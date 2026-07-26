@@ -90,10 +90,9 @@ public final class PartyApplicationService implements features.party.api.PartyAp
                 new PartyCharacterDraft(
                         command == null ? null : command.createDraftName(),
                         command == null ? null : command.createDraftPlayerName(),
-                        command == null ? 0 : command.createDraftLevel(),
-                        command == null ? 0 : command.createDraftPassivePerception(),
-                        command == null ? 0 : command.createDraftArmorClass()),
-                command == null ? PartyMembership.RESERVE : membership(command.membership()))));
+                        command == null ? null : command.createDraftLevel(),
+                        command == null ? null : command.createDraftPassivePerception(),
+                        command == null ? null : command.createDraftArmorClass()))));
     }
 
     public void updateCharacter(UpdateCharacterCommand command) {
@@ -102,9 +101,9 @@ public final class PartyApplicationService implements features.party.api.PartyAp
                 new PartyCharacterDraft(
                         command == null ? null : command.updateDraftName(),
                         command == null ? null : command.updateDraftPlayerName(),
-                        command == null ? 0 : command.updateDraftLevel(),
-                        command == null ? 0 : command.updateDraftPassivePerception(),
-                        command == null ? 0 : command.updateDraftArmorClass()))));
+                        command == null ? null : command.updateDraftLevel(),
+                        command == null ? null : command.updateDraftPassivePerception(),
+                        command == null ? null : command.updateDraftArmorClass()))));
     }
 
     public void deleteCharacter(DeleteCharacterCommand command) {
@@ -185,10 +184,13 @@ public final class PartyApplicationService implements features.party.api.PartyAp
             List<PartyPlanningFactsResponse.ResolvedParticipant> participants = query.participantIds().stream()
                     .map(id -> new PartyPlanningFactsResponse.ResolvedParticipant(id, byId.get(id)))
                     .toList();
-            List<Integer> levels = participants.stream()
-                    .filter(PartyPlanningFactsResponse.ResolvedParticipant::available)
-                    .map(participant -> participant.member().level())
-                    .toList();
+            boolean completeLevels = participants.stream().allMatch(PartyApplicationService::hasAuthoredLevel);
+            List<Integer> levels = completeLevels
+                    ? participants.stream()
+                            .map(participant -> Objects.requireNonNull(
+                                    Objects.requireNonNull(participant.member(), "member").level(), "level"))
+                            .toList()
+                    : List.of();
             result.complete(new PartyPlanningFactsResponse(
                     features.party.api.ReadStatus.SUCCESS,
                     active,
@@ -223,6 +225,11 @@ public final class PartyApplicationService implements features.party.api.PartyAp
         }
     }
 
+    private static boolean hasAuthoredLevel(PartyPlanningFactsResponse.ResolvedParticipant participant) {
+        PartyMemberSummary member = participant.member();
+        return member != null && member.level() != null;
+    }
+
     private MutationResult runRosterMutation(RosterMutationAction action) {
         MutationResult result;
         try {
@@ -232,7 +239,7 @@ public final class PartyApplicationService implements features.party.api.PartyAp
                 publishRepositoryBackedState(mutation.roster());
             }
             result = PartyPublishedProjection.mutationResult(mutation.status());
-        } catch (IllegalStateException exception) {
+        } catch (RuntimeException exception) {
             diagnostics.failure(STORAGE_FAILURE, exception.getClass());
             result = PartyPublishedProjection.storageErrorMutationResult();
         }
@@ -247,7 +254,7 @@ public final class PartyApplicationService implements features.party.api.PartyAp
     private void publishRepositoryBackedStateFromRepository() {
         try {
             publishRepositoryBackedState(repository.load());
-        } catch (IllegalStateException exception) {
+        } catch (RuntimeException exception) {
             diagnostics.failure(STORAGE_FAILURE, exception.getClass());
             publishedState.publishRosterStorageFailure();
         }
@@ -308,6 +315,11 @@ public final class PartyApplicationService implements features.party.api.PartyAp
     @Override
     public ActivePartyCompositionModel activeComposition() {
         return publishedState.activeCompositionModel();
+    }
+
+    @Override
+    public features.party.api.ActivePartyFactsModel activePartyFacts() {
+        return publishedState.activePartyFactsModel();
     }
 
     @Override

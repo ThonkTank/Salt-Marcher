@@ -2,6 +2,7 @@ package features.party.api;
 
 import java.util.List;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 
 /** Immutable planning facts derived from one PartyRoster capture. */
 public record PartyPlanningFactsResponse(
@@ -30,7 +31,7 @@ public record PartyPlanningFactsResponse(
                 ReadStatus.STORAGE_ERROR, List.of(), List.of(), AdventuringDayPlanningSummary.empty(), message);
     }
 
-    public record ResolvedParticipant(long requestedId, PartyMemberSummary member) {
+    public record ResolvedParticipant(long requestedId, @Nullable PartyMemberSummary member) {
         public ResolvedParticipant {
             if (requestedId <= 0L) {
                 throw new IllegalArgumentException("requested participant id must be positive");

@@ -558,7 +558,11 @@ final class EncounterStateViewModel {
         }
     }
 
-    record PartyMemberCandidate(long memberId, String name, int level) {
+    record PartyMemberCandidate(
+            long memberId,
+            String name,
+            @org.jspecify.annotations.Nullable Integer level
+    ) {
         PartyMemberCandidate {
             memberId = Math.max(0L, memberId);
             name = safe(name);

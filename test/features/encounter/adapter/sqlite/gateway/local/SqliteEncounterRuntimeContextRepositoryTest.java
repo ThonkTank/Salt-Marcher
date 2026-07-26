@@ -205,13 +205,11 @@ final class SqliteEncounterRuntimeContextRepositoryTest {
     private static final class RuntimeAccess implements EncounterSession.SessionRepository {
 
         @Override
-        public List<PartyMemberData> loadActiveParty() {
-            return List.of(new PartyMemberData("pc-11", 11L, "Mira", 3));
-        }
-
-        @Override
-        public Optional<BudgetData> loadBudget() {
-            return Optional.of(new BudgetData(List.of(3), 3, 75, 150, 225, 400));
+        public features.encounter.domain.session.EncounterPartyStateData loadPartyState() {
+            return new features.encounter.domain.session.EncounterPartyStateData(
+                    1L,
+                    List.of(new PartyMemberData("pc-11", 11L, "Mira", 3)),
+                    Optional.of(new BudgetData(List.of(3), 3, 75, 150, 225, 400)));
         }
 
         @Override

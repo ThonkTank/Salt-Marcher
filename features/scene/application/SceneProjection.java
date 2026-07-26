@@ -139,7 +139,7 @@ final class SceneProjection {
 
     private static PartyMemberSummary findMember(List<PartyMemberSummary> members, long id) {
         return members.stream().filter(member -> member.id() != null && member.id().longValue() == id)
-                .findFirst().orElse(new PartyMemberSummary(id, "PC #" + id, 0));
+                .findFirst().orElse(new PartyMemberSummary(id, "PC #" + id, null));
     }
 
     private static WorldNpcSummary findNpc(WorldPlannerSnapshot world, long id) {

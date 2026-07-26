@@ -14,6 +14,7 @@ import features.party.PartyServiceAssembly;
 import features.party.api.CharacterDraft;
 import features.party.api.CreateCharacterCommand;
 import features.party.api.MembershipState;
+import features.party.api.SetPartyMembershipCommand;
 import features.sessiongeneration.SessionGenerationServiceAssembly;
 import features.sessionplanner.adapter.sqlite.repository.SqliteSessionPlanRepository;
 import features.sessionplanner.SessionPlannerServiceAssembly;
@@ -281,8 +282,7 @@ final class SessionPlannerWorkspaceCardinalityProductionRouteTest {
                         stores.get("encounter"),
                         creatures.application(), creatures.detail(), creatures.encounterCandidates(),
                         tables.application(), tables.candidates(), null,
-                        party.application(), party.activeParty(), party.activeComposition(),
-                        party.adventuringDaySummary(), party.mutation(),
+                        party.application(), party.mutation(),
                         DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE,
                         DirectUiDispatcher.INSTANCE, diagnostics);
                 SqliteSessionPlanRepository sessions = new SqliteSessionPlanRepository(stores.get("session-planner"));
@@ -299,8 +299,9 @@ final class SessionPlannerWorkspaceCardinalityProductionRouteTest {
                 encounters.start();
                 for (int character = 1; character <= partyCount; character++) {
                     party.application().createCharacter(new CreateCharacterCommand(
-                            new CharacterDraft("Qualification " + character, "Route", 4, 12, 14),
-                            MembershipState.ACTIVE));
+                            new CharacterDraft("Qualification " + character, "Route", 4, 12, 14)));
+                    party.application().setMembership(
+                            new SetPartyMembershipCommand(character, MembershipState.ACTIVE));
                 }
                 return new ProductionRoute(database, sessions,
                         new SqliteEncounterPlanRepository(stores.get("encounter")), planner);

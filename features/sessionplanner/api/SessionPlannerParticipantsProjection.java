@@ -1,6 +1,7 @@
 package features.sessionplanner.api;
 
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 public record SessionPlannerParticipantsProjection(
         PartyState party,
@@ -31,7 +32,7 @@ public record SessionPlannerParticipantsProjection(
     public record PartyState(
             List<Integer> activePartyLevels,
             int activePartySize,
-            int averageLevel,
+            @Nullable Integer averageLevel,
             boolean ready,
             String headline,
             String detail
@@ -40,13 +41,14 @@ public record SessionPlannerParticipantsProjection(
         public PartyState {
             activePartyLevels = copy(activePartyLevels);
             activePartySize = Math.max(0, activePartySize);
-            averageLevel = Math.max(0, averageLevel);
             headline = headline == null ? "" : headline;
             detail = detail == null ? "" : detail;
         }
 
         public static PartyState empty() {
-            return new PartyState(List.of(), 0, 0, false, "Keine Session-Teilnehmer", "Session hat noch keine Teilnehmer.");
+            return new PartyState(
+                    List.of(), 0, null, false,
+                    "Keine Session-Teilnehmer", "Session hat noch keine Teilnehmer.");
         }
 
         @Override
@@ -58,20 +60,19 @@ public record SessionPlannerParticipantsProjection(
     public record ActivePartyMember(
             long characterId,
             String name,
-            int level
+            @Nullable Integer level
     ) {
 
         public ActivePartyMember {
             characterId = Math.max(0L, characterId);
             name = name == null ? "" : name.trim();
-            level = Math.max(0, level);
         }
     }
 
     public record SessionParticipant(
             long characterId,
             String name,
-            int level,
+            @Nullable Integer level,
             boolean available,
             String statusText
     ) {
@@ -79,7 +80,6 @@ public record SessionPlannerParticipantsProjection(
         public SessionParticipant {
             characterId = Math.max(0L, characterId);
             name = name == null ? "" : name.trim();
-            level = Math.max(0, level);
             statusText = statusText == null ? "" : statusText.trim();
         }
     }

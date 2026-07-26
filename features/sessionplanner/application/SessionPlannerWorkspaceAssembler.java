@@ -485,30 +485,34 @@ public final class SessionPlannerWorkspaceAssembler {
                 PartyMemberSummary member = resolved.member();
                 participants.add(member == null
                         ? new SessionPlannerParticipantsProjection.SessionParticipant(
-                                resolved.requestedId(), "Charakter #" + resolved.requestedId(), 0, false,
+                                resolved.requestedId(), "Charakter #" + resolved.requestedId(), null, false,
                                 "Nicht mehr in der aktiven Party verfügbar.")
                         : new SessionPlannerParticipantsProjection.SessionParticipant(
-                                resolved.requestedId(), member.name(), member.level(), true, ""));
+                                resolved.requestedId(), member.name(), member.level(), true,
+                                member.level() == null ? "Stufe fehlt." : ""));
             }
         } else {
             participantIds.forEach(id -> participants.add(
                     new SessionPlannerParticipantsProjection.SessionParticipant(
-                            id, "Charakter #" + id, 0, false, "Party-Planungsdaten nicht verfügbar.")));
+                            id, "Charakter #" + id, null, false, "Party-Planungsdaten nicht verfügbar.")));
         }
         List<Integer> levels = participants.stream()
-                .filter(SessionPlannerParticipantsProjection.SessionParticipant::available)
+                .filter(participant -> participant.available() && participant.level() != null)
                 .map(SessionPlannerParticipantsProjection.SessionParticipant::level).toList();
-        int average = levels.isEmpty() ? 0
-                : (int) Math.round(levels.stream().mapToInt(Integer::intValue).average().orElse(0.0));
         long missing = participants.stream()
                 .filter(participant -> !participant.available()).count();
+        long missingLevels = participants.stream()
+                .filter(participant -> participant.available() && participant.level() == null).count();
+        Integer average = levels.isEmpty() || missing > 0 || missingLevels > 0 ? null
+                : (int) Math.round(levels.stream().mapToInt(Integer::intValue).average().orElseThrow());
         int size = participantIds.size();
         String detail = size == 0 ? "Session hat noch keine Teilnehmer."
                 : missing > 0 ? levels.size() + " aufgelöst · " + missing + " fehlend"
+                : missingLevels > 0 ? missingLevels + " Teilnehmer ohne Stufe"
                 : "Durchschnittsstufe " + average + " · Level " + joinLevels(levels);
         return new SessionPlannerParticipantsProjection(
                 new SessionPlannerParticipantsProjection.PartyState(
-                        levels, size, average, size > 0 && missing == 0,
+                        levels, size, average, size > 0 && missing == 0 && missingLevels == 0,
                         size == 0 ? "Keine Session-Teilnehmer" : size + " Session-Teilnehmer", detail),
                 facts.status() == ReadStatus.SUCCESS
                         ? facts.activeMembers().stream().map(member -> new SessionPlannerParticipantsProjection.ActivePartyMember(
@@ -554,7 +558,10 @@ public final class SessionPlannerWorkspaceAssembler {
         if (status.isBlank() && !participants.party().ready()) {
             status = session.participantRefs().isEmpty()
                     ? "Session hat noch keine Teilnehmer."
-                    : "Session enthält nicht mehr auflösbare Teilnehmer-Referenzen.";
+                    : participants.participants().stream()
+                            .anyMatch(participant -> participant.available() && participant.level() == null)
+                            ? "Für die automatische Vorbereitung fehlt mindestens eine Teilnehmer-Stufe."
+                            : "Session enthält nicht mehr auflösbare Teilnehmer-Referenzen.";
         }
         return new SessionPlannerSessionSnapshot(
                 new SessionPlannerSessionSnapshot.SessionState(

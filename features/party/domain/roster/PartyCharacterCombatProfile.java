@@ -1,15 +1,19 @@
 package features.party.domain.roster;
 
+import org.jspecify.annotations.Nullable;
+
 public record PartyCharacterCombatProfile(
-        int passivePerception,
-        int armorClass
+        @Nullable Integer passivePerception,
+        @Nullable Integer armorClass
 ) {
     public PartyCharacterCombatProfile {
-        passivePerception = clampStat(passivePerception);
-        armorClass = clampStat(armorClass);
+        requireValidWhenPresent(passivePerception, "passivePerception");
+        requireValidWhenPresent(armorClass, "armorClass");
     }
 
-    private static int clampStat(int value) {
-        return Math.max(1, Math.min(99, value));
+    private static void requireValidWhenPresent(@Nullable Integer value, String field) {
+        if (value != null && (value < 1 || value > 99)) {
+            throw new IllegalArgumentException(field + " must be between 1 and 99 when present.");
+        }
     }
 }

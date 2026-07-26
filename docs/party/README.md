@@ -1,14 +1,14 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-20
+Last Reviewed: 2026-07-26
 Source of Truth: Entry point and document map for the party feature.
 
 # Party Feature README
 
 ## Purpose
 
-The party feature owns party composition, party persistence behavior, and the
-public backend boundary `PartyApi`.
+The party feature owns the Campaign Roster, its current-Party subset, character
+state, party persistence behavior, and the public backend boundary `PartyApi`.
 
 ## Documentation Set
 

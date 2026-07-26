@@ -2,7 +2,7 @@ package features.party.api;
 
 import org.jspecify.annotations.Nullable;
 
-public record CreateCharacterCommand(CharacterDraft draft, MembershipState membership) {
+public record CreateCharacterCommand(CharacterDraft draft) {
 
     public @Nullable String createDraftName() {
         return draft == null ? null : draft.name();
@@ -12,19 +12,15 @@ public record CreateCharacterCommand(CharacterDraft draft, MembershipState membe
         return draft == null ? null : draft.playerName();
     }
 
-    public int createDraftLevel() {
-        return draft == null ? 0 : draft.level();
+    public @Nullable Integer createDraftLevel() {
+        return draft == null ? null : draft.level();
     }
 
-    public int createDraftPassivePerception() {
-        return draft == null ? 0 : draft.passivePerception();
+    public @Nullable Integer createDraftPassivePerception() {
+        return draft == null ? null : draft.passivePerception();
     }
 
-    public int createDraftArmorClass() {
-        return draft == null ? 0 : draft.armorClass();
-    }
-
-    public String membershipName() {
-        return membership == null ? "RESERVE" : membership.name();
+    public @Nullable Integer createDraftArmorClass() {
+        return draft == null ? null : draft.armorClass();
     }
 }

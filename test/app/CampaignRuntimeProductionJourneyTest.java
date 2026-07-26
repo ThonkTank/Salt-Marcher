@@ -22,6 +22,7 @@ import features.party.api.MembershipState;
 import features.party.api.MovePartyCharactersCommand;
 import features.party.api.MutationStatus;
 import features.party.api.PartyOverworldTravelLocationSnapshot;
+import features.party.api.SetPartyMembershipCommand;
 import features.scene.api.SceneCommand;
 import features.scene.api.SceneMutationResult;
 import java.nio.file.Files;
@@ -952,9 +953,26 @@ public final class CampaignRuntimeProductionJourneyTest {
         ProductionHostHarness host = new ProductionHostHarness();
         AppBootstrap bootstrap = bootstrapAt(caseRoot.resolve("installation.sqlite"));
         AtomicInteger runtimeCloseAttempts = new AtomicInteger();
+        CountDownLatch lateCleanupEntered = new CountDownLatch(1);
+        CountDownLatch releaseLateCleanup = new CountDownLatch(1);
         bootstrap.installCampaignCloseObserverForTesting(part -> {
-            if ("runtime".equals(part) && runtimeCloseAttempts.incrementAndGet() <= 4) {
+            if (!"runtime".equals(part)) {
+                return;
+            }
+            int attempt = runtimeCloseAttempts.incrementAndGet();
+            if (attempt <= 4) {
                 throw new IllegalStateException("injected synchronous terminal close failure");
+            }
+            if (attempt == 5) {
+                lateCleanupEntered.countDown();
+                try {
+                    if (!releaseLateCleanup.await(5, TimeUnit.SECONDS)) {
+                        throw new IllegalStateException("timed out releasing automatic late cleanup");
+                    }
+                } catch (InterruptedException interruption) {
+                    Thread.currentThread().interrupt();
+                    throw new IllegalStateException("automatic late cleanup was interrupted", interruption);
+                }
             }
         });
         CampaignActivationCoordinator coordinator = await(bootstrap.openCampaignActivationAsync(
@@ -964,7 +982,12 @@ public final class CampaignRuntimeProductionJourneyTest {
 
         org.junit.jupiter.api.Assertions.assertThrows(
                 java.util.concurrent.CompletionException.class, bootstrap::close);
-        assertTrue(bootstrap.campaignActivationRetainedForTesting());
+        assertTrue(lateCleanupEntered.await(5, TimeUnit.SECONDS));
+        try {
+            assertTrue(bootstrap.campaignActivationRetainedForTesting());
+        } finally {
+            releaseLateCleanup.countDown();
+        }
         long cleanupDeadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
         while (bootstrap.campaignActivationRetainedForTesting()
                 && System.nanoTime() < cleanupDeadline) {
@@ -1147,8 +1170,9 @@ public final class CampaignRuntimeProductionJourneyTest {
         unsubscribe.run();
 
         runtime.components().party().application().createCharacter(new CreateCharacterCommand(
-                new CharacterDraft(marker + " Guide", marker, 3, 14, 16),
-                MembershipState.ACTIVE));
+                new CharacterDraft(marker + " Guide", marker, 3, 14, 16)));
+        runtime.components().party().application().setMembership(
+                new SetPartyMembershipCommand(1L, MembershipState.ACTIVE));
         var moved = await(runtime.components().party().application().moveCharacters(
                 new MovePartyCharactersCommand(
                         List.of(1L),

@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-15
+Last Reviewed: 2026-07-26
 Source of Truth: Party feature ownership, write model, and domain invariants.
 
 # Party Domain Model
@@ -10,7 +10,7 @@ Source of Truth: Party feature ownership, write model, and domain invariants.
 Context Role: Party Character State Context
 Context Name: Party
 
-- `party` is the party character state context.
+- `party` is the Campaign Roster and current-Party character state context.
 - Its public boundary is `PartyApi`.
 - The feature owns party composition, party membership, XP progression,
   rest-driven mutation rules, and character-specific runtime travel position.
@@ -36,12 +36,12 @@ immutable, revisioned API state and mutation feedback through `PartyApi`.
 
 ## Write Model
 
-The authored write model is the persisted party roster and character state:
+The authored write model is the persisted Campaign Roster and character state:
 
 - stable character identity
-- party membership state
-- level and XP progression
-- combat profile values owned by the party feature
+- optional player identity, level, and combat-profile facts
+- explicit current-Party membership state
+- XP and rest progression without inventing a missing authored level
 - character-specific travel location and whether that character is attached to
   the party token
 
@@ -50,7 +50,8 @@ The authored write model is the persisted party roster and character state:
 Aggregate Root: PartyRoster
 
 `PartyRoster` is the transaction boundary for one party roster. It owns the
-character collection, next character identity, membership assignment, XP
+character collection, next character identity, optional authored facts,
+membership assignment, XP
 awards and corrections, and rest-driven progression transitions.
 
 `PartyCharacter` is an identity-bearing child model. The Party domain owns
@@ -62,7 +63,7 @@ implementation choices.
 
 Commands entering the aggregate are:
 
-- create character
+- create Roster character
 - update character
 - delete character
 - set membership
@@ -73,10 +74,18 @@ Commands entering the aggregate are:
 Core invariants:
 
 - character identity remains stable across roster mutations
+- character name is the only universal creation requirement; player, level,
+  passive perception, and Armor Class preserve exact presence or absence
+- character creation always produces an inactive Roster member detached from
+  Party travel and Scene participation
 - active and reserve membership is owned by the party aggregate, not by view
-  state
+  state, and changes only through the explicit membership command
 - XP and level progression remain internally consistent after award, signed
   correction, and rest operations
+- editing identity or optional combat facts with the same authored level never
+  changes XP or rest progress; changing or clearing the authored level never
+  discards earned XP, while a raised level establishes at least that level's XP
+  floor
 - negative XP correction is capped at the current level's XP floor and reduces
   rest-cadence XP counters by the applied correction amount without going below
   zero
@@ -85,7 +94,8 @@ Core invariants:
 - the party token is derived from attached character travel state instead of
   being a separate write model
 - adventuring-day budget and progress calculations use party-owned level and
-  rest-budget policies and are exposed through Party API read carriers
+  rest-budget policies and are exposed through Party API read carriers; an
+  automatic calculation requiring level does not run with a missing level
 - external mutation enters through the owning roster aggregate
 
 ## Consistency Model

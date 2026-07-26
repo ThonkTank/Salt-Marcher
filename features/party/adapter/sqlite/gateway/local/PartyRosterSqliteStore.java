@@ -2,6 +2,7 @@ package features.party.adapter.sqlite.gateway.local;
 
 import features.party.adapter.sqlite.model.PartyCharacterRecord;
 import features.party.adapter.sqlite.model.PartyRosterRecord;
+import features.party.adapter.sqlite.model.PartyRosterRecordValidator;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -15,10 +16,13 @@ final class PartyRosterSqliteStore {
     PartyRosterRecord load(Connection connection) throws SQLException {
         long nextCharacterId = metadataStore.loadNextCharacterId(connection);
         List<PartyCharacterRecord> characters = characterStore.loadCharacters(connection);
-        return new PartyRosterRecord(nextCharacterId, characters);
+        PartyRosterRecord roster = new PartyRosterRecord(nextCharacterId, characters);
+        PartyRosterRecordValidator.validate(roster);
+        return roster;
     }
 
     void save(Connection connection, PartyRosterRecord rosterRecord) throws SQLException {
+        PartyRosterRecordValidator.validate(rosterRecord);
         boolean previousAutoCommit = connection.getAutoCommit();
         connection.setAutoCommit(false);
         try {
@@ -26,7 +30,7 @@ final class PartyRosterSqliteStore {
             characterStore.upsertCharacters(connection, rosterRecord.characters());
             metadataStore.saveNextCharacterId(connection, rosterRecord.nextCharacterId());
             connection.commit();
-        } catch (SQLException exception) {
+        } catch (SQLException | RuntimeException exception) {
             connection.rollback();
             throw exception;
         } finally {

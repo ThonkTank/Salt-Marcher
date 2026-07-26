@@ -10,7 +10,7 @@ the interview-derived local GM core.
 
 This is temporary Product-A delivery guidance. It does not define product
 behavior, technical obligations, architecture, contracts, verification policy,
-or either Aletheia process. Those remain owned by the linked canonical
+or any Aletheia process. Those remain owned by the linked canonical
 documents. Delete this roadmap when the complete GM core reaches the program
 exit below.
 
@@ -20,6 +20,14 @@ better path. Prior investment does not keep a step or foundational decision
 closed. Each accepted slice must remain a usable product increment through a
 real production route rather than only a structural foundation.
 
+B1, B2, or B3 may return an independently evaluated roadmap instruction with
+its evidence, maturity, guards, and reopen trigger, including a scoped roadmap
+patch authored only in that reviewer's worktree. A remains this roadmap's owner
+and controls sequencing. A reviewer coordinator may merge an evaluated scoped
+roadmap patch, but A revalidates it before implementation and may revise or
+remove it. No reviewer instruction creates product, architecture, or contract
+truth. C returns process instructions only and cannot add product work.
+
 Aaron performs personal product acceptance only at the fully integrated and
 installed GM-core boundary at M13, repeated after repairs when necessary.
 Earlier slices do not wait for personal owner testing. Their visible behavior
@@ -28,6 +36,18 @@ installed-application automation or agent-operated practical probes,
 independent replay, and the repository gates. The scenarios retained below as
 final owner-test coverage are accumulated for that final end-to-end acceptance
 boundary; they are not intermediate approval gates.
+
+After every productively implemented slice, A applies the exact-install rule in
+the [Product Process](aletheia/product-process.md#local-desktop-availability-after-every-product-slice),
+leaving the desktop shortcut on the latest accepted candidate without waiting
+for intermediate owner approval.
+
+Every capability slice now carries a versioned in-game lesson obligation.
+Because the requirement arrived after M1 and during M2a, one bounded M2t slice
+immediately after M2a establishes automatic first-install/update onboarding,
+skip, and lessons for M1 plus M2a. Every later milestone delivers and
+qualifies its lesson together with the capability instead of accumulating a
+late tutorial retrofit.
 
 The owner has established that no real users or legacy data exist before the
 complete GM core reaches feature completion. Legacy-data compatibility,
@@ -55,7 +75,15 @@ built milestone, revalidate:
    work; and
 6. the exact production journey, causal counterexample where practical,
    independent replay, visible production evidence, final owner-test coverage,
-   and exit facts that will decide the slice.
+   and exit facts that will decide the slice; and
+7. the current implementation maturity under the Product Process and whether
+   the next wave should extend it or reopen its root design; and
+8. whether confirmed B1 behavior, B2 UX, or B3 structural findings, or adopted
+   C process instructions alter priority, scope, proof, or the safest next
+   boundary; and
+9. whether the deciding research, tools, and evaluation methods are available,
+   calibrated against known-good and known-bad cases, and sufficient to measure
+   the proposed slice rather than merely reason about it.
 
 Record only the resulting slice and compact delivery state in its one short
 delivery owner. Do not turn this roadmap into a progress ledger or duplicate
@@ -64,22 +92,39 @@ the Product Process.
 ## Current Program State
 
 - M1's Campaign activation, whole-shell switching, selector, exact resume,
-  isolation, failure boundaries, and warm-switch prequalification are frozen at
-  `f94c373d4`. Independent no-build-cache replay passed all 17 production
-  journey tests with no failure, error, or skip; literal local `./gradlew check`,
-  required PR CI, and installed-desktop identity are green. The compact retained
-  evidence is in [PR #558](https://github.com/ThonkTank/Salt-Marcher/pull/558).
-- The owner has moved personal product testing to the fully integrated M13
-  candidate. M1 therefore has no remaining intermediate owner gate and is ready
-  to exit through PR #558. This roadmap has not audited every other capability
-  against every canonical acceptance outcome; all other milestone completion
-  remains unassessed until live, requirement-by-requirement revalidation.
-- **Next-step verdict:** M2a remains the right next product slice because
-  `AC-F10` is independently useful and needs accepted Campaign isolation. Start
-  it only after PR #558 is actually merged, then revalidate it once more at the
-  merge boundary and open it as a separate production increment. No broader
-  content lifecycle, current-Party/Scene transition, M2b knowledge record, or
-  compatibility bridge is an entry prerequisite.
+  isolation, failure boundaries, and warm-switch prequalification merged as
+  [PR #558](https://github.com/ThonkTank/Salt-Marcher/pull/558) at
+  `fb229a119`. Its independent replay, literal local check, required CI, and
+  installed-artifact identity are green; its personal interaction scenarios
+  remain accumulated for M13's integrated owner test. Its implementation is
+  `Preliminary`: it can support the next slice, but later integration evidence
+  may reopen and replace its internal design. It cannot become `Final` before
+  every remaining integration dependency that may change it is exhausted.
+- **Current merge candidate:** M2a/`AC-F10`, based on `fb229a119`, contains
+  product commits `830d12f82` and `4a55c3855` and the delivery checkpoint
+  `3640721bb` under Product Process `A-0.9.0` at `bbd5988b4`. It supplies one
+  Campaign-owned Roster with name-only creation, nullable authored facts,
+  stable namesake identity, explicit Party membership, strict current-v1
+  persistence, and coherent Party publication. The namesake repair makes the
+  exact stable identity visible in the edit context and identifies the saved
+  record and optional facts in visible feedback; a fresh evaluation qualifies
+  it without changing Party, Scene, or persistence semantics. A fresh isolated
+  replay and independent evaluation also pass the M1 TN-16 current-profile
+  warm-switch oracle; the earlier concurrent-worker failures do not establish
+  a product regression. M2a now returns to its exact-candidate full `check`,
+  installation, target serialization, CI, and merge gates.
+- M2a is `Preliminary`: practical proof and severe-finding repair show no
+  implementation inadequacy requiring immediate rewrite, while later waves may
+  still reopen or replace its design. It is not a mandatory architectural
+  foundation and cannot be `Final` while later Party, Scene, Encounter, travel,
+  or tutorial slices may change it.
+- The confirmed 2026-07-26 tutorial requirement does not change M2a's Roster
+  semantics. It fixes M2t as the next revalidation candidate before M3 so the
+  tutorial boundary is proven with the already delivered Campaign and Roster
+  capabilities before more capability work accumulates.
+- This roadmap has not audited every other capability against every canonical
+  acceptance outcome; all later milestone completion remains unassessed until
+  live, requirement-by-requirement revalidation.
 - No real users or legacy data exist before complete GM-Core feature
   completion. Consequently, no active or proposed pre-completion slice owes a
   legacy conversion, compatibility bridge, migration, fallback, or
@@ -150,7 +195,35 @@ the Product Process.
   deletion/trash/restore; and compatibility work for disposable development
   data.
 
-After M2a, Next-Step Revalidation chooses between the complete M3 current-Party
+### M2t — In-Game Tutorial Foundation And First Lessons
+
+- **Outcome and needs:** `AC-Q15`, `TN-21`, `TN-31`, `TN-38`, and `QS-14`.
+- **Dependency hypothesis:** tutorial delivery must be proven while only the
+  Campaign and Roster capability set needs retroactive coverage; every later
+  capability can then ship its own lesson in the same slice.
+- **Practical proof:** a clean installed profile automatically opens the exact
+  complete Campaign/Roster tutorial set. The first start of each successive
+  installed application version opens exactly the complete set exposed by that
+  version, including unchanged lessons; restarting the same version opens no
+  automatic run. The installed-version matrix covers an unchanged set plus
+  lesson add, change, removal, and restoration. The GM can skip one lesson or
+  dismiss the remaining automatic run by keyboard or pointer without completing
+  it, changing Campaign truth, or losing a capability. A coverage oracle maps
+  every exposed M1/M2a capability to a lesson; an absent or faulty lesson cannot
+  block the underlying capability or Campaign. All proof runs offline.
+- **Final owner-test coverage:** At M13 Aaron experiences clean-install and
+  update onboarding, skips representative lessons, and judges that
+  every capability is explained without obstructing ordinary use.
+- **Exit and reopen:** exit only with exact capability/tutorial coverage,
+  skippable automatic presentation, zero tutorial-only Campaign
+  mutations, keyboard/localization/scale qualification, independent installed-
+  artifact replay, green check/CI, and installation. Reopen the contribution or
+  progress model on missing lessons, stale anchors, capability loss, or
+  tutorial-originated product mutation.
+- **Exclusions:** external documentation, analytics/telemetry, network-hosted
+  tours, and implementation of any capability beyond M1/M2a tutorial coverage.
+
+After M2t, Next-Step Revalidation chooses between the complete M3 current-Party
 and Scene flow and a small M2b knowledge-record slice only if one concrete
 downstream workflow makes that record immediately useful. The guide currently
 places `AC-F07` in M3, where a note-first record has a real Running-Scene use;
@@ -387,7 +460,9 @@ journeys are not yet possible.
 ### M13 — Whole-Product Qualification And Installed Release
 
 - **Outcome and needs:** `AC-Q01` through `AC-Q06`, `AC-Q10`, `AC-Q13`, plus
-  regression and traceability over every `AC-*` and `TN-01` through `TN-37`.
+  regression and traceability over every `AC-*` and `TN-01` through `TN-38`,
+  including the complete installed tutorial manifest and `QS-14` onboarding
+  matrix.
   Qualification covers every obligation active before first-real-user/data
   cutover; `TN-18` is traced as conditionally inactive until the Product Process
   compatibility covenant freezes the initial released format.
@@ -399,15 +474,20 @@ journeys are not yet possible.
   normative `RP-H`, `RP-R`, `RP-L`, and applicable `RP-X` profiles; exercise
   supported OS, display, keyboard, scaling, localization, privacy, fault,
   cancel/retry, current-format recovery, and long-operation survivor matrices.
+  B1, B2, B3, and C each post the Charter-required independently evaluated
+  closure result against the exact M13 candidate even when no finding remains.
 - **Final owner acceptance:** Aaron tests and approves every visible core function in
   the installed application; documentation-only surfaces use their canonical
   gate.
 - **Exit and reopen:** exit only when every interview-derived need is mapped to
-  accepted production evidence, no severe finding or required need remains,
-  literal local `./gradlew check` and required CI are green, supported desktop
-  packages are installed/qualified, the branch is merged, and the published
-  program is ready for use. Any failing journey reopens the owning milestone or
-  its foundational decision rather than receiving a roadmap-only waiver.
+  accepted production evidence, no confirmed product defect, severe finding,
+  required roadmap item, or required need remains unresolved, literal local
+  `./gradlew check` and
+  required CI are green, supported desktop packages are installed/qualified,
+  the branch is merged, and the published program is ready for use. A residual
+  confirmed deviation requires explicit Product Owner acceptance. Any failing
+  journey reopens the owning milestone or its foundational decision rather than
+  receiving a roadmap-only waiver.
 - **Exclusions:** player-operated apps, remote play, touch/mobile layouts,
   general GM dice roller, generic game-system core, and other parked QoL.
 
@@ -417,8 +497,10 @@ After M13 exits and before first non-disposable use or distribution, revalidate
 the exact candidate against the normative
 [Product Process Compatibility Covenant](aletheia/product-process.md#compatibility-covenant).
 That covenant alone defines when compatibility obligations start. Persistence
-and export contracts own the resulting format semantics, and Process Evaluation
-owns any process-adoption verdict. This roadmap adds no trigger condition,
+and export contracts own the resulting format semantics. Process Evaluation
+qualifies a process proposal; its named canonical owner alone decides adoption.
+The owning role may integrate SaltMarcher-local non-production changes, while
+only A implements shipped application changes. This roadmap adds no trigger condition,
 waiver, format rule, or proof substitute.
 
 Treat any missing covenant evidence as a reason to reopen its canonical owner,
@@ -450,4 +532,9 @@ CI, and release artifacts remain in their respective canonical surfaces.
 - [Resource Policy](../policies/resource-policy.md)
 - [Program Charter](aletheia/program-charter.md)
 - [Product Process](aletheia/product-process.md)
+- [B1 Behavior Assurance](aletheia/behavior-assurance.md)
+- [B2 UX Assurance](aletheia/ux-assurance.md)
+- [B3 Structural Assurance](aletheia/structure-assurance.md)
+- [C Process Optimization](aletheia/process-optimization.md)
+- [Process Evaluation](aletheia/process-evaluation.md)
 - [Quality Platforms](../verification/quality-platforms.md)

@@ -242,7 +242,9 @@ final class SessionPlannerViewModel {
                                         && !participantIds.contains(member.characterId()))
                                 .map(member -> new ParticipantChoiceModel(
                                         member.characterId(),
-                                        member.name() + " - Level " + member.level()))
+                                        member.name() + (member.level() == null
+                                                ? " - Stufe fehlt"
+                                                : " - Level " + member.level())))
                                 .toList(),
                         safeParticipants.participants().stream()
                                 .map(SessionParticipantModel::from)
@@ -280,7 +282,7 @@ final class SessionPlannerViewModel {
             static SessionParticipantModel from(
                     SessionPlannerParticipantsProjection.SessionParticipant participant
             ) {
-                String detail = participant.level() > 0
+                String detail = participant.level() != null
                         ? "Level " + participant.level()
                         : participant.statusText();
                 return new SessionParticipantModel(

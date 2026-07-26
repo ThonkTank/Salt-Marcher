@@ -1,18 +1,17 @@
 package features.party.api;
 
+import org.jspecify.annotations.Nullable;
+
 public record CharacterDraft(
         String name,
-        String playerName,
-        int level,
-        int passivePerception,
-        int armorClass
+        @Nullable String playerName,
+        @Nullable Integer level,
+        @Nullable Integer passivePerception,
+        @Nullable Integer armorClass
 ) {
 
     public CharacterDraft {
         name = name == null ? "" : name;
-        playerName = playerName == null ? "" : playerName;
-        level = Math.max(0, level);
-        passivePerception = Math.max(0, passivePerception);
-        armorClass = Math.max(0, armorClass);
+        playerName = playerName == null || playerName.isBlank() ? null : playerName;
     }
 }

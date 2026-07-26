@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-15
+Last Reviewed: 2026-07-26
 Source of Truth: Party top-bar dropdown structure, interactions, and visible
 states.
 
@@ -8,9 +8,10 @@ states.
 
 ## Component Purpose
 
-The party dropdown is the top-bar surface for the current party snapshot. It
-gives a compact read-only overview of active party members, party composition,
-and adventuring-day readiness without becoming a separate navigation tab.
+The party dropdown is the top-bar surface for the Campaign Roster and its
+distinct current-Party subset. It lets the GM manage all Campaign PCs and
+explicitly change table participation without becoming a separate navigation
+tab.
 
 Current state: the dropdown reads the real party snapshot and adventuring-day
 summary, and mutation controls use the Party feature's public mutation API.
@@ -21,32 +22,37 @@ summary, and mutation controls use the Party feature's public mutation API.
 - The dropdown trigger shows only party membership state: no-party text or the
   active character count with average level. Adventuring-day rest-budget state
   is shown by the separate Adventuring Day top-bar surface.
-- The dropdown content shows a `PARTY` header, active member rows, rest action
-  controls, reserve-character search suggestions, a new-character affordance,
-  a summary footer, and compact feedback when party data cannot be loaded.
+- The dropdown content shows a `PARTY` header, active member rows and rest
+  actions plus a distinct `CHARAKTER-ROSTER` section containing every active or
+  inactive PC. Roster rows expose stable Roster IDs so namesakes remain
+  distinguishable. Search matches name, player, or Roster ID.
 - Active member rows are compact full-width two-line cards. The first line
   shows character and player identity, current and next level, an overlaid
   `current XP/next-level XP (%)` level-up meter, and popup-based XP correction.
   The second line shows combat/rest metadata plus edit and remove affordances.
-- The create/edit character editor is a secondary anchored dropdown with
-  character, player, level, passive perception, AC, and edit-mode delete
-  confirmation controls. It stays open on validation or storage failures and
-  reports the field or mutation error inline.
+- The Roster create/edit editor is a secondary anchored dropdown. Only the
+  character name is required; player, level, passive perception, and AC are
+  optional and can be cleared again. Edit mode identifies the PC by stable ID
+  and retains explicit delete confirmation. The editor stays open on validation
+  or storage failures and reports the field or mutation error inline.
 
 ## Interactions
 
 - Opening the dropdown requests the current party snapshot from the Party
   feature.
-- Search filters reserve-character suggestions locally.
-- Add, create, edit, delete, XP correction, remove, short-rest, and long-rest
-  controls persist through the Party feature's public mutation API and refresh
-  the dropdown snapshot after successful mutations.
+- Roster search filters all Campaign PCs locally.
+- Creating a PC adds it only to the Roster. It does not activate current-Party
+  membership, attach the PC to the Party travel token, or assign a Scene.
+- Adding or removing current-Party membership is a separate explicit action on
+  an existing Roster PC. Create, edit, delete, XP correction, membership, rest,
+  and long-rest controls persist through the Party feature's public mutation
+  API and refresh the dropdown snapshot after successful mutations.
 - Clicking a character's level-up meter opens a compact XP popup. `+XP` awards
   XP, while `-XP` corrects previously awarded XP without lowering the
   character below the current level's XP floor.
-- Character editor submission validates name, level, passive perception, and AC
-  before submitting the change to the Party feature; failed validation does not
-  close the editor or mutate the party.
+- Character editor submission requires a non-blank name and validates only
+  optional values that were entered. Failed validation does not close the
+  editor or mutate the Roster.
 - After successful party mutations, updated Party state is available when
   Encounter surfaces refresh party-derived thresholds and combat baselines.
 - The trigger supports the party mnemonic and can be opened from the top bar
@@ -75,6 +81,13 @@ summary, and mutation controls use the Party feature's public mutation API.
   mutations are presented as final state
 - create, edit, remove, rest, and XP-correction actions persist only through
   the Party feature's public mutation API
+- name-only creation succeeds, leaves every optional fact absent, and changes
+  neither current Party nor Scene/travel participation
+- duplicate names remain independently editable and visibly distinguishable by
+  stable Roster ID
+- clearing an optional player, level, passive-perception, or AC value restores
+  absence rather than a default or sentinel
+- current-Party membership changes only through a separate explicit action
 - failed editor validation keeps the editor open, preserves entered values, and
   renders inline error feedback
 - after successful mutations, downstream Encounter refreshes observe the

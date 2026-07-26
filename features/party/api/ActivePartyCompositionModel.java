@@ -33,6 +33,6 @@ public final class ActivePartyCompositionModel {
     private static ActivePartyCompositionResult emptyResult() {
         return new ActivePartyCompositionResult(
                 ReadStatus.STORAGE_ERROR,
-                new ActivePartyComposition(List.of(), 1));
+                new ActivePartyComposition(List.of(), null));
     }
 }

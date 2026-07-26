@@ -299,8 +299,11 @@ public final class SessionPreparationCoordinator {
         if (response == null || response.status() != GeneratedEncounterBatchStatus.SUCCESS
                 || response.batch().isEmpty()) {
             if (response != null && (response.status() == GeneratedEncounterBatchStatus.INVALID_REQUEST
-                    || response.status() == GeneratedEncounterBatchStatus.UNRESOLVABLE)) {
-                invalid(attempt, "Encounter konnten nicht vollständig aufgelöst werden.");
+                    || response.status() == GeneratedEncounterBatchStatus.UNRESOLVABLE
+                    || response.status() == GeneratedEncounterBatchStatus.MISSING_REQUIRED_LEVEL)) {
+                invalid(attempt, response.status() == GeneratedEncounterBatchStatus.MISSING_REQUIRED_LEVEL
+                        ? response.message()
+                        : "Encounter konnten nicht vollständig aufgelöst werden.");
             } else {
                 fail(attempt, "Encounter konnten nicht vorbereitet werden.", null);
             }

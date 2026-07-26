@@ -53,11 +53,15 @@ public record SessionPreparationFingerprint(
         for (int index = 0; index < session.participantRefs().size(); index++) {
             long participantId = session.participantRefs().get(index);
             PartyPlanningFactsResponse.ResolvedParticipant resolved = facts.participants().get(index);
-            if (participantId <= 0L || resolved.requestedId() != participantId || !resolved.available()
-                    || resolved.member().level() < 1 || resolved.member().level() > 20) {
+            if (resolved == null) {
                 return Optional.empty();
             }
-            participants.add(new Participant(participantId, resolved.member().level()));
+            Integer level = resolved.member() == null ? null : resolved.member().level();
+            if (participantId <= 0L || resolved.requestedId() != participantId || !resolved.available()
+                    || level == null || level < 1 || level > 20) {
+                return Optional.empty();
+            }
+            participants.add(new Participant(participantId, level));
         }
         participants.sort(Comparator.comparingLong(Participant::stableId));
         if (participants.stream().map(Participant::stableId).distinct().count() != participants.size()) {

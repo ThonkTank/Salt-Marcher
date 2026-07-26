@@ -2,6 +2,7 @@ package features.sessionplanner.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import features.party.api.AdventuringDayPlanningSummary;
 import features.party.api.PartyMemberSummary;
@@ -46,6 +47,14 @@ final class SessionPreparationFingerprintTest {
         assertNotEquals(identity, capture(base, 5, OptionalInt.of(2), 42L));
     }
 
+    @Test
+    void captureBlocksWhenAnyParticipantLevelIsMissing() {
+        SessionPlan session = session(7L, SessionRevision.initial(), List.of(1L, 2L), "1");
+
+        assertTrue(SessionPreparationFingerprint.capture(
+                session, facts(session.participantRefs(), null), OptionalInt.of(2), 41L).isEmpty());
+    }
+
     private static String capture(
             SessionPlan session,
             int secondLevel,
@@ -70,7 +79,7 @@ final class SessionPreparationFingerprintTest {
                 0L, "", 1L, 1L);
     }
 
-    private static PartyPlanningFactsResponse facts(List<Long> requested, int secondLevel) {
+    private static PartyPlanningFactsResponse facts(List<Long> requested, Integer secondLevel) {
         Map<Long, PartyMemberSummary> members = Map.of(
                 1L, new PartyMemberSummary(1L, "One", 4),
                 2L, new PartyMemberSummary(2L, "Two", secondLevel),

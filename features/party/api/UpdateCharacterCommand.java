@@ -12,15 +12,15 @@ public record UpdateCharacterCommand(long id, CharacterDraft draft) {
         return draft == null ? null : draft.playerName();
     }
 
-    public int updateDraftLevel() {
-        return draft == null ? 0 : draft.level();
+    public @Nullable Integer updateDraftLevel() {
+        return draft == null ? null : draft.level();
     }
 
-    public int updateDraftPassivePerception() {
-        return draft == null ? 0 : draft.passivePerception();
+    public @Nullable Integer updateDraftPassivePerception() {
+        return draft == null ? null : draft.passivePerception();
     }
 
-    public int updateDraftArmorClass() {
-        return draft == null ? 0 : draft.armorClass();
+    public @Nullable Integer updateDraftArmorClass() {
+        return draft == null ? null : draft.armorClass();
     }
 }

@@ -27,6 +27,7 @@ import features.party.api.CharacterDraft;
 import features.party.api.CreateCharacterCommand;
 import features.party.api.MembershipState;
 import features.party.api.PartyApi;
+import features.party.api.SetPartyMembershipCommand;
 
 import javafx.application.Platform;
 import javafx.scene.Node;
@@ -291,8 +292,7 @@ public final class EncounterStateTabTest {
             EncounterServiceAssembly.Component encounter = EncounterServiceAssembly.create(
                     creatures.application(), creatures.detail(), creatures.encounterCandidates(),
                     tables.application(), tables.candidates(), null,
-                    party.application(), party.activeParty(), party.activeComposition(),
-                    party.adventuringDaySummary(), party.mutation(), plans);
+                    party.application(), party.mutation(), plans);
             long savedPlanId = seedSavedEncounter(plans);
             return new TestRuntime(creatures, encounter, savedPlanId);
         }
@@ -311,8 +311,8 @@ public final class EncounterStateTabTest {
             List<Integer> levels = List.of(3, 3, 3, 3);
             for (int index = 0; index < levels.size(); index++) {
                 party.createCharacter(new CreateCharacterCommand(
-                        new CharacterDraft("Hero " + (index + 1), "Mira", levels.get(index), 12, 16),
-                        MembershipState.ACTIVE));
+                        new CharacterDraft("Hero " + (index + 1), "Mira", levels.get(index), 12, 16)));
+                party.setMembership(new SetPartyMembershipCommand(index + 1L, MembershipState.ACTIVE));
             }
             party.calculateAdventuringDay(new CalculateAdventuringDayCommand(levels, 0));
         }

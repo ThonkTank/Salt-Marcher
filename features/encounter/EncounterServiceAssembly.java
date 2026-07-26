@@ -19,9 +19,7 @@ import features.encounter.domain.generation.EncounterGenerator;
 import features.encounter.domain.plan.repository.EncounterPlanRepository;
 import features.encountertable.api.EncounterTableApi;
 import features.encountertable.api.EncounterTableCandidatesModel;
-import features.party.api.ActivePartyCompositionModel;
-import features.party.api.ActivePartyModel;
-import features.party.api.AdventuringDaySummaryModel;
+import features.party.api.ActivePartyFactsModel;
 import features.party.api.PartyApi;
 import features.party.api.PartyMutationModel;
 import features.worldplanner.api.WorldPlannerApi;
@@ -52,15 +50,12 @@ public final class EncounterServiceAssembly {
             EncounterTableCandidatesModel tableCandidates,
             @Nullable WorldPlannerSnapshotModel worldPlanner,
             PartyApi party,
-            ActivePartyModel activeParty,
-            ActivePartyCompositionModel activePartyComposition,
-            AdventuringDaySummaryModel daySummary,
             PartyMutationModel partyMutation,
             T planRepository
     ) {
         return create(
                 creatures, creatureDetails, creatureCandidates, encounterTables, tableCandidates,
-                worldPlanner, party, activeParty, activePartyComposition, daySummary, partyMutation,
+                worldPlanner, party, partyMutation,
                 planRepository, DirectExecutionLane.INSTANCE, DirectUiDispatcher.INSTANCE, NoopDiagnostics.INSTANCE);
     }
 
@@ -73,9 +68,6 @@ public final class EncounterServiceAssembly {
             EncounterTableCandidatesModel tableCandidates,
             @Nullable WorldPlannerSnapshotModel worldPlanner,
             PartyApi party,
-            ActivePartyModel activeParty,
-            ActivePartyCompositionModel activePartyComposition,
-            AdventuringDaySummaryModel daySummary,
             PartyMutationModel partyMutation,
             ExecutionLane executionLane,
             ExecutionLane generatedCpuLane,
@@ -93,9 +85,6 @@ public final class EncounterServiceAssembly {
                 tableCandidates,
                 worldPlanner,
                 party,
-                activeParty,
-                activePartyComposition,
-                daySummary,
                 partyMutation,
                 planRepository,
                 new SqliteEncounterRuntimeContextRepository(safeStore),
@@ -118,9 +107,6 @@ public final class EncounterServiceAssembly {
             EncounterTableCandidatesModel tableCandidates,
             @Nullable WorldPlannerSnapshotModel worldPlanner,
             PartyApi party,
-            ActivePartyModel activeParty,
-            ActivePartyCompositionModel activePartyComposition,
-            AdventuringDaySummaryModel daySummary,
             PartyMutationModel partyMutation,
             ExecutionLane executionLane,
             UiDispatcher uiDispatcher,
@@ -128,7 +114,7 @@ public final class EncounterServiceAssembly {
     ) {
         return create(
                 store, creatures, creatureDetails, creatureCandidates, encounterTables, tableCandidates,
-                worldPlanner, party, activeParty, activePartyComposition, daySummary, partyMutation,
+                worldPlanner, party, partyMutation,
                 executionLane, executionLane, executionLane, uiDispatcher, diagnostics);
     }
 
@@ -141,9 +127,6 @@ public final class EncounterServiceAssembly {
             EncounterTableCandidatesModel tableCandidates,
             @Nullable WorldPlannerSnapshotModel worldPlanner,
             PartyApi party,
-            ActivePartyModel activeParty,
-            ActivePartyCompositionModel activePartyComposition,
-            AdventuringDaySummaryModel daySummary,
             PartyMutationModel partyMutation,
             T planRepository,
             ExecutionLane executionLane,
@@ -152,7 +135,7 @@ public final class EncounterServiceAssembly {
     ) {
         return create(
                 creatures, creatureDetails, creatureCandidates, encounterTables, tableCandidates,
-                worldPlanner, party, activeParty, activePartyComposition, daySummary, partyMutation,
+                worldPlanner, party, partyMutation,
                 planRepository,
                 new InMemoryRuntimeContextRepository(),
                 executionLane,
@@ -173,9 +156,6 @@ public final class EncounterServiceAssembly {
             EncounterTableCandidatesModel tableCandidates,
             @Nullable WorldPlannerSnapshotModel worldPlanner,
             PartyApi party,
-            ActivePartyModel activeParty,
-            ActivePartyCompositionModel activePartyComposition,
-            AdventuringDaySummaryModel daySummary,
             PartyMutationModel partyMutation,
             EncounterPlanRepository planRepository,
             features.encounter.application.EncounterRuntimeContextRepository contextRepository,
@@ -190,9 +170,10 @@ public final class EncounterServiceAssembly {
     ) {
         EncounterPublishedState publishedState = new EncounterPublishedState(
                 java.util.Objects.requireNonNull(uiDispatcher, "uiDispatcher"));
+        ActivePartyFactsModel activePartyFacts = party.activePartyFacts();
         EncounterForeignFacts facts = new EncounterForeignFacts(
                 creatures, creatureDetails, creatureCandidates, encounterTables, tableCandidates,
-                worldPlanner, party, activeParty, activePartyComposition, daySummary, partyMutation);
+                worldPlanner, party, activePartyFacts, partyMutation);
         EncounterPlanGateway plans = new EncounterPlanGateway(
                 planRepository, facts, java.util.Objects.requireNonNull(diagnostics, "diagnostics"));
         EncounterSessionRuntimeAccess runtime = new EncounterSessionRuntimeAccess(
@@ -201,7 +182,7 @@ public final class EncounterServiceAssembly {
                 new EncounterGenerator(facts));
         GeneratedEncounterBatchService generatedBatches = new GeneratedEncounterBatchService(
                 creatures,
-                activePartyComposition,
+                activePartyFacts,
                 java.util.Objects.requireNonNull(generatedRepository, "generatedRepository"),
                 java.util.Objects.requireNonNull(generatedCpuLane, "generatedCpuLane"),
                 java.util.Objects.requireNonNull(generatedIoLane, "generatedIoLane"),

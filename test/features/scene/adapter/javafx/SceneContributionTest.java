@@ -83,6 +83,20 @@ final class SceneContributionTest {
     }
 
     @Test
+    void contributionRendersMissingOptionalPartyLevelWithoutInventingAValue() throws Exception {
+        runOnFxThread(() -> {
+            SceneApplicationService application = applicationWithLevel(null);
+            ShellBinding binding = new SceneContribution(application, application.model(), statblockId -> { }).bind();
+
+            binding.onActivate();
+            Parent main = (Parent) binding.slotContent().get(ShellSlot.COCKPIT_MAIN);
+
+            assertTrue(labels(main).contains("Stufe nicht angegeben"));
+            assertFalse(labels(main).contains("Stufe 0"));
+        });
+    }
+
+    @Test
     void deleteRequiresExplicitConfirmationAndCancelKeepsScene() throws Exception {
         runOnFxThread(() -> {
             SceneApplicationService application = application();
@@ -157,8 +171,12 @@ final class SceneContributionTest {
     }
 
     private static SceneApplicationService application() {
+        return applicationWithLevel(3);
+    }
+
+    private static SceneApplicationService applicationWithLevel(Integer level) {
         ActivePartyResult party = new ActivePartyResult(
-                ReadStatus.SUCCESS, List.of(new PartyMemberSummary(1L, "PC 1", 3)));
+                ReadStatus.SUCCESS, List.of(new PartyMemberSummary(1L, "PC 1", level)));
         ActivePartyModel partyModel = new ActivePartyModel(() -> party, ignored -> () -> { });
         WorldPlannerSnapshot world = new WorldPlannerSnapshot(
                 WorldPlannerReadStatus.SUCCESS, List.of(), List.of(), List.of(), "");

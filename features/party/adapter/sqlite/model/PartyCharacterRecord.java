@@ -10,11 +10,11 @@ public record PartyCharacterRecord(
         String membership,
         Travel travel
 ) {
-    public record Identity(String name, String playerName) {
+    public record Identity(String name, @Nullable String playerName) {
     }
 
     public record Progress(
-            int level,
+            @Nullable Integer level,
             int currentXp,
             int xpSinceLongRest,
             int xpSinceShortRest,
@@ -22,7 +22,7 @@ public record PartyCharacterRecord(
     ) {
     }
 
-    public record Combat(int passivePerception, int armorClass) {
+    public record Combat(@Nullable Integer passivePerception, @Nullable Integer armorClass) {
     }
 
     public record Travel(

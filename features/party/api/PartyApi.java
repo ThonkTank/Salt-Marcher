@@ -13,6 +13,8 @@ public interface PartyApi {
 
     ActivePartyCompositionModel activeComposition();
 
+    ActivePartyFactsModel activePartyFacts();
+
     AdventuringDaySummaryModel adventuringDaySummary();
 
     PartyTravelPositionsModel travelPositions();

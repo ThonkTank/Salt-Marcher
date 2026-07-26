@@ -22,8 +22,11 @@ import features.encounter.api.PreparedEncounterCreature;
 import features.encounter.api.PreparedEncounterRoster;
 import features.encounter.api.PrepareGeneratedEncounterBatchCommand;
 import features.party.api.ActivePartyComposition;
-import features.party.api.ActivePartyCompositionModel;
-import features.party.api.ActivePartyCompositionResult;
+import features.party.api.ActivePartyFacts;
+import features.party.api.ActivePartyFactsModel;
+import features.party.api.ActivePartyFactsResult;
+import features.party.api.AdventuringDaySummary;
+import features.party.api.PartyMemberSummary;
 import features.party.api.ReadStatus;
 import java.util.ArrayList;
 import java.util.ArrayDeque;
@@ -70,7 +73,7 @@ final class GeneratedEncounterBatchServiceTest {
                 candidate(11L, "Wrong CR", "1/4", 100, 50, 15, 0)));
         CountingParty party = new CountingParty();
         GeneratedEncounterBatchService service = new GeneratedEncounterBatchService(
-                creatures, party.model(), new RecordingRepository(),
+                creatures, party.facts(), new RecordingRepository(),
                 DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE);
 
         var result = service.prepare(new PrepareGeneratedEncounterBatchCommand(
@@ -81,6 +84,32 @@ final class GeneratedEncounterBatchServiceTest {
         assertTrue(result.batch().isEmpty());
         assertEquals(1, party.reads);
         assertEquals(1, creatures.queries.size());
+    }
+
+    @Test
+    void mixedKnownAndMissingPartyLevelsBlockBeforeAutomaticGeneration() {
+        RecordingCreatures creatures = new RecordingCreatures(List.of(
+                candidate(11L, "Guard", "1/2", 100, 60, 15, 0)));
+        List<PartyMemberSummary> members = List.of(
+                new PartyMemberSummary(1L, "Known", 3),
+                new PartyMemberSummary(2L, "Missing", null));
+        GeneratedEncounterBatchService service = new GeneratedEncounterBatchService(
+                creatures, facts(members, List.of(3), 3), new RecordingRepository(),
+                DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE);
+
+        var result = service.prepare(command()).toCompletableFuture().join();
+
+        assertEquals(GeneratedEncounterBatchStatus.MISSING_REQUIRED_LEVEL, result.status());
+        assertEquals("Every active party member needs a level before encounter generation.", result.message());
+        assertTrue(result.batch().isEmpty());
+        assertTrue(creatures.queries.isEmpty(), "missing required Party facts block before creature reads");
+
+        var summaries = service.loadSummaries(
+                new features.encounter.api.GeneratedEncounterPlanSummaryBatchQuery(List.of(1L)))
+                .toCompletableFuture().join();
+        assertEquals(GeneratedEncounterBatchStatus.MISSING_REQUIRED_LEVEL, summaries.status());
+        assertEquals("Every active party member needs a level before encounter generation.", summaries.message());
+        assertTrue(summaries.entries().isEmpty());
     }
 
     @Test
@@ -107,7 +136,7 @@ final class GeneratedEncounterBatchServiceTest {
             }
         };
         GeneratedEncounterBatchService service = new GeneratedEncounterBatchService(
-                creatures, party.model(), repository,
+                creatures, party.facts(), repository,
                 DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE);
 
         var result = service.loadSummaries(
@@ -266,12 +295,9 @@ final class GeneratedEncounterBatchServiceTest {
     private static GeneratedEncounterBatchService service(
             RecordingCreatures creatures, RecordingRepository repository
     ) {
-        ActivePartyCompositionModel party = new ActivePartyCompositionModel(
-                () -> new ActivePartyCompositionResult(
-                        ReadStatus.SUCCESS, new ActivePartyComposition(List.of(3, 3, 3, 3), 3)),
-                listener -> () -> { });
         return new GeneratedEncounterBatchService(
-                creatures, party, repository, DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE);
+                creatures, factsWithLevels(List.of(3, 3, 3, 3)), repository,
+                DirectExecutionLane.INSTANCE, DirectExecutionLane.INSTANCE);
     }
 
     private static GeneratedEncounterBatchService service(
@@ -280,11 +306,8 @@ final class GeneratedEncounterBatchServiceTest {
             ExecutionLane cpu,
             ExecutionLane io
     ) {
-        ActivePartyCompositionModel party = new ActivePartyCompositionModel(
-                () -> new ActivePartyCompositionResult(
-                        ReadStatus.SUCCESS, new ActivePartyComposition(List.of(3, 3, 3, 3), 3)),
-                listener -> () -> { });
-        return new GeneratedEncounterBatchService(creatures, party, repository, cpu, io);
+        return new GeneratedEncounterBatchService(
+                creatures, factsWithLevels(List.of(3, 3, 3, 3)), repository, cpu, io);
     }
 
     private static GeneratedEncounterBatchRepository repositoryWithPlans(
@@ -483,12 +506,57 @@ final class GeneratedEncounterBatchServiceTest {
     private static final class CountingParty {
         private int reads;
 
-        ActivePartyCompositionModel model() {
-            return new ActivePartyCompositionModel(() -> {
+        ActivePartyFactsModel facts() {
+            return new ActivePartyFactsModel(() -> {
                 reads++;
-                return new ActivePartyCompositionResult(
-                        ReadStatus.SUCCESS, new ActivePartyComposition(List.of(3, 3, 3, 3), 3));
+                List<Integer> levels = reads == 1 ? List.of(3, 3, 3, 3) : List.of(10, 10, 10, 10);
+                return factsResult(reads, levels);
             }, listener -> () -> { });
         }
+    }
+
+    private static ActivePartyFactsModel factsWithLevels(List<Integer> levels) {
+        List<PartyMemberSummary> members = java.util.stream.IntStream.range(0, levels.size())
+                .mapToObj(index -> new PartyMemberSummary(
+                        index + 1L, "PC " + (index + 1), levels.get(index)))
+                .toList();
+        Integer average = levels.isEmpty() ? null : (int) Math.round(
+                levels.stream().mapToInt(Integer::intValue).average().orElseThrow());
+        return facts(members, levels, average);
+    }
+
+    private static ActivePartyFactsModel facts(
+            List<PartyMemberSummary> members,
+            List<Integer> levels,
+            Integer average
+    ) {
+        return new ActivePartyFactsModel(
+                () -> new ActivePartyFactsResult(
+                        ReadStatus.SUCCESS,
+                        new ActivePartyFacts(
+                                1L,
+                                members,
+                                new ActivePartyComposition(levels, average),
+                                emptyDay())),
+                listener -> () -> { });
+    }
+
+    private static ActivePartyFactsResult factsResult(long revision, List<Integer> levels) {
+        List<PartyMemberSummary> members = java.util.stream.IntStream.range(0, levels.size())
+                .mapToObj(index -> new PartyMemberSummary(
+                        index + 1L, "PC " + (index + 1), levels.get(index)))
+                .toList();
+        int average = (int) Math.round(levels.stream().mapToInt(Integer::intValue).average().orElseThrow());
+        return new ActivePartyFactsResult(
+                ReadStatus.SUCCESS,
+                new ActivePartyFacts(
+                        revision,
+                        members,
+                        new ActivePartyComposition(levels, average),
+                        emptyDay()));
+    }
+
+    private static AdventuringDaySummary emptyDay() {
+        return new AdventuringDaySummary(List.of(), 0, 0, 0, 0, 0, List.of());
     }
 }

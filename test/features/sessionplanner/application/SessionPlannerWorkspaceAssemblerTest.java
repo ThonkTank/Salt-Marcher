@@ -27,6 +27,7 @@ import features.encounter.api.UpdateEncounterBuilderInputsCommand;
 import features.encounter.api.UpdateEncounterPoolFiltersCommand;
 import features.encounter.api.UpdateEncounterTuningCommand;
 import features.party.api.ActivePartyCompositionModel;
+import features.party.api.ActivePartyFactsModel;
 import features.party.api.ActivePartyModel;
 import features.party.api.AdjustPartyXpCommand;
 import features.party.api.AdventuringDayCalculationModel;
@@ -100,6 +101,27 @@ final class SessionPlannerWorkspaceAssemblerTest {
         assertEquals(List.of(1L), workspace.participants().activePartyMembers().stream()
                 .map(member -> member.characterId()).toList());
         assertTrue(workspace.participants().participants().isEmpty());
+    }
+
+    @Test
+    void mixedKnownAndMissingLevelsRemainVisibleButBlockAutomaticPreparation() {
+        SessionPlan current = SessionPlan.seeded(7L, List.of(1L, 2L), EncounterDays.one());
+        SessionPlannerWorkspaceAssembler assembler = new SessionPlannerWorkspaceAssembler(
+                new CountingSource(new SessionPlannerReadCapture(7L, List.of(current), 0)),
+                new CountingParty(3, null), new CountingEncounter(false), unavailableGeneration(), null,
+                directLane(), NoopDiagnostics.INSTANCE);
+
+        SessionPlannerWorkspaceSnapshot workspace = assembler.assemble(SessionPreparationSnapshot.idle())
+                .toCompletableFuture().join().workspace();
+
+        assertEquals(2, workspace.participants().activePartyMembers().size());
+        assertEquals(3, workspace.participants().activePartyMembers().getFirst().level());
+        assertEquals(null, workspace.participants().activePartyMembers().getLast().level());
+        assertEquals(null, workspace.participants().participants().getLast().level());
+        assertFalse(workspace.participants().party().ready());
+        assertEquals(null, workspace.participants().party().averageLevel());
+        assertEquals("Für die automatische Vorbereitung fehlt mindestens eine Teilnehmer-Stufe.",
+                workspace.currentSession().status());
     }
 
     @Test
@@ -496,20 +518,35 @@ final class SessionPlannerWorkspaceAssemblerTest {
 
     private static final class CountingParty implements PartyApi {
         private int reads;
+        private final List<Integer> levels;
+
+        private CountingParty() {
+            this(3);
+        }
+
+        private CountingParty(Integer... levels) {
+            this.levels = java.util.Arrays.asList(levels);
+        }
 
         @Override
         public CompletionStage<PartyPlanningFactsResponse> loadPlanningFacts(PartyPlanningFactsQuery query) {
             reads++;
-            PartyMemberSummary member = new PartyMemberSummary(1L, "Aria", 3);
+            List<PartyMemberSummary> members = java.util.stream.IntStream.range(0, levels.size())
+                    .mapToObj(index -> new PartyMemberSummary(
+                            index + 1L, "PC " + (index + 1), levels.get(index)))
+                    .toList();
             return CompletableFuture.completedFuture(new PartyPlanningFactsResponse(
-                    ReadStatus.SUCCESS, List.of(member),
+                    ReadStatus.SUCCESS, members,
                     query.participantIds().stream().map(id ->
-                            new PartyPlanningFactsResponse.ResolvedParticipant(id, member)).toList(),
+                            new PartyPlanningFactsResponse.ResolvedParticipant(
+                                    id, id > 0 && id <= members.size() ? members.get(id.intValue() - 1) : null))
+                            .toList(),
                     new AdventuringDayPlanningSummary(1_000, 300, 700, 2, 1), ""));
         }
 
         @Override public PartySnapshotModel snapshot() { throw new UnsupportedOperationException(); }
         @Override public ActivePartyModel activeParty() { throw new UnsupportedOperationException(); }
+        @Override public ActivePartyFactsModel activePartyFacts() { throw new UnsupportedOperationException(); }
         @Override public ActivePartyCompositionModel activeComposition() { throw new UnsupportedOperationException(); }
         @Override public AdventuringDaySummaryModel adventuringDaySummary() { throw new UnsupportedOperationException(); }
         @Override public PartyTravelPositionsModel travelPositions() { throw new UnsupportedOperationException(); }

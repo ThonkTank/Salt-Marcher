@@ -16,9 +16,10 @@ final class EncounterSessionContext {
     private String status = DEFAULT_STATUS;
 
     void refresh(EncounterSession.SessionRepository access, boolean includeSavedPlans) {
+        EncounterPartyStateData partyState = access.loadPartyState();
         activeParty.clear();
-        activeParty.addAll(access.loadActiveParty());
-        budget = access.loadBudget();
+        activeParty.addAll(partyState.members());
+        budget = partyState.budget();
         if (includeSavedPlans) {
             refreshSavedPlans(access);
         }

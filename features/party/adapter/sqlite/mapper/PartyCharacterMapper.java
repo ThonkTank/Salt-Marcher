@@ -1,6 +1,7 @@
 package features.party.adapter.sqlite.mapper;
 
 import org.jspecify.annotations.Nullable;
+import java.util.Objects;
 import features.party.adapter.sqlite.model.PartyCharacterRecord;
 import features.party.domain.roster.PartyCharacter;
 import features.party.domain.roster.PartyCharacterCombatProfile;
@@ -37,7 +38,7 @@ final class PartyCharacterMapper {
                 new PartyCharacterCombatProfile(
                         combat.passivePerception(),
                         combat.armorClass()),
-                PartyMembership.fromPersistence(record.membership()),
+                toDomainMembership(record.membership()),
                 toDomainTravel(record.travel()));
     }
 
@@ -64,38 +65,44 @@ final class PartyCharacterMapper {
     }
 
     private static PartyCharacterTravelState toDomainTravel(PartyCharacterRecord.Travel travel) {
-        if (travel == null) {
-            return PartyCharacterTravelState.attachedWithoutLocation();
-        }
+        Objects.requireNonNull(travel, "travel");
         return new PartyCharacterTravelState(
                 toDomainTravelLocation(travel),
                 travel.attachedToPartyToken());
     }
 
+    private static PartyMembership toDomainMembership(String membership) {
+        if ("ACTIVE".equalsIgnoreCase(membership)) {
+            return PartyMembership.ACTIVE;
+        }
+        if ("RESERVE".equalsIgnoreCase(membership)) {
+            return PartyMembership.RESERVE;
+        }
+        throw new IllegalArgumentException("Unknown Party membership in current-v1 record.");
+    }
+
     private static @Nullable PartyTravelLocation toDomainTravelLocation(PartyCharacterRecord.Travel travel) {
         if (DUNGEON_LOCATION_KIND.equalsIgnoreCase(travel.locationKind())) {
             return PartyTravelLocation.dungeon(
-                    valueOrDefault(travel.dungeonMapId(), 1L),
+                    Objects.requireNonNull(travel.dungeonMapId(), "dungeonMapId"),
                     PartyDungeonTravelLocationKind.parse(travel.dungeonLocationKind()),
-                    valueOrDefault(travel.dungeonOwnerId(), 0L),
+                    Objects.requireNonNull(travel.dungeonOwnerId(), "dungeonOwnerId"),
                     new PartyTravelTile(
-                            valueOrDefault(travel.dungeonQ(), 0),
-                            valueOrDefault(travel.dungeonR(), 0),
-                            valueOrDefault(travel.dungeonLevel(), 0)),
+                            Objects.requireNonNull(travel.dungeonQ(), "dungeonQ"),
+                            Objects.requireNonNull(travel.dungeonR(), "dungeonR"),
+                            Objects.requireNonNull(travel.dungeonLevel(), "dungeonLevel")),
                     PartyTravelHeading.parse(travel.dungeonHeading()));
         }
         if (OVERWORLD_LOCATION_KIND.equalsIgnoreCase(travel.locationKind())) {
             return PartyTravelLocation.overworld(
-                    valueOrDefault(travel.overworldMapId(), 0L),
-                    valueOrDefault(travel.overworldTileId(), 0L));
+                    Objects.requireNonNull(travel.overworldMapId(), "overworldMapId"),
+                    Objects.requireNonNull(travel.overworldTileId(), "overworldTileId"));
         }
         return null;
     }
 
     private static PartyCharacterRecord.Travel toRecordTravel(PartyCharacterTravelState travel) {
-        PartyCharacterTravelState safeTravel = travel == null
-                ? PartyCharacterTravelState.attachedWithoutLocation()
-                : travel;
+        PartyCharacterTravelState safeTravel = Objects.requireNonNull(travel, "travel");
         PartyTravelLocation location = safeTravel.location();
         if (location != null && location.isDungeon()) {
             return new PartyCharacterRecord.Travel(
@@ -139,11 +146,4 @@ final class PartyCharacterMapper {
                 safeTravel.attachedToPartyToken());
     }
 
-    private static long valueOrDefault(@Nullable Long value, long fallback) {
-        return value == null ? fallback : value;
-    }
-
-    private static int valueOrDefault(@Nullable Integer value, int fallback) {
-        return value == null ? fallback : value;
-    }
 }

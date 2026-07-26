@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-25
+Last Reviewed: 2026-07-26
 Source of Truth: Solution-neutral technical obligations and measurable quality
 scenarios derived from the confirmed complete local SaltMarcher GM-core needs.
 
@@ -15,11 +15,12 @@ select source modules, feature boundaries, APIs, schemas, storage mechanisms,
 frameworks, processes, or technologies.
 
 The input baseline is the `Active Target` in
-`docs/project/requirements/requirements-program-capabilities.md`, merged to
-`origin/main` by commit `9678b65f62857a26ceb494255eff465748aed299` on
-2026-07-23. The project vision and resource policy are additional binding local
-constraints. Current code, tests, feature boundaries, architecture documents,
-and prior implementation decisions were not derivation inputs.
+`docs/project/requirements/requirements-program-capabilities.md`, originally
+merged to `origin/main` by commit `9678b65f62857a26ceb494255eff465748aed299`
+on 2026-07-23 and extended by the confirmed 2026-07-26 in-game tutorial owner
+requirement. The project vision and resource policy are additional binding
+local constraints. Current code, tests, feature boundaries, architecture
+documents, and prior implementation decisions were not derivation inputs.
 
 Target architecture, comparison with the current system, and migration planning
 remain later phases.
@@ -329,6 +330,7 @@ qualification.
 | `TN-30` | P0 | `SRC-D02`, `SRC-Q01` | Core preparation and play MUST run offline, without hidden upload or default telemetry. Product runtime may create a local complete export or perform another precisely disclosed GM-initiated transfer whose payload and destination are confirmed; it MUST NOT perform background or broader egress. No core workflow may depend on a paid, cloud, external-analysis, or separately administered service. Linux, Windows, and macOS Campaign behavior MUST be portable and self-contained. | Unexplained product outbound attempts, broader-than-confirmed transfer, and mandatory external-service dependencies are `0`; every ordinary core workflow passes with network disabled. | Network-denied journey, product transfer disclosure/destination audit, clean-system install, dependency audit, and cross-platform portability matrix. |
 | `TN-31` | P1 | `SRC-L05`, `SRC-Q01`, `SRC-Q04`, `EXT-WCAG` | All core and extension-facing interface text MUST be localizable while Campaign-authored text remains arbitrary and unchanged by locale. Complete core workflows MUST be keyboard-operable without traps or timing-dependent keystrokes; required information MUST NOT rely on color alone; ordinary text contrast MUST be at least 4.5:1 and essential non-text controls/state at least 3:1; text/interface scaling to 200% MUST preserve content and functionality across the full `RP-H` display matrix. | Localizable identified strings: 100%; authored-text mutation: `0`; unreachable keyboard action, trap, lost content/function, or color-only fact: `0`; action counts obey `TN-21`. | Pseudo-localization with 40% expansion and Unicode corpus; locale/export round trip; keyboard-only workflow suite; mixed-DPI monitor movement; automated and human contrast/scale inspection. |
 | `TN-32` | P1 | `SRC-S03`, `SRC-Q02`, `SRC-Q03`, `SRC-Q05`, `POL-RP` | Time, randomness, permissions, cancellation, corruption, resource pressure, and downstream failure MUST be controllable and observable enough to reproduce every invariant through self-contained qualification with synthetic data and no mandatory external service. Random outcomes need not be identical in play, but their inputs, rule profile, and established result MUST be inspectable for diagnostics and retry safety. | Repeated qualification reaches the same invariant verdict; once-only effects and primary writes occur exactly once. | Deterministic synthetic fixtures, controlled clocks/random sources/faults, production-route acceptance tests, and self-contained proof. |
+| `TN-38` | P1 | `SRC-Q06` | Every exposed capability MUST have an in-game tutorial. The derived update policy is exact: first installation and the first start of every distinct installed application version present the complete tutorial set for all capabilities exposed by that version; another start of the same version does not automatically repeat it. Every lesson can be skipped individually, and the remaining automatic run can be dismissed without completing it. Removed capabilities contribute no lesson; capabilities present again in a later installed version contribute their lesson with that version's complete set. Start, skip, and dismissal MUST NOT disable a capability or mutate Campaign truth. Cross-cutting offline, localization, keyboard, scaling, privacy, and failure-isolation obligations apply to the tutorial surface. | Exposed capabilities without a tutorial, queue mismatch against the complete current-version capability set, missed or repeated version start, required completion before ordinary use, Campaign mutation caused only by start/skip/dismissal, capability loss after skip, or tutorial-only network access: `0`. | Capability/tutorial coverage oracle; clean-install, same-version restart, and successive installed-version journeys with unchanged, added, changed, removed, and restored lessons; individual-skip and whole-run-dismissal journeys; Campaign semantic digest; offline, keyboard-only, pseudo-localization, scale, and tutorial-fault qualification. |
 
 ### Rules Profile And Provenance
 
@@ -362,6 +364,7 @@ qualification.
 | `QS-11 Capability failure` | each supporting capability faults once and repeatedly | explicit survivor matrix below | detection <=1 s from observable failure/first defective access; survivor journeys retain `TN-21`; confirmed/retained-data loss and out-of-envelope resource growth = 0; affected capability identified/retryable | per-capability survivor timings, sentinels, retained-data and resource-envelope audit |
 | `QS-12 Exceptional pressure` | low disk, memory pressure, CPU contention, damaged input, or oversized axis | pressure decision table below | `RP-X` ceilings and 1 s admission/error deadline pass; no truncation/corruption; safe read/export/retry survives | long-duration pressure and completeness/resource audit |
 | `QS-13 Accessibility/localization` | keyboard-only use, locale switch, 200% scale, color unavailable, or mixed-DPI display move | complete core across full `RP-H` display matrix | all workflows/action counts pass; no trap/loss; 4.5:1 text and 3:1 essential non-text contrast; no color-only fact; authored text unchanged | keyboard/action suite, contrast scan plus human review, pseudo-localization/display round trip |
+| `QS-14 Tutorial onboarding` | clean first installation, first start of a new installed application version, or same-version restart | exact complete exposed-capability/tutorial inventory for that installed version; no Campaign is open or one real Campaign is active | clean install and each new version present the complete current set exactly once; same-version restart does not; the GM can skip one lesson or dismiss the remaining run without completion; no Campaign truth changes and every capability remains ordinarily usable | installed-version matrix with unchanged/add/change/remove/restore manifest oracle, keyboard-only individual skip and whole-run dismissal, Campaign semantic digest, restart, offline execution, and tutorial-fault injection |
 
 ## Change Scenarios
 
@@ -470,6 +473,7 @@ criterion-to-need relation.
 | `SRC-Q03` | Modular Change And Third-Party Extensions | `TN-27`, `TN-28`, `TN-29`, `TN-32` |
 | `SRC-Q04` | Rules, Localization, Accessibility, And Displays | `TN-24`, `TN-31`, `TN-33` |
 | `SRC-Q05` | Calendar, Encounter Tables, Dice, And PC Data | `TN-02`, `TN-08`, `TN-09`, `TN-13`, `TN-28`, `TN-32`, `TN-33`, `TN-37` |
+| `SRC-Q06` | In-Game Capability Tutorials | `TN-21`, `TN-31`, `TN-38` |
 | `SRC-C01` | Complete Encounter Outcome | `TN-06`, `TN-10`, `TN-33` |
 | `SRC-C02` | Authoritative Party With Dependent Running Contexts | `TN-07`, `TN-11`, `TN-15`, `TN-16` |
 | `SRC-C03` | Scene Save Before Encounter Synchronization | `TN-11`, `TN-15`, `TN-16` |
@@ -568,6 +572,7 @@ capability requirement remains the behavior owner.
 | `AC-Q12` | Encounter Tables supply weighted candidates | `TN-28`, `TN-32`, `TN-37` |
 | `AC-Q13` | no general dice roller; internal randomness allowed | `TN-32`, `TN-33`; scope exclusion has no additional technical impact |
 | `AC-Q14` | workflow-specific PC statistics | `TN-02`, `TN-13`, `TN-28` |
+| `AC-Q15` | every capability has an in-game tutorial; install/update starts automatically and the experience is skippable | `TN-21`, `TN-31`, `TN-38` |
 | `AC-C01` | complete Encounter outcome | `TN-06`, `TN-10`, `TN-33` |
 | `AC-C02` | authoritative Party with pending dependents | `TN-07`, `TN-11`, `TN-15`, `TN-16` |
 | `AC-C03` | saved Scene with pending Encounter sync | `TN-11`, `TN-15`, `TN-16` |

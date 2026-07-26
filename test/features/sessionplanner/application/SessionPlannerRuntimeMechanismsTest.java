@@ -32,6 +32,7 @@ import features.party.domain.roster.repository.PartyRosterRepository;
 import features.party.api.CharacterDraft;
 import features.party.api.CreateCharacterCommand;
 import features.party.api.MembershipState;
+import features.party.api.SetPartyMembershipCommand;
 import features.party.api.ActivePartyModel;
 import features.party.api.ActivePartyResult;
 import features.party.api.PartyApi;
@@ -529,7 +530,8 @@ final class SessionPlannerRuntimeMechanismsTest {
         assertEquals("", repository.current.statusText());
 
         party.application().createCharacter(new CreateCharacterCommand(
-                new CharacterDraft("Borin", "Stein", 2, 12, 14), MembershipState.ACTIVE));
+                new CharacterDraft("Borin", "Stein", 2, 12, 14)));
+        party.application().setMembership(new SetPartyMembershipCommand(2L, MembershipState.ACTIVE));
         lane.runAll();
         dispatcher.runAll();
         lane.runAll();
@@ -740,7 +742,8 @@ final class SessionPlannerRuntimeMechanismsTest {
                 new InMemoryPartyRepository(), lane, lane, dispatcher, (id, type) -> { });
         lane.runAll();
         party.application().createCharacter(new CreateCharacterCommand(
-                new CharacterDraft("Aria", "Mira", 3, 14, 16), MembershipState.ACTIVE));
+                new CharacterDraft("Aria", "Mira", 3, 14, 16)));
+        party.application().setMembership(new SetPartyMembershipCommand(1L, MembershipState.ACTIVE));
         lane.runAll();
         return party;
     }

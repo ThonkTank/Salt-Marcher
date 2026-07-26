@@ -51,6 +51,16 @@ public final class PartyTopBarContribution implements ShellContribution {
         panelView.bind(viewModel);
         rosterView.bind(viewModel);
         editorView.bind(viewModel);
+        viewModel.editorPanelProperty().addListener((ignored, before, after) -> {
+            boolean wasVisible = before != null && before.visible();
+            boolean editorVisible = after != null && after.visible();
+            if (!wasVisible && editorVisible) {
+                rosterView.showEditorMode(true);
+                editorView.focusNameField();
+            } else if (wasVisible && !editorVisible) {
+                rosterView.showEditorMode(false);
+            }
+        });
         applyPopupPresentation(popupContentModel, viewModel.triggerTextProperty().get());
         viewModel.triggerTextProperty().addListener((ignored, before, after) ->
                 applyPopupPresentation(popupContentModel, after));

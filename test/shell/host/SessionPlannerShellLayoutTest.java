@@ -270,8 +270,7 @@ public final class SessionPlannerShellLayoutTest {
         EncounterServiceAssembly.Component encounter = EncounterServiceAssembly.create(
                 creatures.application(), creatures.detail(), creatures.encounterCandidates(),
                 tables.application(), tables.candidates(), null,
-                party.application(), party.activeParty(), party.activeComposition(),
-                party.adventuringDaySummary(), party.mutation(), new SqliteEncounterPlanRepository(
+                party.application(), party.mutation(), new SqliteEncounterPlanRepository(
                                 TestFeatureStores.current().store(
                                         SqliteEncounterPlanRepository.storeDefinition())));
         SqliteSessionPlanRepository sessionRepository = new SqliteSessionPlanRepository(

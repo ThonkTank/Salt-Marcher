@@ -33,6 +33,6 @@ public final class PartySnapshotModel {
     private static PartySnapshotResult emptyResult() {
         return new PartySnapshotResult(
                 ReadStatus.STORAGE_ERROR,
-                new PartySnapshot(List.of(), List.of(), new PartySummary(0, 0, 1)));
+                new PartySnapshot(List.of(), List.of(), new PartySummary(0, 0, null)));
     }
 }

@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-25
+Last Reviewed: 2026-07-26
 Source of Truth: Persistence path and schema ownership rules for the `party`
 feature.
 
@@ -40,6 +40,12 @@ profile, and character-specific runtime travel context in the party write
 model. That travel context is represented as scalar references to the owning
 space:
 
+- `name` is required; `player_name`, `level`, `passive_perception`, and `ac`
+  are nullable and preserve authored absence without sentinel values
+- a newly inserted Roster character defaults to inactive membership and no
+  party-token attachment; activation and attachment require later explicit
+  mutations
+
 - dungeon travel location stores map id, local owner id, local tile coordinate,
   level, location kind, and heading
 - overworld travel location stores overworld map id and tile id
@@ -57,6 +63,12 @@ Owner startup readiness validates the feature-declared target schema signature; 
 - party writes MUST reject malformed character identity, roster, progression,
   or travel-location payloads instead of silently persisting partial character
   truth
+- a present level requires at least its rules-profile XP floor; XP since the
+  short rest cannot exceed XP since the long rest, and neither rest-progress
+  counter can exceed current XP
+- nullable optional facts MUST round-trip as SQL `NULL`; readers and writers
+  MUST NOT replace absence with level `1`, passive perception `10`, AC `10`, or
+  another compatibility/default value
 - dungeon and overworld travel references MUST be validated as party-owned
   scalar location references rather than expanded into authored map truth
 - storage and schema failures MUST surface through Party API result statuses

@@ -13,6 +13,7 @@ import features.encounter.domain.session.BudgetData;
 import features.encounter.domain.session.CreatureDetailData;
 import features.encounter.domain.session.EncounterCreatureData;
 import features.encounter.domain.session.EncounterSession;
+import features.encounter.domain.session.EncounterPartyStateData;
 import features.encounter.domain.session.GeneratedEncounterData;
 import features.encounter.domain.session.GenerationDiagnosticsData;
 import features.encounter.domain.session.GenerationResultData;
@@ -27,6 +28,9 @@ import features.encounter.domain.reference.EncounterCreatureCandidateCriteria;
 import features.encounter.domain.reference.EncounterCreatureReference;
 import features.encounter.domain.reference.EncounterTableCandidateCriteria;
 import features.encounter.domain.session.PartyBudgetFacts;
+import features.party.api.ActivePartyFactsResult;
+import features.party.api.PartyMemberSummary;
+import features.party.api.ReadStatus;
 
 public final class EncounterSessionRuntimeAccess implements EncounterSession.SessionRepository {
 
@@ -45,13 +49,19 @@ public final class EncounterSessionRuntimeAccess implements EncounterSession.Ses
     }
 
     @Override
-    public List<PartyMemberData> loadActiveParty() {
-        return facts.loadActiveParty();
-    }
-
-    @Override
-    public Optional<BudgetData> loadBudget() {
-        return plans.loadBudget();
+    public EncounterPartyStateData loadPartyState() {
+        ActivePartyFactsResult captured = facts.capturePartyFacts();
+        if (captured.status() != ReadStatus.SUCCESS) {
+            return new EncounterPartyStateData(captured.facts().revision(), List.of(), Optional.empty());
+        }
+        List<PartyMemberData> members = captured.facts().members().stream()
+                .filter(java.util.Objects::nonNull)
+                .map(EncounterSessionRuntimeAccess::partyMember)
+                .toList();
+        return new EncounterPartyStateData(
+                captured.facts().revision(),
+                members,
+                loadBudgetForParty(members));
     }
 
     @Override
@@ -63,7 +73,14 @@ public final class EncounterSessionRuntimeAccess implements EncounterSession.Ses
             EncounterGenerationRequest request,
             List<PartyMemberData> partyMembers
     ) {
-        List<Integer> partyLevels = partyLevels(partyMembers);
+        Optional<List<Integer>> completeLevels = completePartyLevels(partyMembers);
+        if (completeLevels.isEmpty()) {
+            return new GenerationResultData(
+                    false, List.of(),
+                    "Every active party member needs a level before encounter generation.",
+                    Optional.empty(), false);
+        }
+        List<Integer> partyLevels = completeLevels.orElseThrow();
         return generateWith(
                 new features.encounter.domain.generation.EncounterGenerator(
                         new ScopedPartyFacts(facts, partyLevels)),
@@ -71,10 +88,11 @@ public final class EncounterSessionRuntimeAccess implements EncounterSession.Ses
     }
 
     Optional<BudgetData> loadBudgetForParty(List<PartyMemberData> partyMembers) {
-        List<Integer> partyLevels = partyLevels(partyMembers);
-        if (partyLevels.isEmpty()) {
+        Optional<List<Integer>> completeLevels = completePartyLevels(partyMembers);
+        if (completeLevels.isEmpty()) {
             return Optional.empty();
         }
+        List<Integer> partyLevels = completeLevels.orElseThrow();
         EncounterDifficultyThresholds thresholds = EncounterDifficultyMathHelper.thresholdsFor(partyLevels);
         int averageLevel = (int) Math.round(partyLevels.stream()
                 .mapToInt(Integer::intValue)
@@ -181,10 +199,21 @@ public final class EncounterSessionRuntimeAccess implements EncounterSession.Ses
                 + "/D" + effective.diversityLevel();
     }
 
-    private static List<Integer> partyLevels(List<PartyMemberData> partyMembers) {
-        return (partyMembers == null ? List.<PartyMemberData>of() : partyMembers).stream()
-                .map(PartyMemberData::level)
-                .toList();
+    private static Optional<List<Integer>> completePartyLevels(List<PartyMemberData> partyMembers) {
+        List<PartyMemberData> members = partyMembers == null ? List.of() : partyMembers;
+        if (members.isEmpty() || members.stream().anyMatch(member -> member == null || member.level() == null
+                || member.level() < 1 || member.level() > 20)) {
+            return Optional.empty();
+        }
+        return Optional.of(members.stream().map(PartyMemberData::level).toList());
+    }
+
+    private static PartyMemberData partyMember(PartyMemberSummary member) {
+        return new PartyMemberData(
+                "pc-" + member.id(),
+                member.id(),
+                member.name(),
+                member.level());
     }
 
     private static final class ScopedPartyFacts

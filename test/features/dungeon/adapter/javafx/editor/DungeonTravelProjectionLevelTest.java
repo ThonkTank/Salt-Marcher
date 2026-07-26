@@ -30,6 +30,7 @@ import features.party.api.PartyTravelLocationSnapshot;
 import features.party.api.PartyTravelPositionsModel;
 import features.party.api.PartyTravelPositionsResult;
 import features.party.api.PartyTravelTile;
+import features.party.api.SetPartyMembershipCommand;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.input.MouseButton;
@@ -490,8 +491,8 @@ public final class DungeonTravelProjectionLevelTest {
             PartyTravelTile tile
     ) {
         party.createCharacter(new CreateCharacterCommand(
-                new CharacterDraft("Dungeon Guide", "Test", 3, 12, 14),
-                MembershipState.ACTIVE));
+                new CharacterDraft("Dungeon Guide", "Test", 3, 12, 14)));
+        party.setMembership(new SetPartyMembershipCommand(1L, MembershipState.ACTIVE));
         party.moveCharacters(new MovePartyCharactersCommand(
                 List.of(1L),
                 new PartyDungeonTravelLocationSnapshot(
