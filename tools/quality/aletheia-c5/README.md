@@ -1,8 +1,10 @@
 # Aletheia C5 Crash-Safe Host-Lease Custody Candidate
 
-Status: **unevaluated experimental candidate; not adopted**
+Status: **independently qualified and adopted for bounded Preliminary use**
 
-Stable product base: `fb229a119d1c64dbf15282a3608576334c607007`
+Stable product base during evaluation: `fb229a119d1c64dbf15282a3608576334c607007`
+
+Integrated non-production target base: `69d0264408c072079bd68e808b7be9f1b2537cfd`
 
 Frozen concept handoff: `/tmp/aletheia-c5-frozen-concept.md`
 
@@ -41,8 +43,10 @@ files. Stable locks are never unlinked.
 
 The bounded claim covers independent loss of at most one supervisor or
 watchdog. It does not cover correlated loss of both, host/cgroup/session loss,
-common-mode kernel/OOM failure, or hostile isolation. Only the SaltMarcher
-Product Owner may accept cooperative same-user local use with this limitation.
+common-mode kernel/OOM failure, or hostile isolation. The Product Owner accepted
+cooperative same-user local use with this limitation through the standing
+autonomous-adoption direction recorded in the Program Charter. Any broader
+threat model remains outside the adopted claim.
 
 ## Provenance and build
 
@@ -155,5 +159,17 @@ a89d9b6bd940e82e16d33a79a7ce3a79d85882eb1944d600425e82147eda09bd  results/summar
 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  results/run-stderr.txt
 ```
 
-These are test-agent facts only. Maturity, qualification, and any bounded use
-remain for a fresh independent evaluator and the Product Owner respectively.
+## Independent evaluation and adoption
+
+A fresh evaluator rebuilt and replayed the exact candidate from the retained
+commit. It again returned exit `0`, passed all 19 verdicts, rejected known-bad
+C4 `6/6`, measured `66.855%` median A-wait reduction, p95 start overhead of
+`36.444 ms` for A and `5.986 ms` for non-A, and maximum recovery of
+`1299.059 ms`. Evaluation cost was `133.449 s` wall and `37.575 s` CPU with
+`340785` retained bytes, `$0`, and zero egress. Raw and summary SHA-256 were
+`c08c1479b36753f6ba4aad23d86a29fa030fabfcdfaf80d62ba10d3cf3ecad41`
+and `cb2b1e9ca5c46abae1c95e701e5d482393049ccac7402d6942d5b7c09d593c25`.
+
+The evaluator assigned **Preliminary / qualified for bounded use** under the
+single-controller-loss threat boundary. The Product Owner's standing direction
+then adopted that exact bounded use without an intermediate approval gate.
