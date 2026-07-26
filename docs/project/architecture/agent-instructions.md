@@ -29,17 +29,26 @@ second workflow or require per-role artifacts.
 Run focused diagnostics while implementing and `./gradlew check` once the
 candidate is ready. Refresh only proof affected by later edits.
 
-Use an independent final review when the blast radius justifies it. Every
-review or handoff-validation agent first applies the global
+Outside an explicitly chartered Aletheia role process, use an independent final
+review when the blast radius justifies it. Every standard review or handoff-
+validation agent first applies the global
 `lens-adversarial-review-agent`; Main owns
 review scope, lens selection, neutral briefs, proof freshness, finding
 aggregation, and the final verdict. For multi-lens review, Main launches the
 specialist reviewers directly and in parallel where practical. Reviewers start
 without conversation history, inspect evidence independently, remain
-read-only, and do not launch subagents. Do not insert a review coordinator,
+read-only, and do not launch subagents. Do not insert into a standard review a coordinator,
 Overview agent, finding-classifier, separate review document, or
 planner-reviewer-implementer chain. One reviewer remains sufficient when one
 lens covers the material risk.
+
+The GM-Core Aletheia B1, B2, and B3 role processes are experimental assurance,
+not standard review or handoff-validation agents. Under the [Program
+Charter](../delivery/aletheia/program-charter.md), their role coordinators must
+launch separate concept, practical-test, and evaluation subagents. They may
+implement isolated tests, probes, instrumentation, and measurements while
+remaining outside product repair. Standard review agents remain read-only and
+do not inherit this exception.
 
 During a staged migration, a finding on structure, naming, or style already
 owned by a later slice does not block the current slice unless the current
@@ -53,6 +62,18 @@ Delegate only concrete, independent tasks with disjoint write sets. Stop or
 redirect delegated work immediately when the user changes direction. Shared
 files have one writer at a time.
 
+For the active GM-Core program, Aletheia A, B1, B2, B3, and C each run through
+their own role coordinator in a separate persistent conversation. There is no
+global coordinator. Every role coordinator launches separate concept, test,
+and fresh evaluation subagents; it does not perform all phases itself. Their
+canonical [Charter](../delivery/aletheia/program-charter.md#role-coordinators-conversations-and-worktrees)
+defines agent families, artifact-complete handoffs, and exclusive writers. Only
+the A process works in the canonical `projects/SaltMarcher` checkout or changes
+production code. B1, B2, B3, C, and their evaluators use separate Git worktrees
+and may return only handoff-ready tests or precise instructions for A. After
+every merge, each non-A worktree synchronizes to the exact latest stable
+product-slice commit.
+
 ## Instruction Surfaces
 
 Keep `AGENTS.md`, global skills, repo-specific skills, and this standard
@@ -64,3 +85,4 @@ behavior. Delete obsolete rules instead of layering exceptions over them.
 - [Agent Guide](../../../AGENTS.md)
 - [Documentation Standard](../documentation.md)
 - [Quality Platforms](../verification/quality-platforms.md)
+- [Aletheia Program Charter](../delivery/aletheia/program-charter.md)

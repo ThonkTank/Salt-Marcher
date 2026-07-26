@@ -10,7 +10,7 @@ the interview-derived local GM core.
 
 This is temporary Product-A delivery guidance. It does not define product
 behavior, technical obligations, architecture, contracts, verification policy,
-or either Aletheia process. Those remain owned by the linked canonical
+or any Aletheia process. Those remain owned by the linked canonical
 documents. Delete this roadmap when the complete GM core reaches the program
 exit below.
 
@@ -20,6 +20,13 @@ better path. Prior investment does not keep a step or foundational decision
 closed. Each accepted slice must remain a usable product increment through a
 real production route rather than only a structural foundation.
 
+B1, B2, or B3 may return an independently evaluated roadmap instruction with
+its evidence, maturity, guards, and reopen trigger, including a scoped roadmap
+patch authored only in that reviewer's worktree. A remains this roadmap's owner
+and sole integrator, revalidates every instruction before accepting it, and
+controls sequencing. No reviewer instruction creates product, architecture, or
+contract truth. C returns process instructions only and cannot add product work.
+
 Aaron performs personal product acceptance only at the fully integrated and
 installed GM-core boundary at M13, repeated after repairs when necessary.
 Earlier slices do not wait for personal owner testing. Their visible behavior
@@ -28,6 +35,11 @@ installed-application automation or agent-operated practical probes,
 independent replay, and the repository gates. The scenarios retained below as
 final owner-test coverage are accumulated for that final end-to-end acceptance
 boundary; they are not intermediate approval gates.
+
+After every productively implemented slice, A applies the exact-install rule in
+the [Product Process](aletheia/product-process.md#local-desktop-availability-after-every-product-slice),
+leaving the desktop shortcut on the latest accepted candidate without waiting
+for intermediate owner approval.
 
 Every capability slice now carries a versioned in-game lesson obligation.
 Because the requirement arrived after M1 and during M2a, one bounded M2t slice
@@ -64,7 +76,10 @@ built milestone, revalidate:
    independent replay, visible production evidence, final owner-test coverage,
    and exit facts that will decide the slice; and
 7. the current implementation maturity under the Product Process and whether
-   the next wave should extend it or reopen its root design.
+   the next wave should extend it or reopen its root design; and
+8. whether confirmed B1 behavior, B2 UX, or B3 structural findings, or adopted
+   C process instructions alter priority, scope, proof, or the safest next
+   boundary.
 
 Record only the resulting slice and compact delivery state in its one short
 delivery owner. Do not turn this roadmap into a progress ledger or duplicate
@@ -86,7 +101,8 @@ the Product Process.
   explicit Party membership, strict current-v1 persistence, and coherent Party
   publication. Its production UI/failure journey, focused diagnostics, full
   local `./gradlew check`, and independent severe-finding closure are green;
-  installation, required PR CI, and merge remain before activation.
+  its product payload is locally installed; required PR CI and merge remain
+  before activation.
 - M2a is `Preliminary`: practical proof and severe-finding repair show no
   implementation inadequacy requiring immediate rewrite, while later waves may
   still reopen or replace its design. It is not a mandatory architectural
@@ -452,11 +468,14 @@ journeys are not yet possible.
   the installed application; documentation-only surfaces use their canonical
   gate.
 - **Exit and reopen:** exit only when every interview-derived need is mapped to
-  accepted production evidence, no severe finding or required need remains,
-  literal local `./gradlew check` and required CI are green, supported desktop
-  packages are installed/qualified, the branch is merged, and the published
-  program is ready for use. Any failing journey reopens the owning milestone or
-  its foundational decision rather than receiving a roadmap-only waiver.
+  accepted production evidence, no confirmed product defect, severe finding,
+  required roadmap item, or required need remains unresolved, literal local
+  `./gradlew check` and
+  required CI are green, supported desktop packages are installed/qualified,
+  the branch is merged, and the published program is ready for use. A residual
+  confirmed deviation requires explicit Product Owner acceptance. Any failing
+  journey reopens the owning milestone or its foundational decision rather than
+  receiving a roadmap-only waiver.
 - **Exclusions:** player-operated apps, remote play, touch/mobile layouts,
   general GM dice roller, generic game-system core, and other parked QoL.
 
@@ -466,8 +485,9 @@ After M13 exits and before first non-disposable use or distribution, revalidate
 the exact candidate against the normative
 [Product Process Compatibility Covenant](aletheia/product-process.md#compatibility-covenant).
 That covenant alone defines when compatibility obligations start. Persistence
-and export contracts own the resulting format semantics, and Process Evaluation
-owns any process-adoption verdict. This roadmap adds no trigger condition,
+and export contracts own the resulting format semantics. Process Evaluation
+qualifies a process proposal; its named canonical owner alone decides adoption,
+and A alone implements it productively. This roadmap adds no trigger condition,
 waiver, format rule, or proof substitute.
 
 Treat any missing covenant evidence as a reason to reopen its canonical owner,
@@ -499,4 +519,9 @@ CI, and release artifacts remain in their respective canonical surfaces.
 - [Resource Policy](../policies/resource-policy.md)
 - [Program Charter](aletheia/program-charter.md)
 - [Product Process](aletheia/product-process.md)
+- [B1 Behavior Assurance](aletheia/behavior-assurance.md)
+- [B2 UX Assurance](aletheia/ux-assurance.md)
+- [B3 Structural Assurance](aletheia/structure-assurance.md)
+- [C Process Optimization](aletheia/process-optimization.md)
+- [Process Evaluation](aletheia/process-evaluation.md)
 - [Quality Platforms](../verification/quality-platforms.md)
