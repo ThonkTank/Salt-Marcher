@@ -1,8 +1,8 @@
 Status: Active
 Owner: Aletheia A
-Last Reviewed: 2026-07-24
+Last Reviewed: 2026-07-26
 Charter Version: C-0.2.0
-Process Version: A-0.3.2
+Process Version: A-0.3.3
 Evaluation Version: E-0.3.1
 Source of Truth: Current temporary execution rules for GM-Core product slices.
 
@@ -15,7 +15,7 @@ Charter](program-charter.md). This file controls execution, not product truth.
 
 Before product mutation, select one unmet interview-derived acceptance outcome
 through its canonical owner ID. In the slice's one short delivery owner, pin
-that ID, the candidate base commit, Product Process `A-0.3.2`, and the commit
+that ID, the candidate base commit, Product Process `A-0.3.3`, and the commit
 that contains this process version. Also name the intended production route and
 the command, probe, counterexample, measurement, or owner observation that can
 decide the outcome. Do not create generic role ledgers or structured evidence
@@ -68,6 +68,26 @@ A failure caused solely by unrelated or untracked workspace state is neither a
 product regression nor a green gate. Preserve that state and replay the exact
 candidate in an isolated clean worktree or after its owner resolves the
 interference.
+
+## Final Owner-Acceptance Boundary
+
+This is a binding owner timing decision rather than a B process proposal and
+therefore applies immediately to running slices despite an earlier process pin.
+Do not wait for Aaron's personal acceptance between product slices. A slice may
+continue into integration only after its named outcome has practical
+production-route proof, independent replay, affected diagnostics, a literal
+green `./gradlew check`, green required CI, an installed candidate, and relevant
+UI automation where applicable. Owner observations offered during development
+are binding counterevidence or clarification, but become a mandatory
+intermediate gate only when Aaron explicitly requests one for that slice.
+
+Aaron performs personal visual, interaction, and assistive-technology
+acceptance against the fully integrated, installed GM-Core candidate at program
+completion. Each deviation found there reopens every owning acceptance outcome
+and slice, blocks program completion, and requires repaired slice proof plus a
+new integrated owner test. Intermediate technical acceptance never overrides
+final practical counterevidence; the Charter remains the sole completion
+authority.
 
 ## Compatibility Covenant
 

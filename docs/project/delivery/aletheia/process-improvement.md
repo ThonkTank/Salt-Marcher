@@ -1,9 +1,9 @@
 Status: Active
 Owner: Aletheia B
-Last Reviewed: 2026-07-25
+Last Reviewed: 2026-07-26
 Charter Version: C-0.2.0
 Process Version: B-0.3.1
-Observes Product Process: A-0.3.2
+Observes Product Process: A-0.3.3
 Evaluation Version: E-0.3.1
 Source of Truth: Current temporary proposal protocol for GM-Core process improvement.
 
@@ -199,17 +199,21 @@ three-lane canary on the frozen production route:
    caret blink and transitions, then establish an explicit pulse and UI-idle
    condition before every future pixel assertion.
 3. Query accessible role, text, help, value, state, and focus attributes where
-   applicable. Separately run the packaged application with an exact OS version,
-   JavaFX build, screen-reader product and version, and AT configuration, and
-   require `Platform.isAccessibilityActive()` to be true.
-   A human with assistive technology verifies spoken name, role, state and
-   changes, reading and focus order, keyboard-only completion, and recovery.
-   Owner visual acceptance at the real minimum window and scale remains
-   required. Scene-graph metadata, notification calls, headless snapshots, and
-   robot success do not certify screen-reader speech or visual usability. The
-   cited Oracle ACR covers Windows and macOS and explicitly excludes UNIX and
-   Linux; a Linux target therefore requires its own complete AT evidence and
-   cannot inherit that conformance claim.
+   applicable. For an intermediate slice, an independent agent separately runs
+   the packaged application with an exact OS version, JavaFX build,
+   screen-reader product and version, and AT configuration, requires
+   `Platform.isAccessibilityActive()` to be true, and records the observable
+   production-route result. Automation and this practical agent probe may
+   qualify the intermediate slice, but scene-graph metadata, notification
+   calls, headless snapshots, robot success, and an active accessibility flag
+   do not certify screen-reader speech or visual usability. Accumulate those
+   claims for Aaron's final integrated owner test under Product Process
+   `A-0.3.3`, where he verifies spoken name, role, state and changes, reading
+   and focus order, keyboard-only completion and recovery, plus visual usability
+   at the real minimum window and scale. The cited Oracle ACR covers Windows
+   and macOS and explicitly excludes UNIX and Linux; a Linux target therefore
+   requires its own complete AT evidence and cannot inherit that conformance
+   claim.
 
 A disposable probe at `.aletheia-ui-probe/` supports only the automation part.
 `./gradlew -p .aletheia-ui-probe test --console=plain --rerun-tasks --no-daemon`
@@ -230,8 +234,11 @@ or non-focusable target, an unfocused scroll container, missing accessible
 metadata, and text overflow at the minimum viewport. Each corresponding oracle
 must fail. A robot route that misses the production action, a control that
 passes, an inactive accessibility property during the screen-reader lane,
-unstable snapshots outside the freeze, missing owner acceptance, or any product
-dependency/build mutation makes the trial `INCONCLUSIVE`. Rollback removes the
+unstable snapshots outside the freeze, a missing required automation or agent
+probe, or any product dependency/build mutation makes the trial `INCONCLUSIVE`.
+Missing intermediate owner acceptance does not. A speech or visual deviation
+in the final integrated owner test reopens every owning slice under Product
+Process `A-0.3.3`; it is never overridden by this canary. Rollback removes the
 disposable test project, screenshots, caches local to it, and AT configuration,
 then verifies the frozen product tree is unchanged. An independent evaluator
 alone may adopt the delta.

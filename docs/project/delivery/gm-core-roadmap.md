@@ -1,6 +1,6 @@
 Status: Active
 Owner: Aletheia A
-Last Reviewed: 2026-07-25
+Last Reviewed: 2026-07-26
 Source of Truth: Revisable program-wide sequencing and completion guidance for
 the interview-derived local GM core.
 
@@ -19,6 +19,15 @@ milestone may move, split, merge, or disappear when practical evidence shows a
 better path. Prior investment does not keep a step or foundational decision
 closed. Each accepted slice must remain a usable product increment through a
 real production route rather than only a structural foundation.
+
+Aaron performs personal product acceptance only at the fully integrated and
+installed GM-core boundary at M13, repeated after repairs when necessary.
+Earlier slices do not wait for personal owner testing. Their visible behavior
+is qualified through production-route tests,
+installed-application automation or agent-operated practical probes,
+independent replay, and the repository gates. The scenarios retained below as
+final owner-test coverage are accumulated for that final end-to-end acceptance
+boundary; they are not intermediate approval gates.
 
 The owner has established that no real users or legacy data exist before the
 complete GM core reaches feature completion. Legacy-data compatibility,
@@ -45,8 +54,8 @@ built milestone, revalidate:
    been falsified and must reopen in its canonical owner before more product
    work; and
 6. the exact production journey, causal counterexample where practical,
-   independent replay, visible owner acceptance, and exit facts that will
-   decide the slice.
+   independent replay, visible production evidence, final owner-test coverage,
+   and exit facts that will decide the slice.
 
 Record only the resulting slice and compact delivery state in its one short
 delivery owner. Do not turn this roadmap into a progress ledger or duplicate
@@ -54,26 +63,23 @@ the Product Process.
 
 ## Current Program State
 
-- Within the active Campaign slice, runtime foundation commit `1c570d287` and
-  installation/Campaign store-lifetime separation commit `df4d42071` are the
-  accepted checkpoints recorded by the
-  [Campaign Runtime Slice](campaign-runtime/README.md). This roadmap has not
-  audited every other capability against every canonical acceptance outcome;
-  all other milestone completion remains unassessed until live,
-  requirement-by-requirement Next-Step Revalidation.
-- The active Campaign branch contains the activation, whole-shell switching,
-  Campaign selector, and visible exact-resume candidate. Its live evidence
-  belongs in the [Campaign Runtime Slice](campaign-runtime/README.md); until
-  that owner records final independent replay, required full `./gradlew check`,
-  CI, installed-desktop proof, and owner acceptance, the candidate remains work
-  in progress rather than an accepted milestone.
+- M1's Campaign activation, whole-shell switching, selector, exact resume,
+  isolation, failure boundaries, and warm-switch prequalification are frozen at
+  `f94c373d4`. Independent no-build-cache replay passed all 17 production
+  journey tests with no failure, error, or skip; literal local `./gradlew check`,
+  required PR CI, and installed-desktop identity are green. The compact retained
+  evidence is in [PR #558](https://github.com/ThonkTank/Salt-Marcher/pull/558).
+- The owner has moved personal product testing to the fully integrated M13
+  candidate. M1 therefore has no remaining intermediate owner gate and is ready
+  to exit through PR #558. This roadmap has not audited every other capability
+  against every canonical acceptance outcome; all other milestone completion
+  remains unassessed until live, requirement-by-requirement revalidation.
 - **Next-step verdict:** M2a remains the right next product slice because
-  `AC-F10` is independently useful and needs accepted Campaign isolation, but
-  starting it before M1 exits is premature. No broader content lifecycle,
-  current-Party/Scene transition, M2b knowledge record, or compatibility bridge
-  is an entry prerequisite. After M1 acceptance, revalidate M2a once more at
-  the actual boundary and open it as a separate production increment rather
-  than widening the current Campaign-runtime candidate.
+  `AC-F10` is independently useful and needs accepted Campaign isolation. Start
+  it only after PR #558 is actually merged, then revalidate it once more at the
+  merge boundary and open it as a separate production increment. No broader
+  content lifecycle, current-Party/Scene transition, M2b knowledge record, or
+  compatibility bridge is an entry prerequisite.
 - No real users or legacy data exist before complete GM-Core feature
   completion. Consequently, no active or proposed pre-completion slice owes a
   legacy conversion, compatibility bridge, migration, fallback, or
@@ -97,15 +103,18 @@ the Product Process.
   current-profile warm-switch population must meet the `TN-16` readiness
   budget with the representative next mutation; M13 retains normative
   `RP-R`/`RP-L`, every-supported-OS, and fully integrated state qualification.
-  Fault injection covers pre- and post-commit activation failures. Separately,
-  the installed application proves name-only creation plus immediate
-  keyboard-operated selection, switching, and exact restart resume. This
+  Fault injection covers pre- and post-commit activation failures. The
+  production-composition UI route proves name-only creation plus synthesized
+  keyboard selection, switching, focus, and exact restart resume. Package
+  installation proves artifact identity; packaged interaction and usability
+  remain in M13's integrated qualification. This
   milestone does not claim that the still-later Party, map, or travel-authoring
   UI is already available merely to seed the isolation proof.
-- **Owner acceptance:** Aaron operates the selector and all switch/restart
-  states by keyboard and confirms immediate, understandable behavior.
+- **Final owner-test coverage:** At M13 Aaron operates the selector and all
+  switch/restart states by keyboard and confirms immediate, understandable
+  behavior in the integrated application.
 - **Exit and reopen:** exit only after the active slice's frozen replay, full
-  check, CI, installation, and owner acceptance. Reopen runtime/store/activation
+  check, CI, and installation. Reopen runtime/store/activation
   decisions on leakage, stale authority, unsafe crash truth, or unusable
   switching.
 - **Exclusions:** Campaign copy, import/export/deletion and every later workflow.
@@ -127,7 +136,7 @@ the Product Process.
   Creation must not silently enroll a PC in the current Party. A causal
   counterexample must show the current mandatory-statistics or
   automatic-membership behavior failing the same journey.
-- **Owner acceptance:** Aaron creates, corrects, and distinguishes
+- **Final owner-test coverage:** At M13 Aaron creates, corrects, and distinguishes
   representative PCs entirely through the installed application and judges the
   Campaign Roster understandable without relying on current-Party controls.
 - **Exit and reopen:** exit only when missing optional statistics never block
@@ -164,7 +173,7 @@ journeys are not yet possible.
   resolve it manually in that real Scene workflow, then split, move, and reunite
   characters across several continuously usable Scenes and coexisting masks;
   inject Scene/Encounter failures and restart through visibly pending retry.
-- **Owner acceptance:** Aaron runs the complete Scene, Party, Catalog-add,
+- **Final owner-test coverage:** At M13 Aaron runs the complete Scene, Party, Catalog-add,
   lightweight-create, and multi-mask flow without leaving the live workspace.
 - **Exit and reopen:** exit with exactly one Scene per active PC, no implicit
   content deletion, no stale synchronized claim, and unaffected contexts
@@ -188,7 +197,7 @@ journeys are not yet possible.
   regeneration leaves all other edits untouched. The automatic workflow blocks
   on its missing relevant PC statistic while unrelated optional PC data remains
   optional and unrelated Roster/manual-planning work stays usable.
-- **Owner acceptance:** Aaron prepares a real session manually and with
+- **Final owner-test coverage:** At M13 Aaron prepares a real session manually and with
   assistance, edits the timeline, groups, treasures, Items, placements, notes,
   and weighted Encounter Table inputs, and reaches the placed content in play.
 - **Exit and reopen:** exit when manual planning is independent, accepted World
@@ -214,7 +223,7 @@ journeys are not yet possible.
   compare current versus frozen completed facts, then delete/restore a
   referenced object while comparing current dependents, runtime, trash, and
   `[UNKNOWN]` history. Fault each coupled outcome and prove old-or-new truth.
-- **Owner acceptance:** Aaron completes and corrects representative Encounter
+- **Final owner-test coverage:** At M13 Aaron completes and corrects representative Encounter
   and Quest outcomes, distributes every Item explicitly, and judges ledger and
   explanatory history useful without losing the Running Scene.
 - **Exit and reopen:** exit with atomic selected outcomes, one deferred notice,
@@ -239,7 +248,7 @@ journeys are not yet possible.
   features, and exact anchors; exercise preview/commit/undo and destructive
   geometry edits while proving invested content is retained and reassignable,
   then qualify a large sparse Dungeon through the production editor.
-- **Owner acceptance:** Aaron builds and materially revises a representative
+- **Final owner-test coverage:** At M13 Aaron builds and materially revises a representative
   Dungeon using the raster, relationship, room/key, description, and feature
   flows and confirms that authoring remains understandable and responsive.
 - **Exit and reopen:** exit only when every Dungeon acceptance outcome is
@@ -262,7 +271,7 @@ journeys are not yet possible.
   Hex, and Dungeon places; pause/reroute/interrupt, undo/redo several committed
   checkpoints, restart, and compare positions, times, later authoritative
   facts, character knowledge, and permitted perception.
-- **Owner acceptance:** Aaron authors and travels representative Hex and
+- **Final owner-test coverage:** At M13 Aaron authors and travels representative Hex and
   Dungeon routes, uses overrides and interruptions, reveals knowledge, and
   confirms Scene continuity and practical map interaction.
 - **Exit and reopen:** exit with causal checkpoint removal, no duplicate World
@@ -284,7 +293,7 @@ journeys are not yet possible.
   backdate and reunite, restart and catch up in different orders, then verify
   independent relevance and exactly-once shared effects; enable bounded Actor
   Autonomy and prove Party-danger work pauses for GM authority.
-- **Owner acceptance:** Aaron configures a Campaign calendar and climate,
+- **Final owner-test coverage:** At M13 Aaron configures a Campaign calendar and climate,
   advances and corrects Scene time, inspects weather/effects, and resolves a
   warned contradiction without automatic narrative adjudication.
 - **Exit and reopen:** exit when model-specific weather bounds are owned and
@@ -304,7 +313,7 @@ journeys are not yet possible.
   and artwork react; exercise manual precedence/release, blank/replace, display
   loss, missing/damaged/slow media, restart, and a prohibited-information
   oracle.
-- **Owner acceptance:** Aaron manages local media and uses the music player and
+- **Final owner-test coverage:** At M13 Aaron manages local media and uses the music player and
   passive second display during live play across real monitor configurations.
 - **Exit and reopen:** exit with zero private/mechanical/text leaks, no stale
   unsafe frame, smooth manual control, and unaffected Scene usability under
@@ -324,7 +333,7 @@ journeys are not yet possible.
   weighted restock across divergent Scene clocks; delete/reassign/trash/restore
   an owner, inject coupled-write failures, and restart without duplicate stock
   or ledger/history effects.
-- **Owner acceptance:** Aaron manages an NPC- and place-owned Shop from a Scene,
+- **Final owner-test coverage:** At M13 Aaron manages an NPC- and place-owned Shop from a Scene,
   completes representative trades, and judges quantities, prices, notes,
   reassignment, and restock controls.
 - **Exit and reopen:** exit with atomic stock/ledger transitions, scoped
@@ -344,7 +353,7 @@ journeys are not yet possible.
   recover the newest unique safe state with disclosure, export a complete
   Campaign, import it on another supported OS as a new independent Campaign,
   resolve shared-definition conflicts, and trash/restore/permanently delete.
-- **Owner acceptance:** Aaron performs visible recovery, cross-install import,
+- **Final owner-test coverage:** At M13 Aaron performs visible recovery, cross-install import,
   conflict choice, and recoverable/permanent deletion with disposable data.
 - **Exit and reopen:** exit with complete closed manifests, source-independent
   semantic readback, unaffected existing Campaigns, bounded cancellation, and
@@ -365,7 +374,7 @@ journeys are not yet possible.
   restore representative content, mask, generator, importer, and presentation
   extensions; probe every protected sink before/after exact consent and under
   stale handles while opening and exporting the Campaign.
-- **Owner acceptance:** Aaron installs and removes a representative extension,
+- **Final owner-test coverage:** At M13 Aaron installs and removes a representative extension,
   understands requested data/file/network scope, changes consent, and recovers
   from an incompatible extension without losing its retained data.
 - **Exit and reopen:** exit with zero undeclared protected access or safety
@@ -390,7 +399,7 @@ journeys are not yet possible.
   normative `RP-H`, `RP-R`, `RP-L`, and applicable `RP-X` profiles; exercise
   supported OS, display, keyboard, scaling, localization, privacy, fault,
   cancel/retry, current-format recovery, and long-operation survivor matrices.
-- **Owner acceptance:** Aaron tests and approves every visible core function in
+- **Final owner acceptance:** Aaron tests and approves every visible core function in
   the installed application; documentation-only surfaces use their canonical
   gate.
 - **Exit and reopen:** exit only when every interview-derived need is mapped to
