@@ -129,16 +129,14 @@ public final class CampaignRosterProductionJourneyTest {
                 "editing and clearing targets stable Roster identity rather than duplicate name");
         assertNull(member(firstBootstrap, secondEcho.id()).playerName(),
                 "editing one duplicate cannot alter the other duplicate");
-        assertVisibleEditContext(firstWindow, firstEcho.id(), "Echo", "", "", "", "");
-        assertVisibleEditContext(firstWindow, secondEcho.id(), "Echo", "", "", "", "");
-
-        editCharacter(firstWindow, firstBootstrap, secondEcho.id(), "Echo",
-                "", "", "", "18");
+        saveNamesakeAfterClearingPriorSaveStatus(
+                firstWindow, firstBootstrap, firstEcho.id(), secondEcho.id());
         PartyMemberDetails savedSecondEcho = member(firstBootstrap, secondEcho.id());
         assertNull(member(firstBootstrap, firstEcho.id()).armorClass(),
                 "fact-cleared namesake A remains without AC when namesake B is edited");
         assertEquals(18, savedSecondEcho.armorClass(),
                 "only namesake B receives the visible saved AC");
+        assertVisibleEditContext(firstWindow, firstEcho.id(), "Echo", "", "", "", "");
         assertVisibleEditContext(firstWindow, secondEcho.id(), "Echo", "", "", "", "18");
         alphaTruth = truth(reserveMembers(firstBootstrap));
         assertVisibleRoster(firstWindow, alphaTruth.members());
@@ -516,6 +514,76 @@ public final class CampaignRosterProductionJourneyTest {
             button(popup, "Abbrechen").fire();
         });
         awaitFxCondition(() -> !editorView(popup).isVisible());
+    }
+
+    private static void saveNamesakeAfterClearingPriorSaveStatus(
+            Stage stage,
+            AppBootstrap bootstrap,
+            long firstRosterId,
+            long secondRosterId
+    ) throws Exception {
+        String firstFeedback = savedRosterFeedback(firstRosterId, "Echo", "", "", "", "");
+        RosterTruth truthBeforeCancelledEdit = truth(reserveMembers(bootstrap));
+        Parent initialPopup = openPartyPanel(stage);
+        awaitFxCondition(() -> visibleText(initialPopup, firstFeedback));
+
+        openEditEditor(initialPopup, secondRosterId, "Echo");
+        awaitFxCondition(() -> editorTitleLabel(initialPopup).isVisible()
+                && ("Roster-Charakter bearbeiten · Roster-ID " + secondRosterId)
+                        .equals(editorTitleLabel(initialPopup).getText())
+                && !visibleText(initialPopup, firstFeedback));
+        runOnFx(() -> button(initialPopup, "Abbrechen").fire());
+        awaitFxCondition(() -> !editorView(initialPopup).isVisible());
+
+        closePartyPanel();
+        Parent reopenedPopup = openPartyPanel(stage);
+        assertExactRoster(bootstrap, truthBeforeCancelledEdit,
+                "cancelled namesake edit cannot mutate the Roster");
+        openEditEditor(reopenedPopup, secondRosterId, "Echo");
+        awaitFxCondition(() -> editorTitleLabel(reopenedPopup).isVisible()
+                && ("Roster-Charakter bearbeiten · Roster-ID " + secondRosterId)
+                        .equals(editorTitleLabel(reopenedPopup).getText())
+                && !visibleText(reopenedPopup, firstFeedback));
+        runOnFx(() -> {
+            textField(reopenedPopup, "Charaktername").setText("Echo");
+            textField(reopenedPopup, "Spielername").setText("");
+            textField(reopenedPopup, "Level").setText("");
+            textField(reopenedPopup, "Passive Perception").setText("");
+            textField(reopenedPopup, "AC").setText("18");
+            button(reopenedPopup, "Speichern").fire();
+        });
+        awaitFxCondition(() -> {
+            PartyMemberDetails current = member(bootstrap, secondRosterId);
+            return current.playerName() == null
+                    && current.level() == null
+                    && current.passivePerception() == null
+                    && Integer.valueOf(18).equals(current.armorClass());
+        });
+        String secondFeedback = savedRosterFeedback(secondRosterId, "Echo", "", "", "", "18");
+        awaitFxCondition(() -> visibleText(reopenedPopup, secondFeedback));
+    }
+
+    private static void openEditEditor(Parent popup, long rosterId, String name) throws Exception {
+        runOnFx(() -> buttonByAccessibleText(
+                popup,
+                "Roster-ID " + rosterId + ", Charakter bearbeiten: " + name).fire());
+        awaitFxCondition(() -> textField(popup, "Charaktername") != null
+                && buttonOrNull(popup, "Speichern") != null);
+    }
+
+    private static String savedRosterFeedback(
+            long rosterId,
+            String name,
+            String player,
+            String level,
+            String passivePerception,
+            String armorClass
+    ) {
+        return "Roster-ID " + rosterId + " (" + name + ") wurde gespeichert. "
+                + "Spieler: " + optionalFeedback(player) + " · "
+                + "Level: " + optionalFeedback(level) + " · "
+                + "PP: " + optionalFeedback(passivePerception) + " · "
+                + "AC: " + optionalFeedback(armorClass) + ".";
     }
 
     private static PartyEditorTopBarView editorView(Parent parent) {

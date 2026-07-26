@@ -111,6 +111,7 @@ final class PartyTopBarViewModel {
     }
 
     void openCreateEditor() {
+        clearActionStatusForNewEditorContext();
         showEditor(EditorPanelModel.createDraft());
     }
 
@@ -119,6 +120,7 @@ final class PartyTopBarViewModel {
         if (member == null) {
             return false;
         }
+        clearActionStatusForNewEditorContext();
         showEditor(EditorPanelModel.editDraft(
                 memberId,
                 member.name(),
@@ -357,6 +359,10 @@ final class PartyTopBarViewModel {
         showPanel(safePanel().withReadyStatus(status, error));
     }
 
+    private void clearActionStatusForNewEditorContext() {
+        showPanel(safePanel().withoutActionStatus());
+    }
+
     private void showEditor(EditorPanelModel content) {
         editorPanel.set(content == null ? EditorPanelModel.hidden() : content);
     }
@@ -542,6 +548,10 @@ final class PartyTopBarViewModel {
 
         PanelContent withReserveSearch(String searchText) {
             return copy(searchText, actionStatus, actionStatusError, restActionsDisabled, actionsDisabled);
+        }
+
+        PanelContent withoutActionStatus() {
+            return copy(reserveSearchText, "", false, restActionsDisabled, actionsDisabled);
         }
 
         private PanelContent copy(
