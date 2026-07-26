@@ -802,7 +802,6 @@ public final class CampaignRuntimeProductionJourneyTest {
         betaId = coordinator.snapshot().durableActivation().orElseThrow()
                 .campaign().orElseThrow().id();
         betaPath = coordinator.snapshot().campaignPath().orElseThrow();
-        betaGeneration = coordinator.snapshot().durableActivation().orElseThrow().generation();
         CampaignRuntime lateBetaRuntime = coordinator.activeRuntimeForTesting();
 
         openCampaignDeskWithKeyboard(host.window(), host.production);
@@ -838,6 +837,7 @@ public final class CampaignRuntimeProductionJourneyTest {
         assertEquals(betaId, coordinator.snapshot().durableActivation().orElseThrow()
                 .campaign().orElseThrow().id());
         assertEquals(betaPath, coordinator.snapshot().campaignPath().orElseThrow());
+        betaGeneration = coordinator.snapshot().durableActivation().orElseThrow().generation();
 
         long closeStarted = System.nanoTime();
         bootstrap.close();
