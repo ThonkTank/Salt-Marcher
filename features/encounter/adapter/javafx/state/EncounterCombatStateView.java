@@ -410,7 +410,9 @@ public final class EncounterCombatStateView extends VBox {
                 initiativeField.setOnAction(event -> add.fire());
 
                 CombatStyledLabel name = new CombatStyledLabel(
-                        candidate.name() + " (Lv. " + candidate.level() + ")",
+                        candidate.name() + (candidate.level() == null
+                                ? " (Stufe fehlt)"
+                                : " (Lv. " + candidate.level() + ")"),
                         "combat-name");
                 HBox.setHgrow(name, Priority.ALWAYS);
                 HBox row = new HBox(6, name, down, initiativeField, up, add);

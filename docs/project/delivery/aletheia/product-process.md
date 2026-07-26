@@ -1,8 +1,8 @@
 Status: Active
 Owner: Aletheia A
 Last Reviewed: 2026-07-26
-Charter Version: C-0.2.0
-Process Version: A-0.3.3
+Charter Version: C-0.3.0
+Process Version: A-0.4.0
 Evaluation Version: E-0.3.1
 Source of Truth: Current temporary execution rules for GM-Core product slices.
 
@@ -15,7 +15,7 @@ Charter](program-charter.md). This file controls execution, not product truth.
 
 Before product mutation, select one unmet interview-derived acceptance outcome
 through its canonical owner ID. In the slice's one short delivery owner, pin
-that ID, the candidate base commit, Product Process `A-0.3.3`, and the commit
+that ID, the candidate base commit, Product Process `A-0.4.0`, and the commit
 that contains this process version. Also name the intended production route and
 the command, probe, counterexample, measurement, or owner observation that can
 decide the outcome. Do not create generic role ledgers or structured evidence
@@ -24,7 +24,9 @@ records.
 A running slice keeps its pinned process if B proposes a newer version. Change
 it only through an explicitly reversible canary accepted under [Process
 Evaluation](process-evaluation.md); otherwise apply an adopted process at the
-next slice boundary.
+next slice boundary. The Charter's implementation-maturity rule is a direct
+owner instruction and therefore applies immediately to every running slice
+despite an earlier process pin.
 
 ## Work
 
@@ -40,6 +42,40 @@ Use practical tests, demonstrations, measurements, failure injection, or a
 disposable experiment when they can decide a consequential uncertainty. When
 counterevidence invalidates a premise, reopen the root decision before adding a
 bridge. Prior investment is not evidence for retaining a decision.
+
+## Implementation Maturity And Waves
+
+Advance every feature in implementation waves. At slice start, after a
+decisive proof or severe finding, and at the slice checkpoint, classify the
+implemented candidate as exactly one maturity:
+
+- `Rejected`: the candidate is unsuitable. Stop extending it and restart the
+  implementation from its deciding premise; retain only evidence useful to the
+  restart.
+- `Proof of Concept`: the intended observable behavior is demonstrated, but
+  the implementation is structurally or operationally inadequate. It may stand
+  temporarily, but no planner may treat it as a required foundation.
+- `Preliminary`: the current implementation and proof are adequate for now. No
+  immediate rewrite is required, but a later wave may reopen, redesign, or
+  replace it without preserving its internal shape.
+- `Final`: the candidate has earned the highest implementation-quality seal.
+  Current requirements are implemented in the best attainable form: maximally
+  clean, simple, correct, cohesive, robust, and maintainable; no credible
+  materially superior form remains unexamined; practical change scenarios show
+  flexibility under plausible future new or changed requirements; and a
+  dependency-horizon audit shows that no remaining planned or foreseeable
+  integration slice must access it in a way that could require changes. This is
+  the only maturity closed by default. Any uncertainty requires `Preliminary`;
+  premature finalization is a severe finding. New binding needs or practical
+  counterevidence still reopen it.
+
+Before planning the next wave, decide whether the current maturity permits
+extension or calls for reopening the root implementation. Do not build a bridge
+solely to preserve a non-final candidate. Record the classification, concise
+evidence basis, and explicit reopen boundary in the slice's one short delivery
+owner or roadmap entry; do not create a maturity registry. A label describes
+implementation confidence only. It cannot establish product truth, acceptance,
+compatibility, or program completion.
 
 ## Checkpoint
 

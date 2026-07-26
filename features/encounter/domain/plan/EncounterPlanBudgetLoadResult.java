@@ -12,6 +12,7 @@ public record EncounterPlanBudgetLoadResult(
         LOADED,
         PLAN_MISSING,
         PARTY_MISSING,
+        PARTY_FACTS_INCOMPLETE,
         REJECTED,
         FAILED
     }
@@ -36,6 +37,10 @@ public record EncounterPlanBudgetLoadResult(
         return new EncounterPlanBudgetLoadResult(Outcome.PARTY_MISSING, null, message);
     }
 
+    public static EncounterPlanBudgetLoadResult missingRequiredLevel(String message) {
+        return new EncounterPlanBudgetLoadResult(Outcome.PARTY_FACTS_INCOMPLETE, null, message);
+    }
+
     public static EncounterPlanBudgetLoadResult invalidRequest(String message) {
         return new EncounterPlanBudgetLoadResult(Outcome.REJECTED, null, message);
     }
@@ -54,6 +59,10 @@ public record EncounterPlanBudgetLoadResult(
 
     public boolean activePartyMissing() {
         return outcome == Outcome.PARTY_MISSING;
+    }
+
+    public boolean requiredPartyFactsMissing() {
+        return outcome == Outcome.PARTY_FACTS_INCOMPLETE;
     }
 
     public boolean requestRejected() {

@@ -32,6 +32,7 @@ import features.party.api.MovePartyCharactersCommand;
 import features.party.api.PartyApi;
 import features.party.api.PartyOverworldTravelLocationSnapshot;
 import features.party.api.PartySnapshotModel;
+import features.party.api.SetPartyMembershipCommand;
 
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -561,8 +562,8 @@ public final class HexMapEditorBehaviorTest {
         ScenarioState state = createExpandedMapWithMarker();
         RuntimeSurface runtime = state.runtime();
         runtime.party().createCharacter(new CreateCharacterCommand(
-                new CharacterDraft("Guide", "Player", 3, 12, 14),
-                MembershipState.ACTIVE));
+                new CharacterDraft("Guide", "Player", 3, 12, 14)));
+        runtime.party().setMembership(new SetPartyMembershipCommand(1L, MembershipState.ACTIVE));
         runtime.party().moveCharacters(new MovePartyCharactersCommand(
                 List.of(1L),
                 new PartyOverworldTravelLocationSnapshot(state.mapId().value(), state.authoredTileId()),
@@ -1077,8 +1078,8 @@ public final class HexMapEditorBehaviorTest {
                     "HEX-EDITOR-012 shell-bound marker save persists one marker");
 
             runtime.party().createCharacter(new CreateCharacterCommand(
-                    new CharacterDraft("Shell Guide", "Player", 3, 12, 14),
-                    MembershipState.ACTIVE));
+                    new CharacterDraft("Shell Guide", "Player", 3, 12, 14)));
+            runtime.party().setMembership(new SetPartyMembershipCommand(1L, MembershipState.ACTIVE));
             long characterId = newestActiveMemberId(runtime);
             runtime.party().moveCharacters(new MovePartyCharactersCommand(
                     List.of(characterId),

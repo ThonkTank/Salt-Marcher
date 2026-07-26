@@ -53,8 +53,7 @@ final class CatalogTestRuntime {
         EncounterServiceAssembly.Component encounter = EncounterServiceAssembly.create(
                 creatures.application(), creatures.detail(), creatures.encounterCandidates(),
                 tables.application(), tables.candidates(), worldPlanner,
-                party.application(), party.activeParty(), party.activeComposition(),
-                party.adventuringDaySummary(), party.mutation(), new SqliteEncounterPlanRepository(
+                party.application(), party.mutation(), new SqliteEncounterPlanRepository(
                                 TestFeatureStores.current().store(
                                         SqliteEncounterPlanRepository.storeDefinition())));
         return new CatalogTestRuntime(creatures, tables, encounter, worldPlanner);

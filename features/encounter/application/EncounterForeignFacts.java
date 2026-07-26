@@ -31,7 +31,6 @@ import features.encounter.domain.reference.EncounterTableCandidateCriteria;
 import features.encounter.domain.session.CreatureDetailData;
 import features.encounter.domain.session.EncounterCreatureData;
 import features.encounter.domain.session.PartyBudgetFacts;
-import features.encounter.domain.session.PartyMemberData;
 import features.encountertable.api.EncounterTableApi;
 import features.encountertable.api.EncounterTableCandidate;
 import features.encountertable.api.EncounterTableCandidatesModel;
@@ -39,15 +38,10 @@ import features.encountertable.api.EncounterTableCandidatesResult;
 import features.encountertable.api.EncounterTableReadStatus;
 import features.encountertable.api.RefreshEncounterTableCandidatesCommand;
 import features.party.api.PartyApi;
-import features.party.api.ActivePartyCompositionModel;
-import features.party.api.ActivePartyCompositionResult;
-import features.party.api.ActivePartyModel;
-import features.party.api.ActivePartyResult;
-import features.party.api.AdventuringDayResult;
-import features.party.api.AdventuringDaySummaryModel;
+import features.party.api.ActivePartyFactsModel;
+import features.party.api.ActivePartyFactsResult;
 import features.party.api.AwardPartyXpCommand;
 import features.party.api.MutationStatus;
-import features.party.api.PartyMemberSummary;
 import features.party.api.PartyMutationModel;
 import features.party.api.ReadStatus;
 import features.worldplanner.api.WorldFactionInventoryLimitSummary;
@@ -75,9 +69,7 @@ public final class EncounterForeignFacts implements EncounterGenerator.ForeignFa
     private final EncounterTableCandidatesModel tableCandidates;
     private final WorldPlannerSnapshotModel worldPlannerSources;
     private final PartyApi party;
-    private final ActivePartyModel activeParty;
-    private final ActivePartyCompositionModel activePartyComposition;
-    private final AdventuringDaySummaryModel adventuringDaySummary;
+    private final ActivePartyFactsModel activePartyFacts;
     private final PartyMutationModel partyMutation;
 
     public EncounterForeignFacts(
@@ -88,9 +80,7 @@ public final class EncounterForeignFacts implements EncounterGenerator.ForeignFa
             EncounterTableCandidatesModel tableCandidates,
             WorldPlannerSnapshotModel worldPlannerSources,
             PartyApi party,
-            ActivePartyModel activeParty,
-            ActivePartyCompositionModel activePartyComposition,
-            AdventuringDaySummaryModel adventuringDaySummary,
+            ActivePartyFactsModel activePartyFacts,
             PartyMutationModel partyMutation
     ) {
         this.creatures = java.util.Objects.requireNonNull(creatures, "creatures");
@@ -100,46 +90,38 @@ public final class EncounterForeignFacts implements EncounterGenerator.ForeignFa
         this.tableCandidates = java.util.Objects.requireNonNull(tableCandidates, "tableCandidates");
         this.worldPlannerSources = worldPlannerSources;
         this.party = java.util.Objects.requireNonNull(party, "party");
-        this.activeParty = java.util.Objects.requireNonNull(activeParty, "activeParty");
-        this.activePartyComposition = java.util.Objects.requireNonNull(activePartyComposition, "activePartyComposition");
-        this.adventuringDaySummary = java.util.Objects.requireNonNull(adventuringDaySummary, "adventuringDaySummary");
+        this.activePartyFacts = java.util.Objects.requireNonNull(activePartyFacts, "activePartyFacts");
         this.partyMutation = java.util.Objects.requireNonNull(partyMutation, "partyMutation");
     }
 
     @Override
     public PartyBudgetFacts loadPartyBudgetFacts() {
-        ActivePartyCompositionResult compositionResult = activePartyComposition.current();
-        AdventuringDayResult adventuringDayResult = adventuringDaySummary.current();
-        if (compositionResult.status() != ReadStatus.SUCCESS || adventuringDayResult.status() != ReadStatus.SUCCESS) {
+        ActivePartyFactsResult result = capturePartyFacts();
+        if (result.status() != ReadStatus.SUCCESS) {
             return PartyBudgetFacts.storageError();
         }
-        List<Integer> activeLevels = compositionResult.composition().activePartyLevels();
-        if (activeLevels.isEmpty()) {
+        var facts = result.facts();
+        if (facts.members().isEmpty()) {
             return PartyBudgetFacts.noActiveParty();
+        }
+        if (facts.members().stream().anyMatch(member -> member == null || member.level() == null
+                || member.level() < 1 || member.level() > 20)) {
+            return PartyBudgetFacts.missingRequiredLevel();
+        }
+        List<Integer> activeLevels = facts.composition().activePartyLevels();
+        Integer averageLevel = facts.composition().averageLevel();
+        if (activeLevels.size() != facts.members().size() || averageLevel == null) {
+            return PartyBudgetFacts.missingRequiredLevel();
         }
         return PartyBudgetFacts.success(
                 activeLevels,
-                compositionResult.composition().averageLevel(),
-                adventuringDayResult.summary().consumedXp(),
-                adventuringDayResult.summary().totalBudgetXp());
+                averageLevel,
+                facts.adventuringDay().consumedXp(),
+                facts.adventuringDay().totalBudgetXp());
     }
 
-    List<PartyMemberData> loadActiveParty() {
-        ActivePartyResult result = activeParty.current();
-        if (result.status() != ReadStatus.SUCCESS) {
-            return List.of();
-        }
-        List<PartyMemberData> members = new ArrayList<>();
-        for (PartyMemberSummary member : result.members()) {
-            if (member != null) {
-                members.add(new PartyMemberData(
-                        "pc-" + member.id(),
-                        member.id(),
-                        member.name(),
-                        member.level()));
-            }
-        }
-        return List.copyOf(members);
+    ActivePartyFactsResult capturePartyFacts() {
+        return activePartyFacts.current();
     }
 
     boolean awardXp(List<Long> partyMemberIds, int xpPerCharacter) {

@@ -30,8 +30,8 @@ import features.encounter.domain.generation.helper.EncounterDifficultyTargetHelp
 import features.encounter.domain.generation.helper.EncounterRoleClassificationHelper;
 import features.encounter.domain.plan.EncounterPlan;
 import features.encounter.domain.plan.EncounterPlanCreature;
-import features.party.api.ActivePartyCompositionModel;
-import features.party.api.ActivePartyCompositionResult;
+import features.party.api.ActivePartyFactsModel;
+import features.party.api.ActivePartyFactsResult;
 import features.party.api.ReadStatus;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -60,9 +60,11 @@ public final class GeneratedEncounterBatchService {
 
     private static final String INVALID_MESSAGE = "Generated encounter batch is invalid.";
     private static final String UNRESOLVABLE_MESSAGE = "Generated encounter batch cannot be resolved.";
+    private static final String MISSING_PARTY_LEVEL_MESSAGE =
+            "Every active party member needs a level before encounter generation.";
     private static final String STORAGE_MESSAGE = "Generated encounter storage is unavailable.";
     private final CreaturesApi creatures;
-    private final ActivePartyCompositionModel activeParty;
+    private final ActivePartyFactsModel activePartyFacts;
     private final GeneratedEncounterBatchRepository repository;
     private final ExecutionLane cpuLane;
     private final ExecutionLane ioLane;
@@ -70,24 +72,24 @@ public final class GeneratedEncounterBatchService {
 
     public GeneratedEncounterBatchService(
             CreaturesApi creatures,
-            ActivePartyCompositionModel activeParty,
+            ActivePartyFactsModel activePartyFacts,
             GeneratedEncounterBatchRepository repository,
             ExecutionLane cpuLane,
             ExecutionLane ioLane
     ) {
-        this(creatures, activeParty, repository, cpuLane, ioLane, NoopDiagnostics.INSTANCE);
+        this(creatures, activePartyFacts, repository, cpuLane, ioLane, NoopDiagnostics.INSTANCE);
     }
 
     public GeneratedEncounterBatchService(
             CreaturesApi creatures,
-            ActivePartyCompositionModel activeParty,
+            ActivePartyFactsModel activePartyFacts,
             GeneratedEncounterBatchRepository repository,
             ExecutionLane cpuLane,
             ExecutionLane ioLane,
             Diagnostics diagnostics
     ) {
         this.creatures = java.util.Objects.requireNonNull(creatures, "creatures");
-        this.activeParty = java.util.Objects.requireNonNull(activeParty, "activeParty");
+        this.activePartyFacts = java.util.Objects.requireNonNull(activePartyFacts, "activePartyFacts");
         this.repository = java.util.Objects.requireNonNull(repository, "repository");
         this.cpuLane = java.util.Objects.requireNonNull(cpuLane, "cpuLane");
         this.ioLane = java.util.Objects.requireNonNull(ioLane, "ioLane");
@@ -101,12 +103,15 @@ public final class GeneratedEncounterBatchService {
             return CompletableFuture.completedFuture(PreparedGeneratedEncounterBatchResult.failure(
                     GeneratedEncounterBatchStatus.INVALID_REQUEST, INVALID_MESSAGE));
         }
-        ActivePartyCompositionResult capturedParty = activeParty.current();
+        ActivePartyFactsResult capturedParty = activePartyFacts.current();
         if (!validParty(capturedParty)) {
             return CompletableFuture.completedFuture(PreparedGeneratedEncounterBatchResult.failure(
-                    GeneratedEncounterBatchStatus.UNRESOLVABLE, UNRESOLVABLE_MESSAGE));
+                    missingRequiredLevel(capturedParty)
+                            ? GeneratedEncounterBatchStatus.MISSING_REQUIRED_LEVEL
+                            : GeneratedEncounterBatchStatus.UNRESOLVABLE,
+                    missingRequiredLevel(capturedParty) ? MISSING_PARTY_LEVEL_MESSAGE : UNRESOLVABLE_MESSAGE));
         }
-        List<Integer> partyLevels = capturedParty.composition().activePartyLevels();
+        List<Integer> partyLevels = capturedParty.facts().composition().activePartyLevels();
         List<Long> xpUnion = command.intents().stream()
                 .flatMap(intent -> intent.blocks().stream())
                 .map(GeneratedEncounterBlock::xp)
@@ -165,13 +170,18 @@ public final class GeneratedEncounterBatchService {
             return CompletableFuture.completedFuture(GeneratedEncounterPlanSummaryBatchResult.failure(
                     GeneratedEncounterBatchStatus.INVALID_REQUEST, INVALID_MESSAGE));
         }
-        ActivePartyCompositionResult capturedParty = activeParty.current();
+        ActivePartyFactsResult capturedParty = activePartyFacts.current();
         if (!validParty(capturedParty)) {
+            if (missingRequiredLevel(capturedParty)) {
+                return CompletableFuture.completedFuture(GeneratedEncounterPlanSummaryBatchResult.failure(
+                        GeneratedEncounterBatchStatus.MISSING_REQUIRED_LEVEL, MISSING_PARTY_LEVEL_MESSAGE));
+            }
             return CompletableFuture.completedFuture(unresolvableEntries(query.planIds()));
         }
         CompletableFuture<GeneratedEncounterPlanSummaryBatchResult> completion = new CompletableFuture<>();
         try {
-            ioLane.execute(() -> loadPlanRows(completion, query, capturedParty.composition().activePartyLevels()));
+            ioLane.execute(() -> loadPlanRows(
+                    completion, query, capturedParty.facts().composition().activePartyLevels()));
         } catch (RuntimeException exception) {
             completion.complete(GeneratedEncounterPlanSummaryBatchResult.failure(
                     GeneratedEncounterBatchStatus.STORAGE_FAILURE, STORAGE_MESSAGE));
@@ -623,11 +633,26 @@ public final class GeneratedEncounterBatchService {
         }
     }
 
-    private static boolean validParty(ActivePartyCompositionResult result) {
-        return result != null && result.status() == ReadStatus.SUCCESS && result.composition() != null
-                && !result.composition().activePartyLevels().isEmpty()
-                && result.composition().activePartyLevels().stream()
-                        .allMatch(level -> level != null && level.intValue() >= 1 && level.intValue() <= 20);
+    private static boolean validParty(ActivePartyFactsResult result) {
+        if (result == null || result.status() != ReadStatus.SUCCESS || result.facts().members().isEmpty()
+                || result.facts().members().stream().anyMatch(member -> member == null || member.level() == null
+                        || member.level() < 1 || member.level() > 20)
+                || result.facts().composition().averageLevel() == null) {
+            return false;
+        }
+        List<Integer> levels = result.facts().composition().activePartyLevels();
+        return levels.size() == result.facts().members().size()
+                && levels.stream().allMatch(level -> level != null && level >= 1 && level <= 20);
+    }
+
+    private static boolean missingRequiredLevel(ActivePartyFactsResult result) {
+        if (result == null || result.status() != ReadStatus.SUCCESS || result.facts().members().isEmpty()) {
+            return false;
+        }
+        return result.facts().members().stream().anyMatch(member -> member == null || member.level() == null
+                || member.level() < 1 || member.level() > 20)
+                || result.facts().composition().averageLevel() == null
+                || result.facts().composition().activePartyLevels().size() != result.facts().members().size();
     }
 
     private static boolean validPrepared(PreparedEncounterBatch batch) {

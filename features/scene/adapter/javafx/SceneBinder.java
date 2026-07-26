@@ -313,7 +313,9 @@ final class SceneBinder {
                 ? () -> execute(new SceneCommand.UnassignPc(member.id()))
                 : () -> execute(new SceneCommand.AssignPc(scene.sceneId(), member.id()));
         VBox card = card(member.name());
-        card.getChildren().add(status("Stufe " + member.level()));
+        card.getChildren().add(status(member.level() == null
+                ? "Stufe nicht angegeben"
+                : "Stufe " + member.level()));
         if (assignedElsewhere) {
             card.getChildren().add(status("In anderer Szene"));
         }

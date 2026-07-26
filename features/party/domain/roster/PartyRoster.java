@@ -25,12 +25,12 @@ public final class PartyRoster {
         return PartyRosterProjection.from(characters);
     }
 
-    public PartyRosterMutation createCharacter(PartyCharacterDraft draft, PartyMembership membership) {
+    public PartyRosterMutation createCharacter(PartyCharacterDraft draft) {
         if (draft == null || !draft.isValid()) {
             return PartyRosterMutation.invalidInput(this);
         }
         List<PartyCharacter> nextCharacters = new ArrayList<>(characters);
-        nextCharacters.add(PartyCharacter.fromDraft(nextCharacterId, draft, membership));
+        nextCharacters.add(PartyCharacter.fromDraft(nextCharacterId, draft));
         return PartyRosterMutation.success(new PartyRoster(nextCharacterId + 1, nextCharacters));
     }
 

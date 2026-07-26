@@ -22,6 +22,7 @@ import features.party.api.MembershipState;
 import features.party.api.MovePartyCharactersCommand;
 import features.party.api.MutationStatus;
 import features.party.api.PartyOverworldTravelLocationSnapshot;
+import features.party.api.SetPartyMembershipCommand;
 import features.scene.api.SceneCommand;
 import features.scene.api.SceneMutationResult;
 import java.nio.file.Files;
@@ -1147,8 +1148,9 @@ public final class CampaignRuntimeProductionJourneyTest {
         unsubscribe.run();
 
         runtime.components().party().application().createCharacter(new CreateCharacterCommand(
-                new CharacterDraft(marker + " Guide", marker, 3, 14, 16),
-                MembershipState.ACTIVE));
+                new CharacterDraft(marker + " Guide", marker, 3, 14, 16)));
+        runtime.components().party().application().setMembership(
+                new SetPartyMembershipCommand(1L, MembershipState.ACTIVE));
         var moved = await(runtime.components().party().application().moveCharacters(
                 new MovePartyCharactersCommand(
                         List.of(1L),

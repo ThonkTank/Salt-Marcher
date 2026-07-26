@@ -14,6 +14,7 @@ public record EncounterTuningPreviewData(
     public enum Outcome {
         AVAILABLE,
         PARTY_MISSING,
+        PARTY_FACTS_INCOMPLETE,
         FAILED
     }
 
@@ -58,6 +59,22 @@ public record EncounterTuningPreviewData(
                 message);
     }
 
+    public static EncounterTuningPreviewData missingRequiredLevel(
+            List<PreviewPoint> difficultyLabels,
+            List<PreviewPoint> balanceLabels,
+            List<PreviewPoint> amountLabels,
+            List<PreviewPoint> diversityLabels,
+            String message
+    ) {
+        return new EncounterTuningPreviewData(
+                Outcome.PARTY_FACTS_INCOMPLETE,
+                difficultyLabels,
+                balanceLabels,
+                amountLabels,
+                diversityLabels,
+                message);
+    }
+
     public static EncounterTuningPreviewData storageError(String message) {
         return new EncounterTuningPreviewData(Outcome.FAILED, List.of(), List.of(), List.of(), List.of(), message);
     }
@@ -84,6 +101,10 @@ public record EncounterTuningPreviewData(
 
     public boolean activePartyMissing() {
         return outcome == Outcome.PARTY_MISSING;
+    }
+
+    public boolean requiredPartyFactsMissing() {
+        return outcome == Outcome.PARTY_FACTS_INCOMPLETE;
     }
 
     public static final class PreviewPoint {

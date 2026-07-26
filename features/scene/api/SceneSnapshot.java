@@ -1,6 +1,7 @@
 package features.scene.api;
 
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 public record SceneSnapshot(
         long revision,
@@ -92,10 +93,9 @@ public record SceneSnapshot(
         }
     }
 
-    public record PartyChoice(long id, String name, int level, long sceneId) {
+    public record PartyChoice(long id, String name, @Nullable Integer level, long sceneId) {
         public PartyChoice {
             name = normalized(name, "PC #" + id);
-            level = Math.max(0, level);
             sceneId = Math.max(0L, sceneId);
         }
     }

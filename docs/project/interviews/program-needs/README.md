@@ -1,6 +1,6 @@
 Status: Active
 Owner: Aaron
-Last Reviewed: 2026-07-23
+Last Reviewed: 2026-07-26
 Source of Truth: Routing, evidence boundary, and coverage order for the
 program-wide SaltMarcher needs interview.
 
@@ -22,7 +22,8 @@ contracts, persistence, source layout, or delivery order.
 ## Completion State
 
 The interview series was completed and the whole baseline received final owner
-confirmation on 2026-07-23. The
+confirmation on 2026-07-23, then received the confirmed in-game tutorial
+extension on 2026-07-26. The
 [Program Capability Requirements](../../requirements/requirements-program-capabilities.md)
 are therefore the `Active Target` and binding input to technical-needs
 derivation. Greenfield target architecture, comparison with the current system,
@@ -63,6 +64,8 @@ The headings below are interview routes, not presumed feature boundaries.
 7. Cross-workflow completeness, failure semantics, scale, responsiveness,
    modular change, removal, replacement, extension scenarios, and structured
    Shop inventories -- confirmed 2026-07-23
+8. In-game explanation for every capability, automatic first-install/update
+   tutorial start, and optional skip -- confirmed 2026-07-26
 
 ## Evidence
 
@@ -73,6 +76,7 @@ The headings below are interview routes, not presumed feature boundaries.
 - [Follow-Up, Progression, And History 2026-07-22](2026-07-22-follow-up-progression-and-history.md)
 - [Local Data Lifecycle 2026-07-23](2026-07-23-local-data-lifecycle.md)
 - [Cross-Workflow Quality 2026-07-23](2026-07-23-cross-workflow-quality.md)
+- [In-Game Tutorials Follow-Up 2026-07-26](2026-07-26-in-game-tutorials.md)
 - [Goal Interview 2026-07-10](../2026-07-10-goal-interview.md)
 - [Dungeon Needs Interview 2026-07-20](../2026-07-20-dungeon-needs-interview.md)
 

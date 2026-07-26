@@ -98,6 +98,9 @@ public final class EncounterGenerator {
         if (budgetFacts.status().isNoActiveParty()) {
             return PartyLoad.failure("No active party is available.");
         }
+        if (budgetFacts.status().isMissingRequiredLevel()) {
+            return PartyLoad.failure("Every active party member needs a level before encounter generation.");
+        }
         return PartyLoad.success(
                 features.encounter.domain.generation.helper.EncounterDifficultyMathHelper.thresholdsFor(
                         budgetFacts.activePartyLevels()),

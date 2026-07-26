@@ -282,6 +282,9 @@ final class EncounterProjection {
         if (data.activePartyMissing()) {
             return EncounterGenerationStatus.noActivePartyStatus();
         }
+        if (data.requiredPartyFactsMissing()) {
+            return EncounterGenerationStatus.missingRequiredLevelStatus();
+        }
         return EncounterGenerationStatus.defaultFailure();
     }
 
@@ -312,6 +315,9 @@ final class EncounterProjection {
         }
         if (result.activePartyMissing()) {
             return EncounterPlanBudgetStatus.NO_ACTIVE_PARTY;
+        }
+        if (result.requiredPartyFactsMissing()) {
+            return EncounterPlanBudgetStatus.MISSING_REQUIRED_LEVEL;
         }
         if (result.requestRejected()) {
             return EncounterPlanBudgetStatus.INVALID_REQUEST;
@@ -357,6 +363,12 @@ final class EncounterProjection {
                     labels.diversityLabels(),
                     message);
             case NO_ACTIVE_PARTY -> EncounterTuningPreviewData.noActiveParty(
+                    labels.difficultyLabels(),
+                    labels.balanceLabels(),
+                    labels.amountLabels(),
+                    labels.diversityLabels(),
+                    message);
+            case MISSING_REQUIRED_LEVEL -> EncounterTuningPreviewData.missingRequiredLevel(
                     labels.difficultyLabels(),
                     labels.balanceLabels(),
                     labels.amountLabels(),
@@ -449,8 +461,12 @@ final class EncounterProjection {
         if (state.party().isEmpty()) {
             return "Party: 0";
         }
+        if (state.party().stream().anyMatch(member -> member.level() == null)) {
+            return "Party: " + state.party().size() + ", Stufe fehlt";
+        }
         long averageLevel = Math.round(state.party().stream()
-                .mapToInt(PartyMemberData::level)
+                .map(PartyMemberData::level)
+                .mapToInt(Integer::intValue)
                 .average()
                 .orElse(1.0));
         return "Party: " + state.party().size() + ", Lv " + averageLevel;

@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: Aaron (Product Owner)
-Last Reviewed: 2026-07-25
+Last Reviewed: 2026-07-26
 Source of Truth: Final owner-confirmed observable cross-workflow needs for the
 complete local SaltMarcher GM core and the active input to technical-needs
 derivation.
@@ -817,6 +817,13 @@ relevant optional statistics before running. SaltMarcher does not thereby
 become a complete character-sheet, spell, class-feature, or rules-complete
 inventory manager.
 
+### In-Game Capability Tutorials
+
+Every capability exposed by the product has an in-game tutorial. Tutorials
+begin automatically on first installation and after an update. The
+automatically begun tutorial experience is optional and can be skipped without
+requiring the GM to complete it.
+
 ### Acceptance Criteria
 
 - ordinary core preparation and play remain usable without network access
@@ -846,6 +853,9 @@ inventory manager.
   randomize internally
 - an automatic PC workflow clearly requires its missing relevant statistics
   without making unrelated optional character data mandatory
+- every exposed capability has an in-game tutorial; first installation and an
+  update start tutorials automatically, while the GM can skip the automatic
+  tutorial experience without completing it
 
 ## Confirmed Cross-Workflow Behavior
 
@@ -902,14 +912,14 @@ history conflicts which the GM must later resolve.
 
 ## Active Baseline State
 
-All seven interview workflows, the repository-inventory completeness audit,
+All eight interview workflows, the repository-inventory completeness audit,
 and the later structured Shop-inventory addition have owner-confirmed
 interpretations. The refreshed consistency review reconciled Shop purchases
 and counterparties with the character ledger and resolved owner deletion
 without orphaning or silently deleting the Shop. No unresolved product
 decision remains in the needs baseline. The owner confirmed this complete
-baseline on 2026-07-23 and clarified the no-real-user/data activation boundary
-on 2026-07-25.
+baseline on 2026-07-23, clarified the no-real-user/data activation boundary on
+2026-07-25, and added the in-game tutorial requirement on 2026-07-26.
 
 Exact responsiveness and scale budgets, the detailed weather model, the
 published-rule derivation, persistence and backup mechanisms, and extension
@@ -923,8 +933,8 @@ Every interview workflow has an explicitly confirmed interpretation, every
 known capability is included, excluded, or parked, all cross-workflow handoffs
 have observable desired behavior, and no unresolved product decision blocks
 technical-needs derivation. The owner's whole-baseline confirmation on
-2026-07-23 and activation-boundary clarification on 2026-07-25 satisfy the
-completion rule of the interview series.
+2026-07-23, activation-boundary clarification on 2026-07-25, and tutorial
+addition on 2026-07-26 satisfy the completion rule of the interview series.
 
 ## References
 
@@ -936,5 +946,6 @@ completion rule of the interview series.
 - [Follow-Up, Progression, And History Interview](../interviews/program-needs/2026-07-22-follow-up-progression-and-history.md)
 - [Local Data Lifecycle Interview](../interviews/program-needs/2026-07-23-local-data-lifecycle.md)
 - [Cross-Workflow Quality Interview](../interviews/program-needs/2026-07-23-cross-workflow-quality.md)
+- [In-Game Tutorials Follow-Up](../interviews/program-needs/2026-07-26-in-game-tutorials.md)
 - [Project Vision](../vision.md)
 - [Documentation Standard](../documentation.md)

@@ -1,17 +1,19 @@
 package features.party.api;
 
+import org.jspecify.annotations.Nullable;
+
 public record PartyMemberDetails(
         Long id,
         String name,
-        String playerName,
-        int level,
+        @Nullable String playerName,
+        @Nullable Integer level,
         int currentXp,
-        int currentLevelXp,
-        int nextLevelXp,
-        int xpToNextLevel,
-        boolean readyToLevel,
-        int passivePerception,
-        int armorClass,
+        @Nullable Integer currentLevelXp,
+        @Nullable Integer nextLevelXp,
+        @Nullable Integer xpToNextLevel,
+        @Nullable Boolean readyToLevel,
+        @Nullable Integer passivePerception,
+        @Nullable Integer armorClass,
         int xpSinceShortRest,
         int xpSinceLongRest,
         int shortRestsTakenSinceLongRest,

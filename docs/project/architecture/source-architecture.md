@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-25
+Last Reviewed: 2026-07-26
 Source of Truth: Target source shape, dependency direction, and
 architecture-significant quality constraints for the SaltMarcher desktop app.
 
@@ -95,6 +95,44 @@ detailed workspaces; `app` only composes these APIs.
 Internal Java types have no compatibility obligation while all consumers move
 atomically in one green slice. Persisted data and observable behavior retain
 their contract and requirement owners.
+
+## Tutorial Runtime Boundary
+
+The installation runtime owns one tutorial coordinator and its installation-
+scoped progress. Capability owners contribute immutable, versioned lesson
+definitions through explicit application composition; neither the shell nor
+the tutorial coordinator discovers feature implementations. A lesson targets
+semantic capability actions and owned product concepts rather than source
+packages, CSS selectors, persistence rows, or adapter details. An installed
+extension which exposes a capability contributes its lesson through the same
+restricted extension boundary and cannot gain additional Campaign, file, or
+network authority by doing so.
+
+The coordinator compares the installed application version with the last
+version whose automatic presentation began in this installation profile. First
+installation and the first start of every distinct installed version enqueue
+the complete lesson set contributed by all capabilities exposed by that
+version, including unchanged lessons. A same-version restart enqueues nothing
+automatically. Removed capabilities contribute nothing; an added, changed, or
+restored capability participates in the complete set of the next installed
+version in which it is present.
+
+Each lesson exposes an individual skip, and the automatic presentation exposes
+a separate action which dismisses all remaining lessons. Skip, dismissal, and
+completion state are installation-owned preferences, not Campaign truth and do
+not suppress the complete set after a later application update. Starting,
+skipping, or dismissing a tutorial cannot confirm a Campaign mutation, disable
+a capability, or change runtime authority. A
+tutorial may guide a real product action only after the GM invokes that action
+through its ordinary capability boundary and receives the ordinary durable
+feedback.
+
+Tutorial presentation is an in-product shell contribution which remains
+keyboard-operable, localizable, scalable, offline, and skippable without
+completion. It is isolated from an unavailable or faulty lesson so the
+underlying capability and the rest of the Campaign remain usable. Lesson
+versioning and deliberate replay are reversible technical conveniences, not
+owner-confirmed behavior.
 
 ## Campaign Runtime Boundary
 

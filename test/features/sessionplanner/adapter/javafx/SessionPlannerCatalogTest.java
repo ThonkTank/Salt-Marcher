@@ -21,6 +21,7 @@ import features.party.api.CharacterDraft;
 import features.party.api.CreateCharacterCommand;
 import features.party.api.MembershipState;
 import features.party.api.PartyApi;
+import features.party.api.SetPartyMembershipCommand;
 import features.sessiongeneration.api.GenerationDraft;
 import features.sessiongeneration.api.GenerationDraftResponse;
 import features.sessiongeneration.api.GenerationRequest;
@@ -1276,11 +1277,11 @@ public final class SessionPlannerCatalogTest {
     private static void seedActiveParty(SessionPlannerTestServices services) {
         PartyApi party = services.party().application();
         party.createCharacter(new CreateCharacterCommand(
-                new CharacterDraft("Cora", "Mira", 4, 13, 15),
-                MembershipState.ACTIVE));
+                new CharacterDraft("Cora", "Mira", 4, 13, 15)));
+        party.setMembership(new SetPartyMembershipCommand(1L, MembershipState.ACTIVE));
         party.createCharacter(new CreateCharacterCommand(
-                new CharacterDraft("Dain", "Jules", 5, 12, 16),
-                MembershipState.ACTIVE));
+                new CharacterDraft("Dain", "Jules", 5, 12, 16)));
+        party.setMembership(new SetPartyMembershipCommand(2L, MembershipState.ACTIVE));
     }
 
     private static long seedLocation(SessionPlannerTestServices services) {

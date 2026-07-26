@@ -3,6 +3,7 @@ package features.encounter.api;
 public enum EncounterGenerationStatus {
     SUCCESS,
     NO_ACTIVE_PARTY,
+    MISSING_REQUIRED_LEVEL,
     NO_CREATURES,
     NO_SOLUTION,
     INVALID_REQUEST,
@@ -14,6 +15,10 @@ public enum EncounterGenerationStatus {
 
     public static EncounterGenerationStatus noActivePartyStatus() {
         return NO_ACTIVE_PARTY;
+    }
+
+    public static EncounterGenerationStatus missingRequiredLevelStatus() {
+        return MISSING_REQUIRED_LEVEL;
     }
 
     public static EncounterGenerationStatus defaultFailure() {

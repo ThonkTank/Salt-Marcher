@@ -27,6 +27,8 @@ import features.party.domain.roster.PartyTravelLocation;
 import features.party.domain.roster.helper.AdventuringDayProgressCalculationHelper;
 import features.party.api.ActivePartyComposition;
 import features.party.api.ActivePartyCompositionResult;
+import features.party.api.ActivePartyFacts;
+import features.party.api.ActivePartyFactsResult;
 import features.party.api.ActivePartyResult;
 import features.party.api.AdventuringDayBudget;
 import features.party.api.AdventuringDayCalculation;
@@ -64,7 +66,7 @@ final class PartyPublishedProjection {
     static PartySnapshotResult failedSnapshotResult() {
         return new PartySnapshotResult(
                 ReadStatus.STORAGE_ERROR,
-                new PartySnapshot(List.of(), List.of(), new PartySummary(0, 0, 1)));
+                new PartySnapshot(List.of(), List.of(), new PartySummary(0, 0, null)));
     }
 
     static ActivePartyResult failedActivePartyResult() {
@@ -74,7 +76,17 @@ final class PartyPublishedProjection {
     static ActivePartyCompositionResult failedActivePartyCompositionResult() {
         return new ActivePartyCompositionResult(
                 ReadStatus.STORAGE_ERROR,
-                new ActivePartyComposition(List.of(), 1));
+                new ActivePartyComposition(List.of(), null));
+    }
+
+    static ActivePartyFactsResult failedActivePartyFactsResult(long revision) {
+        return new ActivePartyFactsResult(
+                ReadStatus.STORAGE_ERROR,
+                new ActivePartyFacts(
+                        revision,
+                        List.of(),
+                        new ActivePartyComposition(List.of(), null),
+                        new AdventuringDaySummary(List.of(), 0, 0, 0, 0, 0, List.of())));
     }
 
     static AdventuringDayResult failedAdventuringDaySummaryResult() {
@@ -128,6 +140,19 @@ final class PartyPublishedProjection {
                         projection.averageActiveLevel()));
     }
 
+    static ActivePartyFactsResult activePartyFactsResult(PartyRoster roster, long revision) {
+        ActivePartyResult members = activePartyResult(roster);
+        ActivePartyCompositionResult composition = activePartyCompositionResult(roster);
+        AdventuringDayResult adventuringDay = adventuringDaySummaryResult(roster);
+        return new ActivePartyFactsResult(
+                ReadStatus.SUCCESS,
+                new ActivePartyFacts(
+                        revision,
+                        members.members(),
+                        composition.composition(),
+                        adventuringDay.summary()));
+    }
+
     static AdventuringDayResult adventuringDaySummaryResult(PartyRoster roster) {
         return mapAdventuringDaySummaryResult(adventuringDayStatus(roster.projection().activeMembers()));
     }
@@ -172,16 +197,17 @@ final class PartyPublishedProjection {
     }
 
     private static PartyMemberDetails mapDetails(PartyCharacter character) {
+        Integer level = character.progress().level();
         return new PartyMemberDetails(
                 character.id(),
                 character.identity().name(),
                 character.identity().playerName(),
-                character.progress().level(),
+                level,
                 character.progress().currentXp(),
-                PartyCharacterProgress.minimumXpForLevel(character.progress().level()),
-                PartyCharacterProgress.nextLevelXp(character.progress().level()),
-                PartyCharacterProgress.xpToNextLevel(character.progress().level(), character.progress().currentXp()),
-                PartyCharacterProgress.readyToLevel(character.progress().level(), character.progress().currentXp()),
+                level == null ? null : PartyCharacterProgress.minimumXpForLevel(level),
+                level == null ? null : PartyCharacterProgress.nextLevelXp(level),
+                level == null ? null : PartyCharacterProgress.xpToNextLevel(level, character.progress().currentXp()),
+                level == null ? null : PartyCharacterProgress.readyToLevel(level, character.progress().currentXp()),
                 character.combat().passivePerception(),
                 character.combat().armorClass(),
                 character.progress().xpSinceShortRest(),
@@ -195,18 +221,21 @@ final class PartyPublishedProjection {
     }
 
     private static AdventuringDayStatus adventuringDayStatus(List<PartyCharacter> activeMembers) {
-        if (activeMembers.isEmpty()) {
+        List<PartyCharacter> membersWithLevel = activeMembers.stream()
+                .filter(character -> character.progress().level() != null)
+                .toList();
+        if (membersWithLevel.isEmpty() || membersWithLevel.size() != activeMembers.size()) {
             return new AdventuringDayStatus(List.of(), 0, 0, 0, 0, 0, List.of());
         }
-        SummaryAccumulator summary = new SummaryAccumulator(activeMembers.size());
-        for (PartyCharacter character : activeMembers) {
+        SummaryAccumulator summary = new SummaryAccumulator(membersWithLevel.size());
+        for (PartyCharacter character : membersWithLevel) {
             summary.include(restCadenceFor(character));
         }
-        return summary.toStatus(activeMembers);
+        return summary.toStatus(membersWithLevel);
     }
 
     private static CharacterRestCadence restCadenceFor(PartyCharacter character) {
-        int level = character.progress().level();
+        int level = java.util.Objects.requireNonNull(character.progress().level(), "level");
         PartyAdventuringDayBudget budget = PartyAdventuringDayBudget.forLevel(level);
         int totalBudget = budget.perCharacter();
         int targetXp = switch (character.progress().shortRestsTakenSinceLongRest()) {
@@ -469,7 +498,7 @@ final class PartyPublishedProjection {
         private static List<Integer> activeLevels(List<PartyCharacter> activeMembers) {
             List<Integer> levels = new ArrayList<>(activeMembers.size());
             for (PartyCharacter character : activeMembers) {
-                levels.add(character.progress().level());
+                levels.add(java.util.Objects.requireNonNull(character.progress().level(), "level"));
             }
             return List.copyOf(levels);
         }

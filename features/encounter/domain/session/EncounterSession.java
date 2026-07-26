@@ -18,9 +18,7 @@ public final class EncounterSession {
 
     public interface SessionRepository {
 
-        List<PartyMemberData> loadActiveParty();
-
-        Optional<BudgetData> loadBudget();
+        EncounterPartyStateData loadPartyState();
 
         GenerationResultData generate(EncounterGenerationRequest request);
 

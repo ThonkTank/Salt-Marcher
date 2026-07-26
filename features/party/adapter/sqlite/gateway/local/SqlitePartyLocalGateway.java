@@ -61,7 +61,7 @@ public final class SqlitePartyLocalGateway {
                         counted.queryCount()));
                 return roster;
             }
-        } catch (SQLException exception) {
+        } catch (SQLException | RuntimeException exception) {
             throw new IllegalStateException("Failed to load party roster from SQLite.", exception);
         }
     }
@@ -70,7 +70,7 @@ public final class SqlitePartyLocalGateway {
         Objects.requireNonNull(rosterRecord, "rosterRecord");
         try (Connection connection = connections.openConnection()) {
             store.save(connection, rosterRecord);
-        } catch (SQLException exception) {
+        } catch (SQLException | RuntimeException exception) {
             throw new IllegalStateException("Failed to save party roster to SQLite.", exception);
         }
     }

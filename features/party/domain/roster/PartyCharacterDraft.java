@@ -6,20 +6,20 @@ import org.jspecify.annotations.Nullable;
 public final class PartyCharacterDraft {
 
     private final String name;
-    private final String playerName;
-    private final int level;
-    private final int passivePerception;
-    private final int armorClass;
+    private final @Nullable String playerName;
+    private final @Nullable Integer level;
+    private final @Nullable Integer passivePerception;
+    private final @Nullable Integer armorClass;
 
     public PartyCharacterDraft(
             @Nullable String name,
             @Nullable String playerName,
-            int level,
-            int passivePerception,
-            int armorClass
+            @Nullable Integer level,
+            @Nullable Integer passivePerception,
+            @Nullable Integer armorClass
     ) {
         this.name = name == null ? "" : name.trim();
-        this.playerName = playerName == null ? "" : playerName.trim();
+        this.playerName = normalizeOptional(playerName);
         this.level = level;
         this.passivePerception = passivePerception;
         this.armorClass = armorClass;
@@ -29,30 +29,27 @@ public final class PartyCharacterDraft {
         return name;
     }
 
-    public String playerName() {
+    public @Nullable String playerName() {
         return playerName;
     }
 
-    public int level() {
+    public @Nullable Integer level() {
         return level;
     }
 
-    public int passivePerception() {
+    public @Nullable Integer passivePerception() {
         return passivePerception;
     }
 
-    public int armorClass() {
+    public @Nullable Integer armorClass() {
         return armorClass;
     }
 
     public boolean isValid() {
         return !name.isEmpty()
-                && level >= 1
-                && level <= 20
-                && passivePerception >= 1
-                && passivePerception <= 99
-                && armorClass >= 1
-                && armorClass <= 99;
+                && inRangeWhenPresent(level, 1, 20)
+                && inRangeWhenPresent(passivePerception, 1, 99)
+                && inRangeWhenPresent(armorClass, 1, 99);
     }
 
     @Override
@@ -63,15 +60,27 @@ public final class PartyCharacterDraft {
         if (!(other instanceof PartyCharacterDraft draft)) {
             return false;
         }
-        return level == draft.level
-                && passivePerception == draft.passivePerception
-                && armorClass == draft.armorClass
+        return Objects.equals(level, draft.level)
+                && Objects.equals(passivePerception, draft.passivePerception)
+                && Objects.equals(armorClass, draft.armorClass)
                 && name.equals(draft.name)
-                && playerName.equals(draft.playerName);
+                && Objects.equals(playerName, draft.playerName);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(name, playerName, level, passivePerception, armorClass);
+    }
+
+    private static @Nullable String normalizeOptional(@Nullable String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
+    }
+
+    private static boolean inRangeWhenPresent(@Nullable Integer value, int minimum, int maximum) {
+        return value == null || value >= minimum && value <= maximum;
     }
 }

@@ -123,9 +123,9 @@ final class PartyTopBarViewModel {
                 memberId,
                 member.name(),
                 member.playerName(),
-                Integer.toString(member.level()),
-                Integer.toString(member.passivePerception()),
-                Integer.toString(member.armorClass())));
+                optionalText(member.level()),
+                optionalText(member.passivePerception()),
+                optionalText(member.armorClass())));
         return true;
     }
 
@@ -233,18 +233,16 @@ final class PartyTopBarViewModel {
             return Optional.empty();
         }
         String name = safe(parsedDraft.name);
-        String successMessage = displayName(name) + " wurde erstellt und zur Party hinzugef\u00fcgt.";
+        String successMessage = displayName(name) + " wurde dem Charakter-Roster hinzugef\u00fcgt.";
         if (!beginMutation(successMessage, true)) {
             return Optional.empty();
         }
-        return Optional.of(new CreateCharacterCommand(
-                new CharacterDraft(
-                        name,
-                        parsedDraft.playerName,
-                        parsedDraft.level,
-                        parsedDraft.passivePerception,
-                        parsedDraft.armorClass),
-                MembershipState.ACTIVE));
+        return Optional.of(new CreateCharacterCommand(new CharacterDraft(
+                name,
+                parsedDraft.playerName,
+                parsedDraft.level,
+                parsedDraft.passivePerception,
+                parsedDraft.armorClass)));
     }
 
     private Optional<UpdateCharacterCommand> prepareUpdateCharacter(long memberId, EditorDraft draft) {
@@ -290,7 +288,7 @@ final class PartyTopBarViewModel {
                 false,
                 "",
                 presentation.activeMembers,
-                presentation.reserveMembers,
+                presentation.rosterMembers,
                 presentation.reserveSearchText,
                 presentation.summaryText,
                 presentation.restSummaryText,
@@ -380,12 +378,7 @@ final class PartyTopBarViewModel {
             return null;
         }
         PanelContent safePanel = safePanel();
-        for (MemberModel member : safePanel.activeMembers()) {
-            if (member.id() == memberId) {
-                return member;
-            }
-        }
-        for (MemberModel member : safePanel.reserveMembers()) {
+        for (MemberModel member : safePanel.allRosterMembers()) {
             if (member.id() == memberId) {
                 return member;
             }
@@ -423,6 +416,10 @@ final class PartyTopBarViewModel {
 
     private static String safe(@Nullable String value) {
         return value == null ? "" : value;
+    }
+
+    private static String optionalText(@Nullable Integer value) {
+        return value == null ? "" : Integer.toString(value);
     }
 
     record PanelData(
@@ -485,7 +482,7 @@ final class PartyTopBarViewModel {
             boolean storageError,
             String storageMessage,
             List<MemberModel> activeMembers,
-            List<MemberModel> allReserveMembers,
+            List<MemberModel> allRosterMembers,
             String reserveSearchText,
             String summaryText,
             String restSummaryText,
@@ -498,7 +495,7 @@ final class PartyTopBarViewModel {
         public PanelContent {
             storageMessage = safe(storageMessage);
             activeMembers = activeMembers == null ? List.of() : List.copyOf(activeMembers);
-            allReserveMembers = allReserveMembers == null ? List.of() : List.copyOf(allReserveMembers);
+            allRosterMembers = allRosterMembers == null ? List.of() : List.copyOf(allRosterMembers);
             reserveSearchText = safe(reserveSearchText);
             summaryText = safe(summaryText);
             restSummaryText = safe(restSummaryText);
@@ -521,8 +518,8 @@ final class PartyTopBarViewModel {
                     true);
         }
 
-        public List<MemberModel> reserveMembers() {
-            return filteredReserveMembers(allReserveMembers, reserveSearchText);
+        public List<MemberModel> rosterMembers() {
+            return filteredRosterMembers(allRosterMembers, reserveSearchText);
         }
 
         PanelContent withStatus(String status, boolean error) {
@@ -553,7 +550,7 @@ final class PartyTopBarViewModel {
                     storageError,
                     storageMessage,
                     activeMembers,
-                    allReserveMembers,
+                    allRosterMembers,
                     nextReserveSearchText,
                     summaryText,
                     restSummaryText,
@@ -563,13 +560,15 @@ final class PartyTopBarViewModel {
                     nextActionsDisabled);
         }
 
-        private static List<MemberModel> filteredReserveMembers(List<MemberModel> members, String searchText) {
+        private static List<MemberModel> filteredRosterMembers(List<MemberModel> members, String searchText) {
             String lowerSearch = safe(searchText).trim().toLowerCase(Locale.ROOT);
             if (lowerSearch.isBlank()) {
                 return List.copyOf(members);
             }
             return members.stream()
-                    .filter(member -> member.name().toLowerCase(Locale.ROOT).contains(lowerSearch))
+                    .filter(member -> member.name().toLowerCase(Locale.ROOT).contains(lowerSearch)
+                            || safe(member.playerName()).toLowerCase(Locale.ROOT).contains(lowerSearch)
+                            || Long.toString(member.id()).contains(lowerSearch))
                     .toList();
         }
     }
@@ -577,26 +576,24 @@ final class PartyTopBarViewModel {
     record MemberModel(
             long id,
             String name,
-            String playerName,
-            int level,
-            int passivePerception,
-            int armorClass,
+            @Nullable String playerName,
+            @Nullable Integer level,
+            @Nullable Integer passivePerception,
+            @Nullable Integer armorClass,
             String identityText,
             String combatText,
             String levelLabel,
             String nextLevelLabel,
             String levelProgressText,
             String restText,
-            String restStyleClass
+            String restStyleClass,
+            boolean activePartyMember
     ) {
 
         public MemberModel {
             id = Math.max(0L, id);
             name = safe(name);
             playerName = safe(playerName);
-            level = Math.max(1, level);
-            passivePerception = Math.max(0, passivePerception);
-            armorClass = Math.max(0, armorClass);
             identityText = safe(identityText);
             combatText = safe(combatText);
             levelLabel = safe(levelLabel);
@@ -632,11 +629,11 @@ final class PartyTopBarViewModel {
         }
 
         static EditorPanelModel hidden() {
-            return new EditorPanelModel(false, false, 0L, "", "", "", "1", "10", "10", false, false);
+            return new EditorPanelModel(false, false, 0L, "", "", "", "", "", "", false, false);
         }
 
         static EditorPanelModel createDraft() {
-            return new EditorPanelModel(true, false, 0L, "", "", "", "1", "10", "10", false, false);
+            return new EditorPanelModel(true, false, 0L, "", "", "", "", "", "", false, false);
         }
 
         static EditorPanelModel editDraft(
@@ -717,7 +714,7 @@ final class PartyTopBarViewModel {
 
         private final String triggerText;
         private final List<MemberModel> activeMembers;
-        private final List<MemberModel> reserveMembers;
+        private final List<MemberModel> rosterMembers;
         private final String reserveSearchText;
         private final String summaryText;
         private final String restSummaryText;
@@ -727,7 +724,7 @@ final class PartyTopBarViewModel {
         private SnapshotPresentation(
                 String triggerText,
                 List<MemberModel> activeMembers,
-                List<MemberModel> reserveMembers,
+                List<MemberModel> rosterMembers,
                 String reserveSearchText,
                 String summaryText,
                 String restSummaryText,
@@ -736,7 +733,7 @@ final class PartyTopBarViewModel {
         ) {
             this.triggerText = triggerText;
             this.activeMembers = activeMembers;
-            this.reserveMembers = reserveMembers;
+            this.rosterMembers = rosterMembers;
             this.reserveSearchText = reserveSearchText;
             this.summaryText = summaryText;
             this.restSummaryText = restSummaryText;
@@ -752,17 +749,21 @@ final class PartyTopBarViewModel {
         ) {
             @Nullable AdventuringDaySummary daySummary = daySummary(dayResult);
             List<MemberModel> activeMembers =
-                    memberModels(snapshot == null ? null : snapshot.activeMembers(), daySummary);
+                    memberModels(snapshot == null ? null : snapshot.activeMembers(), daySummary, true);
             List<MemberModel> reserveMembers =
-                    memberModels(snapshot == null ? null : snapshot.reserveMembers(), daySummary);
+                    memberModels(snapshot == null ? null : snapshot.reserveMembers(), daySummary, false);
+            List<MemberModel> rosterMembers = java.util.stream.Stream.concat(
+                            activeMembers.stream(), reserveMembers.stream())
+                    .sorted(java.util.Comparator.comparingLong(MemberModel::id))
+                    .toList();
             int activeCount = activeMembers.size();
-            int averageLevel = snapshot == null || snapshot.summary() == null
+            @Nullable Integer averageLevel = snapshot == null || snapshot.summary() == null
                     ? averageLevel(activeMembers)
                     : snapshot.summary().averageLevel();
             return new SnapshotPresentation(
                     PartyTopBarVocabulary.triggerText(activeCount, averageLevel),
                     activeMembers,
-                    reserveMembers,
+                    rosterMembers,
                     reserveSearchText,
                     summaryText(activeMembers, averageLevel),
                     restSummary(daySummary),
@@ -772,10 +773,14 @@ final class PartyTopBarViewModel {
 
         private static List<MemberModel> memberModels(
                 @Nullable List<PartyMemberDetails> members,
-                @Nullable AdventuringDaySummary daySummary
+                @Nullable AdventuringDaySummary daySummary,
+                boolean activePartyMember
         ) {
             return safeMembers(members).stream()
-                    .map(member -> memberModel(member, restStatusFor(daySummary, member.id())))
+                    .map(member -> memberModel(
+                            member,
+                            restStatusFor(daySummary, member.id()),
+                            activePartyMember))
                     .toList();
         }
 
@@ -796,10 +801,11 @@ final class PartyTopBarViewModel {
 
         private static MemberModel memberModel(
                 @Nullable PartyMemberDetails member,
-                @Nullable RestCadenceStatus restStatus
+                @Nullable RestCadenceStatus restStatus,
+                boolean activePartyMember
         ) {
             if (member == null) {
-                return emptyMemberModel(restStatus);
+                return emptyMemberModel(restStatus, activePartyMember);
             }
             String restText = safe(restStatusText(restStatus));
             LevelProgressDisplay levelProgress = levelProgressDisplay(member);
@@ -812,28 +818,33 @@ final class PartyTopBarViewModel {
                     member.armorClass(),
                     identityText(member),
                     combatText(member),
-                    "Lv " + member.level(),
+                    member.level() == null ? "Level \u2014" : "Lv " + member.level(),
                     levelProgress.nextLevelLabel(),
                     levelProgress.text(),
                     restText,
-                    restUrgencyStyleClass(restStatus));
+                    restUrgencyStyleClass(restStatus),
+                    activePartyMember);
         }
 
-        private static MemberModel emptyMemberModel(@Nullable RestCadenceStatus restStatus) {
+        private static MemberModel emptyMemberModel(
+                @Nullable RestCadenceStatus restStatus,
+                boolean activePartyMember
+        ) {
             return new MemberModel(
                     0L,
                     "",
                     "",
-                    1,
-                    10,
-                    10,
+                    null,
+                    null,
+                    null,
                     "",
-                    "AC 10 | PP 10",
-                    "Lv 1",
-                    "Lv 2",
-                    formatProgressText(0, 300, 0),
+                    "AC \u2014 | PP \u2014",
+                    "Level \u2014",
+                    "",
+                    "",
                     safe(restStatusText(restStatus)),
-                    restUrgencyStyleClass(restStatus));
+                    restUrgencyStyleClass(restStatus),
+                    activePartyMember);
         }
 
         private static String identityText(PartyMemberDetails member) {
@@ -849,13 +860,19 @@ final class PartyTopBarViewModel {
         }
 
         private static String combatText(PartyMemberDetails member) {
-            return "AC " + member.armorClass() + " | PP " + member.passivePerception();
+            return "AC " + optionalStat(member.armorClass())
+                    + " | PP " + optionalStat(member.passivePerception());
         }
 
         private static LevelProgressDisplay levelProgressDisplay(PartyMemberDetails member) {
+            if (member.level() == null) {
+                return new LevelProgressDisplay("", "");
+            }
             int currentXp = Math.max(0, member.currentXp());
-            int currentLevelXp = Math.max(0, member.currentLevelXp());
-            int nextLevelXp = Math.max(currentLevelXp, member.nextLevelXp());
+            int currentLevelXp = Math.max(0, member.currentLevelXp() == null ? 0 : member.currentLevelXp());
+            int nextLevelXp = Math.max(
+                    currentLevelXp,
+                    member.nextLevelXp() == null ? currentLevelXp : member.nextLevelXp());
             if (member.level() >= MAX_CHARACTER_LEVEL || nextLevelXp <= currentLevelXp) {
                 return new LevelProgressDisplay("Max", formatProgressText(currentXp, currentXp, 100));
             }
@@ -863,12 +880,16 @@ final class PartyTopBarViewModel {
             int earnedInLevel = Math.max(0, currentXp - currentLevelXp);
             double fraction = Math.max(0.0, Math.min(1.0, (double) earnedInLevel / span));
             int percent = (int) Math.round(fraction * 100.0);
-            if (member.readyToLevel()) {
+            if (Boolean.TRUE.equals(member.readyToLevel())) {
                 percent = 100;
             }
             return new LevelProgressDisplay(
                     "Lv " + (member.level() + 1),
                     formatProgressText(currentXp, nextLevelXp, percent));
+        }
+
+        private static String optionalStat(@Nullable Integer value) {
+            return value == null ? "\u2014" : Integer.toString(value);
         }
 
         private static String formatProgressText(int currentXp, int targetXp, int percent) {
@@ -900,14 +921,23 @@ final class PartyTopBarViewModel {
             return "party-rest-chip-normal";
         }
 
-        private static String summaryText(List<MemberModel> activeMembers, int averageLevel) {
+        private static String summaryText(List<MemberModel> activeMembers, @Nullable Integer averageLevel) {
             if (activeMembers.isEmpty()) {
                 return "Keine Party-Mitglieder";
             }
             double exactAverage = activeMembers.stream()
-                    .mapToInt(MemberModel::level)
+                    .map(MemberModel::level)
+                    .filter(java.util.Objects::nonNull)
+                    .mapToInt(Integer::intValue)
                     .average()
-                    .orElse(1.0);
+                    .orElse(Double.NaN);
+            if (Double.isNaN(exactAverage) || averageLevel == null) {
+                boolean anyLevel = activeMembers.stream().anyMatch(member -> member.level() != null);
+                String levelTruth = anyLevel
+                        ? "Mindestens eine Levelangabe fehlt"
+                        : "Keine Levelangaben";
+                return activeMembers.size() + " Charaktere  .  " + levelTruth;
+            }
             return activeMembers.size() + " Charaktere  .  Schnitt Lv "
                     + String.format(Locale.ROOT, "%.1f", exactAverage) + "  .  Rundung " + averageLevel;
         }
@@ -929,14 +959,14 @@ final class PartyTopBarViewModel {
             return members == null ? List.of() : List.copyOf(members);
         }
 
-        private static int averageLevel(List<MemberModel> activeMembers) {
-            if (activeMembers.isEmpty()) {
-                return 1;
-            }
-            return (int) Math.round(activeMembers.stream()
-                    .mapToInt(MemberModel::level)
+        private static @Nullable Integer averageLevel(List<MemberModel> activeMembers) {
+            double average = activeMembers.stream()
+                    .map(MemberModel::level)
+                    .filter(java.util.Objects::nonNull)
+                    .mapToInt(Integer::intValue)
                     .average()
-                    .orElse(1.0));
+                    .orElse(Double.NaN);
+            return Double.isNaN(average) ? null : (int) Math.round(average);
         }
     }
 
@@ -982,13 +1012,14 @@ final class PartyTopBarViewModel {
 
         private static ParsedDraft parse(EditorDraft draft) {
             String name = safe(draft == null ? "" : draft.name()).trim();
-            ParsedInteger level = parseInteger(draft == null ? "" : draft.rawLevel(), "Level", 1, 20);
-            ParsedInteger passivePerception = parseInteger(
+            ParsedInteger level = parseOptionalInteger(draft == null ? "" : draft.rawLevel(), "Level", 1, 20);
+            ParsedInteger passivePerception = parseOptionalInteger(
                     draft == null ? "" : draft.rawPassivePerception(),
                     "Passive Perception",
                     1,
                     99);
-            ParsedInteger armorClass = parseInteger(draft == null ? "" : draft.rawArmorClass(), "AC", 1, 99);
+            ParsedInteger armorClass = parseOptionalInteger(
+                    draft == null ? "" : draft.rawArmorClass(), "AC", 1, 99);
             return ParsedDraft.from(
                     name,
                     safe(draft == null ? "" : draft.playerName()).trim(),
@@ -997,10 +1028,10 @@ final class PartyTopBarViewModel {
                     armorClass);
         }
 
-        private static ParsedInteger parseInteger(String rawValue, String label, int min, int max) {
+        private static ParsedInteger parseOptionalInteger(String rawValue, String label, int min, int max) {
             String trimmed = safe(rawValue).trim();
             if (trimmed.isEmpty()) {
-                return ParsedInteger.invalid(label + " fehlt.");
+                return ParsedInteger.absent();
             }
             try {
                 int value = Integer.parseInt(trimmed);
@@ -1018,17 +1049,17 @@ final class PartyTopBarViewModel {
 
         private final String name;
         private final String playerName;
-        private final int level;
-        private final int passivePerception;
-        private final int armorClass;
+        private final @Nullable Integer level;
+        private final @Nullable Integer passivePerception;
+        private final @Nullable Integer armorClass;
         private final String message;
 
         private ParsedDraft(
                 String name,
                 String playerName,
-                int level,
-                int passivePerception,
-                int armorClass,
+                @Nullable Integer level,
+                @Nullable Integer passivePerception,
+                @Nullable Integer armorClass,
                 String message
         ) {
             this.name = safe(name);
@@ -1066,16 +1097,16 @@ final class PartyTopBarViewModel {
         }
 
         private static ParsedDraft invalid(String message) {
-            return new ParsedDraft("", "", 0, 0, 0, message);
+            return new ParsedDraft("", "", null, null, null, message);
         }
     }
 
     private static final class ParsedInteger {
 
-        private final int value;
+        private final @Nullable Integer value;
         private final String message;
 
-        private ParsedInteger(int value, String message) {
+        private ParsedInteger(@Nullable Integer value, String message) {
             this.value = value;
             this.message = safe(message);
         }
@@ -1088,8 +1119,12 @@ final class PartyTopBarViewModel {
             return new ParsedInteger(value, "");
         }
 
+        private static ParsedInteger absent() {
+            return new ParsedInteger(null, "");
+        }
+
         private static ParsedInteger invalid(String message) {
-            return new ParsedInteger(0, message);
+            return new ParsedInteger(null, message);
         }
     }
 }

@@ -322,8 +322,7 @@ final class SessionPlannerAuthoredProductionRouteTest {
                     stores.get("encounter"),
                     creatures.application(), creatures.detail(), creatures.encounterCandidates(),
                     tables.application(), tables.candidates(), null,
-                    party.application(), party.activeParty(), party.activeComposition(),
-                    party.adventuringDaySummary(), party.mutation(),
+                    party.application(), party.mutation(),
                     authored, DirectExecutionLane.INSTANCE,
                     DirectExecutionLane.INSTANCE, DirectUiDispatcher.INSTANCE,
                     NoopDiagnostics.INSTANCE);

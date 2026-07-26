@@ -2,12 +2,13 @@ package features.party.domain.roster;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 public record PartyRosterProjection(
         List<PartyCharacter> activeMembers,
         List<PartyCharacter> reserveMembers,
         List<Integer> activeLevelsByComposition,
-        int averageActiveLevel
+        @Nullable Integer averageActiveLevel
 ) {
     public PartyRosterProjection {
         activeMembers = activeMembers == null ? List.of() : List.copyOf(activeMembers);
@@ -47,15 +48,23 @@ public record PartyRosterProjection(
         activeMembersByLevel.sort(PartyRosterProjection::compareActiveLevels);
         List<Integer> activeLevels = new ArrayList<>(activeMembersByLevel.size());
         int totalLevel = 0;
+        boolean incompleteComposition = false;
         for (PartyCharacter character : activeMembersByLevel) {
-            int level = character.progress().level();
-            activeLevels.add(level);
-            totalLevel += level;
+            Integer level = character.progress().level();
+            if (level != null) {
+                activeLevels.add(level);
+                totalLevel += level;
+            } else {
+                incompleteComposition = true;
+            }
         }
 
-        int averageLevel = activeMembers.isEmpty()
-                ? 1
-                : (int) Math.round((double) totalLevel / activeMembers.size());
+        if (incompleteComposition) {
+            activeLevels.clear();
+        }
+        Integer averageLevel = activeLevels.isEmpty()
+                ? null
+                : (int) Math.round((double) totalLevel / activeLevels.size());
         return new PartyRosterProjection(activeMembers, reserveMembers, activeLevels, averageLevel);
     }
 
@@ -74,7 +83,15 @@ public record PartyRosterProjection(
     }
 
     private static int compareActiveLevels(PartyCharacter first, PartyCharacter second) {
-        int levelComparison = Integer.compare(first.progress().level(), second.progress().level());
+        Integer firstLevel = first.progress().level();
+        Integer secondLevel = second.progress().level();
+        if (firstLevel == null && secondLevel != null) {
+            return 1;
+        }
+        if (firstLevel != null && secondLevel == null) {
+            return -1;
+        }
+        int levelComparison = firstLevel == null ? 0 : Integer.compare(firstLevel, secondLevel);
         if (levelComparison != 0) {
             return levelComparison;
         }

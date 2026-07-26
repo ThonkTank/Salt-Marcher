@@ -195,7 +195,7 @@ public record EncounterStateSnapshot(
         }
     }
 
-    public record PartyCandidate(long partyMemberId, String displayName, int level) {
+    public record PartyCandidate(long partyMemberId, String displayName, @Nullable Integer level) {
         public PartyCandidate {
             displayName = displayName == null ? "" : displayName;
         }

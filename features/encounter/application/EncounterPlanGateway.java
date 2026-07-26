@@ -14,7 +14,6 @@ import features.encounter.domain.plan.EncounterPlanBudgetSummaryData;
 import features.encounter.domain.plan.EncounterPlanCreature;
 import features.encounter.domain.plan.SavedEncounterPlansLoadResult;
 import features.encounter.domain.plan.repository.EncounterPlanRepository;
-import features.encounter.domain.session.BudgetData;
 import features.encounter.domain.session.ListPlansOutcome;
 import features.encounter.domain.session.PartyBudgetFacts;
 import features.encounter.domain.session.PlanOutcome;
@@ -41,11 +40,6 @@ public final class EncounterPlanGateway {
         this.diagnostics = java.util.Objects.requireNonNull(diagnostics, "diagnostics");
     }
 
-    Optional<BudgetData> loadBudget() {
-        BudgetResult result = loadBudgetForTuningPreview();
-        return result.status().isSuccess() ? Optional.of(toSessionBudget(result.budget())) : Optional.empty();
-    }
-
     BudgetResult loadBudgetForTuningPreview() {
         PartyBudgetFacts budgetFacts = facts.loadPartyBudgetFacts();
         if (budgetFacts.status().isStorageError()) {
@@ -53,6 +47,9 @@ public final class EncounterPlanGateway {
         }
         if (budgetFacts.status().isNoActiveParty()) {
             return BudgetResult.noActiveParty();
+        }
+        if (budgetFacts.status().isMissingRequiredLevel()) {
+            return BudgetResult.missingRequiredLevel();
         }
         return BudgetResult.success(EncounterDifficultyMathHelper.summarizeBudget(
                 budgetFacts.activePartyLevels(),
@@ -139,6 +136,10 @@ public final class EncounterPlanGateway {
         if (partyFacts.status().isNoActiveParty()) {
             return EncounterPlanBudgetLoadResult.noActiveParty("No active party is available.");
         }
+        if (partyFacts.status().isMissingRequiredLevel()) {
+            return EncounterPlanBudgetLoadResult.missingRequiredLevel(
+                    "Every active party member needs a level before encounter budgeting.");
+        }
         EncounterPlan plan = maybePlan.get();
         int totalBaseXp = totalBaseXp(plan.creatures());
         int creatureCount = plan.creatureCount();
@@ -168,16 +169,6 @@ public final class EncounterPlanGateway {
             total += reference.orElseThrow().xp() * creature.quantity();
         }
         return total;
-    }
-
-    private static BudgetData toSessionBudget(EncounterBudgetSummary budget) {
-        return new BudgetData(
-                budget.activePartyLevels(),
-                budget.averagePartyLevel(),
-                budget.easyThreshold(),
-                budget.mediumThreshold(),
-                budget.hardThreshold(),
-                budget.deadlyThreshold());
     }
 
     private static String defaultMessage(String message, String fallback) {
@@ -228,6 +219,13 @@ public final class EncounterPlanGateway {
                     PartyBudgetFacts.Status.storageErrorStatus(),
                     emptyBudget(),
                     "Party data could not be loaded.");
+        }
+
+        static BudgetResult missingRequiredLevel() {
+            return new BudgetResult(
+                    PartyBudgetFacts.Status.MISSING_REQUIRED_LEVEL,
+                    emptyBudget(),
+                    "Every active party member needs a level before encounter budgeting.");
         }
 
         private static EncounterBudgetSummary emptyBudget() {

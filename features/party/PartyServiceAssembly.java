@@ -5,6 +5,7 @@ import features.party.adapter.javafx.party.PartyTopBarContribution;
 import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
 import features.party.api.ActivePartyCompositionModel;
 import features.party.api.ActivePartyModel;
+import features.party.api.ActivePartyFactsModel;
 import features.party.api.AdventuringDayCalculationModel;
 import features.party.api.AdventuringDaySummaryModel;
 import features.party.api.PartyApi;
@@ -85,10 +86,12 @@ public final class PartyServiceAssembly {
             Diagnostics diagnostics
     ) {
         PartyPublishedState publishedState = new PartyPublishedState(
-                Objects.requireNonNull(uiDispatcher, "uiDispatcher"));
+                Objects.requireNonNull(uiDispatcher, "uiDispatcher"),
+                Objects.requireNonNull(diagnostics, "diagnostics"));
         PartySnapshotModel snapshot = publishedState.snapshotModel();
         ActivePartyModel activeParty = publishedState.activePartyModel();
         ActivePartyCompositionModel activeComposition = publishedState.activeCompositionModel();
+        ActivePartyFactsModel activePartyFacts = publishedState.activePartyFactsModel();
         AdventuringDaySummaryModel daySummary = publishedState.adventuringDaySummaryModel();
         PartyTravelPositionsModel travelPositions = publishedState.travelPositionsModel();
         PartyMutationModel mutation = publishedState.mutationModel();
@@ -98,12 +101,13 @@ public final class PartyServiceAssembly {
                 publishedState,
                 Objects.requireNonNull(executionLane, "executionLane"),
                 Objects.requireNonNull(planningFactsLane, "planningFactsLane"),
-                Objects.requireNonNull(diagnostics, "diagnostics"));
+                diagnostics);
         return new Component(
                 application,
                 snapshot,
                 activeParty,
                 activeComposition,
+                activePartyFacts,
                 daySummary,
                 travelPositions,
                 mutation,
@@ -122,6 +126,7 @@ public final class PartyServiceAssembly {
             PartySnapshotModel snapshot,
             ActivePartyModel activeParty,
             ActivePartyCompositionModel activeComposition,
+            ActivePartyFactsModel activePartyFacts,
             AdventuringDaySummaryModel adventuringDaySummary,
             PartyTravelPositionsModel travelPositions,
             PartyMutationModel mutation,

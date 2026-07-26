@@ -42,6 +42,7 @@ import features.party.api.CharacterDraft;
 import features.party.api.CreateCharacterCommand;
 import features.party.api.MembershipState;
 import features.party.api.PartyApi;
+import features.party.api.SetPartyMembershipCommand;
 import features.worldplanner.WorldPlannerReferenceAssembly;
 import features.worldplanner.WorldPlannerServiceAssembly;
 import features.worldplanner.adapter.sqlite.repository.SqliteWorldPlannerRepository;
@@ -501,9 +502,6 @@ public final class WorldPlannerEncounterTest {
                     tables.candidates(),
                     components.worldSnapshot(),
                     components.party().application(),
-                    components.party().activeParty(),
-                    components.party().activeComposition(),
-                    components.party().adventuringDaySummary(),
                     components.party().mutation(),
                     plans);
             return new EncounterRoute(
@@ -575,11 +573,11 @@ public final class WorldPlannerEncounterTest {
 
         private static void seedParty(PartyApi party) {
             party.createCharacter(new CreateCharacterCommand(
-                    new CharacterDraft("Asha", "Mira", 3, 12, 16),
-                    MembershipState.ACTIVE));
+                    new CharacterDraft("Asha", "Mira", 3, 12, 16)));
+            party.setMembership(new SetPartyMembershipCommand(1L, MembershipState.ACTIVE));
             party.createCharacter(new CreateCharacterCommand(
-                    new CharacterDraft("Borin", "Kestrel", 10, 12, 16),
-                    MembershipState.ACTIVE));
+                    new CharacterDraft("Borin", "Kestrel", 10, 12, 16)));
+            party.setMembership(new SetPartyMembershipCommand(2L, MembershipState.ACTIVE));
             party.calculateAdventuringDay(new CalculateAdventuringDayCommand(List.of(3, 10), 0));
         }
 

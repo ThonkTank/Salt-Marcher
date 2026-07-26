@@ -82,6 +82,7 @@ import features.party.api.PartyTravelHeading;
 import features.party.api.PartyTravelPositionsModel;
 import features.party.api.PartyTravelPositionsResult;
 import features.party.api.PartyTravelTile;
+import features.party.api.SetPartyMembershipCommand;
 
 final class DungeonRuntimeProjectionInvariantScenarios {
 
@@ -921,8 +922,8 @@ final class DungeonRuntimeProjectionInvariantScenarios {
             TravelPositionFacts position
     ) {
         party.createCharacter(new CreateCharacterCommand(
-                new CharacterDraft("Runtime Guide", "Test", 3, 12, 14),
-                MembershipState.ACTIVE));
+                new CharacterDraft("Runtime Guide", "Test", 3, 12, 14)));
+        party.setMembership(new SetPartyMembershipCommand(1L, MembershipState.ACTIVE));
         party.moveCharacters(new MovePartyCharactersCommand(
                 List.of(1L),
                 new PartyDungeonTravelLocationSnapshot(

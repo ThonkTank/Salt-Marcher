@@ -29,6 +29,13 @@ independent replay, and the repository gates. The scenarios retained below as
 final owner-test coverage are accumulated for that final end-to-end acceptance
 boundary; they are not intermediate approval gates.
 
+Every capability slice now carries a versioned in-game lesson obligation.
+Because the requirement arrived after M1 and during M2a, one bounded M2t slice
+immediately after M2a establishes automatic first-install/update onboarding,
+skip, and lessons for M1 plus M2a. Every later milestone delivers and
+qualifies its lesson together with the capability instead of accumulating a
+late tutorial retrofit.
+
 The owner has established that no real users or legacy data exist before the
 complete GM core reaches feature completion. Legacy-data compatibility,
 conversion, migration, and fallback are therefore outside every pre-completion
@@ -55,7 +62,9 @@ built milestone, revalidate:
    work; and
 6. the exact production journey, causal counterexample where practical,
    independent replay, visible production evidence, final owner-test coverage,
-   and exit facts that will decide the slice.
+   and exit facts that will decide the slice; and
+7. the current implementation maturity under the Product Process and whether
+   the next wave should extend it or reopen its root design.
 
 Record only the resulting slice and compact delivery state in its one short
 delivery owner. Do not turn this roadmap into a progress ledger or duplicate
@@ -68,12 +77,25 @@ the Product Process.
   [PR #558](https://github.com/ThonkTank/Salt-Marcher/pull/558) at
   `fb229a119`. Its independent replay, literal local check, required CI, and
   installed-artifact identity are green; its personal interaction scenarios
-  remain accumulated for M13's integrated owner test.
-- **Active next slice:** merge-boundary revalidation confirms M2a/`AC-F10` as
-  the smallest independently useful next value. The [Campaign Roster
-  Slice](campaign-roster/README.md) owns its live delivery state. No broader
-  content lifecycle, current-Party/Scene transition, M2b knowledge record, or
-  compatibility bridge is an entry prerequisite.
+  remain accumulated for M13's integrated owner test. Its implementation is
+  `Preliminary`: it can support the next slice, but later integration evidence
+  may reopen and replace its internal design. It cannot become `Final` before
+  every remaining integration dependency that may change it is exhausted.
+- **Current merge candidate:** M2a/`AC-F10` supplies one Campaign-owned Roster
+  with name-only creation, nullable authored facts, stable namesake identity,
+  explicit Party membership, strict current-v1 persistence, and coherent Party
+  publication. Its production UI/failure journey, focused diagnostics, full
+  local `./gradlew check`, and independent severe-finding closure are green;
+  installation, required PR CI, and merge remain before activation.
+- M2a is `Preliminary`: practical proof and severe-finding repair show no
+  implementation inadequacy requiring immediate rewrite, while later waves may
+  still reopen or replace its design. It is not a mandatory architectural
+  foundation and cannot be `Final` while later Party, Scene, Encounter, travel,
+  or tutorial slices may change it.
+- The confirmed 2026-07-26 tutorial requirement does not change M2a's Roster
+  semantics. It fixes M2t as the next revalidation candidate before M3 so the
+  tutorial boundary is proven with the already delivered Campaign and Roster
+  capabilities before more capability work accumulates.
 - This roadmap has not audited every other capability against every canonical
   acceptance outcome; all later milestone completion remains unassessed until
   live, requirement-by-requirement revalidation.
@@ -147,7 +169,35 @@ the Product Process.
   deletion/trash/restore; and compatibility work for disposable development
   data.
 
-After M2a, Next-Step Revalidation chooses between the complete M3 current-Party
+### M2t — In-Game Tutorial Foundation And First Lessons
+
+- **Outcome and needs:** `AC-Q15`, `TN-21`, `TN-31`, `TN-38`, and `QS-14`.
+- **Dependency hypothesis:** tutorial delivery must be proven while only the
+  Campaign and Roster capability set needs retroactive coverage; every later
+  capability can then ship its own lesson in the same slice.
+- **Practical proof:** a clean installed profile automatically opens the exact
+  complete Campaign/Roster tutorial set. The first start of each successive
+  installed application version opens exactly the complete set exposed by that
+  version, including unchanged lessons; restarting the same version opens no
+  automatic run. The installed-version matrix covers an unchanged set plus
+  lesson add, change, removal, and restoration. The GM can skip one lesson or
+  dismiss the remaining automatic run by keyboard or pointer without completing
+  it, changing Campaign truth, or losing a capability. A coverage oracle maps
+  every exposed M1/M2a capability to a lesson; an absent or faulty lesson cannot
+  block the underlying capability or Campaign. All proof runs offline.
+- **Final owner-test coverage:** At M13 Aaron experiences clean-install and
+  update onboarding, skips representative lessons, and judges that
+  every capability is explained without obstructing ordinary use.
+- **Exit and reopen:** exit only with exact capability/tutorial coverage,
+  skippable automatic presentation, zero tutorial-only Campaign
+  mutations, keyboard/localization/scale qualification, independent installed-
+  artifact replay, green check/CI, and installation. Reopen the contribution or
+  progress model on missing lessons, stale anchors, capability loss, or
+  tutorial-originated product mutation.
+- **Exclusions:** external documentation, analytics/telemetry, network-hosted
+  tours, and implementation of any capability beyond M1/M2a tutorial coverage.
+
+After M2t, Next-Step Revalidation chooses between the complete M3 current-Party
 and Scene flow and a small M2b knowledge-record slice only if one concrete
 downstream workflow makes that record immediately useful. The guide currently
 places `AC-F07` in M3, where a note-first record has a real Running-Scene use;
@@ -384,7 +434,9 @@ journeys are not yet possible.
 ### M13 — Whole-Product Qualification And Installed Release
 
 - **Outcome and needs:** `AC-Q01` through `AC-Q06`, `AC-Q10`, `AC-Q13`, plus
-  regression and traceability over every `AC-*` and `TN-01` through `TN-37`.
+  regression and traceability over every `AC-*` and `TN-01` through `TN-38`,
+  including the complete installed tutorial manifest and `QS-14` onboarding
+  matrix.
   Qualification covers every obligation active before first-real-user/data
   cutover; `TN-18` is traced as conditionally inactive until the Product Process
   compatibility covenant freezes the initial released format.

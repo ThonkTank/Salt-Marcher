@@ -21,14 +21,14 @@ public final class PartyPersistenceSchema {
             column("id", "INTEGER PRIMARY KEY"),
             column("name", "TEXT NOT NULL"),
             column("player_name", TEXT),
-            column("level", "INTEGER NOT NULL DEFAULT 1"),
+            column("level", INTEGER),
             column("current_xp", INTEGER_ZERO_DEFAULT),
             column("xp_since_long_rest", INTEGER_ZERO_DEFAULT),
             column("xp_since_short_rest", INTEGER_ZERO_DEFAULT),
             column("short_rests_taken_since_long_rest", INTEGER_ZERO_DEFAULT),
-            column("passive_perception", "INTEGER NOT NULL DEFAULT 10"),
-            column("ac", "INTEGER NOT NULL DEFAULT 10"),
-            column("in_party", "INTEGER NOT NULL DEFAULT 1"),
+            column("passive_perception", INTEGER),
+            column("ac", INTEGER),
+            column("in_party", "INTEGER NOT NULL DEFAULT 0"),
             column("travel_location_kind", TEXT),
             column("travel_dungeon_map_id", INTEGER),
             column("travel_dungeon_location_kind", TEXT),
@@ -39,7 +39,7 @@ public final class PartyPersistenceSchema {
             column("travel_dungeon_heading", TEXT),
             column("travel_overworld_map_id", INTEGER),
             column("travel_overworld_tile_id", INTEGER),
-            column("attached_to_party_token", "INTEGER NOT NULL DEFAULT 1"));
+            column("attached_to_party_token", "INTEGER NOT NULL DEFAULT 0"));
 
     public static final SqliteTableSpec PARTY_ROSTER_METADATA = table(
             "party_roster_metadata",
@@ -51,14 +51,14 @@ public final class PartyPersistenceSchema {
                     + "id INTEGER PRIMARY KEY, "
                     + "name TEXT NOT NULL, "
                     + "player_name TEXT, "
-                    + "level INTEGER NOT NULL DEFAULT 1, "
+                    + "level INTEGER, "
                     + "current_xp INTEGER NOT NULL DEFAULT 0, "
                     + "xp_since_long_rest INTEGER NOT NULL DEFAULT 0, "
                     + "xp_since_short_rest INTEGER NOT NULL DEFAULT 0, "
                     + "short_rests_taken_since_long_rest INTEGER NOT NULL DEFAULT 0, "
-                    + "passive_perception INTEGER NOT NULL DEFAULT 10, "
-                    + "ac INTEGER NOT NULL DEFAULT 10, "
-                    + "in_party INTEGER NOT NULL DEFAULT 1, "
+                    + "passive_perception INTEGER, "
+                    + "ac INTEGER, "
+                    + "in_party INTEGER NOT NULL DEFAULT 0, "
                     + "travel_location_kind TEXT, "
                     + "travel_dungeon_map_id INTEGER, "
                     + "travel_dungeon_location_kind TEXT, "
@@ -69,7 +69,7 @@ public final class PartyPersistenceSchema {
                     + "travel_dungeon_heading TEXT, "
                     + "travel_overworld_map_id INTEGER, "
                     + "travel_overworld_tile_id INTEGER, "
-                    + "attached_to_party_token INTEGER NOT NULL DEFAULT 1"
+                    + "attached_to_party_token INTEGER NOT NULL DEFAULT 0"
                     + ")";
 
     public static final String CREATE_PARTY_ROSTER_METADATA_TABLE_SQL =

@@ -1,9 +1,9 @@
 Status: Active
 Owner: Aletheia B
 Last Reviewed: 2026-07-26
-Charter Version: C-0.2.0
-Process Version: B-0.3.1
-Observes Product Process: A-0.3.3
+Charter Version: C-0.3.0
+Process Version: B-0.3.3
+Observes Product Process: A-0.4.0
 Evaluation Version: E-0.3.1
 Source of Truth: Current temporary proposal protocol for GM-Core process improvement.
 
@@ -12,6 +12,48 @@ Source of Truth: Current temporary proposal protocol for GM-Core process improve
 B's authority comes only from the [Program Charter](program-charter.md). B may
 observe and propose a process delta. B cannot evaluate or approve its own
 delta.
+
+## Binding Owner Maturity Rule
+
+This rule is owner input, not a B hypothesis or an adopted B process delta.
+Every implementation claim is classified as `Rejected`, `Proof of Concept`,
+`Preliminary`, or `Final`. `Rejected` work is not a planning dependency;
+`Proof of Concept` demonstrates only its bounded experiment; `Preliminary` is
+an integrated but still revisable candidate; and `Final` is the rare highest
+implementation-quality seal, never product truth. It requires the best
+attainable form for current requirements, practical adaptability to plausible
+future changes, exhaustion of credible superior alternatives, and an exhausted
+dependency horizon. Tests, CI, installation, code presence, or prior investment
+do not promote a claim by themselves. A wave may
+rely provisionally on non-final work only while naming the practical condition
+that reopens it. Practical counterevidence may reopen even `Final`; the label is
+never authority to build a bridge around a falsified premise.
+
+## Maturity-Rule Observation
+
+Research verdict: `NO DELTA; owner rule already active in A-0.4.0`.
+
+The maturity classification, reopen boundary, and prohibition on bridges around
+non-final work entered A directly through binding owner instruction. Repeating
+those same checks as a B candidate would create no distinct process variable
+and no comparable baseline/candidate trial. B therefore proposes no maturity-
+classification delta now.
+
+B observes future waves for a demonstrated misclassification, delayed reopen,
+or premature `Final` decision. In particular, it records evidence when a green
+or installed Proof of Concept is promoted without implementation-quality proof,
+a Preliminary boundary is preserved through a bridge after its reopen condition
+is met, or Final is assigned without exhausting credible superior forms,
+plausible future-change scenarios, and the remaining dependency horizon. It
+also records false reopening of a fully audited Final boundary when no material
+alternative or counterevidence exists.
+
+Only a frozen occurrence of one of those failures can justify research into a
+single additional decision aid. A later B proposal must add something not
+already required by A-0.4.0, state measurable false-promotion and false-reopen
+controls, and undergo independent baseline/candidate evaluation. Until then B
+researches classification outcomes without changing A, repinning a slice, or
+creating a second maturity gate.
 
 ## Observe And Propose
 
@@ -252,6 +294,76 @@ Method evidence is preserved in the global mirror at
 `references/quality-platforms/oracle-javafx-css-reference.md`,
 `references/quality-platforms/oracle-javafx-25-accessibility-conformance.md`,
 and `references/quality-platforms/testfx-readme.md`.
+
+## Prospective Proof-Lane Discrimination Canary
+
+Research verdict: `FUTURE CANARY JUSTIFIED; proposed only, not adopted; no A change now`.
+
+M1 exposed two proof-category errors: installed payload identity nearly became
+evidence of installed interaction and usability, while personal acceptance
+became an intermediate gate. The merged local evidence now states the narrower
+truth. `CampaignRuntimeProductionJourneyTest` starts the production-composed
+`SaltMarcherApp`, drives a shown JavaFX `Stage`, and observes visible product
+state with disposable paths; it does not start the installed desktop launcher.
+The packaging tasks build, copy, and register the app image; that establishes
+installation and payload identity, not an interaction. Product Process
+`A-0.3.3` separately defers personal judgment to the integrated GM-Core exit.
+
+The new M2a slice names production-UI replay, installation proof, and deferred
+final interaction acceptance, but it has only frozen its entry decision. It has
+not yet produced one comparable packet containing all non-human proof classes.
+Changing A again now would therefore optimize wording rather than demonstrate a
+behavioral improvement. B waits until M2a retains literal evidence for the
+first three lanes below, then runs this canary asynchronously without delaying
+or changing A:
+
+1. **Package identity:** the expected candidate payload is the payload copied
+   into the declared install root; no launch or interaction claim follows.
+2. **Production-composition UI automation:** the production composition is
+   driven through a shown UI and its product state is observed; no installed
+   launcher claim follows.
+3. **Packaged-app agent probe:** an agent starts the installed launcher and
+   performs the named interaction against disposable data; no human usability
+   or spoken-output claim follows.
+4. **Final human judgment:** Aaron judges the integrated installed program's
+   usability and assistive-technology output; an agent result cannot satisfy
+   this lane, and its deferral does not block an intermediate slice.
+
+The one changed process variable is a four-lane claim classifier attached to
+the existing compact slice/PR evidence, not a new ledger or product command.
+Freeze the M2a product commit, artifact, exact commands, literal outputs,
+environment, acceptance outcome, and required intermediate verdict. Give two
+fresh evaluators the unmodified A-0.3.3 wording and two different fresh
+evaluators the same packet plus the classifier; no evaluator sees another
+verdict. Every evaluator reruns the available first-three-lane routes in the
+same isolated candidate state and reports at most 250 words within 15 minutes.
+
+Use four otherwise identical counterexample packets: mismatch only the installed
+payload digest; replace only the shown production-composition route with a
+direct handler call; replace only packaged-launcher interaction with executable
+existence and matching hashes; and replace only Aaron's final observation with
+an agent-authored usability claim. The expected failed or unproved lane is,
+respectively, 1, 2, 3, and 4. The valid packet must leave lanes 1 through 3
+proved, lane 4 deferred, and the technically qualified M2a slice able to
+continue.
+
+Measure cross-lane promotions, missed counterexamples, false intermediate
+blocks caused by deferred lane 4, evaluator disagreement, elapsed time, and
+response length. A candidate is eligible for independent evaluation only when
+both candidate evaluators make zero cross-lane promotions, miss zero controls,
+and preserve the correct intermediate verdict, while the baseline exhibits at
+least one of the two demonstrated error classes and candidate median time adds
+no more than three minutes. If both arms are already exact, record `NO DELTA`.
+
+Reject the classifier if it promotes any hash, automation, or agent observation
+beyond its lane, accepts synthetic human judgment, misses a counterexample,
+reintroduces an intermediate personal gate, or exceeds the resource bound.
+Different product commits, commands, outputs, environments, acceptance
+outcomes, evaluator contamination, or within-arm disagreement make the trial
+`INCONCLUSIVE`. Rollback deletes the disposable packets and classifier, then
+confirms the M2a commit and working tree are unchanged. Only a later independent
+verdict under Process Evaluation may create a higher Product Process version;
+this research does not change A-0.3.3, M2a gates, or product acceptance.
 
 ## One-Question Architecture-Probe Research
 

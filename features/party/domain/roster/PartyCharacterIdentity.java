@@ -1,8 +1,10 @@
 package features.party.domain.roster;
 
+import org.jspecify.annotations.Nullable;
+
 public record PartyCharacterIdentity(
         String name,
-        String playerName
+        @Nullable String playerName
 ) {
     public PartyCharacterIdentity {
         name = normalizeName(name);
@@ -10,14 +12,18 @@ public record PartyCharacterIdentity(
     }
 
     private static String normalizeName(String value) {
-        String normalized = normalizeOptional(value);
+        String normalized = value == null ? "" : value.trim();
         if (normalized.isEmpty()) {
             throw new IllegalArgumentException("Character name must not be blank.");
         }
         return normalized;
     }
 
-    private static String normalizeOptional(String value) {
-        return value == null ? "" : value.trim();
+    private static @Nullable String normalizeOptional(@Nullable String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 }

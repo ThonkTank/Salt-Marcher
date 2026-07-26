@@ -74,15 +74,15 @@ final class PartyRosterCharacterSqliteStore {
                                 resultSet.getString("name"),
                                 resultSet.getString("player_name")),
                         new PartyCharacterRecord.Progress(
-                                resultSet.getInt("level"),
+                                nullableInteger(resultSet, "level"),
                                 resultSet.getInt("current_xp"),
                                 resultSet.getInt("xp_since_long_rest"),
                                 resultSet.getInt("xp_since_short_rest"),
                                 resultSet.getInt("short_rests_taken_since_long_rest")),
                         new PartyCharacterRecord.Combat(
-                                resultSet.getInt("passive_perception"),
-                                resultSet.getInt("ac")),
-                        resultSet.getInt("in_party") == 1 ? "ACTIVE" : "RESERVE",
+                                nullableInteger(resultSet, "passive_perception"),
+                                nullableInteger(resultSet, "ac")),
+                        strictBoolean(resultSet, "in_party") ? "ACTIVE" : "RESERVE",
                         new PartyCharacterRecord.Travel(
                                 resultSet.getString("travel_location_kind"),
                                 nullableLong(resultSet, "travel_dungeon_map_id"),
@@ -94,7 +94,7 @@ final class PartyRosterCharacterSqliteStore {
                                 resultSet.getString("travel_dungeon_heading"),
                                 nullableLong(resultSet, "travel_overworld_map_id"),
                                 nullableLong(resultSet, "travel_overworld_tile_id"),
-                                resultSet.getInt("attached_to_party_token") == 1)));
+                                strictBoolean(resultSet, "attached_to_party_token"))));
             }
         }
         return characters;
@@ -137,6 +137,14 @@ final class PartyRosterCharacterSqliteStore {
     private static @Nullable Integer nullableInteger(ResultSet resultSet, String columnName) throws SQLException {
         int value = resultSet.getInt(columnName);
         return resultSet.wasNull() ? null : value;
+    }
+
+    private static boolean strictBoolean(ResultSet resultSet, String columnName) throws SQLException {
+        int value = resultSet.getInt(columnName);
+        if (resultSet.wasNull() || value < 0 || value > 1) {
+            throw new SQLException("Invalid Party boolean column: " + columnName);
+        }
+        return value == 1;
     }
 
     void upsertCharacters(Connection connection, List<PartyCharacterRecord> characters) throws SQLException {

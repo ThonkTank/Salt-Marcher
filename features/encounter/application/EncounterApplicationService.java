@@ -735,22 +735,18 @@ public final class EncounterApplicationService implements features.encounter.api
         }
 
         @Override
-        public List<features.encounter.domain.session.PartyMemberData> loadActiveParty() {
-            List<features.encounter.domain.session.PartyMemberData> active = delegate.loadActiveParty();
+        public features.encounter.domain.session.EncounterPartyStateData loadPartyState() {
+            features.encounter.domain.session.EncounterPartyStateData captured = delegate.loadPartyState();
             if ("global".equals(specification.contextId().value())) {
-                return active;
+                return captured;
             }
-            return active.stream()
+            List<features.encounter.domain.session.PartyMemberData> members = captured.members().stream()
                     .filter(member -> specification.partyMemberIds().contains(member.numericId()))
                     .toList();
-        }
-
-        @Override
-        public java.util.Optional<features.encounter.domain.session.BudgetData> loadBudget() {
-            if ("global".equals(specification.contextId().value())) {
-                return delegate.loadBudget();
-            }
-            return delegate.loadBudgetForParty(loadActiveParty());
+            return new features.encounter.domain.session.EncounterPartyStateData(
+                    captured.sourceRevision(),
+                    members,
+                    delegate.loadBudgetForParty(members));
         }
 
         @Override
@@ -759,7 +755,7 @@ public final class EncounterApplicationService implements features.encounter.api
             if ("global".equals(specification.contextId().value())) {
                 return delegate.generate(request);
             }
-            return delegate.generateForParty(withSynchronizedLocation(request), loadActiveParty());
+            return delegate.generateForParty(withSynchronizedLocation(request), loadPartyState().members());
         }
 
         private EncounterGenerationRequest withSynchronizedLocation(EncounterGenerationRequest request) {

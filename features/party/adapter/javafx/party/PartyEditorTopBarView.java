@@ -49,7 +49,7 @@ public final class PartyEditorTopBarView extends VBox {
         revealDeleteButton.setOnAction(event -> publishDeleteConfirmationRequested());
         cancelButton.setOnAction(event -> publishCancelRequested());
         submitButton.setOnAction(event -> publishSubmitRequested());
-        submitButton.setAccessibleHelp("Charaktername erforderlich.");
+        submitButton.setAccessibleHelp("Nur der Charaktername ist erforderlich. Alle weiteren Angaben sind optional.");
         draftBinder.installDraftListeners();
 
         ((StyledVBox) deleteSection).addNodes(
@@ -106,6 +106,13 @@ public final class PartyEditorTopBarView extends VBox {
         return draftBinder.rawDraft();
     }
 
+    void focusNameField() {
+        if (isVisible() && !nameField.isDisabled()) {
+            nameField.requestFocus();
+            nameField.selectAll();
+        }
+    }
+
     private void showEditor(PartyTopBarViewModel.EditorPanelModel content) {
         boolean visible = content != null && content.visible();
         boolean editingExisting = content != null && content.editingExisting();
@@ -117,9 +124,10 @@ public final class PartyEditorTopBarView extends VBox {
     }
 
     private void updateEditorFrame(boolean visible, boolean editingExisting) {
+        setDisable(!visible);
         setVisible(visible);
         setManaged(visible);
-        titleLabel.setText(editingExisting ? "Charakter bearbeiten" : "Neuer Charakter");
+        titleLabel.setText(editingExisting ? "Roster-Charakter bearbeiten" : "Neuer Roster-Charakter");
         submitButton.setText(editingExisting ? "Speichern" : "Erstellen");
         revealDeleteButton.setVisible(visible && editingExisting);
         revealDeleteButton.setManaged(visible && editingExisting);
@@ -180,9 +188,9 @@ public final class PartyEditorTopBarView extends VBox {
             try {
                 nameField.setText(content == null ? "" : content.memberName());
                 playerNameField.setText(content == null ? "" : content.playerName());
-                levelField.setText(content == null ? "1" : content.rawLevel());
-                passivePerceptionField.setText(content == null ? "10" : content.rawPassivePerception());
-                armorClassField.setText(content == null ? "10" : content.rawArmorClass());
+                levelField.setText(content == null ? "" : content.rawLevel());
+                passivePerceptionField.setText(content == null ? "" : content.rawPassivePerception());
+                armorClassField.setText(content == null ? "" : content.rawArmorClass());
             } finally {
                 addDraftListeners();
             }
@@ -252,10 +260,10 @@ public final class PartyEditorTopBarView extends VBox {
         ) {
             GridPane form = new StyledGridPane("party-editor-form");
             addRow(form, 0, "Charakter *", nameField);
-            addRow(form, 1, "Spieler", playerNameField);
-            addRow(form, 2, "Level", levelField);
-            addRow(form, 3, "Passive Perception", passivePerceptionField);
-            addRow(form, 4, "AC", armorClassField);
+            addRow(form, 1, "Spieler (optional)", playerNameField);
+            addRow(form, 2, "Level (optional)", levelField);
+            addRow(form, 3, "Passive Perception (optional)", passivePerceptionField);
+            addRow(form, 4, "AC (optional)", armorClassField);
             return form;
         }
 

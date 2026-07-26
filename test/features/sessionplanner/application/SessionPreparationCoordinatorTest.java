@@ -31,6 +31,7 @@ import features.party.PartyServiceAssembly;
 import features.party.api.CharacterDraft;
 import features.party.api.CreateCharacterCommand;
 import features.party.api.MembershipState;
+import features.party.api.SetPartyMembershipCommand;
 import features.party.api.UpdateCharacterCommand;
 import features.party.domain.roster.PartyRoster;
 import features.party.domain.roster.repository.PartyRosterRepository;
@@ -50,6 +51,7 @@ import features.sessionplanner.api.AddSessionSceneCommand;
 import features.sessionplanner.api.PrepareSessionCommand;
 import features.sessionplanner.api.SessionPlannerAuthoredTarget;
 import features.sessionplanner.api.SessionPlannerCatalogCommand;
+import features.sessionplanner.api.SessionPreparationSnapshot;
 import features.sessionplanner.api.SessionPreparationStatus;
 import features.sessionplanner.api.SetSessionEncounterDaysCommand;
 import features.sessionplanner.domain.session.EncounterDays;
@@ -116,6 +118,25 @@ final class SessionPreparationCoordinatorTest {
             assertEquals(SessionPreparationStatus.INVALID, fixture.planner.workspaceModel().current().preparation().status());
             assertEquals(1L, unchanged.revision().value());
             assertTrue(unchanged.encounters().isEmpty());
+            assertEquals(0, fixture.generation.commitCalls);
+            assertEquals(0, fixture.encounters.commitCalls);
+            assertEquals(0, fixture.preparedSessions.commitCalls);
+        }
+    }
+
+    @Test
+    void missingPartyLevelRemainsTypedAndExplainedWithoutStartingForeignCommit() {
+        try (Fixture fixture = fixture("missing-party-level.db")) {
+            fixture.encounters.prepareOverride = CompletableFuture.completedFuture(
+                    PreparedGeneratedEncounterBatchResult.failure(
+                            features.encounter.api.GeneratedEncounterBatchStatus.MISSING_REQUIRED_LEVEL,
+                            "Every active party member needs a level before encounter generation."));
+
+            fixture.prepare();
+
+            SessionPreparationSnapshot preparation = fixture.planner.workspaceModel().current().preparation();
+            assertEquals(SessionPreparationStatus.INVALID, preparation.status());
+            assertEquals("Every active party member needs a level before encounter generation.", preparation.message());
             assertEquals(0, fixture.generation.commitCalls);
             assertEquals(0, fixture.encounters.commitCalls);
             assertEquals(0, fixture.preparedSessions.commitCalls);
@@ -478,7 +499,8 @@ final class SessionPreparationCoordinatorTest {
         RecordingEncounterApi encounters = new RecordingEncounterApi();
         PartyServiceAssembly.Component party = PartyServiceAssembly.create(new InMemoryPartyRepository());
         party.application().createCharacter(new CreateCharacterCommand(
-                new CharacterDraft("Aria", "Mira", 4, 14, 16), MembershipState.ACTIVE));
+                new CharacterDraft("Aria", "Mira", 4, 14, 16)));
+        party.application().setMembership(new SetPartyMembershipCommand(1L, MembershipState.ACTIVE));
         SessionPlannerServiceAssembly planner = new SessionPlannerServiceAssembly(
                 repository,
                 repository,

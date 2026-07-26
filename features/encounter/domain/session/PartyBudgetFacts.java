@@ -33,6 +33,10 @@ public record PartyBudgetFacts(
         return new PartyBudgetFacts(Status.NO_ACTIVE_PARTY, List.of(), 0, 0, 0);
     }
 
+    public static PartyBudgetFacts missingRequiredLevel() {
+        return new PartyBudgetFacts(Status.MISSING_REQUIRED_LEVEL, List.of(), 0, 0, 0);
+    }
+
     public static PartyBudgetFacts storageError() {
         return new PartyBudgetFacts(Status.STORAGE_ERROR, List.of(), 0, 0, 0);
     }
@@ -40,6 +44,7 @@ public record PartyBudgetFacts(
     public enum Status {
         SUCCESS,
         NO_ACTIVE_PARTY,
+        MISSING_REQUIRED_LEVEL,
         STORAGE_ERROR;
 
         public static Status successStatus() {
@@ -64,6 +69,10 @@ public record PartyBudgetFacts(
 
         public boolean isStorageError() {
             return this == STORAGE_ERROR;
+        }
+
+        public boolean isMissingRequiredLevel() {
+            return this == MISSING_REQUIRED_LEVEL;
         }
     }
 }

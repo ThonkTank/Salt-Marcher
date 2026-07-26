@@ -13,6 +13,7 @@ import features.party.PartyServiceAssembly;
 import features.party.api.CharacterDraft;
 import features.party.api.CreateCharacterCommand;
 import features.party.api.MembershipState;
+import features.party.api.SetPartyMembershipCommand;
 import features.sessiongeneration.SessionGenerationServiceAssembly;
 import features.sessiongeneration.api.GenerationPreparationIdentity;
 import features.sessiongeneration.api.GenerationRequest;
@@ -504,7 +505,9 @@ final class SessionPreparationProductionRouteTest {
         });
         try {
             party.application().createCharacter(new CreateCharacterCommand(
-                    new CharacterDraft(name, "Qualification", level, 12, 14), MembershipState.ACTIVE));
+                    new CharacterDraft(name, "Qualification", level, 12, 14)));
+            party.application().setMembership(
+                    new SetPartyMembershipCommand(expectedSize, MembershipState.ACTIVE));
             published.get(DEADLOCK_TIMEOUT.toSeconds(), TimeUnit.SECONDS);
         } finally {
             unsubscribe.run();
@@ -823,8 +826,7 @@ final class SessionPreparationProductionRouteTest {
                     stores.get(encounterDefinition.owner()),
                     creatures.application(), creatures.detail(), creatures.encounterCandidates(),
                     tables.application(), tables.candidates(), null,
-                    party.application(), party.activeParty(), party.activeComposition(),
-                    party.adventuringDaySummary(), party.mutation(),
+                    party.application(), party.mutation(),
                     authored, admittedEncounterCpu, admittedEncounterIo, uiDispatcher, diagnostics);
             SqliteSessionPlanRepository repository = new SqliteSessionPlanRepository(
                     stores.get(sessionDefinition.owner()));

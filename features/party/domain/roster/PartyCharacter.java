@@ -16,22 +16,6 @@ public record PartyCharacter(
             PartyCharacterIdentity identity,
             PartyCharacterProgress progress,
             PartyCharacterCombatProfile combat,
-            PartyMembership membership
-    ) {
-        this(
-                id,
-                identity,
-                progress,
-                combat,
-                membership,
-                PartyCharacterTravelState.attachedWithoutLocation());
-    }
-
-    public PartyCharacter(
-            long id,
-            PartyCharacterIdentity identity,
-            PartyCharacterProgress progress,
-            PartyCharacterCombatProfile combat,
             @Nullable PartyMembership membership,
             @Nullable PartyCharacterTravelState travel
     ) {
@@ -40,16 +24,17 @@ public record PartyCharacter(
         this.progress = Objects.requireNonNull(progress, "progress");
         this.combat = Objects.requireNonNull(combat, "combat");
         this.membership = Objects.requireNonNullElse(membership, PartyMembership.RESERVE);
-        this.travel = travel == null ? PartyCharacterTravelState.attachedWithoutLocation() : travel;
+        this.travel = travel == null ? PartyCharacterTravelState.detached() : travel;
     }
 
-    public static PartyCharacter fromDraft(long id, PartyCharacterDraft draft, PartyMembership membership) {
+    public static PartyCharacter fromDraft(long id, PartyCharacterDraft draft) {
         return new PartyCharacter(
                 id,
                 new PartyCharacterIdentity(draft.name(), draft.playerName()),
                 PartyCharacterProgress.startingAtLevel(draft.level()),
                 new PartyCharacterCombatProfile(draft.passivePerception(), draft.armorClass()),
-                membership);
+                PartyMembership.RESERVE,
+                PartyCharacterTravelState.detached());
     }
 
     public PartyCharacter withDraft(PartyCharacterDraft draft) {

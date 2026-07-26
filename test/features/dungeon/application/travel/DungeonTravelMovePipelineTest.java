@@ -30,6 +30,7 @@ import features.dungeon.domain.core.structure.transition.Transition;
 import features.dungeon.domain.core.structure.transition.TransitionAnchor;
 import features.dungeon.domain.core.structure.transition.TransitionDestination;
 import features.party.api.ActivePartyCompositionModel;
+import features.party.api.ActivePartyFactsModel;
 import features.party.api.ActivePartyModel;
 import features.party.api.ActivePartyResult;
 import features.party.api.AdjustPartyXpCommand;
@@ -387,6 +388,7 @@ final class DungeonTravelMovePipelineTest {
         }
 
         @Override public ActivePartyModel activeParty() { return activeParty; }
+        @Override public ActivePartyFactsModel activePartyFacts() { throw new UnsupportedOperationException(); }
         @Override public PartyTravelPositionsModel travelPositions() { return travelPositions; }
         @Override public CompletionStage<PartyPlanningFactsResponse> loadPlanningFacts(PartyPlanningFactsQuery query) {
             throw new UnsupportedOperationException();

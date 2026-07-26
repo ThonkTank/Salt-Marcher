@@ -1,7 +1,9 @@
 package features.party.domain.roster;
 
+import org.jspecify.annotations.Nullable;
+
 public record PartyCharacterProgress(
-        int level,
+        @Nullable Integer level,
         int currentXp,
         int xpSinceLongRest,
         int xpSinceShortRest,
@@ -33,29 +35,30 @@ public record PartyCharacterProgress(
     private static final int MAX_LEVEL = 20;
 
     public PartyCharacterProgress {
-        level = clampLevel(level);
+        if (level != null && (level < 1 || level > MAX_LEVEL)) {
+            throw new IllegalArgumentException("level must be between 1 and 20 when present.");
+        }
         currentXp = Math.max(0, currentXp);
         xpSinceLongRest = Math.max(0, xpSinceLongRest);
         xpSinceShortRest = Math.max(0, xpSinceShortRest);
         shortRestsTakenSinceLongRest = Math.max(0, Math.min(2, shortRestsTakenSinceLongRest));
     }
 
-    public static PartyCharacterProgress startingAtLevel(int level) {
-        int safeLevel = clampLevel(level);
-        return new PartyCharacterProgress(safeLevel, minimumXpForLevel(safeLevel), 0, 0, 0);
+    public static PartyCharacterProgress startingAtLevel(@Nullable Integer level) {
+        return new PartyCharacterProgress(level, level == null ? 0 : minimumXpForLevel(level), 0, 0, 0);
     }
 
-    public PartyCharacterProgress withLevel(int nextLevel) {
+    public PartyCharacterProgress withLevel(@Nullable Integer nextLevel) {
         return new PartyCharacterProgress(
                 nextLevel,
-                normalizeCurrentXpForLevel(nextLevel, currentXp),
+                nextLevel == null ? currentXp : currentXpAtLeastLevelMinimum(nextLevel, currentXp),
                 xpSinceLongRest,
                 xpSinceShortRest,
                 shortRestsTakenSinceLongRest);
     }
 
     public PartyCharacterProgress adjustXp(int xpDelta) {
-        int minimumXp = minimumXpForLevel(level);
+        int minimumXp = level == null ? 0 : minimumXpForLevel(level);
         int lowerBound = xpDelta < 0 ? Math.min(currentXp, minimumXp) : 0;
         int nextCurrentXp = Math.max(lowerBound, currentXp + xpDelta);
         int appliedDelta = nextCurrentXp - currentXp;
@@ -83,14 +86,10 @@ public record PartyCharacterProgress(
         return Math.max(1, Math.min(MAX_LEVEL, value));
     }
 
-    public static int normalizeCurrentXpForLevel(int level, int currentXp) {
+    public static int currentXpAtLeastLevelMinimum(int level, int currentXp) {
         int safeLevel = clampLevel(level);
         int minimumXp = minimumXpForLevel(safeLevel);
-        int normalizedXp = Math.max(minimumXp, currentXp);
-        if (safeLevel >= MAX_LEVEL) {
-            return normalizedXp;
-        }
-        return Math.min(normalizedXp, nextLevelXp(safeLevel) - 1);
+        return Math.max(minimumXp, currentXp);
     }
 
     public static int minimumXpForLevel(int level) {

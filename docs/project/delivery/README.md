@@ -21,11 +21,5 @@ temporary process owners are:
 - [Process Improvement](aletheia/process-improvement.md)
 - [Process Evaluation](aletheia/process-evaluation.md)
 
-## Active Migrations
-
-- [Campaign Roster Slice](campaign-roster/README.md) -- one Campaign-owned
-  Roster with name-only PCs, optional facts, stable identity, and no implicit
-  current-Party or Scene membership.
-
 Each delivery owner is temporary and is removed after its own finish criteria
 are met. Durable decisions remain in the linked product owner documents.

@@ -40,7 +40,9 @@ final class CombatInitiativeTracker {
             PartyMemberData member = activeParty.get(index);
             pendingRows.add(new InitiativeEntryData(
                     member.id(),
-                    member.name() + " (Lv. " + member.level() + ")",
+                    member.name() + (member.level() == null
+                            ? " (Stufe fehlt)"
+                            : " (Lv. " + member.level() + ")"),
                     CombatantKind.playerCharacterKind(),
                     CombatRosterBuilder.defaultPlayerInitiative(index)));
         }
