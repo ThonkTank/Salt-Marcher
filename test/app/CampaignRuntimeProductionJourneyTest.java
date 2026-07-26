@@ -806,9 +806,7 @@ public final class CampaignRuntimeProductionJourneyTest {
         CampaignRuntime lateBetaRuntime = coordinator.activeRuntimeForTesting();
 
         openCampaignDeskWithKeyboard(host.window(), host.production);
-        awaitFxCondition(() -> campaignRow(host.window(), "Alpha") != null
-                && !campaignRow(host.window(), "Alpha").isDisabled());
-        runOnFx(() -> campaignRow(host.window(), "Alpha").fire());
+        fireCampaignRowWhenReady(host.window(), "Alpha");
         awaitCondition(() -> coordinator.snapshot().phase()
                 == CampaignActivationCoordinator.Phase.ACTIVE
                 && coordinator.snapshot().durableActivation().orElseThrow().campaign()
@@ -818,9 +816,7 @@ public final class CampaignRuntimeProductionJourneyTest {
         bootstrap.installCampaignActivationPhaseTimeoutForTesting(Duration.ofSeconds(2));
         host.holdNextReadinessTerminal();
         openCampaignDeskWithKeyboard(host.window(), host.production);
-        awaitFxCondition(() -> campaignRow(host.window(), "Beta") != null
-                && !campaignRow(host.window(), "Beta").isDisabled());
-        runOnFx(() -> campaignRow(host.window(), "Beta").fire());
+        fireCampaignRowWhenReady(host.window(), "Beta");
         host.awaitHeldReadinessReady();
         int recoveryBefore = host.recoveryPublications();
         int switchesAfterFaultPublication = host.campaignPublications();
@@ -1298,13 +1294,11 @@ public final class CampaignRuntimeProductionJourneyTest {
         betaPath = coordinator.snapshot().campaignPath().orElseThrow();
 
         openCampaignDeskWithKeyboard(host.window(), host.production);
-        awaitFxCondition(() -> campaignRow(host.window(), "Positive Alpha") != null);
-        runOnFx(() -> campaignRow(host.window(), "Positive Alpha").fire());
+        fireCampaignRowWhenReady(host.window(), "Positive Alpha");
         awaitCondition(() -> coordinator.snapshot().durableActivation().orElseThrow().campaign()
                 .map(campaign -> alphaId.equals(campaign.id())).orElse(false));
         openCampaignDeskWithKeyboard(host.window(), host.production);
-        awaitFxCondition(() -> campaignRow(host.window(), "Positive Beta") != null);
-        runOnFx(() -> campaignRow(host.window(), "Positive Beta").fire());
+        fireCampaignRowWhenReady(host.window(), "Positive Beta");
         awaitCondition(() -> coordinator.snapshot().phase()
                 == CampaignActivationCoordinator.Phase.ACTIVE
                 && coordinator.snapshot().durableActivation().orElseThrow().campaign()
@@ -1402,6 +1396,26 @@ public final class CampaignRuntimeProductionJourneyTest {
         awaitFxConditionUntil(() -> presentedTextArea(stage, "Szenennotizen") != null
                 && notes.equals(presentedTextArea(stage, "Szenennotizen").getText())
                 && presentedText(stage, "Szene aktualisiert."), deadline);
+    }
+
+    private static void fireCampaignRowWhenReady(Stage stage, String campaignName)
+            throws Exception {
+        long deadline = System.nanoTime() + TIMEOUT.toNanos();
+        AtomicBoolean fired = new AtomicBoolean();
+        while (!fired.get() && System.nanoTime() < deadline) {
+            runOnFx(() -> {
+                javafx.scene.control.Button row = campaignRow(stage, campaignName);
+                if (row != null && !row.isDisabled()) {
+                    row.fire();
+                    fired.set(true);
+                }
+            });
+            if (!fired.get()) {
+                java.util.concurrent.locks.LockSupport.parkNanos(
+                        TimeUnit.MILLISECONDS.toNanos(5));
+            }
+        }
+        assertTrue(fired.get(), () -> "Campaign row did not become actionable: " + campaignName);
     }
 
     private static void closeBootstrapAndWindow(
