@@ -109,50 +109,13 @@ func export_campaign(campaign_id: String, destination_path: String) -> Dictionar
 
 
 func import_campaign(bundle_path: String, expected_registry_generation: int) -> Dictionary:
-	var bundle := FileAccess.open(_files.absolute(bundle_path), FileAccess.READ)
-	if bundle == null:
-		return _failure("Campaign-Bundle ist nicht lesbar.")
-	var manifest_result := _read_and_validate_manifest(bundle)
-	if not manifest_result.get("ok", false):
-		bundle.close()
-		return manifest_result
-	var payload: Dictionary = manifest_result["payload"]
-	var import_id := _files.new_identity()
-	var staging_root := _data_root + "/staging/import-" + import_id
-	var staged_campaign := staging_root + "/campaign"
-	var staging_error := _files.ensure_directory(staged_campaign)
-	if staging_error != OK:
-		bundle.close()
-		return _failure("Import-Staging konnte nicht erstellt werden.")
-	var space := DirAccess.open(_files.absolute(staging_root))
-	if space == null or space.get_space_left() < int(manifest_result["total_bytes"]):
-		bundle.close()
-		_remove_tree(_files.absolute(staging_root))
-		return _failure("Für den vollständigen Campaign-Import ist nicht genug freier Speicher vorhanden.")
-
-	var extraction := _extract_entries(bundle, payload["files"], staged_campaign)
-	bundle.close()
-	if not extraction.get("ok", false):
-		_remove_tree(_files.absolute(staging_root))
-		return extraction
-
+	var staged := _stage_and_validate_bundle(bundle_path, "import")
+	if not staged.get("ok", false):
+		return staged
+	var payload: Dictionary = staged["payload"]
+	var staging_root := str(staged["staging_root"])
+	var staged_campaign := str(staged["staged_campaign"])
 	var source_id := str(payload["source_campaign_id"])
-	var staged_store := FileCampaignStore.new(_data_root, source_id, Callable(), staged_campaign)
-	var source_state := staged_store.load_state()
-	if not source_state.get("ok", false):
-		_remove_tree(_files.absolute(staging_root))
-		return _failure("Importierte Campaign besteht die semantische Campaign-Validierung nicht.")
-	if int(source_state["generation"]) != str(payload["campaign_generation"]).to_int():
-		_remove_tree(_files.absolute(staging_root))
-		return _failure("Exportmanifest und importierte Campaign-Generation widersprechen sich.")
-	var source_identity: Dictionary = source_state["identity"]
-	if (
-		source_identity.get("campaign_id", "") != source_id
-		or source_identity.get("name", "") != payload["name"]
-		or source_identity.get("created_at_utc", "") != payload["created_at_utc"]
-	):
-		_remove_tree(_files.absolute(staging_root))
-		return _failure("Exportmanifest und importierte Campaign-Identität widersprechen sich.")
 
 	var new_campaign_id := _files.new_identity()
 	var identity_payload := {
@@ -214,6 +177,89 @@ func import_campaign(bundle_path: String, expected_registry_generation: int) -> 
 	register["campaign_id"] = new_campaign_id
 	register["source_campaign_id"] = source_id
 	return register
+
+
+func validate_bundle(bundle_path: String) -> Dictionary:
+	var staged := _stage_and_validate_bundle(bundle_path, "validation")
+	if not staged.get("ok", false):
+		return staged
+	var payload: Dictionary = staged["payload"]
+	_remove_tree(_files.absolute(staged["staging_root"]))
+	return {
+		"ok": true,
+		"status": "validated",
+		"source_campaign_id": payload["source_campaign_id"],
+		"name": payload["name"],
+		"created_at_utc": payload["created_at_utc"],
+		"campaign_generation": str(payload["campaign_generation"]).to_int(),
+		"file_count": payload["files"].size(),
+	}
+
+
+func stage_validated_bundle(bundle_path: String, purpose: String) -> Dictionary:
+	if not _portable_segment(purpose):
+		return _failure("Ungültiger Staging-Zweck.")
+	return _stage_and_validate_bundle(bundle_path, purpose)
+
+
+func discard_staging(staging_root: String) -> void:
+	var owned_prefix := _files.absolute(_data_root + "/staging/")
+	var absolute_staging := _files.absolute(staging_root)
+	if absolute_staging.begins_with(owned_prefix):
+		_remove_tree(absolute_staging)
+
+
+func _stage_and_validate_bundle(bundle_path: String, purpose: String) -> Dictionary:
+	var bundle := FileAccess.open(_files.absolute(bundle_path), FileAccess.READ)
+	if bundle == null:
+		return _failure("Campaign-Bundle ist nicht lesbar.")
+	var manifest_result := _read_and_validate_manifest(bundle)
+	if not manifest_result.get("ok", false):
+		bundle.close()
+		return manifest_result
+	var payload: Dictionary = manifest_result["payload"]
+	var operation_id := _files.new_identity()
+	var staging_root := _data_root + "/staging/%s-%s" % [purpose, operation_id]
+	var staged_campaign := staging_root + "/campaign"
+	var staging_error := _files.ensure_directory(staged_campaign)
+	if staging_error != OK:
+		bundle.close()
+		return _failure("Campaign-Staging konnte nicht erstellt werden.")
+	var space := DirAccess.open(_files.absolute(staging_root))
+	if space == null or space.get_space_left() < int(manifest_result["total_bytes"]):
+		bundle.close()
+		_remove_tree(_files.absolute(staging_root))
+		return _failure("Für die vollständige Campaign-Prüfung ist nicht genug freier Speicher vorhanden.")
+
+	var extraction := _extract_entries(bundle, payload["files"], staged_campaign)
+	bundle.close()
+	if not extraction.get("ok", false):
+		_remove_tree(_files.absolute(staging_root))
+		return extraction
+	var source_id := str(payload["source_campaign_id"])
+	var staged_store := FileCampaignStore.new(_data_root, source_id, Callable(), staged_campaign)
+	var source_state := staged_store.load_state()
+	if not source_state.get("ok", false):
+		_remove_tree(_files.absolute(staging_root))
+		return _failure("Campaign-Bundle besteht die semantische Campaign-Validierung nicht.")
+	if int(source_state["generation"]) != str(payload["campaign_generation"]).to_int():
+		_remove_tree(_files.absolute(staging_root))
+		return _failure("Exportmanifest und Campaign-Generation widersprechen sich.")
+	var source_identity: Dictionary = source_state["identity"]
+	if (
+		source_identity.get("campaign_id", "") != source_id
+		or source_identity.get("name", "") != payload["name"]
+		or source_identity.get("created_at_utc", "") != payload["created_at_utc"]
+	):
+		_remove_tree(_files.absolute(staging_root))
+		return _failure("Exportmanifest und Campaign-Identität widersprechen sich.")
+	return {
+		"ok": true,
+		"payload": payload,
+		"state": source_state,
+		"staging_root": staging_root,
+		"staged_campaign": staged_campaign,
+	}
 
 
 func _read_and_validate_manifest(bundle: FileAccess) -> Dictionary:

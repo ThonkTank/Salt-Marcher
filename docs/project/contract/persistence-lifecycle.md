@@ -25,6 +25,9 @@ campaigns/<campaign id>/
   objects/<owner>/<content id>.json
   chunks/<owner>/<content id>.bin
   assets/<asset id>/<original file name>
+backups/campaigns/<campaign id>/<backup id>.saltmarcher
+backups/campaigns/<campaign id>/<backup id>.verified.json
+recovery/campaigns/<campaign id>/<restore identity>/original/...
 trash/campaigns/<campaign id>-<deletion identity>/...
 staging/<operation identity>/...
 diagnostics/...
@@ -143,16 +146,25 @@ The Godot runtime currently implements the immutable installation Campaign
 registry; name-only Campaign creation; owner-partitioned Campaign generations;
 atomic runtime-state commits; activation and mutation generation checks;
 restart readback; checksum validation; continuation above retained corrupt
-generations; recoverable Campaign trash and restoration; and a streaming,
-checksummed current-format Campaign bundle. Import validates declared paths,
-counts, sizes, byte lengths, checksums, identity, and semantic Campaign state in
-isolated staging, then creates a new independent Campaign identity.
+generations; recoverable Campaign trash and restoration; explicit confirmed
+permanent deletion with a removal report; and a streaming, checksummed
+current-format Campaign bundle. Import validates declared paths, counts, sizes,
+byte lengths, checksums, identity, and semantic Campaign state in isolated
+staging, then creates a new independent Campaign identity.
 
-Scheduled restore-tested backups, permanent-trash deletion, shared-definition
-conflict staging, cancellable/progress-reporting portability work, compaction,
-released-format conversion, cross-OS qualification, and representative scale
-proof remain open roadmap work. The old Java/SQLite implementation does not
-satisfy this target contract.
+A Campaign runtime coordinator now prepares a target before committing its
+active pointer, revokes the prior synchronous writer, admits exactly one new
+activation generation, and rejects late writes from the detached session. The
+backup engine creates immutable full-Campaign bundles, counts them only after
+an isolated restore validation, verifies durable receipt checksums when listing,
+requires revoked write authority for restore, publishes recovery above the
+replaced live generation, and retains the replaced Campaign root unchanged.
+
+Automatic backup scheduling and retention, asynchronous accepted-write drain,
+shared-definition conflict staging, cancellable/progress-reporting portability
+work, compaction, released-format conversion, cross-OS qualification, and
+representative scale proof remain open roadmap work. The old Java/SQLite
+implementation does not satisfy this target contract.
 
 ## References
 

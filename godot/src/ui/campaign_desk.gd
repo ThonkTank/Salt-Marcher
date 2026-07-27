@@ -13,6 +13,7 @@ const BRASS_MARK := Color("#d2a743")
 const EMBER_RUST := Color("#b75d3d")
 
 var registry: FileCampaignRegistry
+var runtime_coordinator
 var _state: Dictionary = {}
 var _name_input: LineEdit
 var _campaign_list: VBoxContainer
@@ -198,25 +199,33 @@ func _render_state() -> void:
 
 
 func _create_campaign() -> void:
-	var result := registry.create_campaign(_name_input.text)
+	var result: Dictionary
+	if runtime_coordinator != null:
+		result = runtime_coordinator.create_and_switch(_name_input.text, int(_state["generation"]))
+	else:
+		result = registry.create_campaign(_name_input.text, int(_state["generation"]))
 	if not result.get("ok", false):
 		_set_status(result.get("error", "Campaign konnte nicht erstellt werden."), true)
 		_name_input.grab_focus()
 		return
 	_name_input.clear()
-	_state = result["state"]
+	_state = result.get("registry_state", result.get("state", {}))
 	_render_state()
 	_set_status("Campaign erstellt und als aktuelle Route geöffnet.", false)
 
 
 func _activate_campaign(campaign_id: String) -> void:
-	var result := registry.activate_campaign(campaign_id, int(_state["generation"]))
+	var result: Dictionary
+	if runtime_coordinator != null:
+		result = runtime_coordinator.switch_to(campaign_id, int(_state["generation"]))
+	else:
+		result = registry.activate_campaign(campaign_id, int(_state["generation"]))
 	if not result.get("ok", false):
 		_set_status(result.get("error", "Campaign konnte nicht gewechselt werden."), true)
 		if result.get("status", "") == "stale":
 			_reload()
 		return
-	_state = result["state"]
+	_state = result.get("registry_state", result.get("state", {}))
 	_render_state()
 	_set_status("Campaign gewechselt. Die Route ist wieder aktiv.", false)
 

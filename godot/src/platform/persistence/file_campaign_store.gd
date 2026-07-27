@@ -124,7 +124,8 @@ func commit(
 	expected_generation: int,
 	partition_changes: Dictionary,
 	runtime_state: Dictionary,
-	removed_partitions: Array[String] = []
+	removed_partitions: Array[String] = [],
+	minimum_next_generation: int = 0
 ) -> Dictionary:
 	var current := load_state()
 	if not current.get("ok", false):
@@ -174,7 +175,7 @@ func commit(
 		}
 
 	var next_state := {
-		"generation": _next_generation_number(),
+		"generation": maxi(_next_generation_number(), minimum_next_generation),
 		"parent_generation": expected_generation,
 		"committed_at_utc": Time.get_datetime_string_from_system(true),
 		"runtime": runtime_state.duplicate(true),

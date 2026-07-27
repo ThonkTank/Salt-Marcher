@@ -2,8 +2,10 @@ extends SceneTree
 
 const FileCampaignRegistry = preload("res://godot/src/platform/persistence/file_campaign_registry.gd")
 const FileCampaignStore = preload("res://godot/src/platform/persistence/file_campaign_store.gd")
+const CampaignBackupManager = preload("res://godot/src/platform/persistence/campaign_backup_manager.gd")
 const CampaignBundle = preload("res://godot/src/platform/portability/campaign_bundle.gd")
 const CampaignDesk = preload("res://godot/src/ui/campaign_desk.gd")
+const CampaignRuntimeCoordinator = preload("res://godot/src/app/campaign_runtime_coordinator.gd")
 
 var _failures: Array[String] = []
 
@@ -93,6 +95,9 @@ func _run_tests() -> void:
 	_run_portability_contract(root, registry, first_id)
 
 	_run_registry_fault_contract()
+	_run_backup_contract()
+	_run_runtime_coordinator_contract()
+	_run_permanent_deletion_contract()
 
 	await _run_campaign_desk_journey()
 
@@ -266,6 +271,69 @@ func _run_portability_contract(source_root: String, source_registry, source_camp
 	_expect(after_untrusted_rejections.get("generation", -1) == 1, "untrusted import rejection mutates no registry generation")
 
 
+func _run_backup_contract() -> void:
+	var data_root := "user://saltmarcher-backup-tests/%s" % Time.get_ticks_usec()
+	var registry := FileCampaignRegistry.new(data_root)
+	var created := registry.create_campaign("Backup-Pfad")
+	var campaign_id := str(created.get("campaign_id", ""))
+	var store := FileCampaignStore.new(data_root, campaign_id)
+	var runtime := store.default_runtime_state()
+	runtime["focused_workspace"] = "before-backup"
+	var committed := store.commit(1, {
+		"world": {"objects": [{"id": "place-1", "name": "Sicherer Hafen"}]},
+	}, runtime)
+	_expect(committed.get("ok", false), "backup fixture Campaign commit succeeds")
+
+	var manager := CampaignBackupManager.new(data_root, registry)
+	var backup := manager.create_restore_tested_backup(campaign_id)
+	_expect(backup.get("ok", false), "Campaign backup is published only after isolated restore test")
+	if not backup.get("ok", false):
+		return
+	var backup_id := str(backup["backup"]["backup_id"])
+	var listed := manager.list_backups(campaign_id)
+	_expect(listed.get("ok", false) and listed.get("backups", []).size() == 1, "verified Campaign backup is discoverable")
+	_expect(listed.get("backups", [])[0].get("restore_tested", false), "backup receipt records successful restore validation")
+
+	runtime["focused_workspace"] = "after-backup"
+	var changed := store.commit(2, {
+		"world": {"objects": [{"id": "place-1", "name": "Spätere Änderung"}]},
+	}, runtime)
+	_expect(changed.get("ok", false), "Campaign can change after backup")
+	var not_revoked := manager.restore_backup(campaign_id, backup_id, 3, false)
+	_expect(not not_revoked.get("ok", true), "backup restore refuses active write authority")
+	var unchanged_before_restore := FileCampaignStore.new(data_root, campaign_id).load_state()
+	_expect(unchanged_before_restore.get("generation", -1) == 3, "refused restore leaves live Campaign unchanged")
+
+	var restored := manager.restore_backup(campaign_id, backup_id, 3, true)
+	_expect(restored.get("ok", false), "restore-tested Campaign backup restores after authority revocation")
+	if not restored.get("ok", false):
+		return
+	_expect(restored.get("state", {}).get("generation", -1) == 4, "backup restore publishes above the replaced live generation")
+	_expect(restored.get("state", {}).get("parent_generation", -1) == 2, "backup restore generation points to the backed-up safe parent")
+	var restored_world := FileCampaignStore.new(data_root, campaign_id).read_partition("world")
+	var restored_objects: Array = restored_world.get("payload", {}).get("objects", [])
+	_expect(not restored_objects.is_empty() and restored_objects[0].get("name", "") == "Sicherer Hafen", "backup restore recovers backed-up semantic truth")
+	var retained_path := str(restored.get("retained_original_path", ""))
+	var retained_store := FileCampaignStore.new(data_root, campaign_id, Callable(), retained_path).load_state()
+	_expect(retained_store.get("ok", false) and retained_store.get("generation", -1) == 3, "backup restore retains the replaced original Campaign unchanged")
+	var retained_world := FileCampaignStore.new(data_root, campaign_id, Callable(), retained_path).read_partition("world", retained_store)
+	var retained_objects: Array = retained_world.get("payload", {}).get("objects", [])
+	_expect(not retained_objects.is_empty() and retained_objects[0].get("name", "") == "Spätere Änderung", "retained original preserves pre-restore truth")
+
+	var second_backup := manager.create_restore_tested_backup(campaign_id)
+	_expect(second_backup.get("ok", false), "restored Campaign can produce another restore-tested backup")
+	if second_backup.get("ok", false):
+		var second_payload: Dictionary = second_backup["backup"]
+		var second_bundle_path := data_root + "/backups/campaigns/%s/%s" % [campaign_id, second_payload["bundle_name"]]
+		var second_bundle := FileAccess.open(second_bundle_path, FileAccess.READ_WRITE)
+		second_bundle.seek(second_bundle.get_length() - 1)
+		second_bundle.store_8(second_bundle.get_8() ^ 0xff)
+		second_bundle.close()
+		var after_damage := manager.list_backups(campaign_id)
+		_expect(after_damage.get("backups", []).size() == 1, "damaged verified backup is excluded from safe backup list")
+		_expect(after_damage.get("rejected_backups", []).size() == 1, "damaged verified backup is explicitly disclosed")
+
+
 func _write_invalid_bundle(path: String, entry_path: String, entry_size: String, checksum: String) -> void:
 	var payload := {
 		"source_campaign_id": "source",
@@ -289,11 +357,85 @@ func _write_invalid_bundle(path: String, entry_path: String, entry_size: String,
 	file.close()
 
 
+func _run_runtime_coordinator_contract() -> void:
+	var data_root := "user://saltmarcher-runtime-tests/%s" % Time.get_ticks_usec()
+	var registry := FileCampaignRegistry.new(data_root)
+	var first := registry.create_campaign("Erste Runtime")
+	var first_id := str(first.get("campaign_id", ""))
+	var second := registry.create_campaign("Zweite Runtime")
+	var second_id := str(second.get("campaign_id", ""))
+	var coordinator := CampaignRuntimeCoordinator.new(data_root, registry)
+	var opened := coordinator.open_durable_active()
+	_expect(opened.get("ok", false), "runtime coordinator opens durable active Campaign")
+	var active_session = coordinator.current_session()
+	_expect(active_session != null and active_session.campaign_id() == second_id, "runtime coordinator follows durable active pointer")
+
+	var runtime: Dictionary = active_session.snapshot()["campaign_state"]["runtime"].duplicate(true)
+	runtime["focused_workspace"] = "session"
+	var mutation := coordinator.commit_current(2, 1, {"session": {"timeline": []}}, runtime)
+	_expect(mutation.get("ok", false), "admitted runtime commits through activation generation")
+	var stale_activation := coordinator.commit_current(1, 2, {}, runtime)
+	_expect(not stale_activation.get("ok", true) and stale_activation.get("status", "") == "stale_activation", "stale activation generation cannot mutate Campaign")
+
+	var switched := coordinator.switch_to(first_id, 2)
+	_expect(switched.get("ok", false), "runtime coordinator switches to prepared Campaign")
+	_expect(switched.get("registry_state", {}).get("active_campaign_id", "") == first_id, "runtime switch commits durable active pointer")
+	var first_session = coordinator.current_session()
+	_expect(first_session.activation_generation() == 3 and first_session.admitted(), "new runtime owns fresh admitted activation generation")
+	var retired_session = switched.get("prior_session")
+	var retired_write: Dictionary = retired_session.commit(2, 2, {}, runtime)
+	_expect(not retired_write.get("ok", true) and retired_write.get("status", "") == "revoked", "detached runtime cannot publish late work")
+
+	for generation in [1, 2]:
+		var corrupt := FileAccess.open(FileCampaignStore.new(data_root, second_id).commit_path(generation), FileAccess.WRITE)
+		corrupt.store_string("{damaged")
+		corrupt.close()
+	var rejected_target := coordinator.switch_to(second_id, 3)
+	_expect(not rejected_target.get("ok", true) and rejected_target.get("status", "") == "target_unready", "unreadable target is rejected before pointer commit")
+	_expect(coordinator.current_session() == first_session and first_session.admitted(), "target preparation failure preserves current admitted runtime")
+	_expect(registry.load_state().get("active_campaign_id", "") == first_id, "target preparation failure leaves durable pointer unchanged")
+
+	var failure_root := "user://saltmarcher-runtime-pointer-failure/%s" % Time.get_ticks_usec()
+	var fault_state := {"fail": false}
+	var pointer_fault := func(operation: String, phase: String, _path: String) -> bool:
+		return fault_state["fail"] and operation == "registry_commit" and phase == "before_rename"
+	var failure_registry := FileCampaignRegistry.new(failure_root, pointer_fault)
+	var failure_first := failure_registry.create_campaign("Fallback eins")
+	var failure_first_id := str(failure_first.get("campaign_id", ""))
+	failure_registry.create_campaign("Fallback zwei")
+	var failure_coordinator := CampaignRuntimeCoordinator.new(failure_root, failure_registry)
+	failure_coordinator.open_durable_active()
+	var fallback_session = failure_coordinator.current_session()
+	fault_state["fail"] = true
+	var failed_switch := failure_coordinator.switch_to(failure_first_id, 2)
+	_expect(not failed_switch.get("ok", true), "pointer publication failure is surfaced by runtime coordinator")
+	_expect(fallback_session.admitted(), "definite pre-commit pointer failure resumes prior runtime authority")
+	_expect(failure_registry.load_state().get("generation", -1) == 2, "failed pointer publication creates no registry generation")
+
+
+func _run_permanent_deletion_contract() -> void:
+	var data_root := "user://saltmarcher-permanent-delete-tests/%s" % Time.get_ticks_usec()
+	var registry := FileCampaignRegistry.new(data_root)
+	var created := registry.create_campaign("Endgültig")
+	var campaign_id := str(created.get("campaign_id", ""))
+	var trashed := registry.trash_campaign(campaign_id, 1)
+	var trash_entry_id := str(trashed.get("trash_entry_id", ""))
+	var refused := registry.permanently_delete_trashed_campaign(trash_entry_id, "wrong-confirmation")
+	_expect(not refused.get("ok", true), "permanent Campaign deletion requires exact explicit confirmation")
+	_expect(DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(registry.trash_entry_path(trash_entry_id))), "refused permanent deletion leaves recoverable trash intact")
+	var deleted := registry.permanently_delete_trashed_campaign(trash_entry_id, trash_entry_id)
+	_expect(deleted.get("ok", false), "explicit permanent Campaign deletion succeeds")
+	_expect(deleted.get("removed_file_count", 0) >= 2 and deleted.get("removed_bytes", 0) > 0, "permanent deletion reports removed material")
+	_expect(not DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(registry.trash_entry_path(trash_entry_id))), "permanently deleted Campaign is no longer recoverable")
+
+
 func _run_campaign_desk_journey() -> void:
 	var data_root := "user://saltmarcher-ui-tests/%s" % Time.get_ticks_usec()
 	var registry := FileCampaignRegistry.new(data_root)
 	var desk := CampaignDesk.new()
 	desk.registry = registry
+	desk.runtime_coordinator = CampaignRuntimeCoordinator.new(data_root, registry)
+	desk.runtime_coordinator.open_durable_active()
 	root.add_child(desk)
 	await process_frame
 	await process_frame

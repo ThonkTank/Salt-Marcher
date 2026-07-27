@@ -100,6 +100,14 @@ func failure(message: String) -> Dictionary:
 	return {"ok": false, "status": "storage_error", "error": message}
 
 
+func measure_tree(path: String) -> Dictionary:
+	return _measure_tree_absolute(absolute(path))
+
+
+func remove_tree(path: String) -> Dictionary:
+	return _remove_tree_absolute(absolute(path))
+
+
 func _should_fail(operation: String, phase: String, path: String) -> bool:
 	return _fault_injector.is_valid() and bool(_fault_injector.call(operation, phase, path))
 
@@ -107,3 +115,56 @@ func _should_fail(operation: String, phase: String, path: String) -> bool:
 func _remove_if_present(absolute_path: String) -> void:
 	if FileAccess.file_exists(absolute_path):
 		DirAccess.remove_absolute(absolute_path)
+
+
+func _measure_tree_absolute(absolute_path: String) -> Dictionary:
+	var directory := DirAccess.open(absolute_path)
+	if directory == null:
+		return failure("Zu messendes Verzeichnis ist nicht lesbar.")
+	var file_count := 0
+	var total_bytes := 0
+	directory.list_dir_begin()
+	var name := directory.get_next()
+	while not name.is_empty():
+		var child := absolute_path + "/" + name
+		if directory.current_is_dir() and not directory.is_link(name):
+			var nested := _measure_tree_absolute(child)
+			if not nested.get("ok", false):
+				directory.list_dir_end()
+				return nested
+			file_count += int(nested["file_count"])
+			total_bytes += int(nested["total_bytes"])
+		else:
+			file_count += 1
+			total_bytes += FileAccess.get_size(child)
+		name = directory.get_next()
+	directory.list_dir_end()
+	return {"ok": true, "file_count": file_count, "total_bytes": total_bytes}
+
+
+func _remove_tree_absolute(absolute_path: String) -> Dictionary:
+	if not DirAccess.dir_exists_absolute(absolute_path):
+		return {"ok": true}
+	var directory := DirAccess.open(absolute_path)
+	if directory == null:
+		return failure("Zu löschendes Verzeichnis ist nicht lesbar.")
+	directory.list_dir_begin()
+	var name := directory.get_next()
+	while not name.is_empty():
+		var child := absolute_path + "/" + name
+		if directory.current_is_dir() and not directory.is_link(name):
+			var nested := _remove_tree_absolute(child)
+			if not nested.get("ok", false):
+				directory.list_dir_end()
+				return nested
+		else:
+			var file_error := DirAccess.remove_absolute(child)
+			if file_error != OK:
+				directory.list_dir_end()
+				return failure("Datei konnte nicht dauerhaft gelöscht werden: %s" % error_string(file_error))
+		name = directory.get_next()
+	directory.list_dir_end()
+	var directory_error := DirAccess.remove_absolute(absolute_path)
+	if directory_error != OK:
+		return failure("Verzeichnis konnte nicht dauerhaft gelöscht werden: %s" % error_string(directory_error))
+	return {"ok": true}

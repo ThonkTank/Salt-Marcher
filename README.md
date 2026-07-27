@@ -31,8 +31,11 @@ The Godot application stores installation state below
 `user://salt-marcher/`. Campaign identity and activation are already stored as
 immutable, checksummed JSON generations. Campaign truth uses immutable
 owner-partition generations and can round-trip through a streaming,
-checksummed `.saltmarcher` bundle under a new import identity. No Godot code
-opens SQLite or JDBC.
+checksummed `.saltmarcher` bundle under a new import identity. The current
+backend also supports restore-tested manual backups, retained-original restore,
+recoverable trash, and explicitly confirmed permanent deletion. Automatic
+backup scheduling and retention are still migration work. No Godot code opens
+SQLite or JDBC.
 The complete target persistence and recovery semantics are owned by the
 [Persistence Lifecycle](docs/project/contract/persistence-lifecycle.md).
 

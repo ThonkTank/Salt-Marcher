@@ -57,7 +57,7 @@ func load_state() -> Dictionary:
 	return _failure("Keine unverfälschte Campaign-Registry konnte wiederhergestellt werden.")
 
 
-func create_campaign(raw_name: String) -> Dictionary:
+func create_campaign(raw_name: String, expected_generation: int = -1) -> Dictionary:
 	var name := raw_name.strip_edges()
 	if name.is_empty():
 		return _operation_failure("Der Name braucht mindestens ein sichtbares Zeichen.")
@@ -67,6 +67,8 @@ func create_campaign(raw_name: String) -> Dictionary:
 	var current := load_state()
 	if not current.get("ok", false):
 		return current
+	if expected_generation >= 0 and int(current["generation"]) != expected_generation:
+		return _stale(current)
 
 	var campaign_id := _new_campaign_id()
 	var created_at := Time.get_datetime_string_from_system(true)
@@ -284,6 +286,45 @@ func restore_trashed_campaign(trash_entry_id: String, expected_generation: int) 
 	commit["status"] = "restored"
 	commit["campaign_id"] = campaign_id
 	return commit
+
+
+func permanently_delete_trashed_campaign(
+	trash_entry_id: String,
+	confirmation: String
+) -> Dictionary:
+	if confirmation != trash_entry_id:
+		return _operation_failure("Dauerhaftes Löschen erfordert die exakte Trash-Identität als Bestätigung.")
+	var entry := _read_trash_entry(trash_entry_id)
+	if not entry.get("ok", false):
+		return entry
+	var source := _trash_campaigns_dir + "/" + trash_entry_id
+	var measurement := _files.measure_tree(source)
+	if not measurement.get("ok", false):
+		return measurement
+	var deleting_root := _data_root + "/staging/permanent-delete-" + _new_campaign_id()
+	var staging_error := _ensure_directory(_data_root + "/staging")
+	if staging_error != OK:
+		return _operation_failure("Dauerhafte Löschung konnte nicht vorbereitet werden.")
+	var move_error := DirAccess.rename_absolute(_absolute(source), _absolute(deleting_root))
+	if move_error != OK:
+		return _operation_failure("Trash-Eintrag konnte nicht für die dauerhafte Löschung isoliert werden.")
+	var removed := _files.remove_tree(deleting_root)
+	if not removed.get("ok", false):
+		return {
+			"ok": false,
+			"status": "permanent_delete_incomplete",
+			"error": "Dauerhafte Löschung wurde begonnen, konnte aber nicht vollständig abgeschlossen werden.",
+			"deleting_path": deleting_root,
+			"cause": removed,
+		}
+	return {
+		"ok": true,
+		"status": "permanently_deleted",
+		"trash_entry_id": trash_entry_id,
+		"campaign_id": entry["entry"]["campaign_id"],
+		"removed_file_count": measurement["file_count"],
+		"removed_bytes": measurement["total_bytes"],
+	}
 
 
 func generation_path(generation: int) -> String:
