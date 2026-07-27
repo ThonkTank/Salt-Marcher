@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.CampaignRosterSwitchContainmentTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-07-27T08:21:54.201Z" hostname="bastelstation" time="43.666">
+  <properties/>
+  <testcase name="rosterTruthStaysCampaignContainedAcrossMixedSwitchCycles()" classname="app.CampaignRosterSwitchContainmentTest" time="41.207"/>
+  <testcase name="containmentOracleDiscriminatesMisScopedImplantFromBenignWrite()" classname="app.CampaignRosterSwitchContainmentTest" time="2.396"/>
+  <system-out><![CDATA[PROBE-HEAP S0 floorBytes=63343752 sidecarsPresent=false
+PROBE-HEAP S1 floorBytes=81576584 sidecarsPresent=false
+PROBE-HEAP S2 floorBytes=83845632 sidecarsPresent=false
+PROBE race outcomes=[b1:ADMITTED, b2:ADMITTED, b3:ADMITTED, b4:ADMITTED, b5:ADMITTED, b6:ADMITTED, b7:ADMITTED, b8:ADMITTED]
+PROBE boundary outcomes=[b1-revoked-create:REJECTED_SYNC:RejectedExecutionException, b1-revoked-move:REJECTED_RESULT:STORAGE_ERROR, b1-parked-create:REJECTED_SYNC:RejectedExecutionException, b1-parked-move:REJECTED_RESULT:STORAGE_ERROR, b1-closed-create:REJECTED_SYNC:RejectedExecutionException, b1-closed-move:REJECTED_RESULT:STORAGE_ERROR, b2-revoked-create:REJECTED_SYNC:RejectedExecutionException, b2-revoked-move:REJECTED_RESULT:STORAGE_ERROR, b2-parked-create:REJECTED_SYNC:RejectedExecutionException, b2-parked-move:REJECTED_RESULT:STORAGE_ERROR, b3-revoked-create:REJECTED_SYNC:RejectedExecutionException, b3-revoked-move:REJECTED_RESULT:STORAGE_ERROR, b3-parked-create:REJECTED_SYNC:RejectedExecutionException, b3-parked-move:REJECTED_RESULT:STORAGE_ERROR, b3-closed-create:REJECTED_SYNC:RejectedExecutionException, b3-closed-move:REJECTED_RESULT:STORAGE_ERROR, b4-revoked-create:REJECTED_SYNC:RejectedExecutionException, b4-revoked-move:REJECTED_RESULT:STORAGE_ERROR, b4-parked-create:REJECTED_SYNC:RejectedExecutionException, b4-parked-move:REJECTED_RESULT:STORAGE_ERROR, b5-revoked-create:REJECTED_SYNC:RejectedExecutionException, b5-revoked-move:REJECTED_RESULT:STORAGE_ERROR, b5-parked-create:REJECTED_SYNC:RejectedExecutionException, b5-parked-move:REJECTED_RESULT:STORAGE_ERROR, b5-closed-create:REJECTED_SYNC:RejectedExecutionException, b5-closed-move:REJECTED_RESULT:STORAGE_ERROR, b6-revoked-create:REJECTED_SYNC:RejectedExecutionException, b6-revoked-move:REJECTED_RESULT:STORAGE_ERROR, b6-parked-create:REJECTED_SYNC:RejectedExecutionException, b6-parked-move:REJECTED_RESULT:STORAGE_ERROR, b7-revoked-create:REJECTED_SYNC:RejectedExecutionException, b7-revoked-move:REJECTED_RESULT:STORAGE_ERROR, b7-parked-create:REJECTED_SYNC:RejectedExecutionException, b7-parked-move:REJECTED_RESULT:STORAGE_ERROR, b7-closed-create:REJECTED_SYNC:RejectedExecutionException, b7-closed-move:REJECTED_RESULT:STORAGE_ERROR, b8-revoked-create:REJECTED_SYNC:RejectedExecutionException, b8-revoked-move:REJECTED_RESULT:STORAGE_ERROR, b8-parked-create:REJECTED_SYNC:RejectedExecutionException, b8-parked-move:REJECTED_RESULT:STORAGE_ERROR]
+PROBE settled-heap S0=63343752 S1=81576584 S2=83845632 slopeMbPerCycle=0.815
+PROBE success-switch nanos=[1364243528, 1169904534, 1315980144, 1065113286, 1018842271, 972921368, 1334679500, 973628125]
+PROBE switch-latency firstMean=1228.810ms lastMean=1075.018ms
+NEGATIVE-CONTROL crossCampaignRows=1
+BENIGN-CONTROL crossCampaignRows=0
+]]></system-out>
+  <system-err><![CDATA[Juli 27, 2026 10:21:54 AM com.sun.javafx.application.PlatformImpl startup
+WARNUNG: Unsupported JavaFX configuration: classes were loaded from 'unnamed module @71529963'
+]]></system-err>
+</testsuite>

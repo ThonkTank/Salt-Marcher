@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="app.CampaignSwitchCycleContainmentTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-07-26T12:56:21.515Z" hostname="bastelstation" time="51.664">
+  <properties/>
+  <testcase name="repeatedMixedSwitchCyclesContainAllProductionRuntimeResources()" classname="app.CampaignSwitchCycleContainmentTest" time="44.278"/>
+  <testcase name="suppressedLaneReleaseIsDetectedByTheSteadyStateOracle()" classname="app.CampaignSwitchCycleContainmentTest" time="3.662"/>
+  <testcase name="benignFakeWithCorrectLaneReleasePassesTheSteadyStateOracle()" classname="app.CampaignSwitchCycleContainmentTest" time="3.651"/>
+  <system-out><![CDATA[PROBE-SAMPLE ResourceSample[label=S0, campaignThreads=8, invocationWorkers=2, nonDaemonThreads=5, campaignFileDescriptors=0, totalFileDescriptors=68, sidecarsPresent=false, retainedRuntimes=2, retainedShells=2, heapUsedBytes=67474568]
+PROBE-SAMPLE ResourceSample[label=S1, campaignThreads=8, invocationWorkers=2, nonDaemonThreads=5, campaignFileDescriptors=0, totalFileDescriptors=68, sidecarsPresent=false, retainedRuntimes=2, retainedShells=2, heapUsedBytes=81255280]
+PROBE-SAMPLE ResourceSample[label=S2, campaignThreads=8, invocationWorkers=2, nonDaemonThreads=5, campaignFileDescriptors=0, totalFileDescriptors=68, sidecarsPresent=false, retainedRuntimes=2, retainedShells=2, heapUsedBytes=88487184]
+PROBE revoked outcomes=[REJECTED_SYNC:IllegalStateException, REJECTED_SYNC:IllegalStateException, REJECTED_SYNC:IllegalStateException, REJECTED_SYNC:IllegalStateException, REJECTED_SYNC:IllegalStateException, REJECTED_SYNC:IllegalStateException, REJECTED_SYNC:IllegalStateException, REJECTED_SYNC:IllegalStateException]
+PROBE corroborating heap observations=[monotonic growth trend on heapUsedBytes: 67474568 < 81255280 < 88487184]
+PROBE success-switch nanos=[1639589121, 1662488830, 1222964327, 1169247130, 1161897170, 1229258768, 1168487424, 1359386093]
+PROBE switch-latency firstMean=1423.572ms lastMean=1229.757ms
+PROBE-SAMPLE ResourceSample[label=negative-control-C0, campaignThreads=2, invocationWorkers=2, nonDaemonThreads=5, campaignFileDescriptors=0, totalFileDescriptors=68, sidecarsPresent=false, retainedRuntimes=0, retainedShells=0, heapUsedBytes=77008352]
+PROBE-SAMPLE ResourceSample[label=negative-control-C1, campaignThreads=6, invocationWorkers=2, nonDaemonThreads=5, campaignFileDescriptors=0, totalFileDescriptors=68, sidecarsPresent=false, retainedRuntimes=0, retainedShells=0, heapUsedBytes=77011680]
+PROBE-SAMPLE ResourceSample[label=negative-control-C2, campaignThreads=8, invocationWorkers=2, nonDaemonThreads=5, campaignFileDescriptors=0, totalFileDescriptors=68, sidecarsPresent=false, retainedRuntimes=0, retainedShells=0, heapUsedBytes=77013920]
+NEGATIVE-CONTROL violations=[negative-control-C1 campaignThreads 6 exceeds baseline band 3, negative-control-C2 campaignThreads 8 exceeds baseline band 3, monotonic growth trend on campaignThreads: 2 < 6 < 8]
+PROBE-SAMPLE ResourceSample[label=benign-control-C0, campaignThreads=2, invocationWorkers=2, nonDaemonThreads=5, campaignFileDescriptors=0, totalFileDescriptors=68, sidecarsPresent=false, retainedRuntimes=0, retainedShells=0, heapUsedBytes=77023904]
+PROBE-SAMPLE ResourceSample[label=benign-control-C1, campaignThreads=2, invocationWorkers=2, nonDaemonThreads=5, campaignFileDescriptors=0, totalFileDescriptors=68, sidecarsPresent=false, retainedRuntimes=0, retainedShells=0, heapUsedBytes=77031560]
+PROBE-SAMPLE ResourceSample[label=benign-control-C2, campaignThreads=2, invocationWorkers=2, nonDaemonThreads=5, campaignFileDescriptors=0, totalFileDescriptors=68, sidecarsPresent=false, retainedRuntimes=0, retainedShells=0, heapUsedBytes=77032960]
+BENIGN-CONTROL violations=[]
+]]></system-out>
+  <system-err><![CDATA[Juli 26, 2026 2:56:21 PM com.sun.javafx.application.PlatformImpl startup
+WARNUNG: Unsupported JavaFX configuration: classes were loaded from 'unnamed module @71529963'
+]]></system-err>
+</testsuite>
