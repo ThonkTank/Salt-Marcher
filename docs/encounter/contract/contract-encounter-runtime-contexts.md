@@ -1,0 +1,52 @@
+# Encounter Runtime Context Contract
+
+## Purpose And Boundary
+
+Encounter owns the mutable builder, initiative, combat, and result state of
+each running context. Scene owns which contexts exist, their focus, assigned
+PCs, location, initial prepared plan, and NPC role facts. Synchronization MUST
+NOT transfer Encounter-owned runtime state back to Scene.
+
+## API Surface
+
+`EncounterRuntimeContextApi.synchronize` accepts one complete context set with
+a monotonically increasing source revision, one focused typed context ID, and
+immutable foreign facts per context. The operation is asynchronous. IDs MUST
+be non-blank and unique, the set MUST be non-empty, and the focused ID MUST be
+present.
+
+A newer revision creates missing contexts, updates foreign facts without
+overwriting existing runtime state, removes contexts absent from the complete
+set, and changes focus atomically. A revision not newer than the accepted
+revision returns `STALE_IGNORED`. Invalid sets return `INVALID`; persistence
+failure returns `STORAGE_ERROR`. Scene retries failed synchronization after
+initialization or refresh.
+
+Hostile NPC facts enter the context as enemies, friendly facts enter as allies,
+and neutral facts remain outside combat. The first synchronization of a new
+context MAY open its initial saved plan; later synchronizations MUST NOT reset
+the runtime to that plan.
+
+## Persistence And Current-Format Integrity
+
+Encounter's current declared schema target owns the context root, foreign-fact
+children, builder values, roster and tags, initiative entries, combatants, and
+result enemies. Before the first released format,
+its internal version and construction steps identify only this current target
+and create no obligation to consume or preserve an earlier development format.
+Collections are stored in named relational tables; opaque payloads and text
+codecs are not current-format storage. Cross-feature identifiers are stable
+values and MUST NOT use cross-owner foreign keys.
+
+Replacing the complete context set and all changed runtime rows occurs in one
+SQLite transaction. Saved-plan and runtime-context truth remain distinct in the
+same current Encounter format. A store outside the declared target fails closed
+under the shared persistence lifecycle. After the first released format, any older
+released-format handling must be defined by its owning compatibility contract.
+
+
+## References
+
+- [Encounter Requirements](../requirements/requirements-encounter.md)
+- [Scene Requirements](../../scene/requirements/requirements-scene.md)
+- [Persistence Lifecycle](../../project/contract/persistence-lifecycle.md)
