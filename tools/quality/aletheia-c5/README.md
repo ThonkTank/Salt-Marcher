@@ -48,6 +48,35 @@ cooperative same-user local use with this limitation through the standing
 autonomous-adoption direction recorded in the Program Charter. Any broader
 threat model remains outside the adopted claim.
 
+## Operational launch boundary
+
+C5 coordinates host processes and must itself be the top-level host-executed
+command. Running C5 inside a network- or process-isolated agent sandbox and
+then asking it to launch Gradle or another host workload is invalid: the
+wrapper cannot coordinate a host it cannot observe, and the nested payload no
+longer inherits a direct executable's host permission.
+
+For Codex, compile the pinned source as below, then invoke the generated
+`tools/quality/aletheia-c5/host-lease-native` with
+`sandbox_permissions=require_escalated`. Use one 60-second representative
+startup canary after an execution-envelope or C5 identity change. Do not repeat
+the canary while both remain unchanged.
+
+The 2026-07-27 integration calibration on target `07ea4e183` established:
+
+- exact MAT Usage preflight: direct exit `13` in `4.96 s`; unchanged C5 host
+  launch exit `13` in `5.40 s`;
+- Gradle in the restricted network sandbox: direct and C5-wrapped exit `1`
+  before build startup with the same wildcard-IP error;
+- Gradle on the host: direct `help` passed in `4 s`; unchanged C5 host launch
+  passed in `2 s` with the configuration cache reused.
+
+This discriminates an outer execution-policy failure from a C5 mechanism or
+payload failure. If the host-launched startup canary fails, retain its command,
+audit, environment, exit, and process cleanup and apply the Charter's bounded
+fallback immediately. Do not consume A's critical path with repeated launcher
+experiments.
+
 ## Provenance and build
 
 Direct API decisions use the preserved official Linux man-pages 6.13 extract
