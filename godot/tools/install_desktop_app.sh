@@ -53,7 +53,7 @@ printf '%s\n' \
   "Exec=\"${desktop_exec}\"" \
   "Icon=${desktop_icon}" \
   'Terminal=false' \
-  'Categories=Game;Utility;' \
+  'Categories=Utility;' \
   'StartupNotify=true' \
   > "$desktop_file"
 chmod +x "$desktop_file"
