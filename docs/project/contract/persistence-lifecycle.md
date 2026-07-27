@@ -213,10 +213,15 @@ scheduler discovers existing Campaigns at startup and queues every confirmed
 new generation until the current truth has a restore-tested point; changed truth
 becomes due when the prior verified point reaches 60 seconds.
 
-Godot writes now enforce the 2 GiB reserve floor before immutable JSON,
-Campaign creation, export, import extraction, and backup publication. When a
-platform capacity probe supplies total volume size, the same admission path
-enforces the exact five-percent half of the rule. Under backup storage pressure,
+Godot writes now enforce the greater of a 2 GiB reserve or exactly five percent
+of total volume capacity before immutable JSON, Campaign creation, export,
+import extraction, and backup publication. The production probe invokes no
+shell and passes the target path as one opaque process argument. Linux, macOS,
+and desktop BSD read one portable `/bin/df -Pk` snapshot; Windows uses a
+constant `System.IO.DriveInfo` program through the SystemRoot PowerShell. Invalid
+fields, overflow, contradictory totals, missing executables, and unsupported
+platforms fail closed while safe read, external export, and retry remain
+available. Under backup storage pressure,
 maintenance quarantines and removes at most the oldest verified point per
 attempt, rolls an interrupted point quarantine back after restart, never touches
 rejected or damaged backup evidence, preserves at least three verified points,
@@ -249,11 +254,10 @@ rolls the complete set back; one after the marker finishes deletion. Before that
 marker is written, the compacted live root is semantically revalidated and
 receives its own isolated restore-tested point.
 
-The production cross-platform total-volume-capacity probe, asynchronous
-accepted-write drain and automatic active-Campaign compaction scheduling,
-asset/chunk compaction, released-format conversion, cross-OS qualification,
-representative scale, and the repeated-cancellation resource-envelope proof
-remain open roadmap work.
+Asynchronous accepted-write drain and automatic active-Campaign compaction
+scheduling, asset/chunk compaction, released-format conversion, real Windows and
+macOS probe/export execution, cross-OS qualification, representative scale, and
+the repeated-cancellation resource-envelope proof remain open roadmap work.
 The old Java/SQLite implementation does not satisfy this target contract.
 
 ## References

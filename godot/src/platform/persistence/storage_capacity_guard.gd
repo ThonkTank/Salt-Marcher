@@ -3,15 +3,19 @@ extends RefCounted
 
 ## Rejects writes before SaltMarcher's owned operation would consume the reserve.
 
+const PlatformVolumeCapacityProbe = preload("res://godot/src/platform/persistence/platform_volume_capacity_probe.gd")
+
 const MINIMUM_RESERVE_BYTES := 2 * 1024 * 1024 * 1024
 const RESERVE_PERCENT_NUMERATOR := 5
 const RESERVE_PERCENT_DENOMINATOR := 100
 
 var _capacity_probe: Callable
+var _platform_probe
 
 
-func _init(capacity_probe: Callable = Callable()) -> void:
+func _init(capacity_probe: Callable = Callable(), platform_probe = null) -> void:
 	_capacity_probe = capacity_probe
+	_platform_probe = platform_probe if platform_probe != null else PlatformVolumeCapacityProbe.new()
 
 
 func admit(path: String, declared_write_bytes: int) -> Dictionary:
@@ -67,23 +71,26 @@ func _probe(path: String) -> Dictionary:
 			return probed
 		if int(probed.get("available_bytes", -1)) < 0:
 			return _failure("Verfügbarer Speicher konnte nicht bestimmt werden.")
-		return probed
+		return _validated_capacity(probed)
 	var existing_directory := _nearest_existing_directory(ProjectSettings.globalize_path(path))
 	if existing_directory.is_empty():
 		return _failure("Dateisystem für die Speicherprüfung ist nicht erreichbar.")
-	var directory := DirAccess.open(existing_directory)
-	if directory == null:
-		return _failure("Dateisystem für die Speicherprüfung ist nicht lesbar.")
-	var available_bytes := directory.get_space_left()
+	var capacity = _platform_probe.probe(existing_directory)
+	if not capacity is Dictionary or not capacity.get("ok", false):
+		return _failure("Gesamtkapazität des Ziel-Volumes konnte nicht sicher bestimmt werden.", capacity if capacity is Dictionary else {})
+	return _validated_capacity(capacity)
+
+
+func _validated_capacity(capacity: Dictionary) -> Dictionary:
+	var available_bytes := int(capacity.get("available_bytes", -1))
+	var volume_capacity_bytes := int(capacity.get("volume_capacity_bytes", -1))
 	if available_bytes < 0:
 		return _failure("Verfügbarer Speicher konnte nicht bestimmt werden.")
-	return {
-		"ok": true,
-		"available_bytes": available_bytes,
-		# Godot exposes free bytes but not total volume capacity. A later platform
-		# probe must provide that value before the percentage half is qualified.
-		"volume_capacity_bytes": -1,
-	}
+	if volume_capacity_bytes != -1 and volume_capacity_bytes <= 0:
+		return _failure("Gesamtkapazität muss positiv oder ausdrücklich unbekannt sein.")
+	if volume_capacity_bytes > 0 and available_bytes > volume_capacity_bytes:
+		return _failure("Volume-Probe lieferte mehr freien Speicher als Gesamtkapazität.")
+	return capacity
 
 
 func _nearest_existing_directory(absolute_path: String) -> String:
@@ -97,11 +104,13 @@ func _nearest_existing_directory(absolute_path: String) -> String:
 
 
 func _ceiling_fraction(value: int, numerator: int, denominator: int) -> int:
-	return (value * numerator + denominator - 1) / denominator
+	var whole := value / denominator
+	var remainder := value % denominator
+	return whole * numerator + (remainder * numerator + denominator - 1) / denominator
 
 
-func _failure(message: String) -> Dictionary:
-	return {
+func _failure(message: String, cause: Dictionary = {}) -> Dictionary:
+	var result := {
 		"ok": false,
 		"status": "storage_probe_error",
 		"error": message,
@@ -109,3 +118,6 @@ func _failure(message: String) -> Dictionary:
 		"external_export_available": true,
 		"retry_available": true,
 	}
+	if not cause.is_empty():
+		result["cause"] = cause
+	return result

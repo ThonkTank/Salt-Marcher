@@ -10,6 +10,7 @@ const CampaignDesk = preload("res://godot/src/ui/campaign_desk.gd")
 const CampaignRuntimeCoordinator = preload("res://godot/src/app/campaign_runtime_coordinator.gd")
 const CampaignBackupScheduler = preload("res://godot/src/app/campaign_backup_scheduler.gd")
 const StorageCapacityGuard = preload("res://godot/src/platform/persistence/storage_capacity_guard.gd")
+const PlatformVolumeCapacityProbe = preload("res://godot/src/platform/persistence/platform_volume_capacity_probe.gd")
 
 var _failures: Array[String] = []
 
@@ -103,6 +104,7 @@ func _run_tests() -> void:
 	_run_registry_fault_contract()
 	_run_backup_contract()
 	await _run_backup_scheduler_contract()
+	_run_volume_capacity_probe_contract()
 	_run_storage_pressure_contract()
 	_run_backup_retention_contract()
 	_run_backup_lifecycle_maintenance_contract()
@@ -634,6 +636,93 @@ func _run_backup_scheduler_contract() -> void:
 	_expect(scheduler.last_result().get("status", "") == "backup_verified", "background backup scheduler discloses its verified terminal result")
 	scheduler.queue_free()
 	await process_frame
+
+
+func _run_volume_capacity_probe_contract() -> void:
+	var root_path := "user://saltmarcher-volume-probe-tests/%s/path with ; shell text" % Time.get_ticks_usec()
+	var absolute_path := ProjectSettings.globalize_path(root_path)
+	_expect(DirAccess.make_dir_recursive_absolute(absolute_path) == OK, "volume probe fixture creates an existing path")
+	var posix_call: Dictionary = {}
+	var posix_probe := PlatformVolumeCapacityProbe.new(
+		func() -> String: return "Linux",
+		func(executable: String, arguments: PackedStringArray) -> Dictionary:
+			posix_call["executable"] = executable
+			posix_call["arguments"] = arguments
+			return {
+				"exit_code": 0,
+				"output": "Filesystem 1024-blocks Used Available Capacity Mounted on\noverlay 10000000 2500000 7500000 25% /fixture mount\n",
+			}
+	)
+	var posix := posix_probe.probe(absolute_path)
+	_expect(posix.get("ok", false) and posix.get("volume_capacity_bytes", -1) == 10_240_000_000, "POSIX probe parses portable 1024-byte total-volume blocks")
+	_expect(posix.get("available_bytes", -1) == 7_680_000_000 and posix.get("volume_root", "") == "/fixture mount", "POSIX probe returns one internally consistent free/capacity snapshot")
+	_expect(posix_call.get("executable", "") == "/bin/df" and posix_call.get("arguments", PackedStringArray()).size() == 2, "POSIX probe invokes one fixed executable without a shell")
+	_expect(str(posix_call.get("arguments", PackedStringArray())[1]) == absolute_path, "POSIX probe passes an unsafe-looking path as one opaque process argument")
+
+	var mac_probe := PlatformVolumeCapacityProbe.new(
+		func() -> String: return "macOS",
+		func(_executable: String, _arguments: PackedStringArray) -> Dictionary:
+			return {
+				"exit_code": 0,
+				"output": "Filesystem 1024-blocks Used Available Capacity Mounted on\n/dev/disk3s1 200 50 150 25% /\n",
+			}
+	)
+	var mac_result := mac_probe.probe(absolute_path)
+	_expect(mac_result.get("ok", false) and mac_result.get("platform", "") == "macOS", "macOS uses the same POSIX portable snapshot contract")
+
+	var windows_call: Dictionary = {}
+	var windows_probe := PlatformVolumeCapacityProbe.new(
+		func() -> String: return "Windows",
+		func(executable: String, arguments: PackedStringArray) -> Dictionary:
+			windows_call["executable"] = executable
+			windows_call["arguments"] = arguments
+			return {"exit_code": 0, "output": "100000000000|90000000000|C:\\\r\n"}
+	)
+	var windows := windows_probe.probe(absolute_path)
+	_expect(windows.get("ok", false) and windows.get("volume_capacity_bytes", -1) == 100_000_000_000, "Windows DriveInfo probe parses invariant 64-bit capacity")
+	_expect(windows.get("available_bytes", -1) == 90_000_000_000 and windows.get("volume_root", "") == "C:\\", "Windows DriveInfo probe returns available bytes and the owning root")
+	var windows_arguments: PackedStringArray = windows_call.get("arguments", PackedStringArray())
+	_expect(windows_call.get("executable", "") == "powershell.exe" and not windows_arguments.is_empty() and str(windows_arguments[windows_arguments.size() - 1]) == absolute_path, "Windows probe passes the path separately from its constant PowerShell program")
+
+	var failed_process := PlatformVolumeCapacityProbe.new(
+		func() -> String: return "Linux",
+		func(_executable: String, _arguments: PackedStringArray) -> Dictionary:
+			return {"exit_code": 127, "output": "missing"}
+	).probe(absolute_path)
+	_expect(not failed_process.get("ok", true) and failed_process.get("status", "") == "storage_probe_error", "missing platform probe fails closed")
+	var contradictory := PlatformVolumeCapacityProbe.new(
+		func() -> String: return "Windows",
+		func(_executable: String, _arguments: PackedStringArray) -> Dictionary:
+			return {"exit_code": 0, "output": "100|101|C:\\"}
+	).probe(absolute_path)
+	_expect(not contradictory.get("ok", true), "platform probe rejects free space greater than total capacity")
+	var unsupported := PlatformVolumeCapacityProbe.new(
+		func() -> String: return "Web",
+		Callable()
+	).probe(absolute_path)
+	_expect(not unsupported.get("ok", true), "unsupported non-desktop platform cannot silently fall back to the two-GiB floor")
+
+	var live_started_usec := Time.get_ticks_usec()
+	var live_probe := PlatformVolumeCapacityProbe.new().probe(absolute_path)
+	var live_elapsed_usec := Time.get_ticks_usec() - live_started_usec
+	_expect(live_probe.get("ok", false) and live_probe.get("volume_capacity_bytes", -1) > 0, "production Linux probe resolves the real fixture volume capacity")
+	_expect(live_elapsed_usec <= 1_000_000, "production Linux volume admission probe completes within one second")
+	var live_admission := StorageCapacityGuard.new().admit(root_path, 0)
+	_expect(live_admission.get("ok", false) and live_admission.get("capacity_known", false), "production storage admission enforces a known total-volume reserve")
+	if live_admission.get("ok", false):
+		var expected_percentage := (int(live_admission["volume_capacity_bytes"]) * 5 + 99) / 100
+		_expect(live_admission.get("reserve_bytes", -1) == maxi(2 * 1024 * 1024 * 1024, expected_percentage), "production admission applies the exact greater-of-two-GiB-or-five-percent rule")
+	var maximum_int := 0x7fffffffffffffff
+	var huge_guard := StorageCapacityGuard.new(func(_path: String) -> Dictionary:
+		return {"ok": true, "available_bytes": maximum_int, "volume_capacity_bytes": maximum_int}
+	)
+	var huge_admission := huge_guard.admit(root_path, 0)
+	var expected_huge_reserve := (maximum_int / 100) * 5 + ((maximum_int % 100) * 5 + 99) / 100
+	_expect(huge_admission.get("ok", false) and huge_admission.get("reserve_bytes", -1) == expected_huge_reserve, "five-percent reserve remains exact without int64 multiplication overflow")
+	var invalid_unknown := StorageCapacityGuard.new(func(_path: String) -> Dictionary:
+		return {"ok": true, "available_bytes": 10, "volume_capacity_bytes": -2}
+	).admit(root_path, 0)
+	_expect(not invalid_unknown.get("ok", true), "capacity guard rejects undeclared negative total-volume sentinels")
 
 
 func _run_storage_pressure_contract() -> void:
