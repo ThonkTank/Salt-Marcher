@@ -122,19 +122,20 @@ the Product Process.
   A slice first proves the retaining path and then repairs the owning
   presentation-retirement seam with a causal heap control. M2t remains the next
   feature revalidation candidate only after that M1 repair.
-- M1r retaining-root discovery is unevaluated and paused on C5 availability:
-  neither a non-test-held retaining path nor a repair is established, and
-  historic candidates at base `3eb1e0746` are not active. C5 `non-a` exited
-  `1` before the Gradle workload ([#555 comment
-  5086062253](https://github.com/ThonkTank/Salt-Marcher/issues/555#issuecomment-5086062253))
-  and C5 A-mode MAT preflight exited `124` before HPROF parsing ([#555 comment
-  5086502539](https://github.com/ThonkTank/Salt-Marcher/issues/555#issuecomment-5086502539));
-  both are process—not product/root—evidence, and A must not bypass C5. Resume
-  only after C publishes an independently evaluated, adopted availability rule
-  or bounded failure result, then starts a fresh concept at the current stable
-  baseline whose treatment/control distinguishes retired roots from Java-local,
-  test-worker, current-scene, or parked-shell retention; M2t waits for the
-  resulting M1 repair.
+- M1r retaining-root discovery is active but unevaluated: neither a
+  non-test-held retaining path nor a repair is established. The former C5
+  availability pause is closed. The paired host-level replay on `07ea4e183`
+  established that the historic Gradle wildcard-IP and MAT timeout results came
+  from the restricted launcher envelope, while direct host Gradle and unchanged
+  host-launched C5 completed. The adopted execution rule now requires one
+  representative 60-second canary per envelope; a pre-workload failure produces
+  a bounded C result within two minutes and A continues its exact workload
+  directly and serially while non-A heavy work defers. A therefore does not wait
+  for further C5 investigation. The active discovery candidate at `a2e426e76`
+  retains the child-root and MAT-preflight evidence on the current stable
+  baseline. Its next treatment/control must distinguish retired roots from
+  Java-local, test-worker, current-scene, or parked-shell retention; M2t waits
+  for the resulting M1 repair, not for C5 availability.
 - This roadmap has not audited every other capability against every canonical
   acceptance outcome; all later milestone completion remains unassessed until
   live, requirement-by-requirement revalidation.
