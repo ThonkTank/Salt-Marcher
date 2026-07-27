@@ -61,8 +61,14 @@ already covered by a current restore-tested point; damaged evidence defers the
 operation. Production storage admission reads total and available volume bytes
 through direct POSIX or Windows platform adapters and fails closed when the
 greater-of-2-GiB-or-five-percent reserve cannot be proven. Asset/chunk
-compaction, automatic active-Campaign orchestration, and real Windows/macOS
-export qualification remain migration work.
+compaction, automatic active-Campaign compaction orchestration, and real
+Windows/macOS export qualification remain migration work. Accepted Campaign
+writes run through one serial ticketed worker. Create and switch transitions
+revoke new source work immediately, drain accepted work for up to ten seconds
+off the UI thread, and publish the active pointer only after a successful
+drain. A timeout keeps the source pointer and UI fence until that write reaches
+one terminal result, then restores source authority automatically. Orderly
+application shutdown waits for all accepted work rather than abandoning it.
 Recovery points share unchanged Campaign bytes through content-addressed blobs;
 portable `.saltmarcher` bundles remain the transfer format. No Godot code opens
 SQLite or JDBC.

@@ -10,11 +10,15 @@ var _data_root: String
 var _registry
 var _current: CampaignRuntimeSession
 var _backup_notifier: Callable
+var _store_factory: Callable
+var _notification_mutex := Mutex.new()
+var _pending_backup_notifications: Array = []
 
 
-func _init(data_root: String, registry) -> void:
+func _init(data_root: String, registry, store_factory: Callable = Callable()) -> void:
 	_data_root = data_root.trim_suffix("/")
 	_registry = registry
+	_store_factory = store_factory
 
 
 func open_durable_active() -> Dictionary:
@@ -32,7 +36,8 @@ func open_durable_active() -> Dictionary:
 		campaign_id,
 		int(registry_state["generation"]),
 		prepared["store"],
-		prepared["state"]
+		prepared["state"],
+		Callable(self, "_notify_confirmed_generation_values")
 	)
 	return {
 		"ok": true,
@@ -42,7 +47,11 @@ func open_durable_active() -> Dictionary:
 	}
 
 
-func switch_to(campaign_id: String, expected_registry_generation: int) -> Dictionary:
+func switch_to(
+	campaign_id: String,
+	expected_registry_generation: int,
+	drain_timeout_msec: int = 10_000
+) -> Dictionary:
 	var registry_state: Dictionary = _registry.load_state()
 	if not registry_state.get("ok", false):
 		return _recovery("Campaign-Registry ist nicht sicher lesbar.", registry_state)
@@ -66,9 +75,14 @@ func switch_to(campaign_id: String, expected_registry_generation: int) -> Dictio
 		}
 	var prior := _current
 	if prior != null:
-		var revoked := prior.drain_and_revoke()
+		var revoked := prior.drain_and_revoke(drain_timeout_msec)
+		_flush_backup_notifications_if_main_thread()
 		if not revoked.get("ok", false):
-			return _recovery("Die aktuelle Campaign konnte nicht sicher angehalten werden.", revoked)
+			if revoked.get("status", "") == "accepted_write_failed":
+				prior.resume_after_precommit_failure()
+			revoked["session"] = prior
+			revoked["registry_state"] = registry_state
+			return revoked
 
 	var pointer_commit: Dictionary = _registry.activate_campaign(campaign_id, expected_registry_generation)
 	if not pointer_commit.get("ok", false):
@@ -80,7 +94,8 @@ func switch_to(campaign_id: String, expected_registry_generation: int) -> Dictio
 		campaign_id,
 		int(committed_registry["generation"]),
 		prepared["store"],
-		prepared["state"]
+		prepared["state"],
+		Callable(self, "_notify_confirmed_generation_values")
 	)
 	return {
 		"ok": true,
@@ -91,7 +106,11 @@ func switch_to(campaign_id: String, expected_registry_generation: int) -> Dictio
 	}
 
 
-func create_and_switch(name: String, expected_registry_generation: int) -> Dictionary:
+func create_and_switch(
+	name: String,
+	expected_registry_generation: int,
+	drain_timeout_msec: int = 10_000
+) -> Dictionary:
 	var registry_state: Dictionary = _registry.load_state()
 	if not registry_state.get("ok", false):
 		return _recovery("Campaign-Registry ist nicht sicher lesbar.", registry_state)
@@ -104,9 +123,14 @@ func create_and_switch(name: String, expected_registry_generation: int) -> Dicti
 		}
 	var prior := _current
 	if prior != null:
-		var revoked := prior.drain_and_revoke()
+		var revoked := prior.drain_and_revoke(drain_timeout_msec)
+		_flush_backup_notifications_if_main_thread()
 		if not revoked.get("ok", false):
-			return _recovery("Die aktuelle Campaign konnte nicht sicher angehalten werden.", revoked)
+			if revoked.get("status", "") == "accepted_write_failed":
+				prior.resume_after_precommit_failure()
+			revoked["session"] = prior
+			revoked["registry_state"] = registry_state
+			return revoked
 	var created: Dictionary = _registry.create_campaign(name, expected_registry_generation)
 	if not created.get("ok", false):
 		if prior != null:
@@ -121,7 +145,8 @@ func create_and_switch(name: String, expected_registry_generation: int) -> Dicti
 		campaign_id,
 		int(committed_registry["generation"]),
 		prepared["store"],
-		prepared["state"]
+		prepared["state"],
+		Callable(self, "_notify_confirmed_generation_values")
 	)
 	_notify_confirmed_generation(_current)
 	return {
@@ -155,14 +180,63 @@ func commit_current(
 	return committed
 
 
+func submit_current_commit(
+	expected_activation_generation: int,
+	expected_campaign_generation: int,
+	partition_changes: Dictionary,
+	runtime_state: Dictionary,
+	removed_partitions: Array[String] = []
+) -> Dictionary:
+	if _current == null:
+		return {"ok": false, "status": "campaign_required", "error": "Keine Campaign ist aktiv."}
+	return _current.submit_commit(
+		expected_activation_generation,
+		expected_campaign_generation,
+		partition_changes,
+		runtime_state,
+		removed_partitions
+	)
+
+
+func poll_current_commit(ticket_id: String) -> Dictionary:
+	if _current == null:
+		return {"ok": false, "status": "campaign_required", "error": "Keine Campaign ist aktiv."}
+	var polled := _current.poll_commit(ticket_id)
+	_flush_backup_notifications_if_main_thread()
+	return polled
+
+
 func set_backup_notifier(notifier: Callable) -> void:
 	_backup_notifier = notifier
+	_flush_backup_notifications_if_main_thread()
 
 
-func revoke_current() -> Dictionary:
+func flush_backup_notifications() -> void:
+	_notification_mutex.lock()
+	if not _backup_notifier.is_valid():
+		_notification_mutex.unlock()
+		return
+	var pending: Array = _pending_backup_notifications.duplicate(true)
+	_pending_backup_notifications.clear()
+	_notification_mutex.unlock()
+	for notification in pending:
+		_backup_notifier.call(notification["campaign_id"], notification["campaign_generation"])
+
+
+func revoke_current(drain_timeout_msec: int = 10_000) -> Dictionary:
 	if _current == null:
 		return {"ok": true, "status": "no_session"}
-	return _current.drain_and_revoke()
+	var revoked := _current.drain_and_revoke(drain_timeout_msec)
+	_flush_backup_notifications_if_main_thread()
+	return revoked
+
+
+func resume_current_after_cancelled_transition() -> Dictionary:
+	if _current == null:
+		return {"ok": true, "status": "no_session"}
+	var resumed := _current.resume_after_precommit_failure()
+	_flush_backup_notifications_if_main_thread()
+	return resumed
 
 
 func current_session() -> CampaignRuntimeSession:
@@ -170,8 +244,14 @@ func current_session() -> CampaignRuntimeSession:
 
 
 func _prepare(campaign_id: String) -> Dictionary:
-	var store := FileCampaignStore.new(_data_root, campaign_id)
-	var state := store.load_state()
+	var store = (
+		_store_factory.call(_data_root, campaign_id)
+		if _store_factory.is_valid()
+		else FileCampaignStore.new(_data_root, campaign_id)
+	)
+	if store == null:
+		return {"ok": false, "status": "store_unavailable", "error": "Campaign-Speicher konnte nicht vorbereitet werden."}
+	var state: Dictionary = store.load_state()
 	if not state.get("ok", false):
 		return state
 	return {"ok": true, "store": store, "state": state}
@@ -188,5 +268,21 @@ func _recovery(message: String, cause: Dictionary) -> Dictionary:
 
 
 func _notify_confirmed_generation(session: CampaignRuntimeSession) -> void:
-	if _backup_notifier.is_valid():
-		_backup_notifier.call(session.campaign_id(), session.campaign_generation())
+	_notify_confirmed_generation_values(session.campaign_id(), session.campaign_generation())
+
+
+func _notify_confirmed_generation_values(campaign_id: String, campaign_generation: int) -> void:
+	if Thread.is_main_thread() and _backup_notifier.is_valid():
+		_backup_notifier.call(campaign_id, campaign_generation)
+		return
+	_notification_mutex.lock()
+	_pending_backup_notifications.append({
+		"campaign_id": campaign_id,
+		"campaign_generation": campaign_generation,
+	})
+	_notification_mutex.unlock()
+
+
+func _flush_backup_notifications_if_main_thread() -> void:
+	if Thread.is_main_thread():
+		flush_backup_notifications()

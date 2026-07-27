@@ -112,6 +112,20 @@ Campaign switching drains accepted writes, commits the installation active
 pointer, publishes the selected Campaign root, and only then acknowledges the
 switch. Restart follows the durable pointer. No manual Save action is required.
 
+The runtime admits at most one serial asynchronous Campaign write at a time and
+returns a stable ticket only after admission. Polling that ticket exposes one
+terminal result. Switch and create revoke admission before they wait, so work
+submitted afterward is rejected. The visible transition runs outside the scene
+tree thread and waits at most ten seconds. A terminal accepted-write failure or
+a definite pointer pre-commit failure leaves the durable pointer unchanged and
+restores source authority. A drain timeout also leaves that pointer unchanged;
+the visible shell remains fenced until the accepted write terminates, then the
+runtime automatically restores source authority and permits an explicit retry.
+Backup scheduling for a drained successful generation returns to the main
+thread exactly once. Orderly shutdown uses an unbounded drain of already
+accepted work; forced process termination still relies on the immutable commit
+and restart-recovery rules.
+
 ## Validation And Recovery
 
 Opening a generation verifies its envelope, checksum, format, owner inventory,
@@ -254,10 +268,10 @@ rolls the complete set back; one after the marker finishes deletion. Before that
 marker is written, the compacted live root is semantically revalidated and
 receives its own isolated restore-tested point.
 
-Asynchronous accepted-write drain and automatic active-Campaign compaction
-scheduling, asset/chunk compaction, released-format conversion, real Windows and
-macOS probe/export execution, cross-OS qualification, representative scale, and
-the repeated-cancellation resource-envelope proof remain open roadmap work.
+Automatic active-Campaign compaction scheduling, asset/chunk compaction,
+released-format conversion, real Windows and macOS probe/export execution,
+cross-OS qualification, representative scale, and the repeated-cancellation
+resource-envelope proof remain open roadmap work.
 The old Java/SQLite implementation does not satisfy this target contract.
 
 ## References

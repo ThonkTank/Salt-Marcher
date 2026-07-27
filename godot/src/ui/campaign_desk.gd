@@ -3,6 +3,7 @@ extends Control
 
 const FileCampaignRegistry = preload("res://godot/src/platform/persistence/file_campaign_registry.gd")
 const CampaignPortabilityController = preload("res://godot/src/app/campaign_portability_controller.gd")
+const CampaignRuntimeTransitionController = preload("res://godot/src/app/campaign_runtime_transition_controller.gd")
 const CampaignTransferDocket = preload("res://godot/src/ui/campaign_transfer_docket.gd")
 const DefinitionConflictLedger = preload("res://godot/src/ui/definition_conflict_ledger.gd")
 const RouteStitch = preload("res://godot/src/ui/route_stitch.gd")
@@ -18,6 +19,7 @@ const EMBER_RUST := Color("#b75d3d")
 var registry: FileCampaignRegistry
 var runtime_coordinator
 var portability_controller: CampaignPortabilityController
+var runtime_transition_controller: CampaignRuntimeTransitionController
 var data_root := "user://salt-marcher"
 var _state: Dictionary = {}
 var _name_input: LineEdit
@@ -26,6 +28,8 @@ var _status: Label
 var _create_button: Button
 var _transfer_docket: CampaignTransferDocket
 var _conflict_ledger: DefinitionConflictLedger
+var _transfer_busy := false
+var _transition_busy := false
 
 
 func _ready() -> void:
@@ -37,10 +41,22 @@ func _ready() -> void:
 	portability_controller.operation_started.connect(_on_transfer_started)
 	portability_controller.progress_changed.connect(_on_transfer_progress)
 	portability_controller.operation_completed.connect(_on_transfer_completed)
+	if runtime_coordinator != null and runtime_transition_controller == null:
+		runtime_transition_controller = CampaignRuntimeTransitionController.new(runtime_coordinator)
+		add_child(runtime_transition_controller)
+	if runtime_transition_controller != null:
+		runtime_transition_controller.transition_started.connect(_on_runtime_transition_started)
+		runtime_transition_controller.transition_completed.connect(_on_runtime_transition_completed)
+		runtime_transition_controller.transition_recovered.connect(_on_runtime_transition_recovered)
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	theme = _build_theme()
 	_build_surface()
 	_reload()
+
+
+func _process(_delta: float) -> void:
+	if runtime_coordinator != null:
+		runtime_coordinator.flush_backup_notifications()
 
 
 func _build_surface() -> void:
@@ -136,7 +152,7 @@ func _build_surface() -> void:
 	_name_input.custom_minimum_size = Vector2(0, 48)
 	_name_input.text_submitted.connect(func(_value: String) -> void: _create_campaign())
 	_name_input.text_changed.connect(func(value: String) -> void:
-		_create_button.disabled = value.strip_edges().is_empty() or portability_controller.is_active() or (_conflict_ledger != null and _conflict_ledger.is_presented())
+		_create_button.disabled = value.strip_edges().is_empty() or _transfer_busy or _transition_busy or (_conflict_ledger != null and _conflict_ledger.is_presented())
 	)
 	create_row.add_child(_name_input)
 
@@ -248,6 +264,16 @@ func _render_state() -> void:
 
 
 func _create_campaign() -> void:
+	if runtime_transition_controller != null:
+		var started := runtime_transition_controller.create_and_switch(
+			_name_input.text,
+			int(_state["generation"])
+		)
+		if not started.get("ok", false):
+			_set_status(started.get("error", "Campaign konnte nicht erstellt werden."), true)
+			_name_input.grab_focus()
+			return
+		return
 	var result: Dictionary
 	if runtime_coordinator != null:
 		result = runtime_coordinator.create_and_switch(_name_input.text, int(_state["generation"]))
@@ -264,6 +290,15 @@ func _create_campaign() -> void:
 
 
 func _activate_campaign(campaign_id: String) -> void:
+	if runtime_transition_controller != null:
+		var started := runtime_transition_controller.switch_to(
+			campaign_id,
+			int(_state["generation"])
+		)
+		if not started.get("ok", false):
+			_set_status(started.get("error", "Campaign konnte nicht gewechselt werden."), true)
+			return
+		return
 	var result: Dictionary
 	if runtime_coordinator != null:
 		result = runtime_coordinator.switch_to(campaign_id, int(_state["generation"]))
@@ -280,6 +315,8 @@ func _activate_campaign(campaign_id: String) -> void:
 
 
 func start_export_to_path(destination_path: String) -> Dictionary:
+	if runtime_transition_controller != null and runtime_transition_controller.is_active():
+		return {"ok": false, "status": "transition_busy", "error": "Campaign-Wechsel oder -Erstellung läuft noch."}
 	var campaign_id := str(_state.get("active_campaign_id", ""))
 	if campaign_id.is_empty():
 		return {"ok": false, "status": "no_active_campaign", "error": "Keine aktive Campaign kann exportiert werden."}
@@ -287,6 +324,8 @@ func start_export_to_path(destination_path: String) -> Dictionary:
 
 
 func start_import_from_path(bundle_path: String) -> Dictionary:
+	if runtime_transition_controller != null and runtime_transition_controller.is_active():
+		return {"ok": false, "status": "transition_busy", "error": "Campaign-Wechsel oder -Erstellung läuft noch."}
 	return portability_controller.import_campaign(bundle_path, int(_state.get("generation", -1)))
 
 
@@ -318,6 +357,50 @@ func _on_transfer_started(kind: String) -> void:
 		"resolve_import": "Konfliktentscheidungen werden atomar angewendet.",
 		"discard_import": "Staged Import wird verworfen.",
 	}.get(kind, "Campaign-Transfer läuft."))
+
+
+func _on_runtime_transition_started(kind: String) -> void:
+	_transition_busy = true
+	_refresh_busy_state()
+	_set_status(
+		"Campaign wird erstellt; akzeptierte Schreibarbeit wird zuerst abgeschlossen."
+		if kind == "create"
+		else "Campaign-Wechsel wartet auf bereits akzeptierte Schreibarbeit.",
+		false
+	)
+
+
+func _on_runtime_transition_completed(kind: String, result: Dictionary) -> void:
+	_transition_busy = runtime_transition_controller != null and runtime_transition_controller.is_active()
+	if not result.get("ok", false):
+		_refresh_busy_state()
+		_set_status(result.get("error", "Campaign-Übergang ist fehlgeschlagen."), true)
+		if result.get("status", "") == "stale":
+			_reload()
+		elif kind == "create":
+			_name_input.grab_focus()
+		return
+	if kind == "create":
+		_name_input.clear()
+	_state = result.get("registry_state", result.get("state", {}))
+	_render_state()
+	_set_status(
+		"Campaign erstellt und als aktuelle Route geöffnet."
+		if kind == "create"
+		else "Campaign gewechselt. Die Route ist wieder aktiv.",
+		false
+	)
+
+
+func _on_runtime_transition_recovered(result: Dictionary) -> void:
+	_transition_busy = false
+	_refresh_busy_state()
+	_set_status(
+		"Quell-Campaign ist nach dem Switch-Timeout wieder schreibbereit. Der Wechsel kann erneut versucht werden."
+		if result.get("ok", false)
+		else result.get("error", "Quell-Campaign konnte nach dem Timeout nicht fortgesetzt werden."),
+		not result.get("ok", false)
+	)
 
 
 func _on_transfer_progress(progress: Dictionary) -> void:
@@ -385,9 +468,15 @@ func _hide_definition_conflicts() -> void:
 
 
 func _set_transfer_busy(busy: bool) -> void:
+	_transfer_busy = busy
+	_refresh_busy_state()
+
+
+func _refresh_busy_state() -> void:
 	var modal := _conflict_ledger != null and _conflict_ledger.is_presented()
+	var busy := _transfer_busy or _transition_busy
 	_transfer_docket.set_active_campaign(str(_state.get("active_campaign_id", "")))
-	_transfer_docket.set_busy(busy, modal)
+	_transfer_docket.set_busy(busy, modal, _transfer_busy)
 	_create_button.disabled = busy or modal or _name_input.text.strip_edges().is_empty()
 	_name_input.editable = not busy and not modal
 	_name_input.focus_mode = Control.FOCUS_NONE if busy or modal else Control.FOCUS_ALL
@@ -401,8 +490,9 @@ func _set_transfer_busy(busy: bool) -> void:
 func _refresh_transfer_controls() -> void:
 	if _transfer_docket == null:
 		return
-	var busy := portability_controller != null and portability_controller.is_active()
-	_set_transfer_busy(busy)
+	_transfer_busy = portability_controller != null and portability_controller.is_active()
+	_transition_busy = runtime_transition_controller != null and runtime_transition_controller.is_active()
+	_refresh_busy_state()
 
 
 func _set_status(message: String, is_error: bool) -> void:

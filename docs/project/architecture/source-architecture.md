@@ -55,8 +55,12 @@ capability reads another capability's files, scene internals, or model objects.
 - Signals connect explicit owners. Global autoload service location and string
   names as cross-capability APIs are forbidden.
 - The active Campaign owns all Campaign-scoped application objects. Switching
-  revokes the old generation, drains accepted writes, commits the new active
-  pointer, publishes the new shell root, and then releases the detached graph.
+  revokes the old generation, drains its one serial accepted-write worker off
+  the scene-tree thread, commits the new active pointer, publishes the new shell
+  root, and then releases the detached graph. The ten-second visible-transition
+  timeout leaves the source pointer unchanged and keeps the shell fenced until
+  automatic source-authority recovery. Orderly shutdown drains without that
+  interaction timeout.
 
 ## Presentation Architecture
 

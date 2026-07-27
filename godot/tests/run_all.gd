@@ -8,6 +8,8 @@ const CampaignBundle = preload("res://godot/src/platform/portability/campaign_bu
 const SharedDefinitionStore = preload("res://godot/src/platform/persistence/shared_definition_store.gd")
 const CampaignDesk = preload("res://godot/src/ui/campaign_desk.gd")
 const CampaignRuntimeCoordinator = preload("res://godot/src/app/campaign_runtime_coordinator.gd")
+const CampaignRuntimeSession = preload("res://godot/src/app/campaign_runtime_session.gd")
+const CampaignRuntimeTransitionController = preload("res://godot/src/app/campaign_runtime_transition_controller.gd")
 const CampaignBackupScheduler = preload("res://godot/src/app/campaign_backup_scheduler.gd")
 const StorageCapacityGuard = preload("res://godot/src/platform/persistence/storage_capacity_guard.gd")
 const PlatformVolumeCapacityProbe = preload("res://godot/src/platform/persistence/platform_volume_capacity_probe.gd")
@@ -109,6 +111,7 @@ func _run_tests() -> void:
 	_run_backup_retention_contract()
 	_run_backup_lifecycle_maintenance_contract()
 	_run_runtime_coordinator_contract()
+	await _run_runtime_transition_controller_contract()
 	_run_permanent_deletion_contract()
 
 	await _run_campaign_desk_journey()
@@ -636,6 +639,7 @@ func _run_backup_scheduler_contract() -> void:
 	_expect(scheduler.last_result().get("status", "") == "backup_verified", "background backup scheduler discloses its verified terminal result")
 	scheduler.queue_free()
 	await process_frame
+	await process_frame
 
 
 func _run_volume_capacity_probe_contract() -> void:
@@ -1144,6 +1148,202 @@ func _run_runtime_coordinator_contract() -> void:
 	_expect(fallback_session.admitted(), "definite pre-commit pointer failure resumes prior runtime authority")
 	_expect(failure_registry.load_state().get("generation", -1) == 2, "failed pointer publication creates no registry generation")
 
+	var drain_root := "user://saltmarcher-runtime-drain-tests/%s" % Time.get_ticks_usec()
+	var drain_registry := FileCampaignRegistry.new(drain_root)
+	var drain_created := drain_registry.create_campaign("Drain Session")
+	var drain_id := str(drain_created.get("campaign_id", ""))
+	var delayed_store := FileCampaignStore.new(
+		drain_root,
+		drain_id,
+		func(operation: String, phase: String, _path: String) -> bool:
+			if operation == "campaign_commit" and phase == "before_rename":
+				OS.delay_msec(80)
+			return false
+	)
+	var drain_session := CampaignRuntimeSession.new(drain_id, 1, delayed_store, delayed_store.load_state())
+	var drain_runtime: Dictionary = drain_session.snapshot()["campaign_state"]["runtime"].duplicate(true)
+	drain_runtime["focused_workspace"] = "accepted-write"
+	var accepted := drain_session.submit_commit(1, 1, {"session": {"timeline": ["accepted"]}}, drain_runtime)
+	_expect(accepted.get("ok", false) and accepted.get("status", "") == "accepted", "runtime session returns a stable ticket only after accepting asynchronous write work")
+	var competing := drain_session.submit_commit(1, 1, {}, drain_runtime)
+	_expect(not competing.get("ok", true) and competing.get("status", "") == "write_in_flight", "runtime session serializes accepted writes")
+	var timed_out := drain_session.drain_and_revoke(0)
+	_expect(timed_out.get("status", "") == "drain_timeout" and timed_out.get("retry_available", false), "runtime drain times out without publishing a Campaign switch")
+	var premature_resume := drain_session.resume_after_precommit_failure()
+	_expect(not premature_resume.get("ok", true) and premature_resume.get("status", "") == "drain_pending", "timed-out session cannot resume while accepted work is still running")
+	var late_submission := drain_session.submit_commit(1, 1, {}, drain_runtime)
+	_expect(not late_submission.get("ok", true) and late_submission.get("status", "") == "revoked", "draining session rejects later submissions immediately")
+	var invalid_timeout := drain_session.drain_and_revoke(-2)
+	_expect(invalid_timeout.get("status", "") == "invalid_timeout", "runtime drain reserves only minus one for an orderly unbounded shutdown")
+	OS.delay_msec(120)
+	var drained := drain_session.drain_and_revoke(1000)
+	_expect(drained.get("ok", false) and drained.get("accepted_write_results", []).size() == 1, "retry drains the terminal accepted-write result")
+	_expect(drain_session.campaign_generation() == 2 and not drain_session.admitted(), "drain preserves the accepted commit and leaves writer authority revoked")
+	var resumed_session := drain_session.resume_after_precommit_failure()
+	_expect(resumed_session.get("ok", false) and drain_session.admitted(), "cancelled pre-commit transition can resume authority after drain completion")
+	var second_ticket := drain_session.submit_commit(1, 2, {"session": {"timeline": ["polled"]}}, drain_runtime)
+	var polled: Dictionary = {}
+	for _attempt in 200:
+		polled = drain_session.poll_commit(str(second_ticket.get("ticket_id", "")))
+		if polled.get("status", "") == "completed":
+			break
+		OS.delay_msec(2)
+	_expect(polled.get("status", "") == "completed" and polled.get("result", {}).get("ok", false), "accepted asynchronous write exposes one terminal poll result")
+	drain_session.drain_and_revoke()
+
+	var async_switch_root := "user://saltmarcher-runtime-async-switch-tests/%s" % Time.get_ticks_usec()
+	var async_switch_registry := FileCampaignRegistry.new(async_switch_root)
+	var async_first := async_switch_registry.create_campaign("Async Ziel")
+	var async_first_id := str(async_first.get("campaign_id", ""))
+	var async_second := async_switch_registry.create_campaign("Async Quelle")
+	var async_second_id := str(async_second.get("campaign_id", ""))
+	var async_coordinator := CampaignRuntimeCoordinator.new(
+		async_switch_root,
+		async_switch_registry,
+		func(root_path: String, campaign_id: String):
+			return FileCampaignStore.new(
+				root_path,
+				campaign_id,
+				func(operation: String, phase: String, _path: String) -> bool:
+					if campaign_id == async_second_id and operation == "campaign_commit" and phase == "before_rename":
+						OS.delay_msec(60)
+					return false
+			)
+	)
+	var backup_notifications: Array = []
+	async_coordinator.set_backup_notifier(func(campaign_id: String, generation: int) -> void:
+		backup_notifications.append({"campaign_id": campaign_id, "generation": generation})
+	)
+	async_coordinator.open_durable_active()
+	var async_runtime: Dictionary = async_coordinator.current_session().snapshot()["campaign_state"]["runtime"].duplicate(true)
+	var switch_write := async_coordinator.submit_current_commit(2, 1, {"session": {"timeline": ["before-switch"]}}, async_runtime)
+	_expect(switch_write.get("ok", false), "coordinator accepts off-main write before Campaign switch")
+	var drained_switch := async_coordinator.switch_to(async_first_id, 2, 1000)
+	_expect(drained_switch.get("ok", false) and drained_switch.get("registry_state", {}).get("active_campaign_id", "") == async_first_id, "Campaign pointer publishes only after accepted write drain")
+	var drained_source := FileCampaignStore.new(async_switch_root, async_second_id).read_partition("session")
+	_expect(drained_source.get("payload", {}).get("timeline", []) == ["before-switch"], "switch preserves the exact accepted source-Campaign mutation")
+	_expect(
+		backup_notifications.size() == 1 and backup_notifications[0].get("generation", -1) == 2,
+		"drained accepted commit reaches automatic recovery scheduling exactly once; got %s" % JSON.stringify(backup_notifications)
+	)
+
+	var timeout_root := "user://saltmarcher-runtime-timeout-tests/%s" % Time.get_ticks_usec()
+	var timeout_registry := FileCampaignRegistry.new(timeout_root)
+	var timeout_first := timeout_registry.create_campaign("Timeout Ziel")
+	var timeout_first_id := str(timeout_first.get("campaign_id", ""))
+	var timeout_second := timeout_registry.create_campaign("Timeout Quelle")
+	var timeout_second_id := str(timeout_second.get("campaign_id", ""))
+	var timeout_coordinator := CampaignRuntimeCoordinator.new(
+		timeout_root,
+		timeout_registry,
+		func(root_path: String, campaign_id: String):
+			return FileCampaignStore.new(
+				root_path,
+				campaign_id,
+				func(operation: String, phase: String, _path: String) -> bool:
+					if campaign_id == timeout_second_id and operation == "campaign_commit" and phase == "before_rename":
+						OS.delay_msec(120)
+					return false
+			)
+	)
+	timeout_coordinator.open_durable_active()
+	var timeout_runtime: Dictionary = timeout_coordinator.current_session().snapshot()["campaign_state"]["runtime"].duplicate(true)
+	timeout_coordinator.submit_current_commit(2, 1, {"session": {"timeline": ["slow"]}}, timeout_runtime)
+	var timeout_switch := timeout_coordinator.switch_to(timeout_first_id, 2, 1)
+	_expect(timeout_switch.get("status", "") == "drain_timeout", "coordinator exposes bounded drain timeout literally")
+	_expect(timeout_registry.load_state().get("active_campaign_id", "") == timeout_second_id, "drain timeout leaves durable Campaign pointer unchanged")
+	_expect(not timeout_coordinator.current_session().admitted(), "timed-out source rejects late writes until retry or cancel")
+	OS.delay_msec(160)
+	var cancelled_timeout := timeout_coordinator.resume_current_after_cancelled_transition()
+	_expect(cancelled_timeout.get("ok", false) and timeout_coordinator.current_session().admitted(), "cancelled timed-out switch safely resumes source authority after write completion")
+	var retried_switch := timeout_coordinator.switch_to(timeout_first_id, 2, 1000)
+	_expect(retried_switch.get("ok", false), "Campaign switch retries successfully after timed-out accepted work terminates")
+
+	var write_failure_root := "user://saltmarcher-runtime-write-failure-tests/%s" % Time.get_ticks_usec()
+	var write_failure_registry := FileCampaignRegistry.new(write_failure_root)
+	var write_failure_first := write_failure_registry.create_campaign("Failure Ziel")
+	var write_failure_first_id := str(write_failure_first.get("campaign_id", ""))
+	var write_failure_second := write_failure_registry.create_campaign("Failure Quelle")
+	var write_failure_second_id := str(write_failure_second.get("campaign_id", ""))
+	var write_failure_coordinator := CampaignRuntimeCoordinator.new(
+		write_failure_root,
+		write_failure_registry,
+		func(root_path: String, campaign_id: String):
+			return FileCampaignStore.new(
+				root_path,
+				campaign_id,
+				func(operation: String, phase: String, _path: String) -> bool:
+					return campaign_id == write_failure_second_id and operation == "campaign_commit" and phase == "before_rename"
+			)
+	)
+	write_failure_coordinator.open_durable_active()
+	var failed_runtime: Dictionary = write_failure_coordinator.current_session().snapshot()["campaign_state"]["runtime"].duplicate(true)
+	write_failure_coordinator.submit_current_commit(2, 1, {"session": {"timeline": ["fails"]}}, failed_runtime)
+	var refused_for_write := write_failure_coordinator.switch_to(write_failure_first_id, 2, 1000)
+	_expect(refused_for_write.get("status", "") == "accepted_write_failed", "failed accepted write blocks Campaign pointer publication")
+	_expect(write_failure_registry.load_state().get("active_campaign_id", "") == write_failure_second_id, "failed accepted write leaves durable pointer on source Campaign")
+	_expect(write_failure_coordinator.current_session().admitted(), "failed accepted write resumes source authority for explicit retry")
+
+
+func _run_runtime_transition_controller_contract() -> void:
+	var data_root := "user://saltmarcher-runtime-transition-tests/%s" % Time.get_ticks_usec()
+	var registry := FileCampaignRegistry.new(data_root)
+	var target := registry.create_campaign("Controller Ziel")
+	var target_id := str(target.get("campaign_id", ""))
+	var source := registry.create_campaign("Controller Quelle")
+	var source_id := str(source.get("campaign_id", ""))
+	var coordinator := CampaignRuntimeCoordinator.new(
+		data_root,
+		registry,
+		func(root_path: String, campaign_id: String):
+			return FileCampaignStore.new(
+				root_path,
+				campaign_id,
+				func(operation: String, phase: String, _path: String) -> bool:
+					if campaign_id == source_id and operation == "campaign_commit" and phase == "before_rename":
+						OS.delay_msec(120)
+					return false
+			)
+	)
+	coordinator.open_durable_active()
+	var runtime: Dictionary = coordinator.current_session().snapshot()["campaign_state"]["runtime"].duplicate(true)
+	var accepted := coordinator.submit_current_commit(2, 1, {"session": {"timeline": ["controller-drain"]}}, runtime)
+	_expect(accepted.get("ok", false), "transition-controller fixture accepts source write")
+	var controller := CampaignRuntimeTransitionController.new(coordinator, 1)
+	root.add_child(controller)
+	var completions: Array = []
+	var recoveries: Array = []
+	controller.transition_completed.connect(func(kind: String, result: Dictionary) -> void:
+		completions.append({"kind": kind, "result": result.duplicate(true)})
+	)
+	controller.transition_recovered.connect(func(result: Dictionary) -> void:
+		recoveries.append(result.duplicate(true))
+	)
+	var started := controller.switch_to(target_id, 2)
+	_expect(started.get("ok", false) and controller.is_active(), "transition controller admits one non-blocking Campaign switch")
+	for _attempt in 200:
+		if not completions.is_empty():
+			break
+		await create_timer(0.005).timeout
+	_expect(
+		completions.size() == 1 and completions[0].get("result", {}).get("status", "") == "drain_timeout",
+		"transition controller surfaces its bounded drain timeout on the main thread"
+	)
+	_expect(registry.load_state().get("active_campaign_id", "") == source_id, "controller timeout leaves the durable pointer on the source Campaign")
+	_expect(controller.is_active() and not coordinator.current_session().admitted(), "controller keeps competing actions fenced while timed-out work terminates")
+	var competing := controller.switch_to(target_id, 2)
+	_expect(competing.get("status", "") == "transition_recovery_pending", "controller refuses a new switch during timeout recovery")
+	for _attempt in 300:
+		if not recoveries.is_empty():
+			break
+		await create_timer(0.005).timeout
+	_expect(recoveries.size() == 1 and recoveries[0].get("ok", false), "controller automatically resumes source authority after the accepted write terminates")
+	_expect(not controller.is_active() and coordinator.current_session().admitted(), "controller releases the UI fence only after source authority is restored")
+	var source_partition := FileCampaignStore.new(data_root, source_id).read_partition("session")
+	_expect(source_partition.get("payload", {}).get("timeline", []) == ["controller-drain"], "controller recovery preserves the exact accepted source write")
+	controller.queue_free()
+	await process_frame
+
 
 func _run_permanent_deletion_contract() -> void:
 	var data_root := "user://saltmarcher-permanent-delete-tests/%s" % Time.get_ticks_usec()
@@ -1276,16 +1476,25 @@ func _run_campaign_desk_journey() -> void:
 	name_input.text_changed.emit(name_input.text)
 	_expect(not create_button.disabled, "visible-name input enables campaign creation")
 	name_input.text_submitted.emit(name_input.text)
-	await process_frame
-	var after_first := registry.load_state()
+	_expect(create_button.disabled and desk.runtime_transition_controller.is_active(), "Campaign creation leaves the UI thread and disables competing Campaign actions")
+	var after_first: Dictionary = {}
+	for _attempt in 300:
+		await create_timer(0.01).timeout
+		after_first = registry.load_state()
+		if after_first.get("campaigns", []).size() == 1 and not desk.runtime_transition_controller.is_active():
+			break
 	_expect(after_first.get("campaigns", []).size() == 1, "Enter creates a campaign through the Godot production UI")
 	var first_ui_id := str(after_first.get("active_campaign_id", ""))
 
 	name_input.text = "Nebenpfad"
 	name_input.text_changed.emit(name_input.text)
 	name_input.text_submitted.emit(name_input.text)
-	await process_frame
-	var after_second := registry.load_state()
+	var after_second: Dictionary = {}
+	for _attempt in 300:
+		await create_timer(0.01).timeout
+		after_second = registry.load_state()
+		if after_second.get("campaigns", []).size() == 2 and not desk.runtime_transition_controller.is_active():
+			break
 	_expect(after_second.get("campaigns", []).size() == 2, "campaign desk refreshes after a second creation")
 	_expect(after_second.get("active_campaign_id", "") != first_ui_id, "newly created campaign becomes active")
 
@@ -1298,8 +1507,13 @@ func _run_campaign_desk_journey() -> void:
 	_expect(selectable != null, "campaign desk renders another campaign as selectable")
 	if selectable != null:
 		selectable.pressed.emit()
-		await process_frame
-		var after_switch := registry.load_state()
+		_expect(desk.runtime_transition_controller.is_active(), "Campaign button starts a non-blocking runtime transition")
+		var after_switch: Dictionary = {}
+		for _attempt in 300:
+			await create_timer(0.01).timeout
+			after_switch = registry.load_state()
+			if after_switch.get("active_campaign_id", "") == first_ui_id and not desk.runtime_transition_controller.is_active():
+				break
 		_expect(after_switch.get("active_campaign_id", "") == first_ui_id, "campaign button switches the active campaign")
 
 	var export_button := desk.find_child("ExportCampaignButton", true, false) as Button

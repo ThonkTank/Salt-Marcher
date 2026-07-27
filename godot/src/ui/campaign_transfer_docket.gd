@@ -13,6 +13,7 @@ var _quiet_ink: Color
 var _active_campaign_id := ""
 var _busy := false
 var _modal_blocked := false
+var _busy_cancellable := true
 var _export_button: Button
 var _import_button: Button
 var _cancel_button: Button
@@ -43,9 +44,10 @@ func set_active_campaign(campaign_id: String) -> void:
 	_refresh_controls()
 
 
-func set_busy(busy: bool, modal_blocked: bool = false) -> void:
+func set_busy(busy: bool, modal_blocked: bool = false, cancellable: bool = true) -> void:
 	_busy = busy
 	_modal_blocked = modal_blocked
+	_busy_cancellable = cancellable
 	_refresh_controls()
 
 
@@ -191,4 +193,4 @@ func _refresh_controls() -> void:
 		return
 	_export_button.disabled = _busy or _modal_blocked or _active_campaign_id.is_empty()
 	_import_button.disabled = _busy or _modal_blocked
-	_cancel_button.disabled = not _busy or _modal_blocked
+	_cancel_button.disabled = not _busy or _modal_blocked or not _busy_cancellable
