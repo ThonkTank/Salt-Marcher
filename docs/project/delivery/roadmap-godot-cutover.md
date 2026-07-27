@@ -35,7 +35,7 @@ work are forbidden. Pre-completion data is disposable.
 | Milestone | Outcome | Deletion gate | Status |
 | --- | --- | --- | --- |
 | `G0` Target and executable foundation | Godot project starts; Campaign desk creates, lists, activates, restarts, rejects stale activation, and recovers a corrupted newest registry generation through immutable JSON files. Target architecture and persistence contract name no SQLite solution. | None yet: this is the shared foundation and not feature parity. | In progress: code, headless contract/UI journeys, injected write/publication failures, production-scene startup, and a 1366 x 768 render are green; list/open scale and Windows durability qualification remain. |
-| `G1` Transactional Campaign runtime | Partitioned Campaign commit manifests, bounded indexes, automatic preservation, activation drain/revoke, recovery, trash, complete export/import, assets, backups, and representative data fixtures work without SQLite. | Delete Java Campaign registry/runtime, `platform.persistence`, all installation/campaign SQLite lifecycle code, and superseded persistence docs/tests. | In progress: immutable owner partitions, atomic runtime state, stale-write rejection, recovery continuation, recoverable Campaign trash/restore, the explicit permanent-deletion backend, current-format streaming export/import, a restore-tested manual backup/restore engine, and synchronous runtime admission/revoke are green. Automatic backup schedule/retention, asynchronous drain, shared definitions, cancellable progress, compaction, and scale/OS qualification remain. |
+| `G1` Transactional Campaign runtime | Partitioned Campaign commit manifests, bounded indexes, automatic preservation, activation drain/revoke, recovery, trash, complete export/import, assets, backups, and representative data fixtures work without SQLite. | Delete Java Campaign registry/runtime, `platform.persistence`, all installation/campaign SQLite lifecycle code, and superseded persistence docs/tests. | In progress: immutable owner partitions, atomic runtime state, stale-write rejection, recovery continuation, recoverable Campaign trash/restore, the explicit permanent-deletion backend, current-format streaming export/import, 60-second background scheduling of restore-tested recovery points, controlled restore, and synchronous runtime admission/revoke are green. Backup retention/storage pressure, asynchronous drain, shared definitions, cancellable progress, compaction, and scale/OS qualification remain. |
 | `G2` Knowledge and table foundation | Native shell plus Campaign objects, Catalog, Creatures, Items, Roster/current Party/planning Party, note-first records, explicit deletion, and shared-definition read semantics. | Delete corresponding JavaFX views, Java application/domain implementations, SQLite adapters, CSS, and shell contributions. | Pending |
 | `G3` Preparation | Session Planner timeline, Session Generation, World planning, treasures, notes, weather/music preparation, and editable generated output use Godot and file partitions. | Delete Session Planner, Session Generation, World Planner, and preparation-side Java/SQLite owners. | Pending |
 | `G4` Live table | Running Scenes, Encounters, initiative/HP/turns, masks, split Party state, independent time, live notes/search/music, and passive display preserve and resume exact runtime truth. | Delete Scene, Encounter, Encounter Table, Travel state-shell, and related Java owners. | Pending |
@@ -91,9 +91,10 @@ work are forbidden. Pre-completion data is disposable.
   session on target-preparation failure, and resumes it after a definite
   pre-commit pointer failure;
 - backup proof covers restore-tested full-Campaign bundles, verified receipts,
-  rejection of damaged backups and active write authority, recovery publication
-  above replaced live generations, and unchanged retention of the replaced
-  Campaign root;
+  rejection of damaged backups and active write authority, a production
+  background queue with a 60-second due boundary, recovery publication above
+  replaced live generations, and unchanged retention of the replaced Campaign
+  root;
 - untrusted-bundle proof rejects checksum damage, stale registration, parent
   traversal, oversized declared content, and undeclared bytes without changing
   existing registry truth;

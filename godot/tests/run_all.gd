@@ -6,6 +6,7 @@ const CampaignBackupManager = preload("res://godot/src/platform/persistence/camp
 const CampaignBundle = preload("res://godot/src/platform/portability/campaign_bundle.gd")
 const CampaignDesk = preload("res://godot/src/ui/campaign_desk.gd")
 const CampaignRuntimeCoordinator = preload("res://godot/src/app/campaign_runtime_coordinator.gd")
+const CampaignBackupScheduler = preload("res://godot/src/app/campaign_backup_scheduler.gd")
 
 var _failures: Array[String] = []
 
@@ -96,6 +97,7 @@ func _run_tests() -> void:
 
 	_run_registry_fault_contract()
 	_run_backup_contract()
+	await _run_backup_scheduler_contract()
 	_run_runtime_coordinator_contract()
 	_run_permanent_deletion_contract()
 
@@ -332,6 +334,45 @@ func _run_backup_contract() -> void:
 		var after_damage := manager.list_backups(campaign_id)
 		_expect(after_damage.get("backups", []).size() == 1, "damaged verified backup is excluded from safe backup list")
 		_expect(after_damage.get("rejected_backups", []).size() == 1, "damaged verified backup is explicitly disclosed")
+
+	var schedule_root := "user://saltmarcher-backup-schedule-tests/%s" % Time.get_ticks_usec()
+	var schedule_registry := FileCampaignRegistry.new(schedule_root)
+	var scheduled_campaign := schedule_registry.create_campaign("Rolling Recovery")
+	var scheduled_id := str(scheduled_campaign.get("campaign_id", ""))
+	var schedule_manager := CampaignBackupManager.new(schedule_root, schedule_registry)
+	var first_point := schedule_manager.maintain_recovery_point(scheduled_id, 1, 100, 60)
+	_expect(first_point.get("ok", false) and first_point.get("status", "") == "backup_verified", "automatic recovery maintenance creates the first restore-tested point")
+	var scheduled_store := FileCampaignStore.new(schedule_root, scheduled_id)
+	var scheduled_runtime := scheduled_store.default_runtime_state()
+	scheduled_runtime["focused_workspace"] = "changed"
+	var scheduled_change := scheduled_store.commit(1, {"world": {"objects": []}}, scheduled_runtime)
+	_expect(scheduled_change.get("ok", false), "rolling recovery fixture advances Campaign truth")
+	var early_check := schedule_manager.maintain_recovery_point(scheduled_id, 2, 159, 60)
+	_expect(early_check.get("ok", false) and early_check.get("status", "") == "not_due" and early_check.get("next_due_at_unix", -1) == 160, "rolling recovery waits only until the existing point reaches its age limit")
+	var due_check := schedule_manager.maintain_recovery_point(scheduled_id, 2, 160, 60)
+	_expect(due_check.get("ok", false) and due_check.get("status", "") == "backup_verified", "rolling recovery protects changed Campaign truth at the 60 second boundary")
+	var protected_check := schedule_manager.maintain_recovery_point(scheduled_id, 2, 500, 60)
+	_expect(protected_check.get("ok", false) and protected_check.get("status", "") == "current_generation_protected", "unchanged Campaign truth does not create redundant rolling backups")
+
+
+func _run_backup_scheduler_contract() -> void:
+	var data_root := "user://saltmarcher-backup-worker-tests/%s" % Time.get_ticks_usec()
+	var registry := FileCampaignRegistry.new(data_root)
+	var created := registry.create_campaign("Background Recovery")
+	var campaign_id := str(created.get("campaign_id", ""))
+	var scheduler := CampaignBackupScheduler.new(data_root, registry)
+	root.add_child(scheduler)
+	var backups: Dictionary = {}
+	for _attempt in 200:
+		await create_timer(0.01).timeout
+		backups = CampaignBackupManager.new(data_root, registry).list_backups(campaign_id)
+		if backups.get("backups", []).size() == 1 and scheduler.pending_count() == 0:
+			break
+	_expect(backups.get("backups", []).size() == 1, "background backup scheduler protects Campaigns discovered at startup")
+	_expect(scheduler.pending_count() == 0, "background backup leaves its queue only after verified recovery publication")
+	_expect(scheduler.last_result().get("status", "") == "backup_verified", "background backup scheduler discloses its verified terminal result")
+	scheduler.queue_free()
+	await process_frame
 
 
 func _write_invalid_bundle(path: String, entry_path: String, entry_size: String, checksum: String) -> void:

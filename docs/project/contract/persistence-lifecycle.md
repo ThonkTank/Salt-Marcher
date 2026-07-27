@@ -158,13 +158,16 @@ activation generation, and rejects late writes from the detached session. The
 backup engine creates immutable full-Campaign bundles, counts them only after
 an isolated restore validation, verifies durable receipt checksums when listing,
 requires revoked write authority for restore, publishes recovery above the
-replaced live generation, and retains the replaced Campaign root unchanged.
+replaced live generation, and retains the replaced Campaign root unchanged. A
+background scheduler discovers existing Campaigns at startup and queues every
+confirmed new generation until the current truth has a restore-tested point;
+changed truth becomes due when the prior verified point reaches 60 seconds.
 
-Automatic backup scheduling and retention, asynchronous accepted-write drain,
-shared-definition conflict staging, cancellable/progress-reporting portability
-work, compaction, released-format conversion, cross-OS qualification, and
-representative scale proof remain open roadmap work. The old Java/SQLite
-implementation does not satisfy this target contract.
+Backup retention and storage-pressure policy, asynchronous accepted-write
+drain, shared-definition conflict staging, cancellable/progress-reporting
+portability work, compaction, released-format conversion, cross-OS
+qualification, and representative scale proof remain open roadmap work. The
+old Java/SQLite implementation does not satisfy this target contract.
 
 ## References
 

@@ -22,7 +22,7 @@ func _init(data_root: String, registry) -> void:
 	_portability = CampaignBundle.new(_data_root, registry)
 
 
-func create_restore_tested_backup(campaign_id: String) -> Dictionary:
+func create_restore_tested_backup(campaign_id: String, created_at_unix: int = -1) -> Dictionary:
 	var store := FileCampaignStore.new(_data_root, campaign_id)
 	var state := store.load_state()
 	if not state.get("ok", false):
@@ -53,11 +53,13 @@ func create_restore_tested_backup(campaign_id: String) -> Dictionary:
 	if bundle_checksum.length() != 64 or bundle_size <= 0:
 		DirAccess.remove_absolute(absolute_bundle)
 		return _failure("Campaign-Backup konnte nach dem Restore-Test nicht bestätigt werden.")
+	var receipt_time := created_at_unix if created_at_unix >= 0 else int(Time.get_unix_time_from_system())
 	var receipt_payload := {
 		"backup_id": backup_id,
 		"campaign_id": campaign_id,
 		"campaign_generation": str(state["generation"]),
-		"created_at_utc": Time.get_datetime_string_from_system(true),
+		"created_at_utc": Time.get_datetime_string_from_unix_time(receipt_time),
+		"created_at_unix": str(receipt_time),
 		"bundle_name": bundle_name,
 		"bundle_size": str(bundle_size),
 		"bundle_sha256": bundle_checksum,
@@ -76,6 +78,53 @@ func create_restore_tested_backup(campaign_id: String) -> Dictionary:
 		"status": "backup_verified",
 		"backup": receipt_payload,
 	}
+
+
+func maintain_recovery_point(
+	campaign_id: String,
+	observed_generation: int,
+	now_unix: int = -1,
+	maximum_age_seconds: int = 60
+) -> Dictionary:
+	if maximum_age_seconds <= 0:
+		return _failure("Das Recovery-Point-Intervall muss positiv sein.")
+	var current := FileCampaignStore.new(_data_root, campaign_id).load_state()
+	if not current.get("ok", false):
+		return current
+	var current_generation := int(current["generation"])
+	if observed_generation > current_generation:
+		return {
+			"ok": false,
+			"status": "stale_observation",
+			"error": "Die beobachtete Campaign-Generation ist noch nicht dauerhaft lesbar.",
+			"state": current,
+		}
+	var effective_now := now_unix if now_unix >= 0 else int(Time.get_unix_time_from_system())
+	var listed := list_backups(campaign_id)
+	if not listed.get("ok", false):
+		return listed
+	var newest_backup_time := -1
+	for backup in listed["backups"]:
+		if int(str(backup.get("campaign_generation", "0"))) == current_generation:
+			return {
+				"ok": true,
+				"status": "current_generation_protected",
+				"campaign_id": campaign_id,
+				"campaign_generation": current_generation,
+			}
+		newest_backup_time = maxi(newest_backup_time, int(str(backup.get("created_at_unix", "-1"))))
+	if newest_backup_time >= 0 and effective_now - newest_backup_time < maximum_age_seconds:
+		return {
+			"ok": true,
+			"status": "not_due",
+			"campaign_id": campaign_id,
+			"campaign_generation": current_generation,
+			"next_due_at_unix": newest_backup_time + maximum_age_seconds,
+		}
+	var created := create_restore_tested_backup(campaign_id, effective_now)
+	if created.get("ok", false):
+		created["campaign_generation"] = current_generation
+	return created
 
 
 func list_backups(campaign_id: String) -> Dictionary:
@@ -233,6 +282,9 @@ func _read_receipt(campaign_id: String, backup_id: String) -> Dictionary:
 		return _failure("Backup-Beleg besitzt eine ungültige Prüfsumme.")
 	if payload.get("backup_id", "") != backup_id or payload.get("campaign_id", "") != campaign_id or payload.get("restore_tested", false) != true:
 		return _failure("Backup-Beleg und angefordertes Backup widersprechen sich.")
+	var created_at_unix := str(payload.get("created_at_unix", ""))
+	if not created_at_unix.is_valid_int() or created_at_unix.to_int() < 0:
+		return _failure("Backup-Beleg enthält keinen gültigen Erstellungszeitpunkt.")
 	var bundle_name := str(payload.get("bundle_name", ""))
 	if bundle_name != backup_id + ".saltmarcher":
 		return _failure("Backup-Beleg enthält keinen sicheren Bundle-Namen.")

@@ -9,6 +9,7 @@ const CampaignRuntimeSession = preload("res://godot/src/app/campaign_runtime_ses
 var _data_root: String
 var _registry
 var _current: CampaignRuntimeSession
+var _backup_notifier: Callable
 
 
 func _init(data_root: String, registry) -> void:
@@ -122,6 +123,7 @@ func create_and_switch(name: String, expected_registry_generation: int) -> Dicti
 		prepared["store"],
 		prepared["state"]
 	)
+	_notify_confirmed_generation(_current)
 	return {
 		"ok": true,
 		"status": "created",
@@ -141,13 +143,20 @@ func commit_current(
 ) -> Dictionary:
 	if _current == null:
 		return {"ok": false, "status": "campaign_required", "error": "Keine Campaign ist aktiv."}
-	return _current.commit(
+	var committed := _current.commit(
 		expected_activation_generation,
 		expected_campaign_generation,
 		partition_changes,
 		runtime_state,
 		removed_partitions
 	)
+	if committed.get("ok", false):
+		_notify_confirmed_generation(_current)
+	return committed
+
+
+func set_backup_notifier(notifier: Callable) -> void:
+	_backup_notifier = notifier
 
 
 func revoke_current() -> Dictionary:
@@ -176,3 +185,8 @@ func _recovery(message: String, cause: Dictionary) -> Dictionary:
 		"cause": cause,
 		"session": _current,
 	}
+
+
+func _notify_confirmed_generation(session: CampaignRuntimeSession) -> void:
+	if _backup_notifier.is_valid():
+		_backup_notifier.call(session.campaign_id(), session.campaign_generation())
