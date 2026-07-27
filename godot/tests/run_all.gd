@@ -3,6 +3,7 @@ extends SceneTree
 const FileCampaignRegistry = preload("res://godot/src/platform/persistence/file_campaign_registry.gd")
 const FileCampaignStore = preload("res://godot/src/platform/persistence/file_campaign_store.gd")
 const CampaignBackupManager = preload("res://godot/src/platform/persistence/campaign_backup_manager.gd")
+const CampaignBackupClosure = preload("res://godot/src/platform/persistence/campaign_backup_closure.gd")
 const CampaignBundle = preload("res://godot/src/platform/portability/campaign_bundle.gd")
 const CampaignDesk = preload("res://godot/src/ui/campaign_desk.gd")
 const CampaignRuntimeCoordinator = preload("res://godot/src/app/campaign_runtime_coordinator.gd")
@@ -304,6 +305,7 @@ func _run_backup_contract() -> void:
 	var manager := CampaignBackupManager.new(data_root, registry)
 	var backup := manager.create_restore_tested_backup(campaign_id)
 	_expect(backup.get("ok", false), "Campaign backup is published only after isolated restore test")
+	_expect(backup.get("unique_bytes_stored", 0) > 0, "first content-addressed recovery point stores its unique Campaign bytes")
 	if not backup.get("ok", false):
 		return
 	var backup_id := str(backup["backup"]["backup_id"])
@@ -341,11 +343,33 @@ func _run_backup_contract() -> void:
 	_expect(second_backup.get("ok", false), "restored Campaign can produce another restore-tested backup")
 	if second_backup.get("ok", false):
 		var second_payload: Dictionary = second_backup["backup"]
-		var second_bundle_path := data_root + "/backups/campaigns/%s/%s" % [campaign_id, second_payload["bundle_name"]]
-		var second_bundle := FileAccess.open(second_bundle_path, FileAccess.READ_WRITE)
-		second_bundle.seek(second_bundle.get_length() - 1)
-		second_bundle.store_8(second_bundle.get_8() ^ 0xff)
-		second_bundle.close()
+		_expect(second_backup.get("reused_file_count", 0) > 0 and second_backup.get("unique_bytes_stored", -1) < str(second_payload["logical_bytes"]).to_int(), "later recovery point reuses unchanged content-addressed Campaign bytes")
+		var blob_directory := data_root + "/backups/campaigns/%s/blobs/sha256" % campaign_id
+		var blob_file_count := 0
+		for blob_file in DirAccess.get_files_at(ProjectSettings.globalize_path(blob_directory)):
+			if blob_file.ends_with(".blob"):
+				blob_file_count += 1
+		var total_point_references: int = backup["backup"]["files"].size() + second_payload["files"].size()
+		_expect(blob_file_count < total_point_references, "unchanged files across recovery points occupy one physical content-addressed blob")
+		var internal_bundle_count := 0
+		for backup_file in DirAccess.get_files_at(ProjectSettings.globalize_path(data_root + "/backups/campaigns/" + campaign_id)):
+			if backup_file.ends_with(".saltmarcher"):
+				internal_bundle_count += 1
+		_expect(internal_bundle_count == 0, "internal recovery points no longer duplicate portable full-Campaign bundles")
+		var unique_checksum := ""
+		for entry in second_payload["files"]:
+			if str(entry["path"]).ends_with("generation-%020d.json" % int(second_payload["campaign_generation"])):
+				unique_checksum = str(entry["sha256"])
+				break
+		_expect(not unique_checksum.is_empty(), "damage fixture identifies a generation-local backup blob")
+		var second_blob_path := CampaignBackupClosure.new(data_root).blob_path(campaign_id, unique_checksum)
+		var second_blob := FileAccess.open(second_blob_path, FileAccess.READ_WRITE)
+		var last_position := second_blob.get_length() - 1
+		second_blob.seek(last_position)
+		var original_byte := second_blob.get_8()
+		second_blob.seek(last_position)
+		second_blob.store_8(original_byte ^ 0xff)
+		second_blob.close()
 		var after_damage := manager.list_backups(campaign_id)
 		_expect(after_damage.get("backups", []).size() == 1, "damaged verified backup is excluded from safe backup list")
 		_expect(after_damage.get("rejected_backups", []).size() == 1, "damaged verified backup is explicitly disclosed")
@@ -465,12 +489,12 @@ func _run_backup_retention_contract() -> void:
 	var store := FileCampaignStore.new(data_root, campaign_id)
 	var manager := CampaignBackupManager.new(data_root, registry)
 	var backup_ids: Array[String] = []
-	for generation in range(1, 7):
+	for generation in range(1, 6):
 		var backup := manager.create_restore_tested_backup(campaign_id, generation * 60)
 		_expect(backup.get("ok", false), "retention fixture creates verified point %d" % generation)
 		if backup.get("ok", false):
 			backup_ids.append(str(backup["backup"]["backup_id"]))
-		if generation < 6:
+		if generation < 5:
 			var state := store.load_state()
 			var runtime: Dictionary = state["runtime"].duplicate(true)
 			runtime["focused_workspace"] = "generation-%d" % (generation + 1)
@@ -487,7 +511,7 @@ func _run_backup_retention_contract() -> void:
 				]
 			)
 	var before := manager.list_backups(campaign_id)
-	_expect(before.get("backups", []).size() == 6, "retention starts with six verified recovery points")
+	_expect(before.get("backups", []).size() == 5, "retention starts with five verified recovery points")
 
 	var crash_after_receipt := CampaignBackupManager.new(
 		data_root,
@@ -499,7 +523,7 @@ func _run_backup_retention_contract() -> void:
 	var receipt_interruption := crash_after_receipt.prune_oldest_verified_backup(campaign_id, 3)
 	_expect(receipt_interruption.get("status", "") == "retention_interrupted", "retention fault seam simulates process loss after receipt quarantine")
 	var receipt_restart := CampaignBackupManager.new(data_root, registry).list_backups(campaign_id)
-	_expect(receipt_restart.get("backups", []).size() == 6, "restart restores a receipt when its verified bundle remained live")
+	_expect(receipt_restart.get("backups", []).size() == 5, "restart restores an interrupted verified recovery point")
 	_expect(receipt_restart.get("retention_recovery_events", [])[0].get("status", "") == "retention_rollback_completed", "restart discloses completed retention rollback")
 
 	var interrupted_manager := CampaignBackupManager.new(
@@ -512,33 +536,20 @@ func _run_backup_retention_contract() -> void:
 	var interrupted := interrupted_manager.prune_oldest_verified_backup(campaign_id, 3)
 	_expect(not interrupted.get("ok", true), "interrupted retention is surfaced as failure")
 	var after_interruption := manager.list_backups(campaign_id)
-	_expect(after_interruption.get("backups", []).size() == 6, "interrupted retention restores all verified recovery points")
-
-	var crash_after_bundle := CampaignBackupManager.new(
-		data_root,
-		registry,
-		null,
-		func(operation: String, phase: String, _subject: String) -> bool:
-			return operation == "backup_retention" and phase == "after_bundle_quarantine_without_cleanup"
-	)
-	var bundle_interruption := crash_after_bundle.prune_oldest_verified_backup(campaign_id, 3)
-	_expect(bundle_interruption.get("status", "") == "retention_interrupted", "retention fault seam simulates process loss after complete quarantine")
-	var bundle_restart := CampaignBackupManager.new(data_root, registry).list_backups(campaign_id)
-	_expect(bundle_restart.get("backups", []).size() == 5, "restart completes a retention decision after receipt and bundle were quarantined")
-	_expect(bundle_restart.get("retention_recovery_events", [])[0].get("status", "") == "retention_delete_completed", "restart discloses completed quarantined deletion")
+	_expect(after_interruption.get("backups", []).size() == 5, "interrupted retention restores all verified recovery points")
 
 	var pruned := manager.prune_oldest_verified_backup(campaign_id, 3)
 	_expect(pruned.get("ok", false) and pruned.get("status", "") == "oldest_verified_backup_pruned", "pressure retention removes exactly the oldest verified point")
-	_expect(pruned.get("backup_id", "") == backup_ids[1] and pruned.get("removed_bytes", 0) > 0, "retention reports the exact removed recovery point and bytes")
+	_expect(pruned.get("backup_id", "") == backup_ids[0] and pruned.get("removed_bytes", 0) > 0, "retention reports the exact removed recovery point and bytes")
 	var after_prune := manager.list_backups(campaign_id)
 	_expect(after_prune.get("backups", []).size() == 4 and after_prune.get("rejected_backups", []).is_empty(), "ordinary retention removes only one verified recovery point")
 
 	var latest := store.load_state()
 	var next_runtime: Dictionary = latest["runtime"].duplicate(true)
-	next_runtime["focused_workspace"] = "generation-7"
+	next_runtime["focused_workspace"] = "generation-6"
 	var next_commit := store.commit(
 		int(latest["generation"]),
-		{"world": {"revision": 7}},
+		{"world": {"revision": 6}},
 		next_runtime
 	)
 	_expect(next_commit.get("ok", false), "pressure-retention fixture creates unprotected changed truth")
@@ -550,7 +561,7 @@ func _run_backup_retention_contract() -> void:
 	var pressure_result := pressure_manager.maintain_with_pressure_retention(
 		campaign_id,
 		int(next_commit.get("state", {}).get("generation", 0)),
-		420,
+		360,
 		60,
 		3
 	)

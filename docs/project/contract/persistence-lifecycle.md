@@ -25,8 +25,8 @@ campaigns/<campaign id>/
   objects/<owner>/<content id>.json
   chunks/<owner>/<content id>.bin
   assets/<asset id>/<original file name>
-backups/campaigns/<campaign id>/<backup id>.saltmarcher
-backups/campaigns/<campaign id>/<backup id>.verified.json
+backups/campaigns/<campaign id>/points/<backup id>.verified.json
+backups/campaigns/<campaign id>/blobs/sha256/<content checksum>.blob
 recovery/campaigns/<campaign id>/<restore identity>/original/...
 trash/campaigns/<campaign id>-<deletion identity>/...
 staging/<operation identity>/...
@@ -161,32 +161,36 @@ staging, then creates a new independent Campaign identity.
 A Campaign runtime coordinator now prepares a target before committing its
 active pointer, revokes the prior synchronous writer, admits exactly one new
 activation generation, and rejects late writes from the detached session. The
-backup engine creates immutable full-Campaign bundles, counts them only after
-an isolated restore validation, verifies durable receipt checksums when listing,
-requires revoked write authority for restore, publishes recovery above the
-replaced live generation, and retains the replaced Campaign root unchanged. A
-background scheduler discovers existing Campaigns at startup and queues every
-confirmed new generation until the current truth has a restore-tested point;
-changed truth becomes due when the prior verified point reaches 60 seconds.
+backup engine creates immutable content-addressed Campaign closures: each point
+is a checksummed file inventory, while unchanged bytes are shared by checksum
+inside that Campaign's backup pool. A point counts only after isolated
+reconstruction and semantic restore validation. Listing revalidates referenced
+blob sizes and checksums. Restore requires revoked write authority, publishes
+recovery above the replaced live generation, and retains the replaced Campaign
+root unchanged. Portable `.saltmarcher` bundles remain the independent
+export/import format rather than the rolling-backup representation. A background
+scheduler discovers existing Campaigns at startup and queues every confirmed
+new generation until the current truth has a restore-tested point; changed truth
+becomes due when the prior verified point reaches 60 seconds.
 
 Godot writes now enforce the 2 GiB reserve floor before immutable JSON,
 Campaign creation, export, import extraction, and backup publication. When a
 platform capacity probe supplies total volume size, the same admission path
 enforces the exact five-percent half of the rule. Under backup storage pressure,
-maintenance quarantines and removes at most the oldest verified bundle per
-attempt, rolls a receipt-only interruption back after restart, completes an
-already fully quarantined deletion after restart, never touches rejected or
-damaged backup evidence, preserves at least three verified points, and retries
-backup publication. Campaign creation itself now stages and validates its
-complete root before live promotion and removes it again when registry
+maintenance quarantines and removes at most the oldest verified point per
+attempt, rolls an interrupted point quarantine back after restart, never touches
+rejected or damaged backup evidence, preserves at least three verified points,
+garbage-collects only blobs unreferenced by every remaining valid point, and
+retries backup publication. Campaign creation itself now stages and validates
+its complete root before live promotion and removes it again when registry
 publication fails.
 
-Normal-time retention tiers, deduplicated backup closures, the production
-cross-platform total-volume-capacity probe, asynchronous accepted-write drain,
-shared-definition conflict staging, cancellable/progress-reporting portability
-work, compaction, released-format conversion, cross-OS qualification, and
-representative scale proof remain open roadmap work. The old Java/SQLite
-implementation does not satisfy this target contract.
+Normal-time retention tiers, the production cross-platform
+total-volume-capacity probe, asynchronous accepted-write drain, shared-definition
+conflict staging, cancellable/progress-reporting portability work, compaction,
+released-format conversion, cross-OS qualification, and representative scale
+proof remain open roadmap work. The old Java/SQLite implementation does not
+satisfy this target contract.
 
 ## References
 
