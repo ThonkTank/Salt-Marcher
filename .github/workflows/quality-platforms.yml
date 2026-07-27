@@ -30,3 +30,21 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y imagemagick
       - run: ./gradlew check --rerun-tasks --console=plain
+      - name: Extract allowlisted JUnit failure records
+        if: failure()
+        run: >-
+          python3 tools/quality/extract_ci_failure_records.py
+          --input-dir build/test-results/test
+          --output build/ci-failure-records/records.json
+          --run-id "${{ github.run_id }}"
+          --run-attempt "${{ github.run_attempt }}"
+          --head-sha "${{ github.event.pull_request.head.sha || github.sha }}"
+      - name: Retain allowlisted JUnit failure records
+        if: failure() && hashFiles('build/ci-failure-records/records.json') != ''
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: check-failure-records-${{ github.run_id }}
+          path: build/ci-failure-records/records.json
+          if-no-files-found: error
+          retention-days: 1
+          include-hidden-files: false
