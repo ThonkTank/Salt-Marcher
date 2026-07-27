@@ -122,6 +122,19 @@ the Product Process.
   A slice first proves the retaining path and then repairs the owning
   presentation-retirement seam with a causal heap control. M2t remains the next
   feature revalidation candidate only after that M1 repair.
+- M1r retaining-root discovery is unevaluated and paused on C5 availability:
+  neither a non-test-held retaining path nor a repair is established, and
+  historic candidates at base `3eb1e0746` are not active. C5 `non-a` exited
+  `1` before the Gradle workload ([#555 comment
+  5086062253](https://github.com/ThonkTank/Salt-Marcher/issues/555#issuecomment-5086062253))
+  and C5 A-mode MAT preflight exited `124` before HPROF parsing ([#555 comment
+  5086502539](https://github.com/ThonkTank/Salt-Marcher/issues/555#issuecomment-5086502539));
+  both are process—not product/root—evidence, and A must not bypass C5. Resume
+  only after C publishes an independently evaluated, adopted availability rule
+  or bounded failure result, then starts a fresh concept at the current stable
+  baseline whose treatment/control distinguishes retired roots from Java-local,
+  test-worker, current-scene, or parked-shell retention; M2t waits for the
+  resulting M1 repair.
 - This roadmap has not audited every other capability against every canonical
   acceptance outcome; all later milestone completion remains unassessed until
   live, requirement-by-requirement revalidation.
