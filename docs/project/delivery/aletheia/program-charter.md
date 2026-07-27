@@ -1,7 +1,7 @@
 Status: Active
 Owner: SaltMarcher Product Owner
 Last Reviewed: 2026-07-27
-Charter Version: C-0.9.1
+Charter Version: C-0.9.2
 Source of Truth: User-given authority, workstream boundaries, agent assignment, maturity semantics, and completion boundary for the GM-Core program.
 
 # GM-Core Aletheia Program Charter
@@ -69,6 +69,37 @@ evidence of failure, budget expiry, or a falsified premise—not merely because
 the agent is quiet, slow, or nearly complete. If one candidate cannot proceed,
 the role may advance non-conflicting preparation but does not discard completed
 work or end its standing goal.
+
+## Critical-Path Priority And Impact Watch
+
+Before starting or continuing delegated work, every coordinator checks the
+live roadmap, current PR or umbrella-issue handoffs, active agents, and whether
+its action is blocking A. If C owns an A blocker, C unblocks A first with the
+smallest safe bounded result, fallback, or temporary rule; the broader process
+repair continues afterward and off A's critical path. Process completeness is
+never a reason to keep A waiting.
+
+Every delegated assignment declares a wall deadline, next observable signal,
+and maximum turns or token budget when the runtime exposes them. The
+coordinator checks impact at least every five minutes while the assignment is
+active. Quiet work is preserved, not replaced, but at budget expiry the
+coordinator parks it at its latest recoverable artifact, interrupts further
+spend, and chooses from that evidence. It does not restart the same work under
+a new agent merely to obtain a cleaner report.
+
+No C-owned process improvement may keep A blocked for more than ten minutes.
+Before that limit, C publishes the bounded evidence and an explicit safe
+fallback. If a protected boundary makes fallback impossible, C publishes that
+bounded failure and A replans around the unavailable method; neither waits for
+the background process repair.
+After any adopted process change, C checks the next observable A checkpoint
+and one subsequent relevant worker or CI result for queue time, time to first
+useful signal, retries, failures, work discarded, and coordinator wall time.
+It also records goal-token and delegated-turn deltas when available; unavailable
+runtime counters stay explicitly unavailable. A regression, missing promised
+benefit, or new blocker triggers immediate rollback, repair, or scope reduction.
+These facts live in the existing handoff, PR, or umbrella issue, never a new
+progress ledger.
 
 ## Research, Evidence, And Tooling
 
