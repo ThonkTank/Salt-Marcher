@@ -1,7 +1,7 @@
 Status: Active
 Owner: SaltMarcher Product Owner
 Last Reviewed: 2026-07-27
-Charter Version: C-0.9.2
+Charter Version: C-0.9.3
 Source of Truth: User-given authority, workstream boundaries, agent assignment, maturity semantics, and completion boundary for the GM-Core program.
 
 # GM-Core Aletheia Program Charter
@@ -65,10 +65,14 @@ worker, a temporarily unavailable host window, a retryable admission result, or
 a quiet phase agent is not a terminal blocker. The coordinator preserves the
 in-flight candidate and its artifacts, continues safe independent work, and
 retries within its frozen budget. It replaces a phase agent only after positive
-evidence of failure, budget expiry, or a falsified premise—not merely because
-the agent is quiet, slow, or nearly complete. If one candidate cannot proceed,
-the role may advance non-conflicting preparation but does not discard completed
-work or end its standing goal.
+evidence of failure or a falsified premise—not merely because the agent is quiet,
+slow, nearly complete, or past its budget. Budget expiry closes the candidate
+claim as `inconclusive`; it never by itself terminates useful or nearly complete
+running work. Preserve the latest durable artifact, checkpoint and hand off or
+park at a known safe boundary, and prevent the next duplicate. If no safe
+boundary is known, let useful running work finish. If one candidate cannot
+proceed, the role may advance non-conflicting preparation but does not discard
+completed work or end its standing goal.
 
 ## Critical-Path Priority And Impact Watch
 
@@ -82,10 +86,13 @@ never a reason to keep A waiting.
 Every delegated assignment declares a wall deadline, next observable signal,
 and maximum turns or token budget when the runtime exposes them. The
 coordinator checks impact at least every five minutes while the assignment is
-active. Quiet work is preserved, not replaced, but at budget expiry the
-coordinator parks it at its latest recoverable artifact, interrupts further
-spend, and chooses from that evidence. It does not restart the same work under
-a new agent merely to obtain a cleaner report.
+active. Quiet work is preserved, not replaced. At budget expiry the coordinator
+closes the candidate claim as `inconclusive`, preserves its latest durable
+artifact, and checkpoints, hands off, or parks it only at a known safe boundary.
+If no safe boundary is known, useful running work finishes and the next
+duplicate is prevented. Expiry alone never permits a signal, discard, or
+restart. Termination still requires positive failure or safety evidence, the
+worker's own role authority, or non-productive duplication.
 
 No C-owned process improvement may keep A blocked for more than ten minutes.
 Before that limit, C publishes the bounded evidence and an explicit safe
@@ -189,9 +196,10 @@ evidence pauses or reopens product work.
 
 A owns the delivery critical path. B1, B2, B3, and C may each hold at most one
 active candidate and preregister time, token or turn, compute, and external-cost
-budgets. They select the highest expected risk or process value, stop as
-`inconclusive` when a budget expires, and never prolong the program merely to
-search for hypothetical improvement.
+budgets. They select the highest expected risk or process value and close the
+candidate claim as `inconclusive` when a budget expires. They preserve useful
+running work under the safe-boundary rule above and never prolong the program
+merely to search for hypothetical improvement.
 
 At each A slice boundary, each B reviewer samples the changed surface through
 its own lens plus at most one highest program-wide risk. C tests at most one

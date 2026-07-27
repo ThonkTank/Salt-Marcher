@@ -1,8 +1,8 @@
 Status: Active
 Owner: Aletheia C
 Last Reviewed: 2026-07-27
-Charter Version: C-0.9.2
-Process Version: C-2.3.0
+Charter Version: C-0.9.3
+Process Version: C-2.3.1
 Evaluation Version: E-0.7.0
 Source of Truth: Temporary protocol for measured GM-Core work-process optimization.
 
@@ -75,12 +75,13 @@ At candidate start, C records in its existing brief or handoff:
 An A-blocking candidate receives at most ten minutes before a bounded fallback
 or failure report removes C from the critical path; A replans around a method
 that cannot be bypassed safely. Every other C candidate must produce its first
-executable or externally observable signal
-within 15 minutes; otherwise C parks and narrows it before spending more. Long
-qualified measurements may continue only after that signal and only while A is
-not waiting. A five-minute checkpoint compares elapsed wall time, active-agent
-state, turns/token delta when available, new retries, and live A progress with
-the frozen expectation.
+executable or externally observable signal within 15 minutes; otherwise C
+closes the claim as `inconclusive` and follows the Charter's
+artifact-preservation and safe-boundary rule before parking or handing off the
+work. Long qualified measurements may continue only after that signal and only
+while A is not waiting. A five-minute checkpoint compares elapsed wall time,
+active-agent state, turns/token delta when available, new retries, and live A
+progress with the frozen expectation.
 
 C measures adoption effects at the next A checkpoint and the next applicable
 worker or CI result. If saved A wait time does not exceed C-imposed wait, the
