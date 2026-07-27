@@ -119,5 +119,9 @@ work are forbidden. Pre-completion data is disposable.
   publication, independent round trip, keyboard focus, all three simultaneous
   conflict consequences, affected-Campaign disclosure, visible retain-both,
   and two inspected 1366 x 768 OpenGL renders;
+- the Gradle-free local development installer archives only the committed Godot
+  project and icon, verifies the installed commit by readback, and publishes a
+  desktop launcher; self-contained three-OS export presets remain a `G7`/`G8`
+  gate;
 - current contradiction: 1,536 Java files and the Gradle/OpenJFX/SQLite build
   still exist and are owned by `G1` through `G8`.

@@ -22,6 +22,17 @@ Run the current headless foundation tests:
 godot --headless --path . --script res://godot/tests/run_all.gd
 ```
 
+Install the currently committed Godot development build for local desktop
+testing (the installer refuses a dirty worktree):
+
+```bash
+godot/tools/install_desktop_app.sh
+```
+
+This development install contains only the Godot project and icon and launches
+through the locally installed Godot 4 executable. Self-contained Linux,
+Windows, and macOS exports remain a product qualification gate.
+
 On restricted machines, point Godot's XDG data, cache, and config directories
 at writable locations before running it.
 
