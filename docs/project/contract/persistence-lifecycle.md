@@ -2,7 +2,7 @@
 
 Status: Active migration contract
 Owner: Platform Persistence
-Last Reviewed: 2026-07-27
+Last Reviewed: 2026-07-28
 Source of Truth: This document
 
 ## Purpose And Boundary
@@ -225,10 +225,35 @@ retries backup publication. Campaign creation itself now stages and validates
 its complete root before live promotion and removes it again when registry
 publication fails.
 
-Normal-time retention tiers, the production cross-platform
-total-volume-capacity probe, asynchronous accepted-write drain, compaction,
-released-format conversion, cross-OS qualification, representative scale, and
-the repeated-cancellation resource-envelope proof remain open roadmap work.
+Normal maintenance applies configurable time and count retention. The safe
+default keeps every verified point for one hour, one point per hour through one
+day, one per day through 30 days, and one per week through 26 weeks, with an
+absolute 160-point ceiling and a hard floor of three recovery-newest points,
+preferring distinct Campaign generations when available. Count limits win when
+they intersect a time tier. Every individual removal first
+isolates its receipt; a durable tombstone distinguishes committed cleanup from
+rollback after a crash. Blob collection still touches only bytes unreferenced by
+every remaining valid receipt. The capacity reserve remains the independent
+storage-pressure limit.
+
+The explicit Campaign-history compactor requires revoked write authority, an
+unchanged expected generation, and a restore-tested point of that exact active
+generation. It validates every local commit before planning; any damaged commit
+defers the operation unchanged. It keeps at least the newest three valid local
+generations and every partition they reference, never traverses assets, trash,
+exports, retained restore originals, or backup storage, and removes only older
+commit and owner-partition files whose exact size and checksum occur in the
+protected backup. Unknown object files also fail closed. Candidates move into a
+checksummed quarantine receipt. An interruption before the durable commit marker
+rolls the complete set back; one after the marker finishes deletion. Before that
+marker is written, the compacted live root is semantically revalidated and
+receives its own isolated restore-tested point.
+
+The production cross-platform total-volume-capacity probe, asynchronous
+accepted-write drain and automatic active-Campaign compaction scheduling,
+asset/chunk compaction, released-format conversion, cross-OS qualification,
+representative scale, and the repeated-cancellation resource-envelope proof
+remain open roadmap work.
 The old Java/SQLite implementation does not satisfy this target contract.
 
 ## References

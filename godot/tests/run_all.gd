@@ -105,6 +105,7 @@ func _run_tests() -> void:
 	await _run_backup_scheduler_contract()
 	_run_storage_pressure_contract()
 	_run_backup_retention_contract()
+	_run_backup_lifecycle_maintenance_contract()
 	_run_runtime_coordinator_contract()
 	_run_permanent_deletion_contract()
 
@@ -792,6 +793,188 @@ func _run_backup_retention_contract() -> void:
 	_expect(after_pressure.get("backups", []).size() == 3, "pressure retention stops at three verified recovery points")
 	var minimum := manager.prune_oldest_verified_backup(campaign_id, 3)
 	_expect(minimum.get("ok", false) and minimum.get("status", "") == "retention_minimum_preserved", "retention refuses to cross its verified-point minimum")
+
+
+func _run_backup_lifecycle_maintenance_contract() -> void:
+	var retention_root := "user://saltmarcher-normal-retention-tests/%s" % Time.get_ticks_usec()
+	var retention_registry := FileCampaignRegistry.new(retention_root)
+	var retention_created := retention_registry.create_campaign("Zeitstufen")
+	var retention_id := str(retention_created.get("campaign_id", ""))
+	var retention_store := FileCampaignStore.new(retention_root, retention_id)
+	var retention_manager := CampaignBackupManager.new(retention_root, retention_registry)
+	var point_times := [0, 60, 120, 180, 300, 600, 900, 1200]
+	var point_ids: Array[String] = []
+	for index in point_times.size():
+		var point := retention_manager.create_restore_tested_backup(retention_id, point_times[index])
+		_expect(point.get("ok", false), "normal retention fixture creates point %d" % (index + 1))
+		if point.get("ok", false):
+			point_ids.append(str(point["backup"]["backup_id"]))
+		if index < point_times.size() - 1:
+			var state := retention_store.load_state()
+			var runtime: Dictionary = state["runtime"].duplicate(true)
+			runtime["focused_workspace"] = "retention-%d" % (index + 2)
+			var commit := retention_store.commit(
+				int(state["generation"]),
+				{"world": {"retention_revision": index + 2}},
+				runtime
+			)
+			_expect(commit.get("ok", false), "normal retention fixture advances generation %d" % (index + 2))
+	var policy := {
+		"minimum_verified_points": 3,
+		"maximum_verified_points": 5,
+		"keep_all_seconds": 180,
+		"tiers": [{"until_age_seconds": 1200, "spacing_seconds": 300}],
+	}
+	var retained := retention_manager.apply_normal_retention(retention_id, 1200, policy)
+	_expect(retained.get("ok", false) and retained.get("status", "") == "retention_applied", "normal retention applies configurable time and count tiers")
+	_expect(retained.get("removed_backup_ids", []).size() == 3 and retained.get("retained_verified_points", -1) == 5, "normal retention reports its exact bounded point set")
+	var retained_list := retention_manager.list_backups(retention_id)
+	var retained_ids: Dictionary = {}
+	for backup in retained_list.get("backups", []):
+		retained_ids[str(backup["backup_id"])] = true
+	_expect(retained_ids.size() == 5, "normal retention leaves exactly five verified points")
+	for protected_index in range(3, point_ids.size()):
+		_expect(retained_ids.has(point_ids[protected_index]), "normal retention preserves selected recent and bucket points")
+	var repeated := retention_manager.apply_normal_retention(retention_id, 1200, policy)
+	_expect(repeated.get("ok", false) and repeated.get("status", "") == "retention_current" and repeated.get("removed_backup_ids", ["unexpected"]).is_empty(), "normal retention is idempotent")
+	var protected_prune := retention_manager.prune_verified_backup(retention_id, point_ids.back(), 3)
+	_expect(not protected_prune.get("ok", true), "retention refuses explicit removal of a newest protected point")
+	var invalid_policy := retention_manager.apply_normal_retention(retention_id, 1200, {"minimum_verified_points": 1})
+	_expect(not invalid_policy.get("ok", true), "retention rejects a policy below the safe recovery minimum")
+	var retention_cleanup_fault := CampaignBackupManager.new(
+		retention_root,
+		retention_registry,
+		null,
+		func(operation: String, phase: String, _subject: String) -> bool:
+			return operation == "backup_retention" and phase == "after_commit_tombstone"
+	)
+	var retention_cleanup_pending := retention_cleanup_fault.prune_oldest_verified_backup(retention_id, 3)
+	_expect(retention_cleanup_pending.get("status", "") == "retention_cleanup_pending", "retention fault seam simulates process loss after durable removal decision")
+	var retention_cleanup_restart := CampaignBackupManager.new(retention_root, retention_registry).list_backups(retention_id)
+	_expect(retention_cleanup_restart.get("backups", []).size() == 4, "committed retention remains removed after restart")
+	_expect(retention_cleanup_restart.get("retention_recovery_events", [])[0].get("status", "") == "retention_cleanup_completed", "retention finishes committed tombstone cleanup after restart")
+	var clock_root := "user://saltmarcher-retention-clock-tests/%s" % Time.get_ticks_usec()
+	var clock_registry := FileCampaignRegistry.new(clock_root)
+	var clock_created := clock_registry.create_campaign("Clock Safe")
+	var clock_id := str(clock_created.get("campaign_id", ""))
+	var clock_store := FileCampaignStore.new(clock_root, clock_id)
+	var clock_manager := CampaignBackupManager.new(clock_root, clock_registry)
+	var clock_point_ids: Array[String] = []
+	for index in 4:
+		var clock_point := clock_manager.create_restore_tested_backup(clock_id, 1000 - index * 100)
+		clock_point_ids.append(str(clock_point.get("backup", {}).get("backup_id", "")))
+		if index < 3:
+			var clock_state := clock_store.load_state()
+			clock_store.commit(
+				int(clock_state["generation"]),
+				{"world": {"revision": index + 2}},
+				clock_state["runtime"]
+			)
+	var clock_retention := clock_manager.apply_normal_retention(clock_id, 2000, {
+		"minimum_verified_points": 3,
+		"maximum_verified_points": 3,
+		"keep_all_seconds": 0,
+		"tiers": [{"until_age_seconds": 2000, "spacing_seconds": 2000}],
+	})
+	_expect(clock_retention.get("ok", false), "retention tolerates a backwards system clock")
+	var clock_list := clock_manager.list_backups(clock_id)
+	var clock_remaining: Dictionary = {}
+	for backup in clock_list.get("backups", []):
+		clock_remaining[str(backup["backup_id"])] = true
+	_expect(clock_remaining.has(clock_point_ids.back()) and not clock_remaining.has(clock_point_ids.front()), "retention protects newest Campaign generations independently of wall-clock order")
+
+	var compaction_root := "user://saltmarcher-compaction-tests/%s" % Time.get_ticks_usec()
+	var compaction_registry := FileCampaignRegistry.new(compaction_root)
+	var compaction_created := compaction_registry.create_campaign("Compaction")
+	var compaction_id := str(compaction_created.get("campaign_id", ""))
+	var compaction_store := FileCampaignStore.new(compaction_root, compaction_id)
+	for generation in range(2, 8):
+		var state := compaction_store.load_state()
+		var runtime: Dictionary = state["runtime"].duplicate(true)
+		runtime["focused_workspace"] = "compaction-%d" % generation
+		var commit := compaction_store.commit(
+			int(state["generation"]),
+			{"world": {"revision": generation}},
+			runtime
+		)
+		_expect(commit.get("ok", false), "compaction fixture advances generation %d" % generation)
+	var compaction_manager := CampaignBackupManager.new(compaction_root, compaction_registry)
+	var protected_backup := compaction_manager.create_restore_tested_backup(compaction_id, 2000)
+	_expect(protected_backup.get("ok", false), "compaction fixture creates an exact restore-tested current point")
+	var active_refusal := compaction_manager.compact_campaign_history(compaction_id, 7, false)
+	_expect(not active_refusal.get("ok", true), "compaction refuses active write authority")
+	var interrupted_manager := CampaignBackupManager.new(
+		compaction_root,
+		compaction_registry,
+		null,
+		func(operation: String, phase: String, _subject: String) -> bool:
+			return operation == "campaign_compaction" and phase == "after_quarantine_without_rollback"
+	)
+	var interrupted := interrupted_manager.compact_campaign_history(compaction_id, 7, true, 3, 2001)
+	_expect(interrupted.get("status", "") == "compaction_interrupted", "compaction fault seam simulates process loss before commit")
+	var readable_during_interruption := compaction_store.load_state()
+	_expect(readable_during_interruption.get("ok", false) and readable_during_interruption.get("generation", -1) == 7, "interrupted compaction leaves active Campaign truth readable")
+	var compacted := CampaignBackupManager.new(compaction_root, compaction_registry).compact_campaign_history(
+		compaction_id,
+		7,
+		true,
+		3,
+		2002
+	)
+	_expect(compacted.get("ok", false) and compacted.get("status", "") == "campaign_compacted", "compaction rolls an interrupted quarantine back and completes on retry")
+	_expect(compacted.get("recovery_events", [])[0].get("status", "") == "compaction_rollback_completed", "compaction discloses restart rollback")
+	_expect(DirAccess.get_files_at(ProjectSettings.globalize_path(compaction_root + "/campaigns/" + compaction_id + "/commits")).size() == 3, "compaction retains exactly the configured local generation floor")
+	var compacted_objects := 0
+	var object_root := ProjectSettings.globalize_path(compaction_root + "/campaigns/" + compaction_id + "/objects")
+	for owner in DirAccess.get_directories_at(object_root):
+		compacted_objects += DirAccess.get_files_at(object_root + "/" + owner).size()
+	_expect(compacted_objects == 3, "compaction removes only partitions unreachable from retained local generations")
+	var after_compaction := compaction_store.load_state()
+	_expect(after_compaction.get("ok", false) and after_compaction.get("generation", -1) == 7, "compaction preserves active semantic truth")
+	if protected_backup.get("ok", false):
+		var staged_original := CampaignBackupClosure.new(compaction_root).stage_point(
+			compaction_id,
+			str(protected_backup["backup"]["backup_id"]),
+			"post-compaction-proof"
+		)
+		_expect(staged_original.get("ok", false), "pre-compaction recovery point remains independently restorable")
+		if staged_original.get("ok", false):
+			CampaignBackupClosure.new(compaction_root).discard_staging(staged_original["staging_root"])
+	var damaged_latest := FileAccess.open(compaction_store.commit_path(7), FileAccess.WRITE)
+	damaged_latest.store_string("{damaged")
+	damaged_latest.close()
+	var local_fallback := compaction_store.load_state()
+	_expect(local_fallback.get("ok", false) and local_fallback.get("generation", -1) == 6 and local_fallback.get("recovered", false), "compaction retains a local corruption fallback")
+	var damage_deferred := CampaignBackupManager.new(compaction_root, compaction_registry).compact_campaign_history(compaction_id, 6, true, 2)
+	_expect(damage_deferred.get("ok", false) and damage_deferred.get("status", "") == "compaction_deferred_for_damage", "compaction preserves damaged generation evidence")
+
+	var committed_root := "user://saltmarcher-compaction-commit-tests/%s" % Time.get_ticks_usec()
+	var committed_registry := FileCampaignRegistry.new(committed_root)
+	var committed_created := committed_registry.create_campaign("Committed Compaction")
+	var committed_id := str(committed_created.get("campaign_id", ""))
+	var committed_store := FileCampaignStore.new(committed_root, committed_id)
+	for generation in range(2, 6):
+		var state := committed_store.load_state()
+		var commit := committed_store.commit(
+			int(state["generation"]),
+			{"world": {"revision": generation}},
+			state["runtime"]
+		)
+		_expect(commit.get("ok", false), "committed-compaction fixture advances generation %d" % generation)
+	var committed_backup := CampaignBackupManager.new(committed_root, committed_registry).create_restore_tested_backup(committed_id, 3000)
+	_expect(committed_backup.get("ok", false), "committed-compaction fixture protects current truth")
+	var commit_fault_manager := CampaignBackupManager.new(
+		committed_root,
+		committed_registry,
+		null,
+		func(operation: String, phase: String, _subject: String) -> bool:
+			return operation == "campaign_compaction" and phase == "after_commit_marker"
+	)
+	var cleanup_pending := commit_fault_manager.compact_campaign_history(committed_id, 5, true, 3, 3001)
+	_expect(cleanup_pending.get("status", "") == "compaction_cleanup_pending", "compaction fault seam simulates process loss after durable commit")
+	var cleanup_restart := CampaignBackupManager.new(committed_root, committed_registry).compact_campaign_history(committed_id, 5, true, 3, 3002)
+	_expect(cleanup_restart.get("ok", false) and cleanup_restart.get("status", "") == "compaction_current", "committed compaction finishes cleanup after restart")
+	_expect(cleanup_restart.get("recovery_events", [])[0].get("status", "") == "compaction_cleanup_completed", "compaction discloses committed cleanup completion")
 
 
 func _write_invalid_bundle(path: String, entry_path: String, entry_size: String, checksum: String) -> void:

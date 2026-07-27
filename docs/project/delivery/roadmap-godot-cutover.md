@@ -2,7 +2,7 @@
 
 Status: Active migration ledger
 Owner: Godot Cutover Program
-Last Reviewed: 2026-07-27
+Last Reviewed: 2026-07-28
 Source of Truth: This document
 
 ## Objective And Status Authority
@@ -40,7 +40,7 @@ work are forbidden. Pre-completion data is disposable.
 | Milestone | Outcome | Deletion gate | Status |
 | --- | --- | --- | --- |
 | `G0` Target and executable foundation | Godot project starts; Campaign desk creates, lists, activates, restarts, rejects stale activation, and recovers a corrupted newest registry generation through immutable JSON files. Target architecture and persistence contract name no SQLite solution. | None yet: this is the shared foundation and not feature parity. | In progress: code, headless contract/UI journeys, injected write/publication failures, production-scene startup, and a 1366 x 768 render are green; list/open scale and Windows durability qualification remain. |
-| `G1` Transactional Campaign runtime | Partitioned Campaign commit manifests, bounded indexes, automatic preservation, activation drain/revoke, recovery, trash, complete export/import, assets, backups, and representative data fixtures work without SQLite. | Delete Java Campaign registry/runtime, `platform.persistence`, all installation/campaign SQLite lifecycle code, and superseded persistence docs/tests. | In progress: immutable owner partitions, atomic runtime state, stale-write rejection, recovery continuation, recoverable Campaign trash/restore, the explicit permanent-deletion backend, current-format streaming export/import with installation-wide Shared-Definition closure, an off-main-thread progress/cancellation controller, and a keyboard-operable explicit conflict ledger, 60-second background scheduling of restore-tested content-addressed recovery points, controlled restore, pressure-triggered rollback-safe retention, the 2 GiB storage-reserve floor, and synchronous runtime admission/revoke are green. Normal retention tiers, the cross-platform total-volume probe for exact five-percent admission, asynchronous drain, compaction, repeated-cancellation resource qualification, and scale/OS qualification remain. |
+| `G1` Transactional Campaign runtime | Partitioned Campaign commit manifests, bounded indexes, automatic preservation, activation drain/revoke, recovery, trash, complete export/import, assets, backups, and representative data fixtures work without SQLite. | Delete Java Campaign registry/runtime, `platform.persistence`, all installation/campaign SQLite lifecycle code, and superseded persistence docs/tests. | In progress: immutable owner partitions, atomic runtime state, stale-write rejection, recovery continuation, recoverable Campaign trash/restore, the explicit permanent-deletion backend, current-format streaming export/import with installation-wide Shared-Definition closure, an off-main-thread progress/cancellation controller, and a keyboard-operable explicit conflict ledger, 60-second background scheduling of restore-tested content-addressed recovery points, controlled restore, configurable normal and pressure retention, the 2 GiB storage-reserve floor, a revoked-writer commit/partition compaction backend, and synchronous runtime admission/revoke are green. The cross-platform total-volume probe for exact five-percent admission, asynchronous drain plus automatic active-Campaign compaction scheduling, asset/chunk compaction, repeated-cancellation resource qualification, and scale/OS qualification remain. |
 | `G2` Knowledge and table foundation | Native shell plus Campaign objects, Catalog, Creatures, Items, Roster/current Party/planning Party, note-first records, explicit deletion, and shared-definition read semantics. | Delete corresponding JavaFX views, Java application/domain implementations, SQLite adapters, CSS, and shell contributions. | Pending |
 | `G3` Preparation | Session Planner timeline, Session Generation, World planning, treasures, notes, weather/music preparation, and editable generated output use Godot and file partitions. | Delete Session Planner, Session Generation, World Planner, and preparation-side Java/SQLite owners. | Pending |
 | `G4` Live table | Running Scenes, Encounters, initiative/HP/turns, masks, split Party state, independent time, live notes/search/music, and passive display preserve and resume exact runtime truth. | Delete Scene, Encounter, Encounter Table, Travel state-shell, and related Java owners. | Pending |
@@ -106,6 +106,15 @@ work are forbidden. Pre-completion data is disposable.
   staging or live orphans, one-at-a-time oldest-point quarantine, interrupted
   retention rollback after restart, unreferenced-blob collection, and a hard
   minimum of three verified recovery points;
+- normal-retention proof covers configurable all/hour/day/week windows, a hard
+  count ceiling, newest-point protection, deterministic repeated maintenance,
+  exact removal reporting, and restart cleanup after the durable removal
+  tombstone;
+- compaction proof covers active-writer refusal, exact current-backup coverage,
+  a three-generation local fallback, reachability-based partition collection,
+  unchanged active semantic truth, independent pre-compaction restore,
+  damage-evidence deferral, rollback before the commit marker, and cleanup after
+  it;
 - untrusted-bundle proof rejects checksum damage, stale registration, parent
   traversal, oversized declared content, and undeclared bytes without changing
   existing registry truth;

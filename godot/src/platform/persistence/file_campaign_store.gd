@@ -221,6 +221,28 @@ func campaign_directory() -> String:
 	return _campaign_dir
 
 
+func generation_inventory() -> Dictionary:
+	var identity := validate_identity()
+	if not identity.get("ok", false):
+		return identity
+	var valid: Array = []
+	var rejected: Array = []
+	for generation in _available_generations():
+		var candidate := _read_commit(generation)
+		if candidate.get("ok", false):
+			valid.append(candidate["state"])
+		else:
+			rejected.append({
+				"generation": generation,
+				"error": candidate.get("error", "Campaign-Generation ist beschädigt."),
+			})
+	return {
+		"ok": true,
+		"valid_generations": valid,
+		"rejected_generations": rejected,
+	}
+
+
 func default_runtime_state() -> Dictionary:
 	return {
 		"focused_workspace": "campaign",

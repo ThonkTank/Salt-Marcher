@@ -53,8 +53,13 @@ publication. The current
 backend also schedules restore-tested recovery points in the background,
 supports retained-original restore and recoverable trash, and provides
 explicitly confirmed permanent deletion. Backup retention and storage-pressure
-handling now preserve a 2 GiB floor and at least three verified points; normal
-retention tiers and the cross-platform total-volume probe remain migration work.
+handling now preserve a 2 GiB floor and at least three verified points. Normal
+maintenance keeps all points for one hour, then one per hour, day, and week
+through 26 weeks, with a configurable hard point cap. Revoked-writer
+compaction removes only old commits and partition objects whose exact bytes are
+already covered by a current restore-tested point; damaged evidence defers the
+operation. Asset/chunk compaction, automatic active-Campaign orchestration, and
+the cross-platform total-volume probe remain migration work.
 Recovery points share unchanged Campaign bytes through content-addressed blobs;
 portable `.saltmarcher` bundles remain the transfer format. No Godot code opens
 SQLite or JDBC.
