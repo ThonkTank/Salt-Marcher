@@ -1,8 +1,8 @@
 Status: Active
 Owner: Aletheia C
-Last Reviewed: 2026-07-26
-Charter Version: C-0.9.0
-Process Version: C-2.2.0
+Last Reviewed: 2026-07-27
+Charter Version: C-0.9.1
+Process Version: C-2.2.1
 Evaluation Version: E-0.7.0
 Source of Truth: Temporary protocol for measured GM-Core work-process optimization.
 
@@ -100,6 +100,18 @@ unresolved uncertainty, and remaining required handoffs.
   isolation, correlated controller loss, or host-failure safety. Reopen on any
   overlap, premature admission/release, material overhead regression, threat-
   boundary expansion, or operational maintenance burden.
+  C5 is an outer host scheduler, so its executable—not merely its payload—must
+  be launched with host execution. A sandboxed wrapper invocation is a launcher
+  integration failure and cannot establish C5 or workload unavailability.
+  Current paired evidence on `07ea4e183` reproduced the historical Gradle
+  wildcard-IP failure for both wrapped and unwrapped commands inside the same
+  restricted network sandbox, while direct host Gradle completed and unchanged
+  C5 wrapping the same host Gradle command also completed. The exact MAT Usage
+  preflight likewise completed with exit `13` in `4.96 s` direct and `5.40 s`
+  through unchanged host-launched C5; the historical 900-second result is not
+  currently reproducible. Operational use follows the Charter's one-canary,
+  two-minute-failure, immediate-A-fallback rule rather than launching a long C
+  investigation on A's critical path.
 
 - **Operation-scoped asynchronous terminal oracles — unevaluated:** required CI
   exposed three oracles sampling queue drains, fixture-wide absence, or an

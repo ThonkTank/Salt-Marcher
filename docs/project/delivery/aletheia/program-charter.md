@@ -1,7 +1,7 @@
 Status: Active
 Owner: SaltMarcher Product Owner
-Last Reviewed: 2026-07-26
-Charter Version: C-0.9.0
+Last Reviewed: 2026-07-27
+Charter Version: C-0.9.1
 Source of Truth: User-given authority, workstream boundaries, agent assignment, maturity semantics, and completion boundary for the GM-Core program.
 
 # GM-Core Aletheia Program Charter
@@ -176,6 +176,24 @@ time. A retryable deferral waits and retries without becoming a blocked goal.
 Already-running workers are allowed to finish and are never killed merely to
 retrofit admission. This is local same-user scheduling, not a global
 coordinator, security boundary, or guarantee against host failure.
+
+The admission executable itself runs as a top-level host command. A nested
+sandboxed launch cannot observe or coordinate the host it is meant to guard and
+is invalid availability evidence. In Codex, invoke the adopted executable with
+host execution (`sandbox_permissions=require_escalated`) and keep the admitted
+payload, working directory, environment, and audit path explicit. This standing
+authorization covers only the local, finite, already-permitted workload; it
+does not authorize network egress, broader filesystem mutation, secrets, paid
+services, or real-data access.
+
+On the first heavy batch in a new execution envelope, run one representative
+startup canary through that exact host-launched path with a 60-second ceiling.
+Reuse its result while the envelope and tool identity remain unchanged. If the
+canary fails before the workload starts, C records a bounded process failure
+within two minutes; A does not wait for a new C experiment and may run its exact
+critical-path workload directly and serially while B1, B2, B3, and C defer new
+heavy batches. This fallback expires when the host-launched path is available
+again. It never changes product proof or permits overlapping heavy work.
 
 For M13, every B1, B2, B3, and C role coordinator posts an artifact-complete
 closure result against the exact candidate to the M13 PR, or to the umbrella
