@@ -2,6 +2,9 @@ class_name CampaignDesk
 extends Control
 
 const FileCampaignRegistry = preload("res://godot/src/platform/persistence/file_campaign_registry.gd")
+const CampaignPortabilityController = preload("res://godot/src/app/campaign_portability_controller.gd")
+const CampaignTransferDocket = preload("res://godot/src/ui/campaign_transfer_docket.gd")
+const DefinitionConflictLedger = preload("res://godot/src/ui/definition_conflict_ledger.gd")
 const RouteStitch = preload("res://godot/src/ui/route_stitch.gd")
 
 const NIGHT_INK := Color("#0a1114")
@@ -14,14 +17,26 @@ const EMBER_RUST := Color("#b75d3d")
 
 var registry: FileCampaignRegistry
 var runtime_coordinator
+var portability_controller: CampaignPortabilityController
+var data_root := "user://salt-marcher"
 var _state: Dictionary = {}
 var _name_input: LineEdit
 var _campaign_list: VBoxContainer
 var _status: Label
 var _create_button: Button
+var _transfer_docket: CampaignTransferDocket
+var _conflict_ledger: DefinitionConflictLedger
 
 
 func _ready() -> void:
+	if registry == null:
+		registry = FileCampaignRegistry.new(data_root)
+	if portability_controller == null:
+		portability_controller = CampaignPortabilityController.new(data_root, registry)
+		add_child(portability_controller)
+	portability_controller.operation_started.connect(_on_transfer_started)
+	portability_controller.progress_changed.connect(_on_transfer_progress)
+	portability_controller.operation_completed.connect(_on_transfer_completed)
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	theme = _build_theme()
 	_build_surface()
@@ -93,15 +108,26 @@ func _build_surface() -> void:
 	var divider := HSeparator.new()
 	content.add_child(divider)
 
+	var workbench := HBoxContainer.new()
+	workbench.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	workbench.add_theme_constant_override("separation", 24)
+	content.add_child(workbench)
+
+	var campaign_column := VBoxContainer.new()
+	campaign_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	campaign_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	campaign_column.add_theme_constant_override("separation", 10)
+	workbench.add_child(campaign_column)
+
 	var creation_label := Label.new()
 	creation_label.text = "NEUE CAMPAIGN"
 	creation_label.add_theme_color_override("font_color", QUIET_INK)
 	creation_label.add_theme_font_size_override("font_size", 12)
-	content.add_child(creation_label)
+	campaign_column.add_child(creation_label)
 
 	var create_row := HBoxContainer.new()
 	create_row.add_theme_constant_override("separation", 12)
-	content.add_child(create_row)
+	campaign_column.add_child(create_row)
 
 	_name_input = LineEdit.new()
 	_name_input.name = "CampaignNameInput"
@@ -110,7 +136,7 @@ func _build_surface() -> void:
 	_name_input.custom_minimum_size = Vector2(0, 48)
 	_name_input.text_submitted.connect(func(_value: String) -> void: _create_campaign())
 	_name_input.text_changed.connect(func(value: String) -> void:
-		_create_button.disabled = value.strip_edges().is_empty()
+		_create_button.disabled = value.strip_edges().is_empty() or portability_controller.is_active() or (_conflict_ledger != null and _conflict_ledger.is_presented())
 	)
 	create_row.add_child(_name_input)
 
@@ -132,12 +158,12 @@ func _build_surface() -> void:
 	list_label.text = "DEINE CAMPAIGNS"
 	list_label.add_theme_color_override("font_color", QUIET_INK)
 	list_label.add_theme_font_size_override("font_size", 12)
-	content.add_child(list_label)
+	campaign_column.add_child(list_label)
 
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.custom_minimum_size = Vector2(0, 180)
-	content.add_child(scroll)
+	campaign_column.add_child(scroll)
 
 	_campaign_list = VBoxContainer.new()
 	_campaign_list.name = "CampaignList"
@@ -150,12 +176,32 @@ func _build_surface() -> void:
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_status.add_theme_color_override("font_color", QUIET_INK)
 	_status.add_theme_font_size_override("font_size", 14)
-	content.add_child(_status)
+	campaign_column.add_child(_status)
+
+	_transfer_docket = CampaignTransferDocket.new(
+		_panel_style(Color("#0d1b20"), MAP_TEAL, 1, 8),
+		_display_font(),
+		BRASS_MARK,
+		QUIET_INK
+	)
+	_transfer_docket.export_path_selected.connect(_start_export)
+	_transfer_docket.import_path_selected.connect(_start_import)
+	_transfer_docket.cancel_requested.connect(_cancel_active_transfer)
+	workbench.add_child(_transfer_docket)
+
+	_conflict_ledger = DefinitionConflictLedger.new(
+		_panel_style(Color("#102127"), BRASS_MARK, 2, 10),
+		_display_font(),
+		BRASS_MARK,
+		QUIET_INK
+	)
+	_conflict_ledger.resolve_requested.connect(_resolve_conflicting_import)
+	_conflict_ledger.discard_requested.connect(_discard_conflicting_import)
+	_conflict_ledger.cancel_requested.connect(_cancel_active_transfer)
+	add_child(_conflict_ledger)
 
 
 func _reload() -> void:
-	if registry == null:
-		registry = FileCampaignRegistry.new()
 	_state = registry.load_state()
 	_render_state()
 
@@ -164,6 +210,7 @@ func _render_state() -> void:
 	for child in _campaign_list.get_children():
 		child.queue_free()
 	if not _state.get("ok", false):
+		_refresh_transfer_controls()
 		_set_status(_state.get("error", "Campaigns konnten nicht geladen werden."), true)
 		return
 
@@ -173,6 +220,7 @@ func _render_state() -> void:
 		empty.text = "Noch keine Campaign. Ein Name genügt, um spielbereit zu beginnen."
 		empty.add_theme_color_override("font_color", QUIET_INK)
 		_campaign_list.add_child(empty)
+		_refresh_transfer_controls()
 		_set_status("Bereit für deine erste Campaign.", false)
 		_name_input.grab_focus.call_deferred()
 		return
@@ -196,6 +244,7 @@ func _render_state() -> void:
 		_set_status(_state["recovery_message"], true)
 	else:
 		_set_status("%d Campaigns lokal verfügbar." % campaigns.size(), false)
+	_refresh_transfer_controls()
 
 
 func _create_campaign() -> void:
@@ -228,6 +277,132 @@ func _activate_campaign(campaign_id: String) -> void:
 	_state = result.get("registry_state", result.get("state", {}))
 	_render_state()
 	_set_status("Campaign gewechselt. Die Route ist wieder aktiv.", false)
+
+
+func start_export_to_path(destination_path: String) -> Dictionary:
+	var campaign_id := str(_state.get("active_campaign_id", ""))
+	if campaign_id.is_empty():
+		return {"ok": false, "status": "no_active_campaign", "error": "Keine aktive Campaign kann exportiert werden."}
+	return portability_controller.export_campaign(campaign_id, destination_path)
+
+
+func start_import_from_path(bundle_path: String) -> Dictionary:
+	return portability_controller.import_campaign(bundle_path, int(_state.get("generation", -1)))
+
+
+func _start_export(destination_path: String) -> void:
+	var started := start_export_to_path(destination_path)
+	if not started.get("ok", false):
+		_set_status(started.get("error", "Campaign-Export konnte nicht gestartet werden."), true)
+
+
+func _start_import(bundle_path: String) -> void:
+	var started := start_import_from_path(bundle_path)
+	if not started.get("ok", false):
+		_set_status(started.get("error", "Campaign-Import konnte nicht gestartet werden."), true)
+
+
+func _cancel_active_transfer() -> void:
+	var cancellation := portability_controller.cancel_active()
+	if cancellation.get("ok", false):
+		_transfer_docket.detail("Abbruch angefordert; bereits veröffentlichte Wahrheit bleibt bestehen.")
+	else:
+		_set_status(cancellation.get("error", "Transfer konnte nicht abgebrochen werden."), true)
+
+
+func _on_transfer_started(kind: String) -> void:
+	_set_transfer_busy(true)
+	_transfer_docket.reset_progress({
+		"export": "Vollständiger Campaign-Export läuft.",
+		"import": "Campaign-Paket wird isoliert geprüft.",
+		"resolve_import": "Konfliktentscheidungen werden atomar angewendet.",
+		"discard_import": "Staged Import wird verworfen.",
+	}.get(kind, "Campaign-Transfer läuft."))
+
+
+func _on_transfer_progress(progress: Dictionary) -> void:
+	_transfer_docket.show_progress(progress)
+
+
+func _on_transfer_completed(kind: String, result: Dictionary) -> void:
+	_set_transfer_busy(false)
+	if kind == "import" and result.get("status", "") == "definition_conflicts":
+		_show_definition_conflicts(result)
+		_set_status("Import wartet auf deine Shared-Definition-Entscheidungen.", true)
+		return
+	if kind == "discard_import":
+		if result.get("ok", false):
+			_hide_definition_conflicts()
+			_set_status("Campaign-Import wurde verworfen; vorhandene Daten blieben unverändert.", false)
+		else:
+			_set_status(result.get("error", "Staged Import konnte nicht verworfen werden."), true)
+		return
+	if not result.get("ok", false):
+		var cancelled: bool = result.get("status", "") == "cancelled"
+		_set_status(
+			result.get("error", "Campaign-Transfer ist fehlgeschlagen."),
+			not cancelled
+		)
+		if cancelled:
+			_transfer_docket.detail("Transfer abgebrochen; es wurde keine neue Wahrheit veröffentlicht.")
+		return
+	match kind:
+		"export":
+			_transfer_docket.complete_progress("Vollständiges Transferpaket wurde geschrieben.")
+			_set_status("Campaign vollständig exportiert: %s" % result.get("path", ""), false)
+		"import", "resolve_import":
+			_hide_definition_conflicts()
+			_reload()
+			_transfer_docket.complete_progress("Campaign und erforderliche Definitionen sind lokal verfügbar.")
+			_set_status("Campaign als unabhängige Mappe importiert.", false)
+
+
+func _show_definition_conflicts(result: Dictionary) -> void:
+	_conflict_ledger.present(result)
+	_refresh_transfer_controls()
+
+
+func _resolve_conflicting_import(import_id: String, decisions: Dictionary) -> void:
+	var started := portability_controller.resolve_import(
+		import_id,
+		int(_state.get("generation", -1)),
+		decisions
+	)
+	if not started.get("ok", false):
+		_set_status(started.get("error", "Konfliktauflösung konnte nicht gestartet werden."), true)
+
+
+func _discard_conflicting_import(import_id: String) -> void:
+	var started := portability_controller.discard_import(import_id)
+	if not started.get("ok", false):
+		_set_status(started.get("error", "Import konnte nicht verworfen werden."), true)
+
+
+func _hide_definition_conflicts() -> void:
+	_conflict_ledger.dismiss()
+	_refresh_transfer_controls()
+	_transfer_docket.focus_import()
+
+
+func _set_transfer_busy(busy: bool) -> void:
+	var modal := _conflict_ledger != null and _conflict_ledger.is_presented()
+	_transfer_docket.set_active_campaign(str(_state.get("active_campaign_id", "")))
+	_transfer_docket.set_busy(busy, modal)
+	_create_button.disabled = busy or modal or _name_input.text.strip_edges().is_empty()
+	_name_input.editable = not busy and not modal
+	_name_input.focus_mode = Control.FOCUS_NONE if busy or modal else Control.FOCUS_ALL
+	for child in _campaign_list.get_children():
+		if child is Button:
+			child.disabled = busy or modal or child.text.begins_with("AKTUELLE ROUTE")
+	if modal:
+		_conflict_ledger.set_busy(busy)
+
+
+func _refresh_transfer_controls() -> void:
+	if _transfer_docket == null:
+		return
+	var busy := portability_controller != null and portability_controller.is_active()
+	_set_transfer_busy(busy)
 
 
 func _set_status(message: String, is_error: bool) -> void:

@@ -80,6 +80,19 @@ invalid, stale, rejected, or explicitly discarded decision changes neither the
 registry nor the active Shared-Definition generation. Every choice preserves
 completed historical facts.
 
+The Campaign desk runs export, import, conflict resolution, and staged-import
+discard through one background transfer worker. It disables competing Campaign
+actions while work is active, reports the current inventory, extraction, or
+definition phase, and offers cancellation. Cancellation is checked at bounded
+file and definition boundaries before publication. Once the atomic registry
+commit begins, completion wins and is reported as completion rather than a
+false cancellation.
+
+The conflict ledger traps the decision workflow above the ordinary desk, moves
+keyboard focus to the first choice, names affected existing Campaigns, displays
+all three consequences simultaneously, and keeps completion disabled until each
+conflict has an explicit choice. Discard remains a separate explicit action.
+
 ## Compatibility And Failure Behavior
 
 Compatibility obligations begin with the first-real-user/data format freeze.

@@ -66,7 +66,14 @@ func load_generation(generation: int) -> Dictionary:
 	}
 
 
-func prepare_generation(base_generation: int, changed_definitions: Array) -> Dictionary:
+func prepare_generation(
+	base_generation: int,
+	changed_definitions: Array,
+	progress_callback: Callable = Callable(),
+	cancellation_callback: Callable = Callable()
+) -> Dictionary:
+	if _cancelled(cancellation_callback):
+		return _cancelled_failure()
 	var current := load_generation(base_generation)
 	if not current.get("ok", false):
 		return current
@@ -75,6 +82,8 @@ func prepare_generation(base_generation: int, changed_definitions: Array) -> Dic
 	var definitions: Dictionary = current["definitions"].duplicate(true)
 	var normalized_by_id := {}
 	for value in changed_definitions:
+		if _cancelled(cancellation_callback):
+			return _cancelled_failure()
 		var normalized := validate_definition(value)
 		if not normalized.get("ok", false):
 			return normalized
@@ -83,7 +92,12 @@ func prepare_generation(base_generation: int, changed_definitions: Array) -> Dic
 		if normalized_by_id.has(definition_id):
 			return _failure("Eine Shared Definition darf pro Generation nur einmal geändert werden: %s" % definition_id)
 		normalized_by_id[definition_id] = definition
+	var published_count := 0
+	var created_object_paths: Array[String] = []
 	for definition_id_value in normalized_by_id:
+		if _cancelled(cancellation_callback):
+			_remove_unpublished_objects(created_object_paths)
+			return _cancelled_failure()
 		var definition_id := str(definition_id_value)
 		var definition: Dictionary = normalized_by_id[definition_id_value]
 		var content_sha256 := _files.checksum(definition["content"])
@@ -93,6 +107,7 @@ func prepare_generation(base_generation: int, changed_definitions: Array) -> Dic
 		if not FileAccess.file_exists(_files.absolute(object_path)):
 			var object_directory_error := _files.ensure_directory((_root + "/" + relative_path).get_base_dir())
 			if object_directory_error != OK:
+				_remove_unpublished_objects(created_object_paths)
 				return _failure("Shared-Definition-Objektverzeichnis konnte nicht erstellt werden.")
 			var write := _files.write_new_json(
 				object_path,
@@ -100,7 +115,9 @@ func prepare_generation(base_generation: int, changed_definitions: Array) -> Dic
 				"shared_definition_object"
 			)
 			if not write.get("ok", false):
+				_remove_unpublished_objects(created_object_paths)
 				return write
+			created_object_paths.append(object_path)
 		definitions[definition_id] = {
 			"kind": definition["kind"],
 			"name": definition["name"],
@@ -108,7 +125,16 @@ func prepare_generation(base_generation: int, changed_definitions: Array) -> Dic
 			"definition_sha256": definition_sha256,
 			"content_sha256": content_sha256,
 		}
+		published_count += 1
+		if progress_callback.is_valid():
+			progress_callback.call({
+				"phase": "definitions",
+				"completed": published_count,
+				"total": normalized_by_id.size(),
+				"message": "Shared Definitions werden für die atomare Veröffentlichung vorbereitet.",
+			})
 	if definitions.size() > MAX_DEFINITION_COUNT:
+		_remove_unpublished_objects(created_object_paths)
 		return _failure("Die Shared-Definition-Sammlung überschreitet die zulässige Anzahl.")
 	var next_generation := _next_generation_number()
 	var payload := {
@@ -118,7 +144,11 @@ func prepare_generation(base_generation: int, changed_definitions: Array) -> Dic
 	}
 	var generation_directory_error := _files.ensure_directory(_generations_dir)
 	if generation_directory_error != OK:
+		_remove_unpublished_objects(created_object_paths)
 		return _failure("Shared-Definition-Generationsverzeichnis konnte nicht erstellt werden.")
+	if _cancelled(cancellation_callback):
+		_remove_unpublished_objects(created_object_paths)
+		return _cancelled_failure()
 	var write_generation := _files.write_new_json(
 		generation_path(next_generation),
 		_envelope(GENERATION_FORMAT_ID, payload),
@@ -126,6 +156,7 @@ func prepare_generation(base_generation: int, changed_definitions: Array) -> Dic
 	)
 	if not write_generation.get("ok", false):
 		if write_generation.get("status", "") != "ambiguous_commit":
+			_remove_unpublished_objects(created_object_paths)
 			return write_generation
 	var prepared := load_generation(next_generation)
 	if not prepared.get("ok", false):
@@ -199,12 +230,33 @@ func generation_path(generation: int) -> String:
 func discard_unselected_generation(generation: int) -> Dictionary:
 	if generation <= 0:
 		return {"ok": true, "status": "unchanged"}
+	var state := load_generation(generation)
+	if not state.get("ok", false):
+		return state
+	var candidate_paths: Array[String] = []
+	for reference in state["definitions"].values():
+		candidate_paths.append(_root + "/" + str(reference.get("path", "")))
 	var path := _files.absolute(generation_path(generation))
 	if not FileAccess.file_exists(path):
 		return {"ok": true, "status": "unchanged"}
 	var remove_error := DirAccess.remove_absolute(path)
 	if remove_error != OK:
 		return _failure("Nicht veröffentlichte Shared-Definition-Generation konnte nicht entfernt werden.")
+	var referenced_paths := {}
+	for remaining_generation in _available_generations():
+		var remaining := load_generation(remaining_generation)
+		if not remaining.get("ok", false):
+			return {
+				"ok": true,
+				"status": "discarded_gc_deferred",
+				"generation": generation,
+				"warning": "Objektbereinigung wurde wegen einer beschädigten verbleibenden Generation zurückgestellt.",
+			}
+		for reference in remaining["definitions"].values():
+			referenced_paths[_root + "/" + str(reference.get("path", ""))] = true
+	for candidate_path in candidate_paths:
+		if not referenced_paths.has(candidate_path):
+			_remove_unpublished_objects([candidate_path])
 	return {"ok": true, "status": "discarded", "generation": generation}
 
 
@@ -242,6 +294,21 @@ func _read_indexed_definition(definition_id: String, reference: Variant) -> Dict
 	if reference.get("kind", "") != definition["kind"] or reference.get("name", "") != definition["name"]:
 		return _failure("Shared-Definition-Metadaten und Objekt widersprechen sich.")
 	return {"ok": true, "definition": definition}
+
+
+func _remove_unpublished_objects(paths: Array) -> void:
+	for object_path_value in paths:
+		var object_path := str(object_path_value)
+		var absolute_object := _files.absolute(object_path)
+		if FileAccess.file_exists(absolute_object):
+			DirAccess.remove_absolute(absolute_object)
+		var object_directory := absolute_object.get_base_dir()
+		if (
+			DirAccess.dir_exists_absolute(object_directory)
+			and DirAccess.get_files_at(object_directory).is_empty()
+			and DirAccess.get_directories_at(object_directory).is_empty()
+		):
+			DirAccess.remove_absolute(object_directory)
 
 
 func _available_generations() -> Array[int]:
@@ -308,6 +375,18 @@ func _envelope(format_id: String, payload: Dictionary) -> Dictionary:
 		"format": format_id,
 		"payload": payload,
 		"payload_sha256": _files.checksum(payload),
+	}
+
+
+func _cancelled(cancellation_callback: Callable) -> bool:
+	return cancellation_callback.is_valid() and bool(cancellation_callback.call())
+
+
+func _cancelled_failure() -> Dictionary:
+	return {
+		"ok": false,
+		"status": "cancelled",
+		"error": "Shared-Definition-Vorbereitung wurde vor Veröffentlichung abgebrochen.",
 	}
 
 

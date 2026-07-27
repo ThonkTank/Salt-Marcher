@@ -22,6 +22,8 @@ var _registry
 var _files: ImmutableJsonFiles
 var _capacity_guard
 var _definition_store: SharedDefinitionStore
+var _progress_callback: Callable
+var _cancellation_callback: Callable
 
 
 func _init(data_root: String, registry, capacity_guard = null) -> void:
@@ -32,7 +34,16 @@ func _init(data_root: String, registry, capacity_guard = null) -> void:
 	_definition_store = SharedDefinitionStore.new(_data_root, Callable(), _capacity_guard)
 
 
-func export_campaign(campaign_id: String, destination_path: String) -> Dictionary:
+func export_campaign(
+	campaign_id: String,
+	destination_path: String,
+	progress_callback: Callable = Callable(),
+	cancellation_callback: Callable = Callable()
+) -> Dictionary:
+	_set_observers(progress_callback, cancellation_callback)
+	_emit_progress("validating", 0, 1, "Campaign wird für den Export geprüft.")
+	if _is_cancelled():
+		return _cancelled_failure()
 	var store := FileCampaignStore.new(_data_root, campaign_id)
 	var state := store.load_state()
 	if not state.get("ok", false):
@@ -58,6 +69,8 @@ func export_campaign(campaign_id: String, destination_path: String) -> Dictionar
 	var inventory := _inventory(absolute_campaign)
 	if not inventory.get("ok", false):
 		return inventory
+	if _is_cancelled():
+		return _cancelled_failure()
 	var identity: Dictionary = state["identity"]
 	var payload := {
 		"source_campaign_id": campaign_id,
@@ -93,7 +106,12 @@ func export_campaign(campaign_id: String, destination_path: String) -> Dictionar
 	output.store_buffer(MAGIC.to_utf8_buffer())
 	output.store_64(manifest_bytes.size())
 	output.store_buffer(manifest_bytes)
+	var exported_file_count := 0
 	for entry in inventory["files"]:
+		if _is_cancelled():
+			output.close()
+			DirAccess.remove_absolute(temporary_path)
+			return _cancelled_failure()
 		var relative_path := str(entry["path"])
 		var path_bytes := relative_path.to_utf8_buffer()
 		output.store_32(path_bytes.size())
@@ -108,6 +126,13 @@ func export_campaign(campaign_id: String, destination_path: String) -> Dictionar
 			output.close()
 			DirAccess.remove_absolute(temporary_path)
 			return copy
+		exported_file_count += 1
+		_emit_progress(
+			"writing",
+			exported_file_count,
+			inventory["files"].size(),
+			"Campaign-Dateien werden in das Transferpaket geschrieben."
+		)
 	var closing_inventory := _inventory(absolute_campaign)
 	var closing_registry: Dictionary = _registry.load_state()
 	if (
@@ -119,6 +144,10 @@ func export_campaign(campaign_id: String, destination_path: String) -> Dictionar
 		output.close()
 		DirAccess.remove_absolute(temporary_path)
 		return _failure("Campaign oder Shared Definitions wurden während des Exports verändert; Export wurde verworfen.")
+	if _is_cancelled():
+		output.close()
+		DirAccess.remove_absolute(temporary_path)
+		return _cancelled_failure()
 	output.flush()
 	var write_error := output.get_error()
 	output.close()
@@ -129,6 +158,7 @@ func export_campaign(campaign_id: String, destination_path: String) -> Dictionar
 	if rename_error != OK:
 		DirAccess.remove_absolute(temporary_path)
 		return _failure("Exportdatei konnte nicht veröffentlicht werden.")
+	_emit_progress("completed", 1, 1, "Campaign-Export ist vollständig geschrieben.")
 	return {
 		"ok": true,
 		"status": "exported",
@@ -139,7 +169,16 @@ func export_campaign(campaign_id: String, destination_path: String) -> Dictionar
 	}
 
 
-func import_campaign(bundle_path: String, expected_registry_generation: int) -> Dictionary:
+func import_campaign(
+	bundle_path: String,
+	expected_registry_generation: int,
+	progress_callback: Callable = Callable(),
+	cancellation_callback: Callable = Callable()
+) -> Dictionary:
+	_set_observers(progress_callback, cancellation_callback)
+	_emit_progress("validating", 0, 1, "Transferpaket wird geprüft.")
+	if _is_cancelled():
+		return _cancelled_failure()
 	var staged := _stage_and_validate_bundle(bundle_path, "import")
 	if not staged.get("ok", false):
 		return staged
@@ -173,8 +212,14 @@ func import_campaign(bundle_path: String, expected_registry_generation: int) -> 
 func resolve_import(
 	import_id: String,
 	expected_registry_generation: int,
-	decisions: Dictionary
+	decisions: Dictionary,
+	progress_callback: Callable = Callable(),
+	cancellation_callback: Callable = Callable()
 ) -> Dictionary:
+	_set_observers(progress_callback, cancellation_callback)
+	_emit_progress("resolving", 0, 1, "Konfliktentscheidungen werden geprüft.")
+	if _is_cancelled():
+		return _cancelled_failure()
 	var operation := _read_import_operation(import_id)
 	if not operation.get("ok", false):
 		return operation
@@ -213,6 +258,9 @@ func discard_import(import_id: String) -> Dictionary:
 
 
 func _complete_staged_import(staged: Dictionary, current: Dictionary, decisions: Dictionary) -> Dictionary:
+	if _is_cancelled():
+		_cleanup_cancelled_staging(str(staged["staging_root"]))
+		return _cancelled_failure()
 	var plan := _plan_shared_definitions(staged, current, decisions)
 	if not plan.get("ok", false):
 		return plan
@@ -246,10 +294,19 @@ func _complete_staged_import(staged: Dictionary, current: Dictionary, decisions:
 	var active_definition_generation := int(current.get("shared_definitions_generation", 0))
 	var prepared := _definition_store.prepare_generation(
 		active_definition_generation,
-		plan["definitions_to_publish"]
+		plan["definitions_to_publish"],
+		_progress_callback,
+		_cancellation_callback
 	)
 	if not prepared.get("ok", false):
+		if prepared.get("status", "") == "cancelled":
+			_cleanup_cancelled_staging(staging_root)
 		return prepared
+	if _is_cancelled():
+		if prepared.get("status", "") == "prepared":
+			_definition_store.discard_unselected_generation(int(prepared["generation"]))
+		_cleanup_cancelled_staging(staging_root)
+		return _cancelled_failure()
 	var next_definition_generation := int(prepared["generation"])
 	var new_campaign_id := _files.new_identity()
 	var replace_identity := _replace_staged_identity(
@@ -301,6 +358,7 @@ func _complete_staged_import(staged: Dictionary, current: Dictionary, decisions:
 	register["shared_definitions_generation"] = next_definition_generation
 	register["definition_decisions"] = decisions.duplicate(true)
 	register["definition_reference_remap"] = plan["reference_remap"].duplicate(true)
+	_emit_progress("completed", 1, 1, "Campaign und Definitionen wurden importiert.")
 	return register
 
 
@@ -308,6 +366,11 @@ func _discard_failed_import(staging_root: String, prepared: Dictionary) -> void:
 	_remove_tree(_files.absolute(staging_root))
 	if prepared.get("status", "") == "prepared":
 		_definition_store.discard_unselected_generation(int(prepared["generation"]))
+
+
+func _cleanup_cancelled_staging(staging_root: String) -> void:
+	if not FileAccess.file_exists(_files.absolute(staging_root + "/operation.json")):
+		_remove_tree(_files.absolute(staging_root))
 
 
 func _plan_shared_definitions(staged: Dictionary, current: Dictionary, decisions: Dictionary) -> Dictionary:
@@ -319,6 +382,8 @@ func _plan_shared_definitions(staged: Dictionary, current: Dictionary, decisions
 	var reference_remap := {}
 	var conflicts: Array = []
 	for imported_value in staged["payload"]["shared_definitions"]:
+		if _is_cancelled():
+			return _cancelled_failure()
 		var validation := _definition_store.validate_definition(imported_value)
 		if not validation.get("ok", false):
 			return validation
@@ -500,6 +565,7 @@ func _stale_import(current: Dictionary) -> Dictionary:
 
 
 func validate_bundle(bundle_path: String) -> Dictionary:
+	_set_observers(Callable(), Callable())
 	var staged := _stage_and_validate_bundle(bundle_path, "validation")
 	if not staged.get("ok", false):
 		return staged
@@ -518,6 +584,7 @@ func validate_bundle(bundle_path: String) -> Dictionary:
 
 
 func stage_validated_bundle(bundle_path: String, purpose: String) -> Dictionary:
+	_set_observers(Callable(), Callable())
 	if not _portable_segment(purpose):
 		return _failure("Ungültiger Staging-Zweck.")
 	return _stage_and_validate_bundle(bundle_path, purpose)
@@ -531,6 +598,8 @@ func discard_staging(staging_root: String) -> void:
 
 
 func _stage_and_validate_bundle(bundle_path: String, purpose: String) -> Dictionary:
+	if _is_cancelled():
+		return _cancelled_failure()
 	var bundle := FileAccess.open(_files.absolute(bundle_path), FileAccess.READ)
 	if bundle == null:
 		return _failure("Campaign-Bundle ist nicht lesbar.")
@@ -539,6 +608,9 @@ func _stage_and_validate_bundle(bundle_path: String, purpose: String) -> Diction
 		bundle.close()
 		return manifest_result
 	var payload: Dictionary = manifest_result["payload"]
+	if _is_cancelled():
+		bundle.close()
+		return _cancelled_failure()
 	var operation_id := _files.new_identity()
 	var staging_root := _data_root + "/staging/%s-%s" % [purpose, operation_id]
 	var staged_campaign := staging_root + "/campaign"
@@ -647,7 +719,10 @@ func _read_and_validate_manifest(bundle: FileAccess) -> Dictionary:
 
 
 func _extract_entries(bundle: FileAccess, entries: Array, staging_campaign: String) -> Dictionary:
+	var extracted_file_count := 0
 	for expected in entries:
+		if _is_cancelled():
+			return _cancelled_failure()
 		if bundle.get_length() - bundle.get_position() < 12:
 			return _failure("Campaign-Bundle endet vor dem nächsten Dateieintrag.")
 		var path_size := bundle.get_32()
@@ -670,6 +745,9 @@ func _extract_entries(bundle: FileAccess, entries: Array, staging_campaign: Stri
 		hashing.start(HashingContext.HASH_SHA256)
 		var remaining := content_size
 		while remaining > 0:
+			if _is_cancelled():
+				output.close()
+				return _cancelled_failure()
 			var chunk := bundle.get_buffer(mini(CHUNK_SIZE, remaining))
 			if chunk.is_empty():
 				output.close()
@@ -682,6 +760,13 @@ func _extract_entries(bundle: FileAccess, entries: Array, staging_campaign: Stri
 		output.close()
 		if output_error != OK or hashing.finish().hex_encode() != expected["sha256"]:
 			return _failure("Importierte Campaign-Datei besteht die Prüfsummenvalidierung nicht.")
+		extracted_file_count += 1
+		_emit_progress(
+			"extracting",
+			extracted_file_count,
+			entries.size(),
+			"Campaign-Dateien werden isoliert geprüft."
+		)
 	if bundle.get_position() != bundle.get_length():
 		return _failure("Campaign-Bundle enthält nicht deklarierte zusätzliche Daten.")
 	return {"ok": true}
@@ -697,7 +782,10 @@ func _inventory(root_path: String) -> Dictionary:
 		return _failure("Campaign überschreitet die zulässige Export-Dateianzahl.")
 	var entries: Array = []
 	var total_bytes := 0
+	var inventoried_file_count := 0
 	for relative_path in relative_paths:
+		if _is_cancelled():
+			return _cancelled_failure()
 		var source := FileAccess.open(root_path + "/" + relative_path, FileAccess.READ)
 		if source == null:
 			return _failure("Campaign-Datei ist während des Exports nicht lesbar.")
@@ -714,6 +802,13 @@ func _inventory(root_path: String) -> Dictionary:
 			"size": str(size),
 			"sha256": checksum_result["sha256"],
 		})
+		inventoried_file_count += 1
+		_emit_progress(
+			"inventory",
+			inventoried_file_count,
+			relative_paths.size(),
+			"Campaign-Inhalt wird vollständig erfasst."
+		)
 	return {"ok": true, "files": entries, "total_bytes": total_bytes}
 
 
@@ -725,6 +820,9 @@ func _collect_paths(root_path: String, relative_dir: String, output: Array[Strin
 	directory.list_dir_begin()
 	var name := directory.get_next()
 	while not name.is_empty():
+		if _is_cancelled():
+			directory.list_dir_end()
+			return _cancelled_failure()
 		var relative_path := name if relative_dir.is_empty() else relative_dir + "/" + name
 		if directory.is_link(name):
 			directory.list_dir_end()
@@ -751,6 +849,9 @@ func _copy_file_into_bundle(path: String, output: FileAccess, expected_checksum:
 	var hashing := HashingContext.new()
 	hashing.start(HashingContext.HASH_SHA256)
 	while source.get_position() < source.get_length():
+		if _is_cancelled():
+			source.close()
+			return _cancelled_failure()
 		var chunk := source.get_buffer(mini(CHUNK_SIZE, source.get_length() - source.get_position()))
 		if chunk.is_empty():
 			source.close()
@@ -768,6 +869,8 @@ func _hash_open_file(source: FileAccess) -> Dictionary:
 	if hashing.start(HashingContext.HASH_SHA256) != OK:
 		return _failure("Campaign-Dateiprüfsumme konnte nicht begonnen werden.")
 	while source.get_position() < source.get_length():
+		if _is_cancelled():
+			return _cancelled_failure()
 		var chunk := source.get_buffer(mini(CHUNK_SIZE, source.get_length() - source.get_position()))
 		if chunk.is_empty():
 			return _failure("Campaign-Datei konnte nicht vollständig gelesen werden.")
@@ -825,6 +928,33 @@ func _remove_tree(absolute_path: String) -> void:
 		name = directory.get_next()
 	directory.list_dir_end()
 	DirAccess.remove_absolute(absolute_path)
+
+
+func _set_observers(progress_callback: Callable, cancellation_callback: Callable) -> void:
+	_progress_callback = progress_callback
+	_cancellation_callback = cancellation_callback
+
+
+func _emit_progress(phase: String, completed: int, total: int, message: String) -> void:
+	if _progress_callback.is_valid():
+		_progress_callback.call({
+			"phase": phase,
+			"completed": completed,
+			"total": total,
+			"message": message,
+		})
+
+
+func _is_cancelled() -> bool:
+	return _cancellation_callback.is_valid() and bool(_cancellation_callback.call())
+
+
+func _cancelled_failure() -> Dictionary:
+	return {
+		"ok": false,
+		"status": "cancelled",
+		"error": "Vorgang wurde vor der Veröffentlichung abgebrochen.",
+	}
 
 
 func _failure(message: String) -> Dictionary:

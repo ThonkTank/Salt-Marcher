@@ -96,7 +96,9 @@ func _run_tests() -> void:
 	_expect(restored.get("campaign_id", "") == first_id, "restore retains Campaign identity")
 	var restored_store := FileCampaignStore.new(root, first_id).load_state()
 	_expect(restored_store.get("ok", false) and restored_store.get("generation", -1) == 5, "restore retains complete Campaign generations and safe parent")
-	_run_portability_contract(root, registry, first_id)
+	var portability_bundle := _run_portability_contract(root, registry, first_id)
+	if not portability_bundle.is_empty():
+		await _run_campaign_conflict_ui_journey(portability_bundle)
 
 	_run_registry_fault_contract()
 	_run_backup_contract()
@@ -215,7 +217,7 @@ func _run_registry_fault_contract() -> void:
 	_expect(DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(rollback_root + "/campaigns/" + rollback_id)), "failed trash publication restores the complete Campaign root")
 
 
-func _run_portability_contract(source_root: String, source_registry, source_campaign_id: String) -> void:
+func _run_portability_contract(source_root: String, source_registry, source_campaign_id: String) -> String:
 	var source_definitions := SharedDefinitionStore.new(source_root)
 	var wolf_definition := {
 		"definition_id": "creature.wolf",
@@ -275,7 +277,7 @@ func _run_portability_contract(source_root: String, source_registry, source_camp
 	var imported := importer.import_campaign(bundle_path, 0)
 	_expect(imported.get("ok", false), "current-format Campaign bundle imports: %s" % imported.get("error", "no error detail"))
 	if not imported.get("ok", false):
-		return
+		return ""
 	var imported_id := str(imported.get("campaign_id", ""))
 	_expect(not imported_id.is_empty() and imported_id != source_campaign_id, "import creates a new independent Campaign identity")
 	var imported_registry := target_registry.load_state()
@@ -341,6 +343,8 @@ func _run_portability_contract(source_root: String, source_registry, source_camp
 	_expect(after_untrusted_rejections.get("generation", -1) == 1, "untrusted import rejection mutates no registry generation")
 	_run_shared_definition_conflict_contract(bundle_path)
 	_run_shared_definition_atomic_failure_contract(bundle_path)
+	_run_portability_cancellation_contract(bundle_path)
+	return bundle_path
 
 
 func _run_shared_definition_atomic_failure_contract(bundle_path: String) -> void:
@@ -356,6 +360,49 @@ func _run_shared_definition_atomic_failure_contract(bundle_path: String) -> void
 	_expect(_has_no_child_directories(target_root + "/campaigns"), "failed definition-bearing import leaves no live Campaign orphan")
 	_expect(_has_no_child_directories(target_root + "/staging"), "failed definition-bearing import removes its isolated staging")
 	_expect(not FileAccess.file_exists(SharedDefinitionStore.new(target_root).generation_path(1)), "failed definition-bearing import removes its unselected definition generation")
+	_expect(_has_no_child_directories(target_root + "/installation/shared-definitions/objects"), "failed definition-bearing import collects objects referenced only by its unselected generation")
+
+
+func _run_portability_cancellation_contract(bundle_path: String) -> void:
+	var target_root := "user://saltmarcher-portability-cancellation/%s" % Time.get_ticks_usec()
+	var registry := FileCampaignRegistry.new(target_root)
+	var cancellation_state := {"checks": 0}
+	var cancel_during_extraction := func() -> bool:
+		cancellation_state["checks"] += 1
+		return int(cancellation_state["checks"]) >= 4
+	var phases: Array[String] = []
+	var progress := func(update: Dictionary) -> void:
+		phases.append(str(update.get("phase", "")))
+	var cancelled := CampaignBundle.new(target_root, registry).import_campaign(
+		bundle_path,
+		0,
+		progress,
+		cancel_during_extraction
+	)
+	_expect(cancelled.get("status", "") == "cancelled", "Campaign import observes cancellation at a natural extraction boundary")
+	_expect(registry.load_state().get("generation", -1) == 0, "cancelled Campaign import publishes no registry generation")
+	_expect(_has_no_child_directories(target_root + "/staging"), "cancelled Campaign import leaves no unmarked staging operation")
+	_expect(_has_no_child_directories(target_root + "/campaigns"), "cancelled Campaign import leaves no live Campaign")
+	_expect("validating" in phases, "Campaign import reports observable work before cancellation")
+
+	var definition_root := "user://saltmarcher-definition-cancellation/%s" % Time.get_ticks_usec()
+	var cancel_definitions := {"requested": false}
+	var definition_progress := func(_update: Dictionary) -> void:
+		cancel_definitions["requested"] = true
+	var definition_cancellation := func() -> bool:
+		return bool(cancel_definitions["requested"])
+	var cancelled_definitions := SharedDefinitionStore.new(definition_root).prepare_generation(
+		0,
+		[
+			{"definition_id": "creature.first", "kind": "creature", "name": "First", "content": {"value": 1}},
+			{"definition_id": "creature.second", "kind": "creature", "name": "Second", "content": {"value": 2}},
+		],
+		definition_progress,
+		definition_cancellation
+	)
+	_expect(cancelled_definitions.get("status", "") == "cancelled", "Shared-Definition preparation observes cancellation between immutable objects")
+	_expect(not FileAccess.file_exists(SharedDefinitionStore.new(definition_root).generation_path(1)), "cancelled Shared-Definition preparation publishes no generation")
+	_expect(_has_no_child_directories(definition_root + "/installation/shared-definitions/objects"), "cancelled Shared-Definition preparation removes its unreferenced objects")
 
 
 func _run_shared_definition_conflict_contract(bundle_path: String) -> void:
@@ -412,6 +459,15 @@ func _run_shared_definition_conflict_contract(bundle_path: String) -> void:
 			{}
 		)
 		_expect(not incomplete.get("ok", true), "%s conflict cannot resolve without an explicit choice" % choice)
+		var cancelled_resolution := CampaignBundle.new(target_root, registry).resolve_import(
+			str(staged.get("import_id", "")),
+			int(before_registry.get("generation", -1)),
+			{"creature.wolf": choice},
+			Callable(),
+			func() -> bool: return true
+		)
+		_expect(cancelled_resolution.get("status", "") == "cancelled", "%s conflict resolution can be cancelled before commit" % choice)
+		_expect(registry.load_state().get("generation", -1) == before_registry.get("generation", -2), "%s cancelled conflict resolution leaves installation truth unchanged" % choice)
 
 		var resolved := restarted_importer.resolve_import(
 			str(staged.get("import_id", "")),
@@ -833,10 +889,103 @@ func _run_permanent_deletion_contract() -> void:
 	_expect(not DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(registry.trash_entry_path(trash_entry_id))), "permanently deleted Campaign is no longer recoverable")
 
 
+func _run_campaign_conflict_ui_journey(bundle_path: String) -> void:
+	var data_root := "user://saltmarcher-conflict-ui-tests/%s" % Time.get_ticks_usec()
+	var registry := FileCampaignRegistry.new(data_root)
+	var created := registry.create_campaign("Bestehende Wolfsrunde")
+	var existing_campaign_id := str(created.get("campaign_id", ""))
+	var definitions := SharedDefinitionStore.new(data_root)
+	var prepared := definitions.prepare_generation(0, [{
+		"definition_id": "creature.wolf",
+		"kind": "creature",
+		"name": "Wolf",
+		"content": {"armor_class": 17, "movement": "30 ft"},
+	}])
+	var published := registry.publish_shared_definitions_generation(
+		int(prepared.get("generation", -1)),
+		int(created.get("state", {}).get("generation", -1))
+	)
+	var existing_store := FileCampaignStore.new(data_root, existing_campaign_id)
+	var existing_state := existing_store.load_state()
+	existing_store.commit(
+		int(existing_state.get("generation", -1)),
+		{},
+		existing_state.get("runtime", {}),
+		[],
+		0,
+		["creature.wolf"]
+	)
+	_expect(published.get("ok", false), "conflict UI fixture publishes its local Shared Definition")
+
+	var desk := CampaignDesk.new()
+	desk.data_root = data_root
+	desk.registry = registry
+	desk.runtime_coordinator = CampaignRuntimeCoordinator.new(data_root, registry)
+	desk.runtime_coordinator.open_durable_active()
+	root.add_child(desk)
+	await process_frame
+	await process_frame
+	var started := desk.start_import_from_path(bundle_path)
+	_expect(started.get("ok", false), "Campaign desk starts a conflicting import")
+	for _frame in 300:
+		if not desk.portability_controller.is_active():
+			break
+		await process_frame
+	await process_frame
+	await process_frame
+
+	var overlay := desk.find_child("DefinitionConflictOverlay", true, false) as Control
+	var affected := desk.find_child("DefinitionConflictAffectedCampaigns", true, false) as Label
+	var keep_choice := desk.find_child("KeepExistingDefinitionChoice", true, false) as CheckBox
+	var imported_choice := desk.find_child("UseImportedDefinitionChoice", true, false) as CheckBox
+	var both_choice := desk.find_child("RetainBothDefinitionsChoice", true, false) as CheckBox
+	var continue_button := desk.find_child("ContinueConflictingImportButton", true, false) as Button
+	var keep_consequence := desk.find_child("KeepExistingDefinitionChoiceConsequence", true, false) as Label
+	var imported_consequence := desk.find_child("UseImportedDefinitionChoiceConsequence", true, false) as Label
+	var both_consequence := desk.find_child("RetainBothDefinitionsChoiceConsequence", true, false) as Label
+	_expect(overlay != null and overlay.visible, "definition conflict opens the blocking production conflict ledger")
+	_expect(affected != null and affected.text.contains("Bestehende Wolfsrunde"), "conflict ledger names every affected existing Campaign")
+	_expect(
+		keep_consequence != null and not keep_consequence.text.is_empty()
+		and imported_consequence != null and not imported_consequence.text.is_empty()
+		and both_consequence != null and not both_consequence.text.is_empty(),
+		"conflict ledger shows all three consequences before a decision"
+	)
+	_expect(keep_choice != null and keep_choice.has_focus(), "conflict ledger moves keyboard focus to its first explicit choice")
+	_expect(continue_button != null and continue_button.disabled, "conflict import cannot continue without an explicit choice")
+	if both_choice != null and continue_button != null:
+		both_choice.button_pressed = true
+		both_choice.toggled.emit(true)
+		_expect(not continue_button.disabled, "explicit retain-both choice enables conflict completion")
+		continue_button.pressed.emit()
+		for _frame in 300:
+			if not desk.portability_controller.is_active():
+				break
+			await process_frame
+		await process_frame
+	var final_state := registry.load_state()
+	_expect(final_state.get("campaigns", []).size() == 2, "conflict ledger atomically completes one independent imported Campaign")
+	_expect(overlay != null and not overlay.visible, "successful conflict resolution closes the modal ledger")
+	var imported_campaign_id := ""
+	for campaign in final_state.get("campaigns", []):
+		if campaign.get("id", "") != existing_campaign_id:
+			imported_campaign_id = str(campaign.get("id", ""))
+	var imported_state := FileCampaignStore.new(data_root, imported_campaign_id).load_state()
+	_expect(
+		not imported_campaign_id.is_empty()
+		and imported_state.get("shared_definition_refs", []).size() == 1
+		and imported_state.get("shared_definition_refs", [""])[0] != "creature.wolf",
+		"visible retain-both decision remaps only the imported Campaign"
+	)
+	desk.queue_free()
+	await process_frame
+
+
 func _run_campaign_desk_journey() -> void:
 	var data_root := "user://saltmarcher-ui-tests/%s" % Time.get_ticks_usec()
 	var registry := FileCampaignRegistry.new(data_root)
 	var desk := CampaignDesk.new()
+	desk.data_root = data_root
 	desk.registry = registry
 	desk.runtime_coordinator = CampaignRuntimeCoordinator.new(data_root, registry)
 	desk.runtime_coordinator.open_durable_active()
@@ -880,6 +1029,43 @@ func _run_campaign_desk_journey() -> void:
 		await process_frame
 		var after_switch := registry.load_state()
 		_expect(after_switch.get("active_campaign_id", "") == first_ui_id, "campaign button switches the active campaign")
+
+	var export_button := desk.find_child("ExportCampaignButton", true, false) as Button
+	var import_button := desk.find_child("ImportCampaignButton", true, false) as Button
+	var cancel_button := desk.find_child("CancelCampaignTransferButton", true, false) as Button
+	var transfer_progress := desk.find_child("CampaignTransferProgress", true, false) as ProgressBar
+	_expect(export_button != null and import_button != null and cancel_button != null, "Campaign desk exposes keyboard-focusable transfer controls")
+	_expect(export_button != null and not export_button.disabled, "active Campaign enables complete export")
+	var completed_operations: Array = []
+	desk.portability_controller.operation_completed.connect(func(kind: String, result: Dictionary) -> void:
+		completed_operations.append({"kind": kind, "result": result.duplicate(true)})
+	)
+	var ui_bundle_path := data_root + "/exports/ui-roundtrip.saltmarcher"
+	var export_started := desk.start_export_to_path(ui_bundle_path)
+	_expect(export_started.get("ok", false), "Campaign desk starts export through its production worker")
+	_expect(export_button.disabled and import_button.disabled and not cancel_button.disabled, "running transfer disables competing actions and exposes cancellation")
+	var competing_transfer := desk.start_import_from_path(ui_bundle_path)
+	_expect(competing_transfer.get("status", "") == "busy", "Campaign desk admits at most one portability worker")
+	for _frame in 300:
+		if not desk.portability_controller.is_active():
+			break
+		await process_frame
+	await process_frame
+	_expect(not completed_operations.is_empty() and completed_operations.back().get("kind", "") == "export", "Campaign desk receives worker export completion")
+	_expect(completed_operations.back().get("result", {}).get("ok", false) and FileAccess.file_exists(ui_bundle_path), "Campaign desk writes a complete portable bundle")
+	_expect(transfer_progress.value > 0, "Campaign desk exposes determinate transfer progress")
+
+	var import_started := desk.start_import_from_path(ui_bundle_path)
+	_expect(import_started.get("ok", false), "Campaign desk starts import through its production worker")
+	for _frame in 300:
+		if not desk.portability_controller.is_active():
+			break
+		await process_frame
+	await process_frame
+	var after_ui_import := registry.load_state()
+	_expect(after_ui_import.get("campaigns", []).size() == 3, "Campaign desk imports one independent Campaign through the worker")
+	_expect(after_ui_import.get("active_campaign_id", "") == first_ui_id, "Campaign desk import does not replace the active Campaign")
+	_expect(not export_button.disabled and not import_button.disabled and cancel_button.disabled, "completed transfer restores ordinary Campaign controls")
 
 	desk.queue_free()
 	await process_frame

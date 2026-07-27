@@ -160,6 +160,15 @@ both under distinct identities, or discards the import. Consequences name every
 affected existing Campaign before resolution. One registry generation exposes
 the new Campaign and selected Shared-Definition generation together.
 
+The production Campaign desk submits portability work to a single background
+worker. File inventory, extraction, and Shared-Definition preparation report
+determinate unit progress. Competing create, activate, export, and import actions
+remain disabled while work is active. Cancellation at a natural pre-commit
+boundary removes unmarked staging and publishes no registry truth; a staged
+definition conflict remains explicitly resumable or discardable. Atomic commit
+is the linearization boundary, so a later cancellation request reports the
+completed outcome.
+
 Campaign deletion atomically removes it from the live registry and publishes
 its complete root in recoverable trash. Permanent deletion is a separate,
 explicit operation and reports exactly what was removed.
@@ -182,6 +191,12 @@ definitions join the installation; conflicts survive restart without mutating
 truth and support explicit keep-existing, use-imported, retain-both, and
 discard paths. Successful resolution atomically selects the definition
 generation while registering a new independent Campaign identity.
+
+The production Campaign desk now exposes complete export/import through an
+off-main-thread portability controller with progress, cancellation, truthful
+failure copy, and one active-operation admission. Its 1366 x 768 transfer docket
+and blocking conflict ledger are keyboard-focusable; the ledger displays all
+consequences and affected Campaign names before enabling completion.
 
 A Campaign runtime coordinator now prepares a target before committing its
 active pointer, revokes the prior synchronous writer, admits exactly one new
@@ -211,11 +226,10 @@ its complete root before live promotion and removes it again when registry
 publication fails.
 
 Normal-time retention tiers, the production cross-platform
-total-volume-capacity probe, asynchronous accepted-write drain, the
-user-visible definition-conflict decision surface, cancellable/progress-reporting
-portability work, compaction, released-format conversion, cross-OS
-qualification, and representative scale proof remain open roadmap work. The
-old Java/SQLite implementation does not satisfy this target contract.
+total-volume-capacity probe, asynchronous accepted-write drain, compaction,
+released-format conversion, cross-OS qualification, representative scale, and
+the repeated-cancellation resource-envelope proof remain open roadmap work.
+The old Java/SQLite implementation does not satisfy this target contract.
 
 ## References
 

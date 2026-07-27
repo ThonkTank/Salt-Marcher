@@ -35,7 +35,10 @@ checksummed `.saltmarcher` bundle under a new import identity. Reusable
 definitions live installation-wide in immutable generations; Campaigns store
 stable references, complete export closes over required definitions, and
 conflicting imports remain staged until an explicit keep, replace, retain-both,
-or discard decision. The current
+or discard decision. The Campaign desk exposes that complete transfer path as
+a non-blocking worker with visible file/definition progress and cancellation;
+its conflict ledger names affected Campaigns and shows every consequence before
+publication. The current
 backend also schedules restore-tested recovery points in the background,
 supports retained-original restore and recoverable trash, and provides
 explicitly confirmed permanent deletion. Backup retention and storage-pressure
