@@ -1,0 +1,17 @@
+Aletheia C5 registered-run rollback
+candidate_commit=ccce150ec5cf783d67794a75324555cc40b234c9
+command_exit=0
+literal_pass=true
+run_scratch_matches_after_cleanup=0
+live_c5_candidate_pids_after_cleanup=0
+live_known_bad_c4_pids_after_cleanup=0
+intent_independently_acquirable_before_scratch_removal=true
+host_independently_acquirable_before_scratch_removal=true
+stable_lock_files_unlinked_by_candidate=false
+rollback_scope=recorded C5 and known-bad-control PIDs/groups only
+restored_behavior=current uncoordinated behavior; never C2/C3/C4
+
+The harness finally block probed the run-specific intent and host files
+independently after every recorded process completed and before it removed the
+private /tmp/aletheia-c5-canary.* scratch tree.  Post-run readback found no
+remaining scratch tree and no executable PID for either generated binary.

@@ -1,7 +1,7 @@
 Status: Active
 Owner: SaltMarcher Product Owner
 Last Reviewed: 2026-07-26
-Charter Version: C-0.7.0
+Charter Version: C-0.9.0
 Source of Truth: User-given authority, workstream boundaries, agent assignment, maturity semantics, and completion boundary for the GM-Core program.
 
 # GM-Core Aletheia Program Charter
@@ -47,6 +47,28 @@ measurements, probes, or disposable experiments and return evidence plus
 precise instructions to A. C changes no product requirement or product code and
 cannot approve its own proposal. All five processes continue beside one another
 without becoming intermediate owner gates.
+
+## Continuous Autonomous Operation
+
+The Product Owner delegates adoption of a reversible, non-production process
+change to its named role coordinator once a fresh independent evaluator
+qualifies the exact candidate and every frozen speed, quality, cost, safety,
+rollback, and shipped-boundary guard passes. No intermediate owner response is
+required. This delegation never covers shipped behavior or resources, product
+requirements or acceptance, weakened `check` or CI, real data, secrets,
+external transmission, paid services, or an unevaluated tradeoff.
+It executes a standing owner decision; it is not self-approval by C or an
+evaluator.
+
+A role goal persists until its program exit. Queueing, another role's active
+worker, a temporarily unavailable host window, a retryable admission result, or
+a quiet phase agent is not a terminal blocker. The coordinator preserves the
+in-flight candidate and its artifacts, continues safe independent work, and
+retries within its frozen budget. It replaces a phase agent only after positive
+evidence of failure, budget expiry, or a falsified premise—not merely because
+the agent is quiet, slow, or nearly complete. If one candidate cannot proceed,
+the role may advance non-conflicting preparation but does not discard completed
+work or end its standing goal.
 
 ## Research, Evidence, And Tooling
 
@@ -146,6 +168,14 @@ highest-value process variable. Program closure uses one bounded integrated B1,
 B2, and B3 sweep against the interview journeys and unresolved risks. C closes
 when no evaluated required proposal remains and its final budget exposes no new
 severe evidence.
+
+All newly started heavy local Gradle, Java, UI, benchmark, or synthetic-worker
+batches use the currently adopted cooperative host-admission tool. A receives
+intent priority; B1, B2, B3, and C run one finite admitted non-A batch at a
+time. A retryable deferral waits and retries without becoming a blocked goal.
+Already-running workers are allowed to finish and are never killed merely to
+retrofit admission. This is local same-user scheduling, not a global
+coordinator, security boundary, or guarantee against host failure.
 
 For M13, every B1, B2, B3, and C role coordinator posts an artifact-complete
 closure result against the exact candidate to the M13 PR, or to the umbrella
