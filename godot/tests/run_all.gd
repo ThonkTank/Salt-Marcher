@@ -7,6 +7,7 @@ const CampaignBundle = preload("res://godot/src/platform/portability/campaign_bu
 const CampaignDesk = preload("res://godot/src/ui/campaign_desk.gd")
 const CampaignRuntimeCoordinator = preload("res://godot/src/app/campaign_runtime_coordinator.gd")
 const CampaignBackupScheduler = preload("res://godot/src/app/campaign_backup_scheduler.gd")
+const StorageCapacityGuard = preload("res://godot/src/platform/persistence/storage_capacity_guard.gd")
 
 var _failures: Array[String] = []
 
@@ -92,12 +93,14 @@ func _run_tests() -> void:
 	_expect(restored.get("state", {}).get("generation", -1) == 6, "restore commits a new registry generation")
 	_expect(restored.get("campaign_id", "") == first_id, "restore retains Campaign identity")
 	var restored_store := FileCampaignStore.new(root, first_id).load_state()
-	_expect(restored_store.get("ok", false) and restored_store.get("generation", -1) == 4, "restore retains complete Campaign generations and safe parent")
+	_expect(restored_store.get("ok", false) and restored_store.get("generation", -1) == 5, "restore retains complete Campaign generations and safe parent")
 	_run_portability_contract(root, registry, first_id)
 
 	_run_registry_fault_contract()
 	_run_backup_contract()
 	await _run_backup_scheduler_contract()
+	_run_storage_pressure_contract()
+	_run_backup_retention_contract()
 	_run_runtime_coordinator_contract()
 	_run_permanent_deletion_contract()
 
@@ -134,33 +137,43 @@ func _run_campaign_store_contract(data_root: String, campaign_id: String) -> voi
 	var world := store.read_partition("world", committed.get("state", {}))
 	_expect(world.get("ok", false) and world.get("present", false), "committed Campaign partition is readable")
 	_expect(world.get("payload", {}).get("objects", [])[0].get("name", "") == "Salzhafen", "Campaign partition preserves semantic payload")
+	var numeric_commit := store.commit(2, {
+		"world": {
+			"objects": [
+				{"id": "place-1", "kind": "place", "name": "Salzhafen", "visit_count": 2},
+			],
+		},
+	}, runtime)
+	_expect(numeric_commit.get("ok", false), "ordinary numeric capability payload survives canonical JSON readback")
+	var numeric_world := store.read_partition("world", numeric_commit.get("state", {}))
+	_expect(int(numeric_world.get("payload", {}).get("objects", [])[0].get("visit_count", -1)) == 2, "numeric capability payload preserves its semantic value")
 
-	var stale := store.commit(1, {}, runtime)
+	var stale := store.commit(2, {}, runtime)
 	_expect(not stale.get("ok", true) and stale.get("status", "") == "stale", "stale Campaign commit is rejected")
 
-	var world_ref: String = str(committed.get("state", {}).get("partition_refs", {}).get("world", {}).get("path", ""))
+	var world_ref: String = str(numeric_commit.get("state", {}).get("partition_refs", {}).get("world", {}).get("path", ""))
 	runtime["focused_workspace"] = "scene"
-	var third := store.commit(2, {
+	var third := store.commit(3, {
 		"scene": {"running": [], "focused_scene_id": ""},
 	}, runtime)
 	_expect(third.get("ok", false), "second owner can join the Campaign generation")
 	_expect(third.get("state", {}).get("partition_refs", {}).get("world", {}).get("path", "") == world_ref, "unchanged owner partition is reused by reference")
 
-	var corrupt := FileAccess.open(store.commit_path(3), FileAccess.WRITE)
+	var corrupt := FileAccess.open(store.commit_path(4), FileAccess.WRITE)
 	corrupt.store_string("{damaged")
 	corrupt.close()
 	var recovered := FileCampaignStore.new(data_root, campaign_id).load_state()
 	_expect(recovered.get("ok", false), "Campaign store recovers from a damaged newest generation")
 	_expect(recovered.get("recovered", false), "Campaign recovery is disclosed")
-	_expect(recovered.get("generation", -1) == 2, "Campaign recovery selects newest fully valid generation")
+	_expect(recovered.get("generation", -1) == 3, "Campaign recovery selects newest fully valid generation")
 	_expect(recovered.get("runtime", {}).get("focused_workspace", "") == "world", "Campaign recovery restores matching runtime state")
 
-	var resumed := store.commit(2, {}, recovered["runtime"])
+	var resumed := store.commit(3, {}, recovered["runtime"])
 	_expect(resumed.get("ok", false), "Campaign store can commit after recovery")
-	_expect(resumed.get("state", {}).get("generation", -1) == 4, "Campaign recovery continuation preserves damaged evidence")
-	_expect(resumed.get("state", {}).get("parent_generation", -1) == 2, "Campaign recovery continuation names its safe parent")
+	_expect(resumed.get("state", {}).get("generation", -1) == 5, "Campaign recovery continuation preserves damaged evidence")
+	_expect(resumed.get("state", {}).get("parent_generation", -1) == 3, "Campaign recovery continuation names its safe parent")
 
-	var invalid_owner := store.commit(4, {"../escape": {}}, resumed.get("state", {}).get("runtime", {}))
+	var invalid_owner := store.commit(5, {"../escape": {}}, resumed.get("state", {}).get("runtime", {}))
 	_expect(not invalid_owner.get("ok", true), "unsafe capability owner is rejected before publication")
 
 
@@ -173,6 +186,8 @@ func _run_registry_fault_contract() -> void:
 	_expect(not failed.get("ok", true), "registry rename failure is surfaced")
 	var after_failure := FileCampaignRegistry.new(data_root).load_state()
 	_expect(after_failure.get("ok", false) and after_failure.get("campaigns", [1]).is_empty(), "failed registry publication exposes no Campaign row")
+	_expect(_has_no_child_directories(data_root + "/campaigns"), "failed registry publication leaves no live Campaign orphan")
+	_expect(_has_no_child_directories(data_root + "/staging"), "failed registry publication removes its isolated creation staging")
 
 	var reconcile_root := "user://saltmarcher-ambiguous-tests/%s" % Time.get_ticks_usec()
 	var fail_after_rename := func(operation: String, phase: String, _path: String) -> bool:
@@ -227,7 +242,7 @@ func _run_portability_contract(source_root: String, source_registry, source_camp
 
 	var imported_store := FileCampaignStore.new(target_root, imported_id)
 	var imported_state := imported_store.load_state()
-	_expect(imported_state.get("ok", false) and imported_state.get("generation", -1) == 4, "import preserves the exact safe Campaign generation")
+	_expect(imported_state.get("ok", false) and imported_state.get("generation", -1) == 5, "import preserves the exact safe Campaign generation")
 	_expect(imported_state.get("runtime", {}).get("focused_workspace", "") == "world", "import preserves resumable Campaign runtime state")
 	var imported_world := imported_store.read_partition("world", imported_state)
 	var imported_objects: Array = imported_world.get("payload", {}).get("objects", [])
@@ -236,7 +251,7 @@ func _run_portability_contract(source_root: String, source_registry, source_camp
 	var source_world := FileCampaignStore.new(source_root, source_campaign_id).read_partition("world")
 	var changed_runtime: Dictionary = imported_state["runtime"].duplicate(true)
 	changed_runtime["focused_workspace"] = "imported-only"
-	var changed_import := imported_store.commit(4, {
+	var changed_import := imported_store.commit(5, {
 		"world": {"objects": [{"id": "place-1", "kind": "place", "name": "Andere Küste"}]},
 	}, changed_runtime)
 	_expect(changed_import.get("ok", false), "imported Campaign is independently writable")
@@ -373,6 +388,178 @@ func _run_backup_scheduler_contract() -> void:
 	_expect(scheduler.last_result().get("status", "") == "backup_verified", "background backup scheduler discloses its verified terminal result")
 	scheduler.queue_free()
 	await process_frame
+
+
+func _run_storage_pressure_contract() -> void:
+	var gib := 1024 * 1024 * 1024
+	var known_guard := StorageCapacityGuard.new(func(_path: String) -> Dictionary:
+		return {
+			"ok": true,
+			"available_bytes": 5 * gib + 100,
+			"volume_capacity_bytes": 100 * gib,
+		}
+	)
+	var admitted := known_guard.admit("user://known-capacity/probe", 100)
+	_expect(admitted.get("ok", false) and admitted.get("reserve_bytes", 0) == 5 * gib, "storage admission reserves exact five percent when volume capacity is known")
+	var rejected := known_guard.admit("user://known-capacity/probe", 101)
+	_expect(not rejected.get("ok", true) and rejected.get("status", "") == "storage_pressure", "storage admission rejects the first byte that would consume the reserve")
+	_expect(rejected.get("safe_read_available", false) and rejected.get("external_export_available", false) and rejected.get("retry_available", false), "storage-pressure result preserves safe read, external export, and retry")
+
+	var unknown_guard := StorageCapacityGuard.new(func(_path: String) -> Dictionary:
+		return {"ok": true, "available_bytes": 2 * gib, "volume_capacity_bytes": -1}
+	)
+	var unknown_rejection := unknown_guard.admit("user://unknown-capacity/probe", 1)
+	_expect(not unknown_rejection.get("ok", true) and unknown_rejection.get("reserve_bytes", 0) == 2 * gib and not unknown_rejection.get("capacity_known", true), "unknown volume capacity fails writes at the two GiB minimum without claiming percentage qualification")
+
+	var data_root := "user://saltmarcher-storage-pressure-tests/%s" % Time.get_ticks_usec()
+	var registry := FileCampaignRegistry.new(data_root)
+	var created := registry.create_campaign("Pressure Safe")
+	var campaign_id := str(created.get("campaign_id", ""))
+	var pressure_guard := StorageCapacityGuard.new(func(path: String) -> Dictionary:
+		var external := path.contains("external-export")
+		return {
+			"ok": true,
+			"available_bytes": 20 * gib if external else 2 * gib,
+			"volume_capacity_bytes": -1,
+		}
+	)
+	var pressured_store := FileCampaignStore.new(data_root, campaign_id, Callable(), "", pressure_guard)
+	var before := pressured_store.load_state()
+	var failed_commit := pressured_store.commit(
+		int(before["generation"]),
+		{"world": {"objects": [{"id": "would-not-store"}]}},
+		before["runtime"]
+	)
+	_expect(not failed_commit.get("ok", true) and failed_commit.get("status", "") == "storage_pressure", "Campaign mutation is rejected before unsafe low-space publication")
+	var after := FileCampaignStore.new(data_root, campaign_id).load_state()
+	_expect(after.get("generation", -1) == before.get("generation", -2) and after.get("partition_refs", {"bad": true}).is_empty(), "low-space rejection leaves prior Campaign truth unchanged and readable")
+	var blocked_bundle := data_root + "/blocked-export/campaign.saltmarcher"
+	var blocked_export := CampaignBundle.new(data_root, registry, pressure_guard).export_campaign(campaign_id, blocked_bundle)
+	_expect(not blocked_export.get("ok", true) and blocked_export.get("status", "") == "storage_pressure", "low-space export is rejected before output publication")
+	_expect(not DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(data_root + "/blocked-export")), "rejected low-space export creates no destination or parent")
+	var external_bundle := data_root + "/external-export/campaign.saltmarcher"
+	var exported := CampaignBundle.new(data_root, registry, pressure_guard).export_campaign(campaign_id, external_bundle)
+	_expect(exported.get("ok", false) and FileAccess.file_exists(external_bundle), "safe export to a destination with capacity remains available under local pressure")
+
+	var import_root := "user://saltmarcher-storage-pressure-import-tests/%s" % Time.get_ticks_usec()
+	var import_registry := FileCampaignRegistry.new(import_root)
+	var blocked_import := CampaignBundle.new(import_root, import_registry, pressure_guard).import_campaign(external_bundle, 0)
+	_expect(not blocked_import.get("ok", true) and blocked_import.get("status", "") == "storage_pressure", "low-space import is rejected before extraction")
+	_expect(import_registry.load_state().get("generation", -1) == 0, "rejected low-space import leaves registry truth unchanged")
+	_expect(_has_no_child_directories(import_root + "/staging"), "rejected low-space import creates no staging operation")
+
+	var create_root := "user://saltmarcher-storage-pressure-create-tests/%s" % Time.get_ticks_usec()
+	var pressured_registry := FileCampaignRegistry.new(create_root, Callable(), pressure_guard)
+	var blocked_create := pressured_registry.create_campaign("No Partial Campaign")
+	_expect(not blocked_create.get("ok", true) and blocked_create.get("status", "") == "storage_pressure", "low-space Campaign creation fails before live publication")
+	_expect(pressured_registry.load_state().get("generation", -1) == 0, "low-space Campaign creation publishes no registry generation")
+	_expect(_has_no_child_directories(create_root + "/campaigns"), "low-space Campaign creation leaves no live Campaign root")
+	_expect(_has_no_child_directories(create_root + "/staging"), "low-space Campaign creation removes its staging root")
+
+
+func _run_backup_retention_contract() -> void:
+	var data_root := "user://saltmarcher-backup-retention-tests/%s" % Time.get_ticks_usec()
+	var registry := FileCampaignRegistry.new(data_root)
+	var created := registry.create_campaign("Retention")
+	var campaign_id := str(created.get("campaign_id", ""))
+	var store := FileCampaignStore.new(data_root, campaign_id)
+	var manager := CampaignBackupManager.new(data_root, registry)
+	var backup_ids: Array[String] = []
+	for generation in range(1, 7):
+		var backup := manager.create_restore_tested_backup(campaign_id, generation * 60)
+		_expect(backup.get("ok", false), "retention fixture creates verified point %d" % generation)
+		if backup.get("ok", false):
+			backup_ids.append(str(backup["backup"]["backup_id"]))
+		if generation < 6:
+			var state := store.load_state()
+			var runtime: Dictionary = state["runtime"].duplicate(true)
+			runtime["focused_workspace"] = "generation-%d" % (generation + 1)
+			var committed := store.commit(
+				int(state["generation"]),
+				{"world": {"revision": generation + 1}},
+				runtime
+			)
+			_expect(
+				committed.get("ok", false),
+				"retention fixture advances to generation %d: %s" % [
+					generation + 1,
+					committed.get("error", "unknown error"),
+				]
+			)
+	var before := manager.list_backups(campaign_id)
+	_expect(before.get("backups", []).size() == 6, "retention starts with six verified recovery points")
+
+	var crash_after_receipt := CampaignBackupManager.new(
+		data_root,
+		registry,
+		null,
+		func(operation: String, phase: String, _subject: String) -> bool:
+			return operation == "backup_retention" and phase == "after_receipt_quarantine_without_rollback"
+	)
+	var receipt_interruption := crash_after_receipt.prune_oldest_verified_backup(campaign_id, 3)
+	_expect(receipt_interruption.get("status", "") == "retention_interrupted", "retention fault seam simulates process loss after receipt quarantine")
+	var receipt_restart := CampaignBackupManager.new(data_root, registry).list_backups(campaign_id)
+	_expect(receipt_restart.get("backups", []).size() == 6, "restart restores a receipt when its verified bundle remained live")
+	_expect(receipt_restart.get("retention_recovery_events", [])[0].get("status", "") == "retention_rollback_completed", "restart discloses completed retention rollback")
+
+	var interrupted_manager := CampaignBackupManager.new(
+		data_root,
+		registry,
+		null,
+		func(operation: String, phase: String, _subject: String) -> bool:
+			return operation == "backup_retention" and phase == "after_receipt_quarantine"
+	)
+	var interrupted := interrupted_manager.prune_oldest_verified_backup(campaign_id, 3)
+	_expect(not interrupted.get("ok", true), "interrupted retention is surfaced as failure")
+	var after_interruption := manager.list_backups(campaign_id)
+	_expect(after_interruption.get("backups", []).size() == 6, "interrupted retention restores all verified recovery points")
+
+	var crash_after_bundle := CampaignBackupManager.new(
+		data_root,
+		registry,
+		null,
+		func(operation: String, phase: String, _subject: String) -> bool:
+			return operation == "backup_retention" and phase == "after_bundle_quarantine_without_cleanup"
+	)
+	var bundle_interruption := crash_after_bundle.prune_oldest_verified_backup(campaign_id, 3)
+	_expect(bundle_interruption.get("status", "") == "retention_interrupted", "retention fault seam simulates process loss after complete quarantine")
+	var bundle_restart := CampaignBackupManager.new(data_root, registry).list_backups(campaign_id)
+	_expect(bundle_restart.get("backups", []).size() == 5, "restart completes a retention decision after receipt and bundle were quarantined")
+	_expect(bundle_restart.get("retention_recovery_events", [])[0].get("status", "") == "retention_delete_completed", "restart discloses completed quarantined deletion")
+
+	var pruned := manager.prune_oldest_verified_backup(campaign_id, 3)
+	_expect(pruned.get("ok", false) and pruned.get("status", "") == "oldest_verified_backup_pruned", "pressure retention removes exactly the oldest verified point")
+	_expect(pruned.get("backup_id", "") == backup_ids[1] and pruned.get("removed_bytes", 0) > 0, "retention reports the exact removed recovery point and bytes")
+	var after_prune := manager.list_backups(campaign_id)
+	_expect(after_prune.get("backups", []).size() == 4 and after_prune.get("rejected_backups", []).is_empty(), "ordinary retention removes only one verified recovery point")
+
+	var latest := store.load_state()
+	var next_runtime: Dictionary = latest["runtime"].duplicate(true)
+	next_runtime["focused_workspace"] = "generation-7"
+	var next_commit := store.commit(
+		int(latest["generation"]),
+		{"world": {"revision": 7}},
+		next_runtime
+	)
+	_expect(next_commit.get("ok", false), "pressure-retention fixture creates unprotected changed truth")
+	var gib := 1024 * 1024 * 1024
+	var pressure_guard := StorageCapacityGuard.new(func(_path: String) -> Dictionary:
+		return {"ok": true, "available_bytes": 2 * gib, "volume_capacity_bytes": -1}
+	)
+	var pressure_manager := CampaignBackupManager.new(data_root, registry, pressure_guard)
+	var pressure_result := pressure_manager.maintain_with_pressure_retention(
+		campaign_id,
+		int(next_commit.get("state", {}).get("generation", 0)),
+		420,
+		60,
+		3
+	)
+	_expect(not pressure_result.get("ok", true) and pressure_result.get("status", "") == "storage_pressure", "backup pressure remains explicit when one safe prune cannot restore capacity")
+	_expect(pressure_result.get("retention", {}).get("status", "") == "oldest_verified_backup_pruned", "storage pressure triggers one conservative verified-backup prune before retry")
+	var after_pressure := manager.list_backups(campaign_id)
+	_expect(after_pressure.get("backups", []).size() == 3, "pressure retention stops at three verified recovery points")
+	var minimum := manager.prune_oldest_verified_backup(campaign_id, 3)
+	_expect(minimum.get("ok", false) and minimum.get("status", "") == "retention_minimum_preserved", "retention refuses to cross its verified-point minimum")
 
 
 func _write_invalid_bundle(path: String, entry_path: String, entry_size: String, checksum: String) -> void:
@@ -525,3 +712,11 @@ func _run_campaign_desk_journey() -> void:
 func _expect(condition: bool, message: String) -> void:
 	if not condition:
 		_failures.append(message)
+
+
+func _has_no_child_directories(path: String) -> bool:
+	var absolute_path := ProjectSettings.globalize_path(path)
+	return (
+		not DirAccess.dir_exists_absolute(absolute_path)
+		or DirAccess.get_directories_at(absolute_path).is_empty()
+	)

@@ -5,6 +5,7 @@ extends RefCounted
 
 const ImmutableJsonFiles = preload("res://godot/src/platform/persistence/immutable_json_files.gd")
 const FileCampaignStore = preload("res://godot/src/platform/persistence/file_campaign_store.gd")
+const StorageCapacityGuard = preload("res://godot/src/platform/persistence/storage_capacity_guard.gd")
 
 const FORMAT_ID := "saltmarcher.campaign-bundle.v1"
 const MAGIC := "SALTMARCHER-BUNDLE-1\n"
@@ -16,12 +17,14 @@ const MAX_SAFE_BYTES := 0x3fffffffffffffff
 var _data_root: String
 var _registry
 var _files: ImmutableJsonFiles
+var _capacity_guard
 
 
-func _init(data_root: String, registry) -> void:
+func _init(data_root: String, registry, capacity_guard = null) -> void:
 	_data_root = data_root.trim_suffix("/")
 	_registry = registry
-	_files = ImmutableJsonFiles.new()
+	_capacity_guard = capacity_guard if capacity_guard != null else StorageCapacityGuard.new()
+	_files = ImmutableJsonFiles.new(Callable(), _capacity_guard)
 
 
 func export_campaign(campaign_id: String, destination_path: String) -> Dictionary:
@@ -36,9 +39,6 @@ func export_campaign(campaign_id: String, destination_path: String) -> Dictionar
 	if FileAccess.file_exists(absolute_destination) or DirAccess.dir_exists_absolute(absolute_destination):
 		return _failure("Das Exportziel existiert bereits.")
 	var parent := absolute_destination.get_base_dir()
-	var parent_error := DirAccess.make_dir_recursive_absolute(parent)
-	if parent_error != OK:
-		return _failure("Exportziel konnte nicht vorbereitet werden.")
 
 	var inventory := _inventory(absolute_campaign)
 	if not inventory.get("ok", false):
@@ -61,6 +61,15 @@ func export_campaign(campaign_id: String, destination_path: String) -> Dictionar
 	var manifest_bytes := (JSON.stringify(manifest, "", true, true) + "\n").to_utf8_buffer()
 	if manifest_bytes.size() > MAX_MANIFEST_BYTES:
 		return _failure("Exportmanifest überschreitet die zulässige Größe.")
+	var declared_output_bytes := MAGIC.to_utf8_buffer().size() + 8 + manifest_bytes.size()
+	for entry in inventory["files"]:
+		declared_output_bytes += 4 + str(entry["path"]).to_utf8_buffer().size() + 8 + str(entry["size"]).to_int()
+	var admission: Dictionary = _capacity_guard.admit(destination_path, declared_output_bytes)
+	if not admission.get("ok", false):
+		return admission
+	var parent_error := DirAccess.make_dir_recursive_absolute(parent)
+	if parent_error != OK:
+		return _failure("Exportziel konnte nicht vorbereitet werden.")
 
 	var temporary_path := absolute_destination + ".pending-%s" % _files.new_identity()
 	var output := FileAccess.open(temporary_path, FileAccess.WRITE)
@@ -221,15 +230,14 @@ func _stage_and_validate_bundle(bundle_path: String, purpose: String) -> Diction
 	var operation_id := _files.new_identity()
 	var staging_root := _data_root + "/staging/%s-%s" % [purpose, operation_id]
 	var staged_campaign := staging_root + "/campaign"
+	var admission: Dictionary = _capacity_guard.admit(staged_campaign, int(manifest_result["total_bytes"]))
+	if not admission.get("ok", false):
+		bundle.close()
+		return admission
 	var staging_error := _files.ensure_directory(staged_campaign)
 	if staging_error != OK:
 		bundle.close()
 		return _failure("Campaign-Staging konnte nicht erstellt werden.")
-	var space := DirAccess.open(_files.absolute(staging_root))
-	if space == null or space.get_space_left() < int(manifest_result["total_bytes"]):
-		bundle.close()
-		_remove_tree(_files.absolute(staging_root))
-		return _failure("Für die vollständige Campaign-Prüfung ist nicht genug freier Speicher vorhanden.")
 
 	var extraction := _extract_entries(bundle, payload["files"], staged_campaign)
 	bundle.close()

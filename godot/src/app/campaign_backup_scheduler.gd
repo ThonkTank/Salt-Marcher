@@ -111,11 +111,12 @@ func _maintain_recovery_point(
 ) -> Dictionary:
 	var worker_registry := FileCampaignRegistry.new(_data_root)
 	var manager := CampaignBackupManager.new(_data_root, worker_registry)
-	return manager.maintain_recovery_point(
+	return manager.maintain_with_pressure_retention(
 		campaign_id,
 		observed_generation,
 		now_unix,
-		MAX_RECOVERY_POINT_AGE_SECONDS
+		MAX_RECOVERY_POINT_AGE_SECONDS,
+		3
 	)
 
 

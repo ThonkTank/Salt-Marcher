@@ -6,6 +6,7 @@ extends RefCounted
 const ImmutableJsonFiles = preload("res://godot/src/platform/persistence/immutable_json_files.gd")
 const FileCampaignStore = preload("res://godot/src/platform/persistence/file_campaign_store.gd")
 const CampaignBundle = preload("res://godot/src/platform/portability/campaign_bundle.gd")
+const StorageCapacityGuard = preload("res://godot/src/platform/persistence/storage_capacity_guard.gd")
 
 const RECEIPT_FORMAT_ID := "saltmarcher.campaign-backup-receipt.v1"
 
@@ -13,13 +14,22 @@ var _data_root: String
 var _registry
 var _files: ImmutableJsonFiles
 var _portability: CampaignBundle
+var _capacity_guard
+var _maintenance_fault_injector: Callable
 
 
-func _init(data_root: String, registry) -> void:
+func _init(
+	data_root: String,
+	registry,
+	capacity_guard = null,
+	maintenance_fault_injector: Callable = Callable()
+) -> void:
 	_data_root = data_root.trim_suffix("/")
 	_registry = registry
-	_files = ImmutableJsonFiles.new()
-	_portability = CampaignBundle.new(_data_root, registry)
+	_capacity_guard = capacity_guard if capacity_guard != null else StorageCapacityGuard.new()
+	_maintenance_fault_injector = maintenance_fault_injector
+	_files = ImmutableJsonFiles.new(Callable(), _capacity_guard)
+	_portability = CampaignBundle.new(_data_root, registry, _capacity_guard)
 
 
 func create_restore_tested_backup(campaign_id: String, created_at_unix: int = -1) -> Dictionary:
@@ -127,11 +137,43 @@ func maintain_recovery_point(
 	return created
 
 
+func maintain_with_pressure_retention(
+	campaign_id: String,
+	observed_generation: int,
+	now_unix: int = -1,
+	maximum_age_seconds: int = 60,
+	minimum_verified_points: int = 3
+) -> Dictionary:
+	var maintained := maintain_recovery_point(
+		campaign_id,
+		observed_generation,
+		now_unix,
+		maximum_age_seconds
+	)
+	if maintained.get("status", "") != "storage_pressure":
+		return maintained
+	var retention := prune_oldest_verified_backup(campaign_id, minimum_verified_points)
+	maintained["retention"] = retention
+	if retention.get("status", "") != "oldest_verified_backup_pruned":
+		return maintained
+	var retry := maintain_recovery_point(
+		campaign_id,
+		observed_generation,
+		now_unix,
+		maximum_age_seconds
+	)
+	retry["retention"] = retention
+	return retry
+
+
 func list_backups(campaign_id: String) -> Dictionary:
 	var backup_directory := _backup_directory(campaign_id)
 	var directory_error := _files.ensure_directory(backup_directory)
 	if directory_error != OK:
 		return _failure("Campaign-Backupverzeichnis ist nicht verfügbar.")
+	var retention_recovery := _recover_retention_quarantines(campaign_id)
+	if not retention_recovery.get("ok", false):
+		return retention_recovery
 	var directory := DirAccess.open(_files.absolute(backup_directory))
 	if directory == null:
 		return _failure("Campaign-Backupverzeichnis ist nicht lesbar.")
@@ -155,7 +197,116 @@ func list_backups(campaign_id: String) -> Dictionary:
 			left_generation == right_generation and str(left["backup_id"]) > str(right["backup_id"])
 		)
 	)
-	return {"ok": true, "backups": backups, "rejected_backups": rejected}
+	return {
+		"ok": true,
+		"backups": backups,
+		"rejected_backups": rejected,
+		"retention_recovery_events": retention_recovery["events"],
+	}
+
+
+func prune_oldest_verified_backup(campaign_id: String, minimum_verified_points: int = 3) -> Dictionary:
+	if minimum_verified_points < 2:
+		return _failure("Retention muss mindestens zwei restore-getestete Recovery-Punkte bewahren.")
+	var listed := list_backups(campaign_id)
+	if not listed.get("ok", false):
+		return listed
+	var backups: Array = listed["backups"]
+	if backups.size() <= minimum_verified_points:
+		return {
+			"ok": true,
+			"status": "retention_minimum_preserved",
+			"campaign_id": campaign_id,
+			"retained_verified_points": backups.size(),
+			"rejected_backups": listed["rejected_backups"],
+		}
+	var candidate: Dictionary = backups[backups.size() - 1]
+	var backup_id := str(candidate["backup_id"])
+	var backup_directory := _backup_directory(campaign_id)
+	var receipt_path := backup_directory + "/" + backup_id + ".verified.json"
+	var bundle_path := backup_directory + "/" + str(candidate["bundle_name"])
+	var quarantine_root := _data_root + "/staging/backup-retention-" + _files.new_identity()
+	var quarantine_error := _files.ensure_directory(quarantine_root)
+	if quarantine_error != OK:
+		return _failure("Backup-Retention konnte keine isolierte Quarantäne vorbereiten.")
+	var quarantined_receipt := quarantine_root + "/receipt.verified.json"
+	var quarantined_bundle := quarantine_root + "/backup.saltmarcher"
+	if _should_fail("backup_retention", "before_quarantine", backup_id):
+		_files.remove_tree(quarantine_root)
+		return _failure("Backup-Retention wurde vor der Quarantäne unterbrochen.")
+	var receipt_move := DirAccess.rename_absolute(
+		_files.absolute(receipt_path),
+		_files.absolute(quarantined_receipt)
+	)
+	if receipt_move != OK:
+		_files.remove_tree(quarantine_root)
+		return _failure("Ältester Backup-Beleg konnte nicht isoliert werden.")
+	if _should_fail("backup_retention", "after_receipt_quarantine", backup_id):
+		var receipt_rollback := DirAccess.rename_absolute(
+			_files.absolute(quarantined_receipt),
+			_files.absolute(receipt_path)
+		)
+		if receipt_rollback != OK:
+			return {
+				"ok": false,
+				"status": "retention_recovery_required",
+				"error": "Unterbrochene Backup-Retention konnte den verifizierten Beleg nicht zurücksetzen.",
+				"quarantine_path": quarantine_root,
+			}
+		_files.remove_tree(quarantine_root)
+		return _failure("Backup-Retention wurde nach der Belegquarantäne sicher zurückgesetzt.")
+	if _should_fail("backup_retention", "after_receipt_quarantine_without_rollback", backup_id):
+		return {
+			"ok": false,
+			"status": "retention_interrupted",
+			"error": "Simulierter Prozessverlust nach der Belegquarantäne.",
+			"quarantine_path": quarantine_root,
+		}
+	var bundle_move := DirAccess.rename_absolute(
+		_files.absolute(bundle_path),
+		_files.absolute(quarantined_bundle)
+	)
+	if bundle_move != OK:
+		var rollback := DirAccess.rename_absolute(
+			_files.absolute(quarantined_receipt),
+			_files.absolute(receipt_path)
+		)
+		if rollback != OK:
+			return {
+				"ok": false,
+				"status": "retention_recovery_required",
+				"error": "Backup-Bundle blieb live, aber sein Beleg konnte nicht zurückgesetzt werden.",
+				"quarantine_path": quarantine_root,
+			}
+		_files.remove_tree(quarantine_root)
+		return _failure("Ältestes Backup-Bundle konnte nicht isoliert werden; der Beleg wurde zurückgesetzt.")
+	if _should_fail("backup_retention", "after_bundle_quarantine_without_cleanup", backup_id):
+		return {
+			"ok": false,
+			"status": "retention_interrupted",
+			"error": "Simulierter Prozessverlust nach vollständiger Backup-Quarantäne.",
+			"quarantine_path": quarantine_root,
+		}
+	var receipt_size := FileAccess.get_size(_files.absolute(quarantined_receipt))
+	var bundle_size := FileAccess.get_size(_files.absolute(quarantined_bundle))
+	var removed := _files.remove_tree(quarantine_root)
+	if not removed.get("ok", false):
+		return {
+			"ok": false,
+			"status": "retention_delete_incomplete",
+			"error": "Backup wurde aus der sicheren Liste isoliert, aber seine Quarantäne konnte nicht vollständig freigegeben werden.",
+			"quarantine_path": quarantine_root,
+			"cause": removed,
+		}
+	return {
+		"ok": true,
+		"status": "oldest_verified_backup_pruned",
+		"campaign_id": campaign_id,
+		"backup_id": backup_id,
+		"removed_bytes": receipt_size + bundle_size,
+		"retained_verified_points": backups.size() - 1,
+		"rejected_backups": listed["rejected_backups"],
+	}
 
 
 func restore_backup(
@@ -319,6 +470,146 @@ func _safe_id(value: String) -> bool:
 		if not allowed:
 			return false
 	return true
+
+
+func _recover_retention_quarantines(campaign_id: String) -> Dictionary:
+	var staging_root := _data_root + "/staging"
+	var absolute_staging := _files.absolute(staging_root)
+	if not DirAccess.dir_exists_absolute(absolute_staging):
+		return {"ok": true, "events": []}
+	var directory := DirAccess.open(absolute_staging)
+	if directory == null:
+		return _failure("Retention-Staging ist nicht lesbar.")
+	var quarantine_names: Array[String] = []
+	directory.list_dir_begin()
+	var discovered_name := directory.get_next()
+	while not discovered_name.is_empty():
+		if directory.current_is_dir() and discovered_name.begins_with("backup-retention-"):
+			quarantine_names.append(discovered_name)
+		discovered_name = directory.get_next()
+	directory.list_dir_end()
+	quarantine_names.sort()
+	var events: Array = []
+	for name in quarantine_names:
+		var recovered := _recover_retention_quarantine(campaign_id, staging_root + "/" + name)
+		if not recovered.get("ok", false):
+			return recovered
+		if recovered.get("handled", false):
+			events.append(recovered["event"])
+	return {"ok": true, "events": events}
+
+
+func _recover_retention_quarantine(campaign_id: String, quarantine_root: String) -> Dictionary:
+	var absolute_root := _files.absolute(quarantine_root)
+	var files := DirAccess.get_files_at(absolute_root)
+	if files.is_empty():
+		var empty_removed := _files.remove_tree(quarantine_root)
+		if not empty_removed.get("ok", false):
+			return empty_removed
+		return {
+			"ok": true,
+			"handled": true,
+			"event": {"status": "empty_retention_quarantine_removed"},
+		}
+	if not "receipt.verified.json" in files:
+		return {
+			"ok": false,
+			"status": "retention_recovery_required",
+			"error": "Retention-Quarantäne besitzt keinen identifizierbaren Backup-Beleg.",
+			"quarantine_path": quarantine_root,
+		}
+	var receipt := _read_quarantined_receipt(quarantine_root + "/receipt.verified.json")
+	if not receipt.get("ok", false):
+		return receipt
+	var payload: Dictionary = receipt["backup"]
+	if payload.get("campaign_id", "") != campaign_id:
+		return {"ok": true, "handled": false}
+	var backup_id := str(payload["backup_id"])
+	var live_receipt := _backup_directory(campaign_id) + "/" + backup_id + ".verified.json"
+	var live_bundle := _backup_directory(campaign_id) + "/" + str(payload["bundle_name"])
+	var quarantined_bundle := quarantine_root + "/backup.saltmarcher"
+	if FileAccess.file_exists(_files.absolute(quarantined_bundle)):
+		if (
+			FileAccess.file_exists(_files.absolute(live_receipt))
+			or FileAccess.file_exists(_files.absolute(live_bundle))
+		):
+			return {
+				"ok": false,
+				"status": "retention_recovery_required",
+				"error": "Vollständig quarantiniertes Backup kollidiert mit live vorhandenen Backup-Dateien.",
+				"quarantine_path": quarantine_root,
+			}
+		var completed := _files.remove_tree(quarantine_root)
+		if not completed.get("ok", false):
+			return completed
+		return {
+			"ok": true,
+			"handled": true,
+			"event": {"status": "retention_delete_completed", "backup_id": backup_id},
+		}
+	if FileAccess.file_exists(_files.absolute(live_receipt)):
+		return {
+			"ok": false,
+			"status": "retention_recovery_required",
+			"error": "Retention-Quarantäne kollidiert mit einem bereits live vorhandenen Backup-Beleg.",
+			"quarantine_path": quarantine_root,
+		}
+	var absolute_live_bundle := _files.absolute(live_bundle)
+	if (
+		not FileAccess.file_exists(absolute_live_bundle)
+		or FileAccess.get_size(absolute_live_bundle) != str(payload["bundle_size"]).to_int()
+		or FileAccess.get_sha256(absolute_live_bundle) != payload["bundle_sha256"]
+	):
+		return {
+			"ok": false,
+			"status": "retention_recovery_required",
+			"error": "Retention-Quarantäne kann ihren live verbliebenen Backup-Inhalt nicht sicher bestätigen.",
+			"quarantine_path": quarantine_root,
+		}
+	var rollback := DirAccess.rename_absolute(
+		_files.absolute(quarantine_root + "/receipt.verified.json"),
+		_files.absolute(live_receipt)
+	)
+	if rollback != OK:
+		return {
+			"ok": false,
+			"status": "retention_recovery_required",
+			"error": "Unterbrochener Backup-Beleg konnte nicht in die sichere Liste zurückgeführt werden.",
+			"quarantine_path": quarantine_root,
+		}
+	var cleanup := _files.remove_tree(quarantine_root)
+	if not cleanup.get("ok", false):
+		return cleanup
+	return {
+		"ok": true,
+		"handled": true,
+		"event": {"status": "retention_rollback_completed", "backup_id": backup_id},
+	}
+
+
+func _read_quarantined_receipt(path: String) -> Dictionary:
+	var read := _files.read_json(path)
+	if not read.get("ok", false) or not read.get("value") is Dictionary:
+		return _failure("Retention-Quarantäne enthält keinen lesbaren Backup-Beleg.")
+	var document: Dictionary = read["value"]
+	if document.get("format", "") != RECEIPT_FORMAT_ID or not document.get("payload") is Dictionary:
+		return _failure("Retention-Quarantäne enthält einen unbekannten Backup-Beleg.")
+	var payload: Dictionary = document["payload"]
+	if document.get("payload_sha256", "") != _files.checksum(payload):
+		return _failure("Retention-Quarantäne enthält einen beschädigten Backup-Beleg.")
+	var backup_id := str(payload.get("backup_id", ""))
+	var campaign_id := str(payload.get("campaign_id", ""))
+	if not _safe_id(backup_id) or not _safe_id(campaign_id):
+		return _failure("Retention-Quarantäne enthält unsichere Identitäten.")
+	if payload.get("bundle_name", "") != backup_id + ".saltmarcher":
+		return _failure("Retention-Quarantäne enthält einen widersprüchlichen Bundle-Namen.")
+	return {"ok": true, "backup": payload}
+
+
+func _should_fail(operation: String, phase: String, subject: String) -> bool:
+	return _maintenance_fault_injector.is_valid() and bool(
+		_maintenance_fault_injector.call(operation, phase, subject)
+	)
 
 
 func _failure(message: String) -> Dictionary:

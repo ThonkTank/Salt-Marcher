@@ -21,7 +21,8 @@ func _init(
 	data_root: String,
 	campaign_id: String,
 	fault_injector: Callable = Callable(),
-	campaign_directory_override: String = ""
+	campaign_directory_override: String = "",
+	capacity_guard = null
 ) -> void:
 	_data_root = data_root.trim_suffix("/")
 	_campaign_id = campaign_id
@@ -32,7 +33,7 @@ func _init(
 	)
 	_commits_dir = _campaign_dir + "/commits"
 	_objects_dir = _campaign_dir + "/objects"
-	_files = ImmutableJsonFiles.new(fault_injector)
+	_files = ImmutableJsonFiles.new(fault_injector, capacity_guard)
 
 
 func initialize(name: String, created_at_utc: String) -> Dictionary:

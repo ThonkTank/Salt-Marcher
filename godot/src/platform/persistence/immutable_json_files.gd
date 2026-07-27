@@ -3,11 +3,15 @@ extends RefCounted
 
 ## Feature-neutral publication of immutable JSON documents through fresh files.
 
+const StorageCapacityGuard = preload("res://godot/src/platform/persistence/storage_capacity_guard.gd")
+
 var _fault_injector: Callable
+var _capacity_guard
 
 
-func _init(fault_injector: Callable = Callable()) -> void:
+func _init(fault_injector: Callable = Callable(), capacity_guard = null) -> void:
 	_fault_injector = fault_injector
+	_capacity_guard = capacity_guard if capacity_guard != null else StorageCapacityGuard.new()
 
 
 func write_new_json(path: String, value: Variant, operation: String = "write") -> Dictionary:
@@ -16,12 +20,16 @@ func write_new_json(path: String, value: Variant, operation: String = "write") -
 		return failure("Ein unveränderliches Persistenzdokument würde überschrieben.")
 	if _should_fail(operation, "before_open", path):
 		return failure("Persistenzfehler vor dem Öffnen wurde ausgelöst.")
+	var encoded := (JSON.stringify(value, "  ", true, true) + "\n").to_utf8_buffer()
+	var admission: Dictionary = _capacity_guard.admit(path, encoded.size())
+	if not admission.get("ok", false):
+		return admission
 
 	var temporary_path := absolute_path + ".pending-%s" % new_identity()
 	var file := FileAccess.open(temporary_path, FileAccess.WRITE)
 	if file == null:
 		return failure("Persistenzdokument konnte nicht geschrieben werden: %s" % error_string(FileAccess.get_open_error()))
-	file.store_string(JSON.stringify(value, "  ", true, true) + "\n")
+	file.store_buffer(encoded)
 	file.flush()
 	var write_error := file.get_error()
 	file.close()
@@ -79,7 +87,7 @@ func checksum(value: Variant) -> String:
 
 
 func canonical_json(value: Variant) -> String:
-	return JSON.stringify(value, "", true, true)
+	return JSON.stringify(_canonical_value(value), "", true, true)
 
 
 func new_identity() -> String:
@@ -168,3 +176,24 @@ func _remove_tree_absolute(absolute_path: String) -> Dictionary:
 	if directory_error != OK:
 		return failure("Verzeichnis konnte nicht dauerhaft gelöscht werden: %s" % error_string(directory_error))
 	return {"ok": true}
+
+
+func _canonical_value(value: Variant) -> Variant:
+	match typeof(value):
+		TYPE_INT:
+			# Godot's JSON parser represents JSON numbers as floats. Lossless large
+			# integers are format-owned decimal strings, so ordinary JSON numbers
+			# canonicalize to their readback representation before checksumming.
+			return float(value)
+		TYPE_ARRAY:
+			var normalized_array: Array = []
+			for element in value:
+				normalized_array.append(_canonical_value(element))
+			return normalized_array
+		TYPE_DICTIONARY:
+			var normalized_dictionary: Dictionary = {}
+			for key in value:
+				normalized_dictionary[key] = _canonical_value(value[key])
+			return normalized_dictionary
+		_:
+			return value

@@ -35,7 +35,9 @@ checksummed `.saltmarcher` bundle under a new import identity. The current
 backend also schedules restore-tested recovery points in the background,
 supports retained-original restore and recoverable trash, and provides
 explicitly confirmed permanent deletion. Backup retention and storage-pressure
-handling are still migration work. No Godot code opens SQLite or JDBC.
+handling now preserve a 2 GiB floor and at least three verified points; normal
+retention tiers, deduplication, and the cross-platform total-volume probe remain
+migration work. No Godot code opens SQLite or JDBC.
 The complete target persistence and recovery semantics are owned by the
 [Persistence Lifecycle](docs/project/contract/persistence-lifecycle.md).
 

@@ -14,14 +14,20 @@ var _registry_dir: String
 var _campaigns_dir: String
 var _trash_campaigns_dir: String
 var _files: ImmutableJsonFiles
+var _capacity_guard
 
 
-func _init(data_root: String = "user://salt-marcher", fault_injector: Callable = Callable()) -> void:
+func _init(
+	data_root: String = "user://salt-marcher",
+	fault_injector: Callable = Callable(),
+	capacity_guard = null
+) -> void:
 	_data_root = data_root.trim_suffix("/")
 	_registry_dir = _data_root + "/installation/registry"
 	_campaigns_dir = _data_root + "/campaigns"
 	_trash_campaigns_dir = _data_root + "/trash/campaigns"
-	_files = ImmutableJsonFiles.new(fault_injector)
+	_capacity_guard = capacity_guard
+	_files = ImmutableJsonFiles.new(fault_injector, capacity_guard)
 
 
 func load_state() -> Dictionary:
@@ -72,12 +78,43 @@ func create_campaign(raw_name: String, expected_generation: int = -1) -> Diction
 
 	var campaign_id := _new_campaign_id()
 	var created_at := Time.get_datetime_string_from_system(true)
-	var campaign_store := FileCampaignStore.new(_data_root, campaign_id)
+	var staging_root := _data_root + "/staging/create-" + campaign_id
+	var staged_campaign := staging_root + "/campaign"
+	var campaign_store := FileCampaignStore.new(
+		_data_root,
+		campaign_id,
+		Callable(),
+		staged_campaign,
+		_capacity_guard
+	)
 	var initialize_result := campaign_store.initialize(name, created_at)
 	if not initialize_result.get("ok", false):
+		_files.remove_tree(staging_root)
 		return initialize_result
+	var campaigns_directory_error := _ensure_directory(_campaigns_dir)
+	if campaigns_directory_error != OK:
+		_files.remove_tree(staging_root)
+		return _operation_failure("Campaign-Zielverzeichnis konnte nicht vorbereitet werden.")
+	var live_campaign := _campaigns_dir + "/" + campaign_id
+	if DirAccess.dir_exists_absolute(_absolute(live_campaign)):
+		_files.remove_tree(staging_root)
+		return _operation_failure("Die neue Campaign-Identität kollidiert mit einer vorhandenen Campaign.")
+	var promote_error := DirAccess.rename_absolute(
+		_absolute(staged_campaign),
+		_absolute(live_campaign)
+	)
+	if promote_error != OK:
+		_files.remove_tree(staging_root)
+		return _operation_failure("Vorbereitete Campaign konnte nicht veröffentlicht werden.")
 	var manifest_validation := _validate_campaign_manifest(campaign_id)
 	if not manifest_validation.get("ok", false):
+		var validation_rollback := DirAccess.rename_absolute(
+			_absolute(live_campaign),
+			_absolute(staged_campaign)
+		)
+		if validation_rollback != OK:
+			return _operation_failure("Ungültige Campaign konnte nicht aus der Live-Wurzel zurückgesetzt werden.")
+		_files.remove_tree(staging_root)
 		return manifest_validation
 
 	var campaigns: Array = current["campaigns"].duplicate(true)
@@ -96,7 +133,15 @@ func create_campaign(raw_name: String, expected_generation: int = -1) -> Diction
 	}
 	var commit := _commit_generation(next_state)
 	if not commit.get("ok", false):
+		var rollback_error := DirAccess.rename_absolute(
+			_absolute(live_campaign),
+			_absolute(staged_campaign)
+		)
+		if rollback_error != OK:
+			return _operation_failure("Campaign-Registry schlug fehl und die vorbereitete Campaign konnte nicht zurückgesetzt werden.")
+		_files.remove_tree(staging_root)
 		return commit
+	_files.remove_tree(staging_root)
 	commit["campaign_id"] = campaign_id
 	commit["status"] = "created"
 	return commit

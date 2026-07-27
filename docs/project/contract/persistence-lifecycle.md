@@ -58,6 +58,12 @@ pending file or unreferenced content is not committed truth. Startup and later
 maintenance may remove such orphaned staging data after proving that no
 manifest references it.
 
+Every owned write and portability destination is capacity-admitted before file
+or staging creation. The working-volume reserve is the greater of 2 GiB or five
+percent of total volume capacity. A rejected operation publishes no new truth,
+does not consume the reserve, and keeps safe read, export to another destination,
+and explicit retry available.
+
 The installation registry applies the same protocol. Creating a Campaign first
 stages its root and manifest, then commits registry membership and the initial
 active pointer in one registry generation. A failed registry commit cannot
@@ -163,11 +169,24 @@ background scheduler discovers existing Campaigns at startup and queues every
 confirmed new generation until the current truth has a restore-tested point;
 changed truth becomes due when the prior verified point reaches 60 seconds.
 
-Backup retention and storage-pressure policy, asynchronous accepted-write
-drain, shared-definition conflict staging, cancellable/progress-reporting
-portability work, compaction, released-format conversion, cross-OS
-qualification, and representative scale proof remain open roadmap work. The
-old Java/SQLite implementation does not satisfy this target contract.
+Godot writes now enforce the 2 GiB reserve floor before immutable JSON,
+Campaign creation, export, import extraction, and backup publication. When a
+platform capacity probe supplies total volume size, the same admission path
+enforces the exact five-percent half of the rule. Under backup storage pressure,
+maintenance quarantines and removes at most the oldest verified bundle per
+attempt, rolls a receipt-only interruption back after restart, completes an
+already fully quarantined deletion after restart, never touches rejected or
+damaged backup evidence, preserves at least three verified points, and retries
+backup publication. Campaign creation itself now stages and validates its
+complete root before live promotion and removes it again when registry
+publication fails.
+
+Normal-time retention tiers, deduplicated backup closures, the production
+cross-platform total-volume-capacity probe, asynchronous accepted-write drain,
+shared-definition conflict staging, cancellable/progress-reporting portability
+work, compaction, released-format conversion, cross-OS qualification, and
+representative scale proof remain open roadmap work. The old Java/SQLite
+implementation does not satisfy this target contract.
 
 ## References
 
