@@ -1,0 +1,53 @@
+# SaltMarcher Vision
+
+## Users
+
+SaltMarcher is for a DnD 5e GM who prepares, runs, and follows up on their
+own table. The primary user is the GM at the table, not players, remote
+participants, or a shared player-facing audience.
+
+## Jobs
+
+- A GM can create and find campaign objects such as NPCs, places, items,
+  factions, monsters, and similar reference material.
+- A GM can prepare a session with scenes, linked places, NPCs, and factions,
+  then generate encounter or loot suggestions that fit that preparation.
+- A GM can run the table by tracking initiative, monster HP, turn position,
+  notes, time, calendar events, music, and prepared scenes without interrupting
+  the active encounter or scene.
+- A GM can use hex or dungeon maps to understand where the party is and what is
+  located where during travel.
+- A GM can follow up after a session by reviewing logged events, visited
+  places, encountered NPCs, awarded items, encounter outcomes, and changed
+  campaign facts.
+- A GM can quickly look up rules, monster information, items, and other
+  reference material.
+
+## Non-Goals
+
+- SaltMarcher is not a dice chat.
+- SaltMarcher does not replace physical table tools such as battle maps,
+  miniatures, or dice.
+- SaltMarcher is not a player-operated app or shared control surface. A passive
+  second-monitor output may present GM-selected, party-known information without
+  accepting player input.
+- SaltMarcher is not a remote-play platform.
+- SaltMarcher does not ordinarily decide rules or make campaign decisions. The
+  GM always has the last word.
+- GM-enabled NPC and monster autonomy is the explicit exception: during
+  confirmed campaign time it may choose and execute bounded jobs and resolve
+  non-party conflicts within configured consequence limits. Party involvement
+  and decisions outside those limits return control to the GM.
+- SaltMarcher does not autonomously generate NPCs, places, or campaign content
+  without the GM's knowledge and decision.
+
+## Quality Bar
+
+- Table use must not interrupt or lose the current running state.
+- Frequent table actions should take very few clicks: for example, opening the
+  monster list in one click and adding a monster in one more click.
+- Notes on an open NPC or place should be immediately reachable.
+- Generator output must remain directly adjustable: the GM can remove monsters,
+  add monsters, or regenerate the encounter.
+
+## References
