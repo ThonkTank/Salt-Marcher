@@ -1,7 +1,0 @@
-interface:
-  display_name: "Callchain Tool"
-  short_description: "Inspect Java method callchains with Joern"
-  default_prompt: "Use $callchain-tool to inspect and interpret method-level static caller/callee evidence for a SaltMarcher code change or review."
-
-policy:
-  allow_implicit_invocation: true

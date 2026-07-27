@@ -1,4 +1,0 @@
-interface:
-  display_name: "Architecture Planning"
-  short_description: "Plan and adversarially verify architectures"
-  default_prompt: "Use $architecture-planning to derive, verify with independent anchors, and adversarially revise a decision-complete architecture candidate."
