@@ -5,18 +5,23 @@ extends RefCounted
 ## A generation becomes visible only after its complete file has been flushed and renamed.
 
 const FORMAT_ID := "saltmarcher.campaign-registry.v1"
-const CAMPAIGN_FORMAT_ID := "saltmarcher.campaign-manifest.v1"
 const MAX_NAME_LENGTH := 160
+const FileCampaignStore = preload("res://godot/src/platform/persistence/file_campaign_store.gd")
+const ImmutableJsonFiles = preload("res://godot/src/platform/persistence/immutable_json_files.gd")
 
 var _data_root: String
 var _registry_dir: String
 var _campaigns_dir: String
+var _trash_campaigns_dir: String
+var _files: ImmutableJsonFiles
 
 
-func _init(data_root: String = "user://salt-marcher") -> void:
+func _init(data_root: String = "user://salt-marcher", fault_injector: Callable = Callable()) -> void:
 	_data_root = data_root.trim_suffix("/")
 	_registry_dir = _data_root + "/installation/registry"
 	_campaigns_dir = _data_root + "/campaigns"
+	_trash_campaigns_dir = _data_root + "/trash/campaigns"
+	_files = ImmutableJsonFiles.new(fault_injector)
 
 
 func load_state() -> Dictionary:
@@ -64,29 +69,11 @@ func create_campaign(raw_name: String) -> Dictionary:
 		return current
 
 	var campaign_id := _new_campaign_id()
-	var campaign_directory := _campaigns_dir + "/" + campaign_id
-	var directory_error := _ensure_directory(campaign_directory)
-	if directory_error != OK:
-		return _operation_failure("Campaign-Verzeichnis konnte nicht erstellt werden: %s" % error_string(directory_error))
-
 	var created_at := Time.get_datetime_string_from_system(true)
-	var campaign_payload := {
-		"campaign_id": campaign_id,
-		"name": name,
-		"created_at_utc": created_at,
-		"features": {},
-	}
-	var campaign_manifest := {
-		"format": CAMPAIGN_FORMAT_ID,
-		"payload": campaign_payload,
-		"payload_sha256": _checksum(campaign_payload),
-	}
-	var manifest_result := _write_new_json(
-		campaign_directory + "/manifest.json",
-		campaign_manifest
-	)
-	if not manifest_result.get("ok", false):
-		return manifest_result
+	var campaign_store := FileCampaignStore.new(_data_root, campaign_id)
+	var initialize_result := campaign_store.initialize(name, created_at)
+	if not initialize_result.get("ok", false):
+		return initialize_result
 	var manifest_validation := _validate_campaign_manifest(campaign_id)
 	if not manifest_validation.get("ok", false):
 		return manifest_validation
@@ -100,7 +87,8 @@ func create_campaign(raw_name: String) -> Dictionary:
 	_sort_campaigns(campaigns)
 
 	var next_state := {
-		"generation": int(current["generation"]) + 1,
+		"generation": _next_generation_number(),
+		"parent_generation": int(current["generation"]),
 		"active_campaign_id": campaign_id,
 		"campaigns": campaigns,
 	}
@@ -129,7 +117,8 @@ func activate_campaign(campaign_id: String, expected_generation: int) -> Diction
 		return {"ok": true, "status": "unchanged", "state": current}
 
 	var next_state := {
-		"generation": expected_generation + 1,
+		"generation": _next_generation_number(),
+		"parent_generation": expected_generation,
 		"active_campaign_id": campaign_id,
 		"campaigns": current["campaigns"].duplicate(true),
 	}
@@ -139,12 +128,174 @@ func activate_campaign(campaign_id: String, expected_generation: int) -> Diction
 	return commit
 
 
+func register_existing_campaign(
+	campaign_id: String,
+	name: String,
+	created_at_utc: String,
+	expected_generation: int
+) -> Dictionary:
+	var current := load_state()
+	if not current.get("ok", false):
+		return current
+	if int(current["generation"]) != expected_generation:
+		return _stale(current)
+	if _contains_campaign(current["campaigns"], campaign_id):
+		return _operation_failure("Diese Campaign-Identität ist bereits registriert.")
+	var store := FileCampaignStore.new(_data_root, campaign_id)
+	var identity := store.validate_identity()
+	var state := store.load_state()
+	if not identity.get("ok", false) or not state.get("ok", false):
+		return _operation_failure("Die importierte Campaign ist nicht vollständig lesbar.")
+	if identity["identity"].get("name", "") != name or identity["identity"].get("created_at_utc", "") != created_at_utc:
+		return _operation_failure("Importmetadaten und Campaign-Identität widersprechen sich.")
+
+	var campaigns: Array = current["campaigns"].duplicate(true)
+	campaigns.append({
+		"id": campaign_id,
+		"name": name,
+		"created_at_utc": created_at_utc,
+	})
+	_sort_campaigns(campaigns)
+	var next_state := {
+		"generation": _next_generation_number(),
+		"parent_generation": expected_generation,
+		"active_campaign_id": current["active_campaign_id"],
+		"campaigns": campaigns,
+	}
+	var commit := _commit_generation(next_state)
+	if commit.get("ok", false):
+		commit["status"] = "registered"
+	return commit
+
+
+func trash_campaign(campaign_id: String, expected_generation: int) -> Dictionary:
+	var current := load_state()
+	if not current.get("ok", false):
+		return current
+	if int(current["generation"]) != expected_generation:
+		return _stale(current)
+	if not _contains_campaign(current["campaigns"], campaign_id):
+		return _operation_failure("Die zu löschende Campaign existiert nicht mehr.")
+	var directory_error := _ensure_directory(_trash_campaigns_dir)
+	if directory_error != OK:
+		return _operation_failure("Campaign-Trash konnte nicht geöffnet werden.")
+
+	var deletion_id := _new_campaign_id()
+	var trash_entry_id := "%s-%s" % [campaign_id, deletion_id]
+	var source := _absolute(_campaigns_dir + "/" + campaign_id)
+	var target := _absolute(_trash_campaigns_dir + "/" + trash_entry_id)
+	var move_error := DirAccess.rename_absolute(source, target)
+	if move_error != OK:
+		return _operation_failure("Campaign konnte nicht in den wiederherstellbaren Trash verschoben werden: %s" % error_string(move_error))
+
+	var campaigns: Array = []
+	for campaign in current["campaigns"]:
+		if campaign.get("id", "") != campaign_id:
+			campaigns.append(campaign.duplicate(true))
+	var next_state := {
+		"generation": _next_generation_number(),
+		"parent_generation": expected_generation,
+		"active_campaign_id": "" if current["active_campaign_id"] == campaign_id else current["active_campaign_id"],
+		"campaigns": campaigns,
+	}
+	var commit := _commit_generation(next_state)
+	if not commit.get("ok", false):
+		var rollback_error := DirAccess.rename_absolute(target, source)
+		if rollback_error != OK:
+			return _operation_failure("Campaign-Löschung schlug fehl und der Campaign-Ordner konnte nicht zurückgesetzt werden.")
+		return commit
+	commit["status"] = "trashed"
+	commit["trash_entry_id"] = trash_entry_id
+	return commit
+
+
+func list_trashed_campaigns() -> Dictionary:
+	var directory_error := _ensure_directory(_trash_campaigns_dir)
+	if directory_error != OK:
+		return _operation_failure("Campaign-Trash konnte nicht geöffnet werden.")
+	var entries: Array = []
+	var rejected_entries: Array = []
+	var directory := DirAccess.open(_absolute(_trash_campaigns_dir))
+	if directory == null:
+		return _operation_failure("Campaign-Trash ist nicht lesbar.")
+	directory.list_dir_begin()
+	var entry_id := directory.get_next()
+	while not entry_id.is_empty():
+		if directory.current_is_dir() and _safe_entry_id(entry_id):
+			var entry := _read_trash_entry(entry_id)
+			if entry.get("ok", false):
+				entries.append(entry["entry"])
+			else:
+				rejected_entries.append({
+					"trash_entry_id": entry_id,
+					"error": entry.get("error", "Trash-Eintrag ist beschädigt."),
+				})
+		entry_id = directory.get_next()
+	directory.list_dir_end()
+	entries.sort_custom(func(left: Dictionary, right: Dictionary) -> bool:
+		return str(left["name"]).to_lower() < str(right["name"]).to_lower()
+	)
+	return {"ok": true, "entries": entries, "rejected_entries": rejected_entries}
+
+
+func restore_trashed_campaign(trash_entry_id: String, expected_generation: int) -> Dictionary:
+	if not _safe_entry_id(trash_entry_id):
+		return _operation_failure("Ungültige Trash-Identität.")
+	var current := load_state()
+	if not current.get("ok", false):
+		return current
+	if int(current["generation"]) != expected_generation:
+		return _stale(current)
+	var trash_entry := _read_trash_entry(trash_entry_id)
+	if not trash_entry.get("ok", false):
+		return trash_entry
+	var entry: Dictionary = trash_entry["entry"]
+	var campaign_id := str(entry["campaign_id"])
+	if _contains_campaign(current["campaigns"], campaign_id):
+		return _operation_failure("Diese Campaign-Identität ist bereits live registriert.")
+
+	var source := _absolute(_trash_campaigns_dir + "/" + trash_entry_id)
+	var target := _absolute(_campaigns_dir + "/" + campaign_id)
+	if DirAccess.dir_exists_absolute(target):
+		return _operation_failure("Das Zielverzeichnis der Campaign ist bereits belegt.")
+	var move_error := DirAccess.rename_absolute(source, target)
+	if move_error != OK:
+		return _operation_failure("Campaign konnte nicht aus dem Trash wiederhergestellt werden: %s" % error_string(move_error))
+
+	var campaigns: Array = current["campaigns"].duplicate(true)
+	campaigns.append({
+		"id": campaign_id,
+		"name": entry["name"],
+		"created_at_utc": entry["created_at_utc"],
+	})
+	_sort_campaigns(campaigns)
+	var next_state := {
+		"generation": _next_generation_number(),
+		"parent_generation": expected_generation,
+		"active_campaign_id": current["active_campaign_id"],
+		"campaigns": campaigns,
+	}
+	var commit := _commit_generation(next_state)
+	if not commit.get("ok", false):
+		var rollback_error := DirAccess.rename_absolute(target, source)
+		if rollback_error != OK:
+			return _operation_failure("Campaign-Wiederherstellung schlug fehl und der Trash-Eintrag konnte nicht zurückgesetzt werden.")
+		return commit
+	commit["status"] = "restored"
+	commit["campaign_id"] = campaign_id
+	return commit
+
+
 func generation_path(generation: int) -> String:
 	return _registry_dir + "/generation-%020d.json" % generation
 
 
 func campaign_manifest_path(campaign_id: String) -> String:
 	return _campaigns_dir + "/" + campaign_id + "/manifest.json"
+
+
+func trash_entry_path(trash_entry_id: String) -> String:
+	return _trash_campaigns_dir + "/" + trash_entry_id
 
 
 func _available_generations() -> Array[int]:
@@ -197,6 +348,7 @@ func _read_generation(generation: int) -> Dictionary:
 		"state": {
 			"ok": true,
 			"generation": generation,
+			"parent_generation": str(payload.get("parent_generation", "0")).to_int(),
 			"active_campaign_id": payload["active_campaign_id"],
 			"campaigns": payload["campaigns"].duplicate(true),
 		},
@@ -204,6 +356,12 @@ func _read_generation(generation: int) -> Dictionary:
 
 
 func _validate_payload(payload: Dictionary) -> Dictionary:
+	if not str(payload.get("parent_generation", "")).is_valid_int():
+		return _failure("Campaign-Registry enthält keinen gültigen Vorgänger.")
+	var generation := str(payload.get("generation", "0")).to_int()
+	var parent_generation := str(payload["parent_generation"]).to_int()
+	if parent_generation < 0 or parent_generation >= generation or (generation == 1 and parent_generation != 0):
+		return _failure("Campaign-Registry enthält eine ungültige Generationsfolge.")
 	var campaigns = payload.get("campaigns")
 	if not campaigns is Array:
 		return _failure("Campaign-Registry enthält keine gültige Campaign-Liste.")
@@ -226,33 +384,13 @@ func _validate_payload(payload: Dictionary) -> Dictionary:
 
 
 func _validate_campaign_manifest(campaign_id: String) -> Dictionary:
-	var path := _absolute(campaign_manifest_path(campaign_id))
-	var file := FileAccess.open(path, FileAccess.READ)
-	if file == null:
-		return _failure("Campaign %s fehlt auf dem Datenträger." % campaign_id)
-	var parser := JSON.new()
-	var parse_error := parser.parse(file.get_as_text())
-	file.close()
-	if parse_error != OK or not parser.data is Dictionary:
-		return _failure("Campaign %s hat kein gültiges Manifest." % campaign_id)
-	var manifest: Dictionary = parser.data
-	if manifest.get("format", "") != CAMPAIGN_FORMAT_ID:
-		return _failure("Campaign %s hat ein unbekanntes Format." % campaign_id)
-	var payload = manifest.get("payload")
-	if not payload is Dictionary:
-		return _failure("Campaign %s hat keinen gültigen Manifest-Payload." % campaign_id)
-	if manifest.get("payload_sha256", "") != _checksum(payload):
-		return _failure("Campaign %s hat eine ungültige Manifest-Prüfsumme." % campaign_id)
-	if payload.get("campaign_id", "") != campaign_id:
-		return _failure("Campaign-Verzeichnis und Manifest-Identität widersprechen sich.")
-	if str(payload.get("name", "")).strip_edges().is_empty():
-		return _failure("Campaign %s hat keinen gültigen Namen." % campaign_id)
-	return {"ok": true}
+	return FileCampaignStore.new(_data_root, campaign_id).validate_identity()
 
 
 func _commit_generation(state: Dictionary) -> Dictionary:
 	var payload := {
 		"generation": str(state["generation"]),
+		"parent_generation": str(state["parent_generation"]),
 		"active_campaign_id": state["active_campaign_id"],
 		"campaigns": state["campaigns"],
 	}
@@ -261,51 +399,31 @@ func _commit_generation(state: Dictionary) -> Dictionary:
 		"payload": payload,
 		"payload_sha256": _checksum(payload),
 	}
-	var result := _write_new_json(generation_path(int(state["generation"])), envelope)
+	var result := _files.write_new_json(
+		generation_path(int(state["generation"])),
+		envelope,
+		"registry_commit"
+	)
 	if not result.get("ok", false):
-		return result
+		if result.get("status", "") != "ambiguous_commit":
+			return result
 	var committed := load_state()
 	if not committed.get("ok", false) or int(committed.get("generation", -1)) != int(state["generation"]):
 		return _operation_failure("Die neue Registry-Generation konnte nicht bestätigt werden.")
 	return {"ok": true, "state": committed}
 
 
-func _write_new_json(path: String, value: Dictionary) -> Dictionary:
-	var absolute_path := _absolute(path)
-	if FileAccess.file_exists(absolute_path):
-		return _operation_failure("Ein unveränderliches Persistenzdokument würde überschrieben.")
-	var temporary_path := absolute_path + ".pending-%s" % _new_campaign_id()
-	var file := FileAccess.open(temporary_path, FileAccess.WRITE)
-	if file == null:
-		return _operation_failure("Persistenzdokument konnte nicht geschrieben werden: %s" % error_string(FileAccess.get_open_error()))
-	file.store_string(JSON.stringify(value, "  ", true, true) + "\n")
-	file.flush()
-	var write_error := file.get_error()
-	file.close()
-	if write_error != OK:
-		return _operation_failure("Persistenzdokument konnte nicht vollständig geschrieben werden: %s" % error_string(write_error))
-	var rename_error := DirAccess.rename_absolute(temporary_path, absolute_path)
-	if rename_error != OK:
-		return _operation_failure("Persistenzdokument konnte nicht veröffentlicht werden: %s" % error_string(rename_error))
-	return {"ok": true}
-
-
 func _checksum(payload: Dictionary) -> String:
-	return JSON.stringify(payload, "", true, true).sha256_text()
+	return _files.checksum(payload)
 
 
 func _new_campaign_id() -> String:
-	var bytes := Crypto.new().generate_random_bytes(16)
-	bytes[6] = (bytes[6] & 0x0f) | 0x40
-	bytes[8] = (bytes[8] & 0x3f) | 0x80
-	var value := bytes.hex_encode()
-	return "%s-%s-%s-%s-%s" % [
-		value.substr(0, 8),
-		value.substr(8, 4),
-		value.substr(12, 4),
-		value.substr(16, 4),
-		value.substr(20, 12),
-	]
+	return _files.new_identity()
+
+
+func _next_generation_number() -> int:
+	var generations := _available_generations()
+	return 1 if generations.is_empty() else generations.back() + 1
 
 
 func _sort_campaigns(campaigns: Array) -> void:
@@ -323,12 +441,62 @@ func _contains_campaign(campaigns: Array, campaign_id: String) -> bool:
 	return false
 
 
+func _read_trash_entry(trash_entry_id: String) -> Dictionary:
+	if not _safe_entry_id(trash_entry_id):
+		return _operation_failure("Ungültige Trash-Identität.")
+	var trash_directory := _trash_campaigns_dir + "/" + trash_entry_id
+	var manifest := _files.read_json(trash_directory + "/manifest.json")
+	if not manifest.get("ok", false) or not manifest.get("value") is Dictionary:
+		return _operation_failure("Trash-Eintrag besitzt kein gültiges Campaign-Manifest.")
+	var document: Dictionary = manifest["value"]
+	if document.get("format", "") != FileCampaignStore.IDENTITY_FORMAT_ID:
+		return _operation_failure("Trash-Eintrag besitzt ein unbekanntes Campaign-Format.")
+	var payload = document.get("payload")
+	if not payload is Dictionary or document.get("payload_sha256", "") != _files.checksum(payload):
+		return _operation_failure("Trash-Eintrag besitzt eine ungültige Manifest-Prüfsumme.")
+	var campaign_id := str(payload.get("campaign_id", ""))
+	var store := FileCampaignStore.new(_data_root, campaign_id, Callable(), trash_directory)
+	var state := store.load_state()
+	if not state.get("ok", false):
+		return _operation_failure("Trash-Eintrag enthält keine wiederherstellbare Campaign.")
+	return {
+		"ok": true,
+		"entry": {
+			"trash_entry_id": trash_entry_id,
+			"campaign_id": campaign_id,
+			"name": payload.get("name", ""),
+			"created_at_utc": payload.get("created_at_utc", ""),
+			"generation": state["generation"],
+		},
+	}
+
+
+func _safe_entry_id(value: String) -> bool:
+	if value.is_empty() or value.length() > 128 or value.contains(".."):
+		return false
+	for index in value.length():
+		var code := value.unicode_at(index)
+		var allowed := (code >= 97 and code <= 122) or (code >= 48 and code <= 57) or code == 45
+		if not allowed:
+			return false
+	return true
+
+
+func _stale(current: Dictionary) -> Dictionary:
+	return {
+		"ok": false,
+		"status": "stale",
+		"error": "Die Campaign-Liste wurde inzwischen geändert. Bitte erneut laden.",
+		"state": current,
+	}
+
+
 func _ensure_directory(path: String) -> Error:
-	return DirAccess.make_dir_recursive_absolute(_absolute(path))
+	return _files.ensure_directory(path)
 
 
 func _absolute(path: String) -> String:
-	return ProjectSettings.globalize_path(path)
+	return _files.absolute(path)
 
 
 func _failure(message: String) -> Dictionary:

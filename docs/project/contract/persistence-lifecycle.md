@@ -139,12 +139,20 @@ explicit operation and reports exactly what was removed.
 
 ## Current Implementation Boundary
 
-The Godot foundation currently implements the immutable installation Campaign
-registry, name-only Campaign creation, activation generation checks, manifest
-creation, restart readback, checksum validation, and fallback to the newest
-valid generation. Campaign commits, partitioning, export/import, trash,
-compaction, and released-format conversion remain open roadmap work. The old
-Java/SQLite implementation does not satisfy this target contract.
+The Godot runtime currently implements the immutable installation Campaign
+registry; name-only Campaign creation; owner-partitioned Campaign generations;
+atomic runtime-state commits; activation and mutation generation checks;
+restart readback; checksum validation; continuation above retained corrupt
+generations; recoverable Campaign trash and restoration; and a streaming,
+checksummed current-format Campaign bundle. Import validates declared paths,
+counts, sizes, byte lengths, checksums, identity, and semantic Campaign state in
+isolated staging, then creates a new independent Campaign identity.
+
+Scheduled restore-tested backups, permanent-trash deletion, shared-definition
+conflict staging, cancellable/progress-reporting portability work, compaction,
+released-format conversion, cross-OS qualification, and representative scale
+proof remain open roadmap work. The old Java/SQLite implementation does not
+satisfy this target contract.
 
 ## References
 

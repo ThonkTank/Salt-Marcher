@@ -34,8 +34,8 @@ work are forbidden. Pre-completion data is disposable.
 
 | Milestone | Outcome | Deletion gate | Status |
 | --- | --- | --- | --- |
-| `G0` Target and executable foundation | Godot project starts; Campaign desk creates, lists, activates, restarts, rejects stale activation, and recovers a corrupted newest registry generation through immutable JSON files. Target architecture and persistence contract name no SQLite solution. | None yet: this is the shared foundation and not feature parity. | In progress: code, headless contract/UI journeys, production-scene startup, and a 1366 x 768 render are green; durability injection and broader persistence qualification remain. |
-| `G1` Transactional Campaign runtime | Partitioned Campaign commit manifests, bounded indexes, automatic preservation, activation drain/revoke, recovery, trash, complete export/import, assets, backups, and representative data fixtures work without SQLite. | Delete Java Campaign registry/runtime, `platform.persistence`, all installation/campaign SQLite lifecycle code, and superseded persistence docs/tests. | Pending |
+| `G0` Target and executable foundation | Godot project starts; Campaign desk creates, lists, activates, restarts, rejects stale activation, and recovers a corrupted newest registry generation through immutable JSON files. Target architecture and persistence contract name no SQLite solution. | None yet: this is the shared foundation and not feature parity. | In progress: code, headless contract/UI journeys, injected write/publication failures, production-scene startup, and a 1366 x 768 render are green; list/open scale and Windows durability qualification remain. |
+| `G1` Transactional Campaign runtime | Partitioned Campaign commit manifests, bounded indexes, automatic preservation, activation drain/revoke, recovery, trash, complete export/import, assets, backups, and representative data fixtures work without SQLite. | Delete Java Campaign registry/runtime, `platform.persistence`, all installation/campaign SQLite lifecycle code, and superseded persistence docs/tests. | In progress: immutable owner partitions, atomic runtime state, stale-write rejection, recovery continuation, recoverable Campaign trash/restore, and current-format streaming export/import are green. Backups, permanent deletion, shared definitions, cancellable progress, compaction, activation drain/revoke, and scale/OS qualification remain. |
 | `G2` Knowledge and table foundation | Native shell plus Campaign objects, Catalog, Creatures, Items, Roster/current Party/planning Party, note-first records, explicit deletion, and shared-definition read semantics. | Delete corresponding JavaFX views, Java application/domain implementations, SQLite adapters, CSS, and shell contributions. | Pending |
 | `G3` Preparation | Session Planner timeline, Session Generation, World planning, treasures, notes, weather/music preparation, and editable generated output use Godot and file partitions. | Delete Session Planner, Session Generation, World Planner, and preparation-side Java/SQLite owners. | Pending |
 | `G4` Live table | Running Scenes, Encounters, initiative/HP/turns, masks, split Party state, independent time, live notes/search/music, and passive display preserve and resume exact runtime truth. | Delete Scene, Encounter, Encounter Table, Travel state-shell, and related Java owners. | Pending |
@@ -46,8 +46,6 @@ work are forbidden. Pre-completion data is disposable.
 
 ## G0 Remaining Gate
 
-- add controlled write/rename/readback failure injection instead of testing only
-  malformed newest-generation recovery;
 - qualify Campaign-registry list/open latency with a representative campaign
   count and verify no unbounded per-frame work;
 - review the file protocol against Windows rename and durability semantics
@@ -84,5 +82,12 @@ work are forbidden. Pre-completion data is disposable.
   creation and rendered Campaign-button activation;
 - a real OpenGL production render completed at 1366 x 768 on Intel UHD 620 and
   was visually inspected for clipping, hierarchy, focus, and empty-state copy;
+- persistence proof covers owner-partition commits, atomic runtime state,
+  immutable recovery continuation, recoverable Campaign trash/restore, injected
+  pre/post-rename failures, and exact current-format export/import under a new
+  identity;
+- untrusted-bundle proof rejects checksum damage, stale registration, parent
+  traversal, oversized declared content, and undeclared bytes without changing
+  existing registry truth;
 - current contradiction: 1,536 Java files and the Gradle/OpenJFX/SQLite build
   still exist and are owned by `G1` through `G8`.
