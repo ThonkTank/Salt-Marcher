@@ -5,20 +5,30 @@ extends RefCounted
 
 const FileCampaignStore = preload("res://godot/src/platform/persistence/file_campaign_store.gd")
 const CampaignRuntimeSession = preload("res://godot/src/app/campaign_runtime_session.gd")
+const CampaignBackupManager = preload("res://godot/src/platform/persistence/campaign_backup_manager.gd")
 
 var _data_root: String
 var _registry
 var _current: CampaignRuntimeSession
 var _backup_notifier: Callable
 var _store_factory: Callable
+var _backup_manager_factory: Callable
 var _notification_mutex := Mutex.new()
 var _pending_backup_notifications: Array = []
+var _lifecycle_mutex := Mutex.new()
+var _active_lifecycle_operation := ""
 
 
-func _init(data_root: String, registry, store_factory: Callable = Callable()) -> void:
+func _init(
+	data_root: String,
+	registry,
+	store_factory: Callable = Callable(),
+	backup_manager_factory: Callable = Callable()
+) -> void:
 	_data_root = data_root.trim_suffix("/")
 	_registry = registry
 	_store_factory = store_factory
+	_backup_manager_factory = backup_manager_factory
 
 
 func open_durable_active() -> Dictionary:
@@ -51,6 +61,22 @@ func switch_to(
 	campaign_id: String,
 	expected_registry_generation: int,
 	drain_timeout_msec: int = 10_000
+) -> Dictionary:
+	var admission := _begin_lifecycle_operation("switch")
+	if not admission.get("ok", false):
+		return admission
+	var result := _switch_to(campaign_id, expected_registry_generation, drain_timeout_msec)
+	if result.get("status", "") == "drain_timeout":
+		_mark_lifecycle_recovery()
+	else:
+		_end_lifecycle_operation()
+	return result
+
+
+func _switch_to(
+	campaign_id: String,
+	expected_registry_generation: int,
+	drain_timeout_msec: int
 ) -> Dictionary:
 	var registry_state: Dictionary = _registry.load_state()
 	if not registry_state.get("ok", false):
@@ -97,6 +123,7 @@ func switch_to(
 		prepared["state"],
 		Callable(self, "_notify_confirmed_generation_values")
 	)
+	_notify_confirmed_generation(_current)
 	return {
 		"ok": true,
 		"status": "switched",
@@ -110,6 +137,22 @@ func create_and_switch(
 	name: String,
 	expected_registry_generation: int,
 	drain_timeout_msec: int = 10_000
+) -> Dictionary:
+	var admission := _begin_lifecycle_operation("create")
+	if not admission.get("ok", false):
+		return admission
+	var result := _create_and_switch(name, expected_registry_generation, drain_timeout_msec)
+	if result.get("status", "") == "drain_timeout":
+		_mark_lifecycle_recovery()
+	else:
+		_end_lifecycle_operation()
+	return result
+
+
+func _create_and_switch(
+	name: String,
+	expected_registry_generation: int,
+	drain_timeout_msec: int
 ) -> Dictionary:
 	var registry_state: Dictionary = _registry.load_state()
 	if not registry_state.get("ok", false):
@@ -234,13 +277,119 @@ func revoke_current(drain_timeout_msec: int = 10_000) -> Dictionary:
 func resume_current_after_cancelled_transition() -> Dictionary:
 	if _current == null:
 		return {"ok": true, "status": "no_session"}
+	if active_lifecycle_operation() != "switch_recovery":
+		return {
+			"ok": false,
+			"status": "no_transition_recovery",
+			"error": "Es wartet kein abgebrochener Campaign-Übergang auf Wiederaufnahme.",
+		}
 	var resumed := _current.resume_after_precommit_failure()
 	_flush_backup_notifications_if_main_thread()
+	if resumed.get("status", "") != "drain_pending":
+		_end_lifecycle_recovery()
 	return resumed
+
+
+func compact_current_history_if_matches(
+	campaign_id: String,
+	expected_campaign_generation: int,
+	minimum_local_generations: int = 3,
+	created_at_unix: int = -1
+) -> Dictionary:
+	var admission := _begin_lifecycle_operation("compaction")
+	if not admission.get("ok", false):
+		return admission
+	var result := _compact_current_history_if_matches(
+		campaign_id,
+		expected_campaign_generation,
+		minimum_local_generations,
+		created_at_unix
+	)
+	_end_lifecycle_operation()
+	return result
+
+
+func active_lifecycle_operation() -> String:
+	_lifecycle_mutex.lock()
+	var operation := _active_lifecycle_operation
+	_lifecycle_mutex.unlock()
+	return operation
 
 
 func current_session() -> CampaignRuntimeSession:
 	return _current
+
+
+func _compact_current_history_if_matches(
+	campaign_id: String,
+	expected_campaign_generation: int,
+	minimum_local_generations: int,
+	created_at_unix: int
+) -> Dictionary:
+	var session := _current
+	if session == null or session.campaign_id() != campaign_id:
+		return {
+			"ok": true,
+			"status": "compaction_not_active",
+			"campaign_id": campaign_id,
+		}
+	if session.campaign_generation() != expected_campaign_generation:
+		return {
+			"ok": false,
+			"status": "stale",
+			"error": "Campaign änderte sich vor der geplanten Compaction.",
+			"campaign_id": campaign_id,
+			"generation": session.campaign_generation(),
+		}
+	var revoked := session.drain_and_revoke(-1)
+	_flush_backup_notifications_if_main_thread()
+	if not revoked.get("ok", false):
+		if revoked.get("status", "") == "accepted_write_failed":
+			session.resume_after_precommit_failure()
+		return revoked
+	var drained_generation := int(revoked.get("campaign_generation", -1))
+	if drained_generation != expected_campaign_generation:
+		var stale_resume := session.resume_after_precommit_failure()
+		return {
+			"ok": false,
+			"status": "stale",
+			"error": "Campaign änderte sich während des Compaction-Drains.",
+			"campaign_id": campaign_id,
+			"generation": drained_generation,
+			"authority_resume": stale_resume,
+		}
+	var manager = (
+		_backup_manager_factory.call(_data_root, _registry)
+		if _backup_manager_factory.is_valid()
+		else CampaignBackupManager.new(_data_root, _registry)
+	)
+	if manager == null:
+		var unavailable_resume := session.resume_after_precommit_failure()
+		return {
+			"ok": false,
+			"status": "compaction_manager_unavailable",
+			"error": "Campaign-Compaction konnte nicht vorbereitet werden.",
+			"authority_resume": unavailable_resume,
+		}
+	var compacted: Dictionary = manager.compact_campaign_history(
+		campaign_id,
+		expected_campaign_generation,
+		true,
+		minimum_local_generations,
+		created_at_unix
+	)
+	var resumed := session.resume_after_precommit_failure()
+	compacted["authority_resume"] = resumed
+	if not resumed.get("ok", false):
+		return {
+			"ok": false,
+			"status": "compaction_authority_resume_failed",
+			"error": "Campaign-Schreibautorität konnte nach der Compaction nicht wiederhergestellt werden.",
+			"campaign_id": campaign_id,
+			"compaction_result": compacted,
+			"authority_resume": resumed,
+		}
+	return compacted
 
 
 func _prepare(campaign_id: String) -> Dictionary:
@@ -286,3 +435,38 @@ func _notify_confirmed_generation_values(campaign_id: String, campaign_generatio
 func _flush_backup_notifications_if_main_thread() -> void:
 	if Thread.is_main_thread():
 		flush_backup_notifications()
+
+
+func _begin_lifecycle_operation(operation: String) -> Dictionary:
+	_lifecycle_mutex.lock()
+	if not _active_lifecycle_operation.is_empty():
+		var active := _active_lifecycle_operation
+		_lifecycle_mutex.unlock()
+		return {
+			"ok": false,
+			"status": "lifecycle_busy",
+			"error": "Campaign-Lifecycle-Operation %s läuft bereits." % active,
+			"active_operation": active,
+		}
+	_active_lifecycle_operation = operation
+	_lifecycle_mutex.unlock()
+	return {"ok": true, "status": "admitted", "operation": operation}
+
+
+func _end_lifecycle_operation() -> void:
+	_lifecycle_mutex.lock()
+	_active_lifecycle_operation = ""
+	_lifecycle_mutex.unlock()
+
+
+func _mark_lifecycle_recovery() -> void:
+	_lifecycle_mutex.lock()
+	_active_lifecycle_operation = "switch_recovery"
+	_lifecycle_mutex.unlock()
+
+
+func _end_lifecycle_recovery() -> void:
+	_lifecycle_mutex.lock()
+	if _active_lifecycle_operation == "switch_recovery":
+		_active_lifecycle_operation = ""
+	_lifecycle_mutex.unlock()

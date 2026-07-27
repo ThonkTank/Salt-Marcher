@@ -20,6 +20,7 @@ var registry: FileCampaignRegistry
 var runtime_coordinator
 var portability_controller: CampaignPortabilityController
 var runtime_transition_controller: CampaignRuntimeTransitionController
+var compaction_scheduler
 var data_root := "user://salt-marcher"
 var _state: Dictionary = {}
 var _name_input: LineEdit
@@ -30,6 +31,7 @@ var _transfer_docket: CampaignTransferDocket
 var _conflict_ledger: DefinitionConflictLedger
 var _transfer_busy := false
 var _transition_busy := false
+var _maintenance_busy := false
 
 
 func _ready() -> void:
@@ -48,6 +50,9 @@ func _ready() -> void:
 		runtime_transition_controller.transition_started.connect(_on_runtime_transition_started)
 		runtime_transition_controller.transition_completed.connect(_on_runtime_transition_completed)
 		runtime_transition_controller.transition_recovered.connect(_on_runtime_transition_recovered)
+	if compaction_scheduler != null:
+		compaction_scheduler.operation_started.connect(_on_maintenance_started)
+		compaction_scheduler.operation_completed.connect(_on_maintenance_completed)
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	theme = _build_theme()
 	_build_surface()
@@ -315,6 +320,8 @@ func _activate_campaign(campaign_id: String) -> void:
 
 
 func start_export_to_path(destination_path: String) -> Dictionary:
+	if _maintenance_busy:
+		return {"ok": false, "status": "maintenance_busy", "error": "Campaign-Wartung läuft noch."}
 	if runtime_transition_controller != null and runtime_transition_controller.is_active():
 		return {"ok": false, "status": "transition_busy", "error": "Campaign-Wechsel oder -Erstellung läuft noch."}
 	var campaign_id := str(_state.get("active_campaign_id", ""))
@@ -324,6 +331,8 @@ func start_export_to_path(destination_path: String) -> Dictionary:
 
 
 func start_import_from_path(bundle_path: String) -> Dictionary:
+	if _maintenance_busy:
+		return {"ok": false, "status": "maintenance_busy", "error": "Campaign-Wartung läuft noch."}
 	if runtime_transition_controller != null and runtime_transition_controller.is_active():
 		return {"ok": false, "status": "transition_busy", "error": "Campaign-Wechsel oder -Erstellung läuft noch."}
 	return portability_controller.import_campaign(bundle_path, int(_state.get("generation", -1)))
@@ -403,6 +412,32 @@ func _on_runtime_transition_recovered(result: Dictionary) -> void:
 	)
 
 
+func _on_maintenance_started(kind: String, _campaign_id: String) -> void:
+	if kind != "campaign_compaction":
+		return
+	_maintenance_busy = true
+	_refresh_busy_state()
+	_set_status("Lokale Campaign-Historie wird sicher verdichtet.", false)
+
+
+func _on_maintenance_completed(kind: String, result: Dictionary) -> void:
+	if kind != "campaign_compaction":
+		return
+	_maintenance_busy = false
+	_refresh_busy_state()
+	if not result.get("ok", false):
+		_set_status(result.get("error", "Campaign-Wartung wird später erneut versucht."), true)
+		return
+	if result.get("status", "") == "campaign_compacted":
+		_set_status(
+			"Campaign-Historie sicher verdichtet; %d ältere Dateien wurden freigegeben."
+			% int(result.get("removed_files", 0)),
+			false
+		)
+	else:
+		_set_status("Campaign-Wartung sicher beendet; die lokale Wahrheit blieb unverändert.", false)
+
+
 func _on_transfer_progress(progress: Dictionary) -> void:
 	_transfer_docket.show_progress(progress)
 
@@ -474,7 +509,7 @@ func _set_transfer_busy(busy: bool) -> void:
 
 func _refresh_busy_state() -> void:
 	var modal := _conflict_ledger != null and _conflict_ledger.is_presented()
-	var busy := _transfer_busy or _transition_busy
+	var busy := _transfer_busy or _transition_busy or _maintenance_busy
 	_transfer_docket.set_active_campaign(str(_state.get("active_campaign_id", "")))
 	_transfer_docket.set_busy(busy, modal, _transfer_busy)
 	_create_button.disabled = busy or modal or _name_input.text.strip_edges().is_empty()

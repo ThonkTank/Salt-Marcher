@@ -11,6 +11,7 @@ const CampaignRuntimeCoordinator = preload("res://godot/src/app/campaign_runtime
 const CampaignRuntimeSession = preload("res://godot/src/app/campaign_runtime_session.gd")
 const CampaignRuntimeTransitionController = preload("res://godot/src/app/campaign_runtime_transition_controller.gd")
 const CampaignBackupScheduler = preload("res://godot/src/app/campaign_backup_scheduler.gd")
+const CampaignCompactionScheduler = preload("res://godot/src/app/campaign_compaction_scheduler.gd")
 const StorageCapacityGuard = preload("res://godot/src/platform/persistence/storage_capacity_guard.gd")
 const PlatformVolumeCapacityProbe = preload("res://godot/src/platform/persistence/platform_volume_capacity_probe.gd")
 
@@ -111,6 +112,7 @@ func _run_tests() -> void:
 	_run_backup_retention_contract()
 	_run_backup_lifecycle_maintenance_contract()
 	_run_runtime_coordinator_contract()
+	await _run_compaction_scheduler_contract()
 	await _run_runtime_transition_controller_contract()
 	_run_permanent_deletion_contract()
 
@@ -640,6 +642,117 @@ func _run_backup_scheduler_contract() -> void:
 	scheduler.queue_free()
 	await process_frame
 	await process_frame
+
+	var retry_root := "user://saltmarcher-compaction-scheduler-retry-tests/%s" % Time.get_ticks_usec()
+	var retry_registry := FileCampaignRegistry.new(retry_root)
+	var retry_created := retry_registry.create_campaign("Compaction Retry")
+	var retry_campaign_id := str(retry_created.get("campaign_id", ""))
+	var retry_store := FileCampaignStore.new(retry_root, retry_campaign_id)
+	for generation in range(2, 5):
+		var retry_state := retry_store.load_state()
+		retry_store.commit(
+			int(retry_state["generation"]),
+			{"world": {"revision": generation}},
+			retry_state["runtime"]
+		)
+	CampaignBackupManager.new(retry_root, retry_registry).create_restore_tested_backup(retry_campaign_id, 5000)
+	var fail_once := {"armed": true}
+	var retry_coordinator := CampaignRuntimeCoordinator.new(
+		retry_root,
+		retry_registry,
+		Callable(),
+		func(root_path: String, manager_registry):
+			return CampaignBackupManager.new(
+				root_path,
+				manager_registry,
+				null,
+				func(operation: String, phase: String, _subject: String) -> bool:
+					if fail_once["armed"] and operation == "campaign_compaction" and phase == "after_quarantine_without_rollback":
+						fail_once["armed"] = false
+						return true
+					return false
+			)
+	)
+	retry_coordinator.open_durable_active()
+	var retry_scheduler := CampaignCompactionScheduler.new(retry_root, retry_registry, retry_coordinator, 4, 3, 0)
+	var retry_results: Array = []
+	var retry_authority: Array = []
+	retry_scheduler.operation_completed.connect(func(_kind: String, result: Dictionary) -> void:
+		retry_results.append(result.duplicate(true))
+		retry_authority.append(retry_coordinator.current_session().admitted())
+	)
+	root.add_child(retry_scheduler)
+	for _attempt in 600:
+		if retry_results.size() >= 2 and retry_scheduler.pending_count() == 0 and not retry_scheduler.is_active():
+			break
+		await create_timer(0.005).timeout
+	_expect(retry_results.size() == 2 and retry_results[0].get("status", "") == "compaction_interrupted", "automatic compaction surfaces one interrupted quarantine before retry")
+	_expect(retry_results.size() == 2 and retry_results[1].get("status", "") == "campaign_compacted", "automatic compaction retries and completes after interrupted quarantine recovery")
+	_expect(
+		retry_results.size() == 2
+		and retry_results[1].get("recovery_events", [])[0].get("status", "") == "compaction_rollback_completed",
+		"automatic retry discloses rollback of the interrupted compaction"
+	)
+	_expect(retry_authority == [true, true], "every failed and successful compaction attempt restores writer authority")
+	retry_scheduler.queue_free()
+	await process_frame
+	await process_frame
+
+	var teardown_root := "user://saltmarcher-compaction-scheduler-teardown-tests/%s" % Time.get_ticks_usec()
+	var teardown_registry := FileCampaignRegistry.new(teardown_root)
+	var teardown_created := teardown_registry.create_campaign("Compaction Teardown")
+	var teardown_campaign_id := str(teardown_created.get("campaign_id", ""))
+	var teardown_store := FileCampaignStore.new(teardown_root, teardown_campaign_id)
+	for generation in range(2, 5):
+		var teardown_state := teardown_store.load_state()
+		teardown_store.commit(
+			int(teardown_state["generation"]),
+			{"world": {"revision": generation}},
+			teardown_state["runtime"]
+		)
+	CampaignBackupManager.new(teardown_root, teardown_registry).create_restore_tested_backup(teardown_campaign_id, 6000)
+	var teardown_coordinator := CampaignRuntimeCoordinator.new(
+		teardown_root,
+		teardown_registry,
+		Callable(),
+		func(root_path: String, manager_registry):
+			return CampaignBackupManager.new(
+				root_path,
+				manager_registry,
+				null,
+				func(operation: String, phase: String, _subject: String) -> bool:
+					if operation == "campaign_compaction" and phase == "before_quarantine":
+						OS.delay_msec(100)
+					return false
+			)
+	)
+	teardown_coordinator.open_durable_active()
+	var teardown_scheduler := CampaignCompactionScheduler.new(teardown_root, teardown_registry, teardown_coordinator, 4, 3, 0)
+	var teardown_starts: Array = []
+	teardown_scheduler.operation_started.connect(func(_kind: String, _campaign_id: String) -> void:
+		teardown_starts.append(true)
+	)
+	root.add_child(teardown_scheduler)
+	for _attempt in 300:
+		if not teardown_starts.is_empty() and teardown_coordinator.active_lifecycle_operation() == "compaction":
+			break
+		await create_timer(0.005).timeout
+	_expect(
+		not teardown_starts.is_empty(),
+		"teardown fixture reaches active automatic compaction; pending=%d active=%s result=%s"
+		% [
+			teardown_scheduler.pending_count(),
+			teardown_coordinator.active_lifecycle_operation(),
+			JSON.stringify(teardown_scheduler.last_result()),
+		]
+	)
+	teardown_scheduler.queue_free()
+	await process_frame
+	await process_frame
+	_expect(teardown_coordinator.current_session().admitted(), "scheduler teardown waits for compaction and restores writer authority")
+	_expect(teardown_coordinator.active_lifecycle_operation().is_empty(), "scheduler teardown leaves no lifecycle operation behind")
+	var teardown_state_after := teardown_store.load_state()
+	_expect(teardown_state_after.get("ok", false) and teardown_state_after.get("generation", -1) == 4, "scheduler teardown preserves active Campaign truth")
 
 
 func _run_volume_capacity_probe_contract() -> void:
@@ -1222,9 +1335,19 @@ func _run_runtime_coordinator_contract() -> void:
 	_expect(drained_switch.get("ok", false) and drained_switch.get("registry_state", {}).get("active_campaign_id", "") == async_first_id, "Campaign pointer publishes only after accepted write drain")
 	var drained_source := FileCampaignStore.new(async_switch_root, async_second_id).read_partition("session")
 	_expect(drained_source.get("payload", {}).get("timeline", []) == ["before-switch"], "switch preserves the exact accepted source-Campaign mutation")
+	var source_notifications := backup_notifications.filter(func(notification: Dictionary) -> bool:
+		return notification.get("campaign_id", "") == async_second_id
+	)
 	_expect(
-		backup_notifications.size() == 1 and backup_notifications[0].get("generation", -1) == 2,
+		source_notifications.size() == 1 and source_notifications[0].get("generation", -1) == 2,
 		"drained accepted commit reaches automatic recovery scheduling exactly once; got %s" % JSON.stringify(backup_notifications)
+	)
+	var target_notifications := backup_notifications.filter(func(notification: Dictionary) -> bool:
+		return notification.get("campaign_id", "") == async_first_id and notification.get("generation", -1) == 1
+	)
+	_expect(
+		not target_notifications.is_empty(),
+		"newly active Campaign is scheduled for preservation and compaction assessment"
 	)
 
 	var timeout_root := "user://saltmarcher-runtime-timeout-tests/%s" % Time.get_ticks_usec()
@@ -1253,9 +1376,11 @@ func _run_runtime_coordinator_contract() -> void:
 	_expect(timeout_switch.get("status", "") == "drain_timeout", "coordinator exposes bounded drain timeout literally")
 	_expect(timeout_registry.load_state().get("active_campaign_id", "") == timeout_second_id, "drain timeout leaves durable Campaign pointer unchanged")
 	_expect(not timeout_coordinator.current_session().admitted(), "timed-out source rejects late writes until retry or cancel")
+	_expect(timeout_coordinator.active_lifecycle_operation() == "switch_recovery", "drain timeout retains lifecycle exclusivity until source recovery")
 	OS.delay_msec(160)
 	var cancelled_timeout := timeout_coordinator.resume_current_after_cancelled_transition()
 	_expect(cancelled_timeout.get("ok", false) and timeout_coordinator.current_session().admitted(), "cancelled timed-out switch safely resumes source authority after write completion")
+	_expect(timeout_coordinator.active_lifecycle_operation().is_empty(), "source recovery releases retained lifecycle exclusivity")
 	var retried_switch := timeout_coordinator.switch_to(timeout_first_id, 2, 1000)
 	_expect(retried_switch.get("ok", false), "Campaign switch retries successfully after timed-out accepted work terminates")
 
@@ -1283,6 +1408,159 @@ func _run_runtime_coordinator_contract() -> void:
 	_expect(refused_for_write.get("status", "") == "accepted_write_failed", "failed accepted write blocks Campaign pointer publication")
 	_expect(write_failure_registry.load_state().get("active_campaign_id", "") == write_failure_second_id, "failed accepted write leaves durable pointer on source Campaign")
 	_expect(write_failure_coordinator.current_session().admitted(), "failed accepted write resumes source authority for explicit retry")
+
+
+func _run_compaction_scheduler_contract() -> void:
+	var data_root := "user://saltmarcher-compaction-scheduler-tests/%s" % Time.get_ticks_usec()
+	var registry := FileCampaignRegistry.new(data_root)
+	var created := registry.create_campaign("Automatic Compaction")
+	var campaign_id := str(created.get("campaign_id", ""))
+	var coordinator := CampaignRuntimeCoordinator.new(
+		data_root,
+		registry,
+		Callable(),
+		func(root_path: String, manager_registry):
+			return CampaignBackupManager.new(
+				root_path,
+				manager_registry,
+				null,
+				func(operation: String, phase: String, _subject: String) -> bool:
+					if operation == "campaign_compaction" and phase == "before_quarantine":
+						OS.delay_msec(80)
+					return false
+			)
+	)
+	coordinator.open_durable_active()
+	var shared_maintenance_mutex := Mutex.new()
+	var scheduler := CampaignCompactionScheduler.new(data_root, registry, coordinator, 4, 3, 0, shared_maintenance_mutex)
+	coordinator.set_backup_notifier(scheduler.note_confirmed_generation)
+	root.add_child(scheduler)
+	for _attempt in 200:
+		if scheduler.pending_count() == 0 and not scheduler.is_active():
+			break
+		await create_timer(0.005).timeout
+	_expect(scheduler.last_result().get("status", "") == "compaction_not_due", "automatic compaction leaves short Campaign history untouched")
+	_expect(coordinator.current_session().admitted(), "not-due compaction assessment never revokes active writer authority")
+	var desk := CampaignDesk.new()
+	desk.data_root = data_root
+	desk.registry = registry
+	desk.runtime_coordinator = coordinator
+	desk.compaction_scheduler = scheduler
+	root.add_child(desk)
+	await process_frame
+	await process_frame
+	var maintenance_name_input := desk.find_child("CampaignNameInput", true, false) as LineEdit
+	var maintenance_export := desk.find_child("ExportCampaignButton", true, false) as Button
+	var maintenance_import := desk.find_child("ImportCampaignButton", true, false) as Button
+	var maintenance_cancel := desk.find_child("CancelCampaignTransferButton", true, false) as Button
+	var maintenance_status := desk.find_child("CampaignStatus", true, false) as Label
+
+	for expected_generation in range(1, 4):
+		var state: Dictionary = coordinator.current_session().snapshot()["campaign_state"]
+		var runtime: Dictionary = state["runtime"].duplicate(true)
+		runtime["focused_workspace"] = "automatic-compaction-%d" % (expected_generation + 1)
+		var committed := coordinator.commit_current(
+			1,
+			expected_generation,
+			{"world": {"revision": expected_generation + 1}},
+			runtime
+		)
+		_expect(committed.get("ok", false), "automatic-compaction fixture advances generation %d" % (expected_generation + 1))
+	var protected := CampaignBackupManager.new(data_root, registry).create_restore_tested_backup(campaign_id, 4000)
+	_expect(protected.get("ok", false), "automatic compaction receives an exact current recovery point")
+	shared_maintenance_mutex.lock()
+	scheduler.note_confirmed_generation(campaign_id, 4)
+	var starts: Array = []
+	var completions: Array = []
+	scheduler.operation_started.connect(func(kind: String, started_campaign_id: String) -> void:
+		starts.append({"kind": kind, "campaign_id": started_campaign_id})
+	)
+	scheduler.operation_completed.connect(func(kind: String, result: Dictionary) -> void:
+		completions.append({"kind": kind, "result": result.duplicate(true)})
+	)
+	for _attempt in 300:
+		if not starts.is_empty():
+			break
+		await create_timer(0.005).timeout
+	_expect(not starts.is_empty() and coordinator.active_lifecycle_operation().is_empty(), "compaction waits outside lifecycle authority while shared backup maintenance owns the recovery pool")
+	shared_maintenance_mutex.unlock()
+	for _attempt in 300:
+		if coordinator.active_lifecycle_operation() == "compaction":
+			break
+		await create_timer(0.005).timeout
+	_expect(starts.size() == 1 and scheduler.is_active(), "due compaction starts one observable background operation")
+	_expect(
+		maintenance_name_input != null and not maintenance_name_input.editable
+		and maintenance_export != null and maintenance_export.disabled
+		and maintenance_import != null and maintenance_import.disabled
+		and maintenance_cancel != null and maintenance_cancel.disabled,
+		"visible Campaign desk fences create and transfer actions without exposing false cancellation during compaction"
+	)
+	_expect(
+		maintenance_status != null and maintenance_status.text.contains("verdichtet"),
+		"visible Campaign desk discloses active local compaction"
+	)
+	var maintenance_export_attempt := desk.start_export_to_path(data_root + "/exports/during-maintenance.saltmarcher")
+	_expect(maintenance_export_attempt.get("status", "") == "maintenance_busy", "programmatic export cannot bypass active compaction fence")
+	var competing_switch := coordinator.switch_to(campaign_id, 1)
+	_expect(competing_switch.get("status", "") == "lifecycle_busy", "Campaign switch cannot race active compaction lifecycle authority")
+	var invalid_resume := coordinator.resume_current_after_cancelled_transition()
+	_expect(invalid_resume.get("status", "") == "no_transition_recovery", "transition recovery cannot re-admit a writer during compaction")
+	for _attempt in 500:
+		if not completions.is_empty() and scheduler.pending_count() == 0 and not scheduler.is_active():
+			break
+		await create_timer(0.005).timeout
+	_expect(
+		completions.size() == 1 and completions[0].get("result", {}).get("status", "") == "campaign_compacted",
+		"automatic scheduler completes safe active-Campaign compaction"
+	)
+	_expect(coordinator.current_session().admitted(), "automatic compaction restores active writer authority on completion")
+	_expect(coordinator.active_lifecycle_operation().is_empty(), "automatic compaction releases lifecycle exclusivity")
+	_expect(maintenance_name_input.editable and not maintenance_export.disabled and not maintenance_import.disabled, "Campaign desk releases its maintenance fence only after terminal completion")
+	var commit_count := DirAccess.get_files_at(
+		ProjectSettings.globalize_path(data_root + "/campaigns/" + campaign_id + "/commits")
+	).size()
+	_expect(commit_count == 3, "automatic compaction retains the configured three-generation local fallback")
+	var state_after := FileCampaignStore.new(data_root, campaign_id).load_state()
+	_expect(state_after.get("ok", false) and state_after.get("generation", -1) == 4, "automatic compaction preserves exact active Campaign truth")
+
+	shared_maintenance_mutex.lock()
+	var generation_five_runtime: Dictionary = state_after["runtime"].duplicate(true)
+	var generation_five := coordinator.commit_current(
+		1,
+		4,
+		{"world": {"revision": 5}},
+		generation_five_runtime
+	)
+	_expect(generation_five.get("ok", false), "generation-race fixture publishes work before compaction owns lifecycle authority")
+	for _attempt in 300:
+		if starts.size() >= 2:
+			break
+		await create_timer(0.005).timeout
+	_expect(starts.size() >= 2 and coordinator.active_lifecycle_operation().is_empty(), "due re-compaction waits on shared maintenance before revoking writer authority")
+	var generation_six_runtime: Dictionary = generation_five.get("state", {}).get("runtime", {}).duplicate(true)
+	var generation_six := coordinator.commit_current(
+		1,
+		5,
+		{"world": {"revision": 6}},
+		generation_six_runtime
+	)
+	_expect(generation_six.get("ok", false), "newer accepted truth can win before delayed compaction lifecycle admission")
+	CampaignBackupManager.new(data_root, registry).create_restore_tested_backup(campaign_id, 4100)
+	shared_maintenance_mutex.unlock()
+	for _attempt in 600:
+		if completions.size() >= 3 and scheduler.pending_count() == 0 and not scheduler.is_active():
+			break
+		await create_timer(0.005).timeout
+	_expect(completions.size() >= 2 and completions[1].get("result", {}).get("status", "") == "stale", "superseded compaction emits one terminal stale result and releases its visible fence")
+	_expect(completions.size() == 3 and completions[2].get("result", {}).get("status", "") == "campaign_compacted", "scheduler reassesses and compacts the newer protected generation")
+	_expect(maintenance_name_input.editable and not maintenance_export.disabled, "generation-race retry leaves no stale maintenance UI fence")
+	var generation_race_state := FileCampaignStore.new(data_root, campaign_id).load_state()
+	_expect(generation_race_state.get("ok", false) and generation_race_state.get("generation", -1) == 6, "generation-race compaction preserves the newest Campaign truth")
+	desk.queue_free()
+	scheduler.queue_free()
+	await process_frame
+	await process_frame
 
 
 func _run_runtime_transition_controller_contract() -> void:

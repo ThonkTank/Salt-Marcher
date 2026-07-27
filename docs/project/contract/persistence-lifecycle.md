@@ -268,10 +268,25 @@ rolls the complete set back; one after the marker finishes deletion. Before that
 marker is written, the compacted live root is semantically revalidated and
 receives its own isolated restore-tested point.
 
-Automatic active-Campaign compaction scheduling, asset/chunk compaction,
-released-format conversion, real Windows and macOS probe/export execution,
-cross-OS qualification, representative scale, and the repeated-cancellation
-resource-envelope proof remain open roadmap work.
+Production schedules this operation automatically for the active Campaign at
+startup, activation, and every confirmed Campaign generation. Assessment runs
+off the scene-tree thread and does not revoke authority. Sixty-four valid local
+generations make compaction due; damaged inventory defers unchanged. One
+background maintenance worker then acquires the Coordinator lifecycle lease,
+fences visible Campaign actions, drains already accepted writes, and compacts
+to the newest three valid generations only when the exact current generation is
+restore-tested. Switch, create, transition recovery, and compaction are mutually
+exclusive. Every failure, stale-generation result, interrupted-quarantine retry,
+successful completion, and scheduler teardown restores writer authority before
+releasing the lease. Retryable failures remain queued with a five-second retry
+delay; restart reassesses the durable active Campaign and reuses the compactor's
+quarantine recovery protocol. Backup creation/retention and compaction also
+share one installation maintenance lock, so no recovery receipt, blob, or
+retention inventory can change concurrently with compaction validation.
+
+Asset/chunk compaction, released-format conversion, real Windows and macOS
+probe/export execution, cross-OS qualification, representative scale, and the
+repeated-cancellation resource-envelope proof remain open roadmap work.
 The old Java/SQLite implementation does not satisfy this target contract.
 
 ## References

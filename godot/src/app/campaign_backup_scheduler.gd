@@ -11,6 +11,7 @@ const RETRY_DELAY_SECONDS := 5
 
 var _data_root: String
 var _registry
+var _maintenance_mutex: Mutex
 var _pending: Dictionary = {}
 var _worker := Thread.new()
 var _worker_campaign_id := ""
@@ -18,9 +19,14 @@ var _worker_observed_generation := 0
 var _last_result: Dictionary = {}
 
 
-func _init(data_root: String = "user://salt-marcher", registry = null) -> void:
+func _init(
+	data_root: String = "user://salt-marcher",
+	registry = null,
+	maintenance_mutex: Mutex = null
+) -> void:
 	_data_root = data_root.trim_suffix("/")
 	_registry = registry if registry != null else FileCampaignRegistry.new(_data_root)
+	_maintenance_mutex = maintenance_mutex if maintenance_mutex != null else Mutex.new()
 
 
 func _ready() -> void:
@@ -43,6 +49,7 @@ func _process(_delta: float) -> void:
 		if _worker.is_alive():
 			return
 		var result: Dictionary = _worker.wait_to_finish()
+		_worker = Thread.new()
 		_finish_worker(result)
 	if _worker.is_started():
 		return
@@ -52,6 +59,7 @@ func _process(_delta: float) -> void:
 func _exit_tree() -> void:
 	if _worker.is_started():
 		var result: Dictionary = _worker.wait_to_finish()
+		_worker = Thread.new()
 		_finish_worker(result)
 
 
@@ -109,15 +117,18 @@ func _maintain_recovery_point(
 	observed_generation: int,
 	now_unix: int
 ) -> Dictionary:
+	_maintenance_mutex.lock()
 	var worker_registry := FileCampaignRegistry.new(_data_root)
 	var manager := CampaignBackupManager.new(_data_root, worker_registry)
-	return manager.maintain_with_pressure_retention(
+	var result := manager.maintain_with_pressure_retention(
 		campaign_id,
 		observed_generation,
 		now_unix,
 		MAX_RECOVERY_POINT_AGE_SECONDS,
 		3
 	)
+	_maintenance_mutex.unlock()
+	return result
 
 
 func _finish_worker(result: Dictionary) -> void:

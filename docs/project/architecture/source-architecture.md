@@ -61,6 +61,12 @@ capability reads another capability's files, scene internals, or model objects.
   timeout leaves the source pointer unchanged and keeps the shell fenced until
   automatic source-authority recovery. Orderly shutdown drains without that
   interaction timeout.
+- Background Campaign maintenance has one bounded worker and a Coordinator-owned
+  lifecycle lease. It assesses immutable history without revoking authority;
+  only a due active-Campaign compaction fences visible actions, drains accepted
+  writes, operates against an exact restore-tested generation, and restores
+  authority before its terminal result returns. Switch, create, timeout
+  recovery, and compaction cannot hold that lease concurrently.
 
 ## Presentation Architecture
 

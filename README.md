@@ -58,11 +58,17 @@ maintenance keeps all points for one hour, then one per hour, day, and week
 through 26 weeks, with a configurable hard point cap. Revoked-writer
 compaction removes only old commits and partition objects whose exact bytes are
 already covered by a current restore-tested point; damaged evidence defers the
-operation. Production storage admission reads total and available volume bytes
+operation. A single background maintenance worker assesses the active Campaign
+at startup, activation, and every confirmed generation. At 64 valid local
+generations it fences Campaign actions, drains accepted writes, compacts back to
+three local generations, restores writer authority on every terminal path, and
+retries interrupted maintenance without blocking the scene-tree thread. Backup
+retention and compaction share one maintenance lock over the recovery pool.
+Production storage admission reads total and available volume bytes
 through direct POSIX or Windows platform adapters and fails closed when the
 greater-of-2-GiB-or-five-percent reserve cannot be proven. Asset/chunk
-compaction, automatic active-Campaign compaction orchestration, and real
-Windows/macOS export qualification remain migration work. Accepted Campaign
+compaction and real Windows/macOS export qualification remain migration work.
+Accepted Campaign
 writes run through one serial ticketed worker. Create and switch transitions
 revoke new source work immediately, drain accepted work for up to ten seconds
 off the UI thread, and publish the active pointer only after a successful
