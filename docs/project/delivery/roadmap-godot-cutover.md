@@ -1,0 +1,88 @@
+# Godot Cutover Roadmap
+
+## Objective And Status Authority
+
+Migrate SaltMarcher completely to one Godot project and remove JavaFX and
+SQLite. This file is the temporary sequencing and deletion ledger. Product
+behavior remains owned by requirements; technical obligations by
+`program-technical-needs.md`; the greenfield runtime target by
+`source-architecture.md`; persistence semantics by `persistence-lifecycle.md`.
+
+Current overall status: **in progress**. A Godot Campaign foundation exists,
+but the Java runtime and most capabilities still remain. No milestone may use a
+narrow green test to claim this objective complete.
+
+## Global Slice Rules
+
+Every milestone must:
+
+1. derive its behavior from the current owner requirements, not Java layout;
+2. use the production Godot composition and file-store route;
+3. cover success, empty, restart, stale-result, damage, and cancellation states
+   applicable to the slice;
+4. verify keyboard/focus, 1366 x 768 layout, scaling, and truthful failure copy
+   for visible work;
+5. prove its representative technical-needs budget where the needed fixture and
+   capability exist;
+6. delete superseded Java/JavaFX/SQLite code, Gradle wiring, resources, and
+   technology-specific docs for that complete owner slice.
+
+Dual writes, a Java-to-Godot bridge, SQLite conversion, and new Java product
+work are forbidden. Pre-completion data is disposable.
+
+## Milestones
+
+| Milestone | Outcome | Deletion gate | Status |
+| --- | --- | --- | --- |
+| `G0` Target and executable foundation | Godot project starts; Campaign desk creates, lists, activates, restarts, rejects stale activation, and recovers a corrupted newest registry generation through immutable JSON files. Target architecture and persistence contract name no SQLite solution. | None yet: this is the shared foundation and not feature parity. | In progress: code, headless contract/UI journeys, production-scene startup, and a 1366 x 768 render are green; durability injection and broader persistence qualification remain. |
+| `G1` Transactional Campaign runtime | Partitioned Campaign commit manifests, bounded indexes, automatic preservation, activation drain/revoke, recovery, trash, complete export/import, assets, backups, and representative data fixtures work without SQLite. | Delete Java Campaign registry/runtime, `platform.persistence`, all installation/campaign SQLite lifecycle code, and superseded persistence docs/tests. | Pending |
+| `G2` Knowledge and table foundation | Native shell plus Campaign objects, Catalog, Creatures, Items, Roster/current Party/planning Party, note-first records, explicit deletion, and shared-definition read semantics. | Delete corresponding JavaFX views, Java application/domain implementations, SQLite adapters, CSS, and shell contributions. | Pending |
+| `G3` Preparation | Session Planner timeline, Session Generation, World planning, treasures, notes, weather/music preparation, and editable generated output use Godot and file partitions. | Delete Session Planner, Session Generation, World Planner, and preparation-side Java/SQLite owners. | Pending |
+| `G4` Live table | Running Scenes, Encounters, initiative/HP/turns, masks, split Party state, independent time, live notes/search/music, and passive display preserve and resume exact runtime truth. | Delete Scene, Encounter, Encounter Table, Travel state-shell, and related Java owners. | Pending |
+| `G5` Spatial runtime | Shared Godot canvas mechanisms plus Hex and Dungeon authoring, sparse rendering, visibility/knowledge, movement, routes, transitions, pursuit, and passive projection meet representative map profiles. | Delete `features/hex`, `features/dungeon`, Java map canvas, their SQLite adapters, JavaFX renderers, and old map resources. | Pending |
+| `G6` Progression and world systems | Follow-up/history, XP, rewards, character loot ledger, shops/trade/restock, calendar, climate, autonomy, and world progression are complete and failure-isolated. | Delete remaining equivalent Java owners and stale feature docs. | Pending |
+| `G7` Product-wide qualification | Current-format recovery and portability, localization, accessibility, tutorials, capability isolation, permission-gated extensions, three-OS export templates, and `RP-R` qualification are green. | Delete temporary compatibility scaffolding, fallback scenes, and migration-only fixtures. | Pending |
+| `G8` JavaFX/SQLite extinction | Godot is the only build, runtime, storage, documentation, and packaging route. Full capability acceptance and completion audit are green. | Delete all paths and dependencies listed below, then delete this roadmap after routing references are cleared. | Pending |
+
+## G0 Remaining Gate
+
+- add controlled write/rename/readback failure injection instead of testing only
+  malformed newest-generation recovery;
+- qualify Campaign-registry list/open latency with a representative campaign
+  count and verify no unbounded per-frame work;
+- review the file protocol against Windows rename and durability semantics
+  before using it for Campaign commits.
+
+## Final Absence And Completion Audit
+
+`G8` cannot close until current evidence proves all of the following:
+
+- `project.godot` is the sole application/build entry point and export presets
+  produce supported Linux, Windows, and macOS desktop artifacts;
+- every confirmed capability and acceptance criterion has a production Godot
+  journey and appropriate headless/visible proof;
+- representative correctness, latency, memory, recovery, portability, offline,
+  accessibility, and failure-isolation scenarios are green;
+- repository search finds no `.java`, `.kt`, `.kts`, `.gradle`, Gradle wrapper,
+  JavaFX import, JDBC import, SQLite dependency, `adapter/javafx`, or
+  `adapter/sqlite` path;
+- runtime inspection finds no `.sqlite`, `-wal`, `-shm`, JDBC URL, database
+  migration, or hidden legacy-data fallback created or opened by Godot;
+- `app/`, `shell/`, legacy `platform/`, legacy `features/`, `gradle/`, `gradlew`,
+  `build.gradle.kts`, and `settings.gradle.kts` are gone;
+- README, architecture, contracts, feature docs, packaging, and user-visible
+  copy describe only the Godot/file-store product;
+- the full requirements-to-proof matrix has no missing, indirect, or merely
+  compatible evidence.
+
+## Current Evidence
+
+- Godot version used for foundation proof: `4.6.2.stable.fedora`
+- headless parser/import: `godot --headless --path . --editor --quit`
+- foundation contract test: `godot --headless --path . --script res://godot/tests/run_all.gd`
+- the same headless suite drives the production Campaign desk through Enter
+  creation and rendered Campaign-button activation;
+- a real OpenGL production render completed at 1366 x 768 on Intel UHD 620 and
+  was visually inspected for clipping, hierarchy, focus, and empty-state copy;
+- current contradiction: 1,536 Java files and the Gradle/OpenJFX/SQLite build
+  still exist and are owned by `G1` through `G8`.

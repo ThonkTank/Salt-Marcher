@@ -1,0 +1,24 @@
+; SaltMarcher Godot 4 project.
+; Edit through Godot where possible; keep this file readable for headless verification.
+
+config_version=5
+
+[application]
+
+config/name="SaltMarcher"
+run/main_scene="res://godot/src/app/main.tscn"
+config/features=PackedStringArray("4.6")
+
+[display]
+
+window/size/viewport_width=1366
+window/size/viewport_height=768
+window/size/window_width_override=1366
+window/size/window_height_override=768
+window/stretch/mode="canvas_items"
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.039, 0.067, 0.078, 1)

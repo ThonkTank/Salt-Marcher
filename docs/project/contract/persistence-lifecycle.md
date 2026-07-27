@@ -2,210 +2,153 @@
 
 ## Purpose And Boundary
 
-SaltMarcher uses one installation-owned SQLite database plus one physically
-separate SQLite database per Campaign. Platform persistence owns physical file
-safety, connection configuration, each file's feature-version ledger,
-owner-scoped preparation, backup, and recovery. Feature SQLite adapters own
-their stored truth, target schema signatures, semantic row validation, and
-migration bodies. Installation-owned registry and reusable definitions never
-share a database with Campaign-owned truth.
+SaltMarcher persists installation and Campaign truth in a Godot-native,
+versioned file store. This contract owns storage location, immutable commit
+publication, validation, recovery, backup, trash, portability, and lifecycle.
+Capability owners own their document schemas and semantic validation. UI and
+model code never perform file I/O.
 
-`app` composes immutable `FeatureStoreDefinition` values before it constructs
-feature services. Preparation returns one `FeatureStoreReadiness` per owner.
-Ready features receive only their `FeatureStoreHandle`; they never receive the
-global registry or another owner's plan. An explicit reference-data maintenance
-route may additionally receive its owner's separate `FeatureStoreMaintenance`
-capability. That single capability creates the verified recovery point and opens the
-subsequent write connection from the same database lifecycle. It is never composed into
-normal desktop startup. Ordinary handles do not expose backup operations.
+SQLite, JDBC, embedded database extensions, and mutable database files are not
+part of the target runtime.
 
-API, domain, application, JavaFX, Catalog, and shell code do not access JDBC,
-database files, or migration types.
+## Storage Roots
 
-## Location And Connection
+All writable state lives below `user://salt-marcher/`:
 
-The installation store is `installation.sqlite` below:
+```text
+installation/
+  registry/generation-<20 digit generation>.json
+  definitions/...
+campaigns/<campaign id>/
+  manifest.json
+  commits/generation-<20 digit generation>.json
+  objects/<owner>/<content id>.json
+  chunks/<owner>/<content id>.bin
+  assets/<asset id>/<original file name>
+trash/campaigns/<campaign id>-<deletion identity>/...
+staging/<operation identity>/...
+diagnostics/...
+```
 
-- `$XDG_DATA_HOME/salt-marcher/` when `XDG_DATA_HOME` is non-blank;
-- `${user.home}/.local/share/salt-marcher/` otherwise.
+Paths stored in documents are normalized relative identities. Absolute paths,
+parent traversal, device names, links which escape an owned root, and aliases
+which collide after target-platform normalization are rejected.
 
-Campaign stores live below the sibling `campaigns/` directory, one reserved
-SQLite file per stable Campaign identity. Desktop startup opens only the
-installation store and the durably selected Campaign store. It never opens the
-former mixed-store filename `game.db`.
+## Immutable Generation Protocol
 
-Every writable connection enables and verifies WAL mode, enables foreign keys,
-uses a 5000 ms busy timeout, and uses SQLite `NORMAL` synchronous mode.
-Connections are operation-scoped and closed by the owning adapter.
+Every committed document envelope contains a format identifier, an owned
+payload, and a SHA-256 checksum of its canonical serialized payload. Generation
+numbers are positive, monotonic integers represented losslessly as decimal
+strings in JSON and zero-padded in filenames.
 
-Opening a handle connection validates only platform compatibility and that
-handle's prepared owner. It MUST NOT iterate, validate, or migrate other
-registered owners. Opening an unprepared handle fails without creating or
-mutating the database.
+A commit follows this order:
 
-## Definitions, Preparation, And Readiness
+1. validate the command against the currently admitted generation;
+2. write every new owner document, chunk, and asset under a fresh identity;
+3. flush and close each file, validate it by readback, and retain prior files;
+4. write the complete next-generation manifest to a fresh pending filename;
+5. flush, close, and atomically rename it to its final generation filename;
+6. read and validate the published generation before reporting stored success.
 
-`FeatureStoreDefinition` contains one stable lowercase owner key, target
-version, contiguous monotonic migration steps beginning at `1`, and a final
-owner validator. Definitions are immutable after composition. Registering or
-discovering a migration as a side effect of opening a connection is forbidden.
+Existing generation files and referenced content are never overwritten. A
+pending file or unreferenced content is not committed truth. Startup and later
+maintenance may remove such orphaned staging data after proving that no
+manifest references it.
 
-Before feature services start, the coordinator:
+The installation registry applies the same protocol. Creating a Campaign first
+stages its root and manifest, then commits registry membership and the initial
+active pointer in one registry generation. A failed registry commit cannot
+publish a new registry row. Duplicate display names are valid; stable Campaign
+identities are unique.
 
-1. loads the driver and verifies the primary database or initializes an empty one
-2. validates the exact direct current-v1 platform ledger and its complete bound
-   object inventory through an immutable read-only connection before reading any
-   owner version when the source has no sidecar
-3. rejects a malformed or newer platform globally without replacement, downgrade,
-   WAL activation, or source transaction
-4. validates every already-current or newer owner immutable read-only; an existing
-   rollback-journal family is first materialized as one coherent disposable inspection,
-   while a complete WAL-plus-SHM family is byte-copied without opening the source and
-   materialized only from that copy; pending direct initialization prepares all owners
-   on a disposable copy before source access
-5. creates and restore-tests one verified pre-mutation snapshot only when at least
-   one pending owner qualified successfully on that copy
-6. prepares only those qualified pending owners against the source, in deterministic
-   composition order and one transaction per owner
-7. validates the owner's exact target DDL and complete bound object inventory,
-   physical integrity, and foreign keys before each commit
-8. returns immutable readiness for every owner
+## Campaign Commit Manifest
 
-Owner-table dependencies, owned prefixes, and forbidden object names are matched
-case-insensitively with locale-independent normalization. Because SQLite accepts
-single-quoted identifiers in identifier positions, a single-quoted owner table in
-stored view or trigger DDL is treated fail-closed as an owner dependency rather than
-ignored as a string literal.
+A Campaign generation names its parent, active runtime/focus state, every
+capability partition and format, indexes needed for bounded reads, asset
+closure, and the checksum of each referenced unit. Changed units receive new
+identities while unchanged units remain referenced. Cross-capability references
+use stable logical identities and are validated by their owners before commit.
 
-Readiness is:
+Capability partitions are independently readable and replaceable. Unknown or
+disabled partitions remain opaque bytes in the manifest closure and survive
+backup, trash, export, import, and compaction.
 
-- `READY`: the owner version and declared table, column, primary-key, required
-  foreign-key, and required-index signatures match the supported target, and
-  global physical and foreign-key integrity succeeded
-- `MIGRATION_FAILED`: a supported migration or owner validation rolled back
-- `NEWER_SCHEMA`: stored owner version is newer than this application
-- `INCOMPATIBLE`: the sidecar family cannot be interpreted safely as one isolated
-  source state, including WAL without SHM, SHM without WAL, mixed journal families,
-  non-physical sidecars, or a family that changes while it is copied
-- `CORRUPT`: physical integrity prevents safe access
+Large spatial truth is chunked by stable map coordinates. Large reference
+collections and histories use bounded immutable segments plus derived indexes;
+startup never parses an entire representative or extraordinary Campaign into
+one Variant tree.
 
-`MIGRATION_FAILED` and `NEWER_SCHEMA` fail closed for that owner only. They do
-not prevent unrelated ready handles from opening connections. Physical database
-corruption, an incompatible sidecar family, and a newer platform version remain
-global because no safe shared file access exists. Incompatibility is not evidence
-of physical corruption and never authorizes recovery, quarantine, or replacement.
+## Admission And Ordering
 
-A table declaration is exact by default. A read-only provider MAY instead
-declare a required column projection when additional provider-owned columns are
-compatible and must remain untouched. That opt-in still fails on every missing
-required column and on mismatched declared keys or indexes; it does not weaken
-exact declarations for application-owned schemas.
+There is one installation writer and at most one admitted writer generation per
+active Campaign. Commands carry the Campaign activation generation and expected
+Campaign generation. Stale work fails before publication. Background results
+also carry their input revision and cannot replace newer state.
 
-No feature may enqueue a persistence operation before its readiness is known.
-An unavailable feature exposes its existing typed storage or availability
-result and performs no write.
+Campaign switching drains accepted writes, commits the installation active
+pointer, publishes the selected Campaign root, and only then acknowledges the
+switch. Restart follows the durable pointer. No manual Save action is required.
 
-Startup readiness does not scan the feature corpus for semantic row validity.
-Providers validate semantic rows on their normal typed read/write routes and
-fail closed through their feature-owned error contract.
+## Validation And Recovery
 
-## Migration Contract
+Opening a generation verifies its envelope, checksum, format, owner inventory,
+references, path safety, required files, and capability validations. Discovery
+is read-only. A malformed newest generation is never repaired in place.
 
-`PRAGMA user_version` owns the platform format. `sm_schema_versions` maps one
-owner to its current feature version. Platform version `1` has one direct
-canonical shape: `owner TEXT PRIMARY KEY` and `version INTEGER NOT NULL
-CHECK(version >= 0)`, with no additional column, index, view, or trigger bound
-to that ledger. A missing key/check, additional column, trigger, or otherwise
-duplicate-capable ledger is a global incompatible platform shape and is not
-repaired.
+Startup scans newest-first and opens the newest uniquely safe generation. It
+discloses rejected generations and any unavailable data. If no unique safe
+choice exists, the application remains read-only and asks the GM to choose
+between named recovery candidates. Damage in one optional partition disables
+that capability when the remaining manifest and core survivor journeys remain
+safe; damage never silently truncates a document.
 
-Each future released-format migration:
+Backups are immutable manifest closures created on a schedule and before a
+released-format conversion. A backup is successful only after an isolated
+restore validates. Retention and compaction preserve at least the active
+generation, the newest validated recovery points, recoverable trash, and every
+format required by the released compatibility policy.
 
-- runs once inside the coordinator-owned owner transaction
-- is idempotent but never changes auto-commit, commits, or updates the ledger itself
-- reads and writes only its feature's stored truth
-- recognizes every supported predecessor through explicit structural validation
-- aborts before destructive work when the stored signature is unknown
-- copies and validates replacement rows before dropping or renaming predecessor tables
+## Format Policy
 
-Compatibility obligations begin with the first released format.
-Before the first released format, the current cut has no compatibility reader, mixed-store
-conversion, or predecessor-format migration obligation. After the first released format,
-`TN-18` governs update/conversion preservation and failure rollback, while
-`TN-19` governs versioned export/import compatibility. Those future translators
-must be explicit and qualified; they do not justify retaining an unused current
-development storage topology.
+Before the first-real-user/data cutover, development formats and data are
+disposable. The Godot migration therefore does not convert Java SQLite files.
+Current-format restart, recovery, export, and import still require proof.
 
-The coordinator records the new owner version only after the migration action
-and final target-signature validator succeed. Failure rolls back schema, rows,
-and owner version for that transaction.
+At first-real-use approval, every installation, Campaign, capability partition,
+and export format receives a frozen version. Later conversion stages a complete
+new closure, restore-tests the pre-conversion backup, validates the result, and
+publishes only the new manifest. Failure leaves prior bytes usable by the prior
+compatible application. Recorded versions never change meaning.
 
-An already recorded version never changes meaning. Supporting another legacy
-shape requires a new migration or an explicitly versioned predecessor
-translator, not rewriting a released step.
+## Export, Import, And Trash
 
-## Backup And Recovery
+Export traverses a validated Campaign manifest closure and writes one bounded,
+versioned package containing Campaign truth, resumable state, local assets, and
+required shared definitions. It records checksums and rejects source changes
+during export.
 
-Before first mutation of an existing healthy database, platform persistence
-runs full `integrity_check` and `foreign_key_check`, creates one coherent
-snapshot, verifies it, copies it to an isolated restore probe, verifies the
-probe, and only then permits owner migration. A live WAL-plus-SHM family is copied
-under matching before/after family tokens and materialized with SQLite snapshot
-semantics only from that isolated copy; a sidecar-free quiescent main file is copied
-under matching before/after identity tokens. Qualification therefore cannot activate
-WAL, create SHM, checkpoint, or remove a sidecar on the source.
+Import treats every byte and reference as untrusted, enforces declared count
+and size limits before allocation, stages only inside its owned directory,
+executes nothing, resolves no external path or URI, and never mutates existing
+Campaign truth. A successful import creates a new Campaign identity. Shared
+definition conflicts remain staged until the GM explicitly resolves them.
 
-The local backup name embeds the compatible platform version. Migration failure
-never replaces the primary with a backup and never deletes the verified backup.
+Campaign deletion atomically removes it from the live registry and publishes
+its complete root in recoverable trash. Permanent deletion is a separate,
+explicit operation and reports exactly what was removed.
 
-If the primary is physically corrupt and its sidecar family was first classified as
-safe to interpret, the lifecycle may restore the highest
-verified backup whose platform version is supported. Before quarantine, it copies
-each candidate in newest-first order to an isolated recovery file, validates the exact
-platform manifest, prepares and validates every registered owner there, and requires
-all owner readiness to be current. A malformed ledger or owner manifest therefore
-leaves the complete primary family byte-for-byte authoritative and creates no
-quarantine. Only a fully qualified copy permits preservation of the corrupt family
-under a local quarantine name; the installed copy is validated again and the backup
-is kept. Unknown newer versions are not
-corruption and never trigger recovery. An orphan SHM, WAL without SHM, mixed
-journal family, or changing source family fails closed byte-for-byte even when a
-valid backup exists; those conditions never enter physical-corruption recovery.
+## Current Implementation Boundary
 
-An explicit feature maintenance operation that replaces reference data requests
-a feature-named maintenance backup through its separately injected maintenance
-capability immediately before its transaction. The same capability supplies the later
-owner connection, so composition cannot back up one physical database and mutate another.
-It exposes only an opaque receipt; it cannot reveal the physical path or another owner's
-definition. Startup does not receive maintenance authority and does not perform external
-imports or paid/network work.
-
-## Execution And Shutdown
-
-The persistence lifecycle does not impose one global application execution
-queue. Independent reads may use a bounded I/O executor. A feature that requires
-ordered mutations owns a serial mutation lane or transaction boundary for that
-truth.
-
-Shutdown first prevents new application work, then drains feature executors,
-then closes the persistence lifecycle. A closed or unready handle rejects work
-with a typed local failure and never opens JDBC.
-
-## Errors, Privacy, And Recovery
-
-Technical diagnostics use stable ids, owner key, operation class, readiness,
-and failure class only. They do not contain paths, SQL, exception messages,
-secrets, or user-authored content and are not transmitted.
-
-Real-data migration requires a restore-tested backup and rehearsal against an
-isolated copy. The operator snapshot uses SQLite's online
-snapshot semantics, is stored with owner-only permissions, and is copied again for the
-destructive rehearsal. The rehearsal executable requires an explicit absolute copy path
-and rejects the installed application-data directory.
+The Godot foundation currently implements the immutable installation Campaign
+registry, name-only Campaign creation, activation generation checks, manifest
+creation, restart readback, checksum validation, and fallback to the newest
+valid generation. Campaign commits, partitioning, export/import, trash,
+compaction, and released-format conversion remain open roadmap work. The old
+Java/SQLite implementation does not satisfy this target contract.
 
 ## References
 
+- [Program Capability Requirements](../requirements/requirements-program-capabilities.md)
+- [Program Technical Needs](../architecture/program-technical-needs.md)
 - [Source Architecture](../architecture/source-architecture.md)
-- [Application Composition](../architecture/patterns/application-composition.md)
-- [Catalog Architecture](../../catalog/architecture/architecture-catalog.md)
-- Feature persistence contracts under `docs/<feature>/contract/`
+- [Godot Cutover Roadmap](../delivery/roadmap-godot-cutover.md)

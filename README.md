@@ -1,32 +1,52 @@
 # SaltMarcher
 
-SaltMarcher is a local-first JavaFX tabletop-campaign tool for map travel,
-dungeon editing, session planning, catalog data, encounters, and party state.
+SaltMarcher is a local-first tabletop-campaign desktop tool for preparing,
+running, and following up on a GM's own table.
+
+SaltMarcher is being rebuilt as a native Godot 4 project. The Godot runtime is
+the only target architecture. The JavaFX/SQLite tree remains temporarily as
+migration input and is removed capability by capability; it is not a second
+supported product line.
 
 ## Quickstart
 
-Run the app from the repository root:
+Run the Godot application from the repository root:
 
 ```bash
-./gradlew run --console=plain
+godot --path .
 ```
+
+Run the current headless foundation tests:
+
+```bash
+godot --headless --path . --script res://godot/tests/run_all.gd
+```
+
+On restricted machines, point Godot's XDG data, cache, and config directories
+at writable locations before running it.
 
 ## Local Data
 
-SaltMarcher stores SQLite data below the XDG data directory. If
-`XDG_DATA_HOME` is set, data lives in `$XDG_DATA_HOME/salt-marcher/`; otherwise
-it lives in `~/.local/share/salt-marcher/`. The current database file is
-`installation.sqlite`; Campaign data is stored separately under
-`campaigns/<id>/campaign.sqlite`. Location and lifecycle rules are owned by the
-[Persistence Lifecycle contract](docs/project/contract/persistence-lifecycle.md).
+The Godot application stores installation state below
+`user://salt-marcher/`. Campaign identity and activation are already stored as
+immutable, checksummed JSON generations. No Godot code opens SQLite or JDBC.
+The complete target persistence and recovery semantics are owned by the
+[Persistence Lifecycle](docs/project/contract/persistence-lifecycle.md).
+
+Pre-completion Java SQLite data is disposable under the confirmed product
+baseline and is deliberately not imported into the Godot format.
 
 ## Project Map
 
-- `app/`: explicit application startup, composition, and lifecycle
-- `shell/`: generic shell API and host runtime
-- `platform/`: feature-neutral execution, persistence, diagnostics, state, and UI mechanisms
-- `features/`: vertical feature APIs, domains, applications, adapters, and composition roots
-- `resources/`: static resources and centralized application styling
-- `docs/`: canonical project and feature documentation
+- `project.godot`: Godot project entry point
+- `godot/src/app/`: application composition and lifecycle
+- `godot/src/ui/`: reusable and shell presentation
+- `godot/src/platform/`: feature-neutral Godot mechanisms
+- `godot/src/capabilities/`: product capabilities as they are migrated
+- `godot/tests/`: headless Godot verification
+- `docs/`: canonical product, architecture, contract, and migration truth
+- `app/`, `shell/`, `platform/`, `features/`: temporary Java migration source
 
-Start with `docs/README.md` for the documentation map.
+Start with [docs/README.md](docs/README.md) for the documentation map and the
+[Godot cutover roadmap](docs/project/delivery/roadmap-godot-cutover.md) for the
+live migration state.

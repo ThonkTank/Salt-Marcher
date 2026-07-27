@@ -19,10 +19,15 @@ lives under `docs/<feature>/`; see [docs/README.md](../README.md).
   [shell layer](architecture/patterns/shell-layer.md), and
   [styling](architecture/patterns/styling.md).
 
+## Delivery
+
+- [Godot Cutover Roadmap](delivery/roadmap-godot-cutover.md) -- live sequencing,
+  deletion gates, evidence, and final JavaFX/SQLite absence criteria.
+
 ## Contracts
 
-- [Persistence Lifecycle](contract/persistence-lifecycle.md) -- shared SQLite
-  location, connection, version, backup, and recovery semantics.
+- [Persistence Lifecycle](contract/persistence-lifecycle.md) -- immutable
+  Godot file-store commit, recovery, backup, trash, and portability semantics.
 
 ## Repo-Wide Requirements
 
