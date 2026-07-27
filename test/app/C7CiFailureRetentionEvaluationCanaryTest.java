@@ -10,6 +10,6 @@ final class C7CiFailureRetentionEvaluationCanaryTest {
         assertEquals(
                 "C7_EVAL_EXPECTED_VALUE",
                 "C7_EVAL_ACTUAL_VALUE",
-                "C7 evaluation deterministic ordinary JUnit failure");
+                "C7_FAKE_CREDENTIAL_SENTINEL_DO_NOT_RETAIN_91A7F0C4");
     }
 }
