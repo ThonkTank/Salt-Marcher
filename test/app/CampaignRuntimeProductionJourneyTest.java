@@ -760,6 +760,135 @@ public final class CampaignRuntimeProductionJourneyTest {
     }
 
     @Test
+    void publicationTimeoutLateTerminalClosesAndResumesDurableFocusedScene()
+            throws Exception {
+        runOnFx(() -> { });
+        long runtimeThreadsBefore = campaignRuntimeThreadCount();
+        assertPublicationCloseResumePositiveControl();
+        System.out.println("B1 close-resume positive-control=PASS");
+        assertPublicationCloseResumePreCommitNegativeControl();
+        System.out.println("B1 close-resume pre-commit-negative-control=PASS");
+
+        Path caseRoot = temporaryDirectory.resolve("publication-close-resume");
+        Path installationPath = caseRoot.resolve("installation.sqlite");
+        Path campaignRoot = caseRoot.resolve("campaigns");
+        String alphaMarker = "Alpha stale publication marker";
+        String betaMarker = "Beta focused resume marker";
+        String betaEdit = "Beta acknowledged after resume";
+        CampaignId betaId;
+        Path betaPath;
+        long betaGeneration;
+
+        ProductionHostHarness host = new ProductionHostHarness();
+        AppBootstrap bootstrap = bootstrapAt(installationPath);
+        CampaignActivationCoordinator coordinator = await(
+                bootstrap.openCampaignActivationAsync(campaignRoot, host));
+        host.attach(coordinator);
+        awaitFxCondition(() -> campaignNameField(host.window()) != null
+                && !campaignNameField(host.window()).isDisabled());
+
+        submitCampaignName(host.window(), "Alpha");
+        awaitCondition(() -> coordinator.snapshot().phase()
+                == CampaignActivationCoordinator.Phase.ACTIVE);
+        assertUsableEmptyPrimaryScene(host.window(), "Alpha", alphaMarker);
+        CampaignId alphaId = coordinator.snapshot().durableActivation().orElseThrow()
+                .campaign().orElseThrow().id();
+
+        openCampaignDeskWithKeyboard(host.window(), host.production);
+        submitCampaignName(host.window(), "Beta");
+        awaitCondition(() -> coordinator.snapshot().phase()
+                == CampaignActivationCoordinator.Phase.ACTIVE);
+        assertUsableEmptyPrimaryScene(host.window(), "Beta", betaMarker);
+        betaId = coordinator.snapshot().durableActivation().orElseThrow()
+                .campaign().orElseThrow().id();
+        betaPath = coordinator.snapshot().campaignPath().orElseThrow();
+        CampaignRuntime lateBetaRuntime = coordinator.activeRuntimeForTesting();
+
+        openCampaignDeskWithKeyboard(host.window(), host.production);
+        fireCampaignRowWhenReady(host.window(), "Alpha");
+        awaitCondition(() -> coordinator.snapshot().phase()
+                == CampaignActivationCoordinator.Phase.ACTIVE
+                && coordinator.snapshot().durableActivation().orElseThrow().campaign()
+                        .map(campaign -> alphaId.equals(campaign.id())).orElse(false));
+        assertFocusedSceneNotes(host.window(), alphaMarker, betaMarker);
+
+        bootstrap.installCampaignActivationPhaseTimeoutForTesting(Duration.ofSeconds(2));
+        host.holdNextReadinessTerminal();
+        openCampaignDeskWithKeyboard(host.window(), host.production);
+        fireCampaignRowWhenReady(host.window(), "Beta");
+        host.awaitHeldReadinessReady();
+        int recoveryBefore = host.recoveryPublications();
+        int switchesAfterFaultPublication = host.campaignPublications();
+        host.blockActivationDispatchUntilRecovery();
+        host.releaseHeldReadinessTerminal();
+
+        awaitCondition(() -> coordinator.snapshot().phase()
+                == CampaignActivationCoordinator.Phase.RECOVERY_REQUIRED);
+        awaitFxCondition(host::recoveryVisible);
+        runOnFx(() -> { });
+        assertEquals(recoveryBefore + 1, host.recoveryPublications(),
+                "timeout must replace the published Beta root with recovery exactly once");
+        assertEquals(switchesAfterFaultPublication, host.campaignPublications(),
+                "revoked late terminal must not publish another Campaign root");
+        runOnFx(() -> assertFalse(host.window().getScene().getRoot() instanceof AppShell,
+                "late terminal must leave recovery authoritative"));
+        assertFalse(lateCandidateAcceptsMutation(lateBetaRuntime),
+                "revoked late candidate must accept zero mutations");
+        assertEquals(betaId, coordinator.snapshot().durableActivation().orElseThrow()
+                .campaign().orElseThrow().id());
+        assertEquals(betaPath, coordinator.snapshot().campaignPath().orElseThrow());
+        betaGeneration = coordinator.snapshot().durableActivation().orElseThrow().generation();
+
+        long closeStarted = System.nanoTime();
+        bootstrap.close();
+        long closeNanos = System.nanoTime() - closeStarted;
+        assertTrue(closeNanos <= Duration.ofSeconds(10).toNanos(),
+                () -> "normal close exceeded 10 s: " + formatMillis(closeNanos));
+        assertTrue(bootstrap.termination().toCompletableFuture().isDone());
+        assertFalse(bootstrap.campaignActivationRetainedForTesting());
+        assertFalse(bootstrap.installationRuntimeRetainedForTesting());
+        assertTrue(bootstrap.closeExecutorShutdownForTesting());
+        host.closeWindow();
+
+        ProductionHostHarness resumedHost = new ProductionHostHarness();
+        AppBootstrap resumedBootstrap = bootstrapAt(installationPath);
+        CampaignActivationCoordinator resumedCoordinator = await(
+                resumedBootstrap.openCampaignActivationAsync(campaignRoot, resumedHost));
+        resumedHost.attachAndResume(resumedCoordinator);
+        assertEquals(1, resumedHost.startupResumeAttempts());
+        assertEquals(CampaignActivationCoordinator.Phase.ACTIVE,
+                resumedCoordinator.snapshot().phase());
+        assertEquals(betaId, resumedCoordinator.snapshot().durableActivation().orElseThrow()
+                .campaign().orElseThrow().id());
+        assertEquals(betaGeneration, resumedCoordinator.snapshot().durableActivation()
+                .orElseThrow().generation());
+        assertEquals(betaPath, resumedCoordinator.snapshot().campaignPath().orElseThrow());
+        assertSafeAttachedShell(resumedHost.window());
+        assertFocusedSceneNotes(resumedHost.window(), betaMarker, alphaMarker);
+        editFocusedSceneThroughUi(resumedHost.window(), betaEdit);
+        closeBootstrapAndWindow(resumedBootstrap, resumedHost);
+
+        ProductionHostHarness readbackHost = new ProductionHostHarness();
+        AppBootstrap readbackBootstrap = bootstrapAt(installationPath);
+        CampaignActivationCoordinator readbackCoordinator = await(
+                readbackBootstrap.openCampaignActivationAsync(campaignRoot, readbackHost));
+        readbackHost.attachAndResume(readbackCoordinator);
+        assertEquals(1, readbackHost.startupResumeAttempts());
+        assertEquals(betaId, readbackCoordinator.snapshot().durableActivation().orElseThrow()
+                .campaign().orElseThrow().id());
+        assertEquals(betaPath, readbackCoordinator.snapshot().campaignPath().orElseThrow());
+        assertSafeAttachedShell(readbackHost.window());
+        assertFocusedSceneNotes(readbackHost.window(), betaEdit, alphaMarker);
+        closeBootstrapAndWindow(readbackBootstrap, readbackHost);
+
+        awaitCondition(() -> campaignRuntimeThreadCount() <= runtimeThreadsBefore);
+        System.out.println("B1 close-resume deciding-metrics=PASS close="
+                + formatMillis(closeNanos)
+                + " recovery-replacements=1 late-publications=0 late-mutations=0"
+                + " startup-resume-attempts=1 durable-readback=exact");
+    }
+
+    @Test
     void restartNeverCreatesOrMutatesMissingTruncatedDamagedOrSymbolicCampaignStore()
             throws Exception {
         runOnFx(() -> { });
@@ -1126,6 +1255,193 @@ public final class CampaignRuntimeProductionJourneyTest {
 
     private AppBootstrap bootstrap(Path installationPath) {
         return bootstrapAt(installationPath);
+    }
+
+    private void assertPublicationCloseResumePositiveControl() throws Exception {
+        Path caseRoot = temporaryDirectory.resolve("publication-close-resume-positive");
+        Path installationPath = caseRoot.resolve("installation.sqlite");
+        Path campaignRoot = caseRoot.resolve("campaigns");
+        String betaMarker = "Positive Beta focused marker";
+        String betaEdit = "Positive Beta acknowledged edit";
+        CampaignId betaId;
+        Path betaPath;
+
+        ProductionHostHarness host = new ProductionHostHarness();
+        AppBootstrap bootstrap = bootstrapAt(installationPath);
+        CampaignActivationCoordinator coordinator = await(
+                bootstrap.openCampaignActivationAsync(campaignRoot, host));
+        host.attach(coordinator);
+        awaitFxCondition(() -> campaignNameField(host.window()) != null
+                && !campaignNameField(host.window()).isDisabled());
+        submitCampaignName(host.window(), "Positive Alpha");
+        awaitCondition(() -> coordinator.snapshot().phase()
+                == CampaignActivationCoordinator.Phase.ACTIVE);
+        assertUsableEmptyPrimaryScene(
+                host.window(), "Positive Alpha", "Positive Alpha marker");
+        CampaignId alphaId = coordinator.snapshot().durableActivation().orElseThrow()
+                .campaign().orElseThrow().id();
+
+        openCampaignDeskWithKeyboard(host.window(), host.production);
+        submitCampaignName(host.window(), "Positive Beta");
+        awaitCondition(() -> coordinator.snapshot().phase()
+                == CampaignActivationCoordinator.Phase.ACTIVE);
+        assertUsableEmptyPrimaryScene(host.window(), "Positive Beta", betaMarker);
+        betaId = coordinator.snapshot().durableActivation().orElseThrow()
+                .campaign().orElseThrow().id();
+        betaPath = coordinator.snapshot().campaignPath().orElseThrow();
+
+        openCampaignDeskWithKeyboard(host.window(), host.production);
+        fireCampaignRowWhenReady(host.window(), "Positive Alpha");
+        awaitCondition(() -> coordinator.snapshot().phase()
+                == CampaignActivationCoordinator.Phase.ACTIVE
+                && coordinator.snapshot().durableActivation().orElseThrow().campaign()
+                        .map(campaign -> alphaId.equals(campaign.id())).orElse(false));
+        assertFocusedSceneNotes(
+                host.window(), "Positive Alpha marker", betaMarker);
+        openCampaignDeskWithKeyboard(host.window(), host.production);
+        fireCampaignRowWhenReady(host.window(), "Positive Beta");
+        awaitCondition(() -> coordinator.snapshot().phase()
+                == CampaignActivationCoordinator.Phase.ACTIVE
+                && coordinator.snapshot().durableActivation().orElseThrow().campaign()
+                        .map(campaign -> betaId.equals(campaign.id())).orElse(false));
+        assertSafeAttachedShell(host.window());
+        assertFocusedSceneNotes(host.window(), betaMarker, "Positive Alpha marker");
+        editFocusedSceneThroughUi(host.window(), betaEdit);
+        closeBootstrapAndWindow(bootstrap, host);
+
+        ProductionHostHarness resumedHost = new ProductionHostHarness();
+        AppBootstrap resumedBootstrap = bootstrapAt(installationPath);
+        CampaignActivationCoordinator resumedCoordinator = await(
+                resumedBootstrap.openCampaignActivationAsync(campaignRoot, resumedHost));
+        resumedHost.attachAndResume(resumedCoordinator);
+        assertEquals(1, resumedHost.startupResumeAttempts());
+        assertEquals(betaId, resumedCoordinator.snapshot().durableActivation().orElseThrow()
+                .campaign().orElseThrow().id());
+        assertEquals(betaPath, resumedCoordinator.snapshot().campaignPath().orElseThrow());
+        assertSafeAttachedShell(resumedHost.window());
+        assertFocusedSceneNotes(resumedHost.window(), betaEdit, "Positive Alpha marker");
+        closeBootstrapAndWindow(resumedBootstrap, resumedHost);
+    }
+
+    private void assertPublicationCloseResumePreCommitNegativeControl() throws Exception {
+        Path caseRoot = temporaryDirectory.resolve("publication-close-resume-negative");
+        Path installationPath = caseRoot.resolve("installation.sqlite");
+        Path campaignRoot = caseRoot.resolve("campaigns");
+        String alphaMarker = "Negative Alpha remains authoritative";
+        String alphaEdit = "Negative Alpha remains writable";
+        ProductionHostHarness host = new ProductionHostHarness();
+        AppBootstrap bootstrap = bootstrapAt(installationPath);
+        CampaignActivationCoordinator coordinator = await(
+                bootstrap.openCampaignActivationAsync(campaignRoot, host));
+        host.attach(coordinator);
+        awaitFxCondition(() -> campaignNameField(host.window()) != null
+                && !campaignNameField(host.window()).isDisabled());
+        submitCampaignName(host.window(), "Negative Alpha");
+        awaitCondition(() -> coordinator.snapshot().phase()
+                == CampaignActivationCoordinator.Phase.ACTIVE);
+        assertUsableEmptyPrimaryScene(host.window(), "Negative Alpha", alphaMarker);
+        CampaignActivation durableAlpha = coordinator.snapshot().durableActivation().orElseThrow();
+        AppShell alphaShell = host.visibleCampaignRoot();
+
+        CampaignActivationCoordinator.Result rejected = await(
+                coordinator.create("Rejected before commit", 0L));
+        assertEquals(CampaignActivationCoordinator.Status.STALE_GENERATION, rejected.status());
+        assertEquals(durableAlpha, coordinator.snapshot().durableActivation().orElseThrow());
+        assertSame(alphaShell, host.visibleCampaignRoot());
+        editFocusedSceneThroughUi(host.window(), alphaEdit);
+        assertEquals(durableAlpha.campaign().orElseThrow().id(),
+                coordinator.snapshot().durableActivation().orElseThrow()
+                        .campaign().orElseThrow().id());
+        closeBootstrapAndWindow(bootstrap, host);
+    }
+
+    private static void assertSafeAttachedShell(Stage stage) throws Exception {
+        awaitFxCondition(() -> stage.isShowing()
+                && stage.getScene() != null
+                && stage.getScene().getRoot() instanceof AppShell);
+        runOnFx(() -> {
+            javafx.scene.Parent root = stage.getScene().getRoot();
+            root.applyCss();
+            root.layout();
+            javafx.geometry.Bounds screen = root.localToScreen(root.getBoundsInLocal());
+            assertTrue(root instanceof AppShell);
+            assertSame(stage.getScene(), root.getScene());
+            assertSame(stage, root.getScene().getWindow());
+            assertTrue(root.getLayoutBounds().getWidth() > 0.0);
+            assertTrue(root.getLayoutBounds().getHeight() > 0.0);
+            assertTrue(screen != null && screen.getWidth() > 0.0 && screen.getHeight() > 0.0);
+        });
+    }
+
+    private static void assertFocusedSceneNotes(
+            Stage stage,
+            String expected,
+            String forbidden
+    ) throws Exception {
+        fireNavigation(stage, "Szenen");
+        awaitFxCondition(() -> presentedTextArea(stage, "Szenennotizen") != null
+                && expected.equals(presentedTextArea(stage, "Szenennotizen").getText()));
+        runOnFx(() -> assertNotEquals(
+                forbidden, presentedTextArea(stage, "Szenennotizen").getText()));
+    }
+
+    private static void editFocusedSceneThroughUi(Stage stage, String notes) throws Exception {
+        long deadline = System.nanoTime() + Duration.ofSeconds(10).toNanos();
+        fireNavigation(stage, "Szenen");
+        awaitFxConditionUntil(() -> presentedTextArea(stage, "Szenennotizen") != null
+                && presentedButton(stage, "Szene speichern") != null, deadline);
+        runOnFxUntil(deadline, () -> {
+            presentedTextArea(stage, "Szenennotizen").setText(notes);
+            presentedButton(stage, "Szene speichern").fire();
+        });
+        awaitFxConditionUntil(() -> presentedTextArea(stage, "Szenennotizen") != null
+                && notes.equals(presentedTextArea(stage, "Szenennotizen").getText())
+                && presentedText(stage, "Szene aktualisiert."), deadline);
+    }
+
+    private static boolean lateCandidateAcceptsMutation(CampaignRuntime runtime)
+            throws Exception {
+        try {
+            return await(runtime.components().scene().application().execute(
+                    new SceneCommand.Create("Revoked late Beta mutation"))).status()
+                    == SceneMutationResult.Status.SUCCESS;
+        } catch (IllegalStateException unavailable) {
+            assertTrue(unavailable.getMessage() != null
+                            && unavailable.getMessage().contains("PARKED"),
+                    () -> "unexpected late-candidate rejection: " + unavailable);
+            return false;
+        }
+    }
+
+    private static void fireCampaignRowWhenReady(Stage stage, String campaignName)
+            throws Exception {
+        long deadline = System.nanoTime() + TIMEOUT.toNanos();
+        AtomicBoolean fired = new AtomicBoolean();
+        while (!fired.get() && System.nanoTime() < deadline) {
+            runOnFx(() -> {
+                javafx.scene.control.Button row = campaignRow(stage, campaignName);
+                if (row != null && !row.isDisabled()) {
+                    row.fire();
+                    fired.set(true);
+                }
+            });
+            if (!fired.get()) {
+                java.util.concurrent.locks.LockSupport.parkNanos(
+                        TimeUnit.MILLISECONDS.toNanos(5));
+            }
+        }
+        assertTrue(fired.get(), () -> "Campaign row did not become actionable: " + campaignName);
+    }
+
+    private static void closeBootstrapAndWindow(
+            AppBootstrap bootstrap,
+            ProductionHostHarness host
+    ) throws Exception {
+        bootstrap.close();
+        assertTrue(bootstrap.termination().toCompletableFuture().isDone());
+        assertFalse(bootstrap.campaignActivationRetainedForTesting());
+        assertFalse(bootstrap.installationRuntimeRetainedForTesting());
+        host.closeWindow();
     }
 
     private static void awaitRegistryOperation(AppBootstrap bootstrap) {
@@ -2085,9 +2401,15 @@ public final class CampaignRuntimeProductionJourneyTest {
         private final Stage window;
         private final CampaignDeskHost production;
         private final AtomicBoolean hideOnNextReadiness = new AtomicBoolean();
+        private final AtomicBoolean holdNextReadinessTerminal = new AtomicBoolean();
         private final AtomicReference<CampaignDeskHost.RootReadinessAttempt> lastReadiness =
                 new AtomicReference<>();
+        private final AtomicReference<HeldReadinessAttempt> heldReadiness =
+                new AtomicReference<>();
         private final AtomicReference<AppShell> lastSwitchedShell = new AtomicReference<>();
+        private final AtomicReference<CountDownLatch> blockedFxRelease = new AtomicReference<>();
+        private final AtomicInteger campaignPublications = new AtomicInteger();
+        private final AtomicInteger recoveryPublications = new AtomicInteger();
 
         private ProductionHostHarness() throws Exception {
             AtomicReference<Stage> stage = new AtomicReference<>();
@@ -2125,6 +2447,7 @@ public final class CampaignRuntimeProductionJourneyTest {
                 AppShell shell
         ) {
             lastSwitchedShell.set(shell);
+            campaignPublications.incrementAndGet();
             return production.switchCampaign(campaign, generation, shell);
         }
 
@@ -2135,6 +2458,7 @@ public final class CampaignRuntimeProductionJourneyTest {
                 CampaignActivationCoordinator.PublicationSurface surface
         ) {
             lastSwitchedShell.set(java.util.Objects.requireNonNull(surface.shell()));
+            campaignPublications.incrementAndGet();
             return production.switchCampaign(campaign, generation, surface);
         }
 
@@ -2143,6 +2467,11 @@ public final class CampaignRuntimeProductionJourneyTest {
                 java.util.Optional<features.campaign.api.CampaignActivation> durableActivation,
                 Class<? extends Throwable> failureType
         ) {
+            recoveryPublications.incrementAndGet();
+            CountDownLatch release = blockedFxRelease.getAndSet(null);
+            if (release != null) {
+                release.countDown();
+            }
             return production.showRecovery(durableActivation, failureType);
         }
 
@@ -2157,6 +2486,11 @@ public final class CampaignRuntimeProductionJourneyTest {
                     (CampaignDeskHost.RootReadinessAttempt)
                             production.awaitPublishedRootReady(shell);
             lastReadiness.set(readiness);
+            if (holdNextReadinessTerminal.compareAndSet(true, false)) {
+                HeldReadinessAttempt held = new HeldReadinessAttempt(readiness);
+                heldReadiness.set(held);
+                return held;
+            }
             return readiness;
         }
 
@@ -2175,6 +2509,67 @@ public final class CampaignRuntimeProductionJourneyTest {
 
         void hideOnNextReadiness() {
             hideOnNextReadiness.set(true);
+        }
+
+        void holdNextReadinessTerminal() {
+            holdNextReadinessTerminal.set(true);
+        }
+
+        void awaitHeldReadinessReady() throws Exception {
+            long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
+            HeldReadinessAttempt held;
+            while ((held = heldReadiness.get()) == null && System.nanoTime() < deadline) {
+                java.util.concurrent.locks.LockSupport.parkNanos(
+                        TimeUnit.MILLISECONDS.toNanos(5));
+            }
+            if (held == null) {
+                throw new AssertionError("No held readiness attempt was observed");
+            }
+            assertTrue(held.productionReady.await(10, TimeUnit.SECONDS),
+                    "production published-root readiness did not become ready");
+        }
+
+        void blockActivationDispatchUntilRecovery() throws Exception {
+            CountDownLatch entered = new CountDownLatch(1);
+            CountDownLatch release = new CountDownLatch(1);
+            if (!blockedFxRelease.compareAndSet(null, release)) {
+                throw new IllegalStateException("JavaFX activation dispatch is already blocked");
+            }
+            Platform.runLater(() -> {
+                entered.countDown();
+                boolean interrupted = false;
+                for (;;) {
+                    try {
+                        release.await();
+                        break;
+                    } catch (InterruptedException failure) {
+                        interrupted = true;
+                    }
+                }
+                if (interrupted) {
+                    Thread.currentThread().interrupt();
+                }
+            });
+            assertTrue(entered.await(10, TimeUnit.SECONDS),
+                    "JavaFX activation terminal blocker did not start");
+        }
+
+        void releaseHeldReadinessTerminal() {
+            java.util.Objects.requireNonNull(
+                    heldReadiness.get(), "No held readiness attempt was observed")
+                    .release();
+        }
+
+        int campaignPublications() {
+            return campaignPublications.get();
+        }
+
+        int recoveryPublications() {
+            return recoveryPublications.get();
+        }
+
+        int startupResumeAttempts() {
+            return production.startupResumeAttemptsForTesting();
         }
 
         CampaignDeskHost.RootReadinessAttempt lastReadinessAttempt() {
@@ -2207,6 +2602,38 @@ public final class CampaignRuntimeProductionJourneyTest {
 
         void closeWindow() throws Exception {
             runOnFx(window::close);
+        }
+
+        private static final class HeldReadinessAttempt
+                implements CampaignActivationCoordinator.PublishedRootReadinessAttempt {
+            private final CampaignDeskHost.RootReadinessAttempt delegate;
+            private final CompletableFuture<Void> terminal = new CompletableFuture<>();
+            private final CountDownLatch productionReady = new CountDownLatch(1);
+
+            private HeldReadinessAttempt(CampaignDeskHost.RootReadinessAttempt delegate) {
+                this.delegate = java.util.Objects.requireNonNull(delegate, "delegate");
+                delegate.completion().whenComplete((ignored, failure) -> {
+                    if (failure == null) {
+                        productionReady.countDown();
+                    } else {
+                        terminal.completeExceptionally(failure);
+                    }
+                });
+            }
+
+            @Override
+            public CompletionStage<Void> completion() {
+                return terminal;
+            }
+
+            @Override
+            public CompletionStage<Void> cancel() {
+                return delegate.cancel();
+            }
+
+            private void release() {
+                terminal.complete(null);
+            }
         }
     }
 
