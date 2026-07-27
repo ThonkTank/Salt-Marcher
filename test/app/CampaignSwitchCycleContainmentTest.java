@@ -744,9 +744,14 @@ public final class CampaignSwitchCycleContainmentTest {
                         List.of(), List.of(), 0L)));
         await(filterPublished);
         unsubscribe.run();
+        // M2a rebase repair (cycle 2, forced deviation): the pre-M2a two-argument
+        // CreateCharacterCommand(draft, membership) constructor no longer exists at
+        // baseline 69d026440. Semantics preserved: character 1 is created and made
+        // ACTIVE through the current production API before the awaited move below.
         runtime.components().party().application().createCharacter(new CreateCharacterCommand(
-                new CharacterDraft(marker + " Guide", marker, 3, 14, 16),
-                MembershipState.ACTIVE));
+                new CharacterDraft(marker + " Guide", marker, 3, 14, 16)));
+        runtime.components().party().application().setMembership(
+                new features.party.api.SetPartyMembershipCommand(1L, MembershipState.ACTIVE));
         var moved = await(runtime.components().party().application().moveCharacters(
                 new MovePartyCharactersCommand(
                         List.of(1L),
