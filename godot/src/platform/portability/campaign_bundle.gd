@@ -5,19 +5,23 @@ extends RefCounted
 
 const ImmutableJsonFiles = preload("res://godot/src/platform/persistence/immutable_json_files.gd")
 const FileCampaignStore = preload("res://godot/src/platform/persistence/file_campaign_store.gd")
+const SharedDefinitionStore = preload("res://godot/src/platform/persistence/shared_definition_store.gd")
 const StorageCapacityGuard = preload("res://godot/src/platform/persistence/storage_capacity_guard.gd")
 
 const FORMAT_ID := "saltmarcher.campaign-bundle.v1"
+const IMPORT_OPERATION_FORMAT_ID := "saltmarcher.campaign-import-operation.v1"
 const MAGIC := "SALTMARCHER-BUNDLE-1\n"
 const CHUNK_SIZE := 1024 * 1024
 const MAX_MANIFEST_BYTES := 256 * 1024 * 1024
 const MAX_FILE_COUNT := 2_000_000
+const MAX_SHARED_DEFINITION_COUNT := 1_000_000
 const MAX_SAFE_BYTES := 0x3fffffffffffffff
 
 var _data_root: String
 var _registry
 var _files: ImmutableJsonFiles
 var _capacity_guard
+var _definition_store: SharedDefinitionStore
 
 
 func _init(data_root: String, registry, capacity_guard = null) -> void:
@@ -25,6 +29,7 @@ func _init(data_root: String, registry, capacity_guard = null) -> void:
 	_registry = registry
 	_capacity_guard = capacity_guard if capacity_guard != null else StorageCapacityGuard.new()
 	_files = ImmutableJsonFiles.new(Callable(), _capacity_guard)
+	_definition_store = SharedDefinitionStore.new(_data_root, Callable(), _capacity_guard)
 
 
 func export_campaign(campaign_id: String, destination_path: String) -> Dictionary:
@@ -32,6 +37,16 @@ func export_campaign(campaign_id: String, destination_path: String) -> Dictionar
 	var state := store.load_state()
 	if not state.get("ok", false):
 		return _failure("Campaign kann nicht vollständig exportiert werden: %s" % state.get("error", "unbekannter Fehler"))
+	var registry_state: Dictionary = _registry.load_state()
+	if not registry_state.get("ok", false):
+		return _failure("Installationweite Referenzen können nicht vollständig exportiert werden.")
+	var definition_generation := int(registry_state.get("shared_definitions_generation", 0))
+	var required_definitions := _definition_store.definitions_for_refs(
+		state.get("shared_definition_refs", []),
+		definition_generation
+	)
+	if not required_definitions.get("ok", false):
+		return _failure("Campaign verweist auf eine fehlende oder beschädigte Shared Definition.")
 	var absolute_destination := _files.absolute(destination_path)
 	var absolute_campaign := _files.absolute(store.campaign_directory())
 	if absolute_destination == absolute_campaign or absolute_destination.begins_with(absolute_campaign + "/"):
@@ -50,7 +65,7 @@ func export_campaign(campaign_id: String, destination_path: String) -> Dictionar
 		"created_at_utc": identity["created_at_utc"],
 		"campaign_generation": str(state["generation"]),
 		"exported_at_utc": Time.get_datetime_string_from_system(true),
-		"shared_definitions": [],
+		"shared_definitions": required_definitions["definitions"],
 		"files": inventory["files"],
 	}
 	var manifest := {
@@ -94,10 +109,16 @@ func export_campaign(campaign_id: String, destination_path: String) -> Dictionar
 			DirAccess.remove_absolute(temporary_path)
 			return copy
 	var closing_inventory := _inventory(absolute_campaign)
-	if not closing_inventory.get("ok", false) or _files.canonical_json(closing_inventory["files"]) != _files.canonical_json(inventory["files"]):
+	var closing_registry: Dictionary = _registry.load_state()
+	if (
+		not closing_inventory.get("ok", false)
+		or _files.canonical_json(closing_inventory["files"]) != _files.canonical_json(inventory["files"])
+		or not closing_registry.get("ok", false)
+		or int(closing_registry.get("shared_definitions_generation", -1)) != definition_generation
+	):
 		output.close()
 		DirAccess.remove_absolute(temporary_path)
-		return _failure("Campaign wurde während des Exports verändert; Export wurde verworfen.")
+		return _failure("Campaign oder Shared Definitions wurden während des Exports verändert; Export wurde verworfen.")
 	output.flush()
 	var write_error := output.get_error()
 	output.close()
@@ -113,6 +134,7 @@ func export_campaign(campaign_id: String, destination_path: String) -> Dictionar
 		"status": "exported",
 		"path": destination_path,
 		"file_count": inventory["files"].size(),
+		"shared_definition_count": required_definitions["definitions"].size(),
 		"payload_bytes": inventory["total_bytes"],
 	}
 
@@ -121,16 +143,315 @@ func import_campaign(bundle_path: String, expected_registry_generation: int) -> 
 	var staged := _stage_and_validate_bundle(bundle_path, "import")
 	if not staged.get("ok", false):
 		return staged
-	var payload: Dictionary = staged["payload"]
+	var current: Dictionary = _registry.load_state()
+	if not current.get("ok", false):
+		_remove_tree(_files.absolute(staged["staging_root"]))
+		return current
+	if int(current["generation"]) != expected_registry_generation:
+		_remove_tree(_files.absolute(staged["staging_root"]))
+		return _stale_import(current)
+	var plan := _plan_shared_definitions(staged, current, {})
+	if not plan.get("ok", false):
+		_remove_tree(_files.absolute(staged["staging_root"]))
+		return plan
+	if not plan["conflicts"].is_empty():
+		var operation := _persist_import_operation(staged, current, plan["conflicts"])
+		if not operation.get("ok", false):
+			_remove_tree(_files.absolute(staged["staging_root"]))
+			return operation
+		return {
+			"ok": false,
+			"status": "definition_conflicts",
+			"error": "Shared-Definition-Konflikte benötigen eine ausdrückliche Entscheidung.",
+			"import_id": staged["operation_id"],
+			"conflicts": plan["conflicts"],
+			"choices": ["keep_existing", "use_imported", "retain_both"],
+		}
+	return _complete_staged_import(staged, current, {})
+
+
+func resolve_import(
+	import_id: String,
+	expected_registry_generation: int,
+	decisions: Dictionary
+) -> Dictionary:
+	var operation := _read_import_operation(import_id)
+	if not operation.get("ok", false):
+		return operation
+	var current: Dictionary = _registry.load_state()
+	if not current.get("ok", false):
+		return current
+	if int(current["generation"]) != expected_registry_generation:
+		return _stale_import(current)
+	var payload: Dictionary = operation["payload"]
+	if int(payload["expected_registry_generation"]) != expected_registry_generation:
+		return _failure("Der staged Import gehört nicht mehr zum aktuellen Installationsstand.")
+	var conflicts: Array = payload["conflicts"]
+	if decisions.size() != conflicts.size():
+		return _failure("Für jeden Shared-Definition-Konflikt ist genau eine Entscheidung erforderlich.")
+	for conflict in conflicts:
+		var definition_id := str(conflict["definition_id"])
+		var choice := str(decisions.get(definition_id, ""))
+		if choice not in ["keep_existing", "use_imported", "retain_both"]:
+			return _failure("Ungültige oder fehlende Konfliktentscheidung für %s." % definition_id)
+	var staged := {
+		"payload": payload["bundle_payload"],
+		"staging_root": payload["staging_root"],
+		"staged_campaign": payload["staged_campaign"],
+		"operation_id": import_id,
+	}
+	return _complete_staged_import(staged, current, decisions)
+
+
+func discard_import(import_id: String) -> Dictionary:
+	var operation := _read_import_operation(import_id)
+	if not operation.get("ok", false):
+		return operation
+	var staging_root := str(operation["payload"]["staging_root"])
+	_remove_tree(_files.absolute(staging_root))
+	return {"ok": true, "status": "import_discarded", "import_id": import_id}
+
+
+func _complete_staged_import(staged: Dictionary, current: Dictionary, decisions: Dictionary) -> Dictionary:
+	var plan := _plan_shared_definitions(staged, current, decisions)
+	if not plan.get("ok", false):
+		return plan
+	if not plan["conflicts"].is_empty():
+		return _failure("Shared-Definition-Konflikte sind noch nicht vollständig aufgelöst.")
 	var staging_root := str(staged["staging_root"])
 	var staged_campaign := str(staged["staged_campaign"])
+	var payload: Dictionary = staged["payload"]
 	var source_id := str(payload["source_campaign_id"])
+	var staged_store := FileCampaignStore.new(_data_root, source_id, Callable(), staged_campaign)
+	var staged_state := staged_store.load_state()
+	if not staged_state.get("ok", false):
+		return _failure("Der staged Import ist nicht mehr vollständig lesbar.")
+	var remapped_refs: Array = []
+	for definition_id_value in staged_state.get("shared_definition_refs", []):
+		var definition_id := str(definition_id_value)
+		remapped_refs.append(plan["reference_remap"].get(definition_id, definition_id))
+	remapped_refs.sort()
+	if remapped_refs != staged_state.get("shared_definition_refs", []):
+		var remap_commit := staged_store.commit(
+			int(staged_state["generation"]),
+			{},
+			staged_state["runtime"],
+			[],
+			0,
+			remapped_refs
+		)
+		if not remap_commit.get("ok", false):
+			return _failure("Retain-both-Referenzen konnten im staged Import nicht veröffentlicht werden.")
 
+	var active_definition_generation := int(current.get("shared_definitions_generation", 0))
+	var prepared := _definition_store.prepare_generation(
+		active_definition_generation,
+		plan["definitions_to_publish"]
+	)
+	if not prepared.get("ok", false):
+		return prepared
+	var next_definition_generation := int(prepared["generation"])
 	var new_campaign_id := _files.new_identity()
+	var replace_identity := _replace_staged_identity(
+		staged_campaign,
+		new_campaign_id,
+		str(payload["name"]),
+		str(payload["created_at_utc"])
+	)
+	if not replace_identity.get("ok", false):
+		_discard_failed_import(staging_root, prepared)
+		return replace_identity
+
+	var target_campaign := _data_root + "/campaigns/" + new_campaign_id
+	var campaigns_directory_error := _files.ensure_directory(_data_root + "/campaigns")
+	if campaigns_directory_error != OK:
+		_discard_failed_import(staging_root, prepared)
+		return _failure("Campaign-Zielverzeichnis konnte nicht vorbereitet werden.")
+	if DirAccess.dir_exists_absolute(_files.absolute(target_campaign)):
+		_discard_failed_import(staging_root, prepared)
+		return _failure("Die neue Import-Identität kollidiert mit einer vorhandenen Campaign.")
+	var promote_error := DirAccess.rename_absolute(
+		_files.absolute(staged_campaign),
+		_files.absolute(target_campaign)
+	)
+	if promote_error != OK:
+		_discard_failed_import(staging_root, prepared)
+		return _failure("Importierte Campaign konnte nicht veröffentlicht werden.")
+
+	var register: Dictionary = _registry.register_existing_campaign(
+		new_campaign_id,
+		str(payload["name"]),
+		str(payload["created_at_utc"]),
+		int(current["generation"]),
+		next_definition_generation
+	)
+	if not register.get("ok", false):
+		var rollback_error := DirAccess.rename_absolute(
+			_files.absolute(target_campaign),
+			_files.absolute(staged_campaign)
+		)
+		if rollback_error != OK:
+			return _failure("Import-Registrierung schlug fehl und die isolierte Campaign konnte nicht zurückgesetzt werden.")
+		_discard_failed_import(staging_root, prepared)
+		return register
+	_remove_tree(_files.absolute(staging_root))
+	register["status"] = "imported"
+	register["campaign_id"] = new_campaign_id
+	register["source_campaign_id"] = source_id
+	register["shared_definitions_generation"] = next_definition_generation
+	register["definition_decisions"] = decisions.duplicate(true)
+	register["definition_reference_remap"] = plan["reference_remap"].duplicate(true)
+	return register
+
+
+func _discard_failed_import(staging_root: String, prepared: Dictionary) -> void:
+	_remove_tree(_files.absolute(staging_root))
+	if prepared.get("status", "") == "prepared":
+		_definition_store.discard_unselected_generation(int(prepared["generation"]))
+
+
+func _plan_shared_definitions(staged: Dictionary, current: Dictionary, decisions: Dictionary) -> Dictionary:
+	var active_generation := int(current.get("shared_definitions_generation", 0))
+	var active := _definition_store.load_generation(active_generation)
+	if not active.get("ok", false):
+		return active
+	var definitions_to_publish: Array = []
+	var reference_remap := {}
+	var conflicts: Array = []
+	for imported_value in staged["payload"]["shared_definitions"]:
+		var validation := _definition_store.validate_definition(imported_value)
+		if not validation.get("ok", false):
+			return validation
+		var imported: Dictionary = validation["definition"]
+		var definition_id := str(imported["definition_id"])
+		if not active["definitions"].has(definition_id):
+			definitions_to_publish.append(imported)
+			continue
+		var existing := _definition_store.read_definition(definition_id, active_generation)
+		if not existing.get("ok", false):
+			return existing
+		if _files.canonical_json(existing["definition"]) == _files.canonical_json(imported):
+			continue
+		var conflict := _definition_conflict(definition_id, existing["definition"], imported, current)
+		var choice := str(decisions.get(definition_id, ""))
+		if choice.is_empty():
+			conflicts.append(conflict)
+		elif choice == "keep_existing":
+			pass
+		elif choice == "use_imported":
+			definitions_to_publish.append(imported)
+		elif choice == "retain_both":
+			var retained: Dictionary = imported.duplicate(true)
+			var retained_id := "%s-imported-%s" % [definition_id, _files.new_identity()]
+			retained["definition_id"] = retained_id
+			definitions_to_publish.append(retained)
+			reference_remap[definition_id] = retained_id
+		else:
+			return _failure("Unbekannte Shared-Definition-Konfliktentscheidung.")
+	return {
+		"ok": true,
+		"definitions_to_publish": definitions_to_publish,
+		"reference_remap": reference_remap,
+		"conflicts": conflicts,
+	}
+
+
+func _definition_conflict(
+	definition_id: String,
+	existing: Dictionary,
+	imported: Dictionary,
+	registry_state: Dictionary
+) -> Dictionary:
+	var affected_campaigns: Array = []
+	for campaign in registry_state["campaigns"]:
+		var campaign_id := str(campaign["id"])
+		var state := FileCampaignStore.new(_data_root, campaign_id).load_state()
+		if state.get("ok", false) and definition_id in state.get("shared_definition_refs", []):
+			affected_campaigns.append({"campaign_id": campaign_id, "name": campaign["name"]})
+	return {
+		"definition_id": definition_id,
+		"existing": {
+			"kind": existing["kind"],
+			"name": existing["name"],
+			"sha256": _files.checksum(existing),
+		},
+		"imported": {
+			"kind": imported["kind"],
+			"name": imported["name"],
+			"sha256": _files.checksum(imported),
+		},
+		"affected_existing_campaigns": affected_campaigns,
+		"consequences": {
+			"keep_existing": "Die importierte Campaign verwendet künftig die vorhandene Variante; ihre abgeschlossene Historie bleibt unverändert.",
+			"use_imported": "%d vorhandene Campaign(s) verwenden künftig die importierte Variante; abgeschlossene Historie bleibt unverändert." % affected_campaigns.size(),
+			"retain_both": "Die importierte Campaign erhält eine neue Definition-ID; vorhandene Campaigns behalten die bisherige Variante.",
+		},
+	}
+
+
+func _persist_import_operation(staged: Dictionary, current: Dictionary, conflicts: Array) -> Dictionary:
+	var payload := {
+		"import_id": staged["operation_id"],
+		"expected_registry_generation": str(current["generation"]),
+		"staging_root": staged["staging_root"],
+		"staged_campaign": staged["staged_campaign"],
+		"bundle_payload": staged["payload"],
+		"conflicts": conflicts,
+	}
+	return _files.write_new_json(
+		str(staged["staging_root"]) + "/operation.json",
+		{
+			"format": IMPORT_OPERATION_FORMAT_ID,
+			"payload": payload,
+			"payload_sha256": _files.checksum(payload),
+		},
+		"import_operation"
+	)
+
+
+func _read_import_operation(import_id: String) -> Dictionary:
+	if not _portable_segment(import_id):
+		return _failure("Ungültige Import-Identität.")
+	var staging_root := _data_root + "/staging/import-" + import_id
+	var read := _files.read_json(staging_root + "/operation.json")
+	if not read.get("ok", false) or not read.get("value") is Dictionary:
+		return _failure("Der staged Import ist nicht lesbar.")
+	var document: Dictionary = read["value"]
+	if document.get("format", "") != IMPORT_OPERATION_FORMAT_ID or not document.get("payload") is Dictionary:
+		return _failure("Der staged Import besitzt ein unbekanntes Format.")
+	var payload: Dictionary = document["payload"]
+	if document.get("payload_sha256", "") != _files.checksum(payload):
+		return _failure("Der staged Import besitzt eine ungültige Prüfsumme.")
+	if (
+		payload.get("import_id", "") != import_id
+		or payload.get("staging_root", "") != staging_root
+		or payload.get("staged_campaign", "") != staging_root + "/campaign"
+		or not payload.get("bundle_payload") is Dictionary
+		or not payload.get("conflicts") is Array
+		or not str(payload.get("expected_registry_generation", "")).is_valid_int()
+	):
+		return _failure("Der staged Import enthält ungültige Metadaten.")
+	var source_id := str(payload["bundle_payload"].get("source_campaign_id", ""))
+	var staged_store := FileCampaignStore.new(_data_root, source_id, Callable(), str(payload["staged_campaign"]))
+	var state := staged_store.load_state()
+	if not state.get("ok", false):
+		return _failure("Die staged Campaign ist nicht mehr vollständig lesbar.")
+	var closure := _validate_definition_closure(payload["bundle_payload"], state)
+	if not closure.get("ok", false):
+		return closure
+	return {"ok": true, "payload": payload}
+
+
+func _replace_staged_identity(
+	staged_campaign: String,
+	new_campaign_id: String,
+	name: String,
+	created_at_utc: String
+) -> Dictionary:
 	var identity_payload := {
 		"campaign_id": new_campaign_id,
-		"name": payload["name"],
-		"created_at_utc": payload["created_at_utc"],
+		"name": name,
+		"created_at_utc": created_at_utc,
 	}
 	var identity_document := {
 		"format": FileCampaignStore.IDENTITY_FORMAT_ID,
@@ -140,52 +461,42 @@ func import_campaign(bundle_path: String, expected_registry_generation: int) -> 
 	var manifest_path := _files.absolute(staged_campaign + "/manifest.json")
 	var replace_manifest := FileAccess.open(manifest_path, FileAccess.WRITE)
 	if replace_manifest == null:
-		_remove_tree(_files.absolute(staging_root))
 		return _failure("Importierte Campaign-Identität konnte nicht neu vergeben werden.")
 	replace_manifest.store_string(JSON.stringify(identity_document, "  ", true, true) + "\n")
 	replace_manifest.flush()
 	var identity_error := replace_manifest.get_error()
 	replace_manifest.close()
 	if identity_error != OK:
-		_remove_tree(_files.absolute(staging_root))
 		return _failure("Importierte Campaign-Identität konnte nicht vollständig geschrieben werden.")
+	return {"ok": true}
 
-	var target_campaign := _data_root + "/campaigns/" + new_campaign_id
-	var campaigns_directory_error := _files.ensure_directory(_data_root + "/campaigns")
-	if campaigns_directory_error != OK:
-		_remove_tree(_files.absolute(staging_root))
-		return _failure("Campaign-Zielverzeichnis konnte nicht vorbereitet werden.")
-	if DirAccess.dir_exists_absolute(_files.absolute(target_campaign)):
-		_remove_tree(_files.absolute(staging_root))
-		return _failure("Die neue Import-Identität kollidiert mit einer vorhandenen Campaign.")
-	var promote_error := DirAccess.rename_absolute(
-		_files.absolute(staged_campaign),
-		_files.absolute(target_campaign)
-	)
-	if promote_error != OK:
-		_remove_tree(_files.absolute(staging_root))
-		return _failure("Importierte Campaign konnte nicht veröffentlicht werden.")
 
-	var register: Dictionary = _registry.register_existing_campaign(
-		new_campaign_id,
-		str(payload["name"]),
-		str(payload["created_at_utc"]),
-		expected_registry_generation
-	)
-	if not register.get("ok", false):
-		var rollback_error := DirAccess.rename_absolute(
-			_files.absolute(target_campaign),
-			_files.absolute(staged_campaign)
-		)
-		if rollback_error != OK:
-			return _failure("Import-Registrierung schlug fehl und die isolierte Campaign konnte nicht zurückgesetzt werden.")
-		_remove_tree(_files.absolute(staging_root))
-		return register
-	_remove_tree(_files.absolute(staging_root))
-	register["status"] = "imported"
-	register["campaign_id"] = new_campaign_id
-	register["source_campaign_id"] = source_id
-	return register
+func _validate_definition_closure(payload: Dictionary, campaign_state: Dictionary) -> Dictionary:
+	var bundled_ids := {}
+	for definition_value in payload.get("shared_definitions", []):
+		var validation := _definition_store.validate_definition(definition_value)
+		if not validation.get("ok", false):
+			return _failure("Campaign-Bundle enthält eine ungültige Shared Definition.")
+		bundled_ids[str(validation["definition"]["definition_id"])] = true
+	var referenced_ids := {}
+	for definition_id_value in campaign_state.get("shared_definition_refs", []):
+		referenced_ids[str(definition_id_value)] = true
+	var bundled_keys: Array = bundled_ids.keys()
+	var referenced_keys: Array = referenced_ids.keys()
+	bundled_keys.sort()
+	referenced_keys.sort()
+	if _files.canonical_json(bundled_keys) != _files.canonical_json(referenced_keys):
+		return _failure("Campaign-Bundle ist keine geschlossene Shared-Definition-Übertragung.")
+	return {"ok": true}
+
+
+func _stale_import(current: Dictionary) -> Dictionary:
+	return {
+		"ok": false,
+		"status": "stale",
+		"error": "Die Installation wurde während des Imports geändert. Bitte Import erneut prüfen.",
+		"state": current,
+	}
 
 
 func validate_bundle(bundle_path: String) -> Dictionary:
@@ -202,6 +513,7 @@ func validate_bundle(bundle_path: String) -> Dictionary:
 		"created_at_utc": payload["created_at_utc"],
 		"campaign_generation": str(payload["campaign_generation"]).to_int(),
 		"file_count": payload["files"].size(),
+		"shared_definition_count": payload["shared_definitions"].size(),
 	}
 
 
@@ -261,12 +573,17 @@ func _stage_and_validate_bundle(bundle_path: String, purpose: String) -> Diction
 	):
 		_remove_tree(_files.absolute(staging_root))
 		return _failure("Exportmanifest und Campaign-Identität widersprechen sich.")
+	var closure_validation := _validate_definition_closure(payload, source_state)
+	if not closure_validation.get("ok", false):
+		_remove_tree(_files.absolute(staging_root))
+		return closure_validation
 	return {
 		"ok": true,
 		"payload": payload,
 		"state": source_state,
 		"staging_root": staging_root,
 		"staged_campaign": staged_campaign,
+		"operation_id": operation_id,
 	}
 
 
@@ -286,6 +603,17 @@ func _read_and_validate_manifest(bundle: FileAccess) -> Dictionary:
 	var payload: Dictionary = manifest["payload"]
 	if manifest.get("payload_sha256", "") != _files.checksum(payload):
 		return _failure("Campaign-Bundle besitzt eine ungültige Manifest-Prüfsumme.")
+	if not payload.get("shared_definitions") is Array or payload["shared_definitions"].size() > MAX_SHARED_DEFINITION_COUNT:
+		return _failure("Campaign-Bundle enthält keine zulässige Shared-Definition-Sammlung.")
+	var known_definition_ids := {}
+	for definition_value in payload["shared_definitions"]:
+		var definition_validation := _definition_store.validate_definition(definition_value)
+		if not definition_validation.get("ok", false):
+			return _failure("Campaign-Bundle enthält eine ungültige Shared Definition.")
+		var definition_id := str(definition_validation["definition"]["definition_id"])
+		if known_definition_ids.has(definition_id):
+			return _failure("Campaign-Bundle enthält eine doppelte Shared Definition.")
+		known_definition_ids[definition_id] = true
 	if not payload.get("files") is Array or payload["files"].size() <= 0 or payload["files"].size() > MAX_FILE_COUNT:
 		return _failure("Campaign-Bundle enthält eine unzulässige Dateianzahl.")
 	if str(payload.get("name", "")).strip_edges().is_empty() or not str(payload.get("campaign_generation", "")).is_valid_int():

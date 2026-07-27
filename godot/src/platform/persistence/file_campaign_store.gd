@@ -69,6 +69,7 @@ func initialize(name: String, created_at_utc: String) -> Dictionary:
 		"committed_at_utc": created_at_utc,
 		"runtime": default_runtime_state(),
 		"partition_refs": {},
+		"shared_definition_refs": [],
 	}
 	var commit := _publish_commit(initial_state)
 	if not commit.get("ok", false):
@@ -126,7 +127,8 @@ func commit(
 	partition_changes: Dictionary,
 	runtime_state: Dictionary,
 	removed_partitions: Array[String] = [],
-	minimum_next_generation: int = 0
+	minimum_next_generation: int = 0,
+	shared_definition_refs = null
 ) -> Dictionary:
 	var current := load_state()
 	if not current.get("ok", false):
@@ -140,6 +142,12 @@ func commit(
 		}
 	if not runtime_state is Dictionary:
 		return _failure("Campaign-Laufzeitzustand muss ein Dokument sein.")
+	var next_definition_refs: Array = current["shared_definition_refs"].duplicate()
+	if shared_definition_refs != null:
+		var refs_validation := _validate_definition_refs(shared_definition_refs)
+		if not refs_validation.get("ok", false):
+			return refs_validation
+		next_definition_refs = refs_validation["refs"]
 
 	var partition_refs: Dictionary = current["partition_refs"].duplicate(true)
 	for owner_value in removed_partitions:
@@ -181,6 +189,7 @@ func commit(
 		"committed_at_utc": Time.get_datetime_string_from_system(true),
 		"runtime": runtime_state.duplicate(true),
 		"partition_refs": partition_refs,
+		"shared_definition_refs": next_definition_refs,
 	}
 	return _publish_commit(next_state)
 
@@ -229,6 +238,7 @@ func _publish_commit(state: Dictionary) -> Dictionary:
 		"committed_at_utc": state["committed_at_utc"],
 		"runtime": state["runtime"],
 		"partitions": state["partition_refs"],
+		"shared_definition_refs": state["shared_definition_refs"],
 	}
 	var write := _files.write_new_json(
 		commit_path(int(state["generation"])),
@@ -261,6 +271,9 @@ func _read_commit(generation: int) -> Dictionary:
 		return _failure("Campaign-Generation hat keinen gültigen Vorgänger.")
 	if not payload.get("runtime") is Dictionary or not payload.get("partitions") is Dictionary:
 		return _failure("Campaign-Generation enthält keinen gültigen Laufzeit- oder Partitionsstand.")
+	var definition_refs_validation := _validate_definition_refs(payload.get("shared_definition_refs", []))
+	if not definition_refs_validation.get("ok", false):
+		return definition_refs_validation
 	var refs: Dictionary = payload["partitions"]
 	for owner_value in refs:
 		var owner := str(owner_value)
@@ -277,6 +290,7 @@ func _read_commit(generation: int) -> Dictionary:
 			"committed_at_utc": payload.get("committed_at_utc", ""),
 			"runtime": payload["runtime"].duplicate(true),
 			"partition_refs": refs.duplicate(true),
+			"shared_definition_refs": definition_refs_validation["refs"],
 		},
 	}
 
@@ -355,6 +369,32 @@ func _valid_owner(owner: String) -> bool:
 		if not allowed:
 			return false
 	return true
+
+
+func _validate_definition_refs(value: Variant) -> Dictionary:
+	if not value is Array:
+		return _failure("Campaign-Generation enthält keine gültigen Shared-Definition-Referenzen.")
+	var known := {}
+	var refs: Array = []
+	for raw_ref in value:
+		var definition_id := str(raw_ref)
+		if definition_id.is_empty() or definition_id.length() > 160 or known.has(definition_id):
+			return _failure("Campaign-Generation enthält eine ungültige oder doppelte Shared-Definition-Referenz.")
+		for index in definition_id.length():
+			var code := definition_id.unicode_at(index)
+			var allowed := (
+				(code >= 97 and code <= 122)
+				or (code >= 48 and code <= 57)
+				or code == 45
+				or code == 46
+				or code == 95
+			)
+			if not allowed:
+				return _failure("Campaign-Generation enthält eine ungültige Shared-Definition-Identität.")
+		known[definition_id] = true
+		refs.append(definition_id)
+	refs.sort()
+	return {"ok": true, "refs": refs}
 
 
 func _failure(message: String) -> Dictionary:

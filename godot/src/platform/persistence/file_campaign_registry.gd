@@ -8,6 +8,7 @@ const FORMAT_ID := "saltmarcher.campaign-registry.v1"
 const MAX_NAME_LENGTH := 160
 const FileCampaignStore = preload("res://godot/src/platform/persistence/file_campaign_store.gd")
 const ImmutableJsonFiles = preload("res://godot/src/platform/persistence/immutable_json_files.gd")
+const SharedDefinitionStore = preload("res://godot/src/platform/persistence/shared_definition_store.gd")
 
 var _data_root: String
 var _registry_dir: String
@@ -44,6 +45,7 @@ func load_state() -> Dictionary:
 			"generation": 0,
 			"active_campaign_id": "",
 			"campaigns": [],
+			"shared_definitions_generation": 0,
 		}
 
 	generations.reverse()
@@ -130,6 +132,7 @@ func create_campaign(raw_name: String, expected_generation: int = -1) -> Diction
 		"parent_generation": int(current["generation"]),
 		"active_campaign_id": campaign_id,
 		"campaigns": campaigns,
+		"shared_definitions_generation": current["shared_definitions_generation"],
 	}
 	var commit := _commit_generation(next_state)
 	if not commit.get("ok", false):
@@ -168,6 +171,7 @@ func activate_campaign(campaign_id: String, expected_generation: int) -> Diction
 		"parent_generation": expected_generation,
 		"active_campaign_id": campaign_id,
 		"campaigns": current["campaigns"].duplicate(true),
+		"shared_definitions_generation": current["shared_definitions_generation"],
 	}
 	var commit := _commit_generation(next_state)
 	if commit.get("ok", false):
@@ -179,7 +183,8 @@ func register_existing_campaign(
 	campaign_id: String,
 	name: String,
 	created_at_utc: String,
-	expected_generation: int
+	expected_generation: int,
+	shared_definitions_generation: int = -1
 ) -> Dictionary:
 	var current := load_state()
 	if not current.get("ok", false):
@@ -195,6 +200,25 @@ func register_existing_campaign(
 		return _operation_failure("Die importierte Campaign ist nicht vollständig lesbar.")
 	if identity["identity"].get("name", "") != name or identity["identity"].get("created_at_utc", "") != created_at_utc:
 		return _operation_failure("Importmetadaten und Campaign-Identität widersprechen sich.")
+	var proposed_definition_generation := (
+		shared_definitions_generation
+		if shared_definitions_generation >= 0
+		else int(current["shared_definitions_generation"])
+	)
+	var proposed_definitions := SharedDefinitionStore.new(_data_root).load_generation(proposed_definition_generation)
+	if not proposed_definitions.get("ok", false):
+		return _operation_failure("Die importierte Campaign verweist auf keinen lesbaren Shared-Definition-Stand.")
+	if (
+		proposed_definition_generation != int(current["shared_definitions_generation"])
+		and int(proposed_definitions.get("parent_generation", -1)) != int(current["shared_definitions_generation"])
+	):
+		return _operation_failure("Der vorbereitete Shared-Definition-Stand basiert nicht auf der aktuellen Installation.")
+	var definition_closure := SharedDefinitionStore.new(_data_root).definitions_for_refs(
+		state.get("shared_definition_refs", []),
+		proposed_definition_generation
+	)
+	if not definition_closure.get("ok", false):
+		return _operation_failure("Die importierte Campaign besitzt keine vollständige Shared-Definition-Closure.")
 
 	var campaigns: Array = current["campaigns"].duplicate(true)
 	campaigns.append({
@@ -208,10 +232,40 @@ func register_existing_campaign(
 		"parent_generation": expected_generation,
 		"active_campaign_id": current["active_campaign_id"],
 		"campaigns": campaigns,
+		"shared_definitions_generation": proposed_definition_generation,
 	}
 	var commit := _commit_generation(next_state)
 	if commit.get("ok", false):
 		commit["status"] = "registered"
+	return commit
+
+
+func publish_shared_definitions_generation(
+	shared_definitions_generation: int,
+	expected_generation: int
+) -> Dictionary:
+	var current := load_state()
+	if not current.get("ok", false):
+		return current
+	if int(current["generation"]) != expected_generation:
+		return _stale(current)
+	if shared_definitions_generation == int(current["shared_definitions_generation"]):
+		return {"ok": true, "status": "unchanged", "state": current}
+	var definitions := SharedDefinitionStore.new(_data_root).load_generation(shared_definitions_generation)
+	if not definitions.get("ok", false):
+		return _operation_failure("Vorbereitete Shared Definitions sind nicht vollständig lesbar.")
+	if int(definitions.get("parent_generation", -1)) != int(current["shared_definitions_generation"]):
+		return _operation_failure("Vorbereitete Shared Definitions basieren nicht auf dem aktuellen Installationsstand.")
+	var next_state := {
+		"generation": _next_generation_number(),
+		"parent_generation": expected_generation,
+		"active_campaign_id": current["active_campaign_id"],
+		"campaigns": current["campaigns"].duplicate(true),
+		"shared_definitions_generation": shared_definitions_generation,
+	}
+	var commit := _commit_generation(next_state)
+	if commit.get("ok", false):
+		commit["status"] = "shared_definitions_published"
 	return commit
 
 
@@ -244,6 +298,7 @@ func trash_campaign(campaign_id: String, expected_generation: int) -> Dictionary
 		"parent_generation": expected_generation,
 		"active_campaign_id": "" if current["active_campaign_id"] == campaign_id else current["active_campaign_id"],
 		"campaigns": campaigns,
+		"shared_definitions_generation": current["shared_definitions_generation"],
 	}
 	var commit := _commit_generation(next_state)
 	if not commit.get("ok", false):
@@ -321,6 +376,7 @@ func restore_trashed_campaign(trash_entry_id: String, expected_generation: int) 
 		"parent_generation": expected_generation,
 		"active_campaign_id": current["active_campaign_id"],
 		"campaigns": campaigns,
+		"shared_definitions_generation": current["shared_definitions_generation"],
 	}
 	var commit := _commit_generation(next_state)
 	if not commit.get("ok", false):
@@ -437,6 +493,7 @@ func _read_generation(generation: int) -> Dictionary:
 			"parent_generation": str(payload.get("parent_generation", "0")).to_int(),
 			"active_campaign_id": payload["active_campaign_id"],
 			"campaigns": payload["campaigns"].duplicate(true),
+			"shared_definitions_generation": str(payload.get("shared_definitions_generation", "0")).to_int(),
 		},
 	}
 
@@ -448,6 +505,11 @@ func _validate_payload(payload: Dictionary) -> Dictionary:
 	var parent_generation := str(payload["parent_generation"]).to_int()
 	if parent_generation < 0 or parent_generation >= generation or (generation == 1 and parent_generation != 0):
 		return _failure("Campaign-Registry enthält eine ungültige Generationsfolge.")
+	if not str(payload.get("shared_definitions_generation", "0")).is_valid_int():
+		return _failure("Campaign-Registry enthält keine gültige Shared-Definition-Generation.")
+	var shared_generation := str(payload.get("shared_definitions_generation", "0")).to_int()
+	if shared_generation < 0 or not SharedDefinitionStore.new(_data_root).load_generation(shared_generation).get("ok", false):
+		return _failure("Campaign-Registry verweist auf keine lesbare Shared-Definition-Generation.")
 	var campaigns = payload.get("campaigns")
 	if not campaigns is Array:
 		return _failure("Campaign-Registry enthält keine gültige Campaign-Liste.")
@@ -479,6 +541,7 @@ func _commit_generation(state: Dictionary) -> Dictionary:
 		"parent_generation": str(state["parent_generation"]),
 		"active_campaign_id": state["active_campaign_id"],
 		"campaigns": state["campaigns"],
+		"shared_definitions_generation": str(state["shared_definitions_generation"]),
 	}
 	var envelope := {
 		"format": FORMAT_ID,

@@ -5,6 +5,7 @@ const FileCampaignStore = preload("res://godot/src/platform/persistence/file_cam
 const CampaignBackupManager = preload("res://godot/src/platform/persistence/campaign_backup_manager.gd")
 const CampaignBackupClosure = preload("res://godot/src/platform/persistence/campaign_backup_closure.gd")
 const CampaignBundle = preload("res://godot/src/platform/portability/campaign_bundle.gd")
+const SharedDefinitionStore = preload("res://godot/src/platform/persistence/shared_definition_store.gd")
 const CampaignDesk = preload("res://godot/src/ui/campaign_desk.gd")
 const CampaignRuntimeCoordinator = preload("res://godot/src/app/campaign_runtime_coordinator.gd")
 const CampaignBackupScheduler = preload("res://godot/src/app/campaign_backup_scheduler.gd")
@@ -215,10 +216,54 @@ func _run_registry_fault_contract() -> void:
 
 
 func _run_portability_contract(source_root: String, source_registry, source_campaign_id: String) -> void:
+	var source_definitions := SharedDefinitionStore.new(source_root)
+	var wolf_definition := {
+		"definition_id": "creature.wolf",
+		"kind": "creature",
+		"name": "Wolf",
+		"content": {"armor_class": 12, "movement": "40 ft"},
+	}
+	var prepared_definitions := source_definitions.prepare_generation(0, [wolf_definition])
+	_expect(prepared_definitions.get("ok", false), "installation-wide Shared Definition is prepared immutably")
+	var renamed_wolf: Dictionary = wolf_definition.duplicate(true)
+	renamed_wolf["name"] = "Dire Wolf"
+	var renamed_generation := source_definitions.prepare_generation(
+		int(prepared_definitions.get("generation", -1)),
+		[renamed_wolf]
+	)
+	var renamed_readback := source_definitions.read_definition(
+		"creature.wolf",
+		int(renamed_generation.get("generation", -1))
+	)
+	_expect(renamed_readback.get("ok", false) and renamed_readback.get("definition", {}).get("name", "") == "Dire Wolf", "metadata-only definition edits receive a distinct immutable object and survive readback")
+	var source_registry_before_definition: Dictionary = source_registry.load_state()
+	var published_definitions: Dictionary = source_registry.publish_shared_definitions_generation(
+		int(prepared_definitions.get("generation", -1)),
+		int(source_registry_before_definition.get("generation", -1))
+	)
+	_expect(published_definitions.get("ok", false), "registry atomically selects the installation-wide definition generation")
+	var published_rename: Dictionary = source_registry.publish_shared_definitions_generation(
+		int(renamed_generation.get("generation", -1)),
+		int(published_definitions.get("state", {}).get("generation", -1))
+	)
+	_expect(published_rename.get("ok", false), "registry accepts only the directly derived definition generation")
+	var source_store := FileCampaignStore.new(source_root, source_campaign_id)
+	var source_before_ref := source_store.load_state()
+	var attached_definition := source_store.commit(
+		int(source_before_ref.get("generation", -1)),
+		{},
+		source_before_ref.get("runtime", {}),
+		[],
+		0,
+		["creature.wolf"]
+	)
+	_expect(attached_definition.get("ok", false), "Campaign generation references reusable definition identity instead of owning a copy")
+
 	var bundle_path := source_root + "/exports/salzpfad.saltmarcher"
 	var exporter := CampaignBundle.new(source_root, source_registry)
 	var exported := exporter.export_campaign(source_campaign_id, bundle_path)
 	_expect(exported.get("ok", false), "complete Campaign bundle exports")
+	_expect(exported.get("shared_definition_count", 0) == 1, "complete Campaign bundle closes over every required Shared Definition")
 	_expect(exported.get("file_count", 0) >= 5, "Campaign bundle contains identity, generations, and owner partitions")
 	_expect(FileAccess.file_exists(bundle_path), "Campaign bundle is one portable file")
 	var duplicate_export := exporter.export_campaign(source_campaign_id, bundle_path)
@@ -243,8 +288,15 @@ func _run_portability_contract(source_root: String, source_registry, source_camp
 
 	var imported_store := FileCampaignStore.new(target_root, imported_id)
 	var imported_state := imported_store.load_state()
-	_expect(imported_state.get("ok", false) and imported_state.get("generation", -1) == 5, "import preserves the exact safe Campaign generation")
+	_expect(imported_state.get("ok", false) and imported_state.get("generation", -1) == 6, "import preserves the exact safe Campaign generation")
 	_expect(imported_state.get("runtime", {}).get("focused_workspace", "") == "world", "import preserves resumable Campaign runtime state")
+	_expect(imported_state.get("shared_definition_refs", []) == ["creature.wolf"], "import preserves Shared-Definition references")
+	var target_registry_state := target_registry.load_state()
+	var imported_definition := SharedDefinitionStore.new(target_root).read_definition(
+		"creature.wolf",
+		int(target_registry_state.get("shared_definitions_generation", 0))
+	)
+	_expect(imported_definition.get("ok", false) and int(imported_definition.get("definition", {}).get("content", {}).get("armor_class", -1)) == 12, "missing Shared Definition joins the target installation atomically")
 	var imported_world := imported_store.read_partition("world", imported_state)
 	var imported_objects: Array = imported_world.get("payload", {}).get("objects", [])
 	_expect(not imported_objects.is_empty() and imported_objects[0].get("name", "") == "Salzhafen", "import preserves owner-partition semantics")
@@ -252,7 +304,7 @@ func _run_portability_contract(source_root: String, source_registry, source_camp
 	var source_world := FileCampaignStore.new(source_root, source_campaign_id).read_partition("world")
 	var changed_runtime: Dictionary = imported_state["runtime"].duplicate(true)
 	changed_runtime["focused_workspace"] = "imported-only"
-	var changed_import := imported_store.commit(5, {
+	var changed_import := imported_store.commit(6, {
 		"world": {"objects": [{"id": "place-1", "kind": "place", "name": "Andere Küste"}]},
 	}, changed_runtime)
 	_expect(changed_import.get("ok", false), "imported Campaign is independently writable")
@@ -287,6 +339,119 @@ func _run_portability_contract(source_root: String, source_registry, source_camp
 	_expect(not oversized_rejection.get("ok", true), "import rejects oversized entries before allocation")
 	var after_untrusted_rejections := target_registry.load_state()
 	_expect(after_untrusted_rejections.get("generation", -1) == 1, "untrusted import rejection mutates no registry generation")
+	_run_shared_definition_conflict_contract(bundle_path)
+	_run_shared_definition_atomic_failure_contract(bundle_path)
+
+
+func _run_shared_definition_atomic_failure_contract(bundle_path: String) -> void:
+	var target_root := "user://saltmarcher-definition-atomic-failure/%s" % Time.get_ticks_usec()
+	var fail_registry := func(operation: String, phase: String, _path: String) -> bool:
+		return operation == "registry_commit" and phase == "before_rename"
+	var registry := FileCampaignRegistry.new(target_root, fail_registry)
+	var importer := CampaignBundle.new(target_root, registry)
+	var rejected := importer.import_campaign(bundle_path, 0)
+	_expect(not rejected.get("ok", true), "definition-bearing import surfaces registry publication failure")
+	var state := FileCampaignRegistry.new(target_root).load_state()
+	_expect(state.get("generation", -1) == 0 and state.get("shared_definitions_generation", -1) == 0, "failed registry publication exposes neither Campaign nor Shared Definitions")
+	_expect(_has_no_child_directories(target_root + "/campaigns"), "failed definition-bearing import leaves no live Campaign orphan")
+	_expect(_has_no_child_directories(target_root + "/staging"), "failed definition-bearing import removes its isolated staging")
+	_expect(not FileAccess.file_exists(SharedDefinitionStore.new(target_root).generation_path(1)), "failed definition-bearing import removes its unselected definition generation")
+
+
+func _run_shared_definition_conflict_contract(bundle_path: String) -> void:
+	for choice in ["keep_existing", "use_imported", "retain_both"]:
+		var target_root := "user://saltmarcher-definition-conflict-%s/%s" % [choice, Time.get_ticks_usec()]
+		var registry := FileCampaignRegistry.new(target_root)
+		var created := registry.create_campaign("Bestehende Referenz")
+		var existing_campaign_id := str(created.get("campaign_id", ""))
+		var local_definition := {
+			"definition_id": "creature.wolf",
+			"kind": "creature",
+			"name": "Wolf",
+			"content": {"armor_class": 15, "movement": "30 ft"},
+		}
+		var definition_store := SharedDefinitionStore.new(target_root)
+		var prepared := definition_store.prepare_generation(0, [local_definition])
+		var published := registry.publish_shared_definitions_generation(
+			int(prepared.get("generation", -1)),
+			int(created.get("state", {}).get("generation", -1))
+		)
+		_expect(published.get("ok", false), "%s fixture publishes conflicting local definition" % choice)
+		var existing_store := FileCampaignStore.new(target_root, existing_campaign_id)
+		var existing_state := existing_store.load_state()
+		var history_payload := {
+			"completed_facts": [{"label": "Wolf armor at encounter", "armor_class": 15}],
+		}
+		var attach := existing_store.commit(
+			int(existing_state.get("generation", -1)),
+			{"history": history_payload},
+			existing_state.get("runtime", {}),
+			[],
+			0,
+			["creature.wolf"]
+		)
+		_expect(attach.get("ok", false), "%s fixture references conflicting local definition" % choice)
+
+		var importer := CampaignBundle.new(target_root, registry)
+		var before_registry := registry.load_state()
+		var staged := importer.import_campaign(bundle_path, int(before_registry.get("generation", -1)))
+		_expect(staged.get("status", "") == "definition_conflicts", "%s import pauses for explicit Shared-Definition decision" % choice)
+		_expect(staged.get("conflicts", []).size() == 1, "%s import reports exactly one definition conflict" % choice)
+		_expect(staged.get("conflicts", [])[0].get("affected_existing_campaigns", []).size() == 1, "%s conflict discloses affected existing Campaign" % choice)
+		var after_stage := registry.load_state()
+		_expect(after_stage.get("generation", -1) == before_registry.get("generation", -2), "%s conflict staging mutates no registry truth" % choice)
+		var definition_after_stage := definition_store.read_definition(
+			"creature.wolf",
+			int(after_stage.get("shared_definitions_generation", 0))
+		)
+		_expect(int(definition_after_stage.get("definition", {}).get("content", {}).get("armor_class", -1)) == 15, "%s conflict staging mutates no shared definition" % choice)
+		var restarted_importer := CampaignBundle.new(target_root, registry)
+		var incomplete := restarted_importer.resolve_import(
+			str(staged.get("import_id", "")),
+			int(before_registry.get("generation", -1)),
+			{}
+		)
+		_expect(not incomplete.get("ok", true), "%s conflict cannot resolve without an explicit choice" % choice)
+
+		var resolved := restarted_importer.resolve_import(
+			str(staged.get("import_id", "")),
+			int(before_registry.get("generation", -1)),
+			{"creature.wolf": choice}
+		)
+		_expect(resolved.get("ok", false), "%s explicitly resolves and atomically commits import" % choice)
+		if not resolved.get("ok", false):
+			continue
+		var final_registry := registry.load_state()
+		var active_generation := int(final_registry.get("shared_definitions_generation", 0))
+		var original_definition := definition_store.read_definition("creature.wolf", active_generation)
+		var expected_armor := 12 if choice == "use_imported" else 15
+		_expect(int(original_definition.get("definition", {}).get("content", {}).get("armor_class", -1)) == expected_armor, "%s publishes the explicitly selected original identity semantics" % choice)
+		var imported_id := str(resolved.get("campaign_id", ""))
+		var imported_state := FileCampaignStore.new(target_root, imported_id).load_state()
+		if choice == "retain_both":
+			var retained_id := str(resolved.get("definition_reference_remap", {}).get("creature.wolf", ""))
+			_expect(not retained_id.is_empty() and imported_state.get("shared_definition_refs", []) == [retained_id], "retain_both remaps only the imported Campaign to a distinct identity")
+			var retained_definition := definition_store.read_definition(retained_id, active_generation)
+			_expect(int(retained_definition.get("definition", {}).get("content", {}).get("armor_class", -1)) == 12, "retain_both preserves the imported variant under its new identity")
+		else:
+			_expect(imported_state.get("shared_definition_refs", []) == ["creature.wolf"], "%s keeps the imported Campaign on the selected shared identity" % choice)
+		var history_after := existing_store.read_partition("history")
+		_expect(int(history_after.get("payload", {}).get("completed_facts", [])[0].get("armor_class", -1)) == 15, "%s leaves completed history unchanged" % choice)
+		if choice == "keep_existing":
+			var before_discard := registry.load_state()
+			var discard_candidate := CampaignBundle.new(target_root, registry).import_campaign(
+				bundle_path,
+				int(before_discard.get("generation", -1))
+			)
+			var discarded := CampaignBundle.new(target_root, registry).discard_import(str(discard_candidate.get("import_id", "")))
+			_expect(discarded.get("ok", false), "staged conflict import can be explicitly discarded after restart")
+			var discarded_resolution := CampaignBundle.new(target_root, registry).resolve_import(
+				str(discard_candidate.get("import_id", "")),
+				int(before_discard.get("generation", -1)),
+				{"creature.wolf": "keep_existing"}
+			)
+			_expect(not discarded_resolution.get("ok", true), "discarded conflict import cannot publish later")
+			_expect(registry.load_state().get("generation", -1) == before_discard.get("generation", -2), "discarded conflict import leaves installation truth unchanged")
 
 
 func _run_backup_contract() -> void:

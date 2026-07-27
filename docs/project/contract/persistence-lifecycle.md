@@ -1,5 +1,10 @@
 # Persistence Lifecycle
 
+Status: Active migration contract
+Owner: Platform Persistence
+Last Reviewed: 2026-07-27
+Source of Truth: This document
+
 ## Purpose And Boundary
 
 SaltMarcher persists installation and Campaign truth in a Godot-native,
@@ -18,7 +23,9 @@ All writable state lives below `user://salt-marcher/`:
 ```text
 installation/
   registry/generation-<20 digit generation>.json
-  definitions/...
+  shared-definitions/
+    generations/generation-<20 digit generation>.json
+    objects/<definition id>/<definition checksum>.json
 campaigns/<campaign id>/
   manifest.json
   commits/generation-<20 digit generation>.json
@@ -64,19 +71,26 @@ percent of total volume capacity. A rejected operation publishes no new truth,
 does not consume the reserve, and keeps safe read, export to another destination,
 and explicit retry available.
 
-The installation registry applies the same protocol. Creating a Campaign first
-stages its root and manifest, then commits registry membership and the initial
-active pointer in one registry generation. A failed registry commit cannot
-publish a new registry row. Duplicate display names are valid; stable Campaign
-identities are unique.
+The installation registry applies the same protocol. It selects Campaign
+membership, the active pointer, and one immutable Shared-Definition generation.
+Creating a Campaign first stages its root and manifest, then commits registry
+membership and the initial active pointer in one registry generation. Import
+prepares both its independent Campaign and definition generation before one
+registry publication makes either visible. A failed registry commit cannot
+publish a new registry row or definition generation. Duplicate display names
+are valid; stable Campaign identities are unique.
 
 ## Campaign Commit Manifest
 
 A Campaign generation names its parent, active runtime/focus state, every
 capability partition and format, indexes needed for bounded reads, asset
 closure, and the checksum of each referenced unit. Changed units receive new
-identities while unchanged units remain referenced. Cross-capability references
-use stable logical identities and are validated by their owners before commit.
+identities while unchanged units remain referenced. Cross-capability and
+reusable-definition references use stable logical identities and are validated
+by their owners before commit. Campaign generations store definition identities,
+never installation-owned definition copies. Current reads resolve against the
+registry-selected definition generation; completed facts are Campaign-owned
+snapshots and are not recalculated.
 
 Capability partitions are independently readable and replaceable. Unknown or
 disabled partitions remain opaque bytes in the manifest closure and survive
@@ -140,7 +154,11 @@ Import treats every byte and reference as untrusted, enforces declared count
 and size limits before allocation, stages only inside its owned directory,
 executes nothing, resolves no external path or URI, and never mutates existing
 Campaign truth. A successful import creates a new Campaign identity. Shared
-definition conflicts remain staged until the GM explicitly resolves them.
+definition conflicts remain checksummed, marked staging across restart until
+the GM explicitly keeps the existing variant, uses the imported variant, keeps
+both under distinct identities, or discards the import. Consequences name every
+affected existing Campaign before resolution. One registry generation exposes
+the new Campaign and selected Shared-Definition generation together.
 
 Campaign deletion atomically removes it from the live registry and publishes
 its complete root in recoverable trash. Permanent deletion is a separate,
@@ -154,9 +172,16 @@ atomic runtime-state commits; activation and mutation generation checks;
 restart readback; checksum validation; continuation above retained corrupt
 generations; recoverable Campaign trash and restoration; explicit confirmed
 permanent deletion with a removal report; and a streaming, checksummed
-current-format Campaign bundle. Import validates declared paths, counts, sizes,
-byte lengths, checksums, identity, and semantic Campaign state in isolated
-staging, then creates a new independent Campaign identity.
+current-format Campaign bundle. Campaign generations now carry reusable
+definition identities. The installation store publishes immutable,
+content-addressed Shared Definitions through a registry-selected generation.
+Export closes over exactly the definitions required by the Campaign. Import
+validates declared paths, counts, sizes, byte lengths, checksums, identity,
+semantic Campaign state, and definition closure in isolated staging. Missing
+definitions join the installation; conflicts survive restart without mutating
+truth and support explicit keep-existing, use-imported, retain-both, and
+discard paths. Successful resolution atomically selects the definition
+generation while registering a new independent Campaign identity.
 
 A Campaign runtime coordinator now prepares a target before committing its
 active pointer, revokes the prior synchronous writer, admits exactly one new
@@ -186,11 +211,11 @@ its complete root before live promotion and removes it again when registry
 publication fails.
 
 Normal-time retention tiers, the production cross-platform
-total-volume-capacity probe, asynchronous accepted-write drain, shared-definition
-conflict staging, cancellable/progress-reporting portability work, compaction,
-released-format conversion, cross-OS qualification, and representative scale
-proof remain open roadmap work. The old Java/SQLite implementation does not
-satisfy this target contract.
+total-volume-capacity probe, asynchronous accepted-write drain, the
+user-visible definition-conflict decision surface, cancellable/progress-reporting
+portability work, compaction, released-format conversion, cross-OS
+qualification, and representative scale proof remain open roadmap work. The
+old Java/SQLite implementation does not satisfy this target contract.
 
 ## References
 
