@@ -26,6 +26,7 @@ godot/src/features/worldplanner/
   world_planner_command_controller.gd  # owner command vocabulary
   world_planner_detail_read_controller.gd # full entity detail read lane
   world_planner_narrative_read_controller.gd # attached-thread read lane
+  world_planner_reference_options_controller.gd # bounded picker options
 godot/src/app/
   campaign_partition_command_controller.gd # shared admitted write lifecycle
 godot/src/features/catalog/
@@ -33,6 +34,7 @@ godot/src/features/catalog/
 godot/src/ui/
   catalog_workspace.gd                 # shared presentation only
   world_planner_narrative_threads.gd   # provider-owned Inspector composition
+  world_planner_reference_picker.gd    # searchable paginated reference index
 ```
 
 `WorldPlannerKnowledge` validates one versioned `worldplanner` owner-partition
@@ -81,6 +83,14 @@ The Inspector can therefore display every typed owner field and edit only
 owner-native values without widening metadata queries or copying foreign
 Creature and Encounter Table truth.
 
+The reference-option lane serves one visible picker at a time with one active
+and one latest pending query. Creature choices come from the registry-selected
+Shared-Definition generation; faction and place choices come from the active
+Campaign's World Planner partition. Both are sorted and paged before UI node
+creation and re-confirm their registry generation before publication. The
+picker retains only draft IDs, and the record command publishes the complete
+owner candidate after explicit confirmation.
+
 ## Current Migration State
 
 The production Godot route currently supports bounded active/trash search,
@@ -94,10 +104,12 @@ same identity and reattaches only surviving relationships that are still free.
 The visible Inspector reads every documented optional NPC, faction, and place
 field. Its editor owns name/general notes, NPC appearance/behavior/history,
 NPC lifecycle and disposition, and faction disposition. Lifecycle change is an
-explicit confirmed command and keeps stable selection. Creature/table and
-relationship pickers, inventory editing, and destination handoffs remain
-pending. The legacy Java owner is not deleted until that parity, acceptance,
-and deletion gate are complete.
+explicit confirmed command and keeps stable selection. Creature and internal
+relationship pickers now cover NPC Creature statblock, faction, last place, and
+place-faction links without raw ID entry. Encounter-Table selection, faction
+inventory editing, and destination handoffs remain pending. The legacy Java
+owner is not deleted until that parity, acceptance, and deletion gate are
+complete.
 
 ## Permanent Constraints
 

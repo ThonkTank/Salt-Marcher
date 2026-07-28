@@ -75,8 +75,16 @@ completions in the provider-neutral result refresh path.
 A second bounded World Planner detail lane resolves the selected entity's full
 typed record without adding those fields to Catalog result rows. The shared
 Inspector renders that immutable readback and submits owner-native field edits
-or explicit NPC lifecycle changes through World Planner commands. Foreign
-references remain display-only until their owning picker/handoff APIs migrate.
+or explicit NPC lifecycle changes through World Planner commands. Encounter
+Table and destination references remain display-only until their owning
+picker/handoff APIs migrate.
+
+The current World Planner editor additionally composes one searchable,
+paginated reference picker. It queries only the selected Creature, faction, or
+place provider, keeps one active plus one latest pending request, displays name
+and stable identity, and publishes no relationship until the enclosing record
+edit is explicitly confirmed. It never materializes an unbounded option list or
+accepts raw foreign IDs as user input.
 
 The Catalog background controller admits one active read and at most one
 latest-wins pending read. Every request receives a monotonic epoch. Newer input

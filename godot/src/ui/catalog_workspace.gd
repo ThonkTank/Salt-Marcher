@@ -6,6 +6,7 @@ const FileCampaignRegistry = preload("res://godot/src/platform/persistence/file_
 const WorldPlannerCommandController = preload("res://godot/src/features/worldplanner/world_planner_command_controller.gd")
 const WorldPlannerDetailReadController = preload("res://godot/src/features/worldplanner/world_planner_detail_read_controller.gd")
 const WorldPlannerNarrativeThreads = preload("res://godot/src/ui/world_planner_narrative_threads.gd")
+const WorldPlannerReferencePicker = preload("res://godot/src/ui/world_planner_reference_picker.gd")
 
 const SECTIONS := [
 	{"id": "creatures", "label": "Monster", "kind": "creature", "provider": true, "mutable": false},
@@ -63,6 +64,10 @@ var _record_lifecycle: OptionButton
 var _record_npc_disposition: SpinBox
 var _faction_editor_fields: VBoxContainer
 var _record_faction_disposition: SpinBox
+var _place_editor_fields: VBoxContainer
+var _reference_picker: WorldPlannerReferencePicker
+var _reference_values: Dictionary = {}
+var _reference_summaries: Dictionary = {}
 var _dialog_mode := ""
 var _dialog_record_id := ""
 var _dialog_kind := ""
@@ -361,6 +366,9 @@ func _build_record_dialogs() -> void:
 	_record_appearance = _add_multiline_editor(_npc_editor_fields, "CatalogRecordAppearance", "Erscheinung · optional")
 	_record_behavior = _add_multiline_editor(_npc_editor_fields, "CatalogRecordBehavior", "Verhalten · optional")
 	_record_history = _add_multiline_editor(_npc_editor_fields, "CatalogRecordHistory", "Geschichte · optional")
+	_add_reference_editor(_npc_editor_fields, "Statblock", "creature_id", "creature", false)
+	_add_reference_editor(_npc_editor_fields, "Fraktion", "faction_id", "faction", false)
+	_add_reference_editor(_npc_editor_fields, "Letzter Ort", "last_place_id", "place", false)
 	var lifecycle_label := Label.new()
 	lifecycle_label.text = "Lebenszyklus"
 	_npc_editor_fields.add_child(lifecycle_label)
@@ -376,6 +384,10 @@ func _build_record_dialogs() -> void:
 	_faction_editor_fields.add_theme_constant_override("separation", 8)
 	fields.add_child(_faction_editor_fields)
 	_record_faction_disposition = _add_disposition_editor(_faction_editor_fields, "CatalogRecordFactionDisposition")
+	_place_editor_fields = VBoxContainer.new()
+	_place_editor_fields.add_theme_constant_override("separation", 8)
+	fields.add_child(_place_editor_fields)
+	_add_reference_editor(_place_editor_fields, "Verknüpfte Fraktionen", "faction_ids", "faction", true)
 	_delete_dialog = ConfirmationDialog.new()
 	_delete_dialog.name = "CatalogDeleteDialog"
 	_delete_dialog.title = "In Papierkorb verschieben?"
@@ -389,6 +401,10 @@ func _build_record_dialogs() -> void:
 	_lifecycle_dialog.get_cancel_button().text = "Abbrechen"
 	_lifecycle_dialog.confirmed.connect(_confirm_lifecycle)
 	add_child(_lifecycle_dialog)
+	_reference_picker = WorldPlannerReferencePicker.new()
+	_reference_picker.data_root = data_root
+	_reference_picker.references_selected.connect(_on_references_selected)
+	_record_dialog.add_child(_reference_picker)
 
 
 func _add_multiline_editor(parent: VBoxContainer, node_name: String, label_text: String) -> TextEdit:
@@ -415,6 +431,37 @@ func _add_disposition_editor(parent: VBoxContainer, node_name: String) -> SpinBo
 	editor.allow_lesser = false
 	parent.add_child(editor)
 	return editor
+
+
+func _add_reference_editor(
+	parent: VBoxContainer,
+	label_text: String,
+	field_key: String,
+	kind: String,
+	multi: bool
+) -> void:
+	var block := VBoxContainer.new()
+	block.add_theme_constant_override("separation", 3)
+	parent.add_child(block)
+	var label := Label.new()
+	label.text = label_text
+	block.add_child(label)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	block.add_child(row)
+	var summary := Label.new()
+	summary.name = "CatalogReferenceSummary%s" % field_key.to_pascal_case()
+	summary.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	summary.add_theme_color_override("font_color", QUIET_INK)
+	summary.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	row.add_child(summary)
+	_reference_summaries[field_key] = summary
+	var choose := Button.new()
+	choose.name = "CatalogReferenceChoose%s" % field_key.to_pascal_case()
+	choose.text = "Auswählen"
+	choose.custom_minimum_size = Vector2(92, 28)
+	choose.pressed.connect(_open_reference_picker.bind(field_key, label_text, kind, multi))
+	row.add_child(choose)
 
 
 func _on_search_changed(value: String) -> void:
@@ -739,9 +786,14 @@ func _on_record_dialog_confirmed() -> void:
 			"history": _record_history.text,
 			"lifecycle_status": str(_record_lifecycle.get_selected_metadata()),
 			"disposition_modifier": int(_record_npc_disposition.value),
+			"creature_id": _single_reference("creature_id"),
+			"faction_id": _single_reference("faction_id"),
+			"last_place_id": _single_reference("last_place_id"),
 		})
 	elif _dialog_kind == "faction":
 		fields["disposition_base"] = int(_record_faction_disposition.value)
+	elif _dialog_kind == "place":
+		fields["faction_ids"] = _reference_values.get("faction_ids", []).duplicate()
 	var started: Dictionary
 	if _dialog_mode == "create":
 		started = command_controller.create_record(
@@ -810,14 +862,55 @@ func _confirm_lifecycle() -> void:
 func _prepare_typed_editor(record: Dictionary, kind: String) -> void:
 	_npc_editor_fields.visible = kind == "npc"
 	_faction_editor_fields.visible = kind == "faction"
+	_place_editor_fields.visible = kind == "place"
+	_reference_values.clear()
 	if kind == "npc":
 		_record_appearance.text = str(record.get("appearance", ""))
 		_record_behavior.text = str(record.get("behavior", ""))
 		_record_history.text = str(record.get("history", ""))
 		_record_lifecycle.select(1 if record.get("lifecycle_status", "active") == "defeated" else 0)
 		_record_npc_disposition.value = float(record.get("disposition_modifier", 0))
+		_reference_values["creature_id"] = _as_reference_array(record.get("creature_id", ""))
+		_reference_values["faction_id"] = _as_reference_array(record.get("faction_id", ""))
+		_reference_values["last_place_id"] = _as_reference_array(record.get("last_place_id", ""))
 	elif kind == "faction":
 		_record_faction_disposition.value = float(record.get("disposition_base", 0))
+	elif kind == "place":
+		_reference_values["faction_ids"] = record.get("faction_ids", []).duplicate()
+	_render_reference_summaries()
+
+
+func _open_reference_picker(field_key: String, label_text: String, kind: String, multi: bool) -> void:
+	_reference_picker.open_picker(
+		field_key,
+		"%s auswählen" % label_text,
+		kind,
+		_reference_values.get(field_key, []).duplicate(),
+		multi
+	)
+
+
+func _on_references_selected(field_key: String, reference_ids: Array) -> void:
+	_reference_values[field_key] = reference_ids.duplicate()
+	_render_reference_summaries()
+
+
+func _render_reference_summaries() -> void:
+	for field_key_value in _reference_summaries:
+		var field_key := str(field_key_value)
+		var summary: Label = _reference_summaries[field_key]
+		var values: Array = _reference_values.get(field_key, [])
+		summary.text = "Nicht verknüpft" if values.is_empty() else ", ".join(PackedStringArray(values))
+
+
+func _as_reference_array(value: Variant) -> Array:
+	var reference_id := str(value)
+	return [] if reference_id.is_empty() else [reference_id]
+
+
+func _single_reference(field_key: String) -> String:
+	var values: Array = _reference_values.get(field_key, [])
+	return "" if values.is_empty() else str(values[0])
 
 
 func _on_trash_toggled(enabled: bool) -> void:

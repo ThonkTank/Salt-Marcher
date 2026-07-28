@@ -18,7 +18,9 @@ shows complete typed entity state; the Inspector edits NPC appearance,
 behavior, history, lifecycle, and disposition plus faction disposition.
 Selected world records also expose attached note-first Quest/rumour threads
 with explicit manual resolution and recoverable trash. Foreign-reference
-pickers/handoffs and reward distribution remain migration work.
+pickers for Creature statblocks, NPC faction/last place, and place factions are
+searchable and bounded. Encounter-Table/inventory editing, destination handoffs,
+and reward distribution remain migration work.
 
 It references creature statblocks and encounter tables through their owning
 public boundaries, and exposes location choices for later Session Planner-owned

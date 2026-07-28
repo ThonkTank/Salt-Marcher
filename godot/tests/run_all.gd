@@ -14,7 +14,9 @@ const WorldPlannerKnowledge = preload("res://godot/src/features/worldplanner/wor
 const WorldPlannerCommandController = preload("res://godot/src/features/worldplanner/world_planner_command_controller.gd")
 const WorldPlannerDetailReadController = preload("res://godot/src/features/worldplanner/world_planner_detail_read_controller.gd")
 const WorldPlannerNarrativeReadController = preload("res://godot/src/features/worldplanner/world_planner_narrative_read_controller.gd")
+const WorldPlannerReferenceOptionsController = preload("res://godot/src/features/worldplanner/world_planner_reference_options_controller.gd")
 const WorldPlannerNarrativeThreads = preload("res://godot/src/ui/world_planner_narrative_threads.gd")
+const WorldPlannerReferencePicker = preload("res://godot/src/ui/world_planner_reference_picker.gd")
 const CampaignRuntimeCoordinator = preload("res://godot/src/app/campaign_runtime_coordinator.gd")
 const CampaignRuntimeSession = preload("res://godot/src/app/campaign_runtime_session.gd")
 const CampaignPortabilityController = preload("res://godot/src/app/campaign_portability_controller.gd")
@@ -690,6 +692,28 @@ func _run_catalog_foundation_contract() -> void:
 	_expect(published.get("ok", false), "Catalog fixture atomically selects its Shared-Definition generation")
 	var campaign_created := registry.create_campaign("Katalog Campaign")
 	_expect(campaign_created.get("ok", false), "Catalog fixture creates an active Campaign for Campaign-owned providers")
+	var catalog_campaign_id := str(campaign_created.get("campaign_id", ""))
+	var world_model := WorldPlannerKnowledge.new()
+	var world_payload := world_model.empty_payload()
+	world_payload = world_model.create_record(
+		world_payload, "faction", "Hafenrat", {}, "faction.harbor", "2026-07-28T11:00:00Z"
+	).get("payload", world_payload)
+	world_payload = world_model.create_record(
+		world_payload,
+		"place",
+		"Nordkai",
+		{"faction_ids": ["faction.harbor"]},
+		"place.north-quay",
+		"2026-07-28T11:00:01Z"
+	).get("payload", world_payload)
+	var catalog_store := FileCampaignStore.new(data_root, catalog_campaign_id)
+	var catalog_state := catalog_store.load_state()
+	var seeded_world := catalog_store.commit(
+		int(catalog_state["generation"]),
+		{WorldPlannerKnowledge.OWNER: world_payload},
+		catalog_state["runtime"]
+	)
+	_expect(seeded_world.get("ok", false), "Catalog fixture seeds provider-owned faction and place choices")
 	var runtime_coordinator := CampaignRuntimeCoordinator.new(data_root, registry)
 	_expect(runtime_coordinator.open_durable_active().get("ok", false), "Catalog fixture opens its active Campaign writer")
 	var first_page := definitions.query_catalog(int(prepared["generation"]), "creature", "wo", 0, 1)
@@ -744,6 +768,45 @@ func _run_catalog_foundation_contract() -> void:
 		"Catalog controller releases read worker and pending state after publication"
 	)
 	controller.queue_free()
+	await process_frame
+	var option_controller := WorldPlannerReferenceOptionsController.new(data_root)
+	root.add_child(option_controller)
+	var option_results: Array = []
+	option_controller.result_published.connect(func(result: Dictionary) -> void: option_results.append(result.duplicate(true)))
+	var first_option_query := option_controller.query("npc.creature", "creature", "w")
+	var replacement_option_query := option_controller.query("npc.creature", "creature", "worg")
+	_expect(
+		first_option_query.get("status", "") == "started" and replacement_option_query.get("status", "") == "queued",
+		"reference options admit one provider read and one latest pending search"
+	)
+	for _attempt in 600:
+		if option_results.size() == 1 and not option_controller.is_active():
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		option_results.size() == 1
+		and option_results[0].get("rows", [])[0].get("reference_id", "") == "creature.worg",
+		"reference options publish only the latest normalized Creature result"
+	)
+	option_results.clear()
+	option_controller.query("npc.faction", "faction", "hafen")
+	for _attempt in 600:
+		if option_results.size() == 1:
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		option_results.size() == 1
+		and option_results[0].get("rows", [])[0].get("reference_id", "") == "faction.harbor",
+		"reference options query active Campaign-owned entities without exposing storage"
+	)
+	var option_resources := option_controller.resource_snapshot()
+	_expect(
+		option_resources.get("active_count", -1) == 0
+		and option_resources.get("pending_count", -1) == 0
+		and option_resources.get("worker_handle_count", -1) == 0,
+		"reference option lane releases worker and pending state"
+	)
+	option_controller.queue_free()
 	await process_frame
 	var item_reference: Dictionary = prepared.get("state", {}).get("definitions", {}).get("item.rope", {})
 	var damaged_item_path := data_root + "/installation/shared-definitions/" + str(item_reference.get("path", ""))
@@ -992,6 +1055,65 @@ func _run_catalog_foundation_contract() -> void:
 	record_behavior.text = "Spricht leise und prüft jede Strömung zweimal."
 	record_history.text = "War Lotsin des Hafenrats."
 	record_disposition.value = 12
+	var reference_picker := catalog.find_child("WorldPlannerReferencePicker", true, false) as WorldPlannerReferencePicker
+	var choose_creature := catalog.find_child("CatalogReferenceChooseCreatureId", true, false) as Button
+	choose_creature.pressed.emit()
+	for _attempt in 600:
+		if reference_picker.snapshot().get("status", "") == "ready" and reference_picker.snapshot().get("rows", []).size() == 50:
+			break
+		await create_timer(0.001).timeout
+	var picker_next := reference_picker.find_child("ReferencePickerNext", true, false) as Button
+	_expect(not picker_next.disabled and picker_next.visible, "reference picker exposes bounded pagination for long provider option sets")
+	picker_next.pressed.emit()
+	for _attempt in 600:
+		if reference_picker.snapshot().get("status", "") == "ready" and reference_picker.snapshot().get("page", -1) == 1:
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		reference_picker.snapshot().get("rows", []).size() == 7,
+		"reference picker renders only the bounded final provider page"
+	)
+	var picker_search := reference_picker.find_child("ReferencePickerSearch", true, false) as LineEdit
+	picker_search.text = "worg"
+	picker_search.text_changed.emit(picker_search.text)
+	picker_search.text_submitted.emit(picker_search.text)
+	for _attempt in 600:
+		if reference_picker.snapshot().get("status", "") == "ready" and reference_picker.snapshot().get("rows", []).size() == 1:
+			break
+		await create_timer(0.001).timeout
+	var picker_results := reference_picker.find_child("ReferencePickerResults", true, false) as VBoxContainer
+	var creature_choice := picker_results.find_child("ReferencePickerChoice", true, false) as CheckButton
+	_expect(creature_choice != null and creature_choice.text.contains("Worg"), "NPC statblock picker searches the Creature provider instead of accepting a raw ID")
+	if creature_choice != null:
+		creature_choice.toggled.emit(true)
+	reference_picker.confirmed.emit()
+	reference_picker.hide()
+	var choose_faction := catalog.find_child("CatalogReferenceChooseFactionId", true, false) as Button
+	choose_faction.pressed.emit()
+	for _attempt in 600:
+		if reference_picker.snapshot().get("status", "") == "ready" and reference_picker.snapshot().get("rows", []).size() == 1:
+			break
+		await create_timer(0.001).timeout
+	picker_results = reference_picker.find_child("ReferencePickerResults", true, false) as VBoxContainer
+	var faction_choice := picker_results.find_child("ReferencePickerChoice", true, false) as CheckButton
+	_expect(faction_choice != null and faction_choice.text.contains("Hafenrat"), "NPC faction picker reads active World Planner choices")
+	if faction_choice != null:
+		faction_choice.toggled.emit(true)
+	reference_picker.confirmed.emit()
+	reference_picker.hide()
+	var choose_place := catalog.find_child("CatalogReferenceChooseLastPlaceId", true, false) as Button
+	choose_place.pressed.emit()
+	for _attempt in 600:
+		if reference_picker.snapshot().get("status", "") == "ready" and reference_picker.snapshot().get("rows", []).size() == 1:
+			break
+		await create_timer(0.001).timeout
+	picker_results = reference_picker.find_child("ReferencePickerResults", true, false) as VBoxContainer
+	var place_choice := picker_results.find_child("ReferencePickerChoice", true, false) as CheckButton
+	_expect(place_choice != null and place_choice.text.contains("Nordkai"), "NPC last-place picker reads active World Planner choices")
+	if place_choice != null:
+		place_choice.toggled.emit(true)
+	reference_picker.confirmed.emit()
+	reference_picker.hide()
 	record_dialog.confirmed.emit()
 	record_dialog.hide()
 	for _attempt in 1200:
@@ -1009,8 +1131,11 @@ func _run_catalog_foundation_contract() -> void:
 		and rich_npc_detail.get("behavior", "") == "Spricht leise und prüft jede Strömung zweimal."
 		and rich_npc_detail.get("history", "") == "War Lotsin des Hafenrats."
 		and rich_npc_detail.get("disposition_modifier", 0) == 12
+		and rich_npc_detail.get("creature_id", "") == "creature.worg"
+		and rich_npc_detail.get("faction_id", "") == "faction.harbor"
+		and rich_npc_detail.get("last_place_id", "") == "place.north-quay"
 		and catalog.section_snapshot("npcs").get("selected_id", "") == stable_npc_id,
-		"native Inspector edit round-trips rich NPC-owned truth and preserves stable selection"
+		"native Inspector edit round-trips rich NPC truth and provider-selected references while preserving selection"
 	)
 	var lifecycle_button := catalog.find_child("CatalogLifecycle", true, false) as Button
 	_expect(lifecycle_button.visible and lifecycle_button.text == "Als besiegt markieren", "active NPC exposes an explicit lifecycle action")
@@ -1079,6 +1204,64 @@ func _run_catalog_foundation_contract() -> void:
 	_expect(
 		narrative_threads.snapshot().get("rows", [])[0].get("reference_id", "") == stable_quest_id,
 		"restoring the NPC atomically reattaches its surviving Quest thread"
+	)
+	catalog.select_section("places")
+	for _attempt in 600:
+		if catalog.section_snapshot("places").get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	var place_state := catalog.section_snapshot("places")
+	catalog.call("_select_row", place_state.get("rows", [])[0])
+	for _attempt in 600:
+		if catalog.detail_snapshot().get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		catalog.detail_snapshot().get("record", {}).get("faction_ids", []) == ["faction.harbor"],
+		"place detail reads its existing provider-owned faction relationship"
+	)
+	edit_button.pressed.emit()
+	var choose_place_factions := catalog.find_child("CatalogReferenceChooseFactionIds", true, false) as Button
+	choose_place_factions.pressed.emit()
+	for _attempt in 600:
+		if reference_picker.snapshot().get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	var clear_references := reference_picker.find_child("ReferencePickerClear", true, false) as Button
+	clear_references.pressed.emit()
+	reference_picker.confirmed.emit()
+	reference_picker.hide()
+	record_dialog.confirmed.emit()
+	record_dialog.hide()
+	for _attempt in 1200:
+		if catalog.detail_snapshot().get("record", {}).get("faction_ids", ["pending"]).is_empty():
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		catalog.detail_snapshot().get("record", {}).get("faction_ids", ["pending"]).is_empty(),
+		"multi-reference picker removes a place-faction relationship without deleting either endpoint"
+	)
+	edit_button.pressed.emit()
+	choose_place_factions.pressed.emit()
+	for _attempt in 600:
+		if reference_picker.snapshot().get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	picker_results = reference_picker.find_child("ReferencePickerResults", true, false) as VBoxContainer
+	faction_choice = picker_results.find_child("ReferencePickerChoice", true, false) as CheckButton
+	if faction_choice != null:
+		faction_choice.toggled.emit(true)
+	reference_picker.confirmed.emit()
+	reference_picker.hide()
+	record_dialog.confirmed.emit()
+	record_dialog.hide()
+	for _attempt in 1200:
+		if "faction.harbor" in catalog.detail_snapshot().get("record", {}).get("faction_ids", []):
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		"faction.harbor" in catalog.detail_snapshot().get("record", {}).get("faction_ids", []),
+		"multi-reference picker restores the place-faction relationship through the serial owner writer"
 	)
 	var unavailable := catalog.select_section("encounters")
 	_expect(unavailable.get("status", "") == "unavailable", "remaining unmigrated Katalog provider stays explicit and side-effect free")

@@ -108,6 +108,8 @@ Inspector surfaces so the user can:
 
 - World Planner persists authored NPC, faction, location, lifecycle, notes,
   links, inventory-limit, Quest, and rumour truth as its own feature state.
+- NPC statblock, faction, last-place, and place-faction editing uses searchable
+  bounded provider choices; it never asks the user to type a foreign stable ID.
 - the shell exposes no separate World Planner left-bar entry and no World
   Planner-owned state pane
 - Catalog list selection opens World Planner details and existing editing
