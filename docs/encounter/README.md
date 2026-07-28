@@ -19,13 +19,16 @@ The Godot owner also prepares one complete ordered Session Generation intent
 batch from one current Creature snapshot and active-Party snapshot, commits all
 plans atomically and idempotently, and hydrates requested summaries in order.
 The production `Encounter` route opens one saved plan through current Creature
-facts, imports the active Party into initiative, expands quantities into
+facts, imports the relevant Party into initiative, expands quantities into
 individual combatants, persists HP/round/turn state, derives results, publishes
 one atomic Encounter-plus-Party XP award, and returns to the retained roster.
-Free-form Party-balanced builder generation, Scene context synchronization,
-mob/reinforcement projections, and final compact state-pane composition remain
-target work. JavaFX/SQLite implementations are migration evidence only and are
-not called by the Godot product.
+The native Scene owner now maintains one independent Encounter context per
+running scene. Assigned PCs, hostile or friendly NPC statblocks, prepared-plan
+rosters, and Scene mobs synchronize atomically while compatible initiative,
+combat HP, round, active turn, and mode survive composition changes. Free-form
+Party-balanced runtime generation, reinforcements, masks, and final compact
+cockpit composition remain target work. JavaFX/SQLite implementations are
+migration evidence only and are not called by the Godot product.
 
 ## Documentation Set
 
@@ -68,3 +71,6 @@ not called by the Godot product.
   Party initiative, deterministic per-member combat expansion, individual HP,
   persisted round/active-turn restart truth, result derivation, atomic XP
   publication, and return to the unchanged runtime roster.
+- Scene-runtime proof covers independent contexts, assigned-Party initiative,
+  mob expansion, friendly/hostile NPC roles, focus switching without combat
+  reset, deleted-context cleanup, exact deep linking, and restart readback.

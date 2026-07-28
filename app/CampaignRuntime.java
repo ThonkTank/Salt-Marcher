@@ -11,9 +11,6 @@ import features.hex.HexServiceAssembly;
 import features.items.ItemsServiceAssembly;
 import features.party.PartyServiceAssembly;
 import features.party.api.PartyApi;
-import features.scene.SceneFeature;
-import features.scene.api.SceneCommand;
-import features.scene.api.SceneMutationResult;
 import features.sessiongeneration.SessionGenerationServiceAssembly;
 import features.sessiongeneration.api.SessionGenerationApi;
 import features.sessionplanner.SessionPlannerServiceAssembly;
@@ -39,7 +36,6 @@ import platform.persistence.FeatureStoreReadiness;
 import platform.persistence.FeatureStoreHandle;
 import platform.persistence.SqliteDatabase;
 import platform.ui.UiDispatcher;
-import shell.api.ContributionKey;
 import shell.host.AppShell;
 
 /**
@@ -49,9 +45,6 @@ import shell.host.AppShell;
  * later switch coordinator can prepare, qualify, activate, quiesce, and close.
  */
 final class CampaignRuntime implements AutoCloseable {
-
-    static final ContributionKey REQUIRED_SCENE_JOURNEY =
-            new ContributionKey("runtime-scenes");
 
     enum State {
         STARTING,
@@ -68,7 +61,6 @@ final class CampaignRuntime implements AutoCloseable {
     record FoundationReadiness(
             Map<String, FeatureStoreReadiness> stores,
             Set<String> coreRequiredStores,
-            SceneMutationResult.Status sceneStatus,
             boolean encounterInitialized,
             boolean persistenceWriteRollbackVerified
     ) {
@@ -76,12 +68,10 @@ final class CampaignRuntime implements AutoCloseable {
             stores = Map.copyOf(Objects.requireNonNull(stores, "stores"));
             coreRequiredStores = Set.copyOf(
                     Objects.requireNonNull(coreRequiredStores, "coreRequiredStores"));
-            sceneStatus = Objects.requireNonNull(sceneStatus, "sceneStatus");
         }
 
         boolean foundationPrepared() {
-            return sceneStatus == SceneMutationResult.Status.SUCCESS
-                    && encounterInitialized
+            return encounterInitialized
                     && persistenceWriteRollbackVerified
                     && coreRequiredStores.stream()
                             .allMatch(owner -> stores.get(owner) == FeatureStoreReadiness.READY);
@@ -116,14 +106,12 @@ final class CampaignRuntime implements AutoCloseable {
     }
 
     record SemanticSurvivorFacts(
-            boolean focusedSceneReadable,
             boolean encounterStateReadable,
             boolean partyReadable,
             boolean travelPositionsReadable
     ) {
         boolean ready() {
-            return focusedSceneReadable
-                    && encounterStateReadable
+            return encounterStateReadable
                     && partyReadable
                     && travelPositionsReadable;
         }
@@ -131,15 +119,11 @@ final class CampaignRuntime implements AutoCloseable {
 
     record PreparedShellFacts(
             int navigationEntries,
-            boolean requiredSceneJourneyPresent,
-            boolean focusedSceneJourneySelected,
             boolean attachedToScene,
             boolean sceneSized
     ) {
         boolean ready() {
             return navigationEntries > 0
-                    && requiredSceneJourneyPresent
-                    && focusedSceneJourneySelected
                     && attachedToScene
                     && sceneSized;
         }
@@ -387,7 +371,7 @@ final class CampaignRuntime implements AutoCloseable {
             FoundationReadiness completed =
                     new FoundationReadiness(
                             storeReadiness, coreRequiredStores,
-                            result.scene().status(), result.encounterInitialized(),
+                            result.encounterInitialized(),
                             result.persistenceWriteRollbackVerified());
             completed.degradedStores().forEach((owner, readiness) -> diagnostics.failure(
                     new DiagnosticId("campaign-runtime.store-degraded."
@@ -423,7 +407,7 @@ final class CampaignRuntime implements AutoCloseable {
                 try {
                     database.verifyTransactionalWriteRollback();
                     verified.complete(new StartupResult(
-                            startup.encounterInitialized(), startup.scene(), true));
+                            startup.encounterInitialized(), true));
                 } catch (java.sql.SQLException failure) {
                     verified.completeExceptionally(failure);
                 }
@@ -435,7 +419,7 @@ final class CampaignRuntime implements AutoCloseable {
     }
 
     /**
-     * Storage preparation, typed Encounter and Scene initialization, and a rolled-back write probe.
+     * Storage preparation, typed Encounter initialization, and a rolled-back write probe.
      *
      * <p>This remains narrower than Campaign core readiness: survivor journeys, safe rendering, and
      * visible shell publication remain the switch coordinator's gate.
@@ -469,14 +453,9 @@ final class CampaignRuntime implements AutoCloseable {
         Scene safeScene = Objects.requireNonNull(candidateScene, "candidateScene");
         PreparedShellFacts facts = new PreparedShellFacts(
                 safeShell.leftBarTabCount(),
-                safeShell.hasLeftBarTab(REQUIRED_SCENE_JOURNEY),
-                safeShell.activeLeftBarTab()
-                        .map(REQUIRED_SCENE_JOURNEY::equals)
-                        .orElse(false),
                 safeShell.getScene() == safeScene && safeScene.getRoot() == safeShell,
                 safeScene.getWidth() > 0 && safeScene.getHeight() > 0);
         SemanticSurvivorFacts survivors = new SemanticSurvivorFacts(
-                components.scene().model().current().focusedSceneId() > 0L,
                 foundation.encounterInitialized(),
                 components.party().activeParty().current().status()
                         == features.party.api.ReadStatus.SUCCESS,
@@ -810,19 +789,9 @@ final class CampaignRuntime implements AutoCloseable {
                         encounter.savedPlans(), world.snapshot(), generation, executionLane,
                         sessionPreparationCpuLane, sessionPreparationIoLane, uiDispatcher,
                         diagnostics));
-        SceneFeature.Component scene = SceneFeature.create(
-                stores.scene(),
-                party.activeParty(),
-                world.snapshot(),
-                session.preparedScenes(),
-                encounter.runtimeContexts(),
-                creatures.referenceIndex(),
-                executionLane,
-                uiDispatcher,
-                diagnostics);
         return new Components(
                 creatures, encounterTables, party, items, world, encounter, dungeon, hex, travel,
-                generation, session, scene);
+                generation, session);
     }
 
     record Components(
@@ -836,8 +805,7 @@ final class CampaignRuntime implements AutoCloseable {
             HexServiceAssembly.Component hex,
             TravelFeature.Component travel,
             SessionGenerationApi generation,
-            SessionPlannerServiceAssembly session,
-            SceneFeature.Component scene
+            SessionPlannerServiceAssembly session
     ) {
         private CompletionStage<StartupResult> start(
                 Map<String, FeatureStoreReadiness> storeReadiness
@@ -860,10 +828,7 @@ final class CampaignRuntime implements AutoCloseable {
             if (travel != null) {
                 travel.start();
             }
-            CompletionStage<SceneMutationResult> sceneReady =
-                    scene.application().execute(new SceneCommand.Initialize());
-            return encounterReady.thenCombine(
-                    sceneReady, (ignored, sceneResult) -> new StartupResult(true, sceneResult, false));
+            return encounterReady.thenApply(ignored -> new StartupResult(true, false));
         }
 
         private Throwable close(
@@ -893,7 +858,6 @@ final class CampaignRuntime implements AutoCloseable {
 
         private List<AutoCloseable> closeableComponents() {
             java.util.ArrayList<AutoCloseable> closeableComponents = new java.util.ArrayList<>();
-            closeableComponents.add(scene);
             closeableComponents.add(session);
             if (travel != null) {
                 closeableComponents.add(travel);
@@ -915,11 +879,6 @@ final class CampaignRuntime implements AutoCloseable {
 
     private record StartupResult(
             boolean encounterInitialized,
-            SceneMutationResult scene,
             boolean persistenceWriteRollbackVerified
-    ) {
-        private StartupResult {
-            scene = Objects.requireNonNull(scene, "scene");
-        }
-    }
+    ) { }
 }

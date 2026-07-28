@@ -26,20 +26,20 @@ public final class CatalogFeature {
                 new MonsterCatalogDefinition(
                         requiredProviders.monsters().queries(), requiredProviders.monsters().poolFilters(),
                         requiredProviders.worldReferences().world(), requiredProviders.encounterTables().catalog(),
-                        requiredRoutes.creatureInspector(), requiredRoutes.encounter(), requiredRoutes.scene()),
+                        requiredRoutes.creatureInspector(), requiredRoutes.encounter()),
                 new ItemsCatalogDefinition(
                         requiredProviders.items().catalog(), requiredRoutes.itemInspector()),
                 new SavedEncounterCatalogDefinition(
                         requiredProviders.savedEncounters().plans(), requiredRoutes.encounter()),
                 new NpcCatalogDefinition(
                         requiredProviders.worldReferences().creatures(), requiredProviders.worldReferences().world(),
-                        requiredRoutes.worldInspectors(), requiredRoutes.encounter(), requiredRoutes.scene()),
+                        requiredRoutes.worldInspectors(), requiredRoutes.encounter()),
                 new FactionCatalogDefinition(
                         requiredProviders.worldReferences().world(), requiredProviders.encounterTables().catalog(),
                         requiredRoutes.worldInspectors(), requiredRoutes.encounter()),
                 new LocationCatalogDefinition(
                         requiredProviders.worldReferences().world(), requiredProviders.encounterTables().catalog(),
-                        requiredRoutes.worldInspectors(), requiredRoutes.encounter(), requiredRoutes.scene()),
+                        requiredRoutes.worldInspectors(), requiredRoutes.encounter()),
                 new EncounterTableCatalogDefinition(
                         requiredProviders.encounterTables().commands(), requiredProviders.encounterTables().catalog(),
                         requiredRoutes.encounter()));

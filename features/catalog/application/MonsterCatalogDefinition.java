@@ -2,7 +2,6 @@ package features.catalog.application;
 
 import features.catalog.application.CatalogApplicationRoutes.CreatureInspectorRoute;
 import features.catalog.application.CatalogApplicationRoutes.EncounterHandoff;
-import features.catalog.application.CatalogApplicationRoutes.SceneHandoff;
 import features.creatures.api.CreatureCatalogPage;
 import features.creatures.api.CreatureCatalogPageResult;
 import features.creatures.api.CreatureCatalogQuery;
@@ -35,7 +34,6 @@ public final class MonsterCatalogDefinition
     private final EncounterTableCatalogModel encounterTables;
     private final CreatureInspectorRoute inspector;
     private final EncounterHandoff encounter;
-    private final SceneHandoff scene;
     private final AtomicLong providerRevision = new AtomicLong();
     private final CatalogSuccessfulAsyncCache<CreatureFilterOptions> filterOptions =
             new CatalogSuccessfulAsyncCache<>();
@@ -46,8 +44,7 @@ public final class MonsterCatalogDefinition
             WorldPlannerSnapshotModel world,
             EncounterTableCatalogModel encounterTables,
             CreatureInspectorRoute inspector,
-            EncounterHandoff encounter,
-            SceneHandoff scene
+            EncounterHandoff encounter
     ) {
         this.queries = Objects.requireNonNull(queries, "queries");
         this.poolFilters = Objects.requireNonNull(poolFilters, "poolFilters");
@@ -55,7 +52,6 @@ public final class MonsterCatalogDefinition
         this.encounterTables = Objects.requireNonNull(encounterTables, "encounterTables");
         this.inspector = Objects.requireNonNull(inspector, "inspector");
         this.encounter = Objects.requireNonNull(encounter, "encounter");
-        this.scene = Objects.requireNonNull(scene, "scene");
     }
 
     @Override public CatalogSectionId id() {
@@ -210,13 +206,9 @@ public final class MonsterCatalogDefinition
                 Optional.of(new CatalogActionSpec(
                         CatalogActionId.OPEN, "Details öffnen", "Monster im Inspector öffnen", "Öffnen",
                         CatalogActionSpec.Emphasis.SECONDARY)),
-                List.of(
-                        new CatalogActionSpec(
-                                CatalogActionId.ADD_TO_ENCOUNTER, "+ Encounter", "Zum Encounter hinzufügen",
-                                "+ Encounter", CatalogActionSpec.Emphasis.PRIMARY),
-                        new CatalogActionSpec(
-                                CatalogActionId.ADD_TO_SCENE, "+ Scene", "Zur fokussierten Scene hinzufügen",
-                                "+ Scene", CatalogActionSpec.Emphasis.SECONDARY)),
+                List.of(new CatalogActionSpec(
+                        CatalogActionId.ADD_TO_ENCOUNTER, "+ Encounter", "Zum Encounter hinzufügen",
+                        "+ Encounter", CatalogActionSpec.Emphasis.PRIMARY)),
                 List.of(CatalogActionSpec.create()), true,
                 new CatalogSortOrder("name", CatalogSortOrder.Direction.ASCENDING),
                 CatalogSortMode.PROVIDER);
@@ -246,12 +238,6 @@ public final class MonsterCatalogDefinition
     public void addToEncounter(long creatureId) {
         if (creatureId > 0L) {
             encounter.addCreature(creatureId);
-        }
-    }
-
-    public void addToScene(long creatureId) {
-        if (creatureId > 0L) {
-            scene.addCreature(creatureId);
         }
     }
 

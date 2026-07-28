@@ -1,7 +1,6 @@
 package features.catalog.application;
 
 import features.catalog.application.CatalogApplicationRoutes.EncounterHandoff;
-import features.catalog.application.CatalogApplicationRoutes.SceneHandoff;
 import features.catalog.application.CatalogApplicationRoutes.WorldInspectorRoutes;
 import features.creatures.api.CreatureReferenceIndexModel;
 import features.worldplanner.api.WorldNpcSummary;
@@ -22,21 +21,18 @@ public final class NpcCatalogDefinition implements CatalogSectionDefinition<Text
     private final WorldPlannerSnapshotModel world;
     private final WorldInspectorRoutes inspectors;
     private final EncounterHandoff encounter;
-    private final SceneHandoff scene;
     private final AtomicLong providerRevision = new AtomicLong();
 
     public NpcCatalogDefinition(
             CreatureReferenceIndexModel creatures,
             WorldPlannerSnapshotModel world,
             WorldInspectorRoutes inspectors,
-            EncounterHandoff encounter,
-            SceneHandoff scene
+            EncounterHandoff encounter
     ) {
         this.creatures = Objects.requireNonNull(creatures, "creatures");
         this.world = Objects.requireNonNull(world, "world");
         this.inspectors = Objects.requireNonNull(inspectors, "inspectors");
         this.encounter = Objects.requireNonNull(encounter, "encounter");
-        this.scene = Objects.requireNonNull(scene, "scene");
     }
 
     @Override public CatalogSectionId id() { return CatalogSectionId.NPCS; }
@@ -63,15 +59,10 @@ public final class NpcCatalogDefinition implements CatalogSectionDefinition<Text
                         new CatalogColumnSpec<>("name", "Name", NpcCatalogRow::displayName, true),
                         new CatalogColumnSpec<>("details", "Details", NpcCatalogRow::details, false)),
                 Optional.of(openAction()),
-                List.of(
-                        new CatalogActionSpec(
-                                CatalogActionId.ADD_TO_ENCOUNTER, "Zum Encounter",
-                                "NPC zum Encounter hinzufügen", "Zum Encounter",
-                                CatalogActionSpec.Emphasis.PRIMARY),
-                        new CatalogActionSpec(
-                                CatalogActionId.ADD_TO_SCENE, "Zur Scene",
-                                "NPC zur fokussierten Scene hinzufügen", "Zur Scene",
-                                CatalogActionSpec.Emphasis.SECONDARY)),
+                List.of(new CatalogActionSpec(
+                        CatalogActionId.ADD_TO_ENCOUNTER, "Zum Encounter",
+                        "NPC zum Encounter hinzufügen", "Zum Encounter",
+                        CatalogActionSpec.Emphasis.PRIMARY)),
                 List.of(CatalogActionSpec.create()), false,
                 new CatalogSortOrder("name", CatalogSortOrder.Direction.ASCENDING), CatalogSortMode.LOCAL);
     }
@@ -87,7 +78,6 @@ public final class NpcCatalogDefinition implements CatalogSectionDefinition<Text
     public void create() { inspectors.createNpc(); }
     public void addToEncounter(long id) { find(id).ifPresent(npc ->
             encounter.addWorldNpc(npc.creatureStatblockId(), npc.npcId())); }
-    public void addToScene(long id) { find(id).ifPresent(npc -> scene.addNpc(npc.npcId())); }
 
     private Optional<WorldNpcSummary> find(long id) {
         var snapshot = world.current();

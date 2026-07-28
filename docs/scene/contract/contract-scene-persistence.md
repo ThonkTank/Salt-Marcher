@@ -1,72 +1,67 @@
 # Runtime Scene Persistence Contract
 
-## Purpose, Owners, And Consumers
+Status: Active Godot persistence contract
+Owner: Scene
+Last Reviewed: 2026-07-28
+Source of Truth: This document
 
-The Scene SQLite adapter persists only Scene-owned workspace truth. Consumers
-use `SceneApi` and `SceneModel`; SQL records do not cross the feature. Party,
-World Planner, Session Planner, and Encounter retain ownership of their own
-payloads and lifecycle.
+## Purpose And Boundary
+
+Scene truth is one immutable, checksummed `scene` owner partition inside the
+active Campaign file store. Its payload format is `saltmarcher.scene.v1`.
+SQLite tables, JDBC, Java repositories, and post-save synchronization markers
+are deleted legacy shapes and are not current compatibility surfaces.
+
+Before the first released Godot format, incompatible development payloads fail
+closed and are disposable rather than receiving an implicit translator.
 
 ## Stored Truth
 
-- `scene_workspace`: workspace revision, next scene ID, Standardszene ID,
-  focused scene ID, synchronization marker, and status text
-- `scene_running_scene`: stable scene ID, title, notes, optional planner
-  provenance values, optional initial Encounter plan ID, optional World Planner
-  location ID, and order
-- `scene_party_member`: ordered Party character foreign IDs
-- `scene_npc`: ordered World Planner NPC foreign IDs
-- `scene_mob`: ordered Scene-owned assignments of Creature catalog foreign IDs
-  and their positive group counts; Creature facts remain Creatures-owned
-- `scene_participant_state`: Scene-owned per-scene defeated state and quick
-  notes for an assigned PC, NPC, or mob, keyed by participant kind and the
-  corresponding foreign ID; it does not own that participant's source facts
+The payload stores:
 
-Party details, World Planner details, disposition, creature statblocks, and
-Encounter workflow state MUST NOT be stored in Scene tables.
+- workspace revision, next identity counter, Standardszene ID, and focused Scene ID;
+- running Scene ID, title, notes, and optional Session/Scene provenance;
+- optional initial saved Encounter-plan and World Planner location references;
+- ordered Party character and World Planner NPC references;
+- stable mob assignment IDs, Creature references, and positive counts;
+- assigned-participant defeated state and quick notes.
 
-## Validation And Errors
+It does not store foreign profiles, names, disposition, lifecycle, statblocks,
+saved-plan rosters, or Encounter workflow state.
 
-Owner startup readiness validates the feature-declared target schema signature; semantic row validation remains on typed provider read/write paths and fails closed through the feature contract.
+## Validation
 
-Scene IDs and all present foreign references MUST be positive. The database
-enforces one row per scene assignment plus global uniqueness of both PC and NPC
-assignment. Location IDs are not unique because multiple scenes may reference
-the same location. The only foreign keys target Scene-owned scene rows; foreign
-feature IDs MUST NOT receive cross-owner foreign keys.
+Validation rejects malformed formats, missing or extra owner structure, empty
+titles, invalid identities, missing focus/standard references, duplicate PC or
+NPC membership, duplicate mob identities, non-positive mob counts, and
+participant state that does not match an assigned participant. Read failure is
+isolated to Scene and never fabricates fallback truth.
 
-Writes replace one complete workspace in a transaction. Failed writes retain
-the last committed workspace and complete the command with `STORAGE_ERROR`.
-Failed Encounter synchronization is not a Scene storage failure: the committed
-workspace remains available with `encounter_synchronized=0` and is retried by
-initialization or refresh.
+## Atomic Publication
 
-## Consistency And Boundary Semantics
+Every command loads one expected Campaign generation, validates supporting
+Party, World Planner, Session Planner, saved Encounter, and Shared-Definition
+facts, and builds:
 
-Each logical Scene mutation increments the workspace revision. Scene persists
-the new revision as unsynchronized before invoking Encounter. An `APPLIED`
-result, or a `STALE_IGNORED` result whose accepted revision covers the sent
-revision, may mark that same current revision synchronized. A late completion
-MUST NOT overwrite a newer Scene revision.
+1. the complete replacement Scene payload; and
+2. the complete replacement Encounter runtime-context collection.
 
-## Compatibility And Migration
+Both partitions publish through one admitted serial Campaign commit. A stale
+activation, changed Campaign or definition generation, missing reference,
+damaged payload, validation error, or storage failure advances neither owner.
+There is no second synchronization write and no recoverable half-success.
 
-Before the first released format,
-`scene` supports exactly the complete current schema at owner version 1. One
-guarded initializer creates all six Scene tables in a fresh owner namespace.
-There is no additive v1-v3 build-up, predecessor repair, backfill, or workspace
-translation.
+## Restart And Reference Semantics
 
-The exact owner inventory covers every table, index, view, and trigger named
-with `scene_` or `idx_scene_`. An unversioned partial namespace, a recorded
-version-1 shape that differs from the exact current DDL, an adjacent retired
-Scene object, or a newer owner version MUST fail without mutating stored rows,
-schema objects, or ledger state. Initialization failure MUST NOT fabricate a
-ledger entry. Unsupported development databases are reinitialized rather than
-migrated before the first released format.
+Focus, composition, provenance, mobs, and participant state restore from the
+Scene partition. Encounter restores each independent runtime context from its
+own partition. On refresh, inactive PCs are removed and newly active PCs remain
+unassigned. Missing foreign references remain explicit repairable identities
+until a valid command removes or replaces them; no storage-level foreign key or
+cross-owner repair is created.
 
-Missing World Planner records remain visible as unresolved stable references
-until the GM removes or replaces them; inactive Party members are removed
-during refresh. These are current reference semantics, not schema-compatibility
-bridges. Foreign feature IDs remain logical values without cross-owner foreign
-keys or repair.
+## References
+
+- [Scene Domain](../domain/domain-scene.md)
+- [Scene Requirements](../requirements/requirements-scene.md)
+- [Persistence Lifecycle](../../project/contract/persistence-lifecycle.md)

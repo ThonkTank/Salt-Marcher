@@ -6,14 +6,15 @@ Last Reviewed: 2026-07-28
 Source of Truth: This document
 
 The current Godot product satisfies persistent manual saved plans, generated
-preparation, and one durable manual live-play route. The `Encounter` workspace
-opens a saved plan through current Creature facts, captures the active Party,
-edits or rolls initiative, expands every monster member, persists exact HP,
-round and active-turn truth, derives results, awards XP atomically with Party,
-and resumes after restart. Free-form builder generation, Scene-owned context
-synchronization, Catalog-to-runtime additions, mob projection,
-reinforcements, and the eventual compact cockpit state-pane composition remain
-unmet target requirements.
+preparation, one durable manual context, and independent Scene-keyed live-play
+contexts. The `Encounter` workspace opens a saved plan through current Creature
+facts, captures the context's assigned Party, edits or rolls initiative,
+expands every hostile or allied roster member, persists exact HP, round and
+active-turn truth, derives results, awards XP atomically with Party, and resumes
+after restart. Scene composition atomically supplies prepared-plan rows, mobs,
+and disposition-derived NPC roles. Free-form builder generation,
+Catalog-to-runtime additions, reinforcements, masks, and the eventual compact
+cockpit composition remain unmet target requirements.
 
 ## Goal
 
@@ -115,6 +116,11 @@ Generated preparation is a separate Session Planner-driven flow:
   visible saved-plan set unchanged
 - retrying an identical completed preparation creates no visible duplicate
   plans
+- every running Scene has one independent Encounter context and focus opens the
+  exact matching context
+- Scene reconciliation retains compatible initiative, HP, round, turn, mode,
+  and result state while adding or removing current composition facts
+- Scene initiative and XP use only the PCs assigned to that running Scene
 
 ## References
 

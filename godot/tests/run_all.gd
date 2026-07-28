@@ -31,6 +31,10 @@ const EncounterGeneratedBatchReadController = preload("res://godot/src/features/
 const EncounterGeneratedBatchCommandController = preload("res://godot/src/features/encounter/encounter_generated_batch_command_controller.gd")
 const EncounterPlanEditorDialog = preload("res://godot/src/ui/encounter_plan_editor_dialog.gd")
 const EncounterRuntimeWorkspace = preload("res://godot/src/ui/encounter_runtime_workspace.gd")
+const SceneKnowledge = preload("res://godot/src/features/scene/scene_knowledge.gd")
+const SceneCommandController = preload("res://godot/src/features/scene/scene_command_controller.gd")
+const SceneReadController = preload("res://godot/src/features/scene/scene_read_controller.gd")
+const SceneWorkspace = preload("res://godot/src/ui/scene_workspace.gd")
 const CampaignRuntimeCoordinator = preload("res://godot/src/app/campaign_runtime_coordinator.gd")
 const CampaignRuntimeSession = preload("res://godot/src/app/campaign_runtime_session.gd")
 const CampaignPortabilityController = preload("res://godot/src/app/campaign_portability_controller.gd")
@@ -143,6 +147,7 @@ func _run_tests() -> void:
 	await _run_world_planner_knowledge_contract()
 	_run_generated_encounter_batch_contract()
 	_run_encounter_plan_knowledge_contract()
+	_run_scene_knowledge_contract()
 	_run_encounter_runtime_knowledge_contract()
 	await _run_generated_encounter_controller_contract()
 	await _run_catalog_foundation_contract()
@@ -1020,6 +1025,27 @@ func _run_party_roster_contract() -> void:
 		and session_workspace.find_child("CancelGeneration", true, false) != null,
 		"production Session Planner exposes durable manual planning plus explicit generation, seed, progress, and cancel controls"
 	)
+	var prepared_scene_workspace := shell.route("scene") as SceneWorkspace
+	_expect(shell.show_route("scene").get("ok", false), "production Scene route accepts prepared Session Planner handoff facts")
+	var prepared_scene_choice := prepared_scene_workspace.find_child("PreparedSceneChoice", true, false) as OptionButton
+	for _attempt in 1800:
+		if prepared_scene_choice.item_count > 1 and not prepared_scene_workspace._commands.busy():
+			break
+		await create_timer(0.001).timeout
+	if prepared_scene_choice.item_count > 1:
+		prepared_scene_choice.select(1)
+	var import_prepared_scene := prepared_scene_workspace.find_child("ImportPreparedScene", true, false) as Button
+	import_prepared_scene.pressed.emit()
+	for _attempt in 1800:
+		if prepared_scene_workspace.snapshot().get("scenes", []).size() == 2:
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		prepared_scene_workspace.snapshot().get("scenes", []).size() == 2
+		and not str(prepared_scene_workspace.snapshot().get("focused", {}).get("source_session_id", "")).is_empty()
+		and not str(prepared_scene_workspace.snapshot().get("focused", {}).get("source_scene_id", "")).is_empty(),
+		"visible Scene controls copy one prepared scene with durable provenance"
+	)
 	shell.show_route("campaigns")
 	var party_top_bar := shell.find_child("PartyTrigger", true, false).get_parent() as PartyTopBar
 	for _attempt in 600:
@@ -1338,6 +1364,103 @@ func _generated_intent(encounter_number: int, label: String, target_xp: int) -> 
 	}
 
 
+func _run_scene_knowledge_contract() -> void:
+	var model := SceneKnowledge.new()
+	var boundary := SceneCommandController.new("user://scene-boundary-contract", null)
+	_expect(
+		boundary.call("_active_world_record", {"records": {"npc.active": {"kind": "npc", "lifecycle_status": "active"}}}, "npc.active", "npc")
+		and not boundary.call("_active_world_record", {"records": {"npc.defeated": {"kind": "npc", "lifecycle_status": "defeated"}}}, "npc.defeated", "npc"),
+		"Scene command boundary admits only active World Planner NPC references"
+	)
+	boundary.free()
+	var initial := model.initialize(model.empty_payload(), ["pc.ada", "pc.bo"])
+	_expect(
+		initial.get("ok", false)
+		and initial.get("payload", {}).get("revision", -1) == 1
+		and initial.get("scene", {}).get("party_member_ids", []) == ["pc.ada", "pc.bo"],
+		"first Scene initialization creates one durable Standardszene with every active PC"
+	)
+	var payload: Dictionary = initial.get("payload", model.empty_payload())
+	var created := model.create_scene(payload, "Unter dem Leuchtturm", "scene.cellar")
+	_expect(
+		created.get("ok", false)
+		and created.get("payload", {}).get("focused_scene_id", "") == "scene.cellar"
+		and created.get("payload", {}).get("scenes", {}).size() == 2,
+		"Scene creates and focuses an independent running context"
+	)
+	payload = created.get("payload", payload)
+	var moved := model.assign_pc(payload, "scene.cellar", "pc.ada")
+	_expect(
+		moved.get("ok", false)
+		and moved.get("payload", {}).get("scenes", {}).get("scene.standard", {}).get("party_member_ids", []) == ["pc.bo"]
+		and moved.get("payload", {}).get("scenes", {}).get("scene.cellar", {}).get("party_member_ids", []) == ["pc.ada"],
+		"moving one PC between running scenes is atomic and globally unique"
+	)
+	payload = moved.get("payload", payload)
+	var npc_first := model.assign_npc(payload, "scene.standard", "npc.guide")
+	var npc_moved := model.assign_npc(npc_first.get("payload", payload), "scene.cellar", "npc.guide")
+	_expect(
+		npc_moved.get("ok", false)
+		and npc_moved.get("payload", {}).get("scenes", {}).get("scene.standard", {}).get("npc_ids", []).is_empty()
+		and npc_moved.get("payload", {}).get("scenes", {}).get("scene.cellar", {}).get("npc_ids", []) == ["npc.guide"],
+		"moving one NPC between running scenes never duplicates the reference"
+	)
+	payload = npc_moved.get("payload", payload)
+	var located := model.set_location(payload, "scene.cellar", "place.lighthouse")
+	var mobbed := model.assign_mob(located.get("payload", payload), "scene.cellar", "creature.worg", 6)
+	var mob_id := str(mobbed.get("scene", {}).get("mobs", [])[0].get("assignment_id", ""))
+	var noted := model.set_participant_state(
+		mobbed.get("payload", payload), "scene.cellar", "mob", mob_id, false, "Hält den Nordgang."
+	)
+	_expect(
+		noted.get("ok", false)
+		and noted.get("scene", {}).get("location_id", "") == "place.lighthouse"
+		and noted.get("scene", {}).get("mobs", [])[0].get("count", -1) == 6
+		and noted.get("scene", {}).get("participant_states", {}).get("mob:%s" % mob_id, {}).get("notes", "") == "Hält den Nordgang.",
+		"Scene owns one location, mob quantities, and participant quick state"
+	)
+	payload = noted.get("payload", payload)
+	var imported := model.import_prepared(
+		payload,
+		"session.night",
+		{
+			"scene_id": "scene.prepared",
+			"title": "Signalfeuer",
+			"notes": "Der Sturm zieht auf.",
+			"location_id": "place.beacon",
+			"encounter_plan_id": "encounter_plan.beacon",
+		},
+		["pc.ada", "pc.bo", "pc.cia"],
+		"scene.imported"
+	)
+	_expect(
+		imported.get("ok", false)
+		and imported.get("scene", {}).get("source_session_id", "") == "session.night"
+		and imported.get("scene", {}).get("initial_encounter_plan_id", "") == "encounter_plan.beacon"
+		and imported.get("scene", {}).get("party_member_ids", []) == ["pc.cia"],
+		"prepared Scene import copies provenance and only currently unassigned active PCs"
+	)
+	payload = imported.get("payload", payload)
+	var refreshed := model.refresh_active_party(payload, ["pc.ada", "pc.cia", "pc.new"])
+	_expect(
+		refreshed.get("ok", false)
+		and not "pc.bo" in refreshed.get("payload", {}).get("scenes", {}).get("scene.standard", {}).get("party_member_ids", [])
+		and not "pc.new" in refreshed.get("payload", {}).get("scenes", {}).get("scene.standard", {}).get("party_member_ids", []),
+		"Scene refresh removes inactive PCs while leaving newly active PCs explicitly unassigned"
+	)
+	var protected := model.delete_scene(refreshed.get("payload", payload), SceneKnowledge.STANDARD_SCENE_ID)
+	_expect(
+		not protected.get("ok", true) and protected.get("status", "") == "protected",
+		"Standardszene deletion is impossible through the owner model"
+	)
+	var round_trip: Variant = JSON.parse_string(JSON.stringify(refreshed.get("payload", payload)))
+	_expect(
+		model.validate_payload(round_trip).get("ok", false)
+		and model.snapshot(round_trip).get("scenes", []).size() == 3,
+		"complete Scene workspace survives canonical JSON restart readback"
+	)
+
+
 func _run_encounter_runtime_knowledge_contract() -> void:
 	var plans := EncounterPlanKnowledge.new()
 	var runtime := EncounterRuntimeKnowledge.new()
@@ -1390,7 +1513,7 @@ func _run_encounter_runtime_knowledge_contract() -> void:
 	var rolled := runtime.roll_all_initiative(payload, {
 		"pc.iria": 18,
 		"pc.tamo": 11,
-		"enemy.creature.wolf": 7,
+		"slot.creature.wolf": 7,
 	})
 	_expect(
 		rolled.get("ok", false)
@@ -1411,7 +1534,7 @@ func _run_encounter_runtime_knowledge_contract() -> void:
 		"initiative confirmation expands every monster member and deterministically publishes the first turn"
 	)
 	payload = combat.get("payload", payload)
-	var first_enemy_id := "enemy.creature.wolf.1"
+	var first_enemy_id := "slot.creature.wolf.member.1"
 	var wounded := runtime.mutate_hp(payload, first_enemy_id, 8, false)
 	payload = wounded.get("payload", payload)
 	var defeated := runtime.mutate_hp(payload, first_enemy_id, 8, false)
@@ -1459,6 +1582,74 @@ func _run_encounter_runtime_knowledge_contract() -> void:
 		and returned.get("context", {}).get("roster", []).size() == 1
 		and returned.get("context", {}).get("combatants", []).is_empty(),
 		"returning to the planner clears combat/result state but preserves the opened runtime roster"
+	)
+	var scene_roster := [{
+		"slot_id": "scene-mob.worgs",
+		"kind": "enemy",
+		"creature_id": "creature.worg",
+		"name": "Worg",
+		"last_known_name": "Worg",
+		"quantity": 2,
+		"challenge_rating": "1/2",
+		"xp": 100,
+		"hit_points": 26,
+		"armor_class": 13,
+		"initiative_bonus": 1,
+	}]
+	var scene_specs := [
+		{
+			"context_id": "encounter_context.scene.harbor",
+			"active_plan_id": "",
+			"party": [{"character_id": "pc.iria", "name": "Iria", "level": 4}],
+			"roster": scene_roster,
+		},
+		{
+			"context_id": "encounter_context.scene.cellar",
+			"active_plan_id": "",
+			"party": [{"character_id": "pc.tamo", "name": "Tamo", "level": 3}],
+			"roster": [],
+		},
+	]
+	var synchronized := runtime.synchronize_contexts(
+		plans.empty_payload(), 1, "encounter_context.scene.harbor", scene_specs
+	)
+	var scene_payload: Dictionary = synchronized.get("payload", plans.empty_payload())
+	var scene_initiative := runtime.open_initiative(
+		scene_payload,
+		scene_specs[0]["party"],
+		"encounter_context.scene.harbor"
+	)
+	scene_payload = scene_initiative.get("payload", scene_payload)
+	var scene_combat := runtime.confirm_initiative(scene_payload, "encounter_context.scene.harbor")
+	scene_payload = scene_combat.get("payload", scene_payload)
+	var scene_wounded := runtime.mutate_hp(
+		scene_payload, "scene-mob.worgs.member.1", 7, false, "encounter_context.scene.harbor"
+	)
+	scene_payload = scene_wounded.get("payload", scene_payload)
+	var switched := runtime.synchronize_contexts(
+		scene_payload, 2, "encounter_context.scene.cellar", scene_specs
+	)
+	var harbor_after_switch := runtime.snapshot(
+		switched.get("payload", scene_payload), "encounter_context.scene.harbor"
+	)
+	var scene_worg_hp := -1
+	for combatant in harbor_after_switch.get("context", {}).get("combatants", []):
+		if combatant.get("combatant_id", "") == "scene-mob.worgs.member.1":
+			scene_worg_hp = int(combatant.get("current_hp", -1))
+	_expect(
+		switched.get("ok", false)
+		and switched.get("payload", {}).get("runtime", {}).get("focused_context_id", "") == "encounter_context.scene.cellar"
+		and harbor_after_switch.get("context", {}).get("mode", "") == "combat"
+		and scene_worg_hp == 19,
+		"Scene focus switches Encounter context while preserving independent combat HP and mode"
+	)
+	var trimmed := runtime.synchronize_contexts(
+		switched.get("payload", scene_payload), 3, "encounter_context.scene.cellar", [scene_specs[1]]
+	)
+	_expect(
+		trimmed.get("ok", false)
+		and not trimmed.get("payload", {}).get("runtime", {}).get("contexts", {}).has("encounter_context.scene.harbor"),
+		"Scene synchronization removes only deleted Scene-owned Encounter contexts"
 	)
 	var damaged: Dictionary = returned.get("payload", {}).duplicate(true)
 	if damaged.has("runtime"):
@@ -2444,6 +2635,214 @@ func _run_catalog_foundation_contract() -> void:
 		encounter_workspace.snapshot().get("context", {}).get("roster", []).size() == 2,
 		"Encounter result returns to the preserved runtime roster without mutating the saved plan"
 	)
+	var scene_workspace := shell.route("scene") as SceneWorkspace
+	var scene_command_results: Array = []
+	scene_workspace._commands.command_completed.connect(func(result: Dictionary) -> void:
+		scene_command_results.append(result.duplicate(true))
+	)
+	_expect(
+		scene_workspace != null
+		and shell.show_route("scene").get("ok", false)
+		and shell.active_route() == "scene",
+		"production shell exposes Scene as a first-class native route"
+	)
+	for _attempt in 1800:
+		if int(scene_workspace.snapshot().get("revision", 0)) >= 1:
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		scene_workspace.snapshot().get("scenes", []).size() == 1
+		and scene_workspace.snapshot().get("focused", {}).get("standard", false)
+		and scene_workspace.snapshot().get("focused", {}).get("party_members", []).size() == 4,
+		"first Scene activation durably seeds one Standardszene with every active PC"
+	)
+	var scene_title_input := scene_workspace.find_child("NewSceneTitle", true, false) as LineEdit
+	var create_scene_button := scene_workspace.find_child("CreateScene", true, false) as Button
+	scene_title_input.text = "Unter dem Leuchtfeuer"
+	create_scene_button.pressed.emit()
+	for _attempt in 1800:
+		if scene_workspace.snapshot().get("scenes", []).size() == 2:
+			break
+		await create_timer(0.001).timeout
+	var cellar_scene_id := str(scene_workspace.snapshot().get("focused_scene_id", ""))
+	_expect(
+		cellar_scene_id != SceneKnowledge.STANDARD_SCENE_ID
+		and scene_workspace.snapshot().get("focused", {}).get("title", "") == "Unter dem Leuchtfeuer",
+		"visible Scene creation focuses one independent running context"
+	)
+	var scene_rail := scene_workspace.find_child("SceneRail", true, false) as VBoxContainer
+	var standard_scene_button: Button = null
+	for child in scene_rail.get_children():
+		if child is Button and str(child.text).contains("Standardszene"):
+			standard_scene_button = child
+			break
+	if standard_scene_button != null:
+		standard_scene_button.pressed.emit()
+	for _attempt in 1800:
+		if scene_workspace.snapshot().get("focused_scene_id", "") == SceneKnowledge.STANDARD_SCENE_ID:
+			break
+		await create_timer(0.001).timeout
+	var standard_party_list := scene_workspace.find_child("ScenePartyList", true, false) as VBoxContainer
+	var release_pc: Button = null
+	if standard_party_list.get_child_count() > 0:
+		var release_buttons := standard_party_list.get_child(0).find_children("", "Button", true, false)
+		if not release_buttons.is_empty():
+			release_pc = release_buttons[0] as Button
+	if release_pc != null:
+		release_pc.pressed.emit()
+	for _attempt in 1800:
+		if scene_workspace.snapshot().get("unassigned_party", []).size() == 1:
+			break
+		await create_timer(0.001).timeout
+	var cellar_scene_button: Button = null
+	for child in scene_rail.get_children():
+		if child is Button and str(child.text).contains("Unter dem Leuchtfeuer"):
+			cellar_scene_button = child
+			break
+	if cellar_scene_button != null:
+		cellar_scene_button.pressed.emit()
+	for _attempt in 1800:
+		if scene_workspace.snapshot().get("focused_scene_id", "") == cellar_scene_id:
+			break
+		await create_timer(0.001).timeout
+	var party_choice := scene_workspace.find_child("ScenePartyChoice", true, false) as OptionButton
+	if party_choice.item_count > 1:
+		party_choice.select(1)
+	var add_scene_pc := scene_workspace.find_child("AddScenePc", true, false) as Button
+	add_scene_pc.pressed.emit()
+	for _attempt in 1800:
+		if scene_workspace.snapshot().get("focused", {}).get("party_members", []).size() == 1:
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		scene_workspace.snapshot().get("focused", {}).get("party_members", []).size() == 1
+		and scene_workspace.snapshot().get("unassigned_party", []).is_empty(),
+		"visible Scene controls move one PC between contexts without duplicate membership"
+	)
+	var location_choice := scene_workspace.find_child("SceneLocationChoice", true, false) as OptionButton
+	if location_choice.item_count > 1:
+		location_choice.select(1)
+	var set_scene_location := scene_workspace.find_child("SetSceneLocation", true, false) as Button
+	set_scene_location.pressed.emit()
+	for _attempt in 1800:
+		if not str(scene_workspace.snapshot().get("focused", {}).get("location_id", "")).is_empty():
+			break
+		await create_timer(0.001).timeout
+	var scene_creature_choice := scene_workspace.find_child("SceneCreatureChoice", true, false) as OptionButton
+	if scene_creature_choice.item_count > 1:
+		scene_creature_choice.select(1)
+	var scene_mob_count := scene_workspace.find_child("SceneMobCount", true, false) as SpinBox
+	scene_mob_count.value = 4
+	var add_scene_mob := scene_workspace.find_child("AddSceneMob", true, false) as Button
+	add_scene_mob.pressed.emit()
+	for _attempt in 1800:
+		if scene_workspace.snapshot().get("focused", {}).get("mob_rows", []).size() == 1:
+			break
+		await create_timer(0.001).timeout
+	var persisted_scene_mobs: Array = scene_workspace.snapshot().get("focused", {}).get("mob_rows", [])
+	_expect(
+		not str(scene_workspace.snapshot().get("focused", {}).get("location_id", "")).is_empty()
+		and persisted_scene_mobs.size() == 1
+		and persisted_scene_mobs[0].get("count", -1) == 4
+		and scene_workspace.snapshot().get("focused", {}).get("encounter", {}).get("roster", []).size() == 1,
+		"Scene location and mob controls atomically publish matching Encounter runtime facts; last command: %s" % [
+			JSON.stringify(scene_command_results.back()) if not scene_command_results.is_empty() else "none"
+		]
+	)
+	var scene_mob_list := scene_workspace.find_child("SceneMobList", true, false) as VBoxContainer
+	var mob_state_saved := false
+	if scene_mob_list.get_child_count() > 0:
+		var mob_card := scene_mob_list.get_child(0)
+		var defeated_toggles := mob_card.find_children("", "CheckBox", true, false)
+		var mob_notes := mob_card.find_children("", "LineEdit", true, false)
+		var defeated_toggle := defeated_toggles[0] as CheckBox if not defeated_toggles.is_empty() else null
+		var mob_note := mob_notes[0] as LineEdit if not mob_notes.is_empty() else null
+		var mob_buttons := mob_card.find_children("", "Button", true, false)
+		if defeated_toggle != null and mob_note != null:
+			defeated_toggle.button_pressed = true
+			mob_note.text = "Hält den Nordgang."
+			for button_value in mob_buttons:
+				var button := button_value as Button
+				if button.text == "Status speichern":
+					button.pressed.emit()
+					mob_state_saved = true
+					break
+	for _attempt in 1800:
+		var states: Dictionary = scene_workspace.snapshot().get("focused", {}).get("participant_states", {})
+		if states.values().any(func(state: Dictionary) -> bool: return state.get("notes", "") == "Hält den Nordgang."):
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		mob_state_saved
+		and scene_workspace.snapshot().get("focused", {}).get("participant_states", {}).values().any(
+			func(state: Dictionary) -> bool: return state.get("defeated", false) and state.get("notes", "") == "Hält den Nordgang."
+		),
+		"Scene participant controls persist defeated state and live quick notes"
+	)
+	var open_scene_encounter := scene_workspace.find_child("OpenFocusedEncounter", true, false) as Button
+	open_scene_encounter.pressed.emit()
+	for _attempt in 1800:
+		if (
+			shell.active_route() == "encounter"
+			and encounter_workspace.context_id == SceneKnowledge.new().encounter_context_id(cellar_scene_id)
+			and encounter_workspace.snapshot().get("context", {}).get("roster", []).size() == 1
+		):
+			break
+		await create_timer(0.001).timeout
+	var opened_scene_roster: Array = encounter_workspace.snapshot().get("context", {}).get("roster", [])
+	_expect(
+		shell.active_route() == "encounter"
+		and opened_scene_roster.size() == 1
+		and opened_scene_roster[0].get("quantity", -1) == 4,
+		"Scene focus opens exactly its synchronized Encounter context in the production workspace"
+	)
+	open_initiative = encounter_workspace.find_child("OpenEncounterInitiative", true, false) as Button
+	if open_initiative != null:
+		open_initiative.pressed.emit()
+	for _attempt in 1800:
+		if encounter_workspace.snapshot().get("context", {}).get("mode", "") == "initiative":
+			break
+		await create_timer(0.001).timeout
+	confirm_initiative = encounter_workspace.find_child("ConfirmEncounterInitiative", true, false) as Button
+	if confirm_initiative != null:
+		confirm_initiative.pressed.emit()
+	for _attempt in 1800:
+		if encounter_workspace.snapshot().get("context", {}).get("mode", "") == "combat":
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		encounter_workspace.snapshot().get("context", {}).get("combatants", []).size() == 5,
+		"Scene-assigned Party and mob facts start one independent five-combatant Encounter"
+	)
+	var scene_reads := SceneReadController.new(data_root)
+	root.add_child(scene_reads)
+	var scene_read_results: Array = []
+	scene_reads.result_published.connect(func(result: Dictionary) -> void:
+		scene_read_results.append(result.duplicate(true))
+	)
+	var superseded_scene_read := scene_reads.query("worg")
+	var latest_scene_read := scene_reads.query("")
+	_expect(
+		superseded_scene_read.get("status", "") == "started"
+		and latest_scene_read.get("status", "") == "queued",
+		"Scene read lane admits one active and one latest pending projection"
+	)
+	for _attempt in 1800:
+		if not scene_reads.is_active():
+			break
+		await create_timer(0.001).timeout
+	await process_frame
+	var scene_read_resources := scene_reads.resource_snapshot()
+	_expect(
+		scene_read_results.size() == 1
+		and scene_read_results[0].get("scenes", []).size() == 2
+		and scene_read_resources.get("active_count", -1) == 0
+		and scene_read_resources.get("pending_count", -1) == 0
+		and scene_read_resources.get("worker_handle_count", -1) == 0,
+		"Scene latest-wins projection suppresses stale results and releases worker state"
+	)
+	scene_reads.queue_free()
+	await process_frame
 	_expect(shell.show_route("catalog").get("ok", false) and shell.active_route() == "catalog", "production shell exposes one native Katalog route")
 	var catalog := shell.route("catalog") as CatalogWorkspace
 	for _attempt in 600:
@@ -3025,6 +3424,29 @@ func _run_catalog_foundation_contract() -> void:
 		narrative_threads.snapshot().get("rows", [])[0].get("reference_id", "") == stable_quest_id,
 		"restoring the NPC atomically reattaches its surviving Quest thread"
 	)
+	_expect(shell.show_route("scene").get("ok", false), "restored World Planner facts remain reachable from the Scene route")
+	var scene_npc_choice := scene_workspace.find_child("SceneNpcChoice", true, false) as OptionButton
+	for _attempt in 1800:
+		if scene_npc_choice.item_count > 1 and not scene_workspace._commands.busy():
+			break
+		await create_timer(0.001).timeout
+	if scene_npc_choice.item_count > 1:
+		scene_npc_choice.select(1)
+	var add_scene_npc := scene_workspace.find_child("AddSceneNpc", true, false) as Button
+	add_scene_npc.pressed.emit()
+	for _attempt in 1800:
+		if scene_workspace.snapshot().get("focused", {}).get("npcs", []).size() == 1:
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		scene_workspace.snapshot().get("focused", {}).get("npcs", []).size() == 1,
+		"visible Scene controls assign one World-Planner NPC by stable reference; choices=%d unassigned=%s last_command=%s" % [
+			scene_npc_choice.item_count,
+			JSON.stringify(scene_workspace.snapshot().get("unassigned_npcs", [])),
+			JSON.stringify(scene_command_results.back()) if not scene_command_results.is_empty() else "none",
+		]
+	)
+	_expect(shell.show_route("catalog").get("ok", false), "Scene handoff returns to the retained Katalog workspace")
 	catalog.select_section("places")
 	for _attempt in 600:
 		if catalog.section_snapshot("places").get("status", "") == "ready":
@@ -3480,6 +3902,22 @@ func _run_catalog_foundation_contract() -> void:
 		and restarted_catalog.detail_snapshot().get("record", {}).get("inventory_limits", {}).size() == 1
 		and restarted_catalog.detail_snapshot().get("inventory_labels", {}).get("creature.worg", "") == "Worg",
 		"faction finite stock and current Creature label survive complete Catalog reconstruction"
+	)
+	var restarted_scene := restarted_shell.route("scene") as SceneWorkspace
+	restarted_shell.show_route("scene")
+	for _attempt in 1800:
+		if restarted_scene.snapshot().get("scenes", []).size() == 2:
+			break
+		await create_timer(0.001).timeout
+	var restarted_mobs: Array = restarted_scene.snapshot().get("focused", {}).get("mob_rows", [])
+	_expect(
+		restarted_scene.snapshot().get("focused_scene_id", "") == cellar_scene_id
+		and restarted_scene.snapshot().get("focused", {}).get("party_members", []).size() == 1
+		and restarted_mobs.size() == 1
+		and restarted_mobs[0].get("count", -1) == 4
+		and restarted_scene.snapshot().get("focused", {}).get("encounter", {}).get("mode", "") == "combat"
+		and restarted_scene.snapshot().get("focused", {}).get("encounter", {}).get("combatants", []).size() == 5,
+		"Scene focus, split Party, mobs, and independent live Encounter survive complete shell reconstruction"
 	)
 	restarted_shell.queue_free()
 	await process_frame

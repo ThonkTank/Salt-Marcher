@@ -217,7 +217,6 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
             switch (action) {
                 case OPEN -> monsterDefinition.open(row.id());
                 case ADD_TO_ENCOUNTER -> monsterDefinition.addToEncounter(row.id());
-                case ADD_TO_SCENE -> monsterDefinition.addToScene(row.id());
                 default -> { }
             }
         });
@@ -268,7 +267,6 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
             switch (action) {
                 case OPEN -> npcDefinition.open(row.npcId());
                 case ADD_TO_ENCOUNTER -> npcDefinition.addToEncounter(row.npcId());
-                case ADD_TO_SCENE -> npcDefinition.addToScene(row.npcId());
                 default -> { }
             }
         });
@@ -301,7 +299,6 @@ public final class CatalogWorkspaceController implements CatalogLifecycle {
             switch (action) {
                 case OPEN -> locationDefinition.open(row.locationId());
                 case USE_AS_ENCOUNTER_SOURCE -> locationDefinition.useAsEncounterSource(row.locationId());
-                case SET_FOCUSED_SCENE_LOCATION -> locationDefinition.setFocusedSceneLocation(row.locationId());
                 default -> { }
             }
         });

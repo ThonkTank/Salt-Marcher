@@ -1,7 +1,6 @@
 package features.catalog.application;
 
 import features.catalog.application.CatalogApplicationRoutes.EncounterHandoff;
-import features.catalog.application.CatalogApplicationRoutes.SceneHandoff;
 import features.catalog.application.CatalogApplicationRoutes.WorldInspectorRoutes;
 import features.encountertable.api.EncounterTableCatalogModel;
 import features.worldplanner.api.WorldLocationSummary;
@@ -23,21 +22,18 @@ public final class LocationCatalogDefinition
     private final EncounterTableCatalogModel tables;
     private final WorldInspectorRoutes inspectors;
     private final EncounterHandoff encounter;
-    private final SceneHandoff scene;
     private final AtomicLong providerRevision = new AtomicLong();
 
     public LocationCatalogDefinition(
             WorldPlannerSnapshotModel world,
             EncounterTableCatalogModel tables,
             WorldInspectorRoutes inspectors,
-            EncounterHandoff encounter,
-            SceneHandoff scene
+            EncounterHandoff encounter
     ) {
         this.world = Objects.requireNonNull(world, "world");
         this.tables = Objects.requireNonNull(tables, "tables");
         this.inspectors = Objects.requireNonNull(inspectors, "inspectors");
         this.encounter = Objects.requireNonNull(encounter, "encounter");
-        this.scene = Objects.requireNonNull(scene, "scene");
     }
 
     @Override public CatalogSectionId id() { return CatalogSectionId.LOCATIONS; }
@@ -66,15 +62,10 @@ public final class LocationCatalogDefinition
                 Optional.of(new CatalogActionSpec(
                         CatalogActionId.OPEN, "Details öffnen", "Ort im Inspector öffnen", "Öffnen",
                         CatalogActionSpec.Emphasis.SECONDARY)),
-                List.of(
-                        new CatalogActionSpec(
-                                CatalogActionId.USE_AS_ENCOUNTER_SOURCE, "Als Quelle",
-                                "Ort als Encounter-Quelle verwenden", "Als Encounter-Quelle",
-                                CatalogActionSpec.Emphasis.PRIMARY),
-                        new CatalogActionSpec(
-                                CatalogActionId.SET_FOCUSED_SCENE_LOCATION, "Als Ort",
-                                "Ort der fokussierten Scene zuweisen", "Als Scene-Ort",
-                                CatalogActionSpec.Emphasis.SECONDARY)),
+                List.of(new CatalogActionSpec(
+                        CatalogActionId.USE_AS_ENCOUNTER_SOURCE, "Als Quelle",
+                        "Ort als Encounter-Quelle verwenden", "Als Encounter-Quelle",
+                        CatalogActionSpec.Emphasis.PRIMARY)),
                 List.of(CatalogActionSpec.create()), false,
                 new CatalogSortOrder("name", CatalogSortOrder.Direction.ASCENDING), CatalogSortMode.LOCAL);
     }
@@ -90,9 +81,6 @@ public final class LocationCatalogDefinition
     public void create() { inspectors.createLocation(); }
     public void useAsEncounterSource(long id) {
         find(id).ifPresent(value -> encounter.useLocationSource(value.locationId()));
-    }
-    public void setFocusedSceneLocation(long id) {
-        find(id).ifPresent(value -> scene.setLocation(value.locationId()));
     }
     public List<CatalogReferenceOption> options() {
         return WorldCatalogProjection.locationOptions(world.current());

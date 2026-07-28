@@ -72,12 +72,9 @@ final class CampaignShell implements CampaignActivationCoordinator.Candidate {
 
     @Override
     public boolean reusableWhileParked() {
-        // The current shared Creature/Item definitions are read-only, and the focused Scene
-        // binding has no delayed background session to retire. Other active workspaces may own
-        // debounce or activation lifecycles, so they take the cold, close-and-rebuild path.
-        return shell.activeLeftBarTab()
-                .map(CampaignRuntime.REQUIRED_SCENE_JOURNEY::equals)
-                .orElse(false);
+        // The Java Scene owner has been removed. Remaining legacy workspaces may own debounce or
+        // activation lifecycles, so parked Campaigns take the cold, close-and-rebuild path.
+        return false;
     }
 
     @Override

@@ -8,6 +8,7 @@ const SharedDefinitionStore = preload("res://godot/src/platform/persistence/shar
 const EncounterPlanKnowledge = preload("res://godot/src/features/encounter/encounter_plan_knowledge.gd")
 const EncounterRuntimeKnowledge = preload("res://godot/src/features/encounter/encounter_runtime_knowledge.gd")
 const PartyRoster = preload("res://godot/src/features/party/party_roster.gd")
+const SceneKnowledge = preload("res://godot/src/features/scene/scene_knowledge.gd")
 
 var _encounter_data_root: String
 
@@ -23,53 +24,54 @@ func _init(data_root: String, runtime_coordinator) -> void:
 	)
 
 
-func open_saved_plan(plan_id: String) -> Dictionary:
-	return start_command({"operation": "open_plan", "plan_id": plan_id})
+func open_saved_plan(plan_id: String, context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
+	return start_command({"operation": "open_plan", "plan_id": plan_id, "context_id": context_id})
 
 
-func open_initiative() -> Dictionary:
-	return start_command({"operation": "open_initiative"})
+func open_initiative(context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
+	return start_command({"operation": "open_initiative", "context_id": context_id})
 
 
-func set_initiative(combatant_id: String, value: int) -> Dictionary:
-	return start_command({"operation": "set_initiative", "combatant_id": combatant_id, "value": value})
+func set_initiative(combatant_id: String, value: int, context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
+	return start_command({"operation": "set_initiative", "combatant_id": combatant_id, "value": value, "context_id": context_id})
 
 
-func roll_all_initiative(rolls: Dictionary) -> Dictionary:
-	return start_command({"operation": "roll_all", "rolls": rolls.duplicate(true)})
+func roll_all_initiative(rolls: Dictionary, context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
+	return start_command({"operation": "roll_all", "rolls": rolls.duplicate(true), "context_id": context_id})
 
 
-func confirm_initiative() -> Dictionary:
-	return start_command({"operation": "confirm_initiative"})
+func confirm_initiative(context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
+	return start_command({"operation": "confirm_initiative", "context_id": context_id})
 
 
-func advance_turn() -> Dictionary:
-	return start_command({"operation": "advance_turn"})
+func advance_turn(context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
+	return start_command({"operation": "advance_turn", "context_id": context_id})
 
 
-func mutate_hp(combatant_id: String, amount: int, healing: bool) -> Dictionary:
+func mutate_hp(combatant_id: String, amount: int, healing: bool, context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
 	return start_command({
 		"operation": "mutate_hp",
 		"combatant_id": combatant_id,
 		"amount": amount,
 		"healing": healing,
+		"context_id": context_id,
 	})
 
 
-func set_combat_initiative(combatant_id: String, value: int) -> Dictionary:
-	return start_command({"operation": "set_combat_initiative", "combatant_id": combatant_id, "value": value})
+func set_combat_initiative(combatant_id: String, value: int, context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
+	return start_command({"operation": "set_combat_initiative", "combatant_id": combatant_id, "value": value, "context_id": context_id})
 
 
-func end_combat() -> Dictionary:
-	return start_command({"operation": "end_combat"})
+func end_combat(context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
+	return start_command({"operation": "end_combat", "context_id": context_id})
 
 
-func award_xp() -> Dictionary:
-	return start_command({"operation": "award_xp"})
+func award_xp(context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
+	return start_command({"operation": "award_xp", "context_id": context_id})
 
 
-func return_to_builder() -> Dictionary:
-	return start_command({"operation": "return_to_builder"})
+func return_to_builder(context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
+	return start_command({"operation": "return_to_builder", "context_id": context_id})
 
 
 func _empty_payload() -> Dictionary:
@@ -80,8 +82,15 @@ func _empty_party_payload() -> Dictionary:
 	return PartyRoster.new().empty_payload()
 
 
+func _empty_scene_payload() -> Dictionary:
+	return SceneKnowledge.new().empty_payload()
+
+
 func _supporting_payload_factories_for(_request: Dictionary) -> Dictionary:
-	return {PartyRoster.OWNER: Callable(self, "_empty_party_payload")}
+	return {
+		PartyRoster.OWNER: Callable(self, "_empty_party_payload"),
+		SceneKnowledge.OWNER: Callable(self, "_empty_scene_payload"),
+	}
 
 
 func _apply_runtime_command(payload: Dictionary, request: Dictionary) -> Dictionary:
@@ -90,36 +99,37 @@ func _apply_runtime_command(payload: Dictionary, request: Dictionary) -> Diction
 		return owner_validation
 	payload = owner_validation["payload"]
 	var model := EncounterRuntimeKnowledge.new()
+	var context_id := str(request.get("context_id", EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID))
 	var result: Dictionary
 	match request["operation"]:
 		"open_plan":
 			var prepared := _prepare_plan_roster(payload, str(request["plan_id"]), request)
 			if not prepared.get("ok", false):
 				return prepared
-			result = model.open_saved_plan(payload, str(request["plan_id"]), prepared["roster"])
+			result = model.open_saved_plan(payload, str(request["plan_id"]), prepared["roster"], context_id)
 		"open_initiative":
-			var party := _active_party(request)
+			var party := _active_party(request, context_id)
 			if not party.get("ok", false):
 				return party
-			result = model.open_initiative(payload, party["active"])
+			result = model.open_initiative(payload, party["active"], context_id)
 		"set_initiative":
-			result = model.set_initiative(payload, str(request["combatant_id"]), int(request["value"]))
+			result = model.set_initiative(payload, str(request["combatant_id"]), int(request["value"]), context_id)
 		"roll_all":
-			result = model.roll_all_initiative(payload, request["rolls"])
+			result = model.roll_all_initiative(payload, request["rolls"], context_id)
 		"confirm_initiative":
-			result = model.confirm_initiative(payload)
+			result = model.confirm_initiative(payload, context_id)
 		"advance_turn":
-			result = model.advance_turn(payload)
+			result = model.advance_turn(payload, context_id)
 		"mutate_hp":
-			result = model.mutate_hp(payload, str(request["combatant_id"]), int(request["amount"]), bool(request["healing"]))
+			result = model.mutate_hp(payload, str(request["combatant_id"]), int(request["amount"]), bool(request["healing"]), context_id)
 		"set_combat_initiative":
-			result = model.set_combat_initiative(payload, str(request["combatant_id"]), int(request["value"]))
+			result = model.set_combat_initiative(payload, str(request["combatant_id"]), int(request["value"]), context_id)
 		"end_combat":
-			result = model.end_combat(payload)
+			result = model.end_combat(payload, context_id)
 		"award_xp":
 			return _award_xp(payload, request)
 		"return_to_builder":
-			result = model.return_to_builder(payload)
+			result = model.return_to_builder(payload, context_id)
 		_:
 			return {"ok": false, "status": "invalid", "error": "Unbekannte Encounter-Laufzeitänderung."}
 	return _validated_result(result)
@@ -181,17 +191,35 @@ func _prepare_plan_roster(payload: Dictionary, plan_id: String, request: Diction
 	return {"ok": true, "roster": prepared_roster}
 
 
-func _active_party(request: Dictionary) -> Dictionary:
+func _active_party(request: Dictionary, context_id: String) -> Dictionary:
 	var party_payload: Dictionary = request.get("supporting_payloads", {}).get(PartyRoster.OWNER, PartyRoster.new().empty_payload())
 	var snapshot := PartyRoster.new().snapshot(party_payload, "", false, PartyRoster.MAX_SEARCH_PAGE_SIZE)
 	if not snapshot.get("ok", false):
 		return snapshot
-	return {"ok": true, "active": snapshot["active"]}
+	if context_id == EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID:
+		return {"ok": true, "active": snapshot["active"]}
+	var scene_payload: Dictionary = request.get("supporting_payloads", {}).get(SceneKnowledge.OWNER, SceneKnowledge.new().empty_payload())
+	var scene_validation := SceneKnowledge.new().validate_payload(scene_payload)
+	if not scene_validation.get("ok", false):
+		return scene_validation
+	var assigned := {}
+	for scene_id_value in scene_validation["payload"]["scenes"]:
+		var scene: Dictionary = scene_validation["payload"]["scenes"][scene_id_value]
+		if SceneKnowledge.new().encounter_context_id(str(scene["scene_id"])) == context_id:
+			for character_id in scene["party_member_ids"]:
+				assigned[character_id] = true
+			break
+	var active: Array = []
+	for member in snapshot["active"]:
+		if assigned.has(member["character_id"]):
+			active.append(member.duplicate(true))
+	return {"ok": true, "active": active}
 
 
 func _award_xp(encounter_payload: Dictionary, request: Dictionary) -> Dictionary:
 	var runtime := EncounterRuntimeKnowledge.new()
-	var snapshot := runtime.snapshot(encounter_payload)
+	var context_id := str(request.get("context_id", EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID))
+	var snapshot := runtime.snapshot(encounter_payload, context_id)
 	if not snapshot.get("ok", false):
 		return snapshot
 	var result_state: Dictionary = snapshot["context"]["result"]
@@ -205,7 +233,7 @@ func _award_xp(encounter_payload: Dictionary, request: Dictionary) -> Dictionary
 	)
 	if not party_change.get("ok", false):
 		return party_change
-	var encounter_change := runtime.mark_xp_awarded(encounter_payload)
+	var encounter_change := runtime.mark_xp_awarded(encounter_payload, context_id)
 	var validated := _validated_result(encounter_change)
 	if not validated.get("ok", false):
 		return validated

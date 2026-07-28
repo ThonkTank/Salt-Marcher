@@ -8,8 +8,7 @@ public record CatalogRoutes(
         CreatureInspectorRoute creatureInspector,
         ItemInspectorRoute itemInspector,
         WorldInspectorRoutes worldInspectors,
-        EncounterHandoff encounter,
-        SceneHandoff scene
+        EncounterHandoff encounter
 ) implements CatalogApplicationRoutes {
 
     public CatalogRoutes {
@@ -17,7 +16,6 @@ public record CatalogRoutes(
         itemInspector = Objects.requireNonNull(itemInspector, "itemInspector");
         worldInspectors = Objects.requireNonNull(worldInspectors, "worldInspectors");
         encounter = Objects.requireNonNull(encounter, "encounter");
-        scene = Objects.requireNonNull(scene, "scene");
     }
 
     @FunctionalInterface
@@ -32,8 +30,5 @@ public record CatalogRoutes(
     }
 
     public interface EncounterHandoff extends CatalogApplicationRoutes.EncounterHandoff {
-    }
-
-    public interface SceneHandoff extends CatalogApplicationRoutes.SceneHandoff {
     }
 }

@@ -5,7 +5,7 @@ extends RefCounted
 ## in the same owner partition and are only copied into a runtime roster on an
 ## explicit open command.
 
-const FORMAT_ID := "saltmarcher.encounter-runtime.v1"
+const FORMAT_ID := "saltmarcher.encounter-runtime.v2"
 const MANUAL_CONTEXT_ID := "encounter_context.manual"
 const MODES := ["builder", "initiative", "combat", "results"]
 const KINDS := ["pc", "enemy", "ally"]
@@ -78,25 +78,37 @@ func snapshot(owner_payload: Dictionary, context_id: String = "") -> Dictionary:
 	}
 
 
-func open_saved_plan(owner_payload: Dictionary, plan_id: String, prepared_roster: Array) -> Dictionary:
-	var state := _mutable_state(owner_payload)
+func open_saved_plan(
+	owner_payload: Dictionary,
+	plan_id: String,
+	prepared_roster: Array,
+	context_id: String = MANUAL_CONTEXT_ID
+) -> Dictionary:
+	var state := _mutable_state(owner_payload, context_id)
 	if not state.get("ok", false):
 		return state
 	if not owner_payload.get("records", {}).has(plan_id):
 		return _failure("Gespeicherter Encounter fehlt: %s" % plan_id, "missing")
-	var roster_validation := _validate_prepared_roster(prepared_roster)
+	var normalized := _normalize_prepared_roster(prepared_roster)
+	if not normalized.get("ok", false):
+		return normalized
+	var roster_validation := _validate_prepared_roster(normalized["roster"])
 	if not roster_validation.get("ok", false):
 		return roster_validation
-	var context := empty_context(MANUAL_CONTEXT_ID)
+	var context := empty_context(context_id)
 	context["revision"] = _next_revision(state["context"])
 	context["status"] = "Encounter-Aufstellung ist bereit."
 	context["active_plan_id"] = plan_id
-	context["roster"] = prepared_roster.duplicate(true)
+	context["roster"] = normalized["roster"].duplicate(true)
 	return _publish_context(state["payload"], state["runtime"], context, "plan_opened")
 
 
-func open_initiative(owner_payload: Dictionary, active_party: Array) -> Dictionary:
-	var state := _mutable_state(owner_payload)
+func open_initiative(
+	owner_payload: Dictionary,
+	active_party: Array,
+	context_id: String = MANUAL_CONTEXT_ID
+) -> Dictionary:
+	var state := _mutable_state(owner_payload, context_id)
 	if not state.get("ok", false):
 		return state
 	var context: Dictionary = state["context"]
@@ -118,13 +130,13 @@ func open_initiative(owner_payload: Dictionary, active_party: Array) -> Dictiona
 	for roster_entry in context["roster"]:
 		var bonus := clampi(int(roster_entry["initiative_bonus"]), -3, 6)
 		initiative.append({
-			"combatant_id": "enemy.%s" % str(roster_entry["creature_id"]),
+			"combatant_id": str(roster_entry["slot_id"]),
 			"label": "%s%s · %+d" % [
 				str(roster_entry["name"]),
 				"" if int(roster_entry["quantity"]) == 1 else " ×%d" % int(roster_entry["quantity"]),
 				int(roster_entry["initiative_bonus"]),
 			],
-			"kind": "enemy",
+			"kind": str(roster_entry["kind"]),
 			"initiative": 12 + bonus,
 			"initiative_bonus": int(roster_entry["initiative_bonus"]),
 		})
@@ -139,8 +151,13 @@ func open_initiative(owner_payload: Dictionary, active_party: Array) -> Dictiona
 	return _publish_context(state["payload"], state["runtime"], context, "initiative_opened")
 
 
-func set_initiative(owner_payload: Dictionary, combatant_id: String, value: int) -> Dictionary:
-	var state := _mutable_state(owner_payload)
+func set_initiative(
+	owner_payload: Dictionary,
+	combatant_id: String,
+	value: int,
+	context_id: String = MANUAL_CONTEXT_ID
+) -> Dictionary:
+	var state := _mutable_state(owner_payload, context_id)
 	if not state.get("ok", false):
 		return state
 	var context: Dictionary = state["context"]
@@ -161,8 +178,12 @@ func set_initiative(owner_payload: Dictionary, combatant_id: String, value: int)
 	return _publish_context(state["payload"], state["runtime"], context, "initiative_updated")
 
 
-func roll_all_initiative(owner_payload: Dictionary, rolls: Dictionary) -> Dictionary:
-	var state := _mutable_state(owner_payload)
+func roll_all_initiative(
+	owner_payload: Dictionary,
+	rolls: Dictionary,
+	context_id: String = MANUAL_CONTEXT_ID
+) -> Dictionary:
+	var state := _mutable_state(owner_payload, context_id)
 	if not state.get("ok", false):
 		return state
 	var context: Dictionary = state["context"]
@@ -181,8 +202,8 @@ func roll_all_initiative(owner_payload: Dictionary, rolls: Dictionary) -> Dictio
 	return _publish_context(state["payload"], state["runtime"], context, "initiative_rolled")
 
 
-func confirm_initiative(owner_payload: Dictionary) -> Dictionary:
-	var state := _mutable_state(owner_payload)
+func confirm_initiative(owner_payload: Dictionary, context_id: String = MANUAL_CONTEXT_ID) -> Dictionary:
+	var state := _mutable_state(owner_payload, context_id)
 	if not state.get("ok", false):
 		return state
 	var context: Dictionary = state["context"]
@@ -190,7 +211,7 @@ func confirm_initiative(owner_payload: Dictionary) -> Dictionary:
 		return _failure("Der Kampf braucht vollständige Initiativewerte.")
 	var roster_by_id := {}
 	for roster_entry in context["roster"]:
-		roster_by_id["enemy.%s" % str(roster_entry["creature_id"])] = roster_entry
+		roster_by_id[str(roster_entry["slot_id"])] = roster_entry
 	var combatants: Array = []
 	var order := 0
 	for initiative_entry in context["initiative"]:
@@ -216,9 +237,9 @@ func confirm_initiative(owner_payload: Dictionary) -> Dictionary:
 		var roster_entry: Dictionary = roster_by_id[id]
 		for member_index in int(roster_entry["quantity"]):
 			combatants.append({
-				"combatant_id": "%s.%d" % [id, member_index + 1],
+				"combatant_id": "%s.member.%d" % [id, member_index + 1],
 				"name": str(roster_entry["name"]) if int(roster_entry["quantity"]) == 1 else "%s #%d" % [str(roster_entry["name"]), member_index + 1],
-				"kind": "enemy",
+				"kind": str(roster_entry["kind"]),
 				"creature_id": str(roster_entry["creature_id"]),
 				"party_member_id": "",
 				"current_hp": int(roster_entry["hit_points"]),
@@ -240,8 +261,8 @@ func confirm_initiative(owner_payload: Dictionary) -> Dictionary:
 	return _publish_context(state["payload"], state["runtime"], context, "combat_started")
 
 
-func advance_turn(owner_payload: Dictionary) -> Dictionary:
-	var state := _mutable_state(owner_payload)
+func advance_turn(owner_payload: Dictionary, context_id: String = MANUAL_CONTEXT_ID) -> Dictionary:
+	var state := _mutable_state(owner_payload, context_id)
 	if not state.get("ok", false):
 		return state
 	var context: Dictionary = state["context"]
@@ -266,8 +287,14 @@ func advance_turn(owner_payload: Dictionary) -> Dictionary:
 	return _publish_context(state["payload"], state["runtime"], context, "turn_advanced")
 
 
-func mutate_hp(owner_payload: Dictionary, combatant_id: String, amount: int, healing: bool) -> Dictionary:
-	var state := _mutable_state(owner_payload)
+func mutate_hp(
+	owner_payload: Dictionary,
+	combatant_id: String,
+	amount: int,
+	healing: bool,
+	context_id: String = MANUAL_CONTEXT_ID
+) -> Dictionary:
+	var state := _mutable_state(owner_payload, context_id)
 	if not state.get("ok", false):
 		return state
 	var context: Dictionary = state["context"]
@@ -293,8 +320,13 @@ func mutate_hp(owner_payload: Dictionary, combatant_id: String, amount: int, hea
 	return _publish_context(state["payload"], state["runtime"], context, "hp_updated")
 
 
-func set_combat_initiative(owner_payload: Dictionary, combatant_id: String, value: int) -> Dictionary:
-	var state := _mutable_state(owner_payload)
+func set_combat_initiative(
+	owner_payload: Dictionary,
+	combatant_id: String,
+	value: int,
+	context_id: String = MANUAL_CONTEXT_ID
+) -> Dictionary:
+	var state := _mutable_state(owner_payload, context_id)
 	if not state.get("ok", false):
 		return state
 	var context: Dictionary = state["context"]
@@ -318,8 +350,8 @@ func set_combat_initiative(owner_payload: Dictionary, combatant_id: String, valu
 	return _publish_context(state["payload"], state["runtime"], context, "combat_initiative_updated")
 
 
-func end_combat(owner_payload: Dictionary) -> Dictionary:
-	var state := _mutable_state(owner_payload)
+func end_combat(owner_payload: Dictionary, context_id: String = MANUAL_CONTEXT_ID) -> Dictionary:
+	var state := _mutable_state(owner_payload, context_id)
 	if not state.get("ok", false):
 		return state
 	var context: Dictionary = state["context"]
@@ -359,8 +391,8 @@ func end_combat(owner_payload: Dictionary) -> Dictionary:
 	return _publish_context(state["payload"], state["runtime"], context, "combat_ended")
 
 
-func mark_xp_awarded(owner_payload: Dictionary) -> Dictionary:
-	var state := _mutable_state(owner_payload)
+func mark_xp_awarded(owner_payload: Dictionary, context_id: String = MANUAL_CONTEXT_ID) -> Dictionary:
+	var state := _mutable_state(owner_payload, context_id)
 	if not state.get("ok", false):
 		return state
 	var context: Dictionary = state["context"]
@@ -375,8 +407,8 @@ func mark_xp_awarded(owner_payload: Dictionary) -> Dictionary:
 	return _publish_context(state["payload"], state["runtime"], context, "xp_awarded")
 
 
-func return_to_builder(owner_payload: Dictionary) -> Dictionary:
-	var state := _mutable_state(owner_payload)
+func return_to_builder(owner_payload: Dictionary, context_id: String = MANUAL_CONTEXT_ID) -> Dictionary:
+	var state := _mutable_state(owner_payload, context_id)
 	if not state.get("ok", false):
 		return state
 	var context: Dictionary = state["context"]
@@ -393,12 +425,236 @@ func return_to_builder(owner_payload: Dictionary) -> Dictionary:
 	return _publish_context(state["payload"], state["runtime"], context, "builder_restored")
 
 
-func _mutable_state(owner_payload: Dictionary) -> Dictionary:
+func focus_context(owner_payload: Dictionary, context_id: String) -> Dictionary:
+	var validation := validate_runtime(owner_payload.get("runtime", null))
+	if not validation.get("ok", false):
+		return validation
+	var runtime: Dictionary = validation["runtime"]
+	if not runtime["contexts"].has(context_id):
+		return _failure("Encounter-Kontext fehlt: %s" % context_id, "missing")
+	if runtime["focused_context_id"] == context_id:
+		return {
+			"ok": true,
+			"status": "unchanged",
+			"payload": owner_payload.duplicate(true),
+			"context": _with_projection(runtime["contexts"][context_id]),
+			"no_write": true,
+		}
+	var next_runtime := runtime.duplicate(true)
+	next_runtime["focused_context_id"] = context_id
+	var next_payload := owner_payload.duplicate(true)
+	next_payload["runtime"] = next_runtime
+	return {
+		"ok": true,
+		"status": "context_focused",
+		"payload": next_payload,
+		"context": _with_projection(next_runtime["contexts"][context_id]),
+	}
+
+
+func synchronize_contexts(
+	owner_payload: Dictionary,
+	source_revision: int,
+	focused_context_id: String,
+	specs: Array
+) -> Dictionary:
+	var validation := validate_runtime(owner_payload.get("runtime", null))
+	if not validation.get("ok", false):
+		return validation
+	if source_revision < 0 or not _valid_id(focused_context_id) or specs.is_empty() or specs.size() > MAX_COLLECTION_SIZE:
+		return _failure("Scene-Synchronisierung besitzt ungültige Grenzen.")
+	var runtime: Dictionary = validation["runtime"]
+	if source_revision < int(runtime["source_revision"]):
+		return {
+			"ok": true,
+			"status": "stale_ignored",
+			"payload": owner_payload.duplicate(true),
+			"accepted_revision": runtime["source_revision"],
+			"no_write": true,
+		}
+	var desired_contexts := {}
+	for value in specs:
+		if not value is Dictionary:
+			return _failure("Scene-Synchronisierung enthält einen ungültigen Kontext.")
+		var spec: Dictionary = value
+		var context_id := str(spec.get("context_id", ""))
+		var active_plan_id := str(spec.get("active_plan_id", ""))
+		if (
+			spec.size() != 4
+			or not _valid_id(context_id)
+			or desired_contexts.has(context_id)
+			or (not active_plan_id.is_empty() and not _valid_id(active_plan_id))
+			or not spec.get("party", null) is Array
+			or not spec.get("roster", null) is Array
+		):
+			return _failure("Scene-Synchronisierung enthält ungültige Kontextfakten.")
+		var party_validation := _validate_active_party(spec["party"], true)
+		if not party_validation.get("ok", false):
+			return party_validation
+		var roster_normalized := _normalize_prepared_roster(spec["roster"])
+		if not roster_normalized.get("ok", false):
+			return roster_normalized
+		var current: Dictionary = runtime["contexts"].get(context_id, empty_context(context_id)).duplicate(true)
+		desired_contexts[context_id] = _reconcile_context(
+			current,
+			spec["party"],
+			roster_normalized["roster"],
+			active_plan_id
+		)
+	if not desired_contexts.has(focused_context_id):
+		return _failure("Fokussierter Scene-Encounter fehlt in der Synchronisierung.")
+	var contexts: Dictionary = runtime["contexts"].duplicate(true)
+	for id_value in contexts.keys():
+		var id := str(id_value)
+		if id.begins_with("encounter_context.scene.") and not desired_contexts.has(id):
+			contexts.erase(id)
+	for id_value in desired_contexts:
+		contexts[id_value] = desired_contexts[id_value]
+	var next_runtime := runtime.duplicate(true)
+	next_runtime["source_revision"] = source_revision
+	next_runtime["focused_context_id"] = focused_context_id
+	next_runtime["contexts"] = contexts
+	var next_validation := validate_runtime(next_runtime)
+	if not next_validation.get("ok", false):
+		return next_validation
+	if next_runtime == runtime:
+		return {
+			"ok": true,
+			"status": "unchanged",
+			"payload": owner_payload.duplicate(true),
+			"accepted_revision": source_revision,
+			"no_write": true,
+		}
+	var next_payload := owner_payload.duplicate(true)
+	next_payload["runtime"] = next_validation["runtime"]
+	return {
+		"ok": true,
+		"status": "contexts_synchronized",
+		"payload": next_payload,
+		"accepted_revision": source_revision,
+		"context": _with_projection(next_runtime["contexts"][focused_context_id]),
+	}
+
+
+func _reconcile_context(
+	current_value: Dictionary,
+	party: Array,
+	roster: Array,
+	active_plan_id: String
+) -> Dictionary:
+	var current := current_value.duplicate(true)
+	var next := current_value.duplicate(true)
+	next["active_plan_id"] = active_plan_id
+	next["roster"] = roster.duplicate(true)
+	match str(current["mode"]):
+		"builder":
+			pass
+		"initiative":
+			next["initiative"] = _reconciled_initiative(current["initiative"], party, roster)
+		"combat":
+			var active_id := _active_combatant_id(current)
+			next["combatants"] = _reconciled_combatants(current["combatants"], party, roster)
+			next["current_turn_index"] = _combatant_index(next["combatants"], active_id)
+			if next["combatants"].is_empty():
+				next["current_turn_index"] = -1
+		"results":
+			pass
+	if next != current:
+		next["status"] = "Scene-Besetzung und Encounter-Kontext sind synchron."
+		next["revision"] = _next_revision(current)
+	return next
+
+
+func _reconciled_initiative(current: Array, party: Array, roster: Array) -> Array:
+	var existing := {}
+	for value in current:
+		existing[str(value["combatant_id"])] = value
+	var result: Array = []
+	for index in party.size():
+		var member: Dictionary = party[index]
+		var id := str(member["character_id"])
+		var prior: Dictionary = existing.get(id, {})
+		result.append({
+			"combatant_id": id,
+			"label": "%s%s" % [str(member["name"]), "" if member["level"] == null else " · Stufe %d" % int(member["level"])],
+			"kind": "pc",
+			"initiative": int(prior.get("initiative", 10 + index)),
+			"initiative_bonus": 0,
+		})
+	for entry_value in roster:
+		var entry: Dictionary = entry_value
+		var id := str(entry["slot_id"])
+		var prior: Dictionary = existing.get(id, {})
+		result.append({
+			"combatant_id": id,
+			"label": "%s%s · %+d" % [str(entry["name"]), "" if int(entry["quantity"]) == 1 else " ×%d" % int(entry["quantity"]), int(entry["initiative_bonus"])],
+			"kind": str(entry["kind"]),
+			"initiative": int(prior.get("initiative", 12 + clampi(int(entry["initiative_bonus"]), -3, 6))),
+			"initiative_bonus": int(entry["initiative_bonus"]),
+		})
+	return result
+
+
+func _reconciled_combatants(current: Array, party: Array, roster: Array) -> Array:
+	var existing := {}
+	for value in current:
+		existing[str(value["combatant_id"])] = value
+	var result: Array = []
+	var order := 0
+	for index in party.size():
+		var member: Dictionary = party[index]
+		var id := str(member["character_id"])
+		var combatant: Dictionary = existing.get(id, {
+			"combatant_id": id,
+			"name": str(member["name"]),
+			"kind": "pc",
+			"creature_id": "",
+			"party_member_id": id,
+			"current_hp": 0,
+			"max_hp": 0,
+			"armor_class": 0,
+			"initiative": 10 + index,
+			"xp": 0,
+			"order": order,
+		}).duplicate(true)
+		combatant["name"] = str(member["name"])
+		combatant["order"] = order
+		result.append(combatant)
+		order += 1
+	for entry_value in roster:
+		var entry: Dictionary = entry_value
+		for member_index in int(entry["quantity"]):
+			var id := "%s.member.%d" % [str(entry["slot_id"]), member_index + 1]
+			var combatant: Dictionary = existing.get(id, {
+				"combatant_id": id,
+				"name": str(entry["name"]) if int(entry["quantity"]) == 1 else "%s #%d" % [str(entry["name"]), member_index + 1],
+				"kind": str(entry["kind"]),
+				"creature_id": str(entry["creature_id"]),
+				"party_member_id": "",
+				"current_hp": int(entry["hit_points"]),
+				"max_hp": int(entry["hit_points"]),
+				"armor_class": int(entry["armor_class"]),
+				"initiative": 12 + clampi(int(entry["initiative_bonus"]), -3, 6),
+				"xp": int(entry["xp"]),
+				"order": order,
+			}).duplicate(true)
+			combatant["name"] = str(entry["name"]) if int(entry["quantity"]) == 1 else "%s #%d" % [str(entry["name"]), member_index + 1]
+			combatant["kind"] = str(entry["kind"])
+			combatant["order"] = order
+			result.append(combatant)
+			order += 1
+	result.sort_custom(Callable(self, "_combatant_precedes"))
+	return result
+
+
+func _mutable_state(owner_payload: Dictionary, context_id: String = MANUAL_CONTEXT_ID) -> Dictionary:
 	var runtime_validation := validate_runtime(owner_payload.get("runtime", null))
 	if not runtime_validation.get("ok", false):
 		return runtime_validation
 	var runtime: Dictionary = runtime_validation["runtime"]
-	var context: Dictionary = runtime["contexts"].get(MANUAL_CONTEXT_ID, empty_context()).duplicate(true)
+	if not _valid_id(context_id):
+		return _failure("Encounter-Kontext besitzt keine gültige Identität.")
+	var context: Dictionary = runtime["contexts"].get(context_id, empty_context(context_id)).duplicate(true)
 	return {"ok": true, "payload": owner_payload.duplicate(true), "runtime": runtime, "context": context}
 
 
@@ -480,16 +736,19 @@ func _validate_context(context_id: String, value: Variant) -> Dictionary:
 func _validate_prepared_roster(roster: Array, empty_allowed: bool = false) -> Dictionary:
 	if roster.is_empty() and not empty_allowed:
 		return _failure("Eine Laufzeit-Aufstellung braucht mindestens eine Kreatur.")
-	var seen := {}
+	var seen_slots := {}
 	for value in roster:
 		if not value is Dictionary:
 			return _failure("Encounter-Laufzeitaufstellung enthält eine ungültige Zeile.")
 		var entry: Dictionary = value
-		var id := str(entry.get("creature_id", ""))
+		var slot_id := str(entry.get("slot_id", ""))
+		var creature_id := str(entry.get("creature_id", ""))
 		if (
-			entry.size() != 9
-			or not _valid_id(id)
-			or seen.has(id)
+			entry.size() != 11
+			or not _valid_id(slot_id)
+			or seen_slots.has(slot_id)
+			or not _valid_id(creature_id)
+			or entry.get("kind", "") not in ["enemy", "ally"]
 			or not _valid_text(entry.get("name", null))
 			or not _positive_integer(entry.get("quantity", null))
 			or not _valid_text(entry.get("challenge_rating", null))
@@ -500,12 +759,28 @@ func _validate_prepared_roster(roster: Array, empty_allowed: bool = false) -> Di
 			or not _valid_text(entry.get("last_known_name", null))
 		):
 			return _failure("Encounter-Laufzeitaufstellung enthält ungültige Creature-Fakten.")
-		seen[id] = true
+		seen_slots[slot_id] = true
 	return {"ok": true}
 
 
-func _validate_active_party(active_party: Array) -> Dictionary:
-	if active_party.is_empty():
+func _normalize_prepared_roster(roster: Array) -> Dictionary:
+	var normalized: Array = []
+	for value in roster:
+		if not value is Dictionary:
+			return _failure("Encounter-Laufzeitaufstellung enthält eine ungültige Zeile.")
+		var entry: Dictionary = value.duplicate(true)
+		if entry.size() == 9:
+			entry["slot_id"] = "slot.%s" % str(entry.get("creature_id", ""))
+			entry["kind"] = "enemy"
+		normalized.append(entry)
+	var validation := _validate_prepared_roster(normalized, true)
+	if not validation.get("ok", false):
+		return validation
+	return {"ok": true, "roster": normalized}
+
+
+func _validate_active_party(active_party: Array, empty_allowed: bool = false) -> Dictionary:
+	if active_party.is_empty() and not empty_allowed:
 		return _failure("Kampfstart braucht aktive Party-Mitglieder.")
 	var seen := {}
 	for value in active_party:

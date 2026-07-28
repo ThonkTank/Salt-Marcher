@@ -40,10 +40,11 @@ godot/src/features/encounter/
   encounter_runtime_knowledge.gd
   encounter_runtime_read_controller.gd
   encounter_runtime_command_controller.gd
-  # target: free-form generation, planning-fact, and Scene synchronization controllers
+  # target: free-form generation and planning-fact controllers
 godot/src/ui/
   encounter_plan_editor_dialog.gd
   encounter_runtime_workspace.gd
+  scene_workspace.gd
   # target: compact cockpit state-pane composition
 ```
 
@@ -70,10 +71,12 @@ bounded roster editor, deterministic generated-batch policy, asynchronous
 prepare/summary lane, and atomic idempotent batch publication. The free-form
 Encounter alternative generator and Session Planner planning facts are not yet
 composed and must not be inferred from the batch seam. A separate top-level
-Encounter workspace now owns the manual live path through one persisted runtime
+Encounter workspace now owns the manual live path plus any selected Scene
 context: open saved plan, initiative, individual combatants, HP/turn mutation,
-results, atomic Party XP award, and return to the retained roster. Scene context
-synchronization and the final compact cockpit placement remain target work.
+results, atomic Party XP award, and return to the retained roster. The Scene
+command controller resolves current Party, World Planner, plan, and Creature
+facts, then uses pure Encounter reconciliation before one atomic Scene-plus-
+Encounter Campaign commit. Final compact cockpit placement remains target work.
 
 ## Generated-Batch Orchestration
 
@@ -131,8 +134,10 @@ saved-plan state.
 Runtime builder, initiative, combat, and result state is published as immutable
 revisioned Encounter state. The manual context already uses this route and
 publishes each mutation through one validated owner replacement;
-generated-batch completion does not mutate it. Saved-plan summary batch reads
-preserve request order and report missing identities explicitly.
+generated-batch completion does not mutate it. Scene contexts use the same
+runtime language and are selected by an explicit context ID; focus changes do
+not reset any parallel context. Saved-plan summary batch reads preserve request
+order and report missing identities explicitly.
 
 ## Quality Targets
 

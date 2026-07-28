@@ -7,6 +7,7 @@ const PartyTopBar = preload("res://godot/src/ui/party_top_bar.gd")
 const AdventuringDayTopBar = preload("res://godot/src/ui/adventuring_day_top_bar.gd")
 const SessionPlannerWorkspace = preload("res://godot/src/ui/session_planner_workspace.gd")
 const EncounterRuntimeWorkspace = preload("res://godot/src/ui/encounter_runtime_workspace.gd")
+const SceneWorkspace = preload("res://godot/src/ui/scene_workspace.gd")
 
 const NIGHT_INK := Color("#0a1114")
 const DEEP_SLATE := Color("#152a32")
@@ -119,9 +120,23 @@ func _ready() -> void:
 	campaign_desk.active_campaign_changed.connect(func(_campaign_id: String) -> void:
 		encounter.refresh()
 	)
+	var scene := SceneWorkspace.new()
+	scene.data_root = data_root
+	scene.runtime_coordinator = runtime_coordinator
+	content.add_child(scene)
+	_routes["scene"] = scene
+	scene.encounter_requested.connect(func(context_id: String) -> void:
+		encounter.context_id = context_id
+		encounter.refresh()
+		show_route("encounter")
+	)
+	campaign_desk.active_campaign_changed.connect(func(_campaign_id: String) -> void:
+		scene.refresh()
+	)
 	_add_route_button(navigation, "campaigns", "Campaigns")
 	_add_route_button(navigation, "catalog", "Katalog")
 	_add_route_button(navigation, "session_planner", "Session Planner")
+	_add_route_button(navigation, "scene", "Scene")
 	_add_route_button(navigation, "encounter", "Encounter")
 	show_route(_active_route)
 
@@ -136,6 +151,9 @@ func show_route(route_id: String) -> Dictionary:
 	for id_value in _route_buttons:
 		var button: Button = _route_buttons[id_value]
 		button.disabled = str(id_value) == route_id
+	if route_id == "scene":
+		var scene_workspace: SceneWorkspace = _routes["scene"]
+		scene_workspace.activate()
 	return {"ok": true, "status": "shown", "route_id": route_id}
 
 

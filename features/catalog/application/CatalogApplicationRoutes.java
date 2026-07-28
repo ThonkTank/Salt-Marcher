@@ -12,7 +12,6 @@ public interface CatalogApplicationRoutes {
     ItemInspectorRoute itemInspector();
     WorldInspectorRoutes worldInspectors();
     EncounterHandoff encounter();
-    SceneHandoff scene();
 
     @FunctionalInterface
     public interface CreatureInspectorRoute {
@@ -41,11 +40,5 @@ public interface CatalogApplicationRoutes {
         void useLocationSource(long locationId);
         void useEncounterTableSource(long tableId);
         CompletionStage<OpenSavedEncounterPlanResult> openSavedEncounter(long planId, boolean discardUnsavedChanges);
-    }
-
-    public interface SceneHandoff {
-        void addCreature(long creatureId);
-        void addNpc(long npcId);
-        void setLocation(long locationId);
     }
 }

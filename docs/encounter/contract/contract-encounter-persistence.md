@@ -45,12 +45,12 @@ meaning, fingerprints, cardinality, order, and Encounter number. The current
 Godot route writes this canonical shape only through the complete generated
 batch command.
 
-The current manual runtime context stores its own revision, mode, status,
-opened-plan reference, materialized Creature roster facts, initiative rows,
-individual combatants, active turn, round, and result. A result stores the
-participating Party identities and award acknowledgement, but not copied Party
-profiles. Scene synchronization will add further contexts through the same
-runtime collection; it is not yet composed.
+Runtime format `saltmarcher.encounter-runtime.v2` stores a focused context ID,
+Scene source revision, and independent contexts. Each context stores its own
+revision, mode, status, opened-plan reference, materialized roster facts with
+stable slot identity and enemy/ally kind, initiative rows, individual
+combatants, active turn, round, and result. A result stores participating Party
+identities and award acknowledgement, but not copied Party profiles.
 
 ## Explicitly Excluded Saved-Plan Truth
 
@@ -99,6 +99,13 @@ Every subsequent initiative, combat, or result mutation replaces the complete
 validated Encounter partition through the admitted serial Campaign writer. XP
 award prepares both the Encounter acknowledgement and Party XP mutation and
 publishes both owner partitions in one Campaign generation.
+
+Scene synchronization resolves every prepared-plan, mob, and combat-relevant
+NPC reference against the current Shared-Definition generation, builds the
+complete context set, and publishes it with the new Scene partition in one
+Campaign generation. Surviving slots reconcile compatible initiative and
+combatant state. Missing Scene contexts are removed, while the manual context
+is preserved. A stale or invalid synchronization writes neither partition.
 
 ## Read And Failure Semantics
 

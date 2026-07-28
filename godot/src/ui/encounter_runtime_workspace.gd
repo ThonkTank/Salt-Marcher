@@ -18,6 +18,7 @@ const DANGER := Color("#d97c6c")
 
 var data_root := "user://salt-marcher"
 var runtime_coordinator
+var context_id := "encounter_context.manual"
 var _reader: EncounterRuntimeReadController
 var _commands: EncounterRuntimeCommandController
 var _snapshot: Dictionary = {}
@@ -49,7 +50,7 @@ func refresh(search_text: String = "") -> Dictionary:
 	if _search != null and search_text.is_empty():
 		search_text = _search.text
 	_set_status("Encounter-Wahrheit wird geladen …", QUIET)
-	return _reader.query(search_text)
+	return _reader.query(search_text, context_id)
 
 
 func snapshot() -> Dictionary:
@@ -169,7 +170,7 @@ func _build_surface() -> void:
 	_end_dialog.title = "Kampf beenden?"
 	_end_dialog.dialog_text = "Das aktuelle HP-Bild wird als Kampfergebnis festgehalten."
 	_end_dialog.ok_button_text = "Kampfergebnis öffnen"
-	_end_dialog.confirmed.connect(func() -> void: _commands.end_combat())
+	_end_dialog.confirmed.connect(func() -> void: _commands.end_combat(context_id))
 	add_child(_end_dialog)
 
 
@@ -272,7 +273,7 @@ func _render_builder(context: Dictionary) -> void:
 	_add_hint(_content, "%d aktive Party-Mitglieder werden beim Kampfstart in die Initiative übernommen." % party_count)
 	var action_row := HBoxContainer.new()
 	_content.add_child(action_row)
-	var start := _add_button(action_row, "Initiative öffnen", _commands.open_initiative, "OpenEncounterInitiative")
+	var start := _add_button(action_row, "Initiative öffnen", func() -> void: _commands.open_initiative(context_id), "OpenEncounterInitiative")
 	start.disabled = party_count == 0 or _commands.busy()
 
 
@@ -308,11 +309,11 @@ func _render_initiative(context: Dictionary) -> void:
 	actions.add_theme_constant_override("separation", 8)
 	_content.add_child(actions)
 	_add_button(actions, "Alle würfeln", _roll_all, "RollEncounterInitiative")
-	_add_button(actions, "Zur Aufstellung", _commands.return_to_builder)
+	_add_button(actions, "Zur Aufstellung", func() -> void: _commands.return_to_builder(context_id))
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	actions.add_child(spacer)
-	var confirm := _add_button(actions, "Kampf starten", _commands.confirm_initiative, "ConfirmEncounterInitiative")
+	var confirm := _add_button(actions, "Kampf starten", func() -> void: _commands.confirm_initiative(context_id), "ConfirmEncounterInitiative")
 	confirm.add_theme_color_override("font_color", BRASS)
 
 
@@ -325,7 +326,7 @@ func _render_combat(context: Dictionary) -> void:
 	var controls := HBoxContainer.new()
 	controls.add_theme_constant_override("separation", 8)
 	_content.add_child(controls)
-	var next := _add_button(controls, "Weiter →", _commands.advance_turn, "AdvanceEncounterTurn")
+	var next := _add_button(controls, "Weiter →", func() -> void: _commands.advance_turn(context_id), "AdvanceEncounterTurn")
 	next.add_theme_color_override("font_color", BRASS)
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -426,7 +427,7 @@ func _render_results(context: Dictionary) -> void:
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation", 8)
 	_content.add_child(actions)
-	var award := _add_button(actions, "XP verteilen", _commands.award_xp, "AwardEncounterXp")
+	var award := _add_button(actions, "XP verteilen", func() -> void: _commands.award_xp(context_id), "AwardEncounterXp")
 	award.disabled = bool(result.get("xp_awarded", false)) or int(result.get("per_player_xp", 0)) <= 0
 	award.add_theme_color_override("font_color", BRASS)
 	if not str(result.get("award_status", "")).is_empty():
@@ -434,7 +435,7 @@ func _render_results(context: Dictionary) -> void:
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	actions.add_child(spacer)
-	_add_button(actions, "Zum Planer", _commands.return_to_builder, "ReturnEncounterBuilder")
+	_add_button(actions, "Zum Planer", func() -> void: _commands.return_to_builder(context_id), "ReturnEncounterBuilder")
 
 
 func _render_empty(message: String) -> void:
@@ -449,14 +450,14 @@ func _render_empty(message: String) -> void:
 
 
 func _open_plan(plan_id: String) -> void:
-	_commands.open_saved_plan(plan_id)
+	_commands.open_saved_plan(plan_id, context_id)
 
 
 func _roll_all() -> void:
 	var rolls := {}
 	for entry in _snapshot.get("context", {}).get("initiative", []):
 		rolls[str(entry["combatant_id"])] = randi_range(1, 20)
-	_commands.roll_all_initiative(rolls)
+	_commands.roll_all_initiative(rolls, context_id)
 
 
 func _initiative_submitted(_text: String, combatant_id: String, spin: SpinBox) -> void:
@@ -476,11 +477,11 @@ func _commit_initiative(combatant_id: String, spin: SpinBox) -> void:
 			current = int(entry["initiative"])
 			break
 	if roundi(spin.value) != current:
-		_commands.set_initiative(combatant_id, roundi(spin.value))
+		_commands.set_initiative(combatant_id, roundi(spin.value), context_id)
 
 
 func _mutate_hp(combatant_id: String, amount: int, healing: bool) -> void:
-	_commands.mutate_hp(combatant_id, amount, healing)
+	_commands.mutate_hp(combatant_id, amount, healing, context_id)
 
 
 func _show_end_dialog() -> void:

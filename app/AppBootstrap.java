@@ -15,7 +15,6 @@ import features.encountertable.EncounterTableServiceAssembly;
 import features.hex.HexServiceAssembly;
 import features.items.ItemsServiceAssembly;
 import features.party.PartyServiceAssembly;
-import features.scene.SceneFeature;
 import features.sessionplanner.SessionPlannerServiceAssembly;
 import features.travel.TravelFeature;
 import features.worldplanner.WorldPlannerServiceAssembly;
@@ -462,7 +461,6 @@ public final class AppBootstrap implements AutoCloseable {
         var hex = components.hex();
         var travel = components.travel();
         var session = components.session();
-        var scene = components.scene();
         var inspector = shell.inspector();
         features.worldplanner.api.WorldPlannerEncounterSink worldEncounter =
                 (statblockId, npcId) -> encounter.application().applyState(
@@ -480,7 +478,7 @@ public final class AppBootstrap implements AutoCloseable {
                                 tables.application(), tables.catalog()),
                         campaignUi),
                 catalogRoutes(
-                        inspector, creatures, items, world, worldEncounter, tables, encounter, scene));
+                        inspector, creatures, items, world, worldEncounter, tables, encounter));
 
         List<ShellContribution> manifest = new ArrayList<>();
         manifest.add(party.adventuringDayTopBarContribution());
@@ -495,7 +493,6 @@ public final class AppBootstrap implements AutoCloseable {
             manifest.add(java.util.Objects.requireNonNull(hex).mapContribution());
         }
         manifest.add(session.contribution());
-        manifest.add(scene.contribution(creatureId -> creatures.openInspector(inspector, creatureId)));
         manifest.add(encounter.stateContribution(
                 creatures.application(), world.application(),
                 creatureId -> creatures.openInspector(inspector, creatureId)));
@@ -518,8 +515,7 @@ public final class AppBootstrap implements AutoCloseable {
             WorldPlannerServiceAssembly.Component world,
             features.worldplanner.api.WorldPlannerEncounterSink worldEncounter,
             EncounterTableServiceAssembly.Component tables,
-            EncounterServiceAssembly.Component encounter,
-            SceneFeature.Component scene
+            EncounterServiceAssembly.Component encounter
     ) {
         CatalogRoutes.WorldInspectorRoutes worldInspectors = new CatalogRoutes.WorldInspectorRoutes() {
             @Override
@@ -592,28 +588,11 @@ public final class AppBootstrap implements AutoCloseable {
                         new OpenSavedEncounterPlanCommand(planId, discardUnsavedChanges));
             }
         };
-        CatalogRoutes.SceneHandoff sceneHandoff = new CatalogRoutes.SceneHandoff() {
-            @Override
-            public void addCreature(long creatureId) {
-                assignMobToFocusedScene(scene, creatureId);
-            }
-
-            @Override
-            public void addNpc(long npcId) {
-                assignNpcToFocusedScene(scene, npcId);
-            }
-
-            @Override
-            public void setLocation(long locationId) {
-                setFocusedSceneLocation(scene, locationId);
-            }
-        };
         return new CatalogRoutes(
                 creatureId -> creatures.openInspector(inspector, creatureId),
                 detail -> items.openInspector(inspector, detail),
                 worldInspectors,
-                encounterHandoff,
-                sceneHandoff);
+                encounterHandoff);
     }
 
     private static EncounterPoolFilters withFaction(EncounterPoolFilters source, long factionId) {
@@ -637,27 +616,6 @@ public final class AppBootstrap implements AutoCloseable {
         return new EncounterPoolFilters(safe.nameQuery(), safe.challengeRatingMin(), safe.challengeRatingMax(),
                 safe.sizes(), safe.creatureTypes(), safe.creatureSubtypes(), safe.biomes(), safe.alignments(),
                 List.copyOf(ids), safe.worldFactionIds(), safe.worldLocationId());
-    }
-
-    private static void assignNpcToFocusedScene(SceneFeature.Component scene, long npcId) {
-        long sceneId = scene.model().current().focusedSceneId();
-        if (sceneId > 0L && npcId > 0L) {
-            scene.application().execute(new features.scene.api.SceneCommand.AssignNpc(sceneId, npcId));
-        }
-    }
-
-    private static void setFocusedSceneLocation(SceneFeature.Component scene, long locationId) {
-        long sceneId = scene.model().current().focusedSceneId();
-        if (sceneId > 0L && locationId > 0L) {
-            scene.application().execute(new features.scene.api.SceneCommand.SetLocation(sceneId, locationId));
-        }
-    }
-
-    private static void assignMobToFocusedScene(SceneFeature.Component scene, long creatureId) {
-        long sceneId = scene.model().current().focusedSceneId();
-        if (sceneId > 0L && creatureId > 0L) {
-            scene.application().execute(new features.scene.api.SceneCommand.AssignMob(sceneId, creatureId, 1));
-        }
     }
 
     private void register(AppShell shell, ResolvedContribution contribution) {

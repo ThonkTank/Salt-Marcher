@@ -14,7 +14,8 @@ migration input and is removed capability by capability; it is not a second
 supported product line.
 
 The production shell now exposes `Campaigns`, one consolidated `Katalog`, a
-native `Session Planner`, and a native `Encounter` route. Katalog retains all seven target sections; Monster and Items already
+native `Session Planner`, a native `Scene` bridge deck, and a native `Encounter`
+route. Katalog retains all seven target sections; Monster and Items already
 query the selected installation-wide Shared-Definition generation off the
 scene-tree thread, while NPCs, factions, and places use the active Campaign's
 World Planner partition. The shared result table sorts before bounded paging,
@@ -37,9 +38,14 @@ commits them atomically and idempotently, and hydrates current summaries in one
 ordered batch read. The Encounter route now opens saved plans into durable
 runtime truth, captures active-Party and monster initiative, tracks individual
 enemy HP plus round/active turn, derives combat results, and awards Party XP in
-one atomic Campaign publication. Free-form runtime generation, Scene-context
-composition, mobs/reinforcements, and remaining live-table systems remain
-migration work. The native
+one atomic Campaign publication. Scene now owns parallel running contexts,
+split Party membership, World Planner NPC/place references, Creature-backed
+mobs, participant quick state, prepared-scene copies, and exact Encounter deep
+links. Every Scene mutation and complete Encounter-context synchronization
+publish in one Campaign generation; compatible combat state survives focus and
+composition changes. The superseded JavaFX/SQLite Scene owner is deleted.
+Free-form runtime generation, reinforcements, masks, passive display, and
+remaining live-table systems remain migration work. The native
 manual Session Planner already owns multiple Sessions, an independent planning
 Party, exact day and scene budgets, ordered scenes/rest gaps, saved Encounter
 and place links, and manual loot notes in one latest-wins master-detail workspace.

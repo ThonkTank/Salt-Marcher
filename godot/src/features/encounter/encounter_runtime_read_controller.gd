@@ -26,10 +26,10 @@ func _init(data_root: String) -> void:
 	_data_root = data_root.trim_suffix("/")
 
 
-func query(search_text: String = "") -> Dictionary:
+func query(search_text: String = "", context_id: String = "") -> Dictionary:
 	_mutex.lock()
 	_latest_epoch += 1
-	var request := {"epoch": _latest_epoch, "search_text": search_text}
+	var request := {"epoch": _latest_epoch, "search_text": search_text, "context_id": context_id}
 	if not _active_request.is_empty():
 		_pending_request = request
 		_cancel_active = true
@@ -153,7 +153,7 @@ func _project(store, campaign_state: Dictionary, request: Dictionary) -> Diction
 	)
 	if not plans.get("ok", false):
 		return plans
-	var runtime := EncounterRuntimeKnowledge.new().snapshot(encounter_validation["payload"])
+	var runtime := EncounterRuntimeKnowledge.new().snapshot(encounter_validation["payload"], str(request.get("context_id", "")))
 	if not runtime.get("ok", false):
 		return runtime
 	return {

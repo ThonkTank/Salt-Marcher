@@ -5,7 +5,6 @@ import features.encounter.EncounterServiceAssembly;
 import features.encountertable.EncounterTableServiceAssembly;
 import features.hex.HexServiceAssembly;
 import features.party.PartyServiceAssembly;
-import features.scene.SceneFeature;
 import features.sessiongeneration.SessionGenerationServiceAssembly;
 import features.sessionplanner.SessionPlannerServiceAssembly;
 import features.worldplanner.WorldPlannerServiceAssembly;
@@ -29,8 +28,7 @@ final class CampaignStoreManifest {
                 database.featureStore(DungeonFeature.storeDefinition()),
                 database.featureStore(HexServiceAssembly.storeDefinition()),
                 database.featureStore(SessionGenerationServiceAssembly.storeDefinition()),
-                database.featureStore(SessionPlannerServiceAssembly.storeDefinition()),
-                database.featureStore(SceneFeature.storeDefinition()));
+                database.featureStore(SessionPlannerServiceAssembly.storeDefinition()));
     }
 
     record Stores(
@@ -41,8 +39,7 @@ final class CampaignStoreManifest {
             FeatureStoreHandle dungeon,
             FeatureStoreHandle hex,
             FeatureStoreHandle sessionGeneration,
-            FeatureStoreHandle sessionPlanner,
-            FeatureStoreHandle scene) {
+            FeatureStoreHandle sessionPlanner) {
 
         List<FeatureStoreHandle> all() {
             return List.of(
@@ -53,8 +50,7 @@ final class CampaignStoreManifest {
                     dungeon,
                     hex,
                     sessionGeneration,
-                    sessionPlanner,
-                    scene);
+                    sessionPlanner);
         }
 
         Set<String> owners() {

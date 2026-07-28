@@ -61,12 +61,13 @@ Encounter derives:
 - prepared concrete generated-roster batches
 
 Generated alternatives and prepared batches remain transient until saved. The
-current builder, initiative, combat, and result session state is Encounter-owned
-runtime state, not persisted `EncounterPlan` truth and not view-owned mutable
-state. The production manual context now persists this runtime truth separately
-from saved plans in the Encounter partition. Opening a plan materializes current
-Creature combat facts; later definition changes do not silently rewrite a
-running fight.
+current builder, initiative, combat, and result session state is
+Encounter-owned runtime state, not persisted `EncounterPlan` truth and not
+view-owned mutable state. One versioned collection persists the independent
+manual context and every Scene-keyed context separately from saved plans.
+Opening a plan or synchronizing a Scene materializes current Creature combat
+facts; compatible combatants preserve their running state across composition
+reconciliation.
 
 ## Mutation Language
 
@@ -81,6 +82,8 @@ Encounter supports:
 - open, edit, and confirm initiative
 - mutate individual enemy HP and initiative, advance turns, and end combat
 - award one result through an atomic Encounter-plus-Party publication
+- synchronize the complete set of Scene-keyed contexts from one Scene revision
+- focus, open, and resume one context without mutating parallel contexts
 
 ## Invariants
 
@@ -104,6 +107,9 @@ Encounter supports:
   retry denotes the same saved plans
 - generated origin never transfers reward, packing, audit, or session-scene
   ownership into Encounter
+- context identity is stable, roster slots are stable within a source, and
+  reconciliation never merges independent running scenes
+- enemy XP excludes allied NPC roster members
 
 ## Domain Policies
 
@@ -127,6 +133,11 @@ batch is a larger all-or-nothing consistency boundary containing multiple
 ordinary Encounter plans with immutable generated origins. Opening a plan
 rebuilds runtime state from current creature detail and clears prior initiative,
 combat, result, and generated-alternative runtime state.
+
+Scene synchronization is a second consistency boundary only at the Campaign
+publication level: one Scene revision and the complete replacement context set
+publish atomically. Encounter still owns every context's workflow state and
+reconciles rather than copying it into Scene.
 
 ## References
 

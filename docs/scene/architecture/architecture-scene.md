@@ -1,69 +1,65 @@
 # Runtime Scene Architecture
 
-## Entity And Concerns
+Status: Active native Godot architecture
+Owner: Scene
+Last Reviewed: 2026-07-28
+Source of Truth: This document
 
-This specification serves maintainers of the GM runtime workspace, Encounter
-state switching, and Scene persistence. It answers how parallel scenes share
-foreign facts without sharing mutable feature internals and how restart-safe
-combat remains Encounter-owned.
+## Objective
 
-## Current Shape
+Provide one native split-party runtime owner whose visible composition and
+Encounter contexts can never diverge across a successful publication.
 
-Scene is one vertical feature under `features/scene`. Its `api` publishes the
-asynchronous command boundary and immutable model, `domain` owns the running
-workspace, `application` orchestrates foreign facts and the synchronization
-saga, `adapter/sqlite` persists Scene-owned truth, and `adapter/javafx`
-contributes controls and main content to the passive shell. `SceneFeature` is
-the only composition entry point used by `app`.
-
-## Context View
+## Current Topology
 
 ```text
-Party API ----------------\
-World Planner API ---------+--> Scene application --> Scene SQLite adapter
-Session Planner API -------/          |
-                                      +--> Encounter runtime-context API
-                                                 |
-                                                 +--> Encounter-owned runtime
+Party partition -----------\
+World Planner partition ----+--> SceneCommandController
+Session Planner partition --+          |
+Shared Definitions ---------/          +--> SceneKnowledge
+                                         +--> EncounterRuntimeKnowledge
+                                         +--> one Campaign generation
+
+File Campaign Store --> SceneReadController --> SceneWorkspace
+                                              --> exact Encounter context deep link
 ```
 
-Scene consumes `ActivePartyModel`, `WorldPlannerSnapshotModel`,
-`PreparedSceneCatalogModel`, `CreatureReferenceIndexModel`, and
-`EncounterRuntimeContextApi` only from the providers' `api` packages. It MUST
-NOT read foreign repositories, issue creature Catalog page queries, or persist
-copied foreign details. Encounter accepts opaque context identifiers and MUST
-NOT depend on Scene types.
+`scene_knowledge.gd` is pure owner logic. `scene_command_controller.gd` reads a
+generation-bound snapshot of supporting owner partitions, resolves complete
+Creature facts, transforms Scene and Encounter copies, confirms Campaign and
+Shared-Definition generations, and submits both replacements to the admitted
+serial Campaign writer. `scene_read_controller.gd` uses one active plus one
+latest pending worker and suppresses stale publication. `scene_workspace.gd`
+dispatches intents and renders the bridge deck. `main_shell.gd` is the sole
+route composition point.
 
 ## Decisions
 
-- Runtime scenes are separate from authored Session Planner scenes because
-  planning edits and live play have different consistency and lifecycle needs.
-- A prepared scene import creates a new Scene-owned copy on every invocation.
-  Provenance remains visible, but no live link back to Session Planner exists.
-- Encounter sessions are keyed and persisted by Encounter because moving their
-  mutable combat internals into Scene would split Encounter ownership.
-- Scene commands and persistence work run asynchronously on the shared
-  `ExecutionLane`; `SceneModel.current()` reads published memory and performs no
-  persistence or foreign I/O.
-- Creature choices and mob labels come from the app-refreshed immutable,
-  revisioned creature reference index. Scene subscribes to that index but does
-  not own its refresh lifecycle, so Scene activation cannot replace a Catalog
-  search result.
-- Scene saves the workspace with `encounterSynchronized=false` before sending a
-  complete revisioned context snapshot. Only an accepted Encounter revision is
-  saved as synchronized. Initialization and refresh retry a pending snapshot.
-  This makes recovery after a partial local failure idempotent and observable.
-- The Scene JavaFX contribution uses controls and main slots but no state slot,
-  preserving simultaneous access to the Encounter state tab.
+- Running scenes are independent copies, not live Session Planner records.
+- Scene owns composition; Encounter owns all workflow and combat state.
+- Context IDs derive deterministically from stable Scene IDs without making
+  Encounter depend on Scene types.
+- A complete owner generation replaces the former save-then-sync saga. There is
+  no partial "Scene saved, Encounter pending" success state.
+- Creature details are resolved in one bounded Shared-Definition read before a
+  write. Scene stores only references and last-known display comes from the read
+  projection.
+- Hidden Scene UI performs no initialization write. First route activation
+  creates the Standardszene; later activation refreshes current foreign facts.
+- The focus compass keeps parallel context visible while one explicit deep link
+  opens the exact Encounter runtime.
 
-Rejected alternatives are one global Encounter, live-linked planner scenes,
-and Scene-owned combat snapshots. Each would prevent independent party-split
-state or duplicate another feature's truth.
+Rejected alternatives are one global Encounter, live-linked prepared scenes,
+Scene-owned combat snapshots, background hidden-route writes, and a retryable
+cross-owner storage saga.
 
-## Consistency
+## Execution And Failure
 
-SQLite writes are transactional inside each owner. Cross-feature synchronization
-is a retryable saga rather than an atomic transaction.
+Pure transforms run off the scene-tree thread. Campaign file reads and
+Shared-Definition resolution run on the command/read workers. Only immutable
+snapshot application and input dispatch occur on the scene-tree thread.
+Cancellation or supersession drops avoidable read work. A command that reaches
+the serial writer resolves as one complete success or failure.
 
 ## References
 
