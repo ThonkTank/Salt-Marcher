@@ -32,7 +32,9 @@ func query(
 	search_text: String,
 	offset: int = 0,
 	limit: int = 50,
-	include_deleted: bool = false
+	include_deleted: bool = false,
+	sort_key: String = "name",
+	sort_ascending: bool = true
 ) -> Dictionary:
 	_mutex.lock()
 	_latest_epoch += 1
@@ -44,6 +46,8 @@ func query(
 		"offset": offset,
 		"limit": limit,
 		"include_deleted": include_deleted,
+		"sort_key": sort_key,
+		"sort_ascending": sort_ascending,
 	}
 	if not _active_request.is_empty():
 		_pending_request = request
@@ -117,6 +121,8 @@ func _run_query(request: Dictionary) -> void:
 			str(request["search_text"]),
 			int(request["offset"]),
 			int(request["limit"]),
+			str(request["sort_key"]),
+			bool(request["sort_ascending"]),
 			Callable(self, "_cancelled_from_worker")
 		)
 		if result.get("ok", false):
@@ -146,6 +152,8 @@ func _query_world_planner(registry, registry_state: Dictionary, request: Diction
 		int(request["offset"]),
 		int(request["limit"]),
 		bool(request["include_deleted"]),
+		str(request["sort_key"]),
+		bool(request["sort_ascending"]),
 		Callable(self, "_cancelled_from_worker")
 	)
 	if not result.get("ok", false):

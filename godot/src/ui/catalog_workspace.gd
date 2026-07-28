@@ -33,8 +33,14 @@ var _section_buttons: Dictionary = {}
 var _search: LineEdit
 var _trash_toggle: CheckButton
 var _create_button: Button
+var _table_header: HBoxContainer
+var _name_header: Button
+var _identity_header: Button
 var _result_list: VBoxContainer
 var _footer: Label
+var _previous_page: Button
+var _page_label: Label
+var _next_page: Button
 var _detail: RichTextLabel
 var _detail_actions: HBoxContainer
 var _edit_button: Button
@@ -71,7 +77,11 @@ func _ready() -> void:
 			"total": 0,
 			"status": "uninitialized",
 			"selected_id": "",
+			"selected_row": {},
 			"trash": false,
+			"page": 0,
+			"sort_key": "name",
+			"sort_ascending": true,
 			"notice": "",
 		}
 	_build_surface()
@@ -82,6 +92,8 @@ func select_section(section_id: String) -> Dictionary:
 	var section := _section(section_id)
 	if section.is_empty():
 		return {"ok": false, "status": "unknown_section"}
+	if section_id != _active_section_id and browse_controller != null:
+		browse_controller.cancel_all()
 	_active_section_id = section_id
 	for id_value in _section_buttons:
 		var button: Button = _section_buttons[id_value]
@@ -93,7 +105,8 @@ func select_section(section_id: String) -> Dictionary:
 	_trash_toggle.visible = bool(section["mutable"])
 	_trash_toggle.set_pressed_no_signal(bool(state["trash"]))
 	_create_button.disabled = bool(state["trash"]) or command_controller.busy()
-	_reset_detail()
+	_render_selected_detail()
+	_render_table_header()
 	if not section["provider"]:
 		state["status"] = "unavailable"
 		_section_state[section_id] = state
@@ -152,7 +165,7 @@ func _build_surface() -> void:
 	for section in SECTIONS:
 		var button := Button.new()
 		button.text = section["label"]
-		button.custom_minimum_size = Vector2(112, 32)
+		button.custom_minimum_size = Vector2(104, 28)
 		button.pressed.connect(select_section.bind(str(section["id"])))
 		selector.add_child(button)
 		_section_buttons[section["id"]] = button
@@ -161,7 +174,7 @@ func _build_surface() -> void:
 	column.add_child(tools)
 	_search = LineEdit.new()
 	_search.name = "CatalogSearch"
-	_search.custom_minimum_size = Vector2(300, 36)
+	_search.custom_minimum_size = Vector2(260, 28)
 	_search.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_search.text_changed.connect(_on_search_changed)
 	_search.text_submitted.connect(func(_value: String) -> void: _submit_current_query())
@@ -169,22 +182,39 @@ func _build_surface() -> void:
 	_trash_toggle = CheckButton.new()
 	_trash_toggle.name = "CatalogTrashToggle"
 	_trash_toggle.text = "Papierkorb"
+	_trash_toggle.custom_minimum_size = Vector2(0, 28)
 	_trash_toggle.tooltip_text = "Gelöschte Einträge prüfen und wiederherstellen"
 	_trash_toggle.toggled.connect(_on_trash_toggled)
 	tools.add_child(_trash_toggle)
 	_create_button = Button.new()
 	_create_button.name = "CatalogCreate"
-	_create_button.custom_minimum_size = Vector2(180, 36)
+	_create_button.custom_minimum_size = Vector2(160, 28)
 	_create_button.pressed.connect(_on_create_requested)
 	tools.add_child(_create_button)
 	var split := HSplitContainer.new()
 	split.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	split.split_offset = 600
 	column.add_child(split)
+	var result_column := VBoxContainer.new()
+	result_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	result_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	result_column.add_theme_constant_override("separation", 4)
+	split.add_child(result_column)
+	_table_header = HBoxContainer.new()
+	_table_header.name = "CatalogTableHeader"
+	_table_header.add_theme_constant_override("separation", 6)
+	result_column.add_child(_table_header)
+	_name_header = _build_header_button("CatalogSortName", "Name", "name")
+	_name_header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_table_header.add_child(_name_header)
+	_identity_header = _build_header_button("CatalogSortIdentity", "Kennung", "identity")
+	_identity_header.custom_minimum_size = Vector2(150, 28)
+	_table_header.add_child(_identity_header)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	split.add_child(scroll)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	result_column.add_child(scroll)
 	_result_list = VBoxContainer.new()
 	_result_list.name = "CatalogResults"
 	_result_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -218,10 +248,33 @@ func _build_surface() -> void:
 	_restore_button.text = "Wiederherstellen"
 	_restore_button.pressed.connect(_on_restore_requested)
 	_detail_actions.add_child(_restore_button)
+	var footer_row := HBoxContainer.new()
+	footer_row.add_theme_constant_override("separation", 8)
+	column.add_child(footer_row)
 	_footer = Label.new()
 	_footer.name = "CatalogFooter"
+	_footer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_footer.add_theme_color_override("font_color", QUIET_INK)
-	column.add_child(_footer)
+	footer_row.add_child(_footer)
+	_previous_page = Button.new()
+	_previous_page.name = "CatalogPreviousPage"
+	_previous_page.text = "Zurück"
+	_previous_page.custom_minimum_size = Vector2(72, 28)
+	_previous_page.pressed.connect(_on_page_requested.bind(-1))
+	footer_row.add_child(_previous_page)
+	_page_label = Label.new()
+	_page_label.name = "CatalogPageLabel"
+	_page_label.custom_minimum_size = Vector2(84, 28)
+	_page_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_page_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_page_label.add_theme_color_override("font_color", QUIET_INK)
+	footer_row.add_child(_page_label)
+	_next_page = Button.new()
+	_next_page.name = "CatalogNextPage"
+	_next_page.text = "Weiter"
+	_next_page.custom_minimum_size = Vector2(72, 28)
+	_next_page.pressed.connect(_on_page_requested.bind(1))
+	footer_row.add_child(_next_page)
 	_debounce = Timer.new()
 	_debounce.one_shot = true
 	_debounce.wait_time = 0.2
@@ -229,6 +282,18 @@ func _build_surface() -> void:
 	add_child(_debounce)
 	_build_record_dialogs()
 	_reset_detail()
+
+
+func _build_header_button(node_name: String, label: String, sort_key: String) -> Button:
+	var button := Button.new()
+	button.name = node_name
+	button.text = label
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.custom_minimum_size = Vector2(0, 28)
+	button.flat = true
+	button.tooltip_text = "%s sortieren; erneut aktivieren kehrt die Richtung um" % label
+	button.pressed.connect(_on_sort_requested.bind(sort_key))
+	return button
 
 
 func _build_record_dialogs() -> void:
@@ -267,8 +332,47 @@ func _build_record_dialogs() -> void:
 func _on_search_changed(value: String) -> void:
 	var state: Dictionary = _section_state[_active_section_id]
 	state["draft"] = value
+	state["page"] = 0
+	state["selected_id"] = ""
+	state["selected_row"] = {}
 	_section_state[_active_section_id] = state
+	_reset_detail()
+	_update_paging(state)
 	_debounce.start()
+
+
+func _on_sort_requested(sort_key: String) -> void:
+	if sort_key not in ["name", "identity"]:
+		return
+	var section := _section(_active_section_id)
+	if section.is_empty() or not section["provider"]:
+		return
+	var state: Dictionary = _section_state[_active_section_id]
+	if state["sort_key"] == sort_key:
+		state["sort_ascending"] = not bool(state["sort_ascending"])
+	else:
+		state["sort_key"] = sort_key
+		state["sort_ascending"] = true
+	state["page"] = 0
+	_section_state[_active_section_id] = state
+	_render_table_header()
+	_update_paging(state)
+	_submit_current_query()
+
+
+func _on_page_requested(delta: int) -> void:
+	var section := _section(_active_section_id)
+	if section.is_empty() or not section["provider"]:
+		return
+	var state: Dictionary = _section_state[_active_section_id]
+	var page_count := _page_count(int(state["total"]))
+	var next_page := clampi(int(state["page"]) + delta, 0, page_count - 1)
+	if next_page == int(state["page"]):
+		return
+	state["page"] = next_page
+	_section_state[_active_section_id] = state
+	_update_paging(state)
+	_submit_current_query()
 
 
 func _submit_current_query() -> void:
@@ -285,9 +389,11 @@ func _submit_current_query() -> void:
 		_active_section_id,
 		str(section["kind"]),
 		str(state["accepted"]),
-		0,
+		int(state["page"]) * PAGE_SIZE,
 		PAGE_SIZE,
-		bool(state["trash"])
+		bool(state["trash"]),
+		str(state["sort_key"]),
+		bool(state["sort_ascending"])
 	)
 
 
@@ -311,12 +417,21 @@ func _on_result_published(result: Dictionary) -> void:
 		state["rows"] = result.get("rows", []).duplicate(true)
 		state["total"] = int(result.get("total", 0))
 		state["status"] = str(result.get("status", "ready"))
-		if not _row_present(state["rows"], str(state["selected_id"])):
-			state["selected_id"] = ""
+		for row in state["rows"]:
+			if _row_id(row) == str(state["selected_id"]):
+				state["selected_row"] = row.duplicate(true)
+				break
+		var last_page := maxi(0, _page_count(int(state["total"])) - 1)
+		if int(state["page"]) > last_page:
+			state["page"] = last_page
+			state["status"] = "uninitialized"
+			_section_state[section_id] = state
+			if section_id == _active_section_id:
+				_submit_current_query()
+			return
 	else:
 		state["status"] = "failed"
 		state["error"] = result.get("error", "Katalogabfrage ist fehlgeschlagen.")
-		state["selected_id"] = ""
 	_section_state[section_id] = state
 	if section_id == _active_section_id:
 		_render_state()
@@ -329,36 +444,104 @@ func _render_state() -> void:
 	var section := _section(_active_section_id)
 	var state: Dictionary = _section_state[_active_section_id]
 	var status := str(state["status"])
+	_render_table_header()
 	if status == "unavailable":
 		_add_message("%s ist im Godot-Cutover noch nicht an seinen Provider angeschlossen." % section["label"])
 		_footer.text = _with_notice("Provider nicht verfügbar · keine Catalog-eigene Ersatzwahrheit", state)
+		_update_paging(state)
 		return
 	if status == "failed":
 		_add_message(str(state.get("error", "Katalogabfrage ist fehlgeschlagen.")))
 		_footer.text = _with_notice("Fehlgeschlagen · Eingabe bleibt erhalten", state)
+		_update_paging(state)
 		return
 	var rows: Array = state["rows"]
 	if rows.is_empty():
 		_add_message("Wird geladen …" if status == "loading" else "Keine passenden Einträge.")
 	else:
 		for row in rows:
-			var button := Button.new()
-			button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-			button.custom_minimum_size = Vector2(0, 40)
-			button.text = "%s\n%s" % [row["name"], _row_id(row)]
-			button.pressed.connect(_select_row.bind(row.duplicate(true)))
-			_result_list.add_child(button)
+			_add_result_row(row)
 	_footer.text = _with_notice("%d von %d %s%s" % [
 		rows.size(),
 		int(state["total"]),
 		"Papierkorbeinträgen" if state["trash"] else "Einträgen",
 		" · wird aktualisiert" if status == "refreshing" else "",
 	], state)
+	_update_paging(state)
+
+
+func _render_table_header() -> void:
+	if _table_header == null:
+		return
+	var section := _section(_active_section_id)
+	var available := not section.is_empty() and bool(section["provider"])
+	_table_header.visible = available
+	if not available:
+		return
+	var state: Dictionary = _section_state[_active_section_id]
+	_name_header.text = _sort_header_text("Name", "name", state)
+	_identity_header.text = _sort_header_text("Kennung", "identity", state)
+
+
+func _sort_header_text(label: String, sort_key: String, state: Dictionary) -> String:
+	if str(state["sort_key"]) != sort_key:
+		return label
+	return "%s %s" % [label, "↑" if state["sort_ascending"] else "↓"]
+
+
+func _add_result_row(row: Dictionary) -> void:
+	var row_container := HBoxContainer.new()
+	row_container.name = "CatalogResultRow"
+	row_container.custom_minimum_size = Vector2(0, 30)
+	row_container.add_theme_constant_override("separation", 6)
+	_result_list.add_child(row_container)
+	var name_button := Button.new()
+	name_button.name = "CatalogResultName"
+	name_button.text = str(row["name"])
+	name_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	name_button.flat = true
+	name_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_button.custom_minimum_size = Vector2(0, 30)
+	name_button.tooltip_text = "Details zu %s öffnen" % row["name"]
+	name_button.pressed.connect(_select_row.bind(row.duplicate(true)))
+	row_container.add_child(name_button)
+	var identity_button := Button.new()
+	identity_button.name = "CatalogResultIdentity"
+	identity_button.text = _row_id(row)
+	identity_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	identity_button.flat = true
+	identity_button.custom_minimum_size = Vector2(150, 30)
+	identity_button.add_theme_color_override("font_color", QUIET_INK)
+	identity_button.tooltip_text = "Dieselbe Referenz im Inspector öffnen"
+	identity_button.pressed.connect(_select_row.bind(row.duplicate(true)))
+	row_container.add_child(identity_button)
+
+
+func _update_paging(state: Dictionary) -> void:
+	if _previous_page == null:
+		return
+	var section := _section(_active_section_id)
+	var page_count := _page_count(int(state.get("total", 0)))
+	var page := clampi(int(state.get("page", 0)), 0, page_count - 1)
+	var visible := page_count > 1 and not section.is_empty() and bool(section["provider"])
+	_previous_page.visible = visible
+	_page_label.visible = visible
+	_next_page.visible = visible
+	_page_label.text = "Seite %d/%d" % [page + 1, page_count]
+	var status := str(state.get("status", ""))
+	var usable := status not in ["unavailable", "failed"]
+	_previous_page.disabled = not usable or page <= 0
+	_next_page.disabled = not usable or page >= page_count - 1
+
+
+func _page_count(total: int) -> int:
+	return maxi(1, int((maxi(0, total) + PAGE_SIZE - 1) / PAGE_SIZE))
 
 
 func _select_row(row: Dictionary) -> void:
 	var state: Dictionary = _section_state[_active_section_id]
 	state["selected_id"] = _row_id(row)
+	state["selected_row"] = row.duplicate(true)
 	_section_state[_active_section_id] = state
 	var safe_name := _escape_bbcode(str(row["name"]))
 	var safe_notes := _escape_bbcode(str(row.get("notes", "")))
@@ -452,6 +635,8 @@ func _on_trash_toggled(enabled: bool) -> void:
 	var state: Dictionary = _section_state[_active_section_id]
 	state["trash"] = enabled
 	state["selected_id"] = ""
+	state["selected_row"] = {}
+	state["page"] = 0
 	state["status"] = "uninitialized"
 	_section_state[_active_section_id] = state
 	_create_button.disabled = enabled or command_controller.busy()
@@ -483,6 +668,7 @@ func _on_command_completed(result: Dictionary) -> void:
 			"restored": "Eintrag wiederhergestellt.",
 		}.get(status, "Änderung gespeichert.")
 		state["selected_id"] = ""
+		state["selected_row"] = {}
 	state["status"] = "uninitialized"
 	_section_state[section_id] = state
 	_command_section_id = ""
@@ -515,15 +701,6 @@ func _section(section_id: String) -> Dictionary:
 	return {}
 
 
-func _row_present(rows: Array, definition_id: String) -> bool:
-	if definition_id.is_empty():
-		return false
-	for row in rows:
-		if _row_id(row) == definition_id:
-			return true
-	return false
-
-
 func _row_id(row: Dictionary) -> String:
 	return str(row.get("reference_id", row.get("definition_id", "")))
 
@@ -544,10 +721,7 @@ func _escape_bbcode(value: String) -> String:
 
 func _selected_row() -> Dictionary:
 	var state: Dictionary = _section_state[_active_section_id]
-	for row in state["rows"]:
-		if _row_id(row) == str(state["selected_id"]):
-			return row.duplicate(true)
-	return {}
+	return state.get("selected_row", {}).duplicate(true)
 
 
 func _render_selected_detail() -> void:

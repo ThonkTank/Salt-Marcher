@@ -669,11 +669,19 @@ func _run_catalog_foundation_contract() -> void:
 	var data_root := "user://saltmarcher-catalog-foundation/%s" % Time.get_ticks_usec()
 	var registry := FileCampaignRegistry.new(data_root)
 	var definitions := SharedDefinitionStore.new(data_root)
-	var prepared := definitions.prepare_generation(0, [
+	var catalog_definitions: Array = [
 		{"definition_id": "creature.wolf", "kind": "creature", "name": "Wolf", "content": {"armor_class": 12}},
 		{"definition_id": "creature.worg", "kind": "creature", "name": "Worg", "content": {"armor_class": 13}},
 		{"definition_id": "item.rope", "kind": "item", "name": "Rope", "content": {"weight": 10}},
-	])
+	]
+	for index in range(55):
+		catalog_definitions.append({
+			"definition_id": "creature.fixture.%03d" % index,
+			"kind": "creature",
+			"name": "Bestie %03d" % index,
+			"content": {"fixture_index": index},
+		})
+	var prepared := definitions.prepare_generation(0, catalog_definitions)
 	_expect(prepared.get("ok", false), "Catalog fixture prepares typed Shared Definitions")
 	var published := registry.publish_shared_definitions_generation(int(prepared.get("generation", -1)), 0)
 	_expect(published.get("ok", false), "Catalog fixture atomically selects its Shared-Definition generation")
@@ -691,6 +699,18 @@ func _run_catalog_foundation_contract() -> void:
 	)
 	var invalid_page := definitions.query_catalog(int(prepared["generation"]), "creature", "", 0, 201)
 	_expect(not invalid_page.get("ok", true), "Catalog provider rejects an unbounded page")
+	var identity_descending := definitions.query_catalog(
+		int(prepared["generation"]), "creature", "", 0, 3, "identity", false
+	)
+	_expect(
+		identity_descending.get("rows", []).map(func(row: Dictionary) -> String: return row["definition_id"])
+		== ["creature.worg", "creature.wolf", "creature.fixture.054"],
+		"Shared Definitions sort stably before bounded paging in either direction"
+	)
+	_expect(
+		not definitions.query_catalog(int(prepared["generation"]), "creature", "", 0, 50, "unknown").get("ok", true),
+		"Shared Definitions reject an unknown Catalog sort key"
+	)
 
 	var controller := CatalogBrowseController.new(data_root, registry)
 	root.add_child(controller)
@@ -698,15 +718,21 @@ func _run_catalog_foundation_contract() -> void:
 	controller.result_published.connect(func(result: Dictionary) -> void:
 		results.append(result.duplicate(true))
 	)
-	var first_query := controller.query("creatures", "creature", "w", 0, 50)
-	var replacement_query := controller.query("creatures", "creature", "worg", 0, 50)
+	var first_query := controller.query("creatures", "creature", "w", 0, 50, false, "name", true)
+	var replacement_query := controller.query("creatures", "creature", "worg", 0, 50, false, "identity", false)
 	_expect(first_query.get("status", "") == "started" and replacement_query.get("status", "") == "queued", "Catalog controller admits one read and one latest-wins pending request")
 	for _attempt in 600:
 		if not controller.is_active():
 			break
 		await create_timer(0.001).timeout
 	await process_frame
-	_expect(results.size() == 1 and results[0].get("rows", [])[0].get("definition_id", "") == "creature.worg", "Catalog controller suppresses superseded readback and publishes only the latest query")
+	_expect(
+		results.size() == 1
+		and results[0].get("rows", [])[0].get("definition_id", "") == "creature.worg"
+		and results[0].get("sort_key", "") == "identity"
+		and not results[0].get("sort_ascending", true),
+		"Catalog controller suppresses superseded readback and publishes only the latest ordered query"
+	)
 	var controller_resources := controller.resource_snapshot()
 	_expect(
 		int(controller_resources.get("active_count", -1)) == 0
@@ -737,9 +763,77 @@ func _run_catalog_foundation_contract() -> void:
 		if catalog.section_snapshot("creatures").get("status", "") in ["ready", "empty"]:
 			break
 		await create_timer(0.001).timeout
-	_expect(catalog.section_snapshot("creatures").get("status", "") == "ready", "opening Katalog after initial hidden-route cancellation restarts its active provider query")
+	var initial_creature_state := catalog.section_snapshot("creatures")
+	_expect(
+		initial_creature_state.get("status", "") == "ready"
+		and initial_creature_state.get("total", -1) == 57
+		and initial_creature_state.get("rows", []).size() == 50,
+		"opening Katalog after initial hidden-route cancellation publishes the first bounded page"
+	)
 	var selector := catalog.find_child("CatalogSectionSelector", true, false)
 	_expect(selector != null and selector.get_child_count() == 7, "native Katalog exposes all seven persistent sections")
+	var next_page := catalog.find_child("CatalogNextPage", true, false) as Button
+	var previous_page := catalog.find_child("CatalogPreviousPage", true, false) as Button
+	var page_label := catalog.find_child("CatalogPageLabel", true, false) as Label
+	_expect(not next_page.disabled and previous_page.disabled and page_label.text == "Seite 1/2", "shared Catalog footer exposes truthful first-page navigation")
+	next_page.pressed.emit()
+	_expect(catalog.section_snapshot("creatures").get("page", -1) == 1, "Catalog paging acknowledges locally before provider completion")
+	for _attempt in 600:
+		var state := catalog.section_snapshot("creatures")
+		if state.get("status", "") == "ready" and state.get("page", -1) == 1:
+			break
+		await create_timer(0.001).timeout
+	var second_page_state := catalog.section_snapshot("creatures")
+	_expect(
+		second_page_state.get("rows", []).size() == 7
+		and page_label.text == "Seite 2/2"
+		and next_page.disabled
+		and not previous_page.disabled,
+		"Catalog renders the bounded final page and updates both navigation boundaries"
+	)
+	var result_list := catalog.find_child("CatalogResults", true, false) as VBoxContainer
+	var selected_page_button := result_list.find_child("CatalogResultName", true, false) as Button
+	selected_page_button.pressed.emit()
+	var retained_selection_id := str(catalog.section_snapshot("creatures").get("selected_id", ""))
+	var identity_header := catalog.find_child("CatalogSortIdentity", true, false) as Button
+	identity_header.pressed.emit()
+	_expect(
+		catalog.section_snapshot("creatures").get("page", -1) == 0
+		and catalog.section_snapshot("creatures").get("sort_key", "") == "identity"
+		and catalog.section_snapshot("creatures").get("selected_id", "") == retained_selection_id,
+		"header sorting resets paging immediately without discarding the stable selection"
+	)
+	for _attempt in 600:
+		var state := catalog.section_snapshot("creatures")
+		if state.get("status", "") == "ready" and state.get("sort_key", "") == "identity":
+			break
+		await create_timer(0.001).timeout
+	identity_header.pressed.emit()
+	for _attempt in 600:
+		var state := catalog.section_snapshot("creatures")
+		if state.get("status", "") == "ready" and not state.get("sort_ascending", true):
+			break
+		await create_timer(0.001).timeout
+	var descending_state := catalog.section_snapshot("creatures")
+	_expect(
+		descending_state.get("rows", [])[0].get("definition_id", "") == "creature.worg"
+		and identity_header.text == "Kennung ↓",
+		"the active column header is the only sort control and exposes descending direction"
+	)
+	next_page.pressed.emit()
+	for _attempt in 600:
+		var state := catalog.section_snapshot("creatures")
+		if state.get("status", "") == "ready" and state.get("page", -1) == 1:
+			break
+		await create_timer(0.001).timeout
+	catalog.select_section("items")
+	catalog.select_section("creatures")
+	_expect(
+		catalog.section_snapshot("creatures").get("page", -1) == 1
+		and catalog.section_snapshot("creatures").get("sort_key", "") == "identity"
+		and not catalog.section_snapshot("creatures").get("sort_ascending", true),
+		"Catalog section switching retains sort direction and page state"
+	)
 	var search := catalog.search_input()
 	search.text = "worg"
 	search.text_changed.emit(search.text)
@@ -783,8 +877,8 @@ func _run_catalog_foundation_contract() -> void:
 		"native Katalog name-only create persists through provider command and refreshes provider readback"
 	)
 	var stable_npc_id := str(npc_state.get("rows", [])[0].get("reference_id", ""))
-	var result_list := catalog.find_child("CatalogResults", true, false) as VBoxContainer
-	var npc_row_button := result_list.get_children().filter(func(child) -> bool: return child is Button)[0] as Button
+	result_list = catalog.find_child("CatalogResults", true, false) as VBoxContainer
+	var npc_row_button := result_list.find_child("CatalogResultName", true, false) as Button
 	npc_row_button.pressed.emit()
 	var edit_button := catalog.find_child("CatalogEdit", true, false) as Button
 	edit_button.pressed.emit()
@@ -889,6 +983,12 @@ func _run_world_planner_knowledge_contract() -> void:
 	var active_factions := model.query(trashed_payload, "faction", "", 0, 50)
 	var deleted_factions := model.query(trashed_payload, "faction", "", 0, 50, true)
 	_expect(active_factions.get("total", -1) == 1 and deleted_factions.get("total", -1) == 1, "active and recoverable-trash provider views remain distinct")
+	var factions_by_identity_desc := model.query(trashed_payload, "faction", "", 0, 50, false, "identity", false)
+	_expect(
+		factions_by_identity_desc.get("rows", [])[0].get("reference_id", "") == "faction.harbor.two"
+		and not factions_by_identity_desc.get("sort_ascending", true),
+		"World Planner applies the same stable sort contract before paging"
+	)
 	var restored := model.restore_record(trashed_payload, "faction.harbor", "2026-07-28T10:00:06Z")
 	var restored_payload: Dictionary = restored.get("payload", {})
 	_expect(

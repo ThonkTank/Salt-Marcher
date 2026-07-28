@@ -50,10 +50,11 @@ truth. Terminal feedback returns on the scene-tree thread.
 
 The Catalog read lane resolves the active Campaign through the immutable
 registry, opens its current commit, reads only the `worldplanner` partition, and
-executes a bounded provider query off the scene-tree thread. It verifies that
-the active registry pointer did not change before publishing. One active query
-and one latest-wins pending query bound memory and worker count; epochs suppress
-late readback.
+executes a bounded provider query off the scene-tree thread. Name or stable-ID
+sorting in either direction occurs before offset/page slicing. The lane verifies
+that the active registry pointer did not change before publishing. One active
+query and one latest-wins pending query bound memory and worker count; epochs
+suppress late readback.
 
 Rows contain provider-neutral stable identity, kind, name, optional notes,
 updated time, and trash state. Full typed detail editing remains an owner API
@@ -61,9 +62,9 @@ target and must not be implemented by copying owner truth into Catalog.
 
 ## Current Migration State
 
-The production Godot route currently supports bounded active/trash search and
-name-only create, name/note edit, recoverable delete, and restore for NPCs,
-factions, and places. Deleting a faction atomically removes current NPC
+The production Godot route currently supports bounded active/trash search,
+stable name/identity sorting, retained paging, and name-only create, name/note
+edit, recoverable delete, and restore for NPCs, factions, and places. Deleting a faction atomically removes current NPC
 membership and place links. Restore keeps the same identity and reattaches only
 surviving relationships that are still free.
 

@@ -32,7 +32,9 @@ and updated time. Kind-specific truth is:
 
 A trash entry stores the complete record, deletion time, and the incoming owner
 relationships removed by that deletion. The current provider excludes trash;
-the trash provider returns it explicitly.
+the trash provider returns it explicitly. Both views validate a `name` or
+`identity` sort key, apply the selected direction with stable-ID tie-breaking,
+and only then slice the requested bounded page.
 
 ## Identity And Minimal Creation
 

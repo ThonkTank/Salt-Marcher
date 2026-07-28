@@ -64,9 +64,17 @@ func query(
 	offset: int = 0,
 	limit: int = 50,
 	include_deleted: bool = false,
+	sort_key: String = "name",
+	sort_ascending: bool = true,
 	cancellation: Callable = Callable()
 ) -> Dictionary:
-	if kind not in KINDS or offset < 0 or limit <= 0 or limit > MAX_PAGE_SIZE:
+	if (
+		kind not in KINDS
+		or offset < 0
+		or limit <= 0
+		or limit > MAX_PAGE_SIZE
+		or sort_key not in ["name", "identity"]
+	):
 		return _failure("World-Planner-Katalogabfrage besitzt ungültige Grenzen.")
 	if _cancelled(cancellation):
 		return _cancelled_failure()
@@ -103,11 +111,15 @@ func query(
 			"updated_at_utc": record["updated_at_utc"],
 		})
 	matching.sort_custom(func(left: Dictionary, right: Dictionary) -> bool:
-		var left_name := str(left["name"]).to_lower()
-		var right_name := str(right["name"]).to_lower()
-		if left_name == right_name:
-			return str(left["reference_id"]) < str(right["reference_id"])
-		return left_name < right_name
+		var left_identity := str(left["reference_id"])
+		var right_identity := str(right["reference_id"])
+		var left_primary := left_identity if sort_key == "identity" else str(left["name"]).to_lower()
+		var right_primary := right_identity if sort_key == "identity" else str(right["name"]).to_lower()
+		if left_primary == right_primary:
+			if left_identity == right_identity:
+				return false
+			return left_identity < right_identity if sort_ascending else left_identity > right_identity
+		return left_primary < right_primary if sort_ascending else left_primary > right_primary
 	)
 	var rows: Array = []
 	var end := mini(offset + limit, matching.size())
@@ -120,6 +132,8 @@ func query(
 		"search_text": search_text,
 		"offset": offset,
 		"limit": limit,
+		"sort_key": sort_key,
+		"sort_ascending": sort_ascending,
 		"total": matching.size(),
 		"rows": rows,
 		"deleted": include_deleted,

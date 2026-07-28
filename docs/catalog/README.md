@@ -10,8 +10,10 @@ handing reference content to another active workspace. It presents Creatures,
 Items, saved Encounters, World Planner records, and Encounter Tables inside one
 `Katalog` navigation entry. The production Godot shell currently connects the
 Creature and Item sections to Shared Definitions and NPCs, factions, and places
-to the active Campaign's World Planner provider. Encounter and Encounter Tables
-remain visible but truthfully unavailable until their provider owners migrate.
+to the active Campaign's World Planner provider. Both provider families expose
+stable name/identity sorting before bounded paging through one retained result
+table. Encounter and Encounter Tables remain visible but truthfully unavailable
+until their provider owners migrate.
 
 ## Reading Order
 

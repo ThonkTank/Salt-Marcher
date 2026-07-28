@@ -16,8 +16,11 @@ supported product line.
 The production shell now exposes `Campaigns` and one consolidated `Katalog`
 route. Katalog retains all seven target sections; Monster and Items already
 query the selected installation-wide Shared-Definition generation off the
-scene-tree thread, while unmigrated provider sections report unavailable rather
-than inventing Catalog-owned records. A compact Party top-bar dropdown now
+scene-tree thread, while NPCs, factions, and places use the active Campaign's
+World Planner partition. The shared result table sorts before bounded paging,
+retains each section's page and direction, and cancels invisible provider work;
+unmigrated sections report unavailable rather than inventing Catalog-owned
+records. A compact Party top-bar dropdown now
 provides the active Campaign's Roster/current-Party foundation without adding a
 third navigation route. Its separate native Rastbudget trigger provides
 active/custom Adventuring-Day budgets and XP timelines; travel, Planning Party

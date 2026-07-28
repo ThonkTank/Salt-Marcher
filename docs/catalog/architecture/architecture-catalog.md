@@ -42,15 +42,17 @@ Encounter-Tabellen.
 Current migration state is narrower than the target: the production shell and
 all seven visible section identities exist; Monster and Items query the
 installation-wide Shared-Definition provider; NPCs, Fraktionen, and Orte query
-the active Campaign's World Planner provider. Encounter and Encounter Tables
-report unavailable. No unavailable section stores Catalog-owned truth.
+the active Campaign's World Planner provider. Both provider families implement
+stable name/identity sorting before bounded paging. Encounter and Encounter
+Tables report unavailable. No unavailable section stores Catalog-owned truth.
 
 ## Provider And Query Boundary
 
 Shared Definitions expose bounded catalog metadata queries by selected
-generation, kind, search text, offset, and page size. Rows contain stable
-definition identity, kind, and display name. Full semantic content stays in the
-provider and is read only when a provider-owned detail route requires it. The
+generation, kind, search text, sort key, direction, offset, and page size.
+Sorting is stable and precedes page slicing. Rows contain stable definition
+identity, kind, and display name. Full semantic content stays in the provider
+and is read only when a provider-owned detail route requires it. The
 generation index is checksummed and structurally validated once per read; it
 does not open every object. A damaged Item object therefore cannot block
 Creature metadata browsing, while selecting that Item still fails exact object
@@ -93,10 +95,14 @@ scene-tree thread; provider reads remain asynchronous. A successful refresh
 keeps accepted rows visible with a refreshing status. Failure never labels
 stale rows as current success.
 
-The current vertical slice retains draft, accepted query, rows, count, status,
-selection, and World Planner trash-view state for all seven sections. Paging
-and sort state are provider-level targets still to be connected to the shared
-Godot result table.
+The production vertical slice retains draft, accepted query, rows, count,
+status, selection, page, name/identity sort direction, and World Planner
+trash-view state for all seven sections. Search and trash-view changes return
+to page one; header sorting returns to page one without discarding a stable
+selection; section switching preserves the retained state and cancels the
+previous section's invisible request. Provider-specific filters and semantic
+columns such as Creature CR or Item rarity/cost remain target work rather than
+being approximated from metadata that the current providers do not publish.
 
 ## Presentation
 
@@ -105,8 +111,9 @@ Godot result table.
 - one persistent seven-section selector;
 - one inside-labelled search field and consistently placed create action;
 - one explicit active/paper-bin switch for recoverable Campaign-owned records;
-- one shared result region and Inspector region;
-- one footer for count and lifecycle status;
+- one shared result table whose two column headers are its only sort controls;
+- one Inspector region;
+- one footer for count, lifecycle status, and bounded page navigation;
 - explicit empty, loading, refreshing, unavailable, and failed states.
 
 Section definitions may supply data, columns, filters, and actions but never
@@ -137,6 +144,7 @@ status and retry affordance rather than SQL, paths, or raw exception text.
 - no JavaFX, Java, JDBC, SQLite, or legacy service locator dependency;
 - only active sections issue work;
 - one active and one latest-wins pending query per read lane;
+- stable provider sorting occurs before bounded page slicing;
 - late or cancelled results never replace newer visible state;
 - row selection never mutates Encounter or Scene;
 - every external mutation is an explicit provider/destination route;
