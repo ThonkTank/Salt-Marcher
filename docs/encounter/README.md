@@ -23,8 +23,8 @@ facts, imports the relevant Party into initiative, expands quantities into
 individual combatants, persists HP/round/turn state, derives results, publishes
 one atomic Encounter-plus-Party XP award, and returns to the retained roster.
 The native Scene owner now maintains one independent Encounter context per
-running scene. Assigned PCs, hostile or friendly NPC statblocks, prepared-plan
-rosters, and Scene mobs synchronize atomically while compatible initiative,
+running scene. Assigned PCs, hostile or friendly NPC statblocks, and Scene mobs
+synchronize atomically while compatible initiative,
 combat HP, round, active turn, and mode survive composition changes. Free-form
 Party-balanced runtime generation, reinforcements, masks, and final compact
 cockpit composition remain target work. JavaFX/SQLite implementations are

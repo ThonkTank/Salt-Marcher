@@ -2,7 +2,7 @@ class_name SceneReadController
 extends Node
 
 ## Latest-wins projection of the Scene workspace plus bounded Party, World,
-## Session Planner, Creature, and focused Encounter facts.
+## Creature, and focused Encounter facts.
 
 const FileCampaignRegistry = preload("res://godot/src/platform/persistence/file_campaign_registry.gd")
 const FileCampaignStore = preload("res://godot/src/platform/persistence/file_campaign_store.gd")
@@ -12,7 +12,6 @@ const EncounterPlanKnowledge = preload("res://godot/src/features/encounter/encou
 const EncounterRuntimeKnowledge = preload("res://godot/src/features/encounter/encounter_runtime_knowledge.gd")
 const PartyRoster = preload("res://godot/src/features/party/party_roster.gd")
 const WorldPlannerKnowledge = preload("res://godot/src/features/worldplanner/world_planner_knowledge.gd")
-const SessionPlanKnowledge = preload("res://godot/src/features/sessionplanner/session_plan_knowledge.gd")
 
 signal query_started(request: Dictionary)
 signal result_published(result: Dictionary)
@@ -153,13 +152,6 @@ func _project(store, campaign_state: Dictionary, registry_state: Dictionary, req
 	var world_validation := world_model.validate_payload(world_read.get("payload", world_model.empty_payload()))
 	if not world_validation.get("ok", false):
 		return world_validation
-	var session_model := SessionPlanKnowledge.new()
-	var session_read: Dictionary = store.read_partition(SessionPlanKnowledge.OWNER, campaign_state)
-	if not session_read.get("ok", false):
-		return session_read
-	var session_validation := session_model.validate_payload(session_read.get("payload", session_model.empty_payload()))
-	if not session_validation.get("ok", false):
-		return session_validation
 	var encounter_model := EncounterPlanKnowledge.new()
 	var encounter_read: Dictionary = store.read_partition(EncounterPlanKnowledge.OWNER, campaign_state)
 	if not encounter_read.get("ok", false):
@@ -212,9 +204,6 @@ func _project(store, campaign_state: Dictionary, registry_state: Dictionary, req
 		if scene["scene_id"] == scene_snapshot["focused_scene_id"]:
 			focused = scene.duplicate(true)
 			break
-	var assigned_pc := {}
-	for id in scene_snapshot["assigned_pc_ids"]:
-		assigned_pc[id] = true
 	var assigned_npc := {}
 	for id in scene_snapshot["assigned_npc_ids"]:
 		assigned_npc[id] = true
@@ -224,14 +213,12 @@ func _project(store, campaign_state: Dictionary, registry_state: Dictionary, req
 		"status": "ready",
 		"revision": scene_snapshot["revision"],
 		"focused_scene_id": scene_snapshot["focused_scene_id"],
-		"standard_scene_id": scene_snapshot["standard_scene_id"],
+		"primary_scene_id": scene_snapshot["primary_scene_id"],
 		"scenes": projected_scenes,
 		"focused": focused,
-		"unassigned_party": _unassigned_party(party_snapshot["active"], assigned_pc, needle),
 		"unassigned_npcs": _world_choices(world_validation["payload"]["records"], "npc", assigned_npc, needle),
 		"location_choices": _world_choices(world_validation["payload"]["records"], "place", {}, needle),
 		"creature_choices": creature_choices,
-		"prepared_scenes": _prepared_choices(session_validation["payload"], needle),
 		"search_text": request["search_text"],
 		"source_revision": scene_snapshot["revision"],
 	}
@@ -277,6 +264,7 @@ func _project_scenes(
 		scene["npcs"] = npc_rows
 		scene["mob_rows"] = mob_rows
 		scene["location_name"] = "Kein Ort" if scene["location_id"].is_empty() else str(location.get("name", "%s · fehlt" % scene["location_id"]))
+		scene["display_name"] = _scene_display_name(scene, party_rows)
 		scene["encounter_context_id"] = context_id
 		scene["encounter"] = encounter.get("context", EncounterRuntimeKnowledge.new().empty_context(context_id))
 		result.append(scene)
@@ -325,13 +313,13 @@ func _positive_integer(value: Variant) -> bool:
 	return _integer(value) and int(value) > 0
 
 
-func _unassigned_party(active: Array, assigned: Dictionary, needle: String) -> Array:
-	var rows: Array = []
-	for member in active:
-		if assigned.has(member["character_id"]) or (not needle.is_empty() and not str(member["name"]).to_lower().contains(needle)):
-			continue
-		rows.append(member.duplicate(true))
-	return rows
+func _scene_display_name(scene: Dictionary, party_rows: Array) -> String:
+	if bool(scene.get("primary", false)):
+		return "Hauptgruppe"
+	var names: Array[String] = []
+	for member in party_rows:
+		names.append(str(member["name"]))
+	return "Teilgruppe · %s" % ", ".join(names)
 
 
 func _world_choices(records: Dictionary, kind: String, assigned: Dictionary, needle: String) -> Array:
@@ -349,32 +337,6 @@ func _world_choices(records: Dictionary, kind: String, assigned: Dictionary, nee
 	rows.sort_custom(func(left: Dictionary, right: Dictionary) -> bool:
 		var order := str(left["name"]).naturalnocasecmp_to(str(right["name"]))
 		return str(left["reference_id"]) < str(right["reference_id"]) if order == 0 else order < 0
-	)
-	if rows.size() > 200:
-		rows.resize(200)
-	return rows
-
-
-func _prepared_choices(payload: Dictionary, needle: String) -> Array:
-	var rows: Array = []
-	for session_id_value in payload["records"]:
-		var session: Dictionary = payload["records"][session_id_value]
-		for scene in session["scenes"]:
-			var haystack := "%s %s" % [session["name"], scene["title"]]
-			if not needle.is_empty() and not haystack.to_lower().contains(needle):
-				continue
-			rows.append({
-				"session_id": session["session_id"],
-				"session_name": session["name"],
-				"scene_id": scene["scene_id"],
-				"title": scene["title"],
-				"location_id": scene["location_id"],
-				"encounter_plan_id": scene["encounter_plan_id"],
-			})
-	rows.sort_custom(func(left: Dictionary, right: Dictionary) -> bool:
-		var key_left := "%s|%s|%s" % [left["session_name"], left["title"], left["scene_id"]]
-		var key_right := "%s|%s|%s" % [right["session_name"], right["title"], right["scene_id"]]
-		return key_left.naturalnocasecmp_to(key_right) < 0
 	)
 	if rows.size() > 200:
 		rows.resize(200)

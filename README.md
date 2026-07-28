@@ -38,11 +38,12 @@ commits them atomically and idempotently, and hydrates current summaries in one
 ordered batch read. The Encounter route now opens saved plans into durable
 runtime truth, captures active-Party and monster initiative, tracks individual
 enemy HP plus round/active turn, derives combat results, and awards Party XP in
-one atomic Campaign publication. Scene now owns parallel running contexts,
-split Party membership, World Planner NPC/place references, Creature-backed
-mobs, participant quick state, prepared-scene copies, and exact Encounter deep
-links. Every Scene mutation and complete Encounter-context synchronization
-publish in one Campaign generation; compatible combat state survives focus and
+one atomic Campaign publication. Scene now owns one primary and any split
+running groups, exact active-Party assignment, World Planner NPC/place
+references, Creature-backed mobs, participant quick state, and exact Encounter
+deep links. The same character-move action splits or reunites groups. Party,
+Scene, and complete Encounter-context replacements publish in one Campaign
+generation; compatible combat state survives focus and
 composition changes. The superseded JavaFX/SQLite Scene owner is deleted.
 Free-form runtime generation, reinforcements, masks, passive display, and
 remaining live-table systems remain migration work. The native

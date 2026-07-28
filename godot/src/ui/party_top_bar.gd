@@ -7,6 +7,7 @@ signal snapshot_refresh_started
 const PartyRoster = preload("res://godot/src/features/party/party_roster.gd")
 const PartyReadController = preload("res://godot/src/features/party/party_read_controller.gd")
 const PartyCommandController = preload("res://godot/src/features/party/party_command_controller.gd")
+const SceneCommandController = preload("res://godot/src/features/scene/scene_command_controller.gd")
 
 const NIGHT_INK := Color("#0a1114")
 const VELLUM_MIST := Color("#d9e3dd")
@@ -18,6 +19,7 @@ var data_root := "user://salt-marcher"
 var runtime_coordinator
 var read_controller: PartyReadController
 var command_controller: PartyCommandController
+var scene_command_controller: SceneCommandController
 var _snapshot: Dictionary = {}
 var _trigger: Button
 var _popup: PopupPanel
@@ -52,10 +54,15 @@ func _ready() -> void:
 	if command_controller == null:
 		command_controller = PartyCommandController.new(data_root, runtime_coordinator)
 		add_child(command_controller)
+	if scene_command_controller == null:
+		scene_command_controller = SceneCommandController.new(data_root, runtime_coordinator)
+		add_child(scene_command_controller)
 	read_controller.query_started.connect(_on_query_started)
 	read_controller.result_published.connect(_on_result_published)
 	command_controller.command_started.connect(_on_command_started)
 	command_controller.command_completed.connect(_on_command_completed)
+	scene_command_controller.command_started.connect(_on_command_started)
+	scene_command_controller.command_completed.connect(_on_command_completed)
 	_build_trigger()
 	_build_popup()
 	_build_editor()
@@ -506,7 +513,7 @@ func _editor_fields() -> Dictionary:
 
 
 func _request_membership(character_id: String, membership: String) -> void:
-	_start_or_report(command_controller.set_membership(character_id, membership))
+	_start_or_report(scene_command_controller.set_party_membership(character_id, membership))
 
 
 func _request_xp(character_id: String, delta: int) -> void:
@@ -523,7 +530,7 @@ func _request_delete() -> void:
 
 
 func _confirm_delete() -> void:
-	_start_or_report(command_controller.trash_character(_editor_character_id))
+	_start_or_report(scene_command_controller.trash_party_character(_editor_character_id))
 
 
 func _request_restore(character_id: String) -> void:

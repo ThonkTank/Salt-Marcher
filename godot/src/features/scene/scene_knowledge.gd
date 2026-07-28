@@ -1,15 +1,15 @@
 class_name SceneKnowledge
 extends RefCounted
 
-## Pure Scene-owned running-workspace state. Foreign objects stay referenced by
-## stable identity; resolved labels and Encounter combat truth remain derived.
+## Pure running-Scene truth. A Campaign always owns one primary Scene. Every
+## active Party character belongs to exactly one Scene; split Scene identities
+## are created and retired only by the same character-move operation.
 
-const FORMAT_ID := "saltmarcher.scene.v1"
+const FORMAT_ID := "saltmarcher.scene.v2"
 const OWNER := "scene"
-const STANDARD_SCENE_ID := "scene.standard"
+const INITIAL_PRIMARY_SCENE_ID := "scene.primary"
 const MAX_SCENES := 1_000
 const MAX_PARTICIPANTS := 10_000
-const MAX_TITLE_LENGTH := 160
 const MAX_NOTES_LENGTH := 100_000
 const PARTICIPANT_KINDS := ["pc", "npc", "mob"]
 
@@ -18,10 +18,9 @@ func empty_payload() -> Dictionary:
 	return {
 		"format": FORMAT_ID,
 		"revision": 0,
-		"next_scene_number": 2,
-		"standard_scene_id": STANDARD_SCENE_ID,
-		"focused_scene_id": STANDARD_SCENE_ID,
-		"scenes": {STANDARD_SCENE_ID: _new_scene(STANDARD_SCENE_ID, "Standardszene")},
+		"primary_scene_id": INITIAL_PRIMARY_SCENE_ID,
+		"focused_scene_id": INITIAL_PRIMARY_SCENE_ID,
+		"scenes": {INITIAL_PRIMARY_SCENE_ID: _new_scene(INITIAL_PRIMARY_SCENE_ID)},
 	}
 
 
@@ -30,11 +29,10 @@ func validate_payload(value: Variant) -> Dictionary:
 		return _failure("Scene-Daten müssen ein Dokument sein.")
 	var payload: Dictionary = value
 	if (
-		payload.size() != 6
+		payload.size() != 5
 		or payload.get("format", "") != FORMAT_ID
 		or not _nonnegative_integer(payload.get("revision", null))
-		or not _positive_integer(payload.get("next_scene_number", null))
-		or not _valid_id(str(payload.get("standard_scene_id", "")))
+		or not _valid_id(str(payload.get("primary_scene_id", "")))
 		or not _valid_id(str(payload.get("focused_scene_id", "")))
 		or not payload.get("scenes", null) is Dictionary
 	):
@@ -43,10 +41,10 @@ func validate_payload(value: Variant) -> Dictionary:
 	if (
 		scenes.is_empty()
 		or scenes.size() > MAX_SCENES
-		or not scenes.has(payload["standard_scene_id"])
+		or not scenes.has(payload["primary_scene_id"])
 		or not scenes.has(payload["focused_scene_id"])
 	):
-		return _failure("Scene-Arbeitsbereich braucht Standard- und fokussierte Szene.")
+		return _failure("Scene-Arbeitsbereich braucht eine primäre und fokussierte Scene.")
 	var globally_assigned_pcs := {}
 	var globally_assigned_npcs := {}
 	for scene_id_value in scenes:
@@ -57,33 +55,88 @@ func validate_payload(value: Variant) -> Dictionary:
 		var scene: Dictionary = scenes[scene_id_value]
 		for pc_id in scene["party_member_ids"]:
 			if globally_assigned_pcs.has(pc_id):
-				return _failure("Ein SC darf nur einer laufenden Szene zugeordnet sein.")
+				return _failure("Ein SC darf nur einer laufenden Scene zugeordnet sein.")
 			globally_assigned_pcs[pc_id] = scene_id
 		for npc_id in scene["npc_ids"]:
 			if globally_assigned_npcs.has(npc_id):
-				return _failure("Ein NPC darf nur einer laufenden Szene zugeordnet sein.")
+				return _failure("Ein NPC darf nur einer laufenden Scene zugeordnet sein.")
 			globally_assigned_npcs[npc_id] = scene_id
+	if globally_assigned_pcs.is_empty():
+		if scenes.size() != 1 or payload["focused_scene_id"] != payload["primary_scene_id"]:
+			return _failure("Ohne aktive Party darf nur die leere primäre Scene bestehen.")
+	else:
+		for scene_value in scenes.values():
+			if scene_value["party_member_ids"].is_empty():
+				return _failure("Eine Teilgruppe ohne aktive SC darf nicht fortbestehen.")
 	return {"ok": true, "payload": payload.duplicate(true)}
 
 
 func initialize(payload_value: Variant, active_party_ids: Array) -> Dictionary:
+	return synchronize_active_party(payload_value, active_party_ids, true)
+
+
+func synchronize_active_party(
+	payload_value: Variant,
+	active_party_ids: Array,
+	force_initial_revision: bool = false
+) -> Dictionary:
 	var validated := validate_payload(payload_value)
 	if not validated.get("ok", false):
 		return validated
-	var ids := _unique_ids(active_party_ids, "Aktive Party")
-	if not ids.get("ok", false):
-		return ids
+	var active := _unique_ids(active_party_ids, "Aktive Party")
+	if not active.get("ok", false):
+		return active
 	var payload: Dictionary = validated["payload"]
-	if int(payload["revision"]) > 0:
-		return refresh_active_party(payload, ids["ids"])
 	var scenes: Dictionary = payload["scenes"].duplicate(true)
-	var standard: Dictionary = scenes[payload["standard_scene_id"]].duplicate(true)
-	standard["party_member_ids"] = ids["ids"].duplicate()
-	scenes[payload["standard_scene_id"]] = standard
+	var active_set := {}
+	for id in active["ids"]:
+		active_set[id] = true
+	var assigned := {}
+	var changed := false
+	for scene_id_value in scenes:
+		var scene: Dictionary = scenes[scene_id_value].duplicate(true)
+		var retained: Array = []
+		for pc_id in scene["party_member_ids"]:
+			if active_set.has(pc_id):
+				retained.append(pc_id)
+				assigned[pc_id] = true
+			else:
+				changed = true
+				scene["participant_states"].erase("pc:%s" % pc_id)
+		if retained != scene["party_member_ids"]:
+			scene["party_member_ids"] = retained
+		scenes[scene_id_value] = scene
+	var focused_id := str(payload["focused_scene_id"])
+	var focused: Dictionary = scenes[focused_id].duplicate(true)
+	for pc_id in active["ids"]:
+		if assigned.has(pc_id):
+			continue
+		focused["party_member_ids"].append(pc_id)
+		assigned[pc_id] = true
+		changed = true
+	scenes[focused_id] = focused
+	var normalized := _remove_empty_groups(
+		scenes,
+		str(payload["primary_scene_id"]),
+		focused_id,
+		active["ids"].is_empty()
+	)
+	if not normalized.get("ok", false):
+		return normalized
+	changed = changed or normalized["changed"]
+	var first_initialization := int(payload["revision"]) == 0 and force_initial_revision
+	if not changed and not first_initialization:
+		return _unchanged(payload, payload["scenes"][payload["focused_scene_id"]])
 	var next_payload := payload.duplicate(true)
-	next_payload["revision"] = 1
-	next_payload["scenes"] = scenes
-	return _validated_change(next_payload, "initialized", standard)
+	next_payload["scenes"] = normalized["scenes"]
+	next_payload["primary_scene_id"] = normalized["primary_scene_id"]
+	next_payload["focused_scene_id"] = normalized["focused_scene_id"]
+	next_payload["revision"] = int(payload["revision"]) + 1
+	return _validated_change(
+		next_payload,
+		"initialized" if first_initialization else "party_synchronized",
+		next_payload["scenes"][next_payload["focused_scene_id"]]
+	)
 
 
 func snapshot(payload_value: Variant) -> Dictionary:
@@ -98,7 +151,7 @@ func snapshot(payload_value: Variant) -> Dictionary:
 		var scene: Dictionary = payload["scenes"][scene_id_value]
 		var summary := scene.duplicate(true)
 		summary["focused"] = scene["scene_id"] == payload["focused_scene_id"]
-		summary["standard"] = scene["scene_id"] == payload["standard_scene_id"]
+		summary["primary"] = scene["scene_id"] == payload["primary_scene_id"]
 		summary["participant_count"] = scene["party_member_ids"].size() + scene["npc_ids"].size() + scene["mobs"].size()
 		scenes.append(summary)
 		for pc_id in scene["party_member_ids"]:
@@ -106,95 +159,21 @@ func snapshot(payload_value: Variant) -> Dictionary:
 		for npc_id in scene["npc_ids"]:
 			assigned_npc_ids[npc_id] = true
 	scenes.sort_custom(func(left: Dictionary, right: Dictionary) -> bool:
-		if bool(left["standard"]) != bool(right["standard"]):
-			return bool(left["standard"])
-		var order := str(left["title"]).naturalnocasecmp_to(str(right["title"]))
-		return str(left["scene_id"]) < str(right["scene_id"]) if order == 0 else order < 0
+		if bool(left["primary"]) != bool(right["primary"]):
+			return bool(left["primary"])
+		return str(left["scene_id"]) < str(right["scene_id"])
 	)
 	return {
 		"ok": true,
 		"status": "ready",
 		"revision": payload["revision"],
 		"focused_scene_id": payload["focused_scene_id"],
-		"standard_scene_id": payload["standard_scene_id"],
+		"primary_scene_id": payload["primary_scene_id"],
 		"focused": payload["scenes"][payload["focused_scene_id"]].duplicate(true),
 		"scenes": scenes,
 		"assigned_pc_ids": assigned_pc_ids.keys(),
 		"assigned_npc_ids": assigned_npc_ids.keys(),
 	}
-
-
-func create_scene(payload_value: Variant, raw_title: String, scene_id_override: String = "") -> Dictionary:
-	var validated := validate_payload(payload_value)
-	if not validated.get("ok", false):
-		return validated
-	var title := raw_title.strip_edges()
-	if title.is_empty() or title.length() > MAX_TITLE_LENGTH:
-		return _failure("Eine laufende Szene braucht einen kurzen sichtbaren Titel.")
-	var payload: Dictionary = validated["payload"]
-	if payload["scenes"].size() >= MAX_SCENES:
-		return _failure("Die Scene-Sammlung hat ihre sichere Grenze erreicht.")
-	var scene_id := scene_id_override if not scene_id_override.is_empty() else "scene.runtime.%s" % _new_identity()
-	if not _valid_id(scene_id) or payload["scenes"].has(scene_id):
-		return _failure("Scene-Identität ist ungültig oder bereits vergeben.")
-	var scene := _new_scene(scene_id, title)
-	var next_payload := payload.duplicate(true)
-	var scenes: Dictionary = payload["scenes"].duplicate(true)
-	scenes[scene_id] = scene
-	next_payload["scenes"] = scenes
-	next_payload["focused_scene_id"] = scene_id
-	next_payload["next_scene_number"] = int(payload["next_scene_number"]) + 1
-	next_payload["revision"] = int(payload["revision"]) + 1
-	return _validated_change(next_payload, "created", scene)
-
-
-func import_prepared(
-	payload_value: Variant,
-	source_session_id: String,
-	source_scene: Dictionary,
-	active_party_ids: Array,
-	scene_id_override: String = ""
-) -> Dictionary:
-	if not _valid_id(source_session_id) or not source_scene is Dictionary:
-		return _failure("Vorbereitete Szene besitzt keine gültige Herkunft.")
-	var source_scene_id := str(source_scene.get("scene_id", ""))
-	var title := str(source_scene.get("title", "")).strip_edges()
-	var notes := str(source_scene.get("notes", "")).strip_edges()
-	var location_id := str(source_scene.get("location_id", ""))
-	var encounter_plan_id := str(source_scene.get("encounter_plan_id", ""))
-	if (
-		not _valid_id(source_scene_id)
-		or title.is_empty()
-		or title.length() > MAX_TITLE_LENGTH
-		or notes.length() > MAX_NOTES_LENGTH
-		or (not location_id.is_empty() and not _valid_id(location_id))
-		or (not encounter_plan_id.is_empty() and not _valid_id(encounter_plan_id))
-	):
-		return _failure("Vorbereitete Szene enthält ungültige Laufzeitdaten.")
-	var created := create_scene(payload_value, title, scene_id_override)
-	if not created.get("ok", false):
-		return created
-	var active := _unique_ids(active_party_ids, "Vorbereitete Party")
-	if not active.get("ok", false):
-		return active
-	var payload: Dictionary = created["payload"]
-	var scene_id := str(created["scene"]["scene_id"])
-	var scenes: Dictionary = payload["scenes"].duplicate(true)
-	var scene: Dictionary = scenes[scene_id].duplicate(true)
-	scene["notes"] = notes
-	scene["source_session_id"] = source_session_id
-	scene["source_scene_id"] = source_scene_id
-	scene["initial_encounter_plan_id"] = encounter_plan_id
-	scene["location_id"] = location_id
-	var assigned := _assigned_ids(payload["scenes"], "party_member_ids", scene_id)
-	for pc_id in active["ids"]:
-		if not assigned.has(pc_id):
-			scene["party_member_ids"].append(pc_id)
-	scenes[scene_id] = scene
-	var next_payload := payload.duplicate(true)
-	next_payload["scenes"] = scenes
-	next_payload["revision"] = int(payload["revision"]) + 1
-	return _validated_change(next_payload, "prepared_imported", scene)
 
 
 func focus_scene(payload_value: Variant, scene_id: String) -> Dictionary:
@@ -210,49 +189,59 @@ func focus_scene(payload_value: Variant, scene_id: String) -> Dictionary:
 	return _validated_change(next_payload, "focused", target["scene"])
 
 
-func update_details(payload_value: Variant, scene_id: String, raw_title: String, raw_notes: String) -> Dictionary:
-	var title := raw_title.strip_edges()
+func move_pc(payload_value: Variant, character_id: String, destination_scene_id: String = "") -> Dictionary:
+	if not _valid_id(character_id):
+		return _failure("SC-Referenz ist ungültig.")
+	var validated := validate_payload(payload_value)
+	if not validated.get("ok", false):
+		return validated
+	var payload: Dictionary = validated["payload"]
+	var source_id := ""
+	for scene_id_value in payload["scenes"]:
+		if character_id in payload["scenes"][scene_id_value]["party_member_ids"]:
+			source_id = str(scene_id_value)
+			break
+	if source_id.is_empty():
+		return _failure("Aktiver SC besitzt keine laufende Scene.", "missing")
+	var create_split := destination_scene_id.is_empty()
+	if create_split and payload["scenes"][source_id]["party_member_ids"].size() <= 1:
+		return _failure("Eine neue Teilgruppe braucht mindestens einen SC, der in der Ausgangsgruppe bleibt.")
+	if not create_split and (not payload["scenes"].has(destination_scene_id) or destination_scene_id == source_id):
+		return _failure("Zielgruppe fehlt oder ist bereits die aktuelle Gruppe.", "missing")
+	var destination_id := "scene.split.%s" % _new_identity() if create_split else destination_scene_id
+	var scenes: Dictionary = payload["scenes"].duplicate(true)
+	if create_split:
+		scenes[destination_id] = _new_scene(destination_id)
+	var source: Dictionary = scenes[source_id].duplicate(true)
+	var destination: Dictionary = scenes[destination_id].duplicate(true)
+	source["party_member_ids"].erase(character_id)
+	source["participant_states"].erase("pc:%s" % character_id)
+	destination["party_member_ids"].append(character_id)
+	scenes[source_id] = source
+	scenes[destination_id] = destination
+	var primary_id := str(payload["primary_scene_id"])
+	if source["party_member_ids"].is_empty():
+		if source_id == primary_id:
+			primary_id = destination_id
+		scenes.erase(source_id)
+	var next_payload := payload.duplicate(true)
+	next_payload["scenes"] = scenes
+	next_payload["primary_scene_id"] = primary_id
+	next_payload["focused_scene_id"] = destination_id
+	next_payload["revision"] = int(payload["revision"]) + 1
+	return _validated_change(next_payload, "party_split" if create_split else "party_moved", destination)
+
+
+func update_notes(payload_value: Variant, scene_id: String, raw_notes: String) -> Dictionary:
 	var notes := raw_notes.strip_edges()
-	if title.is_empty() or title.length() > MAX_TITLE_LENGTH or notes.length() > MAX_NOTES_LENGTH:
-		return _failure("Szenentitel oder Notizen liegen außerhalb der sicheren Grenzen.")
-	return _mutate_scene(payload_value, scene_id, "details_updated", func(scene: Dictionary) -> bool:
-		if scene["title"] == title and scene["notes"] == notes:
+	if notes.length() > MAX_NOTES_LENGTH:
+		return _failure("Scene-Notizen überschreiten die sichere Grenze.")
+	return _mutate_scene(payload_value, scene_id, "notes_updated", func(scene: Dictionary) -> bool:
+		if scene["notes"] == notes:
 			return false
-		scene["title"] = title
 		scene["notes"] = notes
 		return true
 	)
-
-
-func delete_scene(payload_value: Variant, scene_id: String) -> Dictionary:
-	var target := _target(payload_value, scene_id)
-	if not target.get("ok", false):
-		return target
-	var payload: Dictionary = target["payload"]
-	if scene_id == payload["standard_scene_id"]:
-		return _failure("Die Standardszene kann nicht gelöscht werden.", "protected")
-	var scenes: Dictionary = payload["scenes"].duplicate(true)
-	scenes.erase(scene_id)
-	var next_payload := payload.duplicate(true)
-	next_payload["scenes"] = scenes
-	if payload["focused_scene_id"] == scene_id:
-		next_payload["focused_scene_id"] = payload["standard_scene_id"]
-	next_payload["revision"] = int(payload["revision"]) + 1
-	var result := _validated_change(next_payload, "deleted", scenes[next_payload["focused_scene_id"]])
-	result["deleted_scene_id"] = scene_id
-	return result
-
-
-func assign_pc(payload_value: Variant, scene_id: String, character_id: String) -> Dictionary:
-	if not _valid_id(character_id):
-		return _failure("SC-Referenz ist ungültig.")
-	return _move_unique_reference(payload_value, scene_id, character_id, "party_member_ids", "pc_assigned")
-
-
-func unassign_pc(payload_value: Variant, character_id: String) -> Dictionary:
-	if not _valid_id(character_id):
-		return _failure("SC-Referenz ist ungültig.")
-	return _remove_global_reference(payload_value, character_id, "party_member_ids", "pc_unassigned")
 
 
 func assign_npc(payload_value: Variant, scene_id: String, npc_id: String) -> Dictionary:
@@ -305,7 +294,9 @@ func unassign_mob(payload_value: Variant, scene_id: String, creature_id: String)
 		var mobs: Array = scene["mobs"].duplicate(true)
 		for index in mobs.size():
 			if mobs[index]["creature_id"] == creature_id:
+				var assignment_id := str(mobs[index]["assignment_id"])
 				mobs.remove_at(index)
+				scene["participant_states"].erase("mob:%s" % assignment_id)
 				scene["mobs"] = mobs
 				return true
 		return false
@@ -342,40 +333,53 @@ func set_participant_state(
 	)
 
 
-func refresh_active_party(payload_value: Variant, active_party_ids: Array) -> Dictionary:
-	var validated := validate_payload(payload_value)
-	if not validated.get("ok", false):
-		return validated
-	var active := _unique_ids(active_party_ids, "Aktive Party")
-	if not active.get("ok", false):
-		return active
-	var active_set := {}
-	for id in active["ids"]:
-		active_set[id] = true
-	var payload: Dictionary = validated["payload"]
-	var scenes: Dictionary = payload["scenes"].duplicate(true)
-	var changed := false
-	for scene_id_value in scenes:
-		var scene: Dictionary = scenes[scene_id_value].duplicate(true)
-		var retained: Array = []
-		for pc_id in scene["party_member_ids"]:
-			if active_set.has(pc_id):
-				retained.append(pc_id)
-			else:
-				changed = true
-				scene["participant_states"].erase("pc:%s" % pc_id)
-		scene["party_member_ids"] = retained
-		scenes[scene_id_value] = scene
-	if not changed:
-		return _unchanged(payload, payload["scenes"][payload["focused_scene_id"]])
-	var next_payload := payload.duplicate(true)
-	next_payload["scenes"] = scenes
-	next_payload["revision"] = int(payload["revision"]) + 1
-	return _validated_change(next_payload, "party_refreshed", scenes[next_payload["focused_scene_id"]])
-
-
 func encounter_context_id(scene_id: String) -> String:
 	return "encounter_context.%s" % scene_id
+
+
+func _remove_empty_groups(
+	scenes_value: Dictionary,
+	primary_scene_id: String,
+	focused_scene_id: String,
+	party_empty: bool
+) -> Dictionary:
+	var scenes := scenes_value.duplicate(true)
+	var primary_id := primary_scene_id
+	var focused_id := focused_scene_id
+	var changed := false
+	if party_empty:
+		var primary: Dictionary = scenes[primary_id].duplicate(true)
+		primary["party_member_ids"] = []
+		for scene_id_value in scenes.keys():
+			if str(scene_id_value) != primary_id:
+				scenes.erase(scene_id_value)
+				changed = true
+		scenes[primary_id] = primary
+		if focused_id != primary_id:
+			focused_id = primary_id
+			changed = true
+		return {"ok": true, "scenes": scenes, "primary_scene_id": primary_id, "focused_scene_id": focused_id, "changed": changed}
+	var populated: Array[String] = []
+	for scene_id_value in scenes:
+		if not scenes[scene_id_value]["party_member_ids"].is_empty():
+			populated.append(str(scene_id_value))
+	populated.sort()
+	if populated.is_empty():
+		return _failure("Aktive Party besitzt keine laufende Scene.")
+	if primary_id not in populated:
+		var replacement := focused_id if focused_id in populated else populated[0]
+		scenes.erase(primary_id)
+		primary_id = replacement
+		changed = true
+	for scene_id_value in scenes.keys():
+		var scene_id := str(scene_id_value)
+		if scenes[scene_id_value]["party_member_ids"].is_empty():
+			scenes.erase(scene_id_value)
+			changed = true
+	if not scenes.has(focused_id):
+		focused_id = primary_id
+		changed = true
+	return {"ok": true, "scenes": scenes, "primary_scene_id": primary_id, "focused_scene_id": focused_id, "changed": changed}
 
 
 func _move_unique_reference(payload_value: Variant, scene_id: String, ref_id: String, field: String, status: String) -> Dictionary:
@@ -393,11 +397,10 @@ func _move_unique_reference(payload_value: Variant, scene_id: String, ref_id: St
 			if existing_index < 0:
 				refs.append(ref_id)
 				changed = true
-		else:
-			if existing_index >= 0:
-				refs.remove_at(existing_index)
-				scene["participant_states"].erase("%s:%s" % ["pc" if field == "party_member_ids" else "npc", ref_id])
-				changed = true
+		elif existing_index >= 0:
+			refs.remove_at(existing_index)
+			scene["participant_states"].erase("npc:%s" % ref_id)
+			changed = true
 		scene[field] = refs
 		scenes[id_value] = scene
 	if not changed:
@@ -415,7 +418,7 @@ func _remove_global_reference(payload_value: Variant, ref_id: String, field: Str
 	var payload: Dictionary = validated["payload"]
 	var scenes: Dictionary = payload["scenes"].duplicate(true)
 	var changed := false
-	var focused: Dictionary = scenes[payload["focused_scene_id"]]
+	var affected: Dictionary = scenes[payload["focused_scene_id"]]
 	for scene_id_value in scenes:
 		var scene: Dictionary = scenes[scene_id_value].duplicate(true)
 		var refs: Array = scene[field].duplicate()
@@ -423,16 +426,16 @@ func _remove_global_reference(payload_value: Variant, ref_id: String, field: Str
 		if index >= 0:
 			refs.remove_at(index)
 			scene[field] = refs
-			scene["participant_states"].erase("%s:%s" % ["pc" if field == "party_member_ids" else "npc", ref_id])
+			scene["participant_states"].erase("npc:%s" % ref_id)
 			scenes[scene_id_value] = scene
-			focused = scene
+			affected = scene
 			changed = true
 	if not changed:
-		return _failure("Teilnehmer ist keiner laufenden Szene zugeordnet.", "missing")
+		return _failure("Teilnehmer ist keiner laufenden Scene zugeordnet.", "missing")
 	var next_payload := payload.duplicate(true)
 	next_payload["scenes"] = scenes
 	next_payload["revision"] = int(payload["revision"]) + 1
-	return _validated_change(next_payload, status, focused)
+	return _validated_change(next_payload, status, affected)
 
 
 func _mutate_scene(payload_value: Variant, scene_id: String, status: String, mutation: Callable) -> Dictionary:
@@ -456,12 +459,8 @@ func _target(payload_value: Variant, scene_id: String) -> Dictionary:
 	if not validated.get("ok", false):
 		return validated
 	if not _valid_id(scene_id) or not validated["payload"]["scenes"].has(scene_id):
-		return _failure("Laufende Szene fehlt: %s" % scene_id, "missing")
-	return {
-		"ok": true,
-		"payload": validated["payload"],
-		"scene": validated["payload"]["scenes"][scene_id].duplicate(true),
-	}
+		return _failure("Laufende Scene fehlt: %s" % scene_id, "missing")
+	return {"ok": true, "payload": validated["payload"], "scene": validated["payload"]["scenes"][scene_id].duplicate(true)}
 
 
 func _validated_change(payload: Dictionary, status: String, scene: Dictionary) -> Dictionary:
@@ -475,14 +474,10 @@ func _unchanged(payload: Dictionary, scene: Dictionary) -> Dictionary:
 	return {"ok": true, "status": "unchanged", "payload": payload.duplicate(true), "scene": scene.duplicate(true), "no_write": true}
 
 
-func _new_scene(scene_id: String, title: String) -> Dictionary:
+func _new_scene(scene_id: String) -> Dictionary:
 	return {
 		"scene_id": scene_id,
-		"title": title,
 		"notes": "",
-		"source_session_id": "",
-		"source_scene_id": "",
-		"initial_encounter_plan_id": "",
 		"location_id": "",
 		"party_member_ids": [],
 		"npc_ids": [],
@@ -493,33 +488,31 @@ func _new_scene(scene_id: String, title: String) -> Dictionary:
 
 func _validate_scene(scene_id: String, value: Variant) -> Dictionary:
 	if not _valid_id(scene_id) or not value is Dictionary:
-		return _failure("Laufende Szene besitzt keine gültige Identität.")
+		return _failure("Laufende Scene besitzt keine gültige Identität.")
 	var scene: Dictionary = value
 	if (
-		scene.size() != 11
+		scene.size() != 7
 		or scene.get("scene_id", "") != scene_id
-		or not _valid_text(scene.get("title", null), MAX_TITLE_LENGTH, false)
 		or not _valid_text(scene.get("notes", null), MAX_NOTES_LENGTH, true)
-		or not _valid_optional_id(scene.get("source_session_id", null))
-		or not _valid_optional_id(scene.get("source_scene_id", null))
-		or not _valid_optional_id(scene.get("initial_encounter_plan_id", null))
 		or not _valid_optional_id(scene.get("location_id", null))
 		or not scene.get("party_member_ids", null) is Array
 		or not scene.get("npc_ids", null) is Array
 		or not scene.get("mobs", null) is Array
 		or not scene.get("participant_states", null) is Dictionary
 	):
-		return _failure("Laufende Szene %s besitzt ungültige Grundwerte." % scene_id)
+		return _failure("Laufende Scene %s besitzt ungültige Grundwerte." % scene_id)
 	for field in ["party_member_ids", "npc_ids"]:
 		var seen := {}
 		if scene[field].size() > MAX_PARTICIPANTS:
-			return _failure("Laufende Szene überschreitet ihre Teilnehmergrenze.")
+			return _failure("Laufende Scene überschreitet ihre Teilnehmergrenze.")
 		for id_value in scene[field]:
 			var id := str(id_value)
 			if not _valid_id(id) or seen.has(id):
-				return _failure("Laufende Szene enthält ungültige oder doppelte Referenzen.")
+				return _failure("Laufende Scene enthält ungültige oder doppelte Referenzen.")
 			seen[id] = true
 	var seen_mobs := {}
+	if scene["mobs"].size() > MAX_PARTICIPANTS or scene["participant_states"].size() > MAX_PARTICIPANTS:
+		return _failure("Laufende Scene überschreitet ihre Laufzeitgrenze.")
 	for value_mob in scene["mobs"]:
 		if not value_mob is Dictionary:
 			return _failure("Scene-Mob ist ungültig.")
@@ -563,16 +556,6 @@ func _scene_has_participant(scene: Dictionary, kind: String, ref_id: String) -> 
 		if mob["assignment_id"] == ref_id:
 			return true
 	return false
-
-
-func _assigned_ids(scenes: Dictionary, field: String, except_scene_id: String = "") -> Dictionary:
-	var assigned := {}
-	for scene_id_value in scenes:
-		if str(scene_id_value) == except_scene_id:
-			continue
-		for ref_id in scenes[scene_id_value][field]:
-			assigned[ref_id] = true
-	return assigned
 
 
 func _unique_ids(values: Array, label: String) -> Dictionary:

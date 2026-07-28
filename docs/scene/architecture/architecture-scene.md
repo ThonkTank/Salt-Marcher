@@ -13,9 +13,8 @@ Encounter contexts can never diverge across a successful publication.
 ## Current Topology
 
 ```text
-Party partition -----------\
-World Planner partition ----+--> SceneCommandController
-Session Planner partition --+          |
+Party partition ------------+--> SceneCommandController
+World Planner partition ----+          |
 Shared Definitions ---------/          +--> SceneKnowledge
                                          +--> EncounterRuntimeKnowledge
                                          +--> one Campaign generation
@@ -35,8 +34,11 @@ route composition point.
 
 ## Decisions
 
-- Running scenes are independent copies, not live Session Planner records.
+- Running Scenes are independent runtime contexts, not Session Planner records.
+- Session Planner timeline entries are not materialized as Scene copies.
 - Scene owns composition; Encounter owns all workflow and combat state.
+- Party activation, reserve, and deletion synchronize exact Scene assignment
+  and Encounter context facts in the same Campaign publication.
 - Context IDs derive deterministically from stable Scene IDs without making
   Encounter depend on Scene types.
 - A complete owner generation replaces the former save-then-sync saga. There is
@@ -44,14 +46,15 @@ route composition point.
 - Creature details are resolved in one bounded Shared-Definition read before a
   write. Scene stores only references and last-known display comes from the read
   projection.
-- Hidden Scene UI performs no initialization write. First route activation
-  creates the Standardszene; later activation refreshes current foreign facts.
+- Hidden Scene UI performs no route-activation write. The first Party membership
+  change can initialize the primary Scene atomically; route activation refreshes
+  current foreign facts.
 - The focus compass keeps parallel context visible while one explicit deep link
   opens the exact Encounter runtime.
 
-Rejected alternatives are one global Encounter, live-linked prepared scenes,
-Scene-owned combat snapshots, background hidden-route writes, and a retryable
-cross-owner storage saga.
+Rejected alternatives are one global Encounter, copied or live-linked prepared
+Scenes, Scene-owned combat snapshots, background hidden-route writes, and a
+retryable cross-owner storage saga.
 
 ## Execution And Failure
 

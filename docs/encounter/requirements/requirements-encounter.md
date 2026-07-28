@@ -11,7 +11,7 @@ contexts. The `Encounter` workspace opens a saved plan through current Creature
 facts, captures the context's assigned Party, edits or rolls initiative,
 expands every hostile or allied roster member, persists exact HP, round and
 active-turn truth, derives results, awards XP atomically with Party, and resumes
-after restart. Scene composition atomically supplies prepared-plan rows, mobs,
+after restart. Scene composition atomically supplies mobs,
 and disposition-derived NPC roles. Free-form builder generation,
 Catalog-to-runtime additions, reinforcements, masks, and the eventual compact
 cockpit composition remain unmet target requirements.

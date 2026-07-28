@@ -100,7 +100,7 @@ validated Encounter partition through the admitted serial Campaign writer. XP
 award prepares both the Encounter acknowledgement and Party XP mutation and
 publishes both owner partitions in one Campaign generation.
 
-Scene synchronization resolves every prepared-plan, mob, and combat-relevant
+Scene synchronization resolves every mob and combat-relevant
 NPC reference against the current Shared-Definition generation, builds the
 complete context set, and publishes it with the new Scene partition in one
 Campaign generation. Surviving slots reconcile compatible initiative and

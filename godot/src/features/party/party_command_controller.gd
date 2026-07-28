@@ -24,20 +24,12 @@ func update_character(character_id: String, name: String, fields: Dictionary = {
 	return start_command({"operation": "update", "character_id": character_id, "name": name, "fields": fields.duplicate(true)})
 
 
-func set_membership(character_id: String, membership: String) -> Dictionary:
-	return start_command({"operation": "membership", "character_id": character_id, "membership": membership})
-
-
 func adjust_xp(character_ids: Array, delta: int) -> Dictionary:
 	return start_command({"operation": "xp", "character_ids": character_ids.duplicate(), "delta": delta})
 
 
 func perform_rest(rest_type: String) -> Dictionary:
 	return start_command({"operation": "rest", "rest_type": rest_type})
-
-
-func trash_character(character_id: String) -> Dictionary:
-	return start_command({"operation": "trash", "character_id": character_id})
 
 
 func restore_character(character_id: String) -> Dictionary:
@@ -55,14 +47,10 @@ func _apply_party_command(payload: Dictionary, request: Dictionary) -> Dictionar
 			return model.create_character(payload, str(request["name"]), request["fields"])
 		"update":
 			return model.update_character(payload, str(request["character_id"]), str(request["name"]), request["fields"])
-		"membership":
-			return model.set_membership(payload, str(request["character_id"]), str(request["membership"]))
 		"xp":
 			return model.adjust_xp(payload, request["character_ids"], int(request["delta"]))
 		"rest":
 			return model.perform_rest(payload, str(request["rest_type"]))
-		"trash":
-			return model.trash_character(payload, str(request["character_id"]))
 		"restore":
 			return model.restore_character(payload, str(request["character_id"]))
 		_:

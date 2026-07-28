@@ -8,7 +8,7 @@ Source of Truth: This document
 ## Purpose And Boundary
 
 Scene truth is one immutable, checksummed `scene` owner partition inside the
-active Campaign file store. Its payload format is `saltmarcher.scene.v1`.
+active Campaign file store. Its payload format is `saltmarcher.scene.v2`.
 SQLite tables, JDBC, Java repositories, and post-save synchronization markers
 are deleted legacy shapes and are not current compatibility surfaces.
 
@@ -19,9 +19,9 @@ closed and are disposable rather than receiving an implicit translator.
 
 The payload stores:
 
-- workspace revision, next identity counter, Standardszene ID, and focused Scene ID;
-- running Scene ID, title, notes, and optional Session/Scene provenance;
-- optional initial saved Encounter-plan and World Planner location references;
+- workspace revision, primary Scene ID, and focused Scene ID;
+- running Scene ID and notes;
+- optional World Planner location references;
 - ordered Party character and World Planner NPC references;
 - stable mob assignment IDs, Creature references, and positive counts;
 - assigned-participant defeated state and quick notes.
@@ -31,16 +31,17 @@ saved-plan rosters, or Encounter workflow state.
 
 ## Validation
 
-Validation rejects malformed formats, missing or extra owner structure, empty
-titles, invalid identities, missing focus/standard references, duplicate PC or
-NPC membership, duplicate mob identities, non-positive mob counts, and
+Validation rejects malformed formats, missing or extra owner structure,
+invalid identities, missing focus/primary references, duplicate PC or NPC
+membership, empty populated-Party groups, duplicate mob identities,
+non-positive mob counts, and
 participant state that does not match an assigned participant. Read failure is
 isolated to Scene and never fabricates fallback truth.
 
 ## Atomic Publication
 
 Every command loads one expected Campaign generation, validates supporting
-Party, World Planner, Session Planner, saved Encounter, and Shared-Definition
+Party, World Planner, Encounter, and Shared-Definition
 facts, and builds:
 
 1. the complete replacement Scene payload; and
@@ -53,10 +54,11 @@ There is no second synchronization write and no recoverable half-success.
 
 ## Restart And Reference Semantics
 
-Focus, composition, provenance, mobs, and participant state restore from the
+Focus, composition, mobs, and participant state restore from the
 Scene partition. Encounter restores each independent runtime context from its
-own partition. On refresh, inactive PCs are removed and newly active PCs remain
-unassigned. Missing foreign references remain explicit repairable identities
+own partition. Party activation assigns a new active PC to the focused Scene;
+reserve or deletion removes it, and both operations publish Party, Scene, and
+Encounter replacements atomically. Missing foreign references remain explicit repairable identities
 until a valid command removes or replaces them; no storage-level foreign key or
 cross-owner repair is created.
 

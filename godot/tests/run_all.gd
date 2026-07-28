@@ -1025,27 +1025,6 @@ func _run_party_roster_contract() -> void:
 		and session_workspace.find_child("CancelGeneration", true, false) != null,
 		"production Session Planner exposes durable manual planning plus explicit generation, seed, progress, and cancel controls"
 	)
-	var prepared_scene_workspace := shell.route("scene") as SceneWorkspace
-	_expect(shell.show_route("scene").get("ok", false), "production Scene route accepts prepared Session Planner handoff facts")
-	var prepared_scene_choice := prepared_scene_workspace.find_child("PreparedSceneChoice", true, false) as OptionButton
-	for _attempt in 1800:
-		if prepared_scene_choice.item_count > 1 and not prepared_scene_workspace._commands.busy():
-			break
-		await create_timer(0.001).timeout
-	if prepared_scene_choice.item_count > 1:
-		prepared_scene_choice.select(1)
-	var import_prepared_scene := prepared_scene_workspace.find_child("ImportPreparedScene", true, false) as Button
-	import_prepared_scene.pressed.emit()
-	for _attempt in 1800:
-		if prepared_scene_workspace.snapshot().get("scenes", []).size() == 2:
-			break
-		await create_timer(0.001).timeout
-	_expect(
-		prepared_scene_workspace.snapshot().get("scenes", []).size() == 2
-		and not str(prepared_scene_workspace.snapshot().get("focused", {}).get("source_session_id", "")).is_empty()
-		and not str(prepared_scene_workspace.snapshot().get("focused", {}).get("source_scene_id", "")).is_empty(),
-		"visible Scene controls copy one prepared scene with durable provenance"
-	)
 	shell.show_route("campaigns")
 	var party_top_bar := shell.find_child("PartyTrigger", true, false).get_parent() as PartyTopBar
 	for _attempt in 600:
@@ -1090,7 +1069,49 @@ func _run_party_roster_contract() -> void:
 		if party_top_bar.snapshot().get("summary", {}).get("active_count", -1) == 1:
 			break
 		await create_timer(0.001).timeout
-	_expect(membership_clicked and party_top_bar.trigger_button().text.begins_with("1 SC"), "Party top-bar membership action explicitly updates the current Party summary")
+	var atomic_state := FileCampaignStore.new(data_root, campaign_id).load_state()
+	var atomic_scene_read := FileCampaignStore.new(data_root, campaign_id).read_partition(SceneKnowledge.OWNER, atomic_state)
+	var atomic_scene := SceneKnowledge.new().snapshot(atomic_scene_read.get("payload", SceneKnowledge.new().empty_payload()))
+	_expect(
+		membership_clicked
+		and party_top_bar.trigger_button().text.begins_with("1 SC")
+		and atomic_scene.get("focused", {}).get("party_member_ids", []) == [ui_character_id],
+		"Party activation and exact focused-Scene assignment publish in one Campaign generation"
+	)
+	var reserve_button: Button
+	for button in roster_list.find_children("PartyMembershipAction", "Button", true, false):
+		if str(button.get_meta("character_id", "")) == ui_character_id:
+			reserve_button = button
+	var reserve_clicked := reserve_button != null
+	if reserve_clicked:
+		reserve_button.pressed.emit()
+	for _attempt in 1200:
+		if party_top_bar.snapshot().get("summary", {}).get("active_count", -1) == 0:
+			break
+		await create_timer(0.001).timeout
+	atomic_state = FileCampaignStore.new(data_root, campaign_id).load_state()
+	atomic_scene_read = FileCampaignStore.new(data_root, campaign_id).read_partition(SceneKnowledge.OWNER, atomic_state)
+	atomic_scene = SceneKnowledge.new().snapshot(atomic_scene_read.get("payload", SceneKnowledge.new().empty_payload()))
+	_expect(
+		reserve_clicked
+		and atomic_scene.get("scenes", []).size() == 1
+		and atomic_scene.get("focused", {}).get("party_member_ids", []).is_empty(),
+		"Party reserve and Scene removal publish atomically while retaining one empty primary group; clicked=%s party=%s scene=%s" % [
+			reserve_clicked,
+			JSON.stringify(party_top_bar.snapshot().get("summary", {})),
+			JSON.stringify(atomic_scene),
+		]
+	)
+	var reactivate_button: Button
+	for button in roster_list.find_children("PartyMembershipAction", "Button", true, false):
+		if str(button.get_meta("character_id", "")) == ui_character_id:
+			reactivate_button = button
+	if reactivate_button != null:
+		reactivate_button.pressed.emit()
+	for _attempt in 1200:
+		if party_top_bar.snapshot().get("summary", {}).get("active_count", -1) == 1:
+			break
+		await create_timer(0.001).timeout
 	var adventuring_day := shell.find_child("AdventuringDayTrigger", true, false).get_parent() as AdventuringDayTopBar
 	for _attempt in 1200:
 		if adventuring_day.snapshot().get("summary", {}).get("status", "") == "ready":
@@ -1373,44 +1394,46 @@ func _run_scene_knowledge_contract() -> void:
 		"Scene command boundary admits only active World Planner NPC references"
 	)
 	boundary.free()
-	var initial := model.initialize(model.empty_payload(), ["pc.ada", "pc.bo"])
+	var initial := model.initialize(model.empty_payload(), ["pc.ada", "pc.bo", "pc.cia"])
 	_expect(
 		initial.get("ok", false)
 		and initial.get("payload", {}).get("revision", -1) == 1
-		and initial.get("scene", {}).get("party_member_ids", []) == ["pc.ada", "pc.bo"],
-		"first Scene initialization creates one durable Standardszene with every active PC"
+		and initial.get("scene", {}).get("party_member_ids", []) == ["pc.ada", "pc.bo", "pc.cia"],
+		"first Scene initialization creates one durable primary group with every active PC"
 	)
 	var payload: Dictionary = initial.get("payload", model.empty_payload())
-	var created := model.create_scene(payload, "Unter dem Leuchtturm", "scene.cellar")
+	var split := model.move_pc(payload, "pc.ada")
+	var split_id := str(split.get("scene", {}).get("scene_id", ""))
 	_expect(
-		created.get("ok", false)
-		and created.get("payload", {}).get("focused_scene_id", "") == "scene.cellar"
-		and created.get("payload", {}).get("scenes", {}).size() == 2,
-		"Scene creates and focuses an independent running context"
+		split.get("ok", false)
+		and split_id.begins_with("scene.split.")
+		and split.get("payload", {}).get("focused_scene_id", "") == split_id
+		and split.get("payload", {}).get("scenes", {}).get(SceneKnowledge.INITIAL_PRIMARY_SCENE_ID, {}).get("party_member_ids", []) == ["pc.bo", "pc.cia"],
+		"the character-move action creates and focuses a split group without authored Scene metadata"
 	)
-	payload = created.get("payload", payload)
-	var moved := model.assign_pc(payload, "scene.cellar", "pc.ada")
+	payload = split.get("payload", payload)
+	var moved := model.move_pc(payload, "pc.bo", split_id)
 	_expect(
 		moved.get("ok", false)
-		and moved.get("payload", {}).get("scenes", {}).get("scene.standard", {}).get("party_member_ids", []) == ["pc.bo"]
-		and moved.get("payload", {}).get("scenes", {}).get("scene.cellar", {}).get("party_member_ids", []) == ["pc.ada"],
-		"moving one PC between running scenes is atomic and globally unique"
+		and moved.get("payload", {}).get("scenes", {}).get(SceneKnowledge.INITIAL_PRIMARY_SCENE_ID, {}).get("party_member_ids", []) == ["pc.cia"]
+		and moved.get("payload", {}).get("scenes", {}).get(split_id, {}).get("party_member_ids", []) == ["pc.ada", "pc.bo"],
+		"the same character-move action joins an existing group atomically and uniquely"
 	)
 	payload = moved.get("payload", payload)
-	var npc_first := model.assign_npc(payload, "scene.standard", "npc.guide")
-	var npc_moved := model.assign_npc(npc_first.get("payload", payload), "scene.cellar", "npc.guide")
+	var npc_first := model.assign_npc(payload, SceneKnowledge.INITIAL_PRIMARY_SCENE_ID, "npc.guide")
+	var npc_moved := model.assign_npc(npc_first.get("payload", payload), split_id, "npc.guide")
 	_expect(
 		npc_moved.get("ok", false)
-		and npc_moved.get("payload", {}).get("scenes", {}).get("scene.standard", {}).get("npc_ids", []).is_empty()
-		and npc_moved.get("payload", {}).get("scenes", {}).get("scene.cellar", {}).get("npc_ids", []) == ["npc.guide"],
+		and npc_moved.get("payload", {}).get("scenes", {}).get(SceneKnowledge.INITIAL_PRIMARY_SCENE_ID, {}).get("npc_ids", []).is_empty()
+		and npc_moved.get("payload", {}).get("scenes", {}).get(split_id, {}).get("npc_ids", []) == ["npc.guide"],
 		"moving one NPC between running scenes never duplicates the reference"
 	)
 	payload = npc_moved.get("payload", payload)
-	var located := model.set_location(payload, "scene.cellar", "place.lighthouse")
-	var mobbed := model.assign_mob(located.get("payload", payload), "scene.cellar", "creature.worg", 6)
+	var located := model.set_location(payload, split_id, "place.lighthouse")
+	var mobbed := model.assign_mob(located.get("payload", payload), split_id, "creature.worg", 6)
 	var mob_id := str(mobbed.get("scene", {}).get("mobs", [])[0].get("assignment_id", ""))
 	var noted := model.set_participant_state(
-		mobbed.get("payload", payload), "scene.cellar", "mob", mob_id, false, "Hält den Nordgang."
+		mobbed.get("payload", payload), split_id, "mob", mob_id, false, "Hält den Nordgang."
 	)
 	_expect(
 		noted.get("ok", false)
@@ -1420,44 +1443,33 @@ func _run_scene_knowledge_contract() -> void:
 		"Scene owns one location, mob quantities, and participant quick state"
 	)
 	payload = noted.get("payload", payload)
-	var imported := model.import_prepared(
-		payload,
-		"session.night",
-		{
-			"scene_id": "scene.prepared",
-			"title": "Signalfeuer",
-			"notes": "Der Sturm zieht auf.",
-			"location_id": "place.beacon",
-			"encounter_plan_id": "encounter_plan.beacon",
-		},
-		["pc.ada", "pc.bo", "pc.cia"],
-		"scene.imported"
-	)
+	var synchronized := model.synchronize_active_party(payload, ["pc.ada", "pc.bo", "pc.cia", "pc.new"])
 	_expect(
-		imported.get("ok", false)
-		and imported.get("scene", {}).get("source_session_id", "") == "session.night"
-		and imported.get("scene", {}).get("initial_encounter_plan_id", "") == "encounter_plan.beacon"
-		and imported.get("scene", {}).get("party_member_ids", []) == ["pc.cia"],
-		"prepared Scene import copies provenance and only currently unassigned active PCs"
+		synchronized.get("ok", false)
+		and "pc.new" in synchronized.get("payload", {}).get("scenes", {}).get(split_id, {}).get("party_member_ids", []),
+		"newly active PCs join the focused group during the atomic Party synchronization"
 	)
-	payload = imported.get("payload", payload)
-	var refreshed := model.refresh_active_party(payload, ["pc.ada", "pc.cia", "pc.new"])
+	payload = synchronized.get("payload", payload)
+	var refreshed := model.synchronize_active_party(payload, ["pc.cia"])
 	_expect(
 		refreshed.get("ok", false)
-		and not "pc.bo" in refreshed.get("payload", {}).get("scenes", {}).get("scene.standard", {}).get("party_member_ids", [])
-		and not "pc.new" in refreshed.get("payload", {}).get("scenes", {}).get("scene.standard", {}).get("party_member_ids", []),
-		"Scene refresh removes inactive PCs while leaving newly active PCs explicitly unassigned"
+		and refreshed.get("payload", {}).get("scenes", {}).size() == 1
+		and refreshed.get("payload", {}).get("primary_scene_id", "") == SceneKnowledge.INITIAL_PRIMARY_SCENE_ID
+		and refreshed.get("payload", {}).get("scenes", {}).get(SceneKnowledge.INITIAL_PRIMARY_SCENE_ID, {}).get("party_member_ids", []) == ["pc.cia"],
+		"Party synchronization removes inactive PCs and prunes every empty split group"
 	)
-	var protected := model.delete_scene(refreshed.get("payload", payload), SceneKnowledge.STANDARD_SCENE_ID)
+	var cannot_split_single := model.move_pc(refreshed.get("payload", payload), "pc.cia")
 	_expect(
-		not protected.get("ok", true) and protected.get("status", "") == "protected",
-		"Standardszene deletion is impossible through the owner model"
+		not cannot_split_single.get("ok", true),
+		"a one-character primary group cannot be split into an empty-source topology"
 	)
-	var round_trip: Variant = JSON.parse_string(JSON.stringify(refreshed.get("payload", payload)))
+	var empty_party := model.synchronize_active_party(refreshed.get("payload", payload), [])
+	var round_trip: Variant = JSON.parse_string(JSON.stringify(empty_party.get("payload", payload)))
 	_expect(
 		model.validate_payload(round_trip).get("ok", false)
-		and model.snapshot(round_trip).get("scenes", []).size() == 3,
-		"complete Scene workspace survives canonical JSON restart readback"
+		and model.snapshot(round_trip).get("scenes", []).size() == 1
+		and model.snapshot(round_trip).get("focused", {}).get("party_member_ids", []).is_empty(),
+		"empty Party leaves exactly one empty primary group and survives canonical JSON restart readback"
 	)
 
 
@@ -2652,72 +2664,59 @@ func _run_catalog_foundation_contract() -> void:
 		await create_timer(0.001).timeout
 	_expect(
 		scene_workspace.snapshot().get("scenes", []).size() == 1
-		and scene_workspace.snapshot().get("focused", {}).get("standard", false)
+		and scene_workspace.snapshot().get("focused", {}).get("primary", false)
 		and scene_workspace.snapshot().get("focused", {}).get("party_members", []).size() == 4,
-		"first Scene activation durably seeds one Standardszene with every active PC"
+		"first Scene activation durably exposes one primary group with every active PC"
 	)
-	var scene_title_input := scene_workspace.find_child("NewSceneTitle", true, false) as LineEdit
-	var create_scene_button := scene_workspace.find_child("CreateScene", true, false) as Button
-	scene_title_input.text = "Unter dem Leuchtfeuer"
-	create_scene_button.pressed.emit()
+	var move_scene_pc := scene_workspace.find_child("MoveScenePcChoice", true, false) as OptionButton
+	var move_scene_destination := scene_workspace.find_child("MoveSceneDestination", true, false) as OptionButton
+	var move_scene_button := scene_workspace.find_child("MoveScenePc", true, false) as Button
+	if move_scene_pc.item_count > 1:
+		move_scene_pc.select(1)
+	move_scene_destination.select(0)
+	move_scene_button.pressed.emit()
 	for _attempt in 1800:
 		if scene_workspace.snapshot().get("scenes", []).size() == 2:
 			break
 		await create_timer(0.001).timeout
 	var cellar_scene_id := str(scene_workspace.snapshot().get("focused_scene_id", ""))
 	_expect(
-		cellar_scene_id != SceneKnowledge.STANDARD_SCENE_ID
-		and scene_workspace.snapshot().get("focused", {}).get("title", "") == "Unter dem Leuchtfeuer",
-		"visible Scene creation focuses one independent running context"
+		cellar_scene_id != SceneKnowledge.INITIAL_PRIMARY_SCENE_ID
+		and scene_workspace.snapshot().get("focused", {}).get("party_members", []).size() == 1
+		and str(scene_workspace.snapshot().get("focused", {}).get("display_name", "")).begins_with("Teilgruppe"),
+		"the visible character-move action splits and focuses one independent group"
 	)
-	var scene_rail := scene_workspace.find_child("SceneRail", true, false) as VBoxContainer
-	var standard_scene_button: Button = null
-	for child in scene_rail.get_children():
-		if child is Button and str(child.text).contains("Standardszene"):
-			standard_scene_button = child
-			break
-	if standard_scene_button != null:
-		standard_scene_button.pressed.emit()
+	move_scene_pc = scene_workspace.find_child("MoveScenePcChoice", true, false) as OptionButton
+	move_scene_destination = scene_workspace.find_child("MoveSceneDestination", true, false) as OptionButton
+	if move_scene_pc.item_count > 1:
+		move_scene_pc.select(1)
+	if move_scene_destination.item_count > 1:
+		move_scene_destination.select(1)
+	move_scene_button.pressed.emit()
 	for _attempt in 1800:
-		if scene_workspace.snapshot().get("focused_scene_id", "") == SceneKnowledge.STANDARD_SCENE_ID:
-			break
-		await create_timer(0.001).timeout
-	var standard_party_list := scene_workspace.find_child("ScenePartyList", true, false) as VBoxContainer
-	var release_pc: Button = null
-	if standard_party_list.get_child_count() > 0:
-		var release_buttons := standard_party_list.get_child(0).find_children("", "Button", true, false)
-		if not release_buttons.is_empty():
-			release_pc = release_buttons[0] as Button
-	if release_pc != null:
-		release_pc.pressed.emit()
-	for _attempt in 1800:
-		if scene_workspace.snapshot().get("unassigned_party", []).size() == 1:
-			break
-		await create_timer(0.001).timeout
-	var cellar_scene_button: Button = null
-	for child in scene_rail.get_children():
-		if child is Button and str(child.text).contains("Unter dem Leuchtfeuer"):
-			cellar_scene_button = child
-			break
-	if cellar_scene_button != null:
-		cellar_scene_button.pressed.emit()
-	for _attempt in 1800:
-		if scene_workspace.snapshot().get("focused_scene_id", "") == cellar_scene_id:
-			break
-		await create_timer(0.001).timeout
-	var party_choice := scene_workspace.find_child("ScenePartyChoice", true, false) as OptionButton
-	if party_choice.item_count > 1:
-		party_choice.select(1)
-	var add_scene_pc := scene_workspace.find_child("AddScenePc", true, false) as Button
-	add_scene_pc.pressed.emit()
-	for _attempt in 1800:
-		if scene_workspace.snapshot().get("focused", {}).get("party_members", []).size() == 1:
+		if scene_workspace.snapshot().get("scenes", []).size() == 1:
 			break
 		await create_timer(0.001).timeout
 	_expect(
+		scene_workspace.snapshot().get("scenes", []).size() == 1
+		and scene_workspace.snapshot().get("focused", {}).get("party_members", []).size() == 4,
+		"the same visible action reunites a split and removes its empty source group"
+	)
+	move_scene_pc = scene_workspace.find_child("MoveScenePcChoice", true, false) as OptionButton
+	move_scene_destination = scene_workspace.find_child("MoveSceneDestination", true, false) as OptionButton
+	if move_scene_pc.item_count > 1:
+		move_scene_pc.select(1)
+	move_scene_destination.select(0)
+	move_scene_button.pressed.emit()
+	for _attempt in 1800:
+		if scene_workspace.snapshot().get("scenes", []).size() == 2:
+			break
+		await create_timer(0.001).timeout
+	cellar_scene_id = str(scene_workspace.snapshot().get("focused_scene_id", ""))
+	_expect(
 		scene_workspace.snapshot().get("focused", {}).get("party_members", []).size() == 1
-		and scene_workspace.snapshot().get("unassigned_party", []).is_empty(),
-		"visible Scene controls move one PC between contexts without duplicate membership"
+		and scene_workspace.snapshot().get("scenes", []).size() == 2,
+		"a second split leaves every active PC assigned exactly once for the live journey"
 	)
 	var location_choice := scene_workspace.find_child("SceneLocationChoice", true, false) as OptionButton
 	if location_choice.item_count > 1:

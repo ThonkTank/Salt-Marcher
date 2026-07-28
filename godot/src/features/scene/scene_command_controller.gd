@@ -11,7 +11,6 @@ const EncounterPlanKnowledge = preload("res://godot/src/features/encounter/encou
 const EncounterRuntimeKnowledge = preload("res://godot/src/features/encounter/encounter_runtime_knowledge.gd")
 const PartyRoster = preload("res://godot/src/features/party/party_roster.gd")
 const WorldPlannerKnowledge = preload("res://godot/src/features/worldplanner/world_planner_knowledge.gd")
-const SessionPlanKnowledge = preload("res://godot/src/features/sessionplanner/session_plan_knowledge.gd")
 
 var _scene_data_root: String
 
@@ -35,32 +34,24 @@ func refresh_foreign_facts() -> Dictionary:
 	return start_command({"operation": "refresh"})
 
 
-func create_scene(title: String) -> Dictionary:
-	return start_command({"operation": "create", "title": title})
-
-
-func import_prepared(session_id: String, prepared_scene_id: String) -> Dictionary:
-	return start_command({"operation": "import_prepared", "session_id": session_id, "prepared_scene_id": prepared_scene_id})
-
-
 func focus_scene(scene_id: String) -> Dictionary:
 	return start_command({"operation": "focus", "scene_id": scene_id})
 
 
-func update_details(scene_id: String, title: String, notes: String) -> Dictionary:
-	return start_command({"operation": "update_details", "scene_id": scene_id, "title": title, "notes": notes})
+func move_pc(character_id: String, destination_scene_id: String = "") -> Dictionary:
+	return start_command({"operation": "move_pc", "character_id": character_id, "destination_scene_id": destination_scene_id})
 
 
-func delete_scene(scene_id: String) -> Dictionary:
-	return start_command({"operation": "delete", "scene_id": scene_id})
+func update_notes(scene_id: String, notes: String) -> Dictionary:
+	return start_command({"operation": "update_notes", "scene_id": scene_id, "notes": notes})
 
 
-func assign_pc(scene_id: String, character_id: String) -> Dictionary:
-	return start_command({"operation": "assign_pc", "scene_id": scene_id, "character_id": character_id})
+func set_party_membership(character_id: String, membership: String) -> Dictionary:
+	return start_command({"operation": "party_membership", "character_id": character_id, "membership": membership})
 
 
-func unassign_pc(character_id: String) -> Dictionary:
-	return start_command({"operation": "unassign_pc", "character_id": character_id})
+func trash_party_character(character_id: String) -> Dictionary:
+	return start_command({"operation": "party_trash", "character_id": character_id})
 
 
 func assign_npc(scene_id: String, npc_id: String) -> Dictionary:
@@ -112,10 +103,6 @@ func _empty_world_payload() -> Dictionary:
 	return WorldPlannerKnowledge.new().empty_payload()
 
 
-func _empty_session_payload() -> Dictionary:
-	return SessionPlanKnowledge.new().empty_payload()
-
-
 func _empty_encounter_payload() -> Dictionary:
 	return EncounterPlanKnowledge.new().empty_payload()
 
@@ -124,7 +111,6 @@ func _supporting_payload_factories_for(_request: Dictionary) -> Dictionary:
 	return {
 		PartyRoster.OWNER: Callable(self, "_empty_party_payload"),
 		WorldPlannerKnowledge.OWNER: Callable(self, "_empty_world_payload"),
-		SessionPlanKnowledge.OWNER: Callable(self, "_empty_session_payload"),
 		EncounterPlanKnowledge.OWNER: Callable(self, "_empty_encounter_payload"),
 	}
 
@@ -136,7 +122,25 @@ func _apply_scene_command(payload: Dictionary, request: Dictionary) -> Dictionar
 		return validation
 	payload = validation["payload"]
 	var supporting: Dictionary = request.get("supporting_payloads", {})
-	var party := _party_snapshot(supporting.get(PartyRoster.OWNER, _empty_party_payload()))
+	var party_payload: Dictionary = supporting.get(PartyRoster.OWNER, _empty_party_payload())
+	var party_mutation: Dictionary = {}
+	match str(request.get("operation", "")):
+		"party_membership":
+			party_mutation = PartyRoster.new().set_membership(
+				party_payload,
+				str(request.get("character_id", "")),
+				str(request.get("membership", ""))
+			)
+		"party_trash":
+			party_mutation = PartyRoster.new().trash_character(
+				party_payload,
+				str(request.get("character_id", ""))
+			)
+	if not party_mutation.is_empty():
+		if not party_mutation.get("ok", false):
+			return party_mutation
+		party_payload = party_mutation["payload"]
+	var party := _party_snapshot(party_payload)
 	if not party.get("ok", false):
 		return party
 	var world_validation := WorldPlannerKnowledge.new().validate_payload(
@@ -144,50 +148,30 @@ func _apply_scene_command(payload: Dictionary, request: Dictionary) -> Dictionar
 	)
 	if not world_validation.get("ok", false):
 		return world_validation
-	var session_validation := SessionPlanKnowledge.new().validate_payload(
-		supporting.get(SessionPlanKnowledge.OWNER, _empty_session_payload())
-	)
-	if not session_validation.get("ok", false):
-		return session_validation
 	var encounter_validation := EncounterPlanKnowledge.new().validate_payload(
 		supporting.get(EncounterPlanKnowledge.OWNER, _empty_encounter_payload())
 	)
 	if not encounter_validation.get("ok", false):
 		return encounter_validation
+	var synchronized_party := model.synchronize_active_party(payload, party["active_ids"])
+	if not synchronized_party.get("ok", false):
+		return synchronized_party
+	payload = synchronized_party["payload"]
 	var result: Dictionary
 	match str(request.get("operation", "")):
 		"initialize":
 			result = model.initialize(payload, party["active_ids"])
 		"refresh":
-			result = model.refresh_active_party(payload, party["active_ids"])
-		"create":
-			result = model.create_scene(payload, str(request.get("title", "")))
-		"import_prepared":
-			var prepared := _prepared_scene(
-				session_validation["payload"],
-				str(request.get("session_id", "")),
-				str(request.get("prepared_scene_id", ""))
-			)
-			if not prepared.get("ok", false):
-				return prepared
-			result = model.import_prepared(
-				payload,
-				str(request["session_id"]),
-				prepared["scene"],
-				_prepared_active_ids(prepared["session"], party["active_ids"])
-			)
+			result = synchronized_party
 		"focus":
 			result = model.focus_scene(payload, str(request.get("scene_id", "")))
-		"update_details":
-			result = model.update_details(payload, str(request.get("scene_id", "")), str(request.get("title", "")), str(request.get("notes", "")))
-		"delete":
-			result = model.delete_scene(payload, str(request.get("scene_id", "")))
-		"assign_pc":
-			if str(request.get("character_id", "")) not in party["active_ids"]:
-				return _failure("Nur aktive SC können einer laufenden Szene zugeordnet werden.", "missing")
-			result = model.assign_pc(payload, str(request.get("scene_id", "")), str(request.get("character_id", "")))
-		"unassign_pc":
-			result = model.unassign_pc(payload, str(request.get("character_id", "")))
+		"move_pc":
+			result = model.move_pc(payload, str(request.get("character_id", "")), str(request.get("destination_scene_id", "")))
+		"update_notes":
+			result = model.update_notes(payload, str(request.get("scene_id", "")), str(request.get("notes", "")))
+		"party_membership", "party_trash":
+			result = synchronized_party
+			result["status"] = party_mutation["status"]
 		"assign_npc":
 			var npc_id := str(request.get("npc_id", ""))
 			if not _active_world_record(world_validation["payload"], npc_id, "npc"):
@@ -228,7 +212,7 @@ func _apply_scene_command(payload: Dictionary, request: Dictionary) -> Dictionar
 	)
 	if not synchronized.get("ok", false):
 		return synchronized
-	if result.get("no_write", false) and synchronized.get("no_write", false):
+	if party_mutation.is_empty() and result.get("no_write", false) and synchronized.get("no_write", false):
 		result["no_write"] = true
 		return result
 	result.erase("no_write")
@@ -236,6 +220,8 @@ func _apply_scene_command(payload: Dictionary, request: Dictionary) -> Dictionar
 		SceneKnowledge.OWNER: scene_payload,
 		EncounterPlanKnowledge.OWNER: synchronized["payload"],
 	}
+	if not party_mutation.is_empty():
+		result["partition_updates"][PartyRoster.OWNER] = party_payload
 	result["encounter_context_id"] = SceneKnowledge.new().encounter_context_id(scene_payload["focused_scene_id"])
 	result["encounter_status"] = synchronized["status"]
 	return result
@@ -267,17 +253,9 @@ func _resolved_encounter_facts(
 	world_payload: Dictionary,
 	request: Dictionary
 ) -> Dictionary:
-	var plan_model := EncounterPlanKnowledge.new()
 	var creature_ids: Array = []
 	for scene_id_value in scene_payload["scenes"]:
 		var scene: Dictionary = scene_payload["scenes"][scene_id_value]
-		var plan_id := str(scene["initial_encounter_plan_id"])
-		if not plan_id.is_empty():
-			var plan := plan_model.read_plan(encounter_payload, plan_id)
-			if not plan.get("ok", false):
-				return _failure("Vorbereiteter Encounter fehlt für Szene %s." % scene["title"], "missing")
-			for row in plan["record"]["roster"]:
-				creature_ids.append(str(row["creature_id"]))
 		for mob in scene["mobs"]:
 			creature_ids.append(str(mob["creature_id"]))
 		for npc_id in scene["npc_ids"]:
@@ -317,17 +295,6 @@ func _resolved_encounter_facts(
 	for scene_id_value in scene_payload["scenes"]:
 		var scene: Dictionary = scene_payload["scenes"][scene_id_value]
 		var roster: Array = []
-		var plan_id := str(scene["initial_encounter_plan_id"])
-		if not plan_id.is_empty():
-			var plan := plan_model.read_plan(encounter_payload, plan_id)
-			for row in plan["record"]["roster"]:
-				roster.append(_runtime_roster_entry(
-					"scene-plan.%s.%s" % [scene["scene_id"], row["creature_id"]],
-					"enemy",
-					definitions_by_id[str(row["creature_id"])],
-					int(row["quantity"]),
-					str(row["last_known_name"])
-				))
 		for mob in scene["mobs"]:
 			roster.append(_runtime_roster_entry(
 				"scene-mob.%s" % mob["assignment_id"],
@@ -355,7 +322,7 @@ func _resolved_encounter_facts(
 				party_rows.append(party["by_id"][pc_id].duplicate(true))
 		specs.append({
 			"context_id": SceneKnowledge.new().encounter_context_id(str(scene["scene_id"])),
-			"active_plan_id": plan_id,
+			"active_plan_id": "",
 			"party": party_rows,
 			"roster": roster,
 		})
@@ -381,27 +348,6 @@ func _party_snapshot(payload: Dictionary) -> Dictionary:
 		active_ids.append(id)
 		by_id[id] = member.duplicate(true)
 	return {"ok": true, "active": snapshot["active"], "active_ids": active_ids, "by_id": by_id}
-
-
-func _prepared_scene(payload: Dictionary, session_id: String, scene_id: String) -> Dictionary:
-	if not payload["records"].has(session_id):
-		return _failure("Vorbereitete Session fehlt.", "missing")
-	var session: Dictionary = payload["records"][session_id]
-	for value in session["scenes"]:
-		if value["scene_id"] == scene_id:
-			return {"ok": true, "session": session.duplicate(true), "scene": value.duplicate(true)}
-	return _failure("Vorbereitete Szene fehlt.", "missing")
-
-
-func _prepared_active_ids(session: Dictionary, active_ids: Array) -> Array:
-	var active_set := {}
-	for id in active_ids:
-		active_set[id] = true
-	var result: Array = []
-	for id in session["participant_ids"]:
-		if active_set.has(id):
-			result.append(id)
-	return result
 
 
 func _active_world_record(payload: Dictionary, record_id: String, kind: String) -> bool:

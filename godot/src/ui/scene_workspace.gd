@@ -21,23 +21,20 @@ signal encounter_requested(context_id: String)
 
 var data_root := "user://salt-marcher"
 var runtime_coordinator
+var command_controller: SceneCommandController
 var _reader: SceneReadController
 var _commands: SceneCommandController
 var _snapshot: Dictionary = {}
 var _rendering := false
 
 var _scene_rail: VBoxContainer
-var _new_title: LineEdit
-var _prepared_choice: OptionButton
+var _move_pc_choice: OptionButton
+var _move_destination_choice: OptionButton
 var _search: LineEdit
 var _heading: Label
-var _provenance: Label
-var _title: LineEdit
 var _notes: TextEdit
-var _delete: Button
 var _location_choice: OptionButton
 var _party_list: VBoxContainer
-var _party_choice: OptionButton
 var _npc_list: VBoxContainer
 var _npc_choice: OptionButton
 var _mob_list: VBoxContainer
@@ -45,7 +42,6 @@ var _creature_choice: OptionButton
 var _mob_count: SpinBox
 var _encounter_summary: VBoxContainer
 var _status: Label
-var _delete_dialog: ConfirmationDialog
 
 
 func _ready() -> void:
@@ -53,10 +49,12 @@ func _ready() -> void:
 	_reader = SceneReadController.new(data_root)
 	_reader.result_published.connect(_apply_snapshot)
 	add_child(_reader)
-	_commands = SceneCommandController.new(data_root, runtime_coordinator)
+	_commands = command_controller
+	if _commands == null:
+		_commands = SceneCommandController.new(data_root, runtime_coordinator)
+		add_child(_commands)
 	_commands.command_started.connect(_command_started)
 	_commands.command_completed.connect(_command_completed)
-	add_child(_commands)
 	_build_surface()
 	refresh()
 
@@ -147,18 +145,16 @@ func _build_surface() -> void:
 	_scene_rail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_scene_rail.add_theme_constant_override("separation", 4)
 	rail_scroll.add_child(_scene_rail)
-	var create_rule := HSeparator.new()
-	rail.add_child(create_rule)
-	_new_title = LineEdit.new()
-	_new_title.name = "NewSceneTitle"
-	_new_title.placeholder_text = "Neue laufende Szene"
-	_new_title.text_submitted.connect(func(_text: String) -> void: _create_scene())
-	rail.add_child(_new_title)
-	_add_button(rail, "Szene anlegen", _create_scene, "CreateScene")
-	_prepared_choice = OptionButton.new()
-	_prepared_choice.name = "PreparedSceneChoice"
-	rail.add_child(_prepared_choice)
-	_add_button(rail, "Vorbereitung kopieren", _import_prepared, "ImportPreparedScene")
+	var move_rule := HSeparator.new()
+	rail.add_child(move_rule)
+	_add_section_label(rail, "GRUPPE TEILEN / VEREINEN")
+	_move_pc_choice = OptionButton.new()
+	_move_pc_choice.name = "MoveScenePcChoice"
+	rail.add_child(_move_pc_choice)
+	_move_destination_choice = OptionButton.new()
+	_move_destination_choice.name = "MoveSceneDestination"
+	rail.add_child(_move_destination_choice)
+	_add_button(rail, "SC verschieben", _move_pc, "MoveScenePc")
 
 	var main_panel := PanelContainer.new()
 	main_panel.add_theme_stylebox_override("panel", _panel_style(PANEL))
@@ -181,23 +177,12 @@ func _build_surface() -> void:
 	_heading.add_theme_font_size_override("font_size", 22)
 	_heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	heading_row.add_child(_heading)
-	_delete = _add_button(heading_row, "Szene löschen", _show_delete, "DeleteScene")
-	_delete.add_theme_color_override("font_color", DANGER)
-	_provenance = Label.new()
-	_provenance.add_theme_color_override("font_color", QUIET)
-	_provenance.add_theme_font_size_override("font_size", 11)
-	content.add_child(_provenance)
 
 	var details := GridContainer.new()
 	details.columns = 2
 	details.add_theme_constant_override("h_separation", 10)
 	details.add_theme_constant_override("v_separation", 8)
 	content.add_child(details)
-	_add_field_label(details, "Titel")
-	_title = LineEdit.new()
-	_title.name = "SceneTitle"
-	_title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	details.add_child(_title)
 	_add_field_label(details, "Notizen")
 	_notes = TextEdit.new()
 	_notes.name = "SceneNotes"
@@ -213,7 +198,7 @@ func _build_surface() -> void:
 	location_row.add_child(_location_choice)
 	_add_button(location_row, "Ort setzen", _set_location, "SetSceneLocation")
 	_add_field_label(details, "")
-	_add_button(details, "Details speichern", _save_details, "SaveSceneDetails")
+	_add_button(details, "Notizen speichern", _save_notes, "SaveSceneNotes")
 
 	var columns := GridContainer.new()
 	columns.columns = 2
@@ -227,13 +212,6 @@ func _build_surface() -> void:
 	_party_list = VBoxContainer.new()
 	_party_list.name = "ScenePartyList"
 	people.add_child(_party_list)
-	var party_add := HBoxContainer.new()
-	people.add_child(party_add)
-	_party_choice = OptionButton.new()
-	_party_choice.name = "ScenePartyChoice"
-	_party_choice.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	party_add.add_child(_party_choice)
-	_add_button(party_add, "+ SC", _assign_pc, "AddScenePc")
 	_add_section_label(people, "NPC IN DIESER SZENE")
 	_npc_list = VBoxContainer.new()
 	_npc_list.name = "SceneNpcList"
@@ -282,13 +260,6 @@ func _build_surface() -> void:
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_status.add_theme_color_override("font_color", QUIET)
 	page.add_child(_status)
-	_delete_dialog = ConfirmationDialog.new()
-	_delete_dialog.name = "DeleteSceneDialog"
-	_delete_dialog.title = "Laufende Szene löschen?"
-	_delete_dialog.dialog_text = "Der zugehörige Encounter-Kontext wird im selben Campaign-Commit entfernt."
-	_delete_dialog.ok_button_text = "Szene löschen"
-	_delete_dialog.confirmed.connect(_delete_scene)
-	add_child(_delete_dialog)
 
 
 func _apply_snapshot(result: Dictionary) -> void:
@@ -311,7 +282,7 @@ func _render() -> void:
 		var scene: Dictionary = scene_value
 		var marker := "◆" if scene["focused"] else "◇"
 		var button := Button.new()
-		button.text = "%s  %s\n    %d Teilnehmer · %s" % [marker, scene["title"], int(scene["participant_count"]), str(scene["encounter"]["mode"]).to_upper()]
+		button.text = "%s  %s\n    %d Teilnehmer · %s" % [marker, scene["display_name"], int(scene["participant_count"]), str(scene["encounter"]["mode"]).to_upper()]
 		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		button.custom_minimum_size = Vector2(0, 54)
 		button.disabled = bool(scene["focused"]) or _commands.busy()
@@ -322,21 +293,16 @@ func _render() -> void:
 			connector.text = "      │"
 			connector.add_theme_color_override("font_color", Color("#365760"))
 			_scene_rail.add_child(connector)
-	_fill_choice(_prepared_choice, _snapshot.get("prepared_scenes", []), "title", func(row: Dictionary) -> String:
-		return "%s · %s" % [row["session_name"], row["title"]]
-	)
 	var focused: Dictionary = _snapshot.get("focused", {})
 	if focused.is_empty():
 		_render_empty("Keine laufende Szene verfügbar.")
 		_rendering = false
 		return
-	_heading.text = str(focused["title"])
-	_provenance.text = "Eigenständig am Spieltisch" if str(focused["source_session_id"]).is_empty() else "Kopie aus %s · %s" % [focused["source_session_id"], focused["source_scene_id"]]
-	_title.text = str(focused["title"])
+	_heading.text = str(focused["display_name"])
 	_notes.text = str(focused["notes"])
-	_delete.disabled = bool(focused["standard"]) or _commands.busy()
 	_fill_location_choice(focused)
-	_fill_choice(_party_choice, _snapshot.get("unassigned_party", []), "character_id", func(row: Dictionary) -> String: return str(row["name"]))
+	_fill_choice(_move_pc_choice, focused.get("party_members", []), "character_id", func(row: Dictionary) -> String: return str(row["name"]))
+	_fill_move_destinations(focused)
 	_fill_choice(_npc_choice, _snapshot.get("unassigned_npcs", []), "reference_id", func(row: Dictionary) -> String: return str(row["name"]))
 	_fill_choice(_creature_choice, _snapshot.get("creature_choices", []), "definition_id", func(row: Dictionary) -> String: return str(row["name"]))
 	for member in focused.get("party_members", []):
@@ -344,13 +310,13 @@ func _render() -> void:
 		_add_participant_row(
 			_party_list,
 			"%s%s" % [member["name"], "" if member["level"] == null else " · Stufe %d" % int(member["level"])],
-			_unassign_pc.bind(pc_id),
+			Callable(),
 			"pc",
 			pc_id,
 			focused.get("participant_states", {}).get("pc:%s" % pc_id, {})
 		)
 	if focused.get("party_members", []).is_empty():
-		_add_hint(_party_list, "Keine SC zugeordnet. Neue aktive SC bleiben bewusst unverteilt.")
+		_add_hint(_party_list, "Die Party ist leer; diese Hauptgruppe bleibt als Tischfokus bestehen.")
 	for npc in focused.get("npcs", []):
 		var npc_id := str(npc["npc_id"])
 		_add_participant_row(
@@ -394,41 +360,19 @@ func _render_encounter(context: Dictionary) -> void:
 	_add_hint(_encounter_summary, str(context.get("status", "Encounter-Kontext bereit.")))
 
 
-func _create_scene() -> void:
-	if not _new_title.text.strip_edges().is_empty():
-		_dispatch(_commands.create_scene(_new_title.text))
-
-
-func _import_prepared() -> void:
-	var row := _selected_metadata(_prepared_choice)
-	if not row.is_empty():
-		_dispatch(_commands.import_prepared(str(row["session_id"]), str(row["scene_id"])))
-
-
 func _focus_scene(scene_id: String) -> void:
 	_dispatch(_commands.focus_scene(scene_id))
 
 
-func _save_details() -> void:
-	_dispatch(_commands.update_details(str(_snapshot.get("focused_scene_id", "")), _title.text, _notes.text))
+func _save_notes() -> void:
+	_dispatch(_commands.update_notes(str(_snapshot.get("focused_scene_id", "")), _notes.text))
 
 
-func _show_delete() -> void:
-	_delete_dialog.popup_centered()
-
-
-func _delete_scene() -> void:
-	_dispatch(_commands.delete_scene(str(_snapshot.get("focused_scene_id", ""))))
-
-
-func _assign_pc() -> void:
-	var row := _selected_metadata(_party_choice)
-	if not row.is_empty():
-		_dispatch(_commands.assign_pc(str(_snapshot["focused_scene_id"]), str(row["character_id"])))
-
-
-func _unassign_pc(character_id: String) -> void:
-	_dispatch(_commands.unassign_pc(character_id))
+func _move_pc() -> void:
+	var member := _selected_metadata(_move_pc_choice)
+	var destination := _selected_metadata(_move_destination_choice)
+	if not member.is_empty() and not destination.is_empty():
+		_dispatch(_commands.move_pc(str(member["character_id"]), str(destination.get("scene_id", ""))))
 
 
 func _assign_npc() -> void:
@@ -468,7 +412,6 @@ func _command_started(_request: Dictionary) -> void:
 
 func _command_completed(result: Dictionary) -> void:
 	if result.get("ok", false):
-		_new_title.clear()
 		refresh()
 	else:
 		_set_status(str(result.get("error", "Scene-Änderung fehlgeschlagen.")), DANGER)
@@ -492,6 +435,22 @@ func _fill_location_choice(focused: Dictionary) -> void:
 		if row["reference_id"] == focused["location_id"]:
 			selected = index
 	_location_choice.select(selected)
+
+
+func _fill_move_destinations(focused: Dictionary) -> void:
+	_move_destination_choice.clear()
+	_move_destination_choice.add_item("Neue Teilgruppe")
+	_move_destination_choice.set_item_metadata(0, {"scene_id": ""})
+	for value in _snapshot.get("scenes", []):
+		var scene: Dictionary = value
+		if scene["scene_id"] == focused["scene_id"]:
+			continue
+		_move_destination_choice.add_item("Vereinen mit %s" % scene["display_name"])
+		_move_destination_choice.set_item_metadata(
+			_move_destination_choice.item_count - 1,
+			{"scene_id": scene["scene_id"]}
+		)
+	_move_destination_choice.select(0)
 
 
 func _fill_choice(choice: OptionButton, rows: Array, id_field: String, labeler: Callable) -> void:
@@ -532,7 +491,8 @@ func _add_participant_row(
 	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	label.add_theme_color_override("font_color", VELLUM)
 	row.add_child(label)
-	_add_button(row, "Lösen", remove_callback)
+	if remove_callback.is_valid():
+		_add_button(row, "Lösen", remove_callback)
 	var state_row := HBoxContainer.new()
 	card.add_child(state_row)
 	var defeated := CheckBox.new()
@@ -617,8 +577,6 @@ func _add_button(parent: Container, text: String, callback: Callable, node_name:
 
 func _render_empty(message: String) -> void:
 	_heading.text = "SCENE NICHT VERFÜGBAR"
-	_provenance.text = ""
-	_title.text = ""
 	_notes.text = ""
 	_clear_children(_scene_rail)
 	_clear_children(_party_list)

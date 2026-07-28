@@ -1,6 +1,6 @@
 # Encounter Runtime Context Contract
 
-Status: Active target contract with one manual Godot context; Scene synchronization not yet implemented
+Status: Active Godot contract with manual and Scene-keyed contexts implemented
 Owner: Encounter
 Last Reviewed: 2026-07-28
 Source of Truth: This document
@@ -9,13 +9,13 @@ Source of Truth: This document
 
 Encounter owns the mutable builder, initiative, combat, and result state of
 each running context. Scene owns which contexts exist, their focus, assigned
-PCs, location, initial prepared plan, and NPC role facts. Synchronization MUST
+PCs, location, mobs, and NPC role facts. Synchronization MUST
 NOT transfer Encounter-owned runtime state back to Scene.
 
-Current production state uses the stable `encounter_context.manual` context.
-It proves durable runtime ownership and the complete manual saved-plan combat
-journey. The Scene-owned complete-set synchronization API described below is
-still target behavior and must not be inferred from that manual context.
+Current production state uses the stable `encounter_context.manual` context and
+one deterministic context for each running Scene. Scene-owned complete-set
+synchronization and manual saved-plan combat both preserve independent durable
+runtime state.
 
 ## API Surface
 

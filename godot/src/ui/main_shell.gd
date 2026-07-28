@@ -8,6 +8,7 @@ const AdventuringDayTopBar = preload("res://godot/src/ui/adventuring_day_top_bar
 const SessionPlannerWorkspace = preload("res://godot/src/ui/session_planner_workspace.gd")
 const EncounterRuntimeWorkspace = preload("res://godot/src/ui/encounter_runtime_workspace.gd")
 const SceneWorkspace = preload("res://godot/src/ui/scene_workspace.gd")
+const SceneCommandController = preload("res://godot/src/features/scene/scene_command_controller.gd")
 
 const NIGHT_INK := Color("#0a1114")
 const DEEP_SLATE := Color("#152a32")
@@ -76,9 +77,12 @@ func _ready() -> void:
 	top_controls.add_child(top_spacer)
 	var adventuring_day_top_bar := AdventuringDayTopBar.new()
 	top_controls.add_child(adventuring_day_top_bar)
+	var scene_commands := SceneCommandController.new(data_root, runtime_coordinator)
+	add_child(scene_commands)
 	var party_top_bar := PartyTopBar.new()
 	party_top_bar.data_root = data_root
 	party_top_bar.runtime_coordinator = runtime_coordinator
+	party_top_bar.scene_command_controller = scene_commands
 	top_controls.add_child(party_top_bar)
 	party_top_bar.snapshot_published.connect(adventuring_day_top_bar.apply_party_snapshot)
 	party_top_bar.snapshot_refresh_started.connect(adventuring_day_top_bar.mark_party_refreshing)
@@ -123,6 +127,7 @@ func _ready() -> void:
 	var scene := SceneWorkspace.new()
 	scene.data_root = data_root
 	scene.runtime_coordinator = runtime_coordinator
+	scene.command_controller = scene_commands
 	content.add_child(scene)
 	_routes["scene"] = scene
 	scene.encounter_requested.connect(func(context_id: String) -> void:
