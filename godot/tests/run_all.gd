@@ -40,6 +40,8 @@ const PartyTopBar = preload("res://godot/src/ui/party_top_bar.gd")
 const PartyAdventuringDay = preload("res://godot/src/features/party/party_adventuring_day.gd")
 const AdventuringDayCalculationController = preload("res://godot/src/features/party/adventuring_day_calculation_controller.gd")
 const AdventuringDayTopBar = preload("res://godot/src/ui/adventuring_day_top_bar.gd")
+const SessionPlanKnowledge = preload("res://godot/src/features/sessionplanner/session_plan_knowledge.gd")
+const SessionPlannerWorkspace = preload("res://godot/src/ui/session_planner_workspace.gd")
 const StorageCapacityGuard = preload("res://godot/src/platform/persistence/storage_capacity_guard.gd")
 const PlatformVolumeCapacityProbe = preload("res://godot/src/platform/persistence/platform_volume_capacity_probe.gd")
 
@@ -125,6 +127,7 @@ func _run_tests() -> void:
 	_run_binary_content_contract()
 	await _run_adventuring_day_contract()
 	await _run_party_roster_contract()
+	_run_session_plan_contract()
 	await _run_world_planner_knowledge_contract()
 	_run_generated_encounter_batch_contract()
 	_run_encounter_plan_knowledge_contract()
@@ -393,6 +396,95 @@ func _run_adventuring_day_contract() -> void:
 	await process_frame
 
 
+func _run_session_plan_contract() -> void:
+	var model := SessionPlanKnowledge.new()
+	var empty := model.empty_payload()
+	_expect(model.validate_payload(empty).get("ok", false), "empty native Session Planner owner payload validates")
+	var created := model.create_session(empty, "Nacht am Salzsteg", "session.night", "2026-07-28T12:30:00Z")
+	_expect(
+		created.get("ok", false)
+		and created.get("session", {}).get("revision", -1) == 1
+		and created.get("payload", {}).get("current_session_id", "") == "session.night",
+		"Session creation atomically establishes stable identity, initial revision, and current pointer"
+	)
+	var payload: Dictionary = created.get("payload", empty)
+	var participants := model.set_participants(payload, "session.night", 1, ["pc.iria", "pc.kael"])
+	payload = participants.get("payload", payload)
+	var exact_days := model.set_encounter_days(payload, "session.night", 2, 15_000)
+	payload = exact_days.get("payload", payload)
+	_expect(
+		exact_days.get("ok", false)
+		and exact_days.get("session", {}).get("encounter_days_units", -1) == 15_000
+		and exact_days.get("session", {}).get("revision", -1) == 3,
+		"planning Party references and exact fixed-point adventure-day fraction advance revisions"
+	)
+	var stale := model.rename_session(payload, "session.night", 2, "Veraltet")
+	_expect(not stale.get("ok", true) and stale.get("status", "") == "stale", "every authored Session mutation rejects a stale target revision")
+	var first_scene := model.add_scene(payload, "session.night", 3)
+	payload = first_scene.get("payload", payload)
+	var first_id := str(first_scene.get("session", {}).get("selected_scene_id", ""))
+	var second_scene := model.add_scene(payload, "session.night", 4)
+	payload = second_scene.get("payload", payload)
+	var current: Dictionary = second_scene.get("session", {})
+	var second_id := str(current.get("selected_scene_id", ""))
+	_expect(
+		current.get("scenes", []).size() == 2
+		and int(current.get("scenes", [])[0].get("allocation_units", -1)) == 500_000
+		and int(current.get("scenes", [])[1].get("allocation_units", -1)) == 500_000,
+		"scene insertion rebalances the authored budget to an exact one-million-unit total"
+	)
+	var allocated := model.set_allocation(payload, "session.night", 5, first_id, 700_000)
+	payload = allocated.get("payload", payload)
+	current = allocated.get("session", {})
+	_expect(
+		int(current.get("scenes", [])[0].get("allocation_units", -1)) == 700_000
+		and int(current.get("scenes", [])[1].get("allocation_units", -1)) == 300_000,
+		"editing one scene allocation redistributes the exact remainder"
+	)
+	var saved_switch := model.save_scene_and_select_scene(
+		payload, "session.night", 6, second_id, "Sturmzeichen", "Signal bei Mitternacht", "", first_id
+	)
+	payload = saved_switch.get("payload", payload)
+	_expect(
+		saved_switch.get("session", {}).get("selected_scene_id", "") == first_id
+		and saved_switch.get("session", {}).get("scenes", [])[1].get("title", "") == "Sturmzeichen",
+		"dirty scene save and scene switch publish as one guarded Session revision"
+	)
+	var rest := model.set_rest(payload, "session.night", 7, first_id, second_id, "SHORT_REST")
+	payload = rest.get("payload", payload)
+	var moved := model.move_scene(payload, "session.night", 8, second_id, -1)
+	payload = moved.get("payload", payload)
+	_expect(
+		rest.get("session", {}).get("rests", []).size() == 1
+		and moved.get("session", {}).get("rests", []).is_empty(),
+		"rest markers exist only on the currently adjacent ordered scene gap"
+	)
+	var attached := model.attach_encounter(payload, "session.night", 9, second_id, "encounter_plan.harbor")
+	payload = attached.get("payload", payload)
+	var noted := model.add_loot_note(payload, "session.night", 10, second_id, "Kapitänsschlüssel")
+	payload = noted.get("payload", payload)
+	_expect(
+		noted.get("ok", false)
+		and noted.get("session", {}).get("manual_loot_notes", []).size() == 1,
+		"saved Encounter and manual loot remain scene-local authored references"
+	)
+	var removed := model.remove_scene(payload, "session.night", 11, second_id)
+	payload = removed.get("payload", payload)
+	_expect(
+		removed.get("session", {}).get("manual_loot_notes", []).is_empty()
+		and int(removed.get("session", {}).get("scenes", [])[0].get("allocation_units", -1)) == SessionPlanKnowledge.ALLOCATION_TOTAL,
+		"removing a scene prunes dependent notes and renormalizes the remaining scene"
+	)
+	var deleted := model.delete_session(payload, "session.night", 12, "2026-07-28T12:31:00Z")
+	_expect(
+		deleted.get("ok", false)
+		and deleted.get("fallback_seeded", false)
+		and deleted.get("payload", {}).get("records", {}).size() == 1
+		and not str(deleted.get("payload", {}).get("current_session_id", "")).is_empty(),
+		"deleting the final Session atomically installs a valid fallback and current pointer"
+	)
+
+
 func _run_party_roster_contract() -> void:
 	var model := PartyRoster.new()
 	var payload := model.empty_payload()
@@ -538,6 +630,55 @@ func _run_party_roster_contract() -> void:
 	shell.runtime_coordinator = coordinator
 	root.add_child(shell)
 	await process_frame
+	var session_workspace := shell.route("session_planner") as SessionPlannerWorkspace
+	for _attempt in 1200:
+		if session_workspace.snapshot().get("status", "") == "empty":
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		session_workspace != null
+		and shell.show_route("session_planner").get("ok", false)
+		and shell.active_route() == "session_planner",
+		"production shell exposes the native Session Planner as a first-class route"
+	)
+	var create_session := session_workspace.find_child("CreateSession", true, false) as Button
+	create_session.pressed.emit()
+	var session_name := session_workspace.find_child("SessionNameInput", true, false) as LineEdit
+	session_name.text = "Hafennacht"
+	var session_name_dialog := session_workspace.find_child("SessionNameDialog", true, false) as ConfirmationDialog
+	session_name_dialog.confirmed.emit()
+	session_name_dialog.hide()
+	for _attempt in 1200:
+		if session_workspace.snapshot().get("current", {}).get("name", "") == "Hafennacht":
+			break
+		await create_timer(0.001).timeout
+	var add_scene := session_workspace.find_child("AddScene", true, false) as Button
+	add_scene.pressed.emit()
+	for _attempt in 1200:
+		if session_workspace.snapshot().get("scenes", []).size() == 1:
+			break
+		await create_timer(0.001).timeout
+	var planning_party := session_workspace.find_child("PlanningParty", true, false) as Button
+	planning_party.pressed.emit()
+	var planning_list := session_workspace.find_child("PlanningPartyList", true, false) as VBoxContainer
+	var planning_checks := planning_list.find_children("", "CheckBox", true, false)
+	if not planning_checks.is_empty():
+		(planning_checks[0] as CheckBox).button_pressed = true
+	var planning_dialog := session_workspace.find_child("PlanningPartyDialog", true, false) as ConfirmationDialog
+	planning_dialog.confirmed.emit()
+	planning_dialog.hide()
+	for _attempt in 1200:
+		if session_workspace.snapshot().get("participant_rows", []).size() == 1:
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		session_workspace.snapshot().get("current", {}).get("name", "") == "Hafennacht"
+		and session_workspace.snapshot().get("scenes", []).size() == 1
+		and session_workspace.snapshot().get("participant_rows", []).size() == 1
+		and session_workspace.find_child("DirectorSheet", true, false) != null,
+		"production Session Planner creates a durable Session, scene, and independent planning Party through the visible route"
+	)
+	shell.show_route("campaigns")
 	var party_top_bar := shell.find_child("PartyTrigger", true, false).get_parent() as PartyTopBar
 	for _attempt in 600:
 		if party_top_bar.snapshot().get("status", "") in ["ready", "empty"]:

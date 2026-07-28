@@ -1,13 +1,26 @@
 # Session Planner Persistence Contract
 
+Status: Active target with implemented Godot version-1 owner format
+Owner: Session Planner
+Last Reviewed: 2026-07-28
+Source of Truth: This document owns Session Planner persistence and write semantics
+
 ## Owner And Boundary
 
-The Session Planner SQLite adapter is the only writer of planner-owned session
-records. It implements a feature-owned application port and remains private to
-`SessionPlannerFeature`. SQL records, schema carriers, repositories, and
-adapter failures never cross `SessionPlannerApi`.
+The Godot `session_planner` Campaign partition is the only writer-owned durable
+truth for planner records. `SessionPlanCommandController` prepares one complete
+candidate off-thread and submits it through the admitted serial Campaign writer;
+`SessionPlanKnowledge` owns format and domain validation. Partition documents,
+file paths, checksums, and storage failures never become foreign feature truth.
 
-## Final Prepared-Session Commit Operation
+The Java/JavaFX/SQLite implementation remains migration-only legacy until the
+prepared-session workflow and visible owner acceptance complete. New Godot
+writes do not read, repair, dual-write, or mirror that legacy store.
+
+## Remaining Final Prepared-Session Commit Operation
+
+The native manual planning commands are implemented. The following replacement
+operation remains the target for the later Session Generation cutover:
 
 The application port exposes one final replacement operation:
 
@@ -42,15 +55,16 @@ silently retries against `currentRevision`.
 
 ## Stored Truth
 
-The normalized session record stores:
+The version-1 Godot session record stores:
 
 - stable session identity, display name, and revision
 - the current-session pointer
 - session-local participant references
-- exact adventure-day fraction
+- exact adventure-day fraction as fixed-point units (`10_000` units per day)
 - ordered scenes with title, notes, optional World Planner location ID, and
   optional Encounter-plan ID
-- allocation data for encounter-linked scenes
+- exact allocation units for every scene (`1_000_000` units across a non-empty
+  ordered scene list)
 - selected scene identity
 - rests between scenes
 - manual loot notes
@@ -73,7 +87,7 @@ not reward truth and MUST NOT replace a successful typed reward projection.
 ## Reference Rules
 
 - foreign identities are stored as typed stable references, not cross-feature
-  SQLite foreign keys
+  storage links
 - every reward reference names an existing scene in the same session
 - Encounter-channel rewards reference their generated encounter scene
 - quest and environment rewards reference encounter-free scenes
@@ -87,9 +101,10 @@ not reward truth and MUST NOT replace a successful typed reward projection.
 
 ## Writes And Revisions
 
-Every authored command uses optimistic revision validation. A successful write
-replaces the root and affected child collections in one Session Planner
-transaction, advances the revision once, and returns the committed snapshot.
+Every implemented authored command uses optimistic revision validation. A
+successful write publishes one immutable Campaign generation containing the
+complete replacement owner partition, advances the Session revision once, and
+returns the committed snapshot.
 A stale revision or invalid payload writes nothing.
 
 Every authored command carries one authored target consisting of Session
@@ -107,7 +122,8 @@ the same transaction when no Session remains. Stale and missing outcomes write
 nothing. After success the application reads Current authoritatively before it
 publishes.
 
-A catalog switch with a dirty scene draft is one authored-lane operation. It
+A catalog switch with a dirty scene draft is one implemented authored-lane
+operation. It
 prevalidates the target Session, compare-and-swap saves the source draft, then
 switches the pointer and publishes only the target workspace. Any source
 validation or save failure leaves the pointer unchanged. If pointer switching
@@ -141,24 +157,14 @@ again; idempotency makes that retry safe.
 
 ## Migration And Compatibility
 
-Compatibility obligations begin with the first released format.
-Before the first released format, the Session Planner owner's only supported schema is the
-current target at owner version 1. One direct initializer creates every current
-table and index, including manual loot notes and generated reward references.
-It never creates, reads, copies, repairs, or drops a loot-placeholder table or
-another development-only predecessor shape.
-
-An empty store initializes transactionally and reaches the exact current target.
-Any pre-existing incomplete or superseded development shape fails closed without
-schema repair, data conversion, destructive cleanup, or owner-version rewrite.
-The exact target includes the complete owner object inventory, column types,
-nullability and defaults, primary and unique constraints, checks, indexes, and
-all Session-Planner-internal cascading relationships. An adjacent retired owner
-object at recorded version 1 is therefore incompatible rather than ignored.
-Initializer or final-signature failure rolls back every table, index, row, and
-owner-version change made by that attempt. Current-format sessions, manual notes,
-and generated reward references remain readable across ordinary restart and the
-platform-owned backup/recovery lifecycle.
+Compatibility obligations begin with the first released file format. Before
+that release, `saltmarcher.session-plans.v1` is the only supported native owner
+shape. An absent partition reads as the exact empty payload. Its first mutation
+publishes the whole validated format through one immutable Campaign generation.
+Unknown or incomplete shapes fail closed; no reader repairs, converts, or
+destructively cleans them. Current-format sessions, notes, and reward references
+remain readable across ordinary restart and the platform-owned backup/recovery
+lifecycle.
 
 After activation, subsequent owner versions become immutable predecessor
 contracts. A future migration must then preserve every supported shape through
@@ -170,14 +176,13 @@ owner-approved backup boundary.
 
 ## Error Contract
 
-Owner startup readiness validates the exact feature-declared version-1 target
-signature through a separate non-mutating reference schema. It does not repair
-a mismatched structure. Semantic row validation
-remains on typed provider read/write paths and fails closed through the feature
-contract.
+Owner reads validate the complete version-1 document and checksum-backed
+Campaign partition without mutation. They do not repair a mismatched structure.
+Semantic validation remains on typed read/write paths and fails closed through
+the feature contract.
 
 Validation errors identify the invalid command field or invariant without
-echoing authored content. Failure messages are display-safe and contain no SQL,
+echoing authored content. Failure messages are display-safe and contain no
 exception text, paths, generated item payloads, or authored notes. A failure
 leaves the last stable workspace revision visible.
 

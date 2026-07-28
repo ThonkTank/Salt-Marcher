@@ -1,8 +1,17 @@
 # Session Planner Architecture
 
+Status: Active target with implemented Godot foundation
+Owner: Session Planner
+Last Reviewed: 2026-07-28
+Source of Truth: This document owns Session Planner structure and quality decisions
+
 ## Objective
 
-The target supports one responsive preparation command that publishes concrete
+The current Godot foundation publishes one coherent, editable manual-planning
+workspace with persistent Sessions, planning Party, exact budget allocation,
+ordered scenes, rest gaps, saved Encounter links, World Planner places, and
+manual loot notes. The remaining target adds one responsive preparation command
+that publishes concrete
 Encounter rosters, structured rewards, and one coherent editable workspace
 revision. Persistence is durable truth rather than in-process transport, and
 latency stays bounded by provider family rather than saved or generated row
@@ -24,23 +33,22 @@ truth to domain documents, and payload or persistence semantics to contracts.
 ## Target Topology
 
 ```text
-features/sessionplanner/api/
-features/sessionplanner/domain/
-features/sessionplanner/application/
-features/sessionplanner/adapter/sqlite/
-features/sessionplanner/adapter/javafx/
-features/sessionplanner/SessionPlannerFeature
+godot/src/features/sessionplanner/session_plan_knowledge.gd
+godot/src/features/sessionplanner/session_plan_command_controller.gd
+godot/src/features/sessionplanner/session_planner_workspace_controller.gd
+godot/src/ui/session_planner_workspace.gd
 ```
 
-Session Planner remains one feature in the local modular monolith. It receives
-`PartyApi`, `EncounterApi`, `SessionGenerationApi`, and `WorldPlannerApi`
-explicitly from application composition. It exposes `SessionPlannerApi`, one
-workspace snapshot publication, prepared-scene publication, and passive shell
-contributions.
+Session Planner is one Godot capability owner in the local modular monolith.
+It reads Party, Encounter, World Planner, and Shared Definition snapshots at
+explicit owner seams, stores only stable references, and publishes exactly one
+workspace snapshot to its production shell route. Session Generation joins the
+same boundary in the remaining preparation slice.
 
 ## One Workspace State
 
-`SessionPlannerWorkspaceSnapshot` is the sole view-facing planner state. One
+The dictionary emitted by `SessionPlannerWorkspaceController` is the sole
+view-facing planner state. One
 revision contains:
 
 - session catalog and current session
@@ -51,9 +59,9 @@ revision contains:
 - preparation status and stage progress
 - display-safe missing-reference and failure states
 
-`SessionPlannerWorkspaceAssembler` loads one planner snapshot, collects foreign
-IDs, performs one batch read per owning feature, and joins immutable results in
-memory. The JavaFX adapter renders that revision and dispatches typed intents;
+`SessionPlannerWorkspaceController` loads one planner snapshot, collects foreign
+IDs, performs one bounded partition or definition read per owning feature, and
+joins immutable results in memory. The Godot Control renders that revision and dispatches typed intents;
 it performs no provider calls, persistence, orchestration, or independent
 projection refresh.
 
@@ -72,10 +80,10 @@ Catalog switching sends at most one typed select command. When a scene draft is
 dirty, that command carries the guarded source edit; the authored lane saves it
 and switches the pointer without publishing an intermediate source workspace.
 
-Saved-plan search follows the same single-writer rule. JavaFX dispatches a
+Saved-plan search follows the same latest-wins rule. Godot dispatches a
 typed query and only renders the search state inside
-`SessionPlannerWorkspaceSnapshot`; it does not filter cached plans. The
-publication coordinator owns the query epoch, publishes searching and terminal
+workspace snapshot; it does not filter cached plans. The
+controller owns the query epoch, publishes searching and terminal
 states, and accepts a completion only when the captured session identity,
 source revision, and selected scene still match. Underlength input is resolved
 locally with zero provider calls. Valid search hydrates the union of at most
@@ -91,7 +99,7 @@ Assembly begins from a captured planner snapshot; foreign results are joined
 only if that capture is still current. Completion from a stale capture is
 discarded and cannot overwrite a newer publication.
 
-Authored intents carry a Session identity and source revision from the JavaFX
+Authored intents carry a Session identity and source revision from the Godot
 event boundary through the serial authored lane. Generate binds this target
 before asynchronous work begins; preparation loads that exact root, preserves
 it through replacement confirmation, and rechecks it before the final commit.
@@ -101,13 +109,13 @@ Current read and retains the active Session's search and preparation state.
 
 An in-progress or failed preparation updates status around the last stable
 authored workspace. Only a successful final Session Planner commit may publish
-new authored prepared content. JavaFX applies a complete immutable value in one
+new authored prepared content. Godot applies a complete immutable value in one
 dispatch and never combines sections from different revisions.
 
 ## Prepare Session Use Case
 
 ```text
-JavaFX Generate intent
+Godot Generate intent
   -> SessionPlannerApi.prepareSession(command)
   -> capture plan revision + generation inputs + preparation identity
   -> SessionGenerationApi.draft(request)
@@ -154,11 +162,11 @@ implementation package or repository.
 
 ## Execution And Cancellation
 
-- the JavaFX dispatcher only captures intents and applies completed immutable
+- the Godot main thread only captures intents and applies completed immutable
   snapshots
 - pure generation and Encounter draft construction run on bounded CPU work
-- resource and SQLite work run on I/O execution; database transactions remain
-  short and contain no generation search
+- file-partition and definition reads run on bounded worker threads; immutable
+  Campaign commits remain short and contain no generation search
 - no global serial lane encloses the whole preparation workflow
 - only the final active-attempt check, current Session identity/revision
   recheck, synchronized Planner-commit point of no return, and
@@ -186,13 +194,15 @@ implementation package or repository.
 
 Stage timings record stable request identity, stage, duration, candidate count,
 and query count only. Diagnostics exclude authored text, creature payloads,
-generated item text, SQL, and local paths.
+generated item text and local paths.
 
-## Compact JavaFX Composition
+## Compact Godot Composition
 
-The accepted master-detail timeline remains. The controls adapter renders one
-horizontal preparation toolbar with progressive disclosure for participant
-detail. Saved-plan search belongs to the selected-scene inspector. The Generate
+The production route uses a quiet master-detail run sheet: a narrow ordered
+scene rail with one continuous brass track and rest gaps, plus one selected
+director sheet. The toolbar keeps Session selection, exact day fraction,
+planning Party, and scene creation compact. Saved-plan search belongs to the
+selected-scene inspector. The remaining Generate
 button and progress share the toolbar; there is no separate preparation card or
 Apply control. Generated rewards use structured cards, while manual loot notes
 use a separate presentation type.
@@ -216,24 +226,23 @@ fan-out.
 Measurable architecture targets are:
 
 - Generate dispatch and immutable snapshot application are the only
-  preparation work allowed on the JavaFX thread; in-progress publication is
+  preparation work allowed on the Godot main thread; in-progress publication is
   eligible for the next pulse.
 - one workspace assembly performs one planner read and at most one batch read
   each from Party, Encounter, Session Generation, and World Planner, independent
   of scene, saved-plan, reward, slot, and roster-member cardinality
-- ordinary workspace assembly never reads the global Encounter saved-plan
-  catalog. Search reads one bounded root statement and publishes at most eight
-  hits; Encounter summary hydration uses a fixed six-statement temp-relation
-  read independent of result and roster cardinality
-- Session Generation reward hydration uses one connection-scoped temporary
-  request relation and five actual statement executions for non-empty batches,
-  independent of 1, 401, or 800 reward references; caller order, duplicates,
-  and missing identities are reconstructed in memory
+- ordinary workspace assembly reads the Encounter owner partition once.
+  Underlength search performs no chooser scan; valid search publishes at most
+  eight hits plus overflow state, while attached summaries are joined in one
+  batch independent of scene count
+- the remaining Session Generation reward hydration must use one bounded owner
+  read and reconstruct caller order, duplicates, and missing identities in
+  memory
 - the warmed reference workload is two level-3 and two level-4 participants,
   `0.6` adventure days, and three encounters over 20 runs; the complete editable
   publication must satisfy the 2-second p95 product target
-- catalog initialization, migration, and cold caches are measured separately;
-  each CPU, foreign-read, commit, assembly, and JavaFX-apply stage records its
+- partition initialization, migration, and cold caches are measured separately;
+  each CPU, foreign-read, commit, assembly, and Godot-apply stage records its
   own duration and query count
 
 ## Durable Decisions And Rejected Alternatives

@@ -13,8 +13,8 @@ the only target architecture. The JavaFX/SQLite tree remains temporarily as
 migration input and is removed capability by capability; it is not a second
 supported product line.
 
-The production shell now exposes `Campaigns` and one consolidated `Katalog`
-route. Katalog retains all seven target sections; Monster and Items already
+The production shell now exposes `Campaigns`, one consolidated `Katalog`, and a
+native `Session Planner` route. Katalog retains all seven target sections; Monster and Items already
 query the selected installation-wide Shared-Definition generation off the
 scene-tree thread, while NPCs, factions, and places use the active Campaign's
 World Planner partition. The shared result table sorts before bounded paging,
@@ -34,12 +34,17 @@ partition with bounded search/detail, Creature-backed roster create/edit,
 recoverable trash/restore, and restart readback. The same owner now resolves
 complete ordered generated-intent batches from current Party/Creature facts,
 commits them atomically and idempotently, and hydrates current summaries in one
-ordered batch read. The free-form runtime Encounter builder, Session Planner
-composition, initiative, and combat modes remain migration work. A compact Party top-bar dropdown now
+ordered batch read. The free-form runtime Encounter builder, generated Session
+composition, initiative, and combat modes remain migration work. The native
+manual Session Planner already owns multiple Sessions, an independent planning
+Party, exact day and scene budgets, ordered scenes/rest gaps, saved Encounter
+and place links, and manual loot notes in one latest-wins master-detail workspace.
+A compact Party top-bar dropdown now
 provides the active Campaign's Roster/current-Party foundation without adding a
-third navigation route. Its separate native Rastbudget trigger provides
-active/custom Adventuring-Day budgets and XP timelines; travel, Planning Party
-integration, and legacy deletion remain migration work.
+additional Party route. Its separate native Rastbudget trigger provides
+active/custom Adventuring-Day budgets and XP timelines; travel, generated
+preparation, visible Session-Planner acceptance, and legacy deletion remain
+migration work.
 
 ## Quickstart
 

@@ -5,6 +5,7 @@ const CampaignDesk = preload("res://godot/src/ui/campaign_desk.gd")
 const CatalogWorkspace = preload("res://godot/src/ui/catalog_workspace.gd")
 const PartyTopBar = preload("res://godot/src/ui/party_top_bar.gd")
 const AdventuringDayTopBar = preload("res://godot/src/ui/adventuring_day_top_bar.gd")
+const SessionPlannerWorkspace = preload("res://godot/src/ui/session_planner_workspace.gd")
 
 const NIGHT_INK := Color("#0a1114")
 const DEEP_SLATE := Color("#152a32")
@@ -101,8 +102,17 @@ func _ready() -> void:
 	catalog.runtime_coordinator = runtime_coordinator
 	content.add_child(catalog)
 	_routes["catalog"] = catalog
+	var session_planner := SessionPlannerWorkspace.new()
+	session_planner.data_root = data_root
+	session_planner.runtime_coordinator = runtime_coordinator
+	content.add_child(session_planner)
+	_routes["session_planner"] = session_planner
+	campaign_desk.active_campaign_changed.connect(func(_campaign_id: String) -> void:
+		session_planner.refresh()
+	)
 	_add_route_button(navigation, "campaigns", "Campaigns")
 	_add_route_button(navigation, "catalog", "Katalog")
+	_add_route_button(navigation, "session_planner", "Session Planner")
 	show_route(_active_route)
 
 
