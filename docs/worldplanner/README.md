@@ -13,10 +13,12 @@ NPCs, factions, locations, Quests, and rumours.
 It stores World Planner-owned notes, lifecycle state, relationships, source
 constraints, and recoverable trash. Its Godot provider currently supplies
 bounded NPC, faction, and place search plus name-only create, name/note edit,
-deletion, and restore to the single Catalog workspace. Selected world records
-also expose attached note-first Quest/rumour threads with explicit manual
-resolution and recoverable trash in the Inspector. Rich entity editing,
-foreign-owner handoffs, and reward distribution remain migration work.
+deletion, and restore to the single Catalog workspace. Its bounded detail lane
+shows complete typed entity state; the Inspector edits NPC appearance,
+behavior, history, lifecycle, and disposition plus faction disposition.
+Selected world records also expose attached note-first Quest/rumour threads
+with explicit manual resolution and recoverable trash. Foreign-reference
+pickers/handoffs and reward distribution remain migration work.
 
 It references creature statblocks and encounter tables through their owning
 public boundaries, and exposes location choices for later Session Planner-owned

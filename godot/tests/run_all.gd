@@ -12,6 +12,7 @@ const CatalogWorkspace = preload("res://godot/src/ui/catalog_workspace.gd")
 const CatalogBrowseController = preload("res://godot/src/features/catalog/catalog_browse_controller.gd")
 const WorldPlannerKnowledge = preload("res://godot/src/features/worldplanner/world_planner_knowledge.gd")
 const WorldPlannerCommandController = preload("res://godot/src/features/worldplanner/world_planner_command_controller.gd")
+const WorldPlannerDetailReadController = preload("res://godot/src/features/worldplanner/world_planner_detail_read_controller.gd")
 const WorldPlannerNarrativeReadController = preload("res://godot/src/features/worldplanner/world_planner_narrative_read_controller.gd")
 const WorldPlannerNarrativeThreads = preload("res://godot/src/ui/world_planner_narrative_threads.gd")
 const CampaignRuntimeCoordinator = preload("res://godot/src/app/campaign_runtime_coordinator.gd")
@@ -882,6 +883,15 @@ func _run_catalog_foundation_contract() -> void:
 	result_list = catalog.find_child("CatalogResults", true, false) as VBoxContainer
 	var npc_row_button := result_list.find_child("CatalogResultName", true, false) as Button
 	npc_row_button.pressed.emit()
+	for _attempt in 600:
+		if catalog.detail_snapshot().get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		catalog.detail_snapshot().get("record", {}).get("lifecycle_status", "") == "active"
+		and catalog.detail_snapshot().get("record", {}).get("disposition_modifier", -1) == 0,
+		"selected NPC loads its full owner detail without copying typed fields into the Catalog row"
+	)
 	var narrative_threads := catalog.find_child("WorldPlannerNarrativeThreads", true, false) as WorldPlannerNarrativeThreads
 	for _attempt in 600:
 		if narrative_threads.snapshot().get("status", "") == "empty":
@@ -974,6 +984,14 @@ func _run_catalog_foundation_contract() -> void:
 	var edit_button := catalog.find_child("CatalogEdit", true, false) as Button
 	edit_button.pressed.emit()
 	record_notes.text = "Kennt jede Ebbe und jeden Lotsen."
+	var record_appearance := catalog.find_child("CatalogRecordAppearance", true, false) as TextEdit
+	var record_behavior := catalog.find_child("CatalogRecordBehavior", true, false) as TextEdit
+	var record_history := catalog.find_child("CatalogRecordHistory", true, false) as TextEdit
+	var record_disposition := catalog.find_child("CatalogRecordNpcDisposition", true, false) as SpinBox
+	record_appearance.text = "Salzgrauer Mantel und Messingkompass."
+	record_behavior.text = "Spricht leise und prüft jede Strömung zweimal."
+	record_history.text = "War Lotsin des Hafenrats."
+	record_disposition.value = 12
 	record_dialog.confirmed.emit()
 	record_dialog.hide()
 	for _attempt in 1200:
@@ -981,8 +999,42 @@ func _run_catalog_foundation_contract() -> void:
 		if npc_state.get("status", "") == "ready" and npc_state.get("rows", [])[0].get("notes", "") == "Kennt jede Ebbe und jeden Lotsen.":
 			break
 		await create_timer(0.001).timeout
-	_expect(npc_state.get("rows", [])[0].get("notes", "") == "Kennt jede Ebbe und jeden Lotsen.", "native Katalog edit round-trips provider-owned notes")
-	catalog.call("_select_row", npc_state.get("rows", [])[0])
+	for _attempt in 600:
+		if catalog.detail_snapshot().get("record", {}).get("appearance", "") == "Salzgrauer Mantel und Messingkompass.":
+			break
+		await create_timer(0.001).timeout
+	var rich_npc_detail: Dictionary = catalog.detail_snapshot().get("record", {})
+	_expect(
+		npc_state.get("rows", [])[0].get("notes", "") == "Kennt jede Ebbe und jeden Lotsen."
+		and rich_npc_detail.get("behavior", "") == "Spricht leise und prüft jede Strömung zweimal."
+		and rich_npc_detail.get("history", "") == "War Lotsin des Hafenrats."
+		and rich_npc_detail.get("disposition_modifier", 0) == 12
+		and catalog.section_snapshot("npcs").get("selected_id", "") == stable_npc_id,
+		"native Inspector edit round-trips rich NPC-owned truth and preserves stable selection"
+	)
+	var lifecycle_button := catalog.find_child("CatalogLifecycle", true, false) as Button
+	_expect(lifecycle_button.visible and lifecycle_button.text == "Als besiegt markieren", "active NPC exposes an explicit lifecycle action")
+	lifecycle_button.pressed.emit()
+	var lifecycle_dialog := catalog.find_child("CatalogLifecycleDialog", true, false) as ConfirmationDialog
+	lifecycle_dialog.confirmed.emit()
+	lifecycle_dialog.hide()
+	for _attempt in 1200:
+		if catalog.detail_snapshot().get("record", {}).get("lifecycle_status", "") == "defeated":
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		catalog.detail_snapshot().get("record", {}).get("lifecycle_status", "") == "defeated"
+		and lifecycle_button.text == "Reaktivieren",
+		"explicit lifecycle confirmation publishes defeated NPC truth and exposes reactivation"
+	)
+	lifecycle_button.pressed.emit()
+	lifecycle_dialog.confirmed.emit()
+	lifecycle_dialog.hide()
+	for _attempt in 1200:
+		if catalog.detail_snapshot().get("record", {}).get("lifecycle_status", "") == "active":
+			break
+		await create_timer(0.001).timeout
+	_expect(catalog.detail_snapshot().get("record", {}).get("lifecycle_status", "") == "active", "reactivation restores NPC availability through an explicit command")
 	var trash_button := catalog.find_child("CatalogTrash", true, false) as Button
 	trash_button.pressed.emit()
 	var delete_dialog := catalog.find_child("CatalogDeleteDialog", true, false) as ConfirmationDialog
@@ -1067,9 +1119,29 @@ func _run_world_planner_knowledge_contract() -> void:
 	)
 	_expect(place.get("ok", false) and npc.get("ok", false), "World Planner accepts typed optional faction and place links")
 	payload = npc.get("payload", payload)
-	var renamed := model.update_record(payload, "npc.mira", {"name": "Mira Salzhand", "notes": "Kennt jede Ebbe."}, "2026-07-28T10:00:04Z")
+	var renamed := model.update_record(
+		payload,
+		"npc.mira",
+		{
+			"name": "Mira Salzhand",
+			"notes": "Kennt jede Ebbe.",
+			"appearance": "Salzgrauer Mantel",
+			"behavior": "Prüft jede Strömung zweimal.",
+			"history": "War Lotsin des Hafenrats.",
+			"disposition_modifier": 12,
+		},
+		"2026-07-28T10:00:04Z"
+	)
 	_expect(renamed.get("ok", false) and renamed.get("record", {}).get("notes", "") == "Kennt jede Ebbe.", "World Planner edits provider-owned display and note truth")
 	payload = renamed.get("payload", payload)
+	var npc_detail := model.read_entity(payload, "npc.mira")
+	_expect(
+		npc_detail.get("ok", false)
+		and npc_detail.get("record", {}).get("appearance", "") == "Salzgrauer Mantel"
+		and npc_detail.get("record", {}).get("disposition_modifier", 0) == 12,
+		"World Planner detail read returns the complete typed entity without widening Catalog rows"
+	)
+	_expect(not model.read_entity(payload, "npc.mira", true).get("ok", true), "active and deleted entity detail views remain distinct")
 	var quest := model.create_record(
 		payload,
 		"quest",
@@ -1180,7 +1252,8 @@ func _run_world_planner_knowledge_contract() -> void:
 	_expect(
 		trashed_npc.get("ok", false)
 		and trashed_npc.get("removed_link_count", -1) == 1
-		and trashed_npc.get("payload", {}).get("records", {}).get("quest.tide-bell", {}).get("subject_refs", []).size() == 1,
+		and trashed_npc.get("payload", {}).get("records", {}).get("quest.tide-bell", {}).get("subject_refs", []).size() == 1
+		and model.read_entity(trashed_npc.get("payload", {}), "npc.mira", true).get("record", {}).get("appearance", "") == "Salzgrauer Mantel",
 		"trashing a narrative subject atomically removes only that subject attachment"
 	)
 	var restored_npc := model.restore_record(trashed_npc.get("payload", {}), "npc.mira", "2026-07-28T10:00:13Z")
@@ -1213,8 +1286,37 @@ func _run_world_planner_knowledge_contract() -> void:
 	var persisted := FileCampaignStore.new(data_root, campaign_id).read_partition(WorldPlannerKnowledge.OWNER)
 	var persisted_query := model.query(persisted.get("payload", {}), "place", "salz", 0, 50)
 	_expect(persisted.get("ok", false) and persisted_query.get("total", -1) == 1, "World Planner owner partition survives an independent store reopen")
-	completions.clear()
 	var persisted_place_id := str(persisted_query.get("rows", [])[0].get("reference_id", ""))
+	var detail_reader := WorldPlannerDetailReadController.new(data_root)
+	root.add_child(detail_reader)
+	var detail_results: Array = []
+	detail_reader.result_published.connect(func(result: Dictionary) -> void: detail_results.append(result.duplicate(true)))
+	var first_detail_read := detail_reader.query(persisted_place_id, true)
+	var replacement_detail_read := detail_reader.query(persisted_place_id, false)
+	_expect(
+		first_detail_read.get("status", "") == "started" and replacement_detail_read.get("status", "") == "queued",
+		"World Planner detail lane bounds rapid replacement to one active and one latest pending request"
+	)
+	for _attempt in 1200:
+		if detail_results.size() == 1 and not detail_reader.is_active():
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		detail_results.size() == 1
+		and detail_results[0].get("record", {}).get("record_id", "") == persisted_place_id
+		and not detail_results[0].get("request", {}).get("include_deleted", true),
+		"World Planner detail lane publishes only the latest full record after independent reopen"
+	)
+	var detail_resources := detail_reader.resource_snapshot()
+	_expect(
+		detail_resources.get("active_count", -1) == 0
+		and detail_resources.get("pending_count", -1) == 0
+		and detail_resources.get("worker_handle_count", -1) == 0,
+		"World Planner detail lane releases all worker state after publication"
+	)
+	detail_reader.queue_free()
+	await process_frame
+	completions.clear()
 	var narrative_started := commands.create_narrative("rumour", "Kalte Lichter", "Nur bei Springflut sichtbar.", "place", persisted_place_id)
 	_expect(narrative_started.get("status", "") == "started", "typed narrative command enters the shared serial Campaign writer")
 	for _attempt in 1200:

@@ -4,6 +4,7 @@ extends Control
 const CatalogBrowseController = preload("res://godot/src/features/catalog/catalog_browse_controller.gd")
 const FileCampaignRegistry = preload("res://godot/src/platform/persistence/file_campaign_registry.gd")
 const WorldPlannerCommandController = preload("res://godot/src/features/worldplanner/world_planner_command_controller.gd")
+const WorldPlannerDetailReadController = preload("res://godot/src/features/worldplanner/world_planner_detail_read_controller.gd")
 const WorldPlannerNarrativeThreads = preload("res://godot/src/ui/world_planner_narrative_threads.gd")
 
 const SECTIONS := [
@@ -28,6 +29,7 @@ var registry
 var runtime_coordinator
 var browse_controller: CatalogBrowseController
 var command_controller: WorldPlannerCommandController
+var detail_controller: WorldPlannerDetailReadController
 var _active_section_id := "creatures"
 var _section_state: Dictionary = {}
 var _section_buttons: Dictionary = {}
@@ -43,19 +45,31 @@ var _previous_page: Button
 var _page_label: Label
 var _next_page: Button
 var _detail: RichTextLabel
-var _detail_actions: HBoxContainer
+var _detail_actions: HFlowContainer
 var _edit_button: Button
 var _trash_button: Button
 var _restore_button: Button
+var _lifecycle_button: Button
 var _narrative_threads: WorldPlannerNarrativeThreads
 var _debounce: Timer
 var _record_dialog: ConfirmationDialog
 var _record_name: LineEdit
 var _record_notes: TextEdit
+var _npc_editor_fields: VBoxContainer
+var _record_appearance: TextEdit
+var _record_behavior: TextEdit
+var _record_history: TextEdit
+var _record_lifecycle: OptionButton
+var _record_npc_disposition: SpinBox
+var _faction_editor_fields: VBoxContainer
+var _record_faction_disposition: SpinBox
 var _dialog_mode := ""
 var _dialog_record_id := ""
+var _dialog_kind := ""
 var _delete_dialog: ConfirmationDialog
+var _lifecycle_dialog: ConfirmationDialog
 var _command_section_id := ""
+var _selected_detail: Dictionary = {}
 
 
 func _ready() -> void:
@@ -67,10 +81,15 @@ func _ready() -> void:
 	if command_controller == null:
 		command_controller = WorldPlannerCommandController.new(data_root, runtime_coordinator)
 		add_child(command_controller)
+	if detail_controller == null:
+		detail_controller = WorldPlannerDetailReadController.new(data_root)
+		add_child(detail_controller)
 	browse_controller.query_started.connect(_on_query_started)
 	browse_controller.result_published.connect(_on_result_published)
 	command_controller.command_started.connect(_on_command_started)
 	command_controller.command_completed.connect(_on_command_completed)
+	detail_controller.query_started.connect(_on_detail_query_started)
+	detail_controller.result_published.connect(_on_detail_result_published)
 	for section in SECTIONS:
 		_section_state[section["id"]] = {
 			"draft": "",
@@ -132,6 +151,10 @@ func section_snapshot(section_id: String) -> Dictionary:
 
 func search_input() -> LineEdit:
 	return _search
+
+
+func detail_snapshot() -> Dictionary:
+	return _selected_detail.duplicate(true)
 
 
 func _build_surface() -> void:
@@ -232,7 +255,7 @@ func _build_surface() -> void:
 	_detail.fit_content = false
 	_detail.bbcode_enabled = true
 	inspector.add_child(_detail)
-	_detail_actions = HBoxContainer.new()
+	_detail_actions = HFlowContainer.new()
 	_detail_actions.add_theme_constant_override("separation", 8)
 	inspector.add_child(_detail_actions)
 	_edit_button = Button.new()
@@ -250,6 +273,10 @@ func _build_surface() -> void:
 	_restore_button.text = "Wiederherstellen"
 	_restore_button.pressed.connect(_on_restore_requested)
 	_detail_actions.add_child(_restore_button)
+	_lifecycle_button = Button.new()
+	_lifecycle_button.name = "CatalogLifecycle"
+	_lifecycle_button.pressed.connect(_on_lifecycle_requested)
+	_detail_actions.add_child(_lifecycle_button)
 	_narrative_threads = WorldPlannerNarrativeThreads.new()
 	_narrative_threads.name = "WorldPlannerNarrativeThreads"
 	_narrative_threads.data_root = data_root
@@ -306,7 +333,8 @@ func _build_header_button(node_name: String, label: String, sort_key: String) ->
 func _build_record_dialogs() -> void:
 	_record_dialog = ConfirmationDialog.new()
 	_record_dialog.name = "CatalogRecordDialog"
-	_record_dialog.min_size = Vector2i(520, 390)
+	_record_dialog.min_size = Vector2i(560, 620)
+	_record_dialog.get_cancel_button().text = "Abbrechen"
 	_record_dialog.confirmed.connect(_on_record_dialog_confirmed)
 	add_child(_record_dialog)
 	var fields := VBoxContainer.new()
@@ -324,16 +352,69 @@ func _build_record_dialogs() -> void:
 	fields.add_child(notes_label)
 	_record_notes = TextEdit.new()
 	_record_notes.name = "CatalogRecordNotes"
-	_record_notes.custom_minimum_size = Vector2(0, 210)
+	_record_notes.custom_minimum_size = Vector2(0, 100)
 	_record_notes.placeholder_text = "Was muss am Spieltisch schnell wieder auffindbar sein?"
 	fields.add_child(_record_notes)
+	_npc_editor_fields = VBoxContainer.new()
+	_npc_editor_fields.add_theme_constant_override("separation", 8)
+	fields.add_child(_npc_editor_fields)
+	_record_appearance = _add_multiline_editor(_npc_editor_fields, "CatalogRecordAppearance", "Erscheinung · optional")
+	_record_behavior = _add_multiline_editor(_npc_editor_fields, "CatalogRecordBehavior", "Verhalten · optional")
+	_record_history = _add_multiline_editor(_npc_editor_fields, "CatalogRecordHistory", "Geschichte · optional")
+	var lifecycle_label := Label.new()
+	lifecycle_label.text = "Lebenszyklus"
+	_npc_editor_fields.add_child(lifecycle_label)
+	_record_lifecycle = OptionButton.new()
+	_record_lifecycle.name = "CatalogRecordLifecycle"
+	_record_lifecycle.add_item("Aktiv")
+	_record_lifecycle.set_item_metadata(0, "active")
+	_record_lifecycle.add_item("Besiegt")
+	_record_lifecycle.set_item_metadata(1, "defeated")
+	_npc_editor_fields.add_child(_record_lifecycle)
+	_record_npc_disposition = _add_disposition_editor(_npc_editor_fields, "CatalogRecordNpcDisposition")
+	_faction_editor_fields = VBoxContainer.new()
+	_faction_editor_fields.add_theme_constant_override("separation", 8)
+	fields.add_child(_faction_editor_fields)
+	_record_faction_disposition = _add_disposition_editor(_faction_editor_fields, "CatalogRecordFactionDisposition")
 	_delete_dialog = ConfirmationDialog.new()
 	_delete_dialog.name = "CatalogDeleteDialog"
 	_delete_dialog.title = "In Papierkorb verschieben?"
 	_delete_dialog.dialog_text = "Der Eintrag verschwindet aus aktiven Listen. Abhängige aktuelle Verweise werden entfernt; Wiederherstellung bleibt möglich."
 	_delete_dialog.ok_button_text = "In Papierkorb"
+	_delete_dialog.get_cancel_button().text = "Abbrechen"
 	_delete_dialog.confirmed.connect(_confirm_trash)
 	add_child(_delete_dialog)
+	_lifecycle_dialog = ConfirmationDialog.new()
+	_lifecycle_dialog.name = "CatalogLifecycleDialog"
+	_lifecycle_dialog.get_cancel_button().text = "Abbrechen"
+	_lifecycle_dialog.confirmed.connect(_confirm_lifecycle)
+	add_child(_lifecycle_dialog)
+
+
+func _add_multiline_editor(parent: VBoxContainer, node_name: String, label_text: String) -> TextEdit:
+	var label := Label.new()
+	label.text = label_text
+	parent.add_child(label)
+	var editor := TextEdit.new()
+	editor.name = node_name
+	editor.custom_minimum_size = Vector2(0, 62)
+	parent.add_child(editor)
+	return editor
+
+
+func _add_disposition_editor(parent: VBoxContainer, node_name: String) -> SpinBox:
+	var label := Label.new()
+	label.text = "Disposition zu den PCs · -50 bis +50"
+	parent.add_child(label)
+	var editor := SpinBox.new()
+	editor.name = node_name
+	editor.min_value = -50
+	editor.max_value = 50
+	editor.step = 1
+	editor.allow_greater = false
+	editor.allow_lesser = false
+	parent.add_child(editor)
+	return editor
 
 
 func _on_search_changed(value: String) -> void:
@@ -443,6 +524,42 @@ func _on_result_published(result: Dictionary) -> void:
 	if section_id == _active_section_id:
 		_render_state()
 		_render_selected_detail()
+
+
+func _on_detail_query_started(request: Dictionary) -> void:
+	if str(request.get("record_id", "")) != str(_selected_detail.get("record_id", "")):
+		return
+	_selected_detail["status"] = "loading"
+	_edit_button.disabled = true
+
+
+func _on_detail_result_published(result: Dictionary) -> void:
+	var record_id := str(result.get("request", {}).get("record_id", ""))
+	if record_id.is_empty() or record_id != str(_selected_detail.get("record_id", "")):
+		return
+	if not result.get("ok", false):
+		_selected_detail = {
+			"status": "failed",
+			"record_id": record_id,
+			"error": str(result.get("error", "World-Planner-Details konnten nicht geladen werden.")),
+		}
+		_detail.text = _escape_bbcode(str(_selected_detail["error"]))
+		_lifecycle_button.visible = false
+		_edit_button.disabled = true
+		return
+	var record: Dictionary = result.get("record", {}).duplicate(true)
+	_selected_detail = {
+		"status": "ready",
+		"record_id": record_id,
+		"record": record,
+		"deleted": bool(result.get("deleted", false)),
+	}
+	_detail.text = _format_worldplanner_detail(record)
+	var deleted := bool(_selected_detail["deleted"])
+	_edit_button.disabled = command_controller.busy() or deleted
+	_lifecycle_button.visible = record.get("kind", "") == "npc" and not deleted
+	_lifecycle_button.text = "Reaktivieren" if record.get("lifecycle_status", "") == "defeated" else "Als besiegt markieren"
+	_lifecycle_button.disabled = command_controller.busy()
 
 
 func _render_state() -> void:
@@ -563,8 +680,19 @@ func _select_row(row: Dictionary) -> void:
 	_edit_button.visible = not bool(row.get("deleted", false))
 	_trash_button.visible = not bool(row.get("deleted", false))
 	_restore_button.visible = bool(row.get("deleted", false))
+	_lifecycle_button.visible = false
 	_set_action_buttons_disabled(command_controller.busy())
 	_narrative_threads.show_subject(row)
+	_selected_detail = {
+		"status": "loading",
+		"record_id": _row_id(row),
+		"deleted": bool(row.get("deleted", false)),
+	}
+	if bool(section.get("mutable", false)):
+		_edit_button.disabled = true
+		detail_controller.query(_row_id(row), bool(row.get("deleted", false)))
+	else:
+		_selected_detail.clear()
 
 
 func _on_create_requested() -> void:
@@ -574,40 +702,58 @@ func _on_create_requested() -> void:
 		return
 	_dialog_mode = "create"
 	_dialog_record_id = ""
+	_dialog_kind = str(section["kind"])
 	_record_dialog.title = "%s erstellen" % section["label"]
 	_record_dialog.ok_button_text = "Erstellen"
 	_record_name.text = ""
 	_record_notes.text = ""
+	_prepare_typed_editor({}, _dialog_kind)
 	_record_dialog.popup_centered()
 	_record_name.grab_focus()
 
 
 func _on_edit_requested() -> void:
 	var row := _selected_row()
-	if row.is_empty():
+	var record: Dictionary = _selected_detail.get("record", {})
+	if row.is_empty() or record.is_empty():
+		_show_command_failure({"error": "Die vollständigen World-Planner-Details werden noch geladen."})
 		return
 	_dialog_mode = "edit"
 	_dialog_record_id = _row_id(row)
+	_dialog_kind = str(record["kind"])
 	_record_dialog.title = "%s bearbeiten" % row["name"]
 	_record_dialog.ok_button_text = "Änderungen speichern"
-	_record_name.text = str(row["name"])
-	_record_notes.text = str(row.get("notes", ""))
+	_record_name.text = str(record["name"])
+	_record_notes.text = str(record.get("notes", ""))
+	_prepare_typed_editor(record, _dialog_kind)
 	_record_dialog.popup_centered()
 	_record_name.grab_focus()
 
 
 func _on_record_dialog_confirmed() -> void:
+	var fields := {"notes": _record_notes.text}
+	if _dialog_kind == "npc":
+		fields.merge({
+			"appearance": _record_appearance.text,
+			"behavior": _record_behavior.text,
+			"history": _record_history.text,
+			"lifecycle_status": str(_record_lifecycle.get_selected_metadata()),
+			"disposition_modifier": int(_record_npc_disposition.value),
+		})
+	elif _dialog_kind == "faction":
+		fields["disposition_base"] = int(_record_faction_disposition.value)
 	var started: Dictionary
 	if _dialog_mode == "create":
 		started = command_controller.create_record(
-			str(_section(_active_section_id)["kind"]),
+			_dialog_kind,
 			_record_name.text,
-			{"notes": _record_notes.text}
+			fields
 		)
 	else:
+		fields["name"] = _record_name.text
 		started = command_controller.update_record(
 			_dialog_record_id,
-			{"name": _record_name.text, "notes": _record_notes.text}
+			fields
 		)
 	if not started.get("ok", false):
 		_show_command_failure(started)
@@ -634,6 +780,44 @@ func _on_restore_requested() -> void:
 	var started := command_controller.restore_record(_row_id(row))
 	if not started.get("ok", false):
 		_show_command_failure(started)
+
+
+func _on_lifecycle_requested() -> void:
+	var record: Dictionary = _selected_detail.get("record", {})
+	if record.get("kind", "") != "npc" or bool(_selected_detail.get("deleted", false)):
+		return
+	var defeated: bool = record.get("lifecycle_status", "") == "defeated"
+	_lifecycle_dialog.title = "NPC reaktivieren?" if defeated else "NPC als besiegt markieren?"
+	_lifecycle_dialog.dialog_text = (
+		"Der NPC wird wieder für Auswahl und Generierung verfügbar."
+		if defeated
+		else "Der NPC bleibt erhalten, ist aber bis zur Reaktivierung nicht verfügbar."
+	)
+	_lifecycle_dialog.ok_button_text = "Reaktivieren" if defeated else "Als besiegt markieren"
+	_lifecycle_dialog.popup_centered()
+
+
+func _confirm_lifecycle() -> void:
+	var record: Dictionary = _selected_detail.get("record", {})
+	if record.get("kind", "") != "npc":
+		return
+	var next_status := "active" if record.get("lifecycle_status", "") == "defeated" else "defeated"
+	var started: Dictionary = command_controller.set_npc_lifecycle(str(record["record_id"]), next_status)
+	if not started.get("ok", false):
+		_show_command_failure(started)
+
+
+func _prepare_typed_editor(record: Dictionary, kind: String) -> void:
+	_npc_editor_fields.visible = kind == "npc"
+	_faction_editor_fields.visible = kind == "faction"
+	if kind == "npc":
+		_record_appearance.text = str(record.get("appearance", ""))
+		_record_behavior.text = str(record.get("behavior", ""))
+		_record_history.text = str(record.get("history", ""))
+		_record_lifecycle.select(1 if record.get("lifecycle_status", "active") == "defeated" else 0)
+		_record_npc_disposition.value = float(record.get("disposition_modifier", 0))
+	elif kind == "faction":
+		_record_faction_disposition.value = float(record.get("disposition_base", 0))
 
 
 func _on_trash_toggled(enabled: bool) -> void:
@@ -678,14 +862,16 @@ func _on_command_completed(result: Dictionary) -> void:
 		state["notice"] = str(result.get("error", "Änderung ist fehlgeschlagen."))
 	else:
 		var status := str(result.get("status", "completed"))
+		var operation := str(result.get("request", {}).get("operation", ""))
 		state["notice"] = {
 			"created": "Eintrag erstellt.",
 			"updated": "Änderungen gespeichert.",
 			"trashed": "Eintrag in den Papierkorb verschoben.",
 			"restored": "Eintrag wiederhergestellt.",
 		}.get(status, "Änderung gespeichert.")
-		state["selected_id"] = ""
-		state["selected_row"] = {}
+		if operation not in ["update", "set_npc_lifecycle"]:
+			state["selected_id"] = ""
+			state["selected_row"] = {}
 	state["status"] = "uninitialized"
 	_section_state[section_id] = state
 	_command_section_id = ""
@@ -754,6 +940,9 @@ func _reset_detail() -> void:
 		return
 	_detail.text = "Wähle einen Eintrag, um seine Referenz zu prüfen."
 	_detail_actions.visible = false
+	_selected_detail.clear()
+	if detail_controller != null:
+		detail_controller.cancel_all()
 	if _narrative_threads != null:
 		_narrative_threads.clear_subject()
 
@@ -762,6 +951,73 @@ func _set_action_buttons_disabled(disabled: bool) -> void:
 	_edit_button.disabled = disabled
 	_trash_button.disabled = disabled
 	_restore_button.disabled = disabled
+	_lifecycle_button.disabled = disabled
+
+
+func _format_worldplanner_detail(record: Dictionary) -> String:
+	var lines: Array[String] = [
+		"[font_size=22]%s[/font_size]" % _escape_bbcode(str(record["name"])),
+		_escape_bbcode(str(record["record_id"])),
+	]
+	match record["kind"]:
+		"npc":
+			lines.append("NPC · %s · Disposition %s" % [
+				"Aktiv" if record["lifecycle_status"] == "active" else "Besiegt",
+				_signed_number(int(record["disposition_modifier"])),
+			])
+			lines.append("Statblock: %s" % _display_reference(str(record["creature_id"])))
+			lines.append("Fraktion: %s" % _display_reference(str(record["faction_id"])))
+			lines.append("Letzter Ort: %s" % _display_reference(str(record["last_place_id"])))
+			_append_named_text(lines, "Erscheinung", str(record["appearance"]))
+			_append_named_text(lines, "Verhalten", str(record["behavior"]))
+			_append_named_text(lines, "Geschichte", str(record["history"]))
+		"faction":
+			lines.append("Fraktion · Disposition %s" % _signed_number(int(record["disposition_base"])))
+			lines.append("Primäre Encounter-Tabelle: %s" % _display_reference(str(record["primary_encounter_table_id"])))
+			lines.append("Inventarlimits: %s" % _format_inventory(record["inventory_limits"]))
+		"place":
+			lines.append("Ort")
+			lines.append("Fraktionen: %s" % _format_references(record["faction_ids"]))
+			lines.append("Encounter-Tabellen: %s" % _format_references(record["encounter_table_ids"]))
+	_append_named_text(lines, "Notizen", str(record["notes"]))
+	return "\n".join(lines)
+
+
+func _append_named_text(lines: Array[String], label: String, value: String) -> void:
+	if value.is_empty():
+		return
+	lines.append("")
+	lines.append("[color=#d2a743]%s[/color]" % label.to_upper())
+	lines.append(_escape_bbcode(value))
+
+
+func _display_reference(value: String) -> String:
+	return "–" if value.is_empty() else _escape_bbcode(value)
+
+
+func _format_references(values: Array) -> String:
+	if values.is_empty():
+		return "–"
+	var rendered := PackedStringArray()
+	for value in values:
+		rendered.append(_escape_bbcode(str(value)))
+	return ", ".join(rendered)
+
+
+func _format_inventory(value: Dictionary) -> String:
+	if value.is_empty():
+		return "unbegrenzt"
+	var keys: Array = value.keys()
+	keys.sort()
+	var rendered := PackedStringArray()
+	for key in keys:
+		var limit = value[key]
+		rendered.append("%s: %s" % [_escape_bbcode(str(key)), "unbegrenzt" if limit == null else str(limit)])
+	return ", ".join(rendered)
+
+
+func _signed_number(value: int) -> String:
+	return "+%d" % value if value > 0 else str(value)
 
 
 func _with_notice(base: String, state: Dictionary) -> String:

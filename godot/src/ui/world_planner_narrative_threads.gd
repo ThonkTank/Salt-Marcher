@@ -172,6 +172,7 @@ func _build_dialogs() -> void:
 	_editor = ConfirmationDialog.new()
 	_editor.name = "NarrativeEditor"
 	_editor.min_size = Vector2i(500, 390)
+	_editor.get_cancel_button().text = "Abbrechen"
 	_editor.confirmed.connect(_confirm_editor)
 	add_child(_editor)
 	var fields := VBoxContainer.new()
@@ -197,6 +198,7 @@ func _build_dialogs() -> void:
 	_delete_dialog.title = "Faden in Papierkorb verschieben?"
 	_delete_dialog.dialog_text = "Der Faden verschwindet aus dem aktiven Dossier und bleibt wiederherstellbar."
 	_delete_dialog.ok_button_text = "In Papierkorb"
+	_delete_dialog.get_cancel_button().text = "Abbrechen"
 	_delete_dialog.confirmed.connect(_confirm_delete)
 	add_child(_delete_dialog)
 

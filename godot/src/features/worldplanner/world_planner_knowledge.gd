@@ -205,6 +205,36 @@ func query_narratives_for_subject(
 	}
 
 
+func read_entity(
+	payload_value: Variant,
+	record_id: String,
+	include_deleted: bool = false,
+	cancellation: Callable = Callable()
+) -> Dictionary:
+	if not _valid_id(record_id):
+		return _failure("World-Planner-Detailabfrage besitzt keine gültige Identität.")
+	if _cancelled(cancellation):
+		return _cancelled_failure()
+	var validated := validate_payload(payload_value)
+	if not validated.get("ok", false):
+		return validated
+	if _cancelled(cancellation):
+		return _cancelled_failure()
+	var payload: Dictionary = validated["payload"]
+	var source: Dictionary = payload["trash"] if include_deleted else payload["records"]
+	if not source.has(record_id):
+		return _missing(record_id)
+	var record: Dictionary = source[record_id]["record"] if include_deleted else source[record_id]
+	if record["kind"] not in ENTITY_KINDS:
+		return _failure("Die Detailabfrage akzeptiert nur World-Planner-Weltobjekte.")
+	return {
+		"ok": true,
+		"status": "ready",
+		"record": record.duplicate(true),
+		"deleted": include_deleted,
+	}
+
+
 func create_record(
 	payload_value: Variant,
 	kind: String,

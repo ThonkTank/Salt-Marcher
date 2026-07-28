@@ -72,6 +72,12 @@ request. Its typed commands use the same World Planner writer. Catalog owns
 neither the returned thread state nor its validation and ignores those command
 completions in the provider-neutral result refresh path.
 
+A second bounded World Planner detail lane resolves the selected entity's full
+typed record without adding those fields to Catalog result rows. The shared
+Inspector renders that immutable readback and submits owner-native field edits
+or explicit NPC lifecycle changes through World Planner commands. Foreign
+references remain display-only until their owning picker/handoff APIs migrate.
+
 The Catalog background controller admits one active read and at most one
 latest-wins pending read. Every request receives a monotonic epoch. Newer input
 cancels or invalidates older work; late completion cannot replace the latest

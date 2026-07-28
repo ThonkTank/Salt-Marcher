@@ -22,7 +22,10 @@ retains each section's page and direction, and cancels invisible provider work;
 unmigrated sections report unavailable rather than inventing Catalog-owned
 records. Selected NPCs, factions, and places expose attached note-first Quest
 and rumour threads with explicit manual resolution and recoverable trash in the
-same Inspector. A compact Party top-bar dropdown now
+same Inspector. A separate bounded detail read shows full typed entity state;
+NPC appearance, behavior, history, lifecycle/disposition and faction
+disposition are editable without widening Catalog rows. A compact Party
+top-bar dropdown now
 provides the active Campaign's Roster/current-Party foundation without adding a
 third navigation route. Its separate native Rastbudget trigger provides
 active/custom Adventuring-Day budgets and XP timelines; travel, Planning Party

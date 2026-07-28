@@ -24,6 +24,7 @@ provider.
 godot/src/features/worldplanner/
   world_planner_knowledge.gd           # pure owner model and invariants
   world_planner_command_controller.gd  # owner command vocabulary
+  world_planner_detail_read_controller.gd # full entity detail read lane
   world_planner_narrative_read_controller.gd # attached-thread read lane
 godot/src/app/
   campaign_partition_command_controller.gd # shared admitted write lifecycle
@@ -73,6 +74,13 @@ World Planner writer, so a thread mutation cannot race another accepted owner
 mutation. Catalog composes the provider-owned `FÄDEN` view below entity details
 without adding an eighth section or owning narrative state.
 
+The entity-detail lane resolves the complete active or trashed NPC, faction, or
+place record by stable identity. It uses the same one-active/one-latest-pending
+bound and registry confirmation, while Catalog list rows remain provider-neutral.
+The Inspector can therefore display every typed owner field and edit only
+owner-native values without widening metadata queries or copying foreign
+Creature and Encounter Table truth.
+
 ## Current Migration State
 
 The production Godot route currently supports bounded active/trash search,
@@ -83,11 +91,13 @@ open/closed state, and recoverable delete/restore in the Inspector. Deleting an
 entity atomically removes current entity and narrative links. Restore keeps the
 same identity and reattaches only surviving relationships that are still free.
 
-The owner payload already validates the documented optional NPC, faction, and
-place fields. The visible editor currently exposes only name and general notes;
-creature/table selection, lifecycle, disposition, inventory, richer note
-fields, and destination handoffs remain pending. The legacy Java owner is not
-deleted until that parity, acceptance, and deletion gate are complete.
+The visible Inspector reads every documented optional NPC, faction, and place
+field. Its editor owns name/general notes, NPC appearance/behavior/history,
+NPC lifecycle and disposition, and faction disposition. Lifecycle change is an
+explicit confirmed command and keeps stable selection. Creature/table and
+relationship pickers, inventory editing, and destination handoffs remain
+pending. The legacy Java owner is not deleted until that parity, acceptance,
+and deletion gate are complete.
 
 ## Permanent Constraints
 

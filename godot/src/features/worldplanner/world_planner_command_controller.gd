@@ -32,6 +32,14 @@ func restore_record(record_id: String) -> Dictionary:
 	return start_command({"operation": "restore", "record_id": record_id})
 
 
+func set_npc_lifecycle(record_id: String, lifecycle_status: String) -> Dictionary:
+	return start_command({
+		"operation": "set_npc_lifecycle",
+		"record_id": record_id,
+		"fields": {"lifecycle_status": lifecycle_status},
+	})
+
+
 func create_narrative(kind: String, name: String, notes: String, subject_kind: String, subject_id: String) -> Dictionary:
 	return start_command({
 		"operation": "create_narrative",
@@ -78,6 +86,8 @@ func _apply_world_planner_command(payload: Dictionary, request: Dictionary) -> D
 		"create":
 			return model.create_record(payload, str(request["kind"]), str(request["name"]), request["fields"])
 		"update":
+			return model.update_record(payload, str(request["record_id"]), request["fields"])
+		"set_npc_lifecycle":
 			return model.update_record(payload, str(request["record_id"]), request["fields"])
 		"trash":
 			return model.trash_record(payload, str(request["record_id"]))
