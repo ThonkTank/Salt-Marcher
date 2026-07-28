@@ -1,5 +1,10 @@
 # World Planner Domain Model
 
+Status: Confirmed domain model with active Godot migration
+Owner: World Planner
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 ## Context Role
 
 Context Role: Roster Truth Context
@@ -112,6 +117,10 @@ Core invariants:
   changes durable NPC lifecycle or faction stock state.
 - Session Planner-owned integrations may reference World Planner locations
   through stable IDs. World Planner does not define Session Planner records.
+- Explicit deletion removes incoming current relationships atomically and moves
+  the complete aggregate into World Planner-owned recoverable trash. Restore
+  keeps the original stable identity and restores only still-valid,
+  non-conflicting relationships.
 
 ## Consistency Boundaries
 

@@ -65,6 +65,7 @@ func _ready() -> void:
 	var catalog := CatalogWorkspace.new()
 	catalog.data_root = data_root
 	catalog.registry = registry
+	catalog.runtime_coordinator = runtime_coordinator
 	content.add_child(catalog)
 	_routes["catalog"] = catalog
 	_add_route_button(navigation, "campaigns", "Campaigns")

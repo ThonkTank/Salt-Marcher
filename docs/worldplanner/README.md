@@ -1,16 +1,25 @@
 # World Planner Feature Docs
 
+Status: Active Godot migration owner
+Owner: World Planner
+Last Reviewed: 2026-07-28
+Source of Truth: This document routes to the files below
+
 ## Purpose
 
 The `worldplanner` feature owns authored campaign-world planning records for
 NPCs, factions, and locations.
 
-It stores World Planner-owned notes, lifecycle state, relationships, and source
-constraints. It references creature statblocks and encounter tables through
-their owning public boundaries, and exposes location choices for later
-Session Planner-owned integration. It does not own creature statblocks,
-encounter rosters, party truth, combat runtime state, session records, dungeon
-maps, or hex maps.
+It stores World Planner-owned notes, lifecycle state, relationships, source
+constraints, and recoverable trash. Its Godot provider currently supplies
+bounded NPC, faction, and place search plus name-only create, name/note edit,
+deletion, and restore to the single Catalog workspace. Rich typed editing and
+foreign-owner handoffs remain migration work.
+
+It references creature statblocks and encounter tables through their owning
+public boundaries, and exposes location choices for later Session Planner-owned
+integration. It does not own creature statblocks, encounter rosters, party
+truth, combat runtime state, session records, dungeon maps, or hex maps.
 
 ## Document Set
 

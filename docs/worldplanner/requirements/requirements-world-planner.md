@@ -1,5 +1,10 @@
 # World Planner Requirements
 
+Status: Confirmed product requirements
+Owner: World Planner
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 ## Goal
 
 Provide authored campaign-world records through the shared Catalog and
@@ -68,6 +73,8 @@ Inspector surfaces so the user can:
 
 - list, create, rename, edit, and delete World Planner NPCs, factions, and
   locations
+- inspect deleted NPCs, factions, and locations in recoverable trash and
+  restore the same stable identity
 - show NPC details in the shell details/Inspector area
 - select statblocks only from the existing Creatures public boundary
 - add or remove NPCs from factions without mutating creature truth
@@ -110,6 +117,9 @@ Inspector surfaces so the user can:
   clamped sum of faction base and NPC modifier
 - deleting an NPC removes its faction membership; deleting a faction removes
   its location links; deleting a location removes only the location
+- deletion moves the complete owner record into recoverable trash; restore
+  preserves its stable identity and reattaches only relationships whose other
+  endpoint is still active and unclaimed
 - Creature statblocks, encounter-table membership, encounter rosters, party
   members, combat HP, dungeon maps, and hex maps stay in their owning
   contexts.

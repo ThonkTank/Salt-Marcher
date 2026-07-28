@@ -41,8 +41,9 @@ Encounter-Tabellen.
 
 Current migration state is narrower than the target: the production shell and
 all seven visible section identities exist; Monster and Items query the
-installation-wide Shared-Definition provider, while the remaining provider
-routes report unavailable. No unavailable section stores Catalog-owned truth.
+installation-wide Shared-Definition provider; NPCs, Fraktionen, and Orte query
+the active Campaign's World Planner provider. Encounter and Encounter Tables
+report unavailable. No unavailable section stores Catalog-owned truth.
 
 ## Provider And Query Boundary
 
@@ -54,6 +55,11 @@ generation index is checksummed and structurally validated once per read; it
 does not open every object. A damaged Item object therefore cannot block
 Creature metadata browsing, while selecting that Item still fails exact object
 validation.
+
+World Planner supplies the same bounded row contract for active and recoverable
+trash views. Its create, edit, delete, and restore commands remain
+provider-owned and publish through the serial Campaign writer; Catalog only
+collects terminal feedback and refreshes the selected view.
 
 The Catalog background controller admits one active read and at most one
 latest-wins pending read. Every request receives a monotonic epoch. Newer input
@@ -88,8 +94,9 @@ keeps accepted rows visible with a refreshing status. Failure never labels
 stale rows as current success.
 
 The current vertical slice retains draft, accepted query, rows, count, status,
-and selection for all seven sections. Paging and sort state are provider-level
-targets still to be connected to the shared Godot result table.
+selection, and World Planner trash-view state for all seven sections. Paging
+and sort state are provider-level targets still to be connected to the shared
+Godot result table.
 
 ## Presentation
 
@@ -97,6 +104,7 @@ targets still to be connected to the shared Godot result table.
 
 - one persistent seven-section selector;
 - one inside-labelled search field and consistently placed create action;
+- one explicit active/paper-bin switch for recoverable Campaign-owned records;
 - one shared result region and Inspector region;
 - one footer for count and lifecycle status;
 - explicit empty, loading, refreshing, unavailable, and failed states.

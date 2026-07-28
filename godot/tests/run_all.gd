@@ -10,6 +10,8 @@ const CampaignDesk = preload("res://godot/src/ui/campaign_desk.gd")
 const MainShell = preload("res://godot/src/ui/main_shell.gd")
 const CatalogWorkspace = preload("res://godot/src/ui/catalog_workspace.gd")
 const CatalogBrowseController = preload("res://godot/src/features/catalog/catalog_browse_controller.gd")
+const WorldPlannerKnowledge = preload("res://godot/src/features/worldplanner/world_planner_knowledge.gd")
+const WorldPlannerCommandController = preload("res://godot/src/features/worldplanner/world_planner_command_controller.gd")
 const CampaignRuntimeCoordinator = preload("res://godot/src/app/campaign_runtime_coordinator.gd")
 const CampaignRuntimeSession = preload("res://godot/src/app/campaign_runtime_session.gd")
 const CampaignPortabilityController = preload("res://godot/src/app/campaign_portability_controller.gd")
@@ -99,6 +101,7 @@ func _run_tests() -> void:
 	_expect(first.get("state", {}).get("active_campaign_id", "") == first_id, "created campaign is active")
 	_run_campaign_store_contract(root, first_id)
 	_run_binary_content_contract()
+	await _run_world_planner_knowledge_contract()
 	await _run_catalog_foundation_contract()
 
 	var second := registry.create_campaign("Nordmark")
@@ -256,6 +259,10 @@ func _run_catalog_foundation_contract() -> void:
 	_expect(prepared.get("ok", false), "Catalog fixture prepares typed Shared Definitions")
 	var published := registry.publish_shared_definitions_generation(int(prepared.get("generation", -1)), 0)
 	_expect(published.get("ok", false), "Catalog fixture atomically selects its Shared-Definition generation")
+	var campaign_created := registry.create_campaign("Katalog Campaign")
+	_expect(campaign_created.get("ok", false), "Catalog fixture creates an active Campaign for Campaign-owned providers")
+	var runtime_coordinator := CampaignRuntimeCoordinator.new(data_root, registry)
+	_expect(runtime_coordinator.open_durable_active().get("ok", false), "Catalog fixture opens its active Campaign writer")
 	var first_page := definitions.query_catalog(int(prepared["generation"]), "creature", "wo", 0, 1)
 	_expect(
 		first_page.get("ok", false)
@@ -303,6 +310,7 @@ func _run_catalog_foundation_contract() -> void:
 	var shell := MainShell.new()
 	shell.data_root = data_root
 	shell.registry = registry
+	shell.runtime_coordinator = runtime_coordinator
 	root.add_child(shell)
 	await process_frame
 	_expect(shell.show_route("catalog").get("ok", false) and shell.active_route() == "catalog", "production shell exposes one native Katalog route")
@@ -328,15 +336,203 @@ func _run_catalog_foundation_contract() -> void:
 	catalog.select_section("items")
 	catalog.select_section("creatures")
 	_expect(catalog.search_input().text == "worg", "Katalog section switching retains unfinished search state")
-	var unavailable := catalog.select_section("npcs")
-	_expect(unavailable.get("status", "") == "unavailable", "unmigrated Katalog provider is disclosed without Catalog-owned replacement truth")
+	var npc_selection := catalog.select_section("npcs")
+	_expect(npc_selection.get("status", "") == "selected", "native Katalog routes NPCs to their Campaign-owned provider")
+	for _attempt in 600:
+		if catalog.section_snapshot("npcs").get("status", "") == "empty":
+			break
+		await create_timer(0.001).timeout
+	_expect(catalog.section_snapshot("npcs").get("status", "") == "empty", "empty Campaign NPC provider is a ready empty state")
 	var create_button := catalog.find_child("CatalogCreate", true, false) as Button
+	create_button.pressed.emit()
+	var record_name := catalog.find_child("CatalogRecordName", true, false) as LineEdit
+	var record_notes := catalog.find_child("CatalogRecordNotes", true, false) as TextEdit
+	record_name.text = "Mira Salzhand"
+	record_notes.text = "Kennt jede Ebbe am Nordkai."
+	var record_dialog := catalog.find_child("CatalogRecordDialog", true, false) as ConfirmationDialog
+	record_dialog.confirmed.emit()
+	record_dialog.hide()
+	for _attempt in 1200:
+		var npc_state := catalog.section_snapshot("npcs")
+		if npc_state.get("status", "") == "ready" and npc_state.get("rows", []).size() == 1:
+			break
+		await create_timer(0.001).timeout
+	var npc_state := catalog.section_snapshot("npcs")
+	_expect(
+		npc_state.get("status", "") == "ready"
+		and npc_state.get("rows", [])[0].get("name", "") == "Mira Salzhand"
+		and npc_state.get("rows", [])[0].get("notes", "") == "Kennt jede Ebbe am Nordkai.",
+		"native Katalog name-only create persists through provider command and refreshes provider readback"
+	)
+	var stable_npc_id := str(npc_state.get("rows", [])[0].get("reference_id", ""))
+	var result_list := catalog.find_child("CatalogResults", true, false) as VBoxContainer
+	var npc_row_button := result_list.get_children().filter(func(child) -> bool: return child is Button)[0] as Button
+	npc_row_button.pressed.emit()
+	var edit_button := catalog.find_child("CatalogEdit", true, false) as Button
+	edit_button.pressed.emit()
+	record_notes.text = "Kennt jede Ebbe und jeden Lotsen."
+	record_dialog.confirmed.emit()
+	record_dialog.hide()
+	for _attempt in 1200:
+		npc_state = catalog.section_snapshot("npcs")
+		if npc_state.get("status", "") == "ready" and npc_state.get("rows", [])[0].get("notes", "") == "Kennt jede Ebbe und jeden Lotsen.":
+			break
+		await create_timer(0.001).timeout
+	_expect(npc_state.get("rows", [])[0].get("notes", "") == "Kennt jede Ebbe und jeden Lotsen.", "native Katalog edit round-trips provider-owned notes")
+	catalog.call("_select_row", npc_state.get("rows", [])[0])
+	var trash_button := catalog.find_child("CatalogTrash", true, false) as Button
+	trash_button.pressed.emit()
+	var delete_dialog := catalog.find_child("CatalogDeleteDialog", true, false) as ConfirmationDialog
+	delete_dialog.confirmed.emit()
+	delete_dialog.hide()
+	for _attempt in 1200:
+		npc_state = catalog.section_snapshot("npcs")
+		if npc_state.get("status", "") == "empty":
+			break
+		await create_timer(0.001).timeout
+	_expect(npc_state.get("status", "") == "empty", "native Katalog removes a trashed NPC from the active provider view")
+	var trash_toggle := catalog.find_child("CatalogTrashToggle", true, false) as CheckButton
+	trash_toggle.set_pressed_no_signal(true)
+	trash_toggle.toggled.emit(true)
+	for _attempt in 600:
+		npc_state = catalog.section_snapshot("npcs")
+		if npc_state.get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	_expect(npc_state.get("rows", [])[0].get("reference_id", "") == stable_npc_id, "native Katalog exposes the same stable NPC identity in recoverable trash")
+	catalog.call("_select_row", npc_state.get("rows", [])[0])
+	var restore_button := catalog.find_child("CatalogRestore", true, false) as Button
+	restore_button.pressed.emit()
+	for _attempt in 1200:
+		npc_state = catalog.section_snapshot("npcs")
+		if npc_state.get("status", "") == "empty":
+			break
+		await create_timer(0.001).timeout
+	trash_toggle.set_pressed_no_signal(false)
+	trash_toggle.toggled.emit(false)
+	for _attempt in 600:
+		npc_state = catalog.section_snapshot("npcs")
+		if npc_state.get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	_expect(npc_state.get("rows", [])[0].get("reference_id", "") == stable_npc_id, "native Katalog restores the NPC with its original stable identity")
+	var unavailable := catalog.select_section("encounters")
+	_expect(unavailable.get("status", "") == "unavailable", "remaining unmigrated Katalog provider stays explicit and side-effect free")
 	create_button.pressed.emit()
 	var footer := catalog.find_child("CatalogFooter", true, false) as Label
 	_expect(footer.text.contains("noch nicht verfügbar"), "unavailable provider creation remains side-effect free and truthful")
 	shell.queue_free()
 	await process_frame
 	await process_frame
+	runtime_coordinator.revoke_current(-1)
+
+
+func _run_world_planner_knowledge_contract() -> void:
+	var model := WorldPlannerKnowledge.new()
+	var payload := model.empty_payload()
+	var faction := model.create_record(payload, "faction", "Hafenrat", {}, "faction.harbor", "2026-07-28T10:00:00Z")
+	_expect(faction.get("ok", false), "World Planner creates a name-only faction with stable identity")
+	payload = faction.get("payload", payload)
+	var duplicate_faction := model.create_record(payload, "faction", "Hafenrat", {}, "faction.harbor.two", "2026-07-28T10:00:01Z")
+	_expect(duplicate_faction.get("ok", false), "World Planner allows independently identified records with the same name")
+	payload = duplicate_faction.get("payload", payload)
+	var place := model.create_record(
+		payload,
+		"place",
+		"Nordkai",
+		{"notes": "Niedrige Lagerhäuser", "faction_ids": ["faction.harbor"]},
+		"place.north-quay",
+		"2026-07-28T10:00:02Z"
+	)
+	payload = place.get("payload", payload)
+	var npc := model.create_record(
+		payload,
+		"npc",
+		"Mira",
+		{"faction_id": "faction.harbor", "last_place_id": "place.north-quay"},
+		"npc.mira",
+		"2026-07-28T10:00:03Z"
+	)
+	_expect(place.get("ok", false) and npc.get("ok", false), "World Planner accepts typed optional faction and place links")
+	payload = npc.get("payload", payload)
+	var renamed := model.update_record(payload, "npc.mira", {"name": "Mira Salzhand", "notes": "Kennt jede Ebbe."}, "2026-07-28T10:00:04Z")
+	_expect(renamed.get("ok", false) and renamed.get("record", {}).get("notes", "") == "Kennt jede Ebbe.", "World Planner edits provider-owned display and note truth")
+	payload = renamed.get("payload", payload)
+	var trashed := model.trash_record(payload, "faction.harbor", "2026-07-28T10:00:05Z")
+	var trashed_payload: Dictionary = trashed.get("payload", {})
+	_expect(
+		trashed.get("ok", false)
+		and trashed.get("removed_link_count", -1) == 2
+		and trashed_payload.get("records", {}).get("npc.mira", {}).get("faction_id", "missing") == ""
+		and trashed_payload.get("records", {}).get("npc.mira", {}).get("updated_at_utc", "") == "2026-07-28T10:00:05Z"
+		and not "faction.harbor" in trashed_payload.get("records", {}).get("place.north-quay", {}).get("faction_ids", []),
+		"trashing a faction atomically removes current links and timestamps changed dependents"
+	)
+	var active_factions := model.query(trashed_payload, "faction", "", 0, 50)
+	var deleted_factions := model.query(trashed_payload, "faction", "", 0, 50, true)
+	_expect(active_factions.get("total", -1) == 1 and deleted_factions.get("total", -1) == 1, "active and recoverable-trash provider views remain distinct")
+	var restored := model.restore_record(trashed_payload, "faction.harbor", "2026-07-28T10:00:06Z")
+	var restored_payload: Dictionary = restored.get("payload", {})
+	_expect(
+		restored.get("ok", false)
+		and restored.get("record", {}).get("record_id", "") == "faction.harbor"
+		and restored.get("restored_link_count", -1) == 2
+		and restored_payload.get("records", {}).get("npc.mira", {}).get("faction_id", "") == "faction.harbor"
+		and restored_payload.get("records", {}).get("npc.mira", {}).get("updated_at_utc", "") == "2026-07-28T10:00:06Z"
+		and "faction.harbor" in restored_payload.get("records", {}).get("place.north-quay", {}).get("faction_ids", []),
+		"restore preserves identity and timestamps safely reattached current links"
+	)
+	_expect(not model.update_record(restored_payload, "npc.mira", {"name": "   "}).get("ok", true), "World Planner rejects an invalid edit without a replacement payload")
+	_expect(not model.query({"format": "damaged", "records": {}, "trash": {}}, "npc").get("ok", true), "malformed World Planner payload fails only its provider read")
+
+	var data_root := "user://saltmarcher-world-planner-runtime/%s" % Time.get_ticks_usec()
+	var registry := FileCampaignRegistry.new(data_root)
+	var created := registry.create_campaign("World Planner Runtime")
+	var campaign_id := str(created.get("campaign_id", ""))
+	var coordinator := CampaignRuntimeCoordinator.new(data_root, registry)
+	_expect(coordinator.open_durable_active().get("ok", false), "World Planner runtime opens its serial Campaign writer")
+	var commands := WorldPlannerCommandController.new(data_root, coordinator)
+	root.add_child(commands)
+	var completions: Array = []
+	commands.command_completed.connect(func(result: Dictionary) -> void: completions.append(result.duplicate(true)))
+	var started := commands.create_record("place", "Salzgasse")
+	_expect(started.get("status", "") == "started", "World Planner command prepares a name-only mutation off the scene-tree thread")
+	for _attempt in 1200:
+		if not completions.is_empty():
+			break
+		await create_timer(0.001).timeout
+	_expect(completions.size() == 1 and completions[0].get("ok", false) and completions[0].get("status", "") == "created", "World Planner command publishes through the accepted asynchronous Campaign writer")
+	var persisted := FileCampaignStore.new(data_root, campaign_id).read_partition(WorldPlannerKnowledge.OWNER)
+	var persisted_query := model.query(persisted.get("payload", {}), "place", "salz", 0, 50)
+	_expect(persisted.get("ok", false) and persisted_query.get("total", -1) == 1, "World Planner owner partition survives an independent store reopen")
+	var session_state: Dictionary = coordinator.current_session().snapshot()["campaign_state"]
+	var external_advance := FileCampaignStore.new(data_root, campaign_id).commit(
+		int(session_state["generation"]),
+		{"external-proof": {"marker": true}},
+		session_state["runtime"]
+	)
+	_expect(external_advance.get("ok", false), "World Planner stale-write fixture advances durable Campaign truth outside its captured session")
+	completions.clear()
+	commands.create_record("faction", "Darf nicht erscheinen")
+	for _attempt in 1200:
+		if not completions.is_empty():
+			break
+		await create_timer(0.001).timeout
+	var after_stale := FileCampaignStore.new(data_root, campaign_id)
+	var stale_partition := after_stale.read_partition(WorldPlannerKnowledge.OWNER)
+	_expect(
+		completions.size() == 1
+		and not completions[0].get("ok", true)
+		and completions[0].get("status", "") == "stale"
+		and after_stale.load_state().get("generation", -1) == external_advance.get("state", {}).get("generation", -2)
+		and model.query(stale_partition.get("payload", {}), "faction").get("total", -1) == 0,
+		"World Planner command rejects stale Campaign generation without publishing its candidate"
+	)
+	var resources := commands.resource_snapshot()
+	_expect(not resources.get("busy", true) and resources.get("worker_handle_count", -1) == 0 and resources.get("ticket_count", -1) == 0, "World Planner command releases worker and write-ticket state after completion")
+	commands.queue_free()
+	await process_frame
+	coordinator.revoke_current(-1)
 
 
 func _run_binary_content_contract() -> void:

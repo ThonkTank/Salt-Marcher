@@ -1,10 +1,12 @@
 class_name CatalogBrowseController
 extends Node
 
-## Runs one Shared-Definition catalog read with one latest-wins pending request.
+## Runs one provider catalog read with one latest-wins pending request.
 
 const SharedDefinitionStore = preload("res://godot/src/platform/persistence/shared_definition_store.gd")
 const FileCampaignRegistry = preload("res://godot/src/platform/persistence/file_campaign_registry.gd")
+const FileCampaignStore = preload("res://godot/src/platform/persistence/file_campaign_store.gd")
+const WorldPlannerKnowledge = preload("res://godot/src/features/worldplanner/world_planner_knowledge.gd")
 
 signal query_started(request: Dictionary)
 signal result_published(result: Dictionary)
@@ -29,7 +31,8 @@ func query(
 	kind: String,
 	search_text: String,
 	offset: int = 0,
-	limit: int = 50
+	limit: int = 50,
+	include_deleted: bool = false
 ) -> Dictionary:
 	_mutex.lock()
 	_latest_epoch += 1
@@ -40,6 +43,7 @@ func query(
 		"search_text": search_text,
 		"offset": offset,
 		"limit": limit,
+		"include_deleted": include_deleted,
 	}
 	if not _active_request.is_empty():
 		_pending_request = request
@@ -99,10 +103,13 @@ func _start_active_request(request: Dictionary) -> Dictionary:
 
 
 func _run_query(request: Dictionary) -> void:
-	var registry_state: Dictionary = FileCampaignRegistry.new(_data_root).load_state()
+	var registry := FileCampaignRegistry.new(_data_root)
+	var registry_state: Dictionary = registry.load_state()
 	var result: Dictionary
 	if not registry_state.get("ok", false):
 		result = registry_state
+	elif str(request["section_id"]) in ["npcs", "factions", "places"]:
+		result = _query_world_planner(registry, registry_state, request)
 	else:
 		result = SharedDefinitionStore.new(_data_root).query_catalog(
 			int(registry_state.get("shared_definitions_generation", 0)),
@@ -112,9 +119,47 @@ func _run_query(request: Dictionary) -> void:
 			int(request["limit"]),
 			Callable(self, "_cancelled_from_worker")
 		)
+		if result.get("ok", false):
+			for row in result.get("rows", []):
+				row["reference_id"] = row["definition_id"]
 	result["epoch"] = request["epoch"]
 	result["section_id"] = request["section_id"]
 	call_deferred("_finish_on_main", result)
+
+
+func _query_world_planner(registry, registry_state: Dictionary, request: Dictionary) -> Dictionary:
+	var campaign_id := str(registry_state.get("active_campaign_id", ""))
+	if campaign_id.is_empty():
+		return {"ok": false, "status": "campaign_required", "error": "Wähle zuerst eine Campaign."}
+	var store := FileCampaignStore.new(_data_root, campaign_id)
+	var campaign_state := store.load_state()
+	if not campaign_state.get("ok", false):
+		return campaign_state
+	var read := store.read_partition(WorldPlannerKnowledge.OWNER, campaign_state)
+	if not read.get("ok", false):
+		return read
+	var model := WorldPlannerKnowledge.new()
+	var result := model.query(
+		read.get("payload", model.empty_payload()),
+		str(request["kind"]),
+		str(request["search_text"]),
+		int(request["offset"]),
+		int(request["limit"]),
+		bool(request["include_deleted"]),
+		Callable(self, "_cancelled_from_worker")
+	)
+	if not result.get("ok", false):
+		return result
+	var confirmed: Dictionary = registry.load_state()
+	if (
+		not confirmed.get("ok", false)
+		or confirmed.get("active_campaign_id", "") != campaign_id
+		or int(confirmed.get("generation", -1)) != int(registry_state.get("generation", -2))
+	):
+		return {"ok": false, "status": "stale", "error": "Die aktive Campaign änderte sich während der Katalogabfrage."}
+	result["campaign_id"] = campaign_id
+	result["campaign_generation"] = campaign_state["generation"]
+	return result
 
 
 func _cancelled_from_worker() -> bool:

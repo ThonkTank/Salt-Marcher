@@ -1,106 +1,98 @@
 # World Planner Persistence Contract
 
-## Purpose
+Status: Active Godot persistence contract
+Owner: World Planner
+Last Reviewed: 2026-07-28
+Source of Truth: This document
 
-This contract defines the persisted storage boundary for the `worldplanner`
-feature.
+## Purpose And Owner
 
-World Planner persistence stores only World Planner-authored NPC, faction,
-location, lifecycle, note, link, source-constraint, and inventory-limit truth.
+World Planner persists only World Planner-authored NPC, faction, location,
+lifecycle, note, link, source-constraint, inventory-limit, and recoverable-trash
+truth. Its Campaign owner key is exactly `worldplanner`.
 
-## Adapter Boundary
+The payload format is `saltmarcher.world-planner.v1`. It is stored through the
+Campaign immutable-generation protocol as a checksummed owner partition; World
+Planner owns no database, schema registry, mutable sidecar, or Catalog cache.
 
-- The World Planner SQLite adapter satisfies feature-owned application ports
-  and remains private to the World Planner composition entry point.
-- The application composition supplies `WorldPlannerApi` explicitly;
-  registry, discovery, mutable published models, repositories, gateways,
-  mappers, schema classes, and source records are not public boundaries.
-- SQL records and adapter failures MUST NOT cross `WorldPlannerApi`.
+## Payload Shape
 
-## Stored Truth
+The payload contains one active-record map and one trash map. Both are
+keyed by stable lowercase portable IDs. Active and trash maps may not contain
+the same identity.
 
-World Planner persistence stores:
+Every record stores stable ID, kind, display name, general notes, created time,
+and updated time. Kind-specific truth is:
 
-- NPC identity, display name, creature statblock reference, lifecycle status,
-  appearance notes, behavior notes, history notes, general notes, and bounded
-  PC-disposition modifier
-- faction identity, display name, notes, primary encounter-table reference,
-  bounded PC-disposition base, and NPC membership
-- faction statblock inventory limit rows, including whether a statblock is
-  finite or unlimited
-- location identity, display name, notes, linked factions, and linked
-  encounter tables
+- NPC: optional creature ID; appearance, behavior, history; active/defeated
+  lifecycle; optional faction and last-place IDs; bounded disposition modifier;
+- faction: optional primary encounter-table ID, bounded base disposition, and
+  optional finite non-negative inventory limits by creature ID;
+- place: unique faction IDs and unique encounter-table IDs.
 
-World Planner persistence does not store:
+A trash entry stores the complete record, deletion time, and the incoming owner
+relationships removed by that deletion. The current provider excludes trash;
+the trash provider returns it explicitly.
 
-- creature statblock fields
-- encounter-table membership rows
-- post-combat runtime state or pending loss-confirmation workflows
-- saved encounter-plan rosters
-- party membership or character details
-- combat HP, initiative, turn order, or runtime result state
-- dungeon map or hex map truth
-- Session Planner records, notes, or selected session truth
+## Identity And Minimal Creation
 
-## Reference Rules
+Identity is generated once and does not change on rename, deletion, or restore.
+Display names need one visible character and may be shared by several records
+of the same or different kind. Creation requires only name and kind; every
+other field receives an empty, active, unlimited, or neutral default as
+appropriate.
 
-- NPC statblocks are stored as stable creature IDs.
-- Faction and location encounter sources are stored as stable encounter-table
-  IDs.
-- Later Session Planner-owned integration may store location references in
-  Session Planner, not copied location data in World Planner.
-- Foreign truth must be re-read through the owning public boundary when a
-  World Planner projection needs display facts.
-- Missing optional source constraints mean unconstrained.
-- Missing statblock inventory limits mean unlimited.
-- Explicit finite inventory limit `0` means none available for that statblock.
-- NPC membership rows enforce at most one faction for each NPC.
+## Commit And Concurrency
 
-## Validation And Error Behavior
+A command snapshots Campaign ID, activation generation, Campaign generation,
+runtime state, and current partition reference. It reads and validates the
+partition and computes one complete candidate off-thread. Only the admitted
+Campaign runtime may submit it. The serial writer publishes the candidate and
+unchanged runtime in one new immutable Campaign generation.
 
-Owner startup readiness validates the feature-declared target schema signature; semantic row validation remains on typed provider read/write paths and fails closed through the feature contract.
+Stale activation, stale Campaign generation, revoked authority, concurrent
+accepted writes, preparation failure, validation failure, and storage failure
+publish no new World Planner truth. The last confirmed generation remains
+readable. Completion is collected through a bounded write ticket; provider
+controls remain busy until that terminal result is observed.
 
-- Writes must reject malformed NPC, faction, location, creature statblock, or
-  encounter-table references.
-- Writes must reject duplicate membership or duplicate link rows instead of
-  silently persisting ambiguous truth.
-- NPC deletion must remove faction membership in the same saved state.
-- Faction deletion must remove location links in the same saved state.
-- Removing a relationship must leave both referenced records intact.
-- Disposition values must remain between `-50` and `+50`.
-- Finite inventory limits must be non-negative.
-- A faction must not persist more than one primary encounter-table reference.
-- Candidate combat losses must not mutate durable NPC lifecycle or faction
-  stock until user confirmation is recorded.
-- Storage and schema failures must surface through World Planner API result
-  statuses instead of leaking SQLite exceptions to consumers.
-- Failed writes must leave the last stable revisioned World Planner API state
-  visible.
+## Deletion And Restore
 
-## Current Schema Lifecycle
+Deletion is recoverable and atomic with current relationship cleanup:
 
-World Planner is a feature-owned persistence surface. It does not migrate
-existing Session Planner, Encounter, EncounterTable, Creatures, Party, Dungeon,
-or Hex tables in the current backend slice.
+- deleting an NPC removes it from active membership by moving that NPC record;
+- deleting a faction clears NPC `faction_id` values and removes the faction
+  from place faction links in the same candidate;
+- deleting a place clears current NPC `last_place_id` values and otherwise
+  moves only the place;
+- removing a relationship alone never deletes either endpoint.
 
-Compatibility obligations begin with the first released format.
-Before the first released format, owner startup creates the complete current schema
-directly as owner version `1`, only on an empty World Planner namespace, and
-validates its exact table, relationship, constraint, index, and owner-object
-inventory.
+Restore republishes the original identity. Its outgoing and saved incoming
+relationships are restored only when the other endpoint remains active and the
+relationship slot is not already claimed. Missing or conflicting links stay
+absent and do not block restoration of the record.
 
-Unversioned partial, superseded, structurally damaged, adjacent-owner-object,
-and newer shapes fail closed unchanged. Startup performs no `ALTER`, repair,
-membership normalization, copy, drop, or version claim. Until activation,
-unsupported development databases are discarded and recreated from the current
-product.
+## Validation And Failure Isolation
 
-Later Session Planner-owned references to World Planner locations belong to the
-Session Planner persistence contract and do not change this owner boundary.
+- IDs are bounded portable lowercase storage IDs;
+- names and text fields are bounded;
+- dispositions are mathematical integers from `-50` through `+50`, including
+  integral values produced by a JSON round trip;
+- finite inventory limits are mathematical non-negative integers;
+- active internal faction/place references resolve to an active record of the
+  required kind;
+- relationship arrays reject duplicate identities;
+- malformed partition or trash data fails the World Planner provider only and
+  does not prevent Campaign registry or unrelated owner-partition reads;
+- errors expose owned statuses and messages, not paths or raw storage details.
 
+Compatibility obligations begin with the first released format. Until then,
+unsupported development payloads are disposable; the provider performs no
+implicit repair, conversion, SQLite import, or dual write.
 
 ## References
 
-- [World Planner Domain Model](../domain/domain-world-planner.md) (line 1)
-- [World Planner Architecture](../architecture/architecture-world-planner.md) (line 1)
-- [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)
+- [World Planner Requirements](../requirements/requirements-world-planner.md)
+- [World Planner Domain Model](../domain/domain-world-planner.md)
+- [World Planner Architecture](../architecture/architecture-world-planner.md)
+- [Campaign Persistence Contract](../../project/contract/persistence-lifecycle.md)
