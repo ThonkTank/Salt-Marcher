@@ -24,10 +24,13 @@ godot/src/app/
   campaign_partition_command_controller.gd # shared admitted write lifecycle
 godot/src/features/party/
   party_roster.gd                           # pure owner model and invariants
+  party_adventuring_day.gd                  # pure budget/cadence/timeline rules
+  adventuring_day_calculation_controller.gd # latest-wins CPU worker lane
   party_read_controller.gd                  # bounded latest-wins query lane
   party_command_controller.gd               # Party command vocabulary
 godot/src/ui/
   party_top_bar.gd                          # compact dropdown and editor
+  adventuring_day_top_bar.gd                # separate calculator dropdown
 ```
 
 `PartyRoster` validates one complete `party` payload and applies mutations as
@@ -49,6 +52,22 @@ scene-tree thread. Successful Campaign transitions notify the shell to queue a
 fresh Party read, so the persistent trigger cannot retain the prior Campaign's
 summary.
 
+`PartyAdventuringDay` owns the level-budget table, per-character rest cadence,
+group budget thirds, multi-day XP progress, grouped level-up breakpoints, and
+ordered rest timeline. The automatic summary consumes the active Party snapshot
+and fails closed when any active member lacks an authored level. Custom rows are
+ephemeral presentation input and never enter the `party` partition.
+
+Calculations use counted level cohorts rather than one expanded value per PC, so
+content size is not capped by presentation rows. Published results identify the
+local `dnd5e-2014` profile, normalized level/count and XP inputs, positive
+half-up budget-third rounding, and ceiling division for equal XP shares.
+
+`AdventuringDayCalculationController` runs pure calculations in one active plus
+one latest-pending worker lane. Cancellation is cooperative at day boundaries;
+only the latest epoch publishes. The UI bounds rendered timeline rows while the
+calculation result remains complete.
+
 ## State And Consumer Boundaries
 
 - `characters` is the live Roster; `trash` is the recoverable deletion set.
@@ -66,9 +85,12 @@ summary.
 The native model, async read/write lanes, top-bar trigger, active cards, bounded
 Roster search, name-only create, optional-field edit, explicit membership, XP
 correction, Party rest, recoverable trash, restore, restart readback, and stale
-read suppression are implemented. Concrete travel commands, Scene integration,
-Planning Party consumption, Adventuring Day calculation/UI, final `PartyApi`
-carriers, owner-visible acceptance, and legacy Java/SQLite deletion remain.
+read suppression are implemented. The separate native Rastbudget trigger,
+active/custom level rows, budget/progress modes, rest cadence, grouped level-up
+timeline, latest-wins calculation, and 1366 x 768 dropdown proof are also
+implemented. Concrete travel commands, Scene integration, Planning Party
+consumption, final `PartyApi` carriers, owner-visible acceptance, and legacy
+Java/SQLite deletion remain.
 
 ## Permanent Constraints
 
@@ -76,6 +98,8 @@ carriers, owner-visible acceptance, and legacy Java/SQLite deletion remain.
 - stable identity, duplicate-name support, and exact optional absence;
 - no implicit current-Party, travel, Scene, or Planning Party participation;
 - all mutation preparation and provider I/O remain off the scene-tree thread;
+- calculation cost follows days and the fixed 20-level rule axis, not expanded
+  character count; no presentation-defined character cap is allowed;
 - one admitted Campaign writer determines publication order;
 - restore preserves identity but clears active/transient participation;
 - no JavaFX, Java, JDBC, SQLite, or service-locator dependency enters the Godot
@@ -86,5 +110,7 @@ carriers, owner-visible acceptance, and legacy Java/SQLite deletion remain.
 - [Party Domain Model](../domain/domain-party.md)
 - [Party Persistence Contract](../contract/contract-party-persistence.md)
 - [Party Dropdown Requirements](../requirements/requirements-party-dropdown.md)
+- [Adventuring Day Dropdown Requirements](../requirements/requirements-adventuring-day-dropdown.md)
+- [Adventuring Day Calculator Requirements](../requirements/requirements-adventuring-day-calculator.md)
 - [Persistence Lifecycle](../../project/contract/persistence-lifecycle.md)
 - [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)

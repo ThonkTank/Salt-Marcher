@@ -1,6 +1,9 @@
 class_name PartyTopBar
 extends HBoxContainer
 
+signal snapshot_published(snapshot: Dictionary)
+signal snapshot_refresh_started
+
 const PartyRoster = preload("res://godot/src/features/party/party_roster.gd")
 const PartyReadController = preload("res://godot/src/features/party/party_read_controller.gd")
 const PartyCommandController = preload("res://godot/src/features/party/party_command_controller.gd")
@@ -294,6 +297,7 @@ func _add_compact_editor_field(parent: GridContainer, label_text: String, node_n
 
 func _on_query_started(_request: Dictionary) -> void:
 	_notice.text = "Party wird geladen …"
+	snapshot_refresh_started.emit()
 
 
 func _on_result_published(result: Dictionary) -> void:
@@ -302,6 +306,7 @@ func _on_result_published(result: Dictionary) -> void:
 		_trigger.text = "Party nicht verfügbar"
 		_notice.text = str(result.get("error", "Party konnte nicht geladen werden."))
 		_render()
+		snapshot_published.emit(result.duplicate(true))
 		return
 	_snapshot = result.duplicate(true)
 	var summary: Dictionary = _snapshot.get("summary", {})
@@ -314,6 +319,7 @@ func _on_result_published(result: Dictionary) -> void:
 	)
 	_notice.text = "%d von %d Roster-Einträgen" % [int(_snapshot.get("matched", 0)), int(_snapshot.get("total", 0))]
 	_render()
+	snapshot_published.emit(_snapshot.duplicate(true))
 
 
 func _render() -> void:

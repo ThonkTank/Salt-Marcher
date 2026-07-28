@@ -19,8 +19,9 @@ query the selected installation-wide Shared-Definition generation off the
 scene-tree thread, while unmigrated provider sections report unavailable rather
 than inventing Catalog-owned records. A compact Party top-bar dropdown now
 provides the active Campaign's Roster/current-Party foundation without adding a
-third navigation route; travel, Adventuring Day, Planning Party integration,
-and legacy deletion remain migration work.
+third navigation route. Its separate native Rastbudget trigger provides
+active/custom Adventuring-Day budgets and XP timelines; travel, Planning Party
+integration, and legacy deletion remain migration work.
 
 ## Quickstart
 

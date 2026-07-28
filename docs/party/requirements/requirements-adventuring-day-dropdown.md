@@ -1,5 +1,10 @@
 # Adventuring Day Top-Bar UI
 
+Status: Active product requirement with native Godot implementation
+Owner: Party
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 ## Component Purpose
 
 The Adventuring Day top-bar dropdown restores the original separate rest-budget
@@ -7,19 +12,19 @@ trigger next to the Party trigger. It reads the active party's adventuring-day
 summary for the trigger and hosts the original-style adventuring-day calculator
 as a top-bar control panel.
 
-Current state:
+Current Godot state:
 
 - The trigger reads the active party's rest-budget summary through the Party
   feature boundary.
 - The dropdown renders the calculator surface with active-party and custom
   party input modes.
-- Calculation decisions are requested through the Party feature boundary;
-  the JavaFX view owns controls and rendering only.
+- Calculation decisions run through the Party-owned pure calculator and a
+  latest-wins worker lane; the Godot view owns controls and rendering only.
 
 ## Visible Surfaces
 
 - `TOP_BAR` hosts the rest-budget trigger before the Party trigger.
-- The trigger shows `Rastbudget`, `Kein Rastbudget`, `Rastbudget nicht
+- The labelled trigger shows `Kein Rastbudget`, `Stufen fehlen`, `Nicht
   verfügbar`, or `SR <xp> · LR <xp>` depending on read state.
 - The dropdown shows an `ADVENTURING DAY` header and a scrollable calculator
   panel.
@@ -34,7 +39,7 @@ Current state:
 - Editing rows switches the calculator to custom party mode without mutating the
   party roster.
 - `Budget` shows the daily budget and rest milestones for the current rows.
-- `XP -> Tage` shows adventuring-day progress, rest counts, level-up summary,
+- `XP → Tage` shows adventuring-day progress, rest counts, level-up summary,
   and timeline events for the entered group XP.
 
 ## Visible States
@@ -42,7 +47,10 @@ Current state:
 - Loading: the trigger can temporarily show that the rest-budget summary is
   unavailable while it refreshes.
 - No budget: the trigger shows `Kein Rastbudget`.
-- Storage error: the trigger shows `Rastbudget nicht verfügbar`.
+- Storage error: the trigger shows `Nicht verfügbar` beside its `Rastbudget`
+  label.
+- Incomplete authored levels: the trigger shows `Stufen fehlen`; the automatic
+  calculator does not invent a default level.
 - Loaded budget: the trigger shows `Rastbudget` or the compact `SR <xp> · LR
   <xp>` summary and the dropdown exposes the calculator surface.
 
@@ -58,6 +66,8 @@ Current state:
   changes
 - budget and progress modes stay available inside the same dropdown surface and
   reuse the shared calculator behavior
+- `Alt+A` opens the dedicated calculator trigger without adding a navigation
+  route
 
 ## References
 

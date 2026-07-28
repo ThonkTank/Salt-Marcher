@@ -22,6 +22,9 @@ const PartyRoster = preload("res://godot/src/features/party/party_roster.gd")
 const PartyCommandController = preload("res://godot/src/features/party/party_command_controller.gd")
 const PartyReadController = preload("res://godot/src/features/party/party_read_controller.gd")
 const PartyTopBar = preload("res://godot/src/ui/party_top_bar.gd")
+const PartyAdventuringDay = preload("res://godot/src/features/party/party_adventuring_day.gd")
+const AdventuringDayCalculationController = preload("res://godot/src/features/party/adventuring_day_calculation_controller.gd")
+const AdventuringDayTopBar = preload("res://godot/src/ui/adventuring_day_top_bar.gd")
 const StorageCapacityGuard = preload("res://godot/src/platform/persistence/storage_capacity_guard.gd")
 const PlatformVolumeCapacityProbe = preload("res://godot/src/platform/persistence/platform_volume_capacity_probe.gd")
 
@@ -105,6 +108,7 @@ func _run_tests() -> void:
 	_expect(first.get("state", {}).get("active_campaign_id", "") == first_id, "created campaign is active")
 	_run_campaign_store_contract(root, first_id)
 	_run_binary_content_contract()
+	await _run_adventuring_day_contract()
 	await _run_party_roster_contract()
 	await _run_world_planner_knowledge_contract()
 	await _run_catalog_foundation_contract()
@@ -250,6 +254,125 @@ func _run_campaign_store_contract(data_root: String, campaign_id: String) -> voi
 
 	var invalid_owner := store.commit(5, {"../escape": {}}, resumed.get("state", {}).get("runtime", {}))
 	_expect(not invalid_owner.get("ok", true), "unsafe capability owner is rejected before publication")
+
+
+func _run_adventuring_day_contract() -> void:
+	var model := PartyAdventuringDay.new()
+	var level_three := model.budget_for_level(3)
+	_expect(
+		level_three.get("total_budget_xp", -1) == 1_200
+		and level_three.get("first_short_rest_xp", -1) == 400
+		and level_three.get("second_short_rest_xp", -1) == 800,
+		"Adventuring Day preserves the level budget and thirds policy"
+	)
+	var budget := model.calculate([3, 3, 4, 4], 5_800)
+	_expect(
+		budget.get("ok", false)
+		and budget.get("budget", {}).get("total_budget_xp", -1) == 5_800
+		and budget.get("budget", {}).get("first_short_rest_xp", -1) == 1_933
+		and budget.get("budget", {}).get("second_short_rest_xp", -1) == 3_867
+		and budget.get("progress", {}).get("short_rests", -1) == 2
+		and budget.get("progress", {}).get("long_rests", -1) == 1
+		and is_equal_approx(float(budget.get("progress", {}).get("total_days", -1.0)), 1.0),
+		"Adventuring Day calculates one complete mixed-level budget with exact rest milestones"
+	)
+	_expect(
+		model.calculate_rows([{"level": 1, "count": 3}], 1).get("progress", {}).get("per_character_awarded_xp", -1) == 1,
+		"equal Adventuring Day XP shares use the binding ceiling rule"
+	)
+	var progress := model.calculate([3, 3, 4, 4], 7_200)
+	var level_up_events: Array = progress.get("progress", {}).get("events", []).filter(func(event: Dictionary) -> bool:
+		return event.get("type", "") == "level_up"
+	)
+	_expect(
+		level_up_events.size() == 1
+		and level_up_events[0].get("group_xp", -1) == 7_197
+		and level_up_events[0].get("new_level", -1) == 4
+		and level_up_events[0].get("affected_characters", -1) == 2
+		and level_up_events[0].get("partial_day", false),
+		"Adventuring Day groups level-ups at the ceiling-share breakpoint on the correct partial-day timeline"
+	)
+	_expect(
+		progress.get("provenance", {}).get("rule_profile_id", "") == PartyAdventuringDay.RULE_PROFILE_ID
+		and "equal-xp-shares-ceiling" in str(progress.get("provenance", {}).get("rounding_rule_id", ""))
+		and progress.get("provenance", {}).get("inputs", {}).get("level_counts", []).size() == 2,
+		"Adventuring Day publishes offline rule profile, normalized inputs, and rounding provenance"
+	)
+	var summary := model.summary([
+		{"character_id": "pc.one", "level": 3, "xp_since_long_rest": 350, "short_rests_taken_since_long_rest": 0},
+		{"character_id": "pc.two", "level": 3, "xp_since_long_rest": 500, "short_rests_taken_since_long_rest": 1},
+	])
+	_expect(
+		summary.get("status", "") == "ready"
+		and summary.get("remaining_to_short_rest", -1) == 175
+		and summary.get("remaining_to_long_rest", -1) == 775
+		and summary.get("consumed_xp", -1) == 850
+		and summary.get("consumed_percent", -1) == 35
+		and summary.get("cadence", [])[0].get("urgency", "") == "soon",
+		"active Party summary derives averaged rest cadence without mutating Roster progress"
+	)
+	_expect(
+		model.summary([{"character_id": "pc.unknown", "level": null}]).get("status", "") == "incomplete_levels",
+		"automatic active-Party budget refuses to invent a missing authored level"
+	)
+	_expect(
+		not model.calculate([], 0).get("ok", true)
+		and not model.calculate([21], 0).get("ok", true)
+		and not model.calculate([1], -1).get("ok", true),
+		"Adventuring Day rejects empty, out-of-range, and negative calculation inputs"
+	)
+	var large_cohort := model.calculate_rows([{"level": 20, "count": 100_000}], 0)
+	_expect(
+		large_cohort.get("ok", false)
+		and large_cohort.get("budget", {}).get("character_count", -1) == 100_000
+		and large_cohort.get("budget", {}).get("total_budget_xp", -1) == 4_000_000_000,
+		"counted Adventuring Day cohorts avoid an artificial character-content cap"
+	)
+	var reference_durations_usec: Array[int] = []
+	for _run in 20:
+		var started_usec := Time.get_ticks_usec()
+		var reference := model.calculate_rows([
+			{"level": 3, "count": 2},
+			{"level": 4, "count": 2},
+		], 11_600)
+		reference_durations_usec.append(Time.get_ticks_usec() - started_usec)
+		_expect(reference.get("ok", false), "Adventuring Day reference workload remains deterministic")
+	reference_durations_usec.sort()
+	_expect(
+		reference_durations_usec[18] < 2_000_000,
+		"Adventuring Day 20-run reference workload stays below the two-second p95 product budget"
+	)
+
+	var controller := AdventuringDayCalculationController.new()
+	root.add_child(controller)
+	var results: Array = []
+	controller.result_published.connect(func(result: Dictionary) -> void: results.append(result.duplicate(true)))
+	var first := controller.calculate([20], PartyAdventuringDay.MAX_GROUP_XP)
+	var replacement := controller.calculate([3], 1_200)
+	_expect(
+		first.get("status", "") == "started" and replacement.get("status", "") == "queued",
+		"Adventuring Day calculation admits one active and one latest-wins request"
+	)
+	for _attempt in 2400:
+		if not controller.is_active():
+			break
+		await create_timer(0.001).timeout
+	await process_frame
+	_expect(
+		results.size() == 1
+		and results[0].get("request", {}).get("rows", []) == [{"level": 3, "count": 1}]
+		and results[0].get("progress", {}).get("long_rests", -1) == 1,
+		"superseded Adventuring Day work cannot publish over the latest calculation"
+	)
+	var resources := controller.resource_snapshot()
+	_expect(
+		resources.get("active_count", -1) == 0
+		and resources.get("pending_count", -1) == 0
+		and resources.get("worker_handle_count", -1) == 0,
+		"Adventuring Day calculation releases worker and pending state"
+	)
+	controller.queue_free()
+	await process_frame
 
 
 func _run_party_roster_contract() -> void:
@@ -409,8 +532,10 @@ func _run_party_roster_contract() -> void:
 	var editor := party_top_bar.find_child("PartyEditor", true, false) as Window
 	var editor_name := party_top_bar.find_child("PartyEditorName", true, false) as LineEdit
 	var editor_player := party_top_bar.find_child("PartyEditorPlayer", true, false) as LineEdit
+	var editor_level := party_top_bar.find_child("PartyEditorLevel", true, false) as LineEdit
 	editor_name.text = "Kael"
 	editor_player.text = "Jonas"
+	editor_level.text = "3"
 	var editor_save := party_top_bar.find_child("PartyEditorSave", true, false) as Button
 	editor_save.pressed.emit()
 	for _attempt in 1200:
@@ -439,6 +564,62 @@ func _run_party_roster_contract() -> void:
 			break
 		await create_timer(0.001).timeout
 	_expect(membership_clicked and party_top_bar.trigger_button().text.begins_with("1 SC"), "Party top-bar membership action explicitly updates the current Party summary")
+	var adventuring_day := shell.find_child("AdventuringDayTrigger", true, false).get_parent() as AdventuringDayTopBar
+	for _attempt in 1200:
+		if adventuring_day.snapshot().get("summary", {}).get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		adventuring_day != null and adventuring_day.trigger_button().text == "SR 400 · LR 1200",
+		"separate Adventuring Day trigger derives the active Party rest budget"
+	)
+	adventuring_day.open_popup()
+	_expect(
+		adventuring_day.snapshot().get("party_refresh_pending", false)
+		and adventuring_day.trigger_button().text == "Lädt …",
+		"opening Adventuring Day marks the prior Party budget non-final until refreshed readback"
+	)
+	var progress_mode := adventuring_day.find_child("AdventuringDayProgressMode", true, false) as Button
+	progress_mode.pressed.emit()
+	var total_xp := adventuring_day.find_child("AdventuringDayTotalXp", true, false) as LineEdit
+	total_xp.text = "1200"
+	total_xp.text_submitted.emit("1200")
+	for _attempt in 1200:
+		if adventuring_day.snapshot().get("calculation", {}).get("progress", {}).get("total_group_xp", -1) == 1_200:
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		adventuring_day.snapshot().get("mode", "") == "progress"
+		and adventuring_day.snapshot().get("calculation", {}).get("progress", {}).get("total_days", -1.0) == 1.0
+		and adventuring_day.find_child("AdventuringDayTimeline", true, false).get_child_count() == 3,
+		"Adventuring Day popup maps group XP to two Short Rests and one Long Rest"
+	)
+	var add_day_row := adventuring_day.find_child("AdventuringDayAddRow", true, false) as Button
+	add_day_row.pressed.emit()
+	for _attempt in 1200:
+		if not adventuring_day.snapshot().get("loading", true):
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		adventuring_day.snapshot().get("source", "") == "custom"
+		and adventuring_day.snapshot().get("rows", []).size() == 2
+		and party_top_bar.snapshot().get("summary", {}).get("roster_count", -1) == 2
+		and party_top_bar.snapshot().get("summary", {}).get("active_count", -1) == 1,
+		"custom Adventuring Day rows remain local and never mutate Party Roster truth"
+	)
+	var large_count := adventuring_day.find_child("AdventuringDayCount0", true, false) as LineEdit
+	large_count.text = "500"
+	large_count.text_submitted.emit("500")
+	for _attempt in 1200:
+		if adventuring_day.snapshot().get("calculation", {}).get("progress", {}).get("party_size", -1) == 501:
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		adventuring_day.snapshot().get("calculation", {}).get("ok", false)
+		and adventuring_day.snapshot().get("calculation", {}).get("progress", {}).get("party_size", -1) == 501
+		and party_top_bar.snapshot().get("summary", {}).get("active_count", -1) == 1,
+		"large counted custom cohorts calculate without expanding controls or mutating Party truth"
+	)
 	var active_list := party_top_bar.find_child("PartyActiveList", true, false) as VBoxContainer
 	var xp_button: Button
 	for button in active_list.find_children("", "Button", true, false):
@@ -450,10 +631,10 @@ func _run_party_roster_contract() -> void:
 		xp_button.pressed.emit()
 	for _attempt in 1200:
 		var active_rows: Array = party_top_bar.snapshot().get("active", [])
-		if not active_rows.is_empty() and active_rows[0].get("current_xp", -1) == 100:
+		if not active_rows.is_empty() and active_rows[0].get("current_xp", -1) == 1_000:
 			break
 		await create_timer(0.001).timeout
-	_expect(xp_clicked and party_top_bar.snapshot().get("active", [])[0].get("current_xp", -1) == 100, "Party top-bar XP action refreshes durable current-Party progress")
+	_expect(xp_clicked and party_top_bar.snapshot().get("active", [])[0].get("current_xp", -1) == 1_000, "Party top-bar XP action refreshes durable current-Party progress above the authored level floor")
 	var short_rest_button := party_top_bar.find_child("PartyShortRest", true, false) as Button
 	short_rest_button.pressed.emit()
 	for _attempt in 1200:
@@ -473,8 +654,9 @@ func _run_party_roster_contract() -> void:
 	_expect(
 		next_campaign.get("ok", false)
 		and party_top_bar.snapshot().get("summary", {}).get("roster_count", -1) == 0
-		and party_top_bar.trigger_button().text == "Keine aktuelle Party",
-		"successful Campaign transitions refresh the persistent Party trigger through the latest-wins read lane"
+		and party_top_bar.trigger_button().text == "Keine aktuelle Party"
+		and adventuring_day.trigger_button().text == "Kein Rastbudget",
+		"successful Campaign transitions refresh both persistent Party-owned top-bar triggers"
 	)
 	shell.queue_free()
 	commands.queue_free()

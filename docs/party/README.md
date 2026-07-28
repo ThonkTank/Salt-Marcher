@@ -8,7 +8,8 @@ Source of Truth: This document routes to the files below
 ## Purpose
 
 The party feature owns the Campaign Roster, its current-Party subset, character
-state, party persistence behavior, and the public backend boundary `PartyApi`.
+state, Adventuring-Day rules, party persistence behavior, and the public
+backend boundary `PartyApi`.
 
 ## Documentation Set
 

@@ -1,5 +1,10 @@
 # Adventuring Day Calculator
 
+Status: Active product requirement with native Godot implementation
+Owner: Party
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 ## Component Purpose
 
 The Adventuring Day calculator appears inside the Adventuring Day dropdown. It
@@ -12,6 +17,8 @@ Current state:
   output.
 - Active-party levels and calculated results come from the owning Party feature.
 - The calculator presentation does not define adventuring-day calculation rules.
+- Calculation runs off the scene-tree thread with one active and one latest
+  pending request; superseded work cannot publish over the newest input.
 
 ## Visible Surfaces
 
@@ -34,6 +41,9 @@ Current state:
 - Budget mode: daily thresholds and rest milestones are visible.
 - Progress mode: group XP produces day-progress, rest-count, and timeline
   output.
+- Invalid input: empty groups, out-of-range levels, non-positive counts,
+  negative XP, and values beyond exact numeric representation fail visibly
+  without changing Party state.
 
 ## Acceptance Criteria
 
@@ -47,6 +57,12 @@ Current state:
   rest-count, level-up summary, and timeline events
 - adventuring-day calculations come from the owning Party feature, while the
   calculator surface presents inputs and results without defining those rules
+- large timelines remain scrollable and presentation renders a bounded prefix
+  with an explicit remaining-event count rather than creating unbounded controls
+- counted level rows support large parties without expanding one calculation or
+  one UI control per character and without an arbitrary character-count cap
+- every result exposes the local `dnd5e-2014` profile, normalized inputs, and
+  applicable third/share rounding rules
 
 ## References
 

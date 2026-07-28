@@ -4,6 +4,7 @@ extends Control
 const CampaignDesk = preload("res://godot/src/ui/campaign_desk.gd")
 const CatalogWorkspace = preload("res://godot/src/ui/catalog_workspace.gd")
 const PartyTopBar = preload("res://godot/src/ui/party_top_bar.gd")
+const AdventuringDayTopBar = preload("res://godot/src/ui/adventuring_day_top_bar.gd")
 
 const NIGHT_INK := Color("#0a1114")
 const DEEP_SLATE := Color("#152a32")
@@ -70,10 +71,15 @@ func _ready() -> void:
 	var top_spacer := Control.new()
 	top_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	top_controls.add_child(top_spacer)
+	var adventuring_day_top_bar := AdventuringDayTopBar.new()
+	top_controls.add_child(adventuring_day_top_bar)
 	var party_top_bar := PartyTopBar.new()
 	party_top_bar.data_root = data_root
 	party_top_bar.runtime_coordinator = runtime_coordinator
 	top_controls.add_child(party_top_bar)
+	party_top_bar.snapshot_published.connect(adventuring_day_top_bar.apply_party_snapshot)
+	party_top_bar.snapshot_refresh_started.connect(adventuring_day_top_bar.mark_party_refreshing)
+	adventuring_day_top_bar.refresh_requested.connect(party_top_bar.refresh)
 
 	var content := Control.new()
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL

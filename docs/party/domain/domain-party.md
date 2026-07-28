@@ -99,7 +99,8 @@ Core invariants:
   being a separate write model
 - adventuring-day budget and progress calculations use party-owned level and
   rest-budget policies and are exposed through Party API read carriers; an
-  automatic calculation requiring level does not run with a missing level
+  automatic calculation requiring level does not run with a missing level;
+  budget thirds round positive halves up and equal XP shares round up
 - external mutation enters through the owning roster aggregate
 
 ## Consistency Model
@@ -120,6 +121,10 @@ sharing roster internals.
 - `PartyTravelLocation`: character travel target in a dungeon or overworld
   space.
 - `PartyRestType`: short-rest or long-rest roster transition.
+- `PartyAdventuringDayBudget`: level-derived daily XP budget and its two
+  Short-Rest milestones.
+- `PartyAdventuringDayProgress`: group-XP projection across full and partial
+  days, rests, and grouped level-up breakpoints.
 
 ## Architecture Constraints
 
@@ -138,10 +143,12 @@ sharing roster internals.
 The Godot owner now implements the pure Campaign Roster, current-Party subset,
 optional profile facts, XP/rest progression, character-owned travel payload,
 recoverable trash, and stable-identity restore. A native top-bar dropdown reads
-and mutates that owner partition asynchronously. Concrete travel commands,
-Scene participation, Adventuring Day UI/calculation, downstream Encounter
-refresh, and the final public `PartyApi` carrier cutover remain pending, so the
-legacy Java owner is not yet eligible for deletion.
+and mutates that owner partition asynchronously. Party-owned Adventuring-Day
+budget, cadence, multi-day progress, and level-up timeline rules now run through
+a cancellable latest-wins worker and a separate native top-bar calculator.
+Concrete travel commands, Scene participation, downstream Encounter refresh,
+and the final public `PartyApi` carrier cutover remain pending, so the legacy
+Java owner is not yet eligible for deletion.
 
 ## References
 
