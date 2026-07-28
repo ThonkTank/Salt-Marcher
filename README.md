@@ -34,16 +34,21 @@ partition with bounded search/detail, Creature-backed roster create/edit,
 recoverable trash/restore, and restart readback. The same owner now resolves
 complete ordered generated-intent batches from current Party/Creature facts,
 commits them atomically and idempotently, and hydrates current summaries in one
-ordered batch read. The free-form runtime Encounter builder, generated Session
-composition, initiative, and combat modes remain migration work. The native
+ordered batch read. The free-form runtime Encounter builder, initiative, and
+combat modes remain migration work. The native
 manual Session Planner already owns multiple Sessions, an independent planning
 Party, exact day and scene budgets, ordered scenes/rest gaps, saved Encounter
 and place links, and manual loot notes in one latest-wins master-detail workspace.
+That route now also runs the full versioned Session Generation catalog and
+deterministic encounter/reward pipeline off the scene-tree thread, publishes an
+immutable generation run, commits the concrete Encounter batch, replaces the
+exact Session revision, and rehydrates structured rewards with visible progress
+and cancellation.
 A compact Party top-bar dropdown now
 provides the active Campaign's Roster/current-Party foundation without adding a
 additional Party route. Its separate native Rastbudget trigger provides
-active/custom Adventuring-Day budgets and XP timelines; travel, generated
-preparation, visible Session-Planner acceptance, and legacy deletion remain
+active/custom Adventuring-Day budgets and XP timelines; travel, visible
+Session-Planner acceptance, and legacy deletion remain
 migration work.
 
 ## Quickstart

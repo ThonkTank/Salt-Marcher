@@ -1,5 +1,10 @@
 # Session Generation API And Persistence Contract
 
+Status: Active contract with implemented Godot version-1 owner format
+Owner: Session Generation
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 ## Owner And Consumers
 
 Session Generation owns this boundary and all stored generation-run truth.
@@ -7,9 +12,11 @@ Session Planner is the primary consumer. Only Session Generation writes its
 normalized run schema. Encounter consumes encounter intents only through the
 Session Planner preparation workflow and never writes generation storage.
 
-## Non-Blocking API
+## Non-Blocking Godot Boundary
 
-`SessionGenerationApi` exposes:
+The native feature exposes the following semantic operations through pure
+policies, one bounded preparation coordinator, and the admitted Campaign
+writer:
 
 ```text
 draft(GenerationRequest) -> GenerationDraftResponse
@@ -18,8 +25,9 @@ load(GenerationRunId) -> GenerationRunResponse
 loadRewards(GenerationRewardBatchQuery) -> GenerationRewardBatchResponse
 ```
 
-Every operation completes asynchronously and performs no file or SQLite work
-on the JavaFX thread.
+Drafting and foreign snapshot work run off the scene-tree thread. Campaign
+publication is ticketed through the serial runtime writer. No Godot path opens
+SQLite, JDBC, JavaFX, or the legacy owner.
 
 `GenerationRequest` contains one opaque preparation identity, ordered unique
 party-level counts, exact adventure-day fraction, optional encounter count, and
@@ -51,12 +59,12 @@ Commit is idempotent:
 - an existing identity with different content returns `IDENTITY_CONFLICT`
 - no consumer must load the just-committed run to continue the same workflow
 
-## Normalized Persistence
+## Structured File Persistence
 
-The persistence lifecycle owner key remains `session-generation`.
-Owner startup readiness validates the feature-declared target schema signature;
-semantic row validation remains on typed repository read/write paths and fails
-closed through this feature contract.
+The Campaign partition owner key is `session_generation`; its only current
+payload format is `saltmarcher.session-generation-runs.v1`. The partition is a
+checksummed immutable Campaign object selected by a later Campaign commit.
+Semantic validation remains on typed owner read/write paths and fails closed.
 
 The logical schema stores:
 
@@ -69,17 +77,20 @@ The logical schema stores:
 - ordered typed warnings and audits
 
 Every child uses the run identity plus generation-local identity and explicit
-ordering where order affects behavior. Exact decimals are lossless; money uses
-copper-piece units; enums use constrained canonical codes. Composite foreign
-keys prevent cross-run anchors and packing references.
+array order where order affects behavior. Exact fractions and capacities use
+fixed-point integer units; money uses copper-piece units; enums use constrained
+canonical codes. Owner validation prevents cross-run anchors and packing
+references.
 
-The schema MUST NOT store JSON aggregates, Java serialization, delimiter-packed
-records, copied catalog families, unselected candidate search space, or
-formatted text as the only representation of structured facts.
+The payload MUST NOT store Java serialization, delimiter-packed facts, copied
+catalog families, unselected candidate search space, or formatted text as the
+only representation of structured facts. JSON is the explicit typed native
+file representation, not an opaque aggregate hidden behind another schema.
 
-One run and all children insert in one transaction. A failure leaves no visible
-partial root. Load reconstructs typed values and fails on corrupt, orphaned,
-duplicate, unknown-enum, fingerprint-mismatched, or out-of-order rows.
+One run and all children enter one owner-partition candidate. A Campaign commit
+publishes that candidate atomically; a failure leaves no visible partial root.
+Load reconstructs normalized typed values and fails on corrupt, orphaned,
+duplicate, fingerprint-mismatched, or out-of-order content.
 
 ## Catalog Boundary
 
@@ -92,24 +103,22 @@ cross-references before one immutable snapshot is cached.
 Runs pin catalog version and content hash. Source URL and source-file hash are
 provenance and do not replace runtime artifact identity.
 
-## Precompletion Schema Lifecycle
+## Precompletion Format Lifecycle
 
 Before full feature completion there is no released Session Generation data to
-preserve. Owner startup creates the complete normalized schema directly as
-owner version `1`, only on an empty `session_generation_*` namespace, and
-validates the exact table, relationship, constraint, implicit-index, and
-owner-object inventory.
+preserve. The first write creates the complete version-1 partition directly
+from the exact empty payload. There are no native predecessor formats and no
+`session_generation_*` tables.
 
 Every current run stores a non-null content fingerprint. Reads validate that
 fingerprint against reconstructed typed rows; no predecessor row without the
 fingerprint is accepted and no fingerprint is derived as a compatibility
 fallback.
 
-Unversioned partial, predecessor, structurally damaged,
-adjacent-owner-object, and newer shapes fail closed unchanged. Startup performs
-no `ALTER`, repair, backfill, copy, drop, legacy write, or version claim. Such
-precompletion databases, proof-of-concept schemas, files, JSON shapes, Java
-carriers, and tables are discarded and recreated from the current product.
+Unversioned, partial, predecessor, structurally damaged, adjacent-owner, and
+newer shapes fail closed unchanged. Startup performs no repair, backfill,
+legacy read, dual write, or version claim. Precompletion Java/SQLite shapes are
+discarded rather than imported into this first native format.
 
 ## Diagnostics And Errors
 

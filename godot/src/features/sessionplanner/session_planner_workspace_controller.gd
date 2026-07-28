@@ -12,6 +12,7 @@ const PartyAdventuringDay = preload("res://godot/src/features/party/party_advent
 const EncounterPlanKnowledge = preload("res://godot/src/features/encounter/encounter_plan_knowledge.gd")
 const EncounterGenerationPolicy = preload("res://godot/src/features/encounter/encounter_generation_policy.gd")
 const WorldPlannerKnowledge = preload("res://godot/src/features/worldplanner/world_planner_knowledge.gd")
+const SessionGenerationRunKnowledge = preload("res://godot/src/features/sessiongeneration/session_generation_run_knowledge.gd")
 
 signal query_started(request: Dictionary)
 signal result_published(result: Dictionary)
@@ -122,7 +123,8 @@ func _project(store, campaign_state: Dictionary, registry_state: Dictionary, req
 	var party_read := _read_or_empty(store, campaign_state, PartyRoster.OWNER, PartyRoster.new().empty_payload())
 	var encounter_read := _read_or_empty(store, campaign_state, EncounterPlanKnowledge.OWNER, EncounterPlanKnowledge.new().empty_payload())
 	var world_read := _read_or_empty(store, campaign_state, WorldPlannerKnowledge.OWNER, WorldPlannerKnowledge.new().empty_payload())
-	for read in [session_read, party_read, encounter_read, world_read]:
+	var generation_read := _read_or_empty(store, campaign_state, SessionGenerationRunKnowledge.OWNER, SessionGenerationRunKnowledge.new().empty_payload())
+	for read in [session_read, party_read, encounter_read, world_read, generation_read]:
 		if not read.get("ok", false):
 			return read
 		if _cancelled_from_worker():
@@ -131,7 +133,8 @@ func _project(store, campaign_state: Dictionary, registry_state: Dictionary, req
 	var party_snapshot := PartyRoster.new().snapshot(party_read["payload"], "", false, 500, Callable(self, "_cancelled_from_worker"))
 	var encounter_validation := EncounterPlanKnowledge.new().validate_payload(encounter_read["payload"])
 	var world_validation := WorldPlannerKnowledge.new().validate_payload(world_read["payload"])
-	for validation in [session_snapshot, party_snapshot, encounter_validation, world_validation]:
+	var generation_validation := SessionGenerationRunKnowledge.new().validate_payload(generation_read["payload"])
+	for validation in [session_snapshot, party_snapshot, encounter_validation, world_validation, generation_validation]:
 		if not validation.get("ok", false):
 			return validation
 	var result := {
@@ -194,6 +197,16 @@ func _project(store, campaign_state: Dictionary, registry_state: Dictionary, req
 				for entry in summary_result["entries"]:
 					summaries[entry["requested_plan_id"]] = entry
 	var planned_xp := 0
+	var reward_details := {}
+	var reward_references: Array = []
+	for reward in current["generated_rewards"]:
+		reward_references.append({"run_id": reward["generation_id"], "treasure_id": int(reward["treasure_id"])})
+	if not reward_references.is_empty():
+		var reward_batch := SessionGenerationRunKnowledge.new().load_rewards(generation_validation["payload"], reward_references)
+		if reward_batch.get("ok", false):
+			for reward_detail in reward_batch["rewards"]:
+				var key := "%s|%d" % [reward_detail["run_id"], int(reward_detail["treasure"]["treasure_id"])]
+				reward_details[key] = reward_detail
 	for scene_value in current["scenes"]:
 		var scene: Dictionary = scene_value.duplicate(true)
 		var plan_id := str(scene["encounter_plan_id"])
@@ -203,6 +216,16 @@ func _project(store, campaign_state: Dictionary, registry_state: Dictionary, req
 		scene["encounter_status"] = "detached" if plan_id.is_empty() else str(summaries.get(plan_id, {}).get("status", "UNRESOLVABLE"))
 		scene["encounter_summary"] = summaries.get(plan_id, {}).get("summary", {}).duplicate(true)
 		scene["target_xp"] = int(round(float(result["budget"]["scaled_budget_xp"]) * int(scene["allocation_units"]) / SessionPlanKnowledge.ALLOCATION_TOTAL))
+		scene["generated_rewards"] = []
+		for reward in current["generated_rewards"]:
+			if reward["scene_id"] != scene["scene_id"]:
+				continue
+			var reward_key := "%s|%d" % [reward["generation_id"], int(reward["treasure_id"])]
+			scene["generated_rewards"].append({
+				"reference": reward.duplicate(true),
+				"status": "FOUND" if reward_details.has(reward_key) else "MISSING",
+				"detail": reward_details.get(reward_key, {}).duplicate(true),
+			})
 		if scene["encounter_status"] == "FOUND":
 			planned_xp += int(scene["encounter_summary"]["adjusted_xp"])
 		result["scenes"].append(scene)

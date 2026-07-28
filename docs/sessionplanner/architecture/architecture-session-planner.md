@@ -1,19 +1,20 @@
 # Session Planner Architecture
 
-Status: Active target with implemented Godot foundation
+Status: Active target with implemented Godot planning and generation workflow
 Owner: Session Planner
 Last Reviewed: 2026-07-28
 Source of Truth: This document owns Session Planner structure and quality decisions
 
 ## Objective
 
-The current Godot foundation publishes one coherent, editable manual-planning
+The current Godot route publishes one coherent, editable planning
 workspace with persistent Sessions, planning Party, exact budget allocation,
 ordered scenes, rest gaps, saved Encounter links, World Planner places, and
-manual loot notes. The remaining target adds one responsive preparation command
-that publishes concrete
+manual loot notes. One responsive preparation command now publishes concrete
 Encounter rosters, structured rewards, and one coherent editable workspace
-revision. Persistence is durable truth rather than in-process transport, and
+revision. Remaining work covers richer generated-output editing, owner-visible
+acceptance, weather/music preparation, and legacy deletion. Persistence is
+durable truth rather than in-process transport, and
 latency stays bounded by provider family rather than saved or generated row
 count.
 
@@ -30,12 +31,14 @@ This document owns structural and quality decisions for preparation and
 workspace publication. Product outcomes belong to requirements, write-model
 truth to domain documents, and payload or persistence semantics to contracts.
 
-## Target Topology
+## Current Topology
 
 ```text
 godot/src/features/sessionplanner/session_plan_knowledge.gd
 godot/src/features/sessionplanner/session_plan_command_controller.gd
 godot/src/features/sessionplanner/session_planner_workspace_controller.gd
+godot/src/features/sessionplanner/session_preparation_policy.gd
+godot/src/features/sessionplanner/session_preparation_coordinator.gd
 godot/src/ui/session_planner_workspace.gd
 ```
 
@@ -43,7 +46,8 @@ Session Planner is one Godot capability owner in the local modular monolith.
 It reads Party, Encounter, World Planner, and Shared Definition snapshots at
 explicit owner seams, stores only stable references, and publishes exactly one
 workspace snapshot to its production shell route. Session Generation joins the
-same boundary in the remaining preparation slice.
+same boundary only through the bounded preparation coordinator and reward
+projection.
 
 ## One Workspace State
 
@@ -116,18 +120,19 @@ dispatch and never combines sections from different revisions.
 
 ```text
 Godot Generate intent
-  -> SessionPlannerApi.prepareSession(command)
+  -> SessionPreparationCoordinator.start(command)
   -> capture plan revision + generation inputs + preparation identity
-  -> SessionGenerationApi.draft(request)
-  -> EncounterApi.prepareGeneratedBatch(batch)
-  -> validate PreparedSessionDraft
-  -> commit generation run || commit Encounter plan batch
-  -> replace SessionPlan references
+  -> pure Session Generation draft
+  -> EncounterGenerationPolicy.prepare_batch
+  -> SessionPreparationPolicy.assemble
+  -> commit immutable generation run
+  -> commit idempotent Encounter plan batch
+  -> revision-checked SessionPlan replacement
   -> assemble and publish one workspace revision
 ```
 
-The two foreign commits may run concurrently after complete in-memory
-validation. Session Planner commits only after both succeed. The preparation
+The two foreign commits run in a deterministic sequence after complete
+in-memory validation. Session Planner commits only after both succeed. The preparation
 identity is derived from session identity, source revision, normalized inputs,
 and seed; Session Generation and Encounter retain it with their content
 fingerprints. A planner write failure therefore leaves reusable immutable
@@ -202,8 +207,8 @@ The production route uses a quiet master-detail run sheet: a narrow ordered
 scene rail with one continuous brass track and rest gaps, plus one selected
 director sheet. The toolbar keeps Session selection, exact day fraction,
 planning Party, and scene creation compact. Saved-plan search belongs to the
-selected-scene inspector. The remaining Generate
-button and progress share the toolbar; there is no separate preparation card or
+selected-scene inspector. Generate, encounter count, seed, progress, and cancel
+share the toolbar; there is no separate preparation card or
 Apply control. Generated rewards use structured cards, while manual loot notes
 use a separate presentation type.
 
@@ -214,8 +219,8 @@ The hot path has bounded service calls:
 - one Party resolution read
 - one immutable Session Generation catalog snapshot per catalog version
 - one Encounter candidate batch read for all generated intents
-- one generation-run transaction and one Encounter-plan batch transaction
-- one Session Planner replacement transaction
+- one generation-run Campaign commit and one Encounter-plan batch Campaign commit
+- one Session Planner replacement Campaign commit
 - one batch workspace assembly after commit
 
 It forbids per-slot creature queries, per-creature detail reads, loading every
@@ -235,9 +240,8 @@ Measurable architecture targets are:
   Underlength search performs no chooser scan; valid search publishes at most
   eight hits plus overflow state, while attached summaries are joined in one
   batch independent of scene count
-- the remaining Session Generation reward hydration must use one bounded owner
-  read and reconstruct caller order, duplicates, and missing identities in
-  memory
+- Session Generation reward hydration uses one bounded owner read and
+  reconstructs caller order and missing identities in memory
 - the warmed reference workload is two level-3 and two level-4 participants,
   `0.6` adventure days, and three encounters over 20 runs; the complete editable
   publication must satisfy the 2-second p95 product target

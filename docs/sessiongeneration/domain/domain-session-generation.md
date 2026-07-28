@@ -1,5 +1,10 @@
 # Session Generation Domain Model
 
+Status: Active domain with implemented Godot version-1 run owner
+Owner: Session Generation
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 ## Context Role And Ownership
 
 Context Name: `SessionGeneration`
@@ -90,6 +95,11 @@ selected intents and candidate-coverage audits become run truth.
 One `GeneratedRun` and all of its owned values form one immutable consistency
 boundary. A run pins engine version, catalog version, and catalog content hash
 and remains self-contained after creation.
+
+In the native implementation that boundary is one validated
+`saltmarcher.session-generation-runs.v1` Campaign partition candidate. It is
+published through the serial Campaign writer only after all child values and
+hard audits pass. There is no update or partial-run state.
 
 ## Sources
 

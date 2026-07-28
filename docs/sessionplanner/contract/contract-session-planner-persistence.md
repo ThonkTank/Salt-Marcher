@@ -13,14 +13,14 @@ candidate off-thread and submits it through the admitted serial Campaign writer;
 `SessionPlanKnowledge` owns format and domain validation. Partition documents,
 file paths, checksums, and storage failures never become foreign feature truth.
 
-The Java/JavaFX/SQLite implementation remains migration-only legacy until the
-prepared-session workflow and visible owner acceptance complete. New Godot
+The Java/JavaFX/SQLite implementation remains migration-only legacy until
+visible owner acceptance and legacy deletion complete. New Godot
 writes do not read, repair, dual-write, or mirror that legacy store.
 
-## Remaining Final Prepared-Session Commit Operation
+## Implemented Final Prepared-Session Commit Operation
 
-The native manual planning commands are implemented. The following replacement
-operation remains the target for the later Session Generation cutover:
+The native manual planning commands and generated replacement operation are
+implemented:
 
 The application port exposes one final replacement operation:
 

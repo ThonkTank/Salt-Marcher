@@ -42,6 +42,12 @@ const AdventuringDayCalculationController = preload("res://godot/src/features/pa
 const AdventuringDayTopBar = preload("res://godot/src/ui/adventuring_day_top_bar.gd")
 const SessionPlanKnowledge = preload("res://godot/src/features/sessionplanner/session_plan_knowledge.gd")
 const SessionPlannerWorkspace = preload("res://godot/src/ui/session_planner_workspace.gd")
+const SessionPreparationPolicy = preload("res://godot/src/features/sessionplanner/session_preparation_policy.gd")
+const SessionPreparationCoordinator = preload("res://godot/src/features/sessionplanner/session_preparation_coordinator.gd")
+const SessionGenerationCatalog = preload("res://godot/src/features/sessiongeneration/session_generation_catalog.gd")
+const SessionGenerationEngine = preload("res://godot/src/features/sessiongeneration/session_generation_engine.gd")
+const SessionGenerationRewardPolicy = preload("res://godot/src/features/sessiongeneration/session_generation_reward_policy.gd")
+const SessionGenerationRunKnowledge = preload("res://godot/src/features/sessiongeneration/session_generation_run_knowledge.gd")
 const StorageCapacityGuard = preload("res://godot/src/platform/persistence/storage_capacity_guard.gd")
 const PlatformVolumeCapacityProbe = preload("res://godot/src/platform/persistence/platform_volume_capacity_probe.gd")
 
@@ -128,6 +134,8 @@ func _run_tests() -> void:
 	await _run_adventuring_day_contract()
 	await _run_party_roster_contract()
 	_run_session_plan_contract()
+	_run_session_generation_catalog_contract()
+	await _run_session_preparation_coordinator_contract()
 	await _run_world_planner_knowledge_contract()
 	_run_generated_encounter_batch_contract()
 	_run_encounter_plan_knowledge_contract()
@@ -485,6 +493,331 @@ func _run_session_plan_contract() -> void:
 	)
 
 
+func _run_session_generation_catalog_contract() -> void:
+	var catalog := SessionGenerationCatalog.new()
+	catalog.clear_cache_for_tests()
+	var loaded := catalog.load()
+	var snapshot: Dictionary = loaded.get("snapshot", {})
+	_expect(
+		loaded.get("ok", false)
+		and loaded.get("status", "") == "loaded"
+		and snapshot.get("catalog_version", "") == SessionGenerationCatalog.CATALOG_VERSION
+		and snapshot.get("content_hash", "") == "10e7b8c2f3d43c0868e2ce0c3bf8471b72ed4d5327fc633452e0245d32f416f6"
+		and snapshot.get("tables", {}).size() == 16,
+		"Session Generation validates the complete manifest inventory and canonical artifact hash"
+	)
+	_expect(
+		catalog.rows(snapshot, "DB_Progression.tsv").size() == 20
+		and catalog.rows(snapshot, "DB_EncounterRoleBands.tsv").size() == 680
+		and catalog.rows(snapshot, "DB_LootItems.tsv").size() > 600
+		and catalog.rows(snapshot, "DB_MagicCurses.tsv").size() == 300,
+		"Session Generation catalog exposes all validated rule families instead of a reduced fixture"
+	)
+	var cached := catalog.load()
+	_expect(cached.get("ok", false) and cached.get("status", "") == "cached", "validated Session Generation catalog snapshot is reused by content identity")
+	var engine := SessionGenerationEngine.new()
+	var golden := engine.generate_encounter_stage(
+		"preparation.golden",
+		[{"level": 3, "count": 2}, {"level": 4, "count": 2}],
+		6000,
+		3,
+		179974,
+		snapshot
+	)
+	var target_values: Array = []
+	for target in golden.get("encounter_targets", []):
+		target_values.append(int(target["target_xp"]))
+	_expect(
+		golden.get("ok", false)
+		and target_values == [680, 1000, 1800]
+		and golden.get("encounters", []).size() == 3
+		and golden.get("diagnostics", {}).get("candidate_count", 0) > 0,
+		"native Session Generation encounter stages preserve the Golden target vector and complete candidate coverage"
+	)
+	var repeated := engine.generate_encounter_stage(
+		"preparation.golden", [{"level": 3, "count": 2}, {"level": 4, "count": 2}], 6000, 3, 179974, snapshot
+	)
+	_expect(
+		repeated.get("encounters", []) == golden.get("encounters", [])
+		and repeated.get("session", {}) == golden.get("session", {}),
+		"native Session Generation encounter stages are deterministic for normalized input and catalog identity"
+	)
+	_expect(
+		not engine.validate_request("preparation.invalid", [{"level": 3, "count": 1}, {"level": 3, "count": 1}], 6000, 3, 1).get("ok", true),
+		"Session Generation rejects duplicate party-level rows before any catalog work"
+	)
+	var reward_policy := SessionGenerationRewardPolicy.new()
+	var completed := reward_policy.complete(golden, snapshot)
+	var completed_run: Dictionary = completed.get("run", {})
+	var repeated_completion := reward_policy.complete(repeated, snapshot)
+	var all_audits_pass := true
+	for audit in completed_run.get("audits", []):
+		all_audits_pass = all_audits_pass and audit.get("status", "") == "PASS"
+	_expect(
+		completed.get("ok", false)
+		and completed.get("status", "") == "SUCCESS"
+		and not str(completed_run.get("run_id", "")).is_empty()
+		and str(completed_run.get("content_fingerprint", "")).begins_with("v1:")
+		and completed_run.get("treasures", []).size() == int(completed_run.get("session", {}).get("treasure_count", -1)),
+		"native Session Generation completes the Golden run with immutable content identity"
+	)
+	_expect(
+		completed_run.get("loot", []).size() == completed_run.get("packing", []).size()
+		and completed_run.get("loot", []).size() > 0
+		and all_audits_pass
+		and not str(completed_run.get("formatted_text", "")).is_empty(),
+		"reward generation publishes structured loot only after packing and hard audits pass"
+	)
+	_expect(
+		repeated_completion.get("ok", false)
+		and repeated_completion.get("run", {}) == completed_run,
+		"the complete Session Generation result is deterministic for normalized input and catalog identity"
+	)
+	var cancel_probe := func() -> bool: return true
+	_expect(
+		reward_policy.complete(golden, snapshot, cancel_probe).get("status", "") == "CANCELLED",
+		"reward generation observes cancellation before publishing a partial result"
+	)
+	var run_store := SessionGenerationRunKnowledge.new()
+	var committed := run_store.commit_run(run_store.empty_payload(), completed_run)
+	var committed_payload: Dictionary = committed.get("payload", {})
+	var committed_again := run_store.commit_run(committed_payload, completed_run)
+	_expect(
+		committed.get("ok", false)
+		and committed.get("status", "") == "committed"
+		and committed_again.get("ok", false)
+		and committed_again.get("status", "") == "already_committed"
+		and committed_again.get("no_write", false),
+		"immutable Generation Run commit is idempotent without rewriting owner truth"
+	)
+	var json_round_trip = JSON.parse_string(JSON.stringify(committed_payload))
+	var reopened := run_store.load_run(json_round_trip, str(completed_run["run_id"]))
+	_expect(
+		reopened.get("ok", false)
+		and reopened.get("run", {}) == run_store.validate_run(completed_run).get("run", {}),
+		"saved and reopened Generation Run preserves normalized semantics across JSON numeric decoding"
+	)
+	var reward_references: Array = []
+	for index in range(completed_run["treasures"].size() - 1, -1, -1):
+		reward_references.append({"run_id": completed_run["run_id"], "treasure_id": completed_run["treasures"][index]["treasure_id"]})
+	var reward_batch := run_store.load_rewards(committed_payload, reward_references)
+	var reward_order: Array = []
+	for reward in reward_batch.get("rewards", []):
+		reward_order.append(int(reward["treasure"]["treasure_id"]))
+	var expected_reward_order: Array = []
+	for reference in reward_references:
+		expected_reward_order.append(int(reference["treasure_id"]))
+	_expect(
+		reward_batch.get("ok", false) and reward_order == expected_reward_order,
+		"Generation reward batch reads preserve unique request order"
+	)
+	var conflicting_run: Dictionary = completed_run.duplicate(true)
+	conflicting_run["formatted_text"] = str(conflicting_run["formatted_text"]) + "\nabweichend"
+	_expect(
+		run_store.commit_run(committed_payload, conflicting_run).get("status", "") == "IDENTITY_CONFLICT",
+		"one Generation Run identity cannot be rebound even when only excluded presentation text differs"
+	)
+	var preparation_policy := SessionPreparationPolicy.new()
+	var definitions: Array = []
+	var definition_keys := {}
+	for encounter in completed_run["encounters"]:
+		for block in encounter["blocks"]:
+			var key := "%s|%d" % [block["challenge_label"], block["unit_xp"]]
+			if definition_keys.has(key):
+				continue
+			definition_keys[key] = true
+			definitions.append(_generated_creature(
+				"creature.golden.%d" % definitions.size(),
+				"Golden Creature %d" % (definitions.size() + 1),
+				str(block["challenge_label"]), int(block["unit_xp"]), 40, 15, 1, 0
+			))
+	var encounter_policy := EncounterGenerationPolicy.new()
+	var prepared_batch_result := encounter_policy.prepare_batch(
+		preparation_policy.encounter_source(completed_run),
+		preparation_policy.encounter_intents(completed_run),
+		[3, 3, 4, 4],
+		definitions
+	)
+	var prepared_batch: Dictionary = prepared_batch_result.get("batch", {})
+	_expect(
+		prepared_batch_result.get("ok", false)
+		and prepared_batch.get("rosters", []).size() == completed_run["encounters"].size(),
+		"Session preparation translates every generated intent through the Encounter-owned resolver"
+	)
+	var session_model := SessionPlanKnowledge.new()
+	var session_created := session_model.create_session(
+		session_model.empty_payload(), "Golden Session", "session.golden", "2026-07-28T15:00:00Z"
+	)
+	var source_session: Dictionary = session_created.get("session", {})
+	var assembled := preparation_policy.assemble(source_session, completed_run, prepared_batch)
+	var prepared_session: Dictionary = assembled.get("prepared", {})
+	_expect(
+		assembled.get("ok", false)
+		and prepared_session.get("scenes", []).size() >= completed_run["encounters"].size()
+		and prepared_session.get("generated_rewards", []).size() == completed_run["treasures"].size(),
+		"complete preparation assembles encounter scenes and one stable reference for every generated reward"
+	)
+	var encounter_commit := EncounterPlanKnowledge.new().commit_generated_batch(
+		EncounterPlanKnowledge.new().empty_payload(), prepared_batch, "2026-07-28T15:00:01Z"
+	)
+	var session_commit := session_model.commit_prepared_session(
+		session_created.get("payload", {}), prepared_session, encounter_commit.get("mappings", []), "2026-07-28T15:00:02Z"
+	)
+	var prepared_record: Dictionary = session_commit.get("session", {})
+	var all_encounters_attached := true
+	for scene in prepared_record.get("scenes", []):
+		if int(scene.get("allocation_units", 0)) > 0:
+			all_encounters_attached = all_encounters_attached and not str(scene.get("encounter_plan_id", "")).is_empty()
+	_expect(
+		session_commit.get("ok", false)
+		and int(prepared_record.get("revision", 0)) == int(source_session.get("revision", 0)) + 1
+		and all_encounters_attached
+		and prepared_record.get("manual_loot_notes", [1]).is_empty(),
+		"final Session commit atomically replaces authored content only after generated runs and Encounter plans are durable"
+	)
+	var session_retry := session_model.commit_prepared_session(
+		session_commit.get("payload", {}), prepared_session, encounter_commit.get("mappings", []), "2026-07-28T15:00:03Z"
+	)
+	_expect(
+		session_retry.get("ok", false)
+		and session_retry.get("status", "") == "already_committed"
+		and session_retry.get("no_write", false),
+		"completed Session preparation retry is idempotent and does not duplicate scenes or rewards"
+	)
+
+
+func _run_session_preparation_coordinator_contract() -> void:
+	var data_root := "user://saltmarcher-session-preparation/%s" % Time.get_ticks_usec()
+	var registry := FileCampaignRegistry.new(data_root)
+	var catalog := SessionGenerationCatalog.new().load()
+	var catalog_reader := SessionGenerationCatalog.new()
+	var creature_definitions: Array = []
+	for row in catalog_reader.rows(catalog.get("snapshot", {}), "DB_CR.tsv"):
+		creature_definitions.append(_generated_creature(
+			"creature.session-generator.%03d" % creature_definitions.size(),
+			"Generator Creature %s" % row["CR_Label"],
+			str(row["CR_Label"]), catalog_reader.integer(row, "XP"), 50, 15, 1, 0
+		))
+	var definitions := SharedDefinitionStore.new(data_root)
+	var prepared_definitions := definitions.prepare_generation(0, creature_definitions)
+	var selected_definitions := registry.publish_shared_definitions_generation(
+		int(prepared_definitions.get("generation", -1)), 0
+	)
+	_expect(
+		catalog.get("ok", false) and prepared_definitions.get("ok", false) and selected_definitions.get("ok", false),
+		"Session preparation fixture publishes complete current Creature facts"
+	)
+	var created_campaign := registry.create_campaign("Session Preparation")
+	var campaign_id := str(created_campaign.get("campaign_id", ""))
+	var party_model := PartyRoster.new()
+	var party_payload := party_model.empty_payload()
+	var participant_ids: Array = []
+	for index in 4:
+		var participant_id := "pc.preparation.%d" % (index + 1)
+		participant_ids.append(participant_id)
+		party_payload = party_model.create_character(
+			party_payload, "Vorbereitung %d" % (index + 1),
+			{"level": 3 if index < 2 else 4}, participant_id,
+			"2026-07-28T16:00:%02dZ" % index
+		).get("payload", party_payload)
+	var session_model := SessionPlanKnowledge.new()
+	var session_created := session_model.create_session(
+		session_model.empty_payload(), "Generierte Nacht", "session.preparation", "2026-07-28T16:01:00Z"
+	)
+	var session_party := session_model.set_participants(
+		session_created.get("payload", {}), "session.preparation", 1, participant_ids
+	)
+	var session_days := session_model.set_encounter_days(
+		session_party.get("payload", {}), "session.preparation", 2, 6000
+	)
+	var store := FileCampaignStore.new(data_root, campaign_id)
+	var state := store.load_state()
+	var seeded := store.commit(
+		int(state.get("generation", 0)),
+		{PartyRoster.OWNER: party_payload, SessionPlanKnowledge.OWNER: session_days.get("payload", {})},
+		state.get("runtime", {})
+	)
+	_expect(seeded.get("ok", false), "Session preparation fixture seeds Party and exact source Session together")
+	var runtime_coordinator := CampaignRuntimeCoordinator.new(data_root, registry)
+	_expect(runtime_coordinator.open_durable_active().get("ok", false), "Session preparation opens one admitted Campaign writer")
+	var coordinator := SessionPreparationCoordinator.new(data_root, runtime_coordinator)
+	root.add_child(coordinator)
+	var stages: Array = []
+	var results: Array = []
+	var boundary_cancels: Array = []
+	coordinator.progress_changed.connect(func(stage: String, _message: String) -> void:
+		stages.append(stage)
+		if stage == "commit_session":
+			boundary_cancels.append(coordinator.cancel())
+	)
+	coordinator.completed.connect(func(result: Dictionary) -> void: results.append(result.duplicate(true)))
+	var started := coordinator.start("session.preparation", 3, 3, 179974)
+	for _attempt in 6000:
+		if not coordinator.busy() and results.size() == 1:
+			break
+		await create_timer(0.01).timeout
+	_expect(
+		started.get("ok", false)
+		and results.size() == 1
+		and results[0].get("ok", false)
+		and stages == ["preparing", "commit_run", "commit_encounters", "commit_session"]
+		and boundary_cancels.size() == 1
+		and boundary_cancels[0].get("status", "") == "point_of_no_return",
+		"Session preparation coordinator publishes ordered progress and completes all durable owner boundaries"
+	)
+	var durable_state := store.load_state()
+	var run_partition := store.read_partition(SessionGenerationRunKnowledge.OWNER, durable_state)
+	var encounter_partition := store.read_partition(EncounterPlanKnowledge.OWNER, durable_state)
+	var session_partition := store.read_partition(SessionPlanKnowledge.OWNER, durable_state)
+	var durable_session: Dictionary = session_partition.get("payload", {}).get("records", {}).get("session.preparation", {})
+	_expect(
+		run_partition.get("payload", {}).get("records", {}).size() == 1
+		and encounter_partition.get("payload", {}).get("records", {}).size() == 3
+		and int(durable_session.get("revision", 0)) == 4
+		and durable_session.get("generated_rewards", []).size() > 0
+		and durable_session.get("scenes", []).size() >= 3,
+		"successful generation makes the immutable run and complete Encounter batch durable before the prepared Session becomes visible"
+	)
+	var workspace_reader := SessionPlannerWorkspaceController.new(data_root)
+	root.add_child(workspace_reader)
+	var workspace_results: Array = []
+	workspace_reader.result_published.connect(func(result: Dictionary) -> void: workspace_results.append(result.duplicate(true)))
+	workspace_reader.query()
+	for _attempt in 1200:
+		if not workspace_reader.is_active() and workspace_results.size() == 1:
+			break
+		await create_timer(0.005).timeout
+	var hydrated_rewards := 0
+	var workspace_scenes: Array = [] if workspace_results.is_empty() else workspace_results[0].get("scenes", [])
+	for scene in workspace_scenes:
+		for reward in scene.get("generated_rewards", []):
+			if reward.get("status", "") == "FOUND" and not reward.get("detail", {}).get("loot", []).is_empty():
+				hydrated_rewards += 1
+	_expect(
+		hydrated_rewards == durable_session.get("generated_rewards", []).size(),
+		"Session Planner rehydrates every generated reward from Session Generation truth for visible scene detail"
+	)
+	workspace_reader.queue_free()
+	await process_frame
+	var cancellation_results: Array = []
+	coordinator.completed.connect(func(result: Dictionary) -> void: cancellation_results.append(result.duplicate(true)))
+	coordinator.start("session.preparation", 4, 3, 179975)
+	coordinator.cancel()
+	for _attempt in 1000:
+		if not coordinator.busy() and cancellation_results.size() == 1:
+			break
+		await create_timer(0.005).timeout
+	_expect(
+		cancellation_results.size() == 1
+		and cancellation_results[0].get("status", "") == "CANCELLED"
+		and coordinator.resource_snapshot().get("worker_handle_count", -1) == 0,
+		"cancelled Session preparation publishes no partial Session and releases its worker"
+	)
+	coordinator.queue_free()
+	await process_frame
+	runtime_coordinator.revoke_current()
+
+
 func _run_party_roster_contract() -> void:
 	var model := PartyRoster.new()
 	var payload := model.empty_payload()
@@ -675,8 +1008,12 @@ func _run_party_roster_contract() -> void:
 		session_workspace.snapshot().get("current", {}).get("name", "") == "Hafennacht"
 		and session_workspace.snapshot().get("scenes", []).size() == 1
 		and session_workspace.snapshot().get("participant_rows", []).size() == 1
-		and session_workspace.find_child("DirectorSheet", true, false) != null,
-		"production Session Planner creates a durable Session, scene, and independent planning Party through the visible route"
+		and session_workspace.find_child("DirectorSheet", true, false) != null
+		and session_workspace.find_child("GenerationEncounterCount", true, false) != null
+		and session_workspace.find_child("GenerationSeed", true, false) != null
+		and session_workspace.find_child("GenerateSession", true, false) != null
+		and session_workspace.find_child("CancelGeneration", true, false) != null,
+		"production Session Planner exposes durable manual planning plus explicit generation, seed, progress, and cancel controls"
 	)
 	shell.show_route("campaigns")
 	var party_top_bar := shell.find_child("PartyTrigger", true, false).get_parent() as PartyTopBar

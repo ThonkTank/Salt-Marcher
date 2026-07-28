@@ -10,6 +10,7 @@ const ALLOCATION_TOTAL := 1_000_000
 const DAY_UNITS_PER_DAY := 10_000
 const MAX_NAME_LENGTH := 160
 const MAX_TEXT_LENGTH := 20_000
+const SessionPreparationPolicy = preload("res://godot/src/features/sessionplanner/session_preparation_policy.gd")
 
 
 func empty_payload() -> Dictionary:
@@ -391,6 +392,54 @@ func set_rest(payload_value: Variant, session_id: String, expected_revision: int
 	)
 
 
+func commit_prepared_session(
+	payload_value: Variant,
+	prepared_value: Variant,
+	mappings_value: Variant,
+	now_utc: String = ""
+) -> Dictionary:
+	var payload_validation := validate_payload(payload_value)
+	if not payload_validation.get("ok", false):
+		return payload_validation
+	var finalized := SessionPreparationPolicy.new().finalize(prepared_value, mappings_value)
+	if not finalized.get("ok", false):
+		return finalized
+	var payload: Dictionary = payload_validation["payload"]
+	var session_id := str(finalized["session_id"])
+	if not payload["records"].has(session_id):
+		return {"ok": false, "status": "missing", "error": "Die vorbereitete Session fehlt inzwischen."}
+	var current: Dictionary = payload["records"][session_id]
+	if int(current["revision"]) == int(finalized["source_revision"]) + 1 and _same_prepared_content(current, finalized):
+		return _unchanged(payload, current, "already_committed")
+	if int(current["revision"]) != int(finalized["source_revision"]):
+		return {"ok": false, "status": "stale", "error": "Die Session wurde während der Vorbereitung geändert.", "actual_revision": current["revision"]}
+	var session: Dictionary = current.duplicate(true)
+	session["scenes"] = finalized["scenes"].duplicate(true)
+	session["rests"] = finalized["rests"].duplicate(true)
+	session["manual_loot_notes"] = finalized["manual_loot_notes"].duplicate(true)
+	session["generated_rewards"] = finalized["generated_rewards"].duplicate(true)
+	session["selected_scene_id"] = finalized["selected_scene_id"]
+	session["next_scene_number"] = finalized["scenes"].size() + 1
+	session["next_note_number"] = 1
+	session["revision"] = int(current["revision"]) + 1
+	session["updated_at_utc"] = now_utc if not now_utc.is_empty() else Time.get_datetime_string_from_system(true)
+	var next_payload: Dictionary = payload.duplicate(true)
+	var records: Dictionary = payload["records"].duplicate(true)
+	records[session_id] = session
+	next_payload["records"] = records
+	return _validated_change(next_payload, "prepared_committed", session)
+
+
+func _same_prepared_content(session: Dictionary, finalized: Dictionary) -> bool:
+	return (
+		session["scenes"] == finalized["scenes"]
+		and session["rests"] == finalized["rests"]
+		and session["manual_loot_notes"] == finalized["manual_loot_notes"]
+		and session["generated_rewards"] == finalized["generated_rewards"]
+		and session["selected_scene_id"] == finalized["selected_scene_id"]
+	)
+
+
 func add_loot_note(payload_value: Variant, session_id: String, expected_revision: int, scene_id: String, raw_text: String) -> Dictionary:
 	var text := raw_text.strip_edges()
 	if text.is_empty() or text.length() > MAX_TEXT_LENGTH:
@@ -599,11 +648,11 @@ func _validate_session(session_id: String, value: Variant) -> Dictionary:
 		note_ids[note_id] = true
 	var reward_keys := {}
 	for reward_value in session["generated_rewards"]:
-		if not reward_value is Dictionary:
+		if not reward_value is Dictionary or reward_value.size() != 4:
 			return _failure("Generierte Beutereferenz ist ungültig.")
 		var reward: Dictionary = reward_value
 		var key := "%s|%s" % [reward.get("generation_id", ""), reward.get("treasure_id", "")]
-		if not scene_ids.has(str(reward.get("scene_id", ""))) or not _valid_id(str(reward.get("generation_id", ""))) or not _valid_id(str(reward.get("treasure_id", ""))) or reward_keys.has(key):
+		if not scene_ids.has(str(reward.get("scene_id", ""))) or not _valid_id(str(reward.get("generation_id", ""))) or not _valid_id(str(reward.get("treasure_id", ""))) or str(reward.get("last_known_label", "")).strip_edges().is_empty() or str(reward.get("last_known_label", "")).length() > MAX_NAME_LENGTH or reward_keys.has(key):
 			return _failure("Generierte Beutereferenz besitzt ungültige Fachwerte.")
 		reward_keys[key] = true
 	return {"ok": true}

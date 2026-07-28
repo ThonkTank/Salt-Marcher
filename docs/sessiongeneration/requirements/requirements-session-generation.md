@@ -1,5 +1,10 @@
 # Session Generation Requirements
 
+Status: Active requirements with implemented native Godot generation journey
+Owner: Session Generation
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 ## Goal And Scope
 
 Given normalized party levels, an adventure-day fraction, optional encounter
@@ -11,6 +16,11 @@ equivalent to the result first presented for the same generation.
 Session Planner is the primary consumer. Encounter converts generated encounter
 intents into concrete rosters. Session Generation does not own UI, authored
 sessions, Party members, creature facts, or saved Encounter plans.
+
+The current Godot route implements the complete deterministic pipeline,
+immutable run commit, reward hydration, and Session Planner preparation
+journey. Java/SQLite remains migration-only legacy pending visible owner
+acceptance and capability deletion; it is not a second current implementation.
 
 ## User-Observable Result
 

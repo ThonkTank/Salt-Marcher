@@ -6,6 +6,7 @@ extends Control
 const SessionPlannerWorkspaceController = preload("res://godot/src/features/sessionplanner/session_planner_workspace_controller.gd")
 const SessionPlanCommandController = preload("res://godot/src/features/sessionplanner/session_plan_command_controller.gd")
 const SessionPlanKnowledge = preload("res://godot/src/features/sessionplanner/session_plan_knowledge.gd")
+const SessionPreparationCoordinator = preload("res://godot/src/features/sessionplanner/session_preparation_coordinator.gd")
 
 const INK := Color("#0a1114")
 const SLATE := Color("#152a32")
@@ -19,6 +20,7 @@ var data_root := "user://salt-marcher"
 var runtime_coordinator
 var _reader
 var _commands
+var _preparation
 var _snapshot: Dictionary = {}
 var _rendering := false
 var _draft_dirty := false
@@ -42,6 +44,11 @@ var _allocation: SpinBox
 var _encounter_search: LineEdit
 var _encounter_results: VBoxContainer
 var _loot_input: LineEdit
+var _generation_count: OptionButton
+var _generation_seed: SpinBox
+var _generate_button: Button
+var _cancel_generation_button: Button
+var _generation_dialog: ConfirmationDialog
 
 
 func _ready() -> void:
@@ -53,6 +60,10 @@ func _ready() -> void:
 	_commands.command_started.connect(func(_request: Dictionary) -> void: _set_busy(true))
 	_commands.command_completed.connect(_command_completed)
 	add_child(_commands)
+	_preparation = SessionPreparationCoordinator.new(data_root, runtime_coordinator)
+	_preparation.progress_changed.connect(_generation_progress)
+	_preparation.completed.connect(_generation_completed)
+	add_child(_preparation)
 	_build_surface()
 	refresh()
 
@@ -125,6 +136,41 @@ func _build_surface() -> void:
 	toolbar.add_child(_days)
 	_add_button(toolbar, "Planungsgruppe", _open_party_dialog, "PlanningParty")
 	_add_button(toolbar, "+ Szene", _add_scene, "AddScene")
+
+	var generation_bar := HBoxContainer.new()
+	generation_bar.add_theme_constant_override("separation", 8)
+	page.add_child(generation_bar)
+	var generation_label := Label.new()
+	generation_label.text = "SESSION VORBEREITEN"
+	generation_label.add_theme_color_override("font_color", BRASS)
+	generation_bar.add_child(generation_label)
+	var count_label := Label.new()
+	count_label.text = "Encounter"
+	count_label.add_theme_color_override("font_color", QUIET)
+	generation_bar.add_child(count_label)
+	_generation_count = OptionButton.new()
+	_generation_count.name = "GenerationEncounterCount"
+	_generation_count.add_item("Auto")
+	_generation_count.set_item_metadata(0, null)
+	for count in range(1, 11):
+		_generation_count.add_item(str(count))
+		_generation_count.set_item_metadata(count, count)
+	generation_bar.add_child(_generation_count)
+	var seed_label := Label.new()
+	seed_label.text = "Seed"
+	seed_label.add_theme_color_override("font_color", QUIET)
+	generation_bar.add_child(seed_label)
+	_generation_seed = SpinBox.new()
+	_generation_seed.name = "GenerationSeed"
+	_generation_seed.min_value = 0
+	_generation_seed.max_value = 2_147_483_647
+	_generation_seed.step = 1
+	_generation_seed.value = 179974
+	_generation_seed.custom_minimum_size = Vector2(150, 0)
+	generation_bar.add_child(_generation_seed)
+	_generate_button = _add_button(generation_bar, "Ablauf generieren", _request_generation, "GenerateSession")
+	_cancel_generation_button = _add_button(generation_bar, "Abbrechen", _cancel_generation, "CancelGeneration")
+	_cancel_generation_button.disabled = true
 
 	var state_bar := HBoxContainer.new()
 	page.add_child(state_bar)
@@ -209,6 +255,12 @@ func _build_dialogs() -> void:
 	_party_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(_party_list)
 	add_child(_party_dialog)
+	_generation_dialog = ConfirmationDialog.new()
+	_generation_dialog.name = "GenerationConfirmationDialog"
+	_generation_dialog.title = "Session vollständig vorbereiten?"
+	_generation_dialog.dialog_text = "Der generierte Ablauf ersetzt Szenen, Rastmarken und Beutenotizen dieser Revision. Die Planungsgruppe und der Session-Name bleiben erhalten."
+	_generation_dialog.confirmed.connect(_start_generation)
+	add_child(_generation_dialog)
 
 
 func _apply_snapshot(result: Dictionary) -> void:
@@ -250,6 +302,7 @@ func _apply_snapshot(result: Dictionary) -> void:
 	if not preserved_search.is_empty() and _encounter_search != null:
 		_encounter_search.text = preserved_search
 	_set_status("Bereit · Revision %d" % int(result.get("current", {}).get("revision", 0)), QUIET)
+	_set_busy(false)
 	_rendering = false
 
 
@@ -452,6 +505,11 @@ func _render_inspector() -> void:
 		more.add_theme_color_override("font_color", QUIET)
 		_encounter_results.add_child(more)
 
+	if not scene.get("generated_rewards", []).is_empty():
+		_inspector.add_child(_section_label("GENERIERTE BELOHNUNGEN"))
+		for reward_row in scene["generated_rewards"]:
+			_render_generated_reward(reward_row)
+		_inspector.add_child(HSeparator.new())
 	_inspector.add_child(_section_label("MANUELLE BEUTENOTIZEN"))
 	for note in _snapshot["current"].get("manual_loot_notes", []):
 		if note["scene_id"] != scene["scene_id"]:
@@ -635,6 +693,94 @@ func _update_loot(note_id: String, input: LineEdit) -> void:
 	_commands.update_loot_note(target["session_id"], target["revision"], _snapshot["selected_scene"]["scene_id"], note_id, input.text)
 
 
+func _request_generation() -> void:
+	if _snapshot.get("current", {}).is_empty() or _preparation.busy() or _commands.busy():
+		return
+	if _draft_dirty:
+		_set_status("Ungespeicherte Szenendetails zuerst speichern.", DANGER)
+		return
+	var current: Dictionary = _snapshot["current"]
+	if not current.get("scenes", []).is_empty() or not current.get("manual_loot_notes", []).is_empty() or not current.get("generated_rewards", []).is_empty():
+		_generation_dialog.popup_centered()
+	else:
+		_start_generation()
+
+
+func _start_generation() -> void:
+	var target := _target()
+	var count = _generation_count.get_item_metadata(_generation_count.selected)
+	var started: Dictionary = _preparation.start(target["session_id"], target["revision"], count, roundi(_generation_seed.value))
+	if not started.get("ok", false):
+		_set_status(str(started.get("error", "Vorbereitung konnte nicht starten.")), DANGER)
+		return
+	_set_busy(true)
+
+
+func _cancel_generation() -> void:
+	_preparation.cancel()
+	_set_busy(true)
+
+
+func _generation_progress(_stage: String, message: String) -> void:
+	_set_status(message, BRASS)
+	_set_busy(true)
+
+
+func _generation_completed(result: Dictionary) -> void:
+	_set_busy(false)
+	if result.get("ok", false):
+		_set_status("Ablauf vorbereitet · %d Szenen · %d Belohnungen" % [result.get("scene_count", 0), result.get("reward_count", 0)], BRASS)
+		refresh()
+	elif result.get("status", "") == "CANCELLED":
+		_set_status("Vorbereitung abgebrochen.", QUIET)
+	else:
+		_set_status(str(result.get("error", "Vorbereitung fehlgeschlagen.")), DANGER)
+		if result.get("status", "") in ["stale", "revoked"]:
+			refresh()
+
+
+func _render_generated_reward(row: Dictionary) -> void:
+	var reference: Dictionary = row.get("reference", {})
+	var card := PanelContainer.new()
+	card.add_theme_stylebox_override("panel", _panel_style(SLATE))
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 10)
+	margin.add_theme_constant_override("margin_right", 10)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	card.add_child(margin)
+	var body := VBoxContainer.new()
+	margin.add_child(body)
+	var label := Label.new()
+	label.text = str(reference.get("last_known_label", "Generierte Belohnung"))
+	label.add_theme_color_override("font_color", BRASS if row.get("status", "") == "FOUND" else DANGER)
+	body.add_child(label)
+	if row.get("status", "") != "FOUND":
+		var missing := Label.new()
+		missing.text = "Detail fehlt · Run %s · Treasure %s" % [reference.get("generation_id", ""), reference.get("treasure_id", "")]
+		missing.add_theme_color_override("font_color", DANGER)
+		body.add_child(missing)
+	else:
+		var detail: Dictionary = row["detail"]
+		var treasure: Dictionary = detail["treasure"]
+		var meta := Label.new()
+		meta.text = "%s · %s · Zielwert %d cp" % [treasure["channel"], treasure["theme"], treasure["target_cp"]]
+		meta.add_theme_color_override("font_color", QUIET)
+		body.add_child(meta)
+		var packing_by_line := {}
+		for packing in detail["packing"]:
+			packing_by_line[int(packing["line_id"])] = packing
+		for line in detail["loot"]:
+			var packing: Dictionary = packing_by_line.get(int(line["line_id"]), {})
+			var item := Label.new()
+			var container := str(packing.get("container_id", "none"))
+			item.text = "• %s%s" % [line["text"], "" if container == "none" else " · %s" % container]
+			item.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			item.add_theme_color_override("font_color", VELLUM)
+			body.add_child(item)
+	_inspector.add_child(card)
+
+
 func _command_completed(result: Dictionary) -> void:
 	_set_busy(false)
 	if result.get("ok", false):
@@ -656,6 +802,14 @@ func _target() -> Dictionary:
 func _set_busy(value: bool) -> void:
 	if _session_picker != null:
 		_session_picker.disabled = value
+	if _generate_button != null:
+		_generate_button.disabled = value or _snapshot.get("current", {}).is_empty() or _snapshot.get("budget", {}).get("status", "") != "ready"
+	if _cancel_generation_button != null:
+		_cancel_generation_button.disabled = not (_preparation != null and _preparation.cancellable())
+	if _generation_count != null:
+		_generation_count.disabled = value
+	if _generation_seed != null:
+		_generation_seed.editable = not value
 
 
 func _set_status(text: String, color: Color) -> void:

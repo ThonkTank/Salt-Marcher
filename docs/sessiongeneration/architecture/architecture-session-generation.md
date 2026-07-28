@@ -1,5 +1,10 @@
 # Session Generation Architecture
 
+Status: Active Godot architecture with implemented generation and preparation path
+Owner: Session Generation
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 ## Purpose
 
 Session Generation provides deterministic encounter-and-reward computation as
@@ -21,38 +26,44 @@ architecture quality targets. Observable result behavior belongs to
 requirements; run truth belongs to the domain; API and storage semantics belong
 to the contract.
 
-## Target Topology
+## Current Native Topology
 
 ```text
-features/sessiongeneration/api/
-features/sessiongeneration/domain/
-features/sessiongeneration/application/
-features/sessiongeneration/adapter/resource/
-features/sessiongeneration/adapter/sqlite/
-features/sessiongeneration/SessionGenerationFeature
+godot/src/features/sessiongeneration/
+  session_generation_catalog.gd
+  session_generation_engine.gd
+  session_generation_reward_policy.gd
+  session_generation_run_knowledge.gd
+  session_generation_run_command_controller.gd
+godot/src/features/sessionplanner/
+  session_preparation_policy.gd
+  session_preparation_coordinator.gd
 resources/sessiongeneration/
 ```
 
-`SessionGenerationFeature` receives bounded CPU execution, I/O execution,
-persistence, and local diagnostics from application composition. It publishes
-one `SessionGenerationApi` and no JavaFX or shell contribution.
+The Session Generation files remain UI-free. Session Planner owns the
+cross-owner coordinator and the only visible controls. Feature-neutral Campaign
+and Shared-Definition mechanisms provide storage and current creature facts;
+composition supplies the runtime writer. No JavaFX or second generation route
+is published.
 
 ## Runtime
 
 ```text
 Session Planner preparation
-  -> SessionGenerationApi.draft
+  -> SessionGenerationEngine + SessionGenerationRewardPolicy on one worker
   -> cached immutable catalog snapshot
-  -> pure staged GenerationEngine
-  -> GeneratedRunDraft in memory
-  -> SessionGenerationApi.commit
-  -> one atomic normalized write
+  -> complete generated run and prepared Encounter batch in memory
+  -> immutable Session Generation Campaign-partition commit
+  -> idempotent Encounter batch Campaign-partition commit
+  -> revision-checked Session replacement Campaign-partition commit
 ```
 
-The successful draft continues directly into Encounter drafting and Session
-Planner assembly. Commit adds durability once the full prepared session is
-valid. It never requires a save, reload, and equality comparison in the hot
-path.
+The complete draft continues directly into Encounter resolution and Session
+Planner assembly. The three owner commits are deliberately ordered rather than
+placed in a cross-owner transaction. A cancellation or final stale Session may
+leave valid immutable run/Encounter artifacts; retry reuses them by content
+identity and no compensation deletes foreign truth.
 
 ## Publication Semantics
 
@@ -75,43 +86,44 @@ resolution, packing, output, and audits. Each stage consumes immutable values
 and returns immutable values. The engine performs no API mapping, persistence,
 resource loading, clock access, diagnostics, or foreign-feature call.
 
-The application layer validates API input, obtains one already-validated
-catalog snapshot, invokes the engine on CPU execution, assigns stable run
-identity and content fingerprint after hard audits, and maps the result. The
-persistence adapter validates and writes the same semantic candidate; it does
-not rerun generation rules.
+The Session Planner coordinator validates the exact session revision and Party
+snapshot, obtains one validated catalog and one complete Creature snapshot,
+invokes the pure policies on a worker, then submits already-validated owner
+candidates through the serial Campaign writer. Persistence validation never
+reruns generation rules.
 
 ## Catalog Lifecycle
 
 One catalog artifact is validated and cached by `(catalogVersion,
 catalogContentHash)`. Concurrent requests share the immutable snapshot. Artifact
-loading runs once per version and never occurs inside a SQLite transaction.
+loading runs once per content identity and never occurs inside a Campaign
+commit.
 A failed refresh cannot replace the last valid snapshot for an already pinned
 version.
 
 ## Boundaries
 
-- API uses JDK and feature-neutral async values only.
-- Domain depends on no API, SQL, JavaFX, platform, or foreign feature.
-- Application depends inward on domain and outward on feature-owned ports.
-- Resource and SQLite adapters implement those ports and contain no generation
-  policy.
+- Pure generation code depends on no Node, file path, clock, UI, Campaign
+  writer, or foreign owner.
+- The run owner validates its complete versioned document and content identity.
+- The Session Planner coordinator alone reads foreign snapshots and sequences
+  owner publications.
 - Composition is the only construction point.
 - Session Generation does not call Session Planner, Party, Creatures, or
   Encounter.
 - Concrete creature selection remains Encounter-owned.
 
-Forbidden shortcuts include direct foreign database reads, Encounter
-repositories, JavaFX controls, shell service lookup, mutable global catalog
-state, JSON run persistence, opaque formatted-text output, and one monolithic
-generator method hiding stage boundaries.
+Forbidden shortcuts include direct foreign owner mutation, Java/SQLite reads,
+JavaFX controls, shell service lookup, mutable unversioned catalog state,
+opaque formatted-text-only output, and one monolithic generator method hiding
+stage boundaries.
 
 ## Execution And Performance
 
-Pure drafting runs on bounded CPU execution. Catalog and SQLite work run on I/O
-execution. Transactions contain only validation against prepared rows and
-database writes. Multiple independent generation drafts are not globally
-serialized; caller cancellation stops avoidable stage work.
+Pure drafting and file snapshot reads run on one bounded worker per visible
+preparation. Only confirmed owner publications enter the shared serial Campaign
+writer. Caller cancellation stops avoidable stages and never publishes a
+partial Session.
 
 The application publishes stage duration and candidate cardinality diagnostics
 without content. Separate engine and I/O measurements prevent slow persistence
@@ -119,14 +131,14 @@ from being misdiagnosed as generation cost.
 
 Measurable architecture targets are:
 
-- `draft` performs zero SQLite operations and runs generation only on bounded
-  CPU execution; catalog loading and all persistence run on I/O execution
-- requests are not globally serialized; parallelism is bounded by the supplied
-  executors and transactions contain no catalog load or generation search
+- drafting performs zero Campaign writes and never opens SQLite; catalog
+  loading and generation search stay outside Campaign commits
+- the visible coordinator admits one active preparation and exposes explicit
+  cancellation and stage progress
 - catalog validation happens at most once per catalog content identity before
   reuse of its immutable snapshot
-- commit, load, and reward hydration use query families bounded by operation,
-  never one query per encounter, treasure, item line, or packing row
+- commit, load, and reward hydration use complete owner partitions and one
+  ordered reward batch, never one file read per treasure, item, or packing row
 - the Golden input produces the same deterministic engine result, while the
   shared warmed three-Encounter reference workload records catalog, engine,
   commit, and reward-read stages separately and remains inside the Session
@@ -143,8 +155,8 @@ Chosen decisions:
   to named computation boundaries.
 - Draft and commit are separate operations so a complete prepared session can
   be validated before a run becomes durable.
-- Runs use normalized immutable persistence and idempotent content-checked
-  commit so structured rewards and reproducibility survive one rendering.
+- Runs use structured immutable file persistence and idempotent content-checked
+  commit so rewards and reproducibility survive restart and rendering.
 
 Rejected alternatives:
 
