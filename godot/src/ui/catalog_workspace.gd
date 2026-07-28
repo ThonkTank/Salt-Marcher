@@ -7,6 +7,7 @@ const WorldPlannerCommandController = preload("res://godot/src/features/worldpla
 const WorldPlannerDetailReadController = preload("res://godot/src/features/worldplanner/world_planner_detail_read_controller.gd")
 const WorldPlannerNarrativeThreads = preload("res://godot/src/ui/world_planner_narrative_threads.gd")
 const WorldPlannerReferencePicker = preload("res://godot/src/ui/world_planner_reference_picker.gd")
+const FactionInventoryEditor = preload("res://godot/src/ui/faction_inventory_editor.gd")
 const EncounterTableCommandController = preload("res://godot/src/features/encountertable/encounter_table_command_controller.gd")
 const EncounterTableDetailReadController = preload("res://godot/src/features/encountertable/encounter_table_detail_read_controller.gd")
 const EncounterTableEditorDialog = preload("res://godot/src/ui/encounter_table_editor_dialog.gd")
@@ -74,6 +75,7 @@ var _record_lifecycle: OptionButton
 var _record_npc_disposition: SpinBox
 var _faction_editor_fields: VBoxContainer
 var _record_faction_disposition: SpinBox
+var _faction_inventory_editor: FactionInventoryEditor
 var _place_editor_fields: VBoxContainer
 var _reference_picker: WorldPlannerReferencePicker
 var _reference_values: Dictionary = {}
@@ -377,12 +379,23 @@ func _build_record_dialogs() -> void:
 	_record_dialog = ConfirmationDialog.new()
 	_record_dialog.name = "CatalogRecordDialog"
 	_record_dialog.min_size = Vector2i(560, 620)
+	_record_dialog.max_size = Vector2i(620, 700)
 	_record_dialog.get_cancel_button().text = "Abbrechen"
 	_record_dialog.confirmed.connect(_on_record_dialog_confirmed)
 	add_child(_record_dialog)
+	var record_scroll := ScrollContainer.new()
+	record_scroll.name = "CatalogRecordScroll"
+	record_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	record_scroll.custom_minimum_size = Vector2(0, 550)
+	record_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	record_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_record_dialog.add_child(record_scroll)
+	var record_button_row := _record_dialog.get_ok_button().get_parent() as Control
+	record_button_row.z_index = 1
 	var fields := VBoxContainer.new()
+	fields.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	fields.add_theme_constant_override("separation", 8)
-	_record_dialog.add_child(fields)
+	record_scroll.add_child(fields)
 	var name_label := Label.new()
 	name_label.text = "Name"
 	fields.add_child(name_label)
@@ -395,10 +408,11 @@ func _build_record_dialogs() -> void:
 	fields.add_child(notes_label)
 	_record_notes = TextEdit.new()
 	_record_notes.name = "CatalogRecordNotes"
-	_record_notes.custom_minimum_size = Vector2(0, 100)
+	_record_notes.custom_minimum_size = Vector2(0, 82)
 	_record_notes.placeholder_text = "Was muss am Spieltisch schnell wieder auffindbar sein?"
 	fields.add_child(_record_notes)
 	_npc_editor_fields = VBoxContainer.new()
+	_npc_editor_fields.visible = false
 	_npc_editor_fields.add_theme_constant_override("separation", 8)
 	fields.add_child(_npc_editor_fields)
 	_record_appearance = _add_multiline_editor(_npc_editor_fields, "CatalogRecordAppearance", "Erscheinung · optional")
@@ -419,6 +433,7 @@ func _build_record_dialogs() -> void:
 	_npc_editor_fields.add_child(_record_lifecycle)
 	_record_npc_disposition = _add_disposition_editor(_npc_editor_fields, "CatalogRecordNpcDisposition")
 	_faction_editor_fields = VBoxContainer.new()
+	_faction_editor_fields.visible = false
 	_faction_editor_fields.add_theme_constant_override("separation", 8)
 	fields.add_child(_faction_editor_fields)
 	_record_faction_disposition = _add_disposition_editor(_faction_editor_fields, "CatalogRecordFactionDisposition")
@@ -429,7 +444,11 @@ func _build_record_dialogs() -> void:
 		"encounter_table",
 		false
 	)
+	_faction_inventory_editor = FactionInventoryEditor.new()
+	_faction_inventory_editor.choose_requested.connect(_open_faction_inventory_picker)
+	_faction_editor_fields.add_child(_faction_inventory_editor)
 	_place_editor_fields = VBoxContainer.new()
+	_place_editor_fields.visible = false
 	_place_editor_fields.add_theme_constant_override("separation", 8)
 	fields.add_child(_place_editor_fields)
 	_add_reference_editor(_place_editor_fields, "Verknüpfte Fraktionen", "faction_ids", "faction", true)
@@ -660,8 +679,10 @@ func _on_detail_result_published(result: Dictionary) -> void:
 		"record_id": record_id,
 		"record": record,
 		"deleted": bool(result.get("deleted", false)),
+		"inventory_labels": result.get("inventory_labels", {}).duplicate(true),
+		"missing_inventory_definition_ids": result.get("missing_inventory_definition_ids", []).duplicate(),
 	}
-	_detail.text = _format_worldplanner_detail(record)
+	_detail.text = _format_worldplanner_detail(record, _selected_detail["inventory_labels"])
 	var deleted := bool(_selected_detail["deleted"])
 	_edit_button.disabled = _any_command_busy() or deleted
 	_lifecycle_button.visible = record.get("kind", "") == "npc" and not deleted
@@ -903,7 +924,9 @@ func _on_create_requested() -> void:
 	_record_name.text = ""
 	_record_notes.text = ""
 	_prepare_typed_editor({}, _dialog_kind)
-	_record_dialog.popup_centered()
+	_record_dialog.reset_size()
+	_record_dialog.size = Vector2i(560, 620)
+	_record_dialog.popup_centered(Vector2i(560, 620))
 	_record_name.grab_focus()
 
 
@@ -927,7 +950,9 @@ func _on_edit_requested() -> void:
 	_record_name.text = str(record["name"])
 	_record_notes.text = str(record.get("notes", ""))
 	_prepare_typed_editor(record, _dialog_kind)
-	_record_dialog.popup_centered()
+	_record_dialog.reset_size()
+	_record_dialog.size = Vector2i(560, 620)
+	_record_dialog.popup_centered(Vector2i(560, 620))
 	_record_name.grab_focus()
 
 
@@ -947,6 +972,7 @@ func _on_record_dialog_confirmed() -> void:
 	elif _dialog_kind == "faction":
 		fields["disposition_base"] = int(_record_faction_disposition.value)
 		fields["primary_encounter_table_id"] = _single_reference("primary_encounter_table_id")
+		fields["inventory_limits"] = _faction_inventory_editor.inventory_limits()
 	elif _dialog_kind == "place":
 		fields["faction_ids"] = _reference_values.get("faction_ids", []).duplicate()
 		fields["encounter_table_ids"] = _reference_values.get("encounter_table_ids", []).duplicate()
@@ -1082,6 +1108,10 @@ func _prepare_typed_editor(record: Dictionary, kind: String) -> void:
 		_reference_values["primary_encounter_table_id"] = _as_reference_array(
 			record.get("primary_encounter_table_id", "")
 		)
+		_faction_inventory_editor.set_inventory(
+			record.get("inventory_limits", {}),
+			_selected_detail.get("inventory_labels", {})
+		)
 	elif kind == "place":
 		_reference_values["faction_ids"] = record.get("faction_ids", []).duplicate()
 		_reference_values["encounter_table_ids"] = record.get("encounter_table_ids", []).duplicate()
@@ -1098,7 +1128,23 @@ func _open_reference_picker(field_key: String, label_text: String, kind: String,
 	)
 
 
+func _open_faction_inventory_picker(selected_ids: Array) -> void:
+	_reference_picker.open_picker(
+		"inventory_limits",
+		"Finite Monsterbestände auswählen",
+		"creature",
+		selected_ids,
+		true
+	)
+
+
 func _on_references_selected(field_key: String, reference_ids: Array) -> void:
+	if field_key == "inventory_limits":
+		_faction_inventory_editor.apply_selection(
+			reference_ids,
+			Callable(_reference_picker, "reference_label")
+		)
+		return
 	_reference_values[field_key] = reference_ids.duplicate()
 	_render_reference_summaries()
 
@@ -1318,7 +1364,7 @@ func _format_encounter_table_detail(record: Dictionary, entry_labels: Dictionary
 	return "\n".join(lines)
 
 
-func _format_worldplanner_detail(record: Dictionary) -> String:
+func _format_worldplanner_detail(record: Dictionary, inventory_labels: Dictionary = {}) -> String:
 	var lines: Array[String] = [
 		"[font_size=22]%s[/font_size]" % _escape_bbcode(str(record["name"])),
 		_escape_bbcode(str(record["record_id"])),
@@ -1338,7 +1384,7 @@ func _format_worldplanner_detail(record: Dictionary) -> String:
 		"faction":
 			lines.append("Fraktion · Disposition %s" % _signed_number(int(record["disposition_base"])))
 			lines.append("Primäre Encounter-Tabelle: %s" % _display_reference(str(record["primary_encounter_table_id"])))
-			lines.append("Inventarlimits: %s" % _format_inventory(record["inventory_limits"]))
+			lines.append("Inventarlimits: %s" % _format_inventory(record["inventory_limits"], inventory_labels))
 		"place":
 			lines.append("Ort")
 			lines.append("Fraktionen: %s" % _format_references(record["faction_ids"]))
@@ -1368,7 +1414,7 @@ func _format_references(values: Array) -> String:
 	return ", ".join(rendered)
 
 
-func _format_inventory(value: Dictionary) -> String:
+func _format_inventory(value: Dictionary, labels: Dictionary = {}) -> String:
 	if value.is_empty():
 		return "unbegrenzt"
 	var keys: Array = value.keys()
@@ -1376,7 +1422,8 @@ func _format_inventory(value: Dictionary) -> String:
 	var rendered := PackedStringArray()
 	for key in keys:
 		var limit = value[key]
-		rendered.append("%s: %s" % [_escape_bbcode(str(key)), "unbegrenzt" if limit == null else str(limit)])
+		var display_name := str(labels.get(key, key))
+		rendered.append("%s: %s" % [_escape_bbcode(display_name), "unbegrenzt" if limit == null else str(int(limit))])
 	return ", ".join(rendered)
 
 

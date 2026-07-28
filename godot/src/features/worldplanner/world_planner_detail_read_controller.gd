@@ -5,6 +5,7 @@ extends Node
 
 const FileCampaignRegistry = preload("res://godot/src/platform/persistence/file_campaign_registry.gd")
 const FileCampaignStore = preload("res://godot/src/platform/persistence/file_campaign_store.gd")
+const SharedDefinitionStore = preload("res://godot/src/platform/persistence/shared_definition_store.gd")
 const WorldPlannerKnowledge = preload("res://godot/src/features/worldplanner/world_planner_knowledge.gd")
 
 signal query_started(request: Dictionary)
@@ -110,12 +111,24 @@ func _run_query(request: Dictionary) -> void:
 					bool(request["include_deleted"]),
 					Callable(self, "_cancelled_from_worker")
 				)
+				if result.get("ok", false) and result.get("record", {}).get("kind", "") == "faction":
+					var inventory_labels := _resolve_inventory_labels(
+						result["record"],
+						int(registry_state.get("shared_definitions_generation", 0))
+					)
+					if not inventory_labels.get("ok", false):
+						result = inventory_labels
+					else:
+						result["inventory_labels"] = inventory_labels["labels"]
+						result["missing_inventory_definition_ids"] = inventory_labels["missing_definition_ids"]
 				if result.get("ok", false):
 					var confirmed: Dictionary = registry.load_state()
 					if (
 						not confirmed.get("ok", false)
 						or confirmed.get("active_campaign_id", "") != campaign_id
 						or int(confirmed.get("generation", -1)) != int(registry_state.get("generation", -2))
+						or int(confirmed.get("shared_definitions_generation", -1))
+						!= int(registry_state.get("shared_definitions_generation", -2))
 					):
 						result = {"ok": false, "status": "stale", "error": "Die aktive Campaign änderte sich während der Detailabfrage."}
 					else:
@@ -124,6 +137,22 @@ func _run_query(request: Dictionary) -> void:
 	result["epoch"] = request["epoch"]
 	result["request"] = request.duplicate(true)
 	call_deferred("_finish_on_main", result)
+
+
+func _resolve_inventory_labels(record: Dictionary, generation: int) -> Dictionary:
+	var creature_ids: Array = record.get("inventory_limits", {}).keys()
+	var labels := SharedDefinitionStore.new(_data_root).reference_labels(
+		creature_ids,
+		generation,
+		"creature",
+		Callable(self, "_cancelled_from_worker")
+	)
+	if not labels.get("ok", false):
+		return labels
+	for creature_id_value in labels.get("missing_definition_ids", []):
+		var creature_id := str(creature_id_value)
+		labels["labels"][creature_id] = "%s · Referenz fehlt" % creature_id
+	return labels
 
 
 func _cancelled_from_worker() -> bool:

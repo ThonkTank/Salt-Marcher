@@ -104,12 +104,16 @@ same identity and reattaches only surviving relationships that are still free.
 
 The visible Inspector reads every documented optional NPC, faction, and place
 field. Its editor owns name/general notes, NPC appearance/behavior/history,
-NPC lifecycle and disposition, and faction disposition. Lifecycle change is an
-explicit confirmed command and keeps stable selection. Creature and internal
+NPC lifecycle and disposition, faction disposition, and the faction's finite
+Creature stock limits. Lifecycle change is an explicit confirmed command and
+keeps stable selection. Creature and internal
 relationship pickers now cover NPC Creature statblock, faction, last place, and
 place-faction links without raw ID entry. They also cover a faction's primary
 Encounter Table and a place's Encounter Table set through the separate
-provider. Faction inventory editing and destination handoffs remain pending.
+provider. The faction-stock ledger resolves current Creature names, preserves
+only stable IDs plus mathematical integer limits in World Planner truth,
+materializes at most eight rows per dialog page, and removes a finite exception
+through the explicit `Unbegrenzt` action. Destination handoffs remain pending.
 The legacy Java owner is not deleted until that parity, acceptance, and
 deletion gate are complete.
 

@@ -1828,7 +1828,10 @@ func _run_catalog_foundation_contract() -> void:
 		world_payload,
 		"faction",
 		"Hafenrat",
-		{"primary_encounter_table_id": "encounter_table.harbor-patrol"},
+		{
+			"primary_encounter_table_id": "encounter_table.harbor-patrol",
+			"inventory_limits": {"creature.wolf": 3},
+		},
 		"faction.harbor",
 		"2026-07-28T11:00:00Z"
 	).get("payload", world_payload)
@@ -2845,10 +2848,87 @@ func _run_catalog_foundation_contract() -> void:
 		await create_timer(0.001).timeout
 	_expect(
 		catalog.detail_snapshot().get("record", {}).get("primary_encounter_table_id", "")
-		== "encounter_table.harbor-patrol",
-		"faction detail reads its existing primary Encounter Table reference"
+		== "encounter_table.harbor-patrol"
+		and catalog.detail_snapshot().get("record", {}).get("inventory_limits", {}).get("creature.wolf", -1) == 3
+		and catalog.detail_snapshot().get("inventory_labels", {}).get("creature.wolf", "") == "Wolf",
+		"faction detail reads its Encounter Table reference and hydrates finite stock names through the Creature provider"
 	)
 	edit_button.pressed.emit()
+	var record_scroll := catalog.find_child("CatalogRecordScroll", true, false) as ScrollContainer
+	_expect(
+		record_dialog.size.y <= 700
+		and record_scroll != null
+		and record_dialog.get_ok_button().visible
+		and record_dialog.get_cancel_button().visible,
+		"World Planner record editor stays window-bounded with persistent confirmation controls"
+	)
+	var inventory_editor := catalog.find_child("FactionInventoryEditor", true, false)
+	var inventory_rows := inventory_editor.find_child("FactionInventoryRows", true, false) as VBoxContainer
+	_expect(
+		inventory_editor.snapshot().get("limits", {}).get("creature.wolf", -1) == 3
+		and inventory_rows.get_child_count() == 1,
+		"faction editor opens the exact persisted finite-stock ledger without copying Creature facts"
+	)
+	var large_inventory := {}
+	var large_inventory_labels := {}
+	for inventory_index in range(17):
+		var inventory_id := "creature.stock.%02d" % inventory_index
+		large_inventory[inventory_id] = inventory_index
+		large_inventory_labels[inventory_id] = "Bestand %02d" % inventory_index
+	inventory_editor.set_inventory(large_inventory, large_inventory_labels)
+	var inventory_next := inventory_editor.find_child("FactionInventoryNext", true, false) as Button
+	_expect(
+		inventory_editor.snapshot().get("limits", {}).size() == 17
+		and inventory_editor.snapshot().get("materialized_row_count", -1) == 8
+		and inventory_next.visible,
+		"faction stock retains a larger authored ledger while materializing only eight dialog rows"
+	)
+	inventory_next.pressed.emit()
+	_expect(
+		inventory_editor.snapshot().get("page", -1) == 1
+		and inventory_editor.snapshot().get("materialized_row_count", -1) == 8,
+		"faction stock paging replaces the visible ledger page without constructing hidden rows"
+	)
+	inventory_editor.set_inventory({"creature.wolf": 3}, {"creature.wolf": "Wolf"})
+	var choose_inventory_creatures := inventory_editor.find_child("FactionInventoryChooseCreatures", true, false) as Button
+	choose_inventory_creatures.pressed.emit()
+	for _attempt in 600:
+		if reference_picker.snapshot().get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	picker_search.text = "worg"
+	picker_search.text_changed.emit(picker_search.text)
+	picker_search.text_submitted.emit(picker_search.text)
+	for _attempt in 600:
+		if reference_picker.snapshot().get("status", "") == "ready" and reference_picker.snapshot().get("rows", []).size() == 1:
+			break
+		await create_timer(0.001).timeout
+	picker_results = reference_picker.find_child("ReferencePickerResults", true, false) as VBoxContainer
+	var inventory_creature_choice := picker_results.find_child("ReferencePickerChoice", true, false) as CheckButton
+	_expect(
+		inventory_creature_choice != null and inventory_creature_choice.text.contains("Worg"),
+		"finite faction stock selects Creature-owned statblocks through the bounded provider picker"
+	)
+	if inventory_creature_choice != null:
+		inventory_creature_choice.toggled.emit(true)
+	reference_picker.confirmed.emit()
+	reference_picker.hide()
+	var inventory_limit_controls := inventory_rows.find_children("FactionInventoryLimit", "SpinBox", true, false)
+	var unlimited_controls := inventory_rows.find_children("FactionInventoryUnlimited", "Button", true, false)
+	for limit_control in inventory_limit_controls:
+		var limit_identity := limit_control.get_parent().get_child(0) as Label
+		if limit_identity.text.contains("Worg"):
+			limit_control.value = 4
+			limit_control.value_changed.emit(4)
+	for unlimited_control in unlimited_controls:
+		var unlimited_identity := unlimited_control.get_parent().get_child(0) as Label
+		if unlimited_identity.text.contains("Wolf"):
+			unlimited_control.pressed.emit()
+			break
+	_expect(
+		inventory_editor.snapshot().get("limits", {}) == {"creature.worg": 4},
+		"Unbegrenzt removes only the selected finite exception while retaining other authored stock"
+	)
 	var choose_primary_table := catalog.find_child("CatalogReferenceChoosePrimaryEncounterTableId", true, false) as Button
 	choose_primary_table.pressed.emit()
 	for _attempt in 600:
@@ -2865,8 +2945,11 @@ func _run_catalog_foundation_contract() -> void:
 			break
 		await create_timer(0.001).timeout
 	_expect(
-		catalog.detail_snapshot().get("record", {}).get("primary_encounter_table_id", "pending").is_empty(),
-		"single-reference picker explicitly clears a faction's primary Encounter Table"
+		catalog.detail_snapshot().get("record", {}).get("primary_encounter_table_id", "pending").is_empty()
+		and int(catalog.detail_snapshot().get("record", {}).get("inventory_limits", {}).get("creature.worg", -1)) == 4
+		and catalog.detail_snapshot().get("record", {}).get("inventory_limits", {}).size() == 1
+		and catalog.detail_snapshot().get("inventory_labels", {}).get("creature.worg", "") == "Worg",
+		"faction edit atomically clears its primary table and persists provider-selected finite stock"
 	)
 	edit_button.pressed.emit()
 	choose_primary_table.pressed.emit()
@@ -2895,8 +2978,10 @@ func _run_catalog_foundation_contract() -> void:
 		await create_timer(0.001).timeout
 	_expect(
 		catalog.detail_snapshot().get("record", {}).get("primary_encounter_table_id", "")
-		== "encounter_table.harbor-patrol",
-		"faction editor restores its primary Encounter Table through provider selection"
+		== "encounter_table.harbor-patrol"
+		and int(catalog.detail_snapshot().get("record", {}).get("inventory_limits", {}).get("creature.worg", -1)) == 4
+		and catalog.detail_snapshot().get("record", {}).get("inventory_limits", {}).size() == 1,
+		"faction editor restores its primary Encounter Table without losing finite stock"
 	)
 	var encounter_selection := catalog.select_section("encounters")
 	_expect(encounter_selection.get("status", "") == "selected", "native Katalog routes saved Encounters to their Campaign-owned provider")
@@ -3101,6 +3186,22 @@ func _run_catalog_foundation_contract() -> void:
 		restarted_catalog.section_snapshot("encounters").get("total", -1) == 2,
 		"Campaign-owned saved Encounters survive complete Catalog scene reconstruction"
 	)
+	restarted_catalog.select_section("factions")
+	for _attempt in 600:
+		if restarted_catalog.section_snapshot("factions").get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	restarted_catalog.call("_select_row", restarted_catalog.section_snapshot("factions").get("rows", [])[0])
+	for _attempt in 600:
+		if restarted_catalog.detail_snapshot().get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		int(restarted_catalog.detail_snapshot().get("record", {}).get("inventory_limits", {}).get("creature.worg", -1)) == 4
+		and restarted_catalog.detail_snapshot().get("record", {}).get("inventory_limits", {}).size() == 1
+		and restarted_catalog.detail_snapshot().get("inventory_labels", {}).get("creature.worg", "") == "Worg",
+		"faction finite stock and current Creature label survive complete Catalog reconstruction"
+	)
 	restarted_shell.queue_free()
 	await process_frame
 	await process_frame
@@ -3215,6 +3316,11 @@ func _run_world_planner_knowledge_contract() -> void:
 	_expect(
 		not model.update_record(payload, "quest.tide-bell", {"rewards": [{"kind": "xp", "amount": 0}]}).get("ok", true),
 		"narrative reward storage rejects non-positive quantities before publication"
+	)
+	_expect(
+		not model.update_record(payload, "faction.harbor", {"inventory_limits": {"creature.wolf": -1}}).get("ok", true)
+		and not model.update_record(payload, "faction.harbor", {"inventory_limits": {"creature.wolf": 1.5}}).get("ok", true),
+		"faction stock rejects negative and non-integral finite limits without a replacement payload"
 	)
 	var trashed := model.trash_record(payload, "faction.harbor", "2026-07-28T10:00:08Z")
 	var trashed_payload: Dictionary = trashed.get("payload", {})

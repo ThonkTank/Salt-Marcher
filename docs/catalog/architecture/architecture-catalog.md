@@ -85,6 +85,12 @@ request, displays name and stable identity, and publishes no relationship
 until the enclosing record edit is explicitly confirmed. It never materializes
 an unbounded option list or accepts raw foreign IDs as user input.
 
+Faction editing reuses that Creature provider for a bounded stock ledger.
+Catalog renders current Creature names and finite non-negative limits, while
+World Planner persists only stable Creature IDs and the authored limits. An
+omitted row means unlimited stock; the explicit `Unbegrenzt` action removes
+that one finite exception before the enclosing faction edit is confirmed.
+
 Encounter Table owns a separate serial create/update/trash/restore command lane
 and latest-wins active/trash detail lane. Its editor composes the same bounded
 Creature picker, then presents selected identities as a weighted ledger with
