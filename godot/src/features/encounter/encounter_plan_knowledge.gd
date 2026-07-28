@@ -8,6 +8,7 @@ const OWNER := "encounter"
 const KIND := "encounter_plan"
 const MAX_NAME_LENGTH := 160
 const MAX_PAGE_SIZE := 200
+const EncounterGenerationPolicy = preload("res://godot/src/features/encounter/encounter_generation_policy.gd")
 
 
 func empty_payload() -> Dictionary:
@@ -310,6 +311,78 @@ func search_chooser(
 	return {"ok": true, "status": "empty" if hits.is_empty() else "ready", "rows": hits, "has_more": has_more}
 
 
+func commit_generated_batch(
+	payload_value: Variant,
+	batch_value: Variant,
+	now_utc: String = ""
+) -> Dictionary:
+	var payload_validation := validate_payload(payload_value)
+	if not payload_validation.get("ok", false):
+		return payload_validation
+	var policy := EncounterGenerationPolicy.new()
+	var batch_validation := policy.validate_prepared_batch(batch_value)
+	if not batch_validation.get("ok", false):
+		return batch_validation
+	var payload: Dictionary = payload_validation["payload"]
+	var batch: Dictionary = batch_validation["batch"]
+	var existing := _existing_generated_batch(payload, batch)
+	if existing.get("status", "") == "already_committed":
+		return {
+			"ok": true,
+			"status": "already_committed",
+			"no_write": true,
+			"payload": payload,
+			"mappings": existing["mappings"],
+			"batch_fingerprint": batch["batch_fingerprint"],
+		}
+	if existing.get("status", "") == "conflict":
+		return existing
+	var timestamp := now_utc if not now_utc.is_empty() else Time.get_datetime_string_from_system(true)
+	var next_payload: Dictionary = payload.duplicate(true)
+	var mappings: Array = []
+	var source: Dictionary = batch["source"]
+	var batch_id := policy.fingerprint("%s|%s" % [source["engine_version"], source["preparation_id"]])
+	for order in range(batch["rosters"].size()):
+		var roster: Dictionary = batch["rosters"][order]
+		var plan_id := "encounter_plan.generated.%s" % policy.fingerprint(
+			"%s|%d" % [batch_id, int(roster["encounter_number"])]
+		).substr(0, 32)
+		if next_payload["records"].has(plan_id) or next_payload["trash"].has(plan_id):
+			return _batch_conflict("Eine generierte Encounter-Plan-Identität kollidiert mit vorhandener Wahrheit.")
+		var origin := {
+			"batch_id": batch_id,
+			"engine_version": source["engine_version"],
+			"preparation_id": source["preparation_id"],
+			"generation_run_id": source["generation_run_id"],
+			"batch_fingerprint": batch["batch_fingerprint"],
+			"roster_fingerprint": roster["roster_fingerprint"],
+			"intent_fingerprint": roster["intent_fingerprint"],
+			"cardinality": batch["rosters"].size(),
+			"order": order,
+			"encounter_number": roster["encounter_number"],
+		}
+		var created := create_plan(
+			next_payload,
+			str(roster["display_label"]),
+			roster["creatures"],
+			plan_id,
+			timestamp,
+			str(roster["display_label"]),
+			origin
+		)
+		if not created.get("ok", false):
+			return created
+		next_payload = created["payload"]
+		mappings.append(_generated_mapping(roster, plan_id))
+	return {
+		"ok": true,
+		"status": "committed",
+		"payload": next_payload,
+		"mappings": mappings,
+		"batch_fingerprint": batch["batch_fingerprint"],
+	}
+
+
 func _matches(record_id: String, record: Dictionary, needle: String) -> bool:
 	if needle.is_empty():
 		return true
@@ -326,6 +399,77 @@ func _matches(record_id: String, record: Dictionary, needle: String) -> bool:
 		):
 			return true
 	return false
+
+
+func _existing_generated_batch(payload: Dictionary, batch: Dictionary) -> Dictionary:
+	var source: Dictionary = batch["source"]
+	var matched: Array = []
+	for record_id_value in payload["records"]:
+		var record: Dictionary = payload["records"][record_id_value]
+		var origin: Dictionary = record["generated_origin"]
+		if _same_generated_source(origin, source):
+			matched.append({"record": record, "deleted": false})
+	for record_id_value in payload["trash"]:
+		var record: Dictionary = payload["trash"][record_id_value]["record"]
+		var origin: Dictionary = record["generated_origin"]
+		if _same_generated_source(origin, source):
+			matched.append({"record": record, "deleted": true})
+	if matched.is_empty():
+		return {"ok": true, "status": "absent"}
+	if matched.size() != batch["rosters"].size():
+		return _batch_conflict("Gespeicherte Generated-Encounter-Herkunft ist unvollständig.")
+	var by_order := {}
+	for entry in matched:
+		var record: Dictionary = entry["record"]
+		var origin: Dictionary = record["generated_origin"]
+		var order := int(origin["order"])
+		if (
+			entry["deleted"]
+			or origin["generation_run_id"] != source["generation_run_id"]
+			or origin["batch_fingerprint"] != batch["batch_fingerprint"]
+			or int(origin["cardinality"]) != batch["rosters"].size()
+			or order < 0
+			or order >= batch["rosters"].size()
+			or by_order.has(order)
+		):
+			return _batch_conflict("Generated Encounter Batch widerspricht gespeicherter Wahrheit.")
+		var expected: Dictionary = batch["rosters"][order]
+		if (
+			int(origin["encounter_number"]) != int(expected["encounter_number"])
+			or origin["roster_fingerprint"] != expected["roster_fingerprint"]
+			or origin["intent_fingerprint"] != expected["intent_fingerprint"]
+			or not _same_roster_meaning(record["roster"], expected["creatures"])
+		):
+			return _batch_conflict("Generated Encounter Batch widerspricht gespeicherter Roster-Wahrheit.")
+		by_order[order] = record
+	var mappings: Array = []
+	for order in range(batch["rosters"].size()):
+		if not by_order.has(order):
+			return _batch_conflict("Gespeicherte Generated-Encounter-Reihenfolge ist unvollständig.")
+		mappings.append(_generated_mapping(batch["rosters"][order], str(by_order[order]["record_id"])))
+	return {"ok": true, "status": "already_committed", "mappings": mappings}
+
+
+func _same_generated_source(origin: Dictionary, source: Dictionary) -> bool:
+	return (
+		not origin.is_empty()
+		and origin.get("engine_version", "") == source["engine_version"]
+		and origin.get("preparation_id", "") == source["preparation_id"]
+	)
+
+
+func _generated_mapping(roster: Dictionary, plan_id: String) -> Dictionary:
+	var summary: Dictionary = roster["summary"].duplicate(true)
+	summary["plan_id"] = plan_id
+	return {
+		"encounter_number": roster["encounter_number"],
+		"plan_id": plan_id,
+		"summary": summary,
+	}
+
+
+func _batch_conflict(message: String) -> Dictionary:
+	return {"ok": false, "status": "CONFLICT", "error": message}
 
 
 func _validated_change(next_payload: Dictionary, status: String, record: Dictionary) -> Dictionary:

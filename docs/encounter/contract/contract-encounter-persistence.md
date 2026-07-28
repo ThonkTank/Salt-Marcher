@@ -40,8 +40,8 @@ accepts only finite mathematical integers and publishes integer domain values.
 
 Generated origin, when present, contains only batch/run identities, engine
 meaning, fingerprints, cardinality, order, and Encounter number. The current
-Godot slice validates this shape but does not yet expose generated-batch commit;
-that remains part of the G3 Session Generation migration.
+Godot route writes this canonical shape only through the complete generated
+batch command.
 
 ## Explicitly Excluded Truth
 
@@ -73,6 +73,13 @@ moves the same identity back, refuses an active identity conflict, and retains
 the entire roster even when a referenced Creature has since disappeared. The
 last-known name makes that broken reference visible and repairable.
 
+Generated commit validates the complete prepared batch before changing a copy
+of the owner payload. It creates ordinary plans with deterministic stable IDs
+and canonical origins, then publishes the one resulting partition. Exact
+completed retries read back the existing ordered mapping without a Campaign
+write. A partial, reordered, changed, already-trashed, or colliding batch fails
+closed and exposes neither a partial payload nor a partial mapping.
+
 ## Read And Failure Semantics
 
 - Catalog reads validate the complete owner payload, sort deterministically by
@@ -86,13 +93,12 @@ last-known name makes that broken reference visible and repairable.
   from opening.
 - Teardown and supersession release worker and pending-request state.
 
-## Future Batch Boundary
+## Generated Batch Boundary
 
-One generated batch must eventually validate every concrete roster and origin
-before one all-or-nothing partition publication. Identical completed retries
-must denote the same saved plans; partial, reordered, relabeled, or changed
-retries must fail closed. The current manual-plan slice neither approximates
-nor dual-writes that behavior.
+One generated batch validates every concrete roster and origin before one
+all-or-nothing partition publication. Identical completed retries denote the
+same saved plans; partial, reordered, relabeled, or changed retries fail closed.
+The route neither dual-writes nor creates a second generated-plan store.
 
 ## References
 

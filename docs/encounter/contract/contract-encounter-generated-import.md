@@ -1,6 +1,6 @@
 # Encounter Generated Preparation Contract
 
-Status: Active target contract; Godot batch route not yet implemented
+Status: Active Godot contract
 Owner: Encounter
 Last Reviewed: 2026-07-28
 Source of Truth: This document
@@ -25,7 +25,8 @@ loadGeneratedPlanSummaries(GeneratedEncounterPlanSummaryBatchQuery)
   -> GeneratedEncounterPlanSummaryBatchResult
 ```
 
-All operations are asynchronous. The summary query accepts unique Encounter
+All operations are asynchronous in the production Godot controller. The
+summary query accepts unique Encounter
 plan identities and returns existing structured summaries in request order,
 with missing identities reported explicitly rather than omitted.
 
@@ -82,10 +83,12 @@ per Encounter number. No partial mapping is returned.
 
 ## Status And Errors
 
-Statuses are `SUCCESS`, `INVALID_REQUEST`, `UNRESOLVABLE`, `CONFLICT`, and
-`STORAGE_FAILURE`. Display-safe messages contain no SQL, exception text, paths,
-catalog payloads, or creature detail. Non-success returns no applicable draft
-or committed mapping.
+Domain statuses are `SUCCESS`, `INVALID_REQUEST`, `UNRESOLVABLE`, `CONFLICT`,
+and `STORAGE_FAILURE`. Superseded or explicitly cancelled read work publishes
+no result; a generation race may publish `STALE` for a still-current request.
+Display-safe messages contain no SQL, exception text, paths, catalog payloads,
+or creature detail. Non-success returns no applicable draft or committed
+mapping.
 
 ## Persistence And Current Format
 
@@ -108,6 +111,18 @@ of this contract.
   one batch operation
 - read query count is bounded by data family, not Encounter, block, or roster
   member count
+
+## Current Godot Route
+
+`EncounterGeneratedBatchReadController` owns one active plus one latest pending
+prepare/summary request. `EncounterGenerationPolicy` validates and resolves the
+complete batch without UI or storage dependencies.
+`EncounterGeneratedBatchCommandController` revalidates the prepared batch and
+submits one complete `encounter` partition through the admitted serial Campaign
+writer. An identical completed retry returns the existing ordered mapping
+without submitting a redundant Campaign generation. Partial stored origin,
+trash involvement, changed run meaning, reordered or changed fingerprints, and
+stable-ID collision fail closed as `CONFLICT`.
 
 ## References
 

@@ -34,7 +34,10 @@ godot/src/features/encounter/
   encounter_plan_knowledge.gd
   encounter_plan_command_controller.gd
   encounter_plan_detail_read_controller.gd
-  # target: generation, planning-fact, runtime-session, and batch controllers
+  encounter_generation_policy.gd
+  encounter_generated_batch_read_controller.gd
+  encounter_generated_batch_command_controller.gd
+  # target: free-form generation, planning-fact, and runtime-session controllers
 godot/src/ui/
   encounter_plan_editor_dialog.gd
   # target: encounter runtime state pane
@@ -57,12 +60,12 @@ the selected Shared-Definition generation, then stores only the positive
 identity and a last-known display-name snapshot. No storage relation crosses
 those owner stores.
 
-Current production coverage is intentionally narrower than this target: the
-saved-plan owner partition, serial writer, bounded Catalog query, latest-wins
-detail hydration, recoverable trash, and bounded roster editor are live. The
-Encounter runtime pane, generation policies, planning facts, and generated
-batch publication are not yet composed and must not be inferred from the
-saved-plan slice.
+Current production coverage includes the saved-plan owner partition, serial
+writer, bounded Catalog query, latest-wins detail hydration, recoverable trash,
+bounded roster editor, deterministic generated-batch policy, asynchronous
+prepare/summary lane, and atomic idempotent batch publication. The free-form
+Encounter runtime pane, its alternative generator, and Session Planner planning
+facts are not yet composed and must not be inferred from the batch seam.
 
 ## Generated-Batch Orchestration
 
@@ -83,6 +86,15 @@ Prepare and commit are separate because Session Planner must validate the whole
 cross-feature preparation before Encounter truth becomes durable. The prepared
 batch is transient typed state. Commit creates ordinary `EncounterPlan`
 aggregates and retains generated origin only for audit and idempotency.
+
+The production read lane captures one active-Party snapshot and one complete
+Creature snapshot, resolves all intents jointly with deterministic role-aware
+selection and deliberate roster diversity, and confirms Campaign plus
+Shared-Definition generations before publication. The writer validates the
+complete prepared shape in memory and submits one `encounter` partition
+replacement through the admitted Campaign writer. An exact completed retry is
+a no-write readback; changed meaning for the same engine/preparation identity
+is a conflict.
 
 Manual builder generation remains an independent application use case but uses
 the same Encounter math, candidate, ranking, and saved-plan invariants. It does

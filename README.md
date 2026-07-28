@@ -31,8 +31,11 @@ Campaign-owned Godot partition with bounded Catalog browsing, weighted
 Creature membership, create/edit, full details, World Planner references, and
 latest-wins candidate reads. Saved Encounters now use their own Campaign
 partition with bounded search/detail, Creature-backed roster create/edit,
-recoverable trash/restore, and restart readback. The runtime Encounter builder,
-generation, and combat modes remain migration work. A compact Party top-bar dropdown now
+recoverable trash/restore, and restart readback. The same owner now resolves
+complete ordered generated-intent batches from current Party/Creature facts,
+commits them atomically and idempotently, and hydrates current summaries in one
+ordered batch read. The free-form runtime Encounter builder, Session Planner
+composition, initiative, and combat modes remain migration work. A compact Party top-bar dropdown now
 provides the active Campaign's Roster/current-Party foundation without adding a
 third navigation route. Its separate native Rastbudget trigger provides
 active/custom Adventuring-Day budgets and XP timelines; travel, Planning Party

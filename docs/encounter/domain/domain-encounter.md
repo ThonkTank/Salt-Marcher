@@ -1,6 +1,6 @@
 # Encounter Domain Model
 
-Status: Active target domain with saved-plan Godot implementation
+Status: Active target domain with saved-plan and generated-batch Godot implementation
 Owner: Encounter
 Last Reviewed: 2026-07-28
 Source of Truth: This document

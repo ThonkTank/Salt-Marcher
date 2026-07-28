@@ -23,6 +23,9 @@ const EncounterTableEditorDialog = preload("res://godot/src/ui/encounter_table_e
 const EncounterPlanKnowledge = preload("res://godot/src/features/encounter/encounter_plan_knowledge.gd")
 const EncounterPlanCommandController = preload("res://godot/src/features/encounter/encounter_plan_command_controller.gd")
 const EncounterPlanDetailReadController = preload("res://godot/src/features/encounter/encounter_plan_detail_read_controller.gd")
+const EncounterGenerationPolicy = preload("res://godot/src/features/encounter/encounter_generation_policy.gd")
+const EncounterGeneratedBatchReadController = preload("res://godot/src/features/encounter/encounter_generated_batch_read_controller.gd")
+const EncounterGeneratedBatchCommandController = preload("res://godot/src/features/encounter/encounter_generated_batch_command_controller.gd")
 const EncounterPlanEditorDialog = preload("res://godot/src/ui/encounter_plan_editor_dialog.gd")
 const CampaignRuntimeCoordinator = preload("res://godot/src/app/campaign_runtime_coordinator.gd")
 const CampaignRuntimeSession = preload("res://godot/src/app/campaign_runtime_session.gd")
@@ -123,7 +126,9 @@ func _run_tests() -> void:
 	await _run_adventuring_day_contract()
 	await _run_party_roster_contract()
 	await _run_world_planner_knowledge_contract()
+	_run_generated_encounter_batch_contract()
 	_run_encounter_plan_knowledge_contract()
+	await _run_generated_encounter_controller_contract()
 	await _run_catalog_foundation_contract()
 
 	var second := registry.create_campaign("Nordmark")
@@ -678,6 +683,178 @@ func _run_party_roster_contract() -> void:
 	coordinator.revoke_current(-1)
 
 
+func _run_generated_encounter_batch_contract() -> void:
+	var policy := EncounterGenerationPolicy.new()
+	var definitions: Array = [
+		_generated_creature("creature.wolf-a", "Wolf A", "1/4", 50, 11, 12, 2, 0),
+		_generated_creature("creature.wolf-b", "Wolf B", "1/4", 50, 12, 12, 2, 0),
+		_generated_creature("creature.guard", "Küstenwache", "1/4", 50, 42, 15, 1, 0),
+		_generated_creature("creature.worg", "Worg", "1/2", 100, 26, 13, 1, 0),
+	]
+	var source := {
+		"engine_version": "session-generation.v2",
+		"preparation_id": "preparation.harbor-night",
+		"generation_run_id": "run.harbor-night",
+	}
+	var intents: Array = [
+		_generated_intent(1, "Kaiwache I", 200),
+		_generated_intent(2, "Kaiwache II", 200),
+	]
+	_expect(
+		policy.prepare_batch(source, intents, [], definitions).get("status", "") == "UNRESOLVABLE",
+		"generated Encounter preparation rejects an empty active Party before resolution"
+	)
+	var prepared := policy.prepare_batch(source, intents, [3, 3, 3, 3], definitions)
+	_expect(
+		prepared.get("ok", false)
+		and prepared.get("batch", {}).get("rosters", []).size() == 2
+		and prepared.get("diagnostics", {}).get("candidate_snapshot_count", -1) == 1,
+		"generated Encounter preparation resolves the complete ordered batch from one candidate snapshot"
+	)
+	var batch: Dictionary = prepared.get("batch", {})
+	var first_roster: Dictionary = batch.get("rosters", [])[0]
+	var second_roster: Dictionary = batch.get("rosters", [])[1]
+	_expect(
+		first_roster.get("encounter_number", -1) == 1
+		and second_roster.get("encounter_number", -1) == 2
+		and first_roster.get("roster_fingerprint", "") != second_roster.get("roster_fingerprint", ""),
+		"joint deterministic resolution avoids an identical later roster when an equivalent candidate exists"
+	)
+	_expect(
+		first_roster.get("summary", {}).get("base_xp", -1) == 200
+		and first_roster.get("summary", {}).get("adjusted_xp", -1) == 400
+		and first_roster.get("summary", {}).get("difficulty", "") == "EASY",
+		"prepared roster summaries expose base XP, adjusted XP, and current-Party difficulty"
+	)
+	var repeated := policy.prepare_batch(source, intents, [3, 3, 3, 3], definitions)
+	_expect(
+		repeated.get("batch", {}).get("batch_fingerprint", "") == batch.get("batch_fingerprint", "")
+		and repeated.get("batch", {}).get("rosters", []) == batch.get("rosters", []),
+		"identical generated preparation replay is byte-meaning deterministic"
+	)
+	var tampered_summary: Dictionary = batch.duplicate(true)
+	tampered_summary["rosters"][0]["summary"]["creature_count"] = 999
+	_expect(
+		not policy.validate_prepared_batch(tampered_summary).get("ok", true),
+		"generated batch validation rejects a summary that contradicts its concrete roster"
+	)
+	var impossible_intents: Array = intents.duplicate(true)
+	impossible_intents[1]["blocks"][0]["xp"] = 999
+	_expect(
+		policy.prepare_batch(source, impossible_intents, [3, 3, 3, 3], definitions).get("status", "") == "UNRESOLVABLE",
+		"one unresolvable intent publishes no partial prepared batch"
+	)
+	var model := EncounterPlanKnowledge.new()
+	var committed := model.commit_generated_batch(
+		model.empty_payload(),
+		batch,
+		"2026-07-28T14:00:00Z"
+	)
+	_expect(
+		committed.get("ok", false)
+		and committed.get("status", "") == "committed"
+		and committed.get("mappings", []).size() == 2
+		and committed.get("payload", {}).get("records", {}).size() == 2,
+		"one owner mutation publishes every prepared Encounter plan and ordered mapping together"
+	)
+	var committed_payload: Dictionary = committed.get("payload", model.empty_payload())
+	var retried := model.commit_generated_batch(committed_payload, batch, "2026-07-28T14:00:01Z")
+	_expect(
+		retried.get("ok", false)
+		and retried.get("status", "") == "already_committed"
+		and retried.get("mappings", []) == committed.get("mappings", [])
+		and retried.get("payload", {}).get("records", {}).size() == 2,
+		"identical completed batch retry returns the existing mapping without duplicate plans"
+	)
+	var conflicting_source: Dictionary = source.duplicate(true)
+	conflicting_source["generation_run_id"] = "run.changed"
+	var conflicting_prepared := policy.prepare_batch(conflicting_source, intents, [3, 3, 3, 3], definitions)
+	var conflict := model.commit_generated_batch(committed_payload, conflicting_prepared.get("batch", {}))
+	_expect(
+		not conflict.get("ok", true)
+		and conflict.get("status", "") == "CONFLICT"
+		and committed_payload.get("records", {}).size() == 2,
+		"same preparation identity with changed batch meaning conflicts without changing visible saved plans"
+	)
+	var first_plan_id := str(committed.get("mappings", [])[0].get("plan_id", ""))
+	var summaries := policy.summaries_for_plans(
+		[first_plan_id, "encounter_plan.missing"],
+		committed_payload,
+		[3, 3, 3, 3],
+		definitions
+	)
+	_expect(
+		summaries.get("ok", false)
+		and summaries.get("entries", []).size() == 2
+		and summaries.get("entries", [])[0].get("status", "") == "FOUND"
+		and summaries.get("entries", [])[0].get("summary", {}).get("plan_id", "") == first_plan_id
+		and summaries.get("entries", [])[1].get("status", "") == "MISSING"
+		and summaries.get("diagnostics", {}).get("creature_snapshot_count", -1) == 1,
+		"summary hydration preserves request order and distinguishes found from missing plans in one batch"
+	)
+	var missing_definitions: Array = definitions.duplicate(true)
+	missing_definitions.remove_at(0)
+	missing_definitions.remove_at(0)
+	var unresolvable_summary := policy.summaries_for_plans(
+		[first_plan_id], committed_payload, [3, 3, 3, 3], missing_definitions
+	)
+	_expect(
+		unresolvable_summary.get("entries", [])[0].get("status", "") == "UNRESOLVABLE",
+		"summary hydration distinguishes a present plan with missing current Creature facts"
+	)
+
+
+func _generated_creature(
+	definition_id: String,
+	name: String,
+	challenge_rating: String,
+	xp: int,
+	hit_points: int,
+	armor_class: int,
+	initiative_bonus: int,
+	legendary_action_count: int
+) -> Dictionary:
+	return {
+		"definition_id": definition_id,
+		"kind": "creature",
+		"name": name,
+		"content": {
+			"creature_type": "beast",
+			"challenge_rating": challenge_rating,
+			"xp": xp,
+			"hit_points": hit_points,
+			"armor_class": armor_class,
+			"initiative_bonus": initiative_bonus,
+			"legendary_action_count": legendary_action_count,
+		},
+	}
+
+
+func _generated_intent(encounter_number: int, label: String, target_xp: int) -> Dictionary:
+	return {
+		"encounter_number": encounter_number,
+		"display_label": label,
+		"target_xp": target_xp,
+		"difficulty": "EASY",
+		"blocks": [
+			{
+				"block_id": "minions",
+				"requested_role": "MINION",
+				"challenge_rating": "1/4",
+				"xp": 50,
+				"quantity": 2,
+			},
+			{
+				"block_id": "anchor",
+				"requested_role": "STANDARD",
+				"challenge_rating": "1/2",
+				"xp": 100,
+				"quantity": 1,
+			},
+		],
+	}
+
+
 func _run_encounter_plan_knowledge_contract() -> void:
 	var model := EncounterPlanKnowledge.new()
 	var payload := model.empty_payload()
@@ -827,6 +1004,261 @@ func _run_encounter_plan_knowledge_contract() -> void:
 	)
 
 
+func _run_generated_encounter_controller_contract() -> void:
+	var data_root := "user://saltmarcher-generated-encounter-controller/%s" % Time.get_ticks_usec()
+	var registry := FileCampaignRegistry.new(data_root)
+	var created := registry.create_campaign("Generated Encounter Campaign")
+	_expect(created.get("ok", false), "generated Encounter fixture creates an active Campaign")
+	var definitions := SharedDefinitionStore.new(data_root)
+	var prepared_definitions := definitions.prepare_generation(0, [
+		_generated_creature("creature.wolf-a", "Wolf A", "1/4", 50, 11, 12, 2, 0),
+		_generated_creature("creature.wolf-b", "Wolf B", "1/4", 50, 12, 12, 2, 0),
+		_generated_creature("creature.worg", "Worg", "1/2", 100, 26, 13, 1, 0),
+	])
+	_expect(prepared_definitions.get("ok", false), "generated Encounter fixture prepares current Creature facts")
+	var selected_definitions := registry.publish_shared_definitions_generation(
+		int(prepared_definitions.get("generation", -1)),
+		int(created.get("state", {}).get("generation", -1))
+	)
+	_expect(selected_definitions.get("ok", false), "generated Encounter fixture selects one Creature generation")
+	var party_model := PartyRoster.new()
+	var party_payload := party_model.empty_payload()
+	for index in range(4):
+		var character_id := "pc.generated.%d" % (index + 1)
+		party_payload = party_model.create_character(
+			party_payload,
+			"SC %d" % (index + 1),
+			{"level": 3 if index < 2 else 4},
+			character_id,
+			"2026-07-28T13:00:%02dZ" % index
+		).get("payload", party_payload)
+		party_payload = party_model.set_membership(
+			party_payload,
+			character_id,
+			"active",
+			"2026-07-28T13:01:%02dZ" % index
+		).get("payload", party_payload)
+	var store := FileCampaignStore.new(data_root, str(created.get("campaign_id", "")))
+	var state := store.load_state()
+	var seeded := store.commit(
+		int(state.get("generation", -1)),
+		{PartyRoster.OWNER: party_payload},
+		state.get("runtime", {})
+	)
+	_expect(seeded.get("ok", false), "generated Encounter fixture persists one active Party")
+	var runtime_coordinator := CampaignRuntimeCoordinator.new(data_root, registry)
+	_expect(runtime_coordinator.open_durable_active().get("ok", false), "generated Encounter fixture opens its Campaign writer")
+	var read_controller := EncounterGeneratedBatchReadController.new(data_root)
+	root.add_child(read_controller)
+	var results: Array = []
+	read_controller.result_published.connect(func(result: Dictionary) -> void:
+		results.append(result.duplicate(true))
+	)
+	var intents: Array = [_generated_intent(1, "Nachtpatrouille", 200)]
+	var stale_source := {
+		"engine_version": "session-generation.v2",
+		"preparation_id": "preparation.stale",
+		"generation_run_id": "run.stale",
+	}
+	var current_source := {
+		"engine_version": "session-generation.v2",
+		"preparation_id": "preparation.current",
+		"generation_run_id": "run.current",
+	}
+	var first := read_controller.prepare_batch(stale_source, intents)
+	var replacement := read_controller.prepare_batch(current_source, intents)
+	_expect(
+		first.get("status", "") == "started" and replacement.get("status", "") == "queued",
+		"generated Encounter lane admits one active preparation and one latest pending replacement"
+	)
+	for _attempt in 1200:
+		if results.size() == 1 and not read_controller.is_active():
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		results.size() == 1
+		and results[0].get("ok", false)
+		and results[0].get("batch", {}).get("source", {}).get("preparation_id", "") == "preparation.current"
+		and results[0].get("diagnostics", {}).get("candidate_snapshot_count", -1) == 1,
+		"generated Encounter lane suppresses superseded work and publishes only one complete current batch"
+	)
+	var prepared_batch: Dictionary = results[0].get("batch", {}) if results.size() == 1 else {}
+	var read_resources := read_controller.resource_snapshot()
+	_expect(
+		read_resources.get("active_count", -1) == 0
+		and read_resources.get("pending_count", -1) == 0
+		and read_resources.get("worker_handle_count", -1) == 0,
+		"generated Encounter preparation releases worker and pending state"
+	)
+	var command_controller := EncounterGeneratedBatchCommandController.new(data_root, runtime_coordinator)
+	root.add_child(command_controller)
+	var command_results: Array = []
+	command_controller.command_completed.connect(func(result: Dictionary) -> void:
+		command_results.append(result.duplicate(true))
+	)
+	var generation_before := int(runtime_coordinator.current_session().snapshot()["campaign_state"]["generation"])
+	var started_commit := command_controller.commit_prepared_batch(prepared_batch)
+	_expect(started_commit.get("status", "") == "started", "generated Encounter writer accepts one complete prepared batch")
+	for _attempt in 1600:
+		if command_results.size() == 1 and not command_controller.busy():
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		command_results.size() == 1
+		and command_results[0].get("ok", false)
+		and command_results[0].get("status", "") == "committed"
+		and command_results[0].get("mappings", []).size() == 1
+		and int(runtime_coordinator.current_session().snapshot()["campaign_state"]["generation"]) == generation_before + 1,
+		"generated Encounter writer publishes the whole batch in exactly one Campaign generation"
+	)
+	var plan_id := str(command_results[0].get("mappings", [])[0].get("plan_id", "")) if command_results.size() == 1 else ""
+	command_results.clear()
+	var generation_before_retry := int(runtime_coordinator.current_session().snapshot()["campaign_state"]["generation"])
+	command_controller.commit_prepared_batch(prepared_batch)
+	for _attempt in 1200:
+		if command_results.size() == 1 and not command_controller.busy():
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		command_results.size() == 1
+		and command_results[0].get("status", "") == "already_committed"
+		and int(runtime_coordinator.current_session().snapshot()["campaign_state"]["generation"]) == generation_before_retry,
+		"completed generated-batch retry returns its mapping without a redundant Campaign write"
+	)
+	results.clear()
+	read_controller.load_summaries([plan_id, "encounter_plan.missing"])
+	for _attempt in 1200:
+		if results.size() == 1 and not read_controller.is_active():
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		results.size() == 1
+		and results[0].get("entries", []).size() == 2
+		and results[0].get("entries", [])[0].get("status", "") == "FOUND"
+		and results[0].get("entries", [])[1].get("status", "") == "MISSING"
+		and results[0].get("diagnostics", {}).get("plan_partition_read_count", -1) == 1,
+		"production summary lane hydrates ordered generated-plan facts in one owner-partition read"
+	)
+	var performance_intents: Array = [
+		_generated_intent(1, "Referenzbegegnung I", 200),
+		_generated_intent(2, "Referenzbegegnung II", 200),
+		_generated_intent(3, "Referenzbegegnung III", 200),
+	]
+	var prepare_durations_usec: Array[int] = []
+	var commit_durations_usec: Array[int] = []
+	var summary_durations_usec: Array[int] = []
+	var end_to_end_durations_usec: Array[int] = []
+	var performance_ok := true
+	for run_index in range(20):
+		var run_started_usec := Time.get_ticks_usec()
+		results.clear()
+		var prepare_started_usec := Time.get_ticks_usec()
+		read_controller.prepare_batch({
+			"engine_version": "session-generation.v2",
+			"preparation_id": "preparation.performance.%02d" % run_index,
+			"generation_run_id": "run.performance.%02d" % run_index,
+		}, performance_intents)
+		for _attempt in 2000:
+			if results.size() == 1 and not read_controller.is_active():
+				break
+			await create_timer(0.001).timeout
+		prepare_durations_usec.append(Time.get_ticks_usec() - prepare_started_usec)
+		if results.size() != 1 or not results[0].get("ok", false):
+			performance_ok = false
+			continue
+		var performance_batch: Dictionary = results[0]["batch"]
+		command_results.clear()
+		var commit_started_usec := Time.get_ticks_usec()
+		command_controller.commit_prepared_batch(performance_batch)
+		for _attempt in 2000:
+			if command_results.size() == 1 and not command_controller.busy():
+				break
+			await create_timer(0.001).timeout
+		commit_durations_usec.append(Time.get_ticks_usec() - commit_started_usec)
+		if command_results.size() != 1 or not command_results[0].get("ok", false):
+			performance_ok = false
+			continue
+		var performance_plan_ids: Array = command_results[0].get("mappings", []).map(
+			func(mapping: Dictionary) -> String: return str(mapping["plan_id"])
+		)
+		results.clear()
+		var summary_started_usec := Time.get_ticks_usec()
+		read_controller.load_summaries(performance_plan_ids)
+		for _attempt in 2000:
+			if results.size() == 1 and not read_controller.is_active():
+				break
+			await create_timer(0.001).timeout
+		summary_durations_usec.append(Time.get_ticks_usec() - summary_started_usec)
+		var invalid_summary_entries: bool = (
+			results.size() == 1
+			and results[0].get("entries", []).any(
+				func(entry: Dictionary) -> bool: return entry.get("status", "") != "FOUND"
+			)
+		)
+		if (
+			results.size() != 1
+			or not results[0].get("ok", false)
+			or results[0].get("entries", []).size() != 3
+			or invalid_summary_entries
+		):
+			performance_ok = false
+		end_to_end_durations_usec.append(Time.get_ticks_usec() - run_started_usec)
+	prepare_durations_usec.sort()
+	commit_durations_usec.sort()
+	summary_durations_usec.sort()
+	end_to_end_durations_usec.sort()
+	_expect(
+		performance_ok
+		and prepare_durations_usec.size() == 20
+		and commit_durations_usec.size() == 20
+		and summary_durations_usec.size() == 20
+		and end_to_end_durations_usec.size() == 20
+		and end_to_end_durations_usec[18] <= 2_000_000,
+		"generated three-Encounter prepare, atomic commit, and summary hydration stay below the two-second p95 budget over 20 warm runs"
+	)
+	read_controller.queue_free()
+	command_controller.queue_free()
+	await process_frame
+	var restarted := EncounterGeneratedBatchReadController.new(data_root)
+	root.add_child(restarted)
+	var restart_results: Array = []
+	restarted.result_published.connect(func(result: Dictionary) -> void:
+		restart_results.append(result.duplicate(true))
+	)
+	restarted.load_summaries([plan_id])
+	for _attempt in 1200:
+		if restart_results.size() == 1 and not restarted.is_active():
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		restart_results.size() == 1
+		and restart_results[0].get("entries", [])[0].get("summary", {}).get("plan_id", "") == plan_id,
+		"generated Encounter mapping and current-fact summary survive controller reconstruction"
+	)
+	var cancellation_results: Array = []
+	restarted.result_published.connect(func(result: Dictionary) -> void:
+		cancellation_results.append(result.duplicate(true))
+	)
+	restarted.prepare_batch({
+		"engine_version": "session-generation.v2",
+		"preparation_id": "preparation.cancelled",
+		"generation_run_id": "run.cancelled",
+	}, intents)
+	restarted.cancel_all()
+	for _attempt in 1200:
+		if not restarted.is_active():
+			break
+		await create_timer(0.001).timeout
+	await process_frame
+	_expect(
+		cancellation_results.is_empty()
+		and restarted.resource_snapshot().get("worker_handle_count", -1) == 0,
+		"cancelled generated Encounter work publishes no stale batch and releases its worker"
+	)
+	restarted.queue_free()
+	await process_frame
+
+
 func _run_catalog_foundation_contract() -> void:
 	var data_root := "user://saltmarcher-catalog-foundation/%s" % Time.get_ticks_usec()
 	var registry := FileCampaignRegistry.new(data_root)
@@ -933,6 +1365,23 @@ func _run_catalog_foundation_contract() -> void:
 		"place.north-quay",
 		"2026-07-28T11:00:01Z"
 	).get("payload", world_payload)
+	var party_model := PartyRoster.new()
+	var party_payload := party_model.empty_payload()
+	for index in range(4):
+		var character_id := "pc.generated.%d" % (index + 1)
+		party_payload = party_model.create_character(
+			party_payload,
+			"SC %d" % (index + 1),
+			{"level": 3},
+			character_id,
+			"2026-07-28T11:00:%02dZ" % (index + 2)
+		).get("payload", party_payload)
+		party_payload = party_model.set_membership(
+			party_payload,
+			character_id,
+			"active",
+			"2026-07-28T11:00:%02dZ" % (index + 6)
+		).get("payload", party_payload)
 	var catalog_store := FileCampaignStore.new(data_root, catalog_campaign_id)
 	var catalog_state := catalog_store.load_state()
 	var seeded_world := catalog_store.commit(
@@ -941,10 +1390,11 @@ func _run_catalog_foundation_contract() -> void:
 			WorldPlannerKnowledge.OWNER: world_payload,
 			EncounterTableKnowledge.OWNER: encounter_table_payload,
 			EncounterPlanKnowledge.OWNER: encounter_plan_payload,
+			PartyRoster.OWNER: party_payload,
 		},
 		catalog_state["runtime"]
 	)
-	_expect(seeded_world.get("ok", false), "Catalog fixture atomically seeds World Planner, Encounter Table, and saved Encounter owners")
+	_expect(seeded_world.get("ok", false), "Catalog fixture atomically seeds World Planner, Encounter Table, saved Encounter, and Party owners")
 	var runtime_coordinator := CampaignRuntimeCoordinator.new(data_root, registry)
 	_expect(runtime_coordinator.open_durable_active().get("ok", false), "Catalog fixture opens its active Campaign writer")
 	var first_page := definitions.query_catalog(int(prepared["generation"]), "creature", "wo", 0, 1)

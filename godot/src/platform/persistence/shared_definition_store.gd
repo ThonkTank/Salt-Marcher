@@ -206,6 +206,44 @@ func definitions_for_refs(
 	return {"ok": true, "definitions": result}
 
 
+func definitions_of_kind(
+	generation: int,
+	kind: String,
+	cancellation_callback: Callable = Callable()
+) -> Dictionary:
+	if not _valid_kind(kind):
+		return _failure("Shared-Definition-Snapshot besitzt keinen gültigen Typ.")
+	if _cancelled(cancellation_callback):
+		return _cancelled_failure()
+	var state := load_generation(generation)
+	if not state.get("ok", false):
+		return state
+	var ids: Array = []
+	for definition_id_value in state["definitions"]:
+		var definition_id := str(definition_id_value)
+		if state["definitions"][definition_id_value].get("kind", "") == kind:
+			ids.append(definition_id)
+	ids.sort()
+	var result: Array = []
+	for definition_id_value in ids:
+		if _cancelled(cancellation_callback):
+			return _cancelled_failure()
+		var definition := _read_indexed_definition(
+			str(definition_id_value),
+			state["definitions"][definition_id_value]
+		)
+		if not definition.get("ok", false):
+			return definition
+		result.append(definition["definition"])
+	return {
+		"ok": true,
+		"status": "empty" if result.is_empty() else "ready",
+		"generation": generation,
+		"kind": kind,
+		"definitions": result,
+	}
+
+
 func reference_labels(
 	definition_refs: Array,
 	generation: int,

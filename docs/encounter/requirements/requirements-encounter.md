@@ -5,11 +5,13 @@ Owner: Encounter
 Last Reviewed: 2026-07-28
 Source of Truth: This document
 
-The current Godot product satisfies the persistent manual saved-plan subset:
-bounded Katalog search/detail, Creature-backed roster create/edit, recoverable
-trash/restore, and restart readback. Generation, the Encounter state pane,
-Party balancing, generated-batch preparation, and combat remain unmet target
-requirements.
+The current Godot product satisfies persistent manual saved plans plus the
+generated-preparation owner seam: bounded Katalog search/detail,
+Creature-backed roster create/edit, recoverable trash/restore, restart
+readback, complete ordered batch preparation, one atomic idempotent commit, and
+ordered current-fact summary hydration. Free-form builder generation, the
+Encounter state pane, Session Planner composition, and combat remain unmet
+target requirements.
 
 ## Goal
 

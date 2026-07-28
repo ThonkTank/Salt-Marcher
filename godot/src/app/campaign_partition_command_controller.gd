@@ -94,6 +94,9 @@ func _submit_prepared_on_main(prepared: Dictionary) -> void:
 	if not prepared.get("ok", false):
 		_finish(prepared)
 		return
+	if prepared.get("no_write", false):
+		_finish(prepared)
+		return
 	var request: Dictionary = prepared["request"]
 	var state: Dictionary = request["campaign_state"]
 	var submitted: Dictionary = _runtime_coordinator.submit_current_commit(
