@@ -17,6 +17,7 @@ const VELLUM_MIST := Color("#d9e3dd")
 const QUIET_INK := Color("#91a5a2")
 const BRASS_MARK := Color("#d2a743")
 const EMBER_RUST := Color("#b75d3d")
+const CAMPAIGNS_PER_PAGE := 50
 
 var registry: FileCampaignRegistry
 var runtime_coordinator
@@ -27,6 +28,9 @@ var data_root := "user://salt-marcher"
 var _state: Dictionary = {}
 var _name_input: LineEdit
 var _campaign_list: VBoxContainer
+var _campaign_page_label: Label
+var _previous_campaign_page: Button
+var _next_campaign_page: Button
 var _status: Label
 var _create_button: Button
 var _transfer_docket: CampaignTransferDocket
@@ -34,6 +38,10 @@ var _conflict_ledger: DefinitionConflictLedger
 var _transfer_busy := false
 var _transition_busy := false
 var _maintenance_busy := false
+var _registry_read_busy := false
+var _registry_read_pending := false
+var _registry_read_thread := Thread.new()
+var _campaign_page := 0
 
 
 func _ready() -> void:
@@ -62,8 +70,15 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
+	_poll_registry_reload()
 	if runtime_coordinator != null:
 		runtime_coordinator.flush_backup_notifications()
+
+
+func _exit_tree() -> void:
+	if _registry_read_thread.is_started():
+		_registry_read_thread.wait_to_finish()
+		_registry_read_thread = Thread.new()
 
 
 func _build_surface() -> void:
@@ -194,6 +209,26 @@ func _build_surface() -> void:
 	_campaign_list.add_theme_constant_override("separation", 8)
 	scroll.add_child(_campaign_list)
 
+	var campaign_paging := HBoxContainer.new()
+	campaign_paging.add_theme_constant_override("separation", 8)
+	campaign_column.add_child(campaign_paging)
+	_previous_campaign_page = Button.new()
+	_previous_campaign_page.name = "PreviousCampaignPage"
+	_previous_campaign_page.text = "← Zurück"
+	_previous_campaign_page.pressed.connect(_show_previous_campaign_page)
+	campaign_paging.add_child(_previous_campaign_page)
+	_campaign_page_label = Label.new()
+	_campaign_page_label.name = "CampaignPageLabel"
+	_campaign_page_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_campaign_page_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_campaign_page_label.add_theme_color_override("font_color", QUIET_INK)
+	campaign_paging.add_child(_campaign_page_label)
+	_next_campaign_page = Button.new()
+	_next_campaign_page.name = "NextCampaignPage"
+	_next_campaign_page.text = "Weiter →"
+	_next_campaign_page.pressed.connect(_show_next_campaign_page)
+	campaign_paging.add_child(_next_campaign_page)
+
 	_status = Label.new()
 	_status.name = "CampaignStatus"
 	_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -225,20 +260,67 @@ func _build_surface() -> void:
 
 
 func _reload() -> void:
-	_state = registry.load_state()
+	if _registry_read_thread.is_started():
+		_registry_read_pending = true
+		return
+	_registry_read_busy = true
+	_set_status("Campaign-Routen werden geladen.", false)
+	_refresh_busy_state()
+	var start_error := _registry_read_thread.start(_load_registry_state)
+	if start_error != OK:
+		_registry_read_busy = false
+		_state = {
+			"ok": false,
+			"error": "Campaign-Routen konnten nicht im Hintergrund geladen werden.",
+		}
+		_render_state()
+
+
+func registry_read_active() -> bool:
+	return _registry_read_busy
+
+
+func _load_registry_state() -> Dictionary:
+	return FileCampaignRegistry.new(data_root).load_state()
+
+
+func _poll_registry_reload() -> void:
+	if not _registry_read_thread.is_started() or _registry_read_thread.is_alive():
+		return
+	var loaded: Dictionary = _registry_read_thread.wait_to_finish()
+	_registry_read_thread = Thread.new()
+	if _registry_read_pending:
+		_registry_read_pending = false
+		var restart_error := _registry_read_thread.start(_load_registry_state)
+		if restart_error != OK:
+			_registry_read_busy = false
+			_state = {
+				"ok": false,
+				"error": "Campaign-Routen konnten nicht im Hintergrund neu geladen werden.",
+			}
+			_render_state()
+		return
+	_registry_read_busy = false
+	_state = loaded
+	_campaign_page = _active_campaign_page()
 	_render_state()
 
 
 func _render_state() -> void:
 	for child in _campaign_list.get_children():
+		_campaign_list.remove_child(child)
 		child.queue_free()
 	if not _state.get("ok", false):
+		_campaign_page = 0
+		_refresh_campaign_paging(0, true)
 		_refresh_transfer_controls()
 		_set_status(_state.get("error", "Campaigns konnten nicht geladen werden."), true)
 		return
 
 	var campaigns: Array = _state["campaigns"]
 	if campaigns.is_empty():
+		_campaign_page = 0
+		_refresh_campaign_paging(0)
 		var empty := Label.new()
 		empty.text = "Noch keine Campaign. Ein Name genügt, um spielbereit zu beginnen."
 		empty.add_theme_color_override("font_color", QUIET_INK)
@@ -248,7 +330,12 @@ func _render_state() -> void:
 		_name_input.grab_focus.call_deferred()
 		return
 
-	for campaign in campaigns:
+	var page_count := maxi(1, ceili(float(campaigns.size()) / CAMPAIGNS_PER_PAGE))
+	_campaign_page = clampi(_campaign_page, 0, page_count - 1)
+	var first := _campaign_page * CAMPAIGNS_PER_PAGE
+	var last := mini(first + CAMPAIGNS_PER_PAGE, campaigns.size())
+	for index in range(first, last):
+		var campaign: Dictionary = campaigns[index]
 		var is_active: bool = campaign["id"] == _state["active_campaign_id"]
 		var selected_id := str(campaign["id"])
 		var row := Button.new()
@@ -262,6 +349,7 @@ func _render_state() -> void:
 		else:
 			row.pressed.connect(func() -> void: _activate_campaign(selected_id))
 		_campaign_list.add_child(row)
+	_refresh_campaign_paging(campaigns.size())
 
 	if _state.get("recovered", false):
 		_set_status(_state["recovery_message"], true)
@@ -292,6 +380,7 @@ func _create_campaign() -> void:
 		return
 	_name_input.clear()
 	_state = result.get("registry_state", result.get("state", {}))
+	_campaign_page = _active_campaign_page()
 	_render_state()
 	_set_status("Campaign erstellt und als aktuelle Route geöffnet.", false)
 	active_campaign_changed.emit(str(_state.get("active_campaign_id", "")))
@@ -318,6 +407,7 @@ func _activate_campaign(campaign_id: String) -> void:
 			_reload()
 		return
 	_state = result.get("registry_state", result.get("state", {}))
+	_campaign_page = _active_campaign_page()
 	_render_state()
 	_set_status("Campaign gewechselt. Die Route ist wieder aktiv.", false)
 	active_campaign_changed.emit(str(_state.get("active_campaign_id", "")))
@@ -396,6 +486,7 @@ func _on_runtime_transition_completed(kind: String, result: Dictionary) -> void:
 	if kind == "create":
 		_name_input.clear()
 	_state = result.get("registry_state", result.get("state", {}))
+	_campaign_page = _active_campaign_page()
 	_render_state()
 	_set_status(
 		"Campaign erstellt und als aktuelle Route geöffnet."
@@ -514,7 +605,7 @@ func _set_transfer_busy(busy: bool) -> void:
 
 func _refresh_busy_state() -> void:
 	var modal := _conflict_ledger != null and _conflict_ledger.is_presented()
-	var busy := _transfer_busy or _transition_busy or _maintenance_busy
+	var busy := _transfer_busy or _transition_busy or _maintenance_busy or _registry_read_busy
 	_transfer_docket.set_active_campaign(str(_state.get("active_campaign_id", "")))
 	_transfer_docket.set_busy(busy, modal, _transfer_busy)
 	_create_button.disabled = busy or modal or _name_input.text.strip_edges().is_empty()
@@ -523,6 +614,7 @@ func _refresh_busy_state() -> void:
 	for child in _campaign_list.get_children():
 		if child is Button:
 			child.disabled = busy or modal or child.text.begins_with("AKTUELLE ROUTE")
+	_refresh_campaign_paging(int(_state.get("campaigns", []).size()), busy or modal)
 	if modal:
 		_conflict_ledger.set_busy(busy)
 
@@ -538,6 +630,45 @@ func _refresh_transfer_controls() -> void:
 func _set_status(message: String, is_error: bool) -> void:
 	_status.text = message
 	_status.add_theme_color_override("font_color", EMBER_RUST if is_error else QUIET_INK)
+
+
+func _active_campaign_page() -> int:
+	var campaigns: Array = _state.get("campaigns", [])
+	var active_id := str(_state.get("active_campaign_id", ""))
+	if active_id.is_empty():
+		return clampi(_campaign_page, 0, maxi(0, ceili(float(campaigns.size()) / CAMPAIGNS_PER_PAGE) - 1))
+	for index in campaigns.size():
+		if str(campaigns[index].get("id", "")) == active_id:
+			return floori(float(index) / CAMPAIGNS_PER_PAGE)
+	return 0
+
+
+func _show_previous_campaign_page() -> void:
+	if _campaign_page <= 0:
+		return
+	_campaign_page -= 1
+	_render_state()
+	_previous_campaign_page.grab_focus()
+
+
+func _show_next_campaign_page() -> void:
+	var count := int(_state.get("campaigns", []).size())
+	var last_page := maxi(0, ceili(float(count) / CAMPAIGNS_PER_PAGE) - 1)
+	if _campaign_page >= last_page:
+		return
+	_campaign_page += 1
+	_render_state()
+	_next_campaign_page.grab_focus()
+
+
+func _refresh_campaign_paging(count: int, force_disabled: bool = false) -> void:
+	if _campaign_page_label == null:
+		return
+	var page_count := maxi(1, ceili(float(count) / CAMPAIGNS_PER_PAGE))
+	_campaign_page = clampi(_campaign_page, 0, page_count - 1)
+	_campaign_page_label.text = "Seite %d/%d · %d Campaigns" % [_campaign_page + 1, page_count, count]
+	_previous_campaign_page.disabled = force_disabled or _campaign_page == 0
+	_next_campaign_page.disabled = force_disabled or _campaign_page >= page_count - 1
 
 
 func _build_theme() -> Theme:

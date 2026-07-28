@@ -2,7 +2,7 @@
 
 Status: Active migration contract
 Owner: Campaign
-Last Reviewed: 2026-07-27
+Last Reviewed: 2026-07-28
 Source of Truth: This document
 
 ## Purpose And Boundary
@@ -32,6 +32,14 @@ Duplicate Campaign display names are valid. Stable Campaign identities are
 unique. Every registered Campaign must have a readable identity manifest. The
 active Campaign must be a member of the same registry generation.
 
+The Registry list validates its own complete envelope, checksum, generation,
+Shared-Definition pointer, and unique metadata rows without opening every
+Campaign root. Creation and import establish the readable-manifest invariant
+before registry publication. Later damage to one Campaign therefore remains
+visible as one listed route but cannot prevent unrelated routes from being
+listed or opened. Activation and runtime open validate the selected Campaign's
+identity and current generation before changing the durable active pointer.
+
 A Campaign generation stores only stable Shared-Definition identities. Reusable
 Creature, Item, rule, and similar content is owned installation-wide by the
 Shared-Definition store rather than copied into Campaign partitions. Completed
@@ -52,6 +60,31 @@ Shared-Definition generation first; one registry generation then makes both
 the Campaign membership and selected definition generation visible together.
 Definitions or Campaign roots not selected by a registry generation are not
 installation truth.
+
+## Bounded Listing And Current Qualification
+
+The current Campaign desk loads registry bytes on one background read worker.
+The main thread receives only the completed state and materializes at most 50
+sorted Campaign controls per page. Previous/next controls retain the exact row
+count and page position. Reloads requested during an active read are coalesced
+into one follow-up read; Campaign mutation and transfer controls remain fenced
+until the read finishes.
+
+`godot/tests/qualification/campaign_registry_scale_profile.gd` is the dated G0
+lower-bound fixture, not a product content cap. It creates 1,000 complete
+Campaign roots, publishes one 1,000-row registry generation, performs five
+warmups, then measures 100 exact list/open runs. Every run verifies the complete
+row count, first and last stable identities, active pointer, selected Campaign
+identity, and Campaign generation. The p95 is the 95th ascending measurement;
+list and open each use the one-second interaction budget and ten-second timeout
+from the program technical needs.
+
+On 2026-07-28, Godot `4.6.2.stable.fedora` on Fedora Linux x86_64 with an Intel
+i5-8365U produced 2,001 files / 995,329 bytes. Registry list was 55,613 µs p95
+and 63,191 µs maximum; selected Campaign open was 3,615 µs p95 and 4,228 µs
+maximum. This closes the local representative-count list/open scale question.
+It does not qualify the complete warm-switch journey, another OS, extraordinary
+Campaign counts, or the separate power-loss durability gate.
 
 ## Shared Definitions And Import Decisions
 

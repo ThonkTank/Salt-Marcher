@@ -163,6 +163,9 @@ func activate_campaign(campaign_id: String, expected_generation: int) -> Diction
 		}
 	if not _contains_campaign(current["campaigns"], campaign_id):
 		return _operation_failure("Die ausgewählte Campaign existiert nicht mehr.")
+	var target_validation := _validate_campaign_manifest(campaign_id)
+	if not target_validation.get("ok", false):
+		return _operation_failure("Die ausgewählte Campaign kann nicht sicher geöffnet werden.")
 	if current["active_campaign_id"] == campaign_id:
 		return {"ok": true, "status": "unchanged", "state": current}
 
@@ -521,9 +524,6 @@ func _validate_payload(payload: Dictionary) -> Dictionary:
 		var name := str(campaign.get("name", "")).strip_edges()
 		if campaign_id.is_empty() or name.is_empty() or known_ids.has(campaign_id):
 			return _failure("Campaign-Registry enthält eine ungültige oder doppelte Identität.")
-		var manifest_validation := _validate_campaign_manifest(campaign_id)
-		if not manifest_validation.get("ok", false):
-			return manifest_validation
 		known_ids[campaign_id] = true
 	var active_id := str(payload.get("active_campaign_id", ""))
 	if not active_id.is_empty() and not known_ids.has(active_id):

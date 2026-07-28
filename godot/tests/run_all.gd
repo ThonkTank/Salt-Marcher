@@ -157,6 +157,8 @@ func _run_tests() -> void:
 	var second_id := str(second.get("campaign_id", ""))
 	_expect(second.get("state", {}).get("generation", -1) == 2, "second create advances generation")
 	_expect(second.get("state", {}).get("campaigns", []).size() == 2, "both campaigns are registered")
+	_run_registry_manifest_isolation_contract()
+	await _run_campaign_registry_paging_contract()
 
 	var stale := registry.activate_campaign(first_id, 1)
 	_expect(not stale.get("ok", true) and stale.get("status", "") == "stale", "stale activation is rejected")
@@ -229,6 +231,104 @@ func _run_tests() -> void:
 		for failure in _failures:
 			push_error(failure)
 		quit(1)
+
+
+func _run_registry_manifest_isolation_contract() -> void:
+	var data_root := "user://saltmarcher-registry-isolation-tests/%s" % Time.get_ticks_usec()
+	var registry := FileCampaignRegistry.new(data_root)
+	var healthy := registry.create_campaign("Gesunde Route")
+	var damaged := registry.create_campaign("Beschädigte Route")
+	var healthy_id := str(healthy.get("campaign_id", ""))
+	var damaged_id := str(damaged.get("campaign_id", ""))
+	var damaged_manifest := FileAccess.open(registry.campaign_manifest_path(damaged_id), FileAccess.WRITE)
+	if damaged_manifest != null:
+		damaged_manifest.store_string("{damaged")
+		damaged_manifest.close()
+	var listed := registry.load_state()
+	_expect(
+		listed.get("ok", false) and listed.get("campaigns", []).size() == 2,
+		"one damaged Campaign manifest does not block the installation registry list"
+	)
+	var refused := registry.activate_campaign(damaged_id, int(listed.get("generation", -1)))
+	_expect(
+		not refused.get("ok", true)
+		and registry.load_state().get("active_campaign_id", "") == damaged_id,
+		"a damaged selected Campaign is refused without changing registry truth"
+	)
+	var switched := registry.activate_campaign(healthy_id, int(listed.get("generation", -1)))
+	_expect(
+		switched.get("ok", false)
+		and switched.get("state", {}).get("active_campaign_id", "") == healthy_id,
+		"an unrelated healthy Campaign remains openable after isolated manifest damage"
+	)
+
+
+func _run_campaign_registry_paging_contract() -> void:
+	var data_root := "user://saltmarcher-registry-paging-tests/%s" % Time.get_ticks_usec()
+	var registry := FileCampaignRegistry.new(data_root)
+	var campaigns: Array = []
+	for index in range(120):
+		campaigns.append({
+			"id": "campaign.profile.%04d" % index,
+			"name": "Profilroute %04d" % index,
+			"created_at_utc": "2026-07-28T12:00:00Z",
+		})
+	_expect(registry.load_state().get("ok", false), "registry paging fixture initializes its registry root")
+	var committed: Dictionary = registry.call("_commit_generation", {
+		"generation": 1,
+		"parent_generation": 0,
+		"active_campaign_id": "",
+		"campaigns": campaigns,
+		"shared_definitions_generation": 0,
+	})
+	_expect(committed.get("ok", false), "registry paging fixture publishes one complete metadata generation")
+	var desk := CampaignDesk.new()
+	desk.data_root = data_root
+	desk.registry = registry
+	root.add_child(desk)
+	for _attempt in 100:
+		await process_frame
+		if not desk.registry_read_active():
+			break
+	var campaign_list := desk.find_child("CampaignList", true, false) as VBoxContainer
+	var page_label := desk.find_child("CampaignPageLabel", true, false) as Label
+	var previous_button := desk.find_child("PreviousCampaignPage", true, false) as Button
+	var next_button := desk.find_child("NextCampaignPage", true, false) as Button
+	_expect(
+		_campaign_button_count(campaign_list) == 50
+		and page_label != null and page_label.text == "Seite 1/3 · 120 Campaigns"
+		and previous_button != null and previous_button.disabled
+		and next_button != null and not next_button.disabled,
+		"Campaign desk materializes only the first bounded 50-row page"
+	)
+	if next_button != null:
+		next_button.pressed.emit()
+		await process_frame
+		_expect(
+			_campaign_button_count(campaign_list) == 50
+			and page_label.text == "Seite 2/3 · 120 Campaigns",
+			"Campaign desk advances to a second bounded page"
+		)
+		next_button.pressed.emit()
+		await process_frame
+		_expect(
+			_campaign_button_count(campaign_list) == 20
+			and page_label.text == "Seite 3/3 · 120 Campaigns"
+			and next_button.disabled,
+			"Campaign desk materializes only the final remainder page"
+		)
+	desk.queue_free()
+	await process_frame
+
+
+func _campaign_button_count(campaign_list: VBoxContainer) -> int:
+	if campaign_list == null:
+		return 0
+	var count := 0
+	for child in campaign_list.get_children():
+		if child is Button:
+			count += 1
+	return count
 
 
 func _run_campaign_store_contract(data_root: String, campaign_id: String) -> void:

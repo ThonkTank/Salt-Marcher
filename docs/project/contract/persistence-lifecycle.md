@@ -65,6 +65,37 @@ pending file or unreferenced content is not committed truth. Startup and later
 maintenance may remove such orphaned staging data after proving that no
 manifest references it.
 
+### Target Durability And Current Gap
+
+The target protocol does not equate process-visible readback with power-loss
+durability. Before reporting stored success, both the new file bytes and the
+parent-directory namespace change must be durably synchronized using a
+platform-qualified primitive. The final destination must remain fresh and on
+the same volume as its pending file; an existing destination is a protocol
+violation, never an overwrite case.
+
+The current Godot 4.6.2 implementation has not reached that target. SaltMarcher
+calls `FileAccess.flush()`, closes the file, renames it through
+`DirAccess.rename_absolute()`, and confirms it by readback. Godot documents
+[`FileAccess.flush()`](https://docs.godotengine.org/en/stable/classes/class_fileaccess.html#class-fileaccess-method-flush)
+as writing buffered data, but the 4.6.2 platform implementations call only
+`fflush()` on both
+[Unix](https://github.com/godotengine/godot/blob/4.6.2-stable/drivers/unix/file_access_unix.cpp)
+and [Windows](https://github.com/godotengine/godot/blob/4.6.2-stable/drivers/windows/file_access_windows.cpp).
+They do not expose an `fsync`/`FlushFileBuffers` equivalent or a durable
+parent-directory synchronization step. Godot's 4.6.2
+[Windows rename](https://github.com/godotengine/godot/blob/4.6.2-stable/drivers/windows/dir_access_windows.cpp)
+also removes an existing destination before `MoveFileW`; SaltMarcher's fresh
+destination rule avoids that overwrite branch, but `MoveFileW` alone does not
+close the durability gap.
+
+Consequently, the current route is checksummed, immutable, readback-confirmed,
+and qualified against process interruption and injected publication faults, but
+it is not yet qualified for acknowledged-work survival across power loss. A
+cross-platform durable file-and-directory publication boundary plus real
+Windows and macOS fault qualification remains mandatory before `TN-15`, `QS-04`,
+or `G0` can close.
+
 Every owned write and portability destination is capacity-admitted before file
 or staging creation. The working-volume reserve is the greater of 2 GiB or five
 percent of total volume capacity. A rejected operation publishes no new truth,
@@ -309,11 +340,11 @@ quarantine recovery protocol. Backup creation/retention and compaction also
 share one installation maintenance lock, so no recovery receipt, blob, or
 retention inventory can change concurrently with compaction validation.
 
-Released-format conversion, real Windows and macOS probe/export execution,
-cross-OS qualification, representative binary scale, and full `RP-R` repeated-
-cancellation resource qualification remain open roadmap work. The local Linux
-controller envelope above is a narrower production-lifecycle proof, not that
-profile qualification.
+Released-format conversion, an OS-durable publication primitive, real Windows
+and macOS probe/export execution, cross-OS qualification, representative binary
+scale, and full `RP-R` repeated-cancellation resource qualification remain open
+roadmap work. The local Linux controller envelope above is a narrower
+production-lifecycle proof, not that profile qualification.
 The old Java/SQLite implementation does not satisfy this target contract.
 
 ## References
