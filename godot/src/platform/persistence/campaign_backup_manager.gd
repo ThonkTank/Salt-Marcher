@@ -884,6 +884,11 @@ func _build_compaction_plan(
 		retained_paths[_relative_commit_path(int(state["generation"]))] = true
 		for reference_value in state["partition_refs"].values():
 			retained_paths[str(reference_value.get("path", ""))] = true
+		for reference_value in state.get("asset_refs", {}).values():
+			retained_paths[str(reference_value.get("path", ""))] = true
+		for owner_refs_value in state.get("chunk_refs", {}).values():
+			for reference_value in owner_refs_value.values():
+				retained_paths[str(reference_value.get("path", ""))] = true
 	var candidate_paths: Array[String] = []
 	for index in range(minimum_local_generations, valid_generations.size()):
 		candidate_paths.append(_relative_commit_path(int(valid_generations[index]["generation"])))
@@ -893,6 +898,16 @@ func _build_compaction_plan(
 	for object_path in object_files["paths"]:
 		if not retained_paths.has(object_path):
 			candidate_paths.append(object_path)
+	for binary_root in ["assets", "chunks"]:
+		var binary_files := _collect_compactable_binary_files(
+			store.campaign_directory() + "/" + binary_root,
+			binary_root
+		)
+		if not binary_files.get("ok", false):
+			return binary_files
+		for binary_path in binary_files["paths"]:
+			if not retained_paths.has(binary_path):
+				candidate_paths.append(binary_path)
 	candidate_paths.sort()
 	var candidates: Array = []
 	for relative_path in candidate_paths:
@@ -948,6 +963,56 @@ func _collect_compactable_object_files_recursive(
 			return _failure("Campaign-Compaction fand eine unbekannte Objektdatei und bricht sicher ab.")
 		else:
 			paths.append("objects/" + relative_path)
+		name = directory.get_next()
+	directory.list_dir_end()
+	return {"ok": true}
+
+
+func _collect_compactable_binary_files(root: String, prefix: String) -> Dictionary:
+	var paths: Array[String] = []
+	var absolute_root := _files.absolute(root)
+	if not DirAccess.dir_exists_absolute(absolute_root):
+		return {"ok": true, "paths": paths}
+	var collected := _collect_compactable_binary_files_recursive(absolute_root, "", prefix, paths)
+	if not collected.get("ok", false):
+		return collected
+	paths.sort()
+	return {"ok": true, "paths": paths}
+
+
+func _collect_compactable_binary_files_recursive(
+	absolute_root: String,
+	relative_directory: String,
+	prefix: String,
+	paths: Array[String]
+) -> Dictionary:
+	var absolute_directory := absolute_root if relative_directory.is_empty() else absolute_root + "/" + relative_directory
+	var directory := DirAccess.open(absolute_directory)
+	if directory == null:
+		return _failure("Campaign-Binärverzeichnis ist für Compaction nicht lesbar.")
+	directory.list_dir_begin()
+	var name := directory.get_next()
+	while not name.is_empty():
+		var relative_path := name if relative_directory.is_empty() else relative_directory + "/" + name
+		if directory.is_link(name):
+			directory.list_dir_end()
+			return _failure("Campaign-Compaction folgt keinen symbolischen Binärlinks.")
+		if directory.current_is_dir():
+			var nested := _collect_compactable_binary_files_recursive(
+				absolute_root,
+				relative_path,
+				prefix,
+				paths
+			)
+			if not nested.get("ok", false):
+				directory.list_dir_end()
+				return nested
+		else:
+			var campaign_path := prefix + "/" + relative_path
+			if not _safe_binary_compaction_path(campaign_path):
+				directory.list_dir_end()
+				return _failure("Campaign-Compaction fand eine unbekannte Asset- oder Chunk-Datei und bricht sicher ab.")
+			paths.append(campaign_path)
 		name = directory.get_next()
 	directory.list_dir_end()
 	return {"ok": true}
@@ -1139,7 +1204,12 @@ func _relative_commit_path(generation: int) -> String:
 
 
 func _safe_compaction_path(path: String) -> bool:
-	if not (path.begins_with("commits/") or path.begins_with("objects/")):
+	if not (
+		path.begins_with("commits/")
+		or path.begins_with("objects/")
+		or path.begins_with("assets/")
+		or path.begins_with("chunks/")
+	):
 		return false
 	if path.begins_with("/") or path.contains("\\") or path.contains(":"):
 		return false
@@ -1147,6 +1217,17 @@ func _safe_compaction_path(path: String) -> bool:
 		if segment.is_empty() or segment == "." or segment == "..":
 			return false
 	return true
+
+
+func _safe_binary_compaction_path(path: String) -> bool:
+	if not _safe_compaction_path(path) or path.contains(".pending-"):
+		return false
+	var segments := path.split("/", false)
+	if path.begins_with("assets/"):
+		return segments.size() == 3
+	if path.begins_with("chunks/"):
+		return segments.size() == 4 and str(segments[3]).ends_with(".bin")
+	return false
 
 
 func _valid_sha256(value: String) -> bool:

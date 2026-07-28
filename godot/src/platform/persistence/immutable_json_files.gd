@@ -4,6 +4,7 @@ extends RefCounted
 ## Feature-neutral publication of immutable JSON documents through fresh files.
 
 const StorageCapacityGuard = preload("res://godot/src/platform/persistence/storage_capacity_guard.gd")
+const BINARY_CHUNK_SIZE := 1024 * 1024
 
 var _fault_injector: Callable
 var _capacity_guard
@@ -60,6 +61,55 @@ func write_new_json(path: String, value: Variant, operation: String = "write") -
 	if canonical_json(readback["value"]) != canonical_json(value):
 		return failure("Das veröffentlichte Persistenzdokument weicht vom geschriebenen Inhalt ab.")
 	return {"ok": true}
+
+
+func write_new_binary_from_file(
+	path: String,
+	source_path: String,
+	operation: String = "binary_write"
+) -> Dictionary:
+	var absolute_path := absolute(path)
+	var absolute_source := absolute(source_path)
+	if FileAccess.file_exists(absolute_path):
+		return failure("Eine unveränderliche Binärdatei würde überschrieben.")
+	if absolute_source == absolute_path:
+		return failure("Binärquelle und Persistenzziel dürfen nicht identisch sein.")
+	var source := FileAccess.open(absolute_source, FileAccess.READ)
+	if source == null:
+		return failure("Binärquelle ist nicht lesbar.")
+	var size := source.get_length()
+	var admission: Dictionary = _capacity_guard.admit(path, size)
+	if not admission.get("ok", false):
+		source.close()
+		return admission
+	return _copy_new_binary(path, source, size, operation)
+
+
+func write_new_binary_bytes(
+	path: String,
+	bytes: PackedByteArray,
+	operation: String = "binary_write"
+) -> Dictionary:
+	var absolute_path := absolute(path)
+	if FileAccess.file_exists(absolute_path):
+		return failure("Eine unveränderliche Binärdatei würde überschrieben.")
+	var admission: Dictionary = _capacity_guard.admit(path, bytes.size())
+	if not admission.get("ok", false):
+		return admission
+	if _should_fail(operation, "before_open", path):
+		return failure("Persistenzfehler vor dem Öffnen wurde ausgelöst.")
+	var temporary_path := absolute_path + ".pending-%s" % new_identity()
+	var file := FileAccess.open(temporary_path, FileAccess.WRITE)
+	if file == null:
+		return failure("Binärdatei konnte nicht geschrieben werden.")
+	file.store_buffer(bytes)
+	file.flush()
+	var write_error := file.get_error()
+	file.close()
+	if write_error != OK:
+		_remove_if_present(temporary_path)
+		return failure("Binärdatei konnte nicht vollständig geschrieben werden.")
+	return _publish_binary(path, temporary_path, bytes.size(), _sha256_bytes(bytes), operation)
 
 
 func read_json(path: String) -> Dictionary:
@@ -123,6 +173,72 @@ func _should_fail(operation: String, phase: String, path: String) -> bool:
 func _remove_if_present(absolute_path: String) -> void:
 	if FileAccess.file_exists(absolute_path):
 		DirAccess.remove_absolute(absolute_path)
+
+
+func _copy_new_binary(path: String, source: FileAccess, size: int, operation: String) -> Dictionary:
+	if _should_fail(operation, "before_open", path):
+		source.close()
+		return failure("Persistenzfehler vor dem Öffnen wurde ausgelöst.")
+	var temporary_path := absolute(path) + ".pending-%s" % new_identity()
+	var output := FileAccess.open(temporary_path, FileAccess.WRITE)
+	if output == null:
+		source.close()
+		return failure("Binärdatei konnte nicht geschrieben werden.")
+	var hashing := HashingContext.new()
+	hashing.start(HashingContext.HASH_SHA256)
+	while source.get_position() < size:
+		var chunk := source.get_buffer(mini(BINARY_CHUNK_SIZE, size - source.get_position()))
+		if chunk.is_empty():
+			source.close()
+			output.close()
+			_remove_if_present(temporary_path)
+			return failure("Binärquelle wurde nicht vollständig gelesen.")
+		output.store_buffer(chunk)
+		hashing.update(chunk)
+	source.close()
+	output.flush()
+	var write_error := output.get_error()
+	output.close()
+	if write_error != OK:
+		_remove_if_present(temporary_path)
+		return failure("Binärdatei konnte nicht vollständig geschrieben werden.")
+	return _publish_binary(path, temporary_path, size, hashing.finish().hex_encode(), operation)
+
+
+func _publish_binary(
+	path: String,
+	temporary_path: String,
+	size: int,
+	checksum: String,
+	operation: String
+) -> Dictionary:
+	if _should_fail(operation, "after_flush", path):
+		_remove_if_present(temporary_path)
+		return failure("Persistenzfehler nach dem Flush wurde ausgelöst.")
+	if _should_fail(operation, "before_rename", path):
+		_remove_if_present(temporary_path)
+		return failure("Persistenzfehler vor der Veröffentlichung wurde ausgelöst.")
+	var absolute_path := absolute(path)
+	var rename_error := DirAccess.rename_absolute(temporary_path, absolute_path)
+	if rename_error != OK:
+		_remove_if_present(temporary_path)
+		return failure("Binärdatei konnte nicht veröffentlicht werden.")
+	if _should_fail(operation, "after_rename", path):
+		return {
+			"ok": false,
+			"status": "ambiguous_commit",
+			"error": "Binärdatei wurde veröffentlicht, aber ihre Bestätigung wurde unterbrochen.",
+		}
+	if FileAccess.get_size(absolute_path) != size or FileAccess.get_sha256(absolute_path) != checksum:
+		return failure("Veröffentlichte Binärdatei besteht die Rückleseprüfung nicht.")
+	return {"ok": true, "size": size, "sha256": checksum}
+
+
+func _sha256_bytes(bytes: PackedByteArray) -> String:
+	var hashing := HashingContext.new()
+	hashing.start(HashingContext.HASH_SHA256)
+	hashing.update(bytes)
+	return hashing.finish().hex_encode()
 
 
 func _measure_tree_absolute(absolute_path: String) -> Dictionary:

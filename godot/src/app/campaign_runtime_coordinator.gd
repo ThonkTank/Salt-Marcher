@@ -207,7 +207,11 @@ func commit_current(
 	expected_campaign_generation: int,
 	partition_changes: Dictionary,
 	runtime_state: Dictionary,
-	removed_partitions: Array[String] = []
+	removed_partitions: Array[String] = [],
+	asset_changes: Dictionary = {},
+	removed_asset_ids: Array[String] = [],
+	chunk_changes: Dictionary = {},
+	removed_chunks: Dictionary = {}
 ) -> Dictionary:
 	if _current == null:
 		return {"ok": false, "status": "campaign_required", "error": "Keine Campaign ist aktiv."}
@@ -216,7 +220,11 @@ func commit_current(
 		expected_campaign_generation,
 		partition_changes,
 		runtime_state,
-		removed_partitions
+		removed_partitions,
+		asset_changes,
+		removed_asset_ids,
+		chunk_changes,
+		removed_chunks
 	)
 	if committed.get("ok", false):
 		_notify_confirmed_generation(_current)
@@ -228,7 +236,11 @@ func submit_current_commit(
 	expected_campaign_generation: int,
 	partition_changes: Dictionary,
 	runtime_state: Dictionary,
-	removed_partitions: Array[String] = []
+	removed_partitions: Array[String] = [],
+	asset_changes: Dictionary = {},
+	removed_asset_ids: Array[String] = [],
+	chunk_changes: Dictionary = {},
+	removed_chunks: Dictionary = {}
 ) -> Dictionary:
 	if _current == null:
 		return {"ok": false, "status": "campaign_required", "error": "Keine Campaign ist aktiv."}
@@ -237,7 +249,11 @@ func submit_current_commit(
 		expected_campaign_generation,
 		partition_changes,
 		runtime_state,
-		removed_partitions
+		removed_partitions,
+		asset_changes,
+		removed_asset_ids,
+		chunk_changes,
+		removed_chunks
 	)
 
 

@@ -1,5 +1,10 @@
 # Source Architecture
 
+Status: Active target architecture
+Owner: Godot Cutover Program
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 ## Purpose And Target
 
 This document owns SaltMarcher's greenfield runtime and source target. The
@@ -101,12 +106,16 @@ whose checksum, schema, references, and owned files validate. Damage therefore
 falls back to the newest uniquely safe generation and is disclosed.
 
 Campaign data is not one monolithic JSON document. Each commit manifest points
-to immutable owner partitions, indexes, and map chunks. Unchanged content is
-shared by reference between generations; changed content receives new files.
-The complete manifest is the atomic Campaign truth. Compaction may remove data
-only when no retained generation, trash entry, export, or recovery point
-references it. Assets retain their original bytes and are addressed by stable
-manifest identities plus checksums.
+to immutable owner partitions, indexes, map chunks, and local media. Asset IDs
+and owner/coordinate chunk IDs remain stable while every byte revision receives
+a fresh content identity, size, and checksum. Core startup validates reference
+shape without reading all media bytes; capability reads validate the selected
+unit, while complete backup and export validate the full binary closure.
+Unchanged content is shared by reference between generations. The complete
+manifest is the atomic Campaign truth. Compaction may remove data only when no
+retained generation references it and an exact recovery point covers the bytes;
+trash, exports, retained restore originals, and backup storage remain outside
+the live-root collector.
 
 One local GM process is the sole writer. Optimistic generation checks reject
 late or stale commands. Confirmed UI feedback is emitted only after the new

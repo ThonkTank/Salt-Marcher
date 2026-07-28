@@ -48,6 +48,7 @@ func _run_tests() -> void:
 	_expect(first.get("state", {}).get("generation", -1) == 1, "create commits generation one")
 	_expect(first.get("state", {}).get("active_campaign_id", "") == first_id, "created campaign is active")
 	_run_campaign_store_contract(root, first_id)
+	_run_binary_content_contract()
 
 	var second := registry.create_campaign("Nordmark")
 	_expect(second.get("ok", false), "second campaign is created")
@@ -133,6 +134,8 @@ func _run_campaign_store_contract(data_root: String, campaign_id: String) -> voi
 	_expect(initial.get("ok", false), "new campaign has a readable Campaign generation")
 	_expect(initial.get("generation", -1) == 1, "new campaign starts at Campaign generation one")
 	_expect(initial.get("partition_refs", {"unexpected": true}).is_empty(), "new campaign starts without capability partitions")
+	_expect(initial.get("asset_refs", {"unexpected": true}).is_empty(), "new campaign starts without asset references")
+	_expect(initial.get("chunk_refs", {"unexpected": true}).is_empty(), "new campaign starts without chunk references")
 
 	var runtime := store.default_runtime_state()
 	runtime["focused_workspace"] = "world"
@@ -187,6 +190,344 @@ func _run_campaign_store_contract(data_root: String, campaign_id: String) -> voi
 
 	var invalid_owner := store.commit(5, {"../escape": {}}, resumed.get("state", {}).get("runtime", {}))
 	_expect(not invalid_owner.get("ok", true), "unsafe capability owner is rejected before publication")
+
+
+func _run_binary_content_contract() -> void:
+	var data_root := "user://saltmarcher-binary-content-tests/%s" % Time.get_ticks_usec()
+	var registry := FileCampaignRegistry.new(data_root)
+	var created := registry.create_campaign("Binary Closure")
+	var campaign_id := str(created.get("campaign_id", ""))
+	var store := FileCampaignStore.new(data_root, campaign_id)
+	var source_path := data_root + "/sources/table-map.png"
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(source_path.get_base_dir()))
+	var source_bytes := PackedByteArray()
+	source_bytes.resize(1024 * 1024 + 17)
+	source_bytes.fill(0x5a)
+	source_bytes[0] = 0x89
+	source_bytes[1] = 0x50
+	source_bytes[2] = 0x4e
+	source_bytes[3] = 0x47
+	var source_file := FileAccess.open(source_path, FileAccess.WRITE)
+	source_file.store_buffer(source_bytes)
+	source_file.close()
+	var initial := store.load_state()
+	var invalid_name := store.commit(
+		1,
+		{},
+		initial["runtime"],
+		[],
+		0,
+		null,
+		{"asset.map": {"source_path": source_path, "file_name": "CON.png", "media_kind": "map"}}
+	)
+	_expect(not invalid_name.get("ok", true), "asset commit rejects a non-portable target filename before publication")
+	_expect(store.load_state().get("generation", -1) == 1, "rejected asset metadata publishes no Campaign generation")
+	var first_chunk_bytes := "chunk-one".to_utf8_buffer()
+	var first_binary_commit := store.commit(
+		1,
+		{},
+		initial["runtime"],
+		[],
+		0,
+		null,
+		{
+			"asset.map": {
+				"source_path": source_path,
+				"file_name": "table-map.png",
+				"media_kind": "map",
+			},
+		},
+		[],
+		{
+			"hex": {
+				"q0_r0": {
+					"bytes": first_chunk_bytes,
+					"chunk_format": "saltmarcher.hex-chunk.v1",
+				},
+			},
+		}
+	)
+	_expect(first_binary_commit.get("ok", false), "Campaign commit atomically publishes one streamed asset and one binary chunk reference")
+	var generation_two: Dictionary = first_binary_commit.get("state", {})
+	var first_asset_ref: Dictionary = generation_two.get("asset_refs", {}).get("asset.map", {})
+	var first_chunk_ref: Dictionary = generation_two.get("chunk_refs", {}).get("hex", {}).get("q0_r0", {})
+	_expect(
+		first_asset_ref.get("asset_id", "") == "asset.map"
+		and first_asset_ref.get("original_file_name", "") == "table-map.png"
+		and first_asset_ref.get("size", "") == str(source_bytes.size()),
+		"asset manifest preserves stable identity, original filename, and lossless byte size"
+	)
+	var asset_inspection := store.inspect_asset("asset.map", generation_two)
+	_expect(asset_inspection.get("ok", false) and asset_inspection.get("present", false), "committed asset passes exact size and checksum inspection")
+	var first_chunk := store.read_chunk("hex", "q0_r0", generation_two)
+	_expect(first_chunk.get("ok", false) and first_chunk.get("bytes", PackedByteArray()) == first_chunk_bytes, "committed chunk round-trips exact bytes through its stable coordinate")
+	var stale_binary := store.commit(
+		1,
+		{},
+		generation_two["runtime"],
+		[],
+		0,
+		null,
+		{
+			"asset.stale": {
+				"bytes": "must-not-publish".to_utf8_buffer(),
+				"file_name": "stale.bin",
+				"media_kind": "other",
+			},
+		}
+	)
+	_expect(not stale_binary.get("ok", true) and stale_binary.get("status", "") == "stale", "stale binary mutation is rejected before content publication")
+	_expect(not DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(store.campaign_directory() + "/assets/asset.stale")), "stale binary mutation creates no asset artifact")
+
+	var second_asset_bytes := PackedByteArray([0x89, 0x50, 0x4e, 0x47, 9, 8, 7, 6])
+	var second_chunk_bytes := "chunk-two".to_utf8_buffer()
+	var second_binary_commit := store.commit(
+		2,
+		{},
+		generation_two["runtime"],
+		[],
+		0,
+		null,
+		{
+			"asset.map": {
+				"bytes": second_asset_bytes,
+				"file_name": "table-map.png",
+				"media_kind": "map",
+			},
+		},
+		[],
+		{
+			"hex": {
+				"q0_r0": {
+					"bytes": second_chunk_bytes,
+					"chunk_format": "saltmarcher.hex-chunk.v1",
+				},
+			},
+		}
+	)
+	_expect(second_binary_commit.get("ok", false), "asset and chunk updates publish fresh immutable content revisions")
+	var generation_three: Dictionary = second_binary_commit.get("state", {})
+	var second_asset_ref: Dictionary = generation_three.get("asset_refs", {}).get("asset.map", {})
+	var second_chunk_ref: Dictionary = generation_three.get("chunk_refs", {}).get("hex", {}).get("q0_r0", {})
+	_expect(first_asset_ref.get("path", "") != second_asset_ref.get("path", ""), "stable asset identity points to a fresh immutable content path after update")
+	_expect(first_chunk_ref.get("path", "") != second_chunk_ref.get("path", ""), "stable chunk coordinate points to a fresh immutable content path after update")
+	_expect(FileAccess.file_exists(ProjectSettings.globalize_path(store.campaign_directory() + "/" + str(first_asset_ref["path"]))), "asset update retains prior bytes for local generation fallback")
+	_expect(FileAccess.file_exists(ProjectSettings.globalize_path(store.campaign_directory() + "/" + str(first_chunk_ref["path"]))), "chunk update retains prior bytes for local generation fallback")
+
+	var history_backup := CampaignBackupManager.new(data_root, registry).create_restore_tested_backup(campaign_id, 7000)
+	_expect(history_backup.get("ok", false), "restore-tested backup closes over referenced assets and chunks")
+	var bundle_path := data_root + "/exports/binary-closure.saltmarcher"
+	var exported := CampaignBundle.new(data_root, registry).export_campaign(campaign_id, bundle_path)
+	_expect(exported.get("ok", false), "complete Campaign export includes intact asset and chunk bytes")
+	var imported := CampaignBundle.new(data_root, registry).import_campaign(bundle_path, 1)
+	_expect(imported.get("ok", false), "complete Campaign import republishes the binary closure under an independent identity")
+	var imported_id := str(imported.get("campaign_id", ""))
+	var imported_store := FileCampaignStore.new(data_root, imported_id)
+	var imported_state := imported_store.load_state()
+	_expect(imported_store.inspect_asset("asset.map", imported_state).get("ok", false), "imported asset remains independently intact")
+	_expect(imported_store.read_chunk("hex", "q0_r0", imported_state).get("bytes", PackedByteArray()) == second_chunk_bytes, "imported chunk remains byte-exact")
+
+	var removed := store.commit(
+		3,
+		{},
+		generation_three["runtime"],
+		[],
+		0,
+		null,
+		{},
+		["asset.map"],
+		{},
+		{"hex": ["q0_r0"]}
+	)
+	_expect(removed.get("ok", false) and removed.get("state", {}).get("asset_refs", {}).is_empty(), "asset removal publishes only a new manifest without deleting fallback bytes")
+	_expect(removed.get("state", {}).get("chunk_refs", {}).is_empty(), "chunk removal publishes only a new manifest without deleting fallback bytes")
+	var advanced := removed
+	for expected_generation in [4, 5]:
+		advanced = store.commit(expected_generation, {}, advanced["state"]["runtime"])
+		_expect(advanced.get("ok", false), "binary-compaction fixture advances generation %d" % (expected_generation + 1))
+	var generation_six: Dictionary = advanced.get("state", {})
+	var current_backup := CampaignBackupManager.new(data_root, registry).create_restore_tested_backup(campaign_id, 7100)
+	_expect(current_backup.get("ok", false), "binary compaction receives an exact current restore-tested point")
+	var compacted := CampaignBackupManager.new(data_root, registry).compact_campaign_history(campaign_id, 6, true, 3, 7200)
+	_expect(compacted.get("ok", false) and compacted.get("status", "") == "campaign_compacted", "Campaign compaction collects asset and chunk revisions unreachable from retained local generations")
+	for binary_ref in [first_asset_ref, second_asset_ref, first_chunk_ref, second_chunk_ref]:
+		_expect(
+			not FileAccess.file_exists(ProjectSettings.globalize_path(store.campaign_directory() + "/" + str(binary_ref["path"]))),
+			"binary compaction removes unreachable path %s" % binary_ref["path"]
+		)
+	_expect(store.load_state().get("generation", -1) == generation_six.get("generation", -2), "binary compaction preserves current semantic Campaign truth")
+	var staged_history := CampaignBackupClosure.new(data_root).stage_point(
+		campaign_id,
+		str(history_backup.get("backup", {}).get("backup_id", "")),
+		"binary-history-proof"
+	)
+	_expect(staged_history.get("ok", false), "pre-removal recovery point reconstructs compacted historical binary bytes")
+	if staged_history.get("ok", false):
+		var staged_store := FileCampaignStore.new(data_root, campaign_id, Callable(), staged_history["staged_campaign"])
+		var staged_state: Dictionary = staged_history["state"]
+		_expect(staged_store.inspect_asset("asset.map", staged_state).get("ok", false), "historical recovery retains its asset revision")
+		_expect(staged_store.read_chunk("hex", "q0_r0", staged_state).get("bytes", PackedByteArray()) == second_chunk_bytes, "historical recovery retains its chunk revision")
+		CampaignBackupClosure.new(data_root).discard_staging(staged_history["staging_root"])
+
+	var imported_asset_ref: Dictionary = imported_state.get("asset_refs", {}).get("asset.map", {})
+	var imported_asset_path := imported_store.campaign_directory() + "/" + str(imported_asset_ref.get("path", ""))
+	var damaged_asset := FileAccess.open(imported_asset_path, FileAccess.WRITE)
+	damaged_asset.store_buffer(PackedByteArray([0, 1, 2]))
+	damaged_asset.close()
+	_expect(imported_store.load_state().get("ok", false), "damaged optional media does not block core Campaign open")
+	_expect(imported_store.inspect_asset("asset.map").get("status", "") == "asset_damaged", "damaged asset is isolated and named explicitly")
+	_expect(imported_store.read_chunk("hex", "q0_r0").get("ok", false), "unaffected chunk remains usable beside damaged media")
+	var rejected_export := CampaignBundle.new(data_root, registry).export_campaign(imported_id, data_root + "/exports/damaged.saltmarcher")
+	_expect(not rejected_export.get("ok", true), "complete export refuses a damaged asset closure")
+	var rejected_backup := CampaignBackupManager.new(data_root, registry).create_restore_tested_backup(imported_id, 7300)
+	_expect(not rejected_backup.get("ok", true), "complete recovery point refuses a damaged asset closure")
+
+	var pressure_root := "user://saltmarcher-binary-pressure-tests/%s" % Time.get_ticks_usec()
+	var pressure_registry := FileCampaignRegistry.new(pressure_root)
+	var pressure_created := pressure_registry.create_campaign("Binary Pressure")
+	var pressure_id := str(pressure_created.get("campaign_id", ""))
+	var binary_pressure_guard := StorageCapacityGuard.new(func(_path: String) -> Dictionary:
+		return {
+			"ok": true,
+			"available_bytes": 2 * 1024 * 1024 * 1024,
+			"volume_capacity_bytes": -1,
+		}
+	)
+	var pressure_store := FileCampaignStore.new(pressure_root, pressure_id, Callable(), "", binary_pressure_guard)
+	var pressure_state := pressure_store.load_state()
+	var pressured_asset := pressure_store.commit(
+		1,
+		{},
+		pressure_state["runtime"],
+		[],
+		0,
+		null,
+		{
+			"asset.pressure": {
+				"bytes": "blocked-asset".to_utf8_buffer(),
+				"file_name": "blocked.bin",
+				"media_kind": "other",
+			},
+		}
+	)
+	_expect(not pressured_asset.get("ok", true) and pressured_asset.get("status", "") == "storage_pressure", "binary asset is rejected before publication when the storage reserve is reached")
+	_expect(_directory_has_no_files(pressure_store.campaign_directory() + "/assets/asset.pressure"), "rejected low-space asset leaves no final or pending file")
+	var pressured_chunk := pressure_store.commit(
+		1,
+		{},
+		pressure_state["runtime"],
+		[],
+		0,
+		null,
+		{},
+		[],
+		{
+			"world": {
+				"pressure": {
+					"bytes": "blocked-chunk".to_utf8_buffer(),
+					"chunk_format": "saltmarcher.world-chunk.v1",
+				},
+			},
+		}
+	)
+	_expect(not pressured_chunk.get("ok", true) and pressured_chunk.get("status", "") == "storage_pressure", "binary chunk is rejected before publication when the storage reserve is reached")
+	_expect(_directory_has_no_files(pressure_store.campaign_directory() + "/chunks/world/pressure"), "rejected low-space chunk leaves no final or pending file")
+	_expect(pressure_store.load_state().get("generation", -1) == 1, "binary storage-pressure failures leave Campaign truth unchanged")
+
+	for fault_operation in ["campaign_asset", "campaign_chunk"]:
+		var fault_root := "user://saltmarcher-binary-fault-tests/%s-%s" % [fault_operation, Time.get_ticks_usec()]
+		var fault_registry := FileCampaignRegistry.new(fault_root)
+		var fault_created := fault_registry.create_campaign("Binary Fault")
+		var fault_id := str(fault_created.get("campaign_id", ""))
+		var binary_fault := func(operation: String, phase: String, _path: String) -> bool:
+			return operation == fault_operation and phase == "before_rename"
+		var fault_store := FileCampaignStore.new(fault_root, fault_id, binary_fault)
+		var fault_state := fault_store.load_state()
+		var fault_result: Dictionary
+		var fault_directory: String
+		if fault_operation == "campaign_asset":
+			fault_result = fault_store.commit(
+				1,
+				{},
+				fault_state["runtime"],
+				[],
+				0,
+				null,
+				{
+					"asset.fault": {
+						"bytes": "faulted-asset".to_utf8_buffer(),
+						"file_name": "faulted.bin",
+						"media_kind": "other",
+					},
+				}
+			)
+			fault_directory = fault_store.campaign_directory() + "/assets/asset.fault"
+		else:
+			fault_result = fault_store.commit(
+				1,
+				{},
+				fault_state["runtime"],
+				[],
+				0,
+				null,
+				{},
+				[],
+				{
+					"world": {
+						"fault": {
+							"bytes": "faulted-chunk".to_utf8_buffer(),
+							"chunk_format": "saltmarcher.world-chunk.v1",
+						},
+					},
+				}
+			)
+			fault_directory = fault_store.campaign_directory() + "/chunks/world/fault"
+		_expect(not fault_result.get("ok", true), "%s rename fault is surfaced" % fault_operation)
+		_expect(_directory_has_no_files(fault_directory), "%s rename fault removes its pending binary" % fault_operation)
+		_expect(fault_store.load_state().get("generation", -1) == 1, "%s rename fault publishes no Campaign generation" % fault_operation)
+
+	var runtime_root := "user://saltmarcher-binary-runtime-tests/%s" % Time.get_ticks_usec()
+	var runtime_registry := FileCampaignRegistry.new(runtime_root)
+	var runtime_created := runtime_registry.create_campaign("Binary Runtime")
+	var runtime_id := str(runtime_created.get("campaign_id", ""))
+	var runtime_coordinator := CampaignRuntimeCoordinator.new(runtime_root, runtime_registry)
+	runtime_coordinator.open_durable_active()
+	var runtime_state: Dictionary = runtime_coordinator.current_session().snapshot()["campaign_state"]["runtime"].duplicate(true)
+	var binary_ticket := runtime_coordinator.submit_current_commit(
+		1,
+		1,
+		{},
+		runtime_state,
+		[],
+		{
+			"asset.audio": {
+				"bytes": "audio-bytes".to_utf8_buffer(),
+				"file_name": "table-theme.ogg",
+				"media_kind": "audio",
+			},
+		},
+		[],
+		{
+			"dungeon": {
+				"level0_x0_y0": {
+					"bytes": "dungeon-chunk".to_utf8_buffer(),
+					"chunk_format": "saltmarcher.dungeon-chunk.v1",
+				},
+			},
+		}
+	)
+	_expect(binary_ticket.get("status", "") == "accepted", "production runtime accepts asset and chunk changes through its serial asynchronous writer")
+	var binary_terminal: Dictionary = {}
+	for _attempt in 300:
+		binary_terminal = runtime_coordinator.poll_current_commit(str(binary_ticket.get("ticket_id", "")))
+		if binary_terminal.get("status", "") == "completed":
+			break
+		OS.delay_msec(2)
+	_expect(binary_terminal.get("result", {}).get("ok", false), "production runtime publishes asset and chunk changes atomically with Campaign generation")
+	var runtime_store := FileCampaignStore.new(runtime_root, runtime_id)
+	_expect(runtime_store.inspect_asset("asset.audio").get("ok", false), "production runtime asset remains readable after terminal write")
+	_expect(runtime_store.read_chunk("dungeon", "level0_x0_y0").get("bytes", PackedByteArray()) == "dungeon-chunk".to_utf8_buffer(), "production runtime chunk remains byte-exact after terminal write")
+	runtime_coordinator.revoke_current(-1)
 
 
 func _run_registry_fault_contract() -> void:
@@ -1845,4 +2186,12 @@ func _has_no_child_directories(path: String) -> bool:
 	return (
 		not DirAccess.dir_exists_absolute(absolute_path)
 		or DirAccess.get_directories_at(absolute_path).is_empty()
+	)
+
+
+func _directory_has_no_files(path: String) -> bool:
+	var absolute_path := ProjectSettings.globalize_path(path)
+	return (
+		not DirAccess.dir_exists_absolute(absolute_path)
+		or DirAccess.get_files_at(absolute_path).is_empty()
 	)

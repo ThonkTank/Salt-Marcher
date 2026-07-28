@@ -31,6 +31,9 @@ func create_restore_tested_point(
 	var state := store.load_state()
 	if not state.get("ok", false):
 		return _failure("Campaign ist nicht sicher genug lesbar, um einen Recovery-Punkt zu erstellen.")
+	var binary_validation := store.validate_binary_closure(state)
+	if not binary_validation.get("ok", false):
+		return _failure("Campaign-Assets oder -Chunks sind nicht vollständig genug für einen Recovery-Punkt.")
 	var points_error := _files.ensure_directory(_points_directory(campaign_id))
 	if points_error != OK:
 		return _failure("Recovery-Punkt-Verzeichnis konnte nicht erstellt werden.")
@@ -179,6 +182,10 @@ func _stage_payload(payload: Dictionary, purpose: String) -> Dictionary:
 	):
 		discard_staging(staging_root)
 		return _failure("Rekonstruierter Recovery-Punkt besteht die semantische Campaign-Validierung nicht.")
+	var binary_validation := staged_store.validate_binary_closure(state)
+	if not binary_validation.get("ok", false):
+		discard_staging(staging_root)
+		return _failure("Rekonstruierter Recovery-Punkt enthält keine vollständige Asset-/Chunk-Closure.")
 	return {
 		"ok": true,
 		"backup": payload,

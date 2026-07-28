@@ -30,8 +30,8 @@ campaigns/<campaign id>/
   manifest.json
   commits/generation-<20 digit generation>.json
   objects/<owner>/<content id>.json
-  chunks/<owner>/<content id>.bin
-  assets/<asset id>/<original file name>
+  chunks/<owner>/<stable chunk id>/<content id>.bin
+  assets/<stable asset id>/<content id>-<original file name>
 backups/campaigns/<campaign id>/points/<backup id>.verified.json
 backups/campaigns/<campaign id>/blobs/sha256/<content checksum>.blob
 recovery/campaigns/<campaign id>/<restore identity>/original/...
@@ -100,6 +100,22 @@ Large spatial truth is chunked by stable map coordinates. Large reference
 collections and histories use bounded immutable segments plus derived indexes;
 startup never parses an entire representative or extraordinary Campaign into
 one Variant tree.
+
+Each asset reference records a stable Campaign-owned asset identity, fresh
+content identity, media kind, portable original filename, relative path,
+lossless decimal byte size, and SHA-256 checksum. Each chunk reference records
+its capability owner, stable coordinate identity, format, fresh content
+identity, relative path, size, and checksum. Writes may stream a source file or
+publish generated chunk bytes, then read back the new immutable file before one
+Campaign manifest atomically selects it. Replacing or removing a reference does
+not mutate or immediately delete earlier bytes.
+
+Core Campaign open validates binary reference shape but does not hash every
+media file or load every chunk. An explicit asset/chunk read validates the
+selected bytes and reports the named missing or damaged unit. Thus optional
+media damage does not block unrelated Campaign truth. Complete backup, restore,
+export, and import validate every referenced binary byte and fail rather than
+describe a damaged closure as complete.
 
 ## Admission And Ordering
 
@@ -259,10 +275,11 @@ The explicit Campaign-history compactor requires revoked write authority, an
 unchanged expected generation, and a restore-tested point of that exact active
 generation. It validates every local commit before planning; any damaged commit
 defers the operation unchanged. It keeps at least the newest three valid local
-generations and every partition they reference, never traverses assets, trash,
-exports, retained restore originals, or backup storage, and removes only older
-commit and owner-partition files whose exact size and checksum occur in the
-protected backup. Unknown object files also fail closed. Candidates move into a
+generations and every partition, asset revision, and chunk they reference. It
+never traverses trash, exports, retained restore originals, or backup storage,
+and removes only older commits and unreachable live-root objects whose exact
+size and checksum occur in the protected backup. Unknown or malformed object,
+asset, or chunk paths fail closed. Candidates move into a
 checksummed quarantine receipt. An interruption before the durable commit marker
 rolls the complete set back; one after the marker finishes deletion. Before that
 marker is written, the compacted live root is semantically revalidated and
@@ -284,8 +301,8 @@ quarantine recovery protocol. Backup creation/retention and compaction also
 share one installation maintenance lock, so no recovery receipt, blob, or
 retention inventory can change concurrently with compaction validation.
 
-Asset/chunk compaction, released-format conversion, real Windows and macOS
-probe/export execution, cross-OS qualification, representative scale, and the
+Released-format conversion, real Windows and macOS probe/export execution,
+cross-OS qualification, representative binary scale, and the
 repeated-cancellation resource-envelope proof remain open roadmap work.
 The old Java/SQLite implementation does not satisfy this target contract.
 

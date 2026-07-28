@@ -48,6 +48,9 @@ func export_campaign(
 	var state := store.load_state()
 	if not state.get("ok", false):
 		return _failure("Campaign kann nicht vollständig exportiert werden: %s" % state.get("error", "unbekannter Fehler"))
+	var binary_validation := store.validate_binary_closure(state)
+	if not binary_validation.get("ok", false):
+		return _failure("Campaign kann nicht vollständig exportiert werden: Asset- oder Chunk-Closure ist beschädigt.")
 	var registry_state: Dictionary = _registry.load_state()
 	if not registry_state.get("ok", false):
 		return _failure("Installationweite Referenzen können nicht vollständig exportiert werden.")
@@ -634,6 +637,10 @@ func _stage_and_validate_bundle(bundle_path: String, purpose: String) -> Diction
 	if not source_state.get("ok", false):
 		_remove_tree(_files.absolute(staging_root))
 		return _failure("Campaign-Bundle besteht die semantische Campaign-Validierung nicht.")
+	var binary_validation := staged_store.validate_binary_closure(source_state)
+	if not binary_validation.get("ok", false):
+		_remove_tree(_files.absolute(staging_root))
+		return _failure("Campaign-Bundle besitzt keine vollständige Asset-/Chunk-Closure.")
 	if int(source_state["generation"]) != str(payload["campaign_generation"]).to_int():
 		_remove_tree(_files.absolute(staging_root))
 		return _failure("Exportmanifest und Campaign-Generation widersprechen sich.")

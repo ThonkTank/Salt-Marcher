@@ -39,7 +39,11 @@ func commit(
 	expected_campaign_generation: int,
 	partition_changes: Dictionary,
 	runtime_state: Dictionary,
-	removed_partitions: Array[String] = []
+	removed_partitions: Array[String] = [],
+	asset_changes: Dictionary = {},
+	removed_asset_ids: Array[String] = [],
+	chunk_changes: Dictionary = {},
+	removed_chunks: Dictionary = {}
 ) -> Dictionary:
 	_collect_finished_worker()
 	_mutex.lock()
@@ -81,7 +85,13 @@ func commit(
 		expected_campaign_generation,
 		partition_changes,
 		runtime_state,
-		removed_partitions
+		removed_partitions,
+		0,
+		null,
+		asset_changes,
+		removed_asset_ids,
+		chunk_changes,
+		removed_chunks
 	)
 	_mutex.lock()
 	if committed.get("ok", false):
@@ -96,7 +106,11 @@ func submit_commit(
 	expected_campaign_generation: int,
 	partition_changes: Dictionary,
 	runtime_state: Dictionary,
-	removed_partitions: Array[String] = []
+	removed_partitions: Array[String] = [],
+	asset_changes: Dictionary = {},
+	removed_asset_ids: Array[String] = [],
+	chunk_changes: Dictionary = {},
+	removed_chunks: Dictionary = {}
 ) -> Dictionary:
 	_collect_finished_worker()
 	_mutex.lock()
@@ -130,7 +144,11 @@ func submit_commit(
 		expected_campaign_generation,
 		partition_changes.duplicate(true),
 		runtime_state.duplicate(true),
-		removed_partitions.duplicate()
+		removed_partitions.duplicate(),
+		asset_changes.duplicate(true),
+		removed_asset_ids.duplicate(),
+		chunk_changes.duplicate(true),
+		removed_chunks.duplicate(true)
 	))
 	if start_error != OK:
 		_mutex.lock()
@@ -287,13 +305,23 @@ func _run_async_commit(
 	expected_campaign_generation: int,
 	partition_changes: Dictionary,
 	runtime_state: Dictionary,
-	removed_partitions: Array[String]
+	removed_partitions: Array[String],
+	asset_changes: Dictionary,
+	removed_asset_ids: Array[String],
+	chunk_changes: Dictionary,
+	removed_chunks: Dictionary
 ) -> Dictionary:
 	var committed: Dictionary = _store.commit(
 		expected_campaign_generation,
 		partition_changes,
 		runtime_state,
-		removed_partitions
+		removed_partitions,
+		0,
+		null,
+		asset_changes,
+		removed_asset_ids,
+		chunk_changes,
+		removed_chunks
 	)
 	if committed.get("ok", false) and _completion_notifier.is_valid():
 		_completion_notifier.call(_campaign_id, int(committed.get("state", {}).get("generation", -1)))
@@ -317,4 +345,5 @@ func _collect_finished_worker() -> void:
 	_worker_join_mutex.lock()
 	if _worker.is_started() and not _worker.is_alive():
 		_worker.wait_to_finish()
+		_worker = Thread.new()
 	_worker_join_mutex.unlock()

@@ -56,9 +56,16 @@ explicitly confirmed permanent deletion. Backup retention and storage-pressure
 handling now preserve a 2 GiB floor and at least three verified points. Normal
 maintenance keeps all points for one hour, then one per hour, day, and week
 through 26 weeks, with a configurable hard point cap. Revoked-writer
-compaction removes only old commits and partition objects whose exact bytes are
-already covered by a current restore-tested point; damaged evidence defers the
-operation. A single background maintenance worker assesses the active Campaign
+compaction removes only old commits, partition objects, asset revisions, and
+binary chunks unreachable from the three retained local generations and already
+covered byte-exactly by a current restore-tested point; damaged evidence defers
+the operation. Assets retain stable semantic identities, original portable
+filenames, media kinds, byte sizes, and checksums while updates receive fresh
+immutable content paths. Spatial chunks use stable owner/coordinate identities
+with the same immutable byte protocol. Complete backup and export validate the
+entire referenced binary closure; a damaged optional asset remains isolated
+without blocking core Campaign open. A single background maintenance worker
+assesses the active Campaign
 at startup, activation, and every confirmed generation. At 64 valid local
 generations it fences Campaign actions, drains accepted writes, compacts back to
 three local generations, restores writer authority on every terminal path, and
@@ -66,8 +73,8 @@ retries interrupted maintenance without blocking the scene-tree thread. Backup
 retention and compaction share one maintenance lock over the recovery pool.
 Production storage admission reads total and available volume bytes
 through direct POSIX or Windows platform adapters and fails closed when the
-greater-of-2-GiB-or-five-percent reserve cannot be proven. Asset/chunk
-compaction and real Windows/macOS export qualification remain migration work.
+greater-of-2-GiB-or-five-percent reserve cannot be proven. Real Windows/macOS
+export qualification and representative binary scale remain migration work.
 Accepted Campaign
 writes run through one serial ticketed worker. Create and switch transitions
 revoke new source work immediately, drain accepted work for up to ten seconds
