@@ -12,8 +12,10 @@ Items, saved Encounters, World Planner records, and Encounter Tables inside one
 Creature and Item sections to Shared Definitions and NPCs, factions, and places
 to the active Campaign's World Planner provider. Both provider families expose
 stable name/identity sorting before bounded paging through one retained result
-table. Encounter and Encounter Tables remain visible but truthfully unavailable
-until their provider owners migrate.
+table. A selected NPC, faction, or place now exposes its World Planner-owned
+note-first Quest and rumour threads in the Inspector without adding another
+Catalog section. Encounter and Encounter Tables remain visible but truthfully
+unavailable until their provider owners migrate.
 
 ## Reading Order
 

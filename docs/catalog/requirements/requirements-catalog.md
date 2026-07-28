@@ -17,9 +17,11 @@ workspace serves both game preparation and running-session lookup.
    that section's search or filters.
 2. The GM opens a selected record in the Inspector without changing Encounter
    or Scene state.
-3. The GM uses an explicit action when a Monster, NPC, faction, location, or
+3. For a selected NPC, faction, or location, the GM reads and explicitly
+   maintains its attached Quest and rumour threads in that same Inspector.
+4. The GM uses an explicit action when a Monster, NPC, faction, location, or
    Encounter Table should affect the active Encounter or focused Scene.
-4. The GM switches sections and later returns without losing unfinished input
+5. The GM switches sections and later returns without losing unfinished input
    or the previous result position.
 
 ## Target Behavior
@@ -92,6 +94,10 @@ workspace serves both game preparation and running-session lookup.
   explicit discard confirmation.
 - NPC, faction, and location details and edit actions MUST remain available in
   the Inspector.
+- A selected active NPC, faction, or location MUST show its attached Quest and
+  rumour threads below the owned details. Creating, editing, manually
+  closing/reopening, trashing, and restoring a thread MUST be explicit and MUST
+  NOT add another Catalog section or mutate the selected world record.
 - NPCs MUST support explicit Encounter and focused-Scene actions. Factions,
   locations, and Encounter tables MUST support explicit Encounter-source
   actions; locations MUST support assigning the focused Scene location.
@@ -148,6 +154,9 @@ Encounter or Scene workspaces, or expose a second World Planner workspace.
   and paging appears within 100 ms while Creature, Item, and option reads remain
   independently non-blocking.
 - Opening details changes only Inspector content.
+- Quest and rumour actions publish only World Planner-owned narrative truth;
+  deleting and restoring a world subject detaches and safely reattaches its
+  surviving threads without changing the seven-section Catalog topology.
 - Each explicit Encounter or Scene action changes only its named destination.
 - Opening a saved Encounter with unsaved roster changes requires confirmation
   before replacement.

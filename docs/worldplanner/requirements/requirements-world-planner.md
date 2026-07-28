@@ -15,6 +15,8 @@ Inspector surfaces so the user can:
 - organize NPCs into factions
 - define faction encounter-table and optional statblock inventory limits
 - define locations and link them to factions and encounter tables
+- keep note-first Quest and rumour threads attached to NPCs, factions, or
+  locations and resolve them manually
 - use factions and locations as encounter-generation source constraints
 - add NPCs to combat through the Encounter state tab
 - confirm combat losses manually and reactivate defeated NPCs later
@@ -26,6 +28,7 @@ Inspector surfaces so the user can:
 - editing creature statblocks or importing creature truth into World Planner
 - editing encounter tables
 - persisting encounter runtime combat state inside World Planner
+- autonomous Quest completion, trigger graphs, or reward distribution
 - storing party membership, dungeon map truth, or hex map truth
 - replacing saved encounter plans, the Encounter state tab, or the Session
   Planner session record
@@ -44,13 +47,18 @@ Inspector surfaces so the user can:
    statblock. Missing limits mean unlimited stock.
 7. The user creates locations, links factions, and attaches location-owned
    encounter tables.
-8. The user chooses factions or a location in the Catalog to limit
+8. From a selected NPC, faction, or location Inspector, the user creates a
+   titled Quest or rumour with free-form notes and later edits, closes, reopens,
+   trashes, or restores that thread explicitly.
+9. A Quest may retain stable contributor references and structured XP or item
+   rewards for later owner integrations; a rumour has no contributors.
+10. The user chooses factions or a location in the Catalog to limit
    random encounter generation.
-9. The user adds NPCs to combat.
-10. At combat end, the Encounter state tab shows candidate losses and the user
+11. The user adds NPCs to combat.
+12. At combat end, the Encounter state tab shows candidate losses and the user
    confirms which losses should update World Planner state.
-11. Defeated NPCs stop counting as available until the user reactivates them.
-12. Later Session Planner-owned work can read World Planner location choices
+13. Defeated NPCs stop counting as available until the user reactivates them.
+14. Later Session Planner-owned work can read World Planner location choices
    through a public boundary without World Planner defining session records.
 
 ## Source Constraint Behavior
@@ -89,13 +97,17 @@ Inspector surfaces so the user can:
 - reactivate a defeated named NPC
 - expose location choices through a public boundary for future
   Session Planner-owned integration
+- create, edit, manually close/reopen, recoverably delete, and restore Quest and
+  rumour threads from the Inspector of an attached active world record
+- store Quest contributor IDs plus positive XP and item-quantity rewards
+  without granting or distributing them
 - store faction disposition and NPC modifiers toward the PCs so runtime scenes
   can derive friendly, neutral, and hostile Encounter roles
 
 ## Acceptance Criteria
 
 - World Planner persists authored NPC, faction, location, lifecycle, notes,
-  links, and inventory-limit truth as its own feature state.
+  links, inventory-limit, Quest, and rumour truth as its own feature state.
 - the shell exposes no separate World Planner left-bar entry and no World
   Planner-owned state pane
 - Catalog list selection opens World Planner details and existing editing
@@ -120,6 +132,13 @@ Inspector surfaces so the user can:
 - deletion moves the complete owner record into recoverable trash; restore
   preserves its stable identity and reattaches only relationships whose other
   endpoint is still active and unclaimed
+- narrative resolution is only `open` or `closed` and changes only through an
+  explicit user command; no stored condition or background process closes it
+- Quest and rumour subjects are active World Planner NPCs, factions, or places;
+  removing a subject detaches that relationship atomically, and restoring it
+  reattaches only a still-existing narrative
+- structured rewards remain undistributed planning truth until the progression
+  owner integrates them in a later milestone
 - Creature statblocks, encounter-table membership, encounter rosters, party
   members, combat HP, dungeon maps, and hex maps stay in their owning
   contexts.

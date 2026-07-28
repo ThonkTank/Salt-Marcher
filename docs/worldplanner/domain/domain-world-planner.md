@@ -10,7 +10,8 @@ Source of Truth: This document
 Context Role: Roster Truth Context
 Context Name: WorldPlanner
 
-- `worldplanner` owns authored NPC, faction, and location planning truth.
+- `worldplanner` owns authored NPC, faction, location, Quest, and rumour
+  planning truth.
 - Its public boundary is `WorldPlannerApi`.
 - It reads creature, encounter-table, and Encounter-owned combat/result facts
   through public boundaries, and exposes location choices for later
@@ -27,6 +28,8 @@ Context Name: WorldPlanner
 - faction catalog, membership, inventory, and encounter-source readback
 - location catalog, faction links, and encounter-table links
 - NPC lifecycle readback and reactivation
+- narrative threads by active world subject, including explicit resolution and
+  recoverable-trash state
 
 Published carriers remain thinner than the internal authored model. They carry
 stable IDs and display data, not copied foreign statblocks or encounter
@@ -34,7 +37,8 @@ rosters.
 
 ## Write Model
 
-World Planner has three authored aggregate centers.
+World Planner has three authored world-entity centers and two note-first
+narrative record types.
 
 `WorldNpc` owns:
 
@@ -61,6 +65,18 @@ World Planner has three authored aggregate centers.
 - display name and notes
 - linked faction references
 - location-owned encounter-table references
+
+`WorldQuest` owns:
+
+- stable Quest identity, title, and free-form notes
+- manual resolution state: open or closed
+- unique typed subject references to active NPCs, factions, or places
+- unique stable contributor references to Party-owned characters
+- validated positive XP and item-quantity reward descriptions
+
+`WorldRumour` owns the same title, notes, manual resolution, and subject model,
+but has no contributors. Both narrative types retain reward descriptions only;
+they never grant XP, move items, or infer completion.
 
 ## Derived State
 
@@ -96,6 +112,10 @@ Commands entering the model include:
 - create, rename, edit, and delete location
 - add or remove location faction link
 - add or remove location encounter-table link
+- create or edit Quest or rumour
+- attach or detach a narrative subject
+- close or reopen a narrative explicitly
+- move a narrative to recoverable trash or restore it
 - confirm post-combat losses
 
 Core invariants:
@@ -117,6 +137,14 @@ Core invariants:
   changes durable NPC lifecycle or faction stock state.
 - Session Planner-owned integrations may reference World Planner locations
   through stable IDs. World Planner does not define Session Planner records.
+- narrative subjects resolve to active World Planner entities of their declared
+  kind, duplicate subject pairs are invalid, and subject deletion detaches the
+  current relationship in the same candidate state
+- Quest contributors are unique stable foreign IDs; rumours have none
+- XP amounts and item quantities are positive mathematical integers; item
+  rewards retain only a stable definition ID and quantity
+- resolution never changes from a trigger, condition, combat event, or reward
+  side effect; it is an explicit `open`/`closed` command
 - Explicit deletion removes incoming current relationships atomically and moves
   the complete aggregate into World Planner-owned recoverable trash. Restore
   keeps the original stable identity and restores only still-valid,
@@ -134,6 +162,10 @@ Core invariants:
 - Session Planner owns its session-planning records and selected session
   state. Future location use in those records belongs to the Session Planner
   owner and may reference World Planner locations through stable IDs.
+- Party owns character profiles and progression. World Planner may retain a
+  Quest contributor ID but does not copy or validate current character facts.
+- Progression and inventory owners distribute rewards. World Planner stores
+  only the authored reward description.
 - Party, Dungeon, and Hex own their own travel or map concepts. World Planner
   locations are campaign planning locations unless a later owner document
   defines an explicit integration.

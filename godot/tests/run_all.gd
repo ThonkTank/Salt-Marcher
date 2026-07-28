@@ -12,6 +12,8 @@ const CatalogWorkspace = preload("res://godot/src/ui/catalog_workspace.gd")
 const CatalogBrowseController = preload("res://godot/src/features/catalog/catalog_browse_controller.gd")
 const WorldPlannerKnowledge = preload("res://godot/src/features/worldplanner/world_planner_knowledge.gd")
 const WorldPlannerCommandController = preload("res://godot/src/features/worldplanner/world_planner_command_controller.gd")
+const WorldPlannerNarrativeReadController = preload("res://godot/src/features/worldplanner/world_planner_narrative_read_controller.gd")
+const WorldPlannerNarrativeThreads = preload("res://godot/src/ui/world_planner_narrative_threads.gd")
 const CampaignRuntimeCoordinator = preload("res://godot/src/app/campaign_runtime_coordinator.gd")
 const CampaignRuntimeSession = preload("res://godot/src/app/campaign_runtime_session.gd")
 const CampaignPortabilityController = preload("res://godot/src/app/campaign_portability_controller.gd")
@@ -880,6 +882,95 @@ func _run_catalog_foundation_contract() -> void:
 	result_list = catalog.find_child("CatalogResults", true, false) as VBoxContainer
 	var npc_row_button := result_list.find_child("CatalogResultName", true, false) as Button
 	npc_row_button.pressed.emit()
+	var narrative_threads := catalog.find_child("WorldPlannerNarrativeThreads", true, false) as WorldPlannerNarrativeThreads
+	for _attempt in 600:
+		if narrative_threads.snapshot().get("status", "") == "empty":
+			break
+		await create_timer(0.001).timeout
+	_expect(narrative_threads.visible and narrative_threads.snapshot().get("status", "") == "empty", "selecting a World Planner row opens its empty narrative dossier without another route")
+	var create_quest := narrative_threads.find_child("NarrativeCreateQuest", true, false) as Button
+	create_quest.pressed.emit()
+	var narrative_name := narrative_threads.find_child("NarrativeName", true, false) as LineEdit
+	var narrative_notes := narrative_threads.find_child("NarrativeNotes", true, false) as TextEdit
+	var narrative_editor := narrative_threads.find_child("NarrativeEditor", true, false) as ConfirmationDialog
+	narrative_name.text = "Die Glocke bei Ebbe"
+	narrative_notes.text = "Mira kennt den Weg zum versunkenen Glockensteg."
+	narrative_editor.confirmed.emit()
+	narrative_editor.hide()
+	for _attempt in 1200:
+		if narrative_threads.snapshot().get("rows", []).size() == 1:
+			break
+		await create_timer(0.001).timeout
+	var narrative_state := narrative_threads.snapshot()
+	var stable_quest_id := str(narrative_state.get("rows", [])[0].get("reference_id", ""))
+	_expect(
+		narrative_state.get("rows", [])[0].get("kind", "") == "quest"
+		and narrative_state.get("rows", [])[0].get("resolution_state", "") == "open"
+		and catalog.section_snapshot("npcs").get("selected_id", "") == stable_npc_id,
+		"production Inspector creates one open Quest attached to the selected NPC without changing Catalog selection"
+	)
+	var thread_list := narrative_threads.find_child("NarrativeThreadList", true, false) as VBoxContainer
+	var close_button: Button
+	for button in thread_list.find_children("", "Button", true, false):
+		if button.text == "Schließen":
+			close_button = button
+			break
+	_expect(close_button != null, "open Quest exposes an explicit close action")
+	if close_button != null:
+		close_button.pressed.emit()
+	for _attempt in 1200:
+		if narrative_threads.snapshot().get("rows", [])[0].get("resolution_state", "") == "closed":
+			break
+		await create_timer(0.001).timeout
+	_expect(narrative_threads.snapshot().get("rows", [])[0].get("resolution_state", "") == "closed", "Quest resolution is a manual explicit open/closed command")
+	thread_list = narrative_threads.find_child("NarrativeThreadList", true, false) as VBoxContainer
+	var narrative_trash_button: Button
+	for button in thread_list.find_children("", "Button", true, false):
+		if button.text == "Papierkorb":
+			narrative_trash_button = button
+			break
+	_expect(narrative_trash_button != null, "active narrative thread exposes recoverable trash")
+	if narrative_trash_button != null:
+		narrative_trash_button.pressed.emit()
+	var narrative_delete := narrative_threads.find_child("NarrativeDeleteDialog", true, false) as ConfirmationDialog
+	narrative_delete.confirmed.emit()
+	narrative_delete.hide()
+	for _attempt in 1200:
+		if narrative_threads.snapshot().get("status", "") == "empty":
+			break
+		await create_timer(0.001).timeout
+	var narrative_trash_toggle := narrative_threads.find_child("NarrativeTrashToggle", true, false) as CheckButton
+	narrative_trash_toggle.set_pressed_no_signal(true)
+	narrative_trash_toggle.toggled.emit(true)
+	for _attempt in 600:
+		if narrative_threads.snapshot().get("rows", []).size() == 1:
+			break
+		await create_timer(0.001).timeout
+	_expect(narrative_threads.snapshot().get("rows", [])[0].get("reference_id", "") == stable_quest_id, "narrative trash exposes the same stable Quest identity")
+	thread_list = narrative_threads.find_child("NarrativeThreadList", true, false) as VBoxContainer
+	var narrative_restore_button: Button
+	for button in thread_list.find_children("", "Button", true, false):
+		if button.text == "Wiederherstellen":
+			narrative_restore_button = button
+			break
+	_expect(narrative_restore_button != null, "trashed narrative thread exposes restore")
+	if narrative_restore_button != null:
+		narrative_restore_button.pressed.emit()
+	for _attempt in 1200:
+		if narrative_threads.snapshot().get("status", "") == "empty":
+			break
+		await create_timer(0.001).timeout
+	narrative_trash_toggle.set_pressed_no_signal(false)
+	narrative_trash_toggle.toggled.emit(false)
+	for _attempt in 600:
+		if narrative_threads.snapshot().get("rows", []).size() == 1:
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		narrative_threads.snapshot().get("rows", [])[0].get("reference_id", "") == stable_quest_id
+		and narrative_threads.snapshot().get("rows", [])[0].get("resolution_state", "") == "closed",
+		"restoring a narrative thread preserves identity and manual resolution state"
+	)
 	var edit_button := catalog.find_child("CatalogEdit", true, false) as Button
 	edit_button.pressed.emit()
 	record_notes.text = "Kennt jede Ebbe und jeden Lotsen."
@@ -928,6 +1019,15 @@ func _run_catalog_foundation_contract() -> void:
 			break
 		await create_timer(0.001).timeout
 	_expect(npc_state.get("rows", [])[0].get("reference_id", "") == stable_npc_id, "native Katalog restores the NPC with its original stable identity")
+	catalog.call("_select_row", npc_state.get("rows", [])[0])
+	for _attempt in 600:
+		if narrative_threads.snapshot().get("rows", []).size() == 1:
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		narrative_threads.snapshot().get("rows", [])[0].get("reference_id", "") == stable_quest_id,
+		"restoring the NPC atomically reattaches its surviving Quest thread"
+	)
 	var unavailable := catalog.select_section("encounters")
 	_expect(unavailable.get("status", "") == "unavailable", "remaining unmigrated Katalog provider stays explicit and side-effect free")
 	create_button.pressed.emit()
@@ -970,15 +1070,74 @@ func _run_world_planner_knowledge_contract() -> void:
 	var renamed := model.update_record(payload, "npc.mira", {"name": "Mira Salzhand", "notes": "Kennt jede Ebbe."}, "2026-07-28T10:00:04Z")
 	_expect(renamed.get("ok", false) and renamed.get("record", {}).get("notes", "") == "Kennt jede Ebbe.", "World Planner edits provider-owned display and note truth")
 	payload = renamed.get("payload", payload)
-	var trashed := model.trash_record(payload, "faction.harbor", "2026-07-28T10:00:05Z")
+	var quest := model.create_record(
+		payload,
+		"quest",
+		"Die Glocke bei Ebbe",
+		{
+			"notes": "Mira kennt den Weg zum versunkenen Glockensteg.",
+			"subject_refs": [
+				{"kind": "npc", "record_id": "npc.mira"},
+				{"kind": "place", "record_id": "place.north-quay"},
+			],
+			"contributor_ids": ["pc.ada", "pc.borin"],
+			"rewards": [
+				{"kind": "xp", "amount": 301},
+				{"kind": "item", "definition_id": "item.salt-key", "quantity": 1},
+			],
+		},
+		"quest.tide-bell",
+		"2026-07-28T10:00:05Z"
+	)
+	_expect(quest.get("ok", false), "World Planner creates a note-first Quest with typed subjects, contributors, and stored rewards")
+	payload = quest.get("payload", payload)
+	var rumour := model.create_record(
+		payload,
+		"rumour",
+		"Schwarze Segel",
+		{
+			"notes": "Der Hafenrat zahlt für Sichtungen.",
+			"subject_refs": [{"kind": "faction", "record_id": "faction.harbor"}],
+		},
+		"rumour.black-sails",
+		"2026-07-28T10:00:06Z"
+	)
+	_expect(rumour.get("ok", false), "World Planner creates a note-first rumour attached to one world subject")
+	payload = rumour.get("payload", payload)
+	var npc_threads := model.query_narratives_for_subject(payload, "npc.mira")
+	_expect(
+		npc_threads.get("ok", false)
+		and npc_threads.get("total", -1) == 1
+		and npc_threads.get("rows", [])[0].get("reference_id", "") == "quest.tide-bell"
+		and npc_threads.get("rows", [])[0].get("contributor_ids", []) == ["pc.ada", "pc.borin"]
+		and npc_threads.get("rows", [])[0].get("rewards", []).size() == 2,
+		"subject dossier returns complete structured narrative truth without distributing rewards"
+	)
+	var closed_quest := model.update_record(payload, "quest.tide-bell", {"resolution_state": "closed"}, "2026-07-28T10:00:07Z")
+	_expect(closed_quest.get("ok", false) and closed_quest.get("record", {}).get("resolution_state", "") == "closed", "Quest resolution is an explicit manual state transition")
+	payload = closed_quest.get("payload", payload)
+	_expect(
+		not model.update_record(payload, "quest.tide-bell", {"completion_condition": "automatic"}).get("ok", true),
+		"World Planner rejects autonomous completion graphs outside the note-first contract"
+	)
+	_expect(
+		not model.update_record(payload, "rumour.black-sails", {"contributor_ids": ["pc.ada"]}).get("ok", true),
+		"rumours reject Quest-only contributor assignment"
+	)
+	_expect(
+		not model.update_record(payload, "quest.tide-bell", {"rewards": [{"kind": "xp", "amount": 0}]}).get("ok", true),
+		"narrative reward storage rejects non-positive quantities before publication"
+	)
+	var trashed := model.trash_record(payload, "faction.harbor", "2026-07-28T10:00:08Z")
 	var trashed_payload: Dictionary = trashed.get("payload", {})
 	_expect(
 		trashed.get("ok", false)
-		and trashed.get("removed_link_count", -1) == 2
+		and trashed.get("removed_link_count", -1) == 3
 		and trashed_payload.get("records", {}).get("npc.mira", {}).get("faction_id", "missing") == ""
-		and trashed_payload.get("records", {}).get("npc.mira", {}).get("updated_at_utc", "") == "2026-07-28T10:00:05Z"
-		and not "faction.harbor" in trashed_payload.get("records", {}).get("place.north-quay", {}).get("faction_ids", []),
-		"trashing a faction atomically removes current links and timestamps changed dependents"
+		and trashed_payload.get("records", {}).get("npc.mira", {}).get("updated_at_utc", "") == "2026-07-28T10:00:08Z"
+		and not "faction.harbor" in trashed_payload.get("records", {}).get("place.north-quay", {}).get("faction_ids", [])
+		and trashed_payload.get("records", {}).get("rumour.black-sails", {}).get("subject_refs", []).is_empty(),
+		"trashing a faction atomically removes entity and narrative links and timestamps changed dependents"
 	)
 	var active_factions := model.query(trashed_payload, "faction", "", 0, 50)
 	var deleted_factions := model.query(trashed_payload, "faction", "", 0, 50, true)
@@ -989,18 +1148,49 @@ func _run_world_planner_knowledge_contract() -> void:
 		and not factions_by_identity_desc.get("sort_ascending", true),
 		"World Planner applies the same stable sort contract before paging"
 	)
-	var restored := model.restore_record(trashed_payload, "faction.harbor", "2026-07-28T10:00:06Z")
+	var restored := model.restore_record(trashed_payload, "faction.harbor", "2026-07-28T10:00:09Z")
 	var restored_payload: Dictionary = restored.get("payload", {})
 	_expect(
 		restored.get("ok", false)
 		and restored.get("record", {}).get("record_id", "") == "faction.harbor"
-		and restored.get("restored_link_count", -1) == 2
+		and restored.get("restored_link_count", -1) == 3
 		and restored_payload.get("records", {}).get("npc.mira", {}).get("faction_id", "") == "faction.harbor"
-		and restored_payload.get("records", {}).get("npc.mira", {}).get("updated_at_utc", "") == "2026-07-28T10:00:06Z"
-		and "faction.harbor" in restored_payload.get("records", {}).get("place.north-quay", {}).get("faction_ids", []),
-		"restore preserves identity and timestamps safely reattached current links"
+		and restored_payload.get("records", {}).get("npc.mira", {}).get("updated_at_utc", "") == "2026-07-28T10:00:09Z"
+		and "faction.harbor" in restored_payload.get("records", {}).get("place.north-quay", {}).get("faction_ids", [])
+		and restored_payload.get("records", {}).get("rumour.black-sails", {}).get("subject_refs", [])[0].get("record_id", "") == "faction.harbor",
+		"restore preserves identity and safely reattaches entity and narrative links"
 	)
-	_expect(not model.update_record(restored_payload, "npc.mira", {"name": "   "}).get("ok", true), "World Planner rejects an invalid edit without a replacement payload")
+	var trashed_quest := model.trash_record(restored_payload, "quest.tide-bell", "2026-07-28T10:00:10Z")
+	var deleted_npc_threads := model.query_narratives_for_subject(trashed_quest.get("payload", {}), "npc.mira", true)
+	_expect(
+		trashed_quest.get("ok", false)
+		and deleted_npc_threads.get("total", -1) == 1
+		and deleted_npc_threads.get("rows", [])[0].get("resolution_state", "") == "closed",
+		"narrative trash preserves stable identity and manual resolution state for recovery"
+	)
+	var restored_quest := model.restore_record(trashed_quest.get("payload", {}), "quest.tide-bell", "2026-07-28T10:00:11Z")
+	var restored_quest_payload: Dictionary = restored_quest.get("payload", {})
+	_expect(
+		restored_quest.get("ok", false)
+		and restored_quest.get("record", {}).get("record_id", "") == "quest.tide-bell"
+		and model.query_narratives_for_subject(restored_quest_payload, "place.north-quay").get("total", -1) == 1,
+		"restoring a Quest preserves identity and every still-valid subject attachment"
+	)
+	var trashed_npc := model.trash_record(restored_quest_payload, "npc.mira", "2026-07-28T10:00:12Z")
+	_expect(
+		trashed_npc.get("ok", false)
+		and trashed_npc.get("removed_link_count", -1) == 1
+		and trashed_npc.get("payload", {}).get("records", {}).get("quest.tide-bell", {}).get("subject_refs", []).size() == 1,
+		"trashing a narrative subject atomically removes only that subject attachment"
+	)
+	var restored_npc := model.restore_record(trashed_npc.get("payload", {}), "npc.mira", "2026-07-28T10:00:13Z")
+	var final_payload: Dictionary = restored_npc.get("payload", {})
+	_expect(
+		restored_npc.get("restored_link_count", -1) == 1
+		and model.query_narratives_for_subject(final_payload, "npc.mira").get("rows", [])[0].get("reference_id", "") == "quest.tide-bell",
+		"restoring a subject atomically reattaches its surviving narrative thread"
+	)
+	_expect(not model.update_record(final_payload, "npc.mira", {"name": "   "}).get("ok", true), "World Planner rejects an invalid edit without a replacement payload")
 	_expect(not model.query({"format": "damaged", "records": {}, "trash": {}}, "npc").get("ok", true), "malformed World Planner payload fails only its provider read")
 
 	var data_root := "user://saltmarcher-world-planner-runtime/%s" % Time.get_ticks_usec()
@@ -1023,6 +1213,52 @@ func _run_world_planner_knowledge_contract() -> void:
 	var persisted := FileCampaignStore.new(data_root, campaign_id).read_partition(WorldPlannerKnowledge.OWNER)
 	var persisted_query := model.query(persisted.get("payload", {}), "place", "salz", 0, 50)
 	_expect(persisted.get("ok", false) and persisted_query.get("total", -1) == 1, "World Planner owner partition survives an independent store reopen")
+	completions.clear()
+	var persisted_place_id := str(persisted_query.get("rows", [])[0].get("reference_id", ""))
+	var narrative_started := commands.create_narrative("rumour", "Kalte Lichter", "Nur bei Springflut sichtbar.", "place", persisted_place_id)
+	_expect(narrative_started.get("status", "") == "started", "typed narrative command enters the shared serial Campaign writer")
+	for _attempt in 1200:
+		if not completions.is_empty():
+			break
+		await create_timer(0.001).timeout
+	var persisted_with_narrative := FileCampaignStore.new(data_root, campaign_id).read_partition(WorldPlannerKnowledge.OWNER)
+	var reopened_threads := model.query_narratives_for_subject(persisted_with_narrative.get("payload", {}), persisted_place_id)
+	_expect(
+		completions.size() == 1
+		and completions[0].get("ok", false)
+		and reopened_threads.get("total", -1) == 1
+		and reopened_threads.get("rows", [])[0].get("name", "") == "Kalte Lichter",
+		"narrative command truth survives an independent Campaign store reopen"
+	)
+	var narrative_reader := WorldPlannerNarrativeReadController.new(data_root)
+	root.add_child(narrative_reader)
+	var narrative_results: Array = []
+	narrative_reader.result_published.connect(func(result: Dictionary) -> void: narrative_results.append(result.duplicate(true)))
+	var first_read := narrative_reader.query(persisted_place_id, true)
+	var replacement_read := narrative_reader.query(persisted_place_id, false)
+	_expect(
+		first_read.get("status", "") == "started" and replacement_read.get("status", "") == "queued",
+		"narrative read lane bounds rapid replacement to one active and one latest pending request"
+	)
+	for _attempt in 1200:
+		if narrative_results.size() == 1 and not narrative_reader.is_active():
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		narrative_results.size() == 1
+		and not narrative_results[0].get("request", {}).get("include_deleted", true)
+		and narrative_results[0].get("rows", []).size() == 1,
+		"narrative read lane publishes only the latest requested dossier view"
+	)
+	var narrative_resources := narrative_reader.resource_snapshot()
+	_expect(
+		narrative_resources.get("active_count", -1) == 0
+		and narrative_resources.get("pending_count", -1) == 0
+		and narrative_resources.get("worker_handle_count", -1) == 0,
+		"narrative read lane releases all worker state after publication"
+	)
+	narrative_reader.queue_free()
+	await process_frame
 	var session_state: Dictionary = coordinator.current_session().snapshot()["campaign_state"]
 	var external_advance := FileCampaignStore.new(data_root, campaign_id).commit(
 		int(session_state["generation"]),

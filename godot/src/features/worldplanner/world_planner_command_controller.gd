@@ -32,6 +32,42 @@ func restore_record(record_id: String) -> Dictionary:
 	return start_command({"operation": "restore", "record_id": record_id})
 
 
+func create_narrative(kind: String, name: String, notes: String, subject_kind: String, subject_id: String) -> Dictionary:
+	return start_command({
+		"operation": "create_narrative",
+		"kind": kind,
+		"name": name,
+		"fields": {
+			"notes": notes,
+			"subject_refs": [{"kind": subject_kind, "record_id": subject_id}],
+		},
+	})
+
+
+func update_narrative(record_id: String, name: String, notes: String) -> Dictionary:
+	return start_command({
+		"operation": "update_narrative",
+		"record_id": record_id,
+		"fields": {"name": name, "notes": notes},
+	})
+
+
+func set_narrative_state(record_id: String, resolution_state: String) -> Dictionary:
+	return start_command({
+		"operation": "set_narrative_state",
+		"record_id": record_id,
+		"fields": {"resolution_state": resolution_state},
+	})
+
+
+func trash_narrative(record_id: String) -> Dictionary:
+	return start_command({"operation": "trash_narrative", "record_id": record_id})
+
+
+func restore_narrative(record_id: String) -> Dictionary:
+	return start_command({"operation": "restore_narrative", "record_id": record_id})
+
+
 func _empty_payload() -> Dictionary:
 	return WorldPlannerKnowledge.new().empty_payload()
 
@@ -46,6 +82,14 @@ func _apply_world_planner_command(payload: Dictionary, request: Dictionary) -> D
 		"trash":
 			return model.trash_record(payload, str(request["record_id"]))
 		"restore":
+			return model.restore_record(payload, str(request["record_id"]))
+		"create_narrative":
+			return model.create_record(payload, str(request["kind"]), str(request["name"]), request["fields"])
+		"update_narrative", "set_narrative_state":
+			return model.update_record(payload, str(request["record_id"]), request["fields"])
+		"trash_narrative":
+			return model.trash_record(payload, str(request["record_id"]))
+		"restore_narrative":
 			return model.restore_record(payload, str(request["record_id"]))
 		_:
 			return {"ok": false, "status": "invalid", "error": "Unbekannte World-Planner-Änderung."}

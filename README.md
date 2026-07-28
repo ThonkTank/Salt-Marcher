@@ -20,7 +20,9 @@ scene-tree thread, while NPCs, factions, and places use the active Campaign's
 World Planner partition. The shared result table sorts before bounded paging,
 retains each section's page and direction, and cancels invisible provider work;
 unmigrated sections report unavailable rather than inventing Catalog-owned
-records. A compact Party top-bar dropdown now
+records. Selected NPCs, factions, and places expose attached note-first Quest
+and rumour threads with explicit manual resolution and recoverable trash in the
+same Inspector. A compact Party top-bar dropdown now
 provides the active Campaign's Roster/current-Party foundation without adding a
 third navigation route. Its separate native Rastbudget trigger provides
 active/custom Adventuring-Day budgets and XP timelines; travel, Planning Party

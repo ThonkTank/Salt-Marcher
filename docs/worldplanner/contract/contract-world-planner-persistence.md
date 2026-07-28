@@ -8,8 +8,8 @@ Source of Truth: This document
 ## Purpose And Owner
 
 World Planner persists only World Planner-authored NPC, faction, location,
-lifecycle, note, link, source-constraint, inventory-limit, and recoverable-trash
-truth. Its Campaign owner key is exactly `worldplanner`.
+lifecycle, note, link, source-constraint, inventory-limit, Quest/rumour, and
+recoverable-trash truth. Its Campaign owner key is exactly `worldplanner`.
 
 The payload format is `saltmarcher.world-planner.v1`. It is stored through the
 Campaign immutable-generation protocol as a checksummed owner partition; World
@@ -29,6 +29,16 @@ and updated time. Kind-specific truth is:
 - faction: optional primary encounter-table ID, bounded base disposition, and
   optional finite non-negative inventory limits by creature ID;
 - place: unique faction IDs and unique encounter-table IDs.
+- Quest: manual `open`/`closed` resolution, unique typed NPC/faction/place
+  subjects, unique contributor IDs, and zero or more structured rewards;
+- rumour: the same resolution and subject shape, an empty contributor list, and
+  zero or more structured rewards.
+
+An XP reward has exactly `kind: xp` and one positive integer `amount`. An item
+reward has exactly `kind: item`, one portable `definition_id`, and one positive
+integer `quantity`. These values are authored planning data only. This
+partition performs no XP grant, inventory mutation, automatic completion, or
+trigger evaluation.
 
 A trash entry stores the complete record, deletion time, and the incoming owner
 relationships removed by that deletion. The current provider excludes trash;
@@ -67,6 +77,10 @@ Deletion is recoverable and atomic with current relationship cleanup:
   from place faction links in the same candidate;
 - deleting a place clears current NPC `last_place_id` values and otherwise
   moves only the place;
+- deleting an NPC, faction, or place removes that subject from every active
+  Quest or rumour in the same candidate;
+- deleting a Quest or rumour moves the complete narrative record, including
+  resolution, subjects, contributors, and rewards;
 - removing a relationship alone never deletes either endpoint.
 
 Restore republishes the original identity. Its outgoing and saved incoming
@@ -83,6 +97,11 @@ absent and do not block restoration of the record.
 - finite inventory limits are mathematical non-negative integers;
 - active internal faction/place references resolve to an active record of the
   required kind;
+- active narrative subjects resolve to active World Planner entities of their
+  declared kind and reject duplicate kind/ID pairs;
+- rumours reject contributors; Quest contributor IDs are unique portable
+  foreign references and do not copy Party truth;
+- rewards have an exact supported shape and positive integral quantity;
 - relationship arrays reject duplicate identities;
 - malformed partition or trash data fails the World Planner provider only and
   does not prevent Campaign registry or unrelated owner-partition reads;

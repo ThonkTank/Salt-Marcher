@@ -44,7 +44,10 @@ all seven visible section identities exist; Monster and Items query the
 installation-wide Shared-Definition provider; NPCs, Fraktionen, and Orte query
 the active Campaign's World Planner provider. Both provider families implement
 stable name/identity sorting before bounded paging. Encounter and Encounter
-Tables report unavailable. No unavailable section stores Catalog-owned truth.
+Tables report unavailable. Selected active World Planner rows compose their
+provider-owned Quest/rumour threads in the Inspector. No unavailable section
+stores Catalog-owned truth, and narrative records do not become an eighth
+section.
 
 ## Provider And Query Boundary
 
@@ -62,6 +65,12 @@ World Planner supplies the same bounded row contract for active and recoverable
 trash views. Its create, edit, delete, and restore commands remain
 provider-owned and publish through the serial Campaign writer; Catalog only
 collects terminal feedback and refreshes the selected view.
+
+An independent World Planner narrative lane reads attached threads for the
+selected active NPC, faction, or place with one active and one latest pending
+request. Its typed commands use the same World Planner writer. Catalog owns
+neither the returned thread state nor its validation and ignores those command
+completions in the provider-neutral result refresh path.
 
 The Catalog background controller admits one active read and at most one
 latest-wins pending read. Every request receives a monotonic epoch. Newer input
@@ -113,6 +122,8 @@ being approximated from metadata that the current providers do not publish.
 - one explicit active/paper-bin switch for recoverable Campaign-owned records;
 - one shared result table whose two column headers are its only sort controls;
 - one Inspector region;
+- one provider-owned narrative-thread composition below selected World Planner
+  entity details;
 - one footer for count, lifecycle status, and bounded page navigation;
 - explicit empty, loading, refreshing, unavailable, and failed states.
 
@@ -122,8 +133,10 @@ virtualization or bounded page nodes so scene-tree node count follows visible
 content rather than provider size. No section retains a second hidden node tree.
 
 Selecting a row is side-effect free. Opening details changes only Inspector
-content. Any Encounter or Scene mutation uses an explicit named route owned by
-the destination feature. Encounter tuning does not belong to Catalog.
+content. Narrative create/edit/state/trash/restore actions are explicit World
+Planner commands and do not change Catalog selection. Any Encounter or Scene
+mutation uses an explicit named route owned by the destination feature.
+Encounter tuning does not belong to Catalog.
 
 ## Persistence And Failure Isolation
 

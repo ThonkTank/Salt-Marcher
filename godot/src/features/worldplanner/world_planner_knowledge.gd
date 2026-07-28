@@ -1,14 +1,17 @@
 class_name WorldPlannerKnowledge
 extends RefCounted
 
-## Pure owner model for Campaign-authored NPC, faction, and place truth.
+## Pure owner model for Campaign-authored world entities and narrative truth.
 
 const FORMAT_ID := "saltmarcher.world-planner.v1"
 const OWNER := "worldplanner"
 const MAX_NAME_LENGTH := 160
 const MAX_NOTES_LENGTH := 100_000
 const MAX_PAGE_SIZE := 200
-const KINDS := ["npc", "faction", "place"]
+const MAX_REWARD_QUANTITY := 2_147_483_647
+const ENTITY_KINDS := ["npc", "faction", "place"]
+const NARRATIVE_KINDS := ["quest", "rumour"]
+const KINDS := ENTITY_KINDS + NARRATIVE_KINDS
 
 
 func empty_payload() -> Dictionary:
@@ -140,6 +143,68 @@ func query(
 	}
 
 
+func query_narratives_for_subject(
+	payload_value: Variant,
+	subject_id: String,
+	include_deleted: bool = false,
+	limit: int = 100,
+	cancellation: Callable = Callable()
+) -> Dictionary:
+	if not _valid_id(subject_id) or limit <= 0 or limit > MAX_PAGE_SIZE:
+		return _failure("Narrative Abfrage besitzt ungültige Grenzen.")
+	if _cancelled(cancellation):
+		return _cancelled_failure()
+	var validated := validate_payload(payload_value)
+	if not validated.get("ok", false):
+		return validated
+	var payload: Dictionary = validated["payload"]
+	if not payload["records"].has(subject_id) or payload["records"][subject_id]["kind"] not in ENTITY_KINDS:
+		return _missing(subject_id)
+	var source: Dictionary = payload["trash"] if include_deleted else payload["records"]
+	var matching: Array = []
+	for record_id_value in source:
+		if _cancelled(cancellation):
+			return _cancelled_failure()
+		var record_id := str(record_id_value)
+		var record: Dictionary = source[record_id_value]["record"] if include_deleted else source[record_id_value]
+		if record["kind"] not in NARRATIVE_KINDS or not _has_subject(record["subject_refs"], subject_id):
+			continue
+		matching.append({
+			"reference_id": record_id,
+			"kind": record["kind"],
+			"name": record["name"],
+			"notes": record["notes"],
+			"resolution_state": record["resolution_state"],
+			"subject_refs": record["subject_refs"].duplicate(true),
+			"contributor_ids": record["contributor_ids"].duplicate(),
+			"rewards": record["rewards"].duplicate(true),
+			"deleted": include_deleted,
+			"updated_at_utc": record["updated_at_utc"],
+		})
+	matching.sort_custom(func(left: Dictionary, right: Dictionary) -> bool:
+		var left_state := 0 if left["resolution_state"] == "open" else 1
+		var right_state := 0 if right["resolution_state"] == "open" else 1
+		if left_state != right_state:
+			return left_state < right_state
+		var left_name := str(left["name"]).to_lower()
+		var right_name := str(right["name"]).to_lower()
+		if left_name == right_name:
+			return str(left["reference_id"]) < str(right["reference_id"])
+		return left_name < right_name
+	)
+	var rows: Array = []
+	for index in range(mini(limit, matching.size())):
+		rows.append(matching[index].duplicate(true))
+	return {
+		"ok": true,
+		"status": "empty" if matching.is_empty() else "ready",
+		"subject_id": subject_id,
+		"deleted": include_deleted,
+		"total": matching.size(),
+		"rows": rows,
+	}
+
+
 func create_record(
 	payload_value: Variant,
 	kind: String,
@@ -246,6 +311,14 @@ func trash_record(payload_value: Variant, record_id: String, now_utc: String = "
 			ids.erase(record_id)
 			source["faction_ids"] = ids
 			source_changed = true
+		if source["kind"] in NARRATIVE_KINDS and _has_subject(source["subject_refs"], record_id):
+			incoming_links.append({"source_id": source_id, "field": "subject_refs"})
+			var subject_refs: Array = []
+			for subject_ref in source["subject_refs"]:
+				if str(subject_ref["record_id"]) != record_id:
+					subject_refs.append(subject_ref.duplicate(true))
+			source["subject_refs"] = subject_refs
+			source_changed = true
 		if source_changed:
 			source["updated_at_utc"] = timestamp
 		records[source_id] = source
@@ -305,6 +378,15 @@ func restore_record(payload_value: Variant, record_id: String, now_utc: String =
 			source["faction_ids"] = ids
 			restored_links += 1
 			source_changed = true
+		elif field == "subject_refs" and source["kind"] in NARRATIVE_KINDS:
+			var subject_ref := {"kind": record["kind"], "record_id": record_id}
+			if subject_ref not in source["subject_refs"]:
+				var subject_refs: Array = source["subject_refs"].duplicate(true)
+				subject_refs.append(subject_ref)
+				subject_refs.sort_custom(Callable(self, "_subject_before"))
+				source["subject_refs"] = subject_refs
+				restored_links += 1
+				source_changed = true
 		if source_changed:
 			source["updated_at_utc"] = timestamp
 		records[source_id] = source
@@ -350,10 +432,17 @@ func _default_record(record_id: String, kind: String, name: String, timestamp: S
 			"disposition_base": 0,
 			"inventory_limits": {},
 		})
-	else:
+	elif kind == "place":
 		record.merge({
 			"faction_ids": [],
 			"encounter_table_ids": [],
+		})
+	else:
+		record.merge({
+			"resolution_state": "open",
+			"subject_refs": [],
+			"contributor_ids": [],
+			"rewards": [],
 		})
 	return record
 
@@ -382,6 +471,8 @@ func _allowed_fields(kind: String) -> Array:
 		return common + ["primary_encounter_table_id", "disposition_base", "inventory_limits"]
 	if kind == "place":
 		return common + ["faction_ids", "encounter_table_ids"]
+	if kind in NARRATIVE_KINDS:
+		return common + ["resolution_state", "subject_refs", "contributor_ids", "rewards"]
 	return []
 
 
@@ -419,9 +510,18 @@ func _validate_record(record_id: String, value: Variant) -> Dictionary:
 			or not _valid_inventory(record.get("inventory_limits", null))
 		):
 			return _failure("Fraktion %s besitzt ungültige Fachwerte." % record_id)
-	else:
+	elif kind == "place":
 		if not _valid_id_array(record.get("faction_ids", null)) or not _valid_id_array(record.get("encounter_table_ids", null)):
 			return _failure("Ort %s besitzt ungültige Verweise." % record_id)
+	else:
+		if (
+			record.get("resolution_state", "") not in ["open", "closed"]
+			or not _valid_subject_refs(record.get("subject_refs", null))
+			or not _valid_id_array(record.get("contributor_ids", null))
+			or (kind == "rumour" and not record.get("contributor_ids", []).is_empty())
+			or not _valid_rewards(record.get("rewards", null))
+		):
+			return _failure("Narrativer Eintrag %s besitzt ungültige Fachwerte." % record_id)
 	return {"ok": true}
 
 
@@ -440,6 +540,15 @@ func _validate_active_references(records: Dictionary) -> Dictionary:
 			for faction_id in record["faction_ids"]:
 				if not records.has(faction_id) or records[faction_id]["kind"] != "faction":
 					return _failure("Ort %s verweist auf keine aktive Fraktion." % record_id)
+		elif record["kind"] in NARRATIVE_KINDS:
+			for subject_ref in record["subject_refs"]:
+				var subject_id := str(subject_ref["record_id"])
+				if (
+					not records.has(subject_id)
+					or records[subject_id]["kind"] != subject_ref["kind"]
+					or records[subject_id]["kind"] not in ENTITY_KINDS
+				):
+					return _failure("Narrativer Eintrag %s verweist auf kein aktives Weltobjekt." % record_id)
 	return {"ok": true}
 
 
@@ -455,14 +564,72 @@ func _filter_missing_outgoing_links(record: Dictionary, records: Dictionary) -> 
 			if records.has(faction_id) and records[faction_id]["kind"] == "faction":
 				faction_ids.append(faction_id)
 		record["faction_ids"] = faction_ids
+	elif record["kind"] in NARRATIVE_KINDS:
+		var subject_refs: Array = []
+		for subject_ref in record["subject_refs"]:
+			var subject_id := str(subject_ref["record_id"])
+			if records.has(subject_id) and records[subject_id]["kind"] == subject_ref["kind"]:
+				subject_refs.append(subject_ref.duplicate(true))
+		record["subject_refs"] = subject_refs
 
 
 func _valid_incoming_link(value: Variant) -> bool:
 	return (
 		value is Dictionary
 		and _valid_id(str(value.get("source_id", "")))
-		and value.get("field", "") in ["faction_id", "last_place_id", "faction_ids"]
+		and value.get("field", "") in ["faction_id", "last_place_id", "faction_ids", "subject_refs"]
 	)
+
+
+func _valid_subject_refs(value: Variant) -> bool:
+	if not value is Array:
+		return false
+	var seen := {}
+	for subject_value in value:
+		if not subject_value is Dictionary or subject_value.size() != 2:
+			return false
+		var kind := str(subject_value.get("kind", ""))
+		var record_id := str(subject_value.get("record_id", ""))
+		var key := "%s:%s" % [kind, record_id]
+		if kind not in ENTITY_KINDS or not _valid_id(record_id) or seen.has(key):
+			return false
+		seen[key] = true
+	return true
+
+
+func _valid_rewards(value: Variant) -> bool:
+	if not value is Array:
+		return false
+	for reward_value in value:
+		if not reward_value is Dictionary:
+			return false
+		var reward: Dictionary = reward_value
+		if reward.get("kind", "") == "xp":
+			if reward.size() != 2 or not _valid_bounded_integer(reward.get("amount", null), 1, MAX_REWARD_QUANTITY):
+				return false
+		elif reward.get("kind", "") == "item":
+			if (
+				reward.size() != 3
+				or not _valid_id(str(reward.get("definition_id", "")))
+				or not _valid_bounded_integer(reward.get("quantity", null), 1, MAX_REWARD_QUANTITY)
+			):
+				return false
+		else:
+			return false
+	return true
+
+
+func _has_subject(subject_refs: Array, subject_id: String) -> bool:
+	for subject_ref in subject_refs:
+		if str(subject_ref.get("record_id", "")) == subject_id:
+			return true
+	return false
+
+
+func _subject_before(left: Dictionary, right: Dictionary) -> bool:
+	var left_key := "%s:%s" % [left["kind"], left["record_id"]]
+	var right_key := "%s:%s" % [right["kind"], right["record_id"]]
+	return left_key < right_key
 
 
 func _valid_inventory(value: Variant) -> bool:

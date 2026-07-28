@@ -8,9 +8,10 @@ Source of Truth: This document
 ## Purpose And Boundary
 
 World Planner owns Campaign-authored NPC, faction, location, lifecycle, note,
-source-constraint, membership, inventory-limit, and recoverable-trash truth. It
-does not own creature statblocks, encounter tables, encounter runtime, party
-truth, session records, or Catalog browsing state.
+source-constraint, membership, inventory-limit, Quest/rumour, and
+recoverable-trash truth. It does not own creature statblocks, encounter tables,
+encounter runtime, party truth, reward distribution, session records, or
+Catalog browsing state.
 
 The product exposes these records inside the single Godot `Katalog` route. That
 placement does not transfer ownership to Catalog: Catalog asks the World
@@ -23,18 +24,22 @@ provider.
 godot/src/features/worldplanner/
   world_planner_knowledge.gd           # pure owner model and invariants
   world_planner_command_controller.gd  # owner command vocabulary
+  world_planner_narrative_read_controller.gd # attached-thread read lane
 godot/src/app/
   campaign_partition_command_controller.gd # shared admitted write lifecycle
 godot/src/features/catalog/
   catalog_browse_controller.gd         # provider-neutral query lane
 godot/src/ui/
   catalog_workspace.gd                 # shared presentation only
+  world_planner_narrative_threads.gd   # provider-owned Inspector composition
 ```
 
 `WorldPlannerKnowledge` validates one versioned `worldplanner` owner-partition
 payload. It creates stable independently identified NPCs, factions, and places;
 allows duplicate display names; owns type-specific optional values and internal
-relationships; and applies deletion or restoration as one candidate state. It
+relationships; stores note-first Quest/rumour records with typed subjects,
+manual resolution, contributors, and reward descriptions; and applies deletion
+or restoration as one candidate state. It
 has no Node, filesystem, Catalog, Java, JavaFX, JDBC, or SQLite dependency.
 
 `WorldPlannerCommandController` configures the provider-neutral Campaign
@@ -60,13 +65,23 @@ Rows contain provider-neutral stable identity, kind, name, optional notes,
 updated time, and trash state. Full typed detail editing remains an owner API
 target and must not be implemented by copying owner truth into Catalog.
 
+The separate narrative read lane resolves one selected active World Planner
+entity and returns only attached Quest/rumour rows. It has the same one-active,
+one-latest-pending bound, cancellation, registry confirmation, and late-result
+suppression as the Catalog lane. Narrative commands share the existing serial
+World Planner writer, so a thread mutation cannot race another accepted owner
+mutation. Catalog composes the provider-owned `FÄDEN` view below entity details
+without adding an eighth section or owning narrative state.
+
 ## Current Migration State
 
 The production Godot route currently supports bounded active/trash search,
 stable name/identity sorting, retained paging, and name-only create, name/note
-edit, recoverable delete, and restore for NPCs, factions, and places. Deleting a faction atomically removes current NPC
-membership and place links. Restore keeps the same identity and reattaches only
-surviving relationships that are still free.
+edit, recoverable delete, and restore for NPCs, factions, and places. Selected
+active entities also expose attached Quest/rumour title and notes, manual
+open/closed state, and recoverable delete/restore in the Inspector. Deleting an
+entity atomically removes current entity and narrative links. Restore keeps the
+same identity and reattaches only surviving relationships that are still free.
 
 The owner payload already validates the documented optional NPC, faction, and
 place fields. The visible editor currently exposes only name and general notes;
@@ -82,6 +97,7 @@ deleted until that parity, acceptance, and deletion gate are complete.
 - duplicate display names are valid;
 - current and trash queries are distinct bounded views;
 - deletion and relationship cleanup publish atomically;
+- narrative completion is manual and rewards are stored but never distributed;
 - restore never invents a missing or conflicting relationship;
 - provider I/O and mutation preparation never block the scene-tree thread;
 - Catalog owns no World Planner record, persistence path, or domain rule;

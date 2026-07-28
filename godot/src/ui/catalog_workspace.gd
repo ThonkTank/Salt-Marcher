@@ -4,6 +4,7 @@ extends Control
 const CatalogBrowseController = preload("res://godot/src/features/catalog/catalog_browse_controller.gd")
 const FileCampaignRegistry = preload("res://godot/src/platform/persistence/file_campaign_registry.gd")
 const WorldPlannerCommandController = preload("res://godot/src/features/worldplanner/world_planner_command_controller.gd")
+const WorldPlannerNarrativeThreads = preload("res://godot/src/ui/world_planner_narrative_threads.gd")
 
 const SECTIONS := [
 	{"id": "creatures", "label": "Monster", "kind": "creature", "provider": true, "mutable": false},
@@ -46,6 +47,7 @@ var _detail_actions: HBoxContainer
 var _edit_button: Button
 var _trash_button: Button
 var _restore_button: Button
+var _narrative_threads: WorldPlannerNarrativeThreads
 var _debounce: Timer
 var _record_dialog: ConfirmationDialog
 var _record_name: LineEdit
@@ -248,6 +250,11 @@ func _build_surface() -> void:
 	_restore_button.text = "Wiederherstellen"
 	_restore_button.pressed.connect(_on_restore_requested)
 	_detail_actions.add_child(_restore_button)
+	_narrative_threads = WorldPlannerNarrativeThreads.new()
+	_narrative_threads.name = "WorldPlannerNarrativeThreads"
+	_narrative_threads.data_root = data_root
+	_narrative_threads.command_controller = command_controller
+	inspector.add_child(_narrative_threads)
 	var footer_row := HBoxContainer.new()
 	footer_row.add_theme_constant_override("separation", 8)
 	column.add_child(footer_row)
@@ -557,6 +564,7 @@ func _select_row(row: Dictionary) -> void:
 	_trash_button.visible = not bool(row.get("deleted", false))
 	_restore_button.visible = bool(row.get("deleted", false))
 	_set_action_buttons_disabled(command_controller.busy())
+	_narrative_threads.show_subject(row)
 
 
 func _on_create_requested() -> void:
@@ -644,7 +652,11 @@ func _on_trash_toggled(enabled: bool) -> void:
 	_submit_current_query()
 
 
-func _on_command_started(_request: Dictionary) -> void:
+func _on_command_started(request: Dictionary) -> void:
+	if _is_narrative_operation(str(request.get("operation", ""))):
+		_create_button.disabled = true
+		_set_action_buttons_disabled(true)
+		return
 	_command_section_id = _active_section_id
 	var state: Dictionary = _section_state[_command_section_id]
 	state["notice"] = "Änderung wird gespeichert …"
@@ -655,6 +667,11 @@ func _on_command_started(_request: Dictionary) -> void:
 
 
 func _on_command_completed(result: Dictionary) -> void:
+	if _is_narrative_operation(str(result.get("request", {}).get("operation", ""))):
+		var active_state: Dictionary = _section_state[_active_section_id]
+		_create_button.disabled = bool(active_state["trash"])
+		_set_action_buttons_disabled(command_controller.busy())
+		return
 	var section_id := _command_section_id if _section_state.has(_command_section_id) else _active_section_id
 	var state: Dictionary = _section_state[section_id]
 	if not result.get("ok", false):
@@ -737,6 +754,8 @@ func _reset_detail() -> void:
 		return
 	_detail.text = "Wähle einen Eintrag, um seine Referenz zu prüfen."
 	_detail_actions.visible = false
+	if _narrative_threads != null:
+		_narrative_threads.clear_subject()
 
 
 func _set_action_buttons_disabled(disabled: bool) -> void:
@@ -748,6 +767,13 @@ func _set_action_buttons_disabled(disabled: bool) -> void:
 func _with_notice(base: String, state: Dictionary) -> String:
 	var notice := str(state.get("notice", ""))
 	return base if notice.is_empty() else "%s · %s" % [base, notice]
+
+
+func _is_narrative_operation(operation: String) -> bool:
+	return operation in [
+		"create_narrative", "update_narrative", "set_narrative_state",
+		"trash_narrative", "restore_narrative",
+	]
 
 
 func _notification(what: int) -> void:
