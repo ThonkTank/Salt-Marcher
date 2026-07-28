@@ -49,8 +49,9 @@ conflicting imports remain staged until an explicit keep, replace, retain-both,
 or discard decision. The Campaign desk exposes that complete transfer path as
 a non-blocking worker with visible file/definition progress and cancellation;
 its conflict ledger names affected Campaigns and shows every consequence before
-publication. The current
-backend also schedules restore-tested recovery points in the background,
+publication. Repeated early, middle, and post-commit cancellation exercises the
+worker's single terminal outcome and releases its thread and queue state. The
+current backend also schedules restore-tested recovery points in the background,
 supports retained-original restore and recoverable trash, and provides
 explicitly confirmed permanent deletion. Backup retention and storage-pressure
 handling now preserve a 2 GiB floor and at least three verified points. Normal

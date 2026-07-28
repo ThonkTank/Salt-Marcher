@@ -9,6 +9,7 @@ const SharedDefinitionStore = preload("res://godot/src/platform/persistence/shar
 const CampaignDesk = preload("res://godot/src/ui/campaign_desk.gd")
 const CampaignRuntimeCoordinator = preload("res://godot/src/app/campaign_runtime_coordinator.gd")
 const CampaignRuntimeSession = preload("res://godot/src/app/campaign_runtime_session.gd")
+const CampaignPortabilityController = preload("res://godot/src/app/campaign_portability_controller.gd")
 const CampaignRuntimeTransitionController = preload("res://godot/src/app/campaign_runtime_transition_controller.gd")
 const CampaignBackupScheduler = preload("res://godot/src/app/campaign_backup_scheduler.gd")
 const CampaignCompactionScheduler = preload("res://godot/src/app/campaign_compaction_scheduler.gd")
@@ -16,6 +17,52 @@ const StorageCapacityGuard = preload("res://godot/src/platform/persistence/stora
 const PlatformVolumeCapacityProbe = preload("res://godot/src/platform/persistence/platform_volume_capacity_probe.gd")
 
 var _failures: Array[String] = []
+
+
+class PortabilityCancellationProbe:
+	extends RefCounted
+
+	var mode: String
+	var publication_state: Dictionary
+	var publication_mutex: Mutex
+
+
+	func _init(next_mode: String, shared_state: Dictionary, shared_mutex: Mutex) -> void:
+		mode = next_mode
+		publication_state = shared_state
+		publication_mutex = shared_mutex
+
+
+	func export_campaign(
+		_campaign_id: String,
+		_destination_path: String,
+		progress: Callable,
+		cancellation: Callable
+	) -> Dictionary:
+		progress.call({"phase": "started", "completed": 0, "total": 3})
+		for _attempt in 500:
+			if cancellation.call():
+				return _cancelled()
+			if mode != "early":
+				break
+			OS.delay_msec(1)
+		progress.call({"phase": "middle", "completed": 1, "total": 3})
+		for _attempt in 500:
+			if cancellation.call():
+				return _cancelled()
+			if mode != "mid":
+				break
+			OS.delay_msec(1)
+		publication_mutex.lock()
+		publication_state["count"] = int(publication_state.get("count", 0)) + 1
+		publication_mutex.unlock()
+		progress.call({"phase": "committed", "completed": 3, "total": 3})
+		OS.delay_msec(30)
+		return {"ok": true, "status": "exported", "publication_count": 1}
+
+
+	func _cancelled() -> Dictionary:
+		return {"ok": false, "status": "cancelled"}
 
 
 func _init() -> void:
@@ -103,6 +150,7 @@ func _run_tests() -> void:
 	_expect(restored_store.get("ok", false) and restored_store.get("generation", -1) == 5, "restore retains complete Campaign generations and safe parent")
 	var portability_bundle := _run_portability_contract(root, registry, first_id)
 	if not portability_bundle.is_empty():
+		await _run_portability_controller_resource_contract()
 		await _run_campaign_conflict_ui_journey(portability_bundle)
 
 	_run_registry_fault_contract()
@@ -619,6 +667,19 @@ func _run_portability_contract(source_root: String, source_registry, source_camp
 	_expect(FileAccess.file_exists(bundle_path), "Campaign bundle is one portable file")
 	var duplicate_export := exporter.export_campaign(source_campaign_id, bundle_path)
 	_expect(not duplicate_export.get("ok", true), "Campaign export never overwrites an existing bundle")
+	var cancelled_export_path := source_root + "/exports/cancelled.saltmarcher"
+	var cancel_export := {"requested": false}
+	var cancelled_export := exporter.export_campaign(
+		source_campaign_id,
+		cancelled_export_path,
+		func(update: Dictionary) -> void:
+			if update.get("phase", "") == "writing":
+				cancel_export["requested"] = true,
+		func() -> bool: return bool(cancel_export["requested"])
+	)
+	_expect(cancelled_export.get("status", "") == "cancelled", "production Campaign export cancels after partial bundle writing")
+	_expect(not FileAccess.file_exists(cancelled_export_path), "cancelled production export publishes no bundle")
+	_expect(_has_no_files_with_prefix(cancelled_export_path.get_base_dir(), "cancelled.saltmarcher.pending-"), "cancelled production export removes its pending bundle bytes")
 
 	var target_root := "user://saltmarcher-import-tests/%s" % Time.get_ticks_usec()
 	var target_registry := FileCampaignRegistry.new(target_root)
@@ -752,6 +813,110 @@ func _run_portability_cancellation_contract(bundle_path: String) -> void:
 	_expect(cancelled_definitions.get("status", "") == "cancelled", "Shared-Definition preparation observes cancellation between immutable objects")
 	_expect(not FileAccess.file_exists(SharedDefinitionStore.new(definition_root).generation_path(1)), "cancelled Shared-Definition preparation publishes no generation")
 	_expect(_has_no_child_directories(definition_root + "/installation/shared-definitions/objects"), "cancelled Shared-Definition preparation removes its unreferenced objects")
+
+
+func _run_portability_controller_resource_contract() -> void:
+	var data_root := "user://saltmarcher-portability-controller-resource/%s" % Time.get_ticks_usec()
+	var registry := FileCampaignRegistry.new(data_root)
+	var publication_state := {"count": 0}
+	var publication_mutex := Mutex.new()
+	var next_mode := {"value": "early"}
+	var controller := CampaignPortabilityController.new(
+		data_root,
+		registry,
+		null,
+		func(_root: String, _registry, _guard):
+			return PortabilityCancellationProbe.new(
+				str(next_mode["value"]),
+				publication_state,
+				publication_mutex
+			)
+	)
+	root.add_child(controller)
+	var progress_events: Array = []
+	var completions: Array = []
+	controller.progress_changed.connect(func(progress: Dictionary) -> void:
+		progress_events.append(progress.duplicate(true))
+	)
+	controller.operation_completed.connect(func(kind: String, result: Dictionary) -> void:
+		completions.append({"kind": kind, "result": result.duplicate(true)})
+	)
+
+	next_mode["value"] = "early"
+	controller.export_campaign("warmup", data_root + "/warmup.saltmarcher")
+	controller.cancel_active()
+	for _attempt in 600:
+		if not controller.is_active():
+			break
+		await create_timer(0.001).timeout
+	await process_frame
+	progress_events.clear()
+	completions.clear()
+	var baseline_rss := _resident_memory_bytes()
+	var request_ack_usec: Array[int] = []
+	var terminal_cleanup_usec: Array[int] = []
+	var expected_publications := 0
+	var modes: Array[String] = []
+	for index in 20:
+		modes.append("early" if index < 7 else ("mid" if index < 14 else "commit_boundary"))
+	for cycle in modes.size():
+		var mode := modes[cycle]
+		next_mode["value"] = mode
+		progress_events.clear()
+		var completion_count_before := completions.size()
+		var started := controller.export_campaign(
+			"cycle-%d" % cycle,
+			data_root + "/cycle-%d.saltmarcher" % cycle
+		)
+		_expect(started.get("status", "") == "started", "cancellation cycle %d starts exactly one portability worker" % cycle)
+		if mode == "mid":
+			for _attempt in 600:
+				if _progress_has_phase(progress_events, "middle"):
+					break
+				await create_timer(0.001).timeout
+		elif mode == "commit_boundary":
+			for _attempt in 600:
+				if _progress_has_phase(progress_events, "committed"):
+					break
+				await create_timer(0.001).timeout
+			expected_publications += 1
+		var cancel_started_usec := Time.get_ticks_usec()
+		var cancellation := controller.cancel_active()
+		request_ack_usec.append(Time.get_ticks_usec() - cancel_started_usec)
+		_expect(cancellation.get("status", "") == "cancellation_requested", "cancellation cycle %d acknowledges the active request" % cycle)
+		for _attempt in 10_000:
+			if not controller.is_active():
+				break
+			await create_timer(0.001).timeout
+		terminal_cleanup_usec.append(Time.get_ticks_usec() - cancel_started_usec)
+		await process_frame
+		_expect(completions.size() == completion_count_before + 1, "cancellation cycle %d emits exactly one terminal result" % cycle)
+		if completions.size() > completion_count_before:
+			var terminal: Dictionary = completions.back()["result"]
+			var expected_status := "exported" if mode == "commit_boundary" else "cancelled"
+			_expect(terminal.get("status", "") == expected_status, "cancellation cycle %d preserves its linearized %s result" % [cycle, expected_status])
+		var resources := controller.resource_snapshot()
+		_expect(
+			not resources.get("active", true)
+			and int(resources.get("worker_handle_count", -1)) == 0
+			and int(resources.get("pending_operation_count", -1)) == 0,
+			"cancellation cycle %d releases its worker handle and queue state" % cycle
+		)
+	publication_mutex.lock()
+	var publication_count := int(publication_state.get("count", -1))
+	publication_mutex.unlock()
+	_expect(publication_count == expected_publications, "twenty cancellation cycles publish only post-commit-boundary results exactly once")
+	request_ack_usec.sort()
+	terminal_cleanup_usec.sort()
+	_expect(request_ack_usec[18] <= 1_000_000, "cancellation request acknowledgement p95 remains within one second")
+	_expect(terminal_cleanup_usec[18] <= 10_000_000, "cancellation terminal cleanup p95 remains within ten seconds")
+	await process_frame
+	await process_frame
+	var final_rss := _resident_memory_bytes()
+	if baseline_rss > 0 and final_rss > 0:
+		_expect(final_rss <= int(float(baseline_rss) * 1.10), "twenty cancellation cycles return Linux resident memory within ten percent of steady state")
+	controller.queue_free()
+	await process_frame
 
 
 func _run_shared_definition_conflict_contract(bundle_path: String) -> void:
@@ -2181,6 +2346,28 @@ func _expect(condition: bool, message: String) -> void:
 		_failures.append(message)
 
 
+func _progress_has_phase(events: Array, phase: String) -> bool:
+	for event in events:
+		if str(event.get("phase", "")) == phase:
+			return true
+	return false
+
+
+func _resident_memory_bytes() -> int:
+	var status := FileAccess.open("/proc/self/status", FileAccess.READ)
+	if status == null:
+		return -1
+	var contents := status.get_as_text()
+	status.close()
+	for line in contents.split("\n"):
+		if not line.begins_with("VmRSS:"):
+			continue
+		var fields := line.split(" ", false)
+		if fields.size() >= 2 and str(fields[1]).is_valid_int():
+			return str(fields[1]).to_int() * 1024
+	return -1
+
+
 func _has_no_child_directories(path: String) -> bool:
 	var absolute_path := ProjectSettings.globalize_path(path)
 	return (
@@ -2195,3 +2382,13 @@ func _directory_has_no_files(path: String) -> bool:
 		not DirAccess.dir_exists_absolute(absolute_path)
 		or DirAccess.get_files_at(absolute_path).is_empty()
 	)
+
+
+func _has_no_files_with_prefix(path: String, prefix: String) -> bool:
+	var absolute_path := ProjectSettings.globalize_path(path)
+	if not DirAccess.dir_exists_absolute(absolute_path):
+		return true
+	for file_name in DirAccess.get_files_at(absolute_path):
+		if file_name.begins_with(prefix):
+			return false
+	return true

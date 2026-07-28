@@ -12,16 +12,23 @@ signal operation_completed(kind: String, result: Dictionary)
 var _data_root: String
 var _registry
 var _capacity_guard
+var _bundle_factory: Callable
 var _thread: Thread
 var _mutex := Mutex.new()
 var _cancel_requested := false
 var _active_kind := ""
 
 
-func _init(data_root: String, registry, capacity_guard = null) -> void:
+func _init(
+	data_root: String,
+	registry,
+	capacity_guard = null,
+	bundle_factory: Callable = Callable()
+) -> void:
 	_data_root = data_root.trim_suffix("/")
 	_registry = registry
 	_capacity_guard = capacity_guard
+	_bundle_factory = bundle_factory
 
 
 func export_campaign(campaign_id: String, destination_path: String) -> Dictionary:
@@ -79,6 +86,19 @@ func active_kind() -> String:
 	return kind
 
 
+func resource_snapshot() -> Dictionary:
+	_mutex.lock()
+	var snapshot := {
+		"active": not _active_kind.is_empty(),
+		"active_kind": _active_kind,
+		"cancellation_requested": _cancel_requested,
+		"worker_handle_count": 1 if _thread != null else 0,
+		"pending_operation_count": 0,
+	}
+	_mutex.unlock()
+	return snapshot
+
+
 func _start(kind: String, arguments: Dictionary) -> Dictionary:
 	_mutex.lock()
 	if not _active_kind.is_empty():
@@ -105,7 +125,18 @@ func _start(kind: String, arguments: Dictionary) -> Dictionary:
 
 
 func _run_operation(kind: String, arguments: Dictionary) -> void:
-	var bundle := CampaignBundle.new(_data_root, _registry, _capacity_guard)
+	var bundle = (
+		_bundle_factory.call(_data_root, _registry, _capacity_guard)
+		if _bundle_factory.is_valid()
+		else CampaignBundle.new(_data_root, _registry, _capacity_guard)
+	)
+	if bundle == null:
+		call_deferred("_finish_on_main", kind, {
+			"ok": false,
+			"status": "worker_error",
+			"error": "Transfer-Worker besitzt keinen ausführbaren Portabilitätspfad.",
+		})
+		return
 	var progress := Callable(self, "_progress_from_worker")
 	var cancellation := Callable(self, "_cancelled_from_worker")
 	var result: Dictionary

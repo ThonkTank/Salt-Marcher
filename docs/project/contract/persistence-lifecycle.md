@@ -197,7 +197,15 @@ remain disabled while work is active. Cancellation at a natural pre-commit
 boundary removes unmarked staging and publishes no registry truth; a staged
 definition conflict remains explicitly resumable or discardable. Atomic commit
 is the linearization boundary, so a later cancellation request reports the
-completed outcome.
+completed outcome. A production export cancelled after partial bundle writing
+removes its pending bytes and publishes no destination file. The controller
+exposes a read-only resource snapshot for
+qualification: active operation, cancellation request, live worker-handle
+count, and pending-operation count. On Linux, the current deterministic
+20-cycle early/middle/post-commit exercise proves one terminal result per cycle,
+request acknowledgement below one second p95, terminal cleanup below ten
+seconds p95, no lingering handle or queue entry, only post-commit publication,
+and resident-memory return within ten percent of warmed steady state.
 
 Campaign deletion atomically removes it from the live registry and publishes
 its complete root in recoverable trash. Permanent deletion is a separate,
@@ -302,8 +310,10 @@ share one installation maintenance lock, so no recovery receipt, blob, or
 retention inventory can change concurrently with compaction validation.
 
 Released-format conversion, real Windows and macOS probe/export execution,
-cross-OS qualification, representative binary scale, and the
-repeated-cancellation resource-envelope proof remain open roadmap work.
+cross-OS qualification, representative binary scale, and full `RP-R` repeated-
+cancellation resource qualification remain open roadmap work. The local Linux
+controller envelope above is a narrower production-lifecycle proof, not that
+profile qualification.
 The old Java/SQLite implementation does not satisfy this target contract.
 
 ## References
