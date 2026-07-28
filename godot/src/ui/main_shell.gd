@@ -6,6 +6,7 @@ const CatalogWorkspace = preload("res://godot/src/ui/catalog_workspace.gd")
 const PartyTopBar = preload("res://godot/src/ui/party_top_bar.gd")
 const AdventuringDayTopBar = preload("res://godot/src/ui/adventuring_day_top_bar.gd")
 const SessionPlannerWorkspace = preload("res://godot/src/ui/session_planner_workspace.gd")
+const EncounterRuntimeWorkspace = preload("res://godot/src/ui/encounter_runtime_workspace.gd")
 
 const NIGHT_INK := Color("#0a1114")
 const DEEP_SLATE := Color("#152a32")
@@ -110,9 +111,18 @@ func _ready() -> void:
 	campaign_desk.active_campaign_changed.connect(func(_campaign_id: String) -> void:
 		session_planner.refresh()
 	)
+	var encounter := EncounterRuntimeWorkspace.new()
+	encounter.data_root = data_root
+	encounter.runtime_coordinator = runtime_coordinator
+	content.add_child(encounter)
+	_routes["encounter"] = encounter
+	campaign_desk.active_campaign_changed.connect(func(_campaign_id: String) -> void:
+		encounter.refresh()
+	)
 	_add_route_button(navigation, "campaigns", "Campaigns")
 	_add_route_button(navigation, "catalog", "Katalog")
 	_add_route_button(navigation, "session_planner", "Session Planner")
+	_add_route_button(navigation, "encounter", "Encounter")
 	show_route(_active_route)
 
 

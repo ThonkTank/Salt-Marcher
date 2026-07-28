@@ -5,13 +5,15 @@ Owner: Encounter
 Last Reviewed: 2026-07-28
 Source of Truth: This document
 
-The current Godot product satisfies persistent manual saved plans plus the
-generated-preparation owner seam: bounded Katalog search/detail,
-Creature-backed roster create/edit, recoverable trash/restore, restart
-readback, complete ordered batch preparation, one atomic idempotent commit, and
-ordered current-fact summary hydration. Free-form builder generation, the
-Encounter state pane, Session Planner composition, and combat remain unmet
-target requirements.
+The current Godot product satisfies persistent manual saved plans, generated
+preparation, and one durable manual live-play route. The `Encounter` workspace
+opens a saved plan through current Creature facts, captures the active Party,
+edits or rolls initiative, expands every monster member, persists exact HP,
+round and active-turn truth, derives results, awards XP atomically with Party,
+and resumes after restart. Free-form builder generation, Scene-owned context
+synchronization, Catalog-to-runtime additions, mob projection,
+reinforcements, and the eventual compact cockpit state-pane composition remain
+unmet target requirements.
 
 ## Goal
 

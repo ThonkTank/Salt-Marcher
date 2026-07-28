@@ -1,6 +1,6 @@
 # Encounter Domain Model
 
-Status: Active target domain with saved-plan and generated-batch Godot implementation
+Status: Active target domain with saved-plan, generated-batch, and manual runtime Godot implementation
 Owner: Encounter
 Last Reviewed: 2026-07-28
 Source of Truth: This document
@@ -63,7 +63,10 @@ Encounter derives:
 Generated alternatives and prepared batches remain transient until saved. The
 current builder, initiative, combat, and result session state is Encounter-owned
 runtime state, not persisted `EncounterPlan` truth and not view-owned mutable
-state.
+state. The production manual context now persists this runtime truth separately
+from saved plans in the Encounter partition. Opening a plan materializes current
+Creature combat facts; later definition changes do not silently rewrite a
+running fight.
 
 ## Mutation Language
 
@@ -74,6 +77,10 @@ Encounter supports:
 - load or list saved Encounter plans
 - prepare one ordered generated-intent batch as concrete rosters
 - commit one complete prepared batch as saved Encounter plans
+- open a saved plan into the manual runtime context
+- open, edit, and confirm initiative
+- mutate individual enemy HP and initiative, advance turns, and end combat
+- award one result through an atomic Encounter-plus-Party publication
 
 ## Invariants
 

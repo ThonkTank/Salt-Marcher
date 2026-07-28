@@ -1,6 +1,6 @@
 # Encounter Architecture
 
-Status: Active target architecture with partial Godot implementation
+Status: Active target architecture with saved-plan, generated-batch, and manual runtime Godot implementation
 Owner: Encounter
 Last Reviewed: 2026-07-28
 Source of Truth: This document
@@ -37,10 +37,14 @@ godot/src/features/encounter/
   encounter_generation_policy.gd
   encounter_generated_batch_read_controller.gd
   encounter_generated_batch_command_controller.gd
-  # target: free-form generation, planning-fact, and runtime-session controllers
+  encounter_runtime_knowledge.gd
+  encounter_runtime_read_controller.gd
+  encounter_runtime_command_controller.gd
+  # target: free-form generation, planning-fact, and Scene synchronization controllers
 godot/src/ui/
   encounter_plan_editor_dialog.gd
-  # target: encounter runtime state pane
+  encounter_runtime_workspace.gd
+  # target: compact cockpit state-pane composition
 ```
 
 Pure owner code depends on no UI node, file path, Campaign store, or foreign
@@ -64,8 +68,12 @@ Current production coverage includes the saved-plan owner partition, serial
 writer, bounded Catalog query, latest-wins detail hydration, recoverable trash,
 bounded roster editor, deterministic generated-batch policy, asynchronous
 prepare/summary lane, and atomic idempotent batch publication. The free-form
-Encounter runtime pane, its alternative generator, and Session Planner planning
-facts are not yet composed and must not be inferred from the batch seam.
+Encounter alternative generator and Session Planner planning facts are not yet
+composed and must not be inferred from the batch seam. A separate top-level
+Encounter workspace now owns the manual live path through one persisted runtime
+context: open saved plan, initiative, individual combatants, HP/turn mutation,
+results, atomic Party XP award, and return to the retained roster. Scene context
+synchronization and the final compact cockpit placement remain target work.
 
 ## Generated-Batch Orchestration
 
@@ -120,10 +128,11 @@ mapping or no mapping. A validation, resolution, conflict, cancellation, or
 storage failure does not publish a partial set and does not advance visible
 saved-plan state.
 
-Runtime builder, initiative, combat, and result state will be published as
-immutable revisioned Encounter state. Generated-batch completion must not
-mutate those runtime sessions. Saved-plan summary batch reads preserve request
-order and report missing identities explicitly.
+Runtime builder, initiative, combat, and result state is published as immutable
+revisioned Encounter state. The manual context already uses this route and
+publishes each mutation through one validated owner replacement;
+generated-batch completion does not mutate it. Saved-plan summary batch reads
+preserve request order and report missing identities explicitly.
 
 ## Quality Targets
 

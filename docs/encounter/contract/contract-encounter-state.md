@@ -1,5 +1,10 @@
 # Encounter State Contract
 
+Status: Active target contract with partial Godot runtime command coverage
+Owner: Encounter
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 ## Purpose
 
 This contract defines the public runtime workflow surface used by the encounter
@@ -17,6 +22,12 @@ state tab.
 - `ApplyEncounterStateCommand` submits workflow actions such as generate, save
   current plan, open saved plan, roster edits, initiative confirmation, combat
   mutations, XP award, and refresh through `EncounterApi`
+
+Current Godot production commands cover saved-plan open, initiative open/edit/
+roll/confirm, individual enemy HP mutation, combat-initiative edit, turn
+advance, combat end, one atomic XP award, and return to the preserved builder
+roster. Generate, save-current-plan from the runtime workspace, roster edits,
+reinforcements, and Scene context synchronization remain target commands.
 
 ## Boundary Rules
 

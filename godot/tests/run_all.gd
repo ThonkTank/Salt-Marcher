@@ -23,10 +23,14 @@ const EncounterTableEditorDialog = preload("res://godot/src/ui/encounter_table_e
 const EncounterPlanKnowledge = preload("res://godot/src/features/encounter/encounter_plan_knowledge.gd")
 const EncounterPlanCommandController = preload("res://godot/src/features/encounter/encounter_plan_command_controller.gd")
 const EncounterPlanDetailReadController = preload("res://godot/src/features/encounter/encounter_plan_detail_read_controller.gd")
+const EncounterRuntimeKnowledge = preload("res://godot/src/features/encounter/encounter_runtime_knowledge.gd")
+const EncounterRuntimeCommandController = preload("res://godot/src/features/encounter/encounter_runtime_command_controller.gd")
+const EncounterRuntimeReadController = preload("res://godot/src/features/encounter/encounter_runtime_read_controller.gd")
 const EncounterGenerationPolicy = preload("res://godot/src/features/encounter/encounter_generation_policy.gd")
 const EncounterGeneratedBatchReadController = preload("res://godot/src/features/encounter/encounter_generated_batch_read_controller.gd")
 const EncounterGeneratedBatchCommandController = preload("res://godot/src/features/encounter/encounter_generated_batch_command_controller.gd")
 const EncounterPlanEditorDialog = preload("res://godot/src/ui/encounter_plan_editor_dialog.gd")
+const EncounterRuntimeWorkspace = preload("res://godot/src/ui/encounter_runtime_workspace.gd")
 const CampaignRuntimeCoordinator = preload("res://godot/src/app/campaign_runtime_coordinator.gd")
 const CampaignRuntimeSession = preload("res://godot/src/app/campaign_runtime_session.gd")
 const CampaignPortabilityController = preload("res://godot/src/app/campaign_portability_controller.gd")
@@ -139,6 +143,7 @@ func _run_tests() -> void:
 	await _run_world_planner_knowledge_contract()
 	_run_generated_encounter_batch_contract()
 	_run_encounter_plan_knowledge_contract()
+	_run_encounter_runtime_knowledge_contract()
 	await _run_generated_encounter_controller_contract()
 	await _run_catalog_foundation_contract()
 
@@ -1333,6 +1338,136 @@ func _generated_intent(encounter_number: int, label: String, target_xp: int) -> 
 	}
 
 
+func _run_encounter_runtime_knowledge_contract() -> void:
+	var plans := EncounterPlanKnowledge.new()
+	var runtime := EncounterRuntimeKnowledge.new()
+	var created := plans.create_plan(
+		plans.empty_payload(),
+		"Wölfe am Kai",
+		[{"creature_id": "creature.wolf", "quantity": 4, "last_known_name": "Wolf"}],
+		"encounter_plan.runtime",
+		"2026-07-28T16:00:00Z"
+	)
+	var payload: Dictionary = created.get("payload", plans.empty_payload())
+	_expect(
+		payload.get("format", "") == "saltmarcher.encounter.v2"
+		and runtime.validate_runtime(payload.get("runtime", {})).get("ok", false),
+		"Encounter v2 keeps saved plans and versioned runtime contexts as separate collections in one owner partition"
+	)
+	var opened := runtime.open_saved_plan(payload, "encounter_plan.runtime", [{
+		"creature_id": "creature.wolf",
+		"name": "Wolf",
+		"last_known_name": "Wolf",
+		"quantity": 4,
+		"challenge_rating": "1/4",
+		"xp": 51,
+		"hit_points": 11,
+		"armor_class": 12,
+		"initiative_bonus": 2,
+	}])
+	_expect(
+		opened.get("ok", false)
+		and opened.get("context", {}).get("mode", "") == "builder"
+		and opened.get("context", {}).get("roster", []).size() == 1,
+		"opening a saved plan materializes current Creature combat facts into an independent runtime roster"
+	)
+	payload = opened.get("payload", payload)
+	_expect(
+		not runtime.open_initiative(payload, []).get("ok", true),
+		"runtime combat start fails closed when the active Party is empty"
+	)
+	var initiative := runtime.open_initiative(payload, [
+		{"character_id": "pc.iria", "name": "Iria", "level": 4},
+		{"character_id": "pc.tamo", "name": "Tamo", "level": 3},
+	])
+	_expect(
+		initiative.get("ok", false)
+		and initiative.get("context", {}).get("mode", "") == "initiative"
+		and initiative.get("context", {}).get("initiative", []).size() == 3,
+		"initiative opens one Party row plus one quantity-aware enemy row per runtime roster slot"
+	)
+	payload = initiative.get("payload", payload)
+	var rolled := runtime.roll_all_initiative(payload, {
+		"pc.iria": 18,
+		"pc.tamo": 11,
+		"enemy.creature.wolf": 7,
+	})
+	_expect(
+		rolled.get("ok", false)
+		and rolled.get("context", {}).get("initiative", [])[2].get("initiative", -1) == 9,
+		"rolling all initiative applies each enemy initiative bonus without hiding the authored values"
+	)
+	payload = rolled.get("payload", payload)
+	var adjusted := runtime.set_initiative(payload, "pc.tamo", 20)
+	_expect(adjusted.get("ok", false), "one visible initiative value remains explicitly editable")
+	payload = adjusted.get("payload", payload)
+	var combat := runtime.confirm_initiative(payload)
+	var combat_context: Dictionary = combat.get("context", {})
+	_expect(
+		combat.get("ok", false)
+		and combat_context.get("mode", "") == "combat"
+		and combat_context.get("combatants", []).size() == 6
+		and combat_context.get("active_combatant_id", "") == "pc.tamo",
+		"initiative confirmation expands every monster member and deterministically publishes the first turn"
+	)
+	payload = combat.get("payload", payload)
+	var first_enemy_id := "enemy.creature.wolf.1"
+	var wounded := runtime.mutate_hp(payload, first_enemy_id, 8, false)
+	payload = wounded.get("payload", payload)
+	var defeated := runtime.mutate_hp(payload, first_enemy_id, 8, false)
+	_expect(
+		defeated.get("ok", false)
+		and defeated.get("context", {}).get("combatants", [])[2].get("current_hp", -1) >= 0,
+		"combat HP mutation clamps one individual monster at zero while preserving per-member runtime truth"
+	)
+	payload = defeated.get("payload", payload)
+	var before_turn_id: String = str(runtime.snapshot(payload).get("context", {}).get("active_combatant_id", ""))
+	var advanced := runtime.advance_turn(payload)
+	_expect(
+		advanced.get("ok", false)
+		and advanced.get("context", {}).get("active_combatant_id", "") != before_turn_id,
+		"next-turn advances the persisted active position without selecting a defeated enemy"
+	)
+	payload = advanced.get("payload", payload)
+	var restart_copy: Dictionary = JSON.parse_string(JSON.stringify(payload))
+	var resumed := runtime.snapshot(restart_copy)
+	_expect(
+		plans.validate_payload(restart_copy).get("ok", false)
+		and resumed.get("context", {}).get("active_combatant_id", "") == advanced.get("context", {}).get("active_combatant_id", "")
+		and resumed.get("context", {}).get("round", -1) == 1,
+		"running Encounter round, active turn, and individual HP survive a JSON restart round trip"
+	)
+	var ended := runtime.end_combat(payload)
+	_expect(
+		ended.get("ok", false)
+		and ended.get("context", {}).get("mode", "") == "results"
+		and ended.get("context", {}).get("result", {}).get("eligible_xp", -1) == 51
+		and ended.get("context", {}).get("result", {}).get("per_player_xp", -1) == 25,
+		"combat resolution derives defeated-enemy XP and explicitly floors a non-divisible participating-Party share"
+	)
+	payload = ended.get("payload", payload)
+	var awarded := runtime.mark_xp_awarded(payload)
+	_expect(
+		awarded.get("ok", false)
+		and awarded.get("context", {}).get("result", {}).get("xp_awarded", false),
+		"runtime marks one result award exactly once after the Party mutation boundary succeeds"
+	)
+	var returned := runtime.return_to_builder(awarded.get("payload", payload))
+	_expect(
+		returned.get("ok", false)
+		and returned.get("context", {}).get("mode", "") == "builder"
+		and returned.get("context", {}).get("roster", []).size() == 1
+		and returned.get("context", {}).get("combatants", []).is_empty(),
+		"returning to the planner clears combat/result state but preserves the opened runtime roster"
+	)
+	var damaged: Dictionary = returned.get("payload", {}).duplicate(true)
+	if damaged.has("runtime"):
+		damaged["runtime"]["contexts"][EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID]["round"] = 1.5
+		_expect(not plans.validate_payload(damaged).get("ok", true), "Encounter owner rejects non-integral persisted runtime numbers")
+	else:
+		_expect(false, "Encounter owner rejects non-integral persisted runtime numbers")
+
+
 func _run_encounter_plan_knowledge_contract() -> void:
 	var model := EncounterPlanKnowledge.new()
 	var payload := model.empty_payload()
@@ -1925,6 +2060,31 @@ func _run_catalog_foundation_contract() -> void:
 	_expect(seeded_world.get("ok", false), "Catalog fixture atomically seeds World Planner, Encounter Table, saved Encounter, and Party owners")
 	var runtime_coordinator := CampaignRuntimeCoordinator.new(data_root, registry)
 	_expect(runtime_coordinator.open_durable_active().get("ok", false), "Catalog fixture opens its active Campaign writer")
+	var runtime_reads := EncounterRuntimeReadController.new(data_root)
+	root.add_child(runtime_reads)
+	var runtime_read_results: Array = []
+	runtime_reads.result_published.connect(func(result: Dictionary) -> void: runtime_read_results.append(result.duplicate(true)))
+	var first_runtime_read := runtime_reads.query("")
+	var replacement_runtime_read := runtime_reads.query("nordkai")
+	_expect(
+		first_runtime_read.get("status", "") == "started"
+		and replacement_runtime_read.get("status", "") == "queued",
+		"Encounter workspace read lane admits one active request and one latest replacement"
+	)
+	for _attempt in 1200:
+		if not runtime_reads.is_active():
+			break
+		await create_timer(0.001).timeout
+	await process_frame
+	_expect(
+		runtime_read_results.size() == 1
+		and runtime_read_results[0].get("plans", []).size() == 1
+		and runtime_reads.resource_snapshot().get("worker_handle_count", -1) == 0
+		and runtime_reads.resource_snapshot().get("pending_count", -1) == 0,
+		"Encounter workspace read lane suppresses stale publication and releases worker state"
+	)
+	runtime_reads.queue_free()
+	await process_frame
 	var first_page := definitions.query_catalog(int(prepared["generation"]), "creature", "wo", 0, 1)
 	_expect(
 		first_page.get("ok", false)
@@ -2165,6 +2325,125 @@ func _run_catalog_foundation_contract() -> void:
 	shell.runtime_coordinator = runtime_coordinator
 	root.add_child(shell)
 	await process_frame
+	var encounter_workspace := shell.route("encounter") as EncounterRuntimeWorkspace
+	for _attempt in 1200:
+		if encounter_workspace.snapshot().get("plans", []).size() == 1:
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		encounter_workspace != null
+		and shell.show_route("encounter").get("ok", false)
+		and shell.active_route() == "encounter"
+		and encounter_workspace.snapshot().get("active_party", []).size() == 4,
+		"production shell exposes the native Encounter route with current active-Party facts"
+	)
+	var encounter_plan_rail := encounter_workspace.find_child("EncounterPlanRail", true, false) as VBoxContainer
+	var open_runtime_plan := encounter_plan_rail.get_child(0) as Button if encounter_plan_rail != null and encounter_plan_rail.get_child_count() > 0 else null
+	if open_runtime_plan != null:
+		open_runtime_plan.pressed.emit()
+	for _attempt in 1800:
+		if encounter_workspace.snapshot().get("context", {}).get("roster", []).size() == 2:
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		encounter_workspace.snapshot().get("context", {}).get("mode", "") == "builder"
+		and encounter_workspace.snapshot().get("context", {}).get("roster", []).size() == 2,
+		"Encounter route opens one saved plan through current Creature facts and persists its runtime roster"
+	)
+	var open_initiative := encounter_workspace.find_child("OpenEncounterInitiative", true, false) as Button
+	if open_initiative != null:
+		open_initiative.pressed.emit()
+	for _attempt in 1800:
+		if encounter_workspace.snapshot().get("context", {}).get("mode", "") == "initiative":
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		encounter_workspace.snapshot().get("context", {}).get("initiative", []).size() == 6,
+		"Encounter route renders four PCs and two quantity-aware enemy initiative rows"
+	)
+	var roll_initiative := encounter_workspace.find_child("RollEncounterInitiative", true, false) as Button
+	var revision_before_roll := int(encounter_workspace.snapshot().get("context", {}).get("revision", -1))
+	if roll_initiative != null:
+		roll_initiative.pressed.emit()
+	for _attempt in 1800:
+		if int(encounter_workspace.snapshot().get("context", {}).get("revision", -1)) > revision_before_roll:
+			break
+		await create_timer(0.001).timeout
+	var confirm_initiative := encounter_workspace.find_child("ConfirmEncounterInitiative", true, false) as Button
+	if confirm_initiative != null:
+		confirm_initiative.pressed.emit()
+	for _attempt in 1800:
+		if encounter_workspace.snapshot().get("context", {}).get("mode", "") == "combat":
+			break
+		await create_timer(0.001).timeout
+	var live_context: Dictionary = encounter_workspace.snapshot().get("context", {})
+	_expect(
+		live_context.get("combatants", []).size() == 8
+		and encounter_workspace.find_child("EncounterTurnStrip", true, false).get_child_count() == 8
+		and encounter_workspace.find_child("AdvanceEncounterTurn", true, false) != null,
+		"Encounter combat expands every monster member and renders the persisted turn order as the live strip"
+	)
+	var enemy_id := ""
+	for combatant in live_context.get("combatants", []):
+		if combatant.get("kind", "") == "enemy":
+			enemy_id = str(combatant["combatant_id"])
+			break
+	if not enemy_id.is_empty():
+		encounter_workspace.call("_mutate_hp", enemy_id, 1_000, false)
+	for _attempt in 1800:
+		var hp_reached_zero := false
+		for combatant in encounter_workspace.snapshot().get("context", {}).get("combatants", []):
+			if combatant.get("combatant_id", "") == enemy_id and int(combatant.get("current_hp", -1)) == 0:
+				hp_reached_zero = true
+		if hp_reached_zero:
+			break
+		await create_timer(0.001).timeout
+	var persisted_runtime := FileCampaignStore.new(data_root, catalog_campaign_id).read_partition(EncounterPlanKnowledge.OWNER)
+	_expect(
+		EncounterRuntimeKnowledge.new().snapshot(persisted_runtime.get("payload", {})).get("context", {}).get("combatants", []).any(
+			func(combatant: Dictionary) -> bool: return combatant.get("combatant_id", "") == enemy_id and int(combatant.get("current_hp", -1)) == 0
+		),
+		"production HP control confirms individual monster damage in the durable Encounter owner partition"
+	)
+	var end_encounter := encounter_workspace.find_child("EndEncounter", true, false) as Button
+	if end_encounter != null:
+		end_encounter.pressed.emit()
+	var end_dialog := encounter_workspace.find_child("EndEncounterDialog", true, false) as ConfirmationDialog
+	if end_dialog != null:
+		end_dialog.confirmed.emit()
+		end_dialog.hide()
+	for _attempt in 1800:
+		if encounter_workspace.snapshot().get("context", {}).get("mode", "") == "results":
+			break
+		await create_timer(0.001).timeout
+	var result_context: Dictionary = encounter_workspace.snapshot().get("context", {})
+	_expect(
+		result_context.get("result", {}).get("eligible_xp", -1) > 0
+		and encounter_workspace.find_child("AwardEncounterXp", true, false) != null,
+		"two-step combat end publishes a visible result derived from tracked HP"
+	)
+	var award_xp := encounter_workspace.find_child("AwardEncounterXp", true, false) as Button
+	if award_xp != null and not award_xp.disabled:
+		award_xp.pressed.emit()
+	for _attempt in 1800:
+		if encounter_workspace.snapshot().get("context", {}).get("result", {}).get("xp_awarded", false):
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		encounter_workspace.snapshot().get("context", {}).get("result", {}).get("xp_awarded", false),
+		"Encounter result awards XP once through one atomic Encounter-plus-Party Campaign publication"
+	)
+	var return_builder := encounter_workspace.find_child("ReturnEncounterBuilder", true, false) as Button
+	if return_builder != null:
+		return_builder.pressed.emit()
+	for _attempt in 1800:
+		if encounter_workspace.snapshot().get("context", {}).get("mode", "") == "builder":
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		encounter_workspace.snapshot().get("context", {}).get("roster", []).size() == 2,
+		"Encounter result returns to the preserved runtime roster without mutating the saved plan"
+	)
 	_expect(shell.show_route("catalog").get("ok", false) and shell.active_route() == "catalog", "production shell exposes one native Katalog route")
 	var catalog := shell.route("catalog") as CatalogWorkspace
 	for _attempt in 600:

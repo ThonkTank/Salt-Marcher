@@ -3,12 +3,13 @@ extends RefCounted
 
 ## Pure Campaign owner for saved Encounter-plan roster truth.
 
-const FORMAT_ID := "saltmarcher.encounter-plans.v1"
+const FORMAT_ID := "saltmarcher.encounter.v2"
 const OWNER := "encounter"
 const KIND := "encounter_plan"
 const MAX_NAME_LENGTH := 160
 const MAX_PAGE_SIZE := 200
 const EncounterGenerationPolicy = preload("res://godot/src/features/encounter/encounter_generation_policy.gd")
+const EncounterRuntimeKnowledge = preload("res://godot/src/features/encounter/encounter_runtime_knowledge.gd")
 
 
 func empty_payload() -> Dictionary:
@@ -16,6 +17,7 @@ func empty_payload() -> Dictionary:
 		"format": FORMAT_ID,
 		"records": {},
 		"trash": {},
+		"runtime": EncounterRuntimeKnowledge.new().empty_runtime(),
 	}
 
 
@@ -27,8 +29,12 @@ func validate_payload(value: Variant) -> Dictionary:
 		payload.get("format", "") != FORMAT_ID
 		or not payload.get("records", null) is Dictionary
 		or not payload.get("trash", null) is Dictionary
+		or not payload.get("runtime", null) is Dictionary
 	):
 		return _failure("Encounter-Plan-Daten besitzen kein unterstütztes Format.")
+	var runtime_validation := EncounterRuntimeKnowledge.new().validate_runtime(payload["runtime"])
+	if not runtime_validation.get("ok", false):
+		return runtime_validation
 	for record_id_value in payload["records"]:
 		var validation := _validate_record(str(record_id_value), payload["records"][record_id_value])
 		if not validation.get("ok", false):

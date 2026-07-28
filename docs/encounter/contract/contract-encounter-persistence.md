@@ -7,13 +7,13 @@ Source of Truth: This document
 
 ## Purpose And Boundary
 
-This contract owns saved Encounter-plan persistence. Current production truth
-is one immutable, checksummed `encounter` owner partition inside the active
-Campaign file store. SQLite, JDBC, Java repositories, and cross-feature tables
-are legacy migration evidence and are not part of the target or current Godot
-route.
+This contract owns saved Encounter-plan and Encounter runtime persistence.
+Current production truth is one immutable, checksummed `encounter` owner
+partition inside the active Campaign file store. SQLite, JDBC, Java
+repositories, and cross-feature tables are legacy migration evidence and are
+not part of the target or current Godot route.
 
-The current partition format is `saltmarcher.encounter-plans.v1`. Before the
+The current partition format is `saltmarcher.encounter.v2`. Before the
 first released Godot format, incompatible development data is disposable and
 fails closed rather than receiving an implicit converter.
 
@@ -23,7 +23,9 @@ The partition contains:
 
 - `records`: active saved Encounter plans by stable plan identity;
 - `trash`: recoverable saved Encounter plans by the same stable identity plus
-  deletion time.
+  deletion time;
+- `runtime`: a versioned context collection with its focused context and source
+  revision.
 
 Every plan stores exactly:
 
@@ -43,17 +45,28 @@ meaning, fingerprints, cardinality, order, and Encounter number. The current
 Godot route writes this canonical shape only through the complete generated
 batch command.
 
-## Explicitly Excluded Truth
+The current manual runtime context stores its own revision, mode, status,
+opened-plan reference, materialized Creature roster facts, initiative rows,
+individual combatants, active turn, round, and result. A result stores the
+participating Party identities and award acknowledgement, but not copied Party
+profiles. Scene synchronization will add further contexts through the same
+runtime collection; it is not yet composed.
+
+## Explicitly Excluded Saved-Plan Truth
 
 Saved-plan persistence rejects or omits:
 
 - Creature statblocks, XP, or other Shared-Definition content;
 - Party members, thresholds, or copied Party state;
 - generated alternatives and active generator filters;
-- initiative, combat HP, turn order, masks, or defeated/result state;
+- initiative, combat HP, turn order, masks, or defeated/result state inside a
+  saved plan;
 - rewards, loot resolution, packing, Session Planner scenes, or audits.
 
-Those values remain derived, runtime-owned, or foreign-owner truth.
+Those values remain derived, runtime-owned, or foreign-owner truth. Runtime HP,
+initiative, turn order, and result state are intentionally durable
+runtime-owned truth in the separate `runtime` collection. Masks remain unmet
+target work.
 
 ## Mutation And Publication
 
@@ -79,6 +92,13 @@ and canonical origins, then publishes the one resulting partition. Exact
 completed retries read back the existing ordered mapping without a Campaign
 write. A partial, reordered, changed, already-trashed, or colliding batch fails
 closed and exposes neither a partial payload nor a partial mapping.
+
+Opening a saved plan resolves the complete roster against one selected
+Shared-Definition generation before replacing the manual runtime context.
+Every subsequent initiative, combat, or result mutation replaces the complete
+validated Encounter partition through the admitted serial Campaign writer. XP
+award prepares both the Encounter acknowledgement and Party XP mutation and
+publishes both owner partitions in one Campaign generation.
 
 ## Read And Failure Semantics
 

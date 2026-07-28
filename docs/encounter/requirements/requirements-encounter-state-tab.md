@@ -1,12 +1,30 @@
 # Encounter Runtime State UI
 
+Status: Active target requirements with a partial top-level Godot workspace
+Owner: Encounter
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 The Builder mode exposes difficulty, balance, amount, and diversity in an
 `Encounter abstimmen` section. The section is collapsed by default and writes
 only `EncounterTuningSettings`; Catalog pool filters remain unchanged.
 
+## Current Production Slice
+
+The native top-level `Encounter` workspace currently covers saved-plan open,
+current Creature-fact materialization, active-Party initiative edit/roll,
+per-member combat state, enemy HP, round/active-turn advance, two-step combat
+end, result XP derivation, atomic Party award, and return to the retained
+roster. Its horizontal turn strip renders the exact persisted order.
+
+The compact global `COCKPIT_STATE` placement, free-form generation, roster
+editing, Catalog additions and reinforcements, add-SC, mob projection, detail
+and numeric popups, loot context, and Scene-owned multiple contexts remain the
+target described below.
+
 ## Component Purpose
 
-The Encounter state tab owns the compact encounter dialog shown in the
+The target Encounter state tab owns the compact encounter dialog shown in the
 global `COCKPIT_STATE` pane when the active left-bar tab does not provide its
 own state content.
 
@@ -26,7 +44,7 @@ generator tuning signals to this dialog through runtime session state.
 
 ## Visible Surfaces
 
-Current state:
+Target state:
 
 - `Creation` shows the original compact encounter roster dialog: title row,
   difficulty and party summary, difficulty meter, thresholds, adjusted XP,
