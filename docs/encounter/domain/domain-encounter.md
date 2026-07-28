@@ -79,6 +79,8 @@ Encounter supports:
 - prepare one ordered generated-intent batch as concrete rosters
 - commit one complete prepared batch as saved Encounter plans
 - open a saved plan into the manual runtime context
+- add a current Creature to the manual builder roster or as one live combat
+  reinforcement without changing saved-plan truth
 - open, edit, and confirm initiative
 - mutate individual enemy HP and initiative, advance turns, and end combat
 - award one result through an atomic Encounter-plus-Party publication
@@ -109,6 +111,8 @@ Encounter supports:
   ownership into Encounter
 - context identity is stable, roster slots are stable within a source, and
   reconciliation never merges independent running scenes
+- a builder addition clears the copied saved-plan identity; a live
+  reinforcement preserves the creation roster and current active turn
 - enemy XP excludes allied NPC roster members
 
 ## Domain Policies

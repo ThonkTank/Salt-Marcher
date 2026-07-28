@@ -28,6 +28,10 @@ func open_saved_plan(plan_id: String, context_id: String = EncounterRuntimeKnowl
 	return start_command({"operation": "open_plan", "plan_id": plan_id, "context_id": context_id})
 
 
+func add_creature(creature_id: String, context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
+	return start_command({"operation": "add_creature", "creature_id": creature_id, "context_id": context_id})
+
+
 func open_initiative(context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
 	return start_command({"operation": "open_initiative", "context_id": context_id})
 
@@ -107,6 +111,11 @@ func _apply_runtime_command(payload: Dictionary, request: Dictionary) -> Diction
 			if not prepared.get("ok", false):
 				return prepared
 			result = model.open_saved_plan(payload, str(request["plan_id"]), prepared["roster"], context_id)
+		"add_creature":
+			var prepared := _prepare_creature(str(request["creature_id"]), request)
+			if not prepared.get("ok", false):
+				return prepared
+			result = model.add_creature(payload, prepared["creature"], context_id)
 		"open_initiative":
 			var party := _active_party(request, context_id)
 			if not party.get("ok", false):
@@ -189,6 +198,45 @@ func _prepare_plan_roster(payload: Dictionary, plan_id: String, request: Diction
 	):
 		return {"ok": false, "status": "stale", "error": "Die aktive Campaign oder Creature-Generation änderte sich während des Öffnens."}
 	return {"ok": true, "roster": prepared_roster}
+
+
+func _prepare_creature(creature_id: String, request: Dictionary) -> Dictionary:
+	var registry_state := FileCampaignRegistry.new(_encounter_data_root).load_state()
+	if (
+		not registry_state.get("ok", false)
+		or registry_state.get("active_campaign_id", "") != request.get("campaign_id", "")
+		or int(registry_state.get("generation", -1)) != int(request.get("activation_generation", -2))
+	):
+		return {"ok": false, "status": "stale", "error": "Die aktive Campaign änderte sich vor der Encounter-Übergabe."}
+	var definitions := SharedDefinitionStore.new(_encounter_data_root).definitions_for_refs(
+		[creature_id],
+		int(registry_state.get("shared_definitions_generation", 0))
+	)
+	if not definitions.get("ok", false) or definitions.get("definitions", []).size() != 1:
+		return {"ok": false, "status": str(definitions.get("status", "missing")), "error": "Das gewählte Monster fehlt im aktuellen Creature-Katalog."}
+	var definition: Dictionary = definitions["definitions"][0]
+	var content = definition.get("content", null)
+	if definition.get("kind", "") != "creature" or not content is Dictionary or not _valid_creature_content(content):
+		return _invalid_creature()
+	var confirmed := FileCampaignRegistry.new(_encounter_data_root).load_state()
+	if (
+		not confirmed.get("ok", false)
+		or confirmed.get("active_campaign_id", "") != request.get("campaign_id", "")
+		or int(confirmed.get("generation", -1)) != int(request.get("activation_generation", -2))
+		or int(confirmed.get("shared_definitions_generation", -1)) != int(registry_state.get("shared_definitions_generation", -2))
+	):
+		return {"ok": false, "status": "stale", "error": "Die aktive Campaign oder Creature-Generation änderte sich während der Encounter-Übergabe."}
+	return {"ok": true, "creature": {
+		"creature_id": str(definition["definition_id"]),
+		"name": str(definition["name"]),
+		"last_known_name": str(definition["name"]),
+		"quantity": 1,
+		"challenge_rating": str(content["challenge_rating"]),
+		"xp": int(content["xp"]),
+		"hit_points": int(content["hit_points"]),
+		"armor_class": int(content["armor_class"]),
+		"initiative_bonus": int(content["initiative_bonus"]),
+	}}
 
 
 func _active_party(request: Dictionary, context_id: String) -> Dictionary:

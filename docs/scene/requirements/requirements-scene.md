@@ -46,6 +46,9 @@ Definitions, and Encounter retain ownership of referenced facts.
 - Friendly NPCs enter the Scene Encounter as allies, hostile NPCs as enemies,
   and neutral NPCs remain visible without joining combat.
 - Mob groups retain stable assignment identity and positive count.
+- Catalog `+ Scene` adds exactly one mob of the selected current Creature to
+  the focused running Scene; an existing matching mob increments rather than
+  replacing its authored count.
 - PC, NPC, or mob changes reconcile the full Encounter roster while
   preserving compatible initiative, HP, round, active turn, and mode.
 - Storage, reference, definition, or stale-generation failure is visible and

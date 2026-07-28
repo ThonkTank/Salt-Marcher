@@ -1549,7 +1549,13 @@ func _run_scene_knowledge_contract() -> void:
 		and noted.get("scene", {}).get("participant_states", {}).get("mob:%s" % mob_id, {}).get("notes", "") == "Hält den Nordgang.",
 		"Scene owns one location, mob quantities, and participant quick state"
 	)
-	payload = noted.get("payload", payload)
+	var incremented_mob := model.add_mob(noted.get("payload", payload), split_id, "creature.worg", 1)
+	_expect(
+		incremented_mob.get("ok", false)
+		and incremented_mob.get("scene", {}).get("mobs", [])[0].get("count", -1) == 7,
+		"Catalog Scene handoff increments one existing Creature mob instead of replacing its authored quantity"
+	)
+	payload = incremented_mob.get("payload", payload)
 	var synchronized := model.synchronize_active_party(payload, ["pc.ada", "pc.bo", "pc.cia", "pc.new"])
 	_expect(
 		synchronized.get("ok", false)
@@ -1583,6 +1589,28 @@ func _run_scene_knowledge_contract() -> void:
 func _run_encounter_runtime_knowledge_contract() -> void:
 	var plans := EncounterPlanKnowledge.new()
 	var runtime := EncounterRuntimeKnowledge.new()
+	var wolf_facts := {
+		"creature_id": "creature.wolf",
+		"name": "Wolf",
+		"last_known_name": "Wolf",
+		"quantity": 1,
+		"challenge_rating": "1/4",
+		"xp": 51,
+		"hit_points": 11,
+		"armor_class": 12,
+		"initiative_bonus": 2,
+	}
+	var manual_added := runtime.add_creature(plans.empty_payload(), wolf_facts)
+	manual_added = runtime.add_creature(manual_added.get("payload", plans.empty_payload()), wolf_facts)
+	var manual_restart: Dictionary = JSON.parse_string(JSON.stringify(manual_added.get("payload", {})))
+	_expect(
+		manual_added.get("ok", false)
+		and manual_added.get("context", {}).get("active_plan_id", "missing") == ""
+		and manual_added.get("context", {}).get("roster", []).size() == 1
+		and manual_added.get("context", {}).get("roster", [])[0].get("quantity", -1) == 2
+		and runtime.snapshot(manual_restart).get("context", {}).get("roster", [])[0].get("quantity", -1) == 2,
+		"Catalog additions build and restart one manual Encounter-owned roster without creating saved-plan truth"
+	)
 	var created := plans.create_plan(
 		plans.empty_payload(),
 		"Wölfe am Kai",
@@ -1629,6 +1657,10 @@ func _run_encounter_runtime_knowledge_contract() -> void:
 		"initiative opens one Party row plus one quantity-aware enemy row per runtime roster slot"
 	)
 	payload = initiative.get("payload", payload)
+	_expect(
+		not runtime.add_creature(payload, wolf_facts).get("ok", true),
+		"Catalog addition fails visibly during initiative instead of guessing a runtime transition"
+	)
 	var rolled := runtime.roll_all_initiative(payload, {
 		"pc.iria": 18,
 		"pc.tamo": 11,
@@ -1653,6 +1685,27 @@ func _run_encounter_runtime_knowledge_contract() -> void:
 		"initiative confirmation expands every monster member and deterministically publishes the first turn"
 	)
 	payload = combat.get("payload", payload)
+	var active_before_reinforcement := str(combat_context.get("active_combatant_id", ""))
+	var reinforced := runtime.add_creature(payload, {
+		"creature_id": "creature.worg",
+		"name": "Worg",
+		"last_known_name": "Worg",
+		"quantity": 1,
+		"challenge_rating": "1/2",
+		"xp": 100,
+		"hit_points": 26,
+		"armor_class": 13,
+		"initiative_bonus": 1,
+	})
+	_expect(
+		reinforced.get("ok", false)
+		and reinforced.get("status", "") == "reinforcement_added"
+		and reinforced.get("context", {}).get("combatants", []).size() == 7
+		and reinforced.get("context", {}).get("active_combatant_id", "") == active_before_reinforcement
+		and reinforced.get("context", {}).get("roster", []).size() == 1,
+		"Catalog addition creates one live reinforcement while preserving active turn and the creation roster"
+	)
+	payload = reinforced.get("payload", payload)
 	var first_enemy_id := "slot.creature.wolf.member.1"
 	var wounded := runtime.mutate_hp(payload, first_enemy_id, 8, false)
 	payload = wounded.get("payload", payload)
@@ -3130,6 +3183,92 @@ func _run_catalog_foundation_contract() -> void:
 		await create_timer(0.001).timeout
 	var creature_state := catalog.section_snapshot("creatures")
 	_expect(creature_state.get("rows", [])[0].get("definition_id", "") == "creature.worg", "native Katalog searches the selected provider through its background controller")
+	await process_frame
+	var destination_header := catalog.find_child("CatalogDestinationHeader", true, false) as Label
+	var creature_result_list := catalog.find_child("CatalogResults", true, false) as VBoxContainer
+	var add_to_encounter := creature_result_list.find_child("CatalogCreatureToEncounter", true, false) as Button
+	var add_to_scene := creature_result_list.find_child("CatalogCreatureToScene", true, false) as Button
+	_expect(
+		destination_header != null and destination_header.visible
+		and add_to_encounter != null and add_to_scene != null,
+		"each visible Creature row exposes explicit, destination-labelled Encounter and Scene actions"
+	)
+	var destination_registry_state := registry.load_state()
+	var missing_destination: Dictionary = catalog.encounter_runtime_command_controller.call("_prepare_creature", "creature.missing", {
+		"campaign_id": catalog_campaign_id,
+		"activation_generation": int(destination_registry_state.get("generation", -1)),
+	})
+	var stale_destination: Dictionary = catalog.encounter_runtime_command_controller.call("_prepare_creature", "creature.worg", {
+		"campaign_id": catalog_campaign_id,
+		"activation_generation": -1,
+	})
+	_expect(
+		missing_destination.get("status", "") == "missing_definition"
+		and stale_destination.get("status", "") == "stale",
+		"destination preparation rejects missing Creature truth and stale Campaign activation before any mutation"
+	)
+	var retained_creature_query := {
+		"accepted": creature_state.get("accepted", ""),
+		"page": creature_state.get("page", -1),
+		"sort_key": creature_state.get("sort_key", ""),
+		"sort_ascending": creature_state.get("sort_ascending", true),
+		"selected_id": creature_state.get("selected_id", ""),
+		"rows": creature_state.get("rows", []).duplicate(true),
+	}
+	add_to_encounter.pressed.emit()
+	var manual_roster: Array = []
+	for _attempt in 1800:
+		var encounter_partition := FileCampaignStore.new(data_root, catalog_campaign_id).read_partition(EncounterPlanKnowledge.OWNER)
+		manual_roster = EncounterRuntimeKnowledge.new().snapshot(
+			encounter_partition.get("payload", {}), EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID
+		).get("context", {}).get("roster", [])
+		if manual_roster.any(func(entry: Dictionary) -> bool: return entry.get("creature_id", "") == "creature.worg" and int(entry.get("quantity", 0)) == 2):
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		manual_roster.any(func(entry: Dictionary) -> bool: return entry.get("creature_id", "") == "creature.worg" and int(entry.get("quantity", 0)) == 2),
+		"Catalog + Encounter appends the selected Creature to the manual Encounter-owned builder roster"
+	)
+	for _attempt in 1800:
+		if not catalog.encounter_runtime_command_controller.busy() and catalog.get("_destination_pending").is_empty():
+			break
+		await create_timer(0.001).timeout
+	await process_frame
+	creature_result_list = catalog.find_child("CatalogResults", true, false) as VBoxContainer
+	add_to_scene = creature_result_list.find_child("CatalogCreatureToScene", true, false) as Button
+	_expect(add_to_scene != null, "Creature Scene action remains visible after an Encounter handoff rerender")
+	catalog.call("_request_creature_destination", "scene", creature_state.get("rows", [])[0])
+	for _attempt in 1800:
+		var rows: Array = scene_workspace.snapshot().get("focused", {}).get("mob_rows", [])
+		if rows.any(func(entry: Dictionary) -> bool: return entry.get("creature_id", "") == "creature.worg" and int(entry.get("count", 0)) == 1):
+			break
+		await create_timer(0.001).timeout
+	var handed_scene_rows: Array = scene_workspace.snapshot().get("focused", {}).get("mob_rows", [])
+	var creature_state_after_handoffs := catalog.section_snapshot("creatures")
+	_expect(
+		handed_scene_rows.any(func(entry: Dictionary) -> bool: return entry.get("creature_id", "") == "creature.worg" and int(entry.get("count", 0)) == 1)
+		and creature_state_after_handoffs.get("accepted", "") == retained_creature_query["accepted"]
+		and creature_state_after_handoffs.get("page", -1) == retained_creature_query["page"]
+		and creature_state_after_handoffs.get("sort_key", "") == retained_creature_query["sort_key"]
+		and creature_state_after_handoffs.get("sort_ascending", true) == retained_creature_query["sort_ascending"]
+		and creature_state_after_handoffs.get("selected_id", "") == retained_creature_query["selected_id"]
+		and creature_state_after_handoffs.get("rows", []) == retained_creature_query["rows"],
+		"Catalog + Scene adds exactly one mob to the focused running Scene without changing visible Monster query truth"
+	)
+	var handoff_restart_scene := FileCampaignStore.new(data_root, catalog_campaign_id).read_partition(SceneKnowledge.OWNER)
+	var handoff_restart_encounter := FileCampaignStore.new(data_root, catalog_campaign_id).read_partition(EncounterPlanKnowledge.OWNER)
+	var handoff_restart_scene_snapshot := SceneKnowledge.new().snapshot(handoff_restart_scene.get("payload", {}))
+	var handoff_restart_scene_context := EncounterRuntimeKnowledge.new().snapshot(
+		handoff_restart_encounter.get("payload", {}),
+		SceneKnowledge.new().encounter_context_id(str(handoff_restart_scene_snapshot.get("focused_scene_id", "")))
+	)
+	_expect(
+		handoff_restart_scene_snapshot.get("focused", {}).get("mobs", []).any(
+			func(entry: Dictionary) -> bool: return entry.get("creature_id", "") == "creature.worg" and int(entry.get("count", 0)) == 1
+		)
+		and handoff_restart_scene_context.get("context", {}).get("combatants", []).size() == 6,
+		"focused Scene handoff and reconciled live-combat reinforcement survive exact owner-partition restart readback"
+	)
 	catalog.select_section("items")
 	catalog.select_section("creatures")
 	_expect(catalog.search_input().text == "worg", "Katalog section switching retains unfinished search state")
@@ -4112,10 +4251,11 @@ func _run_catalog_foundation_contract() -> void:
 	_expect(
 		restarted_scene.snapshot().get("focused_scene_id", "") == cellar_scene_id
 		and restarted_scene.snapshot().get("focused", {}).get("party_members", []).size() == 1
-		and restarted_mobs.size() == 1
-		and restarted_mobs[0].get("count", -1) == 4
+		and restarted_mobs.size() == 2
+		and restarted_mobs.any(func(entry: Dictionary) -> bool: return int(entry.get("count", -1)) == 4)
+		and restarted_mobs.any(func(entry: Dictionary) -> bool: return entry.get("creature_id", "") == "creature.worg" and int(entry.get("count", -1)) == 1)
 		and restarted_scene.snapshot().get("focused", {}).get("encounter", {}).get("mode", "") == "combat"
-		and restarted_scene.snapshot().get("focused", {}).get("encounter", {}).get("combatants", []).size() == 5,
+		and restarted_scene.snapshot().get("focused", {}).get("encounter", {}).get("combatants", []).size() == 6,
 		"Scene focus, split Party, mobs, and independent live Encounter survive complete shell reconstruction"
 	)
 	restarted_shell.queue_free()

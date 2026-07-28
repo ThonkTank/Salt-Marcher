@@ -76,7 +76,11 @@ context: open saved plan, initiative, individual combatants, HP/turn mutation,
 results, atomic Party XP award, and return to the retained roster. The Scene
 command controller resolves current Party, World Planner, plan, and Creature
 facts, then uses pure Encounter reconciliation before one atomic Scene-plus-
-Encounter Campaign commit. Final compact cockpit placement remains target work.
+Encounter Campaign commit. Catalog Creature actions now enter that same serial
+boundary: builder mode increments a stable Creature roster slot, while combat
+mode creates one reinforcement without changing the creation roster and
+reindexes the preserved active combatant after initiative ordering. Final
+compact cockpit placement remains target work.
 
 ## Generated-Batch Orchestration
 

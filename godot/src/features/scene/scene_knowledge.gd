@@ -287,6 +287,25 @@ func assign_mob(payload_value: Variant, scene_id: String, creature_id: String, c
 	)
 
 
+func add_mob(payload_value: Variant, scene_id: String, creature_id: String, count: int = 1) -> Dictionary:
+	if not _valid_id(creature_id) or count <= 0 or count > 1_000_000:
+		return _failure("Mob-Zuwachs braucht Creature-Referenz und positive Anzahl.")
+	var target := _target(payload_value, scene_id)
+	if not target.get("ok", false):
+		return target
+	var next_count := count
+	for mob in target["scene"]["mobs"]:
+		if mob["creature_id"] == creature_id:
+			next_count += int(mob["count"])
+			break
+	if next_count > 1_000_000:
+		return _failure("Mob-Zuwachs überschreitet die unterstützte Anzahl.")
+	var result := assign_mob(target["payload"], scene_id, creature_id, next_count)
+	if result.get("ok", false) and result.get("status", "") == "mob_assigned":
+		result["status"] = "mob_added"
+	return result
+
+
 func unassign_mob(payload_value: Variant, scene_id: String, creature_id: String) -> Dictionary:
 	if not _valid_id(creature_id):
 		return _failure("Mob-Creature-Referenz ist ungültig.")

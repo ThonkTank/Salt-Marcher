@@ -18,6 +18,7 @@ const DANGER := Color("#d97c6c")
 
 var data_root := "user://salt-marcher"
 var runtime_coordinator
+var command_controller: EncounterRuntimeCommandController
 var context_id := "encounter_context.manual"
 var _reader: EncounterRuntimeReadController
 var _commands: EncounterRuntimeCommandController
@@ -38,10 +39,12 @@ func _ready() -> void:
 	_reader = EncounterRuntimeReadController.new(data_root)
 	_reader.result_published.connect(_apply_snapshot)
 	add_child(_reader)
-	_commands = EncounterRuntimeCommandController.new(data_root, runtime_coordinator)
+	_commands = command_controller
+	if _commands == null:
+		_commands = EncounterRuntimeCommandController.new(data_root, runtime_coordinator)
+		add_child(_commands)
 	_commands.command_started.connect(_command_started)
 	_commands.command_completed.connect(_command_completed)
-	add_child(_commands)
 	_build_surface()
 	refresh()
 

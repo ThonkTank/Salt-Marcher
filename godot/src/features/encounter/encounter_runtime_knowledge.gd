@@ -103,6 +103,63 @@ func open_saved_plan(
 	return _publish_context(state["payload"], state["runtime"], context, "plan_opened")
 
 
+func add_creature(
+	owner_payload: Dictionary,
+	prepared_creature: Dictionary,
+	context_id: String = MANUAL_CONTEXT_ID
+) -> Dictionary:
+	var state := _mutable_state(owner_payload, context_id)
+	if not state.get("ok", false):
+		return state
+	var normalized := _normalize_prepared_roster([prepared_creature])
+	if not normalized.get("ok", false):
+		return normalized
+	var entry: Dictionary = normalized["roster"][0]
+	var context: Dictionary = state["context"]
+	match str(context["mode"]):
+		"builder":
+			var roster: Array = context["roster"].duplicate(true)
+			var merged := false
+			for index in roster.size():
+				if str(roster[index]["creature_id"]) == str(entry["creature_id"]) and str(roster[index]["kind"]) == "enemy":
+					roster[index] = roster[index].duplicate(true)
+					roster[index]["quantity"] = int(roster[index]["quantity"]) + 1
+					merged = true
+					break
+			if not merged:
+				roster.append(entry.duplicate(true))
+			context["roster"] = roster
+			context["active_plan_id"] = ""
+			context["status"] = "%s zur manuellen Aufstellung hinzugefügt." % entry["name"]
+			context["revision"] = _next_revision(context)
+			return _publish_context(state["payload"], state["runtime"], context, "creature_added")
+		"combat":
+			var active_id := _active_combatant_id(context)
+			var combatants: Array = context["combatants"].duplicate(true)
+			var combatant_id := "reinforcement.%s.%d" % [str(entry["creature_id"]), int(context["revision"]) + 1]
+			combatants.append({
+				"combatant_id": combatant_id,
+				"name": str(entry["name"]),
+				"kind": "enemy",
+				"creature_id": str(entry["creature_id"]),
+				"party_member_id": "",
+				"current_hp": int(entry["hit_points"]),
+				"max_hp": int(entry["hit_points"]),
+				"armor_class": int(entry["armor_class"]),
+				"initiative": 12 + clampi(int(entry["initiative_bonus"]), -3, 6),
+				"xp": int(entry["xp"]),
+				"order": combatants.size(),
+			})
+			combatants.sort_custom(Callable(self, "_combatant_precedes"))
+			context["combatants"] = combatants
+			context["current_turn_index"] = _combatant_index(combatants, active_id)
+			context["status"] = "%s als Verstärkung hinzugefügt." % entry["name"]
+			context["revision"] = _next_revision(context)
+			return _publish_context(state["payload"], state["runtime"], context, "reinforcement_added")
+		_:
+			return _failure("Monster können nur in der Aufstellung oder im laufenden Kampf hinzugefügt werden.")
+
+
 func open_initiative(
 	owner_payload: Dictionary,
 	active_party: Array,

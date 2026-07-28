@@ -70,6 +70,10 @@ func assign_mob(scene_id: String, creature_id: String, count: int) -> Dictionary
 	return start_command({"operation": "assign_mob", "scene_id": scene_id, "creature_id": creature_id, "count": count})
 
 
+func assign_mob_to_focused(creature_id: String, count: int = 1) -> Dictionary:
+	return start_command({"operation": "assign_mob_focused", "creature_id": creature_id, "count": count})
+
+
 func unassign_mob(scene_id: String, creature_id: String) -> Dictionary:
 	return start_command({"operation": "unassign_mob", "scene_id": scene_id, "creature_id": creature_id})
 
@@ -185,7 +189,15 @@ func _apply_scene_command(payload: Dictionary, request: Dictionary) -> Dictionar
 				return _failure("Scene-Ort fehlt im aktiven World Planner.", "missing")
 			result = model.set_location(payload, str(request.get("scene_id", "")), location_id)
 		"assign_mob":
-			result = model.assign_mob(payload, str(request.get("scene_id", "")), str(request.get("creature_id", "")), int(request.get("count", 0)))
+			var scene_id := str(request.get("scene_id", payload["focused_scene_id"]))
+			result = model.assign_mob(payload, scene_id, str(request.get("creature_id", "")), int(request.get("count", 0)))
+		"assign_mob_focused":
+			result = model.add_mob(
+				payload,
+				str(payload["focused_scene_id"]),
+				str(request.get("creature_id", "")),
+				int(request.get("count", 0))
+			)
 		"unassign_mob":
 			result = model.unassign_mob(payload, str(request.get("scene_id", "")), str(request.get("creature_id", "")))
 		"set_participant_state":

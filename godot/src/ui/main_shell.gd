@@ -9,6 +9,7 @@ const SessionPlannerWorkspace = preload("res://godot/src/ui/session_planner_work
 const EncounterRuntimeWorkspace = preload("res://godot/src/ui/encounter_runtime_workspace.gd")
 const SceneWorkspace = preload("res://godot/src/ui/scene_workspace.gd")
 const SceneCommandController = preload("res://godot/src/features/scene/scene_command_controller.gd")
+const EncounterRuntimeCommandController = preload("res://godot/src/features/encounter/encounter_runtime_command_controller.gd")
 
 const NIGHT_INK := Color("#0a1114")
 const DEEP_SLATE := Color("#152a32")
@@ -79,6 +80,8 @@ func _ready() -> void:
 	top_controls.add_child(adventuring_day_top_bar)
 	var scene_commands := SceneCommandController.new(data_root, runtime_coordinator)
 	add_child(scene_commands)
+	var encounter_commands := EncounterRuntimeCommandController.new(data_root, runtime_coordinator)
+	add_child(encounter_commands)
 	var party_top_bar := PartyTopBar.new()
 	party_top_bar.data_root = data_root
 	party_top_bar.runtime_coordinator = runtime_coordinator
@@ -106,6 +109,8 @@ func _ready() -> void:
 	catalog.data_root = data_root
 	catalog.registry = registry
 	catalog.runtime_coordinator = runtime_coordinator
+	catalog.scene_command_controller = scene_commands
+	catalog.encounter_runtime_command_controller = encounter_commands
 	content.add_child(catalog)
 	_routes["catalog"] = catalog
 	var session_planner := SessionPlannerWorkspace.new()
@@ -119,6 +124,7 @@ func _ready() -> void:
 	var encounter := EncounterRuntimeWorkspace.new()
 	encounter.data_root = data_root
 	encounter.runtime_coordinator = runtime_coordinator
+	encounter.command_controller = encounter_commands
 	content.add_child(encounter)
 	_routes["encounter"] = encounter
 	campaign_desk.active_campaign_changed.connect(func(_campaign_id: String) -> void:

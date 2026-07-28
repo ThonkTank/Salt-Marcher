@@ -16,6 +16,8 @@ const EncounterPlanDetailReadController = preload("res://godot/src/features/enco
 const EncounterPlanEditorDialog = preload("res://godot/src/ui/encounter_plan_editor_dialog.gd")
 const ItemDetailReadController = preload("res://godot/src/features/items/item_detail_read_controller.gd")
 const CreatureDetailReadController = preload("res://godot/src/features/creatures/creature_detail_read_controller.gd")
+const EncounterRuntimeCommandController = preload("res://godot/src/features/encounter/encounter_runtime_command_controller.gd")
+const SceneCommandController = preload("res://godot/src/features/scene/scene_command_controller.gd")
 
 const SECTIONS := [
 	{"id": "creatures", "label": "Monster", "kind": "creature", "provider": true, "mutable": false},
@@ -46,6 +48,8 @@ var encounter_plan_command_controller: EncounterPlanCommandController
 var encounter_plan_detail_controller: EncounterPlanDetailReadController
 var item_detail_controller: ItemDetailReadController
 var creature_detail_controller: CreatureDetailReadController
+var encounter_runtime_command_controller: EncounterRuntimeCommandController
+var scene_command_controller: SceneCommandController
 var _active_section_id := "creatures"
 var _section_state: Dictionary = {}
 var _section_buttons: Dictionary = {}
@@ -74,6 +78,7 @@ var _identity_header: Button
 var _category_header: Button
 var _rarity_header: Button
 var _cost_header: Button
+var _destination_header: Label
 var _result_list: VBoxContainer
 var _footer: Label
 var _previous_page: Button
@@ -112,6 +117,7 @@ var _delete_dialog: ConfirmationDialog
 var _lifecycle_dialog: ConfirmationDialog
 var _command_section_id := ""
 var _selected_detail: Dictionary = {}
+var _destination_pending: Dictionary = {}
 
 
 func _ready() -> void:
@@ -144,6 +150,12 @@ func _ready() -> void:
 	if creature_detail_controller == null:
 		creature_detail_controller = CreatureDetailReadController.new(data_root)
 		add_child(creature_detail_controller)
+	if encounter_runtime_command_controller == null:
+		encounter_runtime_command_controller = EncounterRuntimeCommandController.new(data_root, runtime_coordinator)
+		add_child(encounter_runtime_command_controller)
+	if scene_command_controller == null:
+		scene_command_controller = SceneCommandController.new(data_root, runtime_coordinator)
+		add_child(scene_command_controller)
 	browse_controller.query_started.connect(_on_query_started)
 	browse_controller.result_published.connect(_on_result_published)
 	command_controller.command_started.connect(_on_command_started)
@@ -162,6 +174,8 @@ func _ready() -> void:
 	item_detail_controller.result_published.connect(_on_item_detail_result_published)
 	creature_detail_controller.query_started.connect(_on_creature_detail_query_started)
 	creature_detail_controller.result_published.connect(_on_creature_detail_result_published)
+	encounter_runtime_command_controller.command_completed.connect(_on_destination_completed.bind("encounter"))
+	scene_command_controller.command_completed.connect(_on_destination_completed.bind("scene"))
 	for section in SECTIONS:
 		_section_state[section["id"]] = {
 			"draft": "",
@@ -385,6 +399,15 @@ func _build_surface() -> void:
 	_cost_header = _build_header_button("CatalogSortCost", "Kosten", "cost")
 	_cost_header.custom_minimum_size = Vector2(96, 28)
 	_table_header.add_child(_cost_header)
+	_destination_header = Label.new()
+	_destination_header.name = "CatalogDestinationHeader"
+	_destination_header.text = "ZIELE"
+	_destination_header.custom_minimum_size = Vector2(174, 28)
+	_destination_header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_destination_header.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_destination_header.add_theme_color_override("font_color", BRASS_MARK)
+	_destination_header.add_theme_font_size_override("font_size", 10)
+	_table_header.add_child(_destination_header)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -1247,6 +1270,7 @@ func _render_table_header() -> void:
 	_category_header.visible = items or creatures
 	_rarity_header.visible = items or creatures
 	_cost_header.visible = items or creatures
+	_destination_header.visible = creatures
 	_category_header.text = _sort_header_text("Typ" if creatures else "Kategorie", "type" if creatures else "category", state)
 	_rarity_header.text = _sort_header_text("HG" if creatures else "Seltenheit", "challenge_rating" if creatures else "rarity", state)
 	_cost_header.text = _sort_header_text("TP" if creatures else "Kosten", "xp" if creatures else "cost", state)
@@ -1289,6 +1313,8 @@ func _add_result_row(row: Dictionary) -> void:
 		], 150, row)
 		_add_item_row_cell(row_container, str(row.get("challenge_rating", "–")), 112, row)
 		_add_item_row_cell(row_container, str(row.get("xp", 0)), 96, row)
+		_add_creature_destination_button(row_container, "+ Encounter", "encounter", row, 96)
+		_add_creature_destination_button(row_container, "+ Scene", "scene", row, 72)
 	else:
 		var identity_button := Button.new()
 		identity_button.name = "CatalogResultIdentity"
@@ -1314,6 +1340,77 @@ func _add_item_row_cell(parent: HBoxContainer, text_value: String, width: float,
 	button.tooltip_text = "%s · im Inspector öffnen" % text_value
 	button.pressed.connect(_select_row.bind(row.duplicate(true)))
 	parent.add_child(button)
+
+
+func _add_creature_destination_button(
+	parent: HBoxContainer,
+	label_text: String,
+	destination: String,
+	row: Dictionary,
+	width: float
+) -> void:
+	var button := Button.new()
+	button.name = "CatalogCreatureToEncounter" if destination == "encounter" else "CatalogCreatureToScene"
+	button.text = label_text
+	button.custom_minimum_size = Vector2(width, 30)
+	button.disabled = _destination_busy()
+	button.tooltip_text = (
+		"Ein Monster zur manuellen Encounter-Aufstellung oder als Verstärkung hinzufügen"
+		if destination == "encounter"
+		else "Einen Mob zur fokussierten laufenden Scene hinzufügen"
+	)
+	button.pressed.connect(_request_creature_destination.bind(destination, row.duplicate(true)))
+	parent.add_child(button)
+
+
+func _request_creature_destination(destination: String, row: Dictionary) -> void:
+	if not _destination_pending.is_empty():
+		return
+	_destination_pending = {
+		"destination": destination,
+		"creature_id": _row_id(row),
+		"creature_name": str(row.get("name", "Monster")),
+	}
+	var started := (
+		encounter_runtime_command_controller.add_creature(_row_id(row))
+		if destination == "encounter"
+		else scene_command_controller.assign_mob_to_focused(_row_id(row), 1)
+	)
+	if not started.get("ok", false):
+		_destination_pending.clear()
+		_set_destination_notice(str(started.get("error", "Zielübergabe konnte nicht gestartet werden.")))
+		return
+	_set_destination_notice("%s wird an %s übergeben …" % [
+		str(row.get("name", "Monster")),
+		"Encounter" if destination == "encounter" else "Scene",
+	])
+
+
+func _on_destination_completed(result: Dictionary, destination: String) -> void:
+	if _destination_pending.is_empty() or str(_destination_pending.get("destination", "")) != destination:
+		return
+	var creature_name := str(_destination_pending.get("creature_name", "Monster"))
+	_destination_pending.clear()
+	if result.get("ok", false):
+		_set_destination_notice("%s zu %s hinzugefügt." % [creature_name, "Encounter" if destination == "encounter" else "Scene"])
+	else:
+		_set_destination_notice(str(result.get("error", "Zielübergabe ist fehlgeschlagen.")))
+
+
+func _set_destination_notice(message: String) -> void:
+	var state: Dictionary = _section_state["creatures"]
+	state["notice"] = message
+	_section_state["creatures"] = state
+	if _active_section_id == "creatures":
+		_render_state()
+
+
+func _destination_busy() -> bool:
+	return (
+		not _destination_pending.is_empty()
+		or (encounter_runtime_command_controller != null and encounter_runtime_command_controller.busy())
+		or (scene_command_controller != null and scene_command_controller.busy())
+	)
 
 
 func _update_paging(state: Dictionary) -> void:
@@ -1796,6 +1893,7 @@ func _any_command_busy() -> bool:
 		(command_controller != null and command_controller.busy())
 		or (encounter_table_command_controller != null and encounter_table_command_controller.busy())
 		or (encounter_plan_command_controller != null and encounter_plan_command_controller.busy())
+		or _destination_busy()
 	)
 
 

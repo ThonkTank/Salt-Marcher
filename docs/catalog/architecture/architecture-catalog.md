@@ -78,8 +78,17 @@ A second bounded World Planner detail lane resolves the selected entity's full
 typed record without adding those fields to Catalog result rows. The shared
 Inspector renders that immutable readback and submits owner-native field edits
 or explicit NPC lifecycle changes through World Planner commands. Encounter
-Table references use their provider picker; destination handoffs remain absent
-until the real Encounter and Scene owners migrate.
+Table references use their provider picker.
+
+Creature rows expose two explicit destination routes without copying target
+state into Catalog. `+ Encounter` submits the selected stable Creature identity
+to the Encounter serial writer, which resolves current combat facts and either
+increments the manual builder roster or creates a live reinforcement while
+preserving the active turn. `+ Scene` submits that identity to the Scene serial
+writer, which resolves the focused Scene inside its own generation-bound
+command, adds exactly one mob, and atomically reconciles the Scene-keyed
+Encounter context. Completion changes only the local footer notice; accepted
+query, rows, page, sort, and selection remain intact.
 
 The current World Planner editor additionally composes one searchable,
 paginated reference picker. It queries only the selected Creature, faction,
@@ -148,8 +157,9 @@ changes return to page one; header sorting returns to page one without
 discarding a stable selection; section switching preserves the retained state
 and cancels the previous section's invisible request. Items publishes its real
 category, rarity, and cost columns plus the complete required filter set.
-Creature-specific filters and semantic columns such as CR remain target work
-rather than being approximated from generic metadata.
+Creatures publishes its combined multi-value taxonomy filters, CR range,
+semantic type/HG/XP columns, exact statblocks, and the two destination actions
+from one bounded result table.
 
 ## Presentation
 

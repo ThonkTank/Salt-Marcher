@@ -17,10 +17,16 @@ per-member combat state, enemy HP, round/active-turn advance, two-step combat
 end, result XP derivation, atomic Party award, and return to the retained
 roster. Its horizontal turn strip renders the exact persisted order.
 
-The compact global `COCKPIT_STATE` placement, free-form generation, roster
-editing, Catalog additions and reinforcements, add-SC, mob projection, detail
+The compact global `COCKPIT_STATE` placement, free-form generation, full roster
+editing, add-SC, mob projection, detail
 and numeric popups, loot context, and Scene-owned multiple contexts remain the
 target described below.
+
+Catalog additions are production-native: `+ Encounter` adds one current
+Creature to the manual builder and increments an existing matching slot, or
+adds one independent reinforcement during combat. The latter preserves both
+the current active turn and the creation roster. Initiative and result modes
+reject the addition visibly instead of guessing a transition.
 
 ## Component Purpose
 
