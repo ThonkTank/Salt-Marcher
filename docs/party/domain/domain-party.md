@@ -1,5 +1,10 @@
 # Party Domain Model
 
+Status: Active domain contract
+Owner: Party
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 ## Context Role
 
 Context Role: Party Character State Context
@@ -39,6 +44,10 @@ The authored write model is the persisted Campaign Roster and character state:
 - XP and rest progression without inventing a missing authored level
 - character-specific travel location and whether that character is attached to
   the party token
+
+The Session Planner's Planning Party is not part of this write model. It is a
+stable-reference selection owned by Session Planner and resolved against Party
+snapshots.
 
 ## Aggregate Model
 
@@ -121,8 +130,21 @@ sharing roster internals.
   stays with the character-owned roster state
 - Dungeon travel changes party position through `PartyApi`; shell session state
   and campaign-level models are not alternate owners
+- Session Planner owns Planning Party membership and metadata; Party owns only
+  Roster truth and explicit current-Party membership
+
+## Current Godot Migration State
+
+The Godot owner now implements the pure Campaign Roster, current-Party subset,
+optional profile facts, XP/rest progression, character-owned travel payload,
+recoverable trash, and stable-identity restore. A native top-bar dropdown reads
+and mutates that owner partition asynchronously. Concrete travel commands,
+Scene participation, Adventuring Day UI/calculation, downstream Encounter
+refresh, and the final public `PartyApi` carrier cutover remain pending, so the
+legacy Java owner is not yet eligible for deletion.
 
 ## References
 
 - [Party Persistence](../contract/contract-party-persistence.md)
+- [Party Architecture](../architecture/architecture-party.md)
 - [Party UI](../requirements/requirements-party-dropdown.md)

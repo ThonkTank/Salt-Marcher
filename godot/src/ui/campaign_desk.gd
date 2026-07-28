@@ -1,6 +1,8 @@
 class_name CampaignDesk
 extends Control
 
+signal active_campaign_changed(campaign_id: String)
+
 const FileCampaignRegistry = preload("res://godot/src/platform/persistence/file_campaign_registry.gd")
 const CampaignPortabilityController = preload("res://godot/src/app/campaign_portability_controller.gd")
 const CampaignRuntimeTransitionController = preload("res://godot/src/app/campaign_runtime_transition_controller.gd")
@@ -292,6 +294,7 @@ func _create_campaign() -> void:
 	_state = result.get("registry_state", result.get("state", {}))
 	_render_state()
 	_set_status("Campaign erstellt und als aktuelle Route geöffnet.", false)
+	active_campaign_changed.emit(str(_state.get("active_campaign_id", "")))
 
 
 func _activate_campaign(campaign_id: String) -> void:
@@ -317,6 +320,7 @@ func _activate_campaign(campaign_id: String) -> void:
 	_state = result.get("registry_state", result.get("state", {}))
 	_render_state()
 	_set_status("Campaign gewechselt. Die Route ist wieder aktiv.", false)
+	active_campaign_changed.emit(str(_state.get("active_campaign_id", "")))
 
 
 func start_export_to_path(destination_path: String) -> Dictionary:
@@ -399,6 +403,7 @@ func _on_runtime_transition_completed(kind: String, result: Dictionary) -> void:
 		else "Campaign gewechselt. Die Route ist wieder aktiv.",
 		false
 	)
+	active_campaign_changed.emit(str(_state.get("active_campaign_id", "")))
 
 
 func _on_runtime_transition_recovered(result: Dictionary) -> void:

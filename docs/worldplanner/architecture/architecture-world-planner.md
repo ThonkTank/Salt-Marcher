@@ -22,7 +22,9 @@ provider.
 ```text
 godot/src/features/worldplanner/
   world_planner_knowledge.gd           # pure owner model and invariants
-  world_planner_command_controller.gd  # off-thread prepare, serial commit
+  world_planner_command_controller.gd  # owner command vocabulary
+godot/src/app/
+  campaign_partition_command_controller.gd # shared admitted write lifecycle
 godot/src/features/catalog/
   catalog_browse_controller.gd         # provider-neutral query lane
 godot/src/ui/
@@ -35,12 +37,14 @@ allows duplicate display names; owns type-specific optional values and internal
 relationships; and applies deletion or restoration as one candidate state. It
 has no Node, filesystem, Catalog, Java, JavaFX, JDBC, or SQLite dependency.
 
-`WorldPlannerCommandController` snapshots the admitted active Campaign, reads
-and prepares one mutation on a worker, and submits the complete candidate
-partition to the existing serial asynchronous Campaign writer. Activation and
-Campaign generations bind the submission. A switch, newer write, revoked
-session, or concurrent accepted write rejects publication instead of writing
-detached truth. Terminal feedback returns on the scene-tree thread.
+`WorldPlannerCommandController` configures the provider-neutral Campaign
+partition command lane with World Planner's payload and mutation vocabulary.
+That lane snapshots the admitted active Campaign, reads and prepares one
+mutation on a worker, and submits the complete candidate partition to the
+existing serial asynchronous Campaign writer. Activation and Campaign
+generations bind the submission. A switch, newer write, revoked session, or
+concurrent accepted write rejects publication instead of writing detached
+truth. Terminal feedback returns on the scene-tree thread.
 
 ## Read Boundary
 

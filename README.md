@@ -1,5 +1,10 @@
 # SaltMarcher
 
+Status: Active migration entry point
+Owner: Godot Cutover Program
+Last Reviewed: 2026-07-28
+Source of Truth: This document routes to the canonical files under `docs/`
+
 SaltMarcher is a local-first tabletop-campaign desktop tool for preparing,
 running, and following up on a GM's own table.
 
@@ -12,7 +17,10 @@ The production shell now exposes `Campaigns` and one consolidated `Katalog`
 route. Katalog retains all seven target sections; Monster and Items already
 query the selected installation-wide Shared-Definition generation off the
 scene-tree thread, while unmigrated provider sections report unavailable rather
-than inventing Catalog-owned records.
+than inventing Catalog-owned records. A compact Party top-bar dropdown now
+provides the active Campaign's Roster/current-Party foundation without adding a
+third navigation route; travel, Adventuring Day, Planning Party integration,
+and legacy deletion remain migration work.
 
 ## Quickstart
 

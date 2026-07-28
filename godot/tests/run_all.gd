@@ -18,6 +18,10 @@ const CampaignPortabilityController = preload("res://godot/src/app/campaign_port
 const CampaignRuntimeTransitionController = preload("res://godot/src/app/campaign_runtime_transition_controller.gd")
 const CampaignBackupScheduler = preload("res://godot/src/app/campaign_backup_scheduler.gd")
 const CampaignCompactionScheduler = preload("res://godot/src/app/campaign_compaction_scheduler.gd")
+const PartyRoster = preload("res://godot/src/features/party/party_roster.gd")
+const PartyCommandController = preload("res://godot/src/features/party/party_command_controller.gd")
+const PartyReadController = preload("res://godot/src/features/party/party_read_controller.gd")
+const PartyTopBar = preload("res://godot/src/ui/party_top_bar.gd")
 const StorageCapacityGuard = preload("res://godot/src/platform/persistence/storage_capacity_guard.gd")
 const PlatformVolumeCapacityProbe = preload("res://godot/src/platform/persistence/platform_volume_capacity_probe.gd")
 
@@ -101,6 +105,7 @@ func _run_tests() -> void:
 	_expect(first.get("state", {}).get("active_campaign_id", "") == first_id, "created campaign is active")
 	_run_campaign_store_contract(root, first_id)
 	_run_binary_content_contract()
+	await _run_party_roster_contract()
 	await _run_world_planner_knowledge_contract()
 	await _run_catalog_foundation_contract()
 
@@ -245,6 +250,237 @@ func _run_campaign_store_contract(data_root: String, campaign_id: String) -> voi
 
 	var invalid_owner := store.commit(5, {"../escape": {}}, resumed.get("state", {}).get("runtime", {}))
 	_expect(not invalid_owner.get("ok", true), "unsafe capability owner is rejected before publication")
+
+
+func _run_party_roster_contract() -> void:
+	var model := PartyRoster.new()
+	var payload := model.empty_payload()
+	var first := model.create_character(payload, "Iria", {}, "pc.iria", "2026-07-28T12:00:00Z")
+	_expect(
+		first.get("ok", false)
+		and first.get("character", {}).get("level", 1) == null
+		and first.get("character", {}).get("player_name", "sentinel") == null
+		and first.get("character", {}).get("membership", "") == "reserve"
+		and first.get("character", {}).get("travel", {}).get("kind", "") == "detached",
+		"Party name-only creation preserves optional absence and does not activate or attach the PC"
+	)
+	var attached_without_location: Dictionary = first.get("payload", {}).duplicate(true)
+	attached_without_location["characters"]["pc.iria"]["travel"]["attached_to_party_token"] = true
+	_expect(
+		model.validate_payload(attached_without_location).get("ok", false),
+		"Party token attachment remains valid before a concrete travel location exists"
+	)
+	payload = first.get("payload", payload)
+	var namesake := model.create_character(
+		payload,
+		"Iria",
+		{"player_name": "Nela", "level": 2},
+		"pc.iria.two",
+		"2026-07-28T12:00:01Z"
+	)
+	_expect(namesake.get("ok", false), "Party allows same-named PCs with independent stable Roster identities")
+	payload = namesake.get("payload", payload)
+	var updated := model.update_character(
+		payload,
+		"pc.iria",
+		"Iria Salzweg",
+		{"player_name": "Mika", "level": 4, "passive_perception": 15, "armor_class": 17},
+		"2026-07-28T12:00:02Z"
+	)
+	_expect(
+		updated.get("ok", false)
+		and updated.get("character", {}).get("current_xp", -1) == 2_700
+		and updated.get("character", {}).get("passive_perception", -1) == 15,
+		"Party edit applies optional combat facts and establishes the authored level XP floor"
+	)
+	payload = updated.get("payload", payload)
+	var activated := model.set_membership(payload, "pc.iria", "active", "2026-07-28T12:00:03Z")
+	_expect(activated.get("ok", false), "current Party membership changes through an explicit owner command")
+	payload = activated.get("payload", payload)
+	var filtered := model.snapshot(payload, "Nela")
+	_expect(
+		filtered.get("roster", []).size() == 1
+		and filtered.get("active", []).size() == 1
+		and filtered.get("summary", {}).get("active_count", -1) == 1,
+		"Roster search does not filter or redefine current Party truth"
+	)
+	var bounded := model.snapshot(payload, "Iria", false, 1)
+	_expect(
+		bounded.get("roster", []).size() == 1 and bounded.get("matched", -1) == 2,
+		"bounded Party search reports all matches separately from returned rows"
+	)
+	var awarded := model.adjust_xp(payload, ["pc.iria"], 500, "2026-07-28T12:00:04Z")
+	payload = awarded.get("payload", payload)
+	var corrected := model.adjust_xp(payload, ["pc.iria"], -10_000, "2026-07-28T12:00:05Z")
+	_expect(
+		awarded.get("applied_by_id", {}).get("pc.iria", -1) == 500
+		and corrected.get("applied_by_id", {}).get("pc.iria", 1) == -500
+		and corrected.get("payload", {}).get("characters", {}).get("pc.iria", {}).get("current_xp", -1) == 2_700,
+		"negative XP correction stops at the currently authored level floor"
+	)
+	payload = corrected.get("payload", payload)
+	var new_award := model.adjust_xp(payload, ["pc.iria"], 300, "2026-07-28T12:00:06Z")
+	payload = new_award.get("payload", payload)
+	var short_rest := model.perform_rest(payload, "short", "2026-07-28T12:00:07Z")
+	var rested_character: Dictionary = short_rest.get("payload", {}).get("characters", {}).get("pc.iria", {})
+	_expect(
+		rested_character.get("xp_since_long_rest", -1) == 300
+		and rested_character.get("xp_since_short_rest", -1) == 0
+		and rested_character.get("short_rests_taken_since_long_rest", -1) == 1,
+		"short rest resets only short-rest progress for active Party members"
+	)
+	payload = short_rest.get("payload", payload)
+	var long_rest := model.perform_rest(payload, "long", "2026-07-28T12:00:08Z")
+	rested_character = long_rest.get("payload", {}).get("characters", {}).get("pc.iria", {})
+	_expect(
+		rested_character.get("xp_since_long_rest", -1) == 0
+		and rested_character.get("short_rests_taken_since_long_rest", -1) == 0,
+		"long rest resets both rest-progress windows for active Party members"
+	)
+	payload = long_rest.get("payload", payload)
+	var trashed := model.trash_character(payload, "pc.iria", "2026-07-28T12:00:09Z")
+	var restored := model.restore_character(trashed.get("payload", {}), "pc.iria", "2026-07-28T12:00:10Z")
+	_expect(
+		restored.get("ok", false)
+		and restored.get("character", {}).get("character_id", "") == "pc.iria"
+		and restored.get("character", {}).get("membership", "") == "reserve"
+		and restored.get("character", {}).get("travel", {}).get("kind", "") == "detached",
+		"Party restore preserves identity but never silently rejoins current Party or travel"
+	)
+	_expect(not model.create_character(restored.get("payload", {}), " ").get("ok", true), "Party rejects blank names without publishing a candidate")
+	_expect(not model.update_character(restored.get("payload", {}), "pc.iria", "Iria", {"level": 21}).get("ok", true), "Party rejects out-of-range optional facts without mutation")
+
+	var data_root := "user://saltmarcher-party-runtime/%s" % Time.get_ticks_usec()
+	var registry := FileCampaignRegistry.new(data_root)
+	var created := registry.create_campaign("Party Runtime")
+	var campaign_id := str(created.get("campaign_id", ""))
+	var coordinator := CampaignRuntimeCoordinator.new(data_root, registry)
+	_expect(coordinator.open_durable_active().get("ok", false), "Party runtime opens the serial Campaign writer")
+	var commands := PartyCommandController.new(data_root, coordinator)
+	root.add_child(commands)
+	var completions: Array = []
+	commands.command_completed.connect(func(result: Dictionary) -> void: completions.append(result.duplicate(true)))
+	commands.create_character("Kael", {"player_name": "Nela", "level": 3})
+	for _attempt in 1200:
+		if not completions.is_empty():
+			break
+		await create_timer(0.001).timeout
+	_expect(completions.size() == 1 and completions[0].get("status", "") == "created", "Party command publishes through the shared asynchronous partition writer")
+	var persisted := FileCampaignStore.new(data_root, campaign_id).read_partition(PartyRoster.OWNER)
+	var persisted_snapshot := model.snapshot(persisted.get("payload", {}))
+	_expect(
+		persisted_snapshot.get("roster", []).size() == 1
+		and persisted_snapshot.get("roster", [])[0].get("player_name", "") == "Nela",
+		"Party owner partition survives an independent store reopen and JSON round trip"
+	)
+	var reads := PartyReadController.new(data_root)
+	root.add_child(reads)
+	var read_results: Array = []
+	reads.result_published.connect(func(result: Dictionary) -> void: read_results.append(result.duplicate(true)))
+	var first_read := reads.query("")
+	var replacement_read := reads.query("Kael")
+	_expect(first_read.get("status", "") == "started" and replacement_read.get("status", "") == "queued", "Party read lane admits one active and one latest-wins request")
+	for _attempt in 1200:
+		if not reads.is_active():
+			break
+		await create_timer(0.001).timeout
+	await process_frame
+	_expect(read_results.size() == 1 and read_results[0].get("roster", []).size() == 1, "Party read lane suppresses superseded result publication")
+	var read_resources := reads.resource_snapshot()
+	_expect(read_resources.get("worker_handle_count", -1) == 0 and read_resources.get("pending_count", -1) == 0, "Party read lane releases worker and pending state")
+	reads.queue_free()
+	await process_frame
+
+	var shell := MainShell.new()
+	shell.data_root = data_root
+	shell.registry = registry
+	shell.runtime_coordinator = coordinator
+	root.add_child(shell)
+	await process_frame
+	var party_top_bar := shell.find_child("PartyTrigger", true, false).get_parent() as PartyTopBar
+	for _attempt in 600:
+		if party_top_bar.snapshot().get("status", "") in ["ready", "empty"]:
+			break
+		await create_timer(0.001).timeout
+	_expect(party_top_bar != null and party_top_bar.trigger_button().text == "Keine aktuelle Party", "production shell exposes Party as a compact top-bar surface, not a route")
+	party_top_bar.open_popup()
+	var create_button := party_top_bar.find_child("PartyCreate", true, false) as Button
+	create_button.pressed.emit()
+	var editor := party_top_bar.find_child("PartyEditor", true, false) as Window
+	var editor_name := party_top_bar.find_child("PartyEditorName", true, false) as LineEdit
+	var editor_player := party_top_bar.find_child("PartyEditorPlayer", true, false) as LineEdit
+	editor_name.text = "Kael"
+	editor_player.text = "Jonas"
+	var editor_save := party_top_bar.find_child("PartyEditorSave", true, false) as Button
+	editor_save.pressed.emit()
+	for _attempt in 1200:
+		if party_top_bar.snapshot().get("summary", {}).get("roster_count", -1) == 2:
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		party_top_bar.snapshot().get("summary", {}).get("roster_count", -1) == 2
+		and not editor.visible,
+		"Party top-bar editor creates a reserve namesake and closes only after terminal success"
+	)
+	var ui_character_id := ""
+	for character in party_top_bar.snapshot().get("roster", []):
+		if character.get("player_name", "") == "Jonas":
+			ui_character_id = str(character["character_id"])
+	var roster_list := party_top_bar.find_child("PartyRosterList", true, false) as VBoxContainer
+	var membership_button: Button
+	for button in roster_list.find_children("PartyMembershipAction", "Button", true, false):
+		if str(button.get_meta("character_id", "")) == ui_character_id:
+			membership_button = button
+	var membership_clicked := membership_button != null
+	if membership_clicked:
+		membership_button.pressed.emit()
+	for _attempt in 1200:
+		if party_top_bar.snapshot().get("summary", {}).get("active_count", -1) == 1:
+			break
+		await create_timer(0.001).timeout
+	_expect(membership_clicked and party_top_bar.trigger_button().text.begins_with("1 SC"), "Party top-bar membership action explicitly updates the current Party summary")
+	var active_list := party_top_bar.find_child("PartyActiveList", true, false) as VBoxContainer
+	var xp_button: Button
+	for button in active_list.find_children("", "Button", true, false):
+		if button.text == "+100 XP" and str(button.get_meta("character_id", "")) == ui_character_id:
+			xp_button = button
+			break
+	var xp_clicked := xp_button != null
+	if xp_clicked:
+		xp_button.pressed.emit()
+	for _attempt in 1200:
+		var active_rows: Array = party_top_bar.snapshot().get("active", [])
+		if not active_rows.is_empty() and active_rows[0].get("current_xp", -1) == 100:
+			break
+		await create_timer(0.001).timeout
+	_expect(xp_clicked and party_top_bar.snapshot().get("active", [])[0].get("current_xp", -1) == 100, "Party top-bar XP action refreshes durable current-Party progress")
+	var short_rest_button := party_top_bar.find_child("PartyShortRest", true, false) as Button
+	short_rest_button.pressed.emit()
+	for _attempt in 1200:
+		var active_rows: Array = party_top_bar.snapshot().get("active", [])
+		if not active_rows.is_empty() and active_rows[0].get("short_rests_taken_since_long_rest", -1) == 1:
+			break
+		await create_timer(0.001).timeout
+	_expect(party_top_bar.snapshot().get("active", [])[0].get("xp_since_short_rest", -1) == 0, "Party top-bar rest action applies only through the Party owner command")
+	var next_campaign := coordinator.create_and_switch("Fresh Party Route", int(registry.load_state()["generation"]))
+	var campaign_desk := shell.route("campaigns") as CampaignDesk
+	if next_campaign.get("ok", false):
+		campaign_desk.active_campaign_changed.emit(str(next_campaign.get("registry_state", {}).get("active_campaign_id", "")))
+	for _attempt in 1200:
+		if party_top_bar.snapshot().get("summary", {}).get("roster_count", -1) == 0:
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		next_campaign.get("ok", false)
+		and party_top_bar.snapshot().get("summary", {}).get("roster_count", -1) == 0
+		and party_top_bar.trigger_button().text == "Keine aktuelle Party",
+		"successful Campaign transitions refresh the persistent Party trigger through the latest-wins read lane"
+	)
+	shell.queue_free()
+	commands.queue_free()
+	await process_frame
+	await process_frame
+	coordinator.revoke_current(-1)
 
 
 func _run_catalog_foundation_contract() -> void:

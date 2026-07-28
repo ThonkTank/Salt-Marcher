@@ -3,6 +3,7 @@ extends Control
 
 const CampaignDesk = preload("res://godot/src/ui/campaign_desk.gd")
 const CatalogWorkspace = preload("res://godot/src/ui/catalog_workspace.gd")
+const PartyTopBar = preload("res://godot/src/ui/party_top_bar.gd")
 
 const NIGHT_INK := Color("#0a1114")
 const DEEP_SLATE := Color("#152a32")
@@ -51,15 +52,41 @@ func _ready() -> void:
 	route_label.add_theme_color_override("font_color", QUIET_INK)
 	route_label.add_theme_font_size_override("font_size", 11)
 	navigation.add_child(route_label)
+	var app_column := VBoxContainer.new()
+	app_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	app_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	layout.add_child(app_column)
+	var top_bar := PanelContainer.new()
+	top_bar.custom_minimum_size = Vector2(0, 54)
+	app_column.add_child(top_bar)
+	var top_margin := MarginContainer.new()
+	top_margin.add_theme_constant_override("margin_left", 18)
+	top_margin.add_theme_constant_override("margin_right", 18)
+	top_margin.add_theme_constant_override("margin_top", 9)
+	top_margin.add_theme_constant_override("margin_bottom", 9)
+	top_bar.add_child(top_margin)
+	var top_controls := HBoxContainer.new()
+	top_margin.add_child(top_controls)
+	var top_spacer := Control.new()
+	top_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	top_controls.add_child(top_spacer)
+	var party_top_bar := PartyTopBar.new()
+	party_top_bar.data_root = data_root
+	party_top_bar.runtime_coordinator = runtime_coordinator
+	top_controls.add_child(party_top_bar)
+
 	var content := Control.new()
 	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	content.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	layout.add_child(content)
+	app_column.add_child(content)
 
 	var campaign_desk := CampaignDesk.new()
 	campaign_desk.registry = registry
 	campaign_desk.runtime_coordinator = runtime_coordinator
 	campaign_desk.compaction_scheduler = compaction_scheduler
+	campaign_desk.active_campaign_changed.connect(func(_campaign_id: String) -> void:
+		party_top_bar.refresh()
+	)
 	content.add_child(campaign_desk)
 	_routes["campaigns"] = campaign_desk
 	var catalog := CatalogWorkspace.new()

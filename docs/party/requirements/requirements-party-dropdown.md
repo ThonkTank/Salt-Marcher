@@ -1,5 +1,10 @@
 # Party Dropdown UI
 
+Status: Active product requirement with partial Godot implementation
+Owner: Party
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 ## Component Purpose
 
 The party dropdown is the top-bar surface for the Campaign Roster and its
@@ -7,8 +12,11 @@ distinct current-Party subset. It lets the GM manage all Campaign PCs and
 explicitly change table participation without becoming a separate navigation
 tab.
 
-Current state: the dropdown reads the real party snapshot and adventuring-day
-summary, and mutation controls use the Party feature's public mutation API.
+Current Godot state: the production top bar reads the real Campaign `party`
+partition and routes character, membership, XP, rest, trash, and restore
+mutations through the Party command boundary. The separate Adventuring Day
+surface, concrete travel mutation, Scene participation, Encounter refresh, and
+final public `PartyApi` carrier cutover remain pending.
 
 ## Visible Surfaces
 
@@ -21,9 +29,10 @@ summary, and mutation controls use the Party feature's public mutation API.
   inactive PC. Roster rows expose stable Roster IDs so namesakes remain
   distinguishable. Search matches name, player, or Roster ID.
 - Active member rows are compact full-width two-line cards. The first line
-  shows character and player identity, current and next level, an overlaid
-  `current XP/next-level XP (%)` level-up meter, and popup-based XP correction.
-  The second line shows combat/rest metadata plus edit and remove affordances.
+  shows character and player identity with direct XP correction. The second
+  line shows authored level, current/next XP, passive perception, AC, stable
+  Roster ID, edit, and remove affordances. A richer overlaid percentage meter
+  remains a presentation follow-up.
 - The Roster create/edit editor is a secondary anchored dropdown. Only the
   character name is required; player, level, passive perception, and AC are
   optional and can be cleared again. Edit mode identifies the PC by stable ID
@@ -34,7 +43,8 @@ summary, and mutation controls use the Party feature's public mutation API.
 
 - Opening the dropdown requests the current party snapshot from the Party
   feature.
-- Roster search filters all Campaign PCs locally.
+- Roster search requests a bounded off-thread filter over all Campaign PCs;
+  only the latest requested result may publish.
 - Creating a PC adds it only to the Roster. It does not activate current-Party
   membership, attach the PC to the Party travel token, or assign a Scene.
 - Adding or removing current-Party membership is a separate explicit action on
@@ -59,7 +69,8 @@ summary, and mutation controls use the Party feature's public mutation API.
 - Loading: party summary content is temporarily unavailable while the snapshot
   refreshes.
 - Empty: no active party members are available.
-- Loaded: member summaries and adventuring-day status are visible.
+- Loaded: member summaries and Party rest actions are visible; Adventuring Day
+  status belongs to its separate pending top-bar surface.
 - Storage error: the dropdown reports that party data could not be loaded.
 - Action feedback: a successful or warning-colored inline status explains the
   mutation result.
@@ -94,3 +105,4 @@ summary, and mutation controls use the Party feature's public mutation API.
 - [Adventuring Day Top-Bar UI](requirements-adventuring-day-dropdown.md)
 - [Party Domain Model](../domain/domain-party.md)
 - [Party Persistence](../contract/contract-party-persistence.md)
+- [Party Architecture](../architecture/architecture-party.md)
