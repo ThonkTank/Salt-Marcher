@@ -1,5 +1,10 @@
 # Encounter Runtime Context Contract
 
+Status: Active target contract; Godot runtime route not yet implemented
+Owner: Encounter
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 ## Purpose And Boundary
 
 Encounter owns the mutable builder, initiative, combat, and result state of
@@ -29,20 +34,19 @@ the runtime to that plan.
 
 ## Persistence And Current-Format Integrity
 
-Encounter's current declared schema target owns the context root, foreign-fact
-children, builder values, roster and tags, initiative entries, combatants, and
-result enemies. Before the first released format,
-its internal version and construction steps identify only this current target
-and create no obligation to consume or preserve an earlier development format.
-Collections are stored in named relational tables; opaque payloads and text
-codecs are not current-format storage. Cross-feature identifiers are stable
-values and MUST NOT use cross-owner foreign keys.
+The target Encounter owner partition holds context roots, immutable foreign
+facts, builder values, rosters and tags, initiative entries, combatants, and
+result enemies as explicit versioned JSON values. Large or independently
+streamed runtime collections may use Encounter-owned chunks referenced by that
+partition. Cross-feature identifiers remain stable values and never become
+cross-owner storage links.
 
-Replacing the complete context set and all changed runtime rows occurs in one
-SQLite transaction. Saved-plan and runtime-context truth remain distinct in the
-same current Encounter format. A store outside the declared target fails closed
-under the shared persistence lifecycle. After the first released format, any older
-released-format handling must be defined by its owning compatibility contract.
+Replacing the complete context set and every changed runtime value occurs in
+one Campaign generation publication. Saved-plan and runtime-context truth stay
+separate typed collections inside the Encounter owner format. A malformed or
+unsupported owner format fails closed under the shared persistence lifecycle.
+Before the first released Godot format, earlier development formats are
+disposable; later compatibility requires an explicit owning contract.
 
 
 ## References

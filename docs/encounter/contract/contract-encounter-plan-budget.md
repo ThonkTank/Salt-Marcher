@@ -1,5 +1,10 @@
 # Encounter Plan Budget Contract
 
+Status: Active target contract; Godot planning route not yet implemented
+Owner: Encounter
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 ## Purpose
 
 This contract defines the encounter-owned planning surface used by
@@ -8,8 +13,8 @@ facts.
 
 ## Read Surface
 
-- `EncounterApi` provides a typed saved-plan planning operation returning one
-  `EncounterPlanFact`
+- the target Godot Encounter application boundary provides a typed saved-plan
+  planning operation returning one `EncounterPlanFact`
 
 ## Payload
 
@@ -29,11 +34,11 @@ facts.
 ## Boundary Rules
 
 - the planning payload is read-only
-- the service does not expose encounter persistence rows directly
+- the service does not expose Encounter owner-partition documents directly
 - creature XP stays creature-owned and is reloaded through creature detail
   reads instead of being duplicated into encounter-plan persistence
-- SessionPlanner consumes the facts through `EncounterApi`, supplied during
-  explicit application composition
+- Session Planner consumes the facts through the Encounter application
+  boundary supplied during explicit Godot composition
 
 ## References
 

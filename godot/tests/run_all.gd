@@ -20,6 +20,10 @@ const WorldPlannerReferencePicker = preload("res://godot/src/ui/world_planner_re
 const EncounterTableKnowledge = preload("res://godot/src/features/encountertable/encounter_table_knowledge.gd")
 const EncounterTableCandidateController = preload("res://godot/src/features/encountertable/encounter_table_candidate_controller.gd")
 const EncounterTableEditorDialog = preload("res://godot/src/ui/encounter_table_editor_dialog.gd")
+const EncounterPlanKnowledge = preload("res://godot/src/features/encounter/encounter_plan_knowledge.gd")
+const EncounterPlanCommandController = preload("res://godot/src/features/encounter/encounter_plan_command_controller.gd")
+const EncounterPlanDetailReadController = preload("res://godot/src/features/encounter/encounter_plan_detail_read_controller.gd")
+const EncounterPlanEditorDialog = preload("res://godot/src/ui/encounter_plan_editor_dialog.gd")
 const CampaignRuntimeCoordinator = preload("res://godot/src/app/campaign_runtime_coordinator.gd")
 const CampaignRuntimeSession = preload("res://godot/src/app/campaign_runtime_session.gd")
 const CampaignPortabilityController = preload("res://godot/src/app/campaign_portability_controller.gd")
@@ -119,6 +123,7 @@ func _run_tests() -> void:
 	await _run_adventuring_day_contract()
 	await _run_party_roster_contract()
 	await _run_world_planner_knowledge_contract()
+	_run_encounter_plan_knowledge_contract()
 	await _run_catalog_foundation_contract()
 
 	var second := registry.create_campaign("Nordmark")
@@ -673,6 +678,155 @@ func _run_party_roster_contract() -> void:
 	coordinator.revoke_current(-1)
 
 
+func _run_encounter_plan_knowledge_contract() -> void:
+	var model := EncounterPlanKnowledge.new()
+	var payload := model.empty_payload()
+	var empty_roster := model.create_plan(payload, "Leere Begegnung", [])
+	_expect(not empty_roster.get("ok", true), "saved Encounter owner rejects an empty roster")
+	var created := model.create_plan(
+		payload,
+		"Wölfe am Kai",
+		[
+			{"creature_id": "creature.wolf", "quantity": 3, "last_known_name": "Wolf"},
+			{"creature_id": "creature.worg", "quantity": 1, "last_known_name": "Worg"},
+		],
+		"encounter_plan.quay-wolves",
+		"2026-07-28T12:00:00Z"
+	)
+	_expect(created.get("ok", false), "saved Encounter owner creates an ordered concrete roster with stable identity")
+	payload = created.get("payload", payload)
+	var duplicate := model.create_plan(
+		payload,
+		"Doppeltes Roster",
+		[
+			{"creature_id": "creature.wolf", "quantity": 1, "last_known_name": "Wolf"},
+			{"creature_id": "creature.wolf", "quantity": 2, "last_known_name": "Wolf"},
+		],
+		"encounter_plan.duplicate",
+		"2026-07-28T12:00:01Z"
+	)
+	_expect(not duplicate.get("ok", true), "saved Encounter owner rejects duplicate Creature identities")
+	var by_creature := model.query(payload, "worg", 0, 50)
+	_expect(
+		by_creature.get("ok", false)
+		and by_creature.get("total", -1) == 1
+		and by_creature.get("rows", [])[0].get("creature_count", -1) == 4,
+		"saved Encounter catalog search covers roster labels and exposes bounded counts"
+	)
+	_expect(not model.search_chooser(payload, "w").get("ok", true), "saved-plan chooser refuses fewer than two characters before a read")
+	var chooser := model.search_chooser(payload, "wölfe")
+	_expect(
+		chooser.get("ok", false)
+		and chooser.get("rows", []).size() == 1
+		and chooser.get("rows", [])[0].get("summary_text", "") == "4 Monster · 2 Arten",
+		"saved-plan chooser returns Encounter-owned compact summary text"
+	)
+	var chooser_payload := model.empty_payload()
+	for index in range(9):
+		var chooser_plan := model.create_plan(
+			chooser_payload,
+			"Patrouille %02d" % index,
+			[{"creature_id": "creature.%02d" % index, "quantity": 1, "last_known_name": "Wache %02d" % index}],
+			"encounter_plan.chooser.%02d" % index,
+			"2026-07-28T12:01:%02dZ" % index
+		)
+		chooser_payload = chooser_plan.get("payload", chooser_payload)
+	var bounded_chooser := model.search_chooser(chooser_payload, "patrouille")
+	_expect(
+		bounded_chooser.get("rows", []).size() == 8 and bounded_chooser.get("has_more", false),
+		"saved-plan chooser publishes eight newest hits and uses the ninth only for has-more"
+	)
+	var updated := model.update_plan(
+		payload,
+		"encounter_plan.quay-wolves",
+		"Nachtwache am Kai",
+		[{"creature_id": "creature.worg", "quantity": 2, "last_known_name": "Worg"}],
+		"2026-07-28T12:00:02Z"
+	)
+	_expect(updated.get("ok", false), "saved Encounter update replaces one complete roster atomically")
+	payload = updated.get("payload", payload)
+	var trashed := model.trash_plan(payload, "encounter_plan.quay-wolves", "2026-07-28T12:00:03Z")
+	_expect(trashed.get("ok", false), "saved Encounter moves to recoverable owner trash")
+	payload = trashed.get("payload", payload)
+	_expect(
+		model.query(payload, "", 0, 50).get("total", -1) == 0
+		and model.query(payload, "", 0, 50, true).get("rows", [])[0].get("deleted", false),
+		"saved Encounter trash is excluded from active reads and remains explicitly queryable"
+	)
+	var restored := model.restore_plan(payload, "encounter_plan.quay-wolves", "2026-07-28T12:00:04Z")
+	_expect(restored.get("ok", false), "saved Encounter restores the same stable identity")
+	payload = restored.get("payload", payload)
+	var damaged := payload.duplicate(true)
+	damaged["records"]["encounter_plan.quay-wolves"]["roster"][0]["quantity"] = 0
+	_expect(not model.validate_payload(damaged).get("ok", true), "saved Encounter payload validation fails closed on a damaged roster")
+	var generated := model.create_plan(
+		model.empty_payload(),
+		"Generierte Patrouille",
+		[{"creature_id": "creature.wolf", "quantity": 2, "last_known_name": "Wolf"}],
+		"encounter_plan.generated",
+		"2026-07-28T12:00:05Z",
+		"Patrouille 1",
+		{
+			"batch_id": "batch.one",
+			"engine_version": "engine.v1",
+			"preparation_id": "preparation.one",
+			"generation_run_id": "run.one",
+			"batch_fingerprint": "batch-fingerprint",
+			"roster_fingerprint": "roster-fingerprint",
+			"intent_fingerprint": "intent-fingerprint",
+			"cardinality": 1,
+			"order": 0,
+			"encounter_number": 1,
+		}
+	)
+	_expect(generated.get("ok", false), "saved Encounter owner validates canonical generated-origin shape")
+	_expect(
+		not model.update_plan(
+			generated.get("payload", model.empty_payload()),
+			"encounter_plan.generated",
+			"Veränderte Patrouille",
+			[{"creature_id": "creature.worg", "quantity": 1, "last_known_name": "Worg"}]
+		).get("ok", true),
+		"manual saved-plan editing cannot invalidate immutable generated roster origin"
+	)
+	var damage_root := "user://saltmarcher-encounter-plan-damage/%s" % Time.get_ticks_usec()
+	var damage_registry := FileCampaignRegistry.new(damage_root)
+	var damage_campaign := damage_registry.create_campaign("Damage Isolation")
+	var damage_campaign_id := str(damage_campaign.get("campaign_id", ""))
+	var damage_store := FileCampaignStore.new(damage_root, damage_campaign_id)
+	var damage_state := damage_store.load_state()
+	var damage_plan := model.create_plan(
+		model.empty_payload(),
+		"Beschädigtes Roster",
+		[{"creature_id": "creature.wolf", "quantity": 1, "last_known_name": "Wolf"}],
+		"encounter_plan.damage",
+		"2026-07-28T12:00:06Z"
+	)
+	var damage_commit := damage_store.commit(
+		int(damage_state["generation"]),
+		{
+			EncounterPlanKnowledge.OWNER: damage_plan["payload"],
+			EncounterTableKnowledge.OWNER: EncounterTableKnowledge.new().empty_payload(),
+		},
+		damage_state["runtime"]
+	)
+	_expect(damage_commit.get("ok", false), "damage fixture publishes Encounter and independent table owners atomically")
+	var committed_damage_state: Dictionary = damage_commit.get("state", {})
+	var damaged_reference: Dictionary = committed_damage_state.get("partition_refs", {}).get(EncounterPlanKnowledge.OWNER, {})
+	var damaged_path := ProjectSettings.globalize_path(
+		"%s/campaigns/%s/%s" % [damage_root, damage_campaign_id, damaged_reference.get("path", "")]
+	)
+	var damaged_file := FileAccess.open(damaged_path, FileAccess.WRITE)
+	if damaged_file != null:
+		damaged_file.store_string("{damaged")
+		damaged_file.close()
+	_expect(
+		not damage_store.read_partition(EncounterPlanKnowledge.OWNER, committed_damage_state).get("ok", true)
+		and damage_store.read_partition(EncounterTableKnowledge.OWNER, committed_damage_state).get("ok", false),
+		"damaged saved Encounter bytes fail only that owner while an independent Campaign partition stays readable"
+	)
+
+
 func _run_catalog_foundation_contract() -> void:
 	var data_root := "user://saltmarcher-catalog-foundation/%s" % Time.get_ticks_usec()
 	var registry := FileCampaignRegistry.new(data_root)
@@ -744,6 +898,20 @@ func _run_catalog_foundation_contract() -> void:
 		).get("ok", true),
 		"Encounter Table owner rejects duplicate Creature membership instead of changing weight meaning"
 	)
+	var encounter_plan_model := EncounterPlanKnowledge.new()
+	var encounter_plan_payload := encounter_plan_model.empty_payload()
+	var seeded_plan := encounter_plan_model.create_plan(
+		encounter_plan_payload,
+		"Wache am Nordkai",
+		[
+			{"creature_id": "creature.wolf", "quantity": 3, "last_known_name": "Wolf"},
+			{"creature_id": "creature.worg", "quantity": 1, "last_known_name": "Worg"},
+		],
+		"encounter_plan.north-quay-watch",
+		"2026-07-28T10:59:58Z"
+	)
+	_expect(seeded_plan.get("ok", false), "Catalog fixture creates native saved Encounter truth")
+	encounter_plan_payload = seeded_plan.get("payload", encounter_plan_payload)
 	var world_model := WorldPlannerKnowledge.new()
 	var world_payload := world_model.empty_payload()
 	world_payload = world_model.create_record(
@@ -772,10 +940,11 @@ func _run_catalog_foundation_contract() -> void:
 		{
 			WorldPlannerKnowledge.OWNER: world_payload,
 			EncounterTableKnowledge.OWNER: encounter_table_payload,
+			EncounterPlanKnowledge.OWNER: encounter_plan_payload,
 		},
 		catalog_state["runtime"]
 	)
-	_expect(seeded_world.get("ok", false), "Catalog fixture atomically seeds World Planner and Encounter Table owners")
+	_expect(seeded_world.get("ok", false), "Catalog fixture atomically seeds World Planner, Encounter Table, and saved Encounter owners")
 	var runtime_coordinator := CampaignRuntimeCoordinator.new(data_root, registry)
 	_expect(runtime_coordinator.open_durable_active().get("ok", false), "Catalog fixture opens its active Campaign writer")
 	var first_page := definitions.query_catalog(int(prepared["generation"]), "creature", "wo", 0, 1)
@@ -924,6 +1093,84 @@ func _run_catalog_foundation_contract() -> void:
 		"Encounter Table candidate lane releases worker and pending state"
 	)
 	candidate_controller.queue_free()
+	await process_frame
+	var plan_detail_controller := EncounterPlanDetailReadController.new(data_root)
+	root.add_child(plan_detail_controller)
+	var plan_detail_results: Array = []
+	plan_detail_controller.result_published.connect(func(result: Dictionary) -> void:
+		plan_detail_results.append(result.duplicate(true))
+	)
+	var superseded_plan_detail := plan_detail_controller.query("encounter_plan.missing")
+	var current_plan_detail := plan_detail_controller.query("encounter_plan.north-quay-watch")
+	_expect(
+		superseded_plan_detail.get("status", "") == "started"
+		and current_plan_detail.get("status", "") == "queued",
+		"saved Encounter detail lane admits one active read and one latest pending request"
+	)
+	for _attempt in 600:
+		if plan_detail_results.size() == 1 and not plan_detail_controller.is_active():
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		plan_detail_results.size() == 1
+		and plan_detail_results[0].get("record", {}).get("roster", []).size() == 2
+		and plan_detail_results[0].get("current_labels", {}).get("creature.worg", "") == "Worg",
+		"saved Encounter detail publishes only the latest complete roster with current Creature labels"
+	)
+	var missing_label: Dictionary = plan_detail_controller.call(
+		"_resolve_roster_labels",
+		{"roster": [{
+			"creature_id": "creature.retired",
+			"quantity": 1,
+			"last_known_name": "Schattenwolf",
+		}]},
+		int(prepared["generation"])
+	)
+	_expect(
+		missing_label.get("ok", false)
+		and missing_label.get("current_labels", {}).get("creature.retired", "") == "Schattenwolf · Referenz fehlt"
+		and "creature.retired" in missing_label.get("missing_definition_ids", []),
+		"missing current Creature truth retains the saved last-known label and exposes repair status"
+	)
+	var plan_detail_resources := plan_detail_controller.resource_snapshot()
+	_expect(
+		plan_detail_resources.get("active_count", -1) == 0
+		and plan_detail_resources.get("pending_count", -1) == 0
+		and plan_detail_resources.get("worker_handle_count", -1) == 0,
+		"saved Encounter detail lane releases worker and pending state"
+	)
+	plan_detail_controller.queue_free()
+	await process_frame
+	var plan_commands := EncounterPlanCommandController.new(data_root, runtime_coordinator)
+	root.add_child(plan_commands)
+	var rejected_plan_commands: Array = []
+	plan_commands.command_completed.connect(func(result: Dictionary) -> void:
+		rejected_plan_commands.append(result.duplicate(true))
+	)
+	var generation_before_rejection := int(FileCampaignStore.new(data_root, catalog_campaign_id).load_state()["generation"])
+	var invalid_plan_started := plan_commands.create_plan(
+		"Unauflösbares Roster",
+		[{"creature_id": "creature.missing", "quantity": 1, "last_known_name": "Fehlend"}]
+	)
+	_expect(invalid_plan_started.get("status", "") == "started", "saved Encounter writer admits validation off the UI thread")
+	for _attempt in 600:
+		if rejected_plan_commands.size() == 1 and not plan_commands.busy():
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		rejected_plan_commands.size() == 1
+		and not rejected_plan_commands[0].get("ok", true)
+		and int(FileCampaignStore.new(data_root, catalog_campaign_id).load_state()["generation"]) == generation_before_rejection,
+		"missing Creature truth rejects the complete saved Encounter command without publishing a Campaign generation"
+	)
+	var rejected_command_resources := plan_commands.resource_snapshot()
+	_expect(
+		not rejected_command_resources.get("busy", true)
+		and rejected_command_resources.get("worker_handle_count", -1) == 0
+		and rejected_command_resources.get("ticket_count", -1) == 0,
+		"rejected saved Encounter command releases worker and ticket state"
+	)
+	plan_commands.queue_free()
 	await process_frame
 	var item_reference: Dictionary = prepared.get("state", {}).get("definitions", {}).get("item.rope", {})
 	var damaged_item_path := data_root + "/installation/shared-definitions/" + str(item_reference.get("path", ""))
@@ -1597,11 +1844,180 @@ func _run_catalog_foundation_contract() -> void:
 		== "encounter_table.harbor-patrol",
 		"faction editor restores its primary Encounter Table through provider selection"
 	)
-	var unavailable := catalog.select_section("encounters")
-	_expect(unavailable.get("status", "") == "unavailable", "remaining unmigrated Katalog provider stays explicit and side-effect free")
+	var encounter_selection := catalog.select_section("encounters")
+	_expect(encounter_selection.get("status", "") == "selected", "native Katalog routes saved Encounters to their Campaign-owned provider")
+	for _attempt in 600:
+		if catalog.section_snapshot("encounters").get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	var encounter_state := catalog.section_snapshot("encounters")
+	_expect(
+		encounter_state.get("total", -1) == 1
+		and encounter_state.get("rows", [])[0].get("reference_id", "") == "encounter_plan.north-quay-watch"
+		and encounter_state.get("rows", [])[0].get("creature_count", -1) == 4,
+		"saved Encounter Catalog publishes bounded roster summaries without copied Creature facts"
+	)
+	catalog.call("_select_row", encounter_state.get("rows", [])[0])
+	for _attempt in 600:
+		if catalog.detail_snapshot().get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		catalog.detail_snapshot().get("record", {}).get("roster", []).size() == 2
+		and catalog.detail_snapshot().get("current_labels", {}).get("creature.wolf", "") == "Wolf",
+		"saved Encounter Inspector resolves current labels through its independent latest-wins lane"
+	)
+	var large_encounter_editor := EncounterPlanEditorDialog.new()
+	large_encounter_editor.data_root = data_root
+	root.add_child(large_encounter_editor)
+	await process_frame
+	var large_roster: Array = []
+	for index in range(121):
+		large_roster.append({
+			"creature_id": "creature.roster.%03d" % index,
+			"quantity": 1,
+			"last_known_name": "Rosterzeile %03d" % index,
+		})
+	large_encounter_editor.open_edit({
+		"record_id": "encounter_plan.large-manifest",
+		"name": "Großes Manifest",
+		"roster": large_roster,
+	})
+	await process_frame
+	var roster_rows := large_encounter_editor.find_child("EncounterPlanRoster", true, false) as VBoxContainer
+	var roster_next := large_encounter_editor.find_child("EncounterPlanRosterNext", true, false) as Button
+	_expect(
+		roster_rows.get_child_count() == 50
+		and roster_next.visible
+		and large_encounter_editor.snapshot().get("roster", []).size() == 121,
+		"saved Encounter editor retains a large ordered roster while materializing only 50 rows"
+	)
+	roster_next.pressed.emit()
+	await process_frame
+	_expect(roster_rows.get_child_count() == 50, "saved Encounter roster paging never builds hidden row trees")
+	large_encounter_editor.hide()
+	large_encounter_editor.queue_free()
+	await process_frame
+	await process_frame
 	create_button.pressed.emit()
-	var footer := catalog.find_child("CatalogFooter", true, false) as Label
-	_expect(footer.text.contains("noch nicht verfügbar"), "unavailable provider creation remains side-effect free and truthful")
+	var encounter_editor := catalog.find_child("EncounterPlanEditorDialog", true, false) as EncounterPlanEditorDialog
+	var encounter_name := encounter_editor.find_child("EncounterPlanName", true, false) as LineEdit
+	await process_frame
+	_expect(encounter_name.has_focus(), "saved Encounter editor moves keyboard focus to its first required field")
+	encounter_name.text = "Worgs am Leuchtfeuer"
+	encounter_name.text_changed.emit(encounter_name.text)
+	var choose_plan_creatures := encounter_editor.find_child("EncounterPlanChooseCreatures", true, false) as Button
+	choose_plan_creatures.pressed.emit()
+	var plan_picker := encounter_editor.find_child("WorldPlannerReferencePicker", true, false) as WorldPlannerReferencePicker
+	for _attempt in 600:
+		if plan_picker.snapshot().get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	var plan_picker_search := plan_picker.find_child("ReferencePickerSearch", true, false) as LineEdit
+	plan_picker_search.text = "worg"
+	plan_picker_search.text_changed.emit(plan_picker_search.text)
+	plan_picker_search.text_submitted.emit(plan_picker_search.text)
+	for _attempt in 600:
+		if plan_picker.snapshot().get("status", "") == "ready" and plan_picker.snapshot().get("rows", []).size() == 1:
+			break
+		await create_timer(0.001).timeout
+	var plan_picker_results := plan_picker.find_child("ReferencePickerResults", true, false) as VBoxContainer
+	var plan_creature_choice := plan_picker_results.find_child("ReferencePickerChoice", true, false) as CheckButton
+	if plan_creature_choice != null:
+		plan_creature_choice.toggled.emit(true)
+	plan_picker.confirmed.emit()
+	plan_picker.hide()
+	var roster_quantity := encounter_editor.find_child("EncounterPlanRosterQuantity", true, false) as SpinBox
+	_expect(roster_quantity != null, "saved Encounter editor turns provider selection into one visible manifest row")
+	if roster_quantity != null:
+		roster_quantity.value = 4
+		roster_quantity.value_changed.emit(4)
+	encounter_editor.confirmed.emit()
+	encounter_editor.hide()
+	for _attempt in 1200:
+		encounter_state = catalog.section_snapshot("encounters")
+		if encounter_state.get("status", "") == "ready" and encounter_state.get("total", -1) == 2:
+			break
+		await create_timer(0.001).timeout
+	var created_plan_row: Dictionary = {}
+	for row in encounter_state.get("rows", []):
+		if row.get("name", "") == "Worgs am Leuchtfeuer":
+			created_plan_row = row
+			break
+	_expect(
+		not created_plan_row.is_empty() and created_plan_row.get("creature_count", -1) == 4,
+		"saved Encounter create validates current Creature truth and commits one Campaign-owned roster"
+	)
+	if not created_plan_row.is_empty():
+		catalog.call("_select_row", created_plan_row)
+	for _attempt in 600:
+		if catalog.detail_snapshot().get("record", {}).get("name", "") == "Worgs am Leuchtfeuer":
+			break
+		await create_timer(0.001).timeout
+	var plan_edit := catalog.find_child("CatalogEdit", true, false) as Button
+	plan_edit.pressed.emit()
+	encounter_name.text = "Worgs am Leuchtfeuer · Nacht"
+	encounter_name.text_changed.emit(encounter_name.text)
+	roster_quantity = encounter_editor.find_child("EncounterPlanRosterQuantity", true, false) as SpinBox
+	if roster_quantity != null:
+		roster_quantity.value = 5
+		roster_quantity.value_changed.emit(5)
+	encounter_editor.confirmed.emit()
+	encounter_editor.hide()
+	for _attempt in 1200:
+		if (
+			catalog.detail_snapshot().get("record", {}).get("name", "") == "Worgs am Leuchtfeuer · Nacht"
+			and catalog.detail_snapshot().get("record", {}).get("roster", [])[0].get("quantity", -1) == 5
+		):
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		catalog.detail_snapshot().get("record", {}).get("roster", [])[0].get("quantity", -1) == 5,
+		"saved Encounter edit replaces the complete roster while retaining stable plan identity"
+	)
+	var plan_trash := catalog.find_child("CatalogTrash", true, false) as Button
+	plan_trash.pressed.emit()
+	var plan_delete_dialog := catalog.find_child("CatalogDeleteDialog", true, false) as ConfirmationDialog
+	plan_delete_dialog.confirmed.emit()
+	plan_delete_dialog.hide()
+	for _attempt in 1200:
+		encounter_state = catalog.section_snapshot("encounters")
+		if encounter_state.get("status", "") == "ready" and encounter_state.get("total", -1) == 1:
+			break
+		await create_timer(0.001).timeout
+	var plan_trash_toggle := catalog.find_child("CatalogTrashToggle", true, false) as CheckButton
+	plan_trash_toggle.button_pressed = true
+	plan_trash_toggle.toggled.emit(true)
+	for _attempt in 600:
+		encounter_state = catalog.section_snapshot("encounters")
+		if encounter_state.get("status", "") == "ready" and encounter_state.get("total", -1) == 1:
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		encounter_state.get("rows", [])[0].get("deleted", false),
+		"saved Encounter trash remains explicitly inspectable"
+	)
+	catalog.call("_select_row", encounter_state.get("rows", [])[0])
+	for _attempt in 600:
+		if catalog.detail_snapshot().get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	var plan_restore := catalog.find_child("CatalogRestore", true, false) as Button
+	plan_restore.pressed.emit()
+	for _attempt in 1200:
+		encounter_state = catalog.section_snapshot("encounters")
+		if encounter_state.get("status", "") == "empty":
+			break
+		await create_timer(0.001).timeout
+	_expect(encounter_state.get("total", -1) == 0, "saved Encounter restore removes the plan from owner trash")
+	plan_trash_toggle.button_pressed = false
+	plan_trash_toggle.toggled.emit(false)
+	for _attempt in 600:
+		encounter_state = catalog.section_snapshot("encounters")
+		if encounter_state.get("status", "") == "ready" and encounter_state.get("total", -1) == 2:
+			break
+		await create_timer(0.001).timeout
+	_expect(encounter_state.get("total", -1) == 2, "saved Encounter restore returns the same plan to active Catalog results")
 	shell.queue_free()
 	await process_frame
 	await process_frame
@@ -1621,6 +2037,15 @@ func _run_catalog_foundation_contract() -> void:
 	_expect(
 		restarted_catalog.section_snapshot("encounter_tables").get("total", -1) == 2,
 		"Campaign-owned Encounter Tables survive complete Catalog scene reconstruction"
+	)
+	restarted_catalog.select_section("encounters")
+	for _attempt in 600:
+		if restarted_catalog.section_snapshot("encounters").get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		restarted_catalog.section_snapshot("encounters").get("total", -1) == 2,
+		"Campaign-owned saved Encounters survive complete Catalog scene reconstruction"
 	)
 	restarted_shell.queue_free()
 	await process_frame

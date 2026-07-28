@@ -42,10 +42,9 @@ Encounter-Tabellen.
 Current migration state is narrower than the target: the production shell and
 all seven visible section identities exist; Monster and Items query the
 installation-wide Shared-Definition provider; NPCs, Fraktionen, and Orte query
-the active Campaign's World Planner provider; Encounter-Tabellen query their
-own active-Campaign partition. All three provider families implement stable
-name/identity sorting before bounded paging. Saved Encounter reports
-unavailable. Selected active World Planner rows compose their provider-owned
+the active Campaign's World Planner provider; Encounter-Tabellen and saved
+Encounters query their own active-Campaign partitions. All provider families
+implement stable name/identity sorting before bounded paging. Selected active World Planner rows compose their provider-owned
 Quest/rumour threads in the Inspector. No unavailable section stores
 Catalog-owned truth, and narrative records do not become an eighth section.
 
@@ -91,6 +90,13 @@ latest-wins detail lane. Its editor composes the same bounded Creature picker,
 then presents selected identities as a weighted ledger with one explicit
 `1..10` value per entry. Catalog never writes that owner partition directly or
 copies Creature facts into table summaries.
+
+Encounter owns a separate serial saved-plan create/update/trash/restore lane
+and latest-wins detail lane. Its bounded roster-manifest editor composes the
+Creature picker, preserves stable ordered identities, and presents quantities
+plus current or last-known names. Commands refresh exact Creature definitions
+before publication. Catalog receives summaries and immutable details only; it
+never owns or writes the `encounter` partition.
 
 The Catalog background controller admits one active read and at most one
 latest-wins pending read. Every request receives a monotonic epoch. Newer input

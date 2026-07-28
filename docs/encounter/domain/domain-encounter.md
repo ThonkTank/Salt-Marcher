@@ -1,5 +1,10 @@
 # Encounter Domain Model
 
+Status: Active target domain with saved-plan Godot implementation
+Owner: Encounter
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 ## Context Role And Ownership
 
 Context Name: `Encounter`

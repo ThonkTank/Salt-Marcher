@@ -1,5 +1,10 @@
 # Encounter Generated Preparation Contract
 
+Status: Active target contract; Godot batch route not yet implemented
+Owner: Encounter
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 ## Purpose And Ownership
 
 Encounter owns the conversion of one ordered Session Generation intent batch
@@ -64,7 +69,7 @@ unresolvable, it returns no roster draft.
 Commit accepts the stable preparation and generation-run identities plus the
 complete prepared batch. It revalidates batch identity, roster fingerprints,
 and saved-plan invariants, then inserts every plan, roster row, and
-generated-origin row in one Encounter transaction.
+generated-origin value in one Encounter owner-partition publication.
 
 Generated batch identity is unique by `(engineVersion, preparationIdentity)`
 and stores the normalized batch fingerprint and cardinality. An identical
@@ -98,7 +103,7 @@ of this contract.
 ## Performance Contract
 
 - one candidate snapshot read serves the complete prepared batch
-- persistence uses one transaction and set-based row writes
+- persistence uses one complete owner-partition batch publication
 - `loadGeneratedPlanSummaries` hydrates the complete requested identity set as
   one batch operation
 - read query count is bounded by data family, not Encounter, block, or roster

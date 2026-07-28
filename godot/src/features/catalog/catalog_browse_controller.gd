@@ -8,6 +8,7 @@ const FileCampaignRegistry = preload("res://godot/src/platform/persistence/file_
 const FileCampaignStore = preload("res://godot/src/platform/persistence/file_campaign_store.gd")
 const WorldPlannerKnowledge = preload("res://godot/src/features/worldplanner/world_planner_knowledge.gd")
 const EncounterTableKnowledge = preload("res://godot/src/features/encountertable/encounter_table_knowledge.gd")
+const EncounterPlanKnowledge = preload("res://godot/src/features/encounter/encounter_plan_knowledge.gd")
 
 signal query_started(request: Dictionary)
 signal result_published(result: Dictionary)
@@ -117,6 +118,8 @@ func _run_query(request: Dictionary) -> void:
 		result = _query_world_planner(registry, registry_state, request)
 	elif str(request["section_id"]) == "encounter_tables":
 		result = _query_encounter_tables(registry, registry_state, request)
+	elif str(request["section_id"]) == "encounters":
+		result = _query_encounter_plans(registry, registry_state, request)
 	else:
 		result = SharedDefinitionStore.new(_data_root).query_catalog(
 			int(registry_state.get("shared_definitions_generation", 0)),
@@ -203,6 +206,45 @@ func _query_encounter_tables(registry, registry_state: Dictionary, request: Dict
 		or int(confirmed.get("generation", -1)) != int(registry_state.get("generation", -2))
 	):
 		return {"ok": false, "status": "stale", "error": "Die aktive Campaign änderte sich während der Encounter-Table-Abfrage."}
+	result["campaign_id"] = campaign_id
+	result["campaign_generation"] = campaign_state["generation"]
+	return result
+
+
+func _query_encounter_plans(registry, registry_state: Dictionary, request: Dictionary) -> Dictionary:
+	var campaign_id := str(registry_state.get("active_campaign_id", ""))
+	if campaign_id.is_empty():
+		return {"ok": false, "status": "campaign_required", "error": "Wähle zuerst eine Campaign."}
+	var store := FileCampaignStore.new(_data_root, campaign_id)
+	var campaign_state := store.load_state()
+	if not campaign_state.get("ok", false):
+		return campaign_state
+	var read := store.read_partition(EncounterPlanKnowledge.OWNER, campaign_state)
+	if not read.get("ok", false):
+		return read
+	var model := EncounterPlanKnowledge.new()
+	var result := model.query(
+		read.get("payload", model.empty_payload()),
+		str(request["search_text"]),
+		int(request["offset"]),
+		int(request["limit"]),
+		bool(request["include_deleted"]),
+		str(request["sort_key"]),
+		bool(request["sort_ascending"]),
+		Callable(self, "_cancelled_from_worker")
+	)
+	if not result.get("ok", false):
+		return result
+	var confirmed: Dictionary = registry.load_state()
+	var confirmed_campaign: Dictionary = store.load_state()
+	if (
+		not confirmed.get("ok", false)
+		or confirmed.get("active_campaign_id", "") != campaign_id
+		or int(confirmed.get("generation", -1)) != int(registry_state.get("generation", -2))
+		or not confirmed_campaign.get("ok", false)
+		or int(confirmed_campaign.get("generation", -1)) != int(campaign_state.get("generation", -2))
+	):
+		return {"ok": false, "status": "stale", "error": "Die Campaign änderte sich während der Encounter-Plan-Abfrage."}
 	result["campaign_id"] = campaign_id
 	result["campaign_generation"] = campaign_state["generation"]
 	return result

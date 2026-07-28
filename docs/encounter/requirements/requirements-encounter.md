@@ -1,5 +1,16 @@
 # Encounter Feature Spec
 
+Status: Active target requirements with partial Godot implementation
+Owner: Encounter
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
+The current Godot product satisfies the persistent manual saved-plan subset:
+bounded Katalog search/detail, Creature-backed roster create/edit, recoverable
+trash/restore, and restart readback. Generation, the Encounter state pane,
+Party balancing, generated-batch preparation, and combat remain unmet target
+requirements.
+
 ## Goal
 
 Provide a runtime encounter builder that:

@@ -1,14 +1,24 @@
 # Encounter Saved Plans Contract
 
+Status: Active target contract with partial Godot implementation
+Owner: Encounter
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 ## Purpose
 
 This contract defines the encounter-owned saved-plan chooser surface consumed
-by SessionPlanner.
+by Session Planner and the native Katalog.
+
+The current Godot implementation provides the owner model, bounded Katalog
+query, detail hydration, and create/edit/trash/restore route. The dedicated
+Session Planner chooser controller and handoff remain G3 work.
 
 ## Search Surface
 
-- `EncounterApi.searchSavedPlans(SearchSavedEncounterPlansQuery)` is the typed,
-  demand-driven chooser operation
+- the Encounter owner exposes one typed, demand-driven chooser operation;
+  the current pure Godot operation is `search_chooser`, while the target
+  Session Planner-facing application boundary remains to be composed
 - queries are trimmed and case-normalized; fewer than two characters are an
   invalid request and perform no persistence read
 - a successful result exposes at most eight ordered
@@ -18,8 +28,9 @@ by SessionPlanner.
 - matching covers the saved name and generated label, treats `%` and `_` as
   literal characters, and uses deterministic newest-first ordering with plan
   identity as the tie-breaker
-- the SQLite adapter reads at most nine roots in one parameterized statement;
-  the ninth root establishes `hasMore` and is never published as a hit
+- the file-backed operation evaluates the validated owner partition off the
+  scene-tree thread and publishes no more than eight hits; a ninth match only
+  establishes `hasMore`
 
 ## Boundary Rules
 
@@ -27,8 +38,9 @@ by SessionPlanner.
   catalog
 - encounter owns the summary-text formatting and supplies it as a thin chooser
   display form
-- results are returned through `EncounterApi`; there is no second reply channel
-- search does not expose encounter persistence rows directly
+- results are returned through the Encounter application boundary; there is no
+  second reply channel
+- search does not expose owner-partition documents directly
 - creature detail remains creature-owned and does not appear in the summary
 - generated-origin plans appear through the same chooser surface as manual
   plans; origin metadata is not a chooser label or a second plan kind

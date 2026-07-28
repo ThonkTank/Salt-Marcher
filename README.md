@@ -29,7 +29,10 @@ provider pickers maintain NPC statblock/faction/last-place and place-faction
 references without raw ID entry. Encounter Tables now use a separate
 Campaign-owned Godot partition with bounded Catalog browsing, weighted
 Creature membership, create/edit, full details, World Planner references, and
-latest-wins candidate reads. A compact Party top-bar dropdown now
+latest-wins candidate reads. Saved Encounters now use their own Campaign
+partition with bounded search/detail, Creature-backed roster create/edit,
+recoverable trash/restore, and restart readback. The runtime Encounter builder,
+generation, and combat modes remain migration work. A compact Party top-bar dropdown now
 provides the active Campaign's Roster/current-Party foundation without adding a
 third navigation route. Its separate native Rastbudget trigger provides
 active/custom Adventuring-Day budgets and XP timelines; travel, Planning Party

@@ -10,12 +10,13 @@ handing reference content to another active workspace. It presents Creatures,
 Items, saved Encounters, World Planner records, and Encounter Tables inside one
 `Katalog` navigation entry. The production Godot shell currently connects the
 Creature and Item sections to Shared Definitions, NPCs/factions/places to the
-active Campaign's World Planner provider, and Encounter Tables to their own
-Campaign partition. All providers sort stably before bounded paging through
-one retained result table. A selected NPC, faction, or place exposes its
+active Campaign's World Planner provider, and Encounter Tables plus saved
+Encounters to their own Campaign partitions. All providers sort stably before
+bounded paging through one retained result table. A selected NPC, faction, or place exposes its
 World Planner-owned note-first Quest and rumour threads in the Inspector;
 Encounter Tables expose weighted provider details and create/edit. Saved
-Encounter remains visible but truthfully unavailable until its owner migrates.
+Encounters expose complete roster details, Creature-backed create/edit, and
+recoverable trash/restore without transferring roster ownership to Catalog.
 
 ## Reading Order
 

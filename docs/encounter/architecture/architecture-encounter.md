@@ -1,5 +1,10 @@
 # Encounter Architecture
 
+Status: Active target architecture with partial Godot implementation
+Owner: Encounter
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 ## Objective
 
 Encounter provides manual and generated roster construction while remaining the
@@ -25,19 +30,21 @@ compatibility, and persistence semantics to contracts.
 ## Topology And Dependency Direction
 
 ```text
-features/encounter/api/
-features/encounter/domain/
-features/encounter/application/
-features/encounter/adapter/sqlite/
-features/encounter/adapter/javafx/
-features/encounter/EncounterFeature
+godot/src/features/encounter/
+  encounter_plan_knowledge.gd
+  encounter_plan_command_controller.gd
+  encounter_plan_detail_read_controller.gd
+  # target: generation, planning-fact, runtime-session, and batch controllers
+godot/src/ui/
+  encounter_plan_editor_dialog.gd
+  # target: encounter runtime state pane
 ```
 
-Domain code depends on no API carriers, SQL, JavaFX, platform service, or
-foreign feature. Application code translates public commands and foreign API
-results, invokes Encounter policies, and depends outward only on
-feature-owned ports. SQLite and JavaFX adapters implement those ports.
-Composition is the only construction point.
+Pure owner code depends on no UI node, file path, Campaign store, or foreign
+feature. Application controllers translate commands and foreign results,
+invoke Encounter policies, and use only the feature-neutral Campaign and
+Shared-Definition mechanisms. UI nodes dispatch typed intents and render
+immutable results. Composition is the only construction point.
 
 Encounter may consume `PartyApi`, `CreaturesApi`, `EncounterTableApi`, and
 `WorldPlannerApi`. Session Planner consumes `EncounterApi`; Encounter never
@@ -46,10 +53,16 @@ repository or table directly.
 
 Creature catalog truth is installation-owned while Encounter saved plans are
 Campaign-owned. Encounter validates and refreshes Creature references through
-`CreaturesApi`, then stores only the positive identity and a last-known display
-name snapshot. A database foreign key cannot cross those stores and is not part
-of the Encounter schema; Campaign-local parent-child truth retains ordinary
-foreign keys.
+the selected Shared-Definition generation, then stores only the positive
+identity and a last-known display-name snapshot. No storage relation crosses
+those owner stores.
+
+Current production coverage is intentionally narrower than this target: the
+saved-plan owner partition, serial writer, bounded Catalog query, latest-wins
+detail hydration, recoverable trash, and bounded roster editor are live. The
+Encounter runtime pane, generation policies, planning facts, and generated
+batch publication are not yet composed and must not be inferred from the
+saved-plan slice.
 
 ## Generated-Batch Orchestration
 
@@ -78,11 +91,11 @@ not create a second plan model or generated-batch writer.
 ## Execution
 
 - command dispatch and immutable snapshot application are the only Encounter
-  work allowed on the JavaFX thread
-- foreign reads and SQLite work run on I/O execution
+  work allowed on the Godot scene-tree thread
+- foreign reads and file-store work run on worker execution
 - deterministic candidate evaluation and roster construction run on bounded
   CPU execution
-- candidate search never runs inside a database transaction
+- candidate search never runs inside a file-store publication boundary
 - cancellation stops avoidable preparation work before commit; a commit that
   has started resolves as one complete success or failure
 - preparation is not submitted as one global serial chain
@@ -95,18 +108,18 @@ mapping or no mapping. A validation, resolution, conflict, cancellation, or
 storage failure does not publish a partial set and does not advance visible
 saved-plan state.
 
-Runtime builder, initiative, combat, and result state is published as immutable
-revisioned Encounter state. Generated-batch completion does not mutate those
-runtime sessions. Saved-plan summary batch reads preserve request order and
-report missing identities explicitly.
+Runtime builder, initiative, combat, and result state will be published as
+immutable revisioned Encounter state. Generated-batch completion must not
+mutate those runtime sessions. Saved-plan summary batch reads preserve request
+order and report missing identities explicitly.
 
 ## Quality Targets
 
 - one generated prepare performs one candidate-snapshot read for the complete
   intent union; query count is independent of Encounter, CR/role-block, and
   selected-roster-member cardinality
-- commit uses one Encounter transaction with set-based plan, roster, and origin
-  writes and exposes no partial rows
+- commit uses one complete Encounter owner-partition publication containing
+  plan, roster, and origin values and exposes no partial batch
 - one workspace hydration request uses one saved-plan summary batch read rather
   than one read per scene or plan
 - deterministic reference-input replay yields the same ordered concrete rosters for
@@ -136,12 +149,12 @@ Rejected alternatives:
 - abstract XP/role slot persistence as a saved Encounter plan
 - exact-XP point queries per slot or creature-detail reads per roster member
 - first-match selection that accidentally repeats equivalent rosters
-- one transaction per generated Encounter or a duplicate generated-origin
+- one publication per generated Encounter or a duplicate generated-origin
   writer
 - rewards, packing, audits, session scenes, or copied creature statblocks in
   Encounter persistence
-- cross-feature database access, JavaFX orchestration, a shared workflow
-  transaction, or compensating deletion
+- cross-feature storage access, UI orchestration, a shared workflow commit, or
+  compensating deletion
 - a Campaign-to-installation Creature foreign key or copied Creature catalog
   table inside the Campaign store
 
