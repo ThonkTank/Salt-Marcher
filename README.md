@@ -8,6 +8,12 @@ the only target architecture. The JavaFX/SQLite tree remains temporarily as
 migration input and is removed capability by capability; it is not a second
 supported product line.
 
+The production shell now exposes `Campaigns` and one consolidated `Katalog`
+route. Katalog retains all seven target sections; Monster and Items already
+query the selected installation-wide Shared-Definition generation off the
+scene-tree thread, while unmigrated provider sections report unavailable rather
+than inventing Catalog-owned records.
+
 ## Quickstart
 
 Run the Godot application from the repository root:

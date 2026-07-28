@@ -1,6 +1,6 @@
 extends Control
 
-const CampaignDesk = preload("res://godot/src/ui/campaign_desk.gd")
+const MainShell = preload("res://godot/src/ui/main_shell.gd")
 const FileCampaignRegistry = preload("res://godot/src/platform/persistence/file_campaign_registry.gd")
 const CampaignRuntimeCoordinator = preload("res://godot/src/app/campaign_runtime_coordinator.gd")
 const CampaignBackupScheduler = preload("res://godot/src/app/campaign_backup_scheduler.gd")
@@ -34,11 +34,11 @@ func _ready() -> void:
 	)
 	add_child(backup_scheduler)
 	add_child(compaction_scheduler)
-	var desk := CampaignDesk.new()
-	desk.registry = registry
-	desk.runtime_coordinator = _runtime_coordinator
-	desk.compaction_scheduler = compaction_scheduler
-	add_child(desk)
+	var shell := MainShell.new()
+	shell.registry = registry
+	shell.runtime_coordinator = _runtime_coordinator
+	shell.compaction_scheduler = compaction_scheduler
+	add_child(shell)
 
 
 func _exit_tree() -> void:

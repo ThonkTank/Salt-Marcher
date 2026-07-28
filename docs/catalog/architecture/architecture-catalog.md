@@ -1,229 +1,149 @@
 # Catalog Architecture
 
+Status: Active target architecture
+Owner: Catalog
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 ## Purpose And Boundary
 
-Catalog is the read-and-handoff workspace for reference content. It owns the
-user's transient browsing experience: active section, unfinished input,
-committed query, result lifecycle, sort, page, selection, and explicit actions.
-It owns no creature, item, Encounter, World Planner, or Encounter Table truth
-and has no persistence adapter.
+Catalog is the Godot read-and-handoff workspace for reference content. It owns
+only transient browsing state: active section, draft and accepted query,
+result lifecycle, paging, stable selection, and explicit outward actions. It
+owns no Creature, Item, Encounter, NPC, faction, place, or Encounter Table
+truth and has no persistence adapter.
 
 Provider features remain the sole owners of durable records, validation,
-migrations, details, and mutations. Catalog consumes only their public APIs.
-Encounter owns generation pool criteria; the visible Monster filter editor
-edits that typed capability and queries Creatures with the accepted revision.
+details, and mutations. Catalog consumes only their Godot application APIs.
+It never creates a substitute record because a provider is missing. A missing
+provider is a visible unavailable state whose create action is side-effect
+free.
 
-## Target Topology
+## Godot Source Shape
 
 ```text
-features/catalog/
-├── application/
-│   ├── CatalogWorkspace
-│   ├── BrowseSession
-│   ├── CatalogSectionDefinition
-│   ├── CatalogSectionState
-│   └── CatalogResult
-├── adapter/javafx/
-│   ├── CatalogContribution
-│   ├── CatalogWorkspaceView
-│   ├── CatalogSectionRenderer
-│   ├── CatalogControlFactory
-│   └── CatalogPicker
-└── CatalogFeature
+godot/src/
+  app/main.gd
+  features/catalog/
+    catalog_browse_controller.gd
+    catalog_workspace_state.gd        # target retained state owner
+    catalog_section_definition.gd     # target typed section declaration
+  ui/
+    main_shell.gd
+    catalog_workspace.gd
+    catalog_result_table.gd           # target virtualized shared result view
 ```
 
-The seven sections are statically and explicitly composed. They are not seven
-controllers or JavaFX view classes. Each is a typed definition that supplies
-provider query translation, immutable filter fields, columns, stable identity,
-and available actions to shared application and presentation mechanisms.
+`main_shell.gd` composes exactly one `Katalog` route. Catalog does not register
+another World Planner route or a section-specific workspace root. The seven
+sections are Monster, Items, Encounter, NPCs, Fraktionen, Orte, and
+Encounter-Tabellen.
 
-Runtime discovery and a plugin registry are rejected because the product owns
-exactly seven sections and has no extension need.
+Current migration state is narrower than the target: the production shell and
+all seven visible section identities exist; Monster and Items query the
+installation-wide Shared-Definition provider, while the remaining provider
+routes report unavailable. No unavailable section stores Catalog-owned truth.
 
-## Typed Section Definition
+## Provider And Query Boundary
 
-`CatalogSectionDefinition<Q, R, K>` contains:
+Shared Definitions expose bounded catalog metadata queries by selected
+generation, kind, search text, offset, and page size. Rows contain stable
+definition identity, kind, and display name. Full semantic content stays in the
+provider and is read only when a provider-owned detail route requires it. The
+generation index is checksummed and structurally validated once per read; it
+does not open every object. A damaged Item object therefore cannot block
+Creature metadata browsing, while selecting that Item still fails exact object
+validation.
 
-- stable section id, label, and initial immutable query draft
-- typed filter specifications with getters and immutable updaters
-- provider query function and provider-result translation
-- stable row identity and table column specifications
-- optional paging and typed row or section action declarations
-- optional provider revision observation used only while the section is active
+The Catalog background controller admits one active read and at most one
+latest-wins pending read. Every request receives a monotonic epoch. Newer input
+cancels or invalidates older work; late completion cannot replace the latest
+visible result. On completion or teardown, no worker handle or pending request
+remains. Provider work never runs on the Godot scene-tree thread.
 
-`CatalogWorkspaceController` binds each declared action to the explicitly
-composed outward route for that section. The three provider-owned create routes
-and the four non-mutating unavailable outcomes are exhaustively composed there;
-the renderer cannot infer availability or invent a mutation.
+The target provider contract is the same for every section:
 
-Filter specifications are a sealed family for text search, single choice,
-multi-choice, range, and tri-state values. They do not use string-keyed maps,
-untyped values, reflection, JavaFX nodes, CSS classes, or provider persistence
-types.
+- bounded query input and immutable result;
+- stable row identity independent of display name;
+- typed ready, empty, invalid, unavailable, cancelled, stale, and failed state;
+- provider-owned details and create/edit routes;
+- explicit Encounter or Scene handoff routes where required;
+- no filesystem, SQLite, JDBC, Java, or UI-node type at the boundary.
 
-Provider APIs keep their own result vocabularies. The definition translates at
-the real consumer boundary into one Catalog result model rather than requiring
-providers to depend on Catalog.
+Creature and Item reads use independent bounded workers once both providers
+have their final owner services. Other independent providers may likewise run
+concurrently. Ordering belongs only to a provider's own mutation boundary.
 
-## Browse Session And Workspace State
+## Workspace State And Interaction
 
-One reusable `BrowseSession<Q, R, K>` owns the lifecycle shared by all sections:
+One retained state exists per section. It holds draft and accepted query,
+rows, total, page, stable selection, sort, request epoch, and result status.
+Only the selected section may issue or observe work. Switching sections cancels
+or invalidates invisible work without discarding that section's local state.
 
-- unfinished draft and last committed query
-- 200 ms debounce and immediate Enter submission
-- request epoch and cancellation or invalidation of superseded work
-- page, total, stable selection, provider revision, stale marker, and one
-  generic `SortState` consisting of a declared column id and direction
-- immutable result state: uninitialized, loading, refreshing, ready, empty,
-  invalid, unavailable, or failed
+Search uses a 200 ms debounce and immediate Enter submission. Local typing,
+section changes, selection, paging, and sort feedback occur synchronously on the
+scene-tree thread; provider reads remain asynchronous. A successful refresh
+keeps accepted rows visible with a refreshing status. Failure never labels
+stale rows as current success.
 
-Only the selected session is active. Activating a section observes its provider
-and queries when uninitialized, stale, or edited. Deactivating it releases the
-subscription and invalidates in-flight publication while retaining immutable
-state. An inactive section performs no query, option load, or provider
-subscription.
+The current vertical slice retains draft, accepted query, rows, count, status,
+and selection for all seven sections. Paging and sort state are provider-level
+targets still to be connected to the shared Godot result table.
 
-The workspace owns the active section and the seven retained session states.
-It publishes one revisioned immutable snapshot. JavaFX state is never the
-source of unfinished input or selection.
+## Presentation
 
-Sorting is application state rather than a control-specific callback. A
-section maps the generic sort state to its typed provider query and declares
-which columns accept it. Header activation is the sole presentation input for
-changing that state; providers do not leak their own sort widgets into Catalog.
+`CatalogWorkspace` owns one Godot root. It renders:
 
-A refresh retains the last successful rows while exposing `refreshing`. A
-failure may retain that read-only result with a retry action, but it cannot be
-reported as current success. A selected identity survives refresh only when it
-is present in the accepted result.
+- one persistent seven-section selector;
+- one inside-labelled search field and consistently placed create action;
+- one shared result region and Inspector region;
+- one footer for count and lifecycle status;
+- explicit empty, loading, refreshing, unavailable, and failed states.
 
-## Actions And Cross-Feature State
+Section definitions may supply data, columns, filters, and actions but never
+construct Controls. Long choice lists and result collections use Godot
+virtualization or bounded page nodes so scene-tree node count follows visible
+content rather than provider size. No section retains a second hidden node tree.
 
-Selecting or opening a row is read-only with respect to Encounter and Scene.
-Every external change uses a named typed action route. Catalog consumes a typed
-outcome where the provider API supplies one; synchronous provider callbacks and
-unavailable create capabilities publish only their explicit local feedback.
+Selecting a row is side-effect free. Opening details changes only Inspector
+content. Any Encounter or Scene mutation uses an explicit named route owned by
+the destination feature. Encounter tuning does not belong to Catalog.
 
-Catalog consumes exact routes for:
+## Persistence And Failure Isolation
 
-- provider-owned details and editors in the Inspector
-- adding a Creature or NPC to Encounter or focused Scene
-- opening a saved Encounter with the provider-owned discard decision
-- selecting faction, location, or Encounter Table sources for Encounter
-- assigning the focused Scene location
+Catalog has no stored truth and receives no paths or persistence handles.
+Shared-Definition reads select the generation from the Campaign registry;
+Campaign-owned providers read their owner partition through the active runtime
+boundary. One provider's damage, absence, cancellation, or slow response cannot
+block another provider or Campaign opening.
 
-Catalog does not coordinate a cross-provider transaction. A future action that
-requires one must be owned by the feature that owns the consistency boundary,
-not by callbacks or a Catalog database.
+Diagnostics are local and payload-free. A visible failure carries an owned
+status and retry affordance rather than SQL, paths, or raw exception text.
 
-Monster generation filters have one canonical owner: Encounter. Catalog keeps
-only the unfinished editor value required to show invalid or not-yet-debounced
-input. An accepted filter command returns or publishes its revision; the
-Creature query records that revision so late readback cannot replace newer
-visible work.
+## Permanent Constraints
 
-## JavaFX Presentation
-
-Three section-neutral presentation owners implement the shared Catalog surface:
-`CatalogSectionRenderer`, `CatalogControlFactory`, and `CatalogPicker`.
-`CatalogSectionRenderer` composes the selected section from the sealed filter
-specifications, column specifications, paging capability, action specifications,
-and immutable state. Changing section rebinds or rebuilds this one renderer;
-application state, not seven retained node trees, preserves work.
-
-`CatalogWorkspaceView` owns one main JavaFX root for the lifetime of the
-workspace. `CatalogSectionRenderer` replaces or rebinds only content beneath
-that root; a section cannot supply another main root, nested workspace shell,
-or retained node tree.
-
-`CatalogPicker` owns the section-neutral virtualized choice and multi-choice
-picker, including its popup, selection, and option-cell lifecycle.
-`CatalogControlFactory` owns the remaining declared Catalog visual roles and
-creates their controls. Section definitions cannot construct controls or assign
-styles. The renderer owns:
-
-- the persistent section selector and compact wrapping controls area
-- inside-label search, selection, range, and filter controls
-- one chip per active filter value, selective removal, and whole-filter reset
-- status, empty and failure presentation, table, paging, keyboard,
-  accessibility, and stable-id selection
-- header-only sort interaction and the unified result footer containing count,
-  status, and optional pagination
-- one consistent create control backed by a typed provider route or a
-  side-effect-free unavailable capability that returns visible feedback;
-  details remain row-driven and have no dedicated button
-- the shared 28 px control and 12 px regular type contract, plus the compact
-  chip information style
-
-Section-specific behavior is limited to typed data, columns, filters, and
-actions. A one-off JavaFX escape hatch is not a supported section capability.
-
-Choice and multi-choice filters use virtualized picker content so node count
-tracks visible options rather than provider result size. Their option source is
-loaded only for the active session. Overlapping requests share one in-flight
-load, and its successful result is cached independently of page request epochs.
-A failure is never cached as an empty success: successful page rows remain
-read-only, the footer reports the option failure, and the next active query
-retries the load.
-
-## Persistence, Execution, And Failure Isolation
-
-Catalog never receives `SqliteDatabase`, JDBC, paths, or migration plans.
-Provider services are created only after their owner-scoped storage readiness
-is known under the [persistence lifecycle](../../project/contract/persistence-lifecycle.md).
-
-Persistence-backed queries run outside the JavaFX thread. Creature and Item
-catalog reads use independent bounded read lanes, so a slow or failed Item read
-cannot queue behind or block Creature lookup, and vice versa. Other independent
-provider reads may likewise execute concurrently; ordered writes are serialized
-by their owning feature or store, not by one application-wide queue. One
-provider's newer schema, migration failure, unavailable source, option-load
-failure, or query failure becomes only that section's typed unavailable or
-failed state.
-
-These read lanes, caches, sort state, and presentation mechanisms do not move
-record or persistence ownership into Catalog. Creature, Item, Encounter, World
-Planner, and Encounter Table APIs remain the authoritative routes; their
-provider and persisted truth is unchanged.
-
-Diagnostics remain payload-free and local. A visible failure carries a stable
-local diagnostic id and retryability, not SQL, paths, or exception messages.
-
-## Composition
-
-`CatalogFeature` receives the seven definitions plus the UI dispatcher and
-constructs the workspace and contribution. `app` explicitly supplies provider
-APIs and outward routes; neither Catalog nor shell locates services.
-
-The permanent structural constraints are:
-
-- Catalog application imports provider APIs but no foreign implementation,
-  JavaFX, JDBC, or persistence package
-- Catalog has no domain or SQLite role
-- exactly seven definitions are explicitly composed
-- section definitions contain no JavaFX nodes or style decisions
-- only `CatalogSectionRenderer`, `CatalogControlFactory`, and the section-neutral
-  `CatalogPicker`, including their nested classes, depend on JavaFX controls
-- exactly one Catalog main root exists and sections cannot provide another
-- all sortable sections consume the generic sort state through declared columns
-- option pickers are virtualized, overlapping loads are coalesced, and only
-  successful option results are cached
-- Creature and Item stateless Catalog reads use separate bounded lanes while
-  Creature state-publishing commands retain their serialized execution lane
-- no section-specific lifecycle controller or JavaFX section class returns
-- inactive sections cannot acquire subscriptions or issue provider calls
+- exactly one Catalog route and one Catalog UI root;
+- exactly seven statically composed section identities;
+- no Catalog domain database, persistence adapter, or copied provider truth;
+- no JavaFX, Java, JDBC, SQLite, or legacy service locator dependency;
+- only active sections issue work;
+- one active and one latest-wins pending query per read lane;
+- late or cancelled results never replace newer visible state;
+- row selection never mutates Encounter or Scene;
+- every external mutation is an explicit provider/destination route;
+- unavailable providers remain truthful and side-effect free.
 
 ## Rejected Alternatives
 
-- Seven controllers and seven JavaFX section roots are rejected because they
-  duplicate one browsing lifecycle and one presentation grammar.
-- Eager activation is rejected because invisible sections have no user work to
-  perform and failures or latency must remain isolated.
-- A dynamic form map is rejected because it sacrifices typed update semantics.
-- A Catalog-owned read database is rejected because it duplicates provider
-  truth and creates synchronization invariants.
-- One global serial execution lane is rejected because independent reads and
-  failures do not share an ordering invariant.
+- Seven controllers or retained section node trees duplicate one lifecycle and
+  are rejected.
+- A Catalog-owned read database duplicates provider truth and is rejected.
+- Eager loading of inactive sections creates invisible work and is rejected.
+- A separate World Planner navigation surface duplicates the consolidated
+  Katalog and is rejected.
+- Calling the legacy Java Catalog from Godot would preserve the old runtime and
+  is rejected; provider owners migrate directly to Godot contracts.
 
 ## References
 

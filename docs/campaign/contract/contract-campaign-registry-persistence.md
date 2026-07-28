@@ -58,7 +58,12 @@ installation truth.
 A Shared Definition has a stable lowercase portable identity, a typed kind, a
 display name, and a semantic content document. Immutable objects are addressed
 by the checksum of the complete definition. A checksummed generation index
-selects one object for every current identity.
+selects one object for every current identity. Registry and Katalog metadata
+reads validate the complete index envelope and structural references without
+opening every semantic object. Selecting a definition, resolving a Campaign
+reference, and complete export validate the addressed object's exact bytes.
+Damage to one unselected definition therefore does not block registry or
+unrelated definition reads.
 
 A complete Campaign export contains exactly every definition referenced by the
 exported Campaign generation. Import validates that closure before proposing a

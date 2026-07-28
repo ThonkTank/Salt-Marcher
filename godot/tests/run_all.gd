@@ -7,6 +7,9 @@ const CampaignBackupClosure = preload("res://godot/src/platform/persistence/camp
 const CampaignBundle = preload("res://godot/src/platform/portability/campaign_bundle.gd")
 const SharedDefinitionStore = preload("res://godot/src/platform/persistence/shared_definition_store.gd")
 const CampaignDesk = preload("res://godot/src/ui/campaign_desk.gd")
+const MainShell = preload("res://godot/src/ui/main_shell.gd")
+const CatalogWorkspace = preload("res://godot/src/ui/catalog_workspace.gd")
+const CatalogBrowseController = preload("res://godot/src/features/catalog/catalog_browse_controller.gd")
 const CampaignRuntimeCoordinator = preload("res://godot/src/app/campaign_runtime_coordinator.gd")
 const CampaignRuntimeSession = preload("res://godot/src/app/campaign_runtime_session.gd")
 const CampaignPortabilityController = preload("res://godot/src/app/campaign_portability_controller.gd")
@@ -96,6 +99,7 @@ func _run_tests() -> void:
 	_expect(first.get("state", {}).get("active_campaign_id", "") == first_id, "created campaign is active")
 	_run_campaign_store_contract(root, first_id)
 	_run_binary_content_contract()
+	await _run_catalog_foundation_contract()
 
 	var second := registry.create_campaign("Nordmark")
 	_expect(second.get("ok", false), "second campaign is created")
@@ -238,6 +242,101 @@ func _run_campaign_store_contract(data_root: String, campaign_id: String) -> voi
 
 	var invalid_owner := store.commit(5, {"../escape": {}}, resumed.get("state", {}).get("runtime", {}))
 	_expect(not invalid_owner.get("ok", true), "unsafe capability owner is rejected before publication")
+
+
+func _run_catalog_foundation_contract() -> void:
+	var data_root := "user://saltmarcher-catalog-foundation/%s" % Time.get_ticks_usec()
+	var registry := FileCampaignRegistry.new(data_root)
+	var definitions := SharedDefinitionStore.new(data_root)
+	var prepared := definitions.prepare_generation(0, [
+		{"definition_id": "creature.wolf", "kind": "creature", "name": "Wolf", "content": {"armor_class": 12}},
+		{"definition_id": "creature.worg", "kind": "creature", "name": "Worg", "content": {"armor_class": 13}},
+		{"definition_id": "item.rope", "kind": "item", "name": "Rope", "content": {"weight": 10}},
+	])
+	_expect(prepared.get("ok", false), "Catalog fixture prepares typed Shared Definitions")
+	var published := registry.publish_shared_definitions_generation(int(prepared.get("generation", -1)), 0)
+	_expect(published.get("ok", false), "Catalog fixture atomically selects its Shared-Definition generation")
+	var first_page := definitions.query_catalog(int(prepared["generation"]), "creature", "wo", 0, 1)
+	_expect(
+		first_page.get("ok", false)
+		and first_page.get("total", -1) == 2
+		and first_page.get("rows", []).size() == 1
+		and first_page.get("rows", [])[0].get("definition_id", "") == "creature.wolf",
+		"Catalog provider returns deterministic stable-id search and bounded paging"
+	)
+	var invalid_page := definitions.query_catalog(int(prepared["generation"]), "creature", "", 0, 201)
+	_expect(not invalid_page.get("ok", true), "Catalog provider rejects an unbounded page")
+
+	var controller := CatalogBrowseController.new(data_root, registry)
+	root.add_child(controller)
+	var results: Array = []
+	controller.result_published.connect(func(result: Dictionary) -> void:
+		results.append(result.duplicate(true))
+	)
+	var first_query := controller.query("creatures", "creature", "w", 0, 50)
+	var replacement_query := controller.query("creatures", "creature", "worg", 0, 50)
+	_expect(first_query.get("status", "") == "started" and replacement_query.get("status", "") == "queued", "Catalog controller admits one read and one latest-wins pending request")
+	for _attempt in 600:
+		if not controller.is_active():
+			break
+		await create_timer(0.001).timeout
+	await process_frame
+	_expect(results.size() == 1 and results[0].get("rows", [])[0].get("definition_id", "") == "creature.worg", "Catalog controller suppresses superseded readback and publishes only the latest query")
+	var controller_resources := controller.resource_snapshot()
+	_expect(
+		int(controller_resources.get("active_count", -1)) == 0
+		and int(controller_resources.get("pending_count", -1)) == 0
+		and int(controller_resources.get("worker_handle_count", -1)) == 0,
+		"Catalog controller releases read worker and pending state after publication"
+	)
+	controller.queue_free()
+	await process_frame
+	var item_reference: Dictionary = prepared.get("state", {}).get("definitions", {}).get("item.rope", {})
+	var damaged_item_path := data_root + "/installation/shared-definitions/" + str(item_reference.get("path", ""))
+	var damaged_item := FileAccess.open(damaged_item_path, FileAccess.WRITE)
+	damaged_item.store_string("{damaged")
+	damaged_item.close()
+	_expect(registry.load_state().get("ok", false), "one damaged Shared Definition does not block registry or Campaign opening")
+	_expect(definitions.query_catalog(int(prepared["generation"]), "creature", "", 0, 50).get("ok", false), "damaged Item definition does not block independent Creature metadata browsing")
+	_expect(not definitions.read_definition("item.rope", int(prepared["generation"])).get("ok", true), "selected damaged Shared Definition fails exact object validation")
+
+	var shell := MainShell.new()
+	shell.data_root = data_root
+	shell.registry = registry
+	root.add_child(shell)
+	await process_frame
+	_expect(shell.show_route("catalog").get("ok", false) and shell.active_route() == "catalog", "production shell exposes one native Katalog route")
+	var catalog := shell.route("catalog") as CatalogWorkspace
+	for _attempt in 600:
+		if catalog.section_snapshot("creatures").get("status", "") in ["ready", "empty"]:
+			break
+		await create_timer(0.001).timeout
+	_expect(catalog.section_snapshot("creatures").get("status", "") == "ready", "opening Katalog after initial hidden-route cancellation restarts its active provider query")
+	var selector := catalog.find_child("CatalogSectionSelector", true, false)
+	_expect(selector != null and selector.get_child_count() == 7, "native Katalog exposes all seven persistent sections")
+	var search := catalog.search_input()
+	search.text = "worg"
+	search.text_changed.emit(search.text)
+	search.text_submitted.emit(search.text)
+	for _attempt in 600:
+		var state := catalog.section_snapshot("creatures")
+		if state.get("status", "") == "ready" and state.get("rows", []).size() == 1:
+			break
+		await create_timer(0.001).timeout
+	var creature_state := catalog.section_snapshot("creatures")
+	_expect(creature_state.get("rows", [])[0].get("definition_id", "") == "creature.worg", "native Katalog searches the selected provider through its background controller")
+	catalog.select_section("items")
+	catalog.select_section("creatures")
+	_expect(catalog.search_input().text == "worg", "Katalog section switching retains unfinished search state")
+	var unavailable := catalog.select_section("npcs")
+	_expect(unavailable.get("status", "") == "unavailable", "unmigrated Katalog provider is disclosed without Catalog-owned replacement truth")
+	var create_button := catalog.find_child("CatalogCreate", true, false) as Button
+	create_button.pressed.emit()
+	var footer := catalog.find_child("CatalogFooter", true, false) as Label
+	_expect(footer.text.contains("noch nicht verfügbar"), "unavailable provider creation remains side-effect free and truthful")
+	shell.queue_free()
+	await process_frame
+	await process_frame
 
 
 func _run_binary_content_contract() -> void:

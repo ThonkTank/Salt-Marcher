@@ -11,6 +11,7 @@ const MAX_DEFINITION_COUNT := 1_000_000
 const MAX_ID_LENGTH := 160
 const MAX_KIND_LENGTH := 80
 const MAX_NAME_LENGTH := 240
+const MAX_CATALOG_PAGE_SIZE := 200
 
 var _root: String
 var _generations_dir: String
@@ -55,7 +56,7 @@ func load_generation(generation: int) -> Dictionary:
 	var definitions: Dictionary = payload["definitions"]
 	for definition_id_value in definitions:
 		var definition_id := str(definition_id_value)
-		var validation := _read_indexed_definition(definition_id, definitions[definition_id_value])
+		var validation := _validate_index_reference(definition_id, definitions[definition_id_value])
 		if not validation.get("ok", false):
 			return validation
 	return {
@@ -197,6 +198,62 @@ func definitions_for_refs(definition_refs: Array, generation: int) -> Dictionary
 	return {"ok": true, "definitions": result}
 
 
+func query_catalog(
+	generation: int,
+	kind: String,
+	search_text: String = "",
+	offset: int = 0,
+	limit: int = 50,
+	cancellation_callback: Callable = Callable()
+) -> Dictionary:
+	if not _valid_kind(kind) or offset < 0 or limit <= 0 or limit > MAX_CATALOG_PAGE_SIZE:
+		return _failure("Katalogabfrage besitzt ungültige Grenzen.")
+	if _cancelled(cancellation_callback):
+		return _cancelled_failure()
+	var state := load_generation(generation)
+	if not state.get("ok", false):
+		return state
+	var needle := search_text.strip_edges().to_lower()
+	var matching: Array = []
+	for definition_id_value in state["definitions"]:
+		if _cancelled(cancellation_callback):
+			return _cancelled_failure()
+		var definition_id := str(definition_id_value)
+		var reference: Dictionary = state["definitions"][definition_id_value]
+		var name := str(reference.get("name", ""))
+		if reference.get("kind", "") != kind:
+			continue
+		if not needle.is_empty() and not name.to_lower().contains(needle) and not definition_id.contains(needle):
+			continue
+		matching.append({
+			"definition_id": definition_id,
+			"kind": kind,
+			"name": name,
+		})
+	matching.sort_custom(func(left: Dictionary, right: Dictionary) -> bool:
+		var left_name := str(left["name"]).to_lower()
+		var right_name := str(right["name"]).to_lower()
+		if left_name == right_name:
+			return str(left["definition_id"]) < str(right["definition_id"])
+		return left_name < right_name
+	)
+	var rows: Array = []
+	var end := mini(offset + limit, matching.size())
+	for index in range(mini(offset, matching.size()), end):
+		rows.append(matching[index].duplicate(true))
+	return {
+		"ok": true,
+		"status": "empty" if matching.is_empty() else "ready",
+		"generation": generation,
+		"kind": kind,
+		"search_text": search_text,
+		"offset": offset,
+		"limit": limit,
+		"total": matching.size(),
+		"rows": rows,
+	}
+
+
 func validate_definition(value: Variant) -> Dictionary:
 	if not value is Dictionary:
 		return _failure("Shared Definition muss ein Dokument sein.")
@@ -261,17 +318,13 @@ func discard_unselected_generation(generation: int) -> Dictionary:
 
 
 func _read_indexed_definition(definition_id: String, reference: Variant) -> Dictionary:
-	if not _valid_id(definition_id) or not reference is Dictionary:
-		return _failure("Shared-Definition-Index enthält einen ungültigen Eintrag.")
-	var relative_path := str(reference.get("path", ""))
-	var definition_sha256 := str(reference.get("definition_sha256", ""))
-	var content_sha256 := str(reference.get("content_sha256", ""))
-	if (
-		relative_path != "objects/%s/%s.json" % [definition_id, definition_sha256]
-		or not _valid_sha256(definition_sha256)
-		or not _valid_sha256(content_sha256)
-	):
-		return _failure("Shared-Definition-Index enthält eine unsichere Objektreferenz.")
+	var reference_validation := _validate_index_reference(definition_id, reference)
+	if not reference_validation.get("ok", false):
+		return reference_validation
+	var validated_reference: Dictionary = reference_validation["reference"]
+	var relative_path := str(validated_reference["path"])
+	var definition_sha256 := str(validated_reference["definition_sha256"])
+	var content_sha256 := str(validated_reference["content_sha256"])
 	var read := _files.read_json(_root + "/" + relative_path)
 	if not read.get("ok", false) or not read.get("value") is Dictionary:
 		return _failure("Shared Definition %s ist nicht lesbar." % definition_id)
@@ -291,9 +344,33 @@ func _read_indexed_definition(definition_id: String, reference: Variant) -> Dict
 		or _files.checksum(definition["content"]) != content_sha256
 	):
 		return _failure("Shared-Definition-Index und Objekt widersprechen sich.")
-	if reference.get("kind", "") != definition["kind"] or reference.get("name", "") != definition["name"]:
+	if validated_reference["kind"] != definition["kind"] or validated_reference["name"] != definition["name"]:
 		return _failure("Shared-Definition-Metadaten und Objekt widersprechen sich.")
 	return {"ok": true, "definition": definition}
+
+
+func _validate_index_reference(definition_id: String, reference: Variant) -> Dictionary:
+	if not _valid_id(definition_id) or not reference is Dictionary:
+		return _failure("Shared-Definition-Index enthält einen ungültigen Eintrag.")
+	var typed_reference: Dictionary = reference
+	var relative_path := str(reference.get("path", ""))
+	var definition_sha256 := str(reference.get("definition_sha256", ""))
+	var content_sha256 := str(reference.get("content_sha256", ""))
+	var kind := str(reference.get("kind", ""))
+	var name := str(reference.get("name", "")).strip_edges()
+	if (
+		relative_path != "objects/%s/%s.json" % [definition_id, definition_sha256]
+		or not _valid_sha256(definition_sha256)
+		or not _valid_sha256(content_sha256)
+		or kind.is_empty()
+		or kind.length() > MAX_KIND_LENGTH
+		or not _valid_kind(kind)
+		or name.is_empty()
+		or name.length() > MAX_NAME_LENGTH
+		or name != reference.get("name", "")
+	):
+		return _failure("Shared-Definition-Index enthält eine unsichere Objektreferenz.")
+	return {"ok": true, "reference": typed_reference.duplicate(true)}
 
 
 func _remove_unpublished_objects(paths: Array) -> void:

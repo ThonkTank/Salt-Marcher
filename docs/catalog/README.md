@@ -1,9 +1,16 @@
 # Catalog Feature
 
+Status: Active Godot migration owner
+Owner: Catalog
+Last Reviewed: 2026-07-28
+Source of Truth: This document routes to the files below
+
 Catalog is the application capability for finding, evaluating, and explicitly
 handing reference content to another active workspace. It presents Creatures,
 Items, saved Encounters, World Planner records, and Encounter Tables inside one
-`Katalog` left-bar tab.
+`Katalog` navigation entry. The production Godot shell currently connects the
+Creature and Item sections to Shared Definitions. The other five sections are
+visible but truthfully unavailable until their provider owners migrate.
 
 ## Reading Order
 

@@ -1,5 +1,10 @@
 # Catalog Requirements
 
+Status: Confirmed product requirements
+Owner: Catalog
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 ## Goal
 
 The GM MUST be able to find, evaluate, and explicitly hand reference content
@@ -81,7 +86,7 @@ workspace serves both game preparation and running-session lookup.
   add-to-focused-Scene actions.
 - Items MUST be read-only, searched asynchronously, distinguish loading,
   unavailable, empty, invalid, and storage-failure outcomes, and open details
-  without blocking the JavaFX thread.
+  without blocking the Godot scene-tree thread.
 - Saved encounters MUST open in the global Encounter state tab. If the focused
   Encounter has unsaved roster changes, opening another plan MUST require an
   explicit discard confirmation.
@@ -103,7 +108,7 @@ workspace serves both game preparation and running-session lookup.
   selection, and paging feedback MUST remain available while provider reads are
   pending. Each interaction MUST update its local visible state within 100 ms
   on the supported desktop target and MUST NOT wait for Creature, Item, or
-  option-provider I/O on the JavaFX thread.
+  option-provider I/O on the Godot scene-tree thread.
 
 ## Non-Goals
 
@@ -138,7 +143,7 @@ Encounter or Scene workspaces, or expose a second World Planner workspace.
 - Refreshing provider results preserves a still-present selected record by its
   stable identity.
 - Each reachable result state renders a distinct visible outcome and leaves the
-  JavaFX event thread responsive.
+  Godot scene-tree thread responsive.
 - Local feedback for typing, filtering, sorting, section switching, selection,
   and paging appears within 100 ms while Creature, Item, and option reads remain
   independently non-blocking.
