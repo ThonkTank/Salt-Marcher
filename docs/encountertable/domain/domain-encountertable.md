@@ -55,9 +55,10 @@ partition or Shared-Definition files themselves.
 
 Godot currently owns create, edit, bounded Catalog summaries, full detail,
 weighted Creature membership, World Planner reference choices, cross-owner
-candidate resolution, restart persistence, and worker cleanup. Recoverable
-table deletion/restore, group entries, Loot Table choice/conflict presentation,
-and Encounter destination handoff remain pending. The Java implementation is
+candidate resolution, recoverable table deletion/restore with atomic dependent
+World Planner cleanup and safe relationship reattachment, restart persistence,
+and worker cleanup. Group entries, Loot Table choice/conflict presentation, and
+Encounter destination handoff remain pending. The Java implementation is
 migration evidence only.
 
 ## References

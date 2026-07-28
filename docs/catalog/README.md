@@ -14,9 +14,11 @@ active Campaign's World Planner provider, and Encounter Tables plus saved
 Encounters to their own Campaign partitions. All providers sort stably before
 bounded paging through one retained result table. A selected NPC, faction, or place exposes its
 World Planner-owned note-first Quest and rumour threads in the Inspector;
-Encounter Tables expose weighted provider details and create/edit. Saved
-Encounters expose complete roster details, Creature-backed create/edit, and
-recoverable trash/restore without transferring roster ownership to Catalog.
+Encounter Tables expose weighted provider details, create/edit, and recoverable
+trash/restore; their owner atomically maintains dependent World Planner
+references. Saved Encounters expose complete roster details, Creature-backed
+create/edit, and recoverable trash/restore without transferring roster
+ownership to Catalog.
 
 ## Reading Order
 

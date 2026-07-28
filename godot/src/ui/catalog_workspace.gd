@@ -21,7 +21,7 @@ const SECTIONS := [
 	{"id": "npcs", "label": "NPCs", "kind": "npc", "provider": true, "mutable": true, "trashable": true},
 	{"id": "factions", "label": "Fraktionen", "kind": "faction", "provider": true, "mutable": true, "trashable": true},
 	{"id": "places", "label": "Orte", "kind": "place", "provider": true, "mutable": true, "trashable": true},
-	{"id": "encounter_tables", "label": "Encounter-Tabellen", "kind": "encounter_table", "provider": true, "mutable": true},
+	{"id": "encounter_tables", "label": "Encounter-Tabellen", "kind": "encounter_table", "provider": true, "mutable": true, "trashable": true},
 ]
 const PAGE_SIZE := 50
 
@@ -696,12 +696,12 @@ func _on_encounter_table_detail_result_published(result: Dictionary) -> void:
 		"record": record,
 		"entry_labels": result.get("entry_labels", {}).duplicate(true),
 		"missing_definition_ids": result.get("missing_definition_ids", []).duplicate(),
-		"deleted": false,
+		"deleted": bool(result.get("deleted", false)),
 	}
 	_detail.text = _format_encounter_table_detail(record, _selected_detail["entry_labels"])
 	if not _selected_detail["missing_definition_ids"].is_empty():
 		_detail.text += "\n\n%d fehlende Creature-Referenzen können im Editor repariert werden." % _selected_detail["missing_definition_ids"].size()
-	_edit_button.disabled = _any_command_busy()
+	_edit_button.disabled = _any_command_busy() or bool(_selected_detail["deleted"])
 	_lifecycle_button.visible = false
 
 
@@ -870,7 +870,7 @@ func _select_row(row: Dictionary) -> void:
 	if _active_section_id == "encounter_tables":
 		_narrative_threads.clear_subject()
 		_edit_button.disabled = true
-		encounter_table_detail_controller.query(_row_id(row))
+		encounter_table_detail_controller.query(_row_id(row), bool(row.get("deleted", false)))
 	elif _active_section_id == "encounters":
 		_narrative_threads.clear_subject()
 		_edit_button.disabled = true
@@ -1012,11 +1012,13 @@ func _confirm_trash() -> void:
 	var row := _selected_row()
 	if row.is_empty():
 		return
-	var started := (
-		encounter_plan_command_controller.trash_plan(_row_id(row))
-		if _active_section_id == "encounters"
-		else command_controller.trash_record(_row_id(row))
-	)
+	var started: Dictionary
+	if _active_section_id == "encounters":
+		started = encounter_plan_command_controller.trash_plan(_row_id(row))
+	elif _active_section_id == "encounter_tables":
+		started = encounter_table_command_controller.trash_table(_row_id(row))
+	else:
+		started = command_controller.trash_record(_row_id(row))
 	if not started.get("ok", false):
 		_show_command_failure(started)
 
@@ -1025,11 +1027,13 @@ func _on_restore_requested() -> void:
 	var row := _selected_row()
 	if row.is_empty():
 		return
-	var started := (
-		encounter_plan_command_controller.restore_plan(_row_id(row))
-		if _active_section_id == "encounters"
-		else command_controller.restore_record(_row_id(row))
-	)
+	var started: Dictionary
+	if _active_section_id == "encounters":
+		started = encounter_plan_command_controller.restore_plan(_row_id(row))
+	elif _active_section_id == "encounter_tables":
+		started = encounter_table_command_controller.restore_table(_row_id(row))
+	else:
+		started = command_controller.restore_record(_row_id(row))
 	if not started.get("ok", false):
 		_show_command_failure(started)
 

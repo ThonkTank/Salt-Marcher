@@ -24,10 +24,10 @@ func _init(data_root: String) -> void:
 	_data_root = data_root.trim_suffix("/")
 
 
-func query(record_id: String) -> Dictionary:
+func query(record_id: String, include_deleted: bool = false) -> Dictionary:
 	_mutex.lock()
 	_latest_epoch += 1
-	var request := {"epoch": _latest_epoch, "record_id": record_id}
+	var request := {"epoch": _latest_epoch, "record_id": record_id, "include_deleted": include_deleted}
 	if not _active_request.is_empty():
 		_pending_request = request
 		_cancel_active = true
@@ -104,6 +104,7 @@ func _run_query(request: Dictionary) -> void:
 				result = model.read_table(
 					read.get("payload", model.empty_payload()),
 					str(request["record_id"]),
+					bool(request["include_deleted"]),
 					Callable(self, "_cancelled_from_worker")
 				)
 				if result.get("ok", false):

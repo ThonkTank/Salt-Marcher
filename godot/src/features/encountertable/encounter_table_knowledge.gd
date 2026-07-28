@@ -8,12 +8,14 @@ const OWNER := "encountertables"
 const KIND := "encounter_table"
 const MAX_NAME_LENGTH := 160
 const MAX_PAGE_SIZE := 200
+const WorldPlannerKnowledge = preload("res://godot/src/features/worldplanner/world_planner_knowledge.gd")
 
 
 func empty_payload() -> Dictionary:
 	return {
 		"format": FORMAT_ID,
 		"records": {},
+		"trash": {},
 	}
 
 
@@ -21,12 +23,33 @@ func validate_payload(value: Variant) -> Dictionary:
 	if not value is Dictionary:
 		return _failure("Encounter-Table-Daten müssen ein Dokument sein.")
 	var payload: Dictionary = value
-	if payload.get("format", "") != FORMAT_ID or not payload.get("records", null) is Dictionary:
+	if (
+		payload.get("format", "") != FORMAT_ID
+		or not payload.get("records", null) is Dictionary
+		or not payload.get("trash", null) is Dictionary
+	):
 		return _failure("Encounter-Table-Daten besitzen kein unterstütztes Format.")
 	for record_id_value in payload["records"]:
 		var validation := _validate_record(str(record_id_value), payload["records"][record_id_value])
 		if not validation.get("ok", false):
 			return validation
+	for record_id_value in payload["trash"]:
+		var record_id := str(record_id_value)
+		var entry = payload["trash"][record_id_value]
+		if (
+			not entry is Dictionary
+			or entry.size() != 3
+			or payload["records"].has(record_id)
+			or not _valid_timestamp(str(entry.get("deleted_at_utc", "")))
+			or not entry.get("incoming_links", null) is Array
+		):
+			return _failure("Encounter-Table-Papierkorb enthält einen ungültigen Eintrag.")
+		var record_validation := _validate_record(record_id, entry.get("record", null))
+		if not record_validation.get("ok", false):
+			return record_validation
+		for link in entry["incoming_links"]:
+			if not _valid_incoming_link(link):
+				return _failure("Encounter-Table-Papierkorb enthält einen ungültigen World-Planner-Verweis.")
 	return {"ok": true, "payload": payload.duplicate(true)}
 
 
@@ -35,6 +58,7 @@ func query(
 	search_text: String = "",
 	offset: int = 0,
 	limit: int = 50,
+	include_deleted: bool = false,
 	sort_key: String = "name",
 	sort_ascending: bool = true,
 	cancellation: Callable = Callable()
@@ -46,20 +70,22 @@ func query(
 	var validated := validate_payload(payload_value)
 	if not validated.get("ok", false):
 		return validated
+	var payload: Dictionary = validated["payload"]
+	var source: Dictionary = payload["trash"] if include_deleted else payload["records"]
 	var needle := search_text.strip_edges().to_lower()
 	var matching: Array = []
-	for record_id_value in validated["payload"]["records"]:
+	for record_id_value in source:
 		if _cancelled(cancellation):
 			return _cancelled_failure()
 		var record_id := str(record_id_value)
-		var record: Dictionary = validated["payload"]["records"][record_id_value]
+		var record: Dictionary = source[record_id_value]["record"] if include_deleted else source[record_id_value]
 		if (
 			not needle.is_empty()
 			and not str(record["name"]).to_lower().contains(needle)
 			and not record_id.contains(needle)
 		):
 			continue
-		matching.append({
+		var row := {
 			"reference_id": record_id,
 			"kind": KIND,
 			"name": record["name"],
@@ -67,7 +93,11 @@ func query(
 			"entry_count": record["entries"].size(),
 			"linked_loot_table_id": record["linked_loot_table_id"],
 			"updated_at_utc": record["updated_at_utc"],
-		})
+			"deleted": include_deleted,
+		}
+		if include_deleted:
+			row["deleted_at_utc"] = source[record_id_value]["deleted_at_utc"]
+		matching.append(row)
 	matching.sort_custom(func(left: Dictionary, right: Dictionary) -> bool:
 		var left_identity := str(left["reference_id"])
 		var right_identity := str(right["reference_id"])
@@ -92,6 +122,7 @@ func query(
 		"limit": limit,
 		"sort_key": sort_key,
 		"sort_ascending": sort_ascending,
+		"include_deleted": include_deleted,
 		"total": matching.size(),
 		"rows": rows,
 	}
@@ -100,6 +131,7 @@ func query(
 func read_table(
 	payload_value: Variant,
 	record_id: String,
+	include_deleted: bool = false,
 	cancellation: Callable = Callable()
 ) -> Dictionary:
 	if not _valid_id(record_id):
@@ -111,13 +143,15 @@ func read_table(
 		return validated
 	if _cancelled(cancellation):
 		return _cancelled_failure()
-	var records: Dictionary = validated["payload"]["records"]
-	if not records.has(record_id):
+	var payload: Dictionary = validated["payload"]
+	var source: Dictionary = payload["trash"] if include_deleted else payload["records"]
+	if not source.has(record_id):
 		return _missing(record_id)
 	return {
 		"ok": true,
 		"status": "ready",
-		"record": records[record_id].duplicate(true),
+		"record": (source[record_id]["record"] if include_deleted else source[record_id]).duplicate(true),
+		"deleted": include_deleted,
 	}
 
 
@@ -142,7 +176,7 @@ func create_table(
 	if not _valid_id(record_id):
 		return _failure("Encounter-Table-Identität ist ungültig.")
 	var payload: Dictionary = validated["payload"]
-	if payload["records"].has(record_id):
+	if payload["records"].has(record_id) or payload["trash"].has(record_id):
 		return _failure("Encounter-Table-Identität existiert bereits.")
 	var timestamp := now_utc if not now_utc.is_empty() else Time.get_datetime_string_from_system(true)
 	var record := {
@@ -205,6 +239,149 @@ func update_table(
 		"status": "updated",
 		"record": record.duplicate(true),
 		"payload": next_validation["payload"],
+	}
+
+
+func trash_table(
+	payload_value: Variant,
+	world_payload_value: Variant,
+	record_id: String,
+	now_utc: String = ""
+) -> Dictionary:
+	var validated := validate_payload(payload_value)
+	if not validated.get("ok", false):
+		return validated
+	var world_validation := WorldPlannerKnowledge.new().validate_payload(world_payload_value)
+	if not world_validation.get("ok", false):
+		return world_validation
+	var payload: Dictionary = validated["payload"]
+	if not payload["records"].has(record_id):
+		return _missing(record_id)
+	var timestamp := now_utc if not now_utc.is_empty() else Time.get_datetime_string_from_system(true)
+	var records: Dictionary = payload["records"].duplicate(true)
+	var record: Dictionary = records[record_id].duplicate(true)
+	var incoming_links: Array = []
+	var world_payload: Dictionary = world_validation["payload"]
+	var world_records: Dictionary = world_payload["records"].duplicate(true)
+	for source_id_value in world_records:
+		var source_id := str(source_id_value)
+		var source: Dictionary = world_records[source_id_value].duplicate(true)
+		var changed := false
+		if source.get("kind", "") == "faction" and source.get("primary_encounter_table_id", "") == record_id:
+			incoming_links.append({"source_id": source_id, "field": "primary_encounter_table_id"})
+			source["primary_encounter_table_id"] = ""
+			changed = true
+		elif source.get("kind", "") == "place" and record_id in source.get("encounter_table_ids", []):
+			incoming_links.append({"source_id": source_id, "field": "encounter_table_ids"})
+			var table_ids: Array = source["encounter_table_ids"].duplicate()
+			table_ids.erase(record_id)
+			source["encounter_table_ids"] = table_ids
+			changed = true
+		if changed:
+			source["updated_at_utc"] = timestamp
+			world_records[source_id] = source
+	records.erase(record_id)
+	var trash: Dictionary = payload["trash"].duplicate(true)
+	trash[record_id] = {
+		"record": record,
+		"deleted_at_utc": timestamp,
+		"incoming_links": incoming_links,
+	}
+	var next_payload := payload.duplicate(true)
+	next_payload["records"] = records
+	next_payload["trash"] = trash
+	var next_world_payload := world_payload.duplicate(true)
+	next_world_payload["records"] = world_records
+	var next_validation := validate_payload(next_payload)
+	if not next_validation.get("ok", false):
+		return next_validation
+	var next_world_validation := WorldPlannerKnowledge.new().validate_payload(next_world_payload)
+	if not next_world_validation.get("ok", false):
+		return next_world_validation
+	return {
+		"ok": true,
+		"status": "trashed",
+		"record": record,
+		"removed_link_count": incoming_links.size(),
+		"payload": next_validation["payload"],
+		"partition_updates": {
+			OWNER: next_validation["payload"],
+			WorldPlannerKnowledge.OWNER: next_world_validation["payload"],
+		},
+	}
+
+
+func restore_table(
+	payload_value: Variant,
+	world_payload_value: Variant,
+	record_id: String,
+	now_utc: String = ""
+) -> Dictionary:
+	var validated := validate_payload(payload_value)
+	if not validated.get("ok", false):
+		return validated
+	var world_validation := WorldPlannerKnowledge.new().validate_payload(world_payload_value)
+	if not world_validation.get("ok", false):
+		return world_validation
+	var payload: Dictionary = validated["payload"]
+	if not payload["trash"].has(record_id):
+		return _missing(record_id)
+	var timestamp := now_utc if not now_utc.is_empty() else Time.get_datetime_string_from_system(true)
+	var trash: Dictionary = payload["trash"].duplicate(true)
+	var trash_entry: Dictionary = trash[record_id]
+	var record: Dictionary = trash_entry["record"].duplicate(true)
+	record["updated_at_utc"] = timestamp
+	var records: Dictionary = payload["records"].duplicate(true)
+	records[record_id] = record
+	var world_payload: Dictionary = world_validation["payload"]
+	var world_records: Dictionary = world_payload["records"].duplicate(true)
+	var restored_links := 0
+	for link in trash_entry["incoming_links"]:
+		var source_id := str(link["source_id"])
+		var field := str(link["field"])
+		if not world_records.has(source_id):
+			continue
+		var source: Dictionary = world_records[source_id].duplicate(true)
+		var changed := false
+		if (
+			field == "primary_encounter_table_id"
+			and source.get("kind", "") == "faction"
+			and str(source.get(field, "")).is_empty()
+		):
+			source[field] = record_id
+			changed = true
+		elif field == "encounter_table_ids" and source.get("kind", "") == "place" and record_id not in source.get(field, []):
+			var table_ids: Array = source[field].duplicate()
+			table_ids.append(record_id)
+			table_ids.sort()
+			source[field] = table_ids
+			changed = true
+		if changed:
+			source["updated_at_utc"] = timestamp
+			world_records[source_id] = source
+			restored_links += 1
+	trash.erase(record_id)
+	var next_payload := payload.duplicate(true)
+	next_payload["records"] = records
+	next_payload["trash"] = trash
+	var next_world_payload := world_payload.duplicate(true)
+	next_world_payload["records"] = world_records
+	var next_validation := validate_payload(next_payload)
+	if not next_validation.get("ok", false):
+		return next_validation
+	var next_world_validation := WorldPlannerKnowledge.new().validate_payload(next_world_payload)
+	if not next_world_validation.get("ok", false):
+		return next_world_validation
+	return {
+		"ok": true,
+		"status": "restored",
+		"record": record,
+		"restored_link_count": restored_links,
+		"payload": next_validation["payload"],
+		"partition_updates": {
+			OWNER: next_validation["payload"],
+			WorldPlannerKnowledge.OWNER: next_world_validation["payload"],
+		},
 	}
 
 
@@ -340,6 +517,15 @@ func _valid_id(value: String) -> bool:
 
 func _valid_timestamp(value: String) -> bool:
 	return not value.is_empty() and value.length() <= 64
+
+
+func _valid_incoming_link(value: Variant) -> bool:
+	return (
+		value is Dictionary
+		and value.size() == 2
+		and _valid_id(str(value.get("source_id", "")))
+		and value.get("field", "") in ["primary_encounter_table_id", "encounter_table_ids"]
+	)
 
 
 func _new_identity() -> String:

@@ -1843,6 +1843,53 @@ func _run_catalog_foundation_contract() -> void:
 		"place.north-quay",
 		"2026-07-28T11:00:01Z"
 	).get("payload", world_payload)
+	var pure_table_trash := encounter_table_model.trash_table(
+		encounter_table_payload,
+		world_payload,
+		"encounter_table.harbor-patrol",
+		"2026-07-28T11:00:02Z"
+	)
+	var pure_trashed_tables: Dictionary = pure_table_trash.get("partition_updates", {}).get(
+		EncounterTableKnowledge.OWNER, {}
+	)
+	var pure_trashed_world: Dictionary = pure_table_trash.get("partition_updates", {}).get(
+		WorldPlannerKnowledge.OWNER, {}
+	)
+	_expect(
+		pure_table_trash.get("ok", false)
+		and pure_table_trash.get("removed_link_count", -1) == 2
+		and encounter_table_model.query(pure_trashed_tables, "", 0, 50).get("total", -1) == 0
+		and encounter_table_model.query(pure_trashed_tables, "", 0, 50, true).get("rows", [])[0].get("deleted", false)
+		and pure_trashed_world.get("records", {}).get("faction.harbor", {}).get("primary_encounter_table_id", "missing") == ""
+		and pure_trashed_world.get("records", {}).get("place.north-quay", {}).get("encounter_table_ids", ["missing"]).is_empty(),
+		"Encounter Table trash atomically preserves owner truth while removing every current World Planner reference"
+	)
+	var replacement_world := pure_trashed_world.duplicate(true)
+	replacement_world["records"]["faction.harbor"]["primary_encounter_table_id"] = "encounter_table.replacement"
+	var safe_restore := encounter_table_model.restore_table(
+		pure_trashed_tables,
+		replacement_world,
+		"encounter_table.harbor-patrol",
+		"2026-07-28T11:00:03Z"
+	)
+	var safe_restored_world: Dictionary = safe_restore.get("partition_updates", {}).get(
+		WorldPlannerKnowledge.OWNER, {}
+	)
+	_expect(
+		safe_restore.get("ok", false)
+		and safe_restore.get("restored_link_count", -1) == 1
+		and safe_restored_world.get("records", {}).get("faction.harbor", {}).get("primary_encounter_table_id", "") == "encounter_table.replacement"
+		and "encounter_table.harbor-patrol" in safe_restored_world.get("records", {}).get("place.north-quay", {}).get("encounter_table_ids", []),
+		"Encounter Table restore reattaches only surviving non-conflicting World Planner relationships"
+	)
+	var damaged_table_trash := pure_trashed_tables.duplicate(true)
+	damaged_table_trash["trash"]["encounter_table.harbor-patrol"]["incoming_links"].append(
+		{"source_id": "place.north-quay", "field": "unknown"}
+	)
+	_expect(
+		not encounter_table_model.validate_payload(damaged_table_trash).get("ok", true),
+		"Encounter Table trash validation fails closed on damaged relationship recovery evidence"
+	)
 	var party_model := PartyRoster.new()
 	var party_payload := party_model.empty_payload()
 	for index in range(4):
@@ -2333,6 +2380,85 @@ func _run_catalog_foundation_contract() -> void:
 		catalog.detail_snapshot().get("record", {}).get("entries", [])[0].get("weight", -1) == 9,
 		"Encounter Table edit round-trips description and authored weight without mutating Creature truth"
 	)
+	encounter_table_state = catalog.section_snapshot("encounter_tables")
+	var referenced_table_row: Dictionary = {}
+	for row in encounter_table_state.get("rows", []):
+		if row.get("reference_id", "") == "encounter_table.harbor-patrol":
+			referenced_table_row = row
+			break
+	_expect(not referenced_table_row.is_empty(), "Encounter Table lifecycle fixture retains the referenced authored table")
+	if not referenced_table_row.is_empty():
+		catalog.call("_select_row", referenced_table_row)
+	for _attempt in 600:
+		if catalog.detail_snapshot().get("record_id", "") == "encounter_table.harbor-patrol" and catalog.detail_snapshot().get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	var table_trash_button := catalog.find_child("CatalogTrash", true, false) as Button
+	var table_delete_dialog := catalog.find_child("CatalogDeleteDialog", true, false) as ConfirmationDialog
+	var generation_before_table_trash := int(runtime_coordinator.current_session().snapshot().get("campaign_state", {}).get("generation", -1))
+	table_trash_button.pressed.emit()
+	table_delete_dialog.confirmed.emit()
+	table_delete_dialog.hide()
+	for _attempt in 1200:
+		encounter_table_state = catalog.section_snapshot("encounter_tables")
+		if encounter_table_state.get("status", "") == "ready" and encounter_table_state.get("total", -1) == 1:
+			break
+		await create_timer(0.001).timeout
+	var after_table_trash_state := catalog_store.load_state()
+	var after_table_trash_owner := catalog_store.read_partition(EncounterTableKnowledge.OWNER, after_table_trash_state)
+	var after_table_trash_world := catalog_store.read_partition(WorldPlannerKnowledge.OWNER, after_table_trash_state)
+	_expect(
+		int(after_table_trash_state.get("generation", -1)) == generation_before_table_trash + 1
+		and after_table_trash_owner.get("payload", {}).get("records", {}).get("encounter_table.harbor-patrol", {}).is_empty()
+		and after_table_trash_owner.get("payload", {}).get("trash", {}).has("encounter_table.harbor-patrol")
+		and after_table_trash_world.get("payload", {}).get("records", {}).get("faction.harbor", {}).get("primary_encounter_table_id", "missing") == ""
+		and after_table_trash_world.get("payload", {}).get("records", {}).get("place.north-quay", {}).get("encounter_table_ids", ["missing"]).is_empty(),
+		"visible Encounter Table trash commits owner lifecycle and dependent World Planner cleanup in one Campaign generation"
+	)
+	var table_trash_toggle := catalog.find_child("CatalogTrashToggle", true, false) as CheckButton
+	table_trash_toggle.button_pressed = true
+	table_trash_toggle.toggled.emit(true)
+	for _attempt in 600:
+		encounter_table_state = catalog.section_snapshot("encounter_tables")
+		if encounter_table_state.get("status", "") == "ready" and encounter_table_state.get("total", -1) == 1:
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		encounter_table_state.get("rows", [])[0].get("deleted", false),
+		"Encounter Table trash remains explicitly queryable through the bounded Catalog provider"
+	)
+	catalog.call("_select_row", encounter_table_state.get("rows", [])[0])
+	for _attempt in 600:
+		if catalog.detail_snapshot().get("status", "") == "ready" and catalog.detail_snapshot().get("deleted", false):
+			break
+		await create_timer(0.001).timeout
+	var table_restore_button := catalog.find_child("CatalogRestore", true, false) as Button
+	table_restore_button.pressed.emit()
+	for _attempt in 1200:
+		encounter_table_state = catalog.section_snapshot("encounter_tables")
+		if encounter_table_state.get("status", "") == "empty":
+			break
+		await create_timer(0.001).timeout
+	var after_table_restore_state := catalog_store.load_state()
+	var after_table_restore_owner := catalog_store.read_partition(EncounterTableKnowledge.OWNER, after_table_restore_state)
+	var after_table_restore_world := catalog_store.read_partition(WorldPlannerKnowledge.OWNER, after_table_restore_state)
+	_expect(
+		after_table_restore_owner.get("payload", {}).get("records", {}).has("encounter_table.harbor-patrol")
+		and not after_table_restore_owner.get("payload", {}).get("trash", {}).has("encounter_table.harbor-patrol")
+		and after_table_restore_world.get("payload", {}).get("records", {}).get("faction.harbor", {}).get("primary_encounter_table_id", "") == "encounter_table.harbor-patrol"
+		and "encounter_table.harbor-patrol" in after_table_restore_world.get("payload", {}).get("records", {}).get("place.north-quay", {}).get("encounter_table_ids", [])
+		and not catalog.encounter_table_command_controller.resource_snapshot().get("busy", true)
+		and catalog.encounter_table_command_controller.resource_snapshot().get("worker_handle_count", -1) == 0
+		and catalog.encounter_table_command_controller.resource_snapshot().get("ticket_count", -1) == 0,
+		"visible Encounter Table restore preserves identity, safely reattaches references, and releases command resources"
+	)
+	table_trash_toggle.button_pressed = false
+	table_trash_toggle.toggled.emit(false)
+	for _attempt in 600:
+		encounter_table_state = catalog.section_snapshot("encounter_tables")
+		if encounter_table_state.get("status", "") == "ready" and encounter_table_state.get("total", -1) == 2:
+			break
+		await create_timer(0.001).timeout
 	catalog.select_section("npcs")
 	create_button.pressed.emit()
 	var record_name := catalog.find_child("CatalogRecordName", true, false) as LineEdit

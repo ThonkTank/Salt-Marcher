@@ -20,6 +20,11 @@ Each active record contains:
 - an ordered array of unique `{creature_id, weight}` memberships;
 - creation and update timestamps.
 
+Recoverably deleted records move into the same owner partition's `trash` map.
+Each entry preserves the complete record, deletion timestamp, and the exact
+faction-primary or place-membership links removed from current World Planner
+truth. Active and deleted maps cannot contain the same stable identity.
+
 Creature and Loot identifiers are logical foreign references. The partition
 does not copy either provider's facts.
 
@@ -48,9 +53,13 @@ Campaign partitions from opening.
 
 The complete partition participates in immutable Campaign generations,
 backups, compaction, export, import, and recovery through the shared file-store
-contract. The target recoverable-deletion transition updates Encounter Table
-truth and dependent World Planner references in one Campaign commit; that
-cross-owner transition is not yet implemented.
+contract. Recoverable deletion updates Encounter Table truth and removes every
+current faction-primary and place-membership reference in the same Campaign
+commit. Restore preserves the table identity and reattaches a recorded link
+only when its World Planner source still exists and the relationship remains
+safe: a faction's primary slot must still be empty, while a surviving place may
+regain the missing set member. Conflicting or deleted endpoints remain
+untouched.
 
 Compatibility obligations begin with the first released file format. Before
 that activation point, version `v1` is disposable and has no SQLite import,

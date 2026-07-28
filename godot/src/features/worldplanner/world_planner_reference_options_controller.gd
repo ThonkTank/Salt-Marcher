@@ -156,6 +156,7 @@ func _query_encounter_tables(registry, registry_state: Dictionary, request: Dict
 		str(request["search_text"]),
 		int(request["offset"]),
 		int(request["limit"]),
+		false,
 		"name",
 		true,
 		Callable(self, "_cancelled_from_worker")

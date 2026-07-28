@@ -85,11 +85,13 @@ request, displays name and stable identity, and publishes no relationship
 until the enclosing record edit is explicitly confirmed. It never materializes
 an unbounded option list or accepts raw foreign IDs as user input.
 
-Encounter Table owns a separate serial create/update command lane and
-latest-wins detail lane. Its editor composes the same bounded Creature picker,
-then presents selected identities as a weighted ledger with one explicit
-`1..10` value per entry. Catalog never writes that owner partition directly or
-copies Creature facts into table summaries.
+Encounter Table owns a separate serial create/update/trash/restore command lane
+and latest-wins active/trash detail lane. Its editor composes the same bounded
+Creature picker, then presents selected identities as a weighted ledger with
+one explicit `1..10` value per entry. The lifecycle command atomically updates
+the Encounter Table and World Planner partitions; Catalog only requests that
+transition and never owns either payload or copies Creature facts into table
+summaries.
 
 Encounter owns a separate serial saved-plan create/update/trash/restore lane
 and latest-wins detail lane. Its bounded roster-manifest editor composes the

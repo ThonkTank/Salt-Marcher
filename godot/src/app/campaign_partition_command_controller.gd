@@ -84,9 +84,26 @@ func _prepare_on_worker(request: Dictionary) -> void:
 		result = read
 	else:
 		var payload: Dictionary = read.get("payload", _empty_payload_factory.call())
-		result = _apply_command.call(payload, request)
+		var worker_request := request.duplicate(true)
+		var supporting_payloads := {}
+		var supporting_factories := _supporting_payload_factories_for(request)
+		for owner_value in supporting_factories:
+			var owner := str(owner_value)
+			var factory: Callable = supporting_factories[owner_value]
+			var supporting_read := store.read_partition(owner, request["campaign_state"])
+			if not supporting_read.get("ok", false):
+				result = supporting_read
+				break
+			supporting_payloads[owner] = supporting_read.get("payload", factory.call())
+		if result.is_empty():
+			worker_request["supporting_payloads"] = supporting_payloads
+			result = _apply_command.call(payload, worker_request)
 	result["request"] = request.duplicate(true)
 	call_deferred("_submit_prepared_on_main", result)
+
+
+func _supporting_payload_factories_for(_request: Dictionary) -> Dictionary:
+	return {}
 
 
 func _submit_prepared_on_main(prepared: Dictionary) -> void:
@@ -99,10 +116,11 @@ func _submit_prepared_on_main(prepared: Dictionary) -> void:
 		return
 	var request: Dictionary = prepared["request"]
 	var state: Dictionary = request["campaign_state"]
+	var partition_updates: Dictionary = prepared.get("partition_updates", {_owner: prepared["payload"]})
 	var submitted: Dictionary = _runtime_coordinator.submit_current_commit(
 		int(request["activation_generation"]),
 		int(request["campaign_generation"]),
-		{_owner: prepared["payload"]},
+		partition_updates,
 		state["runtime"]
 	)
 	if not submitted.get("ok", false):
@@ -135,7 +153,7 @@ func _process(_delta: float) -> void:
 	if result.get("ok", false):
 		result["status"] = str(prepared.get("status", "completed"))
 		for field in prepared:
-			if field not in ["ok", "status", "payload", "request"]:
+			if field not in ["ok", "status", "payload", "partition_updates", "request"]:
 				result[field] = prepared[field]
 	_finish(result)
 
