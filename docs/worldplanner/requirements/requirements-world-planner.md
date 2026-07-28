@@ -110,6 +110,8 @@ Inspector surfaces so the user can:
   links, inventory-limit, Quest, and rumour truth as its own feature state.
 - NPC statblock, faction, last-place, and place-faction editing uses searchable
   bounded provider choices; it never asks the user to type a foreign stable ID.
+- Faction primary-table and place-table editing uses the same bounded
+  Encounter Table provider and remains only a World Planner-owned reference.
 - the shell exposes no separate World Planner left-bar entry and no World
   Planner-owned state pane
 - Catalog list selection opens World Planner details and existing editing

@@ -7,15 +7,18 @@ const WorldPlannerCommandController = preload("res://godot/src/features/worldpla
 const WorldPlannerDetailReadController = preload("res://godot/src/features/worldplanner/world_planner_detail_read_controller.gd")
 const WorldPlannerNarrativeThreads = preload("res://godot/src/ui/world_planner_narrative_threads.gd")
 const WorldPlannerReferencePicker = preload("res://godot/src/ui/world_planner_reference_picker.gd")
+const EncounterTableCommandController = preload("res://godot/src/features/encountertable/encounter_table_command_controller.gd")
+const EncounterTableDetailReadController = preload("res://godot/src/features/encountertable/encounter_table_detail_read_controller.gd")
+const EncounterTableEditorDialog = preload("res://godot/src/ui/encounter_table_editor_dialog.gd")
 
 const SECTIONS := [
 	{"id": "creatures", "label": "Monster", "kind": "creature", "provider": true, "mutable": false},
 	{"id": "items", "label": "Items", "kind": "item", "provider": true, "mutable": false},
 	{"id": "encounters", "label": "Encounter", "kind": "", "provider": false, "mutable": false},
-	{"id": "npcs", "label": "NPCs", "kind": "npc", "provider": true, "mutable": true},
-	{"id": "factions", "label": "Fraktionen", "kind": "faction", "provider": true, "mutable": true},
-	{"id": "places", "label": "Orte", "kind": "place", "provider": true, "mutable": true},
-	{"id": "encounter_tables", "label": "Encounter-Tabellen", "kind": "", "provider": false, "mutable": false},
+	{"id": "npcs", "label": "NPCs", "kind": "npc", "provider": true, "mutable": true, "trashable": true},
+	{"id": "factions", "label": "Fraktionen", "kind": "faction", "provider": true, "mutable": true, "trashable": true},
+	{"id": "places", "label": "Orte", "kind": "place", "provider": true, "mutable": true, "trashable": true},
+	{"id": "encounter_tables", "label": "Encounter-Tabellen", "kind": "encounter_table", "provider": true, "mutable": true},
 ]
 const PAGE_SIZE := 50
 
@@ -31,6 +34,8 @@ var runtime_coordinator
 var browse_controller: CatalogBrowseController
 var command_controller: WorldPlannerCommandController
 var detail_controller: WorldPlannerDetailReadController
+var encounter_table_command_controller: EncounterTableCommandController
+var encounter_table_detail_controller: EncounterTableDetailReadController
 var _active_section_id := "creatures"
 var _section_state: Dictionary = {}
 var _section_buttons: Dictionary = {}
@@ -68,6 +73,7 @@ var _place_editor_fields: VBoxContainer
 var _reference_picker: WorldPlannerReferencePicker
 var _reference_values: Dictionary = {}
 var _reference_summaries: Dictionary = {}
+var _encounter_table_editor: EncounterTableEditorDialog
 var _dialog_mode := ""
 var _dialog_record_id := ""
 var _dialog_kind := ""
@@ -89,12 +95,22 @@ func _ready() -> void:
 	if detail_controller == null:
 		detail_controller = WorldPlannerDetailReadController.new(data_root)
 		add_child(detail_controller)
+	if encounter_table_command_controller == null:
+		encounter_table_command_controller = EncounterTableCommandController.new(data_root, runtime_coordinator)
+		add_child(encounter_table_command_controller)
+	if encounter_table_detail_controller == null:
+		encounter_table_detail_controller = EncounterTableDetailReadController.new(data_root)
+		add_child(encounter_table_detail_controller)
 	browse_controller.query_started.connect(_on_query_started)
 	browse_controller.result_published.connect(_on_result_published)
 	command_controller.command_started.connect(_on_command_started)
 	command_controller.command_completed.connect(_on_command_completed)
 	detail_controller.query_started.connect(_on_detail_query_started)
 	detail_controller.result_published.connect(_on_detail_result_published)
+	encounter_table_command_controller.command_started.connect(_on_command_started)
+	encounter_table_command_controller.command_completed.connect(_on_command_completed)
+	encounter_table_detail_controller.query_started.connect(_on_encounter_table_detail_query_started)
+	encounter_table_detail_controller.result_published.connect(_on_encounter_table_detail_result_published)
 	for section in SECTIONS:
 		_section_state[section["id"]] = {
 			"draft": "",
@@ -127,10 +143,14 @@ func select_section(section_id: String) -> Dictionary:
 	var state: Dictionary = _section_state[section_id]
 	_search.text = str(state["draft"])
 	_search.placeholder_text = "%s durchsuchen" % section["label"]
-	_create_button.text = "%s erstellen" % section["label"]
-	_trash_toggle.visible = bool(section["mutable"])
+	_create_button.text = (
+		"Encounter-Tabelle erstellen"
+		if section_id == "encounter_tables"
+		else "%s erstellen" % section["label"]
+	)
+	_trash_toggle.visible = bool(section.get("trashable", false))
 	_trash_toggle.set_pressed_no_signal(bool(state["trash"]))
-	_create_button.disabled = bool(state["trash"]) or command_controller.busy()
+	_create_button.disabled = bool(state["trash"]) or _any_command_busy()
 	_render_selected_detail()
 	_render_table_header()
 	if not section["provider"]:
@@ -384,10 +404,24 @@ func _build_record_dialogs() -> void:
 	_faction_editor_fields.add_theme_constant_override("separation", 8)
 	fields.add_child(_faction_editor_fields)
 	_record_faction_disposition = _add_disposition_editor(_faction_editor_fields, "CatalogRecordFactionDisposition")
+	_add_reference_editor(
+		_faction_editor_fields,
+		"Primäre Encounter-Tabelle",
+		"primary_encounter_table_id",
+		"encounter_table",
+		false
+	)
 	_place_editor_fields = VBoxContainer.new()
 	_place_editor_fields.add_theme_constant_override("separation", 8)
 	fields.add_child(_place_editor_fields)
 	_add_reference_editor(_place_editor_fields, "Verknüpfte Fraktionen", "faction_ids", "faction", true)
+	_add_reference_editor(
+		_place_editor_fields,
+		"Encounter-Tabellen",
+		"encounter_table_ids",
+		"encounter_table",
+		true
+	)
 	_delete_dialog = ConfirmationDialog.new()
 	_delete_dialog.name = "CatalogDeleteDialog"
 	_delete_dialog.title = "In Papierkorb verschieben?"
@@ -405,6 +439,10 @@ func _build_record_dialogs() -> void:
 	_reference_picker.data_root = data_root
 	_reference_picker.references_selected.connect(_on_references_selected)
 	_record_dialog.add_child(_reference_picker)
+	_encounter_table_editor = EncounterTableEditorDialog.new()
+	_encounter_table_editor.data_root = data_root
+	_encounter_table_editor.table_submitted.connect(_on_encounter_table_submitted)
+	add_child(_encounter_table_editor)
 
 
 func _add_multiline_editor(parent: VBoxContainer, node_name: String, label_text: String) -> TextEdit:
@@ -603,10 +641,46 @@ func _on_detail_result_published(result: Dictionary) -> void:
 	}
 	_detail.text = _format_worldplanner_detail(record)
 	var deleted := bool(_selected_detail["deleted"])
-	_edit_button.disabled = command_controller.busy() or deleted
+	_edit_button.disabled = _any_command_busy() or deleted
 	_lifecycle_button.visible = record.get("kind", "") == "npc" and not deleted
 	_lifecycle_button.text = "Reaktivieren" if record.get("lifecycle_status", "") == "defeated" else "Als besiegt markieren"
-	_lifecycle_button.disabled = command_controller.busy()
+	_lifecycle_button.disabled = _any_command_busy()
+
+
+func _on_encounter_table_detail_query_started(request: Dictionary) -> void:
+	if str(request.get("record_id", "")) != str(_selected_detail.get("record_id", "")):
+		return
+	_selected_detail["status"] = "loading"
+	_edit_button.disabled = true
+
+
+func _on_encounter_table_detail_result_published(result: Dictionary) -> void:
+	var record_id := str(result.get("request", {}).get("record_id", ""))
+	if record_id.is_empty() or record_id != str(_selected_detail.get("record_id", "")):
+		return
+	if not result.get("ok", false):
+		_selected_detail = {
+			"status": "failed",
+			"record_id": record_id,
+			"error": str(result.get("error", "Encounter-Table-Details konnten nicht geladen werden.")),
+		}
+		_detail.text = _escape_bbcode(str(_selected_detail["error"]))
+		_edit_button.disabled = true
+		return
+	var record: Dictionary = result.get("record", {}).duplicate(true)
+	_selected_detail = {
+		"status": "ready",
+		"record_id": record_id,
+		"record": record,
+		"entry_labels": result.get("entry_labels", {}).duplicate(true),
+		"missing_definition_ids": result.get("missing_definition_ids", []).duplicate(),
+		"deleted": false,
+	}
+	_detail.text = _format_encounter_table_detail(record, _selected_detail["entry_labels"])
+	if not _selected_detail["missing_definition_ids"].is_empty():
+		_detail.text += "\n\n%d fehlende Creature-Referenzen können im Editor repariert werden." % _selected_detail["missing_definition_ids"].size()
+	_edit_button.disabled = _any_command_busy()
+	_lifecycle_button.visible = false
 
 
 func _render_state() -> void:
@@ -725,20 +799,25 @@ func _select_row(row: Dictionary) -> void:
 	var section := _section(_active_section_id)
 	_detail_actions.visible = bool(section.get("mutable", false))
 	_edit_button.visible = not bool(row.get("deleted", false))
-	_trash_button.visible = not bool(row.get("deleted", false))
-	_restore_button.visible = bool(row.get("deleted", false))
+	_trash_button.visible = bool(section.get("trashable", false)) and not bool(row.get("deleted", false))
+	_restore_button.visible = bool(section.get("trashable", false)) and bool(row.get("deleted", false))
 	_lifecycle_button.visible = false
-	_set_action_buttons_disabled(command_controller.busy())
-	_narrative_threads.show_subject(row)
+	_set_action_buttons_disabled(_any_command_busy())
 	_selected_detail = {
 		"status": "loading",
 		"record_id": _row_id(row),
 		"deleted": bool(row.get("deleted", false)),
 	}
-	if bool(section.get("mutable", false)):
+	if _active_section_id == "encounter_tables":
+		_narrative_threads.clear_subject()
+		_edit_button.disabled = true
+		encounter_table_detail_controller.query(_row_id(row))
+	elif bool(section.get("mutable", false)):
+		_narrative_threads.show_subject(row)
 		_edit_button.disabled = true
 		detail_controller.query(_row_id(row), bool(row.get("deleted", false)))
 	else:
+		_narrative_threads.clear_subject()
 		_selected_detail.clear()
 
 
@@ -746,6 +825,9 @@ func _on_create_requested() -> void:
 	var section := _section(_active_section_id)
 	if not section.get("mutable", false):
 		_footer.text = "Erstellen ist für %s noch nicht verfügbar." % section["label"]
+		return
+	if _active_section_id == "encounter_tables":
+		_encounter_table_editor.open_create()
 		return
 	_dialog_mode = "create"
 	_dialog_record_id = ""
@@ -763,7 +845,10 @@ func _on_edit_requested() -> void:
 	var row := _selected_row()
 	var record: Dictionary = _selected_detail.get("record", {})
 	if row.is_empty() or record.is_empty():
-		_show_command_failure({"error": "Die vollständigen World-Planner-Details werden noch geladen."})
+		_show_command_failure({"error": "Die vollständigen Provider-Details werden noch geladen."})
+		return
+	if _active_section_id == "encounter_tables":
+		_encounter_table_editor.open_edit(record, _selected_detail.get("entry_labels", {}))
 		return
 	_dialog_mode = "edit"
 	_dialog_record_id = _row_id(row)
@@ -792,8 +877,10 @@ func _on_record_dialog_confirmed() -> void:
 		})
 	elif _dialog_kind == "faction":
 		fields["disposition_base"] = int(_record_faction_disposition.value)
+		fields["primary_encounter_table_id"] = _single_reference("primary_encounter_table_id")
 	elif _dialog_kind == "place":
 		fields["faction_ids"] = _reference_values.get("faction_ids", []).duplicate()
+		fields["encounter_table_ids"] = _reference_values.get("encounter_table_ids", []).duplicate()
 	var started: Dictionary
 	if _dialog_mode == "create":
 		started = command_controller.create_record(
@@ -807,6 +894,22 @@ func _on_record_dialog_confirmed() -> void:
 			_dialog_record_id,
 			fields
 		)
+	if not started.get("ok", false):
+		_show_command_failure(started)
+
+
+func _on_encounter_table_submitted(
+	mode: String,
+	record_id: String,
+	name_text: String,
+	description: String,
+	entries: Array
+) -> void:
+	var started := (
+		encounter_table_command_controller.create_table(name_text, description, entries)
+		if mode == "create"
+		else encounter_table_command_controller.update_table(record_id, name_text, description, entries)
+	)
 	if not started.get("ok", false):
 		_show_command_failure(started)
 
@@ -875,8 +978,12 @@ func _prepare_typed_editor(record: Dictionary, kind: String) -> void:
 		_reference_values["last_place_id"] = _as_reference_array(record.get("last_place_id", ""))
 	elif kind == "faction":
 		_record_faction_disposition.value = float(record.get("disposition_base", 0))
+		_reference_values["primary_encounter_table_id"] = _as_reference_array(
+			record.get("primary_encounter_table_id", "")
+		)
 	elif kind == "place":
 		_reference_values["faction_ids"] = record.get("faction_ids", []).duplicate()
+		_reference_values["encounter_table_ids"] = record.get("encounter_table_ids", []).duplicate()
 	_render_reference_summaries()
 
 
@@ -915,7 +1022,7 @@ func _single_reference(field_key: String) -> String:
 
 func _on_trash_toggled(enabled: bool) -> void:
 	var section := _section(_active_section_id)
-	if not section.get("mutable", false):
+	if not section.get("trashable", false):
 		return
 	var state: Dictionary = _section_state[_active_section_id]
 	state["trash"] = enabled
@@ -924,7 +1031,7 @@ func _on_trash_toggled(enabled: bool) -> void:
 	state["page"] = 0
 	state["status"] = "uninitialized"
 	_section_state[_active_section_id] = state
-	_create_button.disabled = enabled or command_controller.busy()
+	_create_button.disabled = enabled or _any_command_busy()
 	_reset_detail()
 	_submit_current_query()
 
@@ -947,7 +1054,7 @@ func _on_command_completed(result: Dictionary) -> void:
 	if _is_narrative_operation(str(result.get("request", {}).get("operation", ""))):
 		var active_state: Dictionary = _section_state[_active_section_id]
 		_create_button.disabled = bool(active_state["trash"])
-		_set_action_buttons_disabled(command_controller.busy())
+		_set_action_buttons_disabled(_any_command_busy())
 		return
 	var section_id := _command_section_id if _section_state.has(_command_section_id) else _active_section_id
 	var state: Dictionary = _section_state[section_id]
@@ -969,7 +1076,7 @@ func _on_command_completed(result: Dictionary) -> void:
 	_section_state[section_id] = state
 	_command_section_id = ""
 	var active_state: Dictionary = _section_state[_active_section_id]
-	_create_button.disabled = bool(active_state["trash"])
+	_create_button.disabled = bool(active_state["trash"]) or _any_command_busy()
 	if section_id == _active_section_id and is_visible_in_tree():
 		_reset_detail()
 		_submit_current_query()
@@ -1008,6 +1115,7 @@ func _kind_label(kind: String) -> String:
 		"npc": "NPC",
 		"faction": "Fraktion",
 		"place": "Ort",
+		"encounter_table": "Encounter-Tabelle",
 	}.get(kind, kind)
 
 
@@ -1036,6 +1144,8 @@ func _reset_detail() -> void:
 	_selected_detail.clear()
 	if detail_controller != null:
 		detail_controller.cancel_all()
+	if encounter_table_detail_controller != null:
+		encounter_table_detail_controller.cancel_all()
 	if _narrative_threads != null:
 		_narrative_threads.clear_subject()
 
@@ -1045,6 +1155,37 @@ func _set_action_buttons_disabled(disabled: bool) -> void:
 	_trash_button.disabled = disabled
 	_restore_button.disabled = disabled
 	_lifecycle_button.disabled = disabled
+
+
+func _any_command_busy() -> bool:
+	return (
+		(command_controller != null and command_controller.busy())
+		or (encounter_table_command_controller != null and encounter_table_command_controller.busy())
+	)
+
+
+func _format_encounter_table_detail(record: Dictionary, entry_labels: Dictionary = {}) -> String:
+	var lines: Array[String] = [
+		"[font_size=22]%s[/font_size]" % _escape_bbcode(str(record["name"])),
+		_escape_bbcode(str(record["record_id"])),
+		"%d gewichtete Monster" % record.get("entries", []).size(),
+	]
+	_append_named_text(lines, "Beschreibung", str(record.get("description", "")))
+	if not str(record.get("linked_loot_table_id", "")).is_empty():
+		lines.append("")
+		lines.append("Verknüpfte Loot-Tabelle: %s" % _display_reference(str(record["linked_loot_table_id"])))
+	if not record.get("entries", []).is_empty():
+		lines.append("")
+		lines.append("[color=#d2a743]GEWICHTETE QUELLEN[/color]")
+		for entry in record["entries"]:
+			var creature_id := str(entry["creature_id"])
+			var display_name := str(entry_labels.get(creature_id, creature_id))
+			lines.append("%s · %s · Gewicht %d" % [
+				_escape_bbcode(display_name),
+				_escape_bbcode(creature_id),
+				int(entry["weight"]),
+			])
+	return "\n".join(lines)
 
 
 func _format_worldplanner_detail(record: Dictionary) -> String:

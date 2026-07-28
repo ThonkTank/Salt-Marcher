@@ -180,9 +180,15 @@ func read_definition(definition_id: String, generation: int) -> Dictionary:
 	return _read_indexed_definition(definition_id, definitions[definition_id])
 
 
-func definitions_for_refs(definition_refs: Array, generation: int) -> Dictionary:
+func definitions_for_refs(
+	definition_refs: Array,
+	generation: int,
+	cancellation_callback: Callable = Callable()
+) -> Dictionary:
 	var unique_refs := {}
 	for value in definition_refs:
+		if _cancelled(cancellation_callback):
+			return _cancelled_failure()
 		var definition_id := str(value)
 		if not _valid_id(definition_id) or unique_refs.has(definition_id):
 			return _failure("Campaign enthält eine ungültige oder doppelte Shared-Definition-Referenz.")
@@ -191,11 +197,45 @@ func definitions_for_refs(definition_refs: Array, generation: int) -> Dictionary
 	var ids: Array = unique_refs.keys()
 	ids.sort()
 	for definition_id_value in ids:
+		if _cancelled(cancellation_callback):
+			return _cancelled_failure()
 		var definition := read_definition(str(definition_id_value), generation)
 		if not definition.get("ok", false):
 			return definition
 		result.append(definition["definition"])
 	return {"ok": true, "definitions": result}
+
+
+func reference_labels(
+	definition_refs: Array,
+	generation: int,
+	expected_kind: String = "",
+	cancellation_callback: Callable = Callable()
+) -> Dictionary:
+	if not expected_kind.is_empty() and not _valid_kind(expected_kind):
+		return _failure("Shared-Definition-Referenztyp ist ungültig.")
+	var state := load_generation(generation)
+	if not state.get("ok", false):
+		return state
+	var labels := {}
+	var missing: Array = []
+	for value in definition_refs:
+		if _cancelled(cancellation_callback):
+			return _cancelled_failure()
+		var definition_id := str(value)
+		if not _valid_id(definition_id) or labels.has(definition_id):
+			return _failure("Referenzliste enthält eine ungültige oder doppelte Shared-Definition-Identität.")
+		var reference: Dictionary = state["definitions"].get(definition_id, {})
+		if reference.is_empty() or (not expected_kind.is_empty() and reference.get("kind", "") != expected_kind):
+			labels[definition_id] = "Fehlend · %s" % definition_id
+			missing.append(definition_id)
+		else:
+			labels[definition_id] = str(reference.get("name", definition_id))
+	return {
+		"ok": true,
+		"labels": labels,
+		"missing_definition_ids": missing,
+	}
 
 
 func query_catalog(

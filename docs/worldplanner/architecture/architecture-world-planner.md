@@ -86,10 +86,11 @@ Creature and Encounter Table truth.
 The reference-option lane serves one visible picker at a time with one active
 and one latest pending query. Creature choices come from the registry-selected
 Shared-Definition generation; faction and place choices come from the active
-Campaign's World Planner partition. Both are sorted and paged before UI node
-creation and re-confirm their registry generation before publication. The
-picker retains only draft IDs, and the record command publishes the complete
-owner candidate after explicit confirmation.
+Campaign's World Planner partition; Encounter Table choices come from their
+own active-Campaign partition. All are sorted and paged before UI node creation
+and re-confirm their registry generation before publication. The picker retains
+only draft IDs, and the record command publishes the complete owner candidate
+after explicit confirmation.
 
 ## Current Migration State
 
@@ -106,10 +107,11 @@ field. Its editor owns name/general notes, NPC appearance/behavior/history,
 NPC lifecycle and disposition, and faction disposition. Lifecycle change is an
 explicit confirmed command and keeps stable selection. Creature and internal
 relationship pickers now cover NPC Creature statblock, faction, last place, and
-place-faction links without raw ID entry. Encounter-Table selection, faction
-inventory editing, and destination handoffs remain pending. The legacy Java
-owner is not deleted until that parity, acceptance, and deletion gate are
-complete.
+place-faction links without raw ID entry. They also cover a faction's primary
+Encounter Table and a place's Encounter Table set through the separate
+provider. Faction inventory editing and destination handoffs remain pending.
+The legacy Java owner is not deleted until that parity, acceptance, and
+deletion gate are complete.
 
 ## Permanent Constraints
 

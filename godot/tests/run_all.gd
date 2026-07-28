@@ -17,6 +17,9 @@ const WorldPlannerNarrativeReadController = preload("res://godot/src/features/wo
 const WorldPlannerReferenceOptionsController = preload("res://godot/src/features/worldplanner/world_planner_reference_options_controller.gd")
 const WorldPlannerNarrativeThreads = preload("res://godot/src/ui/world_planner_narrative_threads.gd")
 const WorldPlannerReferencePicker = preload("res://godot/src/ui/world_planner_reference_picker.gd")
+const EncounterTableKnowledge = preload("res://godot/src/features/encountertable/encounter_table_knowledge.gd")
+const EncounterTableCandidateController = preload("res://godot/src/features/encountertable/encounter_table_candidate_controller.gd")
+const EncounterTableEditorDialog = preload("res://godot/src/ui/encounter_table_editor_dialog.gd")
 const CampaignRuntimeCoordinator = preload("res://godot/src/app/campaign_runtime_coordinator.gd")
 const CampaignRuntimeSession = preload("res://godot/src/app/campaign_runtime_session.gd")
 const CampaignPortabilityController = preload("res://godot/src/app/campaign_portability_controller.gd")
@@ -675,8 +678,28 @@ func _run_catalog_foundation_contract() -> void:
 	var registry := FileCampaignRegistry.new(data_root)
 	var definitions := SharedDefinitionStore.new(data_root)
 	var catalog_definitions: Array = [
-		{"definition_id": "creature.wolf", "kind": "creature", "name": "Wolf", "content": {"armor_class": 12}},
-		{"definition_id": "creature.worg", "kind": "creature", "name": "Worg", "content": {"armor_class": 13}},
+		{
+			"definition_id": "creature.wolf",
+			"kind": "creature",
+			"name": "Wolf",
+			"content": {
+				"creature_type": "beast", "challenge_rating": "1/4", "xp": 50,
+				"hit_points": 11, "hit_dice_count": 2, "hit_dice_sides": 8,
+				"hit_dice_modifier": 2, "armor_class": 12, "initiative_bonus": 2,
+				"legendary_action_count": 0,
+			},
+		},
+		{
+			"definition_id": "creature.worg",
+			"kind": "creature",
+			"name": "Worg",
+			"content": {
+				"creature_type": "monstrosity", "challenge_rating": "1/2", "xp": 100,
+				"hit_points": 26, "hit_dice_count": 4, "hit_dice_sides": 10,
+				"hit_dice_modifier": 4, "armor_class": 13, "initiative_bonus": 1,
+				"legendary_action_count": 0,
+			},
+		},
 		{"definition_id": "item.rope", "kind": "item", "name": "Rope", "content": {"weight": 10}},
 	]
 	for index in range(55):
@@ -693,16 +716,52 @@ func _run_catalog_foundation_contract() -> void:
 	var campaign_created := registry.create_campaign("Katalog Campaign")
 	_expect(campaign_created.get("ok", false), "Catalog fixture creates an active Campaign for Campaign-owned providers")
 	var catalog_campaign_id := str(campaign_created.get("campaign_id", ""))
+	var encounter_table_model := EncounterTableKnowledge.new()
+	var encounter_table_payload := encounter_table_model.empty_payload()
+	var seeded_table := encounter_table_model.create_table(
+		encounter_table_payload,
+		"Hafenpatrouille",
+		{
+			"description": "Gewichtete Begegnungen zwischen Kai und Zolltor.",
+			"entries": [
+				{"creature_id": "creature.wolf", "weight": 2},
+				{"creature_id": "creature.worg", "weight": 7},
+			],
+		},
+		"encounter_table.harbor-patrol",
+		"2026-07-28T10:59:59Z"
+	)
+	_expect(seeded_table.get("ok", false), "Encounter Table owner accepts weighted Creature membership")
+	encounter_table_payload = seeded_table.get("payload", encounter_table_payload)
+	_expect(
+		not encounter_table_model.update_table(
+			encounter_table_payload,
+			"encounter_table.harbor-patrol",
+			{"entries": [
+				{"creature_id": "creature.wolf", "weight": 2},
+				{"creature_id": "creature.wolf", "weight": 3},
+			]}
+		).get("ok", true),
+		"Encounter Table owner rejects duplicate Creature membership instead of changing weight meaning"
+	)
 	var world_model := WorldPlannerKnowledge.new()
 	var world_payload := world_model.empty_payload()
 	world_payload = world_model.create_record(
-		world_payload, "faction", "Hafenrat", {}, "faction.harbor", "2026-07-28T11:00:00Z"
+		world_payload,
+		"faction",
+		"Hafenrat",
+		{"primary_encounter_table_id": "encounter_table.harbor-patrol"},
+		"faction.harbor",
+		"2026-07-28T11:00:00Z"
 	).get("payload", world_payload)
 	world_payload = world_model.create_record(
 		world_payload,
 		"place",
 		"Nordkai",
-		{"faction_ids": ["faction.harbor"]},
+		{
+			"faction_ids": ["faction.harbor"],
+			"encounter_table_ids": ["encounter_table.harbor-patrol"],
+		},
 		"place.north-quay",
 		"2026-07-28T11:00:01Z"
 	).get("payload", world_payload)
@@ -710,10 +769,13 @@ func _run_catalog_foundation_contract() -> void:
 	var catalog_state := catalog_store.load_state()
 	var seeded_world := catalog_store.commit(
 		int(catalog_state["generation"]),
-		{WorldPlannerKnowledge.OWNER: world_payload},
+		{
+			WorldPlannerKnowledge.OWNER: world_payload,
+			EncounterTableKnowledge.OWNER: encounter_table_payload,
+		},
 		catalog_state["runtime"]
 	)
-	_expect(seeded_world.get("ok", false), "Catalog fixture seeds provider-owned faction and place choices")
+	_expect(seeded_world.get("ok", false), "Catalog fixture atomically seeds World Planner and Encounter Table owners")
 	var runtime_coordinator := CampaignRuntimeCoordinator.new(data_root, registry)
 	_expect(runtime_coordinator.open_durable_active().get("ok", false), "Catalog fixture opens its active Campaign writer")
 	var first_page := definitions.query_catalog(int(prepared["generation"]), "creature", "wo", 0, 1)
@@ -737,6 +799,16 @@ func _run_catalog_foundation_contract() -> void:
 	_expect(
 		not definitions.query_catalog(int(prepared["generation"]), "creature", "", 0, 50, "unknown").get("ok", true),
 		"Shared Definitions reject an unknown Catalog sort key"
+	)
+	var creature_labels := definitions.reference_labels(
+		["creature.wolf", "creature.missing"],
+		int(prepared["generation"]),
+		"creature"
+	)
+	_expect(
+		creature_labels.get("labels", {}).get("creature.wolf", "") == "Wolf"
+		and creature_labels.get("missing_definition_ids", []) == ["creature.missing"],
+		"one metadata read resolves visible provider names while preserving repairable missing identities"
 	)
 
 	var controller := CatalogBrowseController.new(data_root, registry)
@@ -799,6 +871,17 @@ func _run_catalog_foundation_contract() -> void:
 		and option_results[0].get("rows", [])[0].get("reference_id", "") == "faction.harbor",
 		"reference options query active Campaign-owned entities without exposing storage"
 	)
+	option_results.clear()
+	option_controller.query("world.encounter-table", "encounter_table", "hafen")
+	for _attempt in 600:
+		if option_results.size() == 1:
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		option_results.size() == 1
+		and option_results[0].get("rows", [])[0].get("reference_id", "") == "encounter_table.harbor-patrol",
+		"reference options query the Campaign-owned Encounter Table provider"
+	)
 	var option_resources := option_controller.resource_snapshot()
 	_expect(
 		option_resources.get("active_count", -1) == 0
@@ -807,6 +890,40 @@ func _run_catalog_foundation_contract() -> void:
 		"reference option lane releases worker and pending state"
 	)
 	option_controller.queue_free()
+	await process_frame
+	var candidate_controller := EncounterTableCandidateController.new(data_root)
+	root.add_child(candidate_controller)
+	var candidate_results: Array = []
+	candidate_controller.result_published.connect(func(result: Dictionary) -> void:
+		candidate_results.append(result.duplicate(true))
+	)
+	var broad_candidates := candidate_controller.query(["encounter_table.harbor-patrol"], 0)
+	var narrow_candidates := candidate_controller.query(["encounter_table.harbor-patrol"], 75)
+	_expect(
+		broad_candidates.get("status", "") == "started" and narrow_candidates.get("status", "") == "queued",
+		"Encounter Table candidates admit one cross-owner read and one latest pending evaluation"
+	)
+	for _attempt in 600:
+		if candidate_results.size() == 1 and not candidate_controller.is_active():
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		candidate_results.size() == 1
+		and candidate_results[0].get("rows", []).size() == 1
+		and candidate_results[0].get("rows", [])[0].get("creature_id", "") == "creature.wolf"
+		and candidate_results[0].get("rows", [])[0].get("weight", -1) == 2
+		and candidate_results[0].get("rows", [])[0].get("table_weights", {}).get("encounter_table.harbor-patrol", -1) == 2
+		and candidate_results[0].get("rows", [])[0].get("xp", -1) == 50,
+		"latest candidate evaluation resolves exact Creature facts, XP ceiling, and authored table weight"
+	)
+	var candidate_resources := candidate_controller.resource_snapshot()
+	_expect(
+		candidate_resources.get("active_count", -1) == 0
+		and candidate_resources.get("pending_count", -1) == 0
+		and candidate_resources.get("worker_handle_count", -1) == 0,
+		"Encounter Table candidate lane releases worker and pending state"
+	)
+	candidate_controller.queue_free()
 	await process_frame
 	var item_reference: Dictionary = prepared.get("state", {}).get("definitions", {}).get("item.rope", {})
 	var damaged_item_path := data_root + "/installation/shared-definitions/" + str(item_reference.get("path", ""))
@@ -922,6 +1039,126 @@ func _run_catalog_foundation_contract() -> void:
 		await create_timer(0.001).timeout
 	_expect(catalog.section_snapshot("npcs").get("status", "") == "empty", "empty Campaign NPC provider is a ready empty state")
 	var create_button := catalog.find_child("CatalogCreate", true, false) as Button
+	var table_selection := catalog.select_section("encounter_tables")
+	_expect(table_selection.get("status", "") == "selected", "seventh Katalog section routes to its Campaign-owned Encounter Table provider")
+	for _attempt in 600:
+		if catalog.section_snapshot("encounter_tables").get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	var encounter_table_state := catalog.section_snapshot("encounter_tables")
+	_expect(
+		encounter_table_state.get("total", -1) == 1
+		and encounter_table_state.get("rows", [])[0].get("reference_id", "") == "encounter_table.harbor-patrol"
+		and encounter_table_state.get("rows", [])[0].get("entry_count", -1) == 2,
+		"Encounter Table Catalog publishes bounded summaries without copying Creature facts"
+	)
+	catalog.call("_select_row", encounter_table_state.get("rows", [])[0])
+	for _attempt in 600:
+		if catalog.detail_snapshot().get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		catalog.detail_snapshot().get("record", {}).get("entries", []).size() == 2,
+		"Encounter Table Inspector loads complete weighted owner detail through its own read lane"
+	)
+	create_button.pressed.emit()
+	var encounter_table_editor := catalog.find_child("EncounterTableEditorDialog", true, false) as EncounterTableEditorDialog
+	var large_editor_entries: Array = []
+	for index in range(121):
+		large_editor_entries.append({"creature_id": "creature.ledger.%03d" % index, "weight": 1})
+	encounter_table_editor.open_edit({
+		"record_id": "encounter_table.large-ledger",
+		"name": "Große Quellenliste",
+		"description": "",
+		"entries": large_editor_entries,
+	})
+	await process_frame
+	var entry_list := encounter_table_editor.find_child("EncounterTableEntries", true, false) as VBoxContainer
+	var entry_next := encounter_table_editor.find_child("EncounterTableEntriesNext", true, false) as Button
+	_expect(
+		entry_list.get_child_count() == 50
+		and entry_next.visible
+		and encounter_table_editor.snapshot().get("entries", []).size() == 121,
+		"weighted editor retains an unbounded authored set while materializing only one 50-row page"
+	)
+	entry_next.pressed.emit()
+	await process_frame
+	_expect(
+		entry_list.get_child_count() == 50,
+		"weighted editor pages without constructing a hidden second result tree"
+	)
+	encounter_table_editor.open_create()
+	var table_name := encounter_table_editor.find_child("EncounterTableName", true, false) as LineEdit
+	var table_description := encounter_table_editor.find_child("EncounterTableDescription", true, false) as TextEdit
+	table_name.text = "Küstenwache"
+	table_name.text_changed.emit(table_name.text)
+	table_description.text = "Patrouillen entlang der äußeren Mole."
+	var choose_table_creatures := encounter_table_editor.find_child("EncounterTableChooseCreatures", true, false) as Button
+	choose_table_creatures.pressed.emit()
+	var table_creature_picker := encounter_table_editor.find_child("WorldPlannerReferencePicker", true, false) as WorldPlannerReferencePicker
+	for _attempt in 600:
+		if table_creature_picker.snapshot().get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	var table_picker_search := table_creature_picker.find_child("ReferencePickerSearch", true, false) as LineEdit
+	table_picker_search.text = "worg"
+	table_picker_search.text_changed.emit(table_picker_search.text)
+	table_picker_search.text_submitted.emit(table_picker_search.text)
+	for _attempt in 600:
+		if table_creature_picker.snapshot().get("status", "") == "ready" and table_creature_picker.snapshot().get("rows", []).size() == 1:
+			break
+		await create_timer(0.001).timeout
+	var table_picker_results := table_creature_picker.find_child("ReferencePickerResults", true, false) as VBoxContainer
+	var table_creature_choice := table_picker_results.find_child("ReferencePickerChoice", true, false) as CheckButton
+	if table_creature_choice != null:
+		table_creature_choice.toggled.emit(true)
+	table_creature_picker.confirmed.emit()
+	table_creature_picker.hide()
+	var table_weight := encounter_table_editor.find_child("EncounterTableEntryWeight", true, false) as SpinBox
+	_expect(table_weight != null, "Encounter Table editor turns provider selection into one visible weighted ledger row")
+	if table_weight != null:
+		table_weight.value = 8
+		table_weight.value_changed.emit(8)
+	encounter_table_editor.confirmed.emit()
+	encounter_table_editor.hide()
+	for _attempt in 1200:
+		encounter_table_state = catalog.section_snapshot("encounter_tables")
+		if encounter_table_state.get("status", "") == "ready" and encounter_table_state.get("total", -1) == 2:
+			break
+		await create_timer(0.001).timeout
+	var created_table_row: Dictionary = {}
+	for row in encounter_table_state.get("rows", []):
+		if row.get("name", "") == "Küstenwache":
+			created_table_row = row
+			break
+	_expect(not created_table_row.is_empty(), "Encounter Table create publishes a stable Campaign-owned record through the serial writer")
+	if not created_table_row.is_empty():
+		catalog.call("_select_row", created_table_row)
+	for _attempt in 600:
+		if catalog.detail_snapshot().get("record", {}).get("name", "") == "Küstenwache":
+			break
+		await create_timer(0.001).timeout
+	var table_edit_button := catalog.find_child("CatalogEdit", true, false) as Button
+	table_edit_button.pressed.emit()
+	table_description.text = "Patrouillen entlang der äußeren Mole und des Leuchtfeuers."
+	table_weight = encounter_table_editor.find_child("EncounterTableEntryWeight", true, false) as SpinBox
+	if table_weight != null:
+		table_weight.value = 9
+		table_weight.value_changed.emit(9)
+	encounter_table_editor.confirmed.emit()
+	encounter_table_editor.hide()
+	for _attempt in 1200:
+		if (
+			catalog.detail_snapshot().get("record", {}).get("description", "")
+			== "Patrouillen entlang der äußeren Mole und des Leuchtfeuers."
+		):
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		catalog.detail_snapshot().get("record", {}).get("entries", [])[0].get("weight", -1) == 9,
+		"Encounter Table edit round-trips description and authored weight without mutating Creature truth"
+	)
+	catalog.select_section("npcs")
 	create_button.pressed.emit()
 	var record_name := catalog.find_child("CatalogRecordName", true, false) as LineEdit
 	var record_notes := catalog.find_child("CatalogRecordNotes", true, false) as TextEdit
@@ -1217,8 +1454,9 @@ func _run_catalog_foundation_contract() -> void:
 			break
 		await create_timer(0.001).timeout
 	_expect(
-		catalog.detail_snapshot().get("record", {}).get("faction_ids", []) == ["faction.harbor"],
-		"place detail reads its existing provider-owned faction relationship"
+		catalog.detail_snapshot().get("record", {}).get("faction_ids", []) == ["faction.harbor"]
+		and catalog.detail_snapshot().get("record", {}).get("encounter_table_ids", []) == ["encounter_table.harbor-patrol"],
+		"place detail reads existing faction and Encounter Table provider relationships"
 	)
 	edit_button.pressed.emit()
 	var choose_place_factions := catalog.find_child("CatalogReferenceChooseFactionIds", true, false) as Button
@@ -1231,6 +1469,15 @@ func _run_catalog_foundation_contract() -> void:
 	clear_references.pressed.emit()
 	reference_picker.confirmed.emit()
 	reference_picker.hide()
+	var choose_place_tables := catalog.find_child("CatalogReferenceChooseEncounterTableIds", true, false) as Button
+	choose_place_tables.pressed.emit()
+	for _attempt in 600:
+		if reference_picker.snapshot().get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	clear_references.pressed.emit()
+	reference_picker.confirmed.emit()
+	reference_picker.hide()
 	record_dialog.confirmed.emit()
 	record_dialog.hide()
 	for _attempt in 1200:
@@ -1238,8 +1485,9 @@ func _run_catalog_foundation_contract() -> void:
 			break
 		await create_timer(0.001).timeout
 	_expect(
-		catalog.detail_snapshot().get("record", {}).get("faction_ids", ["pending"]).is_empty(),
-		"multi-reference picker removes a place-faction relationship without deleting either endpoint"
+		catalog.detail_snapshot().get("record", {}).get("faction_ids", ["pending"]).is_empty()
+		and catalog.detail_snapshot().get("record", {}).get("encounter_table_ids", ["pending"]).is_empty(),
+		"multi-reference pickers remove place-faction and place-table relationships without deleting endpoints"
 	)
 	edit_button.pressed.emit()
 	choose_place_factions.pressed.emit()
@@ -1253,15 +1501,101 @@ func _run_catalog_foundation_contract() -> void:
 		faction_choice.toggled.emit(true)
 	reference_picker.confirmed.emit()
 	reference_picker.hide()
+	choose_place_tables.pressed.emit()
+	for _attempt in 600:
+		if reference_picker.snapshot().get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	var encounter_table_choice: CheckButton
+	picker_results = reference_picker.find_child("ReferencePickerResults", true, false) as VBoxContainer
+	for choice in picker_results.find_children("ReferencePickerChoice", "CheckButton", true, false):
+		if choice.text.contains("Hafenpatrouille"):
+			encounter_table_choice = choice
+			break
+	_expect(encounter_table_choice != null, "place Encounter Table picker renders Campaign-owned names and stable identities")
+	if encounter_table_choice != null:
+		encounter_table_choice.toggled.emit(true)
+	reference_picker.confirmed.emit()
+	reference_picker.hide()
 	record_dialog.confirmed.emit()
 	record_dialog.hide()
 	for _attempt in 1200:
-		if "faction.harbor" in catalog.detail_snapshot().get("record", {}).get("faction_ids", []):
+		if (
+			"faction.harbor" in catalog.detail_snapshot().get("record", {}).get("faction_ids", [])
+			and "encounter_table.harbor-patrol" in catalog.detail_snapshot().get("record", {}).get("encounter_table_ids", [])
+		):
 			break
 		await create_timer(0.001).timeout
 	_expect(
-		"faction.harbor" in catalog.detail_snapshot().get("record", {}).get("faction_ids", []),
-		"multi-reference picker restores the place-faction relationship through the serial owner writer"
+		"faction.harbor" in catalog.detail_snapshot().get("record", {}).get("faction_ids", [])
+		and "encounter_table.harbor-patrol" in catalog.detail_snapshot().get("record", {}).get("encounter_table_ids", []),
+		"multi-reference pickers restore place relationships through the serial World Planner writer"
+	)
+	catalog.select_section("factions")
+	for _attempt in 600:
+		if catalog.section_snapshot("factions").get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	var faction_state := catalog.section_snapshot("factions")
+	catalog.call("_select_row", faction_state.get("rows", [])[0])
+	for _attempt in 600:
+		if catalog.detail_snapshot().get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		catalog.detail_snapshot().get("record", {}).get("primary_encounter_table_id", "")
+		== "encounter_table.harbor-patrol",
+		"faction detail reads its existing primary Encounter Table reference"
+	)
+	edit_button.pressed.emit()
+	var choose_primary_table := catalog.find_child("CatalogReferenceChoosePrimaryEncounterTableId", true, false) as Button
+	choose_primary_table.pressed.emit()
+	for _attempt in 600:
+		if reference_picker.snapshot().get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	clear_references.pressed.emit()
+	reference_picker.confirmed.emit()
+	reference_picker.hide()
+	record_dialog.confirmed.emit()
+	record_dialog.hide()
+	for _attempt in 1200:
+		if catalog.detail_snapshot().get("record", {}).get("primary_encounter_table_id", "pending").is_empty():
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		catalog.detail_snapshot().get("record", {}).get("primary_encounter_table_id", "pending").is_empty(),
+		"single-reference picker explicitly clears a faction's primary Encounter Table"
+	)
+	edit_button.pressed.emit()
+	choose_primary_table.pressed.emit()
+	for _attempt in 600:
+		if reference_picker.snapshot().get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	picker_results = reference_picker.find_child("ReferencePickerResults", true, false) as VBoxContainer
+	encounter_table_choice = null
+	for choice in picker_results.find_children("ReferencePickerChoice", "CheckButton", true, false):
+		if choice.text.contains("Hafenpatrouille"):
+			encounter_table_choice = choice
+			break
+	if encounter_table_choice != null:
+		encounter_table_choice.toggled.emit(true)
+	reference_picker.confirmed.emit()
+	reference_picker.hide()
+	record_dialog.confirmed.emit()
+	record_dialog.hide()
+	for _attempt in 1200:
+		if (
+			catalog.detail_snapshot().get("record", {}).get("primary_encounter_table_id", "")
+			== "encounter_table.harbor-patrol"
+		):
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		catalog.detail_snapshot().get("record", {}).get("primary_encounter_table_id", "")
+		== "encounter_table.harbor-patrol",
+		"faction editor restores its primary Encounter Table through provider selection"
 	)
 	var unavailable := catalog.select_section("encounters")
 	_expect(unavailable.get("status", "") == "unavailable", "remaining unmigrated Katalog provider stays explicit and side-effect free")
@@ -1269,6 +1603,26 @@ func _run_catalog_foundation_contract() -> void:
 	var footer := catalog.find_child("CatalogFooter", true, false) as Label
 	_expect(footer.text.contains("noch nicht verfügbar"), "unavailable provider creation remains side-effect free and truthful")
 	shell.queue_free()
+	await process_frame
+	await process_frame
+	var restarted_shell := MainShell.new()
+	restarted_shell.data_root = data_root
+	restarted_shell.registry = registry
+	restarted_shell.runtime_coordinator = runtime_coordinator
+	root.add_child(restarted_shell)
+	await process_frame
+	restarted_shell.show_route("catalog")
+	var restarted_catalog := restarted_shell.route("catalog") as CatalogWorkspace
+	restarted_catalog.select_section("encounter_tables")
+	for _attempt in 600:
+		if restarted_catalog.section_snapshot("encounter_tables").get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		restarted_catalog.section_snapshot("encounter_tables").get("total", -1) == 2,
+		"Campaign-owned Encounter Tables survive complete Catalog scene reconstruction"
+	)
+	restarted_shell.queue_free()
 	await process_frame
 	await process_frame
 	runtime_coordinator.revoke_current(-1)

@@ -1,29 +1,23 @@
-# Encounter Table Feature README
+# Encounter Table
 
-## Purpose
+Status: Active migration summary
+Owner: Encounter Table
+Last Reviewed: 2026-07-28
+Source of Truth: The linked owner documents
 
-The encounter table feature owns read-only access to authored encounter-table
-membership. It lets runtime encounter generation use curated creature pools
-without making the encounter generator own catalog persistence.
+Encounter Table is the Campaign-owned source capability for named, weighted
+Monster pools. Godot currently provides bounded Catalog browsing, full detail,
+create/edit with provider-selected Creature membership, World Planner
+references, and weighted candidate evaluation against current Creature facts.
+
+Recoverable deletion/restore, group entries, Loot Table selection/conflict
+presentation, and explicit Encounter handoff remain migration work. The legacy
+Java/SQLite implementation is not target architecture.
 
 ## Documentation Set
 
-- [Encounter Table Spec](requirements/requirements-encountertable.md)
-- [Encounter Table Domain Model](domain/domain-encountertable.md)
-- [Encounter Table Persistence](contract/contract-encountertable-persistence.md)
-- [Encounter Feature Spec](../encounter/requirements/requirements-encounter.md)
-- [Catalog Tab UI](../creatures/requirements/requirements-creatures-catalog.md)
-
-## Scope
-
-In scope:
-
-- list encounter table summaries
-- expose linked loot-table identifiers as read-only warning context
-- load weighted encounter-generation candidates for selected table IDs
-
-Out of scope:
-
-- table editor and CRUD flows
-- loot-table assignment UI
-- persisted generated encounters
+- [Requirements](requirements/requirements-encountertable.md)
+- [Domain Model](domain/domain-encountertable.md)
+- [Persistence Contract](contract/contract-encountertable-persistence.md)
+- [Encounter Requirements](../encounter/requirements/requirements-encounter.md)
+- [Catalog Requirements](../catalog/requirements/requirements-catalog.md)

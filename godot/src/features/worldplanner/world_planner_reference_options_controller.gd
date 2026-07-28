@@ -7,6 +7,7 @@ const SharedDefinitionStore = preload("res://godot/src/platform/persistence/shar
 const FileCampaignRegistry = preload("res://godot/src/platform/persistence/file_campaign_registry.gd")
 const FileCampaignStore = preload("res://godot/src/platform/persistence/file_campaign_store.gd")
 const WorldPlannerKnowledge = preload("res://godot/src/features/worldplanner/world_planner_knowledge.gd")
+const EncounterTableKnowledge = preload("res://godot/src/features/encountertable/encounter_table_knowledge.gd")
 
 signal query_started(request: Dictionary)
 signal result_published(result: Dictionary)
@@ -102,6 +103,8 @@ func _run_query(request: Dictionary) -> void:
 		result = registry_state
 	elif str(request["kind"]) == "creature":
 		result = _query_creatures(registry, registry_state, request)
+	elif str(request["kind"]) == EncounterTableKnowledge.KIND:
+		result = _query_encounter_tables(registry, registry_state, request)
 	elif str(request["kind"]) in WorldPlannerKnowledge.ENTITY_KINDS:
 		result = _query_world_planner(registry, registry_state, request)
 	else:
@@ -133,6 +136,41 @@ func _query_creatures(registry, registry_state: Dictionary, request: Dictionary)
 		or int(confirmed.get("shared_definitions_generation", -1)) != int(registry_state.get("shared_definitions_generation", -2))
 	):
 		return {"ok": false, "status": "stale", "error": "Der Kreaturenindex änderte sich während der Auswahl."}
+	return result
+
+
+func _query_encounter_tables(registry, registry_state: Dictionary, request: Dictionary) -> Dictionary:
+	var campaign_id := str(registry_state.get("active_campaign_id", ""))
+	if campaign_id.is_empty():
+		return {"ok": false, "status": "campaign_required", "error": "Wähle zuerst eine Campaign."}
+	var store := FileCampaignStore.new(_data_root, campaign_id)
+	var campaign_state := store.load_state()
+	if not campaign_state.get("ok", false):
+		return campaign_state
+	var read := store.read_partition(EncounterTableKnowledge.OWNER, campaign_state)
+	if not read.get("ok", false):
+		return read
+	var model := EncounterTableKnowledge.new()
+	var result := model.query(
+		read.get("payload", model.empty_payload()),
+		str(request["search_text"]),
+		int(request["offset"]),
+		int(request["limit"]),
+		"name",
+		true,
+		Callable(self, "_cancelled_from_worker")
+	)
+	if not result.get("ok", false):
+		return result
+	var confirmed: Dictionary = registry.load_state()
+	if (
+		not confirmed.get("ok", false)
+		or confirmed.get("active_campaign_id", "") != campaign_id
+		or int(confirmed.get("generation", -1)) != int(registry_state.get("generation", -2))
+	):
+		return {"ok": false, "status": "stale", "error": "Die aktive Campaign änderte sich während der Referenzauswahl."}
+	result["campaign_id"] = campaign_id
+	result["campaign_generation"] = campaign_state["generation"]
 	return result
 
 

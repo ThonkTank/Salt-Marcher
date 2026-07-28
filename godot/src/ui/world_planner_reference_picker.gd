@@ -16,6 +16,7 @@ var _field_key := ""
 var _kind := ""
 var _multi := false
 var _selected_ids: Dictionary = {}
+var _labels_by_id: Dictionary = {}
 var _rows: Array = []
 var _total := 0
 var _page := 0
@@ -47,10 +48,12 @@ func open_picker(field_key: String, title_text: String, kind: String, selected_i
 	_kind = kind
 	_multi = multi
 	_selected_ids.clear()
+	_labels_by_id.clear()
 	for value in selected_ids:
 		var reference_id := str(value)
 		if not reference_id.is_empty():
 			_selected_ids[reference_id] = true
+			_labels_by_id[reference_id] = reference_id
 	_rows.clear()
 	_total = 0
 	_page = 0
@@ -81,6 +84,10 @@ func snapshot() -> Dictionary:
 		"status": _status,
 		"error": _error,
 	}
+
+
+func reference_label(reference_id: String) -> String:
+	return str(_labels_by_id.get(reference_id, reference_id))
 
 
 func _build_surface() -> void:
@@ -189,6 +196,9 @@ func _on_result_published(result: Dictionary) -> void:
 		return
 	if result.get("ok", false):
 		_rows = result.get("rows", []).duplicate(true)
+		for row in _rows:
+			var reference_id := str(row.get("reference_id", row.get("definition_id", "")))
+			_labels_by_id[reference_id] = str(row.get("name", reference_id))
 		_total = int(result.get("total", 0))
 		_status = str(result.get("status", "ready"))
 	else:
@@ -283,7 +293,12 @@ func _on_visibility_changed() -> void:
 
 
 func _kind_label(kind: String) -> String:
-	return {"creature": "Monster", "faction": "Fraktionen", "place": "Orte"}.get(kind, kind)
+	return {
+		"creature": "Monster",
+		"faction": "Fraktionen",
+		"place": "Orte",
+		"encounter_table": "Encounter-Tabellen",
+	}.get(kind, kind)
 
 
 func _exit_tree() -> void:

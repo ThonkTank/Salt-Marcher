@@ -26,7 +26,10 @@ same Inspector. A separate bounded detail read shows full typed entity state;
 NPC appearance, behavior, history, lifecycle/disposition and faction
 disposition are editable without widening Catalog rows. Searchable, paginated
 provider pickers maintain NPC statblock/faction/last-place and place-faction
-references without raw ID entry. A compact Party top-bar dropdown now
+references without raw ID entry. Encounter Tables now use a separate
+Campaign-owned Godot partition with bounded Catalog browsing, weighted
+Creature membership, create/edit, full details, World Planner references, and
+latest-wins candidate reads. A compact Party top-bar dropdown now
 provides the active Campaign's Roster/current-Party foundation without adding a
 third navigation route. Its separate native Rastbudget trigger provides
 active/custom Adventuring-Day budgets and XP timelines; travel, Planning Party

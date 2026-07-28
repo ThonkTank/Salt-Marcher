@@ -1,46 +1,71 @@
-# Encounter Table Feature Spec
+# Encounter Table Requirements
+
+Status: Confirmed product requirements
+Owner: Encounter Table
+Last Reviewed: 2026-07-28
+Source of Truth: This document
 
 ## Goal
 
-Expose authored encounter tables as a read-only candidate source for runtime
-encounter generation.
+The GM MUST be able to author named Encounter Tables as reusable Campaign
+sources whose weighted Monster entries constrain later Encounter generation
+without deciding a narrative result.
+
+## Target Behavior
+
+- Encounter Tables are Campaign-owned records with stable identities, names,
+  optional descriptions, and weighted Monster or group entries.
+- The GM can create, inspect, edit, recoverably delete, and restore a table.
+- Monster membership is selected through the Creature provider. The interface
+  never asks the GM to type a foreign stable ID.
+- One Monster occurs at most once in one table and has an integer weight from
+  `1` through `10`.
+- An empty table is valid and supplies no candidates.
+- Catalog exposes searchable, stably sorted, bounded table summaries and opens
+  full provider-owned details in the Inspector.
+- Factions may select one primary table; places may select multiple tables.
+  Selecting or opening either endpoint alone changes no relationship.
+- A candidate evaluation over no selected tables returns no table candidates.
+- A candidate evaluation over selected tables resolves current Creature facts
+  through the Creature provider, applies the supplied XP ceiling, and retains
+  every selected table's authored weight as source context.
+- When the same Monster occurs in several selected tables, its current
+  effective legacy-compatible ranking weight is the greatest authored weight;
+  every per-table weight remains present for the later Encounter policy owner.
+- Missing, malformed, or damaged table or Creature truth produces an owned
+  failure. The feature never invents candidate facts.
+- An optional linked Loot Table is warning context. Different linked Loot
+  Tables in one selection produce a non-blocking `Loot-Konflikt` signal.
 
 ## Non-Goals
 
-- editing encounter tables
-- creating encounter-table entries
-- assigning loot tables
-- resolving or rolling loot
-
-## Expected Capabilities
-
-- load all encounter table summaries for Catalog controls
-- expose each table's optional linked loot-table ID
-- load generation candidates for selected table IDs with an XP ceiling
-- carry each candidate's table weight into encounter ranking
-- return an empty candidate list for empty table selections
-
-## User-Visible Behavior
-
-- selecting no encounter tables means the generator uses the normal monster
-  catalog source and current creature filters
-- selecting one or more encounter tables means generation uses only creatures
-  present in those selected tables
-- type, subtype, and biome filters do not additionally constrain selected
-  encounter-table generation
-- multiple selected tables with different linked loot-table IDs show a
-  non-blocking `Loot-Konflikt` warning
+- choosing or randomizing the final Encounter
+- balancing Encounter composition
+- owning Creature statblocks or Loot Tables
+- persisting a generated Encounter
+- distributing loot or Quest rewards
 
 ## Acceptance Criteria
 
-- encounter-table data is exposed only through the Encounter Table feature
-  boundary
-- encounter-table generation lookup remains read-only
-- table selection does not create or persist encounter state
-- missing or broken encounter-table storage produces a storage-error result
+- complete create and edit journeys survive restart with stable table identity
+  and exact weights;
+- duplicate Monster membership and weights outside `1..10` fail without a
+  Campaign commit;
+- Catalog paging, search, sorting, selection, and detail reads remain bounded
+  and off the Godot scene-tree thread;
+- repeated or replaced candidate reads publish only the latest result and
+  release all worker and pending state;
+- a fixed selected-table/Creature fixture returns the exact eligible
+  identities, XP facts, effective weights, and per-table authored weights;
+- World Planner references are chosen through the Encounter Table provider and
+  persist only when the enclosing owner edit is confirmed;
+- recoverable table deletion removes dependent current references atomically
+  and restore reattaches only still-safe relationships;
+- final visible interaction and layout acceptance remains owner manual testing.
 
 ## References
 
-- [Encounter Table Domain Model](../domain/domain-encountertable.md) (line 1)
-- [Encounter Table Persistence](../contract/contract-encountertable-persistence.md) (line 1)
-- [Encounter Feature Spec](../../encounter/requirements/requirements-encounter.md) (line 1)
+- [Encounter Table Domain Model](../domain/domain-encountertable.md)
+- [Encounter Table Persistence](../contract/contract-encountertable-persistence.md)
+- [Program Capabilities](../../project/requirements/requirements-program-capabilities.md)
+- [Program Technical Needs](../../project/architecture/program-technical-needs.md)

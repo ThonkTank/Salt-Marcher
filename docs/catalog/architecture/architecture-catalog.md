@@ -42,12 +42,12 @@ Encounter-Tabellen.
 Current migration state is narrower than the target: the production shell and
 all seven visible section identities exist; Monster and Items query the
 installation-wide Shared-Definition provider; NPCs, Fraktionen, and Orte query
-the active Campaign's World Planner provider. Both provider families implement
-stable name/identity sorting before bounded paging. Encounter and Encounter
-Tables report unavailable. Selected active World Planner rows compose their
-provider-owned Quest/rumour threads in the Inspector. No unavailable section
-stores Catalog-owned truth, and narrative records do not become an eighth
-section.
+the active Campaign's World Planner provider; Encounter-Tabellen query their
+own active-Campaign partition. All three provider families implement stable
+name/identity sorting before bounded paging. Saved Encounter reports
+unavailable. Selected active World Planner rows compose their provider-owned
+Quest/rumour threads in the Inspector. No unavailable section stores
+Catalog-owned truth, and narrative records do not become an eighth section.
 
 ## Provider And Query Boundary
 
@@ -76,15 +76,21 @@ A second bounded World Planner detail lane resolves the selected entity's full
 typed record without adding those fields to Catalog result rows. The shared
 Inspector renders that immutable readback and submits owner-native field edits
 or explicit NPC lifecycle changes through World Planner commands. Encounter
-Table and destination references remain display-only until their owning
-picker/handoff APIs migrate.
+Table references use their provider picker; destination handoffs remain absent
+until the real Encounter and Scene owners migrate.
 
 The current World Planner editor additionally composes one searchable,
-paginated reference picker. It queries only the selected Creature, faction, or
-place provider, keeps one active plus one latest pending request, displays name
-and stable identity, and publishes no relationship until the enclosing record
-edit is explicitly confirmed. It never materializes an unbounded option list or
-accepts raw foreign IDs as user input.
+paginated reference picker. It queries only the selected Creature, faction,
+place, or Encounter Table provider, keeps one active plus one latest pending
+request, displays name and stable identity, and publishes no relationship
+until the enclosing record edit is explicitly confirmed. It never materializes
+an unbounded option list or accepts raw foreign IDs as user input.
+
+Encounter Table owns a separate serial create/update command lane and
+latest-wins detail lane. Its editor composes the same bounded Creature picker,
+then presents selected identities as a weighted ledger with one explicit
+`1..10` value per entry. Catalog never writes that owner partition directly or
+copies Creature facts into table summaries.
 
 The Catalog background controller admits one active read and at most one
 latest-wins pending read. Every request receives a monotonic epoch. Newer input

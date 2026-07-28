@@ -9,13 +9,13 @@ Catalog is the application capability for finding, evaluating, and explicitly
 handing reference content to another active workspace. It presents Creatures,
 Items, saved Encounters, World Planner records, and Encounter Tables inside one
 `Katalog` navigation entry. The production Godot shell currently connects the
-Creature and Item sections to Shared Definitions and NPCs, factions, and places
-to the active Campaign's World Planner provider. Both provider families expose
-stable name/identity sorting before bounded paging through one retained result
-table. A selected NPC, faction, or place now exposes its World Planner-owned
-note-first Quest and rumour threads in the Inspector without adding another
-Catalog section. Encounter and Encounter Tables remain visible but truthfully
-unavailable until their provider owners migrate.
+Creature and Item sections to Shared Definitions, NPCs/factions/places to the
+active Campaign's World Planner provider, and Encounter Tables to their own
+Campaign partition. All providers sort stably before bounded paging through
+one retained result table. A selected NPC, faction, or place exposes its
+World Planner-owned note-first Quest and rumour threads in the Inspector;
+Encounter Tables expose weighted provider details and create/edit. Saved
+Encounter remains visible but truthfully unavailable until its owner migrates.
 
 ## Reading Order
 
