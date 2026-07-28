@@ -40,7 +40,7 @@ godot/src/features/encounter/
   encounter_runtime_knowledge.gd
   encounter_runtime_read_controller.gd
   encounter_runtime_command_controller.gd
-  # target: free-form generation and planning-fact controllers
+  # target: grouped table/World source composition and planning-fact controllers
 godot/src/ui/
   encounter_plan_editor_dialog.gd
   encounter_runtime_workspace.gd
@@ -68,9 +68,11 @@ those owner stores.
 Current production coverage includes the saved-plan owner partition, serial
 writer, bounded Catalog query, latest-wins detail hydration, recoverable trash,
 bounded roster editor, deterministic generated-batch policy, asynchronous
-prepare/summary lane, and atomic idempotent batch publication. The free-form
-Encounter alternative generator and Session Planner planning facts are not yet
-composed and must not be inferred from the batch seam. A separate top-level
+prepare/summary lane, and atomic idempotent batch publication. The same pure
+policy now performs bounded free-form candidate enumeration/ranking from one
+Party plus Creature snapshot; runtime v4 persists split builder inputs,
+alternatives, selection, and diagnostics. Session Planner planning facts and
+grouped Encounter-table/World sources are not inferred from that seam. A separate top-level
 Encounter workspace now owns the manual live path plus any selected Scene
 context: open saved plan, initiative, individual combatants, HP/turn mutation,
 results, atomic Party XP award, and return to the retained roster. The Scene
@@ -116,6 +118,26 @@ is a conflict.
 Manual builder generation remains an independent application use case but uses
 the same Encounter math, candidate, ranking, and saved-plan invariants. It does
 not create a second plan model or generated-batch writer.
+
+## Free Builder Orchestration
+
+```text
+Catalog filter change
+  -> merge only EncounterPoolFilters; preserve EncounterTuningSettings
+
+generateAlternatives(tuning)
+  -> merge only tuning; preserve current pool filters
+  -> capture one active-Party and complete Creature snapshot on the worker
+  -> enumerate bounded one/two/three-statblock compositions
+  -> rank exact target-band options or the best fallback deterministically
+  -> confirm Campaign plus Shared-Definition generations
+  -> publish runtime v4 alternatives, diagnostics, selection, and roster once
+
+saveCurrentPlan(name)
+  -> revalidate every current Creature identity/name
+  -> create one ordinary EncounterPlan in the same owner payload
+  -> mark the runtime context with the new plan identity in the same commit
+```
 
 ## Execution
 

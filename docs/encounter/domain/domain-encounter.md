@@ -60,8 +60,10 @@ Encounter derives:
 - party-specific planning facts for saved plans
 - prepared concrete generated-roster batches
 
-Generated alternatives and prepared batches remain transient until saved. The
-current builder, initiative, combat, and result session state is
+Generated alternatives remain durable runtime-only truth until cleared or
+replaced; prepared batches remain transient until committed. Neither is saved
+plan truth until an explicit save/commit. The current builder, initiative,
+combat, and result session state is
 Encounter-owned runtime state, not persisted `EncounterPlan` truth and not
 view-owned mutable state. One versioned collection persists the independent
 manual context and every Scene-keyed context separately from saved plans.
@@ -74,6 +76,10 @@ reconciliation.
 Encounter supports:
 
 - generate encounter alternatives
+- update Catalog pool filters without changing Encounter tuning, and update
+  Encounter tuning without changing Catalog pool filters
+- select a generated alternative or clear only its history while retaining the
+  current roster
 - save the current roster as an Encounter plan
 - load or list saved Encounter plans
 - prepare one ordered generated-intent batch as concrete rosters

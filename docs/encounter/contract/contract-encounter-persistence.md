@@ -45,15 +45,17 @@ meaning, fingerprints, cardinality, order, and Encounter number. The current
 Godot route writes this canonical shape only through the complete generated
 batch command.
 
-Runtime format `saltmarcher.encounter-runtime.v3` stores a focused context ID,
+Runtime format `saltmarcher.encounter-runtime.v4` stores a focused context ID,
 Scene source revision, and independent contexts. Each context stores its own
 revision, mode, status, opened-plan reference, materialized roster facts with
 stable slot identity and enemy/ally kind, initiative rows, individual
 combatants, active turn, round, result, and at most one removed manual-roster
-entry with its original position for undo. A result stores participating Party
-identities and award acknowledgement, but not copied Party profiles. Runtime
-v2 documents normalize in memory with empty removal history; the next real
-runtime mutation publishes v3 without a separate dual-write path.
+entry with its original position for undo. Each context also keeps split
+Catalog-owned pool filters and Encounter-owned tuning plus bounded ranked
+alternatives, selected index, and search diagnostics. A result stores
+participating Party identities and award acknowledgement, but not copied Party
+profiles. Runtime v2/v3 documents normalize in memory with empty missing v4
+state; the next real runtime mutation publishes v4 without a dual-write path.
 
 ## Explicitly Excluded Saved-Plan Truth
 
@@ -61,7 +63,7 @@ Saved-plan persistence rejects or omits:
 
 - Creature statblocks, XP, or other Shared-Definition content;
 - Party members, thresholds, or copied Party state;
-- generated alternatives and active generator filters;
+- generated alternatives and active generator filters inside a saved plan;
 - initiative, combat HP, turn order, masks, or defeated/result state inside a
   saved plan;
 - rewards, loot resolution, packing, Session Planner scenes, or audits.

@@ -1322,6 +1322,37 @@ func _run_party_roster_contract() -> void:
 
 func _run_generated_encounter_batch_contract() -> void:
 	var policy := EncounterGenerationPolicy.new()
+	var free_definitions: Array = [
+		_creature_fixture("creature.free.wolf", "Freier Wolf", "Beast", "1/4", 0.25, 50, 11, "2d8+2", 12, 2, ["Forest"]),
+		_creature_fixture("creature.free.worg", "Freier Worg", "Monstrosity", "1/2", 0.5, 100, 26, "4d10+4", 13, 1, ["Forest", "Hill"]),
+		_creature_fixture("creature.free.ogre", "Freier Oger", "Giant", "2", 2.0, 450, 59, "7d10+21", 11, -1, ["Hill"]),
+	]
+	var free_request := {
+		"pool_filters": EncounterRuntimeKnowledge.new().default_pool_filters(),
+		"tuning": EncounterRuntimeKnowledge.new().default_tuning(),
+	}
+	free_request["tuning"]["seed"] = "harbor-night"
+	var free_generated := policy.generate_alternatives([3, 3, 3, 3], free_definitions, free_request)
+	var free_repeated := policy.generate_alternatives([3, 3, 3, 3], free_definitions, free_request)
+	_expect(
+		free_generated.get("ok", false)
+		and free_generated.get("alternatives", []).size() == 3
+		and free_generated.get("alternatives", [])[0].get("summary", {}).get("difficulty", "") == "MEDIUM"
+		and free_generated.get("diagnostics", {}).get("resolved_difficulty", "") == "MEDIUM"
+		and free_generated.get("diagnostics", {}).get("candidate_pool_size", -1) == 3
+		and free_generated.get("diagnostics", {}).get("candidate_evaluation_count", 0) > 0,
+		"free Encounter generation ranks multiple exact alternatives and publishes resolved tuning plus bounded-search diagnostics"
+	)
+	_expect(
+		free_repeated.get("alternatives", []) == free_generated.get("alternatives", []),
+		"free Encounter generation is deterministic for the same Party, filters, tuning, and seed"
+	)
+	var empty_filter_request: Dictionary = free_request.duplicate(true)
+	empty_filter_request["pool_filters"]["types"] = ["Dragon"]
+	_expect(
+		policy.generate_alternatives([3, 3, 3, 3], free_definitions, empty_filter_request).get("status", "") == "NO_CREATURES",
+		"free generation distinguishes an empty filtered pool from a non-empty pool without a composition"
+	)
 	var definitions: Array = [
 		_generated_creature("creature.wolf-a", "Wolf A", "1/4", 50, 11, 12, 2, 0),
 		_generated_creature("creature.wolf-b", "Wolf B", "1/4", 50, 12, 12, 2, 0),
@@ -1611,15 +1642,41 @@ func _run_encounter_runtime_knowledge_contract() -> void:
 		and runtime.snapshot(manual_restart).get("context", {}).get("roster", [])[0].get("quantity", -1) == 2,
 		"Catalog additions build and restart one manual Encounter-owned roster without creating saved-plan truth"
 	)
+	var catalog_filters := runtime.default_pool_filters()
+	catalog_filters["search_text"] = "wolf"
+	var filtered := runtime.update_pool_filters(manual_added.get("payload", {}), catalog_filters)
+	var encounter_tuning := runtime.default_tuning()
+	encounter_tuning["seed"] = "catalog-owner-boundary"
+	var tuned := runtime.update_tuning(filtered.get("payload", {}), encounter_tuning)
+	var inputs_restart: Dictionary = JSON.parse_string(JSON.stringify(tuned.get("payload", {})))
+	var restarted_inputs: Dictionary = runtime.snapshot(inputs_restart).get("context", {}).get("builder_inputs", {})
+	_expect(
+		filtered.get("ok", false)
+		and tuned.get("ok", false)
+		and restarted_inputs.get("pool_filters", {}).get("search_text", "") == "wolf"
+		and restarted_inputs.get("tuning", {}).get("seed", "") == "catalog-owner-boundary",
+		"Catalog-owned pool filters and Encounter-owned tuning update independently and survive canonical restart readback"
+	)
 	var legacy_payload: Dictionary = manual_added.get("payload", {}).duplicate(true)
 	legacy_payload["runtime"]["format"] = EncounterRuntimeKnowledge.LEGACY_FORMAT_ID
 	legacy_payload["runtime"]["contexts"][EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID].erase("removed_roster_entry")
+	legacy_payload["runtime"]["contexts"][EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID].erase("builder_inputs")
+	legacy_payload["runtime"]["contexts"][EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID].erase("generation")
 	var legacy_snapshot := runtime.snapshot(legacy_payload)
 	_expect(
 		legacy_snapshot.get("ok", false)
 		and legacy_snapshot.get("context", {}).get("removed_roster_entry", {"missing": true}).is_empty()
 		and runtime.validate_runtime(legacy_payload["runtime"]).get("runtime", {}).get("format", "") == EncounterRuntimeKnowledge.FORMAT_ID,
-		"Encounter runtime v2 normalizes in memory to v3 with an empty one-step removal history"
+		"Encounter runtime v2 normalizes in memory to v4 with empty undo, builder inputs, and generation history"
+	)
+	var previous_payload: Dictionary = manual_added.get("payload", {}).duplicate(true)
+	previous_payload["runtime"]["format"] = EncounterRuntimeKnowledge.PREVIOUS_FORMAT_ID
+	previous_payload["runtime"]["contexts"][EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID].erase("builder_inputs")
+	previous_payload["runtime"]["contexts"][EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID].erase("generation")
+	_expect(
+		runtime.snapshot(previous_payload).get("context", {}).get("builder_inputs", {}).get("tuning", {}).get("difficulty", "") == "AUTO"
+		and runtime.validate_runtime(previous_payload["runtime"]).get("runtime", {}).get("format", "") == EncounterRuntimeKnowledge.FORMAT_ID,
+		"Encounter runtime v3 normalizes in memory to v4 without inventing generated alternatives"
 	)
 	var quantity_increased := runtime.adjust_roster_quantity(
 		manual_added.get("payload", {}), "slot.creature.wolf", 1
@@ -1703,8 +1760,9 @@ func _run_encounter_runtime_knowledge_contract() -> void:
 	payload = initiative.get("payload", payload)
 	_expect(
 		not runtime.adjust_roster_quantity(payload, "slot.creature.wolf", 1).get("ok", true)
-		and not runtime.remove_roster_slot(payload, "slot.creature.wolf").get("ok", true),
-		"manual roster editing fails closed once initiative has begun"
+		and not runtime.remove_roster_slot(payload, "slot.creature.wolf").get("ok", true)
+		and not runtime.apply_generated_alternatives(payload, [], {}).get("ok", true),
+		"manual roster editing and generated-alternative application fail closed once initiative has begun"
 	)
 	_expect(
 		not runtime.add_creature(payload, wolf_facts).get("ok", true),
@@ -2816,7 +2874,7 @@ func _run_catalog_foundation_contract() -> void:
 		and encounter_workspace.snapshot().get("context", {}).get("roster", []).size() == 2,
 		"Encounter route opens one saved plan through current Creature facts and persists its runtime roster"
 	)
-	var runtime_roster_rows := encounter_workspace.find_children("EncounterRosterRow", "PanelContainer", true, false)
+	var runtime_roster_rows := encounter_workspace.find_children("EncounterRosterRow_*", "PanelContainer", true, false)
 	var increase_wolves := runtime_roster_rows[0].find_child("EncounterRosterIncrease", true, false) as Button if runtime_roster_rows.size() == 2 else null
 	if increase_wolves != null:
 		increase_wolves.pressed.emit()
@@ -2824,7 +2882,7 @@ func _run_catalog_foundation_contract() -> void:
 		if encounter_workspace.snapshot().get("context", {}).get("roster", [])[0].get("quantity", -1) == 4:
 			break
 		await create_timer(0.001).timeout
-	runtime_roster_rows = encounter_workspace.find_children("EncounterRosterRow", "PanelContainer", true, false)
+	runtime_roster_rows = encounter_workspace.find_children("EncounterRosterRow_*", "PanelContainer", true, false)
 	var decrease_wolves := runtime_roster_rows[0].find_child("EncounterRosterDecrease", true, false) as Button if runtime_roster_rows.size() == 2 else null
 	if decrease_wolves != null:
 		decrease_wolves.pressed.emit()
@@ -2832,7 +2890,7 @@ func _run_catalog_foundation_contract() -> void:
 		if encounter_workspace.snapshot().get("context", {}).get("roster", [])[0].get("quantity", -1) == 3:
 			break
 		await create_timer(0.001).timeout
-	runtime_roster_rows = encounter_workspace.find_children("EncounterRosterRow", "PanelContainer", true, false)
+	runtime_roster_rows = encounter_workspace.find_children("EncounterRosterRow_*", "PanelContainer", true, false)
 	var remove_worg := runtime_roster_rows[1].find_child("EncounterRosterRemove", true, false) as Button if runtime_roster_rows.size() == 2 else null
 	if remove_worg != null:
 		remove_worg.pressed.emit()
@@ -2861,6 +2919,98 @@ func _run_catalog_foundation_contract() -> void:
 		and encounter_workspace.find_children("EncounterRosterQuantity", "Label", true, false).size() == 2
 		and encounter_workspace.find_child("EncounterRosterUndoNotice", true, false) == null,
 		"visible one-step undo restores the removed slot at its original roster position"
+	)
+	var toggle_tuning := encounter_workspace.find_child("ToggleEncounterTuning", true, false) as Button
+	if toggle_tuning != null:
+		toggle_tuning.pressed.emit()
+	await process_frame
+	var generation_seed := encounter_workspace.find_child("EncounterGenerationSeed", true, false) as LineEdit
+	if generation_seed != null:
+		generation_seed.text = "catalog-foundation"
+	var generate_alternatives := encounter_workspace.find_child("GenerateEncounterAlternatives", true, false) as Button
+	if generate_alternatives != null:
+		generate_alternatives.pressed.emit()
+	for _attempt in 6000:
+		if encounter_workspace.snapshot().get("context", {}).get("generation", {}).get("alternatives", []).size() == 3:
+			break
+		await create_timer(0.001).timeout
+	var generated_context: Dictionary = encounter_workspace.snapshot().get("context", {})
+	var persisted_generation := FileCampaignStore.new(data_root, catalog_campaign_id).read_partition(EncounterPlanKnowledge.OWNER)
+	var restarted_generation := EncounterRuntimeKnowledge.new().snapshot(persisted_generation.get("payload", {}))
+	_expect(
+		generated_context.get("generation", {}).get("alternatives", []).size() == 3
+		and generated_context.get("generation", {}).get("diagnostics", {}).get("candidate_pool_size", 0) > 0
+		and generated_context.get("active_plan_id", "missing") == ""
+		and encounter_workspace.find_child("EncounterAlternativeNavigator", true, false) != null
+		and restarted_generation.get("context", {}).get("generation", {}).get("alternatives", []).size() == 3,
+		"visible free generation publishes three durable alternatives with diagnostics and detaches the opened plan"
+	)
+	var next_alternative := encounter_workspace.find_child("NextEncounterAlternative", true, false) as Button
+	if next_alternative != null:
+		next_alternative.pressed.emit()
+	for _attempt in 2400:
+		if encounter_workspace.snapshot().get("context", {}).get("generation", {}).get("selected_index", -1) == 1:
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		encounter_workspace.snapshot().get("context", {}).get("generation", {}).get("selected_index", -1) == 1,
+		"visible alternative navigation atomically replaces the current roster with the selected proposal"
+	)
+	var save_current := encounter_workspace.find_child("SaveCurrentEncounter", true, false) as Button
+	if save_current != null:
+		save_current.pressed.emit()
+	var save_dialog := encounter_workspace.find_child("SaveCurrentEncounterDialog", true, false) as ConfirmationDialog
+	var save_name := encounter_workspace.find_child("SaveCurrentEncounterName", true, false) as LineEdit
+	if save_name != null:
+		save_name.text = "Freie Hafenbegegnung"
+	if save_dialog != null:
+		save_dialog.confirmed.emit()
+		save_dialog.hide()
+	for _attempt in 2400:
+		if encounter_workspace.snapshot().get("plans", []).size() == 2:
+			break
+		await create_timer(0.001).timeout
+	var saved_generated_partition := FileCampaignStore.new(data_root, catalog_campaign_id).read_partition(EncounterPlanKnowledge.OWNER)
+	var saved_generated_records: Dictionary = saved_generated_partition.get("payload", {}).get("records", {})
+	var saved_generated_found := false
+	for record in saved_generated_records.values():
+		if record.get("name", "") == "Freie Hafenbegegnung" and not str(record.get("generated_label", "")).is_empty():
+			saved_generated_found = true
+	_expect(
+		saved_generated_found
+		and not str(encounter_workspace.snapshot().get("context", {}).get("active_plan_id", "")).is_empty(),
+		"Save-current persists the selected generated roster as one ordinary plan with its visible generated label"
+	)
+	var clear_generation := encounter_workspace.find_child("ClearEncounterGeneration", true, false) as Button
+	var generated_roster_before_clear: Array = encounter_workspace.snapshot().get("context", {}).get("roster", []).duplicate(true)
+	if clear_generation != null:
+		clear_generation.pressed.emit()
+	for _attempt in 2400:
+		if encounter_workspace.snapshot().get("context", {}).get("generation", {}).get("alternatives", []).is_empty():
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		encounter_workspace.snapshot().get("context", {}).get("roster", []) == generated_roster_before_clear
+		and encounter_workspace.snapshot().get("plans", []).size() == 2,
+		"visible history clear keeps the current roster and saved plan while removing only transient alternatives"
+	)
+	encounter_plan_rail = encounter_workspace.find_child("EncounterPlanRail", true, false) as VBoxContainer
+	open_runtime_plan = null
+	if encounter_plan_rail != null:
+		for candidate in encounter_plan_rail.get_children():
+			if candidate is Button and str(candidate.text).begins_with("Wache am Nordkai"):
+				open_runtime_plan = candidate
+				break
+	if open_runtime_plan != null:
+		open_runtime_plan.pressed.emit()
+	for _attempt in 2400:
+		if encounter_workspace.snapshot().get("context", {}).get("active_plan_id", "") == "encounter_plan.north-quay-watch":
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		encounter_workspace.snapshot().get("context", {}).get("roster", []).size() == 2
+		and encounter_workspace.snapshot().get("context", {}).get("roster", [])[0].get("quantity", -1) == 3,
+		"opening the original saved plan after generation restores its unchanged authored composition"
 	)
 	var open_initiative := encounter_workspace.find_child("OpenEncounterInitiative", true, false) as Button
 	if open_initiative != null:
@@ -3278,6 +3428,17 @@ func _run_catalog_foundation_contract() -> void:
 		await create_timer(0.001).timeout
 	var creature_state := catalog.section_snapshot("creatures")
 	_expect(creature_state.get("rows", [])[0].get("definition_id", "") == "creature.worg", "native Katalog searches the selected provider through its background controller")
+	for _attempt in 1800:
+		if not catalog.encounter_runtime_command_controller.busy():
+			break
+		await create_timer(0.001).timeout
+	var filtered_encounter_partition: Dictionary = FileCampaignStore.new(data_root, catalog_campaign_id).read_partition(EncounterPlanKnowledge.OWNER)
+	var filtered_encounter_context: Dictionary = EncounterRuntimeKnowledge.new().snapshot(filtered_encounter_partition.get("payload", {})).get("context", {})
+	_expect(
+		filtered_encounter_context.get("builder_inputs", {}).get("pool_filters", {}).get("search_text", "") == "worg"
+		and filtered_encounter_context.get("builder_inputs", {}).get("tuning", {}).get("seed", "") == "catalog-foundation",
+		"Catalog publishes pool search separately while preserving Encounter-owned generator tuning"
+	)
 	await process_frame
 	var destination_header := catalog.find_child("CatalogDestinationHeader", true, false) as Label
 	var creature_result_list := catalog.find_child("CatalogResults", true, false) as VBoxContainer
@@ -4124,13 +4285,18 @@ func _run_catalog_foundation_contract() -> void:
 			break
 		await create_timer(0.001).timeout
 	var encounter_state := catalog.section_snapshot("encounters")
+	var north_plan_row: Dictionary = {}
+	for row in encounter_state.get("rows", []):
+		if row.get("reference_id", "") == "encounter_plan.north-quay-watch":
+			north_plan_row = row
+			break
 	_expect(
-		encounter_state.get("total", -1) == 1
-		and encounter_state.get("rows", [])[0].get("reference_id", "") == "encounter_plan.north-quay-watch"
-		and encounter_state.get("rows", [])[0].get("creature_count", -1) == 4,
+		encounter_state.get("total", -1) == 2
+		and north_plan_row.get("creature_count", -1) == 4,
 		"saved Encounter Catalog publishes bounded roster summaries without copied Creature facts"
 	)
-	catalog.call("_select_row", encounter_state.get("rows", [])[0])
+	if not north_plan_row.is_empty():
+		catalog.call("_select_row", north_plan_row)
 	for _attempt in 600:
 		if catalog.detail_snapshot().get("status", "") == "ready":
 			break
@@ -4209,7 +4375,7 @@ func _run_catalog_foundation_contract() -> void:
 	encounter_editor.hide()
 	for _attempt in 1200:
 		encounter_state = catalog.section_snapshot("encounters")
-		if encounter_state.get("status", "") == "ready" and encounter_state.get("total", -1) == 2:
+		if encounter_state.get("status", "") == "ready" and encounter_state.get("total", -1) == 3:
 			break
 		await create_timer(0.001).timeout
 	var created_plan_row: Dictionary = {}
@@ -4255,7 +4421,7 @@ func _run_catalog_foundation_contract() -> void:
 	plan_delete_dialog.hide()
 	for _attempt in 1200:
 		encounter_state = catalog.section_snapshot("encounters")
-		if encounter_state.get("status", "") == "ready" and encounter_state.get("total", -1) == 1:
+		if encounter_state.get("status", "") == "ready" and encounter_state.get("total", -1) == 2:
 			break
 		await create_timer(0.001).timeout
 	var plan_trash_toggle := catalog.find_child("CatalogTrashToggle", true, false) as CheckButton
@@ -4287,10 +4453,10 @@ func _run_catalog_foundation_contract() -> void:
 	plan_trash_toggle.toggled.emit(false)
 	for _attempt in 600:
 		encounter_state = catalog.section_snapshot("encounters")
-		if encounter_state.get("status", "") == "ready" and encounter_state.get("total", -1) == 2:
+		if encounter_state.get("status", "") == "ready" and encounter_state.get("total", -1) == 3:
 			break
 		await create_timer(0.001).timeout
-	_expect(encounter_state.get("total", -1) == 2, "saved Encounter restore returns the same plan to active Catalog results")
+	_expect(encounter_state.get("total", -1) == 3, "saved Encounter restore returns the same plan to active Catalog results")
 	shell.queue_free()
 	await process_frame
 	await process_frame
@@ -4317,8 +4483,26 @@ func _run_catalog_foundation_contract() -> void:
 			break
 		await create_timer(0.001).timeout
 	_expect(
-		restarted_catalog.section_snapshot("encounters").get("total", -1) == 2,
+		restarted_catalog.section_snapshot("encounters").get("total", -1) == 3,
 		"Campaign-owned saved Encounters survive complete Catalog scene reconstruction"
+	)
+	var restart_builder_inputs: Dictionary = {}
+	for _attempt in 1800:
+		var restart_encounter_partition := FileCampaignStore.new(data_root, catalog_campaign_id).read_partition(EncounterPlanKnowledge.OWNER)
+		restart_builder_inputs = EncounterRuntimeKnowledge.new().snapshot(
+			restart_encounter_partition.get("payload", {}),
+			EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID
+		).get("context", {}).get("builder_inputs", {})
+		if (
+			restart_builder_inputs.get("pool_filters", {}).get("search_text", "") == "worg"
+			and restart_builder_inputs.get("tuning", {}).get("seed", "") == "catalog-foundation"
+		):
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		restart_builder_inputs.get("pool_filters", {}).get("search_text", "") == "worg"
+		and restart_builder_inputs.get("tuning", {}).get("seed", "") == "catalog-foundation",
+		"fresh Catalog construction does not overwrite the last explicitly published pool filters or Encounter tuning"
 	)
 	restarted_catalog.select_section("factions")
 	for _attempt in 600:

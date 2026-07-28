@@ -15,8 +15,11 @@ expands every hostile or allied roster member, persists exact HP, round and
 active-turn truth, derives results, awards XP atomically with Party, and resumes
 after restart. Scene composition atomically supplies mobs,
 and disposition-derived NPC roles. Catalog additions also extend the manual
-roster or add one live reinforcement. Free-form builder generation, masks, and
-the eventual compact cockpit composition remain unmet target requirements.
+roster or add one live reinforcement. The manual builder generates several
+ranked alternatives from the active Party, current Catalog pool filters, and
+Encounter-owned tuning, persists its diagnostics/history, and saves the selected
+roster as an ordinary plan. Encounter-table/World source composition, masks,
+and the eventual compact cockpit composition remain unmet target requirements.
 
 ## Goal
 

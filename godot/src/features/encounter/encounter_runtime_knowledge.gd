@@ -5,8 +5,9 @@ extends RefCounted
 ## in the same owner partition and are only copied into a runtime roster on an
 ## explicit open command.
 
-const FORMAT_ID := "saltmarcher.encounter-runtime.v3"
+const FORMAT_ID := "saltmarcher.encounter-runtime.v4"
 const LEGACY_FORMAT_ID := "saltmarcher.encounter-runtime.v2"
+const PREVIOUS_FORMAT_ID := "saltmarcher.encounter-runtime.v3"
 const MANUAL_CONTEXT_ID := "encounter_context.manual"
 const MODES := ["builder", "initiative", "combat", "results"]
 const KINDS := ["pc", "enemy", "ally"]
@@ -37,6 +38,38 @@ func empty_context(context_id: String = MANUAL_CONTEXT_ID) -> Dictionary:
 		"round": 1,
 		"result": _empty_result(),
 		"removed_roster_entry": {},
+		"builder_inputs": {
+			"pool_filters": default_pool_filters(),
+			"tuning": default_tuning(),
+		},
+		"generation": _empty_generation(),
+	}
+
+
+func default_pool_filters() -> Dictionary:
+	return {
+		"search_text": "",
+		"sizes": [],
+		"types": [],
+		"subtypes": [],
+		"environments": [],
+		"alignments": [],
+		"minimum_challenge_rating": null,
+		"maximum_challenge_rating": null,
+		"encounter_table_ids": [],
+		"faction_ids": [],
+		"location_id": "",
+	}
+
+
+func default_tuning() -> Dictionary:
+	return {
+		"difficulty": "AUTO",
+		"amount": "AUTO",
+		"balance": "AUTO",
+		"diversity": "AUTO",
+		"seed": "",
+		"alternative_count": 3,
 	}
 
 
@@ -44,8 +77,8 @@ func validate_runtime(value: Variant) -> Dictionary:
 	if not value is Dictionary:
 		return _failure("Encounter-Laufzeitdaten müssen ein Dokument sein.")
 	var runtime: Dictionary = value.duplicate(true)
-	if runtime.get("format", "") == LEGACY_FORMAT_ID:
-		runtime = _upgrade_v2_runtime(runtime)
+	if runtime.get("format", "") in [LEGACY_FORMAT_ID, PREVIOUS_FORMAT_ID]:
+		runtime = _upgrade_legacy_runtime(runtime)
 	if (
 		runtime.size() != 4
 		or runtime.get("format", "") != FORMAT_ID
@@ -66,14 +99,22 @@ func validate_runtime(value: Variant) -> Dictionary:
 	return {"ok": true, "runtime": runtime.duplicate(true)}
 
 
-func _upgrade_v2_runtime(runtime_value: Dictionary) -> Dictionary:
+func _upgrade_legacy_runtime(runtime_value: Dictionary) -> Dictionary:
 	var runtime := runtime_value.duplicate(true)
 	runtime["format"] = FORMAT_ID
 	var contexts: Dictionary = runtime.get("contexts", {}).duplicate(true)
 	for context_id in contexts:
-		if contexts[context_id] is Dictionary and not contexts[context_id].has("removed_roster_entry"):
+		if contexts[context_id] is Dictionary:
 			var context: Dictionary = contexts[context_id].duplicate(true)
-			context["removed_roster_entry"] = {}
+			if not context.has("removed_roster_entry"):
+				context["removed_roster_entry"] = {}
+			if not context.has("builder_inputs"):
+				context["builder_inputs"] = {
+					"pool_filters": default_pool_filters(),
+					"tuning": default_tuning(),
+				}
+			if not context.has("generation"):
+				context["generation"] = _empty_generation()
 			contexts[context_id] = context
 	runtime["contexts"] = contexts
 	return runtime
@@ -113,6 +154,7 @@ func open_saved_plan(
 	if not roster_validation.get("ok", false):
 		return roster_validation
 	var context := empty_context(context_id)
+	context["builder_inputs"] = state["context"]["builder_inputs"].duplicate(true)
 	context["revision"] = _next_revision(state["context"])
 	context["status"] = "Encounter-Aufstellung ist bereit."
 	context["active_plan_id"] = plan_id
@@ -148,6 +190,7 @@ func add_creature(
 			context["roster"] = roster
 			context["active_plan_id"] = ""
 			context["removed_roster_entry"] = {}
+			context["generation"] = _empty_generation()
 			context["status"] = "%s zur manuellen Aufstellung hinzugefügt." % entry["name"]
 			context["revision"] = _next_revision(context)
 			return _publish_context(state["payload"], state["runtime"], context, "creature_added")
@@ -202,6 +245,7 @@ func adjust_roster_quantity(
 		context["roster"] = roster
 		context["active_plan_id"] = ""
 		context["removed_roster_entry"] = {}
+		context["generation"] = _empty_generation()
 		context["status"] = "%s auf ×%d gesetzt." % [roster[index]["name"], next_quantity]
 		context["revision"] = _next_revision(context)
 		return _publish_context(state["payload"], state["runtime"], context, "roster_quantity_changed")
@@ -228,6 +272,7 @@ func remove_roster_slot(
 		context["roster"] = roster
 		context["active_plan_id"] = ""
 		context["removed_roster_entry"] = {"index": index, "entry": removed}
+		context["generation"] = _empty_generation()
 		context["status"] = "%s aus der Aufstellung entfernt." % removed["name"]
 		context["revision"] = _next_revision(context)
 		return _publish_context(state["payload"], state["runtime"], context, "roster_slot_removed")
@@ -254,9 +299,145 @@ func undo_roster_removal(
 	context["roster"] = roster
 	context["active_plan_id"] = ""
 	context["removed_roster_entry"] = {}
+	context["generation"] = _empty_generation()
 	context["status"] = "%s wiederhergestellt." % entry["name"]
 	context["revision"] = _next_revision(context)
 	return _publish_context(state["payload"], state["runtime"], context, "roster_removal_undone")
+
+
+func update_pool_filters(
+	owner_payload: Dictionary,
+	pool_filters: Dictionary,
+	context_id: String = MANUAL_CONTEXT_ID
+) -> Dictionary:
+	var state := _manual_context_state(owner_payload, context_id)
+	if not state.get("ok", false):
+		return state
+	var validation := _validate_pool_filters(pool_filters)
+	if not validation.get("ok", false):
+		return validation
+	var context: Dictionary = state["context"]
+	if context["builder_inputs"]["pool_filters"] == validation["pool_filters"]:
+		return {"ok": true, "status": "unchanged", "no_write": true, "payload": state["payload"], "context": _with_projection(context)}
+	context["builder_inputs"] = context["builder_inputs"].duplicate(true)
+	context["builder_inputs"]["pool_filters"] = validation["pool_filters"]
+	context["generation"] = _empty_generation()
+	context["status"] = "Katalogfilter für die nächste Generierung aktualisiert."
+	context["revision"] = _next_revision(context)
+	return _publish_context(state["payload"], state["runtime"], context, "pool_filters_updated")
+
+
+func update_tuning(
+	owner_payload: Dictionary,
+	tuning: Dictionary,
+	context_id: String = MANUAL_CONTEXT_ID
+) -> Dictionary:
+	var state := _manual_context_state(owner_payload, context_id)
+	if not state.get("ok", false):
+		return state
+	var validation := _validate_tuning(tuning)
+	if not validation.get("ok", false):
+		return validation
+	var context: Dictionary = state["context"]
+	if context["builder_inputs"]["tuning"] == validation["tuning"]:
+		return {"ok": true, "status": "unchanged", "no_write": true, "payload": state["payload"], "context": _with_projection(context)}
+	context["builder_inputs"] = context["builder_inputs"].duplicate(true)
+	context["builder_inputs"]["tuning"] = validation["tuning"]
+	context["generation"] = _empty_generation()
+	context["status"] = "Generator-Abstimmung aktualisiert."
+	context["revision"] = _next_revision(context)
+	return _publish_context(state["payload"], state["runtime"], context, "tuning_updated")
+
+
+func apply_generated_alternatives(
+	owner_payload: Dictionary,
+	alternatives: Array,
+	diagnostics: Dictionary,
+	context_id: String = MANUAL_CONTEXT_ID
+) -> Dictionary:
+	var state := _manual_builder_state(owner_payload, context_id)
+	if not state.get("ok", false):
+		return state
+	var generation := {
+		"alternatives": alternatives.duplicate(true),
+		"selected_index": 0,
+		"diagnostics": diagnostics.duplicate(true),
+	}
+	var generation_validation := _validate_generation(generation)
+	if not generation_validation.get("ok", false):
+		return generation_validation
+	var normalized := _normalize_prepared_roster(alternatives[0]["roster"])
+	if not normalized.get("ok", false):
+		return normalized
+	var context: Dictionary = state["context"]
+	context["roster"] = normalized["roster"]
+	context["active_plan_id"] = ""
+	context["removed_roster_entry"] = {}
+	context["generation"] = generation
+	context["status"] = "%d Encounter-Vorschläge sind bereit." % alternatives.size()
+	context["revision"] = _next_revision(context)
+	return _publish_context(state["payload"], state["runtime"], context, "alternatives_generated")
+
+
+func select_generated_alternative(
+	owner_payload: Dictionary,
+	index: int,
+	context_id: String = MANUAL_CONTEXT_ID
+) -> Dictionary:
+	var state := _manual_builder_state(owner_payload, context_id)
+	if not state.get("ok", false):
+		return state
+	var context: Dictionary = state["context"]
+	var alternatives: Array = context["generation"]["alternatives"]
+	if index < 0 or index >= alternatives.size():
+		return _failure("Encounter-Vorschlag liegt außerhalb der verfügbaren Alternativen.")
+	if index == int(context["generation"]["selected_index"]):
+		return {"ok": true, "status": "unchanged", "no_write": true, "payload": state["payload"], "context": _with_projection(context)}
+	var normalized := _normalize_prepared_roster(alternatives[index]["roster"])
+	if not normalized.get("ok", false):
+		return normalized
+	context["roster"] = normalized["roster"]
+	context["generation"] = context["generation"].duplicate(true)
+	context["generation"]["selected_index"] = index
+	context["active_plan_id"] = ""
+	context["removed_roster_entry"] = {}
+	context["status"] = "Encounter-Vorschlag %d von %d geöffnet." % [index + 1, alternatives.size()]
+	context["revision"] = _next_revision(context)
+	return _publish_context(state["payload"], state["runtime"], context, "alternative_selected")
+
+
+func clear_generation_history(
+	owner_payload: Dictionary,
+	context_id: String = MANUAL_CONTEXT_ID
+) -> Dictionary:
+	var state := _manual_builder_state(owner_payload, context_id)
+	if not state.get("ok", false):
+		return state
+	var context: Dictionary = state["context"]
+	if context["generation"]["alternatives"].is_empty():
+		return {"ok": true, "status": "unchanged", "no_write": true, "payload": state["payload"], "context": _with_projection(context)}
+	context["generation"] = _empty_generation()
+	context["active_plan_id"] = ""
+	context["status"] = "Generator-Verlauf gelöscht; die aktuelle Aufstellung bleibt manuell erhalten."
+	context["revision"] = _next_revision(context)
+	return _publish_context(state["payload"], state["runtime"], context, "generation_history_cleared")
+
+
+func mark_current_saved(
+	owner_payload: Dictionary,
+	plan_id: String,
+	context_id: String = MANUAL_CONTEXT_ID
+) -> Dictionary:
+	var state := _manual_builder_state(owner_payload, context_id)
+	if not state.get("ok", false):
+		return state
+	if not owner_payload.get("records", {}).has(plan_id):
+		return _failure("Der gespeicherte Encounter fehlt nach der Veröffentlichung.", "missing")
+	var context: Dictionary = state["context"]
+	context["active_plan_id"] = plan_id
+	context["status"] = "Aktuelle Aufstellung als Encounter gespeichert."
+	context["revision"] = _next_revision(context)
+	return _publish_context(state["payload"], state["runtime"], context, "current_plan_saved")
 
 
 func open_initiative(
@@ -704,6 +885,7 @@ func _reconcile_context(
 	next["roster"] = roster.duplicate(true)
 	if next["roster"] != current["roster"]:
 		next["removed_roster_entry"] = {}
+		next["generation"] = _empty_generation()
 	match str(current["mode"]):
 		"builder":
 			pass
@@ -817,14 +999,18 @@ func _mutable_state(owner_payload: Dictionary, context_id: String = MANUAL_CONTE
 
 
 func _manual_builder_state(owner_payload: Dictionary, context_id: String) -> Dictionary:
-	if context_id != MANUAL_CONTEXT_ID:
-		return _failure("Die freie Roster-Bearbeitung gehört nur zur manuellen Encounter-Aufstellung.")
-	var state := _mutable_state(owner_payload, context_id)
+	var state := _manual_context_state(owner_payload, context_id)
 	if not state.get("ok", false):
 		return state
 	if state["context"]["mode"] != "builder":
 		return _failure("Roster-Zeilen können nur in der Aufstellung bearbeitet werden.")
 	return state
+
+
+func _manual_context_state(owner_payload: Dictionary, context_id: String) -> Dictionary:
+	if context_id != MANUAL_CONTEXT_ID:
+		return _failure("Freie Builder-Eingaben gehören nur zur manuellen Encounter-Aufstellung.")
+	return _mutable_state(owner_payload, context_id)
 
 
 func _publish_context(owner_payload: Dictionary, runtime: Dictionary, context: Dictionary, status: String) -> Dictionary:
@@ -862,7 +1048,7 @@ func _validate_context(context_id: String, value: Variant) -> Dictionary:
 		return _failure("Encounter-Kontext besitzt keine gültige Identität.")
 	var context: Dictionary = value
 	if (
-		context.size() != 12
+		context.size() != 14
 		or context.get("context_id", "") != context_id
 		or not _nonnegative_integer(context.get("revision", null))
 		or context.get("mode", "") not in MODES
@@ -875,6 +1061,8 @@ func _validate_context(context_id: String, value: Variant) -> Dictionary:
 		or not _positive_integer(context.get("round", null))
 		or not context.get("result", null) is Dictionary
 		or not context.get("removed_roster_entry", null) is Dictionary
+		or not context.get("builder_inputs", null) is Dictionary
+		or not context.get("generation", null) is Dictionary
 	):
 		return _failure("Encounter-Kontext %s besitzt ungültige Grundwerte." % context_id)
 	for collection in [context["roster"], context["initiative"], context["combatants"]]:
@@ -886,6 +1074,12 @@ func _validate_context(context_id: String, value: Variant) -> Dictionary:
 	var removed_validation := _validate_removed_roster_entry(context["removed_roster_entry"])
 	if not removed_validation.get("ok", false):
 		return removed_validation
+	var builder_validation := _validate_builder_inputs(context["builder_inputs"])
+	if not builder_validation.get("ok", false):
+		return builder_validation
+	var generation_validation := _validate_generation(context["generation"])
+	if not generation_validation.get("ok", false):
+		return generation_validation
 	var seen_initiative := {}
 	for entry in context["initiative"]:
 		if not _valid_initiative(entry) or seen_initiative.has(entry["combatant_id"]):
@@ -918,6 +1112,156 @@ func _validate_removed_roster_entry(value: Dictionary) -> Dictionary:
 	var validation := _validate_prepared_roster([value["entry"]])
 	if not validation.get("ok", false):
 		return validation
+	return {"ok": true}
+
+
+func _validate_builder_inputs(value: Dictionary) -> Dictionary:
+	if value.size() != 2 or not value.get("pool_filters", null) is Dictionary or not value.get("tuning", null) is Dictionary:
+		return _failure("Encounter-Builder-Eingaben besitzen kein unterstütztes Format.")
+	var filters := _validate_pool_filters(value["pool_filters"])
+	if not filters.get("ok", false):
+		return filters
+	var tuning := _validate_tuning(value["tuning"])
+	if not tuning.get("ok", false):
+		return tuning
+	return {"ok": true}
+
+
+func _validate_pool_filters(value: Dictionary) -> Dictionary:
+	if value.size() != 11:
+		return _failure("Encounter-Pool-Filter besitzen kein unterstütztes Format.")
+	var normalized := default_pool_filters()
+	var search_text := str(value.get("search_text", "")).strip_edges()
+	var location_id := str(value.get("location_id", "")).strip_edges()
+	if search_text.length() > MAX_TEXT_LENGTH or (not location_id.is_empty() and not _valid_id(location_id)):
+		return _failure("Encounter-Pool-Filter enthalten ungültigen Text.")
+	var minimum = value.get("minimum_challenge_rating")
+	var maximum = value.get("maximum_challenge_rating")
+	if (
+		(minimum != null and (not minimum is int and not minimum is float or not is_finite(float(minimum)) or float(minimum) < 0.0))
+		or (maximum != null and (not maximum is int and not maximum is float or not is_finite(float(maximum)) or float(maximum) < 0.0))
+		or (minimum != null and maximum != null and float(minimum) > float(maximum))
+	):
+		return _failure("Encounter-HG-Filter sind ungültig.")
+	normalized["search_text"] = search_text
+	normalized["minimum_challenge_rating"] = null if minimum == null else float(minimum)
+	normalized["maximum_challenge_rating"] = null if maximum == null else float(maximum)
+	normalized["location_id"] = location_id
+	for key in ["sizes", "types", "subtypes", "environments", "alignments", "encounter_table_ids", "faction_ids"]:
+		if not value.get(key, null) is Array:
+			return _failure("Encounter-Pool-Filterlisten fehlen.")
+		var values: Array = []
+		for entry_value in value[key]:
+			if not entry_value is String:
+				return _failure("Encounter-Pool-Filterlisten enthalten ungültige Werte.")
+			var entry := str(entry_value).strip_edges()
+			if entry.is_empty() or entry.length() > MAX_TEXT_LENGTH or (key in ["encounter_table_ids", "faction_ids"] and not _valid_id(entry)):
+				return _failure("Encounter-Pool-Filterlisten enthalten ungültige Werte.")
+			if entry not in values:
+				values.append(entry)
+		values.sort()
+		normalized[key] = values
+	return {"ok": true, "pool_filters": normalized}
+
+
+func _validate_tuning(value: Dictionary) -> Dictionary:
+	if value.size() != 6:
+		return _failure("Encounter-Tuning besitzt kein unterstütztes Format.")
+	var tuning := {
+		"difficulty": str(value.get("difficulty", "")).to_upper(),
+		"amount": str(value.get("amount", "")).to_upper(),
+		"balance": str(value.get("balance", "")).to_upper(),
+		"diversity": str(value.get("diversity", "")).to_upper(),
+		"seed": str(value.get("seed", "")).strip_edges(),
+		"alternative_count": value.get("alternative_count"),
+	}
+	if (
+		tuning["difficulty"] not in ["AUTO", "EASY", "MEDIUM", "HARD", "DEADLY"]
+		or tuning["amount"] not in ["AUTO", "FEW", "STANDARD", "MANY"]
+		or tuning["balance"] not in ["AUTO", "FOCUSED", "EVEN", "VARIED"]
+		or tuning["diversity"] not in ["AUTO", "LOW", "MEDIUM", "HIGH"]
+		or str(tuning["seed"]).length() > MAX_TEXT_LENGTH
+		or not _positive_integer(tuning["alternative_count"])
+		or int(tuning["alternative_count"]) > 8
+	):
+		return _failure("Encounter-Tuning enthält ungültige Werte.")
+	tuning["alternative_count"] = int(tuning["alternative_count"])
+	return {"ok": true, "tuning": tuning}
+
+
+func _validate_generation(value: Dictionary) -> Dictionary:
+	if (
+		value.size() != 3
+		or not value.get("alternatives", null) is Array
+		or not _integer(value.get("selected_index", null))
+		or not value.get("diagnostics", null) is Dictionary
+		or value["alternatives"].size() > 8
+	):
+		return _failure("Encounter-Generatorzustand besitzt kein unterstütztes Format.")
+	if value["alternatives"].is_empty():
+		if int(value["selected_index"]) != -1 or not value["diagnostics"].is_empty():
+			return _failure("Leerer Encounter-Generatorzustand enthält veraltete Auswahlwerte.")
+		return {"ok": true}
+	if int(value["selected_index"]) < 0 or int(value["selected_index"]) >= value["alternatives"].size():
+		return _failure("Encounter-Generatorauswahl liegt außerhalb der Alternativen.")
+	var seen := {}
+	for alternative_value in value["alternatives"]:
+		var alternative := _validate_generated_alternative(alternative_value)
+		if not alternative.get("ok", false):
+			return alternative
+		var alternative_id := str(alternative_value["alternative_id"])
+		if seen.has(alternative_id):
+			return _failure("Encounter-Generatoralternativen besitzen doppelte Identitäten.")
+		seen[alternative_id] = true
+	return _validate_generation_diagnostics(value["diagnostics"])
+
+
+func _validate_generated_alternative(value: Variant) -> Dictionary:
+	if (
+		not value is Dictionary
+		or value.size() != 5
+		or not _valid_sha256(str(value.get("alternative_id", "")))
+		or not _valid_text(value.get("label", null))
+		or not value.get("roster", null) is Array
+		or not value.get("summary", null) is Dictionary
+		or not value.get("highlights", null) is Array
+	):
+		return _failure("Encounter-Generatoralternative ist ungültig.")
+	var roster := _normalize_prepared_roster(value["roster"])
+	if not roster.get("ok", false) or roster["roster"].is_empty():
+		return _failure("Encounter-Generatoralternative besitzt kein gültiges Roster.")
+	var summary: Dictionary = value["summary"]
+	if (
+		summary.size() != 5
+		or not _positive_integer(summary.get("base_xp", null))
+		or not _positive_integer(summary.get("adjusted_xp", null))
+		or summary.get("difficulty", "") not in ["EASY", "MEDIUM", "HARD", "DEADLY"]
+		or not _positive_integer(summary.get("creature_count", null))
+		or not _positive_integer(summary.get("species_count", null))
+		or int(summary["species_count"]) != value["roster"].size()
+	):
+		return _failure("Encounter-Generatoralternative besitzt eine ungültige Summary.")
+	for highlight in value["highlights"]:
+		if not _valid_text(highlight):
+			return _failure("Encounter-Generatoralternative besitzt ungültige Hinweise.")
+	return {"ok": true}
+
+
+func _validate_generation_diagnostics(value: Dictionary) -> Dictionary:
+	if (
+		value.size() != 12
+		or value.get("requested_difficulty", "") not in ["AUTO", "EASY", "MEDIUM", "HARD", "DEADLY"]
+		or value.get("resolved_difficulty", "") not in ["EASY", "MEDIUM", "HARD", "DEADLY"]
+		or value.get("resolved_amount", "") not in ["FEW", "STANDARD", "MANY"]
+		or value.get("resolved_balance", "") not in ["FOCUSED", "EVEN", "VARIED"]
+		or value.get("resolved_diversity", "") not in ["LOW", "MEDIUM", "HIGH"]
+		or value.get("solution_quality", "") not in ["EXACT", "FALLBACK"]
+		or value.get("stop_category", "") not in ["EXACT_OPTIONS_READY", "BEST_FALLBACK"]
+	):
+		return _failure("Encounter-Generatordiagnostik besitzt ungültige Fachwerte.")
+	for key in ["candidate_pool_size", "attempt_count", "candidate_evaluation_count", "target_min_xp", "target_max_xp"]:
+		if not _nonnegative_integer(value.get(key, null)):
+			return _failure("Encounter-Generatordiagnostik besitzt ungültige Zähler.")
 	return {"ok": true}
 
 
@@ -1075,6 +1419,10 @@ func _empty_result() -> Dictionary:
 	}
 
 
+func _empty_generation() -> Dictionary:
+	return {"alternatives": [], "selected_index": -1, "diagnostics": {}}
+
+
 func _next_revision(context: Dictionary) -> int:
 	return int(context.get("revision", 0)) + 1
 
@@ -1116,6 +1464,15 @@ func _valid_id(value: String) -> bool:
 		if not ((code >= 48 and code <= 57) or (code >= 97 and code <= 122) or code in [45, 46, 95]):
 			return false
 	return value not in [".", ".."]
+
+
+func _valid_sha256(value: String) -> bool:
+	if value.length() != 64:
+		return false
+	for character in value:
+		if character not in "0123456789abcdef":
+			return false
+	return true
 
 
 func _valid_optional_id(value: Variant) -> bool:

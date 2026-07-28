@@ -17,8 +17,8 @@ per-member combat state, enemy HP, round/active-turn advance, two-step combat
 end, result XP derivation, atomic Party award, and return to the retained
 roster. Its horizontal turn strip renders the exact persisted order.
 
-The compact global `COCKPIT_STATE` placement, free-form generation, add-SC,
-mob projection, detail
+The compact global `COCKPIT_STATE` placement, Encounter-table/World generator
+sources, add-SC, mob projection, detail
 and numeric popups, and loot context remain the target described below.
 
 Catalog additions are production-native: `+ Encounter` adds one current
@@ -31,6 +31,16 @@ Manual roster editing is production-native: each row exposes quantity `+` and
 `-`, complete removal, and one persisted undo for the most recently removed
 slot. Every edit clears the copied saved-plan identity. Quantity zero, missing
 slots, Scene contexts, and initiative/combat/result modes fail closed.
+
+Free generation is production-native for the current Catalog pool: its collapsed
+`Encounter abstimmen` docket keeps difficulty, amount, XP distribution,
+statblock diversity, seed, and alternative count separate from Catalog-owned
+filters. Generation reads one active-Party and complete current Creature
+snapshot off-thread, publishes exact or fallback diagnostics, persists ranked
+alternatives across restart, supports previous/next and history clear, and saves
+the selected roster through the ordinary saved-plan owner. Non-empty Encounter
+Table, faction, or location sources fail visibly until their separate native
+group-source composition is complete.
 
 ## Component Purpose
 

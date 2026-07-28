@@ -28,8 +28,9 @@ roll/confirm, individual enemy HP mutation, combat-initiative edit, turn
 advance, combat end, one atomic XP award, and return to the preserved builder
 roster. They also cover manual quantity changes, remove plus one-step undo,
 Catalog additions in builder/combat mode, and atomic Scene context
-synchronization. Generate and save-current-plan from the runtime workspace
-remain target commands.
+synchronization. Free generate, previous/next alternative, history clear, and
+save-current-plan are production commands for the current Catalog pool;
+Encounter-table and World-source composition remains target work.
 
 ## Boundary Rules
 

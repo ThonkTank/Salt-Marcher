@@ -17,6 +17,7 @@ const EncounterPlanEditorDialog = preload("res://godot/src/ui/encounter_plan_edi
 const ItemDetailReadController = preload("res://godot/src/features/items/item_detail_read_controller.gd")
 const CreatureDetailReadController = preload("res://godot/src/features/creatures/creature_detail_read_controller.gd")
 const EncounterRuntimeCommandController = preload("res://godot/src/features/encounter/encounter_runtime_command_controller.gd")
+const EncounterRuntimeKnowledge = preload("res://godot/src/features/encounter/encounter_runtime_knowledge.gd")
 const SceneCommandController = preload("res://godot/src/features/scene/scene_command_controller.gd")
 
 const SECTIONS := [
@@ -118,6 +119,9 @@ var _lifecycle_dialog: ConfirmationDialog
 var _command_section_id := ""
 var _selected_detail: Dictionary = {}
 var _destination_pending: Dictionary = {}
+var _pool_filter_pending: Dictionary = {}
+var _pool_filter_published: Dictionary = {}
+var _pool_filter_baseline_initialized := false
 
 
 func _ready() -> void:
@@ -175,6 +179,7 @@ func _ready() -> void:
 	creature_detail_controller.query_started.connect(_on_creature_detail_query_started)
 	creature_detail_controller.result_published.connect(_on_creature_detail_result_published)
 	encounter_runtime_command_controller.command_completed.connect(_on_destination_completed.bind("encounter"))
+	encounter_runtime_command_controller.command_completed.connect(_on_encounter_runtime_command_completed)
 	scene_command_controller.command_completed.connect(_on_destination_completed.bind("scene"))
 	for section in SECTIONS:
 		_section_state[section["id"]] = {
@@ -891,6 +896,45 @@ func _submit_current_query() -> void:
 		if _active_section_id == "creatures"
 		else {}
 	)
+	if _active_section_id == "creatures":
+		_request_pool_filter_publish(state)
+
+
+func _request_pool_filter_publish(state: Dictionary) -> void:
+	var filters := EncounterRuntimeKnowledge.new().default_pool_filters()
+	var catalog_filters := _creature_query_filters(state)
+	filters["search_text"] = str(state.get("accepted", "")).strip_edges()
+	for key in ["sizes", "types", "subtypes", "environments", "alignments", "minimum_challenge_rating", "maximum_challenge_rating"]:
+		filters[key] = catalog_filters.get(key, filters[key])
+	if not _pool_filter_baseline_initialized:
+		_pool_filter_baseline_initialized = true
+		_pool_filter_published = filters.duplicate(true)
+		return
+	if filters == _pool_filter_published:
+		_pool_filter_pending.clear()
+		return
+	_pool_filter_pending = filters
+	_try_publish_pool_filters()
+
+
+func _try_publish_pool_filters() -> void:
+	if _pool_filter_pending.is_empty() or encounter_runtime_command_controller == null or encounter_runtime_command_controller.busy():
+		return
+	var started := encounter_runtime_command_controller.update_pool_filters(_pool_filter_pending)
+	if not started.get("ok", false) and started.get("status", "") not in ["campaign_required", "revoked"]:
+		_set_destination_notice(str(started.get("error", "Katalogfilter konnten nicht für Encounter veröffentlicht werden.")))
+
+
+func _on_encounter_runtime_command_completed(result: Dictionary) -> void:
+	var request: Dictionary = result.get("request", {})
+	if request.get("operation", "") == "update_pool_filters":
+		if result.get("ok", false):
+			_pool_filter_published = request.get("pool_filters", {}).duplicate(true)
+			if _pool_filter_pending == _pool_filter_published:
+				_pool_filter_pending.clear()
+		elif result.get("status", "") not in ["campaign_required", "revoked"]:
+			_set_destination_notice(str(result.get("error", "Katalogfilter konnten nicht für Encounter veröffentlicht werden.")))
+	call_deferred("_try_publish_pool_filters")
 
 
 func _on_query_started(request: Dictionary) -> void:

@@ -48,6 +48,8 @@ func _render() -> void:
 		if encounter.snapshot().get("status", "") in ["ready", "empty", "unavailable", "incompatible", "failed"]:
 			break
 		await create_timer(0.001).timeout
+	encounter.set("_tuning_expanded", true)
+	encounter.call("_render")
 	await process_frame
 	await process_frame
 	var error := root.get_texture().get_image().save_png(_output_path)
@@ -114,6 +116,40 @@ func _prepare_fixture() -> Dictionary:
 				"armor_class": 13, "initiative_bonus": 1,
 			},
 		]
+	).get("payload", encounter_payload)
+	var render_tuning := runtime_model.default_tuning()
+	render_tuning["difficulty"] = "MEDIUM"
+	render_tuning["seed"] = "grauhafen"
+	encounter_payload = runtime_model.update_tuning(encounter_payload, render_tuning).get("payload", encounter_payload)
+	encounter_payload = runtime_model.apply_generated_alternatives(
+		encounter_payload,
+		[
+			{
+				"alternative_id": "1".repeat(64), "label": "Vorschlag 1 · Mittel",
+				"roster": [
+					{"creature_id": "creature.wolf", "name": "Wolf", "last_known_name": "Wolf", "quantity": 4, "challenge_rating": "1/4", "xp": 50, "hit_points": 11, "armor_class": 12, "initiative_bonus": 2},
+					{"creature_id": "creature.worg", "name": "Worg", "last_known_name": "Worg", "quantity": 2, "challenge_rating": "1/2", "xp": 100, "hit_points": 26, "armor_class": 13, "initiative_bonus": 1},
+				],
+				"summary": {"base_xp": 400, "adjusted_xp": 800, "difficulty": "MEDIUM", "creature_count": 6, "species_count": 2},
+				"highlights": ["2 Arten · 6 Gegner", "Zielband 800–1199 angepasste XP", "STANDARD · EVEN · MEDIUM"],
+			},
+			{
+				"alternative_id": "2".repeat(64), "label": "Vorschlag 2 · Mittel",
+				"roster": [
+					{"creature_id": "creature.wolf", "name": "Wolf", "last_known_name": "Wolf", "quantity": 2, "challenge_rating": "1/4", "xp": 50, "hit_points": 11, "armor_class": 12, "initiative_bonus": 2},
+					{"creature_id": "creature.worg", "name": "Worg", "last_known_name": "Worg", "quantity": 3, "challenge_rating": "1/2", "xp": 100, "hit_points": 26, "armor_class": 13, "initiative_bonus": 1},
+				],
+				"summary": {"base_xp": 400, "adjusted_xp": 800, "difficulty": "MEDIUM", "creature_count": 5, "species_count": 2},
+				"highlights": ["2 Arten · 5 Gegner", "Zielband 800–1199 angepasste XP", "STANDARD · EVEN · MEDIUM"],
+			},
+		],
+		{
+			"requested_difficulty": "MEDIUM", "resolved_difficulty": "MEDIUM",
+			"resolved_amount": "STANDARD", "resolved_balance": "EVEN", "resolved_diversity": "MEDIUM",
+			"solution_quality": "EXACT", "stop_category": "EXACT_OPTIONS_READY",
+			"candidate_pool_size": 57, "attempt_count": 18420, "candidate_evaluation_count": 18420,
+			"target_min_xp": 800, "target_max_xp": 1199,
+		}
 	).get("payload", encounter_payload)
 	var committed := store.commit(
 		int(state["generation"]),

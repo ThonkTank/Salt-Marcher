@@ -32,6 +32,15 @@ var _turn_strip: HBoxContainer
 var _content: VBoxContainer
 var _status: Label
 var _end_dialog: ConfirmationDialog
+var _save_dialog: ConfirmationDialog
+var _save_name: LineEdit
+var _tuning_expanded := false
+var _difficulty_option: OptionButton
+var _amount_option: OptionButton
+var _balance_option: OptionButton
+var _diversity_option: OptionButton
+var _seed_input: LineEdit
+var _alternative_count: SpinBox
 
 
 func _ready() -> void:
@@ -176,6 +185,24 @@ func _build_surface() -> void:
 	_end_dialog.confirmed.connect(func() -> void: _commands.end_combat(context_id))
 	add_child(_end_dialog)
 
+	_save_dialog = ConfirmationDialog.new()
+	_save_dialog.name = "SaveCurrentEncounterDialog"
+	_save_dialog.title = "Aktuelle Aufstellung speichern"
+	_save_dialog.ok_button_text = "Encounter speichern"
+	_save_dialog.confirmed.connect(_save_current_confirmed)
+	var save_form := VBoxContainer.new()
+	save_form.add_theme_constant_override("separation", 6)
+	_save_dialog.add_child(save_form)
+	var save_hint := Label.new()
+	save_hint.text = "Der Plan speichert nur Creature-Identitäten, Mengen und aktuelle Namen."
+	save_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	save_form.add_child(save_hint)
+	_save_name = LineEdit.new()
+	_save_name.name = "SaveCurrentEncounterName"
+	_save_name.placeholder_text = "Name der Aufstellung"
+	save_form.add_child(_save_name)
+	add_child(_save_dialog)
+
 
 func _apply_snapshot(result: Dictionary) -> void:
 	if not result.get("ok", false):
@@ -259,6 +286,8 @@ func _render_builder(context: Dictionary) -> void:
 		if editable
 		else "Diese Aufstellung folgt der fokussierten Scene. Zusammensetzung wird dort geändert."
 	)
+	if editable:
+		_render_generator_docket(context)
 	var removed: Dictionary = context.get("removed_roster_entry", {})
 	if editable and not removed.is_empty():
 		var undo_row := PanelContainer.new()
@@ -291,7 +320,7 @@ func _render_builder(context: Dictionary) -> void:
 	for entry_value in roster:
 		var entry: Dictionary = entry_value
 		var slip := PanelContainer.new()
-		slip.name = "EncounterRosterRow"
+		slip.name = "EncounterRosterRow_%s" % str(entry["slot_id"]).replace(".", "_")
 		slip.add_theme_stylebox_override("panel", _panel_style(SLATE, Color("#29464e"), 1))
 		_content.add_child(slip)
 		var slip_margin := MarginContainer.new()
@@ -338,8 +367,242 @@ func _render_builder(context: Dictionary) -> void:
 	_add_hint(_content, "%d aktive Party-Mitglieder werden beim Kampfstart in die Initiative übernommen." % party_count)
 	var action_row := HBoxContainer.new()
 	_content.add_child(action_row)
+	var save_current := _add_button(action_row, "Aufstellung speichern", _show_save_current, "SaveCurrentEncounter")
+	save_current.disabled = _commands.busy()
+	var action_spacer := Control.new()
+	action_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	action_row.add_child(action_spacer)
 	var start := _add_button(action_row, "Initiative öffnen", func() -> void: _commands.open_initiative(context_id), "OpenEncounterInitiative")
 	start.disabled = party_count == 0 or _commands.busy()
+
+
+func _render_generator_docket(context: Dictionary) -> void:
+	var inputs: Dictionary = context.get("builder_inputs", {})
+	var tuning: Dictionary = inputs.get("tuning", {})
+	var filters: Dictionary = inputs.get("pool_filters", {})
+	var generation: Dictionary = context.get("generation", {})
+	var alternatives: Array = generation.get("alternatives", [])
+	var docket := PanelContainer.new()
+	docket.name = "EncounterGeneratorDocket"
+	docket.add_theme_stylebox_override("panel", _panel_style(
+		PANEL_ACTIVE if not alternatives.is_empty() else SLATE,
+		BRASS if not alternatives.is_empty() else Color("#29464e"),
+		1
+	))
+	_content.add_child(docket)
+	var docket_margin := MarginContainer.new()
+	_set_margins(docket_margin, 11)
+	docket.add_child(docket_margin)
+	var docket_content := VBoxContainer.new()
+	docket_content.add_theme_constant_override("separation", 8)
+	docket_margin.add_child(docket_content)
+	var title_row := HBoxContainer.new()
+	title_row.add_theme_constant_override("separation", 8)
+	docket_content.add_child(title_row)
+	var eyebrow := Label.new()
+	eyebrow.text = "ENCOUNTER ABSTIMMEN"
+	eyebrow.add_theme_color_override("font_color", BRASS)
+	eyebrow.add_theme_font_size_override("font_size", 11)
+	title_row.add_child(eyebrow)
+	var tuning_summary := Label.new()
+	tuning_summary.text = "%s · %s · %s Arten" % [
+		_difficulty_label(str(tuning.get("difficulty", "AUTO"))),
+		_amount_label(str(tuning.get("amount", "AUTO"))),
+		_diversity_label(str(tuning.get("diversity", "AUTO"))),
+	]
+	tuning_summary.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tuning_summary.add_theme_color_override("font_color", QUIET)
+	title_row.add_child(tuning_summary)
+	var toggle := _add_button(title_row, "Schließen" if _tuning_expanded else "Öffnen", _toggle_tuning, "ToggleEncounterTuning")
+	toggle.disabled = _commands.busy()
+	var generate := _add_button(title_row, "Generieren", _generate, "GenerateEncounterAlternatives")
+	generate.add_theme_color_override("font_color", BRASS)
+	generate.disabled = int(_snapshot.get("party_summary", {}).get("active_count", 0)) == 0 or _commands.busy()
+	_add_hint(docket_content, _pool_filter_summary(filters))
+	if _tuning_expanded:
+		var controls := GridContainer.new()
+		controls.name = "EncounterTuningControls"
+		controls.columns = 3
+		controls.add_theme_constant_override("h_separation", 10)
+		controls.add_theme_constant_override("v_separation", 7)
+		docket_content.add_child(controls)
+		_difficulty_option = _add_tuning_option(controls, "EncounterDifficulty", "Ziel", [
+			["AUTO", "Auto"], ["EASY", "Leicht"], ["MEDIUM", "Mittel"], ["HARD", "Schwer"], ["DEADLY", "Tödlich"],
+		], str(tuning.get("difficulty", "AUTO")))
+		_amount_option = _add_tuning_option(controls, "EncounterAmount", "Menge", [
+			["AUTO", "Auto"], ["FEW", "Wenige"], ["STANDARD", "Standard"], ["MANY", "Viele"],
+		], str(tuning.get("amount", "AUTO")))
+		_balance_option = _add_tuning_option(controls, "EncounterBalance", "XP-Verteilung", [
+			["AUTO", "Auto"], ["FOCUSED", "Fokussiert"], ["EVEN", "Ausgeglichen"], ["VARIED", "Variiert"],
+		], str(tuning.get("balance", "AUTO")))
+		_diversity_option = _add_tuning_option(controls, "EncounterDiversity", "Statblocks", [
+			["AUTO", "Auto"], ["LOW", "Wenig"], ["MEDIUM", "Mittel"], ["HIGH", "Viel"],
+		], str(tuning.get("diversity", "AUTO")))
+		var seed_block := VBoxContainer.new()
+		controls.add_child(seed_block)
+		var seed_label := Label.new()
+		seed_label.text = "Seed"
+		seed_label.add_theme_color_override("font_color", QUIET)
+		seed_label.add_theme_font_size_override("font_size", 10)
+		seed_block.add_child(seed_label)
+		_seed_input = LineEdit.new()
+		_seed_input.name = "EncounterGenerationSeed"
+		_seed_input.placeholder_text = "stabiler Seed"
+		_seed_input.text = str(tuning.get("seed", ""))
+		seed_block.add_child(_seed_input)
+		var count_block := VBoxContainer.new()
+		controls.add_child(count_block)
+		var count_label := Label.new()
+		count_label.text = "Vorschläge"
+		count_label.add_theme_color_override("font_color", QUIET)
+		count_label.add_theme_font_size_override("font_size", 10)
+		count_block.add_child(count_label)
+		_alternative_count = SpinBox.new()
+		_alternative_count.name = "EncounterAlternativeCount"
+		_alternative_count.min_value = 1
+		_alternative_count.max_value = 8
+		_alternative_count.step = 1
+		_alternative_count.value = int(tuning.get("alternative_count", 3))
+		count_block.add_child(_alternative_count)
+		var tuning_actions := HBoxContainer.new()
+		docket_content.add_child(tuning_actions)
+		var apply := _add_button(tuning_actions, "Abstimmung übernehmen", _apply_tuning, "ApplyEncounterTuning")
+		apply.disabled = _commands.busy()
+	if alternatives.is_empty():
+		return
+	var selected_index := int(generation.get("selected_index", 0))
+	var selected: Dictionary = alternatives[selected_index]
+	var summary: Dictionary = selected.get("summary", {})
+	var alternative_row := HBoxContainer.new()
+	alternative_row.name = "EncounterAlternativeNavigator"
+	alternative_row.add_theme_constant_override("separation", 8)
+	docket_content.add_child(alternative_row)
+	var previous := _add_button(alternative_row, "←", _select_alternative.bind(selected_index - 1), "PreviousEncounterAlternative")
+	previous.disabled = selected_index <= 0 or _commands.busy()
+	var position := Label.new()
+	position.text = "VORSCHLAG %d / %d" % [selected_index + 1, alternatives.size()]
+	position.add_theme_color_override("font_color", BRASS)
+	position.add_theme_font_size_override("font_size", 11)
+	alternative_row.add_child(position)
+	var measure := Label.new()
+	measure.text = "%s · %d XP angepasst · %d Gegner" % [
+		_difficulty_label(str(summary.get("difficulty", ""))),
+		int(summary.get("adjusted_xp", 0)),
+		int(summary.get("creature_count", 0)),
+	]
+	measure.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	measure.add_theme_color_override("font_color", VELLUM)
+	alternative_row.add_child(measure)
+	var next := _add_button(alternative_row, "→", _select_alternative.bind(selected_index + 1), "NextEncounterAlternative")
+	next.disabled = selected_index >= alternatives.size() - 1 or _commands.busy()
+	var clear := _add_button(alternative_row, "Verlauf löschen", _clear_generation, "ClearEncounterGeneration")
+	clear.disabled = _commands.busy()
+	var diagnostics: Dictionary = generation.get("diagnostics", {})
+	_add_hint(docket_content, "%s · Pool %d · %d Bewertungen · %s" % [
+		"Exakte Lösung" if diagnostics.get("solution_quality", "") == "EXACT" else "Beste Annäherung",
+		int(diagnostics.get("candidate_pool_size", 0)),
+		int(diagnostics.get("candidate_evaluation_count", 0)),
+		_stop_label(str(diagnostics.get("stop_category", ""))),
+	])
+
+
+func _add_tuning_option(parent: Container, node_name: String, label_text: String, values: Array, selected: String) -> OptionButton:
+	var block := VBoxContainer.new()
+	parent.add_child(block)
+	var label := Label.new()
+	label.text = label_text
+	label.add_theme_color_override("font_color", QUIET)
+	label.add_theme_font_size_override("font_size", 10)
+	block.add_child(label)
+	var option := OptionButton.new()
+	option.name = node_name
+	for value in values:
+		option.add_item(str(value[1]))
+		option.set_item_metadata(option.item_count - 1, value[0])
+		if str(value[0]) == selected:
+			option.select(option.item_count - 1)
+	block.add_child(option)
+	return option
+
+
+func _pool_filter_summary(filters: Dictionary) -> String:
+	var parts: Array[String] = []
+	if not str(filters.get("search_text", "")).is_empty():
+		parts.append("Suche „%s“" % filters["search_text"])
+	for pair in [["sizes", "Größe"], ["types", "Typ"], ["subtypes", "Untertyp"], ["environments", "Umwelt"], ["alignments", "Gesinnung"]]:
+		if not filters.get(pair[0], []).is_empty():
+			parts.append("%s %d" % [pair[1], filters[pair[0]].size()])
+	if filters.get("minimum_challenge_rating") != null or filters.get("maximum_challenge_rating") != null:
+		parts.append("HG %s–%s" % [
+			"0" if filters.get("minimum_challenge_rating") == null else str(filters["minimum_challenge_rating"]),
+			"∞" if filters.get("maximum_challenge_rating") == null else str(filters["maximum_challenge_rating"]),
+		])
+	return "Monsterpool: gesamter aktueller Katalog" if parts.is_empty() else "Monsterpool aus Katalog: %s" % " · ".join(parts)
+
+
+func _toggle_tuning() -> void:
+	_tuning_expanded = not _tuning_expanded
+	_render()
+
+
+func _current_tuning() -> Dictionary:
+	var persisted: Dictionary = _snapshot.get("context", {}).get("builder_inputs", {}).get("tuning", {}).duplicate(true)
+	if _difficulty_option == null or not is_instance_valid(_difficulty_option):
+		return persisted
+	persisted["difficulty"] = str(_difficulty_option.get_selected_metadata())
+	persisted["amount"] = str(_amount_option.get_selected_metadata())
+	persisted["balance"] = str(_balance_option.get_selected_metadata())
+	persisted["diversity"] = str(_diversity_option.get_selected_metadata())
+	persisted["seed"] = _seed_input.text.strip_edges()
+	persisted["alternative_count"] = roundi(_alternative_count.value)
+	return persisted
+
+
+func _apply_tuning() -> void:
+	_dispatch(_commands.update_tuning(_current_tuning(), context_id))
+
+
+func _generate() -> void:
+	_dispatch(_commands.generate_alternatives(_current_tuning(), context_id))
+
+
+func _select_alternative(index: int) -> void:
+	_dispatch(_commands.select_generated_alternative(index, context_id))
+
+
+func _clear_generation() -> void:
+	_dispatch(_commands.clear_generation_history(context_id))
+
+
+func _show_save_current() -> void:
+	var generation: Dictionary = _snapshot.get("context", {}).get("generation", {})
+	var alternatives: Array = generation.get("alternatives", [])
+	var suggested := "Aktuelle Aufstellung"
+	if not alternatives.is_empty():
+		suggested = str(alternatives[int(generation.get("selected_index", 0))].get("label", suggested))
+	_save_name.text = suggested
+	_save_dialog.popup_centered(Vector2i(480, 180))
+	_save_name.grab_focus()
+
+
+func _save_current_confirmed() -> void:
+	_dispatch(_commands.save_current_plan(_save_name.text, context_id))
+
+
+func _difficulty_label(value: String) -> String:
+	return {"AUTO": "Auto", "EASY": "Leicht", "MEDIUM": "Mittel", "HARD": "Schwer", "DEADLY": "Tödlich"}.get(value, value)
+
+
+func _amount_label(value: String) -> String:
+	return {"AUTO": "Auto", "FEW": "Wenige", "STANDARD": "Standard", "MANY": "Viele"}.get(value, value)
+
+
+func _diversity_label(value: String) -> String:
+	return {"AUTO": "Auto", "LOW": "wenig", "MEDIUM": "mittel", "HIGH": "viel"}.get(value, value)
+
+
+func _stop_label(value: String) -> String:
+	return {"EXACT_OPTIONS_READY": "Zielband erfüllt", "BEST_FALLBACK": "beste Annäherung"}.get(value, value)
 
 
 func _adjust_roster_quantity(slot_id: String, delta: int) -> void:

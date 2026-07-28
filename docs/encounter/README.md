@@ -25,8 +25,11 @@ one atomic Encounter-plus-Party XP award, and returns to the retained roster.
 The native Scene owner now maintains one independent Encounter context per
 running scene. Assigned PCs, hostile or friendly NPC statblocks, and Scene mobs
 synchronize atomically while compatible initiative,
-combat HP, round, active turn, and mode survive composition changes. Free-form
-Party-balanced runtime generation, masks, and final compact cockpit composition
+combat HP, round, active turn, and mode survive composition changes. The manual
+builder now generates ranked Party-balanced alternatives from persisted Catalog
+pool filters and Encounter-owned tuning, navigates them, clears transient
+history, and saves the selected roster through the ordinary plan owner. Masks,
+foreign table/World source composition, and final compact cockpit composition
 remain target work. Manual roster quantity/remove/one-step undo and live
 reinforcements are production-native. JavaFX/SQLite implementations are
 migration evidence only and are not called by the Godot product.
@@ -69,7 +72,8 @@ migration evidence only and are not called by the Godot product.
   commit, and summary phases separately and keeps the complete three-Encounter
   route below the two-second p95 target over 20 runs;
 - the production manual runtime journey covers current-fact plan open, manual
-  quantity/remove/persisted undo, Party initiative, deterministic per-member
+  quantity/remove/persisted undo, deterministic free generation, alternative
+  navigation, save-current, history clearing, Party initiative, deterministic per-member
   combat expansion, individual HP,
   persisted round/active-turn restart truth, result derivation, atomic XP
   publication, and return to the unchanged runtime roster.

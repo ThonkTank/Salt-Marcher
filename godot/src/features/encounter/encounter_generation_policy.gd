@@ -26,6 +26,83 @@ const DEADLY_THRESHOLDS := [
 	3600, 4500, 5100, 5700, 6400, 7200, 8800, 9500, 10900, 12700,
 ]
 const MULTIPLIERS := [1.0, 1.5, 2.0, 2.5, 3.0, 4.0]
+const FREE_DIFFICULTIES := ["AUTO", "EASY", "MEDIUM", "HARD", "DEADLY"]
+const FREE_AMOUNTS := ["AUTO", "FEW", "STANDARD", "MANY"]
+const FREE_BALANCES := ["AUTO", "FOCUSED", "EVEN", "VARIED"]
+const FREE_DIVERSITIES := ["AUTO", "LOW", "MEDIUM", "HIGH"]
+const FREE_MAX_ALTERNATIVES := 8
+const FREE_MAX_QUANTITY := 20
+
+
+func generate_alternatives(
+	party_levels_value: Variant,
+	definitions_value: Variant,
+	request_value: Variant,
+	cancellation: Callable = Callable()
+) -> Dictionary:
+	var levels := _validate_party_levels(party_levels_value)
+	if not levels.get("ok", false):
+		return levels
+	var request := _validate_free_request(request_value)
+	if not request.get("ok", false):
+		return request
+	var candidates := _candidate_snapshot(definitions_value)
+	if not candidates.get("ok", false):
+		return candidates
+	var filtered: Array = []
+	for candidate_value in candidates["rows"]:
+		if _cancelled(cancellation):
+			return _cancelled_failure()
+		if _matches_free_filters(candidate_value, request["pool_filters"]):
+			filtered.append(candidate_value)
+	if filtered.is_empty():
+		return _failure("NO_CREATURES", "Die aktuellen Katalogfilter lassen keine vollständigen Monster übrig.")
+	var tuning: Dictionary = request["tuning"]
+	var resolved := {
+		"difficulty": "MEDIUM" if tuning["difficulty"] == "AUTO" else tuning["difficulty"],
+		"amount": "STANDARD" if tuning["amount"] == "AUTO" else tuning["amount"],
+		"balance": "EVEN" if tuning["balance"] == "AUTO" else tuning["balance"],
+		"diversity": "MEDIUM" if tuning["diversity"] == "AUTO" else tuning["diversity"],
+	}
+	var target := _difficulty_target(str(resolved["difficulty"]), levels["levels"])
+	var search := _search_free_compositions(
+		filtered,
+		levels["levels"],
+		resolved,
+		target,
+		str(tuning["seed"]),
+		cancellation
+	)
+	if not search.get("ok", false):
+		return search
+	var ranked: Array = search["exact"] if not search["exact"].is_empty() else search["fallback"]
+	if ranked.is_empty():
+		return _failure("NO_SOLUTION", "Aus dem gefilterten Monsterpool lässt sich keine gültige Aufstellung bilden.")
+	ranked.sort_custom(Callable(self, "_free_option_precedes"))
+	var alternatives: Array = []
+	var limit := mini(int(tuning["alternative_count"]), ranked.size())
+	for index in limit:
+		alternatives.append(_free_alternative(ranked[index], index, target, resolved))
+	var exact: bool = not search["exact"].is_empty()
+	return {
+		"ok": true,
+		"status": "SUCCESS" if exact else "FALLBACK",
+		"alternatives": alternatives,
+		"diagnostics": {
+			"requested_difficulty": tuning["difficulty"],
+			"resolved_difficulty": resolved["difficulty"],
+			"resolved_amount": resolved["amount"],
+			"resolved_balance": resolved["balance"],
+			"resolved_diversity": resolved["diversity"],
+			"solution_quality": "EXACT" if exact else "FALLBACK",
+			"stop_category": "EXACT_OPTIONS_READY" if exact else "BEST_FALLBACK",
+			"candidate_pool_size": filtered.size(),
+			"attempt_count": int(search["attempt_count"]),
+			"candidate_evaluation_count": int(search["evaluation_count"]),
+			"target_min_xp": int(target["minimum"]),
+			"target_max_xp": int(target["maximum"]),
+		},
+	}
 
 
 func prepare_batch(
@@ -398,6 +475,343 @@ func _summary(
 	}
 
 
+func _validate_free_request(value: Variant) -> Dictionary:
+	if not value is Dictionary or value.size() != 2:
+		return _failure("INVALID_REQUEST", "Freie Encounter-Generierung braucht Pool-Filter und Tuning.")
+	var filters := _normalize_free_filters(value.get("pool_filters"))
+	if not filters.get("ok", false):
+		return filters
+	var tuning := _normalize_free_tuning(value.get("tuning"))
+	if not tuning.get("ok", false):
+		return tuning
+	return {"ok": true, "pool_filters": filters["filters"], "tuning": tuning["tuning"]}
+
+
+func _normalize_free_filters(value: Variant) -> Dictionary:
+	if not value is Dictionary:
+		return _failure("INVALID_REQUEST", "Encounter-Pool-Filter fehlen.")
+	var expected := [
+		"search_text", "sizes", "types", "subtypes", "environments", "alignments",
+		"minimum_challenge_rating", "maximum_challenge_rating", "encounter_table_ids",
+		"faction_ids", "location_id",
+	]
+	if value.size() != expected.size():
+		return _failure("INVALID_REQUEST", "Encounter-Pool-Filter besitzen unerwartete Felder.")
+	var search_text := str(value.get("search_text", "")).strip_edges()
+	var location_id := str(value.get("location_id", "")).strip_edges()
+	if search_text.length() > MAX_TEXT_LENGTH or (not location_id.is_empty() and not _valid_id(location_id)):
+		return _failure("INVALID_REQUEST", "Encounter-Pool-Filter enthalten ungültigen Text.")
+	var minimum = value.get("minimum_challenge_rating")
+	var maximum = value.get("maximum_challenge_rating")
+	if (
+		(minimum != null and (not minimum is int and not minimum is float or not is_finite(float(minimum)) or float(minimum) < 0.0))
+		or (maximum != null and (not maximum is int and not maximum is float or not is_finite(float(maximum)) or float(maximum) < 0.0))
+		or (minimum != null and maximum != null and float(minimum) > float(maximum))
+	):
+		return _failure("INVALID_REQUEST", "Encounter-HG-Filter sind ungültig.")
+	var normalized := {
+		"search_text": search_text,
+		"minimum_challenge_rating": null if minimum == null else float(minimum),
+		"maximum_challenge_rating": null if maximum == null else float(maximum),
+		"location_id": location_id,
+	}
+	for key in ["sizes", "types", "subtypes", "environments", "alignments"]:
+		var values := _normalized_text_values(value.get(key), false)
+		if not values.get("ok", false):
+			return values
+		normalized[key] = values["values"]
+	for key in ["encounter_table_ids", "faction_ids"]:
+		var values := _normalized_text_values(value.get(key), true)
+		if not values.get("ok", false):
+			return values
+		normalized[key] = values["values"]
+	return {"ok": true, "filters": normalized}
+
+
+func _normalize_free_tuning(value: Variant) -> Dictionary:
+	if not value is Dictionary or value.size() != 6:
+		return _failure("INVALID_REQUEST", "Encounter-Tuning besitzt unerwartete Felder.")
+	var difficulty := str(value.get("difficulty", "")).to_upper()
+	var amount := str(value.get("amount", "")).to_upper()
+	var balance := str(value.get("balance", "")).to_upper()
+	var diversity := str(value.get("diversity", "")).to_upper()
+	var seed := str(value.get("seed", "")).strip_edges()
+	var alternative_count = value.get("alternative_count")
+	if (
+		difficulty not in FREE_DIFFICULTIES
+		or amount not in FREE_AMOUNTS
+		or balance not in FREE_BALANCES
+		or diversity not in FREE_DIVERSITIES
+		or seed.length() > MAX_TEXT_LENGTH
+		or not _positive_integer(alternative_count)
+		or int(alternative_count) > FREE_MAX_ALTERNATIVES
+	):
+		return _failure("INVALID_REQUEST", "Encounter-Tuning enthält ungültige Werte.")
+	return {"ok": true, "tuning": {
+		"difficulty": difficulty,
+		"amount": amount,
+		"balance": balance,
+		"diversity": diversity,
+		"seed": seed,
+		"alternative_count": int(alternative_count),
+	}}
+
+
+func _normalized_text_values(value: Variant, identities: bool) -> Dictionary:
+	if not value is Array:
+		return _failure("INVALID_REQUEST", "Encounter-Filterlisten müssen Listen sein.")
+	var result: Array = []
+	for entry_value in value:
+		if not entry_value is String:
+			return _failure("INVALID_REQUEST", "Encounter-Filterlisten enthalten ungültige Werte.")
+		var entry := str(entry_value).strip_edges()
+		if entry.is_empty() or entry.length() > MAX_TEXT_LENGTH or (identities and not _valid_id(entry)):
+			return _failure("INVALID_REQUEST", "Encounter-Filterlisten enthalten ungültige Werte.")
+		if entry not in result:
+			result.append(entry)
+	result.sort()
+	return {"ok": true, "values": result}
+
+
+func _matches_free_filters(candidate: Dictionary, filters: Dictionary) -> bool:
+	var needle := str(filters["search_text"]).to_lower()
+	if not needle.is_empty() and not str(candidate["name"]).to_lower().contains(needle):
+		return false
+	if filters["minimum_challenge_rating"] != null and float(candidate["challenge_rating_decimal"]) < float(filters["minimum_challenge_rating"]):
+		return false
+	if filters["maximum_challenge_rating"] != null and float(candidate["challenge_rating_decimal"]) > float(filters["maximum_challenge_rating"]):
+		return false
+	for pair in [["sizes", "size"], ["types", "creature_type"], ["subtypes", "subtype"], ["alignments", "alignment"]]:
+		if not filters[pair[0]].is_empty() and candidate[pair[1]] not in filters[pair[0]]:
+			return false
+	if not filters["environments"].is_empty():
+		var shared := false
+		for environment in candidate["environments"]:
+			if environment in filters["environments"]:
+				shared = true
+				break
+		if not shared:
+			return false
+	return true
+
+
+func _difficulty_target(difficulty: String, levels: Array) -> Dictionary:
+	var thresholds := thresholds_for(levels)
+	match difficulty:
+		"EASY":
+			return {"minimum": 1, "maximum": maxi(1, int(thresholds["medium"]) - 1)}
+		"HARD":
+			return {"minimum": int(thresholds["hard"]), "maximum": maxi(int(thresholds["hard"]), int(thresholds["deadly"]) - 1)}
+		"DEADLY":
+			return {"minimum": int(thresholds["deadly"]), "maximum": maxi(int(thresholds["deadly"]) + 100, roundi(float(thresholds["deadly"]) * 1.5))}
+		_:
+			return {"minimum": int(thresholds["medium"]), "maximum": maxi(int(thresholds["medium"]), int(thresholds["hard"]) - 1)}
+
+
+func _search_free_compositions(
+	candidates: Array,
+	levels: Array,
+	resolved: Dictionary,
+	target: Dictionary,
+	seed: String,
+	cancellation: Callable
+) -> Dictionary:
+	var exact: Array = []
+	var fallback: Array = []
+	var seen := {}
+	var evaluation_count := 0
+	var attempt_count := 0
+	var shortlist := _free_shortlist(candidates, 32)
+	for candidate in candidates:
+		for quantity in range(1, FREE_MAX_QUANTITY + 1):
+			if _cancelled(cancellation):
+				return _cancelled_failure()
+			attempt_count += 1
+			evaluation_count += 1
+			_collect_free_option([candidate], [quantity], levels, resolved, target, seed, seen, exact, fallback)
+	for left_index in shortlist.size():
+		for right_index in range(left_index + 1, shortlist.size()):
+			for left_quantity in range(1, 11):
+				for right_quantity in range(1, 11):
+					if _cancelled(cancellation):
+						return _cancelled_failure()
+					attempt_count += 1
+					evaluation_count += 1
+					_collect_free_option(
+						[shortlist[left_index], shortlist[right_index]],
+						[left_quantity, right_quantity], levels, resolved, target, seed,
+						seen, exact, fallback
+					)
+	var triple_shortlist := _free_shortlist(candidates, 18)
+	for first_index in triple_shortlist.size():
+		var second_index := (first_index + 1) % triple_shortlist.size()
+		var third_index := (first_index + 2) % triple_shortlist.size()
+		if first_index == second_index or second_index == third_index:
+			continue
+		for first_quantity in range(1, 7):
+			for second_quantity in range(1, 7):
+				for third_quantity in range(1, 7):
+					if _cancelled(cancellation):
+						return _cancelled_failure()
+					attempt_count += 1
+					evaluation_count += 1
+					_collect_free_option(
+						[triple_shortlist[first_index], triple_shortlist[second_index], triple_shortlist[third_index]],
+						[first_quantity, second_quantity, third_quantity], levels, resolved, target, seed,
+						seen, exact, fallback
+					)
+	return {
+		"ok": true,
+		"exact": exact,
+		"fallback": fallback,
+		"attempt_count": attempt_count,
+		"evaluation_count": evaluation_count,
+	}
+
+
+func _free_shortlist(candidates: Array, limit: int) -> Array:
+	var sorted := candidates.duplicate(true)
+	sorted.sort_custom(func(left: Dictionary, right: Dictionary) -> bool:
+		if int(left["xp"]) == int(right["xp"]):
+			return str(left["creature_id"]) < str(right["creature_id"])
+		return int(left["xp"]) < int(right["xp"])
+	)
+	if sorted.size() <= limit:
+		return sorted
+	var result: Array = []
+	for index in limit:
+		result.append(sorted[roundi(float(index) * float(sorted.size() - 1) / float(limit - 1))])
+	return result
+
+
+func _collect_free_option(
+	selected: Array,
+	quantities: Array,
+	levels: Array,
+	resolved: Dictionary,
+	target: Dictionary,
+	seed: String,
+	seen: Dictionary,
+	exact: Array,
+	fallback: Array
+) -> void:
+	var roster: Array = []
+	var base_xp := 0
+	var creature_count := 0
+	var quantity_max := 0
+	for index in selected.size():
+		var candidate: Dictionary = selected[index]
+		var quantity := int(quantities[index])
+		base_xp += int(candidate["xp"]) * quantity
+		creature_count += quantity
+		quantity_max = maxi(quantity_max, quantity)
+		roster.append({
+			"creature_id": candidate["creature_id"],
+			"name": candidate["name"],
+			"last_known_name": candidate["name"],
+			"quantity": quantity,
+			"challenge_rating": candidate["challenge_rating"],
+			"xp": candidate["xp"],
+			"hit_points": candidate["hit_points"],
+			"armor_class": candidate["armor_class"],
+			"initiative_bonus": candidate["initiative_bonus"],
+		})
+	roster.sort_custom(func(left: Dictionary, right: Dictionary) -> bool:
+		return str(left["creature_id"]) < str(right["creature_id"])
+	)
+	var roster_key_parts: Array[String] = []
+	for entry in roster:
+		roster_key_parts.append("%s:%d" % [entry["creature_id"], int(entry["quantity"])])
+	var roster_key := "|".join(roster_key_parts)
+	if seen.has(roster_key):
+		return
+	seen[roster_key] = true
+	var adjusted_xp := roundi(float(base_xp) * multiplier_for(creature_count, levels.size()))
+	var midpoint: int = roundi(float(int(target["minimum"]) + int(target["maximum"])) / 2.0)
+	var score: int = absi(adjusted_xp - midpoint)
+	score += _amount_penalty(creature_count, str(resolved["amount"])) * maxi(1, midpoint / 4)
+	score += abs(selected.size() - _desired_species(str(resolved["diversity"]))) * maxi(1, midpoint / 5)
+	score += _balance_penalty(quantities, creature_count, quantity_max, str(resolved["balance"])) * maxi(1, midpoint / 10)
+	var option := {
+		"alternative_id": fingerprint("free|%s|%s" % [seed, roster_key]),
+		"roster": roster,
+		"base_xp": base_xp,
+		"adjusted_xp": adjusted_xp,
+		"difficulty": difficulty_for(adjusted_xp, levels),
+		"creature_count": creature_count,
+		"species_count": selected.size(),
+		"score": score,
+	}
+	if adjusted_xp >= int(target["minimum"]) and adjusted_xp <= int(target["maximum"]):
+		_retain_free_option(exact, option, 128)
+	else:
+		_retain_free_option(fallback, option, 128)
+
+
+func _retain_free_option(collection: Array, option: Dictionary, limit: int) -> void:
+	if collection.size() < limit:
+		collection.append(option)
+		return
+	var worst_index := 0
+	for index in range(1, collection.size()):
+		if _free_option_precedes(collection[worst_index], collection[index]):
+			worst_index = index
+	if _free_option_precedes(option, collection[worst_index]):
+		collection[worst_index] = option
+
+
+func _amount_penalty(count: int, amount: String) -> int:
+	var minimum: int = int({"FEW": 1, "STANDARD": 2, "MANY": 5}.get(amount, 2))
+	var maximum: int = int({"FEW": 3, "STANDARD": 6, "MANY": 12}.get(amount, 6))
+	return minimum - count if count < minimum else count - maximum if count > maximum else 0
+
+
+func _desired_species(diversity: String) -> int:
+	return int({"LOW": 1, "MEDIUM": 2, "HIGH": 3}.get(diversity, 2))
+
+
+func _balance_penalty(quantities: Array, count: int, quantity_max: int, balance: String) -> int:
+	if quantities.size() <= 1:
+		return 0 if balance == "FOCUSED" else 2
+	var minimum := int(quantities[0])
+	for quantity in quantities:
+		minimum = mini(minimum, int(quantity))
+	match balance:
+		"FOCUSED":
+			return maxi(0, count * 2 / 3 - quantity_max)
+		"VARIED":
+			return 0 if quantity_max > minimum else 2
+		_:
+			return quantity_max - minimum
+
+
+func _free_option_precedes(left: Dictionary, right: Dictionary) -> bool:
+	if int(left["score"]) != int(right["score"]):
+		return int(left["score"]) < int(right["score"])
+	return str(left["alternative_id"]) < str(right["alternative_id"])
+
+
+func _free_alternative(option: Dictionary, index: int, target: Dictionary, resolved: Dictionary) -> Dictionary:
+	var highlights: Array = [
+		"%d Arten · %d Gegner" % [int(option["species_count"]), int(option["creature_count"])],
+		"Zielband %d–%d angepasste XP" % [int(target["minimum"]), int(target["maximum"])],
+		"%s · %s · %s" % [resolved["amount"], resolved["balance"], resolved["diversity"]],
+	]
+	return {
+		"alternative_id": option["alternative_id"],
+		"label": "Vorschlag %d · %s" % [index + 1, str(option["difficulty"]).capitalize()],
+		"roster": option["roster"].duplicate(true),
+		"summary": {
+			"base_xp": int(option["base_xp"]),
+			"adjusted_xp": int(option["adjusted_xp"]),
+			"difficulty": option["difficulty"],
+			"creature_count": int(option["creature_count"]),
+			"species_count": int(option["species_count"]),
+		},
+		"highlights": highlights,
+	}
+
+
 func _candidate_snapshot(definitions_value: Variant) -> Dictionary:
 	if not definitions_value is Array:
 		return _failure("STORAGE_FAILURE", "Creature-Fakten konnten nicht als Snapshot gelesen werden.")
@@ -429,6 +843,7 @@ func _project_candidate(value: Variant) -> Dictionary:
 	var creature_id := str(value.get("definition_id", ""))
 	var name := str(value.get("name", "")).strip_edges()
 	var content: Dictionary = value["content"]
+	var projection: Dictionary = value.get("catalog_projection", {})
 	if (
 		not _valid_id(creature_id)
 		or name.is_empty()
@@ -439,12 +854,15 @@ func _project_candidate(value: Variant) -> Dictionary:
 		or not _nonnegative_integer(content.get("armor_class", null))
 		or not _integer(content.get("initiative_bonus", null))
 		or not _nonnegative_integer(content.get("legendary_action_count", null))
+		or (projection.has("challenge_rating_decimal") and not projection.get("challenge_rating_decimal") is int and not projection.get("challenge_rating_decimal") is float)
+		or (projection.has("environments") and not projection.get("environments") is Array)
 	):
 		return _failure("INVALID_REQUEST", "Creature besitzt keine vollständigen Generatorfakten.")
 	var candidate := {
 		"creature_id": creature_id,
 		"name": name,
 		"challenge_rating": str(content["challenge_rating"]).strip_edges(),
+		"challenge_rating_decimal": float(projection.get("challenge_rating_decimal", _challenge_rating_decimal(str(content["challenge_rating"])))),
 		"xp": int(content["xp"]),
 		"hit_points": int(content["hit_points"]),
 		"armor_class": int(content["armor_class"]),
@@ -454,9 +872,21 @@ func _project_candidate(value: Variant) -> Dictionary:
 		"swim_speed": int(content.get("swim_speed", 0)) if _nonnegative_integer(content.get("swim_speed", 0)) else 0,
 		"climb_speed": int(content.get("climb_speed", 0)) if _nonnegative_integer(content.get("climb_speed", 0)) else 0,
 		"burrow_speed": int(content.get("burrow_speed", 0)) if _nonnegative_integer(content.get("burrow_speed", 0)) else 0,
+		"size": str(projection.get("size", "")),
+		"creature_type": str(projection.get("creature_type", "")),
+		"subtype": str(projection.get("subtype", "")),
+		"alignment": str(projection.get("alignment", "")),
+		"environments": projection.get("environments", []).duplicate(),
 	}
 	candidate["role"] = _classify_role(candidate)
 	return {"ok": true, "candidate": candidate}
+
+
+func _challenge_rating_decimal(value: String) -> float:
+	var parts := value.split("/")
+	if parts.size() == 2 and str(parts[0]).is_valid_float() and str(parts[1]).is_valid_float() and not is_zero_approx(float(parts[1])):
+		return float(parts[0]) / float(parts[1])
+	return float(value) if value.is_valid_float() else 0.0
 
 
 func _classify_role(candidate: Dictionary) -> String:

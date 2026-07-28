@@ -23,6 +23,13 @@ filters and Encounter-owned generation tuning.
   replacement primitive used to persist one already merged complete snapshot;
   workflow consumers submit the partial commands above
 
+Current production persists the visible Catalog name, HG, size, type, subtype,
+environment, and alignment pool filters separately from Encounter difficulty,
+amount, XP-distribution, statblock-diversity, seed, and alternative-count
+tuning. Non-empty Encounter-table, faction, or location source selections are
+validated but generation rejects them visibly until the native grouped-source
+composition is delivered.
+
 ## Boundary Rules
 
 - the contract is workflow-oriented, not a mirror of the internal encounter

@@ -7,6 +7,7 @@ const FileCampaignRegistry = preload("res://godot/src/platform/persistence/file_
 const SharedDefinitionStore = preload("res://godot/src/platform/persistence/shared_definition_store.gd")
 const EncounterPlanKnowledge = preload("res://godot/src/features/encounter/encounter_plan_knowledge.gd")
 const EncounterRuntimeKnowledge = preload("res://godot/src/features/encounter/encounter_runtime_knowledge.gd")
+const EncounterGenerationPolicy = preload("res://godot/src/features/encounter/encounter_generation_policy.gd")
 const PartyRoster = preload("res://godot/src/features/party/party_roster.gd")
 const SceneKnowledge = preload("res://godot/src/features/scene/scene_knowledge.gd")
 
@@ -42,6 +43,30 @@ func remove_roster_slot(slot_id: String, context_id: String = EncounterRuntimeKn
 
 func undo_roster_removal(context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
 	return start_command({"operation": "undo_roster_removal", "context_id": context_id})
+
+
+func update_pool_filters(pool_filters: Dictionary, context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
+	return start_command({"operation": "update_pool_filters", "pool_filters": pool_filters.duplicate(true), "context_id": context_id})
+
+
+func update_tuning(tuning: Dictionary, context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
+	return start_command({"operation": "update_tuning", "tuning": tuning.duplicate(true), "context_id": context_id})
+
+
+func generate_alternatives(tuning: Dictionary, context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
+	return start_command({"operation": "generate_alternatives", "tuning": tuning.duplicate(true), "context_id": context_id})
+
+
+func select_generated_alternative(index: int, context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
+	return start_command({"operation": "select_generated_alternative", "index": index, "context_id": context_id})
+
+
+func clear_generation_history(context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
+	return start_command({"operation": "clear_generation_history", "context_id": context_id})
+
+
+func save_current_plan(name: String, context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
+	return start_command({"operation": "save_current_plan", "name": name, "context_id": context_id})
 
 
 func open_initiative(context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
@@ -134,6 +159,18 @@ func _apply_runtime_command(payload: Dictionary, request: Dictionary) -> Diction
 			result = model.remove_roster_slot(payload, str(request["slot_id"]), context_id)
 		"undo_roster_removal":
 			result = model.undo_roster_removal(payload, context_id)
+		"update_pool_filters":
+			result = model.update_pool_filters(payload, request["pool_filters"], context_id)
+		"update_tuning":
+			result = model.update_tuning(payload, request["tuning"], context_id)
+		"generate_alternatives":
+			return _generate_alternatives(payload, request, context_id)
+		"select_generated_alternative":
+			result = model.select_generated_alternative(payload, int(request["index"]), context_id)
+		"clear_generation_history":
+			result = model.clear_generation_history(payload, context_id)
+		"save_current_plan":
+			return _save_current_plan(payload, request, context_id)
 		"open_initiative":
 			var party := _active_party(request, context_id)
 			if not party.get("ok", false):
@@ -255,6 +292,131 @@ func _prepare_creature(creature_id: String, request: Dictionary) -> Dictionary:
 		"armor_class": int(content["armor_class"]),
 		"initiative_bonus": int(content["initiative_bonus"]),
 	}}
+
+
+func _generate_alternatives(payload: Dictionary, request: Dictionary, context_id: String) -> Dictionary:
+	var runtime := EncounterRuntimeKnowledge.new()
+	var tuning_update := runtime.update_tuning(payload, request["tuning"], context_id)
+	if not tuning_update.get("ok", false):
+		return tuning_update
+	var working_payload: Dictionary = tuning_update.get("payload", payload)
+	var runtime_snapshot := runtime.snapshot(working_payload, context_id)
+	if not runtime_snapshot.get("ok", false) or runtime_snapshot["context"]["mode"] != "builder":
+		return {"ok": false, "status": "invalid", "error": "Encounter-Vorschläge können nur in der manuellen Aufstellung erzeugt werden."}
+	var party := _active_party(request, context_id)
+	if not party.get("ok", false):
+		return party
+	var levels: Array = []
+	for member in party["active"]:
+		if member.get("level") == null:
+			return {"ok": false, "status": "UNRESOLVABLE", "error": "Jedes aktive Party-Mitglied braucht für die Generierung eine Stufe."}
+		levels.append(int(member["level"]))
+	var registry_state := FileCampaignRegistry.new(_encounter_data_root).load_state()
+	if (
+		not registry_state.get("ok", false)
+		or registry_state.get("active_campaign_id", "") != request.get("campaign_id", "")
+		or int(registry_state.get("generation", -1)) != int(request.get("activation_generation", -2))
+	):
+		return {"ok": false, "status": "stale", "error": "Die aktive Campaign änderte sich vor der Encounter-Generierung."}
+	var definitions := SharedDefinitionStore.new(_encounter_data_root).definitions_of_kind(
+		int(registry_state.get("shared_definitions_generation", 0)), "creature"
+	)
+	if not definitions.get("ok", false):
+		return definitions
+	var builder_inputs: Dictionary = runtime_snapshot["context"]["builder_inputs"]
+	if (
+		not builder_inputs["pool_filters"]["encounter_table_ids"].is_empty()
+		or not builder_inputs["pool_filters"]["faction_ids"].is_empty()
+		or not str(builder_inputs["pool_filters"]["location_id"]).is_empty()
+	):
+		return {"ok": false, "status": "unsupported_source", "error": "Encounter-Tabellen und World-Quellen brauchen zuerst ihre native Gruppenquellen-Anbindung."}
+	var generated := EncounterGenerationPolicy.new().generate_alternatives(
+		levels,
+		definitions.get("definitions", []),
+		builder_inputs
+	)
+	if not generated.get("ok", false):
+		return generated
+	var confirmed := FileCampaignRegistry.new(_encounter_data_root).load_state()
+	if (
+		not confirmed.get("ok", false)
+		or confirmed.get("active_campaign_id", "") != request.get("campaign_id", "")
+		or int(confirmed.get("generation", -1)) != int(request.get("activation_generation", -2))
+		or int(confirmed.get("shared_definitions_generation", -1)) != int(registry_state.get("shared_definitions_generation", -2))
+	):
+		return {"ok": false, "status": "stale", "error": "Die aktive Campaign oder Creature-Generation änderte sich während der Encounter-Generierung."}
+	return _validated_result(runtime.apply_generated_alternatives(
+		working_payload,
+		generated["alternatives"],
+		generated["diagnostics"],
+		context_id
+	))
+
+
+func _save_current_plan(payload: Dictionary, request: Dictionary, context_id: String) -> Dictionary:
+	var runtime := EncounterRuntimeKnowledge.new()
+	var runtime_snapshot := runtime.snapshot(payload, context_id)
+	if not runtime_snapshot.get("ok", false):
+		return runtime_snapshot
+	var context: Dictionary = runtime_snapshot["context"]
+	if context_id != EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID or context["mode"] != "builder" or context["roster"].is_empty():
+		return {"ok": false, "status": "invalid", "error": "Nur eine nicht leere manuelle Aufstellung kann gespeichert werden."}
+	var registry_state := FileCampaignRegistry.new(_encounter_data_root).load_state()
+	if (
+		not registry_state.get("ok", false)
+		or registry_state.get("active_campaign_id", "") != request.get("campaign_id", "")
+		or int(registry_state.get("generation", -1)) != int(request.get("activation_generation", -2))
+	):
+		return {"ok": false, "status": "stale", "error": "Die aktive Campaign änderte sich vor dem Speichern der Aufstellung."}
+	var creature_ids: Array = []
+	for entry in context["roster"]:
+		creature_ids.append(str(entry["creature_id"]))
+	var definitions := SharedDefinitionStore.new(_encounter_data_root).definitions_for_refs(
+		creature_ids,
+		int(registry_state.get("shared_definitions_generation", 0))
+	)
+	if not definitions.get("ok", false) or definitions.get("definitions", []).size() != creature_ids.size():
+		return {"ok": false, "status": "missing", "error": "Die aktuelle Aufstellung verweist auf fehlende Creature-Fakten."}
+	var current_names := {}
+	for definition in definitions["definitions"]:
+		if definition.get("kind", "") != "creature":
+			return _invalid_creature()
+		current_names[str(definition["definition_id"])] = str(definition["name"])
+	var confirmed := FileCampaignRegistry.new(_encounter_data_root).load_state()
+	if (
+		not confirmed.get("ok", false)
+		or confirmed.get("active_campaign_id", "") != request.get("campaign_id", "")
+		or int(confirmed.get("generation", -1)) != int(request.get("activation_generation", -2))
+		or int(confirmed.get("shared_definitions_generation", -1)) != int(registry_state.get("shared_definitions_generation", -2))
+	):
+		return {"ok": false, "status": "stale", "error": "Die aktive Campaign oder Creature-Generation änderte sich während des Speicherns."}
+	var saved_roster: Array = []
+	for entry in context["roster"]:
+		saved_roster.append({
+			"creature_id": entry["creature_id"],
+			"quantity": int(entry["quantity"]),
+			"last_known_name": current_names[str(entry["creature_id"])],
+		})
+	var generated_label := ""
+	var generation: Dictionary = context["generation"]
+	if not generation["alternatives"].is_empty():
+		generated_label = str(generation["alternatives"][int(generation["selected_index"])]["label"])
+	var created := EncounterPlanKnowledge.new().create_plan(
+		payload,
+		str(request.get("name", "")),
+		saved_roster,
+		"",
+		"",
+		generated_label
+	)
+	if not created.get("ok", false):
+		return created
+	var marked := runtime.mark_current_saved(
+		created["payload"], str(created["record"]["record_id"]), context_id
+	)
+	if marked.get("ok", false):
+		marked["record"] = created["record"]
+	return _validated_result(marked)
 
 
 func _active_party(request: Dictionary, context_id: String) -> Dictionary:
