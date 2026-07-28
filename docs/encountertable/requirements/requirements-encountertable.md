@@ -36,6 +36,10 @@ without deciding a narrative result.
   failure. The feature never invents candidate facts.
 - An optional linked Loot Table is warning context. Different linked Loot
   Tables in one selection produce a non-blocking `Loot-Konflikt` signal.
+- Encounter may read a selected table set as immutable generation-source
+  context containing unique Creature IDs, maximum effective weights, linked
+  Loot IDs, and conflict state; this read does not resolve or own a final
+  roster.
 
 ## Non-Goals
 
@@ -57,6 +61,9 @@ without deciding a narrative result.
   release all worker and pending state;
 - a fixed selected-table/Creature fixture returns the exact eligible
   identities, XP facts, effective weights, and per-table authored weights;
+- selected table sources constrain production Encounter generation, survive
+  Catalog restart, publish source diagnostics, and never copy table records
+  into Encounter persistence;
 - World Planner references are chosen through the Encounter Table provider and
   persist only when the enclosing owner edit is confirmed;
 - recoverable table deletion removes dependent current references atomically

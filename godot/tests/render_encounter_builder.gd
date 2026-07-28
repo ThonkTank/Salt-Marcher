@@ -121,6 +121,11 @@ func _prepare_fixture() -> Dictionary:
 	render_tuning["difficulty"] = "MEDIUM"
 	render_tuning["seed"] = "grauhafen"
 	encounter_payload = runtime_model.update_tuning(encounter_payload, render_tuning).get("payload", encounter_payload)
+	encounter_payload = runtime_model.update_source_filters(encounter_payload, {
+		"encounter_table_ids": ["encounter_table.harbor", "encounter_table.docks"],
+		"faction_ids": ["faction.harbor"],
+		"location_id": "place.gray-harbor",
+	}).get("payload", encounter_payload)
 	encounter_payload = runtime_model.apply_generated_alternatives(
 		encounter_payload,
 		[
@@ -147,9 +152,11 @@ func _prepare_fixture() -> Dictionary:
 			"requested_difficulty": "MEDIUM", "resolved_difficulty": "MEDIUM",
 			"resolved_amount": "STANDARD", "resolved_balance": "EVEN", "resolved_diversity": "MEDIUM",
 			"solution_quality": "EXACT", "stop_category": "EXACT_OPTIONS_READY",
-			"candidate_pool_size": 57, "attempt_count": 18420, "candidate_evaluation_count": 18420,
-			"target_min_xp": 800, "target_max_xp": 1199,
-		}
+				"candidate_pool_size": 57, "attempt_count": 18420, "candidate_evaluation_count": 18420,
+				"target_min_xp": 800, "target_max_xp": 1199,
+				"source_mode": "GROUPED", "source_table_count": 2, "source_faction_count": 1,
+				"source_location_selected": true, "loot_conflict": true,
+			}
 	).get("payload", encounter_payload)
 	var committed := store.commit(
 		int(state["generation"]),

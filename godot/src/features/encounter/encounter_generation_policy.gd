@@ -49,20 +49,27 @@ func generate_alternatives(
 	var candidates := _candidate_snapshot(definitions_value)
 	if not candidates.get("ok", false):
 		return candidates
+	var source: Dictionary = request["source_constraints"]
 	var filtered: Array = []
 	for candidate_value in candidates["rows"]:
 		if _cancelled(cancellation):
 			return _cancelled_failure()
-		if _matches_free_filters(candidate_value, request["pool_filters"]):
-			filtered.append(candidate_value)
+		var candidate: Dictionary = candidate_value.duplicate(true)
+		if source["active"] and candidate["creature_id"] not in source["allowed_creature_ids"]:
+			continue
+		if _matches_free_filters(candidate, request["pool_filters"], bool(source["active"])):
+			candidate["source_weight"] = int(source["weights"].get(candidate["creature_id"], 1))
+			candidate["maximum_quantity"] = int(source["maximum_quantities"].get(candidate["creature_id"], FREE_MAX_QUANTITY))
+			filtered.append(candidate)
 	if filtered.is_empty():
-		return _failure("NO_CREATURES", "Die aktuellen Katalogfilter lassen keine vollständigen Monster übrig.")
+		return _failure("NO_CREATURES", "Die aktuellen Filter und Quellen lassen keine vollständigen Monster übrig.")
 	var tuning: Dictionary = request["tuning"]
 	var resolved := {
 		"difficulty": "MEDIUM" if tuning["difficulty"] == "AUTO" else tuning["difficulty"],
 		"amount": "STANDARD" if tuning["amount"] == "AUTO" else tuning["amount"],
 		"balance": "EVEN" if tuning["balance"] == "AUTO" else tuning["balance"],
 		"diversity": "MEDIUM" if tuning["diversity"] == "AUTO" else tuning["diversity"],
+		"source_constraints": source,
 	}
 	var target := _difficulty_target(str(resolved["difficulty"]), levels["levels"])
 	var search := _search_free_compositions(
@@ -101,6 +108,11 @@ func generate_alternatives(
 			"candidate_evaluation_count": int(search["evaluation_count"]),
 			"target_min_xp": int(target["minimum"]),
 			"target_max_xp": int(target["maximum"]),
+			"source_mode": "GROUPED" if source["active"] else "CATALOG",
+			"source_table_count": int(source["table_ids"].size()),
+			"source_faction_count": int(source["faction_ids"].size()),
+			"source_location_selected": not str(source["location_id"]).is_empty(),
+			"loot_conflict": bool(source["loot_conflict"]),
 		},
 	}
 
@@ -476,7 +488,7 @@ func _summary(
 
 
 func _validate_free_request(value: Variant) -> Dictionary:
-	if not value is Dictionary or value.size() != 2:
+	if not value is Dictionary or value.size() not in [2, 3]:
 		return _failure("INVALID_REQUEST", "Freie Encounter-Generierung braucht Pool-Filter und Tuning.")
 	var filters := _normalize_free_filters(value.get("pool_filters"))
 	if not filters.get("ok", false):
@@ -484,7 +496,15 @@ func _validate_free_request(value: Variant) -> Dictionary:
 	var tuning := _normalize_free_tuning(value.get("tuning"))
 	if not tuning.get("ok", false):
 		return tuning
-	return {"ok": true, "pool_filters": filters["filters"], "tuning": tuning["tuning"]}
+	var source := _normalize_source_constraints(value.get("source_constraints", _default_source_constraints()))
+	if not source.get("ok", false):
+		return source
+	return {
+		"ok": true,
+		"pool_filters": filters["filters"],
+		"tuning": tuning["tuning"],
+		"source_constraints": source["source_constraints"],
+	}
 
 
 func _normalize_free_filters(value: Variant) -> Dictionary:
@@ -573,7 +593,58 @@ func _normalized_text_values(value: Variant, identities: bool) -> Dictionary:
 	return {"ok": true, "values": result}
 
 
-func _matches_free_filters(candidate: Dictionary, filters: Dictionary) -> bool:
+func _default_source_constraints() -> Dictionary:
+	return {
+		"active": false,
+		"allowed_creature_ids": [],
+		"weights": {},
+		"maximum_quantities": {},
+		"table_ids": [],
+		"faction_ids": [],
+		"location_id": "",
+		"linked_loot_table_ids": [],
+		"loot_conflict": false,
+	}
+
+
+func _normalize_source_constraints(value: Variant) -> Dictionary:
+	if not value is Dictionary or value.size() != 9 or not value.get("active", null) is bool:
+		return _failure("INVALID_REQUEST", "Generator-Quellen besitzen ein unerwartetes Format.")
+	var normalized := _default_source_constraints()
+	normalized["active"] = bool(value["active"])
+	for key in ["allowed_creature_ids", "table_ids", "faction_ids", "linked_loot_table_ids"]:
+		var values := _normalized_text_values(value.get(key), true)
+		if not values.get("ok", false):
+			return values
+		normalized[key] = values["values"]
+	var location_id := str(value.get("location_id", "")).strip_edges()
+	if not location_id.is_empty() and not _valid_id(location_id):
+		return _failure("INVALID_REQUEST", "Generator-Ort besitzt keine gültige Identität.")
+	normalized["location_id"] = location_id
+	for pair in [["weights", 1, 10], ["maximum_quantities", 0, 2_147_483_647]]:
+		var source_values = value.get(pair[0])
+		if not source_values is Dictionary:
+			return _failure("INVALID_REQUEST", "Generator-Quellen enthalten ungültige Mengenwerte.")
+		var target := {}
+		for creature_id_value in source_values:
+			var creature_id := str(creature_id_value)
+			var number = source_values[creature_id_value]
+			if not _valid_id(creature_id) or not _integer(number) or int(number) < int(pair[1]) or int(number) > int(pair[2]):
+				return _failure("INVALID_REQUEST", "Generator-Quellen enthalten ungültige Mengenwerte.")
+			target[creature_id] = int(number)
+		normalized[pair[0]] = target
+	if not value.get("loot_conflict", null) is bool:
+		return _failure("INVALID_REQUEST", "Generator-Loot-Hinweis ist ungültig.")
+	normalized["loot_conflict"] = bool(value["loot_conflict"])
+	if (
+		normalized["active"]
+		and (normalized["table_ids"].is_empty() or normalized["allowed_creature_ids"].is_empty())
+	):
+		return _failure("NO_CREATURES", "Die gewählten Quellen enthalten keine verwendbare Encounter-Tabelle.")
+	return {"ok": true, "source_constraints": normalized}
+
+
+func _matches_free_filters(candidate: Dictionary, filters: Dictionary, grouped_source: bool) -> bool:
 	var needle := str(filters["search_text"]).to_lower()
 	if not needle.is_empty() and not str(candidate["name"]).to_lower().contains(needle):
 		return false
@@ -581,10 +652,14 @@ func _matches_free_filters(candidate: Dictionary, filters: Dictionary) -> bool:
 		return false
 	if filters["maximum_challenge_rating"] != null and float(candidate["challenge_rating_decimal"]) > float(filters["maximum_challenge_rating"]):
 		return false
-	for pair in [["sizes", "size"], ["types", "creature_type"], ["subtypes", "subtype"], ["alignments", "alignment"]]:
+	for pair in [["sizes", "size"], ["alignments", "alignment"]]:
 		if not filters[pair[0]].is_empty() and candidate[pair[1]] not in filters[pair[0]]:
 			return false
-	if not filters["environments"].is_empty():
+	if not grouped_source:
+		for pair in [["types", "creature_type"], ["subtypes", "subtype"]]:
+			if not filters[pair[0]].is_empty() and candidate[pair[1]] not in filters[pair[0]]:
+				return false
+	if not grouped_source and not filters["environments"].is_empty():
 		var shared := false
 		for environment in candidate["environments"]:
 			if environment in filters["environments"]:
@@ -623,7 +698,7 @@ func _search_free_compositions(
 	var attempt_count := 0
 	var shortlist := _free_shortlist(candidates, 32)
 	for candidate in candidates:
-		for quantity in range(1, FREE_MAX_QUANTITY + 1):
+		for quantity in range(1, mini(FREE_MAX_QUANTITY, int(candidate["maximum_quantity"])) + 1):
 			if _cancelled(cancellation):
 				return _cancelled_failure()
 			attempt_count += 1
@@ -631,8 +706,8 @@ func _search_free_compositions(
 			_collect_free_option([candidate], [quantity], levels, resolved, target, seed, seen, exact, fallback)
 	for left_index in shortlist.size():
 		for right_index in range(left_index + 1, shortlist.size()):
-			for left_quantity in range(1, 11):
-				for right_quantity in range(1, 11):
+			for left_quantity in range(1, mini(10, int(shortlist[left_index]["maximum_quantity"])) + 1):
+				for right_quantity in range(1, mini(10, int(shortlist[right_index]["maximum_quantity"])) + 1):
 					if _cancelled(cancellation):
 						return _cancelled_failure()
 					attempt_count += 1
@@ -648,9 +723,9 @@ func _search_free_compositions(
 		var third_index := (first_index + 2) % triple_shortlist.size()
 		if first_index == second_index or second_index == third_index:
 			continue
-		for first_quantity in range(1, 7):
-			for second_quantity in range(1, 7):
-				for third_quantity in range(1, 7):
+		for first_quantity in range(1, mini(6, int(triple_shortlist[first_index]["maximum_quantity"])) + 1):
+			for second_quantity in range(1, mini(6, int(triple_shortlist[second_index]["maximum_quantity"])) + 1):
+				for third_quantity in range(1, mini(6, int(triple_shortlist[third_index]["maximum_quantity"])) + 1):
 					if _cancelled(cancellation):
 						return _cancelled_failure()
 					attempt_count += 1
@@ -699,12 +774,14 @@ func _collect_free_option(
 	var base_xp := 0
 	var creature_count := 0
 	var quantity_max := 0
+	var source_weight_penalty := 0
 	for index in selected.size():
 		var candidate: Dictionary = selected[index]
 		var quantity := int(quantities[index])
 		base_xp += int(candidate["xp"]) * quantity
 		creature_count += quantity
 		quantity_max = maxi(quantity_max, quantity)
+		source_weight_penalty += (10 - int(candidate["source_weight"])) * quantity
 		roster.append({
 			"creature_id": candidate["creature_id"],
 			"name": candidate["name"],
@@ -732,6 +809,7 @@ func _collect_free_option(
 	score += _amount_penalty(creature_count, str(resolved["amount"])) * maxi(1, midpoint / 4)
 	score += abs(selected.size() - _desired_species(str(resolved["diversity"]))) * maxi(1, midpoint / 5)
 	score += _balance_penalty(quantities, creature_count, quantity_max, str(resolved["balance"])) * maxi(1, midpoint / 10)
+	score += source_weight_penalty * maxi(1, midpoint / 1000)
 	var option := {
 		"alternative_id": fingerprint("free|%s|%s" % [seed, roster_key]),
 		"roster": roster,
@@ -797,6 +875,15 @@ func _free_alternative(option: Dictionary, index: int, target: Dictionary, resol
 		"Zielband %d–%d angepasste XP" % [int(target["minimum"]), int(target["maximum"])],
 		"%s · %s · %s" % [resolved["amount"], resolved["balance"], resolved["diversity"]],
 	]
+	if resolved.get("source_constraints", {}).get("active", false):
+		var source: Dictionary = resolved["source_constraints"]
+		highlights.append("%d Tabellen · %d Fraktionen%s" % [
+			source["table_ids"].size(),
+			source["faction_ids"].size(),
+			" · 1 Ort" if not str(source["location_id"]).is_empty() else "",
+		])
+		if source["loot_conflict"]:
+			highlights.append("Loot-Konflikt · mehrere verknüpfte Beutequellen")
 	return {
 		"alternative_id": option["alternative_id"],
 		"label": "Vorschlag %d · %s" % [index + 1, str(option["difficulty"]).capitalize()],

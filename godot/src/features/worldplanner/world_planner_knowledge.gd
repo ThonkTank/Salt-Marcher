@@ -235,6 +235,65 @@ func read_entity(
 	}
 
 
+func generation_sources(
+	payload_value: Variant,
+	faction_ids_value: Variant,
+	location_id_value: String,
+	cancellation: Callable = Callable()
+) -> Dictionary:
+	var validated := validate_payload(payload_value)
+	if not validated.get("ok", false):
+		return validated
+	if not faction_ids_value is Array:
+		return _failure("Generator-Fraktionen müssen eine Liste sein.")
+	var records: Dictionary = validated["payload"]["records"]
+	var faction_ids: Array = []
+	for faction_id_value in faction_ids_value:
+		if _cancelled(cancellation):
+			return _cancelled_failure()
+		var faction_id := str(faction_id_value)
+		if not _valid_id(faction_id) or faction_id in faction_ids:
+			return _failure("Generator-Fraktionen enthalten ungültige oder doppelte Identitäten.")
+		if not records.has(faction_id) or records[faction_id]["kind"] != "faction":
+			return _missing(faction_id)
+		faction_ids.append(faction_id)
+	faction_ids.sort()
+	var location_id := location_id_value.strip_edges()
+	var location: Dictionary = {}
+	if not location_id.is_empty():
+		if not _valid_id(location_id) or not records.has(location_id) or records[location_id]["kind"] != "place":
+			return _missing(location_id)
+		location = records[location_id]
+	var faction_tables := _primary_tables_for_factions(records, faction_ids)
+	var location_faction_ids: Array = location.get("faction_ids", []).duplicate()
+	location_faction_ids.sort()
+	var location_tables: Array = location.get("encounter_table_ids", []).duplicate()
+	for table_id in _primary_tables_for_factions(records, location_faction_ids):
+		if table_id not in location_tables:
+			location_tables.append(table_id)
+	location_tables.sort()
+	var table_ids: Array = []
+	if not faction_ids.is_empty() and not location_id.is_empty():
+		for table_id in faction_tables:
+			if table_id in location_tables:
+				table_ids.append(table_id)
+	elif not faction_ids.is_empty():
+		table_ids = faction_tables
+	elif not location_id.is_empty():
+		table_ids = location_tables
+	var stock_faction_ids: Array = faction_ids if not faction_ids.is_empty() else location_faction_ids
+	var stock_limits := _combined_stock_limits(records, stock_faction_ids)
+	return {
+		"ok": true,
+		"status": "ready" if not table_ids.is_empty() else "empty",
+		"constrained": not faction_ids.is_empty() or not location_id.is_empty(),
+		"table_ids": table_ids,
+		"faction_ids": stock_faction_ids,
+		"location_id": location_id,
+		"stock_limits": stock_limits,
+	}
+
+
 func create_record(
 	payload_value: Variant,
 	kind: String,
@@ -475,6 +534,38 @@ func _default_record(record_id: String, kind: String, name: String, timestamp: S
 			"rewards": [],
 		})
 	return record
+
+
+func _primary_tables_for_factions(records: Dictionary, faction_ids: Array) -> Array:
+	var table_ids: Array = []
+	for faction_id in faction_ids:
+		var table_id := str(records.get(faction_id, {}).get("primary_encounter_table_id", ""))
+		if not table_id.is_empty() and table_id not in table_ids:
+			table_ids.append(table_id)
+	table_ids.sort()
+	return table_ids
+
+
+func _combined_stock_limits(records: Dictionary, faction_ids: Array) -> Dictionary:
+	var keys: Array = []
+	for faction_id in faction_ids:
+		for creature_id in records.get(faction_id, {}).get("inventory_limits", {}):
+			if creature_id not in keys:
+				keys.append(creature_id)
+	keys.sort()
+	var combined := {}
+	for creature_id in keys:
+		var quantity := 0
+		var unlimited := false
+		for faction_id in faction_ids:
+			var inventory: Dictionary = records.get(faction_id, {}).get("inventory_limits", {})
+			if not inventory.has(creature_id) or inventory[creature_id] == null:
+				unlimited = true
+				break
+			quantity += int(inventory[creature_id])
+		if not unlimited:
+			combined[creature_id] = quantity
+	return combined
 
 
 func _apply_patch(record_value: Variant, fields: Dictionary) -> Dictionary:

@@ -113,6 +113,9 @@ func _ready() -> void:
 	catalog.encounter_runtime_command_controller = encounter_commands
 	content.add_child(catalog)
 	_routes["catalog"] = catalog
+	campaign_desk.active_campaign_changed.connect(func(_campaign_id: String) -> void:
+		catalog.refresh()
+	)
 	var session_planner := SessionPlannerWorkspace.new()
 	session_planner.data_root = data_root
 	session_planner.runtime_coordinator = runtime_coordinator

@@ -1,6 +1,6 @@
 # Encounter State Contract
 
-Status: Active target contract with partial Godot runtime command coverage
+Status: Active target contract with grouped-source Godot runtime coverage
 Owner: Encounter
 Last Reviewed: 2026-07-28
 Source of Truth: This document
@@ -30,7 +30,11 @@ roster. They also cover manual quantity changes, remove plus one-step undo,
 Catalog additions in builder/combat mode, and atomic Scene context
 synchronization. Free generate, previous/next alternative, history clear, and
 save-current-plan are production commands for the current Catalog pool;
-Encounter-table and World-source composition remains target work.
+Catalog source updates and Encounter-table/World-source generation are also
+production commands. The source run resolves direct-table and World-derived
+table intersection, current table membership/weights, finite faction stock,
+provenance diagnostics, and non-blocking Loot conflict before one generation
+publication.
 
 ## Boundary Rules
 

@@ -100,8 +100,13 @@ Encounter supports:
 - the active party is the balancing baseline for runtime generation
 - encounter math uses current public Party facts rather than copied Party truth
 - selected encounter tables replace creature-filter sourcing for that pass
+- table and faction selections form unions within their own dimensions, while
+  direct Encounter Tables and World-derived tables intersect
 - selected World Planner sources may narrow encounter tables and stock caps but
   do not transfer World Planner ownership
+- a location contributes its own tables and linked factions' primary tables;
+  finite caps apply to generated quantities and omitted caps remain unlimited
+- multiple linked Loot Table IDs are warning context, not a generation failure
 - Auto difficulty and tuning resolve deterministically from the generation
   seed and request meaning before alternatives are enumerated
 - a non-empty candidate pool with no viable roster is distinct from an empty

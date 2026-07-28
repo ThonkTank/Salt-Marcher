@@ -27,10 +27,13 @@ running scene. Assigned PCs, hostile or friendly NPC statblocks, and Scene mobs
 synchronize atomically while compatible initiative,
 combat HP, round, active turn, and mode survive composition changes. The manual
 builder now generates ranked Party-balanced alternatives from persisted Catalog
-pool filters and Encounter-owned tuning, navigates them, clears transient
-history, and saves the selected roster through the ordinary plan owner. Masks,
-foreign table/World source composition, and final compact cockpit composition
-remain target work. Manual roster quantity/remove/one-step undo and live
+pool filters or grouped Encounter-Table/World Planner sources and Encounter-owned
+tuning, navigates them, clears transient history, and saves the selected roster
+through the ordinary plan owner. Catalog persists the source choices separately;
+Encounter resolves table membership, World table intersection, finite faction
+stock, source diagnostics, and non-blocking Loot conflicts only for generation.
+Masks and final compact cockpit composition remain target work. Manual roster
+quantity/remove/one-step undo and live
 reinforcements are production-native. JavaFX/SQLite implementations are
 migration evidence only and are not called by the Godot product.
 
@@ -77,6 +80,10 @@ migration evidence only and are not called by the Godot product.
   combat expansion, individual HP,
   persisted round/active-turn restart truth, result derivation, atomic XP
   publication, and return to the unchanged runtime roster.
+- grouped-source proof covers Catalog table/faction/location selection,
+  independent restart persistence, direct-table and World-source intersection,
+  current weighted table membership, finite faction stock, deterministic
+  generation, source diagnostics, and a non-blocking multiple-Loot warning;
 - Scene-runtime proof covers independent contexts, assigned-Party initiative,
   mob expansion, friendly/hostile NPC roles, focus switching without combat
   reset, deleted-context cleanup, exact deep linking, and restart readback.

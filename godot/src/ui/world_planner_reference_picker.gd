@@ -91,7 +91,8 @@ func reference_label(reference_id: String) -> String:
 
 
 func _build_surface() -> void:
-	name = "WorldPlannerReferencePicker"
+	if name.is_empty() or name.begins_with("@"):
+		name = "WorldPlannerReferencePicker"
 	min_size = Vector2i(620, 520)
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 8)

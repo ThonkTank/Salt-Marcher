@@ -40,7 +40,6 @@ godot/src/features/encounter/
   encounter_runtime_knowledge.gd
   encounter_runtime_read_controller.gd
   encounter_runtime_command_controller.gd
-  # target: grouped table/World source composition and planning-fact controllers
 godot/src/ui/
   encounter_plan_editor_dialog.gd
   encounter_runtime_workspace.gd
@@ -70,9 +69,12 @@ writer, bounded Catalog query, latest-wins detail hydration, recoverable trash,
 bounded roster editor, deterministic generated-batch policy, asynchronous
 prepare/summary lane, and atomic idempotent batch publication. The same pure
 policy now performs bounded free-form candidate enumeration/ranking from one
-Party plus Creature snapshot; runtime v4 persists split builder inputs,
-alternatives, selection, and diagnostics. Session Planner planning facts and
-grouped Encounter-table/World sources are not inferred from that seam. A separate top-level
+Party plus Creature snapshot; runtime v5 persists split builder inputs,
+alternatives, selection, and source-aware diagnostics. For grouped generation,
+the controller also reads Encounter Table and World Planner owner snapshots on
+the worker, derives only effective table IDs, weighted Creature IDs, finite
+caps, and Loot context, then confirms the same Campaign generation before
+publication. Session Planner planning facts are not inferred from that seam. A separate top-level
 Encounter workspace now owns the manual live path plus any selected Scene
 context: open saved plan, initiative, individual combatants, HP/turn mutation,
 results, atomic Party XP award, and return to the retained roster. The Scene
@@ -128,10 +130,12 @@ Catalog filter change
 generateAlternatives(tuning)
   -> merge only tuning; preserve current pool filters
   -> capture one active-Party and complete Creature snapshot on the worker
+  -> when selected, derive World table/cap constraints and current Encounter
+     Table membership/weights without copying provider records
   -> enumerate bounded one/two/three-statblock compositions
   -> rank exact target-band options or the best fallback deterministically
   -> confirm Campaign plus Shared-Definition generations
-  -> publish runtime v4 alternatives, diagnostics, selection, and roster once
+  -> publish runtime v5 alternatives, diagnostics, selection, and roster once
 
 saveCurrentPlan(name)
   -> revalidate every current Creature identity/name

@@ -1353,6 +1353,45 @@ func _run_generated_encounter_batch_contract() -> void:
 		policy.generate_alternatives([3, 3, 3, 3], free_definitions, empty_filter_request).get("status", "") == "NO_CREATURES",
 		"free generation distinguishes an empty filtered pool from a non-empty pool without a composition"
 	)
+	var grouped_request: Dictionary = free_request.duplicate(true)
+	grouped_request["pool_filters"]["types"] = ["Dragon"]
+	grouped_request["pool_filters"]["environments"] = ["Desert"]
+	grouped_request["source_constraints"] = {
+		"active": true,
+		"allowed_creature_ids": ["creature.free.wolf", "creature.free.worg"],
+		"weights": {"creature.free.wolf": 2, "creature.free.worg": 9},
+		"maximum_quantities": {"creature.free.wolf": 2, "creature.free.worg": 1},
+		"table_ids": ["encounter_table.harbor"],
+		"faction_ids": ["faction.harbor"],
+		"location_id": "place.north-quay",
+		"linked_loot_table_ids": ["loot_table.harbor", "loot_table.docks"],
+		"loot_conflict": true,
+	}
+	var grouped_generated := policy.generate_alternatives([3, 3, 3, 3], free_definitions, grouped_request)
+	var grouped_roster: Array = grouped_generated.get("alternatives", [])[0].get("roster", []) if grouped_generated.get("alternatives", []).size() > 0 else []
+	var grouped_quantities := {}
+	for entry in grouped_roster:
+		grouped_quantities[entry["creature_id"]] = int(entry["quantity"])
+	_expect(
+		grouped_generated.get("ok", false)
+		and grouped_generated.get("diagnostics", {}).get("source_mode", "") == "GROUPED"
+		and grouped_generated.get("diagnostics", {}).get("source_table_count", -1) == 1
+		and grouped_generated.get("diagnostics", {}).get("source_faction_count", -1) == 1
+		and grouped_generated.get("diagnostics", {}).get("source_location_selected", false)
+		and grouped_generated.get("diagnostics", {}).get("loot_conflict", false)
+		and int(grouped_quantities.get("creature.free.wolf", 0)) <= 2
+		and int(grouped_quantities.get("creature.free.worg", 0)) <= 1,
+		"grouped generation ignores table-owned taxonomy filters, honors finite stock, and publishes durable source diagnostics"
+	)
+	var exhausted_grouped_request: Dictionary = grouped_request.duplicate(true)
+	exhausted_grouped_request["source_constraints"]["maximum_quantities"] = {
+		"creature.free.wolf": 0,
+		"creature.free.worg": 0,
+	}
+	_expect(
+		policy.generate_alternatives([3, 3, 3, 3], free_definitions, exhausted_grouped_request).get("status", "") == "NO_SOLUTION",
+		"non-empty grouped candidates with exhausted finite stock return NO_SOLUTION instead of exceeding owned inventory"
+	)
 	var definitions: Array = [
 		_generated_creature("creature.wolf-a", "Wolf A", "1/4", 50, 11, 12, 2, 0),
 		_generated_creature("creature.wolf-b", "Wolf B", "1/4", 50, 12, 12, 2, 0),
@@ -1648,14 +1687,29 @@ func _run_encounter_runtime_knowledge_contract() -> void:
 	var encounter_tuning := runtime.default_tuning()
 	encounter_tuning["seed"] = "catalog-owner-boundary"
 	var tuned := runtime.update_tuning(filtered.get("payload", {}), encounter_tuning)
-	var inputs_restart: Dictionary = JSON.parse_string(JSON.stringify(tuned.get("payload", {})))
+	var sourced := runtime.update_source_filters(tuned.get("payload", {}), {
+		"encounter_table_ids": ["encounter_table.harbor"],
+		"faction_ids": ["faction.harbor"],
+		"location_id": "place.north-quay",
+	})
+	var catalog_partial := runtime.update_catalog_filters(sourced.get("payload", {}), {
+		"search_text": "worg",
+		"sizes": [], "types": [], "subtypes": [], "environments": [], "alignments": [],
+		"minimum_challenge_rating": null, "maximum_challenge_rating": null,
+	})
+	var inputs_restart: Dictionary = JSON.parse_string(JSON.stringify(catalog_partial.get("payload", {})))
 	var restarted_inputs: Dictionary = runtime.snapshot(inputs_restart).get("context", {}).get("builder_inputs", {})
 	_expect(
 		filtered.get("ok", false)
 		and tuned.get("ok", false)
-		and restarted_inputs.get("pool_filters", {}).get("search_text", "") == "wolf"
+		and sourced.get("ok", false)
+		and catalog_partial.get("ok", false)
+		and restarted_inputs.get("pool_filters", {}).get("search_text", "") == "worg"
+		and restarted_inputs.get("pool_filters", {}).get("encounter_table_ids", []) == ["encounter_table.harbor"]
+		and restarted_inputs.get("pool_filters", {}).get("faction_ids", []) == ["faction.harbor"]
+		and restarted_inputs.get("pool_filters", {}).get("location_id", "") == "place.north-quay"
 		and restarted_inputs.get("tuning", {}).get("seed", "") == "catalog-owner-boundary",
-		"Catalog-owned pool filters and Encounter-owned tuning update independently and survive canonical restart readback"
+		"Catalog taxonomy, grouped source filters, and Encounter tuning update independently and survive canonical restart readback"
 	)
 	var legacy_payload: Dictionary = manual_added.get("payload", {}).duplicate(true)
 	legacy_payload["runtime"]["format"] = EncounterRuntimeKnowledge.LEGACY_FORMAT_ID
@@ -1667,16 +1721,22 @@ func _run_encounter_runtime_knowledge_contract() -> void:
 		legacy_snapshot.get("ok", false)
 		and legacy_snapshot.get("context", {}).get("removed_roster_entry", {"missing": true}).is_empty()
 		and runtime.validate_runtime(legacy_payload["runtime"]).get("runtime", {}).get("format", "") == EncounterRuntimeKnowledge.FORMAT_ID,
-		"Encounter runtime v2 normalizes in memory to v4 with empty undo, builder inputs, and generation history"
+		"Encounter runtime v2 normalizes in memory to v5 with empty undo, builder inputs, and generation history"
+	)
+	var older_payload: Dictionary = manual_added.get("payload", {}).duplicate(true)
+	older_payload["runtime"]["format"] = EncounterRuntimeKnowledge.OLDER_FORMAT_ID
+	older_payload["runtime"]["contexts"][EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID].erase("builder_inputs")
+	older_payload["runtime"]["contexts"][EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID].erase("generation")
+	_expect(
+		runtime.snapshot(older_payload).get("context", {}).get("builder_inputs", {}).get("tuning", {}).get("difficulty", "") == "AUTO"
+		and runtime.validate_runtime(older_payload["runtime"]).get("runtime", {}).get("format", "") == EncounterRuntimeKnowledge.FORMAT_ID,
+		"Encounter runtime v3 normalizes in memory to v5 without inventing generated alternatives"
 	)
 	var previous_payload: Dictionary = manual_added.get("payload", {}).duplicate(true)
 	previous_payload["runtime"]["format"] = EncounterRuntimeKnowledge.PREVIOUS_FORMAT_ID
-	previous_payload["runtime"]["contexts"][EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID].erase("builder_inputs")
-	previous_payload["runtime"]["contexts"][EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID].erase("generation")
 	_expect(
-		runtime.snapshot(previous_payload).get("context", {}).get("builder_inputs", {}).get("tuning", {}).get("difficulty", "") == "AUTO"
-		and runtime.validate_runtime(previous_payload["runtime"]).get("runtime", {}).get("format", "") == EncounterRuntimeKnowledge.FORMAT_ID,
-		"Encounter runtime v3 normalizes in memory to v4 without inventing generated alternatives"
+		runtime.validate_runtime(previous_payload["runtime"]).get("runtime", {}).get("format", "") == EncounterRuntimeKnowledge.FORMAT_ID,
+		"Encounter runtime v4 normalizes in memory to v5 with explicit Catalog source diagnostics defaults"
 	)
 	var quantity_increased := runtime.adjust_roster_quantity(
 		manual_added.get("payload", {}), "slot.creature.wolf", 1
@@ -2464,6 +2524,48 @@ func _run_catalog_foundation_contract() -> void:
 		"place.north-quay",
 		"2026-07-28T11:00:01Z"
 	).get("payload", world_payload)
+	var resolved_world_source := world_model.generation_sources(
+		world_payload,
+		["faction.harbor"],
+		"place.north-quay"
+	)
+	_expect(
+		resolved_world_source.get("ok", false)
+		and resolved_world_source.get("table_ids", []) == ["encounter_table.harbor-patrol"]
+		and resolved_world_source.get("faction_ids", []) == ["faction.harbor"]
+		and resolved_world_source.get("stock_limits", {}).get("creature.wolf", -1) == 3
+		and not resolved_world_source.get("stock_limits", {}).has("creature.worg"),
+		"World Planner derives intersected table sources and finite-only stock caps without copying foreign records"
+	)
+	var source_table_payload: Dictionary = encounter_table_payload.duplicate(true)
+	source_table_payload = encounter_table_model.update_table(
+		source_table_payload,
+		"encounter_table.harbor-patrol",
+		{"linked_loot_table_id": "loot_table.harbor"},
+		"2026-07-28T11:00:01Z"
+	).get("payload", source_table_payload)
+	source_table_payload = encounter_table_model.create_table(
+		source_table_payload,
+		"Dockschatten",
+		{
+			"linked_loot_table_id": "loot_table.docks",
+			"entries": [{"creature_id": "creature.wolf", "weight": 9}],
+		},
+		"encounter_table.dock-shadows",
+		"2026-07-28T11:00:01Z"
+	).get("payload", source_table_payload)
+	var table_source := encounter_table_model.generation_source(
+		source_table_payload,
+		["encounter_table.harbor-patrol", "encounter_table.dock-shadows"]
+	)
+	_expect(
+		table_source.get("ok", false)
+		and table_source.get("creature_ids", []) == ["creature.wolf", "creature.worg"]
+		and table_source.get("weights", {}).get("creature.wolf", -1) == 9
+		and table_source.get("linked_loot_table_ids", []).size() == 2
+		and table_source.get("loot_conflict", false),
+		"Encounter Table derives one weighted union plus a non-blocking multi-loot conflict from selected table truth"
+	)
 	var pure_table_trash := encounter_table_model.trash_table(
 		encounter_table_payload,
 		world_payload,
@@ -2849,6 +2951,87 @@ func _run_catalog_foundation_contract() -> void:
 	shell.runtime_coordinator = runtime_coordinator
 	root.add_child(shell)
 	await process_frame
+	var source_catalog := shell.route("catalog") as CatalogWorkspace
+	shell.show_route("catalog")
+	var source_tables_button := source_catalog.find_child("CatalogEncounterSourceTables", true, false) as Button
+	for _attempt in 1800:
+		if source_tables_button != null and not source_tables_button.disabled:
+			break
+		await create_timer(0.001).timeout
+	if source_tables_button != null:
+		source_tables_button.pressed.emit()
+	var source_picker := source_catalog.find_child("CatalogEncounterSourcePicker", true, false) as WorldPlannerReferencePicker
+	for _attempt in 1200:
+		if source_picker != null and source_picker.snapshot().get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	if source_picker != null:
+		for choice in source_picker.find_children("ReferencePickerChoice", "CheckButton", true, false):
+			if choice.text.contains("Hafenpatrouille"):
+				choice.toggled.emit(true)
+		source_picker.confirmed.emit()
+		source_picker.hide()
+	for _attempt in 2400:
+		var source_read := FileCampaignStore.new(data_root, catalog_campaign_id).read_partition(EncounterPlanKnowledge.OWNER)
+		var source_context := EncounterRuntimeKnowledge.new().snapshot(source_read.get("payload", {}), EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID)
+		if source_context.get("context", {}).get("builder_inputs", {}).get("pool_filters", {}).get("encounter_table_ids", []) == ["encounter_table.harbor-patrol"]:
+			break
+		await create_timer(0.001).timeout
+	var source_factions_button := source_catalog.find_child("CatalogEncounterSourceFactions", true, false) as Button
+	for _attempt in 1800:
+		if source_factions_button != null and not source_factions_button.disabled:
+			break
+		await create_timer(0.001).timeout
+	if source_factions_button != null:
+		source_factions_button.pressed.emit()
+	for _attempt in 1200:
+		if source_picker != null and source_picker.snapshot().get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	if source_picker != null:
+		for choice in source_picker.find_children("ReferencePickerChoice", "CheckButton", true, false):
+			if choice.text.contains("Hafenrat"):
+				choice.toggled.emit(true)
+		source_picker.confirmed.emit()
+		source_picker.hide()
+	for _attempt in 2400:
+		var source_read := FileCampaignStore.new(data_root, catalog_campaign_id).read_partition(EncounterPlanKnowledge.OWNER)
+		var source_context := EncounterRuntimeKnowledge.new().snapshot(source_read.get("payload", {}), EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID)
+		if source_context.get("context", {}).get("builder_inputs", {}).get("pool_filters", {}).get("faction_ids", []) == ["faction.harbor"]:
+			break
+		await create_timer(0.001).timeout
+	var source_location_button := source_catalog.find_child("CatalogEncounterSourceLocation", true, false) as Button
+	for _attempt in 1800:
+		if source_location_button != null and not source_location_button.disabled:
+			break
+		await create_timer(0.001).timeout
+	if source_location_button != null:
+		source_location_button.pressed.emit()
+	for _attempt in 1200:
+		if source_picker != null and source_picker.snapshot().get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	if source_picker != null:
+		for choice in source_picker.find_children("ReferencePickerChoice", "CheckButton", true, false):
+			if choice.text.contains("Nordkai"):
+				choice.toggled.emit(true)
+		source_picker.confirmed.emit()
+		source_picker.hide()
+	for _attempt in 2400:
+		if not source_catalog.encounter_runtime_command_controller.busy():
+			break
+		await create_timer(0.001).timeout
+	var grouped_source_read := FileCampaignStore.new(data_root, catalog_campaign_id).read_partition(EncounterPlanKnowledge.OWNER)
+	var grouped_source_context: Dictionary = EncounterRuntimeKnowledge.new().snapshot(
+		grouped_source_read.get("payload", {}), EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID
+	).get("context", {})
+	_expect(
+		grouped_source_context.get("builder_inputs", {}).get("pool_filters", {}).get("encounter_table_ids", []) == ["encounter_table.harbor-patrol"]
+		and grouped_source_context.get("builder_inputs", {}).get("pool_filters", {}).get("faction_ids", []) == ["faction.harbor"]
+		and grouped_source_context.get("builder_inputs", {}).get("pool_filters", {}).get("location_id", "") == "place.north-quay"
+		and source_catalog.find_child("CatalogEncounterSourceStatus", true, false).text.contains("1 Ort"),
+		"visible Catalog source stamps persist table, faction, and location constraints without exposing raw input fields"
+	)
 	var encounter_workspace := shell.route("encounter") as EncounterRuntimeWorkspace
 	for _attempt in 1200:
 		if encounter_workspace.snapshot().get("plans", []).size() == 1:
@@ -2935,15 +3118,26 @@ func _run_catalog_foundation_contract() -> void:
 			break
 		await create_timer(0.001).timeout
 	var generated_context: Dictionary = encounter_workspace.snapshot().get("context", {})
+	var generated_diagnostics: Dictionary = generated_context.get("generation", {}).get("diagnostics", {})
+	var grouped_stock_respected := true
+	for alternative: Dictionary in generated_context.get("generation", {}).get("alternatives", []):
+		for entry: Dictionary in alternative.get("roster", []):
+			if entry.get("creature_id", "") == "creature.wolf" and int(entry.get("quantity", 0)) > 3:
+				grouped_stock_respected = false
 	var persisted_generation := FileCampaignStore.new(data_root, catalog_campaign_id).read_partition(EncounterPlanKnowledge.OWNER)
 	var restarted_generation := EncounterRuntimeKnowledge.new().snapshot(persisted_generation.get("payload", {}))
 	_expect(
 		generated_context.get("generation", {}).get("alternatives", []).size() == 3
-		and generated_context.get("generation", {}).get("diagnostics", {}).get("candidate_pool_size", 0) > 0
+		and generated_diagnostics.get("candidate_pool_size", 0) == 2
+		and generated_diagnostics.get("source_mode", "") == "GROUPED"
+		and generated_diagnostics.get("source_table_count", 0) == 1
+		and generated_diagnostics.get("source_faction_count", 0) == 1
+		and generated_diagnostics.get("source_location_selected", false)
+		and grouped_stock_respected
 		and generated_context.get("active_plan_id", "missing") == ""
 		and encounter_workspace.find_child("EncounterAlternativeNavigator", true, false) != null
 		and restarted_generation.get("context", {}).get("generation", {}).get("alternatives", []).size() == 3,
-		"visible free generation publishes three durable alternatives with diagnostics and detaches the opened plan"
+		"visible grouped generation resolves all source dimensions, enforces finite stock, publishes three durable alternatives, and detaches the opened plan"
 	)
 	var next_alternative := encounter_workspace.find_child("NextEncounterAlternative", true, false) as Button
 	if next_alternative != null:
@@ -3436,8 +3630,11 @@ func _run_catalog_foundation_contract() -> void:
 	var filtered_encounter_context: Dictionary = EncounterRuntimeKnowledge.new().snapshot(filtered_encounter_partition.get("payload", {})).get("context", {})
 	_expect(
 		filtered_encounter_context.get("builder_inputs", {}).get("pool_filters", {}).get("search_text", "") == "worg"
+		and filtered_encounter_context.get("builder_inputs", {}).get("pool_filters", {}).get("encounter_table_ids", []) == ["encounter_table.harbor-patrol"]
+		and filtered_encounter_context.get("builder_inputs", {}).get("pool_filters", {}).get("faction_ids", []) == ["faction.harbor"]
+		and filtered_encounter_context.get("builder_inputs", {}).get("pool_filters", {}).get("location_id", "") == "place.north-quay"
 		and filtered_encounter_context.get("builder_inputs", {}).get("tuning", {}).get("seed", "") == "catalog-foundation",
-		"Catalog publishes pool search separately while preserving Encounter-owned generator tuning"
+		"Catalog publishes taxonomy separately while preserving grouped sources and Encounter-owned generator tuning"
 	)
 	await process_frame
 	var destination_header := catalog.find_child("CatalogDestinationHeader", true, false) as Label

@@ -74,6 +74,9 @@ Inspector surfaces so the user can:
 - A finite faction inventory limit caps the generated count for that creature
   statblock.
 - Missing faction inventory limits are unlimited by default.
+- Multiple selected factions union their primary tables. If several relevant
+  factions all define a finite limit for one Creature, those limits add; one
+  omitted limit makes that Creature unlimited.
 - A generator request that cannot satisfy finite inventory caps must return a
   clear no-solution state instead of exceeding owned stock.
 
@@ -91,6 +94,8 @@ Inspector surfaces so the user can:
 - remove faction membership and location links without deleting the referenced
   provider records
 - select factions and locations in encounter-generation controls
+- restore those stable source selections after restart without changing
+  Encounter-owned tuning
 - add an NPC to combat while preserving its World Planner identity
 - show a post-combat loss confirmation before durable NPC or inventory state
   changes

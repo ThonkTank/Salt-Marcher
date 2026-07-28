@@ -18,8 +18,11 @@ and disposition-derived NPC roles. Catalog additions also extend the manual
 roster or add one live reinforcement. The manual builder generates several
 ranked alternatives from the active Party, current Catalog pool filters, and
 Encounter-owned tuning, persists its diagnostics/history, and saves the selected
-roster as an ordinary plan. Encounter-table/World source composition, masks,
-and the eventual compact cockpit composition remain unmet target requirements.
+roster as an ordinary plan. Catalog now persists Encounter Table, World Planner
+faction, and location sources independently from tuning. Generation resolves
+their table intersection, weighted membership, finite faction stock, provenance,
+and non-blocking Loot conflict. Masks and the eventual compact cockpit
+composition remain unmet target requirements.
 
 ## Goal
 

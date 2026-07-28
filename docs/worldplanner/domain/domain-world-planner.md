@@ -133,6 +133,12 @@ Core invariants:
 - A finite statblock inventory limit is a cap for generated encounter counts.
 - Explicit source constraints intersect candidate sources; unset constraints
   are unconstrained.
+- Multiple selected factions contribute the union of their primary tables; a
+  selected location contributes its own tables plus linked factions' primary
+  tables. Explicit faction and location table sets intersect.
+- Relevant faction stock caps sum only when every contributing faction has a
+  finite limit for that Creature; any omitted limit keeps that Creature
+  unlimited for the source.
 - Combat runtime may propose losses, but only World Planner confirmation
   changes durable NPC lifecycle or faction stock state.
 - Session Planner-owned integrations may reference World Planner locations

@@ -18,6 +18,7 @@ const ItemDetailReadController = preload("res://godot/src/features/items/item_de
 const CreatureDetailReadController = preload("res://godot/src/features/creatures/creature_detail_read_controller.gd")
 const EncounterRuntimeCommandController = preload("res://godot/src/features/encounter/encounter_runtime_command_controller.gd")
 const EncounterRuntimeKnowledge = preload("res://godot/src/features/encounter/encounter_runtime_knowledge.gd")
+const EncounterRuntimeReadController = preload("res://godot/src/features/encounter/encounter_runtime_read_controller.gd")
 const SceneCommandController = preload("res://godot/src/features/scene/scene_command_controller.gd")
 
 const SECTIONS := [
@@ -50,6 +51,7 @@ var encounter_plan_detail_controller: EncounterPlanDetailReadController
 var item_detail_controller: ItemDetailReadController
 var creature_detail_controller: CreatureDetailReadController
 var encounter_runtime_command_controller: EncounterRuntimeCommandController
+var encounter_runtime_read_controller: EncounterRuntimeReadController
 var scene_command_controller: SceneCommandController
 var _active_section_id := "creatures"
 var _section_state: Dictionary = {}
@@ -73,6 +75,12 @@ var _creature_environment: MenuButton
 var _creature_alignment: MenuButton
 var _creature_minimum_cr: LineEdit
 var _creature_maximum_cr: LineEdit
+var _encounter_source_controls: HBoxContainer
+var _source_table_button: Button
+var _source_faction_button: Button
+var _source_location_button: Button
+var _source_clear_button: Button
+var _source_status: Label
 var _table_header: HBoxContainer
 var _name_header: Button
 var _identity_header: Button
@@ -107,6 +115,7 @@ var _record_faction_disposition: SpinBox
 var _faction_inventory_editor: FactionInventoryEditor
 var _place_editor_fields: VBoxContainer
 var _reference_picker: WorldPlannerReferencePicker
+var _encounter_source_picker: WorldPlannerReferencePicker
 var _reference_values: Dictionary = {}
 var _reference_summaries: Dictionary = {}
 var _encounter_table_editor: EncounterTableEditorDialog
@@ -122,6 +131,9 @@ var _destination_pending: Dictionary = {}
 var _pool_filter_pending: Dictionary = {}
 var _pool_filter_published: Dictionary = {}
 var _pool_filter_baseline_initialized := false
+var _source_filter_pending: Dictionary = {}
+var _source_filter_values: Dictionary = {}
+var _builder_inputs_ready := false
 
 
 func _ready() -> void:
@@ -157,6 +169,9 @@ func _ready() -> void:
 	if encounter_runtime_command_controller == null:
 		encounter_runtime_command_controller = EncounterRuntimeCommandController.new(data_root, runtime_coordinator)
 		add_child(encounter_runtime_command_controller)
+	if encounter_runtime_read_controller == null:
+		encounter_runtime_read_controller = EncounterRuntimeReadController.new(data_root)
+		add_child(encounter_runtime_read_controller)
 	if scene_command_controller == null:
 		scene_command_controller = SceneCommandController.new(data_root, runtime_coordinator)
 		add_child(scene_command_controller)
@@ -180,6 +195,7 @@ func _ready() -> void:
 	creature_detail_controller.result_published.connect(_on_creature_detail_result_published)
 	encounter_runtime_command_controller.command_completed.connect(_on_destination_completed.bind("encounter"))
 	encounter_runtime_command_controller.command_completed.connect(_on_encounter_runtime_command_completed)
+	encounter_runtime_read_controller.result_published.connect(_on_builder_inputs_published)
 	scene_command_controller.command_completed.connect(_on_destination_completed.bind("scene"))
 	for section in SECTIONS:
 		_section_state[section["id"]] = {
@@ -218,6 +234,7 @@ func _ready() -> void:
 		}
 	_build_surface()
 	select_section(_active_section_id)
+	encounter_runtime_read_controller.query("", EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID)
 
 
 func select_section(section_id: String) -> Dictionary:
@@ -279,6 +296,30 @@ func search_input() -> LineEdit:
 
 func detail_snapshot() -> Dictionary:
 	return _selected_detail.duplicate(true)
+
+
+func refresh() -> void:
+	_pool_filter_pending.clear()
+	_pool_filter_published.clear()
+	_pool_filter_baseline_initialized = false
+	_source_filter_pending.clear()
+	_source_filter_values.clear()
+	_builder_inputs_ready = false
+	for section_id in _section_state:
+		var state: Dictionary = _section_state[section_id]
+		state["rows"] = []
+		state["total"] = 0
+		state["status"] = "uninitialized"
+		state["selected_id"] = ""
+		state["selected_row"] = {}
+		state["notice"] = ""
+		state["page"] = 0
+		_section_state[section_id] = state
+	_reset_detail()
+	_update_source_controls()
+	select_section(_active_section_id)
+	if encounter_runtime_read_controller != null:
+		encounter_runtime_read_controller.query("", EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID)
 
 
 func _build_surface() -> void:
@@ -375,6 +416,40 @@ func _build_surface() -> void:
 	_creature_alignment = _build_creature_multi_filter(creature_context_filters, "CatalogCreatureAlignment", "Gesinnung", "alignments")
 	_creature_minimum_cr = _build_creature_cr_filter(creature_context_filters, "CatalogCreatureMinimumCr", "HG min.")
 	_creature_maximum_cr = _build_creature_cr_filter(creature_context_filters, "CatalogCreatureMaximumCr", "HG max.")
+	_encounter_source_controls = HBoxContainer.new()
+	_encounter_source_controls.name = "CatalogEncounterSourceControls"
+	_encounter_source_controls.add_theme_constant_override("separation", 8)
+	_creature_filters.add_child(_encounter_source_controls)
+	var source_eyebrow := Label.new()
+	source_eyebrow.text = "ENCOUNTERQUELLEN"
+	source_eyebrow.add_theme_color_override("font_color", BRASS_MARK)
+	source_eyebrow.add_theme_font_size_override("font_size", 10)
+	source_eyebrow.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_encounter_source_controls.add_child(source_eyebrow)
+	_source_table_button = _build_source_button(
+		_encounter_source_controls, "CatalogEncounterSourceTables", "Tabellen", "encounter_source_tables", "Encounter-Tabellen", "encounter_table", true
+	)
+	_source_faction_button = _build_source_button(
+		_encounter_source_controls, "CatalogEncounterSourceFactions", "Fraktionen", "encounter_source_factions", "World-Planner-Fraktionen", "faction", true
+	)
+	_source_location_button = _build_source_button(
+		_encounter_source_controls, "CatalogEncounterSourceLocation", "Ort", "encounter_source_location", "World-Planner-Ort", "place", false
+	)
+	_source_clear_button = Button.new()
+	_source_clear_button.name = "CatalogEncounterSourcesClear"
+	_source_clear_button.text = "Quellen lösen"
+	_source_clear_button.flat = true
+	_source_clear_button.pressed.connect(_clear_encounter_sources)
+	_encounter_source_controls.add_child(_source_clear_button)
+	_source_status = Label.new()
+	_source_status.name = "CatalogEncounterSourceStatus"
+	_source_status.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_source_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_source_status.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_source_status.add_theme_color_override("font_color", QUIET_INK)
+	_source_status.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	_encounter_source_controls.add_child(_source_status)
+	_update_source_controls()
 	_creature_filters.visible = false
 	var split := HSplitContainer.new()
 	split.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -580,6 +655,25 @@ func _build_creature_cr_filter(parent: Container, node_name: String, placeholder
 	return input
 
 
+func _build_source_button(
+	parent: Container,
+	node_name: String,
+	label: String,
+	field_key: String,
+	title_text: String,
+	kind: String,
+	multi: bool
+) -> Button:
+	var button := Button.new()
+	button.name = node_name
+	button.text = label
+	button.custom_minimum_size = Vector2(106, 28)
+	button.tooltip_text = "%s als Generatorquelle auswählen" % title_text
+	button.pressed.connect(_open_encounter_source_picker.bind(field_key, title_text, kind, multi))
+	parent.add_child(button)
+	return button
+
+
 func _build_record_dialogs() -> void:
 	_record_dialog = ConfirmationDialog.new()
 	_record_dialog.name = "CatalogRecordDialog"
@@ -681,6 +775,11 @@ func _build_record_dialogs() -> void:
 	_reference_picker.data_root = data_root
 	_reference_picker.references_selected.connect(_on_references_selected)
 	_record_dialog.add_child(_reference_picker)
+	_encounter_source_picker = WorldPlannerReferencePicker.new()
+	_encounter_source_picker.data_root = data_root
+	_encounter_source_picker.name = "CatalogEncounterSourcePicker"
+	_encounter_source_picker.references_selected.connect(_on_encounter_sources_selected)
+	add_child(_encounter_source_picker)
 	_encounter_table_editor = EncounterTableEditorDialog.new()
 	_encounter_table_editor.data_root = data_root
 	_encounter_table_editor.table_submitted.connect(_on_encounter_table_submitted)
@@ -901,11 +1000,11 @@ func _submit_current_query() -> void:
 
 
 func _request_pool_filter_publish(state: Dictionary) -> void:
-	var filters := EncounterRuntimeKnowledge.new().default_pool_filters()
+	var filters := {}
 	var catalog_filters := _creature_query_filters(state)
 	filters["search_text"] = str(state.get("accepted", "")).strip_edges()
 	for key in ["sizes", "types", "subtypes", "environments", "alignments", "minimum_challenge_rating", "maximum_challenge_rating"]:
-		filters[key] = catalog_filters.get(key, filters[key])
+		filters[key] = catalog_filters.get(key)
 	if not _pool_filter_baseline_initialized:
 		_pool_filter_baseline_initialized = true
 		_pool_filter_published = filters.duplicate(true)
@@ -918,23 +1017,93 @@ func _request_pool_filter_publish(state: Dictionary) -> void:
 
 
 func _try_publish_pool_filters() -> void:
-	if _pool_filter_pending.is_empty() or encounter_runtime_command_controller == null or encounter_runtime_command_controller.busy():
+	if encounter_runtime_command_controller == null or encounter_runtime_command_controller.busy():
 		return
-	var started := encounter_runtime_command_controller.update_pool_filters(_pool_filter_pending)
+	var started: Dictionary
+	if not _source_filter_pending.is_empty():
+		started = encounter_runtime_command_controller.update_source_filters(_source_filter_pending)
+	elif not _pool_filter_pending.is_empty():
+		started = encounter_runtime_command_controller.update_catalog_filters(_pool_filter_pending)
+	else:
+		return
 	if not started.get("ok", false) and started.get("status", "") not in ["campaign_required", "revoked"]:
 		_set_destination_notice(str(started.get("error", "Katalogfilter konnten nicht für Encounter veröffentlicht werden.")))
 
 
 func _on_encounter_runtime_command_completed(result: Dictionary) -> void:
 	var request: Dictionary = result.get("request", {})
-	if request.get("operation", "") == "update_pool_filters":
+	if request.get("operation", "") == "update_catalog_filters":
 		if result.get("ok", false):
-			_pool_filter_published = request.get("pool_filters", {}).duplicate(true)
+			_pool_filter_published = request.get("catalog_filters", {}).duplicate(true)
 			if _pool_filter_pending == _pool_filter_published:
 				_pool_filter_pending.clear()
 		elif result.get("status", "") not in ["campaign_required", "revoked"]:
+			if _pool_filter_pending == request.get("catalog_filters", {}):
+				_pool_filter_pending.clear()
 			_set_destination_notice(str(result.get("error", "Katalogfilter konnten nicht für Encounter veröffentlicht werden.")))
+	elif request.get("operation", "") == "update_source_filters":
+		if result.get("ok", false):
+			_source_filter_values = request.get("source_filters", {}).duplicate(true)
+			if _source_filter_pending == _source_filter_values:
+				_source_filter_pending.clear()
+			_builder_inputs_ready = true
+			_update_source_controls()
+		elif result.get("status", "") not in ["campaign_required", "revoked"]:
+			if _source_filter_pending == request.get("source_filters", {}):
+				_source_filter_pending.clear()
+			_set_destination_notice(str(result.get("error", "Generatorquellen konnten nicht veröffentlicht werden.")))
+	_update_source_controls()
 	call_deferred("_try_publish_pool_filters")
+
+
+func _on_builder_inputs_published(result: Dictionary) -> void:
+	if not result.get("ok", false):
+		_builder_inputs_ready = false
+		_update_source_controls()
+		return
+	var pool_filters: Dictionary = result.get("context", {}).get("builder_inputs", {}).get(
+		"pool_filters", EncounterRuntimeKnowledge.new().default_pool_filters()
+	)
+	_pool_filter_published = {
+		"search_text": str(pool_filters.get("search_text", "")),
+		"sizes": pool_filters.get("sizes", []).duplicate(),
+		"types": pool_filters.get("types", []).duplicate(),
+		"subtypes": pool_filters.get("subtypes", []).duplicate(),
+		"environments": pool_filters.get("environments", []).duplicate(),
+		"alignments": pool_filters.get("alignments", []).duplicate(),
+		"minimum_challenge_rating": pool_filters.get("minimum_challenge_rating"),
+		"maximum_challenge_rating": pool_filters.get("maximum_challenge_rating"),
+	}
+	_source_filter_values = {
+		"encounter_table_ids": pool_filters.get("encounter_table_ids", []).duplicate(),
+		"faction_ids": pool_filters.get("faction_ids", []).duplicate(),
+		"location_id": str(pool_filters.get("location_id", "")),
+	}
+	_pool_filter_baseline_initialized = true
+	_builder_inputs_ready = true
+	_update_source_controls()
+	if not _pool_filter_pending.is_empty():
+		call_deferred("_try_publish_pool_filters")
+		return
+	var state: Dictionary = _section_state["creatures"]
+	state["draft"] = _pool_filter_published["search_text"]
+	state["accepted"] = _pool_filter_published["search_text"]
+	for key in ["sizes", "types", "subtypes", "environments", "alignments"]:
+		state["filters"][key] = _pool_filter_published[key].duplicate()
+	state["filters"]["minimum_challenge_rating"] = (
+		"" if _pool_filter_published["minimum_challenge_rating"] == null else str(_pool_filter_published["minimum_challenge_rating"])
+	)
+	state["filters"]["maximum_challenge_rating"] = (
+		"" if _pool_filter_published["maximum_challenge_rating"] == null else str(_pool_filter_published["maximum_challenge_rating"])
+	)
+	state["page"] = 0
+	_section_state["creatures"] = state
+	if _active_section_id == "creatures":
+		_search.set_block_signals(true)
+		_search.text = str(state["draft"])
+		_search.set_block_signals(false)
+		_sync_creature_filter_controls(state)
+		_submit_current_query()
 
 
 func _on_query_started(request: Dictionary) -> void:
@@ -1234,6 +1403,7 @@ func _sync_creature_filter_controls(state: Dictionary) -> void:
 
 
 func _render_state() -> void:
+	_update_source_controls()
 	for child in _result_list.get_children():
 		child.queue_free()
 	var section := _section(_active_section_id)
@@ -1768,6 +1938,89 @@ func _on_references_selected(field_key: String, reference_ids: Array) -> void:
 		return
 	_reference_values[field_key] = reference_ids.duplicate()
 	_render_reference_summaries()
+
+
+func _open_encounter_source_picker(
+	field_key: String,
+	title_text: String,
+	kind: String,
+	multi: bool
+) -> void:
+	if not _builder_inputs_ready:
+		_set_destination_notice("Generatorquellen werden noch aus dem Encounter geladen.")
+		return
+	var selected: Array = []
+	match field_key:
+		"encounter_source_tables":
+			selected = _source_filter_values.get("encounter_table_ids", []).duplicate()
+		"encounter_source_factions":
+			selected = _source_filter_values.get("faction_ids", []).duplicate()
+		"encounter_source_location":
+			var location_id := str(_source_filter_values.get("location_id", ""))
+			if not location_id.is_empty():
+				selected = [location_id]
+	_encounter_source_picker.open_picker(field_key, "%s auswählen" % title_text, kind, selected, multi)
+
+
+func _on_encounter_sources_selected(field_key: String, reference_ids: Array) -> void:
+	var next := _source_filter_values.duplicate(true)
+	if next.is_empty():
+		next = {"encounter_table_ids": [], "faction_ids": [], "location_id": ""}
+	match field_key:
+		"encounter_source_tables":
+			next["encounter_table_ids"] = reference_ids.duplicate()
+		"encounter_source_factions":
+			next["faction_ids"] = reference_ids.duplicate()
+		"encounter_source_location":
+			next["location_id"] = "" if reference_ids.is_empty() else str(reference_ids[0])
+		_:
+			return
+	_queue_source_filters(next)
+
+
+func _clear_encounter_sources() -> void:
+	_queue_source_filters({"encounter_table_ids": [], "faction_ids": [], "location_id": ""})
+
+
+func _queue_source_filters(source_filters: Dictionary) -> void:
+	if source_filters == _source_filter_values:
+		_source_filter_pending.clear()
+		_update_source_controls()
+		return
+	_source_filter_pending = source_filters.duplicate(true)
+	_update_source_controls()
+	_try_publish_pool_filters()
+
+
+func _update_source_controls() -> void:
+	if _source_table_button == null:
+		return
+	var visible_values: Dictionary = _source_filter_pending if not _source_filter_pending.is_empty() else _source_filter_values
+	var table_count: int = visible_values.get("encounter_table_ids", []).size()
+	var faction_count: int = visible_values.get("faction_ids", []).size()
+	var has_location := not str(visible_values.get("location_id", "")).is_empty()
+	_source_table_button.text = "Tabellen" if table_count == 0 else "Tabellen · %d" % table_count
+	_source_faction_button.text = "Fraktionen" if faction_count == 0 else "Fraktionen · %d" % faction_count
+	_source_location_button.text = "Ort" if not has_location else "Ort · 1"
+	var busy := not _builder_inputs_ready or (encounter_runtime_command_controller != null and encounter_runtime_command_controller.busy())
+	_source_table_button.disabled = busy
+	_source_faction_button.disabled = busy
+	_source_location_button.disabled = busy
+	_source_clear_button.disabled = busy or (table_count == 0 and faction_count == 0 and not has_location)
+	var parts: Array[String] = []
+	if table_count > 0:
+		parts.append("%d Tabellen" % table_count)
+	if faction_count > 0:
+		parts.append("%d Fraktionen" % faction_count)
+	if has_location:
+		parts.append("1 Ort")
+	_source_status.text = (
+		"Quellen werden veröffentlicht …"
+		if not _source_filter_pending.is_empty()
+		else "Gesamter aktueller Katalog"
+		if parts.is_empty()
+		else " · ".join(parts)
+	)
 
 
 func _render_reference_summaries() -> void:

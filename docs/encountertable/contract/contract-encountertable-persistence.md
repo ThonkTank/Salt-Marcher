@@ -38,6 +38,8 @@ does not copy either provider's facts.
 - detail reads validate the selected complete owner partition and exact table;
 - candidate reads validate selected tables, then resolve the unique Creature
   closure from the registry-selected Shared-Definition generation;
+- pure generation-source reads validate selected tables and return only stable
+  membership IDs, effective weights, linked Loot IDs, and conflict state;
 - publication re-confirms active Campaign and Shared-Definition generations;
 - cancellation and replacement publish no stale candidate result.
 

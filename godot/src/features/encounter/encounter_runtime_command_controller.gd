@@ -8,8 +8,10 @@ const SharedDefinitionStore = preload("res://godot/src/platform/persistence/shar
 const EncounterPlanKnowledge = preload("res://godot/src/features/encounter/encounter_plan_knowledge.gd")
 const EncounterRuntimeKnowledge = preload("res://godot/src/features/encounter/encounter_runtime_knowledge.gd")
 const EncounterGenerationPolicy = preload("res://godot/src/features/encounter/encounter_generation_policy.gd")
+const EncounterTableKnowledge = preload("res://godot/src/features/encountertable/encounter_table_knowledge.gd")
 const PartyRoster = preload("res://godot/src/features/party/party_roster.gd")
 const SceneKnowledge = preload("res://godot/src/features/scene/scene_knowledge.gd")
+const WorldPlannerKnowledge = preload("res://godot/src/features/worldplanner/world_planner_knowledge.gd")
 
 var _encounter_data_root: String
 
@@ -47,6 +49,14 @@ func undo_roster_removal(context_id: String = EncounterRuntimeKnowledge.MANUAL_C
 
 func update_pool_filters(pool_filters: Dictionary, context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
 	return start_command({"operation": "update_pool_filters", "pool_filters": pool_filters.duplicate(true), "context_id": context_id})
+
+
+func update_catalog_filters(catalog_filters: Dictionary, context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
+	return start_command({"operation": "update_catalog_filters", "catalog_filters": catalog_filters.duplicate(true), "context_id": context_id})
+
+
+func update_source_filters(source_filters: Dictionary, context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
+	return start_command({"operation": "update_source_filters", "source_filters": source_filters.duplicate(true), "context_id": context_id})
 
 
 func update_tuning(tuning: Dictionary, context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
@@ -127,11 +137,23 @@ func _empty_scene_payload() -> Dictionary:
 	return SceneKnowledge.new().empty_payload()
 
 
-func _supporting_payload_factories_for(_request: Dictionary) -> Dictionary:
-	return {
+func _empty_encounter_table_payload() -> Dictionary:
+	return EncounterTableKnowledge.new().empty_payload()
+
+
+func _empty_world_planner_payload() -> Dictionary:
+	return WorldPlannerKnowledge.new().empty_payload()
+
+
+func _supporting_payload_factories_for(request: Dictionary) -> Dictionary:
+	var factories := {
 		PartyRoster.OWNER: Callable(self, "_empty_party_payload"),
 		SceneKnowledge.OWNER: Callable(self, "_empty_scene_payload"),
 	}
+	if request.get("operation", "") == "generate_alternatives":
+		factories[EncounterTableKnowledge.OWNER] = Callable(self, "_empty_encounter_table_payload")
+		factories[WorldPlannerKnowledge.OWNER] = Callable(self, "_empty_world_planner_payload")
+	return factories
 
 
 func _apply_runtime_command(payload: Dictionary, request: Dictionary) -> Dictionary:
@@ -161,6 +183,10 @@ func _apply_runtime_command(payload: Dictionary, request: Dictionary) -> Diction
 			result = model.undo_roster_removal(payload, context_id)
 		"update_pool_filters":
 			result = model.update_pool_filters(payload, request["pool_filters"], context_id)
+		"update_catalog_filters":
+			result = model.update_catalog_filters(payload, request["catalog_filters"], context_id)
+		"update_source_filters":
+			result = model.update_source_filters(payload, request["source_filters"], context_id)
 		"update_tuning":
 			result = model.update_tuning(payload, request["tuning"], context_id)
 		"generate_alternatives":
@@ -324,16 +350,15 @@ func _generate_alternatives(payload: Dictionary, request: Dictionary, context_id
 	if not definitions.get("ok", false):
 		return definitions
 	var builder_inputs: Dictionary = runtime_snapshot["context"]["builder_inputs"]
-	if (
-		not builder_inputs["pool_filters"]["encounter_table_ids"].is_empty()
-		or not builder_inputs["pool_filters"]["faction_ids"].is_empty()
-		or not str(builder_inputs["pool_filters"]["location_id"]).is_empty()
-	):
-		return {"ok": false, "status": "unsupported_source", "error": "Encounter-Tabellen und World-Quellen brauchen zuerst ihre native Gruppenquellen-Anbindung."}
+	var source_constraints := _generation_source_constraints(builder_inputs["pool_filters"], request)
+	if not source_constraints.get("ok", false):
+		return source_constraints
+	var policy_request: Dictionary = builder_inputs.duplicate(true)
+	policy_request["source_constraints"] = source_constraints["source_constraints"]
 	var generated := EncounterGenerationPolicy.new().generate_alternatives(
 		levels,
 		definitions.get("definitions", []),
-		builder_inputs
+		policy_request
 	)
 	if not generated.get("ok", false):
 		return generated
@@ -351,6 +376,65 @@ func _generate_alternatives(payload: Dictionary, request: Dictionary, context_id
 		generated["diagnostics"],
 		context_id
 	))
+
+
+func _generation_source_constraints(pool_filters: Dictionary, request: Dictionary) -> Dictionary:
+	var direct_table_ids: Array = pool_filters["encounter_table_ids"].duplicate()
+	var selected_faction_ids: Array = pool_filters["faction_ids"].duplicate()
+	var location_id := str(pool_filters["location_id"])
+	var source_active := not direct_table_ids.is_empty() or not selected_faction_ids.is_empty() or not location_id.is_empty()
+	if not source_active:
+		return {"ok": true, "source_constraints": {
+			"active": false,
+			"allowed_creature_ids": [],
+			"weights": {},
+			"maximum_quantities": {},
+			"table_ids": [],
+			"faction_ids": [],
+			"location_id": "",
+			"linked_loot_table_ids": [],
+			"loot_conflict": false,
+		}}
+	var supporting: Dictionary = request.get("supporting_payloads", {})
+	var world := WorldPlannerKnowledge.new().generation_sources(
+		supporting.get(WorldPlannerKnowledge.OWNER, WorldPlannerKnowledge.new().empty_payload()),
+		selected_faction_ids,
+		location_id
+	)
+	if not world.get("ok", false):
+		return world
+	var world_constrained := bool(world["constrained"])
+	var effective_table_ids: Array = []
+	if not direct_table_ids.is_empty() and world_constrained:
+		for table_id in direct_table_ids:
+			if table_id in world["table_ids"]:
+				effective_table_ids.append(table_id)
+	elif not direct_table_ids.is_empty():
+		effective_table_ids = direct_table_ids
+	else:
+		effective_table_ids = world["table_ids"].duplicate()
+	effective_table_ids.sort()
+	if effective_table_ids.is_empty():
+		return {"ok": false, "status": "NO_CREATURES", "error": "Die gewählten Tabellen-, Fraktions- und Ortsquellen besitzen keine gemeinsame Encounter-Tabelle."}
+	var table_source := EncounterTableKnowledge.new().generation_source(
+		supporting.get(EncounterTableKnowledge.OWNER, EncounterTableKnowledge.new().empty_payload()),
+		effective_table_ids
+	)
+	if not table_source.get("ok", false):
+		return table_source
+	if table_source["creature_ids"].is_empty():
+		return {"ok": false, "status": "NO_CREATURES", "error": "Die gewählten Encounter-Tabellen enthalten keine Monster."}
+	return {"ok": true, "source_constraints": {
+		"active": true,
+		"allowed_creature_ids": table_source["creature_ids"],
+		"weights": table_source["weights"],
+		"maximum_quantities": world["stock_limits"],
+		"table_ids": effective_table_ids,
+		"faction_ids": world["faction_ids"],
+		"location_id": location_id,
+		"linked_loot_table_ids": table_source["linked_loot_table_ids"],
+		"loot_conflict": table_source["loot_conflict"],
+	}}
 
 
 func _save_current_plan(payload: Dictionary, request: Dictionary, context_id: String) -> Dictionary:

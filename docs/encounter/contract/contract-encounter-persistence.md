@@ -45,17 +45,21 @@ meaning, fingerprints, cardinality, order, and Encounter number. The current
 Godot route writes this canonical shape only through the complete generated
 batch command.
 
-Runtime format `saltmarcher.encounter-runtime.v4` stores a focused context ID,
+Runtime format `saltmarcher.encounter-runtime.v5` stores a focused context ID,
 Scene source revision, and independent contexts. Each context stores its own
 revision, mode, status, opened-plan reference, materialized roster facts with
 stable slot identity and enemy/ally kind, initiative rows, individual
 combatants, active turn, round, result, and at most one removed manual-roster
 entry with its original position for undo. Each context also keeps split
-Catalog-owned pool filters and Encounter-owned tuning plus bounded ranked
-alternatives, selected index, and search diagnostics. A result stores
+Catalog-owned pool filters, including stable table/faction/location source
+IDs, and Encounter-owned tuning plus bounded ranked alternatives, selected
+index, and search diagnostics. Diagnostics retain source mode and counts,
+location presence, and Loot-conflict state, but no copied foreign provider
+records. A result stores
 participating Party identities and award acknowledgement, but not copied Party
-profiles. Runtime v2/v3 documents normalize in memory with empty missing v4
-state; the next real runtime mutation publishes v4 without a dual-write path.
+profiles. Runtime v2/v3/v4 documents normalize in memory with empty or defaulted
+missing v5 state; the next real runtime mutation publishes v5 without a
+dual-write path.
 
 ## Explicitly Excluded Saved-Plan Truth
 

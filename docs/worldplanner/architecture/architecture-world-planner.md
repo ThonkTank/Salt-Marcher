@@ -92,6 +92,13 @@ and re-confirm their registry generation before publication. The picker retains
 only draft IDs, and the record command publishes the complete owner candidate
 after explicit confirmation.
 
+The pure generation-source read validates selected active factions and an
+optional active location. It derives only effective Encounter Table IDs,
+relevant faction IDs, and finite Creature caps. Multiple faction tables form a
+union; a location adds its own tables plus linked-faction primary tables; the
+explicit faction and location dimensions intersect. World Planner never opens
+Encounter Table membership or copies Creature facts into this result.
+
 ## Current Migration State
 
 The production Godot route currently supports bounded active/trash search,
@@ -113,7 +120,9 @@ Encounter Table and a place's Encounter Table set through the separate
 provider. The faction-stock ledger resolves current Creature names, preserves
 only stable IDs plus mathematical integer limits in World Planner truth,
 materializes at most eight rows per dialog page, and removes a finite exception
-through the explicit `Unbegrenzt` action. Destination handoffs remain pending.
+through the explicit `Unbegrenzt` action. Catalog source controls now consume
+the bounded faction/location choices, while Encounter consumes the pure derived
+source result during worker-backed generation. Destination handoffs remain pending.
 The legacy Java owner is not deleted until that parity, acceptance, and
 deletion gate are complete.
 

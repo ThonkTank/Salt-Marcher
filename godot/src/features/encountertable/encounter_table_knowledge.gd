@@ -420,6 +420,46 @@ func memberships_for_tables(
 	}
 
 
+func generation_source(
+	payload_value: Variant,
+	table_ids: Array,
+	cancellation: Callable = Callable()
+) -> Dictionary:
+	var validated := validate_payload(payload_value)
+	if not validated.get("ok", false):
+		return validated
+	var memberships := memberships_for_tables(validated["payload"], table_ids, cancellation)
+	if not memberships.get("ok", false):
+		return memberships
+	var creature_ids: Array = []
+	var weights := {}
+	for membership in memberships["memberships"]:
+		var creature_id := str(membership["creature_id"])
+		if creature_id not in creature_ids:
+			creature_ids.append(creature_id)
+		weights[creature_id] = maxi(int(weights.get(creature_id, 0)), int(membership["weight"]))
+	creature_ids.sort()
+	var linked_loot_table_ids: Array = []
+	for table_id in table_ids:
+		if _cancelled(cancellation):
+			return _cancelled_failure()
+		var loot_id := str(validated["payload"]["records"][table_id]["linked_loot_table_id"])
+		if not loot_id.is_empty() and loot_id not in linked_loot_table_ids:
+			linked_loot_table_ids.append(loot_id)
+	linked_loot_table_ids.sort()
+	var selected_table_ids := table_ids.duplicate()
+	selected_table_ids.sort()
+	return {
+		"ok": true,
+		"status": "ready" if not creature_ids.is_empty() else "empty",
+		"table_ids": selected_table_ids,
+		"creature_ids": creature_ids,
+		"weights": weights,
+		"linked_loot_table_ids": linked_loot_table_ids,
+		"loot_conflict": linked_loot_table_ids.size() > 1,
+	}
+
+
 func _apply_patch(record_value: Variant, fields: Dictionary) -> Dictionary:
 	if not record_value is Dictionary:
 		return _failure("Encounter Table ist ungültig.")

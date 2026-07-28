@@ -17,9 +17,9 @@ per-member combat state, enemy HP, round/active-turn advance, two-step combat
 end, result XP derivation, atomic Party award, and return to the retained
 roster. Its horizontal turn strip renders the exact persisted order.
 
-The compact global `COCKPIT_STATE` placement, Encounter-table/World generator
-sources, add-SC, mob projection, detail
-and numeric popups, and loot context remain the target described below.
+The compact global `COCKPIT_STATE` placement, add-SC, mob projection, detail
+and numeric popups, and resolved loot assignment remain the target described
+below.
 
 Catalog additions are production-native: `+ Encounter` adds one current
 Creature to the manual builder and increments an existing matching slot, or
@@ -32,15 +32,18 @@ Manual roster editing is production-native: each row exposes quantity `+` and
 slot. Every edit clears the copied saved-plan identity. Quantity zero, missing
 slots, Scene contexts, and initiative/combat/result modes fail closed.
 
-Free generation is production-native for the current Catalog pool: its collapsed
+Free generation is production-native for the current Catalog pool or grouped
+source selection: its collapsed
 `Encounter abstimmen` docket keeps difficulty, amount, XP distribution,
 statblock diversity, seed, and alternative count separate from Catalog-owned
 filters. Generation reads one active-Party and complete current Creature
 snapshot off-thread, publishes exact or fallback diagnostics, persists ranked
 alternatives across restart, supports previous/next and history clear, and saves
-the selected roster through the ordinary saved-plan owner. Non-empty Encounter
-Table, faction, or location sources fail visibly until their separate native
-group-source composition is complete.
+the selected roster through the ordinary saved-plan owner. Catalog provides
+searchable table/faction/location controls and restores them after restart.
+Encounter resolves their effective table intersection, finite faction stock,
+and source provenance without copying provider records. Multiple linked Loot
+Table IDs produce a visible warning but do not disable the roster.
 
 ## Component Purpose
 
@@ -137,9 +140,9 @@ the fixed footer while oversized page bodies scroll.
   through the difficulty label and adjusted XP summary.
 - Saved plan available: the title-row open action is enabled and shows the
   saved plan name, generated label, and creature count.
-- Encounter-table loot conflict: the Catalog controls show `Loot-Konflikt`;
-  combat start remains available because loot assignment is not part of this
-  runtime surface.
+- Encounter-table loot conflict: the Encounter result docket shows
+  `Loot-Konflikt`; combat start remains available because loot assignment is
+  not part of this runtime surface.
 - Removed roster slot: a one-action undo notice is visible until another roster
   or generator mutation replaces it.
 - Live combat: the active turn is highlighted and defeated monsters use the
@@ -165,7 +168,11 @@ the fixed footer while oversized page bodies scroll.
 - when the active left-bar tab does not claim `COCKPIT_STATE`, the global
   Encounter state tab owns the compact encounter dialog in that pane
 - generation uses the active party plus the latest catalog filter, difficulty,
-  tuning, and encounter-table selections visible to the runtime session
+  tuning, and table/faction/location source selections visible to the runtime
+  session; direct tables and World-derived tables intersect, while table
+  sourcing replaces type, subtype, and biome filtering for that run
+- finite World Planner faction stock caps every generated quantity for its
+  Creature; omitted limits remain unlimited
 - opening a saved encounter plan replaces the current creation roster and
   clears generated-alternative, initiative, combat, and result runtime state
 - the title-row `Verlauf löschen` action removes transient generation history

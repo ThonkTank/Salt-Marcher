@@ -5,9 +5,10 @@ extends RefCounted
 ## in the same owner partition and are only copied into a runtime roster on an
 ## explicit open command.
 
-const FORMAT_ID := "saltmarcher.encounter-runtime.v4"
+const FORMAT_ID := "saltmarcher.encounter-runtime.v5"
 const LEGACY_FORMAT_ID := "saltmarcher.encounter-runtime.v2"
-const PREVIOUS_FORMAT_ID := "saltmarcher.encounter-runtime.v3"
+const OLDER_FORMAT_ID := "saltmarcher.encounter-runtime.v3"
+const PREVIOUS_FORMAT_ID := "saltmarcher.encounter-runtime.v4"
 const MANUAL_CONTEXT_ID := "encounter_context.manual"
 const MODES := ["builder", "initiative", "combat", "results"]
 const KINDS := ["pc", "enemy", "ally"]
@@ -77,7 +78,7 @@ func validate_runtime(value: Variant) -> Dictionary:
 	if not value is Dictionary:
 		return _failure("Encounter-Laufzeitdaten müssen ein Dokument sein.")
 	var runtime: Dictionary = value.duplicate(true)
-	if runtime.get("format", "") in [LEGACY_FORMAT_ID, PREVIOUS_FORMAT_ID]:
+	if runtime.get("format", "") in [LEGACY_FORMAT_ID, OLDER_FORMAT_ID, PREVIOUS_FORMAT_ID]:
 		runtime = _upgrade_legacy_runtime(runtime)
 	if (
 		runtime.size() != 4
@@ -101,6 +102,7 @@ func validate_runtime(value: Variant) -> Dictionary:
 
 func _upgrade_legacy_runtime(runtime_value: Dictionary) -> Dictionary:
 	var runtime := runtime_value.duplicate(true)
+	var source_format := str(runtime.get("format", ""))
 	runtime["format"] = FORMAT_ID
 	var contexts: Dictionary = runtime.get("contexts", {}).duplicate(true)
 	for context_id in contexts:
@@ -115,6 +117,19 @@ func _upgrade_legacy_runtime(runtime_value: Dictionary) -> Dictionary:
 				}
 			if not context.has("generation"):
 				context["generation"] = _empty_generation()
+			elif source_format == PREVIOUS_FORMAT_ID and context["generation"] is Dictionary:
+				var generation: Dictionary = context["generation"].duplicate(true)
+				if not generation.get("alternatives", []).is_empty() and generation.get("diagnostics", null) is Dictionary:
+					var diagnostics: Dictionary = generation["diagnostics"].duplicate(true)
+					diagnostics.merge({
+						"source_mode": "CATALOG",
+						"source_table_count": 0,
+						"source_faction_count": 0,
+						"source_location_selected": false,
+						"loot_conflict": false,
+					}, false)
+					generation["diagnostics"] = diagnostics
+				context["generation"] = generation
 			contexts[context_id] = context
 	runtime["contexts"] = contexts
 	return runtime
@@ -325,6 +340,27 @@ func update_pool_filters(
 	context["status"] = "Katalogfilter für die nächste Generierung aktualisiert."
 	context["revision"] = _next_revision(context)
 	return _publish_context(state["payload"], state["runtime"], context, "pool_filters_updated")
+
+
+func update_catalog_filters(
+	owner_payload: Dictionary,
+	catalog_filters: Dictionary,
+	context_id: String = MANUAL_CONTEXT_ID
+) -> Dictionary:
+	var expected := [
+		"search_text", "sizes", "types", "subtypes", "environments", "alignments",
+		"minimum_challenge_rating", "maximum_challenge_rating",
+	]
+	return _merge_pool_filter_fields(owner_payload, catalog_filters, expected, context_id, "catalog_filters_updated")
+
+
+func update_source_filters(
+	owner_payload: Dictionary,
+	source_filters: Dictionary,
+	context_id: String = MANUAL_CONTEXT_ID
+) -> Dictionary:
+	var expected := ["encounter_table_ids", "faction_ids", "location_id"]
+	return _merge_pool_filter_fields(owner_payload, source_filters, expected, context_id, "source_filters_updated")
 
 
 func update_tuning(
@@ -1249,7 +1285,7 @@ func _validate_generated_alternative(value: Variant) -> Dictionary:
 
 func _validate_generation_diagnostics(value: Dictionary) -> Dictionary:
 	if (
-		value.size() != 12
+		value.size() != 17
 		or value.get("requested_difficulty", "") not in ["AUTO", "EASY", "MEDIUM", "HARD", "DEADLY"]
 		or value.get("resolved_difficulty", "") not in ["EASY", "MEDIUM", "HARD", "DEADLY"]
 		or value.get("resolved_amount", "") not in ["FEW", "STANDARD", "MANY"]
@@ -1257,12 +1293,54 @@ func _validate_generation_diagnostics(value: Dictionary) -> Dictionary:
 		or value.get("resolved_diversity", "") not in ["LOW", "MEDIUM", "HIGH"]
 		or value.get("solution_quality", "") not in ["EXACT", "FALLBACK"]
 		or value.get("stop_category", "") not in ["EXACT_OPTIONS_READY", "BEST_FALLBACK"]
+		or value.get("source_mode", "") not in ["CATALOG", "GROUPED"]
+		or not value.get("source_location_selected", null) is bool
+		or not value.get("loot_conflict", null) is bool
 	):
 		return _failure("Encounter-Generatordiagnostik besitzt ungültige Fachwerte.")
-	for key in ["candidate_pool_size", "attempt_count", "candidate_evaluation_count", "target_min_xp", "target_max_xp"]:
+	for key in [
+		"candidate_pool_size", "attempt_count", "candidate_evaluation_count", "target_min_xp", "target_max_xp",
+		"source_table_count", "source_faction_count",
+	]:
 		if not _nonnegative_integer(value.get(key, null)):
 			return _failure("Encounter-Generatordiagnostik besitzt ungültige Zähler.")
 	return {"ok": true}
+
+
+func _merge_pool_filter_fields(
+	owner_payload: Dictionary,
+	fields: Dictionary,
+	expected_keys: Array,
+	context_id: String,
+	status: String
+) -> Dictionary:
+	var state := _manual_context_state(owner_payload, context_id)
+	if not state.get("ok", false):
+		return state
+	if fields.size() != expected_keys.size():
+		return _failure("Partielle Encounter-Pool-Filter besitzen kein unterstütztes Format.")
+	for key in expected_keys:
+		if not fields.has(key):
+			return _failure("Partielle Encounter-Pool-Filter sind unvollständig.")
+	var context: Dictionary = state["context"]
+	var merged: Dictionary = context["builder_inputs"]["pool_filters"].duplicate(true)
+	for key in expected_keys:
+		merged[key] = fields[key]
+	var validation := _validate_pool_filters(merged)
+	if not validation.get("ok", false):
+		return validation
+	if context["builder_inputs"]["pool_filters"] == validation["pool_filters"]:
+		return {"ok": true, "status": "unchanged", "no_write": true, "payload": state["payload"], "context": _with_projection(context)}
+	context["builder_inputs"] = context["builder_inputs"].duplicate(true)
+	context["builder_inputs"]["pool_filters"] = validation["pool_filters"]
+	context["generation"] = _empty_generation()
+	context["status"] = (
+		"Generator-Quellen aktualisiert."
+		if status == "source_filters_updated"
+		else "Katalogfilter für die nächste Generierung aktualisiert."
+	)
+	context["revision"] = _next_revision(context)
+	return _publish_context(state["payload"], state["runtime"], context, status)
 
 
 func _validate_prepared_roster(roster: Array, empty_allowed: bool = false) -> Dictionary:

@@ -25,6 +25,9 @@ narrative selection.
   current Creature-provider facts under one XP ceiling.
 - `Table Weight Context`: every selected table's authored weight for one
   Creature plus the effective legacy-compatible maximum.
+- `Generation Source`: unique selected table and Creature identities, maximum
+  effective weights, unique linked Loot identities, and conflict state without
+  Creature facts or a chosen Encounter.
 
 ## Invariants
 
@@ -57,8 +60,9 @@ Godot currently owns create, edit, bounded Catalog summaries, full detail,
 weighted Creature membership, World Planner reference choices, cross-owner
 candidate resolution, recoverable table deletion/restore with atomic dependent
 World Planner cleanup and safe relationship reattachment, restart persistence,
-and worker cleanup. Group entries, Loot Table choice/conflict presentation, and
-Encounter destination handoff remain pending. The Java implementation is
+and worker cleanup. Encounter consumes the pure generation-source projection
+and presents Loot conflict without blocking roster use. Group entries, visible
+Loot Table choice, and resolved Loot assignment remain pending. The Java implementation is
 migration evidence only.
 
 ## References

@@ -504,6 +504,19 @@ func _render_generator_docket(context: Dictionary) -> void:
 		int(diagnostics.get("candidate_evaluation_count", 0)),
 		_stop_label(str(diagnostics.get("stop_category", ""))),
 	])
+	if diagnostics.get("source_mode", "CATALOG") == "GROUPED":
+		_add_hint(docket_content, "Quellenbeweis: %d Tabellen · %d Fraktionen%s" % [
+			int(diagnostics.get("source_table_count", 0)),
+			int(diagnostics.get("source_faction_count", 0)),
+			" · 1 Ort" if diagnostics.get("source_location_selected", false) else "",
+		])
+	if diagnostics.get("loot_conflict", false):
+		var loot_warning := Label.new()
+		loot_warning.name = "EncounterLootConflict"
+		loot_warning.text = "Loot-Konflikt · Die Quellen verweisen auf mehrere Beutetabellen; die Aufstellung bleibt verwendbar."
+		loot_warning.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		loot_warning.add_theme_color_override("font_color", BRASS)
+		docket_content.add_child(loot_warning)
 
 
 func _add_tuning_option(parent: Container, node_name: String, label_text: String, values: Array, selected: String) -> OptionButton:
@@ -537,6 +550,12 @@ func _pool_filter_summary(filters: Dictionary) -> String:
 			"0" if filters.get("minimum_challenge_rating") == null else str(filters["minimum_challenge_rating"]),
 			"∞" if filters.get("maximum_challenge_rating") == null else str(filters["maximum_challenge_rating"]),
 		])
+	if not filters.get("encounter_table_ids", []).is_empty():
+		parts.append("Tabellen %d" % filters["encounter_table_ids"].size())
+	if not filters.get("faction_ids", []).is_empty():
+		parts.append("Fraktionen %d" % filters["faction_ids"].size())
+	if not str(filters.get("location_id", "")).is_empty():
+		parts.append("Ort 1")
 	return "Monsterpool: gesamter aktueller Katalog" if parts.is_empty() else "Monsterpool aus Katalog: %s" % " · ".join(parts)
 
 

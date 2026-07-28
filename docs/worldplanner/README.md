@@ -22,8 +22,10 @@ with explicit manual resolution and recoverable trash. Foreign-reference
 pickers for Creature statblocks, NPC faction/last place, place factions,
 faction primary Encounter Tables, and place Encounter Tables are searchable
 and bounded. Finite faction stock uses the same Creature provider; omitted
-statblocks remain unlimited. Destination handoffs and reward distribution
-remain migration work.
+statblocks remain unlimited. Catalog now consumes one derived generation-source
+read: selected factions and a location resolve effective table IDs and finite
+stock caps without copying Creature or Encounter Table records. Destination
+handoffs and reward distribution remain migration work.
 
 It references creature statblocks and encounter tables through their owning
 public boundaries, and exposes location choices for later Session Planner-owned

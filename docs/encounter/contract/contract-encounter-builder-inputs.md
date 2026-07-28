@@ -1,5 +1,10 @@
 # Encounter Builder Inputs Contract
 
+Status: Active Godot contract
+Owner: Encounter
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 ## Purpose
 
 This contract defines the builder-input surface shared by Catalog-owned pool
@@ -24,11 +29,11 @@ filters and Encounter-owned generation tuning.
   workflow consumers submit the partial commands above
 
 Current production persists the visible Catalog name, HG, size, type, subtype,
-environment, and alignment pool filters separately from Encounter difficulty,
-amount, XP-distribution, statblock-diversity, seed, and alternative-count
-tuning. Non-empty Encounter-table, faction, or location source selections are
-validated but generation rejects them visibly until the native grouped-source
-composition is delivered.
+environment, alignment, Encounter Table, faction, and location pool filters
+separately from Encounter difficulty, amount, XP-distribution,
+statblock-diversity, seed, and alternative-count tuning. Catalog taxonomy
+updates preserve source selections, source updates preserve taxonomy, and
+Encounter tuning updates preserve the complete pool-filter value.
 
 ## Boundary Rules
 
@@ -37,8 +42,18 @@ composition is delivered.
 - late update results must not overwrite a newer published revision
 - a pool-filter update MUST preserve tuning and a tuning update MUST preserve
   pool filters
-- all visible pool filters constrain candidate loading; selected Encounter
-  tables are intersected with the filtered creature pool
+- name, challenge rating, size, and alignment always constrain the resulting
+  candidate pool
+- without a grouped source, type, subtype, and biome constrain the complete
+  Creature catalog
+- within one source dimension, selected table or faction identities form a
+  union; a location contributes its own tables plus linked-faction primary
+  tables
+- direct table and World-derived table dimensions intersect; once a table
+  source is active, its membership replaces type, subtype, and biome filtering
+  for that generation run
+- source fields persist only stable IDs; table membership, weights, Loot links,
+  and World stock limits remain ephemeral provider read results
 - it does not expose saved plans, roster cards, initiative rows, combat
   runtime, or result state
 - it does not expose foreign creature, party, or encounter-table internals
