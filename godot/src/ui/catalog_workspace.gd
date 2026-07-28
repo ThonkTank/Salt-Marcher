@@ -14,6 +14,7 @@ const EncounterTableEditorDialog = preload("res://godot/src/ui/encounter_table_e
 const EncounterPlanCommandController = preload("res://godot/src/features/encounter/encounter_plan_command_controller.gd")
 const EncounterPlanDetailReadController = preload("res://godot/src/features/encounter/encounter_plan_detail_read_controller.gd")
 const EncounterPlanEditorDialog = preload("res://godot/src/ui/encounter_plan_editor_dialog.gd")
+const ItemDetailReadController = preload("res://godot/src/features/items/item_detail_read_controller.gd")
 
 const SECTIONS := [
 	{"id": "creatures", "label": "Monster", "kind": "creature", "provider": true, "mutable": false},
@@ -42,15 +43,27 @@ var encounter_table_command_controller: EncounterTableCommandController
 var encounter_table_detail_controller: EncounterTableDetailReadController
 var encounter_plan_command_controller: EncounterPlanCommandController
 var encounter_plan_detail_controller: EncounterPlanDetailReadController
+var item_detail_controller: ItemDetailReadController
 var _active_section_id := "creatures"
 var _section_state: Dictionary = {}
 var _section_buttons: Dictionary = {}
 var _search: LineEdit
 var _trash_toggle: CheckButton
 var _create_button: Button
+var _item_filters: VBoxContainer
+var _item_category: OptionButton
+var _item_subcategory: OptionButton
+var _item_rarity: OptionButton
+var _item_magic: OptionButton
+var _item_attunement: OptionButton
+var _item_minimum_cost: LineEdit
+var _item_maximum_cost: LineEdit
 var _table_header: HBoxContainer
 var _name_header: Button
 var _identity_header: Button
+var _category_header: Button
+var _rarity_header: Button
+var _cost_header: Button
 var _result_list: VBoxContainer
 var _footer: Label
 var _previous_page: Button
@@ -115,6 +128,9 @@ func _ready() -> void:
 	if encounter_plan_detail_controller == null:
 		encounter_plan_detail_controller = EncounterPlanDetailReadController.new(data_root)
 		add_child(encounter_plan_detail_controller)
+	if item_detail_controller == null:
+		item_detail_controller = ItemDetailReadController.new(data_root)
+		add_child(item_detail_controller)
 	browse_controller.query_started.connect(_on_query_started)
 	browse_controller.result_published.connect(_on_result_published)
 	command_controller.command_started.connect(_on_command_started)
@@ -129,6 +145,8 @@ func _ready() -> void:
 	encounter_plan_command_controller.command_completed.connect(_on_command_completed)
 	encounter_plan_detail_controller.query_started.connect(_on_encounter_plan_detail_query_started)
 	encounter_plan_detail_controller.result_published.connect(_on_encounter_plan_detail_result_published)
+	item_detail_controller.query_started.connect(_on_item_detail_query_started)
+	item_detail_controller.result_published.connect(_on_item_detail_result_published)
 	for section in SECTIONS:
 		_section_state[section["id"]] = {
 			"draft": "",
@@ -143,6 +161,16 @@ func _ready() -> void:
 			"sort_key": "name",
 			"sort_ascending": true,
 			"notice": "",
+			"filters": {
+				"category": "",
+				"subcategory": "",
+				"rarity": "",
+				"magic": null,
+				"attunement": null,
+				"minimum_cost_cp": "",
+				"maximum_cost_cp": "",
+			},
+			"filter_options": {"categories": [], "subcategories": [], "rarities": []},
 		}
 	_build_surface()
 	select_section(_active_section_id)
@@ -168,9 +196,13 @@ func select_section(section_id: String) -> Dictionary:
 		if section_id == "encounters"
 		else "%s erstellen" % section["label"]
 	)
+	_create_button.visible = bool(section.get("mutable", false))
 	_trash_toggle.visible = bool(section.get("trashable", false))
 	_trash_toggle.set_pressed_no_signal(bool(state["trash"]))
 	_create_button.disabled = bool(state["trash"]) or _any_command_busy()
+	_item_filters.visible = section_id == "items"
+	if section_id == "items":
+		_sync_item_filter_controls(state)
 	_render_selected_detail()
 	_render_table_header()
 	if not section["provider"]:
@@ -261,6 +293,24 @@ func _build_surface() -> void:
 	_create_button.custom_minimum_size = Vector2(160, 28)
 	_create_button.pressed.connect(_on_create_requested)
 	tools.add_child(_create_button)
+	_item_filters = VBoxContainer.new()
+	_item_filters.name = "CatalogItemFilters"
+	_item_filters.add_theme_constant_override("separation", 8)
+	column.add_child(_item_filters)
+	var item_taxonomy_filters := HBoxContainer.new()
+	item_taxonomy_filters.add_theme_constant_override("separation", 8)
+	_item_filters.add_child(item_taxonomy_filters)
+	_item_category = _build_item_option_filter(item_taxonomy_filters, "CatalogItemCategory", "Kategorie")
+	_item_subcategory = _build_item_option_filter(item_taxonomy_filters, "CatalogItemSubcategory", "Untertyp")
+	_item_rarity = _build_item_option_filter(item_taxonomy_filters, "CatalogItemRarity", "Rarität")
+	var item_fact_filters := HBoxContainer.new()
+	item_fact_filters.add_theme_constant_override("separation", 8)
+	_item_filters.add_child(item_fact_filters)
+	_item_magic = _build_item_boolean_filter(item_fact_filters, "CatalogItemMagic", "Magie")
+	_item_attunement = _build_item_boolean_filter(item_fact_filters, "CatalogItemAttunement", "Einstimmung")
+	_item_minimum_cost = _build_item_cost_filter(item_fact_filters, "CatalogItemMinimumCost", "Min. · KM")
+	_item_maximum_cost = _build_item_cost_filter(item_fact_filters, "CatalogItemMaximumCost", "Max. · KM")
+	_item_filters.visible = false
 	var split := HSplitContainer.new()
 	split.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	split.split_offset = 600
@@ -280,6 +330,15 @@ func _build_surface() -> void:
 	_identity_header = _build_header_button("CatalogSortIdentity", "Kennung", "identity")
 	_identity_header.custom_minimum_size = Vector2(150, 28)
 	_table_header.add_child(_identity_header)
+	_category_header = _build_header_button("CatalogSortCategory", "Kategorie", "category")
+	_category_header.custom_minimum_size = Vector2(150, 28)
+	_table_header.add_child(_category_header)
+	_rarity_header = _build_header_button("CatalogSortRarity", "Seltenheit", "rarity")
+	_rarity_header.custom_minimum_size = Vector2(112, 28)
+	_table_header.add_child(_rarity_header)
+	_cost_header = _build_header_button("CatalogSortCost", "Kosten", "cost")
+	_cost_header.custom_minimum_size = Vector2(96, 28)
+	_table_header.add_child(_cost_header)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -299,6 +358,7 @@ func _build_surface() -> void:
 	_detail.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_detail.fit_content = false
 	_detail.bbcode_enabled = true
+	_detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	inspector.add_child(_detail)
 	_detail_actions = HFlowContainer.new()
 	_detail_actions.add_theme_constant_override("separation", 8)
@@ -338,12 +398,12 @@ func _build_surface() -> void:
 	_previous_page = Button.new()
 	_previous_page.name = "CatalogPreviousPage"
 	_previous_page.text = "Zurück"
-	_previous_page.custom_minimum_size = Vector2(72, 28)
+	_previous_page.custom_minimum_size = Vector2(60, 28)
 	_previous_page.pressed.connect(_on_page_requested.bind(-1))
 	footer_row.add_child(_previous_page)
 	_page_label = Label.new()
 	_page_label.name = "CatalogPageLabel"
-	_page_label.custom_minimum_size = Vector2(84, 28)
+	_page_label.custom_minimum_size = Vector2(58, 28)
 	_page_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_page_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_page_label.add_theme_color_override("font_color", QUIET_INK)
@@ -351,7 +411,7 @@ func _build_surface() -> void:
 	_next_page = Button.new()
 	_next_page.name = "CatalogNextPage"
 	_next_page.text = "Weiter"
-	_next_page.custom_minimum_size = Vector2(72, 28)
+	_next_page.custom_minimum_size = Vector2(60, 28)
 	_next_page.pressed.connect(_on_page_requested.bind(1))
 	footer_row.add_child(_next_page)
 	_debounce = Timer.new()
@@ -370,9 +430,51 @@ func _build_header_button(node_name: String, label: String, sort_key: String) ->
 	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	button.custom_minimum_size = Vector2(0, 28)
 	button.flat = true
+	button.clip_text = true
 	button.tooltip_text = "%s sortieren; erneut aktivieren kehrt die Richtung um" % label
 	button.pressed.connect(_on_sort_requested.bind(sort_key))
 	return button
+
+
+func _build_item_option_filter(parent: Container, node_name: String, label_text: String) -> OptionButton:
+	var option := OptionButton.new()
+	option.name = node_name
+	option.custom_minimum_size = Vector2(124, 28)
+	option.tooltip_text = label_text
+	option.add_item("%s · alle" % label_text)
+	option.set_item_metadata(0, "")
+	option.item_selected.connect(_on_item_filters_changed)
+	parent.add_child(option)
+	return option
+
+
+func _build_item_boolean_filter(parent: Container, node_name: String, label_text: String) -> OptionButton:
+	var option := OptionButton.new()
+	option.name = node_name
+	option.custom_minimum_size = Vector2(112, 28)
+	option.tooltip_text = label_text
+	for entry in [
+		{"label": "%s · alle" % label_text, "value": null},
+		{"label": "%s · ja" % label_text, "value": true},
+		{"label": "%s · nein" % label_text, "value": false},
+	]:
+		option.add_item(entry["label"])
+		option.set_item_metadata(option.item_count - 1, entry["value"])
+	option.item_selected.connect(_on_item_filters_changed)
+	parent.add_child(option)
+	return option
+
+
+func _build_item_cost_filter(parent: Container, node_name: String, placeholder: String) -> LineEdit:
+	var input := LineEdit.new()
+	input.name = node_name
+	input.custom_minimum_size = Vector2(96, 28)
+	input.placeholder_text = placeholder
+	input.tooltip_text = "Kosten in Kupfermünzen"
+	input.text_changed.connect(_on_item_cost_changed)
+	input.text_submitted.connect(func(_value: String) -> void: _submit_current_query())
+	parent.add_child(input)
+	return input
 
 
 func _build_record_dialogs() -> void:
@@ -589,6 +691,39 @@ func _on_page_requested(delta: int) -> void:
 	_submit_current_query()
 
 
+func _on_item_filters_changed(_index: int) -> void:
+	if _active_section_id != "items":
+		return
+	var state: Dictionary = _section_state["items"]
+	state["filters"]["category"] = str(_item_category.get_selected_metadata())
+	state["filters"]["subcategory"] = str(_item_subcategory.get_selected_metadata())
+	state["filters"]["rarity"] = str(_item_rarity.get_selected_metadata())
+	state["filters"]["magic"] = _item_magic.get_selected_metadata()
+	state["filters"]["attunement"] = _item_attunement.get_selected_metadata()
+	state["page"] = 0
+	_section_state["items"] = state
+	_submit_current_query()
+
+
+func _on_item_cost_changed(_value: String) -> void:
+	if _active_section_id != "items":
+		return
+	var state: Dictionary = _section_state["items"]
+	state["filters"]["minimum_cost_cp"] = _item_minimum_cost.text.strip_edges()
+	state["filters"]["maximum_cost_cp"] = _item_maximum_cost.text.strip_edges()
+	state["page"] = 0
+	_section_state["items"] = state
+	_debounce.start()
+
+
+func _item_query_filters(state: Dictionary) -> Dictionary:
+	var filters: Dictionary = state.get("filters", {}).duplicate(true)
+	for key in ["minimum_cost_cp", "maximum_cost_cp"]:
+		var value := str(filters.get(key, "")).strip_edges()
+		filters[key] = null if value.is_empty() else value.to_int() if value.is_valid_int() else value
+	return filters
+
+
 func _submit_current_query() -> void:
 	var section := _section(_active_section_id)
 	if section.is_empty() or not section["provider"]:
@@ -607,7 +742,8 @@ func _submit_current_query() -> void:
 		PAGE_SIZE,
 		bool(state["trash"]),
 		str(state["sort_key"]),
-		bool(state["sort_ascending"])
+		bool(state["sort_ascending"]),
+		_item_query_filters(state) if _active_section_id == "items" else {}
 	)
 
 
@@ -631,6 +767,9 @@ func _on_result_published(result: Dictionary) -> void:
 		state["rows"] = result.get("rows", []).duplicate(true)
 		state["total"] = int(result.get("total", 0))
 		state["status"] = str(result.get("status", "ready"))
+		if section_id == "items":
+			state["filter_options"] = result.get("filter_options", {}).duplicate(true)
+			state["error"] = str(result.get("error", ""))
 		for row in state["rows"]:
 			if _row_id(row) == str(state["selected_id"]):
 				state["selected_row"] = row.duplicate(true)
@@ -648,6 +787,8 @@ func _on_result_published(result: Dictionary) -> void:
 		state["error"] = result.get("error", "Katalogabfrage ist fehlgeschlagen.")
 	_section_state[section_id] = state
 	if section_id == _active_section_id:
+		if section_id == "items":
+			_sync_item_filter_controls(state)
 		_render_state()
 		_render_selected_detail()
 
@@ -763,6 +904,86 @@ func _on_encounter_plan_detail_result_published(result: Dictionary) -> void:
 	_lifecycle_button.visible = false
 
 
+func _on_item_detail_query_started(request: Dictionary) -> void:
+	if str(request.get("definition_id", "")) != str(_selected_detail.get("record_id", "")):
+		return
+	_selected_detail["status"] = "loading"
+
+
+func _on_item_detail_result_published(result: Dictionary) -> void:
+	var definition_id := str(result.get("request", {}).get("definition_id", ""))
+	if definition_id.is_empty() or definition_id != str(_selected_detail.get("record_id", "")):
+		return
+	if not result.get("ok", false):
+		_selected_detail = {
+			"status": str(result.get("status", "failed")),
+			"record_id": definition_id,
+			"error": str(result.get("error", "Item-Details konnten nicht geladen werden.")),
+		}
+		_detail.text = _escape_bbcode(str(_selected_detail["error"]))
+		return
+	var item: Dictionary = result.get("item", {}).duplicate(true)
+	_selected_detail = {
+		"status": "ready",
+		"record_id": definition_id,
+		"record": item,
+	}
+	_detail.text = _format_item_detail(item)
+
+
+func _sync_item_filter_controls(state: Dictionary) -> void:
+	if _item_filters == null:
+		return
+	for control in [
+		_item_category, _item_subcategory, _item_rarity, _item_magic,
+		_item_attunement, _item_minimum_cost, _item_maximum_cost,
+	]:
+		control.set_block_signals(true)
+	var filters: Dictionary = state.get("filters", {})
+	var options: Dictionary = state.get("filter_options", {})
+	_populate_item_option(_item_category, "Kategorie", options.get("categories", []), str(filters.get("category", "")))
+	_populate_item_option(
+		_item_subcategory,
+		"Untertyp",
+		options.get("subcategories", []),
+		str(filters.get("subcategory", ""))
+	)
+	_populate_item_option(_item_rarity, "Rarität", options.get("rarities", []), str(filters.get("rarity", "")))
+	_select_option_metadata(_item_magic, filters.get("magic"))
+	_select_option_metadata(_item_attunement, filters.get("attunement"))
+	_item_minimum_cost.text = str(filters.get("minimum_cost_cp", ""))
+	_item_maximum_cost.text = str(filters.get("maximum_cost_cp", ""))
+	for control in [
+		_item_category, _item_subcategory, _item_rarity, _item_magic,
+		_item_attunement, _item_minimum_cost, _item_maximum_cost,
+	]:
+		control.set_block_signals(false)
+
+
+func _populate_item_option(option: OptionButton, label_text: String, values: Array, selected: String) -> void:
+	option.clear()
+	option.add_item("%s · alle" % label_text)
+	option.set_item_metadata(0, "")
+	var found := selected.is_empty()
+	for value in values:
+		var text := str(value)
+		option.add_item(text)
+		option.set_item_metadata(option.item_count - 1, text)
+		found = found or text == selected
+	if not found:
+		option.add_item(selected)
+		option.set_item_metadata(option.item_count - 1, selected)
+	_select_option_metadata(option, selected)
+
+
+func _select_option_metadata(option: OptionButton, selected: Variant) -> void:
+	for index in option.item_count:
+		if option.get_item_metadata(index) == selected:
+			option.select(index)
+			return
+	option.select(0)
+
+
 func _render_state() -> void:
 	for child in _result_list.get_children():
 		child.queue_free()
@@ -771,8 +992,32 @@ func _render_state() -> void:
 	var status := str(state["status"])
 	_render_table_header()
 	if status == "unavailable":
-		_add_message("%s ist im Godot-Cutover noch nicht an seinen Provider angeschlossen." % section["label"])
-		_footer.text = _with_notice("Provider nicht verfügbar · keine Catalog-eigene Ersatzwahrheit", state)
+		_add_message(
+			"Der Items-Katalog wurde noch nicht importiert. Der lokale Katalog bleibt offline und unverändert."
+			if _active_section_id == "items"
+			else "%s ist im Godot-Cutover noch nicht an seinen Provider angeschlossen." % section["label"]
+		)
+		_footer.text = _with_notice(
+			"Items-Daten nicht verfügbar · vollständigen Operator-Import ausführen"
+			if _active_section_id == "items"
+			else "Provider nicht verfügbar · keine Catalog-eigene Ersatzwahrheit",
+			state
+		)
+		_update_paging(state)
+		return
+	if status == "incompatible":
+		_add_message(str(state.get("error", "Der lokale Items-Katalog besitzt ein inkompatibles Format.")))
+		_footer.text = _with_notice("Inkompatibel · vollständigen Items-Import erneut ausführen", state)
+		_update_paging(state)
+		return
+	if status == "invalid_query":
+		_add_message("Die Kostengrenzen müssen nicht-negative ganze Kupfermünzen sein; Minimum darf Maximum nicht überschreiten.")
+		_footer.text = _with_notice("Ungültiger Filter · Eingabe bleibt erhalten", state)
+		_update_paging(state)
+		return
+	if status == "storage_error":
+		_add_message(str(state.get("error", "Der lokale Items-Katalog ist nicht lesbar.")))
+		_footer.text = _with_notice("Speicherfehler · andere Katalogbereiche bleiben verfügbar", state)
 		_update_paging(state)
 		return
 	if status == "failed":
@@ -805,7 +1050,15 @@ func _render_table_header() -> void:
 		return
 	var state: Dictionary = _section_state[_active_section_id]
 	_name_header.text = _sort_header_text("Name", "name", state)
+	var items := _active_section_id == "items"
+	_identity_header.visible = not items
 	_identity_header.text = _sort_header_text("Kennung", "identity", state)
+	_category_header.visible = items
+	_rarity_header.visible = items
+	_cost_header.visible = items
+	_category_header.text = _sort_header_text("Kategorie", "category", state)
+	_rarity_header.text = _sort_header_text("Seltenheit", "rarity", state)
+	_cost_header.text = _sort_header_text("Kosten", "cost", state)
 
 
 func _sort_header_text(label: String, sort_key: String, state: Dictionary) -> String:
@@ -825,21 +1078,44 @@ func _add_result_row(row: Dictionary) -> void:
 	name_button.text = str(row["name"])
 	name_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	name_button.flat = true
+	name_button.clip_text = true
 	name_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_button.custom_minimum_size = Vector2(0, 30)
 	name_button.tooltip_text = "Details zu %s öffnen" % row["name"]
 	name_button.pressed.connect(_select_row.bind(row.duplicate(true)))
 	row_container.add_child(name_button)
-	var identity_button := Button.new()
-	identity_button.name = "CatalogResultIdentity"
-	identity_button.text = _row_id(row)
-	identity_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	identity_button.flat = true
-	identity_button.custom_minimum_size = Vector2(150, 30)
-	identity_button.add_theme_color_override("font_color", QUIET_INK)
-	identity_button.tooltip_text = "Dieselbe Referenz im Inspector öffnen"
-	identity_button.pressed.connect(_select_row.bind(row.duplicate(true)))
-	row_container.add_child(identity_button)
+	if _active_section_id == "items":
+		_add_item_row_cell(row_container, "%s%s" % [
+			str(row.get("category", "")),
+			" · %s" % row["subcategory"] if not str(row.get("subcategory", "")).is_empty() else "",
+		], 150, row)
+		_add_item_row_cell(row_container, str(row.get("rarity", "–")) if not str(row.get("rarity", "")).is_empty() else "–", 112, row)
+		_add_item_row_cell(row_container, str(row.get("cost_display", "–")) if not str(row.get("cost_display", "")).is_empty() else "–", 96, row)
+	else:
+		var identity_button := Button.new()
+		identity_button.name = "CatalogResultIdentity"
+		identity_button.text = _row_id(row)
+		identity_button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		identity_button.flat = true
+		identity_button.clip_text = true
+		identity_button.custom_minimum_size = Vector2(150, 30)
+		identity_button.add_theme_color_override("font_color", QUIET_INK)
+		identity_button.tooltip_text = "Dieselbe Referenz im Inspector öffnen"
+		identity_button.pressed.connect(_select_row.bind(row.duplicate(true)))
+		row_container.add_child(identity_button)
+
+
+func _add_item_row_cell(parent: HBoxContainer, text_value: String, width: float, row: Dictionary) -> void:
+	var button := Button.new()
+	button.text = text_value
+	button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	button.flat = true
+	button.clip_text = true
+	button.custom_minimum_size = Vector2(width, 30)
+	button.add_theme_color_override("font_color", QUIET_INK)
+	button.tooltip_text = "%s · Item im Inspector öffnen" % text_value
+	button.pressed.connect(_select_row.bind(row.duplicate(true)))
+	parent.add_child(button)
 
 
 func _update_paging(state: Dictionary) -> void:
@@ -896,6 +1172,9 @@ func _select_row(row: Dictionary) -> void:
 		_narrative_threads.clear_subject()
 		_edit_button.disabled = true
 		encounter_plan_detail_controller.query(_row_id(row), bool(row.get("deleted", false)))
+	elif _active_section_id == "items":
+		_narrative_threads.clear_subject()
+		item_detail_controller.query(_row_id(row))
 	elif bool(section.get("mutable", false)):
 		_narrative_threads.show_subject(row)
 		_edit_button.disabled = true
@@ -1296,6 +1575,8 @@ func _reset_detail() -> void:
 		encounter_table_detail_controller.cancel_all()
 	if encounter_plan_detail_controller != null:
 		encounter_plan_detail_controller.cancel_all()
+	if item_detail_controller != null:
+		item_detail_controller.cancel_all()
 	if _narrative_threads != null:
 		_narrative_threads.clear_subject()
 
@@ -1337,6 +1618,48 @@ func _format_encounter_plan_detail(record: Dictionary, current_labels: Dictionar
 			_escape_bbcode(display_name),
 			_escape_bbcode(creature_id),
 		])
+	return "\n".join(lines)
+
+
+func _format_item_detail(item: Dictionary) -> String:
+	var classification := PackedStringArray([str(item["category"])])
+	if not str(item["subcategory"]).is_empty():
+		classification.append(str(item["subcategory"]))
+	if bool(item["magic"]):
+		classification.append("magisch")
+	if not str(item["rarity"]).is_empty():
+		classification.append(str(item["rarity"]))
+	if bool(item["attunement"]):
+		classification.append("Einstimmung erforderlich")
+	var lines: Array[String] = [
+		"[font_size=22]%s[/font_size]" % _escape_bbcode(str(item["name"])),
+		_escape_bbcode(str(item["source_key"])),
+		" · ".join(classification),
+	]
+	var facts := PackedStringArray()
+	if not str(item["cost_display"]).is_empty():
+		facts.append("Kosten %s" % str(item["cost_display"]))
+	if item["weight"] != null:
+		facts.append("Gewicht %s lb" % str(item["weight"]))
+	if not str(item["damage"]).is_empty():
+		facts.append("Schaden %s" % str(item["damage"]))
+	if not str(item["armor_class"]).is_empty():
+		facts.append(str(item["armor_class"]))
+	if not facts.is_empty():
+		lines.append("")
+		lines.append("[color=#d2a743]WERTE[/color]")
+		lines.append(" · ".join(facts))
+	if not item["properties"].is_empty():
+		lines.append("")
+		lines.append("[color=#d2a743]EIGENSCHAFTEN[/color]")
+		lines.append(" · ".join(PackedStringArray(item["properties"])))
+	_append_named_text(lines, "Beschreibung", str(item["description"]))
+	lines.append("")
+	lines.append("[color=#d2a743]QUELLE[/color]")
+	lines.append("%s · %s" % [
+		_escape_bbcode(str(item["source_version"])),
+		_escape_bbcode(str(item["source_url"])).replace("/", "/​"),
+	])
 	return "\n".join(lines)
 
 

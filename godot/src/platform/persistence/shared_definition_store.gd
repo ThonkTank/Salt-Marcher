@@ -71,16 +71,24 @@ func prepare_generation(
 	base_generation: int,
 	changed_definitions: Array,
 	progress_callback: Callable = Callable(),
-	cancellation_callback: Callable = Callable()
+	cancellation_callback: Callable = Callable(),
+	removed_definition_ids: Array = []
 ) -> Dictionary:
 	if _cancelled(cancellation_callback):
 		return _cancelled_failure()
 	var current := load_generation(base_generation)
 	if not current.get("ok", false):
 		return current
-	if changed_definitions.is_empty():
+	if changed_definitions.is_empty() and removed_definition_ids.is_empty():
 		return {"ok": true, "status": "unchanged", "generation": base_generation, "state": current}
 	var definitions: Dictionary = current["definitions"].duplicate(true)
+	var removals := {}
+	for value in removed_definition_ids:
+		var definition_id := str(value)
+		if not _valid_id(definition_id) or removals.has(definition_id):
+			return _failure("Shared-Definition-Entfernung besitzt eine ungültige oder doppelte Identität.")
+		removals[definition_id] = true
+		definitions.erase(definition_id)
 	var normalized_by_id := {}
 	for value in changed_definitions:
 		if _cancelled(cancellation_callback):
@@ -126,6 +134,8 @@ func prepare_generation(
 			"definition_sha256": definition_sha256,
 			"content_sha256": content_sha256,
 		}
+		if definition.has("catalog_projection"):
+			definitions[definition_id]["catalog_projection"] = definition["catalog_projection"].duplicate(true)
 		published_count += 1
 		if progress_callback.is_valid():
 			progress_callback.call({
@@ -361,14 +371,19 @@ func validate_definition(value: Variant) -> Dictionary:
 		return _failure("Shared Definition besitzt keinen gültigen Namen.")
 	if not definition.get("content") is Dictionary:
 		return _failure("Shared Definition besitzt keinen gültigen Inhalt.")
-	return {
-		"ok": true,
-		"definition": {
+	var normalized_definition := {
 			"definition_id": definition_id,
 			"kind": kind,
 			"name": name,
 			"content": definition["content"].duplicate(true),
-		},
+	}
+	if definition.has("catalog_projection"):
+		if not definition["catalog_projection"] is Dictionary:
+			return _failure("Shared Definition besitzt keine gültige Katalogprojektion.")
+		normalized_definition["catalog_projection"] = definition["catalog_projection"].duplicate(true)
+	return {
+		"ok": true,
+		"definition": normalized_definition,
 	}
 
 
@@ -438,6 +453,8 @@ func _read_indexed_definition(definition_id: String, reference: Variant) -> Dict
 		return _failure("Shared-Definition-Index und Objekt widersprechen sich.")
 	if validated_reference["kind"] != definition["kind"] or validated_reference["name"] != definition["name"]:
 		return _failure("Shared-Definition-Metadaten und Objekt widersprechen sich.")
+	if validated_reference.get("catalog_projection") != definition.get("catalog_projection"):
+		return _failure("Shared-Definition-Katalogprojektion und Objekt widersprechen sich.")
 	return {"ok": true, "definition": definition}
 
 
@@ -460,6 +477,7 @@ func _validate_index_reference(definition_id: String, reference: Variant) -> Dic
 		or name.is_empty()
 		or name.length() > MAX_NAME_LENGTH
 		or name != reference.get("name", "")
+		or (reference.has("catalog_projection") and not reference["catalog_projection"] is Dictionary)
 	):
 		return _failure("Shared-Definition-Index enthält eine unsichere Objektreferenz.")
 	return {"ok": true, "reference": typed_reference.duplicate(true)}

@@ -1,5 +1,10 @@
 # Items Domain Model
 
+Status: Active Godot domain
+Owner: Items
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 ## Context Role
 
 Context Role: Imported Reference Catalog Context
@@ -12,16 +17,18 @@ assignment, crafting, or user-authored item truth.
 
 ## Published Language
 
-`ItemsCatalogApi` publishes item queries, typed catalog statuses, filter
-options, result pages, item rows, and item details. `ItemsImportApi` publishes
-the explicit full-corpus import result and its typed status.
+`ItemCatalog` publishes item queries, typed catalog statuses, filter options,
+result pages, item rows, and exact-read item details. `ItemImportService`
+publishes the explicit full-corpus maintenance result and its typed status.
 
 ## Application Boundary
 
 The application boundary normalizes catalog queries and coordinates public
-source loading, batch validation, verified backup, and whole-catalog
-replacement. It translates domain catalog values into immutable API carriers;
-it does not create missing reference facts or expose persistence shape.
+source loading, complete batch validation, immutable generation preparation,
+and whole-catalog replacement. It does not create missing reference facts or
+expose persistence paths. Catalog browsing and exact detail reads run outside
+the Godot scene-tree thread; the separate operator import is never reachable
+from the desktop UI.
 
 ## Write Model And Derived State
 
@@ -40,7 +47,7 @@ truth.
 - catalog records are read-only between complete imports
 - one import publishes either a complete replacement or no replacement
 - both the equipment and magic-item indexes and every referenced detail are
-  fetched and parsed before validation permits any database maintenance
+  fetched and parsed before validation permits any generation preparation
 - equipment and magic-item feeds that describe the same source key produce one
   deterministic record
 - absent source fields remain absent; they are not invented from display text
@@ -50,9 +57,11 @@ truth.
 ## Consistency Boundary
 
 One import batch is the consistency boundary: readers observe either the prior
-complete projection or the replacement complete projection. A catalog query or
-detail lookup is internally consistent for that single request; later requests
-may observe a newer completed import.
+complete Shared-Definition generation or the replacement complete generation.
+The checksummed generation carries bounded Item filter/sort projections; full
+semantic content stays in exact-read immutable definition objects. A catalog
+query or detail lookup is internally consistent for that single request;
+later requests may observe a newer completed import.
 
 ## References
 

@@ -9,6 +9,7 @@ const FileCampaignStore = preload("res://godot/src/platform/persistence/file_cam
 const WorldPlannerKnowledge = preload("res://godot/src/features/worldplanner/world_planner_knowledge.gd")
 const EncounterTableKnowledge = preload("res://godot/src/features/encountertable/encounter_table_knowledge.gd")
 const EncounterPlanKnowledge = preload("res://godot/src/features/encounter/encounter_plan_knowledge.gd")
+const ItemCatalog = preload("res://godot/src/features/items/item_catalog.gd")
 
 signal query_started(request: Dictionary)
 signal result_published(result: Dictionary)
@@ -36,7 +37,8 @@ func query(
 	limit: int = 50,
 	include_deleted: bool = false,
 	sort_key: String = "name",
-	sort_ascending: bool = true
+	sort_ascending: bool = true,
+	filters: Dictionary = {}
 ) -> Dictionary:
 	_mutex.lock()
 	_latest_epoch += 1
@@ -50,6 +52,7 @@ func query(
 		"include_deleted": include_deleted,
 		"sort_key": sort_key,
 		"sort_ascending": sort_ascending,
+		"filters": filters.duplicate(true),
 	}
 	if not _active_request.is_empty():
 		_pending_request = request
@@ -120,6 +123,17 @@ func _run_query(request: Dictionary) -> void:
 		result = _query_encounter_tables(registry, registry_state, request)
 	elif str(request["section_id"]) == "encounters":
 		result = _query_encounter_plans(registry, registry_state, request)
+	elif str(request["section_id"]) == "items":
+		result = ItemCatalog.new(_data_root).query(
+			int(registry_state.get("shared_definitions_generation", 0)),
+			str(request["search_text"]),
+			request.get("filters", {}),
+			int(request["offset"]),
+			int(request["limit"]),
+			str(request["sort_key"]),
+			bool(request["sort_ascending"]),
+			Callable(self, "_cancelled_from_worker")
+		)
 	else:
 		result = SharedDefinitionStore.new(_data_root).query_catalog(
 			int(registry_state.get("shared_definitions_generation", 0)),

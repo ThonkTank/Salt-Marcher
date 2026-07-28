@@ -1,5 +1,10 @@
 # Items Catalog
 
+Status: Confirmed product requirements
+Owner: Items
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 ## Goal
 
 Provide a fast local reference list for public-SRD equipment and magic items

@@ -1,5 +1,10 @@
 # Items Feature README
 
+Status: Active Godot owner
+Owner: Items
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 ## Purpose
 
 Items owns a local read-only reference catalog imported explicitly from the
@@ -18,7 +23,10 @@ The import is pinned to the public 2014 API at
 `https://www.dnd5eapi.co/api/2014`. The API requires no authentication and
 exposes GET-only reference data. SaltMarcher stores the imported projection
 locally and performs no network requests while browsing the Catalog. Network
-access exists only behind the explicit `ItemsImportApi` maintenance call.
+access exists only behind the explicit `godot/tools/import_items.gd` operator
+command. It validates both indexes and every referenced detail before
+preparing a replacement, then selects the complete immutable generation
+through one registry commit.
 
 ## References
 

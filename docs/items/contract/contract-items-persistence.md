@@ -1,121 +1,109 @@
 # Items Persistence And Import Contract
 
+Status: Active Godot contract
+Owner: Items
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 ## Purpose And Consumers
 
-This persistence contract owns the local Items schema, compatibility rules,
-full-corpus import boundary, and read failure semantics. The Items application
-service is its consumer. Catalog presentation consumes only `ItemsCatalogApi`;
-it does not access SQLite or the public HTTP source.
+This contract owns the local Items compatibility rules, full-corpus import
+boundary, and read failure semantics. Catalog consumes only `ItemCatalog`; it
+does not receive paths or access the public HTTP source. The separate operator
+command composes `ItemImportService` with `Dnd5e2014ItemSource`.
 
-## Ownership And Compatibility
+## Storage Ownership And Compatibility
 
-Items owns the unambiguous current tables `items_catalog_entries` and
-`items_catalog_tags`. Stable source keys from the pinned `/api/2014` API are
-persisted as text identifiers. One direct schema initializer is registered as
-owner version `1` under `items` and consumed through one prepared
-`FeatureStoreHandle`; Items
-does not open a parallel connection lifecycle. Desktop composition constructs only the
-catalog-read adapter and application service. The separately composed operator import
-constructs its own HTTP source, import application service, and write adapter from one
-owner-bound `FeatureStoreMaintenance` capability. That capability supplies both the
-whole-database backup and the later Items write connection; ordinary provider reads cannot
-request either maintenance operation.
+Items is an installation-wide immutable Shared-Definition provider. The active
+registry selects exactly one checksummed Shared-Definition generation. Item
+objects contain full semantic detail and source attribution. Their generation
+references contain only the checksummed filter/sort projection required for
+bounded browsing: stable source key, category, subcategory, magic status,
+rarity, attunement status, and optional cost.
 
-Owner version `1` has one structural signature: exact entry and tag columns,
-`source_key` and `(item_source_key, tag)` primary keys, one cascading tag
-foreign key, and the five named query indexes. The entry columns are exactly
-the fields written by a validated current provider import: identity, display
-and classification facts, cost and weight, combat and description facts, and
-source version and URL. No migration identity or predecessor provenance is
-stored. Owner readiness checks the exact owner object inventory plus every
-declared column type, nullability, default, primary key, `CHECK`, foreign key,
-unique constraint, table flag, and named index before the handle becomes
-`READY`; platform
-startup also checks global integrity and foreign keys. Semantic rows remain an
-Items provider read/write concern and fail closed through typed Items results
-rather than a startup corpus scan.
+The projection is repeated inside the immutable object and is covered by both
+the object identity checksum and generation checksum. An exact detail read
+rejects any mismatch between object and projection. A damaged Item object does
+not block metadata browsing or an independent Creature provider; selecting the
+damaged Item returns a storage failure.
 
-## Development Compatibility Boundary
-
-Compatibility obligations begin with the first released format.
-Before the first released format, Items supports no predecessor conversion, compatibility
-bridge, or schema fallback. The version `1` initializer creates the current
-tables and indexes directly only when no current or retired Items development
-table exists. Existing older, mixed, or incomplete development shapes return
-typed `INCOMPATIBLE` without copying, dropping, renaming, or otherwise mutating
-those tables and without affecting another provider's readiness. Such
-disposable development databases must be reinitialized and populated through a
-complete current provider import.
-
-After activation, a schema or pinned-source-version change requires a new
-explicit compatibility decision under the project persistence lifecycle. Where
-that decision keeps imported reference data replaceable, the replacement still
-requires a complete validated re-import rather than synthesized source facts.
+Before the first released format, Items supports no predecessor conversion or
+fallback. A selected Item definition without the current projection or current
+semantic detail is `INCOMPATIBLE`. Replaceable development data must be
+re-imported as a complete corpus. A later released format change requires an
+explicit compatibility decision under the project persistence lifecycle.
 
 ## Import Boundary
 
-The explicit `ItemsImportApi` capability reads only the public equipment and
-magic-item GET endpoints. It requires no account, cookie, token, or other
-secret. The desktop runtime and Items UI never invoke this capability and
-never transmit local database contents. An operator must invoke import as a
-separate maintenance action.
+The explicit `godot/tools/import_items.gd` command reads only public GET
+endpoints below the pinned `/api/2014` root. It requires no account, cookie,
+token, or other secret. The desktop runtime and Items UI never compose this
+source and never transmit local data.
 
-Both indexes and every referenced detail are fetched and parsed before a domain
-batch validates completeness, unique keys, and pinned-source attribution.
-Only then does the importer initialize the Items schema and ask the shared
-SQLite lifecycle for a timestamped maintenance backup. The platform proves
-both the backup and a restored temporary copy with SQLite `integrity_check`.
-One later transaction replaces both prior Items-owned tables. A fetch, parse,
-validation, backup, restore-check, or SQL failure leaves the prior Items
-projection intact and returns a typed failure status.
+The command fetches both complete indexes:
 
-Required batch validation rejects an empty corpus, a missing equipment or
-magic-item feed, blank stable key, name, or category, duplicate stable keys,
-and source version or URL attribution outside the pinned source. Optional
-upstream fields remain absent rather than being synthesized.
+- `/api/2014/equipment`
+- `/api/2014/magic-items`
 
-## Query Contract
+Every referenced detail must be fetched before storage preparation begins.
+Index counts and feed-local paths must match exactly. Batch validation then
+rejects an empty feed, missing or extra detail, blank or unsafe stable index,
+name, or category, duplicate stable identity or source key, an unexpected
+detail URL, invalid cost or weight, malformed description/property data, or
+attribution outside the pinned source.
 
-Catalog queries accept optional filters and a bounded page. Invalid bounds
-return an invalid-query result. Zero imported rows return an unavailable
-result. An unsupported schema returns an incompatible result. Storage failures
-return a storage-error result without changing published prior state.
+Only a complete normalized batch can prepare a generation. Preparation removes
+the previously selected Item kind and adds the entire replacement while
+preserving every independent Shared-Definition kind. It does not alter the
+registry pointer. One later generation-checked registry commit selects the
+replacement. A source, parse, validation, preparation, or stale-publication
+failure leaves the prior complete Items generation selected. A failed
+publication discards its unselected generation.
 
-All catalog reads and explicit imports return `CompletionStage` results and
-schedule blocking work through the supplied `ExecutionLane`. SQLite and HTTP
-work therefore remain outside the JavaFX application thread; a future Catalog
-consumer may dispatch only the resulting immutable projection back to JavaFX.
+## Query And Detail Contract
 
-## Error And Compatibility Behavior
+Catalog queries accept optional name, category, subcategory, rarity, magic,
+attunement, minimum-cost, and maximum-cost filters plus a bounded page. They
+sort stably by name, category, rarity, or cost before slicing. Missing costs
+remain absent and sort after known costs. Filter-option values come from the
+complete selected projection, not merely the filtered page.
 
-- Missing or zero-row imported data returns `UNAVAILABLE`.
-- An unsupported or newer Items schema returns `INCOMPATIBLE` without mutation.
-- A recorded Items owner version above the current direct version is rejected during read-only
-  store qualification; the application reports `INCOMPATIBLE` while the owner rows, schema,
-  platform ledger, and complete SQLite file family remain unchanged.
-- Invalid cost bounds return `INVALID_QUERY` without querying rows.
-- Missing detail keys return `NOT_FOUND`.
-- SQLite failures return `STORAGE_ERROR`; execution-lane rejection returns
-  `EXECUTION_ERROR`.
-- Import distinguishes source, validation, backup, storage, and execution
-  failures. No failure status permits partial replacement.
+Invalid bounds or cost ranges return `INVALID_QUERY`. Zero Item definitions
+return `UNAVAILABLE`. A definition with an absent or invalid current projection
+returns `INCOMPATIBLE`. Generation read failures return `STORAGE_ERROR`.
+Catalog browsing opens no Item object files.
 
-The current schema owner target is version `1`, created by its single direct
-initializer. Before the first released format, the initializer may be revised with the
-current target and never translates an earlier development shape. After the
-first released format, later compatible changes use a new Items-owned migration. Public
-API callers never infer compatibility from JDBC or table layout.
+Detail lookup exact-reads one immutable object outside the scene-tree thread.
+It returns complete description, properties, cost, weight, rarity,
+attunement, damage or armor facts when present, and pinned source attribution.
+Missing identity returns `NOT_FOUND`; incompatible content and damaged bytes
+remain distinguishable. A registry-generation change makes an in-flight detail
+read stale rather than publishing mixed-generation truth.
 
+## Permanent Constraints
+
+- no Items-owned SQLite database, table, migration, JDBC adapter, or Java API;
+- no network request from Catalog browsing or the desktop Items UI;
+- no create, edit, delete, loot, assignment, inventory, or crafting command;
+- no partial import, incremental public-source merge, or synthesized absent
+  source fact;
+- no scene-tree filesystem work for browsing or detail reads;
+- no replacement pointer publication before both feeds and every detail pass
+  validation.
 
 ## Attribution
 
-Every imported row retains source version and source URL. The Inspector shows
-that attribution. The project data source is the 5e-bits 5e-database/API; its
-repository is MIT licensed and identifies the underlying material as Open Game
-License 1.0a content.
+Every imported row retains source version `2014 SRD` and its exact public
+detail URL. The Inspector shows both. The project data source is the 5e-bits
+5e-database/API; its repository is MIT licensed and identifies the underlying
+material as Open Game License 1.0a content.
 
 References:
 
 - [D&D 5e SRD API Introduction](https://5e-bits.github.io/docs/introduction)
+- [2014 API resource root](https://5e-bits.github.io/docs/api)
+- [Equipment index contract](https://5e-bits.github.io/docs/api/get-list-of-all-available-resources-for-an-endpoint)
+- [Equipment detail contract](https://5e-bits.github.io/docs/api/get-an-equipment-item-by-index)
+- [Magic-item detail contract](https://5e-bits.github.io/docs/api/get-a-magic-item-by-index)
 - [5e-database](https://github.com/5e-bits/5e-database)
 - [5e-database License](https://github.com/5e-bits/5e-database/blob/main/LICENSE.md)

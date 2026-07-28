@@ -76,6 +76,17 @@ Run the current headless foundation tests:
 godot --headless --path . --script res://godot/tests/run_all.gd
 ```
 
+Import or replace the complete local public 2014-SRD Items catalog as an
+explicit operator maintenance action:
+
+```bash
+godot --headless --path . --script res://godot/tools/import_items.gd
+```
+
+The desktop Items browser stays offline and read-only. The command fetches both
+public indexes and every referenced detail before it can select a replacement
+Shared-Definition generation.
+
 Install the currently committed Godot development build for local desktop
 testing (the installer refuses a dirty worktree):
 

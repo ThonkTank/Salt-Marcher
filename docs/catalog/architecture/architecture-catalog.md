@@ -39,9 +39,10 @@ another World Planner route or a section-specific workspace root. The seven
 sections are Monster, Items, Encounter, NPCs, Fraktionen, Orte, and
 Encounter-Tabellen.
 
-Current migration state is narrower than the target: the production shell and
-all seven visible section identities exist; Monster and Items query the
-installation-wide Shared-Definition provider; NPCs, Fraktionen, and Orte query
+The production shell and all seven visible section identities exist. Monster
+queries installation-wide Shared-Definition metadata. Items uses its native
+provider over a checksummed Shared-Definition projection plus exact-read detail
+objects. NPCs, Fraktionen, and Orte query
 the active Campaign's World Planner provider; Encounter-Tabellen and saved
 Encounters query their own active-Campaign partitions. All provider families
 implement stable name/identity sorting before bounded paging. Selected active World Planner rows compose their provider-owned
@@ -50,13 +51,15 @@ Catalog-owned truth, and narrative records do not become an eighth section.
 
 ## Provider And Query Boundary
 
-Shared Definitions expose bounded catalog metadata queries by selected
+Shared Definitions expose bounded generic catalog metadata queries by selected
 generation, kind, search text, sort key, direction, offset, and page size.
 Sorting is stable and precedes page slicing. Rows contain stable definition
 identity, kind, and display name. Full semantic content stays in the provider
 and is read only when a provider-owned detail route requires it. The
-generation index is checksummed and structurally validated once per read; it
-does not open every object. A damaged Item object therefore cannot block
+generation index is checksummed and structurally validated once per read. The
+Items owner additionally validates its category, subcategory, rarity,
+magic/attunement, and optional-cost projection without opening object files;
+its full detail remains exact-read. A damaged Item object therefore cannot block
 Creature metadata browsing, while selecting that Item still fails exact object
 validation.
 
@@ -139,13 +142,14 @@ keeps accepted rows visible with a refreshing status. Failure never labels
 stale rows as current success.
 
 The production vertical slice retains draft, accepted query, rows, count,
-status, selection, page, name/identity sort direction, and World Planner
-trash-view state for all seven sections. Search and trash-view changes return
-to page one; header sorting returns to page one without discarding a stable
-selection; section switching preserves the retained state and cancels the
-previous section's invisible request. Provider-specific filters and semantic
-columns such as Creature CR or Item rarity/cost remain target work rather than
-being approximated from metadata that the current providers do not publish.
+status, selection, page, provider-supported sort direction, and World Planner
+trash-view state for all seven sections. Search, Item filters, and trash-view
+changes return to page one; header sorting returns to page one without
+discarding a stable selection; section switching preserves the retained state
+and cancels the previous section's invisible request. Items publishes its real
+category, rarity, and cost columns plus the complete required filter set.
+Creature-specific filters and semantic columns such as CR remain target work
+rather than being approximated from generic metadata.
 
 ## Presentation
 
@@ -154,7 +158,8 @@ being approximated from metadata that the current providers do not publish.
 - one persistent seven-section selector;
 - one inside-labelled search field and consistently placed create action;
 - one explicit active/paper-bin switch for recoverable Campaign-owned records;
-- one shared result table whose two column headers are its only sort controls;
+- one shared result table whose provider-declared column headers are its only
+  sort controls;
 - one Inspector region;
 - one provider-owned narrative-thread composition below selected World Planner
   entity details;

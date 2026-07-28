@@ -10,6 +10,8 @@ const CampaignDesk = preload("res://godot/src/ui/campaign_desk.gd")
 const MainShell = preload("res://godot/src/ui/main_shell.gd")
 const CatalogWorkspace = preload("res://godot/src/ui/catalog_workspace.gd")
 const CatalogBrowseController = preload("res://godot/src/features/catalog/catalog_browse_controller.gd")
+const ItemCatalog = preload("res://godot/src/features/items/item_catalog.gd")
+const ItemImportService = preload("res://godot/src/features/items/item_import_service.gd")
 const WorldPlannerKnowledge = preload("res://godot/src/features/worldplanner/world_planner_knowledge.gd")
 const WorldPlannerCommandController = preload("res://godot/src/features/worldplanner/world_planner_command_controller.gd")
 const WorldPlannerDetailReadController = preload("res://godot/src/features/worldplanner/world_planner_detail_read_controller.gd")
@@ -149,6 +151,8 @@ func _run_tests() -> void:
 	_run_encounter_plan_knowledge_contract()
 	_run_scene_knowledge_contract()
 	_run_encounter_runtime_knowledge_contract()
+	_run_item_catalog_replacement_contract()
+	_run_item_import_contract()
 	await _run_generated_encounter_controller_contract()
 	await _run_catalog_foundation_contract()
 
@@ -2202,7 +2206,42 @@ func _run_catalog_foundation_contract() -> void:
 				"legendary_action_count": 0,
 			},
 		},
-		{"definition_id": "item.rope", "kind": "item", "name": "Rope", "content": {"weight": 10}},
+		_item_fixture(
+			"item.equipment.rope-hempen",
+			"equipment:rope-hempen",
+			"Rope, Hempen (50 feet)",
+			"Adventuring Gear",
+			"Standard Gear",
+			false,
+			"",
+			false,
+			100,
+			"1 gp",
+			10.0,
+			"",
+			"",
+			["Utility"],
+			"A braided hempen rope.",
+			"https://www.dnd5eapi.co/api/2014/equipment/rope-hempen"
+		),
+		_item_fixture(
+			"item.magic-item.rope-of-climbing",
+			"magic-item:rope-of-climbing",
+			"Rope of Climbing",
+			"Adventuring Gear",
+			"Magic Item",
+			true,
+			"Uncommon",
+			false,
+			null,
+			"",
+			null,
+			"",
+			"",
+			[],
+			"This silk rope moves on command.",
+			"https://www.dnd5eapi.co/api/2014/magic-items/rope-of-climbing"
+		),
 	]
 	for index in range(55):
 		catalog_definitions.append({
@@ -2410,6 +2449,43 @@ func _run_catalog_foundation_contract() -> void:
 		not definitions.query_catalog(int(prepared["generation"]), "creature", "", 0, 50, "unknown").get("ok", true),
 		"Shared Definitions reject an unknown Catalog sort key"
 	)
+	var items := ItemCatalog.new(data_root)
+	var equipment_page := items.query(
+		int(prepared["generation"]),
+		"rope",
+		{"category": "Adventuring Gear", "magic": false, "minimum_cost_cp": 100, "maximum_cost_cp": 100},
+		0,
+		50,
+		"cost",
+		true
+	)
+	_expect(
+		equipment_page.get("status", "") == "ready"
+		and equipment_page.get("total", -1) == 1
+		and equipment_page.get("rows", [])[0].get("source_key", "") == "equipment:rope-hempen"
+		and "Adventuring Gear" in equipment_page.get("filter_options", {}).get("categories", []),
+		"Items owner applies semantic filters and exposes stable full-corpus filter options before bounded paging"
+	)
+	var magic_page := items.query(
+		int(prepared["generation"]), "", {"magic": true}, 0, 50, "rarity", false
+	)
+	_expect(
+		magic_page.get("status", "") == "ready"
+		and magic_page.get("rows", [])[0].get("rarity", "") == "Uncommon"
+		and magic_page.get("rows", [])[0].get("cost_cp", 0) == null,
+		"Items owner distinguishes magic rarity and absent upstream cost without inventing a value"
+	)
+	_expect(
+		items.query(int(prepared["generation"]), "", {"minimum_cost_cp": "many"}).get("status", "") == "invalid_query",
+		"Items owner reports invalid cost filters without reading object bodies"
+	)
+	var rope_detail := items.detail(int(prepared["generation"]), "item.equipment.rope-hempen")
+	_expect(
+		rope_detail.get("ok", false)
+		and rope_detail.get("item", {}).get("weight") == 10.0
+		and rope_detail.get("item", {}).get("source_version", "") == "2014 SRD",
+		"Items detail exact-read validates semantic facts and pinned source attribution"
+	)
 	var creature_labels := definitions.reference_labels(
 		["creature.wolf", "creature.missing"],
 		int(prepared["generation"]),
@@ -2613,14 +2689,18 @@ func _run_catalog_foundation_contract() -> void:
 	)
 	plan_commands.queue_free()
 	await process_frame
-	var item_reference: Dictionary = prepared.get("state", {}).get("definitions", {}).get("item.rope", {})
+	var item_reference: Dictionary = prepared.get("state", {}).get("definitions", {}).get("item.equipment.rope-hempen", {})
 	var damaged_item_path := data_root + "/installation/shared-definitions/" + str(item_reference.get("path", ""))
 	var damaged_item := FileAccess.open(damaged_item_path, FileAccess.WRITE)
 	damaged_item.store_string("{damaged")
 	damaged_item.close()
 	_expect(registry.load_state().get("ok", false), "one damaged Shared Definition does not block registry or Campaign opening")
 	_expect(definitions.query_catalog(int(prepared["generation"]), "creature", "", 0, 50).get("ok", false), "damaged Item definition does not block independent Creature metadata browsing")
-	_expect(not definitions.read_definition("item.rope", int(prepared["generation"])).get("ok", true), "selected damaged Shared Definition fails exact object validation")
+	_expect(
+		items.query(int(prepared["generation"]), "rope", {}, 0, 50).get("total", -1) == 2,
+		"damaged Item object does not block checksummed Items metadata browsing"
+	)
+	_expect(not items.detail(int(prepared["generation"]), "item.equipment.rope-hempen").get("ok", true), "selected damaged Item fails exact object validation")
 
 	var shell := MainShell.new()
 	shell.data_root = data_root
@@ -3012,6 +3092,45 @@ func _run_catalog_foundation_contract() -> void:
 			break
 		await create_timer(0.001).timeout
 	catalog.select_section("items")
+	for _attempt in 600:
+		if catalog.section_snapshot("items").get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	var item_filter_strip := catalog.find_child("CatalogItemFilters", true, false) as VBoxContainer
+	var item_magic_filter := catalog.find_child("CatalogItemMagic", true, false) as OptionButton
+	var immutable_create := catalog.find_child("CatalogCreate", true, false) as Button
+	_expect(
+		catalog.section_snapshot("items").get("total", -1) == 2
+		and item_filter_strip.visible
+		and not immutable_create.visible,
+		"Items surface exposes provider filters and no create mutation on the read-only owner"
+	)
+	item_magic_filter.select(1)
+	item_magic_filter.item_selected.emit(1)
+	for _attempt in 600:
+		var item_state := catalog.section_snapshot("items")
+		if item_state.get("status", "") == "ready" and item_state.get("total", -1) == 1:
+			break
+		await create_timer(0.001).timeout
+	var filtered_items := catalog.section_snapshot("items")
+	_expect(
+		filtered_items.get("rows", [])[0].get("source_key", "") == "magic-item:rope-of-climbing",
+		"Items surface submits semantic magic filtering through its background owner"
+	)
+	var item_result_list := catalog.find_child("CatalogResults", true, false) as VBoxContainer
+	var item_result_button := item_result_list.find_child("CatalogResultName", true, false) as Button
+	item_result_button.pressed.emit()
+	for _attempt in 600:
+		if catalog.detail_snapshot().get("status", "") == "ready":
+			break
+		await create_timer(0.001).timeout
+	var item_inspector := catalog.find_child("CatalogInspector", true, false) as RichTextLabel
+	_expect(
+		catalog.detail_snapshot().get("record", {}).get("rarity", "") == "Uncommon"
+		and item_inspector.text.contains("2014 SRD")
+		and item_inspector.text.replace("​", "").contains("https://www.dnd5eapi.co/api/2014/magic-items/rope-of-climbing"),
+		"Items selection exact-reads complete semantic detail and visible pinned-source attribution"
+	)
 	catalog.select_section("creatures")
 	_expect(
 		catalog.section_snapshot("creatures").get("page", -1) == 1
@@ -6428,6 +6547,211 @@ func _run_campaign_desk_journey() -> void:
 
 	desk.queue_free()
 	await process_frame
+
+func _run_item_import_contract() -> void:
+	var data_root := "user://saltmarcher-item-import/%s" % Time.get_ticks_usec()
+	var registry := FileCampaignRegistry.new(data_root)
+	var definitions := SharedDefinitionStore.new(data_root)
+	var prepared_creature := definitions.prepare_generation(0, [{
+		"definition_id": "creature.mastiff",
+		"kind": "creature",
+		"name": "Mastiff",
+		"content": {"armor_class": 12},
+	}])
+	registry.publish_shared_definitions_generation(int(prepared_creature.get("generation", -1)), 0)
+	var importer := ItemImportService.new(data_root)
+	var imported := importer.import_fetched_corpus(_item_corpus_fixture())
+	var selected := registry.load_state()
+	var catalog := ItemCatalog.new(data_root)
+	var page := catalog.query(int(selected.get("shared_definitions_generation", -1)), "", {}, 0, 50)
+	var detail := catalog.detail(
+		int(selected.get("shared_definitions_generation", -1)),
+		"item.equipment.lantern-hooded"
+	)
+	_expect(
+		imported.get("status", "") == "imported"
+		and imported.get("equipment_count", -1) == 1
+		and imported.get("magic_item_count", -1) == 1
+		and page.get("total", -1) == 2
+		and detail.get("item", {}).get("cost_cp", -1) == 500
+		and detail.get("item", {}).get("weight") == 2.0,
+		"native Items operator import validates both complete feeds and publishes browseable semantic truth"
+	)
+	var selected_generation := int(selected.get("shared_definitions_generation", -1))
+	var selected_state := definitions.load_generation(selected_generation)
+	_expect(
+		selected_state.get("definitions", {}).has("creature.mastiff"),
+		"Items import preserves definitions owned by independent providers"
+	)
+	var incomplete := _item_corpus_fixture()
+	incomplete["details"].erase("/api/2014/magic-items/rope-of-climbing")
+	var rejected := importer.import_fetched_corpus(incomplete)
+	_expect(
+		rejected.get("status", "") == "validation_error"
+		and int(registry.load_state().get("shared_definitions_generation", -2)) == selected_generation
+		and catalog.query(selected_generation, "", {}, 0, 50).get("total", -1) == 2,
+		"incomplete public detail fetch rejects before storage and leaves the selected prior Items corpus unchanged"
+	)
+
+
+func _item_corpus_fixture() -> Dictionary:
+	return {
+		"equipment_index": {
+			"count": 1,
+			"results": [{"index": "lantern-hooded", "name": "Lantern, Hooded", "url": "/api/2014/equipment/lantern-hooded"}],
+		},
+		"magic_item_index": {
+			"count": 1,
+			"results": [{"index": "rope-of-climbing", "name": "Rope of Climbing", "url": "/api/2014/magic-items/rope-of-climbing"}],
+		},
+		"details": {
+			"/api/2014/equipment/lantern-hooded": {
+				"index": "lantern-hooded",
+				"name": "Lantern, Hooded",
+				"equipment_category": {"name": "Adventuring Gear"},
+				"gear_category": {"name": "Standard Gear"},
+				"cost": {"quantity": 5, "unit": "gp"},
+				"weight": 2.0,
+				"properties": [{"name": "Light"}],
+				"desc": ["A hooded lantern casts bright light."],
+				"url": "/api/2014/equipment/lantern-hooded",
+			},
+			"/api/2014/magic-items/rope-of-climbing": {
+				"index": "rope-of-climbing",
+				"name": "Rope of Climbing",
+				"equipment_category": {"name": "Wondrous Items"},
+				"rarity": {"name": "Uncommon"},
+				"desc": ["This silk rope moves on command and requires attunement."],
+				"url": "/api/2014/magic-items/rope-of-climbing",
+			},
+		},
+	}
+
+
+func _run_item_catalog_replacement_contract() -> void:
+	var data_root := "user://saltmarcher-item-replacement/%s" % Time.get_ticks_usec()
+	var registry := FileCampaignRegistry.new(data_root)
+	var definitions := SharedDefinitionStore.new(data_root)
+	_expect(
+		ItemCatalog.new(data_root).query(0, "", {}, 0, 50).get("status", "") == "unavailable"
+		and ItemCatalog.new(data_root).query(999, "", {}, 0, 50).get("status", "") == "storage_error",
+		"Items owner distinguishes missing import from an unreadable selected generation"
+	)
+	var incompatible_root := data_root + "-incompatible"
+	var incompatible_definitions := SharedDefinitionStore.new(incompatible_root)
+	var incompatible_generation := incompatible_definitions.prepare_generation(0, [{
+		"definition_id": "item.equipment.legacy",
+		"kind": "item",
+		"name": "Legacy Item",
+		"content": {"source_key": "equipment:legacy"},
+	}])
+	_expect(
+		ItemCatalog.new(incompatible_root).query(
+			int(incompatible_generation.get("generation", -1)), "", {}, 0, 50
+		).get("status", "") == "incompatible",
+		"Items owner isolates a definition without the current semantic projection as incompatible"
+	)
+	var first_items := [
+		_item_fixture(
+			"item.equipment.rope", "equipment:rope", "Rope", "Gear", "Kit", false, "", false,
+			100, "1 gp", 10.0, "", "", [], "Rope.",
+			"https://www.dnd5eapi.co/api/2014/equipment/rope"
+		),
+		_item_fixture(
+			"item.magic-item.bag", "magic-item:bag", "Bag", "Gear", "Magic Item", true, "Rare", false,
+			null, "", null, "", "", [], "Bag.",
+			"https://www.dnd5eapi.co/api/2014/magic-items/bag"
+		),
+	]
+	var first := definitions.prepare_generation(0, [{
+		"definition_id": "creature.guard",
+		"kind": "creature",
+		"name": "Guard",
+		"content": {"armor_class": 16},
+	}] + first_items)
+	var first_publish := registry.publish_shared_definitions_generation(int(first.get("generation", -1)), 0)
+	_expect(first.get("ok", false) and first_publish.get("ok", false), "Items replacement fixture publishes its first complete generation")
+	var replacement := _item_fixture(
+		"item.equipment.lantern", "equipment:lantern", "Lantern", "Gear", "Standard", false, "", false,
+		500, "5 gp", 2.0, "", "", [], "Lantern.",
+		"https://www.dnd5eapi.co/api/2014/equipment/lantern"
+	)
+	var prepared := definitions.prepare_generation(
+		int(first["generation"]),
+		[replacement],
+		Callable(),
+		Callable(),
+		["item.equipment.rope", "item.magic-item.bag"]
+	)
+	var before_publish := registry.load_state()
+	var old_items := ItemCatalog.new(data_root).query(int(first["generation"]), "", {}, 0, 50)
+	_expect(
+		prepared.get("ok", false)
+		and int(before_publish.get("shared_definitions_generation", -1)) == int(first["generation"])
+		and old_items.get("total", -1) == 2,
+		"preparing a full Items replacement leaves the selected prior corpus unchanged"
+	)
+	var published := registry.publish_shared_definitions_generation(
+		int(prepared.get("generation", -1)),
+		int(before_publish.get("generation", -1))
+	)
+	var replacement_state := definitions.load_generation(int(prepared.get("generation", -1)))
+	var replacement_items := ItemCatalog.new(data_root).query(int(prepared.get("generation", -1)), "", {}, 0, 50)
+	_expect(
+		published.get("ok", false)
+		and replacement_items.get("total", -1) == 1
+		and replacement_items.get("rows", [])[0].get("source_key", "") == "equipment:lantern"
+		and replacement_state.get("definitions", {}).has("creature.guard")
+		and not replacement_state.get("definitions", {}).has("item.equipment.rope"),
+		"one registry commit atomically selects the complete Items replacement while preserving other definition owners"
+	)
+
+
+func _item_fixture(
+	definition_id: String,
+	source_key: String,
+	name: String,
+	category: String,
+	subcategory: String,
+	magic: bool,
+	rarity: String,
+	attunement: bool,
+	cost_cp: Variant,
+	cost_display: String,
+	weight: Variant,
+	damage: String,
+	armor_class: String,
+	properties: Array,
+	description: String,
+	source_url: String
+) -> Dictionary:
+	var projection := {
+		"source_key": source_key,
+		"category": category,
+		"subcategory": subcategory,
+		"magic": magic,
+		"rarity": rarity,
+		"attunement": attunement,
+		"cost_cp": cost_cp,
+		"cost_display": cost_display,
+	}
+	var content := projection.duplicate(true)
+	content.merge({
+		"weight": weight,
+		"damage": damage,
+		"armor_class": armor_class,
+		"properties": properties.duplicate(),
+		"description": description,
+		"source_version": "2014 SRD",
+		"source_url": source_url,
+	})
+	return {
+		"definition_id": definition_id,
+		"kind": "item",
+		"name": name,
+		"catalog_projection": projection,
+		"content": content,
+	}
 
 
 func _expect(condition: bool, message: String) -> void:
