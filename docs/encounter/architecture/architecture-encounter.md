@@ -80,7 +80,9 @@ Encounter Campaign commit. Catalog Creature actions now enter that same serial
 boundary: builder mode increments a stable Creature roster slot, while combat
 mode creates one reinforcement without changing the creation roster and
 reindexes the preserved active combatant after initiative ordering. Final
-compact cockpit placement remains target work.
+compact cockpit placement remains target work. Manual builder quantity changes,
+complete slot removal, and one-step undo use the same Encounter writer; they
+clear the copied plan identity and reject Scene contexts or later runtime modes.
 
 ## Generated-Batch Orchestration
 

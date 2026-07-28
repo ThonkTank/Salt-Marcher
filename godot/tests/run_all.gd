@@ -1611,6 +1611,50 @@ func _run_encounter_runtime_knowledge_contract() -> void:
 		and runtime.snapshot(manual_restart).get("context", {}).get("roster", [])[0].get("quantity", -1) == 2,
 		"Catalog additions build and restart one manual Encounter-owned roster without creating saved-plan truth"
 	)
+	var legacy_payload: Dictionary = manual_added.get("payload", {}).duplicate(true)
+	legacy_payload["runtime"]["format"] = EncounterRuntimeKnowledge.LEGACY_FORMAT_ID
+	legacy_payload["runtime"]["contexts"][EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID].erase("removed_roster_entry")
+	var legacy_snapshot := runtime.snapshot(legacy_payload)
+	_expect(
+		legacy_snapshot.get("ok", false)
+		and legacy_snapshot.get("context", {}).get("removed_roster_entry", {"missing": true}).is_empty()
+		and runtime.validate_runtime(legacy_payload["runtime"]).get("runtime", {}).get("format", "") == EncounterRuntimeKnowledge.FORMAT_ID,
+		"Encounter runtime v2 normalizes in memory to v3 with an empty one-step removal history"
+	)
+	var quantity_increased := runtime.adjust_roster_quantity(
+		manual_added.get("payload", {}), "slot.creature.wolf", 1
+	)
+	var quantity_decreased := runtime.adjust_roster_quantity(
+		quantity_increased.get("payload", {}), "slot.creature.wolf", -1
+	)
+	var removed := runtime.remove_roster_slot(quantity_decreased.get("payload", {}), "slot.creature.wolf")
+	var removed_restart: Dictionary = JSON.parse_string(JSON.stringify(removed.get("payload", {})))
+	var removed_after_restart := runtime.snapshot(removed_restart)
+	var restored := runtime.undo_roster_removal(removed_restart)
+	_expect(
+		quantity_increased.get("context", {}).get("roster", [])[0].get("quantity", -1) == 3
+		and quantity_decreased.get("context", {}).get("roster", [])[0].get("quantity", -1) == 2
+		and quantity_decreased.get("context", {}).get("active_plan_id", "missing") == ""
+		and removed_after_restart.get("context", {}).get("roster", []).is_empty()
+		and removed_after_restart.get("context", {}).get("removed_roster_entry", {}).get("entry", {}).get("quantity", -1) == 2
+		and restored.get("context", {}).get("roster", [])[0].get("quantity", -1) == 2
+		and restored.get("context", {}).get("removed_roster_entry", {"missing": true}).is_empty(),
+		"manual quantity, remove, persisted one-step undo, and restoration remain one Encounter-owned atomic history"
+	)
+	var single_added := runtime.add_creature(plans.empty_payload(), wolf_facts)
+	_expect(
+		not runtime.adjust_roster_quantity(single_added.get("payload", {}), "slot.creature.wolf", -1).get("ok", true)
+		and not runtime.adjust_roster_quantity(single_added.get("payload", {}), "slot.creature.missing", 1).get("ok", true)
+		and not runtime.remove_roster_slot(single_added.get("payload", {}), "slot.creature.wolf", "encounter_context.scene.alpha").get("ok", true),
+		"manual roster commands reject quantity zero, missing slots, and Scene-owned contexts without guessing"
+	)
+	var removed_then_added := runtime.remove_roster_slot(manual_added.get("payload", {}), "slot.creature.wolf")
+	removed_then_added = runtime.add_creature(removed_then_added.get("payload", {}), wolf_facts)
+	_expect(
+		removed_then_added.get("ok", false)
+		and removed_then_added.get("context", {}).get("removed_roster_entry", {"missing": true}).is_empty(),
+		"the one-step removal history expires on the next roster mutation"
+	)
 	var created := plans.create_plan(
 		plans.empty_payload(),
 		"Wölfe am Kai",
@@ -1657,6 +1701,11 @@ func _run_encounter_runtime_knowledge_contract() -> void:
 		"initiative opens one Party row plus one quantity-aware enemy row per runtime roster slot"
 	)
 	payload = initiative.get("payload", payload)
+	_expect(
+		not runtime.adjust_roster_quantity(payload, "slot.creature.wolf", 1).get("ok", true)
+		and not runtime.remove_roster_slot(payload, "slot.creature.wolf").get("ok", true),
+		"manual roster editing fails closed once initiative has begun"
+	)
 	_expect(
 		not runtime.add_creature(payload, wolf_facts).get("ok", true),
 		"Catalog addition fails visibly during initiative instead of guessing a runtime transition"
@@ -2766,6 +2815,52 @@ func _run_catalog_foundation_contract() -> void:
 		encounter_workspace.snapshot().get("context", {}).get("mode", "") == "builder"
 		and encounter_workspace.snapshot().get("context", {}).get("roster", []).size() == 2,
 		"Encounter route opens one saved plan through current Creature facts and persists its runtime roster"
+	)
+	var runtime_roster_rows := encounter_workspace.find_children("EncounterRosterRow", "PanelContainer", true, false)
+	var increase_wolves := runtime_roster_rows[0].find_child("EncounterRosterIncrease", true, false) as Button if runtime_roster_rows.size() == 2 else null
+	if increase_wolves != null:
+		increase_wolves.pressed.emit()
+	for _attempt in 1800:
+		if encounter_workspace.snapshot().get("context", {}).get("roster", [])[0].get("quantity", -1) == 4:
+			break
+		await create_timer(0.001).timeout
+	runtime_roster_rows = encounter_workspace.find_children("EncounterRosterRow", "PanelContainer", true, false)
+	var decrease_wolves := runtime_roster_rows[0].find_child("EncounterRosterDecrease", true, false) as Button if runtime_roster_rows.size() == 2 else null
+	if decrease_wolves != null:
+		decrease_wolves.pressed.emit()
+	for _attempt in 1800:
+		if encounter_workspace.snapshot().get("context", {}).get("roster", [])[0].get("quantity", -1) == 3:
+			break
+		await create_timer(0.001).timeout
+	runtime_roster_rows = encounter_workspace.find_children("EncounterRosterRow", "PanelContainer", true, false)
+	var remove_worg := runtime_roster_rows[1].find_child("EncounterRosterRemove", true, false) as Button if runtime_roster_rows.size() == 2 else null
+	if remove_worg != null:
+		remove_worg.pressed.emit()
+	for _attempt in 1800:
+		if encounter_workspace.snapshot().get("context", {}).get("roster", []).size() == 1:
+			break
+		await create_timer(0.001).timeout
+	var persisted_removed := FileCampaignStore.new(data_root, catalog_campaign_id).read_partition(EncounterPlanKnowledge.OWNER)
+	var restarted_removed := EncounterRuntimeKnowledge.new().snapshot(persisted_removed.get("payload", {}))
+	_expect(
+		encounter_workspace.snapshot().get("context", {}).get("active_plan_id", "missing") == ""
+		and encounter_workspace.find_child("EncounterRosterUndoNotice", true, false) != null
+		and restarted_removed.get("context", {}).get("roster", []).size() == 1
+		and restarted_removed.get("context", {}).get("removed_roster_entry", {}).get("entry", {}).get("name", "") == "Worg",
+		"visible roster controls detach the manual lineup from its saved plan and persist the removal history"
+	)
+	var undo_roster := encounter_workspace.find_child("EncounterRosterUndo", true, false) as Button
+	if undo_roster != null:
+		undo_roster.pressed.emit()
+	for _attempt in 1800:
+		if encounter_workspace.snapshot().get("context", {}).get("roster", []).size() == 2:
+			break
+		await create_timer(0.001).timeout
+	_expect(
+		encounter_workspace.snapshot().get("context", {}).get("roster", [])[1].get("name", "") == "Worg"
+		and encounter_workspace.find_children("EncounterRosterQuantity", "Label", true, false).size() == 2
+		and encounter_workspace.find_child("EncounterRosterUndoNotice", true, false) == null,
+		"visible one-step undo restores the removed slot at its original roster position"
 	)
 	var open_initiative := encounter_workspace.find_child("OpenEncounterInitiative", true, false) as Button
 	if open_initiative != null:

@@ -252,18 +252,57 @@ func _render_turn_strip(context: Dictionary) -> void:
 
 
 func _render_builder(context: Dictionary) -> void:
-	_add_stage_heading("Aufstellung", "Öffne links einen gespeicherten Encounter. Aktuelle Creature-Fakten werden erst beim Öffnen in den Laufzeitkontext übernommen.")
+	var editable := context_id == "encounter_context.manual"
+	_add_stage_heading(
+		"Aufstellung",
+		"Monster aus dem Katalog ergänzen und ihre Anzahl hier abstimmen. Gespeicherte Pläne bleiben unverändert."
+		if editable
+		else "Diese Aufstellung folgt der fokussierten Scene. Zusammensetzung wird dort geändert."
+	)
+	var removed: Dictionary = context.get("removed_roster_entry", {})
+	if editable and not removed.is_empty():
+		var undo_row := PanelContainer.new()
+		undo_row.name = "EncounterRosterUndoNotice"
+		undo_row.add_theme_stylebox_override("panel", _panel_style(SLATE, BRASS, 1))
+		_content.add_child(undo_row)
+		var undo_margin := MarginContainer.new()
+		_set_margins(undo_margin, 10)
+		undo_row.add_child(undo_margin)
+		var undo_content := HBoxContainer.new()
+		undo_content.add_theme_constant_override("separation", 8)
+		undo_margin.add_child(undo_content)
+		var removed_entry: Dictionary = removed.get("entry", {})
+		var undo_label := Label.new()
+		undo_label.text = "%s ×%d entfernt" % [removed_entry.get("name", "Monster"), int(removed_entry.get("quantity", 0))]
+		undo_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		undo_label.add_theme_color_override("font_color", VELLUM)
+		undo_content.add_child(undo_label)
+		var undo := _add_button(undo_content, "Rückgängig", _undo_roster_removal, "EncounterRosterUndo")
+		undo.disabled = _commands.busy()
 	var roster: Array = context.get("roster", [])
 	if roster.is_empty():
-		_add_empty_card("Noch keine Aufstellung", "Gespeicherten Encounter links auswählen oder im Katalog anlegen.")
+		_add_empty_card(
+			"Noch keine Aufstellung",
+			"Im Katalog ein Monster mit + Encounter hinzufügen oder links einen gespeicherten Plan öffnen."
+			if editable
+			else "Die fokussierte Scene enthält derzeit keine kampfrelevanten Teilnehmer."
+		)
 		return
 	for entry_value in roster:
 		var entry: Dictionary = entry_value
+		var slip := PanelContainer.new()
+		slip.name = "EncounterRosterRow"
+		slip.add_theme_stylebox_override("panel", _panel_style(SLATE, Color("#29464e"), 1))
+		_content.add_child(slip)
+		var slip_margin := MarginContainer.new()
+		_set_margins(slip_margin, 8)
+		slip.add_child(slip_margin)
 		var row := HBoxContainer.new()
-		row.custom_minimum_size = Vector2(0, 44)
-		_content.add_child(row)
+		row.custom_minimum_size = Vector2(0, 38)
+		row.add_theme_constant_override("separation", 7)
+		slip_margin.add_child(row)
 		var name := Label.new()
-		name.text = "%s%s" % [entry["name"], "" if int(entry["quantity"]) == 1 else " ×%d" % int(entry["quantity"])]
+		name.text = str(entry["name"])
 		name.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		name.add_theme_color_override("font_color", VELLUM)
 		name.add_theme_font_size_override("font_size", 15)
@@ -272,12 +311,47 @@ func _render_builder(context: Dictionary) -> void:
 		_add_data_label(row, "%d TP" % int(entry["hit_points"]))
 		_add_data_label(row, "RK %d" % int(entry["armor_class"]))
 		_add_data_label(row, "%d XP" % (int(entry["xp"]) * int(entry["quantity"])))
+		if editable:
+			var decrease := _add_button(row, "−", _adjust_roster_quantity.bind(str(entry["slot_id"]), -1), "EncounterRosterDecrease")
+			decrease.custom_minimum_size = Vector2(34, 30)
+			decrease.tooltip_text = "Ein Monster weniger"
+			decrease.disabled = int(entry["quantity"]) <= 1 or _commands.busy()
+			var quantity := Label.new()
+			quantity.name = "EncounterRosterQuantity"
+			quantity.text = "×%d" % int(entry["quantity"])
+			quantity.custom_minimum_size = Vector2(42, 30)
+			quantity.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			quantity.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			quantity.add_theme_color_override("font_color", BRASS)
+			row.add_child(quantity)
+			var increase := _add_button(row, "+", _adjust_roster_quantity.bind(str(entry["slot_id"]), 1), "EncounterRosterIncrease")
+			increase.custom_minimum_size = Vector2(34, 30)
+			increase.tooltip_text = "Ein Monster mehr"
+			increase.disabled = _commands.busy()
+			var remove := _add_button(row, "Entfernen", _remove_roster_slot.bind(str(entry["slot_id"])), "EncounterRosterRemove")
+			remove.tooltip_text = "%s vollständig aus der Aufstellung entfernen" % entry["name"]
+			remove.add_theme_color_override("font_color", DANGER)
+			remove.disabled = _commands.busy()
+	if editable:
+		_add_hint(_content, "Neue Monster kommen über + Encounter im Katalog. Jede Änderung löst die Aufstellung vom geöffneten Plan.")
 	var party_count := int(_snapshot.get("party_summary", {}).get("active_count", 0))
 	_add_hint(_content, "%d aktive Party-Mitglieder werden beim Kampfstart in die Initiative übernommen." % party_count)
 	var action_row := HBoxContainer.new()
 	_content.add_child(action_row)
 	var start := _add_button(action_row, "Initiative öffnen", func() -> void: _commands.open_initiative(context_id), "OpenEncounterInitiative")
 	start.disabled = party_count == 0 or _commands.busy()
+
+
+func _adjust_roster_quantity(slot_id: String, delta: int) -> void:
+	_dispatch(_commands.adjust_roster_quantity(slot_id, delta, context_id))
+
+
+func _remove_roster_slot(slot_id: String) -> void:
+	_dispatch(_commands.remove_roster_slot(slot_id, context_id))
+
+
+func _undo_roster_removal() -> void:
+	_dispatch(_commands.undo_roster_removal(context_id))
 
 
 func _render_initiative(context: Dictionary) -> void:
@@ -505,6 +579,11 @@ func _command_completed(result: Dictionary) -> void:
 		_set_status(str(result.get("error", "Encounter-Änderung fehlgeschlagen.")), DANGER)
 		return
 	refresh()
+
+
+func _dispatch(result: Dictionary) -> void:
+	if not result.get("ok", false):
+		_set_status(str(result.get("error", "Encounter-Änderung konnte nicht gestartet werden.")), DANGER)
 
 
 func _add_stage_heading(title: String, subtitle: String) -> void:

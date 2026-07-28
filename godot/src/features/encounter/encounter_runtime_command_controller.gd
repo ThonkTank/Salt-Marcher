@@ -32,6 +32,18 @@ func add_creature(creature_id: String, context_id: String = EncounterRuntimeKnow
 	return start_command({"operation": "add_creature", "creature_id": creature_id, "context_id": context_id})
 
 
+func adjust_roster_quantity(slot_id: String, delta: int, context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
+	return start_command({"operation": "adjust_roster_quantity", "slot_id": slot_id, "delta": delta, "context_id": context_id})
+
+
+func remove_roster_slot(slot_id: String, context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
+	return start_command({"operation": "remove_roster_slot", "slot_id": slot_id, "context_id": context_id})
+
+
+func undo_roster_removal(context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
+	return start_command({"operation": "undo_roster_removal", "context_id": context_id})
+
+
 func open_initiative(context_id: String = EncounterRuntimeKnowledge.MANUAL_CONTEXT_ID) -> Dictionary:
 	return start_command({"operation": "open_initiative", "context_id": context_id})
 
@@ -116,6 +128,12 @@ func _apply_runtime_command(payload: Dictionary, request: Dictionary) -> Diction
 			if not prepared.get("ok", false):
 				return prepared
 			result = model.add_creature(payload, prepared["creature"], context_id)
+		"adjust_roster_quantity":
+			result = model.adjust_roster_quantity(payload, str(request["slot_id"]), int(request["delta"]), context_id)
+		"remove_roster_slot":
+			result = model.remove_roster_slot(payload, str(request["slot_id"]), context_id)
+		"undo_roster_removal":
+			result = model.undo_roster_removal(payload, context_id)
 		"open_initiative":
 			var party := _active_party(request, context_id)
 			if not party.get("ok", false):

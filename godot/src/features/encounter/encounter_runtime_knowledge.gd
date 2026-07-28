@@ -5,7 +5,8 @@ extends RefCounted
 ## in the same owner partition and are only copied into a runtime roster on an
 ## explicit open command.
 
-const FORMAT_ID := "saltmarcher.encounter-runtime.v2"
+const FORMAT_ID := "saltmarcher.encounter-runtime.v3"
+const LEGACY_FORMAT_ID := "saltmarcher.encounter-runtime.v2"
 const MANUAL_CONTEXT_ID := "encounter_context.manual"
 const MODES := ["builder", "initiative", "combat", "results"]
 const KINDS := ["pc", "enemy", "ally"]
@@ -35,13 +36,16 @@ func empty_context(context_id: String = MANUAL_CONTEXT_ID) -> Dictionary:
 		"current_turn_index": -1,
 		"round": 1,
 		"result": _empty_result(),
+		"removed_roster_entry": {},
 	}
 
 
 func validate_runtime(value: Variant) -> Dictionary:
 	if not value is Dictionary:
 		return _failure("Encounter-Laufzeitdaten müssen ein Dokument sein.")
-	var runtime: Dictionary = value
+	var runtime: Dictionary = value.duplicate(true)
+	if runtime.get("format", "") == LEGACY_FORMAT_ID:
+		runtime = _upgrade_v2_runtime(runtime)
 	if (
 		runtime.size() != 4
 		or runtime.get("format", "") != FORMAT_ID
@@ -60,6 +64,19 @@ func validate_runtime(value: Variant) -> Dictionary:
 		if not validation.get("ok", false):
 			return validation
 	return {"ok": true, "runtime": runtime.duplicate(true)}
+
+
+func _upgrade_v2_runtime(runtime_value: Dictionary) -> Dictionary:
+	var runtime := runtime_value.duplicate(true)
+	runtime["format"] = FORMAT_ID
+	var contexts: Dictionary = runtime.get("contexts", {}).duplicate(true)
+	for context_id in contexts:
+		if contexts[context_id] is Dictionary and not contexts[context_id].has("removed_roster_entry"):
+			var context: Dictionary = contexts[context_id].duplicate(true)
+			context["removed_roster_entry"] = {}
+			contexts[context_id] = context
+	runtime["contexts"] = contexts
+	return runtime
 
 
 func snapshot(owner_payload: Dictionary, context_id: String = "") -> Dictionary:
@@ -130,6 +147,7 @@ func add_creature(
 				roster.append(entry.duplicate(true))
 			context["roster"] = roster
 			context["active_plan_id"] = ""
+			context["removed_roster_entry"] = {}
 			context["status"] = "%s zur manuellen Aufstellung hinzugefügt." % entry["name"]
 			context["revision"] = _next_revision(context)
 			return _publish_context(state["payload"], state["runtime"], context, "creature_added")
@@ -158,6 +176,87 @@ func add_creature(
 			return _publish_context(state["payload"], state["runtime"], context, "reinforcement_added")
 		_:
 			return _failure("Monster können nur in der Aufstellung oder im laufenden Kampf hinzugefügt werden.")
+
+
+func adjust_roster_quantity(
+	owner_payload: Dictionary,
+	slot_id: String,
+	delta: int,
+	context_id: String = MANUAL_CONTEXT_ID
+) -> Dictionary:
+	var state := _manual_builder_state(owner_payload, context_id)
+	if not state.get("ok", false):
+		return state
+	if not _valid_id(slot_id) or delta not in [-1, 1]:
+		return _failure("Roster-Menge braucht eine gültige Zeile und genau einen Schritt.")
+	var context: Dictionary = state["context"]
+	var roster: Array = context["roster"].duplicate(true)
+	for index in roster.size():
+		if str(roster[index]["slot_id"]) != slot_id:
+			continue
+		var next_quantity := int(roster[index]["quantity"]) + delta
+		if next_quantity <= 0:
+			return _failure("Menge eins wird über Entfernen aus der Aufstellung genommen.")
+		roster[index] = roster[index].duplicate(true)
+		roster[index]["quantity"] = next_quantity
+		context["roster"] = roster
+		context["active_plan_id"] = ""
+		context["removed_roster_entry"] = {}
+		context["status"] = "%s auf ×%d gesetzt." % [roster[index]["name"], next_quantity]
+		context["revision"] = _next_revision(context)
+		return _publish_context(state["payload"], state["runtime"], context, "roster_quantity_changed")
+	return _failure("Roster-Zeile fehlt: %s" % slot_id, "missing")
+
+
+func remove_roster_slot(
+	owner_payload: Dictionary,
+	slot_id: String,
+	context_id: String = MANUAL_CONTEXT_ID
+) -> Dictionary:
+	var state := _manual_builder_state(owner_payload, context_id)
+	if not state.get("ok", false):
+		return state
+	if not _valid_id(slot_id):
+		return _failure("Roster-Zeile besitzt keine gültige Identität.")
+	var context: Dictionary = state["context"]
+	var roster: Array = context["roster"].duplicate(true)
+	for index in roster.size():
+		if str(roster[index]["slot_id"]) != slot_id:
+			continue
+		var removed: Dictionary = roster[index].duplicate(true)
+		roster.remove_at(index)
+		context["roster"] = roster
+		context["active_plan_id"] = ""
+		context["removed_roster_entry"] = {"index": index, "entry": removed}
+		context["status"] = "%s aus der Aufstellung entfernt." % removed["name"]
+		context["revision"] = _next_revision(context)
+		return _publish_context(state["payload"], state["runtime"], context, "roster_slot_removed")
+	return _failure("Roster-Zeile fehlt: %s" % slot_id, "missing")
+
+
+func undo_roster_removal(
+	owner_payload: Dictionary,
+	context_id: String = MANUAL_CONTEXT_ID
+) -> Dictionary:
+	var state := _manual_builder_state(owner_payload, context_id)
+	if not state.get("ok", false):
+		return state
+	var context: Dictionary = state["context"]
+	var removed: Dictionary = context["removed_roster_entry"]
+	if removed.is_empty():
+		return _failure("Es gibt keine entfernte Roster-Zeile zum Wiederherstellen.", "missing")
+	var entry: Dictionary = removed["entry"].duplicate(true)
+	var roster: Array = context["roster"].duplicate(true)
+	for value in roster:
+		if str(value["slot_id"]) == str(entry["slot_id"]):
+			return _failure("Die entfernte Roster-Zeile ist bereits vorhanden.")
+	roster.insert(clampi(int(removed["index"]), 0, roster.size()), entry)
+	context["roster"] = roster
+	context["active_plan_id"] = ""
+	context["removed_roster_entry"] = {}
+	context["status"] = "%s wiederhergestellt." % entry["name"]
+	context["revision"] = _next_revision(context)
+	return _publish_context(state["payload"], state["runtime"], context, "roster_removal_undone")
 
 
 func open_initiative(
@@ -603,6 +702,8 @@ func _reconcile_context(
 	var next := current_value.duplicate(true)
 	next["active_plan_id"] = active_plan_id
 	next["roster"] = roster.duplicate(true)
+	if next["roster"] != current["roster"]:
+		next["removed_roster_entry"] = {}
 	match str(current["mode"]):
 		"builder":
 			pass
@@ -715,6 +816,17 @@ func _mutable_state(owner_payload: Dictionary, context_id: String = MANUAL_CONTE
 	return {"ok": true, "payload": owner_payload.duplicate(true), "runtime": runtime, "context": context}
 
 
+func _manual_builder_state(owner_payload: Dictionary, context_id: String) -> Dictionary:
+	if context_id != MANUAL_CONTEXT_ID:
+		return _failure("Die freie Roster-Bearbeitung gehört nur zur manuellen Encounter-Aufstellung.")
+	var state := _mutable_state(owner_payload, context_id)
+	if not state.get("ok", false):
+		return state
+	if state["context"]["mode"] != "builder":
+		return _failure("Roster-Zeilen können nur in der Aufstellung bearbeitet werden.")
+	return state
+
+
 func _publish_context(owner_payload: Dictionary, runtime: Dictionary, context: Dictionary, status: String) -> Dictionary:
 	var contexts: Dictionary = runtime["contexts"].duplicate(true)
 	contexts[context["context_id"]] = context.duplicate(true)
@@ -750,7 +862,7 @@ func _validate_context(context_id: String, value: Variant) -> Dictionary:
 		return _failure("Encounter-Kontext besitzt keine gültige Identität.")
 	var context: Dictionary = value
 	if (
-		context.size() != 11
+		context.size() != 12
 		or context.get("context_id", "") != context_id
 		or not _nonnegative_integer(context.get("revision", null))
 		or context.get("mode", "") not in MODES
@@ -762,6 +874,7 @@ func _validate_context(context_id: String, value: Variant) -> Dictionary:
 		or not _integer(context.get("current_turn_index", null))
 		or not _positive_integer(context.get("round", null))
 		or not context.get("result", null) is Dictionary
+		or not context.get("removed_roster_entry", null) is Dictionary
 	):
 		return _failure("Encounter-Kontext %s besitzt ungültige Grundwerte." % context_id)
 	for collection in [context["roster"], context["initiative"], context["combatants"]]:
@@ -770,6 +883,9 @@ func _validate_context(context_id: String, value: Variant) -> Dictionary:
 	var roster_validation := _validate_prepared_roster(context["roster"], true)
 	if not roster_validation.get("ok", false):
 		return roster_validation
+	var removed_validation := _validate_removed_roster_entry(context["removed_roster_entry"])
+	if not removed_validation.get("ok", false):
+		return removed_validation
 	var seen_initiative := {}
 	for entry in context["initiative"]:
 		if not _valid_initiative(entry) or seen_initiative.has(entry["combatant_id"]):
@@ -787,6 +903,21 @@ func _validate_context(context_id: String, value: Variant) -> Dictionary:
 		return _failure("Aktiver Encounter-Zug liegt außerhalb der Reihenfolge.")
 	if not _valid_result(context["result"]):
 		return _failure("Encounter-Kontext %s besitzt ein ungültiges Ergebnis." % context_id)
+	return {"ok": true}
+
+
+func _validate_removed_roster_entry(value: Dictionary) -> Dictionary:
+	if value.is_empty():
+		return {"ok": true}
+	if (
+		value.size() != 2
+		or not _nonnegative_integer(value.get("index", null))
+		or not value.get("entry", null) is Dictionary
+	):
+		return _failure("Entfernte Roster-Zeile besitzt kein unterstütztes Undo-Format.")
+	var validation := _validate_prepared_roster([value["entry"]])
+	if not validation.get("ok", false):
+		return validation
 	return {"ok": true}
 
 

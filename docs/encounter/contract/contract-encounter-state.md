@@ -26,8 +26,10 @@ state tab.
 Current Godot production commands cover saved-plan open, initiative open/edit/
 roll/confirm, individual enemy HP mutation, combat-initiative edit, turn
 advance, combat end, one atomic XP award, and return to the preserved builder
-roster. Generate, save-current-plan from the runtime workspace, roster edits,
-reinforcements, and Scene context synchronization remain target commands.
+roster. They also cover manual quantity changes, remove plus one-step undo,
+Catalog additions in builder/combat mode, and atomic Scene context
+synchronization. Generate and save-current-plan from the runtime workspace
+remain target commands.
 
 ## Boundary Rules
 

@@ -81,6 +81,8 @@ Encounter supports:
 - open a saved plan into the manual runtime context
 - add a current Creature to the manual builder roster or as one live combat
   reinforcement without changing saved-plan truth
+- adjust a manual builder slot by one, remove a complete slot, and restore the
+  most recently removed slot at its prior position
 - open, edit, and confirm initiative
 - mutate individual enemy HP and initiative, advance turns, and end combat
 - award one result through an atomic Encounter-plus-Party publication
@@ -113,6 +115,10 @@ Encounter supports:
   reconciliation never merges independent running scenes
 - a builder addition clears the copied saved-plan identity; a live
   reinforcement preserves the creation roster and current active turn
+- every manual roster edit clears the copied saved-plan identity; only the most
+  recent removal is undoable, and the next roster mutation clears that history
+- Scene-keyed contexts and initiative, combat, or result modes reject manual
+  roster edits
 - enemy XP excludes allied NPC roster members
 
 ## Domain Policies

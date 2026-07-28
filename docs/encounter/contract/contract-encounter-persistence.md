@@ -45,12 +45,15 @@ meaning, fingerprints, cardinality, order, and Encounter number. The current
 Godot route writes this canonical shape only through the complete generated
 batch command.
 
-Runtime format `saltmarcher.encounter-runtime.v2` stores a focused context ID,
+Runtime format `saltmarcher.encounter-runtime.v3` stores a focused context ID,
 Scene source revision, and independent contexts. Each context stores its own
 revision, mode, status, opened-plan reference, materialized roster facts with
 stable slot identity and enemy/ally kind, initiative rows, individual
-combatants, active turn, round, and result. A result stores participating Party
-identities and award acknowledgement, but not copied Party profiles.
+combatants, active turn, round, result, and at most one removed manual-roster
+entry with its original position for undo. A result stores participating Party
+identities and award acknowledgement, but not copied Party profiles. Runtime
+v2 documents normalize in memory with empty removal history; the next real
+runtime mutation publishes v3 without a separate dual-write path.
 
 ## Explicitly Excluded Saved-Plan Truth
 
@@ -95,8 +98,10 @@ closed and exposes neither a partial payload nor a partial mapping.
 
 Opening a saved plan resolves the complete roster against one selected
 Shared-Definition generation before replacing the manual runtime context.
-Every subsequent initiative, combat, or result mutation replaces the complete
-validated Encounter partition through the admitted serial Campaign writer. XP
+Manual quantity, remove, and undo commands operate only on that manual builder
+context, clear an opened-plan reference, and replace the complete validated
+Encounter partition through the admitted serial Campaign writer. Every
+subsequent initiative, combat, or result mutation uses the same boundary. XP
 award prepares both the Encounter acknowledgement and Party XP mutation and
 publishes both owner partitions in one Campaign generation.
 

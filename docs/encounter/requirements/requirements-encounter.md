@@ -8,13 +8,15 @@ Source of Truth: This document
 The current Godot product satisfies persistent manual saved plans, generated
 preparation, one durable manual context, and independent Scene-keyed live-play
 contexts. The `Encounter` workspace opens a saved plan through current Creature
-facts, captures the context's assigned Party, edits or rolls initiative,
+facts, lets the manual context adjust quantities, remove one roster slot, and
+undo the most recent removal across restart, captures the context's assigned
+Party, edits or rolls initiative,
 expands every hostile or allied roster member, persists exact HP, round and
 active-turn truth, derives results, awards XP atomically with Party, and resumes
 after restart. Scene composition atomically supplies mobs,
-and disposition-derived NPC roles. Free-form builder generation,
-Catalog-to-runtime additions, reinforcements, masks, and the eventual compact
-cockpit composition remain unmet target requirements.
+and disposition-derived NPC roles. Catalog additions also extend the manual
+roster or add one live reinforcement. Free-form builder generation, masks, and
+the eventual compact cockpit composition remain unmet target requirements.
 
 ## Goal
 
@@ -110,6 +112,9 @@ Generated preparation is a separate Session Planner-driven flow:
   generated statblock counts from exceeding finite faction stock caps
 - opening a saved plan replaces the builder roster and returns the state tab to
   Creation mode
+- manual roster `+`, `-`, remove, and one-step undo publish durable Encounter
+  runtime truth, detach the lineup from an opened saved plan, and reject Scene
+  contexts or non-builder modes
 - generated preparation publishes every concrete roster in request order or
   publishes none of them
 - invalid, unresolvable, or failed generated preparation leaves the previously

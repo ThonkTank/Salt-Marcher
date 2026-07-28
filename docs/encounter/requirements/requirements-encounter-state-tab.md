@@ -17,16 +17,20 @@ per-member combat state, enemy HP, round/active-turn advance, two-step combat
 end, result XP derivation, atomic Party award, and return to the retained
 roster. Its horizontal turn strip renders the exact persisted order.
 
-The compact global `COCKPIT_STATE` placement, free-form generation, full roster
-editing, add-SC, mob projection, detail
-and numeric popups, loot context, and Scene-owned multiple contexts remain the
-target described below.
+The compact global `COCKPIT_STATE` placement, free-form generation, add-SC,
+mob projection, detail
+and numeric popups, and loot context remain the target described below.
 
 Catalog additions are production-native: `+ Encounter` adds one current
 Creature to the manual builder and increments an existing matching slot, or
 adds one independent reinforcement during combat. The latter preserves both
 the current active turn and the creation roster. Initiative and result modes
 reject the addition visibly instead of guessing a transition.
+
+Manual roster editing is production-native: each row exposes quantity `+` and
+`-`, complete removal, and one persisted undo for the most recently removed
+slot. Every edit clears the copied saved-plan identity. Quantity zero, missing
+slots, Scene contexts, and initiative/combat/result modes fail closed.
 
 ## Component Purpose
 
@@ -159,6 +163,8 @@ the fixed footer while oversized page bodies scroll.
   deleting the current roster
 - catalog `+Add` appends creatures in creation mode and adds reinforcements in
   active combat without mutating saved encounter-plan persistence implicitly
+- manual roster quantity, removal, and one-step undo remain durable across
+  restart and never mutate the opened saved plan or a Scene-owned context
 - combat start is unavailable until a non-empty roster exists
 - live combat keeps per-member runtime state even when the UI aggregates
   matching monsters into mob cards for display
