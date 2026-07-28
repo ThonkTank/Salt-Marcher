@@ -1,5 +1,10 @@
 # Creature Details UI
 
+Status: Active target requirements
+Owner: Creatures and Catalog
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 ## Component Purpose
 
 The creature detail entry renders a read-only stat block in the shell Inspector.

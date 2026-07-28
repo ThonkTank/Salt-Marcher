@@ -12,6 +12,8 @@ const CatalogWorkspace = preload("res://godot/src/ui/catalog_workspace.gd")
 const CatalogBrowseController = preload("res://godot/src/features/catalog/catalog_browse_controller.gd")
 const ItemCatalog = preload("res://godot/src/features/items/item_catalog.gd")
 const ItemImportService = preload("res://godot/src/features/items/item_import_service.gd")
+const CreatureCatalog = preload("res://godot/src/features/creatures/creature_catalog.gd")
+const CreatureImportService = preload("res://godot/src/features/creatures/creature_import_service.gd")
 const WorldPlannerKnowledge = preload("res://godot/src/features/worldplanner/world_planner_knowledge.gd")
 const WorldPlannerCommandController = preload("res://godot/src/features/worldplanner/world_planner_command_controller.gd")
 const WorldPlannerDetailReadController = preload("res://godot/src/features/worldplanner/world_planner_detail_read_controller.gd")
@@ -153,6 +155,7 @@ func _run_tests() -> void:
 	_run_encounter_runtime_knowledge_contract()
 	_run_item_catalog_replacement_contract()
 	_run_item_import_contract()
+	_run_creature_import_contract()
 	await _run_generated_encounter_controller_contract()
 	await _run_catalog_foundation_contract()
 
@@ -2184,28 +2187,8 @@ func _run_catalog_foundation_contract() -> void:
 	var registry := FileCampaignRegistry.new(data_root)
 	var definitions := SharedDefinitionStore.new(data_root)
 	var catalog_definitions: Array = [
-		{
-			"definition_id": "creature.wolf",
-			"kind": "creature",
-			"name": "Wolf",
-			"content": {
-				"creature_type": "beast", "challenge_rating": "1/4", "xp": 50,
-				"hit_points": 11, "hit_dice_count": 2, "hit_dice_sides": 8,
-				"hit_dice_modifier": 2, "armor_class": 12, "initiative_bonus": 2,
-				"legendary_action_count": 0,
-			},
-		},
-		{
-			"definition_id": "creature.worg",
-			"kind": "creature",
-			"name": "Worg",
-			"content": {
-				"creature_type": "monstrosity", "challenge_rating": "1/2", "xp": 100,
-				"hit_points": 26, "hit_dice_count": 4, "hit_dice_sides": 10,
-				"hit_dice_modifier": 4, "armor_class": 13, "initiative_bonus": 1,
-				"legendary_action_count": 0,
-			},
-		},
+		_creature_fixture("creature.wolf", "Wolf", "Beast", "1/4", 0.25, 50, 11, "2d8+2", 12, 2, ["Forest"]),
+		_creature_fixture("creature.worg", "Worg", "Monstrosity", "1/2", 0.5, 100, 26, "4d10+4", 13, 1, ["Forest", "Hill"]),
 		_item_fixture(
 			"item.equipment.rope-hempen",
 			"equipment:rope-hempen",
@@ -2244,12 +2227,10 @@ func _run_catalog_foundation_contract() -> void:
 		),
 	]
 	for index in range(55):
-		catalog_definitions.append({
-			"definition_id": "creature.fixture.%03d" % index,
-			"kind": "creature",
-			"name": "Bestie %03d" % index,
-			"content": {"fixture_index": index},
-		})
+		catalog_definitions.append(_creature_fixture(
+			"creature.fixture.%03d" % index, "Bestie %03d" % index, "Beast", "1/8", 0.125,
+			25, 4, "1d6+1", 11, 1, ["Forest"]
+		))
 	var prepared := definitions.prepare_generation(0, catalog_definitions)
 	_expect(prepared.get("ok", false), "Catalog fixture prepares typed Shared Definitions")
 	var published := registry.publish_shared_definitions_generation(int(prepared.get("generation", -1)), 0)
@@ -6548,6 +6529,183 @@ func _run_campaign_desk_journey() -> void:
 	desk.queue_free()
 	await process_frame
 
+func _run_creature_import_contract() -> void:
+	var data_root := "user://saltmarcher-creature-import/%s" % Time.get_ticks_usec()
+	var registry := FileCampaignRegistry.new(data_root)
+	var definitions := SharedDefinitionStore.new(data_root)
+	var item := _item_fixture(
+		"item.equipment.torch", "equipment:torch", "Torch", "Gear", "Standard", false, "", false,
+		1, "1 cp", 1.0, "", "", [], "A torch.",
+		"https://www.dnd5eapi.co/api/2014/equipment/torch"
+	)
+	var item_generation := definitions.prepare_generation(0, [item])
+	registry.publish_shared_definitions_generation(int(item_generation.get("generation", -1)), 0)
+	var corpus := _open5e_creature_corpus(325)
+	var importer := CreatureImportService.new(data_root)
+	var imported := importer.import_fetched_corpus(corpus)
+	var selected := registry.load_state()
+	var generation := int(selected.get("shared_definitions_generation", -1))
+	var catalog := CreatureCatalog.new(data_root)
+	var filtered := catalog.query(
+		generation,
+		"",
+		{
+			"types": ["Dragon", "Beast"],
+			"sizes": ["Large"],
+			"environments": ["Forest", "Mountain"],
+			"alignments": ["neutral"],
+			"minimum_challenge_rating": 0.5,
+			"maximum_challenge_rating": 5.0,
+		},
+		0,
+		50,
+		"challenge_rating",
+		false
+	)
+	var detail := catalog.detail(generation, "creature.open5e.srd_fixture-000")
+	var selected_state := definitions.load_generation(generation)
+	_expect(
+		imported.get("status", "") == "imported"
+		and imported.get("creature_count", -1) == 325
+		and detail.get("ok", false)
+		and detail.get("creature", {}).get("ability_scores", {}).get("strength", -1) == 12
+		and detail.get("creature", {}).get("actions", []).size() == 1
+		and selected_state.get("definitions", {}).has("item.equipment.torch"),
+		"native Creature operator import validates the complete pinned SRD feed, publishes exact statblocks, and preserves independent providers"
+	)
+	_expect(
+		filtered.get("status", "") == "ready"
+		and filtered.get("total", 0) > 0
+		and "Dragon" in filtered.get("filter_options", {}).get("types", [])
+		and "Forest" in filtered.get("filter_options", {}).get("environments", []),
+		"Creature owner combines multi-value taxonomy, environment, alignment, and CR filters while exposing full-corpus options"
+	)
+	_expect(
+		catalog.query(generation, "", {"minimum_challenge_rating": "many"}).get("status", "") == "invalid_query"
+		and catalog.query(generation, "", {}, 0, 50, "name", true, func() -> bool: return true).get("status", "") == "cancelled",
+		"Creature owner rejects invalid filters and observes cancellation before publishing rows"
+	)
+	var durations: Array[int] = []
+	var scale_ok := true
+	for _run in 20:
+		var started := Time.get_ticks_usec()
+		var page := catalog.query(generation, "fixture", {}, 250, 50, "xp", false)
+		durations.append(Time.get_ticks_usec() - started)
+		if page.get("rows", []).size() != 50 or page.get("total", -1) != 325:
+			scale_ok = false
+	durations.sort()
+	_expect(
+		scale_ok and durations[18] <= 2_000_000,
+		"325-Creature semantic query and bounded paging stay below the two-second p95 budget over 20 warm runs"
+	)
+	var damaged_reference: Dictionary = selected_state.get("definitions", {}).get("creature.open5e.srd_fixture-000", {})
+	var damaged_path := data_root + "/installation/shared-definitions/" + str(damaged_reference.get("path", ""))
+	var damaged_file := FileAccess.open(damaged_path, FileAccess.WRITE)
+	damaged_file.store_string("{damaged")
+	damaged_file.close()
+	_expect(
+		catalog.query(generation, "Fixture 000", {}, 0, 50).get("total", -1) == 1
+		and not catalog.detail(generation, "creature.open5e.srd_fixture-000").get("ok", true),
+		"damaged Creature object leaves checksummed metadata browsing available but fails the selected exact read closed"
+	)
+	var replacement_corpus := _open5e_creature_corpus(1)
+	replacement_corpus["results"][0]["key"] = "srd_replacement"
+	replacement_corpus["results"][0]["name"] = "Replacement"
+	var replacement := importer.import_fetched_corpus(replacement_corpus)
+	var replacement_generation := int(registry.load_state().get("shared_definitions_generation", -1))
+	var replacement_state := definitions.load_generation(replacement_generation)
+	_expect(
+		replacement.get("status", "") == "imported"
+		and catalog.query(replacement_generation, "", {}, 0, 50).get("total", -1) == 1
+		and replacement_state.get("definitions", {}).has("creature.open5e.srd_replacement")
+		and not replacement_state.get("definitions", {}).has("creature.open5e.srd_fixture-001")
+		and replacement_state.get("definitions", {}).has("item.equipment.torch"),
+		"one registry commit atomically replaces the complete Creature corpus while preserving other definition owners"
+	)
+	var incomplete := _open5e_creature_corpus(2)
+	incomplete["count"] = 3
+	_expect(
+		importer.import_fetched_corpus(incomplete).get("status", "") == "validation_error"
+		and int(registry.load_state().get("shared_definitions_generation", -2)) == replacement_generation,
+		"incomplete Creature corpus rejects before storage and leaves the selected prior generation unchanged"
+	)
+
+
+func _open5e_creature_corpus(count: int) -> Dictionary:
+	var results: Array = []
+	for index in count:
+		results.append(_open5e_raw_creature(
+			"srd_fixture-%03d" % index,
+			"Fixture %03d" % index,
+			"Dragon" if index % 2 == 0 else "Beast",
+			"Large" if index % 3 == 0 else "Medium",
+			0.5 if index % 4 == 0 else 2.0,
+			100 if index % 4 == 0 else 450,
+			["Forest", "Mountain"] if index % 3 == 0 else ["Urban"],
+			"neutral" if index % 5 == 0 else "unaligned"
+		))
+	return {
+		"count": count,
+		"source_document": {
+			"key": "srd-2014",
+			"name": "System Reference Document 5.1",
+			"display_name": "5e 2014 Rules",
+			"licenses": [
+				{"name": "Creative Commons Attribution 4.0", "key": "cc-by-40"},
+				{"name": "OPEN GAME LICENSE Version 1.0a", "key": "ogl-10a"},
+			],
+			"permalink": "https://dnd.wizards.com/resources/systems-reference-document",
+		},
+		"results": results,
+	}
+
+
+func _open5e_raw_creature(
+	key: String,
+	name: String,
+	creature_type: String,
+	size: String,
+	challenge_rating: float,
+	xp: int,
+	environments: Array,
+	alignment: String
+) -> Dictionary:
+	var environment_objects: Array = []
+	for environment in environments:
+		environment_objects.append({"name": environment, "key": str(environment).to_lower()})
+	return {
+		"key": key,
+		"name": name,
+		"document": {"key": "srd-2014"},
+		"type": {"name": creature_type, "key": creature_type.to_lower()},
+		"size": {"name": size, "key": size.to_lower()},
+		"subcategory": null,
+		"challenge_rating": challenge_rating,
+		"experience_points": xp,
+		"alignment": alignment,
+		"hit_points": 13,
+		"hit_dice": "2d8+4",
+		"armor_class": 13,
+		"armor_detail": "natural armor",
+		"initiative_bonus": 1,
+		"ability_scores": {"strength": 12, "dexterity": 12, "constitution": 14, "intelligence": 6, "wisdom": 10, "charisma": 8},
+		"saving_throws": {"dexterity": 3},
+		"skill_bonuses": {"perception": 2},
+		"speed_all": {"unit": "feet", "walk": 30, "crawl": 15, "hover": false, "fly": 0, "burrow": 0, "climb": 0, "swim": 0},
+		"normal_sight_range": 10560,
+		"darkvision_range": 60,
+		"blindsight_range": null,
+		"tremorsense_range": null,
+		"truesight_range": null,
+		"passive_perception": 12,
+		"languages": {"as_string": "Common"},
+		"resistances_and_immunities": {"damage_immunities": [], "damage_resistances": [], "damage_vulnerabilities": [], "condition_immunities": []},
+		"traits": [{"name": "Keen Senses", "desc": "The creature has advantage on perception checks."}],
+		"actions": [{"name": "Bite", "desc": "Melee Weapon Attack.", "action_type": "ACTION", "order_in_statblock": 0, "legendary_action_cost": null}],
+		"environments": environment_objects,
+	}
+
+
 func _run_item_import_contract() -> void:
 	var data_root := "user://saltmarcher-item-import/%s" % Time.get_ticks_usec()
 	var registry := FileCampaignRegistry.new(data_root)
@@ -6705,6 +6863,70 @@ func _run_item_catalog_replacement_contract() -> void:
 		and not replacement_state.get("definitions", {}).has("item.equipment.rope"),
 		"one registry commit atomically selects the complete Items replacement while preserving other definition owners"
 	)
+
+
+func _creature_fixture(
+	definition_id: String,
+	name: String,
+	creature_type: String,
+	challenge_rating: String,
+	challenge_rating_decimal: float,
+	xp: int,
+	hit_points: int,
+	hit_dice: String,
+	armor_class: int,
+	initiative_bonus: int,
+	environments: Array
+) -> Dictionary:
+	var expression := RegEx.new()
+	expression.compile("^([0-9]+)d([0-9]+)([+-][0-9]+)?$")
+	var hit_dice_match := expression.search(hit_dice)
+	var source_key := definition_id.replace("creature.", "fixture_").replace(".", "_")
+	var projection := {
+		"source_key": source_key,
+		"creature_type": creature_type,
+		"size": "Medium",
+		"subtype": "",
+		"alignment": "unaligned",
+		"challenge_rating": challenge_rating,
+		"challenge_rating_decimal": challenge_rating_decimal,
+		"xp": xp,
+		"environments": environments.duplicate(),
+	}
+	var content := projection.duplicate(true)
+	content.merge({
+		"hit_points": hit_points,
+		"hit_dice": hit_dice,
+		"hit_dice_count": hit_dice_match.get_string(1).to_int(),
+		"hit_dice_sides": hit_dice_match.get_string(2).to_int(),
+		"hit_dice_modifier": 0 if hit_dice_match.get_string(3).is_empty() else hit_dice_match.get_string(3).to_int(),
+		"armor_class": armor_class,
+		"armor_detail": "natural armor",
+		"initiative_bonus": initiative_bonus,
+		"legendary_action_count": 0,
+		"ability_scores": {"strength": 10, "dexterity": 12, "constitution": 10, "intelligence": 3, "wisdom": 12, "charisma": 6},
+		"saving_throws": {},
+		"skills": {},
+		"speed": {"unit": "feet", "walk": 40, "hover": false},
+		"senses": {"normal_sight_range": 10560, "darkvision_range": null, "blindsight_range": null, "tremorsense_range": null, "truesight_range": null},
+		"passive_perception": 11,
+		"languages": "",
+		"resistances_and_immunities": {"damage_immunities": [], "damage_resistances": [], "damage_vulnerabilities": [], "condition_immunities": []},
+		"traits": [],
+		"actions": [{"name": "Bite", "desc": "A fixture attack.", "action_type": "ACTION", "legendary_action_cost": 0, "order": 0}],
+		"source_document": "srd-2014",
+		"source_version": "Open5e V2 · 5e 2014 Rules",
+		"source_licenses": ["Creative Commons Attribution 4.0"],
+		"source_permalink": "https://dnd.wizards.com/resources/systems-reference-document",
+		"source_url": "https://api.open5e.com/v2/creatures/%s/" % source_key,
+	})
+	return {
+		"definition_id": definition_id,
+		"kind": "creature",
+		"name": name,
+		"catalog_projection": projection,
+		"content": content,
+	}
 
 
 func _item_fixture(

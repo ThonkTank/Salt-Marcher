@@ -87,6 +87,17 @@ The desktop Items browser stays offline and read-only. The command fetches both
 public indexes and every referenced detail before it can select a replacement
 Shared-Definition generation.
 
+Import or replace the complete local public 2014-SRD Creature catalog through
+the pinned Open5e V2 document as a separate operator action:
+
+```bash
+godot --headless --path . --script res://godot/tools/import_creatures.gd
+```
+
+The command fetches the source-document license record and every paginated
+`srd-2014` Creature before it can atomically select the replacement kind. The
+desktop Monster browser remains offline and read-only.
+
 Install the currently committed Godot development build for local desktop
 testing (the installer refuses a dirty worktree):
 

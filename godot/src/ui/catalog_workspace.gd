@@ -15,6 +15,7 @@ const EncounterPlanCommandController = preload("res://godot/src/features/encount
 const EncounterPlanDetailReadController = preload("res://godot/src/features/encounter/encounter_plan_detail_read_controller.gd")
 const EncounterPlanEditorDialog = preload("res://godot/src/ui/encounter_plan_editor_dialog.gd")
 const ItemDetailReadController = preload("res://godot/src/features/items/item_detail_read_controller.gd")
+const CreatureDetailReadController = preload("res://godot/src/features/creatures/creature_detail_read_controller.gd")
 
 const SECTIONS := [
 	{"id": "creatures", "label": "Monster", "kind": "creature", "provider": true, "mutable": false},
@@ -44,6 +45,7 @@ var encounter_table_detail_controller: EncounterTableDetailReadController
 var encounter_plan_command_controller: EncounterPlanCommandController
 var encounter_plan_detail_controller: EncounterPlanDetailReadController
 var item_detail_controller: ItemDetailReadController
+var creature_detail_controller: CreatureDetailReadController
 var _active_section_id := "creatures"
 var _section_state: Dictionary = {}
 var _section_buttons: Dictionary = {}
@@ -58,6 +60,14 @@ var _item_magic: OptionButton
 var _item_attunement: OptionButton
 var _item_minimum_cost: LineEdit
 var _item_maximum_cost: LineEdit
+var _creature_filters: VBoxContainer
+var _creature_size: MenuButton
+var _creature_type: MenuButton
+var _creature_subtype: MenuButton
+var _creature_environment: MenuButton
+var _creature_alignment: MenuButton
+var _creature_minimum_cr: LineEdit
+var _creature_maximum_cr: LineEdit
 var _table_header: HBoxContainer
 var _name_header: Button
 var _identity_header: Button
@@ -131,6 +141,9 @@ func _ready() -> void:
 	if item_detail_controller == null:
 		item_detail_controller = ItemDetailReadController.new(data_root)
 		add_child(item_detail_controller)
+	if creature_detail_controller == null:
+		creature_detail_controller = CreatureDetailReadController.new(data_root)
+		add_child(creature_detail_controller)
 	browse_controller.query_started.connect(_on_query_started)
 	browse_controller.result_published.connect(_on_result_published)
 	command_controller.command_started.connect(_on_command_started)
@@ -147,6 +160,8 @@ func _ready() -> void:
 	encounter_plan_detail_controller.result_published.connect(_on_encounter_plan_detail_result_published)
 	item_detail_controller.query_started.connect(_on_item_detail_query_started)
 	item_detail_controller.result_published.connect(_on_item_detail_result_published)
+	creature_detail_controller.query_started.connect(_on_creature_detail_query_started)
+	creature_detail_controller.result_published.connect(_on_creature_detail_result_published)
 	for section in SECTIONS:
 		_section_state[section["id"]] = {
 			"draft": "",
@@ -169,8 +184,18 @@ func _ready() -> void:
 				"attunement": null,
 				"minimum_cost_cp": "",
 				"maximum_cost_cp": "",
+				"sizes": [],
+				"types": [],
+				"subtypes": [],
+				"environments": [],
+				"alignments": [],
+				"minimum_challenge_rating": "",
+				"maximum_challenge_rating": "",
 			},
-			"filter_options": {"categories": [], "subcategories": [], "rarities": []},
+			"filter_options": {
+				"categories": [], "subcategories": [], "rarities": [],
+				"sizes": [], "types": [], "subtypes": [], "environments": [], "alignments": [],
+			},
 		}
 	_build_surface()
 	select_section(_active_section_id)
@@ -203,6 +228,9 @@ func select_section(section_id: String) -> Dictionary:
 	_item_filters.visible = section_id == "items"
 	if section_id == "items":
 		_sync_item_filter_controls(state)
+	_creature_filters.visible = section_id == "creatures"
+	if section_id == "creatures":
+		_sync_creature_filter_controls(state)
 	_render_selected_detail()
 	_render_table_header()
 	if not section["provider"]:
@@ -311,6 +339,24 @@ func _build_surface() -> void:
 	_item_minimum_cost = _build_item_cost_filter(item_fact_filters, "CatalogItemMinimumCost", "Min. · KM")
 	_item_maximum_cost = _build_item_cost_filter(item_fact_filters, "CatalogItemMaximumCost", "Max. · KM")
 	_item_filters.visible = false
+	_creature_filters = VBoxContainer.new()
+	_creature_filters.name = "CatalogCreatureFilters"
+	_creature_filters.add_theme_constant_override("separation", 8)
+	column.add_child(_creature_filters)
+	var creature_taxonomy_filters := HBoxContainer.new()
+	creature_taxonomy_filters.add_theme_constant_override("separation", 8)
+	_creature_filters.add_child(creature_taxonomy_filters)
+	_creature_size = _build_creature_multi_filter(creature_taxonomy_filters, "CatalogCreatureSize", "Größe", "sizes")
+	_creature_type = _build_creature_multi_filter(creature_taxonomy_filters, "CatalogCreatureType", "Typ", "types")
+	_creature_subtype = _build_creature_multi_filter(creature_taxonomy_filters, "CatalogCreatureSubtype", "Untertyp", "subtypes")
+	var creature_context_filters := HBoxContainer.new()
+	creature_context_filters.add_theme_constant_override("separation", 8)
+	_creature_filters.add_child(creature_context_filters)
+	_creature_environment = _build_creature_multi_filter(creature_context_filters, "CatalogCreatureEnvironment", "Umwelt", "environments")
+	_creature_alignment = _build_creature_multi_filter(creature_context_filters, "CatalogCreatureAlignment", "Gesinnung", "alignments")
+	_creature_minimum_cr = _build_creature_cr_filter(creature_context_filters, "CatalogCreatureMinimumCr", "HG min.")
+	_creature_maximum_cr = _build_creature_cr_filter(creature_context_filters, "CatalogCreatureMaximumCr", "HG max.")
+	_creature_filters.visible = false
 	var split := HSplitContainer.new()
 	split.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	split.split_offset = 600
@@ -472,6 +518,35 @@ func _build_item_cost_filter(parent: Container, node_name: String, placeholder: 
 	input.placeholder_text = placeholder
 	input.tooltip_text = "Kosten in Kupfermünzen"
 	input.text_changed.connect(_on_item_cost_changed)
+	input.text_submitted.connect(func(_value: String) -> void: _submit_current_query())
+	parent.add_child(input)
+	return input
+
+
+func _build_creature_multi_filter(
+	parent: Container,
+	node_name: String,
+	label_text: String,
+	filter_key: String
+) -> MenuButton:
+	var menu := MenuButton.new()
+	menu.name = node_name
+	menu.text = "%s · alle" % label_text
+	menu.custom_minimum_size = Vector2(124, 28)
+	menu.tooltip_text = "%s mehrfach auswählen" % label_text
+	menu.get_popup().hide_on_checkable_item_selection = false
+	menu.get_popup().id_pressed.connect(_on_creature_filter_pressed.bind(filter_key, label_text, menu))
+	parent.add_child(menu)
+	return menu
+
+
+func _build_creature_cr_filter(parent: Container, node_name: String, placeholder: String) -> LineEdit:
+	var input := LineEdit.new()
+	input.name = node_name
+	input.custom_minimum_size = Vector2(86, 28)
+	input.placeholder_text = placeholder
+	input.tooltip_text = "HG als Zahl oder Dezimalwert"
+	input.text_changed.connect(_on_creature_cr_changed)
 	input.text_submitted.connect(func(_value: String) -> void: _submit_current_query())
 	parent.add_child(input)
 	return input
@@ -658,7 +733,9 @@ func _on_search_changed(value: String) -> void:
 
 
 func _on_sort_requested(sort_key: String) -> void:
-	if sort_key not in ["name", "identity"]:
+	if _active_section_id == "creatures":
+		sort_key = {"category": "type", "rarity": "challenge_rating", "cost": "xp"}.get(sort_key, sort_key)
+	if sort_key not in ["name", "identity", "category", "rarity", "cost", "type", "challenge_rating", "xp"]:
 		return
 	var section := _section(_active_section_id)
 	if section.is_empty() or not section["provider"]:
@@ -724,6 +801,48 @@ func _item_query_filters(state: Dictionary) -> Dictionary:
 	return filters
 
 
+func _on_creature_filter_pressed(id: int, filter_key: String, label_text: String, menu: MenuButton) -> void:
+	if _active_section_id != "creatures":
+		return
+	var popup := menu.get_popup()
+	var index := popup.get_item_index(id)
+	if index < 0:
+		return
+	popup.set_item_checked(index, not popup.is_item_checked(index))
+	var state: Dictionary = _section_state["creatures"]
+	var selected: Array = state["filters"].get(filter_key, []).duplicate()
+	var value := str(popup.get_item_metadata(index))
+	if popup.is_item_checked(index) and value not in selected:
+		selected.append(value)
+	elif not popup.is_item_checked(index):
+		selected.erase(value)
+	selected.sort()
+	state["filters"][filter_key] = selected
+	state["page"] = 0
+	_section_state["creatures"] = state
+	menu.text = "%s · alle" % label_text if selected.is_empty() else "%s · %d" % [label_text, selected.size()]
+	_submit_current_query()
+
+
+func _on_creature_cr_changed(_value: String) -> void:
+	if _active_section_id != "creatures":
+		return
+	var state: Dictionary = _section_state["creatures"]
+	state["filters"]["minimum_challenge_rating"] = _creature_minimum_cr.text.strip_edges()
+	state["filters"]["maximum_challenge_rating"] = _creature_maximum_cr.text.strip_edges()
+	state["page"] = 0
+	_section_state["creatures"] = state
+	_debounce.start()
+
+
+func _creature_query_filters(state: Dictionary) -> Dictionary:
+	var filters: Dictionary = state.get("filters", {}).duplicate(true)
+	for key in ["minimum_challenge_rating", "maximum_challenge_rating"]:
+		var value := str(filters.get(key, "")).strip_edges()
+		filters[key] = null if value.is_empty() else value.to_float() if value.is_valid_float() else value
+	return filters
+
+
 func _submit_current_query() -> void:
 	var section := _section(_active_section_id)
 	if section.is_empty() or not section["provider"]:
@@ -743,7 +862,11 @@ func _submit_current_query() -> void:
 		bool(state["trash"]),
 		str(state["sort_key"]),
 		bool(state["sort_ascending"]),
-		_item_query_filters(state) if _active_section_id == "items" else {}
+		_item_query_filters(state)
+		if _active_section_id == "items"
+		else _creature_query_filters(state)
+		if _active_section_id == "creatures"
+		else {}
 	)
 
 
@@ -767,7 +890,7 @@ func _on_result_published(result: Dictionary) -> void:
 		state["rows"] = result.get("rows", []).duplicate(true)
 		state["total"] = int(result.get("total", 0))
 		state["status"] = str(result.get("status", "ready"))
-		if section_id == "items":
+		if section_id in ["items", "creatures"]:
 			state["filter_options"] = result.get("filter_options", {}).duplicate(true)
 			state["error"] = str(result.get("error", ""))
 		for row in state["rows"]:
@@ -789,6 +912,8 @@ func _on_result_published(result: Dictionary) -> void:
 	if section_id == _active_section_id:
 		if section_id == "items":
 			_sync_item_filter_controls(state)
+		elif section_id == "creatures":
+			_sync_creature_filter_controls(state)
 		_render_state()
 		_render_selected_detail()
 
@@ -931,6 +1056,29 @@ func _on_item_detail_result_published(result: Dictionary) -> void:
 	_detail.text = _format_item_detail(item)
 
 
+func _on_creature_detail_query_started(request: Dictionary) -> void:
+	if str(request.get("definition_id", "")) != str(_selected_detail.get("record_id", "")):
+		return
+	_selected_detail["status"] = "loading"
+
+
+func _on_creature_detail_result_published(result: Dictionary) -> void:
+	var definition_id := str(result.get("request", {}).get("definition_id", ""))
+	if definition_id.is_empty() or definition_id != str(_selected_detail.get("record_id", "")):
+		return
+	if not result.get("ok", false):
+		_selected_detail = {
+			"status": str(result.get("status", "failed")),
+			"record_id": definition_id,
+			"error": str(result.get("error", "Monster-Details konnten nicht geladen werden.")),
+		}
+		_detail.text = _escape_bbcode(str(_selected_detail["error"]))
+		return
+	var creature: Dictionary = result.get("creature", {}).duplicate(true)
+	_selected_detail = {"status": "ready", "record_id": definition_id, "record": creature}
+	_detail.text = _format_creature_detail(creature)
+
+
 func _sync_item_filter_controls(state: Dictionary) -> void:
 	if _item_filters == null:
 		return
@@ -984,6 +1132,40 @@ func _select_option_metadata(option: OptionButton, selected: Variant) -> void:
 	option.select(0)
 
 
+func _sync_creature_filter_controls(state: Dictionary) -> void:
+	if _creature_filters == null:
+		return
+	var filters: Dictionary = state.get("filters", {})
+	var options: Dictionary = state.get("filter_options", {})
+	for entry in [
+		[_creature_size, "Größe", "sizes"],
+		[_creature_type, "Typ", "types"],
+		[_creature_subtype, "Untertyp", "subtypes"],
+		[_creature_environment, "Umwelt", "environments"],
+		[_creature_alignment, "Gesinnung", "alignments"],
+	]:
+		var menu: MenuButton = entry[0]
+		var label_text := str(entry[1])
+		var key := str(entry[2])
+		var selected: Array = filters.get(key, [])
+		var popup := menu.get_popup()
+		popup.clear()
+		var id := 1
+		for value in options.get(key, []):
+			popup.add_check_item(str(value), id)
+			var index := popup.get_item_index(id)
+			popup.set_item_metadata(index, str(value))
+			popup.set_item_checked(index, value in selected)
+			id += 1
+		menu.text = "%s · alle" % label_text if selected.is_empty() else "%s · %d" % [label_text, selected.size()]
+	_creature_minimum_cr.set_block_signals(true)
+	_creature_maximum_cr.set_block_signals(true)
+	_creature_minimum_cr.text = str(filters.get("minimum_challenge_rating", ""))
+	_creature_maximum_cr.text = str(filters.get("maximum_challenge_rating", ""))
+	_creature_minimum_cr.set_block_signals(false)
+	_creature_maximum_cr.set_block_signals(false)
+
+
 func _render_state() -> void:
 	for child in _result_list.get_children():
 		child.queue_free()
@@ -995,23 +1177,31 @@ func _render_state() -> void:
 		_add_message(
 			"Der Items-Katalog wurde noch nicht importiert. Der lokale Katalog bleibt offline und unverändert."
 			if _active_section_id == "items"
+			else "Der Monster-Katalog wurde noch nicht importiert. Der lokale Katalog bleibt offline und unverändert."
+			if _active_section_id == "creatures"
 			else "%s ist im Godot-Cutover noch nicht an seinen Provider angeschlossen." % section["label"]
 		)
 		_footer.text = _with_notice(
 			"Items-Daten nicht verfügbar · vollständigen Operator-Import ausführen"
 			if _active_section_id == "items"
+			else "Monster-Daten nicht verfügbar · vollständigen Operator-Import ausführen"
+			if _active_section_id == "creatures"
 			else "Provider nicht verfügbar · keine Catalog-eigene Ersatzwahrheit",
 			state
 		)
 		_update_paging(state)
 		return
 	if status == "incompatible":
-		_add_message(str(state.get("error", "Der lokale Items-Katalog besitzt ein inkompatibles Format.")))
-		_footer.text = _with_notice("Inkompatibel · vollständigen Items-Import erneut ausführen", state)
+		_add_message(str(state.get("error", "Der lokale Provider-Katalog besitzt ein inkompatibles Format.")))
+		_footer.text = _with_notice("Inkompatibel · vollständigen Provider-Import erneut ausführen", state)
 		_update_paging(state)
 		return
 	if status == "invalid_query":
-		_add_message("Die Kostengrenzen müssen nicht-negative ganze Kupfermünzen sein; Minimum darf Maximum nicht überschreiten.")
+		_add_message(
+			"Die HG-Grenzen müssen nicht-negative Zahlen sein; Minimum darf Maximum nicht überschreiten."
+			if _active_section_id == "creatures"
+			else "Die Kostengrenzen müssen nicht-negative ganze Kupfermünzen sein; Minimum darf Maximum nicht überschreiten."
+		)
 		_footer.text = _with_notice("Ungültiger Filter · Eingabe bleibt erhalten", state)
 		_update_paging(state)
 		return
@@ -1051,14 +1241,15 @@ func _render_table_header() -> void:
 	var state: Dictionary = _section_state[_active_section_id]
 	_name_header.text = _sort_header_text("Name", "name", state)
 	var items := _active_section_id == "items"
-	_identity_header.visible = not items
+	var creatures := _active_section_id == "creatures"
+	_identity_header.visible = not items and not creatures
 	_identity_header.text = _sort_header_text("Kennung", "identity", state)
-	_category_header.visible = items
-	_rarity_header.visible = items
-	_cost_header.visible = items
-	_category_header.text = _sort_header_text("Kategorie", "category", state)
-	_rarity_header.text = _sort_header_text("Seltenheit", "rarity", state)
-	_cost_header.text = _sort_header_text("Kosten", "cost", state)
+	_category_header.visible = items or creatures
+	_rarity_header.visible = items or creatures
+	_cost_header.visible = items or creatures
+	_category_header.text = _sort_header_text("Typ" if creatures else "Kategorie", "type" if creatures else "category", state)
+	_rarity_header.text = _sort_header_text("HG" if creatures else "Seltenheit", "challenge_rating" if creatures else "rarity", state)
+	_cost_header.text = _sort_header_text("TP" if creatures else "Kosten", "xp" if creatures else "cost", state)
 
 
 func _sort_header_text(label: String, sort_key: String, state: Dictionary) -> String:
@@ -1091,6 +1282,13 @@ func _add_result_row(row: Dictionary) -> void:
 		], 150, row)
 		_add_item_row_cell(row_container, str(row.get("rarity", "–")) if not str(row.get("rarity", "")).is_empty() else "–", 112, row)
 		_add_item_row_cell(row_container, str(row.get("cost_display", "–")) if not str(row.get("cost_display", "")).is_empty() else "–", 96, row)
+	elif _active_section_id == "creatures":
+		_add_item_row_cell(row_container, "%s%s" % [
+			str(row.get("creature_type", "")),
+			" · %s" % row["subtype"] if not str(row.get("subtype", "")).is_empty() else "",
+		], 150, row)
+		_add_item_row_cell(row_container, str(row.get("challenge_rating", "–")), 112, row)
+		_add_item_row_cell(row_container, str(row.get("xp", 0)), 96, row)
 	else:
 		var identity_button := Button.new()
 		identity_button.name = "CatalogResultIdentity"
@@ -1113,7 +1311,7 @@ func _add_item_row_cell(parent: HBoxContainer, text_value: String, width: float,
 	button.clip_text = true
 	button.custom_minimum_size = Vector2(width, 30)
 	button.add_theme_color_override("font_color", QUIET_INK)
-	button.tooltip_text = "%s · Item im Inspector öffnen" % text_value
+	button.tooltip_text = "%s · im Inspector öffnen" % text_value
 	button.pressed.connect(_select_row.bind(row.duplicate(true)))
 	parent.add_child(button)
 
@@ -1175,6 +1373,9 @@ func _select_row(row: Dictionary) -> void:
 	elif _active_section_id == "items":
 		_narrative_threads.clear_subject()
 		item_detail_controller.query(_row_id(row))
+	elif _active_section_id == "creatures":
+		_narrative_threads.clear_subject()
+		creature_detail_controller.query(_row_id(row))
 	elif bool(section.get("mutable", false)):
 		_narrative_threads.show_subject(row)
 		_edit_button.disabled = true
@@ -1577,6 +1778,8 @@ func _reset_detail() -> void:
 		encounter_plan_detail_controller.cancel_all()
 	if item_detail_controller != null:
 		item_detail_controller.cancel_all()
+	if creature_detail_controller != null:
+		creature_detail_controller.cancel_all()
 	if _narrative_threads != null:
 		_narrative_threads.clear_subject()
 
@@ -1661,6 +1864,122 @@ func _format_item_detail(item: Dictionary) -> String:
 		_escape_bbcode(str(item["source_url"])).replace("/", "/​"),
 	])
 	return "\n".join(lines)
+
+
+func _format_creature_detail(creature: Dictionary) -> String:
+	var classification := PackedStringArray([
+		str(creature["size"]),
+		str(creature["creature_type"]) + (" (%s)" % creature["subtype"] if not str(creature["subtype"]).is_empty() else ""),
+	])
+	if not str(creature["alignment"]).is_empty():
+		classification.append(str(creature["alignment"]))
+	var lines: Array[String] = [
+		"[font_size=24]%s[/font_size]" % _escape_bbcode(str(creature["name"])),
+		_escape_bbcode(str(creature["source_key"])),
+		" · ".join(classification),
+		"",
+		"[color=#d2a743]KERNWERTE[/color]",
+		"RK %d%s · TP %d%s" % [
+			int(creature["armor_class"]),
+			" · %s" % creature["armor_detail"] if not str(creature["armor_detail"]).is_empty() else "",
+			int(creature["hit_points"]),
+			" (%s)" % creature["hit_dice"] if not str(creature["hit_dice"]).is_empty() else "",
+		],
+		"Initiative %s · HG %s · %d EP" % [
+			_signed_number(int(creature["initiative_bonus"])),
+			str(creature["challenge_rating"]),
+			int(creature["xp"]),
+		],
+		"Bewegung %s" % _format_speed(creature["speed"]),
+		"",
+		"[color=#d2a743]ATTRIBUTE[/color]",
+		_format_abilities(creature["ability_scores"]),
+	]
+	_append_map_line(lines, "Rettungswürfe", creature["saving_throws"])
+	_append_map_line(lines, "Fertigkeiten", creature["skills"])
+	if int(creature.get("passive_perception", 0)) > 0:
+		lines.append("Passive Wahrnehmung %d" % int(creature["passive_perception"]))
+	if not str(creature["languages"]).is_empty():
+		lines.append("Sprachen %s" % _escape_bbcode(str(creature["languages"])))
+	if not creature["environments"].is_empty():
+		lines.append("Umwelt %s" % " · ".join(PackedStringArray(creature["environments"])))
+	var defenses: Dictionary = creature["resistances_and_immunities"]
+	for entry in [
+		["Schadensresistenzen", "damage_resistances"],
+		["Schadensimmunitäten", "damage_immunities"],
+		["Verwundbarkeiten", "damage_vulnerabilities"],
+		["Zustandsimmunitäten", "condition_immunities"],
+	]:
+		if not defenses.get(entry[1], []).is_empty():
+			lines.append("%s %s" % [entry[0], " · ".join(PackedStringArray(defenses[entry[1]]))])
+	_append_creature_entries(lines, "EIGENSCHAFTEN", creature["traits"])
+	var grouped_actions := {
+		"ACTION": ["AKTIONEN", []],
+		"BONUS_ACTION": ["BONUSAKTIONEN", []],
+		"REACTION": ["REAKTIONEN", []],
+		"LEGENDARY_ACTION": ["LEGENDÄRE AKTIONEN", []],
+	}
+	for action in creature["actions"]:
+		var action_type := str(action.get("action_type", "ACTION"))
+		if not grouped_actions.has(action_type):
+			action_type = "ACTION"
+		grouped_actions[action_type][1].append(action)
+	for action_type in ["ACTION", "BONUS_ACTION", "REACTION", "LEGENDARY_ACTION"]:
+		_append_creature_entries(lines, grouped_actions[action_type][0], grouped_actions[action_type][1])
+	lines.append("")
+	lines.append("[color=#d2a743]QUELLE[/color]")
+	lines.append("%s · %s" % [
+		_escape_bbcode(str(creature["source_version"])),
+		" / ".join(PackedStringArray(creature["source_licenses"])),
+	])
+	lines.append(_escape_bbcode(str(creature["source_url"])).replace("/", "/​"))
+	return "\n".join(lines)
+
+
+func _format_speed(speed: Dictionary) -> String:
+	var values := PackedStringArray()
+	var unit := str(speed.get("unit", "feet"))
+	for key in ["walk", "fly", "swim", "climb", "burrow", "crawl"]:
+		if float(speed.get(key, 0)) > 0.0:
+			values.append("%s %s %s" % [key.capitalize(), speed[key], unit])
+	if bool(speed.get("hover", false)):
+		values.append("schwebend")
+	return " · ".join(values) if not values.is_empty() else "–"
+
+
+func _format_abilities(scores: Dictionary) -> String:
+	var values := PackedStringArray()
+	for entry in [["ST", "strength"], ["GE", "dexterity"], ["KO", "constitution"], ["IN", "intelligence"], ["WE", "wisdom"], ["CH", "charisma"]]:
+		var score := int(scores.get(entry[1], 0))
+		values.append("%s %d (%s)" % [entry[0], score, _signed_number(int(floor((score - 10) / 2.0)))])
+	return " · ".join(values)
+
+
+func _append_map_line(lines: Array[String], label_text: String, values: Dictionary) -> void:
+	if values.is_empty():
+		return
+	var parts := PackedStringArray()
+	var keys: Array = values.keys()
+	keys.sort()
+	for key in keys:
+		parts.append("%s %s" % [str(key).capitalize(), _signed_number(int(values[key]))])
+	lines.append("%s %s" % [label_text, " · ".join(parts)])
+
+
+func _append_creature_entries(lines: Array[String], heading: String, entries: Array) -> void:
+	if entries.is_empty():
+		return
+	lines.append("")
+	lines.append("[color=#d2a743]%s[/color]" % heading)
+	for entry in entries:
+		var suffix := ""
+		if int(entry.get("legendary_action_cost", 0)) > 1:
+			suffix = " (%d Aktionen)" % int(entry["legendary_action_cost"])
+		lines.append("[b]%s%s.[/b] %s" % [
+			_escape_bbcode(str(entry["name"])),
+			suffix,
+			_escape_bbcode(str(entry["desc"])),
+		])
 
 
 func _format_encounter_table_detail(record: Dictionary, entry_labels: Dictionary = {}) -> String:

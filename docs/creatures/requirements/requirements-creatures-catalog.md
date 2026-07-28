@@ -1,5 +1,10 @@
 # Catalog Tab UI
 
+Status: Active target requirements
+Owner: Creatures and Catalog
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 ## Component Purpose
 
 The Monster section is the creature provider's read-only browsing experience

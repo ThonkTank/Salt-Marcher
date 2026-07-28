@@ -1,88 +1,111 @@
-# Creatures Persistence
+# Creatures Persistence And Import Contract
 
-This document is normative for the `creatures` feature's persistence path.
+Status: Active Godot contract
+Owner: Creatures
+Last Reviewed: 2026-07-28
+Source of Truth: This document
 
-## Adapter Boundary
+## Purpose And Consumers
 
-- The creatures SQLite adapter satisfies feature-owned application ports and
-  remains private to the creatures composition entry point.
-- The application composition supplies the creatures API explicitly; no
-  registry, discovery convention, or adapter type is a public boundary.
-- SQL rows, mappers, gateways, and schema helpers MUST NOT cross the feature
-  API.
+This contract owns Creature compatibility, the full-corpus import boundary,
+and read failure semantics. Catalog consumes `CreatureCatalog`; it receives no
+paths and does not access HTTP. The separate operator command composes
+`CreatureImportService` with `Open5eSrd2014CreatureSource`.
 
-## Mandatory Schema
+## Storage Ownership And Compatibility
 
-- The feature-owned persistence schema declaration is the canonical in-code
-  owner of the complete current schema. It contains exactly:
-  - `creatures`
-  - `creature_biomes`
-  - `creature_subtypes`
-  - `creature_actions`
-- The declaration also owns the complete current column, key, relationship,
-  constraint, and index signatures for those tables. Persistent tables,
-  indexes, views, or triggers in the `creatures*`, `creature_*`,
-  `idx_creatures_*`, or `idx_creature_*` namespaces are invalid unless they
-  occur in that declaration.
-- Provider-native fields are mapped into this current schema before they become
-  live installation truth. A provider's wider native table is not a compatible
-  Creatures store and is never adopted or repaired in place.
+Creatures is an installation-wide immutable Shared-Definition provider. The
+active registry selects exactly one checksummed Shared-Definition generation.
+Creature objects contain the full normalized statblock and attribution. Their
+generation references contain only the checksummed fields needed for bounded
+filtering and sorting: stable source key, name, size, type, subtype, alignment,
+CR, XP, and environments.
 
-## Read Path Responsibilities
+The projection is repeated inside the immutable object and covered by the
+object and generation checksums. Exact detail reads reject a projection/object
+mismatch. A damaged Creature object does not block metadata browsing or an
+independent provider; selecting it or requesting a complete facts snapshot
+fails closed.
 
-- the shared platform owns connection lifecycle; the Creatures SQLite adapter
-  owns feature schema readiness
-- Query construction and row mapping remain private SQLite-adapter concerns.
-- Shared SQL filter-clause and parameter-binding helpers stay local to that
-  package and must not become public feature boundaries.
-- A direct facts query resolves the complete requested XP-value or creature-ID
-  union in one set-based adapter operation. It has no UI page size or hidden
-  result limit and returns stable creature-ID order.
+Before the first released format, Creatures supports no SQLite conversion,
+predecessor reader, or fallback. A selected Creature without the current
+projection or semantic content is `INCOMPATIBLE` and replaceable development
+data must be imported again. Later released format changes require an explicit
+compatibility decision under the project persistence lifecycle.
 
-## Validation And Error Behavior
+## Import Boundary
 
-Owner startup readiness validates the exact feature-declared schema and owner
-object inventory against a separately derived SQLite reference schema.
-Validation is read-only. Semantic row validation remains on typed provider read
-paths and fails closed through the feature contract.
+`godot/tools/import_creatures.gd` performs GET-only reads against Open5e V2. It
+requires no account, cookie, token, or secret. The desktop runtime and Creature
+UI never compose the source and never transmit local data.
 
-- feature-local schema readiness MUST be verified before the catalog exposes a
-  successful lookup result
-- a malformed current schema MUST fail without changing its schema, rows, or
-  recorded owner version
-- malformed or incomplete source rows MUST be rejected or mapped to a clear
-  storage-failure result instead of silently fabricating creature truth
-- storage and schema failures MUST surface through Creatures API result status
-  vocabulary rather than leaking SQLite exceptions to consumers
-- filter normalization with domain meaning belongs to the creatures domain
-  boundary; the persistence slice validates only source-shape and storage
-  readiness concerns
+The source adapter fetches the exact document record
+`/v2/documents/srd-2014/` and every page of
+`/v2/creatures/?document__key__in=srd-2014`. It pins the API version and source
+document explicitly. The API page count must remain constant during a fetch;
+every `next` link must remain on the expected HTTPS host and endpoint; and the
+final result count must match exactly.
 
-## Stability Rules
+Batch validation rejects an empty or partial corpus, a non-SRD document,
+missing license or source link, unsafe or duplicate stable identity, duplicate
+source key, invalid classification/CR/XP/combat facts, malformed hit dice,
+ability, movement, environment, defense, trait, or action data, or a record
+whose nested document is not `srd-2014`.
 
-- The creatures query adapter is injected through the feature composition
-  entry point.
-- Creature persistence helpers may be refactored internally while one
-  feature-owned read port remains the application-to-SQLite boundary.
+Only a complete normalized batch can prepare a generation. Preparation removes
+the previously selected Creature kind and adds the replacement while preserving
+every independent Shared-Definition kind. It does not alter the registry
+pointer. One generation-checked registry commit selects the replacement. Any
+source, parse, validation, preparation, or stale-publication failure leaves the
+prior complete generation selected. A failed publication discards its
+unselected generation.
 
-## Compatibility And Initialization
+## Query, Detail, And Facts Contract
 
-Compatibility obligations begin with the first released format.
-Before the first released format, Creatures has one disposable current format: owner
-version `1`. Its single initializer runs only when the complete Creatures owner
-namespace is empty, then creates the current tables and indexes directly. It
-does not inspect predecessor columns, add missing columns, copy rows, or repair
-partial tables.
+Catalog queries accept name text, CR minimum/maximum, and multi-value size,
+type, subtype, environment, and alignment filters plus a bounded page. They sort
+stably by name, identity, CR, type, or XP before slicing. Filter options come
+from the complete selected projection, not only the filtered page.
 
-An unversioned partial owner namespace and a malformed recorded version `1`
-fail as unavailable without ledger fabrication or mutation. A recorded owner
-version above `1` fails as newer and is neither downgraded nor rewritten. Until
-activation there is no compatibility reader or migration chain. After
-activation, later format changes are governed by `TN-18` and `TN-19`.
+Invalid bounds, value shapes, or CR ranges return `INVALID_QUERY`. Zero Creature
+definitions return `UNAVAILABLE`. Invalid current projections return
+`INCOMPATIBLE`. Generation failures return `STORAGE_ERROR`. Catalog browsing
+opens no Creature object files.
 
+Detail lookup exact-reads one immutable statblock outside the scene-tree thread
+and returns classification, core combat facts, six abilities, saving throws,
+skills, movement, senses, languages, defenses, traits, actions, environments,
+and source attribution. Missing identity returns `NOT_FOUND`; incompatible
+content and damaged bytes remain distinguishable. A registry-generation change
+makes an in-flight detail read stale instead of publishing mixed-generation
+truth.
 
-## References
+The unpaged facts snapshot exact-reads and validates every current Creature in
+stable definition-ID order for downstream policy. It has no UI page limit and
+observes cancellation between objects.
 
-- [Creatures Domain Model](../domain/domain-creatures.md) (line 1)
-- [Catalog Tab UI](../requirements/requirements-creatures-catalog.md) (line 1)
-- [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)
+## Permanent Constraints
+
+- no Creatures-owned SQLite database, table, migration, JDBC adapter, or Java
+  API in the target state;
+- no D&D Beyond session crawler, authenticated scraper, or reuse of the legacy
+  private corpus;
+- no network request from Catalog browsing or the desktop Creature UI;
+- no creature create, edit, or delete command;
+- no partial import, cross-rules-system merge, or synthesized missing fact;
+- no scene-tree filesystem work for browsing, details, or facts snapshots;
+- no replacement pointer publication before the document and complete corpus
+  pass validation.
+
+## Attribution
+
+Every imported creature retains Open5e key, exact V2 detail URL, source document
+`srd-2014`, source permalink, and the document's reported license names. The
+Inspector shows the pinned version, licenses, and exact detail URL.
+
+References:
+
+- [Open5e API overview](https://open5e.com/api-docs)
+- [Open5e V2 Creature endpoint](https://api.open5e.com/v2/creatures/)
+- [Open5e 2014 SRD document](https://api.open5e.com/v2/documents/srd-2014/)
+- [Open5e project and licensing principles](https://github.com/open5e)

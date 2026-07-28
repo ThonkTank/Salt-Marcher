@@ -1,100 +1,77 @@
 # Creatures Domain Model
 
+Status: Active Godot domain
+Owner: Creatures
+Last Reviewed: 2026-07-28
+Source of Truth: This document
+
 ## Context Role
 
-Context Role: Reference Catalog Context
+Context Role: Imported Reference Catalog Context
+
 Context Name: Creatures
 
-- `creatures` is a reference catalog context over imported creature truth.
-- Its public boundary is `CreaturesApi`.
-- The feature intentionally exposes catalog search, filtering, detail lookup,
-  encounter-candidate lookup, and direct one-shot facts snapshots without
-  owning encounter generation policy or creature lifecycle truth.
+Creatures owns the complete, replaceable local projection of the pinned public
+2014-SRD creature corpus. It does not own encounter ranking, balancing,
+rosters, runtime combat state, NPC lifecycle, or authored creature mutation.
 
 ## Published Language
 
-`CreaturesApi` owns public catalog queries, result pages, lookup statuses,
-filter options, creature details, action details, catalog rows,
-encounter-candidate reference profiles, and direct facts snapshots selected by
-an XP-value union or creature-ID union.
-
-A direct facts query is one complete, unpaged read. It returns every matching
-creature in stable creature-ID order and never inherits UI paging or catalog
-result limits. Consumers may apply their own ranking policy only after this
-immutable query result crosses the API boundary.
-
-Creatures API carriers describe imported creature facts and lookup results.
-They do not encode encounter ranking, choice, balancing, or composition policy.
+`CreatureCatalog` publishes semantic catalog queries, typed lookup states,
+complete filter options, bounded result pages, exact-read statblocks, and
+complete unpaged current-facts snapshots. `CreatureImportService` publishes
+the explicit full-corpus maintenance result and its typed status.
 
 ## Application Boundary
 
-The application boundary owns query normalization, paging coordination, detail
-lookup, filter option loading, and domain lookup-port coordination. It maps
-imported catalog truth into API carriers.
+The application boundary normalizes queries and coordinates public source
+loading, complete batch validation, immutable generation preparation, and
+whole-catalog replacement. Catalog browsing and exact detail reads run outside
+the Godot scene-tree thread. The public source and operator importer are never
+composed into the desktop UI.
 
-It does not own encounter ranking, candidate scoring, or creature lifecycle
-policy.
-
-## Catalog Model
-
-`catalog/` owns the domain role packages for imported creature reference
-catalog access. Read-only catalog lookup ports belong under `catalog/port/`.
-They express domain-facing lookup needs, not data adapter placement or storage
-shape.
+Consumers receive creature facts, not persistence paths or source payloads.
+Encounter, Scene, World Planner, and Session Generation may apply their own
+policy only after the immutable Creature result crosses this boundary.
 
 ## Write Model And Derived State
 
-Write Model: None
+The only write model is one validated full-corpus import batch. One creature is
+identified by its stable Open5e key and contains classification, CR/XP, combat
+facts, abilities, movement, senses, languages, defenses, traits, actions,
+environments, and source attribution.
 
-`creatures` does not own authored creature mutation flows in SaltMarcher. The
-feature consumes imported creature reference truth and exposes it through its
-own API language.
-
-Derived state:
-
-- filtered catalog result pages
-- normalized filter option sets
-- creature detail projections
-- encounter-candidate reference profiles and one-shot facts snapshots for
-  downstream generator policy
+Derived state consists of distinct filter-option sets, filtered and ordered
+result pages, exact selected details, and complete current-facts snapshots.
+Derived results never mutate imported truth.
 
 ## Invariants
 
-- creature catalog lookups remain read-only within SaltMarcher
-- API creature detail and encounter-candidate carriers reflect imported
-  creature truth rather than encounter-balancing policy
-- missing or broken source data becomes lookup failure state, not synthesized
-  creature facts
-- query normalization may narrow invalid ranges or defaults, but it must not
-  invent authored creature truth
+- stable source keys and Shared-Definition identities are unique within the
+  pinned source document;
+- catalog truth is read-only between complete imports;
+- one import publishes either the complete replacement corpus or no
+  replacement;
+- every page and source-document license record is fetched and validated before
+  generation preparation;
+- only Open5e V2 document `srd-2014` enters this owner; other Open5e game systems
+  and documents are not mechanically mixed into the 2014 rules corpus;
+- absent source facts remain absent; no display text becomes invented domain
+  truth;
+- downstream encounter, NPC, Scene, and runtime state remains owned by its own
+  feature.
 
-## Consistency Model
+## Consistency Boundary
 
-The creatures context is a reference-catalog context with imported upstream
-truth. A lookup result is internally consistent within one query or detail
-request, but the feature does not own cross-request authored mutation
-consistency because it has no local write model.
-
-## Promotion Triggers
-
-Reclassify `creatures` before adding any of:
-
-- authored creature creation or editing policy
-- creature validation beyond query/default normalization
-- encounter balancing, ranking, or candidate-choice policy
-- persisted creature lifecycle or ownership rules
-- mutable catalog truth owned by this feature rather than imported lookup data
-
-## Ubiquitous Language
-
-- `Creature Catalog`: imported creature reference data.
-- `Creature Detail`: public reference profile for one creature.
-- `Catalog Query`: public lookup request over imported reference truth.
-- `Encounter Candidate`: reference creature profile consumed by encounter
-  generation.
+One import batch is the consistency boundary. Readers observe either the prior
+complete Shared-Definition generation or the replacement complete generation.
+The generation carries bounded Creature filter/sort projections; the full
+statblock stays in an exact-read immutable object. A query, detail lookup, or
+facts snapshot is internally consistent for its selected generation. A later
+request may observe a newer completed import.
 
 ## References
 
-- [Creatures Persistence](../contract/contract-creatures-persistence.md)
+- [Creatures Persistence And Import](../contract/contract-creatures-persistence.md)
 - [Catalog Tab UI](../requirements/requirements-creatures-catalog.md)
 - [Creature Details UI](../requirements/requirements-creatures-details.md)
