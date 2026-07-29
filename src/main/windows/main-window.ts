@@ -1,6 +1,7 @@
 import { BrowserWindow } from 'electron'
 import { hardenWebContents } from '../security/security.js'
 import { outputPath } from '../application-lifecycle/runtime-paths.js'
+import { isE2eRuntime } from '../application-lifecycle/e2e-runtime.js'
 
 export function createMainWindow(): BrowserWindow {
   const window = new BrowserWindow({
@@ -15,8 +16,7 @@ export function createMainWindow(): BrowserWindow {
       contextIsolation: true,
       nodeIntegration: false,
       webSecurity: true,
-      additionalArguments:
-        process.env['SALT_MARCHER_E2E'] === 'true' ? ['--salt-marcher-e2e'] : []
+      additionalArguments: isE2eRuntime() ? ['--salt-marcher-e2e'] : []
     }
   })
   hardenWebContents(window.webContents)

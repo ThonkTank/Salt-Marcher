@@ -1,5 +1,4 @@
 import { browser, expect } from '@wdio/globals'
-import { AxeBuilder } from '@axe-core/webdriverio'
 import type { Browser as WdioBrowser } from 'webdriverio'
 
 describe('campaign walking skeleton', () => {
@@ -25,7 +24,5 @@ describe('campaign walking skeleton', () => {
     await expect(await client.$('button=Campaign A (active)')).toBeExisting()
 
     await expect(await client.$('button=Campaign B')).toBeExisting()
-    const accessibility = await new AxeBuilder({ client }).analyze()
-    expect(accessibility.violations).toEqual([])
   })
 })

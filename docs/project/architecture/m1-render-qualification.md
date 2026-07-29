@@ -31,11 +31,15 @@ On each supported Linux, Windows, and macOS `RP-H` machine, record:
 
 The CI evidence route is `pnpm check`, `pnpm package`, and on Linux
 `xvfb-run -a pnpm test:e2e`. The E2E journey creates Campaign A, creates
-Campaign B, returns to A, and runs axe-core against the rendered shell.
+Campaign B, and returns to A. axe-core is installed for the accessibility
+gate; its Electron invocation remains blocked by the same ChromeDriver
+teardown defect described below.
 
 ## Current evidence
 
 The fixture volume, p95 ranking, and threshold evaluation are unit tested.
 The renderer exposes keyboard navigation, a text alternative, and explicit
-WebGL-context recovery announcements. RP-H measurements and the cross-platform
-CI run remain required before M1 acceptance.
+WebGL-context recovery announcements. The WebdriverIO journey reaches every
+A/B/A assertion locally, but ChromeDriver blocks while deleting the Electron
+session. RP-H measurements, a working E2E teardown/axe invocation, and the
+cross-platform CI run remain required before M1 acceptance.

@@ -5,6 +5,7 @@ import { createMainWindow } from '../windows/main-window.js'
 import { createSecondaryWindow } from '../windows/secondary-window.js'
 import { configureSecurity } from '../security/security.js'
 import { outputPath } from './runtime-paths.js'
+import { isE2eRuntime } from './e2e-runtime.js'
 import {
   activateCampaignInputSchema,
   createCampaignInputSchema
@@ -27,7 +28,7 @@ export async function startApplication(): Promise<void> {
     requireCore().activate(activateCampaignInputSchema.parse(raw).id)
   )
   createMainWindow()
-  if (process.env['SALT_MARCHER_E2E'] !== 'true') createSecondaryWindow()
+  if (!isE2eRuntime()) createSecondaryWindow()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createMainWindow()
   })

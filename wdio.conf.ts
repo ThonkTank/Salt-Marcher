@@ -19,11 +19,16 @@ export const config = {
       browserName: 'electron',
       'wdio:electronServiceOptions': {
         appEntryPoint: join(process.cwd(), 'out', 'main', 'index.js'),
-        appArgs: [`--user-data-dir=${userData}`, '--disable-gpu']
+        appArgs: [
+          '--no-sandbox',
+          '--salt-marcher-e2e-runtime',
+          `--user-data-dir=${userData}`,
+          '--disable-gpu'
+        ]
       }
     }
   ],
-  logLevel: 'warn',
+  logLevel: process.env['WDIO_LOG_LEVEL'] ?? 'warn',
   framework: 'mocha',
   reporters: ['spec'],
   mochaOpts: { ui: 'bdd', timeout: 45_000 }

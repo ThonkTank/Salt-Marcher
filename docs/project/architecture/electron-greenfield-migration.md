@@ -7,11 +7,11 @@ JavaFX baseline is preserved by tag `javafx-final-2026-07-27` at `e29b305`, and
 `stable` is unchanged. The secure Electron shell, utility-process SQLite
 campaign skeleton, and Pixi/Babylon prototypes are present. Typecheck, lint,
 unit/integration tests, build, headless Electron smoke test, and Linux AppImage
-packaging pass locally. The project has a WebdriverIO + axe-core Electron
-journey and CI now runs native packaging on all three target systems plus the
-Linux E2E gate. Remaining M1 acceptance evidence is a successful CI run and
-the measured RP-H p95, context-loss, 200%-scale, and screen-reader matrix
-recorded in `m1-render-qualification.md`.
+packaging pass locally. The project has a WebdriverIO Electron journey and
+axe-core is part of the target test stack; CI now runs native packaging on all
+three target systems plus the Linux E2E gate. Remaining M1 acceptance evidence
+is a successful CI run and the measured RP-H p95, context-loss, 200%-scale,
+screen-reader, and axe matrix recorded in `m1-render-qualification.md`.
 
 ## Decisions
 
@@ -92,5 +92,5 @@ that decision.
 M1 cannot yet be accepted until the recorded cross-platform and integrated-GPU
 qualification evidence is attached. This is a gate, not a reason to weaken the
 16-ms/50-ms budgets. The local WebdriverIO runner also cannot currently reach
-its ChromeDriver loopback server; CI must supply the authoritative Electron E2E
-result.
+its ChromeDriver session teardown; CI must supply the authoritative Electron
+E2E result once that driver defect is resolved.
