@@ -1,0 +1,15 @@
+appId: org.saltmarcher.app
+productName: SaltMarcher
+directories:
+  output: release
+files:
+  - out/**
+asar: true
+asarUnpack:
+  - node_modules/better-sqlite3/**
+linux:
+  target: [AppImage]
+win:
+  target: [nsis]
+mac:
+  target: [dmg]

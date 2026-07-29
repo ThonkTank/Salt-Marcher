@@ -1,0 +1,62 @@
+:root {
+  color-scheme: dark;
+  font-family: system-ui, sans-serif;
+  background: #15201e;
+  color: #f7f2e8;
+}
+body {
+  margin: 0;
+}
+.app-shell {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: clamp(1.5rem, 4vw, 4rem);
+}
+.eyebrow {
+  color: #a8d7c7;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.inline-form {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.35rem;
+}
+input,
+button {
+  font: inherit;
+  padding: 0.65rem 0.8rem;
+  border-radius: 0.35rem;
+}
+input {
+  flex: 1;
+  border: 1px solid #92b5a9;
+  background: #0c1513;
+  color: inherit;
+}
+button {
+  border: 1px solid #a8d7c7;
+  background: #245f4d;
+  color: inherit;
+  cursor: pointer;
+}
+button[aria-pressed='true'] {
+  background: #a8d7c7;
+  color: #10211b;
+}
+ul {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+li button {
+  width: 100%;
+  text-align: left;
+}
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid #f1cc7d;
+  outline-offset: 3px;
+}

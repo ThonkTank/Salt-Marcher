@@ -1,0 +1,6 @@
+docs/
+resources/
+pnpm-lock.yaml
+node_modules/
+out/
+release/
