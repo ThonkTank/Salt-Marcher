@@ -1,15 +1,19 @@
 import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera.js'
 import { Engine } from '@babylonjs/core/Engines/engine.js'
+import { PointerEventTypes } from '@babylonjs/core/Events/pointerEvents.js'
 import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight.js'
 import { Color4 } from '@babylonjs/core/Maths/math.color.js'
 import { Vector3 } from '@babylonjs/core/Maths/math.vector.js'
 import { CreateBox } from '@babylonjs/core/Meshes/Builders/boxBuilder.js'
 import { Scene } from '@babylonjs/core/scene.js'
-import { useEffect, useRef, type ReactElement } from 'react'
+import { useEffect, useRef, useState, type ReactElement } from 'react'
 
 /** M1 continuous dungeon prototype: chunk meshes, camera, hover/picking and selection. */
 export function BabylonQualificationView(): ReactElement {
   const canvas = useRef<HTMLCanvasElement>(null)
+  const [status, setStatus] = useState(
+    '3D qualification view ready. Drag to orbit; click a chunk to select.'
+  )
   useEffect(() => {
     const element = canvas.current
     if (element === null) return
@@ -41,9 +45,33 @@ export function BabylonQualificationView(): ReactElement {
           chunk.isPickable = true
         }
       }
+      let hoveredName: string | undefined
       scene.onPointerObservable.add((event) => {
-        if (event.pickInfo?.hit && event.pickInfo.pickedMesh !== null)
-          event.pickInfo.pickedMesh.showBoundingBox = true
+        const pickedMesh = event.pickInfo?.pickedMesh
+        if (
+          event.type === PointerEventTypes.POINTERMOVE &&
+          pickedMesh !== null &&
+          pickedMesh !== undefined
+        ) {
+          if (hoveredName !== pickedMesh.name) {
+            hoveredName = pickedMesh.name
+            pickedMesh.showBoundingBox = true
+            setStatus(`Hovering ${pickedMesh.name}.`)
+          }
+        }
+        if (
+          event.type === PointerEventTypes.POINTERPICK &&
+          pickedMesh !== null &&
+          pickedMesh !== undefined
+        ) {
+          setStatus(`Selected ${pickedMesh.name}.`)
+        }
+      })
+      engine.onContextLostObservable.add(() => {
+        setStatus('3D graphics context lost; waiting for restoration.')
+      })
+      engine.onContextRestoredObservable.add(() => {
+        setStatus('3D graphics context restored.')
       })
       engine.runRenderLoop(() => scene.render())
       const resize = () => engine.resize()
@@ -54,10 +82,20 @@ export function BabylonQualificationView(): ReactElement {
         engine.dispose()
       }
     } catch {
+      queueMicrotask(() =>
+        setStatus('3D graphics are unavailable on this device.')
+      )
       return
     }
   }, [])
   return (
-    <canvas ref={canvas} className="qualification-canvas" aria-hidden="true" />
+    <>
+      <canvas
+        ref={canvas}
+        className="qualification-canvas"
+        aria-label="3D dungeon qualification view"
+      />
+      <p aria-live="polite">{status}</p>
+    </>
   )
 }

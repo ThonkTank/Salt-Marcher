@@ -122,10 +122,15 @@ export function App(): ReactElement {
               <BabylonQualificationView />
             </div>
           </div>
-          <p className="sr-only">
-            Equivalent spatial information is available through the campaign
-            catalog and keyboard-operated controls as the product slices arrive.
-          </p>
+          <details>
+            <summary>Text alternative for the spatial qualification</summary>
+            <p>
+              The 2D fixture contains 100,000 sparse cells, including 8,192
+              visible facts. Arrow keys pan the 2D view. The 3D fixture contains
+              25 pickable dungeon chunks; drag to orbit and click a chunk to
+              select it. Both views announce graphics-context recovery.
+            </p>
+          </details>
         </section>
       ) : null}
     </main>

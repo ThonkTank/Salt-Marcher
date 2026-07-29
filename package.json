@@ -18,7 +18,7 @@
     "test:smoke": "corepack pnpm build && electron out/main/index.js --smoke-test",
     "test:e2e": "corepack pnpm build && wdio run wdio.conf.ts",
     "check": "corepack pnpm format && corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test && corepack pnpm test:smoke",
-    "package": "corepack pnpm build && electron-builder"
+    "package": "corepack enable --install-directory ./node_modules/.bin && corepack pnpm build && electron-builder"
   },
   "dependencies": {
     "@babylonjs/core": "9.18.1",

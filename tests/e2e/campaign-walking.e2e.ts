@@ -1,26 +1,31 @@
-import { $, browser, expect } from '@wdio/globals'
+import { browser, expect } from '@wdio/globals'
+import { AxeBuilder } from '@axe-core/webdriverio'
+import type { Browser as WdioBrowser } from 'webdriverio'
 
 describe('campaign walking skeleton', () => {
   it('creates and switches the selected campaign', async () => {
+    const client = browser as unknown as WdioBrowser
     await (
       browser as unknown as { pause(milliseconds: number): Promise<void> }
     ).pause(1_000)
-    const field = await $('#campaign-name')
-    await browser.waitUntil(() => field.isExisting(), {
+    const field = await client.$('#campaign-name')
+    await client.waitUntil(() => field.isExisting(), {
       timeout: 5_000,
       timeoutMsg: 'Campaign input was not rendered.'
     })
     await field.setValue('Campaign A')
-    await $('button=Create campaign').click()
-    await expect($('button=Campaign A (active)')).toBeExisting()
+    await (await client.$('button=Create campaign')).click()
+    await expect(await client.$('button=Campaign A (active)')).toBeExisting()
 
     await field.setValue('Campaign B')
-    await $('button=Create campaign').click()
-    await expect($('button=Campaign B (active)')).toBeExisting()
+    await (await client.$('button=Create campaign')).click()
+    await expect(await client.$('button=Campaign B (active)')).toBeExisting()
 
-    await $('button=Campaign A').click()
-    await expect($('button=Campaign A (active)')).toBeExisting()
+    await (await client.$('button=Campaign A')).click()
+    await expect(await client.$('button=Campaign A (active)')).toBeExisting()
 
-    await expect($('button=Campaign B')).toBeExisting()
+    await expect(await client.$('button=Campaign B')).toBeExisting()
+    const accessibility = await new AxeBuilder({ client }).analyze()
+    expect(accessibility.violations).toEqual([])
   })
 })
