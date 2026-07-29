@@ -4,7 +4,10 @@ jobs:
   check:
     strategy:
       fail-fast: false
-      matrix: { os: [ubuntu-latest, windows-latest, macos-latest] }
+      # windows-latest currently provides a Visual Studio version that node-gyp
+      # cannot identify while compiling better-sqlite3.  Pin the supported
+      # Windows 2022 image so native modules build reproducibly.
+      matrix: { os: [ubuntu-latest, windows-2022, macos-latest] }
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
