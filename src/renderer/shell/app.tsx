@@ -1,5 +1,7 @@
 import { useEffect, useState, type FormEvent, type ReactElement } from 'react'
 import type { CampaignSnapshot } from '../../shared/contracts/campaign.js'
+import { PixiQualificationView } from '../spatial-2d/pixi-qualification-view.js'
+import { BabylonQualificationView } from '../spatial-3d/babylon-qualification-view.js'
 
 declare global {
   interface Window {
@@ -102,6 +104,29 @@ export function App(): ReactElement {
           </ul>
         )}
       </section>
+      {!readOnly ? (
+        <section aria-labelledby="rendering-qualification-heading">
+          <h2 id="rendering-qualification-heading">Rendering qualification</h2>
+          <p>
+            PixiJS renders 100,000 sparse cells (8,192 facts); Babylon.js
+            renders pickable dungeon chunks.
+          </p>
+          <div className="qualification-grid">
+            <div>
+              <h3>2D sparse map</h3>
+              <PixiQualificationView />
+            </div>
+            <div>
+              <h3>3D dungeon</h3>
+              <BabylonQualificationView />
+            </div>
+          </div>
+          <p className="sr-only">
+            Equivalent spatial information is available through the campaign
+            catalog and keyboard-operated controls as the product slices arrive.
+          </p>
+        </section>
+      ) : null}
     </main>
   )
 }

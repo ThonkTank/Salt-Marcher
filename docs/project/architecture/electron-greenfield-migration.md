@@ -2,10 +2,14 @@
 
 ## Status
 
-**Current milestone: M0 — target foundation.** The JavaFX baseline is preserved
-by tag `javafx-final-2026-07-27` at `e29b305`. `stable` is intentionally not
-changed. The next work packages are M0 documentation, M1 secure desktop shell,
-campaign walking skeleton, and renderer qualification.
+**Current milestone: M1 — qualification in progress.** M0 is complete: the
+JavaFX baseline is preserved by tag `javafx-final-2026-07-27` at `e29b305`, and
+`stable` is unchanged. The secure Electron shell, utility-process SQLite
+campaign skeleton, and Pixi/Babylon prototypes are present. Typecheck, lint,
+unit tests, build and a headless Electron smoke test pass locally. Remaining
+M1 gates are measured p95 qualification on the specified laptop profile,
+GPU/memory-loss simulation, real Electron E2E coverage, packaging validation,
+and the three-platform CI result.
 
 ## Decisions
 
@@ -83,4 +87,6 @@ that decision.
 
 ## Open blockers
 
-None.
+M1 cannot yet be accepted until the recorded cross-platform and integrated-GPU
+qualification evidence is attached. This is a gate, not a reason to weaken the
+16-ms/50-ms budgets.

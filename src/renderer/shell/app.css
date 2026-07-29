@@ -60,3 +60,26 @@ input:focus-visible {
   outline: 3px solid #f1cc7d;
   outline-offset: 3px;
 }
+.qualification-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+.qualification-canvas {
+  width: 100%;
+  min-height: 300px;
+  border: 1px solid #92b5a9;
+  display: block;
+}
+.qualification-canvas canvas {
+  max-width: 100%;
+  height: auto;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
