@@ -8,7 +8,7 @@ export function createSecondaryWindow(): BrowserWindow {
     height: 360,
     show: false,
     webPreferences: {
-      preload: outputPath('preload', 'index.mjs'),
+      preload: outputPath('preload', 'index.js'),
       sandbox: true,
       contextIsolation: true,
       nodeIntegration: false,

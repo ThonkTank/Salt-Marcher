@@ -27,7 +27,7 @@ export async function startApplication(): Promise<void> {
     requireCore().activate(activateCampaignInputSchema.parse(raw).id)
   )
   createMainWindow()
-  createSecondaryWindow()
+  if (process.env['SALT_MARCHER_E2E'] !== 'true') createSecondaryWindow()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createMainWindow()
   })

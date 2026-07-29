@@ -10,11 +10,12 @@ export function createMainWindow(): BrowserWindow {
     minHeight: 540,
     show: false,
     webPreferences: {
-      preload: outputPath('preload', 'index.mjs'),
+      preload: outputPath('preload', 'index.js'),
       sandbox: true,
       contextIsolation: true,
       nodeIntegration: false,
-      webSecurity: true
+      webSecurity: true,
+      additionalArguments: process.env['SALT_MARCHER_E2E'] === 'true' ? ['--salt-marcher-e2e'] : []
     }
   })
   hardenWebContents(window.webContents)

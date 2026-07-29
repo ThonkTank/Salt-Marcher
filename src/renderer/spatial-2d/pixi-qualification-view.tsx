@@ -39,6 +39,7 @@ export function PixiQualificationView(): ReactElement {
         }
         application.stage.addChild(layer)
       })
+      .catch(() => application.destroy(true, { children: true }))
     return () => {
       disposed = true
       application.destroy(true, { children: true })

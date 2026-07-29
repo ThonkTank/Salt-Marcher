@@ -2,6 +2,7 @@ import { mkdirSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 
 const userData = join(process.cwd(), '.tmp', 'wdio-user-data')
+process.env['SALT_MARCHER_E2E'] = 'true'
 rmSync(userData, { recursive: true, force: true })
 mkdirSync(userData, { recursive: true })
 
@@ -10,7 +11,9 @@ export const config = {
   specs: ['./tests/e2e/**/*.e2e.ts'],
   maxInstances: 1,
   autoXvfb: true,
-  services: ['electron'],
+  services: [
+    ['electron', { captureMainProcessLogs: true, mainProcessLogLevel: 'debug' }]
+  ],
   capabilities: [
     {
       browserName: 'electron',

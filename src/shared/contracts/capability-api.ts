@@ -11,4 +11,5 @@ export interface CampaignCapability extends CampaignReadCapability {
 
 export interface SaltMarcherApi {
   campaigns: CampaignReadCapability | CampaignCapability
+  runtime: Readonly<{ readOnly: boolean; e2e: boolean }>
 }

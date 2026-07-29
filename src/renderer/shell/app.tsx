@@ -17,7 +17,8 @@ export function App(): ReactElement {
   const [snapshot, setSnapshot] = useState<CampaignSnapshot>(emptySnapshot)
   const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const readOnly = new URLSearchParams(window.location.search).has('readonly')
+  const readOnly = window.saltMarcher.runtime.readOnly
+  const e2e = window.saltMarcher.runtime.e2e
   useEffect(() => {
     void window.saltMarcher.campaigns
       .list()
@@ -58,7 +59,7 @@ export function App(): ReactElement {
         </p>
       </header>
       {error !== null ? <p role="alert">{error}</p> : null}
-      {!readOnly ? (
+      {!readOnly && !e2e ? (
         <form onSubmit={(event) => void createCampaign(event)}>
           <label htmlFor="campaign-name">Campaign name</label>
           <div className="inline-form">
