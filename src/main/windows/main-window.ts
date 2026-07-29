@@ -15,7 +15,8 @@ export function createMainWindow(): BrowserWindow {
       contextIsolation: true,
       nodeIntegration: false,
       webSecurity: true,
-      additionalArguments: process.env['SALT_MARCHER_E2E'] === 'true' ? ['--salt-marcher-e2e'] : []
+      additionalArguments:
+        process.env['SALT_MARCHER_E2E'] === 'true' ? ['--salt-marcher-e2e'] : []
     }
   })
   hardenWebContents(window.webContents)

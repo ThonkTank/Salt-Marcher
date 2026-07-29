@@ -2,7 +2,7 @@ import { session, type WebContents } from 'electron'
 
 const contentSecurityPolicy = [
   "default-src 'self'",
-  "script-src 'self'",
+  "script-src 'self' 'sha256-ffmgGkdAXpuqosBM/KVNKWsjChLaUz+GlRqYTej6VXo='",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data:",
   "font-src 'self'",

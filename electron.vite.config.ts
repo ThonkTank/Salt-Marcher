@@ -1,5 +1,24 @@
 import { defineConfig } from 'electron-vite'
-import { resolve } from 'node:path'
+import { cpSync, rmSync } from 'node:fs'
+import { createRequire } from 'node:module'
+import { dirname, resolve } from 'node:path'
+import type { Plugin } from 'vite'
+
+const require = createRequire(import.meta.url)
+const babylonDirectory = dirname(
+  require.resolve('@babylonjs/core/package.json')
+)
+
+function copyBabylonRuntime(): Plugin {
+  return {
+    name: 'copy-babylon-runtime',
+    closeBundle() {
+      const destination = resolve('out/renderer/vendor/babylon')
+      rmSync(destination, { recursive: true, force: true })
+      cpSync(babylonDirectory, destination, { recursive: true })
+    }
+  }
+}
 
 export default defineConfig({
   main: {
@@ -20,6 +39,12 @@ export default defineConfig({
     }
   },
   renderer: {
+    plugins: [copyBabylonRuntime()],
+    build: {
+      rollupOptions: {
+        external: (id) => id.startsWith('@babylonjs/core/')
+      }
+    },
     resolve: {
       alias: {
         '@renderer': resolve('src/renderer'),

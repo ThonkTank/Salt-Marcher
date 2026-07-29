@@ -37,7 +37,9 @@ const campaigns: CampaignCapability = {
   }
 }
 const api: SaltMarcherApi = {
-  campaigns: process.argv.includes('--salt-marcher-read-only') ? readCampaigns : campaigns,
+  campaigns: process.argv.includes('--salt-marcher-read-only')
+    ? readCampaigns
+    : campaigns,
   runtime: Object.freeze({
     readOnly: process.argv.includes('--salt-marcher-read-only'),
     e2e: process.argv.includes('--salt-marcher-e2e')

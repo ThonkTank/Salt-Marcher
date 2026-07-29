@@ -23,5 +23,13 @@ export default tseslint.config(
         { allowConstantExport: true }
       ]
     }
+  },
+  {
+    files: ['tests/e2e/**/*.e2e.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off'
+    }
   }
 )

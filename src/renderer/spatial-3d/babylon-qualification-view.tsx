@@ -1,12 +1,10 @@
-import {
-  ArcRotateCamera,
-  Color4,
-  Engine,
-  HemisphericLight,
-  MeshBuilder,
-  Scene,
-  Vector3
-} from '@babylonjs/core'
+import { ArcRotateCamera } from '@babylonjs/core/Cameras/arcRotateCamera.js'
+import { Engine } from '@babylonjs/core/Engines/engine.js'
+import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight.js'
+import { Color4 } from '@babylonjs/core/Maths/math.color.js'
+import { Vector3 } from '@babylonjs/core/Maths/math.vector.js'
+import { CreateBox } from '@babylonjs/core/Meshes/Builders/boxBuilder.js'
+import { Scene } from '@babylonjs/core/scene.js'
 import { useEffect, useRef, type ReactElement } from 'react'
 
 /** M1 continuous dungeon prototype: chunk meshes, camera, hover/picking and selection. */
@@ -34,7 +32,7 @@ export function BabylonQualificationView(): ReactElement {
       new HemisphericLight('ambient', new Vector3(0, 1, 0), scene)
       for (let x = -2; x <= 2; x += 1) {
         for (let z = -2; z <= 2; z += 1) {
-          const chunk = MeshBuilder.CreateBox(
+          const chunk = CreateBox(
             `chunk-${x}-${z}`,
             { width: 3.8, height: 1, depth: 3.8 },
             scene

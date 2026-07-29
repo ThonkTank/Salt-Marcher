@@ -59,7 +59,7 @@ export function App(): ReactElement {
         </p>
       </header>
       {error !== null ? <p role="alert">{error}</p> : null}
-      {!readOnly && !e2e ? (
+      {!readOnly ? (
         <form onSubmit={(event) => void createCampaign(event)}>
           <label htmlFor="campaign-name">Campaign name</label>
           <div className="inline-form">
@@ -105,7 +105,7 @@ export function App(): ReactElement {
           </ul>
         )}
       </section>
-      {!readOnly ? (
+      {!readOnly && !e2e ? (
         <section aria-labelledby="rendering-qualification-heading">
           <h2 id="rendering-qualification-heading">Rendering qualification</h2>
           <p>
