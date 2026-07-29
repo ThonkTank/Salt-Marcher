@@ -15,10 +15,10 @@
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:smoke": "pnpm build && electron out/main/index.js --smoke-test",
-    "test:e2e": "wdio run wdio.conf.ts",
-    "check": "pnpm format && pnpm lint && pnpm typecheck && pnpm test && pnpm test:smoke",
-    "package": "pnpm build && electron-builder"
+    "test:smoke": "corepack pnpm build && electron out/main/index.js --smoke-test",
+    "test:e2e": "corepack pnpm build && wdio run wdio.conf.ts",
+    "check": "corepack pnpm format && corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test && corepack pnpm test:smoke",
+    "package": "corepack pnpm build && electron-builder"
   },
   "dependencies": {
     "@babylonjs/core": "9.18.1",
@@ -31,6 +31,8 @@
   "devDependencies": {
     "@axe-core/webdriverio": "4.12.1",
     "@electron-toolkit/utils": "4.0.0",
+    "@wdio/electron-service": "10.1.0",
+    "@wdio/globals": "9.29.1",
     "@eslint/js": "10.0.1",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.2",
@@ -52,11 +54,16 @@
     "globals": "17.8.0",
     "jsdom": "30.0.1",
     "prettier": "3.9.6",
-    "tsx": "4.21.0",
+    "tsx": "4.23.1",
     "typescript": "5.9.3",
     "typescript-eslint": "8.57.0",
     "vite": "7.3.6",
     "vitest": "4.1.10",
     "webdriverio": "9.30.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@wdio/native-utils": "2.5.0"
+    }
   }
 }

@@ -1,10 +1,12 @@
 import { app } from 'electron'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 
 export function outputPath(...segments: string[]): string {
-  return join(
-    app.isPackaged ? app.getAppPath() : process.cwd(),
-    'out',
-    ...segments
-  )
+  const entryPoint = process.argv[1]
+  const outputRoot = app.isPackaged
+    ? join(app.getAppPath(), 'out')
+    : entryPoint === undefined
+      ? join(process.cwd(), 'out')
+      : dirname(dirname(entryPoint))
+  return join(outputRoot, ...segments)
 }
