@@ -10,6 +10,7 @@ import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData.js'
 import { Scene } from '@babylonjs/core/scene.js'
 import { useEffect, useRef, useState, type ReactElement } from 'react'
 import {
+  downloadRawQualificationSamples,
   InteractionSampler,
   localPreviewBudgetMs,
   recordedRunCount
@@ -25,6 +26,8 @@ import { exerciseWebglContextLoss } from './webgl-context.js'
 /** M1 continuous dungeon prototype: chunk meshes, camera, hover/picking and selection. */
 export function BabylonQualificationView(): ReactElement {
   const canvas = useRef<HTMLCanvasElement>(null)
+  const downloadSamples = useRef<(() => void) | null>(null)
+  const [samplingReady, setSamplingReady] = useState(false)
   const exerciseContextLoss = (): void => {
     const element = canvas.current
     if (element === null || !exerciseWebglContextLoss(element))
@@ -73,6 +76,14 @@ export function BabylonQualificationView(): ReactElement {
       const previewSampler = new InteractionSampler(localPreviewBudgetMs)
       const cameraSampler = new InteractionSampler()
       const hoverSampler = new InteractionSampler()
+      downloadSamples.current = () => {
+        downloadRawQualificationSamples('m1-babylon-raw.json', {
+          babylonCamera: cameraSampler.samples,
+          babylonHoverPick: hoverSampler.samples,
+          babylonVoxelPreview: previewSampler.samples
+        })
+      }
+      setSamplingReady(true)
       let previewVoxels = createQualificationVoxelChunk()
       let preview = createVoxelMesh(scene, previewVoxels)
       preview.position.set(-16, 0, -16)
@@ -150,6 +161,8 @@ export function BabylonQualificationView(): ReactElement {
       return () => {
         window.removeEventListener('resize', resize)
         element.removeEventListener('keydown', previewWithKeyboard)
+        downloadSamples.current = null
+        setSamplingReady(false)
         scene.dispose()
         engine.dispose()
       }
@@ -171,6 +184,13 @@ export function BabylonQualificationView(): ReactElement {
       <p>Press P after selecting a chunk to rebuild its local preview.</p>
       <button type="button" onClick={exerciseContextLoss}>
         Exercise 3D WebGL context loss and restoration
+      </button>
+      <button
+        type="button"
+        onClick={() => downloadSamples.current?.()}
+        disabled={!samplingReady}
+      >
+        Download 3D raw timing samples
       </button>
       <p aria-live="polite">{status}</p>
     </>

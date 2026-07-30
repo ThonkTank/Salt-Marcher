@@ -8,6 +8,7 @@ import {
   qualificationViewport
 } from './sparse-pixi-qualification.js'
 import {
+  downloadRawQualificationSamples,
   InteractionSampler,
   recordedRunCount
 } from '../spatial-3d/render-qualification-metrics.js'
@@ -18,6 +19,8 @@ const cellIndex = createSparseCellIndex(cells)
 
 export function PixiQualificationView(): ReactElement {
   const host = useRef<HTMLDivElement>(null)
+  const downloadSamples = useRef<(() => void) | null>(null)
+  const [samplingReady, setSamplingReady] = useState(false)
   const [contextCanvas, setContextCanvas] = useState<HTMLCanvasElement | null>(
     null
   )
@@ -46,6 +49,12 @@ export function PixiQualificationView(): ReactElement {
         application.stage.addChild(layer)
         const viewport = { ...qualificationViewport() }
         const interactionSampler = new InteractionSampler()
+        downloadSamples.current = () => {
+          downloadRawQualificationSamples('m1-pixi-pan-raw.json', {
+            pixiPan: interactionSampler.samples
+          })
+        }
+        setSamplingReady(true)
         const redraw = (): void => {
           const visible = cullIndexedCells(cellIndex, viewport)
           graphic.clear()
@@ -120,6 +129,8 @@ export function PixiQualificationView(): ReactElement {
       disposed = true
       setContextCanvas(null)
       detachListeners()
+      downloadSamples.current = null
+      setSamplingReady(false)
       application.destroy(true, { children: true })
     }
   }, [])
@@ -146,6 +157,13 @@ export function PixiQualificationView(): ReactElement {
         }}
       >
         Exercise 2D WebGL context loss and restoration
+      </button>
+      <button
+        type="button"
+        onClick={() => downloadSamples.current?.()}
+        disabled={!samplingReady}
+      >
+        Download 2D raw timing samples
       </button>
     </>
   )

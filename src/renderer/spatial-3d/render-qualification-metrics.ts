@@ -51,4 +51,35 @@ export class InteractionSampler {
   public get recordedSamples(): number {
     return this.#samples.length
   }
+
+  public get samples(): readonly number[] {
+    return [...this.#samples]
+  }
+}
+
+export function downloadRawQualificationSamples(
+  filename: string,
+  populations: Readonly<Record<string, readonly number[]>>
+): void {
+  const artifact = {
+    status: 'pending-rp-h-measurement',
+    recordedAt: new Date().toISOString(),
+    environment: {
+      userAgent: navigator.userAgent,
+      displayWidth: window.screen.width,
+      displayHeight: window.screen.height,
+      displayScalePercent: window.devicePixelRatio * 100
+    },
+    populations
+  }
+  const anchor = document.createElement('a')
+  const objectUrl = URL.createObjectURL(
+    new Blob([JSON.stringify(artifact, null, 2)], {
+      type: 'application/json'
+    })
+  )
+  anchor.href = objectUrl
+  anchor.download = filename
+  anchor.click()
+  URL.revokeObjectURL(objectUrl)
 }
