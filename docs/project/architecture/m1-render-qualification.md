@@ -18,14 +18,21 @@ not turn a passing local test into a claim about `RP-H` hardware.
 - Do not pool different OSs, cold/warm runs, actions, display scales, or GPU
   states.
 
-## Required test matrix
+## M1 reference-machine acceptance
 
-On each supported Linux, Windows, and macOS `RP-H` machine, record:
+M1 accepts one named `RP-H` reference machine in its intended deployment
+configuration. Its record must state the OS and exact display scale actually
+tested; a M1 pass does not generalize to another OS, GPU, or scaling mode.
+The M6 cross-platform accessibility matrix owns the full Linux, Windows, and
+macOS coverage.
+
+On the M1 reference machine, record:
 
 1. OS, architecture, Electron version, CPU calibration, storage measurement,
    power mode, free space, display scale, and GPU model/driver.
-2. Camera orbit, hover/pick, and local-preview populations at 1366 x 768 and
-   at 200% scale. Record all p95 values and timeout failures.
+2. Pixi pan, camera orbit, hover/pick, and local-preview populations at
+   1366 x 768 and the declared display scale. Record all p95 values and
+   timeout failures.
 3. Exercise the supplied WebGL context-loss/restoration control for both 2D
    and 3D views. The app
    must retain its accessible text alternative and announce recovery rather
@@ -46,7 +53,8 @@ block before that assertion completes.
 The fixture volume, spatial-index invariant, voxel remesh, p95 ranking, and
 threshold evaluation are unit tested. The renderer exposes keyboard navigation,
 a keyboard-operable text alternative, local-preview instrumentation, and
-explicit WebGL-context recovery controls and announcements. Raw machine-readable
-evidence uses the template under `docs/project/evidence/`. The template is not
-measurement evidence: RP-H measurements, explicit context-loss exercise,
-200%-scale and screen-reader records remain required before M1 acceptance.
+explicit WebGL-context recovery controls and announcements. Final evidence is
+validated with `pnpm qualify:render:validate <file>`. The checked-in form is
+not measurement evidence: reference-machine measurements, explicit context-loss
+exercise, resource-cycle observations, and a screen-reader record remain
+required before M1 acceptance.

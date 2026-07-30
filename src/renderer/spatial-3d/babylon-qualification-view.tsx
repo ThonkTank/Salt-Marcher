@@ -115,6 +115,10 @@ export function BabylonQualificationView({
             chunk.name === state.selectedChunk ||
             chunk.name === state.hoveredChunk
       })
+      for (const chunk of chunks.values())
+        chunk.showBoundingBox =
+          chunk.name === model.state.selectedChunk ||
+          chunk.name === model.state.hoveredChunk
       const collect = (
         tracker: FrameMeasurementTracker,
         sampler: InteractionSampler,
@@ -194,6 +198,11 @@ export function BabylonQualificationView({
         ) {
           if (hoveredName !== pickedMesh.name) {
             hoveredName = pickedMesh.name
+            hoverTracker.begin(
+              event.event instanceof PointerEvent
+                ? event.event.timeStamp
+                : performance.now()
+            )
             model.hover(pickedMesh.name)
             hoverTracker.arm()
             setStatus(`Hovering ${pickedMesh.name}.`)
@@ -218,11 +227,11 @@ export function BabylonQualificationView({
       const beginCameraMeasurement = (): void => {
         cameraTracker.begin()
       }
-      const beginHoverMeasurement = (): void => {
-        hoverTracker.begin()
+      const cancelCameraMeasurement = (): void => {
+        cameraTracker.cancel()
       }
       element.addEventListener('pointerdown', beginCameraMeasurement, true)
-      element.addEventListener('pointermove', beginHoverMeasurement, true)
+      element.addEventListener('pointerup', cancelCameraMeasurement, true)
       engine.onContextLostObservable.add(() => {
         setStatus('3D graphics context lost; waiting for restoration.')
       })
@@ -236,7 +245,7 @@ export function BabylonQualificationView({
         window.removeEventListener('resize', resize)
         element.removeEventListener('keydown', previewWithKeyboard)
         element.removeEventListener('pointerdown', beginCameraMeasurement, true)
-        element.removeEventListener('pointermove', beginHoverMeasurement, true)
+        element.removeEventListener('pointerup', cancelCameraMeasurement, true)
         downloadSamples.current = null
         unsubscribeModel()
         scene.dispose()

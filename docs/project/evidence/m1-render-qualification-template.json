@@ -1,5 +1,5 @@
 {
-  "$schema": "./m1-render-qualification.schema.json",
+  "$comment": "Intentionally incomplete capture worksheet. Remove this comment and validate only after filling the strict schema fields.",
   "status": "pending-rp-h-measurement",
   "recordedAt": null,
   "environment": {
