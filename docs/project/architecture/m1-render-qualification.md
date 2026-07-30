@@ -24,18 +24,19 @@ not turn a passing local test into a claim about `RP-H` hardware.
 ## M1 reference-machine acceptance
 
 M1 accepts one named `RP-H` reference machine in its intended deployment
-configuration. Its record must state the OS and exact display scale actually
-tested; a M1 pass does not generalize to another OS, GPU, or scaling mode.
-The M6 cross-platform accessibility matrix owns the full Linux, Windows, and
-macOS coverage.
+configuration. On that same machine it separately qualifies normal display and
+200% scaling; these are distinct populations and must never be pooled. A M1
+pass does not generalize to another OS, GPU, or scaling mode. The M6
+cross-platform accessibility matrix owns the full Linux, Windows, macOS,
+mixed-DPI, and monitor-change coverage.
 
 On the M1 reference machine, record:
 
 1. OS, architecture, Electron version, CPU calibration, storage measurement,
-   power mode, free space, display scale, and GPU model/driver.
+   power mode, free space, and GPU model/driver.
 2. Pixi pan, camera orbit, hover/pick, and local-preview populations at
-   1366 x 768 and the declared display scale. Record all p95 values and
-   timeout failures.
+   1366 x 768 once at normal display and once at 200% scaling. Record all p95
+   values and timeout failures separately.
 3. Exercise the supplied WebGL context-loss/restoration control for both 2D
    and 3D views at least 20 times each. After every restoration, perform the
    indicated next pan, camera, hover/pick, or preview interaction; only the
@@ -45,9 +46,11 @@ On the M1 reference machine, record:
 4. Keyboard operation of the 2D view and the text alternative with a screen
    reader. Record the reader and version used.
 5. Run **20 renderer build/dispose cycles**. Record the displayed cycle count,
-   before/after aggregate Electron working set, and settled canvas, mesh, and
-   listener counts. A non-settled result is a failed resource observation, not
-   a value to normalize away.
+   three settled aggregate Electron working-set samples before and after, and
+   settled canvas, mesh, and listener counts. Canvas counts are read from the
+   DOM; Babylon mesh counts and registered listeners are observed during each
+   teardown. A non-settled result is a failed resource observation, not a
+   value to normalize away.
 
 The CI evidence route is `pnpm check`, `pnpm package`, and on Linux
 `xvfb-run -a pnpm test:e2e`. The E2E journey creates Campaign A, creates

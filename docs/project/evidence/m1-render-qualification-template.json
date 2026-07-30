@@ -1,6 +1,9 @@
 {
-  "$comment": "Intentionally incomplete capture worksheet. Remove this comment and validate only after filling the strict schema fields.",
-  "status": "pending-rp-h-measurement",
+  "$comment": "Copy this worksheet to a dated file and replace every placeholder. It intentionally fails validation until the complete M1 measurement is recorded.",
+  "status": "fail",
+  "commit": null,
+  "fixtureVersion": "m1-render-qualification-v2",
+  "packageSha256": null,
   "recordedAt": null,
   "environment": {
     "operatingSystem": null,
@@ -10,23 +13,93 @@
     "storageMeasurement": null,
     "powerMode": null,
     "freeSpaceGiB": null,
-    "displayScalePercent": null,
+    "displayWidth": 1366,
+    "displayHeight": 768,
+    "renderingBackend": "webgl2",
+    "webglVersion": null,
     "gpuModel": null,
-    "gpuDriver": null
+    "gpuDriver": null,
+    "softwareRendering": false
   },
   "populations": {
-    "pixiPan": [],
-    "babylonCamera": [],
-    "babylonHoverPick": [],
-    "babylonVoxelPreview": []
+    "normal": {
+      "pixiPan": {
+        "samples": [],
+        "p95Ms": null,
+        "budgetMs": null,
+        "passes": null
+      },
+      "babylonCamera": {
+        "samples": [],
+        "p95Ms": null,
+        "budgetMs": null,
+        "passes": null
+      },
+      "babylonHoverPick": {
+        "samples": [],
+        "p95Ms": null,
+        "budgetMs": null,
+        "passes": null
+      },
+      "babylonVoxelPreview": {
+        "samples": [],
+        "p95Ms": null,
+        "budgetMs": null,
+        "passes": null
+      }
+    },
+    "scale200Percent": {
+      "pixiPan": {
+        "samples": [],
+        "p95Ms": null,
+        "budgetMs": null,
+        "passes": null
+      },
+      "babylonCamera": {
+        "samples": [],
+        "p95Ms": null,
+        "budgetMs": null,
+        "passes": null
+      },
+      "babylonHoverPick": {
+        "samples": [],
+        "p95Ms": null,
+        "budgetMs": null,
+        "passes": null
+      },
+      "babylonVoxelPreview": {
+        "samples": [],
+        "p95Ms": null,
+        "budgetMs": null,
+        "passes": null
+      }
+    }
   },
   "contextLoss": {
     "pixi": null,
     "babylon": null
   },
+  "resources": {
+    "rendererCycles": null,
+    "pixiContextLossCycles": null,
+    "babylonContextLossCycles": null,
+    "processMemoryBytesBefore": null,
+    "processMemoryBytesAfterSettling": null,
+    "rpHMemoryBudgetBytes": null,
+    "listenerCountBefore": null,
+    "listenerCountAfter": null,
+    "canvasCountBefore": null,
+    "canvasCountAfter": null,
+    "meshCountBefore": null,
+    "meshCountAfter": null
+  },
   "accessibility": {
-    "scale200Percent": null,
-    "textAlternative": null,
-    "screenReader": null
+    "keyboardJourneyPassed": null,
+    "textAlternativePassed": null,
+    "screenReader": {
+      "reader": null,
+      "version": null,
+      "journeyPassed": null
+    }
   }
 }

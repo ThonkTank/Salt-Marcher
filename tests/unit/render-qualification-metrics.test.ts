@@ -38,14 +38,14 @@ describe('render qualification metrics', () => {
     expect(sampler.record(1)).toMatchObject({ sampleCount: recordedRunCount })
   })
 
-  it('accepts one interaction and separates frame work from input latency', () => {
+  it('counts interaction preparation and rendering but excludes VSync wait', () => {
     const tracker = new FrameMeasurementTracker()
     expect(tracker.begin(10)).toBe(true)
     expect(tracker.begin(11)).toBe(false)
-    tracker.arm()
+    tracker.arm(18)
     tracker.beforeRender(20)
     expect(tracker.afterRender(25)).toEqual({
-      frameWorkMs: 5,
+      frameWorkMs: 13,
       inputToPresentationMs: 15
     })
   })

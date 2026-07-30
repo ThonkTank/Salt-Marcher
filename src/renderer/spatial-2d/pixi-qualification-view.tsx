@@ -18,7 +18,11 @@ import {
   webgl2Description
 } from '../spatial-3d/webgl-context.js'
 import { type SpatialQualificationModel } from '../spatial-qualification-model.js'
-import { type RendererResourceCounts } from '../renderer-resource-cycle.js'
+import {
+  ListenerRegistrationTracker,
+  type QualificationRenderer,
+  type RendererResourceCounts
+} from '../renderer-resource-cycle.js'
 
 const cells = createSparseQualificationCells()
 const cellIndex = createSparseCellIndex(cells)
@@ -30,8 +34,14 @@ export function PixiQualificationView({
   onPopulationComplete
 }: {
   readonly model: SpatialQualificationModel
-  readonly onResourcesCreated?: (counts: RendererResourceCounts) => void
-  readonly onResourcesDisposed?: (counts: RendererResourceCounts) => void
+  readonly onResourcesCreated?: (
+    renderer: QualificationRenderer,
+    counts: RendererResourceCounts
+  ) => void
+  readonly onResourcesDisposed?: (
+    renderer: QualificationRenderer,
+    counts: RendererResourceCounts
+  ) => void
   readonly onPopulationComplete?: (samples: readonly number[]) => void
 }): ReactElement {
   const host = useRef<HTMLDivElement>(null)
@@ -48,7 +58,7 @@ export function PixiQualificationView({
     const application = new Application()
     let disposed = false
     let resourcesCreated = false
-    let detachListeners = (): void => undefined
+    const listeners = new ListenerRegistrationTracker()
     void application
       .init({
         width: 640,
@@ -74,8 +84,6 @@ export function PixiQualificationView({
         const graphic = new Graphics()
         layer.addChild(graphic)
         application.stage.addChild(layer)
-        resourcesCreated = true
-        onResourcesCreated?.({ canvases: 1, meshes: 0, listeners: 4 })
         const viewport = { ...model.state.viewport }
         const interactionSampler = new InteractionSampler()
         const inputToPresentation: number[] = []
@@ -110,6 +118,9 @@ export function PixiQualificationView({
           }
         }
         application.renderer.runners.postrender.add(postrenderListener)
+        listeners.track(() =>
+          application.renderer.runners.postrender.remove(postrenderListener)
+        )
         const redraw = (): void => {
           const visible = cullIndexedCells(cellIndex, viewport)
           graphic.clear()
@@ -128,10 +139,12 @@ export function PixiQualificationView({
           )
         }
         redraw()
-        const unsubscribeModel = model.subscribe((state) => {
-          Object.assign(viewport, state.viewport)
-          redraw()
-        })
+        listeners.track(
+          model.subscribe((state) => {
+            Object.assign(viewport, state.viewport)
+            redraw()
+          })
+        )
         const pan = (event: KeyboardEvent): void => {
           const startedAt = performance.now()
           const distance = 24
@@ -144,10 +157,10 @@ export function PixiQualificationView({
           else return
           event.preventDefault()
           if (!frameTracker.begin(startedAt)) return
-          model.pan(deltaX, deltaY)
           application.ticker.addOnce(() => {
             frameTracker.arm()
             frameTracker.beforeRender()
+            model.pan(deltaX, deltaY)
           })
         }
         const contextLost = (event: Event): void => {
@@ -161,25 +174,19 @@ export function PixiQualificationView({
             '2D graphics context restored; pan once to complete this cycle.'
           )
         }
-        element.addEventListener('keydown', pan)
-        application.canvas.addEventListener('webglcontextlost', contextLost)
-        application.canvas.addEventListener(
+        listeners.listen(element, 'keydown', pan)
+        listeners.listen(application.canvas, 'webglcontextlost', contextLost)
+        listeners.listen(
+          application.canvas,
           'webglcontextrestored',
           contextRestored
         )
-        detachListeners = (): void => {
-          element.removeEventListener('keydown', pan)
-          application.canvas.removeEventListener(
-            'webglcontextlost',
-            contextLost
-          )
-          application.canvas.removeEventListener(
-            'webglcontextrestored',
-            contextRestored
-          )
-          unsubscribeModel()
-          application.renderer.runners.postrender.remove(postrenderListener)
-        }
+        onResourcesCreated?.('pixi', {
+          canvases: element.querySelectorAll('canvas').length,
+          meshes: 0,
+          listeners: listeners.count
+        })
+        resourcesCreated = true
       })
       .catch(() => {
         setStatus('2D graphics are unavailable on this device.')
@@ -188,11 +195,15 @@ export function PixiQualificationView({
     return () => {
       disposed = true
       setContextCanvas(null)
-      detachListeners()
+      listeners.dispose()
       downloadSamples.current = null
-      if (resourcesCreated)
-        onResourcesDisposed?.({ canvases: 1, meshes: 0, listeners: 4 })
       application.destroy(true, { children: true })
+      if (resourcesCreated)
+        onResourcesDisposed?.('pixi', {
+          canvases: element.querySelectorAll('canvas').length,
+          meshes: 0,
+          listeners: listeners.count
+        })
     }
   }, [model, onPopulationComplete, onResourcesCreated, onResourcesDisposed])
   return (

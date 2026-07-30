@@ -7,7 +7,12 @@ import {
   type FormEvent,
   type ReactElement
 } from 'react'
-import type { CampaignSnapshot } from '../../shared/contracts/campaign.js'
+import {
+  capabilityErrorCodeSchema,
+  type CampaignSnapshot,
+  type CapabilityErrorCode
+} from '../../shared/contracts/campaign.js'
+import { CapabilityError } from '../../shared/errors/capability-error.js'
 import { PixiQualificationView } from '../spatial-2d/pixi-qualification-view.js'
 import {
   downloadRawQualificationSamples,
@@ -22,6 +27,7 @@ import {
 } from '../spatial-qualification-model.js'
 import {
   RendererResourceCycleTracker,
+  type QualificationRenderer,
   type RendererResourceCounts
 } from '../renderer-resource-cycle.js'
 
@@ -45,11 +51,9 @@ export function App(): ReactElement {
   const [qualificationSamples, setQualificationSamples] = useState<
     Readonly<Partial<Record<QualificationPopulation, readonly number[]>>>
   >({})
-  const liveResources = useRef<RendererResourceCounts>({
-    canvases: 0,
-    meshes: 0,
-    listeners: 0
-  })
+  const rendererResources = useRef<
+    Partial<Record<QualificationRenderer, RendererResourceCounts>>
+  >({})
   const resourceCycles = useRef(new RendererResourceCycleTracker())
   const spatialModel = useMemo(
     () => new SpatialQualificationModel(qualificationViewport()),
@@ -67,14 +71,20 @@ export function App(): ReactElement {
       .catch((cause: unknown) => setError(readError(cause)))
   }, [])
   useEffect(() => spatialModel.subscribe(setSpatialState), [spatialModel])
-  const resourcesCreated = useCallback((counts: RendererResourceCounts) => {
-    liveResources.current = addResources(liveResources.current, counts)
-    resourceCycles.current.rendererBuilt()
-  }, [])
-  const resourcesDisposed = useCallback((counts: RendererResourceCounts) => {
-    liveResources.current = subtractResources(liveResources.current, counts)
-    resourceCycles.current.rendererDisposed()
-  }, [])
+  const resourcesCreated = useCallback(
+    (renderer: QualificationRenderer, counts: RendererResourceCounts) => {
+      rendererResources.current[renderer] = counts
+      resourceCycles.current.rendererBuilt()
+    },
+    []
+  )
+  const resourcesDisposed = useCallback(
+    (renderer: QualificationRenderer, _counts: RendererResourceCounts) => {
+      delete rendererResources.current[renderer]
+      resourceCycles.current.rendererDisposed(_counts)
+    },
+    []
+  )
   const completePixiPopulation = useCallback((samples: readonly number[]) => {
     setQualificationSamples((current) => ({ ...current, pixiPan: samples }))
   }, [])
@@ -94,21 +104,21 @@ export function App(): ReactElement {
     hasCompleteQualificationPopulations(qualificationSamples)
   const runRendererResourceCycles = async (): Promise<void> => {
     try {
-      resourceCycles.current.begin(liveResources.current)
+      resourceCycles.current.begin(observedResources(rendererResources.current))
       setResourceCycleStatus('Running 20 renderer build/dispose cycles…')
-      const processMemoryBytesBefore =
-        await window.saltMarcher.runtime.processMemoryBytes()
+      const processMemoryBytesBefore = await settledWorkingSetSamples()
       for (let cycle = 1; cycle <= 20; cycle += 1) {
         setQualificationGeneration((current) => current + 1)
         await waitForRendererBuilds(resourceCycles.current, cycle * 2)
       }
       await settleRenderer()
-      const result = resourceCycles.current.finish(liveResources.current)
-      const processMemoryBytesAfterSettling =
-        await window.saltMarcher.runtime.processMemoryBytes()
+      const result = resourceCycles.current.finish(
+        observedResources(rendererResources.current)
+      )
+      const processMemoryBytesAfterSettling = await settledWorkingSetSamples()
       setResourceCycleStatus(
         result.settled && result.rendererCycles >= 20
-          ? `Completed ${result.rendererCycles} renderer cycles with stable canvas, mesh, and listener counts. Process working set: ${processMemoryBytesBefore} → ${processMemoryBytesAfterSettling} bytes.`
+          ? `Completed ${result.rendererCycles} renderer cycles with stable canvas, mesh, and listener counts. Settled process working sets: ${processMemoryBytesBefore.join(', ')} → ${processMemoryBytesAfterSettling.join(', ')} bytes.`
           : `Resource cycle check did not settle (${result.rendererCycles} completed cycles). Record this as a failed resource observation.`
       )
     } catch {
@@ -127,6 +137,11 @@ export function App(): ReactElement {
       setName('')
       setError(null)
     } catch (cause) {
+      if (errorCode(cause) === 'outcome_unknown')
+        void window.saltMarcher.campaigns
+          .list()
+          .then(setSnapshot)
+          .catch(setError)
       setError(readError(cause))
     }
   }
@@ -249,30 +264,33 @@ export function App(): ReactElement {
   )
 }
 
-function addResources(
-  current: RendererResourceCounts,
-  added: RendererResourceCounts
+function observedResources(
+  records: Partial<Record<QualificationRenderer, RendererResourceCounts>>
 ): RendererResourceCounts {
   return {
-    canvases: current.canvases + added.canvases,
-    meshes: current.meshes + added.meshes,
-    listeners: current.listeners + added.listeners
-  }
-}
-
-function subtractResources(
-  current: RendererResourceCounts,
-  removed: RendererResourceCounts
-): RendererResourceCounts {
-  return {
-    canvases: Math.max(0, current.canvases - removed.canvases),
-    meshes: Math.max(0, current.meshes - removed.meshes),
-    listeners: Math.max(0, current.listeners - removed.listeners)
+    canvases: document.querySelectorAll('.qualification-grid canvas').length,
+    meshes: Object.values(records).reduce(
+      (total, counts) => total + (counts?.meshes ?? 0),
+      0
+    ),
+    listeners: Object.values(records).reduce(
+      (total, counts) => total + (counts?.listeners ?? 0),
+      0
+    )
   }
 }
 
 function settleRenderer(): Promise<void> {
   return new Promise((resolve) => globalThis.setTimeout(resolve, 100))
+}
+
+async function settledWorkingSetSamples(): Promise<readonly number[]> {
+  const samples: number[] = []
+  for (let sample = 0; sample < 3; sample += 1) {
+    await settleRenderer()
+    samples.push(await window.saltMarcher.runtime.processMemoryBytes())
+  }
+  return samples
 }
 
 function downloadCompleteQualificationSamples(
@@ -352,9 +370,28 @@ function SpatialTextAlternative({
   )
 }
 function readError(cause: unknown): string {
-  return cause instanceof Error
-    ? cause.message
-    : 'The requested operation could not be completed.'
+  const messages: Record<CapabilityErrorCode, string> = {
+    validation_failed: 'Die Eingabe ist nicht gültig.',
+    not_found: 'Diese Campaign ist nicht mehr verfügbar.',
+    read_only: 'Dieses Fenster darf Campaigns nicht ändern.',
+    outcome_unknown:
+      'Es ist unklar, ob die Campaign erstellt wurde. Die Liste wird neu geladen.',
+    core_unavailable: 'Der lokale Programmkern ist nicht erreichbar.',
+    protocol_violation:
+      'Die interne Verbindung wurde aus Sicherheitsgründen beendet.',
+    timeout: 'Die Anfrage hat zu lange gedauert. Sie kann wiederholt werden.',
+    internal: 'Die angeforderte Operation konnte nicht abgeschlossen werden.'
+  }
+  const code = errorCode(cause)
+  return code === undefined
+    ? 'The requested operation could not be completed.'
+    : messages[code]
+}
+
+function errorCode(cause: unknown): CapabilityErrorCode | undefined {
+  if (!(cause instanceof CapabilityError)) return undefined
+  const parsed = capabilityErrorCodeSchema.safeParse(cause.code)
+  return parsed.success ? parsed.data : undefined
 }
 
 function hasCampaignWriteCapability(

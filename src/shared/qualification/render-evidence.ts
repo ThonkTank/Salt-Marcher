@@ -10,6 +10,14 @@ const resultSchema = z
     passes: z.boolean()
   })
   .strict()
+const resultsSchema = z
+  .object({
+    pixiPan: resultSchema,
+    babylonCamera: resultSchema,
+    babylonHoverPick: resultSchema,
+    babylonVoxelPreview: resultSchema
+  })
+  .strict()
 
 const recoverySchema = z
   .object({
@@ -39,7 +47,6 @@ export const renderQualificationEvidenceSchema = z
         freeSpaceGiB: z.number().finite().nonnegative(),
         displayWidth: z.literal(1366),
         displayHeight: z.literal(768),
-        displayScalePercent: z.union([z.literal(100), z.literal(200)]),
         renderingBackend: z.literal('webgl2'),
         webglVersion: z.string().startsWith('WebGL 2'),
         gpuModel: z.string().min(1),
@@ -48,12 +55,7 @@ export const renderQualificationEvidenceSchema = z
       })
       .strict(),
     populations: z
-      .object({
-        pixiPan: resultSchema,
-        babylonCamera: resultSchema,
-        babylonHoverPick: resultSchema,
-        babylonVoxelPreview: resultSchema
-      })
+      .object({ normal: resultsSchema, scale200Percent: resultsSchema })
       .strict(),
     contextLoss: z
       .object({ pixi: recoverySchema, babylon: recoverySchema })
@@ -63,8 +65,13 @@ export const renderQualificationEvidenceSchema = z
         rendererCycles: z.number().int().min(20),
         pixiContextLossCycles: z.number().int().min(20),
         babylonContextLossCycles: z.number().int().min(20),
-        processMemoryBytesBefore: z.number().int().nonnegative(),
-        processMemoryBytesAfterSettling: z.number().int().nonnegative(),
+        processMemoryBytesBefore: z
+          .array(z.number().int().nonnegative())
+          .min(3),
+        processMemoryBytesAfterSettling: z
+          .array(z.number().int().nonnegative())
+          .min(3),
+        rpHMemoryBudgetBytes: z.number().int().positive(),
         listenerCountBefore: z.number().int().nonnegative(),
         listenerCountAfter: z.number().int().nonnegative(),
         canvasCountBefore: z.number().int().nonnegative(),
@@ -78,7 +85,11 @@ export const renderQualificationEvidenceSchema = z
         keyboardJourneyPassed: z.literal(true),
         textAlternativePassed: z.literal(true),
         screenReader: z
-          .object({ reader: z.string().min(1), version: z.string().min(1) })
+          .object({
+            reader: z.string().min(1),
+            version: z.string().min(1),
+            journeyPassed: z.literal(true)
+          })
           .strict()
       })
       .strict()
@@ -99,23 +110,105 @@ export function validateRenderQualificationEvidence(
     babylonHoverPick: 16,
     babylonVoxelPreview: 50
   } as const
-  for (const [name, budget] of Object.entries(expectedBudgets) as [
-    keyof typeof expectedBudgets,
-    number
-  ][]) {
-    const result = evidence.populations[name]
-    const p95Ms = p95(result.samples)
-    if (result.p95Ms !== p95Ms || result.budgetMs !== budget)
-      throw new Error(`${name} has an incorrect p95 or budget`)
-    if (result.passes !== p95Ms <= budget)
-      throw new Error(`${name} has an incorrect verdict`)
-  }
-  const allPassed = Object.values(evidence.populations).every(
-    (population) => population.passes
-  )
+  for (const configuration of Object.values(evidence.populations))
+    for (const [name, budget] of Object.entries(expectedBudgets) as [
+      keyof typeof expectedBudgets,
+      number
+    ][]) {
+      const result = configuration[name]
+      const measuredP95 = p95(result.samples)
+      if (result.p95Ms !== measuredP95 || result.budgetMs !== budget)
+        throw new Error(`${name} has an incorrect p95 or budget`)
+      if (result.passes !== measuredP95 <= budget)
+        throw new Error(`${name} has an incorrect verdict`)
+    }
+  const resourcesPass =
+    evidence.resources.listenerCountBefore ===
+      evidence.resources.listenerCountAfter &&
+    evidence.resources.canvasCountBefore ===
+      evidence.resources.canvasCountAfter &&
+    evidence.resources.meshCountBefore === evidence.resources.meshCountAfter &&
+    Math.max(...evidence.resources.processMemoryBytesAfterSettling) <=
+      Math.min(...evidence.resources.processMemoryBytesBefore) * 1.1 &&
+    Math.max(...evidence.resources.processMemoryBytesAfterSettling) <
+      evidence.resources.rpHMemoryBudgetBytes * 0.75
+  const allPassed =
+    Object.values(evidence.populations).every((configuration) =>
+      Object.values(configuration).every((population) => population.passes)
+    ) && resourcesPass
   if ((evidence.status === 'pass') !== allPassed)
-    throw new Error('Top-level status does not match population verdicts')
+    throw new Error(
+      'Top-level status does not match performance, recovery, resource, and accessibility verdicts'
+    )
   return evidence
+}
+
+export function renderQualificationJsonSchema(): object {
+  return z.toJSONSchema(renderQualificationEvidenceSchema)
+}
+
+export function renderQualificationTemplate(): object {
+  const pendingResult = {
+    samples: [],
+    p95Ms: null,
+    budgetMs: null,
+    passes: null
+  }
+  const pendingConfiguration = {
+    pixiPan: pendingResult,
+    babylonCamera: pendingResult,
+    babylonHoverPick: pendingResult,
+    babylonVoxelPreview: pendingResult
+  }
+  return {
+    $comment:
+      'Copy this worksheet to a dated file and replace every placeholder. It intentionally fails validation until the complete M1 measurement is recorded.',
+    status: 'fail',
+    commit: null,
+    fixtureVersion: 'm1-render-qualification-v2',
+    packageSha256: null,
+    recordedAt: null,
+    environment: {
+      operatingSystem: null,
+      architecture: null,
+      electronVersion: null,
+      cpuCalibration: null,
+      storageMeasurement: null,
+      powerMode: null,
+      freeSpaceGiB: null,
+      displayWidth: 1366,
+      displayHeight: 768,
+      renderingBackend: 'webgl2',
+      webglVersion: null,
+      gpuModel: null,
+      gpuDriver: null,
+      softwareRendering: false
+    },
+    populations: {
+      normal: pendingConfiguration,
+      scale200Percent: pendingConfiguration
+    },
+    contextLoss: { pixi: null, babylon: null },
+    resources: {
+      rendererCycles: null,
+      pixiContextLossCycles: null,
+      babylonContextLossCycles: null,
+      processMemoryBytesBefore: null,
+      processMemoryBytesAfterSettling: null,
+      rpHMemoryBudgetBytes: null,
+      listenerCountBefore: null,
+      listenerCountAfter: null,
+      canvasCountBefore: null,
+      canvasCountAfter: null,
+      meshCountBefore: null,
+      meshCountAfter: null
+    },
+    accessibility: {
+      keyboardJourneyPassed: null,
+      textAlternativePassed: null,
+      screenReader: { reader: null, version: null, journeyPassed: null }
+    }
+  }
 }
 
 function p95(samples: readonly number[]): number {

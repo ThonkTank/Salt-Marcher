@@ -30,6 +30,7 @@ export interface FrameMeasurement {
  */
 export class FrameMeasurementTracker {
   #inputAt: number | undefined
+  #inputWorkEndedAt: number | undefined
   #frameStartedAt: number | undefined
   #armed = false
 
@@ -39,12 +40,16 @@ export class FrameMeasurementTracker {
     return true
   }
 
-  public arm(): void {
-    if (this.#inputAt !== undefined) this.#armed = true
+  public arm(inputWorkEndedAt = performance.now()): void {
+    if (this.#inputAt !== undefined) {
+      this.#inputWorkEndedAt = inputWorkEndedAt
+      this.#armed = true
+    }
   }
 
   public cancel(): void {
     this.#inputAt = undefined
+    this.#inputWorkEndedAt = undefined
     this.#frameStartedAt = undefined
     this.#armed = false
   }
@@ -57,13 +62,23 @@ export class FrameMeasurementTracker {
   public afterRender(
     presentedAt = performance.now()
   ): FrameMeasurement | undefined {
-    if (this.#inputAt === undefined || this.#frameStartedAt === undefined)
+    if (
+      this.#inputAt === undefined ||
+      this.#inputWorkEndedAt === undefined ||
+      this.#frameStartedAt === undefined
+    )
       return undefined
     const measurement = {
-      frameWorkMs: presentedAt - this.#frameStartedAt,
+      // The delay between input work ending and the next render is VSync idle
+      // time. The budget instead covers input/picking/preparation plus render.
+      frameWorkMs:
+        this.#inputWorkEndedAt -
+        this.#inputAt +
+        (presentedAt - this.#frameStartedAt),
       inputToPresentationMs: presentedAt - this.#inputAt
     }
     this.#inputAt = undefined
+    this.#inputWorkEndedAt = undefined
     this.#frameStartedAt = undefined
     this.#armed = false
     return measurement

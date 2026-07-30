@@ -28,7 +28,11 @@ import {
   webgl2Description
 } from './webgl-context.js'
 import { type SpatialQualificationModel } from '../spatial-qualification-model.js'
-import { type RendererResourceCounts } from '../renderer-resource-cycle.js'
+import {
+  ListenerRegistrationTracker,
+  type QualificationRenderer,
+  type RendererResourceCounts
+} from '../renderer-resource-cycle.js'
 
 /** M1 continuous dungeon prototype: chunk meshes, camera, hover/picking and selection. */
 export function BabylonQualificationView({
@@ -38,8 +42,14 @@ export function BabylonQualificationView({
   onPopulationComplete
 }: {
   readonly model: SpatialQualificationModel
-  readonly onResourcesCreated?: (counts: RendererResourceCounts) => void
-  readonly onResourcesDisposed?: (counts: RendererResourceCounts) => void
+  readonly onResourcesCreated?: (
+    renderer: QualificationRenderer,
+    counts: RendererResourceCounts
+  ) => void
+  readonly onResourcesDisposed?: (
+    renderer: QualificationRenderer,
+    counts: RendererResourceCounts
+  ) => void
   readonly onPopulationComplete?: (
     population: 'babylonCamera' | 'babylonHoverPick' | 'babylonVoxelPreview',
     samples: readonly number[]
@@ -127,14 +137,16 @@ export function BabylonQualificationView({
       let previewVoxels = createQualificationVoxelChunk()
       let preview = createVoxelMesh(scene, previewVoxels)
       preview.position.set(-16, 0, -16)
-      onResourcesCreated?.({ canvases: 1, meshes: 26, listeners: 8 })
-      const unsubscribeModel = model.subscribe((state) => {
-        selectedName = state.selectedChunk ?? undefined
-        for (const chunk of chunks.values())
-          chunk.showBoundingBox =
-            chunk.name === state.selectedChunk ||
-            chunk.name === state.hoveredChunk
-      })
+      const listeners = new ListenerRegistrationTracker()
+      listeners.track(
+        model.subscribe((state) => {
+          selectedName = state.selectedChunk ?? undefined
+          for (const chunk of chunks.values())
+            chunk.showBoundingBox =
+              chunk.name === state.selectedChunk ||
+              chunk.name === state.hoveredChunk
+        })
+      )
       for (const chunk of chunks.values())
         chunk.showBoundingBox =
           chunk.name === model.state.selectedChunk ||
@@ -163,12 +175,15 @@ export function BabylonQualificationView({
           )
         }
       }
-      scene.onBeforeRenderObservable.add(() => {
+      const beforeRenderObserver = scene.onBeforeRenderObservable.add(() => {
         cameraTracker.beforeRender()
         hoverTracker.beforeRender()
         previewTracker.beforeRender()
       })
-      scene.onAfterRenderObservable.add(() => {
+      listeners.track(() =>
+        scene.onBeforeRenderObservable.remove(beforeRenderObserver)
+      )
+      const afterRenderObserver = scene.onAfterRenderObservable.add(() => {
         recovery.current.observedRerender()
         collect(
           cameraTracker,
@@ -201,6 +216,9 @@ export function BabylonQualificationView({
         )
           setDownloadReady(true)
       })
+      listeners.track(() =>
+        scene.onAfterRenderObservable.remove(afterRenderObserver)
+      )
       const noteRecoveredInteraction = (): void => {
         const completedBefore = recovery.current.completedCycles
         recovery.current.observedNextInteraction()
@@ -230,12 +248,24 @@ export function BabylonQualificationView({
           `Local 32 × 32 × 16 voxel preview remeshed (${previewSampler.recordedSamples}/${recordedRunCount} recorded samples).`
         )
       }
-      camera.onViewMatrixChangedObservable.add(() => {
-        cameraTracker.arm()
-        noteRecoveredInteraction()
-      })
-      scene.onPointerObservable.add((event) => {
+      const cameraChangedObserver = camera.onViewMatrixChangedObservable.add(
+        () => {
+          cameraTracker.arm()
+          noteRecoveredInteraction()
+        }
+      )
+      listeners.track(() =>
+        camera.onViewMatrixChangedObservable.remove(cameraChangedObserver)
+      )
+      const pointerObserver = scene.onPointerObservable.add((event) => {
         const pickedMesh = event.pickInfo?.pickedMesh
+        if (
+          event.type === PointerEventTypes.POINTERMOVE &&
+          (pickedMesh === null ||
+            pickedMesh === undefined ||
+            hoveredName === pickedMesh.name)
+        )
+          hoverTracker.cancel()
         if (
           event.type === PointerEventTypes.POINTERMOVE &&
           pickedMesh !== null &&
@@ -243,11 +273,6 @@ export function BabylonQualificationView({
         ) {
           if (hoveredName !== pickedMesh.name) {
             hoveredName = pickedMesh.name
-            hoverTracker.begin(
-              event.event instanceof PointerEvent
-                ? event.event.timeStamp
-                : performance.now()
-            )
             model.hover(pickedMesh.name)
             hoverTracker.arm()
             noteRecoveredInteraction()
@@ -263,44 +288,60 @@ export function BabylonQualificationView({
           setStatus(`Selected ${pickedMesh.name}.`)
         }
       })
+      listeners.track(() => scene.onPointerObservable.remove(pointerObserver))
       const previewWithKeyboard = (event: KeyboardEvent): void => {
         if (event.key !== 'p' && event.key !== 'P') return
         event.preventDefault()
         if (!previewTracker.begin()) return
         rebuildPreview()
       }
-      element.addEventListener('keydown', previewWithKeyboard)
+      listeners.listen(element, 'keydown', previewWithKeyboard)
       const beginCameraMeasurement = (): void => {
         cameraTracker.begin()
       }
-      const cancelCameraMeasurement = (): void => {
-        cameraTracker.cancel()
+      const beginHoverMeasurement = (event: PointerEvent): void => {
+        if (event.type === 'pointermove') hoverTracker.begin(event.timeStamp)
       }
-      element.addEventListener('pointerdown', beginCameraMeasurement, true)
-      element.addEventListener('pointerup', cancelCameraMeasurement, true)
-      engine.onContextLostObservable.add(() => {
+      listeners.listen(element, 'pointerdown', beginCameraMeasurement, true)
+      listeners.listen(element, 'pointermove', beginHoverMeasurement, true)
+      const contextLostObserver = engine.onContextLostObservable.add(() => {
         recovery.current.observedLoss()
         setStatus('3D graphics context lost; waiting for restoration.')
       })
-      engine.onContextRestoredObservable.add(() => {
-        recovery.current.observedRestoration()
-        setStatus(
-          '3D graphics context restored; move the camera, hover, or rebuild a preview to complete this cycle.'
-        )
-      })
+      listeners.track(() =>
+        engine.onContextLostObservable.remove(contextLostObserver)
+      )
+      const contextRestoredObserver = engine.onContextRestoredObservable.add(
+        () => {
+          recovery.current.observedRestoration()
+          setStatus(
+            '3D graphics context restored; move the camera, hover, or rebuild a preview to complete this cycle.'
+          )
+        }
+      )
+      listeners.track(() =>
+        engine.onContextRestoredObservable.remove(contextRestoredObserver)
+      )
       engine.runRenderLoop(() => scene.render())
       const resize = () => engine.resize()
-      window.addEventListener('resize', resize)
+      listeners.listenWindow('resize', resize)
+      onResourcesCreated?.('babylon', {
+        canvases: document.querySelectorAll('.qualification-grid canvas')
+          .length,
+        meshes: scene.meshes.length,
+        listeners: listeners.count
+      })
       return () => {
-        window.removeEventListener('resize', resize)
-        element.removeEventListener('keydown', previewWithKeyboard)
-        element.removeEventListener('pointerdown', beginCameraMeasurement, true)
-        element.removeEventListener('pointerup', cancelCameraMeasurement, true)
+        listeners.dispose()
         downloadSamples.current = null
-        unsubscribeModel()
-        onResourcesDisposed?.({ canvases: 1, meshes: 26, listeners: 8 })
         scene.dispose()
         engine.dispose()
+        onResourcesDisposed?.('babylon', {
+          canvases: document.querySelectorAll('.qualification-grid canvas')
+            .length,
+          meshes: scene.meshes.length,
+          listeners: listeners.count
+        })
       }
     } catch {
       queueMicrotask(() =>

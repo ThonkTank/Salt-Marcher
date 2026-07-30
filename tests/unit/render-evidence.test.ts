@@ -29,7 +29,6 @@ function evidence(): RenderQualificationEvidence {
       freeSpaceGiB: 100,
       displayWidth: 1366,
       displayHeight: 768,
-      displayScalePercent: 100,
       renderingBackend: 'webgl2',
       webglVersion: 'WebGL 2.0',
       gpuModel: 'integrated',
@@ -37,10 +36,18 @@ function evidence(): RenderQualificationEvidence {
       softwareRendering: false
     },
     populations: {
-      pixiPan: result(16),
-      babylonCamera: result(16),
-      babylonHoverPick: result(16),
-      babylonVoxelPreview: result(50)
+      normal: {
+        pixiPan: result(16),
+        babylonCamera: result(16),
+        babylonHoverPick: result(16),
+        babylonVoxelPreview: result(50)
+      },
+      scale200Percent: {
+        pixiPan: result(16),
+        babylonCamera: result(16),
+        babylonHoverPick: result(16),
+        babylonVoxelPreview: result(50)
+      }
     },
     contextLoss: {
       pixi: {
@@ -62,8 +69,9 @@ function evidence(): RenderQualificationEvidence {
       rendererCycles: 20,
       pixiContextLossCycles: 20,
       babylonContextLossCycles: 20,
-      processMemoryBytesBefore: 1,
-      processMemoryBytesAfterSettling: 1,
+      processMemoryBytesBefore: [1, 1, 1],
+      processMemoryBytesAfterSettling: [1, 1, 1],
+      rpHMemoryBudgetBytes: 2,
       listenerCountBefore: 1,
       listenerCountAfter: 1,
       canvasCountBefore: 1,
@@ -74,7 +82,7 @@ function evidence(): RenderQualificationEvidence {
     accessibility: {
       keyboardJourneyPassed: true,
       textAlternativePassed: true,
-      screenReader: { reader: 'test', version: '1' }
+      screenReader: { reader: 'test', version: '1', journeyPassed: true }
     }
   }
 }
@@ -86,10 +94,10 @@ describe('render qualification evidence', () => {
 
   it('rejects missing samples and forged p95 values', () => {
     const incomplete = evidence()
-    incomplete.populations.pixiPan.samples = []
+    incomplete.populations.normal.pixiPan.samples = []
     expect(() => validateRenderQualificationEvidence(incomplete)).toThrow()
     const forged = evidence()
-    forged.populations.pixiPan.p95Ms = 2
+    forged.populations.normal.pixiPan.p95Ms = 2
     expect(() => validateRenderQualificationEvidence(forged)).toThrow(
       'incorrect p95'
     )
