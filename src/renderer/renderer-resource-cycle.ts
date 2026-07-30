@@ -35,6 +35,10 @@ export class RendererResourceCycleTracker {
     this.#rendererBuilds += 1
   }
 
+  public get rendererBuilds(): number {
+    return this.#rendererBuilds
+  }
+
   public rendererDisposed(): void {
     this.#rendererDisposals += 1
   }

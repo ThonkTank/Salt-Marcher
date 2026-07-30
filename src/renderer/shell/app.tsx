@@ -69,23 +69,29 @@ export function App(): ReactElement {
     resourceCycles.current.rendererDisposed()
   }, [])
   const runRendererResourceCycles = async (): Promise<void> => {
-    resourceCycles.current.begin(liveResources.current)
-    setResourceCycleStatus('Running 20 renderer build/dispose cycles…')
-    const processMemoryBytesBefore =
-      await window.saltMarcher.runtime.processMemoryBytes()
-    for (let cycle = 1; cycle <= 20; cycle += 1) {
-      setQualificationGeneration((current) => current + 1)
+    try {
+      resourceCycles.current.begin(liveResources.current)
+      setResourceCycleStatus('Running 20 renderer build/dispose cycles…')
+      const processMemoryBytesBefore =
+        await window.saltMarcher.runtime.processMemoryBytes()
+      for (let cycle = 1; cycle <= 20; cycle += 1) {
+        setQualificationGeneration((current) => current + 1)
+        await waitForRendererBuilds(resourceCycles.current, cycle * 2)
+      }
       await settleRenderer()
+      const result = resourceCycles.current.finish(liveResources.current)
+      const processMemoryBytesAfterSettling =
+        await window.saltMarcher.runtime.processMemoryBytes()
+      setResourceCycleStatus(
+        result.settled && result.rendererCycles >= 20
+          ? `Completed ${result.rendererCycles} renderer cycles with stable canvas, mesh, and listener counts. Process working set: ${processMemoryBytesBefore} → ${processMemoryBytesAfterSettling} bytes.`
+          : `Resource cycle check did not settle (${result.rendererCycles} completed cycles). Record this as a failed resource observation.`
+      )
+    } catch {
+      setResourceCycleStatus(
+        'Resource cycle check could not rebuild both renderers. Record this as a failed resource observation.'
+      )
     }
-    await settleRenderer()
-    const result = resourceCycles.current.finish(liveResources.current)
-    const processMemoryBytesAfterSettling =
-      await window.saltMarcher.runtime.processMemoryBytes()
-    setResourceCycleStatus(
-      result.settled && result.rendererCycles >= 20
-        ? `Completed ${result.rendererCycles} renderer cycles with stable canvas, mesh, and listener counts. Process working set: ${processMemoryBytesBefore} → ${processMemoryBytesAfterSettling} bytes.`
-        : `Resource cycle check did not settle (${result.rendererCycles} completed cycles). Record this as a failed resource observation.`
-    )
   }
   async function createCampaign(
     event: FormEvent<HTMLFormElement>
@@ -232,6 +238,20 @@ function subtractResources(
 
 function settleRenderer(): Promise<void> {
   return new Promise((resolve) => globalThis.setTimeout(resolve, 100))
+}
+
+async function waitForRendererBuilds(
+  tracker: RendererResourceCycleTracker,
+  expectedBuilds: number
+): Promise<void> {
+  const deadline = performance.now() + 10_000
+  while (tracker.rendererBuilds < expectedBuilds) {
+    if (performance.now() > deadline)
+      throw new Error(
+        `Renderer cycle timed out before both views rebuilt (${tracker.rendererBuilds}/${expectedBuilds}).`
+      )
+    await new Promise((resolve) => globalThis.setTimeout(resolve, 25))
+  }
 }
 
 function SpatialTextAlternative({
