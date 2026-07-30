@@ -15,7 +15,7 @@
     },
     "fixtureVersion": {
       "type": "string",
-      "const": "m1-render-qualification-v2"
+      "const": "m1-render-qualification-v3"
     },
     "packageSha256": {
       "type": "string",
@@ -41,13 +41,189 @@
           "type": "string",
           "minLength": 1
         },
-        "cpuCalibration": {
-          "type": "string",
-          "minLength": 1
-        },
-        "storageMeasurement": {
-          "type": "string",
-          "minLength": 1
+        "calibration": {
+          "type": "object",
+          "properties": {
+            "implementationRevision": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "operatingSystem": {
+              "type": "string",
+              "minLength": 1
+            },
+            "architecture": {
+              "type": "string",
+              "minLength": 1
+            },
+            "powerMode": {
+              "type": "string",
+              "minLength": 1
+            },
+            "freeSpaceGiB": {
+              "type": "number",
+              "minimum": 0
+            },
+            "logicalCpuCores": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            },
+            "memoryAvailableGiB": {
+              "type": "number",
+              "minimum": 0
+            },
+            "dedicatedGpu": {
+              "type": "boolean"
+            },
+            "serverClassHardware": {
+              "type": "boolean"
+            },
+            "cpu": {
+              "type": "object",
+              "properties": {
+                "scheduling": {
+                  "type": "object",
+                  "properties": {
+                    "records": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "elapsedMs": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  },
+                  "required": [
+                    "records",
+                    "elapsedMs",
+                    "sha256"
+                  ],
+                  "additionalProperties": false
+                },
+                "spatial": {
+                  "type": "object",
+                  "properties": {
+                    "records": {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                    },
+                    "elapsedMs": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  },
+                  "required": [
+                    "records",
+                    "elapsedMs",
+                    "sha256"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "scheduling",
+                "spatial"
+              ],
+              "additionalProperties": false
+            },
+            "storage": {
+              "type": "object",
+              "properties": {
+                "filesystem": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "storageDevice": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "cacheState": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "fileBytes": {
+                  "type": "number",
+                  "const": 67108864
+                },
+                "randomAlgorithm": {
+                  "type": "string",
+                  "const": "splitmix64-v1"
+                },
+                "randomSeed": {
+                  "type": "number",
+                  "const": 23072026
+                },
+                "sequentialWriteBytesPerSecond": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "sequentialReadBytesPerSecond": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "durableRandomWriteMs": {
+                  "minItems": 200,
+                  "maxItems": 200,
+                  "type": "array",
+                  "items": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                },
+                "randomReadMs": {
+                  "minItems": 1000,
+                  "maxItems": 1000,
+                  "type": "array",
+                  "items": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                }
+              },
+              "required": [
+                "filesystem",
+                "storageDevice",
+                "cacheState",
+                "fileBytes",
+                "randomAlgorithm",
+                "randomSeed",
+                "sequentialWriteBytesPerSecond",
+                "sequentialReadBytesPerSecond",
+                "durableRandomWriteMs",
+                "randomReadMs"
+              ],
+              "additionalProperties": false
+            },
+            "passes": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "implementationRevision",
+            "operatingSystem",
+            "architecture",
+            "powerMode",
+            "freeSpaceGiB",
+            "logicalCpuCores",
+            "memoryAvailableGiB",
+            "dedicatedGpu",
+            "serverClassHardware",
+            "cpu",
+            "storage",
+            "passes"
+          ],
+          "additionalProperties": false
         },
         "powerMode": {
           "type": "string",
@@ -67,11 +243,11 @@
         },
         "renderingBackend": {
           "type": "string",
-          "const": "webgl2"
+          "minLength": 1
         },
         "webglVersion": {
           "type": "string",
-          "pattern": "^WebGL 2.*"
+          "minLength": 1
         },
         "gpuModel": {
           "type": "string",
@@ -82,16 +258,14 @@
           "minLength": 1
         },
         "softwareRendering": {
-          "type": "boolean",
-          "const": false
+          "type": "boolean"
         }
       },
       "required": [
         "operatingSystem",
         "architecture",
         "electronVersion",
-        "cpuCalibration",
-        "storageMeasurement",
+        "calibration",
         "powerMode",
         "freeSpaceGiB",
         "displayWidth",
@@ -400,66 +574,76 @@
         "pixi": {
           "type": "object",
           "properties": {
-            "lossRequested": {
-              "type": "boolean",
-              "const": true
+            "requestedCycles": {
+              "type": "integer",
+              "minimum": 20,
+              "maximum": 9007199254740991
             },
-            "lossObserved": {
-              "type": "boolean",
-              "const": true
+            "observedLossCycles": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
             },
-            "restorationObserved": {
-              "type": "boolean",
-              "const": true
+            "restoredCycles": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
             },
-            "rerendered": {
-              "type": "boolean",
-              "const": true
+            "rerenderedCycles": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
             },
-            "nextInteractionSucceeded": {
-              "type": "boolean",
-              "const": true
+            "nextInteractionSucceededCycles": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
             }
           },
           "required": [
-            "lossRequested",
-            "lossObserved",
-            "restorationObserved",
-            "rerendered",
-            "nextInteractionSucceeded"
+            "requestedCycles",
+            "observedLossCycles",
+            "restoredCycles",
+            "rerenderedCycles",
+            "nextInteractionSucceededCycles"
           ],
           "additionalProperties": false
         },
         "babylon": {
           "type": "object",
           "properties": {
-            "lossRequested": {
-              "type": "boolean",
-              "const": true
+            "requestedCycles": {
+              "type": "integer",
+              "minimum": 20,
+              "maximum": 9007199254740991
             },
-            "lossObserved": {
-              "type": "boolean",
-              "const": true
+            "observedLossCycles": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
             },
-            "restorationObserved": {
-              "type": "boolean",
-              "const": true
+            "restoredCycles": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
             },
-            "rerendered": {
-              "type": "boolean",
-              "const": true
+            "rerenderedCycles": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
             },
-            "nextInteractionSucceeded": {
-              "type": "boolean",
-              "const": true
+            "nextInteractionSucceededCycles": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
             }
           },
           "required": [
-            "lossRequested",
-            "lossObserved",
-            "restorationObserved",
-            "rerendered",
-            "nextInteractionSucceeded"
+            "requestedCycles",
+            "observedLossCycles",
+            "restoredCycles",
+            "rerenderedCycles",
+            "nextInteractionSucceededCycles"
           ],
           "additionalProperties": false
         }
@@ -475,17 +659,17 @@
       "properties": {
         "rendererCycles": {
           "type": "integer",
-          "minimum": 20,
+          "minimum": 0,
           "maximum": 9007199254740991
         },
         "pixiContextLossCycles": {
           "type": "integer",
-          "minimum": 20,
+          "minimum": 0,
           "maximum": 9007199254740991
         },
         "babylonContextLossCycles": {
           "type": "integer",
-          "minimum": 20,
+          "minimum": 0,
           "maximum": 9007199254740991
         },
         "processMemoryBytesBefore": {
@@ -562,12 +746,10 @@
       "type": "object",
       "properties": {
         "keyboardJourneyPassed": {
-          "type": "boolean",
-          "const": true
+          "type": "boolean"
         },
         "textAlternativePassed": {
-          "type": "boolean",
-          "const": true
+          "type": "boolean"
         },
         "screenReader": {
           "type": "object",
@@ -581,8 +763,7 @@
               "minLength": 1
             },
             "journeyPassed": {
-              "type": "boolean",
-              "const": true
+              "type": "boolean"
             }
           },
           "required": [

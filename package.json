@@ -18,6 +18,7 @@
     "test:smoke": "corepack pnpm build && electron out/main/index.js --smoke-test --no-sandbox",
     "test:packaged-smoke": "corepack pnpm package && tsx scripts/packaged-smoke.ts",
     "test:e2e": "corepack pnpm build && wdio run wdio.conf.ts --suite create && wdio run wdio.conf.ts --suite restart",
+    "qualify:rp-h": "tsx scripts/qualify-rp-h.ts",
     "qualify:render:validate": "tsx scripts/validate-render-qualification.ts",
     "qualify:render:artifacts": "tsx scripts/generate-render-qualification-artifacts.ts",
     "qualify:render:artifacts:check": "tsx scripts/check-render-qualification-artifacts.ts",

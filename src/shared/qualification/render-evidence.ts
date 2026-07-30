@@ -21,19 +21,63 @@ const resultsSchema = z
 
 const recoverySchema = z
   .object({
-    lossRequested: z.literal(true),
-    lossObserved: z.literal(true),
-    restorationObserved: z.literal(true),
-    rerendered: z.literal(true),
-    nextInteractionSucceeded: z.literal(true)
+    requestedCycles: z.number().int().min(20),
+    observedLossCycles: z.number().int().nonnegative(),
+    restoredCycles: z.number().int().nonnegative(),
+    rerenderedCycles: z.number().int().nonnegative(),
+    nextInteractionSucceededCycles: z.number().int().nonnegative()
   })
   .strict()
+
+const calibrationRunSchema = z
+  .object({
+    records: z.number().int().positive(),
+    elapsedMs: z.number().finite().nonnegative(),
+    sha256: z.string().regex(/^[0-9a-f]{64}$/)
+  })
+  .strict()
+const rpHCalibrationSchema = z
+  .object({
+    implementationRevision: z.string().regex(/^[0-9a-f]{64}$/),
+    operatingSystem: z.string().min(1),
+    architecture: z.string().min(1),
+    powerMode: z.string().min(1),
+    freeSpaceGiB: z.number().finite().nonnegative(),
+    logicalCpuCores: z.number().int().nonnegative(),
+    memoryAvailableGiB: z.number().finite().nonnegative(),
+    dedicatedGpu: z.boolean(),
+    serverClassHardware: z.boolean(),
+    cpu: z
+      .object({
+        scheduling: calibrationRunSchema,
+        spatial: calibrationRunSchema
+      })
+      .strict(),
+    storage: z
+      .object({
+        filesystem: z.string().min(1),
+        storageDevice: z.string().min(1),
+        cacheState: z.string().min(1),
+        fileBytes: z.literal(64 * 1024 * 1024),
+        randomAlgorithm: z.literal('splitmix64-v1'),
+        randomSeed: z.literal(23072026),
+        sequentialWriteBytesPerSecond: z.number().finite().nonnegative(),
+        sequentialReadBytesPerSecond: z.number().finite().nonnegative(),
+        durableRandomWriteMs: z.array(sampleSchema).length(200),
+        randomReadMs: z.array(sampleSchema).length(1000)
+      })
+      .strict(),
+    passes: z.boolean()
+  })
+  .strict()
+
+export type RpHCalibration = z.infer<typeof rpHCalibrationSchema>
 
 export const renderQualificationEvidenceSchema = z
   .object({
     status: z.enum(['pass', 'fail']),
     commit: z.string().regex(/^[0-9a-f]{40}$/),
-    fixtureVersion: z.literal('m1-render-qualification-v2'),
+    fixtureVersion: z.literal('m1-render-qualification-v3'),
     packageSha256: z.string().regex(/^[0-9a-f]{64}$/),
     recordedAt: z.iso.datetime(),
     environment: z
@@ -41,17 +85,16 @@ export const renderQualificationEvidenceSchema = z
         operatingSystem: z.string().min(1),
         architecture: z.string().min(1),
         electronVersion: z.string().min(1),
-        cpuCalibration: z.string().min(1),
-        storageMeasurement: z.string().min(1),
+        calibration: rpHCalibrationSchema,
         powerMode: z.string().min(1),
         freeSpaceGiB: z.number().finite().nonnegative(),
         displayWidth: z.literal(1366),
         displayHeight: z.literal(768),
-        renderingBackend: z.literal('webgl2'),
-        webglVersion: z.string().startsWith('WebGL 2'),
+        renderingBackend: z.string().min(1),
+        webglVersion: z.string().min(1),
         gpuModel: z.string().min(1),
         gpuDriver: z.string().min(1),
-        softwareRendering: z.literal(false)
+        softwareRendering: z.boolean()
       })
       .strict(),
     populations: z
@@ -62,9 +105,9 @@ export const renderQualificationEvidenceSchema = z
       .strict(),
     resources: z
       .object({
-        rendererCycles: z.number().int().min(20),
-        pixiContextLossCycles: z.number().int().min(20),
-        babylonContextLossCycles: z.number().int().min(20),
+        rendererCycles: z.number().int().nonnegative(),
+        pixiContextLossCycles: z.number().int().nonnegative(),
+        babylonContextLossCycles: z.number().int().nonnegative(),
         processMemoryBytesBefore: z
           .array(z.number().int().nonnegative())
           .min(3),
@@ -82,13 +125,13 @@ export const renderQualificationEvidenceSchema = z
       .strict(),
     accessibility: z
       .object({
-        keyboardJourneyPassed: z.literal(true),
-        textAlternativePassed: z.literal(true),
+        keyboardJourneyPassed: z.boolean(),
+        textAlternativePassed: z.boolean(),
         screenReader: z
           .object({
             reader: z.string().min(1),
             version: z.string().min(1),
-            journeyPassed: z.literal(true)
+            journeyPassed: z.boolean()
           })
           .strict()
       })
@@ -100,10 +143,36 @@ export type RenderQualificationEvidence = z.infer<
   typeof renderQualificationEvidenceSchema
 >
 
+export function rpHCalibrationPasses(calibration: RpHCalibration): boolean {
+  return (
+    calibration.logicalCpuCores >= 4 &&
+    calibration.memoryAvailableGiB >= 8 &&
+    calibration.powerMode !== 'unknown' &&
+    !calibration.dedicatedGpu &&
+    !calibration.serverClassHardware &&
+    calibration.cpu.scheduling.records === 100_000 &&
+    calibration.cpu.scheduling.elapsedMs <= 500 &&
+    calibration.cpu.spatial.records === 2_000_000 &&
+    calibration.cpu.spatial.elapsedMs <= 5_000 &&
+    calibration.storage.filesystem !== 'unknown' &&
+    calibration.storage.storageDevice !== 'unknown' &&
+    calibration.storage.cacheState !== 'unknown' &&
+    calibration.storage.sequentialWriteBytesPerSecond >= 200_000_000 &&
+    calibration.storage.sequentialReadBytesPerSecond >= 200_000_000 &&
+    p95(calibration.storage.randomReadMs) <= 2 &&
+    p95(calibration.storage.durableRandomWriteMs) <= 10
+  )
+}
+
 export function validateRenderQualificationEvidence(
   raw: unknown
 ): RenderQualificationEvidence {
   const evidence = renderQualificationEvidenceSchema.parse(raw)
+  if (
+    evidence.environment.calibration.passes !==
+    rpHCalibrationPasses(evidence.environment.calibration)
+  )
+    throw new Error('RP-H calibration has an incorrect verdict')
   const expectedBudgets = {
     pixiPan: 16,
     babylonCamera: 16,
@@ -122,7 +191,17 @@ export function validateRenderQualificationEvidence(
       if (result.passes !== measuredP95 <= budget)
         throw new Error(`${name} has an incorrect verdict`)
     }
+  const recoveryPasses = Object.values(evidence.contextLoss).every(
+    (recovery) =>
+      recovery.observedLossCycles >= recovery.requestedCycles &&
+      recovery.restoredCycles >= recovery.requestedCycles &&
+      recovery.rerenderedCycles >= recovery.requestedCycles &&
+      recovery.nextInteractionSucceededCycles >= recovery.requestedCycles
+  )
   const resourcesPass =
+    evidence.resources.rendererCycles >= 20 &&
+    evidence.resources.pixiContextLossCycles >= 20 &&
+    evidence.resources.babylonContextLossCycles >= 20 &&
     evidence.resources.listenerCountBefore ===
       evidence.resources.listenerCountAfter &&
     evidence.resources.canvasCountBefore ===
@@ -132,13 +211,26 @@ export function validateRenderQualificationEvidence(
       Math.min(...evidence.resources.processMemoryBytesBefore) * 1.1 &&
     Math.max(...evidence.resources.processMemoryBytesAfterSettling) <
       evidence.resources.rpHMemoryBudgetBytes * 0.75
+  const backendPasses =
+    evidence.environment.renderingBackend === 'webgl2' &&
+    evidence.environment.webglVersion.startsWith('WebGL 2') &&
+    !evidence.environment.softwareRendering
+  const accessibilityPasses =
+    evidence.accessibility.keyboardJourneyPassed &&
+    evidence.accessibility.textAlternativePassed &&
+    evidence.accessibility.screenReader.journeyPassed
   const allPassed =
     Object.values(evidence.populations).every((configuration) =>
       Object.values(configuration).every((population) => population.passes)
-    ) && resourcesPass
+    ) &&
+    rpHCalibrationPasses(evidence.environment.calibration) &&
+    backendPasses &&
+    recoveryPasses &&
+    resourcesPass &&
+    accessibilityPasses
   if ((evidence.status === 'pass') !== allPassed)
     throw new Error(
-      'Top-level status does not match performance, recovery, resource, and accessibility verdicts'
+      'Top-level status does not match calibration, performance, backend, recovery, resource, and accessibility verdicts'
     )
   return evidence
 }
@@ -165,24 +257,23 @@ export function renderQualificationTemplate(): object {
       'Copy this worksheet to a dated file and replace every placeholder. It intentionally fails validation until the complete M1 measurement is recorded.',
     status: 'fail',
     commit: null,
-    fixtureVersion: 'm1-render-qualification-v2',
+    fixtureVersion: 'm1-render-qualification-v3',
     packageSha256: null,
     recordedAt: null,
     environment: {
       operatingSystem: null,
       architecture: null,
       electronVersion: null,
-      cpuCalibration: null,
-      storageMeasurement: null,
+      calibration: null,
       powerMode: null,
       freeSpaceGiB: null,
       displayWidth: 1366,
       displayHeight: 768,
-      renderingBackend: 'webgl2',
+      renderingBackend: null,
       webglVersion: null,
       gpuModel: null,
       gpuDriver: null,
-      softwareRendering: false
+      softwareRendering: null
     },
     populations: {
       normal: pendingConfiguration,
@@ -213,5 +304,5 @@ export function renderQualificationTemplate(): object {
 
 function p95(samples: readonly number[]): number {
   const ordered = [...samples].sort((left, right) => left - right)
-  return ordered[94] ?? 0
+  return ordered[Math.ceil(ordered.length * 0.95) - 1] ?? 0
 }
