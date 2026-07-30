@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs'
+import { existsSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { spawn } from 'node:child_process'
 
@@ -33,15 +33,24 @@ child.once('exit', (code) => {
 
 function packagedExecutable(): string {
   switch (process.platform) {
-    case 'darwin':
+    case 'darwin': {
+      const macDirectory = readdirSync('release', { withFileTypes: true }).find(
+        (entry) => entry.isDirectory() && entry.name.startsWith('mac')
+      )?.name
+      if (macDirectory === undefined) {
+        throw new Error(
+          'electron-builder did not produce a macOS app directory'
+        )
+      }
       return join(
         'release',
-        'mac',
+        macDirectory,
         'SaltMarcher.app',
         'Contents',
         'MacOS',
         'SaltMarcher'
       )
+    }
     case 'win32':
       return join('release', 'win-unpacked', 'SaltMarcher.exe')
     default:
