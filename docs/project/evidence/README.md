@@ -16,5 +16,7 @@ pnpm qualify:render:validate docs/project/evidence/<dated-file>.json
 
 M1 covers one declared RP-H reference machine/configuration. The M6
 cross-platform accessibility matrix owns the broader OS and scale coverage.
+The final resource record requires 20 build/dispose cycles and 20 completed
+loss/restore/next-interaction cycles for **each** renderer.
 The checked-in template is intentionally incomplete and **must not** validate;
 only a completed `pass` or `fail` artifact is admissible acceptance evidence.

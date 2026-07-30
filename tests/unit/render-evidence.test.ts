@@ -60,7 +60,8 @@ function evidence(): RenderQualificationEvidence {
     },
     resources: {
       rendererCycles: 20,
-      contextLossCycles: 20,
+      pixiContextLossCycles: 20,
+      babylonContextLossCycles: 20,
       processMemoryBytesBefore: 1,
       processMemoryBytesAfterSettling: 1,
       listenerCountBefore: 1,

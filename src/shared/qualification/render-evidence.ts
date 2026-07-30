@@ -61,7 +61,8 @@ export const renderQualificationEvidenceSchema = z
     resources: z
       .object({
         rendererCycles: z.number().int().min(20),
-        contextLossCycles: z.number().int().min(20),
+        pixiContextLossCycles: z.number().int().min(20),
+        babylonContextLossCycles: z.number().int().min(20),
         processMemoryBytesBefore: z.number().int().nonnegative(),
         processMemoryBytesAfterSettling: z.number().int().nonnegative(),
         listenerCountBefore: z.number().int().nonnegative(),
