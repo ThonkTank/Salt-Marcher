@@ -3,7 +3,8 @@
 ## Status
 
 **Current milestone: M1 — qualification in progress.** M0 is complete. The
-retired implementation is preserved by tag `javafx-final-2026-07-27`. The
+retired implementation is preserved by tag `javafx-final-2026-07-27` and the
+`stable` branch at the same final JavaFX commit. The
 secure Electron shell, utility-process SQLite
 campaign skeleton, and Pixi/Babylon prototypes are present. Typecheck, lint,
 unit/integration tests, build, headless Electron smoke test, and Linux AppImage

@@ -2,55 +2,48 @@
 
 ## Purpose And Boundary
 
-The Campaign feature owns the installation-wide registry of stable Campaign
-identities and names plus the single durable active-Campaign pointer. The
-registry lives in `installation.sqlite`; Campaign-authored truth remains in the
-physically separate store for that Campaign. Consumers receive only
-`CampaignRegistryApi`, never a database path or another owner's handle.
+Campaign owns the installation-wide list of Campaign identities and display
+names plus the one durable active-Campaign pointer. The registry is in
+`installation.sqlite`; Campaign-authored truth is in the physically separate
+`campaigns/<id>/campaign.sqlite` store. Only the utility process opens either
+database.
 
-## Stored Truth
+## Current Development Schema
 
-- `campaign_registry_campaigns` stores one non-blank display name for each
-  stable Campaign identity. Duplicate display names are valid.
-- `campaign_registry_activation` stores at most one pointer and its strictly
-  positive activation generation. Its target must exist in the Campaign table.
-- Registering a Campaign and committing its first active pointer is one
-  transaction. A failed or stale commit cannot leave a new registry row behind.
+The registry owns `campaigns` and `settings`:
 
-## Schema Ownership And Validation
+- `campaigns` stores UUIDv7 `id`, non-blank `name`, creation time, and a
+  creation `status` of `creating` or `ready`.
+- `settings.active_campaign_id` is either absent or identifies a ready
+  Campaign.
 
-The two tables, their columns, primary keys, checks, foreign key, automatic
-SQLite indexes, and the complete persistent `campaign_registry_*` object
-inventory form one exact schema. Readiness compares that target to a separately
-derived SQLite reference schema without mutating the installation store.
-Malformed or adjacent owner objects make the registry unavailable; they are
-not repaired, dropped, or ignored.
+Duplicate display names are valid. Only ready Campaigns are listed or may be
+activated. The renderer sees snapshots through the validated capability API,
+not SQLite errors or paths.
 
-## Compatibility And Initialization
+## Creation And Crash Recovery
 
-Compatibility obligations begin with the first released format.
-Before the first released format, the Campaign registry has one disposable current format:
-owner version `1`. Its single initializer requires an empty
-`campaign_registry_*` namespace and creates the complete current target
-directly. An unversioned partial namespace and a malformed recorded version `1`
-fail without schema, row, or ledger mutation. A recorded version above `1`
-fails as newer without downgrade.
+Creating a name-only Campaign deliberately crosses the registry/store file
+boundary in this order:
 
-Until activation there is no predecessor conversion, compatibility reader,
-backfill, or repair path. After activation, future format changes are governed
-by project `TN-18` and `TN-19` and must introduce explicit qualified
-preservation behavior rather than changing the meaning of version `1`.
+1. Commit a `creating` registry row.
+2. Create and validate `campaign.sqlite` beneath `campaigns/.creating/<id>/`.
+3. Atomically move that directory to `campaigns/<id>/`.
+4. In one registry transaction, mark it `ready` and set the active pointer.
 
-## Error And Consistency Behavior
+An interruption before the store exists is removed during next startup. An
+interruption after a valid staged or final store exists is finished during next
+startup. Thus recovery yields either the prior registry truth or one complete,
+ready Campaign; a partial Campaign is never visible.
 
-Registry operations fail through Campaign result statuses and do not expose
-SQLite exceptions. Pointer compare-and-set uses the expected generation; a
-stale generation returns current durable activation truth. Shutdown rejects
-new work and prevents an accepted mutation from committing after terminal
-revocation.
+## Release Boundary
+
+This is a disposable greenfield development schema. Version ledgers,
+activation generations, compare-and-set activation, compatibility readers,
+and migration obligations are not current architecture. They may be introduced
+only with an explicitly qualified first-release or later format decision.
 
 ## References
 
-- [Persistence Lifecycle](../../project/contract/persistence-lifecycle.md)
-
-- [Program Capability Requirements](../../project/requirements/requirements-program-capabilities.md)
+- [Development Persistence Contract](../../project/contract/persistence-lifecycle.md)
+- [Electron Target Architecture](../../project/architecture/target-architecture.md)
