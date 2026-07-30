@@ -7,7 +7,9 @@ describe('campaign walking skeleton', () => {
     const client = browser as unknown as WdioBrowser
     const field = await client.$('#campaign-name')
     await waitForCampaignInput(client, field)
-    const accessibility = await new AxeBuilder({ client }).analyze()
+    const accessibility = await new AxeBuilder({ client })
+      .setLegacyMode()
+      .analyze()
     expect(accessibility.violations).toHaveLength(0)
     await field.setValue('Campaign A')
     await (await client.$('button=Create campaign')).click()
