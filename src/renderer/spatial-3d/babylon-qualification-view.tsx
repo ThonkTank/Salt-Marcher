@@ -22,12 +22,17 @@ import {
   type VoxelChunk
 } from './voxel-chunk.js'
 import { exerciseWebglContextLoss } from './webgl-context.js'
+import { type SpatialQualificationModel } from '../spatial-qualification-model.js'
 
 /** M1 continuous dungeon prototype: chunk meshes, camera, hover/picking and selection. */
-export function BabylonQualificationView(): ReactElement {
+export function BabylonQualificationView({
+  model
+}: {
+  readonly model: SpatialQualificationModel
+}): ReactElement {
   const canvas = useRef<HTMLCanvasElement>(null)
   const downloadSamples = useRef<(() => void) | null>(null)
-  const [samplingReady, setSamplingReady] = useState(false)
+  const [downloadReady, setDownloadReady] = useState(false)
   const exerciseContextLoss = (): void => {
     const element = canvas.current
     if (element === null || !exerciseWebglContextLoss(element))
@@ -72,7 +77,7 @@ export function BabylonQualificationView(): ReactElement {
         }
       }
       let hoveredName: string | undefined
-      let selectedName: string | undefined
+      let selectedName = model.state.selectedChunk ?? undefined
       const previewSampler = new InteractionSampler(localPreviewBudgetMs)
       const cameraSampler = new InteractionSampler()
       const hoverSampler = new InteractionSampler()
@@ -83,10 +88,16 @@ export function BabylonQualificationView(): ReactElement {
           babylonVoxelPreview: previewSampler.samples
         })
       }
-      setSamplingReady(true)
       let previewVoxels = createQualificationVoxelChunk()
       let preview = createVoxelMesh(scene, previewVoxels)
       preview.position.set(-16, 0, -16)
+      const unsubscribeModel = model.subscribe((state) => {
+        selectedName = state.selectedChunk ?? undefined
+        for (const chunk of chunks.values())
+          chunk.showBoundingBox =
+            chunk.name === state.selectedChunk ||
+            chunk.name === state.hoveredChunk
+      })
       const recordAfterFrame = (
         sampler: InteractionSampler,
         startedAt: number,
@@ -94,6 +105,12 @@ export function BabylonQualificationView(): ReactElement {
       ): void => {
         scene.onAfterRenderObservable.addOnce(() => {
           const result = sampler.record(performance.now() - startedAt)
+          if (
+            cameraSampler.recordedSamples === recordedRunCount &&
+            hoverSampler.recordedSamples === recordedRunCount &&
+            previewSampler.recordedSamples === recordedRunCount
+          )
+            setDownloadReady(true)
           if (result !== undefined)
             setStatus(
               `${label} p95 ${result.p95Ms.toFixed(2)} ms after ${recordedRunCount} presented frames (${result.passes ? 'passes' : 'fails'}).`
@@ -129,7 +146,7 @@ export function BabylonQualificationView(): ReactElement {
         ) {
           if (hoveredName !== pickedMesh.name) {
             hoveredName = pickedMesh.name
-            pickedMesh.showBoundingBox = true
+            model.hover(pickedMesh.name)
             recordAfterFrame(hoverSampler, performance.now(), '3D hover/pick')
             setStatus(`Hovering ${pickedMesh.name}.`)
           }
@@ -139,7 +156,7 @@ export function BabylonQualificationView(): ReactElement {
           pickedMesh !== null &&
           pickedMesh !== undefined
         ) {
-          selectedName = pickedMesh.name
+          model.select(pickedMesh.name)
           setStatus(`Selected ${pickedMesh.name}.`)
         }
       })
@@ -162,7 +179,7 @@ export function BabylonQualificationView(): ReactElement {
         window.removeEventListener('resize', resize)
         element.removeEventListener('keydown', previewWithKeyboard)
         downloadSamples.current = null
-        setSamplingReady(false)
+        unsubscribeModel()
         scene.dispose()
         engine.dispose()
       }
@@ -172,7 +189,7 @@ export function BabylonQualificationView(): ReactElement {
       )
       return
     }
-  }, [])
+  }, [model])
   return (
     <>
       <canvas
@@ -188,9 +205,9 @@ export function BabylonQualificationView(): ReactElement {
       <button
         type="button"
         onClick={() => downloadSamples.current?.()}
-        disabled={!samplingReady}
+        disabled={!downloadReady}
       >
-        Download 3D raw timing samples
+        Download complete 3D raw timing samples
       </button>
       <p aria-live="polite">{status}</p>
     </>

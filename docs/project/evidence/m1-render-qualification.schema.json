@@ -1,22 +1,50 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "SaltMarcher M1 render qualification evidence",
+  "title": "SaltMarcher M1 render qualification end evidence",
   "type": "object",
-  "required": ["status", "environment", "populations", "contextLoss", "accessibility"],
+  "additionalProperties": false,
+  "required": ["status", "commit", "fixtureVersion", "packageSha256", "recordedAt", "environment", "populations", "contextLoss", "resources", "accessibility"],
   "properties": {
-    "status": { "enum": ["pending-rp-h-measurement", "pass", "fail"] },
-    "recordedAt": { "type": ["string", "null"], "format": "date-time" },
-    "environment": { "type": "object" },
-    "populations": {
-      "type": "object",
-      "additionalProperties": {
-        "type": "array",
-        "items": { "type": "number", "minimum": 0 },
-        "minItems": 0,
-        "maxItems": 100
+    "status": { "enum": ["pass", "fail"] },
+    "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "fixtureVersion": { "const": "m1-render-qualification-v2" },
+    "packageSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "recordedAt": { "type": "string", "format": "date-time" },
+    "environment": { "$ref": "#/$defs/environment" },
+    "populations": { "$ref": "#/$defs/populations" },
+    "contextLoss": { "$ref": "#/$defs/contextLoss" },
+    "resources": { "$ref": "#/$defs/resources" },
+    "accessibility": { "$ref": "#/$defs/accessibility" }
+  },
+  "$defs": {
+    "environment": {
+      "type": "object", "additionalProperties": false,
+      "required": ["operatingSystem", "architecture", "electronVersion", "cpuCalibration", "storageMeasurement", "powerMode", "freeSpaceGiB", "displayWidth", "displayHeight", "displayScalePercent", "renderingBackend", "webglVersion", "gpuModel", "gpuDriver", "softwareRendering"],
+      "properties": {
+        "operatingSystem": { "type": "string", "minLength": 1 }, "architecture": { "type": "string", "minLength": 1 }, "electronVersion": { "type": "string", "minLength": 1 }, "cpuCalibration": { "type": "string", "minLength": 1 }, "storageMeasurement": { "type": "string", "minLength": 1 }, "powerMode": { "type": "string", "minLength": 1 }, "freeSpaceGiB": { "type": "number", "minimum": 0 }, "displayWidth": { "const": 1366 }, "displayHeight": { "const": 768 }, "displayScalePercent": { "enum": [100, 200] }, "renderingBackend": { "const": "webgl2" }, "webglVersion": { "type": "string", "pattern": "^WebGL 2" }, "gpuModel": { "type": "string", "minLength": 1 }, "gpuDriver": { "type": "string", "minLength": 1 }, "softwareRendering": { "const": false }
       }
     },
-    "contextLoss": { "type": "object" },
-    "accessibility": { "type": "object" }
+    "result": {
+      "type": "object", "additionalProperties": false,
+      "required": ["samples", "p95Ms", "budgetMs", "passes"],
+      "properties": { "samples": { "type": "array", "minItems": 100, "maxItems": 100, "items": { "type": "number", "minimum": 0 } }, "p95Ms": { "type": "number", "minimum": 0 }, "budgetMs": { "type": "number", "exclusiveMinimum": 0 }, "passes": { "type": "boolean" } }
+    },
+    "populations": {
+      "type": "object", "additionalProperties": false,
+      "required": ["pixiPan", "babylonCamera", "babylonHoverPick", "babylonVoxelPreview"],
+      "properties": { "pixiPan": { "$ref": "#/$defs/result" }, "babylonCamera": { "$ref": "#/$defs/result" }, "babylonHoverPick": { "$ref": "#/$defs/result" }, "babylonVoxelPreview": { "$ref": "#/$defs/result" } }
+    },
+    "recovery": {
+      "type": "object", "additionalProperties": false,
+      "required": ["lossRequested", "lossObserved", "restorationObserved", "rerendered", "nextInteractionSucceeded"],
+      "properties": { "lossRequested": { "const": true }, "lossObserved": { "const": true }, "restorationObserved": { "const": true }, "rerendered": { "const": true }, "nextInteractionSucceeded": { "const": true } }
+    },
+    "contextLoss": { "type": "object", "additionalProperties": false, "required": ["pixi", "babylon"], "properties": { "pixi": { "$ref": "#/$defs/recovery" }, "babylon": { "$ref": "#/$defs/recovery" } } },
+    "resources": {
+      "type": "object", "additionalProperties": false,
+      "required": ["rendererCycles", "contextLossCycles", "processMemoryBytesBefore", "processMemoryBytesAfterSettling", "listenerCountBefore", "listenerCountAfter", "canvasCountBefore", "canvasCountAfter", "meshCountBefore", "meshCountAfter"],
+      "properties": { "rendererCycles": { "type": "integer", "minimum": 20 }, "contextLossCycles": { "type": "integer", "minimum": 20 }, "processMemoryBytesBefore": { "type": "integer", "minimum": 0 }, "processMemoryBytesAfterSettling": { "type": "integer", "minimum": 0 }, "listenerCountBefore": { "type": "integer", "minimum": 0 }, "listenerCountAfter": { "type": "integer", "minimum": 0 }, "canvasCountBefore": { "type": "integer", "minimum": 0 }, "canvasCountAfter": { "type": "integer", "minimum": 0 }, "meshCountBefore": { "type": "integer", "minimum": 0 }, "meshCountAfter": { "type": "integer", "minimum": 0 } }
+    },
+    "accessibility": { "type": "object", "additionalProperties": false, "required": ["keyboardJourneyPassed", "textAlternativePassed", "screenReader"], "properties": { "keyboardJourneyPassed": { "const": true }, "textAlternativePassed": { "const": true }, "screenReader": { "type": "object", "additionalProperties": false, "required": ["reader", "version"], "properties": { "reader": { "type": "string", "minLength": 1 }, "version": { "type": "string", "minLength": 1 } } } } }
   }
 }

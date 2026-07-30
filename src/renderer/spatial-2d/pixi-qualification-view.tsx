@@ -4,8 +4,7 @@ import {
   createSparseQualificationCells,
   createSparseCellIndex,
   cullIndexedCells,
-  countFacts,
-  qualificationViewport
+  countFacts
 } from './sparse-pixi-qualification.js'
 import {
   downloadRawQualificationSamples,
@@ -13,14 +12,19 @@ import {
   recordedRunCount
 } from '../spatial-3d/render-qualification-metrics.js'
 import { exerciseWebglContextLoss } from '../spatial-3d/webgl-context.js'
+import { type SpatialQualificationModel } from '../spatial-qualification-model.js'
 
 const cells = createSparseQualificationCells()
 const cellIndex = createSparseCellIndex(cells)
 
-export function PixiQualificationView(): ReactElement {
+export function PixiQualificationView({
+  model
+}: {
+  readonly model: SpatialQualificationModel
+}): ReactElement {
   const host = useRef<HTMLDivElement>(null)
   const downloadSamples = useRef<(() => void) | null>(null)
-  const [samplingReady, setSamplingReady] = useState(false)
+  const [downloadReady, setDownloadReady] = useState(false)
   const [contextCanvas, setContextCanvas] = useState<HTMLCanvasElement | null>(
     null
   )
@@ -47,14 +51,13 @@ export function PixiQualificationView(): ReactElement {
         const graphic = new Graphics()
         layer.addChild(graphic)
         application.stage.addChild(layer)
-        const viewport = { ...qualificationViewport() }
+        const viewport = { ...model.state.viewport }
         const interactionSampler = new InteractionSampler()
         downloadSamples.current = () => {
           downloadRawQualificationSamples('m1-pixi-pan-raw.json', {
             pixiPan: interactionSampler.samples
           })
         }
-        setSamplingReady(true)
         const redraw = (): void => {
           const visible = cullIndexedCells(cellIndex, viewport)
           graphic.clear()
@@ -73,23 +76,25 @@ export function PixiQualificationView(): ReactElement {
           )
         }
         redraw()
+        const unsubscribeModel = model.subscribe((state) => {
+          Object.assign(viewport, state.viewport)
+          redraw()
+        })
         const pan = (event: KeyboardEvent): void => {
           const startedAt = performance.now()
           const distance = 24
-          if (event.key === 'ArrowLeft') viewport.x -= distance
-          else if (event.key === 'ArrowRight') viewport.x += distance
-          else if (event.key === 'ArrowUp') viewport.y -= distance
-          else if (event.key === 'ArrowDown') viewport.y += distance
+          if (event.key === 'ArrowLeft') model.pan(-distance, 0)
+          else if (event.key === 'ArrowRight') model.pan(distance, 0)
+          else if (event.key === 'ArrowUp') model.pan(0, -distance)
+          else if (event.key === 'ArrowDown') model.pan(0, distance)
           else return
-          viewport.x = Math.max(0, viewport.x)
-          viewport.y = Math.max(0, viewport.y)
           event.preventDefault()
-          redraw()
           application.ticker.addOnce(() => {
             const result = interactionSampler.record(
               performance.now() - startedAt
             )
             if (result !== undefined) {
+              setDownloadReady(true)
               setStatus(
                 `2D pan p95 ${result.p95Ms.toFixed(2)} ms after ${recordedRunCount} presented frames (${result.passes ? 'passes' : 'fails'}).`
               )
@@ -119,6 +124,7 @@ export function PixiQualificationView(): ReactElement {
             'webglcontextrestored',
             contextRestored
           )
+          unsubscribeModel()
         }
       })
       .catch(() => {
@@ -130,10 +136,9 @@ export function PixiQualificationView(): ReactElement {
       setContextCanvas(null)
       detachListeners()
       downloadSamples.current = null
-      setSamplingReady(false)
       application.destroy(true, { children: true })
     }
-  }, [])
+  }, [model])
   return (
     <>
       <div
@@ -161,9 +166,9 @@ export function PixiQualificationView(): ReactElement {
       <button
         type="button"
         onClick={() => downloadSamples.current?.()}
-        disabled={!samplingReady}
+        disabled={!downloadReady}
       >
-        Download 2D raw timing samples
+        Download complete 2D raw timing samples
       </button>
     </>
   )

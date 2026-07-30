@@ -62,7 +62,7 @@ export function downloadRawQualificationSamples(
   populations: Readonly<Record<string, readonly number[]>>
 ): void {
   const artifact = {
-    status: 'pending-rp-h-measurement',
+    captureKind: 'raw-timing-source',
     recordedAt: new Date().toISOString(),
     environment: {
       userAgent: navigator.userAgent,

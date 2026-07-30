@@ -1,12 +1,18 @@
-import { useEffect, useState, type FormEvent, type ReactElement } from 'react'
 import {
-  capabilityErrorCodeSchema,
-  type CampaignSnapshot
-} from '../../shared/contracts/campaign.js'
-import { CapabilityError } from '../../shared/errors/capability-error.js'
-import type { CapabilityErrorCode } from '../../shared/contracts/campaign.js'
+  useEffect,
+  useMemo,
+  useState,
+  type FormEvent,
+  type ReactElement
+} from 'react'
+import type { CampaignSnapshot } from '../../shared/contracts/campaign.js'
 import { PixiQualificationView } from '../spatial-2d/pixi-qualification-view.js'
 import { BabylonQualificationView } from '../spatial-3d/babylon-qualification-view.js'
+import { qualificationViewport } from '../spatial-2d/sparse-pixi-qualification.js'
+import {
+  SpatialQualificationModel,
+  type SpatialQualificationState
+} from '../spatial-qualification-model.js'
 
 declare global {
   interface Window {
@@ -22,6 +28,13 @@ export function App(): ReactElement {
   const [snapshot, setSnapshot] = useState<CampaignSnapshot>(emptySnapshot)
   const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const spatialModel = useMemo(
+    () => new SpatialQualificationModel(qualificationViewport()),
+    []
+  )
+  const [spatialState, setSpatialState] = useState<SpatialQualificationState>(
+    spatialModel.state
+  )
   const readOnly = window.saltMarcher.runtime.readOnly
   const e2e = window.saltMarcher.runtime.e2e
   useEffect(() => {
@@ -30,6 +43,7 @@ export function App(): ReactElement {
       .then(setSnapshot)
       .catch((cause: unknown) => setError(readError(cause)))
   }, [])
+  useEffect(() => spatialModel.subscribe(setSpatialState), [spatialModel])
   async function createCampaign(
     event: FormEvent<HTMLFormElement>
   ): Promise<void> {
@@ -40,11 +54,6 @@ export function App(): ReactElement {
       setName('')
       setError(null)
     } catch (cause) {
-      if (errorCode(cause) === 'outcome_unknown')
-        void window.saltMarcher.campaigns
-          .list()
-          .then(setSnapshot)
-          .catch(setError)
       setError(readError(cause))
     }
   }
@@ -125,23 +134,27 @@ export function App(): ReactElement {
           <div className="qualification-grid">
             <div>
               <h3>2D sparse map</h3>
-              <PixiQualificationView />
+              <PixiQualificationView model={spatialModel} />
             </div>
             <div>
               <h3>3D dungeon</h3>
-              <BabylonQualificationView />
+              <BabylonQualificationView model={spatialModel} />
             </div>
           </div>
-          <SpatialTextAlternative />
+          <SpatialTextAlternative model={spatialModel} state={spatialState} />
         </section>
       ) : null}
     </main>
   )
 }
 
-function SpatialTextAlternative(): ReactElement {
-  const [position, setPosition] = useState('initial viewport')
-  const [chunk, setChunk] = useState('no chunk selected')
+function SpatialTextAlternative({
+  model,
+  state
+}: {
+  readonly model: SpatialQualificationModel
+  readonly state: SpatialQualificationState
+}): ReactElement {
   return (
     <section aria-labelledby="spatial-text-alternative-heading">
       <h3 id="spatial-text-alternative-heading">
@@ -152,58 +165,43 @@ function SpatialTextAlternative(): ReactElement {
         spatial selection information without requiring WebGL.
       </p>
       <p>
-        2D position: <output>{position}</output>. The fixture contains 100,000
-        sparse cells and 8,192 initially visible facts.
+        2D position:{' '}
+        <output>{`${state.viewport.x}, ${state.viewport.y}`}</output>. The
+        fixture contains 100,000 sparse cells and 8,192 initially visible facts.
       </p>
       <div className="inline-form" aria-label="Move the 2D text alternative">
-        <button type="button" onClick={() => setPosition('west viewport')}>
+        <button type="button" onClick={() => model.pan(-24, 0)}>
           Move west
         </button>
-        <button type="button" onClick={() => setPosition('east viewport')}>
+        <button type="button" onClick={() => model.pan(24, 0)}>
           Move east
         </button>
       </div>
       <p>
-        3D selection: <output>{chunk}</output>. The dungeon fixture includes a
-        remeshable 32 × 32 × 16 voxel chunk and 25 pickable surrounding chunks.
+        3D selection:{' '}
+        <output>{state.selectedChunk ?? 'no chunk selected'}</output>. The
+        dungeon fixture includes a remeshable 32 × 32 × 16 voxel chunk and 25
+        pickable surrounding chunks.
       </p>
       <div className="inline-form" aria-label="Select a dungeon chunk">
-        <button type="button" onClick={() => setChunk('northwest chunk')}>
+        <button type="button" onClick={() => model.select('chunk--2--2')}>
           Select northwest chunk
         </button>
-        <button type="button" onClick={() => setChunk('southeast chunk')}>
+        <button type="button" onClick={() => model.select('chunk-2-2')}>
           Select southeast chunk
         </button>
       </div>
       <p aria-live="polite" className="sr-only">
-        Text alternative updated: {position}; {chunk}.
+        Text alternative updated: {state.viewport.x}, {state.viewport.y};{' '}
+        {state.selectedChunk ?? 'no chunk selected'}.
       </p>
     </section>
   )
 }
 function readError(cause: unknown): string {
-  const code = errorCode(cause)
-  const messages: Record<CapabilityErrorCode, string> = {
-    validation_failed: 'Die Eingabe ist nicht gültig.',
-    not_found: 'Diese Campaign ist nicht mehr verfügbar.',
-    read_only: 'Dieses Fenster darf Campaigns nicht ändern.',
-    timeout: 'Die Anfrage hat zu lange gedauert. Sie kann wiederholt werden.',
-    outcome_unknown:
-      'Es ist unklar, ob die Campaign erstellt wurde. Die Liste wird neu geladen.',
-    core_unavailable: 'Der lokale Programmkern ist nicht erreichbar.',
-    protocol_violation:
-      'Die interne Verbindung wurde aus Sicherheitsgründen beendet.',
-    internal: 'Die angeforderte Operation konnte nicht abgeschlossen werden.'
-  }
-  return code === undefined
-    ? 'Die angeforderte Operation konnte nicht abgeschlossen werden.'
-    : messages[code]
-}
-
-function errorCode(cause: unknown): CapabilityErrorCode | undefined {
-  if (!(cause instanceof CapabilityError)) return undefined
-  const parsed = capabilityErrorCodeSchema.safeParse(cause.code)
-  return parsed.success ? parsed.data : undefined
+  return cause instanceof Error
+    ? cause.message
+    : 'The requested operation could not be completed.'
 }
 
 function hasCampaignWriteCapability(
