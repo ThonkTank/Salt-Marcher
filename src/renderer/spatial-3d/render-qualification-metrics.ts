@@ -10,6 +10,58 @@ export interface QualificationResult {
   readonly passes: boolean
 }
 
+export interface FrameMeasurement {
+  readonly frameWorkMs: number
+  readonly inputToPresentationMs: number
+}
+
+/**
+ * Accepts exactly one DOM interaction until its next completed render. Keeping
+ * the input and renderer boundaries separate prevents VSync wait from being
+ * confused with frame work.
+ */
+export class FrameMeasurementTracker {
+  #inputAt: number | undefined
+  #frameStartedAt: number | undefined
+  #armed = false
+
+  public begin(inputAt = performance.now()): boolean {
+    if (this.#inputAt !== undefined) return false
+    this.#inputAt = inputAt
+    return true
+  }
+
+  public arm(): void {
+    if (this.#inputAt !== undefined) this.#armed = true
+  }
+
+  public cancel(): void {
+    this.#inputAt = undefined
+    this.#frameStartedAt = undefined
+    this.#armed = false
+  }
+
+  public beforeRender(frameStartedAt = performance.now()): void {
+    if (this.#armed && this.#frameStartedAt === undefined)
+      this.#frameStartedAt = frameStartedAt
+  }
+
+  public afterRender(
+    presentedAt = performance.now()
+  ): FrameMeasurement | undefined {
+    if (this.#inputAt === undefined || this.#frameStartedAt === undefined)
+      return undefined
+    const measurement = {
+      frameWorkMs: presentedAt - this.#frameStartedAt,
+      inputToPresentationMs: presentedAt - this.#inputAt
+    }
+    this.#inputAt = undefined
+    this.#frameStartedAt = undefined
+    this.#armed = false
+    return measurement
+  }
+}
+
 export function p95(samples: readonly number[]): number {
   if (samples.length === 0) throw new Error('At least one sample is required')
   const ordered = [...samples].sort((left, right) => left - right)

@@ -8,10 +8,14 @@ import {
 } from './sparse-pixi-qualification.js'
 import {
   downloadRawQualificationSamples,
+  FrameMeasurementTracker,
   InteractionSampler,
   recordedRunCount
 } from '../spatial-3d/render-qualification-metrics.js'
-import { exerciseWebglContextLoss } from '../spatial-3d/webgl-context.js'
+import {
+  exerciseWebglContextLoss,
+  webgl2Description
+} from '../spatial-3d/webgl-context.js'
 import { type SpatialQualificationModel } from '../spatial-qualification-model.js'
 
 const cells = createSparseQualificationCells()
@@ -40,12 +44,21 @@ export function PixiQualificationView({
         width: 640,
         height: 360,
         background: '#0c1513',
-        antialias: false
+        antialias: false,
+        preference: 'webgl'
       })
       .then(() => {
         if (disposed) return
         element.append(application.canvas)
         setContextCanvas(application.canvas)
+        const backend = webgl2Description(application.canvas)
+        if (backend === undefined) {
+          setStatus(
+            '2D qualification requires WebGL 2; this device is unavailable.'
+          )
+          application.destroy(true, { children: true })
+          return
+        }
         const layer = new Container()
         layer.scale.set(0.4)
         const graphic = new Graphics()
@@ -53,11 +66,30 @@ export function PixiQualificationView({
         application.stage.addChild(layer)
         const viewport = { ...model.state.viewport }
         const interactionSampler = new InteractionSampler()
+        const inputToPresentation: number[] = []
+        const frameTracker = new FrameMeasurementTracker()
         downloadSamples.current = () => {
           downloadRawQualificationSamples('m1-pixi-pan-raw.json', {
-            pixiPan: interactionSampler.samples
+            pixiPanFrameWork: interactionSampler.samples,
+            pixiPanInputToPresentation: inputToPresentation
           })
         }
+        const postrenderListener = {
+          postrender: () => {
+            const timing = frameTracker.afterRender()
+            if (timing === undefined) return
+            if (inputToPresentation.length < recordedRunCount)
+              inputToPresentation.push(timing.inputToPresentationMs)
+            const result = interactionSampler.record(timing.frameWorkMs)
+            if (result !== undefined) {
+              setDownloadReady(true)
+              setStatus(
+                `2D pan frame-work p95 ${result.p95Ms.toFixed(2)} ms after ${recordedRunCount} samples.`
+              )
+            }
+          }
+        }
+        application.renderer.runners.postrender.add(postrenderListener)
         const redraw = (): void => {
           const visible = cullIndexedCells(cellIndex, viewport)
           graphic.clear()
@@ -83,22 +115,19 @@ export function PixiQualificationView({
         const pan = (event: KeyboardEvent): void => {
           const startedAt = performance.now()
           const distance = 24
-          if (event.key === 'ArrowLeft') model.pan(-distance, 0)
-          else if (event.key === 'ArrowRight') model.pan(distance, 0)
-          else if (event.key === 'ArrowUp') model.pan(0, -distance)
-          else if (event.key === 'ArrowDown') model.pan(0, distance)
+          let deltaX = 0
+          let deltaY = 0
+          if (event.key === 'ArrowLeft') deltaX = -distance
+          else if (event.key === 'ArrowRight') deltaX = distance
+          else if (event.key === 'ArrowUp') deltaY = -distance
+          else if (event.key === 'ArrowDown') deltaY = distance
           else return
           event.preventDefault()
+          if (!frameTracker.begin(startedAt)) return
+          model.pan(deltaX, deltaY)
           application.ticker.addOnce(() => {
-            const result = interactionSampler.record(
-              performance.now() - startedAt
-            )
-            if (result !== undefined) {
-              setDownloadReady(true)
-              setStatus(
-                `2D pan p95 ${result.p95Ms.toFixed(2)} ms after ${recordedRunCount} presented frames (${result.passes ? 'passes' : 'fails'}).`
-              )
-            }
+            frameTracker.arm()
+            frameTracker.beforeRender()
           })
         }
         const contextLost = (event: Event): void => {
@@ -125,6 +154,7 @@ export function PixiQualificationView({
             contextRestored
           )
           unsubscribeModel()
+          application.renderer.runners.postrender.remove(postrenderListener)
         }
       })
       .catch(() => {

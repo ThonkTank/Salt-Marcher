@@ -25,4 +25,19 @@ describe('WebGL context-loss exercise', () => {
     } as unknown as HTMLCanvasElement
     expect(exerciseWebglContextLoss(canvas)).toBe(false)
   })
+
+  it('does not accept WebGL 1 as the WebGL 2 qualification baseline', () => {
+    const canvas = {
+      getContext: (kind: string) =>
+        kind === 'webgl2'
+          ? null
+          : {
+              getExtension: () => ({
+                loseContext: vi.fn(),
+                restoreContext: vi.fn()
+              })
+            }
+    } as unknown as HTMLCanvasElement
+    expect(exerciseWebglContextLoss(canvas)).toBe(false)
+  })
 })

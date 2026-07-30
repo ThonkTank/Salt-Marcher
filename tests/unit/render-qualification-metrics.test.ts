@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   cameraAndHoverBudgetMs,
+  FrameMeasurementTracker,
   InteractionSampler,
   localPreviewBudgetMs,
   p95,
@@ -34,5 +35,17 @@ describe('render qualification metrics', () => {
       expect(sampler.record(1)).toBeUndefined()
     }
     expect(sampler.record(1)).toMatchObject({ sampleCount: recordedRunCount })
+  })
+
+  it('accepts one interaction and separates frame work from input latency', () => {
+    const tracker = new FrameMeasurementTracker()
+    expect(tracker.begin(10)).toBe(true)
+    expect(tracker.begin(11)).toBe(false)
+    tracker.arm()
+    tracker.beforeRender(20)
+    expect(tracker.afterRender(25)).toEqual({
+      frameWorkMs: 5,
+      inputToPresentationMs: 15
+    })
   })
 })

@@ -11,6 +11,7 @@ import { Scene } from '@babylonjs/core/scene.js'
 import { useEffect, useRef, useState, type ReactElement } from 'react'
 import {
   downloadRawQualificationSamples,
+  FrameMeasurementTracker,
   InteractionSampler,
   localPreviewBudgetMs,
   recordedRunCount
@@ -21,7 +22,7 @@ import {
   togglePreviewVoxel,
   type VoxelChunk
 } from './voxel-chunk.js'
-import { exerciseWebglContextLoss } from './webgl-context.js'
+import { exerciseWebglContextLoss, webgl2Description } from './webgl-context.js'
 import { type SpatialQualificationModel } from '../spatial-qualification-model.js'
 
 /** M1 continuous dungeon prototype: chunk meshes, camera, hover/picking and selection. */
@@ -51,6 +52,13 @@ export function BabylonQualificationView({
         preserveDrawingBuffer: false,
         stencil: false
       })
+      if (webgl2Description(element) === undefined) {
+        engine.dispose()
+        setStatus(
+          '3D qualification requires WebGL 2; this device is unavailable.'
+        )
+        return
+      }
       const scene = new Scene(engine)
       scene.clearColor = new Color4(0.047, 0.082, 0.075, 1)
       const camera = new ArcRotateCamera(
@@ -81,11 +89,20 @@ export function BabylonQualificationView({
       const previewSampler = new InteractionSampler(localPreviewBudgetMs)
       const cameraSampler = new InteractionSampler()
       const hoverSampler = new InteractionSampler()
+      const previewTracker = new FrameMeasurementTracker()
+      const cameraTracker = new FrameMeasurementTracker()
+      const hoverTracker = new FrameMeasurementTracker()
+      const cameraInputToPresentation: number[] = []
+      const hoverInputToPresentation: number[] = []
+      const previewInputToPresentation: number[] = []
       downloadSamples.current = () => {
         downloadRawQualificationSamples('m1-babylon-raw.json', {
           babylonCamera: cameraSampler.samples,
           babylonHoverPick: hoverSampler.samples,
-          babylonVoxelPreview: previewSampler.samples
+          babylonVoxelPreview: previewSampler.samples,
+          babylonCameraInputToPresentation: cameraInputToPresentation,
+          babylonHoverPickInputToPresentation: hoverInputToPresentation,
+          babylonVoxelPreviewInputToPresentation: previewInputToPresentation
         })
       }
       let previewVoxels = createQualificationVoxelChunk()
@@ -98,44 +115,75 @@ export function BabylonQualificationView({
             chunk.name === state.selectedChunk ||
             chunk.name === state.hoveredChunk
       })
-      const recordAfterFrame = (
+      const collect = (
+        tracker: FrameMeasurementTracker,
         sampler: InteractionSampler,
-        startedAt: number,
+        diagnostics: number[],
         label: string
       ): void => {
-        scene.onAfterRenderObservable.addOnce(() => {
-          const result = sampler.record(performance.now() - startedAt)
-          if (
-            cameraSampler.recordedSamples === recordedRunCount &&
-            hoverSampler.recordedSamples === recordedRunCount &&
-            previewSampler.recordedSamples === recordedRunCount
+        const timing = tracker.afterRender()
+        if (timing === undefined) return
+        if (diagnostics.length < recordedRunCount)
+          diagnostics.push(timing.inputToPresentationMs)
+        const result = sampler.record(timing.frameWorkMs)
+        if (result !== undefined)
+          setStatus(
+            `${label} frame-work p95 ${result.p95Ms.toFixed(2)} ms after ${recordedRunCount} samples.`
           )
-            setDownloadReady(true)
-          if (result !== undefined)
-            setStatus(
-              `${label} p95 ${result.p95Ms.toFixed(2)} ms after ${recordedRunCount} presented frames (${result.passes ? 'passes' : 'fails'}).`
-            )
-        })
       }
+      scene.onBeforeRenderObservable.add(() => {
+        cameraTracker.beforeRender()
+        hoverTracker.beforeRender()
+        previewTracker.beforeRender()
+      })
+      scene.onAfterRenderObservable.add(() => {
+        collect(
+          cameraTracker,
+          cameraSampler,
+          cameraInputToPresentation,
+          '3D camera'
+        )
+        collect(
+          hoverTracker,
+          hoverSampler,
+          hoverInputToPresentation,
+          '3D hover/pick'
+        )
+        collect(
+          previewTracker,
+          previewSampler,
+          previewInputToPresentation,
+          'Local voxel preview'
+        )
+        if (
+          cameraSampler.recordedSamples === recordedRunCount &&
+          hoverSampler.recordedSamples === recordedRunCount &&
+          previewSampler.recordedSamples === recordedRunCount
+        )
+          setDownloadReady(true)
+      })
       const rebuildPreview = (): void => {
         if (selectedName === undefined) {
+          previewTracker.cancel()
           setStatus('Select a chunk before requesting a local preview.')
           return
         }
         const selected = chunks.get(selectedName)
-        if (selected === undefined) return
-        const startedAt = performance.now()
+        if (selected === undefined) {
+          previewTracker.cancel()
+          return
+        }
         previewVoxels = togglePreviewVoxel(previewVoxels)
         preview.dispose()
         preview = createVoxelMesh(scene, previewVoxels)
         preview.position.set(-16, 0, -16)
-        recordAfterFrame(previewSampler, startedAt, 'Local voxel preview')
+        previewTracker.arm()
         setStatus(
           `Local 32 × 32 × 16 voxel preview remeshed (${previewSampler.recordedSamples}/${recordedRunCount} recorded samples).`
         )
       }
       camera.onViewMatrixChangedObservable.add(() => {
-        recordAfterFrame(cameraSampler, performance.now(), '3D camera')
+        cameraTracker.arm()
       })
       scene.onPointerObservable.add((event) => {
         const pickedMesh = event.pickInfo?.pickedMesh
@@ -147,7 +195,7 @@ export function BabylonQualificationView({
           if (hoveredName !== pickedMesh.name) {
             hoveredName = pickedMesh.name
             model.hover(pickedMesh.name)
-            recordAfterFrame(hoverSampler, performance.now(), '3D hover/pick')
+            hoverTracker.arm()
             setStatus(`Hovering ${pickedMesh.name}.`)
           }
         }
@@ -163,9 +211,18 @@ export function BabylonQualificationView({
       const previewWithKeyboard = (event: KeyboardEvent): void => {
         if (event.key !== 'p' && event.key !== 'P') return
         event.preventDefault()
+        if (!previewTracker.begin()) return
         rebuildPreview()
       }
       element.addEventListener('keydown', previewWithKeyboard)
+      const beginCameraMeasurement = (): void => {
+        cameraTracker.begin()
+      }
+      const beginHoverMeasurement = (): void => {
+        hoverTracker.begin()
+      }
+      element.addEventListener('pointerdown', beginCameraMeasurement, true)
+      element.addEventListener('pointermove', beginHoverMeasurement, true)
       engine.onContextLostObservable.add(() => {
         setStatus('3D graphics context lost; waiting for restoration.')
       })
@@ -178,6 +235,8 @@ export function BabylonQualificationView({
       return () => {
         window.removeEventListener('resize', resize)
         element.removeEventListener('keydown', previewWithKeyboard)
+        element.removeEventListener('pointerdown', beginCameraMeasurement, true)
+        element.removeEventListener('pointermove', beginHoverMeasurement, true)
         downloadSamples.current = null
         unsubscribeModel()
         scene.dispose()
