@@ -15,6 +15,19 @@ with a derived p95. Then validate the completed artifact:
 pnpm qualify:render:validate docs/project/evidence/<dated-file>.json
 ```
 
+Before the render run, create the structured calibration record with:
+
+```
+pnpm qualify:rp-h --output .tmp/rp-h-calibration.json --power-mode <mode> --dedicated-gpu false --server-class-hardware false --filesystem <name> --storage-device <name> --cache-state <state>
+```
+
+The command records the specified CPU streams, the 64 MiB sequential and 4 KiB
+storage populations, its implementation revision, and a calculated RP-H
+verdict. Copy the complete record into `environment.calibration`; the two
+hardware-class flags require operator confirmation because they cannot be
+determined portably. A failed calibration is valid only in a `status: "fail"`
+render evidence record.
+
 M1 covers one RP-H reference machine at normal display and 200% scaling. The
 M6 cross-platform accessibility matrix owns the broader OS, mixed-DPI, and
 monitor-change coverage.

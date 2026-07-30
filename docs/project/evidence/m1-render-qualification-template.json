@@ -2,24 +2,23 @@
   "$comment": "Copy this worksheet to a dated file and replace every placeholder. It intentionally fails validation until the complete M1 measurement is recorded.",
   "status": "fail",
   "commit": null,
-  "fixtureVersion": "m1-render-qualification-v2",
+  "fixtureVersion": "m1-render-qualification-v3",
   "packageSha256": null,
   "recordedAt": null,
   "environment": {
     "operatingSystem": null,
     "architecture": null,
     "electronVersion": null,
-    "cpuCalibration": null,
-    "storageMeasurement": null,
+    "calibration": null,
     "powerMode": null,
     "freeSpaceGiB": null,
     "displayWidth": 1366,
     "displayHeight": 768,
-    "renderingBackend": "webgl2",
+    "renderingBackend": null,
     "webglVersion": null,
     "gpuModel": null,
     "gpuDriver": null,
-    "softwareRendering": false
+    "softwareRendering": null
   },
   "populations": {
     "normal": {
