@@ -36,7 +36,17 @@ const api: SaltMarcherApi = {
     : campaigns,
   runtime: Object.freeze({
     readOnly: process.argv.includes('--salt-marcher-read-only'),
-    e2e: process.argv.includes('--salt-marcher-e2e')
+    e2e: process.argv.includes('--salt-marcher-e2e'),
+    async processMemoryBytes() {
+      const value: unknown = await ipcRenderer.invoke('runtime:memory')
+      if (
+        typeof value !== 'number' ||
+        !Number.isSafeInteger(value) ||
+        value < 0
+      )
+        throw new Error('Invalid runtime memory response')
+      return value
+    }
   })
 }
 

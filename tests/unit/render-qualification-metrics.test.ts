@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   cameraAndHoverBudgetMs,
+  FrameMeasurementTracker,
+  hasCompleteQualificationPopulations,
   InteractionSampler,
   localPreviewBudgetMs,
   p95,
@@ -34,5 +36,36 @@ describe('render qualification metrics', () => {
       expect(sampler.record(1)).toBeUndefined()
     }
     expect(sampler.record(1)).toMatchObject({ sampleCount: recordedRunCount })
+  })
+
+  it('counts interaction preparation and rendering but excludes VSync wait', () => {
+    const tracker = new FrameMeasurementTracker()
+    expect(tracker.begin(10)).toBe(true)
+    expect(tracker.begin(11)).toBe(false)
+    tracker.arm(18)
+    tracker.beforeRender(20)
+    expect(tracker.afterRender(25)).toEqual({
+      frameWorkMs: 13,
+      inputToPresentationMs: 15
+    })
+  })
+
+  it('only enables combined export after every named population has 100 samples', () => {
+    const samples = Array.from({ length: recordedRunCount }, () => 1)
+    expect(
+      hasCompleteQualificationPopulations({
+        pixiPan: samples,
+        babylonCamera: samples,
+        babylonHoverPick: samples
+      })
+    ).toBe(false)
+    expect(
+      hasCompleteQualificationPopulations({
+        pixiPan: samples,
+        babylonCamera: samples,
+        babylonHoverPick: samples,
+        babylonVoxelPreview: samples
+      })
+    ).toBe(true)
   })
 })
