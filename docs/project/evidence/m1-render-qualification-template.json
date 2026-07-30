@@ -1,0 +1,32 @@
+{
+  "$schema": "./m1-render-qualification.schema.json",
+  "status": "pending-rp-h-measurement",
+  "recordedAt": null,
+  "environment": {
+    "operatingSystem": null,
+    "architecture": null,
+    "electronVersion": null,
+    "cpuCalibration": null,
+    "storageMeasurement": null,
+    "powerMode": null,
+    "freeSpaceGiB": null,
+    "displayScalePercent": null,
+    "gpuModel": null,
+    "gpuDriver": null
+  },
+  "populations": {
+    "pixiPan": [],
+    "babylonCamera": [],
+    "babylonHoverPick": [],
+    "babylonVoxelPreview": []
+  },
+  "contextLoss": {
+    "pixi": null,
+    "babylon": null
+  },
+  "accessibility": {
+    "scale200Percent": null,
+    "textAlternative": null,
+    "screenReader": null
+  }
+}

@@ -132,19 +132,53 @@ export function App(): ReactElement {
               <BabylonQualificationView />
             </div>
           </div>
-          <details>
-            <summary>Text alternative for the spatial qualification</summary>
-            <p>
-              The 2D fixture contains 100,000 sparse cells, including 8,192
-              initially visible facts. Arrow keys dynamically recull the 2D
-              view. The 3D fixture contains 25 pickable dungeon chunks; drag to
-              orbit, click a chunk to select it, and press P to rebuild its
-              local preview. Both views announce graphics-context recovery.
-            </p>
-          </details>
+          <SpatialTextAlternative />
         </section>
       ) : null}
     </main>
+  )
+}
+
+function SpatialTextAlternative(): ReactElement {
+  const [position, setPosition] = useState('initial viewport')
+  const [chunk, setChunk] = useState('no chunk selected')
+  return (
+    <section aria-labelledby="spatial-text-alternative-heading">
+      <h3 id="spatial-text-alternative-heading">
+        Text alternative for the spatial qualification
+      </h3>
+      <p>
+        This keyboard-operable alternative exposes the same fixture scale and
+        spatial selection information without requiring WebGL.
+      </p>
+      <p>
+        2D position: <output>{position}</output>. The fixture contains 100,000
+        sparse cells and 8,192 initially visible facts.
+      </p>
+      <div className="inline-form" aria-label="Move the 2D text alternative">
+        <button type="button" onClick={() => setPosition('west viewport')}>
+          Move west
+        </button>
+        <button type="button" onClick={() => setPosition('east viewport')}>
+          Move east
+        </button>
+      </div>
+      <p>
+        3D selection: <output>{chunk}</output>. The dungeon fixture includes a
+        remeshable 32 × 32 × 16 voxel chunk and 25 pickable surrounding chunks.
+      </p>
+      <div className="inline-form" aria-label="Select a dungeon chunk">
+        <button type="button" onClick={() => setChunk('northwest chunk')}>
+          Select northwest chunk
+        </button>
+        <button type="button" onClick={() => setChunk('southeast chunk')}>
+          Select southeast chunk
+        </button>
+      </div>
+      <p aria-live="polite" className="sr-only">
+        Text alternative updated: {position}; {chunk}.
+      </p>
+    </section>
   )
 }
 function readError(cause: unknown): string {

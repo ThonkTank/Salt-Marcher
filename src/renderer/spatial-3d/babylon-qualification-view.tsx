@@ -5,6 +5,8 @@ import { HemisphericLight } from '@babylonjs/core/Lights/hemisphericLight.js'
 import { Color4 } from '@babylonjs/core/Maths/math.color.js'
 import { Vector3 } from '@babylonjs/core/Maths/math.vector.js'
 import { CreateBox } from '@babylonjs/core/Meshes/Builders/boxBuilder.js'
+import { Mesh } from '@babylonjs/core/Meshes/mesh.js'
+import { VertexData } from '@babylonjs/core/Meshes/mesh.vertexData.js'
 import { Scene } from '@babylonjs/core/scene.js'
 import { useEffect, useRef, useState, type ReactElement } from 'react'
 import {
@@ -12,10 +14,24 @@ import {
   localPreviewBudgetMs,
   recordedRunCount
 } from './render-qualification-metrics.js'
+import {
+  createQualificationVoxelChunk,
+  meshVoxelChunk,
+  togglePreviewVoxel,
+  type VoxelChunk
+} from './voxel-chunk.js'
+import { exerciseWebglContextLoss } from './webgl-context.js'
 
 /** M1 continuous dungeon prototype: chunk meshes, camera, hover/picking and selection. */
 export function BabylonQualificationView(): ReactElement {
   const canvas = useRef<HTMLCanvasElement>(null)
+  const exerciseContextLoss = (): void => {
+    const element = canvas.current
+    if (element === null || !exerciseWebglContextLoss(element))
+      setStatus(
+        'This browser does not expose the WebGL context-loss test extension.'
+      )
+  }
   const [status, setStatus] = useState(
     '3D qualification view ready. Drag to orbit; click a chunk to select.'
   )
@@ -55,6 +71,24 @@ export function BabylonQualificationView(): ReactElement {
       let hoveredName: string | undefined
       let selectedName: string | undefined
       const previewSampler = new InteractionSampler(localPreviewBudgetMs)
+      const cameraSampler = new InteractionSampler()
+      const hoverSampler = new InteractionSampler()
+      let previewVoxels = createQualificationVoxelChunk()
+      let preview = createVoxelMesh(scene, previewVoxels)
+      preview.position.set(-16, 0, -16)
+      const recordAfterFrame = (
+        sampler: InteractionSampler,
+        startedAt: number,
+        label: string
+      ): void => {
+        scene.onAfterRenderObservable.addOnce(() => {
+          const result = sampler.record(performance.now() - startedAt)
+          if (result !== undefined)
+            setStatus(
+              `${label} p95 ${result.p95Ms.toFixed(2)} ms after ${recordedRunCount} presented frames (${result.passes ? 'passes' : 'fails'}).`
+            )
+        })
+      }
       const rebuildPreview = (): void => {
         if (selectedName === undefined) {
           setStatus('Select a chunk before requesting a local preview.')
@@ -63,23 +97,18 @@ export function BabylonQualificationView(): ReactElement {
         const selected = chunks.get(selectedName)
         if (selected === undefined) return
         const startedAt = performance.now()
-        const position = selected.position.clone()
-        selected.dispose()
-        const preview = CreateBox(
-          selectedName,
-          { width: 3.8, height: 1.2, depth: 3.8 },
-          scene
-        )
-        preview.position.copyFrom(position)
-        preview.isPickable = true
-        chunks.set(selectedName, preview)
-        const result = previewSampler.record(performance.now() - startedAt)
+        previewVoxels = togglePreviewVoxel(previewVoxels)
+        preview.dispose()
+        preview = createVoxelMesh(scene, previewVoxels)
+        preview.position.set(-16, 0, -16)
+        recordAfterFrame(previewSampler, startedAt, 'Local voxel preview')
         setStatus(
-          result === undefined
-            ? `Local preview rebuilt (${previewSampler.recordedSamples}/${recordedRunCount} recorded samples).`
-            : `Local preview p95 ${result.p95Ms.toFixed(2)} ms after ${recordedRunCount} samples (${result.passes ? 'passes' : 'fails'}).`
+          `Local 32 × 32 × 16 voxel preview remeshed (${previewSampler.recordedSamples}/${recordedRunCount} recorded samples).`
         )
       }
+      camera.onViewMatrixChangedObservable.add(() => {
+        recordAfterFrame(cameraSampler, performance.now(), '3D camera')
+      })
       scene.onPointerObservable.add((event) => {
         const pickedMesh = event.pickInfo?.pickedMesh
         if (
@@ -90,6 +119,7 @@ export function BabylonQualificationView(): ReactElement {
           if (hoveredName !== pickedMesh.name) {
             hoveredName = pickedMesh.name
             pickedMesh.showBoundingBox = true
+            recordAfterFrame(hoverSampler, performance.now(), '3D hover/pick')
             setStatus(`Hovering ${pickedMesh.name}.`)
           }
         }
@@ -139,7 +169,22 @@ export function BabylonQualificationView(): ReactElement {
         aria-label="3D dungeon qualification view"
       />
       <p>Press P after selecting a chunk to rebuild its local preview.</p>
+      <button type="button" onClick={exerciseContextLoss}>
+        Exercise 3D WebGL context loss and restoration
+      </button>
       <p aria-live="polite">{status}</p>
     </>
   )
+}
+
+function createVoxelMesh(scene: Scene, voxels: VoxelChunk): Mesh {
+  const mesh = new Mesh('voxel-preview', scene)
+  const geometry = meshVoxelChunk(voxels)
+  const vertexData = new VertexData()
+  vertexData.positions = [...geometry.positions]
+  vertexData.indices = [...geometry.indices]
+  vertexData.normals = [...geometry.normals]
+  vertexData.applyToMesh(mesh)
+  mesh.isPickable = false
+  return mesh
 }

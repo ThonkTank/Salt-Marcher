@@ -2,7 +2,8 @@ import { Application, Container, Graphics } from 'pixi.js'
 import { useEffect, useRef, useState, type ReactElement } from 'react'
 import {
   createSparseQualificationCells,
-  cullCells,
+  createSparseCellIndex,
+  cullIndexedCells,
   countFacts,
   qualificationViewport
 } from './sparse-pixi-qualification.js'
@@ -10,11 +11,16 @@ import {
   InteractionSampler,
   recordedRunCount
 } from '../spatial-3d/render-qualification-metrics.js'
+import { exerciseWebglContextLoss } from '../spatial-3d/webgl-context.js'
 
 const cells = createSparseQualificationCells()
+const cellIndex = createSparseCellIndex(cells)
 
 export function PixiQualificationView(): ReactElement {
   const host = useRef<HTMLDivElement>(null)
+  const [contextCanvas, setContextCanvas] = useState<HTMLCanvasElement | null>(
+    null
+  )
   const [status, setStatus] = useState('Preparing 2D qualification view.')
   useEffect(() => {
     const element = host.current
@@ -32,6 +38,7 @@ export function PixiQualificationView(): ReactElement {
       .then(() => {
         if (disposed) return
         element.append(application.canvas)
+        setContextCanvas(application.canvas)
         const layer = new Container()
         layer.scale.set(0.4)
         const graphic = new Graphics()
@@ -40,7 +47,7 @@ export function PixiQualificationView(): ReactElement {
         const viewport = { ...qualificationViewport() }
         const interactionSampler = new InteractionSampler()
         const redraw = (): void => {
-          const visible = cullCells(cells, viewport)
+          const visible = cullIndexedCells(cellIndex, viewport)
           graphic.clear()
           for (const cell of visible) {
             graphic.rect(cell.x - viewport.x, cell.y - viewport.y, 2, 2)
@@ -69,14 +76,16 @@ export function PixiQualificationView(): ReactElement {
           viewport.y = Math.max(0, viewport.y)
           event.preventDefault()
           redraw()
-          const result = interactionSampler.record(
-            performance.now() - startedAt
-          )
-          if (result !== undefined) {
-            setStatus(
-              `2D pan p95 ${result.p95Ms.toFixed(2)} ms after ${recordedRunCount} samples (${result.passes ? 'passes' : 'fails'}).`
+          application.ticker.addOnce(() => {
+            const result = interactionSampler.record(
+              performance.now() - startedAt
             )
-          }
+            if (result !== undefined) {
+              setStatus(
+                `2D pan p95 ${result.p95Ms.toFixed(2)} ms after ${recordedRunCount} presented frames (${result.passes ? 'passes' : 'fails'}).`
+              )
+            }
+          })
         }
         const contextLost = (event: Event): void => {
           event.preventDefault()
@@ -109,6 +118,7 @@ export function PixiQualificationView(): ReactElement {
       })
     return () => {
       disposed = true
+      setContextCanvas(null)
       detachListeners()
       application.destroy(true, { children: true })
     }
@@ -123,6 +133,20 @@ export function PixiQualificationView(): ReactElement {
         aria-label="2D sparse-map qualification view"
       />
       <p aria-live="polite">{status}</p>
+      <button
+        type="button"
+        onClick={() => {
+          if (
+            contextCanvas === null ||
+            !exerciseWebglContextLoss(contextCanvas)
+          )
+            setStatus(
+              'This browser does not expose the WebGL context-loss test extension.'
+            )
+        }}
+      >
+        Exercise 2D WebGL context loss and restoration
+      </button>
     </>
   )
 }

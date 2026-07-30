@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SaltMarcher M1 render qualification evidence",
+  "type": "object",
+  "required": ["status", "environment", "populations", "contextLoss", "accessibility"],
+  "properties": {
+    "status": { "enum": ["pending-rp-h-measurement", "pass", "fail"] },
+    "recordedAt": { "type": ["string", "null"], "format": "date-time" },
+    "environment": { "type": "object" },
+    "populations": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "array",
+        "items": { "type": "number", "minimum": 0 },
+        "minItems": 0,
+        "maxItems": 100
+      }
+    },
+    "contextLoss": { "type": "object" },
+    "accessibility": { "type": "object" }
+  }
+}
