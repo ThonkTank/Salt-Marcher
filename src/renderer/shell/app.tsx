@@ -1,5 +1,10 @@
 import { useEffect, useState, type FormEvent, type ReactElement } from 'react'
-import type { CampaignSnapshot } from '../../shared/contracts/campaign.js'
+import {
+  capabilityErrorCodeSchema,
+  type CampaignSnapshot
+} from '../../shared/contracts/campaign.js'
+import { CapabilityError } from '../../shared/errors/capability-error.js'
+import type { CapabilityErrorCode } from '../../shared/contracts/campaign.js'
 import { PixiQualificationView } from '../spatial-2d/pixi-qualification-view.js'
 import { BabylonQualificationView } from '../spatial-3d/babylon-qualification-view.js'
 
@@ -35,6 +40,11 @@ export function App(): ReactElement {
       setName('')
       setError(null)
     } catch (cause) {
+      if (errorCode(cause) === 'outcome_unknown')
+        void window.saltMarcher.campaigns
+          .list()
+          .then(setSnapshot)
+          .catch(setError)
       setError(readError(cause))
     }
   }
@@ -138,9 +148,28 @@ export function App(): ReactElement {
   )
 }
 function readError(cause: unknown): string {
-  return cause instanceof Error
-    ? cause.message
-    : 'The requested operation could not be completed.'
+  const code = errorCode(cause)
+  const messages: Record<CapabilityErrorCode, string> = {
+    validation_failed: 'Die Eingabe ist nicht gültig.',
+    not_found: 'Diese Campaign ist nicht mehr verfügbar.',
+    read_only: 'Dieses Fenster darf Campaigns nicht ändern.',
+    timeout: 'Die Anfrage hat zu lange gedauert. Sie kann wiederholt werden.',
+    outcome_unknown:
+      'Es ist unklar, ob die Campaign erstellt wurde. Die Liste wird neu geladen.',
+    core_unavailable: 'Der lokale Programmkern ist nicht erreichbar.',
+    protocol_violation:
+      'Die interne Verbindung wurde aus Sicherheitsgründen beendet.',
+    internal: 'Die angeforderte Operation konnte nicht abgeschlossen werden.'
+  }
+  return code === undefined
+    ? 'Die angeforderte Operation konnte nicht abgeschlossen werden.'
+    : messages[code]
+}
+
+function errorCode(cause: unknown): CapabilityErrorCode | undefined {
+  if (!(cause instanceof CapabilityError)) return undefined
+  const parsed = capabilityErrorCodeSchema.safeParse(cause.code)
+  return parsed.success ? parsed.data : undefined
 }
 
 function hasCampaignWriteCapability(

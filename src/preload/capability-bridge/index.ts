@@ -2,8 +2,10 @@ import { contextBridge, ipcRenderer } from 'electron'
 import {
   createCampaignInputSchema,
   activateCampaignInputSchema,
-  campaignSnapshotSchema
+  campaignCapabilityResponseSchema,
+  freezeCampaignSnapshot
 } from '../../shared/contracts/campaign.js'
+import { CapabilityError } from '../../shared/errors/capability-error.js'
 import type {
   CampaignCapability,
   CampaignReadCapability,
@@ -12,28 +14,20 @@ import type {
 
 const readCampaigns: CampaignReadCapability = {
   async list() {
-    return campaignSnapshotSchema.parse(
-      await ipcRenderer.invoke('campaign:list')
-    )
+    return invokeCampaign('campaign:list')
   }
 }
 const campaigns: CampaignCapability = {
   ...readCampaigns,
   async create(name) {
-    return campaignSnapshotSchema.parse(
-      await ipcRenderer.invoke(
-        'campaign:create',
-        createCampaignInputSchema.parse({ name })
-      )
-    )
+    const input = createCampaignInputSchema.safeParse({ name })
+    if (!input.success) throw new CapabilityError('validation_failed', false)
+    return invokeCampaign('campaign:create', input.data)
   },
   async activate(id) {
-    return campaignSnapshotSchema.parse(
-      await ipcRenderer.invoke(
-        'campaign:activate',
-        activateCampaignInputSchema.parse({ id })
-      )
-    )
+    const input = activateCampaignInputSchema.safeParse({ id })
+    if (!input.success) throw new CapabilityError('validation_failed', false)
+    return invokeCampaign('campaign:activate', input.data)
   }
 }
 const api: SaltMarcherApi = {
@@ -47,3 +41,25 @@ const api: SaltMarcherApi = {
 }
 
 contextBridge.exposeInMainWorld('saltMarcher', Object.freeze(api))
+
+async function invokeCampaign(
+  channel: 'campaign:list' | 'campaign:create' | 'campaign:activate',
+  input?: unknown
+) {
+  try {
+    const response = campaignCapabilityResponseSchema.safeParse(
+      await ipcRenderer.invoke(channel, input)
+    )
+    if (!response.success)
+      throw new CapabilityError('protocol_violation', false)
+    if (!response.data.ok)
+      throw new CapabilityError(
+        response.data.error.code,
+        response.data.error.retryable
+      )
+    return freezeCampaignSnapshot(response.data.snapshot)
+  } catch (error) {
+    if (error instanceof CapabilityError) throw error
+    throw new CapabilityError('core_unavailable', true)
+  }
+}

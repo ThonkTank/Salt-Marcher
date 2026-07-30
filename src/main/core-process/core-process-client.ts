@@ -3,6 +3,7 @@ import { utilityProcess, type UtilityProcess } from 'electron'
 import {
   coreReadySchema,
   coreResponseSchema,
+  freezeCampaignSnapshot,
   type CampaignSnapshot,
   type CoreRequest
 } from '../../shared/contracts/campaign.js'
@@ -14,7 +15,6 @@ export class CoreProcessClient {
   #resolveReady: (() => void) | undefined
   #rejectReady: ((error: Error) => void) | undefined
   #closed = false
-  #lastSnapshot: CampaignSnapshot = { activeCampaignId: null, campaigns: [] }
   readonly #pending = new Map<
     string,
     {
@@ -22,6 +22,7 @@ export class CoreProcessClient {
       reject: (error: Error) => void
     }
   >()
+  readonly #timedOutRequestIds = new Set<string>()
 
   public constructor(dataRoot: string, utilityPath: string) {
     this.#process = utilityProcess.fork(utilityPath, [dataRoot], {
@@ -32,19 +33,18 @@ export class CoreProcessClient {
       this.#rejectReady = reject
     })
     this.#process.on('message', (raw) => this.handleMessage(raw))
-    this.#process.on('exit', (code) => {
-      const error = new CapabilityError(`Core process exited (${code})`)
+    this.#process.on('exit', () => {
+      const error = new CapabilityError('core_unavailable', false)
       if (!this.#closed) console.error(error.message)
       this.fail(error)
     })
   }
 
   public async waitUntilReady(): Promise<void> {
-    await this.withTimeout(this.#ready, 'Core process did not become ready')
+    await this.withTimeout(this.#ready)
   }
 
   public list(): Promise<CampaignSnapshot> {
-    if (this.#closed) return Promise.resolve(this.#lastSnapshot)
     return this.request({ kind: 'campaign.list' })
   }
 
@@ -59,7 +59,7 @@ export class CoreProcessClient {
   public close(): void {
     if (this.#closed) return
     this.#closed = true
-    this.rejectAll(new CapabilityError('Core process is closing'))
+    this.rejectAll(new CapabilityError('core_unavailable', false))
     this.#process.postMessage({
       kind: 'core.shutdown',
       requestId: randomUUID()
@@ -71,17 +71,32 @@ export class CoreProcessClient {
 
   private request(request: CoreRequestWithoutId): Promise<CampaignSnapshot> {
     const requestId = randomUUID()
-    return this.withTimeout(
-      new Promise((resolve, reject) => {
-        if (this.#closed) {
-          reject(new CapabilityError('Core process is closed'))
-          return
+    return new Promise((resolve, reject) => {
+      if (this.#closed) {
+        reject(new CapabilityError('core_unavailable', false))
+        return
+      }
+      const timeout = setTimeout(() => {
+        if (!this.#pending.delete(requestId)) return
+        this.#timedOutRequestIds.add(requestId)
+        setTimeout(
+          () => this.#timedOutRequestIds.delete(requestId),
+          10_000
+        ).unref()
+        reject(timeoutFor(request.kind))
+      }, 10_000)
+      this.#pending.set(requestId, {
+        resolve: (snapshot) => {
+          clearTimeout(timeout)
+          resolve(snapshot)
+        },
+        reject: (error) => {
+          clearTimeout(timeout)
+          reject(error)
         }
-        this.#pending.set(requestId, { resolve, reject })
-        this.#process.postMessage({ ...request, requestId })
-      }),
-      `Core request ${request.kind} timed out`
-    )
+      })
+      this.#process.postMessage({ ...request, requestId })
+    })
   }
 
   private handleMessage(raw: unknown): void {
@@ -92,20 +107,27 @@ export class CoreProcessClient {
       return
     }
     const response = coreResponseSchema.safeParse(raw)
-    if (!response.success) return
+    if (!response.success) {
+      this.protocolViolation()
+      return
+    }
     const pending = this.#pending.get(response.data.requestId)
-    if (pending === undefined) return
+    if (pending === undefined) {
+      if (this.#timedOutRequestIds.delete(response.data.requestId)) return
+      this.protocolViolation()
+      return
+    }
     this.#pending.delete(response.data.requestId)
     if (!response.data.ok) {
       pending.reject(
         new CapabilityError(
-          response.data.error ?? 'Core process rejected command'
+          response.data.error.code,
+          response.data.error.retryable
         )
       )
       return
     }
-    this.#lastSnapshot = response.data.snapshot
-    pending.resolve(response.data.snapshot)
+    pending.resolve(freezeCampaignSnapshot(response.data.snapshot))
   }
 
   private rejectAll(error: Error): void {
@@ -114,16 +136,28 @@ export class CoreProcessClient {
   }
 
   private fail(error: Error): void {
+    this.#closed = true
     this.#rejectReady?.(error)
     this.#resolveReady = undefined
     this.#rejectReady = undefined
     this.rejectAll(error)
   }
 
-  private withTimeout<T>(operation: Promise<T>, message: string): Promise<T> {
+  private protocolViolation(): void {
+    if (this.#closed) return
+    this.#closed = true
+    const error = new CapabilityError('protocol_violation', false)
+    this.#rejectReady?.(error)
+    this.#resolveReady = undefined
+    this.#rejectReady = undefined
+    this.rejectAll(error)
+    this.#process.kill()
+  }
+
+  private withTimeout<T>(operation: Promise<T>): Promise<T> {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(
-        () => reject(new CapabilityError(message)),
+        () => reject(new CapabilityError('timeout', true)),
         10_000
       )
       operation.then(
@@ -133,11 +167,21 @@ export class CoreProcessClient {
         },
         (error: unknown) => {
           clearTimeout(timeout)
-          reject(error instanceof Error ? error : new Error(String(error)))
+          reject(
+            error instanceof CapabilityError
+              ? error
+              : new CapabilityError('internal', false)
+          )
         }
       )
     })
   }
+}
+
+function timeoutFor(kind: CoreRequestWithoutId['kind']): CapabilityError {
+  return kind === 'campaign.create'
+    ? new CapabilityError('outcome_unknown', false)
+    : new CapabilityError('timeout', true)
 }
 
 type CoreRequestWithoutId =

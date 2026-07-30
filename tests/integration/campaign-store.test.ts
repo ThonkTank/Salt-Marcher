@@ -12,6 +12,18 @@ afterEach(() => {
 })
 
 describe('CampaignStore', () => {
+  it('returns deeply frozen snapshots', () => {
+    const root = mkdtempSync(join(tmpdir(), 'salt-marcher-campaign-store-'))
+    roots.push(root)
+    const store = new CampaignStore(root)
+    const snapshot = store.create('Frozen Campaign')
+    store.close()
+
+    expect(Object.isFrozen(snapshot)).toBe(true)
+    expect(Object.isFrozen(snapshot.campaigns)).toBe(true)
+    expect(Object.isFrozen(snapshot.campaigns[0])).toBe(true)
+  })
+
   it('reopens the campaign selected after A/B/A walking', () => {
     const root = mkdtempSync(join(tmpdir(), 'salt-marcher-campaign-store-'))
     roots.push(root)

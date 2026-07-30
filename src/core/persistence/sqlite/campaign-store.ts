@@ -6,6 +6,7 @@ import type {
   CampaignSnapshot
 } from '../../../shared/contracts/campaign.js'
 import { uuidv7 } from '../../../shared/ids/uuidv7.js'
+import { freezeCampaignSnapshot } from '../../../shared/contracts/campaign.js'
 
 export type CampaignCreatePhase =
   | 'before-registry-entry'
@@ -57,7 +58,10 @@ export class CampaignStore {
     const active = this.installation
       .prepare("SELECT value FROM settings WHERE key = 'active_campaign_id'")
       .get() as { value: string } | undefined
-    return { campaigns, activeCampaignId: active?.value ?? null }
+    return freezeCampaignSnapshot({
+      campaigns,
+      activeCampaignId: active?.value ?? null
+    })
   }
 
   create(name: string): CampaignSnapshot {
