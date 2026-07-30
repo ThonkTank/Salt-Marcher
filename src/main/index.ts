@@ -8,7 +8,7 @@ const smokeTest = process.argv.includes('--smoke-test')
 
 void startApplication()
   .then(() => {
-    if (smokeTest) setTimeout(() => app.quit(), 500)
+    if (smokeTest) setTimeout(() => app.exit(0), 500)
   })
   .catch((error: unknown) => {
     console.error('SaltMarcher failed to start', error)

@@ -1,7 +1,11 @@
 name: Check
 on: [pull_request, push]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 jobs:
   check:
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       # windows-latest currently provides a Visual Studio version that node-gyp
@@ -25,6 +29,7 @@ jobs:
       - run: pnpm test:packaged-smoke
         if: matrix.os != 'ubuntu-latest'
   e2e:
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
