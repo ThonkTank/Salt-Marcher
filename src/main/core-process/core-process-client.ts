@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto'
 import { utilityProcess, type UtilityProcess } from 'electron'
-import { z } from 'zod'
 import {
   coreReadySchema,
   coreResponseSchema,
@@ -16,10 +15,6 @@ export class CoreProcessClient {
   #resolveReady: (() => void) | undefined
   #rejectReady: ((error: Error) => void) | undefined
   #closed = false
-  #lastSnapshot: CampaignSnapshot = freezeCampaignSnapshot({
-    activeCampaignId: null,
-    campaigns: []
-  })
   readonly #pending = new Map<
     string,
     {
@@ -27,6 +22,7 @@ export class CoreProcessClient {
       reject: (error: Error) => void
     }
   >()
+  readonly #timedOutRequestIds = new Set<string>()
 
   public constructor(dataRoot: string, utilityPath: string) {
     this.#process = utilityProcess.fork(utilityPath, [dataRoot], {
@@ -38,7 +34,7 @@ export class CoreProcessClient {
     })
     this.#process.on('message', (raw) => this.handleMessage(raw))
     this.#process.on('exit', () => {
-      const error = new CapabilityError('core_unavailable', true)
+      const error = new CapabilityError('core_unavailable', false)
       if (!this.#closed) console.error(error.message)
       this.fail(error)
     })
@@ -49,7 +45,6 @@ export class CoreProcessClient {
   }
 
   public list(): Promise<CampaignSnapshot> {
-    if (this.#closed) return Promise.resolve(this.#lastSnapshot)
     return this.request({ kind: 'campaign.list' })
   }
 
@@ -76,16 +71,32 @@ export class CoreProcessClient {
 
   private request(request: CoreRequestWithoutId): Promise<CampaignSnapshot> {
     const requestId = randomUUID()
-    return this.withTimeout(
-      new Promise((resolve, reject) => {
-        if (this.#closed) {
-          reject(new CapabilityError('core_unavailable', false))
-          return
+    return new Promise((resolve, reject) => {
+      if (this.#closed) {
+        reject(new CapabilityError('core_unavailable', false))
+        return
+      }
+      const timeout = setTimeout(() => {
+        if (!this.#pending.delete(requestId)) return
+        this.#timedOutRequestIds.add(requestId)
+        setTimeout(
+          () => this.#timedOutRequestIds.delete(requestId),
+          10_000
+        ).unref()
+        reject(timeoutFor(request.kind))
+      }, 10_000)
+      this.#pending.set(requestId, {
+        resolve: (snapshot) => {
+          clearTimeout(timeout)
+          resolve(snapshot)
+        },
+        reject: (error) => {
+          clearTimeout(timeout)
+          reject(error)
         }
-        this.#pending.set(requestId, { resolve, reject })
-        this.#process.postMessage({ ...request, requestId })
       })
-    )
+      this.#process.postMessage({ ...request, requestId })
+    })
   }
 
   private handleMessage(raw: unknown): void {
@@ -97,23 +108,15 @@ export class CoreProcessClient {
     }
     const response = coreResponseSchema.safeParse(raw)
     if (!response.success) {
-      const requestId = z.object({ requestId: z.uuid() }).safeParse(raw)
-      if (requestId.success) {
-        const pending = this.#pending.get(requestId.data.requestId)
-        if (pending !== undefined) {
-          this.#pending.delete(requestId.data.requestId)
-          pending.reject(new CapabilityError('protocol_violation', false))
-        }
-      } else {
-        // An uncorrelatable utility response cannot be retried safely. Reject
-        // every waiter now instead of silently converting a protocol breach
-        // into an unrelated timeout.
-        this.fail(new CapabilityError('protocol_violation', false))
-      }
+      this.protocolViolation()
       return
     }
     const pending = this.#pending.get(response.data.requestId)
-    if (pending === undefined) return
+    if (pending === undefined) {
+      if (this.#timedOutRequestIds.delete(response.data.requestId)) return
+      this.protocolViolation()
+      return
+    }
     this.#pending.delete(response.data.requestId)
     if (!response.data.ok) {
       pending.reject(
@@ -124,9 +127,7 @@ export class CoreProcessClient {
       )
       return
     }
-    const snapshot = freezeCampaignSnapshot(response.data.snapshot)
-    this.#lastSnapshot = snapshot
-    pending.resolve(snapshot)
+    pending.resolve(freezeCampaignSnapshot(response.data.snapshot))
   }
 
   private rejectAll(error: Error): void {
@@ -135,10 +136,22 @@ export class CoreProcessClient {
   }
 
   private fail(error: Error): void {
+    this.#closed = true
     this.#rejectReady?.(error)
     this.#resolveReady = undefined
     this.#rejectReady = undefined
     this.rejectAll(error)
+  }
+
+  private protocolViolation(): void {
+    if (this.#closed) return
+    this.#closed = true
+    const error = new CapabilityError('protocol_violation', false)
+    this.#rejectReady?.(error)
+    this.#resolveReady = undefined
+    this.#rejectReady = undefined
+    this.rejectAll(error)
+    this.#process.kill()
   }
 
   private withTimeout<T>(operation: Promise<T>): Promise<T> {
@@ -163,6 +176,12 @@ export class CoreProcessClient {
       )
     })
   }
+}
+
+function timeoutFor(kind: CoreRequestWithoutId['kind']): CapabilityError {
+  return kind === 'campaign.create'
+    ? new CapabilityError('outcome_unknown', false)
+    : new CapabilityError('timeout', true)
 }
 
 type CoreRequestWithoutId =

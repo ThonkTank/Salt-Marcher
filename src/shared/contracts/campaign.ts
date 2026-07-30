@@ -38,6 +38,7 @@ export const capabilityErrorCodeSchema = z.enum([
   'not_found',
   'read_only',
   'timeout',
+  'outcome_unknown',
   'core_unavailable',
   'protocol_violation',
   'internal'
