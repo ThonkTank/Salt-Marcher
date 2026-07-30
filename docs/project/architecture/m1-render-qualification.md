@@ -12,7 +12,10 @@ not turn a passing local test into a claim about `RP-H` hardware.
 - Babylon.js creates 25 pickable chunk meshes plus a representative
   32 × 32 × 16 voxel chunk. Camera, hover/pick, and local voxel-preview remesh
   are separate populations and each ends at Babylon's next rendered frame.
-- Camera and hover p95 is at most 16 ms. Local preview p95 is at most 50 ms.
+- Camera and hover **frame-work** p95 is at most 16 ms. Local preview
+  **input-to-first-visible-frame** p95 is at most 50 ms. Input-to-visible is
+  additionally retained as a diagnostic for the other populations and is not
+  substituted for their frame-work budget.
 - For each warm population, perform five unrecorded warm-ups followed by 100
   recorded operations. Sort each population separately; p95 is rank 95.
 - Do not pool different OSs, cold/warm runs, actions, display scales, or GPU

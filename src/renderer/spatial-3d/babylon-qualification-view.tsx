@@ -138,16 +138,20 @@ export function BabylonQualificationView({
         tracker: FrameMeasurementTracker,
         sampler: InteractionSampler,
         diagnostics: number[],
-        label: string
+        label: string,
+        measuredDuration: (timing: {
+          readonly frameWorkMs: number
+          readonly inputToPresentationMs: number
+        }) => number
       ): void => {
         const timing = tracker.afterRender()
         if (timing === undefined) return
         if (diagnostics.length < recordedRunCount)
           diagnostics.push(timing.inputToPresentationMs)
-        const result = sampler.record(timing.frameWorkMs)
+        const result = sampler.record(measuredDuration(timing))
         if (result !== undefined)
           setStatus(
-            `${label} frame-work p95 ${result.p95Ms.toFixed(2)} ms after ${recordedRunCount} samples.`
+            `${label} p95 ${result.p95Ms.toFixed(2)} ms after ${recordedRunCount} samples.`
           )
       }
       scene.onBeforeRenderObservable.add(() => {
@@ -161,19 +165,22 @@ export function BabylonQualificationView({
           cameraTracker,
           cameraSampler,
           cameraInputToPresentation,
-          '3D camera'
+          '3D camera frame-work',
+          (timing) => timing.frameWorkMs
         )
         collect(
           hoverTracker,
           hoverSampler,
           hoverInputToPresentation,
-          '3D hover/pick'
+          '3D hover/pick frame-work',
+          (timing) => timing.frameWorkMs
         )
         collect(
           previewTracker,
           previewSampler,
           previewInputToPresentation,
-          'Local voxel preview'
+          'Local voxel preview input-to-visible',
+          (timing) => timing.inputToPresentationMs
         )
         if (
           cameraSampler.recordedSamples === recordedRunCount &&
