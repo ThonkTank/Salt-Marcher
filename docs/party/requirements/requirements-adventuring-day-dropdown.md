@@ -14,7 +14,7 @@ Current state:
 - The dropdown renders the calculator surface with active-party and custom
   party input modes.
 - Calculation decisions are requested through the Party feature boundary;
-  the JavaFX view owns controls and rendering only.
+  the presentation owns controls and rendering only.
 
 ## Visible Surfaces
 

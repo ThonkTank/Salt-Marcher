@@ -110,7 +110,7 @@ export function App(): ReactElement {
           <h2 id="rendering-qualification-heading">Rendering qualification</h2>
           <p>
             PixiJS renders 100,000 sparse cells (8,192 facts); Babylon.js
-            renders pickable dungeon chunks.
+            renders pickable dungeon chunks with a local preview path.
           </p>
           <div className="qualification-grid">
             <div>
@@ -126,9 +126,10 @@ export function App(): ReactElement {
             <summary>Text alternative for the spatial qualification</summary>
             <p>
               The 2D fixture contains 100,000 sparse cells, including 8,192
-              visible facts. Arrow keys pan the 2D view. The 3D fixture contains
-              25 pickable dungeon chunks; drag to orbit and click a chunk to
-              select it. Both views announce graphics-context recovery.
+              initially visible facts. Arrow keys dynamically recull the 2D
+              view. The 3D fixture contains 25 pickable dungeon chunks; drag to
+              orbit, click a chunk to select it, and press P to rebuild its
+              local preview. Both views announce graphics-context recovery.
             </p>
           </details>
         </section>

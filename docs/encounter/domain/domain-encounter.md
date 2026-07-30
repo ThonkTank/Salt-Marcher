@@ -122,5 +122,4 @@ combat, result, and generated-alternative runtime state.
 - [Encounter Persistence](../contract/contract-encounter-persistence.md)
 - [Encounter Saved Plans Contract](../contract/contract-encounter-saved-plans.md)
 - [Generated Preparation Contract](../contract/contract-encounter-generated-import.md)
-- [Architecture](../architecture/architecture-encounter.md)
 - [Encounter Runtime UI](../requirements/requirements-encounter-state-tab.md)

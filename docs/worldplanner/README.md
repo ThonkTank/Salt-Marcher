@@ -18,10 +18,6 @@ maps, or hex maps.
 
 - [World Planner Requirements](./requirements/requirements-world-planner.md)
 
-### Architecture
-
-- [World Planner Architecture](./architecture/architecture-world-planner.md)
-
 ### Contract
 
 - [World Planner Persistence Contract](./contract/contract-world-planner-persistence.md)

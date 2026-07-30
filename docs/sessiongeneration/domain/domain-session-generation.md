@@ -94,4 +94,3 @@ and remains self-contained after creation.
 ## Sources
 
 - [Requirements](../requirements/requirements-session-generation.md)
-- [Contract](../contract/contract-session-generation.md)

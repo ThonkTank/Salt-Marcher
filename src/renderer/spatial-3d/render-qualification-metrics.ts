@@ -29,3 +29,26 @@ export function qualifyInteraction(
     passes: p95Ms <= budgetMs
   }
 }
+
+/** Collects one warm population and one recorded population without pooling them. */
+export class InteractionSampler {
+  readonly #warmups: number[] = []
+  readonly #samples: number[] = []
+
+  public constructor(private readonly budgetMs = cameraAndHoverBudgetMs) {}
+
+  public record(durationMs: number): QualificationResult | undefined {
+    if (this.#warmups.length < warmupRunCount) {
+      this.#warmups.push(durationMs)
+      return undefined
+    }
+    if (this.#samples.length < recordedRunCount) this.#samples.push(durationMs)
+    return this.#samples.length === recordedRunCount
+      ? qualifyInteraction(this.#samples, this.budgetMs)
+      : undefined
+  }
+
+  public get recordedSamples(): number {
+    return this.#samples.length
+  }
+}

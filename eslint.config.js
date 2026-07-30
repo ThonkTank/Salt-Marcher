@@ -12,7 +12,7 @@ export default tseslint.config(
   ...tseslint.configs.recommendedTypeChecked,
   {
     languageOptions: {
-      globals: { ...globals.browser, ...globals.node },
+      globals: globals.node,
       parserOptions: { projectService: true }
     },
     plugins: { 'react-hooks': reactHooks, 'react-refresh': reactRefresh },
@@ -21,6 +21,38 @@ export default tseslint.config(
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true }
+      ]
+    }
+  },
+  {
+    files: ['src/renderer/**/*.ts', 'src/renderer/**/*.tsx'],
+    languageOptions: {
+      globals: globals.browser,
+      parserOptions: {
+        projectService: false,
+        project: './tsconfig.renderer.json'
+      }
+    },
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        { name: 'process', message: 'Renderer code has no Node.js process.' },
+        { name: 'Buffer', message: 'Renderer code has no Node.js Buffer.' }
+      ],
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['node:*'],
+              message: 'Renderer code cannot import Node.js modules.'
+            },
+            {
+              group: ['electron'],
+              message: 'Renderer code must use the preload capability bridge.'
+            }
+          ]
+        }
       ]
     }
   },

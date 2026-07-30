@@ -132,7 +132,6 @@ Core invariants:
 ## References
 
 - [World Planner Requirements](../requirements/requirements-world-planner.md) (line 1)
-- [World Planner Architecture](../architecture/architecture-world-planner.md) (line 1)
 - [World Planner Persistence Contract](../contract/contract-world-planner-persistence.md) (line 1)
 - [Creatures Domain Model](../../creatures/domain/domain-creatures.md) (line 1)
 - [Encounter Domain Model](../../encounter/domain/domain-encounter.md) (line 1)

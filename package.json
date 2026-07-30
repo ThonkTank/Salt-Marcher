@@ -13,10 +13,11 @@
     "format": "prettier --check .",
     "format:write": "prettier --write .",
     "lint": "eslint . --max-warnings=0",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit --project tsconfig.renderer.json",
     "test": "vitest run",
     "test:smoke": "corepack pnpm build && electron out/main/index.js --smoke-test --no-sandbox",
-    "test:e2e": "corepack pnpm build && wdio run wdio.conf.ts",
+    "test:packaged-smoke": "corepack pnpm package && tsx scripts/packaged-smoke.ts",
+    "test:e2e": "corepack pnpm build && wdio run wdio.conf.ts --suite create && wdio run wdio.conf.ts --suite restart",
     "check": "corepack pnpm format && corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test && corepack pnpm test:smoke",
     "package": "corepack enable --install-directory ./node_modules/.bin && corepack pnpm build && electron-builder --publish never"
   },

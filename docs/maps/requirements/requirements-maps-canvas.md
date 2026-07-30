@@ -3,7 +3,7 @@
 ## Goal
 
 Provide feature-neutral passive map-canvas mechanisms that Dungeon and Hex
-JavaFX surfaces reuse for rendering, hit-testing, camera behavior, viewport
+map surfaces reuse for rendering, hit-testing, camera behavior, viewport
 caching, and passive pointer capture.
 
 ## Non-Goals
@@ -69,8 +69,3 @@ caching, and passive pointer capture.
 - adopter-native coordinate conversion happens outside the passive canvas
 
 ## References
-
-- [Maps Canvas Architecture](../architecture/architecture-maps-canvas.md) (line 1)
-- [Maps Canvas Contract](../contract/contract-maps-canvas.md) (line 1)
-- [Dungeon Map Adoption Architecture](../architecture/architecture-maps-dungeon-adoption.md) (line 1)
-- [Hex Map Adoption Architecture](../architecture/architecture-maps-hex-adoption.md) (line 1)

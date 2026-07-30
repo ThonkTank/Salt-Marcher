@@ -19,7 +19,7 @@ capability. That single capability creates the verified recovery point and opens
 subsequent write connection from the same database lifecycle. It is never composed into
 normal desktop startup. Ordinary handles do not expose backup operations.
 
-API, domain, application, JavaFX, Catalog, and shell code do not access JDBC,
+API, domain, application, presentation, Catalog, and shell code do not access
 database files, or migration types.
 
 ## Location And Connection
@@ -189,7 +189,7 @@ truth.
 
 Shutdown first prevents new application work, then drains feature executors,
 then closes the persistence lifecycle. A closed or unready handle rejects work
-with a typed local failure and never opens JDBC.
+with a typed local failure and never opens a store directly.
 
 ## Errors, Privacy, And Recovery
 
@@ -205,7 +205,4 @@ and rejects the installed application-data directory.
 
 ## References
 
-- [Source Architecture](../architecture/source-architecture.md)
-- [Application Composition](../architecture/patterns/application-composition.md)
-- [Catalog Architecture](../../catalog/architecture/architecture-catalog.md)
 - Feature persistence contracts under `docs/<feature>/contract/`

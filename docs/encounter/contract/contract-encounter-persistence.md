@@ -121,6 +121,5 @@ signature fails closed without schema or row repair.
 
 - [Encounter Domain Model](../domain/domain-encounter.md) (line 1)
 - [Encounter Feature Spec](../requirements/requirements-encounter.md) (line 1)
-- [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)
 - [Generated Import Contract](contract-encounter-generated-import.md)
 - [Encounter Runtime Context Contract](contract-encounter-runtime-contexts.md)

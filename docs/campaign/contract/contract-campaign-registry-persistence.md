@@ -6,7 +6,7 @@ The Campaign feature owns the installation-wide registry of stable Campaign
 identities and names plus the single durable active-Campaign pointer. The
 registry lives in `installation.sqlite`; Campaign-authored truth remains in the
 physically separate store for that Campaign. Consumers receive only
-`CampaignRegistryApi`, never JDBC, a database path, or another owner's handle.
+`CampaignRegistryApi`, never a database path or another owner's handle.
 
 ## Stored Truth
 
@@ -53,5 +53,4 @@ revocation.
 
 - [Persistence Lifecycle](../../project/contract/persistence-lifecycle.md)
 
-- [Source Architecture](../../project/architecture/source-architecture.md)
 - [Program Capability Requirements](../../project/requirements/requirements-program-capabilities.md)

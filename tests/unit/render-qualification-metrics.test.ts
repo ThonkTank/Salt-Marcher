@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   cameraAndHoverBudgetMs,
+  InteractionSampler,
   localPreviewBudgetMs,
   p95,
   qualifyInteraction,
@@ -21,5 +22,17 @@ describe('render qualification metrics', () => {
       false
     )
     expect(qualifyInteraction([50], localPreviewBudgetMs).passes).toBe(true)
+  })
+
+  it('excludes five warm-ups before reporting the 100-sample result', () => {
+    const sampler = new InteractionSampler()
+    for (
+      let index = 0;
+      index < warmupRunCount + recordedRunCount - 1;
+      index += 1
+    ) {
+      expect(sampler.record(1)).toBeUndefined()
+    }
+    expect(sampler.record(1)).toMatchObject({ sampleCount: recordedRunCount })
   })
 })

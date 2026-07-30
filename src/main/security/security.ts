@@ -13,6 +13,10 @@ const contentSecurityPolicy = [
 ].join('; ')
 
 export function configureSecurity(): void {
+  session.defaultSession.setPermissionRequestHandler(
+    (_contents, _permission, callback) => callback(false)
+  )
+  session.defaultSession.setPermissionCheckHandler(() => false)
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     callback({
       responseHeaders: {

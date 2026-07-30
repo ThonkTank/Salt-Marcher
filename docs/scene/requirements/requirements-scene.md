@@ -70,5 +70,4 @@ copy.
 ## References
 
 - [Scene Domain](../domain/domain-scene.md)
-- [Scene Architecture](../architecture/architecture-scene.md)
 - [Scene Persistence Contract](../contract/contract-scene-persistence.md)

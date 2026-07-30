@@ -102,5 +102,3 @@ Session Planner persistence contract and do not change this owner boundary.
 ## References
 
 - [World Planner Domain Model](../domain/domain-world-planner.md) (line 1)
-- [World Planner Architecture](../architecture/architecture-world-planner.md) (line 1)
-- [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)

@@ -23,6 +23,7 @@ export const activateCampaignInputSchema = z.object({ id: z.uuid() })
 
 export const coreRequestSchema = z.discriminatedUnion('kind', [
   z.object({ requestId: z.uuid(), kind: z.literal('campaign.list') }),
+  z.object({ requestId: z.uuid(), kind: z.literal('core.shutdown') }),
   z.object({
     requestId: z.uuid(),
     kind: z.literal('campaign.create'),
@@ -35,12 +36,16 @@ export const coreRequestSchema = z.discriminatedUnion('kind', [
   })
 ])
 
-export const coreResponseSchema = z.object({
-  requestId: z.uuid(),
-  ok: z.boolean(),
-  snapshot: campaignSnapshotSchema.optional(),
-  error: z.string().optional()
-})
+export const coreResponseSchema = z.discriminatedUnion('ok', [
+  z.object({
+    requestId: z.uuid(),
+    ok: z.literal(true),
+    snapshot: campaignSnapshotSchema
+  }),
+  z.object({ requestId: z.uuid(), ok: z.literal(false), error: z.string() })
+])
+
+export const coreReadySchema = z.object({ kind: z.literal('core.ready') })
 
 export type CoreRequest = z.infer<typeof coreRequestSchema>
 export type CoreResponse = z.infer<typeof coreResponseSchema>

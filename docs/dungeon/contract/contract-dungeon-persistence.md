@@ -326,5 +326,4 @@ on typed provider read/write paths and fails closed through the feature contract
 ## References
 
 - [Dungeon Domain Model](../domain/domain-dungeon.md) (line 1)
-- [Dungeon Map Surface Contract](../../maps/contract/contract-maps-dungeon-surface.md) (line 1)
 - [Map Canvas Overview](../../maps/README.md) (line 1)

@@ -11,7 +11,6 @@ initiative, combat, and result state.
 
 - [Requirements](requirements/requirements-scene.md)
 - [Domain](domain/domain-scene.md)
-- [Architecture](architecture/architecture-scene.md)
 - [Persistence](contract/contract-scene-persistence.md)
 
 ## References

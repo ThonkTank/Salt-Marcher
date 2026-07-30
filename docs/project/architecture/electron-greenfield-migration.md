@@ -2,15 +2,15 @@
 
 ## Status
 
-**Current milestone: M1 — qualification in progress.** M0 is complete: the
-JavaFX baseline is preserved by tag `javafx-final-2026-07-27` at `e29b305`, and
-`stable` is unchanged. The secure Electron shell, utility-process SQLite
+**Current milestone: M1 — qualification in progress.** M0 is complete. The
+retired implementation is preserved by tag `javafx-final-2026-07-27`. The
+secure Electron shell, utility-process SQLite
 campaign skeleton, and Pixi/Babylon prototypes are present. Typecheck, lint,
 unit/integration tests, build, headless Electron smoke test, and Linux AppImage
 packaging pass locally. The project has a WebdriverIO Electron journey and
-axe-core is part of the target test stack; CI now runs native packaging on all
-three target systems plus the Linux E2E gate. GitHub Actions run `30495856713`
-is green. Remaining M1 acceptance evidence is the measured RP-H p95,
+axe-core is part of the target test stack; CI runs native packaging on all
+three target systems plus the Linux E2E gate. Remaining M1 acceptance evidence
+is the measured RP-H p95,
 context-loss, 200%-scale, screen-reader, and axe matrix recorded in
 `m1-render-qualification.md`.
 
@@ -28,14 +28,14 @@ context-loss, 200%-scale, screen-reader, and axe matrix recorded in
 
 ### M0 — target foundation
 
-Preserve the JavaFX commit, document this target architecture and roadmap,
-retire JavaFX-specific source architecture, make issue evidence
+Preserve the retired baseline by tag, document this target architecture and
+roadmap, retire source-specific architecture, make issue evidence
 product-neutral, close superseded Java PRs after retaining their visible
 requirements, and add this contributor guide.
 
 ### M1 — qualifying foundation (Go/No-Go)
 
-Replace the active Java/Gradle application with a secure Electron/React shell,
+Replace the retired application with a secure Electron/React shell,
 one canonical `pnpm check`, cross-platform CI and packaging. Build a
 utility-process-owned campaign skeleton that creates name-only campaigns,
 switches A/B/A, and resumes exactly after restart. Qualify PixiJS at 100,000
@@ -80,8 +80,8 @@ installers, and all 78 confirmed GM-core cases. Then freeze the SQLite format.
 
 ## First change packages
 
-1. `docs: adopt Electron target and retire JavaFX gates`
-2. `build: replace JavaFX application with secure Electron shell`
+1. `docs: adopt Electron target and retire legacy gates`
+2. `build: establish secure Electron shell`
 3. `feat: create switch and reopen campaigns`
 4. `feat: qualify sparse Pixi and Babylon renderers`
 
@@ -92,7 +92,5 @@ that decision.
 
 M1 cannot yet be accepted until the recorded integrated-GPU qualification and
 accessibility evidence is attached. This is a gate, not a reason to weaken the
-16-ms/50-ms budgets. CI run `30495856713` establishes the cross-platform
-package and Linux Electron E2E evidence. The local WebdriverIO runner can
-still block while deleting its ChromeDriver session, but that does not weaken
-the successful CI E2E result.
+16-ms/50-ms budgets. Store reproducible measurements in
+`docs/project/evidence/`; track current CI state in the relevant pull request.

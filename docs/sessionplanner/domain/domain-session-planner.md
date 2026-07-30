@@ -21,7 +21,7 @@ The feature publishes:
 - one immutable, revisioned `SessionPlannerWorkspaceSnapshot`
 - one revisioned prepared-scene catalog for Scene consumers
 
-SQL rows, repositories, JavaFX controls, and foreign internal models are not
+SQL rows, repositories, presentation controls, and foreign internal models are not
 part of the published language.
 
 ## Write Model
@@ -113,6 +113,5 @@ Planner never compensates by deleting that foreign truth.
 
 - [Requirements](../requirements/requirements-session-planner.md)
 - [Persistence Contract](../contract/contract-session-planner-persistence.md)
-- [Architecture](../architecture/architecture-session-planner.md)
 - [Encounter Domain](../../encounter/domain/domain-encounter.md)
 - [Session Generation Domain](../../sessiongeneration/domain/domain-session-generation.md)

@@ -3,12 +3,18 @@ import { join } from 'node:path'
 
 const userData = join(process.cwd(), '.tmp', 'wdio-user-data')
 process.env['SALT_MARCHER_E2E'] = 'true'
-rmSync(userData, { recursive: true, force: true })
+if (!process.argv.includes('restart')) {
+  rmSync(userData, { recursive: true, force: true })
+}
 mkdirSync(userData, { recursive: true })
 
 export const config = {
   runner: 'local',
   specs: ['./tests/e2e/**/*.e2e.ts'],
+  suites: {
+    create: ['./tests/e2e/campaign-walking.e2e.ts'],
+    restart: ['./tests/e2e/campaign-restart.e2e.ts']
+  },
   maxInstances: 1,
   autoXvfb: true,
   services: [

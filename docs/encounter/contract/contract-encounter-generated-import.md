@@ -108,5 +108,4 @@ of this contract.
 
 - [Encounter Domain](../domain/domain-encounter.md)
 - [Encounter Persistence](contract-encounter-persistence.md)
-- [Session Generation Contract](../../sessiongeneration/contract/contract-session-generation.md)
 - [Session Planner Requirements](../../sessionplanner/requirements/requirements-session-planner.md)

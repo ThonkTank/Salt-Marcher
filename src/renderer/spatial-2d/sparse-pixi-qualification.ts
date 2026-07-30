@@ -4,15 +4,37 @@ export interface SparseCell {
   readonly fact: boolean
 }
 
-const gridWidth = 400
+const gridWidth = 128
+const cellStride = 12
+
+export const sparseCellCount = 100_000
+export const visibleFactCount = 8_192
 
 /** Deterministic, thinly distributed data for the M1 rendering qualification. */
 export function createSparseQualificationCells(): readonly SparseCell[] {
-  return Array.from({ length: 100_000 }, (_, index) => ({
-    x: (index % gridWidth) * 12,
-    y: Math.floor(index / gridWidth) * 12,
-    fact: index < 8_192
+  return Array.from({ length: sparseCellCount }, (_, index) => ({
+    x: (index % gridWidth) * cellStride,
+    y: Math.floor(index / gridWidth) * cellStride,
+    fact: index < visibleFactCount
   }))
+}
+
+export function qualificationViewport(): Readonly<{
+  x: number
+  y: number
+  width: number
+  height: number
+}> {
+  return {
+    x: 0,
+    y: 0,
+    width: gridWidth * cellStride,
+    height: Math.ceil(visibleFactCount / gridWidth) * cellStride
+  }
+}
+
+export function countFacts(cells: readonly SparseCell[]): number {
+  return cells.filter((cell) => cell.fact).length
 }
 
 export function cullCells(

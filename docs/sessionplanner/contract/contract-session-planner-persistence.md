@@ -184,7 +184,5 @@ leaves the last stable workspace revision visible.
 ## References
 
 - [Domain](../domain/domain-session-planner.md)
-- [Architecture](../architecture/architecture-session-planner.md)
 - [Shared Persistence Lifecycle](../../project/contract/persistence-lifecycle.md)
-- [Session Generation Contract](../../sessiongeneration/contract/contract-session-generation.md)
 - [Encounter Generated Preparation](../../encounter/contract/contract-encounter-generated-import.md)

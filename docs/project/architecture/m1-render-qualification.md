@@ -5,10 +5,10 @@ not turn a passing local test into a claim about `RP-H` hardware.
 
 ## Fixture and budgets
 
-- PixiJS loads 100,000 deterministic sparse cells. The fixture contains 8,192
-  designated visible facts and exercises culling.
-- Babylon.js creates 25 pickable chunk meshes with orbit camera, hover, and
-  selection.
+- PixiJS loads 100,000 deterministic sparse cells. Its initial viewport
+  contains all 8,192 designated facts; keyboard pan dynamically reculls it.
+- Babylon.js creates 25 pickable chunk meshes with orbit camera, hover,
+  selection, and a local-preview remesh operation.
 - Camera and hover p95 is at most 16 ms. Local preview p95 is at most 50 ms.
 - For each warm population, perform five unrecorded warm-ups followed by 100
   recorded operations. Sort each population separately; p95 is rank 95.
@@ -31,17 +31,18 @@ On each supported Linux, Windows, and macOS `RP-H` machine, record:
 
 The CI evidence route is `pnpm check`, `pnpm package`, and on Linux
 `xvfb-run -a pnpm test:e2e`. The E2E journey creates Campaign A, creates
-Campaign B, and returns to A. axe-core is installed for the accessibility
-gate; its Electron invocation remains blocked by the local ChromeDriver
-teardown defect described below.
+Campaign B, returns to A, then starts a second Electron process with the same
+data directory to confirm A remains active before making another mutation.
+The Electron journey runs axe-core after the campaign input is rendered and
+requires zero violations. Local ChromeDriver session setup/teardown can still
+block before that assertion completes.
 
 ## Current evidence
 
-The fixture volume, p95 ranking, and threshold evaluation are unit tested.
-The renderer exposes keyboard navigation, a text alternative, and explicit
-WebGL-context recovery announcements. GitHub Actions run `30495856713` passes
-`pnpm check` and native package creation on Linux, Windows, and macOS, plus
-the Linux WebdriverIO A/B/A journey. Locally, ChromeDriver can still block
-while deleting the Electron session. RP-H measurements, explicit context-loss
-exercise, 200%-scale and screen-reader records, and a working axe invocation
-remain required before M1 acceptance.
+The fixture volume, dynamic-culling invariant, p95 ranking, and threshold
+evaluation are unit tested. The renderer exposes keyboard navigation, a text
+alternative, local-preview instrumentation, and explicit WebGL-context recovery
+announcements. Locally, ChromeDriver can still block while creating or deleting
+the Electron session. RP-H measurements, explicit context-loss exercise,
+200%-scale and screen-reader records, plus a completed axe run, remain required
+before M1 acceptance.

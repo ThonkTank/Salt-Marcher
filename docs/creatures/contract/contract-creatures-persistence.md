@@ -85,4 +85,3 @@ activation, later format changes are governed by `TN-18` and `TN-19`.
 
 - [Creatures Domain Model](../domain/domain-creatures.md) (line 1)
 - [Catalog Tab UI](../requirements/requirements-creatures-catalog.md) (line 1)
-- [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)

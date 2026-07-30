@@ -92,4 +92,3 @@ the current product.
 
 - [Party Domain Model](../domain/domain-party.md) (line 1)
 - [Party Dropdown UI](../requirements/requirements-party-dropdown.md) (line 1)
-- [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)

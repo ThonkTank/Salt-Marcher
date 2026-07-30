@@ -20,7 +20,10 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
       - run: pnpm check
         if: matrix.os != 'ubuntu-latest'
-      - run: pnpm package
+      - run: xvfb-run -a pnpm test:packaged-smoke
+        if: matrix.os == 'ubuntu-latest'
+      - run: pnpm test:packaged-smoke
+        if: matrix.os != 'ubuntu-latest'
   e2e:
     runs-on: ubuntu-latest
     steps:

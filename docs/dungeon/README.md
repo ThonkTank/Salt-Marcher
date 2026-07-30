@@ -13,16 +13,9 @@ Dungeon architecture owns how its API facts adopt those mechanisms.
 ### Reading Order
 
 1. Start here to find the owning document family.
-2. Read [Dungeon Architecture](./architecture/architecture-dungeon-domain.md)
-   for feature ownership, authored-core boundaries, runtime capabilities, and
-   dependency direction.
-3. Read [Dungeon Domain Model](./domain/domain-dungeon.md) for domain truth,
+2. Read [Dungeon Domain Model](./domain/domain-dungeon.md) for domain truth,
    write-model ownership, API language, and invariants.
 4. Read the relevant requirements document for user-visible behavior.
-
-### Architecture
-
-- [Dungeon Domain Architecture](./architecture/architecture-dungeon-domain.md)
 
 ### Requirements
 
@@ -42,8 +35,6 @@ Dungeon architecture owns how its API facts adopt those mechanisms.
 ### Related Map Canvas Docs
 
 - [Map Canvas Overview](../maps/README.md) (line 1)
-- [Dungeon Map Adoption Architecture](../maps/architecture/architecture-maps-dungeon-adoption.md) (line 1)
-- [Dungeon Map Surface Contract](../maps/contract/contract-maps-dungeon-surface.md) (line 1)
 - [Maps Canvas Requirements](../maps/requirements/requirements-maps-canvas.md) (line 1)
 
 ### Related Actor Autonomy Docs

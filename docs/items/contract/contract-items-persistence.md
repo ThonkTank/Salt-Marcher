@@ -83,8 +83,8 @@ return a storage-error result without changing published prior state.
 
 All catalog reads and explicit imports return `CompletionStage` results and
 schedule blocking work through the supplied `ExecutionLane`. SQLite and HTTP
-work therefore remain outside the JavaFX application thread; a future Catalog
-consumer may dispatch only the resulting immutable projection back to JavaFX.
+work therefore remain outside the interactive rendering path; a future Catalog
+consumer may dispatch only the resulting immutable projection to its view.
 
 ## Error And Compatibility Behavior
 
@@ -104,7 +104,7 @@ The current schema owner target is version `1`, created by its single direct
 initializer. Before the first released format, the initializer may be revised with the
 current target and never translates an earlier development shape. After the
 first released format, later compatible changes use a new Items-owned migration. Public
-API callers never infer compatibility from JDBC or table layout.
+API callers never infer compatibility from table layout.
 
 
 ## Attribution

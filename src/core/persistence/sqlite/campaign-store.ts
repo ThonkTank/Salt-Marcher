@@ -43,11 +43,15 @@ export class CampaignStore {
   create(name: string): CampaignSnapshot {
     const id = uuidv7()
     const createdAt = new Date().toISOString()
-    this.installation
-      .prepare('INSERT INTO campaigns (id, name, created_at) VALUES (?, ?, ?)')
-      .run(id, name, createdAt)
     this.ensureCampaignStore(id)
-    this.setActive(id)
+    this.installation.transaction(() => {
+      this.installation
+        .prepare(
+          'INSERT INTO campaigns (id, name, created_at) VALUES (?, ?, ?)'
+        )
+        .run(id, name, createdAt)
+      this.setActive(id)
+    })()
     return this.list()
   }
 

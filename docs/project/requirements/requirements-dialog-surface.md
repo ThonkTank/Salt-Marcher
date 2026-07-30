@@ -3,7 +3,7 @@
 ## Component Purpose
 
 The shared surface centralizes dialog-like layout for embedded state-tab surfaces
-and popup content. JavaFX section composition stays in the owning surface,
+and popup content. Section composition stays in the owning surface,
 while the surface owns header visibility, footer visibility, and body scroll
 policy.
 
@@ -14,7 +14,7 @@ policy.
 - Keep action buttons in the footer so navigation remains visible.
 - Do not put feature services, domain objects, or command decisions in this
   primitive.
-- Use the shared anchored-popup host when a dialog surface appears in a JavaFX
+- Use the shared anchored-popup host when a dialog surface appears in an
   popup.
 - The primitive must not own feature callbacks or domain-facing behavior.
 
@@ -29,7 +29,7 @@ policy.
   primitive
 - layout state remains presentation state rather than feature truth
 - popup-hosted dialog content uses the shared anchored host rather than opening
-  raw JavaFX popups directly from feature layout code
+  raw platform popups directly from feature layout code
 
 ## References
 

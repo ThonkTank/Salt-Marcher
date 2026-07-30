@@ -6,6 +6,8 @@ lives under `docs/<feature>/`; see [docs/README.md](../README.md).
 ## Direction
 
 - [Vision](vision.md) -- who SaltMarcher is for, and what it is not.
+- [Truth Manifest](truth-manifest.md) -- authoritative locations for product,
+  architecture, status, and evidence claims.
 
 ## Architecture
 
@@ -16,12 +18,6 @@ lives under `docs/<feature>/`; see [docs/README.md](../README.md).
   source shape, boundaries, security model, and data ownership. Start here.
 - [Electron Greenfield Migration](architecture/electron-greenfield-migration.md)
   -- versioned roadmap, decisions, progress, and blockers.
-- [Superseded JavaFX Source Architecture](architecture/source-architecture.md)
-  -- historical reference only.
-- Patterns: [feature boundaries](architecture/patterns/feature-boundaries.md),
-  [application composition](architecture/patterns/application-composition.md),
-  [shell layer](architecture/patterns/shell-layer.md), and
-  [styling](architecture/patterns/styling.md).
 
 ## Contracts
 

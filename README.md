@@ -7,10 +7,7 @@ preserved as Git reference `javafx-final-2026-07-27`.
 
 ## Quickstart
 
-The Electron implementation is introduced in the next migration package. Until
-then, consult the [migration plan](docs/project/architecture/electron-greenfield-migration.md).
-
-Once the Electron shell is present, run it from the repository root:
+Run the Electron shell from the repository root:
 
 ```bash
 pnpm dev
@@ -18,7 +15,7 @@ pnpm dev
 
 ## Local Data
 
-The Electron application will use an isolated development-data directory until
+The Electron application uses an isolated development-data directory until
 its first real-use release. It owns `installation.sqlite` plus one
 `campaigns/<id>/campaign.sqlite` per campaign; no legacy-data conversion is
 provided.

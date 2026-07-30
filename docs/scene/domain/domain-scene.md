@@ -57,5 +57,4 @@ features. Refresh removes Party IDs that are no longer active.
 ## References
 
 - [Scene Requirements](../requirements/requirements-scene.md)
-- [Scene Architecture](../architecture/architecture-scene.md)
 - [Scene Persistence Contract](../contract/contract-scene-persistence.md)

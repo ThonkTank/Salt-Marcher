@@ -117,5 +117,4 @@ Inspector surfaces so the user can:
 ## References
 
 - [World Planner Domain Model](../domain/domain-world-planner.md) (line 1)
-- [World Planner Architecture](../architecture/architecture-world-planner.md) (line 1)
 - [World Planner Persistence Contract](../contract/contract-world-planner-persistence.md) (line 1)

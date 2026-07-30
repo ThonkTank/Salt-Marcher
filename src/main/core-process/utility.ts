@@ -1,4 +1,5 @@
 import {
+  coreReadySchema,
   coreRequestSchema,
   type CampaignSnapshot
 } from '../../shared/contracts/campaign.js'
@@ -13,19 +14,21 @@ const dataRoot: string = suppliedDataRoot
 
 const campaigns = new CampaignStore(dataRoot)
 
+process.parentPort.postMessage(coreReadySchema.parse({ kind: 'core.ready' }))
+
 process.parentPort.on('message', (event) => {
   const raw: unknown = event.data
   const parsed = coreRequestSchema.safeParse(raw)
   if (!parsed.success) {
-    process.parentPort?.postMessage({
-      requestId: crypto.randomUUID(),
-      ok: false,
-      error: 'Invalid command'
-    })
     return
   }
 
   try {
+    if (parsed.data.kind === 'core.shutdown') {
+      respond(parsed.data.requestId, campaigns.list())
+      campaigns.close()
+      process.exit(0)
+    }
     if (parsed.data.kind === 'campaign.create') {
       const snapshot = campaigns.create(parsed.data.input.name)
       respond(parsed.data.requestId, snapshot)

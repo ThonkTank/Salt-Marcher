@@ -9,15 +9,9 @@ Items, saved Encounters, World Planner records, and Encounter Tables inside one
 
 1. Read [Catalog Requirements](requirements/requirements-catalog.md) for
    user-visible behavior and acceptance criteria.
-2. Read [Catalog Architecture](architecture/architecture-catalog.md) for the
-   durable target structure, ownership, and dependency direction.
 
 ## Document Set
 
 ### Requirements
 
 - [Catalog Requirements](requirements/requirements-catalog.md)
-
-### Architecture
-
-- [Catalog Architecture](architecture/architecture-catalog.md)

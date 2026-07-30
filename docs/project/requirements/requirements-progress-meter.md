@@ -3,7 +3,7 @@
 ## Component Purpose
 
 The reusable meter renders a compact track, filled region, centered text overlay,
-optional tooltip, and optional amount popup in one JavaFX control.
+optional tooltip, and optional amount popup in one interface control.
 
 The meter presents values supplied by its owning feature and keeps only local
 popup interaction state such as the current amount draft. It does not calculate

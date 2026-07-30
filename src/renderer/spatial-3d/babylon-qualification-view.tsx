@@ -7,6 +7,11 @@ import { Vector3 } from '@babylonjs/core/Maths/math.vector.js'
 import { CreateBox } from '@babylonjs/core/Meshes/Builders/boxBuilder.js'
 import { Scene } from '@babylonjs/core/scene.js'
 import { useEffect, useRef, useState, type ReactElement } from 'react'
+import {
+  InteractionSampler,
+  localPreviewBudgetMs,
+  recordedRunCount
+} from './render-qualification-metrics.js'
 
 /** M1 continuous dungeon prototype: chunk meshes, camera, hover/picking and selection. */
 export function BabylonQualificationView(): ReactElement {
@@ -34,6 +39,7 @@ export function BabylonQualificationView(): ReactElement {
       )
       camera.attachControl(element, true)
       new HemisphericLight('ambient', new Vector3(0, 1, 0), scene)
+      const chunks = new Map<string, ReturnType<typeof CreateBox>>()
       for (let x = -2; x <= 2; x += 1) {
         for (let z = -2; z <= 2; z += 1) {
           const chunk = CreateBox(
@@ -43,9 +49,37 @@ export function BabylonQualificationView(): ReactElement {
           )
           chunk.position.set(x * 4, -1, z * 4)
           chunk.isPickable = true
+          chunks.set(chunk.name, chunk)
         }
       }
       let hoveredName: string | undefined
+      let selectedName: string | undefined
+      const previewSampler = new InteractionSampler(localPreviewBudgetMs)
+      const rebuildPreview = (): void => {
+        if (selectedName === undefined) {
+          setStatus('Select a chunk before requesting a local preview.')
+          return
+        }
+        const selected = chunks.get(selectedName)
+        if (selected === undefined) return
+        const startedAt = performance.now()
+        const position = selected.position.clone()
+        selected.dispose()
+        const preview = CreateBox(
+          selectedName,
+          { width: 3.8, height: 1.2, depth: 3.8 },
+          scene
+        )
+        preview.position.copyFrom(position)
+        preview.isPickable = true
+        chunks.set(selectedName, preview)
+        const result = previewSampler.record(performance.now() - startedAt)
+        setStatus(
+          result === undefined
+            ? `Local preview rebuilt (${previewSampler.recordedSamples}/${recordedRunCount} recorded samples).`
+            : `Local preview p95 ${result.p95Ms.toFixed(2)} ms after ${recordedRunCount} samples (${result.passes ? 'passes' : 'fails'}).`
+        )
+      }
       scene.onPointerObservable.add((event) => {
         const pickedMesh = event.pickInfo?.pickedMesh
         if (
@@ -64,9 +98,16 @@ export function BabylonQualificationView(): ReactElement {
           pickedMesh !== null &&
           pickedMesh !== undefined
         ) {
+          selectedName = pickedMesh.name
           setStatus(`Selected ${pickedMesh.name}.`)
         }
       })
+      const previewWithKeyboard = (event: KeyboardEvent): void => {
+        if (event.key !== 'p' && event.key !== 'P') return
+        event.preventDefault()
+        rebuildPreview()
+      }
+      element.addEventListener('keydown', previewWithKeyboard)
       engine.onContextLostObservable.add(() => {
         setStatus('3D graphics context lost; waiting for restoration.')
       })
@@ -78,6 +119,7 @@ export function BabylonQualificationView(): ReactElement {
       window.addEventListener('resize', resize)
       return () => {
         window.removeEventListener('resize', resize)
+        element.removeEventListener('keydown', previewWithKeyboard)
         scene.dispose()
         engine.dispose()
       }
@@ -93,8 +135,10 @@ export function BabylonQualificationView(): ReactElement {
       <canvas
         ref={canvas}
         className="qualification-canvas"
+        tabIndex={0}
         aria-label="3D dungeon qualification view"
       />
+      <p>Press P after selecting a chunk to rebuild its local preview.</p>
       <p aria-live="polite">{status}</p>
     </>
   )
