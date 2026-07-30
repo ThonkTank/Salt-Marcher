@@ -34,11 +34,17 @@ On the M1 reference machine, record:
    1366 x 768 and the declared display scale. Record all p95 values and
    timeout failures.
 3. Exercise the supplied WebGL context-loss/restoration control for both 2D
-   and 3D views. The app
-   must retain its accessible text alternative and announce recovery rather
+   and 3D views at least 20 times each. After every restoration, perform the
+   indicated next pan, camera, hover/pick, or preview interaction; only the
+   displayed completed-cycle count is evidence of a successful recovery. The
+   app must retain its accessible text alternative and announce recovery rather
    than terminate.
 4. Keyboard operation of the 2D view and the text alternative with a screen
    reader. Record the reader and version used.
+5. Run **20 renderer build/dispose cycles**. Record the displayed cycle count,
+   before/after aggregate Electron working set, and settled canvas, mesh, and
+   listener counts. A non-settled result is a failed resource observation, not
+   a value to normalize away.
 
 The CI evidence route is `pnpm check`, `pnpm package`, and on Linux
 `xvfb-run -a pnpm test:e2e`. The E2E journey creates Campaign A, creates

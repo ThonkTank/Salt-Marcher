@@ -182,6 +182,14 @@ export function BabylonQualificationView({
         )
           setDownloadReady(true)
       })
+      const noteRecoveredInteraction = (): void => {
+        const completedBefore = recovery.current.completedCycles
+        recovery.current.observedNextInteraction()
+        if (recovery.current.completedCycles > completedBefore)
+          setStatus(
+            `3D context recovery cycle ${recovery.current.completedCycles} completed after a successful interaction.`
+          )
+      }
       const rebuildPreview = (): void => {
         if (selectedName === undefined) {
           previewTracker.cancel()
@@ -198,14 +206,14 @@ export function BabylonQualificationView({
         preview = createVoxelMesh(scene, previewVoxels)
         preview.position.set(-16, 0, -16)
         previewTracker.arm()
-        recovery.current.observedNextInteraction()
+        noteRecoveredInteraction()
         setStatus(
           `Local 32 × 32 × 16 voxel preview remeshed (${previewSampler.recordedSamples}/${recordedRunCount} recorded samples).`
         )
       }
       camera.onViewMatrixChangedObservable.add(() => {
         cameraTracker.arm()
-        recovery.current.observedNextInteraction()
+        noteRecoveredInteraction()
       })
       scene.onPointerObservable.add((event) => {
         const pickedMesh = event.pickInfo?.pickedMesh
@@ -223,7 +231,7 @@ export function BabylonQualificationView({
             )
             model.hover(pickedMesh.name)
             hoverTracker.arm()
-            recovery.current.observedNextInteraction()
+            noteRecoveredInteraction()
             setStatus(`Hovering ${pickedMesh.name}.`)
           }
         }
