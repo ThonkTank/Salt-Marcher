@@ -9,6 +9,11 @@ import {
 } from 'react'
 import type { CampaignSnapshot } from '../../shared/contracts/campaign.js'
 import { PixiQualificationView } from '../spatial-2d/pixi-qualification-view.js'
+import {
+  downloadRawQualificationSamples,
+  hasCompleteQualificationPopulations,
+  type QualificationPopulation
+} from '../spatial-3d/render-qualification-metrics.js'
 import { BabylonQualificationView } from '../spatial-3d/babylon-qualification-view.js'
 import { qualificationViewport } from '../spatial-2d/sparse-pixi-qualification.js'
 import {
@@ -29,7 +34,6 @@ const emptySnapshot: CampaignSnapshot = {
   activeCampaignId: null,
   campaigns: []
 }
-
 export function App(): ReactElement {
   const [snapshot, setSnapshot] = useState<CampaignSnapshot>(emptySnapshot)
   const [name, setName] = useState('')
@@ -38,6 +42,9 @@ export function App(): ReactElement {
   const [resourceCycleStatus, setResourceCycleStatus] = useState<string | null>(
     null
   )
+  const [qualificationSamples, setQualificationSamples] = useState<
+    Readonly<Partial<Record<QualificationPopulation, readonly number[]>>>
+  >({})
   const liveResources = useRef<RendererResourceCounts>({
     canvases: 0,
     meshes: 0,
@@ -68,6 +75,23 @@ export function App(): ReactElement {
     liveResources.current = subtractResources(liveResources.current, counts)
     resourceCycles.current.rendererDisposed()
   }, [])
+  const completePixiPopulation = useCallback((samples: readonly number[]) => {
+    setQualificationSamples((current) => ({ ...current, pixiPan: samples }))
+  }, [])
+  const completeBabylonPopulation = useCallback(
+    (
+      population: 'babylonCamera' | 'babylonHoverPick' | 'babylonVoxelPreview',
+      samples: readonly number[]
+    ) => {
+      setQualificationSamples((current) => ({
+        ...current,
+        [population]: samples
+      }))
+    },
+    []
+  )
+  const qualificationSamplesComplete =
+    hasCompleteQualificationPopulations(qualificationSamples)
   const runRendererResourceCycles = async (): Promise<void> => {
     try {
       resourceCycles.current.begin(liveResources.current)
@@ -187,6 +211,7 @@ export function App(): ReactElement {
                 model={spatialModel}
                 onResourcesCreated={resourcesCreated}
                 onResourcesDisposed={resourcesDisposed}
+                onPopulationComplete={completePixiPopulation}
               />
             </div>
             <div key={`babylon-${qualificationGeneration}`}>
@@ -195,6 +220,7 @@ export function App(): ReactElement {
                 model={spatialModel}
                 onResourcesCreated={resourcesCreated}
                 onResourcesDisposed={resourcesDisposed}
+                onPopulationComplete={completeBabylonPopulation}
               />
             </div>
           </div>
@@ -203,6 +229,15 @@ export function App(): ReactElement {
             onClick={() => void runRendererResourceCycles()}
           >
             Run 20 renderer build/dispose cycles
+          </button>
+          <button
+            type="button"
+            disabled={!qualificationSamplesComplete}
+            onClick={() =>
+              downloadCompleteQualificationSamples(qualificationSamples)
+            }
+          >
+            Download all complete raw timing populations
           </button>
           {resourceCycleStatus !== null ? (
             <p aria-live="polite">{resourceCycleStatus}</p>
@@ -238,6 +273,18 @@ function subtractResources(
 
 function settleRenderer(): Promise<void> {
   return new Promise((resolve) => globalThis.setTimeout(resolve, 100))
+}
+
+function downloadCompleteQualificationSamples(
+  populations: Readonly<
+    Partial<Record<QualificationPopulation, readonly number[]>>
+  >
+): void {
+  if (!hasCompleteQualificationPopulations(populations)) return
+  downloadRawQualificationSamples(
+    'm1-render-qualification-raw.json',
+    populations
+  )
 }
 
 async function waitForRendererBuilds(

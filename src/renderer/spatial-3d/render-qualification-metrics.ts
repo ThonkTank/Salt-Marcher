@@ -2,6 +2,14 @@ export const cameraAndHoverBudgetMs = 16
 export const localPreviewBudgetMs = 50
 export const warmupRunCount = 5
 export const recordedRunCount = 100
+export const requiredQualificationPopulations = [
+  'pixiPan',
+  'babylonCamera',
+  'babylonHoverPick',
+  'babylonVoxelPreview'
+] as const
+export type QualificationPopulation =
+  (typeof requiredQualificationPopulations)[number]
 
 export interface QualificationResult {
   readonly sampleCount: number
@@ -134,4 +142,14 @@ export function downloadRawQualificationSamples(
   anchor.download = filename
   anchor.click()
   URL.revokeObjectURL(objectUrl)
+}
+
+export function hasCompleteQualificationPopulations(
+  populations: Readonly<
+    Partial<Record<QualificationPopulation, readonly number[]>>
+  >
+): populations is Readonly<Record<QualificationPopulation, readonly number[]>> {
+  return requiredQualificationPopulations.every(
+    (population) => populations[population]?.length === recordedRunCount
+  )
 }

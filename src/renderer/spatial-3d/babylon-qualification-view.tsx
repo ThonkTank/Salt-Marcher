@@ -34,11 +34,16 @@ import { type RendererResourceCounts } from '../renderer-resource-cycle.js'
 export function BabylonQualificationView({
   model,
   onResourcesCreated,
-  onResourcesDisposed
+  onResourcesDisposed,
+  onPopulationComplete
 }: {
   readonly model: SpatialQualificationModel
   readonly onResourcesCreated?: (counts: RendererResourceCounts) => void
   readonly onResourcesDisposed?: (counts: RendererResourceCounts) => void
+  readonly onPopulationComplete?: (
+    population: 'babylonCamera' | 'babylonHoverPick' | 'babylonVoxelPreview',
+    samples: readonly number[]
+  ) => void
 }): ReactElement {
   const canvas = useRef<HTMLCanvasElement>(null)
   const downloadSamples = useRef<(() => void) | null>(null)
@@ -139,6 +144,8 @@ export function BabylonQualificationView({
         sampler: InteractionSampler,
         diagnostics: number[],
         label: string,
+        population:
+          'babylonCamera' | 'babylonHoverPick' | 'babylonVoxelPreview',
         measuredDuration: (timing: {
           readonly frameWorkMs: number
           readonly inputToPresentationMs: number
@@ -149,10 +156,12 @@ export function BabylonQualificationView({
         if (diagnostics.length < recordedRunCount)
           diagnostics.push(timing.inputToPresentationMs)
         const result = sampler.record(measuredDuration(timing))
-        if (result !== undefined)
+        if (result !== undefined) {
+          onPopulationComplete?.(population, sampler.samples)
           setStatus(
             `${label} p95 ${result.p95Ms.toFixed(2)} ms after ${recordedRunCount} samples.`
           )
+        }
       }
       scene.onBeforeRenderObservable.add(() => {
         cameraTracker.beforeRender()
@@ -166,6 +175,7 @@ export function BabylonQualificationView({
           cameraSampler,
           cameraInputToPresentation,
           '3D camera frame-work',
+          'babylonCamera',
           (timing) => timing.frameWorkMs
         )
         collect(
@@ -173,6 +183,7 @@ export function BabylonQualificationView({
           hoverSampler,
           hoverInputToPresentation,
           '3D hover/pick frame-work',
+          'babylonHoverPick',
           (timing) => timing.frameWorkMs
         )
         collect(
@@ -180,6 +191,7 @@ export function BabylonQualificationView({
           previewSampler,
           previewInputToPresentation,
           'Local voxel preview input-to-visible',
+          'babylonVoxelPreview',
           (timing) => timing.inputToPresentationMs
         )
         if (
@@ -296,7 +308,7 @@ export function BabylonQualificationView({
       )
       return
     }
-  }, [model, onResourcesCreated, onResourcesDisposed])
+  }, [model, onPopulationComplete, onResourcesCreated, onResourcesDisposed])
   return (
     <>
       <canvas

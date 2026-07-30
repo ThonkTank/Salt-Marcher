@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   cameraAndHoverBudgetMs,
   FrameMeasurementTracker,
+  hasCompleteQualificationPopulations,
   InteractionSampler,
   localPreviewBudgetMs,
   p95,
@@ -47,5 +48,24 @@ describe('render qualification metrics', () => {
       frameWorkMs: 5,
       inputToPresentationMs: 15
     })
+  })
+
+  it('only enables combined export after every named population has 100 samples', () => {
+    const samples = Array.from({ length: recordedRunCount }, () => 1)
+    expect(
+      hasCompleteQualificationPopulations({
+        pixiPan: samples,
+        babylonCamera: samples,
+        babylonHoverPick: samples
+      })
+    ).toBe(false)
+    expect(
+      hasCompleteQualificationPopulations({
+        pixiPan: samples,
+        babylonCamera: samples,
+        babylonHoverPick: samples,
+        babylonVoxelPreview: samples
+      })
+    ).toBe(true)
   })
 })

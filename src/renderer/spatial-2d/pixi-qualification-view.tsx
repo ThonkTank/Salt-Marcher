@@ -26,11 +26,13 @@ const cellIndex = createSparseCellIndex(cells)
 export function PixiQualificationView({
   model,
   onResourcesCreated,
-  onResourcesDisposed
+  onResourcesDisposed,
+  onPopulationComplete
 }: {
   readonly model: SpatialQualificationModel
   readonly onResourcesCreated?: (counts: RendererResourceCounts) => void
   readonly onResourcesDisposed?: (counts: RendererResourceCounts) => void
+  readonly onPopulationComplete?: (samples: readonly number[]) => void
 }): ReactElement {
   const host = useRef<HTMLDivElement>(null)
   const downloadSamples = useRef<(() => void) | null>(null)
@@ -100,6 +102,7 @@ export function PixiQualificationView({
             const result = interactionSampler.record(timing.frameWorkMs)
             if (result !== undefined) {
               setDownloadReady(true)
+              onPopulationComplete?.(interactionSampler.samples)
               setStatus(
                 `2D pan frame-work p95 ${result.p95Ms.toFixed(2)} ms after ${recordedRunCount} samples.`
               )
@@ -191,7 +194,7 @@ export function PixiQualificationView({
         onResourcesDisposed?.({ canvases: 1, meshes: 0, listeners: 4 })
       application.destroy(true, { children: true })
     }
-  }, [model, onResourcesCreated, onResourcesDisposed])
+  }, [model, onPopulationComplete, onResourcesCreated, onResourcesDisposed])
   return (
     <>
       <div
