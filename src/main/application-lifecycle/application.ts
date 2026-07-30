@@ -49,6 +49,12 @@ export async function startApplication(): Promise<void> {
       return requireCore().activate(input.data.id)
     })
   )
+  ipcMain.handle('runtime:memory', (event) => {
+    authorize(event, false)
+    return app
+      .getAppMetrics()
+      .reduce((total, metric) => total + metric.memory.workingSetSize * 1024, 0)
+  })
   createMainWindow()
   if (!isE2eRuntime()) createSecondaryWindow()
   app.on('activate', () => {

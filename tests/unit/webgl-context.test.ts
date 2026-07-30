@@ -64,5 +64,10 @@ describe('WebGL context-loss exercise', () => {
       rerendered: true,
       nextInteractionSucceeded: true
     })
+    expect(recovery.completedCycles).toBe(1)
+
+    recovery.requested()
+    expect(recovery.record.lossObserved).toBe(false)
+    expect(recovery.completedCycles).toBe(1)
   })
 })

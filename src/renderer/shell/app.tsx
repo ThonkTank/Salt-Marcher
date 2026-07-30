@@ -1,6 +1,8 @@
 import {
+  useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type FormEvent,
   type ReactElement
@@ -13,6 +15,10 @@ import {
   SpatialQualificationModel,
   type SpatialQualificationState
 } from '../spatial-qualification-model.js'
+import {
+  RendererResourceCycleTracker,
+  type RendererResourceCounts
+} from '../renderer-resource-cycle.js'
 
 declare global {
   interface Window {
@@ -28,6 +34,16 @@ export function App(): ReactElement {
   const [snapshot, setSnapshot] = useState<CampaignSnapshot>(emptySnapshot)
   const [name, setName] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [qualificationGeneration, setQualificationGeneration] = useState(0)
+  const [resourceCycleStatus, setResourceCycleStatus] = useState<string | null>(
+    null
+  )
+  const liveResources = useRef<RendererResourceCounts>({
+    canvases: 0,
+    meshes: 0,
+    listeners: 0
+  })
+  const resourceCycles = useRef(new RendererResourceCycleTracker())
   const spatialModel = useMemo(
     () => new SpatialQualificationModel(qualificationViewport()),
     []
@@ -44,6 +60,33 @@ export function App(): ReactElement {
       .catch((cause: unknown) => setError(readError(cause)))
   }, [])
   useEffect(() => spatialModel.subscribe(setSpatialState), [spatialModel])
+  const resourcesCreated = useCallback((counts: RendererResourceCounts) => {
+    liveResources.current = addResources(liveResources.current, counts)
+    resourceCycles.current.rendererBuilt()
+  }, [])
+  const resourcesDisposed = useCallback((counts: RendererResourceCounts) => {
+    liveResources.current = subtractResources(liveResources.current, counts)
+    resourceCycles.current.rendererDisposed()
+  }, [])
+  const runRendererResourceCycles = async (): Promise<void> => {
+    resourceCycles.current.begin(liveResources.current)
+    setResourceCycleStatus('Running 20 renderer build/dispose cycles…')
+    const processMemoryBytesBefore =
+      await window.saltMarcher.runtime.processMemoryBytes()
+    for (let cycle = 1; cycle <= 20; cycle += 1) {
+      setQualificationGeneration((current) => current + 1)
+      await settleRenderer()
+    }
+    await settleRenderer()
+    const result = resourceCycles.current.finish(liveResources.current)
+    const processMemoryBytesAfterSettling =
+      await window.saltMarcher.runtime.processMemoryBytes()
+    setResourceCycleStatus(
+      result.settled && result.rendererCycles >= 20
+        ? `Completed ${result.rendererCycles} renderer cycles with stable canvas, mesh, and listener counts. Process working set: ${processMemoryBytesBefore} → ${processMemoryBytesAfterSettling} bytes.`
+        : `Resource cycle check did not settle (${result.rendererCycles} completed cycles). Record this as a failed resource observation.`
+    )
+  }
   async function createCampaign(
     event: FormEvent<HTMLFormElement>
   ): Promise<void> {
@@ -132,20 +175,63 @@ export function App(): ReactElement {
             renders pickable dungeon chunks with a local preview path.
           </p>
           <div className="qualification-grid">
-            <div>
+            <div key={`pixi-${qualificationGeneration}`}>
               <h3>2D sparse map</h3>
-              <PixiQualificationView model={spatialModel} />
+              <PixiQualificationView
+                model={spatialModel}
+                onResourcesCreated={resourcesCreated}
+                onResourcesDisposed={resourcesDisposed}
+              />
             </div>
-            <div>
+            <div key={`babylon-${qualificationGeneration}`}>
               <h3>3D dungeon</h3>
-              <BabylonQualificationView model={spatialModel} />
+              <BabylonQualificationView
+                model={spatialModel}
+                onResourcesCreated={resourcesCreated}
+                onResourcesDisposed={resourcesDisposed}
+              />
             </div>
           </div>
+          <button
+            type="button"
+            onClick={() => void runRendererResourceCycles()}
+          >
+            Run 20 renderer build/dispose cycles
+          </button>
+          {resourceCycleStatus !== null ? (
+            <p aria-live="polite">{resourceCycleStatus}</p>
+          ) : null}
           <SpatialTextAlternative model={spatialModel} state={spatialState} />
         </section>
       ) : null}
     </main>
   )
+}
+
+function addResources(
+  current: RendererResourceCounts,
+  added: RendererResourceCounts
+): RendererResourceCounts {
+  return {
+    canvases: current.canvases + added.canvases,
+    meshes: current.meshes + added.meshes,
+    listeners: current.listeners + added.listeners
+  }
+}
+
+function subtractResources(
+  current: RendererResourceCounts,
+  removed: RendererResourceCounts
+): RendererResourceCounts {
+  return {
+    canvases: Math.max(0, current.canvases - removed.canvases),
+    meshes: Math.max(0, current.meshes - removed.meshes),
+    listeners: Math.max(0, current.listeners - removed.listeners)
+  }
+}
+
+function settleRenderer(): Promise<void> {
+  return new Promise((resolve) => globalThis.setTimeout(resolve, 100))
 }
 
 function SpatialTextAlternative({

@@ -18,14 +18,19 @@ import {
   webgl2Description
 } from '../spatial-3d/webgl-context.js'
 import { type SpatialQualificationModel } from '../spatial-qualification-model.js'
+import { type RendererResourceCounts } from '../renderer-resource-cycle.js'
 
 const cells = createSparseQualificationCells()
 const cellIndex = createSparseCellIndex(cells)
 
 export function PixiQualificationView({
-  model
+  model,
+  onResourcesCreated,
+  onResourcesDisposed
 }: {
   readonly model: SpatialQualificationModel
+  readonly onResourcesCreated?: (counts: RendererResourceCounts) => void
+  readonly onResourcesDisposed?: (counts: RendererResourceCounts) => void
 }): ReactElement {
   const host = useRef<HTMLDivElement>(null)
   const downloadSamples = useRef<(() => void) | null>(null)
@@ -40,6 +45,7 @@ export function PixiQualificationView({
     if (element === null) return
     const application = new Application()
     let disposed = false
+    let resourcesCreated = false
     let detachListeners = (): void => undefined
     void application
       .init({
@@ -66,6 +72,8 @@ export function PixiQualificationView({
         const graphic = new Graphics()
         layer.addChild(graphic)
         application.stage.addChild(layer)
+        resourcesCreated = true
+        onResourcesCreated?.({ canvases: 1, meshes: 0, listeners: 4 })
         const viewport = { ...model.state.viewport }
         const interactionSampler = new InteractionSampler()
         const inputToPresentation: number[] = []
@@ -73,7 +81,8 @@ export function PixiQualificationView({
         downloadSamples.current = () => {
           downloadRawQualificationSamples('m1-pixi-pan-raw.json', {
             pixiPanFrameWork: interactionSampler.samples,
-            pixiPanInputToPresentation: inputToPresentation
+            pixiPanInputToPresentation: inputToPresentation,
+            pixiContextRecoveryCycles: [recovery.current.completedCycles]
           })
         }
         const postrenderListener = {
@@ -82,6 +91,10 @@ export function PixiQualificationView({
             const timing = frameTracker.afterRender()
             if (timing === undefined) return
             recovery.current.observedNextInteraction()
+            if (recovery.current.completedCycles > 0)
+              setStatus(
+                `2D context recovery cycle ${recovery.current.completedCycles} completed after a successful pan.`
+              )
             if (inputToPresentation.length < recordedRunCount)
               inputToPresentation.push(timing.inputToPresentationMs)
             const result = interactionSampler.record(timing.frameWorkMs)
@@ -141,7 +154,9 @@ export function PixiQualificationView({
         }
         const contextRestored = (): void => {
           recovery.current.observedRestoration()
-          setStatus('2D graphics context restored.')
+          setStatus(
+            '2D graphics context restored; pan once to complete this cycle.'
+          )
         }
         element.addEventListener('keydown', pan)
         application.canvas.addEventListener('webglcontextlost', contextLost)
@@ -172,9 +187,11 @@ export function PixiQualificationView({
       setContextCanvas(null)
       detachListeners()
       downloadSamples.current = null
+      if (resourcesCreated)
+        onResourcesDisposed?.({ canvases: 1, meshes: 0, listeners: 4 })
       application.destroy(true, { children: true })
     }
-  }, [model])
+  }, [model, onResourcesCreated, onResourcesDisposed])
   return (
     <>
       <div

@@ -23,12 +23,25 @@ export class ContextRecoveryTracker {
     rerendered: false,
     nextInteractionSucceeded: false
   }
+  #completedCycles = 0
 
   public get record(): ContextRecoveryRecord {
     return this.#record
   }
 
+  public get completedCycles(): number {
+    return this.#completedCycles
+  }
+
   public requested(): void {
+    if (this.#record.lossRequested)
+      this.#record = {
+        lossRequested: false,
+        lossObserved: false,
+        restorationObserved: false,
+        rerendered: false,
+        nextInteractionSucceeded: false
+      }
     this.#record = { ...this.#record, lossRequested: true }
   }
 
@@ -48,8 +61,10 @@ export class ContextRecoveryTracker {
   }
 
   public observedNextInteraction(): void {
-    if (this.#record.rerendered)
+    if (this.#record.rerendered && !this.#record.nextInteractionSucceeded) {
       this.#record = { ...this.#record, nextInteractionSucceeded: true }
+      this.#completedCycles += 1
+    }
   }
 }
 

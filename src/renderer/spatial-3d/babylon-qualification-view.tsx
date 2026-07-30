@@ -28,12 +28,17 @@ import {
   webgl2Description
 } from './webgl-context.js'
 import { type SpatialQualificationModel } from '../spatial-qualification-model.js'
+import { type RendererResourceCounts } from '../renderer-resource-cycle.js'
 
 /** M1 continuous dungeon prototype: chunk meshes, camera, hover/picking and selection. */
 export function BabylonQualificationView({
-  model
+  model,
+  onResourcesCreated,
+  onResourcesDisposed
 }: {
   readonly model: SpatialQualificationModel
+  readonly onResourcesCreated?: (counts: RendererResourceCounts) => void
+  readonly onResourcesDisposed?: (counts: RendererResourceCounts) => void
 }): ReactElement {
   const canvas = useRef<HTMLCanvasElement>(null)
   const downloadSamples = useRef<(() => void) | null>(null)
@@ -110,12 +115,14 @@ export function BabylonQualificationView({
           babylonVoxelPreview: previewSampler.samples,
           babylonCameraInputToPresentation: cameraInputToPresentation,
           babylonHoverPickInputToPresentation: hoverInputToPresentation,
-          babylonVoxelPreviewInputToPresentation: previewInputToPresentation
+          babylonVoxelPreviewInputToPresentation: previewInputToPresentation,
+          babylonContextRecoveryCycles: [recovery.current.completedCycles]
         })
       }
       let previewVoxels = createQualificationVoxelChunk()
       let preview = createVoxelMesh(scene, previewVoxels)
       preview.position.set(-16, 0, -16)
+      onResourcesCreated?.({ canvases: 1, meshes: 26, listeners: 8 })
       const unsubscribeModel = model.subscribe((state) => {
         selectedName = state.selectedChunk ?? undefined
         for (const chunk of chunks.values())
@@ -250,7 +257,9 @@ export function BabylonQualificationView({
       })
       engine.onContextRestoredObservable.add(() => {
         recovery.current.observedRestoration()
-        setStatus('3D graphics context restored.')
+        setStatus(
+          '3D graphics context restored; move the camera, hover, or rebuild a preview to complete this cycle.'
+        )
       })
       engine.runRenderLoop(() => scene.render())
       const resize = () => engine.resize()
@@ -262,6 +271,7 @@ export function BabylonQualificationView({
         element.removeEventListener('pointerup', cancelCameraMeasurement, true)
         downloadSamples.current = null
         unsubscribeModel()
+        onResourcesDisposed?.({ canvases: 1, meshes: 26, listeners: 8 })
         scene.dispose()
         engine.dispose()
       }
@@ -271,7 +281,7 @@ export function BabylonQualificationView({
       )
       return
     }
-  }, [model])
+  }, [model, onResourcesCreated, onResourcesDisposed])
   return (
     <>
       <canvas
