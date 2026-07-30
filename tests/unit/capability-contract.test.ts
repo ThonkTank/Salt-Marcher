@@ -17,6 +17,23 @@ describe('capability contract', () => {
     ).toBe(false)
   })
 
+  it('rejects unknown fields instead of silently dropping them', () => {
+    expect(
+      campaignCapabilityResponseSchema.safeParse({
+        ok: false,
+        error: { code: 'internal', retryable: false },
+        technicalDetail: 'sqlite error'
+      }).success
+    ).toBe(false)
+    expect(
+      capabilityFailureSchema.safeParse({
+        code: 'internal',
+        retryable: false,
+        message: 'sqlite error'
+      }).success
+    ).toBe(false)
+  })
+
   it('carries code and retryability without a technical message', () => {
     const error = new CapabilityError('timeout', true)
 

@@ -149,7 +149,11 @@ export class CoreProcessClient {
         },
         (error: unknown) => {
           clearTimeout(timeout)
-          reject(error instanceof Error ? error : new Error(String(error)))
+          reject(
+            error instanceof CapabilityError
+              ? error
+              : new CapabilityError('internal', false)
+          )
         }
       )
     })
