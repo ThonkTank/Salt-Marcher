@@ -28,8 +28,13 @@ import {
 import {
   RendererResourceCycleTracker,
   type QualificationRenderer,
+  type RendererCycleResult,
   type RendererResourceCounts
 } from '../renderer-resource-cycle.js'
+import {
+  runtimeObservationSchema,
+  type ContextRecoveryObservation
+} from '../../shared/qualification/runtime-observation.js'
 
 declare global {
   interface Window {
@@ -51,6 +56,25 @@ export function App(): ReactElement {
   const [qualificationSamples, setQualificationSamples] = useState<
     Readonly<Partial<Record<QualificationPopulation, readonly number[]>>>
   >({})
+  const [configuration, setConfiguration] = useState<
+    'normal' | 'scale200Percent'
+  >('normal')
+  const [contextLoss, setContextLoss] = useState<
+    Partial<Record<QualificationRenderer, ContextRecoveryObservation>>
+  >({})
+  const [webgl, setWebgl] = useState<
+    Partial<
+      Record<
+        QualificationRenderer,
+        { readonly version: string; readonly renderer: string }
+      >
+    >
+  >({})
+  const [resourceObservation, setResourceObservation] = useState<{
+    readonly result: RendererCycleResult
+    readonly processMemoryBytesBefore: readonly number[]
+    readonly processMemoryBytesAfterSettling: readonly number[]
+  } | null>(null)
   const rendererResources = useRef<
     Partial<Record<QualificationRenderer, RendererResourceCounts>>
   >({})
@@ -88,6 +112,42 @@ export function App(): ReactElement {
   const completePixiPopulation = useCallback((samples: readonly number[]) => {
     setQualificationSamples((current) => ({ ...current, pixiPan: samples }))
   }, [])
+  const updateContextLoss = useCallback(
+    (
+      renderer: QualificationRenderer,
+      observation: ContextRecoveryObservation
+    ) => {
+      setContextLoss((current) => ({ ...current, [renderer]: observation }))
+    },
+    []
+  )
+  const updateWebgl = useCallback(
+    (
+      renderer: QualificationRenderer,
+      observation: { readonly version: string; readonly renderer: string }
+    ) => setWebgl((current) => ({ ...current, [renderer]: observation })),
+    []
+  )
+  const updatePixiContextLoss = useCallback(
+    (observation: ContextRecoveryObservation) =>
+      updateContextLoss('pixi', observation),
+    [updateContextLoss]
+  )
+  const updateBabylonContextLoss = useCallback(
+    (observation: ContextRecoveryObservation) =>
+      updateContextLoss('babylon', observation),
+    [updateContextLoss]
+  )
+  const updatePixiWebgl = useCallback(
+    (observation: { readonly version: string; readonly renderer: string }) =>
+      updateWebgl('pixi', observation),
+    [updateWebgl]
+  )
+  const updateBabylonWebgl = useCallback(
+    (observation: { readonly version: string; readonly renderer: string }) =>
+      updateWebgl('babylon', observation),
+    [updateWebgl]
+  )
   const completeBabylonPopulation = useCallback(
     (
       population: 'babylonCamera' | 'babylonHoverPick' | 'babylonVoxelPreview',
@@ -116,6 +176,11 @@ export function App(): ReactElement {
         observedResources(rendererResources.current)
       )
       const processMemoryBytesAfterSettling = await settledWorkingSetSamples()
+      setResourceObservation({
+        result,
+        processMemoryBytesBefore,
+        processMemoryBytesAfterSettling
+      })
       setResourceCycleStatus(
         result.settled && result.rendererCycles >= 20
           ? `Completed ${result.rendererCycles} renderer cycles with stable canvas, mesh, and listener counts. Settled process working sets: ${processMemoryBytesBefore.join(', ')} → ${processMemoryBytesAfterSettling.join(', ')} bytes.`
@@ -227,6 +292,8 @@ export function App(): ReactElement {
                 onResourcesCreated={resourcesCreated}
                 onResourcesDisposed={resourcesDisposed}
                 onPopulationComplete={completePixiPopulation}
+                onContextRecoveryChange={updatePixiContextLoss}
+                onWebglReady={updatePixiWebgl}
               />
             </div>
             <div key={`babylon-${qualificationGeneration}`}>
@@ -236,6 +303,8 @@ export function App(): ReactElement {
                 onResourcesCreated={resourcesCreated}
                 onResourcesDisposed={resourcesDisposed}
                 onPopulationComplete={completeBabylonPopulation}
+                onContextRecoveryChange={updateBabylonContextLoss}
+                onWebglReady={updateBabylonWebgl}
               />
             </div>
           </div>
@@ -253,6 +322,38 @@ export function App(): ReactElement {
             }
           >
             Download all complete raw timing populations
+          </button>
+          <label htmlFor="qualification-configuration">
+            Measurement configuration
+          </label>
+          <select
+            id="qualification-configuration"
+            value={configuration}
+            onChange={(event) =>
+              setConfiguration(
+                event.target.value as 'normal' | 'scale200Percent'
+              )
+            }
+          >
+            <option value="normal">Normal display</option>
+            <option value="scale200Percent">200% display scaling</option>
+          </select>
+          <button
+            type="button"
+            disabled={
+              !qualificationSamplesComplete || !hasWebglObservations(webgl)
+            }
+            onClick={() =>
+              void downloadRuntimeObservation(
+                configuration,
+                qualificationSamples,
+                contextLoss,
+                webgl,
+                resourceObservation
+              )
+            }
+          >
+            Download complete runtime observation
           </button>
           {resourceCycleStatus !== null ? (
             <p aria-live="polite">{resourceCycleStatus}</p>
@@ -303,6 +404,101 @@ function downloadCompleteQualificationSamples(
     'm1-render-qualification-raw.json',
     populations
   )
+}
+
+function hasWebglObservations(
+  observations: Partial<
+    Record<
+      QualificationRenderer,
+      { readonly version: string; readonly renderer: string }
+    >
+  >
+): observations is Record<
+  QualificationRenderer,
+  { readonly version: string; readonly renderer: string }
+> {
+  return observations.pixi !== undefined && observations.babylon !== undefined
+}
+
+async function downloadRuntimeObservation(
+  configuration: 'normal' | 'scale200Percent',
+  populations: Readonly<
+    Partial<Record<QualificationPopulation, readonly number[]>>
+  >,
+  contextLoss: Partial<
+    Record<QualificationRenderer, ContextRecoveryObservation>
+  >,
+  webgl: Partial<
+    Record<
+      QualificationRenderer,
+      { readonly version: string; readonly renderer: string }
+    >
+  >,
+  resources: {
+    readonly result: RendererCycleResult
+    readonly processMemoryBytesBefore: readonly number[]
+    readonly processMemoryBytesAfterSettling: readonly number[]
+  } | null
+): Promise<void> {
+  if (
+    !hasCompleteQualificationPopulations(populations) ||
+    !hasWebglObservations(webgl)
+  )
+    return
+  const artifact = runtimeObservationSchema.parse({
+    captureKind: 'm1-runtime-observation',
+    formatVersion: 'm1-runtime-observation-v1',
+    recordedAt: new Date().toISOString(),
+    configuration,
+    environment: {
+      userAgent: navigator.userAgent,
+      displayWidth: window.screen.width,
+      displayHeight: window.screen.height,
+      devicePixelRatio: window.devicePixelRatio,
+      gpu: await window.saltMarcher.runtime.gpuObservation(),
+      webgl: { pixi: webgl.pixi, babylon: webgl.babylon }
+    },
+    populations,
+    contextLoss: {
+      pixi: contextLoss.pixi ?? emptyRecoveryObservation(),
+      babylon: contextLoss.babylon ?? emptyRecoveryObservation()
+    },
+    resources:
+      resources === null
+        ? null
+        : {
+            rendererCycles: resources.result.rendererCycles,
+            rendererBuilds: resources.result.rendererBuilds,
+            rendererDisposals: resources.result.rendererDisposals,
+            before: resources.result.before,
+            after: resources.result.after,
+            settled: resources.result.settled,
+            processMemoryBytesBefore: resources.processMemoryBytesBefore,
+            processMemoryBytesAfterSettling:
+              resources.processMemoryBytesAfterSettling
+          }
+  })
+  const anchor = document.createElement('a')
+  const objectUrl = URL.createObjectURL(
+    new Blob([JSON.stringify(artifact, null, 2)], {
+      type: 'application/json'
+    })
+  )
+  anchor.href = objectUrl
+  anchor.download = `m1-runtime-observation-${configuration}.json`
+  anchor.click()
+  URL.revokeObjectURL(objectUrl)
+}
+
+function emptyRecoveryObservation(): ContextRecoveryObservation {
+  return {
+    requestedCycles: 0,
+    observedLossCycles: 0,
+    restoredCycles: 0,
+    rerenderedCycles: 0,
+    nextInteractionSucceededCycles: 0,
+    completedCycles: 0
+  }
 }
 
 async function waitForRendererBuilds(

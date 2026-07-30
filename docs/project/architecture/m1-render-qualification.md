@@ -52,6 +52,17 @@ On the M1 reference machine, record:
    teardown. A non-settled result is a failed resource observation, not a
    value to normalize away.
 
+The packaged application exports these machine observations as a
+versioned `m1-runtime-observation-v1` JSON download. A download made after the
+four complete timing populations contains their raw samples, the selected
+configuration, display/DPR, concrete Pixi and Babylon WebGL version/renderer
+strings, Electron GPU feature status, active driver devices, and the
+software-rendering verdict. A post-resource-run download additionally contains
+the complete resource result and both working-set sample sets. The operator
+must use separate fresh processes and separate downloads for normal and 200%
+display scaling; the only manual M1 record is keyboard/text-alternative and
+screen-reader acceptance.
+
 The CI evidence route is `pnpm check`, `pnpm package`, and on Linux
 `xvfb-run -a pnpm test:e2e`. The E2E journey creates Campaign A, creates
 Campaign B, returns to A, then starts a second Electron process with the same

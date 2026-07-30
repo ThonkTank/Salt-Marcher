@@ -24,6 +24,11 @@ export class ContextRecoveryTracker {
     nextInteractionSucceeded: false
   }
   #completedCycles = 0
+  #requestedCycles = 0
+  #observedLossCycles = 0
+  #restoredCycles = 0
+  #rerenderedCycles = 0
+  #nextInteractionSucceededCycles = 0
 
   public get record(): ContextRecoveryRecord {
     return this.#record
@@ -31,6 +36,17 @@ export class ContextRecoveryTracker {
 
   public get completedCycles(): number {
     return this.#completedCycles
+  }
+
+  public get observation(): ContextRecoveryObservation {
+    return {
+      requestedCycles: this.#requestedCycles,
+      observedLossCycles: this.#observedLossCycles,
+      restoredCycles: this.#restoredCycles,
+      rerenderedCycles: this.#rerenderedCycles,
+      nextInteractionSucceededCycles: this.#nextInteractionSucceededCycles,
+      completedCycles: this.#completedCycles
+    }
   }
 
   public requested(): void {
@@ -43,27 +59,35 @@ export class ContextRecoveryTracker {
         nextInteractionSucceeded: false
       }
     this.#record = { ...this.#record, lossRequested: true }
+    this.#requestedCycles += 1
   }
 
   public observedLoss(): void {
-    if (this.#record.lossRequested)
+    if (this.#record.lossRequested && !this.#record.lossObserved) {
       this.#record = { ...this.#record, lossObserved: true }
+      this.#observedLossCycles += 1
+    }
   }
 
   public observedRestoration(): void {
-    if (this.#record.lossObserved)
+    if (this.#record.lossObserved && !this.#record.restorationObserved) {
       this.#record = { ...this.#record, restorationObserved: true }
+      this.#restoredCycles += 1
+    }
   }
 
   public observedRerender(): void {
-    if (this.#record.restorationObserved)
+    if (this.#record.restorationObserved && !this.#record.rerendered) {
       this.#record = { ...this.#record, rerendered: true }
+      this.#rerenderedCycles += 1
+    }
   }
 
   public observedNextInteraction(): void {
     if (this.#record.rerendered && !this.#record.nextInteractionSucceeded) {
       this.#record = { ...this.#record, nextInteractionSucceeded: true }
       this.#completedCycles += 1
+      this.#nextInteractionSucceededCycles += 1
     }
   }
 }
@@ -91,3 +115,12 @@ export function webgl2Description(
   if (context === null) return undefined
   return context.getParameter(context.VERSION) as string
 }
+
+export function webgl2Renderer(canvas: HTMLCanvasElement): string | undefined {
+  const context = canvas.getContext('webgl2')
+  if (context === null) return undefined
+  const debug = context.getExtension('WEBGL_debug_renderer_info')
+  if (debug === null) return 'unavailable (WEBGL_debug_renderer_info disabled)'
+  return context.getParameter(debug.UNMASKED_RENDERER_WEBGL) as string
+}
+import type { ContextRecoveryObservation } from '../../shared/qualification/runtime-observation.js'

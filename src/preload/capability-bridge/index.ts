@@ -6,6 +6,7 @@ import {
   freezeCampaignSnapshot
 } from '../../shared/contracts/campaign.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
+import { runtimeGpuObservationSchema } from '../../shared/qualification/runtime-observation.js'
 import type {
   CampaignCapability,
   CampaignReadCapability,
@@ -46,6 +47,13 @@ const api: SaltMarcherApi = {
       )
         throw new Error('Invalid runtime memory response')
       return value
+    },
+    async gpuObservation() {
+      const response = runtimeGpuObservationSchema.safeParse(
+        await ipcRenderer.invoke('runtime:gpu-observation')
+      )
+      if (!response.success) throw new Error('Invalid runtime GPU response')
+      return response.data
     }
   })
 }

@@ -15,8 +15,10 @@ import {
 import {
   ContextRecoveryTracker,
   exerciseWebglContextLoss,
-  webgl2Description
+  webgl2Description,
+  webgl2Renderer
 } from '../spatial-3d/webgl-context.js'
+import type { ContextRecoveryObservation } from '../../shared/qualification/runtime-observation.js'
 import { type SpatialQualificationModel } from '../spatial-qualification-model.js'
 import {
   ListenerRegistrationTracker,
@@ -31,7 +33,9 @@ export function PixiQualificationView({
   model,
   onResourcesCreated,
   onResourcesDisposed,
-  onPopulationComplete
+  onPopulationComplete,
+  onContextRecoveryChange,
+  onWebglReady
 }: {
   readonly model: SpatialQualificationModel
   readonly onResourcesCreated?: (
@@ -43,6 +47,13 @@ export function PixiQualificationView({
     counts: RendererResourceCounts
   ) => void
   readonly onPopulationComplete?: (samples: readonly number[]) => void
+  readonly onContextRecoveryChange?: (
+    observation: ContextRecoveryObservation
+  ) => void
+  readonly onWebglReady?: (observation: {
+    readonly version: string
+    readonly renderer: string
+  }) => void
 }): ReactElement {
   const host = useRef<HTMLDivElement>(null)
   const downloadSamples = useRef<(() => void) | null>(null)
@@ -79,6 +90,10 @@ export function PixiQualificationView({
           application.destroy(true, { children: true })
           return
         }
+        onWebglReady?.({
+          version: backend,
+          renderer: webgl2Renderer(application.canvas) ?? 'unavailable'
+        })
         const layer = new Container()
         layer.scale.set(0.4)
         const graphic = new Graphics()
@@ -98,9 +113,11 @@ export function PixiQualificationView({
         const postrenderListener = {
           postrender: () => {
             recovery.current.observedRerender()
+            onContextRecoveryChange?.(recovery.current.observation)
             const timing = frameTracker.afterRender()
             if (timing === undefined) return
             recovery.current.observedNextInteraction()
+            onContextRecoveryChange?.(recovery.current.observation)
             if (recovery.current.completedCycles > 0)
               setStatus(
                 `2D context recovery cycle ${recovery.current.completedCycles} completed after a successful pan.`
@@ -166,10 +183,12 @@ export function PixiQualificationView({
         const contextLost = (event: Event): void => {
           event.preventDefault()
           recovery.current.observedLoss()
+          onContextRecoveryChange?.(recovery.current.observation)
           setStatus('2D graphics context lost; waiting for restoration.')
         }
         const contextRestored = (): void => {
           recovery.current.observedRestoration()
+          onContextRecoveryChange?.(recovery.current.observation)
           setStatus(
             '2D graphics context restored; pan once to complete this cycle.'
           )
@@ -205,7 +224,14 @@ export function PixiQualificationView({
           listeners: listeners.count
         })
     }
-  }, [model, onPopulationComplete, onResourcesCreated, onResourcesDisposed])
+  }, [
+    model,
+    onContextRecoveryChange,
+    onPopulationComplete,
+    onResourcesCreated,
+    onResourcesDisposed,
+    onWebglReady
+  ])
   return (
     <>
       <div
@@ -221,9 +247,10 @@ export function PixiQualificationView({
         onClick={() => {
           if (
             contextCanvas === null ||
-            !exerciseWebglContextLoss(contextCanvas, () =>
+            !exerciseWebglContextLoss(contextCanvas, () => {
               recovery.current.requested()
-            )
+              onContextRecoveryChange?.(recovery.current.observation)
+            })
           )
             setStatus(
               'This browser does not expose the WebGL context-loss test extension.'
