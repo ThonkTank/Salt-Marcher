@@ -104,6 +104,11 @@ export class CoreProcessClient {
           this.#pending.delete(requestId.data.requestId)
           pending.reject(new CapabilityError('protocol_violation', false))
         }
+      } else {
+        // An uncorrelatable utility response cannot be retried safely. Reject
+        // every waiter now instead of silently converting a protocol breach
+        // into an unrelated timeout.
+        this.fail(new CapabilityError('protocol_violation', false))
       }
       return
     }
