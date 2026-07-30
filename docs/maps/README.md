@@ -15,17 +15,6 @@ does not own adopter domain, persistence, or gameplay semantics.
 
 - [Maps Canvas Requirements](./requirements/requirements-maps-canvas.md)
 
-### Architecture
-
-- [Maps Canvas Architecture](./architecture/architecture-maps-canvas.md)
-- [Dungeon Map Adoption Architecture](./architecture/architecture-maps-dungeon-adoption.md)
-- [Hex Map Adoption Architecture](./architecture/architecture-maps-hex-adoption.md)
-
-### Contracts
-
-- [Maps Canvas Contract](./contract/contract-maps-canvas.md)
-- [Dungeon Map Surface Contract](./contract/contract-maps-dungeon-surface.md)
-
 ## Adopters
 
 - Dungeon adopts the passive canvas through its feature-owned translation and

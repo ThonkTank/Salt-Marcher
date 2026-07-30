@@ -30,7 +30,6 @@ Generic shared map-canvas behavior remains canonical in `docs/maps/`.
 
 - [Map Canvas Overview](../maps/README.md) (line 1)
 - [Maps Canvas Requirements](../maps/requirements/requirements-maps-canvas.md) (line 1)
-- [Hex Map Adoption Architecture](../maps/architecture/architecture-maps-hex-adoption.md) (line 1)
 
 ## References
 

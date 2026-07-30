@@ -2,7 +2,7 @@
 
 ## Component Purpose
 
-The anchored popup centralizes JavaFX popup hosting, visibility, placement,
+The anchored popup centralizes popup hosting, visibility, placement,
 offset, width, focus restoration, auto-hide, and Escape handling.
 
 ## Rules

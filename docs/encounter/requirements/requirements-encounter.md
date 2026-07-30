@@ -108,4 +108,3 @@ Generated preparation is a separate Session Planner-driven flow:
 - [Encounter Persistence Contract](../contract/contract-encounter-persistence.md) (line 1)
 - [Encounter Table Feature Spec](../../encountertable/requirements/requirements-encountertable.md) (line 1)
 - [Generated Preparation Contract](../contract/contract-encounter-generated-import.md)
-- [Architecture](../architecture/architecture-encounter.md)

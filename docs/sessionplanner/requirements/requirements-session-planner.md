@@ -180,6 +180,5 @@ The last stable workspace remains visible in every non-ready state.
 
 - [Domain](../domain/domain-session-planner.md)
 - [Persistence Contract](../contract/contract-session-planner-persistence.md)
-- [Architecture](../architecture/architecture-session-planner.md)
 - [Session Generation Requirements](../../sessiongeneration/requirements/requirements-session-generation.md)
 - [Encounter Requirements](../../encounter/requirements/requirements-encounter.md)

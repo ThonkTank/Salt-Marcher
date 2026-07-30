@@ -6,18 +6,18 @@ lives under `docs/<feature>/`; see [docs/README.md](../README.md).
 ## Direction
 
 - [Vision](vision.md) -- who SaltMarcher is for, and what it is not.
+- [Truth Manifest](truth-manifest.md) -- authoritative locations for product,
+  architecture, status, and evidence claims.
 
 ## Architecture
 
 - [Program Technical Needs](architecture/program-technical-needs.md) --
   solution-neutral obligations and measurable quality scenarios derived from
   the confirmed complete local GM-core needs.
-- [Source Architecture](architecture/source-architecture.md) -- target source
-  shape, boundaries, quality concerns, and migration relationship. Start here.
-- Patterns: [feature boundaries](architecture/patterns/feature-boundaries.md),
-  [application composition](architecture/patterns/application-composition.md),
-  [shell layer](architecture/patterns/shell-layer.md), and
-  [styling](architecture/patterns/styling.md).
+- [Electron Target Architecture](architecture/target-architecture.md) -- active
+  source shape, boundaries, security model, and data ownership. Start here.
+- [Electron Greenfield Migration](architecture/electron-greenfield-migration.md)
+  -- versioned roadmap, decisions, progress, and blockers.
 
 ## Contracts
 

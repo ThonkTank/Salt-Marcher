@@ -1,2 +1,8 @@
-.gradle/
-build/
+node_modules/
+out/
+release/
+coverage/
+.tmp/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

@@ -1,9 +1,6 @@
 # Dungeon Domain Model
 
-Architecture note: Dungeon-specific domain architecture, model-family
-placement, and dependency direction live in
-[Dungeon Domain Architecture](../architecture/architecture-dungeon-domain.md).
-This document owns domain truth only.
+This document owns Dungeon domain truth only.
 
 ## Context Role
 
@@ -122,7 +119,7 @@ Editor tools use product language rather than storage or operation variants:
 - `PointerGesture` identifies primary, secondary, or modified intent
 
 Create, delete, and alternate behavior derive from the family plus gesture. The
-domain does not own JavaFX buttons, pointer coordinates, or dropdown state.
+domain does not own presentation buttons, pointer coordinates, or dropdown state.
 
 ## Command Outcomes And Patches
 
@@ -235,7 +232,7 @@ allocation, and unit-of-work ports for authored maps. Identity allocation
 reserves bounded stable ranges for every map-wide authored identity family that
 commands may create, without inserting placeholder maps, topology elements,
 authored entities, or child rows. Its SQLite adapter implements those ports;
-adapters never surface JDBC types or exceptions through Dungeon APIs.
+adapters never surface storage types or exceptions through Dungeon APIs.
 
 Party-aware travel composition consumes `PartyApi`, supplied explicitly during
 application composition, for party state and outbound travel-position changes.
@@ -297,9 +294,6 @@ the global compact `Reise` context, but it does not own Dungeon movement rules.
 ## References
 
 - [Dungeon Feature Docs](../README.md) (line 1)
-- [Dungeon Domain Architecture](../architecture/architecture-dungeon-domain.md) (line 1)
 - [Dungeon Feature Requirements](../requirements/requirements-dungeon.md) (line 1)
 - [Dungeon Editor Requirements](../requirements/requirements-dungeon-editor.md) (line 1)
-- [Dungeon Map Adoption Architecture](../../maps/architecture/architecture-maps-dungeon-adoption.md) (line 1)
-- [Dungeon Map Surface Contract](../../maps/contract/contract-maps-dungeon-surface.md) (line 1)
 - [Dungeon Persistence Contract](../contract/contract-dungeon-persistence.md) (line 1)

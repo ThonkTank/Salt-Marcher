@@ -75,4 +75,3 @@ are reinitialized rather than migrated.
 - [Encounter Table Domain Model](../domain/domain-encountertable.md) (line 1)
 
 - [Encounter Table Feature Spec](../requirements/requirements-encountertable.md) (line 1)
-- [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)

@@ -4,11 +4,8 @@
 
 - [Requirements](requirements/requirements-session-generation.md)
 - [Domain](domain/domain-session-generation.md)
-- [API And Persistence Contract](contract/contract-session-generation.md)
-- [Architecture](architecture/architecture-session-generation.md)
 
 ## Neighboring Owners
 
 - [Session Planner](../sessionplanner/README.md)
 - [Encounter](../encounter/README.md)
-- [Source Architecture](../project/architecture/source-architecture.md)
