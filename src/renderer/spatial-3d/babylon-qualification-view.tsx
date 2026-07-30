@@ -22,7 +22,11 @@ import {
   togglePreviewVoxel,
   type VoxelChunk
 } from './voxel-chunk.js'
-import { exerciseWebglContextLoss, webgl2Description } from './webgl-context.js'
+import {
+  ContextRecoveryTracker,
+  exerciseWebglContextLoss,
+  webgl2Description
+} from './webgl-context.js'
 import { type SpatialQualificationModel } from '../spatial-qualification-model.js'
 
 /** M1 continuous dungeon prototype: chunk meshes, camera, hover/picking and selection. */
@@ -33,10 +37,14 @@ export function BabylonQualificationView({
 }): ReactElement {
   const canvas = useRef<HTMLCanvasElement>(null)
   const downloadSamples = useRef<(() => void) | null>(null)
+  const recovery = useRef(new ContextRecoveryTracker())
   const [downloadReady, setDownloadReady] = useState(false)
   const exerciseContextLoss = (): void => {
     const element = canvas.current
-    if (element === null || !exerciseWebglContextLoss(element))
+    if (
+      element === null ||
+      !exerciseWebglContextLoss(element, () => recovery.current.requested())
+    )
       setStatus(
         'This browser does not expose the WebGL context-loss test extension.'
       )
@@ -141,6 +149,7 @@ export function BabylonQualificationView({
         previewTracker.beforeRender()
       })
       scene.onAfterRenderObservable.add(() => {
+        recovery.current.observedRerender()
         collect(
           cameraTracker,
           cameraSampler,
@@ -182,12 +191,14 @@ export function BabylonQualificationView({
         preview = createVoxelMesh(scene, previewVoxels)
         preview.position.set(-16, 0, -16)
         previewTracker.arm()
+        recovery.current.observedNextInteraction()
         setStatus(
           `Local 32 × 32 × 16 voxel preview remeshed (${previewSampler.recordedSamples}/${recordedRunCount} recorded samples).`
         )
       }
       camera.onViewMatrixChangedObservable.add(() => {
         cameraTracker.arm()
+        recovery.current.observedNextInteraction()
       })
       scene.onPointerObservable.add((event) => {
         const pickedMesh = event.pickInfo?.pickedMesh
@@ -205,6 +216,7 @@ export function BabylonQualificationView({
             )
             model.hover(pickedMesh.name)
             hoverTracker.arm()
+            recovery.current.observedNextInteraction()
             setStatus(`Hovering ${pickedMesh.name}.`)
           }
         }
@@ -233,9 +245,11 @@ export function BabylonQualificationView({
       element.addEventListener('pointerdown', beginCameraMeasurement, true)
       element.addEventListener('pointerup', cancelCameraMeasurement, true)
       engine.onContextLostObservable.add(() => {
+        recovery.current.observedLoss()
         setStatus('3D graphics context lost; waiting for restoration.')
       })
       engine.onContextRestoredObservable.add(() => {
+        recovery.current.observedRestoration()
         setStatus('3D graphics context restored.')
       })
       engine.runRenderLoop(() => scene.render())

@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import { exerciseWebglContextLoss } from '../../src/renderer/spatial-3d/webgl-context.js'
+import {
+  ContextRecoveryTracker,
+  exerciseWebglContextLoss
+} from '../../src/renderer/spatial-3d/webgl-context.js'
 
 describe('WebGL context-loss exercise', () => {
   it('uses the browser loss extension and schedules restoration', () => {
@@ -39,5 +42,27 @@ describe('WebGL context-loss exercise', () => {
             }
     } as unknown as HTMLCanvasElement
     expect(exerciseWebglContextLoss(canvas)).toBe(false)
+  })
+
+  it('requires every observed recovery transition before declaring the next action successful', () => {
+    const recovery = new ContextRecoveryTracker()
+    recovery.observedLoss()
+    recovery.observedRestoration()
+    recovery.observedRerender()
+    recovery.observedNextInteraction()
+    expect(recovery.record.nextInteractionSucceeded).toBe(false)
+
+    recovery.requested()
+    recovery.observedLoss()
+    recovery.observedRestoration()
+    recovery.observedRerender()
+    recovery.observedNextInteraction()
+    expect(recovery.record).toEqual({
+      lossRequested: true,
+      lossObserved: true,
+      restorationObserved: true,
+      rerendered: true,
+      nextInteractionSucceeded: true
+    })
   })
 })

@@ -13,6 +13,7 @@ import {
   recordedRunCount
 } from '../spatial-3d/render-qualification-metrics.js'
 import {
+  ContextRecoveryTracker,
   exerciseWebglContextLoss,
   webgl2Description
 } from '../spatial-3d/webgl-context.js'
@@ -28,6 +29,7 @@ export function PixiQualificationView({
 }): ReactElement {
   const host = useRef<HTMLDivElement>(null)
   const downloadSamples = useRef<(() => void) | null>(null)
+  const recovery = useRef(new ContextRecoveryTracker())
   const [downloadReady, setDownloadReady] = useState(false)
   const [contextCanvas, setContextCanvas] = useState<HTMLCanvasElement | null>(
     null
@@ -76,8 +78,10 @@ export function PixiQualificationView({
         }
         const postrenderListener = {
           postrender: () => {
+            recovery.current.observedRerender()
             const timing = frameTracker.afterRender()
             if (timing === undefined) return
+            recovery.current.observedNextInteraction()
             if (inputToPresentation.length < recordedRunCount)
               inputToPresentation.push(timing.inputToPresentationMs)
             const result = interactionSampler.record(timing.frameWorkMs)
@@ -132,9 +136,11 @@ export function PixiQualificationView({
         }
         const contextLost = (event: Event): void => {
           event.preventDefault()
+          recovery.current.observedLoss()
           setStatus('2D graphics context lost; waiting for restoration.')
         }
         const contextRestored = (): void => {
+          recovery.current.observedRestoration()
           setStatus('2D graphics context restored.')
         }
         element.addEventListener('keydown', pan)
@@ -184,7 +190,9 @@ export function PixiQualificationView({
         onClick={() => {
           if (
             contextCanvas === null ||
-            !exerciseWebglContextLoss(contextCanvas)
+            !exerciseWebglContextLoss(contextCanvas, () =>
+              recovery.current.requested()
+            )
           )
             setStatus(
               'This browser does not expose the WebGL context-loss test extension.'
