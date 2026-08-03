@@ -65,6 +65,23 @@ import {
   updateWorldFactionInputSchema,
   worldFactionSnapshotSchema
 } from '../../shared/contracts/encounter-source.js'
+import {
+  createHexMapInputSchema,
+  evaluateHexRouteInputSchema,
+  hexMapCatalogSnapshotSchema,
+  hexMapSnapshotSchema,
+  hexRouteEvaluationSchema,
+  hexTerrainCatalogSchema,
+  hexTravelSnapshotSchema,
+  mutateHexTravelInputSchema,
+  paintHexTerrainInputSchema,
+  placeHexLocationInputSchema,
+  positionHexPartyInputSchema,
+  removeHexLocationInputSchema,
+  setHexTravelMultiplierInputSchema,
+  startHexTravelInputSchema,
+  updateHexMapInputSchema
+} from '../../shared/contracts/hex.js'
 
 async function invoke<T>(
   channel: string,
@@ -325,6 +342,153 @@ const api: SaltMarcherApi = {
           deleteWorldFactionInputSchema.parse({ id, expectedRevision }),
           worldFactionSnapshotSchema
         )
+      )
+  },
+  hex: {
+    terrainCatalog: async () =>
+      freezeDeep(
+        await invoke('hex:terrainCatalog', undefined, hexTerrainCatalogSchema)
+      ),
+    catalog: async () =>
+      freezeDeep(
+        await invoke('hex:catalog', undefined, hexMapCatalogSnapshotSchema)
+      ),
+    read: async (mapId) =>
+      freezeDeep(await invoke('hex:read', { mapId }, hexMapSnapshotSchema)),
+    create: async (displayName, expectedCatalogRevision) =>
+      freezeDeep(
+        await invoke(
+          'hex:create',
+          createHexMapInputSchema.parse({
+            displayName,
+            expectedCatalogRevision
+          }),
+          hexMapSnapshotSchema
+        )
+      ),
+    update: async (
+      mapId,
+      displayName,
+      radius,
+      confirmDataLoss,
+      expectedRevision
+    ) =>
+      freezeDeep(
+        await invoke(
+          'hex:update',
+          updateHexMapInputSchema.parse({
+            mapId,
+            displayName,
+            radius,
+            confirmDataLoss,
+            expectedRevision
+          }),
+          hexMapSnapshotSchema
+        )
+      ),
+    paint: async (mapId, coordinate, terrainId, expectedRevision) =>
+      freezeDeep(
+        await invoke(
+          'hex:paint',
+          paintHexTerrainInputSchema.parse({
+            mapId,
+            coordinate,
+            terrainId,
+            expectedRevision
+          }),
+          hexMapSnapshotSchema
+        )
+      ),
+    placeLocation: async (mapId, locationId, coordinate, expectedRevision) =>
+      freezeDeep(
+        await invoke(
+          'hex:placeLocation',
+          placeHexLocationInputSchema.parse({
+            mapId,
+            locationId,
+            coordinate,
+            expectedRevision
+          }),
+          hexMapSnapshotSchema
+        )
+      ),
+    removeLocation: async (locationId, expectedMapRevision) =>
+      freezeDeep(
+        await invoke(
+          'hex:removeLocation',
+          removeHexLocationInputSchema.parse({
+            locationId,
+            expectedMapRevision
+          }),
+          hexMapSnapshotSchema
+        )
+      )
+  },
+  hexTravel: {
+    read: async (sceneId) =>
+      freezeDeep(
+        await invoke('hex-travel:read', { sceneId }, hexTravelSnapshotSchema)
+      ),
+    evaluate: (sceneId, mapId, waypoints) =>
+      invoke(
+        'hex-travel:evaluate',
+        evaluateHexRouteInputSchema.parse({ sceneId, mapId, waypoints }),
+        hexRouteEvaluationSchema
+      ),
+    position: async (sceneId, mapId, coordinate, expectedSceneRevision) =>
+      freezeDeep(
+        await invoke(
+          'hex-travel:position',
+          positionHexPartyInputSchema.parse({
+            sceneId,
+            mapId,
+            coordinate,
+            expectedSceneRevision
+          }),
+          hexTravelSnapshotSchema
+        )
+      ),
+    start: async (sceneId, mapId, waypoints, multiplier, expectedRevision) =>
+      freezeDeep(
+        await invoke(
+          'hex-travel:start',
+          startHexTravelInputSchema.parse({
+            sceneId,
+            mapId,
+            waypoints,
+            multiplier,
+            expectedRevision
+          }),
+          hexTravelSnapshotSchema
+        )
+      ),
+    pause: (sceneId, expectedRevision) =>
+      invoke(
+        'hex-travel:pause',
+        mutateHexTravelInputSchema.parse({ sceneId, expectedRevision }),
+        hexTravelSnapshotSchema
+      ),
+    resume: (sceneId, expectedRevision) =>
+      invoke(
+        'hex-travel:resume',
+        mutateHexTravelInputSchema.parse({ sceneId, expectedRevision }),
+        hexTravelSnapshotSchema
+      ),
+    abort: (sceneId, expectedRevision) =>
+      invoke(
+        'hex-travel:abort',
+        mutateHexTravelInputSchema.parse({ sceneId, expectedRevision }),
+        hexTravelSnapshotSchema
+      ),
+    setMultiplier: (sceneId, multiplier, expectedRevision) =>
+      invoke(
+        'hex-travel:setMultiplier',
+        setHexTravelMultiplierInputSchema.parse({
+          sceneId,
+          multiplier,
+          expectedRevision
+        }),
+        hexTravelSnapshotSchema
       )
   },
   session: {

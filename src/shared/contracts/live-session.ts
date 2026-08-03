@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { partyCharacterSchema, partySnapshotSchema } from './party.js'
 import { sceneSnapshotSchema } from './scene.js'
+import { hexTravelSnapshotSchema } from './hex.js'
 
 export { partyCharacterSchema as partyMemberSchema, partySnapshotSchema }
 
@@ -73,13 +74,32 @@ export const liveSessionSnapshotSchema = z
     revision: z.number().int().nonnegative(),
     party: partySnapshotSchema,
     scene: sceneSnapshotSchema,
-    travel: z
-      .object({
-        kind: z.literal('none'),
-        label: z.string(),
-        hint: z.string()
-      })
-      .strict(),
+    travel: z.discriminatedUnion('kind', [
+      z
+        .object({
+          kind: z.literal('none'),
+          label: z.string(),
+          hint: z.string()
+        })
+        .strict(),
+      hexTravelSnapshotSchema
+        .pick({
+          status: true,
+          mapId: true,
+          mapName: true,
+          currentLabel: true,
+          locationName: true,
+          progress: true,
+          remainingGameSeconds: true,
+          gameTimeSeconds: true,
+          effectiveSpeedFeet: true,
+          assumedSpeedMemberNames: true,
+          multiplier: true,
+          hint: true
+        })
+        .extend({ kind: z.literal('hex') })
+        .strict()
+    ]),
     combat: combatSnapshotSchema.nullable()
   })
   .strict()

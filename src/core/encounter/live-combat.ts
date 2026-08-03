@@ -1,4 +1,6 @@
 import Database from 'better-sqlite3'
+import { HexMapStore, initializeHexSchema } from '../hex/hex-map-store.js'
+import { HexTravelStore } from '../hex/hex-travel.js'
 import { z } from 'zod'
 import {
   combatSnapshotSchema,
@@ -495,19 +497,45 @@ export class LivePlayService {
   private snapshotFrom(
     party: PartyStore,
     scene: SceneStore,
-    combat: CombatStore
+    combat: CombatStore,
+    hexTravel?: HexTravelStore
   ): LiveSessionSnapshot {
+    const travel = (
+      hexTravel ??
+      new HexTravelStore(
+        scene.database(),
+        new HexMapStore(scene.database()),
+        party,
+        scene
+      )
+    ).read(scene.focusedSceneId())
     const partySnapshot = party.read()
     const sceneSnapshot = scene.snapshot(partySnapshot.members)
     return liveSessionSnapshotSchema.parse({
       revision: sceneSnapshot.revision,
       party: partySnapshot,
       scene: sceneSnapshot,
-      travel: {
-        kind: 'none',
-        label: 'Kein aktiver Reisekontext',
-        hint: 'Dungeon oder Hex stellen derzeit keinen Live-Kontext bereit.'
-      },
+      travel: travel?.mapId
+        ? {
+            kind: 'hex',
+            status: travel.status,
+            mapId: travel.mapId,
+            mapName: travel.mapName,
+            currentLabel: travel.currentLabel,
+            locationName: travel.locationName,
+            progress: travel.progress,
+            remainingGameSeconds: travel.remainingGameSeconds,
+            gameTimeSeconds: travel.gameTimeSeconds,
+            effectiveSpeedFeet: travel.effectiveSpeedFeet,
+            assumedSpeedMemberNames: travel.assumedSpeedMemberNames,
+            multiplier: travel.multiplier,
+            hint: travel.hint
+          }
+        : {
+            kind: 'none',
+            label: 'Kein aktiver Reisekontext',
+            hint: 'Dungeon oder Hex stellen derzeit keinen Live-Kontext bereit.'
+          },
       combat: combat.snapshot(scene.assignedParty(partySnapshot.members))
     })
   }
@@ -529,11 +557,13 @@ export class LivePlayService {
       initializeCombatSchema(db)
       initializeWorldLocationSchema(db)
       initializeEncounterSourceSchema(db)
+      initializeHexSchema(db)
       const locations = new WorldLocationStore(db)
       const scene = new SceneStore(db, () => locations.read().locations)
       const combatFor = (sceneId: string) => new CombatStore(db, sceneId)
+      const party = new PartyStore(db)
       return work({
-        party: new PartyStore(db),
+        party,
         scene,
         combat: combatFor(scene.focusedSceneId()),
         combatFor,

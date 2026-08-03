@@ -127,6 +127,11 @@ claiming completion of M3 or M5. Its approved expansion contains:
 - Scene groups and Encounter Tables share one two-pane creature-collection
   manager component rather than parallel look-alike dialogs; faction stock is
   edited only from the selected table's creature membership
+- one campaign-local Hex vertical slice now connects a Pixi editor, static
+  catalog-backed terrain IDs, World Planner location placement, focused-Scene
+  Party position, waypoint route planning, durable checkpoints and Scene time,
+  and the Session Karte/Reise surfaces; editable Terrain catalog CRUD remains a
+  later slice
 
 Encounter-table, faction, and location filter controls appear only when their
 owning providers publish real options. NPC membership, loot links, and stock

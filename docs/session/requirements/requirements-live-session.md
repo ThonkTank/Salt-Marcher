@@ -47,8 +47,9 @@ discard confirmation.
 - The upper-right panel switches between Details and Karte. Details has a
   scene-local backward/forward history and renders creature statblocks inline;
   later described scene objects use the same history surface.
-- Karte is a provider-ready route-planning shell. It does not fabricate a map,
-  locations, or routes when Hex/Dungeon has not published a context.
+- Karte consumes the approved Hex provider. It shows the current token, supports
+  administrative placement, ordered waypoint planning, explicit start, and an
+  honest empty state when no map exists.
 - The control panel uses only its required height and the group panel receives
   the remaining left-column space. One shared vertical divider changes both
   left/right panel widths. A separate horizontal divider changes only the
@@ -58,8 +59,8 @@ discard confirmation.
 ## Combat Scenario
 
 1. The GM selects `Encounter` from the scenario dropdown. `Reise` is the other
-   current option and publishes a read-only no-context state until an approved
-   Dungeon or Hex readback exists.
+   current option and publishes no-context or approved Hex readback plus bounded
+   runtime controls.
 2. The GM selects one or more groups belonging to the focused Scene. The
    assigned Scene Party is always selected.
 3. Every selection change shows base XP, adjusted XP, Party thresholds and the

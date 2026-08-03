@@ -45,6 +45,23 @@ export function initializePartySchema(db: Database.Database): void {
     })()
   } else createPartyTables(db)
 
+  const currentColumns = db
+    .prepare("PRAGMA table_info('player_characters')")
+    .all() as readonly { name: string }[]
+  const names = new Set(currentColumns.map((column) => column.name))
+  if (!names.has('movement_speed_feet'))
+    db.exec(
+      'ALTER TABLE player_characters ADD COLUMN movement_speed_feet INTEGER CHECK(movement_speed_feet BETWEEN 0 AND 999)'
+    )
+  if (!names.has('travel_map_id'))
+    db.exec('ALTER TABLE player_characters ADD COLUMN travel_map_id TEXT')
+  if (!names.has('travel_tile_id'))
+    db.exec('ALTER TABLE player_characters ADD COLUMN travel_tile_id TEXT')
+  if (!names.has('attached_to_party_token'))
+    db.exec(
+      'ALTER TABLE player_characters ADD COLUMN attached_to_party_token INTEGER NOT NULL DEFAULT 0 CHECK(attached_to_party_token IN (0, 1))'
+    )
+
   const metadata = db
     .prepare('SELECT 1 FROM party_roster_metadata WHERE singleton = 1')
     .get()
@@ -82,6 +99,10 @@ function createPartyTables(db: Database.Database): void {
       xp INTEGER NOT NULL CHECK(xp >= 0),
       xp_since_short_rest INTEGER NOT NULL CHECK(xp_since_short_rest >= 0),
       xp_since_long_rest INTEGER NOT NULL CHECK(xp_since_long_rest >= 0),
+      movement_speed_feet INTEGER CHECK(movement_speed_feet BETWEEN 0 AND 999),
+      travel_map_id TEXT,
+      travel_tile_id TEXT,
+      attached_to_party_token INTEGER NOT NULL DEFAULT 0 CHECK(attached_to_party_token IN (0, 1)),
       position INTEGER NOT NULL CHECK(position >= 0)
     );
     CREATE TABLE IF NOT EXISTS party_xp_awards (
@@ -102,7 +123,9 @@ export class PartyStore {
       .prepare(
         `
         SELECT id, name, player_name, level, passive_perception, armor_class,
-               active, xp, xp_since_short_rest, xp_since_long_rest
+               active, xp, xp_since_short_rest, xp_since_long_rest,
+               movement_speed_feet, travel_map_id, travel_tile_id,
+               attached_to_party_token
         FROM player_characters ORDER BY position, id
       `
       )
@@ -130,8 +153,9 @@ export class PartyStore {
           `
           INSERT INTO player_characters (
             id, name, player_name, level, passive_perception, armor_class,
-            active, xp, xp_since_short_rest, xp_since_long_rest, position
-          ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, 0, 0, ?)
+            active, xp, xp_since_short_rest, xp_since_long_rest,
+            movement_speed_feet, position
+          ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, 0, 0, ?, ?)
         `
         )
         .run(
@@ -142,6 +166,7 @@ export class PartyStore {
           draft.passivePerception,
           draft.armorClass,
           xp,
+          draft.movementSpeedFeet ?? null,
           position
         )
     })
@@ -167,7 +192,7 @@ export class PartyStore {
           `
           UPDATE player_characters
           SET name = ?, player_name = ?, level = ?, passive_perception = ?,
-              armor_class = ?, xp = ?
+              armor_class = ?, movement_speed_feet = ?, xp = ?
           WHERE id = ?
         `
         )
@@ -177,11 +202,29 @@ export class PartyStore {
           draft.level,
           draft.passivePerception,
           draft.armorClass,
+          draft.movementSpeedFeet ?? null,
           xp,
           id
         )
     })
     return this.read()
+  }
+
+  setTravelPosition(ids: readonly string[], mapId: string, tile: string): void {
+    const update = this.db.prepare(
+      `UPDATE player_characters
+       SET travel_map_id = ?, travel_tile_id = ?, attached_to_party_token = 1
+       WHERE id = ?`
+    )
+    for (const id of ids) {
+      if (update.run(mapId, tile, id).changes !== 1)
+        throw new Error('not found')
+    }
+    this.db
+      .prepare(
+        'UPDATE party_roster_metadata SET revision = revision + 1 WHERE singleton = 1'
+      )
+      .run()
   }
 
   delete(id: string, expectedRevision: number): PartySnapshot {
@@ -344,6 +387,20 @@ function rowPartyMember(row: unknown): PartyCharacter {
         : Number(value['passive_perception']),
     armorClass:
       value['armor_class'] === null ? null : Number(value['armor_class']),
+    movementSpeedFeet:
+      value['movement_speed_feet'] === null
+        ? null
+        : Number(value['movement_speed_feet']),
+    travelPosition:
+      typeof value['travel_map_id'] === 'string' &&
+      typeof value['travel_tile_id'] === 'string'
+        ? {
+            kind: 'hex',
+            mapId: value['travel_map_id'],
+            tileId: value['travel_tile_id']
+          }
+        : null,
+    attachedToPartyToken: Number(value['attached_to_party_token']) === 1,
     active: Number(value['active']) === 1,
     xp: Number(value['xp']),
     currentLevelFloor: level === null ? 0 : levelXp[level - 1]!,

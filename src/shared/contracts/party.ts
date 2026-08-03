@@ -8,6 +8,16 @@ export const partyCharacterSchema = z
     level: z.number().int().min(1).max(20).nullable(),
     passivePerception: z.number().int().min(0).max(99).nullable(),
     armorClass: z.number().int().min(0).max(99).nullable(),
+    movementSpeedFeet: z.number().int().min(0).max(999).nullable(),
+    travelPosition: z
+      .object({
+        kind: z.literal('hex'),
+        mapId: z.uuid(),
+        tileId: z.string().min(1)
+      })
+      .strict()
+      .nullable(),
+    attachedToPartyToken: z.boolean(),
     active: z.boolean(),
     xp: z.number().int().nonnegative(),
     currentLevelFloor: z.number().int().nonnegative(),
@@ -41,7 +51,8 @@ export const partyCharacterDraftSchema = z
     playerName: z.string().trim().max(100).nullable(),
     level: z.number().int().min(1).max(20).nullable(),
     passivePerception: z.number().int().min(0).max(99).nullable(),
-    armorClass: z.number().int().min(0).max(99).nullable()
+    armorClass: z.number().int().min(0).max(99).nullable(),
+    movementSpeedFeet: z.number().int().min(0).max(999).nullable().default(null)
   })
   .strict()
 
@@ -104,7 +115,7 @@ export const adventuringDayCalculationSchema = z
 export type PartyCharacter = Readonly<z.infer<typeof partyCharacterSchema>>
 export type PartySnapshot = Readonly<z.infer<typeof partySnapshotSchema>>
 export type PartyCharacterDraft = Readonly<
-  z.infer<typeof partyCharacterDraftSchema>
+  z.input<typeof partyCharacterDraftSchema>
 >
 export type AdventuringDaySummary = Readonly<
   z.infer<typeof adventuringDaySummarySchema>

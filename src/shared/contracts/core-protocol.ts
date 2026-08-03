@@ -40,6 +40,18 @@ import {
   updateEncounterTableInputSchema,
   updateWorldFactionInputSchema
 } from './encounter-source.js'
+import {
+  createHexMapInputSchema,
+  evaluateHexRouteInputSchema,
+  mutateHexTravelInputSchema,
+  paintHexTerrainInputSchema,
+  placeHexLocationInputSchema,
+  positionHexPartyInputSchema,
+  removeHexLocationInputSchema,
+  setHexTravelMultiplierInputSchema,
+  startHexTravelInputSchema,
+  updateHexMapInputSchema
+} from './hex.js'
 
 const id = z.uuid()
 const simple = <const K extends string>(kind: K) =>
@@ -318,6 +330,106 @@ export const coreRequestSchema = z.discriminatedUnion('kind', [
       requestId: id,
       kind: z.literal('combat.complete'),
       input: combatRevisionInputSchema
+    })
+    .strict(),
+  simple('hex.terrainCatalog'),
+  simple('hex.catalog'),
+  z
+    .object({
+      requestId: id,
+      kind: z.literal('hex.read'),
+      input: z.object({ mapId: z.uuid() }).strict()
+    })
+    .strict(),
+  z
+    .object({
+      requestId: id,
+      kind: z.literal('hex.create'),
+      input: createHexMapInputSchema
+    })
+    .strict(),
+  z
+    .object({
+      requestId: id,
+      kind: z.literal('hex.update'),
+      input: updateHexMapInputSchema
+    })
+    .strict(),
+  z
+    .object({
+      requestId: id,
+      kind: z.literal('hex.paint'),
+      input: paintHexTerrainInputSchema
+    })
+    .strict(),
+  z
+    .object({
+      requestId: id,
+      kind: z.literal('hex.placeLocation'),
+      input: placeHexLocationInputSchema
+    })
+    .strict(),
+  z
+    .object({
+      requestId: id,
+      kind: z.literal('hex.removeLocation'),
+      input: removeHexLocationInputSchema
+    })
+    .strict(),
+  z
+    .object({
+      requestId: id,
+      kind: z.literal('hexTravel.read'),
+      input: z.object({ sceneId: z.uuid() }).strict()
+    })
+    .strict(),
+  z
+    .object({
+      requestId: id,
+      kind: z.literal('hexTravel.evaluate'),
+      input: evaluateHexRouteInputSchema
+    })
+    .strict(),
+  z
+    .object({
+      requestId: id,
+      kind: z.literal('hexTravel.position'),
+      input: positionHexPartyInputSchema
+    })
+    .strict(),
+  z
+    .object({
+      requestId: id,
+      kind: z.literal('hexTravel.start'),
+      input: startHexTravelInputSchema
+    })
+    .strict(),
+  z
+    .object({
+      requestId: id,
+      kind: z.literal('hexTravel.pause'),
+      input: mutateHexTravelInputSchema
+    })
+    .strict(),
+  z
+    .object({
+      requestId: id,
+      kind: z.literal('hexTravel.resume'),
+      input: mutateHexTravelInputSchema
+    })
+    .strict(),
+  z
+    .object({
+      requestId: id,
+      kind: z.literal('hexTravel.abort'),
+      input: mutateHexTravelInputSchema
+    })
+    .strict(),
+  z
+    .object({
+      requestId: id,
+      kind: z.literal('hexTravel.setMultiplier'),
+      input: setHexTravelMultiplierInputSchema
     })
     .strict()
 ])
