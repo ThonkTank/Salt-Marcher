@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useCallback,
   useMemo,
   useRef,
   useState,
@@ -48,6 +49,16 @@ import type {
   WorldFactionDraft,
   WorldFactionSnapshot
 } from '../../shared/contracts/encounter-source.js'
+import type {
+  AxialCoordinate,
+  HexMapCatalogSnapshot,
+  HexMapSnapshot,
+  HexRouteEvaluation,
+  HexTerrainCatalog,
+  HexTerrainId,
+  HexTravelSnapshot
+} from '../../shared/contracts/hex.js'
+import { HexMapCanvas } from '../features/hex/hex-map-canvas.js'
 
 declare global {
   interface Window {
@@ -92,7 +103,9 @@ export function App() {
   const [campaigns, setCampaigns] = useState(emptyCampaigns)
   const [session, setSession] = useState<LiveSessionSnapshot | null>(null)
   const [campaignName, setCampaignName] = useState('')
-  const [workspace, setWorkspace] = useState<'session' | 'catalog'>('session')
+  const [workspace, setWorkspace] = useState<'session' | 'catalog' | 'hex'>(
+    'session'
+  )
   const [partyOpen, setPartyOpen] = useState(false)
   const [dayOpen, setDayOpen] = useState(false)
   const [groupDialogOpen, setGroupDialogOpen] = useState(false)
@@ -175,7 +188,9 @@ export function App() {
   const heading = active
     ? workspace === 'catalog'
       ? 'Katalog'
-      : 'Session'
+      : workspace === 'hex'
+        ? 'Hex-Editor'
+        : 'Session'
     : 'Campaigns'
 
   return (
@@ -243,6 +258,15 @@ export function App() {
               </button>
               <button
                 className="icon-button"
+                aria-label="Hex-Editor"
+                title="Hex-Editor"
+                aria-pressed={workspace === 'hex'}
+                onClick={() => setWorkspace('hex')}
+              >
+                <span aria-hidden="true">⬡</span>
+              </button>
+              <button
+                className="icon-button"
                 aria-label="Katalog"
                 title="Katalog"
                 aria-pressed={workspace === 'catalog'}
@@ -301,6 +325,9 @@ export function App() {
               inspect={setInspected}
               onError={setError}
             />
+          )}
+          {active && session && workspace === 'hex' && (
+            <HexEditor onError={setError} />
           )}
         </div>
       </div>
@@ -829,6 +856,9 @@ function PartyEditor(props: {
     props.member?.passivePerception?.toString() ?? ''
   )
   const [armor, setArmor] = useState(props.member?.armorClass?.toString() ?? '')
+  const [movementSpeed, setMovementSpeed] = useState(
+    props.member?.movementSpeedFeet?.toString() ?? ''
+  )
   const optional = (value: string) =>
     value.trim() === '' ? null : Number(value)
   return (
@@ -841,7 +871,8 @@ function PartyEditor(props: {
           playerName: player.trim() || null,
           level: optional(level),
           passivePerception: optional(perception),
-          armorClass: optional(armor)
+          armorClass: optional(armor),
+          movementSpeedFeet: optional(movementSpeed)
         })
       }}
     >
@@ -891,6 +922,18 @@ function PartyEditor(props: {
           onChange={(event) => setArmor(event.target.value)}
         />
       </div>
+      <label>
+        Bewegungsrate (ft/Runde)
+        <input
+          aria-label="Bewegungsrate"
+          type="number"
+          min="0"
+          max="999"
+          placeholder="30"
+          value={movementSpeed}
+          onChange={(event) => setMovementSpeed(event.target.value)}
+        />
+      </label>
       {props.member && !props.deleteConfirm && (
         <button
           type="button"
@@ -1132,13 +1175,11 @@ function SessionWorkspace(props: {
         </button>
       </div>
       {props.layout.upperRightTab === 'map' ? (
-        <div className="session-map-empty">
-          <strong>Reiseplanung</strong>
-          <p>
-            Sobald ein Hex- oder Dungeon-Provider verfügbar ist, können hier
-            Orte gewählt und Routen geplant werden.
-          </p>
-        </div>
+        <SessionHexMap
+          snapshot={props.snapshot}
+          setSnapshot={props.setSnapshot}
+          onError={props.onError}
+        />
       ) : (
         <>
           <nav className="detail-history" aria-label="Detail Verlauf">
@@ -1207,7 +1248,14 @@ function SessionWorkspace(props: {
       {!props.scenario ? (
         <div className="scenario-empty">Szenario Panel</div>
       ) : props.scenario === 'travel' ? (
-        <TravelScenario snapshot={props.snapshot} />
+        <TravelScenario
+          snapshot={props.snapshot}
+          setSnapshot={props.setSnapshot}
+          openMap={() =>
+            props.setLayout({ ...props.layout, upperRightTab: 'map' })
+          }
+          onError={props.onError}
+        />
       ) : (
         <SessionEncounterPanel
           {...props}
@@ -2008,15 +2056,714 @@ function groupDraftSignature(
   return JSON.stringify({ name, entries: groupDraftEntries(quantities) })
 }
 
-function TravelScenario({ snapshot }: { snapshot: LiveSessionSnapshot }) {
+function TravelScenario(props: {
+  snapshot: LiveSessionSnapshot
+  setSnapshot: (snapshot: LiveSessionSnapshot) => void
+  openMap: () => void
+  onError: (message: string) => void
+}) {
+  const focusedSceneId = props.snapshot.scene.focusedSceneId
+  const onError = props.onError
+  const setSnapshot = props.setSnapshot
+  const [travel, setTravel] = useState<HexTravelSnapshot | null>(null)
+  const refresh = useCallback(async () => {
+    const next = await window.saltMarcher.hexTravel.read(focusedSceneId)
+    setTravel(next)
+    setSnapshot(await window.saltMarcher.session.read())
+  }, [focusedSceneId, setSnapshot])
+  useEffect(() => {
+    void Promise.resolve().then(refresh).catch(showError(onError))
+  }, [onError, refresh])
+  useEffect(() => {
+    if (travel?.status !== 'travelling') return
+    const timer = window.setInterval(
+      () => void refresh().catch(showError(onError)),
+      100
+    )
+    return () => window.clearInterval(timer)
+  }, [onError, refresh, travel?.status])
+  const mutate = async (action: 'pause' | 'resume' | 'abort') => {
+    if (!travel) return
+    try {
+      setTravel(
+        await window.saltMarcher.hexTravel[action](
+          focusedSceneId,
+          travel.revision
+        )
+      )
+      props.setSnapshot(await window.saltMarcher.session.read())
+    } catch (cause) {
+      props.onError(errorText(cause))
+    }
+  }
+  const context = props.snapshot.travel
   return (
     <section className="scenario-content travel-context">
       <p className="section-kicker">Reise</p>
-      <h2>{snapshot.travel.label}</h2>
-      <p>{snapshot.travel.hint}</p>
-      <small>Dieser globale Zustand ist schreibgeschützt.</small>
+      <h2>
+        {context.kind === 'hex'
+          ? context.locationName || context.currentLabel
+          : context.label}
+      </h2>
+      {context.kind === 'hex' ? (
+        <>
+          <p>
+            {context.mapName} · {formatGameTime(context.gameTimeSeconds)}
+          </p>
+          <p>{context.hint}</p>
+          <dl className="travel-facts">
+            <div>
+              <dt>Status</dt>
+              <dd>{context.status}</dd>
+            </div>
+            <div>
+              <dt>Tempo</dt>
+              <dd>{context.effectiveSpeedFeet} ft/Runde</dd>
+            </div>
+            <div>
+              <dt>Rest</dt>
+              <dd>{formatDuration(context.remainingGameSeconds)}</dd>
+            </div>
+          </dl>
+          {context.assumedSpeedMemberNames.length > 0 && (
+            <p className="travel-warning">
+              30 ft angenommen für {context.assumedSpeedMemberNames.join(', ')}.
+            </p>
+          )}
+          {travel && (
+            <label>
+              Darstellungstempo
+              <select
+                value={travel.multiplier}
+                onChange={(event) =>
+                  void window.saltMarcher.hexTravel
+                    .setMultiplier(
+                      focusedSceneId,
+                      Number(event.target.value) as 1 | 2 | 5 | 10,
+                      travel.revision
+                    )
+                    .then(setTravel)
+                    .catch(showError(props.onError))
+                }
+              >
+                {[1, 2, 5, 10].map((value) => (
+                  <option key={value} value={value}>
+                    {value}×
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <div className="row-actions">
+            <button onClick={props.openMap}>Karte öffnen</button>
+            {travel?.status === 'travelling' && (
+              <button onClick={() => void mutate('pause')}>Pause</button>
+            )}
+            {(travel?.status === 'paused' || travel?.status === 'blocked') && (
+              <button onClick={() => void mutate('resume')}>Fortsetzen</button>
+            )}
+            {travel &&
+              ['travelling', 'paused', 'blocked'].includes(travel.status) && (
+                <button className="danger" onClick={() => void mutate('abort')}>
+                  Abbrechen
+                </button>
+              )}
+          </div>
+        </>
+      ) : (
+        <>
+          <p>{context.hint}</p>
+          <button onClick={props.openMap}>Karte öffnen</button>
+        </>
+      )}
     </section>
   )
+}
+
+function SessionHexMap(props: {
+  snapshot: LiveSessionSnapshot
+  setSnapshot: (snapshot: LiveSessionSnapshot) => void
+  onError: (message: string) => void
+}) {
+  const sceneId = props.snapshot.scene.focusedSceneId
+  const onError = props.onError
+  const [catalog, setCatalog] = useState<HexMapCatalogSnapshot | null>(null)
+  const [terrains, setTerrains] = useState<HexTerrainCatalog | null>(null)
+  const [map, setMap] = useState<HexMapSnapshot | null>(null)
+  const [travel, setTravel] = useState<HexTravelSnapshot | null>(null)
+  const [selected, setSelected] = useState<AxialCoordinate | null>(null)
+  const [mode, setMode] = useState<'inspect' | 'position' | 'plan'>('inspect')
+  const [waypoints, setWaypoints] = useState<AxialCoordinate[]>([])
+  const [evaluation, setEvaluation] = useState<HexRouteEvaluation | null>(null)
+
+  useEffect(() => {
+    void Promise.all([
+      window.saltMarcher.hex.catalog(),
+      window.saltMarcher.hex.terrainCatalog(),
+      window.saltMarcher.hexTravel.read(sceneId)
+    ])
+      .then(async ([nextCatalog, nextTerrains, nextTravel]) => {
+        setCatalog(nextCatalog)
+        setTerrains(nextTerrains)
+        setTravel(nextTravel)
+        const mapId = nextTravel.mapId ?? nextCatalog.maps[0]?.id
+        setMap(mapId ? await window.saltMarcher.hex.read(mapId) : null)
+      })
+      .catch(showError(onError))
+  }, [onError, sceneId])
+
+  useEffect(() => {
+    if (!map || mode !== 'plan' || waypoints.length === 0) return
+    void Promise.resolve()
+      .then(() =>
+        window.saltMarcher.hexTravel.evaluate(sceneId, map.map.id, waypoints)
+      )
+      .then(setEvaluation)
+      .catch(showError(onError))
+  }, [map, mode, onError, sceneId, waypoints])
+
+  const selectMap = async (mapId: string) => {
+    try {
+      setMap(await window.saltMarcher.hex.read(mapId))
+      setSelected(null)
+      setWaypoints([])
+    } catch (cause) {
+      props.onError(errorText(cause))
+    }
+  }
+  const clickTile = (coordinate: AxialCoordinate) => {
+    setSelected(coordinate)
+    if (mode === 'plan') {
+      setEvaluation(null)
+      setWaypoints((current) => [...current, coordinate])
+    }
+  }
+  const placeParty = async () => {
+    if (!map || !selected) return
+    try {
+      setTravel(
+        await window.saltMarcher.hexTravel.position(
+          sceneId,
+          map.map.id,
+          selected,
+          props.snapshot.scene.revision
+        )
+      )
+      props.setSnapshot(await window.saltMarcher.session.read())
+      setMode('inspect')
+    } catch (cause) {
+      props.onError(errorText(cause))
+    }
+  }
+  const start = async () => {
+    if (!map || !travel || !evaluation?.canStart) return
+    try {
+      setTravel(
+        await window.saltMarcher.hexTravel.start(
+          sceneId,
+          map.map.id,
+          waypoints,
+          travel.multiplier,
+          travel.revision
+        )
+      )
+      props.setSnapshot(await window.saltMarcher.session.read())
+      setMode('inspect')
+      setWaypoints([])
+    } catch (cause) {
+      props.onError(errorText(cause))
+    }
+  }
+
+  if (!catalog || !terrains)
+    return <div className="session-map-empty">Karte wird geladen …</div>
+  if (catalog.maps.length === 0)
+    return (
+      <div className="session-map-empty">
+        <strong>Keine Hex-Karte</strong>
+        <p>Lege zuerst im Hex-Editor eine Karte an.</p>
+      </div>
+    )
+  if (!map) return <div className="session-map-empty">Karte wird geladen …</div>
+  const token = travel?.mapId === map.map.id ? travel.current : null
+  const route =
+    evaluation?.path ?? (travel?.mapId === map.map.id ? travel.path : [])
+  const selectedTile = selected
+    ? map.tiles.find((tile) => tile.q === selected.q && tile.r === selected.r)
+    : null
+  return (
+    <div className="session-hex-map">
+      <div className="hex-map-toolbar">
+        <select
+          aria-label="Hex-Karte"
+          value={map.map.id}
+          onChange={(event) => void selectMap(event.target.value)}
+        >
+          {catalog.maps.map((entry) => (
+            <option key={entry.id} value={entry.id}>
+              {entry.displayName}
+            </option>
+          ))}
+        </select>
+        <button
+          aria-pressed={mode === 'inspect'}
+          onClick={() => setMode('inspect')}
+        >
+          Auswahl
+        </button>
+        <button
+          aria-pressed={mode === 'position'}
+          onClick={() => setMode('position')}
+        >
+          Party platzieren
+        </button>
+        <button
+          aria-pressed={mode === 'plan'}
+          onClick={() => {
+            setMode('plan')
+            setWaypoints([])
+            setEvaluation(null)
+          }}
+        >
+          Reise planen
+        </button>
+        {mode === 'plan' && (
+          <button
+            disabled={waypoints.length === 0}
+            onClick={() => {
+              setEvaluation(null)
+              setWaypoints((current) => current.slice(0, -1))
+            }}
+          >
+            Letzten Punkt entfernen
+          </button>
+        )}
+      </div>
+      <HexMapCanvas
+        snapshot={map}
+        terrains={terrains}
+        selected={selected}
+        token={token}
+        route={route}
+        onTileClick={clickTile}
+        ariaLabel={`Hex-Karte ${map.map.displayName}`}
+      />
+      <div className="hex-map-status">
+        <span>
+          {selectedTile
+            ? `${selectedTile.label} · ${terrains.terrains.find((terrain) => terrain.id === selectedTile.terrainId)?.label}${selectedTile.location ? ` · ${selectedTile.location.displayName}` : ''}`
+            : (travel?.hint ?? 'Hexfeld auswählen.')}
+        </span>
+        {mode === 'position' && (
+          <button disabled={!selected} onClick={() => void placeParty()}>
+            Party hier platzieren
+          </button>
+        )}
+        {mode === 'plan' && (
+          <>
+            <span>
+              {evaluation?.message ?? 'Wegpunkte auf der Karte wählen.'}
+            </span>
+            {evaluation && (
+              <span>{formatDuration(evaluation.totalGameSeconds)}</span>
+            )}
+            <button
+              disabled={!evaluation?.canStart}
+              onClick={() => void start()}
+            >
+              Reise starten
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function HexEditor(props: { onError: (message: string) => void }) {
+  const onError = props.onError
+  const [catalog, setCatalog] = useState<HexMapCatalogSnapshot | null>(null)
+  const [terrains, setTerrains] = useState<HexTerrainCatalog | null>(null)
+  const [map, setMap] = useState<HexMapSnapshot | null>(null)
+  const [selected, setSelected] = useState<AxialCoordinate | null>(null)
+  const [tool, setTool] = useState<'select' | 'paint'>('select')
+  const [terrainId, setTerrainId] = useState<HexTerrainId>('grassland')
+  const [newName, setNewName] = useState('Neue Hex-Karte')
+  const [name, setName] = useState('')
+  const [radius, setRadius] = useState(2)
+
+  const refreshCatalog = async (preferred?: string) => {
+    const next = await window.saltMarcher.hex.catalog()
+    setCatalog(next)
+    const mapId = preferred ?? map?.map.id ?? next.maps[0]?.id
+    if (!mapId) {
+      setMap(null)
+      return
+    }
+    const nextMap = await window.saltMarcher.hex.read(mapId)
+    setMap(nextMap)
+    setName(nextMap.map.displayName)
+    setRadius(nextMap.map.radius)
+  }
+  useEffect(() => {
+    void Promise.all([
+      window.saltMarcher.hex.catalog(),
+      window.saltMarcher.hex.terrainCatalog()
+    ])
+      .then(async ([nextCatalog, nextTerrains]) => {
+        setCatalog(nextCatalog)
+        setTerrains(nextTerrains)
+        const first = nextCatalog.maps[0]
+        if (first) {
+          const nextMap = await window.saltMarcher.hex.read(first.id)
+          setMap(nextMap)
+          setName(nextMap.map.displayName)
+          setRadius(nextMap.map.radius)
+        }
+      })
+      .catch(showError(onError))
+  }, [onError])
+
+  const create = async (event: FormEvent) => {
+    event.preventDefault()
+    if (!catalog) return
+    try {
+      const created = await window.saltMarcher.hex.create(
+        newName,
+        catalog.revision
+      )
+      await refreshCatalog(created.map.id)
+    } catch (cause) {
+      props.onError(errorText(cause))
+    }
+  }
+  const saveMetadata = async () => {
+    if (!map) return
+    const confirmDataLoss =
+      radius < map.map.radius
+        ? window.confirm(
+            'Beim Verkleinern können Terrain und Ortsplatzierungen verloren gehen. Fortfahren?'
+          )
+        : false
+    if (radius < map.map.radius && !confirmDataLoss) return
+    try {
+      const next = await window.saltMarcher.hex.update(
+        map.map.id,
+        name,
+        radius,
+        confirmDataLoss,
+        map.map.revision
+      )
+      setMap(next)
+      await refreshCatalog(next.map.id)
+    } catch (cause) {
+      props.onError(errorText(cause))
+    }
+  }
+  const tileClick = async (coordinate: AxialCoordinate) => {
+    setSelected(coordinate)
+    if (!map || tool !== 'paint') return
+    try {
+      setMap(
+        await window.saltMarcher.hex.paint(
+          map.map.id,
+          coordinate,
+          terrainId,
+          map.map.revision
+        )
+      )
+    } catch (cause) {
+      props.onError(errorText(cause))
+    }
+  }
+
+  if (!catalog || !terrains)
+    return (
+      <section className="workspace-panel">Hex-Editor wird geladen …</section>
+    )
+  const tile =
+    selected && map
+      ? map.tiles.find(
+          (candidate) =>
+            candidate.q === selected.q && candidate.r === selected.r
+        )
+      : null
+  return (
+    <section className="hex-editor-workspace">
+      <aside className="hex-editor-controls">
+        <form onSubmit={(event) => void create(event)}>
+          <h2>Hex-Karten</h2>
+          <input
+            aria-label="Neue Karte"
+            value={newName}
+            onChange={(event) => setNewName(event.target.value)}
+          />
+          <button disabled={!newName.trim()}>Neu</button>
+        </form>
+        <label>
+          Karte
+          <select
+            value={map?.map.id ?? ''}
+            onChange={(event) =>
+              void refreshCatalog(event.target.value).catch(
+                showError(props.onError)
+              )
+            }
+          >
+            <option value="">Keine Karte</option>
+            {catalog.maps.map((entry) => (
+              <option key={entry.id} value={entry.id}>
+                {entry.displayName}
+              </option>
+            ))}
+          </select>
+        </label>
+        {map && (
+          <>
+            <label>
+              Name
+              <input
+                value={name}
+                onChange={(event) => setName(event.target.value)}
+              />
+            </label>
+            <label>
+              Radius
+              <input
+                type="number"
+                min="0"
+                max="99"
+                value={radius}
+                onChange={(event) => setRadius(Number(event.target.value))}
+              />
+            </label>
+            <button onClick={() => void saveMetadata()}>
+              Kartendaten speichern
+            </button>
+            <div className="tool-row">
+              <button
+                aria-pressed={tool === 'select'}
+                onClick={() => setTool('select')}
+              >
+                Auswahl
+              </button>
+              <button
+                aria-pressed={tool === 'paint'}
+                onClick={() => setTool('paint')}
+              >
+                Terrain malen
+              </button>
+            </div>
+            <label>
+              Terrain
+              <select
+                value={terrainId}
+                onChange={(event) =>
+                  setTerrainId(event.target.value as HexTerrainId)
+                }
+              >
+                {terrains.terrains.map((terrain) => (
+                  <option key={terrain.id} value={terrain.id}>
+                    {terrain.label} ·{' '}
+                    {terrain.passable
+                      ? `${terrain.travelCost}×`
+                      : 'unpassierbar'}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </>
+        )}
+      </aside>
+      <main className="hex-editor-map">
+        {map ? (
+          <HexMapCanvas
+            snapshot={map}
+            terrains={terrains}
+            selected={selected}
+            onTileClick={(coordinate) => void tileClick(coordinate)}
+            ariaLabel={`Hex-Editor ${map.map.displayName}`}
+          />
+        ) : (
+          <div className="session-map-empty">Erstelle eine Hex-Karte.</div>
+        )}
+      </main>
+      <aside className="hex-editor-state">
+        <h2>Hexfeld</h2>
+        {tile ? (
+          <>
+            <strong>{tile.label}</strong>
+            <p>
+              {
+                terrains.terrains.find(
+                  (terrain) => terrain.id === tile.terrainId
+                )?.label
+              }
+            </p>
+            <p>{tile.location?.displayName ?? 'Kein benannter Ort'}</p>
+          </>
+        ) : (
+          <p>Wähle ein Hexfeld aus.</p>
+        )}
+      </aside>
+    </section>
+  )
+}
+
+function HexLocationPlacementDialog(props: {
+  location: WorldLocation
+  close: () => void
+  onPlaced: () => void
+  onError: (message: string) => void
+}) {
+  const onError = props.onError
+  const [catalog, setCatalog] = useState<HexMapCatalogSnapshot | null>(null)
+  const [terrains, setTerrains] = useState<HexTerrainCatalog | null>(null)
+  const [map, setMap] = useState<HexMapSnapshot | null>(null)
+  const [selected, setSelected] = useState<AxialCoordinate | null>(null)
+  const [existing, setExisting] = useState<{
+    mapId: string
+    revision: number
+  } | null>(null)
+  useEffect(() => {
+    void Promise.all([
+      window.saltMarcher.hex.catalog(),
+      window.saltMarcher.hex.terrainCatalog()
+    ])
+      .then(async ([nextCatalog, nextTerrains]) => {
+        setCatalog(nextCatalog)
+        setTerrains(nextTerrains)
+        const snapshots = await Promise.all(
+          nextCatalog.maps.map((entry) => window.saltMarcher.hex.read(entry.id))
+        )
+        const found = snapshots.find((snapshot) =>
+          snapshot.tiles.some(
+            (tile) => tile.location?.locationId === props.location.id
+          )
+        )
+        const initial = found ?? snapshots[0] ?? null
+        setMap(initial)
+        if (found) {
+          const tile = found.tiles.find(
+            (candidate) => candidate.location?.locationId === props.location.id
+          )!
+          setSelected({ q: tile.q, r: tile.r })
+          setExisting({ mapId: found.map.id, revision: found.map.revision })
+        }
+      })
+      .catch(showError(onError))
+  }, [onError, props.location.id])
+  const changeMap = async (mapId: string) => {
+    setMap(await window.saltMarcher.hex.read(mapId))
+    setSelected(null)
+  }
+  const place = async () => {
+    if (!map || !selected) return
+    try {
+      await window.saltMarcher.hex.placeLocation(
+        map.map.id,
+        props.location.id,
+        selected,
+        map.map.revision
+      )
+      props.onPlaced()
+      props.close()
+    } catch (cause) {
+      props.onError(errorText(cause))
+    }
+  }
+  const remove = async () => {
+    if (!existing) return
+    try {
+      await window.saltMarcher.hex.removeLocation(
+        props.location.id,
+        existing.revision
+      )
+      props.onPlaced()
+      props.close()
+    } catch (cause) {
+      props.onError(errorText(cause))
+    }
+  }
+  return (
+    <div className="modal-backdrop" role="presentation">
+      <section
+        className="hex-placement-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Ort auf Hex-Karte platzieren"
+      >
+        <header>
+          <div>
+            <p className="section-kicker">Ort platzieren</p>
+            <h2>{props.location.displayName}</h2>
+          </div>
+          <button aria-label="Schließen" onClick={props.close}>
+            ×
+          </button>
+        </header>
+        {!catalog || !terrains ? (
+          <p>Karten werden geladen …</p>
+        ) : catalog.maps.length === 0 ? (
+          <p>Lege zuerst eine Hex-Karte an.</p>
+        ) : map ? (
+          <>
+            <select
+              aria-label="Zielkarte"
+              value={map.map.id}
+              onChange={(event) =>
+                void changeMap(event.target.value).catch(
+                  showError(props.onError)
+                )
+              }
+            >
+              {catalog.maps.map((entry) => (
+                <option key={entry.id} value={entry.id}>
+                  {entry.displayName}
+                </option>
+              ))}
+            </select>
+            <HexMapCanvas
+              snapshot={map}
+              terrains={terrains}
+              selected={selected}
+              onTileClick={setSelected}
+              ariaLabel={`Platzierung von ${props.location.displayName}`}
+            />
+            <footer>
+              <button onClick={props.close}>Abbrechen</button>
+              {existing && (
+                <button className="danger" onClick={() => void remove()}>
+                  Von Karte entfernen
+                </button>
+              )}
+              <button disabled={!selected} onClick={() => void place()}>
+                Hier platzieren
+              </button>
+            </footer>
+          </>
+        ) : null}
+      </section>
+    </div>
+  )
+}
+
+function formatDuration(totalSeconds: number) {
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  return `${hours} Std. ${minutes} Min.`
+}
+
+function formatGameTime(totalSeconds: number) {
+  const day = Math.floor(totalSeconds / 86400) + 1
+  const inDay = totalSeconds % 86400
+  const hours = Math.floor(inDay / 3600)
+    .toString()
+    .padStart(2, '0')
+  const minutes = Math.floor((inDay % 3600) / 60)
+    .toString()
+    .padStart(2, '0')
+  return `Tag ${day}, ${hours}:${minutes}`
 }
 
 function CatalogWorkspace(
@@ -2045,6 +2792,9 @@ function CatalogWorkspace(
     WorldLocation | null | undefined
   >(undefined)
   const [deleteLocationConfirm, setDeleteLocationConfirm] = useState(false)
+  const [placingLocation, setPlacingLocation] = useState<WorldLocation | null>(
+    null
+  )
   const [locationTables, setLocationTables] = useState<EncounterTable[]>([])
   const [locationFactions, setLocationFactions] = useState<WorldFaction[]>([])
   const request = useRef(0)
@@ -2379,6 +3129,7 @@ function CatalogWorkspace(
             setEditingLocation(selectedLocation)
             setSelectedLocation(null)
           }}
+          place={() => setPlacingLocation(selectedLocation)}
           deleteConfirm={deleteLocationConfirm}
           setDeleteConfirm={setDeleteLocationConfirm}
           remove={() => void deleteLocation()}
@@ -2393,6 +3144,16 @@ function CatalogWorkspace(
           save={(draft) => void saveLocation(draft)}
         />
       )}
+      {placingLocation && (
+        <HexLocationPlacementDialog
+          location={placingLocation}
+          close={() => setPlacingLocation(null)}
+          onPlaced={() =>
+            void window.saltMarcher.session.read().then(props.setSnapshot)
+          }
+          onError={props.onError}
+        />
+      )}
     </section>
   )
 }
@@ -2401,6 +3162,7 @@ function LocationInspector(props: {
   location: WorldLocation
   close: () => void
   edit: () => void
+  place: () => void
   deleteConfirm: boolean
   setDeleteConfirm: (value: boolean) => void
   remove: () => void
@@ -2424,6 +3186,7 @@ function LocationInspector(props: {
         {props.location.encounterTableIds.length} direkte Encounter-Tabellen
       </p>
       <footer className="row-actions">
+        <button onClick={props.place}>Platzieren / verschieben</button>
         <button onClick={props.edit}>Bearbeiten</button>
         {!props.deleteConfirm ? (
           <button

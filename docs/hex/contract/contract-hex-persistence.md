@@ -25,7 +25,10 @@ Hex persistence MUST store:
 - maps, including stable id, display name, and radius
 - tiles, including owning map id and axial coordinate
 - terrain overrides keyed by map and tile coordinate
-- markers keyed by map and marker id, with exactly one owning tile coordinate
+- World Planner location placements keyed by foreign logical location ID, with
+  exactly one owning tile coordinate
+- Scene-scoped runtime journeys with route, checkpoint, status, participants,
+  presentation multiplier, and restart state
 
 ## Schema Semantics
 
@@ -54,36 +57,27 @@ Terrain override rows MUST be scoped to one map and one tile coordinate. The
 terrain value MUST use the Hex terrain vocabulary exposed by the Hex editor
 requirements.
 
-### Markers
+### Location Placements
 
-Marker rows MUST include:
+Placement rows store only World Planner location ID, owning map ID, and axial
+coordinate. Unique constraints enforce one placement per location and at most
+one placed location per tile. Cross-owner database foreign keys are forbidden;
+the application command coordinates deletion while each owner retains its SQL.
 
-- stable marker id inside the map
-- owning map id
-- owning tile coordinate `q,r`
-- nonblank name
-- marker type
-- optional note
+### Runtime Journeys
 
-Marker type MUST be one of:
-
-- `SETTLEMENT`
-- `LANDMARK`
-- `DANGER`
-- `RESOURCE`
-
-Each marker row MUST belong to exactly one owning tile. A marker note MAY be
-stored as absent, null, or blank according to the chosen adapter convention, but
-that absence MUST round-trip as "no note" and MUST NOT change marker identity.
+Journey rows are keyed by Scene ID and store map ID, expanded adjacent path,
+current checkpoint, participant IDs, status, presentation multiplier, and
+segment start. Compact `Reise` context remains derived and is not stored again.
 
 ## Validation And Error Behavior
 
 Owner startup readiness validates the feature-declared target schema signature; semantic row validation remains on typed provider read/write paths and fails closed through the feature contract.
 
-- Loading malformed marker type, blank marker name, invalid map radius, or
-  out-of-radius tile coordinates MUST fail visibly to the caller instead of
+- Loading an unknown terrain ID, invalid map radius, malformed route, or
+  out-of-radius tile coordinate MUST fail visibly to the caller instead of
   silently repairing stored truth.
-- Saving a map MUST preserve marker ownership and terrain overrides for tiles
+- Saving a map MUST preserve location ownership and terrain overrides for tiles
   that remain inside the map radius.
 - Shrinking a map radius MAY delete out-of-radius tile-owned data only after
   the editor behavior has surfaced the destructive warning owned by

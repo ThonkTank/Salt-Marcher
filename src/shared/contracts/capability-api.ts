@@ -27,6 +27,15 @@ import type {
   WorldFactionDraft,
   WorldFactionSnapshot
 } from './encounter-source.js'
+import type {
+  AxialCoordinate,
+  HexMapCatalogSnapshot,
+  HexMapSnapshot,
+  HexRouteEvaluation,
+  HexTerrainCatalog,
+  HexTerrainId,
+  HexTravelSnapshot
+} from './hex.js'
 
 export interface CampaignReadCapability {
   list(): Promise<CampaignSnapshot>
@@ -122,6 +131,70 @@ export interface SaltMarcherApi {
       expectedRevision: number
     ): Promise<WorldFactionSnapshot>
     delete(id: string, expectedRevision: number): Promise<WorldFactionSnapshot>
+  }
+  hex: {
+    terrainCatalog(): Promise<HexTerrainCatalog>
+    catalog(): Promise<HexMapCatalogSnapshot>
+    read(mapId: string): Promise<HexMapSnapshot>
+    create(
+      displayName: string,
+      expectedCatalogRevision: number
+    ): Promise<HexMapSnapshot>
+    update(
+      mapId: string,
+      displayName: string,
+      radius: number,
+      confirmDataLoss: boolean,
+      expectedRevision: number
+    ): Promise<HexMapSnapshot>
+    paint(
+      mapId: string,
+      coordinate: AxialCoordinate,
+      terrainId: HexTerrainId,
+      expectedRevision: number
+    ): Promise<HexMapSnapshot>
+    placeLocation(
+      mapId: string,
+      locationId: string,
+      coordinate: AxialCoordinate,
+      expectedRevision: number
+    ): Promise<HexMapSnapshot>
+    removeLocation(
+      locationId: string,
+      expectedMapRevision: number
+    ): Promise<HexMapSnapshot>
+  }
+  hexTravel: {
+    read(sceneId: string): Promise<HexTravelSnapshot>
+    evaluate(
+      sceneId: string,
+      mapId: string,
+      waypoints: readonly AxialCoordinate[]
+    ): Promise<HexRouteEvaluation>
+    position(
+      sceneId: string,
+      mapId: string,
+      coordinate: AxialCoordinate,
+      expectedSceneRevision: number
+    ): Promise<HexTravelSnapshot>
+    start(
+      sceneId: string,
+      mapId: string,
+      waypoints: readonly AxialCoordinate[],
+      multiplier: 1 | 2 | 5 | 10,
+      expectedRevision: number
+    ): Promise<HexTravelSnapshot>
+    pause(sceneId: string, expectedRevision: number): Promise<HexTravelSnapshot>
+    resume(
+      sceneId: string,
+      expectedRevision: number
+    ): Promise<HexTravelSnapshot>
+    abort(sceneId: string, expectedRevision: number): Promise<HexTravelSnapshot>
+    setMultiplier(
+      sceneId: string,
+      multiplier: 1 | 2 | 5 | 10,
+      expectedRevision: number
+    ): Promise<HexTravelSnapshot>
   }
   session: {
     read(): Promise<LiveSessionSnapshot>

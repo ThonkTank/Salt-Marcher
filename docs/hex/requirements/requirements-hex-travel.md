@@ -14,7 +14,7 @@ party-owned runtime position.
 
 ## Visible Structure
 
-- controls that include the `Reisegruppe` movement tool
+- controls for administrative Party placement and explicit route planning
 - main content as the shared `Hex-Karte` map surface
 - one visible party token on the active hex
 - compact travel context in the runtime `Reise` state tab, including location,
@@ -31,7 +31,15 @@ party-owned runtime position.
 
 - the travel surface MUST load a visible hex map and current party position
 - the surface MUST show the party token on the current tile when one exists
-- travel MUST support direct party-token movement across the hex map
+- route planning MUST accept ordered manual waypoints and expand every segment
+  into deterministic adjacent Hex steps
+- route start MUST be explicit and MUST reject out-of-map or impassable steps
+- the travelling group MUST be the focused Scene's assigned active PCs and use
+  the slowest movement speed; missing speed assumes 30 ft with a visible warning
+- every reached Hex checkpoint MUST commit Party position and Scene time
+  together
+- the default 3-mile rule uses `mph = Speed / 10`, current terrain cost, and
+  one real second per in-game hour at 1x presentation speed
 - the surface MUST communicate current location or context plus visible travel
   status
 - the surface MUST communicate visible overworld travel context such as
@@ -45,8 +53,9 @@ party-owned runtime position.
 ## Acceptance Criteria
 
 - A user can identify the current party tile on the map.
-- Using the `Reisegruppe` tool to choose a destination tile updates visible
-  travel context when the move resolves.
+- Starting a waypoint route advances the token through its visible path.
+- Pause, resume, abort, 1x/2x/5x/10x presentation speed, and paused restart
+  preserve in-world duration and the last committed Hex.
 - The travel surface stays focused on interactive map travel rather than
   adding movement commands to the compact runtime `Reise` state tab.
 - Missing location context is shown explicitly.

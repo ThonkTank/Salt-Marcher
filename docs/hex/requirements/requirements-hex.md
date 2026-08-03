@@ -9,6 +9,7 @@ Provide one hex-map workflow that lets a GM:
 - read compact Hex travel state through the feature-neutral global travel-state
   surface shown in the runtime `Reise` tab
 - edit map metadata and hex terrain without duplicating map truth
+- place existing World Planner locations once on a Hex map
 
 ## Non-Goals
 
@@ -36,8 +37,11 @@ Provide one hex-map workflow that lets a GM:
 
 1. The user opens the `Hex-Karte` surface.
 2. The party token is shown on the current tile.
-3. The user selects the `Reisegruppe` tool and clicks a destination hex.
-4. The visible party token and Hex travel readback update.
+3. The user selects `Reise planen` and clicks one or more waypoints.
+4. The map expands those points into one adjacent Hex path and previews its
+   duration.
+5. The user starts the journey explicitly. The visible party token, Scene time,
+   and Hex travel readback advance checkpoint by checkpoint.
 
 ### Read Compact Hex Travel State
 
@@ -60,7 +64,7 @@ Provide one hex-map workflow that lets a GM:
 - compact travel context for overworld travel
 - terrain paint workflow
 - map creation and metadata editing
-- simple tile-owned marker placement
+- placement of one existing World Planner location from `Katalog → Orte`
 - destructive shrink warning when radius changes would remove authored tile
   data
 
@@ -76,6 +80,10 @@ Provide one hex-map workflow that lets a GM:
   does not infer active travel from editor-only map selection.
 - Editing terrain or map metadata never requires the user to infer hidden map
   state from implementation details.
+- travel can be paused, resumed, or aborted and resumes paused at the last
+  committed Hex after restart
+- V1 terrain definitions are replaceable static catalog data; editable Terrain
+  catalog CRUD remains a later slice
 
 ## Open Product Questions
 

@@ -29,8 +29,9 @@ travel workspaces.
 - Selecting the runtime tab labeled `Reise` switches the global state pane
   from Encounter content to the selected travel context or explicit no-context
   state.
-- The live compact state-tab surface remains read-mostly. Travel movement and
-  editing commands belong in the owning interactive travel or editor surface.
+- The live compact surface may dispatch provider-neutral pause, resume, abort,
+  presentation-speed, and open-map actions. Route planning, positioning,
+  starting, and editing remain in the owning map or editor surface.
 
 ## Visible States
 
@@ -48,7 +49,8 @@ travel workspaces.
   the navigable Travel left-bar tab
 - selecting the runtime tab labeled `Reise` swaps the state pane from
   Encounter content to compact travel content
-- the no-context and live compact states remain command-free in this surface
+- the no-context state remains command-free apart from opening an available map;
+  live context exposes only the bounded runtime controls above
 - a feature-owned live travel context can appear only through an approved
   readback surface and without adding movement commands to this state tab
 - Dungeon and Hex MUST NOT register separate global `travel` contribution keys;

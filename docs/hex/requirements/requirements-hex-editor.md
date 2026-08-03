@@ -3,8 +3,8 @@
 ## Goal
 
 Define the required editor workflow over committed hex-map truth so the user
-can manage maps, inspect tiles, paint terrain, and place simple authored
-markers without inventing a second map source of truth.
+can manage maps, inspect tiles, paint terrain, and place existing World Planner
+locations without inventing a second place or map source of truth.
 
 ## Non-Goals
 
@@ -18,13 +18,12 @@ markers without inventing a second map source of truth.
 
 - a shared shell catalog CRUD surface for selecting, creating, renaming, and
   reloading Hex maps
-- compact tool controls for at least `Auswahl`, terrain painting, marker
-  placement, and party-token movement
+- compact tool controls for `Auswahl` and terrain painting
 - main content as the shared hex map surface in editor mode
 - state content for selected map metadata, radius changes, active status,
   selected tile details, and marker editing
 - terrain palette for the active paint tool
-- marker placement controls for name, type, and optional note in the state pane
+- World Planner location placement launched from `Katalog → Orte`
 
 ## Visible States
 
@@ -32,8 +31,7 @@ markers without inventing a second map source of truth.
 - loaded editable hex map
 - selected tile with visible details
 - active terrain-paint mode
-- active marker-placement mode
-- selected marker with visible name, type, note when present, and owning tile
+- selected placed World Planner location with its resolved name
 - save or validation failure during map edits
 - destructive radius-change warning before data loss
 
@@ -53,14 +51,12 @@ markers without inventing a second map source of truth.
 - the editor MUST support a selection tool for tile inspection
 - the editor MUST support a terrain-paint tool
 - the active terrain type MUST be visible while painting
-- the editor MUST support placing a simple marker on one selected or clicked
-  tile
-- marker creation MUST require a nonblank name
-- marker creation MUST require one marker type from the supported marker type
-  vocabulary
-- marker note text MUST be optional
-- every marker MUST belong to exactly one owning hex tile
-- marker feedback MUST be visible on the owning tile after placement
+- `Katalog → Orte → Platzieren` MUST open a map chooser and Hex placement view
+- one World Planner location MUST be placed globally at most once and one Hex
+  MUST carry at most one World Planner location
+- moving a placement MUST retain the World Planner location identity
+- deleting the World Planner location MUST remove its placement atomically
+- placement feedback MUST be visible on the owning tile
 - tile inspection MUST surface visible details for at least position, terrain,
   elevation, biome, exploration state, and notes when those values are
   available
@@ -81,14 +77,10 @@ The editor terrain palette exposes these visible labels:
 - `Wüste`
 - `Sumpf`
 
-## Supported Marker Types
-
-The V1 marker vocabulary exposes these visible marker types:
-
-- `SETTLEMENT`
-- `LANDMARK`
-- `DANGER`
-- `RESOURCE`
+The static V1 terrain catalog also publishes display color, passability, and
+travel cost. Maps store stable terrain IDs. Editing terrain definitions through
+Catalog CRUD is deliberately deferred without making those values hard-coded
+map truth.
 
 ## Acceptance Criteria
 
@@ -96,10 +88,8 @@ The V1 marker vocabulary exposes these visible marker types:
   immediately see it as an editable radius-2 map.
 - The user can select a tile and inspect visible tile details.
 - The user can paint terrain and see the changed terrain on the map.
-- The user can place a named marker with a supported type on exactly one tile.
-- The user can add or omit a marker note without changing marker ownership.
-- Marker validation failure produces a visible error outcome when name or type
-  is missing.
+- The user can place, move, reveal, and remove an existing World Planner
+  location from its Catalog detail.
 - Destructive radius shrink requires an explicit warning before commit.
 - Save failure produces a visible error outcome.
 - The visible Hex map surface remains available below the controls because the

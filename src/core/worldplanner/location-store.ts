@@ -119,6 +119,31 @@ export class WorldLocationStore {
 
   delete(id: string, expectedRevision: number): WorldLocationSnapshot {
     this.mutate(expectedRevision, () => {
+      const hexPlacementTable = this.db
+        .prepare(
+          "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'hex_location_placement'"
+        )
+        .get()
+      if (hexPlacementTable) {
+        const placement = this.db
+          .prepare(
+            'SELECT map_id AS mapId FROM hex_location_placement WHERE location_id = ?'
+          )
+          .get(id) as { mapId: string } | undefined
+        this.db
+          .prepare('DELETE FROM hex_location_placement WHERE location_id = ?')
+          .run(id)
+        if (placement) {
+          this.db
+            .prepare('UPDATE hex_map SET revision = revision + 1 WHERE id = ?')
+            .run(placement.mapId)
+          this.db
+            .prepare(
+              'UPDATE hex_metadata SET revision = revision + 1 WHERE singleton = 1'
+            )
+            .run()
+        }
+      }
       if (
         this.db
           .prepare('DELETE FROM worldplanner_location WHERE id = ?')

@@ -30,6 +30,7 @@ export const runningSceneSchema = z
     focused: z.boolean(),
     locationId: z.string().nullable(),
     locationName: z.string(),
+    gameTimeSeconds: z.number().int().nonnegative(),
     partyMemberIds: z.array(z.uuid()),
     groups: z.array(sceneGroupSchema)
   })

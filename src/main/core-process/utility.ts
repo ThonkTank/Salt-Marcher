@@ -11,6 +11,9 @@ import { z } from 'zod'
 import { join } from 'node:path'
 import { WorldLocationService } from '../../core/worldplanner/location-store.js'
 import { EncounterSourceService } from '../../core/worldplanner/encounter-source-store.js'
+import { HexMapService } from '../../core/hex/hex-map-store.js'
+import { HexTravelService } from '../../core/hex/hex-travel.js'
+import { hexTerrainCatalog } from '../../core/hex/terrain-catalog.js'
 const root = process.argv[2]
 if (!root || !process.parentPort)
   throw new Error('Utility process requires a data root and parent port')
@@ -18,6 +21,8 @@ const campaigns = new CampaignStore(root)
 const play = new LivePlayService(() => campaigns.activeCampaignPath())
 const locations = new WorldLocationService(() => campaigns.activeCampaignPath())
 const sources = new EncounterSourceService(() => campaigns.activeCampaignPath())
+const hex = new HexMapService(() => campaigns.activeCampaignPath())
+const hexTravel = new HexTravelService(() => campaigns.activeCampaignPath())
 const creatures = new CreatureCatalogService(
   join(root, 'installation.sqlite'),
   (query) => sources.resolve(query),
@@ -158,8 +163,10 @@ process.parentPort.on('message', (event) => {
         r.requestId,
         sources.deleteFaction(r.input.id, r.input.expectedRevision)
       )
-    else if (r.kind === 'session.read') respond(r.requestId, play.readSession())
-    else if (r.kind === 'scene.focus')
+    else if (r.kind === 'session.read') {
+      hexTravel.read()
+      respond(r.requestId, play.readSession())
+    } else if (r.kind === 'scene.focus')
       respond(
         r.requestId,
         play.focusScene(r.input.sceneId, r.input.expectedRevision)
@@ -287,6 +294,38 @@ process.parentPort.on('message', (event) => {
       respond(r.requestId, play.awardXp(r.input.expectedRevision))
     else if (r.kind === 'combat.complete')
       respond(r.requestId, play.completeCombat(r.input.expectedRevision))
+    else if (r.kind === 'hex.terrainCatalog')
+      respond(r.requestId, hexTerrainCatalog)
+    else if (r.kind === 'hex.catalog') respond(r.requestId, hex.catalog())
+    else if (r.kind === 'hex.read')
+      respond(r.requestId, hex.read(r.input.mapId))
+    else if (r.kind === 'hex.create')
+      respond(
+        r.requestId,
+        hex.create(r.input.displayName, r.input.expectedCatalogRevision)
+      )
+    else if (r.kind === 'hex.update') respond(r.requestId, hex.update(r.input))
+    else if (r.kind === 'hex.paint') respond(r.requestId, hex.paint(r.input))
+    else if (r.kind === 'hex.placeLocation')
+      respond(r.requestId, hex.placeLocation(r.input))
+    else if (r.kind === 'hex.removeLocation')
+      respond(r.requestId, hex.removeLocation(r.input))
+    else if (r.kind === 'hexTravel.read')
+      respond(r.requestId, hexTravel.read(r.input.sceneId))
+    else if (r.kind === 'hexTravel.evaluate')
+      respond(r.requestId, hexTravel.evaluate(r.input))
+    else if (r.kind === 'hexTravel.position')
+      respond(r.requestId, hexTravel.position(r.input))
+    else if (r.kind === 'hexTravel.start')
+      respond(r.requestId, hexTravel.start(r.input))
+    else if (r.kind === 'hexTravel.pause')
+      respond(r.requestId, hexTravel.pause(r.input))
+    else if (r.kind === 'hexTravel.resume')
+      respond(r.requestId, hexTravel.resume(r.input))
+    else if (r.kind === 'hexTravel.abort')
+      respond(r.requestId, hexTravel.abort(r.input))
+    else if (r.kind === 'hexTravel.setMultiplier')
+      respond(r.requestId, hexTravel.setMultiplier(r.input))
   } catch (e) {
     failure(
       r.requestId,

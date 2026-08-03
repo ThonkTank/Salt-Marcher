@@ -23,6 +23,7 @@ export function initializeSceneSchema(db: Database.Database): void {
       title TEXT NOT NULL,
       location_id TEXT,
       location_name TEXT NOT NULL DEFAULT '',
+      game_time_seconds INTEGER NOT NULL DEFAULT 28800 CHECK(game_time_seconds >= 0),
       position INTEGER NOT NULL CHECK(position >= 0)
     );
     CREATE TABLE IF NOT EXISTS scene_party_member (
@@ -46,6 +47,13 @@ export function initializeSceneSchema(db: Database.Database): void {
       UNIQUE(group_id, creature_id)
     );
   `)
+  const sceneColumns = db
+    .prepare("PRAGMA table_info('scene_running_scene')")
+    .all() as readonly { name: string }[]
+  if (!sceneColumns.some((column) => column.name === 'game_time_seconds'))
+    db.exec(
+      'ALTER TABLE scene_running_scene ADD COLUMN game_time_seconds INTEGER NOT NULL DEFAULT 28800 CHECK(game_time_seconds >= 0)'
+    )
   const exists = db
     .prepare('SELECT 1 FROM scene_workspace WHERE singleton = 1')
     .get()
@@ -95,12 +103,13 @@ export class SceneStore {
     const locations = this.locationProvider()
     const rows = this.db
       .prepare(
-        'SELECT id, title, location_id AS locationId, position FROM scene_running_scene ORDER BY position, id'
+        'SELECT id, title, location_id AS locationId, game_time_seconds AS gameTimeSeconds, position FROM scene_running_scene ORDER BY position, id'
       )
       .all() as Array<{
       id: string
       title: string
       locationId: string | null
+      gameTimeSeconds: number
       position: number
     }>
     const scenes = rows.map((row) => this.resolveScene(row, root, locations))
@@ -120,6 +129,35 @@ export class SceneStore {
         .filter((member) => member.active && !assigned.has(member.id))
         .map((member) => member.id)
     })
+  }
+
+  partyMemberIds(sceneId: string): readonly string[] {
+    return (
+      this.db
+        .prepare(
+          'SELECT party_member_id AS id FROM scene_party_member WHERE scene_id = ? ORDER BY position, party_member_id'
+        )
+        .all(sceneId) as Array<{ id: string }>
+    ).map((row) => row.id)
+  }
+
+  advanceTravel(
+    sceneId: string,
+    gameSeconds: number,
+    locationId: string | null,
+    locationName: string
+  ): void {
+    if (
+      this.db
+        .prepare(
+          `UPDATE scene_running_scene
+           SET game_time_seconds = game_time_seconds + ?, location_id = ?, location_name = ?
+           WHERE id = ?`
+        )
+        .run(gameSeconds, locationId, locationName, sceneId).changes !== 1
+    )
+      throw new Error('not found')
+    this.bump()
   }
 
   focused(party: readonly PartyMember[]): RunningScene {
@@ -280,6 +318,7 @@ export class SceneStore {
       id: string
       title: string
       locationId: string | null
+      gameTimeSeconds: number
       position: number
     },
     root: SceneRoot,
@@ -304,6 +343,7 @@ export class SceneStore {
       locationName: row.locationId
         ? (location?.displayName ?? 'Nicht verfügbarer Ort')
         : '',
+      gameTimeSeconds: row.gameTimeSeconds,
       partyMemberIds,
       groups: [...this.groups(row.id)]
     }

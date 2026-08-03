@@ -77,6 +77,23 @@ import {
   updateWorldFactionInputSchema,
   worldFactionSnapshotSchema
 } from '../../shared/contracts/encounter-source.js'
+import {
+  createHexMapInputSchema,
+  evaluateHexRouteInputSchema,
+  hexMapCatalogSnapshotSchema,
+  hexMapSnapshotSchema,
+  hexRouteEvaluationSchema,
+  hexTerrainCatalogSchema,
+  hexTravelSnapshotSchema,
+  mutateHexTravelInputSchema,
+  paintHexTerrainInputSchema,
+  placeHexLocationInputSchema,
+  positionHexPartyInputSchema,
+  removeHexLocationInputSchema,
+  setHexTravelMultiplierInputSchema,
+  startHexTravelInputSchema,
+  updateHexMapInputSchema
+} from '../../shared/contracts/hex.js'
 
 let core: CoreProcessClient | undefined
 
@@ -310,6 +327,141 @@ export async function startApplication(): Promise<void> {
     (v) => {
       const i = v as z.infer<typeof deleteWorldLocationInputSchema>
       return requireCore().locationsDelete(i.id, i.expectedRevision)
+    }
+  )
+  capability(
+    'hex:terrainCatalog',
+    hexTerrainCatalogSchema,
+    false,
+    z.undefined(),
+    () => requireCore().hexTerrainCatalog()
+  )
+  capability(
+    'hex:catalog',
+    hexMapCatalogSnapshotSchema,
+    false,
+    z.undefined(),
+    () => requireCore().hexCatalog()
+  )
+  capability(
+    'hex:read',
+    hexMapSnapshotSchema,
+    false,
+    z.object({ mapId: z.uuid() }).strict(),
+    (v) => requireCore().hexRead((v as { mapId: string }).mapId)
+  )
+  capability(
+    'hex:create',
+    hexMapSnapshotSchema,
+    true,
+    createHexMapInputSchema,
+    (v) => {
+      const i = v as z.infer<typeof createHexMapInputSchema>
+      return requireCore().hexCreate(i.displayName, i.expectedCatalogRevision)
+    }
+  )
+  capability(
+    'hex:update',
+    hexMapSnapshotSchema,
+    true,
+    updateHexMapInputSchema,
+    (v) => requireCore().hexUpdate(v as z.infer<typeof updateHexMapInputSchema>)
+  )
+  capability(
+    'hex:paint',
+    hexMapSnapshotSchema,
+    true,
+    paintHexTerrainInputSchema,
+    (v) =>
+      requireCore().hexPaint(v as z.infer<typeof paintHexTerrainInputSchema>)
+  )
+  capability(
+    'hex:placeLocation',
+    hexMapSnapshotSchema,
+    true,
+    placeHexLocationInputSchema,
+    (v) =>
+      requireCore().hexPlaceLocation(
+        v as z.infer<typeof placeHexLocationInputSchema>
+      )
+  )
+  capability(
+    'hex:removeLocation',
+    hexMapSnapshotSchema,
+    true,
+    removeHexLocationInputSchema,
+    (v) => {
+      const i = v as z.infer<typeof removeHexLocationInputSchema>
+      return requireCore().hexRemoveLocation(
+        i.locationId,
+        i.expectedMapRevision
+      )
+    }
+  )
+  capability(
+    'hex-travel:read',
+    hexTravelSnapshotSchema,
+    false,
+    z.object({ sceneId: z.uuid() }).strict(),
+    (v) => requireCore().hexTravelRead((v as { sceneId: string }).sceneId)
+  )
+  capability(
+    'hex-travel:evaluate',
+    hexRouteEvaluationSchema,
+    false,
+    evaluateHexRouteInputSchema,
+    (v) => {
+      const i = v as z.infer<typeof evaluateHexRouteInputSchema>
+      return requireCore().hexTravelEvaluate(i.sceneId, i.mapId, i.waypoints)
+    }
+  )
+  capability(
+    'hex-travel:position',
+    hexTravelSnapshotSchema,
+    true,
+    positionHexPartyInputSchema,
+    (v) =>
+      requireCore().hexTravelPosition(
+        v as z.infer<typeof positionHexPartyInputSchema>
+      )
+  )
+  capability(
+    'hex-travel:start',
+    hexTravelSnapshotSchema,
+    true,
+    startHexTravelInputSchema,
+    (v) =>
+      requireCore().hexTravelStart(
+        v as z.infer<typeof startHexTravelInputSchema>
+      )
+  )
+  for (const action of ['pause', 'resume', 'abort'] as const)
+    capability(
+      `hex-travel:${action}`,
+      hexTravelSnapshotSchema,
+      true,
+      mutateHexTravelInputSchema,
+      (v) => {
+        const i = v as z.infer<typeof mutateHexTravelInputSchema>
+        return requireCore().hexTravelMutate(
+          action,
+          i.sceneId,
+          i.expectedRevision
+        )
+      }
+    )
+  capability(
+    'hex-travel:setMultiplier',
+    hexTravelSnapshotSchema,
+    true,
+    setHexTravelMultiplierInputSchema,
+    (v) => {
+      const i = v as z.infer<typeof setHexTravelMultiplierInputSchema>
+      return requireCore().hexTravelSetMultiplier(
+        i.sceneId,
+        i.multiplier,
+        i.expectedRevision
+      )
     }
   )
   capability(

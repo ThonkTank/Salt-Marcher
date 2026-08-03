@@ -54,6 +54,15 @@ import {
   type WorldFactionDraft,
   type WorldFactionSnapshot
 } from '../../shared/contracts/encounter-source.js'
+import {
+  hexMapCatalogSnapshotSchema,
+  hexMapSnapshotSchema,
+  hexRouteEvaluationSchema,
+  hexTerrainCatalogSchema,
+  hexTravelSnapshotSchema,
+  type AxialCoordinate,
+  type HexTerrainId
+} from '../../shared/contracts/hex.js'
 
 export class CoreProcessClient {
   readonly #process: UtilityProcess
@@ -205,6 +214,132 @@ export class CoreProcessClient {
     return this.request(
       { kind: 'locations.delete', input: { id, expectedRevision } },
       worldLocationSnapshotSchema
+    )
+  }
+  hexTerrainCatalog() {
+    return this.request({ kind: 'hex.terrainCatalog' }, hexTerrainCatalogSchema)
+  }
+  hexCatalog() {
+    return this.request({ kind: 'hex.catalog' }, hexMapCatalogSnapshotSchema)
+  }
+  hexRead(mapId: string) {
+    return this.request(
+      { kind: 'hex.read', input: { mapId } },
+      hexMapSnapshotSchema
+    )
+  }
+  hexCreate(displayName: string, expectedCatalogRevision: number) {
+    return this.request(
+      { kind: 'hex.create', input: { displayName, expectedCatalogRevision } },
+      hexMapSnapshotSchema
+    )
+  }
+  hexUpdate(input: {
+    mapId: string
+    displayName: string
+    radius: number
+    confirmDataLoss: boolean
+    expectedRevision: number
+  }) {
+    return this.request({ kind: 'hex.update', input }, hexMapSnapshotSchema)
+  }
+  hexPaint(input: {
+    mapId: string
+    coordinate: AxialCoordinate
+    terrainId: HexTerrainId
+    expectedRevision: number
+  }) {
+    return this.request({ kind: 'hex.paint', input }, hexMapSnapshotSchema)
+  }
+  hexPlaceLocation(input: {
+    mapId: string
+    locationId: string
+    coordinate: AxialCoordinate
+    expectedRevision: number
+  }) {
+    return this.request(
+      { kind: 'hex.placeLocation', input },
+      hexMapSnapshotSchema
+    )
+  }
+  hexRemoveLocation(locationId: string, expectedMapRevision: number) {
+    return this.request(
+      {
+        kind: 'hex.removeLocation',
+        input: { locationId, expectedMapRevision }
+      },
+      hexMapSnapshotSchema
+    )
+  }
+  hexTravelRead(sceneId: string) {
+    return this.request(
+      { kind: 'hexTravel.read', input: { sceneId } },
+      hexTravelSnapshotSchema
+    )
+  }
+  hexTravelEvaluate(
+    sceneId: string,
+    mapId: string,
+    waypoints: readonly AxialCoordinate[]
+  ) {
+    return this.request(
+      {
+        kind: 'hexTravel.evaluate',
+        input: { sceneId, mapId, waypoints: [...waypoints] }
+      },
+      hexRouteEvaluationSchema
+    )
+  }
+  hexTravelPosition(input: {
+    sceneId: string
+    mapId: string
+    coordinate: AxialCoordinate
+    expectedSceneRevision: number
+  }) {
+    return this.request(
+      { kind: 'hexTravel.position', input },
+      hexTravelSnapshotSchema
+    )
+  }
+  hexTravelStart(input: {
+    sceneId: string
+    mapId: string
+    waypoints: readonly AxialCoordinate[]
+    multiplier: 1 | 2 | 5 | 10
+    expectedRevision: number
+  }) {
+    return this.request(
+      {
+        kind: 'hexTravel.start',
+        input: { ...input, waypoints: [...input.waypoints] }
+      },
+      hexTravelSnapshotSchema
+    )
+  }
+  hexTravelMutate(
+    kind: 'pause' | 'resume' | 'abort',
+    sceneId: string,
+    expectedRevision: number
+  ) {
+    return this.request(
+      {
+        kind: `hexTravel.${kind}` as const,
+        input: { sceneId, expectedRevision }
+      },
+      hexTravelSnapshotSchema
+    )
+  }
+  hexTravelSetMultiplier(
+    sceneId: string,
+    multiplier: 1 | 2 | 5 | 10,
+    expectedRevision: number
+  ) {
+    return this.request(
+      {
+        kind: 'hexTravel.setMultiplier',
+        input: { sceneId, multiplier, expectedRevision }
+      },
+      hexTravelSnapshotSchema
     )
   }
   encounterTablesRead(): Promise<EncounterTableSnapshot> {

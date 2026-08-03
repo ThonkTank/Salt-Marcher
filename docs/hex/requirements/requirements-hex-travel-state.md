@@ -18,6 +18,8 @@ Define the compact read-mostly travel-state surface shown in the runtime
 - one travel-status badge
 - a small key-value block for weather, time of day, and pace
 - one concise interaction or context hint
+- compact controls for opening the map, presentation speed, pause, resume, and
+  abort
 
 ## Required Behavior
 
@@ -32,7 +34,8 @@ Define the compact read-mostly travel-state surface shown in the runtime
   empty state
 - the surface MUST consume an approved Hex runtime readback and MUST NOT infer
   Hex travel context from editor-only map selection
-- movement commands MUST remain outside the compact state tab
+- route planning, administrative placement, and route start MUST remain in the
+  map; runtime pause/resume/abort and presentation speed remain in this tab
 - Hex MUST publish its compact context as typed readback for the feature-neutral
   Travel capability; Hex MUST NOT remain the permanent owner of the global
   `travel` shell contribution
