@@ -1,3 +1,4 @@
+import { message as uiMessage } from '../../i18n/messages.de.js'
 import {
   useEffect,
   useMemo,
@@ -30,12 +31,16 @@ import { CreatureFilters, FilterChips } from '../catalog/catalog-controls.js'
 import {
   emptyCreatureOptions,
   emptyQuery,
-  errorText,
-  showError,
   useCreatureSearch
 } from '../catalog/catalog-state.js'
+import {
+  capabilityErrorText,
+  reportCapabilityError
+} from '../../capabilities/capability-errors.js'
 import { CreatureInspector } from '../catalog/creature-inspector.js'
 import './session.css'
+import { sessionCapabilities } from './session-capabilities.js'
+import { useSessionDetailHistory } from './use-session-detail-history.js'
 
 export default function SessionWorkspace(props: {
   snapshot: LiveSessionSnapshot
@@ -49,49 +54,21 @@ export default function SessionWorkspace(props: {
   onError: (message: string) => void
 }) {
   const [editingGroup, setEditingGroup] = useState<SceneGroup | null>(null)
-  const [detailHistories, setDetailHistories] = useState<
-    Record<string, { entries: Creature[]; index: number }>
-  >({})
   const focused = props.snapshot.scene.scenes.find(
     (scene) => scene.id === props.snapshot.scene.focusedSceneId
   )!
-
-  const history = detailHistories[focused.id] ?? { entries: [], index: -1 }
-  const detail = history.entries[history.index] ?? null
-  const openDetail = (creature: Creature) =>
-    setDetailHistories((current) => {
-      const previous = current[focused.id] ?? { entries: [], index: -1 }
-      if (previous.entries[previous.index]?.id === creature.id) return current
-      const entries = [
-        ...previous.entries.slice(0, previous.index + 1),
-        creature
-      ]
-      return {
-        ...current,
-        [focused.id]: { entries, index: entries.length - 1 }
-      }
-    })
-  const moveHistory = (offset: number) =>
-    setDetailHistories((current) => {
-      const previous = current[focused.id] ?? { entries: [], index: -1 }
-      return {
-        ...current,
-        [focused.id]: {
-          ...previous,
-          index: Math.max(
-            -1,
-            Math.min(previous.entries.length - 1, previous.index + offset)
-          )
-        }
-      }
-    })
+  const { history, detail, openDetail, moveHistory, closeDetail } =
+    useSessionDetailHistory(focused.id)
 
   const control = (
-    <section className="session-control-panel" aria-label="Session Steuerung">
+    <section
+      className="session-control-panel"
+      aria-label={uiMessage('ui.session.steuerung')}
+    >
       <div className="panel-heading">
         <div>
-          <p className="section-kicker">Session</p>
-          <h2>Steuerung</h2>
+          <p className="section-kicker">{uiMessage('nav.session')}</p>
+          <h2>{uiMessage('ui.steuerung')}</h2>
         </div>
         <button
           onClick={() => {
@@ -99,18 +76,18 @@ export default function SessionWorkspace(props: {
             props.setGroupDialogOpen(true)
           }}
         >
-          Gruppen managen
+          {uiMessage('ui.gruppen.managen')}
         </button>
       </div>
       <label>
-        Aktive Szene
+        {uiMessage('ui.aktive.szene')}
         <select
-          aria-label="Aktive Szene"
+          aria-label={uiMessage('ui.aktive.szene')}
           value={focused.id}
           disabled={props.snapshot.scene.scenes.length < 2}
           onChange={(event) =>
             void scenarioAction(props, () =>
-              window.saltMarcher.scene.focus(
+              sessionCapabilities().scene.focus(
                 event.target.value,
                 props.snapshot.scene.revision
               )
@@ -125,13 +102,13 @@ export default function SessionWorkspace(props: {
         </select>
       </label>
       <label>
-        Ort
+        {uiMessage('ui.ort')}
         <select
-          aria-label="Scene-Ort"
+          aria-label={uiMessage('ui.scene.ort')}
           value={focused.locationId ?? ''}
           onChange={(event) =>
             void scenarioAction(props, () =>
-              window.saltMarcher.scene.setLocation(
+              sessionCapabilities().scene.setLocation(
                 focused.id,
                 event.target.value || null,
                 props.snapshot.scene.revision
@@ -139,12 +116,14 @@ export default function SessionWorkspace(props: {
             )
           }
         >
-          <option value="">Kein Ort</option>
+          <option value="">{uiMessage('ui.kein.ort')}</option>
           {focused.locationId &&
             !props.snapshot.scene.locationChoices.some(
               (location) => location.id === focused.locationId
             ) && (
-              <option value={focused.locationId}>Nicht verfügbarer Ort</option>
+              <option value={focused.locationId}>
+                {uiMessage('ui.nicht.verfuegbarer.ort')}
+              </option>
             )}
           {props.snapshot.scene.locationChoices.map((location) => (
             <option key={location.id} value={location.id}>
@@ -155,16 +134,16 @@ export default function SessionWorkspace(props: {
       </label>
       <p className="panel-hint">
         {props.snapshot.scene.scenes.length > 1
-          ? 'Szenen führen Gruppen, Details und Combat unabhängig.'
-          : 'Weitere simultane Szenen erscheinen automatisch in der Auswahl.'}
+          ? uiMessage('session.independentHint')
+          : uiMessage('session.additionalHint')}
       </p>
     </section>
   )
 
   const groups = (
-    <section className="session-groups" aria-label="Gruppen">
+    <section className="session-groups" aria-label={uiMessage('ui.gruppen')}>
       <div className="groups-heading">
-        <h2>Gruppen</h2>
+        <h2>{uiMessage('ui.gruppen')}</h2>
       </div>
       <PartyGroup
         snapshot={props.snapshot}
@@ -183,13 +162,13 @@ export default function SessionWorkspace(props: {
                   props.setGroupDialogOpen(true)
                 }}
               >
-                Bearbeiten
+                {uiMessage('ui.bearbeiten')}
               </button>
               <button
                 className="danger"
                 onClick={() =>
                   void scenarioAction(props, () =>
-                    window.saltMarcher.scene.deleteGroup(
+                    sessionCapabilities().scene.deleteGroup(
                       focused.id,
                       group.id,
                       props.snapshot.scene.revision
@@ -197,7 +176,7 @@ export default function SessionWorkspace(props: {
                   )
                 }
               >
-                Löschen
+                {uiMessage('ui.loeschen')}
               </button>
             </div>
           </div>
@@ -208,10 +187,10 @@ export default function SessionWorkspace(props: {
                 className={entry.available ? '' : 'unavailable'}
                 disabled={!entry.available}
                 onClick={() =>
-                  void window.saltMarcher.creatures
-                    .detail(entry.creatureId)
+                  void sessionCapabilities()
+                    .creatures.detail(entry.creatureId)
                     .then(openDetail)
-                    .catch(showError(props.onError))
+                    .catch(reportCapabilityError(props.onError))
                 }
               >
                 {entry.displayName} × {entry.quantity}
@@ -224,7 +203,10 @@ export default function SessionWorkspace(props: {
   )
 
   const details = (
-    <section className="session-detail-panel" aria-label="Detailansicht">
+    <section
+      className="session-detail-panel"
+      aria-label={uiMessage('ui.detailansicht')}
+    >
       <div className="session-panel-tabs" role="tablist">
         <button
           role="tab"
@@ -233,7 +215,7 @@ export default function SessionWorkspace(props: {
             props.setLayout({ ...props.layout, upperRightTab: 'details' })
           }
         >
-          Details
+          {uiMessage('ui.details')}
         </button>
         <button
           role="tab"
@@ -242,7 +224,7 @@ export default function SessionWorkspace(props: {
             props.setLayout({ ...props.layout, upperRightTab: 'map' })
           }
         >
-          Karte
+          {uiMessage('ui.karte')}
         </button>
       </div>
       {props.layout.upperRightTab === 'map' ? (
@@ -253,30 +235,28 @@ export default function SessionWorkspace(props: {
         />
       ) : (
         <>
-          <nav className="detail-history" aria-label="Detail Verlauf">
+          <nav
+            className="detail-history"
+            aria-label={uiMessage('ui.detail.verlauf')}
+          >
             <button
-              aria-label="Zurück"
+              aria-label={uiMessage('ui.zurueck')}
               disabled={history.index <= 0}
               onClick={() => moveHistory(-1)}
             >
               ←
             </button>
             <button
-              aria-label="Vor"
+              aria-label={uiMessage('ui.vor')}
               disabled={history.index >= history.entries.length - 1}
               onClick={() => moveHistory(1)}
             >
               →
             </button>
             <button
-              aria-label="Detail schließen"
+              aria-label={uiMessage('ui.detail.schliessen')}
               disabled={!detail}
-              onClick={() =>
-                setDetailHistories((current) => ({
-                  ...current,
-                  [focused.id]: { entries: [], index: -1 }
-                }))
-              }
+              onClick={closeDetail}
             >
               ×
             </button>
@@ -292,8 +272,9 @@ export default function SessionWorkspace(props: {
                 <p className="section-kicker">{focused.title}</p>
                 <h2>{focused.locationName || 'Keine Detailauswahl'}</h2>
                 <p>
-                  Wähle ein Monster aus einer Gruppe oder später einen Ort bzw.
-                  ein anderes beschriebenes Szenenobjekt aus.
+                  {uiMessage(
+                    'ui.waehle.ein.monster.aus.einer.gruppe.oder.spaeter'
+                  )}
                 </p>
               </div>
             )}
@@ -304,20 +285,23 @@ export default function SessionWorkspace(props: {
   )
 
   const scenarioPanel = (
-    <aside className="scenario-panel" aria-label="Szenario Panel">
+    <aside
+      className="scenario-panel"
+      aria-label={uiMessage('ui.szenario.panel')}
+    >
       <select
-        aria-label="Szenario Auswahl"
+        aria-label={uiMessage('ui.szenario.auswahl')}
         value={props.scenario}
         onChange={(event) =>
           props.setScenario(event.target.value as '' | 'encounter' | 'travel')
         }
       >
-        <option value="">Szenario auswählen …</option>
-        <option value="encounter">Encounter</option>
-        <option value="travel">Reise</option>
+        <option value="">{uiMessage('ui.szenario.auswaehlen')}</option>
+        <option value="encounter">{uiMessage('ui.encounter')}</option>
+        <option value="travel">{uiMessage('ui.reise')}</option>
       </select>
       {!props.scenario ? (
-        <div className="scenario-empty">Szenario Panel</div>
+        <div className="scenario-empty">{uiMessage('ui.szenario.panel')}</div>
       ) : props.scenario === 'travel' ? (
         <TravelScenario
           snapshot={props.snapshot}
@@ -338,7 +322,10 @@ export default function SessionWorkspace(props: {
   )
 
   return (
-    <section className="session-mockup" aria-label="Session workspace">
+    <section
+      className="session-mockup"
+      aria-label={uiMessage('ui.session.workspace')}
+    >
       <div className="session-layout">
         <SessionPanelLayout
           preference={props.layout}
@@ -487,20 +474,22 @@ function PartyGroup(props: {
   return (
     <article className="group-card party-group">
       <div className="group-card-title">
-        <strong>Party</strong>
-        <span>{scene.partyMemberIds.length} in dieser Scene</span>
+        <strong>{uiMessage('ui.party')}</strong>
+        <span>
+          {scene.partyMemberIds.length} {uiMessage('ui.in.dieser.scene')}
+        </span>
       </div>
       <div className="group-members">
         {active.length === 0 ? (
-          <span>Keine aktiven Mitglieder</span>
+          <span>{uiMessage('ui.keine.aktiven.mitglieder')}</span>
         ) : (
           active.map((member) => (
             <span key={member.id} className="scene-party-member">
-              {member.name} · Lv {member.level ?? '—'}{' '}
+              {member.name} {uiMessage('ui.lv')} {member.level ?? '—'}{' '}
               <button
                 onClick={() =>
                   void scenarioAction(props, () =>
-                    window.saltMarcher.scene.assignPartyMember(
+                    sessionCapabilities().scene.assignPartyMember(
                       props.sceneId,
                       member.id,
                       !scene.partyMemberIds.includes(member.id),
@@ -510,8 +499,8 @@ function PartyGroup(props: {
                 }
               >
                 {scene.partyMemberIds.includes(member.id)
-                  ? 'Entfernen'
-                  : 'Zur Scene'}
+                  ? uiMessage('ui.entfernen')
+                  : uiMessage('session.assignToScene')}
               </button>
             </span>
           ))
@@ -530,7 +519,10 @@ export function CreatureCollectionCatalogPane(props: {
   inspect: (creature: Creature) => void
 }) {
   return (
-    <section className="group-catalog-pane" aria-label="Monsterkatalog">
+    <section
+      className="group-catalog-pane"
+      aria-label={uiMessage('ui.monsterkatalog')}
+    >
       <CreatureFilters
         query={props.query}
         options={props.options}
@@ -544,11 +536,11 @@ export function CreatureCollectionCatalogPane(props: {
         <table className="catalog-table group-catalog-table">
           <thead>
             <tr>
-              <th>Monster</th>
-              <th>CR</th>
-              <th>Typ</th>
-              <th>XP</th>
-              <th>Aktionen</th>
+              <th>{uiMessage('ui.monster')}</th>
+              <th>{uiMessage('ui.cr')}</th>
+              <th>{uiMessage('ui.typ')}</th>
+              <th>{uiMessage('ui.xp.2')}</th>
+              <th>{uiMessage('ui.aktionen')}</th>
             </tr>
           </thead>
           <tbody>
@@ -598,7 +590,7 @@ export function CreatureCollectionCatalogPane(props: {
               })
             }
           >
-            Zurück
+            {uiMessage('ui.zurueck')}
           </button>
           <span>{Math.floor(props.query.offset / props.query.limit) + 1}</span>
           <button
@@ -614,7 +606,7 @@ export function CreatureCollectionCatalogPane(props: {
               })
             }
           >
-            Weiter
+            {uiMessage('ui.weiter')}
           </button>
         </div>
       </footer>
@@ -729,23 +721,28 @@ function GroupDialog(props: {
 
   useCreatureSearch(sourceQuery, setPage, props.onError)
   useEffect(() => {
-    void window.saltMarcher.creatures
-      .filterOptions()
+    void sessionCapabilities()
+      .creatures.filterOptions()
       .then(setOptions)
-      .catch(showError(props.onError))
+      .catch(reportCapabilityError(props.onError))
   }, [props.onError])
 
   useEffect(() => {
     if (!active) return
     const token = ++evaluationRequest.current
     const timer = window.setTimeout(() => {
-      void window.saltMarcher.scene
-        .evaluateGroupDraft(focused.id, entries, props.snapshot.scene.revision)
+      void sessionCapabilities()
+        .scene.evaluateGroupDraft(
+          focused.id,
+          entries,
+          props.snapshot.scene.revision
+        )
         .then((next) => {
           if (evaluationRequest.current === token) setEvaluation(next)
         })
         .catch((cause) => {
-          if (evaluationRequest.current === token) setMessage(errorText(cause))
+          if (evaluationRequest.current === token)
+            setMessage(capabilityErrorText(cause))
         })
     }, 120)
     return () => window.clearTimeout(timer)
@@ -758,7 +755,9 @@ function GroupDialog(props: {
     const token = ++factsRequest.current
     void Promise.all(
       group.entries.map((entry) =>
-        window.saltMarcher.creatures.detail(entry.creatureId).catch(() => null)
+        sessionCapabilities()
+          .creatures.detail(entry.creatureId)
+          .catch(() => null)
       )
     ).then((creatures) => {
       if (factsRequest.current !== token) return
@@ -845,9 +844,9 @@ function GroupDialog(props: {
 
   async function inspect(creature: Creature) {
     try {
-      props.inspect(await window.saltMarcher.creatures.detail(creature.id))
+      props.inspect(await sessionCapabilities().creatures.detail(creature.id))
     } catch (cause) {
-      setMessage(errorText(cause))
+      setMessage(capabilityErrorText(cause))
     }
   }
 
@@ -856,7 +855,7 @@ function GroupDialog(props: {
     const nextSeed = seed + 1
     setBusy(true)
     try {
-      const result = await window.saltMarcher.scene.generateGroupDraft(
+      const result = await sessionCapabilities().scene.generateGroupDraft(
         focused.id,
         entries,
         mode,
@@ -888,7 +887,7 @@ function GroupDialog(props: {
       setSeed(nextSeed)
       setMessage(result.message)
     } catch (cause) {
-      setMessage(errorText(cause))
+      setMessage(capabilityErrorText(cause))
     } finally {
       setBusy(false)
     }
@@ -906,7 +905,7 @@ function GroupDialog(props: {
     setBusy(true)
     try {
       props.saved(
-        await window.saltMarcher.scene.saveGroup(
+        await sessionCapabilities().scene.saveGroup(
           focused.id,
           selection === 'new' ? null : selection,
           name.trim(),
@@ -915,7 +914,7 @@ function GroupDialog(props: {
         )
       )
     } catch (cause) {
-      setMessage(errorText(cause))
+      setMessage(capabilityErrorText(cause))
     } finally {
       setBusy(false)
     }
@@ -932,11 +931,11 @@ function GroupDialog(props: {
         <header>
           <div>
             <p className="section-kicker">{focused.title}</p>
-            <h2 id="group-builder-title">Gruppen managen</h2>
+            <h2 id="group-builder-title">{uiMessage('ui.gruppen.managen')}</h2>
           </div>
           <button
             type="button"
-            aria-label="Dialog schließen"
+            aria-label={uiMessage('ui.dialog.schliessen')}
             onClick={() => request({ kind: 'close' })}
           >
             ×
@@ -951,7 +950,10 @@ function GroupDialog(props: {
             add={addCreature}
             inspect={(creature) => void inspect(creature)}
           />
-          <section className="group-draft-pane" aria-label="Aktuelle Gruppe">
+          <section
+            className="group-draft-pane"
+            aria-label={uiMessage('ui.aktuelle.gruppe')}
+          >
             <CreatureCollectionSelection
               label="Gruppe"
               value={selection}
@@ -967,14 +969,14 @@ function GroupDialog(props: {
             />
             {!active ? (
               <p className="empty-state">
-                Wähle eine Gruppe aus oder lege eine neue Gruppe an.
+                {uiMessage('ui.waehle.eine.gruppe.aus.oder.lege.eine.neue')}
               </p>
             ) : (
               <>
                 <input
                   autoFocus
-                  aria-label="Gruppenname"
-                  placeholder="Gruppenname"
+                  aria-label={uiMessage('ui.gruppenname')}
+                  placeholder={uiMessage('ui.gruppenname')}
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                 />
@@ -1008,8 +1010,9 @@ function GroupDialog(props: {
                             {fact?.displayName ?? entry.creatureId}
                           </strong>
                           <small>
-                            CR {fact?.cr ?? '—'} ·{' '}
-                            {(fact?.xp ?? 0).toLocaleString()} XP
+                            {uiMessage('ui.cr')} {fact?.cr ?? '—'} ·{' '}
+                            {(fact?.xp ?? 0).toLocaleString()}{' '}
+                            {uiMessage('ui.xp.2')}
                           </small>
                         </span>
                         <button
@@ -1026,8 +1029,8 @@ function GroupDialog(props: {
                 </ul>
                 {entries.length === 0 && (
                   <p className="empty-state">
-                    Monster links mit <strong>+</strong> hinzufügen oder eine
-                    Gruppe generieren.
+                    {uiMessage('ui.monster.links.mit')} <strong>+</strong>{' '}
+                    {uiMessage('ui.hinzufuegen.oder.eine.gruppe.generieren')}
                   </p>
                 )}
                 <TuningControls tuning={tuning} changed={setTuning} />
@@ -1036,19 +1039,20 @@ function GroupDialog(props: {
                     disabled={busy || !canGenerate}
                     onClick={() => void generate('fill')}
                   >
-                    Auffüllen
+                    {uiMessage('ui.auffuellen')}
                   </button>
                   <button
                     disabled={busy || !canGenerate}
                     onClick={() => void generate('replace')}
                   >
-                    Neu generieren
+                    {uiMessage('ui.neu.generieren')}
                   </button>
                 </div>
                 {!canGenerate && (
                   <small className="muted">
-                    Zum Generieren braucht die Scene eine zugewiesene Party mit
-                    vollständigen Leveln.
+                    {uiMessage(
+                      'ui.zum.generieren.braucht.die.scene.eine.zugewiesene.party'
+                    )}
                   </small>
                 )}
                 {evaluation && (
@@ -1058,10 +1062,14 @@ function GroupDialog(props: {
             )}
             {pending && (
               <div className="confirm-row group-draft-confirm" role="alert">
-                <span>Ungespeicherte Änderungen verwerfen?</span>
-                <button onClick={() => setPending(null)}>Abbrechen</button>
+                <span>
+                  {uiMessage('ui.ungespeicherte.aenderungen.verwerfen')}
+                </span>
+                <button onClick={() => setPending(null)}>
+                  {uiMessage('action.cancel')}
+                </button>
                 <button className="danger" onClick={() => perform(pending)}>
-                  Änderungen verwerfen
+                  {uiMessage('ui.aenderungen.verwerfen')}
                 </button>
               </div>
             )}
@@ -1075,17 +1083,19 @@ function GroupDialog(props: {
         <footer className="group-builder-footer">
           <span className="muted">
             {focused.locationName || 'Kein Ort gesetzt'} · {assigned.length}{' '}
-            zugewiesene PCs
+            {uiMessage('ui.zugewiesene.pcs')}
           </span>
           <div>
             <button type="button" onClick={() => request({ kind: 'close' })}>
-              Abbrechen
+              {uiMessage('action.cancel')}
             </button>
             <button
               disabled={busy || !active || !name.trim() || entries.length === 0}
               onClick={() => void save()}
             >
-              {selection === 'new' ? 'Gruppe erstellen' : 'Speichern'}
+              {selection === 'new'
+                ? uiMessage('action.createGroup')
+                : uiMessage('action.save')}
             </button>
           </div>
         </footer>
@@ -1137,6 +1147,6 @@ async function scenarioAction(
   try {
     props.setSnapshot(await operation())
   } catch (cause) {
-    props.onError(errorText(cause))
+    props.onError(capabilityErrorText(cause))
   }
 }

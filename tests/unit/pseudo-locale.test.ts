@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  formatMessage,
   messagesDe,
   pseudoExpand
 } from '../../src/renderer/i18n/messages.de.js'
@@ -10,5 +11,23 @@ describe('pseudo locale', () => {
       expect(pseudoExpand(value).length).toBeGreaterThanOrEqual(
         Math.ceil(value.length * 1.4)
       )
+  })
+
+  it('formats typed dynamic copy before pseudo expansion', () => {
+    expect(
+      formatMessage(
+        'party.restSummary',
+        { shortRestXp: 100, longRestXp: 300 },
+        false
+      )
+    ).toBe('SR 100 · LR 300')
+    const pseudo = formatMessage(
+      'catalog.locationCount',
+      { visible: 2, total: 5 },
+      true
+    )
+    expect(pseudo).toContain('2')
+    expect(pseudo).toContain('5')
+    expect(pseudo.startsWith('⟦')).toBe(true)
   })
 })

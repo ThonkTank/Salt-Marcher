@@ -1,3 +1,4 @@
+import { message } from '../../i18n/messages.de.js'
 import { Application, Container, Graphics, Text } from 'pixi.js'
 import { useEffect, useRef, useState, type ReactElement } from 'react'
 import type {
@@ -250,13 +251,17 @@ export function HexMapCanvas(props: {
       />
       {renderError && (
         <p className="hex-canvas-render-error" role="alert">
-          Die Kartenansicht konnte nicht initialisiert werden. Navigation und
-          Kartendaten bleiben verfügbar.
+          {message(
+            'ui.die.kartenansicht.konnte.nicht.initialisiert.werden.navigation.und'
+          )}
         </p>
       )}
-      <section className="hex-accessible-selection" aria-label="Hex-Navigation">
+      <section
+        className="hex-accessible-selection"
+        aria-label={message('ui.hex.navigation')}
+      >
         <label>
-          q-Koordinate
+          {message('ui.q.koordinate')}
           <input
             type="number"
             value={directQ}
@@ -264,7 +269,7 @@ export function HexMapCanvas(props: {
           />
         </label>
         <label>
-          r-Koordinate
+          {message('ui.r.koordinate')}
           <input
             type="number"
             value={directR}
@@ -277,9 +282,9 @@ export function HexMapCanvas(props: {
               props.onTileClick?.({ q: directQ, r: directR })
           }}
         >
-          Koordinate auswählen
+          {message('ui.koordinate.auswaehlen')}
         </button>
-        <ul aria-label="Relevante Kartenfakten">
+        <ul aria-label={message('ui.relevante.kartenfakten')}>
           {props.snapshot.tiles
             .filter((tile) => tile.location || tile.terrainId !== 'grassland')
             .slice(factPage * 20, factPage * 20 + 20)
@@ -294,7 +299,7 @@ export function HexMapCanvas(props: {
           disabled={factPage === 0}
           onClick={() => setFactPage((p) => p - 1)}
         >
-          Vorherige Fakten
+          {message('ui.vorherige.fakten')}
         </button>
         <button
           disabled={
@@ -305,7 +310,7 @@ export function HexMapCanvas(props: {
           }
           onClick={() => setFactPage((p) => p + 1)}
         >
-          Weitere Fakten
+          {message('ui.weitere.fakten')}
         </button>
       </section>
     </div>

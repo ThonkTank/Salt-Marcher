@@ -1,3 +1,4 @@
+import { formatMessage, message } from '../../i18n/messages.de.js'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type {
   Creature,
@@ -33,10 +34,13 @@ import {
 import {
   emptyCreatureOptions,
   emptyQuery,
-  errorText,
-  showError,
   useCreatureSearch
 } from './catalog-state.js'
+import { catalogCapabilities } from './catalog-capabilities.js'
+import {
+  capabilityErrorText,
+  reportCapabilityError
+} from '../../capabilities/capability-errors.js'
 
 type CatalogWorkspaceProps = {
   snapshot: LiveSessionSnapshot
@@ -79,10 +83,10 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
   const onError = props.onError
   useEffect(() => {
     if (section !== 'monsters') return
-    void window.saltMarcher.creatures
-      .filterOptions()
+    void catalogCapabilities()
+      .creatures.filterOptions()
       .then(setOptions)
-      .catch(showError(onError))
+      .catch(reportCapabilityError(onError))
   }, [onError, section])
   useEffect(() => {
     if (section !== 'monsters') return
@@ -90,11 +94,11 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
     const timer = window.setTimeout(async () => {
       setLoading(true)
       try {
-        const result = await window.saltMarcher.creatures.search(query)
+        const result = await catalogCapabilities().creatures.search(query)
         if (request.current !== token) return
         setPage(result)
       } catch (cause) {
-        if (request.current === token) onError(errorText(cause))
+        if (request.current === token) onError(capabilityErrorText(cause))
       } finally {
         if (request.current === token) setLoading(false)
       }
@@ -107,9 +111,9 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
       setLocationLoading(true)
       try {
         const [next, tableSnapshot, factionSnapshot] = await Promise.all([
-          window.saltMarcher.locations.read(),
-          window.saltMarcher.encounterTables.read(),
-          window.saltMarcher.factions.read()
+          catalogCapabilities().locations.read(),
+          catalogCapabilities().encounterTables.read(),
+          catalogCapabilities().factions.read()
         ])
         setLocations(next)
         setLocationTables([...tableSnapshot.tables])
@@ -121,7 +125,7 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
             : null
         )
       } catch (cause) {
-        onError(errorText(cause))
+        onError(capabilityErrorText(cause))
       } finally {
         setLocationLoading(false)
       }
@@ -137,9 +141,9 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
   }, [locationSearchInput, section])
   const open = async (creature: Creature) => {
     try {
-      props.inspect(await window.saltMarcher.creatures.detail(creature.id))
+      props.inspect(await catalogCapabilities().creatures.detail(creature.id))
     } catch (cause) {
-      props.onError(errorText(cause))
+      props.onError(capabilityErrorText(cause))
     }
   }
   const visibleLocations = useMemo(() => {
@@ -163,12 +167,15 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
         locations.locations.map((location) => location.id)
       )
       const next = editingLocation
-        ? await window.saltMarcher.locations.update(
+        ? await catalogCapabilities().locations.update(
             editingLocation.id,
             draft,
             locations.revision
           )
-        : await window.saltMarcher.locations.create(draft, locations.revision)
+        : await catalogCapabilities().locations.create(
+            draft,
+            locations.revision
+          )
       const selectedId =
         editingLocation?.id ??
         next.locations.find((location) => !previousIds.has(location.id))?.id
@@ -177,25 +184,25 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
         next.locations.find((location) => location.id === selectedId) ?? null
       )
       setEditingLocation(undefined)
-      props.setSnapshot(await window.saltMarcher.session.read())
+      props.setSnapshot(await catalogCapabilities().session.read())
     } catch (cause) {
-      props.onError(errorText(cause))
+      props.onError(capabilityErrorText(cause))
     }
   }
 
   const deleteLocation = async () => {
     if (!selectedLocation) return
     try {
-      const next = await window.saltMarcher.locations.delete(
+      const next = await catalogCapabilities().locations.delete(
         selectedLocation.id,
         locations.revision
       )
       setLocations(next)
       setSelectedLocation(null)
       setDeleteLocationConfirm(false)
-      props.setSnapshot(await window.saltMarcher.session.read())
+      props.setSnapshot(await catalogCapabilities().session.read())
     } catch (cause) {
-      props.onError(errorText(cause))
+      props.onError(capabilityErrorText(cause))
     }
   }
 
@@ -209,25 +216,25 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
             aria-pressed={section === 'monsters'}
             onClick={() => setSection('monsters')}
           >
-            Monster
+            {message('ui.monster')}
           </button>
           <button
             aria-pressed={section === 'locations'}
             onClick={() => setSection('locations')}
           >
-            Orte
+            {message('ui.orte')}
           </button>
           <button
             aria-pressed={section === 'factions'}
             onClick={() => setSection('factions')}
           >
-            Fraktionen
+            {message('ui.fraktionen')}
           </button>
           <button
             aria-pressed={section === 'encounterTables'}
             onClick={() => setSection('encounterTables')}
           >
-            Encounter-Tabellen
+            {message('ui.encounter.tabellen')}
           </button>
         </header>
         {section === 'monsters' ? (
@@ -256,8 +263,8 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
                       query={query}
                       changed={setQuery}
                     />
-                    <th>Typ</th>
-                    <th>Größe</th>
+                    <th>{message('ui.typ')}</th>
+                    <th>{message('ui.groesse')}</th>
                     <SortHeader
                       label="XP"
                       field="xp"
@@ -292,7 +299,7 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
             <footer className="catalog-footer">
               <span>
                 {loading
-                  ? 'Monster werden aktualisiert …'
+                  ? message('catalog.monstersUpdating')
                   : page?.message || `${page?.total ?? 0} Monster`}
               </span>
               <div>
@@ -305,7 +312,7 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
                     })
                   }
                 >
-                  Zurück
+                  {message('ui.zurueck')}
                 </button>
                 <span>{Math.floor(query.offset / query.limit) + 1}</span>
                 <button
@@ -314,7 +321,7 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
                     setQuery({ ...query, offset: query.offset + query.limit })
                   }
                 >
-                  Weiter
+                  {message('ui.weiter')}
                 </button>
               </div>
             </footer>
@@ -329,13 +336,13 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
               }}
             >
               <input
-                aria-label="Orte suchen"
-                placeholder="Orte suchen …"
+                aria-label={message('ui.orte.suchen')}
+                placeholder={message('ui.orte.suchen.2')}
                 value={locationSearchInput}
                 onChange={(event) => setLocationSearchInput(event.target.value)}
               />
               <button type="button" onClick={() => setEditingLocation(null)}>
-                Erstellen
+                {message('ui.erstellen')}
               </button>
             </form>
             <div className="catalog-table-wrap">
@@ -351,10 +358,11 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
                           )
                         }
                       >
-                        Name {locationDirection === 'asc' ? '↑' : '↓'}
+                        {message('ui.name')}{' '}
+                        {locationDirection === 'asc' ? '↑' : '↓'}
                       </button>
                     </th>
-                    <th>Notizen</th>
+                    <th>{message('ui.notizen')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -380,10 +388,13 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
             <footer className="catalog-footer">
               <span>
                 {locationLoading
-                  ? 'Orte werden aktualisiert …'
+                  ? message('catalog.locationsUpdating')
                   : visibleLocations.length === 0
-                    ? 'Keine Orte gefunden.'
-                    : `${visibleLocations.length} von ${locations.locations.length} Orten`}
+                    ? message('catalog.noLocations')
+                    : formatMessage('catalog.locationCount', {
+                        visible: visibleLocations.length,
+                        total: locations.locations.length
+                      })}
               </span>
             </footer>
           </>
@@ -427,7 +438,7 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
           location={placingLocation}
           close={() => setPlacingLocation(null)}
           onPlaced={() =>
-            void window.saltMarcher.session.read().then(props.setSnapshot)
+            void catalogCapabilities().session.read().then(props.setSnapshot)
           }
           onError={props.onError}
         />
@@ -445,13 +456,19 @@ function LocationInspector(props: {
   remove: () => void
 }) {
   return (
-    <aside className="location-inspector" aria-label="Ort Details">
+    <aside
+      className="location-inspector"
+      aria-label={message('ui.ort.details')}
+    >
       <header>
         <div>
-          <p className="section-kicker">Ort</p>
+          <p className="section-kicker">{message('ui.ort')}</p>
           <IlluminatedHeading title={props.location.displayName} />
         </div>
-        <button aria-label="Ort Details schließen" onClick={props.close}>
+        <button
+          aria-label={message('ui.ort.details.schliessen')}
+          onClick={props.close}
+        >
           ×
         </button>
       </header>
@@ -459,27 +476,30 @@ function LocationInspector(props: {
         {props.location.notes || 'Keine Beschreibung hinterlegt.'}
       </p>
       <p>
-        {props.location.factionIds.length} Fraktionen ·{' '}
-        {props.location.encounterTableIds.length} direkte Encounter-Tabellen
+        {props.location.factionIds.length} {message('ui.fraktionen.2')}{' '}
+        {props.location.encounterTableIds.length}{' '}
+        {message('ui.direkte.encounter.tabellen')}
       </p>
       <footer className="row-actions">
-        <button onClick={props.place}>Platzieren / verschieben</button>
-        <button onClick={props.edit}>Bearbeiten</button>
+        <button onClick={props.place}>
+          {message('ui.platzieren.verschieben')}
+        </button>
+        <button onClick={props.edit}>{message('ui.bearbeiten')}</button>
         {!props.deleteConfirm ? (
           <button
             className="danger"
             onClick={() => props.setDeleteConfirm(true)}
           >
-            Löschen
+            {message('ui.loeschen')}
           </button>
         ) : (
           <>
-            <span>Ort wirklich löschen?</span>
+            <span>{message('ui.ort.wirklich.loeschen')}</span>
             <button onClick={() => props.setDeleteConfirm(false)}>
-              Abbrechen
+              {message('action.cancel')}
             </button>
             <button className="danger" onClick={props.remove}>
-              Wirklich löschen
+              {message('ui.wirklich.loeschen')}
             </button>
           </>
         )}
@@ -511,7 +531,11 @@ function LocationDialog(props: {
         className="location-editor"
         role="dialog"
         aria-modal="true"
-        aria-label={props.location ? 'Ort bearbeiten' : 'Ort erstellen'}
+        aria-label={
+          props.location
+            ? message('catalog.editLocation')
+            : message('catalog.createLocation')
+        }
         onSubmit={(event) => {
           event.preventDefault()
           props.save({ displayName, notes, factionIds, encounterTableIds })
@@ -519,14 +543,18 @@ function LocationDialog(props: {
       >
         <header>
           <div>
-            <p className="section-kicker">World Planner</p>
-            <h2>{props.location ? 'Ort bearbeiten' : 'Ort erstellen'}</h2>
+            <p className="section-kicker">{message('ui.world.planner')}</p>
+            <h2>
+              {props.location
+                ? message('catalog.editLocation')
+                : message('catalog.createLocation')}
+            </h2>
           </div>
         </header>
         <label>
-          Name
+          {message('ui.name')}
           <input
-            aria-label="Ortsname"
+            aria-label={message('ui.ortsname')}
             required
             maxLength={100}
             value={displayName}
@@ -552,9 +580,9 @@ function LocationDialog(props: {
           changed={setEncounterTableIds}
         />
         <label>
-          Notizen
+          {message('ui.notizen')}
           <textarea
-            aria-label="Ortsnotizen"
+            aria-label={message('ui.ortsnotizen')}
             maxLength={20_000}
             rows={10}
             value={notes}
@@ -563,10 +591,10 @@ function LocationDialog(props: {
         </label>
         <footer>
           <button type="button" onClick={props.close}>
-            Abbrechen
+            {message('action.cancel')}
           </button>
           <button disabled={!displayName.trim()}>
-            {props.location ? 'Speichern' : 'Erstellen'}
+            {props.location ? message('action.save') : message('action.create')}
           </button>
         </footer>
       </form>
@@ -589,10 +617,10 @@ function EncounterTableCatalog(props: {
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
   useEffect(() => {
-    void window.saltMarcher.encounterTables
-      .read()
+    void catalogCapabilities()
+      .encounterTables.read()
       .then(setSnapshot)
-      .catch(showError(props.onError))
+      .catch(reportCapabilityError(props.onError))
   }, [props.onError])
 
   const visible = snapshot.tables.filter((table) =>
@@ -607,30 +635,33 @@ function EncounterTableCatalog(props: {
   ) {
     try {
       const next = table
-        ? await window.saltMarcher.encounterTables.update(
+        ? await catalogCapabilities().encounterTables.update(
             table.id,
             draft,
             snapshot.revision
           )
-        : await window.saltMarcher.encounterTables.create(
+        : await catalogCapabilities().encounterTables.create(
             draft,
             snapshot.revision
           )
       setSnapshot(next)
       setEditing(undefined)
     } catch (cause) {
-      props.onError(errorText(cause))
+      props.onError(capabilityErrorText(cause))
     }
   }
 
   async function remove(id: string) {
     try {
       setSnapshot(
-        await window.saltMarcher.encounterTables.delete(id, snapshot.revision)
+        await catalogCapabilities().encounterTables.delete(
+          id,
+          snapshot.revision
+        )
       )
       setDeleteId(null)
     } catch (cause) {
-      props.onError(errorText(cause))
+      props.onError(capabilityErrorText(cause))
     }
   }
 
@@ -638,21 +669,23 @@ function EncounterTableCatalog(props: {
     <>
       <div className="catalog-filters">
         <input
-          aria-label="Encounter-Tabellen suchen"
-          placeholder="Encounter-Tabellen suchen …"
+          aria-label={message('ui.encounter.tabellen.suchen')}
+          placeholder={message('ui.encounter.tabellen.suchen.2')}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
-        <button onClick={() => setEditing(null)}>Erstellen</button>
+        <button onClick={() => setEditing(null)}>
+          {message('ui.erstellen')}
+        </button>
       </div>
       <div className="catalog-table-wrap">
         <table className="catalog-table">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Einträge</th>
-              <th>Beschreibung</th>
-              <th>Aktionen</th>
+              <th>{message('ui.name')}</th>
+              <th>{message('ui.eintraege')}</th>
+              <th>{message('ui.beschreibung')}</th>
+              <th>{message('ui.aktionen')}</th>
             </tr>
           </thead>
           <tbody>
@@ -672,13 +705,13 @@ function EncounterTableCatalog(props: {
                   {deleteId === table.id ? (
                     <>
                       <button onClick={() => setDeleteId(null)}>
-                        Abbrechen
+                        {message('action.cancel')}
                       </button>
                       <button
                         className="danger"
                         onClick={() => void remove(table.id)}
                       >
-                        Bestätigen
+                        {message('ui.bestaetigen')}
                       </button>
                     </>
                   ) : (
@@ -686,7 +719,7 @@ function EncounterTableCatalog(props: {
                       className="danger"
                       onClick={() => setDeleteId(table.id)}
                     >
-                      Löschen
+                      {message('ui.loeschen')}
                     </button>
                   )}
                 </td>
@@ -696,7 +729,9 @@ function EncounterTableCatalog(props: {
         </table>
       </div>
       <footer className="catalog-footer">
-        <span>{visible.length} Encounter-Tabellen</span>
+        <span>
+          {visible.length} {message('ui.encounter.tabellen')}
+        </span>
       </footer>
       {editing !== undefined && (
         <EncounterTableDialog
@@ -744,16 +779,18 @@ function EncounterTableDialog(props: {
   useCreatureSearch(query, setPage, props.onError)
 
   useEffect(() => {
-    void window.saltMarcher.creatures
-      .filterOptions()
+    void catalogCapabilities()
+      .creatures.filterOptions()
       .then(setOptions)
-      .catch(showError(props.onError))
+      .catch(reportCapabilityError(props.onError))
   }, [props.onError])
 
   useEffect(() => {
     void Promise.all(
       Object.keys(weights).map((id) =>
-        window.saltMarcher.creatures.detail(id).catch(() => null)
+        catalogCapabilities()
+          .creatures.detail(id)
+          .catch(() => null)
       )
     ).then((rows) =>
       setNames(
@@ -823,14 +860,14 @@ function EncounterTableDialog(props: {
       >
         <header>
           <div>
-            <p className="section-kicker">Katalog</p>
+            <p className="section-kicker">{message('nav.catalog')}</p>
             <h2 id="encounter-table-manager-title">
-              Encounter-Tabellen managen
+              {message('ui.encounter.tabellen.managen')}
             </h2>
           </div>
           <button
             type="button"
-            aria-label="Dialog schließen"
+            aria-label={message('ui.dialog.schliessen')}
             onClick={requestClose}
           >
             ×
@@ -856,7 +893,7 @@ function EncounterTableDialog(props: {
           />
           <section
             className="group-draft-pane"
-            aria-label="Aktuelle Encounter-Tabelle"
+            aria-label={message('ui.aktuelle.encounter.tabelle')}
           >
             <CreatureCollectionSelection
               label="Encounter-Tabelle"
@@ -870,26 +907,26 @@ function EncounterTableDialog(props: {
               changed={requestSelection}
             />
             <label>
-              Name
+              {message('ui.name')}
               <input
                 required
-                aria-label="Tabellenname"
+                aria-label={message('ui.tabellenname')}
                 maxLength={100}
                 value={displayName}
                 onChange={(event) => setDisplayName(event.target.value)}
               />
             </label>
             <label>
-              Beschreibung
+              {message('ui.beschreibung')}
               <textarea
-                aria-label="Tabellenbeschreibung"
+                aria-label={message('ui.tabellenbeschreibung')}
                 rows={4}
                 maxLength={20_000}
                 value={description}
                 onChange={(event) => setDescription(event.target.value)}
               />
             </label>
-            <h3>Gewichtete Einträge</h3>
+            <h3>{message('ui.gewichtete.eintraege')}</h3>
             <ul className="group-draft-roster">
               {entries.map(([id, weight]) => (
                 <li key={id}>
@@ -917,8 +954,13 @@ function EncounterTableDialog(props: {
                     </button>
                   </div>
                   <span>
-                    <strong>{names[id] ?? `Nicht verfügbar (${id})`}</strong>
-                    <small>Gewicht {weight} von 10</small>
+                    <strong>
+                      {names[id] ??
+                        formatMessage('catalog.unavailableReference', { id })}
+                    </strong>
+                    <small>
+                      {message('ui.gewicht')} {weight} {message('ui.von.10')}
+                    </small>
                   </span>
                   <button
                     type="button"
@@ -936,21 +978,24 @@ function EncounterTableDialog(props: {
             </ul>
             {entries.length === 0 && (
               <p className="empty-state">
-                Monster links mit <strong>+</strong> hinzufügen.
+                {message('ui.monster.links.mit')} <strong>+</strong>{' '}
+                {message('ui.hinzufuegen')}
               </p>
             )}
             {pending && (
               <div className="confirm-row group-draft-confirm" role="alert">
-                <span>Ungespeicherte Änderungen verwerfen?</span>
+                <span>
+                  {message('ui.ungespeicherte.aenderungen.verwerfen')}
+                </span>
                 <button type="button" onClick={() => setPending(null)}>
-                  Abbrechen
+                  {message('action.cancel')}
                 </button>
                 <button
                   type="button"
                   className="danger"
                   onClick={discardPending}
                 >
-                  Änderungen verwerfen
+                  {message('ui.aenderungen.verwerfen')}
                 </button>
               </div>
             )}
@@ -958,11 +1003,13 @@ function EncounterTableDialog(props: {
         </div>
         <footer className="group-builder-footer">
           <span className="muted">
-            Gewichte bestimmen die relative Auswahlwahrscheinlichkeit.
+            {message(
+              'ui.gewichte.bestimmen.die.relative.auswahlwahrscheinlichkeit'
+            )}
           </span>
           <div>
             <button type="button" onClick={requestClose}>
-              Abbrechen
+              {message('action.cancel')}
             </button>
             <button
               type="button"
@@ -977,7 +1024,7 @@ function EncounterTableDialog(props: {
                 })
               }
             >
-              {props.table ? 'Speichern' : 'Erstellen'}
+              {props.table ? message('action.save') : message('action.create')}
             </button>
           </div>
         </footer>
@@ -1005,14 +1052,14 @@ function FactionCatalog(props: {
   const [deleteId, setDeleteId] = useState<string | null>(null)
   useEffect(() => {
     void Promise.all([
-      window.saltMarcher.factions.read(),
-      window.saltMarcher.encounterTables.read()
+      catalogCapabilities().factions.read(),
+      catalogCapabilities().encounterTables.read()
     ])
       .then(([factions, tableSnapshot]) => {
         setSnapshot(factions)
         setTableSnapshot(tableSnapshot)
       })
-      .catch(showError(props.onError))
+      .catch(reportCapabilityError(props.onError))
   }, [props.onError])
 
   const visible = snapshot.factions.filter((faction) =>
@@ -1024,48 +1071,53 @@ function FactionCatalog(props: {
     try {
       setSnapshot(
         editing
-          ? await window.saltMarcher.factions.update(
+          ? await catalogCapabilities().factions.update(
               editing.id,
               draft,
               snapshot.revision
             )
-          : await window.saltMarcher.factions.create(draft, snapshot.revision)
+          : await catalogCapabilities().factions.create(
+              draft,
+              snapshot.revision
+            )
       )
       setEditing(undefined)
     } catch (cause) {
-      props.onError(errorText(cause))
+      props.onError(capabilityErrorText(cause))
     }
   }
   async function remove(id: string) {
     try {
       setSnapshot(
-        await window.saltMarcher.factions.delete(id, snapshot.revision)
+        await catalogCapabilities().factions.delete(id, snapshot.revision)
       )
       setDeleteId(null)
     } catch (cause) {
-      props.onError(errorText(cause))
+      props.onError(capabilityErrorText(cause))
     }
   }
   return (
     <>
       <div className="catalog-filters">
         <input
-          aria-label="Fraktionen suchen"
-          placeholder="Fraktionen suchen …"
+          aria-label={message('ui.fraktionen.suchen')}
+          placeholder={message('ui.fraktionen.suchen.2')}
           value={search}
           onChange={(event) => setSearch(event.target.value)}
         />
-        <button onClick={() => setEditing(null)}>Erstellen</button>
+        <button onClick={() => setEditing(null)}>
+          {message('ui.erstellen')}
+        </button>
       </div>
       <div className="catalog-table-wrap">
         <table className="catalog-table">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Gesinnung</th>
-              <th>Primärtabelle</th>
-              <th>Bestand</th>
-              <th>Aktionen</th>
+              <th>{message('ui.name')}</th>
+              <th>{message('ui.gesinnung')}</th>
+              <th>{message('ui.primaertabelle')}</th>
+              <th>{message('ui.bestand')}</th>
+              <th>{message('ui.aktionen')}</th>
             </tr>
           </thead>
           <tbody>
@@ -1083,20 +1135,22 @@ function FactionCatalog(props: {
                 <td>
                   {tableSnapshot.tables.find(
                     (table) => table.id === faction.primaryEncounterTableId
-                  )?.displayName ?? 'Keine'}
+                  )?.displayName ?? message('catalog.none')}
                 </td>
-                <td>{faction.inventory.length} Grenzen</td>
+                <td>
+                  {faction.inventory.length} {message('ui.grenzen')}
+                </td>
                 <td className="row-actions">
                   {deleteId === faction.id ? (
                     <>
                       <button onClick={() => setDeleteId(null)}>
-                        Abbrechen
+                        {message('action.cancel')}
                       </button>
                       <button
                         className="danger"
                         onClick={() => void remove(faction.id)}
                       >
-                        Bestätigen
+                        {message('ui.bestaetigen')}
                       </button>
                     </>
                   ) : (
@@ -1104,7 +1158,7 @@ function FactionCatalog(props: {
                       className="danger"
                       onClick={() => setDeleteId(faction.id)}
                     >
-                      Löschen
+                      {message('ui.loeschen')}
                     </button>
                   )}
                 </td>
@@ -1114,7 +1168,9 @@ function FactionCatalog(props: {
         </table>
       </div>
       <footer className="catalog-footer">
-        <span>{visible.length} Fraktionen</span>
+        <span>
+          {visible.length} {message('ui.fraktionen')}
+        </span>
       </footer>
       {editing !== undefined && (
         <FactionDialog
@@ -1174,7 +1230,9 @@ function FactionDialog(props: {
   useEffect(() => {
     void Promise.all(
       selectedCreatureIds.map((id) =>
-        window.saltMarcher.creatures.detail(id).catch(() => null)
+        catalogCapabilities()
+          .creatures.detail(id)
+          .catch(() => null)
       )
     ).then((rows) =>
       setNames(
@@ -1212,12 +1270,12 @@ function FactionDialog(props: {
         props.tableSnapshot.tables.map((candidate) => candidate.id)
       )
       const next = table
-        ? await window.saltMarcher.encounterTables.update(
+        ? await catalogCapabilities().encounterTables.update(
             table.id,
             draft,
             props.tableSnapshot.revision
           )
-        : await window.saltMarcher.encounterTables.create(
+        : await catalogCapabilities().encounterTables.create(
             draft,
             props.tableSnapshot.revision
           )
@@ -1226,11 +1284,11 @@ function FactionDialog(props: {
         next.tables.find((candidate) => !previousIds.has(candidate.id))?.id ??
         null
       props.tablesChanged(next)
-      props.factionsChanged(await window.saltMarcher.factions.read())
+      props.factionsChanged(await catalogCapabilities().factions.read())
       selectPrimaryTableFromSnapshot(selectedId, next)
       setTableManager(undefined)
     } catch (cause) {
-      props.onError(errorText(cause))
+      props.onError(capabilityErrorText(cause))
     }
   }
 
@@ -1260,7 +1318,9 @@ function FactionDialog(props: {
           role="dialog"
           aria-modal="true"
           aria-label={
-            props.faction ? 'Fraktion bearbeiten' : 'Fraktion erstellen'
+            props.faction
+              ? message('catalog.editFaction')
+              : message('catalog.createFaction')
           }
           onSubmit={(event) => {
             event.preventDefault()
@@ -1277,33 +1337,35 @@ function FactionDialog(props: {
         >
           <header>
             <div>
-              <p className="section-kicker">World Planner</p>
+              <p className="section-kicker">{message('ui.world.planner')}</p>
               <h2>
-                {props.faction ? 'Fraktion bearbeiten' : 'Fraktion erstellen'}
+                {props.faction
+                  ? message('catalog.editFaction')
+                  : message('catalog.createFaction')}
               </h2>
             </div>
             <button
               type="button"
-              aria-label="Dialog schließen"
+              aria-label={message('ui.dialog.schliessen')}
               onClick={props.close}
             >
               ×
             </button>
           </header>
           <label>
-            Name
+            {message('ui.name')}
             <input
               required
-              aria-label="Fraktionsname"
+              aria-label={message('ui.fraktionsname')}
               maxLength={100}
               value={displayName}
               onChange={(event) => setDisplayName(event.target.value)}
             />
           </label>
           <label>
-            Notizen
+            {message('ui.notizen')}
             <textarea
-              aria-label="Fraktionsnotizen"
+              aria-label={message('ui.fraktionsnotizen')}
               rows={4}
               maxLength={20_000}
               value={notes}
@@ -1311,9 +1373,10 @@ function FactionDialog(props: {
             />
           </label>
           <label>
-            Gesinnung ({disposition})
+            {message('ui.gesinnung.2')}
+            {disposition})
             <input
-              aria-label="Fraktionsgesinnung"
+              aria-label={message('ui.fraktionsgesinnung')}
               type="range"
               min={-50}
               max={50}
@@ -1322,16 +1385,16 @@ function FactionDialog(props: {
             />
           </label>
           <label>
-            Primäre Encounter-Tabelle
+            {message('ui.primaere.encounter.tabelle')}
             <span className="faction-table-selection">
               <select
-                aria-label="Primäre Encounter-Tabelle"
+                aria-label={message('ui.primaere.encounter.tabelle')}
                 value={primaryEncounterTableId ?? ''}
                 onChange={(event) =>
                   selectPrimaryTable(event.target.value || null)
                 }
               >
-                <option value="">Keine primäre Tabelle</option>
+                <option value="">{message('ui.keine.primaere.tabelle')}</option>
                 {props.tableSnapshot.tables.map((table) => (
                   <option key={table.id} value={table.id}>
                     {table.displayName}
@@ -1339,14 +1402,15 @@ function FactionDialog(props: {
                 ))}
               </select>
               <button type="button" onClick={() => setTableManager(null)}>
-                Neue Encounter-Tabelle
+                {message('ui.neue.encounter.tabelle')}
               </button>
             </span>
           </label>
-          <h3>Endlicher Bestand</h3>
+          <h3>{message('ui.endlicher.bestand')}</h3>
           <p className="muted">
-            Der Bestand basiert auf der Primärtabelle. Ein leeres Maximum
-            bedeutet unbegrenzt.
+            {message(
+              'ui.der.bestand.basiert.auf.der.primaertabelle.ein.leeres'
+            )}
           </p>
           <ul className="source-entry-list">
             {selectedTable?.entries.map((entry) => (
@@ -1356,12 +1420,12 @@ function FactionDialog(props: {
                     `Nicht verfügbar (${entry.creatureId})`}
                 </span>
                 <label>
-                  Maximum
+                  {message('ui.maximum')}
                   <input
                     aria-label={`Maximum ${names[entry.creatureId] ?? entry.creatureId}`}
                     type="number"
                     min={0}
-                    placeholder="Unbegrenzt"
+                    placeholder={message('ui.unbegrenzt')}
                     value={inventory[entry.creatureId] ?? ''}
                     onChange={(event) => {
                       const next = { ...inventory }
@@ -1383,22 +1447,26 @@ function FactionDialog(props: {
                     setInventory(next)
                   }}
                 >
-                  Unbegrenzt
+                  {message('ui.unbegrenzt')}
                 </button>
               </li>
             ))}
           </ul>
           {!selectedTable && (
             <p className="empty-state">
-              Wähle eine Encounter-Tabelle, um den Bestand festzulegen.
+              {message(
+                'ui.waehle.eine.encounter.tabelle.um.den.bestand.festzulegen'
+              )}
             </p>
           )}
           <footer>
             <button type="button" onClick={props.close}>
-              Abbrechen
+              {message('action.cancel')}
             </button>
             <button disabled={!displayName.trim()}>
-              {props.faction ? 'Speichern' : 'Erstellen'}
+              {props.faction
+                ? message('action.save')
+                : message('action.create')}
             </button>
           </footer>
         </form>

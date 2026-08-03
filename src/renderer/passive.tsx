@@ -1,7 +1,7 @@
+import { message } from './i18n/messages.de.js'
 import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import './passive/passive.css'
-import { message } from './i18n/messages.de.js'
 
 declare global {
   interface Window {
@@ -27,7 +27,7 @@ export function PassiveDisplay() {
   }, [])
   return (
     <main>
-      <p className="eyebrow">SaltMarcher</p>
+      <p className="eyebrow">{message('ui.saltmarcher')}</p>
       <h1>{message('passive.heading')}</h1>
       {projection?.campaignId === null ? (
         <p>{message('passive.intro')}</p>
@@ -45,7 +45,7 @@ export function PassiveDisplay() {
         {projection?.campaignId === null
           ? message('passive.empty')
           : message('passive.shared')}{' '}
-        · Core {coreStatus}
+        {message('ui.core')} {coreStatus}
       </p>
     </main>
   )

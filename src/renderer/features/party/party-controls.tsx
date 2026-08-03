@@ -1,12 +1,14 @@
-import { useEffect, useState } from 'react'
+import { formatMessage, message } from '../../i18n/messages.de.js'
+import { useState } from 'react'
 import type { PartySnapshot } from '../../../shared/contracts/live-session.js'
 import type {
-  AdventuringDayCalculation,
   PartyCharacter,
   PartyCharacterDraft
 } from '../../../shared/contracts/party.js'
-import { errorText } from '../catalog/catalog-state.js'
+import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import './party.css'
+import { partyCapabilities } from './party-capabilities.js'
+import { useAdventuringDayCalculation } from './use-adventuring-day-calculation.js'
 
 export function AdventuringDayDropdown(props: {
   party: PartySnapshot
@@ -18,14 +20,12 @@ export function AdventuringDayDropdown(props: {
   const [custom, setCustom] = useState(false)
   const [mode, setMode] = useState<'budget' | 'progress'>('budget')
   const [totalXp, setTotalXp] = useState(0)
-  const [calculation, setCalculation] =
-    useState<AdventuringDayCalculation | null>(null)
-  useEffect(() => {
-    if (!props.open) return
-    void window.saltMarcher.party
-      .calculateAdventuringDay(rows, mode === 'progress' ? totalXp : 0)
-      .then(setCalculation)
-  }, [props.open, rows, totalXp, mode])
+  const calculation = useAdventuringDayCalculation(
+    props.open,
+    rows,
+    mode,
+    totalXp
+  )
   return (
     <div className="party-dropdown day-dropdown">
       <button
@@ -37,18 +37,24 @@ export function AdventuringDayDropdown(props: {
         }}
       >
         {!day.available
-          ? 'Kein Rastbudget'
-          : `SR ${day.shortRestXp} · LR ${day.longRestXp}`}
+          ? message('party.noRestBudget')
+          : formatMessage('party.restSummary', {
+              shortRestXp: day.shortRestXp,
+              longRestXp: day.longRestXp
+            })}
       </button>
       {props.open && (
-        <section className="party-panel day-panel" aria-label="Adventuring Day">
+        <section
+          className="party-panel day-panel"
+          aria-label={message('ui.adventuring.day')}
+        >
           <header>
-            <h2>ADVENTURING DAY</h2>
+            <h2>{message('ui.adventuring.day.2')}</h2>
             <button onClick={() => props.setOpen(false)}>×</button>
           </header>
           {!day.available ? (
             <p className="empty-state">
-              Für das Rastbudget brauchen alle aktiven SC ein Level.
+              {message('ui.fuer.das.rastbudget.brauchen.alle.aktiven.sc.ein')}
             </p>
           ) : (
             <>
@@ -59,7 +65,7 @@ export function AdventuringDayDropdown(props: {
                     setCustom(false)
                   }}
                 >
-                  Aktive Party
+                  {message('ui.aktive.party')}
                 </button>
                 <button
                   onClick={() => {
@@ -67,7 +73,7 @@ export function AdventuringDayDropdown(props: {
                     setCustom(true)
                   }}
                 >
-                  Zeile
+                  {message('ui.zeile')}
                 </button>
                 <button
                   onClick={() => {
@@ -75,7 +81,7 @@ export function AdventuringDayDropdown(props: {
                     setCustom(true)
                   }}
                 >
-                  Leeren
+                  {message('ui.leeren')}
                 </button>
               </div>
               <div className="party-rest-actions">
@@ -83,20 +89,20 @@ export function AdventuringDayDropdown(props: {
                   className={mode === 'budget' ? 'accent' : ''}
                   onClick={() => setMode('budget')}
                 >
-                  Budget
+                  {message('ui.budget')}
                 </button>
                 <button
                   className={mode === 'progress' ? 'accent' : ''}
                   onClick={() => setMode('progress')}
                 >
-                  XP → Tage
+                  {message('ui.xp.tage')}
                 </button>
               </div>
               <ul className="day-rows">
                 {rows.map((row, index) => (
                   <li key={`${index}-${row.level}`}>
                     <label>
-                      Level
+                      {message('ui.level')}
                       <input
                         type="number"
                         min="1"
@@ -114,7 +120,7 @@ export function AdventuringDayDropdown(props: {
                       />
                     </label>
                     <label>
-                      Anzahl
+                      {message('ui.anzahl')}
                       <input
                         type="number"
                         min="1"
@@ -146,10 +152,10 @@ export function AdventuringDayDropdown(props: {
               </ul>
               {mode === 'progress' && (
                 <input
-                  aria-label="Gesamt-XP"
+                  aria-label={message('ui.gesamt.xp')}
                   type="number"
                   min="0"
-                  placeholder="Gesamt-XP"
+                  placeholder={message('ui.gesamt.xp')}
                   value={totalXp}
                   onChange={(event) =>
                     setTotalXp(Math.max(0, Number(event.target.value)))
@@ -158,18 +164,23 @@ export function AdventuringDayDropdown(props: {
               )}
               <div className="day-summary">
                 <strong>
-                  {calculation?.dailyBudget.toLocaleString() ?? 0} XP
+                  {calculation?.dailyBudget.toLocaleString() ?? 0}{' '}
+                  {message('ui.xp.2')}
                 </strong>
                 <span>
                   {custom
-                    ? 'Eigene Party'
-                    : `Aktive Party · ${day.partySize} SC`}
+                    ? message('party.custom')
+                    : formatMessage('party.activeSummary', {
+                        partySize: day.partySize
+                      })}
                 </span>
                 {mode === 'progress' && calculation && (
                   <span>
-                    {calculation.completedDays} volle Tage ·{' '}
-                    {Math.round(calculation.dayProgress * 100)}% aktueller Tag ·{' '}
-                    {calculation.shortRests} SR · {calculation.longRests} LR
+                    {calculation.completedDays} {message('ui.volle.tage')}{' '}
+                    {Math.round(calculation.dayProgress * 100)}
+                    {message('ui.aktueller.tag')} {calculation.shortRests}{' '}
+                    {message('ui.sr')} {calculation.longRests}{' '}
+                    {message('ui.lr')}
                   </span>
                 )}
               </div>
@@ -226,7 +237,7 @@ export function PartyDropdown(props: {
     try {
       props.changed(await operation())
     } catch (cause) {
-      props.onError(errorText(cause))
+      props.onError(capabilityErrorText(cause))
     } finally {
       setBusy(false)
     }
@@ -238,26 +249,35 @@ export function PartyDropdown(props: {
         className="party-trigger"
         aria-expanded={props.open}
         aria-controls="party-panel"
-        title="Party-Panel öffnen (Alt+P)"
+        title={message('ui.party.panel.oeffnen.alt.p')}
         onClick={() => props.setOpen(!props.open)}
       >
         {active.length === 0
-          ? 'Keine Party'
-          : `${active.length} SC · Ø Lv ${average ?? '—'}`}
+          ? message('party.none')
+          : formatMessage('party.summary', {
+              count: active.length,
+              average: average ?? '—'
+            })}
       </button>
       {props.open && (
-        <section id="party-panel" className="party-panel" aria-label="Party">
+        <section
+          id="party-panel"
+          className="party-panel"
+          aria-label={message('ui.party')}
+        >
           <header>
-            <h2>PARTY</h2>
+            <h2>{message('ui.party.2')}</h2>
             <button
-              aria-label="Party-Panel schließen"
+              aria-label={message('ui.party.panel.schliessen')}
               onClick={() => props.setOpen(false)}
             >
               ×
             </button>
           </header>
           {active.length === 0 ? (
-            <p className="empty-state">Keine aktiven Party-Mitglieder.</p>
+            <p className="empty-state">
+              {message('ui.keine.aktiven.party.mitglieder')}
+            </p>
           ) : (
             <ul className="party-list active-party-list">
               {active.map((member) => (
@@ -265,15 +285,15 @@ export function PartyDropdown(props: {
                   <div className="party-card-main">
                     <strong>{member.name}</strong>
                     <small>
-                      {member.playerName ?? 'Kein Spieler'} · Lv{' '}
-                      {member.level ?? '—'}
+                      {member.playerName ?? message('party.noPlayer')}{' '}
+                      {message('ui.lv')} {member.level ?? '—'}
                     </small>
                     <progress
                       max={member.nextLevelXp ?? Math.max(1, member.xp)}
                       value={member.xp}
                     />
                     <small>
-                      {member.xp.toLocaleString()} XP
+                      {member.xp.toLocaleString()} {message('ui.xp.2')}
                       {member.nextLevelXp
                         ? ` / ${member.nextLevelXp.toLocaleString()}`
                         : ''}
@@ -281,8 +301,8 @@ export function PartyDropdown(props: {
                   </div>
                   <div className="party-card-actions">
                     <span>
-                      PP {member.passivePerception ?? '—'} · AC{' '}
-                      {member.armorClass ?? '—'}
+                      {message('ui.pp')} {member.passivePerception ?? '—'}{' '}
+                      {message('ui.ac')} {member.armorClass ?? '—'}
                     </span>
                     <button
                       onClick={() => {
@@ -290,16 +310,16 @@ export function PartyDropdown(props: {
                         setXpDelta(100)
                       }}
                     >
-                      XP
+                      {message('ui.xp.2')}
                     </button>
                     <button onClick={() => setEditor(member)}>
-                      Bearbeiten
+                      {message('ui.bearbeiten')}
                     </button>
                     <button
                       disabled={busy}
                       onClick={() =>
                         void run(() =>
-                          window.saltMarcher.party.setMembership(
+                          partyCapabilities().party.setMembership(
                             member.id,
                             false,
                             props.party.revision
@@ -307,13 +327,13 @@ export function PartyDropdown(props: {
                         )
                       }
                     >
-                      Entfernen
+                      {message('ui.entfernen')}
                     </button>
                   </div>
                   {xpMember === member.id && (
                     <div className="xp-popover">
                       <input
-                        aria-label="XP Betrag"
+                        aria-label={message('ui.xp.betrag')}
                         type="number"
                         min="1"
                         value={xpDelta}
@@ -324,7 +344,7 @@ export function PartyDropdown(props: {
                       <button
                         onClick={() =>
                           void run(() =>
-                            window.saltMarcher.party.adjustXp(
+                            partyCapabilities().party.adjustXp(
                               member.id,
                               -xpDelta,
                               props.party.revision
@@ -332,12 +352,12 @@ export function PartyDropdown(props: {
                           )
                         }
                       >
-                        −XP
+                        {message('ui.xp.3')}
                       </button>
                       <button
                         onClick={() =>
                           void run(() =>
-                            window.saltMarcher.party.adjustXp(
+                            partyCapabilities().party.adjustXp(
                               member.id,
                               xpDelta,
                               props.party.revision
@@ -345,7 +365,7 @@ export function PartyDropdown(props: {
                           )
                         }
                       >
-                        +XP
+                        {message('ui.xp.4')}
                       </button>
                       <button onClick={() => setXpMember(null)}>×</button>
                     </div>
@@ -359,27 +379,27 @@ export function PartyDropdown(props: {
               disabled={busy || active.length === 0}
               onClick={() =>
                 void run(() =>
-                  window.saltMarcher.party.rest('short', props.party.revision)
+                  partyCapabilities().party.rest('short', props.party.revision)
                 )
               }
             >
-              Short Rest
+              {message('ui.short.rest')}
             </button>
             <button
               disabled={busy || active.length === 0}
               onClick={() =>
                 void run(() =>
-                  window.saltMarcher.party.rest('long', props.party.revision)
+                  partyCapabilities().party.rest('long', props.party.revision)
                 )
               }
             >
-              Long Rest
+              {message('ui.long.rest')}
             </button>
           </div>
-          <h3>CHARAKTER-ROSTER</h3>
+          <h3>{message('ui.charakter.roster')}</h3>
           <input
-            aria-label="Charakter-Roster durchsuchen"
-            placeholder="Name, Spieler oder Roster-ID"
+            aria-label={message('ui.charakter.roster.durchsuchen')}
+            placeholder={message('ui.name.spieler.oder.roster.id')}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
@@ -389,17 +409,20 @@ export function PartyDropdown(props: {
                 <span>
                   <strong>{member.name}</strong>
                   <small>
-                    {member.playerName ?? 'Kein Spieler'} · #
-                    {member.id.slice(0, 8)} · Lv {member.level ?? '—'}
+                    {member.playerName ?? message('party.noPlayer')} · #
+                    {member.id.slice(0, 8)} {message('ui.lv')}{' '}
+                    {member.level ?? '—'}
                   </small>
                 </span>
                 <div className="row-actions">
-                  <button onClick={() => setEditor(member)}>Bearbeiten</button>
+                  <button onClick={() => setEditor(member)}>
+                    {message('ui.bearbeiten')}
+                  </button>
                   <button
                     disabled={busy}
                     onClick={() =>
                       void run(() =>
-                        window.saltMarcher.party.setMembership(
+                        partyCapabilities().party.setMembership(
                           member.id,
                           !member.active,
                           props.party.revision
@@ -407,14 +430,16 @@ export function PartyDropdown(props: {
                       )
                     }
                   >
-                    {member.active ? 'Aus Party' : 'Zur Party'}
+                    {member.active
+                      ? message('party.leave')
+                      : message('party.join')}
                   </button>
                 </div>
               </li>
             ))}
           </ul>
           <button onClick={() => setEditor('new')}>
-            Neuer Roster-Charakter
+            {message('ui.neuer.roster.charakter')}
           </button>
           {editor && (
             <PartyEditor
@@ -430,11 +455,11 @@ export function PartyDropdown(props: {
                 void run(async () => {
                   const snapshot =
                     editor === 'new'
-                      ? await window.saltMarcher.party.create(
+                      ? await partyCapabilities().party.create(
                           draft,
                           props.party.revision
                         )
-                      : await window.saltMarcher.party.update(
+                      : await partyCapabilities().party.update(
                           editor.id,
                           draft,
                           props.party.revision
@@ -448,7 +473,7 @@ export function PartyDropdown(props: {
                 : {
                     remove: () =>
                       void run(async () => {
-                        const snapshot = await window.saltMarcher.party.delete(
+                        const snapshot = await partyCapabilities().party.delete(
                           editor.id,
                           props.party.revision
                         )
@@ -503,54 +528,56 @@ function PartyEditor(props: {
     >
       <h3>
         {props.member
-          ? `CHARAKTER #${props.member.id.slice(0, 8)} BEARBEITEN`
-          : 'CHARAKTER ERSTELLEN'}
+          ? formatMessage('party.editCharacter', {
+              id: props.member.id.slice(0, 8)
+            })
+          : message('party.createCharacter')}
       </h3>
       <input
         autoFocus
         required
-        placeholder="Charaktername"
+        placeholder={message('ui.charaktername')}
         value={name}
         onChange={(event) => setName(event.target.value)}
       />
       <input
-        placeholder="Spielername"
+        placeholder={message('ui.spielername')}
         value={player}
         onChange={(event) => setPlayer(event.target.value)}
       />
       <div className="editor-numbers">
         <input
-          aria-label="Level"
+          aria-label={message('ui.level')}
           type="number"
           min="1"
           max="20"
-          placeholder="Level"
+          placeholder={message('ui.level')}
           value={level}
           onChange={(event) => setLevel(event.target.value)}
         />
         <input
-          aria-label="Passive Perception"
+          aria-label={message('ui.passive.perception')}
           type="number"
           min="0"
           max="99"
-          placeholder="Passive Perception"
+          placeholder={message('ui.passive.perception')}
           value={perception}
           onChange={(event) => setPerception(event.target.value)}
         />
         <input
-          aria-label="Armor Class"
+          aria-label={message('ui.armor.class')}
           type="number"
           min="0"
           max="99"
-          placeholder="AC"
+          placeholder={message('ui.ac.2')}
           value={armor}
           onChange={(event) => setArmor(event.target.value)}
         />
       </div>
       <label>
-        Bewegungsrate (ft/Runde)
+        {message('ui.bewegungsrate.ft.runde')}
         <input
-          aria-label="Bewegungsrate"
+          aria-label={message('ui.bewegungsrate')}
           type="number"
           min="0"
           max="999"
@@ -565,26 +592,28 @@ function PartyEditor(props: {
           className="danger"
           onClick={() => props.setDeleteConfirm(true)}
         >
-          Löschen
+          {message('ui.loeschen')}
         </button>
       )}
       {props.deleteConfirm && (
         <div className="confirm-row">
-          <span>{props.member?.name} wirklich löschen?</span>
+          <span>
+            {props.member?.name} {message('ui.wirklich.loeschen.2')}
+          </span>
           <button type="button" onClick={() => props.setDeleteConfirm(false)}>
-            Abbrechen
+            {message('action.cancel')}
           </button>
           <button type="button" className="danger" onClick={props.remove}>
-            Wirklich löschen
+            {message('ui.wirklich.loeschen')}
           </button>
         </div>
       )}
       <footer>
         <button type="button" onClick={props.close}>
-          Abbrechen
+          {message('action.cancel')}
         </button>
         <button disabled={props.busy || !name.trim()}>
-          {props.member ? 'Speichern' : 'Erstellen'}
+          {props.member ? message('action.save') : message('action.create')}
         </button>
       </footer>
     </form>

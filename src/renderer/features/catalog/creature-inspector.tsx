@@ -1,3 +1,4 @@
+import { message } from '../../i18n/messages.de.js'
 import type { Creature } from '../../../shared/contracts/encounter.js'
 import { IlluminatedHeading } from '../../shell/illuminated-heading.js'
 import './catalog.css'
@@ -20,15 +21,18 @@ export function CreatureInspector(props: {
   return (
     <aside
       className={`creature-inspector${props.embedded ? ' embedded' : ''}`}
-      aria-label="Monster Details"
+      aria-label={message('ui.monster.details')}
     >
       <header>
         <div>
-          <p className="section-kicker">Statblock</p>
+          <p className="section-kicker">{message('ui.statblock')}</p>
           <IlluminatedHeading title={c.name} />
         </div>
         {props.close && (
-          <button aria-label="Monster Details schließen" onClick={props.close}>
+          <button
+            aria-label={message('ui.monster.details.schliessen')}
+            onClick={props.close}
+          >
             ×
           </button>
         )}
@@ -39,13 +43,13 @@ export function CreatureInspector(props: {
       </p>
       <hr />
       <p>
-        <strong>Rüstungsklasse</strong> {c.ac}
+        <strong>{message('ui.ruestungsklasse')}</strong> {c.ac}
       </p>
       <p>
-        <strong>Trefferpunkte</strong> {c.hp} ({c.hitDice})
+        <strong>{message('ui.trefferpunkte')}</strong> {c.hp} ({c.hitDice})
       </p>
       <p>
-        <strong>Bewegung</strong> {c.speed}
+        <strong>{message('ui.bewegung')}</strong> {c.speed}
       </p>
       <div className="ability-grid">
         {ability('STR', c.abilities.str)}
@@ -56,24 +60,24 @@ export function CreatureInspector(props: {
         {ability('CHA', c.abilities.cha)}
       </div>
       <p>
-        <strong>Rettungswürfe</strong> {c.savingThrows || '—'}
+        <strong>{message('ui.rettungswuerfe')}</strong> {c.savingThrows || '—'}
       </p>
       <p>
-        <strong>Fertigkeiten</strong> {c.skills || '—'}
+        <strong>{message('ui.fertigkeiten')}</strong> {c.skills || '—'}
       </p>
       <p>
-        <strong>Sinne</strong> {c.senses || '—'}
+        <strong>{message('ui.sinne')}</strong> {c.senses || '—'}
       </p>
       <p>
-        <strong>Sprachen</strong> {c.languages || '—'}
+        <strong>{message('ui.sprachen')}</strong> {c.languages || '—'}
       </p>
       <p>
-        <strong>Herausforderung</strong> {c.challengeRating} (
-        {c.xp.toLocaleString()} XP)
+        <strong>{message('ui.herausforderung')}</strong> {c.challengeRating} (
+        {c.xp.toLocaleString()} {message('ui.xp')}
       </p>
       {c.traits.length > 0 && (
         <>
-          <h3>Merkmale</h3>
+          <h3>{message('ui.merkmale')}</h3>
           {c.traits.map((trait) => (
             <p key={trait.name}>
               <strong>{trait.name}.</strong> {trait.description}
@@ -81,7 +85,7 @@ export function CreatureInspector(props: {
           ))}
         </>
       )}
-      <h3>Aktionen</h3>
+      <h3>{message('ui.aktionen')}</h3>
       {c.actions.map((action) => (
         <p key={action.name}>
           <strong>{action.name}.</strong> {action.description}
@@ -89,7 +93,7 @@ export function CreatureInspector(props: {
       ))}
       {c.legendaryActions.length > 0 && (
         <>
-          <h3>Legendäre Aktionen</h3>
+          <h3>{message('ui.legendaere.aktionen')}</h3>
           {c.legendaryActions.map((action) => (
             <p key={action.name}>
               <strong>{action.name}.</strong> {action.description}

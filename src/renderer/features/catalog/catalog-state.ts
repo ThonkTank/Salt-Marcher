@@ -4,8 +4,8 @@ import type {
   CreatureCatalogQuery,
   CreatureFilterOptions
 } from '../../../shared/contracts/encounter.js'
-import { capabilityErrorCode } from '../../../shared/errors/capability-error.js'
-import { capabilityErrorMessage } from '../../i18n/messages.de.js'
+import { catalogCapabilities } from './catalog-capabilities.js'
+import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 
 export const emptyQuery: CreatureCatalogQuery = {
   name: '',
@@ -44,25 +44,15 @@ export function useCreatureSearch(
   useEffect(() => {
     const token = ++request.current
     const timer = window.setTimeout(() => {
-      void window.saltMarcher.creatures
-        .search(query)
+      void catalogCapabilities()
+        .creatures.search(query)
         .then((page) => {
           if (request.current === token) setPage(page)
         })
         .catch((cause) => {
-          if (request.current === token) onError(errorText(cause))
+          if (request.current === token) onError(capabilityErrorText(cause))
         })
     }, 200)
     return () => window.clearTimeout(timer)
   }, [query, setPage, onError])
-}
-
-export function errorText(cause: unknown): string {
-  if (capabilityErrorCode(cause) === 'outcome_unknown')
-    window.dispatchEvent(new Event('saltmarcher:readback'))
-  return capabilityErrorMessage(cause)
-}
-
-export function showError(setError: (message: string) => void) {
-  return (cause: unknown) => setError(errorText(cause))
 }

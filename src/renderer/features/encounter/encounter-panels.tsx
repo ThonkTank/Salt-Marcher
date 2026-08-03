@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { message } from '../../i18n/messages.de.js'
+import { useState } from 'react'
 import type { Creature } from '../../../shared/contracts/encounter.js'
 import type { EncounterTuning } from '../../../shared/contracts/encounter-tuning.js'
 import type { EncounterSelectionEvaluation } from '../../../shared/contracts/scene.js'
@@ -6,8 +7,10 @@ import type {
   CombatSnapshot,
   LiveSessionSnapshot
 } from '../../../shared/contracts/live-session.js'
-import { errorText } from '../catalog/catalog-state.js'
+import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import './encounter.css'
+import { encounterCapabilities } from './encounter-capabilities.js'
+import { useEncounterEvaluation } from './use-encounter-evaluation.js'
 
 type ScenarioProps = {
   snapshot: LiveSessionSnapshot
@@ -20,33 +23,22 @@ export function SessionEncounterPanel(
   props: ScenarioProps & { inspect: (creature: Creature) => void }
 ) {
   const [selected, setSelected] = useState<string[]>([])
-  const [evaluation, setEvaluation] =
-    useState<EncounterSelectionEvaluation | null>(null)
-  const onError = props.onError
   const focused = props.snapshot.scene.scenes.find(
     (scene) => scene.id === props.snapshot.scene.focusedSceneId
   )!
   const assignedParty = props.snapshot.party.members.filter(
     (member) => member.active && focused.partyMemberIds.includes(member.id)
   )
-  useEffect(() => {
-    let current = true
-    void window.saltMarcher.encounter
-      .evaluate(focused.id, selected, props.snapshot.scene.revision)
-      .then((value) => {
-        if (current) setEvaluation(value)
-      })
-      .catch((cause) => {
-        if (current) onError(errorText(cause))
-      })
-    return () => {
-      current = false
-    }
-  }, [focused.id, props.snapshot.scene.revision, selected, onError])
+  const evaluation = useEncounterEvaluation(
+    focused.id,
+    selected,
+    props.snapshot.scene.revision,
+    props.onError
+  )
   if (props.snapshot.combat) return <CombatScenario {...props} />
   async function direct() {
     await scenarioAction(props, () =>
-      window.saltMarcher.combat.prepare(
+      encounterCapabilities().combat.prepare(
         focused.id,
         selected,
         props.snapshot.scene.revision
@@ -56,10 +48,12 @@ export function SessionEncounterPanel(
   return (
     <div className="scenario-scroll">
       <section className="scenario-content combat-setup">
-        <p className="section-kicker">Encounter</p>
-        <h2>Gruppen aus {focused.title}</h2>
+        <p className="section-kicker">{message('ui.encounter')}</p>
+        <h2>
+          {message('ui.gruppen.aus')} {focused.title}
+        </h2>
         <label className="scenario-choice locked">
-          <input type="checkbox" checked readOnly /> Scene-Party (
+          <input type="checkbox" checked readOnly /> {message('ui.scene.party')}
           {assignedParty.length})
         </label>
         {focused.groups.map((group) => (
@@ -80,17 +74,17 @@ export function SessionEncounterPanel(
         ))}
         {focused.groups.length === 0 && (
           <p className="empty-state">
-            Lege zuerst eine Gruppe in dieser Scene an.
+            {message('ui.lege.zuerst.eine.gruppe.in.dieser.scene.an')}
           </p>
         )}
         {evaluation && <DifficultySummary evaluation={evaluation} />}
         <footer>
-          <button onClick={props.close}>Schließen</button>
+          <button onClick={props.close}>{message('action.close')}</button>
           <button
             disabled={!evaluation?.canStart}
             onClick={() => void direct()}
           >
-            Initiative vorbereiten
+            {message('ui.initiative.vorbereiten')}
           </button>
         </footer>
       </section>
@@ -120,14 +114,15 @@ export function DifficultySummary(props: {
     <div className="difficulty-summary" aria-live="polite">
       <strong>{evaluation.difficultyLabel}</strong>
       <span>
-        {evaluation.adjustedXp.toLocaleString()} adjusted XP ·{' '}
-        {evaluation.baseXp.toLocaleString()} base XP ·{' '}
-        {evaluation.creatureCount} Monster
+        {evaluation.adjustedXp.toLocaleString()} {message('ui.adjusted.xp')}{' '}
+        {evaluation.baseXp.toLocaleString()} {message('ui.base.xp')}{' '}
+        {evaluation.creatureCount} {message('ui.monster')}
       </span>
       <small>
-        Easy {evaluation.partyThresholds[0]} · Medium{' '}
-        {evaluation.partyThresholds[1]} · Hard {evaluation.partyThresholds[2]} ·
-        Deadly {evaluation.partyThresholds[3]}
+        {message('ui.easy')} {evaluation.partyThresholds[0]}{' '}
+        {message('ui.medium')} {evaluation.partyThresholds[1]}{' '}
+        {message('ui.hard')} {evaluation.partyThresholds[2]}{' '}
+        {message('ui.deadly')} {evaluation.partyThresholds[3]}
       </small>
       {props.meter && (
         <div className="difficulty-meter" aria-hidden="true">
@@ -167,19 +162,19 @@ export function TuningControls(props: {
   return (
     <div className="tuning-controls">
       <label>
-        Schwierigkeit
+        {message('ui.schwierigkeit')}
         {select('difficulty', ['auto', 'easy', 'medium', 'hard', 'deadly'])}
       </label>
       <label>
-        Menge
+        {message('ui.menge')}
         {select('amount', ['auto', 'few', 'standard', 'many'])}
       </label>
       <label>
-        Balance
+        {message('ui.balance')}
         {select('balance', ['auto', 'even', 'varied'])}
       </label>
       <label>
-        Vielfalt
+        {message('ui.vielfalt')}
         {select('diversity', ['auto', 'low', 'high'])}
       </label>
     </div>
@@ -189,25 +184,27 @@ export function TuningControls(props: {
 function tuningLabel(value: string): string {
   return (
     {
-      auto: 'Auto',
-      easy: 'Leicht',
-      medium: 'Mittel',
-      hard: 'Schwer',
-      deadly: 'Tödlich',
-      few: 'Wenige',
-      standard: 'Standard',
-      many: 'Viele',
-      even: 'Ausgeglichen',
-      varied: 'Variiert',
-      low: 'Niedrig',
-      high: 'Hoch'
+      auto: message('encounter.tuning.auto'),
+      easy: message('encounter.tuning.easy'),
+      medium: message('encounter.tuning.medium'),
+      hard: message('encounter.tuning.hard'),
+      deadly: message('encounter.tuning.deadly'),
+      few: message('encounter.tuning.few'),
+      standard: message('encounter.tuning.standard'),
+      many: message('encounter.tuning.many'),
+      even: message('encounter.tuning.even'),
+      varied: message('encounter.tuning.varied'),
+      low: message('encounter.tuning.low'),
+      high: message('encounter.tuning.high')
     }[value] ?? value
   )
 }
 
 function CombatScenario(props: ScenarioProps) {
   if (!props.snapshot.combat)
-    return <p className="scenario-empty">Kein aktiver Encounter.</p>
+    return (
+      <p className="scenario-empty">{message('ui.kein.aktiver.encounter')}</p>
+    )
   if (props.snapshot.combat.phase === 'initiative')
     return <InitiativePanel {...props} combat={props.snapshot.combat} />
   if (props.snapshot.combat.phase === 'combat')
@@ -223,7 +220,7 @@ function InitiativePanel(props: ScenarioProps & { combat: CombatSnapshot }) {
   )
   return (
     <section className="scenario-content">
-      <h2>Initiative</h2>
+      <h2>{message('ui.initiative')}</h2>
       <ul className="initiative-list">
         {props.combat.initiativeRows.map((row) => (
           <li key={row.id}>
@@ -245,16 +242,18 @@ function InitiativePanel(props: ScenarioProps & { combat: CombatSnapshot }) {
         <button
           onClick={() =>
             void scenarioAction(props, () =>
-              window.saltMarcher.combat.rollInitiative(props.combat.revision)
+              encounterCapabilities().combat.rollInitiative(
+                props.combat.revision
+              )
             )
           }
         >
-          Alle würfeln
+          {message('ui.alle.wuerfeln')}
         </button>
         <button
           onClick={() =>
             void scenarioAction(props, () =>
-              window.saltMarcher.combat.confirmInitiative(
+              encounterCapabilities().combat.confirmInitiative(
                 props.combat.initiativeRows.map((row) => ({
                   id: row.id,
                   initiative: values[row.id] ?? row.initiative
@@ -264,7 +263,7 @@ function InitiativePanel(props: ScenarioProps & { combat: CombatSnapshot }) {
             )
           }
         >
-          Kampf starten
+          {message('ui.kampf.starten')}
         </button>
       </footer>
     </section>
@@ -275,7 +274,9 @@ function CombatPanel(props: ScenarioProps & { combat: CombatSnapshot }) {
   const [confirmEnd, setConfirmEnd] = useState(false)
   return (
     <section className="scenario-content">
-      <h2>Runde {props.combat.round}</h2>
+      <h2>
+        {message('ui.runde')} {props.combat.round}
+      </h2>
       <ul className="combat-cards">
         {props.combat.cards.map((card) => (
           <CombatCardView
@@ -290,30 +291,32 @@ function CombatPanel(props: ScenarioProps & { combat: CombatSnapshot }) {
         className="primary-action"
         onClick={() =>
           void scenarioAction(props, () =>
-            window.saltMarcher.combat.advanceTurn(props.combat.revision)
+            encounterCapabilities().combat.advanceTurn(props.combat.revision)
           )
         }
       >
-        ▶ Weiter
+        {message('ui.weiter.2')}
       </button>
       {!confirmEnd ? (
         <button
           className={props.combat.allEnemiesDefeated ? 'accent' : ''}
           onClick={() => setConfirmEnd(true)}
         >
-          Kampf beenden
+          {message('ui.kampf.beenden')}
         </button>
       ) : (
         <div className="confirm-row">
-          <button onClick={() => setConfirmEnd(false)}>Abbruch</button>
+          <button onClick={() => setConfirmEnd(false)}>
+            {message('ui.abbruch')}
+          </button>
           <button
             onClick={() =>
               void scenarioAction(props, () =>
-                window.saltMarcher.combat.end(props.combat.revision)
+                encounterCapabilities().combat.end(props.combat.revision)
               )
             }
           >
-            Bestätigen
+            {message('ui.bestaetigen')}
           </button>
         </div>
       )}
@@ -343,7 +346,8 @@ function CombatCardView(props: {
       {!card.playerCharacter && (
         <>
           <span>
-            HP {card.currentHp}/{card.maxHp} · AC {card.armorClass}
+            {message('ui.hp')} {card.currentHp}/{card.maxHp} {message('ui.ac')}{' '}
+            {card.armorClass}
           </span>
           <progress max={card.maxHp} value={card.currentHp} />
           <div className="card-controls">
@@ -360,7 +364,7 @@ function CombatCardView(props: {
               disabled={!card.alive}
               onClick={() =>
                 void props.action(() =>
-                  window.saltMarcher.combat.changeHp(
+                  encounterCapabilities().combat.changeHp(
                     card.id,
                     amount,
                     false,
@@ -369,13 +373,13 @@ function CombatCardView(props: {
                 )
               }
             >
-              − HP
+              {message('ui.hp.2')}
             </button>
             <button
               disabled={!card.alive}
               onClick={() =>
                 void props.action(() =>
-                  window.saltMarcher.combat.changeHp(
+                  encounterCapabilities().combat.changeHp(
                     card.id,
                     amount,
                     true,
@@ -384,7 +388,7 @@ function CombatCardView(props: {
                 )
               }
             >
-              + HP
+              {message('ui.hp.3')}
             </button>
           </div>
         </>
@@ -401,7 +405,7 @@ function CombatCardView(props: {
         <button
           onClick={() =>
             void props.action(() =>
-              window.saltMarcher.combat.adjustInitiative(
+              encounterCapabilities().combat.adjustInitiative(
                 card.id,
                 initiative,
                 props.combat.revision
@@ -409,7 +413,7 @@ function CombatCardView(props: {
             )
           }
         >
-          Init
+          {message('ui.init')}
         </button>
       </div>
       <small>{card.detail}</small>
@@ -428,7 +432,7 @@ function ResolutionPanel(props: ScenarioProps & { combat: CombatSnapshot }) {
   const [fraction, setFraction] = useState(resolution?.xpFraction ?? 1)
   if (!resolution) return null
   const saveResolution = () =>
-    window.saltMarcher.combat.updateResolution(
+    encounterCapabilities().combat.updateResolution(
       selected,
       threshold,
       fraction,
@@ -439,10 +443,10 @@ function ResolutionPanel(props: ScenarioProps & { combat: CombatSnapshot }) {
       const updated = await saveResolution()
       if (!updated.combat) throw new Error('Combat nicht verfügbar')
       props.setSnapshot(
-        await window.saltMarcher.combat.awardXp(updated.combat.revision)
+        await encounterCapabilities().combat.awardXp(updated.combat.revision)
       )
     } catch (cause) {
-      props.onError(errorText(cause))
+      props.onError(capabilityErrorText(cause))
     }
   }
   async function complete() {
@@ -450,11 +454,11 @@ function ResolutionPanel(props: ScenarioProps & { combat: CombatSnapshot }) {
       const updated = await saveResolution()
       if (!updated.combat) throw new Error('Combat nicht verfügbar')
       props.setSnapshot(
-        await window.saltMarcher.combat.complete(updated.combat.revision)
+        await encounterCapabilities().combat.complete(updated.combat.revision)
       )
       props.close()
     } catch (cause) {
-      props.onError(errorText(cause))
+      props.onError(capabilityErrorText(cause))
     }
   }
   const eligible = resolution.enemies
@@ -464,15 +468,20 @@ function ResolutionPanel(props: ScenarioProps & { combat: CombatSnapshot }) {
   const perPlayer = Math.floor(awarded / Math.max(1, resolution.partySize))
   return (
     <section className="scenario-content resolution-panel">
-      <h2>Kampfergebnis</h2>
+      <h2>{message('ui.kampfergebnis')}</h2>
       <p>
-        {selected.length} Gegner besiegt · {eligible} XP
+        {selected.length} {message('ui.gegner.besiegt')} {eligible}{' '}
+        {message('ui.xp.2')}
       </p>
       <p>
-        <strong>{perPlayer} XP pro Spieler</strong> ({awarded} gesamt)
+        <strong>
+          {perPlayer} {message('ui.xp.pro.spieler')}
+        </strong>{' '}
+        ({awarded} {message('ui.gesamt')}
       </p>
       <label>
-        Besiegungsschwelle <span>{Math.round(threshold * 100)}%</span>
+        {message('ui.besiegungsschwelle')}{' '}
+        <span>{Math.round(threshold * 100)}%</span>
         <input
           type="range"
           min="0"
@@ -483,7 +492,7 @@ function ResolutionPanel(props: ScenarioProps & { combat: CombatSnapshot }) {
         />
       </label>
       <label>
-        XP-Anteil <span>{Math.round(fraction * 100)}%</span>
+        {message('ui.xp.anteil')} <span>{Math.round(fraction * 100)}%</span>
         <input
           type="range"
           min="0"
@@ -508,7 +517,11 @@ function ResolutionPanel(props: ScenarioProps & { combat: CombatSnapshot }) {
                   )
                 }
               />
-              {enemy.name} ({enemy.alive ? 'Lebt' : 'Tot'}) · {enemy.xp} XP
+              {enemy.name} (
+              {enemy.alive
+                ? message('encounter.alive')
+                : message('encounter.dead')}
+              ) · {enemy.xp} {message('ui.xp.2')}
             </label>
           </li>
         ))}
@@ -519,9 +532,13 @@ function ResolutionPanel(props: ScenarioProps & { combat: CombatSnapshot }) {
           disabled={resolution.xpAwarded || perPlayer <= 0}
           onClick={() => void award()}
         >
-          {resolution.xpAwarded ? 'XP verteilt' : 'XP verteilen'}
+          {resolution.xpAwarded
+            ? message('encounter.xpAwarded')
+            : message('encounter.awardXp')}
         </button>
-        <button onClick={() => void complete()}>Zum Planer</button>
+        <button onClick={() => void complete()}>
+          {message('ui.zum.planer')}
+        </button>
       </footer>
     </section>
   )
@@ -534,6 +551,6 @@ async function scenarioAction(
   try {
     props.setSnapshot(await operation())
   } catch (cause) {
-    props.onError(errorText(cause))
+    props.onError(capabilityErrorText(cause))
   }
 }

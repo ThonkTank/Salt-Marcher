@@ -1,3 +1,4 @@
+import { formatMessage, message } from '../../i18n/messages.de.js'
 import type {
   CreatureCatalogQuery,
   CreatureFilterOptions
@@ -18,8 +19,8 @@ export function CreatureFilters(props: {
       className={`catalog-filters${props.compact ? ' compact-filters' : ''}`}
     >
       <input
-        aria-label="Monster suchen"
-        placeholder="Monster suchen …"
+        aria-label={message('ui.monster.suchen')}
+        placeholder={message('ui.monster.suchen.2')}
         value={q.name}
         onChange={(event) => update({ name: event.target.value })}
         onKeyDown={(event) => {
@@ -27,7 +28,7 @@ export function CreatureFilters(props: {
         }}
       />
       <select
-        aria-label="CR minimum"
+        aria-label={message('ui.cr.minimum')}
         value={q.crMin ?? ''}
         onChange={(event) =>
           update({
@@ -35,7 +36,7 @@ export function CreatureFilters(props: {
           })
         }
       >
-        <option value="">CR min</option>
+        <option value="">{message('ui.cr.min')}</option>
         {props.options.challengeRatings.map((value) => (
           <option key={value} value={crNumber(value)}>
             {value}
@@ -43,7 +44,7 @@ export function CreatureFilters(props: {
         ))}
       </select>
       <select
-        aria-label="CR maximum"
+        aria-label={message('ui.cr.maximum')}
         value={q.crMax ?? ''}
         onChange={(event) =>
           update({
@@ -51,7 +52,7 @@ export function CreatureFilters(props: {
           })
         }
       >
-        <option value="">CR max</option>
+        <option value="">{message('ui.cr.max')}</option>
         {props.options.challengeRatings.map((value) => (
           <option key={value} value={crNumber(value)}>
             {value}
@@ -106,13 +107,13 @@ export function CreatureFilters(props: {
       )}
       {props.options.locations.length > 0 && (
         <select
-          aria-label="Ort"
+          aria-label={message('ui.ort')}
           value={q.locationId ?? ''}
           onChange={(event) =>
             update({ locationId: event.target.value || null })
           }
         >
-          <option value="">Ort</option>
+          <option value="">{message('ui.ort')}</option>
           {props.options.locations.map((option) => (
             <option key={option.id} value={option.id}>
               {option.label}
@@ -121,7 +122,7 @@ export function CreatureFilters(props: {
         </select>
       )}
       <button onClick={() => props.changed({ ...emptyQuery, limit: q.limit })}>
-        Filter zurücksetzen
+        {message('ui.filter.zuruecksetzen')}
       </button>
     </div>
   )
@@ -203,12 +204,15 @@ export function FilterChips(props: {
   const q = props.query
   if (q.name)
     chips.push({
-      label: `Suche: ${q.name}`,
+      label: formatMessage('catalog.searchChip', { name: q.name }),
       clear: () => props.changed({ ...q, name: '', offset: 0 })
     })
   if (q.crMin !== undefined || q.crMax !== undefined)
     chips.push({
-      label: `CR ${q.crMin ?? '0'}–${q.crMax ?? '∞'}`,
+      label: formatMessage('catalog.challengeChip', {
+        minimum: q.crMin ?? '0',
+        maximum: q.crMax ?? '∞'
+      }),
       clear: () => {
         const { crMin, crMax, ...rest } = q
         void crMin
@@ -238,7 +242,9 @@ export function FilterChips(props: {
       })
   if (q.locationId)
     chips.push({
-      label: `Ort: ${q.locationId}`,
+      label: formatMessage('catalog.locationChip', {
+        location: q.locationId
+      }),
       clear: () => props.changed({ ...q, locationId: null, offset: 0 })
     })
   return (

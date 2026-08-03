@@ -98,14 +98,25 @@ function reconcileAndSchedule(
 
 reconcileAndSchedule('campaign-reconcile')
 process.parentPort.postMessage(coreReadySchema.parse({ kind: 'core.ready' }))
-const handlers = {
+const campaignHandlers = {
   'campaign.list': () => campaigns.list(),
   'campaign.create': (input) => campaigns.create(input.name),
   'campaign.activate': (input) => campaigns.activate(input.id),
   'settings.read': () => campaigns.readSettings(),
   'settings.update': (input) =>
     campaigns.updateSettings(input.patch, input.expectedRevision),
-  'projection.read': () => emptyPassiveProjection,
+  'projection.read': () => emptyPassiveProjection
+} satisfies Pick<
+  CoreHandlers,
+  | 'campaign.list'
+  | 'campaign.create'
+  | 'campaign.activate'
+  | 'settings.read'
+  | 'settings.update'
+  | 'projection.read'
+>
+
+const partyHandlers = {
   'party.read': () => play.readParty(),
   'party.setMembership': (input) =>
     play.setMembership(input.id, input.active, input.expectedRevision),
@@ -123,10 +134,29 @@ const handlers = {
     play.adjustPartyXp(input.id, input.delta, input.expectedRevision),
   'party.rest': (input) => play.restParty(input.type, input.expectedRevision),
   'party.calculateAdventuringDay': (input) =>
-    play.calculateAdventuringDay(input.rows, input.totalXp),
+    play.calculateAdventuringDay(input.rows, input.totalXp)
+} satisfies Pick<
+  CoreHandlers,
+  | 'party.read'
+  | 'party.setMembership'
+  | 'party.create'
+  | 'party.update'
+  | 'party.delete'
+  | 'party.adjustXp'
+  | 'party.rest'
+  | 'party.calculateAdventuringDay'
+>
+
+const creatureHandlers = {
   'creatures.search': (input) => creatures.search(input),
   'creatures.filterOptions': () => creatures.filterOptions(),
-  'creatures.detail': (input) => creatures.detail(input.id),
+  'creatures.detail': (input) => creatures.detail(input.id)
+} satisfies Pick<
+  CoreHandlers,
+  'creatures.search' | 'creatures.filterOptions' | 'creatures.detail'
+>
+
+const worldPlannerHandlers = {
   'locations.read': () => locations.read(),
   'locations.create': (input) =>
     locations.create(input.location, input.expectedRevision),
@@ -150,7 +180,24 @@ const handlers = {
   'factions.update': (input) =>
     sources.updateFaction(input.id, input.faction, input.expectedRevision),
   'factions.delete': (input) =>
-    sources.deleteFaction(input.id, input.expectedRevision),
+    sources.deleteFaction(input.id, input.expectedRevision)
+} satisfies Pick<
+  CoreHandlers,
+  | 'locations.read'
+  | 'locations.create'
+  | 'locations.update'
+  | 'locations.delete'
+  | 'encounterTables.read'
+  | 'encounterTables.create'
+  | 'encounterTables.update'
+  | 'encounterTables.delete'
+  | 'factions.read'
+  | 'factions.create'
+  | 'factions.update'
+  | 'factions.delete'
+>
+
+const sessionHandlers = {
   'session.read': () => play.readSession(),
   'scene.focus': (input) =>
     play.focusScene(input.sceneId, input.expectedRevision),
@@ -192,7 +239,20 @@ const handlers = {
       input.tuning,
       input.seed,
       input.expectedRevision
-    ),
+    )
+} satisfies Pick<
+  CoreHandlers,
+  | 'session.read'
+  | 'scene.focus'
+  | 'scene.setLocation'
+  | 'scene.saveGroup'
+  | 'scene.deleteGroup'
+  | 'scene.assignPartyMember'
+  | 'scene.evaluateGroupDraft'
+  | 'scene.generateGroupDraft'
+>
+
+const encounterHandlers = {
   'encounter.evaluate': (input) =>
     play.evaluateEncounter(
       input.sceneId,
@@ -228,7 +288,23 @@ const handlers = {
       input.xpFraction
     ),
   'combat.awardXp': (input) => play.awardXp(input.expectedRevision),
-  'combat.complete': (input) => play.completeCombat(input.expectedRevision),
+  'combat.complete': (input) => play.completeCombat(input.expectedRevision)
+} satisfies Pick<
+  CoreHandlers,
+  | 'encounter.evaluate'
+  | 'combat.prepare'
+  | 'combat.rollInitiative'
+  | 'combat.confirmInitiative'
+  | 'combat.advanceTurn'
+  | 'combat.adjustInitiative'
+  | 'combat.changeHp'
+  | 'combat.end'
+  | 'combat.updateResolution'
+  | 'combat.awardXp'
+  | 'combat.complete'
+>
+
+const hexHandlers = {
   'hex.terrainCatalog': () => hexTerrainCatalog,
   'hex.catalog': () => hex.catalog(),
   'hex.locateLocation': (input) => hex.locateLocation(input.locationId),
@@ -238,7 +314,21 @@ const handlers = {
   'hex.update': (input) => hex.update(input),
   'hex.paint': (input) => hex.paint(input),
   'hex.placeLocation': (input) => hex.placeLocation(input),
-  'hex.removeLocation': (input) => hex.removeLocation(input),
+  'hex.removeLocation': (input) => hex.removeLocation(input)
+} satisfies Pick<
+  CoreHandlers,
+  | 'hex.terrainCatalog'
+  | 'hex.catalog'
+  | 'hex.locateLocation'
+  | 'hex.readChunks'
+  | 'hex.create'
+  | 'hex.update'
+  | 'hex.paint'
+  | 'hex.placeLocation'
+  | 'hex.removeLocation'
+>
+
+const travelHandlers = {
   'hexTravel.read': (input) => hexTravel.read(input.sceneId),
   'hexTravel.evaluate': (input) => hexTravel.evaluate(input),
   'hexTravel.position': (input) => hexTravel.position(input),
@@ -246,12 +336,37 @@ const handlers = {
   'hexTravel.pause': (input) => hexTravel.pause(input),
   'hexTravel.resume': (input) => hexTravel.resume(input),
   'hexTravel.abort': (input) => hexTravel.abort(input),
-  'hexTravel.setMultiplier': (input) => hexTravel.setMultiplier(input),
+  'hexTravel.setMultiplier': (input) => hexTravel.setMultiplier(input)
+} satisfies Pick<
+  CoreHandlers,
+  | 'hexTravel.read'
+  | 'hexTravel.evaluate'
+  | 'hexTravel.position'
+  | 'hexTravel.start'
+  | 'hexTravel.pause'
+  | 'hexTravel.resume'
+  | 'hexTravel.abort'
+  | 'hexTravel.setMultiplier'
+>
+
+const lifecycleHandlers = {
   'core.shutdown': () => {
     if (travelTimer !== undefined) clearTimeout(travelTimer)
     campaigns.close()
     return null
   }
+} satisfies Pick<CoreHandlers, 'core.shutdown'>
+
+const handlers = {
+  ...campaignHandlers,
+  ...partyHandlers,
+  ...creatureHandlers,
+  ...worldPlannerHandlers,
+  ...sessionHandlers,
+  ...encounterHandlers,
+  ...hexHandlers,
+  ...travelHandlers,
+  ...lifecycleHandlers
 } satisfies CoreHandlers
 
 process.parentPort.on('message', (event) => {

@@ -1,3 +1,4 @@
+import { message } from '../../i18n/messages.de.js'
 import { useEffect, useState, type FormEvent } from 'react'
 import type {
   AxialCoordinate,
@@ -6,8 +7,6 @@ import type {
   HexTerrainCatalog,
   HexTerrainId
 } from '../../../shared/contracts/hex.js'
-import { capabilityErrorCode } from '../../../shared/errors/capability-error.js'
-import { capabilityErrorMessage } from '../../i18n/messages.de.js'
 import {
   absorbChunk,
   chunkRevision,
@@ -16,6 +15,11 @@ import {
 } from './hex-chunk-cache.js'
 import { HexMapCanvas } from './hex-map-canvas.js'
 import './hex.css'
+import { hexCapabilities } from './hex-capabilities.js'
+import {
+  capabilityErrorText,
+  reportCapabilityError
+} from '../../capabilities/capability-errors.js'
 
 export default function HexEditor(props: {
   onError: (message: string) => void
@@ -30,7 +34,7 @@ export default function HexEditor(props: {
   const [name, setName] = useState('')
 
   const refreshCatalog = async (preferred?: string) => {
-    const next = await window.saltMarcher.hex.catalog()
+    const next = await hexCapabilities().hex.catalog()
     setCatalog(next)
     const mapId = preferred ?? map?.map.id ?? next.maps[0]?.id
     const summary = next.maps.find((entry) => entry.id === mapId)
@@ -45,8 +49,8 @@ export default function HexEditor(props: {
 
   useEffect(() => {
     void Promise.all([
-      window.saltMarcher.hex.catalog(),
-      window.saltMarcher.hex.terrainCatalog()
+      hexCapabilities().hex.catalog(),
+      hexCapabilities().hex.terrainCatalog()
     ])
       .then(async ([nextCatalog, nextTerrains]) => {
         setCatalog(nextCatalog)
@@ -58,34 +62,34 @@ export default function HexEditor(props: {
           setName(nextMap.map.displayName)
         }
       })
-      .catch(showError(props.onError))
+      .catch(reportCapabilityError(props.onError))
   }, [props.onError])
 
   const create = async (event: FormEvent) => {
     event.preventDefault()
     if (!catalog) return
     try {
-      const created = await window.saltMarcher.hex.create(
+      const created = await hexCapabilities().hex.create(
         newName,
         catalog.revision
       )
       await refreshCatalog(created.id)
     } catch (cause) {
-      props.onError(errorText(cause))
+      props.onError(capabilityErrorText(cause))
     }
   }
 
   const saveMetadata = async () => {
     if (!map) return
     try {
-      const next = await window.saltMarcher.hex.updateMetadata(
+      const next = await hexCapabilities().hex.updateMetadata(
         map.map.id,
         name,
         map.map.metadataRevision
       )
       await refreshCatalog(next.id)
     } catch (cause) {
-      props.onError(errorText(cause))
+      props.onError(capabilityErrorText(cause))
     }
   }
 
@@ -93,7 +97,7 @@ export default function HexEditor(props: {
     setSelected(coordinate)
     if (!map || tool !== 'paint') return
     try {
-      const chunk = await window.saltMarcher.hex.paint(
+      const chunk = await hexCapabilities().hex.paint(
         map.map.id,
         coordinate,
         terrainId,
@@ -101,18 +105,20 @@ export default function HexEditor(props: {
       )
       absorbChunk(map.map.id, chunk)
       invalidateHexMap(map.map.id)
-      const nextCatalog = await window.saltMarcher.hex.catalog()
+      const nextCatalog = await hexCapabilities().hex.catalog()
       setCatalog(nextCatalog)
       const summary = nextCatalog.maps.find((entry) => entry.id === map.map.id)
       if (summary) setMap(await readHexMapView(summary, map.center, true))
     } catch (cause) {
-      props.onError(errorText(cause))
+      props.onError(capabilityErrorText(cause))
     }
   }
 
   if (!catalog || !terrains)
     return (
-      <section className="workspace-panel">Hex-Editor wird geladen …</section>
+      <section className="workspace-panel">
+        {message('ui.hex.editor.wird.geladen')}
+      </section>
     )
   const tile =
     selected && map
@@ -125,25 +131,25 @@ export default function HexEditor(props: {
     <section className="hex-editor-workspace">
       <aside className="hex-editor-controls">
         <form onSubmit={(event) => void create(event)}>
-          <h2>Hex-Karten</h2>
+          <h2>{message('ui.hex.karten')}</h2>
           <input
-            aria-label="Neue Karte"
+            aria-label={message('ui.neue.karte')}
             value={newName}
             onChange={(event) => setNewName(event.target.value)}
           />
-          <button disabled={!newName.trim()}>Neu</button>
+          <button disabled={!newName.trim()}>{message('ui.neu')}</button>
         </form>
         <label>
-          Karte
+          {message('ui.karte')}
           <select
             value={map?.map.id ?? ''}
             onChange={(event) =>
               void refreshCatalog(event.target.value).catch(
-                showError(props.onError)
+                reportCapabilityError(props.onError)
               )
             }
           >
-            <option value="">Keine Karte</option>
+            <option value="">{message('ui.keine.karte')}</option>
             {catalog.maps.map((entry) => (
               <option key={entry.id} value={entry.id}>
                 {entry.displayName}
@@ -154,31 +160,31 @@ export default function HexEditor(props: {
         {map && (
           <>
             <label>
-              Name
+              {message('ui.name')}
               <input
                 value={name}
                 onChange={(event) => setName(event.target.value)}
               />
             </label>
             <button onClick={() => void saveMetadata()}>
-              Kartendaten speichern
+              {message('ui.kartendaten.speichern')}
             </button>
             <div className="tool-row">
               <button
                 aria-pressed={tool === 'select'}
                 onClick={() => setTool('select')}
               >
-                Auswahl
+                {message('ui.auswahl')}
               </button>
               <button
                 aria-pressed={tool === 'paint'}
                 onClick={() => setTool('paint')}
               >
-                Terrain malen
+                {message('ui.terrain.malen')}
               </button>
             </div>
             <label>
-              Terrain
+              {message('ui.terrain')}
               <select
                 value={terrainId}
                 onChange={(event) =>
@@ -190,7 +196,7 @@ export default function HexEditor(props: {
                     {terrain.label} ·{' '}
                     {terrain.passable
                       ? `${terrain.travelCost}×`
-                      : 'unpassierbar'}
+                      : message('hex.impassable')}
                   </option>
                 ))}
               </select>
@@ -198,7 +204,10 @@ export default function HexEditor(props: {
           </>
         )}
       </aside>
-      <section className="hex-editor-map" aria-label="Kartenansicht">
+      <section
+        className="hex-editor-map"
+        aria-label={message('ui.kartenansicht')}
+      >
         {map ? (
           <HexMapCanvas
             snapshot={map}
@@ -208,16 +217,18 @@ export default function HexEditor(props: {
             onViewportChange={(center) =>
               void readHexMapView(map.map, center)
                 .then(setMap)
-                .catch(showError(props.onError))
+                .catch(reportCapabilityError(props.onError))
             }
             ariaLabel={`Hex-Editor ${map.map.displayName}`}
           />
         ) : (
-          <div className="session-map-empty">Erstelle eine Hex-Karte.</div>
+          <div className="session-map-empty">
+            {message('ui.erstelle.eine.hex.karte')}
+          </div>
         )}
       </section>
       <aside className="hex-editor-state">
-        <h2>Hexfeld</h2>
+        <h2>{message('ui.hexfeld')}</h2>
         {tile ? (
           <>
             <strong>{tile.label}</strong>
@@ -228,22 +239,14 @@ export default function HexEditor(props: {
                 )?.label
               }
             </p>
-            <p>{tile.location?.displayName ?? 'Kein benannter Ort'}</p>
+            <p>
+              {tile.location?.displayName ?? message('hex.noNamedLocation')}
+            </p>
           </>
         ) : (
-          <p>Wähle ein Hexfeld aus.</p>
+          <p>{message('ui.waehle.ein.hexfeld.aus')}</p>
         )}
       </aside>
     </section>
   )
-}
-
-function errorText(cause: unknown): string {
-  if (capabilityErrorCode(cause) === 'outcome_unknown')
-    window.dispatchEvent(new Event('saltmarcher:readback'))
-  return capabilityErrorMessage(cause)
-}
-
-function showError(setError: (message: string) => void) {
-  return (cause: unknown) => setError(errorText(cause))
 }

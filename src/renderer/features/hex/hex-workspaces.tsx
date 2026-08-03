@@ -1,3 +1,4 @@
+import { message } from '../../i18n/messages.de.js'
 import { useCallback, useEffect, useState } from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type { WorldLocation } from '../../../shared/contracts/world-location.js'
@@ -11,9 +12,13 @@ import type {
 } from '../../../shared/contracts/hex.js'
 import { HexMapCanvas } from './hex-map-canvas.js'
 import { readHexMapView } from './hex-chunk-cache.js'
-import { capabilityErrorMessage } from '../../i18n/messages.de.js'
-import { capabilityErrorCode } from '../../../shared/errors/capability-error.js'
 import './hex.css'
+import { hexCapabilities } from './hex-capabilities.js'
+import {
+  capabilityErrorText,
+  reportCapabilityError
+} from '../../capabilities/capability-errors.js'
+import { travelSegmentProgress, useTravelClock } from './use-travel-clock.js'
 
 export function TravelScenario(props: {
   snapshot: LiveSessionSnapshot
@@ -25,49 +30,39 @@ export function TravelScenario(props: {
   const onError = props.onError
   const setSnapshot = props.setSnapshot
   const [travel, setTravel] = useState<HexTravelSnapshot | null>(null)
-  const [clockNow, setClockNow] = useState(0)
+  const clockNow = useTravelClock(travel)
   const refresh = useCallback(async () => {
-    const next = await window.saltMarcher.hexTravel.read(focusedSceneId)
+    const next = await hexCapabilities().hexTravel.read(focusedSceneId)
     setTravel(next)
-    setSnapshot(await window.saltMarcher.session.read())
+    setSnapshot(await hexCapabilities().session.read())
   }, [focusedSceneId, setSnapshot])
   useEffect(() => {
-    void Promise.resolve().then(refresh).catch(showError(onError))
+    void Promise.resolve().then(refresh).catch(reportCapabilityError(onError))
   }, [onError, refresh])
   useEffect(() => {
-    if (
-      travel?.status !== 'travelling' ||
-      travel.segmentStartedAt === null ||
-      travel.segmentEndsAt === null
-    )
-      return
-    const timer = window.setInterval(() => setClockNow(Date.now()), 250)
-    return () => window.clearInterval(timer)
-  }, [travel?.segmentEndsAt, travel?.segmentStartedAt, travel?.status])
-  useEffect(() => {
-    return window.saltMarcher.session.onChanged((notice) => {
+    return hexCapabilities().session.onChanged((notice) => {
       if (notice.sceneId !== focusedSceneId) return
-      void refresh().catch(showError(onError))
+      void refresh().catch(reportCapabilityError(onError))
     })
   }, [focusedSceneId, onError, refresh])
   const mutate = async (action: 'pause' | 'resume' | 'abort') => {
     if (!travel) return
     try {
       setTravel(
-        await window.saltMarcher.hexTravel[action](
+        await hexCapabilities().hexTravel[action](
           focusedSceneId,
           travel.revision
         )
       )
-      props.setSnapshot(await window.saltMarcher.session.read())
+      props.setSnapshot(await hexCapabilities().session.read())
     } catch (cause) {
-      props.onError(errorText(cause))
+      props.onError(capabilityErrorText(cause))
     }
   }
   const context = props.snapshot.travel
   return (
     <section className="scenario-content travel-context">
-      <p className="section-kicker">Reise</p>
+      <p className="section-kicker">{message('ui.reise')}</p>
       <h2>
         {context.kind === 'hex'
           ? context.locationName || context.currentLabel
@@ -83,54 +78,53 @@ export function TravelScenario(props: {
             travel.segmentStartedAt !== null &&
             travel.segmentEndsAt !== null && (
               <progress
-                aria-label="Fortschritt des aktuellen Reiseabschnitts"
+                aria-label={message(
+                  'ui.fortschritt.des.aktuellen.reiseabschnitts'
+                )}
                 max={1}
-                value={Math.max(
-                  0,
-                  Math.min(
-                    1,
-                    (clockNow - travel.segmentStartedAt) /
-                      Math.max(
-                        1,
-                        travel.segmentEndsAt - travel.segmentStartedAt
-                      )
-                  )
+                value={travelSegmentProgress(
+                  travel.segmentStartedAt,
+                  travel.segmentEndsAt,
+                  clockNow
                 )}
               />
             )}
           <dl className="travel-facts">
             <div>
-              <dt>Status</dt>
+              <dt>{message('ui.status')}</dt>
               <dd>{context.status}</dd>
             </div>
             <div>
-              <dt>Tempo</dt>
-              <dd>{context.effectiveSpeedFeet} ft/Runde</dd>
+              <dt>{message('ui.tempo')}</dt>
+              <dd>
+                {context.effectiveSpeedFeet} {message('ui.ft.runde')}
+              </dd>
             </div>
             <div>
-              <dt>Rest</dt>
+              <dt>{message('ui.rest')}</dt>
               <dd>{formatDuration(context.remainingGameSeconds)}</dd>
             </div>
           </dl>
           {context.assumedSpeedMemberNames.length > 0 && (
             <p className="travel-warning">
-              30 ft angenommen für {context.assumedSpeedMemberNames.join(', ')}.
+              {message('ui.30.ft.angenommen.fuer')}{' '}
+              {context.assumedSpeedMemberNames.join(', ')}.
             </p>
           )}
           {travel && (
             <label>
-              Darstellungstempo
+              {message('ui.darstellungstempo')}
               <select
                 value={travel.multiplier}
                 onChange={(event) =>
-                  void window.saltMarcher.hexTravel
-                    .setMultiplier(
+                  void hexCapabilities()
+                    .hexTravel.setMultiplier(
                       focusedSceneId,
                       Number(event.target.value) as 1 | 2 | 5 | 10,
                       travel.revision
                     )
                     .then(setTravel)
-                    .catch(showError(props.onError))
+                    .catch(reportCapabilityError(props.onError))
                 }
               >
                 {[1, 2, 5, 10].map((value) => (
@@ -142,17 +136,23 @@ export function TravelScenario(props: {
             </label>
           )}
           <div className="row-actions">
-            <button onClick={props.openMap}>Karte öffnen</button>
+            <button onClick={props.openMap}>
+              {message('ui.karte.oeffnen')}
+            </button>
             {travel?.status === 'travelling' && (
-              <button onClick={() => void mutate('pause')}>Pause</button>
+              <button onClick={() => void mutate('pause')}>
+                {message('ui.pause')}
+              </button>
             )}
             {(travel?.status === 'paused' || travel?.status === 'blocked') && (
-              <button onClick={() => void mutate('resume')}>Fortsetzen</button>
+              <button onClick={() => void mutate('resume')}>
+                {message('ui.fortsetzen')}
+              </button>
             )}
             {travel &&
               ['travelling', 'paused', 'blocked'].includes(travel.status) && (
                 <button className="danger" onClick={() => void mutate('abort')}>
-                  Abbrechen
+                  {message('action.cancel')}
                 </button>
               )}
           </div>
@@ -160,7 +160,7 @@ export function TravelScenario(props: {
       ) : (
         <>
           <p>{context.hint}</p>
-          <button onClick={props.openMap}>Karte öffnen</button>
+          <button onClick={props.openMap}>{message('ui.karte.oeffnen')}</button>
         </>
       )}
     </section>
@@ -186,9 +186,9 @@ export function SessionHexMap(props: {
 
   useEffect(() => {
     void Promise.all([
-      window.saltMarcher.hex.catalog(),
-      window.saltMarcher.hex.terrainCatalog(),
-      window.saltMarcher.hexTravel.read(sceneId)
+      hexCapabilities().hex.catalog(),
+      hexCapabilities().hex.terrainCatalog(),
+      hexCapabilities().hexTravel.read(sceneId)
     ])
       .then(async ([nextCatalog, nextTerrains, nextTravel]) => {
         setCatalog(nextCatalog)
@@ -198,22 +198,22 @@ export function SessionHexMap(props: {
         const summary = nextCatalog.maps.find((entry) => entry.id === mapId)
         setMap(summary ? await readHexMapView(summary) : null)
       })
-      .catch(showError(onError))
+      .catch(reportCapabilityError(onError))
   }, [onError, sceneId])
 
   useEffect(
     () =>
-      window.saltMarcher.session.onChanged((notice) => {
+      hexCapabilities().session.onChanged((notice) => {
         if (notice.sceneId !== sceneId) return
         void Promise.all([
-          window.saltMarcher.hexTravel.read(sceneId),
-          window.saltMarcher.session.read()
+          hexCapabilities().hexTravel.read(sceneId),
+          hexCapabilities().session.read()
         ])
           .then(([nextTravel, nextSession]) => {
             setTravel(nextTravel)
             setSnapshot(nextSession)
           })
-          .catch(showError(onError))
+          .catch(reportCapabilityError(onError))
       }),
     [onError, sceneId, setSnapshot]
   )
@@ -222,10 +222,10 @@ export function SessionHexMap(props: {
     if (!map || mode !== 'plan' || waypoints.length === 0) return
     void Promise.resolve()
       .then(() =>
-        window.saltMarcher.hexTravel.evaluate(sceneId, map.map.id, waypoints)
+        hexCapabilities().hexTravel.evaluate(sceneId, map.map.id, waypoints)
       )
       .then(setEvaluation)
-      .catch(showError(onError))
+      .catch(reportCapabilityError(onError))
   }, [map, mode, onError, sceneId, waypoints])
 
   const selectMap = async (mapId: string) => {
@@ -236,7 +236,7 @@ export function SessionHexMap(props: {
       setSelected(null)
       setWaypoints([])
     } catch (cause) {
-      props.onError(errorText(cause))
+      props.onError(capabilityErrorText(cause))
     }
   }
   const clickTile = (coordinate: AxialCoordinate) => {
@@ -250,24 +250,24 @@ export function SessionHexMap(props: {
     if (!map || !selected) return
     try {
       setTravel(
-        await window.saltMarcher.hexTravel.position(
+        await hexCapabilities().hexTravel.position(
           sceneId,
           map.map.id,
           selected,
           props.snapshot.scene.revision
         )
       )
-      props.setSnapshot(await window.saltMarcher.session.read())
+      props.setSnapshot(await hexCapabilities().session.read())
       setMode('inspect')
     } catch (cause) {
-      props.onError(errorText(cause))
+      props.onError(capabilityErrorText(cause))
     }
   }
   const start = async () => {
     if (!map || !travel || !evaluation?.canStart) return
     try {
       setTravel(
-        await window.saltMarcher.hexTravel.start(
+        await hexCapabilities().hexTravel.start(
           sceneId,
           map.map.id,
           waypoints,
@@ -275,24 +275,25 @@ export function SessionHexMap(props: {
           travel.revision
         )
       )
-      props.setSnapshot(await window.saltMarcher.session.read())
+      props.setSnapshot(await hexCapabilities().session.read())
       setMode('inspect')
       setWaypoints([])
     } catch (cause) {
-      props.onError(errorText(cause))
+      props.onError(capabilityErrorText(cause))
     }
   }
 
   if (!catalog || !terrains)
-    return <div className="session-map-empty">Karte wird geladen …</div>
+    return <div className="session-map-empty">{message('hex.loading')}</div>
   if (catalog.maps.length === 0)
     return (
       <div className="session-map-empty">
-        <strong>Keine Hex-Karte</strong>
-        <p>Lege zuerst im Hex-Editor eine Karte an.</p>
+        <strong>{message('hex.none')}</strong>
+        <p>{message('ui.lege.zuerst.im.hex.editor.eine.karte.an')}</p>
       </div>
     )
-  if (!map) return <div className="session-map-empty">Karte wird geladen …</div>
+  if (!map)
+    return <div className="session-map-empty">{message('hex.loading')}</div>
   const token = travel?.mapId === map.map.id ? travel.current : null
   const route =
     evaluation?.path ?? (travel?.mapId === map.map.id ? travel.path : [])
@@ -303,7 +304,7 @@ export function SessionHexMap(props: {
     <div className="session-hex-map">
       <div className="hex-map-toolbar">
         <select
-          aria-label="Hex-Karte"
+          aria-label={message('ui.hex.karte')}
           value={map.map.id}
           onChange={(event) => void selectMap(event.target.value)}
         >
@@ -317,13 +318,13 @@ export function SessionHexMap(props: {
           aria-pressed={mode === 'inspect'}
           onClick={() => setMode('inspect')}
         >
-          Auswahl
+          {message('ui.auswahl')}
         </button>
         <button
           aria-pressed={mode === 'position'}
           onClick={() => setMode('position')}
         >
-          Party platzieren
+          {message('ui.party.platzieren')}
         </button>
         <button
           aria-pressed={mode === 'plan'}
@@ -333,7 +334,7 @@ export function SessionHexMap(props: {
             setEvaluation(null)
           }}
         >
-          Reise planen
+          {message('ui.reise.planen')}
         </button>
         {mode === 'plan' && (
           <button
@@ -343,7 +344,7 @@ export function SessionHexMap(props: {
               setWaypoints((current) => current.slice(0, -1))
             }}
           >
-            Letzten Punkt entfernen
+            {message('ui.letzten.punkt.entfernen')}
           </button>
         )}
       </div>
@@ -357,7 +358,7 @@ export function SessionHexMap(props: {
         onViewportChange={(center) =>
           void readHexMapView(map.map, center)
             .then(setMap)
-            .catch(showError(props.onError))
+            .catch(reportCapabilityError(props.onError))
         }
         ariaLabel={`Hex-Karte ${map.map.displayName}`}
       />
@@ -365,18 +366,16 @@ export function SessionHexMap(props: {
         <span>
           {selectedTile
             ? `${selectedTile.label} · ${terrains.terrains.find((terrain) => terrain.id === selectedTile.terrainId)?.label}${selectedTile.location ? ` · ${selectedTile.location.displayName}` : ''}`
-            : (travel?.hint ?? 'Hexfeld auswählen.')}
+            : (travel?.hint ?? message('hex.selectTile'))}
         </span>
         {mode === 'position' && (
           <button disabled={!selected} onClick={() => void placeParty()}>
-            Party hier platzieren
+            {message('ui.party.hier.platzieren')}
           </button>
         )}
         {mode === 'plan' && (
           <>
-            <span>
-              {evaluation?.message ?? 'Wegpunkte auf der Karte wählen.'}
-            </span>
+            <span>{evaluation?.message ?? message('hex.chooseWaypoints')}</span>
             {evaluation && (
               <span>{formatDuration(evaluation.totalGameSeconds)}</span>
             )}
@@ -384,7 +383,7 @@ export function SessionHexMap(props: {
               disabled={!evaluation?.canStart}
               onClick={() => void start()}
             >
-              Reise starten
+              {message('ui.reise.starten')}
             </button>
           </>
         )}
@@ -410,9 +409,9 @@ export function HexLocationPlacementDialog(props: {
   } | null>(null)
   useEffect(() => {
     void Promise.all([
-      window.saltMarcher.hex.catalog(),
-      window.saltMarcher.hex.terrainCatalog(),
-      window.saltMarcher.hex.locateLocation(props.location.id)
+      hexCapabilities().hex.catalog(),
+      hexCapabilities().hex.terrainCatalog(),
+      hexCapabilities().hex.locateLocation(props.location.id)
     ])
       .then(async ([nextCatalog, nextTerrains, placement]) => {
         setCatalog(nextCatalog)
@@ -432,7 +431,7 @@ export function HexLocationPlacementDialog(props: {
           })
         }
       })
-      .catch(showError(onError))
+      .catch(reportCapabilityError(onError))
   }, [onError, props.location.id])
   const changeMap = async (mapId: string) => {
     const summary = catalog?.maps.find((entry) => entry.id === mapId)
@@ -442,7 +441,7 @@ export function HexLocationPlacementDialog(props: {
   const place = async () => {
     if (!map || !selected) return
     try {
-      await window.saltMarcher.hex.placeLocation(
+      await hexCapabilities().hex.placeLocation(
         map.map.id,
         props.location.id,
         selected,
@@ -451,13 +450,13 @@ export function HexLocationPlacementDialog(props: {
       props.onPlaced()
       props.close()
     } catch (cause) {
-      props.onError(errorText(cause))
+      props.onError(capabilityErrorText(cause))
     }
   }
   const remove = async () => {
     if (!existing) return
     try {
-      await window.saltMarcher.hex.removeLocation(
+      await hexCapabilities().hex.removeLocation(
         existing.mapId,
         props.location.id,
         existing.contentRevision
@@ -465,7 +464,7 @@ export function HexLocationPlacementDialog(props: {
       props.onPlaced()
       props.close()
     } catch (cause) {
-      props.onError(errorText(cause))
+      props.onError(capabilityErrorText(cause))
     }
   }
   return (
@@ -474,29 +473,29 @@ export function HexLocationPlacementDialog(props: {
         className="hex-placement-dialog"
         role="dialog"
         aria-modal="true"
-        aria-label="Ort auf Hex-Karte platzieren"
+        aria-label={message('ui.ort.auf.hex.karte.platzieren')}
       >
         <header>
           <div>
-            <p className="section-kicker">Ort platzieren</p>
+            <p className="section-kicker">{message('ui.ort.platzieren')}</p>
             <h2>{props.location.displayName}</h2>
           </div>
-          <button aria-label="Schließen" onClick={props.close}>
+          <button aria-label={message('action.close')} onClick={props.close}>
             ×
           </button>
         </header>
         {!catalog || !terrains ? (
-          <p>Karten werden geladen …</p>
+          <p>{message('ui.karten.werden.geladen')}</p>
         ) : catalog.maps.length === 0 ? (
-          <p>Lege zuerst eine Hex-Karte an.</p>
+          <p>{message('ui.lege.zuerst.eine.hex.karte.an')}</p>
         ) : map ? (
           <>
             <select
-              aria-label="Zielkarte"
+              aria-label={message('ui.zielkarte')}
               value={map.map.id}
               onChange={(event) =>
                 void changeMap(event.target.value).catch(
-                  showError(props.onError)
+                  reportCapabilityError(props.onError)
                 )
               }
             >
@@ -514,19 +513,19 @@ export function HexLocationPlacementDialog(props: {
               onViewportChange={(center) =>
                 void readHexMapView(map.map, center)
                   .then(setMap)
-                  .catch(showError(props.onError))
+                  .catch(reportCapabilityError(props.onError))
               }
               ariaLabel={`Platzierung von ${props.location.displayName}`}
             />
             <footer>
-              <button onClick={props.close}>Abbrechen</button>
+              <button onClick={props.close}>{message('action.cancel')}</button>
               {existing && (
                 <button className="danger" onClick={() => void remove()}>
-                  Von Karte entfernen
+                  {message('ui.von.karte.entfernen')}
                 </button>
               )}
               <button disabled={!selected} onClick={() => void place()}>
-                Hier platzieren
+                {message('ui.hier.platzieren')}
               </button>
             </footer>
           </>
@@ -552,13 +551,4 @@ function formatGameTime(totalSeconds: number) {
     .toString()
     .padStart(2, '0')
   return `Tag ${day}, ${hours}:${minutes}`
-}
-function errorText(cause: unknown): string {
-  if (capabilityErrorCode(cause) === 'outcome_unknown')
-    window.dispatchEvent(new Event('saltmarcher:readback'))
-  return capabilityErrorMessage(cause)
-}
-
-function showError(setError: (message: string) => void) {
-  return (cause: unknown) => setError(errorText(cause))
 }

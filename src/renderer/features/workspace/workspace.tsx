@@ -1,9 +1,13 @@
+import { message } from '../../i18n/messages.de.js'
 import { useEffect, lazy, useState, type FormEvent } from 'react'
 import type { CampaignSnapshot } from '../../../shared/contracts/campaign.js'
 import type { Creature } from '../../../shared/contracts/encounter.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type { CoreProcessStatus } from '../../../shared/contracts/runtime.js'
-import { errorText, showError } from '../catalog/catalog-state.js'
+import {
+  capabilityErrorText,
+  reportCapabilityError
+} from '../../capabilities/capability-errors.js'
 import { CreatureInspector } from '../catalog/creature-inspector.js'
 import {
   AdventuringDayDropdown,
@@ -14,7 +18,6 @@ import campaignIcon from '../../assets/icons/campaign.svg?url'
 import sessionIcon from '../../assets/icons/session.svg?url'
 import hexIcon from '../../assets/icons/hex.svg?url'
 import catalogIcon from '../../assets/icons/catalog.svg?url'
-import { message } from '../../i18n/messages.de.js'
 import SessionWorkspace from '../session/session-workspace.js'
 
 type FantasyIconName = 'campaign' | 'session' | 'hex' | 'catalog'
@@ -77,7 +80,7 @@ export function WorkspaceApp() {
   }
 
   useEffect(() => {
-    void Promise.resolve().then(load).catch(showError(setError))
+    void Promise.resolve().then(load).catch(reportCapabilityError(setError))
   }, [])
 
   useEffect(() => {
@@ -88,7 +91,7 @@ export function WorkspaceApp() {
   useEffect(() => {
     const readback = () => {
       setReadbackKey((current) => current + 1)
-      void load().catch(showError(setError))
+      void load().catch(reportCapabilityError(setError))
     }
     window.addEventListener('saltmarcher:readback', readback)
     return () => window.removeEventListener('saltmarcher:readback', readback)
@@ -115,7 +118,7 @@ export function WorkspaceApp() {
       setSession(await window.saltMarcher.session.read())
       setWorkspace('session')
     } catch (cause) {
-      setError(errorText(cause))
+      setError(capabilityErrorText(cause))
     }
   }
 
@@ -128,7 +131,7 @@ export function WorkspaceApp() {
       setWorkspace('session')
       setScenarios({})
     } catch (cause) {
-      setError(errorText(cause))
+      setError(capabilityErrorText(cause))
     }
   }
 
@@ -195,7 +198,7 @@ export function WorkspaceApp() {
           </>
         )}
         <div className="workspace-heading">
-          <p className="eyebrow">SaltMarcher</p>
+          <p className="eyebrow">{message('ui.saltmarcher')}</p>
           <h1>{heading}</h1>
         </div>
         <p className="top-bar-status">

@@ -4,7 +4,11 @@ import type { Browser as WdioBrowser } from 'webdriverio'
 describe('campaign restart', () => {
   it('resumes Campaign A after an Electron process restart and accepts a mutation', async () => {
     const client = browser as unknown as WdioBrowser
-    await expect(await client.$('h1=Session')).toBeExisting()
+    const sessionHeading = await client.$('h1=Session')
+    await client.waitUntil(() => sessionHeading.isExisting(), {
+      timeout: 10_000,
+      timeoutMsg: 'Persisted active campaign did not resume after restart.'
+    })
     await expect(
       await client.$(
         '[aria-label="Gekoppelte Grenze zwischen linker und rechter Spalte"]'

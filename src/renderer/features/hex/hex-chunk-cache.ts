@@ -5,6 +5,7 @@ import {
   type HexMapSummary,
   type HexMapView
 } from '../../../shared/contracts/hex.js'
+import { hexCapabilities } from './hex-capabilities.js'
 
 const chunkSize = 32
 const viewHalfExtent = 12
@@ -44,7 +45,7 @@ export async function readHexMapView(
     loadedContentRevision.get(map.id) === map.contentRevision &&
     keys.every((key) => mapCache?.has(keyId(key)))
   if (!warm) {
-    const result = await window.saltMarcher.hex.readChunks(map.id, keys)
+    const result = await hexCapabilities().hex.readChunks(map.id, keys)
     for (const chunk of result.chunks) absorbChunk(map.id, chunk)
     loadedContentRevision.set(map.id, result.map.contentRevision)
     return assemble(result.map, center)

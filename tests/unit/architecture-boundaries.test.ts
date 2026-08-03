@@ -160,6 +160,54 @@ describe('architecture boundaries', () => {
       ).toBeGreaterThan(0)
   })
 
+  it('gives every renderer feature a screen, hook, adapter and owned CSS', () => {
+    const screens = {
+      session: 'session-workspace.tsx',
+      catalog: 'catalog-workspace.tsx',
+      hex: 'hex-editor.tsx',
+      party: 'party-controls.tsx',
+      encounter: 'encounter-panels.tsx'
+    } as const
+    for (const [feature, screen] of Object.entries(screens)) {
+      const directory = `src/renderer/features/${feature}`
+      const files = readdirSync(directory)
+      expect(files).toContain(screen)
+      expect(files).toContain(`${feature}-capabilities.ts`)
+      expect(files).toContain(`${feature}.css`)
+      expect(
+        files.some(
+          (file) => file.startsWith('use-') || file.endsWith('-state.ts')
+        ),
+        `${feature} has no feature hook or reducer`
+      ).toBe(true)
+      for (const file of codeFiles(directory))
+        if (!file.endsWith(`${feature}-capabilities.ts`))
+          expect(
+            source(file),
+            `${file} bypasses its capability adapter`
+          ).not.toContain('window.saltMarcher')
+    }
+  })
+
+  it('keeps static UI copy behind typed message keys', () => {
+    const rendererFiles = [
+      ...codeFiles('src/renderer/features'),
+      'src/renderer/passive.tsx'
+    ].filter((file) => file.endsWith('.tsx'))
+    for (const file of rendererFiles) {
+      const content = source(file)
+      expect(content, `${file} contains static visible JSX copy`).not.toMatch(
+        />[^<>{\n]*[A-Za-zÄÖÜäöü][^<>{\n]*<\//
+      )
+      expect(
+        content,
+        `${file} contains a static accessibility label`
+      ).not.toMatch(
+        /(?:aria-label|title|placeholder)="[^"]*[A-Za-zÄÖÜäöü][^"]*"/
+      )
+    }
+  })
+
   it('uses one complete operation table across process boundaries', () => {
     const operations = [
       ...Object.values(coreOperations),
@@ -178,7 +226,22 @@ describe('architecture boundaries', () => {
     expect(
       source('src/main/application-lifecycle/capability-registration.ts')
     ).toContain('Object.entries(mainOperations)')
-    expect(source('src/utility/index.ts')).toContain('satisfies CoreHandlers')
+    const utility = source('src/utility/index.ts')
+    expect(utility).toContain('satisfies CoreHandlers')
+    for (const feature of [
+      'campaign',
+      'party',
+      'creature',
+      'worldPlanner',
+      'session',
+      'encounter',
+      'hex',
+      'travel',
+      'lifecycle'
+    ]) {
+      expect(utility).toContain(`const ${feature}Handlers =`)
+      expect(utility).toContain(`...${feature}Handlers`)
+    }
     const preloadInvocations = [
       source('src/preload/capability-bridge/index.ts'),
       source('src/preload/passive.ts')

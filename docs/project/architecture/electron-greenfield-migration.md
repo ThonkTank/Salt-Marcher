@@ -25,7 +25,11 @@ Automated architecture and normal-bundle budget gates protect these boundaries.
 Every renderer invocation is now declared in the shared operation contracts;
 Main lifecycle, registration, runtime observation and role resolution are
 separate modules. Renderer styling is split into tokens, shell and owning
-feature styles.
+feature styles. Session, Catalog, Hex, Party and Encounter each route through
+an owning capability adapter and keep asynchronous or reducer state in feature
+hooks. Static JSX copy and accessibility labels come from the typed German
+message catalog. The utility dispatcher composes typed aggregate-specific
+handler maps. Architecture tests prevent these boundaries from regressing.
 
 ## Decisions
 
