@@ -5,8 +5,12 @@ import type {
   Campaign,
   CampaignSnapshot
 } from '../../../shared/contracts/campaign.js'
-import { uuidv7 } from '../../../shared/ids/uuidv7.js'
 import { freezeCampaignSnapshot } from '../../../shared/contracts/campaign.js'
+import { uuidv7 } from '../../../shared/ids/uuidv7.js'
+import { initializePartySchema } from '../../party/party-store.js'
+import { initializeSceneSchema } from '../../scene/scene-store.js'
+import { initializeCombatSchema } from '../../encounter/live-combat.js'
+import { initializeWorldLocationSchema } from '../../worldplanner/location-store.js'
 
 export type CampaignCreatePhase =
   | 'before-registry-entry'
@@ -95,6 +99,12 @@ export class CampaignStore {
     this.installation.close()
   }
 
+  activeCampaignPath(): string {
+    const id = this.list().activeCampaignId
+    if (!id) throw new Error('Campaign not found')
+    return this.campaignPath(id)
+  }
+
   private addCreationStatusToPreCutoverStore(): void {
     const columns = this.installation
       .prepare('PRAGMA table_info(campaigns)')
@@ -114,6 +124,10 @@ export class CampaignStore {
     campaign.exec(
       'CREATE TABLE IF NOT EXISTS campaign_runtime (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL)'
     )
+    initializePartySchema(campaign)
+    initializeSceneSchema(campaign)
+    initializeCombatSchema(campaign)
+    initializeWorldLocationSchema(campaign)
     campaign.close()
   }
 

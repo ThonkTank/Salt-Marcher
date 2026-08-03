@@ -32,6 +32,18 @@ filters and Encounter-owned generation tuning.
   pool filters
 - all visible pool filters constrain candidate loading; selected Encounter
   tables are intersected with the filtered creature pool
+- choices within one source dimension form a union; explicitly selected table,
+  faction, and location dimensions intersect by creature ID
+- a location contributes direct tables and the primary tables of linked
+  factions; direct location-table membership is unlimited while faction
+  inventory may cap quantities
+- finite caps intersect by taking the smallest cap; any unlimited contribution
+  makes a unioned dimension unlimited
+- no effective table activates a visible catalog fallback, while an effective
+  but empty/filtered/capped pool returns no solution
+- summed weights rank unioned choices; intersections retain the lowest weight,
+  and deterministic seed selection uses weights only between otherwise
+  comparable balancing options
 - it does not expose saved plans, roster cards, initiative rows, combat
   runtime, or result state
 - it does not expose foreign creature, party, or encounter-table internals

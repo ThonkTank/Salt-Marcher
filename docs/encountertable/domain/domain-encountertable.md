@@ -6,7 +6,7 @@ Context Role: Reference Catalog Context
 Context Name: EncounterTable
 
 - `encountertable` publishes authored encounter-table membership as a
-  read-only reference catalog for generator candidate pools.
+  campaign-local authored catalog for generator candidate pools.
 - It does not own creature truth or loot truth.
 - It exposes encounter-table summaries and weighted candidate rows through
   `EncounterTableApi`.
@@ -42,8 +42,8 @@ and does not leak adapter exceptions through the API.
 
 Write Model: Encounter Table-owned authored membership rows in SQLite
 
-`EncounterTableApi` exposes no mutation workflow unless observable product
-requirements add one; storage ownership does not imply a public write API.
+`EncounterTableApi` exposes immutable revisioned snapshots plus create, update,
+and delete commands for table metadata and weighted membership.
 
 Derived state:
 
@@ -53,11 +53,12 @@ Derived state:
 
 ## Invariants
 
-- empty table selections produce no table candidates
+- no effective table produces an explicit catalog fallback; an effective empty
+  table produces an empty candidate pool
 - weights are normalized to the supported `1..10` range
 - generation candidates respect the supplied XP ceiling
-- selected table lookup must not additionally apply creature type, subtype, or
-  biome filters
+- the Encounter application layer intersects table membership with every
+  visible creature filter
 
 ## Foreign Boundaries
 

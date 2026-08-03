@@ -25,8 +25,10 @@ import {
 import {
   ContextRecoveryTracker,
   exerciseWebglContextLoss,
-  webgl2Description
+  webgl2Description,
+  webgl2Renderer
 } from './webgl-context.js'
+import type { ContextRecoveryObservation } from '../../shared/qualification/runtime-observation.js'
 import { type SpatialQualificationModel } from '../spatial-qualification-model.js'
 import {
   ListenerRegistrationTracker,
@@ -39,7 +41,9 @@ export function BabylonQualificationView({
   model,
   onResourcesCreated,
   onResourcesDisposed,
-  onPopulationComplete
+  onPopulationComplete,
+  onContextRecoveryChange,
+  onWebglReady
 }: {
   readonly model: SpatialQualificationModel
   readonly onResourcesCreated?: (
@@ -54,6 +58,13 @@ export function BabylonQualificationView({
     population: 'babylonCamera' | 'babylonHoverPick' | 'babylonVoxelPreview',
     samples: readonly number[]
   ) => void
+  readonly onContextRecoveryChange?: (
+    observation: ContextRecoveryObservation
+  ) => void
+  readonly onWebglReady?: (observation: {
+    readonly version: string
+    readonly renderer: string
+  }) => void
 }): ReactElement {
   const canvas = useRef<HTMLCanvasElement>(null)
   const downloadSamples = useRef<(() => void) | null>(null)
@@ -63,7 +74,10 @@ export function BabylonQualificationView({
     const element = canvas.current
     if (
       element === null ||
-      !exerciseWebglContextLoss(element, () => recovery.current.requested())
+      !exerciseWebglContextLoss(element, () => {
+        recovery.current.requested()
+        onContextRecoveryChange?.(recovery.current.observation)
+      })
     )
       setStatus(
         'This browser does not expose the WebGL context-loss test extension.'
@@ -87,6 +101,10 @@ export function BabylonQualificationView({
         )
         return
       }
+      onWebglReady?.({
+        version: webgl2Description(element) ?? 'unavailable',
+        renderer: webgl2Renderer(element) ?? 'unavailable'
+      })
       const scene = new Scene(engine)
       scene.clearColor = new Color4(0.047, 0.082, 0.075, 1)
       const camera = new ArcRotateCamera(
@@ -185,6 +203,7 @@ export function BabylonQualificationView({
       )
       const afterRenderObserver = scene.onAfterRenderObservable.add(() => {
         recovery.current.observedRerender()
+        onContextRecoveryChange?.(recovery.current.observation)
         collect(
           cameraTracker,
           cameraSampler,
@@ -222,6 +241,7 @@ export function BabylonQualificationView({
       const noteRecoveredInteraction = (): void => {
         const completedBefore = recovery.current.completedCycles
         recovery.current.observedNextInteraction()
+        onContextRecoveryChange?.(recovery.current.observation)
         if (recovery.current.completedCycles > completedBefore)
           setStatus(
             `3D context recovery cycle ${recovery.current.completedCycles} completed after a successful interaction.`
@@ -306,6 +326,7 @@ export function BabylonQualificationView({
       listeners.listen(element, 'pointermove', beginHoverMeasurement, true)
       const contextLostObserver = engine.onContextLostObservable.add(() => {
         recovery.current.observedLoss()
+        onContextRecoveryChange?.(recovery.current.observation)
         setStatus('3D graphics context lost; waiting for restoration.')
       })
       listeners.track(() =>
@@ -314,6 +335,7 @@ export function BabylonQualificationView({
       const contextRestoredObserver = engine.onContextRestoredObservable.add(
         () => {
           recovery.current.observedRestoration()
+          onContextRecoveryChange?.(recovery.current.observation)
           setStatus(
             '3D graphics context restored; move the camera, hover, or rebuild a preview to complete this cycle.'
           )
@@ -349,7 +371,14 @@ export function BabylonQualificationView({
       )
       return
     }
-  }, [model, onPopulationComplete, onResourcesCreated, onResourcesDisposed])
+  }, [
+    model,
+    onContextRecoveryChange,
+    onPopulationComplete,
+    onResourcesCreated,
+    onResourcesDisposed,
+    onWebglReady
+  ])
   return (
     <>
       <canvas

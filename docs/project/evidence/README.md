@@ -41,3 +41,31 @@ only a completed `pass` or `fail` artifact is admissible acceptance evidence.
 The schema and worksheet are generated from the executable Zod contract; run
 `pnpm qualify:render:artifacts` after changing it, and
 `pnpm qualify:render:artifacts:check` verifies the checked-in copies.
+
+## Runtime observations from the packaged app
+
+The rendering-qualification screen exports a versioned
+`m1-runtime-observation-v1` JSON file. It is the source for every non-manual
+renderer observation in the final evidence record: the four raw timing
+populations, display dimensions and DPR, both actual WebGL canvas versions and
+unmasked renderers, Chromium GPU feature status and active driver devices,
+software-rendering verdict, cumulative recovery milestones, and the complete
+resource-cycle result including working-set samples.
+
+For each configuration, start a **new app process** from the AppImage. Select
+the matching configuration only after confirming the display setup, perform
+five warm-ups and 100 recorded actions for each population, and download one
+complete runtime observation. Do this once for `normal` and, after changing to
+200% scaling and confirming the effective 1366 × 768 display, once for
+`scale200Percent`; never combine their populations.
+
+In the normal-display process also exercise each context-loss control 20 times,
+perform its indicated follow-up interaction after every restoration, then run
+the 20 renderer build/dispose cycles. Download the observation again after the
+resource run: its `resources` record includes the three working-set samples on
+each side and the concrete canvas, mesh, and listener counts before and after.
+If the process is interrupted, the scaling is wrong, a resource result is not
+settled, or a population is incomplete, discard that affected observation and
+repeat it in a fresh process. The only fields not supplied by observations are
+the keyboard journey, text-alternative journey, and screen-reader name,
+version, and result.

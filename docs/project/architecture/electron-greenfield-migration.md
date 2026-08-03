@@ -95,3 +95,42 @@ M1 cannot yet be accepted until the recorded integrated-GPU qualification and
 accessibility evidence is attached. This is a gate, not a reason to weaken the
 16-ms/50-ms budgets. Store reproducible measurements in
 `docs/project/evidence/`; track current CI state in the relevant pull request.
+
+## Approved vertical slice in progress
+
+The first running-play slice crosses the roadmap labels deliberately without
+claiming completion of M3 or M5. Its approved expansion contains:
+
+- the complete Party roster dropdown, Party membership, progression, rests,
+  and the separate Adventuring Day top-bar calculator
+- the productive Monster section of the common Catalog, backed by a versioned
+  local SRD 5.1 resource; the other Catalog sections remain later slices
+- one focused persistent runtime Scene with explicit PC assignments and named
+  GM creature groups; one two-pane builder combines the shared filtered
+  creature catalog, transient manual editing, live balancing, and fill-or-
+  replace generation before an explicit Scene save
+- a scenario dropdown for Encounter and read-only Reise; Encounter consumes
+  only selected Scene groups and owns difficulty evaluation, Initiative,
+  Combat, and Resolution, with the explicit no-loot state until Loot migrates
+- a persistent four-panel Session surface with one shared column divider and
+  an independent right-side Details/Scenario divider, focused-scene control,
+  scene-local detail history, inline statblocks, and an honest provider-ready
+  map/route-planning shell; Combat is persisted independently per running Scene
+- campaign-local World Planner location and faction CRUD plus authored
+  Encounter Tables in Catalog; locations link factions and tables, factions
+  own disposition, a primary table and optional finite inventory caps, while
+  Scene stores only a stable focused-location reference
+- one shared source resolver supplies both the visible Monster catalog and the
+  Scene-group generator with union-within/intersection-across semantics,
+  weighted deterministic ranking, finite caps, and explicit fallback/no-
+  solution behavior
+- Scene groups and Encounter Tables share one two-pane creature-collection
+  manager component rather than parallel look-alike dialogs; faction stock is
+  edited only from the selected table's creature membership
+
+Encounter-table, faction, and location filter controls appear only when their
+owning providers publish real options. NPC membership, loot links, and stock
+consumption remain later work. The slice uses only secure typed capabilities
+and utility-process-owned feature stores; it does not introduce copied creature
+truth, a Java compatibility layer, or claim that the open M1 qualification
+gate is complete.

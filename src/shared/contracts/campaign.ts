@@ -35,6 +35,7 @@ export function freezeCampaignSnapshot(
 
 export const capabilityErrorCodeSchema = z.enum([
   'validation_failed',
+  'stale',
   'not_found',
   'read_only',
   'timeout',

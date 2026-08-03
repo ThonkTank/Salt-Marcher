@@ -15,9 +15,9 @@ revision, the Standardszene ID, the focused-scene ID, scene identity allocation,
 and the collection of `RunningScene` records.
 
 Each `RunningScene` owns its title, notes, optional Session Planner provenance,
-an optional initial Encounter-plan reference, one optional World Planner
-location reference, ordered PC references, and ordered World Planner NPC
-references. Foreign IDs are references, not copied foreign entities.
+one optional World Planner location reference, ordered PC references, ordered
+World Planner NPC references, and ordered named creature groups. A group owns
+positive quantities of Creature catalog references, never copied statblocks.
 
 ## Invariants
 
@@ -27,6 +27,7 @@ references. Foreign IDs are references, not copied foreign entities.
 - A PC reference can occur in at most one running scene.
 - An NPC reference can occur in at most one running scene.
 - A running scene has zero or one location and any number of NPC references.
+- A running scene may have any number of named, non-empty creature groups.
 - Multiple running scenes may reference the same location.
 - Every prepared-scene import creates a new independent copy with provenance;
   importing the same prepared source again is valid and creates another copy.
@@ -53,6 +54,14 @@ IDs and foreign IDs after the Scene save. The persisted synchronization marker
 is derived operational state and does not transfer Encounter ownership.
 Foreign names, levels, lifecycle, and disposition are re-read from their owning
 features. Refresh removes Party IDs that are no longer active.
+
+Group editing and generation form one transient Scene application workflow. It
+supplies the current draft plus Scene context to the pure Encounter evaluation
+and generation rules and publishes one immutable full-roster result. Fill
+generation treats existing draft entries as fixed input; replacement generation
+starts from an empty roster. Only explicit save creates or updates Scene-owned
+group truth; filters, tuning, diagnostics, and an unaccepted draft are not
+persisted.
 
 ## References
 
