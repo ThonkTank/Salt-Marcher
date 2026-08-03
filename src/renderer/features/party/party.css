@@ -121,4 +121,5 @@
 .danger {
   border-color: var(--border-danger);
   background: var(--surface-danger);
+  color: var(--text-on-accent);
 }
