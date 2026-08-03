@@ -7,16 +7,31 @@ import {
 import { coreProcessStatusSchema } from '../shared/contracts/runtime.js'
 import { capabilityFailureSchema } from '../shared/contracts/campaign.js'
 import { CapabilityError } from '../shared/errors/capability-error.js'
+import {
+  coreOperations,
+  mainOperationForChannel,
+  mainOperations
+} from '../shared/contracts/operations.js'
 
 const responseSchema = z.discriminatedUnion('ok', [
   z.object({ ok: z.literal(true), payload: z.unknown() }).strict(),
   z.object({ ok: z.literal(false), error: capabilityFailureSchema }).strict()
 ])
 
-const api: PassiveDisplayApi = {
+type PassiveE2eApi = PassiveDisplayApi & {
+  __e2eProbePrivilegedChannels?: () => Promise<
+    Readonly<Record<string, boolean>>
+  >
+}
+
+const api: PassiveE2eApi = {
   async readProjection() {
+    const operation = coreOperations['projection.read']
     const result = responseSchema.parse(
-      await ipcRenderer.invoke('projection:read')
+      await ipcRenderer.invoke(
+        operation.channel!,
+        operation.input.parse(undefined)
+      )
     )
     if (!result.ok)
       throw new CapabilityError(
@@ -33,8 +48,11 @@ const api: PassiveDisplayApi = {
     return () => ipcRenderer.removeListener('projection:changed', handler)
   },
   async coreStatus() {
+    const operation = mainOperationForChannel('runtime:core-status')
+    if (operation === null || operation[1].channel === null)
+      throw new CapabilityError('protocol_violation', false)
     return coreProcessStatusSchema.parse(
-      await ipcRenderer.invoke('runtime:core-status')
+      await ipcRenderer.invoke(operation[1].channel, undefined)
     )
   },
   onCoreStatus(listener) {
@@ -43,6 +61,50 @@ const api: PassiveDisplayApi = {
     ipcRenderer.on('runtime:core-status-changed', handler)
     return () =>
       ipcRenderer.removeListener('runtime:core-status-changed', handler)
+  }
+}
+
+if (process.argv.includes('--passive-e2e-probe')) {
+  api.__e2eProbePrivilegedChannels = async () => {
+    const definitions = [
+      ...Object.values(coreOperations),
+      ...Object.values(mainOperations)
+    ]
+    const privilegedChannels = definitions
+      .filter(
+        (definition) =>
+          definition.channel !== null &&
+          definition.roles.includes('gm') &&
+          !definition.roles.includes('passive')
+      )
+      .map((definition) => definition.channel!)
+    return Object.freeze(
+      Object.fromEntries(
+        await Promise.all(
+          privilegedChannels.map(async (channel) => {
+            try {
+              const result: unknown = await ipcRenderer.invoke(
+                channel,
+                undefined
+              )
+              const rejected =
+                result !== null &&
+                typeof result === 'object' &&
+                'ok' in result &&
+                result.ok === false &&
+                'error' in result &&
+                result.error !== null &&
+                typeof result.error === 'object' &&
+                'code' in result.error &&
+                result.error.code === 'read_only'
+              return [channel, rejected] as const
+            } catch {
+              return [channel, true] as const
+            }
+          })
+        )
+      )
+    )
   }
 }
 

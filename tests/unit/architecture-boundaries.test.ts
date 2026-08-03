@@ -1,7 +1,10 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join, normalize, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { coreOperations } from '../../src/shared/contracts/operations.js'
+import {
+  coreOperations,
+  mainOperations
+} from '../../src/shared/contracts/operations.js'
 
 const source = (path: string) => readFileSync(join(process.cwd(), path), 'utf8')
 
@@ -100,7 +103,7 @@ describe('architecture boundaries', () => {
     expect(windowSource).toContain("'passive.js'")
     expect(windowSource).toContain("'passive.html'")
     expect(preload).not.toMatch(/campaign:|session:read|hex:|settings:/)
-    expect(preload).toContain("'projection:read'")
+    expect(preload).toContain("coreOperations['projection.read']")
     expect(preload).toContain("'runtime:core-status'")
   })
 
@@ -146,20 +149,47 @@ describe('architecture boundaries', () => {
     expect(hexLines).toBeLessThan(1_000)
   })
 
+  it('keeps renderer styling in tokens, shell and owning features', () => {
+    expect(
+      source('src/renderer/shell/app.css').split('\n').length
+    ).toBeLessThan(600)
+    for (const feature of ['session', 'party', 'catalog', 'encounter', 'hex'])
+      expect(
+        source(`src/renderer/features/${feature}/${feature}.css`).trim().length,
+        `${feature} owns no feature styles`
+      ).toBeGreaterThan(0)
+  })
+
   it('uses one complete operation table across process boundaries', () => {
-    const channels = Object.values(coreOperations)
+    const operations = [
+      ...Object.values(coreOperations),
+      ...Object.values(mainOperations)
+    ]
+    const channels = operations
       .map((operation) => operation.channel)
       .filter((channel) => channel !== null)
     expect(new Set(channels).size).toBe(channels.length)
     expect(
-      Object.values(coreOperations).every(
-        (operation) => operation.deadlineMs === 10_000
-      )
+      operations.every((operation) => operation.deadlineMs === 10_000)
     ).toBe(true)
-    expect(source('src/main/application-lifecycle/application.ts')).toContain(
-      'Object.entries(coreOperations)'
-    )
+    expect(
+      source('src/main/application-lifecycle/capability-registration.ts')
+    ).toContain('Object.entries(coreOperations)')
+    expect(
+      source('src/main/application-lifecycle/capability-registration.ts')
+    ).toContain('Object.entries(mainOperations)')
     expect(source('src/utility/index.ts')).toContain('satisfies CoreHandlers')
+    const preloadInvocations = [
+      source('src/preload/capability-bridge/index.ts'),
+      source('src/preload/passive.ts')
+    ]
+      .join('\n')
+      .matchAll(/ipcRenderer\.invoke\(['"]([^'"]+)['"]/g)
+    for (const match of preloadInvocations)
+      expect(
+        channels,
+        `preload invokes undefined channel ${match[1]}`
+      ).toContain(match[1])
   })
 
   it('opens schemas once and never migrates normal commands', () => {

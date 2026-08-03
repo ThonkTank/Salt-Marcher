@@ -34,9 +34,11 @@ import {
   updatePartyCharacterInputSchema
 } from '../../shared/contracts/party.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
-import { runtimeGpuObservationSchema } from '../../shared/qualification/runtime-observation.js'
 import type { SaltMarcherApi } from '../../shared/contracts/capability-api.js'
-import { operationForChannel } from '../../shared/contracts/operations.js'
+import {
+  mainOperationForChannel,
+  operationForChannel
+} from '../../shared/contracts/operations.js'
 import {
   assignScenePartyInputSchema,
   deleteSceneGroupInputSchema,
@@ -50,7 +52,10 @@ import {
   sceneGroupDraftGenerationRequestSchema,
   sceneGroupDraftGenerationSchema
 } from '../../shared/contracts/scene.js'
-import { coreProcessStatusSchema } from '../../shared/contracts/runtime.js'
+import {
+  coreProcessStatusSchema,
+  type CoreProcessStatus
+} from '../../shared/contracts/runtime.js'
 import { sessionChangeNoticeSchema } from '../../shared/contracts/session-change.js'
 import {
   installationPreferencesSchema,
@@ -125,6 +130,21 @@ async function invoke<T>(
     const value = schema.safeParse(result.payload)
     if (!value.success) throw new CapabilityError('protocol_violation', false)
     return value.data!
+  } catch (error) {
+    if (error instanceof CapabilityError) throw error
+    throw new CapabilityError('core_unavailable', true)
+  }
+}
+
+async function invokeMain<T>(channel: string, input: unknown): Promise<T> {
+  const operation = mainOperationForChannel(channel)
+  if (operation === null) throw new CapabilityError('protocol_violation', false)
+  const request = operation[1].input.safeParse(input)
+  if (!request.success) throw new CapabilityError('validation_failed', false)
+  try {
+    return operation[1].output.parse(
+      await ipcRenderer.invoke(operation[1].channel!, request.data)
+    ) as T
   } catch (error) {
     if (error instanceof CapabilityError) throw error
     throw new CapabilityError('core_unavailable', true)
@@ -677,33 +697,18 @@ const api: SaltMarcherApi = {
   runtime: Object.freeze({
     readOnly: process.argv.includes('--salt-marcher-read-only'),
     e2e: process.argv.includes('--salt-marcher-e2e'),
-    async processMemoryBytes() {
-      const value: unknown = await ipcRenderer.invoke('runtime:memory')
-      return z.number().nonnegative().parse(value)
-    },
-    async gpuObservation() {
-      return runtimeGpuObservationSchema.parse(
-        await ipcRenderer.invoke('runtime:gpu-observation')
-      )
-    },
-    async coreStatus() {
-      return coreProcessStatusSchema.parse(
-        await ipcRenderer.invoke('runtime:core-status')
-      )
-    },
-    async retryCore() {
-      return coreProcessStatusSchema.parse(
-        await ipcRenderer.invoke('runtime:retry-core')
-      )
-    },
-    onCoreStatus(listener) {
+    processMemoryBytes: () => invokeMain<number>('runtime:memory', undefined),
+    gpuObservation: () => invokeMain('runtime:gpu-observation', undefined),
+    coreStatus: () => invokeMain('runtime:core-status', undefined),
+    retryCore: () => invokeMain('runtime:retry-core', undefined),
+    onCoreStatus(listener: (status: CoreProcessStatus) => void) {
       const handler = (_event: Electron.IpcRendererEvent, raw: unknown) =>
         listener(coreProcessStatusSchema.parse(raw))
       ipcRenderer.on('runtime:core-status-changed', handler)
       return () =>
         ipcRenderer.removeListener('runtime:core-status-changed', handler)
     }
-  })
+  } satisfies SaltMarcherApi['runtime'])
 }
 
 contextBridge.exposeInMainWorld('saltMarcher', Object.freeze(api))

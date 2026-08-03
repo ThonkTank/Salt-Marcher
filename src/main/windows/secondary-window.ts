@@ -16,7 +16,9 @@ export function createSecondaryWindow(): BrowserWindow {
       contextIsolation: true,
       nodeIntegration: false,
       webSecurity: true,
-      additionalArguments: []
+      additionalArguments: process.argv.includes('--passive-e2e')
+        ? ['--passive-e2e-probe']
+        : []
     }
   })
   readOnlyContents.add(window.webContents)

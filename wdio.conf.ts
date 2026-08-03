@@ -37,5 +37,5 @@ export const config = {
   logLevel: process.env['WDIO_LOG_LEVEL'] ?? 'warn',
   framework: 'mocha',
   reporters: ['spec'],
-  mochaOpts: { ui: 'bdd', timeout: 45_000 }
+  mochaOpts: { ui: 'bdd', timeout: 90_000 }
 }

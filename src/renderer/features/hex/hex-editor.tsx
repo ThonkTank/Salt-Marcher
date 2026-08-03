@@ -15,6 +15,7 @@ import {
   readHexMapView
 } from './hex-chunk-cache.js'
 import { HexMapCanvas } from './hex-map-canvas.js'
+import './hex.css'
 
 export default function HexEditor(props: {
   onError: (message: string) => void
@@ -197,7 +198,7 @@ export default function HexEditor(props: {
           </>
         )}
       </aside>
-      <main className="hex-editor-map">
+      <section className="hex-editor-map" aria-label="Kartenansicht">
         {map ? (
           <HexMapCanvas
             snapshot={map}
@@ -214,7 +215,7 @@ export default function HexEditor(props: {
         ) : (
           <div className="session-map-empty">Erstelle eine Hex-Karte.</div>
         )}
-      </main>
+      </section>
       <aside className="hex-editor-state">
         <h2>Hexfeld</h2>
         {tile ? (

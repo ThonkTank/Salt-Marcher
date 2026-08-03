@@ -35,6 +35,7 @@ import {
   useCreatureSearch
 } from '../catalog/catalog-state.js'
 import { CreatureInspector } from '../catalog/creature-inspector.js'
+import './session.css'
 
 export default function SessionWorkspace(props: {
   snapshot: LiveSessionSnapshot
@@ -547,7 +548,7 @@ export function CreatureCollectionCatalogPane(props: {
               <th>CR</th>
               <th>Typ</th>
               <th>XP</th>
-              <th />
+              <th>Aktionen</th>
             </tr>
           </thead>
           <tbody>

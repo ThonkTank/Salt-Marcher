@@ -31,9 +31,10 @@ interrupted reads fail retryably, while an interrupted write reports
 bounded backoff and the still-responsive shell exposes explicit recovery after
 the retry budget is exhausted.
 
-The passive second-monitor window uses a separate fail-closed preload. Until a
-party-safe projection has an explicit product contract, that preload exposes
-no IPC capability at all and therefore no Campaign read or write capability.
+The passive second-monitor window uses a separate fail-closed preload. It
+exposes only the typed party-safe projection read/change notification and Core
+status; Main rejects every privileged GM capability from that window role
+before validating input or reaching the utility process.
 
 ## Source shape
 
@@ -41,9 +42,10 @@ no IPC capability at all and therefore no Campaign read or write capability.
 src/
 ├── main/{application-lifecycle,windows,security,core-process}
 ├── preload/capability-bridge
-├── core/{domain,application,persistence/sqlite,generation,workers}
+├── utility
+├── core/{application,encounter,hex,party,persistence,scene,worldplanner}
 ├── renderer/{shell,features,spatial-2d,spatial-3d}
-└── shared/{contracts,ids,errors,testing}
+└── shared/{contracts,ids,errors,qualification}
 ```
 
 Electron, React, TypeScript, `electron-vite`, `electron-builder`, PixiJS,
@@ -51,6 +53,11 @@ Babylon.js, `better-sqlite3`, Zod, Vitest, Testing Library, WebdriverIO and
 axe-core are mandatory parts of the target stack. Electron is pinned to one
 stable version at installation time. WebGL 2 is the rendering baseline;
 WebGPU is optional acceleration only.
+
+All renderer-to-Main invocations are declared in
+`src/shared/contracts/operations.ts` with channel, validated input/output,
+read/write mode, allowed window roles and deadline. Core kinds use the same
+table to type the supervisor protocol and the exhaustive utility handler map.
 
 ## Data ownership
 

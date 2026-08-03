@@ -9,11 +9,11 @@ secure Electron shell, utility-process SQLite
 campaign skeleton, and Pixi/Babylon prototypes are present. Typecheck, lint,
 unit/integration tests, build, headless Electron smoke test, and Linux AppImage
 packaging pass locally. The project has a WebdriverIO Electron journey and
-axe-core is part of the target test stack; CI runs native packaging on all
-three target systems plus the Linux E2E gate. Remaining M1 acceptance evidence
-is the measured RP-H p95,
-context-loss, 200%-scale, screen-reader, and axe matrix recorded in
-`m1-render-qualification.md`.
+axe-core now covers Campaign, Session, Catalog, Hex and dialogs in both themes,
+plus the automated 200%-scale and pseudo-locale journeys. CI runs native
+packaging on all three target systems plus the Linux E2E gate. Remaining M1
+acceptance evidence is the measured RP-H p95, context-loss, real 200%-scale and
+screen-reader qualification recorded in `m1-render-qualification.md`.
 
 The qualification harness is now a separate renderer entry and Babylon is no
 longer copied wholesale into the normal application. Runtime hardening now
@@ -22,6 +22,10 @@ restart, typed failures, one SQLite development schema version and connection
 policy, SQLite-owned installation preferences, utility-driven Hex travel,
 unbounded sparse Hex viewports, and a dedicated fail-closed passive preload.
 Automated architecture and normal-bundle budget gates protect these boundaries.
+Every renderer invocation is now declared in the shared operation contracts;
+Main lifecycle, registration, runtime observation and role resolution are
+separate modules. Renderer styling is split into tokens, shell and owning
+feature styles.
 
 ## Decisions
 

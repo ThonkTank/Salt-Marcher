@@ -7,6 +7,7 @@ import type {
   LiveSessionSnapshot
 } from '../../../shared/contracts/live-session.js'
 import { errorText } from '../catalog/catalog-state.js'
+import './encounter.css'
 
 type ScenarioProps = {
   snapshot: LiveSessionSnapshot

@@ -134,11 +134,11 @@ export function WorkspaceApp() {
 
   const heading = active
     ? workspace === 'catalog'
-      ? 'Katalog'
+      ? message('nav.catalog')
       : workspace === 'hex'
-        ? 'Hex-Editor'
-        : 'Session'
-    : 'Kampagnen'
+        ? message('nav.hex')
+        : message('nav.session')
+    : message('nav.campaigns')
 
   return (
     <main className="app-shell">
@@ -160,15 +160,22 @@ export function WorkspaceApp() {
         </div>
       )}
       <header className="top-bar">
-        <button className="menu-button" aria-label="Menü" title="Menü">
+        <button
+          className="menu-button"
+          aria-label={message('app.menu')}
+          title={message('app.menu')}
+        >
           <span aria-hidden="true">☰</span>
         </button>
         {active && session && (
           <>
-            <nav className="shell-quick-actions" aria-label="Sitzungssteuerung">
-              <button>Zeit</button>
-              <button>Wetter</button>
-              <button>Musik</button>
+            <nav
+              className="shell-quick-actions"
+              aria-label={message('app.sessionControls')}
+            >
+              <button>{message('quick.time')}</button>
+              <button>{message('quick.weather')}</button>
+              <button>{message('quick.music')}</button>
             </nav>
             <AdventuringDayDropdown
               party={session.party}
@@ -192,28 +199,32 @@ export function WorkspaceApp() {
           <h1>{heading}</h1>
         </div>
         <p className="top-bar-status">
-          {active ? 'Live-Session' : 'Kampagne auswählen oder erstellen'}
+          {active
+            ? message('campaign.statusActive')
+            : message('campaign.statusChoose')}
         </p>
         <button
           className="theme-toggle"
           aria-label={
             theme === 'dark'
-              ? 'Zum Pergamentmodus wechseln'
-              : 'Zum Kerzenlichtmodus wechseln'
+              ? message('theme.toLight')
+              : message('theme.toDark')
           }
-          title={theme === 'dark' ? 'Tageslicht' : 'Kerzenlicht'}
+          title={
+            theme === 'dark' ? message('theme.light') : message('theme.dark')
+          }
           aria-pressed={theme === 'dark'}
           onClick={toggleTheme}
         >
-          {theme === 'dark' ? 'Tageslicht' : 'Kerzenlicht'}
+          {theme === 'dark' ? message('theme.light') : message('theme.dark')}
         </button>
       </header>
       <div className="shell-body">
-        <nav className="icon-bar" aria-label="Arbeitsbereiche">
+        <nav className="icon-bar" aria-label={message('app.workspaces')}>
           <button
             className="icon-button"
-            aria-label="Kampagnen"
-            title="Kampagnen"
+            aria-label={message('nav.campaigns')}
+            title={message('nav.campaigns')}
             aria-pressed={!active}
             onClick={() => {
               setCampaigns({ ...campaigns, activeCampaignId: null })
@@ -226,8 +237,8 @@ export function WorkspaceApp() {
             <>
               <button
                 className="icon-button"
-                aria-label="Session"
-                title="Session"
+                aria-label={message('nav.session')}
+                title={message('nav.session')}
                 aria-pressed={workspace === 'session'}
                 onClick={() => setWorkspace('session')}
               >
@@ -235,8 +246,8 @@ export function WorkspaceApp() {
               </button>
               <button
                 className="icon-button"
-                aria-label="Hex-Editor"
-                title="Hex-Editor"
+                aria-label={message('nav.hex')}
+                title={message('nav.hex')}
                 aria-pressed={workspace === 'hex'}
                 onClick={() => setWorkspace('hex')}
               >
@@ -244,8 +255,8 @@ export function WorkspaceApp() {
               </button>
               <button
                 className="icon-button"
-                aria-label="Katalog"
-                title="Katalog"
+                aria-label={message('nav.catalog')}
+                title={message('nav.catalog')}
                 aria-pressed={workspace === 'catalog'}
                 onClick={() => setWorkspace('catalog')}
               >
@@ -330,9 +341,9 @@ function CampaignChooser(props: {
   return (
     <section className="workspace-panel campaign-panel">
       <div>
-        <p className="section-kicker">Kampagnenarchiv</p>
-        <h2>Kampagne auswählen</h2>
-        <p>Eine neue Kampagne beginnen oder eine bestehende fortsetzen.</p>
+        <p className="section-kicker">{message('campaign.archive')}</p>
+        <h2>{message('campaign.choose')}</h2>
+        <p>{message('campaign.intro')}</p>
       </div>
       <form
         onSubmit={(event) => void props.createCampaign(event)}
@@ -340,13 +351,13 @@ function CampaignChooser(props: {
       >
         <input
           id="campaign-name"
-          aria-label="Kampagnenname"
-          placeholder="Kampagnenname"
+          aria-label={message('campaign.name')}
+          placeholder={message('campaign.name')}
           required
           value={props.name}
           onChange={(event) => props.setName(event.target.value)}
         />
-        <button>Kampagne erstellen</button>
+        <button>{message('action.createCampaign')}</button>
       </form>
       <div className="campaigns">
         {props.campaigns.campaigns.map((campaign) => (

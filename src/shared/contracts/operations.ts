@@ -85,6 +85,8 @@ import {
   updateInstallationSettingsInputSchema
 } from './settings.js'
 import { passiveProjectionSchema } from './passive-display.js'
+import { coreProcessStatusSchema } from './runtime.js'
+import { runtimeGpuObservationSchema } from '../qualification/runtime-observation.js'
 
 export type OperationMode = 'read' | 'write'
 export type WindowRole = 'gm' | 'passive' | 'qualification'
@@ -425,7 +427,40 @@ export const coreOperations = {
   'core.shutdown': write(null, none, z.unknown(), [])
 } as const
 
+/**
+ * Main-owned capabilities use the same contract shape as Core operations.
+ * Keeping them here means every renderer invocation has one authoritative
+ * channel, input, output, mode, role and deadline definition.
+ */
+export const mainOperations = {
+  'runtime.memory': read(
+    'runtime:memory',
+    none,
+    z.number().int().nonnegative(),
+    ['gm', 'qualification']
+  ),
+  'runtime.gpuObservation': read(
+    'runtime:gpu-observation',
+    none,
+    runtimeGpuObservationSchema,
+    ['gm', 'qualification']
+  ),
+  'runtime.coreStatus': read(
+    'runtime:core-status',
+    none,
+    coreProcessStatusSchema,
+    ['gm', 'passive', 'qualification']
+  ),
+  'runtime.retryCore': write(
+    'runtime:retry-core',
+    none,
+    coreProcessStatusSchema,
+    ['gm', 'qualification']
+  )
+} as const
+
 export type CoreOperationKind = keyof typeof coreOperations
+export type MainOperationKind = keyof typeof mainOperations
 export type CoreOperationInput<K extends CoreOperationKind> = z.output<
   (typeof coreOperations)[K]['input']
 >
@@ -445,5 +480,16 @@ export function operationForChannel(
   for (const [kind, definition] of Object.entries(coreOperations))
     if (definition.channel === channel)
       return [kind as CoreOperationKind, definition] as const
+  return null
+}
+
+export function mainOperationForChannel(
+  channel: string
+):
+  | readonly [MainOperationKind, (typeof mainOperations)[MainOperationKind]]
+  | null {
+  for (const [kind, definition] of Object.entries(mainOperations))
+    if (definition.channel === channel)
+      return [kind as MainOperationKind, definition] as const
   return null
 }

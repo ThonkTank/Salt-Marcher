@@ -31,8 +31,8 @@
   --sm-tan-line: #8a6a3e;
   --sm-ink: #241a10;
   --sm-ink-2: #4a3520;
-  --sm-ink-3: #6f5c44;
-  --sm-ink-4: #7a6444;
+  --sm-ink-3: #57442e;
+  --sm-ink-4: #685136;
   --sm-zinnober: #8a2418;
   --sm-zinnober-2: #9b4a37;
   --sm-gold: #b8862b;
@@ -48,7 +48,7 @@
   --sm-candle: #ecdcb8;
   --sm-candle-2: #d6c49c;
   --sm-candle-3: #a89275;
-  --sm-candle-4: #8d7a58;
+  --sm-candle-4: #a18c68;
   --sm-goldink: #d4a94b;
   --sm-goldink-2: #e8c882;
   --sm-seal: #c94a32;
@@ -92,7 +92,7 @@
   --text-3: var(--sm-ink-3);
   --text-muted: var(--sm-ink-4);
   --text-on-accent: #f8eed6;
-  --text-eyebrow: #8a6234;
+  --text-eyebrow: #70451f;
 
   --accent-rubric: var(--sm-zinnober);
   --accent-rubric-line: var(--sm-zinnober-2);

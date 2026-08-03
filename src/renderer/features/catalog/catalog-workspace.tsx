@@ -652,7 +652,7 @@ function EncounterTableCatalog(props: {
               <th>Name</th>
               <th>Einträge</th>
               <th>Beschreibung</th>
-              <th />
+              <th>Aktionen</th>
             </tr>
           </thead>
           <tbody>
@@ -1065,7 +1065,7 @@ function FactionCatalog(props: {
               <th>Gesinnung</th>
               <th>Primärtabelle</th>
               <th>Bestand</th>
-              <th />
+              <th>Aktionen</th>
             </tr>
           </thead>
           <tbody>

@@ -1,5 +1,6 @@
 import type { Creature } from '../../../shared/contracts/encounter.js'
 import { IlluminatedHeading } from '../../shell/illuminated-heading.js'
+import './catalog.css'
 
 export function CreatureInspector(props: {
   creature: Creature

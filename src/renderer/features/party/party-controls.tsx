@@ -6,6 +6,7 @@ import type {
   PartyCharacterDraft
 } from '../../../shared/contracts/party.js'
 import { errorText } from '../catalog/catalog-state.js'
+import './party.css'
 
 export function AdventuringDayDropdown(props: {
   party: PartySnapshot

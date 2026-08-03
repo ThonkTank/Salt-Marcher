@@ -13,6 +13,7 @@ import { HexMapCanvas } from './hex-map-canvas.js'
 import { readHexMapView } from './hex-chunk-cache.js'
 import { capabilityErrorMessage } from '../../i18n/messages.de.js'
 import { capabilityErrorCode } from '../../../shared/errors/capability-error.js'
+import './hex.css'
 
 export function TravelScenario(props: {
   snapshot: LiveSessionSnapshot

@@ -1,6 +1,7 @@
 import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import './passive/passive.css'
+import { message } from './i18n/messages.de.js'
 
 declare global {
   interface Window {
@@ -27,12 +28,9 @@ export function PassiveDisplay() {
   return (
     <main>
       <p className="eyebrow">SaltMarcher</p>
-      <h1>Passive Anzeige</h1>
+      <h1>{message('passive.heading')}</h1>
       {projection?.campaignId === null ? (
-        <p>
-          Eine party-sichere Projektion wurde noch nicht ausgewählt. Bis dahin
-          bleiben Kampagnen- und GM-Daten verborgen.
-        </p>
+        <p>{message('passive.intro')}</p>
       ) : (
         <section>
           <h2>{projection?.title}</h2>
@@ -45,8 +43,8 @@ export function PassiveDisplay() {
       )}
       <p className="status">
         {projection?.campaignId === null
-          ? 'Keine Datenfreigabe aktiv'
-          : 'Freigegebene Projektion'}{' '}
+          ? message('passive.empty')
+          : message('passive.shared')}{' '}
         · Core {coreStatus}
       </p>
     </main>

@@ -1,5 +1,9 @@
 import { browser, expect } from '@wdio/globals'
 import type { Browser as WdioBrowser } from 'webdriverio'
+import {
+  coreOperations,
+  mainOperations
+} from '../../src/shared/contracts/operations.js'
 
 describe('passive display isolation', () => {
   it('never renders a GM sentinel and exposes only the empty projection', async () => {
@@ -32,10 +36,45 @@ describe('passive display isolation', () => {
         'GM-SENTINEL-DO-NOT-LEAK'
       )
     ).toBe(false)
-    expect(
-      (await (await client.$('.status')).getText()).includes(
-        'Keine Datenfreigabe aktiv'
+    await client.waitUntil(
+      async () =>
+        (await (await client.$('.status')).getText()).includes(
+          'Keine Datenfreigabe aktiv'
+        ),
+      {
+        timeout: 5_000,
+        timeoutMsg: 'Passive projection did not settle to its safe empty state.'
+      }
+    )
+
+    const probe = await client.execute(async () => {
+      const api = (
+        window as unknown as {
+          saltMarcherPassive: {
+            __e2eProbePrivilegedChannels?: () => Promise<
+              Record<string, boolean>
+            >
+          }
+        }
+      ).saltMarcherPassive as {
+        __e2eProbePrivilegedChannels?: () => Promise<Record<string, boolean>>
+      }
+      return api.__e2eProbePrivilegedChannels?.()
+    })
+    const expectedChannels = [
+      ...Object.values(coreOperations),
+      ...Object.values(mainOperations)
+    ]
+      .filter(
+        (definition) =>
+          definition.channel !== null &&
+          definition.roles.includes('gm') &&
+          !definition.roles.includes('passive')
       )
-    ).toBe(true)
+      .map((definition) => definition.channel!)
+      .sort()
+    expect(Object.keys(probe ?? {}).sort()).toEqual(expectedChannels)
+    expect(Object.values(probe ?? {}).every(Boolean)).toBe(true)
+    expect(JSON.stringify(probe)).not.toContain('GM-SENTINEL-DO-NOT-LEAK')
   })
 })

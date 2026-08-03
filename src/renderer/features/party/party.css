@@ -1,0 +1,124 @@
+.day-panel {
+  width: min(21rem, calc(100vw - 1rem));
+}
+
+.day-summary {
+  display: grid;
+  gap: 0.2rem;
+  border: 1px solid var(--border-1);
+  background: var(--surface-control);
+  padding: 0.75rem;
+}
+
+.day-summary strong {
+  font-size: 1.25rem;
+}
+
+.day-rows,
+.day-timeline {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.day-rows li {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  align-items: end;
+  gap: 0.35rem;
+}
+
+.day-rows label {
+  display: grid;
+  gap: 0.2rem;
+  color: var(--text-3);
+  font-size: 0.7rem;
+}
+
+.day-rows input {
+  min-width: 0;
+  width: 100%;
+}
+
+.day-timeline {
+  border-left: 2px solid var(--accent-gold);
+  padding-left: 0.65rem;
+  color: var(--text-2);
+  font-size: 0.75rem;
+}
+
+.party-character-card {
+  display: grid !important;
+  align-items: stretch !important;
+}
+
+.party-card-main,
+.party-editor {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.party-card-actions,
+.party-rest-actions,
+.editor-numbers,
+.save-row,
+.tuning-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.party-card-actions span {
+  flex: 1;
+  color: var(--text-3);
+  font-size: 0.75rem;
+}
+
+.party-card-actions button,
+.party-rest-actions button,
+.xp-popover button {
+  padding: 0.3rem 0.45rem;
+  font-size: 0.75rem;
+}
+
+.xp-popover {
+  display: flex;
+  gap: 0.3rem;
+  border-top: 1px solid var(--border-1);
+  padding-top: 0.45rem;
+}
+
+.xp-popover input {
+  min-width: 0;
+  width: 5rem;
+}
+
+.party-editor {
+  position: sticky;
+  z-index: 2;
+  bottom: 0;
+  border: 1px solid var(--border-structural);
+  border-radius: var(--radius-0);
+  background: var(--surface-button);
+  box-shadow: var(--shadow-editor);
+  padding: 0.75rem;
+}
+
+.party-editor footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.editor-numbers input {
+  min-width: 5rem;
+  flex: 1;
+}
+
+.danger {
+  border-color: var(--border-danger);
+  background: var(--surface-danger);
+}

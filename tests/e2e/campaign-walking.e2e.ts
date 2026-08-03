@@ -7,20 +7,7 @@ describe('campaign walking skeleton', () => {
     const client = browser as unknown as WdioBrowser
     const field = await client.$('#campaign-name')
     await waitForCampaignInput(client, field)
-    const accessibility = await new AxeBuilder({ client })
-      .setLegacyMode()
-      .analyze()
-    expect(accessibility.violations).toHaveLength(0)
-    await (
-      await client.$('button[aria-label="Zum Kerzenlichtmodus wechseln"]')
-    ).click()
-    const darkAccessibility = await new AxeBuilder({ client })
-      .setLegacyMode()
-      .analyze()
-    expect(darkAccessibility.violations).toHaveLength(0)
-    await (
-      await client.$('button[aria-label="Zum Pergamentmodus wechseln"]')
-    ).click()
+    await expectAccessibleInBothThemes(client)
     await field.setValue('Campaign A')
     await (await client.$('button=Kampagne erstellen')).click()
     await expect(await client.$('h1=Session')).toBeExisting()
@@ -34,6 +21,7 @@ describe('campaign walking skeleton', () => {
     await expect(
       await client.$('aside[aria-label="Szenario Panel"]')
     ).toBeExisting()
+    await expectAccessibleInBothThemes(client)
     await (await client.$('button=Karte')).click()
     await expect(await client.$('strong=Keine Hex-Karte')).toBeExisting()
     await (await client.$('button=Details')).click()
@@ -83,6 +71,14 @@ describe('campaign walking skeleton', () => {
     ).toBeExisting()
 
     await expectHexEditorLayout(client)
+    await expectAccessibleInBothThemes(client)
+    await client.execute(() => {
+      document.documentElement.style.zoom = '2'
+    })
+    await expectAccessible(client)
+    await client.execute(() => {
+      document.documentElement.style.zoom = ''
+    })
     await (
       await client.$('button[aria-label="Zum Kerzenlichtmodus wechseln"]')
     ).click()
@@ -228,10 +224,12 @@ describe('campaign walking skeleton', () => {
       timeoutMsg: 'Filtered Wolf catalog row was not rendered.'
     })
     await expect(await client.$('button=+ Encounter')).not.toBeExisting()
+    await expectAccessibleInBothThemes(client)
 
     await (await client.$('button[aria-label="Session"]')).click()
     await (await client.$('button=Gruppen managen')).click()
     await (await client.$('button=Neue Gruppe')).click()
+    await expectAccessibleInBothThemes(client)
     await (
       await client.$('input[aria-label="Gruppenname"]')
     ).setValue('Wolf Pack')
@@ -259,7 +257,39 @@ describe('campaign walking skeleton', () => {
     await prepare.click()
     await expect(await client.$('h2=Initiative')).toBeExisting()
   })
+
+  it('survives the pseudo locale without accessibility regressions', async () => {
+    const client = browser as unknown as WdioBrowser
+    const url = new URL(await client.getUrl())
+    url.searchParams.set('locale', 'pseudo')
+    await client.url(url.href)
+    await (await client.$('h1*=⟦')).waitForExist()
+    await expectAccessible(client)
+  })
 })
+
+async function expectAccessible(client: WdioBrowser): Promise<void> {
+  const accessibility = await new AxeBuilder({ client })
+    .setLegacyMode()
+    .analyze()
+  expect(accessibility.violations).toHaveLength(0)
+}
+
+async function expectAccessibleInBothThemes(
+  client: WdioBrowser
+): Promise<void> {
+  await expectAccessible(client)
+  await client.execute(() => {
+    document.querySelector<HTMLButtonElement>('.theme-toggle')?.click()
+  })
+  try {
+    await expectAccessible(client)
+  } finally {
+    await client.execute(() => {
+      document.querySelector<HTMLButtonElement>('.theme-toggle')?.click()
+    })
+  }
+}
 
 async function waitForCampaignInput(
   client: WdioBrowser,
