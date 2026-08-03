@@ -19,15 +19,17 @@ import type {
   WorldFactionSnapshot
 } from '../../../shared/contracts/encounter-source.js'
 import { HexLocationPlacementDialog } from '../hex/hex-workspaces.js'
+import { IlluminatedHeading } from '../../shell/illuminated-heading.js'
 import {
   CreatureCollectionCatalogPane,
-  CreatureCollectionSelection,
+  CreatureCollectionSelection
+} from '../session/session-workspace.js'
+import {
   CreatureFilters,
   FilterChips,
-  IlluminatedHeading,
   ReferenceMultiSelect,
   SortHeader
-} from '../workspace/workspace.js'
+} from './catalog-controls.js'
 import {
   emptyCreatureOptions,
   emptyQuery,
