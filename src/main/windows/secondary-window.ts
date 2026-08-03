@@ -11,12 +11,12 @@ export function createSecondaryWindow(): BrowserWindow {
     height: 360,
     show: false,
     webPreferences: {
-      preload: outputPath('preload', 'index.js'),
+      preload: outputPath('preload', 'passive.js'),
       sandbox: true,
       contextIsolation: true,
       nodeIntegration: false,
       webSecurity: true,
-      additionalArguments: ['--salt-marcher-read-only']
+      additionalArguments: []
     }
   })
   readOnlyContents.add(window.webContents)
@@ -24,11 +24,9 @@ export function createSecondaryWindow(): BrowserWindow {
   window.once('ready-to-show', () => window.show())
   const rendererUrl = developmentRendererUrl()
   if (rendererUrl !== undefined) {
-    void window.loadURL(`${rendererUrl}?readonly=1`)
+    void window.loadURL(`${rendererUrl}/passive.html`)
   } else {
-    void window.loadFile(outputPath('renderer', 'index.html'), {
-      query: { readonly: '1' }
-    })
+    void window.loadFile(outputPath('renderer', 'passive.html'))
   }
   return window
 }

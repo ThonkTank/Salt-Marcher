@@ -1,24 +1,8 @@
 import { defineConfig } from 'electron-vite'
-import { cpSync, rmSync } from 'node:fs'
-import { createRequire } from 'node:module'
-import { dirname, resolve } from 'node:path'
-import type { Plugin } from 'vite'
+import { resolve } from 'node:path'
 
-const require = createRequire(import.meta.url)
-const babylonDirectory = dirname(
-  require.resolve('@babylonjs/core/package.json')
-)
-
-function copyBabylonRuntime(): Plugin {
-  return {
-    name: 'copy-babylon-runtime',
-    closeBundle() {
-      const destination = resolve('out/renderer/vendor/babylon')
-      rmSync(destination, { recursive: true, force: true })
-      cpSync(babylonDirectory, destination, { recursive: true })
-    }
-  }
-}
+const qualificationBuild =
+  process.env['SALT_MARCHER_BUILD_TARGET'] === 'qualification'
 
 export default defineConfig({
   main: {
@@ -27,7 +11,7 @@ export default defineConfig({
       rollupOptions: {
         input: {
           index: resolve('src/main/index.ts'),
-          utility: resolve('src/main/core-process/utility.ts')
+          utility: resolve('src/utility/index.ts')
         }
       }
     }
@@ -35,14 +19,26 @@ export default defineConfig({
   preload: {
     build: {
       externalizeDeps: false,
-      rollupOptions: { output: { format: 'cjs', entryFileNames: '[name].js' } }
+      rollupOptions: {
+        input: {
+          index: resolve('src/preload/index.ts')
+        },
+        output: { format: 'cjs', entryFileNames: '[name].js' }
+      }
     }
   },
   renderer: {
-    plugins: [copyBabylonRuntime()],
     build: {
+      manifest: true,
       rollupOptions: {
-        external: (id) => id.startsWith('@babylonjs/core/')
+        input: {
+          ...(qualificationBuild
+            ? { qualification: resolve('src/renderer/qualification.html') }
+            : {
+                index: resolve('src/renderer/index.html'),
+                passive: resolve('src/renderer/passive.html')
+              })
+        }
       }
     },
     resolve: {

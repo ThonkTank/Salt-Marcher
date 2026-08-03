@@ -1,0 +1,310 @@
+@import '@fontsource/im-fell-english/latin-400.css';
+@import '@fontsource/im-fell-english-sc/latin-400.css';
+@import '@fontsource/eb-garamond/latin-400.css';
+@import '@fontsource/eb-garamond/latin-600.css';
+@import '@fontsource/cormorant-unicase/latin-500.css';
+
+/* SaltMarcher · Design-Tokens „Pergament & Kerzenlicht"
+   Generiert aus dem Design System. Light ist :root, Dark ist [data-theme='dark'].
+   Setze data-theme auf <html>.
+
+   Die vier Familien werden über lokale Fontsource-Pakete gebündelt. Dadurch
+   bleiben sie offline verfügbar und erfüllen die Renderer-CSP. */
+
+/* Fundament: alle Maße des Systems sind Außenmaße.
+   Ohne diese Regel stimmen --control-pane-w, --scenario-pane-w und die
+   1280-px-Rechnung nicht. Entspricht `* { box-sizing: border-box }` in
+   src/renderer/shell/app.css. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  /* ── Basispalette · Pergament & Eisengalle (light) ───────────────── */
+  --sm-paper: #fbf5e4;
+  --sm-vellum: #e8d6ae;
+  --sm-vellum-deep: #e2cea4;
+  --sm-tan: #cdb385;
+  --sm-tan-deep: #b48961;
+  --sm-tan-line: #8a6a3e;
+  --sm-ink: #241a10;
+  --sm-ink-2: #4a3520;
+  --sm-ink-3: #6f5c44;
+  --sm-ink-4: #7a6444;
+  --sm-zinnober: #8a2418;
+  --sm-zinnober-2: #9b4a37;
+  --sm-gold: #b8862b;
+  --sm-verdigris: #4a6b52;
+
+  /* ── Basispalette · Kerzenlicht (dark) ──────────────────────────── */
+  --sm-pitch: #14100c;
+  --sm-leather: #1e1712;
+  --sm-leather-2: #17120d;
+  --sm-raised: #2b2118;
+  --sm-brass: #6b5334;
+  --sm-brass-2: #4e3d29;
+  --sm-candle: #ecdcb8;
+  --sm-candle-2: #d6c49c;
+  --sm-candle-3: #a89275;
+  --sm-candle-4: #8d7a58;
+  --sm-goldink: #d4a94b;
+  --sm-goldink-2: #e8c882;
+  --sm-seal: #c94a32;
+  --sm-moss: #6f9a7c;
+
+  /* ── Semantik · Light ist der Standard ──────────────────────────── */
+  color-scheme: light;
+
+  --surface-chrome: linear-gradient(#dcc699, #cdb385);
+  --surface-rail: #d5bd92;
+  --surface-desk: radial-gradient(
+    120% 90% at 15% 0%,
+    #f6efdb,
+    #e6d3a9 70%,
+    #d9c294
+  );
+  --surface-pane: transparent;
+  --surface-pane-sunken: var(--sm-vellum-deep);
+  --surface-sheet: var(--sm-paper);
+  --surface-card: #f4ead1;
+  --surface-control: #fbf5e4;
+  --surface-button: #ddc496;
+  --surface-button-hover: #e9d5ab;
+  --surface-chip: #eaddbd;
+  --surface-tab-active: #f4ead1;
+  --surface-tab: #dfc9a0;
+  --divider-face: repeating-linear-gradient(
+    #b3946a,
+    #b3946a 3px,
+    #c9ad84 3px,
+    #c9ad84 6px
+  );
+
+  --border-hair: #c1a374;
+  --border-1: #b99a6c;
+  --border-2: #a98f66;
+  --border-structural: #8a6a3e;
+
+  --text-1: var(--sm-ink);
+  --text-2: var(--sm-ink-2);
+  --text-3: var(--sm-ink-3);
+  --text-muted: var(--sm-ink-4);
+  --text-on-accent: #f8eed6;
+  --text-eyebrow: #8a6234;
+
+  --accent-rubric: var(--sm-zinnober);
+  --accent-rubric-line: var(--sm-zinnober-2);
+  --accent-gold: var(--sm-gold);
+  --accent-verdigris: var(--sm-verdigris);
+  --accent-danger: #8a2418;
+
+  --focus-ring: #8a2418;
+  --shadow-card: 1px 1px 0 #c9ae80;
+  --shadow-dialog: 0 16px 44px #3a2a1866;
+  --sheet-glow: inset 0 0 40px #d8be8e60;
+  --initial-face: radial-gradient(#f7efd9, #e6d0a2);
+  --initial-border: var(--sm-tan-line);
+  --initial-ink: var(--sm-zinnober);
+  --meter-overlay: #0002;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --surface-chrome: linear-gradient(#241c14, #191410);
+  --surface-rail: #1b1510;
+  --surface-desk: radial-gradient(90% 70% at 50% 0%, #241b12, #14100c 75%);
+  --surface-pane: transparent;
+  --surface-pane-sunken: var(--sm-leather-2);
+  --surface-sheet: linear-gradient(#221a12, #17120d);
+  --surface-card: linear-gradient(#241c14, #1c1610);
+  --surface-control: #0f0c08;
+  --surface-button: var(--sm-raised);
+  --surface-button-hover: #362a1e;
+  --surface-chip: #211a12;
+  --surface-tab-active: #2f2416;
+  --surface-tab: #1c1610;
+  --divider-face: repeating-linear-gradient(
+    #2e2417,
+    #2e2417 3px,
+    #4a3a24 3px,
+    #4a3a24 6px
+  );
+
+  --border-hair: #3d3022;
+  --border-1: var(--sm-brass-2);
+  --border-2: #574530;
+  --border-structural: var(--sm-brass);
+
+  --text-1: var(--sm-candle);
+  --text-2: var(--sm-candle-2);
+  --text-3: var(--sm-candle-3);
+  --text-muted: var(--sm-candle-4);
+  --text-on-accent: #ffeec2;
+  --text-eyebrow: var(--sm-gold);
+
+  --accent-rubric: var(--sm-seal);
+  --accent-rubric-line: var(--sm-goldink);
+  --accent-gold: var(--sm-goldink);
+  --accent-verdigris: var(--sm-moss);
+  --accent-danger: #a9473c;
+
+  --focus-ring: var(--sm-goldink);
+  --shadow-card: none;
+  --shadow-dialog: 0 16px 44px #000b;
+  --sheet-glow: inset 0 0 90px #b8862b12;
+  --initial-face: radial-gradient(#3a2c18, #241a10);
+  --initial-border: var(--sm-gold);
+  --initial-ink: var(--sm-goldink-2);
+  --meter-overlay: #0002;
+}
+
+:root {
+  --font-display: 'IM Fell English', Georgia, serif;
+  --font-smallcaps: 'IM Fell English SC', Georgia, serif;
+  --font-body: 'EB Garamond', Georgia, serif;
+  --font-initial: 'Cormorant Unicase', Georgia, serif;
+  --font-mono: ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  /* Größen — Werkzeugdichte zuerst; 11 px ist der harte Boden */
+  --text-xs: 11px;
+  --text-sm: 12px;
+  --text-ui: 13px;
+  --text-base: 14px;
+  --text-md: 15px;
+  --text-lg: 17px;
+  --text-xl: 20px;
+  --text-2xl: 24px;
+  --text-3xl: 30px;
+  --text-4xl: 40px;
+
+  --leading-tight: 1.15;
+  --leading-ui: 1.3;
+  --leading-prose: 1.5;
+
+  --tracking-caps: 0.05em;
+  --tracking-label: 0.06em;
+  --tracking-eyebrow: 0.22em;
+
+  /* Rollen */
+  --type-eyebrow: var(--tracking-eyebrow) / 1 var(--font-smallcaps);
+  --weight-display: 400;
+  --weight-body: 400;
+  --weight-strong: 600;
+}
+
+:root {
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 5px;
+  --space-4: 6px;
+  --space-5: 8px;
+  --space-6: 10px;
+  --space-7: 12px;
+  --space-8: 16px;
+  --space-9: 20px;
+  --space-10: 24px;
+
+  /* Shell-Geometrie — 1280 px Fensterbreite ist die Untergrenze */
+  --topbar-h: 66px;
+  --rail-w: 66px;
+  --icon-btn: 48px;
+  --divider-w: 9px;
+  --control-pane-w: 300px;
+  --scenario-pane-w: 264px;
+  --pane-pad: 12px;
+  --panel-gap: 10px;
+  --control-h: 26px;
+  --field-pad: 5px 6px;
+  --button-pad: 4px 8px;
+  --chip-pad: 4px 6px;
+  --row-pad: 5px 7px;
+  --sheet-pad: 18px 22px;
+}
+
+:root {
+  /* Kanten sind scharf — Pergament wird beschnitten, nicht abgerundet. */
+  --radius-0: 0;
+  --radius-seal: 999px;
+
+  --border-width-hair: 1px;
+  --border-width-structural: 2px;
+
+  --rule-rubric: linear-gradient(
+    90deg,
+    var(--accent-rubric),
+    var(--sm-tan-deep) 60%,
+    transparent
+  );
+  --statblock-rule: var(--border-width-structural) solid
+    var(--accent-rubric-line);
+  --active-marker: inset 3px 0 var(--accent-gold);
+  --focus-outline: 2px solid var(--focus-ring);
+  --focus-offset: 2px;
+}
+
+:root {
+  --dur-fast: 90ms;
+  --dur: 160ms;
+  --ease: cubic-bezier(0.32, 0.06, 0.24, 1);
+  --transition-surface:
+    background var(--dur-fast) var(--ease),
+    border-color var(--dur-fast) var(--ease);
+}
+
+/* ── Ergänzungen für app.css: flache Varianten der Verlaufsflächen ──────
+   app.css setzt teils background-color-artige Flächen; Verläufe funktionieren
+   dort nicht in jedem Kontext. */
+:root {
+  --surface-app: #e8d6ae;
+  --surface-chrome-flat: #cdb385;
+  --surface-rail-flat: #d5bd92;
+  --surface-panel: #f0e4c6;
+  --surface-card-flat: #f4ead1;
+  --surface-pane-sunken-flat: #e2cea4;
+  --surface-sheet-flat: #fbf5e4;
+  --surface-raised: #f7efd9;
+
+  --surface-error: #f2ddd2;
+  --border-error: #a4503c;
+  --text-error: #6d1f14;
+  --surface-danger: #8a2418;
+  --border-danger: #6d1f14;
+
+  --difficulty-1: #4a6b52;
+  --difficulty-2: #b8862b;
+  --difficulty-3: #b06a2c;
+  --difficulty-4: #8a2418;
+
+  --scrim: #241a1080;
+  --shadow-panel: 0 0.8rem 2.4rem #3a2a1833;
+  --shadow-editor: 0 -0.7rem 1.5rem #3a2a1826;
+}
+
+[data-theme='dark'] {
+  --surface-app: #14100c;
+  --surface-chrome-flat: #241c14;
+  --surface-rail-flat: #1b1510;
+  --surface-panel: #1e1712;
+  --surface-card-flat: #221a12;
+  --surface-pane-sunken-flat: #17120d;
+  --surface-sheet-flat: #1c1610;
+  --surface-raised: #2b2118;
+
+  --surface-error: #3b1c15;
+  --border-error: #a4503c;
+  --text-error: #f0b8a6;
+  --surface-danger: #6d2a1e;
+  --border-danger: #a4503c;
+
+  --difficulty-1: #6f9a7c;
+  --difficulty-2: #d4a94b;
+  --difficulty-3: #c47a3c;
+  --difficulty-4: #c94a32;
+
+  --scrim: #000000b3;
+  --shadow-panel: 0 0.8rem 2.4rem #0009;
+  --shadow-editor: 0 -0.7rem 1.5rem #0008;
+}

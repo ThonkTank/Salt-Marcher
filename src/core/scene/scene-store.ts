@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3'
+import { CapabilityError } from '../../shared/errors/capability-error.js'
 import {
   sceneSnapshotSchema,
   type RunningScene,
@@ -10,7 +11,10 @@ import { uuidv7 } from '../../shared/ids/uuidv7.js'
 import { creatureById } from '../creatures/catalog.js'
 import type { WorldLocation } from '../../shared/contracts/world-location.js'
 
-export function initializeSceneSchema(db: Database.Database): void {
+export function initializeSceneSchema(
+  db: Database.Database,
+  activePartyMemberIds: readonly string[]
+): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS scene_workspace (
       singleton INTEGER PRIMARY KEY NOT NULL CHECK(singleton = 1),
@@ -47,13 +51,6 @@ export function initializeSceneSchema(db: Database.Database): void {
       UNIQUE(group_id, creature_id)
     );
   `)
-  const sceneColumns = db
-    .prepare("PRAGMA table_info('scene_running_scene')")
-    .all() as readonly { name: string }[]
-  if (!sceneColumns.some((column) => column.name === 'game_time_seconds'))
-    db.exec(
-      'ALTER TABLE scene_running_scene ADD COLUMN game_time_seconds INTEGER NOT NULL DEFAULT 28800 CHECK(game_time_seconds >= 0)'
-    )
   const exists = db
     .prepare('SELECT 1 FROM scene_workspace WHERE singleton = 1')
     .get()
@@ -66,16 +63,11 @@ export function initializeSceneSchema(db: Database.Database): void {
     db.prepare(
       "INSERT INTO scene_running_scene (id, title, location_id, location_name, position) VALUES (?, 'Standardszene', NULL, '', 0)"
     ).run(sceneId)
-    const active = db
-      .prepare(
-        'SELECT id FROM player_characters WHERE active = 1 ORDER BY position, id'
-      )
-      .all() as { id: string }[]
     const insert = db.prepare(
       'INSERT INTO scene_party_member (scene_id, party_member_id, position) VALUES (?, ?, ?)'
     )
-    active.forEach((member, position) =>
-      insert.run(sceneId, member.id, position)
+    activePartyMemberIds.forEach((memberId, position) =>
+      insert.run(sceneId, memberId, position)
     )
   })()
 }
@@ -83,7 +75,8 @@ export function initializeSceneSchema(db: Database.Database): void {
 export class SceneStore {
   constructor(
     private readonly db: Database.Database,
-    private readonly locationProvider: () => readonly WorldLocation[] = () => []
+    private readonly locationProvider: () => readonly WorldLocation[] = () => [],
+    private readonly activePartyMember: (id: string) => boolean = () => false
   ) {}
 
   database(): Database.Database {
@@ -156,7 +149,7 @@ export class SceneStore {
         )
         .run(gameSeconds, locationId, locationName, sceneId).changes !== 1
     )
-      throw new Error('not found')
+      throw new CapabilityError('not_found', false)
     this.bump()
   }
 
@@ -165,7 +158,7 @@ export class SceneStore {
     const scene = snapshot.scenes.find(
       (candidate) => candidate.id === snapshot.focusedSceneId
     )
-    if (!scene) throw new Error('not found')
+    if (!scene) throw new CapabilityError('not_found', false)
     return scene
   }
 
@@ -220,10 +213,8 @@ export class SceneStore {
     this.mutate(expectedRevision, () => {
       this.requireScene(sceneId)
       if (assigned) {
-        const member = this.db
-          .prepare('SELECT active FROM player_characters WHERE id = ?')
-          .get(partyMemberId) as { active: number } | undefined
-        if (!member || member.active !== 1) throw new Error('not found')
+        if (!this.activePartyMember(partyMemberId))
+          throw new CapabilityError('not_found', false)
         this.db
           .prepare('DELETE FROM scene_party_member WHERE party_member_id = ?')
           .run(partyMemberId)
@@ -259,15 +250,18 @@ export class SceneStore {
     this.mutate(expectedRevision, () => {
       this.requireScene(sceneId)
       const normalized = normalizeEntries(entries)
-      if (normalized.size === 0) throw new Error('validation')
+      if (normalized.size === 0)
+        throw new CapabilityError('validation_failed', false)
       for (const creatureId of normalized.keys())
-        if (!creatureById(creatureId)) throw new Error('not found')
+        if (!creatureById(creatureId))
+          throw new CapabilityError('not_found', false)
       const id = groupId ?? uuidv7()
       if (groupId) {
         const group = this.db
           .prepare('SELECT scene_id AS sceneId FROM scene_group WHERE id = ?')
           .get(groupId) as { sceneId: string } | undefined
-        if (!group || group.sceneId !== sceneId) throw new Error('not found')
+        if (!group || group.sceneId !== sceneId)
+          throw new CapabilityError('not_found', false)
         this.db
           .prepare('UPDATE scene_group SET name = ? WHERE id = ?')
           .run(name, id)
@@ -299,7 +293,7 @@ export class SceneStore {
       const result = this.db
         .prepare('DELETE FROM scene_group WHERE id = ? AND scene_id = ?')
         .run(groupId, sceneId)
-      if (result.changes === 0) throw new Error('not found')
+      if (result.changes === 0) throw new CapabilityError('not_found', false)
     })
   }
 
@@ -377,7 +371,7 @@ export class SceneStore {
         .prepare('SELECT 1 FROM scene_running_scene WHERE id = ?')
         .get(id) === undefined
     )
-      throw new Error('not found')
+      throw new CapabilityError('not_found', false)
   }
 
   private root(): SceneRoot {
@@ -390,7 +384,8 @@ export class SceneStore {
 
   private mutate(expectedRevision: number, operation: () => void): void {
     this.db.transaction(() => {
-      if (this.revision() !== expectedRevision) throw new Error('stale')
+      if (this.revision() !== expectedRevision)
+        throw new CapabilityError('stale', true)
       operation()
       this.bump()
     })()

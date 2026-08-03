@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3'
+import { CapabilityError } from '../../shared/errors/capability-error.js'
 import {
   worldLocationDraftSchema,
   worldLocationSnapshotSchema,
@@ -6,6 +7,18 @@ import {
   type WorldLocationSnapshot
 } from '../../shared/contracts/world-location.js'
 import { uuidv7 } from '../../shared/ids/uuidv7.js'
+import { EncounterTableStore } from '../encounter/encounter-table-store.js'
+import { WorldFactionStore } from './faction-store.js'
+
+export interface WorldLocationReferences {
+  containsFaction(id: string): boolean
+  containsEncounterTable(id: string): boolean
+}
+
+const noReferences: WorldLocationReferences = {
+  containsFaction: () => false,
+  containsEncounterTable: () => false
+}
 
 export function initializeWorldLocationSchema(db: Database.Database): void {
   db.exec(`
@@ -40,7 +53,27 @@ export function initializeWorldLocationSchema(db: Database.Database): void {
 }
 
 export class WorldLocationStore {
-  constructor(private readonly db: Database.Database) {}
+  constructor(
+    private readonly db: Database.Database,
+    private readonly knownReferences: WorldLocationReferences = noReferences
+  ) {}
+
+  exists(id: string): boolean {
+    return (
+      this.db
+        .prepare('SELECT 1 FROM worldplanner_location WHERE id = ?')
+        .get(id) !== undefined
+    )
+  }
+
+  displayName(id: string): string | null {
+    const row = this.db
+      .prepare(
+        'SELECT display_name AS displayName FROM worldplanner_location WHERE id = ?'
+      )
+      .get(id) as { displayName: string } | undefined
+    return row?.displayName ?? null
+  }
 
   read(): WorldLocationSnapshot {
     const metadata = this.db
@@ -111,7 +144,7 @@ export class WorldLocationStore {
           'UPDATE worldplanner_location SET display_name = ?, notes = ? WHERE id = ?'
         )
         .run(parsed.displayName, parsed.notes, id).changes
-      if (changed === 0) throw new Error('not found')
+      if (changed === 0) throw new CapabilityError('not_found', false)
       this.replaceReferences(id, parsed.factionIds, parsed.encounterTableIds)
     })
     return this.read()
@@ -119,37 +152,12 @@ export class WorldLocationStore {
 
   delete(id: string, expectedRevision: number): WorldLocationSnapshot {
     this.mutate(expectedRevision, () => {
-      const hexPlacementTable = this.db
-        .prepare(
-          "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'hex_location_placement'"
-        )
-        .get()
-      if (hexPlacementTable) {
-        const placement = this.db
-          .prepare(
-            'SELECT map_id AS mapId FROM hex_location_placement WHERE location_id = ?'
-          )
-          .get(id) as { mapId: string } | undefined
-        this.db
-          .prepare('DELETE FROM hex_location_placement WHERE location_id = ?')
-          .run(id)
-        if (placement) {
-          this.db
-            .prepare('UPDATE hex_map SET revision = revision + 1 WHERE id = ?')
-            .run(placement.mapId)
-          this.db
-            .prepare(
-              'UPDATE hex_metadata SET revision = revision + 1 WHERE singleton = 1'
-            )
-            .run()
-        }
-      }
       if (
         this.db
           .prepare('DELETE FROM worldplanner_location WHERE id = ?')
           .run(id).changes === 0
       )
-        throw new Error('not found')
+        throw new CapabilityError('not_found', false)
       this.db
         .prepare(
           'DELETE FROM worldplanner_location_faction WHERE location_id = ?'
@@ -199,8 +207,14 @@ export class WorldLocationStore {
     factionIds: readonly string[],
     encounterTableIds: readonly string[]
   ): void {
-    this.assertReferences('worldplanner_faction', factionIds)
-    this.assertReferences('encounter_table', encounterTableIds)
+    if (factionIds.some((id) => !this.knownReferences.containsFaction(id)))
+      throw new CapabilityError('not_found', false)
+    if (
+      encounterTableIds.some(
+        (id) => !this.knownReferences.containsEncounterTable(id)
+      )
+    )
+      throw new CapabilityError('not_found', false)
     this.db
       .prepare(
         'DELETE FROM worldplanner_location_faction WHERE location_id = ?'
@@ -225,16 +239,6 @@ export class WorldLocationStore {
     )
   }
 
-  private assertReferences(table: string, ids: readonly string[]): void {
-    if (ids.length === 0) return
-    const exists = this.db
-      .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?")
-      .get(table)
-    if (!exists) throw new Error('not found')
-    const statement = this.db.prepare(`SELECT 1 FROM ${table} WHERE id = ?`)
-    if (ids.some((id) => !statement.get(id))) throw new Error('not found')
-  }
-
   private mutate(expectedRevision: number, operation: () => void): void {
     const mutation = () => {
       const current = (
@@ -244,7 +248,7 @@ export class WorldLocationStore {
           )
           .get() as { revision: number }
       ).revision
-      if (current !== expectedRevision) throw new Error('stale')
+      if (current !== expectedRevision) throw new CapabilityError('stale', true)
       operation()
       this.bumpRevision()
     }
@@ -262,7 +266,7 @@ export class WorldLocationStore {
 }
 
 export class WorldLocationService {
-  constructor(private readonly campaignPath: () => string) {}
+  constructor(private readonly campaignDatabase: () => Database.Database) {}
 
   read(): WorldLocationSnapshot {
     return this.withStore((store) => store.read())
@@ -281,12 +285,18 @@ export class WorldLocationService {
   }
 
   private withStore<T>(work: (store: WorldLocationStore) => T): T {
-    const db = new Database(this.campaignPath())
-    try {
-      initializeWorldLocationSchema(db)
-      return work(new WorldLocationStore(db))
-    } finally {
-      db.close()
-    }
+    const db = this.campaignDatabase()
+    const tables = new EncounterTableStore(db)
+    const factions = new WorldFactionStore(db, {
+      containsTable: (id) => tables.contains(id),
+      containsCreature: (tableId, creatureId) =>
+        tables.containsCreature(tableId, creatureId)
+    })
+    return work(
+      new WorldLocationStore(db, {
+        containsFaction: (id) => factions.contains(id),
+        containsEncounterTable: (id) => tables.contains(id)
+      })
+    )
   }
 }

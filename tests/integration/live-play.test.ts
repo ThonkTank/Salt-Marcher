@@ -4,7 +4,6 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { LivePlayService } from '../../src/core/encounter/live-combat.js'
 import { CampaignStore } from '../../src/core/persistence/sqlite/campaign-store.js'
-import Database from 'better-sqlite3'
 import { uuidv7 } from '../../src/shared/ids/uuidv7.js'
 
 const roots: string[] = []
@@ -19,7 +18,7 @@ function harness() {
   roots.push(root)
   const campaigns = new CampaignStore(root)
   campaigns.create('Test Campaign')
-  const play = new LivePlayService(() => campaigns.activeCampaignPath())
+  const play = new LivePlayService(() => campaigns.activeCampaignDatabase())
   return { campaigns, play }
 }
 
@@ -31,7 +30,7 @@ describe('live party, scene groups and combat', () => {
 
     const reopened = new CampaignStore(roots[0] ?? '')
     const second = new LivePlayService(() =>
-      reopened.activeCampaignPath()
+      reopened.activeCampaignDatabase()
     ).readParty()
     reopened.close()
 
@@ -154,7 +153,7 @@ describe('live party, scene groups and combat', () => {
 
     const reopened = new CampaignStore(roots[0] ?? '')
     const resumed = new LivePlayService(() =>
-      reopened.activeCampaignPath()
+      reopened.activeCampaignDatabase()
     ).readSession()
     reopened.close()
 
@@ -187,15 +186,13 @@ describe('live party, scene groups and combat', () => {
     const firstCombat = session.combat
 
     const secondSceneId = uuidv7()
-    const db = new Database(campaigns.activeCampaignPath())
+    const db = campaigns.activeCampaignDatabase()
     db.prepare(
       "INSERT INTO scene_running_scene (id, title, location_id, location_name, position) VALUES (?, 'Nebenszene', NULL, '', 1)"
     ).run(secondSceneId)
     db.prepare(
       'UPDATE scene_workspace SET revision = revision + 1 WHERE singleton = 1'
     ).run()
-    db.close()
-
     session = play.readSession()
     session = play.focusScene(secondSceneId, session.scene.revision)
     expect(session.combat).toBeNull()

@@ -1,786 +1,116 @@
 import { app, BrowserWindow, ipcMain, type IpcMainInvokeEvent } from 'electron'
 import { join } from 'node:path'
-import { readFile, rename, writeFile } from 'node:fs/promises'
-import { CoreProcessClient } from '../core-process/core-process-client.js'
+import { CoreProcessSupervisor } from '../core-process/core-process-supervisor.js'
 import { createMainWindow } from '../windows/main-window.js'
-import { isReadOnlyWindow } from '../windows/secondary-window.js'
+import {
+  createSecondaryWindow,
+  isReadOnlyWindow
+} from '../windows/secondary-window.js'
 import { configureSecurity } from '../security/security.js'
 import { outputPath } from './runtime-paths.js'
-import {
-  activateCampaignInputSchema,
-  campaignCapabilityResponseSchema,
-  createCampaignInputSchema,
-  type CampaignSnapshot
-} from '../../shared/contracts/campaign.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
+import {
+  coreOperations,
+  type CoreOperationKind,
+  type OperationDefinition,
+  type WindowRole
+} from '../../shared/contracts/operations.js'
 import {
   runtimeGpuObservationSchema,
   type RuntimeGpuObservation
 } from '../../shared/qualification/runtime-observation.js'
+import { coreProcessStatusSchema } from '../../shared/contracts/runtime.js'
+import { roleCanInvoke } from './operation-authorization.js'
 import {
-  creatureCatalogPageSchema,
-  creatureCatalogQuerySchema,
-  creatureFilterOptionsSchema,
-  creatureSchema
-} from '../../shared/contracts/encounter.js'
-import {
-  adjustInitiativeInputSchema,
-  changeHpInputSchema,
-  combatRevisionInputSchema,
-  confirmInitiativeInputSchema,
-  liveSessionSnapshotSchema,
-  prepareCombatInputSchema,
-  updateResolutionInputSchema
-} from '../../shared/contracts/live-session.js'
-import {
-  adjustPartyXpInputSchema,
-  adventuringDayCalculationSchema,
-  adventuringDayInputSchema,
-  createPartyCharacterInputSchema,
-  deletePartyCharacterInputSchema,
-  partySnapshotSchema,
-  restPartyInputSchema,
-  setMembershipInputSchema,
-  updatePartyCharacterInputSchema
-} from '../../shared/contracts/party.js'
-import { z } from 'zod'
-import {
-  assignScenePartyInputSchema,
-  deleteSceneGroupInputSchema,
-  encounterSelectionEvaluationSchema,
-  evaluateEncounterSelectionInputSchema,
-  evaluateSceneGroupDraftInputSchema,
-  focusSceneInputSchema,
-  saveSceneGroupInputSchema,
-  setSceneLocationInputSchema,
-  sceneGroupDraftEvaluationSchema,
-  sceneGroupDraftGenerationRequestSchema,
-  sceneGroupDraftGenerationSchema
-} from '../../shared/contracts/scene.js'
-import {
-  defaultSessionLayoutPreference,
-  sessionLayoutPreferenceSchema
-} from '../../shared/contracts/session-layout.js'
-import {
-  createWorldLocationInputSchema,
-  deleteWorldLocationInputSchema,
-  updateWorldLocationInputSchema,
-  worldLocationSnapshotSchema
-} from '../../shared/contracts/world-location.js'
-import {
-  createEncounterTableInputSchema,
-  createWorldFactionInputSchema,
-  deleteEncounterTableInputSchema,
-  deleteWorldFactionInputSchema,
-  encounterTableSnapshotSchema,
-  updateEncounterTableInputSchema,
-  updateWorldFactionInputSchema,
-  worldFactionSnapshotSchema
-} from '../../shared/contracts/encounter-source.js'
-import {
-  createHexMapInputSchema,
-  evaluateHexRouteInputSchema,
-  hexMapCatalogSnapshotSchema,
-  hexMapSnapshotSchema,
-  hexRouteEvaluationSchema,
-  hexTerrainCatalogSchema,
-  hexTravelSnapshotSchema,
-  mutateHexTravelInputSchema,
-  paintHexTerrainInputSchema,
-  placeHexLocationInputSchema,
-  positionHexPartyInputSchema,
-  removeHexLocationInputSchema,
-  setHexTravelMultiplierInputSchema,
-  startHexTravelInputSchema,
-  updateHexMapInputSchema
-} from '../../shared/contracts/hex.js'
+  emptyPassiveProjection,
+  passiveProjectionSchema
+} from '../../shared/contracts/passive-display.js'
 
-let core: CoreProcessClient | undefined
-
-const legacySessionLayoutPreferenceSchema = z
-  .object({
-    mode: z.enum(['rows', 'columns']),
-    rows: z.unknown(),
-    columns: z
-      .object({
-        leftFraction: z.number(),
-        leftTopFraction: z.number(),
-        rightTopFraction: z.number()
-      })
-      .strict(),
-    upperRightTab: z.enum(['details', 'map'])
-  })
-  .strict()
+let core: CoreProcessSupervisor | undefined
 
 export async function startApplication(): Promise<void> {
   await app.whenReady()
   configureSecurity()
-  core = new CoreProcessClient(
+  core = new CoreProcessSupervisor(
     join(app.getPath('userData'), 'development-data'),
     outputPath('main', 'utility.js')
   )
-  await core.waitUntilReady()
-  ipcMain.handle('campaign:list', (event) =>
-    invokeCapability(() => {
-      authorize(event, false)
-      return requireCore().list()
-    })
-  )
-  const sessionLayoutPath = join(app.getPath('userData'), 'session-layout.json')
-  ipcMain.handle('session-layout:read', (event) =>
-    invokeGeneric(async () => {
-      authorize(event, false)
-      try {
-        const raw: unknown = JSON.parse(
-          await readFile(sessionLayoutPath, 'utf8')
+  core.onStatus((status) => {
+    for (const window of BrowserWindow.getAllWindows())
+      window.webContents.send(
+        'runtime:core-status-changed',
+        coreProcessStatusSchema.parse(status)
+      )
+  })
+  core.onSessionChanged((notice) => {
+    for (const window of BrowserWindow.getAllWindows()) {
+      window.webContents.send('session:changed', notice)
+      if (isReadOnlyWindow(window.webContents))
+        window.webContents.send(
+          'projection:changed',
+          passiveProjectionSchema.parse(emptyPassiveProjection)
         )
-        const current = sessionLayoutPreferenceSchema.safeParse(raw)
-        if (current.success) return current.data
-        const legacy = legacySessionLayoutPreferenceSchema.parse(raw)
-        return sessionLayoutPreferenceSchema.parse({
-          leftFraction: legacy.columns.leftFraction,
-          rightTopFraction: legacy.columns.rightTopFraction,
-          upperRightTab: legacy.upperRightTab
-        })
-      } catch {
-        return defaultSessionLayoutPreference
-      }
-    }, sessionLayoutPreferenceSchema)
-  )
-  ipcMain.handle('session-layout:save', (event, raw) =>
-    invokeGeneric(async () => {
-      authorize(event, true)
-      const preference = sessionLayoutPreferenceSchema.safeParse(raw)
-      if (!preference.success)
-        throw new CapabilityError('validation_failed', false)
-      const temporary = `${sessionLayoutPath}.tmp`
-      await writeFile(temporary, JSON.stringify(preference.data), 'utf8')
-      await rename(temporary, sessionLayoutPath)
-      return preference.data
-    }, sessionLayoutPreferenceSchema)
-  )
-  ipcMain.handle('campaign:create', (event, raw) =>
-    invokeCapability(() => {
-      authorize(event, true)
-      const input = createCampaignInputSchema.safeParse(raw)
-      if (!input.success) throw new CapabilityError('validation_failed', false)
-      return requireCore().create(input.data.name)
-    })
-  )
-  ipcMain.handle('campaign:activate', (event, raw) =>
-    invokeCapability(() => {
-      authorize(event, true)
-      const input = activateCampaignInputSchema.safeParse(raw)
-      if (!input.success) throw new CapabilityError('validation_failed', false)
-      return requireCore().activate(input.data.id)
-    })
-  )
-  const capability = <T>(
-    channel: string,
-    schema: z.ZodType<T>,
-    write: boolean,
-    parse: z.ZodType<unknown>,
-    operation: (input: unknown) => Promise<T>
-  ) =>
-    ipcMain.handle(channel, (event, raw) =>
-      invokeGeneric(() => {
-        authorize(event, write)
-        const value = parse.safeParse(raw)
-        if (!value.success)
+    }
+  })
+  void core.waitUntilReady().catch(() => {
+    // The shell stays visible and exposes explicit recovery through core status.
+  })
+
+  registerCoreOperations()
+  registerRuntimeOperations()
+  createMainWindow()
+  if (process.argv.includes('--passive-e2e')) createSecondaryWindow()
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) createMainWindow()
+  })
+}
+
+function registerCoreOperations(): void {
+  for (const [rawKind, definition] of Object.entries(coreOperations)) {
+    if (definition.channel === null) continue
+    const kind = rawKind as CoreOperationKind
+    ipcMain.handle(definition.channel, (event, raw) =>
+      invokeGeneric(async () => {
+        authorizeCoreOperation(event, kind)
+        const input = definition.input.safeParse(raw)
+        if (!input.success)
           throw new CapabilityError('validation_failed', false)
-        return operation(value.data)
-      }, schema)
+        return requestCore(kind, input.data)
+      }, definition.output)
     )
-  capability('party:read', partySnapshotSchema, false, z.undefined(), () =>
-    requireCore().partyRead()
-  )
-  capability(
-    'party:setMembership',
-    partySnapshotSchema,
-    true,
-    setMembershipInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof setMembershipInputSchema>
-      return requireCore().partySetMembership(
-        i.id,
-        i.active,
-        i.expectedRevision
-      )
-    }
-  )
-  capability(
-    'party:create',
-    partySnapshotSchema,
-    true,
-    createPartyCharacterInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof createPartyCharacterInputSchema>
-      return requireCore().partyCreate(i.character, i.expectedRevision)
-    }
-  )
-  capability(
-    'party:update',
-    partySnapshotSchema,
-    true,
-    updatePartyCharacterInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof updatePartyCharacterInputSchema>
-      return requireCore().partyUpdate(i.id, i.character, i.expectedRevision)
-    }
-  )
-  capability(
-    'party:delete',
-    partySnapshotSchema,
-    true,
-    deletePartyCharacterInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof deletePartyCharacterInputSchema>
-      return requireCore().partyDelete(i.id, i.expectedRevision)
-    }
-  )
-  capability(
-    'party:adjustXp',
-    partySnapshotSchema,
-    true,
-    adjustPartyXpInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof adjustPartyXpInputSchema>
-      return requireCore().partyAdjustXp(i.id, i.delta, i.expectedRevision)
-    }
-  )
-  capability(
-    'party:rest',
-    partySnapshotSchema,
-    true,
-    restPartyInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof restPartyInputSchema>
-      return requireCore().partyRest(i.type, i.expectedRevision)
-    }
-  )
-  capability(
-    'party:calculateAdventuringDay',
-    adventuringDayCalculationSchema,
-    false,
-    adventuringDayInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof adventuringDayInputSchema>
-      return requireCore().partyCalculateAdventuringDay(i.rows, i.totalXp)
-    }
-  )
-  capability(
-    'creatures:search',
-    creatureCatalogPageSchema,
-    false,
-    creatureCatalogQuerySchema,
-    (v) =>
-      requireCore().creaturesSearch(
-        v as z.infer<typeof creatureCatalogQuerySchema>
-      )
-  )
-  capability(
-    'creatures:filterOptions',
-    creatureFilterOptionsSchema,
-    false,
-    z.undefined(),
-    () => requireCore().creaturesFilterOptions()
-  )
-  capability(
-    'creatures:detail',
-    creatureSchema,
-    false,
-    z.object({ id: z.string() }).strict(),
-    (v) => requireCore().creaturesDetail((v as { id: string }).id)
-  )
-  capability(
-    'locations:read',
-    worldLocationSnapshotSchema,
-    false,
-    z.undefined(),
-    () => requireCore().locationsRead()
-  )
-  capability(
-    'locations:create',
-    worldLocationSnapshotSchema,
-    true,
-    createWorldLocationInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof createWorldLocationInputSchema>
-      return requireCore().locationsCreate(i.location, i.expectedRevision)
-    }
-  )
-  capability(
-    'locations:update',
-    worldLocationSnapshotSchema,
-    true,
-    updateWorldLocationInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof updateWorldLocationInputSchema>
-      return requireCore().locationsUpdate(i.id, i.location, i.expectedRevision)
-    }
-  )
-  capability(
-    'locations:delete',
-    worldLocationSnapshotSchema,
-    true,
-    deleteWorldLocationInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof deleteWorldLocationInputSchema>
-      return requireCore().locationsDelete(i.id, i.expectedRevision)
-    }
-  )
-  capability(
-    'hex:terrainCatalog',
-    hexTerrainCatalogSchema,
-    false,
-    z.undefined(),
-    () => requireCore().hexTerrainCatalog()
-  )
-  capability(
-    'hex:catalog',
-    hexMapCatalogSnapshotSchema,
-    false,
-    z.undefined(),
-    () => requireCore().hexCatalog()
-  )
-  capability(
-    'hex:read',
-    hexMapSnapshotSchema,
-    false,
-    z.object({ mapId: z.uuid() }).strict(),
-    (v) => requireCore().hexRead((v as { mapId: string }).mapId)
-  )
-  capability(
-    'hex:create',
-    hexMapSnapshotSchema,
-    true,
-    createHexMapInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof createHexMapInputSchema>
-      return requireCore().hexCreate(i.displayName, i.expectedCatalogRevision)
-    }
-  )
-  capability(
-    'hex:update',
-    hexMapSnapshotSchema,
-    true,
-    updateHexMapInputSchema,
-    (v) => requireCore().hexUpdate(v as z.infer<typeof updateHexMapInputSchema>)
-  )
-  capability(
-    'hex:paint',
-    hexMapSnapshotSchema,
-    true,
-    paintHexTerrainInputSchema,
-    (v) =>
-      requireCore().hexPaint(v as z.infer<typeof paintHexTerrainInputSchema>)
-  )
-  capability(
-    'hex:placeLocation',
-    hexMapSnapshotSchema,
-    true,
-    placeHexLocationInputSchema,
-    (v) =>
-      requireCore().hexPlaceLocation(
-        v as z.infer<typeof placeHexLocationInputSchema>
-      )
-  )
-  capability(
-    'hex:removeLocation',
-    hexMapSnapshotSchema,
-    true,
-    removeHexLocationInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof removeHexLocationInputSchema>
-      return requireCore().hexRemoveLocation(
-        i.locationId,
-        i.expectedMapRevision
-      )
-    }
-  )
-  capability(
-    'hex-travel:read',
-    hexTravelSnapshotSchema,
-    false,
-    z.object({ sceneId: z.uuid() }).strict(),
-    (v) => requireCore().hexTravelRead((v as { sceneId: string }).sceneId)
-  )
-  capability(
-    'hex-travel:evaluate',
-    hexRouteEvaluationSchema,
-    false,
-    evaluateHexRouteInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof evaluateHexRouteInputSchema>
-      return requireCore().hexTravelEvaluate(i.sceneId, i.mapId, i.waypoints)
-    }
-  )
-  capability(
-    'hex-travel:position',
-    hexTravelSnapshotSchema,
-    true,
-    positionHexPartyInputSchema,
-    (v) =>
-      requireCore().hexTravelPosition(
-        v as z.infer<typeof positionHexPartyInputSchema>
-      )
-  )
-  capability(
-    'hex-travel:start',
-    hexTravelSnapshotSchema,
-    true,
-    startHexTravelInputSchema,
-    (v) =>
-      requireCore().hexTravelStart(
-        v as z.infer<typeof startHexTravelInputSchema>
-      )
-  )
-  for (const action of ['pause', 'resume', 'abort'] as const)
-    capability(
-      `hex-travel:${action}`,
-      hexTravelSnapshotSchema,
-      true,
-      mutateHexTravelInputSchema,
-      (v) => {
-        const i = v as z.infer<typeof mutateHexTravelInputSchema>
-        return requireCore().hexTravelMutate(
-          action,
-          i.sceneId,
-          i.expectedRevision
-        )
-      }
-    )
-  capability(
-    'hex-travel:setMultiplier',
-    hexTravelSnapshotSchema,
-    true,
-    setHexTravelMultiplierInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof setHexTravelMultiplierInputSchema>
-      return requireCore().hexTravelSetMultiplier(
-        i.sceneId,
-        i.multiplier,
-        i.expectedRevision
-      )
-    }
-  )
-  capability(
-    'encounter-tables:read',
-    encounterTableSnapshotSchema,
-    false,
-    z.undefined(),
-    () => requireCore().encounterTablesRead()
-  )
-  capability(
-    'encounter-tables:create',
-    encounterTableSnapshotSchema,
-    true,
-    createEncounterTableInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof createEncounterTableInputSchema>
-      return requireCore().encounterTablesCreate(i.table, i.expectedRevision)
-    }
-  )
-  capability(
-    'encounter-tables:update',
-    encounterTableSnapshotSchema,
-    true,
-    updateEncounterTableInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof updateEncounterTableInputSchema>
-      return requireCore().encounterTablesUpdate(
-        i.id,
-        i.table,
-        i.expectedRevision
-      )
-    }
-  )
-  capability(
-    'encounter-tables:delete',
-    encounterTableSnapshotSchema,
-    true,
-    deleteEncounterTableInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof deleteEncounterTableInputSchema>
-      return requireCore().encounterTablesDelete(i.id, i.expectedRevision)
-    }
-  )
-  capability(
-    'factions:read',
-    worldFactionSnapshotSchema,
-    false,
-    z.undefined(),
-    () => requireCore().factionsRead()
-  )
-  capability(
-    'factions:create',
-    worldFactionSnapshotSchema,
-    true,
-    createWorldFactionInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof createWorldFactionInputSchema>
-      return requireCore().factionsCreate(i.faction, i.expectedRevision)
-    }
-  )
-  capability(
-    'factions:update',
-    worldFactionSnapshotSchema,
-    true,
-    updateWorldFactionInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof updateWorldFactionInputSchema>
-      return requireCore().factionsUpdate(i.id, i.faction, i.expectedRevision)
-    }
-  )
-  capability(
-    'factions:delete',
-    worldFactionSnapshotSchema,
-    true,
-    deleteWorldFactionInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof deleteWorldFactionInputSchema>
-      return requireCore().factionsDelete(i.id, i.expectedRevision)
-    }
-  )
-  capability(
-    'session:read',
-    liveSessionSnapshotSchema,
-    false,
-    z.undefined(),
-    () => requireCore().sessionRead()
-  )
-  capability(
-    'scene:focus',
-    liveSessionSnapshotSchema,
-    true,
-    focusSceneInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof focusSceneInputSchema>
-      return requireCore().sceneFocus(i.sceneId, i.expectedRevision)
-    }
-  )
-  capability(
-    'scene:setLocation',
-    liveSessionSnapshotSchema,
-    true,
-    setSceneLocationInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof setSceneLocationInputSchema>
-      return requireCore().sceneSetLocation(
-        i.sceneId,
-        i.locationId,
-        i.expectedRevision
-      )
-    }
-  )
-  capability(
-    'scene:saveGroup',
-    liveSessionSnapshotSchema,
-    true,
-    saveSceneGroupInputSchema,
-    (v) =>
-      requireCore().sceneSaveGroup(
-        v as z.infer<typeof saveSceneGroupInputSchema>
-      )
-  )
-  capability(
-    'scene:deleteGroup',
-    liveSessionSnapshotSchema,
-    true,
-    deleteSceneGroupInputSchema,
-    (v) =>
-      requireCore().sceneDeleteGroup(
-        v as z.infer<typeof deleteSceneGroupInputSchema>
-      )
-  )
-  capability(
-    'scene:assignPartyMember',
-    liveSessionSnapshotSchema,
-    true,
-    assignScenePartyInputSchema,
-    (v) =>
-      requireCore().sceneAssignPartyMember(
-        v as z.infer<typeof assignScenePartyInputSchema>
-      )
-  )
-  capability(
-    'scene:evaluateGroupDraft',
-    sceneGroupDraftEvaluationSchema,
-    false,
-    evaluateSceneGroupDraftInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof evaluateSceneGroupDraftInputSchema>
-      return requireCore().sceneEvaluateGroupDraft(
-        i.sceneId,
-        i.entries,
-        i.expectedRevision
-      )
-    }
-  )
-  capability(
-    'scene:generateGroupDraft',
-    sceneGroupDraftGenerationSchema,
-    false,
-    sceneGroupDraftGenerationRequestSchema,
-    (v) => {
-      const i = v as z.infer<typeof sceneGroupDraftGenerationRequestSchema>
-      return requireCore().sceneGenerateGroupDraft(
-        i.sceneId,
-        i.entries,
-        i.mode,
-        i.filters,
-        i.tuning,
-        i.seed,
-        i.expectedRevision
-      )
-    }
-  )
-  capability(
-    'encounter:evaluate',
-    encounterSelectionEvaluationSchema,
-    false,
-    evaluateEncounterSelectionInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof evaluateEncounterSelectionInputSchema>
-      return requireCore().encounterEvaluate(
-        i.sceneId,
-        i.groupIds,
-        i.expectedRevision
-      )
-    }
-  )
-  capability(
-    'combat:prepare',
-    liveSessionSnapshotSchema,
-    true,
-    prepareCombatInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof prepareCombatInputSchema>
-      return requireCore().combatPrepare(
-        i.sceneId,
-        i.groupIds,
-        i.expectedSceneRevision
-      )
-    }
-  )
-  capability(
-    'combat:rollInitiative',
-    liveSessionSnapshotSchema,
-    true,
-    combatRevisionInputSchema,
-    (v) =>
-      requireCore().combatRollInitiative(
-        (v as z.infer<typeof combatRevisionInputSchema>).expectedRevision
-      )
-  )
-  capability(
-    'combat:confirmInitiative',
-    liveSessionSnapshotSchema,
-    true,
-    confirmInitiativeInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof confirmInitiativeInputSchema>
-      return requireCore().combatConfirmInitiative(i.values, i.expectedRevision)
-    }
-  )
-  capability(
-    'combat:advanceTurn',
-    liveSessionSnapshotSchema,
-    true,
-    combatRevisionInputSchema,
-    (v) =>
-      requireCore().combatAdvanceTurn(
-        (v as z.infer<typeof combatRevisionInputSchema>).expectedRevision
-      )
-  )
-  capability(
-    'combat:adjustInitiative',
-    liveSessionSnapshotSchema,
-    true,
-    adjustInitiativeInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof adjustInitiativeInputSchema>
-      return requireCore().combatAdjustInitiative(
-        i.id,
-        i.initiative,
-        i.expectedRevision
-      )
-    }
-  )
-  capability(
-    'combat:changeHp',
-    liveSessionSnapshotSchema,
-    true,
-    changeHpInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof changeHpInputSchema>
-      return requireCore().combatChangeHp(
-        i.cardId,
-        i.amount,
-        i.healing,
-        i.expectedRevision
-      )
-    }
-  )
-  capability(
-    'combat:end',
-    liveSessionSnapshotSchema,
-    true,
-    combatRevisionInputSchema,
-    (v) =>
-      requireCore().combatEnd(
-        (v as z.infer<typeof combatRevisionInputSchema>).expectedRevision
-      )
-  )
-  capability(
-    'combat:updateResolution',
-    liveSessionSnapshotSchema,
-    true,
-    updateResolutionInputSchema,
-    (v) => {
-      const i = v as z.infer<typeof updateResolutionInputSchema>
-      return requireCore().combatUpdateResolution(
-        i.selectedEnemyIds,
-        i.thresholdFraction,
-        i.xpFraction,
-        i.expectedRevision
-      )
-    }
-  )
-  capability(
-    'combat:awardXp',
-    liveSessionSnapshotSchema,
-    true,
-    combatRevisionInputSchema,
-    (v) =>
-      requireCore().combatAwardXp(
-        (v as z.infer<typeof combatRevisionInputSchema>).expectedRevision
-      )
-  )
-  capability(
-    'combat:complete',
-    liveSessionSnapshotSchema,
-    true,
-    combatRevisionInputSchema,
-    (v) =>
-      requireCore().combatComplete(
-        (v as z.infer<typeof combatRevisionInputSchema>).expectedRevision
-      )
-  )
+  }
+}
+
+function requestCore(
+  kind: CoreOperationKind,
+  input: unknown
+): Promise<unknown> {
+  // The operation table validates here and the supervisor validates again at
+  // the process boundary.
+  return requireCore().requestOperation(kind, input as never)
+}
+
+function registerRuntimeOperations(): void {
   ipcMain.handle('runtime:memory', (event) => {
-    authorize(event, false)
+    authorize(event, ['gm', 'qualification'], false)
     return app
       .getAppMetrics()
       .reduce((total, metric) => total + metric.memory.workingSetSize * 1024, 0)
   })
   ipcMain.handle('runtime:gpu-observation', async (event) => {
-    authorize(event, false)
+    authorize(event, ['gm', 'qualification'], false)
     await app.getGPUInfo('complete')
     return runtimeGpuObservationSchema.parse(await gpuObservation())
   })
-  createMainWindow()
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createMainWindow()
+  ipcMain.handle('runtime:core-status', (event) => {
+    authorize(event, ['gm', 'passive', 'qualification'], false)
+    return coreProcessStatusSchema.parse(requireCore().status())
+  })
+  ipcMain.handle('runtime:retry-core', (event) => {
+    authorize(event, ['gm', 'qualification'], false)
+    const current = requireCore()
+    current.retry()
+    return coreProcessStatusSchema.parse(current.status())
   })
 }
 
@@ -805,19 +135,17 @@ async function gpuObservation(): Promise<RuntimeGpuObservation> {
 function gpuDevices(info: unknown): RuntimeGpuObservation['activeGpuDevices'] {
   const records = objectValue(info)['gpuDevice']
   if (!Array.isArray(records)) return []
-  return records.flatMap((record) => {
+  return records.map((record) => {
     const device = objectValue(record)
-    return [
-      {
-        active: device['active'] === true,
-        deviceId: stringValue(device['deviceId']),
-        vendorId: stringValue(device['vendorId']),
-        deviceName: stringValue(device['deviceString']),
-        vendorName: stringValue(device['vendorString']),
-        driverVendor: stringValue(device['driverVendor']),
-        driverVersion: stringValue(device['driverVersion'])
-      }
-    ]
+    return {
+      active: device['active'] === true,
+      deviceId: stringValue(device['deviceId']),
+      vendorId: stringValue(device['vendorId']),
+      deviceName: stringValue(device['deviceString']),
+      vendorName: stringValue(device['vendorString']),
+      driverVendor: stringValue(device['driverVendor']),
+      driverVersion: stringValue(device['driverVersion'])
+    }
   })
 }
 
@@ -849,49 +177,70 @@ function stringValue(value: unknown): string {
   return typeof value === 'string' ? value : ''
 }
 
-export function stopApplication(): void {
-  core?.close()
+export async function stopApplication(): Promise<void> {
+  await core?.closeGracefully()
   core = undefined
 }
 
-function requireCore(): CoreProcessClient {
+export function waitForCoreReady(): Promise<void> {
+  return requireCore().waitUntilReady()
+}
+
+function requireCore(): CoreProcessSupervisor {
   if (core === undefined) throw new CapabilityError('core_unavailable', true)
   return core
 }
 
-function authorize(event: IpcMainInvokeEvent, requiresWrite: boolean): void {
+function authorize(
+  event: IpcMainInvokeEvent,
+  allowedRoles: readonly WindowRole[],
+  requiresWrite: boolean
+): void {
   const window = BrowserWindow.fromWebContents(event.sender)
   if (window === null || window.isDestroyed())
     throw new CapabilityError('protocol_violation', false)
-  if (requiresWrite && isReadOnlyWindow(event.sender)) {
+  const role: WindowRole = isReadOnlyWindow(event.sender)
+    ? 'passive'
+    : process.argv.includes('--m1-qualification')
+      ? 'qualification'
+      : 'gm'
+  if (!allowedRoles.includes(role) || (requiresWrite && role !== 'gm'))
     throw new CapabilityError('read_only', false)
-  }
 }
 
-async function invokeCapability(
-  operation: () => Promise<CampaignSnapshot>
-): Promise<unknown> {
-  try {
-    return campaignCapabilityResponseSchema.parse({
-      ok: true,
-      snapshot: await operation()
-    })
-  } catch (error) {
-    const failure =
-      error instanceof CapabilityError
-        ? { code: error.code, retryable: error.retryable }
-        : { code: 'internal' as const, retryable: false }
-    return campaignCapabilityResponseSchema.parse({ ok: false, error: failure })
-  }
+function authorizeCoreOperation(
+  event: IpcMainInvokeEvent,
+  kind: CoreOperationKind
+): void {
+  const window = BrowserWindow.fromWebContents(event.sender)
+  if (window === null || window.isDestroyed())
+    throw new CapabilityError('protocol_violation', false)
+  const role: WindowRole = isReadOnlyWindow(event.sender)
+    ? 'passive'
+    : process.argv.includes('--m1-qualification')
+      ? 'qualification'
+      : 'gm'
+  if (!roleCanInvoke(role, kind)) throw new CapabilityError('read_only', false)
 }
-async function invokeGeneric<T>(
-  operation: () => Promise<T>,
-  schema: z.ZodType<T>
+
+async function invokeGeneric(
+  operation: () => Promise<unknown>,
+  schema: OperationDefinition['output']
 ): Promise<unknown> {
   try {
     return { ok: true, payload: schema.parse(await operation()) }
   } catch (error) {
     const code = error instanceof CapabilityError ? error.code : 'internal'
-    return { ok: false, error: { code, retryable: false } }
+    const retryable = error instanceof CapabilityError ? error.retryable : false
+    return {
+      ok: false,
+      error: {
+        code,
+        retryable,
+        ...(error instanceof CapabilityError && error.data
+          ? { data: error.data }
+          : {})
+      }
+    }
   }
 }

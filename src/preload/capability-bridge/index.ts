@@ -2,7 +2,8 @@ import { contextBridge, ipcRenderer } from 'electron'
 import { z } from 'zod'
 import {
   activateCampaignInputSchema,
-  campaignCapabilityResponseSchema,
+  campaignSnapshotSchema,
+  capabilityFailureSchema,
   createCampaignInputSchema,
   freezeCampaignSnapshot
 } from '../../shared/contracts/campaign.js'
@@ -35,6 +36,7 @@ import {
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import { runtimeGpuObservationSchema } from '../../shared/qualification/runtime-observation.js'
 import type { SaltMarcherApi } from '../../shared/contracts/capability-api.js'
+import { operationForChannel } from '../../shared/contracts/operations.js'
 import {
   assignScenePartyInputSchema,
   deleteSceneGroupInputSchema,
@@ -48,7 +50,13 @@ import {
   sceneGroupDraftGenerationRequestSchema,
   sceneGroupDraftGenerationSchema
 } from '../../shared/contracts/scene.js'
-import { sessionLayoutPreferenceSchema } from '../../shared/contracts/session-layout.js'
+import { coreProcessStatusSchema } from '../../shared/contracts/runtime.js'
+import { sessionChangeNoticeSchema } from '../../shared/contracts/session-change.js'
+import {
+  installationPreferencesSchema,
+  installationSettingsSchema,
+  updateInstallationSettingsInputSchema
+} from '../../shared/contracts/settings.js'
 import {
   createWorldLocationInputSchema,
   deleteWorldLocationInputSchema,
@@ -68,8 +76,11 @@ import {
 import {
   createHexMapInputSchema,
   evaluateHexRouteInputSchema,
+  hexChunkReadResultSchema,
+  hexChunkSnapshotSchema,
   hexMapCatalogSnapshotSchema,
-  hexMapSnapshotSchema,
+  hexLocationPlacementReferenceSchema,
+  hexMapSummarySchema,
   hexRouteEvaluationSchema,
   hexTerrainCatalogSchema,
   hexTravelSnapshotSchema,
@@ -77,6 +88,7 @@ import {
   paintHexTerrainInputSchema,
   placeHexLocationInputSchema,
   positionHexPartyInputSchema,
+  readHexChunksInputSchema,
   removeHexLocationInputSchema,
   setHexTravelMultiplierInputSchema,
   startHexTravelInputSchema,
@@ -89,35 +101,27 @@ async function invoke<T>(
   schema: { safeParse(value: unknown): { success: boolean; data?: T } }
 ): Promise<T> {
   try {
-    const raw: unknown = await ipcRenderer.invoke(channel, input)
+    const operation = operationForChannel(channel)
+    if (operation === null)
+      throw new CapabilityError('protocol_violation', false)
+    const raw: unknown = await ipcRenderer.invoke(operation[1].channel!, input)
     const result = z
       .discriminatedUnion('ok', [
         z.object({ ok: z.literal(true), payload: z.unknown() }).passthrough(),
         z
           .object({
             ok: z.literal(false),
-            error: z
-              .object({
-                code: z.enum([
-                  'validation_failed',
-                  'stale',
-                  'not_found',
-                  'read_only',
-                  'timeout',
-                  'outcome_unknown',
-                  'core_unavailable',
-                  'protocol_violation',
-                  'internal'
-                ]),
-                retryable: z.boolean()
-              })
-              .strict()
+            error: capabilityFailureSchema
           })
           .passthrough()
       ])
       .parse(raw)
     if (!result.ok)
-      throw new CapabilityError(result.error.code, result.error.retryable)
+      throw new CapabilityError(
+        result.error.code,
+        result.error.retryable,
+        result.error.data
+      )
     const value = schema.safeParse(result.payload)
     if (!value.success) throw new CapabilityError('protocol_violation', false)
     return value.data!
@@ -133,31 +137,39 @@ const live = async (channel: string, input: unknown) =>
 const api: SaltMarcherApi = {
   campaigns: {
     async list() {
-      const result = campaignCapabilityResponseSchema.parse(
-        await ipcRenderer.invoke('campaign:list')
+      return freezeCampaignSnapshot(
+        await invoke('campaign:list', undefined, campaignSnapshotSchema)
       )
-      if (!result.ok)
-        throw new CapabilityError(result.error.code, result.error.retryable)
-      return freezeCampaignSnapshot(result.snapshot)
     },
     async create(name) {
       const input = createCampaignInputSchema.parse({ name })
-      const result = campaignCapabilityResponseSchema.parse(
-        await ipcRenderer.invoke('campaign:create', input)
+      return freezeCampaignSnapshot(
+        await invoke('campaign:create', input, campaignSnapshotSchema)
       )
-      if (!result.ok)
-        throw new CapabilityError(result.error.code, result.error.retryable)
-      return freezeCampaignSnapshot(result.snapshot)
     },
     async activate(id) {
       const input = activateCampaignInputSchema.parse({ id })
-      const result = campaignCapabilityResponseSchema.parse(
-        await ipcRenderer.invoke('campaign:activate', input)
+      return freezeCampaignSnapshot(
+        await invoke('campaign:activate', input, campaignSnapshotSchema)
       )
-      if (!result.ok)
-        throw new CapabilityError(result.error.code, result.error.retryable)
-      return freezeCampaignSnapshot(result.snapshot)
     }
+  },
+  settings: {
+    read: async () =>
+      freezeDeep(
+        await invoke('settings:read', undefined, installationSettingsSchema)
+      ),
+    update: async (patch, expectedRevision) =>
+      freezeDeep(
+        await invoke(
+          'settings:update',
+          updateInstallationSettingsInputSchema.parse({
+            patch: installationPreferencesSchema.partial().parse(patch),
+            expectedRevision
+          }),
+          installationSettingsSchema
+        )
+      )
   },
   party: {
     read: async () =>
@@ -353,8 +365,20 @@ const api: SaltMarcherApi = {
       freezeDeep(
         await invoke('hex:catalog', undefined, hexMapCatalogSnapshotSchema)
       ),
-    read: async (mapId) =>
-      freezeDeep(await invoke('hex:read', { mapId }, hexMapSnapshotSchema)),
+    locateLocation: (locationId) =>
+      invoke(
+        'hex:locateLocation',
+        { locationId },
+        hexLocationPlacementReferenceSchema
+      ),
+    readChunks: async (mapId, keys) =>
+      freezeDeep(
+        await invoke(
+          'hex:readChunks',
+          readHexChunksInputSchema.parse({ mapId, keys }),
+          hexChunkReadResultSchema
+        )
+      ),
     create: async (displayName, expectedCatalogRevision) =>
       freezeDeep(
         await invoke(
@@ -363,30 +387,22 @@ const api: SaltMarcherApi = {
             displayName,
             expectedCatalogRevision
           }),
-          hexMapSnapshotSchema
+          hexMapSummarySchema
         )
       ),
-    update: async (
-      mapId,
-      displayName,
-      radius,
-      confirmDataLoss,
-      expectedRevision
-    ) =>
+    updateMetadata: async (mapId, displayName, expectedMetadataRevision) =>
       freezeDeep(
         await invoke(
           'hex:update',
           updateHexMapInputSchema.parse({
             mapId,
             displayName,
-            radius,
-            confirmDataLoss,
-            expectedRevision
+            expectedMetadataRevision
           }),
-          hexMapSnapshotSchema
+          hexMapSummarySchema
         )
       ),
-    paint: async (mapId, coordinate, terrainId, expectedRevision) =>
+    paint: async (mapId, coordinate, terrainId, expectedChunkRevision) =>
       freezeDeep(
         await invoke(
           'hex:paint',
@@ -394,9 +410,9 @@ const api: SaltMarcherApi = {
             mapId,
             coordinate,
             terrainId,
-            expectedRevision
+            expectedChunkRevision
           }),
-          hexMapSnapshotSchema
+          hexChunkSnapshotSchema
         )
       ),
     placeLocation: async (mapId, locationId, coordinate, expectedRevision) =>
@@ -407,20 +423,21 @@ const api: SaltMarcherApi = {
             mapId,
             locationId,
             coordinate,
-            expectedRevision
+            expectedContentRevision: expectedRevision
           }),
-          hexMapSnapshotSchema
+          hexChunkReadResultSchema
         )
       ),
-    removeLocation: async (locationId, expectedMapRevision) =>
+    removeLocation: async (mapId, locationId, expectedContentRevision) =>
       freezeDeep(
         await invoke(
           'hex:removeLocation',
           removeHexLocationInputSchema.parse({
+            mapId,
             locationId,
-            expectedMapRevision
+            expectedContentRevision
           }),
-          hexMapSnapshotSchema
+          hexChunkReadResultSchema
         )
       )
   },
@@ -493,22 +510,12 @@ const api: SaltMarcherApi = {
   },
   session: {
     read: () => live('session:read', undefined),
-    readLayout: async () =>
-      freezeDeep(
-        await invoke(
-          'session-layout:read',
-          undefined,
-          sessionLayoutPreferenceSchema
-        )
-      ),
-    saveLayout: async (preference) =>
-      freezeDeep(
-        await invoke(
-          'session-layout:save',
-          sessionLayoutPreferenceSchema.parse(preference),
-          sessionLayoutPreferenceSchema
-        )
-      )
+    onChanged(listener) {
+      const handler = (_event: Electron.IpcRendererEvent, raw: unknown) =>
+        listener(freezeDeep(sessionChangeNoticeSchema.parse(raw)))
+      ipcRenderer.on('session:changed', handler)
+      return () => ipcRenderer.removeListener('session:changed', handler)
+    }
   },
   scene: {
     focus: (sceneId, expectedRevision) =>
@@ -678,6 +685,23 @@ const api: SaltMarcherApi = {
       return runtimeGpuObservationSchema.parse(
         await ipcRenderer.invoke('runtime:gpu-observation')
       )
+    },
+    async coreStatus() {
+      return coreProcessStatusSchema.parse(
+        await ipcRenderer.invoke('runtime:core-status')
+      )
+    },
+    async retryCore() {
+      return coreProcessStatusSchema.parse(
+        await ipcRenderer.invoke('runtime:retry-core')
+      )
+    },
+    onCoreStatus(listener) {
+      const handler = (_event: Electron.IpcRendererEvent, raw: unknown) =>
+        listener(coreProcessStatusSchema.parse(raw))
+      ipcRenderer.on('runtime:core-status-changed', handler)
+      return () =>
+        ipcRenderer.removeListener('runtime:core-status-changed', handler)
     }
   })
 }

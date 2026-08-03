@@ -1,3 +1,4 @@
+import { CapabilityError } from '../../shared/errors/capability-error.js'
 import type {
   Creature,
   CreatureCatalogQuery
@@ -22,7 +23,7 @@ import {
   creatures
 } from '../creatures/catalog.js'
 import { difficulty, multiplier, partyThresholds } from '../encounter/math.js'
-import type { ResolvedEncounterSource } from '../worldplanner/encounter-source-store.js'
+import type { ResolvedEncounterSource } from '../application/encounter-source-service.js'
 
 type DraftEntry = { creatureId: string; quantity: number }
 
@@ -44,7 +45,7 @@ export function evaluateSceneGroups(
     scene.groups.find((group) => group.id === id)
   )
   if (selected.some((group) => group === undefined))
-    throw new Error('not found')
+    throw new CapabilityError('not_found', false)
   const groups = selected as SceneGroup[]
   const evaluation = evaluateSceneGroupDraft(
     scene.id,
@@ -129,7 +130,7 @@ export function generateSceneGroupDraft(
     assignedParty.length === 0 ||
     assignedParty.some((member) => member.level === null)
   )
-    throw new Error('validation')
+    throw new CapabilityError('validation_failed', false)
 
   const base = mode === 'fill' ? normalizeEntries(input) : []
   const thresholds = partyThresholds(assignedParty)

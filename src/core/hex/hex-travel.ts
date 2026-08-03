@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3'
+import { CapabilityError } from '../../shared/errors/capability-error.js'
 import { z } from 'zod'
 import {
   axialCoordinateSchema,
@@ -13,24 +14,15 @@ import {
   type HexRouteEvaluation,
   type HexTravelSnapshot
 } from '../../shared/contracts/hex.js'
-import { initializePartySchema, PartyStore } from '../party/party-store.js'
-import { initializeSceneSchema, SceneStore } from '../scene/scene-store.js'
-import {
-  initializeWorldLocationSchema,
-  WorldLocationStore
-} from '../worldplanner/location-store.js'
-import {
-  HexMapStore,
-  initializeHexSchema,
-  insideRadius,
-  parseTileId,
-  tileId,
-  tileLabel
-} from './hex-map-store.js'
+import { PartyStore } from '../party/party-store.js'
+import { SceneStore } from '../scene/scene-store.js'
+import { WorldLocationStore } from '../worldplanner/location-store.js'
+import { HexMapStore, parseTileId, tileId, tileLabel } from './hex-map-store.js'
 import { terrainDefinition } from './terrain-catalog.js'
 
 const hexDistanceMiles = 3
 const speedToMphDivisor = 10
+const maximumExpandedRouteSteps = 10_000
 
 type JourneyStatus =
   'travelling' | 'paused' | 'blocked' | 'completed' | 'aborted'
@@ -108,15 +100,24 @@ export function travelGameSeconds(speedFeet: number, cost: number): number {
 }
 
 export class HexTravelService {
-  private readonly prepared = new Set<string>()
-
   constructor(
-    private readonly campaignPath: () => string,
+    private readonly campaignDatabase: () => Database.Database,
     private readonly now: () => number = Date.now
   ) {}
 
   read(sceneId?: string): HexTravelSnapshot {
     return this.withStore((store) => store.read(sceneId))
+  }
+
+  tick(): {
+    changed: readonly HexTravelSnapshot[]
+    active: boolean
+  } {
+    return this.withStore((store) => store.advanceActive())
+  }
+
+  nextBoundaryDelay(): number | null {
+    return this.withStore((store) => store.nextBoundaryDelay())
   }
 
   evaluate(input: unknown): HexRouteEvaluation {
@@ -155,35 +156,17 @@ export class HexTravelService {
   }
 
   private withStore<T>(work: (store: HexTravelStore) => T): T {
-    const path = this.campaignPath()
-    const db = new Database(path)
-    db.pragma('foreign_keys = ON')
-    try {
-      initializePartySchema(db)
-      initializeWorldLocationSchema(db)
-      initializeSceneSchema(db)
-      initializeHexSchema(db)
-      if (!this.prepared.has(path)) {
-        db.prepare(
-          `UPDATE hex_journey SET status = 'paused', segment_started_at = NULL,
-           revision = revision + 1, hint = 'Nach dem Neustart pausiert.'
-           WHERE status = 'travelling'`
-        ).run()
-        this.prepared.add(path)
-      }
-      const locations = new WorldLocationStore(db)
-      return work(
-        new HexTravelStore(
-          db,
-          new HexMapStore(db),
-          new PartyStore(db),
-          new SceneStore(db, () => locations.read().locations),
-          this.now
-        )
+    const db = this.campaignDatabase()
+    const locations = new WorldLocationStore(db)
+    return work(
+      new HexTravelStore(
+        db,
+        new HexMapStore(db, locations),
+        new PartyStore(db),
+        new SceneStore(db, () => locations.read().locations),
+        this.now
       )
-    } finally {
-      db.close()
-    }
+    )
   }
 }
 
@@ -198,9 +181,54 @@ export class HexTravelStore {
 
   read(requestedSceneId?: string): HexTravelSnapshot {
     const sceneId = requestedSceneId ?? this.scenes.focusedSceneId()
-    const journey = this.journey(sceneId)
-    if (journey?.status === 'travelling') this.advance(journey)
     return this.snapshot(sceneId, this.journey(sceneId))
+  }
+
+  advanceActive(): {
+    changed: readonly HexTravelSnapshot[]
+    active: boolean
+  } {
+    const sceneIds = this.db
+      .prepare(
+        "SELECT scene_id AS sceneId FROM hex_journey WHERE status = 'travelling'"
+      )
+      .all() as { sceneId: string }[]
+    const changed: HexTravelSnapshot[] = []
+    for (const { sceneId } of sceneIds) {
+      const before = this.journey(sceneId)
+      if (before === null) continue
+      this.advance(before)
+      const after = this.journey(sceneId)
+      if (after !== null && after.revision !== before.revision)
+        changed.push(this.snapshot(sceneId, after))
+    }
+    const active =
+      this.db
+        .prepare(
+          "SELECT 1 FROM hex_journey WHERE status = 'travelling' LIMIT 1"
+        )
+        .get() !== undefined
+    return { changed, active }
+  }
+
+  nextBoundaryDelay(): number | null {
+    const journeys = this.db
+      .prepare(
+        `SELECT scene_id AS sceneId, revision, map_id AS mapId, status,
+                path_json AS pathJson, current_index AS currentIndex,
+                party_member_ids_json AS partyMemberIdsJson,
+                multiplier, segment_started_at AS segmentStartedAt, hint
+         FROM hex_journey WHERE status = 'travelling'`
+      )
+      .all() as JourneyRow[]
+    let next: number | null = null
+    for (const journey of journeys) {
+      const endsAt = this.segmentEndsAt(journey)
+      if (endsAt === null) continue
+      const delay = Math.max(0, endsAt - this.now())
+      next = next === null ? delay : Math.min(next, delay)
+    }
+    return next
   }
 
   evaluate(input: z.infer<typeof evaluateHexRouteInputSchema>) {
@@ -211,12 +239,10 @@ export class HexTravelStore {
 
   position(input: z.infer<typeof positionHexPartyInputSchema>) {
     if (this.scenes.revision() !== input.expectedSceneRevision)
-      throw new Error('stale')
-    const map = this.maps.read(input.mapId).map
-    if (!insideRadius(input.coordinate, map.radius))
-      throw new Error('validation')
+      throw new CapabilityError('stale', true)
+    this.maps.summary(input.mapId)
     const ids = this.scenes.partyMemberIds(input.sceneId)
-    if (ids.length === 0) throw new Error('validation')
+    if (ids.length === 0) throw new CapabilityError('validation_failed', false)
     this.db.transaction(() => {
       this.party.setTravelPosition(ids, input.mapId, tileId(input.coordinate))
       this.setSceneLocation(input.sceneId, input.mapId, input.coordinate, 0)
@@ -230,9 +256,10 @@ export class HexTravelStore {
   start(input: z.infer<typeof startHexTravelInputSchema>) {
     const current = this.journey(input.sceneId)
     if ((current?.revision ?? 0) !== input.expectedRevision)
-      throw new Error('stale')
+      throw new CapabilityError('stale', true)
     const evaluation = this.route(input.sceneId, input.mapId, input.waypoints)
-    if (!evaluation.canStart) throw new Error(evaluation.message)
+    if (!evaluation.canStart)
+      throw new CapabilityError('validation_failed', false)
     const partyMemberIds = this.scenes.partyMemberIds(input.sceneId)
     const status: JourneyStatus =
       evaluation.path.length <= 1 ? 'completed' : 'travelling'
@@ -280,7 +307,8 @@ export class HexTravelStore {
   resume(input: z.infer<typeof mutateHexTravelInputSchema>) {
     const journey = this.requireJourney(input.sceneId, input.expectedRevision)
     const path = this.path(journey)
-    if (journey.currentIndex >= path.length - 1) throw new Error('validation')
+    if (journey.currentIndex >= path.length - 1)
+      throw new CapabilityError('validation_failed', false)
     const currentMembers = this.scenes.partyMemberIds(input.sceneId)
     this.db
       .prepare(
@@ -327,7 +355,7 @@ export class HexTravelStore {
     mapId: string,
     waypoints: readonly AxialCoordinate[]
   ): z.infer<typeof hexRouteEvaluationSchema> {
-    const map = this.maps.read(mapId)
+    this.maps.summary(mapId)
     const position = this.scenePosition(sceneId, mapId)
     const speed = this.speed(sceneId)
     if (!position)
@@ -346,15 +374,21 @@ export class HexTravelStore {
         totalGameSeconds: 0,
         ...speed
       }
-    const path = expandWaypoints(position, waypoints)
-    if (path.some((coordinate) => !insideRadius(coordinate, map.map.radius)))
+    const stepCount = waypoints.reduce(
+      (total, waypoint, index) =>
+        total +
+        axialDistance(index === 0 ? position : waypoints[index - 1]!, waypoint),
+      0
+    )
+    if (stepCount > maximumExpandedRouteSteps)
       return {
         canStart: false,
-        message: 'Die Route verlässt die Karte.',
-        path: [...path],
+        message: 'Die Route ist für einen einzelnen Reiseauftrag zu lang.',
+        path: [position],
         totalGameSeconds: 0,
         ...speed
       }
+    const path = expandWaypoints(position, waypoints)
     if (speed.effectiveSpeedFeet <= 0)
       return {
         canStart: false,
@@ -363,12 +397,9 @@ export class HexTravelStore {
         totalGameSeconds: 0,
         ...speed
       }
-    const tiles = new Map(map.tiles.map((tile) => [tile.id, tile]))
     let totalGameSeconds = 0
     for (const coordinate of path.slice(1)) {
-      const terrain = terrainDefinition(
-        tiles.get(tileId(coordinate))!.terrainId
-      )
+      const terrain = terrainDefinition(this.maps.terrainAt(mapId, coordinate))
       if (!terrain.passable)
         return {
           canStart: false,
@@ -408,12 +439,13 @@ export class HexTravelStore {
     const path = this.path(journey)
     let index = journey.currentIndex
     let startedAt = journey.segmentStartedAt ?? this.now()
-    const map = this.maps.read(journey.mapId)
-    const tiles = new Map(map.tiles.map((tile) => [tile.id, tile]))
+    this.maps.summary(journey.mapId)
     const speed = this.speed(journey.sceneId).effectiveSpeedFeet
     while (index < path.length - 1) {
       const next = path[index + 1]!
-      const terrain = terrainDefinition(tiles.get(tileId(next))!.terrainId)
+      const terrain = terrainDefinition(
+        this.maps.terrainAt(journey.mapId, next)
+      )
       if (!terrain.passable || speed <= 0) {
         this.db
           .prepare(
@@ -460,20 +492,16 @@ export class HexTravelStore {
       ? this.path(journey)[journey.currentIndex]!
       : this.scenePosition(sceneId)
     const mapId = journey?.mapId ?? this.positionMapId(sceneId)
-    const map = mapId ? this.maps.read(mapId) : null
+    const map = mapId ? this.maps.summary(mapId) : null
     const placement =
-      map && position
-        ? (map.tiles.find((tile) => tile.id === tileId(position))?.location ??
-          null)
-        : null
+      map && position ? this.maps.locationAt(map.id, position) : null
     const speed = this.speed(sceneId)
     const path = journey ? this.path(journey) : []
     let remainingGameSeconds = 0
     if (journey && map) {
-      const tiles = new Map(map.tiles.map((tile) => [tile.id, tile]))
       for (const coordinate of path.slice(journey.currentIndex + 1)) {
         const terrain = terrainDefinition(
-          tiles.get(tileId(coordinate))!.terrainId
+          this.maps.terrainAt(map.id, coordinate)
         )
         if (terrain.passable && speed.effectiveSpeedFeet > 0)
           remainingGameSeconds += travelGameSeconds(
@@ -487,13 +515,15 @@ export class HexTravelStore {
       sceneId,
       status: journey?.status ?? (position ? 'ready' : 'unpositioned'),
       mapId: mapId ?? null,
-      mapName: map?.map.displayName ?? '',
+      mapName: map?.displayName ?? '',
       current: position ?? null,
       currentLabel: position ? tileLabel(position) : '',
       locationId: placement?.locationId ?? null,
       locationName: placement?.displayName ?? '',
       path,
       currentIndex: journey?.currentIndex ?? 0,
+      segmentStartedAt: journey?.segmentStartedAt ?? null,
+      segmentEndsAt: journey ? this.segmentEndsAt(journey) : null,
       progress:
         path.length <= 1
           ? position
@@ -592,15 +622,7 @@ export class HexTravelStore {
     coordinate: AxialCoordinate,
     gameSeconds: number
   ) {
-    const placement = this.db
-      .prepare(
-        `SELECT p.location_id AS locationId, l.display_name AS displayName
-         FROM hex_location_placement p
-         JOIN worldplanner_location l ON l.id = p.location_id
-         WHERE p.map_id = ? AND p.q = ? AND p.r = ?`
-      )
-      .get(mapId, coordinate.q, coordinate.r) as
-      { locationId: string; displayName: string } | undefined
+    const placement = this.maps.locationAt(mapId, coordinate)
     this.scenes.advanceTravel(
       sceneId,
       gameSeconds,
@@ -613,7 +635,7 @@ export class HexTravelStore {
     const scene = this.scenes
       .snapshot(this.party.read().members)
       .scenes.find((candidate) => candidate.id === sceneId)
-    if (!scene) throw new Error('not found')
+    if (!scene) throw new CapabilityError('not_found', false)
     return scene
   }
 
@@ -631,10 +653,27 @@ export class HexTravelStore {
     )
   }
 
+  private segmentEndsAt(journey: JourneyRow): number | null {
+    if (journey.status !== 'travelling' || journey.segmentStartedAt === null)
+      return null
+    const path = this.path(journey)
+    const next = path[journey.currentIndex + 1]
+    if (next === undefined) return null
+    const speed = this.speed(journey.sceneId).effectiveSpeedFeet
+    const terrain = terrainDefinition(this.maps.terrainAt(journey.mapId, next))
+    if (speed <= 0 || !terrain.passable) return this.now()
+    const gameSeconds = travelGameSeconds(speed, terrain.travelCost)
+    return Math.round(
+      journey.segmentStartedAt +
+        (gameSeconds * 1000) / 3600 / journey.multiplier
+    )
+  }
+
   private requireJourney(sceneId: string, expectedRevision: number) {
     const journey = this.journey(sceneId)
-    if (!journey) throw new Error('not found')
-    if (journey.revision !== expectedRevision) throw new Error('stale')
+    if (!journey) throw new CapabilityError('not_found', false)
+    if (journey.revision !== expectedRevision)
+      throw new CapabilityError('stale', true)
     return journey
   }
 

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
-  campaignCapabilityResponseSchema,
   capabilityFailureSchema,
   freezeCampaignSnapshot
 } from '../../src/shared/contracts/campaign.js'
+import { coreResultSchema } from '../../src/shared/contracts/core-protocol.js'
 import { CapabilityError } from '../../src/shared/errors/capability-error.js'
 
 describe('capability contract', () => {
@@ -22,7 +22,8 @@ describe('capability contract', () => {
 
   it('rejects unknown fields instead of silently dropping them', () => {
     expect(
-      campaignCapabilityResponseSchema.safeParse({
+      coreResultSchema.safeParse({
+        requestId: '0184d1f4-bba7-7c9c-9d89-5f1c0f36a031',
         ok: false,
         error: { code: 'internal', retryable: false },
         technicalDetail: 'sqlite error'
@@ -61,7 +62,11 @@ describe('capability contract', () => {
     expect(Object.isFrozen(snapshot.campaigns)).toBe(true)
     expect(Object.isFrozen(snapshot.campaigns[0])).toBe(true)
     expect(
-      campaignCapabilityResponseSchema.parse({ ok: true, snapshot })
+      coreResultSchema.parse({
+        requestId: '0184d1f4-bba7-7c9c-9d89-5f1c0f36a031',
+        ok: true,
+        payload: snapshot
+      })
     ).toMatchObject({ ok: true })
   })
 })

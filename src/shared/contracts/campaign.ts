@@ -40,6 +40,7 @@ export const capabilityErrorCodeSchema = z.enum([
   'read_only',
   'timeout',
   'outcome_unknown',
+  'development_data_incompatible',
   'core_unavailable',
   'protocol_violation',
   'internal'
@@ -48,14 +49,13 @@ export type CapabilityErrorCode = z.infer<typeof capabilityErrorCodeSchema>
 export const capabilityFailureSchema = z
   .object({
     code: capabilityErrorCodeSchema,
-    retryable: z.boolean()
+    retryable: z.boolean(),
+    data: z
+      .object({ developmentDataPath: z.string().min(1) })
+      .strict()
+      .optional()
   })
   .strict()
-
-export const campaignCapabilityResponseSchema = z.discriminatedUnion('ok', [
-  z.object({ ok: z.literal(true), snapshot: campaignSnapshotSchema }).strict(),
-  z.object({ ok: z.literal(false), error: capabilityFailureSchema }).strict()
-])
 
 export const createCampaignInputSchema = z
   .object({ name: z.string().trim().min(1, 'A name is required').max(100) })
@@ -63,45 +63,6 @@ export const createCampaignInputSchema = z
 
 export const activateCampaignInputSchema = z.object({ id: z.uuid() }).strict()
 
-export const coreRequestSchema = z.discriminatedUnion('kind', [
-  z.object({ requestId: z.uuid(), kind: z.literal('campaign.list') }).strict(),
-  z.object({ requestId: z.uuid(), kind: z.literal('core.shutdown') }).strict(),
-  z
-    .object({
-      requestId: z.uuid(),
-      kind: z.literal('campaign.create'),
-      input: createCampaignInputSchema
-    })
-    .strict(),
-  z
-    .object({
-      requestId: z.uuid(),
-      kind: z.literal('campaign.activate'),
-      input: activateCampaignInputSchema
-    })
-    .strict()
-])
-
-export const coreResponseSchema = z.discriminatedUnion('ok', [
-  z
-    .object({
-      requestId: z.uuid(),
-      ok: z.literal(true),
-      snapshot: campaignSnapshotSchema
-    })
-    .strict(),
-  z
-    .object({
-      requestId: z.uuid(),
-      ok: z.literal(false),
-      error: capabilityFailureSchema
-    })
-    .strict()
-])
-
 export const coreReadySchema = z
   .object({ kind: z.literal('core.ready') })
   .strict()
-
-export type CoreRequest = z.infer<typeof coreRequestSchema>
-export type CoreResponse = z.infer<typeof coreResponseSchema>

@@ -8,7 +8,7 @@ import {
 } from '../../src/core/creatures/catalog.js'
 import { LivePlayService } from '../../src/core/encounter/live-combat.js'
 import { CampaignStore } from '../../src/core/persistence/sqlite/campaign-store.js'
-import { EncounterSourceService } from '../../src/core/worldplanner/encounter-source-store.js'
+import { EncounterSourceService } from '../../src/core/application/encounter-source-service.js'
 import { WorldLocationService } from '../../src/core/worldplanner/location-store.js'
 import { creatureCatalogQuerySchema } from '../../src/shared/contracts/encounter.js'
 
@@ -24,11 +24,11 @@ function harness() {
   roots.push(root)
   const campaigns = new CampaignStore(root)
   campaigns.create('Sources')
-  const path = () => campaigns.activeCampaignPath()
+  const path = () => campaigns.activeCampaignDatabase()
   const sources = new EncounterSourceService(path)
   const locations = new WorldLocationService(path)
   const catalog = new CreatureCatalogService(
-    join(root, 'installation.sqlite'),
+    () => campaigns.installationDatabase(),
     (query) => sources.resolve(query),
     () => ({
       encounterTables: sources

@@ -3,6 +3,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { CampaignStore } from '../../src/core/persistence/sqlite/campaign-store.js'
+import Database from 'better-sqlite3'
+import { CapabilityError } from '../../src/shared/errors/capability-error.js'
+import { configureSqlite } from '../../src/core/persistence/sqlite/database.js'
 
 const roots: string[] = []
 
@@ -111,6 +114,70 @@ describe('CampaignStore', () => {
 
     expect(() => store.create('Never Created')).toThrow('injected failure')
     expect(store.list()).toEqual({ campaigns: [], activeCampaignId: null })
+    store.close()
+  })
+
+  it('stores installation preferences with optimistic revisions', () => {
+    const root = mkdtempSync(join(tmpdir(), 'salt-marcher-campaign-store-'))
+    roots.push(root)
+    const store = new CampaignStore(root)
+    const initial = store.readSettings()
+    const updated = store.updateSettings(
+      {
+        ...initial.preferences,
+        theme: 'dark',
+        sessionLayout: {
+          ...initial.preferences.sessionLayout,
+          leftFraction: 0.55
+        }
+      },
+      initial.revision
+    )
+
+    expect(updated).toMatchObject({
+      revision: initial.revision + 1,
+      preferences: { theme: 'dark', sessionLayout: { leftFraction: 0.55 } }
+    })
+    expect(() =>
+      store.updateSettings(initial.preferences, initial.revision)
+    ).toThrowError(new CapabilityError('stale', true))
+    store.close()
+
+    const reopened = new CampaignStore(root)
+    expect(reopened.readSettings()).toEqual(updated)
+    reopened.close()
+  })
+
+  it('fails closed for development data with another schema version', () => {
+    const root = mkdtempSync(join(tmpdir(), 'salt-marcher-campaign-store-'))
+    roots.push(root)
+    const store = new CampaignStore(root)
+    store.close()
+    const db = new Database(join(root, 'installation.sqlite'))
+    db.pragma('user_version = 2')
+    db.close()
+
+    expect(() => new CampaignStore(root)).toThrowError(
+      new CapabilityError('development_data_incompatible', false, {
+        developmentDataPath: root
+      })
+    )
+  })
+
+  it('configures durable SQLite pragmas for the installation store', () => {
+    const root = mkdtempSync(join(tmpdir(), 'salt-marcher-campaign-store-'))
+    roots.push(root)
+    const store = new CampaignStore(root)
+    const db = new Database(join(root, 'installation.sqlite'))
+    configureSqlite(db)
+
+    expect(db.pragma('journal_mode', { simple: true })).toBe('wal')
+    expect(db.pragma('synchronous', { simple: true })).toBe(2)
+    expect(db.pragma('foreign_keys', { simple: true })).toBe(1)
+    expect(db.pragma('busy_timeout', { simple: true })).toBe(5000)
+    expect(db.pragma('user_version', { simple: true })).toBe(1)
+
+    db.close()
     store.close()
   })
 })

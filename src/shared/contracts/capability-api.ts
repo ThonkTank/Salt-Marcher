@@ -1,5 +1,7 @@
 import type { CampaignSnapshot } from './campaign.js'
 import type { RuntimeGpuObservation } from '../qualification/runtime-observation.js'
+import type { CoreProcessStatus } from './runtime.js'
+import type { SessionChangeNotice } from './session-change.js'
 import type {
   Creature,
   CreatureCatalogPage,
@@ -16,7 +18,10 @@ import type {
   SceneGroupDraftEvaluation,
   SceneGroupDraftGeneration
 } from './scene.js'
-import type { SessionLayoutPreference } from './session-layout.js'
+import type {
+  InstallationPreferencesPatch,
+  InstallationSettings
+} from './settings.js'
 import type {
   WorldLocationDraft,
   WorldLocationSnapshot
@@ -29,8 +34,12 @@ import type {
 } from './encounter-source.js'
 import type {
   AxialCoordinate,
+  HexChunkKey,
+  HexChunkReadResult,
+  HexChunkSnapshot,
   HexMapCatalogSnapshot,
-  HexMapSnapshot,
+  HexLocationPlacementReference,
+  HexMapSummary,
   HexRouteEvaluation,
   HexTerrainCatalog,
   HexTerrainId,
@@ -53,7 +62,17 @@ export interface SaltMarcherApi {
     e2e: boolean
     processMemoryBytes(): Promise<number>
     gpuObservation(): Promise<RuntimeGpuObservation>
+    coreStatus(): Promise<CoreProcessStatus>
+    retryCore(): Promise<CoreProcessStatus>
+    onCoreStatus(listener: (status: CoreProcessStatus) => void): () => void
   }>
+  settings: {
+    read(): Promise<InstallationSettings>
+    update(
+      patch: InstallationPreferencesPatch,
+      expectedRevision: number
+    ): Promise<InstallationSettings>
+  }
   party: {
     read(): Promise<PartySnapshot>
     create(
@@ -135,34 +154,37 @@ export interface SaltMarcherApi {
   hex: {
     terrainCatalog(): Promise<HexTerrainCatalog>
     catalog(): Promise<HexMapCatalogSnapshot>
-    read(mapId: string): Promise<HexMapSnapshot>
+    locateLocation(locationId: string): Promise<HexLocationPlacementReference>
+    readChunks(
+      mapId: string,
+      keys: readonly HexChunkKey[]
+    ): Promise<HexChunkReadResult>
     create(
       displayName: string,
       expectedCatalogRevision: number
-    ): Promise<HexMapSnapshot>
-    update(
+    ): Promise<HexMapSummary>
+    updateMetadata(
       mapId: string,
       displayName: string,
-      radius: number,
-      confirmDataLoss: boolean,
-      expectedRevision: number
-    ): Promise<HexMapSnapshot>
+      expectedMetadataRevision: number
+    ): Promise<HexMapSummary>
     paint(
       mapId: string,
       coordinate: AxialCoordinate,
       terrainId: HexTerrainId,
-      expectedRevision: number
-    ): Promise<HexMapSnapshot>
+      expectedChunkRevision: number
+    ): Promise<HexChunkSnapshot>
     placeLocation(
       mapId: string,
       locationId: string,
       coordinate: AxialCoordinate,
-      expectedRevision: number
-    ): Promise<HexMapSnapshot>
+      expectedContentRevision: number
+    ): Promise<HexChunkReadResult>
     removeLocation(
+      mapId: string,
       locationId: string,
-      expectedMapRevision: number
-    ): Promise<HexMapSnapshot>
+      expectedContentRevision: number
+    ): Promise<HexChunkReadResult>
   }
   hexTravel: {
     read(sceneId: string): Promise<HexTravelSnapshot>
@@ -198,10 +220,7 @@ export interface SaltMarcherApi {
   }
   session: {
     read(): Promise<LiveSessionSnapshot>
-    readLayout(): Promise<SessionLayoutPreference>
-    saveLayout(
-      preference: SessionLayoutPreference
-    ): Promise<SessionLayoutPreference>
+    onChanged(listener: (notice: SessionChangeNotice) => void): () => void
   }
   scene: {
     focus(

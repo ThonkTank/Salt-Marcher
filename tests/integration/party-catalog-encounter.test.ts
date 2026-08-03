@@ -19,8 +19,10 @@ function harness() {
   roots.push(root)
   const campaigns = new CampaignStore(root)
   campaigns.create('Parity Campaign')
-  const play = new LivePlayService(() => campaigns.activeCampaignPath())
-  const catalog = new CreatureCatalogService(join(root, 'installation.sqlite'))
+  const play = new LivePlayService(() => campaigns.activeCampaignDatabase())
+  const catalog = new CreatureCatalogService(() =>
+    campaigns.installationDatabase()
+  )
   return { campaigns, play, catalog }
 }
 
@@ -159,7 +161,7 @@ describe('party and catalog parity slice', () => {
 
     const reopened = new CampaignStore(roots[0] ?? '')
     const resumed = new LivePlayService(() =>
-      reopened.activeCampaignPath()
+      reopened.activeCampaignDatabase()
     ).readSession()
     expect(resumed.combat).toEqual(expected)
     expect(resumed.scene.scenes[0]?.groups[0]?.name).toBe('Forest trouble')

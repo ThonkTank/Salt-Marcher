@@ -19,7 +19,7 @@ describe('campaign restart', () => {
     await (await client.$('button[aria-label="Katalog"]')).click()
     await (await client.$('button=Orte')).click()
     await expect(await client.$('button=Salzmarschhafen')).toBeExisting()
-    await (await client.$('button[aria-label="Campaigns"]')).click()
+    await (await client.$('button[aria-label="Kampagnen"]')).click()
     const field = await client.$('#campaign-name')
     await client.waitUntil(() => field.isExisting(), {
       timeout: 5_000,
@@ -28,7 +28,7 @@ describe('campaign restart', () => {
     await expect(await client.$('button=Campaign A')).toBeExisting()
 
     await field.setValue('Campaign C')
-    await (await client.$('button=Create campaign')).click()
+    await (await client.$('button=Kampagne erstellen')).click()
     await expect(await client.$('h1=Session')).toBeExisting()
   })
 })

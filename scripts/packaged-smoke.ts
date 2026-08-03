@@ -1,35 +1,35 @@
-import { existsSync, readdirSync } from 'node:fs'
+import { existsSync, mkdtempSync, readdirSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { spawn } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 
 const executable = packagedExecutable()
+const qualification = process.argv.includes('--qualification')
 
 if (!existsSync(executable)) {
   throw new Error(`Packaged executable was not found: ${executable}`)
 }
 
-const child = spawn(
-  executable,
-  ['--smoke-test', ...(process.platform === 'linux' ? ['--no-sandbox'] : [])],
-  { stdio: 'inherit' }
-)
-const timeout = setTimeout(() => {
-  child.kill()
-  throw new Error('Packaged application did not exit within 20 seconds')
-}, 20_000)
-
-child.once('error', (error) => {
-  clearTimeout(timeout)
-  throw error
-})
-child.once('exit', (code) => {
-  clearTimeout(timeout)
-  if (code !== 0) {
+const userData = mkdtempSync(join(tmpdir(), 'salt-marcher-packaged-smoke-'))
+try {
+  const result = spawnSync(
+    executable,
+    [
+      '--smoke-test',
+      ...(qualification ? ['--m1-qualification'] : []),
+      ...(process.platform === 'linux' ? ['--no-sandbox'] : []),
+      `--user-data-dir=${userData}`
+    ],
+    { stdio: 'inherit', timeout: 20_000 }
+  )
+  if (result.error) throw result.error
+  if (result.status !== 0)
     throw new Error(
-      `Packaged application exited with code ${code ?? 'unknown'}`
+      `Packaged application exited with code ${result.status ?? 'unknown'}`
     )
-  }
-})
+} finally {
+  rmSync(userData, { recursive: true, force: true })
+}
 
 function packagedExecutable(): string {
   switch (process.platform) {

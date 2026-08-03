@@ -18,7 +18,7 @@ function harness() {
   roots.push(root)
   const campaigns = new CampaignStore(root)
   campaigns.create('Locations')
-  const path = () => campaigns.activeCampaignPath()
+  const path = () => campaigns.activeCampaignDatabase()
   return {
     campaigns,
     play: new LivePlayService(path),
@@ -105,7 +105,7 @@ describe('world locations', () => {
 
     const reopened = new CampaignStore(root)
     const resumed = new WorldLocationService(() =>
-      reopened.activeCampaignPath()
+      reopened.activeCampaignDatabase()
     ).read()
     reopened.close()
     expect(resumed).toEqual(expected)

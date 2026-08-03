@@ -14,6 +14,18 @@ importers:
       '@babylonjs/core':
         specifier: 9.18.1
         version: 9.18.1
+      '@fontsource/cormorant-unicase':
+        specifier: 5.3.0
+        version: 5.3.0
+      '@fontsource/eb-garamond':
+        specifier: 5.3.0
+        version: 5.3.0
+      '@fontsource/im-fell-english':
+        specifier: 5.3.0
+        version: 5.3.0
+      '@fontsource/im-fell-english-sc':
+        specifier: 5.3.0
+        version: 5.3.0
       better-sqlite3:
         specifier: 13.0.2
         version: 13.0.2
@@ -844,6 +856,18 @@ packages:
     peerDependenciesMeta:
       '@noble/hashes':
         optional: true
+
+  '@fontsource/cormorant-unicase@5.3.0':
+    resolution: {integrity: sha512-x9aUMox6cSI3aWckMDlinaBWdRhVteKTLakTAkzdRHlpAIVMspUgRaV1qkCR4ZcWlovyc7KUq7zqUb/F72/8lQ==}
+
+  '@fontsource/eb-garamond@5.3.0':
+    resolution: {integrity: sha512-VplwHpB8FLuzl+4G5LDci1b3Z4SghiuXH8XEgaxjnOb5aue5mEt1njmDKeO6iyLeGa73LffU7PC7hzncLRx0ZA==}
+
+  '@fontsource/im-fell-english-sc@5.3.0':
+    resolution: {integrity: sha512-jKnCJ22tgVwxWVs1YQ/GCWmP60ulVq49IJZ7c0wgv0MXHe8T8LPbl0sOteYLOkCURW5+ZKwFiLNU2h/l9fHgrg==}
+
+  '@fontsource/im-fell-english@5.3.0':
+    resolution: {integrity: sha512-FcgdWfY9WeUM2gQkfmwhn4Ed9LVtlll8LSSZvHfbsUrnHK5tHHnGg6BgwAfHogp52adU3eE89J/3B52qV3b+Vw==}
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -5063,6 +5087,14 @@ snapshots:
   '@exodus/bytes@1.15.1(@noble/hashes@2.2.0)':
     optionalDependencies:
       '@noble/hashes': 2.2.0
+
+  '@fontsource/cormorant-unicase@5.3.0': {}
+
+  '@fontsource/eb-garamond@5.3.0': {}
+
+  '@fontsource/im-fell-english-sc@5.3.0': {}
+
+  '@fontsource/im-fell-english@5.3.0': {}
 
   '@humanfs/core@0.19.2':
     dependencies:

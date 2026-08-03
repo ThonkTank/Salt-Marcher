@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3'
+import { CapabilityError } from '../../shared/errors/capability-error.js'
 import {
   partySnapshotSchema,
   type AdventuringDaySummary,
@@ -22,45 +23,7 @@ export const dailyXp = [
 ] as const
 
 export function initializePartySchema(db: Database.Database): void {
-  const columns = db
-    .prepare("PRAGMA table_info('player_characters')")
-    .all() as readonly { name: string }[]
-  if (
-    columns.length > 0 &&
-    !columns.some((column) => column.name === 'player_name')
-  ) {
-    db.transaction(() => {
-      db.exec('ALTER TABLE player_characters RENAME TO player_characters_old')
-      createPartyTables(db)
-      db.exec(`
-        INSERT INTO player_characters (
-          id, name, level, active, xp, position,
-          player_name, passive_perception, armor_class,
-          xp_since_short_rest, xp_since_long_rest
-        )
-        SELECT id, name, level, active, xp, position, NULL, NULL, NULL, 0, 0
-        FROM player_characters_old;
-        DROP TABLE player_characters_old;
-      `)
-    })()
-  } else createPartyTables(db)
-
-  const currentColumns = db
-    .prepare("PRAGMA table_info('player_characters')")
-    .all() as readonly { name: string }[]
-  const names = new Set(currentColumns.map((column) => column.name))
-  if (!names.has('movement_speed_feet'))
-    db.exec(
-      'ALTER TABLE player_characters ADD COLUMN movement_speed_feet INTEGER CHECK(movement_speed_feet BETWEEN 0 AND 999)'
-    )
-  if (!names.has('travel_map_id'))
-    db.exec('ALTER TABLE player_characters ADD COLUMN travel_map_id TEXT')
-  if (!names.has('travel_tile_id'))
-    db.exec('ALTER TABLE player_characters ADD COLUMN travel_tile_id TEXT')
-  if (!names.has('attached_to_party_token'))
-    db.exec(
-      'ALTER TABLE player_characters ADD COLUMN attached_to_party_token INTEGER NOT NULL DEFAULT 0 CHECK(attached_to_party_token IN (0, 1))'
-    )
+  createPartyTables(db)
 
   const metadata = db
     .prepare('SELECT 1 FROM party_roster_metadata WHERE singleton = 1')
@@ -182,7 +145,7 @@ export class PartyStore {
       const current = this.db
         .prepare('SELECT xp FROM player_characters WHERE id = ?')
         .get(id) as { xp: number } | undefined
-      if (!current) throw new Error('not found')
+      if (!current) throw new CapabilityError('not_found', false)
       const xp =
         draft.level === null
           ? current.xp
@@ -218,7 +181,7 @@ export class PartyStore {
     )
     for (const id of ids) {
       if (update.run(mapId, tile, id).changes !== 1)
-        throw new Error('not found')
+        throw new CapabilityError('not_found', false)
     }
     this.db
       .prepare(
@@ -233,7 +196,7 @@ export class PartyStore {
         this.db.prepare('DELETE FROM player_characters WHERE id = ?').run(id)
           .changes === 0
       )
-        throw new Error('not found')
+        throw new CapabilityError('not_found', false)
     })
     return this.read()
   }
@@ -247,7 +210,7 @@ export class PartyStore {
       const changed = this.db
         .prepare('UPDATE player_characters SET active = ? WHERE id = ?')
         .run(active ? 1 : 0, id).changes
-      if (changed === 0) throw new Error('not found')
+      if (changed === 0) throw new CapabilityError('not_found', false)
     })
     return this.read()
   }
@@ -265,7 +228,7 @@ export class PartyStore {
         .get(id) as
         | { level: number | null; xp: number; shortXp: number; longXp: number }
         | undefined
-      if (!member) throw new Error('not found')
+      if (!member) throw new CapabilityError('not_found', false)
       const floor = member.level === null ? 0 : levelXp[member.level - 1]!
       const nextXp = Math.max(floor, member.xp + delta)
       const applied = nextXp - member.xp
@@ -324,7 +287,8 @@ export class PartyStore {
         .run(combatId, xpEach).changes
       if (inserted === 0) return
       const selected = memberIds ? Array.from(new Set(memberIds)) : null
-      if (selected && selected.length === 0) throw new Error('validation')
+      if (selected && selected.length === 0)
+        throw new CapabilityError('validation_failed', false)
       const selection = selected
         ? ` AND id IN (${selected.map(() => '?').join(', ')})`
         : ''
@@ -352,7 +316,7 @@ export class PartyStore {
           )
           .get() as { revision: number }
       ).revision
-      if (current !== expectedRevision) throw new Error('stale')
+      if (current !== expectedRevision) throw new CapabilityError('stale', true)
       mutation()
       this.bumpRevision()
     })()

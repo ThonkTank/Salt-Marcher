@@ -7,10 +7,26 @@ import type {
 } from '../../../shared/contracts/campaign.js'
 import { freezeCampaignSnapshot } from '../../../shared/contracts/campaign.js'
 import { uuidv7 } from '../../../shared/ids/uuidv7.js'
-import { initializePartySchema } from '../../party/party-store.js'
+import { initializePartySchema, PartyStore } from '../../party/party-store.js'
 import { initializeSceneSchema } from '../../scene/scene-store.js'
 import { initializeCombatSchema } from '../../encounter/live-combat.js'
 import { initializeWorldLocationSchema } from '../../worldplanner/location-store.js'
+import { initializeEncounterTableSchema } from '../../encounter/encounter-table-store.js'
+import { initializeWorldFactionSchema } from '../../worldplanner/faction-store.js'
+import { initializeHexSchema } from '../../hex/hex-map-store.js'
+import {
+  assertDevelopmentSchemaVersion,
+  configureSqlite,
+  initializeDevelopmentSchemaVersion
+} from './database.js'
+import {
+  defaultInstallationPreferences,
+  type InstallationPreferencesPatch,
+  type InstallationSettings
+} from '../../../shared/contracts/settings.js'
+import { CapabilityError } from '../../../shared/errors/capability-error.js'
+import { InstallationSettingsStore } from './installation-settings-store.js'
+import { initializeCreatureSchema } from '../../creatures/catalog.js'
 
 export type CampaignCreatePhase =
   | 'before-registry-entry'
@@ -25,6 +41,8 @@ export interface CampaignStoreOptions {
 
 export class CampaignStore {
   private readonly installation: Database.Database
+  private readonly installationSettings: InstallationSettingsStore
+  private activeCampaign: Database.Database | undefined
   private readonly onCreatePhase:
     ((phase: CampaignCreatePhase) => void) | undefined
 
@@ -34,10 +52,15 @@ export class CampaignStore {
   ) {
     this.onCreatePhase = options.onCreatePhase
     const installationPath = join(dataRoot, 'installation.sqlite')
+    const installationExists = existsSync(installationPath)
     mkdirSync(dirname(installationPath), { recursive: true })
     this.installation = new Database(installationPath)
-    this.installation.pragma('journal_mode = WAL')
-    this.installation.exec(`
+    this.installationSettings = new InstallationSettingsStore(this.installation)
+    try {
+      configureSqlite(this.installation)
+      if (installationExists)
+        assertDevelopmentSchemaVersion(this.installation, this.dataRoot)
+      this.installation.exec(`
       CREATE TABLE IF NOT EXISTS campaigns (
         id TEXT PRIMARY KEY NOT NULL,
         name TEXT NOT NULL,
@@ -48,9 +71,26 @@ export class CampaignStore {
         key TEXT PRIMARY KEY NOT NULL,
         value TEXT NOT NULL
       );
-    `)
-    this.addCreationStatusToPreCutoverStore()
-    this.recoverIncompleteCreations()
+      CREATE TABLE IF NOT EXISTS installation_settings (
+        singleton INTEGER PRIMARY KEY NOT NULL CHECK(singleton = 1),
+        revision INTEGER NOT NULL CHECK(revision >= 0),
+        preferences_json TEXT NOT NULL
+      );
+      `)
+      this.installation
+        .prepare(
+          'INSERT OR IGNORE INTO installation_settings (singleton, revision, preferences_json) VALUES (1, 0, ?)'
+        )
+        .run(JSON.stringify(defaultInstallationPreferences))
+      initializeCreatureSchema(this.installation)
+      if (!installationExists)
+        initializeDevelopmentSchemaVersion(this.installation)
+      this.recoverIncompleteCreations()
+      this.openRecordedActiveCampaign()
+    } catch (error) {
+      this.installation.close()
+      throw error
+    }
   }
 
   list(): CampaignSnapshot {
@@ -90,44 +130,74 @@ export class CampaignStore {
     const exists = this.installation
       .prepare("SELECT 1 FROM campaigns WHERE id = ? AND status = 'ready'")
       .get(id)
-    if (exists === undefined) throw new Error('Campaign not found')
+    if (exists === undefined) throw new CapabilityError('not_found', false)
+    this.switchActiveCampaign(id)
     this.setActive(id)
     return this.list()
   }
 
+  readSettings(): InstallationSettings {
+    return this.installationSettings.read()
+  }
+
+  updateSettings(
+    patch: InstallationPreferencesPatch,
+    expectedRevision: number
+  ): InstallationSettings {
+    return this.installationSettings.update(patch, expectedRevision)
+  }
+
   close(): void {
+    this.activeCampaign?.close()
+    this.activeCampaign = undefined
     this.installation.close()
   }
 
-  activeCampaignPath(): string {
-    const id = this.list().activeCampaignId
-    if (!id) throw new Error('Campaign not found')
-    return this.campaignPath(id)
+  activeCampaignDatabase(): Database.Database {
+    if (this.activeCampaign === undefined)
+      throw new CapabilityError('not_found', false)
+    return this.activeCampaign
   }
 
-  private addCreationStatusToPreCutoverStore(): void {
-    const columns = this.installation
-      .prepare('PRAGMA table_info(campaigns)')
-      .all() as {
-      name: string
-    }[]
-    if (!columns.some((column) => column.name === 'status'))
-      this.installation.exec(
-        "ALTER TABLE campaigns ADD COLUMN status TEXT NOT NULL DEFAULT 'ready' CHECK(status IN ('creating', 'ready'))"
-      )
+  installationDatabase(): Database.Database {
+    return this.installation
+  }
+
+  activeCampaignId(): string {
+    const id = this.list().activeCampaignId
+    if (id === null) throw new CapabilityError('not_found', false)
+    return id
+  }
+
+  /** Diagnostic path used by integration fixtures and incompatibility reports. */
+  activeCampaignPath(): string {
+    const id = this.list().activeCampaignId
+    if (id === null) throw new CapabilityError('not_found', false)
+    return this.campaignPath(id)
   }
 
   private createStagedCampaignStore(id: string): void {
     const campaignPath = this.stagedCampaignPath(id)
     mkdirSync(dirname(campaignPath), { recursive: true })
     const campaign = new Database(campaignPath)
+    configureSqlite(campaign)
     campaign.exec(
       'CREATE TABLE IF NOT EXISTS campaign_runtime (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL)'
     )
     initializePartySchema(campaign)
-    initializeSceneSchema(campaign)
+    initializeSceneSchema(
+      campaign,
+      new PartyStore(campaign)
+        .read()
+        .members.filter((member) => member.active)
+        .map((member) => member.id)
+    )
     initializeCombatSchema(campaign)
     initializeWorldLocationSchema(campaign)
+    initializeEncounterTableSchema(campaign)
+    initializeWorldFactionSchema(campaign)
+    initializeHexSchema(campaign)
+    initializeDevelopmentSchemaVersion(campaign)
     campaign.close()
   }
 
@@ -147,6 +217,7 @@ export class CampaignStore {
         .run(id)
       this.setActive(id)
     })()
+    this.switchActiveCampaign(id)
   }
 
   private recoverIncompleteCreations(): void {
@@ -189,12 +260,14 @@ export class CampaignStore {
     let campaign: Database.Database | undefined
     try {
       campaign = new Database(path, { readonly: true })
+      assertDevelopmentSchemaVersion(campaign)
       return (
         campaign
           .prepare(
             "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'campaign_runtime'"
           )
-          .get() !== undefined
+          .get() !== undefined &&
+        campaign.pragma('quick_check', { simple: true }) === 'ok'
       )
     } catch {
       return false
@@ -231,5 +304,23 @@ export class CampaignStore {
         "INSERT INTO settings (key, value) VALUES ('active_campaign_id', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
       )
       .run(id)
+  }
+
+  private openRecordedActiveCampaign(): void {
+    const id = this.list().activeCampaignId
+    if (id !== null) this.switchActiveCampaign(id)
+  }
+
+  private switchActiveCampaign(id: string): void {
+    const next = new Database(this.campaignPath(id))
+    try {
+      configureSqlite(next)
+      assertDevelopmentSchemaVersion(next, this.campaignDirectory(id))
+    } catch (error) {
+      next.close()
+      throw error
+    }
+    this.activeCampaign?.close()
+    this.activeCampaign = next
   }
 }

@@ -1,0 +1,100 @@
+import { readFileSync, statSync } from 'node:fs'
+import { join } from 'node:path'
+
+type ManifestEntry = {
+  file: string
+  src?: string
+  isEntry?: boolean
+  imports?: string[]
+  dynamicImports?: string[]
+  css?: string[]
+  assets?: string[]
+}
+
+const rendererRoot = join(process.cwd(), 'out', 'renderer')
+const manifest = JSON.parse(
+  readFileSync(join(rendererRoot, '.vite', 'manifest.json'), 'utf8')
+) as Record<string, ManifestEntry>
+const entryKey = Object.keys(manifest).find(
+  (key) =>
+    manifest[key]?.isEntry === true && manifest[key]?.src === 'index.html'
+)
+if (!entryKey) throw new Error('Normal renderer entry missing from manifest')
+
+const files = new Set<string>()
+const visited = new Set<string>()
+function visit(key: string): void {
+  if (visited.has(key)) return
+  visited.add(key)
+  const entry = manifest[key]
+  if (!entry) throw new Error(`Manifest import missing: ${key}`)
+  files.add(entry.file)
+  for (const file of [...(entry.css ?? []), ...(entry.assets ?? [])])
+    files.add(file)
+  for (const dependency of [
+    ...(entry.imports ?? []),
+    ...(entry.dynamicImports ?? [])
+  ])
+    visit(dependency)
+}
+visit(entryKey)
+
+const byteCount = [...files].reduce(
+  (total, file) => total + statSync(join(rendererRoot, file)).size,
+  0
+)
+const budget = 3 * 1024 * 1024
+if (byteCount > budget)
+  throw new Error(
+    `Normal renderer is ${(byteCount / 1024 / 1024).toFixed(2)} MiB; budget is 3 MiB`
+  )
+if ([...files].some((file) => /qualification|babylon/i.test(file)))
+  throw new Error('Qualification-only rendering code is reachable from the app')
+
+const budgetEntry = (
+  label: string,
+  predicate: (key: string, entry: ManifestEntry) => boolean,
+  bytes: number
+) => {
+  const match = Object.entries(manifest).find(([key, entry]) =>
+    predicate(key, entry)
+  )
+  if (!match) throw new Error(`${label} chunk is missing from the manifest`)
+  const size = statSync(join(rendererRoot, match[1].file)).size
+  if (size > bytes)
+    throw new Error(
+      `${label} is ${(size / 1024).toFixed(1)} KiB; budget is ${(bytes / 1024).toFixed(0)} KiB`
+    )
+  return size
+}
+
+const shellBytes = budgetEntry(
+  'Shell entry',
+  (_key, entry) => entry.isEntry === true && entry.src === 'index.html',
+  32 * 1024
+)
+const workspaceBytes = budgetEntry(
+  'Workspace feature',
+  (key) => key.startsWith('_workspace-'),
+  1_500 * 1024
+)
+const catalogBytes = budgetEntry(
+  'Catalog lazy entry',
+  (_key, entry) => entry.src === 'features/catalog/catalog-workspace.tsx',
+  256 * 1024
+)
+const hexBytes = budgetEntry(
+  'Hex lazy entry',
+  (_key, entry) => entry.src === 'features/hex/hex-editor.tsx',
+  256 * 1024
+)
+
+console.log(
+  [
+    `Normal renderer: ${(byteCount / 1024 / 1024).toFixed(2)} MiB / 3.00 MiB`,
+    `shell ${(shellBytes / 1024).toFixed(1)} KiB`,
+    `workspace ${(workspaceBytes / 1024).toFixed(1)} KiB`,
+    `catalog ${(catalogBytes / 1024).toFixed(1)} KiB`,
+    `hex ${(hexBytes / 1024).toFixed(1)} KiB`
+  ].join('; ')
+)

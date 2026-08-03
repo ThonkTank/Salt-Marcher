@@ -2,29 +2,38 @@ import {
   capabilityFailureSchema,
   coreReadySchema,
   type CapabilityErrorCode
-} from '../../shared/contracts/campaign.js'
-import { coreRequestSchema } from '../../shared/contracts/core-protocol.js'
-import { CampaignStore } from '../../core/persistence/sqlite/campaign-store.js'
-import { CreatureCatalogService } from '../../core/creatures/catalog.js'
-import { LivePlayService } from '../../core/encounter/live-combat.js'
+} from '../shared/contracts/campaign.js'
+import {
+  coreEventSchema,
+  coreRequestSchema,
+  type CoreHandlers,
+  type CoreRequest
+} from '../shared/contracts/core-protocol.js'
+import { coreOperations } from '../shared/contracts/operations.js'
+import { CampaignStore } from '../core/persistence/sqlite/campaign-store.js'
+import { CreatureCatalogService } from '../core/creatures/catalog.js'
+import { LivePlayService } from '../core/encounter/live-combat.js'
 import { z } from 'zod'
-import { join } from 'node:path'
-import { WorldLocationService } from '../../core/worldplanner/location-store.js'
-import { EncounterSourceService } from '../../core/worldplanner/encounter-source-store.js'
-import { HexMapService } from '../../core/hex/hex-map-store.js'
-import { HexTravelService } from '../../core/hex/hex-travel.js'
-import { hexTerrainCatalog } from '../../core/hex/terrain-catalog.js'
+import { WorldLocationService } from '../core/worldplanner/location-store.js'
+import { EncounterSourceService } from '../core/application/encounter-source-service.js'
+import { HexMapService } from '../core/hex/hex-map-store.js'
+import { HexTravelService } from '../core/hex/hex-travel.js'
+import { hexTerrainCatalog } from '../core/hex/terrain-catalog.js'
+import { CapabilityError } from '../shared/errors/capability-error.js'
+import { hexTravelSnapshotSchema } from '../shared/contracts/hex.js'
+import { emptyPassiveProjection } from '../shared/contracts/passive-display.js'
 const root = process.argv[2]
 if (!root || !process.parentPort)
   throw new Error('Utility process requires a data root and parent port')
 const campaigns = new CampaignStore(root)
-const play = new LivePlayService(() => campaigns.activeCampaignPath())
-const locations = new WorldLocationService(() => campaigns.activeCampaignPath())
-const sources = new EncounterSourceService(() => campaigns.activeCampaignPath())
-const hex = new HexMapService(() => campaigns.activeCampaignPath())
-const hexTravel = new HexTravelService(() => campaigns.activeCampaignPath())
+const activeDatabase = () => campaigns.activeCampaignDatabase()
+const play = new LivePlayService(activeDatabase)
+const locations = new WorldLocationService(activeDatabase)
+const sources = new EncounterSourceService(activeDatabase)
+const hex = new HexMapService(activeDatabase)
+const hexTravel = new HexTravelService(activeDatabase)
 const creatures = new CreatureCatalogService(
-  join(root, 'installation.sqlite'),
+  () => campaigns.installationDatabase(),
   (query) => sources.resolve(query),
   () => ({
     encounterTables: sources
@@ -40,8 +49,216 @@ const creatures = new CreatureCatalogService(
     }))
   })
 )
+let travelTimer: NodeJS.Timeout | undefined
+
+function publishSessionChange(
+  snapshot: ReturnType<HexTravelService['read']>,
+  reason: 'travel-boundary' | 'travel-command' | 'campaign-reconcile'
+): void {
+  process.parentPort?.postMessage(
+    coreEventSchema.parse({
+      kind: 'session.changed',
+      notice: {
+        campaignId: campaigns.activeCampaignId(),
+        sceneId: snapshot.sceneId,
+        revision: snapshot.revision,
+        reason
+      }
+    })
+  )
+}
+
+function scheduleNextBoundary(): void {
+  if (travelTimer !== undefined) clearTimeout(travelTimer)
+  travelTimer = undefined
+  try {
+    const delay = hexTravel.nextBoundaryDelay()
+    if (delay === null) return
+    travelTimer = setTimeout(() => {
+      travelTimer = undefined
+      reconcileAndSchedule('travel-boundary')
+    }, delay)
+    travelTimer.unref()
+  } catch {
+    // No active campaign is a normal idle state for the installation.
+  }
+}
+
+function reconcileAndSchedule(
+  reason: 'travel-boundary' | 'travel-command' | 'campaign-reconcile'
+): void {
+  try {
+    const tick = hexTravel.tick()
+    for (const snapshot of tick.changed) publishSessionChange(snapshot, reason)
+  } catch {
+    // No active campaign is a normal idle state for the installation.
+  }
+  scheduleNextBoundary()
+}
+
+reconcileAndSchedule('campaign-reconcile')
 process.parentPort.postMessage(coreReadySchema.parse({ kind: 'core.ready' }))
+const handlers = {
+  'campaign.list': () => campaigns.list(),
+  'campaign.create': (input) => campaigns.create(input.name),
+  'campaign.activate': (input) => campaigns.activate(input.id),
+  'settings.read': () => campaigns.readSettings(),
+  'settings.update': (input) =>
+    campaigns.updateSettings(input.patch, input.expectedRevision),
+  'projection.read': () => emptyPassiveProjection,
+  'party.read': () => play.readParty(),
+  'party.setMembership': (input) =>
+    play.setMembership(input.id, input.active, input.expectedRevision),
+  'party.create': (input) =>
+    play.createPartyCharacter(input.character, input.expectedRevision),
+  'party.update': (input) =>
+    play.updatePartyCharacter(
+      input.id,
+      input.character,
+      input.expectedRevision
+    ),
+  'party.delete': (input) =>
+    play.deletePartyCharacter(input.id, input.expectedRevision),
+  'party.adjustXp': (input) =>
+    play.adjustPartyXp(input.id, input.delta, input.expectedRevision),
+  'party.rest': (input) => play.restParty(input.type, input.expectedRevision),
+  'party.calculateAdventuringDay': (input) =>
+    play.calculateAdventuringDay(input.rows, input.totalXp),
+  'creatures.search': (input) => creatures.search(input),
+  'creatures.filterOptions': () => creatures.filterOptions(),
+  'creatures.detail': (input) => creatures.detail(input.id),
+  'locations.read': () => locations.read(),
+  'locations.create': (input) =>
+    locations.create(input.location, input.expectedRevision),
+  'locations.update': (input) =>
+    locations.update(input.id, input.location, input.expectedRevision),
+  'locations.delete': (input) =>
+    activeDatabase().transaction(() => {
+      hex.unlinkDeletedLocation(input.id)
+      return locations.delete(input.id, input.expectedRevision)
+    })(),
+  'encounterTables.read': () => sources.readTables(),
+  'encounterTables.create': (input) =>
+    sources.createTable(input.table, input.expectedRevision),
+  'encounterTables.update': (input) =>
+    sources.updateTable(input.id, input.table, input.expectedRevision),
+  'encounterTables.delete': (input) =>
+    sources.deleteTable(input.id, input.expectedRevision),
+  'factions.read': () => sources.readFactions(),
+  'factions.create': (input) =>
+    sources.createFaction(input.faction, input.expectedRevision),
+  'factions.update': (input) =>
+    sources.updateFaction(input.id, input.faction, input.expectedRevision),
+  'factions.delete': (input) =>
+    sources.deleteFaction(input.id, input.expectedRevision),
+  'session.read': () => play.readSession(),
+  'scene.focus': (input) =>
+    play.focusScene(input.sceneId, input.expectedRevision),
+  'scene.setLocation': (input) =>
+    play.setSceneLocation(
+      input.sceneId,
+      input.locationId,
+      input.expectedRevision
+    ),
+  'scene.saveGroup': (input) =>
+    play.saveSceneGroup(
+      input.sceneId,
+      input.groupId,
+      input.name,
+      input.entries,
+      input.expectedRevision
+    ),
+  'scene.deleteGroup': (input) =>
+    play.deleteSceneGroup(input.sceneId, input.groupId, input.expectedRevision),
+  'scene.assignPartyMember': (input) =>
+    play.assignScenePartyMember(
+      input.sceneId,
+      input.partyMemberId,
+      input.assigned,
+      input.expectedRevision
+    ),
+  'scene.evaluateGroupDraft': (input) =>
+    play.evaluateGroupDraft(
+      input.sceneId,
+      input.entries,
+      input.expectedRevision
+    ),
+  'scene.generateGroupDraft': (input) =>
+    play.generateGroupDraft(
+      input.sceneId,
+      input.entries,
+      input.mode,
+      input.filters,
+      input.tuning,
+      input.seed,
+      input.expectedRevision
+    ),
+  'encounter.evaluate': (input) =>
+    play.evaluateEncounter(
+      input.sceneId,
+      input.groupIds,
+      input.expectedRevision
+    ),
+  'combat.prepare': (input) =>
+    play.prepareCombat(
+      input.sceneId,
+      input.expectedSceneRevision,
+      input.groupIds
+    ),
+  'combat.rollInitiative': (input) =>
+    play.rollInitiative(input.expectedRevision),
+  'combat.confirmInitiative': (input) =>
+    play.confirmInitiative(input.expectedRevision, input.values),
+  'combat.advanceTurn': (input) => play.advanceTurn(input.expectedRevision),
+  'combat.adjustInitiative': (input) =>
+    play.adjustInitiative(input.expectedRevision, input.id, input.initiative),
+  'combat.changeHp': (input) =>
+    play.changeHp(
+      input.expectedRevision,
+      input.cardId,
+      input.amount,
+      input.healing
+    ),
+  'combat.end': (input) => play.endCombat(input.expectedRevision),
+  'combat.updateResolution': (input) =>
+    play.updateResolution(
+      input.expectedRevision,
+      input.selectedEnemyIds,
+      input.thresholdFraction,
+      input.xpFraction
+    ),
+  'combat.awardXp': (input) => play.awardXp(input.expectedRevision),
+  'combat.complete': (input) => play.completeCombat(input.expectedRevision),
+  'hex.terrainCatalog': () => hexTerrainCatalog,
+  'hex.catalog': () => hex.catalog(),
+  'hex.locateLocation': (input) => hex.locateLocation(input.locationId),
+  'hex.readChunks': (input) => hex.readChunks(input.mapId, input.keys),
+  'hex.create': (input) =>
+    hex.create(input.displayName, input.expectedCatalogRevision),
+  'hex.update': (input) => hex.update(input),
+  'hex.paint': (input) => hex.paint(input),
+  'hex.placeLocation': (input) => hex.placeLocation(input),
+  'hex.removeLocation': (input) => hex.removeLocation(input),
+  'hexTravel.read': (input) => hexTravel.read(input.sceneId),
+  'hexTravel.evaluate': (input) => hexTravel.evaluate(input),
+  'hexTravel.position': (input) => hexTravel.position(input),
+  'hexTravel.start': (input) => hexTravel.start(input),
+  'hexTravel.pause': (input) => hexTravel.pause(input),
+  'hexTravel.resume': (input) => hexTravel.resume(input),
+  'hexTravel.abort': (input) => hexTravel.abort(input),
+  'hexTravel.setMultiplier': (input) => hexTravel.setMultiplier(input),
+  'core.shutdown': () => {
+    if (travelTimer !== undefined) clearTimeout(travelTimer)
+    campaigns.close()
+    return null
+  }
+} satisfies CoreHandlers
+
 process.parentPort.on('message', (event) => {
+  void handleMessage(event)
+})
+
+async function handleMessage(event: { data: unknown }): Promise<void> {
   const parsed = coreRequestSchema.safeParse(event.data)
   if (!parsed.success) {
     const envelope = z
@@ -52,300 +269,72 @@ process.parentPort.on('message', (event) => {
   }
   const r = parsed.data
   try {
-    if (r.kind === 'core.shutdown') {
-      respond(r.requestId, campaigns.list())
-      campaigns.close()
-      process.exit(0)
-    } else if (r.kind === 'campaign.list')
-      respond(r.requestId, campaigns.list())
-    else if (r.kind === 'campaign.create')
-      respond(r.requestId, campaigns.create(r.input.name))
-    else if (r.kind === 'campaign.activate')
-      respond(r.requestId, campaigns.activate(r.input.id))
-    else if (r.kind === 'party.read') respond(r.requestId, play.readParty())
-    else if (r.kind === 'party.setMembership')
-      respond(
-        r.requestId,
-        play.setMembership(r.input.id, r.input.active, r.input.expectedRevision)
-      )
-    else if (r.kind === 'party.create')
-      respond(
-        r.requestId,
-        play.createPartyCharacter(r.input.character, r.input.expectedRevision)
-      )
-    else if (r.kind === 'party.update')
-      respond(
-        r.requestId,
-        play.updatePartyCharacter(
-          r.input.id,
-          r.input.character,
-          r.input.expectedRevision
-        )
-      )
-    else if (r.kind === 'party.delete')
-      respond(
-        r.requestId,
-        play.deletePartyCharacter(r.input.id, r.input.expectedRevision)
-      )
-    else if (r.kind === 'party.adjustXp')
-      respond(
-        r.requestId,
-        play.adjustPartyXp(r.input.id, r.input.delta, r.input.expectedRevision)
-      )
-    else if (r.kind === 'party.rest')
-      respond(
-        r.requestId,
-        play.restParty(r.input.type, r.input.expectedRevision)
-      )
-    else if (r.kind === 'party.calculateAdventuringDay')
-      respond(
-        r.requestId,
-        play.calculateAdventuringDay(r.input.rows, r.input.totalXp)
-      )
-    else if (r.kind === 'creatures.search')
-      respond(r.requestId, creatures.search(r.input))
-    else if (r.kind === 'creatures.filterOptions')
-      respond(r.requestId, creatures.filterOptions())
-    else if (r.kind === 'creatures.detail') {
-      respond(r.requestId, creatures.detail(r.input.id))
-    } else if (r.kind === 'locations.read')
-      respond(r.requestId, locations.read())
-    else if (r.kind === 'locations.create')
-      respond(
-        r.requestId,
-        locations.create(r.input.location, r.input.expectedRevision)
-      )
-    else if (r.kind === 'locations.update')
-      respond(
-        r.requestId,
-        locations.update(r.input.id, r.input.location, r.input.expectedRevision)
-      )
-    else if (r.kind === 'locations.delete')
-      respond(
-        r.requestId,
-        locations.delete(r.input.id, r.input.expectedRevision)
-      )
-    else if (r.kind === 'encounterTables.read')
-      respond(r.requestId, sources.readTables())
-    else if (r.kind === 'encounterTables.create')
-      respond(
-        r.requestId,
-        sources.createTable(r.input.table, r.input.expectedRevision)
-      )
-    else if (r.kind === 'encounterTables.update')
-      respond(
-        r.requestId,
-        sources.updateTable(r.input.id, r.input.table, r.input.expectedRevision)
-      )
-    else if (r.kind === 'encounterTables.delete')
-      respond(
-        r.requestId,
-        sources.deleteTable(r.input.id, r.input.expectedRevision)
-      )
-    else if (r.kind === 'factions.read')
-      respond(r.requestId, sources.readFactions())
-    else if (r.kind === 'factions.create')
-      respond(
-        r.requestId,
-        sources.createFaction(r.input.faction, r.input.expectedRevision)
-      )
-    else if (r.kind === 'factions.update')
-      respond(
-        r.requestId,
-        sources.updateFaction(
-          r.input.id,
-          r.input.faction,
-          r.input.expectedRevision
-        )
-      )
-    else if (r.kind === 'factions.delete')
-      respond(
-        r.requestId,
-        sources.deleteFaction(r.input.id, r.input.expectedRevision)
-      )
-    else if (r.kind === 'session.read') {
-      hexTravel.read()
-      respond(r.requestId, play.readSession())
-    } else if (r.kind === 'scene.focus')
-      respond(
-        r.requestId,
-        play.focusScene(r.input.sceneId, r.input.expectedRevision)
-      )
-    else if (r.kind === 'scene.setLocation')
-      respond(
-        r.requestId,
-        play.setSceneLocation(
-          r.input.sceneId,
-          r.input.locationId,
-          r.input.expectedRevision
-        )
-      )
-    else if (r.kind === 'scene.saveGroup')
-      respond(
-        r.requestId,
-        play.saveSceneGroup(
-          r.input.sceneId,
-          r.input.groupId,
-          r.input.name,
-          r.input.entries,
-          r.input.expectedRevision
-        )
-      )
-    else if (r.kind === 'scene.deleteGroup')
-      respond(
-        r.requestId,
-        play.deleteSceneGroup(
-          r.input.sceneId,
-          r.input.groupId,
-          r.input.expectedRevision
-        )
-      )
-    else if (r.kind === 'scene.assignPartyMember')
-      respond(
-        r.requestId,
-        play.assignScenePartyMember(
-          r.input.sceneId,
-          r.input.partyMemberId,
-          r.input.assigned,
-          r.input.expectedRevision
-        )
-      )
-    else if (r.kind === 'scene.evaluateGroupDraft')
-      respond(
-        r.requestId,
-        play.evaluateGroupDraft(
-          r.input.sceneId,
-          r.input.entries,
-          r.input.expectedRevision
-        )
-      )
-    else if (r.kind === 'scene.generateGroupDraft')
-      respond(
-        r.requestId,
-        play.generateGroupDraft(
-          r.input.sceneId,
-          r.input.entries,
-          r.input.mode,
-          r.input.filters,
-          r.input.tuning,
-          r.input.seed,
-          r.input.expectedRevision
-        )
-      )
-    else if (r.kind === 'encounter.evaluate')
-      respond(
-        r.requestId,
-        play.evaluateEncounter(
-          r.input.sceneId,
-          r.input.groupIds,
-          r.input.expectedRevision
-        )
-      )
-    else if (r.kind === 'combat.prepare')
-      respond(
-        r.requestId,
-        play.prepareCombat(
-          r.input.sceneId,
-          r.input.expectedSceneRevision,
-          r.input.groupIds
-        )
-      )
-    else if (r.kind === 'combat.rollInitiative')
-      respond(r.requestId, play.rollInitiative(r.input.expectedRevision))
-    else if (r.kind === 'combat.confirmInitiative')
-      respond(
-        r.requestId,
-        play.confirmInitiative(r.input.expectedRevision, r.input.values)
-      )
-    else if (r.kind === 'combat.advanceTurn')
-      respond(r.requestId, play.advanceTurn(r.input.expectedRevision))
-    else if (r.kind === 'combat.adjustInitiative')
-      respond(
-        r.requestId,
-        play.adjustInitiative(
-          r.input.expectedRevision,
-          r.input.id,
-          r.input.initiative
-        )
-      )
-    else if (r.kind === 'combat.changeHp')
-      respond(
-        r.requestId,
-        play.changeHp(
-          r.input.expectedRevision,
-          r.input.cardId,
-          r.input.amount,
-          r.input.healing
-        )
-      )
-    else if (r.kind === 'combat.end')
-      respond(r.requestId, play.endCombat(r.input.expectedRevision))
-    else if (r.kind === 'combat.updateResolution')
-      respond(
-        r.requestId,
-        play.updateResolution(
-          r.input.expectedRevision,
-          r.input.selectedEnemyIds,
-          r.input.thresholdFraction,
-          r.input.xpFraction
-        )
-      )
-    else if (r.kind === 'combat.awardXp')
-      respond(r.requestId, play.awardXp(r.input.expectedRevision))
-    else if (r.kind === 'combat.complete')
-      respond(r.requestId, play.completeCombat(r.input.expectedRevision))
-    else if (r.kind === 'hex.terrainCatalog')
-      respond(r.requestId, hexTerrainCatalog)
-    else if (r.kind === 'hex.catalog') respond(r.requestId, hex.catalog())
-    else if (r.kind === 'hex.read')
-      respond(r.requestId, hex.read(r.input.mapId))
-    else if (r.kind === 'hex.create')
-      respond(
-        r.requestId,
-        hex.create(r.input.displayName, r.input.expectedCatalogRevision)
-      )
-    else if (r.kind === 'hex.update') respond(r.requestId, hex.update(r.input))
-    else if (r.kind === 'hex.paint') respond(r.requestId, hex.paint(r.input))
-    else if (r.kind === 'hex.placeLocation')
-      respond(r.requestId, hex.placeLocation(r.input))
-    else if (r.kind === 'hex.removeLocation')
-      respond(r.requestId, hex.removeLocation(r.input))
-    else if (r.kind === 'hexTravel.read')
-      respond(r.requestId, hexTravel.read(r.input.sceneId))
-    else if (r.kind === 'hexTravel.evaluate')
-      respond(r.requestId, hexTravel.evaluate(r.input))
-    else if (r.kind === 'hexTravel.position')
-      respond(r.requestId, hexTravel.position(r.input))
-    else if (r.kind === 'hexTravel.start')
-      respond(r.requestId, hexTravel.start(r.input))
-    else if (r.kind === 'hexTravel.pause')
-      respond(r.requestId, hexTravel.pause(r.input))
-    else if (r.kind === 'hexTravel.resume')
-      respond(r.requestId, hexTravel.resume(r.input))
-    else if (r.kind === 'hexTravel.abort')
-      respond(r.requestId, hexTravel.abort(r.input))
-    else if (r.kind === 'hexTravel.setMultiplier')
-      respond(r.requestId, hexTravel.setMultiplier(r.input))
+    const payload = await dispatch(r)
+    respond(r.requestId, payload)
+    if (r.kind === 'core.shutdown') setImmediate(() => process.exit(0))
   } catch (e) {
-    failure(
-      r.requestId,
-      e instanceof Error && e.message === 'not found'
-        ? 'not_found'
-        : e instanceof Error && e.message === 'stale'
-          ? 'stale'
-          : e instanceof Error && e.message === 'validation'
-            ? 'validation_failed'
-            : 'internal'
-    )
+    const mapped = capabilityFailure(e)
+    failure(r.requestId, mapped.code, mapped.retryable, mapped.data)
   }
-})
+}
+
+function dispatch(request: CoreRequest): Promise<unknown> {
+  const handler = handlers[request.kind] as (input: unknown) => unknown
+  const result = handler(request.input)
+  return Promise.resolve(result).then((payload) => {
+    const parsed = coreOperations[request.kind].output.parse(payload)
+    if (
+      request.kind.startsWith('hexTravel.') &&
+      request.kind !== 'hexTravel.read'
+    ) {
+      const snapshot = hexTravelSnapshotSchema.safeParse(parsed)
+      if (snapshot.success)
+        publishSessionChange(snapshot.data, 'travel-command')
+    }
+    if (
+      coreOperations[request.kind].mode === 'write' &&
+      request.kind !== 'settings.update' &&
+      request.kind !== 'core.shutdown'
+    )
+      reconcileAndSchedule(
+        request.kind === 'campaign.create' ||
+          request.kind === 'campaign.activate'
+          ? 'campaign-reconcile'
+          : 'travel-command'
+      )
+    return parsed
+  })
+}
 function respond(requestId: string, payload: unknown) {
   process.parentPort?.postMessage({ requestId, ok: true, payload })
 }
-function failure(requestId: string, code: CapabilityErrorCode) {
+function failure(
+  requestId: string,
+  code: CapabilityErrorCode,
+  retryable = false,
+  data?: Readonly<{ developmentDataPath: string }>
+) {
   process.parentPort?.postMessage({
     requestId,
     ok: false,
-    error: capabilityFailureSchema.parse({ code, retryable: false })
+    error: capabilityFailureSchema.parse({
+      code,
+      retryable,
+      ...(data ? { data } : {})
+    })
   })
+}
+
+function capabilityFailure(error: unknown): {
+  code: CapabilityErrorCode
+  retryable: boolean
+  data?: Readonly<{ developmentDataPath: string }>
+} {
+  if (error instanceof CapabilityError)
+    return {
+      code: error.code,
+      retryable: error.retryable,
+      ...(error.data ? { data: error.data } : {})
+    }
+  return { code: 'internal', retryable: false }
 }

@@ -11,8 +11,18 @@ describe('campaign walking skeleton', () => {
       .setLegacyMode()
       .analyze()
     expect(accessibility.violations).toHaveLength(0)
+    await (
+      await client.$('button[aria-label="Zum Kerzenlichtmodus wechseln"]')
+    ).click()
+    const darkAccessibility = await new AxeBuilder({ client })
+      .setLegacyMode()
+      .analyze()
+    expect(darkAccessibility.violations).toHaveLength(0)
+    await (
+      await client.$('button[aria-label="Zum Pergamentmodus wechseln"]')
+    ).click()
     await field.setValue('Campaign A')
-    await (await client.$('button=Create campaign')).click()
+    await (await client.$('button=Kampagne erstellen')).click()
     await expect(await client.$('h1=Session')).toBeExisting()
     await expect(
       await client.$('section[aria-label="Session Steuerung"]')
@@ -25,7 +35,7 @@ describe('campaign walking skeleton', () => {
       await client.$('aside[aria-label="Szenario Panel"]')
     ).toBeExisting()
     await (await client.$('button=Karte')).click()
-    await expect(await client.$('strong=Reiseplanung')).toBeExisting()
+    await expect(await client.$('strong=Keine Hex-Karte')).toBeExisting()
     await (await client.$('button=Details')).click()
     await expect(await client.$$('[role="separator"]')).toBeElementsArrayOfSize(
       2
@@ -50,14 +60,38 @@ describe('campaign walking skeleton', () => {
     await expect(rightDivider).toHaveAttribute('aria-valuenow', '47')
     await client.pause(400)
 
-    await (await client.$('button[aria-label="Campaigns"]')).click()
+    await (await client.$('button[aria-label="Kampagnen"]')).click()
     const nextField = await client.$('#campaign-name')
     await nextField.setValue('Campaign B')
-    await (await client.$('button=Create campaign')).click()
+    await (await client.$('button=Kampagne erstellen')).click()
     await expect(await client.$('h1=Session')).toBeExisting()
 
-    await (await client.$('button[aria-label="Campaigns"]')).click()
+    await (await client.$('button[aria-label="Kampagnen"]')).click()
     await (await client.$('button=Campaign A')).click()
+    await expect(await client.$('h1=Session')).toBeExisting()
+  })
+
+  it('keeps a newly created hex map inside the workspace', async () => {
+    const client = browser as unknown as WdioBrowser
+    await (await client.$('button[aria-label="Hex-Editor"]')).click()
+    await (
+      await client.$('input[aria-label="Neue Karte"]')
+    ).setValue('Salzmarsch-Küste')
+    await (await client.$('button=Neu')).click()
+    await expect(
+      await client.$('[role="img"][aria-label="Hex-Editor Salzmarsch-Küste"]')
+    ).toBeExisting()
+
+    await expectHexEditorLayout(client)
+    await (
+      await client.$('button[aria-label="Zum Kerzenlichtmodus wechseln"]')
+    ).click()
+    await expectHexEditorLayout(client)
+    await (
+      await client.$('button[aria-label="Zum Pergamentmodus wechseln"]')
+    ).click()
+
+    await (await client.$('button[aria-label="Session"]')).click()
     await expect(await client.$('h1=Session')).toBeExisting()
   })
 
@@ -73,7 +107,9 @@ describe('campaign walking skeleton', () => {
       await editLocation.$('textarea[aria-label="Ortsnotizen"]')
     ).setValue('Nebel, Lagerhäuser und eine geschäftige Anlegestelle.')
     await (await editLocation.$('button=Speichern')).click()
-    await expect(await client.$('h2=Salzmarschhafen')).toBeExisting()
+    await expect(
+      await client.$('h2[aria-label="Salzmarschhafen"]')
+    ).toBeExisting()
     await (await client.$('button[aria-label="Ort Details schließen"]')).click()
     await (await client.$('button[aria-label="Session"]')).click()
     const sceneLocation = await client.$('select[aria-label="Scene-Ort"]')
@@ -229,10 +265,56 @@ async function waitForCampaignInput(
   client: WdioBrowser,
   field: Awaited<ReturnType<WdioBrowser['$']>>
 ): Promise<void> {
-  await client.waitUntil(() => field.isExisting(), {
-    timeout: 5_000,
-    timeoutMsg: 'Campaign input was not rendered.'
+  try {
+    await client.waitUntil(() => field.isExisting(), {
+      timeout: 5_000,
+      timeoutMsg: 'Campaign input was not rendered.'
+    })
+  } catch (cause) {
+    const diagnostic = await client.execute(() => ({
+      url: window.location.href,
+      body: document.body.innerHTML,
+      capability: typeof (window as unknown as { saltMarcher?: unknown })
+        .saltMarcher,
+      scripts: [...document.scripts].map((script) => script.src)
+    }))
+    throw new Error(
+      `Campaign input was not rendered: ${JSON.stringify(diagnostic)}`,
+      { cause }
+    )
+  }
+}
+
+async function expectHexEditorLayout(client: WdioBrowser): Promise<void> {
+  const layout = await client.execute(() => {
+    const workspace = document.querySelector('.hex-editor-workspace')
+    const shell = document.querySelector('.hex-canvas-shell')
+    const host = document.querySelector('.hex-canvas')
+    if (
+      !(workspace instanceof HTMLElement) ||
+      !(shell instanceof HTMLElement) ||
+      !(host instanceof HTMLElement)
+    )
+      return null
+    const shellBounds = shell.getBoundingClientRect()
+    return {
+      workspaceDisplay: getComputedStyle(workspace).display,
+      shellPosition: getComputedStyle(shell).position,
+      hostPosition: getComputedStyle(host).position,
+      shellWidth: shellBounds.width,
+      shellHeight: shellBounds.height,
+      shellRight: shellBounds.right,
+      viewportWidth: window.innerWidth
+    }
   })
+
+  expect(layout).not.toBeNull()
+  expect(layout?.workspaceDisplay).toBe('grid')
+  expect(layout?.shellPosition).toBe('relative')
+  expect(layout?.hostPosition).toBe('absolute')
+  expect(layout?.shellWidth).toBeGreaterThan(0)
+  expect(layout?.shellHeight).toBeGreaterThanOrEqual(260)
+  expect(layout?.shellRight).toBeLessThanOrEqual(layout?.viewportWidth ?? 0)
 }
 
 async function createLocation(
@@ -247,7 +329,7 @@ async function createLocation(
   await (await dialog.$('input[aria-label="Ortsname"]')).setValue(name)
   await (await dialog.$('textarea[aria-label="Ortsnotizen"]')).setValue(notes)
   await (await dialog.$('button=Erstellen')).click()
-  await expect(await client.$(`h2=${name}`)).toBeExisting()
+  await expect(await client.$(`h2[aria-label="${name}"]`)).toBeExisting()
 }
 
 async function waitForSceneLocation(

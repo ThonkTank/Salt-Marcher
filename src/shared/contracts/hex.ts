@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 export const axialCoordinateSchema = z
-  .object({ q: z.number().int(), r: z.number().int() })
+  .object({ q: z.number().int().safe(), r: z.number().int().safe() })
   .strict()
 
 export const hexTerrainIdSchema = z.enum([
@@ -34,8 +34,8 @@ export const hexMapSummarySchema = z
   .object({
     id: z.uuid(),
     displayName: z.string().min(1).max(100),
-    radius: z.number().int().min(0).max(99),
-    revision: z.number().int().nonnegative(),
+    metadataRevision: z.number().int().nonnegative(),
+    contentRevision: z.number().int().nonnegative(),
     position: z.number().int().nonnegative()
   })
   .strict()
@@ -63,12 +63,47 @@ export const hexMapCatalogSnapshotSchema = z
   })
   .strict()
 
-export const hexMapSnapshotSchema = z
-  .object({ map: hexMapSummarySchema, tiles: z.array(hexTileSchema) })
+export const hexChunkKeySchema = z
+  .object({
+    q: z.number().int().safe(),
+    r: z.number().int().safe()
+  })
   .strict()
 
-const expectedMapRevisionSchema = z
-  .object({ expectedRevision: z.number().int().nonnegative() })
+export const hexTerrainOverrideSchema = axialCoordinateSchema
+  .extend({ terrainId: hexTerrainIdSchema })
+  .strict()
+
+export const hexChunkSnapshotSchema = z
+  .object({
+    key: hexChunkKeySchema,
+    revision: z.number().int().nonnegative(),
+    terrainOverrides: z.array(hexTerrainOverrideSchema),
+    locations: z.array(hexLocationPlacementSchema)
+  })
+  .strict()
+
+export const hexChunkReadResultSchema = z
+  .object({
+    map: hexMapSummarySchema,
+    chunks: z.array(hexChunkSnapshotSchema).max(64)
+  })
+  .strict()
+
+/** Renderer-local projection assembled from chunk snapshots. */
+export const hexMapViewSchema = z
+  .object({
+    map: hexMapSummarySchema,
+    center: axialCoordinateSchema,
+    tiles: z.array(hexTileSchema)
+  })
+  .strict()
+
+export const readHexChunksInputSchema = z
+  .object({
+    mapId: z.uuid(),
+    keys: z.array(hexChunkKeySchema).min(1).max(64)
+  })
   .strict()
 
 export const createHexMapInputSchema = z
@@ -78,37 +113,48 @@ export const createHexMapInputSchema = z
   })
   .strict()
 
-export const updateHexMapInputSchema = expectedMapRevisionSchema
-  .extend({
+export const updateHexMapInputSchema = z
+  .object({
     mapId: z.uuid(),
     displayName: z.string().trim().min(1).max(100),
-    radius: z.number().int().min(0).max(99),
-    confirmDataLoss: z.boolean().default(false)
+    expectedMetadataRevision: z.number().int().nonnegative()
   })
   .strict()
 
-export const paintHexTerrainInputSchema = expectedMapRevisionSchema
-  .extend({
+export const paintHexTerrainInputSchema = z
+  .object({
     mapId: z.uuid(),
     coordinate: axialCoordinateSchema,
-    terrainId: hexTerrainIdSchema
+    terrainId: hexTerrainIdSchema,
+    expectedChunkRevision: z.number().int().nonnegative()
   })
   .strict()
 
-export const placeHexLocationInputSchema = expectedMapRevisionSchema
-  .extend({
+export const placeHexLocationInputSchema = z
+  .object({
     mapId: z.uuid(),
     locationId: z.uuid(),
-    coordinate: axialCoordinateSchema
+    coordinate: axialCoordinateSchema,
+    expectedContentRevision: z.number().int().nonnegative()
   })
   .strict()
 
 export const removeHexLocationInputSchema = z
   .object({
+    mapId: z.uuid(),
     locationId: z.uuid(),
-    expectedMapRevision: z.number().int().nonnegative()
+    expectedContentRevision: z.number().int().nonnegative()
   })
   .strict()
+
+export const hexLocationPlacementReferenceSchema = z
+  .object({
+    mapId: z.uuid(),
+    coordinate: axialCoordinateSchema,
+    contentRevision: z.number().int().nonnegative()
+  })
+  .strict()
+  .nullable()
 
 export const hexTravelStatusSchema = z.enum([
   'unpositioned',
@@ -133,6 +179,8 @@ export const hexTravelSnapshotSchema = z
     locationName: z.string(),
     path: z.array(axialCoordinateSchema),
     currentIndex: z.number().int().nonnegative(),
+    segmentStartedAt: z.number().int().nonnegative().nullable(),
+    segmentEndsAt: z.number().int().nonnegative().nullable(),
     progress: z.number().min(0).max(1),
     remainingGameSeconds: z.number().int().nonnegative(),
     gameTimeSeconds: z.number().int().nonnegative(),
@@ -220,7 +268,16 @@ export type HexTerrainCatalog = Readonly<
 export type HexMapCatalogSnapshot = Readonly<
   z.infer<typeof hexMapCatalogSnapshotSchema>
 >
-export type HexMapSnapshot = Readonly<z.infer<typeof hexMapSnapshotSchema>>
+export type HexMapSummary = Readonly<z.infer<typeof hexMapSummarySchema>>
+export type HexChunkKey = Readonly<z.infer<typeof hexChunkKeySchema>>
+export type HexChunkSnapshot = Readonly<z.infer<typeof hexChunkSnapshotSchema>>
+export type HexChunkReadResult = Readonly<
+  z.infer<typeof hexChunkReadResultSchema>
+>
+export type HexMapView = Readonly<z.infer<typeof hexMapViewSchema>>
+export type HexLocationPlacementReference = Readonly<
+  z.infer<typeof hexLocationPlacementReferenceSchema>
+>
 export type HexTravelSnapshot = Readonly<
   z.infer<typeof hexTravelSnapshotSchema>
 >

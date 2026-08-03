@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3'
-import { HexMapStore, initializeHexSchema } from '../hex/hex-map-store.js'
+import { CapabilityError } from '../../shared/errors/capability-error.js'
+import { HexMapStore } from '../hex/hex-map-store.js'
 import { HexTravelStore } from '../hex/hex-travel.js'
 import { z } from 'zod'
 import {
@@ -21,25 +22,15 @@ import type {
   SceneGroupDraftGeneration
 } from '../../shared/contracts/scene.js'
 import { creatureById } from '../creatures/catalog.js'
-import {
-  calculateAdventuringDay,
-  initializePartySchema,
-  PartyStore
-} from '../party/party-store.js'
-import { initializeSceneSchema, SceneStore } from '../scene/scene-store.js'
+import { calculateAdventuringDay, PartyStore } from '../party/party-store.js'
+import { SceneStore } from '../scene/scene-store.js'
 import {
   evaluateSceneGroupDraft,
   evaluateSceneGroups,
   generateSceneGroupDraft
 } from '../scene/group-generator.js'
-import {
-  initializeWorldLocationSchema,
-  WorldLocationStore
-} from '../worldplanner/location-store.js'
-import {
-  initializeEncounterSourceSchema,
-  resolveEncounterSource
-} from '../worldplanner/encounter-source-store.js'
+import { WorldLocationStore } from '../worldplanner/location-store.js'
+import { EncounterSourceService } from '../application/encounter-source-service.js'
 
 const sourceSchema = z.discriminatedUnion('kind', [
   z
@@ -107,24 +98,6 @@ type CombatMemento = z.infer<typeof combatMementoSchema>
 type Combatant = z.infer<typeof combatantSchema>
 
 export function initializeCombatSchema(db: Database.Database): void {
-  const runtimeColumns = db
-    .prepare("PRAGMA table_info('encounter_combat_runtime')")
-    .all() as { name: string }[]
-  if (
-    runtimeColumns.length > 0 &&
-    !runtimeColumns.some((column) => column.name === 'scene_id')
-  ) {
-    db.exec(`
-      DROP TABLE IF EXISTS encounter_combat_resolution_enemies;
-      DROP TABLE IF EXISTS encounter_combat_resolution;
-      DROP TABLE IF EXISTS encounter_combat_turn_order;
-      DROP TABLE IF EXISTS encounter_combatants;
-      DROP TABLE IF EXISTS encounter_combat_sources;
-      DROP TABLE IF EXISTS encounter_combat_selected_groups;
-      DROP TABLE IF EXISTS encounter_combat_runtime;
-      DROP TABLE IF EXISTS live_combat_runtime;
-    `)
-  }
   db.exec(`
     CREATE TABLE IF NOT EXISTS encounter_combat_runtime (
       scene_id TEXT PRIMARY KEY NOT NULL,
@@ -189,7 +162,7 @@ export function initializeCombatSchema(db: Database.Database): void {
 }
 
 export class LivePlayService {
-  constructor(private readonly campaignPath: () => string) {}
+  constructor(private readonly campaignDatabase: () => Database.Database) {}
 
   readParty() {
     return this.withStores(({ party }) => party.read())
@@ -276,7 +249,7 @@ export class LivePlayService {
           .read()
           .locations.some((location) => location.id === locationId)
       )
-        throw new Error('not found')
+        throw new CapabilityError('not_found', false)
       scene.setLocation(sceneId, locationId, expectedRevision)
       return this.snapshotFrom(party, scene, combat)
     })
@@ -334,10 +307,11 @@ export class LivePlayService {
     expectedRevision: number
   ): SceneGroupDraftGeneration {
     return this.withStores(({ party, scene }) => {
-      if (scene.revision() !== expectedRevision) throw new Error('stale')
+      if (scene.revision() !== expectedRevision)
+        throw new CapabilityError('stale', true)
       const partySnapshot = party.read()
       const focused = scene.focused(partySnapshot.members)
-      if (focused.id !== sceneId) throw new Error('not found')
+      if (focused.id !== sceneId) throw new CapabilityError('not_found', false)
       const resolvedFilters = { ...filters, locationId: focused.locationId }
       return generateSceneGroupDraft(
         focused,
@@ -348,7 +322,9 @@ export class LivePlayService {
         tuning,
         seed,
         expectedRevision,
-        resolveEncounterSource(scene.database(), resolvedFilters)
+        new EncounterSourceService(() => scene.database()).resolve(
+          resolvedFilters
+        )
       )
     })
   }
@@ -359,10 +335,11 @@ export class LivePlayService {
     expectedRevision: number
   ): SceneGroupDraftEvaluation {
     return this.withStores(({ party, scene }) => {
-      if (scene.revision() !== expectedRevision) throw new Error('stale')
+      if (scene.revision() !== expectedRevision)
+        throw new CapabilityError('stale', true)
       const partySnapshot = party.read()
       const focused = scene.focused(partySnapshot.members)
-      if (focused.id !== sceneId) throw new Error('not found')
+      if (focused.id !== sceneId) throw new CapabilityError('not_found', false)
       return evaluateSceneGroupDraft(
         sceneId,
         scene.assignedParty(partySnapshot.members, sceneId),
@@ -377,10 +354,11 @@ export class LivePlayService {
     expectedRevision: number
   ): EncounterSelectionEvaluation {
     return this.withStores(({ party, scene }) => {
-      if (scene.revision() !== expectedRevision) throw new Error('stale')
+      if (scene.revision() !== expectedRevision)
+        throw new CapabilityError('stale', true)
       const partySnapshot = party.read()
       const focused = scene.focused(partySnapshot.members)
-      if (focused.id !== sceneId) throw new Error('not found')
+      if (focused.id !== sceneId) throw new CapabilityError('not_found', false)
       return evaluateSceneGroups(
         focused,
         scene.assignedParty(partySnapshot.members, sceneId),
@@ -395,13 +373,15 @@ export class LivePlayService {
     groupIds: readonly string[]
   ): LiveSessionSnapshot {
     return this.withStores(({ party, scene, combat }) => {
-      if (scene.revision() !== expectedSceneRevision) throw new Error('stale')
+      if (scene.revision() !== expectedSceneRevision)
+        throw new CapabilityError('stale', true)
       const partySnapshot = party.read()
       const focused = scene.focused(partySnapshot.members)
-      if (focused.id !== sceneId) throw new Error('not found')
+      if (focused.id !== sceneId) throw new CapabilityError('not_found', false)
       const assigned = scene.assignedParty(partySnapshot.members, sceneId)
       const evaluation = evaluateSceneGroups(focused, assigned, groupIds)
-      if (!evaluation.canStart) throw new Error('validation')
+      if (!evaluation.canStart)
+        throw new CapabilityError('validation_failed', false)
       combat.prepare(assigned, focused.groups, groupIds)
       return this.snapshotFrom(party, scene, combat)
     })
@@ -504,7 +484,10 @@ export class LivePlayService {
       hexTravel ??
       new HexTravelStore(
         scene.database(),
-        new HexMapStore(scene.database()),
+        new HexMapStore(
+          scene.database(),
+          new WorldLocationStore(scene.database())
+        ),
         party,
         scene
       )
@@ -549,29 +532,23 @@ export class LivePlayService {
       locations: WorldLocationStore
     }) => T
   ): T {
-    const db = new Database(this.campaignPath())
-    db.pragma('foreign_keys = ON')
-    try {
-      initializePartySchema(db)
-      initializeSceneSchema(db)
-      initializeCombatSchema(db)
-      initializeWorldLocationSchema(db)
-      initializeEncounterSourceSchema(db)
-      initializeHexSchema(db)
-      const locations = new WorldLocationStore(db)
-      const scene = new SceneStore(db, () => locations.read().locations)
-      const combatFor = (sceneId: string) => new CombatStore(db, sceneId)
-      const party = new PartyStore(db)
-      return work({
-        party,
-        scene,
-        combat: combatFor(scene.focusedSceneId()),
-        combatFor,
-        locations
-      })
-    } finally {
-      db.close()
-    }
+    const db = this.campaignDatabase()
+    const locations = new WorldLocationStore(db)
+    const party = new PartyStore(db)
+    const scene = new SceneStore(
+      db,
+      () => locations.read().locations,
+      (id) =>
+        party.read().members.some((member) => member.id === id && member.active)
+    )
+    const combatFor = (sceneId: string) => new CombatStore(db, sceneId)
+    return work({
+      party,
+      scene,
+      combat: combatFor(scene.focusedSceneId()),
+      combatFor,
+      locations
+    })
   }
 }
 
@@ -596,13 +573,14 @@ class CombatStore {
     groupIds: readonly string[]
   ): void {
     const party = members.filter((member) => member.active)
-    if (party.length === 0) throw new Error('validation')
+    if (party.length === 0)
+      throw new CapabilityError('validation_failed', false)
     const selected = Array.from(new Set(groupIds))
     const chosenGroups = selected.map((id) =>
       groups.find((group) => group.id === id)
     )
     if (chosenGroups.some((group) => group === undefined))
-      throw new Error('not found')
+      throw new CapabilityError('not_found', false)
     const sources: CombatMemento['sources'] = party.map((member, index) => ({
       kind: 'party',
       rowId: `party:${member.id}`,
@@ -613,7 +591,8 @@ class CombatStore {
     for (const group of chosenGroups) {
       for (const entry of group?.entries ?? []) {
         const creature = creatureById(entry.creatureId)
-        if (!entry.available || !creature) throw new Error('not found')
+        if (!entry.available || !creature)
+          throw new CapabilityError('not_found', false)
         sources.push({
           kind: 'monster',
           rowId: `monster:${entry.id}`,
@@ -625,7 +604,7 @@ class CombatStore {
       }
     }
     if (!sources.some((source) => source.kind === 'monster'))
-      throw new Error('validation')
+      throw new CapabilityError('validation_failed', false)
     this.save({
       id: uuidv7(),
       revision: 0,
@@ -650,7 +629,8 @@ class CombatStore {
     }[]
   ): void {
     const party = members.filter((member) => member.active)
-    if (party.length === 0 || roster.length === 0) throw new Error('validation')
+    if (party.length === 0 || roster.length === 0)
+      throw new CapabilityError('validation_failed', false)
     const sources: CombatMemento['sources'] = party.map((member, index) => ({
       kind: 'party',
       rowId: `party:${member.id}`,
@@ -660,7 +640,8 @@ class CombatStore {
     }))
     roster.forEach((entry) => {
       const creature = creatureById(entry.creatureId)
-      if (!entry.available || !creature) throw new Error('not found')
+      if (!entry.available || !creature)
+        throw new CapabilityError('not_found', false)
       sources.push({
         kind: 'monster',
         rowId: `monster:builder:${entry.creatureId}`,
@@ -687,7 +668,7 @@ class CombatStore {
   addReinforcement(creatureId: string, quantity: number): void {
     const state = this.requireCombat()
     const creature = creatureById(creatureId)
-    if (!creature) throw new Error('not found')
+    if (!creature) throw new CapabilityError('not_found', false)
     const activeCard = state.turnOrder[state.activeIndex]
     const initiative = creature.initiative
     const sourceId = `monster:reinforcement:${uuidv7()}`
@@ -726,7 +707,8 @@ class CombatStore {
 
   roll(): void {
     const state = this.require()
-    if (state.phase !== 'initiative') throw new Error('validation')
+    if (state.phase !== 'initiative')
+      throw new CapabilityError('validation_failed', false)
     const values = [13, 15, 17, 19, 11]
     state.sources = state.sources.map((source, index) => ({
       ...source,
@@ -739,7 +721,8 @@ class CombatStore {
     values: readonly { id: string; initiative: number }[]
   ): void {
     const state = this.require()
-    if (state.phase !== 'initiative') throw new Error('validation')
+    if (state.phase !== 'initiative')
+      throw new CapabilityError('validation_failed', false)
     const input = new Map(values.map((value) => [value.id, value.initiative]))
     state.sources = state.sources.map((source) => ({
       ...source,
@@ -765,7 +748,7 @@ class CombatStore {
         continue
       }
       const creature = creatureById(source.creatureId)
-      if (!creature) throw new Error('not found')
+      if (!creature) throw new CapabilityError('not_found', false)
       let ordinal = 1
       for (const size of mobSizes(source.quantity)) {
         const cardId = `monster-card:${uuidv7()}`
@@ -819,7 +802,7 @@ class CombatStore {
       changed = true
       return { ...combatant, initiative }
     })
-    if (!changed) throw new Error('not found')
+    if (!changed) throw new CapabilityError('not_found', false)
     state.turnOrder = sortedCardIds(state.combatants)
     state.activeIndex = Math.max(0, state.turnOrder.indexOf(activeCard ?? ''))
     this.bump(state)
@@ -835,7 +818,7 @@ class CombatStore {
           combatant.currentHp > 0
       )
       .sort((a, b) => a.currentHp - b.currentHp || a.name.localeCompare(b.name))
-    if (members.length === 0) throw new Error('not found')
+    if (members.length === 0) throw new CapabilityError('not_found', false)
     let remaining = amount
     const nextHp = new Map<string, number>()
     if (healing) {
@@ -880,14 +863,14 @@ class CombatStore {
   ): void {
     const state = this.require()
     if (state.phase !== 'resolution' || !state.resolution)
-      throw new Error('validation')
+      throw new CapabilityError('validation_failed', false)
     const enemyIds = new Set(
       state.combatants
         .filter((combatant) => !combatant.playerCharacter)
         .map((combatant) => combatant.id)
     )
     if (selectedEnemyIds.some((id) => !enemyIds.has(id)))
-      throw new Error('not found')
+      throw new CapabilityError('not_found', false)
     state.resolution = {
       ...state.resolution,
       selectedEnemyIds: Array.from(new Set(selectedEnemyIds)),
@@ -907,9 +890,9 @@ class CombatStore {
       !state.resolution ||
       state.resolution.xpAwarded
     )
-      throw new Error('validation')
+      throw new CapabilityError('validation_failed', false)
     const partySize = members.filter((member) => member.active).length
-    if (partySize === 0) throw new Error('validation')
+    if (partySize === 0) throw new CapabilityError('validation_failed', false)
     const selected = new Set(state.resolution.selectedEnemyIds)
     const eligible = state.combatants
       .filter((combatant) => selected.has(combatant.id))
@@ -922,7 +905,7 @@ class CombatStore {
 
   markXpAwarded(): void {
     const state = this.require()
-    if (!state.resolution) throw new Error('validation')
+    if (!state.resolution) throw new CapabilityError('validation_failed', false)
     state.resolution = { ...state.resolution, xpAwarded: true }
     this.bump(state)
   }
@@ -1042,7 +1025,8 @@ class CombatStore {
   }
 
   assertRevision(expectedRevision: number): void {
-    if (this.require().revision !== expectedRevision) throw new Error('stale')
+    if (this.require().revision !== expectedRevision)
+      throw new CapabilityError('stale', true)
   }
 
   clear(): void {
@@ -1051,13 +1035,14 @@ class CombatStore {
 
   private requireCombat(): CombatMemento {
     const state = this.require()
-    if (state.phase !== 'combat') throw new Error('validation')
+    if (state.phase !== 'combat')
+      throw new CapabilityError('validation_failed', false)
     return state
   }
 
   private require(): CombatMemento {
     const state = this.load()
-    if (!state) throw new Error('not found')
+    if (!state) throw new CapabilityError('not_found', false)
     return state
   }
 

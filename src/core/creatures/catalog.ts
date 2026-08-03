@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3'
+import { CapabilityError } from '../../shared/errors/capability-error.js'
 import { z } from 'zod'
 import catalogDocument from './srd-5.1.generated.json' with { type: 'json' }
 import {
@@ -11,7 +12,7 @@ import {
   type CreatureCatalogQuery,
   type CreatureFilterOptions
 } from '../../shared/contracts/encounter.js'
-import type { ResolvedEncounterSource } from '../worldplanner/encounter-source-store.js'
+import type { ResolvedEncounterSource } from '../application/encounter-source-service.js'
 
 type ReferenceOptions = Pick<
   CreatureFilterOptions,
@@ -40,7 +41,7 @@ const byId = new Map(creatures.map((creature) => [creature.id, creature]))
 
 export class CreatureCatalogService {
   constructor(
-    private readonly installationPath: string,
+    private readonly installationDatabase: () => Database.Database,
     private readonly sourceResolver?: (
       query: CreatureCatalogQuery
     ) => ResolvedEncounterSource,
@@ -103,60 +104,45 @@ export class CreatureCatalogService {
   }
 
   filterOptions(): CreatureFilterOptions {
-    const db = this.open()
-    try {
-      const references = this.referenceOptions?.() ?? {
-        encounterTables: [],
-        factions: [],
-        locations: []
-      }
-      const strings = (sql: string) =>
-        (db.prepare(sql).all() as { value: string }[]).map((row) => row.value)
-      return creatureFilterOptionsSchema.parse({
-        challengeRatings: strings(
-          'SELECT DISTINCT challenge_rating_text AS value FROM creatures ORDER BY challenge_rating, value'
-        ),
-        sizes: strings(
-          'SELECT DISTINCT size AS value FROM creatures ORDER BY value'
-        ),
-        types: strings(
-          'SELECT DISTINCT creature_type AS value FROM creatures ORDER BY value'
-        ),
-        subtypes: strings(
-          'SELECT DISTINCT subtype AS value FROM creature_subtypes ORDER BY value'
-        ),
-        biomes: strings(
-          'SELECT DISTINCT biome AS value FROM creature_biomes ORDER BY value'
-        ),
-        alignments: strings(
-          'SELECT DISTINCT alignment AS value FROM creatures ORDER BY value'
-        ),
-        encounterTables: references.encounterTables,
-        factions: references.factions,
-        locations: references.locations
-      })
-    } finally {
-      db.close()
+    const db = this.installationDatabase()
+    const references = this.referenceOptions?.() ?? {
+      encounterTables: [],
+      factions: [],
+      locations: []
     }
+    const strings = (sql: string) =>
+      (db.prepare(sql).all() as { value: string }[]).map((row) => row.value)
+    return creatureFilterOptionsSchema.parse({
+      challengeRatings: strings(
+        'SELECT DISTINCT challenge_rating_text AS value FROM creatures ORDER BY challenge_rating, value'
+      ),
+      sizes: strings(
+        'SELECT DISTINCT size AS value FROM creatures ORDER BY value'
+      ),
+      types: strings(
+        'SELECT DISTINCT creature_type AS value FROM creatures ORDER BY value'
+      ),
+      subtypes: strings(
+        'SELECT DISTINCT subtype AS value FROM creature_subtypes ORDER BY value'
+      ),
+      biomes: strings(
+        'SELECT DISTINCT biome AS value FROM creature_biomes ORDER BY value'
+      ),
+      alignments: strings(
+        'SELECT DISTINCT alignment AS value FROM creatures ORDER BY value'
+      ),
+      encounterTables: references.encounterTables,
+      factions: references.factions,
+      locations: references.locations
+    })
   }
 
   detail(id: string): Creature {
-    const db = this.open()
-    try {
-      const row = db
-        .prepare('SELECT detail_json AS detailJson FROM creatures WHERE id = ?')
-        .get(id) as { detailJson: string } | undefined
-      if (!row) throw new Error('not found')
-      return creatureSchema.parse(JSON.parse(row.detailJson))
-    } finally {
-      db.close()
-    }
-  }
-
-  private open(): Database.Database {
-    const db = new Database(this.installationPath)
-    initializeCreatureSchema(db)
-    return db
+    const row = this.installationDatabase()
+      .prepare('SELECT detail_json AS detailJson FROM creatures WHERE id = ?')
+      .get(id) as { detailJson: string } | undefined
+    if (!row) throw new CapabilityError('not_found', false)
+    return creatureSchema.parse(JSON.parse(row.detailJson))
   }
 }
 

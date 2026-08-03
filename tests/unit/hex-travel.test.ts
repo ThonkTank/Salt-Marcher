@@ -6,19 +6,16 @@ import {
   travelGameSeconds
 } from '../../src/core/hex/hex-travel.js'
 import {
-  coordinates,
-  insideRadius,
+  chunkKeyFor,
   parseTileId,
   tileId,
   tileLabel
 } from '../../src/core/hex/hex-map-store.js'
 
 describe('hex geometry and travel rules', () => {
-  it('generates stable radius coordinates and tile identities', () => {
-    expect(coordinates(0)).toEqual([{ q: 0, r: 0 }])
-    expect(coordinates(2)).toHaveLength(19)
-    expect(insideRadius({ q: 2, r: -1 }, 2)).toBe(true)
-    expect(insideRadius({ q: 2, r: 1 }, 2)).toBe(false)
+  it('generates stable chunk keys and tile identities', () => {
+    expect(chunkKeyFor({ q: 31, r: 32 })).toEqual({ q: 0, r: 1 })
+    expect(chunkKeyFor({ q: -1, r: -33 })).toEqual({ q: -1, r: -2 })
     expect(parseTileId(tileId({ q: -2, r: 1 }))).toEqual({ q: -2, r: 1 })
     expect(tileLabel({ q: -2, r: 1 })).toBe('Hex q=-2, r=1')
   })

@@ -1,8 +1,8 @@
 import { Application, Container, Graphics, Text } from 'pixi.js'
-import { useEffect, useRef, type ReactElement } from 'react'
+import { useEffect, useRef, useState, type ReactElement } from 'react'
 import type {
   AxialCoordinate,
-  HexMapSnapshot,
+  HexMapView,
   HexTerrainCatalog
 } from '../../../shared/contracts/hex.js'
 
@@ -38,25 +38,37 @@ function pixelToAxial(x: number, y: number, size: number): AxialCoordinate {
 }
 
 export function HexMapCanvas(props: {
-  snapshot: HexMapSnapshot
+  snapshot: HexMapView
   terrains: HexTerrainCatalog
   selected: AxialCoordinate | null
   token?: AxialCoordinate | null
   route?: readonly AxialCoordinate[]
   onTileClick?: (coordinate: AxialCoordinate) => void
+  onViewportChange?: (center: AxialCoordinate) => void
   ariaLabel: string
 }): ReactElement {
   const host = useRef<HTMLDivElement>(null)
+  const [renderError, setRenderError] = useState(false)
+  const [directQ, setDirectQ] = useState(props.selected?.q ?? 0)
+  const [directR, setDirectR] = useState(props.selected?.r ?? 0)
+  const [factPage, setFactPage] = useState(0)
   const click = useRef(props.onTileClick)
+  const viewportChange = useRef(props.onViewportChange)
   useEffect(() => {
     click.current = props.onTileClick
   }, [props.onTileClick])
+  useEffect(() => {
+    viewportChange.current = props.onViewportChange
+  }, [props.onViewportChange])
 
   useEffect(() => {
     const element = host.current
     if (!element) return
+    setRenderError(false)
     const application = new Application()
     let disposed = false
+    let initialized = false
+    let destroyed = false
     let dragging = false
     let last = { x: 0, y: 0 }
     const size = 27
@@ -64,6 +76,16 @@ export function HexMapCanvas(props: {
     const byTerrain = new Map(
       props.terrains.terrains.map((terrain) => [terrain.id, terrain])
     )
+    const destroy = () => {
+      if (!initialized || destroyed) return
+      destroyed = true
+      try {
+        ;(application as Application & { cleanup?: () => void }).cleanup?.()
+        application.destroy(true, { children: true })
+      } catch {
+        // Renderer cleanup must never prevent navigation away from the map.
+      }
+    }
 
     void application
       .init({
@@ -73,10 +95,18 @@ export function HexMapCanvas(props: {
         preference: 'webgl'
       })
       .then(() => {
-        if (disposed) return
+        initialized = true
+        if (disposed) {
+          destroy()
+          return
+        }
         element.append(application.canvas)
         application.stage.addChild(world)
-        world.position.set(element.clientWidth / 2, element.clientHeight / 2)
+        const viewportCenter = center(props.snapshot.center, size)
+        world.position.set(
+          element.clientWidth / 2 - viewportCenter.x,
+          element.clientHeight / 2 - viewportCenter.y
+        )
 
         const tiles = new Graphics()
         for (const tile of props.snapshot.tiles) {
@@ -148,6 +178,18 @@ export function HexMapCanvas(props: {
           last = { x: event.clientX, y: event.clientY }
         }
         const pointerUp = () => {
+          if (dragging && viewportChange.current) {
+            const localX =
+              (element.clientWidth / 2 - world.position.x) / world.scale.x
+            const localY =
+              (element.clientHeight / 2 - world.position.y) / world.scale.y
+            const nextCenter = pixelToAxial(localX, localY, size)
+            if (
+              nextCenter.q !== props.snapshot.center.q ||
+              nextCenter.r !== props.snapshot.center.r
+            )
+              viewportChange.current(nextCenter)
+          }
           dragging = false
         }
         const pointerClick = (event: MouseEvent) => {
@@ -187,11 +229,14 @@ export function HexMapCanvas(props: {
             canvas.removeEventListener('wheel', wheel)
           }
       })
+      .catch(() => {
+        destroy()
+        if (!disposed) setRenderError(true)
+      })
 
     return () => {
       disposed = true
-      ;(application as Application & { cleanup?: () => void }).cleanup?.()
-      application.destroy(true, { children: true })
+      destroy()
     }
   }, [props.snapshot, props.terrains, props.selected, props.token, props.route])
 
@@ -203,27 +248,66 @@ export function HexMapCanvas(props: {
         role="img"
         aria-label={props.ariaLabel}
       />
-      <label className="hex-accessible-selection">
-        Hexfeld auswählen
-        <select
-          value={
-            props.selected ? `${props.selected.q}:${props.selected.r}` : ''
-          }
-          onChange={(event) => {
-            const [q, r] = event.target.value.split(':').map(Number)
-            if (Number.isFinite(q) && Number.isFinite(r))
-              props.onTileClick?.({ q: q!, r: r! })
+      {renderError && (
+        <p className="hex-canvas-render-error" role="alert">
+          Die Kartenansicht konnte nicht initialisiert werden. Navigation und
+          Kartendaten bleiben verfügbar.
+        </p>
+      )}
+      <section className="hex-accessible-selection" aria-label="Hex-Navigation">
+        <label>
+          q-Koordinate
+          <input
+            type="number"
+            value={directQ}
+            onChange={(event) => setDirectQ(Number(event.target.value))}
+          />
+        </label>
+        <label>
+          r-Koordinate
+          <input
+            type="number"
+            value={directR}
+            onChange={(event) => setDirectR(Number(event.target.value))}
+          />
+        </label>
+        <button
+          onClick={() => {
+            if (Number.isSafeInteger(directQ) && Number.isSafeInteger(directR))
+              props.onTileClick?.({ q: directQ, r: directR })
           }}
         >
-          <option value="">Keine Auswahl</option>
-          {props.snapshot.tiles.map((tile) => (
-            <option key={tile.id} value={tile.id}>
-              {tile.label} · {byLabel(props.terrains, tile.terrainId)}
-              {tile.location ? ` · ${tile.location.displayName}` : ''}
-            </option>
-          ))}
-        </select>
-      </label>
+          Koordinate auswählen
+        </button>
+        <ul aria-label="Relevante Kartenfakten">
+          {props.snapshot.tiles
+            .filter((tile) => tile.location || tile.terrainId !== 'grassland')
+            .slice(factPage * 20, factPage * 20 + 20)
+            .map((tile) => (
+              <li key={tile.id}>
+                {tile.label} · {byLabel(props.terrains, tile.terrainId)}
+                {tile.location ? ` · ${tile.location.displayName}` : ''}
+              </li>
+            ))}
+        </ul>
+        <button
+          disabled={factPage === 0}
+          onClick={() => setFactPage((p) => p - 1)}
+        >
+          Vorherige Fakten
+        </button>
+        <button
+          disabled={
+            (factPage + 1) * 20 >=
+            props.snapshot.tiles.filter(
+              (tile) => tile.location || tile.terrainId !== 'grassland'
+            ).length
+          }
+          onClick={() => setFactPage((p) => p + 1)}
+        >
+          Weitere Fakten
+        </button>
+      </section>
     </div>
   )
 }

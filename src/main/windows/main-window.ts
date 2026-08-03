@@ -24,9 +24,20 @@ export function createMainWindow(): BrowserWindow {
   window.once('ready-to-show', () => window.show())
   const rendererUrl = developmentRendererUrl()
   if (rendererUrl !== undefined) {
-    void window.loadURL(rendererUrl)
+    void window.loadURL(
+      process.argv.includes('--m1-qualification')
+        ? `${rendererUrl}/qualification.html`
+        : rendererUrl
+    )
   } else {
-    void window.loadFile(outputPath('renderer', 'index.html'))
+    void window.loadFile(
+      outputPath(
+        'renderer',
+        process.argv.includes('--m1-qualification')
+          ? 'qualification.html'
+          : 'index.html'
+      )
+    )
   }
   return window
 }
