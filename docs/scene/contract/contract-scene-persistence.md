@@ -16,14 +16,16 @@ payloads and lifecycle.
   location ID, and order
 - `scene_party_member`: ordered Party character foreign IDs
 - `scene_npc`: ordered World Planner NPC foreign IDs
-- `scene_mob`: ordered Scene-owned assignments of Creature catalog foreign IDs
-  and their positive group counts; Creature facts remain Creatures-owned
+- `scene_group` and `scene_group_entry`: ordered, named Scene-owned groups of
+  Creature catalog foreign IDs and positive quantities; Creature facts remain
+  Creatures-owned
 - `scene_participant_state`: Scene-owned per-scene defeated state and quick
   notes for an assigned PC, NPC, or mob, keyed by participant kind and the
   corresponding foreign ID; it does not own that participant's source facts
 
-Party details, World Planner details, disposition, creature statblocks, and
-Encounter workflow state MUST NOT be stored in Scene tables.
+Party details, World Planner details, disposition, creature statblocks,
+generator drafts and suggestions, and Encounter workflow state MUST NOT be
+stored in Scene tables.
 
 ## Validation And Errors
 

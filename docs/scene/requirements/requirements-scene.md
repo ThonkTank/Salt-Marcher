@@ -23,8 +23,10 @@ owners of the referenced content.
 3. PCs are moved between scenes; one PC can be in at most one running scene.
 4. The GM selects one World Planner location and any number of World Planner
    NPCs for the focused scene.
-5. Switching scenes immediately switches the visible Encounter session.
-6. Every scene and Encounter session is restored after an application restart.
+5. The GM creates or edits named creature groups in one catalog-backed builder
+   and may manually compose, fill, or replace its transient roster.
+6. Switching scenes immediately switches the visible Encounter session.
+7. Every persisted scene and Encounter session is restored after restart.
 
 Each prepared-scene import creates a new copy of title, notes, location,
 participant references, linked saved Encounter plan, and source provenance.
@@ -44,6 +46,14 @@ copy.
 - Friendly NPCs enter the scene Encounter as allies, hostile NPCs as enemies,
   and neutral NPCs remain visible context without joining combat.
 - The scene location automatically constrains later Encounter generation.
+- `Gruppen managen` combines the filtered Creature catalog with one transient
+  group draft. Manual changes and generation are evaluated immediately against
+  the assigned Party.
+- `Auffüllen` preserves the current roster as its generation basis, while `Neu
+  generieren` replaces it. Both use optional location, catalog filters, tuning,
+  and a deterministic seed. An unsaved result is discarded only after
+  confirmation and never survives restart.
+- Encounter may select only persisted groups from the focused Scene.
 - PC and NPC changes during initiative or combat reconcile immediately while
   retaining existing initiative, HP, round, and active turn where applicable.
 - A failed Encounter synchronization is visible as pending. The saved Scene
@@ -63,8 +73,8 @@ copy.
 - A failed post-save Encounter synchronization leaves the persisted Scene
   revision marked unsynchronized, and a later initialization or refresh can
   mark that revision synchronized.
-- A restart restores focus, scene contents, generated alternatives, initiative,
-  combatants, HP, round, turn, result, and XP-award status.
+- A restart restores focus, scene contents, initiative, combatants, HP, round,
+  turn, result, and XP-award status, but not an unaccepted group proposal.
 - The Scene tab leaves the global Encounter state pane visible.
 
 ## References

@@ -12,6 +12,9 @@ describe('capability contract', () => {
       capabilityFailureSchema.parse({ code: 'not_found', retryable: false })
     ).toEqual({ code: 'not_found', retryable: false })
     expect(
+      capabilityFailureSchema.parse({ code: 'stale', retryable: false })
+    ).toEqual({ code: 'stale', retryable: false })
+    expect(
       capabilityFailureSchema.safeParse({ error: 'database unavailable' })
         .success
     ).toBe(false)

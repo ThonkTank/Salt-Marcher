@@ -31,6 +31,11 @@ World Planner persistence stores:
 - location identity, display name, notes, linked factions, and linked
   encounter tables
 
+The active Electron slice materializes location and faction metadata, faction
+inventory, location-to-faction links, and location-to-table links. Foreign
+creature and encounter-table IDs remain logical references; cross-owner
+referential cleanup is orchestrated in one utility-process transaction.
+
 World Planner persistence does not store:
 
 - creature statblock fields
@@ -54,6 +59,9 @@ World Planner persistence does not store:
 - Missing optional source constraints mean unconstrained.
 - Missing statblock inventory limits mean unlimited.
 - Explicit finite inventory limit `0` means none available for that statblock.
+- A faction inventory row is valid only while the creature belongs to that
+  faction's primary encounter table. Changing or deleting the reference and
+  removing a table entry prune invalid rows in the same transaction.
 - NPC membership rows enforce at most one faction for each NPC.
 
 ## Validation And Error Behavior
@@ -69,6 +77,8 @@ Owner startup readiness validates the feature-declared target schema signature; 
 - Removing a relationship must leave both referenced records intact.
 - Disposition values must remain between `-50` and `+50`.
 - Finite inventory limits must be non-negative.
+- Inventory writes without a primary table or for creatures outside that table
+  must fail validation.
 - A faction must not persist more than one primary encounter-table reference.
 - Candidate combat losses must not mutate durable NPC lifecycle or faction
   stock until user confirmation is recorded.

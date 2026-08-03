@@ -1,0 +1,141 @@
+import { z } from 'zod'
+import { partyCharacterSchema, partySnapshotSchema } from './party.js'
+import { sceneSnapshotSchema } from './scene.js'
+
+export { partyCharacterSchema as partyMemberSchema, partySnapshotSchema }
+
+export const initiativeRowSchema = z
+  .object({
+    id: z.string().min(1),
+    label: z.string().min(1),
+    kind: z.enum(['party', 'monster']),
+    initiative: z.number().int().min(-10).max(40)
+  })
+  .strict()
+
+export const combatCardSchema = z
+  .object({
+    id: z.string().min(1),
+    memberIds: z.array(z.string().min(1)).min(1),
+    name: z.string().min(1),
+    playerCharacter: z.boolean(),
+    active: z.boolean(),
+    alive: z.boolean(),
+    currentHp: z.number().int().nonnegative(),
+    maxHp: z.number().int().nonnegative(),
+    armorClass: z.number().int().nonnegative(),
+    initiative: z.number().int().min(-10).max(40),
+    count: z.number().int().positive(),
+    detail: z.string()
+  })
+  .strict()
+
+export const resultEnemySchema = z
+  .object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    alive: z.boolean(),
+    xp: z.number().int().nonnegative(),
+    selected: z.boolean()
+  })
+  .strict()
+
+export const resolutionSchema = z
+  .object({
+    enemies: z.array(resultEnemySchema),
+    thresholdFraction: z.number().min(0).max(1),
+    xpFraction: z.number().min(0).max(1),
+    eligibleXp: z.number().int().nonnegative(),
+    awardedXp: z.number().int().nonnegative(),
+    perPlayerXp: z.number().int().nonnegative(),
+    partySize: z.number().int().positive(),
+    xpAwarded: z.boolean(),
+    lootSummary: z.string()
+  })
+  .strict()
+
+export const combatSnapshotSchema = z
+  .object({
+    id: z.uuid(),
+    revision: z.number().int().nonnegative(),
+    phase: z.enum(['initiative', 'combat', 'resolution']),
+    selectedGroupIds: z.array(z.uuid()),
+    initiativeRows: z.array(initiativeRowSchema),
+    cards: z.array(combatCardSchema),
+    round: z.number().int().positive(),
+    allEnemiesDefeated: z.boolean(),
+    resolution: resolutionSchema.nullable()
+  })
+  .strict()
+
+export const liveSessionSnapshotSchema = z
+  .object({
+    revision: z.number().int().nonnegative(),
+    party: partySnapshotSchema,
+    scene: sceneSnapshotSchema,
+    travel: z
+      .object({
+        kind: z.literal('none'),
+        label: z.string(),
+        hint: z.string()
+      })
+      .strict(),
+    combat: combatSnapshotSchema.nullable()
+  })
+  .strict()
+
+export const prepareCombatInputSchema = z
+  .object({
+    sceneId: z.uuid(),
+    expectedSceneRevision: z.number().int().nonnegative(),
+    groupIds: z.array(z.uuid()).min(1)
+  })
+  .strict()
+
+export const confirmInitiativeInputSchema = z
+  .object({
+    expectedRevision: z.number().int().nonnegative(),
+    values: z.array(
+      z
+        .object({
+          id: z.string().min(1),
+          initiative: z.number().int().min(-10).max(40)
+        })
+        .strict()
+    )
+  })
+  .strict()
+
+export const combatRevisionInputSchema = z
+  .object({ expectedRevision: z.number().int().nonnegative() })
+  .strict()
+
+export const adjustInitiativeInputSchema = combatRevisionInputSchema
+  .extend({
+    id: z.string().min(1),
+    initiative: z.number().int().min(-10).max(40)
+  })
+  .strict()
+
+export const changeHpInputSchema = combatRevisionInputSchema
+  .extend({
+    cardId: z.string().min(1),
+    amount: z.number().int().positive(),
+    healing: z.boolean()
+  })
+  .strict()
+
+export const updateResolutionInputSchema = combatRevisionInputSchema
+  .extend({
+    selectedEnemyIds: z.array(z.string().min(1)),
+    thresholdFraction: z.number().min(0).max(1),
+    xpFraction: z.number().min(0).max(1)
+  })
+  .strict()
+
+export type PartyMember = Readonly<z.infer<typeof partyCharacterSchema>>
+export type PartySnapshot = Readonly<z.infer<typeof partySnapshotSchema>>
+export type CombatSnapshot = Readonly<z.infer<typeof combatSnapshotSchema>>
+export type LiveSessionSnapshot = Readonly<
+  z.infer<typeof liveSessionSnapshotSchema>
+>

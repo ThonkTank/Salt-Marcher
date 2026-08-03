@@ -1,191 +1,518 @@
 import { randomUUID } from 'node:crypto'
 import { utilityProcess, type UtilityProcess } from 'electron'
+import { z } from 'zod'
 import {
   coreReadySchema,
-  coreResponseSchema,
-  freezeCampaignSnapshot,
-  type CampaignSnapshot,
-  type CoreRequest
+  type CampaignSnapshot
 } from '../../shared/contracts/campaign.js'
+import {
+  coreRequestSchema,
+  coreResultSchema
+} from '../../shared/contracts/core-protocol.js'
+import {
+  creatureCatalogPageSchema,
+  creatureCatalogQuerySchema,
+  creatureFilterOptionsSchema,
+  creatureSchema,
+  type CreatureCatalogPage,
+  type CreatureCatalogQuery,
+  type CreatureFilterOptions
+} from '../../shared/contracts/encounter.js'
+import {
+  liveSessionSnapshotSchema,
+  partySnapshotSchema,
+  type LiveSessionSnapshot,
+  type PartySnapshot
+} from '../../shared/contracts/live-session.js'
+import {
+  adventuringDayCalculationSchema,
+  type AdventuringDayCalculation,
+  type PartyCharacterDraft
+} from '../../shared/contracts/party.js'
+import type { EncounterTuning } from '../../shared/contracts/encounter-tuning.js'
+import {
+  encounterSelectionEvaluationSchema,
+  sceneGroupDraftEvaluationSchema,
+  sceneGroupDraftGenerationSchema,
+  type EncounterSelectionEvaluation,
+  type GroupGenerationMode,
+  type SceneGroupDraftEntry,
+  type SceneGroupDraftEvaluation,
+  type SceneGroupDraftGeneration
+} from '../../shared/contracts/scene.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
+import {
+  worldLocationSnapshotSchema,
+  type WorldLocationDraft,
+  type WorldLocationSnapshot
+} from '../../shared/contracts/world-location.js'
+import {
+  encounterTableSnapshotSchema,
+  worldFactionSnapshotSchema,
+  type EncounterTableDraft,
+  type EncounterTableSnapshot,
+  type WorldFactionDraft,
+  type WorldFactionSnapshot
+} from '../../shared/contracts/encounter-source.js'
 
 export class CoreProcessClient {
   readonly #process: UtilityProcess
   readonly #ready: Promise<void>
-  #resolveReady: (() => void) | undefined
-  #rejectReady: ((error: Error) => void) | undefined
+  #resolve?: () => void
+  #reject?: (error: Error) => void
   #closed = false
   readonly #pending = new Map<
     string,
     {
-      resolve: (value: CampaignSnapshot) => void
+      resolve: (value: unknown) => void
       reject: (error: Error) => void
+      schema: z.ZodType<unknown>
     }
   >()
-  readonly #timedOutRequestIds = new Set<string>()
 
-  public constructor(dataRoot: string, utilityPath: string) {
-    this.#process = utilityProcess.fork(utilityPath, [dataRoot], {
-      stdio: 'ignore'
+  constructor(dataRoot: string, path: string) {
+    this.#process = utilityProcess.fork(path, [dataRoot], { stdio: 'ignore' })
+    this.#ready = new Promise((resolve, reject) => {
+      this.#resolve = resolve
+      this.#reject = reject
     })
-    this.#ready = new Promise<void>((resolve, reject) => {
-      this.#resolveReady = resolve
-      this.#rejectReady = reject
+    this.#process.on('message', (value) => this.handle(value))
+    this.#process.on('exit', () =>
+      this.fail(new CapabilityError('core_unavailable', false))
+    )
+  }
+
+  waitUntilReady() {
+    return this.#ready
+  }
+  list() {
+    return this.request({ kind: 'campaign.list' }, campaignSchema)
+  }
+  create(name: string) {
+    return this.request(
+      { kind: 'campaign.create', input: { name } },
+      campaignSchema
+    )
+  }
+  activate(id: string) {
+    return this.request(
+      { kind: 'campaign.activate', input: { id } },
+      campaignSchema
+    )
+  }
+  partyRead(): Promise<PartySnapshot> {
+    return this.request({ kind: 'party.read' }, partySnapshotSchema)
+  }
+  partySetMembership(id: string, active: boolean, expectedRevision: number) {
+    return this.request(
+      { kind: 'party.setMembership', input: { id, active, expectedRevision } },
+      partySnapshotSchema
+    )
+  }
+  partyCreate(character: PartyCharacterDraft, expectedRevision: number) {
+    return this.request(
+      { kind: 'party.create', input: { character, expectedRevision } },
+      partySnapshotSchema
+    )
+  }
+  partyUpdate(
+    id: string,
+    character: PartyCharacterDraft,
+    expectedRevision: number
+  ) {
+    return this.request(
+      { kind: 'party.update', input: { id, character, expectedRevision } },
+      partySnapshotSchema
+    )
+  }
+  partyDelete(id: string, expectedRevision: number) {
+    return this.request(
+      { kind: 'party.delete', input: { id, expectedRevision } },
+      partySnapshotSchema
+    )
+  }
+  partyAdjustXp(id: string, delta: number, expectedRevision: number) {
+    return this.request(
+      { kind: 'party.adjustXp', input: { id, delta, expectedRevision } },
+      partySnapshotSchema
+    )
+  }
+  partyRest(type: 'short' | 'long', expectedRevision: number) {
+    return this.request(
+      { kind: 'party.rest', input: { type, expectedRevision } },
+      partySnapshotSchema
+    )
+  }
+  partyCalculateAdventuringDay(
+    rows: readonly { level: number; count: number }[],
+    totalXp?: number
+  ): Promise<AdventuringDayCalculation> {
+    return this.request(
+      {
+        kind: 'party.calculateAdventuringDay',
+        input: { rows, ...(totalXp === undefined ? {} : { totalXp }) }
+      },
+      adventuringDayCalculationSchema
+    )
+  }
+  creaturesSearch(query: CreatureCatalogQuery): Promise<CreatureCatalogPage> {
+    return this.request(
+      {
+        kind: 'creatures.search',
+        input: creatureCatalogQuerySchema.parse(query)
+      },
+      creatureCatalogPageSchema
+    )
+  }
+  creaturesFilterOptions(): Promise<CreatureFilterOptions> {
+    return this.request(
+      { kind: 'creatures.filterOptions' },
+      creatureFilterOptionsSchema
+    )
+  }
+  creaturesDetail(id: string) {
+    return this.request(
+      { kind: 'creatures.detail', input: { id } },
+      creatureSchema
+    )
+  }
+  locationsRead(): Promise<WorldLocationSnapshot> {
+    return this.request({ kind: 'locations.read' }, worldLocationSnapshotSchema)
+  }
+  locationsCreate(
+    location: WorldLocationDraft,
+    expectedRevision: number
+  ): Promise<WorldLocationSnapshot> {
+    return this.request(
+      { kind: 'locations.create', input: { location, expectedRevision } },
+      worldLocationSnapshotSchema
+    )
+  }
+  locationsUpdate(
+    id: string,
+    location: WorldLocationDraft,
+    expectedRevision: number
+  ): Promise<WorldLocationSnapshot> {
+    return this.request(
+      { kind: 'locations.update', input: { id, location, expectedRevision } },
+      worldLocationSnapshotSchema
+    )
+  }
+  locationsDelete(
+    id: string,
+    expectedRevision: number
+  ): Promise<WorldLocationSnapshot> {
+    return this.request(
+      { kind: 'locations.delete', input: { id, expectedRevision } },
+      worldLocationSnapshotSchema
+    )
+  }
+  encounterTablesRead(): Promise<EncounterTableSnapshot> {
+    return this.request(
+      { kind: 'encounterTables.read' },
+      encounterTableSnapshotSchema
+    )
+  }
+  encounterTablesCreate(
+    table: EncounterTableDraft,
+    expectedRevision: number
+  ): Promise<EncounterTableSnapshot> {
+    return this.request(
+      { kind: 'encounterTables.create', input: { table, expectedRevision } },
+      encounterTableSnapshotSchema
+    )
+  }
+  encounterTablesUpdate(
+    id: string,
+    table: EncounterTableDraft,
+    expectedRevision: number
+  ): Promise<EncounterTableSnapshot> {
+    return this.request(
+      {
+        kind: 'encounterTables.update',
+        input: { id, table, expectedRevision }
+      },
+      encounterTableSnapshotSchema
+    )
+  }
+  encounterTablesDelete(
+    id: string,
+    expectedRevision: number
+  ): Promise<EncounterTableSnapshot> {
+    return this.request(
+      { kind: 'encounterTables.delete', input: { id, expectedRevision } },
+      encounterTableSnapshotSchema
+    )
+  }
+  factionsRead(): Promise<WorldFactionSnapshot> {
+    return this.request({ kind: 'factions.read' }, worldFactionSnapshotSchema)
+  }
+  factionsCreate(
+    faction: WorldFactionDraft,
+    expectedRevision: number
+  ): Promise<WorldFactionSnapshot> {
+    return this.request(
+      { kind: 'factions.create', input: { faction, expectedRevision } },
+      worldFactionSnapshotSchema
+    )
+  }
+  factionsUpdate(
+    id: string,
+    faction: WorldFactionDraft,
+    expectedRevision: number
+  ): Promise<WorldFactionSnapshot> {
+    return this.request(
+      { kind: 'factions.update', input: { id, faction, expectedRevision } },
+      worldFactionSnapshotSchema
+    )
+  }
+  factionsDelete(
+    id: string,
+    expectedRevision: number
+  ): Promise<WorldFactionSnapshot> {
+    return this.request(
+      { kind: 'factions.delete', input: { id, expectedRevision } },
+      worldFactionSnapshotSchema
+    )
+  }
+  sessionRead(): Promise<LiveSessionSnapshot> {
+    return this.request({ kind: 'session.read' }, liveSessionSnapshotSchema)
+  }
+  sceneFocus(sceneId: string, expectedRevision: number) {
+    return this.request(
+      { kind: 'scene.focus', input: { sceneId, expectedRevision } },
+      liveSessionSnapshotSchema
+    )
+  }
+  sceneSetLocation(
+    sceneId: string,
+    locationId: string | null,
+    expectedRevision: number
+  ) {
+    return this.request(
+      {
+        kind: 'scene.setLocation',
+        input: { sceneId, locationId, expectedRevision }
+      },
+      liveSessionSnapshotSchema
+    )
+  }
+  sceneSaveGroup(input: {
+    sceneId: string
+    groupId: string | null
+    name: string
+    entries: readonly { creatureId: string; quantity: number }[]
+    expectedRevision: number
+  }) {
+    return this.request(
+      { kind: 'scene.saveGroup', input },
+      liveSessionSnapshotSchema
+    )
+  }
+  sceneDeleteGroup(input: {
+    sceneId: string
+    groupId: string
+    expectedRevision: number
+  }) {
+    return this.request(
+      { kind: 'scene.deleteGroup', input },
+      liveSessionSnapshotSchema
+    )
+  }
+  sceneAssignPartyMember(input: {
+    sceneId: string
+    partyMemberId: string
+    assigned: boolean
+    expectedRevision: number
+  }) {
+    return this.request(
+      { kind: 'scene.assignPartyMember', input },
+      liveSessionSnapshotSchema
+    )
+  }
+  sceneEvaluateGroupDraft(
+    sceneId: string,
+    entries: readonly SceneGroupDraftEntry[],
+    expectedRevision: number
+  ): Promise<SceneGroupDraftEvaluation> {
+    return this.request(
+      {
+        kind: 'scene.evaluateGroupDraft',
+        input: { sceneId, entries, expectedRevision }
+      },
+      sceneGroupDraftEvaluationSchema
+    )
+  }
+  sceneGenerateGroupDraft(
+    sceneId: string,
+    entries: readonly SceneGroupDraftEntry[],
+    mode: GroupGenerationMode,
+    filters: CreatureCatalogQuery,
+    tuning: EncounterTuning,
+    seed: number,
+    expectedRevision: number
+  ): Promise<SceneGroupDraftGeneration> {
+    return this.request(
+      {
+        kind: 'scene.generateGroupDraft',
+        input: {
+          sceneId,
+          entries,
+          mode,
+          filters,
+          tuning,
+          seed,
+          expectedRevision
+        }
+      },
+      sceneGroupDraftGenerationSchema
+    )
+  }
+  encounterEvaluate(
+    sceneId: string,
+    groupIds: readonly string[],
+    expectedRevision: number
+  ): Promise<EncounterSelectionEvaluation> {
+    return this.request(
+      {
+        kind: 'encounter.evaluate',
+        input: { sceneId, groupIds, expectedRevision }
+      },
+      encounterSelectionEvaluationSchema
+    )
+  }
+  combatPrepare(
+    sceneId: string,
+    groupIds: readonly string[],
+    expectedSceneRevision: number
+  ) {
+    return this.live('combat.prepare', {
+      sceneId,
+      groupIds,
+      expectedSceneRevision
     })
-    this.#process.on('message', (raw) => this.handleMessage(raw))
-    this.#process.on('exit', () => {
-      const error = new CapabilityError('core_unavailable', false)
-      if (!this.#closed) console.error(error.message)
-      this.fail(error)
+  }
+  combatRollInitiative(expectedRevision: number) {
+    return this.live('combat.rollInitiative', { expectedRevision })
+  }
+  combatConfirmInitiative(
+    values: readonly { id: string; initiative: number }[],
+    expectedRevision: number
+  ) {
+    return this.live('combat.confirmInitiative', { values, expectedRevision })
+  }
+  combatAdvanceTurn(expectedRevision: number) {
+    return this.live('combat.advanceTurn', { expectedRevision })
+  }
+  combatAdjustInitiative(
+    id: string,
+    initiative: number,
+    expectedRevision: number
+  ) {
+    return this.live('combat.adjustInitiative', {
+      id,
+      initiative,
+      expectedRevision
     })
   }
-
-  public async waitUntilReady(): Promise<void> {
-    await this.withTimeout(this.#ready)
+  combatChangeHp(
+    cardId: string,
+    amount: number,
+    healing: boolean,
+    expectedRevision: number
+  ) {
+    return this.live('combat.changeHp', {
+      cardId,
+      amount,
+      healing,
+      expectedRevision
+    })
   }
-
-  public list(): Promise<CampaignSnapshot> {
-    return this.request({ kind: 'campaign.list' })
+  combatEnd(expectedRevision: number) {
+    return this.live('combat.end', { expectedRevision })
   }
-
-  public create(name: string): Promise<CampaignSnapshot> {
-    return this.request({ kind: 'campaign.create', input: { name } })
+  combatUpdateResolution(
+    selectedEnemyIds: readonly string[],
+    thresholdFraction: number,
+    xpFraction: number,
+    expectedRevision: number
+  ) {
+    return this.live('combat.updateResolution', {
+      selectedEnemyIds,
+      thresholdFraction,
+      xpFraction,
+      expectedRevision
+    })
   }
-
-  public activate(id: string): Promise<CampaignSnapshot> {
-    return this.request({ kind: 'campaign.activate', input: { id } })
+  combatAwardXp(expectedRevision: number) {
+    return this.live('combat.awardXp', { expectedRevision })
   }
-
-  public close(): void {
-    if (this.#closed) return
+  combatComplete(expectedRevision: number) {
+    return this.live('combat.complete', { expectedRevision })
+  }
+  close() {
     this.#closed = true
-    this.rejectAll(new CapabilityError('core_unavailable', false))
-    this.#process.postMessage({
-      kind: 'core.shutdown',
+    this.#process.kill()
+  }
+
+  private live(kind: string, input: Record<string, unknown>) {
+    return this.request({ kind, input }, liveSessionSnapshotSchema)
+  }
+
+  private request<T>(raw: unknown, schema: z.ZodType<T>): Promise<T> {
+    const request = coreRequestSchema.parse({
+      ...(raw as object),
       requestId: randomUUID()
     })
-    setTimeout(() => {
-      this.#process.kill()
-    }, 1_000).unref()
-  }
-
-  private request(request: CoreRequestWithoutId): Promise<CampaignSnapshot> {
-    const requestId = randomUUID()
     return new Promise((resolve, reject) => {
       if (this.#closed) {
         reject(new CapabilityError('core_unavailable', false))
         return
       }
-      const timeout = setTimeout(() => {
-        if (!this.#pending.delete(requestId)) return
-        this.#timedOutRequestIds.add(requestId)
-        setTimeout(
-          () => this.#timedOutRequestIds.delete(requestId),
-          10_000
-        ).unref()
-        reject(timeoutFor(request.kind))
-      }, 10_000)
-      this.#pending.set(requestId, {
-        resolve: (snapshot) => {
-          clearTimeout(timeout)
-          resolve(snapshot)
-        },
-        reject: (error) => {
-          clearTimeout(timeout)
-          reject(error)
-        }
+      this.#pending.set(request.requestId, {
+        resolve: resolve as (value: unknown) => void,
+        reject,
+        schema
       })
-      this.#process.postMessage({ ...request, requestId })
+      this.#process.postMessage(request)
     })
   }
 
-  private handleMessage(raw: unknown): void {
+  private handle(raw: unknown) {
     if (coreReadySchema.safeParse(raw).success) {
-      this.#resolveReady?.()
-      this.#resolveReady = undefined
-      this.#rejectReady = undefined
+      this.#resolve?.()
       return
     }
-    const response = coreResponseSchema.safeParse(raw)
-    if (!response.success) {
-      this.protocolViolation()
-      return
-    }
-    const pending = this.#pending.get(response.data.requestId)
-    if (pending === undefined) {
-      if (this.#timedOutRequestIds.delete(response.data.requestId)) return
-      this.protocolViolation()
-      return
-    }
-    this.#pending.delete(response.data.requestId)
-    if (!response.data.ok) {
-      pending.reject(
-        new CapabilityError(
-          response.data.error.code,
-          response.data.error.retryable
-        )
+    const result = coreResultSchema.safeParse(raw)
+    if (!result.success) return this.protocol()
+    const pending = this.#pending.get(result.data.requestId)
+    if (!pending) return this.protocol()
+    this.#pending.delete(result.data.requestId)
+    if (!result.data.ok)
+      return pending.reject(
+        new CapabilityError(result.data.error.code, result.data.error.retryable)
       )
-      return
-    }
-    pending.resolve(freezeCampaignSnapshot(response.data.snapshot))
+    const value = pending.schema.safeParse(result.data.payload)
+    if (!value.success) return this.protocol()
+    pending.resolve(value.data)
   }
 
-  private rejectAll(error: Error): void {
+  private protocol() {
+    this.fail(new CapabilityError('protocol_violation', false))
+    this.#process.kill()
+  }
+  private fail(error: Error) {
+    if (this.#closed) return
+    this.#closed = true
+    this.#reject?.(error)
     for (const pending of this.#pending.values()) pending.reject(error)
     this.#pending.clear()
   }
-
-  private fail(error: Error): void {
-    this.#closed = true
-    this.#rejectReady?.(error)
-    this.#resolveReady = undefined
-    this.#rejectReady = undefined
-    this.rejectAll(error)
-  }
-
-  private protocolViolation(): void {
-    if (this.#closed) return
-    this.#closed = true
-    const error = new CapabilityError('protocol_violation', false)
-    this.#rejectReady?.(error)
-    this.#resolveReady = undefined
-    this.#rejectReady = undefined
-    this.rejectAll(error)
-    this.#process.kill()
-  }
-
-  private withTimeout<T>(operation: Promise<T>): Promise<T> {
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(
-        () => reject(new CapabilityError('timeout', true)),
-        10_000
-      )
-      operation.then(
-        (value) => {
-          clearTimeout(timeout)
-          resolve(value)
-        },
-        (error: unknown) => {
-          clearTimeout(timeout)
-          reject(
-            error instanceof CapabilityError
-              ? error
-              : new CapabilityError('internal', false)
-          )
-        }
-      )
-    })
-  }
 }
 
-function timeoutFor(kind: CoreRequestWithoutId['kind']): CapabilityError {
-  return kind === 'campaign.create'
-    ? new CapabilityError('outcome_unknown', false)
-    : new CapabilityError('timeout', true)
-}
-
-type CoreRequestWithoutId =
-  | Omit<Extract<CoreRequest, { kind: 'core.shutdown' }>, 'requestId'>
-  | Omit<Extract<CoreRequest, { kind: 'campaign.list' }>, 'requestId'>
-  | Omit<Extract<CoreRequest, { kind: 'campaign.create' }>, 'requestId'>
-  | Omit<Extract<CoreRequest, { kind: 'campaign.activate' }>, 'requestId'>
+const campaignSchema = z.object({
+  activeCampaignId: z.uuid().nullable(),
+  campaigns: z.array(
+    z.object({ id: z.uuid(), name: z.string(), createdAt: z.string() })
+  )
+}) as z.ZodType<CampaignSnapshot>

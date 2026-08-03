@@ -19,7 +19,7 @@ Inspector surfaces so the user can:
 ## Non-Goals
 
 - editing creature statblocks or importing creature truth into World Planner
-- editing encounter tables
+- NPC creation and combat-loss workflows in the current Electron slice
 - persisting encounter runtime combat state inside World Planner
 - storing party membership, dungeon map truth, or hex map truth
 - replacing saved encounter plans, the Encounter state tab, or the Session
@@ -36,7 +36,8 @@ Inspector surfaces so the user can:
 5. The user creates factions, assigns one primary encounter table, and adds any
    number of NPCs.
 6. The user optionally sets finite faction stock limits per creature
-   statblock. Missing limits mean unlimited stock.
+   statblock from the faction's primary encounter table. Missing limits mean
+   unlimited stock; unrelated statblocks cannot be added directly.
 7. The user creates locations, links factions, and attaches location-owned
    encounter tables.
 8. The user chooses factions or a location in the Catalog to limit
@@ -58,6 +59,9 @@ Inspector surfaces so the user can:
   linked factions.
 - A faction contributes its primary encounter table and its NPC or statblock
   inventory.
+- The editable faction inventory consists only of creatures in its current
+  primary encounter table. Changing tables preserves limits for shared
+  creatures and removes all other limits.
 - A finite faction inventory limit caps the generated count for that creature
   statblock.
 - Missing faction inventory limits are unlimited by default.
@@ -72,6 +76,8 @@ Inspector surfaces so the user can:
 - select statblocks only from the existing Creatures public boundary
 - add or remove NPCs from factions without mutating creature truth
 - configure faction stock as finite or unlimited per creature statblock
+- create a missing encounter table from above the faction editor without
+  losing the faction draft; the saved table becomes the selected primary table
 - configure location-to-faction and location-to-table links
 - remove faction membership and location links without deleting the referenced
   provider records
@@ -96,6 +102,8 @@ Inspector surfaces so the user can:
 - NPCs store creature statblock references, not copied statblock fields.
 - Factions can contain any number of NPCs and one primary encounter table.
 - Faction statblock limits are optional and unlimited by default.
+- Faction inventory limits outside the selected primary encounter table are
+  rejected; removing table entries prunes affected limits atomically.
 - Encounter generation cannot generate more finite-stock creatures of a
   statblock than the selected faction or location source owns.
 - Location-constrained generation uses only encounter tables available through
@@ -113,6 +121,15 @@ Inspector surfaces so the user can:
 - Creature statblocks, encounter-table membership, encounter rosters, party
   members, combat HP, dungeon maps, and hex maps stay in their owning
   contexts.
+
+## Active Electron Slice
+
+The current Electron slice implements campaign-local location and faction CRUD
+through Catalog. Locations link any number of factions and direct encounter
+tables. Factions own notes, disposition, an optional primary encounter table,
+and optional finite creature inventory caps. These sources constrain both the
+visible monster catalog and Scene-group generation. NPC membership and durable
+combat-loss workflows remain deferred.
 
 ## References
 

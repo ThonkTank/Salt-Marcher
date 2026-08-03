@@ -16,9 +16,10 @@ This document is normative for the `encountertable` feature's persistence path.
 - The feature-owned persistence schema declaration is the canonical in-code
   schema owner.
 - The schema owns:
-  - `encounter_tables`
-  - `encounter_table_entries`
-  - `encounter_table_loot_links`
+  - `encounter_table`
+  - `encounter_table_entry`
+  - `encounter_table_loot_link`
+  - `encounter_table_metadata`
 
 Creature and loot-table identifiers are logical references. The Encounter
 Table schema MUST use foreign keys only between its own tables; it MUST NOT bind
@@ -30,6 +31,15 @@ startup, deletion, or repair to a Creatures- or Loot-owned table.
   adapter owns feature schema readiness, SQL, and row translation
 - one feature-owned read port separates application orchestration from SQLite
   mechanics
+
+## Write And Delete Responsibilities
+
+- table snapshots carry an optimistic revision; stale mutations fail without
+  changing rows
+- entries use stable creature logical references, unique table membership,
+  ordered positions, and weights from `1..10`
+- deleting a table removes its entries and loot link, removes World Planner
+  location links, and clears matching faction primary references atomically
 
 ## Validation And Error Behavior
 
