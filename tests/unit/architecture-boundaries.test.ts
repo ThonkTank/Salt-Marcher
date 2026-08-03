@@ -119,10 +119,30 @@ describe('architecture boundaries', () => {
 
   it('keeps extracted feature workspaces outside the shell composition root', () => {
     const shellLines = source('src/renderer/shell/app.tsx').split('\n').length
+    const workspaceLines = source(
+      'src/renderer/features/workspace/workspace.tsx'
+    ).split('\n').length
+    const sessionLines = source(
+      'src/renderer/features/session/session-workspace.tsx'
+    ).split('\n').length
+    const catalogLines = source(
+      'src/renderer/features/catalog/catalog-workspace.tsx'
+    ).split('\n').length
+    const partyLines = source(
+      'src/renderer/features/party/party-controls.tsx'
+    ).split('\n').length
+    const encounterLines = source(
+      'src/renderer/features/encounter/encounter-panels.tsx'
+    ).split('\n').length
     const hexLines = source(
       'src/renderer/features/hex/hex-workspaces.tsx'
     ).split('\n').length
     expect(shellLines).toBeLessThan(100)
+    expect(workspaceLines).toBeLessThan(500)
+    expect(sessionLines).toBeLessThan(1_500)
+    expect(catalogLines).toBeLessThan(1_600)
+    expect(partyLines).toBeLessThan(800)
+    expect(encounterLines).toBeLessThan(700)
     expect(hexLines).toBeLessThan(1_000)
   })
 
