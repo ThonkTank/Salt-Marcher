@@ -15,6 +15,14 @@ is the measured RP-H p95,
 context-loss, 200%-scale, screen-reader, and axe matrix recorded in
 `m1-render-qualification.md`.
 
+The qualification harness is now a separate renderer entry and Babylon is no
+longer copied wholesale into the normal application. Runtime hardening now
+includes request deadlines, read/write interruption semantics, bounded Core
+restart, typed failures, one SQLite development schema version and connection
+policy, SQLite-owned installation preferences, utility-driven Hex travel,
+unbounded sparse Hex viewports, and a dedicated fail-closed passive preload.
+Automated architecture and normal-bundle budget gates protect these boundaries.
+
 ## Decisions
 
 - Rebuild in the same repository; do not mechanically translate Java code.

@@ -55,7 +55,7 @@ Provide one hex-map workflow that lets a GM:
 1. The user opens the hex editor.
 2. The user selects a map and a tool.
 3. The user inspects a tile or paints terrain.
-4. The user edits map metadata such as name or radius when needed.
+4. The user edits map metadata such as its name when needed.
 
 ## Visible Capabilities
 
@@ -65,8 +65,7 @@ Provide one hex-map workflow that lets a GM:
 - terrain paint workflow
 - map creation and metadata editing
 - placement of one existing World Planner location from `Katalog → Orte`
-- destructive shrink warning when radius changes would remove authored tile
-  data
+- bounded viewport loading over an unbounded sparse axial coordinate space
 
 ## Acceptance Criteria
 

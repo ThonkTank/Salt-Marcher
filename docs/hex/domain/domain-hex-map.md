@@ -33,10 +33,10 @@ overworld travel readback when the party location points at a Hex map.
 
 ### Map
 
-A Hex map has a stable identity, a required display name, and a radius. Radius
-defines the set of valid tile coordinates for the authored map. V1 Hex maps
-support radius `0` through `99`; larger stored values are malformed domain
-truth and must fail visibly instead of being projected.
+A Hex map has a stable identity and a required display name. Its axial
+coordinate space is intentionally unbounded. Reads request a bounded viewport;
+the map persists only sparse authored overrides and markers, never an eagerly
+materialized infinite grid.
 
 ### Tile
 
@@ -46,9 +46,8 @@ Dungeon room coordinate participates in Hex tile identity.
 
 Party-owned overworld travel state carries only `mapId` plus a stable
 `tileId`. Hex translates that `tileId` to and from axial `q,r` through the
-Hex-owned stable tile-id convention. The convention is valid only for the V1
-maximum Hex radius `99`; invalid or out-of-radius ids do not become active Hex
-travel positions.
+Hex-owned stable tile-id convention. Any safely representable integer axial
+coordinate is valid; malformed tile IDs do not become active travel positions.
 
 ### Terrain
 
@@ -67,15 +66,13 @@ own at most one placement.
 ## Invariants
 
 - A Hex map name MUST be nonblank.
-- A Hex map radius MUST be nonnegative.
-- A Hex map radius MUST NOT exceed `99`.
 - A Hex tile MUST reference an existing Hex map.
-- A Hex tile coordinate MUST be inside the owning map radius.
+- A viewport read MUST be bounded even though map coordinates are not.
 - A terrain override MUST reference exactly one valid Hex tile.
 - A placement MUST reference exactly one valid Hex tile and one World Planner
   location identity.
 - map rows MUST NOT copy World Planner location display facts.
-- a journey route remains inside one map and advances only through adjacent,
+- a journey route remains on one map and advances only through adjacent,
   currently passable Hexes.
 - Hex runtime readback MAY interpret party-owned overworld travel positions as
   Hex coordinates only through the Hex stable tile-id convention.

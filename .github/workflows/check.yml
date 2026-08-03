@@ -28,6 +28,10 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
       - run: pnpm test:packaged-smoke
         if: matrix.os != 'ubuntu-latest'
+      - run: xvfb-run -a pnpm test:packaged-qualification-smoke
+        if: matrix.os == 'ubuntu-latest'
+      - run: pnpm test:packaged-qualification-smoke
+        if: matrix.os != 'ubuntu-latest'
   e2e:
     timeout-minutes: 15
     runs-on: ubuntu-latest
@@ -39,3 +43,4 @@ jobs:
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: xvfb-run -a pnpm test:e2e
+      - run: xvfb-run -a pnpm test:passive-e2e

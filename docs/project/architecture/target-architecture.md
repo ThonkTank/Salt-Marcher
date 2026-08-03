@@ -25,6 +25,16 @@ disabled, a restrictive CSP, and local content only. It cannot access Node.js,
 the filesystem, or SQLite. Main and preload expose only explicit capabilities;
 they do not become service locators.
 
+The utility boundary is supervised. Every request has a ten-second deadline;
+interrupted reads fail retryably, while an interrupted write reports
+`outcome_unknown` and is never automatically replayed. Crashes restart with
+bounded backoff and the still-responsive shell exposes explicit recovery after
+the retry budget is exhausted.
+
+The passive second-monitor window uses a separate fail-closed preload. Until a
+party-safe projection has an explicit product contract, that preload exposes
+no IPC capability at all and therefore no Campaign read or write capability.
+
 ## Source shape
 
 ```text
@@ -53,3 +63,16 @@ begin.
 
 No legacy data migration, compatibility bridge, Java runtime, JDBC layer, or
 generic ORM is part of this architecture.
+
+All SQLite connections enable foreign keys, WAL, full synchronous durability,
+and a bounded busy timeout. Development stores carry one whole-database schema
+version and fail closed on mismatch; developers delete the isolated data root
+instead of running migrations. Installation preferences, including theme and
+Session layout, use one revisions-protected SQLite record rather than renderer
+storage or Main-process JSON.
+
+Hex maps use an unbounded axial coordinate space backed by sparse authored
+terrain and marker rows. Reads always request a bounded viewport window; the
+implicit default terrain is generated only for that window. Travel progression
+is clocked by the utility process and publishes revision changes. Reads are
+pure observations and never advance Scene time.

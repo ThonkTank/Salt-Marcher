@@ -22,7 +22,7 @@ tables, generic map-canvas contracts, party roster persistence, compact
 
 Hex persistence MUST store:
 
-- maps, including stable id, display name, and radius
+- maps, including stable id and display name
 - tiles, including owning map id and axial coordinate
 - terrain overrides keyed by map and tile coordinate
 - World Planner location placements keyed by foreign logical location ID, with
@@ -38,7 +38,7 @@ The map table MUST store one row per authored Hex map. A map row MUST include:
 
 - stable map id
 - nonblank name
-- radius from `0` through `99`
+- no stored boundary or eagerly materialized default-tile extent
 
 ### Tiles
 
@@ -74,25 +74,22 @@ segment start. Compact `Reise` context remains derived and is not stored again.
 
 Owner startup readiness validates the feature-declared target schema signature; semantic row validation remains on typed provider read/write paths and fails closed through the feature contract.
 
-- Loading an unknown terrain ID, invalid map radius, malformed route, or
-  out-of-radius tile coordinate MUST fail visibly to the caller instead of
+- Loading an unknown terrain ID, malformed route, or malformed tile coordinate
+  MUST fail visibly to the caller instead of
   silently repairing stored truth.
-- Saving a map MUST preserve location ownership and terrain overrides for tiles
-  that remain inside the map radius.
-- Shrinking a map radius MAY delete out-of-radius tile-owned data only after
-  the editor behavior has surfaced the destructive warning owned by
-  requirements.
+- Viewport reads MUST bound generated default tiles and query only the sparse
+  authored rows intersecting that window.
 
 ## Compatibility And Migration
 
 Compatibility obligations begin with the first released format.
-Before the first released format, Hex supports exactly the current schema at owner version
-1. A fresh owner namespace is initialized directly to that complete target.
+Before the first released format, Hex supports exactly the current development
+schema. A fresh owner namespace is initialized directly to that complete target.
 There is no predecessor import, hybrid-schema repair, copy/drop conversion,
 archive table, or cross-owner foreign-key rewrite.
 
-An unversioned partial namespace, a recorded version-1 shape that differs from
-the exact current DDL, an adjacent retired Hex object, or a newer owner version
+An unversioned partial namespace, a recorded shape that differs from the exact
+current DDL, an adjacent retired Hex object, or a newer owner version
 MUST fail closed. Failure MUST leave the schema, rows, and owner ledger
 unchanged; initialization failure MUST NOT fabricate a ledger entry. Until
 activation, unsupported development databases are reinitialized rather than

@@ -20,7 +20,7 @@ locations without inventing a second place or map source of truth.
   reloading Hex maps
 - compact tool controls for `Auswahl` and terrain painting
 - main content as the shared hex map surface in editor mode
-- state content for selected map metadata, radius changes, active status,
+- state content for selected map metadata, active status,
   selected tile details, and marker editing
 - terrain palette for the active paint tool
 - World Planner location placement launched from `Katalog → Orte`
@@ -33,21 +33,19 @@ locations without inventing a second place or map source of truth.
 - active terrain-paint mode
 - selected placed World Planner location with its resolved name
 - save or validation failure during map edits
-- destructive radius-change warning before data loss
 
 ## Required Behavior
 
 - the editor MUST let the user create and edit hex maps
-- new map creation MUST use the shared catalog `Neu` flow and create a named
-  map with default radius `2`
-- map editing MUST support visible name and radius changes from the state pane
+- new map creation MUST use the shared catalog `Neu` flow and create a named,
+  initially empty sparse map
+- map editing MUST support visible name changes from the state pane
 - the Hex control panel MUST use the shared shell map layout pattern:
   `CatalogCrudControlsView` as fixed catalog, compact Hex controls as the
   flexible controls child, Hex rendering in `COCKPIT_MAIN`, and edit details in
   `COCKPIT_STATE`
-- map radius MUST stay inside the supported `0` through `99` range
-- shrinking a map radius in a way that removes authored terrain or markers MUST
-  surface an explicit destructive warning before commit
+- maps MUST grow without a coordinate boundary; panning loads bounded viewport
+  windows while only authored terrain overrides and markers are persisted
 - the editor MUST support a selection tool for tile inspection
 - the editor MUST support a terrain-paint tool
 - the active terrain type MUST be visible while painting
@@ -85,12 +83,11 @@ map truth.
 ## Acceptance Criteria
 
 - The user can create a new map through the shared catalog `Neu` flow and
-  immediately see it as an editable radius-2 map.
+  immediately see it as an editable sparse map centered on axial `0,0`.
 - The user can select a tile and inspect visible tile details.
 - The user can paint terrain and see the changed terrain on the map.
 - The user can place, move, reveal, and remove an existing World Planner
   location from its Catalog detail.
-- Destructive radius shrink requires an explicit warning before commit.
 - Save failure produces a visible error outcome.
 - The visible Hex map surface remains available below the controls because the
   map catalog and compact controls share the shell stack layout used by Dungeon
