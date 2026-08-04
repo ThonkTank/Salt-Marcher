@@ -319,7 +319,16 @@ describe('campaign walking skeleton', () => {
     await expect(await groupSelection.$('option:checked')).toHaveText(
       'Neue Gruppe'
     )
-    await expect(await groupDialog.$('button=Neue Gruppe')).toBeExisting()
+    await expect(await groupDialog.$('button*=Neue Gruppe')).toBeExisting()
+    await expect(
+      await groupDialog.$('section[aria-label="Filter und Generator"]')
+    ).toBeExisting()
+    const draftDivider = await groupDialog.$(
+      '[aria-label="Breite des Gruppenentwurfs"]'
+    )
+    await expect(draftDivider).toHaveAttribute('aria-valuenow', '460')
+    await pressDividerKey(client, 'Breite des Gruppenentwurfs', 'ArrowLeft')
+    await expect(draftDivider).toHaveAttribute('aria-valuenow', '470')
     await (
       await groupDialog.$('input[aria-label="Gruppenname"]')
     ).setValue('Wolf Pack')
@@ -332,9 +341,16 @@ describe('campaign walking skeleton', () => {
       timeoutMsg: 'Generator was not available for the new group draft.'
     })
     await generate.click()
-    const clearGenerated = await groupDialog.$('button=Leeren')
-    await clearGenerated.waitForExist({ timeout: 5_000 })
-    await clearGenerated.click()
+    await expectGroupManagementGolden(client)
+    await expect(await groupDialog.$('button=Leeren')).not.toBeExisting()
+    const undoGenerated = await groupDialog.$(
+      'button[aria-label="Änderung zurücknehmen"]'
+    )
+    await client.waitUntil(() => undoGenerated.isEnabled(), {
+      timeout: 5_000,
+      timeoutMsg: 'Generated group draft did not become undoable.'
+    })
+    await undoGenerated.click()
     const dialogSearch = await groupDialog.$(
       'input[aria-label="Monster suchen"]'
     )
@@ -413,7 +429,7 @@ describe('campaign walking skeleton', () => {
       'select[aria-label="Gruppe auswählen"]'
     )
     await reopenedSelection.selectByVisibleText('Wolf Pack')
-    await (await reopenedGroupDialog.$('button=Neue Gruppe')).click()
+    await (await reopenedGroupDialog.$('button*=Neue Gruppe')).click()
     const emptyGroupName = await reopenedGroupDialog.$(
       'input[aria-label="Gruppenname"]'
     )
@@ -595,6 +611,22 @@ async function expectScenarioGolden(
   client: WdioBrowser,
   name: 'initiative' | 'combat' | 'resolution'
 ): Promise<void> {
+  await expectElementGolden(client, name, 'aside[aria-label="Szenario Panel"]')
+}
+
+async function expectGroupManagementGolden(client: WdioBrowser): Promise<void> {
+  await expectElementGolden(
+    client,
+    'group-management',
+    'section[aria-labelledby="group-builder-title"]'
+  )
+}
+
+async function expectElementGolden(
+  client: WdioBrowser,
+  name: string,
+  selector: string
+): Promise<void> {
   if (process.platform !== 'linux') return
   await client.execute(() => {
     const style = document.createElement('style')
@@ -609,9 +641,7 @@ async function expectScenarioGolden(
   mkdirSync(artifacts, { recursive: true })
   const actualPath = join(artifacts, `${name}.png`)
   const baselinePath = join(directory, `${name}.png`)
-  const bytes = await (
-    await client.$('aside[aria-label="Szenario Panel"]')
-  ).saveScreenshot(actualPath)
+  const bytes = await (await client.$(selector)).saveScreenshot(actualPath)
   if (process.env['UPDATE_VISUAL_GOLDENS'] === '1') {
     writeFileSync(baselinePath, bytes)
     return

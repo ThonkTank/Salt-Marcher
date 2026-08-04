@@ -6,6 +6,7 @@ import {
 } from '../../src/renderer/features/session/use-session-detail-history.js'
 import { travelSegmentProgress } from '../../src/renderer/features/hex/use-travel-clock.js'
 import {
+  emptyGroupDraftHistory,
   groupDraftReducer,
   type GroupDraftState
 } from '../../src/renderer/features/session/group-draft.js'
@@ -95,7 +96,9 @@ describe('renderer feature state', () => {
       baseline: 'baseline',
       evaluation: null,
       seed: 0,
-      message: ''
+      message: '',
+      generationSummary: '',
+      history: emptyGroupDraftHistory()
     }
     const renamed = groupDraftReducer(initial, {
       kind: 'name',
@@ -110,6 +113,79 @@ describe('renderer feature state', () => {
     expect(resized).toMatchObject({
       name: 'Grauwölfe',
       quantities: { wolf: 3 }
+    })
+  })
+
+  it('keeps twenty undoable group roster steps and truncates redo branches', () => {
+    let state: GroupDraftState = {
+      name: 'Wölfe',
+      note: 'Bleibt unverändert',
+      disposition: 'hostile',
+      quantities: {},
+      deadQuantities: {},
+      facts: {},
+      baseline: 'baseline',
+      evaluation: null,
+      seed: 0,
+      message: '',
+      generationSummary: '',
+      history: emptyGroupDraftHistory()
+    }
+    for (let quantity = 1; quantity <= 25; quantity += 1)
+      state = groupDraftReducer(state, {
+        kind: 'roster',
+        update: { quantities: { wolf: quantity }, deadQuantities: {} }
+      })
+
+    expect(state.history.past).toHaveLength(20)
+    state = groupDraftReducer(state, { kind: 'undo-roster' })
+    expect(state.quantities).toEqual({ wolf: 24 })
+    expect(state.history.future).toHaveLength(1)
+
+    state = groupDraftReducer(state, {
+      kind: 'roster',
+      update: { quantities: { wolf: 24 }, deadQuantities: { wolf: 1 } }
+    })
+    expect(state.history.future).toHaveLength(0)
+    expect(state).toMatchObject({
+      name: 'Wölfe',
+      note: 'Bleibt unverändert',
+      deadQuantities: { wolf: 1 }
+    })
+  })
+
+  it('undoes and redoes living and dead quantities without touching identity', () => {
+    const initial: GroupDraftState = {
+      name: 'Wölfe',
+      note: 'Am Tor',
+      disposition: 'neutral',
+      quantities: { wolf: 2 },
+      deadQuantities: {},
+      facts: {},
+      baseline: 'baseline',
+      evaluation: null,
+      seed: 0,
+      message: '',
+      generationSummary: '',
+      history: emptyGroupDraftHistory()
+    }
+    const changed = groupDraftReducer(initial, {
+      kind: 'roster',
+      update: { quantities: { wolf: 1 }, deadQuantities: { wolf: 1 } }
+    })
+    const undone = groupDraftReducer(changed, { kind: 'undo-roster' })
+    const redone = groupDraftReducer(undone, { kind: 'redo-roster' })
+
+    expect(undone).toMatchObject({
+      name: 'Wölfe',
+      note: 'Am Tor',
+      disposition: 'neutral',
+      quantities: { wolf: 2 },
+      deadQuantities: {}
+    })
+    expect(redone).toMatchObject({
+      quantities: { wolf: 1 },
+      deadQuantities: { wolf: 1 }
     })
   })
 })

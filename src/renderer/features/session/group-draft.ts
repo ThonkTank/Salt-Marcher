@@ -13,6 +13,21 @@ export type DraftCreatureFact = {
   available: boolean
 }
 
+export type GroupDraftRosterSnapshot = {
+  quantities: Record<string, number>
+  deadQuantities: Record<string, number>
+}
+
+export type GroupDraftHistory = {
+  past: GroupDraftRosterSnapshot[]
+  future: GroupDraftRosterSnapshot[]
+}
+
+export const emptyGroupDraftHistory = (): GroupDraftHistory => ({
+  past: [],
+  future: []
+})
+
 export type GroupDraftState = {
   name: string
   note: string
@@ -24,6 +39,8 @@ export type GroupDraftState = {
   evaluation: SceneGroupDraftEvaluation | null
   seed: number
   message: string
+  generationSummary: string
+  history: GroupDraftHistory
 }
 
 export type GroupDraftAction =
@@ -41,6 +58,9 @@ export type GroupDraftMutation =
     }
   | { kind: 'quantities'; update: DraftUpdate<Record<string, number>> }
   | { kind: 'dead-quantities'; update: DraftUpdate<Record<string, number>> }
+  | { kind: 'roster'; update: GroupDraftRosterSnapshot }
+  | { kind: 'undo-roster' }
+  | { kind: 'redo-roster' }
   | {
       kind: 'facts'
       update: DraftUpdate<Record<string, DraftCreatureFact>>
@@ -52,12 +72,46 @@ export type GroupDraftMutation =
     }
   | { kind: 'seed'; update: DraftUpdate<number> }
   | { kind: 'message'; update: DraftUpdate<string> }
+  | { kind: 'generationSummary'; update: DraftUpdate<string> }
 
 export function groupDraftReducer(
   state: GroupDraftState,
   action: GroupDraftMutation
 ): GroupDraftState {
   if (action.kind === 'replace') return action.state
+  if (action.kind === 'roster')
+    return {
+      ...state,
+      ...copyRoster(action.update),
+      history: {
+        past: [...state.history.past, rosterSnapshot(state)].slice(-20),
+        future: []
+      }
+    }
+  if (action.kind === 'undo-roster') {
+    const previous = state.history.past.at(-1)
+    if (!previous) return state
+    return {
+      ...state,
+      ...copyRoster(previous),
+      history: {
+        past: state.history.past.slice(0, -1),
+        future: [rosterSnapshot(state), ...state.history.future]
+      }
+    }
+  }
+  if (action.kind === 'redo-roster') {
+    const next = state.history.future[0]
+    if (!next) return state
+    return {
+      ...state,
+      ...copyRoster(next),
+      history: {
+        past: [...state.history.past, rosterSnapshot(state)].slice(-20),
+        future: state.history.future.slice(1)
+      }
+    }
+  }
   const field =
     action.kind === 'dead-quantities' ? 'deadQuantities' : action.kind
   const current = state[field]
@@ -66,6 +120,21 @@ export function groupDraftReducer(
       ? (action.update as (value: typeof current) => typeof current)(current)
       : action.update
   return { ...state, [field]: value }
+}
+
+export function rosterSnapshot(
+  state: Pick<GroupDraftState, 'quantities' | 'deadQuantities'>
+): GroupDraftRosterSnapshot {
+  return copyRoster(state)
+}
+
+function copyRoster(
+  snapshot: GroupDraftRosterSnapshot
+): GroupDraftRosterSnapshot {
+  return {
+    quantities: { ...snapshot.quantities },
+    deadQuantities: { ...snapshot.deadQuantities }
+  }
 }
 
 export function creatureFact(creature: Creature): DraftCreatureFact {

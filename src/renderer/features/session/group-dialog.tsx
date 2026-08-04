@@ -1,6 +1,8 @@
 import { formatMessage, message as uiMessage } from '../../i18n/messages.de.js'
 import {
   Fragment,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
   useEffect,
   useMemo,
   useReducer,
@@ -19,10 +21,7 @@ import type {
   SceneGroupDisposition
 } from '../../../shared/contracts/scene.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
-import {
-  DifficultySummary,
-  TuningControls
-} from '../encounter/encounter-tuning.js'
+import { TuningControls } from '../encounter/encounter-tuning.js'
 import { encounterCapabilities } from '../encounter/encounter-capabilities.js'
 import {
   applyCombatCommandResult,
@@ -43,6 +42,7 @@ import { ModalDialog } from '../../shell/modal-dialog.js'
 import { CreatureInspector } from '../catalog/creature-inspector.js'
 import {
   creatureFact,
+  emptyGroupDraftHistory,
   groupDraftEntries,
   groupDraftReducer,
   groupDraftSignature,
@@ -51,31 +51,6 @@ import {
   type GroupDraftAction,
   type GroupDraftState
 } from './group-draft.js'
-
-function DispositionSelect(props: {
-  value: SceneGroupDisposition
-  changed: (value: SceneGroupDisposition) => void
-}) {
-  return (
-    <label>
-      {uiMessage('group.disposition')}
-      <select
-        value={props.value}
-        onChange={(event) =>
-          props.changed(event.target.value as SceneGroupDisposition)
-        }
-      >
-        <option value="hostile">
-          {uiMessage('group.disposition.hostile')}
-        </option>
-        <option value="neutral">
-          {uiMessage('group.disposition.neutral')}
-        </option>
-        <option value="allied">{uiMessage('group.disposition.allied')}</option>
-      </select>
-    </label>
-  )
-}
 
 export function CreatureCollectionCatalogPane(props: {
   query: CreatureCatalogQuery
@@ -86,6 +61,10 @@ export function CreatureCollectionCatalogPane(props: {
   inspect: (creature: Creature) => void
   quantities?: Readonly<Record<string, number>>
   variant?: 'builder' | 'inspector'
+  controls?: boolean
+  showBiome?: boolean
+  footerStatus?: string
+  className?: string
 }) {
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set())
 
@@ -100,22 +79,26 @@ export function CreatureCollectionCatalogPane(props: {
 
   return (
     <section
-      className="group-catalog-pane"
+      className={`group-catalog-pane${props.className ? ` ${props.className}` : ''}`}
       aria-label={uiMessage('ui.monsterkatalog')}
     >
-      <div className="catalog-pane-summary">
-        <strong>{uiMessage('ui.monsterkatalog')}</strong>
-        <span>{props.page?.message}</span>
-      </div>
-      <CreatureFilters
-        query={props.query}
-        options={props.options}
-        changed={props.changed}
-        compact
-      />
-      <div className="filter-chips">
-        <FilterChips query={props.query} changed={props.changed} />
-      </div>
+      {props.controls !== false && (
+        <>
+          <div className="catalog-pane-summary">
+            <strong>{uiMessage('ui.monsterkatalog')}</strong>
+            <span>{props.page?.message}</span>
+          </div>
+          <CreatureFilters
+            query={props.query}
+            options={props.options}
+            changed={props.changed}
+            compact
+          />
+          <div className="filter-chips">
+            <FilterChips query={props.query} changed={props.changed} />
+          </div>
+        </>
+      )}
       <div className="group-catalog-table-wrap">
         <table className="catalog-table group-catalog-table">
           <thead>
@@ -123,6 +106,7 @@ export function CreatureCollectionCatalogPane(props: {
               <th>{uiMessage('ui.monster')}</th>
               <th>{uiMessage('ui.cr')}</th>
               <th>{uiMessage('ui.typ')}</th>
+              {props.showBiome && <th>{uiMessage('catalog.environment')}</th>}
               <th>{uiMessage('ui.xp.2')}</th>
               {props.variant !== 'inspector' && (
                 <th>{uiMessage('ui.aktionen')}</th>
@@ -167,6 +151,9 @@ export function CreatureCollectionCatalogPane(props: {
                     </td>
                     <td>{creature.challengeRating}</td>
                     <td>{creature.type}</td>
+                    {props.showBiome && (
+                      <td>{creature.biomes.join(', ') || '—'}</td>
+                    )}
                     <td>{creature.xp.toLocaleString()}</td>
                     {props.variant !== 'inspector' && (
                       <td>
@@ -190,7 +177,7 @@ export function CreatureCollectionCatalogPane(props: {
                   </tr>
                   {open && props.variant !== 'inspector' && (
                     <tr className="catalog-expanded-row">
-                      <td colSpan={5}>
+                      <td colSpan={props.showBiome ? 6 : 5}>
                         <CreatureInspector creature={creature} embedded />
                       </td>
                     </tr>
@@ -206,7 +193,9 @@ export function CreatureCollectionCatalogPane(props: {
       </div>
       <footer className="catalog-footer">
         <span>
-          {props.page?.message || `${props.page?.total ?? 0} Monster`}
+          {props.footerStatus ||
+            props.page?.message ||
+            `${props.page?.total ?? 0} Monster`}
         </span>
         <div>
           <button
@@ -333,7 +322,9 @@ export function GroupDialog(props: {
     ),
     evaluation: null,
     seed: 0,
-    message: ''
+    message: '',
+    generationSummary: '',
+    history: emptyGroupDraftHistory()
   })
   const {
     name,
@@ -345,22 +336,14 @@ export function GroupDialog(props: {
     baseline,
     evaluation,
     seed,
-    message
+    message,
+    generationSummary,
+    history
   } = draft
   const setName = (update: string) => dispatchDraft({ kind: 'name', update })
   const setNote = (update: string) => dispatchDraft({ kind: 'note', update })
   const setDisposition = (update: SceneGroupDisposition) =>
     dispatchDraft({ kind: 'disposition', update })
-  const setQuantities = (
-    update:
-      | Record<string, number>
-      | ((current: Record<string, number>) => Record<string, number>)
-  ) => dispatchDraft({ kind: 'quantities', update })
-  const setDeadQuantities = (
-    update:
-      | Record<string, number>
-      | ((current: Record<string, number>) => Record<string, number>)
-  ) => dispatchDraft({ kind: 'dead-quantities', update })
   const setFacts = (
     update:
       | Record<string, DraftCreatureFact>
@@ -373,12 +356,15 @@ export function GroupDialog(props: {
   const setSeed = (update: number) => dispatchDraft({ kind: 'seed', update })
   const setMessage = (update: string) =>
     dispatchDraft({ kind: 'message', update })
+  const setGenerationSummary = (update: string) =>
+    dispatchDraft({ kind: 'generationSummary', update })
   const [query, setQuery] = useState<CreatureCatalogQuery>({
     ...emptyQuery,
     locationId: focused.locationId,
     limit: 30
   })
   const [page, setPage] = useState<CreatureCatalogPage | null>(null)
+  const [catalogTotal, setCatalogTotal] = useState(0)
   const [options, setOptions] = useState(emptyCreatureOptions)
   const [tuning, setTuning] = useState<EncounterTuning>({
     difficulty: 'auto',
@@ -388,16 +374,14 @@ export function GroupDialog(props: {
   })
   const [pending, setPending] = useState<GroupDraftAction | null>(null)
   const [busy, setBusy] = useState(false)
+  const [cachedDirty, setCachedDirty] = useState(false)
+  const [draftPaneWidth, setDraftPaneWidth] = useState(460)
   const drafts = useRef(new Map<string, GroupDraftState>())
   const evaluationRequest = useRef(0)
   const factsRequest = useRef(0)
   const entries = useMemo(
     () => groupDraftEntries(quantities, deadQuantities),
     [deadQuantities, quantities]
-  )
-  const creatureCount = entries.reduce(
-    (total, entry) => total + entry.quantity,
-    0
   )
   const active = selection !== null
   const dirty =
@@ -416,6 +400,10 @@ export function GroupDialog(props: {
     void sessionCapabilities()
       .creatures.filterOptions()
       .then(setOptions)
+      .catch(reportCapabilityError(props.onError))
+    void sessionCapabilities()
+      .creatures.search({ ...emptyQuery, limit: 1 })
+      .then((result) => setCatalogTotal(result.total))
       .catch(reportCapabilityError(props.onError))
   }, [props.onError])
 
@@ -472,7 +460,9 @@ export function GroupDialog(props: {
   function load(nextSelection: string | null) {
     cacheCurrentDraft()
     const cached = nextSelection ? drafts.current.get(nextSelection) : null
-    if (cached) {
+    if (cached && nextSelection) {
+      drafts.current.delete(nextSelection)
+      setCachedDirty(hasDirtyDrafts())
       setSelection(nextSelection)
       dispatchDraft({ kind: 'replace', state: cached })
       return
@@ -503,6 +493,7 @@ export function GroupDialog(props: {
       ]) ?? []
     )
     setSelection(nextSelection)
+    setCachedDirty(hasDirtyDrafts())
     dispatchDraft({
       kind: 'replace',
       state: {
@@ -521,7 +512,9 @@ export function GroupDialog(props: {
         ),
         evaluation: null,
         message: '',
-        seed: 0
+        seed: 0,
+        generationSummary: '',
+        history: emptyGroupDraftHistory()
       }
     })
   }
@@ -538,7 +531,9 @@ export function GroupDialog(props: {
       baseline,
       evaluation,
       seed,
-      message
+      message,
+      generationSummary,
+      history
     })
   }
 
@@ -567,16 +562,23 @@ export function GroupDialog(props: {
       return
     }
     cacheCurrentDraft()
+    setCachedDirty(hasDirtyDrafts())
     if (dirty || hasDirtyDrafts()) setPending(action)
     else perform(action)
   }
 
   function addCreature(creature: Creature) {
     if (!active) return
-    setQuantities((current) => ({
-      ...current,
-      [creature.id]: Math.min(999, (current[creature.id] ?? 0) + 1)
-    }))
+    dispatchDraft({
+      kind: 'roster',
+      update: {
+        quantities: {
+          ...quantities,
+          [creature.id]: Math.min(999, (quantities[creature.id] ?? 0) + 1)
+        },
+        deadQuantities
+      }
+    })
     setFacts((current) => ({
       ...current,
       [creature.id]: creatureFact(creature)
@@ -588,16 +590,34 @@ export function GroupDialog(props: {
     delta: number,
     kind: 'alive' | 'dead' = 'alive'
   ) {
-    const update = kind === 'alive' ? setQuantities : setDeadQuantities
-    update((current) => {
-      const quantity = Math.max(
-        0,
-        Math.min(999, (current[creatureId] ?? 0) + delta)
-      )
-      const next = { ...current }
-      if (quantity === 0) delete next[creatureId]
-      else next[creatureId] = quantity
-      return next
+    const current = kind === 'alive' ? quantities : deadQuantities
+    const quantity = Math.max(
+      0,
+      Math.min(999, (current[creatureId] ?? 0) + delta)
+    )
+    const next = { ...current }
+    if (quantity === 0) delete next[creatureId]
+    else next[creatureId] = quantity
+    dispatchDraft({
+      kind: 'roster',
+      update: {
+        quantities: kind === 'alive' ? next : quantities,
+        deadQuantities: kind === 'dead' ? next : deadQuantities
+      }
+    })
+  }
+
+  function removeCreature(creatureId: string) {
+    const nextQuantities = { ...quantities }
+    const nextDeadQuantities = { ...deadQuantities }
+    delete nextQuantities[creatureId]
+    delete nextDeadQuantities[creatureId]
+    dispatchDraft({
+      kind: 'roster',
+      update: {
+        quantities: nextQuantities,
+        deadQuantities: nextDeadQuantities
+      }
     })
   }
 
@@ -623,11 +643,30 @@ export function GroupDialog(props: {
         nextSeed,
         props.snapshot.scene.revision
       )
-      setQuantities(
-        Object.fromEntries(
-          result.entries.map((entry) => [entry.creatureId, entry.quantity])
-        )
+      const nextQuantities = Object.fromEntries(
+        result.entries.map((entry) => [entry.creatureId, entry.quantity])
       )
+      const previousCount = Object.values(quantities).reduce(
+        (total, quantity) => total + quantity,
+        0
+      )
+      const nextCount = Object.values(nextQuantities).reduce(
+        (total, quantity) => total + quantity,
+        0
+      )
+      const nextDeadQuantities = mode === 'fill' ? deadQuantities : {}
+      if (
+        JSON.stringify(
+          groupDraftEntries(nextQuantities, nextDeadQuantities)
+        ) !== JSON.stringify(entries)
+      )
+        dispatchDraft({
+          kind: 'roster',
+          update: {
+            quantities: nextQuantities,
+            deadQuantities: nextDeadQuantities
+          }
+        })
       setFacts((current) => ({
         ...current,
         ...Object.fromEntries(
@@ -645,6 +684,18 @@ export function GroupDialog(props: {
       setEvaluation(result.evaluation)
       setSeed(nextSeed)
       setMessage(result.message)
+      setGenerationSummary(
+        formatMessage(
+          mode === 'fill' ? 'group.generatedFilled' : 'group.generatedReplaced',
+          {
+            count:
+              mode === 'fill'
+                ? Math.max(0, nextCount - previousCount)
+                : nextCount,
+            seed: nextSeed
+          }
+        )
+      )
     } catch (cause) {
       setMessage(capabilityErrorText(cause))
     } finally {
@@ -744,25 +795,111 @@ export function GroupDialog(props: {
     }
   }
 
+  const totalInDraft = Object.fromEntries(
+    Array.from(
+      new Set([...Object.keys(quantities), ...Object.keys(deadQuantities)])
+    ).map((id) => [id, (quantities[id] ?? 0) + (deadQuantities[id] ?? 0)])
+  )
+  const filteredCount = page?.total ?? 0
+  const filterSummary = formatMessage('group.catalogCount', {
+    filtered: filteredCount,
+    total: catalogTotal
+  })
+  const catalogFooterStatus = [
+    page?.message ||
+      formatMessage('group.filteredMonsters', { count: filteredCount }),
+    generationSummary
+  ]
+    .filter(Boolean)
+    .join(' · ')
+  const sceneContext = [focused.title, focused.locationName]
+    .filter(Boolean)
+    .join(' · ')
+  const levelContext = assigned
+    .map((member) => member.level?.toString() ?? '—')
+    .join(' / ')
+  const anyDirty = dirty || cachedDirty
+
   return (
     <ModalDialog
-      className="group-dialog group-builder-dialog"
+      className="group-dialog session-group-manager"
       labelledBy="group-builder-title"
       onClose={() => request({ kind: 'close' })}
       busy={busy}
     >
-      <header>
-        <div className="builder-title-block">
-          <div className="title-group">
-            <span className="illuminated-initial" aria-hidden="true">
-              {uiMessage('ui.gruppen.managen').charAt(0)}
-            </span>
-            <h2 id="group-builder-title">
-              {uiMessage('ui.gruppen.managen').slice(1)}
-            </h2>
-          </div>
-          <p className="scene-crumb">{focused.title}</p>
+      <header className="group-manager-header">
+        <div className="title-group">
+          <span className="illuminated-initial" aria-hidden="true">
+            {uiMessage('ui.gruppen.managen').charAt(0)}
+          </span>
+          <h2 id="group-builder-title">
+            {uiMessage('ui.gruppen.managen').slice(1)}
+          </h2>
         </div>
+        <span className="scene-crumb" title={sceneContext}>
+          {sceneContext}
+        </span>
+        <select
+          className="group-manager-selection"
+          aria-label={uiMessage('group.select')}
+          value={selection ?? ''}
+          onChange={(event) =>
+            request({
+              kind: 'select',
+              selection: event.target.value || null
+            })
+          }
+        >
+          <option value="">{uiMessage('group.selectPlaceholder')}</option>
+          {activeGroups.map((group) => (
+            <option key={group.id} value={group.id}>
+              {group.name}
+              {props.snapshot.combat?.selectedGroupIds.includes(group.id)
+                ? ` · ${uiMessage('encounter.inCombat')}`
+                : ''}
+            </option>
+          ))}
+          <option value={newGroupDraftKey}>
+            {uiMessage('group.createTitle')}
+          </option>
+        </select>
+        <button
+          className="group-manager-new"
+          type="button"
+          onClick={() =>
+            request({ kind: 'select', selection: newGroupDraftKey })
+          }
+        >
+          + {uiMessage('group.createTitle')}
+        </button>
+        <input
+          className="group-manager-name"
+          aria-label={uiMessage('ui.gruppenname')}
+          placeholder={uiMessage('ui.gruppenname')}
+          maxLength={100}
+          disabled={!active}
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+        />
+        <select
+          className="group-manager-disposition"
+          aria-label={uiMessage('group.disposition')}
+          disabled={!active}
+          value={disposition}
+          onChange={(event) =>
+            setDisposition(event.target.value as SceneGroupDisposition)
+          }
+        >
+          <option value="hostile">
+            {uiMessage('group.disposition.hostile')}
+          </option>
+          <option value="neutral">
+            {uiMessage('group.disposition.neutral')}
+          </option>
+          <option value="allied">
+            {uiMessage('group.disposition.allied')}
+          </option>
+        </select>
         <button
           className="close"
           type="button"
@@ -772,106 +909,105 @@ export function GroupDialog(props: {
           ×
         </button>
       </header>
-      <div className="group-builder-layout">
-        <CreatureCollectionCatalogPane
+
+      <section
+        className="group-manager-tools"
+        aria-label={uiMessage('group.tools')}
+      >
+        <CreatureFilters
           query={query}
-          options={{ ...options, locations: [] }}
+          options={options}
+          changed={setQuery}
+          clustered
+        />
+        <div className="group-tool-row">
+          <div className="group-filter-summary">
+            <FilterChips query={query} changed={setQuery} options={options} />
+            <span>{filterSummary}</span>
+          </div>
+          <section
+            className="group-generator-card"
+            aria-label={uiMessage('group.generator')}
+          >
+            <strong>{uiMessage('group.generator')}</strong>
+            <TuningControls tuning={tuning} changed={setTuning} />
+            <div className="group-generator-actions">
+              <button
+                type="button"
+                disabled={busy || !canGenerate}
+                onClick={() => void generate('fill')}
+              >
+                {uiMessage('ui.auffuellen')}
+              </button>
+              <button
+                type="button"
+                disabled={busy || !canGenerate}
+                onClick={() => void generate('replace')}
+              >
+                {uiMessage('ui.neu.generieren')}
+              </button>
+            </div>
+            {!canGenerate && (
+              <small>
+                {uiMessage(
+                  'ui.zum.generieren.braucht.die.scene.eine.zugewiesene.party'
+                )}
+              </small>
+            )}
+          </section>
+        </div>
+      </section>
+
+      <div
+        className="group-manager-workspace"
+        style={{
+          gridTemplateColumns: `minmax(0, 1fr) var(--divider-w) ${draftPaneWidth}px`
+        }}
+      >
+        <CreatureCollectionCatalogPane
+          className="group-manager-catalog"
+          query={query}
+          options={options}
           page={page}
           changed={setQuery}
           add={addCreature}
           inspect={(creature) => void inspect(creature)}
-          quantities={Object.fromEntries(
-            Array.from(
-              new Set([
-                ...Object.keys(quantities),
-                ...Object.keys(deadQuantities)
-              ])
-            ).map((id) => [
-              id,
-              (quantities[id] ?? 0) + (deadQuantities[id] ?? 0)
-            ])
-          )}
+          quantities={totalInDraft}
+          controls={false}
+          showBiome
+          footerStatus={catalogFooterStatus}
         />
-        <div className="builder-seam" aria-hidden="true" />
+        <GroupBuilderDivider
+          value={draftPaneWidth}
+          changed={setDraftPaneWidth}
+        />
         <section
-          className="group-draft-pane"
+          className="group-manager-draft-rim"
           aria-label={uiMessage('ui.aktuelle.gruppe')}
         >
-          <div className="group-identity">
-            <CreatureCollectionSelection
-              label="Gruppe"
-              value={selection}
-              emptyLabel="Gruppe auswählen …"
-              newLabel={uiMessage('group.createTitle')}
-              choices={activeGroups.map((group) => ({
-                id: group.id,
-                label: `${group.name}${
-                  props.snapshot.combat?.selectedGroupIds.includes(group.id)
-                    ? ` · ${uiMessage('encounter.inCombat')}`
-                    : ''
-                }`
-              }))}
-              changed={(nextSelection) =>
-                request({ kind: 'select', selection: nextSelection })
-              }
+          <div className="group-manager-draft-sheet">
+            <GroupDraftEvaluation
+              evaluation={evaluation}
+              canUndo={history.past.length > 0}
+              canRedo={history.future.length > 0}
+              undo={() => dispatchDraft({ kind: 'undo-roster' })}
+              redo={() => dispatchDraft({ kind: 'redo-roster' })}
             />
-            {active && (
-              <>
-                <label>
-                  {uiMessage('ui.gruppenname')}
-                  <input
-                    className="group-name"
-                    autoFocus
-                    aria-label={uiMessage('ui.gruppenname')}
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                  />
-                </label>
-                <DispositionSelect
-                  value={disposition}
-                  changed={setDisposition}
-                />
-                <label className="group-note-field">
-                  {uiMessage('group.note')}
-                  <textarea
-                    aria-label={uiMessage('group.note')}
-                    maxLength={1000}
-                    rows={2}
-                    value={note}
-                    onChange={(event) => setNote(event.target.value)}
-                  />
-                </label>
-              </>
-            )}
-          </div>
-          {!active ? (
-            <p className="empty-state">
-              {uiMessage('ui.waehle.eine.gruppe.aus.oder.lege.eine.neue')}
-            </p>
-          ) : (
-            <>
-              <section className="group-draft-sheet">
-                <header>
-                  <h3>{uiMessage('ui.entwurf')}</h3>
-                  <span className="draft-meta">
-                    {creatureCount} {uiMessage('ui.wesen')}
-                    {evaluation
-                      ? ` · ${evaluation.baseXp.toLocaleString()} XP`
-                      : ''}
-                  </span>
-                  {entries.length > 0 && (
-                    <button
-                      className="clear-draft"
-                      type="button"
-                      onClick={() => setQuantities({})}
-                    >
-                      {uiMessage('ui.leeren')}
-                    </button>
-                  )}
-                </header>
+            <div className="group-draft-scroll">
+              {!active ? (
+                <p className="draft-empty">
+                  {uiMessage('ui.waehle.eine.gruppe.aus.oder.lege.eine.neue')}
+                </p>
+              ) : entries.length === 0 ? (
+                <p className="draft-empty">
+                  {uiMessage('ui.monster.links.mit')} <strong>+</strong>{' '}
+                  {uiMessage('ui.hinzufuegen.oder.eine.gruppe.generieren')}
+                </p>
+              ) : (
                 <ul className="group-draft-roster">
                   {entries.map((entry) => {
                     const fact = facts[entry.creatureId]
+                    const displayName = fact?.displayName ?? entry.creatureId
                     return (
                       <li
                         key={entry.creatureId}
@@ -880,66 +1016,67 @@ export function GroupDialog(props: {
                         }
                       >
                         <span>
-                          <strong>
-                            {fact?.displayName ?? entry.creatureId}
-                          </strong>
+                          <strong>{displayName}</strong>
                           <small>
                             {uiMessage('ui.cr')} {fact?.cr ?? '—'} ·{' '}
                             {(fact?.xp ?? 0).toLocaleString()}{' '}
                             {uiMessage('ui.xp.2')}
+                            {fact?.available === false
+                              ? ` · ${uiMessage('group.unavailable')}`
+                              : ''}
                           </small>
                         </span>
-                        <div className="roster-quantity roster-life-count">
-                          <small>{uiMessage('group.alive')}</small>
-                          <button
-                            aria-label={`Anzahl ${fact?.displayName ?? entry.creatureId} verringern`}
-                            onClick={() => changeQuantity(entry.creatureId, -1)}
-                          >
-                            −
-                          </button>
-                          <strong>{entry.quantity}</strong>
-                          <button
-                            aria-label={`Anzahl ${fact?.displayName ?? entry.creatureId} erhöhen`}
-                            onClick={() => changeQuantity(entry.creatureId, 1)}
-                          >
-                            +
-                          </button>
-                        </div>
-                        <div className="roster-quantity roster-dead-count">
-                          <small>{uiMessage('group.dead')}</small>
-                          <button
-                            aria-label={`Tote ${fact?.displayName ?? entry.creatureId} verringern`}
-                            onClick={() =>
-                              changeQuantity(entry.creatureId, -1, 'dead')
-                            }
-                          >
-                            −
-                          </button>
-                          <strong>{entry.deadQuantity}</strong>
-                          <button
-                            aria-label={`Tote ${fact?.displayName ?? entry.creatureId} erhöhen`}
-                            onClick={() =>
-                              changeQuantity(entry.creatureId, 1, 'dead')
-                            }
-                          >
-                            +
-                          </button>
+                        <div className="group-roster-counts">
+                          <div className="roster-quantity">
+                            <small>{uiMessage('group.alive')}</small>
+                            <button
+                              type="button"
+                              aria-label={`Anzahl ${displayName} verringern`}
+                              onClick={() =>
+                                changeQuantity(entry.creatureId, -1)
+                              }
+                            >
+                              −
+                            </button>
+                            <strong>{entry.quantity}</strong>
+                            <button
+                              type="button"
+                              aria-label={`Anzahl ${displayName} erhöhen`}
+                              onClick={() =>
+                                changeQuantity(entry.creatureId, 1)
+                              }
+                            >
+                              +
+                            </button>
+                          </div>
+                          <div className="roster-quantity">
+                            <small>{uiMessage('group.dead')}</small>
+                            <button
+                              type="button"
+                              aria-label={`Tote ${displayName} verringern`}
+                              onClick={() =>
+                                changeQuantity(entry.creatureId, -1, 'dead')
+                              }
+                            >
+                              −
+                            </button>
+                            <strong>{entry.deadQuantity}</strong>
+                            <button
+                              type="button"
+                              aria-label={`Tote ${displayName} erhöhen`}
+                              onClick={() =>
+                                changeQuantity(entry.creatureId, 1, 'dead')
+                              }
+                            >
+                              +
+                            </button>
+                          </div>
                         </div>
                         <button
                           className="remove"
-                          aria-label={`${fact?.displayName ?? entry.creatureId} entfernen`}
-                          onClick={() => {
-                            changeQuantity(
-                              entry.creatureId,
-                              -entry.quantity,
-                              'alive'
-                            )
-                            changeQuantity(
-                              entry.creatureId,
-                              -entry.deadQuantity,
-                              'dead'
-                            )
-                          }}
+                          type="button"
+                          aria-label={`${displayName} entfernen`}
+                          onClick={() => removeCreature(entry.creatureId)}
                         >
                           ×
                         </button>
@@ -947,64 +1084,53 @@ export function GroupDialog(props: {
                     )
                   })}
                 </ul>
-                {entries.length === 0 && (
-                  <p className="draft-empty">
-                    {uiMessage('ui.monster.links.mit')} <strong>+</strong>{' '}
-                    {uiMessage('ui.hinzufuegen.oder.eine.gruppe.generieren')}
-                  </p>
-                )}
-              </section>
-              <TuningControls tuning={tuning} changed={setTuning} />
-              <div className="group-generator-actions">
-                <button
-                  disabled={busy || !canGenerate}
-                  onClick={() => void generate('fill')}
-                >
-                  {uiMessage('ui.auffuellen')}
-                </button>
-                <button
-                  disabled={busy || !canGenerate}
-                  onClick={() => void generate('replace')}
-                >
-                  {uiMessage('ui.neu.generieren')}
-                </button>
-              </div>
-              {!canGenerate && (
-                <small className="muted">
-                  {uiMessage(
-                    'ui.zum.generieren.braucht.die.scene.eine.zugewiesene.party'
-                  )}
-                </small>
               )}
-              {evaluation && (
-                <DifficultySummary evaluation={evaluation} meter />
+              {pending && (
+                <div className="confirm-row group-draft-confirm" role="alert">
+                  <span>
+                    {uiMessage('ui.ungespeicherte.aenderungen.verwerfen')}
+                  </span>
+                  <button type="button" onClick={() => setPending(null)}>
+                    {uiMessage('action.cancel')}
+                  </button>
+                  <button
+                    type="button"
+                    className="danger"
+                    onClick={() => perform(pending)}
+                  >
+                    {uiMessage('ui.aenderungen.verwerfen')}
+                  </button>
+                </div>
               )}
-            </>
-          )}
-          {pending && (
-            <div className="confirm-row group-draft-confirm" role="alert">
-              <span>
-                {uiMessage('ui.ungespeicherte.aenderungen.verwerfen')}
-              </span>
-              <button onClick={() => setPending(null)}>
-                {uiMessage('action.cancel')}
-              </button>
-              <button className="danger" onClick={() => perform(pending)}>
-                {uiMessage('ui.aenderungen.verwerfen')}
-              </button>
+              {message && (
+                <p className="group-draft-message" role="status">
+                  {message}
+                </p>
+              )}
             </div>
-          )}
-          {message && (
-            <p className="generator-status" role="status">
-              {message}
-            </p>
-          )}
+            <label className="group-manager-note">
+              <span>{uiMessage('group.note')}</span>
+              <textarea
+                aria-label={uiMessage('group.note')}
+                maxLength={1000}
+                rows={2}
+                disabled={!active}
+                value={note}
+                onChange={(event) => setNote(event.target.value)}
+              />
+            </label>
+          </div>
         </section>
       </div>
-      <footer className="group-builder-footer">
-        <span className="muted">
+
+      <footer className="group-manager-footer">
+        <span>
           {focused.locationName || uiMessage('ui.kein.ort.gesetzt')} ·{' '}
           {assigned.length} {uiMessage('ui.zugewiesene.pcs')}
+          {assigned.length > 0
+            ? ` · ${uiMessage('group.levels')} ${levelContext}`
+            : ''}
+          {anyDirty ? ` · ${uiMessage('group.unsaved')}` : ''}
         </span>
         <div>
           {props.reinforcementMode &&
@@ -1039,6 +1165,7 @@ export function GroupDialog(props: {
           </button>
           <button
             className="primary-action"
+            type="button"
             disabled={busy || !active || !name.trim()}
             onClick={() => void save()}
           >
@@ -1048,4 +1175,133 @@ export function GroupDialog(props: {
       </footer>
     </ModalDialog>
   )
+}
+
+function GroupBuilderDivider(props: {
+  value: number
+  changed: (value: number) => void
+}) {
+  const clamp = (value: number) => Math.max(400, Math.min(620, value))
+  const resize = (event: ReactPointerEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    const workspace = event.currentTarget.parentElement
+    if (!workspace) return
+    const bounds = workspace.getBoundingClientRect()
+    const update = (clientX: number) =>
+      props.changed(clamp(Math.round(bounds.right - clientX)))
+    update(event.clientX)
+    const move = (next: PointerEvent) => update(next.clientX)
+    const stop = () => {
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', stop)
+    }
+    window.addEventListener('pointermove', move)
+    window.addEventListener('pointerup', stop, { once: true })
+  }
+  const keyboard = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const direction =
+      event.key === 'ArrowLeft' ? 1 : event.key === 'ArrowRight' ? -1 : 0
+    if (!direction) return
+    event.preventDefault()
+    props.changed(clamp(props.value + direction * 10))
+  }
+  return (
+    <div
+      className="group-manager-divider"
+      role="separator"
+      aria-label={uiMessage('group.draftWidth')}
+      aria-orientation="vertical"
+      aria-valuemin={400}
+      aria-valuemax={620}
+      aria-valuenow={props.value}
+      tabIndex={0}
+      onPointerDown={resize}
+      onKeyDown={keyboard}
+    />
+  )
+}
+
+function GroupDraftEvaluation(props: {
+  evaluation: GroupDraftState['evaluation']
+  canUndo: boolean
+  canRedo: boolean
+  undo: () => void
+  redo: () => void
+}) {
+  const evaluation = props.evaluation
+  const maximum = Math.max(1, (evaluation?.partyThresholds[3] ?? 0) * 1.25)
+  const position = Math.min(
+    100,
+    Math.round(((evaluation?.adjustedXp ?? 0) / maximum) * 100)
+  )
+  const threshold = evaluation ? thresholdForEvaluation(evaluation) : 0
+  const difficultyLabel = evaluation
+    ? groupDifficultyLabel(evaluation.difficultyBand)
+    : '—'
+  return (
+    <div className="group-draft-evaluation" aria-live="polite">
+      <div className="group-draft-evaluation-row">
+        <strong>{difficultyLabel}</strong>
+        <span>
+          {(evaluation?.adjustedXp ?? 0).toLocaleString('de-DE')} XP{' '}
+          {uiMessage('encounter.adjusted').toLocaleLowerCase()}
+        </span>
+        <small>
+          {evaluation
+            ? `${uiMessage('encounter.threshold')} ${difficultyLabel} ${threshold.toLocaleString('de-DE')}`
+            : uiMessage('group.evaluationPending')}
+        </small>
+        <div className="group-history-actions">
+          <button
+            type="button"
+            aria-label={uiMessage('group.undo')}
+            disabled={!props.canUndo}
+            onClick={props.undo}
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            aria-label={uiMessage('group.redo')}
+            disabled={!props.canRedo}
+            onClick={props.redo}
+          >
+            ›
+          </button>
+        </div>
+      </div>
+      <div className="group-difficulty-meter" aria-hidden="true">
+        <span style={{ width: `${position}%` }} />
+      </div>
+      <small>
+        {(evaluation?.baseXp ?? 0).toLocaleString('de-DE')}{' '}
+        {uiMessage('group.baseXp')} · {uiMessage('encounter.multiplier')} ×{' '}
+        {(evaluation?.multiplier ?? 1).toLocaleString('de-DE')} ·{' '}
+        {evaluation?.creatureCount ?? 0} {uiMessage('ui.wesen')}
+      </small>
+    </div>
+  )
+}
+
+function groupDifficultyLabel(
+  band: NonNullable<GroupDraftState['evaluation']>['difficultyBand']
+): string {
+  if (band === 'trivial') return uiMessage('group.difficulty.trivial')
+  if (band === 'easy') return uiMessage('group.difficulty.easy')
+  if (band === 'medium') return uiMessage('group.difficulty.medium')
+  if (band === 'hard') return uiMessage('group.difficulty.hard')
+  if (band === 'deadly') return uiMessage('group.difficulty.deadly')
+  return uiMessage('group.difficulty.unavailable')
+}
+
+function thresholdForEvaluation(
+  evaluation: NonNullable<GroupDraftState['evaluation']>
+): number {
+  if (evaluation.difficultyBand === 'easy') return evaluation.partyThresholds[0]
+  if (evaluation.difficultyBand === 'medium')
+    return evaluation.partyThresholds[1]
+  if (evaluation.difficultyBand === 'hard') return evaluation.partyThresholds[2]
+  if (evaluation.difficultyBand === 'deadly')
+    return evaluation.partyThresholds[3]
+  return 0
 }

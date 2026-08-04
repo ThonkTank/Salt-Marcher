@@ -1,4 +1,5 @@
 import { formatMessage, message } from '../../i18n/messages.de.js'
+import type { ReactNode } from 'react'
 import type {
   CreatureCatalogQuery,
   CreatureFilterOptions
@@ -10,10 +11,147 @@ export function CreatureFilters(props: {
   options: CreatureFilterOptions
   changed: (query: CreatureCatalogQuery) => void
   compact?: boolean
+  clustered?: boolean
 }) {
   const q = props.query
   const update = (values: Partial<CreatureCatalogQuery>) =>
     props.changed({ ...q, ...values, offset: 0 })
+  if (props.clustered)
+    return (
+      <div className="group-filter-trays">
+        <FilterTray label={message('catalog.searchAndStrength')}>
+          <div className="group-filter-grid group-filter-strength">
+            <FilterField label={message('ui.name')} active={Boolean(q.name)}>
+              <input
+                aria-label={message('ui.monster.suchen')}
+                placeholder={message('ui.monster.suchen.2')}
+                value={q.name}
+                onChange={(event) => update({ name: event.target.value })}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter')
+                    update({ name: event.currentTarget.value })
+                }}
+              />
+            </FilterField>
+            <FilterField
+              label={message('catalog.crFrom')}
+              active={q.crMin !== undefined}
+            >
+              <select
+                aria-label={message('ui.cr.minimum')}
+                value={q.crMin ?? ''}
+                onChange={(event) =>
+                  update({
+                    crMin: event.target.value
+                      ? Number(event.target.value)
+                      : undefined
+                  })
+                }
+              >
+                <option value="">{message('catalog.all')}</option>
+                {props.options.challengeRatings.map((value) => (
+                  <option key={value} value={crNumber(value)}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+            </FilterField>
+            <FilterField
+              label={message('catalog.crTo')}
+              active={q.crMax !== undefined}
+            >
+              <select
+                aria-label={message('ui.cr.maximum')}
+                value={q.crMax ?? ''}
+                onChange={(event) =>
+                  update({
+                    crMax: event.target.value
+                      ? Number(event.target.value)
+                      : undefined
+                  })
+                }
+              >
+                <option value="">{message('catalog.all')}</option>
+                {props.options.challengeRatings.map((value) => (
+                  <option key={value} value={crNumber(value)}>
+                    {value}
+                  </option>
+                ))}
+              </select>
+            </FilterField>
+          </div>
+        </FilterTray>
+        <FilterTray label={message('catalog.creatureTraits')}>
+          <div className="group-filter-grid group-filter-creature">
+            <AdditiveSelect
+              label={message('catalog.size')}
+              options={props.options.sizes}
+              selected={q.sizes}
+              changed={(sizes) => update({ sizes })}
+            />
+            <AdditiveSelect
+              label={message('ui.typ')}
+              options={props.options.types}
+              selected={q.types}
+              changed={(types) => update({ types })}
+            />
+            <AdditiveSelect
+              label={message('catalog.subtype')}
+              options={props.options.subtypes}
+              selected={q.subtypes}
+              changed={(subtypes) => update({ subtypes })}
+            />
+          </div>
+        </FilterTray>
+        <FilterTray label={message('catalog.origin')}>
+          <div className="group-filter-grid group-filter-origin">
+            <AdditiveSelect
+              label={message('catalog.environment')}
+              options={props.options.biomes}
+              selected={q.biomes}
+              changed={(biomes) => update({ biomes })}
+            />
+            <AdditiveSelect
+              label={message('catalog.alignment')}
+              options={props.options.alignments}
+              selected={q.alignments}
+              changed={(alignments) => update({ alignments })}
+            />
+            <ReferenceAdditiveSelect
+              label={message('catalog.table')}
+              options={props.options.encounterTables}
+              selected={q.encounterTableIds}
+              changed={(encounterTableIds) => update({ encounterTableIds })}
+            />
+            <ReferenceAdditiveSelect
+              label={message('group.disposition')}
+              options={props.options.factions}
+              selected={q.factionIds}
+              changed={(factionIds) => update({ factionIds })}
+            />
+            <FilterField
+              label={message('ui.ort')}
+              active={Boolean(q.locationId)}
+            >
+              <select
+                aria-label={message('ui.ort')}
+                value={q.locationId ?? ''}
+                onChange={(event) =>
+                  update({ locationId: event.target.value || null })
+                }
+              >
+                <option value="">{message('catalog.noLocation')}</option>
+                {props.options.locations.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </FilterField>
+          </div>
+        </FilterTray>
+      </div>
+    )
   return (
     <div
       className={`catalog-filters${props.compact ? ' compact-filters' : ''}`}
@@ -125,6 +263,98 @@ export function CreatureFilters(props: {
   )
 }
 
+function FilterTray(props: { label: string; children: ReactNode }) {
+  return (
+    <section className="group-filter-tray">
+      <span className="group-filter-kicker">{props.label}</span>
+      {props.children}
+    </section>
+  )
+}
+
+function FilterField(props: {
+  label: string
+  active: boolean
+  children: ReactNode
+}) {
+  return (
+    <label className={props.active ? 'group-filter-active' : undefined}>
+      <span>{props.label}</span>
+      {props.children}
+    </label>
+  )
+}
+
+function AdditiveSelect(props: {
+  label: string
+  options: readonly string[]
+  selected: readonly string[]
+  changed: (values: string[]) => void
+}) {
+  return (
+    <FilterField label={props.label} active={props.selected.length > 0}>
+      <select
+        aria-label={props.label}
+        value=""
+        onChange={(event) => {
+          const value = event.target.value
+          if (value && !props.selected.includes(value))
+            props.changed([...props.selected, value])
+        }}
+      >
+        <option value="">
+          {props.selected.length > 0
+            ? formatMessage('catalog.selectedCount', {
+                count: props.selected.length
+              })
+            : message('catalog.all')}
+        </option>
+        {props.options
+          .filter((option) => !props.selected.includes(option))
+          .map((option) => (
+            <option key={option}>{option}</option>
+          ))}
+      </select>
+    </FilterField>
+  )
+}
+
+function ReferenceAdditiveSelect(props: {
+  label: string
+  options: readonly { id: string; label: string }[]
+  selected: readonly string[]
+  changed: (values: string[]) => void
+}) {
+  return (
+    <FilterField label={props.label} active={props.selected.length > 0}>
+      <select
+        aria-label={props.label}
+        value=""
+        onChange={(event) => {
+          const value = event.target.value
+          if (value && !props.selected.includes(value))
+            props.changed([...props.selected, value])
+        }}
+      >
+        <option value="">
+          {props.selected.length > 0
+            ? formatMessage('catalog.selectedCount', {
+                count: props.selected.length
+              })
+            : message('catalog.all')}
+        </option>
+        {props.options
+          .filter((option) => !props.selected.includes(option.id))
+          .map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
+      </select>
+    </FilterField>
+  )
+}
+
 function MultiSelect(props: {
   label: string
   options: readonly string[]
@@ -196,6 +426,7 @@ export function ReferenceMultiSelect(props: {
 export function FilterChips(props: {
   query: CreatureCatalogQuery
   changed: (query: CreatureCatalogQuery) => void
+  options?: CreatureFilterOptions
 }) {
   const chips: { label: string; clear: () => void }[] = []
   const q = props.query
@@ -229,7 +460,7 @@ export function FilterChips(props: {
   for (const [field, values] of groups)
     for (const value of values)
       chips.push({
-        label: value,
+        label: filterValueLabel(field, value, props.options),
         clear: () =>
           props.changed({
             ...q,
@@ -240,7 +471,9 @@ export function FilterChips(props: {
   if (q.locationId)
     chips.push({
       label: formatMessage('catalog.locationChip', {
-        location: q.locationId
+        location:
+          props.options?.locations.find((option) => option.id === q.locationId)
+            ?.label ?? q.locationId
       }),
       clear: () => props.changed({ ...q, locationId: null, offset: 0 })
     })
@@ -267,6 +500,30 @@ export function FilterChips(props: {
       )}
     </>
   )
+}
+
+function filterValueLabel(
+  field:
+    | 'sizes'
+    | 'types'
+    | 'subtypes'
+    | 'biomes'
+    | 'alignments'
+    | 'encounterTableIds'
+    | 'factionIds',
+  value: string,
+  options?: CreatureFilterOptions
+): string {
+  if (field === 'encounterTableIds')
+    return (
+      options?.encounterTables.find((option) => option.id === value)?.label ??
+      value
+    )
+  if (field === 'factionIds')
+    return (
+      options?.factions.find((option) => option.id === value)?.label ?? value
+    )
+  return value
 }
 
 export function SortHeader(props: {
