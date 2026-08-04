@@ -9,9 +9,11 @@ import type {
   CreatureFilterOptions
 } from './encounter.js'
 import type {
+  CombatCommandResult,
   CombatCondition,
   LiveSessionSnapshot,
-  PartySnapshot
+  PartySnapshot,
+  SceneGroupCommandResult
 } from './live-session.js'
 import type { AdventuringDayCalculation, PartyCharacterDraft } from './party.js'
 import type { EncounterTuning } from './encounter-tuning.js'
@@ -50,6 +52,11 @@ import type {
   HexTerrainId,
   HexTravelSnapshot
 } from './hex.js'
+import type {
+  ReferenceDocument,
+  ReferenceIndex,
+  ReferenceTarget
+} from './reference.js'
 
 export interface CampaignReadCapability {
   list(): Promise<CampaignSnapshot>
@@ -117,6 +124,10 @@ export interface SaltMarcherApi {
     search(query: CreatureCatalogQuery): Promise<CreatureCatalogPage>
     filterOptions(): Promise<CreatureFilterOptions>
     detail(id: string): Promise<Creature>
+  }
+  references: {
+    index(): Promise<ReferenceIndex>
+    detail(target: ReferenceTarget): Promise<ReferenceDocument>
   }
   locations: {
     read(): Promise<WorldLocationSnapshot>
@@ -247,20 +258,21 @@ export interface SaltMarcherApi {
       name: string,
       note: string,
       disposition: SceneGroupDisposition,
-      entries: readonly { creatureId: string; quantity: number }[],
-      expectedRevision: number
-    ): Promise<LiveSessionSnapshot>
+      entries: readonly SceneGroupDraftEntry[],
+      expectedRevision: number,
+      expectedGroupRevision: number | null
+    ): Promise<SceneGroupCommandResult>
     deleteGroup(
       sceneId: string,
       groupId: string,
-      expectedRevision: number
-    ): Promise<LiveSessionSnapshot>
+      expectedGroupRevision: number
+    ): Promise<SceneGroupCommandResult>
     setGroupArchived(
       sceneId: string,
       groupId: string,
       archived: boolean,
-      expectedRevision: number
-    ): Promise<LiveSessionSnapshot>
+      expectedGroupRevision: number
+    ): Promise<SceneGroupCommandResult>
     assignPartyMember(
       sceneId: string,
       partyMemberId: string,
@@ -294,39 +306,50 @@ export interface SaltMarcherApi {
       sceneId: string,
       groupIds: readonly string[],
       expectedSceneRevision: number
-    ): Promise<LiveSessionSnapshot>
-    rollInitiative(expectedRevision: number): Promise<LiveSessionSnapshot>
+    ): Promise<CombatCommandResult>
+    joinGroup(
+      sceneId: string,
+      groupId: string,
+      expectedGroupRevision: number,
+      expectedCombatRevision: number
+    ): Promise<CombatCommandResult>
+    rollInitiative(expectedRevision: number): Promise<CombatCommandResult>
     confirmInitiative(
       values: readonly { id: string; initiative: number }[],
       expectedRevision: number
-    ): Promise<LiveSessionSnapshot>
-    advanceTurn(expectedRevision: number): Promise<LiveSessionSnapshot>
+    ): Promise<CombatCommandResult>
+    advanceTurn(expectedRevision: number): Promise<CombatCommandResult>
+    retreatTurn(expectedRevision: number): Promise<CombatCommandResult>
     adjustInitiative(
       id: string,
       initiative: number,
       expectedRevision: number
-    ): Promise<LiveSessionSnapshot>
+    ): Promise<CombatCommandResult>
     changeHp(
       cardId: string,
       amount: number,
       healing: boolean,
       expectedRevision: number
-    ): Promise<LiveSessionSnapshot>
+    ): Promise<CombatCommandResult>
     toggleCondition(
       cardId: string,
       condition: CombatCondition,
       active: boolean,
       expectedRevision: number
-    ): Promise<LiveSessionSnapshot>
-    undo(expectedRevision: number): Promise<LiveSessionSnapshot>
-    end(expectedRevision: number): Promise<LiveSessionSnapshot>
+    ): Promise<CombatCommandResult>
+    undo(expectedRevision: number): Promise<CombatCommandResult>
+    end(expectedRevision: number): Promise<CombatCommandResult>
+    moveToPhase(
+      target: 'selection' | 'initiative' | 'combat',
+      expectedRevision: number
+    ): Promise<CombatCommandResult>
     updateResolution(
       selectedEnemyIds: readonly string[],
-      thresholdFraction: number,
+      mode: 'defeated' | 'manual',
       xpFraction: number,
       expectedRevision: number
-    ): Promise<LiveSessionSnapshot>
-    awardXp(expectedRevision: number): Promise<LiveSessionSnapshot>
-    complete(expectedRevision: number): Promise<LiveSessionSnapshot>
+    ): Promise<CombatCommandResult>
+    awardXp(expectedRevision: number): Promise<CombatCommandResult>
+    complete(expectedRevision: number): Promise<CombatCommandResult>
   }
 }

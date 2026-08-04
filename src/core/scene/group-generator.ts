@@ -52,7 +52,14 @@ export function evaluateSceneGroups(
   const evaluation = evaluateSceneGroupDraft(
     scene.id,
     assignedParty,
-    groups.flatMap((group) => group.entries)
+    groups.flatMap((group) =>
+      group.entries
+        .filter((entry) => entry.aliveQuantity > 0)
+        .map((entry) => ({
+          creatureId: entry.creatureId,
+          quantity: entry.aliveQuantity
+        }))
+    )
   )
   return encounterSelectionEvaluationSchema.parse({
     ...evaluation,
@@ -461,6 +468,7 @@ function mergeEntries(
       Math.min(999, (quantities.get(entry.creatureId) ?? 0) + entry.quantity)
     )
   return [...quantities.entries()]
+    .filter(([, quantity]) => quantity > 0)
     .map(([creatureId, quantity]) => ({ creatureId, quantity }))
     .sort((a, b) => a.creatureId.localeCompare(b.creatureId))
 }

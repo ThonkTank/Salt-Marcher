@@ -40,7 +40,7 @@ tab. Scene owns runtime composition; Session does not own a second group list.
 - Active groups can be edited or archived. Archived groups appear under
   `Inaktiv`, can be restored, and are permanently deleted only after explicit
   confirmation. Empty and archived groups cannot start a new Encounter.
-- Archiving a group never mutates Combat already copied into the runtime.
+- Archiving a linked group removes that group and its members from Combat.
 - A missing creature remains visibly unavailable and cannot enter combat.
 
 The same dialog exposes the Encounter tuning language. `Auffüllen` preserves
@@ -66,6 +66,13 @@ with any dirty draft requires explicit discard confirmation.
   later described scene objects use the same history surface.
 - During Combat, activating a monster card with a catalog identity opens that
   creature in the center Details view automatically.
+- Read-only rules prose, creature statblocks, group notes, active condition
+  labels, and displayed location names recognize terms from the local reference
+  graph. Hover or keyboard focus opens a preview; previews can recursively open
+  child previews, and clicking opens the full document in Details history.
+- Holding direct pointer intent on a preview for five seconds, or choosing its
+  pin action, creates a movable persistent card. Pinned cards survive center-tab
+  and Scene changes but remain memory-only and clear on application restart.
 - Karte consumes the approved Hex provider. It shows the current token, supports
   administrative placement, ordered waypoint planning, explicit start, and an
   honest empty state when no map exists.
@@ -86,15 +93,15 @@ with any dirty draft requires explicit discard confirmation.
    Party member are required to prepare Initiative.
 4. Initiative values can be edited before Combat starts. The Party reports its
    values manually; the roll action rolls only monster initiatives.
-5. Combat exposes a four-step breadcrumb, turn and round progression, editable
-   initiative, monster HP, damage, healing, conditions, a bounded 20-step undo
-   history, and a confirmed transition to Resolution.
+5. Combat exposes a four-step breadcrumb, turn and round progression, monster
+   HP, damage, healing, conditions, a bounded 20-step undo history,
+   Group-Manager reinforcement, and a direct transition to Resolution.
 6. Resolution exposes defeated-enemy selection, defeat threshold, XP fraction,
    per-player XP, one idempotent Party award, and the current no-loot notice.
 7. Completing Resolution returns the scenario panel to selection while keeping
    the Scene and its groups unchanged.
 
-Matching monsters retain individual runtime HP. The view shows up to three as
+Matching monsters retain individual Scene-owned HP. The view shows up to three as
 individual cards, four to ten as one mob, and larger counts in mobs of four to
 ten. Mob damage spills through lowest-HP living members; healing restores the
 lowest-HP living member. A mob card shows the front living member's HP plus the

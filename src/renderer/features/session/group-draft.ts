@@ -18,6 +18,7 @@ export type GroupDraftState = {
   note: string
   disposition: SceneGroupDisposition
   quantities: Record<string, number>
+  deadQuantities: Record<string, number>
   facts: Record<string, DraftCreatureFact>
   baseline: string
   evaluation: SceneGroupDraftEvaluation | null
@@ -28,6 +29,45 @@ export type GroupDraftState = {
 export type GroupDraftAction =
   { kind: 'close' } | { kind: 'select'; selection: string | null }
 
+type DraftUpdate<T> = T | ((current: T) => T)
+
+export type GroupDraftMutation =
+  | { kind: 'replace'; state: GroupDraftState }
+  | { kind: 'name'; update: DraftUpdate<string> }
+  | { kind: 'note'; update: DraftUpdate<string> }
+  | {
+      kind: 'disposition'
+      update: DraftUpdate<SceneGroupDisposition>
+    }
+  | { kind: 'quantities'; update: DraftUpdate<Record<string, number>> }
+  | { kind: 'dead-quantities'; update: DraftUpdate<Record<string, number>> }
+  | {
+      kind: 'facts'
+      update: DraftUpdate<Record<string, DraftCreatureFact>>
+    }
+  | { kind: 'baseline'; update: DraftUpdate<string> }
+  | {
+      kind: 'evaluation'
+      update: DraftUpdate<SceneGroupDraftEvaluation | null>
+    }
+  | { kind: 'seed'; update: DraftUpdate<number> }
+  | { kind: 'message'; update: DraftUpdate<string> }
+
+export function groupDraftReducer(
+  state: GroupDraftState,
+  action: GroupDraftMutation
+): GroupDraftState {
+  if (action.kind === 'replace') return action.state
+  const field =
+    action.kind === 'dead-quantities' ? 'deadQuantities' : action.kind
+  const current = state[field]
+  const value =
+    typeof action.update === 'function'
+      ? (action.update as (value: typeof current) => typeof current)(current)
+      : action.update
+  return { ...state, [field]: value }
+}
+
 export function creatureFact(creature: Creature): DraftCreatureFact {
   return {
     displayName: creature.name,
@@ -37,10 +77,19 @@ export function creatureFact(creature: Creature): DraftCreatureFact {
   }
 }
 
-export function groupDraftEntries(quantities: Record<string, number>) {
-  return Object.entries(quantities)
-    .filter(([, quantity]) => quantity > 0)
-    .map(([creatureId, quantity]) => ({ creatureId, quantity }))
+export function groupDraftEntries(
+  quantities: Record<string, number>,
+  deadQuantities: Record<string, number> = {}
+) {
+  return Array.from(
+    new Set([...Object.keys(quantities), ...Object.keys(deadQuantities)])
+  )
+    .map((creatureId) => ({
+      creatureId,
+      quantity: quantities[creatureId] ?? 0,
+      deadQuantity: deadQuantities[creatureId] ?? 0
+    }))
+    .filter((entry) => entry.quantity + entry.deadQuantity > 0)
     .sort((a, b) => a.creatureId.localeCompare(b.creatureId))
 }
 
@@ -48,12 +97,13 @@ export function groupDraftSignature(
   name: string,
   note: string,
   disposition: SceneGroupDisposition,
-  quantities: Record<string, number>
+  quantities: Record<string, number>,
+  deadQuantities: Record<string, number> = {}
 ): string {
   return JSON.stringify({
     name,
     note,
     disposition,
-    entries: groupDraftEntries(quantities)
+    entries: groupDraftEntries(quantities, deadQuantities)
   })
 }

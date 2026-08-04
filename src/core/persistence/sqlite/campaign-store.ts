@@ -16,7 +16,6 @@ import { freezeCampaignSnapshot } from '../../../shared/contracts/campaign.js'
 import { uuidv7 } from '../../../shared/ids/uuidv7.js'
 import { initializePartySchema, PartyStore } from '../../party/party-store.js'
 import { initializeSceneSchema } from '../../scene/scene-store.js'
-import { migrateSceneSchemaV3ToV4 } from '../../scene/scene-migrations.js'
 import { initializeCombatSchema } from '../../encounter/live-combat.js'
 import { initializeWorldLocationSchema } from '../../worldplanner/location-store.js'
 import { initializeEncounterTableSchema } from '../../encounter/encounter-table-store.js'
@@ -25,8 +24,9 @@ import { initializeHexSchema } from '../../hex/hex-map-store.js'
 import {
   assertDevelopmentSchemaVersion,
   configureSqlite,
-  initializeDevelopmentSchemaVersion,
-  migrateDevelopmentSchema
+  currentDevelopmentSchemaVersion,
+  IncompatibleDevelopmentDataError,
+  initializeDevelopmentSchemaVersion
 } from './database.js'
 import {
   defaultInstallationPreferences,
@@ -67,17 +67,8 @@ export class CampaignStore {
     this.installationSettings = new InstallationSettingsStore(this.installation)
     try {
       configureSqlite(this.installation)
-      if (installationExists) {
-        migrateDevelopmentSchema(
-          this.installation,
-          () => undefined,
-          () =>
-            this.installation.exec(
-              'ALTER TABLE campaigns ADD COLUMN trashed_at TEXT'
-            )
-        )
+      if (installationExists)
         assertDevelopmentSchemaVersion(this.installation, this.dataRoot)
-      }
       this.installation.exec(`
       CREATE TABLE IF NOT EXISTS campaigns (
         id TEXT PRIMARY KEY NOT NULL,
@@ -484,7 +475,6 @@ export class CampaignStore {
     const next = new Database(this.campaignPath(id))
     try {
       configureSqlite(next)
-      migrateDevelopmentSchema(next, () => migrateSceneSchemaV3ToV4(next))
       assertDevelopmentSchemaVersion(next, this.campaignDirectory(id))
     } catch (error) {
       next.close()
@@ -492,5 +482,27 @@ export class CampaignStore {
     }
     this.activeCampaign?.close()
     this.activeCampaign = next
+  }
+}
+
+/**
+ * Development data is deliberately disposable before the first stable data
+ * format. Only the fixed Electron development-data directory may be reset.
+ */
+export function openDevelopmentCampaignStore(dataRoot: string): CampaignStore {
+  try {
+    return new CampaignStore(dataRoot)
+  } catch (error) {
+    if (!(error instanceof IncompatibleDevelopmentDataError)) throw error
+    if (dataRoot.split(/[\\/]/).at(-1) !== 'development-data') throw error
+    rmSync(dataRoot, { recursive: true, force: true })
+    console.info(
+      JSON.stringify({
+        component: 'development-data',
+        event: 'schema-reset',
+        schemaVersion: currentDevelopmentSchemaVersion
+      })
+    )
+    return new CampaignStore(dataRoot)
   }
 }

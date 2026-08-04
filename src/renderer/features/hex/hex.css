@@ -65,12 +65,19 @@
   z-index: 1;
   inset: 0;
   display: grid;
-  place-items: center;
+  align-content: center;
+  justify-items: center;
+  gap: var(--space-5);
   margin: 0;
   background: var(--surface-error);
   color: var(--text-error);
   padding: var(--space-10);
   text-align: center;
+}
+
+.hex-canvas-render-error p {
+  max-width: 34rem;
+  margin: 0;
 }
 
 .hex-accessible-selection {

@@ -19,10 +19,14 @@ import {
 import {
   adjustInitiativeInputSchema,
   changeHpInputSchema,
+  combatCommandResultSchema,
   combatRevisionInputSchema,
   confirmInitiativeInputSchema,
+  joinCombatGroupInputSchema,
   liveSessionSnapshotSchema,
+  moveCombatPhaseInputSchema,
   prepareCombatInputSchema,
+  sceneGroupCommandResultSchema,
   toggleConditionInputSchema,
   updateResolutionInputSchema
 } from '../../shared/contracts/live-session.js'
@@ -104,6 +108,11 @@ import {
   startHexTravelInputSchema,
   updateHexMapInputSchema
 } from '../../shared/contracts/hex.js'
+import {
+  referenceDocumentSchema,
+  referenceIndexSchema,
+  referenceTargetSchema
+} from '../../shared/contracts/reference.js'
 
 async function invoke<T>(
   channel: string,
@@ -127,11 +136,7 @@ async function invoke<T>(
       ])
       .parse(raw)
     if (!result.ok)
-      throw new CapabilityError(
-        result.error.code,
-        result.error.retryable,
-        result.error.data
-      )
+      throw new CapabilityError(result.error.code, result.error.retryable)
     const value = schema.safeParse(result.payload)
     if (!value.success) throw new CapabilityError('protocol_violation', false)
     return value.data!
@@ -158,6 +163,10 @@ async function invokeMain<T>(channel: string, input: unknown): Promise<T> {
 
 const live = async (channel: string, input: unknown) =>
   freezeDeep(await invoke(channel, input, liveSessionSnapshotSchema))
+const combatCommand = async (channel: string, input: unknown) =>
+  freezeDeep(await invoke(channel, input, combatCommandResultSchema))
+const sceneGroupCommand = async (channel: string, input: unknown) =>
+  freezeDeep(await invoke(channel, input, sceneGroupCommandResultSchema))
 
 const api: SaltMarcherApi = {
   campaigns: {
@@ -301,6 +310,20 @@ const api: SaltMarcherApi = {
     filterOptions: () =>
       invoke('creatures:filterOptions', undefined, creatureFilterOptionsSchema),
     detail: (id) => invoke('creatures:detail', { id }, creatureSchema)
+  },
+  references: {
+    index: async () =>
+      freezeDeep(
+        await invoke('references:index', undefined, referenceIndexSchema)
+      ),
+    detail: async (target) =>
+      freezeDeep(
+        await invoke(
+          'references:detail',
+          referenceTargetSchema.parse(target),
+          referenceDocumentSchema
+        )
+      )
   },
   locations: {
     read: async () =>
@@ -591,9 +614,10 @@ const api: SaltMarcherApi = {
       note,
       disposition,
       entries,
-      expectedRevision
+      expectedRevision,
+      expectedGroupRevision
     ) =>
-      live(
+      sceneGroupCommand(
         'scene:saveGroup',
         saveSceneGroupInputSchema.parse({
           sceneId,
@@ -602,26 +626,27 @@ const api: SaltMarcherApi = {
           note,
           disposition,
           entries,
-          expectedRevision
+          expectedRevision,
+          expectedGroupRevision
         })
       ),
-    setGroupArchived: (sceneId, groupId, archived, expectedRevision) =>
-      live(
+    setGroupArchived: (sceneId, groupId, archived, expectedGroupRevision) =>
+      sceneGroupCommand(
         'scene:setGroupArchived',
         setSceneGroupArchivedInputSchema.parse({
           sceneId,
           groupId,
           archived,
-          expectedRevision
+          expectedGroupRevision
         })
       ),
-    deleteGroup: (sceneId, groupId, expectedRevision) =>
-      live(
+    deleteGroup: (sceneId, groupId, expectedGroupRevision) =>
+      sceneGroupCommand(
         'scene:deleteGroup',
         deleteSceneGroupInputSchema.parse({
           sceneId,
           groupId,
-          expectedRevision
+          expectedGroupRevision
         })
       ),
     assignPartyMember: (sceneId, partyMemberId, assigned, expectedRevision) =>
@@ -685,7 +710,7 @@ const api: SaltMarcherApi = {
   },
   combat: {
     prepare: (sceneId, groupIds, expectedSceneRevision) =>
-      live(
+      combatCommand(
         'combat:prepare',
         prepareCombatInputSchema.parse({
           sceneId,
@@ -693,33 +718,53 @@ const api: SaltMarcherApi = {
           expectedSceneRevision
         })
       ),
+    joinGroup: (
+      sceneId,
+      groupId,
+      expectedGroupRevision,
+      expectedCombatRevision
+    ) =>
+      combatCommand(
+        'combat:joinGroup',
+        joinCombatGroupInputSchema.parse({
+          sceneId,
+          groupId,
+          expectedGroupRevision,
+          expectedCombatRevision
+        })
+      ),
     rollInitiative: (expectedRevision) =>
-      live(
+      combatCommand(
         'combat:rollInitiative',
         combatRevisionInputSchema.parse({ expectedRevision })
       ),
     confirmInitiative: (values, expectedRevision) =>
-      live(
+      combatCommand(
         'combat:confirmInitiative',
         confirmInitiativeInputSchema.parse({ values, expectedRevision })
       ),
     advanceTurn: (expectedRevision) =>
-      live(
+      combatCommand(
         'combat:advanceTurn',
         combatRevisionInputSchema.parse({ expectedRevision })
       ),
+    retreatTurn: (expectedRevision) =>
+      combatCommand(
+        'combat:retreatTurn',
+        combatRevisionInputSchema.parse({ expectedRevision })
+      ),
     adjustInitiative: (id, initiative, expectedRevision) =>
-      live(
+      combatCommand(
         'combat:adjustInitiative',
         adjustInitiativeInputSchema.parse({ id, initiative, expectedRevision })
       ),
     changeHp: (cardId, amount, healing, expectedRevision) =>
-      live(
+      combatCommand(
         'combat:changeHp',
         changeHpInputSchema.parse({ cardId, amount, healing, expectedRevision })
       ),
     toggleCondition: (cardId, condition, active, expectedRevision) =>
-      live(
+      combatCommand(
         'combat:toggleCondition',
         toggleConditionInputSchema.parse({
           cardId,
@@ -729,34 +774,37 @@ const api: SaltMarcherApi = {
         })
       ),
     undo: (expectedRevision) =>
-      live(
+      combatCommand(
         'combat:undo',
         combatRevisionInputSchema.parse({ expectedRevision })
       ),
     end: (expectedRevision) =>
-      live('combat:end', combatRevisionInputSchema.parse({ expectedRevision })),
-    updateResolution: (
-      selectedEnemyIds,
-      thresholdFraction,
-      xpFraction,
-      expectedRevision
-    ) =>
-      live(
+      combatCommand(
+        'combat:end',
+        combatRevisionInputSchema.parse({ expectedRevision })
+      ),
+    moveToPhase: (target, expectedRevision) =>
+      combatCommand(
+        'combat:moveToPhase',
+        moveCombatPhaseInputSchema.parse({ target, expectedRevision })
+      ),
+    updateResolution: (selectedEnemyIds, mode, xpFraction, expectedRevision) =>
+      combatCommand(
         'combat:updateResolution',
         updateResolutionInputSchema.parse({
           selectedEnemyIds,
-          thresholdFraction,
+          mode,
           xpFraction,
           expectedRevision
         })
       ),
     awardXp: (expectedRevision) =>
-      live(
+      combatCommand(
         'combat:awardXp',
         combatRevisionInputSchema.parse({ expectedRevision })
       ),
     complete: (expectedRevision) =>
-      live(
+      combatCommand(
         'combat:complete',
         combatRevisionInputSchema.parse({ expectedRevision })
       )

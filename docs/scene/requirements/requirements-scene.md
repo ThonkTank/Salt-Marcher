@@ -54,6 +54,10 @@ copy.
   and a deterministic seed. An unsaved result is discarded only after
   confirmation and never survives restart.
 - Encounter may select only persisted groups from the focused Scene.
+- Selected groups remain live-linked: Combat HP, death and conditions update
+  the same stable Scene members, and saved group edits reconcile immediately.
+- Group generation changes living members only and retains existing dead
+  members. Archiving a linked group removes it from the running Combat.
 - PC and NPC changes during initiative or combat reconcile immediately while
   retaining existing initiative, HP, round, and active turn where applicable.
 - A failed Encounter synchronization is visible as pending. The saved Scene

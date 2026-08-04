@@ -1,7 +1,4 @@
-import {
-  capabilityErrorCode,
-  type CapabilityError
-} from '../../shared/errors/capability-error.js'
+import { capabilityErrorCode } from '../../shared/errors/capability-error.js'
 
 export const messagesDe = {
   'app.loading': 'Anwendung wird geladen …',
@@ -14,6 +11,38 @@ export const messagesDe = {
   'action.save': 'Speichern',
   'action.create': 'Erstellen',
   'action.createGroup': 'Gruppe erstellen',
+  'reference.indexFailed': 'Referenzindex konnte nicht geladen werden.',
+  'reference.label': 'Referenz: {name}',
+  'reference.possibleCount': '{count} mögliche Referenzen',
+  'reference.back': 'Zur Auswahl',
+  'reference.pin': '{name} anheften',
+  'reference.pinTitle': 'Anheften',
+  'reference.detail': 'Detail',
+  'reference.loading': 'Referenz wird geladen …',
+  'reference.unavailable': 'Referenz ist nicht verfügbar.',
+  'reference.deleted': 'Diese Referenz ist nicht mehr verfügbar.',
+  'reference.pinnedLabel': 'Angeheftete Referenz: {name}',
+  'reference.move': '{name} verschieben',
+  'reference.moveTitle': 'Ziehen oder mit Pfeiltasten verschieben',
+  'reference.close': '{name} schließen',
+  'reference.kind.rule': 'Rule',
+  'reference.kind.condition': 'Condition',
+  'reference.kind.spell': 'Spell',
+  'reference.kind.item': 'Item',
+  'reference.kind.ability': 'Ability',
+  'reference.kind.action': 'Action',
+  'reference.kind.creature': 'Creature',
+  'reference.kind.npc': 'NPC',
+  'reference.kind.location': 'Location',
+  'reference.kind.faction': 'Faction',
+  'reference.context.statblock': 'Creature Statblock',
+  'reference.context.trait': '{name} · Trait',
+  'reference.context.action': '{name} · Action',
+  'reference.context.legendaryAction': '{name} · Legendary Action',
+  'reference.damageVulnerabilities': 'Damage Vulnerabilities',
+  'reference.damageResistances': 'Damage Resistances',
+  'reference.damageImmunities': 'Damage Immunities',
+  'reference.conditionImmunities': 'Condition Immunities',
   'app.menu': 'Menü',
   'app.workspaces': 'Arbeitsbereiche',
   'app.sessionControls': 'Sitzungssteuerung',
@@ -94,6 +123,15 @@ export const messagesDe = {
   'encounter.monsterInitiative': 'Monster',
   'encounter.partyInitiative': 'Party',
   'encounter.conditions': 'Zustände',
+  'encounter.reinforcement': 'Verstärkung',
+  'encounter.thresholdDefeated': '0 TP oder weniger',
+  'encounter.thresholdManual': 'Manuell markiert',
+  'encounter.hpHint': 'Enter wirkt wie − · Schaden ist der Normalfall',
+  'encounter.conditionCount': '{count} von {total}',
+  'encounter.inCombat': 'im Combat',
+  'encounter.joinCombat': 'Zum Combat hinzufügen',
+  'group.alive': 'Lebend',
+  'group.dead': 'Tot',
   'encounter.noneGroupsTitle': 'Keine Gruppen in dieser Szene',
   'encounter.noneGroupsHint':
     'Lege eine Gruppe an oder bestücke sie im Gruppen-Builder.',
@@ -141,6 +179,9 @@ export const messagesDe = {
   'group.disposition.hostile': 'Feindlich',
   'group.disposition.neutral': 'Neutral',
   'group.disposition.allied': 'Verbündet',
+  'group.validation.name': 'Ein Gruppenname ist erforderlich.',
+  'group.validation.availableMonster':
+    'Mindestens ein verfügbares Monster ist erforderlich.',
   'passive.heading': 'Passive Anzeige',
   'passive.intro':
     'Eine party-sichere Projektion wurde noch nicht ausgewählt. Bis dahin bleiben Kampagnen- und GM-Daten verborgen.',
@@ -160,8 +201,6 @@ export const messagesDe = {
     'Die Einstellung ist trotz unterbrochener Antwort sichtbar gespeichert.',
   'settings.outcome_not_committed':
     'Die Einstellung ist nach der unterbrochenen Antwort nicht sichtbar gespeichert; sie wurde nicht erneut gesendet.',
-  'error.development_data_incompatible':
-    'Die lokalen Entwicklungsdaten haben eine inkompatible Version.',
   'error.core_unavailable': 'Der lokale Programmkern ist nicht erreichbar.',
   'error.protocol_violation': 'Die lokale Prozessantwort war ungültig.',
   'error.internal': 'Ein interner Fehler ist aufgetreten.',
@@ -216,6 +255,7 @@ export const messagesDe = {
   'ui.dialog.schliessen': 'Dialog schließen',
   'ui.die.kartenansicht.konnte.nicht.initialisiert.werden.navigation.und':
     'Die Kartenansicht konnte nicht initialisiert werden. Navigation und Kartendaten bleiben verfügbar.',
+  'ui.kartenansicht.erneut.laden': 'Kartenansicht erneut laden',
   'ui.direkte.encounter.tabellen': 'direkte Encounter-Tabellen',
   'ui.easy': 'Easy',
   'ui.eintraege': 'Einträge',
@@ -466,10 +506,7 @@ export function capabilityErrorMessage(error: unknown): string {
   const code = capabilityErrorCode(error)
   if (code === null) return message('error.unknown')
   const base = message(`error.${code}`)
-  const data = (error as Partial<CapabilityError>).data
-  return code === 'development_data_incompatible' && data?.developmentDataPath
-    ? `${base} ${data.developmentDataPath}`
-    : base
+  return base
 }
 
 function pseudoLocaleEnabled(): boolean {

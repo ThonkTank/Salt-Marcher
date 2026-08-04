@@ -51,7 +51,6 @@ export const capabilityErrorCodeSchema = z.enum([
   'read_only',
   'timeout',
   'outcome_unknown',
-  'development_data_incompatible',
   'core_unavailable',
   'protocol_violation',
   'internal'
@@ -61,10 +60,7 @@ export const capabilityFailureSchema = z
   .object({
     code: capabilityErrorCodeSchema,
     retryable: z.boolean(),
-    data: z
-      .object({ developmentDataPath: z.string().min(1) })
-      .strict()
-      .optional()
+    data: z.never().optional()
   })
   .strict()
 

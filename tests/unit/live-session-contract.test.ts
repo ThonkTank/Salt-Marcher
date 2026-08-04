@@ -31,6 +31,7 @@ describe('live session capability contracts', () => {
         note: '',
         disposition: 'neutral',
         expectedRevision: 0,
+        expectedGroupRevision: null,
         entries: []
       }).success
     ).toBe(true)
@@ -42,6 +43,7 @@ describe('live session capability contracts', () => {
         note: '',
         disposition: 'hostile',
         expectedRevision: 0,
+        expectedGroupRevision: null,
         entries: [{ creatureId: 'goblin', quantity: 0 }]
       }).success
     ).toBe(false)

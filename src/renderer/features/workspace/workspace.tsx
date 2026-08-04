@@ -1,10 +1,11 @@
 import { message } from '../../i18n/messages.de.js'
-import { useEffect, lazy, useState } from 'react'
+import { useCallback, useEffect, lazy, useRef, useState } from 'react'
 import type { CampaignSnapshot } from '../../../shared/contracts/campaign.js'
 import type { CampaignCapability } from '../../../shared/contracts/capability-api.js'
 import type { Creature } from '../../../shared/contracts/encounter.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type { CoreProcessStatus } from '../../../shared/contracts/runtime.js'
+import type { ReferenceTarget } from '../../../shared/contracts/reference.js'
 import {
   capabilityErrorText,
   reportCapabilityError
@@ -22,6 +23,8 @@ import saltMarcherLogo from '../../assets/icons/salt-marcher.svg?url'
 import SessionWorkspace from '../session/session-workspace.js'
 import { CampaignMenu } from './campaign-menu.js'
 import './workspace.css'
+import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
+import { ReferenceProvider } from '../reference/reference-provider.js'
 
 type FantasyIconName = 'session' | 'hex' | 'catalog'
 
@@ -39,12 +42,6 @@ function FantasyIcon(props: { name: FantasyIconName }) {
   return <img src={fantasyIconAssets[props.name]} alt="" aria-hidden="true" />
 }
 
-declare global {
-  interface Window {
-    saltMarcher: import('../../../shared/contracts/capability-api.js').SaltMarcherApi
-  }
-}
-
 const emptyCampaigns: CampaignSnapshot = {
   activeCampaignId: null,
   campaigns: [],
@@ -52,6 +49,7 @@ const emptyCampaigns: CampaignSnapshot = {
 }
 
 export function WorkspaceApp() {
+  const capabilityApi = useCapabilityApi()
   const [campaigns, setCampaigns] = useState(emptyCampaigns)
   const [session, setSession] = useState<LiveSessionSnapshot | null>(null)
   const [campaignMenuOpen, setCampaignMenuOpen] = useState(false)
@@ -70,27 +68,31 @@ export function WorkspaceApp() {
     useInstallationPreferences(setError)
   const [coreStatus, setCoreStatus] = useState<CoreProcessStatus>('starting')
   const [readbackKey, setReadbackKey] = useState(0)
+  const [referenceRequest, setReferenceRequest] = useState<Readonly<{
+    target: ReferenceTarget
+    breadcrumb: string
+    nonce: number
+  }> | null>(null)
+  const referenceRequestSequence = useRef(0)
   const active = campaigns.activeCampaignId !== null
 
-  const load = async () => {
-    const nextCampaigns = await window.saltMarcher.campaigns.list()
+  const load = useCallback(async () => {
+    const nextCampaigns = await capabilityApi.campaigns.list()
     setCampaigns(nextCampaigns)
     if (nextCampaigns.activeCampaignId === null) setCampaignMenuOpen(true)
     setSession(
-      nextCampaigns.activeCampaignId
-        ? await window.saltMarcher.session.read()
-        : null
+      nextCampaigns.activeCampaignId ? await capabilityApi.session.read() : null
     )
-  }
+  }, [capabilityApi])
 
   useEffect(() => {
     void Promise.resolve().then(load).catch(reportCapabilityError(setError))
-  }, [])
+  }, [load])
 
   useEffect(() => {
-    void window.saltMarcher.runtime.coreStatus().then(setCoreStatus)
-    return window.saltMarcher.runtime.onCoreStatus(setCoreStatus)
-  }, [])
+    void capabilityApi.runtime.coreStatus().then(setCoreStatus)
+    return capabilityApi.runtime.onCoreStatus(setCoreStatus)
+  }, [capabilityApi])
 
   useEffect(() => {
     const readback = () => {
@@ -99,7 +101,7 @@ export function WorkspaceApp() {
     }
     window.addEventListener('saltmarcher:readback', readback)
     return () => window.removeEventListener('saltmarcher:readback', readback)
-  }, [])
+  }, [load])
 
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
@@ -112,13 +114,12 @@ export function WorkspaceApp() {
     return () => window.removeEventListener('keydown', keydown)
   }, [active])
 
-  const campaignCapability = () =>
-    window.saltMarcher.campaigns as CampaignCapability
+  const campaignCapability = () => capabilityApi.campaigns as CampaignCapability
 
   async function createCampaign(name: string) {
     try {
       setCampaigns(await campaignCapability().create(name))
-      setSession(await window.saltMarcher.session.read())
+      setSession(await capabilityApi.session.read())
       setWorkspace('session')
       setCampaignMenuOpen(false)
     } catch (cause) {
@@ -129,7 +130,7 @@ export function WorkspaceApp() {
   async function switchCampaign(id: string) {
     try {
       setCampaigns(await campaignCapability().activate(id))
-      setSession(await window.saltMarcher.session.read())
+      setSession(await capabilityApi.session.read())
       setWorkspace('session')
       setScenarios({})
       setCampaignMenuOpen(false)
@@ -192,221 +193,242 @@ export function WorkspaceApp() {
   )
 
   return (
-    <main className="app-shell">
-      {coreStatus !== 'ready' && (
-        <div className="core-status-banner" role="status">
-          <span>
-            {coreStatus === 'unavailable'
-              ? message('core.unavailable')
-              : message('core.recovering')}
-          </span>
-          {coreStatus === 'unavailable' && (
-            <button
-              type="button"
-              onClick={() => void window.saltMarcher.runtime.retryCore()}
-            >
-              {message('core.retry')}
-            </button>
-          )}
-        </div>
-      )}
-      <header
-        className={`top-bar${workspace === 'session' ? ' session-context' : ''}`}
-      >
-        <button
-          className="menu-button"
-          aria-label={message('app.menu')}
-          title={message('app.menu')}
-          aria-expanded={campaignMenuOpen}
-          aria-controls="campaign-menu"
-          onClick={() =>
-            setCampaignMenuOpen((current) => (active ? !current : true))
-          }
+    <ReferenceProvider
+      capability={capabilityApi.references}
+      campaignId={campaigns.activeCampaignId}
+      refreshKey={`${workspace}:${readbackKey}`}
+      openReference={(target, breadcrumb) => {
+        setWorkspace('session')
+        setReferenceRequest({
+          target,
+          breadcrumb,
+          nonce: ++referenceRequestSequence.current
+        })
+      }}
+      onError={setError}
+    >
+      <main className="app-shell">
+        {coreStatus !== 'ready' && (
+          <div className="core-status-banner" role="status">
+            <span>
+              {coreStatus === 'unavailable'
+                ? message('core.unavailable')
+                : message('core.recovering')}
+            </span>
+            {coreStatus === 'unavailable' && (
+              <button
+                type="button"
+                onClick={() => void capabilityApi.runtime.retryCore()}
+              >
+                {message('core.retry')}
+              </button>
+            )}
+          </div>
+        )}
+        <header
+          className={`top-bar${workspace === 'session' ? ' session-context' : ''}`}
         >
-          <span aria-hidden="true">☰</span>
-        </button>
-        <CampaignMenu
-          snapshot={campaigns}
-          open={campaignMenuOpen}
-          forced={!active}
-          dismiss={() => setCampaignMenuOpen(false)}
-          create={createCampaign}
-          activate={switchCampaign}
-          rename={renameCampaign}
-          trash={trashCampaign}
-          restore={restoreCampaign}
-          deleteForever={deleteCampaignForever}
-        />
-        {active && session && (
-          <nav
-            className="shell-quick-actions"
-            aria-label={message('app.sessionControls')}
+          <button
+            className="menu-button"
+            aria-label={message('app.menu')}
+            title={message('app.menu')}
+            aria-expanded={campaignMenuOpen}
+            aria-controls="campaign-menu"
+            onClick={() =>
+              setCampaignMenuOpen((current) => (active ? !current : true))
+            }
           >
-            <button>{message('quick.weather')}</button>
-            <AdventuringDayDropdown
-              party={session.party}
-              open={dayOpen}
-              setOpen={setDayOpen}
-              triggerLabel={message('quick.rest')}
-            />
-            <button
-              onClick={() => {
-                if (!focusedScene) return
-                setScenarios((current) => ({
-                  ...current,
-                  [focusedScene.id]: 'travel'
-                }))
-              }}
+            <span aria-hidden="true">☰</span>
+          </button>
+          <CampaignMenu
+            snapshot={campaigns}
+            open={campaignMenuOpen}
+            forced={!active}
+            dismiss={() => setCampaignMenuOpen(false)}
+            create={createCampaign}
+            activate={switchCampaign}
+            rename={renameCampaign}
+            trash={trashCampaign}
+            restore={restoreCampaign}
+            deleteForever={deleteCampaignForever}
+          />
+          {active && session && (
+            <nav
+              className="shell-quick-actions"
+              aria-label={message('app.sessionControls')}
             >
-              {message('ui.reise')}
-            </button>
-            <PartyDropdown
-              party={session.party}
-              open={partyOpen}
-              setOpen={setPartyOpen}
-              changed={(party) => {
-                setSession({ ...session, party })
-                void window.saltMarcher.session.read().then(setSession)
-              }}
-              onError={setError}
-              triggerLabel={message('ui.party')}
+              <button>{message('quick.weather')}</button>
+              <AdventuringDayDropdown
+                party={session.party}
+                open={dayOpen}
+                setOpen={setDayOpen}
+                triggerLabel={message('quick.rest')}
+              />
+              <button
+                onClick={() => {
+                  if (!focusedScene) return
+                  setScenarios((current) => ({
+                    ...current,
+                    [focusedScene.id]: 'travel'
+                  }))
+                }}
+              >
+                {message('ui.reise')}
+              </button>
+              <PartyDropdown
+                party={session.party}
+                open={partyOpen}
+                setOpen={setPartyOpen}
+                changed={(party) => {
+                  setSession({ ...session, party })
+                  void capabilityApi.session.read().then(setSession)
+                }}
+                onError={setError}
+                triggerLabel={message('ui.party')}
+              />
+            </nav>
+          )}
+          <div className="workspace-heading">
+            <p className="eyebrow">{message('ui.saltmarcher')}</p>
+            <h1>
+              {workspace === 'session' && activeCampaign
+                ? `${message('nav.session')} · ${activeCampaign.name}`
+                : heading}
+            </h1>
+          </div>
+          <p className="top-bar-status">
+            {workspace === 'session' && focusedScene
+              ? formatSessionStatus(
+                  focusedScene.gameTimeSeconds,
+                  session?.party.adventuringDay
+                )
+              : active
+                ? message('campaign.statusActive')
+                : message('campaign.statusChoose')}
+          </p>
+          <button
+            className="theme-toggle"
+            aria-label={
+              theme === 'dark'
+                ? message('theme.toLight')
+                : message('theme.toDark')
+            }
+            title={
+              theme === 'dark' ? message('theme.light') : message('theme.dark')
+            }
+            aria-pressed={theme === 'dark'}
+            onClick={toggleTheme}
+          >
+            {theme === 'dark' ? message('theme.light') : message('theme.dark')}
+          </button>
+        </header>
+        <div className="shell-body">
+          <nav className="icon-bar" aria-label={message('app.workspaces')}>
+            {active && (
+              <>
+                <button
+                  className="icon-button"
+                  aria-label={message('nav.session')}
+                  title={message('nav.session')}
+                  aria-pressed={workspace === 'session'}
+                  onClick={() => setWorkspace('session')}
+                >
+                  <FantasyIcon name="session" />
+                </button>
+                <button
+                  className="icon-button"
+                  aria-label={message('nav.hex')}
+                  title={message('nav.hex')}
+                  aria-pressed={workspace === 'hex'}
+                  onClick={() => setWorkspace('hex')}
+                >
+                  <FantasyIcon name="hex" />
+                </button>
+                <button
+                  className="icon-button"
+                  aria-label={message('nav.catalog')}
+                  title={message('nav.catalog')}
+                  aria-pressed={workspace === 'catalog'}
+                  onClick={() => setWorkspace('catalog')}
+                >
+                  <FantasyIcon name="catalog" />
+                </button>
+              </>
+            )}
+            <img
+              className="rail-logo"
+              src={saltMarcherLogo}
+              alt={message('ui.saltmarcher')}
             />
           </nav>
-        )}
-        <div className="workspace-heading">
-          <p className="eyebrow">{message('ui.saltmarcher')}</p>
-          <h1>
-            {workspace === 'session' && activeCampaign
-              ? `${message('nav.session')} · ${activeCampaign.name}`
-              : heading}
-          </h1>
+          <div className={`work-area${active ? ' session-work-area' : ''}`}>
+            {error && (
+              <p className="error-message" role="alert">
+                {error}{' '}
+                <button className="compact" onClick={() => setError('')}>
+                  {message('action.close')}
+                </button>
+              </p>
+            )}
+            {!active && (
+              <section className="campaign-idle" aria-live="polite">
+                <p className="section-kicker">{message('campaign.archive')}</p>
+                <h2>{message('campaign.choose')}</h2>
+                <p>{message('campaign.menuHint')}</p>
+              </section>
+            )}
+            {active && session && workspace === 'session' && (
+              <SessionWorkspace
+                key={`session-${readbackKey}`}
+                snapshot={session}
+                setSnapshot={setSession}
+                groupDialogOpen={groupDialogOpen}
+                setGroupDialogOpen={setGroupDialogOpen}
+                scenario={
+                  session.combat
+                    ? 'encounter'
+                    : (scenarios[session.scene.focusedSceneId] ?? '')
+                }
+                setScenario={(scenario) =>
+                  setScenarios((current) => ({
+                    ...current,
+                    [session.scene.focusedSceneId]: scenario
+                  }))
+                }
+                layout={sessionLayout}
+                setLayout={setSessionLayout}
+                referenceRequest={referenceRequest}
+                referenceOpened={(nonce) =>
+                  setReferenceRequest((current) =>
+                    current?.nonce === nonce ? null : current
+                  )
+                }
+                onError={setError}
+              />
+            )}
+            {active && session && workspace === 'catalog' && (
+              <LazyCatalogWorkspace
+                key={`catalog-${readbackKey}`}
+                snapshot={session}
+                setSnapshot={setSession}
+                close={() => setWorkspace('session')}
+                inspect={setInspected}
+                onError={setError}
+              />
+            )}
+            {active && session && workspace === 'hex' && (
+              <LazyHexEditor key={`hex-${readbackKey}`} onError={setError} />
+            )}
+          </div>
         </div>
-        <p className="top-bar-status">
-          {workspace === 'session' && focusedScene
-            ? formatSessionStatus(
-                focusedScene.gameTimeSeconds,
-                session?.party.adventuringDay
-              )
-            : active
-              ? message('campaign.statusActive')
-              : message('campaign.statusChoose')}
-        </p>
-        <button
-          className="theme-toggle"
-          aria-label={
-            theme === 'dark'
-              ? message('theme.toLight')
-              : message('theme.toDark')
-          }
-          title={
-            theme === 'dark' ? message('theme.light') : message('theme.dark')
-          }
-          aria-pressed={theme === 'dark'}
-          onClick={toggleTheme}
-        >
-          {theme === 'dark' ? message('theme.light') : message('theme.dark')}
-        </button>
-      </header>
-      <div className="shell-body">
-        <nav className="icon-bar" aria-label={message('app.workspaces')}>
-          {active && (
-            <>
-              <button
-                className="icon-button"
-                aria-label={message('nav.session')}
-                title={message('nav.session')}
-                aria-pressed={workspace === 'session'}
-                onClick={() => setWorkspace('session')}
-              >
-                <FantasyIcon name="session" />
-              </button>
-              <button
-                className="icon-button"
-                aria-label={message('nav.hex')}
-                title={message('nav.hex')}
-                aria-pressed={workspace === 'hex'}
-                onClick={() => setWorkspace('hex')}
-              >
-                <FantasyIcon name="hex" />
-              </button>
-              <button
-                className="icon-button"
-                aria-label={message('nav.catalog')}
-                title={message('nav.catalog')}
-                aria-pressed={workspace === 'catalog'}
-                onClick={() => setWorkspace('catalog')}
-              >
-                <FantasyIcon name="catalog" />
-              </button>
-            </>
-          )}
-          <img
-            className="rail-logo"
-            src={saltMarcherLogo}
-            alt={message('ui.saltmarcher')}
+        {inspected && (
+          <CreatureInspector
+            creature={inspected}
+            close={() => setInspected(null)}
           />
-        </nav>
-        <div className={`work-area${active ? ' session-work-area' : ''}`}>
-          {error && (
-            <p className="error-message" role="alert">
-              {error}{' '}
-              <button className="compact" onClick={() => setError('')}>
-                {message('action.close')}
-              </button>
-            </p>
-          )}
-          {!active && (
-            <section className="campaign-idle" aria-live="polite">
-              <p className="section-kicker">{message('campaign.archive')}</p>
-              <h2>{message('campaign.choose')}</h2>
-              <p>{message('campaign.menuHint')}</p>
-            </section>
-          )}
-          {active && session && workspace === 'session' && (
-            <SessionWorkspace
-              key={`session-${readbackKey}`}
-              snapshot={session}
-              setSnapshot={setSession}
-              groupDialogOpen={groupDialogOpen}
-              setGroupDialogOpen={setGroupDialogOpen}
-              scenario={
-                session.combat
-                  ? 'encounter'
-                  : (scenarios[session.scene.focusedSceneId] ?? '')
-              }
-              setScenario={(scenario) =>
-                setScenarios((current) => ({
-                  ...current,
-                  [session.scene.focusedSceneId]: scenario
-                }))
-              }
-              layout={sessionLayout}
-              setLayout={setSessionLayout}
-              onError={setError}
-            />
-          )}
-          {active && session && workspace === 'catalog' && (
-            <LazyCatalogWorkspace
-              key={`catalog-${readbackKey}`}
-              snapshot={session}
-              setSnapshot={setSession}
-              close={() => setWorkspace('session')}
-              inspect={setInspected}
-              onError={setError}
-            />
-          )}
-          {active && session && workspace === 'hex' && (
-            <LazyHexEditor key={`hex-${readbackKey}`} onError={setError} />
-          )}
-        </div>
-      </div>
-      {inspected && (
-        <CreatureInspector
-          creature={inspected}
-          close={() => setInspected(null)}
-        />
-      )}
-    </main>
+        )}
+      </main>
+    </ReferenceProvider>
   )
 }
 

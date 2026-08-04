@@ -271,6 +271,38 @@ describe('architecture boundaries', () => {
     expect(all).not.toMatch(/new Database\(/)
   })
 
+  it('keeps combat persistence as runtime references to owning aggregates', () => {
+    const combat = source('src/core/encounter/live-combat.ts')
+    const combatantTable = combat.match(
+      /CREATE TABLE IF NOT EXISTS encounter_combatants \([\s\S]*?\n {4}\);/
+    )?.[0]
+    expect(combatantTable).toBeDefined()
+    expect(combatantTable).not.toMatch(
+      /current_hp|max_hp|armor_class|conditions|creature_id|name|detail|xp/
+    )
+    expect(combat).not.toContain('threshold_fraction')
+    expect(combat).not.toContain('member_ids TEXT')
+  })
+
+  it('keeps scene SQL private and routes renderer capabilities through its provider', () => {
+    expect(source('src/core/scene/scene-store.ts')).not.toMatch(
+      /\bdatabase\(\)/
+    )
+    for (const file of codeFiles('src/renderer/features'))
+      expect(source(file), `${file} reads the preload global`).not.toContain(
+        'window.saltMarcher'
+      )
+  })
+
+  it('uses the shared accessible dialog primitive for application dialogs', () => {
+    for (const file of codeFiles('src/renderer')) {
+      if (file.endsWith('modal-dialog.tsx')) continue
+      expect(source(file), `${file} defines a raw modal dialog`).not.toMatch(
+        /aria-modal|role=['"]dialog['"]/
+      )
+    }
+  })
+
   it('models unbounded maps as mathematical 32 by 32 chunks', () => {
     const contract = source('src/shared/contracts/hex.ts')
     const store = source('src/core/hex/hex-map-store.ts')

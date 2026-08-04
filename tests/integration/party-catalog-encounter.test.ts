@@ -26,6 +26,11 @@ function harness() {
   return { campaigns, play, catalog }
 }
 
+function sessionAfter(play: LivePlayService, command: () => unknown) {
+  command()
+  return play.readSession()
+}
+
 describe('party and catalog parity slice', () => {
   it('preserves absent character facts and caps XP correction at the level floor', () => {
     const { campaigns, play } = harness()
@@ -140,14 +145,17 @@ describe('party and catalog parity slice', () => {
     )
     expect(suggestion.entries.length).toBeGreaterThan(0)
     expect(play.readSession().scene.scenes[0]?.groups).toHaveLength(0)
-    session = play.saveSceneGroup(
-      sceneId,
-      null,
-      'Forest trouble',
-      '',
-      'hostile',
-      suggestion.entries,
-      session.scene.revision
+    session = sessionAfter(play, () =>
+      play.saveSceneGroup(
+        sceneId,
+        null,
+        'Forest trouble',
+        '',
+        'hostile',
+        suggestion.entries,
+        session.scene.revision,
+        null
+      )
     )
     const groupId = session.scene.scenes[0]?.groups[0]?.id ?? ''
     const evaluation = play.evaluateEncounter(
@@ -156,7 +164,9 @@ describe('party and catalog parity slice', () => {
       session.scene.revision
     )
     expect(evaluation.canStart).toBe(true)
-    session = play.prepareCombat(sceneId, session.scene.revision, [groupId])
+    session = sessionAfter(play, () =>
+      play.prepareCombat(sceneId, session.scene.revision, [groupId])
+    )
     expect(session.combat?.phase).toBe('initiative')
     const expected = session.combat
     campaigns.close()

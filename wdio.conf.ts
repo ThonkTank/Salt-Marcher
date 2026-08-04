@@ -29,7 +29,8 @@ export const config = {
           '--no-sandbox',
           '--salt-marcher-e2e-runtime',
           `--user-data-dir=${userData}`,
-          '--disable-gpu'
+          '--use-angle=swiftshader',
+          '--enable-unsafe-swiftshader'
         ]
       }
     }

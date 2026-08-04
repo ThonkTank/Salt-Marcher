@@ -21,10 +21,11 @@ import type {
 } from '../../../shared/contracts/encounter-source.js'
 import { HexLocationPlacementDialog } from '../hex/hex-workspaces.js'
 import { IlluminatedHeading } from '../../shell/illuminated-heading.js'
+import { ModalDialog } from '../../shell/modal-dialog.js'
 import {
   CreatureCollectionCatalogPane,
   CreatureCollectionSelection
-} from '../session/session-workspace.js'
+} from '../session/group-dialog.js'
 import {
   CreatureFilters,
   FilterChips,
@@ -526,79 +527,77 @@ function LocationDialog(props: {
     ...(props.location?.encounterTableIds ?? [])
   ])
   return (
-    <div className="modal-backdrop" role="presentation">
-      <form
-        className="location-editor"
-        role="dialog"
-        aria-modal="true"
-        aria-label={
-          props.location
-            ? message('catalog.editLocation')
-            : message('catalog.createLocation')
-        }
-        onSubmit={(event) => {
-          event.preventDefault()
-          props.save({ displayName, notes, factionIds, encounterTableIds })
-        }}
-      >
-        <header>
-          <div>
-            <p className="section-kicker">{message('ui.world.planner')}</p>
-            <h2>
-              {props.location
-                ? message('catalog.editLocation')
-                : message('catalog.createLocation')}
-            </h2>
-          </div>
-        </header>
-        <label>
-          {message('ui.name')}
-          <input
-            aria-label={message('ui.ortsname')}
-            required
-            maxLength={100}
-            value={displayName}
-            onChange={(event) => setDisplayName(event.target.value)}
-          />
-        </label>
-        <ReferenceMultiSelect
-          label="Verknüpfte Fraktionen"
-          options={props.factions.map((faction) => ({
-            id: faction.id,
-            label: faction.displayName
-          }))}
-          selected={factionIds}
-          changed={setFactionIds}
+    <ModalDialog
+      form
+      className="location-editor"
+      ariaLabel={
+        props.location
+          ? message('catalog.editLocation')
+          : message('catalog.createLocation')
+      }
+      onClose={props.close}
+      onSubmit={(event) => {
+        event.preventDefault()
+        props.save({ displayName, notes, factionIds, encounterTableIds })
+      }}
+    >
+      <header>
+        <div>
+          <p className="section-kicker">{message('ui.world.planner')}</p>
+          <h2>
+            {props.location
+              ? message('catalog.editLocation')
+              : message('catalog.createLocation')}
+          </h2>
+        </div>
+      </header>
+      <label>
+        {message('ui.name')}
+        <input
+          aria-label={message('ui.ortsname')}
+          required
+          maxLength={100}
+          value={displayName}
+          onChange={(event) => setDisplayName(event.target.value)}
         />
-        <ReferenceMultiSelect
-          label="Direkte Encounter-Tabellen"
-          options={props.tables.map((table) => ({
-            id: table.id,
-            label: table.displayName
-          }))}
-          selected={encounterTableIds}
-          changed={setEncounterTableIds}
+      </label>
+      <ReferenceMultiSelect
+        label="Verknüpfte Fraktionen"
+        options={props.factions.map((faction) => ({
+          id: faction.id,
+          label: faction.displayName
+        }))}
+        selected={factionIds}
+        changed={setFactionIds}
+      />
+      <ReferenceMultiSelect
+        label="Direkte Encounter-Tabellen"
+        options={props.tables.map((table) => ({
+          id: table.id,
+          label: table.displayName
+        }))}
+        selected={encounterTableIds}
+        changed={setEncounterTableIds}
+      />
+      <label>
+        {message('ui.notizen')}
+        <textarea
+          aria-label={message('ui.ortsnotizen')}
+          maxLength={20_000}
+          rows={10}
+          value={notes}
+          onChange={(event) => setNotes(event.target.value)}
         />
-        <label>
-          {message('ui.notizen')}
-          <textarea
-            aria-label={message('ui.ortsnotizen')}
-            maxLength={20_000}
-            rows={10}
-            value={notes}
-            onChange={(event) => setNotes(event.target.value)}
-          />
-        </label>
-        <footer>
-          <button type="button" onClick={props.close}>
-            {message('action.cancel')}
-          </button>
-          <button disabled={!displayName.trim()}>
-            {props.location ? message('action.save') : message('action.create')}
-          </button>
-        </footer>
-      </form>
-    </div>
+      </label>
+      <footer>
+        <button type="button" onClick={props.close}>
+          {message('action.cancel')}
+        </button>
+        <button disabled={!displayName.trim()}>
+          {props.location ? message('action.save') : message('action.create')}
+        </button>
+      </footer>
+    </ModalDialog>
   )
 }
 
@@ -851,185 +850,172 @@ function EncounterTableDialog(props: {
     else select(action.id)
   }
   return (
-    <div className="modal-backdrop" role="presentation">
-      <section
-        className="group-dialog group-builder-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="encounter-table-manager-title"
-      >
-        <header>
-          <div>
-            <p className="section-kicker">{message('nav.catalog')}</p>
-            <h2 id="encounter-table-manager-title">
-              {message('ui.encounter.tabellen.managen')}
-            </h2>
-          </div>
-          <button
-            type="button"
-            aria-label={message('ui.dialog.schliessen')}
-            onClick={requestClose}
-          >
-            ×
-          </button>
-        </header>
-        <div className="group-builder-layout">
-          <CreatureCollectionCatalogPane
-            query={query}
-            options={options}
-            page={page}
-            changed={setQuery}
-            inspect={props.inspect}
-            add={(creature) => {
-              setWeights((current) => ({
-                ...current,
-                [creature.id]: current[creature.id] ?? 1
-              }))
-              setNames((current) => ({
-                ...current,
-                [creature.id]: creature.name
-              }))
-            }}
+    <ModalDialog
+      className="group-dialog group-builder-dialog"
+      labelledBy="encounter-table-manager-title"
+      onClose={requestClose}
+    >
+      <header>
+        <div>
+          <p className="section-kicker">{message('nav.catalog')}</p>
+          <h2 id="encounter-table-manager-title">
+            {message('ui.encounter.tabellen.managen')}
+          </h2>
+        </div>
+        <button
+          type="button"
+          aria-label={message('ui.dialog.schliessen')}
+          onClick={requestClose}
+        >
+          ×
+        </button>
+      </header>
+      <div className="group-builder-layout">
+        <CreatureCollectionCatalogPane
+          query={query}
+          options={options}
+          page={page}
+          changed={setQuery}
+          inspect={props.inspect}
+          add={(creature) => {
+            setWeights((current) => ({
+              ...current,
+              [creature.id]: current[creature.id] ?? 1
+            }))
+            setNames((current) => ({
+              ...current,
+              [creature.id]: creature.name
+            }))
+          }}
+        />
+        <section
+          className="group-draft-pane"
+          aria-label={message('ui.aktuelle.encounter.tabelle')}
+        >
+          <CreatureCollectionSelection
+            label="Encounter-Tabelle"
+            value={props.table?.id ?? 'new'}
+            emptyLabel="Tabelle auswählen …"
+            newLabel="Neue Tabelle"
+            choices={props.tables.map((table) => ({
+              id: table.id,
+              label: table.displayName
+            }))}
+            changed={requestSelection}
           />
-          <section
-            className="group-draft-pane"
-            aria-label={message('ui.aktuelle.encounter.tabelle')}
-          >
-            <CreatureCollectionSelection
-              label="Encounter-Tabelle"
-              value={props.table?.id ?? 'new'}
-              emptyLabel="Tabelle auswählen …"
-              newLabel="Neue Tabelle"
-              choices={props.tables.map((table) => ({
-                id: table.id,
-                label: table.displayName
-              }))}
-              changed={requestSelection}
+          <label>
+            {message('ui.name')}
+            <input
+              required
+              aria-label={message('ui.tabellenname')}
+              maxLength={100}
+              value={displayName}
+              onChange={(event) => setDisplayName(event.target.value)}
             />
-            <label>
-              {message('ui.name')}
-              <input
-                required
-                aria-label={message('ui.tabellenname')}
-                maxLength={100}
-                value={displayName}
-                onChange={(event) => setDisplayName(event.target.value)}
-              />
-            </label>
-            <label>
-              {message('ui.beschreibung')}
-              <textarea
-                aria-label={message('ui.tabellenbeschreibung')}
-                rows={4}
-                maxLength={20_000}
-                value={description}
-                onChange={(event) => setDescription(event.target.value)}
-              />
-            </label>
-            <h3>{message('ui.gewichtete.eintraege')}</h3>
-            <ul className="group-draft-roster">
-              {entries.map(([id, weight]) => (
-                <li key={id}>
-                  <div className="roster-quantity">
-                    <button
-                      type="button"
-                      aria-label={`Gewicht ${names[id] ?? id} verringern`}
-                      disabled={weight <= 1}
-                      onClick={() =>
-                        setWeights({ ...weights, [id]: weight - 1 })
-                      }
-                    >
-                      −
-                    </button>
-                    <strong>{weight}</strong>
-                    <button
-                      type="button"
-                      aria-label={`Gewicht ${names[id] ?? id} erhöhen`}
-                      disabled={weight >= 10}
-                      onClick={() =>
-                        setWeights({ ...weights, [id]: weight + 1 })
-                      }
-                    >
-                      +
-                    </button>
-                  </div>
-                  <span>
-                    <strong>
-                      {names[id] ??
-                        formatMessage('catalog.unavailableReference', { id })}
-                    </strong>
-                    <small>
-                      {message('ui.gewicht')} {weight} {message('ui.von.10')}
-                    </small>
-                  </span>
+          </label>
+          <label>
+            {message('ui.beschreibung')}
+            <textarea
+              aria-label={message('ui.tabellenbeschreibung')}
+              rows={4}
+              maxLength={20_000}
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+            />
+          </label>
+          <h3>{message('ui.gewichtete.eintraege')}</h3>
+          <ul className="group-draft-roster">
+            {entries.map(([id, weight]) => (
+              <li key={id}>
+                <div className="roster-quantity">
                   <button
                     type="button"
-                    aria-label={`${names[id] ?? id} entfernen`}
-                    onClick={() => {
-                      const next = { ...weights }
-                      delete next[id]
-                      setWeights(next)
-                    }}
+                    aria-label={`Gewicht ${names[id] ?? id} verringern`}
+                    disabled={weight <= 1}
+                    onClick={() => setWeights({ ...weights, [id]: weight - 1 })}
                   >
-                    ×
+                    −
                   </button>
-                </li>
-              ))}
-            </ul>
-            {entries.length === 0 && (
-              <p className="empty-state">
-                {message('ui.monster.links.mit')} <strong>+</strong>{' '}
-                {message('ui.hinzufuegen')}
-              </p>
-            )}
-            {pending && (
-              <div className="confirm-row group-draft-confirm" role="alert">
+                  <strong>{weight}</strong>
+                  <button
+                    type="button"
+                    aria-label={`Gewicht ${names[id] ?? id} erhöhen`}
+                    disabled={weight >= 10}
+                    onClick={() => setWeights({ ...weights, [id]: weight + 1 })}
+                  >
+                    +
+                  </button>
+                </div>
                 <span>
-                  {message('ui.ungespeicherte.aenderungen.verwerfen')}
+                  <strong>
+                    {names[id] ??
+                      formatMessage('catalog.unavailableReference', { id })}
+                  </strong>
+                  <small>
+                    {message('ui.gewicht')} {weight} {message('ui.von.10')}
+                  </small>
                 </span>
-                <button type="button" onClick={() => setPending(null)}>
-                  {message('action.cancel')}
-                </button>
                 <button
                   type="button"
-                  className="danger"
-                  onClick={discardPending}
+                  aria-label={`${names[id] ?? id} entfernen`}
+                  onClick={() => {
+                    const next = { ...weights }
+                    delete next[id]
+                    setWeights(next)
+                  }}
                 >
-                  {message('ui.aenderungen.verwerfen')}
+                  ×
                 </button>
-              </div>
-            )}
-          </section>
+              </li>
+            ))}
+          </ul>
+          {entries.length === 0 && (
+            <p className="empty-state">
+              {message('ui.monster.links.mit')} <strong>+</strong>{' '}
+              {message('ui.hinzufuegen')}
+            </p>
+          )}
+          {pending && (
+            <div className="confirm-row group-draft-confirm" role="alert">
+              <span>{message('ui.ungespeicherte.aenderungen.verwerfen')}</span>
+              <button type="button" onClick={() => setPending(null)}>
+                {message('action.cancel')}
+              </button>
+              <button type="button" className="danger" onClick={discardPending}>
+                {message('ui.aenderungen.verwerfen')}
+              </button>
+            </div>
+          )}
+        </section>
+      </div>
+      <footer className="group-builder-footer">
+        <span className="muted">
+          {message(
+            'ui.gewichte.bestimmen.die.relative.auswahlwahrscheinlichkeit'
+          )}
+        </span>
+        <div>
+          <button type="button" onClick={requestClose}>
+            {message('action.cancel')}
+          </button>
+          <button
+            type="button"
+            disabled={!displayName.trim()}
+            onClick={() =>
+              props.save(props.table, {
+                displayName,
+                description,
+                entries: Object.entries(weights).map(
+                  ([creatureId, weight]) => ({ creatureId, weight })
+                )
+              })
+            }
+          >
+            {props.table ? message('action.save') : message('action.create')}
+          </button>
         </div>
-        <footer className="group-builder-footer">
-          <span className="muted">
-            {message(
-              'ui.gewichte.bestimmen.die.relative.auswahlwahrscheinlichkeit'
-            )}
-          </span>
-          <div>
-            <button type="button" onClick={requestClose}>
-              {message('action.cancel')}
-            </button>
-            <button
-              type="button"
-              disabled={!displayName.trim()}
-              onClick={() =>
-                props.save(props.table, {
-                  displayName,
-                  description,
-                  entries: Object.entries(weights).map(
-                    ([creatureId, weight]) => ({ creatureId, weight })
-                  )
-                })
-              }
-            >
-              {props.table ? message('action.save') : message('action.create')}
-            </button>
-          </div>
-        </footer>
-      </section>
-    </div>
+      </footer>
+    </ModalDialog>
   )
 }
 
@@ -1312,165 +1298,159 @@ function FactionDialog(props: {
   }
   return (
     <>
-      <div className="modal-backdrop" role="presentation">
-        <form
-          className="location-editor faction-editor"
-          role="dialog"
-          aria-modal="true"
-          aria-label={
-            props.faction
-              ? message('catalog.editFaction')
-              : message('catalog.createFaction')
-          }
-          onSubmit={(event) => {
-            event.preventDefault()
-            props.save({
-              displayName,
-              notes,
-              disposition,
-              primaryEncounterTableId,
-              inventory: Object.entries(inventory).map(
-                ([creatureId, maximum]) => ({ creatureId, maximum })
-              )
-            })
-          }}
-        >
-          <header>
-            <div>
-              <p className="section-kicker">{message('ui.world.planner')}</p>
-              <h2>
-                {props.faction
-                  ? message('catalog.editFaction')
-                  : message('catalog.createFaction')}
-              </h2>
-            </div>
-            <button
-              type="button"
-              aria-label={message('ui.dialog.schliessen')}
-              onClick={props.close}
+      <ModalDialog
+        form
+        className="location-editor faction-editor"
+        ariaLabel={
+          props.faction
+            ? message('catalog.editFaction')
+            : message('catalog.createFaction')
+        }
+        onClose={props.close}
+        onSubmit={(event) => {
+          event.preventDefault()
+          props.save({
+            displayName,
+            notes,
+            disposition,
+            primaryEncounterTableId,
+            inventory: Object.entries(inventory).map(
+              ([creatureId, maximum]) => ({ creatureId, maximum })
+            )
+          })
+        }}
+      >
+        <header>
+          <div>
+            <p className="section-kicker">{message('ui.world.planner')}</p>
+            <h2>
+              {props.faction
+                ? message('catalog.editFaction')
+                : message('catalog.createFaction')}
+            </h2>
+          </div>
+          <button
+            type="button"
+            aria-label={message('ui.dialog.schliessen')}
+            onClick={props.close}
+          >
+            ×
+          </button>
+        </header>
+        <label>
+          {message('ui.name')}
+          <input
+            required
+            aria-label={message('ui.fraktionsname')}
+            maxLength={100}
+            value={displayName}
+            onChange={(event) => setDisplayName(event.target.value)}
+          />
+        </label>
+        <label>
+          {message('ui.notizen')}
+          <textarea
+            aria-label={message('ui.fraktionsnotizen')}
+            rows={4}
+            maxLength={20_000}
+            value={notes}
+            onChange={(event) => setNotes(event.target.value)}
+          />
+        </label>
+        <label>
+          {message('ui.gesinnung.2')}
+          {disposition})
+          <input
+            aria-label={message('ui.fraktionsgesinnung')}
+            type="range"
+            min={-50}
+            max={50}
+            value={disposition}
+            onChange={(event) => setDisposition(Number(event.target.value))}
+          />
+        </label>
+        <label>
+          {message('ui.primaere.encounter.tabelle')}
+          <span className="faction-table-selection">
+            <select
+              aria-label={message('ui.primaere.encounter.tabelle')}
+              value={primaryEncounterTableId ?? ''}
+              onChange={(event) =>
+                selectPrimaryTable(event.target.value || null)
+              }
             >
-              ×
+              <option value="">{message('ui.keine.primaere.tabelle')}</option>
+              {props.tableSnapshot.tables.map((table) => (
+                <option key={table.id} value={table.id}>
+                  {table.displayName}
+                </option>
+              ))}
+            </select>
+            <button type="button" onClick={() => setTableManager(null)}>
+              {message('ui.neue.encounter.tabelle')}
             </button>
-          </header>
-          <label>
-            {message('ui.name')}
-            <input
-              required
-              aria-label={message('ui.fraktionsname')}
-              maxLength={100}
-              value={displayName}
-              onChange={(event) => setDisplayName(event.target.value)}
-            />
-          </label>
-          <label>
-            {message('ui.notizen')}
-            <textarea
-              aria-label={message('ui.fraktionsnotizen')}
-              rows={4}
-              maxLength={20_000}
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-            />
-          </label>
-          <label>
-            {message('ui.gesinnung.2')}
-            {disposition})
-            <input
-              aria-label={message('ui.fraktionsgesinnung')}
-              type="range"
-              min={-50}
-              max={50}
-              value={disposition}
-              onChange={(event) => setDisposition(Number(event.target.value))}
-            />
-          </label>
-          <label>
-            {message('ui.primaere.encounter.tabelle')}
-            <span className="faction-table-selection">
-              <select
-                aria-label={message('ui.primaere.encounter.tabelle')}
-                value={primaryEncounterTableId ?? ''}
-                onChange={(event) =>
-                  selectPrimaryTable(event.target.value || null)
-                }
-              >
-                <option value="">{message('ui.keine.primaere.tabelle')}</option>
-                {props.tableSnapshot.tables.map((table) => (
-                  <option key={table.id} value={table.id}>
-                    {table.displayName}
-                  </option>
-                ))}
-              </select>
-              <button type="button" onClick={() => setTableManager(null)}>
-                {message('ui.neue.encounter.tabelle')}
-              </button>
-            </span>
-          </label>
-          <h3>{message('ui.endlicher.bestand')}</h3>
-          <p className="muted">
-            {message(
-              'ui.der.bestand.basiert.auf.der.primaertabelle.ein.leeres'
-            )}
-          </p>
-          <ul className="source-entry-list">
-            {selectedTable?.entries.map((entry) => (
-              <li key={entry.creatureId}>
-                <span>
-                  {names[entry.creatureId] ??
-                    `Nicht verfügbar (${entry.creatureId})`}
-                </span>
-                <label>
-                  {message('ui.maximum')}
-                  <input
-                    aria-label={`Maximum ${names[entry.creatureId] ?? entry.creatureId}`}
-                    type="number"
-                    min={0}
-                    placeholder={message('ui.unbegrenzt')}
-                    value={inventory[entry.creatureId] ?? ''}
-                    onChange={(event) => {
-                      const next = { ...inventory }
-                      if (!event.target.value) delete next[entry.creatureId]
-                      else
-                        next[entry.creatureId] = Math.max(
-                          0,
-                          Number(event.target.value)
-                        )
-                      setInventory(next)
-                    }}
-                  />
-                </label>
-                <button
-                  type="button"
-                  onClick={() => {
+          </span>
+        </label>
+        <h3>{message('ui.endlicher.bestand')}</h3>
+        <p className="muted">
+          {message('ui.der.bestand.basiert.auf.der.primaertabelle.ein.leeres')}
+        </p>
+        <ul className="source-entry-list">
+          {selectedTable?.entries.map((entry) => (
+            <li key={entry.creatureId}>
+              <span>
+                {names[entry.creatureId] ??
+                  `Nicht verfügbar (${entry.creatureId})`}
+              </span>
+              <label>
+                {message('ui.maximum')}
+                <input
+                  aria-label={`Maximum ${names[entry.creatureId] ?? entry.creatureId}`}
+                  type="number"
+                  min={0}
+                  placeholder={message('ui.unbegrenzt')}
+                  value={inventory[entry.creatureId] ?? ''}
+                  onChange={(event) => {
                     const next = { ...inventory }
-                    delete next[entry.creatureId]
+                    if (!event.target.value) delete next[entry.creatureId]
+                    else
+                      next[entry.creatureId] = Math.max(
+                        0,
+                        Number(event.target.value)
+                      )
                     setInventory(next)
                   }}
-                >
-                  {message('ui.unbegrenzt')}
-                </button>
-              </li>
-            ))}
-          </ul>
-          {!selectedTable && (
-            <p className="empty-state">
-              {message(
-                'ui.waehle.eine.encounter.tabelle.um.den.bestand.festzulegen'
-              )}
-            </p>
-          )}
-          <footer>
-            <button type="button" onClick={props.close}>
-              {message('action.cancel')}
-            </button>
-            <button disabled={!displayName.trim()}>
-              {props.faction
-                ? message('action.save')
-                : message('action.create')}
-            </button>
-          </footer>
-        </form>
-      </div>
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  const next = { ...inventory }
+                  delete next[entry.creatureId]
+                  setInventory(next)
+                }}
+              >
+                {message('ui.unbegrenzt')}
+              </button>
+            </li>
+          ))}
+        </ul>
+        {!selectedTable && (
+          <p className="empty-state">
+            {message(
+              'ui.waehle.eine.encounter.tabelle.um.den.bestand.festzulegen'
+            )}
+          </p>
+        )}
+        <footer>
+          <button type="button" onClick={props.close}>
+            {message('action.cancel')}
+          </button>
+          <button disabled={!displayName.trim()}>
+            {props.faction ? message('action.save') : message('action.create')}
+          </button>
+        </footer>
+      </ModalDialog>
       {tableManager !== undefined && (
         <EncounterTableDialog
           key={tableManager?.id ?? 'new-faction-table'}

@@ -16,11 +16,15 @@ import {
 import {
   adjustInitiativeInputSchema,
   changeHpInputSchema,
+  combatCommandResultSchema,
   combatRevisionInputSchema,
   confirmInitiativeInputSchema,
+  joinCombatGroupInputSchema,
   liveSessionSnapshotSchema,
+  moveCombatPhaseInputSchema,
   partySnapshotSchema,
   prepareCombatInputSchema,
+  sceneGroupCommandResultSchema,
   toggleConditionInputSchema,
   updateResolutionInputSchema
 } from './live-session.js'
@@ -92,6 +96,11 @@ import {
 import { passiveProjectionSchema } from './passive-display.js'
 import { coreProcessStatusSchema } from './runtime.js'
 import { runtimeGpuObservationSchema } from '../qualification/runtime-observation.js'
+import {
+  referenceDocumentSchema,
+  referenceIndexSchema,
+  referenceTargetSchema
+} from './reference.js'
 
 export type OperationMode = 'read' | 'write'
 export type WindowRole = 'gm' | 'passive' | 'qualification'
@@ -229,6 +238,12 @@ export const coreOperations = {
     creatureFilterOptionsSchema
   ),
   'creatures.detail': read('creatures:detail', creatureId, creatureSchema),
+  'references.index': read('references:index', none, referenceIndexSchema),
+  'references.detail': read(
+    'references:detail',
+    referenceTargetSchema,
+    referenceDocumentSchema
+  ),
   'locations.read': read('locations:read', none, worldLocationSnapshotSchema),
   'locations.create': write(
     'locations:create',
@@ -295,17 +310,17 @@ export const coreOperations = {
   'scene.saveGroup': write(
     'scene:saveGroup',
     saveSceneGroupInputSchema,
-    liveSessionSnapshotSchema
+    sceneGroupCommandResultSchema
   ),
   'scene.deleteGroup': write(
     'scene:deleteGroup',
     deleteSceneGroupInputSchema,
-    liveSessionSnapshotSchema
+    sceneGroupCommandResultSchema
   ),
   'scene.setGroupArchived': write(
     'scene:setGroupArchived',
     setSceneGroupArchivedInputSchema,
-    liveSessionSnapshotSchema
+    sceneGroupCommandResultSchema
   ),
   'scene.assignPartyMember': write(
     'scene:assignPartyMember',
@@ -330,62 +345,77 @@ export const coreOperations = {
   'combat.prepare': write(
     'combat:prepare',
     prepareCombatInputSchema,
-    liveSessionSnapshotSchema
+    combatCommandResultSchema
+  ),
+  'combat.joinGroup': write(
+    'combat:joinGroup',
+    joinCombatGroupInputSchema,
+    combatCommandResultSchema
   ),
   'combat.rollInitiative': write(
     'combat:rollInitiative',
     combatRevisionInputSchema,
-    liveSessionSnapshotSchema
+    combatCommandResultSchema
   ),
   'combat.confirmInitiative': write(
     'combat:confirmInitiative',
     confirmInitiativeInputSchema,
-    liveSessionSnapshotSchema
+    combatCommandResultSchema
   ),
   'combat.advanceTurn': write(
     'combat:advanceTurn',
     combatRevisionInputSchema,
-    liveSessionSnapshotSchema
+    combatCommandResultSchema
+  ),
+  'combat.retreatTurn': write(
+    'combat:retreatTurn',
+    combatRevisionInputSchema,
+    combatCommandResultSchema
   ),
   'combat.adjustInitiative': write(
     'combat:adjustInitiative',
     adjustInitiativeInputSchema,
-    liveSessionSnapshotSchema
+    combatCommandResultSchema
   ),
   'combat.changeHp': write(
     'combat:changeHp',
     changeHpInputSchema,
-    liveSessionSnapshotSchema
+    combatCommandResultSchema
   ),
   'combat.toggleCondition': write(
     'combat:toggleCondition',
     toggleConditionInputSchema,
-    liveSessionSnapshotSchema
+    combatCommandResultSchema
   ),
   'combat.undo': write(
     'combat:undo',
     combatRevisionInputSchema,
-    liveSessionSnapshotSchema
+    combatCommandResultSchema
   ),
   'combat.end': write(
     'combat:end',
     combatRevisionInputSchema,
-    liveSessionSnapshotSchema
+    combatCommandResultSchema
+  ),
+  'combat.moveToPhase': write(
+    'combat:moveToPhase',
+    moveCombatPhaseInputSchema,
+    combatCommandResultSchema
   ),
   'combat.updateResolution': write(
     'combat:updateResolution',
     updateResolutionInputSchema,
-    liveSessionSnapshotSchema
+    combatCommandResultSchema
   ),
   'combat.awardXp': write(
     'combat:awardXp',
     combatRevisionInputSchema,
-    liveSessionSnapshotSchema
+    combatCommandResultSchema
   ),
   'combat.complete': write(
     'combat:complete',
     combatRevisionInputSchema,
-    liveSessionSnapshotSchema
+    combatCommandResultSchema
   ),
   'hex.terrainCatalog': read(
     'hex:terrainCatalog',

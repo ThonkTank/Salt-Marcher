@@ -398,6 +398,23 @@
   background: var(--surface-pane-sunken-flat);
 }
 
+.roster-life-count,
+.roster-dead-count {
+  display: grid;
+  grid-template-columns: auto 26px auto 26px;
+}
+
+.group-draft-roster li {
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+}
+
+.roster-life-count small,
+.roster-dead-count small {
+  color: var(--text-3);
+  font-family: var(--font-smallcaps);
+  text-transform: uppercase;
+}
+
 .session-scenario-column {
   padding: var(--space-5);
   background: var(--surface-pane-sunken);

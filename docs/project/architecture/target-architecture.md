@@ -43,7 +43,7 @@ src/
 ├── main/{application-lifecycle,windows,security,core-process}
 ├── preload/capability-bridge
 ├── utility
-├── core/{application,encounter,hex,party,persistence,scene,worldplanner}
+├── core/{application,encounter,hex,party,persistence,reference,scene,worldplanner}
 ├── renderer/{shell,features,spatial-2d,spatial-3d}
 └── shared/{contracts,ids,errors,qualification}
 ```
@@ -73,13 +73,23 @@ generic ORM is part of this architecture.
 
 All SQLite connections enable foreign keys, WAL, full synchronous durability,
 and a bounded busy timeout. Development stores carry one whole-database schema
-version and fail closed on mismatch; developers delete the isolated data root
-instead of running migrations. Installation preferences, including theme and
-Session layout, use one revisions-protected SQLite record rather than renderer
-storage or Main-process JSON.
+version. On mismatch, startup removes only the fixed isolated
+`development-data` root and immediately creates the current schema; it neither
+runs migrations nor exposes a compatibility error as normal application
+behavior. Installation preferences, including theme and Session layout, use
+one revisions-protected SQLite record rather than renderer storage or
+Main-process JSON.
 
 Hex maps use an unbounded axial coordinate space backed by sparse authored
 terrain and marker rows. Reads always request a bounded viewport window; the
 implicit default terrain is generated only for that window. Travel progression
 is clocked by the utility process and publishes revision changes. Reads are
 pure observations and never advance Scene time.
+
+Reference lookup follows the same boundary. A deterministic, attributed SRD
+artifact is checked into the application and loaded only by the utility
+process. The utility composes that static truth with the canonical creature
+catalog and campaign-owned location and faction services, then publishes a
+revisioned index and normalized documents through two typed read capabilities.
+The renderer compiles matching state locally; hover traversal performs detail
+reads but never receives filesystem, database, or runtime network access.

@@ -16,8 +16,9 @@ payloads and lifecycle.
   location ID, and order
 - `scene_party_member`: ordered Party character foreign IDs
 - `scene_npc`: ordered World Planner NPC foreign IDs
-- `scene_group` and `scene_group_entry`: ordered, named Scene-owned groups of
-  Creature catalog foreign IDs and positive quantities; Creature facts remain
+- `scene_group`, `scene_group_entry`, and `scene_group_member`: ordered, named
+  Scene-owned groups of Creature catalog foreign IDs and stable members;
+  members store current HP and conditions while Creature facts remain
   Creatures-owned
 - `scene_participant_state`: Scene-owned per-scene defeated state and quick
   notes for an assigned PC, NPC, or mob, keyed by participant kind and the
@@ -62,10 +63,10 @@ translation.
 The exact owner inventory covers every table, index, view, and trigger named
 with `scene_` or `idx_scene_`. An unversioned partial namespace, a recorded
 version-1 shape that differs from the exact current DDL, an adjacent retired
-Scene object, or a newer owner version MUST fail without mutating stored rows,
-schema objects, or ledger state. Initialization failure MUST NOT fabricate a
-ledger entry. Unsupported development databases are reinitialized rather than
-migrated before the first released format.
+Scene object, or a newer owner version is incompatible. The application-level
+development-store opener removes the fixed isolated data root and initializes
+the complete current database; it never attempts an in-place Scene repair or
+migration.
 
 Missing World Planner records remain visible as unresolved stable references
 until the GM removes or replaces them; inactive Party members are removed

@@ -36,6 +36,7 @@ const documentSchema = z
   .strict()
 
 const catalog = documentSchema.parse(catalogDocument)
+export const creatureCatalogManifest = Object.freeze(catalog.manifest)
 export const creatures: readonly Creature[] = Object.freeze(catalog.creatures)
 const byId = new Map(creatures.map((creature) => [creature.id, creature]))
 

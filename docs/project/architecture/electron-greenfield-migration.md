@@ -123,20 +123,23 @@ claiming completion of M3 or M5. Its approved expansion contains:
   the Party atomically assigns the PC to the focused Scene
 - anchored burger-menu Campaign CRUD without an icon-rail Campaign workspace,
   including rename, recoverable trash/restore, exact-name permanent deletion,
-  and crash-reconciled `.trash`/`.deleting` directory transitions in schema v5
+  and crash-reconciled `.trash`/`.deleting` directory transitions in the
+  complete greenfield schema v7
 - the productive Monster section of the common Catalog, backed by a versioned
   local SRD 5.1 resource; the other Catalog sections remain later slices
 - one focused persistent runtime Scene with explicit PC assignments and named
-  GM creature groups carrying an optional note, visual disposition, and archive
-  state; the v3-to-v4 migration gives existing notes the empty value; one
+  GM creature groups carrying an optional note, visual disposition, archive
+  state, aggregate revision, and stable Scene-owned members; incompatible
+  pre-v7 development data is discarded and rebuilt instead of migrated; one
   two-pane builder creates empty or populated groups and combines the shared
   filtered creature catalog, transient manual editing, live balancing, and
   fill-or-replace generation for new or existing groups before an explicit save
 - a scenario dropdown for Encounter and read-only Reise; Encounter consumes
   only selected Scene groups and owns difficulty evaluation, Initiative,
-  Combat, and Resolution, with a four-phase breadcrumb, monster-only initiative
-  rolls, individual mob HP/conditions, bounded persisted undo, and the explicit
-  no-loot state until Loot migrates
+  Combat turn state, and Resolution, with a four-phase breadcrumb, monster-only
+  initiative rolls, Scene-owned individual member HP/conditions, bounded
+  persisted undo, Group-Manager reinforcement, and the explicit no-loot state
+  until Loot migrates
 - a persistent three-column Session surface with independently resizable
   control/group and scenario columns around a flexible Details/Katalog/Karte
   center, focused-scene control, shared catalog filtering, scene-local detail
@@ -159,6 +162,11 @@ claiming completion of M3 or M5. Its approved expansion contains:
   Party position, waypoint route planning, durable checkpoints and Scene time,
   and the Session Karte/Reise surfaces; editable Terrain catalog CRUD remains a
   later slice
+- one offline reference-graph slice imports attributed SRD 5.1 rules into a
+  deterministic local artifact, merges creature and campaign world terms in
+  the utility process, highlights read-only Session prose, opens typed details
+  in Scene-local history, supports recursively nested hover cards, and keeps
+  explicitly pinned cards as movable memory-only windows
 
 Encounter-table, faction, and location filter controls appear only when their
 owning providers publish real options. NPC membership, loot links, and stock

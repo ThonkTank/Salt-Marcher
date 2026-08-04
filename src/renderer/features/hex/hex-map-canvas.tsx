@@ -1,4 +1,7 @@
 import { message } from '../../i18n/messages.de.js'
+// Installs Pixi's static CSP-safe shader and uniform synchronizers. Despite the
+// package name, this keeps `unsafe-eval` disabled rather than enabling it.
+import 'pixi.js/unsafe-eval'
 import { Application, Container, Graphics, Text } from 'pixi.js'
 import { useEffect, useRef, useState, type ReactElement } from 'react'
 import type {
@@ -50,6 +53,7 @@ export function HexMapCanvas(props: {
 }): ReactElement {
   const host = useRef<HTMLDivElement>(null)
   const [renderError, setRenderError] = useState(false)
+  const [renderAttempt, setRenderAttempt] = useState(0)
   const [directQ, setDirectQ] = useState(props.selected?.q ?? 0)
   const [directR, setDirectR] = useState(props.selected?.r ?? 0)
   const [factPage, setFactPage] = useState(0)
@@ -78,11 +82,12 @@ export function HexMapCanvas(props: {
       props.terrains.terrains.map((terrain) => [terrain.id, terrain])
     )
     const destroy = () => {
-      if (!initialized || destroyed) return
+      if (destroyed) return
       destroyed = true
       try {
         ;(application as Application & { cleanup?: () => void }).cleanup?.()
-        application.destroy(true, { children: true })
+        if (initialized) application.destroy(true, { children: true })
+        else application.stage.destroy({ children: true })
       } catch {
         // Renderer cleanup must never prevent navigation away from the map.
       }
@@ -239,7 +244,14 @@ export function HexMapCanvas(props: {
       disposed = true
       destroy()
     }
-  }, [props.snapshot, props.terrains, props.selected, props.token, props.route])
+  }, [
+    props.snapshot,
+    props.terrains,
+    props.selected,
+    props.token,
+    props.route,
+    renderAttempt
+  ])
 
   return (
     <div className="hex-canvas-shell">
@@ -250,11 +262,19 @@ export function HexMapCanvas(props: {
         aria-label={props.ariaLabel}
       />
       {renderError && (
-        <p className="hex-canvas-render-error" role="alert">
-          {message(
-            'ui.die.kartenansicht.konnte.nicht.initialisiert.werden.navigation.und'
-          )}
-        </p>
+        <div className="hex-canvas-render-error" role="alert">
+          <p>
+            {message(
+              'ui.die.kartenansicht.konnte.nicht.initialisiert.werden.navigation.und'
+            )}
+          </p>
+          <button
+            type="button"
+            onClick={() => setRenderAttempt((attempt) => attempt + 1)}
+          >
+            {message('ui.kartenansicht.erneut.laden')}
+          </button>
+        </div>
       )}
       <section
         className="hex-accessible-selection"

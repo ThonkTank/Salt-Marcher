@@ -1,15 +1,25 @@
-import { existsSync, mkdirSync, mkdtempSync, renameSync, rmSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  renameSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { CampaignStore } from '../../src/core/persistence/sqlite/campaign-store.js'
+import {
+  CampaignStore,
+  openDevelopmentCampaignStore
+} from '../../src/core/persistence/sqlite/campaign-store.js'
 import Database from 'better-sqlite3'
 import { CapabilityError } from '../../src/shared/errors/capability-error.js'
 import {
   configureSqlite,
-  migrateDevelopmentSchema
+  currentDevelopmentSchemaVersion
 } from '../../src/core/persistence/sqlite/database.js'
-import { migrateSceneSchemaV3ToV4 } from '../../src/core/scene/scene-migrations.js'
 
 const roots: string[] = []
 
@@ -163,20 +173,55 @@ describe('CampaignStore', () => {
     reopened.close()
   })
 
-  it('fails closed for development data with another schema version', () => {
-    const root = mkdtempSync(join(tmpdir(), 'salt-marcher-campaign-store-'))
-    roots.push(root)
+  it('rebuilds incompatible development data without touching siblings', () => {
+    const parent = mkdtempSync(join(tmpdir(), 'salt-marcher-campaign-store-'))
+    roots.push(parent)
+    const root = join(parent, 'development-data')
+    mkdirSync(root, { recursive: true })
     const store = new CampaignStore(root)
+    store.create('Disposable Campaign')
     store.close()
+    mkdirSync(join(parent, 'keep-me'))
     const db = new Database(join(root, 'installation.sqlite'))
     db.pragma('user_version = 2')
     db.close()
 
-    expect(() => new CampaignStore(root)).toThrowError(
-      new CapabilityError('development_data_incompatible', false, {
-        developmentDataPath: root
-      })
+    const rebuilt = openDevelopmentCampaignStore(root)
+    expect(rebuilt.list()).toEqual({
+      activeCampaignId: null,
+      campaigns: [],
+      trashedCampaigns: []
+    })
+    expect(existsSync(join(parent, 'keep-me'))).toBe(true)
+    rebuilt.close()
+  })
+
+  it('rebuilds when the selected campaign database is incompatible', () => {
+    const parent = mkdtempSync(join(tmpdir(), 'salt-marcher-campaign-store-'))
+    roots.push(parent)
+    const root = join(parent, 'development-data')
+    const store = new CampaignStore(root)
+    const campaignId = store.create('Disposable Campaign').activeCampaignId!
+    store.close()
+    const db = new Database(
+      join(root, 'campaigns', campaignId, 'campaign.sqlite')
     )
+    db.pragma('user_version = 2')
+    db.close()
+
+    const rebuilt = openDevelopmentCampaignStore(root)
+    expect(rebuilt.list().campaigns).toEqual([])
+    rebuilt.close()
+  })
+
+  it('does not treat arbitrary startup failures as disposable schema data', () => {
+    const parent = mkdtempSync(join(tmpdir(), 'salt-marcher-campaign-store-'))
+    roots.push(parent)
+    const root = join(parent, 'development-data')
+    writeFileSync(root, 'preserve')
+
+    expect(() => openDevelopmentCampaignStore(root)).toThrow()
+    expect(readFileSync(root, 'utf8')).toBe('preserve')
   })
 
   it('configures durable SQLite pragmas for the installation store', () => {
@@ -190,34 +235,12 @@ describe('CampaignStore', () => {
     expect(db.pragma('synchronous', { simple: true })).toBe(2)
     expect(db.pragma('foreign_keys', { simple: true })).toBe(1)
     expect(db.pragma('busy_timeout', { simple: true })).toBe(5000)
-    expect(db.pragma('user_version', { simple: true })).toBe(5)
+    expect(db.pragma('user_version', { simple: true })).toBe(
+      currentDevelopmentSchemaVersion
+    )
 
     db.close()
     store.close()
-  })
-
-  it('migrates version 3 scene groups with an empty persisted note', () => {
-    const db = new Database(':memory:')
-    db.exec(`
-      CREATE TABLE scene_group (
-        id TEXT PRIMARY KEY NOT NULL,
-        scene_id TEXT NOT NULL,
-        name TEXT NOT NULL,
-        disposition TEXT NOT NULL,
-        archived INTEGER NOT NULL,
-        position INTEGER NOT NULL
-      );
-      INSERT INTO scene_group VALUES ('group-1', 'scene-1', 'Wölfe', 'hostile', 0, 0);
-    `)
-    db.pragma('user_version = 3')
-
-    migrateDevelopmentSchema(db, () => migrateSceneSchemaV3ToV4(db))
-
-    expect(db.pragma('user_version', { simple: true })).toBe(5)
-    expect(
-      db.prepare('SELECT note FROM scene_group WHERE id = ?').get('group-1')
-    ).toEqual({ note: '' })
-    db.close()
   })
 
   it('renames, trashes, restores and permanently deletes campaigns', () => {
@@ -291,30 +314,5 @@ describe('CampaignStore', () => {
     })
     expect(existsSync(join(root, 'campaigns', '.deleting', id))).toBe(false)
     recoveredDelete.close()
-  })
-
-  it('migrates version 4 campaign registries with a trash timestamp', () => {
-    const db = new Database(':memory:')
-    db.exec(`
-      CREATE TABLE campaigns (
-        id TEXT PRIMARY KEY NOT NULL,
-        name TEXT NOT NULL,
-        created_at TEXT NOT NULL,
-        status TEXT NOT NULL
-      );
-    `)
-    db.pragma('user_version = 4')
-
-    migrateDevelopmentSchema(db, undefined, () =>
-      db.exec('ALTER TABLE campaigns ADD COLUMN trashed_at TEXT')
-    )
-
-    expect(db.pragma('user_version', { simple: true })).toBe(5)
-    expect(
-      db
-        .prepare("SELECT 1 FROM pragma_table_info('campaigns') WHERE name = ?")
-        .get('trashed_at')
-    ).toBeDefined()
-    db.close()
   })
 })

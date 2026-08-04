@@ -19,6 +19,7 @@ import {
   reportCapabilityError
 } from '../../capabilities/capability-errors.js'
 import { travelSegmentProgress, useTravelClock } from './use-travel-clock.js'
+import { ModalDialog } from '../../shell/modal-dialog.js'
 
 export function TravelScenario(props: {
   snapshot: LiveSessionSnapshot
@@ -468,70 +469,67 @@ export function HexLocationPlacementDialog(props: {
     }
   }
   return (
-    <div className="modal-backdrop" role="presentation">
-      <section
-        className="hex-placement-dialog"
-        role="dialog"
-        aria-modal="true"
-        aria-label={message('ui.ort.auf.hex.karte.platzieren')}
-      >
-        <header>
-          <div>
-            <p className="section-kicker">{message('ui.ort.platzieren')}</p>
-            <h2>{props.location.displayName}</h2>
-          </div>
-          <button aria-label={message('action.close')} onClick={props.close}>
-            ×
-          </button>
-        </header>
-        {!catalog || !terrains ? (
-          <p>{message('ui.karten.werden.geladen')}</p>
-        ) : catalog.maps.length === 0 ? (
-          <p>{message('ui.lege.zuerst.eine.hex.karte.an')}</p>
-        ) : map ? (
-          <>
-            <select
-              aria-label={message('ui.zielkarte')}
-              value={map.map.id}
-              onChange={(event) =>
-                void changeMap(event.target.value).catch(
-                  reportCapabilityError(props.onError)
-                )
-              }
-            >
-              {catalog.maps.map((entry) => (
-                <option key={entry.id} value={entry.id}>
-                  {entry.displayName}
-                </option>
-              ))}
-            </select>
-            <HexMapCanvas
-              snapshot={map}
-              terrains={terrains}
-              selected={selected}
-              onTileClick={setSelected}
-              onViewportChange={(center) =>
-                void readHexMapView(map.map, center)
-                  .then(setMap)
-                  .catch(reportCapabilityError(props.onError))
-              }
-              ariaLabel={`Platzierung von ${props.location.displayName}`}
-            />
-            <footer>
-              <button onClick={props.close}>{message('action.cancel')}</button>
-              {existing && (
-                <button className="danger" onClick={() => void remove()}>
-                  {message('ui.von.karte.entfernen')}
-                </button>
-              )}
-              <button disabled={!selected} onClick={() => void place()}>
-                {message('ui.hier.platzieren')}
+    <ModalDialog
+      className="hex-placement-dialog"
+      ariaLabel={message('ui.ort.auf.hex.karte.platzieren')}
+      onClose={props.close}
+    >
+      <header>
+        <div>
+          <p className="section-kicker">{message('ui.ort.platzieren')}</p>
+          <h2>{props.location.displayName}</h2>
+        </div>
+        <button aria-label={message('action.close')} onClick={props.close}>
+          ×
+        </button>
+      </header>
+      {!catalog || !terrains ? (
+        <p>{message('ui.karten.werden.geladen')}</p>
+      ) : catalog.maps.length === 0 ? (
+        <p>{message('ui.lege.zuerst.eine.hex.karte.an')}</p>
+      ) : map ? (
+        <>
+          <select
+            aria-label={message('ui.zielkarte')}
+            value={map.map.id}
+            onChange={(event) =>
+              void changeMap(event.target.value).catch(
+                reportCapabilityError(props.onError)
+              )
+            }
+          >
+            {catalog.maps.map((entry) => (
+              <option key={entry.id} value={entry.id}>
+                {entry.displayName}
+              </option>
+            ))}
+          </select>
+          <HexMapCanvas
+            snapshot={map}
+            terrains={terrains}
+            selected={selected}
+            onTileClick={setSelected}
+            onViewportChange={(center) =>
+              void readHexMapView(map.map, center)
+                .then(setMap)
+                .catch(reportCapabilityError(props.onError))
+            }
+            ariaLabel={`Platzierung von ${props.location.displayName}`}
+          />
+          <footer>
+            <button onClick={props.close}>{message('action.cancel')}</button>
+            {existing && (
+              <button className="danger" onClick={() => void remove()}>
+                {message('ui.von.karte.entfernen')}
               </button>
-            </footer>
-          </>
-        ) : null}
-      </section>
-    </div>
+            )}
+            <button disabled={!selected} onClick={() => void place()}>
+              {message('ui.hier.platzieren')}
+            </button>
+          </footer>
+        </>
+      ) : null}
+    </ModalDialog>
   )
 }
 

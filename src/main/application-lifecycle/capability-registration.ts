@@ -76,10 +76,7 @@ async function invokeGeneric(
       ok: false,
       error: {
         code,
-        retryable,
-        ...(error instanceof CapabilityError && error.data
-          ? { data: error.data }
-          : {})
+        retryable
       }
     }
   }

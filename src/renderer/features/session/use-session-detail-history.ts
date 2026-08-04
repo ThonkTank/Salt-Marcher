@@ -1,12 +1,16 @@
 import { useReducer } from 'react'
-import type { Creature } from '../../../shared/contracts/encounter.js'
+import type {
+  ReferenceDocument,
+  ReferenceTarget
+} from '../../../shared/contracts/reference.js'
 
 export type DetailHistory = Readonly<{
   entries: readonly DetailHistoryEntry[]
   index: number
 }>
 export type DetailHistoryEntry = Readonly<{
-  creature: Creature
+  target: ReferenceTarget
+  document: ReferenceDocument
   breadcrumb: string
 }>
 export type DetailHistoryState = Readonly<Record<string, DetailHistory>>
@@ -41,7 +45,8 @@ export function reduceDetailHistory(
     }
   const current = previous.entries[previous.index]
   if (
-    current?.creature.id === action.entry.creature.id &&
+    current &&
+    sameTarget(current.target, action.entry.target) &&
     current.breadcrumb === action.entry.breadcrumb
   )
     return state
@@ -60,12 +65,28 @@ export function useSessionDetailHistory(sceneId: string) {
   const history = state[sceneId] ?? emptyHistory
   return {
     history,
-    detail: history.entries[history.index]?.creature ?? null,
+    detail: history.entries[history.index]?.document ?? null,
     breadcrumb: history.entries[history.index]?.breadcrumb ?? null,
-    openDetail: (creature: Creature, breadcrumb: string) =>
-      dispatch({ type: 'open', sceneId, entry: { creature, breadcrumb } }),
+    openDetail: (document: ReferenceDocument, breadcrumb: string) =>
+      dispatch({
+        type: 'open',
+        sceneId,
+        entry: { target: document.target, document, breadcrumb }
+      }),
     moveHistory: (offset: number) =>
       dispatch({ type: 'move', sceneId, offset }),
     closeDetail: () => dispatch({ type: 'close', sceneId })
   } as const
+}
+
+function sameTarget(
+  left: ReferenceTarget | undefined,
+  right: ReferenceTarget
+): boolean {
+  return (
+    left !== undefined &&
+    left.kind === right.kind &&
+    left.id === right.id &&
+    left.sectionId === right.sectionId
+  )
 }

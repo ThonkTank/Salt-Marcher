@@ -1,6 +1,10 @@
 import { browser, expect } from '@wdio/globals'
 import { AxeBuilder } from '@axe-core/webdriverio'
 import type { Browser as WdioBrowser } from 'webdriverio'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import pixelmatch from 'pixelmatch'
+import { PNG } from 'pngjs'
 
 describe('campaign walking skeleton', () => {
   it('creates and switches the selected campaign', async () => {
@@ -120,9 +124,23 @@ describe('campaign walking skeleton', () => {
       await client.$('input[aria-label="Neue Karte"]')
     ).setValue('Salzmarsch-Küste')
     await (await client.$('button=Neu')).click()
-    await expect(
-      await client.$('[role="img"][aria-label="Hex-Editor Salzmarsch-Küste"]')
-    ).toBeExisting()
+    const mapHost = await client.$(
+      '[role="img"][aria-label="Hex-Editor Salzmarsch-Küste"]'
+    )
+    await expect(mapHost).toBeExisting()
+    const mapCanvas = await mapHost.$('canvas')
+    await mapCanvas.waitForExist({ timeout: 5_000 })
+    await expect(await client.$('.hex-canvas-render-error')).not.toBeExisting()
+    const canvasSize = await client.execute(() => {
+      const canvas = document.querySelector<HTMLCanvasElement>(
+        '[role="img"][aria-label="Hex-Editor Salzmarsch-Küste"] canvas'
+      )
+      return canvas
+        ? { width: canvas.width, height: canvas.height }
+        : { width: 0, height: 0 }
+    })
+    expect(canvasSize.width).toBeGreaterThan(0)
+    expect(canvasSize.height).toBeGreaterThan(0)
 
     await expectHexEditorLayout(client)
     await expectAccessibleInBothThemes(client)
@@ -373,6 +391,17 @@ describe('campaign walking skeleton', () => {
     await expect(
       await client.$('button[aria-current="step"]*=Initiative')
     ).toBeExisting()
+    await expectScenarioGolden(client, 'initiative')
+    await (await client.$('button=Kampf starten')).click()
+    await expect(
+      await client.$('button[aria-current="step"]*=Kampf')
+    ).toBeExisting()
+    await expectScenarioGolden(client, 'combat')
+    await (
+      await (await client.$('.combat-panel footer')).$('button*=Auflösung')
+    ).click()
+    await expect(await client.$('.resolution-panel')).toBeExisting()
+    await expectScenarioGolden(client, 'resolution')
   })
 
   it('survives the pseudo locale without accessibility regressions', async () => {
@@ -513,4 +542,50 @@ async function pressDividerKey(
     label,
     key
   )
+}
+
+async function expectScenarioGolden(
+  client: WdioBrowser,
+  name: 'initiative' | 'combat' | 'resolution'
+): Promise<void> {
+  if (process.platform !== 'linux') return
+  await client.execute(() => {
+    const style = document.createElement('style')
+    style.dataset['visualTest'] = 'true'
+    style.textContent =
+      '*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}'
+    document.head.append(style)
+  })
+  const directory = join(process.cwd(), 'tests', 'e2e', 'goldens', 'linux')
+  const artifacts = join(process.cwd(), '.tmp', 'visual-diffs')
+  mkdirSync(directory, { recursive: true })
+  mkdirSync(artifacts, { recursive: true })
+  const actualPath = join(artifacts, `${name}.png`)
+  const baselinePath = join(directory, `${name}.png`)
+  const bytes = await (
+    await client.$('aside[aria-label="Szenario Panel"]')
+  ).saveScreenshot(actualPath)
+  if (process.env['UPDATE_VISUAL_GOLDENS'] === '1') {
+    writeFileSync(baselinePath, bytes)
+    return
+  }
+  if (!existsSync(baselinePath))
+    throw new Error(`Missing golden ${baselinePath}`)
+  const expected = PNG.sync.read(readFileSync(baselinePath))
+  const actual = PNG.sync.read(bytes)
+  expect({ width: actual.width, height: actual.height }).toEqual({
+    width: expected.width,
+    height: expected.height
+  })
+  const diff = new PNG({ width: actual.width, height: actual.height })
+  const changed = pixelmatch(
+    expected.data,
+    actual.data,
+    diff.data,
+    actual.width,
+    actual.height,
+    { threshold: 0.2 }
+  )
+  writeFileSync(join(artifacts, `${name}.diff.png`), PNG.sync.write(diff))
+  expect(changed / (actual.width * actual.height)).toBeLessThanOrEqual(0.03)
 }

@@ -1,5 +1,6 @@
 import type { SceneGroup } from '../../../shared/contracts/scene.js'
 import { formatMessage, message } from '../../i18n/messages.de.js'
+import { ReferenceText } from '../reference/reference-ui.js'
 
 export function SessionGroupCard(props: {
   group: SceneGroup
@@ -15,6 +16,11 @@ export function SessionGroupCard(props: {
     (total, entry) => total + entry.quantity,
     0
   )
+  const aliveCount = props.group.entries.reduce(
+    (total, entry) => total + entry.aliveQuantity,
+    0
+  )
+  const deadCount = count - aliveCount
   const disposition = {
     hostile: message('group.disposition.hostile'),
     neutral: message('group.disposition.neutral'),
@@ -30,8 +36,9 @@ export function SessionGroupCard(props: {
         <span className="group-mark" aria-hidden="true" />
         <strong>{props.group.name}</strong>
         <span className="group-meta">
-          {disposition} · {count} Wesen · {props.group.baseXp.toLocaleString()}{' '}
-          XP
+          {disposition} · {aliveCount} lebend
+          {deadCount > 0 ? ` · ${deadCount} tot` : ''} ·{' '}
+          {props.group.baseXp.toLocaleString()} XP
         </span>
         <div className="row-actions">
           {props.edit && (
@@ -58,13 +65,21 @@ export function SessionGroupCard(props: {
               disabled={!entry.available}
               onClick={() => props.inspect(entry.creatureId)}
             >
-              {entry.quantity > 1 ? `${entry.quantity}× ` : ''}
-              {entry.displayName}
+              {entry.aliveQuantity > 1 ? `${entry.aliveQuantity}× ` : ''}
+              {entry.aliveQuantity > 0 ? entry.displayName : ''}
+              {entry.aliveQuantity > 0 && entry.deadQuantity > 0 ? ' · ' : ''}
+              {entry.deadQuantity > 0
+                ? `${entry.deadQuantity}× ${entry.displayName} (tot)`
+                : ''}
             </button>
           ))
         )}
       </div>
-      {props.group.note && <p className="group-note">{props.group.note}</p>}
+      {props.group.note && (
+        <p className="group-note">
+          <ReferenceText>{props.group.note}</ReferenceText>
+        </p>
+      )}
       {props.deleteConfirming && (
         <div className="group-delete-confirm" role="alert">
           <span>

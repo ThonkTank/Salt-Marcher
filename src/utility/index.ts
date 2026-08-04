@@ -10,7 +10,7 @@ import {
   type CoreRequest
 } from '../shared/contracts/core-protocol.js'
 import { coreOperations } from '../shared/contracts/operations.js'
-import { CampaignStore } from '../core/persistence/sqlite/campaign-store.js'
+import { openDevelopmentCampaignStore } from '../core/persistence/sqlite/campaign-store.js'
 import { CreatureCatalogService } from '../core/creatures/catalog.js'
 import { LivePlayService } from '../core/encounter/live-combat.js'
 import { z } from 'zod'
@@ -22,10 +22,11 @@ import { hexTerrainCatalog } from '../core/hex/terrain-catalog.js'
 import { CapabilityError } from '../shared/errors/capability-error.js'
 import { hexTravelSnapshotSchema } from '../shared/contracts/hex.js'
 import { emptyPassiveProjection } from '../shared/contracts/passive-display.js'
+import { ReferenceService } from '../core/reference/reference-service.js'
 const root = process.argv[2]
 if (!root || !process.parentPort)
   throw new Error('Utility process requires a data root and parent port')
-const campaigns = new CampaignStore(root)
+const campaigns = openDevelopmentCampaignStore(root)
 const activeDatabase = () => campaigns.activeCampaignDatabase()
 const play = new LivePlayService(activeDatabase)
 const locations = new WorldLocationService(activeDatabase)
@@ -48,6 +49,9 @@ const creatures = new CreatureCatalogService(
       label: location.displayName
     }))
   })
+)
+const references = new ReferenceService(creatures, locations, sources, () =>
+  campaigns.activeCampaignId()
 )
 let travelTimer: NodeJS.Timeout | undefined
 
@@ -159,10 +163,16 @@ const partyHandlers = {
 const creatureHandlers = {
   'creatures.search': (input) => creatures.search(input),
   'creatures.filterOptions': () => creatures.filterOptions(),
-  'creatures.detail': (input) => creatures.detail(input.id)
+  'creatures.detail': (input) => creatures.detail(input.id),
+  'references.index': () => references.index(),
+  'references.detail': (input) => references.detail(input)
 } satisfies Pick<
   CoreHandlers,
-  'creatures.search' | 'creatures.filterOptions' | 'creatures.detail'
+  | 'creatures.search'
+  | 'creatures.filterOptions'
+  | 'creatures.detail'
+  | 'references.index'
+  | 'references.detail'
 >
 
 const worldPlannerHandlers = {
@@ -224,16 +234,21 @@ const sessionHandlers = {
       input.note,
       input.disposition,
       input.entries,
-      input.expectedRevision
+      input.expectedRevision,
+      input.expectedGroupRevision
     ),
   'scene.deleteGroup': (input) =>
-    play.deleteSceneGroup(input.sceneId, input.groupId, input.expectedRevision),
+    play.deleteSceneGroup(
+      input.sceneId,
+      input.groupId,
+      input.expectedGroupRevision
+    ),
   'scene.setGroupArchived': (input) =>
     play.setSceneGroupArchived(
       input.sceneId,
       input.groupId,
       input.archived,
-      input.expectedRevision
+      input.expectedGroupRevision
     ),
   'scene.assignPartyMember': (input) =>
     play.assignScenePartyMember(
@@ -284,11 +299,19 @@ const encounterHandlers = {
       input.expectedSceneRevision,
       input.groupIds
     ),
+  'combat.joinGroup': (input) =>
+    play.joinCombatGroup(
+      input.sceneId,
+      input.groupId,
+      input.expectedGroupRevision,
+      input.expectedCombatRevision
+    ),
   'combat.rollInitiative': (input) =>
     play.rollInitiative(input.expectedRevision),
   'combat.confirmInitiative': (input) =>
     play.confirmInitiative(input.expectedRevision, input.values),
   'combat.advanceTurn': (input) => play.advanceTurn(input.expectedRevision),
+  'combat.retreatTurn': (input) => play.retreatTurn(input.expectedRevision),
   'combat.adjustInitiative': (input) =>
     play.adjustInitiative(input.expectedRevision, input.id, input.initiative),
   'combat.changeHp': (input) =>
@@ -307,11 +330,13 @@ const encounterHandlers = {
     ),
   'combat.undo': (input) => play.undoCombat(input.expectedRevision),
   'combat.end': (input) => play.endCombat(input.expectedRevision),
+  'combat.moveToPhase': (input) =>
+    play.moveCombatToPhase(input.expectedRevision, input.target),
   'combat.updateResolution': (input) =>
     play.updateResolution(
       input.expectedRevision,
       input.selectedEnemyIds,
-      input.thresholdFraction,
+      input.mode,
       input.xpFraction
     ),
   'combat.awardXp': (input) => play.awardXp(input.expectedRevision),
@@ -320,14 +345,17 @@ const encounterHandlers = {
   CoreHandlers,
   | 'encounter.evaluate'
   | 'combat.prepare'
+  | 'combat.joinGroup'
   | 'combat.rollInitiative'
   | 'combat.confirmInitiative'
   | 'combat.advanceTurn'
+  | 'combat.retreatTurn'
   | 'combat.adjustInitiative'
   | 'combat.changeHp'
   | 'combat.toggleCondition'
   | 'combat.undo'
   | 'combat.end'
+  | 'combat.moveToPhase'
   | 'combat.updateResolution'
   | 'combat.awardXp'
   | 'combat.complete'
@@ -418,7 +446,7 @@ async function handleMessage(event: { data: unknown }): Promise<void> {
     if (r.kind === 'core.shutdown') setImmediate(() => process.exit(0))
   } catch (e) {
     const mapped = capabilityFailure(e)
-    failure(r.requestId, mapped.code, mapped.retryable, mapped.data)
+    failure(r.requestId, mapped.code, mapped.retryable)
   }
 }
 
@@ -454,16 +482,14 @@ function respond(requestId: string, payload: unknown) {
 function failure(
   requestId: string,
   code: CapabilityErrorCode,
-  retryable = false,
-  data?: Readonly<{ developmentDataPath: string }>
+  retryable = false
 ) {
   process.parentPort?.postMessage({
     requestId,
     ok: false,
     error: capabilityFailureSchema.parse({
       code,
-      retryable,
-      ...(data ? { data } : {})
+      retryable
     })
   })
 }
@@ -471,13 +497,11 @@ function failure(
 function capabilityFailure(error: unknown): {
   code: CapabilityErrorCode
   retryable: boolean
-  data?: Readonly<{ developmentDataPath: string }>
 } {
   if (error instanceof CapabilityError)
     return {
       code: error.code,
-      retryable: error.retryable,
-      ...(error.data ? { data: error.data } : {})
+      retryable: error.retryable
     }
   return { code: 'internal', retryable: false }
 }
