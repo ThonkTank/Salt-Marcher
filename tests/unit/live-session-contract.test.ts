@@ -22,21 +22,25 @@ import {
 } from '../../src/shared/contracts/encounter-source.js'
 
 describe('live session capability contracts', () => {
-  it('rejects empty groups, non-positive quantities and unknown fields', () => {
+  it('allows empty named groups and rejects invalid quantities', () => {
     expect(
       saveSceneGroupInputSchema.safeParse({
         sceneId: '0184d1f4-bba7-7c9c-9d89-5f1c0f36a030',
         groupId: null,
         name: 'Goblins',
+        note: '',
+        disposition: 'neutral',
         expectedRevision: 0,
         entries: []
       }).success
-    ).toBe(false)
+    ).toBe(true)
     expect(
       saveSceneGroupInputSchema.safeParse({
         sceneId: '0184d1f4-bba7-7c9c-9d89-5f1c0f36a030',
         groupId: null,
         name: 'Goblins',
+        note: '',
+        disposition: 'hostile',
         expectedRevision: 0,
         entries: [{ creatureId: 'goblin', quantity: 0 }]
       }).success
@@ -106,16 +110,27 @@ describe('live session capability contracts', () => {
     ).toBe(false)
   })
 
-  it('retains the two independent divider positions and bounds them', () => {
+  it('retains both pane widths, the center tab and migrates old layouts', () => {
     expect(
       sessionLayoutPreferenceSchema.parse(defaultSessionLayoutPreference)
     ).toEqual(defaultSessionLayoutPreference)
     expect(
       sessionLayoutPreferenceSchema.safeParse({
         ...defaultSessionLayoutPreference,
-        leftFraction: 0.95
+        controlPaneWidth: 500
       }).success
     ).toBe(false)
+    expect(
+      sessionLayoutPreferenceSchema.parse({
+        leftFraction: 0.62,
+        rightTopFraction: 0.45,
+        upperRightTab: 'map'
+      })
+    ).toEqual({
+      controlPaneWidth: 300,
+      scenarioPaneWidth: 264,
+      centerTab: 'map'
+    })
   })
 
   it('validates location drafts and revisioned updates', () => {

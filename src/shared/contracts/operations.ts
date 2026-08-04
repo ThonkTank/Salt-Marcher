@@ -1,8 +1,11 @@
 import { z } from 'zod'
 import {
   activateCampaignInputSchema,
+  campaignIdInputSchema,
   campaignSnapshotSchema,
-  createCampaignInputSchema
+  createCampaignInputSchema,
+  permanentlyDeleteCampaignInputSchema,
+  renameCampaignInputSchema
 } from './campaign.js'
 import {
   creatureCatalogPageSchema,
@@ -18,6 +21,7 @@ import {
   liveSessionSnapshotSchema,
   partySnapshotSchema,
   prepareCombatInputSchema,
+  toggleConditionInputSchema,
   updateResolutionInputSchema
 } from './live-session.js'
 import {
@@ -41,6 +45,7 @@ import {
   sceneGroupDraftEvaluationSchema,
   sceneGroupDraftGenerationRequestSchema,
   sceneGroupDraftGenerationSchema,
+  setSceneGroupArchivedInputSchema,
   setSceneLocationInputSchema
 } from './scene.js'
 import {
@@ -150,6 +155,26 @@ export const coreOperations = {
   'campaign.activate': write(
     'campaign:activate',
     activateCampaignInputSchema,
+    campaignSnapshotSchema
+  ),
+  'campaign.rename': write(
+    'campaign:rename',
+    renameCampaignInputSchema,
+    campaignSnapshotSchema
+  ),
+  'campaign.trash': write(
+    'campaign:trash',
+    campaignIdInputSchema,
+    campaignSnapshotSchema
+  ),
+  'campaign.restore': write(
+    'campaign:restore',
+    campaignIdInputSchema,
+    campaignSnapshotSchema
+  ),
+  'campaign.deleteForever': write(
+    'campaign:deleteForever',
+    permanentlyDeleteCampaignInputSchema,
     campaignSnapshotSchema
   ),
   'settings.read': read('settings:read', none, installationSettingsSchema),
@@ -277,6 +302,11 @@ export const coreOperations = {
     deleteSceneGroupInputSchema,
     liveSessionSnapshotSchema
   ),
+  'scene.setGroupArchived': write(
+    'scene:setGroupArchived',
+    setSceneGroupArchivedInputSchema,
+    liveSessionSnapshotSchema
+  ),
   'scene.assignPartyMember': write(
     'scene:assignPartyMember',
     assignScenePartyInputSchema,
@@ -325,6 +355,16 @@ export const coreOperations = {
   'combat.changeHp': write(
     'combat:changeHp',
     changeHpInputSchema,
+    liveSessionSnapshotSchema
+  ),
+  'combat.toggleCondition': write(
+    'combat:toggleCondition',
+    toggleConditionInputSchema,
+    liveSessionSnapshotSchema
+  ),
+  'combat.undo': write(
+    'combat:undo',
+    combatRevisionInputSchema,
     liveSessionSnapshotSchema
   ),
   'combat.end': write(

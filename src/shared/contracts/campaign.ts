@@ -10,16 +10,22 @@ export const campaignSchema = z
 
 export type Campaign = Readonly<z.infer<typeof campaignSchema>>
 
+export const trashedCampaignSchema = campaignSchema.extend({
+  trashedAt: z.iso.datetime()
+})
+
 export const campaignSnapshotSchema = z
   .object({
     activeCampaignId: z.uuid().nullable(),
-    campaigns: z.array(campaignSchema)
+    campaigns: z.array(campaignSchema),
+    trashedCampaigns: z.array(trashedCampaignSchema)
   })
   .strict()
 
 export type CampaignSnapshot = Readonly<{
   activeCampaignId: string | null
   campaigns: readonly Campaign[]
+  trashedCampaigns: readonly Readonly<z.infer<typeof trashedCampaignSchema>>[]
 }>
 
 export function freezeCampaignSnapshot(
@@ -29,6 +35,11 @@ export function freezeCampaignSnapshot(
     activeCampaignId: snapshot.activeCampaignId,
     campaigns: Object.freeze(
       snapshot.campaigns.map((campaign) => Object.freeze({ ...campaign }))
+    ),
+    trashedCampaigns: Object.freeze(
+      snapshot.trashedCampaigns.map((campaign) =>
+        Object.freeze({ ...campaign })
+      )
     )
   })
 }
@@ -62,6 +73,22 @@ export const createCampaignInputSchema = z
   .strict()
 
 export const activateCampaignInputSchema = z.object({ id: z.uuid() }).strict()
+
+export const renameCampaignInputSchema = z
+  .object({
+    id: z.uuid(),
+    name: z.string().trim().min(1, 'A name is required').max(100)
+  })
+  .strict()
+
+export const campaignIdInputSchema = z.object({ id: z.uuid() }).strict()
+
+export const permanentlyDeleteCampaignInputSchema = z
+  .object({
+    id: z.uuid(),
+    confirmationName: z.string().max(100)
+  })
+  .strict()
 
 export const coreReadySchema = z
   .object({ kind: z.literal('core.ready') })

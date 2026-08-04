@@ -2,7 +2,7 @@
 
 ## Ownership
 
-`LiveSession` projects the focused Scene into one four-panel running-play
+`LiveSession` projects the focused Scene into one three-column running-play
 workspace. Scene owns focus and ordered, named creature groups; Live Session
 owns neither Party membership nor creature facts.
 
@@ -11,21 +11,31 @@ Creatures publishes current statblocks. Encounter owns the active Combat
 memento, including Initiative, individual combatants, HP, turn, round, and
 Resolution state.
 
+The live-play application service coordinates the membership transition with
+Scene: a newly active Party member is assigned to the focused Scene in the same
+transaction, while an inactive member is removed from every Scene. This policy
+does not transfer ownership of Party membership to Scene.
+
 ## Invariants
 
 - group identity and order remain stable
-- a group has a non-blank name and at least one positive creature quantity
+- a group has a non-blank name, an optional persisted note of at most 1,000
+  characters, a visual disposition, an archive flag, and zero or more positive
+  creature quantities
 - group entries contain references only; current display and Combat facts are
   resolved through Creatures
+- empty and archived groups cannot be copied into a new Combat; an already
+  copied Combat remains independent of later group archival or deletion
 - a Combat is keyed by Scene identity and captures its selected group
   identities and runtime combat profiles
 - Resolution awards XP to the current active Party through an idempotent Combat
   identity
 - finishing Combat clears only Encounter runtime state
 
-Detail history and selected scenario are renderer state scoped by Scene. Panel
-column width, right-side divider height, and selected Details/Karte tab are
-app-wide shell preferences, not campaign domain state.
+Detail history and selected scenario are renderer state scoped by Scene. Left
+control/group width, right scenario width, and the selected
+Details/Katalog/Karte center tab are app-wide shell preferences, not campaign
+domain state.
 
 All public snapshots are immutable and revisioned. Mutations reject stale
 revisions instead of silently targeting newer state.

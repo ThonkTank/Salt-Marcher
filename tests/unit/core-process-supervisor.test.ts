@@ -128,13 +128,15 @@ describe('CoreProcessSupervisor', () => {
     })
     children[0]?.succeed({
       activeCampaignId: null,
-      campaigns: []
+      campaigns: [],
+      trashedCampaigns: []
     })
     children[0]?.emit('exit', 1)
 
     await expect(result).resolves.toEqual({
       activeCampaignId: null,
-      campaigns: []
+      campaigns: [],
+      trashedCampaigns: []
     })
     await supervisor.closeGracefully()
   })

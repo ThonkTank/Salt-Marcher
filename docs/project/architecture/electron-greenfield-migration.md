@@ -118,20 +118,31 @@ The first running-play slice crosses the roadmap labels deliberately without
 claiming completion of M3 or M5. Its approved expansion contains:
 
 - the complete Party roster dropdown, Party membership, progression, rests,
-  and the separate Adventuring Day top-bar calculator
+  and the separate Adventuring Day top-bar calculator; the focused Scene shows
+  Party as its first allied group card and owns only Scene assignment; joining
+  the Party atomically assigns the PC to the focused Scene
+- anchored burger-menu Campaign CRUD without an icon-rail Campaign workspace,
+  including rename, recoverable trash/restore, exact-name permanent deletion,
+  and crash-reconciled `.trash`/`.deleting` directory transitions in schema v5
 - the productive Monster section of the common Catalog, backed by a versioned
   local SRD 5.1 resource; the other Catalog sections remain later slices
 - one focused persistent runtime Scene with explicit PC assignments and named
-  GM creature groups; one two-pane builder combines the shared filtered
-  creature catalog, transient manual editing, live balancing, and fill-or-
-  replace generation before an explicit Scene save
+  GM creature groups carrying an optional note, visual disposition, and archive
+  state; the v3-to-v4 migration gives existing notes the empty value; one
+  two-pane builder creates empty or populated groups and combines the shared
+  filtered creature catalog, transient manual editing, live balancing, and
+  fill-or-replace generation for new or existing groups before an explicit save
 - a scenario dropdown for Encounter and read-only Reise; Encounter consumes
   only selected Scene groups and owns difficulty evaluation, Initiative,
-  Combat, and Resolution, with the explicit no-loot state until Loot migrates
-- a persistent four-panel Session surface with one shared column divider and
-  an independent right-side Details/Scenario divider, focused-scene control,
-  scene-local detail history, inline statblocks, and an honest provider-ready
-  map/route-planning shell; Combat is persisted independently per running Scene
+  Combat, and Resolution, with a four-phase breadcrumb, monster-only initiative
+  rolls, individual mob HP/conditions, bounded persisted undo, and the explicit
+  no-loot state until Loot migrates
+- a persistent three-column Session surface with independently resizable
+  control/group and scenario columns around a flexible Details/Katalog/Karte
+  center, focused-scene control, shared catalog filtering, scene-local detail
+  history, inline and active-monster-following statblocks, and an honest
+  provider-ready map/route-planning shell; Combat is persisted independently per
+  running Scene
 - campaign-local World Planner location and faction CRUD plus authored
   Encounter Tables in Catalog; locations link factions and tables, factions
   own disposition, a primary table and optional finite inventory caps, while

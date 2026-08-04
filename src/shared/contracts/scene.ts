@@ -13,12 +13,22 @@ export const sceneGroupEntrySchema = z
   })
   .strict()
 
+export const sceneGroupDispositionSchema = z.enum([
+  'hostile',
+  'neutral',
+  'allied'
+])
+
 export const sceneGroupSchema = z
   .object({
     id: z.uuid(),
     name: z.string().min(1).max(100),
+    note: z.string().max(1_000),
+    disposition: sceneGroupDispositionSchema,
+    archived: z.boolean(),
+    baseXp: z.number().int().nonnegative(),
     position: z.number().int().nonnegative(),
-    entries: z.array(sceneGroupEntrySchema).min(1)
+    entries: z.array(sceneGroupEntrySchema)
   })
   .strict()
 
@@ -61,13 +71,15 @@ export const sceneGroupDraftEntrySchema = z
   })
   .strict()
 
-const groupEntriesInputSchema = z.array(sceneGroupDraftEntrySchema).min(1)
+const groupEntriesInputSchema = z.array(sceneGroupDraftEntrySchema)
 
 export const saveSceneGroupInputSchema = z
   .object({
     sceneId: z.uuid(),
     groupId: z.uuid().nullable(),
     name: z.string().trim().min(1).max(100),
+    note: z.string().trim().max(1_000),
+    disposition: sceneGroupDispositionSchema,
     entries: groupEntriesInputSchema,
     expectedRevision: z.number().int().nonnegative()
   })
@@ -77,6 +89,15 @@ export const deleteSceneGroupInputSchema = z
   .object({
     sceneId: z.uuid(),
     groupId: z.uuid(),
+    expectedRevision: z.number().int().nonnegative()
+  })
+  .strict()
+
+export const setSceneGroupArchivedInputSchema = z
+  .object({
+    sceneId: z.uuid(),
+    groupId: z.uuid(),
+    archived: z.boolean(),
     expectedRevision: z.number().int().nonnegative()
   })
   .strict()
@@ -140,6 +161,15 @@ export const sceneGroupDraftEvaluationSchema = z
     ]),
     baseXp: z.number().int().nonnegative(),
     adjustedXp: z.number().int().nonnegative(),
+    multiplier: z.number().positive(),
+    difficultyBand: z.enum([
+      'trivial',
+      'easy',
+      'medium',
+      'hard',
+      'deadly',
+      'unavailable'
+    ]),
     difficultyLabel: z.string(),
     canStart: z.boolean(),
     message: z.string()
@@ -194,6 +224,7 @@ export const sceneGroupDraftGenerationSchema = z
   .strict()
 
 export type SceneGroup = Readonly<z.infer<typeof sceneGroupSchema>>
+export type SceneGroupDisposition = z.infer<typeof sceneGroupDispositionSchema>
 export type RunningScene = Readonly<z.infer<typeof runningSceneSchema>>
 export type SceneSnapshot = Readonly<z.infer<typeof sceneSnapshotSchema>>
 export type SceneGroupDraftGeneration = Readonly<

@@ -5,6 +5,21 @@ import { hexTravelSnapshotSchema } from './hex.js'
 
 export { partyCharacterSchema as partyMemberSchema, partySnapshotSchema }
 
+export const combatConditions = [
+  'Liegend',
+  'Betäubt',
+  'Konzentration',
+  'Gefesselt',
+  'Verlangsamt',
+  'Verängstigt',
+  'Blind',
+  'Vergiftet',
+  'Gelähmt',
+  'Bezaubert'
+] as const
+
+export const combatConditionSchema = z.enum(combatConditions)
+
 export const initiativeRowSchema = z
   .object({
     id: z.string().min(1),
@@ -17,16 +32,20 @@ export const initiativeRowSchema = z
 export const combatCardSchema = z
   .object({
     id: z.string().min(1),
+    creatureId: z.string().min(1).nullable(),
     memberIds: z.array(z.string().min(1)).min(1),
     name: z.string().min(1),
     playerCharacter: z.boolean(),
     active: z.boolean(),
+    done: z.boolean(),
     alive: z.boolean(),
     currentHp: z.number().int().nonnegative(),
     maxHp: z.number().int().nonnegative(),
     armorClass: z.number().int().nonnegative(),
     initiative: z.number().int().min(-10).max(40),
     count: z.number().int().positive(),
+    aliveCount: z.number().int().nonnegative(),
+    conditions: z.array(combatConditionSchema),
     detail: z.string()
   })
   .strict()
@@ -64,6 +83,7 @@ export const combatSnapshotSchema = z
     initiativeRows: z.array(initiativeRowSchema),
     cards: z.array(combatCardSchema),
     round: z.number().int().positive(),
+    undoLabel: z.string().min(1).nullable(),
     allEnemiesDefeated: z.boolean(),
     resolution: resolutionSchema.nullable()
   })
@@ -145,6 +165,14 @@ export const changeHpInputSchema = combatRevisionInputSchema
   })
   .strict()
 
+export const toggleConditionInputSchema = combatRevisionInputSchema
+  .extend({
+    cardId: z.string().min(1),
+    condition: combatConditionSchema,
+    active: z.boolean()
+  })
+  .strict()
+
 export const updateResolutionInputSchema = combatRevisionInputSchema
   .extend({
     selectedEnemyIds: z.array(z.string().min(1)),
@@ -156,6 +184,7 @@ export const updateResolutionInputSchema = combatRevisionInputSchema
 export type PartyMember = Readonly<z.infer<typeof partyCharacterSchema>>
 export type PartySnapshot = Readonly<z.infer<typeof partySnapshotSchema>>
 export type CombatSnapshot = Readonly<z.infer<typeof combatSnapshotSchema>>
+export type CombatCondition = z.infer<typeof combatConditionSchema>
 export type LiveSessionSnapshot = Readonly<
   z.infer<typeof liveSessionSnapshotSchema>
 >

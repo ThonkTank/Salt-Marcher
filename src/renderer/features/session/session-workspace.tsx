@@ -1,13 +1,5 @@
-import { message as uiMessage } from '../../i18n/messages.de.js'
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent as ReactKeyboardEvent,
-  type PointerEvent as ReactPointerEvent,
-  type ReactNode
-} from 'react'
+import { formatMessage, message as uiMessage } from '../../i18n/messages.de.js'
+import { useEffect, useMemo, useRef, useState, Fragment } from 'react'
 import type {
   Creature,
   CreatureCatalogPage,
@@ -17,16 +9,17 @@ import type {
 import type { EncounterTuning } from '../../../shared/contracts/encounter-tuning.js'
 import type {
   SceneGroup,
+  SceneGroupDisposition,
   SceneGroupDraftEvaluation
 } from '../../../shared/contracts/scene.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type { SessionLayoutPreference } from '../../../shared/contracts/session-layout.js'
 import { SessionHexMap, TravelScenario } from '../hex/hex-workspaces.js'
+import { SessionEncounterPanel } from '../encounter/encounter-panels.js'
 import {
   DifficultySummary,
-  SessionEncounterPanel,
   TuningControls
-} from '../encounter/encounter-panels.js'
+} from '../encounter/encounter-tuning.js'
 import { CreatureFilters, FilterChips } from '../catalog/catalog-controls.js'
 import {
   emptyCreatureOptions,
@@ -41,6 +34,18 @@ import { CreatureInspector } from '../catalog/creature-inspector.js'
 import './session.css'
 import { sessionCapabilities } from './session-capabilities.js'
 import { useSessionDetailHistory } from './use-session-detail-history.js'
+import { SessionPanelLayout } from './session-panel-layout.js'
+import { SessionGroupCard } from './session-group-card.js'
+import { ScenePartyCard } from './scene-party-card.js'
+import {
+  creatureFact,
+  groupDraftEntries,
+  groupDraftSignature,
+  newGroupDraftKey,
+  type DraftCreatureFact,
+  type GroupDraftAction,
+  type GroupDraftState
+} from './group-draft.js'
 
 export default function SessionWorkspace(props: {
   snapshot: LiveSessionSnapshot
@@ -54,11 +59,59 @@ export default function SessionWorkspace(props: {
   onError: (message: string) => void
 }) {
   const [editingGroup, setEditingGroup] = useState<SceneGroup | null>(null)
+  const [deleteGroupId, setDeleteGroupId] = useState<string | null>(null)
+  const [catalogQuery, setCatalogQuery] = useState<CreatureCatalogQuery>({
+    ...emptyQuery,
+    limit: 30
+  })
+  const [catalogPage, setCatalogPage] = useState<CreatureCatalogPage | null>(
+    null
+  )
+  const [catalogOptions, setCatalogOptions] = useState(emptyCreatureOptions)
+  const followedCombatCard = useRef<string | null>(null)
   const focused = props.snapshot.scene.scenes.find(
     (scene) => scene.id === props.snapshot.scene.focusedSceneId
   )!
-  const { history, detail, openDetail, moveHistory, closeDetail } =
+  const { history, detail, breadcrumb, openDetail, moveHistory, closeDetail } =
     useSessionDetailHistory(focused.id)
+
+  useCreatureSearch(catalogQuery, setCatalogPage, props.onError)
+  useEffect(() => {
+    void sessionCapabilities()
+      .creatures.filterOptions()
+      .then(setCatalogOptions)
+      .catch(reportCapabilityError(props.onError))
+  }, [props.onError])
+
+  async function openCreature(creatureId: string, context: string) {
+    try {
+      const creature = await sessionCapabilities().creatures.detail(creatureId)
+      openDetail(creature, `${context} › ${creature.name}`)
+      props.setLayout({ ...props.layout, centerTab: 'details' })
+    } catch (cause) {
+      props.onError(capabilityErrorText(cause))
+    }
+  }
+
+  const activeCombatCard = props.snapshot.combat?.cards.find(
+    (card) => card.active && !card.playerCharacter && card.creatureId
+  )
+  useEffect(() => {
+    if (!activeCombatCard?.creatureId) {
+      followedCombatCard.current = null
+      return
+    }
+    if (followedCombatCard.current === activeCombatCard.id) return
+    followedCombatCard.current = activeCombatCard.id
+    const group = focused.groups.find((candidate) =>
+      candidate.entries.some(
+        (entry) => entry.creatureId === activeCombatCard.creatureId
+      )
+    )
+    void openCreature(activeCombatCard.creatureId, group?.name ?? 'Encounter')
+    // The active card identity deliberately controls this effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeCombatCard?.id, activeCombatCard?.creatureId])
 
   const control = (
     <section
@@ -66,10 +119,7 @@ export default function SessionWorkspace(props: {
       aria-label={uiMessage('ui.session.steuerung')}
     >
       <div className="panel-heading">
-        <div>
-          <p className="section-kicker">{uiMessage('nav.session')}</p>
-          <h2>{uiMessage('ui.steuerung')}</h2>
-        </div>
+        <h2>{uiMessage('ui.session.steuerung')}</h2>
         <button
           onClick={() => {
             setEditingGroup(null)
@@ -145,28 +195,52 @@ export default function SessionWorkspace(props: {
       <div className="groups-heading">
         <h2>{uiMessage('ui.gruppen')}</h2>
       </div>
-      <PartyGroup
+      <ScenePartyCard
         snapshot={props.snapshot}
         sceneId={focused.id}
         setSnapshot={props.setSnapshot}
         onError={props.onError}
       />
-      {focused.groups.map((group) => (
-        <article className="group-card" key={group.id}>
-          <div className="group-card-title">
-            <strong>{group.name}</strong>
-            <div className="row-actions">
-              <button
-                onClick={() => {
-                  setEditingGroup(group)
-                  props.setGroupDialogOpen(true)
-                }}
-              >
-                {uiMessage('ui.bearbeiten')}
-              </button>
-              <button
-                className="danger"
-                onClick={() =>
+      {focused.groups
+        .filter((group) => !group.archived)
+        .map((group) => (
+          <SessionGroupCard
+            key={group.id}
+            group={group}
+            inspect={(creatureId) => void openCreature(creatureId, group.name)}
+            edit={() => {
+              setEditingGroup(group)
+              props.setGroupDialogOpen(true)
+            }}
+          />
+        ))}
+      {focused.groups.some((group) => group.archived) && (
+        <div className="inactive-groups">
+          <h3>{uiMessage('group.inactive')}</h3>
+          {focused.groups
+            .filter((group) => group.archived)
+            .map((group) => (
+              <SessionGroupCard
+                key={group.id}
+                group={group}
+                inspect={(creatureId) =>
+                  void openCreature(creatureId, group.name)
+                }
+                restore={() =>
+                  void scenarioAction(props, () =>
+                    sessionCapabilities().scene.setGroupArchived(
+                      focused.id,
+                      group.id,
+                      false,
+                      props.snapshot.scene.revision
+                    )
+                  )
+                }
+                deleteRequested={() => setDeleteGroupId(group.id)}
+                deleteConfirming={deleteGroupId === group.id}
+                cancelDelete={() => setDeleteGroupId(null)}
+                deleteGroup={() => {
+                  setDeleteGroupId(null)
                   void scenarioAction(props, () =>
                     sessionCapabilities().scene.deleteGroup(
                       focused.id,
@@ -174,31 +248,11 @@ export default function SessionWorkspace(props: {
                       props.snapshot.scene.revision
                     )
                   )
-                }
-              >
-                {uiMessage('ui.loeschen')}
-              </button>
-            </div>
-          </div>
-          <div className="group-members">
-            {group.entries.map((entry) => (
-              <button
-                key={entry.id}
-                className={entry.available ? '' : 'unavailable'}
-                disabled={!entry.available}
-                onClick={() =>
-                  void sessionCapabilities()
-                    .creatures.detail(entry.creatureId)
-                    .then(openDetail)
-                    .catch(reportCapabilityError(props.onError))
-                }
-              >
-                {entry.displayName} × {entry.quantity}
-              </button>
+                }}
+              />
             ))}
-          </div>
-        </article>
-      ))}
+        </div>
+      )}
     </section>
   )
 
@@ -210,28 +264,44 @@ export default function SessionWorkspace(props: {
       <div className="session-panel-tabs" role="tablist">
         <button
           role="tab"
-          aria-selected={props.layout.upperRightTab === 'details'}
+          aria-selected={props.layout.centerTab === 'details'}
           onClick={() =>
-            props.setLayout({ ...props.layout, upperRightTab: 'details' })
+            props.setLayout({ ...props.layout, centerTab: 'details' })
           }
         >
-          {uiMessage('ui.details')}
+          {uiMessage('ui.detail')}
         </button>
         <button
           role="tab"
-          aria-selected={props.layout.upperRightTab === 'map'}
+          aria-selected={props.layout.centerTab === 'catalog'}
           onClick={() =>
-            props.setLayout({ ...props.layout, upperRightTab: 'map' })
+            props.setLayout({ ...props.layout, centerTab: 'catalog' })
           }
+        >
+          {uiMessage('nav.catalog')}
+        </button>
+        <button
+          role="tab"
+          aria-selected={props.layout.centerTab === 'map'}
+          onClick={() => props.setLayout({ ...props.layout, centerTab: 'map' })}
         >
           {uiMessage('ui.karte')}
         </button>
       </div>
-      {props.layout.upperRightTab === 'map' ? (
+      {props.layout.centerTab === 'map' ? (
         <SessionHexMap
           snapshot={props.snapshot}
           setSnapshot={props.setSnapshot}
           onError={props.onError}
+        />
+      ) : props.layout.centerTab === 'catalog' ? (
+        <CreatureCollectionCatalogPane
+          query={catalogQuery}
+          options={catalogOptions}
+          page={catalogPage}
+          changed={setCatalogQuery}
+          inspect={(creature) => void openCreature(creature.id, 'Katalog')}
+          variant="inspector"
         />
       ) : (
         <>
@@ -244,27 +314,30 @@ export default function SessionWorkspace(props: {
               disabled={history.index <= 0}
               onClick={() => moveHistory(-1)}
             >
-              ←
+              ‹
             </button>
             <button
               aria-label={uiMessage('ui.vor')}
               disabled={history.index >= history.entries.length - 1}
               onClick={() => moveHistory(1)}
             >
-              →
+              ›
             </button>
+            <span>{breadcrumb ?? (focused.locationName || focused.title)}</span>
             <button
+              className="detail-close"
               aria-label={uiMessage('ui.detail.schliessen')}
               disabled={!detail}
               onClick={closeDetail}
             >
               ×
             </button>
-            <span>
-              {detail?.name ?? (focused.locationName || focused.title)}
-            </span>
           </nav>
-          <div className="detail-scroll">
+          <div
+            className="detail-scroll"
+            tabIndex={0}
+            aria-label={uiMessage('ui.detailansicht')}
+          >
             {detail ? (
               <CreatureInspector creature={detail} embedded />
             ) : (
@@ -289,33 +362,40 @@ export default function SessionWorkspace(props: {
       className="scenario-panel"
       aria-label={uiMessage('ui.szenario.panel')}
     >
-      <select
-        aria-label={uiMessage('ui.szenario.auswahl')}
-        value={props.scenario}
-        onChange={(event) =>
-          props.setScenario(event.target.value as '' | 'encounter' | 'travel')
-        }
-      >
-        <option value="">{uiMessage('ui.szenario.auswaehlen')}</option>
-        <option value="encounter">{uiMessage('ui.encounter')}</option>
-        <option value="travel">{uiMessage('ui.reise')}</option>
-      </select>
+      <header>
+        <select
+          aria-label={uiMessage('ui.szenario.auswahl')}
+          value={props.scenario}
+          onChange={(event) =>
+            props.setScenario(event.target.value as '' | 'encounter' | 'travel')
+          }
+        >
+          <option value="">{uiMessage('ui.szenario.auswaehlen')}</option>
+          <option value="encounter">{uiMessage('ui.encounter')}</option>
+          <option value="travel">{uiMessage('ui.reise')}</option>
+        </select>
+      </header>
       {!props.scenario ? (
         <div className="scenario-empty">{uiMessage('ui.szenario.panel')}</div>
       ) : props.scenario === 'travel' ? (
         <TravelScenario
           snapshot={props.snapshot}
           setSnapshot={props.setSnapshot}
-          openMap={() =>
-            props.setLayout({ ...props.layout, upperRightTab: 'map' })
-          }
+          openMap={() => props.setLayout({ ...props.layout, centerTab: 'map' })}
           onError={props.onError}
         />
       ) : (
         <SessionEncounterPanel
           {...props}
-          inspect={openDetail}
+          inspect={(creature) => {
+            openDetail(creature, `Encounter › ${creature.name}`)
+            props.setLayout({ ...props.layout, centerTab: 'details' })
+          }}
           close={() => props.setScenario('')}
+          manageGroups={() => {
+            setEditingGroup(null)
+            props.setGroupDialogOpen(true)
+          }}
         />
       )}
     </aside>
@@ -345,7 +425,10 @@ export default function SessionWorkspace(props: {
             props.setSnapshot(snapshot)
             props.setGroupDialogOpen(false)
           }}
-          inspect={openDetail}
+          inspect={(creature) => {
+            openDetail(creature, `Katalog › ${creature.name}`)
+            props.setLayout({ ...props.layout, centerTab: 'details' })
+          }}
           onError={props.onError}
         />
       )}
@@ -353,160 +436,28 @@ export default function SessionWorkspace(props: {
   )
 }
 
-function SessionPanelLayout(props: {
-  preference: SessionLayoutPreference
-  changed: (preference: SessionLayoutPreference) => void
-  control: ReactNode
-  groups: ReactNode
-  details: ReactNode
-  scenario: ReactNode
+function DispositionSelect(props: {
+  value: SceneGroupDisposition
+  changed: (value: SceneGroupDisposition) => void
 }) {
-  const p = props.preference
   return (
-    <div className="session-workspace">
-      <div
-        className="session-column session-left-column"
-        style={{ flexBasis: `${p.leftFraction * 100}%` }}
+    <label>
+      {uiMessage('group.disposition')}
+      <select
+        value={props.value}
+        onChange={(event) =>
+          props.changed(event.target.value as SceneGroupDisposition)
+        }
       >
-        <div className="session-control-pane">{props.control}</div>
-        <div className="session-pane">{props.groups}</div>
-      </div>
-      <SessionDivider
-        axis="vertical"
-        value={p.leftFraction}
-        changed={(leftFraction) => props.changed({ ...p, leftFraction })}
-        label="Gekoppelte Grenze zwischen linker und rechter Spalte"
-      />
-      <div className="session-column">
-        <div
-          className="session-pane"
-          style={{ flexBasis: `${p.rightTopFraction * 100}%` }}
-        >
-          {props.details}
-        </div>
-        <SessionDivider
-          axis="horizontal"
-          value={p.rightTopFraction}
-          changed={(rightTopFraction) =>
-            props.changed({ ...p, rightTopFraction })
-          }
-          label="Grenze zwischen Details und Szenario"
-        />
-        <div className="session-pane">{props.scenario}</div>
-      </div>
-    </div>
-  )
-}
-
-function SessionDivider(props: {
-  axis: 'horizontal' | 'vertical'
-  value: number
-  changed: (value: number) => void
-  label: string
-}) {
-  const resize = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if ((event.target as HTMLElement).closest('button')) return
-    event.preventDefault()
-    const parent = event.currentTarget.parentElement
-    if (!parent) return
-    const bounds = parent.getBoundingClientRect()
-    const update = (clientX: number, clientY: number) => {
-      const raw =
-        props.axis === 'vertical'
-          ? (clientX - bounds.left) / bounds.width
-          : (clientY - bounds.top) / bounds.height
-      props.changed(Math.max(0.18, Math.min(0.82, raw)))
-    }
-    update(event.clientX, event.clientY)
-    const move = (next: PointerEvent) => update(next.clientX, next.clientY)
-    const stop = () => {
-      window.removeEventListener('pointermove', move)
-      window.removeEventListener('pointerup', stop)
-    }
-    window.addEventListener('pointermove', move)
-    window.addEventListener('pointerup', stop, { once: true })
-  }
-  const keyboard = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    const direction =
-      props.axis === 'vertical'
-        ? event.key === 'ArrowLeft'
-          ? -1
-          : event.key === 'ArrowRight'
-            ? 1
-            : 0
-        : event.key === 'ArrowUp'
-          ? -1
-          : event.key === 'ArrowDown'
-            ? 1
-            : 0
-    if (!direction) return
-    event.preventDefault()
-    props.changed(
-      Math.max(0.18, Math.min(0.82, props.value + direction * 0.02))
-    )
-  }
-  return (
-    <div
-      className={`session-divider session-divider-${props.axis}`}
-      role="separator"
-      aria-label={props.label}
-      aria-orientation={props.axis}
-      aria-valuemin={18}
-      aria-valuemax={82}
-      aria-valuenow={Math.round(props.value * 100)}
-      tabIndex={0}
-      onPointerDown={resize}
-      onKeyDown={keyboard}
-    />
-  )
-}
-
-function PartyGroup(props: {
-  snapshot: LiveSessionSnapshot
-  sceneId: string
-  setSnapshot: (snapshot: LiveSessionSnapshot) => void
-  onError: (message: string) => void
-}) {
-  const active = props.snapshot.party.members.filter((member) => member.active)
-  const scene = props.snapshot.scene.scenes.find(
-    (entry) => entry.id === props.sceneId
-  )!
-  return (
-    <article className="group-card party-group">
-      <div className="group-card-title">
-        <strong>{uiMessage('ui.party')}</strong>
-        <span>
-          {scene.partyMemberIds.length} {uiMessage('ui.in.dieser.scene')}
-        </span>
-      </div>
-      <div className="group-members">
-        {active.length === 0 ? (
-          <span>{uiMessage('ui.keine.aktiven.mitglieder')}</span>
-        ) : (
-          active.map((member) => (
-            <span key={member.id} className="scene-party-member">
-              {member.name} {uiMessage('ui.lv')} {member.level ?? '—'}{' '}
-              <button
-                onClick={() =>
-                  void scenarioAction(props, () =>
-                    sessionCapabilities().scene.assignPartyMember(
-                      props.sceneId,
-                      member.id,
-                      !scene.partyMemberIds.includes(member.id),
-                      props.snapshot.scene.revision
-                    )
-                  )
-                }
-              >
-                {scene.partyMemberIds.includes(member.id)
-                  ? uiMessage('ui.entfernen')
-                  : uiMessage('session.assignToScene')}
-              </button>
-            </span>
-          ))
-        )}
-      </div>
-    </article>
+        <option value="hostile">
+          {uiMessage('group.disposition.hostile')}
+        </option>
+        <option value="neutral">
+          {uiMessage('group.disposition.neutral')}
+        </option>
+        <option value="allied">{uiMessage('group.disposition.allied')}</option>
+      </select>
+    </label>
   )
 }
 
@@ -515,14 +466,31 @@ export function CreatureCollectionCatalogPane(props: {
   options: CreatureFilterOptions
   page: CreatureCatalogPage | null
   changed: (query: CreatureCatalogQuery) => void
-  add: (creature: Creature) => void
+  add?: (creature: Creature) => void
   inspect: (creature: Creature) => void
+  quantities?: Readonly<Record<string, number>>
+  variant?: 'builder' | 'inspector'
 }) {
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set())
+
+  function toggleExpanded(creatureId: string) {
+    setExpanded((current) => {
+      const next = new Set(current)
+      if (next.has(creatureId)) next.delete(creatureId)
+      else next.add(creatureId)
+      return next
+    })
+  }
+
   return (
     <section
       className="group-catalog-pane"
       aria-label={uiMessage('ui.monsterkatalog')}
     >
+      <div className="catalog-pane-summary">
+        <strong>{uiMessage('ui.monsterkatalog')}</strong>
+        <span>{props.page?.message}</span>
+      </div>
       <CreatureFilters
         query={props.query}
         options={props.options}
@@ -540,35 +508,80 @@ export function CreatureCollectionCatalogPane(props: {
               <th>{uiMessage('ui.cr')}</th>
               <th>{uiMessage('ui.typ')}</th>
               <th>{uiMessage('ui.xp.2')}</th>
-              <th>{uiMessage('ui.aktionen')}</th>
+              {props.variant !== 'inspector' && (
+                <th>{uiMessage('ui.aktionen')}</th>
+              )}
             </tr>
           </thead>
           <tbody>
-            {props.page?.rows.map((creature) => (
-              <tr key={creature.id}>
-                <td>
-                  <button
-                    type="button"
-                    className="link-button"
-                    onClick={() => props.inspect(creature)}
-                  >
-                    {creature.name}
-                  </button>
-                </td>
-                <td>{creature.challengeRating}</td>
-                <td>{creature.type}</td>
-                <td>{creature.xp.toLocaleString()}</td>
-                <td>
-                  <button
-                    type="button"
-                    aria-label={`${creature.name} hinzufügen`}
-                    onClick={() => props.add(creature)}
-                  >
-                    +
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {props.page?.rows.map((creature) => {
+              const open = expanded.has(creature.id)
+              const quantity = props.quantities?.[creature.id] ?? 0
+              return (
+                <Fragment key={creature.id}>
+                  <tr className={open ? 'catalog-row expanded' : 'catalog-row'}>
+                    <td>
+                      <span className="catalog-name-cell">
+                        <button
+                          type="button"
+                          className="catalog-expand"
+                          aria-expanded={open}
+                          aria-label={formatMessage(
+                            open
+                              ? 'catalog.hideCreature'
+                              : 'catalog.showCreature',
+                            { name: creature.name }
+                          )}
+                          onClick={() =>
+                            props.variant === 'inspector'
+                              ? props.inspect(creature)
+                              : toggleExpanded(creature.id)
+                          }
+                        >
+                          {open ? '▾' : '▸'}
+                        </button>
+                        <button
+                          type="button"
+                          className="link-button"
+                          onClick={() => props.inspect(creature)}
+                        >
+                          {creature.name}
+                        </button>
+                      </span>
+                    </td>
+                    <td>{creature.challengeRating}</td>
+                    <td>{creature.type}</td>
+                    <td>{creature.xp.toLocaleString()}</td>
+                    {props.variant !== 'inspector' && (
+                      <td>
+                        {quantity > 0 ? (
+                          <span className="catalog-in-draft">
+                            {formatMessage('catalog.inGroup', { quantity })}
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            aria-label={formatMessage('catalog.addCreature', {
+                              name: creature.name
+                            })}
+                            onClick={() => props.add?.(creature)}
+                          >
+                            +
+                          </button>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                  {open && props.variant !== 'inspector' && (
+                    <tr className="catalog-expanded-row">
+                      <td colSpan={5}>
+                        <CreatureInspector creature={creature} embedded />
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
+              )
+            })}
           </tbody>
         </table>
         {props.page?.status === 'empty' && (
@@ -618,7 +631,7 @@ export function CreatureCollectionSelection(props: {
   label: string
   value: string | null
   emptyLabel: string
-  newLabel: string
+  newLabel?: string
   choices: readonly { id: string; label: string }[]
   changed: (value: string | null) => void
 }) {
@@ -632,7 +645,7 @@ export function CreatureCollectionSelection(props: {
           onChange={(event) => props.changed(event.target.value || null)}
         >
           <option value="">{props.emptyLabel}</option>
-          <option value="new">{props.newLabel}</option>
+          {props.newLabel && <option value="new">{props.newLabel}</option>}
           {props.choices.map((choice) => (
             <option key={choice.id} value={choice.id}>
               {choice.label}
@@ -640,9 +653,11 @@ export function CreatureCollectionSelection(props: {
           ))}
         </select>
       </label>
-      <button type="button" onClick={() => props.changed('new')}>
-        {props.newLabel}
-      </button>
+      {props.newLabel && (
+        <button type="button" onClick={() => props.changed('new')}>
+          {props.newLabel}
+        </button>
+      )}
     </div>
   )
 }
@@ -658,6 +673,7 @@ function GroupDialog(props: {
   const focused = props.snapshot.scene.scenes.find(
     (scene) => scene.id === props.snapshot.scene.focusedSceneId
   )!
+  const activeGroups = focused.groups.filter((group) => !group.archived)
   const initialQuantities = Object.fromEntries(
     props.group?.entries.map((entry) => [entry.creatureId, entry.quantity]) ??
       []
@@ -674,11 +690,16 @@ function GroupDialog(props: {
     ]) ?? []
   )
   const [selection, setSelection] = useState<string | null>(
-    props.group?.id ?? null
+    props.group?.id ?? (activeGroups.length === 0 ? newGroupDraftKey : null)
   )
   const [name, setName] = useState(props.group?.name ?? '')
+  const [note, setNote] = useState(props.group?.note ?? '')
+  const [disposition, setDisposition] = useState<SceneGroupDisposition>(
+    props.group?.disposition ?? 'hostile'
+  )
   const [query, setQuery] = useState<CreatureCatalogQuery>({
     ...emptyQuery,
+    locationId: focused.locationId,
     limit: 30
   })
   const [page, setPage] = useState<CreatureCatalogPage | null>(null)
@@ -696,17 +717,29 @@ function GroupDialog(props: {
   const [evaluation, setEvaluation] =
     useState<SceneGroupDraftEvaluation | null>(null)
   const [baseline, setBaseline] = useState(() =>
-    groupDraftSignature(props.group?.name ?? '', initialQuantities)
+    groupDraftSignature(
+      props.group?.name ?? '',
+      props.group?.note ?? '',
+      props.group?.disposition ?? 'hostile',
+      initialQuantities
+    )
   )
   const [pending, setPending] = useState<GroupDraftAction | null>(null)
   const [seed, setSeed] = useState(0)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
+  const drafts = useRef(new Map<string, GroupDraftState>())
   const evaluationRequest = useRef(0)
   const factsRequest = useRef(0)
   const entries = useMemo(() => groupDraftEntries(quantities), [quantities])
+  const creatureCount = entries.reduce(
+    (total, entry) => total + entry.quantity,
+    0
+  )
   const active = selection !== null
-  const dirty = active && groupDraftSignature(name, quantities) !== baseline
+  const dirty =
+    active &&
+    groupDraftSignature(name, note, disposition, quantities) !== baseline
   const assigned = props.snapshot.party.members.filter((member) =>
     focused.partyMemberIds.includes(member.id)
   )
@@ -714,12 +747,7 @@ function GroupDialog(props: {
     active &&
     assigned.length > 0 &&
     assigned.every((member) => member.level !== null)
-  const sourceQuery = useMemo(
-    () => ({ ...query, locationId: focused.locationId }),
-    [focused.locationId, query]
-  )
-
-  useCreatureSearch(sourceQuery, setPage, props.onError)
+  useCreatureSearch(query, setPage, props.onError)
   useEffect(() => {
     void sessionCapabilities()
       .creatures.filterOptions()
@@ -749,7 +777,7 @@ function GroupDialog(props: {
   }, [active, entries, focused.id, props.snapshot.scene.revision])
 
   useEffect(() => {
-    if (!selection || selection === 'new') return
+    if (!selection) return
     const group = focused.groups.find((candidate) => candidate.id === selection)
     if (!group) return
     const token = ++factsRequest.current
@@ -771,11 +799,27 @@ function GroupDialog(props: {
   }, [focused.groups, selection])
 
   function load(nextSelection: string | null) {
-    const group =
-      nextSelection && nextSelection !== 'new'
-        ? focused.groups.find((candidate) => candidate.id === nextSelection)
-        : undefined
+    cacheCurrentDraft()
+    const cached = nextSelection ? drafts.current.get(nextSelection) : null
+    if (cached) {
+      setSelection(nextSelection)
+      setName(cached.name)
+      setNote(cached.note)
+      setDisposition(cached.disposition)
+      setQuantities(cached.quantities)
+      setFacts(cached.facts)
+      setBaseline(cached.baseline)
+      setEvaluation(cached.evaluation)
+      setMessage(cached.message)
+      setSeed(cached.seed)
+      return
+    }
+    const group = nextSelection
+      ? focused.groups.find((candidate) => candidate.id === nextSelection)
+      : undefined
     const nextName = group?.name ?? ''
+    const nextNote = group?.note ?? ''
+    const nextDisposition = group?.disposition ?? 'hostile'
     const nextQuantities = Object.fromEntries(
       group?.entries.map((entry) => [entry.creatureId, entry.quantity]) ?? []
     )
@@ -792,12 +836,43 @@ function GroupDialog(props: {
     )
     setSelection(nextSelection)
     setName(nextName)
+    setNote(nextNote)
+    setDisposition(nextDisposition)
     setQuantities(nextQuantities)
     setFacts(nextFacts)
-    setBaseline(groupDraftSignature(nextName, nextQuantities))
+    setBaseline(
+      groupDraftSignature(nextName, nextNote, nextDisposition, nextQuantities)
+    )
     setEvaluation(null)
     setMessage('')
     setSeed(0)
+  }
+
+  function cacheCurrentDraft() {
+    if (!selection) return
+    drafts.current.set(selection, {
+      name,
+      note,
+      disposition,
+      quantities,
+      facts,
+      baseline,
+      evaluation,
+      seed,
+      message
+    })
+  }
+
+  function hasDirtyDrafts() {
+    return [...drafts.current.values()].some(
+      (draft) =>
+        groupDraftSignature(
+          draft.name,
+          draft.note,
+          draft.disposition,
+          draft.quantities
+        ) !== draft.baseline
+    )
   }
 
   function perform(action: GroupDraftAction) {
@@ -807,22 +882,21 @@ function GroupDialog(props: {
   }
 
   function request(action: GroupDraftAction) {
-    if (dirty) setPending(action)
+    if (action.kind === 'select') {
+      load(action.selection)
+      return
+    }
+    cacheCurrentDraft()
+    if (dirty || hasDirtyDrafts()) setPending(action)
     else perform(action)
   }
 
   function addCreature(creature: Creature) {
-    if (!active) {
-      setSelection('new')
-      setName('')
-      setQuantities({ [creature.id]: 1 })
-      setBaseline(groupDraftSignature('', {}))
-    } else {
-      setQuantities((current) => ({
-        ...current,
-        [creature.id]: Math.min(999, (current[creature.id] ?? 0) + 1)
-      }))
-    }
+    if (!active) return
+    setQuantities((current) => ({
+      ...current,
+      [creature.id]: Math.min(999, (current[creature.id] ?? 0) + 1)
+    }))
     setFacts((current) => ({
       ...current,
       [creature.id]: creatureFact(creature)
@@ -859,7 +933,7 @@ function GroupDialog(props: {
         focused.id,
         entries,
         mode,
-        sourceQuery,
+        query,
         tuning,
         nextSeed,
         props.snapshot.scene.revision
@@ -894,11 +968,14 @@ function GroupDialog(props: {
   }
 
   async function save() {
-    if (!active || !name.trim() || entries.length === 0) {
-      setMessage('Gruppenname und mindestens ein Monster sind erforderlich.')
+    if (!active || !name.trim()) {
+      setMessage('Ein Gruppenname ist erforderlich.')
       return
     }
-    if (!entries.some((entry) => facts[entry.creatureId]?.available === true)) {
+    if (
+      entries.length > 0 &&
+      !entries.some((entry) => facts[entry.creatureId]?.available === true)
+    ) {
       setMessage('Mindestens ein verfügbares Monster ist erforderlich.')
       return
     }
@@ -907,9 +984,30 @@ function GroupDialog(props: {
       props.saved(
         await sessionCapabilities().scene.saveGroup(
           focused.id,
-          selection === 'new' ? null : selection,
+          selection === newGroupDraftKey ? null : selection,
           name.trim(),
+          note.trim(),
+          disposition,
           entries,
+          props.snapshot.scene.revision
+        )
+      )
+    } catch (cause) {
+      setMessage(capabilityErrorText(cause))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function archive() {
+    if (!selection || selection === newGroupDraftKey) return
+    setBusy(true)
+    try {
+      props.saved(
+        await sessionCapabilities().scene.setGroupArchived(
+          focused.id,
+          selection,
+          true,
           props.snapshot.scene.revision
         )
       )
@@ -929,11 +1027,19 @@ function GroupDialog(props: {
         aria-labelledby="group-builder-title"
       >
         <header>
-          <div>
-            <p className="section-kicker">{focused.title}</p>
-            <h2 id="group-builder-title">{uiMessage('ui.gruppen.managen')}</h2>
+          <div className="builder-title-block">
+            <div className="title-group">
+              <span className="illuminated-initial" aria-hidden="true">
+                {uiMessage('ui.gruppen.managen').charAt(0)}
+              </span>
+              <h2 id="group-builder-title">
+                {uiMessage('ui.gruppen.managen').slice(1)}
+              </h2>
+            </div>
+            <p className="scene-crumb">{focused.title}</p>
           </div>
           <button
+            className="close"
             type="button"
             aria-label={uiMessage('ui.dialog.schliessen')}
             onClick={() => request({ kind: 'close' })}
@@ -949,90 +1055,140 @@ function GroupDialog(props: {
             changed={setQuery}
             add={addCreature}
             inspect={(creature) => void inspect(creature)}
+            quantities={quantities}
           />
+          <div className="builder-seam" aria-hidden="true" />
           <section
             className="group-draft-pane"
             aria-label={uiMessage('ui.aktuelle.gruppe')}
           >
-            <CreatureCollectionSelection
-              label="Gruppe"
-              value={selection}
-              emptyLabel="Gruppe auswählen …"
-              newLabel="Neue Gruppe"
-              choices={focused.groups.map((group) => ({
-                id: group.id,
-                label: group.name
-              }))}
-              changed={(nextSelection) =>
-                request({ kind: 'select', selection: nextSelection })
-              }
-            />
+            <div className="group-identity">
+              <CreatureCollectionSelection
+                label="Gruppe"
+                value={selection}
+                emptyLabel="Gruppe auswählen …"
+                newLabel={uiMessage('group.createTitle')}
+                choices={activeGroups.map((group) => ({
+                  id: group.id,
+                  label: group.name
+                }))}
+                changed={(nextSelection) =>
+                  request({ kind: 'select', selection: nextSelection })
+                }
+              />
+              {active && (
+                <>
+                  <label>
+                    {uiMessage('ui.gruppenname')}
+                    <input
+                      className="group-name"
+                      autoFocus
+                      aria-label={uiMessage('ui.gruppenname')}
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
+                    />
+                  </label>
+                  <DispositionSelect
+                    value={disposition}
+                    changed={setDisposition}
+                  />
+                  <label className="group-note-field">
+                    {uiMessage('group.note')}
+                    <textarea
+                      aria-label={uiMessage('group.note')}
+                      maxLength={1000}
+                      rows={2}
+                      value={note}
+                      onChange={(event) => setNote(event.target.value)}
+                    />
+                  </label>
+                </>
+              )}
+            </div>
             {!active ? (
               <p className="empty-state">
                 {uiMessage('ui.waehle.eine.gruppe.aus.oder.lege.eine.neue')}
               </p>
             ) : (
               <>
-                <input
-                  autoFocus
-                  aria-label={uiMessage('ui.gruppenname')}
-                  placeholder={uiMessage('ui.gruppenname')}
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                />
-                <ul className="group-draft-roster">
-                  {entries.map((entry) => {
-                    const fact = facts[entry.creatureId]
-                    return (
-                      <li
-                        key={entry.creatureId}
-                        className={
-                          fact?.available === false ? 'unavailable' : ''
-                        }
+                <section className="group-draft-sheet">
+                  <header>
+                    <h3>{uiMessage('ui.entwurf')}</h3>
+                    <span className="draft-meta">
+                      {creatureCount} {uiMessage('ui.wesen')}
+                      {evaluation
+                        ? ` · ${evaluation.baseXp.toLocaleString()} XP`
+                        : ''}
+                    </span>
+                    {entries.length > 0 && (
+                      <button
+                        className="clear-draft"
+                        type="button"
+                        onClick={() => setQuantities({})}
                       >
-                        <div className="roster-quantity">
-                          <button
-                            aria-label={`Anzahl ${fact?.displayName ?? entry.creatureId} verringern`}
-                            onClick={() => changeQuantity(entry.creatureId, -1)}
-                          >
-                            −
-                          </button>
-                          <strong>{entry.quantity}</strong>
-                          <button
-                            aria-label={`Anzahl ${fact?.displayName ?? entry.creatureId} erhöhen`}
-                            onClick={() => changeQuantity(entry.creatureId, 1)}
-                          >
-                            +
-                          </button>
-                        </div>
-                        <span>
-                          <strong>
-                            {fact?.displayName ?? entry.creatureId}
-                          </strong>
-                          <small>
-                            {uiMessage('ui.cr')} {fact?.cr ?? '—'} ·{' '}
-                            {(fact?.xp ?? 0).toLocaleString()}{' '}
-                            {uiMessage('ui.xp.2')}
-                          </small>
-                        </span>
-                        <button
-                          aria-label={`${fact?.displayName ?? entry.creatureId} entfernen`}
-                          onClick={() =>
-                            changeQuantity(entry.creatureId, -entry.quantity)
+                        {uiMessage('ui.leeren')}
+                      </button>
+                    )}
+                  </header>
+                  <ul className="group-draft-roster">
+                    {entries.map((entry) => {
+                      const fact = facts[entry.creatureId]
+                      return (
+                        <li
+                          key={entry.creatureId}
+                          className={
+                            fact?.available === false ? 'unavailable' : ''
                           }
                         >
-                          ×
-                        </button>
-                      </li>
-                    )
-                  })}
-                </ul>
-                {entries.length === 0 && (
-                  <p className="empty-state">
-                    {uiMessage('ui.monster.links.mit')} <strong>+</strong>{' '}
-                    {uiMessage('ui.hinzufuegen.oder.eine.gruppe.generieren')}
-                  </p>
-                )}
+                          <span>
+                            <strong>
+                              {fact?.displayName ?? entry.creatureId}
+                            </strong>
+                            <small>
+                              {uiMessage('ui.cr')} {fact?.cr ?? '—'} ·{' '}
+                              {(fact?.xp ?? 0).toLocaleString()}{' '}
+                              {uiMessage('ui.xp.2')}
+                            </small>
+                          </span>
+                          <div className="roster-quantity">
+                            <button
+                              aria-label={`Anzahl ${fact?.displayName ?? entry.creatureId} verringern`}
+                              onClick={() =>
+                                changeQuantity(entry.creatureId, -1)
+                              }
+                            >
+                              −
+                            </button>
+                            <strong>{entry.quantity}</strong>
+                            <button
+                              aria-label={`Anzahl ${fact?.displayName ?? entry.creatureId} erhöhen`}
+                              onClick={() =>
+                                changeQuantity(entry.creatureId, 1)
+                              }
+                            >
+                              +
+                            </button>
+                          </div>
+                          <button
+                            className="remove"
+                            aria-label={`${fact?.displayName ?? entry.creatureId} entfernen`}
+                            onClick={() =>
+                              changeQuantity(entry.creatureId, -entry.quantity)
+                            }
+                          >
+                            ×
+                          </button>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                  {entries.length === 0 && (
+                    <p className="draft-empty">
+                      {uiMessage('ui.monster.links.mit')} <strong>+</strong>{' '}
+                      {uiMessage('ui.hinzufuegen.oder.eine.gruppe.generieren')}
+                    </p>
+                  )}
+                </section>
                 <TuningControls tuning={tuning} changed={setTuning} />
                 <div className="group-generator-actions">
                   <button
@@ -1082,59 +1238,39 @@ function GroupDialog(props: {
         </div>
         <footer className="group-builder-footer">
           <span className="muted">
-            {focused.locationName || 'Kein Ort gesetzt'} · {assigned.length}{' '}
-            {uiMessage('ui.zugewiesene.pcs')}
+            {focused.locationName || uiMessage('ui.kein.ort.gesetzt')} ·{' '}
+            {assigned.length} {uiMessage('ui.zugewiesene.pcs')}
           </span>
           <div>
-            <button type="button" onClick={() => request({ kind: 'close' })}>
+            {selection && selection !== newGroupDraftKey && (
+              <button
+                className="danger"
+                type="button"
+                disabled={busy}
+                onClick={() => void archive()}
+              >
+                {uiMessage('group.archive')}
+              </button>
+            )}
+            <button
+              className="secondary"
+              type="button"
+              onClick={() => request({ kind: 'close' })}
+            >
               {uiMessage('action.cancel')}
             </button>
             <button
-              disabled={busy || !active || !name.trim() || entries.length === 0}
+              className="primary-action"
+              disabled={busy || !active || !name.trim()}
               onClick={() => void save()}
             >
-              {selection === 'new'
-                ? uiMessage('action.createGroup')
-                : uiMessage('action.save')}
+              {uiMessage('action.save')}
             </button>
           </div>
         </footer>
       </section>
     </div>
   )
-}
-
-type DraftCreatureFact = {
-  displayName: string
-  cr: number
-  xp: number
-  available: boolean
-}
-
-type GroupDraftAction =
-  { kind: 'close' } | { kind: 'select'; selection: string | null }
-
-function creatureFact(creature: Creature): DraftCreatureFact {
-  return {
-    displayName: creature.name,
-    cr: creature.cr,
-    xp: creature.xp,
-    available: true
-  }
-}
-
-function groupDraftEntries(quantities: Record<string, number>) {
-  return Object.entries(quantities)
-    .filter(([, quantity]) => quantity > 0)
-    .map(([creatureId, quantity]) => ({ creatureId, quantity }))
-    .sort((a, b) => a.creatureId.localeCompare(b.creatureId))
-}
-
-function groupDraftSignature(
-  name: string,
-  quantities: Record<string, number>
-): string {
-  return JSON.stringify({ name, entries: groupDraftEntries(quantities) })
 }
 
 async function scenarioAction(

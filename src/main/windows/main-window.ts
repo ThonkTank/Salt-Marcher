@@ -6,10 +6,11 @@ import { isE2eRuntime } from '../application-lifecycle/e2e-runtime.js'
 export function createMainWindow(): BrowserWindow {
   const window = new BrowserWindow({
     title: 'SaltMarcher',
-    width: 1180,
-    height: 760,
+    width: 1280,
+    height: 800,
     minWidth: 720,
     minHeight: 540,
+    autoHideMenuBar: true,
     show: false,
     webPreferences: {
       preload: outputPath('preload', 'index.js'),
@@ -20,6 +21,7 @@ export function createMainWindow(): BrowserWindow {
       additionalArguments: isE2eRuntime() ? ['--salt-marcher-e2e'] : []
     }
   })
+  window.setMenuBarVisibility(false)
   hardenWebContents(window.webContents)
   window.once('ready-to-show', () => window.show())
   const rendererUrl = developmentRendererUrl()

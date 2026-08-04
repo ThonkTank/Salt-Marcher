@@ -23,6 +23,7 @@ export const messagesDe = {
   'nav.hex': 'Hex-Editor',
   'quick.time': 'Zeit',
   'quick.weather': 'Wetter',
+  'quick.rest': 'Rast',
   'quick.music': 'Musik',
   'theme.toLight': 'Zum Pergamentmodus wechseln',
   'theme.toDark': 'Zum Kerzenlichtmodus wechseln',
@@ -35,6 +36,21 @@ export const messagesDe = {
   'campaign.intro':
     'Eine neue Kampagne beginnen oder eine bestehende fortsetzen.',
   'campaign.name': 'Kampagnenname',
+  'campaign.new': 'Neue Kampagne',
+  'campaign.available': 'Verfügbare Kampagnen',
+  'campaign.none': 'Noch keine Kampagne vorhanden.',
+  'campaign.active': 'Aktiv',
+  'campaign.open': 'Öffnen',
+  'campaign.rename': 'Umbenennen',
+  'campaign.toTrash': 'In Papierkorb',
+  'campaign.trash': 'Papierkorb',
+  'campaign.restore': 'Wiederherstellen',
+  'campaign.deleteForever': 'Endgültig löschen',
+  'campaign.confirmDelete':
+    'Zum endgültigen Löschen den Namen „{name}“ exakt eingeben.',
+  'campaign.confirmName': 'Kampagnenname zur Bestätigung',
+  'campaign.menuHint':
+    'Wähle oder erstelle eine Kampagne über das geöffnete Burgermenü.',
   'session.independentHint':
     'Szenen führen Gruppen, Details und Combat unabhängig.',
   'session.additionalHint':
@@ -45,6 +61,9 @@ export const messagesDe = {
   'party.custom': 'Eigene Party',
   'party.activeSummary': 'Aktive Party · {partySize} SC',
   'party.none': 'Keine Party',
+  'party.sceneManage': 'Party der Scene verwalten',
+  'party.sceneManageHint':
+    'Neue Party-Mitglieder werden automatisch dieser fokussierten Scene zugewiesen. Hier kannst du sie später verteilen oder entfernen.',
   'party.summary': '{count} SC · Ø Lv {average}',
   'party.noPlayer': 'Kein Spieler',
   'party.leave': 'Aus Party',
@@ -55,6 +74,30 @@ export const messagesDe = {
   'encounter.dead': 'Tot',
   'encounter.xpAwarded': 'XP verteilt',
   'encounter.awardXp': 'XP verteilen',
+  'encounter.selection': 'Auswahl',
+  'encounter.combat': 'Kampf',
+  'encounter.resolution': 'Auflösung',
+  'encounter.partyInitiativeHint': 'Spieler nennen ihre Werte',
+  'encounter.rollMonsters': 'Monster würfeln',
+  'encounter.advanceTurn': 'Zug ›',
+  'encounter.previousTurn': 'Zug zurück',
+  'encounter.toResolution': 'Auflösung ›',
+  'encounter.undo': 'Rückgängig',
+  'encounter.undoNamed': 'Rückgängig: {label}',
+  'encounter.hpDialog': 'Trefferpunkte und Zustände für {name}',
+  'encounter.hpChange': 'Trefferpunkte von {name} ändern',
+  'encounter.damage': 'Schaden anwenden',
+  'encounter.heal': 'Heilung anwenden',
+  'encounter.initiativeFor': 'Initiative für {name}',
+  'encounter.hpSummary': '{current}/{maximum}',
+  'encounter.mobSummary': '{name} ×{alive}/{total}',
+  'encounter.monsterInitiative': 'Monster',
+  'encounter.partyInitiative': 'Party',
+  'encounter.conditions': 'Zustände',
+  'encounter.noneGroupsTitle': 'Keine Gruppen in dieser Szene',
+  'encounter.noneGroupsHint':
+    'Lege eine Gruppe an oder bestücke sie im Gruppen-Builder.',
+  'encounter.complete': 'XP vergeben und beenden',
   'encounter.tuning.auto': 'Auto',
   'encounter.tuning.easy': 'Leicht',
   'encounter.tuning.medium': 'Mittel',
@@ -84,6 +127,20 @@ export const messagesDe = {
   'catalog.searchChip': 'Suche: {name}',
   'catalog.challengeChip': 'CR {minimum}–{maximum}',
   'catalog.locationChip': 'Ort: {location}',
+  'catalog.addCreature': '{name} hinzufügen',
+  'catalog.inGroup': '{quantity}× in Gruppe',
+  'catalog.showCreature': '{name} aufklappen',
+  'catalog.hideCreature': '{name} zuklappen',
+  'group.deleteConfirm': '{name} wirklich löschen?',
+  'group.inactive': 'Inaktiv',
+  'group.archive': 'Archivieren',
+  'group.restore': 'Wiederherstellen',
+  'group.empty': 'Noch keine Wesen',
+  'group.createTitle': 'Neue Gruppe',
+  'group.disposition': 'Fraktion',
+  'group.disposition.hostile': 'Feindlich',
+  'group.disposition.neutral': 'Neutral',
+  'group.disposition.allied': 'Verbündet',
   'passive.heading': 'Passive Anzeige',
   'passive.intro':
     'Eine party-sichere Projektion wurde noch nicht ausgewählt. Bis dahin bleiben Kampagnen- und GM-Daten verborgen.',
@@ -154,6 +211,7 @@ export const messagesDe = {
   'ui.detail.schliessen': 'Detail schließen',
   'ui.detail.verlauf': 'Detail Verlauf',
   'ui.detailansicht': 'Detailansicht',
+  'ui.detail': 'Detail',
   'ui.details': 'Details',
   'ui.dialog.schliessen': 'Dialog schließen',
   'ui.die.kartenansicht.konnte.nicht.initialisiert.werden.navigation.und':
@@ -234,6 +292,9 @@ export const messagesDe = {
   'ui.keine.primaere.tabelle': 'Keine primäre Tabelle',
   'ui.koordinate.auswaehlen': 'Koordinate auswählen',
   'ui.leeren': 'Leeren',
+  'ui.entwurf': 'Entwurf',
+  'ui.wesen': 'Wesen',
+  'ui.kein.ort.gesetzt': 'Kein Ort gesetzt',
   'ui.lege.zuerst.eine.gruppe.in.dieser.scene.an':
     'Lege zuerst eine Gruppe in dieser Scene an.',
   'ui.lege.zuerst.eine.hex.karte.an': 'Lege zuerst eine Hex-Karte an.',
@@ -338,7 +399,7 @@ export const messagesDe = {
   'ui.waehle.eine.encounter.tabelle.um.den.bestand.festzulegen':
     'Wähle eine Encounter-Tabelle, um den Bestand festzulegen.',
   'ui.waehle.eine.gruppe.aus.oder.lege.eine.neue':
-    'Wähle eine Gruppe aus oder lege eine neue Gruppe an.',
+    'Wähle eine bestehende aktive Gruppe aus.',
   'ui.weiter': 'Weiter',
   'ui.weiter.2': '▶ Weiter',
   'ui.weitere.fakten': 'Weitere Fakten',
@@ -359,7 +420,17 @@ export const messagesDe = {
   'ui.zum.generieren.braucht.die.scene.eine.zugewiesene.party':
     'Zum Generieren braucht die Scene eine zugewiesene Party mit vollständigen Leveln.',
   'ui.zum.planer': 'Zum Planer',
-  'ui.zurueck': 'Zurück'
+  'ui.zurueck': 'Zurück',
+  'group.note': 'Gruppennotiz',
+  'encounter.assignedParty': 'Zugewiesene Party',
+  'encounter.noAssignedParty': 'Keine Party zugewiesen',
+  'encounter.groupsInScene': 'Gruppen in dieser Szene',
+  'encounter.baseXp': 'Grund-XP',
+  'encounter.multiplier': 'Multiplikator',
+  'encounter.adjusted': 'Angepasst',
+  'encounter.threshold': 'Schwelle',
+  'encounter.defeated': 'Besiegt',
+  'encounter.eligibleXp': 'Anrechenbare XP'
 } as const
 
 export type MessageKey = keyof typeof messagesDe

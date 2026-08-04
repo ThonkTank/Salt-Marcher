@@ -8,7 +8,11 @@ import type {
   CreatureCatalogQuery,
   CreatureFilterOptions
 } from './encounter.js'
-import type { LiveSessionSnapshot, PartySnapshot } from './live-session.js'
+import type {
+  CombatCondition,
+  LiveSessionSnapshot,
+  PartySnapshot
+} from './live-session.js'
 import type { AdventuringDayCalculation, PartyCharacterDraft } from './party.js'
 import type { EncounterTuning } from './encounter-tuning.js'
 import type {
@@ -16,7 +20,8 @@ import type {
   GroupGenerationMode,
   SceneGroupDraftEntry,
   SceneGroupDraftEvaluation,
-  SceneGroupDraftGeneration
+  SceneGroupDraftGeneration,
+  SceneGroupDisposition
 } from './scene.js'
 import type {
   InstallationPreferencesPatch,
@@ -53,6 +58,10 @@ export interface CampaignReadCapability {
 export interface CampaignCapability extends CampaignReadCapability {
   create(name: string): Promise<CampaignSnapshot>
   activate(id: string): Promise<CampaignSnapshot>
+  rename(id: string, name: string): Promise<CampaignSnapshot>
+  trash(id: string): Promise<CampaignSnapshot>
+  restore(id: string): Promise<CampaignSnapshot>
+  deleteForever(id: string, confirmationName: string): Promise<CampaignSnapshot>
 }
 
 export interface SaltMarcherApi {
@@ -236,12 +245,20 @@ export interface SaltMarcherApi {
       sceneId: string,
       groupId: string | null,
       name: string,
+      note: string,
+      disposition: SceneGroupDisposition,
       entries: readonly { creatureId: string; quantity: number }[],
       expectedRevision: number
     ): Promise<LiveSessionSnapshot>
     deleteGroup(
       sceneId: string,
       groupId: string,
+      expectedRevision: number
+    ): Promise<LiveSessionSnapshot>
+    setGroupArchived(
+      sceneId: string,
+      groupId: string,
+      archived: boolean,
       expectedRevision: number
     ): Promise<LiveSessionSnapshot>
     assignPartyMember(
@@ -295,6 +312,13 @@ export interface SaltMarcherApi {
       healing: boolean,
       expectedRevision: number
     ): Promise<LiveSessionSnapshot>
+    toggleCondition(
+      cardId: string,
+      condition: CombatCondition,
+      active: boolean,
+      expectedRevision: number
+    ): Promise<LiveSessionSnapshot>
+    undo(expectedRevision: number): Promise<LiveSessionSnapshot>
     end(expectedRevision: number): Promise<LiveSessionSnapshot>
     updateResolution(
       selectedEnemyIds: readonly string[],

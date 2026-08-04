@@ -144,6 +144,8 @@ describe('party and catalog parity slice', () => {
       sceneId,
       null,
       'Forest trouble',
+      '',
+      'hostile',
       suggestion.entries,
       session.scene.revision
     )
@@ -190,6 +192,10 @@ describe('party and catalog parity slice', () => {
     )
     expect(before.creatureCount).toBe(1)
     expect(before.baseXp).toBeGreaterThan(0)
+    expect(before.multiplier).toBeGreaterThan(0)
+    expect(['trivial', 'easy', 'medium', 'hard', 'deadly']).toContain(
+      before.difficultyBand
+    )
 
     const filled = play.generateGroupDraft(
       sceneId,

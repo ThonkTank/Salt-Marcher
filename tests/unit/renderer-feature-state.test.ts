@@ -14,12 +14,12 @@ describe('renderer feature state', () => {
     state = reduceDetailHistory(state, {
       type: 'open',
       sceneId: 'scene-a',
-      creature: creature('wolf')
+      entry: { creature: creature('wolf'), breadcrumb: 'Rudel › Wolf' }
     })
     state = reduceDetailHistory(state, {
       type: 'open',
       sceneId: 'scene-a',
-      creature: creature('bear')
+      entry: { creature: creature('bear'), breadcrumb: 'Wald › Bär' }
     })
     state = reduceDetailHistory(state, {
       type: 'move',
@@ -29,13 +29,12 @@ describe('renderer feature state', () => {
     state = reduceDetailHistory(state, {
       type: 'open',
       sceneId: 'scene-a',
-      creature: creature('crab')
+      entry: { creature: creature('crab'), breadcrumb: 'Küste › Krabbe' }
     })
 
-    expect(state['scene-a']?.entries.map(({ id }) => id)).toEqual([
-      'wolf',
-      'crab'
-    ])
+    expect(
+      state['scene-a']?.entries.map(({ creature }) => creature.id)
+    ).toEqual(['wolf', 'crab'])
     expect(state['scene-a']?.index).toBe(1)
     expect(state['scene-b']).toBeUndefined()
   })

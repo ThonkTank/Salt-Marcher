@@ -38,9 +38,11 @@ summary, and mutation controls use the Party feature's public mutation API.
 - Creating a PC adds it only to the Roster. It does not activate current-Party
   membership, attach the PC to the Party travel token, or assign a Scene.
 - Adding or removing current-Party membership is a separate explicit action on
-  an existing Roster PC. Create, edit, delete, XP correction, membership, rest,
-  and long-rest controls persist through the Party feature's public mutation
-  API and refresh the dropdown snapshot after successful mutations.
+  an existing Roster PC. `Zur Party` also assigns a newly active PC to the
+  focused Scene; `Aus Party` removes that PC from every Scene. Create, edit,
+  delete, XP correction, membership, rest, and long-rest controls persist
+  through the Party feature's public mutation API and refresh the dropdown
+  snapshot after successful mutations.
 - Clicking a character's level-up meter opens a compact XP popup. `+XP` awards
   XP, while `-XP` corrects previously awarded XP without lowering the
   character below the current level's XP floor.
@@ -82,6 +84,9 @@ summary, and mutation controls use the Party feature's public mutation API.
 - clearing an optional player, level, passive-perception, or AC value restores
   absence rather than a default or sentinel
 - current-Party membership changes only through a separate explicit action
+- `Zur Party` assigns all four seeded PCs to the focused Scene without another
+  manual assignment step; with several Scenes it never targets an unfocused
+  Scene
 - failed editor validation keeps the editor open, preserves entered values, and
   renders inline error feedback
 - after successful mutations, downstream Encounter refreshes observe the

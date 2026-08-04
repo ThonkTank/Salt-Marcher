@@ -6,6 +6,7 @@ import { z } from 'zod'
 import {
   combatSnapshotSchema,
   liveSessionSnapshotSchema,
+  type CombatCondition,
   type CombatSnapshot,
   type LiveSessionSnapshot,
   type PartyMember
@@ -19,7 +20,8 @@ import type {
   GroupGenerationMode,
   SceneGroupDraftEntry,
   SceneGroupDraftEvaluation,
-  SceneGroupDraftGeneration
+  SceneGroupDraftGeneration,
+  SceneGroupDisposition
 } from '../../shared/contracts/scene.js'
 import { creatureById } from '../creatures/catalog.js'
 import { calculateAdventuringDay, PartyStore } from '../party/party-store.js'
@@ -58,6 +60,7 @@ const combatantSchema = z
   .object({
     id: z.string(),
     cardId: z.string(),
+    creatureId: z.string().nullable(),
     name: z.string(),
     playerCharacter: z.boolean(),
     currentHp: z.number().int().nonnegative(),
@@ -66,6 +69,7 @@ const combatantSchema = z
     initiative: z.number().int(),
     xp: z.number().int().nonnegative(),
     detail: z.string(),
+    conditions: z.array(z.string()),
     order: z.number().int().nonnegative()
   })
   .strict()
@@ -129,6 +133,7 @@ export function initializeCombatSchema(db: Database.Database): void {
       scene_id TEXT NOT NULL,
       id TEXT NOT NULL,
       card_id TEXT NOT NULL,
+      creature_id TEXT,
       name TEXT NOT NULL,
       player_character INTEGER NOT NULL,
       current_hp INTEGER NOT NULL,
@@ -137,6 +142,7 @@ export function initializeCombatSchema(db: Database.Database): void {
       initiative INTEGER NOT NULL,
       xp INTEGER NOT NULL,
       detail TEXT NOT NULL,
+      conditions TEXT NOT NULL,
       combat_order INTEGER NOT NULL,
       PRIMARY KEY(scene_id, id)
     );
@@ -158,6 +164,13 @@ export function initializeCombatSchema(db: Database.Database): void {
       position INTEGER NOT NULL,
       PRIMARY KEY(scene_id, enemy_id)
     );
+    CREATE TABLE IF NOT EXISTS encounter_combat_history (
+      scene_id TEXT NOT NULL,
+      revision INTEGER NOT NULL,
+      label TEXT NOT NULL,
+      memento TEXT NOT NULL,
+      PRIMARY KEY(scene_id, revision)
+    );
   `)
 }
 
@@ -170,10 +183,22 @@ export class LivePlayService {
 
   setMembership(id: string, active: boolean, expectedRevision: number) {
     return this.withStores(({ party, scene, combat }) => {
-      const snapshot = party.setMembership(id, active, expectedRevision)
-      if (!active) scene.unassignPartyMember(id)
-      combat.reconcileParty(scene.assignedParty(snapshot.members))
-      return snapshot
+      const transaction = scene.database().transaction(() => {
+        const existing = party.read().members.find((member) => member.id === id)
+        if (!existing) throw new CapabilityError('not_found', false)
+        const snapshot = party.setMembership(id, active, expectedRevision)
+        if (!active) scene.unassignPartyMember(id)
+        else if (!existing.active)
+          scene.assignPartyMember(
+            scene.focusedSceneId(),
+            id,
+            true,
+            scene.revision()
+          )
+        combat.reconcileParty(scene.assignedParty(snapshot.members))
+        return snapshot
+      })
+      return transaction()
     })
   }
 
@@ -259,11 +284,33 @@ export class LivePlayService {
     sceneId: string,
     groupId: string | null,
     name: string,
+    note: string,
+    disposition: SceneGroupDisposition,
     entries: readonly { creatureId: string; quantity: number }[],
     expectedRevision: number
   ): LiveSessionSnapshot {
     return this.withStores(({ party, scene, combat }) => {
-      scene.saveGroup(sceneId, groupId, name, entries, expectedRevision)
+      scene.saveGroup(
+        sceneId,
+        groupId,
+        name,
+        note,
+        disposition,
+        entries,
+        expectedRevision
+      )
+      return this.snapshotFrom(party, scene, combat)
+    })
+  }
+
+  setSceneGroupArchived(
+    sceneId: string,
+    groupId: string,
+    archived: boolean,
+    expectedRevision: number
+  ): LiveSessionSnapshot {
+    return this.withStores(({ party, scene, combat }) => {
+      scene.setGroupArchived(sceneId, groupId, archived, expectedRevision)
       return this.snapshotFrom(party, scene, combat)
     })
   }
@@ -423,6 +470,21 @@ export class LivePlayService {
     return this.mutateCombat(expectedRevision, (combat) =>
       combat.changeHp(cardId, amount, healing)
     )
+  }
+
+  toggleCombatCondition(
+    expectedRevision: number,
+    cardId: string,
+    condition: CombatCondition,
+    active: boolean
+  ): LiveSessionSnapshot {
+    return this.mutateCombat(expectedRevision, (combat) =>
+      combat.toggleCondition(cardId, condition, active)
+    )
+  }
+
+  undoCombat(expectedRevision: number): LiveSessionSnapshot {
+    return this.mutateCombat(expectedRevision, (combat) => combat.undo())
   }
 
   endCombat(expectedRevision: number): LiveSessionSnapshot {
@@ -605,6 +667,7 @@ class CombatStore {
     }
     if (!sources.some((source) => source.kind === 'monster'))
       throw new CapabilityError('validation_failed', false)
+    this.clearHistory()
     this.save({
       id: uuidv7(),
       revision: 0,
@@ -651,6 +714,7 @@ class CombatStore {
         initiative: 12 + Math.max(-3, Math.min(6, creature.initiative))
       })
     })
+    this.clearHistory()
     this.save({
       id: uuidv7(),
       revision: 0,
@@ -687,6 +751,7 @@ class CombatStore {
         state.combatants.push({
           id: `monster-member:${uuidv7()}`,
           cardId,
+          creatureId,
           name:
             quantity === 1 ? creature.name : `${creature.name} #${ordinal++}`,
           playerCharacter: false,
@@ -696,24 +761,29 @@ class CombatStore {
           initiative,
           xp: creature.xp,
           detail: `CR ${creature.challengeRating} · ${creature.type}`,
+          conditions: [],
           order: state.combatants.length
         })
       }
     }
     state.turnOrder = sortedCardIds(state.combatants)
     state.activeIndex = Math.max(0, state.turnOrder.indexOf(activeCard ?? ''))
-    this.bump(state)
+    this.bump(state, `Verstärkung · ${creature.name}`)
   }
 
   roll(): void {
     const state = this.require()
     if (state.phase !== 'initiative')
       throw new CapabilityError('validation_failed', false)
-    const values = [13, 15, 17, 19, 11]
-    state.sources = state.sources.map((source, index) => ({
-      ...source,
-      initiative: values[index % values.length] ?? 13
-    }))
+    state.sources = state.sources.map((source) => {
+      if (source.kind === 'party') return source
+      const creature = creatureById(source.creatureId)
+      if (!creature) throw new CapabilityError('not_found', false)
+      return {
+        ...source,
+        initiative: 1 + Math.floor(Math.random() * 20) + creature.initiative
+      }
+    })
     this.bump(state)
   }
 
@@ -735,6 +805,7 @@ class CombatStore {
         combatants.push({
           id: source.partyId,
           cardId: `party-card:${source.partyId}`,
+          creatureId: null,
           name: source.name,
           playerCharacter: true,
           currentHp: 0,
@@ -743,6 +814,7 @@ class CombatStore {
           initiative: source.initiative,
           xp: 0,
           detail: 'Aktives Party-Mitglied',
+          conditions: [],
           order: order++
         })
         continue
@@ -760,6 +832,7 @@ class CombatStore {
           combatants.push({
             id: `monster-member:${uuidv7()}`,
             cardId,
+            creatureId: source.creatureId,
             name,
             playerCharacter: false,
             currentHp: creature.hp,
@@ -768,6 +841,7 @@ class CombatStore {
             initiative: source.initiative,
             xp: creature.xp,
             detail: `CR ${creature.cr} · ${creature.type}`,
+            conditions: [],
             order: order++
           })
         }
@@ -778,7 +852,7 @@ class CombatStore {
     state.activeIndex = 0
     state.round = 1
     state.phase = 'combat'
-    this.bump(state)
+    this.bump(state, 'Kampf gestartet')
   }
 
   advance(): void {
@@ -790,7 +864,7 @@ class CombatStore {
       state.activeIndex = next
       if (cardAlive(state.combatants, state.turnOrder[next] ?? '')) break
     }
-    this.bump(state)
+    this.bump(state, 'Zugfolge')
   }
 
   adjustInitiative(id: string, initiative: number): void {
@@ -837,7 +911,61 @@ class CombatStore {
       ...combatant,
       currentHp: nextHp.get(combatant.id) ?? combatant.currentHp
     }))
-    this.bump(state)
+    this.bump(
+      state,
+      `${healing ? '+' : '−'}${amount} TP · ${members[0]?.name ?? cardId}`
+    )
+  }
+
+  toggleCondition(
+    cardId: string,
+    condition: CombatCondition,
+    active: boolean
+  ): void {
+    const state = this.requireCombat()
+    const target = state.combatants
+      .filter(
+        (combatant) =>
+          combatant.cardId === cardId &&
+          (combatant.playerCharacter || combatant.currentHp > 0)
+      )
+      .sort(
+        (a, b) => a.currentHp - b.currentHp || a.name.localeCompare(b.name)
+      )[0]
+    if (!target) throw new CapabilityError('not_found', false)
+    const conditions = new Set(target.conditions)
+    if (active) conditions.add(condition)
+    else conditions.delete(condition)
+    state.combatants = state.combatants.map((combatant) =>
+      combatant.id === target.id
+        ? { ...combatant, conditions: Array.from(conditions) }
+        : combatant
+    )
+    this.bump(state, `${condition} · ${target.name}`)
+  }
+
+  undo(): void {
+    const current = this.require()
+    const row = this.db
+      .prepare(
+        `
+        SELECT revision, memento
+        FROM encounter_combat_history
+        WHERE scene_id = ?
+        ORDER BY revision DESC
+        LIMIT 1
+      `
+      )
+      .get(this.sceneId) as { revision: number; memento: string } | undefined
+    if (!row) throw new CapabilityError('validation_failed', false)
+    const previous = combatMementoSchema.parse(JSON.parse(row.memento))
+    previous.revision = current.revision + 1
+    this.db
+      .prepare(
+        'DELETE FROM encounter_combat_history WHERE scene_id = ? AND revision = ?'
+      )
+      .run(this.sceneId, row.revision)
+    this.save(previous)
   }
 
   end(): void {
@@ -853,7 +981,7 @@ class CombatStore {
       xpFraction: 1,
       xpAwarded: false
     }
-    this.bump(state)
+    this.bump(state, 'Auflösung')
   }
 
   updateResolution(
@@ -945,6 +1073,7 @@ class CombatStore {
       state.combatants.push({
         id: member.id,
         cardId: `party-card:${member.id}`,
+        creatureId: null,
         name: member.name,
         playerCharacter: true,
         currentHp: 0,
@@ -953,6 +1082,7 @@ class CombatStore {
         initiative: 10 + index,
         xp: 0,
         detail: 'Aktives Party-Mitglied',
+        conditions: [],
         order: state.combatants.length
       })
     })
@@ -965,8 +1095,11 @@ class CombatStore {
   snapshot(members: readonly PartyMember[]): CombatSnapshot | null {
     const state = this.load()
     if (!state) return null
-    const activeCard = state.turnOrder[state.activeIndex]
-    const cards = projectedCards(state.combatants, activeCard)
+    const cards = projectedCards(
+      state.combatants,
+      state.turnOrder,
+      state.activeIndex
+    )
     const activePartySize = Math.max(
       1,
       members.filter((member) => member.active).length
@@ -994,6 +1127,7 @@ class CombatStore {
       })),
       cards,
       round: state.round,
+      undoLabel: this.latestUndoLabel(),
       allEnemiesDefeated:
         state.combatants.some((combatant) => !combatant.playerCharacter) &&
         state.combatants
@@ -1031,6 +1165,7 @@ class CombatStore {
 
   clear(): void {
     clearCombatTables(this.db, this.sceneId)
+    this.clearHistory()
   }
 
   private requireCombat(): CombatMemento {
@@ -1110,18 +1245,22 @@ class CombatStore {
     const combatants = this.db
       .prepare(
         `
-        SELECT id, card_id AS cardId, name,
+        SELECT id, card_id AS cardId, creature_id AS creatureId, name,
           player_character AS playerCharacter, current_hp AS currentHp,
           max_hp AS maxHp, armor_class AS armorClass, initiative, xp, detail,
+          conditions,
           combat_order AS "order"
         FROM encounter_combatants WHERE scene_id = ? ORDER BY combat_order
       `
       )
       .all(this.sceneId)
       .map((row) => ({
-        ...(row as Combatant),
+        ...(row as Omit<Combatant, 'playerCharacter' | 'conditions'>),
         playerCharacter:
-          Number((row as { playerCharacter: number }).playerCharacter) === 1
+          Number((row as { playerCharacter: number }).playerCharacter) === 1,
+        conditions: z
+          .array(z.string())
+          .parse(JSON.parse((row as { conditions: string }).conditions))
       }))
     const turnOrder = (
       this.db
@@ -1165,13 +1304,57 @@ class CombatStore {
     })
   }
 
-  private bump(state: CombatMemento): void {
+  private bump(state: CombatMemento, undoLabel?: string): void {
+    if (undoLabel) this.recordHistory(undoLabel)
     state.revision += 1
     this.save(state)
   }
 
   private save(state: CombatMemento): void {
     persistCombat(this.db, this.sceneId, combatMementoSchema.parse(state))
+  }
+
+  private recordHistory(label: string): void {
+    const previous = this.load()
+    if (!previous) return
+    this.db
+      .prepare(
+        `
+        INSERT OR REPLACE INTO encounter_combat_history (
+          scene_id, revision, label, memento
+        ) VALUES (?, ?, ?, ?)
+      `
+      )
+      .run(this.sceneId, previous.revision, label, JSON.stringify(previous))
+    this.db
+      .prepare(
+        `
+        DELETE FROM encounter_combat_history
+        WHERE scene_id = ? AND revision NOT IN (
+          SELECT revision FROM encounter_combat_history
+          WHERE scene_id = ? ORDER BY revision DESC LIMIT 20
+        )
+      `
+      )
+      .run(this.sceneId, this.sceneId)
+  }
+
+  private latestUndoLabel(): string | null {
+    const row = this.db
+      .prepare(
+        `
+        SELECT label FROM encounter_combat_history
+        WHERE scene_id = ? ORDER BY revision DESC LIMIT 1
+      `
+      )
+      .get(this.sceneId) as { label: string } | undefined
+    return row?.label ?? null
+  }
+
+  private clearHistory(): void {
+    this.db
+      .prepare('DELETE FROM encounter_combat_history WHERE scene_id = ?')
+      .run(this.sceneId)
   }
 }
 
@@ -1237,15 +1420,16 @@ function persistCombat(
     )
     const combatant = db.prepare(`
       INSERT INTO encounter_combatants (
-        scene_id, id, card_id, name, player_character, current_hp, max_hp, armor_class,
-        initiative, xp, detail, combat_order
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        scene_id, id, card_id, creature_id, name, player_character, current_hp, max_hp, armor_class,
+        initiative, xp, detail, conditions, combat_order
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `)
     state.combatants.forEach((entry) =>
       combatant.run(
         sceneId,
         entry.id,
         entry.cardId,
+        entry.creatureId,
         entry.name,
         entry.playerCharacter ? 1 : 0,
         entry.currentHp,
@@ -1254,6 +1438,7 @@ function persistCombat(
         entry.initiative,
         entry.xp,
         entry.detail,
+        JSON.stringify(entry.conditions),
         entry.order
       )
     )
@@ -1314,8 +1499,11 @@ function cardAlive(combatants: readonly Combatant[], cardId: string): boolean {
 
 function projectedCards(
   combatants: readonly Combatant[],
-  activeCard: string | undefined
+  turnOrder: readonly string[],
+  activeIndex: number
 ) {
+  const order = new Map(turnOrder.map((cardId, index) => [cardId, index]))
+  const activeCard = turnOrder[activeIndex]
   const grouped = new Map<string, Combatant[]>()
   for (const combatant of combatants) {
     const values = grouped.get(combatant.cardId) ?? []
@@ -1329,25 +1517,27 @@ function projectedCards(
       const alive = values.filter(
         (value) => value.playerCharacter || value.currentHp > 0
       )
+      const front = alive.toSorted(
+        (a, b) => a.currentHp - b.currentHp || a.name.localeCompare(b.name)
+      )[0]
       return {
         id,
+        creatureId: first.creatureId,
         memberIds: values.map((value) => value.id),
         name: values.length > 1 ? first.name.replace(/ #\d+$/, '') : first.name,
         playerCharacter: first.playerCharacter,
         active: id === activeCard,
+        done: (order.get(id) ?? 0) < activeIndex,
         alive: alive.length > 0,
-        currentHp: values.reduce((total, value) => total + value.currentHp, 0),
-        maxHp: values.reduce((total, value) => total + value.maxHp, 0),
+        currentHp: front?.currentHp ?? 0,
+        maxHp: front?.maxHp ?? first.maxHp,
         armorClass: first.armorClass,
         initiative: first.initiative,
         count: values.length,
+        aliveCount: alive.length,
+        conditions: front?.conditions ?? [],
         detail: first.detail
       }
     })
-    .sort(
-      (a, b) =>
-        b.initiative - a.initiative ||
-        Number(b.playerCharacter) - Number(a.playerCharacter) ||
-        a.name.localeCompare(b.name)
-    )
+    .sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0))
 }

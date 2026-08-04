@@ -1,6 +1,7 @@
 import { message } from '../../i18n/messages.de.js'
-import { useEffect, lazy, useState, type FormEvent } from 'react'
+import { useEffect, lazy, useState } from 'react'
 import type { CampaignSnapshot } from '../../../shared/contracts/campaign.js'
+import type { CampaignCapability } from '../../../shared/contracts/capability-api.js'
 import type { Creature } from '../../../shared/contracts/encounter.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type { CoreProcessStatus } from '../../../shared/contracts/runtime.js'
@@ -14,20 +15,21 @@ import {
   PartyDropdown
 } from '../party/party-controls.js'
 import { useInstallationPreferences } from '../../shell/use-installation-preferences.js'
-import campaignIcon from '../../assets/icons/campaign.svg?url'
 import sessionIcon from '../../assets/icons/session.svg?url'
 import hexIcon from '../../assets/icons/hex.svg?url'
 import catalogIcon from '../../assets/icons/catalog.svg?url'
+import saltMarcherLogo from '../../assets/icons/salt-marcher.svg?url'
 import SessionWorkspace from '../session/session-workspace.js'
+import { CampaignMenu } from './campaign-menu.js'
+import './workspace.css'
 
-type FantasyIconName = 'campaign' | 'session' | 'hex' | 'catalog'
+type FantasyIconName = 'session' | 'hex' | 'catalog'
 
 const LazyHexEditor = lazy(async () => {
   return import('../hex/hex-editor.js')
 })
 
 const fantasyIconAssets: Record<FantasyIconName, string> = {
-  campaign: campaignIcon,
   session: sessionIcon,
   hex: hexIcon,
   catalog: catalogIcon
@@ -45,13 +47,14 @@ declare global {
 
 const emptyCampaigns: CampaignSnapshot = {
   activeCampaignId: null,
-  campaigns: []
+  campaigns: [],
+  trashedCampaigns: []
 }
 
 export function WorkspaceApp() {
   const [campaigns, setCampaigns] = useState(emptyCampaigns)
   const [session, setSession] = useState<LiveSessionSnapshot | null>(null)
-  const [campaignName, setCampaignName] = useState('')
+  const [campaignMenuOpen, setCampaignMenuOpen] = useState(false)
   const [workspace, setWorkspace] = useState<'session' | 'catalog' | 'hex'>(
     'session'
   )
@@ -72,6 +75,7 @@ export function WorkspaceApp() {
   const load = async () => {
     const nextCampaigns = await window.saltMarcher.campaigns.list()
     setCampaigns(nextCampaigns)
+    if (nextCampaigns.activeCampaignId === null) setCampaignMenuOpen(true)
     setSession(
       nextCampaigns.activeCampaignId
         ? await window.saltMarcher.session.read()
@@ -108,15 +112,15 @@ export function WorkspaceApp() {
     return () => window.removeEventListener('keydown', keydown)
   }, [active])
 
-  async function createCampaign(event: FormEvent) {
-    event.preventDefault()
+  const campaignCapability = () =>
+    window.saltMarcher.campaigns as CampaignCapability
+
+  async function createCampaign(name: string) {
     try {
-      const capability = window.saltMarcher
-        .campaigns as import('../../../shared/contracts/capability-api.js').CampaignCapability
-      setCampaigns(await capability.create(campaignName))
-      setCampaignName('')
+      setCampaigns(await campaignCapability().create(name))
       setSession(await window.saltMarcher.session.read())
       setWorkspace('session')
+      setCampaignMenuOpen(false)
     } catch (cause) {
       setError(capabilityErrorText(cause))
     }
@@ -124,12 +128,50 @@ export function WorkspaceApp() {
 
   async function switchCampaign(id: string) {
     try {
-      const capability = window.saltMarcher
-        .campaigns as import('../../../shared/contracts/capability-api.js').CampaignCapability
-      setCampaigns(await capability.activate(id))
+      setCampaigns(await campaignCapability().activate(id))
       setSession(await window.saltMarcher.session.read())
       setWorkspace('session')
       setScenarios({})
+      setCampaignMenuOpen(false)
+    } catch (cause) {
+      setError(capabilityErrorText(cause))
+    }
+  }
+
+  async function renameCampaign(id: string, name: string) {
+    try {
+      setCampaigns(await campaignCapability().rename(id, name))
+    } catch (cause) {
+      setError(capabilityErrorText(cause))
+    }
+  }
+
+  async function trashCampaign(id: string) {
+    try {
+      const next = await campaignCapability().trash(id)
+      setCampaigns(next)
+      if (next.activeCampaignId === null) {
+        setSession(null)
+        setCampaignMenuOpen(true)
+      }
+    } catch (cause) {
+      setError(capabilityErrorText(cause))
+    }
+  }
+
+  async function restoreCampaign(id: string) {
+    try {
+      setCampaigns(await campaignCapability().restore(id))
+    } catch (cause) {
+      setError(capabilityErrorText(cause))
+    }
+  }
+
+  async function deleteCampaignForever(id: string, confirmationName: string) {
+    try {
+      setCampaigns(
+        await campaignCapability().deleteForever(id, confirmationName)
+      )
     } catch (cause) {
       setError(capabilityErrorText(cause))
     }
@@ -142,6 +184,12 @@ export function WorkspaceApp() {
         ? message('nav.hex')
         : message('nav.session')
     : message('nav.campaigns')
+  const activeCampaign = campaigns.campaigns.find(
+    (campaign) => campaign.id === campaigns.activeCampaignId
+  )
+  const focusedScene = session?.scene.scenes.find(
+    (scene) => scene.id === session.scene.focusedSceneId
+  )
 
   return (
     <main className="app-shell">
@@ -162,29 +210,56 @@ export function WorkspaceApp() {
           )}
         </div>
       )}
-      <header className="top-bar">
+      <header
+        className={`top-bar${workspace === 'session' ? ' session-context' : ''}`}
+      >
         <button
           className="menu-button"
           aria-label={message('app.menu')}
           title={message('app.menu')}
+          aria-expanded={campaignMenuOpen}
+          aria-controls="campaign-menu"
+          onClick={() =>
+            setCampaignMenuOpen((current) => (active ? !current : true))
+          }
         >
           <span aria-hidden="true">☰</span>
         </button>
+        <CampaignMenu
+          snapshot={campaigns}
+          open={campaignMenuOpen}
+          forced={!active}
+          dismiss={() => setCampaignMenuOpen(false)}
+          create={createCampaign}
+          activate={switchCampaign}
+          rename={renameCampaign}
+          trash={trashCampaign}
+          restore={restoreCampaign}
+          deleteForever={deleteCampaignForever}
+        />
         {active && session && (
-          <>
-            <nav
-              className="shell-quick-actions"
-              aria-label={message('app.sessionControls')}
-            >
-              <button>{message('quick.time')}</button>
-              <button>{message('quick.weather')}</button>
-              <button>{message('quick.music')}</button>
-            </nav>
+          <nav
+            className="shell-quick-actions"
+            aria-label={message('app.sessionControls')}
+          >
+            <button>{message('quick.weather')}</button>
             <AdventuringDayDropdown
               party={session.party}
               open={dayOpen}
               setOpen={setDayOpen}
+              triggerLabel={message('quick.rest')}
             />
+            <button
+              onClick={() => {
+                if (!focusedScene) return
+                setScenarios((current) => ({
+                  ...current,
+                  [focusedScene.id]: 'travel'
+                }))
+              }}
+            >
+              {message('ui.reise')}
+            </button>
             <PartyDropdown
               party={session.party}
               open={partyOpen}
@@ -194,17 +269,27 @@ export function WorkspaceApp() {
                 void window.saltMarcher.session.read().then(setSession)
               }}
               onError={setError}
+              triggerLabel={message('ui.party')}
             />
-          </>
+          </nav>
         )}
         <div className="workspace-heading">
           <p className="eyebrow">{message('ui.saltmarcher')}</p>
-          <h1>{heading}</h1>
+          <h1>
+            {workspace === 'session' && activeCampaign
+              ? `${message('nav.session')} · ${activeCampaign.name}`
+              : heading}
+          </h1>
         </div>
         <p className="top-bar-status">
-          {active
-            ? message('campaign.statusActive')
-            : message('campaign.statusChoose')}
+          {workspace === 'session' && focusedScene
+            ? formatSessionStatus(
+                focusedScene.gameTimeSeconds,
+                session?.party.adventuringDay
+              )
+            : active
+              ? message('campaign.statusActive')
+              : message('campaign.statusChoose')}
         </p>
         <button
           className="theme-toggle"
@@ -224,18 +309,6 @@ export function WorkspaceApp() {
       </header>
       <div className="shell-body">
         <nav className="icon-bar" aria-label={message('app.workspaces')}>
-          <button
-            className="icon-button"
-            aria-label={message('nav.campaigns')}
-            title={message('nav.campaigns')}
-            aria-pressed={!active}
-            onClick={() => {
-              setCampaigns({ ...campaigns, activeCampaignId: null })
-              setSession(null)
-            }}
-          >
-            <FantasyIcon name="campaign" />
-          </button>
           {active && (
             <>
               <button
@@ -267,6 +340,11 @@ export function WorkspaceApp() {
               </button>
             </>
           )}
+          <img
+            className="rail-logo"
+            src={saltMarcherLogo}
+            alt={message('ui.saltmarcher')}
+          />
         </nav>
         <div className={`work-area${active ? ' session-work-area' : ''}`}>
           {error && (
@@ -278,13 +356,11 @@ export function WorkspaceApp() {
             </p>
           )}
           {!active && (
-            <CampaignChooser
-              campaigns={campaigns}
-              name={campaignName}
-              setName={setCampaignName}
-              createCampaign={createCampaign}
-              switchCampaign={switchCampaign}
-            />
+            <section className="campaign-idle" aria-live="polite">
+              <p className="section-kicker">{message('campaign.archive')}</p>
+              <h2>{message('campaign.choose')}</h2>
+              <p>{message('campaign.menuHint')}</p>
+            </section>
           )}
           {active && session && workspace === 'session' && (
             <SessionWorkspace
@@ -334,46 +410,29 @@ export function WorkspaceApp() {
   )
 }
 
-function CampaignChooser(props: {
-  campaigns: CampaignSnapshot
-  name: string
-  setName: (value: string) => void
-  createCampaign: (event: FormEvent) => Promise<void>
-  switchCampaign: (id: string) => Promise<void>
-}) {
-  return (
-    <section className="workspace-panel campaign-panel">
-      <div>
-        <p className="section-kicker">{message('campaign.archive')}</p>
-        <h2>{message('campaign.choose')}</h2>
-        <p>{message('campaign.intro')}</p>
-      </div>
-      <form
-        onSubmit={(event) => void props.createCampaign(event)}
-        className="inline-form"
-      >
-        <input
-          id="campaign-name"
-          aria-label={message('campaign.name')}
-          placeholder={message('campaign.name')}
-          required
-          value={props.name}
-          onChange={(event) => props.setName(event.target.value)}
-        />
-        <button>{message('action.createCampaign')}</button>
-      </form>
-      <div className="campaigns">
-        {props.campaigns.campaigns.map((campaign) => (
-          <button
-            key={campaign.id}
-            onClick={() => void props.switchCampaign(campaign.id)}
-          >
-            {campaign.name}
-          </button>
-        ))}
-      </div>
-    </section>
-  )
+function formatSessionStatus(
+  gameTimeSeconds: number,
+  dayBudget: LiveSessionSnapshot['party']['adventuringDay'] | undefined
+) {
+  const day = Math.floor(gameTimeSeconds / 86_400) + 1
+  const secondsInDay = gameTimeSeconds % 86_400
+  const hour = Math.floor(secondsInDay / 3_600)
+  const period =
+    hour < 6
+      ? 'Nacht'
+      : hour < 12
+        ? 'Vormittag'
+        : hour < 18
+          ? 'Nachmittag'
+          : 'Abend'
+  const progress =
+    dayBudget?.available && dayBudget.dailyBudget > 0
+      ? Math.min(
+          100,
+          Math.round((dayBudget.longRestXp / dayBudget.dailyBudget) * 100)
+        )
+      : null
+  return `Tag ${day} · ${period}${progress === null ? '' : ` · ${progress} % Tagesbudget`}`
 }
 
 const LazyCatalogWorkspace = lazy(

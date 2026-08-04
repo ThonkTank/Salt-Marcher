@@ -1,4 +1,11 @@
-import { existsSync, mkdirSync, renameSync, rmSync, rmdirSync } from 'node:fs'
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  renameSync,
+  rmSync,
+  rmdirSync
+} from 'node:fs'
 import { dirname, join } from 'node:path'
 import Database from 'better-sqlite3'
 import type {
@@ -9,6 +16,7 @@ import { freezeCampaignSnapshot } from '../../../shared/contracts/campaign.js'
 import { uuidv7 } from '../../../shared/ids/uuidv7.js'
 import { initializePartySchema, PartyStore } from '../../party/party-store.js'
 import { initializeSceneSchema } from '../../scene/scene-store.js'
+import { migrateSceneSchemaV3ToV4 } from '../../scene/scene-migrations.js'
 import { initializeCombatSchema } from '../../encounter/live-combat.js'
 import { initializeWorldLocationSchema } from '../../worldplanner/location-store.js'
 import { initializeEncounterTableSchema } from '../../encounter/encounter-table-store.js'
@@ -17,7 +25,8 @@ import { initializeHexSchema } from '../../hex/hex-map-store.js'
 import {
   assertDevelopmentSchemaVersion,
   configureSqlite,
-  initializeDevelopmentSchemaVersion
+  initializeDevelopmentSchemaVersion,
+  migrateDevelopmentSchema
 } from './database.js'
 import {
   defaultInstallationPreferences,
@@ -58,13 +67,23 @@ export class CampaignStore {
     this.installationSettings = new InstallationSettingsStore(this.installation)
     try {
       configureSqlite(this.installation)
-      if (installationExists)
+      if (installationExists) {
+        migrateDevelopmentSchema(
+          this.installation,
+          () => undefined,
+          () =>
+            this.installation.exec(
+              'ALTER TABLE campaigns ADD COLUMN trashed_at TEXT'
+            )
+        )
         assertDevelopmentSchemaVersion(this.installation, this.dataRoot)
+      }
       this.installation.exec(`
       CREATE TABLE IF NOT EXISTS campaigns (
         id TEXT PRIMARY KEY NOT NULL,
         name TEXT NOT NULL,
         created_at TEXT NOT NULL,
+        trashed_at TEXT,
         status TEXT NOT NULL DEFAULT 'ready' CHECK(status IN ('creating', 'ready'))
       );
       CREATE TABLE IF NOT EXISTS settings (
@@ -86,6 +105,7 @@ export class CampaignStore {
       if (!installationExists)
         initializeDevelopmentSchemaVersion(this.installation)
       this.recoverIncompleteCreations()
+      this.recoverCampaignDirectoryTransitions()
       this.openRecordedActiveCampaign()
     } catch (error) {
       this.installation.close()
@@ -96,15 +116,25 @@ export class CampaignStore {
   list(): CampaignSnapshot {
     const campaigns = this.installation
       .prepare(
-        "SELECT id, name, created_at AS createdAt FROM campaigns WHERE status = 'ready' ORDER BY created_at ASC"
+        "SELECT id, name, created_at AS createdAt FROM campaigns WHERE status = 'ready' AND trashed_at IS NULL ORDER BY created_at ASC"
       )
       .all() as Campaign[]
+    const trashedCampaigns = this.installation
+      .prepare(
+        "SELECT id, name, created_at AS createdAt, trashed_at AS trashedAt FROM campaigns WHERE status = 'ready' AND trashed_at IS NOT NULL ORDER BY trashed_at DESC"
+      )
+      .all() as CampaignSnapshot['trashedCampaigns']
     const active = this.installation
       .prepare("SELECT value FROM settings WHERE key = 'active_campaign_id'")
       .get() as { value: string } | undefined
     return freezeCampaignSnapshot({
       campaigns,
-      activeCampaignId: active?.value ?? null
+      trashedCampaigns: [...trashedCampaigns],
+      activeCampaignId:
+        active !== undefined &&
+        campaigns.some((campaign) => campaign.id === active.value)
+          ? active.value
+          : null
     })
   }
 
@@ -128,11 +158,83 @@ export class CampaignStore {
 
   activate(id: string): CampaignSnapshot {
     const exists = this.installation
-      .prepare("SELECT 1 FROM campaigns WHERE id = ? AND status = 'ready'")
+      .prepare(
+        "SELECT 1 FROM campaigns WHERE id = ? AND status = 'ready' AND trashed_at IS NULL"
+      )
       .get(id)
     if (exists === undefined) throw new CapabilityError('not_found', false)
     this.switchActiveCampaign(id)
     this.setActive(id)
+    return this.list()
+  }
+
+  rename(id: string, name: string): CampaignSnapshot {
+    const result = this.installation
+      .prepare(
+        "UPDATE campaigns SET name = ? WHERE id = ? AND status = 'ready' AND trashed_at IS NULL"
+      )
+      .run(name, id)
+    if (result.changes === 0) throw new CapabilityError('not_found', false)
+    return this.list()
+  }
+
+  trash(id: string): CampaignSnapshot {
+    this.requireSafeCampaignId(id)
+    const campaign = this.installation
+      .prepare(
+        "SELECT 1 FROM campaigns WHERE id = ? AND status = 'ready' AND trashed_at IS NULL"
+      )
+      .get(id)
+    if (campaign === undefined) throw new CapabilityError('not_found', false)
+
+    if (this.list().activeCampaignId === id) {
+      this.activeCampaign?.close()
+      this.activeCampaign = undefined
+    }
+    this.installation.transaction(() => {
+      this.installation
+        .prepare('UPDATE campaigns SET trashed_at = ? WHERE id = ?')
+        .run(new Date().toISOString(), id)
+      this.clearActive(id)
+    })()
+    this.moveDirectory(this.campaignDirectory(id), this.trashDirectory(id))
+    return this.list()
+  }
+
+  restore(id: string): CampaignSnapshot {
+    this.requireSafeCampaignId(id)
+    const campaign = this.installation
+      .prepare(
+        "SELECT 1 FROM campaigns WHERE id = ? AND status = 'ready' AND trashed_at IS NOT NULL"
+      )
+      .get(id)
+    if (campaign === undefined) throw new CapabilityError('not_found', false)
+
+    this.moveDirectory(this.trashDirectory(id), this.campaignDirectory(id))
+    const result = this.installation
+      .prepare('UPDATE campaigns SET trashed_at = NULL WHERE id = ?')
+      .run(id)
+    if (result.changes === 0) throw new CapabilityError('not_found', false)
+    return this.list()
+  }
+
+  deleteForever(id: string, confirmationName: string): CampaignSnapshot {
+    this.requireSafeCampaignId(id)
+    const campaign = this.installation
+      .prepare(
+        "SELECT name FROM campaigns WHERE id = ? AND status = 'ready' AND trashed_at IS NOT NULL"
+      )
+      .get(id) as { name: string } | undefined
+    if (campaign === undefined) throw new CapabilityError('not_found', false)
+    if (campaign.name !== confirmationName)
+      throw new CapabilityError('validation_failed', false)
+
+    this.moveDirectory(this.trashDirectory(id), this.deletingDirectory(id))
+    this.installation.transaction(() => {
+      this.clearActive(id)
+      this.installation.prepare('DELETE FROM campaigns WHERE id = ?').run(id)
+    })()
+    rmSync(this.deletingDirectory(id), { recursive: true, force: true })
     return this.list()
   }
 
@@ -237,6 +339,36 @@ export class CampaignStore {
     }
   }
 
+  private recoverCampaignDirectoryTransitions(): void {
+    const deletingParent = join(this.dataRoot, 'campaigns', '.deleting')
+    if (existsSync(deletingParent))
+      for (const id of readdirSync(deletingParent)) {
+        if (!this.isSafeCampaignId(id)) continue
+        this.installation.transaction(() => {
+          this.clearActive(id)
+          this.installation
+            .prepare('DELETE FROM campaigns WHERE id = ?')
+            .run(id)
+        })()
+        rmSync(this.deletingDirectory(id), { recursive: true, force: true })
+      }
+
+    const trashed = this.installation
+      .prepare(
+        "SELECT id FROM campaigns WHERE status = 'ready' AND trashed_at IS NOT NULL"
+      )
+      .all() as { id: string }[]
+    for (const { id } of trashed) {
+      if (!this.isSafeCampaignId(id))
+        throw new Error('Unsafe campaign identifier in trash registry')
+      const source = this.campaignDirectory(id)
+      const destination = this.trashDirectory(id)
+      if (existsSync(source) && existsSync(destination))
+        throw new Error('Campaign exists in both active and trash storage')
+      this.moveDirectory(source, destination)
+    }
+  }
+
   private removeIncompleteCreation(id: string): void {
     rmSync(this.stagedCampaignDirectory(id), { recursive: true, force: true })
     rmSync(this.campaignDirectory(id), { recursive: true, force: true })
@@ -280,6 +412,14 @@ export class CampaignStore {
     return join(this.dataRoot, 'campaigns', id)
   }
 
+  private trashDirectory(id: string): string {
+    return join(this.dataRoot, 'campaigns', '.trash', id)
+  }
+
+  private deletingDirectory(id: string): string {
+    return join(this.dataRoot, 'campaigns', '.deleting', id)
+  }
+
   private stagedCampaignDirectory(id: string): string {
     return join(this.dataRoot, 'campaigns', '.creating', id)
   }
@@ -298,6 +438,21 @@ export class CampaignStore {
     )
   }
 
+  private requireSafeCampaignId(id: string): void {
+    if (!this.isSafeCampaignId(id))
+      throw new CapabilityError('validation_failed', false)
+  }
+
+  private moveDirectory(source: string, destination: string): void {
+    const sourceExists = existsSync(source)
+    const destinationExists = existsSync(destination)
+    if (!sourceExists && destinationExists) return
+    if (!sourceExists || destinationExists)
+      throw new Error('Campaign directory transition is inconsistent')
+    mkdirSync(dirname(destination), { recursive: true })
+    renameSync(source, destination)
+  }
+
   private setActive(id: string): void {
     this.installation
       .prepare(
@@ -306,15 +461,30 @@ export class CampaignStore {
       .run(id)
   }
 
+  private clearActive(id: string): void {
+    this.installation
+      .prepare(
+        "DELETE FROM settings WHERE key = 'active_campaign_id' AND value = ?"
+      )
+      .run(id)
+  }
+
   private openRecordedActiveCampaign(): void {
     const id = this.list().activeCampaignId
-    if (id !== null) this.switchActiveCampaign(id)
+    if (id !== null) {
+      this.switchActiveCampaign(id)
+      return
+    }
+    this.installation
+      .prepare("DELETE FROM settings WHERE key = 'active_campaign_id'")
+      .run()
   }
 
   private switchActiveCampaign(id: string): void {
     const next = new Database(this.campaignPath(id))
     try {
       configureSqlite(next)
+      migrateDevelopmentSchema(next, () => migrateSceneSchemaV3ToV4(next))
       assertDevelopmentSchemaVersion(next, this.campaignDirectory(id))
     } catch (error) {
       next.close()

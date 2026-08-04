@@ -1,14 +1,31 @@
 import { z } from 'zod'
 
-const fraction = z.number().min(0.18).max(0.82)
-
-export const sessionLayoutPreferenceSchema = z
+const currentSessionLayoutPreferenceSchema = z
   .object({
-    leftFraction: fraction,
-    rightTopFraction: fraction,
+    controlPaneWidth: z.number().int().min(240).max(440),
+    scenarioPaneWidth: z.number().int().min(220).max(420),
+    centerTab: z.enum(['details', 'catalog', 'map'])
+  })
+  .strict()
+
+const legacySessionLayoutPreferenceSchema = z
+  .object({
+    leftFraction: z.number(),
+    rightTopFraction: z.number(),
     upperRightTab: z.enum(['details', 'map'])
   })
   .strict()
+
+export const sessionLayoutPreferenceSchema = z
+  .union([
+    currentSessionLayoutPreferenceSchema,
+    legacySessionLayoutPreferenceSchema.transform((legacy) => ({
+      controlPaneWidth: 300,
+      scenarioPaneWidth: 264,
+      centerTab: legacy.upperRightTab
+    }))
+  ])
+  .pipe(currentSessionLayoutPreferenceSchema)
 
 export type SessionLayoutPreference = Readonly<
   z.infer<typeof sessionLayoutPreferenceSchema>
@@ -16,7 +33,7 @@ export type SessionLayoutPreference = Readonly<
 
 export const defaultSessionLayoutPreference: SessionLayoutPreference =
   sessionLayoutPreferenceSchema.parse({
-    leftFraction: 0.62,
-    rightTopFraction: 0.45,
-    upperRightTab: 'details'
+    controlPaneWidth: 300,
+    scenarioPaneWidth: 264,
+    centerTab: 'details'
   })

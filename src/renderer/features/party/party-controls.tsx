@@ -14,6 +14,7 @@ export function AdventuringDayDropdown(props: {
   party: PartySnapshot
   open: boolean
   setOpen: (open: boolean) => void
+  triggerLabel?: string
 }) {
   const day = props.party.adventuringDay
   const [rows, setRows] = useState(() => partyRows(props.party))
@@ -36,12 +37,13 @@ export function AdventuringDayDropdown(props: {
           props.setOpen(!props.open)
         }}
       >
-        {!day.available
-          ? message('party.noRestBudget')
-          : formatMessage('party.restSummary', {
-              shortRestXp: day.shortRestXp,
-              longRestXp: day.longRestXp
-            })}
+        {props.triggerLabel ??
+          (!day.available
+            ? message('party.noRestBudget')
+            : formatMessage('party.restSummary', {
+                shortRestXp: day.shortRestXp,
+                longRestXp: day.longRestXp
+              }))}
       </button>
       {props.open && (
         <section
@@ -208,6 +210,7 @@ export function PartyDropdown(props: {
   setOpen: (open: boolean) => void
   changed: (party: PartySnapshot) => void
   onError: (message: string) => void
+  triggerLabel?: string
 }) {
   const [search, setSearch] = useState('')
   const [busy, setBusy] = useState(false)
@@ -252,12 +255,13 @@ export function PartyDropdown(props: {
         title={message('ui.party.panel.oeffnen.alt.p')}
         onClick={() => props.setOpen(!props.open)}
       >
-        {active.length === 0
-          ? message('party.none')
-          : formatMessage('party.summary', {
-              count: active.length,
-              average: average ?? '—'
-            })}
+        {props.triggerLabel ??
+          (active.length === 0
+            ? message('party.none')
+            : formatMessage('party.summary', {
+                count: active.length,
+                average: average ?? '—'
+              }))}
       </button>
       {props.open && (
         <section

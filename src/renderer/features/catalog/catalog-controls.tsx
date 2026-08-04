@@ -121,9 +121,6 @@ export function CreatureFilters(props: {
           ))}
         </select>
       )}
-      <button onClick={() => props.changed({ ...emptyQuery, limit: q.limit })}>
-        {message('ui.filter.zuruecksetzen')}
-      </button>
     </div>
   )
 }
@@ -258,6 +255,16 @@ export function FilterChips(props: {
           {chip.label} ×
         </button>
       ))}
+      {chips.length > 0 && (
+        <button
+          className="filter-reset"
+          onClick={() =>
+            props.changed({ ...emptyQuery, limit: props.query.limit })
+          }
+        >
+          {message('ui.filter.zuruecksetzen')}
+        </button>
+      )}
     </>
   )
 }

@@ -1,8 +1,6 @@
-import { message } from '../../i18n/messages.de.js'
+import { formatMessage, message } from '../../i18n/messages.de.js'
 import { useState } from 'react'
 import type { Creature } from '../../../shared/contracts/encounter.js'
-import type { EncounterTuning } from '../../../shared/contracts/encounter-tuning.js'
-import type { EncounterSelectionEvaluation } from '../../../shared/contracts/scene.js'
 import type {
   CombatSnapshot,
   LiveSessionSnapshot
@@ -10,13 +8,16 @@ import type {
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import './encounter.css'
 import { encounterCapabilities } from './encounter-capabilities.js'
+import { CombatCardView } from './combat-card.js'
 import { useEncounterEvaluation } from './use-encounter-evaluation.js'
+import { DifficultySummary } from './encounter-tuning.js'
 
 type ScenarioProps = {
   snapshot: LiveSessionSnapshot
   setSnapshot: (snapshot: LiveSessionSnapshot) => void
   close: () => void
   onError: (message: string) => void
+  manageGroups?: () => void
 }
 
 export function SessionEncounterPanel(
@@ -29,6 +30,7 @@ export function SessionEncounterPanel(
   const assignedParty = props.snapshot.party.members.filter(
     (member) => member.active && focused.partyMemberIds.includes(member.id)
   )
+  const activeGroups = focused.groups.filter((group) => !group.archived)
   const evaluation = useEncounterEvaluation(
     focused.id,
     selected,
@@ -46,157 +48,78 @@ export function SessionEncounterPanel(
     )
   }
   return (
-    <div className="scenario-scroll">
-      <section className="scenario-content combat-setup">
-        <p className="section-kicker">{message('ui.encounter')}</p>
-        <h2>
-          {message('ui.gruppen.aus')} {focused.title}
-        </h2>
-        <label className="scenario-choice locked">
-          <input type="checkbox" checked readOnly /> {message('ui.scene.party')}
-          {assignedParty.length})
-        </label>
-        {focused.groups.map((group) => (
-          <label className="scenario-choice" key={group.id}>
-            <input
-              type="checkbox"
-              checked={selected.includes(group.id)}
-              onChange={(event) =>
-                setSelected(
-                  event.target.checked
-                    ? [...selected, group.id]
-                    : selected.filter((id) => id !== group.id)
-                )
-              }
-            />
-            {group.name}
-          </label>
-        ))}
-        {focused.groups.length === 0 && (
-          <p className="empty-state">
-            {message('ui.lege.zuerst.eine.gruppe.in.dieser.scene.an')}
-          </p>
-        )}
-        {evaluation && <DifficultySummary evaluation={evaluation} />}
-        <footer>
-          <button onClick={props.close}>{message('action.close')}</button>
-          <button
-            disabled={!evaluation?.canStart}
-            onClick={() => void direct()}
-          >
-            {message('ui.initiative.vorbereiten')}
-          </button>
-        </footer>
-      </section>
-    </div>
-  )
-}
-
-export function DifficultySummary(props: {
-  evaluation: Pick<
-    EncounterSelectionEvaluation,
-    | 'difficultyLabel'
-    | 'adjustedXp'
-    | 'baseXp'
-    | 'partyThresholds'
-    | 'creatureCount'
-    | 'message'
-  >
-  meter?: boolean
-}) {
-  const evaluation = props.evaluation
-  const meterMaximum = Math.max(1, evaluation.partyThresholds[3] * 1.5)
-  const meterPosition = Math.min(
-    100,
-    Math.round((evaluation.adjustedXp / meterMaximum) * 100)
-  )
-  return (
-    <div className="difficulty-summary" aria-live="polite">
-      <strong>{evaluation.difficultyLabel}</strong>
-      <span>
-        {evaluation.adjustedXp.toLocaleString()} {message('ui.adjusted.xp')}{' '}
-        {evaluation.baseXp.toLocaleString()} {message('ui.base.xp')}{' '}
-        {evaluation.creatureCount} {message('ui.monster')}
-      </span>
-      <small>
-        {message('ui.easy')} {evaluation.partyThresholds[0]}{' '}
-        {message('ui.medium')} {evaluation.partyThresholds[1]}{' '}
-        {message('ui.hard')} {evaluation.partyThresholds[2]}{' '}
-        {message('ui.deadly')} {evaluation.partyThresholds[3]}
-      </small>
-      {props.meter && (
-        <div className="difficulty-meter" aria-hidden="true">
-          <span style={{ width: `${meterPosition}%` }} />
-        </div>
-      )}
-      <small>{evaluation.message}</small>
-    </div>
-  )
-}
-
-export function TuningControls(props: {
-  tuning: EncounterTuning
-  changed: (tuning: EncounterTuning) => void
-}) {
-  const select = <K extends keyof EncounterTuning>(
-    field: K,
-    values: readonly EncounterTuning[K][]
-  ) => (
-    <select
-      aria-label={field}
-      value={props.tuning[field]}
-      onChange={(event) =>
-        props.changed({
-          ...props.tuning,
-          [field]: event.target.value as EncounterTuning[K]
-        })
-      }
-    >
-      {values.map((value) => (
-        <option key={value} value={value}>
-          {tuningLabel(value)}
-        </option>
-      ))}
-    </select>
-  )
-  return (
-    <div className="tuning-controls">
-      <label>
-        {message('ui.schwierigkeit')}
-        {select('difficulty', ['auto', 'easy', 'medium', 'hard', 'deadly'])}
-      </label>
-      <label>
-        {message('ui.menge')}
-        {select('amount', ['auto', 'few', 'standard', 'many'])}
-      </label>
-      <label>
-        {message('ui.balance')}
-        {select('balance', ['auto', 'even', 'varied'])}
-      </label>
-      <label>
-        {message('ui.vielfalt')}
-        {select('diversity', ['auto', 'low', 'high'])}
-      </label>
-    </div>
-  )
-}
-
-function tuningLabel(value: string): string {
-  return (
-    {
-      auto: message('encounter.tuning.auto'),
-      easy: message('encounter.tuning.easy'),
-      medium: message('encounter.tuning.medium'),
-      hard: message('encounter.tuning.hard'),
-      deadly: message('encounter.tuning.deadly'),
-      few: message('encounter.tuning.few'),
-      standard: message('encounter.tuning.standard'),
-      many: message('encounter.tuning.many'),
-      even: message('encounter.tuning.even'),
-      varied: message('encounter.tuning.varied'),
-      low: message('encounter.tuning.low'),
-      high: message('encounter.tuning.high')
-    }[value] ?? value
+    <>
+      <EncounterCrumbs {...props} />
+      <div className="scenario-scroll">
+        <section className="scenario-content combat-setup">
+          <section className="selection-section">
+            <h2>{message('encounter.assignedParty')}</h2>
+            <div className="assigned-party">
+              {assignedParty.map((member) => (
+                <span key={member.id}>{member.name}</span>
+              ))}
+              {assignedParty.length === 0 && (
+                <span>{message('encounter.noAssignedParty')}</span>
+              )}
+            </div>
+          </section>
+          <section className="selection-section">
+            <h2>{message('encounter.groupsInScene')}</h2>
+            <div className="encounter-group-choices">
+              {activeGroups.map((group) => (
+                <label className="encounter-group-choice" key={group.id}>
+                  <input
+                    type="checkbox"
+                    disabled={group.entries.length === 0}
+                    checked={selected.includes(group.id)}
+                    onChange={(event) =>
+                      setSelected(
+                        event.target.checked
+                          ? [...selected, group.id]
+                          : selected.filter((id) => id !== group.id)
+                      )
+                    }
+                  />
+                  <span
+                    className={`status-mark disposition-${group.disposition}`}
+                    aria-hidden="true"
+                  >
+                    ◆
+                  </span>
+                  <strong>{group.name}</strong>
+                  <span>
+                    {Math.round(
+                      group.baseXp * (evaluation?.multiplier ?? 1)
+                    ).toLocaleString()}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </section>
+          {activeGroups.length === 0 && (
+            <div className="scenario-empty-state">
+              <h2>{message('encounter.noneGroupsTitle')}</h2>
+              <p>{message('encounter.noneGroupsHint')}</p>
+              {props.manageGroups && (
+                <button className="primary-action" onClick={props.manageGroups}>
+                  {message('ui.gruppen.managen')}
+                </button>
+              )}
+            </div>
+          )}
+          {evaluation && <DifficultySummary evaluation={evaluation} meter />}
+          <footer>
+            <button
+              className="primary-action"
+              disabled={!evaluation?.canStart}
+              onClick={() => void direct()}
+            >
+              {message('ui.initiative.vorbereiten')}
+            </button>
+          </footer>
+        </section>
+      </div>
+    </>
   )
 }
 
@@ -205,11 +128,72 @@ function CombatScenario(props: ScenarioProps) {
     return (
       <p className="scenario-empty">{message('ui.kein.aktiver.encounter')}</p>
     )
-  if (props.snapshot.combat.phase === 'initiative')
-    return <InitiativePanel {...props} combat={props.snapshot.combat} />
-  if (props.snapshot.combat.phase === 'combat')
-    return <CombatPanel {...props} combat={props.snapshot.combat} />
-  return <ResolutionPanel {...props} combat={props.snapshot.combat} />
+  return (
+    <>
+      <EncounterCrumbs {...props} />
+      <div className="scenario-scroll">
+        {props.snapshot.combat.phase === 'initiative' ? (
+          <InitiativePanel {...props} combat={props.snapshot.combat} />
+        ) : props.snapshot.combat.phase === 'combat' ? (
+          <CombatPanel {...props} combat={props.snapshot.combat} />
+        ) : (
+          <ResolutionPanel {...props} combat={props.snapshot.combat} />
+        )}
+      </div>
+    </>
+  )
+}
+
+function EncounterCrumbs(props: ScenarioProps) {
+  const phase = props.snapshot.combat?.phase ?? 'selection'
+  const phases = [
+    { id: 'selection', label: message('encounter.selection') },
+    { id: 'initiative', label: message('ui.initiative') },
+    { id: 'combat', label: message('encounter.combat') },
+    { id: 'resolution', label: message('encounter.resolution') }
+  ] as const
+  const currentIndex = phases.findIndex((candidate) => candidate.id === phase)
+
+  async function returnTo(target: 'selection' | 'initiative' | 'combat') {
+    const combat = props.snapshot.combat
+    if (!combat || target === phase) return
+    try {
+      if (target === 'selection') {
+        props.setSnapshot(
+          await encounterCapabilities().combat.complete(combat.revision)
+        )
+        return
+      }
+      let updated = props.snapshot
+      for (let attempt = 0; attempt < 20; attempt += 1) {
+        if (!updated.combat || updated.combat.phase === target) break
+        updated = await encounterCapabilities().combat.undo(
+          updated.combat.revision
+        )
+      }
+      props.setSnapshot(updated)
+    } catch (cause) {
+      props.onError(capabilityErrorText(cause))
+    }
+  }
+
+  return (
+    <nav className="scenario-crumbs" aria-label={message('ui.encounter')}>
+      {phases.map((candidate, index) => (
+        <button
+          key={candidate.id}
+          className={index === currentIndex ? 'current' : undefined}
+          aria-current={index === currentIndex ? 'step' : undefined}
+          disabled={index > currentIndex}
+          onClick={() =>
+            void returnTo(candidate.id as 'selection' | 'initiative' | 'combat')
+          }
+        >
+          {candidate.label}
+        </button>
+      ))}
+    </nav>
+  )
 }
 
 function InitiativePanel(props: ScenarioProps & { combat: CombatSnapshot }) {
@@ -218,39 +202,78 @@ function InitiativePanel(props: ScenarioProps & { combat: CombatSnapshot }) {
       props.combat.initiativeRows.map((row) => [row.id, row.initiative])
     )
   )
+  const partyRows = props.combat.initiativeRows.filter(
+    (row) => row.kind === 'party'
+  )
+  const monsterRows = props.combat.initiativeRows.filter(
+    (row) => row.kind === 'monster'
+  )
+
+  async function rollMonsters() {
+    try {
+      const updated = await encounterCapabilities().combat.rollInitiative(
+        props.combat.revision
+      )
+      if (updated.combat) {
+        setValues(
+          Object.fromEntries(
+            updated.combat.initiativeRows.map((row) => [row.id, row.initiative])
+          )
+        )
+      }
+      props.setSnapshot(updated)
+    } catch (cause) {
+      props.onError(capabilityErrorText(cause))
+    }
+  }
+
+  const rows = (initiativeRows: typeof partyRows) => (
+    <ul className="initiative-list">
+      {initiativeRows.map((row) => (
+        <li key={row.id}>
+          <span>{row.label}</span>
+          <input
+            aria-label={formatMessage('encounter.initiativeFor', {
+              name: row.label
+            })}
+            type="number"
+            min="-10"
+            max="40"
+            value={values[row.id] ?? row.initiative}
+            onChange={(event) =>
+              setValues({ ...values, [row.id]: Number(event.target.value) })
+            }
+          />
+        </li>
+      ))}
+    </ul>
+  )
+
   return (
-    <section className="scenario-content">
-      <h2>{message('ui.initiative')}</h2>
-      <ul className="initiative-list">
-        {props.combat.initiativeRows.map((row) => (
-          <li key={row.id}>
-            <span>{row.label}</span>
-            <input
-              aria-label={`Initiative ${row.label}`}
-              type="number"
-              min="-10"
-              max="40"
-              value={values[row.id] ?? row.initiative}
-              onChange={(event) =>
-                setValues({ ...values, [row.id]: Number(event.target.value) })
-              }
-            />
-          </li>
-        ))}
-      </ul>
+    <section className="scenario-content initiative-panel">
+      <div className="initiative-groups">
+        <section>
+          <header>
+            <span>{message('encounter.partyInitiative')}</span>
+            <small className="hint">
+              {message('encounter.partyInitiativeHint')}
+            </small>
+          </header>
+          {rows(partyRows)}
+        </section>
+        <section>
+          <header>
+            <span>{message('encounter.monsterInitiative')}</span>
+            <button onClick={() => void rollMonsters()}>
+              {message('encounter.rollMonsters')}
+            </button>
+          </header>
+          {rows(monsterRows)}
+        </section>
+      </div>
       <footer>
         <button
-          onClick={() =>
-            void scenarioAction(props, () =>
-              encounterCapabilities().combat.rollInitiative(
-                props.combat.revision
-              )
-            )
-          }
-        >
-          {message('ui.alle.wuerfeln')}
-        </button>
-        <button
+          className="primary-action"
           onClick={() =>
             void scenarioAction(props, () =>
               encounterCapabilities().combat.confirmInitiative(
@@ -272,152 +295,96 @@ function InitiativePanel(props: ScenarioProps & { combat: CombatSnapshot }) {
 
 function CombatPanel(props: ScenarioProps & { combat: CombatSnapshot }) {
   const [confirmEnd, setConfirmEnd] = useState(false)
+  const undoLabel = props.combat.undoLabel
   return (
-    <section className="scenario-content">
-      <h2>
-        {message('ui.runde')} {props.combat.round}
-      </h2>
+    <section className="scenario-content combat-panel">
+      <header className="round-bar combat-round-bar">
+        <span>{message('ui.runde')}</span>
+        <strong className="round-initial">{props.combat.round}</strong>
+        <div className="round-actions turn-controls">
+          <button
+            className="step-back"
+            disabled={!undoLabel}
+            title={
+              undoLabel
+                ? formatMessage('encounter.undoNamed', { label: undoLabel })
+                : message('encounter.undo')
+            }
+            onClick={() =>
+              void scenarioAction(props, () =>
+                encounterCapabilities().combat.undo(props.combat.revision)
+              )
+            }
+          >
+            {message('encounter.previousTurn')}
+          </button>
+          <button
+            className="primary-action advance"
+            onClick={() =>
+              void scenarioAction(props, () =>
+                encounterCapabilities().combat.advanceTurn(
+                  props.combat.revision
+                )
+              )
+            }
+          >
+            {message('encounter.advanceTurn')}
+          </button>
+        </div>
+      </header>
       <ul className="combat-cards">
         {props.combat.cards.map((card) => (
           <CombatCardView
-            key={card.id}
+            key={`${card.id}:${card.initiative}`}
             card={card}
             combat={props.combat}
             action={(operation) => scenarioAction(props, operation)}
           />
         ))}
       </ul>
-      <button
-        className="primary-action"
-        onClick={() =>
-          void scenarioAction(props, () =>
-            encounterCapabilities().combat.advanceTurn(props.combat.revision)
-          )
-        }
-      >
-        {message('ui.weiter.2')}
-      </button>
-      {!confirmEnd ? (
+      <footer className="tool-row">
         <button
-          className={props.combat.allEnemiesDefeated ? 'accent' : ''}
-          onClick={() => setConfirmEnd(true)}
-        >
-          {message('ui.kampf.beenden')}
-        </button>
-      ) : (
-        <div className="confirm-row">
-          <button onClick={() => setConfirmEnd(false)}>
-            {message('ui.abbruch')}
-          </button>
-          <button
-            onClick={() =>
-              void scenarioAction(props, () =>
-                encounterCapabilities().combat.end(props.combat.revision)
-              )
-            }
-          >
-            {message('ui.bestaetigen')}
-          </button>
-        </div>
-      )}
-    </section>
-  )
-}
-
-function CombatCardView(props: {
-  card: CombatSnapshot['cards'][number]
-  combat: CombatSnapshot
-  action: (operation: () => Promise<LiveSessionSnapshot>) => Promise<void>
-}) {
-  const [amount, setAmount] = useState(1)
-  const [initiative, setInitiative] = useState(props.card.initiative)
-  const card = props.card
-  return (
-    <li
-      className={`combat-card${card.active ? ' active' : ''}${!card.alive ? ' dead' : ''}`}
-    >
-      <header>
-        <strong>
-          {card.active ? '▶ ' : ''}
-          {card.alive ? card.name : `† ${card.name}`}
-          {card.count > 1 ? ` × ${card.count}` : ''}
-        </strong>
-      </header>
-      {!card.playerCharacter && (
-        <>
-          <span>
-            {message('ui.hp')} {card.currentHp}/{card.maxHp} {message('ui.ac')}{' '}
-            {card.armorClass}
-          </span>
-          <progress max={card.maxHp} value={card.currentHp} />
-          <div className="card-controls">
-            <input
-              aria-label={`HP Änderung ${card.name}`}
-              type="number"
-              min="1"
-              value={amount}
-              onChange={(event) =>
-                setAmount(Math.max(1, Number(event.target.value)))
-              }
-            />
-            <button
-              disabled={!card.alive}
-              onClick={() =>
-                void props.action(() =>
-                  encounterCapabilities().combat.changeHp(
-                    card.id,
-                    amount,
-                    false,
-                    props.combat.revision
-                  )
-                )
-              }
-            >
-              {message('ui.hp.2')}
-            </button>
-            <button
-              disabled={!card.alive}
-              onClick={() =>
-                void props.action(() =>
-                  encounterCapabilities().combat.changeHp(
-                    card.id,
-                    amount,
-                    true,
-                    props.combat.revision
-                  )
-                )
-              }
-            >
-              {message('ui.hp.3')}
-            </button>
-          </div>
-        </>
-      )}
-      <div className="card-controls">
-        <input
-          aria-label={`Initiative ändern ${card.name}`}
-          type="number"
-          min="-10"
-          max="40"
-          value={initiative}
-          onChange={(event) => setInitiative(Number(event.target.value))}
-        />
-        <button
+          disabled={!undoLabel}
           onClick={() =>
-            void props.action(() =>
-              encounterCapabilities().combat.adjustInitiative(
-                card.id,
-                initiative,
-                props.combat.revision
-              )
+            void scenarioAction(props, () =>
+              encounterCapabilities().combat.undo(props.combat.revision)
             )
           }
         >
-          {message('ui.init')}
+          {undoLabel
+            ? formatMessage('encounter.undoNamed', { label: undoLabel })
+            : message('encounter.undo')}
         </button>
-      </div>
-      <small>{card.detail}</small>
-    </li>
+        {!confirmEnd ? (
+          <button
+            className={
+              props.combat.allEnemiesDefeated
+                ? 'primary-action accent'
+                : 'primary-action'
+            }
+            onClick={() => setConfirmEnd(true)}
+          >
+            {message('encounter.toResolution')}
+          </button>
+        ) : (
+          <div className="confirm-row">
+            <button onClick={() => setConfirmEnd(false)}>
+              {message('ui.abbruch')}
+            </button>
+            <button
+              className="primary-action"
+              onClick={() =>
+                void scenarioAction(props, () =>
+                  encounterCapabilities().combat.end(props.combat.revision)
+                )
+              }
+            >
+              {message('ui.bestaetigen')}
+            </button>
+          </div>
+        )}
+      </footer>
+    </section>
   )
 }
 
@@ -451,7 +418,13 @@ function ResolutionPanel(props: ScenarioProps & { combat: CombatSnapshot }) {
   }
   async function complete() {
     try {
-      const updated = await saveResolution()
+      let updated = await saveResolution()
+      if (!updated.combat) throw new Error('Combat nicht verfügbar')
+      if (!updated.combat.resolution?.xpAwarded && perPlayer > 0) {
+        updated = await encounterCapabilities().combat.awardXp(
+          updated.combat.revision
+        )
+      }
       if (!updated.combat) throw new Error('Combat nicht verfügbar')
       props.setSnapshot(
         await encounterCapabilities().combat.complete(updated.combat.revision)
@@ -468,44 +441,11 @@ function ResolutionPanel(props: ScenarioProps & { combat: CombatSnapshot }) {
   const perPlayer = Math.floor(awarded / Math.max(1, resolution.partySize))
   return (
     <section className="scenario-content resolution-panel">
-      <h2>{message('ui.kampfergebnis')}</h2>
-      <p>
-        {selected.length} {message('ui.gegner.besiegt')} {eligible}{' '}
-        {message('ui.xp.2')}
-      </p>
-      <p>
-        <strong>
-          {perPlayer} {message('ui.xp.pro.spieler')}
-        </strong>{' '}
-        ({awarded} {message('ui.gesamt')}
-      </p>
-      <label>
-        {message('ui.besiegungsschwelle')}{' '}
-        <span>{Math.round(threshold * 100)}%</span>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value={threshold}
-          onChange={(event) => setThreshold(Number(event.target.value))}
-        />
-      </label>
-      <label>
-        {message('ui.xp.anteil')} <span>{Math.round(fraction * 100)}%</span>
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value={fraction}
-          onChange={(event) => setFraction(Number(event.target.value))}
-        />
-      </label>
-      <ul className="result-enemies">
-        {resolution.enemies.map((enemy) => (
-          <li key={enemy.id}>
-            <label>
+      <section className="resolution-section">
+        <h2>{message('encounter.defeated')}</h2>
+        <ul className="result-enemies">
+          {resolution.enemies.map((enemy) => (
+            <li key={enemy.id}>
               <input
                 type="checkbox"
                 checked={selected.includes(enemy.id)}
@@ -517,15 +457,62 @@ function ResolutionPanel(props: ScenarioProps & { combat: CombatSnapshot }) {
                   )
                 }
               />
-              {enemy.name} (
-              {enemy.alive
-                ? message('encounter.alive')
-                : message('encounter.dead')}
-              ) · {enemy.xp} {message('ui.xp.2')}
-            </label>
-          </li>
-        ))}
-      </ul>
+              <span>{enemy.name}</span>
+              <small>
+                {enemy.alive
+                  ? message('encounter.alive')
+                  : message('encounter.dead')}
+              </small>
+              <span>
+                {enemy.xp.toLocaleString()} {message('ui.xp.2')}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
+      <section className="resolution-controls">
+        <label>
+          {message('ui.besiegungsschwelle')}{' '}
+          <span>{Math.round(threshold * 100)}%</span>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={threshold}
+            onChange={(event) => setThreshold(Number(event.target.value))}
+          />
+        </label>
+        <label>
+          {message('ui.xp.anteil')} <span>{Math.round(fraction * 100)}%</span>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={fraction}
+            onChange={(event) => setFraction(Number(event.target.value))}
+          />
+        </label>
+      </section>
+      <dl className="resolution-award">
+        <div>
+          <dt>{message('encounter.defeated')}</dt>
+          <dd>{selected.length}</dd>
+        </div>
+        <div>
+          <dt>{message('encounter.eligibleXp')}</dt>
+          <dd>{eligible.toLocaleString()}</dd>
+        </div>
+        <div>
+          <dt>{message('ui.gesamt')}</dt>
+          <dd>{awarded.toLocaleString()}</dd>
+        </div>
+        <div>
+          <dt>{message('ui.xp.pro.spieler')}</dt>
+          <dd>{perPlayer.toLocaleString()}</dd>
+        </div>
+      </dl>
       <p className="loot-summary">{resolution.lootSummary}</p>
       <footer>
         <button
@@ -536,8 +523,10 @@ function ResolutionPanel(props: ScenarioProps & { combat: CombatSnapshot }) {
             ? message('encounter.xpAwarded')
             : message('encounter.awardXp')}
         </button>
-        <button onClick={() => void complete()}>
-          {message('ui.zum.planer')}
+        <button className="primary-action" onClick={() => void complete()}>
+          {resolution.xpAwarded
+            ? message('ui.zum.planer')
+            : message('encounter.complete')}
         </button>
       </footer>
     </section>

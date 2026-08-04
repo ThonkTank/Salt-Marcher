@@ -4,6 +4,7 @@ import {
   sceneSnapshotSchema,
   type RunningScene,
   type SceneGroup,
+  type SceneGroupDisposition,
   type SceneSnapshot
 } from '../../shared/contracts/scene.js'
 import type { PartyMember } from '../../shared/contracts/live-session.js'
@@ -40,6 +41,9 @@ export function initializeSceneSchema(
       id TEXT PRIMARY KEY NOT NULL,
       scene_id TEXT NOT NULL REFERENCES scene_running_scene(id) ON DELETE CASCADE,
       name TEXT NOT NULL,
+      note TEXT NOT NULL DEFAULT '',
+      disposition TEXT NOT NULL CHECK(disposition IN ('hostile', 'neutral', 'allied')),
+      archived INTEGER NOT NULL CHECK(archived IN (0, 1)),
       position INTEGER NOT NULL CHECK(position >= 0)
     );
     CREATE TABLE IF NOT EXISTS scene_group_entry (
@@ -244,14 +248,14 @@ export class SceneStore {
     sceneId: string,
     groupId: string | null,
     name: string,
+    note: string,
+    disposition: SceneGroupDisposition,
     entries: readonly { creatureId: string; quantity: number }[],
     expectedRevision: number
   ): void {
     this.mutate(expectedRevision, () => {
       this.requireScene(sceneId)
       const normalized = normalizeEntries(entries)
-      if (normalized.size === 0)
-        throw new CapabilityError('validation_failed', false)
       for (const creatureId of normalized.keys())
         if (!creatureById(creatureId))
           throw new CapabilityError('not_found', false)
@@ -263,17 +267,19 @@ export class SceneStore {
         if (!group || group.sceneId !== sceneId)
           throw new CapabilityError('not_found', false)
         this.db
-          .prepare('UPDATE scene_group SET name = ? WHERE id = ?')
-          .run(name, id)
+          .prepare(
+            'UPDATE scene_group SET name = ?, note = ?, disposition = ? WHERE id = ?'
+          )
+          .run(name, note, disposition, id)
         this.db
           .prepare('DELETE FROM scene_group_entry WHERE group_id = ?')
           .run(id)
       } else {
         this.db
           .prepare(
-            'INSERT INTO scene_group (id, scene_id, name, position) VALUES (?, ?, ?, COALESCE((SELECT MAX(position) + 1 FROM scene_group WHERE scene_id = ?), 0))'
+            'INSERT INTO scene_group (id, scene_id, name, note, disposition, archived, position) VALUES (?, ?, ?, ?, ?, 0, COALESCE((SELECT MAX(position) + 1 FROM scene_group WHERE scene_id = ?), 0))'
           )
-          .run(id, sceneId, name, sceneId)
+          .run(id, sceneId, name, note, disposition, sceneId)
       }
       const insert = this.db.prepare(
         'INSERT INTO scene_group_entry (id, group_id, creature_id, quantity, position) VALUES (?, ?, ?, ?, ?)'
@@ -291,8 +297,26 @@ export class SceneStore {
   ): void {
     this.mutate(expectedRevision, () => {
       const result = this.db
-        .prepare('DELETE FROM scene_group WHERE id = ? AND scene_id = ?')
+        .prepare(
+          'DELETE FROM scene_group WHERE id = ? AND scene_id = ? AND archived = 1'
+        )
         .run(groupId, sceneId)
+      if (result.changes === 0) throw new CapabilityError('not_found', false)
+    })
+  }
+
+  setGroupArchived(
+    sceneId: string,
+    groupId: string,
+    archived: boolean,
+    expectedRevision: number
+  ): void {
+    this.mutate(expectedRevision, () => {
+      const result = this.db
+        .prepare(
+          'UPDATE scene_group SET archived = ? WHERE id = ? AND scene_id = ?'
+        )
+        .run(archived ? 1 : 0, groupId, sceneId)
       if (result.changes === 0) throw new CapabilityError('not_found', false)
     })
   }
@@ -301,10 +325,29 @@ export class SceneStore {
     this.requireScene(sceneId)
     const rows = this.db
       .prepare(
-        'SELECT id, name, position FROM scene_group WHERE scene_id = ? ORDER BY position, id'
+        'SELECT id, name, note, disposition, archived, position FROM scene_group WHERE scene_id = ? ORDER BY position, id'
       )
-      .all(sceneId) as Array<{ id: string; name: string; position: number }>
-    return rows.map((row) => ({ ...row, entries: this.groupEntries(row.id) }))
+      .all(sceneId) as Array<{
+      id: string
+      name: string
+      note: string
+      disposition: SceneGroupDisposition
+      archived: number
+      position: number
+    }>
+    return rows.map((row) => {
+      const entries = this.groupEntries(row.id)
+      return {
+        ...row,
+        archived: row.archived === 1,
+        baseXp: entries.reduce(
+          (total, entry) =>
+            total + (creatureById(entry.creatureId)?.xp ?? 0) * entry.quantity,
+          0
+        ),
+        entries
+      }
+    })
   }
 
   private resolveScene(

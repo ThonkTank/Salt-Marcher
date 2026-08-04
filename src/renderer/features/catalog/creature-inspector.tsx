@@ -25,7 +25,6 @@ export function CreatureInspector(props: {
     >
       <header>
         <div>
-          <p className="section-kicker">{message('ui.statblock')}</p>
           <IlluminatedHeading title={c.name} />
         </div>
         {props.close && (
@@ -39,18 +38,11 @@ export function CreatureInspector(props: {
       </header>
       <p className="stat-meta">
         {c.size} {c.type}
-        {c.subtype ? ` (${c.subtype})` : ''}, {c.alignment}
+        {c.subtype ? ` (${c.subtype})` : ''}, {c.alignment} ·{' '}
+        {message('ui.herausforderung')} {c.challengeRating} (
+        {c.xp.toLocaleString()} {message('ui.xp')}
       </p>
       <hr />
-      <p>
-        <strong>{message('ui.ruestungsklasse')}</strong> {c.ac}
-      </p>
-      <p>
-        <strong>{message('ui.trefferpunkte')}</strong> {c.hp} ({c.hitDice})
-      </p>
-      <p>
-        <strong>{message('ui.bewegung')}</strong> {c.speed}
-      </p>
       <div className="ability-grid">
         {ability('STR', c.abilities.str)}
         {ability('DEX', c.abilities.dex)}
@@ -59,22 +51,17 @@ export function CreatureInspector(props: {
         {ability('WIS', c.abilities.wis)}
         {ability('CHA', c.abilities.cha)}
       </div>
-      <p>
-        <strong>{message('ui.rettungswuerfe')}</strong> {c.savingThrows || '—'}
-      </p>
-      <p>
-        <strong>{message('ui.fertigkeiten')}</strong> {c.skills || '—'}
-      </p>
-      <p>
-        <strong>{message('ui.sinne')}</strong> {c.senses || '—'}
-      </p>
-      <p>
-        <strong>{message('ui.sprachen')}</strong> {c.languages || '—'}
-      </p>
-      <p>
-        <strong>{message('ui.herausforderung')}</strong> {c.challengeRating} (
-        {c.xp.toLocaleString()} {message('ui.xp')}
-      </p>
+      <div className="stat-vitals">
+        <p>
+          <strong>{message('ui.ruestungsklasse')}</strong> {c.ac}
+        </p>
+        <p>
+          <strong>{message('ui.trefferpunkte')}</strong> {c.hp} ({c.hitDice})
+        </p>
+        <p>
+          <strong>{message('ui.bewegung')}</strong> {c.speed}
+        </p>
+      </div>
       {c.traits.length > 0 && (
         <>
           <h3>{message('ui.merkmale')}</h3>
@@ -101,6 +88,21 @@ export function CreatureInspector(props: {
           ))}
         </>
       )}
+      <div className="stat-extras">
+        <p>
+          <strong>{message('ui.rettungswuerfe')}</strong>{' '}
+          {c.savingThrows || '—'}
+        </p>
+        <p>
+          <strong>{message('ui.fertigkeiten')}</strong> {c.skills || '—'}
+        </p>
+        <p>
+          <strong>{message('ui.sinne')}</strong> {c.senses || '—'}
+        </p>
+        <p>
+          <strong>{message('ui.sprachen')}</strong> {c.languages || '—'}
+        </p>
+      </div>
     </aside>
   )
 }

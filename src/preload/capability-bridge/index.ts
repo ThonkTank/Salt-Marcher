@@ -2,10 +2,13 @@ import { contextBridge, ipcRenderer } from 'electron'
 import { z } from 'zod'
 import {
   activateCampaignInputSchema,
+  campaignIdInputSchema,
   campaignSnapshotSchema,
   capabilityFailureSchema,
   createCampaignInputSchema,
-  freezeCampaignSnapshot
+  freezeCampaignSnapshot,
+  permanentlyDeleteCampaignInputSchema,
+  renameCampaignInputSchema
 } from '../../shared/contracts/campaign.js'
 import {
   creatureCatalogPageSchema,
@@ -20,6 +23,7 @@ import {
   confirmInitiativeInputSchema,
   liveSessionSnapshotSchema,
   prepareCombatInputSchema,
+  toggleConditionInputSchema,
   updateResolutionInputSchema
 } from '../../shared/contracts/live-session.js'
 import {
@@ -47,6 +51,7 @@ import {
   evaluateSceneGroupDraftInputSchema,
   focusSceneInputSchema,
   saveSceneGroupInputSchema,
+  setSceneGroupArchivedInputSchema,
   setSceneLocationInputSchema,
   sceneGroupDraftEvaluationSchema,
   sceneGroupDraftGenerationRequestSchema,
@@ -171,6 +176,33 @@ const api: SaltMarcherApi = {
       const input = activateCampaignInputSchema.parse({ id })
       return freezeCampaignSnapshot(
         await invoke('campaign:activate', input, campaignSnapshotSchema)
+      )
+    },
+    async rename(id, name) {
+      const input = renameCampaignInputSchema.parse({ id, name })
+      return freezeCampaignSnapshot(
+        await invoke('campaign:rename', input, campaignSnapshotSchema)
+      )
+    },
+    async trash(id) {
+      const input = campaignIdInputSchema.parse({ id })
+      return freezeCampaignSnapshot(
+        await invoke('campaign:trash', input, campaignSnapshotSchema)
+      )
+    },
+    async restore(id) {
+      const input = campaignIdInputSchema.parse({ id })
+      return freezeCampaignSnapshot(
+        await invoke('campaign:restore', input, campaignSnapshotSchema)
+      )
+    },
+    async deleteForever(id, confirmationName) {
+      const input = permanentlyDeleteCampaignInputSchema.parse({
+        id,
+        confirmationName
+      })
+      return freezeCampaignSnapshot(
+        await invoke('campaign:deleteForever', input, campaignSnapshotSchema)
       )
     }
   },
@@ -552,14 +584,34 @@ const api: SaltMarcherApi = {
           expectedRevision
         })
       ),
-    saveGroup: (sceneId, groupId, name, entries, expectedRevision) =>
+    saveGroup: (
+      sceneId,
+      groupId,
+      name,
+      note,
+      disposition,
+      entries,
+      expectedRevision
+    ) =>
       live(
         'scene:saveGroup',
         saveSceneGroupInputSchema.parse({
           sceneId,
           groupId,
           name,
+          note,
+          disposition,
           entries,
+          expectedRevision
+        })
+      ),
+    setGroupArchived: (sceneId, groupId, archived, expectedRevision) =>
+      live(
+        'scene:setGroupArchived',
+        setSceneGroupArchivedInputSchema.parse({
+          sceneId,
+          groupId,
+          archived,
           expectedRevision
         })
       ),
@@ -665,6 +717,21 @@ const api: SaltMarcherApi = {
       live(
         'combat:changeHp',
         changeHpInputSchema.parse({ cardId, amount, healing, expectedRevision })
+      ),
+    toggleCondition: (cardId, condition, active, expectedRevision) =>
+      live(
+        'combat:toggleCondition',
+        toggleConditionInputSchema.parse({
+          cardId,
+          condition,
+          active,
+          expectedRevision
+        })
+      ),
+    undo: (expectedRevision) =>
+      live(
+        'combat:undo',
+        combatRevisionInputSchema.parse({ expectedRevision })
       ),
     end: (expectedRevision) =>
       live('combat:end', combatRevisionInputSchema.parse({ expectedRevision })),

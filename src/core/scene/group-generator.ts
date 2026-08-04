@@ -47,6 +47,8 @@ export function evaluateSceneGroups(
   if (selected.some((group) => group === undefined))
     throw new CapabilityError('not_found', false)
   const groups = selected as SceneGroup[]
+  if (groups.some((group) => group.archived))
+    throw new CapabilityError('validation_failed', false)
   const evaluation = evaluateSceneGroupDraft(
     scene.id,
     assignedParty,
@@ -78,13 +80,21 @@ export function evaluateSceneGroupDraft(
     0
   )
   const thresholds = partyThresholds(assignedParty)
-  const adjustedXp = Math.round(
-    baseXp * multiplier(creatureCount, Math.max(1, assignedParty.length))
+  const appliedMultiplier = multiplier(
+    creatureCount,
+    Math.max(1, assignedParty.length)
   )
+  const adjustedXp = Math.round(baseXp * appliedMultiplier)
   const completeLevels = assignedParty.every((member) => member.level !== null)
   const available = entries.every((entry) => creatureById(entry.creatureId))
   const canStart =
     assignedParty.length > 0 && completeLevels && creatureCount > 0 && available
+  const difficultyLabel = completeLevels
+    ? difficulty(adjustedXp, thresholds)
+    : 'Party-Level fehlen'
+  const difficultyBand = completeLevels
+    ? difficultyLabel.toLowerCase()
+    : 'unavailable'
   return sceneGroupDraftEvaluationSchema.parse({
     sceneId,
     partySize: assignedParty.length,
@@ -92,9 +102,9 @@ export function evaluateSceneGroupDraft(
     partyThresholds: thresholds,
     baseXp,
     adjustedXp,
-    difficultyLabel: completeLevels
-      ? difficulty(adjustedXp, thresholds)
-      : 'Party-Level fehlen',
+    multiplier: appliedMultiplier,
+    difficultyBand,
+    difficultyLabel,
     canStart,
     message:
       assignedParty.length === 0

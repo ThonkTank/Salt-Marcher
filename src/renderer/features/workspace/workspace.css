@@ -1,0 +1,138 @@
+.campaign-menu {
+  position: absolute;
+  z-index: 100;
+  top: 100%;
+  left: 0;
+  display: grid;
+  width: min(31rem, calc(100vw - 1rem));
+  max-height: calc(100vh - var(--topbar-h) - 0.75rem);
+  gap: var(--space-7);
+  overflow: auto;
+  border: var(--border-width-structural) solid var(--border-structural);
+  border-top: 0;
+  background: var(--surface-panel);
+  box-shadow: var(--shadow-panel);
+  padding: var(--space-8);
+}
+
+.campaign-menu > header,
+.campaign-menu-list > li,
+.campaign-row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+}
+
+.campaign-menu h2,
+.campaign-menu h3,
+.campaign-menu p {
+  margin: 0;
+}
+
+.campaign-menu h2 {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+}
+
+.campaign-menu h3,
+.campaign-create label,
+.campaign-trash summary {
+  font-family: var(--font-smallcaps);
+  font-size: var(--text-ui);
+  letter-spacing: var(--tracking-caps);
+}
+
+.campaign-create,
+.campaign-menu-section,
+.campaign-delete-confirm {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.campaign-menu-list {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.campaign-menu-list > li {
+  align-items: stretch;
+  border: 1px solid var(--border-1);
+  background: var(--surface-card-flat);
+  padding: var(--space-4);
+}
+
+.campaign-select {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 0.1rem;
+  border: 0;
+  background: transparent;
+  padding: var(--space-3);
+  text-align: left;
+}
+
+.campaign-select small,
+.campaign-empty {
+  color: var(--text-3);
+}
+
+.campaign-row-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.campaign-row-actions button,
+.campaign-rename button {
+  padding: 0.32rem 0.48rem;
+  font-size: var(--text-ui);
+}
+
+.campaign-rename {
+  display: flex;
+  width: 100%;
+  gap: var(--space-4);
+}
+
+.campaign-rename input {
+  min-width: 0;
+  flex: 1;
+}
+
+.campaign-trash {
+  border-top: 1px solid var(--border-1);
+  padding-top: var(--space-6);
+}
+
+.campaign-trash summary {
+  cursor: pointer;
+  margin-bottom: var(--space-5);
+}
+
+.campaign-trashed-name {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.campaign-delete-confirm {
+  border: 1px solid var(--accent-rubric);
+  background: var(--surface-raised);
+  padding: var(--space-6);
+}
+
+.campaign-idle {
+  max-width: 32rem;
+  margin: 12vh auto 0;
+  text-align: center;
+}
+
+.campaign-idle h2 {
+  margin: var(--space-4) 0;
+  font-family: var(--font-display);
+}

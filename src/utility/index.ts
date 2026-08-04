@@ -102,6 +102,11 @@ const campaignHandlers = {
   'campaign.list': () => campaigns.list(),
   'campaign.create': (input) => campaigns.create(input.name),
   'campaign.activate': (input) => campaigns.activate(input.id),
+  'campaign.rename': (input) => campaigns.rename(input.id, input.name),
+  'campaign.trash': (input) => campaigns.trash(input.id),
+  'campaign.restore': (input) => campaigns.restore(input.id),
+  'campaign.deleteForever': (input) =>
+    campaigns.deleteForever(input.id, input.confirmationName),
   'settings.read': () => campaigns.readSettings(),
   'settings.update': (input) =>
     campaigns.updateSettings(input.patch, input.expectedRevision),
@@ -111,6 +116,10 @@ const campaignHandlers = {
   | 'campaign.list'
   | 'campaign.create'
   | 'campaign.activate'
+  | 'campaign.rename'
+  | 'campaign.trash'
+  | 'campaign.restore'
+  | 'campaign.deleteForever'
   | 'settings.read'
   | 'settings.update'
   | 'projection.read'
@@ -212,11 +221,20 @@ const sessionHandlers = {
       input.sceneId,
       input.groupId,
       input.name,
+      input.note,
+      input.disposition,
       input.entries,
       input.expectedRevision
     ),
   'scene.deleteGroup': (input) =>
     play.deleteSceneGroup(input.sceneId, input.groupId, input.expectedRevision),
+  'scene.setGroupArchived': (input) =>
+    play.setSceneGroupArchived(
+      input.sceneId,
+      input.groupId,
+      input.archived,
+      input.expectedRevision
+    ),
   'scene.assignPartyMember': (input) =>
     play.assignScenePartyMember(
       input.sceneId,
@@ -247,6 +265,7 @@ const sessionHandlers = {
   | 'scene.setLocation'
   | 'scene.saveGroup'
   | 'scene.deleteGroup'
+  | 'scene.setGroupArchived'
   | 'scene.assignPartyMember'
   | 'scene.evaluateGroupDraft'
   | 'scene.generateGroupDraft'
@@ -279,6 +298,14 @@ const encounterHandlers = {
       input.amount,
       input.healing
     ),
+  'combat.toggleCondition': (input) =>
+    play.toggleCombatCondition(
+      input.expectedRevision,
+      input.cardId,
+      input.condition,
+      input.active
+    ),
+  'combat.undo': (input) => play.undoCombat(input.expectedRevision),
   'combat.end': (input) => play.endCombat(input.expectedRevision),
   'combat.updateResolution': (input) =>
     play.updateResolution(
@@ -298,6 +325,8 @@ const encounterHandlers = {
   | 'combat.advanceTurn'
   | 'combat.adjustInitiative'
   | 'combat.changeHp'
+  | 'combat.toggleCondition'
+  | 'combat.undo'
   | 'combat.end'
   | 'combat.updateResolution'
   | 'combat.awardXp'
@@ -412,8 +441,7 @@ function dispatch(request: CoreRequest): Promise<unknown> {
       request.kind !== 'core.shutdown'
     )
       reconcileAndSchedule(
-        request.kind === 'campaign.create' ||
-          request.kind === 'campaign.activate'
+        request.kind.startsWith('campaign.')
           ? 'campaign-reconcile'
           : 'travel-command'
       )

@@ -10,7 +10,7 @@ describe('campaign walking skeleton', () => {
     await expectAccessibleInBothThemes(client)
     await field.setValue('Campaign A')
     await (await client.$('button=Kampagne erstellen')).click()
-    await expect(await client.$('h1=Session')).toBeExisting()
+    await expect(await client.$('h1=Session · Campaign A')).toBeExisting()
     await expect(
       await client.$('section[aria-label="Session Steuerung"]')
     ).toBeExisting()
@@ -21,42 +21,96 @@ describe('campaign walking skeleton', () => {
     await expect(
       await client.$('aside[aria-label="Szenario Panel"]')
     ).toBeExisting()
+    const geometry = await client.execute(() => {
+      const height = (selector: string) =>
+        Math.round(
+          document.querySelector(selector)!.getBoundingClientRect().height
+        )
+      const width = (selector: string) =>
+        Math.round(
+          document.querySelector(selector)!.getBoundingClientRect().width
+        )
+      return {
+        topBar: height('.top-bar'),
+        rail: width('.icon-bar'),
+        control: width('.session-control-column'),
+        scenario: width('.session-scenario-column'),
+        dividers: [...document.querySelectorAll('.session-divider')].map(
+          (element) => Math.round(element.getBoundingClientRect().width)
+        )
+      }
+    })
+    expect(geometry).toEqual({
+      topBar: 66,
+      rail: 66,
+      control: 300,
+      scenario: 264,
+      dividers: [9, 9]
+    })
     await expectAccessibleInBothThemes(client)
     await (await client.$('button=Karte')).click()
     await expect(await client.$('strong=Keine Hex-Karte')).toBeExisting()
-    await (await client.$('button=Details')).click()
+    await (await client.$('button=Detail')).click()
     await expect(await client.$$('[role="separator"]')).toBeElementsArrayOfSize(
       2
     )
     const columnDivider = await client.$(
-      '[aria-label="Gekoppelte Grenze zwischen linker und rechter Spalte"]'
+      '[aria-label="Breite der Steuerungsspalte"]'
     )
-    await pressDividerKey(
-      client,
-      'Gekoppelte Grenze zwischen linker und rechter Spalte',
-      'ArrowLeft'
-    )
-    await expect(columnDivider).toHaveAttribute('aria-valuenow', '60')
+    await pressDividerKey(client, 'Breite der Steuerungsspalte', 'ArrowLeft')
+    await expect(columnDivider).toHaveAttribute('aria-valuenow', '290')
     const rightDivider = await client.$(
-      '[aria-label="Grenze zwischen Details und Szenario"]'
+      '[aria-label="Breite der Szenariospalte"]'
     )
-    await pressDividerKey(
-      client,
-      'Grenze zwischen Details und Szenario',
-      'ArrowDown'
-    )
-    await expect(rightDivider).toHaveAttribute('aria-valuenow', '47')
+    await pressDividerKey(client, 'Breite der Szenariospalte', 'ArrowLeft')
+    await expect(rightDivider).toHaveAttribute('aria-valuenow', '274')
     await client.pause(400)
 
-    await (await client.$('button[aria-label="Kampagnen"]')).click()
+    await (await client.$('button[aria-label="Menü"]')).click()
     const nextField = await client.$('#campaign-name')
     await nextField.setValue('Campaign B')
     await (await client.$('button=Kampagne erstellen')).click()
-    await expect(await client.$('h1=Session')).toBeExisting()
+    await expect(await client.$('h1=Session · Campaign B')).toBeExisting()
 
-    await (await client.$('button[aria-label="Kampagnen"]')).click()
-    await (await client.$('button=Campaign A')).click()
-    await expect(await client.$('h1=Session')).toBeExisting()
+    await (await client.$('button[aria-label="Menü"]')).click()
+    await (await client.$('button[aria-label="Campaign A"]')).click()
+    await expect(await client.$('h1=Session · Campaign A')).toBeExisting()
+
+    await (await client.$('button[aria-label="Menü"]')).click()
+    let campaignBRow = await (
+      await client.$('button[aria-label="Campaign B"]')
+    ).$('..')
+    await (await campaignBRow.$('button=Umbenennen')).click()
+    const rename = await campaignBRow.$('input[aria-label="Umbenennen"]')
+    await rename.setValue('Campaign B Archiv')
+    await (await campaignBRow.$('button=Speichern')).click()
+    campaignBRow = await (
+      await client.$('button[aria-label="Campaign B Archiv"]')
+    ).$('..')
+    await (await campaignBRow.$('button=In Papierkorb')).click()
+    await (await client.$('summary=Papierkorb (1)')).click()
+    let trashedRow = await (await client.$('span=Campaign B Archiv')).$('..')
+    await (await trashedRow.$('button=Wiederherstellen')).click()
+    campaignBRow = await (
+      await client.$('button[aria-label="Campaign B Archiv"]')
+    ).$('..')
+    await (await campaignBRow.$('button=In Papierkorb')).click()
+    await (await client.$('summary=Papierkorb (1)')).click()
+    trashedRow = await (await client.$('span=Campaign B Archiv')).$('..')
+    await (await trashedRow.$('button=Endgültig löschen')).click()
+    const deleteConfirmation = await client.$('.campaign-delete-confirm')
+    await (
+      await deleteConfirmation.$(
+        'input[aria-label="Kampagnenname zur Bestätigung"]'
+      )
+    ).setValue('Campaign B Archiv')
+    await (await deleteConfirmation.$('button=Endgültig löschen')).click()
+    await expect(
+      await client.$('button[aria-label="Campaign B Archiv"]')
+    ).not.toBeExisting()
+    await (
+      await client.$('#campaign-menu button[aria-label="Schließen"]')
+    ).click()
   })
 
   it('keeps a newly created hex map inside the workspace', async () => {
@@ -88,7 +142,7 @@ describe('campaign walking skeleton', () => {
     ).click()
 
     await (await client.$('button[aria-label="Session"]')).click()
-    await expect(await client.$('h1=Session')).toBeExisting()
+    await expect(await client.$('h1=Session · Campaign A')).toBeExisting()
   })
 
   it('builds a scene party, browses monsters and starts a scene group combat', async () => {
@@ -185,7 +239,7 @@ describe('campaign walking skeleton', () => {
     ).click()
     await (await client.$('button[aria-label="Session"]')).click()
 
-    await (await client.$('button=Keine Party')).click()
+    await (await client.$('button=Party')).click()
     for (let active = 1; active <= 2; active += 1) {
       const addButtons = await client.$$('button=Zur Party')
       await addButtons[0]?.click()
@@ -199,21 +253,28 @@ describe('campaign walking skeleton', () => {
     }
     await (await client.$('button[aria-label="Party-Panel schließen"]')).click()
 
-    for (let assigned = 1; assigned <= 2; assigned += 1) {
-      const sceneButtons = await client.$$('button=Zur Scene')
-      await sceneButtons[0]?.click()
-      await client.pause(300)
-      const assignmentError = await client.$('.error-message')
-      if (await assignmentError.isExisting())
-        throw new Error(await assignmentError.getText())
-      await client.waitUntil(
-        async () => (await client.$$('button=Entfernen').length) === assigned,
-        {
-          timeout: 5_000,
-          timeoutMsg: `Scene assignment ${assigned} was not published.`
-        }
-      )
-    }
+    const partyCard = await client.$('article.scene-party-card')
+    await client.waitUntil(
+      async () => (await partyCard.$$('.group-members span').length) === 2,
+      {
+        timeout: 5_000,
+        timeoutMsg: 'New party members were not assigned to the focused scene.'
+      }
+    )
+    await (await partyCard.$('button=Bearbeiten')).click()
+    const scenePartyDialog = await client.$(
+      'section[aria-labelledby="scene-party-dialog-title"]'
+    )
+    await expect(
+      await scenePartyDialog.$$('button=Entfernen')
+    ).toBeElementsArrayOfSize(2)
+    await expect(
+      await scenePartyDialog.$$('button=Zur Scene')
+    ).toBeElementsArrayOfSize(0)
+    await (await scenePartyDialog.$('button=Schließen')).click()
+    await expect(
+      await partyCard.$$('.group-members span')
+    ).toBeElementsArrayOfSize(2)
 
     await (await client.$('button[aria-label="Katalog"]')).click()
     const monsterSearch = await client.$('input[aria-label="Monster suchen"]')
@@ -227,22 +288,76 @@ describe('campaign walking skeleton', () => {
     await expectAccessibleInBothThemes(client)
 
     await (await client.$('button[aria-label="Session"]')).click()
+    const groupsHeading = await client.$('.groups-heading')
+    await expect(await groupsHeading.$('button=Neue Gruppe')).not.toBeExisting()
     await (await client.$('button=Gruppen managen')).click()
-    await (await client.$('button=Neue Gruppe')).click()
+    const groupDialog = await client.$(
+      'section[aria-labelledby="group-builder-title"]'
+    )
     await expectAccessibleInBothThemes(client)
+    const groupSelection = await groupDialog.$(
+      'select[aria-label="Gruppe auswählen"]'
+    )
+    await expect(await groupSelection.$('option:checked')).toHaveText(
+      'Neue Gruppe'
+    )
+    await expect(await groupDialog.$('button=Neue Gruppe')).toBeExisting()
     await (
-      await client.$('input[aria-label="Gruppenname"]')
+      await groupDialog.$('input[aria-label="Gruppenname"]')
     ).setValue('Wolf Pack')
-    const dialogSearch = await client.$('input[aria-label="Monster suchen"]')
+    await (
+      await groupDialog.$('textarea[aria-label="Gruppennotiz"]')
+    ).setValue('Lauert in den Dünen westlich der Furt.')
+    const generate = await groupDialog.$('button=Neu generieren')
+    await client.waitUntil(() => generate.isEnabled(), {
+      timeout: 5_000,
+      timeoutMsg: 'Generator was not available for the new group draft.'
+    })
+    await generate.click()
+    const clearGenerated = await groupDialog.$('button=Leeren')
+    await clearGenerated.waitForExist({ timeout: 5_000 })
+    await clearGenerated.click()
+    const dialogSearch = await groupDialog.$(
+      'input[aria-label="Monster suchen"]'
+    )
     await dialogSearch.setValue('wolf')
     const addWolf = await client.$('button[aria-label="Wolf hinzufügen"]')
     await client.waitUntil(() => addWolf.isExisting(), {
       timeout: 5_000,
       timeoutMsg: 'Wolf add action was not rendered.'
     })
-    for (let count = 0; count < 4; count += 1) await addWolf.click()
-    await (await client.$('button=Gruppe erstellen')).click()
+    await addWolf.click()
+    for (let count = 1; count < 4; count += 1)
+      await client.execute(() => {
+        const increase = document.querySelector<HTMLButtonElement>(
+          'button[aria-label="Anzahl Wolf erhöhen"]'
+        )
+        increase?.click()
+      })
+    await (await groupDialog.$('button=Speichern')).click()
     await expect(await client.$('strong=Wolf Pack')).toBeExisting()
+    await expect(await client.$('.group-note')).toHaveText(
+      'Lauert in den Dünen westlich der Furt.'
+    )
+
+    await (await client.$('button=Gruppen managen')).click()
+    const reopenedGroupDialog = await client.$(
+      'section[aria-labelledby="group-builder-title"]'
+    )
+    const reopenedSelection = await reopenedGroupDialog.$(
+      'select[aria-label="Gruppe auswählen"]'
+    )
+    await reopenedSelection.selectByVisibleText('Wolf Pack')
+    await (await reopenedGroupDialog.$('button=Neue Gruppe')).click()
+    const emptyGroupName = await reopenedGroupDialog.$(
+      'input[aria-label="Gruppenname"]'
+    )
+    await emptyGroupName.setValue('Leere Patrouille')
+    await reopenedSelection.selectByVisibleText('Wolf Pack')
+    await reopenedSelection.selectByVisibleText('Neue Gruppe')
+    await expect(emptyGroupName).toHaveValue('Leere Patrouille')
+    await (await reopenedGroupDialog.$('button=Speichern')).click()
+    await expect(await client.$('strong=Leere Patrouille')).toBeExisting()
 
     await (
       await client.$('select[aria-label="Szenario Auswahl"]')
@@ -255,7 +370,9 @@ describe('campaign walking skeleton', () => {
       timeoutMsg: 'Encounter selection evaluation did not become ready.'
     })
     await prepare.click()
-    await expect(await client.$('h2=Initiative')).toBeExisting()
+    await expect(
+      await client.$('button[aria-current="step"]*=Initiative')
+    ).toBeExisting()
   })
 
   it('survives the pseudo locale without accessibility regressions', async () => {
@@ -263,7 +380,7 @@ describe('campaign walking skeleton', () => {
     const url = new URL(await client.getUrl())
     url.searchParams.set('locale', 'pseudo')
     await client.url(url.href)
-    await (await client.$('h1*=⟦')).waitForExist()
+    await (await client.$('.eyebrow*=⟦')).waitForExist()
     await expectAccessible(client)
   })
 })
