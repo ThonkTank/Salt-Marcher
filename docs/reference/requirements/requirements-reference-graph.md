@@ -15,17 +15,17 @@ full entry in the center Details tab while preserving the surrounding work.
   non-overlapping spans and never rewrites the source text.
 - A term that can identify several entries opens a candidate chooser; the UI
   must not silently choose one meaning.
-- Static SRD terms, creature names, and campaign-owned location and faction
-  names share one index. Campaign names use exact matching to avoid surprising
-  prose matches.
+- Static SRD/creature terms and campaign-owned location/faction terms are
+  transported as separate revisioned indexes and merged by the renderer.
+  Campaign names use exact matching to avoid surprising prose matches.
 - Editable controls remain plain text while editing. Read-only Session prose,
   statblocks, active condition labels, group notes, and reference documents
   participate in recognition.
 
 ## Interaction
 
-- Hovering or focusing a recognized term opens a preview card after a short
-  intent delay. Moving from a card to a term inside that card opens a child
+- Hovering or focusing a recognized term opens a preview card after 350 ms.
+  Leaving uses a 150 ms safe corridor. Moving from a card to a term inside that card opens a child
   card without closing its ancestors.
 - Nesting has no product-level depth limit. The implementation may suppress a
   target already present in its ancestor path to prevent recursive cycles.
@@ -41,13 +41,16 @@ full entry in the center Details tab while preserving the surrounding work.
 
 ## Content and failure behavior
 
-- Full rule documents expose normalized sections, facts, source version, and
-  attribution. Creature documents reuse the canonical statblock projection.
+- Full rule documents expose structured blocks, compiler-linked inline references,
+  facts, source version, and attribution. Creature documents reuse the
+  canonical statblock projection. Campaign and creature prose is linked from
+  the current runtime index because it is not part of the pinned SRD build.
 - Deleted or unavailable campaign targets retain an intelligible unavailable
   state; cached content is not presented as current campaign truth.
 - Index and detail failures do not block the Session workspace. Source text
   remains readable and the failed preview reports a typed unavailable state.
-- Import is an explicit developer operation. Runtime lookup is fully offline
+- `ReadOnlyProse`/`ReferenceRichText` is the registered renderer primitive for
+  read-only prose; editable controls remain unlinked. Import is an explicit developer operation. Runtime lookup is fully offline
   and performs no network access.
 
 ## Acceptance

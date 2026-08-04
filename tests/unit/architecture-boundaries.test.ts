@@ -298,9 +298,32 @@ describe('architecture boundaries', () => {
     for (const file of codeFiles('src/renderer')) {
       if (file.endsWith('modal-dialog.tsx')) continue
       expect(source(file), `${file} defines a raw modal dialog`).not.toMatch(
-        /aria-modal|role=['"]dialog['"]/
+        /aria-modal|<dialog\b/
       )
     }
+  })
+
+  it('routes registered read-only prose surfaces through the reference primitive', () => {
+    for (const file of [
+      'src/renderer/features/catalog/creature-inspector.tsx',
+      'src/renderer/features/encounter/combat-card.tsx',
+      'src/renderer/features/session/session-group-card.tsx',
+      'src/renderer/features/session/session-workspace.tsx'
+    ])
+      expect(source(file), `${file} bypasses ReadOnlyProse`).toContain(
+        'ReadOnlyProse'
+      )
+    expect(
+      source('src/renderer/features/reference/read-only-prose.tsx')
+    ).toContain('ReferenceRichText')
+  })
+
+  it('uses the shared non-modal surface for reference popovers and windows', () => {
+    const referenceUi = source(
+      'src/renderer/features/reference/reference-ui.tsx'
+    )
+    expect(referenceUi).toContain('NonModalSurface')
+    expect(referenceUi).not.toMatch(/role=['"]dialog['"]|aria-modal/)
   })
 
   it('models unbounded maps as mathematical 32 by 32 chunks', () => {

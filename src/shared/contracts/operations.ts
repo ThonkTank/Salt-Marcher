@@ -25,6 +25,8 @@ import {
   partySnapshotSchema,
   prepareCombatInputSchema,
   sceneGroupCommandResultSchema,
+  setConcentrationInputSchema,
+  setExhaustionInputSchema,
   toggleConditionInputSchema,
   updateResolutionInputSchema
 } from './live-session.js'
@@ -97,6 +99,7 @@ import { passiveProjectionSchema } from './passive-display.js'
 import { coreProcessStatusSchema } from './runtime.js'
 import { runtimeGpuObservationSchema } from '../qualification/runtime-observation.js'
 import {
+  referenceCampaignIndexInputSchema,
   referenceDocumentSchema,
   referenceIndexSchema,
   referenceTargetSchema
@@ -238,7 +241,16 @@ export const coreOperations = {
     creatureFilterOptionsSchema
   ),
   'creatures.detail': read('creatures:detail', creatureId, creatureSchema),
-  'references.index': read('references:index', none, referenceIndexSchema),
+  'references.staticIndex': read(
+    'references:static-index',
+    none,
+    referenceIndexSchema
+  ),
+  'references.campaignIndex': read(
+    'references:campaign-index',
+    referenceCampaignIndexInputSchema,
+    referenceIndexSchema
+  ),
   'references.detail': read(
     'references:detail',
     referenceTargetSchema,
@@ -385,6 +397,16 @@ export const coreOperations = {
   'combat.toggleCondition': write(
     'combat:toggleCondition',
     toggleConditionInputSchema,
+    combatCommandResultSchema
+  ),
+  'combat.setConcentration': write(
+    'combat:setConcentration',
+    setConcentrationInputSchema,
+    combatCommandResultSchema
+  ),
+  'combat.setExhaustion': write(
+    'combat:setExhaustion',
+    setExhaustionInputSchema,
     combatCommandResultSchema
   ),
   'combat.undo': write(

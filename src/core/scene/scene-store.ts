@@ -11,6 +11,10 @@ import type { PartyMember } from '../../shared/contracts/live-session.js'
 import { uuidv7 } from '../../shared/ids/uuidv7.js'
 import { creatureById } from '../creatures/catalog.js'
 import type { WorldLocation } from '../../shared/contracts/world-location.js'
+import {
+  combatConditionSchema,
+  type CombatCondition
+} from '../../shared/contracts/combat-status.js'
 
 export function initializeSceneSchema(
   db: Database.Database,
@@ -59,6 +63,8 @@ export function initializeSceneSchema(
       entry_id TEXT NOT NULL REFERENCES scene_group_entry(id) ON DELETE CASCADE,
       current_hp INTEGER NOT NULL CHECK(current_hp >= 0),
       conditions TEXT NOT NULL DEFAULT '[]',
+      concentrating INTEGER NOT NULL DEFAULT 0 CHECK(concentrating IN (0, 1)),
+      exhaustion_level INTEGER NOT NULL DEFAULT 0 CHECK(exhaustion_level BETWEEN 0 AND 6),
       position INTEGER NOT NULL CHECK(position >= 0)
     );
   `)
@@ -330,17 +336,30 @@ export class SceneStore {
 
   memberState(memberId: string): {
     currentHp: number
-    conditions: string[]
+    conditions: CombatCondition[]
+    concentrating: boolean
+    exhaustionLevel: number
   } | null {
     const row = this.db
       .prepare(
-        'SELECT current_hp AS currentHp, conditions FROM scene_group_member WHERE id = ?'
+        `SELECT current_hp AS currentHp, conditions, concentrating,
+                exhaustion_level AS exhaustionLevel
+         FROM scene_group_member WHERE id = ?`
       )
-      .get(memberId) as { currentHp: number; conditions: string } | undefined
+      .get(memberId) as
+      | {
+          currentHp: number
+          conditions: string
+          concentrating: number
+          exhaustionLevel: number
+        }
+      | undefined
     return row
       ? {
           currentHp: row.currentHp,
-          conditions: JSON.parse(row.conditions) as string[]
+          conditions: zodConditions(row.conditions),
+          concentrating: row.concentrating === 1,
+          exhaustionLevel: row.exhaustionLevel
         }
       : null
   }
@@ -351,12 +370,15 @@ export class SceneStore {
     entryId: string
     creatureId: string
     currentHp: number
-    conditions: string[]
+    conditions: CombatCondition[]
+    concentrating: boolean
+    exhaustionLevel: number
   } | null {
     const row = this.db
       .prepare(
         `SELECT m.id, e.group_id AS groupId, e.id AS entryId,
-          e.creature_id AS creatureId, m.current_hp AS currentHp, m.conditions
+          e.creature_id AS creatureId, m.current_hp AS currentHp, m.conditions,
+          m.concentrating, m.exhaustion_level AS exhaustionLevel
          FROM scene_group_member m
          JOIN scene_group_entry e ON e.id = m.entry_id
          WHERE m.id = ?`
@@ -369,12 +391,16 @@ export class SceneStore {
           creatureId: string
           currentHp: number
           conditions: string
+          concentrating: number
+          exhaustionLevel: number
         }
       | undefined
     return row
       ? {
           ...row,
-          conditions: JSON.parse(row.conditions) as string[]
+          conditions: zodConditions(row.conditions),
+          concentrating: row.concentrating === 1,
+          exhaustionLevel: row.exhaustionLevel
         }
       : null
   }
@@ -384,26 +410,49 @@ export class SceneStore {
       id: string
       currentHp: number
       conditions: readonly string[]
+      concentrating: boolean
+      exhaustionLevel: number
     }[]
   ): readonly string[] {
     const changedGroups = new Set<string>()
     const current = this.db.prepare(
-      `SELECT m.current_hp AS currentHp, m.conditions, e.group_id AS groupId
+      `SELECT m.current_hp AS currentHp, m.conditions, m.concentrating,
+              m.exhaustion_level AS exhaustionLevel, e.group_id AS groupId
        FROM scene_group_member m
        JOIN scene_group_entry e ON e.id = m.entry_id
        WHERE m.id = ?`
     )
     const update = this.db.prepare(
-      'UPDATE scene_group_member SET current_hp = ?, conditions = ? WHERE id = ?'
+      `UPDATE scene_group_member
+       SET current_hp = ?, conditions = ?, concentrating = ?, exhaustion_level = ?
+       WHERE id = ?`
     )
     for (const state of states) {
       const row = current.get(state.id) as
-        { currentHp: number; conditions: string; groupId: string } | undefined
+        | {
+            currentHp: number
+            conditions: string
+            concentrating: number
+            exhaustionLevel: number
+            groupId: string
+          }
+        | undefined
       if (!row) throw new CapabilityError('not_found', false)
       const conditions = JSON.stringify(state.conditions)
-      if (row.currentHp === state.currentHp && row.conditions === conditions)
+      if (
+        row.currentHp === state.currentHp &&
+        row.conditions === conditions &&
+        row.concentrating === Number(state.concentrating) &&
+        row.exhaustionLevel === state.exhaustionLevel
+      )
         continue
-      update.run(state.currentHp, conditions, state.id)
+      update.run(
+        state.currentHp,
+        conditions,
+        Number(state.concentrating),
+        state.exhaustionLevel,
+        state.id
+      )
       changedGroups.add(row.groupId)
     }
     const bumpGroup = this.db.prepare(
@@ -530,17 +579,23 @@ export class SceneStore {
       const members = (
         this.db
           .prepare(
-            'SELECT id, current_hp AS currentHp, conditions, position FROM scene_group_member WHERE entry_id = ? ORDER BY position, id'
+            `SELECT id, current_hp AS currentHp, conditions, concentrating,
+                    exhaustion_level AS exhaustionLevel, position
+             FROM scene_group_member WHERE entry_id = ? ORDER BY position, id`
           )
           .all(entry.id) as Array<{
           id: string
           currentHp: number
           conditions: string
+          concentrating: number
+          exhaustionLevel: number
           position: number
         }>
       ).map((member) => ({
         ...member,
-        conditions: JSON.parse(member.conditions) as string[]
+        conditions: zodConditions(member.conditions),
+        concentrating: member.concentrating === 1,
+        exhaustionLevel: member.exhaustionLevel
       }))
       const aliveQuantity = members.filter(
         (member) => member.currentHp > 0
@@ -593,7 +648,9 @@ export class SceneStore {
     for (const member of dead.slice(0, reviveCount))
       this.db
         .prepare(
-          "UPDATE scene_group_member SET current_hp = ?, conditions = '[]' WHERE id = ?"
+          `UPDATE scene_group_member
+           SET current_hp = ?, conditions = '[]', concentrating = 0, exhaustion_level = 0
+           WHERE id = ?`
         )
         .run(creature.hp, member.id)
     const refreshed = this.db
@@ -626,7 +683,9 @@ export class SceneStore {
           .get(entryId) as { position: number | null }
       ).position ?? -1) + 1
     const insert = this.db.prepare(
-      'INSERT INTO scene_group_member (id, entry_id, current_hp, conditions, position) VALUES (?, ?, ?, ?, ?)'
+      `INSERT INTO scene_group_member
+       (id, entry_id, current_hp, conditions, concentrating, exhaustion_level, position)
+       VALUES (?, ?, ?, ?, 0, 0, ?)`
     )
     for (let index = 0; index < aliveMissing; index += 1)
       insert.run(uuidv7(), entryId, creature.hp, '[]', nextPosition + index)
@@ -680,6 +739,10 @@ export class SceneStore {
       )
       .run()
   }
+}
+
+function zodConditions(value: string): CombatCondition[] {
+  return combatConditionSchema.array().parse(JSON.parse(value))
 }
 
 interface SceneRoot {

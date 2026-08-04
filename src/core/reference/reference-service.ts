@@ -1,5 +1,3 @@
-import { z } from 'zod'
-import referenceCatalogDocument from './srd-5.1.generated.json' with { type: 'json' }
 import {
   referenceDocumentSchema,
   referenceIndexSchema,
@@ -7,267 +5,283 @@ import {
   type ReferenceCandidate,
   type ReferenceDocument,
   type ReferenceIndex,
-  type ReferenceTarget
+  type ReferenceInline,
+  type ReferenceTarget,
+  type ReferenceTerm
 } from '../../shared/contracts/reference.js'
+import type {
+  Creature,
+  CreatureAction
+} from '../../shared/contracts/creature.js'
+import type { WorldLocationSnapshot } from '../../shared/contracts/world-location.js'
+import type { WorldFactionSnapshot } from '../../shared/contracts/encounter-source.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
-import {
-  creatureCatalogManifest,
-  creatures,
-  type CreatureCatalogService
-} from '../creatures/catalog.js'
-import type { Creature } from '../../shared/contracts/encounter.js'
-import type { WorldLocationService } from '../worldplanner/location-store.js'
-import type { EncounterSourceService } from '../application/encounter-source-service.js'
+import { referenceTargetKey } from '../../shared/reference/reference-target-key.js'
+import { creatureCatalogManifest } from '../creatures/catalog.js'
 
-const catalogSchema = z
-  .object({
-    manifest: z
-      .object({
-        catalogVersion: z.string(),
-        apiRoot: z.url(),
-        officialSource: z.url(),
-        sourceContentHash: z.string(),
-        license: z.literal('CC-BY-4.0'),
-        attribution: z.string(),
-        endpointCounts: z.record(z.string(), z.number().int().nonnegative())
-      })
-      .strict(),
-    entries: z.array(
-      z
-        .object({
-          aliases: z.array(z.string().min(1)),
-          document: referenceDocumentSchema
-        })
-        .strict()
-    )
-  })
-  .strict()
+export interface StaticReferenceCatalog {
+  index(): ReferenceIndex
+  detail(target: ReferenceTarget): ReferenceDocument
+}
 
-const catalog = catalogSchema.parse(referenceCatalogDocument)
-const staticDocuments = new Map(
-  catalog.entries.map((entry) => [targetKey(entry.document.target), entry])
-)
+export interface ReferenceCreatureQueries {
+  all(): readonly Creature[]
+  detail(id: string): Creature
+}
+
+export interface ReferenceLocationQueries {
+  read(): WorldLocationSnapshot
+}
+
+export interface ReferenceFactionQueries {
+  read(): WorldFactionSnapshot
+}
 
 export class ReferenceService {
   constructor(
-    private readonly creatureCatalog: CreatureCatalogService,
-    private readonly locations: WorldLocationService,
-    private readonly sources: EncounterSourceService,
+    private readonly catalog: StaticReferenceCatalog,
+    private readonly creatureQueries: ReferenceCreatureQueries,
+    private readonly locationQueries: ReferenceLocationQueries,
+    private readonly factionQueries: ReferenceFactionQueries,
     private readonly activeCampaignId: () => string
   ) {}
 
-  index(): ReferenceIndex {
-    const terms = new Map<
-      string,
-      {
-        term: string
-        matchMode: 'folded' | 'exact'
-        candidates: Map<string, ReferenceCandidate>
-      }
-    >()
-    const add = (
-      term: string,
-      matchMode: 'folded' | 'exact',
-      candidate: ReferenceCandidate
-    ) => {
-      const trimmed = term.trim()
-      if (!trimmed) return
-      const lookup = `${matchMode}:${
-        matchMode === 'folded' ? trimmed.toLocaleLowerCase('en-US') : trimmed
-      }`
-      const current = terms.get(lookup) ?? {
-        term: trimmed,
-        matchMode,
-        candidates: new Map()
-      }
-      current.candidates.set(targetKey(candidate.target), candidate)
-      terms.set(lookup, current)
+  staticIndex(): ReferenceIndex {
+    const catalogIndex = this.catalog.index()
+    const terms = new Map<string, MutableTerm>()
+    for (const term of catalogIndex.terms) mergeTerm(terms, term)
+    for (const creature of this.creatureQueries.all()) {
+      addCandidate(terms, creature.name, 'folded', {
+        target: { scope: 'creature', creatureId: creature.id },
+        title: creature.name
+      })
+      addCreatureParts(terms, creature, 'trait', creature.traits)
+      addCreatureParts(terms, creature, 'action', creature.actions)
+      addCreatureParts(
+        terms,
+        creature,
+        'legendary-action',
+        creature.legendaryActions
+      )
     }
-
-    for (const entry of catalog.entries)
-      for (const alias of entry.aliases)
-        add(alias, 'folded', candidateFor(entry.document))
-
-    for (const creature of creatures)
-      add(creature.name, 'folded', {
-        target: { kind: 'creature', id: creature.id },
-        title: creature.name,
-        context: 'Creature Statblock'
-      })
-
-    const locations = this.locations.read()
-    for (const location of locations.locations)
-      add(location.displayName, 'exact', {
-        target: { kind: 'location', id: location.id },
-        title: location.displayName,
-        context: 'Campaign Location'
-      })
-
-    const factions = this.sources.readFactions()
-    for (const faction of factions.factions)
-      add(faction.displayName, 'exact', {
-        target: { kind: 'faction', id: faction.id },
-        title: faction.displayName,
-        context: 'Campaign Faction'
-      })
-
     return referenceIndexSchema.parse({
-      revision: [
-        catalog.manifest.sourceContentHash,
-        creatureCatalogManifest.sourceHash,
-        this.activeCampaignId(),
-        locations.revision,
-        factions.revision
-      ].join(':'),
-      terms: [...terms.values()]
-        .map((term) => ({
-          term: term.term,
-          matchMode: term.matchMode,
-          candidates: [...term.candidates.values()].toSorted(candidateOrder)
-        }))
-        .toSorted(
-          (left, right) =>
-            right.term.length - left.term.length ||
-            left.term.localeCompare(right.term)
-        )
+      scope: 'static',
+      revision: `${catalogIndex.revision}:${creatureCatalogManifest.sourceHash}`,
+      terms: sortedTerms(terms)
+    })
+  }
+
+  campaignIndex(campaignId: string): ReferenceIndex {
+    this.assertCampaign(campaignId)
+    const locations = this.locationQueries.read()
+    const factions = this.factionQueries.read()
+    const terms = new Map<string, MutableTerm>()
+    for (const location of locations.locations)
+      addCandidate(terms, location.displayName, 'exact', {
+        target: {
+          scope: 'campaign',
+          campaignId,
+          entityKind: 'location',
+          entityId: location.id
+        },
+        title: location.displayName
+      })
+    for (const faction of factions.factions)
+      addCandidate(terms, faction.displayName, 'exact', {
+        target: {
+          scope: 'campaign',
+          campaignId,
+          entityKind: 'faction',
+          entityId: faction.id
+        },
+        title: faction.displayName
+      })
+    return referenceIndexSchema.parse({
+      scope: 'campaign',
+      revision: `${campaignId}:${locations.revision}:${factions.revision}`,
+      terms: sortedTerms(terms)
     })
   }
 
   detail(input: ReferenceTarget): ReferenceDocument {
     const target = referenceTargetSchema.parse(input)
-    const staticEntry = staticDocuments.get(targetKey(target))
-    if (staticEntry) return staticEntry.document
-    if (target.kind === 'creature')
-      return creatureDocument(this.creatureCatalog.detail(target.id))
-    if (target.kind === 'action' && target.sectionId)
-      return creatureActionDocument(
-        this.creatureCatalog.detail(target.id),
+    if (target.scope === 'srd') return this.catalog.detail(target)
+    if (target.scope === 'creature')
+      return creatureDocument(this.creatureQueries.detail(target.creatureId))
+    if (target.scope === 'creature-part')
+      return creaturePartDocument(
+        this.creatureQueries.detail(target.creatureId),
         target
       )
-    if (target.kind === 'location') {
-      const location = this.locations
-        .read()
-        .locations.find((candidate) => candidate.id === target.id)
-      if (!location) throw new CapabilityError('not_found', false)
-      return referenceDocumentSchema.parse({
-        target,
-        title: location.displayName,
-        context: 'Campaign Location',
-        summary: location.notes,
-        facts: [
-          { label: 'Factions', value: String(location.factionIds.length) },
-          {
-            label: 'Encounter Tables',
-            value: String(location.encounterTableIds.length)
-          }
-        ],
-        sections: location.notes
-          ? [{ id: 'notes', title: 'Notes', paragraphs: [location.notes] }]
-          : [],
-        source: null
-      })
-    }
-    if (target.kind === 'faction') {
-      const faction = this.sources
-        .readFactions()
-        .factions.find((candidate) => candidate.id === target.id)
-      if (!faction) throw new CapabilityError('not_found', false)
-      return referenceDocumentSchema.parse({
-        target,
-        title: faction.displayName,
-        context: 'Campaign Faction',
-        summary: faction.notes,
-        facts: [
-          { label: 'Disposition', value: String(faction.disposition) },
-          { label: 'Finite Stock', value: String(faction.inventory.length) }
-        ],
-        sections: faction.notes
-          ? [{ id: 'notes', title: 'Notes', paragraphs: [faction.notes] }]
-          : [],
-        source: null
-      })
-    }
-    throw new CapabilityError('not_found', false)
+    this.assertCampaign(target.campaignId)
+    return target.entityKind === 'location'
+      ? locationDocument(this.locationQueries.read(), target)
+      : factionDocument(this.factionQueries.read(), target)
   }
+
+  private assertCampaign(campaignId: string): void {
+    if (campaignId !== this.activeCampaignId())
+      throw new CapabilityError('not_found', false)
+  }
+}
+
+type MutableTerm = {
+  term: string
+  matchMode: 'folded' | 'exact'
+  candidates: Map<string, ReferenceCandidate>
+}
+
+function addCreatureParts(
+  terms: Map<string, MutableTerm>,
+  creature: Creature,
+  partKind: 'trait' | 'action' | 'legendary-action',
+  actions: readonly CreatureAction[]
+): void {
+  for (const action of actions)
+    addCandidate(terms, action.name, 'folded', {
+      target: {
+        scope: 'creature-part',
+        creatureId: creature.id,
+        partKind,
+        partId: action.id
+      },
+      title: `${action.name} — ${creature.name}`
+    })
+}
+
+function addCandidate(
+  terms: Map<string, MutableTerm>,
+  term: string,
+  matchMode: 'folded' | 'exact',
+  candidate: ReferenceCandidate
+): void {
+  const trimmed = term.trim()
+  if (!trimmed) return
+  const normalized =
+    matchMode === 'folded'
+      ? trimmed.normalize('NFKC').toLocaleLowerCase('en-US')
+      : trimmed
+  const key = `${matchMode}:${normalized}`
+  const current = terms.get(key) ?? {
+    term: trimmed,
+    matchMode,
+    candidates: new Map()
+  }
+  current.candidates.set(referenceTargetKey(candidate.target), candidate)
+  terms.set(key, current)
+}
+
+function mergeTerm(terms: Map<string, MutableTerm>, term: ReferenceTerm): void {
+  for (const candidate of term.candidates)
+    addCandidate(terms, term.term, term.matchMode, candidate)
+}
+
+function sortedTerms(terms: Map<string, MutableTerm>): ReferenceTerm[] {
+  return [...terms.values()]
+    .map((term) => ({
+      term: term.term,
+      matchMode: term.matchMode,
+      candidates: [...term.candidates.values()].toSorted(candidateOrder)
+    }))
+    .toSorted(
+      (left, right) =>
+        right.term.length - left.term.length ||
+        left.term.localeCompare(right.term)
+    )
 }
 
 function creatureDocument(creature: Creature): ReferenceDocument {
   return referenceDocumentSchema.parse({
-    target: { kind: 'creature', id: creature.id },
+    documentKind: 'creature',
+    target: { scope: 'creature', creatureId: creature.id },
     title: creature.name,
-    context: 'Creature Statblock',
-    summary: creature.details,
-    facts: [
-      { label: 'Armor Class', value: String(creature.ac) },
-      { label: 'Hit Points', value: `${creature.hp} (${creature.hitDice})` },
-      { label: 'Speed', value: creature.speed },
-      { label: 'Challenge', value: creature.challengeRating }
-    ],
-    sections: [],
-    source: {
-      title: creatureCatalogManifest.sourceDocument,
-      version: creatureCatalogManifest.catalogVersion,
-      url: creatureCatalogManifest.source,
-      attribution: creatureCatalogManifest.attribution
-    },
-    creature
+    creature,
+    source: creatureSource()
   })
 }
 
-function creatureActionDocument(
+function creaturePartDocument(
   creature: Creature,
-  target: ReferenceTarget
+  target: Extract<ReferenceTarget, { scope: 'creature-part' }>
 ): ReferenceDocument {
-  const [kind, rawPosition] = target.sectionId!.split(':')
-  const position = Number(rawPosition)
-  const entries =
-    kind === 'trait'
+  const actions =
+    target.partKind === 'trait'
       ? creature.traits
-      : kind === 'legendary'
-        ? creature.legendaryActions
-        : kind === 'action'
-          ? creature.actions
-          : []
-  const action = entries[position]
+      : target.partKind === 'action'
+        ? creature.actions
+        : creature.legendaryActions
+  const action = actions.find((candidate) => candidate.id === target.partId)
   if (!action) throw new CapabilityError('not_found', false)
-  return referenceDocumentSchema.parse({
+  return article(target, action.name, [], action.description, creatureSource())
+}
+
+function locationDocument(
+  snapshot: WorldLocationSnapshot,
+  target: Extract<ReferenceTarget, { scope: 'campaign' }>
+): ReferenceDocument {
+  const location = snapshot.locations.find(
+    (entry) => entry.id === target.entityId
+  )
+  if (!location) throw new CapabilityError('not_found', false)
+  return article(
     target,
-    title: action.name,
-    context: `${creature.name} · ${
-      kind === 'trait'
-        ? 'Trait'
-        : kind === 'legendary'
-          ? 'Legendary Action'
-          : 'Action'
-    }`,
-    summary: action.description,
-    facts: [],
-    sections: [
-      {
-        id: target.sectionId,
-        title: action.name,
-        paragraphs: [action.description]
-      }
+    location.displayName,
+    [
+      ['Factions', String(location.factionIds.length)],
+      ['Encounter Tables', String(location.encounterTableIds.length)]
     ],
-    source: {
-      title: creatureCatalogManifest.sourceDocument,
-      version: creatureCatalogManifest.catalogVersion,
-      url: creatureCatalogManifest.source,
-      attribution: creatureCatalogManifest.attribution
-    }
+    location.notes,
+    null
+  )
+}
+
+function factionDocument(
+  snapshot: WorldFactionSnapshot,
+  target: Extract<ReferenceTarget, { scope: 'campaign' }>
+): ReferenceDocument {
+  const faction = snapshot.factions.find(
+    (entry) => entry.id === target.entityId
+  )
+  if (!faction) throw new CapabilityError('not_found', false)
+  return article(
+    target,
+    faction.displayName,
+    [
+      ['Disposition', String(faction.disposition)],
+      ['Finite Stock', String(faction.inventory.length)]
+    ],
+    faction.notes,
+    null
+  )
+}
+
+function article(
+  target: ReferenceTarget,
+  title: string,
+  facts: readonly (readonly [string, string])[],
+  body: string,
+  source: ReturnType<typeof creatureSource> | null
+): ReferenceDocument {
+  const inline = (text: string): ReferenceInline[] => [{ kind: 'text', text }]
+  return referenceDocumentSchema.parse({
+    documentKind: 'article',
+    target,
+    title,
+    facts: facts.map(([label, value]) => ({ label, value: inline(value) })),
+    blocks: body.trim()
+      ? [{ kind: 'paragraph', inlines: inline(body.trim()) }]
+      : [],
+    source
   })
 }
 
-function candidateFor(document: ReferenceDocument): ReferenceCandidate {
+function creatureSource() {
   return {
-    target: document.target,
-    title: document.title,
-    context: document.context
+    title: creatureCatalogManifest.sourceDocument,
+    version: creatureCatalogManifest.catalogVersion,
+    url: creatureCatalogManifest.source,
+    attribution: creatureCatalogManifest.attribution
   }
-}
-
-function targetKey(target: ReferenceTarget): string {
-  return `${target.kind}:${target.id}:${target.sectionId ?? ''}`
 }
 
 function candidateOrder(
@@ -275,8 +289,9 @@ function candidateOrder(
   right: ReferenceCandidate
 ): number {
   return (
-    (left.context ?? '').localeCompare(right.context ?? '') ||
     left.title.localeCompare(right.title) ||
-    targetKey(left.target).localeCompare(targetKey(right.target))
+    referenceTargetKey(left.target).localeCompare(
+      referenceTargetKey(right.target)
+    )
   )
 }

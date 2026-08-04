@@ -8,7 +8,7 @@ import { combatConditions } from '../../../shared/contracts/live-session.js'
 import { formatMessage, message } from '../../i18n/messages.de.js'
 import { encounterCapabilities } from './encounter-capabilities.js'
 import { ModalDialog } from '../../shell/modal-dialog.js'
-import { ReferenceText } from '../reference/reference-ui.js'
+import { ReadOnlyProse } from '../reference/read-only-prose.js'
 
 export function CombatCardView(props: {
   card: CombatSnapshot['cards'][number]
@@ -36,6 +36,10 @@ export function CombatCardView(props: {
           total: card.count
         })
       : card.name
+  const activeStatusCount =
+    card.conditions.length +
+    Number(card.concentrating) +
+    Number(card.exhaustionLevel > 0)
 
   function changeHp(healing: boolean) {
     void props.action(() =>
@@ -60,7 +64,7 @@ export function CombatCardView(props: {
               {card.active ? '◆' : card.alive ? '◇' : '†'}
             </span>
             <strong>
-              <ReferenceText>{displayName}</ReferenceText>
+              <ReadOnlyProse>{displayName}</ReadOnlyProse>
             </strong>
             <span className="armor-class">
               {message('ui.ac.2')} {card.armorClass}
@@ -87,13 +91,28 @@ export function CombatCardView(props: {
               </span>
             </span>
           )}
-          {card.conditions.length > 0 && (
+          {(activeStatusCount > 0 || card.exhaustionLevel > 0) && (
             <ul className="combat-conditions conditions">
               {card.conditions.map((condition) => (
                 <li key={condition}>
-                  <ReferenceText>{condition}</ReferenceText>
+                  <ReadOnlyProse>{conditionLabel(condition)}</ReadOnlyProse>
                 </li>
               ))}
+              {card.concentrating && (
+                <li>
+                  <ReadOnlyProse>
+                    {message('encounter.concentration')}
+                  </ReadOnlyProse>
+                </li>
+              )}
+              {card.exhaustionLevel > 0 && (
+                <li>
+                  <ReadOnlyProse>
+                    {message('encounter.exhaustion')}
+                  </ReadOnlyProse>{' '}
+                  {card.exhaustionLevel}
+                </li>
+              )}
             </ul>
           )}
         </div>
@@ -158,8 +177,8 @@ export function CombatCardView(props: {
             {message('encounter.conditions')}
             <span>
               {formatMessage('encounter.conditionCount', {
-                count: card.conditions.length,
-                total: combatConditions.length
+                count: activeStatusCount,
+                total: combatConditions.length + 2
               })}
             </span>
           </h3>
@@ -191,10 +210,51 @@ export function CombatCardView(props: {
                     <span className="condition-mark" aria-hidden="true">
                       {active ? '◆' : '◇'}
                     </span>
-                    {condition}
+                    {conditionLabel(condition)}
                   </button>
                 )
               })}
+          </div>
+          <div className="condition-grid">
+            <button
+              className={card.concentrating ? 'active' : undefined}
+              aria-pressed={card.concentrating}
+              onClick={() =>
+                void props.action(() =>
+                  encounterCapabilities().combat.setConcentration(
+                    card.id,
+                    !card.concentrating,
+                    props.combat.revision
+                  )
+                )
+              }
+            >
+              <span className="condition-mark" aria-hidden="true">
+                {card.concentrating ? '◆' : '◇'}
+              </span>
+              {message('encounter.concentration')}
+            </button>
+            <label>
+              {message('encounter.exhaustionLevel')}
+              <select
+                value={card.exhaustionLevel}
+                onChange={(event) =>
+                  void props.action(() =>
+                    encounterCapabilities().combat.setExhaustion(
+                      card.id,
+                      Number(event.target.value),
+                      props.combat.revision
+                    )
+                  )
+                }
+              >
+                {[0, 1, 2, 3, 4, 5, 6].map((level) => (
+                  <option key={level} value={level}>
+                    {level}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
           <button
             className="hp-dialog-close"
@@ -206,4 +266,8 @@ export function CombatCardView(props: {
       )}
     </>
   )
+}
+
+function conditionLabel(condition: CombatCondition): string {
+  return `${condition[0]!.toLocaleUpperCase('en-US')}${condition.slice(1)}`
 }

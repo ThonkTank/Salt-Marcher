@@ -11,19 +11,22 @@ import {
 } from '../../src/renderer/features/session/group-draft.js'
 
 const document = (id: string): ReferenceDocument => ({
-  target: { kind: 'creature', id },
+  documentKind: 'article',
+  target: {
+    scope: 'srd',
+    catalogId: 'srd-5.1',
+    definitionKind: 'rule',
+    definitionId: id
+  },
   title: id,
-  context: 'Creature Statblock',
-  summary: '',
   facts: [],
-  sections: [],
-  source: null,
-  creature: { id } as ReferenceDocument['creature']
+  blocks: [],
+  source: null
 })
 
 const entry = (id: string, breadcrumb: string) => {
   const next = document(id)
-  return { target: next.target, document: next, breadcrumb }
+  return { target: next.target, breadcrumb }
 }
 
 describe('renderer feature state', () => {
@@ -50,12 +53,28 @@ describe('renderer feature state', () => {
       entry: entry('crab', 'Küste › Krabbe')
     })
 
-    expect(state['scene-a']?.entries.map(({ target }) => target.id)).toEqual([
-      'wolf',
-      'crab'
-    ])
+    expect(
+      state['scene-a']?.entries.map(({ target }) =>
+        target.scope === 'srd' ? target.definitionId : ''
+      )
+    ).toEqual(['wolf', 'crab'])
     expect(state['scene-a']?.index).toBe(1)
     expect(state['scene-b']).toBeUndefined()
+  })
+
+  it('bounds each scene detail history to one hundred target-only entries', () => {
+    let state: DetailHistoryState = {}
+    for (let index = 0; index < 125; index += 1)
+      state = reduceDetailHistory(state, {
+        type: 'open',
+        sceneId: 'scene-a',
+        entry: entry(`creature-${index}`, `Entry ${index}`)
+      })
+    expect(state['scene-a']?.entries).toHaveLength(100)
+    expect(state['scene-a']?.entries[0]?.target).toMatchObject({
+      definitionId: 'creature-25'
+    })
+    expect(state['scene-a']?.index).toBe(99)
   })
 
   it('clamps local travel interpolation without changing domain state', () => {

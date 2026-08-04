@@ -89,7 +89,8 @@ pure observations and never advance Scene time.
 Reference lookup follows the same boundary. A deterministic, attributed SRD
 artifact is checked into the application and loaded only by the utility
 process. The utility composes that static truth with the canonical creature
-catalog and campaign-owned location and faction services, then publishes a
-revisioned index and normalized documents through two typed read capabilities.
+catalog and campaign-owned location and faction services, then publishes
+separate static and Campaign revisioned indexes plus normalized documents
+through three typed read capabilities and one typed invalidation event.
 The renderer compiles matching state locally; hover traversal performs detail
 reads but never receives filesystem, database, or runtime network access.

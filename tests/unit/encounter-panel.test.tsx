@@ -65,7 +65,9 @@ function combatSnapshot(): LiveSessionSnapshot {
           initiative: 15,
           count: 2,
           aliveCount: 2,
-          conditions: ['Prone'],
+          conditions: ['prone'],
+          concentrating: false,
+          exhaustionLevel: 0,
           detail: ''
         }
       ]
@@ -113,12 +115,12 @@ describe('encounter scenario panel', () => {
     const dialog = screen.getByRole('dialog')
     expect(
       within(dialog).getAllByRole('button', { pressed: false })
-    ).toHaveLength(combatConditions.length - 1)
+    ).toHaveLength(combatConditions.length)
     expect(
       within(dialog).getByRole('button', { pressed: true })
     ).toHaveTextContent('Prone')
     expect(
-      within(dialog).getByText(`1 von ${combatConditions.length}`)
+      within(dialog).getByText(`1 von ${combatConditions.length + 2}`)
     ).toBeInTheDocument()
   })
 })

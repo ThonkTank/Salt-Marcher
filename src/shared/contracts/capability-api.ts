@@ -55,6 +55,7 @@ import type {
 import type {
   ReferenceDocument,
   ReferenceIndex,
+  ReferenceIndexChangeNotice,
   ReferenceTarget
 } from './reference.js'
 
@@ -126,8 +127,12 @@ export interface SaltMarcherApi {
     detail(id: string): Promise<Creature>
   }
   references: {
-    index(): Promise<ReferenceIndex>
+    staticIndex(): Promise<ReferenceIndex>
+    campaignIndex(campaignId: string): Promise<ReferenceIndex>
     detail(target: ReferenceTarget): Promise<ReferenceDocument>
+    onCampaignIndexChanged(
+      listener: (notice: ReferenceIndexChangeNotice) => void
+    ): () => void
   }
   locations: {
     read(): Promise<WorldLocationSnapshot>
@@ -335,6 +340,16 @@ export interface SaltMarcherApi {
       cardId: string,
       condition: CombatCondition,
       active: boolean,
+      expectedRevision: number
+    ): Promise<CombatCommandResult>
+    setConcentration(
+      cardId: string,
+      concentrating: boolean,
+      expectedRevision: number
+    ): Promise<CombatCommandResult>
+    setExhaustion(
+      cardId: string,
+      exhaustionLevel: number,
       expectedRevision: number
     ): Promise<CombatCommandResult>
     undo(expectedRevision: number): Promise<CombatCommandResult>

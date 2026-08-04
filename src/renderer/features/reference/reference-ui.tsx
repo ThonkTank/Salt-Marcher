@@ -1,234 +1,137 @@
 /* eslint-disable react-hooks/refs -- Floating UI exposes callback refs and prop getters that are intentionally used during render. */
 import {
-  FloatingNode,
   FloatingPortal,
   autoUpdate,
   flip,
   offset,
-  safePolygon,
   shift,
-  useDismiss,
-  useFloating,
-  useFloatingNodeId,
-  useFocus,
-  useHover,
-  useInteractions,
-  useRole
+  useFloating
 } from '@floating-ui/react'
 import {
   Fragment,
   useEffect,
-  useMemo,
   useRef,
   useState,
-  type PointerEvent as ReactPointerEvent,
-  type ReactNode
+  type PointerEvent as ReactPointerEvent
 } from 'react'
 import type {
+  ReferenceBlock,
   ReferenceCandidate,
   ReferenceDocument,
+  ReferenceInline,
   ReferenceTarget
 } from '../../../shared/contracts/reference.js'
 import { CreatureInspector } from '../catalog/creature-inspector.js'
 import { formatMessage, message } from '../../i18n/messages.de.js'
+import { NonModalSurface } from '../../shell/nonmodal-surface.js'
 import {
   useReferenceContext,
-  useOptionalReferenceContext,
+  ReferenceOverlayParentContext,
   type PinnedReference
 } from './reference-context.js'
+import { referenceTargetKey } from './reference-matcher.js'
 import {
-  matchReferenceText,
-  referenceTargetKey,
-  type ReferenceMatch
-} from './reference-matcher.js'
+  ReferenceLink,
+  ReferenceTerm,
+  ReferenceText
+} from './reference-text.js'
 
-export function ReferenceText(props: {
-  children: string
-  path?: readonly ReferenceTarget[]
-}) {
-  const reference = useOptionalReferenceContext()
-  const compiled = reference?.compiled ?? null
-  const matches = useMemo(
-    () =>
-      compiled
-        ? matchReferenceText(compiled, props.children, props.path ?? [])
-        : [],
-    [compiled, props.children, props.path]
-  )
-  if (matches.length === 0) return <>{props.children}</>
-  const content: ReactNode[] = []
-  let cursor = 0
-  for (const match of matches) {
-    if (match.start > cursor)
-      content.push(props.children.slice(cursor, match.start))
-    content.push(
-      <ReferenceTerm
-        key={`${match.start}:${match.end}:${match.candidates
-          .map((candidate) => referenceTargetKey(candidate.target))
-          .join('|')}`}
-        match={match}
-        path={props.path ?? []}
-      />
-    )
-    cursor = match.end
-  }
-  if (cursor < props.children.length) content.push(props.children.slice(cursor))
-  return <>{content}</>
-}
+export { ReferenceLink, ReferenceText } from './reference-text.js'
 
-export function ReferenceLink(props: {
-  text: string
-  candidate: ReferenceCandidate
-  path?: readonly ReferenceTarget[]
-}) {
-  const reference = useOptionalReferenceContext()
-  if (!reference) return <>{props.text}</>
+export function ReferenceOverlayLayer() {
+  const reference = useReferenceContext()
   return (
-    <ReferenceTerm
-      match={{
-        start: 0,
-        end: props.text.length,
-        text: props.text,
-        candidates: [props.candidate]
-      }}
-      path={props.path ?? []}
-    />
+    <FloatingPortal>
+      {reference.overlays.map((card) => (
+        <ReferenceOverlayCard key={card.id} card={card} />
+      ))}
+    </FloatingPortal>
   )
 }
 
-function ReferenceTerm(props: {
-  match: ReferenceMatch
-  path: readonly ReferenceTarget[]
+function ReferenceOverlayCard(props: {
+  card: ReturnType<typeof useReferenceContext>['overlays'][number]
 }) {
   const reference = useReferenceContext()
-  const [open, setOpen] = useState(false)
   const [selected, setSelected] = useState<ReferenceCandidate | null>(null)
   const [pinning, setPinning] = useState(false)
-  const timer = useRef<number | null>(null)
-  const nodeId = useFloatingNodeId()
-  const { refs, floatingStyles, context } = useFloating({
-    nodeId,
-    open,
-    onOpenChange(next) {
-      setOpen(next)
-      if (!next) setSelected(null)
-    },
+  const pinTimer = useRef<number | null>(null)
+  const { refs, floatingStyles } = useFloating({
+    open: true,
     placement: 'right-start',
     strategy: 'fixed',
     middleware: [offset(8), flip({ padding: 12 }), shift({ padding: 12 })],
-    whileElementsMounted: autoUpdate
+    whileElementsMounted: autoUpdate,
+    elements: { reference: props.card.anchor }
   })
-  const hover = useHover(context, {
-    restMs: 250,
-    delay: { open: 750, close: 120 },
-    handleClose: safePolygon({ buffer: 1 })
-  })
-  const focus = useFocus(context)
-  const dismiss = useDismiss(context, { bubbles: true })
-  const role = useRole(context, { role: 'dialog' })
-  const { getReferenceProps, getFloatingProps } = useInteractions([
-    hover,
-    focus,
-    dismiss,
-    role
-  ])
-  const onlyCandidate =
-    props.match.candidates.length === 1 ? props.match.candidates[0]! : null
-
-  const stopPinTimer = () => {
-    if (timer.current !== null) window.clearTimeout(timer.current)
-    timer.current = null
+  const candidate =
+    selected ??
+    (props.card.match.candidates.length === 1
+      ? props.card.match.candidates[0]!
+      : null)
+  const stopPin = () => {
+    if (pinTimer.current !== null) window.clearTimeout(pinTimer.current)
+    pinTimer.current = null
     setPinning(false)
   }
-  const startPinTimer = () => {
-    if (!onlyCandidate || timer.current !== null) return
+  const startPin = () => {
+    if (!candidate || pinTimer.current !== null) return
     setPinning(true)
-    timer.current = window.setTimeout(() => {
-      timer.current = null
+    pinTimer.current = window.setTimeout(() => {
+      pinTimer.current = null
       setPinning(false)
-      const anchor = refs.reference.current?.getBoundingClientRect() ?? null
-      reference.pinReference(onlyCandidate.target, onlyCandidate.title, anchor)
-      setOpen(false)
+      reference.pinReference(
+        candidate.target,
+        props.card.anchor.getBoundingClientRect()
+      )
+      reference.closeOverlayBranch()
     }, 5_000)
   }
-  useEffect(() => stopPinTimer, [])
-
-  const activate = () => {
-    if (!onlyCandidate) {
-      setOpen(true)
-      return
-    }
-    reference.openReference(
-      onlyCandidate.target,
-      `${onlyCandidate.context ?? kindLabel(onlyCandidate.target.kind)} › ${onlyCandidate.title}`
-    )
-  }
-
+  useEffect(() => stopPin, [candidate])
   return (
-    <>
-      <button
-        type="button"
-        className="reference-term"
-        ref={refs.setReference}
-        {...getReferenceProps({
-          onClick: activate,
-          onPointerEnter: startPinTimer,
-          onPointerLeave: stopPinTimer
-        })}
-      >
-        {props.match.text}
-      </button>
-      <FloatingNode id={nodeId}>
-        {open && (
-          <FloatingPortal>
-            <section
-              className={`reference-hover-card${pinning ? ' pinning' : ''}`}
-              ref={refs.setFloating}
-              style={floatingStyles}
-              aria-label={formatMessage('reference.label', {
-                name: props.match.text
-              })}
-              {...getFloatingProps({
-                onPointerEnter: startPinTimer,
-                onPointerLeave: stopPinTimer
-              })}
-            >
-              {pinning && <span className="reference-pin-progress" />}
-              {props.match.candidates.length > 1 && selected === null ? (
-                <ReferenceChoices
-                  text={props.match.text}
-                  candidates={props.match.candidates}
-                  select={setSelected}
-                />
-              ) : (
-                <ReferencePreview
-                  candidate={selected ?? onlyCandidate!}
-                  path={props.path}
-                  {...(selected
-                    ? {
-                        back: () => {
-                          stopPinTimer()
-                          setSelected(null)
-                        }
-                      }
-                    : {})}
-                  pin={(candidate) => {
-                    const anchor =
-                      refs.reference.current?.getBoundingClientRect() ?? null
-                    reference.pinReference(
-                      candidate.target,
-                      candidate.title,
-                      anchor
-                    )
-                    setOpen(false)
-                  }}
-                />
-              )}
-            </section>
-          </FloatingPortal>
+    <NonModalSurface
+      className={`reference-hover-card${pinning ? ' pinning' : ''}`}
+      ref={refs.setFloating}
+      style={floatingStyles}
+      aria-label={formatMessage('reference.label', {
+        name: props.card.match.text
+      })}
+      onPointerEnter={() => {
+        reference.cancelOverlayClose()
+        startPin()
+      }}
+      onPointerLeave={() => {
+        stopPin()
+        reference.scheduleOverlayClose(props.card.parentId ?? undefined)
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') reference.closeOverlayBranch()
+      }}
+    >
+      {pinning && <span className="reference-pin-progress" />}
+      <ReferenceOverlayParentContext.Provider value={props.card.id}>
+        {!candidate ? (
+          <ReferenceChoices
+            text={props.card.match.text}
+            candidates={props.card.match.candidates}
+            select={setSelected}
+          />
+        ) : (
+          <ReferencePreview
+            candidate={candidate}
+            path={props.card.path}
+            {...(selected ? { back: () => setSelected(null) } : {})}
+            pin={(next) => {
+              reference.pinReference(
+                next.target,
+                props.card.anchor.getBoundingClientRect()
+              )
+              reference.closeOverlayBranch()
+            }}
+          />
         )}
-      </FloatingNode>
-    </>
+      </ReferenceOverlayParentContext.Provider>
+    </NonModalSurface>
   )
 }
 
@@ -255,7 +158,7 @@ function ReferenceChoices(props: {
             onClick={() => props.select(candidate)}
           >
             <strong>{candidate.title}</strong>
-            <span>{candidate.context ?? kindLabel(candidate.target.kind)}</span>
+            <span>{targetLabel(candidate.target)}</span>
           </button>
         ))}
       </div>
@@ -275,9 +178,7 @@ function ReferencePreview(props: {
     <>
       <header className="reference-card-header">
         <div>
-          <span>
-            {props.candidate.context ?? kindLabel(props.candidate.target.kind)}
-          </span>
+          <span>{targetLabel(props.candidate.target)}</span>
           <strong>{props.candidate.title}</strong>
         </div>
         <div className="reference-card-actions">
@@ -305,7 +206,7 @@ function ReferencePreview(props: {
             onClick={() =>
               reference.openReference(
                 props.candidate.target,
-                `${props.candidate.context ?? kindLabel(props.candidate.target.kind)} › ${props.candidate.title}`
+                `${targetLabel(props.candidate.target)} › ${props.candidate.title}`
               )
             }
           >
@@ -338,7 +239,7 @@ export function ReferenceDocumentView(props: {
   path?: readonly ReferenceTarget[]
 }) {
   const path = [...(props.path ?? []), props.document.target]
-  if (props.document.creature)
+  if (props.document.documentKind === 'creature')
     return (
       <CreatureInspector
         creature={props.document.creature}
@@ -351,50 +252,36 @@ export function ReferenceDocumentView(props: {
     <article className={`reference-document${props.compact ? ' compact' : ''}`}>
       {!props.compact && (
         <header>
-          <p>
-            {props.document.context ?? kindLabel(props.document.target.kind)}
-          </p>
+          <p>{targetLabel(props.document.target)}</p>
           <h2>{props.document.title}</h2>
         </header>
       )}
       {props.document.facts.length > 0 && (
         <dl className="reference-facts">
           {props.document.facts.map((fact) => (
-            <Fragment key={`${fact.label}:${fact.value}`}>
+            <Fragment key={fact.label}>
               <dt>{fact.label}</dt>
               <dd>
-                <ReferenceText path={path}>{fact.value}</ReferenceText>
+                <ReferenceInlines
+                  inlines={fact.value}
+                  path={path}
+                  dynamic={props.document.target.scope !== 'srd'}
+                />
               </dd>
             </Fragment>
           ))}
         </dl>
       )}
-      {props.compact
-        ? props.document.summary && (
-            <p>
-              <ReferenceText path={path}>
-                {props.document.summary}
-              </ReferenceText>
-            </p>
-          )
-        : props.document.sections.length > 0
-          ? props.document.sections.map((section) => (
-              <section key={section.id}>
-                {section.title && <h3>{section.title}</h3>}
-                {section.paragraphs.map((paragraph, index) => (
-                  <p key={index}>
-                    <ReferenceText path={path}>{paragraph}</ReferenceText>
-                  </p>
-                ))}
-              </section>
-            ))
-          : props.document.summary && (
-              <p>
-                <ReferenceText path={path}>
-                  {props.document.summary}
-                </ReferenceText>
-              </p>
-            )}
+      {props.document.blocks
+        .slice(0, props.compact ? 3 : undefined)
+        .map((block, index) => (
+          <ReferenceBlockView
+            key={index}
+            block={block}
+            path={path}
+            dynamic={props.document.target.scope !== 'srd'}
+          />
+        ))}
       {!props.compact && props.document.source && (
         <footer className="reference-attribution">
           {props.document.source.title} · {props.document.source.version} ·{' '}
@@ -405,9 +292,114 @@ export function ReferenceDocumentView(props: {
   )
 }
 
+function ReferenceInlines(props: {
+  inlines: readonly ReferenceInline[]
+  path: readonly ReferenceTarget[]
+  dynamic: boolean
+}) {
+  return props.inlines.map((inline, index) => {
+    const candidates =
+      inline.kind === 'reference'
+        ? inline.candidates.filter(
+            (candidate) =>
+              !props.path.some(
+                (target) =>
+                  referenceTargetKey(target) ===
+                  referenceTargetKey(candidate.target)
+              )
+          )
+        : []
+    return inline.kind === 'text' ? (
+      <Fragment key={index}>
+        {props.dynamic ? (
+          <ReferenceText path={props.path}>{inline.text}</ReferenceText>
+        ) : (
+          inline.text
+        )}
+      </Fragment>
+    ) : candidates.length === 0 ? (
+      <Fragment key={index}>{inline.text}</Fragment>
+    ) : candidates.length === 1 ? (
+      <ReferenceLink
+        key={index}
+        text={inline.text}
+        candidate={candidates[0]!}
+        path={props.path}
+      />
+    ) : (
+      <ReferenceTerm
+        key={index}
+        match={{
+          start: 0,
+          end: inline.text.length,
+          text: inline.text,
+          candidates
+        }}
+        path={props.path}
+      />
+    )
+  })
+}
+
+function ReferenceBlockView(props: {
+  block: ReferenceBlock
+  path: readonly ReferenceTarget[]
+  dynamic: boolean
+}) {
+  const content = (inlines: readonly ReferenceInline[]) => (
+    <ReferenceInlines
+      inlines={inlines}
+      path={props.path}
+      dynamic={props.dynamic}
+    />
+  )
+  if (props.block.kind === 'heading') {
+    const Heading = `h${props.block.level}` as 'h2' | 'h3' | 'h4'
+    return <Heading>{content(props.block.inlines)}</Heading>
+  }
+  if (props.block.kind === 'paragraph')
+    return <p>{content(props.block.inlines)}</p>
+  if (props.block.kind === 'list') {
+    const List = props.block.ordered ? 'ol' : 'ul'
+    return (
+      <List>
+        {props.block.items.map((item, index) => (
+          <li key={index}>{content(item)}</li>
+        ))}
+      </List>
+    )
+  }
+  return (
+    <table>
+      <thead>
+        <tr>
+          {props.block.columns.map((column) => (
+            <th key={column}>{column}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {props.block.rows.map((row, rowIndex) => (
+          <tr key={rowIndex}>
+            {row.map((cell, cellIndex) => (
+              <td key={cellIndex}>{content(cell)}</td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
 export function ReferencePinnedWindow(props: { pin: PinnedReference }) {
   const reference = useReferenceContext()
+  const movePin = reference.movePin
   const state = useReferenceDocument(props.pin.target)
+  const windowRef = useRef<HTMLElement>(null)
+  const title =
+    state.status === 'ready'
+      ? state.document.title
+      : targetLabel(props.pin.target)
   const drag = useRef<{
     pointerId: number
     originX: number
@@ -415,6 +407,33 @@ export function ReferencePinnedWindow(props: { pin: PinnedReference }) {
     startX: number
     startY: number
   } | null>(null)
+
+  useEffect(() => {
+    const element = windowRef.current
+    if (!element) return
+    const contain = () => {
+      const bounds = element.getBoundingClientRect()
+      movePin(
+        props.pin.id,
+        Math.min(
+          props.pin.x,
+          Math.max(12, window.innerWidth - bounds.width - 12)
+        ),
+        Math.min(
+          props.pin.y,
+          Math.max(12, window.innerHeight - bounds.height - 12)
+        )
+      )
+    }
+    const observer = new ResizeObserver(contain)
+    observer.observe(element)
+    window.addEventListener('resize', contain)
+    contain()
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', contain)
+    }
+  }, [movePin, props.pin.id, props.pin.x, props.pin.y])
 
   const pointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
     drag.current = {
@@ -441,10 +460,11 @@ export function ReferencePinnedWindow(props: { pin: PinnedReference }) {
   }
 
   return (
-    <section
+    <NonModalSurface
+      ref={windowRef}
       className="reference-pinned-window"
       aria-label={formatMessage('reference.pinnedLabel', {
-        name: props.pin.title
+        name: title
       })}
       style={{
         left: props.pin.x,
@@ -459,7 +479,7 @@ export function ReferencePinnedWindow(props: { pin: PinnedReference }) {
           type="button"
           className="reference-drag-handle"
           aria-label={formatMessage('reference.move', {
-            name: props.pin.title
+            name: title
           })}
           title={message('reference.moveTitle')}
           onPointerDown={pointerDown}
@@ -488,12 +508,12 @@ export function ReferencePinnedWindow(props: { pin: PinnedReference }) {
           }}
         >
           <span aria-hidden="true">⠿</span>
-          <strong>{props.pin.title}</strong>
+          <strong>{title}</strong>
         </button>
         <button
           type="button"
           aria-label={formatMessage('reference.close', {
-            name: props.pin.title
+            name: title
           })}
           onClick={() => reference.closePin(props.pin.id)}
         >
@@ -513,7 +533,7 @@ export function ReferencePinnedWindow(props: { pin: PinnedReference }) {
           <ReferenceDocumentView document={state.document} />
         )}
       </div>
-    </section>
+    </NonModalSurface>
   )
 }
 
@@ -548,12 +568,12 @@ function useReferenceDocument(
     }
     // The stable key and loader fully describe this external request.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key, reference.loadDetail])
+  }, [key, reference.loadDetail, reference.cacheRevision])
   return state
 }
 
-function kindLabel(kind: ReferenceTarget['kind']): string {
-  return {
+function targetLabel(target: ReferenceTarget): string {
+  const labels = {
     rule: message('reference.kind.rule'),
     condition: message('reference.kind.condition'),
     spell: message('reference.kind.spell'),
@@ -561,8 +581,12 @@ function kindLabel(kind: ReferenceTarget['kind']): string {
     ability: message('reference.kind.ability'),
     action: message('reference.kind.action'),
     creature: message('reference.kind.creature'),
-    npc: message('reference.kind.npc'),
     location: message('reference.kind.location'),
     faction: message('reference.kind.faction')
-  }[kind]
+  }
+  if (target.scope === 'srd') return labels[target.definitionKind]
+  if (target.scope === 'creature') return labels.creature
+  if (target.scope === 'creature-part')
+    return target.partKind === 'trait' ? labels.ability : labels.action
+  return labels[target.entityKind]
 }

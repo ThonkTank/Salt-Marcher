@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { creatureCatalogQuerySchema } from './encounter.js'
 import { encounterTuningSchema } from './encounter-tuning.js'
+import { combatStatusSchema } from './combat-status.js'
 
 export const sceneGroupEntrySchema = z
   .object({
@@ -13,11 +14,10 @@ export const sceneGroupEntrySchema = z
     position: z.number().int().nonnegative(),
     available: z.boolean(),
     members: z.array(
-      z
-        .object({
+      combatStatusSchema
+        .extend({
           id: z.uuid(),
           currentHp: z.number().int().nonnegative(),
-          conditions: z.array(z.string()),
           position: z.number().int().nonnegative()
         })
         .strict()

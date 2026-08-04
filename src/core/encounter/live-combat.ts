@@ -19,6 +19,10 @@ import { uuidv7 } from '../../shared/ids/uuidv7.js'
 import type { PartyCharacterDraft } from '../../shared/contracts/party.js'
 import type { CreatureCatalogQuery } from '../../shared/contracts/encounter.js'
 import type { EncounterTuning } from '../../shared/contracts/encounter-tuning.js'
+import {
+  combatConditionSchema,
+  exhaustionLevelSchema
+} from '../../shared/contracts/combat-status.js'
 import type {
   EncounterSelectionEvaluation,
   GroupGenerationMode,
@@ -78,7 +82,9 @@ const combatantSchema = z
     initiative: z.number().int(),
     xp: z.number().int().nonnegative(),
     detail: z.string(),
-    conditions: z.array(z.string()),
+    conditions: z.array(combatConditionSchema),
+    concentrating: z.boolean(),
+    exhaustionLevel: exhaustionLevelSchema,
     order: z.number().int().nonnegative()
   })
   .strict()
@@ -110,6 +116,16 @@ const combatMementoSchema = z
 type CombatMemento = z.infer<typeof combatMementoSchema>
 type Combatant = z.infer<typeof combatantSchema>
 
+function memberStatus(combatant: Combatant) {
+  return {
+    id: combatant.id,
+    currentHp: combatant.currentHp,
+    conditions: combatant.conditions,
+    concentrating: combatant.concentrating,
+    exhaustionLevel: combatant.exhaustionLevel
+  }
+}
+
 const combatHistoryInverseSchema = z.discriminatedUnion('kind', [
   z
     .object({
@@ -119,7 +135,9 @@ const combatHistoryInverseSchema = z.discriminatedUnion('kind', [
           .object({
             id: z.uuid(),
             currentHp: z.number().int().nonnegative(),
-            conditions: z.array(z.string())
+            conditions: z.array(combatConditionSchema),
+            concentrating: z.boolean(),
+            exhaustionLevel: exhaustionLevelSchema
           })
           .strict()
       )
@@ -567,6 +585,26 @@ export class LivePlayService {
     )
   }
 
+  setCombatConcentration(
+    expectedRevision: number,
+    cardId: string,
+    concentrating: boolean
+  ): CombatCommandResult {
+    return this.mutateCombat(expectedRevision, (combat) =>
+      combat.setConcentration(cardId, concentrating)
+    )
+  }
+
+  setCombatExhaustion(
+    expectedRevision: number,
+    cardId: string,
+    exhaustionLevel: number
+  ): CombatCommandResult {
+    return this.mutateCombat(expectedRevision, (combat) =>
+      combat.setExhaustion(cardId, exhaustionLevel)
+    )
+  }
+
   undoCombat(expectedRevision: number): CombatCommandResult {
     return this.mutateCombat(expectedRevision, (combat) => combat.undo())
   }
@@ -792,7 +830,9 @@ class CombatStore {
         members: readonly {
           id: string
           currentHp: number
-          conditions: readonly string[]
+          conditions: readonly CombatCondition[]
+          concentrating: boolean
+          exhaustionLevel: number
         }[]
       }[]
     }[],
@@ -1022,6 +1062,8 @@ class CombatStore {
           xp: creature.xp,
           detail: `CR ${creature.cr} · ${creature.type}`,
           conditions: [...member.conditions],
+          concentrating: member.concentrating,
+          exhaustionLevel: member.exhaustionLevel,
           order: state.combatants.length
         })
       }
@@ -1075,6 +1117,8 @@ class CombatStore {
           xp: 0,
           detail: 'Aktives Party-Mitglied',
           conditions: [],
+          concentrating: false,
+          exhaustionLevel: 0,
           order: order++
         })
         continue
@@ -1111,6 +1155,8 @@ class CombatStore {
             xp: creature.xp,
             detail: `CR ${creature.cr} · ${creature.type}`,
             conditions: sceneState?.conditions ?? [],
+            concentrating: sceneState?.concentrating ?? false,
+            exhaustionLevel: sceneState?.exhaustionLevel ?? 0,
             order: order++
           })
         }
@@ -1249,9 +1295,7 @@ class CombatStore {
         states: members
           .filter((member) => nextHp.has(member.id))
           .map((member) => ({
-            id: member.id,
-            currentHp: member.currentHp,
-            conditions: member.conditions
+            ...memberStatus(member)
           }))
       },
       state.revision
@@ -1287,13 +1331,52 @@ class CombatStore {
       `${condition} · ${target.name}`,
       {
         kind: 'member-states',
-        states: [
-          {
-            id: target.id,
-            currentHp: target.currentHp,
-            conditions: target.conditions
-          }
-        ]
+        states: [memberStatus(target)]
+      },
+      state.revision
+    )
+    this.bump(state)
+  }
+
+  setConcentration(cardId: string, concentrating: boolean): void {
+    this.updateStatus(cardId, 'Concentration', (target) => ({
+      ...target,
+      concentrating
+    }))
+  }
+
+  setExhaustion(cardId: string, exhaustionLevel: number): void {
+    const level = exhaustionLevelSchema.parse(exhaustionLevel)
+    this.updateStatus(cardId, `Exhaustion ${level}`, (target) => ({
+      ...target,
+      exhaustionLevel: level
+    }))
+  }
+
+  private updateStatus(
+    cardId: string,
+    label: string,
+    update: (target: Combatant) => Combatant
+  ): void {
+    const state = this.requireCombat()
+    const target = state.combatants
+      .filter(
+        (combatant) =>
+          combatant.cardId === cardId &&
+          (combatant.playerCharacter || combatant.currentHp > 0)
+      )
+      .sort(
+        (a, b) => a.currentHp - b.currentHp || a.name.localeCompare(b.name)
+      )[0]
+    if (!target) throw new CapabilityError('not_found', false)
+    state.combatants = state.combatants.map((combatant) =>
+      combatant.id === target.id ? update(combatant) : combatant
+    )
+    this.recordHistory(
+      `${label} · ${target.name}`,
+      {
+        kind: 'member-states',
+        states: [memberStatus(target)]
       },
       state.revision
     )
@@ -1333,7 +1416,9 @@ class CombatStore {
           ? {
               ...combatant,
               currentHp: state.currentHp,
-              conditions: [...state.conditions]
+              conditions: [...state.conditions],
+              concentrating: state.concentrating,
+              exhaustionLevel: state.exhaustionLevel
             }
           : combatant
       })
@@ -1476,6 +1561,8 @@ class CombatStore {
         xp: 0,
         detail: 'Aktives Party-Mitglied',
         conditions: [],
+        concentrating: false,
+        exhaustionLevel: 0,
         order: state.combatants.length
       })
     })
@@ -1689,6 +1776,8 @@ class CombatStore {
               xp: creature.xp,
               detail: `CR ${creature.cr} · ${creature.type}`,
               conditions: member.conditions,
+              concentrating: member.concentrating,
+              exhaustionLevel: member.exhaustionLevel,
               order: raw.order
             }
           ]
@@ -1712,6 +1801,8 @@ class CombatStore {
             xp: 0,
             detail: 'Aktives Party-Mitglied',
             conditions: [],
+            concentrating: false,
+            exhaustionLevel: 0,
             order: raw.order
           }
         ]
@@ -1769,13 +1860,17 @@ class CombatStore {
 
   private sceneMemberState(memberId: string): {
     currentHp: number
-    conditions: string[]
+    conditions: CombatCondition[]
+    concentrating: boolean
+    exhaustionLevel: number
   } | null {
     const row = this.scene.memberState(memberId)
     return row
       ? {
           currentHp: row.currentHp,
-          conditions: z.array(z.string()).parse(row.conditions)
+          conditions: z.array(combatConditionSchema).parse(row.conditions),
+          concentrating: row.concentrating,
+          exhaustionLevel: row.exhaustionLevel
         }
       : null
   }
@@ -1788,7 +1883,9 @@ class CombatStore {
               {
                 id: combatant.sceneMemberId,
                 currentHp: combatant.currentHp,
-                conditions: combatant.conditions
+                conditions: combatant.conditions,
+                concentrating: combatant.concentrating,
+                exhaustionLevel: combatant.exhaustionLevel
               }
             ]
           : []
@@ -2022,6 +2119,8 @@ function projectedCards(
         count: values.length,
         aliveCount: alive.length,
         conditions: front?.conditions ?? [],
+        concentrating: front?.concentrating ?? false,
+        exhaustionLevel: front?.exhaustionLevel ?? 0,
         detail: first.detail
       }
     })

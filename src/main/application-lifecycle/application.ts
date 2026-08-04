@@ -7,7 +7,7 @@ import {
   isReadOnlyWindow
 } from '../windows/secondary-window.js'
 import { configureSecurity } from '../security/security.js'
-import { outputPath } from './runtime-paths.js'
+import { outputPath, resourcePath } from './runtime-paths.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import { coreProcessStatusSchema } from '../../shared/contracts/runtime.js'
 import {
@@ -23,7 +23,8 @@ export async function startApplication(): Promise<void> {
   configureSecurity()
   core = new CoreProcessSupervisor(
     join(app.getPath('userData'), 'development-data'),
-    outputPath('main', 'utility.js')
+    outputPath('main', 'utility.js'),
+    resourcePath('reference', 'srd-5.1.sqlite')
   )
   connectCoreNotifications(core)
   void core.waitUntilReady().catch(() => {
@@ -55,6 +56,10 @@ function connectCoreNotifications(supervisor: CoreProcessSupervisor): void {
           passiveProjectionSchema.parse(emptyPassiveProjection)
         )
     }
+  })
+  supervisor.onReferenceChanged((notice) => {
+    for (const window of BrowserWindow.getAllWindows())
+      window.webContents.send('references:index-changed', notice)
   })
 }
 

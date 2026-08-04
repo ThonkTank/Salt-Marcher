@@ -7,7 +7,6 @@ import type {
 import type { SceneGroup } from '../../../shared/contracts/scene.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type { SessionLayoutPreference } from '../../../shared/contracts/session-layout.js'
-import type { ReferenceTarget } from '../../../shared/contracts/reference.js'
 import { SessionHexMap, TravelScenario } from '../hex/hex-workspaces.js'
 import {
   EncounterCrumbs,
@@ -23,13 +22,11 @@ import {
   capabilityErrorText,
   reportCapabilityError
 } from '../../capabilities/capability-errors.js'
-import {
-  ReferenceDocumentView,
-  ReferenceText
-} from '../reference/reference-ui.js'
+import { useReferenceContext } from '../reference/reference-context.js'
+import { ReadOnlyProse } from '../reference/read-only-prose.js'
+import { LazyReferenceDocument } from '../reference/lazy-reference-document.js'
 import './session.css'
 import { sessionCapabilities } from './session-capabilities.js'
-import { useSessionDetailHistory } from './use-session-detail-history.js'
 import { SessionPanelLayout } from './session-panel-layout.js'
 import { SessionGroupCard } from './session-group-card.js'
 import { ScenePartyCard } from './scene-party-card.js'
@@ -44,12 +41,6 @@ export default function SessionWorkspace(props: {
   setScenario: (scenario: '' | 'encounter' | 'travel') => void
   layout: SessionLayoutPreference
   setLayout: (layout: SessionLayoutPreference) => void
-  referenceRequest: Readonly<{
-    target: ReferenceTarget
-    breadcrumb: string
-    nonce: number
-  }> | null
-  referenceOpened: (nonce: number) => void
   onError: (message: string) => void
 }) {
   const [editingGroup, setEditingGroup] = useState<SceneGroup | null>(null)
@@ -67,8 +58,12 @@ export default function SessionWorkspace(props: {
   const focused = props.snapshot.scene.scenes.find(
     (scene) => scene.id === props.snapshot.scene.focusedSceneId
   )!
-  const { history, detail, breadcrumb, openDetail, moveHistory, closeDetail } =
-    useSessionDetailHistory(focused.id)
+  const reference = useReferenceContext()
+  const history = reference.navigation
+  const detail = history.document
+  const breadcrumb = history.entries[history.index]?.breadcrumb ?? null
+  const moveHistory = reference.moveNavigation
+  const closeDetail = reference.closeNavigation
   useCreatureSearch(catalogQuery, setCatalogPage, props.onError)
   useEffect(() => {
     void sessionCapabilities()
@@ -76,41 +71,18 @@ export default function SessionWorkspace(props: {
       .then(setCatalogOptions)
       .catch(reportCapabilityError(props.onError))
   }, [props.onError])
-  async function openReferenceTarget(
-    target: ReferenceTarget,
+  function openReferenceTarget(
+    target: Parameters<typeof reference.openReference>[0],
     breadcrumb: string
   ) {
-    try {
-      openDetail(
-        await sessionCapabilities().references.detail(target),
-        breadcrumb
-      )
-      props.setLayout({ ...props.layout, centerTab: 'details' })
-    } catch (cause) {
-      props.onError(capabilityErrorText(cause))
-    }
+    reference.openReference(target, breadcrumb)
   }
-  async function openCreature(creatureId: string, context: string) {
-    try {
-      const document = await sessionCapabilities().references.detail({
-        kind: 'creature',
-        id: creatureId
-      })
-      openDetail(document, `${context} › ${document.title}`)
-      props.setLayout({ ...props.layout, centerTab: 'details' })
-    } catch (cause) {
-      props.onError(capabilityErrorText(cause))
-    }
-  }
-  useEffect(() => {
-    const request = props.referenceRequest
-    if (!request) return
-    void openReferenceTarget(request.target, request.breadcrumb).finally(() =>
-      props.referenceOpened(request.nonce)
+  function openCreature(creatureId: string, context: string) {
+    reference.openReference(
+      { scope: 'creature', creatureId },
+      `${context} › Kreatur`
     )
-    // The request nonce is the external navigation identity.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.referenceRequest?.nonce])
+  }
   const activeCombatCard = props.snapshot.combat?.cards.find(
     (card) => card.active && !card.playerCharacter && card.creatureId
   )
@@ -126,7 +98,7 @@ export default function SessionWorkspace(props: {
         (entry) => entry.creatureId === activeCombatCard.creatureId
       )
     )
-    void openCreature(activeCombatCard.creatureId, group?.name ?? 'Encounter')
+    openCreature(activeCombatCard.creatureId, group?.name ?? 'Encounter')
     // The active card identity deliberately controls this effect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeCombatCard?.id, activeCombatCard?.creatureId])
@@ -361,14 +333,14 @@ export default function SessionWorkspace(props: {
               ›
             </button>
             <span>
-              <ReferenceText>
+              <ReadOnlyProse>
                 {breadcrumb ?? (focused.locationName || focused.title)}
-              </ReferenceText>
+              </ReadOnlyProse>
             </span>
             <button
               className="detail-close"
               aria-label={uiMessage('ui.detail.schliessen')}
-              disabled={!detail}
+              disabled={history.index < 0}
               onClick={closeDetail}
             >
               ×
@@ -379,15 +351,19 @@ export default function SessionWorkspace(props: {
             tabIndex={0}
             aria-label={uiMessage('ui.detailansicht')}
           >
-            {detail ? (
-              <ReferenceDocumentView document={detail} />
+            {history.loading ? (
+              <p className="reference-status" role="status">
+                {uiMessage('reference.loading')}
+              </p>
+            ) : detail ? (
+              <LazyReferenceDocument document={detail} />
             ) : (
               <div className="detail-empty">
                 <p className="section-kicker">{focused.title}</p>
                 <h2>
-                  <ReferenceText>
+                  <ReadOnlyProse>
                     {focused.locationName || 'Keine Detailauswahl'}
-                  </ReferenceText>
+                  </ReadOnlyProse>
                 </h2>
                 <p>
                   {uiMessage(
@@ -442,7 +418,7 @@ export default function SessionWorkspace(props: {
           {...props}
           inspect={(creature) => {
             void openReferenceTarget(
-              { kind: 'creature', id: creature.id },
+              { scope: 'creature', creatureId: creature.id },
               `Encounter › ${creature.name}`
             )
           }}
@@ -488,7 +464,7 @@ export default function SessionWorkspace(props: {
           }}
           inspect={(creature) => {
             void openReferenceTarget(
-              { kind: 'creature', id: creature.id },
+              { scope: 'creature', creatureId: creature.id },
               `Katalog › ${creature.name}`
             )
           }}

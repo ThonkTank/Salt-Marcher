@@ -325,7 +325,7 @@ describe('campaign walking skeleton', () => {
     ).setValue('Wolf Pack')
     await (
       await groupDialog.$('textarea[aria-label="Gruppennotiz"]')
-    ).setValue('Lauert in den Dünen westlich der Furt.')
+    ).setValue('Lauert Prone in den Dünen; Stunned bei Alarm.')
     const generate = await groupDialog.$('button=Neu generieren')
     await client.waitUntil(() => generate.isEnabled(), {
       timeout: 5_000,
@@ -355,8 +355,55 @@ describe('campaign walking skeleton', () => {
     await (await groupDialog.$('button=Speichern')).click()
     await expect(await client.$('strong=Wolf Pack')).toBeExisting()
     await expect(await client.$('.group-note')).toHaveText(
-      'Lauert in den Dünen westlich der Furt.'
+      'Lauert Prone in den Dünen; Stunned bei Alarm.'
     )
+
+    const groupNote = await client.$('.group-note')
+    const proneReference = await groupNote.$('button=Prone')
+    await proneReference.moveTo()
+    await client.pause(400)
+    const pronePreview = await client.$(
+      'section[role="region"][aria-label="Referenz: Prone"]'
+    )
+    await pronePreview.waitForExist({ timeout: 5_000 })
+    const nestedMovement = await pronePreview.$('button=movement')
+    await nestedMovement.moveTo()
+    await client.pause(400)
+    await expect(
+      await client.$('section[role="region"][aria-label="Referenz: movement"]')
+    ).toBeExisting()
+    await (await pronePreview.$('button[aria-label="Prone anheften"]')).click()
+    const pinnedProne = await client.$(
+      'section[aria-label="Angeheftete Referenz: Prone"]'
+    )
+    await pinnedProne.waitForExist({ timeout: 5_000 })
+    const movePinned = await pinnedProne.$(
+      'button[aria-label="Prone verschieben"]'
+    )
+    await movePinned.click()
+    await client.keys(['SHIFT', 'ARROWRIGHT'])
+    await (await pinnedProne.$('button[aria-label="Prone schließen"]')).click()
+
+    await proneReference.click()
+    let referenceDocument = await client.$('.reference-document')
+    await expect(await referenceDocument.$('h2=Prone')).toBeExisting()
+    await (await groupNote.$('button=Stunned')).click()
+    referenceDocument = await client.$('.reference-document')
+    await expect(await referenceDocument.$('h2=Stunned')).toBeExisting()
+    await (await client.$('button[aria-label="Zurück"]')).click()
+    referenceDocument = await client.$('.reference-document')
+    await expect(await referenceDocument.$('h2=Prone')).toBeExisting()
+    await (await client.$('button[aria-label="Vor"]')).click()
+    referenceDocument = await client.$('.reference-document')
+    await expect(await referenceDocument.$('h2=Stunned')).toBeExisting()
+
+    await client.execute(() => {
+      document.documentElement.style.zoom = '200%'
+    })
+    await expectAccessible(client)
+    await client.execute(() => {
+      document.documentElement.style.zoom = ''
+    })
 
     await (await client.$('button=Gruppen managen')).click()
     const reopenedGroupDialog = await client.$(

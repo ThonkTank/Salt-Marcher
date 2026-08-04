@@ -2,29 +2,15 @@ import { z } from 'zod'
 import { partyCharacterSchema, partySnapshotSchema } from './party.js'
 import { sceneGroupSchema, sceneSnapshotSchema } from './scene.js'
 import { hexTravelSnapshotSchema } from './hex.js'
+import {
+  combatConditionSchema,
+  combatConditions,
+  exhaustionLevelSchema,
+  type CombatCondition
+} from './combat-status.js'
 
 export { partyCharacterSchema as partyMemberSchema, partySnapshotSchema }
-
-export const combatConditions = [
-  'Blinded',
-  'Charmed',
-  'Concentration',
-  'Deafened',
-  'Exhaustion',
-  'Frightened',
-  'Grappled',
-  'Incapacitated',
-  'Invisible',
-  'Paralyzed',
-  'Petrified',
-  'Poisoned',
-  'Prone',
-  'Restrained',
-  'Stunned',
-  'Unconscious'
-] as const
-
-export const combatConditionSchema = z.enum(combatConditions)
+export { combatConditionSchema, combatConditions }
 
 export const initiativeRowSchema = z
   .object({
@@ -52,6 +38,8 @@ export const combatCardSchema = z
     count: z.number().int().positive(),
     aliveCount: z.number().int().nonnegative(),
     conditions: z.array(combatConditionSchema),
+    concentrating: z.boolean(),
+    exhaustionLevel: exhaustionLevelSchema,
     detail: z.string()
   })
   .strict()
@@ -181,6 +169,20 @@ export const toggleConditionInputSchema = combatRevisionInputSchema
   })
   .strict()
 
+export const setConcentrationInputSchema = combatRevisionInputSchema
+  .extend({
+    cardId: z.string().min(1),
+    concentrating: z.boolean()
+  })
+  .strict()
+
+export const setExhaustionInputSchema = combatRevisionInputSchema
+  .extend({
+    cardId: z.string().min(1),
+    exhaustionLevel: exhaustionLevelSchema
+  })
+  .strict()
+
 export const updateResolutionInputSchema = combatRevisionInputSchema
   .extend({
     selectedEnemyIds: z.array(z.string().min(1)),
@@ -229,7 +231,7 @@ export const sceneGroupCommandResultSchema = z
 export type PartyMember = Readonly<z.infer<typeof partyCharacterSchema>>
 export type PartySnapshot = Readonly<z.infer<typeof partySnapshotSchema>>
 export type CombatSnapshot = Readonly<z.infer<typeof combatSnapshotSchema>>
-export type CombatCondition = z.infer<typeof combatConditionSchema>
+export type { CombatCondition }
 export type CombatCommandResult = Readonly<
   z.infer<typeof combatCommandResultSchema>
 >

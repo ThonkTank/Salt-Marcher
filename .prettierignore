@@ -5,3 +5,4 @@ node_modules/
 out/
 release/
 src/core/reference/*.generated.json
+src/core/creatures/*.generated.json

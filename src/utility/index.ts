@@ -11,7 +11,10 @@ import {
 } from '../shared/contracts/core-protocol.js'
 import { coreOperations } from '../shared/contracts/operations.js'
 import { openDevelopmentCampaignStore } from '../core/persistence/sqlite/campaign-store.js'
-import { CreatureCatalogService } from '../core/creatures/catalog.js'
+import {
+  CreatureCatalogService,
+  creatures as creatureCatalogRows
+} from '../core/creatures/catalog.js'
 import { LivePlayService } from '../core/encounter/live-combat.js'
 import { z } from 'zod'
 import { WorldLocationService } from '../core/worldplanner/location-store.js'
@@ -23,9 +26,14 @@ import { CapabilityError } from '../shared/errors/capability-error.js'
 import { hexTravelSnapshotSchema } from '../shared/contracts/hex.js'
 import { emptyPassiveProjection } from '../shared/contracts/passive-display.js'
 import { ReferenceService } from '../core/reference/reference-service.js'
+import { ReferenceCatalogAdapter } from '../core/reference/reference-catalog-adapter.js'
+import { referenceTargetKey } from '../shared/reference/reference-target-key.js'
 const root = process.argv[2]
-if (!root || !process.parentPort)
-  throw new Error('Utility process requires a data root and parent port')
+const referenceDatabasePath = process.argv[3]
+if (!root || !referenceDatabasePath || !process.parentPort)
+  throw new Error(
+    'Utility process requires a data root, reference database, and parent port'
+  )
 const campaigns = openDevelopmentCampaignStore(root)
 const activeDatabase = () => campaigns.activeCampaignDatabase()
 const play = new LivePlayService(activeDatabase)
@@ -50,10 +58,86 @@ const creatures = new CreatureCatalogService(
     }))
   })
 )
-const references = new ReferenceService(creatures, locations, sources, () =>
-  campaigns.activeCampaignId()
+const referenceCatalog = new ReferenceCatalogAdapter(referenceDatabasePath)
+const references = new ReferenceService(
+  referenceCatalog,
+  { all: () => creatureCatalogRows, detail: (id) => creatures.detail(id) },
+  locations,
+  { read: () => sources.readFactions() },
+  () => campaigns.activeCampaignId()
 )
 let travelTimer: NodeJS.Timeout | undefined
+
+type ReferenceSnapshot = Readonly<{
+  index: ReturnType<ReferenceService['campaignIndex']>
+  documents: ReadonlyMap<string, string>
+}>
+
+function referenceSnapshot(): ReferenceSnapshot {
+  const campaignId = campaigns.activeCampaignId()
+  const index = references.campaignIndex(campaignId)
+  const targets = new Map(
+    index.terms.flatMap((term) =>
+      term.candidates.map(
+        (candidate) =>
+          [referenceTargetKey(candidate.target), candidate.target] as const
+      )
+    )
+  )
+  return {
+    index,
+    documents: new Map(
+      [...targets].map(([key, target]) => [
+        key,
+        JSON.stringify(references.detail(target))
+      ])
+    )
+  }
+}
+
+function publishReferenceChange(before: ReferenceSnapshot | null): void {
+  const campaignId = campaigns.activeCampaignId()
+  const after = referenceSnapshot()
+  const targets = (snapshot: ReferenceSnapshot | null) =>
+    new Map(
+      (snapshot?.index.terms ?? []).flatMap((term) =>
+        term.candidates.map(
+          (candidate) =>
+            [referenceTargetKey(candidate.target), candidate.target] as const
+        )
+      )
+    )
+  const oldTargets = targets(before)
+  const newTargets = targets(after)
+  const changedTargets = [...oldTargets, ...newTargets]
+    .filter(
+      ([key], index, all) => all.findIndex(([other]) => other === key) === index
+    )
+    .filter(([key]) => before?.documents.get(key) !== after.documents.get(key))
+    .map(([, target]) => target)
+  process.parentPort?.postMessage(
+    coreEventSchema.parse({
+      kind: 'reference.changed',
+      notice: {
+        campaignId,
+        revision: after.index.revision,
+        changedTargets
+      }
+    })
+  )
+}
+
+function mutateReferences<T>(work: () => T): T {
+  let before: ReferenceSnapshot | null = null
+  try {
+    before = referenceSnapshot()
+  } catch {
+    // Creating the first campaign has no previous campaign reference index.
+  }
+  const result = work()
+  publishReferenceChange(before)
+  return result
+}
 
 function publishSessionChange(
   snapshot: ReturnType<HexTravelService['read']>,
@@ -104,8 +188,10 @@ reconcileAndSchedule('campaign-reconcile')
 process.parentPort.postMessage(coreReadySchema.parse({ kind: 'core.ready' }))
 const campaignHandlers = {
   'campaign.list': () => campaigns.list(),
-  'campaign.create': (input) => campaigns.create(input.name),
-  'campaign.activate': (input) => campaigns.activate(input.id),
+  'campaign.create': (input) =>
+    mutateReferences(() => campaigns.create(input.name)),
+  'campaign.activate': (input) =>
+    mutateReferences(() => campaigns.activate(input.id)),
   'campaign.rename': (input) => campaigns.rename(input.id, input.name),
   'campaign.trash': (input) => campaigns.trash(input.id),
   'campaign.restore': (input) => campaigns.restore(input.id),
@@ -164,28 +250,37 @@ const creatureHandlers = {
   'creatures.search': (input) => creatures.search(input),
   'creatures.filterOptions': () => creatures.filterOptions(),
   'creatures.detail': (input) => creatures.detail(input.id),
-  'references.index': () => references.index(),
+  'references.staticIndex': () => references.staticIndex(),
+  'references.campaignIndex': (input) =>
+    references.campaignIndex(input.campaignId),
   'references.detail': (input) => references.detail(input)
 } satisfies Pick<
   CoreHandlers,
   | 'creatures.search'
   | 'creatures.filterOptions'
   | 'creatures.detail'
-  | 'references.index'
+  | 'references.staticIndex'
+  | 'references.campaignIndex'
   | 'references.detail'
 >
 
 const worldPlannerHandlers = {
   'locations.read': () => locations.read(),
   'locations.create': (input) =>
-    locations.create(input.location, input.expectedRevision),
+    mutateReferences(() =>
+      locations.create(input.location, input.expectedRevision)
+    ),
   'locations.update': (input) =>
-    locations.update(input.id, input.location, input.expectedRevision),
+    mutateReferences(() =>
+      locations.update(input.id, input.location, input.expectedRevision)
+    ),
   'locations.delete': (input) =>
-    activeDatabase().transaction(() => {
-      hex.unlinkDeletedLocation(input.id)
-      return locations.delete(input.id, input.expectedRevision)
-    })(),
+    mutateReferences(() =>
+      activeDatabase().transaction(() => {
+        hex.unlinkDeletedLocation(input.id)
+        return locations.delete(input.id, input.expectedRevision)
+      })()
+    ),
   'encounterTables.read': () => sources.readTables(),
   'encounterTables.create': (input) =>
     sources.createTable(input.table, input.expectedRevision),
@@ -195,11 +290,17 @@ const worldPlannerHandlers = {
     sources.deleteTable(input.id, input.expectedRevision),
   'factions.read': () => sources.readFactions(),
   'factions.create': (input) =>
-    sources.createFaction(input.faction, input.expectedRevision),
+    mutateReferences(() =>
+      sources.createFaction(input.faction, input.expectedRevision)
+    ),
   'factions.update': (input) =>
-    sources.updateFaction(input.id, input.faction, input.expectedRevision),
+    mutateReferences(() =>
+      sources.updateFaction(input.id, input.faction, input.expectedRevision)
+    ),
   'factions.delete': (input) =>
-    sources.deleteFaction(input.id, input.expectedRevision)
+    mutateReferences(() =>
+      sources.deleteFaction(input.id, input.expectedRevision)
+    )
 } satisfies Pick<
   CoreHandlers,
   | 'locations.read'
@@ -328,6 +429,18 @@ const encounterHandlers = {
       input.condition,
       input.active
     ),
+  'combat.setConcentration': (input) =>
+    play.setCombatConcentration(
+      input.expectedRevision,
+      input.cardId,
+      input.concentrating
+    ),
+  'combat.setExhaustion': (input) =>
+    play.setCombatExhaustion(
+      input.expectedRevision,
+      input.cardId,
+      input.exhaustionLevel
+    ),
   'combat.undo': (input) => play.undoCombat(input.expectedRevision),
   'combat.end': (input) => play.endCombat(input.expectedRevision),
   'combat.moveToPhase': (input) =>
@@ -353,6 +466,8 @@ const encounterHandlers = {
   | 'combat.adjustInitiative'
   | 'combat.changeHp'
   | 'combat.toggleCondition'
+  | 'combat.setConcentration'
+  | 'combat.setExhaustion'
   | 'combat.undo'
   | 'combat.end'
   | 'combat.moveToPhase'
@@ -409,6 +524,7 @@ const travelHandlers = {
 const lifecycleHandlers = {
   'core.shutdown': () => {
     if (travelTimer !== undefined) clearTimeout(travelTimer)
+    referenceCatalog.close()
     campaigns.close()
     return null
   }

@@ -1,11 +1,10 @@
 import { message } from '../../i18n/messages.de.js'
-import { useCallback, useEffect, lazy, useRef, useState } from 'react'
+import { useCallback, useEffect, lazy, useState } from 'react'
 import type { CampaignSnapshot } from '../../../shared/contracts/campaign.js'
 import type { CampaignCapability } from '../../../shared/contracts/capability-api.js'
 import type { Creature } from '../../../shared/contracts/encounter.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type { CoreProcessStatus } from '../../../shared/contracts/runtime.js'
-import type { ReferenceTarget } from '../../../shared/contracts/reference.js'
 import {
   capabilityErrorText,
   reportCapabilityError
@@ -68,12 +67,6 @@ export function WorkspaceApp() {
     useInstallationPreferences(setError)
   const [coreStatus, setCoreStatus] = useState<CoreProcessStatus>('starting')
   const [readbackKey, setReadbackKey] = useState(0)
-  const [referenceRequest, setReferenceRequest] = useState<Readonly<{
-    target: ReferenceTarget
-    breadcrumb: string
-    nonce: number
-  }> | null>(null)
-  const referenceRequestSequence = useRef(0)
   const active = campaigns.activeCampaignId !== null
 
   const load = useCallback(async () => {
@@ -196,14 +189,10 @@ export function WorkspaceApp() {
     <ReferenceProvider
       capability={capabilityApi.references}
       campaignId={campaigns.activeCampaignId}
-      refreshKey={`${workspace}:${readbackKey}`}
-      openReference={(target, breadcrumb) => {
+      sceneId={session?.scene.focusedSceneId ?? null}
+      activateReference={() => {
         setWorkspace('session')
-        setReferenceRequest({
-          target,
-          breadcrumb,
-          nonce: ++referenceRequestSequence.current
-        })
+        setSessionLayout({ ...sessionLayout, centerTab: 'details' })
       }}
       onError={setError}
     >
@@ -397,12 +386,6 @@ export function WorkspaceApp() {
                 }
                 layout={sessionLayout}
                 setLayout={setSessionLayout}
-                referenceRequest={referenceRequest}
-                referenceOpened={(nonce) =>
-                  setReferenceRequest((current) =>
-                    current?.nonce === nonce ? null : current
-                  )
-                }
                 onError={setError}
               />
             )}

@@ -9,6 +9,8 @@
   "scripts": {
     "dev": "electron-vite dev",
     "import:references": "tsx scripts/import-srd-references.ts",
+    "update:reference-goldens": "tsx scripts/update-reference-goldens.ts",
+    "check:references": "tsx scripts/check-reference-artifact.ts",
     "build": "electron-vite build && tsx scripts/build-passive-preload.ts",
     "build:qualification": "tsx scripts/build-qualification.ts",
     "start": "electron-vite preview",
@@ -30,13 +32,13 @@
     "qualify:render:validate": "tsx scripts/validate-render-qualification.ts",
     "qualify:render:artifacts": "tsx scripts/generate-render-qualification-artifacts.ts",
     "qualify:render:artifacts:check": "tsx scripts/check-render-qualification-artifacts.ts",
-    "check": "corepack pnpm format && corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test && corepack pnpm qualify:render:artifacts:check && corepack pnpm test:smoke && corepack pnpm test:bundle-budget",
+    "check": "corepack pnpm format && corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test && corepack pnpm check:references && corepack pnpm qualify:render:artifacts:check && corepack pnpm test:smoke && corepack pnpm test:bundle-budget",
     "package": "corepack enable --install-directory ./node_modules/.bin && corepack pnpm build && electron-builder --publish never",
     "package:qualification": "corepack enable --install-directory ./node_modules/.bin && corepack pnpm build:qualification && electron-builder --dir --publish never"
   },
   "dependencies": {
-    "@floating-ui/react": "0.27.20",
     "@babylonjs/core": "9.18.1",
+    "@floating-ui/react": "0.27.20",
     "@fontsource/cormorant-unicase": "5.3.0",
     "@fontsource/eb-garamond": "5.3.0",
     "@fontsource/im-fell-english": "5.3.0",
@@ -76,6 +78,7 @@
     "pixelmatch": "^7.2.0",
     "pngjs": "^7.0.0",
     "prettier": "3.9.6",
+    "tar": "7.5.22",
     "tsx": "4.23.1",
     "typescript": "5.9.3",
     "typescript-eslint": "8.57.0",

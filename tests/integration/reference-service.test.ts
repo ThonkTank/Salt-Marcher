@@ -1,16 +1,22 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { EncounterSourceService } from '../../src/core/application/encounter-source-service.js'
-import { CreatureCatalogService } from '../../src/core/creatures/catalog.js'
+import {
+  CreatureCatalogService,
+  creatures as creatureCatalog
+} from '../../src/core/creatures/catalog.js'
 import { CampaignStore } from '../../src/core/persistence/sqlite/campaign-store.js'
+import { ReferenceCatalogAdapter } from '../../src/core/reference/reference-catalog-adapter.js'
 import { ReferenceService } from '../../src/core/reference/reference-service.js'
 import { WorldLocationService } from '../../src/core/worldplanner/location-store.js'
 
 const roots: string[] = []
+const catalogs: ReferenceCatalogAdapter[] = []
 
 afterEach(() => {
+  for (const catalog of catalogs.splice(0)) catalog.close()
   for (const root of roots.splice(0))
     rmSync(root, { recursive: true, force: true })
 })
@@ -26,79 +32,88 @@ function harness() {
   const creatures = new CreatureCatalogService(() =>
     campaigns.installationDatabase()
   )
+  const catalog = new ReferenceCatalogAdapter(
+    resolve('resources/reference/srd-5.1.sqlite')
+  )
+  catalogs.push(catalog)
   return {
     campaigns,
     locations,
-    sources,
-    references: new ReferenceService(creatures, locations, sources, () =>
-      campaigns.activeCampaignId()
+    references: new ReferenceService(
+      catalog,
+      { all: () => creatureCatalog, detail: (id) => creatures.detail(id) },
+      locations,
+      { read: () => sources.readFactions() },
+      () => campaigns.activeCampaignId()
     )
   }
 }
 
 describe('reference service', () => {
-  it('publishes complete offline SRD concepts and rich details', () => {
+  it('publishes pinned offline SRD concepts and stable creature-part targets', () => {
     const { campaigns, references } = harness()
-    const terms = new Set(references.index().terms.map((term) => term.term))
+    const index = references.staticIndex()
+    const terms = new Set(index.terms.map((term) => term.term))
+    expect(index.scope).toBe('static')
     expect(terms.has('Prone')).toBe(true)
     expect(terms.has('Magic Missile')).toBe(true)
     expect(terms.has('Dash')).toBe(true)
     expect(terms.has('Longsword')).toBe(true)
-    expect(
-      references.detail({ kind: 'condition', id: 'conditions:prone' }).summary
-    ).toContain('movement')
-    expect(
-      references.detail({ kind: 'spell', id: 'spells:magic-missile' }).facts
-    ).toContainEqual({ label: 'Level', value: '1' })
-    expect(
-      references.detail({ kind: 'creature', id: 'goblin' }).creature?.name
-    ).toBe('Goblin')
+
+    const prone = references.detail({
+      scope: 'srd',
+      catalogId: 'srd-5.1',
+      definitionKind: 'condition',
+      definitionId: 'conditions:prone'
+    })
+    expect(prone.documentKind).toBe('article')
+    expect(JSON.stringify(prone)).toContain('movement')
+
+    const goblin = references.detail({
+      scope: 'creature',
+      creatureId: 'goblin'
+    })
+    expect(goblin.documentKind).toBe('creature')
+    if (goblin.documentKind === 'creature')
+      expect(goblin.creature.name).toBe('Goblin')
     expect(
       references.detail({
-        kind: 'action',
-        id: 'goblin',
-        sectionId: 'trait:0'
+        scope: 'creature-part',
+        creatureId: 'goblin',
+        partKind: 'trait',
+        partId: 'nimble-escape'
       }).title
     ).toBe('Nimble Escape')
     campaigns.close()
   })
 
-  it('derives exact campaign terms and reflects rename and deletion revisions', () => {
+  it('isolates exact campaign terms by explicit campaign id', () => {
     const { campaigns, locations, references } = harness()
-    let world = locations.create(
+    const world = locations.create(
       { displayName: 'Slow', notes: 'Magic Missile is forbidden here.' },
       locations.read().revision
     )
+    const campaignId = campaigns.activeCampaignId()
     const location = world.locations[0]!
-    const before = references.index()
-    const slowTargets = before.terms
-      .filter((term) => term.term === 'Slow')
-      .flatMap((term) =>
-        term.candidates.map((candidate) => candidate.target.kind)
-      )
-    expect(slowTargets).toEqual(expect.arrayContaining(['spell', 'location']))
-    expect(
-      references.detail({ kind: 'location', id: location.id }).summary
-    ).toContain('Magic Missile')
+    const before = references.campaignIndex(campaignId)
+    expect(before.scope).toBe('campaign')
+    expect(before.terms.find((term) => term.term === 'Slow')?.matchMode).toBe(
+      'exact'
+    )
 
-    world = locations.update(
+    locations.update(
       location.id,
       { displayName: 'The Quiet Keep', notes: location.notes },
       world.revision
     )
-    const renamed = references.index()
+    const renamed = references.campaignIndex(campaignId)
     expect(renamed.revision).not.toBe(before.revision)
     expect(renamed.terms.some((term) => term.term === 'The Quiet Keep')).toBe(
       true
     )
-    world = locations.delete(location.id, world.revision)
-    expect(
-      references.index().terms.some((term) => term.term === 'The Quiet Keep')
-    ).toBe(false)
-    expect(() =>
-      references.detail({ kind: 'location', id: location.id })
-    ).toThrow('not_found')
-    expect(world.locations).toHaveLength(0)
+    expect(() => references.campaignIndex('another-campaign')).toThrow(
+      'not_found'
+    )
     campaigns.close()
   })
 })

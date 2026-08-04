@@ -4,6 +4,9 @@ directories:
   output: release
 files:
   - out/**
+extraResources:
+  - from: resources/reference
+    to: reference
 asar: true
 asarUnpack:
   - node_modules/better-sqlite3/**

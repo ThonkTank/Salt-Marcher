@@ -24,6 +24,8 @@ const documentSchema = z
     manifest: z
       .object({
         catalogVersion: z.string(),
+        upstreamCommit: z.string(),
+        archiveSha256: z.string(),
         source: z.string(),
         sourceHash: z.string(),
         sourceDocument: z.string(),

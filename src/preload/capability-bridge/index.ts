@@ -27,6 +27,8 @@ import {
   moveCombatPhaseInputSchema,
   prepareCombatInputSchema,
   sceneGroupCommandResultSchema,
+  setConcentrationInputSchema,
+  setExhaustionInputSchema,
   toggleConditionInputSchema,
   updateResolutionInputSchema
 } from '../../shared/contracts/live-session.js'
@@ -109,8 +111,10 @@ import {
   updateHexMapInputSchema
 } from '../../shared/contracts/hex.js'
 import {
+  referenceCampaignIndexInputSchema,
   referenceDocumentSchema,
   referenceIndexSchema,
+  referenceIndexChangeNoticeSchema,
   referenceTargetSchema
 } from '../../shared/contracts/reference.js'
 
@@ -312,9 +316,17 @@ const api: SaltMarcherApi = {
     detail: (id) => invoke('creatures:detail', { id }, creatureSchema)
   },
   references: {
-    index: async () =>
+    staticIndex: async () =>
       freezeDeep(
-        await invoke('references:index', undefined, referenceIndexSchema)
+        await invoke('references:static-index', undefined, referenceIndexSchema)
+      ),
+    campaignIndex: async (campaignId) =>
+      freezeDeep(
+        await invoke(
+          'references:campaign-index',
+          referenceCampaignIndexInputSchema.parse({ campaignId }),
+          referenceIndexSchema
+        )
       ),
     detail: async (target) =>
       freezeDeep(
@@ -323,7 +335,14 @@ const api: SaltMarcherApi = {
           referenceTargetSchema.parse(target),
           referenceDocumentSchema
         )
-      )
+      ),
+    onCampaignIndexChanged(listener) {
+      const handler = (_event: Electron.IpcRendererEvent, raw: unknown) =>
+        listener(freezeDeep(referenceIndexChangeNoticeSchema.parse(raw)))
+      ipcRenderer.on('references:index-changed', handler)
+      return () =>
+        ipcRenderer.removeListener('references:index-changed', handler)
+    }
   },
   locations: {
     read: async () =>
@@ -770,6 +789,24 @@ const api: SaltMarcherApi = {
           cardId,
           condition,
           active,
+          expectedRevision
+        })
+      ),
+    setConcentration: (cardId, concentrating, expectedRevision) =>
+      combatCommand(
+        'combat:setConcentration',
+        setConcentrationInputSchema.parse({
+          cardId,
+          concentrating,
+          expectedRevision
+        })
+      ),
+    setExhaustion: (cardId, exhaustionLevel, expectedRevision) =>
+      combatCommand(
+        'combat:setExhaustion',
+        setExhaustionInputSchema.parse({
+          cardId,
+          exhaustionLevel,
           expectedRevision
         })
       ),

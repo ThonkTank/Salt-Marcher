@@ -1,8 +1,9 @@
-import { formatMessage, message } from '../../i18n/messages.de.js'
+import { message } from '../../i18n/messages.de.js'
 import type { Creature } from '../../../shared/contracts/encounter.js'
 import { IlluminatedHeading } from '../../shell/illuminated-heading.js'
 import type { ReferenceTarget } from '../../../shared/contracts/reference.js'
-import { ReferenceLink, ReferenceText } from '../reference/reference-ui.js'
+import { ReferenceLink } from '../reference/reference-text.js'
+import { ReadOnlyProse } from '../reference/read-only-prose.js'
 import './catalog.css'
 
 export function CreatureInspector(props: {
@@ -13,7 +14,10 @@ export function CreatureInspector(props: {
   referencePath?: readonly ReferenceTarget[]
 }) {
   const c = props.creature
-  const creatureTarget: ReferenceTarget = { kind: 'creature', id: c.id }
+  const creatureTarget: ReferenceTarget = {
+    scope: 'creature',
+    creatureId: c.id
+  }
   const path = props.referencePath ?? [creatureTarget]
   const ability = (label: string, value: number) => (
     <div>
@@ -45,12 +49,12 @@ export function CreatureInspector(props: {
         </header>
       )}
       <p className="stat-meta">
-        <ReferenceText path={path}>{`${c.size} ${c.type}`}</ReferenceText>
+        <ReadOnlyProse path={path}>{`${c.size} ${c.type}`}</ReadOnlyProse>
         {c.subtype ? (
-          <ReferenceText path={path}>{` (${c.subtype})`}</ReferenceText>
+          <ReadOnlyProse path={path}>{` (${c.subtype})`}</ReadOnlyProse>
         ) : null}
         {', '}
-        <ReferenceText path={path}>{c.alignment}</ReferenceText> ·{' '}
+        <ReadOnlyProse path={path}>{c.alignment}</ReadOnlyProse> ·{' '}
         {message('ui.herausforderung')} {c.challengeRating} (
         {c.xp.toLocaleString()} {message('ui.xp')}
       </p>
@@ -85,19 +89,17 @@ export function CreatureInspector(props: {
                   path={path}
                   candidate={{
                     target: {
-                      kind: 'action',
-                      id: c.id,
-                      sectionId: `trait:${c.traits.indexOf(trait)}`
+                      scope: 'creature-part',
+                      creatureId: c.id,
+                      partKind: 'trait',
+                      partId: trait.id
                     },
-                    title: trait.name,
-                    context: formatMessage('reference.context.trait', {
-                      name: c.name
-                    })
+                    title: trait.name
                   }}
                 />
                 .
               </strong>{' '}
-              <ReferenceText path={path}>{trait.description}</ReferenceText>
+              <ReadOnlyProse path={path}>{trait.description}</ReadOnlyProse>
             </p>
           ))}
         </>
@@ -111,19 +113,17 @@ export function CreatureInspector(props: {
               path={path}
               candidate={{
                 target: {
-                  kind: 'action',
-                  id: c.id,
-                  sectionId: `action:${c.actions.indexOf(action)}`
+                  scope: 'creature-part',
+                  creatureId: c.id,
+                  partKind: 'action',
+                  partId: action.id
                 },
-                title: action.name,
-                context: formatMessage('reference.context.action', {
-                  name: c.name
-                })
+                title: action.name
               }}
             />
             .
           </strong>{' '}
-          <ReferenceText path={path}>{action.description}</ReferenceText>
+          <ReadOnlyProse path={path}>{action.description}</ReadOnlyProse>
         </p>
       ))}
       {c.legendaryActions.length > 0 && (
@@ -137,20 +137,17 @@ export function CreatureInspector(props: {
                   path={path}
                   candidate={{
                     target: {
-                      kind: 'action',
-                      id: c.id,
-                      sectionId: `legendary:${c.legendaryActions.indexOf(action)}`
+                      scope: 'creature-part',
+                      creatureId: c.id,
+                      partKind: 'legendary-action',
+                      partId: action.id
                     },
-                    title: action.name,
-                    context: formatMessage(
-                      'reference.context.legendaryAction',
-                      { name: c.name }
-                    )
+                    title: action.name
                   }}
                 />
                 .
               </strong>{' '}
-              <ReferenceText path={path}>{action.description}</ReferenceText>
+              <ReadOnlyProse path={path}>{action.description}</ReadOnlyProse>
             </p>
           ))}
         </>
@@ -158,42 +155,42 @@ export function CreatureInspector(props: {
       <div className="stat-extras">
         <p>
           <strong>{message('ui.rettungswuerfe')}</strong>{' '}
-          <ReferenceText path={path}>{c.savingThrows || '—'}</ReferenceText>
+          <ReadOnlyProse path={path}>{c.savingThrows || '—'}</ReadOnlyProse>
         </p>
         <p>
           <strong>{message('ui.fertigkeiten')}</strong>{' '}
-          <ReferenceText path={path}>{c.skills || '—'}</ReferenceText>
+          <ReadOnlyProse path={path}>{c.skills || '—'}</ReadOnlyProse>
         </p>
         <p>
           <strong>{message('ui.sinne')}</strong>{' '}
-          <ReferenceText path={path}>{c.senses || '—'}</ReferenceText>
+          <ReadOnlyProse path={path}>{c.senses || '—'}</ReadOnlyProse>
         </p>
         <p>
           <strong>{message('ui.sprachen')}</strong>{' '}
-          <ReferenceText path={path}>{c.languages || '—'}</ReferenceText>
+          <ReadOnlyProse path={path}>{c.languages || '—'}</ReadOnlyProse>
         </p>
         {c.damageVulnerabilities && (
           <p>
             <strong>{message('reference.damageVulnerabilities')}</strong>{' '}
-            <ReferenceText path={path}>{c.damageVulnerabilities}</ReferenceText>
+            <ReadOnlyProse path={path}>{c.damageVulnerabilities}</ReadOnlyProse>
           </p>
         )}
         {c.damageResistances && (
           <p>
             <strong>{message('reference.damageResistances')}</strong>{' '}
-            <ReferenceText path={path}>{c.damageResistances}</ReferenceText>
+            <ReadOnlyProse path={path}>{c.damageResistances}</ReadOnlyProse>
           </p>
         )}
         {c.damageImmunities && (
           <p>
             <strong>{message('reference.damageImmunities')}</strong>{' '}
-            <ReferenceText path={path}>{c.damageImmunities}</ReferenceText>
+            <ReadOnlyProse path={path}>{c.damageImmunities}</ReadOnlyProse>
           </p>
         )}
         {c.conditionImmunities && (
           <p>
             <strong>{message('reference.conditionImmunities')}</strong>{' '}
-            <ReferenceText path={path}>{c.conditionImmunities}</ReferenceText>
+            <ReadOnlyProse path={path}>{c.conditionImmunities}</ReadOnlyProse>
           </p>
         )}
       </div>

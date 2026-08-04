@@ -1,0 +1,31 @@
+{
+  "catalogId": "srd-5.1",
+  "catalogVersion": "v5.10.0",
+  "upstreamRepository": "https://github.com/5e-bits/5e-database",
+  "upstreamCommit": "3f5593ea004c4f5a2af95603087ce4de72689d9f",
+  "archiveUrl": "https://codeload.github.com/5e-bits/5e-database/tar.gz/3f5593ea004c4f5a2af95603087ce4de72689d9f",
+  "archiveSha256": "200d84ced9b85049ebd975d497463a10b5b31560f8d86424fd98ae4780eb84c4",
+  "databaseSha256": "eb8394e40c3d04390a01e11d19ea78daa721f54454a52956154854007542c3d6",
+  "officialSource": "https://media.wizards.com/2023/downloads/dnd/SRD_CC_v5.1.pdf",
+  "license": "CC-BY-4.0",
+  "attribution": "This work includes material taken from the System Reference Document 5.1 (SRD 5.1) by Wizards of the Coast LLC and available under CC BY 4.0.",
+  "endpointCounts": {
+    "monsters": 334,
+    "ability-scores": 6,
+    "conditions": 15,
+    "equipment": 237,
+    "feats": 1,
+    "features": 407,
+    "magic-items": 362,
+    "rule-sections": 33,
+    "rules": 6,
+    "skills": 18,
+    "spells": 319,
+    "traits": 38,
+    "weapon-properties": 11
+  },
+  "documents": 1657,
+  "terms": 1518,
+  "creatures": 334,
+  "creatureJsonSha256": "afdce83b65e0863e1247c6297f89460396fe8ce4fd6893139ae3284e8451073d"
+}

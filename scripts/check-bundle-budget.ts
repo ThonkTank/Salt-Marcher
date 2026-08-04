@@ -1,4 +1,4 @@
-import { readFileSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
 type ManifestEntry = {
@@ -39,6 +39,20 @@ function visit(key: string): void {
 }
 visit(entryKey)
 
+const initialFiles = new Set<string>()
+const initialVisited = new Set<string>()
+function visitInitial(key: string): void {
+  if (initialVisited.has(key)) return
+  initialVisited.add(key)
+  const entry = manifest[key]
+  if (!entry) throw new Error(`Manifest import missing: ${key}`)
+  initialFiles.add(entry.file)
+  for (const dependency of entry.imports ?? []) visitInitial(dependency)
+}
+visitInitial(entryKey)
+if ([...initialFiles].some((file) => /reference-(?:ui|runtime)/.test(file)))
+  throw new Error('Reference document/Floating UI code is in the initial graph')
+
 const byteCount = [...files].reduce(
   (total, file) => total + statSync(join(rendererRoot, file)).size,
   0
@@ -50,6 +64,15 @@ if (byteCount > budget)
   )
 if ([...files].some((file) => /qualification|babylon/i.test(file)))
   throw new Error('Qualification-only rendering code is reachable from the app')
+
+const referenceDatabase = readFileSync(
+  join(process.cwd(), 'resources', 'reference', 'srd-5.1.sqlite')
+)
+const JavaScriptFiles = javascriptFiles(join(process.cwd(), 'out'))
+if (
+  JavaScriptFiles.some((file) => readFileSync(file).includes(referenceDatabase))
+)
+  throw new Error('Generated reference SQLite was embedded in JavaScript')
 
 const budgetEntry = (
   label: string,
@@ -75,7 +98,7 @@ const shellBytes = budgetEntry(
 )
 const workspaceBytes = budgetEntry(
   'Workspace feature',
-  (key) => key.startsWith('_workspace-'),
+  (key, entry) => key.startsWith('_workspace-') && entry.file.endsWith('.js'),
   1_500 * 1024
 )
 const catalogBytes = budgetEntry(
@@ -88,6 +111,11 @@ const hexBytes = budgetEntry(
   (_key, entry) => entry.src === 'features/hex/hex-editor.tsx',
   256 * 1024
 )
+const referenceBytes = budgetEntry(
+  'Reference renderer lazy entry',
+  (_key, entry) => entry.src === 'features/reference/reference-ui.tsx',
+  128 * 1024
+)
 
 console.log(
   [
@@ -95,6 +123,18 @@ console.log(
     `shell ${(shellBytes / 1024).toFixed(1)} KiB`,
     `workspace ${(workspaceBytes / 1024).toFixed(1)} KiB`,
     `catalog ${(catalogBytes / 1024).toFixed(1)} KiB`,
-    `hex ${(hexBytes / 1024).toFixed(1)} KiB`
+    `hex ${(hexBytes / 1024).toFixed(1)} KiB`,
+    `reference ${(referenceBytes / 1024).toFixed(1)} KiB`
   ].join('; ')
 )
+
+function javascriptFiles(root: string): string[] {
+  return readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(root, entry.name)
+    return entry.isDirectory()
+      ? javascriptFiles(path)
+      : entry.isFile() && entry.name.endsWith('.js')
+        ? [path]
+        : []
+  })
+}

@@ -4,16 +4,28 @@ import type {
   ReferenceTarget,
   ReferenceTerm
 } from '../../../shared/contracts/reference.js'
+import { referenceTargetKey } from '../../../shared/reference/reference-target-key.js'
 
-type TrieNode = {
-  readonly next: Map<string, TrieNode>
-  readonly outputs: ReferenceTerm[]
+type AutomatonOutput = Readonly<{
+  length: number
+  term: ReferenceTerm
+}>
+
+type AutomatonNode = {
+  readonly next: Map<string, number>
+  failure: number
+  readonly outputs: AutomatonOutput[]
 }
+
+type Automaton = Readonly<{
+  mode: 'exact' | 'folded'
+  nodes: readonly AutomatonNode[]
+}>
 
 export type CompiledReferenceIndex = Readonly<{
   revision: string
-  exact: TrieNode
-  folded: TrieNode
+  exact: Automaton
+  folded: Automaton
 }>
 
 export type ReferenceMatch = Readonly<{
@@ -23,42 +35,44 @@ export type ReferenceMatch = Readonly<{
   candidates: readonly ReferenceCandidate[]
 }>
 
+/** Compile once per index revision. Matching then walks each input exactly once. */
 export function compileReferenceIndex(
   index: ReferenceIndex
 ): CompiledReferenceIndex {
-  const exact = node()
-  const folded = node()
-  for (const term of index.terms) {
-    const root = term.matchMode === 'exact' ? exact : folded
-    const normalized = normalize(term.term, term.matchMode)
-    if (!normalized) continue
-    let current = root
-    for (const character of normalized) {
-      const next = current.next.get(character) ?? node()
-      current.next.set(character, next)
-      current = next
-    }
-    current.outputs.push(term)
+  return {
+    revision: index.revision,
+    exact: buildAutomaton(index.terms, 'exact'),
+    folded: buildAutomaton(index.terms, 'folded')
   }
-  return { revision: index.revision, exact, folded }
+}
+
+export function compileReferenceIndices(
+  indices: readonly ReferenceIndex[]
+): readonly CompiledReferenceIndex[] {
+  return indices.map(compileReferenceIndex)
 }
 
 export function matchReferenceText(
-  compiled: CompiledReferenceIndex,
+  compiled: CompiledReferenceIndex | readonly CompiledReferenceIndex[],
   originalText: string,
   excludedTargets: readonly ReferenceTarget[] = []
 ): readonly ReferenceMatch[] {
   if (!originalText) return []
   const excluded = new Set(excludedTargets.map(referenceTargetKey))
-  const raw = [
-    ...matchesFor(compiled.exact, originalText, 'exact', excluded),
-    ...matchesFor(compiled.folded, originalText, 'folded', excluded)
-  ].sort(
-    (left, right) =>
-      left.start - right.start ||
-      right.end - left.end ||
-      left.text.localeCompare(right.text)
-  )
+  const indices: readonly CompiledReferenceIndex[] = isCompiledIndex(compiled)
+    ? [compiled]
+    : compiled
+  const raw = indices
+    .flatMap((index) => [
+      ...matchesFor(index.exact, originalText, excluded),
+      ...matchesFor(index.folded, originalText, excluded)
+    ])
+    .sort(
+      (left, right) =>
+        left.start - right.start ||
+        right.end - left.end ||
+        left.text.localeCompare(right.text)
+    )
 
   const result: ReferenceMatch[] = []
   let cursor = 0
@@ -91,43 +105,90 @@ export function matchReferenceText(
   return result
 }
 
-export function referenceTargetKey(target: ReferenceTarget): string {
-  return `${target.kind}:${target.id}:${target.sectionId ?? ''}`
+function isCompiledIndex(
+  value: CompiledReferenceIndex | readonly CompiledReferenceIndex[]
+): value is CompiledReferenceIndex {
+  return !Array.isArray(value)
+}
+
+export { referenceTargetKey }
+
+function buildAutomaton(
+  terms: readonly ReferenceTerm[],
+  mode: 'exact' | 'folded'
+): Automaton {
+  const nodes: AutomatonNode[] = [automatonNode()]
+  for (const term of terms) {
+    if (term.matchMode !== mode) continue
+    const characters = [...normalize(term.term, mode)]
+    if (characters.length === 0) continue
+    let state = 0
+    for (const character of characters) {
+      const existing = nodes[state]!.next.get(character)
+      if (existing !== undefined) {
+        state = existing
+        continue
+      }
+      const next = nodes.length
+      nodes.push(automatonNode())
+      nodes[state]!.next.set(character, next)
+      state = next
+    }
+    nodes[state]!.outputs.push({ length: characters.length, term })
+  }
+
+  const queue: number[] = []
+  for (const child of nodes[0]!.next.values()) queue.push(child)
+  for (let cursor = 0; cursor < queue.length; cursor += 1) {
+    const state = queue[cursor]!
+    for (const [character, child] of nodes[state]!.next) {
+      queue.push(child)
+      let failure = nodes[state]!.failure
+      while (failure !== 0 && !nodes[failure]!.next.has(character))
+        failure = nodes[failure]!.failure
+      nodes[child]!.failure = nodes[failure]!.next.get(character) ?? 0
+      nodes[child]!.outputs.push(...nodes[nodes[child]!.failure]!.outputs)
+    }
+  }
+  return { mode, nodes }
 }
 
 function matchesFor(
-  root: TrieNode,
+  automaton: Automaton,
   originalText: string,
-  mode: 'exact' | 'folded',
   excluded: ReadonlySet<string>
 ): ReferenceMatch[] {
-  const projection = normalizedProjection(originalText, mode)
-  const text = projection.characters
+  const projection = normalizedProjection(originalText, automaton.mode)
   const matches: ReferenceMatch[] = []
-  for (let start = 0; start < text.length; start += 1) {
-    if (start > 0 && isWordCharacter(text[start - 1]!)) continue
-    let current = root
-    for (let end = start; end < text.length; end += 1) {
-      const next = current.next.get(text[end]!)
-      if (!next) break
-      current = next
-      if (current.outputs.length === 0) continue
+  let state = 0
+  for (let end = 0; end < projection.characters.length; end += 1) {
+    const character = projection.characters[end]!
+    while (state !== 0 && !automaton.nodes[state]!.next.has(character))
+      state = automaton.nodes[state]!.failure
+    state = automaton.nodes[state]!.next.get(character) ?? 0
+    for (const output of automaton.nodes[state]!.outputs) {
+      const start = end - output.length + 1
+      if (start < 0) continue
+      if (start > 0 && isWordCharacter(projection.characters[start - 1]!))
+        continue
       const matchEnd = end + 1
-      if (matchEnd < text.length && isWordCharacter(text[matchEnd]!)) continue
-      for (const output of current.outputs) {
-        const candidates = output.candidates.filter(
-          (candidate) => !excluded.has(referenceTargetKey(candidate.target))
-        )
-        if (candidates.length === 0) continue
-        const originalStart = projection.starts[start]!
-        const originalEnd = projection.ends[matchEnd - 1]!
-        matches.push({
-          start: originalStart,
-          end: originalEnd,
-          text: originalText.slice(originalStart, originalEnd),
-          candidates
-        })
-      }
+      if (
+        matchEnd < projection.characters.length &&
+        isWordCharacter(projection.characters[matchEnd]!)
+      )
+        continue
+      const candidates = output.term.candidates.filter(
+        (candidate) => !excluded.has(referenceTargetKey(candidate.target))
+      )
+      if (candidates.length === 0) continue
+      const originalStart = projection.starts[start]!
+      const originalEnd = projection.ends[end]!
+      matches.push({
+        start: originalStart,
+        end: originalEnd,
+        text: originalText.slice(originalStart, originalEnd),
+        candidates
+      })
     }
   }
   return matches
@@ -142,9 +203,7 @@ function isWordCharacter(value: string): boolean {
   return /[\p{L}\p{M}\p{N}_]/u.test(value)
 }
 
-const graphemeSegmenter = new Intl.Segmenter('en', {
-  granularity: 'grapheme'
-})
+const graphemeSegmenter = new Intl.Segmenter('en', { granularity: 'grapheme' })
 
 function normalizedProjection(
   original: string,
@@ -154,12 +213,19 @@ function normalizedProjection(
   starts: readonly number[]
   ends: readonly number[]
 }> {
+  if (isAscii(original)) {
+    const characters = [...normalize(original, mode)]
+    return {
+      characters,
+      starts: characters.map((_, index) => index),
+      ends: characters.map((_, index) => index + 1)
+    }
+  }
   const characters: string[] = []
   const starts: number[] = []
   const ends: number[] = []
   for (const segment of graphemeSegmenter.segment(original)) {
-    const normalized = normalize(segment.segment, mode)
-    for (const character of normalized) {
+    for (const character of normalize(segment.segment, mode)) {
       characters.push(character)
       starts.push(segment.index)
       ends.push(segment.index + segment.segment.length)
@@ -168,8 +234,14 @@ function normalizedProjection(
   return { characters, starts, ends }
 }
 
-function node(): TrieNode {
-  return { next: new Map(), outputs: [] }
+function isAscii(value: string): boolean {
+  for (let index = 0; index < value.length; index += 1)
+    if (value.charCodeAt(index) > 0x7f) return false
+  return true
+}
+
+function automatonNode(): AutomatonNode {
+  return { next: new Map(), failure: 0, outputs: [] }
 }
 
 function candidateOrder(
@@ -177,7 +249,6 @@ function candidateOrder(
   right: ReferenceCandidate
 ): number {
   return (
-    (left.context ?? '').localeCompare(right.context ?? '') ||
     left.title.localeCompare(right.title) ||
     referenceTargetKey(left.target).localeCompare(
       referenceTargetKey(right.target)

@@ -1,8 +1,9 @@
-import { useReducer } from 'react'
+import { useReducer, useState } from 'react'
 import type {
   ReferenceDocument,
   ReferenceTarget
 } from '../../../shared/contracts/reference.js'
+import { referenceTargetKey } from '../../../shared/reference/reference-target-key.js'
 
 export type DetailHistory = Readonly<{
   entries: readonly DetailHistoryEntry[]
@@ -10,7 +11,6 @@ export type DetailHistory = Readonly<{
 }>
 export type DetailHistoryEntry = Readonly<{
   target: ReferenceTarget
-  document: ReferenceDocument
   breadcrumb: string
 }>
 export type DetailHistoryState = Readonly<Record<string, DetailHistory>>
@@ -53,7 +53,7 @@ export function reduceDetailHistory(
   const entries = [
     ...previous.entries.slice(0, previous.index + 1),
     action.entry
-  ]
+  ].slice(-100)
   return {
     ...state,
     [action.sceneId]: { entries, index: entries.length - 1 }
@@ -62,17 +62,29 @@ export function reduceDetailHistory(
 
 export function useSessionDetailHistory(sceneId: string) {
   const [state, dispatch] = useReducer(reduceDetailHistory, {})
+  const [documents, setDocuments] = useState(
+    () => new Map<string, ReferenceDocument>()
+  )
   const history = state[sceneId] ?? emptyHistory
+  const currentTarget = history.entries[history.index]?.target
   return {
     history,
-    detail: history.entries[history.index]?.document ?? null,
+    detail: currentTarget
+      ? (documents.get(referenceTargetKey(currentTarget)) ?? null)
+      : null,
     breadcrumb: history.entries[history.index]?.breadcrumb ?? null,
-    openDetail: (document: ReferenceDocument, breadcrumb: string) =>
+    openDetail: (document: ReferenceDocument, breadcrumb: string) => {
+      setDocuments((current) => {
+        const next = new Map(current)
+        next.set(referenceTargetKey(document.target), document)
+        return next
+      })
       dispatch({
         type: 'open',
         sceneId,
-        entry: { target: document.target, document, breadcrumb }
-      }),
+        entry: { target: document.target, breadcrumb }
+      })
+    },
     moveHistory: (offset: number) =>
       dispatch({ type: 'move', sceneId, offset }),
     closeDetail: () => dispatch({ type: 'close', sceneId })
@@ -84,9 +96,6 @@ function sameTarget(
   right: ReferenceTarget
 ): boolean {
   return (
-    left !== undefined &&
-    left.kind === right.kind &&
-    left.id === right.id &&
-    left.sectionId === right.sectionId
+    left !== undefined && referenceTargetKey(left) === referenceTargetKey(right)
   )
 }

@@ -1,4 +1,5 @@
 node_modules/
+.cache/
 out/
 release/
 coverage/
@@ -6,3 +7,4 @@ coverage/
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
+!resources/reference/srd-5.1.sqlite

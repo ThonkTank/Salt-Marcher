@@ -47,11 +47,16 @@ class FakeUtilityProcess extends EventEmitter {
 
 function harness() {
   const children: FakeUtilityProcess[] = []
-  const supervisor = new CoreProcessSupervisor('/data', '/utility.js', () => {
-    const child = new FakeUtilityProcess()
-    children.push(child)
-    return child as never
-  })
+  const supervisor = new CoreProcessSupervisor(
+    '/data',
+    '/utility.js',
+    '/reference.sqlite',
+    () => {
+      const child = new FakeUtilityProcess()
+      children.push(child)
+      return child as never
+    }
+  )
   return { supervisor, children }
 }
 
@@ -138,6 +143,29 @@ describe('CoreProcessSupervisor', () => {
       campaigns: [],
       trashedCampaigns: []
     })
+    await supervisor.closeGracefully()
+  })
+
+  it('forwards typed campaign reference invalidations', async () => {
+    const { supervisor, children } = harness()
+    const listener = vi.fn()
+    supervisor.onReferenceChanged(listener)
+    children[0]?.ready()
+    children[0]?.emit('message', {
+      kind: 'reference.changed',
+      notice: {
+        campaignId: 'campaign-a',
+        revision: 'campaign-a:2:3',
+        changedTargets: []
+      }
+    })
+
+    expect(listener).toHaveBeenCalledWith({
+      campaignId: 'campaign-a',
+      revision: 'campaign-a:2:3',
+      changedTargets: []
+    })
+    children[0]?.emit('exit', 0)
     await supervisor.closeGracefully()
   })
 

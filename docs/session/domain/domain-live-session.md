@@ -8,7 +8,8 @@ owns neither Party membership nor creature facts.
 
 Party publishes the current Roster, membership, and XP through `PartyApi`.
 Creatures publishes current statblocks. Scene owns stable individual creature
-group members, including current HP and conditions. Encounter references those
+group members, including current HP, language-neutral SRD condition IDs,
+concentration, and the numeric exhaustion level. Encounter references those
 members and owns Initiative, card packing, turn, round, and Resolution state.
 
 The live-play application service coordinates the membership transition with
@@ -27,7 +28,7 @@ does not transfer ownership of Party membership to Scene.
 - empty and archived groups cannot join Combat; archiving a linked group
   removes its members from the running Combat
 - a Combat is keyed by Scene identity and retains selected group and member
-  references without copying their mutable HP or conditions
+  references without copying their mutable HP or status truth
 - Resolution awards XP to the current active Party through an idempotent Combat
   identity
 - finishing Combat clears only Encounter runtime state

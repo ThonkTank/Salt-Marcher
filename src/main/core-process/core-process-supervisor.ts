@@ -17,6 +17,10 @@ import {
   sessionChangeNoticeSchema,
   type SessionChangeNotice
 } from '../../shared/contracts/session-change.js'
+import {
+  referenceIndexChangeNoticeSchema,
+  type ReferenceIndexChangeNotice
+} from '../../shared/contracts/reference.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import {
   coreRestartDelay,
@@ -54,11 +58,15 @@ export class CoreProcessSupervisor {
   readonly #sessionChangeListeners = new Set<
     (notice: SessionChangeNotice) => void
   >()
+  readonly #referenceChangeListeners = new Set<
+    (notice: ReferenceIndexChangeNotice) => void
+  >()
   readonly #pending = new Map<string, PendingRequest>()
 
   constructor(
     private readonly dataRoot: string,
     private readonly path: string,
+    private readonly referenceDatabasePath: string,
     private readonly processFactory: ProcessFactory = (utilityPath, args) =>
       utilityProcess.fork(utilityPath, [...args], { stdio: 'pipe' })
   ) {
@@ -88,6 +96,13 @@ export class CoreProcessSupervisor {
   ): () => void {
     this.#sessionChangeListeners.add(listener)
     return () => this.#sessionChangeListeners.delete(listener)
+  }
+
+  onReferenceChanged(
+    listener: (notice: ReferenceIndexChangeNotice) => void
+  ): () => void {
+    this.#referenceChangeListeners.add(listener)
+    return () => this.#referenceChangeListeners.delete(listener)
   }
 
   retry(): void {
@@ -205,8 +220,13 @@ export class CoreProcessSupervisor {
     }
     const event = coreEventSchema.safeParse(raw)
     if (event.success) {
-      const notice = sessionChangeNoticeSchema.parse(event.data.notice)
-      for (const listener of this.#sessionChangeListeners) listener(notice)
+      if (event.data.kind === 'session.changed') {
+        const notice = sessionChangeNoticeSchema.parse(event.data.notice)
+        for (const listener of this.#sessionChangeListeners) listener(notice)
+      } else {
+        const notice = referenceIndexChangeNoticeSchema.parse(event.data.notice)
+        for (const listener of this.#referenceChangeListeners) listener(notice)
+      }
       return
     }
     const result = coreResultSchema.safeParse(raw)
@@ -256,7 +276,10 @@ export class CoreProcessSupervisor {
     )
       return
     this.setStatus(this.#firstReadyResolved ? 'recovering' : 'starting')
-    const child = this.processFactory(this.path, [this.dataRoot])
+    const child = this.processFactory(this.path, [
+      this.dataRoot,
+      this.referenceDatabasePath
+    ])
     this.#process = child
     this.#readyTimer = setTimeout(() => {
       if (this.#process !== child || this.#status === 'ready') return

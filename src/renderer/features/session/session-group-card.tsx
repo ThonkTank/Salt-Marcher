@@ -1,6 +1,6 @@
 import type { SceneGroup } from '../../../shared/contracts/scene.js'
 import { formatMessage, message } from '../../i18n/messages.de.js'
-import { ReferenceText } from '../reference/reference-ui.js'
+import { ReadOnlyProse } from '../reference/read-only-prose.js'
 
 export function SessionGroupCard(props: {
   group: SceneGroup
@@ -77,7 +77,7 @@ export function SessionGroupCard(props: {
       </div>
       {props.group.note && (
         <p className="group-note">
-          <ReferenceText>{props.group.note}</ReferenceText>
+          <ReadOnlyProse>{props.group.note}</ReadOnlyProse>
         </p>
       )}
       {props.deleteConfirming && (

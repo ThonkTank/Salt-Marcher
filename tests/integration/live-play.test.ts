@@ -230,20 +230,49 @@ describe('live party, scene groups and combat', () => {
       play.toggleCombatCondition(
         session.combat?.revision ?? -1,
         monsterCard?.id ?? '',
-        'Prone',
+        'prone',
         true
       )
     )
     expect(
       session.combat?.cards.find((card) => card.id === monsterCard?.id)
         ?.conditions
-    ).toEqual(['Prone'])
+    ).toEqual(['prone'])
     expect(
       session.scene.scenes[0]?.groups[0]?.entries[0]?.members.some((member) =>
-        member.conditions.includes('Prone')
+        member.conditions.includes('prone')
       )
     ).toBe(true)
-    expect(session.combat?.undoLabel).toContain('Prone')
+    expect(session.combat?.undoLabel).toContain('prone')
+    session = sessionAfter(play, () =>
+      play.setCombatConcentration(
+        session.combat?.revision ?? -1,
+        monsterCard?.id ?? '',
+        true
+      )
+    )
+    session = sessionAfter(play, () =>
+      play.setCombatExhaustion(
+        session.combat?.revision ?? -1,
+        monsterCard?.id ?? '',
+        3
+      )
+    )
+    expect(
+      session.combat?.cards.find((card) => card.id === monsterCard?.id)
+    ).toMatchObject({ concentrating: true, exhaustionLevel: 3 })
+    session = sessionAfter(play, () =>
+      play.undoCombat(session.combat?.revision ?? -1)
+    )
+    expect(
+      session.combat?.cards.find((card) => card.id === monsterCard?.id)
+    ).toMatchObject({ concentrating: true, exhaustionLevel: 0 })
+    session = sessionAfter(play, () =>
+      play.undoCombat(session.combat?.revision ?? -1)
+    )
+    expect(
+      session.combat?.cards.find((card) => card.id === monsterCard?.id)
+    ).toMatchObject({ concentrating: false, exhaustionLevel: 0 })
     session = sessionAfter(play, () =>
       play.undoCombat(session.combat?.revision ?? -1)
     )
@@ -519,7 +548,7 @@ describe('live party, scene groups and combat', () => {
       play.toggleCombatCondition(
         session.combat?.revision ?? -1,
         monsterCard?.id ?? '',
-        'Poisoned',
+        'poisoned',
         true
       )
     )
@@ -709,7 +738,7 @@ describe('live party, scene groups and combat', () => {
       play.toggleCombatCondition(
         session.combat!.revision,
         monster.id,
-        'Prone',
+        'prone',
         true
       )
     )

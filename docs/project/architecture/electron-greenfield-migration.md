@@ -124,13 +124,13 @@ claiming completion of M3 or M5. Its approved expansion contains:
 - anchored burger-menu Campaign CRUD without an icon-rail Campaign workspace,
   including rename, recoverable trash/restore, exact-name permanent deletion,
   and crash-reconciled `.trash`/`.deleting` directory transitions in the
-  complete greenfield schema v7
+  complete greenfield schema v8
 - the productive Monster section of the common Catalog, backed by a versioned
   local SRD 5.1 resource; the other Catalog sections remain later slices
 - one focused persistent runtime Scene with explicit PC assignments and named
   GM creature groups carrying an optional note, visual disposition, archive
   state, aggregate revision, and stable Scene-owned members; incompatible
-  pre-v7 development data is discarded and rebuilt instead of migrated; one
+  pre-v8 development data is discarded and rebuilt instead of migrated; one
   two-pane builder creates empty or populated groups and combines the shared
   filtered creature catalog, transient manual editing, live balancing, and
   fill-or-replace generation for new or existing groups before an explicit save
@@ -142,8 +142,8 @@ claiming completion of M3 or M5. Its approved expansion contains:
   until Loot migrates
 - a persistent three-column Session surface with independently resizable
   control/group and scenario columns around a flexible Details/Katalog/Karte
-  center, focused-scene control, shared catalog filtering, scene-local detail
-  history, inline and active-monster-following statblocks, and an honest
+  center, focused-scene control, shared catalog filtering, app-lifetime
+  Campaign/Scene-scoped detail history, inline and active-monster-following statblocks, and an honest
   provider-ready map/route-planning shell; Combat is persisted independently per
   running Scene
 - campaign-local World Planner location and faction CRUD plus authored
@@ -162,9 +162,10 @@ claiming completion of M3 or M5. Its approved expansion contains:
   Party position, waypoint route planning, durable checkpoints and Scene time,
   and the Session Karte/Reise surfaces; editable Terrain catalog CRUD remains a
   later slice
-- one offline reference-graph slice imports attributed SRD 5.1 rules into a
-  deterministic local artifact, merges creature and campaign world terms in
-  the utility process, highlights read-only Session prose, opens typed details
+- one offline reference-graph slice compiles attributed SRD 5.1 rules and
+  creatures from one pinned archive into deterministic local artifacts,
+  publishes separate static and campaign world indexes from the utility
+  process, highlights read-only Session prose, opens typed details
   in Scene-local history, supports recursively nested hover cards, and keeps
   explicitly pinned cards as movable memory-only windows
 

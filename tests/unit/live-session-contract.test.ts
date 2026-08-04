@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   changeHpInputSchema,
-  prepareCombatInputSchema
+  prepareCombatInputSchema,
+  setExhaustionInputSchema,
+  toggleConditionInputSchema
 } from '../../src/shared/contracts/live-session.js'
 import {
   evaluateSceneGroupDraftInputSchema,
@@ -74,6 +76,31 @@ describe('live session capability contracts', () => {
         expectedRevision: 3
       }).success
     ).toBe(false)
+  })
+
+  it('keeps conditions language-neutral and models special statuses separately', () => {
+    const base = {
+      cardId: 'monster-card:1',
+      active: true,
+      expectedRevision: 3
+    }
+    expect(
+      toggleConditionInputSchema.safeParse({ ...base, condition: 'prone' })
+        .success
+    ).toBe(true)
+    expect(
+      toggleConditionInputSchema.safeParse({
+        ...base,
+        condition: 'Concentration'
+      }).success
+    ).toBe(false)
+    expect(
+      setExhaustionInputSchema.safeParse({
+        cardId: base.cardId,
+        exhaustionLevel: 6,
+        expectedRevision: base.expectedRevision
+      }).success
+    ).toBe(true)
   })
 
   it('validates transient draft evaluation and generation modes', () => {
