@@ -420,24 +420,37 @@ describe('campaign walking skeleton', () => {
     const pronePreview = await client.$(
       'section[role="region"][aria-label="Referenz: Prone"]'
     )
-    await client.waitUntil(
-      async () => {
-        await proneReference.moveTo()
-        await client.pause(400)
-        return pronePreview.isExisting()
-      },
-      { timeout: 5_000, timeoutMsg: 'Prone reference preview did not open.' }
-    )
-    const nestedMovement = await pronePreview.$('button=movement')
-    await nestedMovement.moveTo()
-    await client.pause(400)
+    await client.execute(() => {
+      const term = [
+        ...document.querySelectorAll<HTMLButtonElement>(
+          '.group-note .reference-term'
+        )
+      ].find((button) => button.textContent === 'Prone')
+      term?.focus()
+    })
+    await pronePreview.waitForExist({ timeout: 5_000 })
+    await client.execute(() => {
+      const term = [
+        ...document.querySelectorAll<HTMLButtonElement>(
+          '.reference-hover-card .reference-term'
+        )
+      ].find((button) => button.textContent === 'movement')
+      term?.focus()
+    })
     const movementPreview = await client.$(
       'section[role="region"][aria-label="Referenz: movement"]'
     )
     await expect(movementPreview).toBeExisting()
-    await (await client.$('.workspace-heading')).moveTo()
+    await client.keys('Escape')
     await movementPreview.waitForExist({ reverse: true, timeout: 5_000 })
-    await proneReference.moveTo()
+    await client.execute(() => {
+      const term = [
+        ...document.querySelectorAll<HTMLButtonElement>(
+          '.group-note .reference-term'
+        )
+      ].find((button) => button.textContent === 'Prone')
+      term?.focus()
+    })
     const reopenedPronePreview = await client.$(
       'section[role="region"][aria-label="Referenz: Prone"]'
     )
