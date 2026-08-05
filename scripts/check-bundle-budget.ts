@@ -57,10 +57,10 @@ const byteCount = [...files].reduce(
   (total, file) => total + statSync(join(rendererRoot, file)).size,
   0
 )
-const budget = 3 * 1024 * 1024
+const budget = 2.75 * 1024 * 1024
 if (byteCount > budget)
   throw new Error(
-    `Normal renderer is ${(byteCount / 1024 / 1024).toFixed(2)} MiB; budget is 3 MiB`
+    `Normal renderer is ${(byteCount / 1024 / 1024).toFixed(2)} MiB; budget is 2.75 MiB`
   )
 if ([...files].some((file) => /qualification|babylon/i.test(file)))
   throw new Error('Qualification-only rendering code is reachable from the app')
@@ -99,8 +99,25 @@ const shellBytes = budgetEntry(
 const workspaceBytes = budgetEntry(
   'Workspace feature',
   (key, entry) => key.startsWith('_workspace-') && entry.file.endsWith('.js'),
-  1_500 * 1024
+  900 * 1024
 )
+
+const workspaceEntry = Object.entries(manifest).find(
+  ([key, entry]) => key.startsWith('_workspace-') && entry.file.endsWith('.js')
+)
+if (!workspaceEntry) throw new Error('Workspace chunk is missing')
+const workspaceInitialFiles = staticFilesFor(workspaceEntry[0])
+if (
+  [...workspaceInitialFiles].some((file) =>
+    /hex-map-canvas-pixi|WebGLRenderer|WebGPURenderer|CanvasRenderer/.test(file)
+  )
+)
+  throw new Error('Pixi renderer code is reachable from the workspace graph')
+
+if ([...files].some((file) => file.endsWith('.woff')))
+  throw new Error(
+    'Legacy WOFF duplicates are bundled; Electron requires WOFF2 only'
+  )
 const catalogBytes = budgetEntry(
   'Catalog lazy entry',
   (_key, entry) => entry.src === 'features/catalog/catalog-workspace.tsx',
@@ -119,7 +136,7 @@ const referenceBytes = budgetEntry(
 
 console.log(
   [
-    `Normal renderer: ${(byteCount / 1024 / 1024).toFixed(2)} MiB / 3.00 MiB`,
+    `Normal renderer: ${(byteCount / 1024 / 1024).toFixed(2)} MiB / 2.75 MiB`,
     `shell ${(shellBytes / 1024).toFixed(1)} KiB`,
     `workspace ${(workspaceBytes / 1024).toFixed(1)} KiB`,
     `catalog ${(catalogBytes / 1024).toFixed(1)} KiB`,
@@ -127,6 +144,21 @@ console.log(
     `reference ${(referenceBytes / 1024).toFixed(1)} KiB`
   ].join('; ')
 )
+
+function staticFilesFor(entryKey: string): Set<string> {
+  const result = new Set<string>()
+  const seen = new Set<string>()
+  const collect = (key: string): void => {
+    if (seen.has(key)) return
+    seen.add(key)
+    const entry = manifest[key]
+    if (!entry) throw new Error(`Manifest import missing: ${key}`)
+    result.add(entry.file)
+    for (const dependency of entry.imports ?? []) collect(dependency)
+  }
+  collect(entryKey)
+  return result
+}
 
 function javascriptFiles(root: string): string[] {
   return readdirSync(root, { withFileTypes: true }).flatMap((entry) => {

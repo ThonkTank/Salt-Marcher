@@ -25,6 +25,7 @@
     "test:packaged-smoke": "corepack pnpm package && tsx scripts/packaged-smoke.ts",
     "test:packaged-qualification-smoke": "corepack pnpm package:qualification && tsx scripts/packaged-smoke.ts --qualification",
     "test:e2e": "corepack pnpm build && wdio run wdio.conf.ts --suite create && wdio run wdio.conf.ts --suite restart && wdio run wdio.conf.ts --suite dialogs",
+    "test:create:built": "wdio run wdio.conf.ts --suite create",
     "test:dialogs:built": "wdio run wdio.conf.ts --suite dialogs",
     "test:visual:update": "UPDATE_VISUAL_GOLDENS=1 corepack pnpm build && UPDATE_VISUAL_GOLDENS=1 wdio run wdio.conf.ts --suite create && UPDATE_VISUAL_GOLDENS=1 wdio run wdio.conf.ts --suite dialogs",
     "test:passive-e2e": "corepack pnpm build && wdio run wdio.passive.conf.ts",
@@ -33,14 +34,13 @@
     "qualify:render:validate": "tsx scripts/validate-render-qualification.ts",
     "qualify:render:artifacts": "tsx scripts/generate-render-qualification-artifacts.ts",
     "qualify:render:artifacts:check": "tsx scripts/check-render-qualification-artifacts.ts",
-    "check": "corepack pnpm format && corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test && corepack pnpm check:references && corepack pnpm qualify:render:artifacts:check && corepack pnpm test:smoke && corepack pnpm test:dialogs:built && corepack pnpm test:bundle-budget",
+    "check": "corepack pnpm format && corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test && corepack pnpm check:references && corepack pnpm qualify:render:artifacts:check && corepack pnpm test:smoke && corepack pnpm test:create:built && corepack pnpm test:dialogs:built && corepack pnpm test:bundle-budget",
     "package": "corepack enable --install-directory ./node_modules/.bin && corepack pnpm build && electron-builder --publish never",
     "package:qualification": "corepack enable --install-directory ./node_modules/.bin && corepack pnpm build:qualification && electron-builder --dir --publish never"
   },
   "dependencies": {
     "@babylonjs/core": "9.18.1",
     "@floating-ui/react": "0.27.20",
-    "@fontsource/cormorant-unicase": "5.3.0",
     "@fontsource/eb-garamond": "5.3.0",
     "@fontsource/im-fell-english": "5.3.0",
     "@fontsource/im-fell-english-sc": "5.3.0",

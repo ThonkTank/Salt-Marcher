@@ -1,8 +1,39 @@
-@import '@fontsource/im-fell-english/latin-400.css';
-@import '@fontsource/im-fell-english-sc/latin-400.css';
-@import '@fontsource/eb-garamond/latin-400.css';
-@import '@fontsource/eb-garamond/latin-600.css';
-@import '@fontsource/cormorant-unicase/latin-500.css';
+/* Electron supports WOFF2 natively; bundling legacy WOFF duplicates ~220 KiB. */
+@font-face {
+  font-family: 'IM FELL English';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('@fontsource/im-fell-english/files/im-fell-english-latin-400-normal.woff2')
+    format('woff2');
+}
+
+@font-face {
+  font-family: 'IM FELL English SC';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('@fontsource/im-fell-english-sc/files/im-fell-english-sc-latin-400-normal.woff2')
+    format('woff2');
+}
+
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('@fontsource/eb-garamond/files/eb-garamond-latin-400-normal.woff2')
+    format('woff2');
+}
+
+@font-face {
+  font-family: 'EB Garamond';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 600;
+  src: url('@fontsource/eb-garamond/files/eb-garamond-latin-600-normal.woff2')
+    format('woff2');
+}
 
 /* SaltMarcher · Design-Tokens „Pergament & Kerzenlicht"
    Generiert aus dem Design System. Light ist :root, Dark ist [data-theme='dark'].
@@ -165,7 +196,7 @@
   --font-display: 'IM Fell English', Georgia, serif;
   --font-smallcaps: 'IM Fell English SC', Georgia, serif;
   --font-body: 'EB Garamond', Georgia, serif;
-  --font-initial: 'Cormorant Unicase', Georgia, serif;
+  --font-initial: 'IM FELL English SC', Georgia, serif;
   --font-mono: ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
   /* Größen — Werkzeugdichte zuerst; 11 px ist der harte Boden */
