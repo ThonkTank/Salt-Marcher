@@ -1319,7 +1319,7 @@ progress {
   color: var(--text-muted);
 }
 @media (max-width: 900px) {
-  .session-work-area {
+  .layout-cockpit {
     overflow: auto;
   }
 

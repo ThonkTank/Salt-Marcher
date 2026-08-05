@@ -1,7 +1,7 @@
 import { message } from '../../i18n/messages.de.js'
 // Installs Pixi's static CSP-safe shader and uniform synchronizers.
 import 'pixi.js/unsafe-eval'
-import { Application, Container, Graphics, Text } from 'pixi.js'
+import { Container, Graphics, Text, WebGLRenderer } from 'pixi.js'
 import {
   useCallback,
   useEffect,
@@ -26,8 +26,13 @@ import {
   polygon,
   rootThree
 } from './hex-canvas-geometry.js'
+import {
+  rememberCamera,
+  resetCamera,
+  viewportCenter,
+  viewportMetrics
+} from './hex-pixi-camera.js'
 
-const HEX_CHUNK_MARGIN = 32
 type TravelOverlay = Readonly<{
   id: string
   label: string
@@ -37,7 +42,7 @@ type TravelOverlay = Readonly<{
 }>
 
 type CanvasState = {
-  application: Application
+  application: WebGLRenderer
   world: Container
   element: HTMLDivElement
   mapId: string
@@ -76,6 +81,7 @@ export type HexMapCanvasProps = {
   onStrokeComplete?: (path: readonly AxialCoordinate[]) => void
   onViewportChange?: (center: AxialCoordinate, halfExtent: number) => void
   ariaLabel: string
+  onRendererFailure?: (phase: 'bootstrap' | 'canvas', error: Error) => void
 }
 
 export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
@@ -289,7 +295,7 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
     const element = host.current
     if (!element) return
     setRenderError(false)
-    const application = new Application()
+    const application = new WebGLRenderer()
     const world = new Container()
     const layers = {
       grid: new Container(),
@@ -306,6 +312,7 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
     let stroke: AxialCoordinate[] = []
     let resizeObserver: ResizeObserver | null = null
     let lastViewportNotice = 0
+    let animationFrame = 0
 
     const notifyViewport = () => {
       const current = state.current
@@ -325,7 +332,8 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
       current.destroyed = true
       resizeObserver?.disconnect()
       try {
-        application.destroy(true, { children: true })
+        world.destroy({ children: true })
+        application.destroy(true)
       } catch {
         // Renderer cleanup must never prevent navigation away from the map.
       }
@@ -334,18 +342,17 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
 
     void application
       .init({
-        resizeTo: element,
+        width: Math.max(1, element.clientWidth),
+        height: Math.max(1, element.clientHeight),
         background: '#101a18',
-        antialias: true,
-        preference: 'webgl'
+        antialias: true
       })
       .then(() => {
         if (disposed) {
-          application.destroy(true, { children: true })
+          application.destroy(true)
           return
         }
         element.append(application.canvas)
-        application.stage.addChild(world)
         world.addChild(
           layers.grid,
           layers.terrain,
@@ -366,6 +373,12 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
         }
         resetCamera(state.current, { q: 0, r: 0 })
         redraw()
+        const renderFrame = () => {
+          if (disposed) return
+          application.render(world)
+          animationFrame = requestAnimationFrame(renderFrame)
+        }
+        animationFrame = requestAnimationFrame(renderFrame)
 
         const canvas = application.canvas
         const coordinateFor = (event: PointerEvent | MouseEvent) => {
@@ -478,10 +491,16 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
         canvas.addEventListener('click', click)
         canvas.addEventListener('wheel', wheel, { passive: false })
         if (typeof ResizeObserver !== 'undefined') {
-          resizeObserver = new ResizeObserver(() => redrawGrid())
+          resizeObserver = new ResizeObserver(() => {
+            application.resize(
+              Math.max(1, element.clientWidth),
+              Math.max(1, element.clientHeight)
+            )
+            redrawGrid()
+          })
           resizeObserver.observe(element)
         }
-        ;(application as Application & { cleanup?: () => void }).cleanup =
+        ;(application as WebGLRenderer & { cleanup?: () => void }).cleanup =
           () => {
             canvas.removeEventListener('pointerdown', pointerDown)
             canvas.removeEventListener('pointermove', pointerMove)
@@ -492,18 +511,23 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
             canvas.removeEventListener('wheel', wheel)
           }
       })
-      .catch(() => {
+      .catch((cause: unknown) => {
+        const error = cause instanceof Error ? cause : new Error(String(cause))
         try {
-          application.destroy(true, { children: true })
+          application.destroy(true)
         } catch {
           // A failed partial initialization still needs best-effort cleanup.
         }
-        if (!disposed) setRenderError(true)
+        if (!disposed) {
+          latest.current.onRendererFailure?.('bootstrap', error)
+          setRenderError(true)
+        }
       })
 
     return () => {
       disposed = true
-      ;(application as Application & { cleanup?: () => void }).cleanup?.()
+      cancelAnimationFrame(animationFrame)
+      ;(application as WebGLRenderer & { cleanup?: () => void }).cleanup?.()
       destroy()
     }
   }, [redraw, redrawGrid, redrawTransientLayers, renderAttempt])
@@ -647,44 +671,4 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
       )}
     </div>
   )
-}
-
-function viewportCenter(state: CanvasState) {
-  return pixelToAxial(
-    (state.element.clientWidth / 2 - state.world.position.x) /
-      state.world.scale.x,
-    (state.element.clientHeight / 2 - state.world.position.y) /
-      state.world.scale.y
-  )
-}
-
-function viewportMetrics(state: CanvasState) {
-  const center = viewportCenter(state)
-  const horizontal = Math.ceil(
-    state.element.clientWidth / (hexSize * rootThree * state.world.scale.x) / 2
-  )
-  const vertical = Math.ceil(
-    state.element.clientHeight / (hexSize * 1.5 * state.world.scale.y) / 2
-  )
-  return {
-    center,
-    halfExtent: Math.max(horizontal, vertical) + HEX_CHUNK_MARGIN
-  }
-}
-
-function resetCamera(state: CanvasState, coordinate: AxialCoordinate) {
-  const point = center(coordinate)
-  state.world.scale.set(1)
-  state.world.position.set(
-    state.element.clientWidth / 2 - point.x,
-    state.element.clientHeight / 2 - point.y
-  )
-}
-
-function rememberCamera(state: CanvasState) {
-  state.cameraByMap.set(state.mapId, {
-    x: state.world.position.x,
-    y: state.world.position.y,
-    scale: state.world.scale.x
-  })
 }

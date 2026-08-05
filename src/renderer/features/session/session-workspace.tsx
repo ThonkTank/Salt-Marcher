@@ -7,7 +7,7 @@ import type {
 import type { SceneGroup } from '../../../shared/contracts/scene.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type { SessionLayoutPreference } from '../../../shared/contracts/session-layout.js'
-import { SessionHexMap, TravelScenario } from '../hex/hex-workspaces.js'
+import { SessionHexRoute } from './session-hex-route.js'
 import {
   EncounterCrumbs,
   SessionEncounterPanel
@@ -302,10 +302,13 @@ export default function SessionWorkspace(props: {
         </button>
       </div>
       {props.layout.centerTab === 'map' ? (
-        <SessionHexMap
-          snapshot={props.snapshot}
-          setSnapshot={props.setSnapshot}
-          onError={props.onError}
+        <SessionHexRoute
+          kind="map"
+          surfaceProps={{
+            snapshot: props.snapshot,
+            setSnapshot: props.setSnapshot,
+            onError: props.onError
+          }}
         />
       ) : props.layout.centerTab === 'catalog' ? (
         <CreatureCollectionCatalogPane
@@ -411,11 +414,15 @@ export default function SessionWorkspace(props: {
       {!props.scenario ? (
         <div className="scenario-empty">{uiMessage('ui.szenario.panel')}</div>
       ) : props.scenario === 'travel' ? (
-        <TravelScenario
-          snapshot={props.snapshot}
-          setSnapshot={props.setSnapshot}
-          openMap={() => props.setLayout({ ...props.layout, centerTab: 'map' })}
-          onError={props.onError}
+        <SessionHexRoute
+          kind="travel"
+          surfaceProps={{
+            snapshot: props.snapshot,
+            setSnapshot: props.setSnapshot,
+            openMap: () =>
+              props.setLayout({ ...props.layout, centerTab: 'map' }),
+            onError: props.onError
+          }}
         />
       ) : (
         <SessionEncounterPanel

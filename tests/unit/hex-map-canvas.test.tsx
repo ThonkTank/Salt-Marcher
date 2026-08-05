@@ -54,15 +54,16 @@ vi.mock('pixi.js', () => {
     position = { set: vi.fn() }
   }
 
-  class Application {
-    stage = new Container()
+  class WebGLRenderer {
     canvas = document.createElement('canvas')
     init = pixi.init
     destroy = pixi.destroy
+    render = vi.fn()
+    resize = vi.fn()
   }
 
   return {
-    Application,
+    WebGLRenderer,
     Container,
     Graphics,
     Text

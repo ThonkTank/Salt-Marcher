@@ -1,16 +1,11 @@
 import { message } from '../../i18n/messages.de.js'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import type {
   AxialCoordinate,
   HexBrushStrokeResult,
-  HexEraseImpact,
-  HexMapCatalogSnapshot,
   HexMapView,
-  HexHistoryState,
-  HexTerrainCatalog,
   HexTerrainId
 } from '../../../shared/contracts/hex.js'
-import type { WorldLocationSnapshot } from '../../../shared/contracts/world-location.js'
 import { HexMapCanvas } from './hex-map-canvas.js'
 import './hex.css'
 import { hexCapabilities } from './hex-capabilities.js'
@@ -25,60 +20,48 @@ import { createHexLocationPlacementController } from './hex-location-placement-c
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 import { executeRecoverableHexCommand } from './hex-command-executor.js'
 import { HexImpactDialog } from './hex-impact-dialog.js'
-
-type EditorTool = 'select' | 'paint' | 'erase' | 'location'
-
-type PendingErase = Readonly<{
-  path: readonly AxialCoordinate[]
-  radius: number
-  commandId: string
-  confirmationToken: string
-  impact: HexEraseImpact
-}>
-
-type EditorOverlay = Readonly<{
-  id: string
-  label: string
-  token: AxialCoordinate | null
-  route: readonly AxialCoordinate[]
-  focused: boolean
-}>
-
-type PendingHistory = Readonly<{
-  direction: 'undo' | 'redo'
-  commandId: string
-  confirmationToken: string
-  impact: HexEraseImpact
-}>
+import { useHexEditorController } from './use-hex-editor-controller.js'
 
 export default function HexEditor(props: {
   onError: (message: string) => void
 }) {
   const api = useCapabilityApi()
   const capabilities = hexCapabilities(api)
-  const [catalog, setCatalog] = useState<HexMapCatalogSnapshot | null>(null)
-  const [terrains, setTerrains] = useState<HexTerrainCatalog | null>(null)
-  const [locations, setLocations] = useState<WorldLocationSnapshot | null>(null)
-  const [map, setMap] = useState<HexMapView | null>(null)
-  const [selected, setSelected] = useState<AxialCoordinate | null>(null)
-  const [tool, setTool] = useState<EditorTool>('select')
-  const [terrainId, setTerrainId] = useState<HexTerrainId>('grassland')
-  const [radius, setRadius] = useState(0)
-  const [locationId, setLocationId] = useState('')
-  const [overlays, setOverlays] = useState<readonly EditorOverlay[]>([])
-  const [pendingErase, setPendingErase] = useState<PendingErase | null>(null)
-  const [pendingHistory, setPendingHistory] = useState<PendingHistory | null>(
-    null
-  )
-  const [resetViewSignal, setResetViewSignal] = useState(0)
-  const [newName, setNewName] = useState('Neue Hex-Karte')
-  const [name, setName] = useState('')
-  const [history, setHistory] = useState<HexHistoryState>({
-    canUndo: false,
-    canRedo: false,
-    undoLabel: null,
-    redoLabel: null
-  })
+  const controller = useHexEditorController()
+  const {
+    catalog,
+    setCatalog,
+    terrains,
+    setTerrains,
+    locations,
+    setLocations,
+    map,
+    setMap,
+    selected,
+    setSelected,
+    tool,
+    setTool,
+    terrainId,
+    setTerrainId,
+    radius,
+    setRadius,
+    locationId,
+    setLocationId,
+    overlays,
+    setOverlays,
+    pendingErase,
+    setPendingErase,
+    pendingHistory,
+    setPendingHistory,
+    resetViewSignal,
+    setResetViewSignal,
+    newName,
+    setNewName,
+    name,
+    setName,
+    history,
+    setHistory
+  } = controller
   const viewportRequest = useRef(0)
   const mapSelectionRequest = useRef(0)
   const viewportHalfExtent = useRef(64)
@@ -195,7 +178,19 @@ export default function HexEditor(props: {
         }
       )
       .catch(reportCapabilityError(props.onError))
-  }, [capabilities.hex, props.onError, readOverlays])
+  }, [
+    capabilities.hex,
+    props.onError,
+    readOverlays,
+    setCatalog,
+    setHistory,
+    setLocationId,
+    setLocations,
+    setMap,
+    setName,
+    setOverlays,
+    setTerrains
+  ])
 
   useEffect(() => {
     return capabilities.hex.onChanged((notice) => {
@@ -227,7 +222,14 @@ export default function HexEditor(props: {
         })
         .catch(reportCapabilityError(props.onError))
     })
-  }, [capabilities.hex, props.onError, readOverlays])
+  }, [
+    capabilities.hex,
+    props.onError,
+    readOverlays,
+    setHistory,
+    setMap,
+    setOverlays
+  ])
 
   const create = async () => {
     if (!catalog) return

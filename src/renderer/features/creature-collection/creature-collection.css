@@ -161,6 +161,29 @@
   border-bottom: 1px solid var(--border-hair);
 }
 
+/* These shared internals must not inherit consumer-dialog label/footer gaps. */
+.creature-collection-manager .creatures-filter-grid label {
+  gap: var(--space-1);
+}
+
+.creature-collection-pane > .creature-collection-pane-footer {
+  display: flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  border-top: 1px solid var(--border-structural);
+  padding: 0.45rem 0.6rem;
+  color: var(--text-3);
+  font-size: 0.75rem;
+}
+
+.creature-collection-pane-footer > div {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 .creature-collection-table-wrap {
   min-height: 0;
   overflow: auto;
