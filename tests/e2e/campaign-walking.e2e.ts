@@ -477,6 +477,15 @@ describe('campaign walking skeleton', () => {
       document.documentElement.style.zoom = ''
     })
 
+    await (await client.$('.workspace-heading')).moveTo()
+    await client.keys('Escape')
+    await (
+      await client.$('.reference-hover-card')
+    ).waitForExist({
+      reverse: true,
+      timeout: 5_000
+    })
+
     await (await client.$('button=Gruppen managen')).click()
     const reopenedGroupDialog = await client.$(
       'section[aria-labelledby="group-builder-title"]'

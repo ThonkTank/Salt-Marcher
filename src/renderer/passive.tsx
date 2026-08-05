@@ -1,6 +1,7 @@
 import { message } from './i18n/messages.de.js'
 import { StrictMode, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
+import type { CoreProcessStatus } from '../shared/contracts/runtime.js'
 import './passive/passive.css'
 
 declare global {
@@ -13,14 +14,28 @@ export function PassiveDisplay() {
   const [projection, setProjection] = useState<
     import('../shared/contracts/passive-display.js').PassiveProjection | null
   >(null)
-  const [coreStatus, setCoreStatus] = useState('starting')
+  const [coreStatus, setCoreStatus] = useState<CoreProcessStatus>('starting')
   useEffect(() => {
-    void window.saltMarcherPassive.readProjection().then(setProjection)
-    void window.saltMarcherPassive.coreStatus().then(setCoreStatus)
+    let active = true
+    const readProjection = async () => {
+      try {
+        const next = await window.saltMarcherPassive.readProjection()
+        if (active) setProjection(next)
+      } catch {
+        // A status notification retries the read once the utility process is ready.
+      }
+    }
+    const applyCoreStatus = (status: CoreProcessStatus) => {
+      if (!active) return
+      setCoreStatus(status)
+      if (status === 'ready') void readProjection()
+    }
     const stopProjection =
       window.saltMarcherPassive.onProjectionChanged(setProjection)
-    const stopStatus = window.saltMarcherPassive.onCoreStatus(setCoreStatus)
+    const stopStatus = window.saltMarcherPassive.onCoreStatus(applyCoreStatus)
+    void window.saltMarcherPassive.coreStatus().then(applyCoreStatus)
     return () => {
+      active = false
       stopProjection()
       stopStatus()
     }

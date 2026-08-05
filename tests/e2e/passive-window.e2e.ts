@@ -44,7 +44,7 @@ describe('passive display isolation', () => {
           'Keine Datenfreigabe aktiv'
         ),
       {
-        timeout: 5_000,
+        timeout: 15_000,
         timeoutMsg: 'Passive projection did not settle to its safe empty state.'
       }
     )
