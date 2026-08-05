@@ -1,5 +1,5 @@
 import { message } from '../../i18n/messages.de.js'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type { WorldLocation } from '../../../shared/contracts/world-location.js'
 import type {
@@ -11,7 +11,7 @@ import type {
   HexTravelSnapshot
 } from '../../../shared/contracts/hex.js'
 import { HexMapCanvas } from './hex-map-canvas.js'
-import { readHexMapView } from './hex-chunk-cache.js'
+import { HexChunkCache } from './hex-chunk-cache.js'
 import './hex.css'
 import { hexCapabilities } from './hex-capabilities.js'
 import {
@@ -20,6 +20,7 @@ import {
 } from '../../capabilities/capability-errors.js'
 import { travelSegmentProgress, useTravelClock } from './use-travel-clock.js'
 import { ModalDialog } from '../../shell/modal-dialog.js'
+import { createHexLocationPlacementController } from './hex-location-placement-controller.js'
 
 export function TravelScenario(props: {
   snapshot: LiveSessionSnapshot
@@ -173,6 +174,7 @@ export function SessionHexMap(props: {
   setSnapshot: (snapshot: LiveSessionSnapshot) => void
   onError: (message: string) => void
 }) {
+  const chunkCache = useRef(new HexChunkCache())
   const sceneId = props.snapshot.scene.focusedSceneId
   const onError = props.onError
   const setSnapshot = props.setSnapshot
@@ -184,6 +186,7 @@ export function SessionHexMap(props: {
   const [mode, setMode] = useState<'inspect' | 'position' | 'plan'>('inspect')
   const [waypoints, setWaypoints] = useState<AxialCoordinate[]>([])
   const [evaluation, setEvaluation] = useState<HexRouteEvaluation | null>(null)
+  useEffect(() => () => chunkCache.current.clear(), [])
 
   useEffect(() => {
     void Promise.all([
@@ -197,7 +200,7 @@ export function SessionHexMap(props: {
         setTravel(nextTravel)
         const mapId = nextTravel.mapId ?? nextCatalog.maps[0]?.id
         const summary = nextCatalog.maps.find((entry) => entry.id === mapId)
-        setMap(summary ? await readHexMapView(summary) : null)
+        setMap(summary ? await chunkCache.current.readMapView(summary) : null)
       })
       .catch(reportCapabilityError(onError))
   }, [onError, sceneId])
@@ -233,7 +236,7 @@ export function SessionHexMap(props: {
     try {
       const summary = catalog?.maps.find((entry) => entry.id === mapId)
       if (!summary) return
-      setMap(await readHexMapView(summary))
+      setMap(await chunkCache.current.readMapView(summary))
       setSelected(null)
       setWaypoints([])
     } catch (cause) {
@@ -242,7 +245,10 @@ export function SessionHexMap(props: {
   }
   const clickTile = (coordinate: AxialCoordinate) => {
     setSelected(coordinate)
-    if (mode === 'plan') {
+    const authored = map?.tiles.some(
+      (tile) => tile.q === coordinate.q && tile.r === coordinate.r
+    )
+    if (mode === 'plan' && authored) {
       setEvaluation(null)
       setWaypoints((current) => [...current, coordinate])
     }
@@ -357,7 +363,8 @@ export function SessionHexMap(props: {
         route={route}
         onTileClick={clickTile}
         onViewportChange={(center) =>
-          void readHexMapView(map.map, center)
+          void chunkCache.current
+            .readMapView(map.map, center)
             .then(setMap)
             .catch(reportCapabilityError(props.onError))
         }
@@ -370,7 +377,7 @@ export function SessionHexMap(props: {
             : (travel?.hint ?? message('hex.selectTile'))}
         </span>
         {mode === 'position' && (
-          <button disabled={!selected} onClick={() => void placeParty()}>
+          <button disabled={!selectedTile} onClick={() => void placeParty()}>
             {message('ui.party.hier.platzieren')}
           </button>
         )}
@@ -399,6 +406,8 @@ export function HexLocationPlacementDialog(props: {
   onPlaced: () => void
   onError: (message: string) => void
 }) {
+  const chunkCache = useRef(new HexChunkCache())
+  const placementController = useRef(createHexLocationPlacementController())
   const onError = props.onError
   const [catalog, setCatalog] = useState<HexMapCatalogSnapshot | null>(null)
   const [terrains, setTerrains] = useState<HexTerrainCatalog | null>(null)
@@ -408,6 +417,7 @@ export function HexLocationPlacementDialog(props: {
     mapId: string
     contentRevision: number
   } | null>(null)
+  useEffect(() => () => chunkCache.current.clear(), [])
   useEffect(() => {
     void Promise.all([
       hexCapabilities().hex.catalog(),
@@ -421,7 +431,7 @@ export function HexLocationPlacementDialog(props: {
           ? nextCatalog.maps.find((entry) => entry.id === placement.mapId)
           : nextCatalog.maps[0]
         const initial = summary
-          ? await readHexMapView(summary, placement?.coordinate)
+          ? await chunkCache.current.readMapView(summary, placement?.coordinate)
           : null
         setMap(initial)
         if (placement) {
@@ -436,18 +446,20 @@ export function HexLocationPlacementDialog(props: {
   }, [onError, props.location.id])
   const changeMap = async (mapId: string) => {
     const summary = catalog?.maps.find((entry) => entry.id === mapId)
-    if (summary) setMap(await readHexMapView(summary))
+    if (summary) setMap(await chunkCache.current.readMapView(summary))
     setSelected(null)
   }
   const place = async () => {
     if (!map || !selected) return
+    const commandId = crypto.randomUUID()
     try {
-      await hexCapabilities().hex.placeLocation(
-        map.map.id,
-        props.location.id,
-        selected,
-        map.map.contentRevision
-      )
+      await placementController.current.place({
+        commandId,
+        mapId: map.map.id,
+        locationId: props.location.id,
+        coordinate: selected,
+        expectedContentRevision: map.map.contentRevision
+      })
       props.onPlaced()
       props.close()
     } catch (cause) {
@@ -456,12 +468,14 @@ export function HexLocationPlacementDialog(props: {
   }
   const remove = async () => {
     if (!existing) return
+    const commandId = crypto.randomUUID()
     try {
-      await hexCapabilities().hex.removeLocation(
-        existing.mapId,
-        props.location.id,
-        existing.contentRevision
-      )
+      await placementController.current.remove({
+        commandId,
+        mapId: existing.mapId,
+        locationId: props.location.id,
+        expectedContentRevision: existing.contentRevision
+      })
       props.onPlaced()
       props.close()
     } catch (cause) {
@@ -510,7 +524,8 @@ export function HexLocationPlacementDialog(props: {
             selected={selected}
             onTileClick={setSelected}
             onViewportChange={(center) =>
-              void readHexMapView(map.map, center)
+              void chunkCache.current
+                .readMapView(map.map, center)
                 .then(setMap)
                 .catch(reportCapabilityError(props.onError))
             }
@@ -523,7 +538,15 @@ export function HexLocationPlacementDialog(props: {
                 {message('ui.von.karte.entfernen')}
               </button>
             )}
-            <button disabled={!selected} onClick={() => void place()}>
+            <button
+              disabled={
+                !selected ||
+                !map.tiles.some(
+                  (tile) => tile.q === selected.q && tile.r === selected.r
+                )
+              }
+              onClick={() => void place()}
+            >
               {message('ui.hier.platzieren')}
             </button>
           </footer>

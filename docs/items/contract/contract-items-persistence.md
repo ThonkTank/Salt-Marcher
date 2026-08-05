@@ -11,9 +11,9 @@ it does not access SQLite or the public HTTP source.
 
 Items owns the unambiguous current tables `items_catalog_entries` and
 `items_catalog_tags`. Stable source keys from the pinned `/api/2014` API are
-persisted as text identifiers. One direct schema initializer is registered as
-owner version `1` under `items` and consumed through one prepared
-`FeatureStoreHandle`; Items
+persisted as text identifiers. One direct schema initializer participates in
+the whole-database development schema and is consumed through one prepared
+`FeatureStoreHandle`; Items owns no separate version or ledger and
 does not open a parallel connection lifecycle. Desktop composition constructs only the
 catalog-read adapter and application service. The separately composed operator import
 constructs its own HTTP source, import application service, and write adapter from one
@@ -21,7 +21,7 @@ owner-bound `FeatureStoreMaintenance` capability. That capability supplies both 
 whole-database backup and the later Items write connection; ordinary provider reads cannot
 request either maintenance operation.
 
-Owner version `1` has one structural signature: exact entry and tag columns,
+The current target has one structural signature: exact entry and tag columns,
 `source_key` and `(item_source_key, tag)` primary keys, one cascading tag
 foreign key, and the five named query indexes. The entry columns are exactly
 the fields written by a validated current provider import: identity, display
@@ -90,9 +90,8 @@ consumer may dispatch only the resulting immutable projection to its view.
 
 - Missing or zero-row imported data returns `UNAVAILABLE`.
 - An unsupported or newer Items schema returns `INCOMPATIBLE` without mutation.
-- A recorded Items owner version above the current direct version is rejected during read-only
-  store qualification; the application reports `INCOMPATIBLE` while the owner rows, schema,
-  platform ledger, and complete SQLite file family remain unchanged.
+- An unsupported whole-database schema version is rejected during store
+  qualification without feature-local mutation.
 - Invalid cost bounds return `INVALID_QUERY` without querying rows.
 - Missing detail keys return `NOT_FOUND`.
 - SQLite failures return `STORAGE_ERROR`; execution-lane rejection returns
@@ -100,8 +99,8 @@ consumer may dispatch only the resulting immutable projection to its view.
 - Import distinguishes source, validation, backup, storage, and execution
   failures. No failure status permits partial replacement.
 
-The current schema owner target is version `1`, created by its single direct
-initializer. Before the first released format, the initializer may be revised with the
+The current schema target is created by its single direct initializer. Before
+the first released format, the initializer may be revised with the
 current target and never translates an earlier development shape. After the
 first released format, later compatible changes use a new Items-owned migration. Public
 API callers never infer compatibility from table layout.

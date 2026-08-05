@@ -5,6 +5,7 @@ import {
   axialCoordinateSchema,
   evaluateHexRouteInputSchema,
   hexRouteEvaluationSchema,
+  hexRuntimeOverlayProjectionSchema,
   hexTravelSnapshotSchema,
   mutateHexTravelInputSchema,
   positionHexPartyInputSchema,
@@ -17,7 +18,7 @@ import {
 import { PartyStore } from '../party/party-store.js'
 import { SceneStore } from '../scene/scene-store.js'
 import { WorldLocationStore } from '../worldplanner/location-store.js'
-import { HexMapStore, parseTileId, tileId, tileLabel } from './hex-map-store.js'
+import { HexMapStore, tileLabel } from './hex-map-store.js'
 import { terrainDefinition } from './terrain-catalog.js'
 
 const hexDistanceMiles = 3
@@ -32,12 +33,27 @@ interface JourneyRow {
   revision: number
   mapId: string
   status: JourneyStatus
-  pathJson: string
   currentIndex: number
   partyMemberIdsJson: string
   multiplier: 1 | 2 | 5 | 10
   segmentStartedAt: number | null
-  hint: string
+  abortReason: 'user' | 'map-edit' | null
+  hintCode: string
+}
+
+function journeyHint(code: string): string {
+  const hints: Readonly<Record<string, string>> = {
+    travelling: 'Reise läuft.',
+    completed: 'Ziel erreicht.',
+    paused: 'Reise pausiert.',
+    aborted: 'Reise abgebrochen.',
+    'map-edit-aborted': 'Reise wegen Kartenbearbeitung abgebrochen.',
+    'party-changed': 'Reisegruppe geändert; Fortsetzung bestätigen.',
+    'route-left-map': 'Die Route verlässt die angelegte Karte.',
+    'blocked-terrain': 'Das nächste Hex ist nicht mehr passierbar.',
+    'no-speed': 'Die Reisegruppe besitzt keine positive Bewegungsrate.'
+  }
+  return hints[code] ?? 'Reisezustand aktualisiert.'
 }
 
 export function axialDistance(a: AxialCoordinate, b: AxialCoordinate): number {
@@ -120,6 +136,10 @@ export class HexTravelService {
     return this.withStore((store) => store.nextBoundaryDelay())
   }
 
+  runtimeOverlays(mapId: string) {
+    return this.withStore((store) => store.runtimeOverlays(mapId))
+  }
+
   evaluate(input: unknown): HexRouteEvaluation {
     const parsed = evaluateHexRouteInputSchema.parse(input)
     return this.withStore((store) => store.evaluate(parsed))
@@ -184,6 +204,115 @@ export class HexTravelStore {
     return this.snapshot(sceneId, this.journey(sceneId))
   }
 
+  runtimeOverlays(mapId: string) {
+    this.maps.summary(mapId)
+    const party = this.party.read()
+    const scenes = this.scenes.snapshot(party.members)
+    const journeys = this.db
+      .prepare(
+        `SELECT scene_id AS sceneId, revision, map_id AS mapId, status,
+                current_index AS currentIndex,
+                party_member_ids_json AS partyMemberIdsJson,
+                multiplier, segment_started_at AS segmentStartedAt,
+                abort_reason AS abortReason, hint_code AS hintCode
+         FROM hex_journey WHERE map_id = ?`
+      )
+      .all(mapId) as JourneyRow[]
+    const journeyByScene = new Map(journeys.map((row) => [row.sceneId, row]))
+    const pathByScene = new Map<string, AxialCoordinate[]>()
+    const pathRows = this.db
+      .prepare(
+        `SELECT scene_id AS sceneId, q, r FROM hex_journey_path
+         WHERE map_id = ? ORDER BY scene_id, position`
+      )
+      .all(mapId) as Array<{ sceneId: string; q: number; r: number }>
+    for (const row of pathRows) {
+      const path = pathByScene.get(row.sceneId) ?? []
+      path.push({ q: row.q, r: row.r })
+      pathByScene.set(row.sceneId, path)
+    }
+    const overlays = scenes.scenes.flatMap((scene) => {
+      const journey = journeyByScene.get(scene.id)
+      const route =
+        journey && journey.status !== 'aborted'
+          ? (pathByScene.get(scene.id) ?? [])
+          : []
+      const attachedPositions = party.members
+        .filter(
+          (member) =>
+            scene.partyMemberIds.includes(member.id) &&
+            member.attachedToPartyToken &&
+            member.travelPosition?.mapId === mapId
+        )
+        .map((member) => member.travelPosition!)
+      const commonPosition =
+        attachedPositions.length > 0 &&
+        attachedPositions.every(
+          (position) =>
+            position.q === attachedPositions[0]!.q &&
+            position.r === attachedPositions[0]!.r
+        )
+          ? { q: attachedPositions[0]!.q, r: attachedPositions[0]!.r }
+          : null
+      const token = route[journey?.currentIndex ?? 0] ?? commonPosition
+      if (!journey && !token) return []
+      if (journey?.status === 'aborted' && !token) return []
+      return [
+        {
+          sceneId: scene.id,
+          label: scene.title,
+          token,
+          route,
+          focused: scene.id === scenes.focusedSceneId
+        }
+      ]
+    })
+    return hexRuntimeOverlayProjectionSchema.parse({ mapId, overlays })
+  }
+
+  journeyImpacts(
+    mapId: string,
+    coordinateIds: ReadonlySet<string>
+  ): Array<{ sceneId: string; status: HexTravelSnapshot['status'] }> {
+    const targets = [...coordinateIds].map((id) => {
+      const separator = id.indexOf(':')
+      return {
+        q: Number(id.slice(0, separator)),
+        r: Number(id.slice(separator + 1))
+      }
+    })
+    return this.db
+      .prepare(
+        `WITH targets(q, r) AS (
+           SELECT CAST(json_extract(value, '$.q') AS INTEGER),
+                  CAST(json_extract(value, '$.r') AS INTEGER)
+           FROM json_each(?)
+         )
+         SELECT DISTINCT j.scene_id AS sceneId, j.status
+         FROM targets
+         JOIN hex_journey_path p
+           ON p.map_id = ? AND p.q = targets.q AND p.r = targets.r
+         JOIN hex_journey j ON j.scene_id = p.scene_id
+         WHERE j.status <> 'aborted'
+         ORDER BY j.scene_id`
+      )
+      .all(JSON.stringify(targets), mapId) as Array<{
+      sceneId: string
+      status: HexTravelSnapshot['status']
+    }>
+  }
+
+  abortJourneys(sceneIds: readonly string[]): void {
+    const abort = this.db.prepare(
+      `UPDATE hex_journey
+       SET status = 'aborted', revision = revision + 1,
+           current_index = 0, segment_started_at = NULL,
+           abort_reason = 'map-edit', hint_code = 'map-edit-aborted'
+       WHERE scene_id = ?`
+    )
+    for (const sceneId of sceneIds) abort.run(sceneId)
+  }
+
   advanceActive(): {
     changed: readonly HexTravelSnapshot[]
     active: boolean
@@ -215,9 +344,10 @@ export class HexTravelStore {
     const journeys = this.db
       .prepare(
         `SELECT scene_id AS sceneId, revision, map_id AS mapId, status,
-                path_json AS pathJson, current_index AS currentIndex,
+                current_index AS currentIndex,
                 party_member_ids_json AS partyMemberIdsJson,
-                multiplier, segment_started_at AS segmentStartedAt, hint
+                multiplier, segment_started_at AS segmentStartedAt,
+                abort_reason AS abortReason, hint_code AS hintCode
          FROM hex_journey WHERE status = 'travelling'`
       )
       .all() as JourneyRow[]
@@ -241,10 +371,12 @@ export class HexTravelStore {
     if (this.scenes.revision() !== input.expectedSceneRevision)
       throw new CapabilityError('stale', true)
     this.maps.summary(input.mapId)
+    if (!this.maps.tileExists(input.mapId, input.coordinate))
+      throw new CapabilityError('validation_failed', false)
     const ids = this.scenes.partyMemberIds(input.sceneId)
     if (ids.length === 0) throw new CapabilityError('validation_failed', false)
     this.db.transaction(() => {
-      this.party.setTravelPosition(ids, input.mapId, tileId(input.coordinate))
+      this.party.setTravelPosition(ids, input.mapId, input.coordinate)
       this.setSceneLocation(input.sceneId, input.mapId, input.coordinate, 0)
       this.db
         .prepare('DELETE FROM hex_journey WHERE scene_id = ?')
@@ -267,41 +399,42 @@ export class HexTravelStore {
       this.party.setTravelPosition(
         partyMemberIds,
         input.mapId,
-        tileId(evaluation.path[0]!)
+        evaluation.path[0]!
       )
       this.setSceneLocation(input.sceneId, input.mapId, evaluation.path[0]!, 0)
       this.db
         .prepare(
           `INSERT INTO hex_journey (
-             scene_id, revision, map_id, status, path_json, current_index,
-             party_member_ids_json, multiplier, segment_started_at, hint
-           ) VALUES (?, ?, ?, ?, ?, 0, ?, ?, ?, ?)
+             scene_id, revision, map_id, status, current_index,
+             party_member_ids_json, multiplier, segment_started_at,
+             abort_reason, hint_code
+           ) VALUES (?, ?, ?, ?, 0, ?, ?, ?, NULL, ?)
            ON CONFLICT(scene_id) DO UPDATE SET
              revision = excluded.revision, map_id = excluded.map_id,
-             status = excluded.status, path_json = excluded.path_json,
+             status = excluded.status,
              current_index = 0,
              party_member_ids_json = excluded.party_member_ids_json,
              multiplier = excluded.multiplier,
              segment_started_at = excluded.segment_started_at,
-             hint = excluded.hint`
+             abort_reason = NULL, hint_code = excluded.hint_code`
         )
         .run(
           input.sceneId,
           (current?.revision ?? -1) + 1,
           input.mapId,
           status,
-          JSON.stringify(evaluation.path),
           JSON.stringify(partyMemberIds),
           input.multiplier,
           status === 'travelling' ? this.now() : null,
-          status === 'travelling' ? 'Reise läuft.' : 'Ziel erreicht.'
+          status === 'travelling' ? 'travelling' : 'completed'
         )
+      this.replacePath(input.sceneId, input.mapId, evaluation.path)
     })()
     return this.snapshot(input.sceneId, this.journey(input.sceneId))
   }
 
   pause(input: z.infer<typeof mutateHexTravelInputSchema>) {
-    return this.mutate(input, 'paused', 'Reise pausiert.')
+    return this.mutate(input, 'paused', 'paused', null)
   }
 
   resume(input: z.infer<typeof mutateHexTravelInputSchema>) {
@@ -313,7 +446,8 @@ export class HexTravelStore {
     this.db
       .prepare(
         `UPDATE hex_journey SET status = 'travelling', revision = revision + 1,
-         party_member_ids_json = ?, segment_started_at = ?, hint = 'Reise läuft.'
+         party_member_ids_json = ?, segment_started_at = ?,
+         abort_reason = NULL, hint_code = 'travelling'
          WHERE scene_id = ?`
       )
       .run(JSON.stringify(currentMembers), this.now(), input.sceneId)
@@ -321,7 +455,7 @@ export class HexTravelStore {
   }
 
   abort(input: z.infer<typeof mutateHexTravelInputSchema>) {
-    return this.mutate(input, 'aborted', 'Reise abgebrochen.')
+    return this.mutate(input, 'aborted', 'aborted', 'user')
   }
 
   setMultiplier(input: z.infer<typeof setHexTravelMultiplierInputSchema>) {
@@ -339,14 +473,17 @@ export class HexTravelStore {
   private mutate(
     input: z.infer<typeof mutateHexTravelInputSchema>,
     status: JourneyStatus,
-    hint: string
+    hintCode: string,
+    abortReason: JourneyRow['abortReason']
   ) {
     this.requireJourney(input.sceneId, input.expectedRevision)
     this.db
       .prepare(
-        'UPDATE hex_journey SET status = ?, revision = revision + 1, segment_started_at = NULL, hint = ? WHERE scene_id = ?'
+        `UPDATE hex_journey SET status = ?, revision = revision + 1,
+         segment_started_at = NULL, abort_reason = ?, hint_code = ?
+         WHERE scene_id = ?`
       )
-      .run(status, hint, input.sceneId)
+      .run(status, abortReason, hintCode, input.sceneId)
     return this.snapshot(input.sceneId, this.journey(input.sceneId))
   }
 
@@ -399,7 +536,16 @@ export class HexTravelStore {
       }
     let totalGameSeconds = 0
     for (const coordinate of path.slice(1)) {
-      const terrain = terrainDefinition(this.maps.terrainAt(mapId, coordinate))
+      const terrainId = this.maps.terrainAt(mapId, coordinate)
+      if (terrainId === null)
+        return {
+          canStart: false,
+          message: 'Die Route verlässt die angelegte Karte.',
+          path: [...path],
+          totalGameSeconds: 0,
+          ...speed
+        }
+      const terrain = terrainDefinition(terrainId)
       if (!terrain.passable)
         return {
           canStart: false,
@@ -430,7 +576,7 @@ export class HexTravelStore {
       this.db
         .prepare(
           `UPDATE hex_journey SET status = 'paused', revision = revision + 1,
-           segment_started_at = NULL, hint = 'Reisegruppe geändert; Fortsetzung bestätigen.'
+           segment_started_at = NULL, hint_code = 'party-changed'
            WHERE scene_id = ?`
         )
         .run(journey.sceneId)
@@ -443,19 +589,20 @@ export class HexTravelStore {
     const speed = this.speed(journey.sceneId).effectiveSpeedFeet
     while (index < path.length - 1) {
       const next = path[index + 1]!
-      const terrain = terrainDefinition(
-        this.maps.terrainAt(journey.mapId, next)
-      )
-      if (!terrain.passable || speed <= 0) {
+      const terrainId = this.maps.terrainAt(journey.mapId, next)
+      const terrain = terrainId === null ? null : terrainDefinition(terrainId)
+      if (!terrain?.passable || speed <= 0) {
         this.db
           .prepare(
             `UPDATE hex_journey SET status = 'blocked', revision = revision + 1,
-             segment_started_at = NULL, hint = ? WHERE scene_id = ?`
+             segment_started_at = NULL, hint_code = ? WHERE scene_id = ?`
           )
           .run(
-            !terrain.passable
-              ? `${tileLabel(next)} ist nicht mehr passierbar.`
-              : 'Die Reisegruppe besitzt keine positive Bewegungsrate.',
+            !terrain
+              ? 'route-left-map'
+              : !terrain.passable
+                ? 'blocked-terrain'
+                : 'no-speed',
             journey.sceneId
           )
         return
@@ -466,19 +613,20 @@ export class HexTravelStore {
       index += 1
       startedAt += realMilliseconds
       this.db.transaction(() => {
-        this.party.setTravelPosition(storedMembers, journey.mapId, tileId(next))
+        this.party.setTravelPosition(storedMembers, journey.mapId, next)
         this.setSceneLocation(journey.sceneId, journey.mapId, next, gameSeconds)
         const complete = index >= path.length - 1
         this.db
           .prepare(
             `UPDATE hex_journey SET current_index = ?, revision = revision + 1,
-             status = ?, segment_started_at = ?, hint = ? WHERE scene_id = ?`
+             status = ?, segment_started_at = ?, abort_reason = NULL,
+             hint_code = ? WHERE scene_id = ?`
           )
           .run(
             index,
             complete ? 'completed' : 'travelling',
             complete ? null : Math.round(startedAt),
-            complete ? 'Ziel erreicht.' : 'Reise läuft.',
+            complete ? 'completed' : 'travelling',
             journey.sceneId
           )
       })()
@@ -488,22 +636,22 @@ export class HexTravelStore {
 
   private snapshot(sceneId: string, journey: JourneyRow | null) {
     const scene = this.requireScene(sceneId)
-    const position = journey
-      ? this.path(journey)[journey.currentIndex]!
-      : this.scenePosition(sceneId)
+    const path =
+      journey && journey.status !== 'aborted' ? this.path(journey) : []
+    const position =
+      (journey ? path[journey.currentIndex] : null) ??
+      this.scenePosition(sceneId)
     const mapId = journey?.mapId ?? this.positionMapId(sceneId)
     const map = mapId ? this.maps.summary(mapId) : null
     const placement =
       map && position ? this.maps.locationAt(map.id, position) : null
     const speed = this.speed(sceneId)
-    const path = journey ? this.path(journey) : []
     let remainingGameSeconds = 0
     if (journey && map) {
       for (const coordinate of path.slice(journey.currentIndex + 1)) {
-        const terrain = terrainDefinition(
-          this.maps.terrainAt(map.id, coordinate)
-        )
-        if (terrain.passable && speed.effectiveSpeedFeet > 0)
+        const terrainId = this.maps.terrainAt(map.id, coordinate)
+        const terrain = terrainId === null ? null : terrainDefinition(terrainId)
+        if (terrain?.passable && speed.effectiveSpeedFeet > 0)
           remainingGameSeconds += travelGameSeconds(
             speed.effectiveSpeedFeet,
             terrain.travelCost
@@ -535,7 +683,7 @@ export class HexTravelStore {
       ...speed,
       multiplier: journey?.multiplier ?? 1,
       hint:
-        journey?.hint ??
+        (journey ? journeyHint(journey.hintCode) : null) ??
         (position
           ? 'Reise planen oder Party neu platzieren.'
           : 'Party zuerst auf einer Hex-Karte platzieren.')
@@ -547,21 +695,23 @@ export class HexTravelStore {
     const party = this.party
       .read()
       .members.filter((member) => members.includes(member.id))
-    const positions = party
-      .filter((member) => member.attachedToPartyToken)
+    const attached = party.filter((member) => member.attachedToPartyToken)
+    const positions = attached
       .map((member) => member.travelPosition)
       .filter((position) => position !== null)
     if (
-      positions.length === party.length &&
+      positions.length === attached.length &&
       positions.length > 0 &&
       positions.every(
         (position) =>
           position.mapId === positions[0]!.mapId &&
-          position.tileId === positions[0]!.tileId
+          position.q === positions[0]!.q &&
+          position.r === positions[0]!.r
       ) &&
       (!requiredMapId || positions[0]!.mapId === requiredMapId)
     )
-      return parseTileId(positions[0]!.tileId)
+      return { q: positions[0]!.q, r: positions[0]!.r }
+    if (attached.length > 0) return null
 
     const scene = this.requireScene(sceneId)
     if (!scene.locationId) return null
@@ -578,15 +728,15 @@ export class HexTravelStore {
 
   private positionMapId(sceneId: string): string | null {
     const members = this.scenes.partyMemberIds(sceneId)
-    const member = this.party
+    const attached = this.party
       .read()
-      .members.find(
+      .members.filter(
         (candidate) =>
-          members.includes(candidate.id) &&
-          candidate.attachedToPartyToken &&
-          candidate.travelPosition
+          members.includes(candidate.id) && candidate.attachedToPartyToken
       )
+    const member = attached.find((candidate) => candidate.travelPosition)
     if (member?.travelPosition) return member.travelPosition.mapId
+    if (attached.length > 0) return null
     const scene = this.requireScene(sceneId)
     if (!scene.locationId) return null
     const placement = this.db
@@ -644,9 +794,10 @@ export class HexTravelStore {
       (this.db
         .prepare(
           `SELECT scene_id AS sceneId, revision, map_id AS mapId, status,
-                  path_json AS pathJson, current_index AS currentIndex,
+                  current_index AS currentIndex,
                   party_member_ids_json AS partyMemberIdsJson,
-                  multiplier, segment_started_at AS segmentStartedAt, hint
+                  multiplier, segment_started_at AS segmentStartedAt,
+                  abort_reason AS abortReason, hint_code AS hintCode
            FROM hex_journey WHERE scene_id = ?`
         )
         .get(sceneId) as JourneyRow | undefined) ?? null
@@ -660,8 +811,9 @@ export class HexTravelStore {
     const next = path[journey.currentIndex + 1]
     if (next === undefined) return null
     const speed = this.speed(journey.sceneId).effectiveSpeedFeet
-    const terrain = terrainDefinition(this.maps.terrainAt(journey.mapId, next))
-    if (speed <= 0 || !terrain.passable) return this.now()
+    const terrainId = this.maps.terrainAt(journey.mapId, next)
+    const terrain = terrainId === null ? null : terrainDefinition(terrainId)
+    if (speed <= 0 || !terrain?.passable) return this.now()
     const gameSeconds = travelGameSeconds(speed, terrain.travelCost)
     return Math.round(
       journey.segmentStartedAt +
@@ -678,7 +830,31 @@ export class HexTravelStore {
   }
 
   private path(journey: JourneyRow): readonly AxialCoordinate[] {
-    return axialCoordinateSchema.array().parse(JSON.parse(journey.pathJson))
+    return axialCoordinateSchema.array().parse(
+      this.db
+        .prepare(
+          `SELECT q, r FROM hex_journey_path
+           WHERE scene_id = ? ORDER BY position`
+        )
+        .all(journey.sceneId)
+    )
+  }
+
+  private replacePath(
+    sceneId: string,
+    mapId: string,
+    path: readonly AxialCoordinate[]
+  ): void {
+    this.db
+      .prepare('DELETE FROM hex_journey_path WHERE scene_id = ?')
+      .run(sceneId)
+    const insert = this.db.prepare(
+      `INSERT INTO hex_journey_path (scene_id, position, map_id, q, r)
+       VALUES (?, ?, ?, ?, ?)`
+    )
+    path.forEach((coordinate, position) =>
+      insert.run(sceneId, position, mapId, coordinate.q, coordinate.r)
+    )
   }
 
   private memberIds(journey: JourneyRow): readonly string[] {

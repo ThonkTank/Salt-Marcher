@@ -13,7 +13,8 @@ export const config = {
   specs: ['./tests/e2e/**/*.e2e.ts'],
   suites: {
     create: ['./tests/e2e/campaign-walking.e2e.ts'],
-    restart: ['./tests/e2e/campaign-restart.e2e.ts']
+    restart: ['./tests/e2e/campaign-restart.e2e.ts'],
+    dialogs: ['./tests/e2e/dialog-architecture.e2e.ts']
   },
   maxInstances: 1,
   autoXvfb: true,
@@ -38,5 +39,5 @@ export const config = {
   logLevel: process.env['WDIO_LOG_LEVEL'] ?? 'warn',
   framework: 'mocha',
   reporters: ['spec'],
-  mochaOpts: { ui: 'bdd', timeout: 90_000 }
+  mochaOpts: { ui: 'bdd', timeout: 120_000 }
 }

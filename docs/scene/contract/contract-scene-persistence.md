@@ -30,7 +30,9 @@ stored in Scene tables.
 
 ## Validation And Errors
 
-Owner startup readiness validates the feature-declared target schema signature; semantic row validation remains on typed provider read/write paths and fails closed through the feature contract.
+Startup validates the one whole-database development schema version; semantic
+row validation remains on typed provider read/write paths and fails closed
+through the feature contract.
 
 Scene IDs and all present foreign references MUST be positive. The database
 enforces one row per scene assignment plus global uniqueness of both PC and NPC
@@ -55,18 +57,14 @@ MUST NOT overwrite a newer Scene revision.
 ## Compatibility And Migration
 
 Before the first released format,
-`scene` supports exactly the complete current schema at owner version 1. One
-guarded initializer creates all six Scene tables in a fresh owner namespace.
+`scene` supports exactly the complete current whole-database development
+schema. The initializer creates all six Scene tables directly.
 There is no additive v1-v3 build-up, predecessor repair, backfill, or workspace
 translation.
 
-The exact owner inventory covers every table, index, view, and trigger named
-with `scene_` or `idx_scene_`. An unversioned partial namespace, a recorded
-version-1 shape that differs from the exact current DDL, an adjacent retired
-Scene object, or a newer owner version is incompatible. The application-level
-development-store opener removes the fixed isolated data root and initializes
-the complete current database; it never attempts an in-place Scene repair or
-migration.
+Unsupported isolated development databases are reinitialized by the shared
+persistence lifecycle; Scene does not maintain a separate version, ledger, or
+in-place repair path.
 
 Missing World Planner records remain visible as unresolved stable references
 until the GM removes or replaces them; inactive Party members are removed

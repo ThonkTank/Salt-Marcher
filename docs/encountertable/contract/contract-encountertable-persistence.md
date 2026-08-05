@@ -13,8 +13,8 @@ This document is normative for the `encountertable` feature's persistence path.
 
 ## Mandatory Schema
 
-- The feature-owned persistence schema declaration is the canonical in-code
-  schema owner.
+- The feature-owned persistence declaration owns this aggregate's DDL and SQL,
+  but it does not define a separate schema version or migration ledger.
 - The schema owns:
   - `encounter_table`
   - `encounter_table_entry`
@@ -27,8 +27,8 @@ startup, deletion, or repair to a Creatures- or Loot-owned table.
 
 ## Read Path Responsibilities
 
-- the shared platform owns connection lifecycle; the Encounter Table SQLite
-  adapter owns feature schema readiness, SQL, and row translation
+- the shared platform owns connection lifecycle and whole-database development
+  schema readiness; the Encounter Table adapter owns its SQL and row translation
 - one feature-owned read port separates application orchestration from SQLite
   mechanics
 
@@ -43,7 +43,9 @@ startup, deletion, or repair to a Creatures- or Loot-owned table.
 
 ## Validation And Error Behavior
 
-Owner startup readiness validates the feature-declared target schema signature; semantic row validation remains on typed provider read/write paths and fails closed through the feature contract.
+Startup validates the one whole-database development schema version; semantic
+row validation remains on typed provider read/write paths and fails closed
+through the feature contract.
 
 - schema readiness MUST be verified before encounter-table lookups return
   successful results
@@ -66,18 +68,11 @@ Owner startup readiness validates the feature-declared target schema signature; 
 ## Compatibility And Migration
 
 Compatibility obligations begin with the first released format.
-Before the first released format, Encounter Table supports exactly the current schema at
-owner version 1. One guarded initializer creates the complete target in an
-empty owner namespace. There is no predecessor import, partial-schema repair,
-copy/drop conversion, backfill, or cross-owner repair.
-
-The exact owner inventory covers every table, index, view, and trigger named
-with `encounter_table` or `idx_encounter_table`. An unversioned partial
-namespace, a recorded version-1 shape that differs from the exact current DDL,
-an adjacent retired owner object, or a newer owner version MUST fail without
-mutating rows, schema objects, or ledger state. Initialization failure MUST NOT
-fabricate a ledger entry. Until activation, unsupported development databases
-are reinitialized rather than migrated.
+Before the first released format, Encounter Table supports only the current
+whole-database development schema. Its initializer creates the complete target
+directly; there is no feature version, feature ledger, predecessor import,
+partial repair, copy/drop conversion, or backfill. Unsupported isolated
+development databases are reinitialized by the shared persistence lifecycle.
 
 
 ## References

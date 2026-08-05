@@ -61,6 +61,11 @@ function connectCoreNotifications(supervisor: CoreProcessSupervisor): void {
     for (const window of BrowserWindow.getAllWindows())
       window.webContents.send('references:index-changed', notice)
   })
+  supervisor.onHexChanged((notice) => {
+    for (const window of BrowserWindow.getAllWindows())
+      if (!isReadOnlyWindow(window.webContents))
+        window.webContents.send('hex:changed', notice)
+  })
 }
 
 export async function stopApplication(): Promise<void> {

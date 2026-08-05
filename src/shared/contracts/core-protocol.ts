@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { capabilityFailureSchema } from './campaign.js'
 import { sessionChangeNoticeSchema } from './session-change.js'
 import { referenceIndexChangeNoticeSchema } from './reference.js'
+import { hexChangeNoticeSchema } from './hex.js'
 import {
   coreOperations,
   isCoreOperationKind,
@@ -81,6 +82,12 @@ export const coreEventSchema = z.discriminatedUnion('kind', [
     .object({
       kind: z.literal('reference.changed'),
       notice: referenceIndexChangeNoticeSchema
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('hex.changed'),
+      notice: hexChangeNoticeSchema
     })
     .strict()
 ])

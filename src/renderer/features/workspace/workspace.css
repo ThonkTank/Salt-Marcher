@@ -136,3 +136,29 @@
   margin: var(--space-4) 0;
   font-family: var(--font-display);
 }
+@media (max-width: 700px) {
+  .work-area {
+    padding: 1rem;
+  }
+}
+.session-work-area {
+  display: flex;
+  overflow: hidden;
+  padding: 0;
+}
+
+.workspace-load-state {
+  display: grid;
+  width: 100%;
+  max-width: none;
+  min-height: 100%;
+  flex: 1;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-5);
+  text-align: center;
+}
+
+.workspace-load-state > * {
+  margin: 0;
+}

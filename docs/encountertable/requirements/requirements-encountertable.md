@@ -29,6 +29,11 @@ as candidate sources for Scene-group generation.
   that shared manager
 - a faction may open the same table manager above its own editor; saving a new
   table returns to the unchanged faction draft and selects the new table
+- the title-bar close button, Escape, and `Abbrechen` use the same close
+  request; a clean draft closes immediately and a changed draft first opens an
+  accessible discard confirmation above the manager
+- while saving, repeated saves and close requests cannot start competing
+  writes or dismiss an operation whose result is still unknown
 - selecting no effective encounter tables means the generator visibly falls
   back to the normal monster catalog source and current creature filters
 - selecting one or more encounter tables means generation uses only creatures
@@ -48,6 +53,11 @@ as candidate sources for Scene-group generation.
 - table selection does not create or persist encounter state
 - an effective empty table or a table emptied by filters produces a clear
   no-solution result, not a catalog fallback
+- closing a dirty manager by title-bar button, Escape, or `Abbrechen` never
+  loses changes without the same explicit discard confirmation
+- when the manager is opened from a faction editor, only the top discard
+  confirmation is interactive; dismissing it restores focus to the unchanged
+  table manager, and closing that manager restores the unchanged faction draft
 
 ## References
 

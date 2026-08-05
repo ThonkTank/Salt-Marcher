@@ -3,7 +3,7 @@ import { rendererCapabilityApi } from '../../capabilities/renderer-capability-ap
 
 export type CatalogCapabilities = Pick<
   SaltMarcherApi,
-  'creatures' | 'encounterTables' | 'factions' | 'locations' | 'session'
+  'factions' | 'locations' | 'session'
 >
 
 /** Narrow feature adapter; Catalog owns all access to its preload groups. */

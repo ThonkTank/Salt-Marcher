@@ -45,15 +45,30 @@ locations without inventing a second place or map source of truth.
   flexible controls child, Hex rendering in `COCKPIT_MAIN`, and edit details in
   `COCKPIT_STATE`
 - maps MUST grow without a coordinate boundary; panning loads bounded viewport
-  windows while only authored terrain overrides and markers are persisted
+  windows while only authored tiles, terrain overrides, and markers are persisted
+- the empty axial guide grid MUST remain a renderer affordance; a new map has no
+  authored tiles and MUST NOT appear as a pre-filled terrain diamond
 - the editor MUST support a selection tool for tile inspection
 - the editor MUST support a terrain-paint tool
+- terrain painting MUST support continuous pointer strokes and a hexagonal
+  brush radius from `0` through `10`
+- stroke path and radius MUST be validated and expanded by one shared canonical
+  axial-geometry implementation used by preview and committed commands
+- the editor MUST provide an eraser with the same stroke and radius mechanics
+- painting or erasing MUST patch affected chunks without recreating the canvas
+  or resetting its camera
 - the active terrain type MUST be visible while painting
 - `Katalog → Orte → Platzieren` MUST open a map chooser and Hex placement view
+- the Hex editor MUST also provide a location-placement tool that selects one
+  existing World Planner location and confirms its target authored tile
 - one World Planner location MUST be placed globally at most once and one Hex
   MUST carry at most one World Planner location
 - moving a placement MUST retain the World Planner location identity
 - deleting the World Planner location MUST remove its placement atomically
+- erasing tiles that carry locations, Party positions, or stored routes MUST
+  show those references and require confirmation; confirmation removes the
+  placements, aborts affected routes, and clears erased Party positions without
+  deleting World Planner locations or Party members
 - placement feedback MUST be visible on the owning tile
 - tile inspection MUST surface visible details for at least position, terrain,
   elevation, biome, exploration state, and notes when those values are
@@ -61,8 +76,17 @@ locations without inventing a second place or map source of truth.
 - tile inspection MUST expose markers owned by the selected tile when markers
   are present
 - paint feedback MUST be visible on the map surface
+- middle-pointer panning, zoom, resize, chunk reads, and content patches MUST
+  preserve camera state; only map changes or explicit reset may recenter it
+- the map canvas MUST NOT cover the map with visible coordinate inputs or a
+  paged facts window
 - failed save operations MUST surface a visible failure outcome instead of
   silently discarding the edit
+- the editor MUST expose persistent per-map Undo and Redo for the latest twenty
+  terrain, erase, and location-placement changes; Undo restores map truth only
+  and does not restore cleaned Party positions or aborted Journeys
+- external Hex change notices MUST invalidate only the changed chunks without
+  treating every cached chunk as current at the new map revision
 
 ## Supported Terrain Palette
 
@@ -86,8 +110,10 @@ map truth.
   immediately see it as an editable sparse map centered on axial `0,0`.
 - The user can select a tile and inspect visible tile details.
 - The user can paint terrain and see the changed terrain on the map.
+- The user can drag continuous paint and erase strokes at radius `0..10` while
+  the camera stays in place.
 - The user can place, move, reveal, and remove an existing World Planner
-  location from its Catalog detail.
+  location from its Catalog detail or directly in the Hex editor.
 - Save failure produces a visible error outcome.
 - The visible Hex map surface remains available below the controls because the
   map catalog and compact controls share the shell stack layout used by Dungeon

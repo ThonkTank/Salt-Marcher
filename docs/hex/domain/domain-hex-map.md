@@ -21,13 +21,15 @@ overworld travel readback when the party location points at a Hex map.
 
 - `HexMap` is the aggregate root for one authored map.
 - `HexTile` is the authored coordinate inside one map.
-- `HexTerrainOverride` records the authored terrain chosen for one tile when
-  the tile differs from default generation or empty-map state.
+- `HexTerrainOverride` records the authored terrain chosen for one existing
+  tile when it differs from the tile default of Grassland.
 - `HexLocationPlacement` links one foreign World Planner location identity to
   exactly one tile without copying its name or notes.
 - `HexJourney` owns one Scene-scoped runtime route, checkpoint, status, and
   presentation multiplier. Party continues to own character positions and
   Scene owns in-world time.
+- `HexEditHistory` owns the latest twenty applied or undone content commands
+  per map. It restores only Hex tiles, terrain, and location placements.
 
 ## Domain Vocabulary
 
@@ -35,8 +37,9 @@ overworld travel readback when the party location points at a Hex map.
 
 A Hex map has a stable identity and a required display name. Its axial
 coordinate space is intentionally unbounded. Reads request a bounded viewport;
-the map persists only sparse authored overrides and markers, never an eagerly
-materialized infinite grid.
+the map persists only sparse authored tiles, overrides, and markers. Empty
+coordinates remain outside the authored map even when the renderer draws an
+unbounded guide grid over them.
 
 ### Tile
 
@@ -51,8 +54,9 @@ coordinate is valid; malformed tile IDs do not become active travel positions.
 
 ### Terrain
 
-Terrain is authored per tile only when the editor stores an override. Maps store
-stable terrain IDs. A typed read-only V1 catalog resolves label, color,
+Every authored tile resolves to a terrain. Grassland is the default for an
+authored tile and requires no terrain-override row; an absent tile is not
+implicit Grassland. Maps store stable terrain IDs. A typed read-only V1 catalog resolves label, color,
 passability, and travel cost; later Terrain Catalog CRUD can replace that
 provider without rewriting map rows.
 
@@ -69,6 +73,8 @@ own at most one placement.
 - A Hex tile MUST reference an existing Hex map.
 - A viewport read MUST be bounded even though map coordinates are not.
 - A terrain override MUST reference exactly one valid Hex tile.
+- Party placement, World Planner location placement, and journey routes MUST
+  reference authored tiles rather than empty axial coordinates.
 - A placement MUST reference exactly one valid Hex tile and one World Planner
   location identity.
 - map rows MUST NOT copy World Planner location display facts.
@@ -76,6 +82,8 @@ own at most one placement.
   currently passable Hexes.
 - Hex runtime readback MAY interpret party-owned overworld travel positions as
   Hex coordinates only through the Hex stable tile-id convention.
+- undoing an erase MUST NOT reopen an aborted Journey or restore a Party
+  position cleared by the original command.
 
 ## References
 

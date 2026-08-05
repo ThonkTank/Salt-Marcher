@@ -71,22 +71,27 @@ import {
   worldFactionSnapshotSchema
 } from './encounter-source.js'
 import {
+  applyHexBrushStrokeInputSchema,
   createHexMapInputSchema,
   evaluateHexRouteInputSchema,
+  editHexLocationInputSchema,
   hexChunkReadResultSchema,
-  hexChunkSnapshotSchema,
+  hexBrushStrokeResultSchema,
   hexLocationPlacementReferenceSchema,
   hexMapCatalogSnapshotSchema,
-  hexMapSummarySchema,
   hexRouteEvaluationSchema,
   hexTerrainCatalogSchema,
   hexTravelSnapshotSchema,
+  hexHistoryStateSchema,
+  hexCommandIdInputSchema,
+  hexEditorBootstrapSchema,
+  hexMapIdInputSchema,
+  hexRuntimeOverlayProjectionSchema,
+  mutateHexHistoryInputSchema,
   mutateHexTravelInputSchema,
-  paintHexTerrainInputSchema,
-  placeHexLocationInputSchema,
   positionHexPartyInputSchema,
   readHexChunksInputSchema,
-  removeHexLocationInputSchema,
+  unplaceHexLocationInputSchema,
   setHexTravelMultiplierInputSchema,
   startHexTravelInputSchema,
   updateHexMapInputSchema
@@ -444,6 +449,11 @@ export const coreOperations = {
     none,
     hexTerrainCatalogSchema
   ),
+  'hex.editorBootstrap': read(
+    'hex:editorBootstrap',
+    none,
+    hexEditorBootstrapSchema
+  ),
   'hex.catalog': read('hex:catalog', none, hexMapCatalogSnapshotSchema),
   'hex.locateLocation': read(
     'hex:locateLocation',
@@ -458,27 +468,52 @@ export const coreOperations = {
   'hex.create': write(
     'hex:create',
     createHexMapInputSchema,
-    hexMapSummarySchema
+    hexBrushStrokeResultSchema
   ),
   'hex.update': write(
     'hex:update',
     updateHexMapInputSchema,
-    hexMapSummarySchema
+    hexBrushStrokeResultSchema
   ),
-  'hex.paint': write(
-    'hex:paint',
-    paintHexTerrainInputSchema,
-    hexChunkSnapshotSchema
+  'hex.applyBrushStroke': write(
+    'hex:applyBrushStroke',
+    applyHexBrushStrokeInputSchema,
+    hexBrushStrokeResultSchema
+  ),
+  'hex.history': read(
+    'hex:history',
+    hexMapIdInputSchema,
+    hexHistoryStateSchema
+  ),
+  'hex.undo': write(
+    'hex:undo',
+    mutateHexHistoryInputSchema,
+    hexBrushStrokeResultSchema
+  ),
+  'hex.redo': write(
+    'hex:redo',
+    mutateHexHistoryInputSchema,
+    hexBrushStrokeResultSchema
+  ),
+  'hex.commandReceipt': read(
+    'hex:commandReceipt',
+    hexCommandIdInputSchema,
+    hexBrushStrokeResultSchema.nullable()
+  ),
+  'hex.runtimeOverlays': read(
+    'hex:runtimeOverlays',
+    hexMapIdInputSchema,
+    hexRuntimeOverlayProjectionSchema
   ),
   'hex.placeLocation': write(
     'hex:placeLocation',
-    placeHexLocationInputSchema,
-    hexChunkReadResultSchema
+    editHexLocationInputSchema,
+    hexBrushStrokeResultSchema
   ),
   'hex.removeLocation': write(
     'hex:removeLocation',
-    removeHexLocationInputSchema,
-    hexChunkReadResultSchema
+    unplaceHexLocationInputSchema,
+    hexBrushStrokeResultSchema
   ),
   'hexTravel.read': read('hex-travel:read', sceneId, hexTravelSnapshotSchema),
   'hexTravel.evaluate': read(

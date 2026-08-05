@@ -91,7 +91,7 @@ export function ScenePartyCard(props: {
           </header>
           <p className="panel-hint">{message('party.sceneManageHint')}</p>
           {activeMembers.length === 0 ? (
-            <p className="empty-state">
+            <p className="session-empty-state">
               {message('ui.keine.aktiven.mitglieder')}
             </p>
           ) : (

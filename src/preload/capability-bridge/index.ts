@@ -46,8 +46,12 @@ import {
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import type { SaltMarcherApi } from '../../shared/contracts/capability-api.js'
 import {
+  coreOperations,
   mainOperationForChannel,
-  operationForChannel
+  operationForChannel,
+  type CoreOperationInput,
+  type CoreOperationKind,
+  type CoreOperationOutput
 } from '../../shared/contracts/operations.js'
 import {
   assignScenePartyInputSchema,
@@ -89,27 +93,7 @@ import {
   updateWorldFactionInputSchema,
   worldFactionSnapshotSchema
 } from '../../shared/contracts/encounter-source.js'
-import {
-  createHexMapInputSchema,
-  evaluateHexRouteInputSchema,
-  hexChunkReadResultSchema,
-  hexChunkSnapshotSchema,
-  hexMapCatalogSnapshotSchema,
-  hexLocationPlacementReferenceSchema,
-  hexMapSummarySchema,
-  hexRouteEvaluationSchema,
-  hexTerrainCatalogSchema,
-  hexTravelSnapshotSchema,
-  mutateHexTravelInputSchema,
-  paintHexTerrainInputSchema,
-  placeHexLocationInputSchema,
-  positionHexPartyInputSchema,
-  readHexChunksInputSchema,
-  removeHexLocationInputSchema,
-  setHexTravelMultiplierInputSchema,
-  startHexTravelInputSchema,
-  updateHexMapInputSchema
-} from '../../shared/contracts/hex.js'
+import { hexChangeNoticeSchema } from '../../shared/contracts/hex.js'
 import {
   referenceCampaignIndexInputSchema,
   referenceDocumentSchema,
@@ -144,6 +128,39 @@ async function invoke<T>(
     const value = schema.safeParse(result.payload)
     if (!value.success) throw new CapabilityError('protocol_violation', false)
     return value.data!
+  } catch (error) {
+    if (error instanceof CapabilityError) throw error
+    throw new CapabilityError('core_unavailable', true)
+  }
+}
+
+async function invokeCore<K extends CoreOperationKind>(
+  kind: K,
+  input: CoreOperationInput<K>
+): Promise<CoreOperationOutput<K>> {
+  const operation = coreOperations[kind]
+  if (operation.channel === null)
+    throw new CapabilityError('protocol_violation', false)
+  const request = operation.input.safeParse(input)
+  if (!request.success) throw new CapabilityError('validation_failed', false)
+  try {
+    const raw: unknown = await ipcRenderer.invoke(
+      operation.channel,
+      request.data
+    )
+    const result = z
+      .discriminatedUnion('ok', [
+        z.object({ ok: z.literal(true), payload: z.unknown() }).passthrough(),
+        z
+          .object({ ok: z.literal(false), error: capabilityFailureSchema })
+          .passthrough()
+      ])
+      .parse(raw)
+    if (!result.ok)
+      throw new CapabilityError(result.error.code, result.error.retryable)
+    const value = operation.output.safeParse(result.payload)
+    if (!value.success) throw new CapabilityError('protocol_violation', false)
+    return value.data as CoreOperationOutput<K>
   } catch (error) {
     if (error instanceof CapabilityError) throw error
     throw new CapabilityError('core_unavailable', true)
@@ -451,156 +468,78 @@ const api: SaltMarcherApi = {
       )
   },
   hex: {
+    editorBootstrap: () => invokeCore('hex.editorBootstrap', undefined),
     terrainCatalog: async () =>
-      freezeDeep(
-        await invoke('hex:terrainCatalog', undefined, hexTerrainCatalogSchema)
-      ),
-    catalog: async () =>
-      freezeDeep(
-        await invoke('hex:catalog', undefined, hexMapCatalogSnapshotSchema)
-      ),
+      freezeDeep(await invokeCore('hex.terrainCatalog', undefined)),
+    catalog: async () => freezeDeep(await invokeCore('hex.catalog', undefined)),
     locateLocation: (locationId) =>
-      invoke(
-        'hex:locateLocation',
-        { locationId },
-        hexLocationPlacementReferenceSchema
-      ),
+      invokeCore('hex.locateLocation', { locationId }),
     readChunks: async (mapId, keys) =>
       freezeDeep(
-        await invoke(
-          'hex:readChunks',
-          readHexChunksInputSchema.parse({ mapId, keys }),
-          hexChunkReadResultSchema
-        )
+        await invokeCore('hex.readChunks', { mapId, keys: [...keys] })
       ),
-    create: async (displayName, expectedCatalogRevision) =>
-      freezeDeep(
-        await invoke(
-          'hex:create',
-          createHexMapInputSchema.parse({
-            displayName,
-            expectedCatalogRevision
-          }),
-          hexMapSummarySchema
-        )
-      ),
-    updateMetadata: async (mapId, displayName, expectedMetadataRevision) =>
-      freezeDeep(
-        await invoke(
-          'hex:update',
-          updateHexMapInputSchema.parse({
-            mapId,
-            displayName,
-            expectedMetadataRevision
-          }),
-          hexMapSummarySchema
-        )
-      ),
-    paint: async (mapId, coordinate, terrainId, expectedChunkRevision) =>
-      freezeDeep(
-        await invoke(
-          'hex:paint',
-          paintHexTerrainInputSchema.parse({
-            mapId,
-            coordinate,
-            terrainId,
-            expectedChunkRevision
-          }),
-          hexChunkSnapshotSchema
-        )
-      ),
-    placeLocation: async (mapId, locationId, coordinate, expectedRevision) =>
-      freezeDeep(
-        await invoke(
-          'hex:placeLocation',
-          placeHexLocationInputSchema.parse({
-            mapId,
-            locationId,
-            coordinate,
-            expectedContentRevision: expectedRevision
-          }),
-          hexChunkReadResultSchema
-        )
-      ),
-    removeLocation: async (mapId, locationId, expectedContentRevision) =>
-      freezeDeep(
-        await invoke(
-          'hex:removeLocation',
-          removeHexLocationInputSchema.parse({
-            mapId,
-            locationId,
-            expectedContentRevision
-          }),
-          hexChunkReadResultSchema
-        )
-      )
+    create: async (input) => freezeDeep(await invokeCore('hex.create', input)),
+    updateMetadata: async (input) =>
+      freezeDeep(await invokeCore('hex.update', input)),
+    applyBrushStroke: async (input) =>
+      freezeDeep(await invokeCore('hex.applyBrushStroke', input)),
+    history: (mapId) => invokeCore('hex.history', { mapId }),
+    undo: (input) => invokeCore('hex.undo', input),
+    redo: (input) => invokeCore('hex.redo', input),
+    commandReceipt: (commandId) =>
+      invokeCore('hex.commandReceipt', { commandId }),
+    runtimeOverlays: (mapId) => invokeCore('hex.runtimeOverlays', { mapId }),
+    onChanged(listener) {
+      const handler = (_event: Electron.IpcRendererEvent, raw: unknown) =>
+        listener(freezeDeep(hexChangeNoticeSchema.parse(raw)))
+      ipcRenderer.on('hex:changed', handler)
+      return () => ipcRenderer.removeListener('hex:changed', handler)
+    },
+    placeLocation: async (input) =>
+      freezeDeep(await invokeCore('hex.placeLocation', input)),
+    removeLocation: async (input) =>
+      freezeDeep(await invokeCore('hex.removeLocation', input))
   },
   hexTravel: {
     read: async (sceneId) =>
-      freezeDeep(
-        await invoke('hex-travel:read', { sceneId }, hexTravelSnapshotSchema)
-      ),
+      freezeDeep(await invokeCore('hexTravel.read', { sceneId })),
     evaluate: (sceneId, mapId, waypoints) =>
-      invoke(
-        'hex-travel:evaluate',
-        evaluateHexRouteInputSchema.parse({ sceneId, mapId, waypoints }),
-        hexRouteEvaluationSchema
-      ),
+      invokeCore('hexTravel.evaluate', {
+        sceneId,
+        mapId,
+        waypoints: [...waypoints]
+      }),
     position: async (sceneId, mapId, coordinate, expectedSceneRevision) =>
       freezeDeep(
-        await invoke(
-          'hex-travel:position',
-          positionHexPartyInputSchema.parse({
-            sceneId,
-            mapId,
-            coordinate,
-            expectedSceneRevision
-          }),
-          hexTravelSnapshotSchema
-        )
+        await invokeCore('hexTravel.position', {
+          sceneId,
+          mapId,
+          coordinate,
+          expectedSceneRevision
+        })
       ),
     start: async (sceneId, mapId, waypoints, multiplier, expectedRevision) =>
       freezeDeep(
-        await invoke(
-          'hex-travel:start',
-          startHexTravelInputSchema.parse({
-            sceneId,
-            mapId,
-            waypoints,
-            multiplier,
-            expectedRevision
-          }),
-          hexTravelSnapshotSchema
-        )
-      ),
-    pause: (sceneId, expectedRevision) =>
-      invoke(
-        'hex-travel:pause',
-        mutateHexTravelInputSchema.parse({ sceneId, expectedRevision }),
-        hexTravelSnapshotSchema
-      ),
-    resume: (sceneId, expectedRevision) =>
-      invoke(
-        'hex-travel:resume',
-        mutateHexTravelInputSchema.parse({ sceneId, expectedRevision }),
-        hexTravelSnapshotSchema
-      ),
-    abort: (sceneId, expectedRevision) =>
-      invoke(
-        'hex-travel:abort',
-        mutateHexTravelInputSchema.parse({ sceneId, expectedRevision }),
-        hexTravelSnapshotSchema
-      ),
-    setMultiplier: (sceneId, multiplier, expectedRevision) =>
-      invoke(
-        'hex-travel:setMultiplier',
-        setHexTravelMultiplierInputSchema.parse({
+        await invokeCore('hexTravel.start', {
           sceneId,
+          mapId,
+          waypoints: [...waypoints],
           multiplier,
           expectedRevision
-        }),
-        hexTravelSnapshotSchema
-      )
+        })
+      ),
+    pause: (sceneId, expectedRevision) =>
+      invokeCore('hexTravel.pause', { sceneId, expectedRevision }),
+    resume: (sceneId, expectedRevision) =>
+      invokeCore('hexTravel.resume', { sceneId, expectedRevision }),
+    abort: (sceneId, expectedRevision) =>
+      invokeCore('hexTravel.abort', { sceneId, expectedRevision }),
+    setMultiplier: (sceneId, multiplier, expectedRevision) =>
+      invokeCore('hexTravel.setMultiplier', {
+        sceneId,
+        multiplier,
+        expectedRevision
+      })
   },
   session: {
     read: () => live('session:read', undefined),

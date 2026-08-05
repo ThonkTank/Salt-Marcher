@@ -1,18 +1,61 @@
 import { message } from '../../i18n/messages.de.js'
-// Installs Pixi's static CSP-safe shader and uniform synchronizers. Despite the
-// package name, this keeps `unsafe-eval` disabled rather than enabling it.
+// Installs Pixi's static CSP-safe shader and uniform synchronizers.
 import 'pixi.js/unsafe-eval'
 import { Application, Container, Graphics, Text } from 'pixi.js'
-import { useEffect, useRef, useState, type ReactElement } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type ReactElement
+} from 'react'
 import type {
   AxialCoordinate,
   HexMapView,
-  HexTerrainCatalog
+  HexTerrainCatalog,
+  HexTerrainId
 } from '../../../shared/contracts/hex.js'
+import { hexChunkKeyFor } from '../../../shared/hex/axial-geometry.js'
+import { expandHexBrush } from './hex-brush.js'
 
 const rootThree = Math.sqrt(3)
+const hexSize = 27
+const HEX_CHUNK_MARGIN = 32
+type TravelOverlay = Readonly<{
+  id: string
+  label: string
+  token: AxialCoordinate | null
+  route: readonly AxialCoordinate[]
+  focused?: boolean
+}>
 
-function center(coordinate: AxialCoordinate, size: number) {
+type CanvasState = {
+  application: Application
+  world: Container
+  element: HTMLDivElement
+  mapId: string
+  cameraByMap: Map<string, Readonly<{ x: number; y: number; scale: number }>>
+  destroyed: boolean
+  chunks: Map<
+    string,
+    Readonly<{
+      signature: string
+      terrain: Container
+      markers: Container
+    }>
+  >
+  layers: Readonly<{
+    grid: Container
+    terrain: Container
+    markers: Container
+    overlays: Container
+    preview: Container
+    selection: Container
+  }>
+}
+
+function center(coordinate: AxialCoordinate, size = hexSize) {
   return {
     x: size * rootThree * (coordinate.q + coordinate.r / 2),
     y: size * 1.5 * coordinate.r
@@ -26,7 +69,7 @@ function polygon(x: number, y: number, size: number): number[] {
   }).flat()
 }
 
-function pixelToAxial(x: number, y: number, size: number): AxialCoordinate {
+function pixelToAxial(x: number, y: number, size = hexSize): AxialCoordinate {
   const q = ((rootThree / 3) * x - y / 3) / size
   const r = ((2 / 3) * y) / size
   const cube = { x: q, z: r, y: -q - r }
@@ -41,56 +84,282 @@ function pixelToAxial(x: number, y: number, size: number): AxialCoordinate {
   return { q: rx, r: rz }
 }
 
+function coordinateId(coordinate: AxialCoordinate) {
+  return `${coordinate.q}:${coordinate.r}`
+}
+
+function chunkId(coordinate: AxialCoordinate) {
+  const key = hexChunkKeyFor(coordinate)
+  return `${key.q}:${key.r}`
+}
+
 export function HexMapCanvas(props: {
   snapshot: HexMapView
   terrains: HexTerrainCatalog
   selected: AxialCoordinate | null
   token?: AxialCoordinate | null
   route?: readonly AxialCoordinate[]
+  overlays?: readonly TravelOverlay[]
+  interaction?: 'select' | 'paint' | 'erase' | 'location'
+  brushRadius?: number
+  brushTerrainId?: HexTerrainId
+  resetViewSignal?: number
   onTileClick?: (coordinate: AxialCoordinate) => void
-  onViewportChange?: (center: AxialCoordinate) => void
+  onStrokeComplete?: (path: readonly AxialCoordinate[]) => void
+  onViewportChange?: (center: AxialCoordinate, halfExtent: number) => void
   ariaLabel: string
 }): ReactElement {
   const host = useRef<HTMLDivElement>(null)
+  const state = useRef<CanvasState | null>(null)
+  const latest = useRef(props)
+  const previewRef = useRef<readonly AxialCoordinate[]>([])
+  const cameraMemory = useRef(
+    new Map<string, Readonly<{ x: number; y: number; scale: number }>>()
+  )
   const [renderError, setRenderError] = useState(false)
   const [renderAttempt, setRenderAttempt] = useState(0)
-  const [directQ, setDirectQ] = useState(props.selected?.q ?? 0)
-  const [directR, setDirectR] = useState(props.selected?.r ?? 0)
-  const [factPage, setFactPage] = useState(0)
-  const click = useRef(props.onTileClick)
-  const viewportChange = useRef(props.onViewportChange)
   useEffect(() => {
-    click.current = props.onTileClick
-  }, [props.onTileClick])
-  useEffect(() => {
-    viewportChange.current = props.onViewportChange
-  }, [props.onViewportChange])
+    latest.current = props
+  }, [props])
+
+  const clearLayer = useCallback((layer: Container) => {
+    for (const child of layer.removeChildren())
+      child.destroy({ children: true })
+  }, [])
+
+  const redrawGrid = useCallback(() => {
+    const current = state.current
+    if (!current || current.destroyed) return
+    const { world, element, layers } = current
+    clearLayer(layers.grid)
+    const localCenter = viewportCenter(current)
+    const spanQ =
+      Math.ceil(
+        element.clientWidth / (hexSize * rootThree * world.scale.x) / 2
+      ) + 3
+    const spanR =
+      Math.ceil(element.clientHeight / (hexSize * 1.5 * world.scale.y) / 2) + 3
+    const grid = new Graphics()
+    for (let q = localCenter.q - spanQ; q <= localCenter.q + spanQ; q += 1)
+      for (let r = localCenter.r - spanR; r <= localCenter.r + spanR; r += 1) {
+        const point = center({ q, r })
+        grid
+          .poly(polygon(point.x, point.y, hexSize - 1))
+          .stroke({ width: 1, color: '#263d38', alpha: 0.45 })
+      }
+    layers.grid.addChild(grid)
+  }, [clearLayer])
+
+  const redrawTransientLayers = useCallback(() => {
+    const current = state.current
+    if (!current || current.destroyed) return
+    const currentProps = latest.current
+    const { layers } = current
+    clearLayer(layers.preview)
+    clearLayer(layers.selection)
+    const byTerrain = new Map(
+      currentProps.terrains.terrains.map((terrain) => [terrain.id, terrain])
+    )
+    const radius = currentProps.brushRadius ?? 0
+    if (previewRef.current.length > 0) {
+      const preview = new Graphics()
+      for (const coordinate of expandHexBrush(previewRef.current, radius) ??
+        []) {
+        const point = center(coordinate)
+        preview.poly(polygon(point.x, point.y, hexSize - 3)).fill({
+          color:
+            currentProps.interaction === 'erase'
+              ? '#d6594c'
+              : (byTerrain.get(currentProps.brushTerrainId ?? 'grassland')
+                  ?.color ?? '#ffffff'),
+          alpha: 0.35
+        })
+      }
+      layers.preview.addChild(preview)
+    }
+    if (currentProps.selected) {
+      const point = center(currentProps.selected)
+      const selection = new Graphics()
+      selection
+        .poly(polygon(point.x, point.y, hexSize - 2))
+        .stroke({ width: 4, color: '#ffffff' })
+      layers.selection.addChild(selection)
+    }
+  }, [clearLayer])
+
+  const redraw = useCallback(() => {
+    const current = state.current
+    if (!current || current.destroyed) return
+    const currentProps = latest.current
+    const { layers } = current
+    clearLayer(layers.overlays)
+    redrawGrid()
+    const byTerrain = new Map(
+      currentProps.terrains.terrains.map((terrain) => [terrain.id, terrain])
+    )
+    const byChunk = new Map<string, HexMapView['tiles'][number][]>()
+    for (const tile of currentProps.snapshot.tiles) {
+      const id = chunkId(tile)
+      const chunk = byChunk.get(id) ?? []
+      chunk.push(tile)
+      byChunk.set(id, chunk)
+    }
+    for (const [id, drawing] of current.chunks)
+      if (!byChunk.has(id)) {
+        layers.terrain.removeChild(drawing.terrain)
+        layers.markers.removeChild(drawing.markers)
+        drawing.terrain.destroy({ children: true })
+        drawing.markers.destroy({ children: true })
+        current.chunks.delete(id)
+      }
+    for (const [id, chunk] of byChunk) {
+      chunk.sort((left, right) => left.q - right.q || left.r - right.r)
+      const signature = chunk
+        .map((tile) => {
+          const terrain = byTerrain.get(tile.terrainId)
+          return `${tile.q}:${tile.r}:${tile.terrainId}:${terrain?.color ?? ''}:${tile.location?.locationId ?? ''}:${tile.location?.displayName ?? ''}`
+        })
+        .join('|')
+      if (current.chunks.get(id)?.signature === signature) continue
+      const previous = current.chunks.get(id)
+      if (previous) {
+        layers.terrain.removeChild(previous.terrain)
+        layers.markers.removeChild(previous.markers)
+        previous.terrain.destroy({ children: true })
+        previous.markers.destroy({ children: true })
+      }
+      const terrainContainer = new Container()
+      const markerContainer = new Container()
+      const graphics = new Graphics()
+      for (const tile of chunk) {
+        const point = center(tile)
+        const terrain = byTerrain.get(tile.terrainId)
+        if (terrain) {
+          graphics
+            .poly(polygon(point.x, point.y, hexSize - 1))
+            .fill(terrain.color)
+          graphics.stroke({ width: 1, color: '#263d38', alpha: 0.9 })
+        }
+        if (!tile.location) continue
+        const marker = new Graphics()
+        marker.circle(point.x, point.y, 7).fill('#f3d38a')
+        marker.stroke({ width: 2, color: '#3e2f1e' })
+        markerContainer.addChild(marker)
+        const label = new Text({
+          text: tile.location.displayName,
+          style: { fontSize: 12, fill: '#fff4d1' }
+        })
+        label.position.set(point.x + 10, point.y - 18)
+        markerContainer.addChild(label)
+      }
+      terrainContainer.addChild(graphics)
+      layers.terrain.addChild(terrainContainer)
+      layers.markers.addChild(markerContainer)
+      current.chunks.set(id, {
+        signature,
+        terrain: terrainContainer,
+        markers: markerContainer
+      })
+    }
+
+    const overlays = [
+      ...(currentProps.overlays ?? []),
+      ...(currentProps.token || currentProps.route
+        ? [
+            {
+              id: 'primary',
+              label: '',
+              token: currentProps.token ?? null,
+              route: currentProps.route ?? [],
+              focused: true
+            }
+          ]
+        : [])
+    ]
+    overlays.forEach((overlay, index) => {
+      if (overlay.route.length > 1) {
+        const route = new Graphics()
+        const first = center(overlay.route[0]!)
+        route.moveTo(first.x, first.y)
+        for (const coordinate of overlay.route.slice(1)) {
+          const point = center(coordinate)
+          route.lineTo(point.x, point.y)
+        }
+        route.stroke({
+          width: overlay.focused ? 5 : 3,
+          color: overlay.focused ? '#f2cc70' : '#89b8c2',
+          alpha: 0.85
+        })
+        layers.overlays.addChild(route)
+      }
+      if (overlay.token) {
+        const point = center(overlay.token)
+        const token = new Graphics()
+        token
+          .circle(point.x, point.y, overlay.focused ? 11 : 8)
+          .fill(overlay.focused ? '#d6594c' : '#4f96a6')
+        token.circle(point.x, point.y, 4).fill('#fff4e8')
+        token.stroke({ width: 2, color: '#421c19' })
+        layers.overlays.addChild(token)
+        if (overlay.label) {
+          const label = new Text({
+            text: overlay.label,
+            style: { fontSize: 11, fill: '#fff4d1' }
+          })
+          label.position.set(point.x + 12, point.y + index * 12)
+          layers.overlays.addChild(label)
+        }
+      }
+    })
+
+    redrawTransientLayers()
+  }, [clearLayer, redrawGrid, redrawTransientLayers])
 
   useEffect(() => {
     const element = host.current
     if (!element) return
     setRenderError(false)
     const application = new Application()
-    let disposed = false
-    let initialized = false
-    let destroyed = false
-    let dragging = false
-    let last = { x: 0, y: 0 }
-    const size = 27
     const world = new Container()
-    const byTerrain = new Map(
-      props.terrains.terrains.map((terrain) => [terrain.id, terrain])
-    )
+    const layers = {
+      grid: new Container(),
+      terrain: new Container(),
+      markers: new Container(),
+      overlays: new Container(),
+      preview: new Container(),
+      selection: new Container()
+    }
+    let disposed = false
+    let dragging = false
+    let stroking = false
+    let last = { x: 0, y: 0 }
+    let stroke: AxialCoordinate[] = []
+    let resizeObserver: ResizeObserver | null = null
+    let lastViewportNotice = 0
+
+    const notifyViewport = () => {
+      const current = state.current
+      if (!current) return
+      const now = performance.now()
+      if (now - lastViewportNotice < 75) return
+      lastViewportNotice = now
+      redrawGrid()
+      const metrics = viewportMetrics(current)
+      latest.current.onViewportChange?.(metrics.center, metrics.halfExtent)
+    }
+
     const destroy = () => {
-      if (destroyed) return
-      destroyed = true
+      const current = state.current
+      if (!current || current.application !== application || current.destroyed)
+        return
+      current.destroyed = true
+      resizeObserver?.disconnect()
       try {
-        ;(application as Application & { cleanup?: () => void }).cleanup?.()
-        if (initialized) application.destroy(true, { children: true })
-        else application.stage.destroy({ children: true })
+        application.destroy(true, { children: true })
       } catch {
         // Renderer cleanup must never prevent navigation away from the map.
       }
+      state.current = null
     }
 
     void application
@@ -101,166 +370,296 @@ export function HexMapCanvas(props: {
         preference: 'webgl'
       })
       .then(() => {
-        initialized = true
         if (disposed) {
-          destroy()
+          application.destroy(true, { children: true })
           return
         }
         element.append(application.canvas)
         application.stage.addChild(world)
-        const viewportCenter = center(props.snapshot.center, size)
-        world.position.set(
-          element.clientWidth / 2 - viewportCenter.x,
-          element.clientHeight / 2 - viewportCenter.y
+        world.addChild(
+          layers.grid,
+          layers.terrain,
+          layers.markers,
+          layers.overlays,
+          layers.preview,
+          layers.selection
         )
-
-        const tiles = new Graphics()
-        for (const tile of props.snapshot.tiles) {
-          const point = center(tile, size)
-          const terrain = byTerrain.get(tile.terrainId)!
-          tiles.poly(polygon(point.x, point.y, size - 1))
-          tiles.fill(terrain.color)
-          tiles.stroke({ width: 1, color: '#263d38', alpha: 0.9 })
+        state.current = {
+          application,
+          world,
+          element,
+          mapId: latest.current.snapshot.map.id,
+          cameraByMap: cameraMemory.current,
+          destroyed: false,
+          chunks: new Map(),
+          layers
         }
-        world.addChild(tiles)
-
-        if (props.route && props.route.length > 1) {
-          const route = new Graphics()
-          const first = center(props.route[0]!, size)
-          route.moveTo(first.x, first.y)
-          for (const coordinate of props.route.slice(1)) {
-            const point = center(coordinate, size)
-            route.lineTo(point.x, point.y)
-          }
-          route.stroke({ width: 5, color: '#f2cc70', alpha: 0.85 })
-          world.addChild(route)
-        }
-
-        for (const tile of props.snapshot.tiles.filter(
-          (tile) => tile.location
-        )) {
-          const point = center(tile, size)
-          const marker = new Graphics()
-          marker.circle(point.x, point.y, 7).fill('#f3d38a')
-          marker.stroke({ width: 2, color: '#3e2f1e' })
-          world.addChild(marker)
-          const label = new Text({
-            text: tile.location!.displayName,
-            style: { fontSize: 12, fill: '#fff4d1' }
-          })
-          label.position.set(point.x + 10, point.y - 18)
-          world.addChild(label)
-        }
-
-        if (props.selected) {
-          const point = center(props.selected, size)
-          const selection = new Graphics()
-          selection
-            .poly(polygon(point.x, point.y, size - 2))
-            .stroke({ width: 4, color: '#ffffff' })
-          world.addChild(selection)
-        }
-
-        if (props.token) {
-          const point = center(props.token, size)
-          const token = new Graphics()
-          token.circle(point.x, point.y, 11).fill('#d6594c')
-          token.circle(point.x, point.y, 4).fill('#fff4e8')
-          token.stroke({ width: 2, color: '#421c19' })
-          world.addChild(token)
-        }
+        resetCamera(state.current, { q: 0, r: 0 })
+        redraw()
 
         const canvas = application.canvas
+        const coordinateFor = (event: PointerEvent | MouseEvent) => {
+          const bounds = canvas.getBoundingClientRect()
+          return pixelToAxial(
+            (event.clientX - bounds.left - world.position.x) / world.scale.x,
+            (event.clientY - bounds.top - world.position.y) / world.scale.y
+          )
+        }
         const pointerDown = (event: PointerEvent) => {
-          if (event.button !== 1) return
-          dragging = true
-          last = { x: event.clientX, y: event.clientY }
-          event.preventDefault()
+          if (event.button === 1) {
+            dragging = true
+            last = { x: event.clientX, y: event.clientY }
+            canvas.setPointerCapture?.(event.pointerId)
+            event.preventDefault()
+            return
+          }
+          if (
+            event.button === 0 &&
+            (latest.current.interaction === 'paint' ||
+              latest.current.interaction === 'erase')
+          ) {
+            stroking = true
+            stroke = [coordinateFor(event)]
+            previewRef.current = stroke
+            redrawTransientLayers()
+            canvas.setPointerCapture?.(event.pointerId)
+            event.preventDefault()
+          }
         }
         const pointerMove = (event: PointerEvent) => {
-          if (!dragging) return
-          world.position.x += event.clientX - last.x
-          world.position.y += event.clientY - last.y
-          last = { x: event.clientX, y: event.clientY }
-        }
-        const pointerUp = () => {
-          if (dragging && viewportChange.current) {
-            const localX =
-              (element.clientWidth / 2 - world.position.x) / world.scale.x
-            const localY =
-              (element.clientHeight / 2 - world.position.y) / world.scale.y
-            const nextCenter = pixelToAxial(localX, localY, size)
-            if (
-              nextCenter.q !== props.snapshot.center.q ||
-              nextCenter.r !== props.snapshot.center.r
-            )
-              viewportChange.current(nextCenter)
+          if (dragging) {
+            world.position.x += event.clientX - last.x
+            world.position.y += event.clientY - last.y
+            last = { x: event.clientX, y: event.clientY }
+            rememberCamera(state.current!)
+            notifyViewport()
+            return
           }
-          dragging = false
+          if (!stroking) return
+          const coordinate = coordinateFor(event)
+          if (coordinateId(stroke.at(-1)!) === coordinateId(coordinate)) return
+          stroke = [...stroke, coordinate]
+          previewRef.current = stroke
+          redrawTransientLayers()
         }
-        const pointerClick = (event: MouseEvent) => {
-          if (event.button !== 0 || !click.current) return
-          const bounds = canvas.getBoundingClientRect()
-          const localX =
-            (event.clientX - bounds.left - world.position.x) / world.scale.x
-          const localY =
-            (event.clientY - bounds.top - world.position.y) / world.scale.y
-          const coordinate = pixelToAxial(localX, localY, size)
-          if (
-            props.snapshot.tiles.some(
-              (tile) => tile.q === coordinate.q && tile.r === coordinate.r
+        const pointerUp = (event: PointerEvent) => {
+          if (dragging) {
+            dragging = false
+            redrawGrid()
+            const metrics = viewportMetrics(state.current!)
+            latest.current.onViewportChange?.(
+              metrics.center,
+              metrics.halfExtent
             )
+          }
+          if (stroking) {
+            stroking = false
+            const completed = stroke
+            stroke = []
+            previewRef.current = []
+            redrawTransientLayers()
+            latest.current.onStrokeComplete?.(completed)
+          }
+          canvas.releasePointerCapture?.(event.pointerId)
+        }
+        const pointerCancel = (event: PointerEvent) => {
+          dragging = false
+          stroking = false
+          stroke = []
+          previewRef.current = []
+          redrawTransientLayers()
+          canvas.releasePointerCapture?.(event.pointerId)
+        }
+        const click = (event: MouseEvent) => {
+          if (
+            event.button !== 0 ||
+            latest.current.interaction === 'paint' ||
+            latest.current.interaction === 'erase'
           )
-            click.current(coordinate)
+            return
+          latest.current.onTileClick?.(coordinateFor(event))
         }
         const wheel = (event: WheelEvent) => {
           event.preventDefault()
+          const bounds = canvas.getBoundingClientRect()
+          const worldX =
+            (event.clientX - bounds.left - world.position.x) / world.scale.x
+          const worldY =
+            (event.clientY - bounds.top - world.position.y) / world.scale.y
           const next = Math.max(
             0.35,
             Math.min(2.5, world.scale.x * (event.deltaY > 0 ? 0.9 : 1.1))
           )
           world.scale.set(next)
+          world.position.set(
+            event.clientX - bounds.left - worldX * next,
+            event.clientY - bounds.top - worldY * next
+          )
+          redrawGrid()
+          rememberCamera(state.current!)
+          const metrics = viewportMetrics(state.current!)
+          latest.current.onViewportChange?.(metrics.center, metrics.halfExtent)
         }
         canvas.addEventListener('pointerdown', pointerDown)
-        window.addEventListener('pointermove', pointerMove)
-        window.addEventListener('pointerup', pointerUp)
-        canvas.addEventListener('click', pointerClick)
+        canvas.addEventListener('pointermove', pointerMove)
+        canvas.addEventListener('pointerup', pointerUp)
+        canvas.addEventListener('pointercancel', pointerCancel)
+        canvas.addEventListener('lostpointercapture', pointerCancel)
+        canvas.addEventListener('click', click)
         canvas.addEventListener('wheel', wheel, { passive: false })
+        if (typeof ResizeObserver !== 'undefined') {
+          resizeObserver = new ResizeObserver(() => redrawGrid())
+          resizeObserver.observe(element)
+        }
         ;(application as Application & { cleanup?: () => void }).cleanup =
           () => {
             canvas.removeEventListener('pointerdown', pointerDown)
-            window.removeEventListener('pointermove', pointerMove)
-            window.removeEventListener('pointerup', pointerUp)
-            canvas.removeEventListener('click', pointerClick)
+            canvas.removeEventListener('pointermove', pointerMove)
+            canvas.removeEventListener('pointerup', pointerUp)
+            canvas.removeEventListener('pointercancel', pointerCancel)
+            canvas.removeEventListener('lostpointercapture', pointerCancel)
+            canvas.removeEventListener('click', click)
             canvas.removeEventListener('wheel', wheel)
           }
       })
       .catch(() => {
-        destroy()
+        try {
+          application.destroy(true, { children: true })
+        } catch {
+          // A failed partial initialization still needs best-effort cleanup.
+        }
         if (!disposed) setRenderError(true)
       })
 
     return () => {
       disposed = true
+      ;(application as Application & { cleanup?: () => void }).cleanup?.()
       destroy()
     }
+  }, [redraw, redrawGrid, redrawTransientLayers, renderAttempt])
+
+  useEffect(() => {
+    const current = state.current
+    if (!current) return
+    if (current.mapId !== props.snapshot.map.id) {
+      rememberCamera(current)
+      current.chunks.clear()
+      clearLayer(current.layers.terrain)
+      clearLayer(current.layers.markers)
+      current.mapId = props.snapshot.map.id
+      const remembered = current.cameraByMap.get(current.mapId)
+      if (remembered) {
+        current.world.scale.set(remembered.scale)
+        current.world.position.set(remembered.x, remembered.y)
+      } else resetCamera(current, { q: 0, r: 0 })
+    }
+    redraw()
   }, [
     props.snapshot,
     props.terrains,
-    props.selected,
     props.token,
     props.route,
-    renderAttempt
+    props.overlays,
+    redraw,
+    clearLayer
   ])
 
+  useEffect(() => {
+    redrawTransientLayers()
+  }, [
+    props.selected,
+    props.interaction,
+    props.brushRadius,
+    props.brushTerrainId,
+    redrawTransientLayers
+  ])
+
+  useEffect(() => {
+    const current = state.current
+    if (!current || props.resetViewSignal === undefined) return
+    resetCamera(current, { q: 0, r: 0 })
+    rememberCamera(current)
+    redrawGrid()
+  }, [props.resetViewSignal, redrawGrid])
+
+  const keyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    const selected = latest.current.selected ?? latest.current.snapshot.center
+    const delta =
+      event.key === 'ArrowLeft'
+        ? { q: -1, r: 0 }
+        : event.key === 'ArrowRight'
+          ? { q: 1, r: 0 }
+          : event.key === 'ArrowUp'
+            ? { q: 0, r: -1 }
+            : event.key === 'ArrowDown'
+              ? { q: 0, r: 1 }
+              : event.key.toLowerCase() === 'q'
+                ? { q: -1, r: 1 }
+                : event.key.toLowerCase() === 'e'
+                  ? { q: 1, r: -1 }
+                  : null
+    if (delta) {
+      event.preventDefault()
+      const next = {
+        q: selected.q + delta.q,
+        r: selected.r + delta.r
+      }
+      latest.current.onTileClick?.(next)
+      const current = state.current
+      if (current) {
+        const point = center(next)
+        const screenX =
+          current.world.position.x + point.x * current.world.scale.x
+        const screenY =
+          current.world.position.y + point.y * current.world.scale.y
+        const margin = 48
+        if (
+          screenX < margin ||
+          screenY < margin ||
+          screenX > current.element.clientWidth - margin ||
+          screenY > current.element.clientHeight - margin
+        ) {
+          current.world.position.set(
+            current.element.clientWidth / 2 - point.x * current.world.scale.x,
+            current.element.clientHeight / 2 - point.y * current.world.scale.y
+          )
+          rememberCamera(current)
+          redrawGrid()
+          const metrics = viewportMetrics(current)
+          latest.current.onViewportChange?.(metrics.center, metrics.halfExtent)
+        }
+      }
+    } else if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      if (
+        latest.current.interaction === 'paint' ||
+        latest.current.interaction === 'erase'
+      )
+        latest.current.onStrokeComplete?.([selected])
+      else latest.current.onTileClick?.(selected)
+    }
+  }
+
+  const selectedTile = props.selected
+    ? props.snapshot.tiles.find(
+        (tile) => tile.q === props.selected!.q && tile.r === props.selected!.r
+      )
+    : null
   return (
     <div className="hex-canvas-shell">
       <div
         className="hex-canvas"
         ref={host}
-        role="img"
+        role="region"
+        tabIndex={0}
         aria-label={props.ariaLabel}
+        onKeyDown={keyDown}
       />
+      <span className="sr-only" aria-live="polite">
+        {props.selected
+          ? `Hex q=${props.selected.q}, r=${props.selected.r}${selectedTile ? `, ${selectedTile.terrainId}${selectedTile.location ? `, ${selectedTile.location.displayName}` : ''}` : ', leer'}`
+          : ''}
+      </span>
       {renderError && (
         <div className="hex-canvas-render-error" role="alert">
           <p>
@@ -276,67 +675,46 @@ export function HexMapCanvas(props: {
           </button>
         </div>
       )}
-      <section
-        className="hex-accessible-selection"
-        aria-label={message('ui.hex.navigation')}
-      >
-        <label>
-          {message('ui.q.koordinate')}
-          <input
-            type="number"
-            value={directQ}
-            onChange={(event) => setDirectQ(Number(event.target.value))}
-          />
-        </label>
-        <label>
-          {message('ui.r.koordinate')}
-          <input
-            type="number"
-            value={directR}
-            onChange={(event) => setDirectR(Number(event.target.value))}
-          />
-        </label>
-        <button
-          onClick={() => {
-            if (Number.isSafeInteger(directQ) && Number.isSafeInteger(directR))
-              props.onTileClick?.({ q: directQ, r: directR })
-          }}
-        >
-          {message('ui.koordinate.auswaehlen')}
-        </button>
-        <ul aria-label={message('ui.relevante.kartenfakten')}>
-          {props.snapshot.tiles
-            .filter((tile) => tile.location || tile.terrainId !== 'grassland')
-            .slice(factPage * 20, factPage * 20 + 20)
-            .map((tile) => (
-              <li key={tile.id}>
-                {tile.label} · {byLabel(props.terrains, tile.terrainId)}
-                {tile.location ? ` · ${tile.location.displayName}` : ''}
-              </li>
-            ))}
-        </ul>
-        <button
-          disabled={factPage === 0}
-          onClick={() => setFactPage((p) => p - 1)}
-        >
-          {message('ui.vorherige.fakten')}
-        </button>
-        <button
-          disabled={
-            (factPage + 1) * 20 >=
-            props.snapshot.tiles.filter(
-              (tile) => tile.location || tile.terrainId !== 'grassland'
-            ).length
-          }
-          onClick={() => setFactPage((p) => p + 1)}
-        >
-          {message('ui.weitere.fakten')}
-        </button>
-      </section>
     </div>
   )
 }
 
-function byLabel(catalog: HexTerrainCatalog, id: string) {
-  return catalog.terrains.find((terrain) => terrain.id === id)?.label ?? id
+function viewportCenter(state: CanvasState) {
+  return pixelToAxial(
+    (state.element.clientWidth / 2 - state.world.position.x) /
+      state.world.scale.x,
+    (state.element.clientHeight / 2 - state.world.position.y) /
+      state.world.scale.y
+  )
+}
+
+function viewportMetrics(state: CanvasState) {
+  const center = viewportCenter(state)
+  const horizontal = Math.ceil(
+    state.element.clientWidth / (hexSize * rootThree * state.world.scale.x) / 2
+  )
+  const vertical = Math.ceil(
+    state.element.clientHeight / (hexSize * 1.5 * state.world.scale.y) / 2
+  )
+  return {
+    center,
+    halfExtent: Math.max(horizontal, vertical) + HEX_CHUNK_MARGIN
+  }
+}
+
+function resetCamera(state: CanvasState, coordinate: AxialCoordinate) {
+  const point = center(coordinate)
+  state.world.scale.set(1)
+  state.world.position.set(
+    state.element.clientWidth / 2 - point.x,
+    state.element.clientHeight / 2 - point.y
+  )
+}
+
+function rememberCamera(state: CanvasState) {
+  state.cameraByMap.set(state.mapId, {
+    x: state.world.position.x,
+    y: state.world.position.y,
+    scale: state.world.scale.x
+  })
 }

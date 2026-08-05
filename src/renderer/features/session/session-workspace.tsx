@@ -17,7 +17,8 @@ import {
   emptyCreatureOptions,
   emptyQuery,
   useCreatureSearch
-} from '../catalog/catalog-state.js'
+} from '../creatures/creature-state.js'
+import { creaturesCapabilities } from '../creatures/creatures-capabilities.js'
 import {
   capabilityErrorText,
   reportCapabilityError
@@ -30,7 +31,8 @@ import { sessionCapabilities } from './session-capabilities.js'
 import { SessionPanelLayout } from './session-panel-layout.js'
 import { SessionGroupCard } from './session-group-card.js'
 import { ScenePartyCard } from './scene-party-card.js'
-import { CreatureCollectionCatalogPane, GroupDialog } from './group-dialog.js'
+import { GroupDialog } from './group-dialog.js'
+import { CreatureCollectionCatalogPane } from '../creature-collection/creature-collection.js'
 
 export default function SessionWorkspace(props: {
   snapshot: LiveSessionSnapshot
@@ -66,7 +68,7 @@ export default function SessionWorkspace(props: {
   const closeDetail = reference.closeNavigation
   useCreatureSearch(catalogQuery, setCatalogPage, props.onError)
   useEffect(() => {
-    void sessionCapabilities()
+    void creaturesCapabilities()
       .creatures.filterOptions()
       .then(setCatalogOptions)
       .catch(reportCapabilityError(props.onError))

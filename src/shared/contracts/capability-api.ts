@@ -41,15 +41,18 @@ import type {
 } from './encounter-source.js'
 import type {
   AxialCoordinate,
+  ApplyHexBrushStrokeInput,
+  HexBrushStrokeResult,
   HexChunkKey,
   HexChunkReadResult,
-  HexChunkSnapshot,
   HexMapCatalogSnapshot,
   HexLocationPlacementReference,
-  HexMapSummary,
+  HexHistoryState,
+  HexChangeNotice,
+  HexEditorBootstrap,
+  HexRuntimeOverlayProjection,
   HexRouteEvaluation,
   HexTerrainCatalog,
-  HexTerrainId,
   HexTravelSnapshot
 } from './hex.js'
 import type {
@@ -177,6 +180,7 @@ export interface SaltMarcherApi {
     delete(id: string, expectedRevision: number): Promise<WorldFactionSnapshot>
   }
   hex: {
+    editorBootstrap(): Promise<HexEditorBootstrap>
     terrainCatalog(): Promise<HexTerrainCatalog>
     catalog(): Promise<HexMapCatalogSnapshot>
     locateLocation(locationId: string): Promise<HexLocationPlacementReference>
@@ -184,32 +188,49 @@ export interface SaltMarcherApi {
       mapId: string,
       keys: readonly HexChunkKey[]
     ): Promise<HexChunkReadResult>
-    create(
-      displayName: string,
+    create(input: {
+      commandId: string
+      displayName: string
       expectedCatalogRevision: number
-    ): Promise<HexMapSummary>
-    updateMetadata(
-      mapId: string,
-      displayName: string,
+    }): Promise<HexBrushStrokeResult>
+    updateMetadata(input: {
+      commandId: string
+      mapId: string
+      displayName: string
       expectedMetadataRevision: number
-    ): Promise<HexMapSummary>
-    paint(
-      mapId: string,
-      coordinate: AxialCoordinate,
-      terrainId: HexTerrainId,
-      expectedChunkRevision: number
-    ): Promise<HexChunkSnapshot>
-    placeLocation(
-      mapId: string,
-      locationId: string,
-      coordinate: AxialCoordinate,
+    }): Promise<HexBrushStrokeResult>
+    applyBrushStroke(
+      input: ApplyHexBrushStrokeInput
+    ): Promise<HexBrushStrokeResult>
+    history(mapId: string): Promise<HexHistoryState>
+    undo(input: {
+      commandId: string
+      mapId: string
       expectedContentRevision: number
-    ): Promise<HexChunkReadResult>
-    removeLocation(
-      mapId: string,
-      locationId: string,
+      confirmationToken: string | null
+    }): Promise<HexBrushStrokeResult>
+    redo(input: {
+      commandId: string
+      mapId: string
       expectedContentRevision: number
-    ): Promise<HexChunkReadResult>
+      confirmationToken: string | null
+    }): Promise<HexBrushStrokeResult>
+    commandReceipt(commandId: string): Promise<HexBrushStrokeResult | null>
+    runtimeOverlays(mapId: string): Promise<HexRuntimeOverlayProjection>
+    onChanged(listener: (notice: HexChangeNotice) => void): () => void
+    placeLocation(input: {
+      commandId: string
+      mapId: string
+      locationId: string
+      coordinate: AxialCoordinate
+      expectedContentRevision: number
+    }): Promise<HexBrushStrokeResult>
+    removeLocation(input: {
+      commandId: string
+      mapId: string
+      locationId: string
+      expectedContentRevision: number
+    }): Promise<HexBrushStrokeResult>
   }
   hexTravel: {
     read(sceneId: string): Promise<HexTravelSnapshot>

@@ -23,6 +23,10 @@ import {
 } from '../../shared/contracts/reference.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import {
+  hexChangeNoticeSchema,
+  type HexChangeNotice
+} from '../../shared/contracts/hex.js'
+import {
   coreRestartDelay,
   interruptedOperationError,
   type CoreOperationMode
@@ -61,6 +65,7 @@ export class CoreProcessSupervisor {
   readonly #referenceChangeListeners = new Set<
     (notice: ReferenceIndexChangeNotice) => void
   >()
+  readonly #hexChangeListeners = new Set<(notice: HexChangeNotice) => void>()
   readonly #pending = new Map<string, PendingRequest>()
 
   constructor(
@@ -103,6 +108,11 @@ export class CoreProcessSupervisor {
   ): () => void {
     this.#referenceChangeListeners.add(listener)
     return () => this.#referenceChangeListeners.delete(listener)
+  }
+
+  onHexChanged(listener: (notice: HexChangeNotice) => void): () => void {
+    this.#hexChangeListeners.add(listener)
+    return () => this.#hexChangeListeners.delete(listener)
   }
 
   retry(): void {
@@ -223,9 +233,12 @@ export class CoreProcessSupervisor {
       if (event.data.kind === 'session.changed') {
         const notice = sessionChangeNoticeSchema.parse(event.data.notice)
         for (const listener of this.#sessionChangeListeners) listener(notice)
-      } else {
+      } else if (event.data.kind === 'reference.changed') {
         const notice = referenceIndexChangeNoticeSchema.parse(event.data.notice)
         for (const listener of this.#referenceChangeListeners) listener(notice)
+      } else {
+        const notice = hexChangeNoticeSchema.parse(event.data.notice)
+        for (const listener of this.#hexChangeListeners) listener(notice)
       }
       return
     }

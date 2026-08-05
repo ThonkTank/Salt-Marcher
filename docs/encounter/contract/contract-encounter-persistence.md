@@ -14,8 +14,8 @@ persistence path.
 
 ## Mandatory Schema
 
-- The feature-owned persistence schema declaration is the canonical in-code
-  schema owner.
+- The feature-owned persistence declaration owns Encounter DDL and SQL, not an
+  independent schema version or migration ledger.
 - The schema owns:
   - `saved_encounter_plans`
   - `saved_encounter_plan_creatures`
@@ -67,18 +67,14 @@ summary values are not persisted as historical truth.
 
 ## Validation And Error Behavior
 
-Owner startup readiness validates the feature-declared current target schema
-signature exactly, including columns, declared types, nullability, defaults,
-primary and foreign keys, checks, table flags, and named or automatic indexes.
+Startup validates the one whole-database development schema version.
 Semantic row validation remains on typed provider read/write paths and fails
 closed through the feature contract. Compatibility obligations begin with the
 first released format.
-Before the first released format, the current owner target is v1; its one construction
-step requires an empty Encounter namespace, creates the complete fresh
-current-format schema, and carries no obligation to read, repair, convert, or
-preserve an earlier development format. An unversioned partial namespace, a
-different owner version, or a current-format store with an invalid target
-signature fails closed without schema or row repair.
+Before the first released format, one construction step creates the complete
+current schema and carries no obligation to read, repair, convert, or preserve
+an earlier development format. Unsupported isolated development databases are
+reinitialized by the shared persistence lifecycle.
 
 - encounter-plan writes MUST reject empty or malformed roster rows instead of
   silently persisting partial encounter truth

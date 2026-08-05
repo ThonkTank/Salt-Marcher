@@ -9,7 +9,8 @@ export const sessionChangeNoticeSchema = z
       'travel-boundary',
       'travel-command',
       'campaign-reconcile',
-      'projection-invalidated'
+      'projection-invalidated',
+      'map-edit'
     ])
   })
   .strict()

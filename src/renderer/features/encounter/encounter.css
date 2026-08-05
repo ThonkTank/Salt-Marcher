@@ -980,3 +980,55 @@
     grid-template-columns: 1fr;
   }
 }
+@media (max-width: 700px) {
+  .encounter {
+    grid-template-columns: 1fr;
+  }
+
+  .encounter-summary {
+    padding: 1.25rem 0 0;
+    border-top: 1px solid var(--border-hair);
+    border-left: 0;
+  }
+}
+.scenario-content > footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.scenario-content h2 {
+  margin: 0;
+  font-family: var(--font-smallcaps);
+  font-size: 0.95rem;
+  font-weight: var(--weight-display);
+  letter-spacing: var(--tracking-caps);
+}
+
+.initiative-list,
+.combat-cards,
+.result-enemies {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.initiative-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-0);
+  background: var(--surface-control);
+  padding: 0.5rem;
+}
+
+.combat-card small {
+  overflow: hidden;
+  color: var(--text-3);
+  text-overflow: ellipsis;
+}

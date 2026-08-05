@@ -51,11 +51,12 @@ travel positions. That id is not stored in Hex tables; it is computed from the
 Hex axial coordinate and decoded by the Hex runtime readback. Hex persistence
 remains keyed by `map_id`, `q`, and `r`.
 
-### Terrain Overrides
+### Authored Tiles And Terrain Overrides
 
-Terrain override rows MUST be scoped to one map and one tile coordinate. The
-terrain value MUST use the Hex terrain vocabulary exposed by the Hex editor
-requirements.
+Sparse tile rows record which axial coordinates exist on a map. Terrain
+override rows MUST reference an authored tile and use the Hex terrain
+vocabulary exposed by the editor requirements. An authored tile without an
+override resolves to Grassland; an absent row is not a generated tile.
 
 ### Location Placements
 
@@ -66,19 +67,23 @@ the application command coordinates deletion while each owner retains its SQL.
 
 ### Runtime Journeys
 
-Journey rows are keyed by Scene ID and store map ID, expanded adjacent path,
-current checkpoint, participant IDs, status, presentation multiplier, and
-segment start. Compact `Reise` context remains derived and is not stored again.
+Journey rows are keyed by Scene ID and store map ID, current checkpoint,
+participant IDs, status, presentation multiplier, and segment start. Expanded
+adjacent path coordinates live in an ordered relational child table so tile
+impact checks and referential cleanup remain set-based. Compact `Reise` context
+remains derived and is not stored again.
 
 ## Validation And Error Behavior
 
-Owner startup readiness validates the feature-declared target schema signature; semantic row validation remains on typed provider read/write paths and fails closed through the feature contract.
+Startup validates the one campaign-database development schema version.
+Semantic row validation remains on typed provider read/write paths and fails
+closed through the feature contract.
 
 - Loading an unknown terrain ID, malformed route, or malformed tile coordinate
   MUST fail visibly to the caller instead of
   silently repairing stored truth.
-- Viewport reads MUST bound generated default tiles and query only the sparse
-  authored rows intersecting that window.
+- Viewport reads MUST query only sparse authored rows intersecting the requested
+  chunks. Any visible empty guide grid is renderer-only presentation state.
 
 ## Compatibility And Migration
 
@@ -88,18 +93,15 @@ schema. A fresh owner namespace is initialized directly to that complete target.
 There is no predecessor import, hybrid-schema repair, copy/drop conversion,
 archive table, or cross-owner foreign-key rewrite.
 
-An unversioned partial namespace, a recorded shape that differs from the exact
-current DDL, an adjacent retired Hex object, or a newer owner version
-MUST fail closed. Failure MUST leave the schema, rows, and owner ledger
-unchanged; initialization failure MUST NOT fabricate a ledger entry. Until
-activation, unsupported development databases are reinitialized rather than
-migrated.
+An unsupported whole-database development version causes the isolated
+development-data root to be recreated according to the project persistence
+lifecycle. Hex does not maintain a feature ledger or independent schema
+signature. Current Hex tables use foreign keys only inside the Hex owner;
+other features retain Hex identifiers as logical references.
 
-The exact owner inventory covers every table, index, view, and trigger named
-with `hex_`, `idx_hex_`, or `sm_hex_`. Current Hex tables use foreign keys only
-inside the Hex owner. Other features retain Hex map or tile identifiers as
-logical references and MUST NOT cause Hex startup to inspect, repair, rename,
-or rewrite their schemas.
+Hex stores a bounded persistent per-map edit history and idempotent command
+receipts. History contains only Hex-owned tile, terrain, and placement truth;
+it never snapshots Party or Journey aggregates.
 
 
 ## References

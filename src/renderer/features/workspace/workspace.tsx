@@ -1,4 +1,4 @@
-import { message } from '../../i18n/messages.de.js'
+import { formatMessage, message } from '../../i18n/messages.de.js'
 import { useCallback, useEffect, lazy, useState } from 'react'
 import type { CampaignSnapshot } from '../../../shared/contracts/campaign.js'
 import type { CampaignCapability } from '../../../shared/contracts/capability-api.js'
@@ -9,7 +9,7 @@ import {
   capabilityErrorText,
   reportCapabilityError
 } from '../../capabilities/capability-errors.js'
-import { CreatureInspector } from '../catalog/creature-inspector.js'
+import { CreatureInspector } from '../reference/creature-inspector.js'
 import {
   AdventuringDayDropdown,
   PartyDropdown
@@ -24,6 +24,7 @@ import { CampaignMenu } from './campaign-menu.js'
 import './workspace.css'
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 import { ReferenceProvider } from '../reference/reference-provider.js'
+import { WorkspaceLoadBoundary } from './workspace-load-boundary.js'
 
 type FantasyIconName = 'session' | 'hex' | 'catalog'
 
@@ -390,17 +391,40 @@ export function WorkspaceApp() {
               />
             )}
             {active && session && workspace === 'catalog' && (
-              <LazyCatalogWorkspace
-                key={`catalog-${readbackKey}`}
-                snapshot={session}
-                setSnapshot={setSession}
-                close={() => setWorkspace('session')}
-                inspect={setInspected}
-                onError={setError}
-              />
+              <WorkspaceLoadBoundary
+                key={`catalog-boundary-${readbackKey}`}
+                loadingMessage={formatMessage('workspace.loading', {
+                  name: message('nav.catalog')
+                })}
+                failureMessage={formatMessage('workspace.loadFailed', {
+                  name: message('nav.catalog')
+                })}
+                recoveryMessage={message('workspace.reloadHint')}
+                reloadLabel={message('action.reloadApplication')}
+              >
+                <LazyCatalogWorkspace
+                  snapshot={session}
+                  setSnapshot={setSession}
+                  close={() => setWorkspace('session')}
+                  inspect={setInspected}
+                  onError={setError}
+                />
+              </WorkspaceLoadBoundary>
             )}
             {active && session && workspace === 'hex' && (
-              <LazyHexEditor key={`hex-${readbackKey}`} onError={setError} />
+              <WorkspaceLoadBoundary
+                key={`hex-boundary-${readbackKey}`}
+                loadingMessage={formatMessage('workspace.loading', {
+                  name: message('nav.hex')
+                })}
+                failureMessage={formatMessage('workspace.loadFailed', {
+                  name: message('nav.hex')
+                })}
+                recoveryMessage={message('workspace.reloadHint')}
+                reloadLabel={message('action.reloadApplication')}
+              >
+                <LazyHexEditor onError={setError} />
+              </WorkspaceLoadBoundary>
             )}
           </div>
         </div>

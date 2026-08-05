@@ -75,6 +75,18 @@ export class WorldLocationStore {
     return row?.displayName ?? null
   }
 
+  displayNames(ids: readonly string[]): ReadonlyMap<string, string> {
+    if (ids.length === 0) return new Map()
+    const rows = this.db
+      .prepare(
+        `SELECT id, display_name AS displayName
+         FROM worldplanner_location
+         WHERE id IN (SELECT value FROM json_each(?))`
+      )
+      .all(JSON.stringify(ids)) as Array<{ id: string; displayName: string }>
+    return new Map(rows.map((row) => [row.id, row.displayName]))
+  }
+
   read(): WorldLocationSnapshot {
     const metadata = this.db
       .prepare(

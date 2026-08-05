@@ -125,7 +125,7 @@ describe('campaign walking skeleton', () => {
     ).setValue('Salzmarsch-Küste')
     await (await client.$('button=Neu')).click()
     const mapHost = await client.$(
-      '[role="img"][aria-label="Hex-Editor Salzmarsch-Küste"]'
+      '[role="region"][aria-label="Hex-Editor Salzmarsch-Küste"]'
     )
     await expect(mapHost).toBeExisting()
     const mapCanvas = await mapHost.$('canvas')
@@ -133,7 +133,7 @@ describe('campaign walking skeleton', () => {
     await expect(await client.$('.hex-canvas-render-error')).not.toBeExisting()
     const canvasSize = await client.execute(() => {
       const canvas = document.querySelector<HTMLCanvasElement>(
-        '[role="img"][aria-label="Hex-Editor Salzmarsch-Küste"] canvas'
+        '[role="region"][aria-label="Hex-Editor Salzmarsch-Küste"] canvas'
       )
       return canvas
         ? { width: canvas.width, height: canvas.height }
@@ -211,12 +211,40 @@ describe('campaign walking skeleton', () => {
       await factionDialog.$('input[aria-label="Fraktionsname"]')
     ).setValue('Hafenwache')
     await (await factionDialog.$('button=Neue Encounter-Tabelle')).click()
-    const tableDialog = await client.$(
-      'section[aria-labelledby="encounter-table-manager-title"]'
-    )
+    const tableDialog = await client.$('section.encounter-table-manager')
+    const tableGeometry = await client.execute(() => {
+      const layout = document.querySelector('.creature-collection-layout')!
+      const catalog = layout
+        .querySelector('.creature-collection-catalog')!
+        .getBoundingClientRect()
+      const seam = layout
+        .querySelector('.creature-collection-divider')!
+        .getBoundingClientRect()
+      const draft = layout
+        .querySelector('.creature-collection-draft')!
+        .getBoundingClientRect()
+      return {
+        seamWidth: Math.round(seam.width),
+        draftWidth: Math.round(draft.width),
+        ordered: catalog.right <= seam.left && seam.right <= draft.left
+      }
+    })
+    expect(tableGeometry).toEqual({
+      seamWidth: 9,
+      draftWidth: 424,
+      ordered: true
+    })
     await (
       await tableDialog.$('input[aria-label="Tabellenname"]')
     ).setValue('Wachpatrouille')
+    await (await tableDialog.$('button[aria-label="Dialog schließen"]')).click()
+    const keepDraftAlert = await client.$('[role="alertdialog"]')
+    await expect(keepDraftAlert).toBeDisplayed()
+    await (await keepDraftAlert.$('button=Abbrechen')).click()
+    await expect(await client.$('[role="alertdialog"]')).not.toBeExisting()
+    await expect(
+      await tableDialog.$('input[aria-label="Tabellenname"]')
+    ).toHaveValue('Wachpatrouille')
     await (
       await tableDialog.$('input[aria-label="Monster suchen"]')
     ).setValue('wolf')
@@ -244,17 +272,23 @@ describe('campaign walking skeleton', () => {
     await expect(await client.$('button=Hafenwache')).toBeExisting()
     await (await client.$('button=Encounter-Tabellen')).click()
     await (await client.$('button=Wachpatrouille')).click()
-    const reopenedTable = await client.$(
-      'section[aria-labelledby="encounter-table-manager-title"]'
-    )
+    const reopenedTable = await client.$('section.encounter-table-manager')
     await expect(
       await reopenedTable.$(
         'select[aria-label="Encounter-Tabelle auswählen"] option:checked'
       )
     ).toHaveText('Wachpatrouille')
     await (
-      await reopenedTable.$('button[aria-label="Dialog schließen"]')
-    ).click()
+      await reopenedTable.$('textarea[aria-label="Tabellenbeschreibung"]')
+    ).setValue('Nicht speichern')
+    const tableFooter = await reopenedTable.$(
+      'footer.creature-collection-manager-footer'
+    )
+    await (await tableFooter.$('button=Abbrechen')).click()
+    const discardDraftAlert = await client.$('[role="alertdialog"]')
+    await expect(discardDraftAlert).toBeDisplayed()
+    await (await discardDraftAlert.$('button=Änderungen verwerfen')).click()
+    await expect(reopenedTable).not.toBeExisting()
     await (await client.$('button[aria-label="Session"]')).click()
 
     await (await client.$('button=Party')).click()
@@ -376,12 +410,17 @@ describe('campaign walking skeleton', () => {
 
     const groupNote = await client.$('.group-note')
     const proneReference = await groupNote.$('button=Prone')
-    await proneReference.moveTo()
-    await client.pause(400)
     const pronePreview = await client.$(
       'section[role="region"][aria-label="Referenz: Prone"]'
     )
-    await pronePreview.waitForExist({ timeout: 5_000 })
+    await client.waitUntil(
+      async () => {
+        await proneReference.moveTo()
+        await client.pause(400)
+        return pronePreview.isExisting()
+      },
+      { timeout: 5_000, timeoutMsg: 'Prone reference preview did not open.' }
+    )
     const nestedMovement = await pronePreview.$('button=movement')
     await nestedMovement.moveTo()
     await client.pause(400)

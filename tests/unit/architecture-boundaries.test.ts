@@ -158,6 +158,52 @@ describe('architecture boundaries', () => {
         source(`src/renderer/features/${feature}/${feature}.css`).trim().length,
         `${feature} owns no feature styles`
       ).toBeGreaterThan(0)
+    expect(
+      source('src/renderer/features/creatures/creatures.css').trim().length
+    ).toBeGreaterThan(0)
+    expect(source('src/renderer/shell/app.css')).not.toMatch(
+      /\.(?:catalog|session|encounter|hex|party|group|creature)-/
+    )
+  })
+
+  it('keeps shared creature and dialog primitives independent of consumers', () => {
+    for (const file of codeFiles('src/renderer/features/catalog'))
+      expect(source(file), `${file} imports Session`).not.toMatch(
+        /from ['"]\.\.\/session\//
+      )
+    for (const file of codeFiles('src/renderer/features/session'))
+      expect(source(file), `${file} imports Catalog`).not.toMatch(
+        /from ['"]\.\.\/catalog\//
+      )
+    for (const file of codeFiles('src/renderer/features/creature-collection'))
+      expect(source(file), `${file} imports a consumer feature`).not.toMatch(
+        /from ['"]\.\.\/(?:catalog|session)\//
+      )
+    for (const file of codeFiles('src/renderer/features/creatures'))
+      expect(source(file), `${file} imports a consumer feature`).not.toMatch(
+        /from ['"]\.\.\/(?:catalog|session|creature-collection)\//
+      )
+    expect(source('src/renderer/shell/modal-dialog.tsx')).toContain(
+      "import './modal-dialog.css'"
+    )
+    expect(source('src/renderer/features/session/session.css')).not.toContain(
+      '.modal-backdrop'
+    )
+  })
+
+  it('keeps CatalogWorkspace as a small composition root without editors', () => {
+    const root = source('src/renderer/features/catalog/catalog-workspace.tsx')
+    expect(root.split('\n').length).toBeLessThan(200)
+    expect(root).not.toMatch(
+      /function .*Dialog|<ModalDialog|<EncounterTableManager/
+    )
+    for (const controller of [
+      'src/renderer/features/catalog/monster-catalog-controller.ts',
+      'src/renderer/features/catalog/location-catalog-controller.ts',
+      'src/renderer/features/catalog/faction-catalog-controller.ts',
+      'src/renderer/features/encounter-table/encounter-table-catalog-controller.ts'
+    ])
+      expect(source(controller)).toContain('active')
   })
 
   it('gives every renderer feature a screen, hook, adapter and owned CSS', () => {
@@ -303,9 +349,20 @@ describe('architecture boundaries', () => {
     }
   })
 
+  it('composes both creature collection editors through the shared manager', () => {
+    expect(source('src/renderer/features/session/group-dialog.tsx')).toContain(
+      'CreatureCollectionManagerDialog'
+    )
+    expect(
+      source(
+        'src/renderer/features/encounter-table/encounter-table-manager.tsx'
+      )
+    ).toContain('CreatureCollectionManagerDialog')
+  })
+
   it('routes registered read-only prose surfaces through the reference primitive', () => {
     for (const file of [
-      'src/renderer/features/catalog/creature-inspector.tsx',
+      'src/renderer/features/reference/creature-inspector.tsx',
       'src/renderer/features/encounter/combat-card.tsx',
       'src/renderer/features/session/session-group-card.tsx',
       'src/renderer/features/session/session-workspace.tsx'
@@ -328,12 +385,29 @@ describe('architecture boundaries', () => {
 
   it('models unbounded maps as mathematical 32 by 32 chunks', () => {
     const contract = source('src/shared/contracts/hex.ts')
-    const store = source('src/core/hex/hex-map-store.ts')
     expect(contract).toContain('hexChunkKeySchema')
     expect(contract).toContain('.max(64)')
-    expect(contract).not.toContain('radius')
-    expect(store).toContain('HEX_CHUNK_SIZE = 32')
-    expect(store).toContain('Math.floor(coordinate.q / HEX_CHUNK_SIZE)')
+    expect(contract).toContain('radius')
+    expect(source('src/shared/hex/axial-geometry.ts')).toContain(
+      'MAX_HEX_BRUSH_RADIUS = 10'
+    )
+    const geometry = source('src/shared/hex/axial-geometry.ts')
+    expect(geometry).toContain('HEX_CHUNK_SIZE = 32')
+    expect(geometry).toContain('Math.floor(coordinate.q / HEX_CHUNK_SIZE)')
+  })
+
+  it('keeps Hex routes relational and Party travel state explicit', () => {
+    const maps = source('src/core/hex/hex-map-store.ts')
+    const travel = source('src/core/hex/hex-travel.ts')
+    const party = source('src/core/party/party-store.ts')
+    expect(maps).toContain('CREATE TABLE IF NOT EXISTS hex_journey_path')
+    expect(maps).not.toContain('path_json')
+    expect(travel).toContain('JOIN hex_journey_path')
+    expect(travel).not.toContain('pathJson')
+    expect(party).toContain(
+      "travel_state IN ('detached', 'attached-unpositioned', 'hex-positioned')"
+    )
+    expect(party).not.toMatch(/attached_to_party_token|travel_tile_id/)
   })
 
   it('does not ship qualification code through the normal HTML entry', () => {

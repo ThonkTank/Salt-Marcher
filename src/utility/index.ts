@@ -17,13 +17,25 @@ import {
 } from '../core/creatures/catalog.js'
 import { LivePlayService } from '../core/encounter/live-combat.js'
 import { z } from 'zod'
-import { WorldLocationService } from '../core/worldplanner/location-store.js'
+import {
+  WorldLocationService,
+  WorldLocationStore
+} from '../core/worldplanner/location-store.js'
 import { EncounterSourceService } from '../core/application/encounter-source-service.js'
-import { HexMapService } from '../core/hex/hex-map-store.js'
-import { HexTravelService } from '../core/hex/hex-travel.js'
+import { HexMapService, HexMapStore } from '../core/hex/hex-map-store.js'
+import { HexMapEditingCommandHandler } from '../core/application/hex-map-editing.js'
+import { HexTravelService, HexTravelStore } from '../core/hex/hex-travel.js'
+import { HexEditJournalStore } from '../core/hex/hex-edit-journal-store.js'
+import { PartyStore } from '../core/party/party-store.js'
+import { SceneStore } from '../core/scene/scene-store.js'
+import { CampaignUnitOfWork } from '../core/application/campaign-unit-of-work.js'
+import { WorldLocationDeletionCommandHandler } from '../core/application/world-location-deletion.js'
 import { hexTerrainCatalog } from '../core/hex/terrain-catalog.js'
 import { CapabilityError } from '../shared/errors/capability-error.js'
-import { hexTravelSnapshotSchema } from '../shared/contracts/hex.js'
+import {
+  hexBrushStrokeResultSchema,
+  hexTravelSnapshotSchema
+} from '../shared/contracts/hex.js'
 import { emptyPassiveProjection } from '../shared/contracts/passive-display.js'
 import { ReferenceService } from '../core/reference/reference-service.js'
 import { ReferenceCatalogAdapter } from '../core/reference/reference-catalog-adapter.js'
@@ -40,6 +52,30 @@ const play = new LivePlayService(activeDatabase)
 const locations = new WorldLocationService(activeDatabase)
 const sources = new EncounterSourceService(activeDatabase)
 const hex = new HexMapService(activeDatabase)
+const hexEditing = new HexMapEditingCommandHandler(() => {
+  const db = activeDatabase()
+  const locationStore = new WorldLocationStore(db)
+  const maps = new HexMapStore(db, locationStore)
+  const party = new PartyStore(db)
+  const scenes = new SceneStore(db, () => locationStore.read().locations)
+  return {
+    unitOfWork: new CampaignUnitOfWork(db),
+    maps,
+    party,
+    travel: new HexTravelStore(db, maps, party, scenes),
+    journal: new HexEditJournalStore(db)
+  }
+})
+const worldLocationDeletion = new WorldLocationDeletionCommandHandler(() => {
+  const db = activeDatabase()
+  const locationStore = new WorldLocationStore(db)
+  return {
+    unitOfWork: new CampaignUnitOfWork(db),
+    maps: new HexMapStore(db, locationStore),
+    journal: new HexEditJournalStore(db),
+    locations: locationStore
+  }
+})
 const hexTravel = new HexTravelService(activeDatabase)
 const creatures = new CreatureCatalogService(
   () => campaigns.installationDatabase(),
@@ -141,7 +177,8 @@ function mutateReferences<T>(work: () => T): T {
 
 function publishSessionChange(
   snapshot: ReturnType<HexTravelService['read']>,
-  reason: 'travel-boundary' | 'travel-command' | 'campaign-reconcile'
+  reason:
+    'travel-boundary' | 'travel-command' | 'campaign-reconcile' | 'map-edit'
 ): void {
   process.parentPort?.postMessage(
     coreEventSchema.parse({
@@ -151,6 +188,48 @@ function publishSessionChange(
         sceneId: snapshot.sceneId,
         revision: snapshot.revision,
         reason
+      }
+    })
+  )
+}
+
+function publishHexChange(payload: unknown): void {
+  const result = hexBrushStrokeResultSchema.safeParse(payload)
+  if (!result.success || result.data.status !== 'applied') return
+  const applied = result.data
+  if (!applied.changed) return
+  publishHexNotice(
+    applied.commandId,
+    applied.maps.map((map) => map.id),
+    applied.changedChunks
+  )
+  const changedScenes = new Set(
+    applied.impact.journeys.map((journey) => journey.sceneId)
+  )
+  const changedMembers = new Set(
+    applied.impact.partyMembers.map((member) => member.memberId)
+  )
+  if (changedMembers.size > 0)
+    for (const scene of play.readSession().scene.scenes)
+      if (scene.partyMemberIds.some((memberId) => changedMembers.has(memberId)))
+        changedScenes.add(scene.id)
+  for (const sceneId of changedScenes)
+    publishSessionChange(hexTravel.read(sceneId), 'map-edit')
+}
+
+function publishHexNotice(
+  commandId: string,
+  mapIds: readonly string[],
+  changedChunks: readonly unknown[]
+): void {
+  process.parentPort?.postMessage(
+    coreEventSchema.parse({
+      kind: 'hex.changed',
+      notice: {
+        campaignId: campaigns.activeCampaignId(),
+        commandId,
+        mapIds,
+        changedChunks
       }
     })
   )
@@ -275,12 +354,16 @@ const worldPlannerHandlers = {
       locations.update(input.id, input.location, input.expectedRevision)
     ),
   'locations.delete': (input) =>
-    mutateReferences(() =>
-      activeDatabase().transaction(() => {
-        hex.unlinkDeletedLocation(input.id)
-        return locations.delete(input.id, input.expectedRevision)
-      })()
-    ),
+    mutateReferences(() => {
+      const result = worldLocationDeletion.execute(input)
+      if (result.notice)
+        publishHexNotice(
+          result.notice.campaignCommandId,
+          [result.notice.map.id],
+          [result.notice.changedChunk]
+        )
+      return result.snapshot
+    }),
   'encounterTables.read': () => sources.readTables(),
   'encounterTables.create': (input) =>
     sources.createTable(input.table, input.expectedRevision),
@@ -477,25 +560,40 @@ const encounterHandlers = {
 >
 
 const hexHandlers = {
+  'hex.editorBootstrap': () => ({
+    catalog: hex.catalog(),
+    terrains: hexTerrainCatalog,
+    locations: locations.read()
+  }),
   'hex.terrainCatalog': () => hexTerrainCatalog,
   'hex.catalog': () => hex.catalog(),
   'hex.locateLocation': (input) => hex.locateLocation(input.locationId),
   'hex.readChunks': (input) => hex.readChunks(input.mapId, input.keys),
-  'hex.create': (input) =>
-    hex.create(input.displayName, input.expectedCatalogRevision),
-  'hex.update': (input) => hex.update(input),
-  'hex.paint': (input) => hex.paint(input),
-  'hex.placeLocation': (input) => hex.placeLocation(input),
-  'hex.removeLocation': (input) => hex.removeLocation(input)
+  'hex.create': (input) => hexEditing.createMap(input),
+  'hex.update': (input) => hexEditing.updateMap(input),
+  'hex.applyBrushStroke': (input) => hexEditing.applyBrushStroke(input),
+  'hex.history': (input) => hexEditing.history(input.mapId),
+  'hex.undo': (input) => hexEditing.undo(input),
+  'hex.redo': (input) => hexEditing.redo(input),
+  'hex.commandReceipt': (input) => hexEditing.commandReceipt(input.commandId),
+  'hex.runtimeOverlays': (input) => hexTravel.runtimeOverlays(input.mapId),
+  'hex.placeLocation': (input) => hexEditing.placeLocation(input),
+  'hex.removeLocation': (input) => hexEditing.removeLocation(input)
 } satisfies Pick<
   CoreHandlers,
   | 'hex.terrainCatalog'
+  | 'hex.editorBootstrap'
   | 'hex.catalog'
   | 'hex.locateLocation'
   | 'hex.readChunks'
   | 'hex.create'
   | 'hex.update'
-  | 'hex.paint'
+  | 'hex.applyBrushStroke'
+  | 'hex.history'
+  | 'hex.undo'
+  | 'hex.redo'
+  | 'hex.commandReceipt'
+  | 'hex.runtimeOverlays'
   | 'hex.placeLocation'
   | 'hex.removeLocation'
 >
@@ -571,6 +669,16 @@ function dispatch(request: CoreRequest): Promise<unknown> {
   const result = handler(request.input)
   return Promise.resolve(result).then((payload) => {
     const parsed = coreOperations[request.kind].output.parse(payload)
+    if (
+      request.kind === 'hex.create' ||
+      request.kind === 'hex.update' ||
+      request.kind === 'hex.applyBrushStroke' ||
+      request.kind === 'hex.undo' ||
+      request.kind === 'hex.redo' ||
+      request.kind === 'hex.placeLocation' ||
+      request.kind === 'hex.removeLocation'
+    )
+      publishHexChange(parsed)
     if (
       request.kind.startsWith('hexTravel.') &&
       request.kind !== 'hexTravel.read'

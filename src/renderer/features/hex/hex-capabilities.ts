@@ -3,10 +3,10 @@ import { rendererCapabilityApi } from '../../capabilities/renderer-capability-ap
 
 export type HexCapabilities = Pick<
   SaltMarcherApi,
-  'hex' | 'hexTravel' | 'session'
+  'hex' | 'hexTravel' | 'session' | 'locations'
 >
 
-/** Narrow feature adapter for map, travel and session readback capabilities. */
+/** Narrow feature adapter for map, travel, location and session capabilities. */
 export function hexCapabilities(): HexCapabilities {
   return rendererCapabilityApi()
 }

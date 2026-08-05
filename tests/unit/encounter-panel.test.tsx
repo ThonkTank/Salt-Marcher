@@ -9,6 +9,7 @@ import { SessionEncounterPanel } from '../../src/renderer/features/encounter/enc
 import type { SaltMarcherApi } from '../../src/shared/contracts/capability-api.js'
 import type { LiveSessionSnapshot } from '../../src/shared/contracts/live-session.js'
 import { combatConditions } from '../../src/shared/contracts/live-session.js'
+import { ModalLayerProvider } from '../../src/renderer/shell/modal-layer.js'
 
 const sceneId = '01900000-0000-7000-8000-000000000001'
 const groupId = '01900000-0000-7000-8000-000000000002'
@@ -88,14 +89,16 @@ describe('encounter scenario panel', () => {
   it('renders the compact three-action combat footer and panel HP dialog', () => {
     render(
       <CapabilityProvider api={api}>
-        <SessionEncounterPanel
-          snapshot={combatSnapshot()}
-          setSnapshot={vi.fn()}
-          close={vi.fn()}
-          onError={vi.fn()}
-          inspect={vi.fn()}
-          reinforce={vi.fn()}
-        />
+        <ModalLayerProvider>
+          <SessionEncounterPanel
+            snapshot={combatSnapshot()}
+            setSnapshot={vi.fn()}
+            close={vi.fn()}
+            onError={vi.fn()}
+            inspect={vi.fn()}
+            reinforce={vi.fn()}
+          />
+        </ModalLayerProvider>
       </CapabilityProvider>
     )
 

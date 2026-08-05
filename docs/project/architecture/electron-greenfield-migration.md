@@ -126,7 +126,8 @@ claiming completion of M3 or M5. Its approved expansion contains:
   and crash-reconciled `.trash`/`.deleting` directory transitions in the
   complete greenfield schema v8
 - the productive Monster section of the common Catalog, backed by a versioned
-  local SRD 5.1 resource; the other Catalog sections remain later slices
+  local SRD 5.1 resource; Items, saved Encounters, and NPCs remain later
+  Catalog products
 - one focused persistent runtime Scene with explicit PC assignments and named
   GM creature groups carrying an optional note, visual disposition, archive
   state, aggregate revision, and stable Scene-owned members; incompatible
@@ -157,6 +158,15 @@ claiming completion of M3 or M5. Its approved expansion contains:
 - Scene groups and Encounter Tables share one two-pane creature-collection
   manager component rather than parallel look-alike dialogs; faction stock is
   edited only from the selected table's creature membership
+- Catalog, Session, Encounter Table, creature search, and creature collection
+  are one-way renderer features rather than workspace-to-workspace imports.
+  Their blocking surfaces use one portal-based modal stack with inert lower
+  layers, focus restoration, and a shared dirty-draft discard alert
+- the Catalog composition root keeps all existing section-controller state
+  alive while narrow injectable capability ports suppress reads from inactive
+  sections; the shared creature-collection manager owns every named layout
+  area and exposes fixed or accessible resizable divider models instead of an
+  implicit child-order contract
 - one campaign-local Hex vertical slice now connects a Pixi editor, static
   catalog-backed terrain IDs, World Planner location placement, focused-Scene
   Party position, waypoint route planning, durable checkpoints and Scene time,

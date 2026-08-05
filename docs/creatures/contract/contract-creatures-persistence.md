@@ -13,8 +13,8 @@ This document is normative for the `creatures` feature's persistence path.
 
 ## Mandatory Schema
 
-- The feature-owned persistence schema declaration is the canonical in-code
-  owner of the complete current schema. It contains exactly:
+- The feature-owned persistence declaration owns Creatures DDL and SQL, but no
+  independent schema version or migration ledger. It contains exactly:
   - `creatures`
   - `creature_biomes`
   - `creature_subtypes`
@@ -41,15 +41,14 @@ This document is normative for the `creatures` feature's persistence path.
 
 ## Validation And Error Behavior
 
-Owner startup readiness validates the exact feature-declared schema and owner
-object inventory against a separately derived SQLite reference schema.
-Validation is read-only. Semantic row validation remains on typed provider read
-paths and fails closed through the feature contract.
+Startup validates the one whole-database development schema version. Semantic
+row validation remains on typed provider read paths and fails closed through
+the feature contract.
 
-- feature-local schema readiness MUST be verified before the catalog exposes a
-  successful lookup result
+- whole-database schema readiness MUST be verified before the catalog exposes
+  a successful lookup result
 - a malformed current schema MUST fail without changing its schema, rows, or
-  recorded owner version
+  stored data
 - malformed or incomplete source rows MUST be rejected or mapped to a clear
   storage-failure result instead of silently fabricating creature truth
 - storage and schema failures MUST surface through Creatures API result status
@@ -68,11 +67,11 @@ paths and fails closed through the feature contract.
 ## Compatibility And Initialization
 
 Compatibility obligations begin with the first released format.
-Before the first released format, Creatures has one disposable current format: owner
-version `1`. Its single initializer runs only when the complete Creatures owner
-namespace is empty, then creates the current tables and indexes directly. It
-does not inspect predecessor columns, add missing columns, copy rows, or repair
-partial tables.
+Before the first released format, Creatures has one disposable current format.
+Its initializer creates the current tables and indexes directly and does not
+inspect predecessor columns, add missing columns, copy rows, or repair partial
+tables. Unsupported isolated development databases are reinitialized by the
+shared persistence lifecycle.
 
 An unversioned partial owner namespace and a malformed recorded version `1`
 fail as unavailable without ledger fabrication or mutation. A recorded owner

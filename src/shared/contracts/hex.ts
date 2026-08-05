@@ -1,4 +1,9 @@
 import { z } from 'zod'
+import { worldLocationSnapshotSchema } from './world-location.js'
+import {
+  MAX_HEX_BRUSH_RADIUS,
+  MAX_HEX_STROKE_POINTS
+} from '../hex/axial-geometry.js'
 
 export const axialCoordinateSchema = z
   .object({ q: z.number().int().safe(), r: z.number().int().safe() })
@@ -70,7 +75,7 @@ export const hexChunkKeySchema = z
   })
   .strict()
 
-export const hexTerrainOverrideSchema = axialCoordinateSchema
+export const hexAuthoredTileSchema = axialCoordinateSchema
   .extend({ terrainId: hexTerrainIdSchema })
   .strict()
 
@@ -78,7 +83,7 @@ export const hexChunkSnapshotSchema = z
   .object({
     key: hexChunkKeySchema,
     revision: z.number().int().nonnegative(),
-    terrainOverrides: z.array(hexTerrainOverrideSchema),
+    authoredTiles: z.array(hexAuthoredTileSchema),
     locations: z.array(hexLocationPlacementSchema)
   })
   .strict()
@@ -87,6 +92,31 @@ export const hexChunkReadResultSchema = z
   .object({
     map: hexMapSummarySchema,
     chunks: z.array(hexChunkSnapshotSchema).max(64)
+  })
+  .strict()
+
+export const hexEditorBootstrapSchema = z
+  .object({
+    catalog: hexMapCatalogSnapshotSchema,
+    terrains: hexTerrainCatalogSchema,
+    locations: worldLocationSnapshotSchema
+  })
+  .strict()
+
+export const hexRuntimeOverlaySchema = z
+  .object({
+    sceneId: z.uuid(),
+    label: z.string().min(1),
+    token: axialCoordinateSchema.nullable(),
+    route: z.array(axialCoordinateSchema),
+    focused: z.boolean()
+  })
+  .strict()
+
+export const hexRuntimeOverlayProjectionSchema = z
+  .object({
+    mapId: z.uuid(),
+    overlays: z.array(hexRuntimeOverlaySchema)
   })
   .strict()
 
@@ -106,14 +136,18 @@ export const readHexChunksInputSchema = z
   })
   .strict()
 
-export const createHexMapInputSchema = z
+export const createHexMapStoreInputSchema = z
   .object({
     displayName: z.string().trim().min(1).max(100),
     expectedCatalogRevision: z.number().int().nonnegative()
   })
   .strict()
 
-export const updateHexMapInputSchema = z
+export const createHexMapInputSchema = createHexMapStoreInputSchema
+  .extend({ commandId: z.uuid() })
+  .strict()
+
+export const updateHexMapStoreInputSchema = z
   .object({
     mapId: z.uuid(),
     displayName: z.string().trim().min(1).max(100),
@@ -121,14 +155,162 @@ export const updateHexMapInputSchema = z
   })
   .strict()
 
-export const paintHexTerrainInputSchema = z
+export const updateHexMapInputSchema = updateHexMapStoreInputSchema
+  .extend({ commandId: z.uuid() })
+  .strict()
+
+export const hexTravelStatusSchema = z.enum([
+  'unpositioned',
+  'ready',
+  'travelling',
+  'paused',
+  'blocked',
+  'completed',
+  'aborted'
+])
+
+export const hexBrushModeSchema = z.enum(['paint', 'erase'])
+
+export const applyHexBrushStrokeInputSchema = z
   .object({
+    commandId: z.uuid(),
     mapId: z.uuid(),
-    coordinate: axialCoordinateSchema,
-    terrainId: hexTerrainIdSchema,
-    expectedChunkRevision: z.number().int().nonnegative()
+    mode: hexBrushModeSchema,
+    terrainId: hexTerrainIdSchema.nullable(),
+    path: z.array(axialCoordinateSchema).min(1).max(MAX_HEX_STROKE_POINTS),
+    radius: z.number().int().min(0).max(MAX_HEX_BRUSH_RADIUS),
+    expectedContentRevision: z.number().int().nonnegative(),
+    confirmationToken: z.string().min(1).nullable()
   })
   .strict()
+  .superRefine((value, context) => {
+    if (value.mode === 'paint' && value.terrainId === null)
+      context.addIssue({
+        code: 'custom',
+        message: 'Paint strokes require terrain.',
+        path: ['terrainId']
+      })
+    if (value.mode === 'erase' && value.terrainId !== null)
+      context.addIssue({
+        code: 'custom',
+        message: 'Erase strokes cannot carry terrain.',
+        path: ['terrainId']
+      })
+  })
+
+export const hexEraseImpactSchema = z
+  .object({
+    locations: z.array(
+      axialCoordinateSchema
+        .extend({ locationId: z.uuid(), displayName: z.string().min(1) })
+        .strict()
+    ),
+    journeys: z.array(
+      z
+        .object({
+          sceneId: z.uuid(),
+          status: hexTravelStatusSchema
+        })
+        .strict()
+    ),
+    partyMembers: z.array(
+      axialCoordinateSchema
+        .extend({ memberId: z.uuid(), displayName: z.string().min(1) })
+        .strict()
+    )
+  })
+  .strict()
+
+export const hexChangedChunkSchema = z
+  .object({
+    mapId: z.uuid(),
+    key: hexChunkKeySchema,
+    revision: z.number().int().nonnegative()
+  })
+  .strict()
+
+export const hexHistoryStateSchema = z
+  .object({
+    canUndo: z.boolean(),
+    canRedo: z.boolean(),
+    undoLabel: z.string().nullable(),
+    redoLabel: z.string().nullable()
+  })
+  .strict()
+
+export const hexMutationWarningSchema = z.discriminatedUnion('code', [
+  z
+    .object({
+      code: z.literal('deleted_location_skipped'),
+      locationId: z.uuid()
+    })
+    .strict()
+])
+
+export const hexBrushStrokeResultSchema = z.discriminatedUnion('status', [
+  z
+    .object({
+      status: z.literal('confirmation_required'),
+      commandId: z.uuid(),
+      confirmationToken: z.string().min(1),
+      impact: hexEraseImpactSchema
+    })
+    .strict(),
+  z
+    .object({
+      status: z.literal('applied'),
+      commandId: z.uuid(),
+      catalogRevision: z.number().int().nonnegative(),
+      maps: z.array(hexMapSummarySchema).min(1),
+      changedChunks: z.array(hexChangedChunkSchema),
+      history: hexHistoryStateSchema,
+      changed: z.boolean(),
+      affectedTileCount: z.number().int().nonnegative(),
+      impact: hexEraseImpactSchema,
+      warnings: z.array(hexMutationWarningSchema)
+    })
+    .strict(),
+  z
+    .object({
+      status: z.literal('rejected'),
+      commandId: z.uuid(),
+      reason: z.enum([
+        'stroke_too_large',
+        'location_occupied',
+        'location_not_placed',
+        'tile_missing',
+        'history_conflict',
+        'history_empty'
+      ])
+    })
+    .strict()
+])
+
+export const mutateHexHistoryInputSchema = z
+  .object({
+    commandId: z.uuid(),
+    mapId: z.uuid(),
+    expectedContentRevision: z.number().int().nonnegative(),
+    confirmationToken: z.string().min(1).nullable()
+  })
+  .strict()
+
+export const hexCommandIdInputSchema = z
+  .object({ commandId: z.uuid() })
+  .strict()
+
+export const hexMapIdInputSchema = z.object({ mapId: z.uuid() }).strict()
+export const hexEditorBootstrapInputSchema = z.object({}).strict()
+
+export const hexChangeNoticeSchema = z
+  .object({
+    campaignId: z.uuid(),
+    commandId: z.uuid(),
+    mapIds: z.array(z.uuid()).min(1),
+    changedChunks: z.array(hexChangedChunkSchema)
+  })
+  .strict()
+  .readonly()
 
 export const placeHexLocationInputSchema = z
   .object({
@@ -147,6 +329,14 @@ export const removeHexLocationInputSchema = z
   })
   .strict()
 
+export const editHexLocationInputSchema = placeHexLocationInputSchema
+  .extend({ commandId: z.uuid() })
+  .strict()
+
+export const unplaceHexLocationInputSchema = removeHexLocationInputSchema
+  .extend({ commandId: z.uuid() })
+  .strict()
+
 export const hexLocationPlacementReferenceSchema = z
   .object({
     mapId: z.uuid(),
@@ -155,16 +345,6 @@ export const hexLocationPlacementReferenceSchema = z
   })
   .strict()
   .nullable()
-
-export const hexTravelStatusSchema = z.enum([
-  'unpositioned',
-  'ready',
-  'travelling',
-  'paused',
-  'blocked',
-  'completed',
-  'aborted'
-])
 
 export const hexTravelSnapshotSchema = z
   .object({
@@ -275,6 +455,23 @@ export type HexChunkReadResult = Readonly<
   z.infer<typeof hexChunkReadResultSchema>
 >
 export type HexMapView = Readonly<z.infer<typeof hexMapViewSchema>>
+export type HexEditorBootstrap = Readonly<
+  z.infer<typeof hexEditorBootstrapSchema>
+>
+export type HexRuntimeOverlayProjection = Readonly<
+  z.infer<typeof hexRuntimeOverlayProjectionSchema>
+>
+export type HexBrushMode = z.infer<typeof hexBrushModeSchema>
+export type ApplyHexBrushStrokeInput = Readonly<
+  z.infer<typeof applyHexBrushStrokeInputSchema>
+>
+export type HexEraseImpact = Readonly<z.infer<typeof hexEraseImpactSchema>>
+export type HexChangedChunk = Readonly<z.infer<typeof hexChangedChunkSchema>>
+export type HexBrushStrokeResult = Readonly<
+  z.infer<typeof hexBrushStrokeResultSchema>
+>
+export type HexHistoryState = Readonly<z.infer<typeof hexHistoryStateSchema>>
+export type HexChangeNotice = Readonly<z.infer<typeof hexChangeNoticeSchema>>
 export type HexLocationPlacementReference = Readonly<
   z.infer<typeof hexLocationPlacementReferenceSchema>
 >

@@ -59,6 +59,29 @@ All renderer-to-Main invocations are declared in
 read/write mode, allowed window roles and deadline. Core kinds use the same
 table to type the supervisor protocol and the exhaustive utility handler map.
 
+Renderer features depend on shared renderer primitives, never on sibling
+workspaces. Creature search state and controls live in the `creatures` feature;
+the reusable two-pane editor lives in `creature-collection`; Session groups and
+Encounter Tables compose those features without importing Catalog from Session
+or Session from Catalog. Each feature imports and owns its feature stylesheet;
+shell styles contain only application-wide primitives.
+
+Catalog is a composition root over Monster, Location, Faction, and Encounter
+Table controllers and views. Controller state remains mounted across section
+changes, while an explicit active flag prevents hidden sections from reading
+their providers. Narrow renderer-local capability ports make these rules
+testable without widening IPC. The creature-collection manager owns its header,
+named grid areas, catalog pane, draft pane, footer, and divider; consumers may
+choose only a fixed divider or the manager's accessible resizable model.
+
+All blocking dialogs render through the shell-owned modal layer. The layer
+portals dialogs outside the application root, maintains a single ordered modal
+stack, makes the application and lower dialogs inert, traps focus only in the
+top dialog, restores focus on close, and centrally owns Escape and body-scroll
+handling. Potentially destructive close actions open a nested `alertdialog`
+when a draft is dirty. Dialog buttons therefore request one close command
+rather than directly manipulating unrelated workspace state.
+
 ## Data ownership
 
 `installation.sqlite` holds registry, settings, and reusable definitions.
@@ -81,10 +104,16 @@ one revisions-protected SQLite record rather than renderer storage or
 Main-process JSON.
 
 Hex maps use an unbounded axial coordinate space backed by sparse authored
-terrain and marker rows. Reads always request a bounded viewport window; the
-implicit default terrain is generated only for that window. Travel progression
+tile, terrain, and marker rows. Reads always request bounded chunks; the
+renderer may draw an empty unbounded guide grid, but only authored tiles have
+terrain or accept travel and markers. Travel progression
 is clocked by the utility process and publishes revision changes. Reads are
 pure observations and never advance Scene time.
+
+Hex editing commands carry stable command identities, publish exact changed
+chunk notices, and retain a bounded persistent per-map content history. Brush
+geometry is shared pure code; the utility process recomputes committed targets
+from path and radius rather than trusting renderer-expanded tile sets.
 
 Reference lookup follows the same boundary. A deterministic, attributed SRD
 artifact is checked into the application and loaded only by the utility

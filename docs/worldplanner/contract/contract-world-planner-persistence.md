@@ -66,7 +66,10 @@ World Planner persistence does not store:
 
 ## Validation And Error Behavior
 
-Owner startup readiness validates the feature-declared target schema signature; semantic row validation remains on typed provider read/write paths and fails closed through the feature contract.
+Startup validates the one whole-database development schema version; semantic
+row validation remains on typed provider read/write paths and fails closed
+through the feature contract. World Planner owns its DDL and SQL but no
+independent schema version or migration ledger.
 
 - Writes must reject malformed NPC, faction, location, creature statblock, or
   encounter-table references.
@@ -94,16 +97,11 @@ existing Session Planner, Encounter, EncounterTable, Creatures, Party, Dungeon,
 or Hex tables in the current backend slice.
 
 Compatibility obligations begin with the first released format.
-Before the first released format, owner startup creates the complete current schema
-directly as owner version `1`, only on an empty World Planner namespace, and
-validates its exact table, relationship, constraint, index, and owner-object
-inventory.
-
-Unversioned partial, superseded, structurally damaged, adjacent-owner-object,
-and newer shapes fail closed unchanged. Startup performs no `ALTER`, repair,
-membership normalization, copy, drop, or version claim. Until activation,
-unsupported development databases are discarded and recreated from the current
-product.
+Before the first released format, shared startup creates the complete current
+whole-database development schema directly. World Planner owns its DDL and SQL
+but no independent version or ledger. Unsupported isolated development
+databases are discarded and recreated without feature-local `ALTER`, repair,
+membership normalization, copy, drop, or version claims.
 
 Later Session Planner-owned references to World Planner locations belong to the
 Session Planner persistence contract and do not change this owner boundary.

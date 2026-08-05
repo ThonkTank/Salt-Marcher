@@ -21,7 +21,7 @@ import type {
   ReferenceInline,
   ReferenceTarget
 } from '../../../shared/contracts/reference.js'
-import { CreatureInspector } from '../catalog/creature-inspector.js'
+import { CreatureInspector } from './creature-inspector.js'
 import { formatMessage, message } from '../../i18n/messages.de.js'
 import { NonModalSurface } from '../../shell/nonmodal-surface.js'
 import {
