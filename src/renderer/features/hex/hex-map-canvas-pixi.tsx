@@ -16,11 +16,17 @@ import type {
   HexTerrainCatalog,
   HexTerrainId
 } from '../../../shared/contracts/hex.js'
-import { hexChunkKeyFor } from '../../../shared/hex/axial-geometry.js'
 import { expandHexBrush } from './hex-brush.js'
+import {
+  center,
+  chunkId,
+  coordinateId,
+  hexSize,
+  pixelToAxial,
+  polygon,
+  rootThree
+} from './hex-canvas-geometry.js'
 
-const rootThree = Math.sqrt(3)
-const hexSize = 27
 const HEX_CHUNK_MARGIN = 32
 type TravelOverlay = Readonly<{
   id: string
@@ -53,44 +59,6 @@ type CanvasState = {
     preview: Container
     selection: Container
   }>
-}
-
-function center(coordinate: AxialCoordinate, size = hexSize) {
-  return {
-    x: size * rootThree * (coordinate.q + coordinate.r / 2),
-    y: size * 1.5 * coordinate.r
-  }
-}
-
-function polygon(x: number, y: number, size: number): number[] {
-  return Array.from({ length: 6 }, (_, index) => {
-    const angle = ((60 * index - 30) * Math.PI) / 180
-    return [x + size * Math.cos(angle), y + size * Math.sin(angle)]
-  }).flat()
-}
-
-function pixelToAxial(x: number, y: number, size = hexSize): AxialCoordinate {
-  const q = ((rootThree / 3) * x - y / 3) / size
-  const r = ((2 / 3) * y) / size
-  const cube = { x: q, z: r, y: -q - r }
-  let rx = Math.round(cube.x)
-  const ry = Math.round(cube.y)
-  let rz = Math.round(cube.z)
-  const dx = Math.abs(rx - cube.x)
-  const dy = Math.abs(ry - cube.y)
-  const dz = Math.abs(rz - cube.z)
-  if (dx > dy && dx > dz) rx = -ry - rz
-  else if (dy <= dz) rz = -rx - ry
-  return { q: rx, r: rz }
-}
-
-function coordinateId(coordinate: AxialCoordinate) {
-  return `${coordinate.q}:${coordinate.r}`
-}
-
-function chunkId(coordinate: AxialCoordinate) {
-  const key = hexChunkKeyFor(coordinate)
-  return `${key.q}:${key.r}`
 }
 
 export type HexMapCanvasProps = {

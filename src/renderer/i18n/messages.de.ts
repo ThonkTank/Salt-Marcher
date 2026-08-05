@@ -176,6 +176,9 @@ export const messagesDe = {
   'hex.eraseBody':
     'Die betroffenen Bezüge sind auf der Karte sichtbar und werden bereinigt.',
   'hex.eraseConfirm': 'Hexes und Bezüge entfernen',
+  'hex.impact.location': 'Ort: {name}',
+  'hex.impact.journey': 'Reise der Scene {id}',
+  'hex.impact.party': 'Party: {name}',
   'hex.tools': 'Kartenwerkzeuge',
   'hex.history': 'Kartenverlauf',
   'hex.history.undo': 'Rückgängig',

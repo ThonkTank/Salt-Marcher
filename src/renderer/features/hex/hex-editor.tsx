@@ -18,13 +18,13 @@ import {
   capabilityErrorText,
   reportCapabilityError
 } from '../../capabilities/capability-errors.js'
-import { ModalDialog } from '../../shell/modal-dialog.js'
 import { CatalogCrudControlsView } from '../../shell/catalog-crud-controls-view.js'
 import { HexChunkCache } from './hex-chunk-cache.js'
 import { HexCommandQueue } from './hex-command-queue.js'
 import { createHexLocationPlacementController } from './hex-location-placement-controller.js'
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 import { executeRecoverableHexCommand } from './hex-command-executor.js'
+import { HexImpactDialog } from './hex-impact-dialog.js'
 
 type EditorTool = 'select' | 'paint' | 'erase' | 'location'
 
@@ -745,93 +745,33 @@ export default function HexEditor(props: {
         )}
       </aside>
       {pendingErase && (
-        <ModalDialog
-          className="hex-erase-dialog"
-          ariaLabel="Belegte Hexes löschen"
-          onClose={() => setPendingErase(null)}
-        >
-          <h2>{message('hex.eraseTitle')}</h2>
-          <p>{message('hex.eraseBody')}</p>
-          <ul>
-            {pendingErase.impact.locations.map((location) => (
-              <li key={location.locationId}>Ort: {location.displayName}</li>
-            ))}
-            {pendingErase.impact.journeys.map((journey) => (
-              <li key={journey.sceneId}>
-                Reise der Scene {journey.sceneId.slice(0, 8)}
-              </li>
-            ))}
-            {pendingErase.impact.partyMembers.map((member) => (
-              <li key={member.memberId}>Party: {member.displayName}</li>
-            ))}
-          </ul>
-          <div className="row-actions">
-            <button onClick={() => setPendingErase(null)}>
-              {message('action.cancel')}
-            </button>
-            <button
-              className="danger"
-              onClick={() =>
-                void applyCoordinates(
-                  pendingErase.path,
-                  pendingErase.confirmationToken,
-                  pendingErase.radius,
-                  pendingErase.commandId
-                )
-              }
-            >
-              {message('hex.eraseConfirm')}
-            </button>
-          </div>
-        </ModalDialog>
+        <HexImpactDialog
+          impact={pendingErase.impact}
+          cancel={() => setPendingErase(null)}
+          confirm={() =>
+            void applyCoordinates(
+              pendingErase.path,
+              pendingErase.confirmationToken,
+              pendingErase.radius,
+              pendingErase.commandId
+            )
+          }
+        />
       )}
       {pendingHistory && (
-        <ModalDialog
-          className="hex-erase-dialog"
-          ariaLabel={message('hex.eraseTitle')}
-          onClose={() => setPendingHistory(null)}
-        >
-          <h2>{message('hex.eraseTitle')}</h2>
-          <p>{message('hex.eraseBody')}</p>
-          <ImpactList impact={pendingHistory.impact} />
-          <div className="row-actions">
-            <button onClick={() => setPendingHistory(null)}>
-              {message('action.cancel')}
-            </button>
-            <button
-              className="danger"
-              onClick={() =>
-                void changeHistory(
-                  pendingHistory.direction,
-                  pendingHistory.confirmationToken,
-                  pendingHistory.commandId
-                )
-              }
-            >
-              {message('hex.eraseConfirm')}
-            </button>
-          </div>
-        </ModalDialog>
+        <HexImpactDialog
+          impact={pendingHistory.impact}
+          cancel={() => setPendingHistory(null)}
+          confirm={() =>
+            void changeHistory(
+              pendingHistory.direction,
+              pendingHistory.confirmationToken,
+              pendingHistory.commandId
+            )
+          }
+        />
       )}
     </section>
-  )
-}
-
-function ImpactList(props: { impact: HexEraseImpact }) {
-  return (
-    <ul>
-      {props.impact.locations.map((location) => (
-        <li key={location.locationId}>Ort: {location.displayName}</li>
-      ))}
-      {props.impact.journeys.map((journey) => (
-        <li key={journey.sceneId}>
-          Reise der Scene {journey.sceneId.slice(0, 8)}
-        </li>
-      ))}
-      {props.impact.partyMembers.map((member) => (
-        <li key={member.memberId}>Party: {member.displayName}</li>
-      ))}
-    </ul>
   )
 }
 
