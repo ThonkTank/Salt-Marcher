@@ -132,6 +132,16 @@ async function setElectronWindowSize(
     width,
     height
   )
+  await client.waitUntil(
+    async () =>
+      (
+        await client.execute(() => ({
+          width: window.innerWidth,
+          height: window.innerHeight
+        }))
+      ).width <= width,
+    { timeout: 5_000, timeoutMsg: 'Renderer did not observe the window resize' }
+  )
 }
 
 async function openCatalogSection(client: WdioBrowser, label: string) {

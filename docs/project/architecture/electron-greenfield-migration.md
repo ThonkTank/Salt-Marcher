@@ -35,7 +35,7 @@ isolation with structured renderer incidents and Main-controlled reload.
 Renderer feature ports are injected from React context; the mutable capability
 singleton has been removed. Pixi is loaded only at a visible Hex canvas, which
 reduced the shared Workspace chunk from roughly 1.18 MiB to about 289 KiB.
-The normal renderer is capped at 2.76 MiB, legacy WOFF duplicates are excluded,
+The normal renderer is capped at 2.75 MiB, legacy WOFF duplicates are excluded,
 and typed message placeholders fail closed. The canonical check now also runs
 the complete Campaign-walking/Hex journey against the built application.
 
@@ -112,6 +112,10 @@ installers, and all 78 confirmed GM-core cases. Then freeze the SQLite format.
 
 The Go/No-Go decision follows package 4. Do not broaden feature work before
 that decision.
+
+This is a feature freeze: only qualification evidence, defects, security,
+fault containment, diagnostics, dependency-boundary work and changes required
+to reach the M1 Go/No-Go may enter before the decision is recorded.
 
 ## Open blockers
 

@@ -1,6 +1,7 @@
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join, normalize, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import ts from 'typescript'
 import {
   coreOperations,
   mainOperations
@@ -19,9 +20,33 @@ function codeFiles(directory: string): string[] {
 
 function relativeImports(path: string): string[] {
   const content = readFileSync(path, 'utf8')
-  return [...content.matchAll(/(?:from\s+|import\s*)['"](\.[^'"]+)['"]/g)]
-    .map((match) => match[1])
-    .filter((value): value is string => value !== undefined)
+  const tree = ts.createSourceFile(
+    path,
+    content,
+    ts.ScriptTarget.Latest,
+    true,
+    path.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
+  )
+  const specifiers: string[] = []
+  const visit = (node: ts.Node): void => {
+    if (
+      (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+      node.moduleSpecifier &&
+      ts.isStringLiteral(node.moduleSpecifier)
+    )
+      specifiers.push(node.moduleSpecifier.text)
+    if (
+      ts.isCallExpression(node) &&
+      node.expression.kind === ts.SyntaxKind.ImportKeyword &&
+      node.arguments[0] &&
+      ts.isStringLiteral(node.arguments[0])
+    )
+      specifiers.push(node.arguments[0].text)
+    ts.forEachChild(node, visit)
+  }
+  visit(tree)
+  return specifiers
+    .filter((value) => value.startsWith('.'))
     .map((value) => normalize(resolve(dirname(path), value)))
 }
 
@@ -129,12 +154,45 @@ describe('architecture boundaries', () => {
     )
     expect(shell).toContain('<ModuleHost')
     expect(shell).toContain("import('../features/workspace/workspace.js')")
-    expect(workspace).toContain('workspaceDefinitions.map')
-    expect(workspace).toContain('loadCatalogWorkspace')
-    expect(workspace).toContain('loadHexEditor')
+    const definitions = source(
+      'src/renderer/features/workspace/workspace-definition.ts'
+    )
+    expect(workspace).toContain('<WorkspaceRouteHost')
+    expect(definitions).toContain("import('./surfaces/session-surface.js')")
+    expect(definitions).toContain("import('./surfaces/catalog-surface.js')")
+    expect(definitions).toContain("import('./surfaces/hex-surface.js')")
     expect(canvasEntry).toContain("import('./hex-map-canvas-pixi.js')")
     expect(canvasEntry).not.toContain("from 'pixi.js'")
     expect(canvasImplementation).toContain("from 'pixi.js'")
+  })
+
+  it('keeps the TypeScript import graph acyclic', () => {
+    const files = codeFiles('src/renderer').map((file) =>
+      normalize(resolve(file))
+    )
+    const known = new Set(files)
+    const graph = new Map(
+      files.map((file) => [
+        file,
+        relativeImports(file)
+          .map((dependency) => {
+            const stem = dependency.replace(/\.js$/, '')
+            return [`${stem}.ts`, `${stem}.tsx`, stem].find(existsSync) ?? stem
+          })
+          .filter((dependency) => known.has(dependency))
+      ])
+    )
+    const visiting = new Set<string>()
+    const visited = new Set<string>()
+    const walk = (file: string): void => {
+      if (visiting.has(file)) throw new Error(`Import cycle reaches ${file}`)
+      if (visited.has(file)) return
+      visiting.add(file)
+      for (const dependency of graph.get(file) ?? []) walk(dependency)
+      visiting.delete(file)
+      visited.add(file)
+    }
+    for (const file of files) walk(file)
   })
 
   it('injects renderer capabilities without mutable module state', () => {

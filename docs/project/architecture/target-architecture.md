@@ -36,9 +36,11 @@ loads each application or workspace surface explicitly, distinguishes module
 load failures from React render failures, keeps the surrounding shell usable,
 and reports a bounded `RendererIncident` through the preload bridge. Only Main
 may reload a renderer `WebContents`; renderer code cannot call browser-global
-reload APIs. Main additionally records main-frame load failures, renderer
-process termination and responsiveness transitions without navigation URLs or
-campaign data.
+reload APIs. Main additionally records main-frame load failures, preload
+failures, renderer process termination and responsiveness transitions without
+navigation URLs, preload paths, exception messages, or campaign data.
+Incidents carry only bounded scope, phase, code, workspace, safe error class
+and recovery class fields.
 
 The passive second-monitor window uses a separate fail-closed preload. It
 exposes only the typed party-safe projection read/change notification and Core
@@ -80,14 +82,17 @@ adapters receive its `SaltMarcherApi` value and return narrow ports; pure
 controllers and command executors receive those ports explicitly. Mutable
 module-level capability registries and renderer service locators are forbidden.
 Workspace navigation is described by immutable `WorkspaceDefinition` records,
-including identity, label, icon and layout policy, rather than parallel
-conditionals in the shell.
+including identity, label, icon, loader, neutral layout mode and recovery
+policy, rather than parallel conditionals in the shell. Its route host models
+loading, ready, module failure and render failure explicitly. Module failures
+can request a Main-owned renderer reload; render failures remount locally or
+return to Session while Top Bar, Rail and Campaign control remain usable.
 
 Pixi is a leaf dependency of `hex-map-canvas-pixi.tsx`. The lightweight canvas
 surface dynamically loads that implementation behind its own `ModuleHost`, so
 Session, Catalog and the common Workspace graph do not eagerly include Pixi or
 its renderer backends. The bundle gate verifies this static dependency graph,
-a 900 KiB Workspace ceiling and a 2.76 MiB total normal-renderer ceiling.
+a 900 KiB Workspace ceiling and a 2.75 MiB total normal-renderer ceiling.
 
 Catalog is a composition root over Monster, Location, Faction, and Encounter
 Table controllers and views. Controller state remains mounted across section

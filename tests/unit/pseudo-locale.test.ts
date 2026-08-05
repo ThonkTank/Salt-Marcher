@@ -37,4 +37,11 @@ describe('pseudo locale', () => {
       formatMessage('catalog.locationCount', { visible: 2 }, false)
     ).toThrow('Missing {total} for message catalog.locationCount')
   })
+
+  it('rejects extra placeholder parameters at compile time', () => {
+    const invalidParameters = () =>
+      // @ts-expect-error Parameter objects must exactly match the template.
+      formatMessage('workspace.loading', { name: 'Hex', extra: 'private' })
+    expect(invalidParameters).toBeTypeOf('function')
+  })
 })
