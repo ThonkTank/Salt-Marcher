@@ -2,11 +2,14 @@
 
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { ReactNode } from 'react'
 import type {
   AxialCoordinate,
   HexMapView,
   HexTerrainCatalog
 } from '../../src/shared/contracts/hex.js'
+import type { SaltMarcherApi } from '../../src/shared/contracts/capability-api.js'
+import { CapabilityProvider } from '../../src/renderer/capabilities/capability-provider.js'
 
 const pixi = vi.hoisted(() => ({
   init: vi.fn<() => Promise<void>>(),
@@ -85,6 +88,17 @@ const terrains = {
   terrains: []
 } as unknown as HexTerrainCatalog
 
+const api = {
+  runtime: {
+    reportRendererIncident: vi.fn().mockResolvedValue(undefined),
+    reloadRenderer: vi.fn().mockResolvedValue(undefined)
+  }
+} as unknown as SaltMarcherApi
+
+function CanvasTestProvider(props: { children: ReactNode }) {
+  return <CapabilityProvider api={api}>{props.children}</CapabilityProvider>
+}
+
 describe('HexMapCanvas', () => {
   afterEach(() => {
     pixi.init.mockReset()
@@ -102,7 +116,8 @@ describe('HexMapCanvas', () => {
         terrains={terrains}
         selected={null}
         ariaLabel="Testkarte"
-      />
+      />,
+      { wrapper: CanvasTestProvider }
     )
 
     expect(await screen.findByRole('alert')).toHaveTextContent(
@@ -130,7 +145,8 @@ describe('HexMapCanvas', () => {
         terrains={terrains}
         selected={null}
         ariaLabel="Testkarte"
-      />
+      />,
+      { wrapper: CanvasTestProvider }
     )
     await waitFor(() => expect(pixi.init).toHaveBeenCalledTimes(1))
 
@@ -151,7 +167,7 @@ describe('HexMapCanvas', () => {
     view.unmount()
   })
 
-  it('supports all six axial keyboard neighbors', () => {
+  it('supports all six axial keyboard neighbors', async () => {
     pixi.init.mockResolvedValue(undefined)
     const select = vi.fn<(coordinate: AxialCoordinate) => void>()
     const view = render(
@@ -161,9 +177,10 @@ describe('HexMapCanvas', () => {
         selected={null}
         onTileClick={select}
         ariaLabel="Testkarte"
-      />
+      />,
+      { wrapper: CanvasTestProvider }
     )
-    const region = screen.getByRole('region', { name: 'Testkarte' })
+    const region = await screen.findByRole('region', { name: 'Testkarte' })
     for (const key of [
       'ArrowLeft',
       'ArrowRight',
@@ -195,7 +212,8 @@ describe('HexMapCanvas', () => {
         interaction="paint"
         onStrokeComplete={complete}
         ariaLabel="Testkarte"
-      />
+      />,
+      { wrapper: CanvasTestProvider }
     )
     await waitFor(() =>
       expect(view.container.querySelector('canvas')).not.toBeNull()
