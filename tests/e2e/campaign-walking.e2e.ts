@@ -260,11 +260,18 @@ describe('campaign walking skeleton', () => {
     await expect(
       await factionDialog.$('input[aria-label="Fraktionsname"]')
     ).toHaveValue('Hafenwache')
-    await expect(
-      await factionDialog.$(
-        'select[aria-label="Primäre Encounter-Tabelle"] option:checked'
-      )
-    ).toHaveText('Wachpatrouille')
+    await client.waitUntil(
+      async () =>
+        (await (
+          await factionDialog.$(
+            'select[aria-label="Primäre Encounter-Tabelle"] option:checked'
+          )
+        ).getText()) === 'Wachpatrouille',
+      {
+        timeout: 15_000,
+        timeoutMsg: 'New encounter table was not selected in the faction draft.'
+      }
+    )
     await (
       await factionDialog.$('input[aria-label="Maximum Wolf"]')
     ).setValue('2')

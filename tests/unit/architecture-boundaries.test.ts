@@ -152,6 +152,9 @@ describe('architecture boundaries', () => {
     const canvasImplementation = source(
       'src/renderer/features/hex/hex-map-canvas-pixi.tsx'
     )
+    const gestureController = source(
+      'src/renderer/features/hex/hex-canvas-gesture-controller.ts'
+    )
     expect(shell).toContain('<ModuleHost')
     expect(shell).toContain("import('../features/workspace/workspace.js')")
     const definitions = source(
@@ -164,6 +167,12 @@ describe('architecture boundaries', () => {
     expect(canvasEntry).toContain("import('./hex-map-canvas-pixi.js')")
     expect(canvasEntry).not.toContain("from 'pixi.js'")
     expect(canvasImplementation).toContain("from 'pixi.js'")
+    expect(canvasImplementation).toContain('attachHexCanvasGestures')
+    expect(gestureController).not.toContain("from 'pixi.js'")
+    const editor = source('src/renderer/features/hex/hex-editor.tsx')
+    expect(editor).toContain('<HexCatalogPane')
+    expect(editor).toContain('<HexCanvasSurface')
+    expect(editor).toContain('<HexStatePane')
   })
 
   it('keeps the TypeScript import graph acyclic', () => {

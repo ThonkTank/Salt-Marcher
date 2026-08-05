@@ -3,17 +3,14 @@ import { useCallback, useEffect, useRef } from 'react'
 import type {
   AxialCoordinate,
   HexBrushStrokeResult,
-  HexMapView,
-  HexTerrainId
+  HexMapView
 } from '../../../shared/contracts/hex.js'
-import { HexMapCanvas } from './hex-map-canvas.js'
 import './hex.css'
 import { hexCapabilities } from './hex-capabilities.js'
 import {
   capabilityErrorText,
   reportCapabilityError
 } from '../../capabilities/capability-errors.js'
-import { CatalogCrudControlsView } from '../../shell/catalog-crud-controls-view.js'
 import { HexChunkCache } from './hex-chunk-cache.js'
 import { HexCommandQueue } from './hex-command-queue.js'
 import { createHexLocationPlacementController } from './hex-location-placement-controller.js'
@@ -21,6 +18,11 @@ import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 import { executeRecoverableHexCommand } from './hex-command-executor.js'
 import { HexImpactDialog } from './hex-impact-dialog.js'
 import { useHexEditorController } from './use-hex-editor-controller.js'
+import {
+  HexCanvasSurface,
+  HexCatalogPane,
+  HexStatePane
+} from './hex-editor-panes.js'
 
 export default function HexEditor(props: {
   onError: (message: string) => void
@@ -525,227 +527,71 @@ export default function HexEditor(props: {
     )
   const tile =
     selected && map
-      ? map.tiles.find(
+      ? (map.tiles.find(
           (candidate) =>
             candidate.q === selected.q && candidate.r === selected.r
-        )
+        ) ?? null)
       : null
   const targetOccupiedByOtherLocation = Boolean(
     tile?.location && tile.location.locationId !== locationId
   )
   return (
     <section className="hex-editor-workspace">
-      <aside className="hex-editor-controls">
-        <CatalogCrudControlsView
-          title={message('ui.hex.karten')}
-          items={catalog.maps.map((entry) => ({
-            id: entry.id,
-            label: entry.displayName
-          }))}
-          selectedId={map?.map.id ?? ''}
-          emptyLabel={message('ui.keine.karte')}
-          selectLabel={message('ui.karte')}
-          createLabel={message('ui.neue.karte')}
-          createValue={newName}
-          createButtonLabel={message('ui.neu')}
-          editLabel={message('ui.name')}
-          editValue={name}
-          saveButtonLabel={message('ui.kartendaten.speichern')}
-          onCreateValueChange={setNewName}
-          onCreate={create}
-          onEditValueChange={setName}
-          onSave={saveMetadata}
-          onSelect={(mapId) => {
-            setSelected(null)
-            void refreshCatalog(mapId).catch(
-              reportCapabilityError(props.onError)
-            )
-          }}
-        >
-          {map && (
-            <>
-              <div className="tool-row" aria-label={message('hex.tools')}>
-                <button
-                  aria-pressed={tool === 'select'}
-                  onClick={() => setTool('select')}
-                >
-                  {message('ui.auswahl')}
-                </button>
-                <button
-                  aria-pressed={tool === 'paint'}
-                  onClick={() => setTool('paint')}
-                >
-                  {message('ui.terrain.malen')}
-                </button>
-                <button
-                  aria-pressed={tool === 'erase'}
-                  onClick={() => setTool('erase')}
-                >
-                  {message('hex.eraser')}
-                </button>
-                <button
-                  aria-pressed={tool === 'location'}
-                  onClick={() => setTool('location')}
-                >
-                  {message('ui.ort.platzieren')}
-                </button>
-              </div>
-              {(tool === 'paint' || tool === 'erase') && (
-                <label>
-                  {message('hex.brushRadius')}: {radius}
-                  <input
-                    aria-label={message('hex.brushRadius')}
-                    type="range"
-                    min="0"
-                    max="10"
-                    value={radius}
-                    onChange={(event) => setRadius(Number(event.target.value))}
-                  />
-                </label>
-              )}
-              {tool === 'paint' && (
-                <label>
-                  {message('ui.terrain')}
-                  <select
-                    value={terrainId}
-                    onChange={(event) =>
-                      setTerrainId(event.target.value as HexTerrainId)
-                    }
-                  >
-                    {terrains.terrains.map((terrain) => (
-                      <option key={terrain.id} value={terrain.id}>
-                        {terrain.label} ·{' '}
-                        {terrain.passable
-                          ? `${terrain.travelCost}×`
-                          : message('hex.impassable')}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-              {tool === 'location' && (
-                <label>
-                  {message('ui.ort.platzieren')}
-                  <select
-                    value={locationId}
-                    onChange={(event) => setLocationId(event.target.value)}
-                  >
-                    <option value="">
-                      {message('hex.noLocationSelected')}
-                    </option>
-                    {locations.locations.map((location) => (
-                      <option key={location.id} value={location.id}>
-                        {location.displayName}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-              )}
-              <button onClick={() => setResetViewSignal((value) => value + 1)}>
-                {message('hex.resetView')}
-              </button>
-              <div className="tool-row" aria-label={message('hex.history')}>
-                <button
-                  disabled={!history.canUndo}
-                  onClick={() => void changeHistory('undo')}
-                >
-                  {message('hex.history.undo')}
-                  {history.undoLabel
-                    ? `: ${historyLabel(history.undoLabel)}`
-                    : ''}
-                </button>
-                <button
-                  disabled={!history.canRedo}
-                  onClick={() => void changeHistory('redo')}
-                >
-                  {message('hex.history.redo')}
-                  {history.redoLabel
-                    ? `: ${historyLabel(history.redoLabel)}`
-                    : ''}
-                </button>
-              </div>
-            </>
-          )}
-        </CatalogCrudControlsView>
-      </aside>
-      <section
-        className="hex-editor-map"
-        aria-label={message('ui.kartenansicht')}
-      >
-        {map ? (
-          <HexMapCanvas
-            snapshot={map}
-            terrains={terrains}
-            selected={selected}
-            overlays={overlays}
-            interaction={tool}
-            brushRadius={radius}
-            brushTerrainId={terrainId}
-            resetViewSignal={resetViewSignal}
-            onTileClick={setSelected}
-            onStrokeComplete={(path) => void applyStroke(path)}
-            onViewportChange={(center, halfExtent) =>
-              void loadViewport(map, center, halfExtent).catch(
-                reportCapabilityError(props.onError)
-              )
-            }
-            ariaLabel={`Hex-Editor ${map.map.displayName}`}
-          />
-        ) : (
-          <div className="session-map-empty">
-            {message('ui.erstelle.eine.hex.karte')}
-          </div>
-        )}
-      </section>
-      <aside className="hex-editor-state">
-        <h2>{message('ui.hexfeld')}</h2>
-        {selected ? (
-          <>
-            <strong>{`Hex q=${selected.q}, r=${selected.r}`}</strong>
-            {tile ? (
-              <>
-                <p>
-                  {
-                    terrains.terrains.find(
-                      (terrain) => terrain.id === tile.terrainId
-                    )?.label
-                  }
-                </p>
-                <p>
-                  {tile.location?.displayName ?? message('hex.noNamedLocation')}
-                </p>
-              </>
-            ) : (
-              <p>{message('hex.emptyTile')}</p>
-            )}
-            {tool === 'location' && (
-              <>
-                {targetOccupiedByOtherLocation && (
-                  <p role="alert">{message('hex.locationOccupied')}</p>
-                )}
-                <button
-                  disabled={
-                    !tile || !locationId || targetOccupiedByOtherLocation
-                  }
-                  onClick={() => void placeLocation()}
-                >
-                  {message('ui.hier.platzieren')}
-                </button>
-                {tile?.location && (
-                  <button
-                    className="danger"
-                    onClick={() => void removeLocation()}
-                  >
-                    {message('hex.removeLocation')}
-                  </button>
-                )}
-              </>
-            )}
-          </>
-        ) : (
-          <p>{message('ui.waehle.ein.hexfeld.aus')}</p>
-        )}
-      </aside>
+      <HexCatalogPane
+        catalog={catalog}
+        terrains={terrains}
+        locations={locations}
+        map={map}
+        tool={tool}
+        terrainId={terrainId}
+        radius={radius}
+        locationId={locationId}
+        newName={newName}
+        name={name}
+        history={history}
+        onCreateValueChange={setNewName}
+        onCreate={() => void create()}
+        onEditValueChange={setName}
+        onSave={() => void saveMetadata()}
+        onSelectMap={(mapId) => {
+          setSelected(null)
+          void refreshCatalog(mapId).catch(reportCapabilityError(props.onError))
+        }}
+        onSelectTool={setTool}
+        onRadiusChange={setRadius}
+        onTerrainChange={setTerrainId}
+        onLocationChange={setLocationId}
+        onResetView={() => setResetViewSignal((value) => value + 1)}
+        onHistory={(direction) => void changeHistory(direction)}
+      />
+      <HexCanvasSurface
+        map={map}
+        terrains={terrains}
+        selected={selected}
+        overlays={overlays}
+        tool={tool}
+        radius={radius}
+        terrainId={terrainId}
+        resetViewSignal={resetViewSignal}
+        onSelect={setSelected}
+        onStroke={(path) => void applyStroke(path)}
+        onViewportChange={(center, halfExtent) => {
+          if (!map) return
+          void loadViewport(map, center, halfExtent).catch(
+            reportCapabilityError(props.onError)
+          )
+        }}
+      />
+      <HexStatePane
+        selected={selected}
+        tile={tile}
+        terrains={terrains}
+        tool={tool}
+        locationId={locationId}
+        targetOccupiedByOtherLocation={targetOccupiedByOtherLocation}
+        onPlaceLocation={() => void placeLocation()}
+        onRemoveLocation={() => void removeLocation()}
+      />
       {pendingErase && (
         <HexImpactDialog
           impact={pendingErase.impact}
@@ -775,21 +621,4 @@ export default function HexEditor(props: {
       )}
     </section>
   )
-}
-
-function historyLabel(code: string): string {
-  switch (code) {
-    case 'paint':
-      return message('hex.history.paint')
-    case 'erase':
-      return message('hex.history.erase')
-    case 'location_place':
-      return message('hex.history.locationPlace')
-    case 'location_move':
-      return message('hex.history.locationMove')
-    case 'location_remove':
-      return message('hex.history.locationRemove')
-    default:
-      return code
-  }
 }

@@ -20,7 +20,6 @@ import { expandHexBrush } from './hex-brush.js'
 import {
   center,
   chunkId,
-  coordinateId,
   hexSize,
   pixelToAxial,
   polygon,
@@ -32,6 +31,7 @@ import {
   viewportCenter,
   viewportMetrics
 } from './hex-pixi-camera.js'
+import { attachHexCanvasGestures } from './hex-canvas-gesture-controller.js'
 
 type TravelOverlay = Readonly<{
   id: string
@@ -97,6 +97,15 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
   useEffect(() => {
     latest.current = props
   }, [props])
+
+  const reportRendererFailure = useCallback(
+    (phase: 'bootstrap' | 'canvas', cause: unknown) => {
+      const error = cause instanceof Error ? cause : new Error(String(cause))
+      latest.current.onRendererFailure?.(phase, error)
+      setRenderError(true)
+    },
+    []
+  )
 
   const clearLayer = useCallback((layer: Container) => {
     for (const child of layer.removeChildren())
@@ -291,6 +300,22 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
     redrawTransientLayers()
   }, [clearLayer, redrawGrid, redrawTransientLayers])
 
+  const redrawSafely = useCallback(() => {
+    try {
+      redraw()
+    } catch (cause) {
+      reportRendererFailure('canvas', cause)
+    }
+  }, [redraw, reportRendererFailure])
+
+  const redrawTransientLayersSafely = useCallback(() => {
+    try {
+      redrawTransientLayers()
+    } catch (cause) {
+      reportRendererFailure('canvas', cause)
+    }
+  }, [redrawTransientLayers, reportRendererFailure])
+
   useEffect(() => {
     const element = host.current
     if (!element) return
@@ -306,13 +331,10 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
       selection: new Container()
     }
     let disposed = false
-    let dragging = false
-    let stroking = false
-    let last = { x: 0, y: 0 }
-    let stroke: AxialCoordinate[] = []
     let resizeObserver: ResizeObserver | null = null
     let lastViewportNotice = 0
     let animationFrame = 0
+    let detachGestures: (() => void) | undefined
 
     const notifyViewport = () => {
       const current = state.current
@@ -372,11 +394,15 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
           layers
         }
         resetCamera(state.current, { q: 0, r: 0 })
-        redraw()
+        redrawSafely()
         const renderFrame = () => {
           if (disposed) return
-          application.render(world)
-          animationFrame = requestAnimationFrame(renderFrame)
+          try {
+            application.render(world)
+            animationFrame = requestAnimationFrame(renderFrame)
+          } catch (cause) {
+            reportRendererFailure('canvas', cause)
+          }
         }
         animationFrame = requestAnimationFrame(renderFrame)
 
@@ -388,108 +414,58 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
             (event.clientY - bounds.top - world.position.y) / world.scale.y
           )
         }
-        const pointerDown = (event: PointerEvent) => {
-          if (event.button === 1) {
-            dragging = true
-            last = { x: event.clientX, y: event.clientY }
-            canvas.setPointerCapture?.(event.pointerId)
-            event.preventDefault()
-            return
-          }
-          if (
-            event.button === 0 &&
-            (latest.current.interaction === 'paint' ||
-              latest.current.interaction === 'erase')
-          ) {
-            stroking = true
-            stroke = [coordinateFor(event)]
-            previewRef.current = stroke
-            redrawTransientLayers()
-            canvas.setPointerCapture?.(event.pointerId)
-            event.preventDefault()
-          }
-        }
-        const pointerMove = (event: PointerEvent) => {
-          if (dragging) {
-            world.position.x += event.clientX - last.x
-            world.position.y += event.clientY - last.y
-            last = { x: event.clientX, y: event.clientY }
+        detachGestures = attachHexCanvasGestures({
+          canvas,
+          interaction: () => latest.current.interaction,
+          coordinateFor,
+          onPan: (deltaX, deltaY) => {
+            world.position.x += deltaX
+            world.position.y += deltaY
             rememberCamera(state.current!)
             notifyViewport()
-            return
-          }
-          if (!stroking) return
-          const coordinate = coordinateFor(event)
-          if (coordinateId(stroke.at(-1)!) === coordinateId(coordinate)) return
-          stroke = [...stroke, coordinate]
-          previewRef.current = stroke
-          redrawTransientLayers()
-        }
-        const pointerUp = (event: PointerEvent) => {
-          if (dragging) {
-            dragging = false
+          },
+          onPanEnd: () => {
             redrawGrid()
             const metrics = viewportMetrics(state.current!)
             latest.current.onViewportChange?.(
               metrics.center,
               metrics.halfExtent
             )
-          }
-          if (stroking) {
-            stroking = false
-            const completed = stroke
-            stroke = []
+          },
+          onStrokePreview: (path) => {
+            previewRef.current = path
+            redrawTransientLayersSafely()
+          },
+          onStrokeComplete: (path) => latest.current.onStrokeComplete?.(path),
+          onStrokeCancel: () => {
             previewRef.current = []
-            redrawTransientLayers()
-            latest.current.onStrokeComplete?.(completed)
+            redrawTransientLayersSafely()
+          },
+          onSelect: (coordinate) => latest.current.onTileClick?.(coordinate),
+          onZoom: (event) => {
+            const bounds = canvas.getBoundingClientRect()
+            const worldX =
+              (event.clientX - bounds.left - world.position.x) / world.scale.x
+            const worldY =
+              (event.clientY - bounds.top - world.position.y) / world.scale.y
+            const next = Math.max(
+              0.35,
+              Math.min(2.5, world.scale.x * (event.deltaY > 0 ? 0.9 : 1.1))
+            )
+            world.scale.set(next)
+            world.position.set(
+              event.clientX - bounds.left - worldX * next,
+              event.clientY - bounds.top - worldY * next
+            )
+            redrawGrid()
+            rememberCamera(state.current!)
+            const metrics = viewportMetrics(state.current!)
+            latest.current.onViewportChange?.(
+              metrics.center,
+              metrics.halfExtent
+            )
           }
-          canvas.releasePointerCapture?.(event.pointerId)
-        }
-        const pointerCancel = (event: PointerEvent) => {
-          dragging = false
-          stroking = false
-          stroke = []
-          previewRef.current = []
-          redrawTransientLayers()
-          canvas.releasePointerCapture?.(event.pointerId)
-        }
-        const click = (event: MouseEvent) => {
-          if (
-            event.button !== 0 ||
-            latest.current.interaction === 'paint' ||
-            latest.current.interaction === 'erase'
-          )
-            return
-          latest.current.onTileClick?.(coordinateFor(event))
-        }
-        const wheel = (event: WheelEvent) => {
-          event.preventDefault()
-          const bounds = canvas.getBoundingClientRect()
-          const worldX =
-            (event.clientX - bounds.left - world.position.x) / world.scale.x
-          const worldY =
-            (event.clientY - bounds.top - world.position.y) / world.scale.y
-          const next = Math.max(
-            0.35,
-            Math.min(2.5, world.scale.x * (event.deltaY > 0 ? 0.9 : 1.1))
-          )
-          world.scale.set(next)
-          world.position.set(
-            event.clientX - bounds.left - worldX * next,
-            event.clientY - bounds.top - worldY * next
-          )
-          redrawGrid()
-          rememberCamera(state.current!)
-          const metrics = viewportMetrics(state.current!)
-          latest.current.onViewportChange?.(metrics.center, metrics.halfExtent)
-        }
-        canvas.addEventListener('pointerdown', pointerDown)
-        canvas.addEventListener('pointermove', pointerMove)
-        canvas.addEventListener('pointerup', pointerUp)
-        canvas.addEventListener('pointercancel', pointerCancel)
-        canvas.addEventListener('lostpointercapture', pointerCancel)
-        canvas.addEventListener('click', click)
-        canvas.addEventListener('wheel', wheel, { passive: false })
+        })
         if (typeof ResizeObserver !== 'undefined') {
           resizeObserver = new ResizeObserver(() => {
             application.resize(
@@ -500,37 +476,31 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
           })
           resizeObserver.observe(element)
         }
-        ;(application as WebGLRenderer & { cleanup?: () => void }).cleanup =
-          () => {
-            canvas.removeEventListener('pointerdown', pointerDown)
-            canvas.removeEventListener('pointermove', pointerMove)
-            canvas.removeEventListener('pointerup', pointerUp)
-            canvas.removeEventListener('pointercancel', pointerCancel)
-            canvas.removeEventListener('lostpointercapture', pointerCancel)
-            canvas.removeEventListener('click', click)
-            canvas.removeEventListener('wheel', wheel)
-          }
       })
       .catch((cause: unknown) => {
-        const error = cause instanceof Error ? cause : new Error(String(cause))
         try {
           application.destroy(true)
         } catch {
           // A failed partial initialization still needs best-effort cleanup.
         }
         if (!disposed) {
-          latest.current.onRendererFailure?.('bootstrap', error)
-          setRenderError(true)
+          reportRendererFailure('bootstrap', cause)
         }
       })
 
     return () => {
       disposed = true
       cancelAnimationFrame(animationFrame)
-      ;(application as WebGLRenderer & { cleanup?: () => void }).cleanup?.()
+      detachGestures?.()
       destroy()
     }
-  }, [redraw, redrawGrid, redrawTransientLayers, renderAttempt])
+  }, [
+    redrawGrid,
+    redrawSafely,
+    redrawTransientLayersSafely,
+    renderAttempt,
+    reportRendererFailure
+  ])
 
   useEffect(() => {
     const current = state.current
@@ -547,25 +517,26 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
         current.world.position.set(remembered.x, remembered.y)
       } else resetCamera(current, { q: 0, r: 0 })
     }
-    redraw()
+    redrawSafely()
   }, [
     props.snapshot,
     props.terrains,
     props.token,
     props.route,
     props.overlays,
-    redraw,
+    redrawSafely,
     clearLayer
   ])
 
   useEffect(() => {
-    redrawTransientLayers()
+    const frame = requestAnimationFrame(redrawTransientLayersSafely)
+    return () => cancelAnimationFrame(frame)
   }, [
     props.selected,
     props.interaction,
     props.brushRadius,
     props.brushTerrainId,
-    redrawTransientLayers
+    redrawTransientLayersSafely
   ])
 
   useEffect(() => {

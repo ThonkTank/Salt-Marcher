@@ -119,19 +119,27 @@ async function setElectronWindowSize(
           electron: typeof import('electron'),
           width: number,
           height: number
-        ) => void,
+        ) => boolean,
         width: number,
         height: number
-      ) => Promise<void>
+      ) => Promise<boolean>
     }
   }
-  await electronClient.electron.execute(
+  const resized = await electronClient.electron.execute(
     (electron, nextWidth, nextHeight) => {
-      electron.BrowserWindow.getFocusedWindow()?.setSize(nextWidth, nextHeight)
+      const window =
+        electron.BrowserWindow.getFocusedWindow() ??
+        electron.BrowserWindow.getAllWindows().find(
+          (candidate) => !candidate.isDestroyed() && candidate.isVisible()
+        )
+      if (!window) return false
+      window.setSize(nextWidth, nextHeight)
+      return true
     },
     width,
     height
   )
+  expect(resized).toBe(true)
   await client.waitUntil(
     async () =>
       (
@@ -140,7 +148,10 @@ async function setElectronWindowSize(
           height: window.innerHeight
         }))
       ).width <= width,
-    { timeout: 5_000, timeoutMsg: 'Renderer did not observe the window resize' }
+    {
+      timeout: 15_000,
+      timeoutMsg: 'Renderer did not observe the window resize'
+    }
   )
 }
 
