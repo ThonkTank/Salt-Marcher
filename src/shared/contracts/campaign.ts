@@ -46,6 +46,9 @@ export function freezeCampaignSnapshot(
 
 export const capabilityErrorCodeSchema = z.enum([
   'validation_failed',
+  'unsupported_svg',
+  'svg_too_large',
+  'file_read_failed',
   'stale',
   'not_found',
   'read_only',

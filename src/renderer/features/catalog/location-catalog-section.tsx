@@ -217,6 +217,8 @@ function LocationDialog(props: {
   const [displayName, setDisplayName] = useState(
     props.location?.displayName ?? ''
   )
+  const [kind, setKind] = useState(props.location?.kind ?? '')
+  const [region, setRegion] = useState(props.location?.region ?? '')
   const [notes, setNotes] = useState(props.location?.notes ?? '')
   const [factionIds, setFactionIds] = useState<string[]>([
     ...(props.location?.factionIds ?? [])
@@ -226,9 +228,18 @@ function LocationDialog(props: {
   ])
   const [discardOpen, setDiscardOpen] = useState(false)
   const dirty =
-    JSON.stringify({ displayName, notes, factionIds, encounterTableIds }) !==
+    JSON.stringify({
+      displayName,
+      kind,
+      region,
+      notes,
+      factionIds,
+      encounterTableIds
+    }) !==
     JSON.stringify({
       displayName: props.location?.displayName ?? '',
+      kind: props.location?.kind ?? '',
+      region: props.location?.region ?? '',
       notes: props.location?.notes ?? '',
       factionIds: props.location?.factionIds ?? [],
       encounterTableIds: props.location?.encounterTableIds ?? []
@@ -250,7 +261,14 @@ function LocationDialog(props: {
         onClose={requestClose}
         onSubmit={(event) => {
           event.preventDefault()
-          props.save({ displayName, notes, factionIds, encounterTableIds })
+          props.save({
+            displayName,
+            kind,
+            region,
+            notes,
+            factionIds,
+            encounterTableIds
+          })
         }}
       >
         <header>
@@ -274,6 +292,24 @@ function LocationDialog(props: {
             maxLength={100}
             value={displayName}
             onChange={(event) => setDisplayName(event.target.value)}
+          />
+        </label>
+        <label>
+          Typ
+          <input
+            aria-label={message('ui.ortstyp')}
+            maxLength={100}
+            value={kind}
+            onChange={(event) => setKind(event.target.value)}
+          />
+        </label>
+        <label>
+          Region
+          <input
+            aria-label={message('ui.ortsregion')}
+            maxLength={100}
+            value={region}
+            onChange={(event) => setRegion(event.target.value)}
           />
         </label>
         <ReferenceMultiSelect

@@ -119,11 +119,17 @@ describe('campaign walking skeleton', () => {
 
   it('keeps a newly created hex map inside the workspace', async () => {
     const client = browser as unknown as WdioBrowser
+    await createLocation(client, 'Leuchtturmklippe', 'Zeichen an der Küste.')
     await (await client.$('button[aria-label="Hex-Editor"]')).click()
-    await (
-      await client.$('input[aria-label="Neue Karte"]')
-    ).setValue('Salzmarsch-Küste')
     await (await client.$('button=Neu')).click()
+    await expect(
+      await client.$('[role="region"][aria-label="Hex-Editor Neue Hex-Karte"]')
+    ).toBeExisting()
+    await (await client.$('button=Umbenennen')).click()
+    await (
+      await client.$('input[aria-label="Kartenname"]')
+    ).setValue('Salzmarsch-Küste')
+    await (await client.$('button=Speichern')).click()
     const mapHost = await client.$(
       '[role="region"][aria-label="Hex-Editor Salzmarsch-Küste"]'
     )
@@ -143,13 +149,107 @@ describe('campaign walking skeleton', () => {
     expect(canvasSize.height).toBeGreaterThan(0)
 
     await expectHexEditorLayout(client)
+    await mapCanvas.click()
+    await waitForHexContentRevision(client, 'Salzmarsch-Küste', 1)
     await expectAccessibleInBothThemes(client)
+    await expectElementGolden(
+      client,
+      'hex-editor-terrain-light',
+      '.hex-editor-workspace'
+    )
+    await (
+      await client.$('button[aria-label="Zum Kerzenlichtmodus wechseln"]')
+    ).click()
+    await (await client.$('button=Ort platzieren')).click()
+    await client.execute(async () => {
+      const api = window.saltMarcher
+      const [world, symbols] = await Promise.all([
+        api.locations.read(),
+        api.locationSymbols.search('', 0, 24)
+      ])
+      const location = world.locations.find(
+        (entry) => entry.displayName === 'Leuchtturmklippe'
+      )
+      if (!location) throw new Error('E2E location missing')
+      await api.locationSymbols.importAndAssign({
+        commandId: crypto.randomUUID(),
+        displayName: 'Leuchtturm',
+        source:
+          '<svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="M4 22 L10 4 L14 4 L20 22 Z"/></svg>',
+        locationId: location.id,
+        expectedSymbolRevision: symbols.revision,
+        expectedPresentationRevision: location.mapPresentation.revision
+      })
+    })
+    await (await client.$('button[aria-label="Leuchtturm"]')).waitForExist()
+    await mapCanvas.click()
+    await waitForLocationPlacement(client, 'Leuchtturmklippe', true)
+    await expectElementGolden(
+      client,
+      'hex-editor-location-dark',
+      '.hex-editor-workspace'
+    )
+    const renameSymbol = await (
+      await client.$('label*=Eigenes Symbol umbenennen')
+    ).$('input')
+    await renameSymbol.setValue('Bake')
+    await client.keys(['Tab'])
+    await (await client.$('button[aria-label="Bake"]')).waitForExist()
+    await (await client.$('button=Symbol löschen')).click()
+    await (await client.$('button=Löschen und ersetzen')).click()
+    await (
+      await client.$('button[aria-label="Bake"]')
+    ).waitForExist({ reverse: true })
+    await client.waitUntil(
+      () =>
+        client.execute(async () => {
+          const world = await window.saltMarcher.locations.read()
+          return (
+            world.locations.find(
+              (entry) => entry.displayName === 'Leuchtturmklippe'
+            )?.mapPresentation.symbolId === 'location'
+          )
+        }),
+      {
+        timeout: 5_000,
+        timeoutMsg: 'Deleted custom symbol was not replaced by the built-in.'
+      }
+    )
+    await (await client.$('button=Terrain malen')).click()
+    await (await client.$('button=Radieren')).click()
+    await mapCanvas.click()
+    const eraseDialog = await client.$(
+      '[role="dialog"][aria-label="Belegte Hexes löschen?"]'
+    )
+    await eraseDialog.waitForExist()
+    await expect(await eraseDialog.$('li*=Leuchtturmklippe')).toBeExisting()
+    await (await eraseDialog.$('button=Hexes und Bezüge entfernen')).click()
+    await waitForLocationPlacement(client, 'Leuchtturmklippe', false)
+    await (
+      await client.$('button[aria-label="Zum Pergamentmodus wechseln"]')
+    ).click()
+    await (await client.$('button=Auswahl')).click()
+    await mapCanvas.click()
     await client.execute(() => {
       document.documentElement.style.zoom = '2'
     })
     await expectAccessible(client)
+    await expectHexEditorStackedLayout(client)
+    await client.execute(() => {
+      document
+        .querySelector('.hex-editor-state')
+        ?.scrollIntoView({ block: 'start' })
+    })
+    await expectElementGolden(
+      client,
+      'hex-editor-selection-light-200',
+      '.hex-editor-state'
+    )
     await client.execute(() => {
       document.documentElement.style.zoom = ''
+      document
+        .querySelector('.hex-editor-workspace')
+        ?.scrollIntoView({ block: 'start' })
     })
     await (
       await client.$('button[aria-label="Zum Kerzenlichtmodus wechseln"]')
@@ -644,6 +744,92 @@ async function expectHexEditorLayout(client: WdioBrowser): Promise<void> {
   expect(layout?.shellWidth).toBeGreaterThan(0)
   expect(layout?.shellHeight).toBeGreaterThanOrEqual(260)
   expect(layout?.shellRight).toBeLessThanOrEqual(layout?.viewportWidth ?? 0)
+}
+
+async function expectHexEditorStackedLayout(
+  client: WdioBrowser
+): Promise<void> {
+  const geometry = await client.execute(() => {
+    const workspace = document.querySelector('.hex-editor-workspace')
+    const map = document.querySelector('.hex-editor-map')
+    const state = document.querySelector('.hex-editor-state')
+    if (
+      !(workspace instanceof HTMLElement) ||
+      !(map instanceof HTMLElement) ||
+      !(state instanceof HTMLElement)
+    )
+      return null
+    const workspaceBounds = workspace.getBoundingClientRect()
+    const mapBounds = map.getBoundingClientRect()
+    const stateBounds = state.getBoundingClientRect()
+    return {
+      columns: getComputedStyle(workspace).gridTemplateColumns,
+      workspaceWidth: Math.round(workspaceBounds.width),
+      stateWidth: Math.round(stateBounds.width),
+      mapBottom: Math.round(mapBounds.bottom),
+      stateTop: Math.round(stateBounds.top)
+    }
+  })
+  expect(geometry).not.toBeNull()
+  expect(geometry?.columns.split(' ')).toHaveLength(1)
+  expect(geometry?.stateWidth).toBe(geometry?.workspaceWidth)
+  expect(geometry?.stateTop).toBeGreaterThanOrEqual(
+    (geometry?.mapBottom ?? 0) - 1
+  )
+}
+
+async function waitForHexContentRevision(
+  client: WdioBrowser,
+  mapName: string,
+  minimumRevision: number
+): Promise<void> {
+  await client.waitUntil(
+    () =>
+      client.execute(
+        async (name, minimum) => {
+          const catalog = await window.saltMarcher.hex.catalog()
+          return (
+            (catalog.maps.find((entry) => entry.displayName === name)
+              ?.contentRevision ?? -1) >= minimum
+          )
+        },
+        mapName,
+        minimumRevision
+      ),
+    {
+      timeout: 5_000,
+      timeoutMsg: `Hex map ${mapName} did not reach revision ${minimumRevision}.`
+    }
+  )
+}
+
+async function waitForLocationPlacement(
+  client: WdioBrowser,
+  locationName: string,
+  expectedPlaced: boolean
+): Promise<void> {
+  await client.waitUntil(
+    () =>
+      client.execute(
+        async (name, expected) => {
+          const world = await window.saltMarcher.locations.read()
+          const location = world.locations.find(
+            (entry) => entry.displayName === name
+          )
+          if (!location) return false
+          const placement = await window.saltMarcher.hex.locateLocation(
+            location.id
+          )
+          return (placement !== null) === expected
+        },
+        locationName,
+        expectedPlaced
+      ),
+    {
+      timeout: 5_000,
+      timeoutMsg: `Location ${locationName} placement did not become ${String(expectedPlaced)}.`
+    }
+  )
 }
 
 async function createLocation(

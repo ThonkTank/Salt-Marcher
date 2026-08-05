@@ -36,7 +36,7 @@ export const workspaceDefinitions: readonly WorkspaceDefinition[] = [
     id: 'hex',
     label: 'nav.hex',
     icon: hexIcon,
-    layout: 'scroll',
+    layout: 'cockpit',
     load: () => import('./surfaces/hex-surface.js'),
     recovery: recoverToSession
   },

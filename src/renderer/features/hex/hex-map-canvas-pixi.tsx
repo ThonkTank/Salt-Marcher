@@ -32,6 +32,10 @@ import {
   viewportMetrics
 } from './hex-pixi-camera.js'
 import { attachHexCanvasGestures } from './hex-canvas-gesture-controller.js'
+import {
+  HexLocationMarkerOverlay,
+  type HexLocationMarkerOverlayHandle
+} from './hex-location-marker-overlay.js'
 
 type TravelOverlay = Readonly<{
   id: string
@@ -53,13 +57,11 @@ type CanvasState = {
     Readonly<{
       signature: string
       terrain: Container
-      markers: Container
     }>
   >
   layers: Readonly<{
     grid: Container
     terrain: Container
-    markers: Container
     overlays: Container
     preview: Container
     selection: Container
@@ -86,6 +88,7 @@ export type HexMapCanvasProps = {
 
 export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
   const host = useRef<HTMLDivElement>(null)
+  const markerOverlay = useRef<HexLocationMarkerOverlayHandle>(null)
   const state = useRef<CanvasState | null>(null)
   const latest = useRef(props)
   const previewRef = useRef<readonly AxialCoordinate[]>([])
@@ -110,6 +113,18 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
   const clearLayer = useCallback((layer: Container) => {
     for (const child of layer.removeChildren())
       child.destroy({ children: true })
+  }, [])
+
+  const syncCamera = useCallback(() => {
+    const current = state.current
+    if (!current || current.destroyed) return
+    markerOverlay.current?.setCamera({
+      x: current.world.position.x,
+      y: current.world.position.y,
+      scale: current.world.scale.x,
+      width: Math.max(1, current.element.clientWidth),
+      height: Math.max(1, current.element.clientHeight)
+    })
   }, [])
 
   const redrawGrid = useCallback(() => {
@@ -192,9 +207,7 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
     for (const [id, drawing] of current.chunks)
       if (!byChunk.has(id)) {
         layers.terrain.removeChild(drawing.terrain)
-        layers.markers.removeChild(drawing.markers)
         drawing.terrain.destroy({ children: true })
-        drawing.markers.destroy({ children: true })
         current.chunks.delete(id)
       }
     for (const [id, chunk] of byChunk) {
@@ -202,19 +215,16 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
       const signature = chunk
         .map((tile) => {
           const terrain = byTerrain.get(tile.terrainId)
-          return `${tile.q}:${tile.r}:${tile.terrainId}:${terrain?.color ?? ''}:${tile.location?.locationId ?? ''}:${tile.location?.displayName ?? ''}`
+          return `${tile.q}:${tile.r}:${tile.terrainId}:${terrain?.color ?? ''}`
         })
         .join('|')
       if (current.chunks.get(id)?.signature === signature) continue
       const previous = current.chunks.get(id)
       if (previous) {
         layers.terrain.removeChild(previous.terrain)
-        layers.markers.removeChild(previous.markers)
         previous.terrain.destroy({ children: true })
-        previous.markers.destroy({ children: true })
       }
       const terrainContainer = new Container()
-      const markerContainer = new Container()
       const graphics = new Graphics()
       for (const tile of chunk) {
         const point = center(tile)
@@ -225,25 +235,12 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
             .fill(terrain.color)
           graphics.stroke({ width: 1, color: '#263d38', alpha: 0.9 })
         }
-        if (!tile.location) continue
-        const marker = new Graphics()
-        marker.circle(point.x, point.y, 7).fill('#f3d38a')
-        marker.stroke({ width: 2, color: '#3e2f1e' })
-        markerContainer.addChild(marker)
-        const label = new Text({
-          text: tile.location.displayName,
-          style: { fontSize: 12, fill: '#fff4d1' }
-        })
-        label.position.set(point.x + 10, point.y - 18)
-        markerContainer.addChild(label)
       }
       terrainContainer.addChild(graphics)
       layers.terrain.addChild(terrainContainer)
-      layers.markers.addChild(markerContainer)
       current.chunks.set(id, {
         signature,
-        terrain: terrainContainer,
-        markers: markerContainer
+        terrain: terrainContainer
       })
     }
 
@@ -325,7 +322,6 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
     const layers = {
       grid: new Container(),
       terrain: new Container(),
-      markers: new Container(),
       overlays: new Container(),
       preview: new Container(),
       selection: new Container()
@@ -378,7 +374,6 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
         world.addChild(
           layers.grid,
           layers.terrain,
-          layers.markers,
           layers.overlays,
           layers.preview,
           layers.selection
@@ -394,6 +389,7 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
           layers
         }
         resetCamera(state.current, { q: 0, r: 0 })
+        syncCamera()
         redrawSafely()
         const renderFrame = () => {
           if (disposed) return
@@ -422,6 +418,7 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
             world.position.x += deltaX
             world.position.y += deltaY
             rememberCamera(state.current!)
+            syncCamera()
             notifyViewport()
           },
           onPanEnd: () => {
@@ -459,6 +456,7 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
             )
             redrawGrid()
             rememberCamera(state.current!)
+            syncCamera()
             const metrics = viewportMetrics(state.current!)
             latest.current.onViewportChange?.(
               metrics.center,
@@ -472,6 +470,7 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
               Math.max(1, element.clientWidth),
               Math.max(1, element.clientHeight)
             )
+            syncCamera()
             redrawGrid()
           })
           resizeObserver.observe(element)
@@ -499,7 +498,8 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
     redrawSafely,
     redrawTransientLayersSafely,
     renderAttempt,
-    reportRendererFailure
+    reportRendererFailure,
+    syncCamera
   ])
 
   useEffect(() => {
@@ -509,13 +509,13 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
       rememberCamera(current)
       current.chunks.clear()
       clearLayer(current.layers.terrain)
-      clearLayer(current.layers.markers)
       current.mapId = props.snapshot.map.id
       const remembered = current.cameraByMap.get(current.mapId)
       if (remembered) {
         current.world.scale.set(remembered.scale)
         current.world.position.set(remembered.x, remembered.y)
       } else resetCamera(current, { q: 0, r: 0 })
+      syncCamera()
     }
     redrawSafely()
   }, [
@@ -525,7 +525,8 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
     props.route,
     props.overlays,
     redrawSafely,
-    clearLayer
+    clearLayer,
+    syncCamera
   ])
 
   useEffect(() => {
@@ -544,8 +545,9 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
     if (!current || props.resetViewSignal === undefined) return
     resetCamera(current, { q: 0, r: 0 })
     rememberCamera(current)
+    syncCamera()
     redrawGrid()
-  }, [props.resetViewSignal, redrawGrid])
+  }, [props.resetViewSignal, redrawGrid, syncCamera])
 
   const keyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
     const selected = latest.current.selected ?? latest.current.snapshot.center
@@ -589,6 +591,7 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
             current.element.clientHeight / 2 - point.y * current.world.scale.y
           )
           rememberCamera(current)
+          syncCamera()
           redrawGrid()
           const metrics = viewportMetrics(current)
           latest.current.onViewportChange?.(metrics.center, metrics.halfExtent)
@@ -620,6 +623,7 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
         aria-label={props.ariaLabel}
         onKeyDown={keyDown}
       />
+      <HexLocationMarkerOverlay ref={markerOverlay} snapshot={props.snapshot} />
       <span className="sr-only" aria-live="polite">
         {props.selected
           ? `Hex q=${props.selected.q}, r=${props.selected.r}${selectedTile ? `, ${selectedTile.terrainId}${selectedTile.location ? `, ${selectedTile.location.displayName}` : ''}` : ', leer'}`

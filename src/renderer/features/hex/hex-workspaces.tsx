@@ -1,5 +1,5 @@
-import { message } from '../../i18n/messages.de.js'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { formatMessage, message } from '../../i18n/messages.de.js'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type { WorldLocation } from '../../../shared/contracts/world-location.js'
 import type {
@@ -30,7 +30,7 @@ export function TravelScenario(props: {
   onError: (message: string) => void
 }) {
   const api = useCapabilityApi()
-  const capabilities = hexCapabilities(api)
+  const capabilities = useMemo(() => hexCapabilities(api), [api])
   const focusedSceneId = props.snapshot.scene.focusedSceneId
   const onError = props.onError
   const setSnapshot = props.setSnapshot
@@ -109,8 +109,9 @@ export function TravelScenario(props: {
           </dl>
           {context.assumedSpeedMemberNames.length > 0 && (
             <p className="travel-warning">
-              {message('ui.30.ft.angenommen.fuer')}{' '}
-              {context.assumedSpeedMemberNames.join(', ')}.
+              {formatMessage('hex.assumedSpeed', {
+                names: context.assumedSpeedMemberNames.join(', ')
+              })}
             </p>
           )}
           {travel && (
@@ -131,7 +132,7 @@ export function TravelScenario(props: {
               >
                 {[1, 2, 5, 10].map((value) => (
                   <option key={value} value={value}>
-                    {value}×
+                    {formatMessage('hex.multiplier', { value })}
                   </option>
                 ))}
               </select>
@@ -175,10 +176,11 @@ export function SessionHexMap(props: {
   onError: (message: string) => void
 }) {
   const api = useCapabilityApi()
-  const capabilities = hexCapabilities(api)
+  const capabilities = useMemo(() => hexCapabilities(api), [api])
   const chunkCache = useRef(
-    new HexChunkCache((mapId, keys) => api.hex.readChunks(mapId, keys))
+    new HexChunkCache((mapId, keys) => capabilities.hex.readChunks(mapId, keys))
   )
+  const mapRefreshRequest = useRef(0)
   const sceneId = props.snapshot.scene.focusedSceneId
   const onError = props.onError
   const setSnapshot = props.setSnapshot
@@ -224,6 +226,38 @@ export function SessionHexMap(props: {
           .catch(reportCapabilityError(onError))
       }),
     [capabilities, onError, sceneId, setSnapshot]
+  )
+
+  useEffect(
+    () =>
+      capabilities.hex.onChanged((notice) => {
+        if (!map || !notice.mapIds.includes(map.map.id)) return
+        const request = ++mapRefreshRequest.current
+        const changedKeys = notice.changedChunks
+          .filter((chunk) => chunk.mapId === map.map.id)
+          .map((chunk) => chunk.key)
+        chunkCache.current.invalidateChunks(map.map.id, changedKeys)
+        void capabilities.hex
+          .catalog()
+          .then(async (nextCatalog) => {
+            const summary = nextCatalog.maps.find(
+              (candidate) => candidate.id === map.map.id
+            )
+            if (!summary) return null
+            const nextMap = await chunkCache.current.readMapView(
+              summary,
+              map.center
+            )
+            return { nextCatalog, nextMap }
+          })
+          .then((result) => {
+            if (!result || request !== mapRefreshRequest.current) return
+            setCatalog(result.nextCatalog)
+            setMap(result.nextMap)
+          })
+          .catch(reportCapabilityError(onError))
+      }),
+    [capabilities.hex, map, onError]
   )
 
   useEffect(() => {
@@ -372,12 +406,27 @@ export function SessionHexMap(props: {
             .then(setMap)
             .catch(reportCapabilityError(props.onError))
         }
-        ariaLabel={`Hex-Karte ${map.map.displayName}`}
+        ariaLabel={formatMessage('hex.canvas.mapLabel', {
+          name: map.map.displayName
+        })}
       />
       <div className="hex-map-status">
         <span>
           {selectedTile
-            ? `${selectedTile.label} · ${terrains.terrains.find((terrain) => terrain.id === selectedTile.terrainId)?.label}${selectedTile.location ? ` · ${selectedTile.location.displayName}` : ''}`
+            ? formatMessage(
+                selectedTile.location
+                  ? 'hex.status.tileTerrainLocation'
+                  : 'hex.status.tileTerrain',
+                {
+                  q: selectedTile.q,
+                  r: selectedTile.r,
+                  terrain:
+                    terrains.terrains.find(
+                      (terrain) => terrain.id === selectedTile.terrainId
+                    )?.label ?? '',
+                  location: selectedTile.location?.displayName ?? ''
+                }
+              )
             : (travel?.hint ?? message('hex.selectTile'))}
         </span>
         {mode === 'position' && (
@@ -411,13 +460,14 @@ export function HexLocationPlacementDialog(props: {
   onError: (message: string) => void
 }) {
   const api = useCapabilityApi()
-  const capabilities = hexCapabilities(api)
+  const capabilities = useMemo(() => hexCapabilities(api), [api])
   const chunkCache = useRef(
-    new HexChunkCache((mapId, keys) => api.hex.readChunks(mapId, keys))
+    new HexChunkCache((mapId, keys) => capabilities.hex.readChunks(mapId, keys))
   )
   const placementController = useRef(
-    createHexLocationPlacementController(api.hex)
+    createHexLocationPlacementController(capabilities.hex)
   )
+  const mapRefreshRequest = useRef(0)
   const onError = props.onError
   const [catalog, setCatalog] = useState<HexMapCatalogSnapshot | null>(null)
   const [terrains, setTerrains] = useState<HexTerrainCatalog | null>(null)
@@ -454,6 +504,51 @@ export function HexLocationPlacementDialog(props: {
       })
       .catch(reportCapabilityError(onError))
   }, [capabilities, onError, props.location.id])
+  useEffect(
+    () =>
+      capabilities.hex.onChanged((notice) => {
+        if (!map || !notice.mapIds.includes(map.map.id)) return
+        const request = ++mapRefreshRequest.current
+        chunkCache.current.invalidateChunks(
+          map.map.id,
+          notice.changedChunks
+            .filter((chunk) => chunk.mapId === map.map.id)
+            .map((chunk) => chunk.key)
+        )
+        void Promise.all([
+          capabilities.hex.catalog(),
+          capabilities.hex.locateLocation(props.location.id)
+        ])
+          .then(async ([nextCatalog, placement]) => {
+            const mapId = placement?.mapId ?? map.map.id
+            const summary = nextCatalog.maps.find(
+              (candidate) => candidate.id === mapId
+            )
+            if (!summary) return null
+            const nextMap = await chunkCache.current.readMapView(
+              summary,
+              placement?.coordinate ?? map.center
+            )
+            return { nextCatalog, nextMap, placement }
+          })
+          .then((result) => {
+            if (!result || request !== mapRefreshRequest.current) return
+            setCatalog(result.nextCatalog)
+            setMap(result.nextMap)
+            setExisting(
+              result.placement
+                ? {
+                    mapId: result.placement.mapId,
+                    contentRevision: result.placement.contentRevision
+                  }
+                : null
+            )
+            if (result.placement) setSelected(result.placement.coordinate)
+          })
+          .catch(reportCapabilityError(onError))
+      }),
+    [capabilities.hex, map, onError, props.location.id]
+  )
   const changeMap = async (mapId: string) => {
     const summary = catalog?.maps.find((entry) => entry.id === mapId)
     if (summary) setMap(await chunkCache.current.readMapView(summary))
@@ -539,7 +634,9 @@ export function HexLocationPlacementDialog(props: {
                 .then(setMap)
                 .catch(reportCapabilityError(props.onError))
             }
-            ariaLabel={`Platzierung von ${props.location.displayName}`}
+            ariaLabel={formatMessage('hex.canvas.placementLabel', {
+              name: props.location.displayName
+            })}
           />
           <footer>
             <button onClick={props.close}>{message('action.cancel')}</button>
@@ -569,7 +666,7 @@ export function HexLocationPlacementDialog(props: {
 function formatDuration(totalSeconds: number) {
   const hours = Math.floor(totalSeconds / 3600)
   const minutes = Math.floor((totalSeconds % 3600) / 60)
-  return `${hours} Std. ${minutes} Min.`
+  return formatMessage('hex.duration', { hours, minutes })
 }
 
 function formatGameTime(totalSeconds: number) {
@@ -581,5 +678,5 @@ function formatGameTime(totalSeconds: number) {
   const minutes = Math.floor((inDay % 3600) / 60)
     .toString()
     .padStart(2, '0')
-  return `Tag ${day}, ${hours}:${minutes}`
+  return formatMessage('hex.gameTime', { day, hours, minutes })
 }

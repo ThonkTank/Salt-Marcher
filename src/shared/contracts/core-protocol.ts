@@ -3,6 +3,8 @@ import { capabilityFailureSchema } from './campaign.js'
 import { sessionChangeNoticeSchema } from './session-change.js'
 import { referenceIndexChangeNoticeSchema } from './reference.js'
 import { hexChangeNoticeSchema } from './hex.js'
+import { worldLocationChangeNoticeSchema } from './world-location.js'
+import { locationSymbolChangeNoticeSchema } from './location-symbol.js'
 import {
   coreOperations,
   isCoreOperationKind,
@@ -88,6 +90,18 @@ export const coreEventSchema = z.discriminatedUnion('kind', [
     .object({
       kind: z.literal('hex.changed'),
       notice: hexChangeNoticeSchema
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('locations.changed'),
+      notice: worldLocationChangeNoticeSchema
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('location-symbols.changed'),
+      notice: locationSymbolChangeNoticeSchema
     })
     .strict()
 ])

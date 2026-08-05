@@ -42,7 +42,18 @@ application.
 The Hex editor now composes catalog, canvas and state panes around its reducer;
 Pixi drawing, camera logic and gesture state have distinct testable boundaries,
 and both initialization and later canvas-cycle failures retain their cause in
-renderer incidents.
+renderer incidents. Its production shell now follows the high-fidelity
+three-tool design: the utility process persists location-owned map presentation,
+Main performs bounded SVG file selection, an installation-wide one-path symbol
+catalog owns custom glyph data, and the renderer combines Pixi terrain with an
+inline SVG marker and curved-label overlay. Map presentation has its own
+optimistic revision and patch command; chunk projections carry complete,
+immutable marker render data so other map surfaces do not join renderer-side
+catalog snapshots. Location and symbol mutations publish explicit invalidation
+events. Symbol search is paged, SVG validation runs only in the utility process,
+and symbol deletion is a durable installation command which replaces references
+with the built-in `location` marker across active and trashed campaigns before
+removing the catalog entry.
 
 ## Decisions
 
@@ -187,8 +198,10 @@ claiming completion of M3 or M5. Its approved expansion contains:
 - one campaign-local Hex vertical slice now connects a Pixi editor, static
   catalog-backed terrain IDs, World Planner location placement, focused-Scene
   Party position, waypoint route planning, durable checkpoints and Scene time,
-  and the Session Karte/Reise surfaces; editable Terrain catalog CRUD remains a
-  later slice
+  and the Session Karte/Reise surfaces; its editor exposes visible brush levels
+  `1..10` over mathematical radii `0..9`, immediate catalog-location placement,
+  location-owned marker presentation, and installation-wide custom one-path SVG
+  symbols; editable Terrain catalog CRUD remains a later slice
 - one offline reference-graph slice compiles attributed SRD 5.1 rules and
   creatures from one pinned archive into deterministic local artifacts,
   publishes separate static and campaign world indexes from the utility

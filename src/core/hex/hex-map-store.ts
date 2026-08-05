@@ -18,7 +18,8 @@ import {
   type HexChunkKey,
   type HexChunkReadResult,
   type HexChunkSnapshot,
-  type HexMapCatalogSnapshot
+  type HexMapCatalogSnapshot,
+  type HexMarkerPresentation
 } from '../../shared/contracts/hex.js'
 import {
   HEX_CHUNK_SIZE,
@@ -160,7 +161,12 @@ function uniqueChunkKeys(
 }
 
 export class HexMapService {
-  constructor(private readonly campaignDatabase: () => Database.Database) {}
+  constructor(
+    private readonly campaignDatabase: () => Database.Database,
+    private readonly locationLookup?: (
+      db: Database.Database
+    ) => HexLocationLookup
+  ) {}
 
   catalog(): HexMapCatalogSnapshot {
     return this.withStore((store) => store.catalog())
@@ -203,7 +209,7 @@ export class HexMapService {
 
   private withStore<T>(work: (store: HexMapStore) => T): T {
     const db = this.campaignDatabase()
-    const locations = new WorldLocationStore(db)
+    const locations = this.locationLookup?.(db) ?? new WorldLocationStore(db)
     return work(new HexMapStore(db, locations))
   }
 }
@@ -212,6 +218,7 @@ export interface HexLocationLookup {
   exists(id: string): boolean
   displayName(id: string): string | null
   displayNames?(ids: readonly string[]): ReadonlyMap<string, string>
+  markerPresentation?(id: string): HexMarkerPresentation
 }
 
 export type HexMapTruthCell = Readonly<{
@@ -323,7 +330,17 @@ export class HexMapStore {
       ...placement,
       displayName:
         this.locations.displayName(placement.locationId) ??
-        'Nicht verfügbarer Ort'
+        'Nicht verfügbarer Ort',
+      marker: this.locations.markerPresentation?.(placement.locationId) ?? {
+        revision: 0,
+        title:
+          this.locations.displayName(placement.locationId) ??
+          'Nicht verfügbarer Ort',
+        symbol: { kind: 'builtin', id: 'location' },
+        symbolSize: 44,
+        labelCurve: 0,
+        labelPosition: 'below'
+      }
     }))
     return hexChunkSnapshotSchema.parse({
       key,

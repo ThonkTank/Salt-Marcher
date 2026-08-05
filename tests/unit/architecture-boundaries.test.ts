@@ -173,6 +173,17 @@ describe('architecture boundaries', () => {
     expect(editor).toContain('<HexCatalogPane')
     expect(editor).toContain('<HexCanvasSurface')
     expect(editor).toContain('<HexStatePane')
+    expect(editor).toContain('useHexMapController')
+    expect(editor).toContain('useHexCommandController')
+    expect(editor).toContain('useLocationPresentationController')
+    expect(editor).not.toMatch(
+      /\bapi\.(?:hex|hexTravel|session|locations|locationSymbols|runtime)/
+    )
+    expect(canvasImplementation).toContain('<HexLocationMarkerOverlay')
+    expect(canvasImplementation).not.toMatch(/label:\s*['"]Markers['"]/)
+    expect(
+      source('src/renderer/features/hex/hex-location-marker-overlay.tsx')
+    ).toContain('useImperativeHandle')
   })
 
   it('keeps the TypeScript import graph acyclic', () => {
@@ -224,7 +235,15 @@ describe('architecture boundaries', () => {
         `src/renderer/features/${feature}/${feature}-capabilities.ts`
       )
       expect(adapter).toContain('api: SaltMarcherApi')
-      expect(adapter).toContain('return api')
+      if (feature === 'hex') {
+        expect(adapter).not.toContain('return api')
+        expect(adapter).toContain('hex: api.hex')
+        expect(adapter).toContain('locations: api.locations')
+        expect(adapter).toContain('locationSymbols: api.locationSymbols')
+        expect(adapter).toContain(
+          'pickLocationSymbolFile: api.runtime.pickLocationSymbolFile'
+        )
+      } else expect(adapter).toContain('return api')
     }
   })
 
@@ -468,7 +487,7 @@ describe('architecture boundaries', () => {
     expect(contract).toContain('.max(64)')
     expect(contract).toContain('radius')
     expect(source('src/shared/hex/axial-geometry.ts')).toContain(
-      'MAX_HEX_BRUSH_RADIUS = 10'
+      'MAX_HEX_BRUSH_RADIUS = 9'
     )
     const geometry = source('src/shared/hex/axial-geometry.ts')
     expect(geometry).toContain('HEX_CHUNK_SIZE = 32')

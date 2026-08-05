@@ -1,21 +1,12 @@
 import { message } from '../../i18n/messages.de.js'
-import { useCallback, useEffect, useRef } from 'react'
-import type {
-  AxialCoordinate,
-  HexBrushStrokeResult,
-  HexMapView
-} from '../../../shared/contracts/hex.js'
+import { useMemo } from 'react'
 import './hex.css'
 import { hexCapabilities } from './hex-capabilities.js'
 import {
   capabilityErrorText,
   reportCapabilityError
 } from '../../capabilities/capability-errors.js'
-import { HexChunkCache } from './hex-chunk-cache.js'
-import { HexCommandQueue } from './hex-command-queue.js'
-import { createHexLocationPlacementController } from './hex-location-placement-controller.js'
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
-import { executeRecoverableHexCommand } from './hex-command-executor.js'
 import { HexImpactDialog } from './hex-impact-dialog.js'
 import { useHexEditorController } from './use-hex-editor-controller.js'
 import {
@@ -23,503 +14,78 @@ import {
   HexCatalogPane,
   HexStatePane
 } from './hex-editor-panes.js'
+import { useLocationPresentationController } from './use-location-presentation-controller.js'
+import { useLocationSymbolController } from './use-location-symbol-controller.js'
+import { useHexMapController } from './use-hex-map-controller.js'
+import { useHexCommandController } from './use-hex-command-controller.js'
 
 export default function HexEditor(props: {
   onError: (message: string) => void
 }) {
   const api = useCapabilityApi()
-  const capabilities = hexCapabilities(api)
+  const capabilities = useMemo(() => hexCapabilities(api), [api])
   const controller = useHexEditorController()
   const {
     catalog,
-    setCatalog,
     terrains,
-    setTerrains,
     locations,
     setLocations,
+    symbols,
+    setSymbols,
     map,
-    setMap,
     selected,
     setSelected,
     tool,
     setTool,
+    terrainMode,
+    setTerrainMode,
     terrainId,
     setTerrainId,
-    radius,
-    setRadius,
+    brushLevel,
+    setBrushLevel,
     locationId,
     setLocationId,
     overlays,
-    setOverlays,
     pendingErase,
     setPendingErase,
     pendingHistory,
     setPendingHistory,
     resetViewSignal,
-    setResetViewSignal,
-    newName,
-    setNewName,
     name,
     setName,
-    history,
-    setHistory
+    history
   } = controller
-  const viewportRequest = useRef(0)
-  const mapSelectionRequest = useRef(0)
-  const viewportHalfExtent = useRef(64)
-  const commandQueue = useRef(new HexCommandQueue())
-  const chunkCache = useRef(
-    new HexChunkCache((mapId, keys) => api.hex.readChunks(mapId, keys))
-  )
-  const placementController = useRef(
-    createHexLocationPlacementController(api.hex)
-  )
-  const mapRef = useRef(map)
-  useEffect(() => {
-    mapRef.current = map
-  }, [map])
-  useEffect(() => () => chunkCache.current.clear(), [])
-
-  const enqueueCommand = <T,>(operation: () => Promise<T>): Promise<T> =>
-    commandQueue.current.enqueue(operation)
-
-  const loadViewport = async (
-    currentMap: HexMapView,
-    center: AxialCoordinate,
-    halfExtent: number
-  ) => {
-    viewportHalfExtent.current = halfExtent
-    const request = ++viewportRequest.current
-    const next = await chunkCache.current.readMapView(
-      currentMap.map,
-      center,
-      false,
-      halfExtent
-    )
-    if (request === viewportRequest.current) setMap(next)
-  }
-
-  const readOverlays = useCallback(
-    async (mapId: string) => {
-      const projection = await capabilities.hex.runtimeOverlays(mapId)
-      return projection.overlays.map((overlay) => ({
-        id: overlay.sceneId,
-        label: overlay.label,
-        token: overlay.token,
-        route: overlay.route,
-        focused: overlay.focused
-      }))
-    },
-    [capabilities.hex]
-  )
-
-  const refreshCatalog = async (preferred?: string) => {
-    const request = ++mapSelectionRequest.current
-    const next = await capabilities.hex.catalog()
-    if (request !== mapSelectionRequest.current) return
-    setCatalog(next)
-    const mapId = preferred ?? map?.map.id ?? next.maps[0]?.id
-    const summary = next.maps.find((entry) => entry.id === mapId)
-    if (!summary) {
-      setMap(null)
-      setSelected(null)
-      setOverlays([])
-      setHistory({
-        canUndo: false,
-        canRedo: false,
-        undoLabel: null,
-        redoLabel: null
-      })
-      return
-    }
-    const nextMap = await chunkCache.current.readMapView(
-      summary,
-      map?.map.id === summary.id ? map.center : undefined
-    )
-    if (request !== mapSelectionRequest.current) return
-    setMap(nextMap)
-    setName(nextMap.map.displayName)
-    const [nextHistory, nextOverlays] = await Promise.all([
-      capabilities.hex.history(nextMap.map.id),
-      readOverlays(nextMap.map.id)
-    ])
-    if (request !== mapSelectionRequest.current) return
-    setHistory(nextHistory)
-    setOverlays(nextOverlays)
-  }
-
-  useEffect(() => {
-    const request = ++mapSelectionRequest.current
-    void capabilities.hex
-      .editorBootstrap()
-      .then(
-        async ({
-          catalog: nextCatalog,
-          terrains: nextTerrains,
-          locations: nextLocations
-        }) => {
-          if (request !== mapSelectionRequest.current) return
-          setCatalog(nextCatalog)
-          setTerrains(nextTerrains)
-          setLocations(nextLocations)
-          setLocationId(nextLocations.locations[0]?.id ?? '')
-          const first = nextCatalog.maps[0]
-          if (first) {
-            const nextMap = await chunkCache.current.readMapView(first)
-            if (request !== mapSelectionRequest.current) return
-            setMap(nextMap)
-            setName(nextMap.map.displayName)
-            const [nextHistory, nextOverlays] = await Promise.all([
-              capabilities.hex.history(nextMap.map.id),
-              readOverlays(nextMap.map.id)
-            ])
-            if (request !== mapSelectionRequest.current) return
-            setHistory(nextHistory)
-            setOverlays(nextOverlays)
-          }
-        }
-      )
-      .catch(reportCapabilityError(props.onError))
-  }, [
-    capabilities.hex,
-    props.onError,
-    readOverlays,
-    setCatalog,
-    setHistory,
-    setLocationId,
+  const presentation = useLocationPresentationController({
+    locations,
     setLocations,
-    setMap,
-    setName,
-    setOverlays,
-    setTerrains
-  ])
-
-  useEffect(() => {
-    return capabilities.hex.onChanged((notice) => {
-      for (const mapId of notice.mapIds)
-        chunkCache.current.invalidateChunks(
-          mapId,
-          notice.changedChunks
-            .filter((chunk) => chunk.mapId === mapId)
-            .map((chunk) => chunk.key)
-        )
-      const currentMap = mapRef.current
-      if (!currentMap || !notice.mapIds.includes(currentMap.map.id)) return
-      const request = ++viewportRequest.current
-      void Promise.all([
-        chunkCache.current.readMapView(
-          currentMap.map,
-          currentMap.center,
-          false,
-          viewportHalfExtent.current
-        ),
-        capabilities.hex.history(currentMap.map.id),
-        readOverlays(currentMap.map.id)
-      ])
-        .then(([nextMap, nextHistory, nextOverlays]) => {
-          if (request !== viewportRequest.current) return
-          setMap(nextMap)
-          setHistory(nextHistory)
-          setOverlays(nextOverlays)
-        })
-        .catch(reportCapabilityError(props.onError))
-    })
-  }, [
-    capabilities.hex,
-    props.onError,
-    readOverlays,
-    setHistory,
-    setMap,
-    setOverlays
-  ])
-
-  const create = async () => {
-    if (!catalog) return
-    const commandId = crypto.randomUUID()
-    const displayName = newName
-    const expectedCatalogRevision = catalog.revision
-    return enqueueCommand(async () => {
-      try {
-        const result = await executeRecoverableHexCommand(
-          commandId,
-          () =>
-            capabilities.hex.create({
-              commandId,
-              displayName,
-              expectedCatalogRevision
-            }),
-          (receiptId) => capabilities.hex.commandReceipt(receiptId)
-        )
-        if (result.status !== 'applied') {
-          await applyResult(result)
-          return
-        }
-        setSelected(null)
-        await applyResult(result)
-        await refreshCatalog(result.maps[0]!.id)
-      } catch (cause) {
-        props.onError(capabilityErrorText(cause))
-      }
-    })
-  }
-
-  const saveMetadata = async () => {
-    if (!map) return
-    const commandId = crypto.randomUUID()
-    const displayName = name
-    return enqueueCommand(async () => {
-      const currentMap = mapRef.current
-      if (!currentMap) return
-      try {
-        const result = await executeRecoverableHexCommand(
-          commandId,
-          () =>
-            capabilities.hex.updateMetadata({
-              commandId,
-              mapId: currentMap.map.id,
-              displayName,
-              expectedMetadataRevision: currentMap.map.metadataRevision
-            }),
-          (receiptId) => capabilities.hex.commandReceipt(receiptId)
-        )
-        await applyResult(result)
-      } catch (cause) {
-        props.onError(capabilityErrorText(cause))
-      }
-    })
-  }
-
-  const applyResult = async (result: HexBrushStrokeResult) => {
-    if (result.status === 'rejected') {
-      props.onError(
-        result.reason === 'stroke_too_large'
-          ? 'Der Pinselstrich ist zu groß. Bitte in kürzere Striche aufteilen.'
-          : result.reason === 'history_empty'
-            ? 'Für diese Karte ist keine passende Aktion im Verlauf vorhanden.'
-            : result.reason === 'location_occupied'
-              ? 'Auf diesem Hex ist bereits ein anderer Ort platziert.'
-              : result.reason === 'tile_missing'
-                ? 'Orte können nur auf angelegten Hexfeldern platziert werden.'
-                : result.reason === 'location_not_placed'
-                  ? 'Dieser Ort ist auf der Karte nicht platziert.'
-                  : 'Die Kartenänderung kann wegen neuerer Änderungen nicht wiederhergestellt werden.'
-      )
-      return result
-    }
-    if (result.status !== 'applied') return result
-    const summaries = new Map(
-      result.maps.map((summary) => [summary.id, summary])
-    )
-    setCatalog((current) => {
-      if (!current) return current
-      const nextMaps = current.maps.map(
-        (entry) => summaries.get(entry.id) ?? entry
-      )
-      for (const summary of result.maps)
-        if (!nextMaps.some((entry) => entry.id === summary.id))
-          nextMaps.push(summary)
-      return { revision: result.catalogRevision, maps: nextMaps }
-    })
-    for (const summary of result.maps)
-      chunkCache.current.invalidateChunks(
-        summary.id,
-        result.changedChunks
-          .filter((chunk) => chunk.mapId === summary.id)
-          .map((chunk) => chunk.key)
-      )
-    const currentMap = mapRef.current
-    const summary = currentMap ? summaries.get(currentMap.map.id) : undefined
-    if (currentMap && summary) {
-      mapRef.current = { ...currentMap, map: summary }
-      const request = ++viewportRequest.current
-      const nextMap = await chunkCache.current.readMapView(
-        summary,
-        currentMap.center,
-        false,
-        viewportHalfExtent.current
-      )
-      if (request === viewportRequest.current) {
-        mapRef.current = nextMap
-        setMap(nextMap)
-      }
-    }
-    setPendingErase(null)
-    setHistory(result.history)
-    if (
-      result.warnings.some(
-        (warning) => warning.code === 'deleted_location_skipped'
-      )
-    )
-      props.onError(
-        'Ein inzwischen gelöschter Ort wurde beim Wiederherstellen übersprungen.'
-      )
-    return result
-  }
-
-  const changeHistory = async (
-    direction: 'undo' | 'redo',
-    confirmationToken: string | null = null,
-    commandId: string = crypto.randomUUID()
-  ) => {
-    return enqueueCommand(async () => {
-      const currentMap = mapRef.current
-      if (!currentMap) return
-      try {
-        const result = await executeRecoverableHexCommand(
-          commandId,
-          () =>
-            capabilities.hex[direction]({
-              commandId,
-              mapId: currentMap.map.id,
-              expectedContentRevision: currentMap.map.contentRevision,
-              confirmationToken
-            }),
-          (receiptId) => capabilities.hex.commandReceipt(receiptId)
-        )
-        if (result.status === 'confirmation_required') {
-          setPendingHistory({
-            direction,
-            commandId,
-            confirmationToken: result.confirmationToken,
-            impact: result.impact
-          })
-          return
-        }
-        setPendingHistory(null)
-        await applyResult(result)
-      } catch (cause) {
-        props.onError(capabilityErrorText(cause))
-      }
-    })
-  }
-
-  useEffect(() => {
-    const keyDown = (event: KeyboardEvent) => {
-      if (!(event.ctrlKey || event.metaKey)) return
-      const direction =
-        event.key.toLowerCase() === 'z' && !event.shiftKey
-          ? 'undo'
-          : event.key.toLowerCase() === 'y' ||
-              (event.key.toLowerCase() === 'z' && event.shiftKey)
-            ? 'redo'
-            : null
-      if (!direction) return
-      event.preventDefault()
-      void changeHistory(direction)
-    }
-    window.addEventListener('keydown', keyDown)
-    return () => window.removeEventListener('keydown', keyDown)
+    capabilities: capabilities.locations,
+    onError: (cause) => props.onError(capabilityErrorText(cause))
+  })
+  const locationsRef = presentation.locationsRef
+  const symbolManagement = useLocationSymbolController({
+    capabilities,
+    page: symbols,
+    setPage: setSymbols,
+    locationId,
+    locationsRef,
+    setLocations: presentation.setSnapshot,
+    onError: (cause) => props.onError(capabilityErrorText(cause))
+  })
+  const mapLifecycle = useHexMapController({
+    capabilities,
+    editor: controller,
+    presentation,
+    onError: props.onError
+  })
+  const { loadViewport, refreshCatalog } = mapLifecycle
+  const commands = useHexCommandController({
+    capabilities,
+    editor: controller,
+    maps: mapLifecycle,
+    onError: props.onError
   })
 
-  const applyCoordinates = async (
-    path: readonly AxialCoordinate[],
-    confirmationToken: string | null = null,
-    strokeRadius = radius,
-    commandId: string = crypto.randomUUID()
-  ) => {
-    const mode = confirmationToken ? 'erase' : tool
-    if (mode !== 'paint' && mode !== 'erase') return
-    const queuedTerrain = mode === 'paint' ? terrainId : null
-    return enqueueCommand(async () => {
-      const currentMap = mapRef.current
-      if (!currentMap) return
-      try {
-        const result = await executeRecoverableHexCommand(
-          commandId,
-          () =>
-            capabilities.hex.applyBrushStroke({
-              commandId,
-              mapId: currentMap.map.id,
-              mode,
-              terrainId: queuedTerrain,
-              path: [...path],
-              radius: strokeRadius,
-              expectedContentRevision: currentMap.map.contentRevision,
-              confirmationToken
-            }),
-          (receiptId) => capabilities.hex.commandReceipt(receiptId),
-          () => chunkCache.current.invalidateMap(currentMap.map.id)
-        )
-        if (result.status === 'confirmation_required') {
-          setPendingErase({
-            path,
-            radius: strokeRadius,
-            commandId,
-            confirmationToken: result.confirmationToken,
-            impact: result.impact
-          })
-          return
-        }
-        await applyResult(result)
-        const nextOverlays = await readOverlays(currentMap.map.id)
-        if (mapRef.current?.map.id === currentMap.map.id)
-          setOverlays(nextOverlays)
-      } catch (cause) {
-        props.onError(capabilityErrorText(cause))
-      }
-    })
-  }
-
-  const applyStroke = (path: readonly AxialCoordinate[]) =>
-    applyCoordinates(path)
-
-  const placeLocation = async () => {
-    if (!map || !selected || !locationId) return
-    const target = map.tiles.find(
-      (tile) => tile.q === selected.q && tile.r === selected.r
-    )
-    if (
-      !target ||
-      (target.location && target.location.locationId !== locationId)
-    )
-      return
-    const commandId = crypto.randomUUID()
-    const queuedLocationId = locationId
-    const coordinate = selected
-    return enqueueCommand(async () => {
-      const currentMap = mapRef.current
-      if (!currentMap) return
-      try {
-        const result = await placementController.current.place({
-          commandId,
-          mapId: currentMap.map.id,
-          locationId: queuedLocationId,
-          coordinate,
-          expectedContentRevision: currentMap.map.contentRevision
-        })
-        await applyResult(result)
-      } catch (cause) {
-        props.onError(capabilityErrorText(cause))
-      }
-    })
-  }
-
-  const removeLocation = async () => {
-    if (!map || !selected) return
-    const target = map.tiles.find(
-      (tile) => tile.q === selected.q && tile.r === selected.r
-    )
-    if (!target?.location) return
-    const commandId = crypto.randomUUID()
-    const queuedLocationId = target.location.locationId
-    return enqueueCommand(async () => {
-      const currentMap = mapRef.current
-      if (!currentMap) return
-      try {
-        const result = await placementController.current.remove({
-          commandId,
-          mapId: currentMap.map.id,
-          locationId: queuedLocationId,
-          expectedContentRevision: currentMap.map.contentRevision
-        })
-        await applyResult(result)
-      } catch (cause) {
-        props.onError(capabilityErrorText(cause))
-      }
-    })
-  }
-
-  if (!catalog || !terrains || !locations)
+  if (!catalog || !terrains || !locations || !symbols)
     return (
       <section className="workspace-panel">
         {message('ui.hex.editor.wird.geladen')}
@@ -532,37 +98,25 @@ export default function HexEditor(props: {
             candidate.q === selected.q && candidate.r === selected.r
         ) ?? null)
       : null
-  const targetOccupiedByOtherLocation = Boolean(
-    tile?.location && tile.location.locationId !== locationId
-  )
   return (
     <section className="hex-editor-workspace">
       <HexCatalogPane
         catalog={catalog}
-        terrains={terrains}
-        locations={locations}
         map={map}
         tool={tool}
-        terrainId={terrainId}
-        radius={radius}
-        locationId={locationId}
-        newName={newName}
         name={name}
         history={history}
-        onCreateValueChange={setNewName}
-        onCreate={() => void create()}
+        onCreate={() =>
+          void commands.create(message('hex.editor.defaultMapName'))
+        }
         onEditValueChange={setName}
-        onSave={() => void saveMetadata()}
+        onSave={() => void commands.saveMetadata()}
         onSelectMap={(mapId) => {
           setSelected(null)
           void refreshCatalog(mapId).catch(reportCapabilityError(props.onError))
         }}
         onSelectTool={setTool}
-        onRadiusChange={setRadius}
-        onTerrainChange={setTerrainId}
-        onLocationChange={setLocationId}
-        onResetView={() => setResetViewSignal((value) => value + 1)}
-        onHistory={(direction) => void changeHistory(direction)}
+        onHistory={(direction) => void commands.changeHistory(direction)}
       />
       <HexCanvasSurface
         map={map}
@@ -570,11 +124,22 @@ export default function HexEditor(props: {
         selected={selected}
         overlays={overlays}
         tool={tool}
-        radius={radius}
+        brushLevel={brushLevel}
+        terrainMode={terrainMode}
         terrainId={terrainId}
         resetViewSignal={resetViewSignal}
-        onSelect={setSelected}
-        onStroke={(path) => void applyStroke(path)}
+        onSelect={(coordinate) => {
+          setSelected(coordinate)
+          if (tool !== 'location') return
+          const target = map?.tiles.find(
+            (candidate) =>
+              candidate.q === coordinate.q && candidate.r === coordinate.r
+          )
+          if (target?.location) setLocationId(target.location.locationId)
+          else if (target && locationId)
+            void commands.placeLocation(locationId, coordinate)
+        }}
+        onStroke={(path) => void commands.applyStroke(path)}
         onViewportChange={(center, halfExtent) => {
           if (!map) return
           void loadViewport(map, center, halfExtent).catch(
@@ -586,18 +151,58 @@ export default function HexEditor(props: {
         selected={selected}
         tile={tile}
         terrains={terrains}
+        locations={locations}
+        symbols={symbols}
         tool={tool}
+        terrainId={terrainId}
+        brushLevel={brushLevel}
+        terrainMode={terrainMode}
         locationId={locationId}
-        targetOccupiedByOtherLocation={targetOccupiedByOtherLocation}
-        onPlaceLocation={() => void placeLocation()}
-        onRemoveLocation={() => void removeLocation()}
+        onPaintMode={setTerrainMode}
+        onBrushLevelChange={setBrushLevel}
+        onTerrainChange={setTerrainId}
+        onLocationChange={(id) => {
+          setLocationId(id)
+          if (tool === 'location' && selected && tile && !tile.location)
+            void commands.placeLocation(id, selected)
+        }}
+        onPresentationChange={presentation.update}
+        onPresentationCommit={presentation.flush}
+        selectedCustomSymbol={symbolManagement.selectedCustomSymbol}
+        onSymbolSearch={(query) =>
+          void symbolManagement
+            .search(query)
+            .catch(reportCapabilityError(props.onError))
+        }
+        onSymbolPage={(offset) =>
+          void symbolManagement
+            .page(offset)
+            .catch(reportCapabilityError(props.onError))
+        }
+        onImportSymbol={(displayName) =>
+          void symbolManagement
+            .importAndAssign(displayName)
+            .catch(reportCapabilityError(props.onError))
+        }
+        onRenameSymbol={(id, displayName) =>
+          void symbolManagement
+            .rename(id, displayName)
+            .catch(reportCapabilityError(props.onError))
+        }
+        onInspectSymbolDelete={symbolManagement.inspectDelete}
+        onDeleteSymbol={(id) =>
+          void symbolManagement
+            .remove(id)
+            .catch(reportCapabilityError(props.onError))
+        }
+        onRemoveLocation={() => void commands.removeLocation()}
       />
       {pendingErase && (
         <HexImpactDialog
           impact={pendingErase.impact}
           cancel={() => setPendingErase(null)}
           confirm={() =>
-            void applyCoordinates(
+            void commands.applyCoordinates(
               pendingErase.path,
               pendingErase.confirmationToken,
               pendingErase.radius,
@@ -611,7 +216,7 @@ export default function HexEditor(props: {
           impact={pendingHistory.impact}
           cancel={() => setPendingHistory(null)}
           confirm={() =>
-            void changeHistory(
+            void commands.changeHistory(
               pendingHistory.direction,
               pendingHistory.confirmationToken,
               pendingHistory.commandId

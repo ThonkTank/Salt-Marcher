@@ -36,6 +36,7 @@ import {
 import { CapabilityError } from '../../../shared/errors/capability-error.js'
 import { InstallationSettingsStore } from './installation-settings-store.js'
 import { initializeCreatureSchema } from '../../creatures/catalog.js'
+import { initializeLocationSymbolSchema } from '../../worldplanner/location-symbol-store.js'
 
 export type CampaignCreatePhase =
   | 'before-registry-entry'
@@ -93,6 +94,7 @@ export class CampaignStore {
         )
         .run(JSON.stringify(defaultInstallationPreferences))
       initializeCreatureSchema(this.installation)
+      initializeLocationSymbolSchema(this.installation)
       if (!installationExists)
         initializeDevelopmentSchemaVersion(this.installation)
       this.recoverIncompleteCreations()
@@ -254,6 +256,47 @@ export class CampaignStore {
 
   installationDatabase(): Database.Database {
     return this.installation
+  }
+
+  visitCampaignDatabases<T>(
+    visitor: (campaign: {
+      id: string
+      name: string
+      trashed: boolean
+      database: Database.Database
+    }) => T
+  ): T[] {
+    const activeId = this.list().activeCampaignId
+    const rows = this.installation
+      .prepare(
+        "SELECT id, name, trashed_at AS trashedAt FROM campaigns WHERE status = 'ready' ORDER BY created_at"
+      )
+      .all() as { id: string; name: string; trashedAt: string | null }[]
+    return rows.map((row) => {
+      if (row.id === activeId && this.activeCampaign)
+        return visitor({
+          id: row.id,
+          name: row.name,
+          trashed: false,
+          database: this.activeCampaign
+        })
+      const path = row.trashedAt
+        ? join(this.trashDirectory(row.id), 'campaign.sqlite')
+        : this.campaignPath(row.id)
+      const database = new Database(path)
+      try {
+        configureSqlite(database)
+        assertDevelopmentSchemaVersion(database)
+        return visitor({
+          id: row.id,
+          name: row.name,
+          trashed: row.trashedAt !== null,
+          database
+        })
+      } finally {
+        database.close()
+      }
+    })
   }
 
   activeCampaignId(): string {

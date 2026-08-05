@@ -2,10 +2,18 @@ import Database from 'better-sqlite3'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import {
   worldLocationDraftSchema,
+  worldLocationMapPresentationSchema,
   worldLocationSnapshotSchema,
+  defaultWorldLocationMapPresentation,
   type WorldLocationDraft,
+  type WorldLocationMapPresentation,
+  type WorldLocationMapPresentationPatch,
   type WorldLocationSnapshot
 } from '../../shared/contracts/world-location.js'
+import {
+  builtinLocationSymbolIdSchema,
+  type LocationSymbol
+} from '../../shared/contracts/location-symbol.js'
 import { uuidv7 } from '../../shared/ids/uuidv7.js'
 import { EncounterTableStore } from '../encounter/encounter-table-store.js'
 import { WorldFactionStore } from './faction-store.js'
@@ -13,6 +21,8 @@ import { WorldFactionStore } from './faction-store.js'
 export interface WorldLocationReferences {
   containsFaction(id: string): boolean
   containsEncounterTable(id: string): boolean
+  containsLocationSymbol?(id: string): boolean
+  locationSymbol?(id: string): LocationSymbol | null
 }
 
 const noReferences: WorldLocationReferences = {
@@ -29,11 +39,23 @@ export function initializeWorldLocationSchema(db: Database.Database): void {
     CREATE TABLE IF NOT EXISTS worldplanner_location (
       id TEXT PRIMARY KEY NOT NULL,
       display_name TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      region TEXT NOT NULL,
       notes TEXT NOT NULL,
       position INTEGER NOT NULL CHECK(position >= 0)
     );
     CREATE INDEX IF NOT EXISTS idx_worldplanner_location_name
       ON worldplanner_location(display_name COLLATE NOCASE, id);
+    CREATE TABLE IF NOT EXISTS worldplanner_location_map_presentation (
+      location_id TEXT PRIMARY KEY NOT NULL
+        REFERENCES worldplanner_location(id) ON DELETE CASCADE,
+      revision INTEGER NOT NULL CHECK(revision >= 0),
+      title_override TEXT,
+      symbol_id TEXT NOT NULL,
+      symbol_size INTEGER NOT NULL CHECK(symbol_size BETWEEN 24 AND 80),
+      label_curve INTEGER NOT NULL CHECK(label_curve BETWEEN -40 AND 40),
+      label_position TEXT NOT NULL CHECK(label_position IN ('above', 'below', 'both'))
+    );
     CREATE TABLE IF NOT EXISTS worldplanner_location_faction (
       location_id TEXT NOT NULL,
       faction_id TEXT NOT NULL,
@@ -93,27 +115,66 @@ export class WorldLocationStore {
         'SELECT revision FROM worldplanner_location_metadata WHERE singleton = 1'
       )
       .get() as { revision: number }
+    const factionIds = this.referenceMap(
+      'worldplanner_location_faction',
+      'faction_id'
+    )
+    const encounterTableIds = this.referenceMap(
+      'worldplanner_location_encounter_table',
+      'encounter_table_id'
+    )
     const locations = this.db
       .prepare(
         `
-        SELECT id, display_name AS displayName, notes, position
-        FROM worldplanner_location ORDER BY position, id
+        SELECT location.id, location.display_name AS displayName,
+               location.kind, location.region, location.notes, location.position,
+               presentation.revision AS mapRevision,
+               presentation.title_override AS mapTitleOverride,
+               presentation.symbol_id AS mapSymbolId,
+               presentation.symbol_size AS mapSymbolSize,
+               presentation.label_curve AS mapLabelCurve,
+               presentation.label_position AS mapLabelPosition
+        FROM worldplanner_location location
+        JOIN worldplanner_location_map_presentation presentation
+          ON presentation.location_id = location.id
+        ORDER BY location.position, location.id
       `
       )
       .all()
-      .map((location) => ({
-        ...(location as object),
-        factionIds: this.references(
-          'worldplanner_location_faction',
-          'faction_id',
-          (location as { id: string }).id
-        ),
-        encounterTableIds: this.references(
-          'worldplanner_location_encounter_table',
-          'encounter_table_id',
-          (location as { id: string }).id
-        )
-      }))
+      .map((raw) => {
+        const location = raw as {
+          id: string
+          displayName: string
+          kind: string
+          region: string
+          notes: string
+          position: number
+          mapRevision: number
+          mapTitleOverride: string | null
+          mapSymbolId: string
+          mapSymbolSize: number
+          mapLabelCurve: number
+          mapLabelPosition: 'above' | 'below' | 'both'
+        }
+        return {
+          id: location.id,
+          displayName: location.displayName,
+          kind: location.kind,
+          region: location.region,
+          notes: location.notes,
+          position: location.position,
+          mapPresentation: {
+            revision: location.mapRevision,
+            titleOverride: location.mapTitleOverride,
+            symbolId: location.mapSymbolId,
+            symbolSize: location.mapSymbolSize,
+            labelCurve: location.mapLabelCurve,
+            labelPosition: location.mapLabelPosition
+          },
+          factionIds: factionIds.get(location.id) ?? [],
+          encounterTableIds: encounterTableIds.get(location.id) ?? []
+        }
+      })
     return worldLocationSnapshotSchema.parse({
       revision: metadata.revision,
       locations
@@ -136,9 +197,33 @@ export class WorldLocationStore {
       const id = uuidv7()
       this.db
         .prepare(
-          'INSERT INTO worldplanner_location (id, display_name, notes, position) VALUES (?, ?, ?, ?)'
+          `INSERT INTO worldplanner_location
+           (id, display_name, kind, region, notes, position)
+           VALUES (?, ?, ?, ?, ?, ?)`
         )
-        .run(id, parsed.displayName, parsed.notes, position)
+        .run(
+          id,
+          parsed.displayName,
+          parsed.kind,
+          parsed.region,
+          parsed.notes,
+          position
+        )
+      this.db
+        .prepare(
+          `INSERT INTO worldplanner_location_map_presentation
+           (location_id, revision, title_override, symbol_id, symbol_size,
+            label_curve, label_position)
+           VALUES (?, 0, ?, ?, ?, ?, ?)`
+        )
+        .run(
+          id,
+          defaultWorldLocationMapPresentation.titleOverride,
+          defaultWorldLocationMapPresentation.symbolId,
+          defaultWorldLocationMapPresentation.symbolSize,
+          defaultWorldLocationMapPresentation.labelCurve,
+          defaultWorldLocationMapPresentation.labelPosition
+        )
       this.replaceReferences(id, parsed.factionIds, parsed.encounterTableIds)
     })
     return this.read()
@@ -153,9 +238,17 @@ export class WorldLocationStore {
     this.mutate(expectedRevision, () => {
       const changed = this.db
         .prepare(
-          'UPDATE worldplanner_location SET display_name = ?, notes = ? WHERE id = ?'
+          `UPDATE worldplanner_location SET
+             display_name = ?, kind = ?, region = ?, notes = ?
+           WHERE id = ?`
         )
-        .run(parsed.displayName, parsed.notes, id).changes
+        .run(
+          parsed.displayName,
+          parsed.kind,
+          parsed.region,
+          parsed.notes,
+          id
+        ).changes
       if (changed === 0) throw new CapabilityError('not_found', false)
       this.replaceReferences(id, parsed.factionIds, parsed.encounterTableIds)
     })
@@ -184,6 +277,43 @@ export class WorldLocationStore {
     return this.read()
   }
 
+  updateMapPresentation(
+    id: string,
+    raw: WorldLocationMapPresentationPatch,
+    expectedRevision: number
+  ): WorldLocationMapPresentation {
+    const current = this.mapPresentation(id)
+    if (current.revision !== expectedRevision)
+      throw new CapabilityError('stale', true)
+    const presentation = worldLocationMapPresentationSchema.parse({
+      ...current,
+      ...raw,
+      revision: current.revision + 1
+    })
+    this.assertMapSymbol(presentation.symbolId)
+    this.db.transaction(() => {
+      const presentationChanged = this.db
+        .prepare(
+          `UPDATE worldplanner_location_map_presentation SET
+             revision = ?, title_override = ?, symbol_id = ?, symbol_size = ?,
+             label_curve = ?, label_position = ?
+           WHERE location_id = ? AND revision = ?`
+        )
+        .run(
+          presentation.revision,
+          presentation.titleOverride,
+          presentation.symbolId,
+          presentation.symbolSize,
+          presentation.labelCurve,
+          presentation.labelPosition,
+          id,
+          expectedRevision
+        ).changes
+      if (presentationChanged === 0) throw new CapabilityError('stale', true)
+    })()
+    return presentation
+  }
+
   unlinkFaction(factionId: string): void {
     const changes = this.db
       .prepare('DELETE FROM worldplanner_location_faction WHERE faction_id = ?')
@@ -200,18 +330,100 @@ export class WorldLocationStore {
     if (changes > 0) this.bumpRevision()
   }
 
-  private references(
-    table: string,
-    column: string,
-    locationId: string
-  ): string[] {
-    return (
+  mapPresentation(id: string): WorldLocationMapPresentation {
+    const row = this.db
+      .prepare(
+        `SELECT revision, title_override AS titleOverride,
+                symbol_id AS symbolId, symbol_size AS symbolSize,
+                label_curve AS labelCurve, label_position AS labelPosition
+         FROM worldplanner_location_map_presentation WHERE location_id = ?`
+      )
+      .get(id)
+    if (!row) throw new CapabilityError('not_found', false)
+    return worldLocationMapPresentationSchema.parse(row)
+  }
+
+  markerPresentation(id: string) {
+    const displayName = this.displayName(id)
+    if (!displayName) throw new CapabilityError('not_found', false)
+    const presentation = this.mapPresentation(id)
+    const builtin = builtinLocationSymbolIdSchema.safeParse(
+      presentation.symbolId
+    )
+    const symbol = builtin.success
+      ? ({ kind: 'builtin' as const, id: builtin.data } as const)
+      : this.knownReferences.locationSymbol?.(presentation.symbolId)
+    if (!symbol) throw new CapabilityError('not_found', false)
+    return {
+      revision: presentation.revision,
+      title: presentation.titleOverride ?? displayName,
+      symbol:
+        'kind' in symbol
+          ? symbol
+          : {
+              kind: 'custom' as const,
+              id: symbol.id,
+              viewBox: symbol.viewBox,
+              pathData: symbol.pathData,
+              fillRule: symbol.fillRule
+            },
+      symbolSize: presentation.symbolSize,
+      labelCurve: presentation.labelCurve,
+      labelPosition: presentation.labelPosition
+    }
+  }
+
+  replaceMapSymbol(symbolId: string, replacementId = 'location'): string[] {
+    const ids = (
       this.db
         .prepare(
-          `SELECT ${column} AS id FROM ${table} WHERE location_id = ? ORDER BY position, ${column}`
+          `SELECT location_id AS id
+           FROM worldplanner_location_map_presentation
+           WHERE symbol_id = ? ORDER BY location_id`
         )
-        .all(locationId) as { id: string }[]
+        .all(symbolId) as Array<{ id: string }>
     ).map((row) => row.id)
+    if (ids.length === 0) return []
+    this.db
+      .prepare(
+        `UPDATE worldplanner_location_map_presentation
+         SET symbol_id = ?, revision = revision + 1
+         WHERE symbol_id = ?`
+      )
+      .run(replacementId, symbolId)
+    return ids
+  }
+
+  locationsUsingMapSymbol(symbolId: string): Array<{
+    id: string
+    displayName: string
+  }> {
+    return this.db
+      .prepare(
+        `SELECT location.id, location.display_name AS displayName
+         FROM worldplanner_location location
+         JOIN worldplanner_location_map_presentation presentation
+           ON presentation.location_id = location.id
+         WHERE presentation.symbol_id = ?
+         ORDER BY location.position, location.id`
+      )
+      .all(symbolId) as Array<{ id: string; displayName: string }>
+  }
+
+  private referenceMap(table: string, column: string): Map<string, string[]> {
+    const result = new Map<string, string[]>()
+    const rows = this.db
+      .prepare(
+        `SELECT location_id AS locationId, ${column} AS id
+           FROM ${table} ORDER BY location_id, position, ${column}`
+      )
+      .all() as Array<{ locationId: string; id: string }>
+    for (const row of rows)
+      result.set(row.locationId, [
+        ...(result.get(row.locationId) ?? []),
+        row.id
+      ])
+    return result
   }
 
   private replaceReferences(
@@ -251,6 +463,12 @@ export class WorldLocationStore {
     )
   }
 
+  private assertMapSymbol(id: string): void {
+    if (builtinLocationSymbolIdSchema.safeParse(id).success) return
+    if (!this.knownReferences.containsLocationSymbol?.(id))
+      throw new CapabilityError('not_found', false)
+  }
+
   private mutate(expectedRevision: number, operation: () => void): void {
     const mutation = () => {
       const current = (
@@ -278,7 +496,12 @@ export class WorldLocationStore {
 }
 
 export class WorldLocationService {
-  constructor(private readonly campaignDatabase: () => Database.Database) {}
+  constructor(
+    private readonly campaignDatabase: () => Database.Database,
+    private readonly locationSymbol: (
+      id: string
+    ) => LocationSymbol | null = () => null
+  ) {}
 
   read(): WorldLocationSnapshot {
     return this.withStore((store) => store.read())
@@ -296,6 +519,16 @@ export class WorldLocationService {
     return this.withStore((store) => store.delete(id, expectedRevision))
   }
 
+  updateMapPresentation(
+    id: string,
+    patch: WorldLocationMapPresentationPatch,
+    expectedRevision: number
+  ) {
+    return this.withStore((store) =>
+      store.updateMapPresentation(id, patch, expectedRevision)
+    )
+  }
+
   private withStore<T>(work: (store: WorldLocationStore) => T): T {
     const db = this.campaignDatabase()
     const tables = new EncounterTableStore(db)
@@ -307,7 +540,9 @@ export class WorldLocationService {
     return work(
       new WorldLocationStore(db, {
         containsFaction: (id) => factions.contains(id),
-        containsEncounterTable: (id) => tables.contains(id)
+        containsEncounterTable: (id) => tables.contains(id),
+        containsLocationSymbol: (id) => this.locationSymbol(id) !== null,
+        locationSymbol: this.locationSymbol
       })
     )
   }

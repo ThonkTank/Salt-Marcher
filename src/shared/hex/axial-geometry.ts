@@ -1,7 +1,8 @@
 import type { AxialCoordinate } from '../contracts/hex.js'
 
 export const HEX_CHUNK_SIZE = 32
-export const MAX_HEX_BRUSH_RADIUS = 10
+/** Internal mathematical radius; the editor presents this as brush level 1..10. */
+export const MAX_HEX_BRUSH_RADIUS = 9
 export const MAX_HEX_STROKE_POINTS = 4_096
 export const MAX_HEX_STROKE_TILES = 50_000
 export const MAX_HEX_STROKE_CHUNKS = 64

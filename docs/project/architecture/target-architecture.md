@@ -125,6 +125,16 @@ begin.
 No legacy data migration, compatibility bridge, Java runtime, JDBC layer, or
 generic ORM is part of this architecture.
 
+World Location catalog data and its map presentation are separate revisioned
+records in the same campaign store. Map reads project the resolved built-in or
+custom marker into each location placement; renderers do not join campaign
+locations with the installation symbol catalog. Custom marker definitions are
+installation-owned, searched through bounded pages, and parsed from a strict
+one-path SVG subset in the utility process. Their destructive lifecycle is an
+installation command: every campaign database, including recoverable trash,
+is rewritten to the built-in `location` fallback before deletion completes.
+The installation journal makes an interrupted deletion resumable.
+
 All SQLite connections enable foreign keys, WAL, full synchronous durability,
 and a bounded busy timeout. Development stores carry one whole-database schema
 version. On mismatch, startup removes only the fixed isolated

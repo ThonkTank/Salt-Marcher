@@ -58,8 +58,25 @@ import {
   createWorldLocationInputSchema,
   deleteWorldLocationInputSchema,
   updateWorldLocationInputSchema,
+  updateWorldLocationMapPresentationInputSchema,
+  worldLocationMapPresentationSchema,
   worldLocationSnapshotSchema
 } from './world-location.js'
+import {
+  createLocationSymbolInputSchema,
+  deleteLocationSymbolInputSchema,
+  importLocationSymbolInputSchema,
+  importLocationSymbolResultSchema,
+  locationSymbolDeleteImpactSchema,
+  locationSymbolDeleteResultSchema,
+  locationSymbolDetailInputSchema,
+  locationSymbolPageSchema,
+  locationSymbolSchema,
+  locationSymbolSearchInputSchema,
+  locationSymbolSnapshotSchema,
+  updateLocationSymbolInputSchema,
+  svgSymbolFileResultSchema
+} from './location-symbol.js'
 import {
   createEncounterTableInputSchema,
   createWorldFactionInputSchema,
@@ -272,10 +289,50 @@ export const coreOperations = {
     updateWorldLocationInputSchema,
     worldLocationSnapshotSchema
   ),
+  'locations.updateMapPresentation': write(
+    'locations:update-map-presentation',
+    updateWorldLocationMapPresentationInputSchema,
+    worldLocationMapPresentationSchema
+  ),
   'locations.delete': write(
     'locations:delete',
     deleteWorldLocationInputSchema,
     worldLocationSnapshotSchema
+  ),
+  'locationSymbols.create': write(
+    'location-symbols:create',
+    createLocationSymbolInputSchema,
+    locationSymbolSnapshotSchema
+  ),
+  'locationSymbols.search': read(
+    'location-symbols:search',
+    locationSymbolSearchInputSchema,
+    locationSymbolPageSchema
+  ),
+  'locationSymbols.detail': read(
+    'location-symbols:detail',
+    locationSymbolDetailInputSchema,
+    locationSymbolSchema
+  ),
+  'locationSymbols.update': write(
+    'location-symbols:update',
+    updateLocationSymbolInputSchema,
+    locationSymbolSnapshotSchema
+  ),
+  'locationSymbols.deleteImpact': read(
+    'location-symbols:delete-impact',
+    z.object({ id: z.uuid() }).strict(),
+    locationSymbolDeleteImpactSchema
+  ),
+  'locationSymbols.delete': write(
+    'location-symbols:delete',
+    deleteLocationSymbolInputSchema,
+    locationSymbolDeleteResultSchema
+  ),
+  'locationSymbols.importAndAssign': write(
+    'location-symbols:import-and-assign',
+    importLocationSymbolInputSchema,
+    importLocationSymbolResultSchema
   ),
   'encounterTables.read': read(
     'encounter-tables:read',
@@ -590,7 +647,15 @@ export const mainOperations = {
     none,
     ['gm']
   ),
-  'runtime.reloadRenderer': write('runtime:reload-renderer', none, none, ['gm'])
+  'runtime.reloadRenderer': write('runtime:reload-renderer', none, none, [
+    'gm'
+  ]),
+  'runtime.pickLocationSymbolFile': write(
+    'runtime:pick-location-symbol-file',
+    none,
+    svgSymbolFileResultSchema,
+    ['gm']
+  )
 } as const
 
 export type CoreOperationKind = keyof typeof coreOperations

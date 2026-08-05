@@ -108,6 +108,37 @@ describe('chunked hex editor to session travel vertical slice', () => {
     })
     expect(reopened.map.metadataRevision).toBe(0)
     expect(reopened.map.contentRevision).toBe(2)
+
+    const catalogRevision = locations.read().revision
+    locations.updateMapPresentation(
+      world.locations[0]!.id,
+      {
+        titleOverride: 'Das alte Salzhafen',
+        symbolId: 'settlement',
+        symbolSize: 60,
+        labelCurve: 12,
+        labelPosition: 'above'
+      },
+      world.locations[0]!.mapPresentation.revision
+    )
+    const markerOnly = maps.readChunks(map.id, [{ q: 0, r: 0 }])
+    expect(markerOnly.map.contentRevision).toBe(2)
+    expect(markerOnly.chunks[0]).toMatchObject({
+      revision: 2,
+      locations: [
+        {
+          marker: {
+            revision: 1,
+            title: 'Das alte Salzhafen',
+            symbol: { kind: 'builtin', id: 'settlement' },
+            symbolSize: 60,
+            labelCurve: 12,
+            labelPosition: 'above'
+          }
+        }
+      ]
+    })
+    expect(locations.read().revision).toBe(catalogRevision)
   })
 
   it('uses mathematical floor chunking for far positive and negative coordinates', () => {

@@ -27,6 +27,14 @@ import {
   type HexChangeNotice
 } from '../../shared/contracts/hex.js'
 import {
+  worldLocationChangeNoticeSchema,
+  type WorldLocationChangeNotice
+} from '../../shared/contracts/world-location.js'
+import {
+  locationSymbolChangeNoticeSchema,
+  type LocationSymbolChangeNotice
+} from '../../shared/contracts/location-symbol.js'
+import {
   coreRestartDelay,
   interruptedOperationError,
   type CoreOperationMode
@@ -66,6 +74,12 @@ export class CoreProcessSupervisor {
     (notice: ReferenceIndexChangeNotice) => void
   >()
   readonly #hexChangeListeners = new Set<(notice: HexChangeNotice) => void>()
+  readonly #locationChangeListeners = new Set<
+    (notice: WorldLocationChangeNotice) => void
+  >()
+  readonly #locationSymbolChangeListeners = new Set<
+    (notice: LocationSymbolChangeNotice) => void
+  >()
   readonly #pending = new Map<string, PendingRequest>()
 
   constructor(
@@ -113,6 +127,20 @@ export class CoreProcessSupervisor {
   onHexChanged(listener: (notice: HexChangeNotice) => void): () => void {
     this.#hexChangeListeners.add(listener)
     return () => this.#hexChangeListeners.delete(listener)
+  }
+
+  onLocationsChanged(
+    listener: (notice: WorldLocationChangeNotice) => void
+  ): () => void {
+    this.#locationChangeListeners.add(listener)
+    return () => this.#locationChangeListeners.delete(listener)
+  }
+
+  onLocationSymbolsChanged(
+    listener: (notice: LocationSymbolChangeNotice) => void
+  ): () => void {
+    this.#locationSymbolChangeListeners.add(listener)
+    return () => this.#locationSymbolChangeListeners.delete(listener)
   }
 
   retry(): void {
@@ -236,9 +264,16 @@ export class CoreProcessSupervisor {
       } else if (event.data.kind === 'reference.changed') {
         const notice = referenceIndexChangeNoticeSchema.parse(event.data.notice)
         for (const listener of this.#referenceChangeListeners) listener(notice)
-      } else {
+      } else if (event.data.kind === 'hex.changed') {
         const notice = hexChangeNoticeSchema.parse(event.data.notice)
         for (const listener of this.#hexChangeListeners) listener(notice)
+      } else if (event.data.kind === 'locations.changed') {
+        const notice = worldLocationChangeNoticeSchema.parse(event.data.notice)
+        for (const listener of this.#locationChangeListeners) listener(notice)
+      } else {
+        const notice = locationSymbolChangeNoticeSchema.parse(event.data.notice)
+        for (const listener of this.#locationSymbolChangeListeners)
+          listener(notice)
       }
       return
     }

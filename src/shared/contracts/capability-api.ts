@@ -31,8 +31,22 @@ import type {
 } from './settings.js'
 import type {
   WorldLocationDraft,
+  WorldLocationChangeNotice,
+  WorldLocationMapPresentation,
+  WorldLocationMapPresentationPatch,
   WorldLocationSnapshot
 } from './world-location.js'
+import type {
+  LocationSymbolDraft,
+  LocationSymbolChangeNotice,
+  LocationSymbolDeleteImpact,
+  LocationSymbolDeleteResult,
+  LocationSymbolPage,
+  LocationSymbol,
+  ImportLocationSymbolResult,
+  LocationSymbolSnapshot,
+  SvgSymbolFileResult
+} from './location-symbol.js'
 import type {
   EncounterTableDraft,
   EncounterTableSnapshot,
@@ -86,6 +100,7 @@ export interface SaltMarcherApi {
     retryCore(): Promise<CoreProcessStatus>
     reportRendererIncident(incident: RendererIncident): Promise<void>
     reloadRenderer(): Promise<void>
+    pickLocationSymbolFile(): Promise<SvgSymbolFileResult>
     onCoreStatus(listener: (status: CoreProcessStatus) => void): () => void
   }>
   settings: {
@@ -150,7 +165,47 @@ export interface SaltMarcherApi {
       location: WorldLocationDraft,
       expectedRevision: number
     ): Promise<WorldLocationSnapshot>
+    updateMapPresentation(
+      id: string,
+      patch: WorldLocationMapPresentationPatch,
+      expectedRevision: number
+    ): Promise<WorldLocationMapPresentation>
     delete(id: string, expectedRevision: number): Promise<WorldLocationSnapshot>
+    onChanged(listener: (notice: WorldLocationChangeNotice) => void): () => void
+  }
+  locationSymbols: {
+    create(
+      symbol: LocationSymbolDraft,
+      expectedRevision: number
+    ): Promise<LocationSymbolSnapshot>
+    search(
+      query?: string,
+      offset?: number,
+      limit?: number
+    ): Promise<LocationSymbolPage>
+    detail(id: string): Promise<LocationSymbol>
+    update(
+      id: string,
+      displayName: string,
+      expectedRevision: number
+    ): Promise<LocationSymbolSnapshot>
+    deleteImpact(id: string): Promise<LocationSymbolDeleteImpact>
+    delete(
+      commandId: string,
+      id: string,
+      expectedRevision: number
+    ): Promise<LocationSymbolDeleteResult>
+    importAndAssign(input: {
+      commandId: string
+      displayName: string
+      source: string
+      locationId: string
+      expectedSymbolRevision: number
+      expectedPresentationRevision: number
+    }): Promise<ImportLocationSymbolResult>
+    onChanged(
+      listener: (notice: LocationSymbolChangeNotice) => void
+    ): () => void
   }
   encounterTables: {
     read(): Promise<EncounterTableSnapshot>

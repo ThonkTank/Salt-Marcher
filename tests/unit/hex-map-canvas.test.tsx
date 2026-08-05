@@ -229,4 +229,68 @@ describe('HexMapCanvas', () => {
     expect(complete).not.toHaveBeenCalled()
     view.unmount()
   })
+
+  it('renders one identical custom marker projection in every canvas context', async () => {
+    pixi.init.mockResolvedValue(undefined)
+    const customSnapshot: HexMapView = {
+      ...snapshot,
+      tiles: [
+        {
+          id: '0:0',
+          label: '0, 0',
+          q: 0,
+          r: 0,
+          terrainId: 'grassland',
+          location: {
+            q: 0,
+            r: 0,
+            locationId: '01900000-0000-7000-8000-000000000070',
+            displayName: 'Kap',
+            marker: {
+              revision: 1,
+              title: 'Das Kap',
+              symbol: {
+                kind: 'custom',
+                id: '01900000-0000-7000-8000-000000000071',
+                viewBox: { minX: 0, minY: 0, width: 10, height: 20 },
+                pathData: 'M0 20 L5 0 L10 20 Z',
+                fillRule: 'evenodd'
+              },
+              symbolSize: 52,
+              labelCurve: 8,
+              labelPosition: 'both'
+            }
+          }
+        }
+      ]
+    }
+    const contexts = ['Editor', 'Session', 'Reise', 'Platzierung']
+    const view = render(
+      <>
+        {contexts.map((context) => (
+          <HexMapCanvas
+            key={context}
+            snapshot={customSnapshot}
+            terrains={terrains}
+            selected={null}
+            ariaLabel={context}
+          />
+        ))}
+      </>,
+      { wrapper: CanvasTestProvider }
+    )
+    await waitFor(() => expect(pixi.init).toHaveBeenCalledTimes(4))
+    const markers = [
+      ...view.container.querySelectorAll<SVGPathElement>('.hex-location-symbol')
+    ]
+    expect(markers).toHaveLength(4)
+    expect(new Set(markers.map((marker) => marker.getAttribute('d')))).toEqual(
+      new Set(['M0 20 L5 0 L10 20 Z'])
+    )
+    const labelIds = [
+      ...view.container.querySelectorAll<SVGPathElement>('path[id]')
+    ].map((path) => path.id)
+    expect(new Set(labelIds).size).toBe(labelIds.length)
+    view.unmount()
+  })
 })

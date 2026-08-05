@@ -23,10 +23,20 @@ const setSession = vi.fn()
 const location = {
   id: '01900000-0000-7000-8000-000000000010',
   displayName: 'Hafen',
+  kind: '',
+  region: '',
   notes: '',
   position: 0,
   factionIds: [],
-  encounterTableIds: []
+  encounterTableIds: [],
+  mapPresentation: {
+    revision: 0,
+    titleOverride: null,
+    symbolId: 'location',
+    symbolSize: 44,
+    labelCurve: 0,
+    labelPosition: 'below'
+  }
 } as WorldLocation
 const faction = {
   id: '01900000-0000-7000-8000-000000000011',

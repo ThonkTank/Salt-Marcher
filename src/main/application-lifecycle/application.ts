@@ -66,6 +66,16 @@ function connectCoreNotifications(supervisor: CoreProcessSupervisor): void {
       if (!isReadOnlyWindow(window.webContents))
         window.webContents.send('hex:changed', notice)
   })
+  supervisor.onLocationsChanged((notice) => {
+    for (const window of BrowserWindow.getAllWindows())
+      if (!isReadOnlyWindow(window.webContents))
+        window.webContents.send('locations:changed', notice)
+  })
+  supervisor.onLocationSymbolsChanged((notice) => {
+    for (const window of BrowserWindow.getAllWindows())
+      if (!isReadOnlyWindow(window.webContents))
+        window.webContents.send('location-symbols:changed', notice)
+  })
 }
 
 export async function stopApplication(): Promise<void> {

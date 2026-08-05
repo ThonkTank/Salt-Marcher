@@ -1,12 +1,24 @@
 import { describe, expect, it } from 'vitest'
-import { expandHexBrush } from '../../src/renderer/features/hex/hex-brush.js'
+import {
+  brushLevelToRadius,
+  expandHexBrush
+} from '../../src/renderer/features/hex/hex-brush.js'
 import { expandHexStroke } from '../../src/shared/hex/axial-geometry.js'
 
 describe('hex brush geometry', () => {
-  it('expands mathematical hex radii from zero through ten', () => {
+  it('maps the ten UI levels to the one canonical mathematical radius', () => {
+    expect(
+      Array.from({ length: 10 }, (_, index) => brushLevelToRadius(index + 1))
+    ).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])
+    expect(() => brushLevelToRadius(0)).toThrow(RangeError)
+    expect(() => brushLevelToRadius(1.5)).toThrow(RangeError)
+    expect(() => brushLevelToRadius(11)).toThrow(RangeError)
+  })
+
+  it('expands mathematical hex radii from zero through nine', () => {
     expect(expandHexBrush([{ q: 0, r: 0 }], 0)).toHaveLength(1)
     expect(expandHexBrush([{ q: 0, r: 0 }], 1)).toHaveLength(7)
-    expect(expandHexBrush([{ q: 0, r: 0 }], 10)).toHaveLength(331)
+    expect(expandHexBrush([{ q: 0, r: 0 }], 9)).toHaveLength(271)
   })
 
   it('interpolates fast pointer samples into a gapless axial line', () => {

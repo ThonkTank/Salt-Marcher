@@ -80,9 +80,27 @@ import {
 import {
   createWorldLocationInputSchema,
   deleteWorldLocationInputSchema,
+  updateWorldLocationMapPresentationInputSchema,
   updateWorldLocationInputSchema,
+  worldLocationChangeNoticeSchema,
+  worldLocationMapPresentationSchema,
   worldLocationSnapshotSchema
 } from '../../shared/contracts/world-location.js'
+import {
+  createLocationSymbolInputSchema,
+  deleteLocationSymbolInputSchema,
+  importLocationSymbolInputSchema,
+  importLocationSymbolResultSchema,
+  locationSymbolChangeNoticeSchema,
+  locationSymbolDeleteImpactSchema,
+  locationSymbolDeleteResultSchema,
+  locationSymbolDetailInputSchema,
+  locationSymbolPageSchema,
+  locationSymbolSchema,
+  locationSymbolSearchInputSchema,
+  locationSymbolSnapshotSchema,
+  updateLocationSymbolInputSchema
+} from '../../shared/contracts/location-symbol.js'
 import {
   createEncounterTableInputSchema,
   createWorldFactionInputSchema,
@@ -386,6 +404,18 @@ const api: SaltMarcherApi = {
           worldLocationSnapshotSchema
         )
       ),
+    updateMapPresentation: async (id, patch, expectedRevision) =>
+      freezeDeep(
+        await invoke(
+          'locations:update-map-presentation',
+          updateWorldLocationMapPresentationInputSchema.parse({
+            id,
+            patch,
+            expectedRevision
+          }),
+          worldLocationMapPresentationSchema
+        )
+      ),
     delete: async (id, expectedRevision) =>
       freezeDeep(
         await invoke(
@@ -393,7 +423,86 @@ const api: SaltMarcherApi = {
           deleteWorldLocationInputSchema.parse({ id, expectedRevision }),
           worldLocationSnapshotSchema
         )
-      )
+      ),
+    onChanged(listener) {
+      const handler = (_event: Electron.IpcRendererEvent, raw: unknown) =>
+        listener(freezeDeep(worldLocationChangeNoticeSchema.parse(raw)))
+      ipcRenderer.on('locations:changed', handler)
+      return () => ipcRenderer.removeListener('locations:changed', handler)
+    }
+  },
+  locationSymbols: {
+    create: async (symbol, expectedRevision) =>
+      freezeDeep(
+        await invoke(
+          'location-symbols:create',
+          createLocationSymbolInputSchema.parse({ symbol, expectedRevision }),
+          locationSymbolSnapshotSchema
+        )
+      ),
+    search: async (query = '', offset = 0, limit = 24) =>
+      freezeDeep(
+        await invoke(
+          'location-symbols:search',
+          locationSymbolSearchInputSchema.parse({ query, offset, limit }),
+          locationSymbolPageSchema
+        )
+      ),
+    detail: async (id) =>
+      freezeDeep(
+        await invoke(
+          'location-symbols:detail',
+          locationSymbolDetailInputSchema.parse({ id }),
+          locationSymbolSchema
+        )
+      ),
+    update: async (id, displayName, expectedRevision) =>
+      freezeDeep(
+        await invoke(
+          'location-symbols:update',
+          updateLocationSymbolInputSchema.parse({
+            id,
+            displayName,
+            expectedRevision
+          }),
+          locationSymbolSnapshotSchema
+        )
+      ),
+    deleteImpact: async (id) =>
+      freezeDeep(
+        await invoke(
+          'location-symbols:delete-impact',
+          { id },
+          locationSymbolDeleteImpactSchema
+        )
+      ),
+    delete: async (commandId, id, expectedRevision) =>
+      freezeDeep(
+        await invoke(
+          'location-symbols:delete',
+          deleteLocationSymbolInputSchema.parse({
+            commandId,
+            id,
+            expectedRevision
+          }),
+          locationSymbolDeleteResultSchema
+        )
+      ),
+    importAndAssign: async (input) =>
+      freezeDeep(
+        await invoke(
+          'location-symbols:import-and-assign',
+          importLocationSymbolInputSchema.parse(input),
+          importLocationSymbolResultSchema
+        )
+      ),
+    onChanged(listener) {
+      const handler = (_event: Electron.IpcRendererEvent, raw: unknown) =>
+        listener(freezeDeep(locationSymbolChangeNoticeSchema.parse(raw)))
+      ipcRenderer.on('location-symbols:changed', handler)
+      return () =>
+        ipcRenderer.removeListener('location-symbols:changed', handler)
+    }
   },
   encounterTables: {
     read: async () =>
@@ -795,6 +904,8 @@ const api: SaltMarcherApi = {
     reportRendererIncident: (incident) =>
       invokeMain('runtime:report-renderer-incident', incident),
     reloadRenderer: () => invokeMain('runtime:reload-renderer', undefined),
+    pickLocationSymbolFile: () =>
+      invokeMain('runtime:pick-location-symbol-file', undefined),
     onCoreStatus(listener: (status: CoreProcessStatus) => void) {
       const handler = (_event: Electron.IpcRendererEvent, raw: unknown) =>
         listener(coreProcessStatusSchema.parse(raw))

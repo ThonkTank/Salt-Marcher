@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3'
-export const currentDevelopmentSchemaVersion = 11
+export const currentDevelopmentSchemaVersion = 13
 
 export class IncompatibleDevelopmentDataError extends Error {
   constructor(public readonly developmentDataPath?: string) {

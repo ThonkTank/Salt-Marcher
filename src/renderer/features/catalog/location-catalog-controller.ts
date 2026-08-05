@@ -117,6 +117,8 @@ export function useLocationCatalogController(
         (location) =>
           !needle ||
           location.displayName.toLocaleLowerCase().includes(needle) ||
+          location.kind.toLocaleLowerCase().includes(needle) ||
+          location.region.toLocaleLowerCase().includes(needle) ||
           location.notes.toLocaleLowerCase().includes(needle)
       )
       .toSorted((left, right) => {

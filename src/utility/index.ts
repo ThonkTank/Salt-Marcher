@@ -17,12 +17,14 @@ import {
 } from '../core/creatures/catalog.js'
 import { LivePlayService } from '../core/encounter/live-combat.js'
 import { z } from 'zod'
-import {
-  WorldLocationService,
-  WorldLocationStore
-} from '../core/worldplanner/location-store.js'
+import { WorldLocationService } from '../core/worldplanner/location-store.js'
+import { LocationSymbolLifecycleService } from '../core/application/location-symbol-lifecycle.js'
 import { EncounterSourceService } from '../core/application/encounter-source-service.js'
-import { HexMapService, HexMapStore } from '../core/hex/hex-map-store.js'
+import {
+  chunkKeyFor,
+  HexMapService,
+  HexMapStore
+} from '../core/hex/hex-map-store.js'
 import { HexMapEditingCommandHandler } from '../core/application/hex-map-editing.js'
 import { HexTravelService, HexTravelStore } from '../core/hex/hex-travel.js'
 import { HexEditJournalStore } from '../core/hex/hex-edit-journal-store.js'
@@ -40,6 +42,7 @@ import { emptyPassiveProjection } from '../shared/contracts/passive-display.js'
 import { ReferenceService } from '../core/reference/reference-service.js'
 import { ReferenceCatalogAdapter } from '../core/reference/reference-catalog-adapter.js'
 import { referenceTargetKey } from '../shared/reference/reference-target-key.js'
+import { randomUUID } from 'node:crypto'
 const root = process.argv[2]
 const referenceDatabasePath = process.argv[3]
 if (!root || !referenceDatabasePath || !process.parentPort)
@@ -48,16 +51,21 @@ if (!root || !referenceDatabasePath || !process.parentPort)
   )
 const campaigns = openDevelopmentCampaignStore(root)
 const activeDatabase = () => campaigns.activeCampaignDatabase()
+const symbolLifecycle = new LocationSymbolLifecycleService(campaigns)
+const locationSymbols = symbolLifecycle.symbols
+const customSymbol = (id: string) => symbolLifecycle.customSymbol(id)
+const locationStore = (db: ReturnType<typeof activeDatabase>) =>
+  symbolLifecycle.locationStore(db)
 const play = new LivePlayService(activeDatabase)
-const locations = new WorldLocationService(activeDatabase)
+const locations = new WorldLocationService(activeDatabase, customSymbol)
 const sources = new EncounterSourceService(activeDatabase)
-const hex = new HexMapService(activeDatabase)
+const hex = new HexMapService(activeDatabase, locationStore)
 const hexEditing = new HexMapEditingCommandHandler(() => {
   const db = activeDatabase()
-  const locationStore = new WorldLocationStore(db)
-  const maps = new HexMapStore(db, locationStore)
+  const locationsForMap = locationStore(db)
+  const maps = new HexMapStore(db, locationsForMap)
   const party = new PartyStore(db)
-  const scenes = new SceneStore(db, () => locationStore.read().locations)
+  const scenes = new SceneStore(db, () => locationsForMap.read().locations)
   return {
     unitOfWork: new CampaignUnitOfWork(db),
     maps,
@@ -68,12 +76,12 @@ const hexEditing = new HexMapEditingCommandHandler(() => {
 })
 const worldLocationDeletion = new WorldLocationDeletionCommandHandler(() => {
   const db = activeDatabase()
-  const locationStore = new WorldLocationStore(db)
+  const locationsForMap = locationStore(db)
   return {
     unitOfWork: new CampaignUnitOfWork(db),
-    maps: new HexMapStore(db, locationStore),
+    maps: new HexMapStore(db, locationsForMap),
     journal: new HexEditJournalStore(db),
-    locations: locationStore
+    locations: locationsForMap
   }
 })
 const hexTravel = new HexTravelService(activeDatabase)
@@ -235,6 +243,68 @@ function publishHexNotice(
   )
 }
 
+function publishLocationChange(
+  changedLocationIds: readonly string[],
+  reason: 'catalog' | 'presentation' | 'symbol-replacement'
+): void {
+  process.parentPort?.postMessage(
+    coreEventSchema.parse({
+      kind: 'locations.changed',
+      notice: {
+        campaignId: campaigns.activeCampaignId(),
+        revision: locations.read().revision,
+        changedLocationIds,
+        reason
+      }
+    })
+  )
+}
+
+function publishLocationMarkerHexChanges(
+  locationIds: readonly string[],
+  commandId: string = randomUUID()
+): void {
+  const placements = locationIds
+    .map((locationId) => hex.locateLocation(locationId))
+    .filter((placement) => placement !== null)
+  if (placements.length === 0) return
+  const changedChunks = new Map(
+    placements.map((placement) => {
+      const key = chunkKeyFor(placement.coordinate)
+      const chunk = hex.readChunks(placement.mapId, [key]).chunks[0]
+      if (!chunk) throw new CapabilityError('internal', false)
+      return [
+        `${placement.mapId}:${key.q}:${key.r}`,
+        { mapId: placement.mapId, key, revision: chunk.revision }
+      ] as const
+    })
+  )
+  publishHexNotice(
+    commandId,
+    [...new Set(placements.map((placement) => placement.mapId))],
+    [...changedChunks.values()]
+  )
+}
+
+function publishSymbolChange(
+  changedSymbolIds: readonly string[],
+  reason: 'created' | 'renamed' | 'deleted'
+): void {
+  process.parentPort?.postMessage(
+    coreEventSchema.parse({
+      kind: 'location-symbols.changed',
+      notice: {
+        revision: locationSymbols.read().revision,
+        changedSymbolIds,
+        reason
+      }
+    })
+  )
+}
+
+symbolLifecycle.recoverPendingImports()
+symbolLifecycle.recoverPendingDeletions()
+
 function scheduleNextBoundary(): void {
   if (travelTimer !== undefined) clearTimeout(travelTimer)
   travelTimer = undefined
@@ -353,6 +423,16 @@ const worldPlannerHandlers = {
     mutateReferences(() =>
       locations.update(input.id, input.location, input.expectedRevision)
     ),
+  'locations.updateMapPresentation': (input) => {
+    const result = locations.updateMapPresentation(
+      input.id,
+      input.patch,
+      input.expectedRevision
+    )
+    publishLocationChange([input.id], 'presentation')
+    publishLocationMarkerHexChanges([input.id])
+    return result
+  },
   'locations.delete': (input) =>
     mutateReferences(() => {
       const result = worldLocationDeletion.execute(input)
@@ -364,6 +444,65 @@ const worldPlannerHandlers = {
         )
       return result.snapshot
     }),
+  'locationSymbols.create': (input) => {
+    const before = new Set(
+      locationSymbols.read().symbols.map((symbol) => symbol.id)
+    )
+    const result = locationSymbols.create(input.symbol, input.expectedRevision)
+    publishSymbolChange(
+      result.symbols
+        .filter((symbol) => !before.has(symbol.id))
+        .map((symbol) => symbol.id),
+      'created'
+    )
+    return result
+  },
+  'locationSymbols.search': (input) =>
+    locationSymbols.search(input.query, input.offset, input.limit),
+  'locationSymbols.detail': (input) => locationSymbols.detail(input.id),
+  'locationSymbols.update': (input) => {
+    const result = locationSymbols.update(
+      input.id,
+      input.displayName,
+      input.expectedRevision
+    )
+    publishSymbolChange([input.id], 'renamed')
+    return result
+  },
+  'locationSymbols.deleteImpact': (input) =>
+    symbolLifecycle.deleteImpact(input.id),
+  'locationSymbols.delete': (input) => {
+    const result = symbolLifecycle.delete(input)
+    if (result.activeChangedLocationIds.length > 0)
+      publishLocationChange(
+        result.activeChangedLocationIds,
+        'symbol-replacement'
+      )
+    publishLocationMarkerHexChanges(
+      result.activeChangedLocationIds,
+      input.commandId
+    )
+    if (result.status === 'applied') publishSymbolChange([input.id], 'deleted')
+    return {
+      status: result.status,
+      commandId: input.commandId,
+      symbols: result.symbols
+    }
+  },
+  'locationSymbols.importAndAssign': (input) => {
+    const result = symbolLifecycle.importAndAssign(input)
+    if (result.status === 'applied') {
+      publishSymbolChange([result.createdSymbolId], 'created')
+      publishLocationChange([input.locationId], 'presentation')
+      publishLocationMarkerHexChanges([input.locationId], input.commandId)
+    }
+    return {
+      status: result.status,
+      commandId: input.commandId,
+      symbols: result.symbols,
+      presentationRevision: result.presentation.revision
+    }
+  },
   'encounterTables.read': () => sources.readTables(),
   'encounterTables.create': (input) =>
     sources.createTable(input.table, input.expectedRevision),
@@ -389,7 +528,15 @@ const worldPlannerHandlers = {
   | 'locations.read'
   | 'locations.create'
   | 'locations.update'
+  | 'locations.updateMapPresentation'
   | 'locations.delete'
+  | 'locationSymbols.create'
+  | 'locationSymbols.search'
+  | 'locationSymbols.detail'
+  | 'locationSymbols.update'
+  | 'locationSymbols.deleteImpact'
+  | 'locationSymbols.delete'
+  | 'locationSymbols.importAndAssign'
   | 'encounterTables.read'
   | 'encounterTables.create'
   | 'encounterTables.update'

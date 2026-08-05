@@ -4,7 +4,10 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { CampaignStore } from '../../src/core/persistence/sqlite/campaign-store.js'
 import { LivePlayService } from '../../src/core/encounter/live-combat.js'
-import { WorldLocationService } from '../../src/core/worldplanner/location-store.js'
+import {
+  WorldLocationService,
+  WorldLocationStore
+} from '../../src/core/worldplanner/location-store.js'
 
 const roots: string[] = []
 
@@ -109,5 +112,35 @@ describe('world locations', () => {
     ).read()
     reopened.close()
     expect(resumed).toEqual(expected)
+  })
+
+  it('bulk-reads catalog data and presentation with a constant query count', () => {
+    const { campaigns, locations } = harness()
+    let snapshot = locations.read()
+    for (let index = 0; index < 30; index += 1)
+      snapshot = locations.create(
+        { displayName: `Ort ${index}`, notes: '' },
+        snapshot.revision
+      )
+    const database = campaigns.activeCampaignDatabase()
+    let prepares = 0
+    const counted = new Proxy(database, {
+      get(target, property) {
+        if (property === 'prepare')
+          return (source: string) => {
+            prepares += 1
+            return target.prepare(source)
+          }
+        // The read path only uses prepare; preserve all other native members.
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+        return Reflect.get(target, property, target)
+      }
+    })
+
+    const bulk = new WorldLocationStore(counted).read()
+    expect(bulk.locations).toHaveLength(30)
+    expect(prepares).toBe(4)
+    expect(bulk.locations.every((entry) => entry.mapPresentation)).toBe(true)
+    campaigns.close()
   })
 })

@@ -1,6 +1,10 @@
 import { z } from 'zod'
 import { worldLocationSnapshotSchema } from './world-location.js'
 import {
+  builtinLocationSymbolIdSchema,
+  locationSymbolViewBoxSchema
+} from './location-symbol.js'
+import {
   MAX_HEX_BRUSH_RADIUS,
   MAX_HEX_STROKE_POINTS
 } from '../hex/axial-geometry.js'
@@ -45,10 +49,37 @@ export const hexMapSummarySchema = z
   })
   .strict()
 
+export const hexMarkerSymbolSchema = z.discriminatedUnion('kind', [
+  z
+    .object({ kind: z.literal('builtin'), id: builtinLocationSymbolIdSchema })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('custom'),
+      id: z.uuid(),
+      viewBox: locationSymbolViewBoxSchema,
+      pathData: z.string().min(1).max(200_000),
+      fillRule: z.enum(['nonzero', 'evenodd'])
+    })
+    .strict()
+])
+
+export const hexMarkerPresentationSchema = z
+  .object({
+    revision: z.number().int().nonnegative(),
+    title: z.string().min(1).max(100),
+    symbol: hexMarkerSymbolSchema,
+    symbolSize: z.number().int().min(24).max(80),
+    labelCurve: z.number().int().min(-40).max(40),
+    labelPosition: z.enum(['above', 'below', 'both'])
+  })
+  .strict()
+
 export const hexLocationPlacementSchema = axialCoordinateSchema
   .extend({
     locationId: z.uuid(),
-    displayName: z.string().min(1).max(100)
+    displayName: z.string().min(1).max(100),
+    marker: hexMarkerPresentationSchema
   })
   .strict()
 
@@ -449,6 +480,9 @@ export type HexMapCatalogSnapshot = Readonly<
   z.infer<typeof hexMapCatalogSnapshotSchema>
 >
 export type HexMapSummary = Readonly<z.infer<typeof hexMapSummarySchema>>
+export type HexMarkerPresentation = Readonly<
+  z.infer<typeof hexMarkerPresentationSchema>
+>
 export type HexChunkKey = Readonly<z.infer<typeof hexChunkKeySchema>>
 export type HexChunkSnapshot = Readonly<z.infer<typeof hexChunkSnapshotSchema>>
 export type HexChunkReadResult = Readonly<

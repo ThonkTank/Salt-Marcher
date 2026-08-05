@@ -1,4 +1,4 @@
-import { app, ipcMain, type IpcMainInvokeEvent } from 'electron'
+import { app, dialog, ipcMain, type IpcMainInvokeEvent } from 'electron'
 import type { CoreProcessSupervisor } from '../core-process/core-process-supervisor.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import {
@@ -12,6 +12,7 @@ import { runtimeGpuObservationSchema } from '../../shared/qualification/runtime-
 import { roleCanInvoke } from './operation-authorization.js'
 import { roleForEvent } from './window-role.js'
 import { gpuObservation } from './runtime-observation.js'
+import { readLocationSymbolFile } from './location-symbol-file.js'
 
 export function registerCapabilities(core: CoreProcessSupervisor): void {
   for (const [rawKind, definition] of Object.entries(coreOperations)) {
@@ -77,6 +78,15 @@ function mainHandlers(core: CoreProcessSupervisor) {
       setImmediate(() => {
         if (!event.sender.isDestroyed()) event.sender.reload()
       })
+    },
+    'runtime.pickLocationSymbolFile': async () => {
+      const selection = await dialog.showOpenDialog({
+        properties: ['openFile'],
+        filters: [{ name: 'SVG', extensions: ['svg'] }]
+      })
+      if (selection.canceled || !selection.filePaths[0])
+        return { status: 'cancelled' as const }
+      return readLocationSymbolFile(selection.filePaths[0])
     }
   } satisfies Record<
     MainOperationKind,

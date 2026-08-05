@@ -38,6 +38,7 @@ export function attachHexCanvasGestures(options: {
       return
     stroking = true
     stroke = [options.coordinateFor(event)]
+    options.onSelect(stroke[0]!)
     options.onStrokePreview(stroke)
     canvas.setPointerCapture?.(event.pointerId)
     event.preventDefault()
