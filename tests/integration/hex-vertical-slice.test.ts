@@ -19,7 +19,9 @@ import { SceneStore } from '../../src/core/scene/scene-store.js'
 import { CampaignUnitOfWork } from '../../src/core/application/campaign-unit-of-work.js'
 
 const roots: string[] = []
+const campaignStores: CampaignStore[] = []
 afterEach(() => {
+  for (const campaigns of campaignStores.splice(0)) campaigns.close()
   for (const root of roots.splice(0))
     rmSync(root, { recursive: true, force: true })
 })
@@ -28,6 +30,7 @@ function harness() {
   const root = mkdtempSync(join(tmpdir(), 'salt-marcher-hex-'))
   roots.push(root)
   const campaigns = new CampaignStore(root)
+  campaignStores.push(campaigns)
   campaigns.create('Hex campaign')
   const database = () => campaigns.activeCampaignDatabase()
   let now = 1_000
