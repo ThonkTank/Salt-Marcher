@@ -17,6 +17,17 @@ body {
   min-width: 320px;
 }
 
+.module-load-state {
+  display: grid;
+  width: 100%;
+  min-height: 100vh;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-5);
+  padding: var(--space-8);
+  text-align: center;
+}
+
 button,
 input,
 select {

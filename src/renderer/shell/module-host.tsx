@@ -6,12 +6,12 @@ import {
   type ErrorInfo,
   type ReactNode
 } from 'react'
-import type { RendererIncident } from '../../../shared/contracts/runtime.js'
+import type { RendererIncident } from '../../shared/contracts/runtime.js'
 
-export type WorkspaceId = 'session' | 'catalog' | 'hex'
+export type SurfaceId = 'application' | 'session' | 'catalog' | 'hex'
 
-type WorkspaceHostProps<Props extends object> = Readonly<{
-  workspace: WorkspaceId
+type ModuleHostProps<Props extends object> = Readonly<{
+  workspace: SurfaceId
   load: () => Promise<{ default: ComponentType<Props> }>
   componentProps: Props
   loadingMessage: string
@@ -58,8 +58,8 @@ class WorkspaceRenderBoundary extends Component<
 }
 
 /** Loads and isolates one workspace module while leaving the shell operational. */
-export function WorkspaceHost<Props extends object>(
-  props: WorkspaceHostProps<Props>
+export function ModuleHost<Props extends object>(
+  props: ModuleHostProps<Props>
 ) {
   const [Surface, setSurface] = useState<ComponentType<Props> | null>(null)
   const [failure, setFailure] = useState<Failure | null>(null)
@@ -92,7 +92,7 @@ export function WorkspaceHost<Props extends object>(
 
   if (failure)
     return (
-      <section className="workspace-panel workspace-load-state" role="alert">
+      <section className="workspace-panel module-load-state" role="alert">
         <h2>{props.failureMessage}</h2>
         <p>{props.recoveryMessage}</p>
         <div className="workspace-recovery-actions">
@@ -112,7 +112,7 @@ export function WorkspaceHost<Props extends object>(
   if (!Surface)
     return (
       <section
-        className="workspace-panel workspace-load-state"
+        className="workspace-panel module-load-state"
         role="status"
         aria-live="polite"
       >
@@ -128,7 +128,7 @@ export function WorkspaceHost<Props extends object>(
 }
 
 function report<Props extends object>(
-  props: WorkspaceHostProps<Props>,
+  props: ModuleHostProps<Props>,
   phase: Failure['phase'],
   error: Error
 ): void {
@@ -137,11 +137,15 @@ function report<Props extends object>(
       workspace: props.workspace,
       phase,
       code: `workspace.${phase}`,
-      errorName: error.name || 'Error',
-      message: error.message || 'Unknown workspace failure',
+      errorName: safeErrorName(error.name),
+      message: 'Renderer surface failed',
       recoverable: true
     })
     .catch(() => undefined)
+}
+
+function safeErrorName(name: string): string {
+  return /^[A-Za-z][A-Za-z0-9]{0,79}$/.test(name) ? name : 'Error'
 }
 
 function asError(cause: unknown): Error {

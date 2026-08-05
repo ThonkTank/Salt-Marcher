@@ -15,31 +15,21 @@ import {
   PartyDropdown
 } from '../party/party-controls.js'
 import { useInstallationPreferences } from '../../shell/use-installation-preferences.js'
-import sessionIcon from '../../assets/icons/session.svg?url'
-import hexIcon from '../../assets/icons/hex.svg?url'
-import catalogIcon from '../../assets/icons/catalog.svg?url'
 import saltMarcherLogo from '../../assets/icons/salt-marcher.svg?url'
 import SessionWorkspace from '../session/session-workspace.js'
 import { CampaignMenu } from './campaign-menu.js'
 import './workspace.css'
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 import { ReferenceProvider } from '../reference/reference-provider.js'
-import { WorkspaceHost } from './workspace-host.js'
-
-type FantasyIconName = 'session' | 'hex' | 'catalog'
+import { ModuleHost } from '../../shell/module-host.js'
+import {
+  workspaceDefinition,
+  workspaceDefinitions,
+  type WorkspaceId
+} from './workspace-definition.js'
 
 const loadHexEditor = () => import('../hex/hex-editor.js')
 const loadCatalogWorkspace = () => import('../catalog/catalog-workspace.js')
-
-const fantasyIconAssets: Record<FantasyIconName, string> = {
-  session: sessionIcon,
-  hex: hexIcon,
-  catalog: catalogIcon
-}
-
-function FantasyIcon(props: { name: FantasyIconName }) {
-  return <img src={fantasyIconAssets[props.name]} alt="" aria-hidden="true" />
-}
 
 const emptyCampaigns: CampaignSnapshot = {
   activeCampaignId: null,
@@ -52,9 +42,7 @@ export function WorkspaceApp() {
   const [campaigns, setCampaigns] = useState(emptyCampaigns)
   const [session, setSession] = useState<LiveSessionSnapshot | null>(null)
   const [campaignMenuOpen, setCampaignMenuOpen] = useState(false)
-  const [workspace, setWorkspace] = useState<'session' | 'catalog' | 'hex'>(
-    'session'
-  )
+  const [workspace, setWorkspace] = useState<WorkspaceId>('session')
   const [partyOpen, setPartyOpen] = useState(false)
   const [dayOpen, setDayOpen] = useState(false)
   const [groupDialogOpen, setGroupDialogOpen] = useState(false)
@@ -171,13 +159,8 @@ export function WorkspaceApp() {
     }
   }
 
-  const heading = active
-    ? workspace === 'catalog'
-      ? message('nav.catalog')
-      : workspace === 'hex'
-        ? message('nav.hex')
-        : message('nav.session')
-    : message('nav.campaigns')
+  const definition = workspaceDefinition(workspace)
+  const heading = active ? message(definition.label) : message('nav.campaigns')
   const activeCampaign = campaigns.campaigns.find(
     (campaign) => campaign.id === campaigns.activeCampaignId
   )
@@ -313,37 +296,19 @@ export function WorkspaceApp() {
         </header>
         <div className="shell-body">
           <nav className="icon-bar" aria-label={message('app.workspaces')}>
-            {active && (
-              <>
+            {active &&
+              workspaceDefinitions.map((item) => (
                 <button
+                  key={item.id}
                   className="icon-button"
-                  aria-label={message('nav.session')}
-                  title={message('nav.session')}
-                  aria-pressed={workspace === 'session'}
-                  onClick={() => setWorkspace('session')}
+                  aria-label={message(item.label)}
+                  title={message(item.label)}
+                  aria-pressed={workspace === item.id}
+                  onClick={() => setWorkspace(item.id)}
                 >
-                  <FantasyIcon name="session" />
+                  <img src={item.icon} alt="" aria-hidden="true" />
                 </button>
-                <button
-                  className="icon-button"
-                  aria-label={message('nav.hex')}
-                  title={message('nav.hex')}
-                  aria-pressed={workspace === 'hex'}
-                  onClick={() => setWorkspace('hex')}
-                >
-                  <FantasyIcon name="hex" />
-                </button>
-                <button
-                  className="icon-button"
-                  aria-label={message('nav.catalog')}
-                  title={message('nav.catalog')}
-                  aria-pressed={workspace === 'catalog'}
-                  onClick={() => setWorkspace('catalog')}
-                >
-                  <FantasyIcon name="catalog" />
-                </button>
-              </>
-            )}
+              ))}
             <img
               className="rail-logo"
               src={saltMarcherLogo}
@@ -352,7 +317,9 @@ export function WorkspaceApp() {
           </nav>
           <div
             className={`work-area${
-              active && workspace === 'session' ? ' session-work-area' : ''
+              active && definition.layout === 'session'
+                ? ' session-work-area'
+                : ''
             }`}
           >
             {error && (
@@ -394,7 +361,7 @@ export function WorkspaceApp() {
               />
             )}
             {active && session && workspace === 'catalog' && (
-              <WorkspaceHost
+              <ModuleHost
                 key={`catalog-boundary-${readbackKey}`}
                 workspace="catalog"
                 load={loadCatalogWorkspace}
@@ -419,7 +386,7 @@ export function WorkspaceApp() {
               />
             )}
             {active && session && workspace === 'hex' && (
-              <WorkspaceHost
+              <ModuleHost
                 key={`hex-boundary-${readbackKey}`}
                 workspace="hex"
                 load={loadHexEditor}

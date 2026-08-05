@@ -120,33 +120,45 @@ describe('architecture boundaries', () => {
     expect(utility).toContain('nextBoundaryDelay()')
   })
 
-  it('keeps extracted feature workspaces outside the shell composition root', () => {
-    const shellLines = source('src/renderer/shell/app.tsx').split('\n').length
-    const workspaceLines = source(
-      'src/renderer/features/workspace/workspace.tsx'
-    ).split('\n').length
-    const sessionLines = source(
-      'src/renderer/features/session/session-workspace.tsx'
-    ).split('\n').length
-    const catalogLines = source(
-      'src/renderer/features/catalog/catalog-workspace.tsx'
-    ).split('\n').length
-    const partyLines = source(
-      'src/renderer/features/party/party-controls.tsx'
-    ).split('\n').length
-    const encounterLines = source(
-      'src/renderer/features/encounter/encounter-panels.tsx'
-    ).split('\n').length
-    const hexLines = source(
-      'src/renderer/features/hex/hex-workspaces.tsx'
-    ).split('\n').length
-    expect(shellLines).toBeLessThan(100)
-    expect(workspaceLines).toBeLessThan(500)
-    expect(sessionLines).toBeLessThan(1_500)
-    expect(catalogLines).toBeLessThan(1_600)
-    expect(partyLines).toBeLessThan(800)
-    expect(encounterLines).toBeLessThan(700)
-    expect(hexLines).toBeLessThan(1_000)
+  it('keeps module recovery and heavyweight rendering at explicit boundaries', () => {
+    const shell = source('src/renderer/shell/app.tsx')
+    const workspace = source('src/renderer/features/workspace/workspace.tsx')
+    const canvasEntry = source('src/renderer/features/hex/hex-map-canvas.tsx')
+    const canvasImplementation = source(
+      'src/renderer/features/hex/hex-map-canvas-pixi.tsx'
+    )
+    expect(shell).toContain('<ModuleHost')
+    expect(shell).toContain("import('../features/workspace/workspace.js')")
+    expect(workspace).toContain('workspaceDefinitions.map')
+    expect(workspace).toContain('loadCatalogWorkspace')
+    expect(workspace).toContain('loadHexEditor')
+    expect(canvasEntry).toContain("import('./hex-map-canvas-pixi.js')")
+    expect(canvasEntry).not.toContain("from 'pixi.js'")
+    expect(canvasImplementation).toContain("from 'pixi.js'")
+  })
+
+  it('injects renderer capabilities without mutable module state', () => {
+    expect(source('src/renderer/src.tsx')).not.toContain(
+      'installRendererCapabilityApi'
+    )
+    expect(() =>
+      source('src/renderer/capabilities/renderer-capability-api.ts')
+    ).toThrow()
+    for (const feature of [
+      'catalog',
+      'creatures',
+      'encounter-table',
+      'encounter',
+      'hex',
+      'party',
+      'session'
+    ]) {
+      const adapter = source(
+        `src/renderer/features/${feature}/${feature}-capabilities.ts`
+      )
+      expect(adapter).toContain('api: SaltMarcherApi')
+      expect(adapter).toContain('return api')
+    }
   })
 
   it('keeps renderer styling in tokens, shell and owning features', () => {

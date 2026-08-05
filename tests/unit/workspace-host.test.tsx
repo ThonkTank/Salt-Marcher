@@ -2,7 +2,7 @@
 
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { WorkspaceHost } from '../../src/renderer/features/workspace/workspace-host.js'
+import { ModuleHost } from '../../src/renderer/shell/module-host.js'
 
 const labels = {
   loadingMessage: 'Hex-Editor wird geladen …',
@@ -13,14 +13,14 @@ const labels = {
   reloadLabel: 'Anwendung neu laden'
 }
 
-describe('WorkspaceHost', () => {
+describe('ModuleHost', () => {
   afterEach(cleanup)
 
   it('keeps the surrounding shell visible while its module is pending', () => {
     render(
       <main>
         <nav>Shell-Navigation</nav>
-        <WorkspaceHost
+        <ModuleHost
           {...labels}
           workspace="hex"
           load={() => new Promise<{ default: () => null }>(() => undefined)}
@@ -41,7 +41,7 @@ describe('WorkspaceHost', () => {
     const load = vi.fn().mockRejectedValue(new Error('stale chunk'))
 
     render(
-      <WorkspaceHost
+      <ModuleHost
         {...labels}
         workspace="hex"
         load={load}

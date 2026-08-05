@@ -74,7 +74,9 @@ function mainHandlers(core: CoreProcessSupervisor) {
       )
     },
     'runtime.reloadRenderer': (event) => {
-      event.sender.reload()
+      setImmediate(() => {
+        if (!event.sender.isDestroyed()) event.sender.reload()
+      })
     }
   } satisfies Record<
     MainOperationKind,

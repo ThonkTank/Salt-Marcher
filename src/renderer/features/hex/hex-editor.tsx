@@ -19,12 +19,12 @@ import {
   reportCapabilityError
 } from '../../capabilities/capability-errors.js'
 import { ModalDialog } from '../../shell/modal-dialog.js'
-import { capabilityErrorCode } from '../../../shared/errors/capability-error.js'
 import { CatalogCrudControlsView } from '../../shell/catalog-crud-controls-view.js'
 import { HexChunkCache } from './hex-chunk-cache.js'
 import { HexCommandQueue } from './hex-command-queue.js'
 import { createHexLocationPlacementController } from './hex-location-placement-controller.js'
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
+import { executeRecoverableHexCommand } from './hex-command-executor.js'
 
 type EditorTool = 'select' | 'paint' | 'erase' | 'location'
 
@@ -236,11 +236,16 @@ export default function HexEditor(props: {
     const expectedCatalogRevision = catalog.revision
     return enqueueCommand(async () => {
       try {
-        const result = await capabilities.hex.create({
+        const result = await executeRecoverableHexCommand(
           commandId,
-          displayName,
-          expectedCatalogRevision
-        })
+          () =>
+            capabilities.hex.create({
+              commandId,
+              displayName,
+              expectedCatalogRevision
+            }),
+          capabilities.hex.commandReceipt
+        )
         if (result.status !== 'applied') {
           await applyResult(result)
           return
@@ -249,15 +254,6 @@ export default function HexEditor(props: {
         await applyResult(result)
         await refreshCatalog(result.maps[0]!.id)
       } catch (cause) {
-        if (capabilityErrorCode(cause) === 'outcome_unknown') {
-          const receipt = await capabilities.hex.commandReceipt(commandId)
-          if (receipt) {
-            await applyResult(receipt)
-            if (receipt.status === 'applied')
-              await refreshCatalog(receipt.maps[0]!.id)
-            return
-          }
-        }
         props.onError(capabilityErrorText(cause))
       }
     })
@@ -271,21 +267,19 @@ export default function HexEditor(props: {
       const currentMap = mapRef.current
       if (!currentMap) return
       try {
-        const result = await capabilities.hex.updateMetadata({
+        const result = await executeRecoverableHexCommand(
           commandId,
-          mapId: currentMap.map.id,
-          displayName,
-          expectedMetadataRevision: currentMap.map.metadataRevision
-        })
+          () =>
+            capabilities.hex.updateMetadata({
+              commandId,
+              mapId: currentMap.map.id,
+              displayName,
+              expectedMetadataRevision: currentMap.map.metadataRevision
+            }),
+          capabilities.hex.commandReceipt
+        )
         await applyResult(result)
       } catch (cause) {
-        if (capabilityErrorCode(cause) === 'outcome_unknown') {
-          const receipt = await capabilities.hex.commandReceipt(commandId)
-          if (receipt) {
-            await applyResult(receipt)
-            return
-          }
-        }
         props.onError(capabilityErrorText(cause))
       }
     })
@@ -367,12 +361,17 @@ export default function HexEditor(props: {
       const currentMap = mapRef.current
       if (!currentMap) return
       try {
-        const result = await capabilities.hex[direction]({
+        const result = await executeRecoverableHexCommand(
           commandId,
-          mapId: currentMap.map.id,
-          expectedContentRevision: currentMap.map.contentRevision,
-          confirmationToken
-        })
+          () =>
+            capabilities.hex[direction]({
+              commandId,
+              mapId: currentMap.map.id,
+              expectedContentRevision: currentMap.map.contentRevision,
+              confirmationToken
+            }),
+          capabilities.hex.commandReceipt
+        )
         if (result.status === 'confirmation_required') {
           setPendingHistory({
             direction,
@@ -385,14 +384,6 @@ export default function HexEditor(props: {
         setPendingHistory(null)
         await applyResult(result)
       } catch (cause) {
-        if (capabilityErrorCode(cause) === 'outcome_unknown') {
-          const receipt = await capabilities.hex.commandReceipt(commandId)
-          if (receipt) {
-            setPendingHistory(null)
-            await applyResult(receipt)
-            return
-          }
-        }
         props.onError(capabilityErrorText(cause))
       }
     })
@@ -429,16 +420,22 @@ export default function HexEditor(props: {
       const currentMap = mapRef.current
       if (!currentMap) return
       try {
-        const result = await capabilities.hex.applyBrushStroke({
+        const result = await executeRecoverableHexCommand(
           commandId,
-          mapId: currentMap.map.id,
-          mode,
-          terrainId: queuedTerrain,
-          path: [...path],
-          radius: strokeRadius,
-          expectedContentRevision: currentMap.map.contentRevision,
-          confirmationToken
-        })
+          () =>
+            capabilities.hex.applyBrushStroke({
+              commandId,
+              mapId: currentMap.map.id,
+              mode,
+              terrainId: queuedTerrain,
+              path: [...path],
+              radius: strokeRadius,
+              expectedContentRevision: currentMap.map.contentRevision,
+              confirmationToken
+            }),
+          capabilities.hex.commandReceipt,
+          () => chunkCache.current.invalidateMap(currentMap.map.id)
+        )
         if (result.status === 'confirmation_required') {
           setPendingErase({
             path,
@@ -454,17 +451,6 @@ export default function HexEditor(props: {
         if (mapRef.current?.map.id === currentMap.map.id)
           setOverlays(nextOverlays)
       } catch (cause) {
-        if (capabilityErrorCode(cause) === 'outcome_unknown') {
-          try {
-            const receipt = await capabilities.hex.commandReceipt(commandId)
-            if (receipt) {
-              await applyResult(receipt)
-              return
-            }
-          } catch {
-            chunkCache.current.invalidateMap(currentMap.map.id)
-          }
-        }
         props.onError(capabilityErrorText(cause))
       }
     })

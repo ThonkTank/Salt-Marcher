@@ -5,6 +5,7 @@ import {
 } from '../../src/shared/contracts/campaign.js'
 import { coreResultSchema } from '../../src/shared/contracts/core-protocol.js'
 import { CapabilityError } from '../../src/shared/errors/capability-error.js'
+import { rendererIncidentSchema } from '../../src/shared/contracts/runtime.js'
 
 describe('capability contract', () => {
   it('allows only documented typed failures', () => {
@@ -44,6 +45,30 @@ describe('capability contract', () => {
     expect(error.code).toBe('timeout')
     expect(error.retryable).toBe(true)
     expect(error.message).toBe('timeout')
+  })
+
+  it('bounds structured renderer incidents and rejects attached user data', () => {
+    expect(
+      rendererIncidentSchema.parse({
+        workspace: 'hex',
+        phase: 'module-load',
+        code: 'workspace.module-load',
+        errorName: 'ChunkLoadError',
+        message: 'Failed to fetch a renderer module',
+        recoverable: true
+      })
+    ).toMatchObject({ workspace: 'hex', recoverable: true })
+    expect(
+      rendererIncidentSchema.safeParse({
+        workspace: 'hex',
+        phase: 'render',
+        code: 'workspace.render',
+        errorName: 'Error',
+        message: 'failed',
+        recoverable: true,
+        campaignName: 'private campaign'
+      }).success
+    ).toBe(false)
   })
 
   it('freezes success snapshots at the capability boundary', () => {
