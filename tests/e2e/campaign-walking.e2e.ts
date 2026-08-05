@@ -431,10 +431,20 @@ describe('campaign walking skeleton', () => {
     const nestedMovement = await pronePreview.$('button=movement')
     await nestedMovement.moveTo()
     await client.pause(400)
-    await expect(
-      await client.$('section[role="region"][aria-label="Referenz: movement"]')
-    ).toBeExisting()
-    await (await pronePreview.$('button[aria-label="Prone anheften"]')).click()
+    const movementPreview = await client.$(
+      'section[role="region"][aria-label="Referenz: movement"]'
+    )
+    await expect(movementPreview).toBeExisting()
+    await (await client.$('.workspace-heading')).moveTo()
+    await movementPreview.waitForExist({ reverse: true, timeout: 5_000 })
+    await proneReference.moveTo()
+    const reopenedPronePreview = await client.$(
+      'section[role="region"][aria-label="Referenz: Prone"]'
+    )
+    await reopenedPronePreview.waitForExist({ timeout: 5_000 })
+    await (
+      await reopenedPronePreview.$('button[aria-label="Prone anheften"]')
+    ).click()
     const pinnedProne = await client.$(
       'section[aria-label="Angeheftete Referenz: Prone"]'
     )
