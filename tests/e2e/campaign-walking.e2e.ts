@@ -485,6 +485,18 @@ describe('campaign walking skeleton', () => {
       reverse: true,
       timeout: 5_000
     })
+    await client.execute(() => {
+      for (const close of document.querySelectorAll<HTMLButtonElement>(
+        '.reference-pinned-window button[aria-label$=" schließen"]'
+      ))
+        close.click()
+    })
+    await (
+      await client.$('.reference-pinned-window')
+    ).waitForExist({
+      reverse: true,
+      timeout: 5_000
+    })
 
     await (await client.$('button=Gruppen managen')).click()
     const reopenedGroupDialog = await client.$(
