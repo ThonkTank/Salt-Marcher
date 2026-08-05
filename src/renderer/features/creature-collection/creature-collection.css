@@ -184,6 +184,10 @@
   gap: 0.4rem;
 }
 
+.creature-collection-pane-footer button {
+  color: var(--text-1);
+}
+
 .creature-collection-table-wrap {
   min-height: 0;
   overflow: auto;

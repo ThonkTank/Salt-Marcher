@@ -782,7 +782,11 @@ export function GroupDialog(props: {
                 undo={() => dispatchDraft({ kind: 'undo-roster' })}
                 redo={() => dispatchDraft({ kind: 'redo-roster' })}
               />
-              <div className="group-draft-scroll">
+              <div
+                className="group-draft-scroll"
+                tabIndex={0}
+                aria-label={uiMessage('ui.aktuelle.gruppe')}
+              >
                 {!active ? (
                   <p className="session-group-empty">
                     {uiMessage('ui.waehle.eine.gruppe.aus.oder.lege.eine.neue')}

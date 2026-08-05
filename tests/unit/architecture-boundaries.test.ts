@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
-import { dirname, join, normalize, resolve } from 'node:path'
+import { dirname, join, normalize, resolve, sep } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import ts from 'typescript'
 import {
@@ -59,7 +59,7 @@ function expectRelativeImportsWithin(
     for (const imported of relativeImports(file))
       expect(
         roots.some(
-          (root) => imported === root || imported.startsWith(`${root}/`)
+          (root) => imported === root || imported.startsWith(`${root}${sep}`)
         ),
         `${file} imports forbidden layer ${imported}`
       ).toBe(true)
@@ -94,14 +94,14 @@ describe('architecture boundaries', () => {
 
   it('keeps SQL table ownership inside the owning aggregate', () => {
     const owners: readonly [RegExp, string][] = [
-      [/^hex_/, `${normalize(resolve('src/core/hex'))}/`],
+      [/^hex_/, `${normalize(resolve('src/core/hex'))}${sep}`],
       [
         /^(party_|player_characters$)/,
-        `${normalize(resolve('src/core/party'))}/`
+        `${normalize(resolve('src/core/party'))}${sep}`
       ],
-      [/^scene_/, `${normalize(resolve('src/core/scene'))}/`],
-      [/^encounter_/, `${normalize(resolve('src/core/encounter'))}/`],
-      [/^worldplanner_/, `${normalize(resolve('src/core/worldplanner'))}/`]
+      [/^scene_/, `${normalize(resolve('src/core/scene'))}${sep}`],
+      [/^encounter_/, `${normalize(resolve('src/core/encounter'))}${sep}`],
+      [/^worldplanner_/, `${normalize(resolve('src/core/worldplanner'))}${sep}`]
     ]
     for (const file of codeFiles('src/core'))
       for (const table of referencedSqlTables(file)) {
