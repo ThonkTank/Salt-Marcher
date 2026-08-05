@@ -13,6 +13,7 @@ import type {
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import { TuningControls } from '../encounter/encounter-tuning.js'
 import { encounterCapabilities } from '../encounter/encounter-capabilities.js'
+import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 import {
   applyCombatCommandResult,
   applySceneGroupCommandResult
@@ -55,6 +56,7 @@ export function GroupDialog(props: {
   onError: (message: string) => void
   reinforcementMode: boolean
 }) {
+  const api = useCapabilityApi()
   const focused = props.snapshot.scene.scenes.find(
     (scene) => scene.id === props.snapshot.scene.focusedSceneId
   )!
@@ -174,13 +176,13 @@ export function GroupDialog(props: {
     active &&
     assigned.length > 0 &&
     assigned.every((member) => member.level !== null)
-  useCreatureSearch(query, setPage, props.onError)
+  useCreatureSearch(query, setPage, props.onError, api.creatures)
   useEffect(() => {
-    void creaturesCapabilities()
+    void creaturesCapabilities(api)
       .creatures.filterOptions()
       .then(setOptions)
       .catch(reportCapabilityError(props.onError))
-    void creaturesCapabilities()
+    void creaturesCapabilities(api)
       .creatures.search({ ...emptyQuery, limit: 1 })
       .then((result) => setCatalogTotal(result.total))
       .catch(reportCapabilityError(props.onError))
@@ -190,7 +192,7 @@ export function GroupDialog(props: {
     if (!active) return
     const token = ++evaluationRequest.current
     const timer = window.setTimeout(() => {
-      void sessionCapabilities()
+      void sessionCapabilities(api)
         .scene.evaluateGroupDraft(
           focused.id,
           entries,
@@ -218,7 +220,7 @@ export function GroupDialog(props: {
     const token = ++factsRequest.current
     void Promise.all(
       group.entries.map((entry) =>
-        creaturesCapabilities()
+        creaturesCapabilities(api)
           .creatures.detail(entry.creatureId)
           .catch(() => null)
       )
@@ -402,7 +404,9 @@ export function GroupDialog(props: {
 
   async function inspect(creature: Creature) {
     try {
-      props.inspect(await creaturesCapabilities().creatures.detail(creature.id))
+      props.inspect(
+        await creaturesCapabilities(api).creatures.detail(creature.id)
+      )
     } catch (cause) {
       setMessage(capabilityErrorText(cause))
     }
@@ -413,7 +417,7 @@ export function GroupDialog(props: {
     const nextSeed = seed + 1
     setBusy(true)
     try {
-      const result = await sessionCapabilities().scene.generateGroupDraft(
+      const result = await sessionCapabilities(api).scene.generateGroupDraft(
         focused.id,
         entries,
         mode,
@@ -502,7 +506,7 @@ export function GroupDialog(props: {
       props.saved(
         applySceneGroupCommandResult(
           props.snapshot,
-          await sessionCapabilities().scene.saveGroup(
+          await sessionCapabilities(api).scene.saveGroup(
             focused.id,
             selection === newGroupDraftKey ? null : selection,
             name.trim(),
@@ -532,7 +536,7 @@ export function GroupDialog(props: {
       props.saved(
         applySceneGroupCommandResult(
           props.snapshot,
-          await sessionCapabilities().scene.setGroupArchived(
+          await sessionCapabilities(api).scene.setGroupArchived(
             focused.id,
             selection,
             true,
@@ -559,7 +563,7 @@ export function GroupDialog(props: {
       props.saved(
         applyCombatCommandResult(
           props.snapshot,
-          await encounterCapabilities().combat.joinGroup(
+          await encounterCapabilities(api).combat.joinGroup(
             focused.id,
             selection,
             currentGroup.revision,

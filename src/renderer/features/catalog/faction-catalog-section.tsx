@@ -17,6 +17,7 @@ import { creaturesCapabilities } from '../creatures/creatures-capabilities.js'
 import { EncounterTableManager } from '../encounter-table/encounter-table-manager.js'
 import type { EncounterTableSaveResult } from '../encounter-table/encounter-table-manager.js'
 import type { FactionCatalogController } from './faction-catalog-controller.js'
+import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 
 export function FactionCatalogSection(props: {
   controller: FactionCatalogController
@@ -131,6 +132,7 @@ function FactionDialog(props: {
   onError: (message: string) => void
   inspect: (creature: Creature) => void
 }) {
+  const api = useCapabilityApi()
   const [displayName, setDisplayName] = useState(
     props.faction?.displayName ?? ''
   )
@@ -187,7 +189,7 @@ function FactionDialog(props: {
     let current = true
     void Promise.all(
       selectedCreatureIds.map((id) =>
-        creaturesCapabilities()
+        creaturesCapabilities(api)
           .creatures.detail(id)
           .catch(() => null)
       )

@@ -1,4 +1,4 @@
-import { app, ipcMain } from 'electron'
+import { app, ipcMain, type IpcMainInvokeEvent } from 'electron'
 import type { CoreProcessSupervisor } from '../core-process/core-process-supervisor.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import {
@@ -36,8 +36,8 @@ export function registerCapabilities(core: CoreProcessSupervisor): void {
     ipcMain.handle(definition.channel, async (event, raw) => {
       if (!definition.roles.includes(roleForEvent(event)))
         throw new CapabilityError('read_only', false)
-      definition.input.parse(raw)
-      return definition.output.parse(await handlers[kind]())
+      const input = definition.input.parse(raw)
+      return definition.output.parse(await handlers[kind](event, input))
     })
   }
 }
@@ -59,8 +59,27 @@ function mainHandlers(core: CoreProcessSupervisor) {
     'runtime.retryCore': () => {
       core.retry()
       return core.status()
+    },
+    'runtime.reportRendererIncident': (_event, rawIncident: unknown) => {
+      const incident =
+        mainOperations['runtime.reportRendererIncident'].input.parse(
+          rawIncident
+        )
+      console.error(
+        JSON.stringify({
+          event: 'renderer-incident',
+          occurredAt: new Date().toISOString(),
+          ...incident
+        })
+      )
+    },
+    'runtime.reloadRenderer': (event) => {
+      event.sender.reload()
     }
-  } satisfies Record<MainOperationKind, () => unknown>
+  } satisfies Record<
+    MainOperationKind,
+    (event: IpcMainInvokeEvent, input: unknown) => unknown
+  >
 }
 
 async function invokeGeneric(

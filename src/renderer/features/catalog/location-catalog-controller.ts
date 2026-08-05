@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
+import type { SaltMarcherApi } from '../../../shared/contracts/capability-api.js'
 import type {
   WorldLocation,
   WorldLocationDraft,
@@ -12,8 +13,6 @@ import type {
   WorldFactionSnapshot
 } from '../../../shared/contracts/encounter-source.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
-import { encounterTableCapabilities } from '../encounter-table/encounter-table-capabilities.js'
-import { catalogCapabilities } from './catalog-capabilities.js'
 
 export type LocationCatalogPort = {
   readLocations: () => Promise<WorldLocationSnapshot>
@@ -35,24 +34,26 @@ export type LocationCatalogPort = {
   ) => Promise<WorldLocationSnapshot>
 }
 
-const defaultLocationCatalogPort: LocationCatalogPort = {
-  readLocations: () => catalogCapabilities().locations.read(),
-  readTables: () => encounterTableCapabilities().encounterTables.read(),
-  readFactions: () => catalogCapabilities().factions.read(),
-  readSession: () => catalogCapabilities().session.read(),
-  createLocation: (draft, revision) =>
-    catalogCapabilities().locations.create(draft, revision),
-  updateLocation: (id, draft, revision) =>
-    catalogCapabilities().locations.update(id, draft, revision),
-  deleteLocation: (id, revision) =>
-    catalogCapabilities().locations.delete(id, revision)
+export function createLocationCatalogPort(
+  api: SaltMarcherApi
+): LocationCatalogPort {
+  return {
+    readLocations: () => api.locations.read(),
+    readTables: () => api.encounterTables.read(),
+    readFactions: () => api.factions.read(),
+    readSession: () => api.session.read(),
+    createLocation: (draft, revision) => api.locations.create(draft, revision),
+    updateLocation: (id, draft, revision) =>
+      api.locations.update(id, draft, revision),
+    deleteLocation: (id, revision) => api.locations.delete(id, revision)
+  }
 }
 
 export function useLocationCatalogController(
   active: boolean,
   onError: (message: string) => void,
   setSession: (snapshot: LiveSessionSnapshot) => void,
-  port: LocationCatalogPort = defaultLocationCatalogPort
+  port: LocationCatalogPort
 ) {
   const [snapshot, setSnapshot] = useState<WorldLocationSnapshot>({
     revision: 0,

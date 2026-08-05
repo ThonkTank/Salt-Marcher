@@ -9,12 +9,14 @@ import { formatMessage, message } from '../../i18n/messages.de.js'
 import { encounterCapabilities } from './encounter-capabilities.js'
 import { ModalDialog } from '../../shell/modal-dialog.js'
 import { ReadOnlyProse } from '../reference/read-only-prose.js'
+import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 
 export function CombatCardView(props: {
   card: CombatSnapshot['cards'][number]
   combat: CombatSnapshot
   action: (operation: () => Promise<CombatCommandResult>) => Promise<void>
 }) {
+  const api = useCapabilityApi()
   const [amount, setAmount] = useState(1)
   const [dialogOpen, setDialogOpen] = useState(false)
   const card = props.card
@@ -43,7 +45,7 @@ export function CombatCardView(props: {
 
   function changeHp(healing: boolean) {
     void props.action(() =>
-      encounterCapabilities().combat.changeHp(
+      encounterCapabilities(api).combat.changeHp(
         card.id,
         amount,
         healing,
@@ -198,7 +200,7 @@ export function CombatCardView(props: {
                     aria-pressed={active}
                     onClick={() =>
                       void props.action(() =>
-                        encounterCapabilities().combat.toggleCondition(
+                        encounterCapabilities(api).combat.toggleCondition(
                           card.id,
                           condition,
                           !active,
@@ -221,7 +223,7 @@ export function CombatCardView(props: {
               aria-pressed={card.concentrating}
               onClick={() =>
                 void props.action(() =>
-                  encounterCapabilities().combat.setConcentration(
+                  encounterCapabilities(api).combat.setConcentration(
                     card.id,
                     !card.concentrating,
                     props.combat.revision
@@ -240,7 +242,7 @@ export function CombatCardView(props: {
                 value={card.exhaustionLevel}
                 onChange={(event) =>
                   void props.action(() =>
-                    encounterCapabilities().combat.setExhaustion(
+                    encounterCapabilities(api).combat.setExhaustion(
                       card.id,
                       Number(event.target.value),
                       props.combat.revision

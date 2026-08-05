@@ -12,16 +12,13 @@ import {
   emptyCreatureOptions,
   emptyQuery
 } from '../creatures/creature-state.js'
-import {
-  creaturesCapabilities,
-  type CreatureCapabilityPort
-} from '../creatures/creatures-capabilities.js'
+import type { CreatureCapabilityPort } from '../creatures/creatures-capabilities.js'
 
 export function useMonsterCatalogController(
   active: boolean,
   onError: (message: string) => void,
   inspect: (creature: Creature) => void,
-  port: CreatureCapabilityPort = creaturesCapabilities().creatures
+  port: CreatureCapabilityPort
 ) {
   const [query, setQuery] = useState<CreatureCatalogQuery>(emptyQuery)
   const [page, setPage] = useState<CreatureCatalogPage | null>(null)

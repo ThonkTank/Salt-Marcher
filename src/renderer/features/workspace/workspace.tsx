@@ -1,5 +1,5 @@
 import { formatMessage, message } from '../../i18n/messages.de.js'
-import { useCallback, useEffect, lazy, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { CampaignSnapshot } from '../../../shared/contracts/campaign.js'
 import type { CampaignCapability } from '../../../shared/contracts/capability-api.js'
 import type { Creature } from '../../../shared/contracts/encounter.js'
@@ -24,13 +24,12 @@ import { CampaignMenu } from './campaign-menu.js'
 import './workspace.css'
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 import { ReferenceProvider } from '../reference/reference-provider.js'
-import { WorkspaceLoadBoundary } from './workspace-load-boundary.js'
+import { WorkspaceHost } from './workspace-host.js'
 
 type FantasyIconName = 'session' | 'hex' | 'catalog'
 
-const LazyHexEditor = lazy(async () => {
-  return import('../hex/hex-editor.js')
-})
+const loadHexEditor = () => import('../hex/hex-editor.js')
+const loadCatalogWorkspace = () => import('../catalog/catalog-workspace.js')
 
 const fantasyIconAssets: Record<FantasyIconName, string> = {
   session: sessionIcon,
@@ -351,7 +350,11 @@ export function WorkspaceApp() {
               alt={message('ui.saltmarcher')}
             />
           </nav>
-          <div className={`work-area${active ? ' session-work-area' : ''}`}>
+          <div
+            className={`work-area${
+              active && workspace === 'session' ? ' session-work-area' : ''
+            }`}
+          >
             {error && (
               <p className="error-message" role="alert">
                 {error}{' '}
@@ -391,8 +394,17 @@ export function WorkspaceApp() {
               />
             )}
             {active && session && workspace === 'catalog' && (
-              <WorkspaceLoadBoundary
+              <WorkspaceHost
                 key={`catalog-boundary-${readbackKey}`}
+                workspace="catalog"
+                load={loadCatalogWorkspace}
+                componentProps={{
+                  snapshot: session,
+                  setSnapshot: setSession,
+                  close: () => setWorkspace('session'),
+                  inspect: setInspected,
+                  onError: setError
+                }}
                 loadingMessage={formatMessage('workspace.loading', {
                   name: message('nav.catalog')
                 })}
@@ -400,20 +412,18 @@ export function WorkspaceApp() {
                   name: message('nav.catalog')
                 })}
                 recoveryMessage={message('workspace.reloadHint')}
+                retryLabel={message('action.retryWorkspace')}
                 reloadLabel={message('action.reloadApplication')}
-              >
-                <LazyCatalogWorkspace
-                  snapshot={session}
-                  setSnapshot={setSession}
-                  close={() => setWorkspace('session')}
-                  inspect={setInspected}
-                  onError={setError}
-                />
-              </WorkspaceLoadBoundary>
+                reportIncident={capabilityApi.runtime.reportRendererIncident}
+                reloadRenderer={capabilityApi.runtime.reloadRenderer}
+              />
             )}
             {active && session && workspace === 'hex' && (
-              <WorkspaceLoadBoundary
+              <WorkspaceHost
                 key={`hex-boundary-${readbackKey}`}
+                workspace="hex"
+                load={loadHexEditor}
+                componentProps={{ onError: setError }}
                 loadingMessage={formatMessage('workspace.loading', {
                   name: message('nav.hex')
                 })}
@@ -421,10 +431,11 @@ export function WorkspaceApp() {
                   name: message('nav.hex')
                 })}
                 recoveryMessage={message('workspace.reloadHint')}
+                retryLabel={message('action.retryWorkspace')}
                 reloadLabel={message('action.reloadApplication')}
-              >
-                <LazyHexEditor onError={setError} />
-              </WorkspaceLoadBoundary>
+                reportIncident={capabilityApi.runtime.reportRendererIncident}
+                reloadRenderer={capabilityApi.runtime.reloadRenderer}
+              />
             )}
           </div>
         </div>
@@ -463,7 +474,3 @@ function formatSessionStatus(
       : null
   return `Tag ${day} · ${period}${progress === null ? '' : ` · ${progress} % Tagesbudget`}`
 }
-
-const LazyCatalogWorkspace = lazy(
-  () => import('../catalog/catalog-workspace.js')
-)

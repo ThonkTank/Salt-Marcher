@@ -21,6 +21,7 @@ import {
 import { travelSegmentProgress, useTravelClock } from './use-travel-clock.js'
 import { ModalDialog } from '../../shell/modal-dialog.js'
 import { createHexLocationPlacementController } from './hex-location-placement-controller.js'
+import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 
 export function TravelScenario(props: {
   snapshot: LiveSessionSnapshot
@@ -28,35 +29,34 @@ export function TravelScenario(props: {
   openMap: () => void
   onError: (message: string) => void
 }) {
+  const api = useCapabilityApi()
+  const capabilities = hexCapabilities(api)
   const focusedSceneId = props.snapshot.scene.focusedSceneId
   const onError = props.onError
   const setSnapshot = props.setSnapshot
   const [travel, setTravel] = useState<HexTravelSnapshot | null>(null)
   const clockNow = useTravelClock(travel)
   const refresh = useCallback(async () => {
-    const next = await hexCapabilities().hexTravel.read(focusedSceneId)
+    const next = await capabilities.hexTravel.read(focusedSceneId)
     setTravel(next)
-    setSnapshot(await hexCapabilities().session.read())
-  }, [focusedSceneId, setSnapshot])
+    setSnapshot(await capabilities.session.read())
+  }, [capabilities, focusedSceneId, setSnapshot])
   useEffect(() => {
     void Promise.resolve().then(refresh).catch(reportCapabilityError(onError))
   }, [onError, refresh])
   useEffect(() => {
-    return hexCapabilities().session.onChanged((notice) => {
+    return capabilities.session.onChanged((notice) => {
       if (notice.sceneId !== focusedSceneId) return
       void refresh().catch(reportCapabilityError(onError))
     })
-  }, [focusedSceneId, onError, refresh])
+  }, [capabilities, focusedSceneId, onError, refresh])
   const mutate = async (action: 'pause' | 'resume' | 'abort') => {
     if (!travel) return
     try {
       setTravel(
-        await hexCapabilities().hexTravel[action](
-          focusedSceneId,
-          travel.revision
-        )
+        await capabilities.hexTravel[action](focusedSceneId, travel.revision)
       )
-      props.setSnapshot(await hexCapabilities().session.read())
+      props.setSnapshot(await capabilities.session.read())
     } catch (cause) {
       props.onError(capabilityErrorText(cause))
     }
@@ -119,8 +119,8 @@ export function TravelScenario(props: {
               <select
                 value={travel.multiplier}
                 onChange={(event) =>
-                  void hexCapabilities()
-                    .hexTravel.setMultiplier(
+                  void capabilities.hexTravel
+                    .setMultiplier(
                       focusedSceneId,
                       Number(event.target.value) as 1 | 2 | 5 | 10,
                       travel.revision
@@ -174,7 +174,11 @@ export function SessionHexMap(props: {
   setSnapshot: (snapshot: LiveSessionSnapshot) => void
   onError: (message: string) => void
 }) {
-  const chunkCache = useRef(new HexChunkCache())
+  const api = useCapabilityApi()
+  const capabilities = hexCapabilities(api)
+  const chunkCache = useRef(
+    new HexChunkCache((mapId, keys) => api.hex.readChunks(mapId, keys))
+  )
   const sceneId = props.snapshot.scene.focusedSceneId
   const onError = props.onError
   const setSnapshot = props.setSnapshot
@@ -190,9 +194,9 @@ export function SessionHexMap(props: {
 
   useEffect(() => {
     void Promise.all([
-      hexCapabilities().hex.catalog(),
-      hexCapabilities().hex.terrainCatalog(),
-      hexCapabilities().hexTravel.read(sceneId)
+      capabilities.hex.catalog(),
+      capabilities.hex.terrainCatalog(),
+      capabilities.hexTravel.read(sceneId)
     ])
       .then(async ([nextCatalog, nextTerrains, nextTravel]) => {
         setCatalog(nextCatalog)
@@ -203,15 +207,15 @@ export function SessionHexMap(props: {
         setMap(summary ? await chunkCache.current.readMapView(summary) : null)
       })
       .catch(reportCapabilityError(onError))
-  }, [onError, sceneId])
+  }, [capabilities, onError, sceneId])
 
   useEffect(
     () =>
-      hexCapabilities().session.onChanged((notice) => {
+      capabilities.session.onChanged((notice) => {
         if (notice.sceneId !== sceneId) return
         void Promise.all([
-          hexCapabilities().hexTravel.read(sceneId),
-          hexCapabilities().session.read()
+          capabilities.hexTravel.read(sceneId),
+          capabilities.session.read()
         ])
           .then(([nextTravel, nextSession]) => {
             setTravel(nextTravel)
@@ -219,18 +223,18 @@ export function SessionHexMap(props: {
           })
           .catch(reportCapabilityError(onError))
       }),
-    [onError, sceneId, setSnapshot]
+    [capabilities, onError, sceneId, setSnapshot]
   )
 
   useEffect(() => {
     if (!map || mode !== 'plan' || waypoints.length === 0) return
     void Promise.resolve()
       .then(() =>
-        hexCapabilities().hexTravel.evaluate(sceneId, map.map.id, waypoints)
+        capabilities.hexTravel.evaluate(sceneId, map.map.id, waypoints)
       )
       .then(setEvaluation)
       .catch(reportCapabilityError(onError))
-  }, [map, mode, onError, sceneId, waypoints])
+  }, [capabilities, map, mode, onError, sceneId, waypoints])
 
   const selectMap = async (mapId: string) => {
     try {
@@ -257,14 +261,14 @@ export function SessionHexMap(props: {
     if (!map || !selected) return
     try {
       setTravel(
-        await hexCapabilities().hexTravel.position(
+        await capabilities.hexTravel.position(
           sceneId,
           map.map.id,
           selected,
           props.snapshot.scene.revision
         )
       )
-      props.setSnapshot(await hexCapabilities().session.read())
+      props.setSnapshot(await capabilities.session.read())
       setMode('inspect')
     } catch (cause) {
       props.onError(capabilityErrorText(cause))
@@ -274,7 +278,7 @@ export function SessionHexMap(props: {
     if (!map || !travel || !evaluation?.canStart) return
     try {
       setTravel(
-        await hexCapabilities().hexTravel.start(
+        await capabilities.hexTravel.start(
           sceneId,
           map.map.id,
           waypoints,
@@ -282,7 +286,7 @@ export function SessionHexMap(props: {
           travel.revision
         )
       )
-      props.setSnapshot(await hexCapabilities().session.read())
+      props.setSnapshot(await capabilities.session.read())
       setMode('inspect')
       setWaypoints([])
     } catch (cause) {
@@ -406,8 +410,14 @@ export function HexLocationPlacementDialog(props: {
   onPlaced: () => void
   onError: (message: string) => void
 }) {
-  const chunkCache = useRef(new HexChunkCache())
-  const placementController = useRef(createHexLocationPlacementController())
+  const api = useCapabilityApi()
+  const capabilities = hexCapabilities(api)
+  const chunkCache = useRef(
+    new HexChunkCache((mapId, keys) => api.hex.readChunks(mapId, keys))
+  )
+  const placementController = useRef(
+    createHexLocationPlacementController(api.hex)
+  )
   const onError = props.onError
   const [catalog, setCatalog] = useState<HexMapCatalogSnapshot | null>(null)
   const [terrains, setTerrains] = useState<HexTerrainCatalog | null>(null)
@@ -420,9 +430,9 @@ export function HexLocationPlacementDialog(props: {
   useEffect(() => () => chunkCache.current.clear(), [])
   useEffect(() => {
     void Promise.all([
-      hexCapabilities().hex.catalog(),
-      hexCapabilities().hex.terrainCatalog(),
-      hexCapabilities().hex.locateLocation(props.location.id)
+      capabilities.hex.catalog(),
+      capabilities.hex.terrainCatalog(),
+      capabilities.hex.locateLocation(props.location.id)
     ])
       .then(async ([nextCatalog, nextTerrains, placement]) => {
         setCatalog(nextCatalog)
@@ -443,7 +453,7 @@ export function HexLocationPlacementDialog(props: {
         }
       })
       .catch(reportCapabilityError(onError))
-  }, [onError, props.location.id])
+  }, [capabilities, onError, props.location.id])
   const changeMap = async (mapId: string) => {
     const summary = catalog?.maps.find((entry) => entry.id === mapId)
     if (summary) setMap(await chunkCache.current.readMapView(summary))

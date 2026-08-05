@@ -5,7 +5,6 @@ import {
   type HexMapSummary,
   type HexMapView
 } from '../../../shared/contracts/hex.js'
-import { hexCapabilities } from './hex-capabilities.js'
 
 const chunkSize = 32
 const viewHalfExtent = 64
@@ -53,10 +52,7 @@ export class HexChunkCache {
   private readonly loadedContentRevision = new Map<string, number>()
   private readonly staleChunks = new Map<string, Set<string>>()
 
-  constructor(
-    private readonly readChunks: ChunkReader = (mapId, keys) =>
-      hexCapabilities().hex.readChunks(mapId, [...keys])
-  ) {}
+  constructor(private readonly readChunks: ChunkReader) {}
 
   async readMapView(
     map: HexMapSummary,

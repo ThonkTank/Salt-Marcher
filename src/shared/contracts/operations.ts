@@ -101,7 +101,7 @@ import {
   updateInstallationSettingsInputSchema
 } from './settings.js'
 import { passiveProjectionSchema } from './passive-display.js'
-import { coreProcessStatusSchema } from './runtime.js'
+import { coreProcessStatusSchema, rendererIncidentSchema } from './runtime.js'
 import { runtimeGpuObservationSchema } from '../qualification/runtime-observation.js'
 import {
   referenceCampaignIndexInputSchema,
@@ -583,7 +583,14 @@ export const mainOperations = {
     none,
     coreProcessStatusSchema,
     ['gm', 'qualification']
-  )
+  ),
+  'runtime.reportRendererIncident': write(
+    'runtime:report-renderer-incident',
+    rendererIncidentSchema,
+    none,
+    ['gm']
+  ),
+  'runtime.reloadRenderer': write('runtime:reload-renderer', none, none, ['gm'])
 } as const
 
 export type CoreOperationKind = keyof typeof coreOperations

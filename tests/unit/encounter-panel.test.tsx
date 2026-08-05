@@ -4,7 +4,6 @@ import '@testing-library/jest-dom/vitest'
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CapabilityProvider } from '../../src/renderer/capabilities/capability-provider.js'
-import { installRendererCapabilityApi } from '../../src/renderer/capabilities/renderer-capability-api.js'
 import { SessionEncounterPanel } from '../../src/renderer/features/encounter/encounter-panels.js'
 import type { SaltMarcherApi } from '../../src/shared/contracts/capability-api.js'
 import type { LiveSessionSnapshot } from '../../src/shared/contracts/live-session.js'
@@ -83,7 +82,6 @@ describe('encounter scenario panel', () => {
     api = {
       encounter: { evaluate: vi.fn().mockResolvedValue(null) }
     } as unknown as SaltMarcherApi
-    installRendererCapabilityApi(api)
   })
 
   it('renders the compact three-action combat footer and panel HP dialog', () => {

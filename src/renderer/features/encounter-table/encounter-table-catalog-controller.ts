@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import type { SaltMarcherApi } from '../../../shared/contracts/capability-api.js'
 import type {
   EncounterTable,
   EncounterTableDraft,
@@ -8,7 +9,6 @@ import {
   capabilityErrorText,
   reportCapabilityError
 } from '../../capabilities/capability-errors.js'
-import { encounterTableCapabilities } from './encounter-table-capabilities.js'
 import type { EncounterTableSaveResult } from './encounter-table-manager.js'
 
 export type EncounterTableCatalogPort = {
@@ -25,20 +25,22 @@ export type EncounterTableCatalogPort = {
   remove: (id: string, revision: number) => Promise<EncounterTableSnapshot>
 }
 
-const defaultEncounterTableCatalogPort: EncounterTableCatalogPort = {
-  read: () => encounterTableCapabilities().encounterTables.read(),
-  create: (draft, revision) =>
-    encounterTableCapabilities().encounterTables.create(draft, revision),
-  update: (id, draft, revision) =>
-    encounterTableCapabilities().encounterTables.update(id, draft, revision),
-  remove: (id, revision) =>
-    encounterTableCapabilities().encounterTables.delete(id, revision)
+export function createEncounterTableCatalogPort(
+  api: SaltMarcherApi
+): EncounterTableCatalogPort {
+  return {
+    read: () => api.encounterTables.read(),
+    create: (draft, revision) => api.encounterTables.create(draft, revision),
+    update: (id, draft, revision) =>
+      api.encounterTables.update(id, draft, revision),
+    remove: (id, revision) => api.encounterTables.delete(id, revision)
+  }
 }
 
 export function useEncounterTableCatalogController(
   active: boolean,
   onError: (message: string) => void,
-  port: EncounterTableCatalogPort = defaultEncounterTableCatalogPort
+  port: EncounterTableCatalogPort
 ) {
   const [snapshot, setSnapshot] = useState<EncounterTableSnapshot>({
     revision: 0,

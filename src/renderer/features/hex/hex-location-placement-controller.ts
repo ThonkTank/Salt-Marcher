@@ -3,7 +3,7 @@ import type {
   HexBrushStrokeResult
 } from '../../../shared/contracts/hex.js'
 import { capabilityErrorCode } from '../../../shared/errors/capability-error.js'
-import { hexCapabilities } from './hex-capabilities.js'
+import type { SaltMarcherApi } from '../../../shared/contracts/capability-api.js'
 
 type PlacementCommand = Readonly<{
   commandId: string
@@ -16,27 +16,29 @@ type PlacementCommand = Readonly<{
 type RemovalCommand = Readonly<Omit<PlacementCommand, 'coordinate'>>
 
 /** Shared write/receipt policy for every renderer location-placement surface. */
-export function createHexLocationPlacementController() {
+export function createHexLocationPlacementController(
+  hex: SaltMarcherApi['hex']
+) {
   const recover = async (
     commandId: string,
     cause: unknown
   ): Promise<HexBrushStrokeResult> => {
     if (capabilityErrorCode(cause) !== 'outcome_unknown') throw cause
-    const receipt = await hexCapabilities().hex.commandReceipt(commandId)
+    const receipt = await hex.commandReceipt(commandId)
     if (!receipt) throw cause
     return receipt
   }
   return {
     async place(command: PlacementCommand) {
       try {
-        return await hexCapabilities().hex.placeLocation(command)
+        return await hex.placeLocation(command)
       } catch (cause) {
         return recover(command.commandId, cause)
       }
     },
     async remove(command: RemovalCommand) {
       try {
-        return await hexCapabilities().hex.removeLocation(command)
+        return await hex.removeLocation(command)
       } catch (cause) {
         return recover(command.commandId, cause)
       }

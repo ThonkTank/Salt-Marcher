@@ -792,6 +792,9 @@ const api: SaltMarcherApi = {
     gpuObservation: () => invokeMain('runtime:gpu-observation', undefined),
     coreStatus: () => invokeMain('runtime:core-status', undefined),
     retryCore: () => invokeMain('runtime:retry-core', undefined),
+    reportRendererIncident: (incident) =>
+      invokeMain('runtime:report-renderer-incident', incident),
+    reloadRenderer: () => invokeMain('runtime:reload-renderer', undefined),
     onCoreStatus(listener: (status: CoreProcessStatus) => void) {
       const handler = (_event: Electron.IpcRendererEvent, raw: unknown) =>
         listener(coreProcessStatusSchema.parse(raw))

@@ -1,6 +1,6 @@
 import type { CampaignSnapshot } from './campaign.js'
 import type { RuntimeGpuObservation } from '../qualification/runtime-observation.js'
-import type { CoreProcessStatus } from './runtime.js'
+import type { CoreProcessStatus, RendererIncident } from './runtime.js'
 import type { SessionChangeNotice } from './session-change.js'
 import type {
   Creature,
@@ -84,6 +84,8 @@ export interface SaltMarcherApi {
     gpuObservation(): Promise<RuntimeGpuObservation>
     coreStatus(): Promise<CoreProcessStatus>
     retryCore(): Promise<CoreProcessStatus>
+    reportRendererIncident(incident: RendererIncident): Promise<void>
+    reloadRenderer(): Promise<void>
     onCoreStatus(listener: (status: CoreProcessStatus) => void): () => void
   }>
   settings: {

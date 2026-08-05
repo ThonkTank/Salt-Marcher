@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { EncounterSelectionEvaluation } from '../../../shared/contracts/scene.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import { encounterCapabilities } from './encounter-capabilities.js'
+import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 
 export function useEncounterEvaluation(
   sceneId: string,
@@ -9,12 +10,13 @@ export function useEncounterEvaluation(
   sceneRevision: number,
   onError: (message: string) => void
 ): EncounterSelectionEvaluation | null {
+  const api = useCapabilityApi()
   const [evaluation, setEvaluation] =
     useState<EncounterSelectionEvaluation | null>(null)
 
   useEffect(() => {
     let current = true
-    void encounterCapabilities()
+    void encounterCapabilities(api)
       .encounter.evaluate(sceneId, selectedGroupIds, sceneRevision)
       .then((value) => {
         if (current) setEvaluation(value)
@@ -25,7 +27,7 @@ export function useEncounterEvaluation(
     return () => {
       current = false
     }
-  }, [sceneId, sceneRevision, selectedGroupIds, onError])
+  }, [api, sceneId, sceneRevision, selectedGroupIds, onError])
 
   return evaluation
 }

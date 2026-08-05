@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useState } from 'react'
+import { useContext, useEffect, useReducer, useState } from 'react'
 import type {
   Creature,
   CreatureCatalogPage,
@@ -20,7 +20,6 @@ import {
   emptyQuery,
   useCreatureSearch
 } from '../creatures/creature-state.js'
-import { creaturesCapabilities } from '../creatures/creatures-capabilities.js'
 import type { CreatureCapabilityPort } from '../creatures/creatures-capabilities.js'
 import {
   capabilityErrorText,
@@ -33,6 +32,7 @@ import {
   encounterTableDraftReducer,
   encounterTableDraftValue
 } from './encounter-table-draft.js'
+import { CapabilityContext } from '../../capabilities/capability-context.js'
 
 type PendingAction = { kind: 'close' } | { kind: 'select'; id: string }
 
@@ -50,6 +50,7 @@ export function EncounterTableManager(props: {
   inspect: (creature: Creature) => void
   creaturePort?: CreatureCapabilityPort
 }) {
+  const api = useContext(CapabilityContext)
   const [draft, dispatch] = useReducer(
     encounterTableDraftReducer,
     props.table,
@@ -65,7 +66,8 @@ export function EncounterTableManager(props: {
   const [pending, setPending] = useState<PendingAction | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const creaturePort = props.creaturePort ?? creaturesCapabilities().creatures
+  const creaturePort = props.creaturePort ?? api?.creatures
+  if (!creaturePort) throw new Error('Creature capability is not available')
   const dirty = encounterTableDraftDirty(draft)
   const creatureIdsKey = Object.keys(draft.weights).toSorted().join('\u0000')
   const entries = Object.entries(draft.weights).toSorted((left, right) =>

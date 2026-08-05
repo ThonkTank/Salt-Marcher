@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import type { SaltMarcherApi } from '../../../shared/contracts/capability-api.js'
 import type {
   EncounterTable,
   EncounterTableDraft,
@@ -11,9 +12,7 @@ import {
   capabilityErrorText,
   reportCapabilityError
 } from '../../capabilities/capability-errors.js'
-import { encounterTableCapabilities } from '../encounter-table/encounter-table-capabilities.js'
 import type { EncounterTableSaveResult } from '../encounter-table/encounter-table-manager.js'
-import { catalogCapabilities } from './catalog-capabilities.js'
 
 export type FactionCatalogPort = {
   readFactions: () => Promise<WorldFactionSnapshot>
@@ -39,25 +38,27 @@ export type FactionCatalogPort = {
   ) => Promise<EncounterTableSnapshot>
 }
 
-const defaultFactionCatalogPort: FactionCatalogPort = {
-  readFactions: () => catalogCapabilities().factions.read(),
-  readTables: () => encounterTableCapabilities().encounterTables.read(),
-  createFaction: (draft, revision) =>
-    catalogCapabilities().factions.create(draft, revision),
-  updateFaction: (id, draft, revision) =>
-    catalogCapabilities().factions.update(id, draft, revision),
-  deleteFaction: (id, revision) =>
-    catalogCapabilities().factions.delete(id, revision),
-  createTable: (draft, revision) =>
-    encounterTableCapabilities().encounterTables.create(draft, revision),
-  updateTable: (id, draft, revision) =>
-    encounterTableCapabilities().encounterTables.update(id, draft, revision)
+export function createFactionCatalogPort(
+  api: SaltMarcherApi
+): FactionCatalogPort {
+  return {
+    readFactions: () => api.factions.read(),
+    readTables: () => api.encounterTables.read(),
+    createFaction: (draft, revision) => api.factions.create(draft, revision),
+    updateFaction: (id, draft, revision) =>
+      api.factions.update(id, draft, revision),
+    deleteFaction: (id, revision) => api.factions.delete(id, revision),
+    createTable: (draft, revision) =>
+      api.encounterTables.create(draft, revision),
+    updateTable: (id, draft, revision) =>
+      api.encounterTables.update(id, draft, revision)
+  }
 }
 
 export function useFactionCatalogController(
   active: boolean,
   onError: (message: string) => void,
-  port: FactionCatalogPort = defaultFactionCatalogPort
+  port: FactionCatalogPort
 ) {
   const [snapshot, setSnapshot] = useState<WorldFactionSnapshot>({
     revision: 0,

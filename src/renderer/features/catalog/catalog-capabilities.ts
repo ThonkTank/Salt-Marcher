@@ -1,5 +1,4 @@
 import type { SaltMarcherApi } from '../../../shared/contracts/capability-api.js'
-import { rendererCapabilityApi } from '../../capabilities/renderer-capability-api.js'
 
 export type CatalogCapabilities = Pick<
   SaltMarcherApi,
@@ -7,6 +6,6 @@ export type CatalogCapabilities = Pick<
 >
 
 /** Narrow feature adapter; Catalog owns all access to its preload groups. */
-export function catalogCapabilities(): CatalogCapabilities {
-  return rendererCapabilityApi()
+export function catalogCapabilities(api: SaltMarcherApi): CatalogCapabilities {
+  return api
 }

@@ -162,3 +162,10 @@
 .workspace-load-state > * {
   margin: 0;
 }
+
+.workspace-recovery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+}

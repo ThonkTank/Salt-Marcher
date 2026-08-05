@@ -6,7 +6,8 @@ export const messagesDe = {
   'workspace.loadFailed':
     'Der Arbeitsbereich „{name}“ konnte nicht geladen werden.',
   'workspace.reloadHint':
-    'Lade die Anwendung neu, um den Arbeitsbereich erneut anzufordern.',
+    'Versuche den Arbeitsbereich erneut zu öffnen oder lade die Anwendung neu.',
+  'action.retryWorkspace': 'Arbeitsbereich erneut öffnen',
   'action.reloadApplication': 'Anwendung neu laden',
   'core.unavailable': 'Der lokale Programmkern ist nicht erreichbar.',
   'core.recovering': 'Der lokale Programmkern wird wiederhergestellt …',

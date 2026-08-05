@@ -4,6 +4,7 @@ import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import { message } from '../../i18n/messages.de.js'
 import { sessionCapabilities } from './session-capabilities.js'
 import { ModalDialog } from '../../shell/modal-dialog.js'
+import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 
 export function ScenePartyCard(props: {
   snapshot: LiveSessionSnapshot
@@ -11,6 +12,7 @@ export function ScenePartyCard(props: {
   setSnapshot: (snapshot: LiveSessionSnapshot) => void
   onError: (message: string) => void
 }) {
+  const api = useCapabilityApi()
   const [open, setOpen] = useState(false)
   const activeMembers = props.snapshot.party.members.filter(
     (member) => member.active
@@ -25,7 +27,7 @@ export function ScenePartyCard(props: {
   async function assign(memberId: string, assigned: boolean) {
     try {
       props.setSnapshot(
-        await sessionCapabilities().scene.assignPartyMember(
+        await sessionCapabilities(api).scene.assignPartyMember(
           props.sceneId,
           memberId,
           assigned,

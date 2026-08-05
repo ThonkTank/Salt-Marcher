@@ -24,6 +24,7 @@ import { CatalogCrudControlsView } from '../../shell/catalog-crud-controls-view.
 import { HexChunkCache } from './hex-chunk-cache.js'
 import { HexCommandQueue } from './hex-command-queue.js'
 import { createHexLocationPlacementController } from './hex-location-placement-controller.js'
+import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 
 type EditorTool = 'select' | 'paint' | 'erase' | 'location'
 
@@ -53,6 +54,8 @@ type PendingHistory = Readonly<{
 export default function HexEditor(props: {
   onError: (message: string) => void
 }) {
+  const api = useCapabilityApi()
+  const capabilities = hexCapabilities(api)
   const [catalog, setCatalog] = useState<HexMapCatalogSnapshot | null>(null)
   const [terrains, setTerrains] = useState<HexTerrainCatalog | null>(null)
   const [locations, setLocations] = useState<WorldLocationSnapshot | null>(null)
@@ -80,8 +83,12 @@ export default function HexEditor(props: {
   const mapSelectionRequest = useRef(0)
   const viewportHalfExtent = useRef(64)
   const commandQueue = useRef(new HexCommandQueue())
-  const chunkCache = useRef(new HexChunkCache())
-  const placementController = useRef(createHexLocationPlacementController())
+  const chunkCache = useRef(
+    new HexChunkCache((mapId, keys) => api.hex.readChunks(mapId, keys))
+  )
+  const placementController = useRef(
+    createHexLocationPlacementController(api.hex)
+  )
   const mapRef = useRef(map)
   useEffect(() => {
     mapRef.current = map
@@ -107,20 +114,23 @@ export default function HexEditor(props: {
     if (request === viewportRequest.current) setMap(next)
   }
 
-  const readOverlays = useCallback(async (mapId: string) => {
-    const projection = await hexCapabilities().hex.runtimeOverlays(mapId)
-    return projection.overlays.map((overlay) => ({
-      id: overlay.sceneId,
-      label: overlay.label,
-      token: overlay.token,
-      route: overlay.route,
-      focused: overlay.focused
-    }))
-  }, [])
+  const readOverlays = useCallback(
+    async (mapId: string) => {
+      const projection = await capabilities.hex.runtimeOverlays(mapId)
+      return projection.overlays.map((overlay) => ({
+        id: overlay.sceneId,
+        label: overlay.label,
+        token: overlay.token,
+        route: overlay.route,
+        focused: overlay.focused
+      }))
+    },
+    [capabilities.hex]
+  )
 
   const refreshCatalog = async (preferred?: string) => {
     const request = ++mapSelectionRequest.current
-    const next = await hexCapabilities().hex.catalog()
+    const next = await capabilities.hex.catalog()
     if (request !== mapSelectionRequest.current) return
     setCatalog(next)
     const mapId = preferred ?? map?.map.id ?? next.maps[0]?.id
@@ -145,7 +155,7 @@ export default function HexEditor(props: {
     setMap(nextMap)
     setName(nextMap.map.displayName)
     const [nextHistory, nextOverlays] = await Promise.all([
-      hexCapabilities().hex.history(nextMap.map.id),
+      capabilities.hex.history(nextMap.map.id),
       readOverlays(nextMap.map.id)
     ])
     if (request !== mapSelectionRequest.current) return
@@ -155,8 +165,8 @@ export default function HexEditor(props: {
 
   useEffect(() => {
     const request = ++mapSelectionRequest.current
-    void hexCapabilities()
-      .hex.editorBootstrap()
+    void capabilities.hex
+      .editorBootstrap()
       .then(
         async ({
           catalog: nextCatalog,
@@ -175,7 +185,7 @@ export default function HexEditor(props: {
             setMap(nextMap)
             setName(nextMap.map.displayName)
             const [nextHistory, nextOverlays] = await Promise.all([
-              hexCapabilities().hex.history(nextMap.map.id),
+              capabilities.hex.history(nextMap.map.id),
               readOverlays(nextMap.map.id)
             ])
             if (request !== mapSelectionRequest.current) return
@@ -188,7 +198,7 @@ export default function HexEditor(props: {
   }, [props.onError, readOverlays])
 
   useEffect(() => {
-    return hexCapabilities().hex.onChanged((notice) => {
+    return capabilities.hex.onChanged((notice) => {
       for (const mapId of notice.mapIds)
         chunkCache.current.invalidateChunks(
           mapId,
@@ -206,7 +216,7 @@ export default function HexEditor(props: {
           false,
           viewportHalfExtent.current
         ),
-        hexCapabilities().hex.history(currentMap.map.id),
+        capabilities.hex.history(currentMap.map.id),
         readOverlays(currentMap.map.id)
       ])
         .then(([nextMap, nextHistory, nextOverlays]) => {
@@ -226,7 +236,7 @@ export default function HexEditor(props: {
     const expectedCatalogRevision = catalog.revision
     return enqueueCommand(async () => {
       try {
-        const result = await hexCapabilities().hex.create({
+        const result = await capabilities.hex.create({
           commandId,
           displayName,
           expectedCatalogRevision
@@ -240,7 +250,7 @@ export default function HexEditor(props: {
         await refreshCatalog(result.maps[0]!.id)
       } catch (cause) {
         if (capabilityErrorCode(cause) === 'outcome_unknown') {
-          const receipt = await hexCapabilities().hex.commandReceipt(commandId)
+          const receipt = await capabilities.hex.commandReceipt(commandId)
           if (receipt) {
             await applyResult(receipt)
             if (receipt.status === 'applied')
@@ -261,7 +271,7 @@ export default function HexEditor(props: {
       const currentMap = mapRef.current
       if (!currentMap) return
       try {
-        const result = await hexCapabilities().hex.updateMetadata({
+        const result = await capabilities.hex.updateMetadata({
           commandId,
           mapId: currentMap.map.id,
           displayName,
@@ -270,7 +280,7 @@ export default function HexEditor(props: {
         await applyResult(result)
       } catch (cause) {
         if (capabilityErrorCode(cause) === 'outcome_unknown') {
-          const receipt = await hexCapabilities().hex.commandReceipt(commandId)
+          const receipt = await capabilities.hex.commandReceipt(commandId)
           if (receipt) {
             await applyResult(receipt)
             return
@@ -357,7 +367,7 @@ export default function HexEditor(props: {
       const currentMap = mapRef.current
       if (!currentMap) return
       try {
-        const result = await hexCapabilities().hex[direction]({
+        const result = await capabilities.hex[direction]({
           commandId,
           mapId: currentMap.map.id,
           expectedContentRevision: currentMap.map.contentRevision,
@@ -376,7 +386,7 @@ export default function HexEditor(props: {
         await applyResult(result)
       } catch (cause) {
         if (capabilityErrorCode(cause) === 'outcome_unknown') {
-          const receipt = await hexCapabilities().hex.commandReceipt(commandId)
+          const receipt = await capabilities.hex.commandReceipt(commandId)
           if (receipt) {
             setPendingHistory(null)
             await applyResult(receipt)
@@ -419,7 +429,7 @@ export default function HexEditor(props: {
       const currentMap = mapRef.current
       if (!currentMap) return
       try {
-        const result = await hexCapabilities().hex.applyBrushStroke({
+        const result = await capabilities.hex.applyBrushStroke({
           commandId,
           mapId: currentMap.map.id,
           mode,
@@ -446,8 +456,7 @@ export default function HexEditor(props: {
       } catch (cause) {
         if (capabilityErrorCode(cause) === 'outcome_unknown') {
           try {
-            const receipt =
-              await hexCapabilities().hex.commandReceipt(commandId)
+            const receipt = await capabilities.hex.commandReceipt(commandId)
             if (receipt) {
               await applyResult(receipt)
               return

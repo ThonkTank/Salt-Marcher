@@ -1,15 +1,25 @@
 import { message } from '../../i18n/messages.de.js'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { Creature } from '../../../shared/contracts/encounter.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import { EncounterTableCatalogSection } from '../encounter-table/encounter-table-catalog-section.js'
-import { useEncounterTableCatalogController } from '../encounter-table/encounter-table-catalog-controller.js'
+import {
+  createEncounterTableCatalogPort,
+  useEncounterTableCatalogController
+} from '../encounter-table/encounter-table-catalog-controller.js'
 import { MonsterCatalogSection } from './monster-catalog-section.js'
 import { useMonsterCatalogController } from './monster-catalog-controller.js'
 import { LocationCatalogSection } from './location-catalog-section.js'
-import { useLocationCatalogController } from './location-catalog-controller.js'
+import {
+  createLocationCatalogPort,
+  useLocationCatalogController
+} from './location-catalog-controller.js'
 import { FactionCatalogSection } from './faction-catalog-section.js'
-import { useFactionCatalogController } from './faction-catalog-controller.js'
+import {
+  createFactionCatalogPort,
+  useFactionCatalogController
+} from './faction-catalog-controller.js'
+import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 import './catalog.css'
 
 type CatalogWorkspaceProps = {
@@ -21,26 +31,37 @@ type CatalogWorkspaceProps = {
 }
 
 export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
+  const api = useCapabilityApi()
+  const locationPort = useMemo(() => createLocationCatalogPort(api), [api])
+  const factionPort = useMemo(() => createFactionCatalogPort(api), [api])
+  const encounterTablePort = useMemo(
+    () => createEncounterTableCatalogPort(api),
+    [api]
+  )
   const [section, setSection] = useState<
     'monsters' | 'locations' | 'factions' | 'encounterTables'
   >('monsters')
   const monsterController = useMonsterCatalogController(
     section === 'monsters',
     props.onError,
-    props.inspect
+    props.inspect,
+    api.creatures
   )
   const locationController = useLocationCatalogController(
     section === 'locations',
     props.onError,
-    props.setSnapshot
+    props.setSnapshot,
+    locationPort
   )
   const factionController = useFactionCatalogController(
     section === 'factions',
-    props.onError
+    props.onError,
+    factionPort
   )
   const encounterTableController = useEncounterTableCatalogController(
     section === 'encounterTables',
-    props.onError
+    props.onError,
+    encounterTablePort
   )
   return (
     <section className="catalog-workspace">

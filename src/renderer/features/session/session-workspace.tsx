@@ -33,6 +33,7 @@ import { SessionGroupCard } from './session-group-card.js'
 import { ScenePartyCard } from './scene-party-card.js'
 import { GroupDialog } from './group-dialog.js'
 import { CreatureCollectionCatalogPane } from '../creature-collection/creature-collection.js'
+import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 
 export default function SessionWorkspace(props: {
   snapshot: LiveSessionSnapshot
@@ -45,6 +46,7 @@ export default function SessionWorkspace(props: {
   setLayout: (layout: SessionLayoutPreference) => void
   onError: (message: string) => void
 }) {
+  const api = useCapabilityApi()
   const [editingGroup, setEditingGroup] = useState<SceneGroup | null>(null)
   const [deleteGroupId, setDeleteGroupId] = useState<string | null>(null)
   const [reinforcementMode, setReinforcementMode] = useState(false)
@@ -66,13 +68,13 @@ export default function SessionWorkspace(props: {
   const breadcrumb = history.entries[history.index]?.breadcrumb ?? null
   const moveHistory = reference.moveNavigation
   const closeDetail = reference.closeNavigation
-  useCreatureSearch(catalogQuery, setCatalogPage, props.onError)
+  useCreatureSearch(catalogQuery, setCatalogPage, props.onError, api.creatures)
   useEffect(() => {
-    void creaturesCapabilities()
+    void creaturesCapabilities(api)
       .creatures.filterOptions()
       .then(setCatalogOptions)
       .catch(reportCapabilityError(props.onError))
-  }, [props.onError])
+  }, [api, props.onError])
   function openReferenceTarget(
     target: Parameters<typeof reference.openReference>[0],
     breadcrumb: string
@@ -129,7 +131,7 @@ export default function SessionWorkspace(props: {
           disabled={props.snapshot.scene.scenes.length < 2}
           onChange={(event) =>
             void scenarioAction(props, () =>
-              sessionCapabilities().scene.focus(
+              sessionCapabilities(api).scene.focus(
                 event.target.value,
                 props.snapshot.scene.revision
               )
@@ -150,7 +152,7 @@ export default function SessionWorkspace(props: {
           value={focused.locationId ?? ''}
           onChange={(event) =>
             void scenarioAction(props, () =>
-              sessionCapabilities().scene.setLocation(
+              sessionCapabilities(api).scene.setLocation(
                 focused.id,
                 event.target.value || null,
                 props.snapshot.scene.revision
@@ -225,7 +227,7 @@ export default function SessionWorkspace(props: {
                       props.setSnapshot(
                         applySceneGroupCommandResult(
                           props.snapshot,
-                          await sessionCapabilities().scene.setGroupArchived(
+                          await sessionCapabilities(api).scene.setGroupArchived(
                             focused.id,
                             group.id,
                             false,
@@ -248,7 +250,7 @@ export default function SessionWorkspace(props: {
                       props.setSnapshot(
                         applySceneGroupCommandResult(
                           props.snapshot,
-                          await sessionCapabilities().scene.deleteGroup(
+                          await sessionCapabilities(api).scene.deleteGroup(
                             focused.id,
                             group.id,
                             group.revision

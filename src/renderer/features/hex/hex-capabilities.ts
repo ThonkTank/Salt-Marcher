@@ -1,5 +1,4 @@
 import type { SaltMarcherApi } from '../../../shared/contracts/capability-api.js'
-import { rendererCapabilityApi } from '../../capabilities/renderer-capability-api.js'
 
 export type HexCapabilities = Pick<
   SaltMarcherApi,
@@ -7,6 +6,6 @@ export type HexCapabilities = Pick<
 >
 
 /** Narrow feature adapter for map, travel, location and session capabilities. */
-export function hexCapabilities(): HexCapabilities {
-  return rendererCapabilityApi()
+export function hexCapabilities(api: SaltMarcherApi): HexCapabilities {
+  return api
 }

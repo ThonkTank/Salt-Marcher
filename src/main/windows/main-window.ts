@@ -2,6 +2,7 @@ import { app, BrowserWindow } from 'electron'
 import { hardenWebContents } from '../security/security.js'
 import { outputPath } from '../application-lifecycle/runtime-paths.js'
 import { isE2eRuntime } from '../application-lifecycle/e2e-runtime.js'
+import { observeRendererProcess } from './renderer-observability.js'
 
 export function createMainWindow(): BrowserWindow {
   const window = new BrowserWindow({
@@ -23,6 +24,7 @@ export function createMainWindow(): BrowserWindow {
   })
   window.setMenuBarVisibility(false)
   hardenWebContents(window.webContents)
+  observeRendererProcess(window.webContents)
   window.once('ready-to-show', () => window.show())
   const rendererUrl = developmentRendererUrl()
   if (rendererUrl !== undefined) {
