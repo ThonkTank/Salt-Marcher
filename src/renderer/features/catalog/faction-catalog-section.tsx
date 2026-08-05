@@ -206,7 +206,7 @@ function FactionDialog(props: {
     return () => {
       current = false
     }
-  }, [selectedCreatureIds])
+  }, [api, selectedCreatureIds])
 
   const requestClose = () => {
     if (dirty) setDiscardOpen(true)

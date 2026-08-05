@@ -21,14 +21,14 @@ export function createHexLocationPlacementController(
       return executeRecoverableHexCommand(
         command.commandId,
         () => hex.placeLocation(command),
-        hex.commandReceipt
+        (receiptId) => hex.commandReceipt(receiptId)
       )
     },
     async remove(command: RemovalCommand) {
       return executeRecoverableHexCommand(
         command.commandId,
         () => hex.removeLocation(command),
-        hex.commandReceipt
+        (receiptId) => hex.commandReceipt(receiptId)
       )
     }
   }

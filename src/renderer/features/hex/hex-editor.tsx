@@ -195,7 +195,7 @@ export default function HexEditor(props: {
         }
       )
       .catch(reportCapabilityError(props.onError))
-  }, [props.onError, readOverlays])
+  }, [capabilities.hex, props.onError, readOverlays])
 
   useEffect(() => {
     return capabilities.hex.onChanged((notice) => {
@@ -227,7 +227,7 @@ export default function HexEditor(props: {
         })
         .catch(reportCapabilityError(props.onError))
     })
-  }, [props.onError, readOverlays])
+  }, [capabilities.hex, props.onError, readOverlays])
 
   const create = async () => {
     if (!catalog) return
@@ -244,7 +244,7 @@ export default function HexEditor(props: {
               displayName,
               expectedCatalogRevision
             }),
-          capabilities.hex.commandReceipt
+          (receiptId) => capabilities.hex.commandReceipt(receiptId)
         )
         if (result.status !== 'applied') {
           await applyResult(result)
@@ -276,7 +276,7 @@ export default function HexEditor(props: {
               displayName,
               expectedMetadataRevision: currentMap.map.metadataRevision
             }),
-          capabilities.hex.commandReceipt
+          (receiptId) => capabilities.hex.commandReceipt(receiptId)
         )
         await applyResult(result)
       } catch (cause) {
@@ -370,7 +370,7 @@ export default function HexEditor(props: {
               expectedContentRevision: currentMap.map.contentRevision,
               confirmationToken
             }),
-          capabilities.hex.commandReceipt
+          (receiptId) => capabilities.hex.commandReceipt(receiptId)
         )
         if (result.status === 'confirmation_required') {
           setPendingHistory({
@@ -433,7 +433,7 @@ export default function HexEditor(props: {
               expectedContentRevision: currentMap.map.contentRevision,
               confirmationToken
             }),
-          capabilities.hex.commandReceipt,
+          (receiptId) => capabilities.hex.commandReceipt(receiptId),
           () => chunkCache.current.invalidateMap(currentMap.map.id)
         )
         if (result.status === 'confirmation_required') {

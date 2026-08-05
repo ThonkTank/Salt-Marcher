@@ -186,7 +186,7 @@ export function GroupDialog(props: {
       .creatures.search({ ...emptyQuery, limit: 1 })
       .then((result) => setCatalogTotal(result.total))
       .catch(reportCapabilityError(props.onError))
-  }, [props.onError])
+  }, [api, props.onError])
 
   useEffect(() => {
     if (!active) return
@@ -211,7 +211,7 @@ export function GroupDialog(props: {
         })
     }, 120)
     return () => window.clearTimeout(timer)
-  }, [active, entries, focused.id, props.snapshot.scene.revision])
+  }, [active, api, entries, focused.id, props.snapshot.scene.revision])
 
   useEffect(() => {
     if (!selection) return
@@ -236,7 +236,7 @@ export function GroupDialog(props: {
         }
       })
     })
-  }, [focused.groups, selection])
+  }, [api, focused.groups, selection])
 
   function load(nextSelection: string | null) {
     cacheCurrentDraft()

@@ -1,16 +1,20 @@
 import {
   Component,
   useEffect,
-  useState,
+  useReducer,
   type ComponentType,
-  type ErrorInfo,
   type ReactNode
 } from 'react'
 import type { RendererIncident } from '../../shared/contracts/runtime.js'
 
 export type SurfaceId = 'application' | 'session' | 'catalog' | 'hex'
 
-type ModuleHostProps<Props extends object> = Readonly<{
+export type ModuleFailure = Readonly<{
+  phase: 'module-load' | 'render'
+  error: Error
+}>
+
+export type ModuleHostProps<Props extends object> = Readonly<{
   workspace: SurfaceId
   load: () => Promise<{ default: ComponentType<Props> }>
   componentProps: Props
@@ -23,32 +27,72 @@ type ModuleHostProps<Props extends object> = Readonly<{
   reloadRenderer: () => Promise<void>
 }>
 
-type Failure = Readonly<{ phase: 'module-load' | 'render'; error: Error }>
+type ModuleState<Props extends object> =
+  | Readonly<{ status: 'loading'; attempt: number }>
+  | Readonly<{
+      status: 'ready'
+      attempt: number
+      Surface: ComponentType<Props>
+    }>
+  | Readonly<{
+      status: 'module-failed'
+      attempt: number
+      failure: ModuleFailure
+    }>
+  | Readonly<{
+      status: 'render-failed'
+      attempt: number
+      failure: ModuleFailure
+    }>
 
-type WorkspaceRenderBoundaryProps = Readonly<{
+type ModuleAction<Props extends object> =
+  | Readonly<{
+      type: 'loaded'
+      attempt: number
+      Surface: ComponentType<Props>
+    }>
+  | Readonly<{
+      type: 'failed'
+      attempt: number
+      failure: ModuleFailure
+    }>
+  | Readonly<{ type: 'retry' }>
+
+function reduceModuleState<Props extends object>(
+  state: ModuleState<Props>,
+  action: ModuleAction<Props>
+): ModuleState<Props> {
+  if (action.type === 'retry')
+    return { status: 'loading', attempt: state.attempt + 1 }
+  if (action.attempt !== state.attempt) return state
+  if (action.type === 'loaded')
+    return { status: 'ready', attempt: state.attempt, Surface: action.Surface }
+  return {
+    status:
+      action.failure.phase === 'module-load'
+        ? 'module-failed'
+        : 'render-failed',
+    attempt: state.attempt,
+    failure: action.failure
+  }
+}
+
+type ModuleRenderBoundaryProps = Readonly<{
   children: ReactNode
-  resetKey: number
-  failed: (failure: Failure) => void
+  failed: (failure: ModuleFailure) => void
 }>
 
-type WorkspaceRenderBoundaryState = Readonly<{ failed: boolean }>
-
-class WorkspaceRenderBoundary extends Component<
-  WorkspaceRenderBoundaryProps,
-  WorkspaceRenderBoundaryState
+class ModuleRenderBoundary extends Component<
+  ModuleRenderBoundaryProps,
+  Readonly<{ failed: boolean }>
 > {
-  override state: WorkspaceRenderBoundaryState = { failed: false }
+  override state = { failed: false }
 
-  static getDerivedStateFromError(): WorkspaceRenderBoundaryState {
+  static getDerivedStateFromError(): Readonly<{ failed: boolean }> {
     return { failed: true }
   }
 
-  override componentDidUpdate(previous: WorkspaceRenderBoundaryProps): void {
-    if (previous.resetKey !== this.props.resetKey && this.state.failed)
-      this.setState({ failed: false })
-  }
-
-  override componentDidCatch(error: Error, _info: ErrorInfo): void {
+  override componentDidCatch(error: Error): void {
     this.props.failed({ phase: 'render', error })
   }
 
@@ -57,49 +101,52 @@ class WorkspaceRenderBoundary extends Component<
   }
 }
 
-/** Loads and isolates one workspace module while leaving the shell operational. */
+/** Loads and isolates one module while leaving the surrounding shell usable. */
 export function ModuleHost<Props extends object>(
   props: ModuleHostProps<Props>
 ) {
-  const [Surface, setSurface] = useState<ComponentType<Props> | null>(null)
-  const [failure, setFailure] = useState<Failure | null>(null)
-  const [attempt, setAttempt] = useState(0)
+  const [state, dispatch] = useReducer(reduceModuleState<Props>, {
+    status: 'loading',
+    attempt: 0
+  } as ModuleState<Props>)
+  const { load, reportIncident, workspace } = props
 
   useEffect(() => {
     let current = true
-    setSurface(null)
-    setFailure(null)
-    void props.load().then(
+    const attempt = state.attempt
+    void load().then(
       (module) => {
-        if (current) setSurface(() => module.default)
+        if (current)
+          dispatch({ type: 'loaded', attempt, Surface: module.default })
       },
       (cause: unknown) => {
         if (!current) return
         const error = asError(cause)
-        setFailure({ phase: 'module-load', error })
-        report(props, 'module-load', error)
+        dispatch({
+          type: 'failed',
+          attempt,
+          failure: { phase: 'module-load', error }
+        })
+        report(reportIncident, workspace, 'module-load', error)
       }
     )
     return () => {
       current = false
     }
-  }, [attempt, props.load])
+  }, [load, reportIncident, state.attempt, workspace])
 
-  function fail(next: Failure): void {
-    setFailure(next)
-    report(props, next.phase, next.error)
+  function renderFailed(failure: ModuleFailure): void {
+    dispatch({ type: 'failed', attempt: state.attempt, failure })
+    report(reportIncident, workspace, failure.phase, failure.error)
   }
 
-  if (failure)
+  if (state.status === 'module-failed' || state.status === 'render-failed')
     return (
       <section className="workspace-panel module-load-state" role="alert">
         <h2>{props.failureMessage}</h2>
         <p>{props.recoveryMessage}</p>
         <div className="workspace-recovery-actions">
-          <button
-            type="button"
-            onClick={() => setAttempt((value) => value + 1)}
-          >
+          <button type="button" onClick={() => dispatch({ type: 'retry' })}>
             {props.retryLabel}
           </button>
           <button type="button" onClick={() => void props.reloadRenderer()}>
@@ -109,7 +156,7 @@ export function ModuleHost<Props extends object>(
       </section>
     )
 
-  if (!Surface)
+  if (state.status === 'loading')
     return (
       <section
         className="workspace-panel module-load-state"
@@ -120,28 +167,28 @@ export function ModuleHost<Props extends object>(
       </section>
     )
 
+  const Surface = state.Surface
   return (
-    <WorkspaceRenderBoundary resetKey={attempt} failed={fail}>
+    <ModuleRenderBoundary failed={renderFailed}>
       <Surface {...props.componentProps} />
-    </WorkspaceRenderBoundary>
+    </ModuleRenderBoundary>
   )
 }
 
-function report<Props extends object>(
-  props: ModuleHostProps<Props>,
-  phase: Failure['phase'],
+function report(
+  reportIncident: (incident: RendererIncident) => Promise<void>,
+  workspace: SurfaceId,
+  phase: ModuleFailure['phase'],
   error: Error
 ): void {
-  void props
-    .reportIncident({
-      workspace: props.workspace,
-      phase,
-      code: `workspace.${phase}`,
-      errorName: safeErrorName(error.name),
-      message: 'Renderer surface failed',
-      recoverable: true
-    })
-    .catch(() => undefined)
+  void reportIncident({
+    workspace,
+    phase,
+    code: `workspace.${phase}`,
+    errorName: safeErrorName(error.name),
+    message: 'Renderer surface failed',
+    recoverable: true
+  }).catch(() => undefined)
 }
 
 function safeErrorName(name: string): string {
