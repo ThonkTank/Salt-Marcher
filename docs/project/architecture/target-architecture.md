@@ -31,6 +31,15 @@ interrupted reads fail retryably, while an interrupted write reports
 bounded backoff and the still-responsive shell exposes explicit recovery after
 the retry budget is exhausted.
 
+Renderer recovery is also a process boundary. A shell-owned `ModuleHost`
+loads each application or workspace surface explicitly, distinguishes module
+load failures from React render failures, keeps the surrounding shell usable,
+and reports a bounded `RendererIncident` through the preload bridge. Only Main
+may reload a renderer `WebContents`; renderer code cannot call browser-global
+reload APIs. Main additionally records main-frame load failures, renderer
+process termination and responsiveness transitions without navigation URLs or
+campaign data.
+
 The passive second-monitor window uses a separate fail-closed preload. It
 exposes only the typed party-safe projection read/change notification and Core
 status; Main rejects every privileged GM capability from that window role
@@ -65,6 +74,20 @@ the reusable two-pane editor lives in `creature-collection`; Session groups and
 Encounter Tables compose those features without importing Catalog from Session
 or Session from Catalog. Each feature imports and owns its feature stylesheet;
 shell styles contain only application-wide primitives.
+
+The capability provider is the sole renderer composition boundary. Feature
+adapters receive its `SaltMarcherApi` value and return narrow ports; pure
+controllers and command executors receive those ports explicitly. Mutable
+module-level capability registries and renderer service locators are forbidden.
+Workspace navigation is described by immutable `WorkspaceDefinition` records,
+including identity, label, icon and layout policy, rather than parallel
+conditionals in the shell.
+
+Pixi is a leaf dependency of `hex-map-canvas-pixi.tsx`. The lightweight canvas
+surface dynamically loads that implementation behind its own `ModuleHost`, so
+Session, Catalog and the common Workspace graph do not eagerly include Pixi or
+its renderer backends. The bundle gate verifies this static dependency graph,
+a 900 KiB Workspace ceiling and a 2.75 MiB total normal-renderer ceiling.
 
 Catalog is a composition root over Monster, Location, Faction, and Encounter
 Table controllers and views. Controller state remains mounted across section
@@ -114,6 +137,14 @@ Hex editing commands carry stable command identities, publish exact changed
 chunk notices, and retain a bounded persistent per-map content history. Brush
 geometry is shared pure code; the utility process recomputes committed targets
 from path and radius rather than trusting renderer-expanded tile sets.
+Renderer mutations share one receipt-aware command executor: an
+`outcome_unknown` response is reconciled by command identity and is never
+blindly replayed.
+
+German messages expose separate plain and parameterized key types. Placeholder
+names are inferred from the message template, required at compile time and
+validated again at runtime. Electron bundles WOFF2 only; legacy WOFF copies are
+rejected by the bundle gate.
 
 Reference lookup follows the same boundary. A deterministic, attributed SRD
 artifact is checked into the application and loaded only by the utility

@@ -30,4 +30,11 @@ describe('pseudo locale', () => {
     expect(pseudo).toContain('5')
     expect(pseudo.startsWith('⟦')).toBe(true)
   })
+
+  it('fails closed when an untyped caller omits a placeholder', () => {
+    expect(() =>
+      // @ts-expect-error Runtime validation protects non-TypeScript callers.
+      formatMessage('catalog.locationCount', { visible: 2 }, false)
+    ).toThrow('Missing {total} for message catalog.locationCount')
+  })
 })

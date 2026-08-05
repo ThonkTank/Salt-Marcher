@@ -30,6 +30,14 @@ an owning capability adapter and keep asynchronous or reducer state in feature
 hooks. Static JSX copy and accessibility labels come from the typed German
 message catalog. The utility dispatcher composes typed aggregate-specific
 handler maps. Architecture tests prevent these boundaries from regressing.
+Application and workspace modules now load through shell-owned failure
+isolation with structured renderer incidents and Main-controlled reload.
+Renderer feature ports are injected from React context; the mutable capability
+singleton has been removed. Pixi is loaded only at a visible Hex canvas, which
+reduced the shared Workspace chunk from roughly 1.18 MiB to about 289 KiB.
+The normal renderer is capped at 2.75 MiB, legacy WOFF duplicates are excluded,
+and typed message placeholders fail closed. The canonical check now also runs
+the complete Campaign-walking/Hex journey against the built application.
 
 ## Decisions
 

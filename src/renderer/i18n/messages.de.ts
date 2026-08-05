@@ -1,7 +1,6 @@
 import { capabilityErrorCode } from '../../shared/errors/capability-error.js'
 
 export const messagesDe = {
-  'app.loading': 'Anwendung wird geladen …',
   'workspace.loading': '{name} wird geladen …',
   'workspace.loadFailed':
     'Der Arbeitsbereich „{name}“ konnte nicht geladen werden.',
@@ -557,25 +556,49 @@ export const messagesDe = {
 
 export type MessageKey = keyof typeof messagesDe
 
+type PlaceholderNames<Value extends string> =
+  Value extends `${string}{${infer Name}}${infer Rest}`
+    ? Name | PlaceholderNames<Rest>
+    : never
+
+export type PlainMessageKey = {
+  [Key in MessageKey]: PlaceholderNames<(typeof messagesDe)[Key]> extends never
+    ? Key
+    : never
+}[MessageKey]
+
+type ParameterizedMessageKey = Exclude<MessageKey, PlainMessageKey>
+
+export type MessageParameters<Key extends ParameterizedMessageKey> = Readonly<
+  Record<PlaceholderNames<(typeof messagesDe)[Key]>, string | number>
+>
+
 export function message(
-  key: MessageKey,
+  key: PlainMessageKey,
   pseudo = pseudoLocaleEnabled()
 ): string {
   const value = messagesDe[key]
   return pseudo ? pseudoExpand(value) : value
 }
 
-export function formatMessage(
-  key: MessageKey,
-  parameters: Readonly<Record<string, string | number>>,
+export function formatMessage<Key extends ParameterizedMessageKey>(
+  key: Key,
+  parameters: MessageParameters<Key>,
   pseudo = pseudoLocaleEnabled()
 ): string {
+  const provided = parameters as Readonly<Record<string, string | number>>
   const value = messagesDe[key].replace(
     /\{([a-zA-Z][a-zA-Z0-9]*)\}/g,
     (placeholder, name: string) =>
-      Object.hasOwn(parameters, name) ? String(parameters[name]) : placeholder
+      Object.hasOwn(provided, name)
+        ? String(provided[name])
+        : missingParameter(key, placeholder)
   )
   return pseudo ? pseudoExpand(value) : value
+}
+
+function missingParameter(key: MessageKey, placeholder: string): never {
+  throw new Error(`Missing ${placeholder} for message ${key}`)
 }
 
 export function pseudoExpand(value: string): string {
