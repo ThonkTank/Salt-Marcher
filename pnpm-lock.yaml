@@ -17,6 +17,9 @@ importers:
       '@floating-ui/react':
         specifier: 0.27.20
         version: 0.27.20(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@fontsource/cormorant-unicase':
+        specifier: 5.3.0
+        version: 5.3.0
       '@fontsource/eb-garamond':
         specifier: 5.3.0
         version: 5.3.0
@@ -889,6 +892,9 @@ packages:
 
   '@floating-ui/utils@0.2.12':
     resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
+
+  '@fontsource/cormorant-unicase@5.3.0':
+    resolution: {integrity: sha512-x9aUMox6cSI3aWckMDlinaBWdRhVteKTLakTAkzdRHlpAIVMspUgRaV1qkCR4ZcWlovyc7KUq7zqUb/F72/8lQ==}
 
   '@fontsource/eb-garamond@5.3.0':
     resolution: {integrity: sha512-VplwHpB8FLuzl+4G5LDci1b3Z4SghiuXH8XEgaxjnOb5aue5mEt1njmDKeO6iyLeGa73LffU7PC7hzncLRx0ZA==}
@@ -5156,6 +5162,8 @@ snapshots:
       tabbable: 6.5.0
 
   '@floating-ui/utils@0.2.12': {}
+
+  '@fontsource/cormorant-unicase@5.3.0': {}
 
   '@fontsource/eb-garamond@5.3.0': {}
 

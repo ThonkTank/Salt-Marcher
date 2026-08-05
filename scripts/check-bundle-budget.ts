@@ -57,10 +57,10 @@ const byteCount = [...files].reduce(
   (total, file) => total + statSync(join(rendererRoot, file)).size,
   0
 )
-const budget = 2.75 * 1024 * 1024
+const budget = 2.76 * 1024 * 1024
 if (byteCount > budget)
   throw new Error(
-    `Normal renderer is ${(byteCount / 1024 / 1024).toFixed(2)} MiB; budget is 2.75 MiB`
+    `Normal renderer is ${(byteCount / 1024 / 1024).toFixed(2)} MiB; budget is 2.76 MiB`
   )
 if ([...files].some((file) => /qualification|babylon/i.test(file)))
   throw new Error('Qualification-only rendering code is reachable from the app')
@@ -136,7 +136,7 @@ const referenceBytes = budgetEntry(
 
 console.log(
   [
-    `Normal renderer: ${(byteCount / 1024 / 1024).toFixed(2)} MiB / 2.75 MiB`,
+    `Normal renderer: ${(byteCount / 1024 / 1024).toFixed(2)} MiB / 2.76 MiB`,
     `shell ${(shellBytes / 1024).toFixed(1)} KiB`,
     `workspace ${(workspaceBytes / 1024).toFixed(1)} KiB`,
     `catalog ${(catalogBytes / 1024).toFixed(1)} KiB`,

@@ -87,7 +87,7 @@ Pixi is a leaf dependency of `hex-map-canvas-pixi.tsx`. The lightweight canvas
 surface dynamically loads that implementation behind its own `ModuleHost`, so
 Session, Catalog and the common Workspace graph do not eagerly include Pixi or
 its renderer backends. The bundle gate verifies this static dependency graph,
-a 900 KiB Workspace ceiling and a 2.75 MiB total normal-renderer ceiling.
+a 900 KiB Workspace ceiling and a 2.76 MiB total normal-renderer ceiling.
 
 Catalog is a composition root over Monster, Location, Faction, and Encounter
 Table controllers and views. Controller state remains mounted across section

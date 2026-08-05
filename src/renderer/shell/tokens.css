@@ -27,6 +27,15 @@
 }
 
 @font-face {
+  font-family: 'Cormorant Unicase';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 500;
+  src: url('@fontsource/cormorant-unicase/files/cormorant-unicase-latin-500-normal.woff2')
+    format('woff2');
+}
+
+@font-face {
   font-family: 'EB Garamond';
   font-style: normal;
   font-display: swap;
@@ -196,7 +205,7 @@
   --font-display: 'IM Fell English', Georgia, serif;
   --font-smallcaps: 'IM Fell English SC', Georgia, serif;
   --font-body: 'EB Garamond', Georgia, serif;
-  --font-initial: 'IM FELL English SC', Georgia, serif;
+  --font-initial: 'Cormorant Unicase', Georgia, serif;
   --font-mono: ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
   /* Größen — Werkzeugdichte zuerst; 11 px ist der harte Boden */
