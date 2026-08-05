@@ -141,10 +141,14 @@
     padding: 1rem;
   }
 }
-.session-work-area {
+.layout-cockpit {
   display: flex;
   overflow: hidden;
   padding: 0;
+}
+
+.layout-scroll {
+  overflow: auto;
 }
 
 .module-load-state {

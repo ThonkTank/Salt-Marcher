@@ -20,8 +20,14 @@ export function App() {
       recoveryMessage={shellMessagesDe.recovery}
       retryLabel={shellMessagesDe.retry}
       reloadLabel={shellMessagesDe.reload}
-      reportIncident={api.runtime.reportRendererIncident}
-      reloadRenderer={api.runtime.reloadRenderer}
+      recoveryPolicy={{
+        moduleFailure: 'retry-or-reload',
+        renderFailure: 'remount'
+      }}
+      reportIncident={(incident) =>
+        api.runtime.reportRendererIncident(incident)
+      }
+      reloadRenderer={() => api.runtime.reloadRenderer()}
     />
   )
 }

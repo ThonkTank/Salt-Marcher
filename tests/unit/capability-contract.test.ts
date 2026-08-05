@@ -55,9 +55,10 @@ describe('capability contract', () => {
         code: 'workspace.module-load',
         errorName: 'ChunkLoadError',
         message: 'Failed to fetch a renderer module',
-        recoverable: true
+        scope: 'canvas',
+        recoveryClass: 'remount-surface'
       })
-    ).toMatchObject({ workspace: 'hex', recoverable: true })
+    ).toMatchObject({ workspace: 'hex', recoveryClass: 'remount-surface' })
     expect(
       rendererIncidentSchema.safeParse({
         workspace: 'hex',
@@ -65,7 +66,8 @@ describe('capability contract', () => {
         code: 'workspace.render',
         errorName: 'Error',
         message: 'failed',
-        recoverable: true,
+        scope: 'canvas',
+        recoveryClass: 'remount-surface',
         campaignName: 'private campaign'
       }).success
     ).toBe(false)

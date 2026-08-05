@@ -14,6 +14,11 @@ export type ModuleFailure = Readonly<{
   error: Error
 }>
 
+export type ModuleRecoveryPolicy = Readonly<{
+  moduleFailure: 'retry-or-reload'
+  renderFailure: 'remount' | 'remount-or-return'
+}>
+
 export type ModuleHostProps<Props extends object> = Readonly<{
   workspace: SurfaceId
   load: () => Promise<{ default: ComponentType<Props> }>
@@ -23,6 +28,9 @@ export type ModuleHostProps<Props extends object> = Readonly<{
   recoveryMessage: string
   retryLabel: string
   reloadLabel: string
+  recoveryPolicy: ModuleRecoveryPolicy
+  returnLabel?: string
+  returnToSafeSurface?: () => void
   reportIncident: (incident: RendererIncident) => Promise<void>
   reloadRenderer: () => Promise<void>
 }>
@@ -149,9 +157,19 @@ export function ModuleHost<Props extends object>(
           <button type="button" onClick={() => dispatch({ type: 'retry' })}>
             {props.retryLabel}
           </button>
-          <button type="button" onClick={() => void props.reloadRenderer()}>
-            {props.reloadLabel}
-          </button>
+          {state.status === 'module-failed' && (
+            <button type="button" onClick={() => void props.reloadRenderer()}>
+              {props.reloadLabel}
+            </button>
+          )}
+          {state.status === 'render-failed' &&
+            props.recoveryPolicy.renderFailure === 'remount-or-return' &&
+            props.returnToSafeSurface &&
+            props.returnLabel && (
+              <button type="button" onClick={props.returnToSafeSurface}>
+                {props.returnLabel}
+              </button>
+            )}
         </div>
       </section>
     )
@@ -181,13 +199,26 @@ function report(
   phase: ModuleFailure['phase'],
   error: Error
 ): void {
+  const isApplication = workspace === 'application'
   void reportIncident({
+    scope: isApplication
+      ? 'shell'
+      : workspace === 'hex'
+        ? 'canvas'
+        : 'workspace',
     workspace,
     phase,
     code: `workspace.${phase}`,
     errorName: safeErrorName(error.name),
     message: 'Renderer surface failed',
-    recoverable: true
+    recoveryClass:
+      phase === 'module-load'
+        ? isApplication
+          ? 'reload-renderer'
+          : 'retry-module'
+        : workspace === 'hex'
+          ? 'remount-surface'
+          : 'return-session'
   }).catch(() => undefined)
 }
 

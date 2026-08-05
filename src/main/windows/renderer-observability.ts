@@ -2,7 +2,12 @@ import type { WebContents } from 'electron'
 
 type RendererProcessIncident = Readonly<{
   event: 'renderer-process-incident'
-  kind: 'load-failed' | 'process-gone' | 'unresponsive' | 'responsive'
+  kind:
+    | 'load-failed'
+    | 'preload-error'
+    | 'process-gone'
+    | 'unresponsive'
+    | 'responsive'
   occurredAt: string
   details?: Readonly<Record<string, string | number>>
 }>
@@ -21,6 +26,14 @@ export function observeRendererProcess(webContents: WebContents): void {
       })
     }
   )
+  webContents.on('preload-error', (_event, _preloadPath, error) => {
+    record({
+      event: 'renderer-process-incident',
+      kind: 'preload-error',
+      occurredAt: new Date().toISOString(),
+      details: { errorName: safeErrorName(error.name) }
+    })
+  })
   webContents.on('render-process-gone', (_event, details) => {
     record({
       event: 'renderer-process-incident',
@@ -43,6 +56,10 @@ export function observeRendererProcess(webContents: WebContents): void {
       occurredAt: new Date().toISOString()
     })
   )
+}
+
+function safeErrorName(name: string): string {
+  return /^[A-Za-z][A-Za-z0-9]{0,79}$/.test(name) ? name : 'Error'
 }
 
 function record(incident: RendererProcessIncident): void {

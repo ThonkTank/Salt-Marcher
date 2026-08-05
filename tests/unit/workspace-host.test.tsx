@@ -10,7 +10,11 @@ const labels = {
     'Der Arbeitsbereich „Hex-Editor“ konnte nicht geladen werden.',
   recoveryMessage: 'Versuche es erneut.',
   retryLabel: 'Arbeitsbereich erneut öffnen',
-  reloadLabel: 'Anwendung neu laden'
+  reloadLabel: 'Anwendung neu laden',
+  recoveryPolicy: {
+    moduleFailure: 'retry-or-reload',
+    renderFailure: 'remount'
+  } as const
 }
 
 describe('ModuleHost', () => {
@@ -62,5 +66,48 @@ describe('ModuleHost', () => {
     expect(reloadRenderer).toHaveBeenCalledOnce()
     fireEvent.click(screen.getByRole('button', { name: labels.retryLabel }))
     expect(load).toHaveBeenCalledTimes(2)
+  })
+
+  it('isolates render failures and can return to the safe session', async () => {
+    const returnToSafeSurface = vi.fn()
+    const reportIncident = vi.fn().mockResolvedValue(undefined)
+    const Broken = () => {
+      throw new Error('render broke')
+    }
+    render(
+      <main>
+        <nav>Shell-Navigation</nav>
+        <ModuleHost
+          {...labels}
+          recoveryPolicy={{
+            moduleFailure: 'retry-or-reload',
+            renderFailure: 'remount-or-return'
+          }}
+          workspace="catalog"
+          load={vi.fn().mockResolvedValue({ default: Broken })}
+          componentProps={{}}
+          returnLabel="Zur Session"
+          returnToSafeSurface={returnToSafeSurface}
+          reportIncident={reportIncident}
+          reloadRenderer={vi.fn()}
+        />
+      </main>
+    )
+
+    expect(await screen.findByRole('alert')).toBeVisible()
+    expect(screen.getByText('Shell-Navigation')).toBeVisible()
+    expect(reportIncident).toHaveBeenCalledWith(
+      expect.objectContaining({
+        scope: 'workspace',
+        workspace: 'catalog',
+        phase: 'render',
+        recoveryClass: 'return-session'
+      })
+    )
+    expect(
+      screen.queryByRole('button', { name: labels.reloadLabel })
+    ).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Zur Session' }))
+    expect(returnToSafeSurface).toHaveBeenCalledOnce()
   })
 })

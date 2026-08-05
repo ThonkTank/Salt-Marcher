@@ -8,7 +8,10 @@ import { capabilityErrorCode } from '../../shared/errors/capability-error.js'
 import { capabilityErrorMessage, message } from '../i18n/messages.de.js'
 import { useCapabilityApi } from '../capabilities/use-capability-api.js'
 
-export function useInstallationPreferences(onError: (message: string) => void) {
+export function useInstallationPreferences(
+  onError: (message: string) => void,
+  enabled = true
+) {
   const capabilityApi = useCapabilityApi()
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const [sessionLayout, setSessionLayout] = useState(
@@ -20,6 +23,7 @@ export function useInstallationPreferences(onError: (message: string) => void) {
   const writeQueue = useRef<Promise<void>>(Promise.resolve())
 
   useEffect(() => {
+    if (!enabled) return
     void capabilityApi.settings
       .read()
       .then((value) => {
@@ -30,7 +34,7 @@ export function useInstallationPreferences(onError: (message: string) => void) {
         setTheme(value.preferences.theme)
       })
       .catch((cause: unknown) => onError(capabilityErrorMessage(cause)))
-  }, [capabilityApi, onError])
+  }, [capabilityApi, enabled, onError])
 
   useEffect(() => {
     document.documentElement.dataset['theme'] = theme
