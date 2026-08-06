@@ -51,6 +51,14 @@ afterEach(cleanup)
 function capabilityFixture() {
   let pathData = 'M0 10 L5 0 L10 10 Z'
   let listener: ((notice: HexChangeNotice) => void) | null = null
+  const onChanged = vi
+    .fn()
+    .mockImplementation((next: (notice: HexChangeNotice) => void) => {
+      listener = next
+      return () => {
+        listener = null
+      }
+    })
   const api = {
     runtime: { pickLocationSymbolFile: vi.fn() },
     locations: {},
@@ -117,14 +125,7 @@ function capabilityFixture() {
                 : []
             })
         ),
-      onChanged: vi
-        .fn()
-        .mockImplementation((next: (notice: HexChangeNotice) => void) => {
-          listener = next
-          return () => {
-            listener = null
-          }
-        })
+      onChanged
     },
     hexTravel: {
       read: vi.fn().mockResolvedValue({
@@ -142,6 +143,7 @@ function capabilityFixture() {
   } as unknown as SaltMarcherApi
   return {
     api,
+    onChanged,
     replacePath(next: string) {
       pathData = next
       act(() =>
@@ -188,6 +190,7 @@ describe('shared Hex marker synchronization', () => {
     )
     const marker = await screen.findByTestId('Hex-Karte Küste-marker')
     expect(marker).toHaveTextContent('M0 10 L5 0 L10 10 Z')
+    await waitFor(() => expect(fixture.onChanged).toHaveBeenCalled())
 
     fixture.replacePath('M0 0 L10 10 Z')
     await waitFor(() => expect(marker).toHaveTextContent('M0 0 L10 10 Z'))
@@ -207,6 +210,7 @@ describe('shared Hex marker synchronization', () => {
     )
     const marker = await screen.findByTestId('Platzierung von Kap-marker')
     expect(marker).toHaveTextContent('M0 10 L5 0 L10 10 Z')
+    await waitFor(() => expect(fixture.onChanged).toHaveBeenCalled())
 
     fixture.replacePath('M2 2 L8 8 Z')
     await waitFor(() => expect(marker).toHaveTextContent('M2 2 L8 8 Z'))

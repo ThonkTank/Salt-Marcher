@@ -54,6 +54,11 @@ events. Symbol search is paged, SVG validation runs only in the utility process,
 and symbol deletion is a durable installation command which replaces references
 with the built-in `location` marker across active and trashed campaigns before
 removing the catalog entry.
+The Hex location projection now has one renderer owner for catalog,
+presentation, symbol, and creation reconciliation. The shared World Location
+editor uses a narrow World Planner port, and creation returns the exact new
+entity. Create-then-place remains an explicit two-step workflow so an authored
+location survives a rejected placement with a visible partial-success outcome.
 
 ## Decisions
 

@@ -6,9 +6,8 @@ import {
   useLayoutEffect,
   useRef,
   type ButtonHTMLAttributes,
-  type FormEventHandler,
-  type ReactNode,
-  type RefObject
+  type FormHTMLAttributes,
+  type ReactNode
 } from 'react'
 import { createPortal } from 'react-dom'
 import { ModalLayerContext } from './modal-layer.js'
@@ -36,9 +35,7 @@ export function ModalDialog(props: {
   labelledBy?: string
   backdropClassName?: string
   busy?: boolean
-  form?: boolean
   role?: 'dialog' | 'alertdialog'
-  onSubmit?: FormEventHandler<HTMLFormElement>
 }) {
   const layer = useContext(ModalLayerContext)
   if (!layer)
@@ -142,19 +139,9 @@ export function ModalDialog(props: {
       inert={!top || undefined}
       aria-hidden={!top || undefined}
     >
-      {props.form ? (
-        <form
-          ref={dialog as RefObject<HTMLFormElement>}
-          {...shared}
-          onSubmit={props.onSubmit}
-        >
-          {props.children}
-        </form>
-      ) : (
-        <section ref={dialog} {...shared}>
-          {props.children}
-        </section>
-      )}
+      <section ref={dialog} {...shared}>
+        {props.children}
+      </section>
     </div>
   )
   return createPortal(
@@ -164,6 +151,16 @@ export function ModalDialog(props: {
       {content}
     </ModalInstanceContext.Provider>,
     layer.layer
+  )
+}
+
+export function ModalForm(props: FormHTMLAttributes<HTMLFormElement>) {
+  const { className, ...formProps } = props
+  return (
+    <form
+      {...formProps}
+      className={`modal-form${className ? ` ${className}` : ''}`}
+    />
   )
 }
 

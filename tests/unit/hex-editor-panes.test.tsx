@@ -84,6 +84,8 @@ function props(tool: 'select' | 'terrain' | 'location') {
     onBrushLevelChange: vi.fn(),
     onTerrainChange: vi.fn(),
     onLocationChange: vi.fn(),
+    onCreateLocation: vi.fn(),
+    locationDialogOpen: false,
     onPresentationChange: vi.fn(),
     onPresentationCommit: vi.fn(),
     onImportSymbol: vi.fn(),
@@ -119,6 +121,8 @@ describe('hex editor state panes', () => {
 
     const locationProps = props('location')
     rendered.rerender(<HexStatePane {...locationProps} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Ort erstellen' }))
+    expect(locationProps.onCreateLocation).toHaveBeenCalledOnce()
     expect(screen.getByRole('listbox', { name: 'Katalog-Orte' })).toBeVisible()
     expect(screen.getByRole('slider', { name: 'Symbolgröße' })).toHaveAttribute(
       'aria-valuemin',

@@ -116,7 +116,7 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
             edit={locationController.setEditing}
             place={locationController.setPlacing}
             setDeleteConfirm={locationController.setDeleteConfirm}
-            save={(draft) => void locationController.save(draft)}
+            save={locationController.save}
             remove={() => void locationController.remove()}
             placed={() => void locationController.placed()}
             onError={props.onError}

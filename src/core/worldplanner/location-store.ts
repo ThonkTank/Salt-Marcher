@@ -2,13 +2,15 @@ import Database from 'better-sqlite3'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import {
   worldLocationDraftSchema,
+  createWorldLocationResultSchema,
   worldLocationMapPresentationSchema,
   worldLocationSnapshotSchema,
   defaultWorldLocationMapPresentation,
   type WorldLocationDraft,
   type WorldLocationMapPresentation,
   type WorldLocationMapPresentationPatch,
-  type WorldLocationSnapshot
+  type WorldLocationSnapshot,
+  type CreateWorldLocationResult
 } from '../../shared/contracts/world-location.js'
 import {
   builtinLocationSymbolIdSchema,
@@ -185,7 +187,15 @@ export class WorldLocationStore {
     draft: WorldLocationDraft,
     expectedRevision: number
   ): WorldLocationSnapshot {
+    return this.createResult(draft, expectedRevision).snapshot
+  }
+
+  createResult(
+    draft: WorldLocationDraft,
+    expectedRevision: number
+  ): CreateWorldLocationResult {
     const parsed = worldLocationDraftSchema.parse(draft)
+    let createdId = ''
     this.mutate(expectedRevision, () => {
       const position = (
         this.db
@@ -195,6 +205,7 @@ export class WorldLocationStore {
           .get() as { value: number }
       ).value
       const id = uuidv7()
+      createdId = id
       this.db
         .prepare(
           `INSERT INTO worldplanner_location
@@ -226,7 +237,13 @@ export class WorldLocationStore {
         )
       this.replaceReferences(id, parsed.factionIds, parsed.encounterTableIds)
     })
-    return this.read()
+    const snapshot = this.read()
+    const createdLocation = snapshot.locations.find(
+      (location) => location.id === createdId
+    )
+    if (!createdLocation)
+      throw new Error('Created World Location is missing from its snapshot.')
+    return createWorldLocationResultSchema.parse({ snapshot, createdLocation })
   }
 
   update(
@@ -509,6 +526,12 @@ export class WorldLocationService {
 
   create(draft: WorldLocationDraft, expectedRevision: number) {
     return this.withStore((store) => store.create(draft, expectedRevision))
+  }
+
+  createResult(draft: WorldLocationDraft, expectedRevision: number) {
+    return this.withStore((store) =>
+      store.createResult(draft, expectedRevision)
+    )
   }
 
   update(id: string, draft: WorldLocationDraft, expectedRevision: number) {

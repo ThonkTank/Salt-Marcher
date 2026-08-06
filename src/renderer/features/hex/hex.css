@@ -257,6 +257,21 @@
   background: var(--surface-card-flat);
 }
 
+.hex-create-location {
+  justify-self: start;
+  min-height: 28px;
+  padding: 4px 10px;
+  border: 1px solid var(--border-structural);
+  border-radius: 0;
+  background: var(--surface-button);
+  font-family: var(--font-smallcaps);
+  font-size: 13px;
+}
+
+.hex-create-location:hover:not(:disabled) {
+  background: var(--surface-button-hover);
+}
+
 .hex-location-list button {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

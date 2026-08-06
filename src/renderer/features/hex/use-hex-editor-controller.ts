@@ -8,7 +8,6 @@ import type {
   HexTerrainCatalog,
   HexTerrainId
 } from '../../../shared/contracts/hex.js'
-import type { WorldLocationSnapshot } from '../../../shared/contracts/world-location.js'
 import type { LocationSymbolPage } from '../../../shared/contracts/location-symbol.js'
 
 export type EditorTool = 'select' | 'terrain' | 'location'
@@ -38,7 +37,6 @@ export type HexEditorState = Readonly<{
   catalog: Readonly<{
     maps: HexMapCatalogSnapshot | null
     terrains: HexTerrainCatalog | null
-    locations: WorldLocationSnapshot | null
     symbols: LocationSymbolPage | null
   }>
   activeMap: Readonly<{
@@ -98,7 +96,7 @@ export type HexEditorAction =
     }>
 
 export const initialHexEditorState: HexEditorState = {
-  catalog: { maps: null, terrains: null, locations: null, symbols: null },
+  catalog: { maps: null, terrains: null, symbols: null },
   activeMap: {
     map: null,
     selected: null,
@@ -206,7 +204,6 @@ export function useHexEditorController() {
   return {
     catalog: state.catalog.maps,
     terrains: state.catalog.terrains,
-    locations: state.catalog.locations,
     symbols: state.catalog.symbols,
     map: state.activeMap.map,
     selected: state.activeMap.selected,
@@ -223,7 +220,6 @@ export function useHexEditorController() {
     pendingHistory: state.confirmation.history,
     setCatalog: catalogSetter('maps'),
     setTerrains: catalogSetter('terrains'),
-    setLocations: catalogSetter('locations'),
     setSymbols: catalogSetter('symbols'),
     setMap: mapSetter('map'),
     setSelected: mapSetter('selected'),

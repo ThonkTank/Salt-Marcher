@@ -31,6 +31,7 @@ import type {
 } from './settings.js'
 import type {
   WorldLocationDraft,
+  CreateWorldLocationResult,
   WorldLocationChangeNotice,
   WorldLocationMapPresentation,
   WorldLocationMapPresentationPatch,
@@ -159,7 +160,7 @@ export interface SaltMarcherApi {
     create(
       location: WorldLocationDraft,
       expectedRevision: number
-    ): Promise<WorldLocationSnapshot>
+    ): Promise<CreateWorldLocationResult>
     update(
       id: string,
       location: WorldLocationDraft,

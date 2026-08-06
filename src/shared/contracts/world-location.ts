@@ -42,6 +42,13 @@ export const worldLocationSnapshotSchema = z
   })
   .strict()
 
+export const createWorldLocationResultSchema = z
+  .object({
+    snapshot: worldLocationSnapshotSchema,
+    createdLocation: worldLocationSchema
+  })
+  .strict()
+
 export const worldLocationDraftSchema = z
   .object({
     displayName: z.string().trim().min(1).max(100),
@@ -104,6 +111,9 @@ export type WorldLocationDraft = Readonly<
 >
 export type WorldLocationSnapshot = Readonly<
   z.infer<typeof worldLocationSnapshotSchema>
+>
+export type CreateWorldLocationResult = Readonly<
+  z.infer<typeof createWorldLocationResultSchema>
 >
 export type WorldLocationMapPresentation = Readonly<
   z.infer<typeof worldLocationMapPresentationSchema>

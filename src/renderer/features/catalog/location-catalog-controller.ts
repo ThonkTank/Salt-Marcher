@@ -3,6 +3,7 @@ import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session
 import type { SaltMarcherApi } from '../../../shared/contracts/capability-api.js'
 import type {
   WorldLocation,
+  CreateWorldLocationResult,
   WorldLocationDraft,
   WorldLocationSnapshot
 } from '../../../shared/contracts/world-location.js'
@@ -22,7 +23,7 @@ export type LocationCatalogPort = {
   createLocation: (
     draft: WorldLocationDraft,
     revision: number
-  ) => Promise<WorldLocationSnapshot>
+  ) => Promise<CreateWorldLocationResult>
   updateLocation: (
     id: string,
     draft: WorldLocationDraft,
@@ -128,23 +129,38 @@ export function useLocationCatalogController(
   }, [direction, search, snapshot.locations])
 
   async function save(draft: WorldLocationDraft) {
+    let result: { snapshot: WorldLocationSnapshot; selectedId: string }
     try {
-      const previousIds = new Set(snapshot.locations.map((entry) => entry.id))
-      const next = editing
-        ? await port.updateLocation(editing.id, draft, snapshot.revision)
-        : await port.createLocation(draft, snapshot.revision)
-      const selectedId =
-        editing?.id ??
-        next.locations.find((entry) => !previousIds.has(entry.id))?.id
-      setSnapshot(next)
-      setSelected(
-        next.locations.find((entry) => entry.id === selectedId) ?? null
-      )
-      setEditing(undefined)
+      result = editing
+        ? {
+            snapshot: await port.updateLocation(
+              editing.id,
+              draft,
+              snapshot.revision
+            ),
+            selectedId: editing.id
+          }
+        : await port
+            .createLocation(draft, snapshot.revision)
+            .then((created) => ({
+              snapshot: created.snapshot,
+              selectedId: created.createdLocation.id
+            }))
+    } catch (cause) {
+      return { status: 'failed', message: capabilityErrorText(cause) } as const
+    }
+    const next = result.snapshot
+    setSnapshot(next)
+    setSelected(
+      next.locations.find((entry) => entry.id === result.selectedId) ?? null
+    )
+    setEditing(undefined)
+    try {
       setSession(await port.readSession())
     } catch (cause) {
       onError(capabilityErrorText(cause))
     }
+    return { status: 'saved' } as const
   }
 
   async function remove() {

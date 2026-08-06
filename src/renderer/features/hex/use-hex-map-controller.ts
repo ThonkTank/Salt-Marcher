@@ -7,18 +7,18 @@ import { reportCapabilityError } from '../../capabilities/capability-errors.js'
 import type { HexCapabilities } from './hex-capabilities.js'
 import { HexChunkCache } from './hex-chunk-cache.js'
 import type { useHexEditorController } from './use-hex-editor-controller.js'
-import type { useLocationPresentationController } from './use-location-presentation-controller.js'
+import type { useWorldLocationProjectionController } from './use-world-location-projection-controller.js'
 
 type EditorController = ReturnType<typeof useHexEditorController>
-type PresentationController = ReturnType<
-  typeof useLocationPresentationController
+type LocationProjectionController = ReturnType<
+  typeof useWorldLocationProjectionController
 >
 
 /** Owns bootstrap, catalog selection, chunk cache, viewport and map events. */
 export function useHexMapController(options: {
   capabilities: HexCapabilities
   editor: EditorController
-  presentation: PresentationController
+  locations: LocationProjectionController
   onError: (message: string) => void
 }) {
   const optionsRef = useRef(options)
@@ -121,10 +121,10 @@ export function useHexMapController(options: {
         if (request !== mapSelectionRequest.current) return
         const symbols = await capabilities.locationSymbols.search('', 0, 24)
         if (request !== mapSelectionRequest.current) return
-        const { editor, presentation } = optionsRef.current
+        const { editor, locations } = optionsRef.current
         editor.setCatalog(bootstrap.catalog)
         editor.setTerrains(bootstrap.terrains)
-        presentation.setSnapshot(bootstrap.locations)
+        locations.replace(bootstrap.locations)
         editor.setSymbols(symbols)
         editor.setLocationId(bootstrap.locations.locations[0]?.id ?? '')
         const first = bootstrap.catalog.maps[0]
@@ -146,19 +146,6 @@ export function useHexMapController(options: {
       mapSelectionRequest.current += 1
     }
   }, [options.capabilities, readOverlays])
-
-  useEffect(
-    () =>
-      options.capabilities.locations.onChanged(() => {
-        void options.capabilities.locations
-          .read()
-          .then((snapshot) =>
-            optionsRef.current.presentation.mergeExternal(snapshot)
-          )
-          .catch(reportCapabilityError(optionsRef.current.onError))
-      }),
-    [options.capabilities.locations]
-  )
 
   useEffect(
     () =>

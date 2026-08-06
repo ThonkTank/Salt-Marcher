@@ -1,4 +1,4 @@
-import { message } from '../../i18n/messages.de.js'
+import { formatMessage, message } from '../../i18n/messages.de.js'
 import { useMemo } from 'react'
 import './hex.css'
 import { hexCapabilities } from './hex-capabilities.js'
@@ -14,22 +14,28 @@ import {
   HexCatalogPane,
   HexStatePane
 } from './hex-editor-panes.js'
-import { useLocationPresentationController } from './use-location-presentation-controller.js'
 import { useLocationSymbolController } from './use-location-symbol-controller.js'
 import { useHexMapController } from './use-hex-map-controller.js'
 import { useHexCommandController } from './use-hex-command-controller.js'
+import { automaticLocationPlacementTarget } from './world-location-placement-target.js'
+import { useWorldLocationProjectionController } from './use-world-location-projection-controller.js'
+import { WorldLocationDialog } from '../worldplanner/world-location-dialog.js'
+import { createWorldLocationCreationPort } from '../worldplanner/world-location-capabilities.js'
+import { useWorldLocationCreationWorkflow } from '../worldplanner/use-world-location-creation-workflow.js'
 
 export default function HexEditor(props: {
   onError: (message: string) => void
 }) {
   const api = useCapabilityApi()
   const capabilities = useMemo(() => hexCapabilities(api), [api])
+  const locationCreationPort = useMemo(
+    () => createWorldLocationCreationPort(api),
+    [api]
+  )
   const controller = useHexEditorController()
   const {
     catalog,
     terrains,
-    locations,
-    setLocations,
     symbols,
     setSymbols,
     map,
@@ -55,26 +61,23 @@ export default function HexEditor(props: {
     setName,
     history
   } = controller
-  const presentation = useLocationPresentationController({
-    locations,
-    setLocations,
+  const locations = useWorldLocationProjectionController({
     capabilities: capabilities.locations,
     onError: (cause) => props.onError(capabilityErrorText(cause))
   })
-  const locationsRef = presentation.locationsRef
   const symbolManagement = useLocationSymbolController({
     capabilities,
     page: symbols,
     setPage: setSymbols,
     locationId,
-    locationsRef,
-    setLocations: presentation.setSnapshot,
+    locationsRef: locations.snapshotRef,
+    applySymbolAssignment: locations.applySymbolAssignment,
     onError: (cause) => props.onError(capabilityErrorText(cause))
   })
   const mapLifecycle = useHexMapController({
     capabilities,
     editor: controller,
-    presentation,
+    locations,
     onError: props.onError
   })
   const { loadViewport, refreshCatalog } = mapLifecycle
@@ -84,8 +87,39 @@ export default function HexEditor(props: {
     maps: mapLifecycle,
     onError: props.onError
   })
+  const placeLocation = async (
+    locationId: string,
+    coordinate: NonNullable<typeof controller.selected>
+  ) => {
+    const outcome = await commands.placeLocation(locationId, coordinate)
+    if (outcome.status === 'rejected' || outcome.status === 'failed')
+      props.onError(outcome.message)
+    return outcome
+  }
+  const locationCreation = useWorldLocationCreationWorkflow({
+    port: locationCreationPort,
+    currentRevision: () => locations.snapshotRef.current?.revision ?? null,
+    applyCreated: locations.applyCreated,
+    select: setLocationId,
+    place: async (locationId) => {
+      const target = automaticLocationPlacementTarget(
+        controller.map,
+        controller.selected
+      )
+      return target.status === 'eligible'
+        ? commands.placeLocation(locationId, target.coordinate)
+        : target
+    },
+    errorText: capabilityErrorText,
+    onPartialFailure: (detail) =>
+      props.onError(
+        formatMessage('hex.editor.locationCreatedPlacementFailed', { detail })
+      ),
+    unavailableMessage: message('hex.editor.locationCatalogUnavailable'),
+    savingMessage: message('ui.speichern.laeuft')
+  })
 
-  if (!catalog || !terrains || !locations || !symbols)
+  if (!catalog || !terrains || !locations.snapshot || !symbols)
     return (
       <section className="workspace-panel">
         {message('ui.hex.editor.wird.geladen')}
@@ -137,7 +171,7 @@ export default function HexEditor(props: {
           )
           if (target?.location) setLocationId(target.location.locationId)
           else if (target && locationId)
-            void commands.placeLocation(locationId, coordinate)
+            void placeLocation(locationId, coordinate)
         }}
         onStroke={(path) => void commands.applyStroke(path)}
         onViewportChange={(center, halfExtent) => {
@@ -151,7 +185,7 @@ export default function HexEditor(props: {
         selected={selected}
         tile={tile}
         terrains={terrains}
-        locations={locations}
+        locations={locations.snapshot}
         symbols={symbols}
         tool={tool}
         terrainId={terrainId}
@@ -164,10 +198,12 @@ export default function HexEditor(props: {
         onLocationChange={(id) => {
           setLocationId(id)
           if (tool === 'location' && selected && tile && !tile.location)
-            void commands.placeLocation(id, selected)
+            void placeLocation(id, selected)
         }}
-        onPresentationChange={presentation.update}
-        onPresentationCommit={presentation.flush}
+        onCreateLocation={() => void locationCreation.open()}
+        locationDialogOpen={locationCreation.dialogOpen}
+        onPresentationChange={locations.updatePresentation}
+        onPresentationCommit={locations.flushPresentation}
         selectedCustomSymbol={symbolManagement.selectedCustomSymbol}
         onSymbolSearch={(query) =>
           void symbolManagement
@@ -197,6 +233,14 @@ export default function HexEditor(props: {
         }
         onRemoveLocation={() => void commands.removeLocation()}
       />
+      {locationCreation.dialogOpen && (
+        <WorldLocationDialog
+          location={null}
+          references={locationCreation.references}
+          close={locationCreation.close}
+          save={locationCreation.save}
+        />
+      )}
       {pendingErase && (
         <HexImpactDialog
           impact={pendingErase.impact}

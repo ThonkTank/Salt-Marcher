@@ -11,7 +11,8 @@ import { formatMessage, message } from '../../i18n/messages.de.js'
 import {
   DiscardChangesDialog,
   ModalCloseButton,
-  ModalDialog
+  ModalDialog,
+  ModalForm
 } from '../../shell/modal-dialog.js'
 import { creaturesCapabilities } from '../creatures/creatures-capabilities.js'
 import { EncounterTableManager } from '../encounter-table/encounter-table-manager.js'
@@ -235,7 +236,6 @@ function FactionDialog(props: {
   return (
     <>
       <ModalDialog
-        form
         className="catalog-location-editor catalog-faction-editor"
         ariaLabel={
           props.faction
@@ -243,149 +243,156 @@ function FactionDialog(props: {
             : message('catalog.createFaction')
         }
         onClose={requestClose}
-        onSubmit={(event) => {
-          event.preventDefault()
-          props.save({
-            displayName,
-            notes,
-            disposition,
-            primaryEncounterTableId,
-            inventory: Object.entries(inventory).map(
-              ([creatureId, maximum]) => ({ creatureId, maximum })
-            )
-          })
-        }}
       >
-        <header>
-          <div>
-            <p className="section-kicker">{message('ui.world.planner')}</p>
-            <h2>
-              {props.faction
-                ? message('catalog.editFaction')
-                : message('catalog.createFaction')}
-            </h2>
-          </div>
-          <ModalCloseButton aria-label={message('ui.dialog.schliessen')}>
-            ×
-          </ModalCloseButton>
-        </header>
-        <label>
-          {message('ui.name')}
-          <input
-            required
-            aria-label={message('ui.fraktionsname')}
-            maxLength={100}
-            value={displayName}
-            onChange={(event) => setDisplayName(event.target.value)}
-          />
-        </label>
-        <label>
-          {message('ui.notizen')}
-          <textarea
-            aria-label={message('ui.fraktionsnotizen')}
-            rows={4}
-            maxLength={20_000}
-            value={notes}
-            onChange={(event) => setNotes(event.target.value)}
-          />
-        </label>
-        <label>
-          {message('ui.gesinnung.2')} {disposition}
-          <input
-            aria-label={message('ui.fraktionsgesinnung')}
-            type="range"
-            min={-50}
-            max={50}
-            value={disposition}
-            onChange={(event) => setDisposition(Number(event.target.value))}
-          />
-        </label>
-        <label>
-          {message('ui.primaere.encounter.tabelle')}
-          <span className="catalog-faction-table-selection">
-            <select
-              aria-label={message('ui.primaere.encounter.tabelle')}
-              value={primaryEncounterTableId ?? ''}
-              onChange={(event) =>
-                selectPrimaryTableFromSnapshot(
-                  event.target.value || null,
-                  props.tableSnapshot
-                )
-              }
-            >
-              <option value="">{message('ui.keine.primaere.tabelle')}</option>
-              {props.tableSnapshot.tables.map((table) => (
-                <option key={table.id} value={table.id}>
-                  {table.displayName}
-                </option>
-              ))}
-            </select>
-            <button type="button" onClick={() => setTableManager(null)}>
-              {message('ui.neue.encounter.tabelle')}
-            </button>
-          </span>
-        </label>
-        <h3>{message('ui.endlicher.bestand')}</h3>
-        <p className="muted">
-          {message('ui.der.bestand.basiert.auf.der.primaertabelle.ein.leeres')}
-        </p>
-        <ul className="catalog-source-entry-list">
-          {selectedTable?.entries.map((entry) => (
-            <li key={entry.creatureId}>
-              <span>
-                {names[entry.creatureId] ??
-                  formatMessage('catalog.unavailableReference', {
-                    id: entry.creatureId
-                  })}
-              </span>
-              <label>
-                {message('ui.maximum')}
-                <input
-                  aria-label={formatMessage('catalog.inventoryMaximum', {
-                    name: names[entry.creatureId] ?? entry.creatureId
-                  })}
-                  type="number"
-                  min={0}
-                  placeholder={message('ui.unbegrenzt')}
-                  value={inventory[entry.creatureId] ?? ''}
-                  onChange={(event) => {
-                    const next = { ...inventory }
-                    if (!event.target.value) delete next[entry.creatureId]
-                    else
-                      next[entry.creatureId] = Math.max(
-                        0,
-                        Number(event.target.value)
-                      )
-                    setInventory(next)
-                  }}
-                />
-              </label>
-              <button
-                type="button"
-                onClick={() => {
-                  const next = { ...inventory }
-                  delete next[entry.creatureId]
-                  setInventory(next)
-                }}
+        <ModalForm
+          onSubmit={(event) => {
+            event.preventDefault()
+            props.save({
+              displayName,
+              notes,
+              disposition,
+              primaryEncounterTableId,
+              inventory: Object.entries(inventory).map(
+                ([creatureId, maximum]) => ({ creatureId, maximum })
+              )
+            })
+          }}
+        >
+          <header>
+            <div>
+              <p className="section-kicker">{message('ui.world.planner')}</p>
+              <h2>
+                {props.faction
+                  ? message('catalog.editFaction')
+                  : message('catalog.createFaction')}
+              </h2>
+            </div>
+            <ModalCloseButton aria-label={message('ui.dialog.schliessen')}>
+              ×
+            </ModalCloseButton>
+          </header>
+          <label>
+            {message('ui.name')}
+            <input
+              required
+              aria-label={message('ui.fraktionsname')}
+              maxLength={100}
+              value={displayName}
+              onChange={(event) => setDisplayName(event.target.value)}
+            />
+          </label>
+          <label>
+            {message('ui.notizen')}
+            <textarea
+              aria-label={message('ui.fraktionsnotizen')}
+              rows={4}
+              maxLength={20_000}
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
+            />
+          </label>
+          <label>
+            {message('ui.gesinnung.2')} {disposition}
+            <input
+              aria-label={message('ui.fraktionsgesinnung')}
+              type="range"
+              min={-50}
+              max={50}
+              value={disposition}
+              onChange={(event) => setDisposition(Number(event.target.value))}
+            />
+          </label>
+          <label>
+            {message('ui.primaere.encounter.tabelle')}
+            <span className="catalog-faction-table-selection">
+              <select
+                aria-label={message('ui.primaere.encounter.tabelle')}
+                value={primaryEncounterTableId ?? ''}
+                onChange={(event) =>
+                  selectPrimaryTableFromSnapshot(
+                    event.target.value || null,
+                    props.tableSnapshot
+                  )
+                }
               >
-                {message('ui.unbegrenzt')}
+                <option value="">{message('ui.keine.primaere.tabelle')}</option>
+                {props.tableSnapshot.tables.map((table) => (
+                  <option key={table.id} value={table.id}>
+                    {table.displayName}
+                  </option>
+                ))}
+              </select>
+              <button type="button" onClick={() => setTableManager(null)}>
+                {message('ui.neue.encounter.tabelle')}
               </button>
-            </li>
-          ))}
-        </ul>
-        {!selectedTable && (
-          <p className="catalog-empty-state">
+            </span>
+          </label>
+          <h3>{message('ui.endlicher.bestand')}</h3>
+          <p className="muted">
             {message(
-              'ui.waehle.eine.encounter.tabelle.um.den.bestand.festzulegen'
+              'ui.der.bestand.basiert.auf.der.primaertabelle.ein.leeres'
             )}
           </p>
-        )}
-        <footer>
-          <ModalCloseButton>{message('action.cancel')}</ModalCloseButton>
-          <button disabled={!displayName.trim()}>
-            {props.faction ? message('action.save') : message('action.create')}
-          </button>
-        </footer>
+          <ul className="catalog-source-entry-list">
+            {selectedTable?.entries.map((entry) => (
+              <li key={entry.creatureId}>
+                <span>
+                  {names[entry.creatureId] ??
+                    formatMessage('catalog.unavailableReference', {
+                      id: entry.creatureId
+                    })}
+                </span>
+                <label>
+                  {message('ui.maximum')}
+                  <input
+                    aria-label={formatMessage('catalog.inventoryMaximum', {
+                      name: names[entry.creatureId] ?? entry.creatureId
+                    })}
+                    type="number"
+                    min={0}
+                    placeholder={message('ui.unbegrenzt')}
+                    value={inventory[entry.creatureId] ?? ''}
+                    onChange={(event) => {
+                      const next = { ...inventory }
+                      if (!event.target.value) delete next[entry.creatureId]
+                      else
+                        next[entry.creatureId] = Math.max(
+                          0,
+                          Number(event.target.value)
+                        )
+                      setInventory(next)
+                    }}
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = { ...inventory }
+                    delete next[entry.creatureId]
+                    setInventory(next)
+                  }}
+                >
+                  {message('ui.unbegrenzt')}
+                </button>
+              </li>
+            ))}
+          </ul>
+          {!selectedTable && (
+            <p className="catalog-empty-state">
+              {message(
+                'ui.waehle.eine.encounter.tabelle.um.den.bestand.festzulegen'
+              )}
+            </p>
+          )}
+          <footer>
+            <ModalCloseButton>{message('action.cancel')}</ModalCloseButton>
+            <button disabled={!displayName.trim()}>
+              {props.faction
+                ? message('action.save')
+                : message('action.create')}
+            </button>
+          </footer>
+        </ModalForm>
       </ModalDialog>
       {tableManager !== undefined && (
         <EncounterTableManager

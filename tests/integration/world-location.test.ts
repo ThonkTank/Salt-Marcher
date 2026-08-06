@@ -30,6 +30,18 @@ function harness() {
 }
 
 describe('world locations', () => {
+  it('returns the exact created entity with the next aggregate snapshot', () => {
+    const { campaigns, locations } = harness()
+    const result = locations.createResult(
+      { displayName: 'Exakter Ort', notes: '' },
+      0
+    )
+    expect(result.createdLocation.displayName).toBe('Exakter Ort')
+    expect(result.snapshot.revision).toBe(1)
+    expect(result.snapshot.locations).toContainEqual(result.createdLocation)
+    campaigns.close()
+  })
+
   it('creates, updates, deletes and revision-checks independent namesakes', () => {
     const { campaigns, locations } = harness()
     let snapshot = locations.read()

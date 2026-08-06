@@ -56,6 +56,7 @@ import {
 } from './scene.js'
 import {
   createWorldLocationInputSchema,
+  createWorldLocationResultSchema,
   deleteWorldLocationInputSchema,
   updateWorldLocationInputSchema,
   updateWorldLocationMapPresentationInputSchema,
@@ -282,7 +283,7 @@ export const coreOperations = {
   'locations.create': write(
     'locations:create',
     createWorldLocationInputSchema,
-    worldLocationSnapshotSchema
+    createWorldLocationResultSchema
   ),
   'locations.update': write(
     'locations:update',

@@ -1,10 +1,10 @@
 import { browser, expect } from '@wdio/globals'
-import { AxeBuilder } from '@axe-core/webdriverio'
 import type { Browser as WdioBrowser } from 'webdriverio'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
-import pixelmatch from 'pixelmatch'
-import { PNG } from 'pngjs'
+import {
+  expectAccessible,
+  expectAccessibleInBothThemes,
+  expectElementGolden
+} from './support/e2e-assertions.js'
 
 describe('campaign walking skeleton', () => {
   it('creates and switches the selected campaign', async () => {
@@ -267,7 +267,9 @@ describe('campaign walking skeleton', () => {
     const client = browser as unknown as WdioBrowser
     await createLocation(client, 'Saltmarsh', 'A busy harbour town.')
     await (await client.$('button=Bearbeiten')).click()
-    const editLocation = await client.$('form[aria-label="Ort bearbeiten"]')
+    const editLocation = await client.$(
+      '[role="dialog"][aria-label="Ort bearbeiten"]'
+    )
     await (
       await editLocation.$('input[aria-label="Ortsname"]')
     ).setValue('Salzmarschhafen')
@@ -305,7 +307,7 @@ describe('campaign walking skeleton', () => {
     await (await client.$('button=Fraktionen')).click()
     await (await client.$('button=Erstellen')).click()
     const factionDialog = await client.$(
-      'form[aria-label="Fraktion erstellen"]'
+      '[role="dialog"][aria-label="Fraktion erstellen"]'
     )
     await (
       await factionDialog.$('input[aria-label="Fraktionsname"]')
@@ -667,29 +669,6 @@ describe('campaign walking skeleton', () => {
   })
 })
 
-async function expectAccessible(client: WdioBrowser): Promise<void> {
-  const accessibility = await new AxeBuilder({ client })
-    .setLegacyMode()
-    .analyze()
-  expect(accessibility.violations).toHaveLength(0)
-}
-
-async function expectAccessibleInBothThemes(
-  client: WdioBrowser
-): Promise<void> {
-  await expectAccessible(client)
-  await client.execute(() => {
-    document.querySelector<HTMLButtonElement>('.theme-toggle')?.click()
-  })
-  try {
-    await expectAccessible(client)
-  } finally {
-    await client.execute(() => {
-      document.querySelector<HTMLButtonElement>('.theme-toggle')?.click()
-    })
-  }
-}
-
 async function waitForCampaignInput(
   client: WdioBrowser,
   field: Awaited<ReturnType<WdioBrowser['$']>>
@@ -840,7 +819,7 @@ async function createLocation(
   await (await client.$('button[aria-label="Katalog"]')).click()
   await (await client.$('button=Orte')).click()
   await (await client.$('button=Erstellen')).click()
-  const dialog = await client.$('form[aria-label="Ort erstellen"]')
+  const dialog = await client.$('[role="dialog"][aria-label="Ort erstellen"]')
   await (await dialog.$('input[aria-label="Ortsname"]')).setValue(name)
   await (await dialog.$('textarea[aria-label="Ortsnotizen"]')).setValue(notes)
   await (await dialog.$('button=Erstellen')).click()
@@ -896,49 +875,4 @@ async function expectGroupManagementGolden(client: WdioBrowser): Promise<void> {
     'group-management',
     'section[aria-labelledby="group-builder-title"]'
   )
-}
-
-async function expectElementGolden(
-  client: WdioBrowser,
-  name: string,
-  selector: string
-): Promise<void> {
-  if (process.platform !== 'linux') return
-  await client.execute(() => {
-    const style = document.createElement('style')
-    style.dataset['visualTest'] = 'true'
-    style.textContent =
-      '*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}'
-    document.head.append(style)
-  })
-  const directory = join(process.cwd(), 'tests', 'e2e', 'goldens', 'linux')
-  const artifacts = join(process.cwd(), '.tmp', 'visual-diffs')
-  mkdirSync(directory, { recursive: true })
-  mkdirSync(artifacts, { recursive: true })
-  const actualPath = join(artifacts, `${name}.png`)
-  const baselinePath = join(directory, `${name}.png`)
-  const bytes = await (await client.$(selector)).saveScreenshot(actualPath)
-  if (process.env['UPDATE_VISUAL_GOLDENS'] === '1') {
-    writeFileSync(baselinePath, bytes)
-    return
-  }
-  if (!existsSync(baselinePath))
-    throw new Error(`Missing golden ${baselinePath}`)
-  const expected = PNG.sync.read(readFileSync(baselinePath))
-  const actual = PNG.sync.read(bytes)
-  expect({ width: actual.width, height: actual.height }).toEqual({
-    width: expected.width,
-    height: expected.height
-  })
-  const diff = new PNG({ width: actual.width, height: actual.height })
-  const changed = pixelmatch(
-    expected.data,
-    actual.data,
-    diff.data,
-    actual.width,
-    actual.height,
-    { threshold: 0.2 }
-  )
-  writeFileSync(join(artifacts, `${name}.diff.png`), PNG.sync.write(diff))
-  expect(changed / (actual.width * actual.height)).toBeLessThanOrEqual(0.03)
 }

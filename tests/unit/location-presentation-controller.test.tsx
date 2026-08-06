@@ -2,7 +2,7 @@
 
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { useLocationPresentationController } from '../../src/renderer/features/hex/use-location-presentation-controller.js'
+import { useWorldLocationProjectionController } from '../../src/renderer/features/hex/use-world-location-projection-controller.js'
 import type { HexCapabilities } from '../../src/renderer/features/hex/hex-capabilities.js'
 import type {
   WorldLocationMapPresentation,
@@ -21,10 +21,11 @@ const basePresentation: WorldLocationMapPresentation = {
 }
 
 function snapshot(
-  presentation: WorldLocationMapPresentation = basePresentation
+  presentation: WorldLocationMapPresentation = basePresentation,
+  revision = 4
 ): WorldLocationSnapshot {
   return {
-    revision: 4,
+    revision,
     locations: [
       {
         id: locationId,
@@ -41,49 +42,49 @@ function snapshot(
   }
 }
 
-afterEach(() => {
-  vi.useRealTimers()
-})
+function capabilities(values: Partial<HexCapabilities['locations']> = {}) {
+  return {
+    read: vi.fn(),
+    updateMapPresentation: vi.fn(),
+    onChanged: vi.fn().mockReturnValue(() => undefined),
+    ...values
+  } as unknown as HexCapabilities['locations']
+}
 
-describe('location presentation controller', () => {
+afterEach(() => vi.useRealTimers())
+
+describe('world location projection controller', () => {
   it('updates optimistically and coalesces rapid slider changes', async () => {
     vi.useFakeTimers()
-    const setLocations = vi.fn()
     const updateMapPresentation = vi.fn().mockResolvedValue({
       ...basePresentation,
       revision: 1,
       symbolSize: 60
     })
-    const capabilities = {
-      updateMapPresentation,
-      read: vi.fn()
-    } as unknown as HexCapabilities['locations']
     const { result } = renderHook(() =>
-      useLocationPresentationController({
-        locations: snapshot(),
-        setLocations,
-        capabilities,
+      useWorldLocationProjectionController({
+        capabilities: capabilities({ updateMapPresentation }),
         onError: vi.fn()
       })
     )
+    act(() => result.current.replace(snapshot()))
 
     act(() => {
-      result.current.update(locationId, {
+      result.current.updatePresentation(locationId, {
         ...basePresentation,
         symbolSize: 52
       })
-      result.current.update(locationId, {
+      result.current.updatePresentation(locationId, {
         ...basePresentation,
         symbolSize: 60
       })
     })
-    const optimistic = setLocations.mock.lastCall?.[0] as WorldLocationSnapshot
-    expect(optimistic.locations[0]?.mapPresentation.symbolSize).toBe(60)
+    expect(
+      result.current.snapshot?.locations[0]?.mapPresentation.symbolSize
+    ).toBe(60)
     expect(updateMapPresentation).not.toHaveBeenCalled()
 
-    await act(async () => {
-      await vi.advanceTimersByTimeAsync(180)
-    })
+    await act(async () => vi.advanceTimersByTimeAsync(180))
     expect(updateMapPresentation).toHaveBeenCalledOnce()
     expect(updateMapPresentation).toHaveBeenCalledWith(
       locationId,
@@ -92,7 +93,7 @@ describe('location presentation controller', () => {
     )
   })
 
-  it('flushes on interaction end and restores the visible server state on conflict', async () => {
+  it('restores server truth on conflict and ignores stale catalog snapshots', async () => {
     vi.useFakeTimers()
     const remote = snapshot({
       ...basePresentation,
@@ -100,29 +101,24 @@ describe('location presentation controller', () => {
       symbolSize: 32
     })
     const stale = new CapabilityError('stale', true)
-    const setLocations = vi.fn()
-    const onError = vi.fn()
-    const updateMapPresentation = vi.fn().mockRejectedValue(stale)
     const read = vi.fn().mockResolvedValue(remote)
-    const capabilities = {
-      updateMapPresentation,
-      read
-    } as unknown as HexCapabilities['locations']
+    const onError = vi.fn()
     const { result } = renderHook(() =>
-      useLocationPresentationController({
-        locations: snapshot(),
-        setLocations,
-        capabilities,
+      useWorldLocationProjectionController({
+        capabilities: capabilities({
+          read,
+          updateMapPresentation: vi.fn().mockRejectedValue(stale)
+        }),
         onError
       })
     )
-
+    act(() => result.current.replace(snapshot()))
     act(() => {
-      result.current.update(locationId, {
+      result.current.updatePresentation(locationId, {
         ...basePresentation,
         symbolSize: 70
       })
-      result.current.flush(locationId)
+      result.current.flushPresentation(locationId)
     })
     await act(async () => {
       await Promise.resolve()
@@ -130,9 +126,40 @@ describe('location presentation controller', () => {
       await Promise.resolve()
     })
 
-    expect(updateMapPresentation).toHaveBeenCalledOnce()
     expect(read).toHaveBeenCalledOnce()
-    expect(setLocations).toHaveBeenLastCalledWith(remote)
+    expect(result.current.snapshot).toEqual(remote)
     expect(onError).toHaveBeenCalledWith(stale)
+    act(() => result.current.mergeExternal(snapshot(basePresentation, 3)))
+    expect(result.current.snapshot).toEqual(remote)
+  })
+
+  it('applies exact create and symbol results through owned actions', () => {
+    const created = {
+      ...snapshot().locations[0]!,
+      id: '01900000-0000-7000-8000-000000000011',
+      displayName: 'Neu'
+    }
+    const { result } = renderHook(() =>
+      useWorldLocationProjectionController({
+        capabilities: capabilities(),
+        onError: vi.fn()
+      })
+    )
+    act(() => result.current.replace(snapshot()))
+    act(() =>
+      result.current.applyCreated({
+        snapshot: {
+          revision: 5,
+          locations: [...snapshot().locations, created]
+        },
+        createdLocation: created
+      })
+    )
+    act(() => result.current.applySymbolAssignment(created.id, 'settlement', 2))
+    expect(
+      result.current.snapshot?.locations.find(
+        (entry) => entry.id === created.id
+      )?.mapPresentation
+    ).toMatchObject({ symbolId: 'settlement', revision: 2 })
   })
 })

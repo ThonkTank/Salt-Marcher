@@ -130,6 +130,10 @@ tables. Factions own notes, disposition, an optional primary encounter table,
 and optional finite creature inventory caps. These sources constrain both the
 visible monster catalog and Scene-group generation. NPC membership and durable
 combat-loss workflows remain deferred.
+Catalog and Hex compose the same complete domain-owned World Location editor.
+Its creation command returns the exact created location together with the next
+catalog snapshot, while each consumer retains ownership of its surrounding
+workflow.
 
 ## References
 

@@ -1,10 +1,9 @@
 import { browser, expect } from '@wdio/globals'
-import { AxeBuilder } from '@axe-core/webdriverio'
 import type { Browser as WdioBrowser } from 'webdriverio'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
-import pixelmatch from 'pixelmatch'
-import { PNG } from 'pngjs'
+import {
+  expectAccessibleInBothThemes,
+  expectElementGolden
+} from './support/e2e-assertions.js'
 
 describe('dialog architecture', () => {
   it('stacks, guards and responsively lays out direct and nested table managers', async () => {
@@ -53,7 +52,9 @@ describe('dialog architecture', () => {
 
     await (await client.$('button=Fraktionen')).click()
     await clickVisibleCatalogCreate(client)
-    const faction = await client.$('form[aria-label="Fraktion erstellen"]')
+    const faction = await client.$(
+      '[role="dialog"][aria-label="Fraktion erstellen"]'
+    )
     await (
       await faction.$('input[aria-label="Fraktionsname"]')
     ).setValue('Hafenwache')
@@ -214,66 +215,4 @@ async function modalState(client: WdioBrowser) {
       topModal: top?.getAttribute('role') ?? ''
     }
   })
-}
-
-async function expectAccessibleInBothThemes(client: WdioBrowser) {
-  await expectAccessible(client)
-  await toggleTheme(client)
-  await expectAccessible(client)
-  await toggleTheme(client)
-}
-
-async function toggleTheme(client: WdioBrowser) {
-  await client.execute(() => {
-    document.querySelector<HTMLButtonElement>('.theme-toggle')?.click()
-  })
-}
-
-async function expectAccessible(client: WdioBrowser) {
-  const results = await new AxeBuilder({ client }).setLegacyMode().analyze()
-  expect(results.violations).toEqual([])
-}
-
-async function expectElementGolden(
-  client: WdioBrowser,
-  name: string,
-  selector: string
-) {
-  if (process.platform !== 'linux') return
-  await client.execute(() => {
-    const style = document.createElement('style')
-    style.textContent =
-      '*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}'
-    document.head.append(style)
-  })
-  const directory = join(process.cwd(), 'tests', 'e2e', 'goldens', 'linux')
-  const artifacts = join(process.cwd(), '.tmp', 'visual-diffs')
-  mkdirSync(directory, { recursive: true })
-  mkdirSync(artifacts, { recursive: true })
-  const actualPath = join(artifacts, `${name}.png`)
-  const baselinePath = join(directory, `${name}.png`)
-  const bytes = await (await client.$(selector)).saveScreenshot(actualPath)
-  if (process.env['UPDATE_VISUAL_GOLDENS'] === '1') {
-    writeFileSync(baselinePath, bytes)
-    return
-  }
-  if (!existsSync(baselinePath))
-    throw new Error(`Missing golden ${baselinePath}`)
-  const expected = PNG.sync.read(readFileSync(baselinePath))
-  const actual = PNG.sync.read(bytes)
-  expect({ width: actual.width, height: actual.height }).toEqual({
-    width: expected.width,
-    height: expected.height
-  })
-  const diff = new PNG({ width: actual.width, height: actual.height })
-  const changed = pixelmatch(
-    expected.data,
-    actual.data,
-    diff.data,
-    actual.width,
-    actual.height,
-    { threshold: 0.2 }
-  )
-  writeFileSync(join(artifacts, `${name}.diff.png`), PNG.sync.write(diff))
-  expect(changed / (actual.width * actual.height)).toBeLessThanOrEqual(0.03)
 }

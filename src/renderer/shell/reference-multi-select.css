@@ -1,0 +1,20 @@
+.reference-multi-select {
+  position: relative;
+  display: grid;
+}
+
+.reference-multi-select > span {
+  position: absolute;
+  z-index: 1;
+  top: 0.35rem;
+  left: 0.5rem;
+  pointer-events: none;
+  font-size: 0.72rem;
+}
+
+.reference-multi-select select {
+  width: 100%;
+  min-width: 0;
+  min-height: 5.5rem;
+  padding: 1.55rem 0.35rem 0.35rem;
+}

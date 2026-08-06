@@ -416,13 +416,24 @@ const creatureHandlers = {
 const worldPlannerHandlers = {
   'locations.read': () => locations.read(),
   'locations.create': (input) =>
-    mutateReferences(() =>
-      locations.create(input.location, input.expectedRevision)
-    ),
+    mutateReferences(() => {
+      const result = locations.createResult(
+        input.location,
+        input.expectedRevision
+      )
+      publishLocationChange([result.createdLocation.id], 'catalog')
+      return result
+    }),
   'locations.update': (input) =>
-    mutateReferences(() =>
-      locations.update(input.id, input.location, input.expectedRevision)
-    ),
+    mutateReferences(() => {
+      const result = locations.update(
+        input.id,
+        input.location,
+        input.expectedRevision
+      )
+      publishLocationChange([input.id], 'catalog')
+      return result
+    }),
   'locations.updateMapPresentation': (input) => {
     const result = locations.updateMapPresentation(
       input.id,
@@ -442,6 +453,7 @@ const worldPlannerHandlers = {
           [result.notice.map.id],
           [result.notice.changedChunk]
         )
+      publishLocationChange([input.id], 'catalog')
       return result.snapshot
     }),
   'locationSymbols.create': (input) => {

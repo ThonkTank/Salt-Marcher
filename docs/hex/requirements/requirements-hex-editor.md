@@ -65,6 +65,17 @@ locations without inventing a second place or map source of truth.
 - `Katalog → Orte → Platzieren` MUST open a map chooser and Hex placement view
 - the Hex editor MUST also provide a location-placement tool that selects one
   existing World Planner location and confirms its target authored tile
+- the Hex editor location tool MUST let the user create a World Planner
+  location through the complete shared location editor; the created location
+  MUST become the active selection and MUST be placed immediately when the
+  current selection is an authored, unoccupied tile
+- creating a location MUST NOT implicitly author a tile, replace an occupied
+  tile, or create a Hex map; without an eligible tile the new location remains
+  selected for the next explicit placement
+- location creation and Hex placement MUST remain explicit sequential commands;
+  when creation succeeds but placement fails, the location MUST remain selected
+  and the UI MUST identify the partial success instead of reporting creation as
+  failed
 - one World Planner location MUST be placed globally at most once and one Hex
   MUST carry at most one World Planner location
 - moving a placement MUST retain the World Planner location identity
@@ -140,6 +151,8 @@ map truth.
   `1..10` (mathematical radius `0..9`) while the camera stays in place.
 - The user can place, move, reveal, and remove an existing World Planner
   location from its Catalog detail or directly in the Hex editor.
+- The user can create a complete World Planner location from the Hex editor and
+  see it selected and placed on the currently selected free authored tile.
 - The user can change a placed location's title, symbol, symbol size, curved
   label, and label position without resetting the map camera.
 - The user can search custom symbols page by page, import a strict one-path SVG,

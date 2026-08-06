@@ -79,6 +79,7 @@ import {
 } from '../../shared/contracts/settings.js'
 import {
   createWorldLocationInputSchema,
+  createWorldLocationResultSchema,
   deleteWorldLocationInputSchema,
   updateWorldLocationMapPresentationInputSchema,
   updateWorldLocationInputSchema,
@@ -389,7 +390,7 @@ const api: SaltMarcherApi = {
         await invoke(
           'locations:create',
           createWorldLocationInputSchema.parse({ location, expectedRevision }),
-          worldLocationSnapshotSchema
+          createWorldLocationResultSchema
         )
       ),
     update: async (id, location, expectedRevision) =>

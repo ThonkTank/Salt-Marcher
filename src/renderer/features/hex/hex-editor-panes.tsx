@@ -245,6 +245,8 @@ export function HexStatePane(props: {
   onBrushLevelChange: (level: number) => void
   onTerrainChange: (terrainId: HexTerrainId) => void
   onLocationChange: (locationId: string) => void
+  onCreateLocation: () => void
+  locationDialogOpen: boolean
   onPresentationChange: (
     locationId: string,
     presentation: WorldLocationMapPresentation
@@ -431,6 +433,15 @@ function LocationPanel(props: Parameters<typeof HexStatePane>[0]) {
   return (
     <div className="hex-panel-content hex-location-panel">
       <h2>{message('ui.ort')}</h2>
+      <button
+        className="hex-create-location"
+        aria-haspopup="dialog"
+        aria-expanded={props.locationDialogOpen}
+        disabled={props.locationDialogOpen}
+        onClick={props.onCreateLocation}
+      >
+        {message('catalog.createLocation')}
+      </button>
       <label>
         {message('hex.editor.catalogSearch')}
         <input

@@ -14,7 +14,11 @@ export function useLocationSymbolController(props: {
   setPage: (page: LocationSymbolPage) => void
   locationId: string
   locationsRef: RefObject<WorldLocationSnapshot | null>
-  setLocations: (snapshot: WorldLocationSnapshot) => void
+  applySymbolAssignment: (
+    locationId: string,
+    symbolId: string,
+    revision: number
+  ) => void
   onError: (cause: unknown) => void
 }) {
   const { locationSymbols } = props.capabilities
@@ -97,23 +101,11 @@ export function useLocationSymbolController(props: {
     )
     if (created) {
       setSelectedCustomSymbol(created)
-      const snapshot = props.locationsRef.current
-      if (snapshot)
-        props.setLocations({
-          ...snapshot,
-          locations: snapshot.locations.map((entry) =>
-            entry.id === location.id
-              ? {
-                  ...entry,
-                  mapPresentation: {
-                    ...entry.mapPresentation,
-                    revision: result.presentationRevision,
-                    symbolId: created.id
-                  }
-                }
-              : entry
-          )
-        })
+      props.applySymbolAssignment(
+        location.id,
+        created.id,
+        result.presentationRevision
+      )
       const offset = Math.floor(created.position / 24) * 24
       await load('', offset)
     } else await load('', 0)

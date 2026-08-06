@@ -7,7 +7,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   DiscardChangesDialog,
   ModalCloseButton,
-  ModalDialog
+  ModalDialog,
+  ModalForm
 } from '../../src/renderer/shell/modal-dialog.js'
 import { ModalLayerProvider } from '../../src/renderer/shell/modal-layer.js'
 
@@ -172,5 +173,32 @@ describe('ModalDialog', () => {
     fireEvent.keyDown(document, { key: 'Escape' })
     fireEvent.click(close)
     expect(closed).not.toHaveBeenCalled()
+  })
+
+  it('composes form semantics inside the stable dialog element', () => {
+    const submit = vi.fn()
+    render(
+      <ModalLayerProvider>
+        <ModalDialog
+          className="form-dialog"
+          ariaLabel="Formulardialog"
+          onClose={vi.fn()}
+        >
+          <ModalForm
+            onSubmit={(event) => {
+              event.preventDefault()
+              submit()
+            }}
+          >
+            <button>Speichern</button>
+          </ModalForm>
+        </ModalDialog>
+      </ModalLayerProvider>
+    )
+    const dialog = screen.getByRole('dialog', { name: 'Formulardialog' })
+    expect(dialog.tagName).toBe('SECTION')
+    expect(dialog.querySelector('form')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Speichern' }))
+    expect(submit).toHaveBeenCalledOnce()
   })
 })

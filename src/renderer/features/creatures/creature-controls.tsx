@@ -6,6 +6,7 @@ import type {
 } from '../../../shared/contracts/encounter.js'
 import { emptyQuery } from './creature-state.js'
 import './creatures.css'
+import { ReferenceMultiSelect } from '../../shell/reference-multi-select.js'
 
 export function CreatureFilters(props: {
   query: CreatureCatalogQuery
@@ -383,41 +384,6 @@ function MultiSelect(props: {
       >
         {props.options.map((option) => (
           <option key={option}>{option}</option>
-        ))}
-      </select>
-    </label>
-  )
-}
-
-export function ReferenceMultiSelect(props: {
-  label: string
-  options: readonly { id: string; label: string }[]
-  selected: readonly string[]
-  changed: (values: string[]) => void
-}) {
-  return (
-    <label className="creatures-multi-filter">
-      <span>
-        {props.label}
-        {props.selected.length ? ` (${props.selected.length})` : ''}
-      </span>
-      <select
-        multiple
-        aria-label={props.label}
-        value={[...props.selected]}
-        onChange={(event) =>
-          props.changed(
-            Array.from(
-              event.currentTarget.selectedOptions,
-              (option) => option.value
-            )
-          )
-        }
-      >
-        {props.options.map((option) => (
-          <option key={option.id} value={option.id}>
-            {option.label}
-          </option>
         ))}
       </select>
     </label>

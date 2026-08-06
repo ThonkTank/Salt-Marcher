@@ -9,6 +9,7 @@ export const messagesDe = {
   'workspace.reloadHint':
     'Versuche den Arbeitsbereich erneut zu öffnen oder lade die Anwendung neu.',
   'action.retryWorkspace': 'Arbeitsbereich erneut öffnen',
+  'action.retry': 'Erneut versuchen',
   'action.reloadApplication': 'Anwendung neu laden',
   'core.unavailable': 'Der lokale Programmkern ist nicht erreichbar.',
   'core.recovering': 'Der lokale Programmkern wird wiederhergestellt …',
@@ -222,6 +223,10 @@ export const messagesDe = {
     'Orte können nur auf angelegten Hexfeldern platziert werden.',
   'hex.editor.locationNotPlaced':
     'Dieser Ort ist auf der Karte nicht platziert.',
+  'hex.editor.locationCreatedPlacementFailed':
+    'Ort wurde erstellt, konnte aber nicht platziert werden: {detail}',
+  'hex.editor.locationCatalogUnavailable':
+    'Der Ortskatalog ist noch nicht verfügbar.',
   'hex.editor.staleMutation':
     'Die Kartenänderung kann wegen neuerer Änderungen nicht wiederhergestellt werden.',
   'hex.editor.deletedLocationSkipped':
@@ -528,6 +533,9 @@ export const messagesDe = {
   'ui.ortsname': 'Ortsname',
   'ui.ortstyp': 'Ortstyp',
   'ui.ortsregion': 'Ortsregion',
+  'ui.region': 'Region',
+  'ui.referenzen.werden.geladen': 'Referenzen werden geladen …',
+  'ui.speichern.laeuft': 'Speichern läuft bereits.',
   'ui.ortsnotizen': 'Ortsnotizen',
   'ui.party': 'Party',
   'ui.party.2': 'PARTY',

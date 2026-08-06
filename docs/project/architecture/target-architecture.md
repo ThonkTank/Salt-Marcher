@@ -94,6 +94,10 @@ Session, Catalog and the common Workspace graph do not eagerly include Pixi or
 its renderer backends. The Hex editor composes independent catalog, canvas and
 state panes around its reducer controller. Pixi-specific drawing stays in the
 adapter, while camera math and pointer gesture state live in Pixi-free modules.
+One Hex-owned World Location projection controller is the sole owner of its
+location snapshot, exact invalidation subscription, optimistic presentation
+drafts, and conflict recovery. Symbol and creation workflows submit typed
+actions to that owner instead of replacing catalog snapshots themselves.
 The bundle gate verifies this static dependency graph, a 900 KiB Workspace
 ceiling and a 2.75 MiB total normal-renderer ceiling.
 
@@ -104,6 +108,10 @@ their providers. Narrow renderer-local capability ports make these rules
 testable without widening IPC. The creature-collection manager owns its header,
 named grid areas, catalog pane, draft pane, footer, and divider; consumers may
 choose only a fixed divider or the manager's accessible resizable model.
+The domain-owned World Location editor is shared by Catalog and Hex through a
+narrow creation port. Location creation returns both the next immutable
+snapshot and the exact created entity; consumers never infer command results by
+diffing aggregate IDs.
 
 All blocking dialogs render through the shell-owned modal layer. The layer
 portals dialogs outside the application root, maintains a single ordered modal

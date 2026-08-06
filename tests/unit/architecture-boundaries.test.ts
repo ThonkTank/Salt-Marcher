@@ -175,7 +175,7 @@ describe('architecture boundaries', () => {
     expect(editor).toContain('<HexStatePane')
     expect(editor).toContain('useHexMapController')
     expect(editor).toContain('useHexCommandController')
-    expect(editor).toContain('useLocationPresentationController')
+    expect(editor).toContain('useWorldLocationProjectionController')
     expect(editor).not.toMatch(
       /\bapi\.(?:hex|hexTravel|session|locations|locationSymbols|runtime)/
     )
@@ -243,6 +243,7 @@ describe('architecture boundaries', () => {
         expect(adapter).toContain(
           'pickLocationSymbolFile: api.runtime.pickLocationSymbolFile'
         )
+        expect(adapter).not.toMatch(/encounterTables|factions/)
       } else expect(adapter).toContain('return api')
     }
   })
@@ -286,6 +287,16 @@ describe('architecture boundaries', () => {
     )
     expect(source('src/renderer/features/session/session.css')).not.toContain(
       '.modal-backdrop'
+    )
+    for (const file of codeFiles('src/renderer/features/worldplanner'))
+      expect(source(file), `${file} imports a consumer workspace`).not.toMatch(
+        /from ['"]\.\.\/(?:catalog|hex)\//
+      )
+    const modal = source('src/renderer/shell/modal-dialog.tsx')
+    expect(modal).toContain('export function ModalForm')
+    expect(modal).not.toContain('form?: boolean')
+    expect(source('src/renderer/shell/modal-dialog.css')).not.toContain(
+      '.modal-form-content'
     )
   })
 

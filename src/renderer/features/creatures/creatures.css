@@ -24,32 +24,6 @@
   overflow: auto;
 }
 
-.creatures-multi-filter {
-  position: relative;
-  display: grid;
-}
-
-.creatures-multi-filter > span {
-  position: absolute;
-  z-index: 1;
-  top: 0.35rem;
-  left: 0.5rem;
-  pointer-events: none;
-  font-size: 0.72rem;
-}
-
-.creatures-multi-filter select {
-  width: 8rem;
-  height: 1.85rem;
-  padding-top: 1.55rem;
-}
-
-.creatures-multi-filter select:focus,
-.creatures-multi-filter select:active {
-  height: 9rem;
-  padding-top: 1.8rem;
-}
-
 .creatures-filter-chips {
   display: flex;
   min-height: 2.25rem;
