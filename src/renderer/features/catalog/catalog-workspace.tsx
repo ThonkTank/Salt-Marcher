@@ -38,6 +38,16 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
     () => createEncounterTableCatalogPort(api),
     [api]
   )
+  const onBiomesChanged = useMemo(
+    () => (listener: Parameters<typeof api.biomes.onChanged>[0]) =>
+      api.biomes.onChanged(listener),
+    [api]
+  )
+  const onEncounterTablesChanged = useMemo(
+    () => (listener: Parameters<typeof api.encounterTables.onChanged>[0]) =>
+      api.encounterTables.onChanged(listener),
+    [api]
+  )
   const [section, setSection] = useState<
     'monsters' | 'locations' | 'factions' | 'encounterTables'
   >('monsters')
@@ -45,7 +55,10 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
     section === 'monsters',
     props.onError,
     props.inspect,
-    api.creatures
+    api.creatures,
+    api.biomes,
+    onBiomesChanged,
+    onEncounterTablesChanged
   )
   const locationController = useLocationCatalogController(
     section === 'locations',

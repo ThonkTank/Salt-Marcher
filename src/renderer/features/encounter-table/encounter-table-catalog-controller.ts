@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import type { SaltMarcherApi } from '../../../shared/contracts/capability-api.js'
 import type {
   EncounterTable,
+  EncounterTableChangeNotice,
   EncounterTableDraft,
+  EncounterTableScope,
   EncounterTableSnapshot
 } from '../../../shared/contracts/encounter-source.js'
 import {
@@ -14,15 +16,27 @@ import type { EncounterTableSaveResult } from './encounter-table-manager.js'
 export type EncounterTableCatalogPort = {
   read: () => Promise<EncounterTableSnapshot>
   create: (
+    commandId: string,
     draft: EncounterTableDraft,
-    revision: number
+    revision: number,
+    scope?: EncounterTableScope
   ) => Promise<EncounterTableSnapshot>
   update: (
+    commandId: string,
     id: string,
     draft: EncounterTableDraft,
-    revision: number
+    revision: number,
+    scope?: EncounterTableScope
   ) => Promise<EncounterTableSnapshot>
-  remove: (id: string, revision: number) => Promise<EncounterTableSnapshot>
+  remove: (
+    commandId: string,
+    id: string,
+    revision: number,
+    scope?: EncounterTableScope
+  ) => Promise<EncounterTableSnapshot>
+  onChanged: (
+    listener: (notice: EncounterTableChangeNotice) => void
+  ) => () => void
 }
 
 export function createEncounterTableCatalogPort(
@@ -30,10 +44,13 @@ export function createEncounterTableCatalogPort(
 ): EncounterTableCatalogPort {
   return {
     read: () => api.encounterTables.read(),
-    create: (draft, revision) => api.encounterTables.create(draft, revision),
-    update: (id, draft, revision) =>
-      api.encounterTables.update(id, draft, revision),
-    remove: (id, revision) => api.encounterTables.delete(id, revision)
+    create: (commandId, draft, revision, scope) =>
+      api.encounterTables.create(commandId, draft, revision, scope),
+    update: (commandId, id, draft, revision, scope) =>
+      api.encounterTables.update(commandId, id, draft, revision, scope),
+    remove: (commandId, id, revision, scope) =>
+      api.encounterTables.delete(commandId, id, revision, scope),
+    onChanged: (listener) => api.encounterTables.onChanged(listener)
   }
 }
 
@@ -44,6 +61,8 @@ export function useEncounterTableCatalogController(
 ) {
   const [snapshot, setSnapshot] = useState<EncounterTableSnapshot>({
     revision: 0,
+    installationRevision: 0,
+    campaignRevision: 0,
     tables: []
   })
   const [search, setSearch] = useState('')
@@ -57,12 +76,24 @@ export function useEncounterTableCatalogController(
       .read()
       .then((next) => {
         if (!current) return
-        setSnapshot((known) => (next.revision >= known.revision ? next : known))
+        setSnapshot((known) => (isAtLeastAsNew(next, known) ? next : known))
       })
       .catch(reportCapabilityError(onError))
     return () => {
       current = false
     }
+  }, [active, onError, port])
+
+  useEffect(() => {
+    if (!active) return
+    return port.onChanged(() => {
+      void port
+        .read()
+        .then((next) =>
+          setSnapshot((known) => (isAtLeastAsNew(next, known) ? next : known))
+        )
+        .catch(reportCapabilityError(onError))
+    })
   }, [active, onError, port])
 
   const visible = snapshot.tables.filter((table) =>
@@ -73,12 +104,19 @@ export function useEncounterTableCatalogController(
 
   async function save(
     table: EncounterTable | null,
-    draft: EncounterTableDraft
+    draft: EncounterTableDraft,
+    requestedScope: EncounterTableScope = 'campaign'
   ): Promise<EncounterTableSaveResult> {
+    const scope = table?.scope ?? requestedScope
+    const revision =
+      scope === 'installation'
+        ? snapshot.installationRevision
+        : snapshot.campaignRevision
     const previousIds = new Set(snapshot.tables.map((entry) => entry.id))
+    const commandId = crypto.randomUUID()
     const next = table
-      ? await port.update(table.id, draft, snapshot.revision)
-      : await port.create(draft, snapshot.revision)
+      ? await port.update(commandId, table.id, draft, revision, scope)
+      : await port.create(commandId, draft, revision, scope)
     const savedTableId =
       table?.id ??
       next.tables.find((entry) => !previousIds.has(entry.id))?.id ??
@@ -89,7 +127,15 @@ export function useEncounterTableCatalogController(
 
   async function remove(id: string) {
     try {
-      setSnapshot(await port.remove(id, snapshot.revision))
+      const table = snapshot.tables.find((entry) => entry.id === id)
+      if (!table || table.protected) return
+      const revision =
+        table.scope === 'installation'
+          ? snapshot.installationRevision
+          : snapshot.campaignRevision
+      setSnapshot(
+        await port.remove(crypto.randomUUID(), id, revision, table.scope)
+      )
       setDeleteId(null)
     } catch (cause) {
       onError(capabilityErrorText(cause))
@@ -114,3 +160,13 @@ export function useEncounterTableCatalogController(
 export type EncounterTableCatalogController = ReturnType<
   typeof useEncounterTableCatalogController
 >
+
+function isAtLeastAsNew(
+  candidate: EncounterTableSnapshot,
+  known: EncounterTableSnapshot
+): boolean {
+  return (
+    candidate.installationRevision >= known.installationRevision &&
+    candidate.campaignRevision >= known.campaignRevision
+  )
+}

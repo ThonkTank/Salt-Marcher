@@ -95,6 +95,7 @@ describe('architecture boundaries', () => {
   it('keeps SQL table ownership inside the owning aggregate', () => {
     const owners: readonly [RegExp, string][] = [
       [/^hex_/, `${normalize(resolve('src/core/hex'))}${sep}`],
+      [/^biome_/, `${normalize(resolve('src/core/biomes'))}${sep}`],
       [
         /^(party_|player_characters$)/,
         `${normalize(resolve('src/core/party'))}${sep}`
@@ -282,6 +283,17 @@ describe('architecture boundaries', () => {
       expect(source(file), `${file} imports a consumer feature`).not.toMatch(
         /from ['"]\.\.\/(?:catalog|session|creature-collection)\//
       )
+    const creatureControls = source(
+      'src/renderer/features/creatures/creature-controls.tsx'
+    )
+    expect(creatureControls).toContain("shell/searchable-select.js'")
+    expect(creatureControls).not.toContain('shell/reference-multi-select')
+    expect(
+      source('src/renderer/features/hex/hex-editor-panes.tsx')
+    ).not.toContain('shell/reference-multi-select')
+    expect(
+      source('src/renderer/features/catalog/catalog-controls.tsx')
+    ).not.toContain('ReferenceMultiSelect')
     expect(source('src/renderer/shell/modal-dialog.tsx')).toContain(
       "import './modal-dialog.css'"
     )

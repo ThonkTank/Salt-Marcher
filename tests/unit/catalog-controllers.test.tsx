@@ -49,6 +49,8 @@ const faction = {
 } as WorldFaction
 const table = {
   id: '01900000-0000-7000-8000-000000000012',
+  scope: 'campaign',
+  protected: false,
   displayName: 'Patrouille',
   description: '',
   position: 0,
@@ -85,7 +87,12 @@ function ports() {
       revision: 1,
       locations: [location]
     }),
-    readTables: vi.fn().mockResolvedValue({ revision: 1, tables: [table] }),
+    readTables: vi.fn().mockResolvedValue({
+      revision: 1,
+      installationRevision: 0,
+      campaignRevision: 1,
+      tables: [table]
+    }),
     readFactions: vi
       .fn()
       .mockResolvedValue({ revision: 1, factions: [faction] }),
@@ -103,13 +110,15 @@ function ports() {
     updateFaction: vi.fn(),
     deleteFaction: vi.fn(),
     createTable: vi.fn(),
-    updateTable: vi.fn()
+    updateTable: vi.fn(),
+    onTablesChanged: vi.fn().mockReturnValue(() => undefined)
   } as FactionCatalogPort
   const encounterTables = {
     read: vi.fn().mockResolvedValue({ revision: 1, tables: [table] }),
     create: vi.fn(),
     update: vi.fn(),
-    remove: vi.fn()
+    remove: vi.fn(),
+    onChanged: vi.fn().mockReturnValue(() => undefined)
   } as EncounterTableCatalogPort
   return {
     creature,

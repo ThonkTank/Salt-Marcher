@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+export const encounterTableScopeSchema = z.enum(['installation', 'campaign'])
+
 export const encounterTableEntrySchema = z
   .object({
     creatureId: z.string().min(1),
@@ -11,6 +13,8 @@ export const encounterTableEntrySchema = z
 export const encounterTableSchema = z
   .object({
     id: z.uuid(),
+    scope: encounterTableScopeSchema.default('campaign'),
+    protected: z.boolean().default(false),
     displayName: z.string().min(1).max(100),
     description: z.string().max(20_000),
     position: z.number().int().nonnegative(),
@@ -43,6 +47,8 @@ export const encounterTableDraftSchema = z
 export const encounterTableSnapshotSchema = z
   .object({
     revision: z.number().int().nonnegative(),
+    installationRevision: z.number().int().nonnegative().default(0),
+    campaignRevision: z.number().int().nonnegative().default(0),
     tables: z.array(encounterTableSchema)
   })
   .strict()
@@ -94,15 +100,36 @@ const mutationBaseSchema = z
   .object({ expectedRevision: z.number().int().nonnegative() })
   .strict()
 
-export const createEncounterTableInputSchema = mutationBaseSchema
-  .extend({ table: encounterTableDraftSchema })
+const encounterTableMutationBaseSchema = mutationBaseSchema
+  .extend({ commandId: z.uuid() })
+  .strict()
+
+export const createEncounterTableInputSchema = encounterTableMutationBaseSchema
+  .extend({
+    scope: encounterTableScopeSchema.default('campaign'),
+    table: encounterTableDraftSchema
+  })
   .strict()
 export const updateEncounterTableInputSchema = createEncounterTableInputSchema
   .extend({ id: z.uuid() })
   .strict()
-export const deleteEncounterTableInputSchema = mutationBaseSchema
-  .extend({ id: z.uuid() })
+export const deleteEncounterTableInputSchema = encounterTableMutationBaseSchema
+  .extend({
+    id: z.uuid(),
+    scope: encounterTableScopeSchema.default('campaign')
+  })
   .strict()
+
+export const encounterTableChangeNoticeSchema = z
+  .object({
+    installationRevision: z.number().int().nonnegative(),
+    campaignRevision: z.number().int().nonnegative(),
+    changedTableIds: z.array(z.uuid()),
+    scope: encounterTableScopeSchema,
+    reason: z.enum(['created', 'updated', 'deleted'])
+  })
+  .strict()
+  .readonly()
 
 export const createWorldFactionInputSchema = mutationBaseSchema
   .extend({ faction: worldFactionDraftSchema })
@@ -115,11 +142,15 @@ export const deleteWorldFactionInputSchema = mutationBaseSchema
   .strict()
 
 export type EncounterTable = Readonly<z.infer<typeof encounterTableSchema>>
+export type EncounterTableScope = z.infer<typeof encounterTableScopeSchema>
 export type EncounterTableDraft = Readonly<
   z.infer<typeof encounterTableDraftSchema>
 >
 export type EncounterTableSnapshot = Readonly<
   z.infer<typeof encounterTableSnapshotSchema>
+>
+export type EncounterTableChangeNotice = Readonly<
+  z.infer<typeof encounterTableChangeNoticeSchema>
 >
 export type WorldFaction = Readonly<z.infer<typeof worldFactionSchema>>
 export type WorldFactionDraft = Readonly<

@@ -4,8 +4,8 @@ import type {
   HexHistoryState,
   HexMapCatalogSnapshot,
   HexMapView,
-  HexTerrainCatalog,
-  HexTerrainId
+  HexBiomeCatalog,
+  HexBiomeId
 } from '../../../shared/contracts/hex.js'
 import type {
   WorldLocationMapPresentation,
@@ -21,16 +21,20 @@ import { HexMapCanvas } from './hex-map-canvas.js'
 import type {
   EditorOverlay,
   EditorTool,
-  TerrainMode
+  BiomeMode
 } from './use-hex-editor-controller.js'
 import {
   allLocationSymbols,
   builtinLocationSymbols
 } from './location-symbols.js'
 import { ModalDialog } from '../../shell/modal-dialog.js'
+import { SearchableSelect } from '../../shell/searchable-select.js'
 import { HexSlider } from './hex-slider.js'
 import { HexScrollArea } from './hex-scroll-area.js'
 import { brushLevelToRadius } from './hex-brush.js'
+import type { BiomeCatalogCapabilities } from './biome-catalog-capabilities.js'
+import type { BiomeDefinition } from '../../../shared/contracts/biome.js'
+import { BiomePalette } from './biome-palette.js'
 
 export function HexCatalogPane(props: {
   catalog: HexMapCatalogSnapshot
@@ -115,10 +119,10 @@ export function HexCatalogPane(props: {
           {message('hex.editor.selectTool')}
         </ToolButton>
         <ToolButton
-          active={props.tool === 'terrain'}
-          onClick={() => props.onSelectTool('terrain')}
+          active={props.tool === 'biome'}
+          onClick={() => props.onSelectTool('biome')}
         >
-          {message('hex.editor.terrainTool')}
+          {message('hex.editor.biomeTool')}
         </ToolButton>
         <ToolButton
           active={props.tool === 'location'}
@@ -145,13 +149,13 @@ function ToolButton(props: {
 
 export function HexCanvasSurface(props: {
   map: HexMapView | null
-  terrains: HexTerrainCatalog
+  biomes: HexBiomeCatalog
   selected: AxialCoordinate | null
   overlays: readonly EditorOverlay[]
   tool: EditorTool
-  terrainMode: TerrainMode
+  biomeMode: BiomeMode
   brushLevel: number
-  terrainId: HexTerrainId
+  biomeId: HexBiomeId
   resetViewSignal: number
   onSelect: (coordinate: AxialCoordinate) => void
   onStroke: (path: readonly AxialCoordinate[]) => void
@@ -163,17 +167,16 @@ export function HexCanvasSurface(props: {
           entry.q === props.selected!.q && entry.r === props.selected!.r
       )
     : null
-  const terrain = tile
-    ? props.terrains.terrains.find((entry) => entry.id === tile.terrainId)
+  const biome = tile
+    ? props.biomes.biomes.find((entry) => entry.id === tile.biomeId)
     : null
   const toolStatus =
-    props.tool === 'terrain'
-      ? props.terrainMode === 'paint'
+    props.tool === 'biome'
+      ? props.biomeMode === 'paint'
         ? formatMessage('hex.editor.paintStatus', {
-            terrain:
-              props.terrains.terrains.find(
-                (entry) => entry.id === props.terrainId
-              )?.label ?? ''
+            biome:
+              props.biomes.biomes.find((entry) => entry.id === props.biomeId)
+                ?.label ?? ''
           })
         : message('hex.editor.eraseStatus')
       : props.tool === 'location'
@@ -188,14 +191,12 @@ export function HexCanvasSurface(props: {
         {props.map ? (
           <HexMapCanvas
             snapshot={props.map}
-            terrains={props.terrains}
+            biomes={props.biomes}
             selected={props.selected}
             overlays={props.overlays}
-            interaction={
-              props.tool === 'terrain' ? props.terrainMode : props.tool
-            }
+            interaction={props.tool === 'biome' ? props.biomeMode : props.tool}
             brushRadius={brushLevelToRadius(props.brushLevel)}
-            brushTerrainId={props.terrainId}
+            brushBiomeId={props.biomeId}
             resetViewSignal={props.resetViewSignal}
             onTileClick={props.onSelect}
             onStrokeComplete={props.onStroke}
@@ -216,7 +217,7 @@ export function HexCanvasSurface(props: {
             ? formatMessage('hex.editor.coordinateStatus', {
                 q: props.selected.q,
                 r: props.selected.r,
-                terrain: terrain?.label ?? message('hex.editor.emptyHex'),
+                biome: biome?.label ?? message('hex.editor.emptyHex'),
                 location: tile?.location
                   ? ` · ${tile.location.marker.title}`
                   : ''
@@ -230,20 +231,25 @@ export function HexCanvasSurface(props: {
 }
 
 export function HexStatePane(props: {
+  map?: HexMapView | null
   selected: AxialCoordinate | null
   tile: HexMapView['tiles'][number] | null
-  terrains: HexTerrainCatalog
+  biomes: HexBiomeCatalog
   locations: WorldLocationSnapshot
   symbols: LocationSymbolPage
   selectedCustomSymbol: LocationSymbol | null
   tool: EditorTool
-  terrainMode: TerrainMode
-  terrainId: HexTerrainId
+  biomeMode: BiomeMode
+  biomeId: HexBiomeId
   brushLevel: number
   locationId: string
-  onPaintMode: (mode: TerrainMode) => void
+  onPaintMode: (mode: BiomeMode) => void
   onBrushLevelChange: (level: number) => void
-  onTerrainChange: (terrainId: HexTerrainId) => void
+  onBiomeChange: (biomeId: HexBiomeId) => void
+  onBiomeSelected?: (biome: BiomeDefinition) => void
+  biomeCapabilities?: BiomeCatalogCapabilities
+  onReplaceBiomePlaceholder?: () => void
+  onBiomeError?: (message: string) => void
   onLocationChange: (locationId: string) => void
   onCreateLocation: () => void
   locationDialogOpen: boolean
@@ -266,7 +272,7 @@ export function HexStatePane(props: {
     <aside className="hex-editor-state">
       {props.tool === 'select' ? (
         <SelectionPanel {...props} />
-      ) : props.tool === 'terrain' ? (
+      ) : props.tool === 'biome' ? (
         <PaintPanel {...props} />
       ) : (
         <LocationPanel {...props} />
@@ -286,13 +292,13 @@ function PaintPanel(props: Parameters<typeof HexStatePane>[0]) {
         aria-label={message('hex.editor.brushMode')}
       >
         <ToolButton
-          active={props.terrainMode === 'paint'}
+          active={props.biomeMode === 'paint'}
           onClick={() => props.onPaintMode('paint')}
         >
           {message('hex.editor.paint')}
         </ToolButton>
         <ToolButton
-          active={props.terrainMode === 'erase'}
+          active={props.biomeMode === 'erase'}
           onClick={() => props.onPaintMode('erase')}
         >
           {message('hex.editor.erase')}
@@ -316,37 +322,50 @@ function PaintPanel(props: Parameters<typeof HexStatePane>[0]) {
         value={props.brushLevel}
         onChange={props.onBrushLevelChange}
       />
-      <h2>{message('ui.terrain')}</h2>
-      <div className="hex-terrain-grid">
-        {props.terrains.terrains.map((terrain) => (
-          <button
-            key={terrain.id}
-            aria-pressed={props.terrainId === terrain.id}
-            className="hex-terrain-tile"
-            style={{ background: terrain.color }}
-            onClick={() => props.onTerrainChange(terrain.id)}
-          >
-            <span>{terrain.label}</span>
-            <small>{terrain.passable ? `${terrain.travelCost}×` : '—'}</small>
-          </button>
-        ))}
+      <h2>{message('ui.biome')}</h2>
+      {props.biomeCapabilities ? (
+        <BiomePalette
+          capabilities={props.biomeCapabilities}
+          selectedId={props.biomeId}
+          onSelect={(biome) => {
+            props.onBiomeSelected?.(biome)
+            props.onBiomeChange(biome.id)
+            props.onPaintMode('paint')
+          }}
+          onError={props.onBiomeError ?? (() => undefined)}
+        />
+      ) : (
+        <div className="hex-biome-grid">
+          {props.biomes.biomes.map((biome) => (
+            <button
+              key={biome.id}
+              aria-pressed={props.biomeId === biome.id}
+              className="hex-biome-tile"
+              style={{ background: biome.color }}
+              onClick={() => props.onBiomeChange(biome.id)}
+            >
+              <span>{biome.label}</span>
+              <small>{biome.passable ? `${biome.travelCost}×` : '—'}</small>
+            </button>
+          ))}
+        </div>
+      )}
+      {props.onReplaceBiomePlaceholder && (
         <button
-          className="hex-terrain-new"
-          disabled
-          title={message('hex.editor.terrainCatalogDeferred')}
+          className="hex-biome-replace"
+          disabled={props.biomeId === 'to-be-replaced'}
+          onClick={props.onReplaceBiomePlaceholder}
         >
-          {message('hex.editor.newTerrain')}
+          {message('biome.replaceMap')}
         </button>
-      </div>
+      )}
     </div>
   )
 }
 
 function SelectionPanel(props: Parameters<typeof HexStatePane>[0]) {
-  const terrain = props.tile
-    ? props.terrains.terrains.find(
-        (entry) => entry.id === props.tile!.terrainId
-      )
+  const biome = props.tile
+    ? props.biomes.biomes.find((entry) => entry.id === props.tile!.biomeId)
     : null
   const location = props.tile?.location
     ? props.locations.locations.find(
@@ -370,15 +389,20 @@ function SelectionPanel(props: Parameters<typeof HexStatePane>[0]) {
           <strong>
             q {props.selected.q} · r {props.selected.r}
           </strong>
-          <div className="hex-terrain-fact">
-            <span style={{ background: terrain?.color }} />
-            <span>{terrain?.label}</span>
+          <div className="hex-biome-fact">
+            <span style={{ background: biome?.color }} />
+            <span>{biome?.label}</span>
             <small>
-              {terrain?.passable
-                ? `${terrain.travelCost}×`
+              {biome?.passable
+                ? `${biome.travelCost}×`
                 : message('hex.impassable')}
             </small>
           </div>
+          {props.tile.biomeId === 'to-be-replaced' && (
+            <p className="hex-biome-placeholder-warning" role="status">
+              {message('biome.deletedTileWarning')}
+            </p>
+          )}
           <p className="hex-muted">
             {location?.mapPresentation.titleOverride ??
               location?.displayName ??
@@ -392,7 +416,6 @@ function SelectionPanel(props: Parameters<typeof HexStatePane>[0]) {
 
 function LocationPanel(props: Parameters<typeof HexStatePane>[0]) {
   const searchSymbols = useEffectEvent(props.onSymbolSearch)
-  const [query, setQuery] = useState('')
   const [symbolQuery, setSymbolQuery] = useState('')
   const [addOpen, setAddOpen] = useState(false)
   const [newSymbolName, setNewSymbolName] = useState('')
@@ -401,11 +424,17 @@ function LocationPanel(props: Parameters<typeof HexStatePane>[0]) {
   const active = props.locations.locations.find(
     (entry) => entry.id === props.locationId
   )
-  const needle = query.trim().toLocaleLowerCase('de')
-  const hits = props.locations.locations.filter((location) =>
-    `${location.displayName} ${location.kind} ${location.region}`
-      .toLocaleLowerCase('de')
-      .includes(needle)
+  const locationOptions = useMemo(
+    () =>
+      props.locations.locations.map((location) => ({
+        id: location.id,
+        label: location.displayName,
+        searchText: `${location.kind} ${location.region}`,
+        description:
+          [location.kind, location.region].filter(Boolean).join(' · ') ||
+          message('hex.editor.locationFallback')
+      })),
+    [props.locations.locations]
   )
   const symbols = useMemo(
     () => allLocationSymbols(props.symbols.symbols),
@@ -442,38 +471,20 @@ function LocationPanel(props: Parameters<typeof HexStatePane>[0]) {
       >
         {message('catalog.createLocation')}
       </button>
-      <label>
-        {message('hex.editor.catalogSearch')}
-        <input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder={message('hex.editor.locationSearchPlaceholder')}
-        />
-      </label>
-      <HexScrollArea
-        className="hex-location-list"
-        role="listbox"
-        ariaLabel={message('hex.editor.catalogLocations')}
-      >
-        {hits.map((location) => (
-          <button
-            key={location.id}
-            role="option"
-            aria-selected={location.id === props.locationId}
-            onClick={() => props.onLocationChange(location.id)}
-          >
-            <span>{location.displayName}</span>
-            <small>
-              {location.kind ||
-                location.region ||
-                message('hex.editor.locationFallback')}
-            </small>
-          </button>
-        ))}
-      </HexScrollArea>
-      {hits.length === 0 && (
-        <p className="hex-muted">{message('hex.editor.noCatalogMatch')}</p>
-      )}
+      <SearchableSelect
+        mode="single"
+        className="hex-location-select"
+        label={message('hex.editor.catalogLocations')}
+        options={locationOptions}
+        value={props.locationId || null}
+        emptyText={message('hex.editor.locationSearchPlaceholder')}
+        searchPlaceholder={message('hex.editor.locationSearchPlaceholder')}
+        noResultsText={message('hex.editor.noCatalogMatch')}
+        popupMinWidth={240}
+        changed={(locationId) => {
+          if (locationId) props.onLocationChange(locationId)
+        }}
+      />
       <label>
         {message('hex.editor.mapTitle')}
         <input

@@ -63,6 +63,9 @@ function capabilityFixture() {
     runtime: { pickLocationSymbolFile: vi.fn() },
     locations: {},
     locationSymbols: {},
+    biomes: {
+      onChanged: vi.fn().mockReturnValue(() => undefined)
+    },
     hex: {
       catalog: vi.fn().mockImplementation(() =>
         Promise.resolve({
@@ -70,9 +73,9 @@ function capabilityFixture() {
           maps: [summary]
         })
       ),
-      terrainCatalog: vi.fn().mockResolvedValue({
-        version: 'saltmarcher-v1',
-        terrains: []
+      biomeCatalog: vi.fn().mockResolvedValue({
+        revision: 0,
+        biomes: []
       }),
       locateLocation: vi.fn().mockResolvedValue({
         mapId,
@@ -85,13 +88,14 @@ function capabilityFixture() {
           (_mapId: string, keys: readonly { q: number; r: number }[]) =>
             Promise.resolve({
               map: summary,
+              biomes: [],
               chunks: keys.some((key) => key.q === 0 && key.r === 0)
                 ? [
                     {
                       key: { q: 0, r: 0 },
                       revision: 1,
                       authoredTiles: [
-                        { q: 0, r: 0, terrainId: 'grassland' as const }
+                        { q: 0, r: 0, biomeId: 'grassland' as const }
                       ],
                       locations: [
                         {

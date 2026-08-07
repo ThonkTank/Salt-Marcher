@@ -19,7 +19,11 @@ import { PartyStore } from '../party/party-store.js'
 import { SceneStore } from '../scene/scene-store.js'
 import { WorldLocationStore } from '../worldplanner/location-store.js'
 import { HexMapStore, tileLabel } from './hex-map-store.js'
-import { terrainDefinition } from './terrain-catalog.js'
+import { biomeDefinition as defaultBiomeDefinition } from './biome-catalog.js'
+import type {
+  HexBiomeDefinition,
+  HexBiomeId
+} from '../../shared/contracts/hex.js'
 
 const hexDistanceMiles = 3
 const speedToMphDivisor = 10
@@ -50,7 +54,7 @@ function journeyHint(code: string): string {
     'map-edit-aborted': 'Reise wegen Kartenbearbeitung abgebrochen.',
     'party-changed': 'Reisegruppe geändert; Fortsetzung bestätigen.',
     'route-left-map': 'Die Route verlässt die angelegte Karte.',
-    'blocked-terrain': 'Das nächste Hex ist nicht mehr passierbar.',
+    'blocked-biome': 'Das nächste Hex ist nicht mehr passierbar.',
     'no-speed': 'Die Reisegruppe besitzt keine positive Bewegungsrate.'
   }
   return hints[code] ?? 'Reisezustand aktualisiert.'
@@ -118,7 +122,10 @@ export function travelGameSeconds(speedFeet: number, cost: number): number {
 export class HexTravelService {
   constructor(
     private readonly campaignDatabase: () => Database.Database,
-    private readonly now: () => number = Date.now
+    private readonly now: () => number = Date.now,
+    private readonly biomeDefinition: (
+      id: HexBiomeId
+    ) => HexBiomeDefinition = defaultBiomeDefinition
   ) {}
 
   read(sceneId?: string): HexTravelSnapshot {
@@ -184,7 +191,8 @@ export class HexTravelService {
         new HexMapStore(db, locations),
         new PartyStore(db),
         new SceneStore(db, () => locations.read().locations),
-        this.now
+        this.now,
+        this.biomeDefinition
       )
     )
   }
@@ -196,7 +204,10 @@ export class HexTravelStore {
     private readonly maps: HexMapStore,
     private readonly party: PartyStore,
     private readonly scenes: SceneStore,
-    private readonly now: () => number = Date.now
+    private readonly now: () => number = Date.now,
+    private readonly biomeDefinition: (
+      id: HexBiomeId
+    ) => HexBiomeDefinition = defaultBiomeDefinition
   ) {}
 
   read(requestedSceneId?: string): HexTravelSnapshot {
@@ -536,8 +547,8 @@ export class HexTravelStore {
       }
     let totalGameSeconds = 0
     for (const coordinate of path.slice(1)) {
-      const terrainId = this.maps.terrainAt(mapId, coordinate)
-      if (terrainId === null)
+      const biomeId = this.maps.biomeAt(mapId, coordinate)
+      if (biomeId === null)
         return {
           canStart: false,
           message: 'Die Route verlässt die angelegte Karte.',
@@ -545,8 +556,8 @@ export class HexTravelStore {
           totalGameSeconds: 0,
           ...speed
         }
-      const terrain = terrainDefinition(terrainId)
-      if (!terrain.passable)
+      const biome = this.biomeDefinition(biomeId)
+      if (!biome.passable)
         return {
           canStart: false,
           message: `${tileLabel(coordinate)} ist unpassierbar.`,
@@ -556,7 +567,7 @@ export class HexTravelStore {
         }
       totalGameSeconds += travelGameSeconds(
         speed.effectiveSpeedFeet,
-        terrain.travelCost
+        biome.travelCost
       )
     }
     return {
@@ -589,25 +600,25 @@ export class HexTravelStore {
     const speed = this.speed(journey.sceneId).effectiveSpeedFeet
     while (index < path.length - 1) {
       const next = path[index + 1]!
-      const terrainId = this.maps.terrainAt(journey.mapId, next)
-      const terrain = terrainId === null ? null : terrainDefinition(terrainId)
-      if (!terrain?.passable || speed <= 0) {
+      const biomeId = this.maps.biomeAt(journey.mapId, next)
+      const biome = biomeId === null ? null : this.biomeDefinition(biomeId)
+      if (!biome?.passable || speed <= 0) {
         this.db
           .prepare(
             `UPDATE hex_journey SET status = 'blocked', revision = revision + 1,
              segment_started_at = NULL, hint_code = ? WHERE scene_id = ?`
           )
           .run(
-            !terrain
+            !biome
               ? 'route-left-map'
-              : !terrain.passable
-                ? 'blocked-terrain'
+              : !biome.passable
+                ? 'blocked-biome'
                 : 'no-speed',
             journey.sceneId
           )
         return
       }
-      const gameSeconds = travelGameSeconds(speed, terrain.travelCost)
+      const gameSeconds = travelGameSeconds(speed, biome.travelCost)
       const realMilliseconds = (gameSeconds * 1000) / 3600 / journey.multiplier
       if (this.now() - startedAt < realMilliseconds) break
       index += 1
@@ -649,12 +660,12 @@ export class HexTravelStore {
     let remainingGameSeconds = 0
     if (journey && map) {
       for (const coordinate of path.slice(journey.currentIndex + 1)) {
-        const terrainId = this.maps.terrainAt(map.id, coordinate)
-        const terrain = terrainId === null ? null : terrainDefinition(terrainId)
-        if (terrain?.passable && speed.effectiveSpeedFeet > 0)
+        const biomeId = this.maps.biomeAt(map.id, coordinate)
+        const biome = biomeId === null ? null : this.biomeDefinition(biomeId)
+        if (biome?.passable && speed.effectiveSpeedFeet > 0)
           remainingGameSeconds += travelGameSeconds(
             speed.effectiveSpeedFeet,
-            terrain.travelCost
+            biome.travelCost
           )
       }
     }
@@ -811,10 +822,10 @@ export class HexTravelStore {
     const next = path[journey.currentIndex + 1]
     if (next === undefined) return null
     const speed = this.speed(journey.sceneId).effectiveSpeedFeet
-    const terrainId = this.maps.terrainAt(journey.mapId, next)
-    const terrain = terrainId === null ? null : terrainDefinition(terrainId)
-    if (speed <= 0 || !terrain?.passable) return this.now()
-    const gameSeconds = travelGameSeconds(speed, terrain.travelCost)
+    const biomeId = this.maps.biomeAt(journey.mapId, next)
+    const biome = biomeId === null ? null : this.biomeDefinition(biomeId)
+    if (speed <= 0 || !biome?.passable) return this.now()
+    const gameSeconds = travelGameSeconds(speed, biome.travelCost)
     return Math.round(
       journey.segmentStartedAt +
         (gameSeconds * 1000) / 3600 / journey.multiplier

@@ -9,6 +9,9 @@ export {
 } from './creature.js'
 
 const textList = z.array(z.string())
+const catalogOptionSchema = z
+  .object({ id: z.string().min(1), label: z.string().min(1) })
+  .strict()
 
 export const creatureCatalogQuerySchema = z
   .object({
@@ -43,13 +46,11 @@ export const creatureFilterOptionsSchema = z
     sizes: textList,
     types: textList,
     subtypes: textList,
-    biomes: textList,
+    biomes: z.array(catalogOptionSchema),
     alignments: textList,
-    encounterTables: z.array(
-      z.object({ id: z.string(), label: z.string() }).strict()
-    ),
-    factions: z.array(z.object({ id: z.string(), label: z.string() }).strict()),
-    locations: z.array(z.object({ id: z.string(), label: z.string() }).strict())
+    encounterTables: z.array(catalogOptionSchema),
+    factions: z.array(catalogOptionSchema),
+    locations: z.array(catalogOptionSchema)
   })
   .strict()
 

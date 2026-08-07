@@ -230,10 +230,10 @@ export function useHexCommandController(options: {
     commandId: string = crypto.randomUUID()
   ) => {
     const { editor, capabilities, maps, onError } = optionsRef.current
-    const mode = confirmationToken ? 'erase' : editor.terrainMode
-    if (editor.tool !== 'terrain' && !confirmationToken) return
+    const mode = confirmationToken ? 'erase' : editor.biomeMode
+    if (editor.tool !== 'biome' && !confirmationToken) return
     const radius = requestedRadius ?? brushLevelToRadius(editor.brushLevel)
-    const terrainId = mode === 'paint' ? editor.terrainId : null
+    const biomeId = mode === 'paint' ? editor.biomeId : null
     return enqueue(async () => {
       const current = maps.mapRef.current
       if (!current) return
@@ -245,7 +245,7 @@ export function useHexCommandController(options: {
               commandId,
               mapId: current.map.id,
               mode,
-              terrainId,
+              biomeId,
               path: [...path],
               radius,
               expectedContentRevision: current.map.contentRevision,

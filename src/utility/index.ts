@@ -32,8 +32,12 @@ import { PartyStore } from '../core/party/party-store.js'
 import { SceneStore } from '../core/scene/scene-store.js'
 import { CampaignUnitOfWork } from '../core/application/campaign-unit-of-work.js'
 import { WorldLocationDeletionCommandHandler } from '../core/application/world-location-deletion.js'
-import { hexTerrainCatalog } from '../core/hex/terrain-catalog.js'
+import {
+  BiomeCatalogService,
+  type BiomeMapChange
+} from '../core/application/biome-catalog-service.js'
 import { CapabilityError } from '../shared/errors/capability-error.js'
+import { placeholderBiomeId } from '../shared/contracts/biome.js'
 import {
   hexBrushStrokeResultSchema,
   hexTravelSnapshotSchema
@@ -56,9 +60,22 @@ const locationSymbols = symbolLifecycle.symbols
 const customSymbol = (id: string) => symbolLifecycle.customSymbol(id)
 const locationStore = (db: ReturnType<typeof activeDatabase>) =>
   symbolLifecycle.locationStore(db)
-const play = new LivePlayService(activeDatabase)
-const locations = new WorldLocationService(activeDatabase, customSymbol)
-const sources = new EncounterSourceService(activeDatabase)
+const locations = new WorldLocationService(activeDatabase, customSymbol, () =>
+  campaigns.installationDatabase()
+)
+const sources = new EncounterSourceService(
+  activeDatabase,
+  () => campaigns.installationDatabase(),
+  (visitor) =>
+    void campaigns.visitCampaignDatabases(({ id, database }) =>
+      visitor({ id, database })
+    )
+)
+const biomeService = new BiomeCatalogService(campaigns)
+const biomeProjection = (
+  id: Parameters<typeof biomeService.hexDefinition>[0]
+) => biomeService.hexDefinition(id)
+const play = new LivePlayService(activeDatabase, biomeProjection)
 const hex = new HexMapService(activeDatabase, locationStore)
 const hexEditing = new HexMapEditingCommandHandler(() => {
   const db = activeDatabase()
@@ -84,11 +101,22 @@ const worldLocationDeletion = new WorldLocationDeletionCommandHandler(() => {
     locations: locationsForMap
   }
 })
-const hexTravel = new HexTravelService(activeDatabase)
+const hexTravel = new HexTravelService(
+  activeDatabase,
+  Date.now,
+  biomeProjection
+)
 const creatures = new CreatureCatalogService(
   () => campaigns.installationDatabase(),
   (query) => sources.resolve(query),
   () => ({
+    biomes: biomeService
+      .hexCatalog()
+      .biomes.map((biome) => ({
+        id: biome.id,
+        label: biome.label
+      }))
+      .filter((biome) => biome.id !== placeholderBiomeId),
     encounterTables: sources
       .readTables()
       .tables.map((table) => ({ id: table.id, label: table.displayName })),
@@ -102,6 +130,9 @@ const creatures = new CreatureCatalogService(
     }))
   })
 )
+const hexBiomeCatalog = () => {
+  return biomeService.hexCatalog()
+}
 const referenceCatalog = new ReferenceCatalogAdapter(referenceDatabasePath)
 const references = new ReferenceService(
   referenceCatalog,
@@ -243,6 +274,46 @@ function publishHexNotice(
   )
 }
 
+function biomeChangedChunks(mapId: string, changes: readonly BiomeMapChange[]) {
+  const keys = new Map(
+    changes
+      .filter((change) => change.mapId === mapId)
+      .map((change) => {
+        const key = change.key
+        return [`${key.q}:${key.r}`, key] as const
+      })
+  )
+  if (keys.size === 0) return []
+  const changed = []
+  const values = [...keys.values()]
+  for (let index = 0; index < values.length; index += 64)
+    changed.push(
+      ...hex
+        .readChunks(mapId, values.slice(index, index + 64))
+        .chunks.map((chunk) => ({
+          mapId,
+          key: chunk.key,
+          revision: chunk.revision
+        }))
+    )
+  return changed
+}
+
+function publishBiomeMapChanges(
+  commandId: string,
+  changes: readonly BiomeMapChange[]
+): void {
+  let campaignId: string
+  try {
+    campaignId = campaigns.activeCampaignId()
+  } catch {
+    return
+  }
+  const active = changes.filter((change) => change.campaignId === campaignId)
+  for (const mapId of new Set(active.map((change) => change.mapId)))
+    publishHexNotice(commandId, [mapId], biomeChangedChunks(mapId, active))
+}
+
 function publishLocationChange(
   changedLocationIds: readonly string[],
   reason: 'catalog' | 'presentation' | 'symbol-replacement'
@@ -302,8 +373,46 @@ function publishSymbolChange(
   )
 }
 
+function publishBiomeChange(
+  changedBiomeIds: readonly string[],
+  reason: 'created' | 'updated' | 'deleted'
+): void {
+  process.parentPort?.postMessage(
+    coreEventSchema.parse({
+      kind: 'biomes.changed',
+      notice: {
+        revision: biomeService.catalog.revision(),
+        changedBiomeIds,
+        reason
+      }
+    })
+  )
+}
+
+function publishEncounterTableChange(
+  snapshot: ReturnType<EncounterSourceService['readTables']>,
+  changedTableIds: readonly string[],
+  scope: 'installation' | 'campaign',
+  reason: 'created' | 'updated' | 'deleted'
+): void {
+  process.parentPort?.postMessage(
+    coreEventSchema.parse({
+      kind: 'encounter-tables.changed',
+      notice: {
+        installationRevision: snapshot.installationRevision,
+        campaignRevision: snapshot.campaignRevision,
+        changedTableIds,
+        scope,
+        reason
+      }
+    })
+  )
+}
+
 symbolLifecycle.recoverPendingImports()
 symbolLifecycle.recoverPendingDeletions()
+biomeService.recoverPendingDeletions()
+sources.recoverPendingInstallationTableLifecycles()
 
 function scheduleNextBoundary(): void {
   if (travelTimer !== undefined) clearTimeout(travelTimer)
@@ -413,6 +522,49 @@ const creatureHandlers = {
   | 'references.detail'
 >
 
+const biomeHandlers = {
+  'biomes.search': (input) => biomeService.search(input),
+  'biomes.detail': (input) => biomeService.detail(input.id),
+  'biomes.create': (input) => {
+    const result = biomeService.create(
+      input.commandId,
+      input.biome,
+      input.expectedRevision
+    )
+    if (result.biome) publishBiomeChange([result.biome.id], 'created')
+    return result
+  },
+  'biomes.update': (input) => {
+    const result = biomeService.update(
+      input.commandId,
+      input.id,
+      input.biome,
+      input.expectedRevision
+    )
+    publishBiomeChange([input.id], 'updated')
+    return result
+  },
+  'biomes.deleteImpact': (input) => biomeService.deleteImpact(input.id),
+  'biomes.delete': (input) => {
+    const { result, changes } = biomeService.delete(
+      input.commandId,
+      input.id,
+      input.expectedRevision
+    )
+    publishBiomeMapChanges(input.commandId, changes)
+    publishBiomeChange([input.id, 'to-be-replaced'], 'deleted')
+    return result
+  }
+} satisfies Pick<
+  CoreHandlers,
+  | 'biomes.search'
+  | 'biomes.detail'
+  | 'biomes.create'
+  | 'biomes.update'
+  | 'biomes.deleteImpact'
+  | 'biomes.delete'
+>
+
 const worldPlannerHandlers = {
   'locations.read': () => locations.read(),
   'locations.create': (input) =>
@@ -516,12 +668,48 @@ const worldPlannerHandlers = {
     }
   },
   'encounterTables.read': () => sources.readTables(),
-  'encounterTables.create': (input) =>
-    sources.createTable(input.table, input.expectedRevision),
-  'encounterTables.update': (input) =>
-    sources.updateTable(input.id, input.table, input.expectedRevision),
-  'encounterTables.delete': (input) =>
-    sources.deleteTable(input.id, input.expectedRevision),
+  'encounterTables.create': (input) => {
+    const before = new Set(sources.readTables().tables.map(({ id }) => id))
+    const result = sources.createTable(
+      input.commandId,
+      input.table,
+      input.expectedRevision,
+      input.scope
+    )
+    publishEncounterTableChange(
+      result,
+      result.tables.filter(({ id }) => !before.has(id)).map(({ id }) => id),
+      input.scope,
+      'created'
+    )
+    return result
+  },
+  'encounterTables.update': (input) => {
+    const result = sources.updateTable(
+      input.commandId,
+      input.id,
+      input.table,
+      input.expectedRevision,
+      input.scope
+    )
+    publishEncounterTableChange(result, [input.id], input.scope, 'updated')
+    return result
+  },
+  'encounterTables.delete': (input) => {
+    const linkedBiomeIds =
+      input.scope === 'installation'
+        ? biomeService.catalog.biomeIdsUsingEncounterTable(input.id)
+        : []
+    const result = sources.deleteTable(
+      input.commandId,
+      input.id,
+      input.expectedRevision,
+      input.scope
+    )
+    publishEncounterTableChange(result, [input.id], input.scope, 'deleted')
+    if (linkedBiomeIds.length > 0) publishBiomeChange(linkedBiomeIds, 'updated')
+    return result
+  },
   'factions.read': () => sources.readFactions(),
   'factions.create': (input) =>
     mutateReferences(() =>
@@ -721,16 +909,52 @@ const encounterHandlers = {
 const hexHandlers = {
   'hex.editorBootstrap': () => ({
     catalog: hex.catalog(),
-    terrains: hexTerrainCatalog,
+    biomes: hexBiomeCatalog(),
     locations: locations.read()
   }),
-  'hex.terrainCatalog': () => hexTerrainCatalog,
+  'hex.biomeCatalog': () => hexBiomeCatalog(),
   'hex.catalog': () => hex.catalog(),
   'hex.locateLocation': (input) => hex.locateLocation(input.locationId),
-  'hex.readChunks': (input) => hex.readChunks(input.mapId, input.keys),
+  'hex.readChunks': (input) => {
+    const result = hex.readChunks(input.mapId, input.keys)
+    const biomeIds = result.chunks.flatMap((chunk) =>
+      chunk.authoredTiles.map((tile) => tile.biomeId)
+    )
+    return {
+      ...result,
+      biomes: biomeService.hexCatalog(biomeIds).biomes
+    }
+  },
+  'hex.replaceBiomePlaceholder': (input) => {
+    const changes = biomeService.replaceMapPlaceholder(input)
+    const summary = hex.catalog().maps.find((map) => map.id === input.mapId)
+    if (!summary) throw new CapabilityError('not_found', false)
+    const changedChunks = biomeChangedChunks(input.mapId, changes)
+    if (changes.length > 0)
+      publishHexNotice(input.commandId, [input.mapId], changedChunks)
+    return {
+      commandId: input.commandId,
+      mapId: input.mapId,
+      contentRevision: summary.contentRevision,
+      affectedTileCount: changes.reduce(
+        (total, change) => total + change.affectedTileCount,
+        0
+      ),
+      changedChunks
+    }
+  },
   'hex.create': (input) => hexEditing.createMap(input),
   'hex.update': (input) => hexEditing.updateMap(input),
-  'hex.applyBrushStroke': (input) => hexEditing.applyBrushStroke(input),
+  'hex.applyBrushStroke': (input) => {
+    if (input.mode === 'paint') {
+      if (input.biomeId === null)
+        throw new CapabilityError('validation_failed', false)
+      const definition = biomeService.catalog.require(input.biomeId)
+      if (definition.kind === 'placeholder')
+        throw new CapabilityError('validation_failed', false)
+    }
+    return hexEditing.applyBrushStroke(input)
+  },
   'hex.history': (input) => hexEditing.history(input.mapId),
   'hex.undo': (input) => hexEditing.undo(input),
   'hex.redo': (input) => hexEditing.redo(input),
@@ -740,11 +964,12 @@ const hexHandlers = {
   'hex.removeLocation': (input) => hexEditing.removeLocation(input)
 } satisfies Pick<
   CoreHandlers,
-  | 'hex.terrainCatalog'
+  | 'hex.biomeCatalog'
   | 'hex.editorBootstrap'
   | 'hex.catalog'
   | 'hex.locateLocation'
   | 'hex.readChunks'
+  | 'hex.replaceBiomePlaceholder'
   | 'hex.create'
   | 'hex.update'
   | 'hex.applyBrushStroke'
@@ -791,6 +1016,7 @@ const handlers = {
   ...campaignHandlers,
   ...partyHandlers,
   ...creatureHandlers,
+  ...biomeHandlers,
   ...worldPlannerHandlers,
   ...sessionHandlers,
   ...encounterHandlers,

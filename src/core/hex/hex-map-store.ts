@@ -5,18 +5,16 @@ import {
   axialCoordinateSchema,
   createHexMapStoreInputSchema,
   hexChunkKeySchema,
-  hexChunkReadResultSchema,
   hexChunkSnapshotSchema,
   hexMapCatalogSnapshotSchema,
   hexMapSummarySchema,
-  hexTerrainIdSchema,
+  hexBiomeIdSchema,
   placeHexLocationInputSchema,
   readHexChunksInputSchema,
   removeHexLocationInputSchema,
   updateHexMapStoreInputSchema,
   type AxialCoordinate,
   type HexChunkKey,
-  type HexChunkReadResult,
   type HexChunkSnapshot,
   type HexMapCatalogSnapshot,
   type HexMarkerPresentation
@@ -54,6 +52,7 @@ export function initializeHexSchema(db: Database.Database): void {
       map_id TEXT NOT NULL REFERENCES hex_map(id) ON DELETE CASCADE,
       q INTEGER NOT NULL,
       r INTEGER NOT NULL,
+      biome_id TEXT NOT NULL,
       chunk_q INTEGER GENERATED ALWAYS AS
         ((q - CASE WHEN q < 0 THEN 31 ELSE 0 END) / 32) STORED,
       chunk_r INTEGER GENERATED ALWAYS AS
@@ -62,15 +61,8 @@ export function initializeHexSchema(db: Database.Database): void {
     );
     CREATE INDEX IF NOT EXISTS idx_hex_tile_chunk
       ON hex_tile(map_id, chunk_q, chunk_r);
-    CREATE TABLE IF NOT EXISTS hex_terrain (
-      map_id TEXT NOT NULL,
-      q INTEGER NOT NULL,
-      r INTEGER NOT NULL,
-      terrain_id TEXT NOT NULL,
-      PRIMARY KEY(map_id, q, r),
-      FOREIGN KEY(map_id, q, r) REFERENCES hex_tile(map_id, q, r)
-        ON DELETE CASCADE
-    );
+    CREATE INDEX IF NOT EXISTS idx_hex_tile_biome
+      ON hex_tile(biome_id, map_id);
     CREATE TABLE IF NOT EXISTS hex_location_placement (
       location_id TEXT PRIMARY KEY NOT NULL,
       map_id TEXT NOT NULL,
@@ -225,7 +217,7 @@ export type HexMapTruthCell = Readonly<{
   mapId: string
   q: number
   r: number
-  terrainId: z.infer<typeof hexTerrainIdSchema> | null
+  biomeId: z.infer<typeof hexBiomeIdSchema> | null
   locationId: string | null
 }>
 
@@ -273,7 +265,7 @@ export class HexMapStore {
       : null
   }
 
-  readChunks(mapId: string, keys: readonly HexChunkKey[]): HexChunkReadResult {
+  readChunks(mapId: string, keys: readonly HexChunkKey[]) {
     const map = this.summary(mapId)
     const unique = new Map(
       keys.map((raw) => {
@@ -282,10 +274,10 @@ export class HexMapStore {
       })
     )
     if (unique.size > 64) throw new CapabilityError('validation_failed', false)
-    return hexChunkReadResultSchema.parse({
+    return {
       map,
       chunks: [...unique.values()].map((key) => this.readChunk(mapId, key))
-    })
+    } as const
   }
 
   readChunk(mapId: string, rawKey: HexChunkKey): HexChunkSnapshot {
@@ -301,10 +293,8 @@ export class HexMapStore {
     )?.revision
     const authoredTiles = this.db
       .prepare(
-        `SELECT t.q, t.r, COALESCE(o.terrain_id, 'grassland') AS terrainId
+        `SELECT t.q, t.r, t.biome_id AS biomeId
          FROM hex_tile t
-         LEFT JOIN hex_terrain o
-           ON o.map_id = t.map_id AND o.q = t.q AND o.r = t.r
          WHERE t.map_id = ? AND t.chunk_q = ? AND t.chunk_r = ?
          ORDER BY t.q, t.r`
       )
@@ -392,7 +382,7 @@ export class HexMapStore {
   applyBrushTargets(input: {
     mapId: string
     mode: 'paint' | 'erase'
-    terrainId: z.infer<typeof hexTerrainIdSchema> | null
+    biomeId: z.infer<typeof hexBiomeIdSchema> | null
     coordinates: readonly AxialCoordinate[]
     expectedContentRevision: number
   }) {
@@ -411,18 +401,10 @@ export class HexMapStore {
       if (keys.length > 64)
         throw new CapabilityError('validation_failed', false)
       const insertTile = this.db.prepare(
-        `INSERT INTO hex_tile (map_id, q, r)
-         VALUES (?, ?, ?)
-         ON CONFLICT(map_id, q, r) DO NOTHING`
-      )
-      const upsertTerrain = this.db.prepare(
-        `INSERT INTO hex_terrain (map_id, q, r, terrain_id)
+        `INSERT INTO hex_tile (map_id, q, r, biome_id)
          VALUES (?, ?, ?, ?)
          ON CONFLICT(map_id, q, r) DO UPDATE SET
-           terrain_id = excluded.terrain_id`
-      )
-      const deleteTerrain = this.db.prepare(
-        'DELETE FROM hex_terrain WHERE map_id = ? AND q = ? AND r = ?'
+           biome_id = excluded.biome_id`
       )
       const deleteTile = this.db.prepare(
         'DELETE FROM hex_tile WHERE map_id = ? AND q = ? AND r = ?'
@@ -432,16 +414,7 @@ export class HexMapStore {
           deleteTile.run(input.mapId, coordinate.q, coordinate.r)
           continue
         }
-        insertTile.run(input.mapId, coordinate.q, coordinate.r)
-        if (input.terrainId === 'grassland')
-          deleteTerrain.run(input.mapId, coordinate.q, coordinate.r)
-        else
-          upsertTerrain.run(
-            input.mapId,
-            coordinate.q,
-            coordinate.r,
-            input.terrainId
-          )
+        insertTile.run(input.mapId, coordinate.q, coordinate.r, input.biomeId)
       }
       for (const key of keys) this.bumpChunk(input.mapId, key)
       this.bumpContent(input.mapId)
@@ -456,7 +429,7 @@ export class HexMapStore {
   changedBrushTargets(input: {
     mapId: string
     mode: 'paint' | 'erase'
-    terrainId: z.infer<typeof hexTerrainIdSchema> | null
+    biomeId: z.infer<typeof hexBiomeIdSchema> | null
     coordinates: readonly AxialCoordinate[]
   }): AxialCoordinate[] {
     this.summary(input.mapId)
@@ -471,12 +444,9 @@ export class HexMapStore {
          FROM targets
          LEFT JOIN hex_tile tile
            ON tile.map_id = ? AND tile.q = targets.q AND tile.r = targets.r
-         LEFT JOIN hex_terrain terrain
-           ON terrain.map_id = tile.map_id
-          AND terrain.q = tile.q AND terrain.r = tile.r
          WHERE (? = 'erase' AND tile.map_id IS NOT NULL)
             OR (? = 'paint' AND (
-              tile.map_id IS NULL OR COALESCE(terrain.terrain_id, 'grassland') <> ?
+              tile.map_id IS NULL OR tile.biome_id <> ?
             ))`
       )
       .all(
@@ -484,7 +454,7 @@ export class HexMapStore {
         input.mapId,
         input.mode,
         input.mode,
-        input.terrainId
+        input.biomeId
       )
     return axialCoordinateSchema.array().parse(rows)
   }
@@ -639,19 +609,16 @@ export class HexMapStore {
     }))
   }
 
-  terrainAt(mapId: string, coordinate: AxialCoordinate) {
+  biomeAt(mapId: string, coordinate: AxialCoordinate) {
     this.summary(mapId)
     const row = this.db
       .prepare(
-        `SELECT COALESCE(o.terrain_id, 'grassland') AS terrainId
+        `SELECT t.biome_id AS biomeId
          FROM hex_tile t
-         LEFT JOIN hex_terrain o
-           ON o.map_id = t.map_id AND o.q = t.q AND o.r = t.r
          WHERE t.map_id = ? AND t.q = ? AND t.r = ?`
       )
-      .get(mapId, coordinate.q, coordinate.r) as
-      { terrainId: string } | undefined
-    return row ? hexTerrainIdSchema.parse(row.terrainId) : null
+      .get(mapId, coordinate.q, coordinate.r) as { biomeId: string } | undefined
+    return row ? hexBiomeIdSchema.parse(row.biomeId) : null
   }
 
   locationAt(mapId: string, coordinate: AxialCoordinate) {
@@ -685,14 +652,11 @@ export class HexMapStore {
          )
          SELECT targets.q, targets.r,
                 CASE WHEN tile.map_id IS NULL THEN NULL
-                     ELSE COALESCE(terrain.terrain_id, 'grassland') END AS terrainId,
+                     ELSE tile.biome_id END AS biomeId,
                 placement.location_id AS locationId
          FROM targets
          LEFT JOIN hex_tile tile
            ON tile.map_id = ? AND tile.q = targets.q AND tile.r = targets.r
-         LEFT JOIN hex_terrain terrain
-           ON terrain.map_id = tile.map_id
-          AND terrain.q = tile.q AND terrain.r = tile.r
          LEFT JOIN hex_location_placement placement
            ON placement.map_id = tile.map_id
           AND placement.q = tile.q AND placement.r = tile.r`
@@ -700,15 +664,15 @@ export class HexMapStore {
       .all(JSON.stringify(coordinates), mapId) as Array<{
       q: number
       r: number
-      terrainId: string | null
+      biomeId: string | null
       locationId: string | null
     }>
     return rows.map((row) => ({
       mapId,
       q: row.q,
       r: row.r,
-      terrainId:
-        row.terrainId === null ? null : hexTerrainIdSchema.parse(row.terrainId),
+      biomeId:
+        row.biomeId === null ? null : hexBiomeIdSchema.parse(row.biomeId),
       locationId: row.locationId
     }))
   }
@@ -746,17 +710,13 @@ export class HexMapStore {
         this.db
           .prepare('DELETE FROM hex_tile WHERE map_id = ? AND q = ? AND r = ?')
           .run(cell.mapId, cell.q, cell.r)
-        if (cell.terrainId === null) continue
+        if (cell.biomeId === null) continue
         this.db
-          .prepare(`INSERT INTO hex_tile (map_id, q, r) VALUES (?, ?, ?)`)
-          .run(cell.mapId, cell.q, cell.r)
-        if (cell.terrainId !== 'grassland')
-          this.db
-            .prepare(
-              `INSERT INTO hex_terrain (map_id, q, r, terrain_id)
-               VALUES (?, ?, ?, ?)`
-            )
-            .run(cell.mapId, cell.q, cell.r, cell.terrainId)
+          .prepare(
+            `INSERT INTO hex_tile (map_id, q, r, biome_id)
+             VALUES (?, ?, ?, ?)`
+          )
+          .run(cell.mapId, cell.q, cell.r, cell.biomeId)
         if (cell.locationId && !this.locations.exists(cell.locationId))
           skippedLocationIds.push(cell.locationId)
         if (cell.locationId && this.locations.exists(cell.locationId)) {

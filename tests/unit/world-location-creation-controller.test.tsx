@@ -119,7 +119,7 @@ describe('world location creation workflow', () => {
       r: 0,
       id: '0,0',
       label: 'q 0 · r 0',
-      terrainId: 'grassland' as const,
+      biomeId: 'grassland' as const,
       location: null
     }
     const map = { tiles: [tile] } as unknown as HexMapView

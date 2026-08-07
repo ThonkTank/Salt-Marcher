@@ -5,6 +5,8 @@ import { referenceIndexChangeNoticeSchema } from './reference.js'
 import { hexChangeNoticeSchema } from './hex.js'
 import { worldLocationChangeNoticeSchema } from './world-location.js'
 import { locationSymbolChangeNoticeSchema } from './location-symbol.js'
+import { biomeChangeNoticeSchema } from './biome.js'
+import { encounterTableChangeNoticeSchema } from './encounter-source.js'
 import {
   coreOperations,
   isCoreOperationKind,
@@ -102,6 +104,18 @@ export const coreEventSchema = z.discriminatedUnion('kind', [
     .object({
       kind: z.literal('location-symbols.changed'),
       notice: locationSymbolChangeNoticeSchema
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('biomes.changed'),
+      notice: biomeChangeNoticeSchema
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('encounter-tables.changed'),
+      notice: encounterTableChangeNoticeSchema
     })
     .strict()
 ])

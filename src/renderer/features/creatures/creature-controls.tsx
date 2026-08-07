@@ -6,12 +6,17 @@ import type {
 } from '../../../shared/contracts/encounter.js'
 import { emptyQuery } from './creature-state.js'
 import './creatures.css'
-import { ReferenceMultiSelect } from '../../shell/reference-multi-select.js'
+import {
+  SearchableSelect,
+  type SearchableSelectOption
+} from '../../shell/searchable-select.js'
 
 export function CreatureFilters(props: {
   query: CreatureCatalogQuery
   options: CreatureFilterOptions
   changed: (query: CreatureCatalogQuery) => void
+  searchBiomeOptions?:
+    ((query: string) => Promise<readonly SearchableSelectOption[]>) | undefined
   compact?: boolean
   clustered?: boolean
 }) {
@@ -107,10 +112,11 @@ export function CreatureFilters(props: {
         </FilterTray>
         <FilterTray label={message('catalog.origin')}>
           <div className="creatures-filter-grid creatures-filter-origin">
-            <AdditiveSelect
+            <SearchableMultiFilter
               label={message('catalog.environment')}
               options={props.options.biomes}
               selected={q.biomes}
+              searchOptions={props.searchBiomeOptions}
               changed={(biomes) => update({ biomes })}
             />
             <AdditiveSelect
@@ -199,38 +205,39 @@ export function CreatureFilters(props: {
           </option>
         ))}
       </select>
-      <MultiSelect
+      <SearchableMultiFilter
         label={message('catalog.size')}
-        options={props.options.sizes}
+        options={textOptions(props.options.sizes)}
         selected={q.sizes}
         changed={(sizes) => update({ sizes })}
       />
-      <MultiSelect
+      <SearchableMultiFilter
         label={message('ui.typ')}
-        options={props.options.types}
+        options={textOptions(props.options.types)}
         selected={q.types}
         changed={(types) => update({ types })}
       />
-      <MultiSelect
+      <SearchableMultiFilter
         label={message('catalog.subtype')}
-        options={props.options.subtypes}
+        options={textOptions(props.options.subtypes)}
         selected={q.subtypes}
         changed={(subtypes) => update({ subtypes })}
       />
-      <MultiSelect
+      <SearchableMultiFilter
         label={message('catalog.environment')}
         options={props.options.biomes}
         selected={q.biomes}
+        searchOptions={props.searchBiomeOptions}
         changed={(biomes) => update({ biomes })}
       />
-      <MultiSelect
+      <SearchableMultiFilter
         label={message('catalog.alignment')}
-        options={props.options.alignments}
+        options={textOptions(props.options.alignments)}
         selected={q.alignments}
         changed={(alignments) => update({ alignments })}
       />
       {props.options.encounterTables.length > 0 && (
-        <ReferenceMultiSelect
+        <SearchableMultiFilter
           label={message('catalog.table')}
           options={props.options.encounterTables}
           selected={q.encounterTableIds}
@@ -238,7 +245,7 @@ export function CreatureFilters(props: {
         />
       )}
       {props.options.factions.length > 0 && (
-        <ReferenceMultiSelect
+        <SearchableMultiFilter
           label={message('ui.fraktionen')}
           options={props.options.factions}
           selected={q.factionIds}
@@ -246,20 +253,19 @@ export function CreatureFilters(props: {
         />
       )}
       {props.options.locations.length > 0 && (
-        <select
-          aria-label={message('ui.ort')}
-          value={q.locationId ?? ''}
-          onChange={(event) =>
-            update({ locationId: event.target.value || null })
-          }
-        >
-          <option value="">{message('ui.ort')}</option>
-          {props.options.locations.map((option) => (
-            <option key={option.id} value={option.id}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        <SearchableSelect
+          mode="single"
+          label={message('ui.ort')}
+          options={props.options.locations}
+          value={q.locationId ?? null}
+          emptyText={message('ui.ort')}
+          searchPlaceholder={formatMessage('catalog.searchFilter', {
+            filter: message('ui.ort')
+          })}
+          noResultsText={message('catalog.noFilterMatch')}
+          popupMinWidth={224}
+          changed={(locationId) => update({ locationId })}
+        />
       )}
     </div>
   )
@@ -357,37 +363,35 @@ function ReferenceAdditiveSelect(props: {
   )
 }
 
-function MultiSelect(props: {
+function SearchableMultiFilter(props: {
   label: string
-  options: readonly string[]
+  options: readonly SearchableSelectOption[]
   selected: readonly string[]
+  searchOptions?:
+    ((query: string) => Promise<readonly SearchableSelectOption[]>) | undefined
   changed: (values: string[]) => void
 }) {
   return (
-    <label className="creatures-multi-filter">
-      <span>
-        {props.label}
-        {props.selected.length ? ` (${props.selected.length})` : ''}
-      </span>
-      <select
-        multiple
-        aria-label={props.label}
-        value={[...props.selected]}
-        onChange={(event) =>
-          props.changed(
-            Array.from(
-              event.currentTarget.selectedOptions,
-              (option) => option.value
-            )
-          )
-        }
-      >
-        {props.options.map((option) => (
-          <option key={option}>{option}</option>
-        ))}
-      </select>
-    </label>
+    <SearchableSelect
+      mode="multiple"
+      label={props.label}
+      options={props.options}
+      searchOptions={props.searchOptions}
+      values={props.selected}
+      emptyText={props.label}
+      selectedText={(count) => `${props.label} (${String(count)})`}
+      searchPlaceholder={formatMessage('catalog.searchFilter', {
+        filter: props.label
+      })}
+      noResultsText={message('catalog.noFilterMatch')}
+      popupMinWidth={224}
+      changed={props.changed}
+    />
   )
+}
+
+function textOptions(values: readonly string[]): SearchableSelectOption[] {
+  return values.map((value) => ({ id: value, label: value }))
 }
 
 export function FilterChips(props: {
@@ -490,6 +494,8 @@ function filterValueLabel(
     return (
       options?.factions.find((option) => option.id === value)?.label ?? value
     )
+  if (field === 'biomes')
+    return options?.biomes.find((option) => option.id === value)?.label ?? value
   return value
 }
 

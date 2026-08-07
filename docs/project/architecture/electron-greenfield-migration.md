@@ -35,7 +35,9 @@ isolation with structured renderer incidents and Main-controlled reload.
 Renderer feature ports are injected from React context; the mutable capability
 singleton has been removed. Pixi is loaded only at a visible Hex canvas. The
 common Workspace transitive graph is currently 814.9 KiB under its 900 KiB
-ceiling, and the normal renderer is capped at 2.75 MiB. Legacy WOFF duplicates
+ceiling, and the normal renderer is capped at 2.80 MiB. The 0.05 MiB increase
+accounts for the bounded virtual biome catalog and CRUD surface added with
+schema 15 while all per-entry ceilings remain unchanged. Legacy WOFF duplicates
 are excluded, and typed message placeholders fail closed. The canonical check
 now also runs the complete Campaign-walking/Hex journey against the built
 application.
@@ -45,7 +47,7 @@ and both initialization and later canvas-cycle failures retain their cause in
 renderer incidents. Its production shell now follows the high-fidelity
 three-tool design: the utility process persists location-owned map presentation,
 Main performs bounded SVG file selection, an installation-wide one-path symbol
-catalog owns custom glyph data, and the renderer combines Pixi terrain with an
+catalog owns custom glyph data, and the renderer combines Pixi biomes with an
 inline SVG marker and curved-label overlay. Map presentation has its own
 optimistic revision and patch command; chunk projections carry complete,
 immutable marker render data so other map surfaces do not join renderer-side
@@ -200,13 +202,15 @@ claiming completion of M3 or M5. Its approved expansion contains:
   sections; the shared creature-collection manager owns every named layout
   area and exposes fixed or accessible resizable divider models instead of an
   implicit child-order contract
-- one campaign-local Hex vertical slice now connects a Pixi editor, static
-  catalog-backed terrain IDs, World Planner location placement, focused-Scene
+- one campaign-local Hex vertical slice now connects a Pixi editor, shared
+  installation-owned biome IDs, World Planner location placement, focused-Scene
   Party position, waypoint route planning, durable checkpoints and Scene time,
   and the Session Karte/Reise surfaces; its editor exposes visible brush levels
   `1..10` over mathematical radii `0..9`, immediate catalog-location placement,
   location-owned marker presentation, and installation-wide custom one-path SVG
-  symbols; editable Terrain catalog CRUD remains a later slice
+  symbols; a paged virtual palette owns protected built-ins and unlimited
+  custom biome CRUD, installation-wide weighted encounter pools, and recoverable
+  cross-campaign placeholder replacement after custom-biome deletion
 - one offline reference-graph slice compiles attributed SRD 5.1 rules and
   creatures from one pinned archive into deterministic local artifacts,
   publishes separate static and campaign world indexes from the utility

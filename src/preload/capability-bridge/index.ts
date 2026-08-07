@@ -103,10 +103,22 @@ import {
   updateLocationSymbolInputSchema
 } from '../../shared/contracts/location-symbol.js'
 import {
+  biomeCatalogMutationResultSchema,
+  biomeChangeNoticeSchema,
+  biomeDeleteImpactSchema,
+  biomeDefinitionSchema,
+  biomePageSchema,
+  biomeSearchInputSchema,
+  createBiomeInputSchema,
+  deleteBiomeInputSchema,
+  updateBiomeInputSchema
+} from '../../shared/contracts/biome.js'
+import {
   createEncounterTableInputSchema,
   createWorldFactionInputSchema,
   deleteEncounterTableInputSchema,
   deleteWorldFactionInputSchema,
+  encounterTableChangeNoticeSchema,
   encounterTableSnapshotSchema,
   updateEncounterTableInputSchema,
   updateWorldFactionInputSchema,
@@ -505,6 +517,57 @@ const api: SaltMarcherApi = {
         ipcRenderer.removeListener('location-symbols:changed', handler)
     }
   },
+  biomes: {
+    search: async (query = '', offset = 0, limit = 60) =>
+      freezeDeep(
+        await invoke(
+          'biomes:search',
+          biomeSearchInputSchema.parse({ query, offset, limit }),
+          biomePageSchema
+        )
+      ),
+    detail: async (id) =>
+      freezeDeep(await invoke('biomes:detail', { id }, biomeDefinitionSchema)),
+    create: async (commandId, biome, expectedRevision) =>
+      freezeDeep(
+        await invoke(
+          'biomes:create',
+          createBiomeInputSchema.parse({ commandId, biome, expectedRevision }),
+          biomeCatalogMutationResultSchema
+        )
+      ),
+    update: async (commandId, id, biome, expectedRevision) =>
+      freezeDeep(
+        await invoke(
+          'biomes:update',
+          updateBiomeInputSchema.parse({
+            commandId,
+            id,
+            biome,
+            expectedRevision
+          }),
+          biomeCatalogMutationResultSchema
+        )
+      ),
+    deleteImpact: async (id) =>
+      freezeDeep(
+        await invoke('biomes:delete-impact', { id }, biomeDeleteImpactSchema)
+      ),
+    delete: async (commandId, id, expectedRevision) =>
+      freezeDeep(
+        await invoke(
+          'biomes:delete',
+          deleteBiomeInputSchema.parse({ commandId, id, expectedRevision }),
+          biomeCatalogMutationResultSchema
+        )
+      ),
+    onChanged(listener) {
+      const handler = (_event: Electron.IpcRendererEvent, raw: unknown) =>
+        listener(freezeDeep(biomeChangeNoticeSchema.parse(raw)))
+      ipcRenderer.on('biomes:changed', handler)
+      return () => ipcRenderer.removeListener('biomes:changed', handler)
+    }
+  },
   encounterTables: {
     read: async () =>
       freezeDeep(
@@ -514,34 +577,59 @@ const api: SaltMarcherApi = {
           encounterTableSnapshotSchema
         )
       ),
-    create: async (table, expectedRevision) =>
+    create: async (commandId, table, expectedRevision, scope = 'campaign') =>
       freezeDeep(
         await invoke(
           'encounter-tables:create',
-          createEncounterTableInputSchema.parse({ table, expectedRevision }),
-          encounterTableSnapshotSchema
-        )
-      ),
-    update: async (id, table, expectedRevision) =>
-      freezeDeep(
-        await invoke(
-          'encounter-tables:update',
-          updateEncounterTableInputSchema.parse({
-            id,
+          createEncounterTableInputSchema.parse({
+            commandId,
             table,
-            expectedRevision
+            expectedRevision,
+            scope
           }),
           encounterTableSnapshotSchema
         )
       ),
-    delete: async (id, expectedRevision) =>
+    update: async (
+      commandId,
+      id,
+      table,
+      expectedRevision,
+      scope = 'campaign'
+    ) =>
+      freezeDeep(
+        await invoke(
+          'encounter-tables:update',
+          updateEncounterTableInputSchema.parse({
+            commandId,
+            id,
+            table,
+            expectedRevision,
+            scope
+          }),
+          encounterTableSnapshotSchema
+        )
+      ),
+    delete: async (commandId, id, expectedRevision, scope = 'campaign') =>
       freezeDeep(
         await invoke(
           'encounter-tables:delete',
-          deleteEncounterTableInputSchema.parse({ id, expectedRevision }),
+          deleteEncounterTableInputSchema.parse({
+            commandId,
+            id,
+            expectedRevision,
+            scope
+          }),
           encounterTableSnapshotSchema
         )
-      )
+      ),
+    onChanged(listener) {
+      const handler = (_event: Electron.IpcRendererEvent, raw: unknown) =>
+        listener(freezeDeep(encounterTableChangeNoticeSchema.parse(raw)))
+      ipcRenderer.on('encounter-tables:changed', handler)
+      return () =>
+        ipcRenderer.removeListener('encounter-tables:changed', handler)
+    }
   },
   factions: {
     read: async () =>
@@ -579,8 +667,8 @@ const api: SaltMarcherApi = {
   },
   hex: {
     editorBootstrap: () => invokeCore('hex.editorBootstrap', undefined),
-    terrainCatalog: async () =>
-      freezeDeep(await invokeCore('hex.terrainCatalog', undefined)),
+    biomeCatalog: async () =>
+      freezeDeep(await invokeCore('hex.biomeCatalog', undefined)),
     catalog: async () => freezeDeep(await invokeCore('hex.catalog', undefined)),
     locateLocation: (locationId) =>
       invokeCore('hex.locateLocation', { locationId }),
@@ -588,6 +676,8 @@ const api: SaltMarcherApi = {
       freezeDeep(
         await invokeCore('hex.readChunks', { mapId, keys: [...keys] })
       ),
+    replaceBiomePlaceholder: async (input) =>
+      freezeDeep(await invokeCore('hex.replaceBiomePlaceholder', input)),
     create: async (input) => freezeDeep(await invokeCore('hex.create', input)),
     updateMetadata: async (input) =>
       freezeDeep(await invokeCore('hex.update', input)),

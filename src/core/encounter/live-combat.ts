@@ -2,6 +2,11 @@ import Database from 'better-sqlite3'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import { HexMapStore } from '../hex/hex-map-store.js'
 import { HexTravelStore } from '../hex/hex-travel.js'
+import { biomeDefinition as defaultBiomeDefinition } from '../hex/biome-catalog.js'
+import type {
+  HexBiomeDefinition,
+  HexBiomeId
+} from '../../shared/contracts/hex.js'
 import { z } from 'zod'
 import {
   combatCommandResultSchema,
@@ -231,7 +236,12 @@ export function initializeCombatSchema(db: Database.Database): void {
 }
 
 export class LivePlayService {
-  constructor(private readonly campaignDatabase: () => Database.Database) {}
+  constructor(
+    private readonly campaignDatabase: () => Database.Database,
+    private readonly biomeDefinition: (
+      id: HexBiomeId
+    ) => HexBiomeDefinition = defaultBiomeDefinition
+  ) {}
 
   readParty() {
     return this.withStores(({ party }) => party.read())
@@ -739,7 +749,9 @@ export class LivePlayService {
         db,
         new HexMapStore(db, new WorldLocationStore(db)),
         party,
-        scene
+        scene,
+        Date.now,
+        this.biomeDefinition
       )
     ).read(scene.focusedSceneId())
     const partySnapshot = party.read()

@@ -13,10 +13,14 @@ import {
   type CreatureFilterOptions
 } from '../../shared/contracts/encounter.js'
 import type { ResolvedEncounterSource } from '../application/encounter-source-service.js'
+import {
+  builtinBiomeSeeds,
+  legacyCreatureBiomeMatches
+} from '../biomes/biome-seeds.js'
 
 type ReferenceOptions = Pick<
   CreatureFilterOptions,
-  'encounterTables' | 'factions' | 'locations'
+  'biomes' | 'encounterTables' | 'factions' | 'locations'
 >
 
 const documentSchema = z
@@ -70,7 +74,7 @@ export class CreatureCatalogService {
       .filter(
         (creature) =>
           (allowed === null || allowed.has(creature.id)) &&
-          creatureMatchesQuery(creature, query)
+          creatureMatchesQuery(creature, query, !source?.biomeFiltering)
       )
       .toSorted((left, right) => {
         const primary =
@@ -109,6 +113,10 @@ export class CreatureCatalogService {
   filterOptions(): CreatureFilterOptions {
     const db = this.installationDatabase()
     const references = this.referenceOptions?.() ?? {
+      biomes: builtinBiomeSeeds.map((biome) => ({
+        id: biome.id,
+        label: biome.displayName
+      })),
       encounterTables: [],
       factions: [],
       locations: []
@@ -128,9 +136,7 @@ export class CreatureCatalogService {
       subtypes: strings(
         'SELECT DISTINCT subtype AS value FROM creature_subtypes ORDER BY value'
       ),
-      biomes: strings(
-        'SELECT DISTINCT biome AS value FROM creature_biomes ORDER BY value'
-      ),
+      biomes: references.biomes,
       alignments: strings(
         'SELECT DISTINCT alignment AS value FROM creatures ORDER BY value'
       ),
@@ -151,7 +157,8 @@ export class CreatureCatalogService {
 
 export function creatureMatchesQuery(
   creature: Creature,
-  query: CreatureCatalogQuery
+  query: CreatureCatalogQuery,
+  applyBiomeFilter = true
 ): boolean {
   const name = query.name.trim().toLocaleLowerCase()
   return (
@@ -162,8 +169,14 @@ export function creatureMatchesQuery(
     selectedIncludes(query.types, creature.type) &&
     selectedIncludes(query.subtypes, creature.subtype) &&
     selectedIncludes(query.alignments, creature.alignment) &&
-    (query.biomes.length === 0 ||
-      creature.biomes.some((biome) => query.biomes.includes(biome)))
+    (!applyBiomeFilter ||
+      query.biomes.length === 0 ||
+      creature.biomes.some((biome) =>
+        query.biomes.some(
+          (selected) =>
+            selected === biome || legacyCreatureBiomeMatches(selected, biome)
+        )
+      ))
   )
 }
 

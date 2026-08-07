@@ -29,6 +29,8 @@ const ready = {
   tables: [
     {
       id: tableId,
+      scope: 'campaign' as const,
+      protected: false,
       displayName: 'Küstenbegegnungen',
       description: '',
       position: 0,

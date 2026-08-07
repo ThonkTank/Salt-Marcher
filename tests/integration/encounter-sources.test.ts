@@ -1,6 +1,7 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { randomUUID } from 'node:crypto'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   CreatureCatalogService,
@@ -11,6 +12,7 @@ import { CampaignStore } from '../../src/core/persistence/sqlite/campaign-store.
 import { EncounterSourceService } from '../../src/core/application/encounter-source-service.js'
 import { WorldLocationService } from '../../src/core/worldplanner/location-store.js'
 import { creatureCatalogQuerySchema } from '../../src/shared/contracts/encounter.js'
+import { EncounterTableStore } from '../../src/core/encounter/encounter-table-store.js'
 
 const roots: string[] = []
 
@@ -31,6 +33,7 @@ function harness() {
     () => campaigns.installationDatabase(),
     (query) => sources.resolve(query),
     () => ({
+      biomes: [],
       encounterTables: sources
         .readTables()
         .tables.map((table) => ({ id: table.id, label: table.displayName })),
@@ -57,6 +60,118 @@ const query = (values: Record<string, unknown> = {}) =>
   creatureCatalogQuerySchema.parse({ limit: 100, ...values })
 
 describe('encounter tables and factions', () => {
+  it('binds command IDs to exactly one encounter-table request', () => {
+    const { campaigns, sources } = harness()
+    const commandId = randomUUID()
+    const draft = {
+      displayName: 'Idempotent',
+      description: '',
+      entries: []
+    }
+    const first = sources.createTable(commandId, draft, 0)
+    expect(sources.createTable(commandId, draft, 0)).toEqual(first)
+    expect(() =>
+      sources.createTable(
+        commandId,
+        { ...draft, displayName: 'Andere Anfrage' },
+        0
+      )
+    ).toThrow('validation')
+    campaigns.close()
+  })
+
+  it('recovers a global table deletion across active and trashed campaigns', () => {
+    const root = mkdtempSync(join(tmpdir(), 'salt-marcher-global-source-'))
+    roots.push(root)
+    const campaigns = new CampaignStore(root)
+    const firstSnapshot = campaigns.create('Erste Kampagne')
+    const firstId = firstSnapshot.campaigns.find(
+      (campaign) => campaign.name === 'Erste Kampagne'
+    )!.id
+    const secondSnapshot = campaigns.create('Zweite Kampagne')
+    const secondId = secondSnapshot.campaigns.find(
+      (campaign) => campaign.name === 'Zweite Kampagne'
+    )!.id
+    const sources = new EncounterSourceService(
+      () => campaigns.activeCampaignDatabase(),
+      () => campaigns.installationDatabase(),
+      (visitor) => {
+        campaigns.visitCampaignDatabases(visitor)
+      }
+    )
+    const tableSnapshot = sources.createTable(
+      randomUUID(),
+      { displayName: 'Globaler Wachpool', description: '', entries: [] },
+      0,
+      'installation'
+    )
+    const table = tableSnapshot.tables.find(
+      (candidate) => candidate.displayName === 'Globaler Wachpool'
+    )!
+    for (const campaignId of [firstId, secondId]) {
+      campaigns.activate(campaignId)
+      const faction = sources.createFaction(
+        {
+          displayName: `Wache ${campaignId}`,
+          notes: '',
+          disposition: 0,
+          primaryEncounterTableId: table.id,
+          inventory: []
+        },
+        0
+      ).factions[0]!
+      new WorldLocationService(
+        () => campaigns.activeCampaignDatabase(),
+        undefined,
+        () => campaigns.installationDatabase()
+      ).create(
+        {
+          displayName: `Tor ${campaignId}`,
+          notes: '',
+          factionIds: [faction.id],
+          encounterTableIds: [table.id]
+        },
+        0
+      )
+    }
+    campaigns.trash(firstId)
+
+    const commandId = randomUUID()
+    const installationTables = new EncounterTableStore(
+      campaigns.installationDatabase(),
+      'installation'
+    )
+    installationTables.beginInstallationLifecycle({
+      commandId,
+      operation: 'delete',
+      tableId: table.id,
+      expectedRevision: tableSnapshot.installationRevision
+    })
+    installationTables.delete(
+      commandId,
+      table.id,
+      tableSnapshot.installationRevision
+    )
+
+    sources.recoverPendingInstallationTableLifecycles()
+    expect(installationTables.lifecycleCompleted(commandId)).toBe(true)
+    for (const campaignId of [secondId, firstId]) {
+      if (campaignId === firstId) campaigns.restore(firstId)
+      campaigns.activate(campaignId)
+      expect(sources.readFactions().factions[0]).toMatchObject({
+        primaryEncounterTableId: null
+      })
+      expect(
+        new WorldLocationService(
+          () => campaigns.activeCampaignDatabase(),
+          undefined,
+          () => campaigns.installationDatabase()
+        ).read().locations[0]?.encounterTableIds
+      ).toEqual([])
+    }
+    campaigns.close()
+  })
+
   it('persists CRUD data, resolves dimensions and exposes source choices', () => {
     const { campaigns, sources, locations, catalog } = harness()
     const [first, second] = creatures
@@ -64,6 +179,7 @@ describe('encounter tables and factions', () => {
     expect(second).toBeDefined()
 
     let tables = sources.createTable(
+      randomUUID(),
       {
         displayName: 'Coast Patrol',
         description: 'Weighted coastal opposition',
@@ -75,6 +191,7 @@ describe('encounter tables and factions', () => {
       0
     )
     tables = sources.createTable(
+      randomUUID(),
       {
         displayName: 'Elite',
         description: '',
@@ -126,6 +243,7 @@ describe('encounter tables and factions', () => {
     expect(filtered.rows.map((creature) => creature.id)).toEqual([second!.id])
 
     tables = sources.updateTable(
+      randomUUID(),
       eliteId,
       {
         displayName: 'Elite',
@@ -140,7 +258,7 @@ describe('encounter tables and factions', () => {
       inventory: []
     })
 
-    tables = sources.deleteTable(eliteId, tables.revision)
+    tables = sources.deleteTable(randomUUID(), eliteId, tables.revision)
     factions = sources.readFactions()
     world = locations.read()
     expect(factions.factions[0]).toMatchObject({
@@ -156,6 +274,7 @@ describe('encounter tables and factions', () => {
     const { campaigns, sources } = harness()
     const [first, second] = creatures
     const tables = sources.createTable(
+      randomUUID(),
       {
         displayName: 'Narrow source',
         description: '',
@@ -197,6 +316,7 @@ describe('encounter tables and factions', () => {
       true
     )
     const tables = sources.createTable(
+      randomUUID(),
       { displayName: 'Empty', description: '', entries: [] },
       0
     )
@@ -217,6 +337,7 @@ describe('encounter tables and factions', () => {
     const { campaigns, sources, locations, play } = harness()
     const creature = creatures.find((entry) => entry.xp > 0)!
     const tables = sources.createTable(
+      randomUUID(),
       {
         displayName: 'Limited Guard',
         description: '',

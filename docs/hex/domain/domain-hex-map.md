@@ -10,7 +10,7 @@ semantics, and architecture owns system boundaries.
 
 The Hex context owns authored overworld-style hex maps used by Hex editor and
 Hex runtime surfaces. A Hex map is an authored map root with metadata,
-hex tiles, terrain overrides, and logical placements of World Planner locations.
+hex tiles with biome IDs, and logical placements of World Planner locations.
 
 The Hex context does not own Dungeon topology, party roster truth, encounter
 simulation, campaign clocks, weather rules, or generic map-canvas rendering
@@ -20,16 +20,15 @@ overworld travel readback when the party location points at a Hex map.
 ## Write Model
 
 - `HexMap` is the aggregate root for one authored map.
-- `HexTile` is the authored coordinate inside one map.
-- `HexTerrainOverride` records the authored terrain chosen for one existing
-  tile when it differs from the tile default of Grassland.
+- `HexTile` is the authored coordinate inside one map and stores exactly one
+  shared biome ID.
 - `HexLocationPlacement` links one foreign World Planner location identity to
   exactly one tile without copying its name or notes.
 - `HexJourney` owns one Scene-scoped runtime route, checkpoint, status, and
   presentation multiplier. Party continues to own character positions and
   Scene owns in-world time.
 - `HexEditHistory` owns the latest twenty applied or undone content commands
-  per map. It restores only Hex tiles, terrain, and location placements.
+  per map. It restores only Hex tiles, biome IDs, and location placements.
 
 ## Domain Vocabulary
 
@@ -37,7 +36,7 @@ overworld travel readback when the party location points at a Hex map.
 
 A Hex map has a stable identity and a required display name. Its axial
 coordinate space is intentionally unbounded. Reads request a bounded viewport;
-the map persists only sparse authored tiles, overrides, and markers. Empty
+the map persists only sparse authored tiles and markers. Empty
 coordinates remain outside the authored map even when the renderer draws an
 unbounded guide grid over them.
 
@@ -52,13 +51,14 @@ Party-owned overworld travel state carries only `mapId` plus a stable
 Hex-owned stable tile-id convention. Any safely representable integer axial
 coordinate is valid; malformed tile IDs do not become active travel positions.
 
-### Terrain
+### Biome
 
-Every authored tile resolves to a terrain. Grassland is the default for an
-authored tile and requires no terrain-override row; an absent tile is not
-implicit Grassland. Maps store stable terrain IDs. A typed read-only V1 catalog resolves label, color,
-passability, and travel cost; later Terrain Catalog CRUD can replace that
-provider without rewriting map rows.
+Every authored tile stores exactly one shared biome ID; an absent tile has no
+implicit biome. New paint operations start with Grassland as the UI default,
+but persistence does not encode Grassland as a missing override. The installation-owned
+catalog resolves label, color, passability, travel cost, legacy creature
+aliases, and global Encounter Table links without copying those definitions
+into map rows.
 
 ### World Planner Location Placement
 
@@ -72,7 +72,8 @@ own at most one placement.
 - A Hex map name MUST be nonblank.
 - A Hex tile MUST reference an existing Hex map.
 - A viewport read MUST be bounded even though map coordinates are not.
-- A terrain override MUST reference exactly one valid Hex tile.
+- An authored tile MUST carry exactly one existing built-in, custom, or
+  protected replacement-placeholder biome ID.
 - Party placement, World Planner location placement, and journey routes MUST
   reference authored tiles rather than empty axial coordinates.
 - A placement MUST reference exactly one valid Hex tile and one World Planner

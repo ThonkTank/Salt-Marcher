@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import type { SaltMarcherApi } from '../../../shared/contracts/capability-api.js'
 import type {
   EncounterTable,
+  EncounterTableChangeNotice,
   EncounterTableDraft,
+  EncounterTableScope,
   EncounterTableSnapshot,
   WorldFaction,
   WorldFactionDraft,
@@ -28,14 +30,21 @@ export type FactionCatalogPort = {
   ) => Promise<WorldFactionSnapshot>
   deleteFaction: (id: string, revision: number) => Promise<WorldFactionSnapshot>
   createTable: (
+    commandId: string,
     draft: EncounterTableDraft,
-    revision: number
+    revision: number,
+    scope?: EncounterTableScope
   ) => Promise<EncounterTableSnapshot>
   updateTable: (
+    commandId: string,
     id: string,
     draft: EncounterTableDraft,
-    revision: number
+    revision: number,
+    scope?: EncounterTableScope
   ) => Promise<EncounterTableSnapshot>
+  onTablesChanged: (
+    listener: (notice: EncounterTableChangeNotice) => void
+  ) => () => void
 }
 
 export function createFactionCatalogPort(
@@ -48,10 +57,11 @@ export function createFactionCatalogPort(
     updateFaction: (id, draft, revision) =>
       api.factions.update(id, draft, revision),
     deleteFaction: (id, revision) => api.factions.delete(id, revision),
-    createTable: (draft, revision) =>
-      api.encounterTables.create(draft, revision),
-    updateTable: (id, draft, revision) =>
-      api.encounterTables.update(id, draft, revision)
+    createTable: (commandId, draft, revision, scope) =>
+      api.encounterTables.create(commandId, draft, revision, scope),
+    updateTable: (commandId, id, draft, revision, scope) =>
+      api.encounterTables.update(commandId, id, draft, revision, scope),
+    onTablesChanged: (listener) => api.encounterTables.onChanged(listener)
   }
 }
 
@@ -66,6 +76,8 @@ export function useFactionCatalogController(
   })
   const [tableSnapshot, setTableSnapshot] = useState<EncounterTableSnapshot>({
     revision: 0,
+    installationRevision: 0,
+    campaignRevision: 0,
     tables: []
   })
   const [search, setSearch] = useState('')
@@ -82,13 +94,27 @@ export function useFactionCatalogController(
           factions.revision >= known.revision ? factions : known
         )
         setTableSnapshot((known) =>
-          tables.revision >= known.revision ? tables : known
+          isAtLeastAsNew(tables, known) ? tables : known
         )
       })
       .catch(reportCapabilityError(onError))
     return () => {
       current = false
     }
+  }, [active, onError, port])
+
+  useEffect(() => {
+    if (!active) return
+    return port.onTablesChanged(() => {
+      void port
+        .readTables()
+        .then((next) =>
+          setTableSnapshot((known) =>
+            isAtLeastAsNew(next, known) ? next : known
+          )
+        )
+        .catch(reportCapabilityError(onError))
+    })
   }, [active, onError, port])
 
   const visible = snapshot.factions.filter((faction) =>
@@ -121,12 +147,19 @@ export function useFactionCatalogController(
 
   async function saveTable(
     table: EncounterTable | null,
-    draft: EncounterTableDraft
+    draft: EncounterTableDraft,
+    requestedScope: EncounterTableScope = 'campaign'
   ): Promise<EncounterTableSaveResult> {
+    const scope = table?.scope ?? requestedScope
+    const revision =
+      scope === 'installation'
+        ? tableSnapshot.installationRevision
+        : tableSnapshot.campaignRevision
     const previousIds = new Set(tableSnapshot.tables.map((entry) => entry.id))
+    const commandId = crypto.randomUUID()
     const next = table
-      ? await port.updateTable(table.id, draft, tableSnapshot.revision)
-      : await port.createTable(draft, tableSnapshot.revision)
+      ? await port.updateTable(commandId, table.id, draft, revision, scope)
+      : await port.createTable(commandId, draft, revision, scope)
     const savedTableId =
       table?.id ??
       next.tables.find((entry) => !previousIds.has(entry.id))?.id ??
@@ -155,3 +188,13 @@ export function useFactionCatalogController(
 export type FactionCatalogController = ReturnType<
   typeof useFactionCatalogController
 >
+
+function isAtLeastAsNew(
+  candidate: EncounterTableSnapshot,
+  known: EncounterTableSnapshot
+): boolean {
+  return (
+    candidate.installationRevision >= known.installationRevision &&
+    candidate.campaignRevision >= known.campaignRevision
+  )
+}

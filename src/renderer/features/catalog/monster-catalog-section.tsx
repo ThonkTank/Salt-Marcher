@@ -15,10 +15,15 @@ export function MonsterCatalogSection(props: {
       <CreatureFilters
         query={query}
         options={props.controller.options}
+        searchBiomeOptions={props.controller.searchBiomeOptions}
         changed={props.controller.setQuery}
       />
       <div className="creatures-filter-chips">
-        <FilterChips query={query} changed={props.controller.setQuery} />
+        <FilterChips
+          query={query}
+          options={props.controller.options}
+          changed={props.controller.setQuery}
+        />
       </div>
       <div className="catalog-table-wrap">
         <table className="catalog-table">

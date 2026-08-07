@@ -517,7 +517,8 @@ export class WorldLocationService {
     private readonly campaignDatabase: () => Database.Database,
     private readonly locationSymbol: (
       id: string
-    ) => LocationSymbol | null = () => null
+    ) => LocationSymbol | null = () => null,
+    private readonly installationDatabase?: () => Database.Database
   ) {}
 
   read(): WorldLocationSnapshot {
@@ -555,15 +556,22 @@ export class WorldLocationService {
   private withStore<T>(work: (store: WorldLocationStore) => T): T {
     const db = this.campaignDatabase()
     const tables = new EncounterTableStore(db)
+    const installationTables = this.installationDatabase
+      ? new EncounterTableStore(this.installationDatabase(), 'installation')
+      : null
+    const containsTable = (id: string) =>
+      tables.contains(id) || Boolean(installationTables?.contains(id))
+    const containsCreature = (tableId: string, creatureId: string) =>
+      tables.containsCreature(tableId, creatureId) ||
+      Boolean(installationTables?.containsCreature(tableId, creatureId))
     const factions = new WorldFactionStore(db, {
-      containsTable: (id) => tables.contains(id),
-      containsCreature: (tableId, creatureId) =>
-        tables.containsCreature(tableId, creatureId)
+      containsTable,
+      containsCreature
     })
     return work(
       new WorldLocationStore(db, {
         containsFaction: (id) => factions.contains(id),
-        containsEncounterTable: (id) => tables.contains(id),
+        containsEncounterTable: containsTable,
         containsLocationSymbol: (id) => this.locationSymbol(id) !== null,
         locationSymbol: this.locationSymbol
       })

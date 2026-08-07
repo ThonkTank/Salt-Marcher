@@ -31,6 +31,10 @@ describe('Hex World Location creation workflow', () => {
     await createLocation(client, 'Zweiter Ort', false)
     await expectLocationState(client, 'Zweiter Ort', false)
     await expectLocationState(client, 'Leuchtturmklippe', true, false)
+    await selectLocation(client, 'Leuchtturmklippe')
+    await expect(
+      await client.$('input[role="combobox"][aria-label="Katalog-Orte"]')
+    ).toHaveValue('Leuchtturmklippe')
   })
 })
 
@@ -66,9 +70,15 @@ async function expectLocationState(
   placed: boolean,
   selected = true
 ) {
+  const selector = await client.$(
+    'input[role="combobox"][aria-label="Katalog-Orte"]'
+  )
+  if (selected) await expect(selector).toHaveValue(name)
+  await selector.setValue(name)
   const option = await client.$(`[role="option"]*=${name}`)
   await option.waitForExist()
   await expect(option).toHaveAttribute('aria-selected', String(selected))
+  await client.keys(['Escape'])
   await client.waitUntil(
     () =>
       client.execute(
@@ -91,4 +101,14 @@ async function expectLocationState(
       timeoutMsg: `${name} placement did not become ${String(placed)}.`
     }
   )
+}
+
+async function selectLocation(client: WdioBrowser, name: string) {
+  const selector = await client.$(
+    'input[role="combobox"][aria-label="Katalog-Orte"]'
+  )
+  await selector.setValue(name)
+  const option = await client.$(`[role="option"]*=${name}`)
+  await option.waitForDisplayed()
+  await option.click()
 }

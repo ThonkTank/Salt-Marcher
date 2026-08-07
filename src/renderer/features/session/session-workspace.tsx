@@ -34,6 +34,7 @@ import { ScenePartyCard } from './scene-party-card.js'
 import { GroupDialog } from './group-dialog.js'
 import { CreatureCollectionCatalogPane } from '../creature-collection/creature-collection.js'
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
+import { useBiomeOptionSearch } from '../creatures/use-biome-option-search.js'
 
 export default function SessionWorkspace(props: {
   snapshot: LiveSessionSnapshot
@@ -58,6 +59,12 @@ export default function SessionWorkspace(props: {
     null
   )
   const [catalogOptions, setCatalogOptions] = useState(emptyCreatureOptions)
+  const searchBiomeOptions = useBiomeOptionSearch(
+    api.biomes,
+    setCatalogOptions,
+    catalogQuery.biomes,
+    props.onError
+  )
   const followedCombatCard = useRef<string | null>(null)
   const focused = props.snapshot.scene.scenes.find(
     (scene) => scene.id === props.snapshot.scene.focusedSceneId
@@ -314,6 +321,7 @@ export default function SessionWorkspace(props: {
         <CreatureCollectionCatalogPane
           query={catalogQuery}
           options={catalogOptions}
+          searchBiomeOptions={searchBiomeOptions}
           page={catalogPage}
           changed={setCatalogQuery}
           inspect={(creature) => void openCreature(creature.id, 'Katalog')}

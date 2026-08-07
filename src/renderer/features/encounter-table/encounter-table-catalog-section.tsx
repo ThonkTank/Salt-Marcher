@@ -27,6 +27,7 @@ export function EncounterTableCatalogSection(props: {
           <thead>
             <tr>
               <th>{message('ui.name')}</th>
+              <th>{message('encounterTable.scope')}</th>
               <th>{message('ui.eintraege')}</th>
               <th>{message('ui.beschreibung')}</th>
               <th>{message('ui.aktionen')}</th>
@@ -43,10 +44,22 @@ export function EncounterTableCatalogSection(props: {
                     {table.displayName}
                   </button>
                 </td>
+                <td>
+                  {table.scope === 'installation'
+                    ? message('encounterTable.scopeInstallation')
+                    : message('encounterTable.scopeCampaign')}
+                  {table.protected
+                    ? ` · ${message('encounterTable.standard')}`
+                    : ''}
+                </td>
                 <td>{table.entries.length}</td>
                 <td>{table.description || '—'}</td>
                 <td className="row-actions">
-                  {controller.deleteId === table.id ? (
+                  {table.protected ? (
+                    <span className="muted">
+                      {message('encounterTable.protected')}
+                    </span>
+                  ) : controller.deleteId === table.id ? (
                     <>
                       <button onClick={() => controller.setDeleteId(null)}>
                         {message('action.cancel')}
@@ -91,6 +104,7 @@ export function EncounterTableCatalogSection(props: {
           }}
           onError={props.onError}
           inspect={props.inspect}
+          allowInstallationScope
         />
       )}
     </>

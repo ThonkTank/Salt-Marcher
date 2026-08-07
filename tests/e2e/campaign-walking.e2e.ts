@@ -154,7 +154,7 @@ describe('campaign walking skeleton', () => {
     await expectAccessibleInBothThemes(client)
     await expectElementGolden(
       client,
-      'hex-editor-terrain-light',
+      'hex-editor-biome-light',
       '.hex-editor-workspace'
     )
     await (
@@ -215,7 +215,7 @@ describe('campaign walking skeleton', () => {
         timeoutMsg: 'Deleted custom symbol was not replaced by the built-in.'
       }
     )
-    await (await client.$('button=Terrain malen')).click()
+    await (await client.$('button=Biom malen')).click()
     await (await client.$('button=Radieren')).click()
     await mapCanvas.click()
     const eraseDialog = await client.$(
@@ -445,6 +445,15 @@ describe('campaign walking skeleton', () => {
       timeout: 5_000,
       timeoutMsg: 'Filtered Wolf catalog row was not rendered.'
     })
+    const tableFilter = await client.$(
+      'input[role="combobox"][aria-label="Tabelle"]'
+    )
+    await tableFilter.setValue('wach')
+    const tableOption = await client.$('[role="option"]*=Wachpatrouille')
+    await tableOption.waitForDisplayed()
+    await tableOption.click()
+    await expect(await client.$('button=Wachpatrouille ×')).toBeExisting()
+    await client.keys(['Escape'])
     await expect(await client.$('button=+ Encounter')).not.toBeExisting()
     await expectAccessibleInBothThemes(client)
 

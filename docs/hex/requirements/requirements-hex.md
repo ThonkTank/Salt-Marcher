@@ -8,7 +8,7 @@ Provide one hex-map workflow that lets a GM:
 - track and move party travel on that map
 - read compact Hex travel state through the feature-neutral global travel-state
   surface shown in the runtime `Reise` tab
-- edit map metadata and hex terrain without duplicating map truth
+- edit map metadata and hex biomes without duplicating map truth
 - place existing World Planner locations once on a Hex map
 
 ## Non-Goals
@@ -54,7 +54,7 @@ Provide one hex-map workflow that lets a GM:
 
 1. The user opens the hex editor.
 2. The user selects a map and a tool.
-3. The user inspects a tile or paints terrain.
+3. The user inspects a tile or paints a biome.
 4. The user edits map metadata such as its name when needed.
 
 ## Visible Capabilities
@@ -62,7 +62,7 @@ Provide one hex-map workflow that lets a GM:
 - hex map display with party token
 - tile selection and tile inspection
 - compact travel context for overworld travel
-- terrain paint workflow
+- shared biome paint and catalog CRUD workflow
 - map creation and metadata editing
 - placement of one existing World Planner location from `Katalog → Orte`
 - bounded viewport loading over an unbounded sparse axial coordinate space
@@ -77,12 +77,13 @@ Provide one hex-map workflow that lets a GM:
   compact travel-state surface shown in the runtime `Reise` tab.
 - The compact `Reise` state tab consumes Hex runtime travel readback only; it
   does not infer active travel from editor-only map selection.
-- Editing terrain or map metadata never requires the user to infer hidden map
+- Editing a biome or map metadata never requires the user to infer hidden map
   state from implementation details.
 - travel can be paused, resumed, or aborted and resumes paused at the last
   committed Hex after restart
-- V1 terrain definitions are replaceable static catalog data; editable Terrain
-  catalog CRUD remains a later slice
+- biome definitions are installation-owned catalog data shared with creature
+  filtering; protected built-ins and unlimited custom definitions are editable
+  through the Hex editor
 
 ## Open Product Questions
 

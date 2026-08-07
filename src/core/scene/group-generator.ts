@@ -140,7 +140,8 @@ export function generateSceneGroupDraft(
     effectiveEncounterTableIds: [],
     effectiveFactionIds: [],
     locationId: filters.locationId,
-    catalogFallback: true
+    catalogFallback: true,
+    biomeFiltering: false
   }
 ): SceneGroupDraftGeneration {
   if (

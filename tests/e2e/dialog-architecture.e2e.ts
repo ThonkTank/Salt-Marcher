@@ -25,6 +25,16 @@ describe('dialog architecture', () => {
       'dialog-architecture',
       'section.encounter-table-manager'
     )
+    const sizeFilter = await manager.$(
+      'input[role="combobox"][aria-label="Größe"]'
+    )
+    await sizeFilter.setValue('hu')
+    const huge = await manager.$('[role="option"]*=Huge')
+    await huge.waitForDisplayed()
+    await huge.click()
+    const hugeChip = await manager.$('button=Huge ×')
+    await expect(hugeChip).toBeExisting()
+    await hugeChip.click()
 
     const name = await manager.$('input[aria-label="Tabellenname"]')
     await name.setValue('Küstenbegegnungen')

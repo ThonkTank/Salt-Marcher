@@ -19,7 +19,7 @@ const options: CreatureFilterOptions = {
   sizes: ['Klein', 'Mittel'],
   types: ['Humanoid'],
   subtypes: ['Goblinoid'],
-  biomes: ['Küste'],
+  biomes: [{ id: 'coastal', label: 'Küste' }],
   alignments: ['Neutral'],
   encounterTables: [{ id: 'table-1', label: 'Küstenwache' }],
   factions: [{ id: 'faction-1', label: 'Tiefenbund' }],
@@ -41,6 +41,22 @@ function Harness() {
         changed={setQuery}
         clustered
       />
+      <div className="filter-chips">
+        <FilterChips query={query} changed={setQuery} options={options} />
+      </div>
+      <output data-testid="offset">{query.offset}</output>
+    </>
+  )
+}
+
+function CompactHarness() {
+  const [query, setQuery] = useState<CreatureCatalogQuery>({
+    ...emptyQuery,
+    offset: 20
+  })
+  return (
+    <>
+      <CreatureFilters query={query} options={options} changed={setQuery} />
       <div className="filter-chips">
         <FilterChips query={query} changed={setQuery} options={options} />
       </div>
@@ -82,6 +98,43 @@ describe('clustered creature filters', () => {
     ).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Tiefenbund ×' })
+    ).toBeInTheDocument()
+  })
+})
+
+describe('searchable creature filters', () => {
+  it('filters and adds categorical and reference values', () => {
+    render(<CompactHarness />)
+
+    const size = screen.getByRole('combobox', { name: 'Größe' })
+    fireEvent.focus(size)
+    fireEvent.change(size, { target: { value: 'kle' } })
+    fireEvent.click(screen.getByRole('option', { name: 'Klein' }))
+    expect(screen.getByRole('button', { name: 'Klein ×' })).toBeInTheDocument()
+    expect(size).toHaveAttribute('aria-expanded', 'true')
+
+    fireEvent.keyDown(size, { key: 'Escape' })
+    const table = screen.getByRole('combobox', { name: 'Tabelle' })
+    fireEvent.focus(table)
+    fireEvent.change(table, { target: { value: 'wache' } })
+    fireEvent.click(screen.getByRole('option', { name: 'Küstenwache' }))
+    expect(
+      screen.getByRole('button', { name: 'Küstenwache ×' })
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('offset')).toHaveTextContent('0')
+  })
+
+  it('searches and selects one location with a readable chip', () => {
+    render(<CompactHarness />)
+
+    const location = screen.getByRole('combobox', { name: 'Ort' })
+    fireEvent.focus(location)
+    fireEvent.change(location, { target: { value: 'klippen' } })
+    fireEvent.click(screen.getByRole('option', { name: 'Klippenpfad' }))
+
+    expect(location).toHaveValue('Klippenpfad')
+    expect(
+      screen.getByRole('button', { name: 'Ort: Klippenpfad ×' })
     ).toBeInTheDocument()
   })
 })

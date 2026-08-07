@@ -93,7 +93,9 @@ describe('party and catalog parity slice', () => {
       creatureCatalogQuerySchema.parse({
         name: 'wolf',
         types: ['Beast'],
-        biomes: options.biomes.includes('Forest') ? ['Forest'] : [],
+        biomes: options.biomes.some((biome) => biome.id === 'forest')
+          ? ['forest']
+          : [],
         sort: 'cr',
         direction: 'asc',
         limit: 50

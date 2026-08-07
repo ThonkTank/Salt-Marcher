@@ -177,7 +177,7 @@
 
 .hex-value-row,
 .hex-symbol-heading,
-.hex-terrain-fact {
+.hex-biome-fact {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -186,23 +186,177 @@
 
 .hex-value-row small,
 .hex-symbol-heading small,
-.hex-terrain-fact small,
+.hex-biome-fact small,
 .hex-muted {
   color: var(--text-secondary);
 }
 
-.hex-terrain-grid {
+.hex-biome-static-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 6px;
+}
+
+.hex-biome-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 5px;
+}
+
+.hex-biome-toolbar input {
+  min-width: 0;
+}
+
+.hex-biome-toolbar button {
+  padding-inline: 7px;
+}
+
+.hex-biome-viewport {
+  height: 292px;
+  overflow-y: auto;
+  border: 1px solid var(--border-hair);
+  background: var(--surface-pane-sunken-flat);
+}
+
+.hex-biome-virtual-content {
+  position: relative;
+  min-height: 1px;
+}
+
+.hex-biome-tile {
+  position: absolute;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  height: 58px;
+  align-content: end;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-1);
+  border-radius: 0;
+  color: #fff;
+  text-shadow: 0 1px 2px #000;
+}
+
+.hex-biome-tile > span,
+.hex-biome-tile > small {
+  align-self: end;
+  min-width: 0;
+  min-height: 21px;
+  padding: 3px 4px;
+  overflow: hidden;
+  background: #241a10e6;
+  color: var(--text-on-accent);
+  font-size: 12px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hex-biome-tile > small {
+  text-align: right;
+}
+
+.hex-biome-tile[aria-pressed='true'] {
+  outline: 3px solid var(--accent-rubric);
+  outline-offset: -3px;
+}
+
+.hex-biome-loading {
+  background: var(--surface-control);
+  opacity: 0.55;
+}
+
+.hex-biome-count {
+  color: var(--text-secondary);
+  text-align: right;
+}
+
+.hex-biome-replace {
+  padding: 7px;
+  border: 1px dashed var(--border-structural);
+  background: var(--surface-button);
+  text-align: left;
+}
+
+.hex-biome-placeholder-warning {
+  padding: 7px;
+  border: 1px solid #b54a86;
+  background: repeating-linear-gradient(
+    135deg,
+    color-mix(in srgb, #b54a86 22%, transparent) 0 7px,
+    transparent 7px 14px
+  );
+}
+
+.hex-biome-editor {
+  width: min(620px, calc(100vw - 32px));
+  max-height: min(760px, calc(100vh - 32px));
+  overflow: auto;
+}
+
+.hex-biome-color-row {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr);
+  gap: 8px;
+}
+
+.hex-biome-color-row input[type='color'] {
+  padding: 2px;
+}
+
+.hex-biome-checkbox {
+  display: flex !important;
+  align-items: center;
+}
+
+.hex-biome-checkbox input,
+.hex-biome-table-links input {
+  width: auto;
+  min-height: auto;
+}
+
+.hex-biome-table-links {
+  display: grid;
+  max-height: 230px;
+  gap: 2px;
+  padding: 8px;
+  overflow-y: auto;
+  border: 1px solid var(--border-hair);
+}
+
+.hex-biome-table-links label {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 4px;
+}
+
+.hex-biome-table-links small {
+  color: var(--text-secondary);
+}
+
+.hex-biome-dialog-spacer {
+  flex: 1;
+}
+
+.hex-biome-delete-confirm {
+  width: min(520px, calc(100vw - 32px));
+  padding: 20px;
+}
+
+.hex-biome-delete-confirm footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .hex-brush-segments button {
   height: 28px;
 }
 
-.hex-terrain-tile,
-.hex-terrain-new {
+.hex-biome-static-tile,
+.hex-biome-static-new {
   display: grid;
   height: 56px;
   align-content: end;
@@ -214,12 +368,12 @@
   text-shadow: 0 1px 2px #000;
 }
 
-.hex-terrain-tile {
+.hex-biome-static-tile {
   grid-template-columns: minmax(0, 1fr) auto;
 }
 
-.hex-terrain-tile > span,
-.hex-terrain-tile > small {
+.hex-biome-static-tile > span,
+.hex-biome-static-tile > small {
   align-self: end;
   width: 100%;
   min-height: 20px;
@@ -230,12 +384,12 @@
   text-align: left;
 }
 
-.hex-terrain-tile > small {
+.hex-biome-static-tile > small {
   font-size: 11px;
   text-align: right;
 }
 
-.hex-terrain-new {
+.hex-biome-static-new {
   place-items: center;
   border: 1px dashed var(--border-structural);
   background: transparent;
@@ -243,18 +397,9 @@
   text-shadow: none;
 }
 
-.hex-terrain-tile[aria-pressed='true'] {
+.hex-biome-static-tile[aria-pressed='true'] {
   outline: 2px solid var(--accent-gold);
   outline-offset: -2px;
-}
-
-.hex-location-list {
-  display: grid;
-  max-height: 148px;
-  overflow-y: auto;
-  padding-right: 11px;
-  border: 1px solid var(--border-hair);
-  background: var(--surface-card-flat);
 }
 
 .hex-create-location {
@@ -272,31 +417,8 @@
   background: var(--surface-button-hover);
 }
 
-.hex-location-list button {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 6px;
-  min-height: 30px;
-  padding: 5px 7px;
-  border: 0;
-  border-bottom: 1px solid var(--border-hair);
-  border-radius: 0;
-  text-align: left;
-}
-
-.hex-location-list button:hover {
-  background: var(--surface-button-hover);
-}
-
-.hex-location-list button small {
-  color: var(--text-3);
-  font-size: 11px;
-}
-
-.hex-location-list button[aria-selected='true'] {
-  color: var(--text-on-accent);
-  background: var(--accent-rubric);
+.hex-location-select {
+  width: 100%;
 }
 
 .hex-symbol-grid {
@@ -477,7 +599,7 @@
   font-size: 14px;
 }
 
-.hex-terrain-fact > span:first-child {
+.hex-biome-fact > span:first-child {
   width: 12px;
   height: 12px;
   border-radius: 0;

@@ -181,6 +181,7 @@ describe('live session capability contracts', () => {
   it('validates weighted tables and bounded faction inventory', () => {
     expect(
       createEncounterTableInputSchema.safeParse({
+        commandId: '00000000-0000-4000-8000-000000000001',
         expectedRevision: 0,
         table: {
           displayName: 'Harbour Patrol',
@@ -191,6 +192,7 @@ describe('live session capability contracts', () => {
     ).toBe(true)
     expect(
       createEncounterTableInputSchema.safeParse({
+        commandId: '00000000-0000-4000-8000-000000000002',
         expectedRevision: 0,
         table: {
           displayName: 'Broken',

@@ -79,6 +79,17 @@ import {
   svgSymbolFileResultSchema
 } from './location-symbol.js'
 import {
+  biomeCatalogMutationResultSchema,
+  biomeDeleteImpactSchema,
+  biomeDetailInputSchema,
+  biomeDefinitionSchema,
+  biomePageSchema,
+  biomeSearchInputSchema,
+  createBiomeInputSchema,
+  deleteBiomeInputSchema,
+  updateBiomeInputSchema
+} from './biome.js'
+import {
   createEncounterTableInputSchema,
   createWorldFactionInputSchema,
   deleteEncounterTableInputSchema,
@@ -98,7 +109,7 @@ import {
   hexLocationPlacementReferenceSchema,
   hexMapCatalogSnapshotSchema,
   hexRouteEvaluationSchema,
-  hexTerrainCatalogSchema,
+  hexBiomeCatalogSchema,
   hexTravelSnapshotSchema,
   hexHistoryStateSchema,
   hexCommandIdInputSchema,
@@ -109,6 +120,8 @@ import {
   mutateHexTravelInputSchema,
   positionHexPartyInputSchema,
   readHexChunksInputSchema,
+  replaceMapBiomePlaceholderInputSchema,
+  replaceMapBiomePlaceholderResultSchema,
   unplaceHexLocationInputSchema,
   setHexTravelMultiplierInputSchema,
   startHexTravelInputSchema,
@@ -335,6 +348,36 @@ export const coreOperations = {
     importLocationSymbolInputSchema,
     importLocationSymbolResultSchema
   ),
+  'biomes.search': read(
+    'biomes:search',
+    biomeSearchInputSchema,
+    biomePageSchema
+  ),
+  'biomes.detail': read(
+    'biomes:detail',
+    biomeDetailInputSchema,
+    biomeDefinitionSchema
+  ),
+  'biomes.create': write(
+    'biomes:create',
+    createBiomeInputSchema,
+    biomeCatalogMutationResultSchema
+  ),
+  'biomes.update': write(
+    'biomes:update',
+    updateBiomeInputSchema,
+    biomeCatalogMutationResultSchema
+  ),
+  'biomes.deleteImpact': read(
+    'biomes:delete-impact',
+    biomeDetailInputSchema,
+    biomeDeleteImpactSchema
+  ),
+  'biomes.delete': write(
+    'biomes:delete',
+    deleteBiomeInputSchema,
+    biomeCatalogMutationResultSchema
+  ),
   'encounterTables.read': read(
     'encounter-tables:read',
     none,
@@ -502,11 +545,7 @@ export const coreOperations = {
     combatRevisionInputSchema,
     combatCommandResultSchema
   ),
-  'hex.terrainCatalog': read(
-    'hex:terrainCatalog',
-    none,
-    hexTerrainCatalogSchema
-  ),
+  'hex.biomeCatalog': read('hex:biomeCatalog', none, hexBiomeCatalogSchema),
   'hex.editorBootstrap': read(
     'hex:editorBootstrap',
     none,
@@ -522,6 +561,11 @@ export const coreOperations = {
     'hex:readChunks',
     readHexChunksInputSchema,
     hexChunkReadResultSchema
+  ),
+  'hex.replaceBiomePlaceholder': write(
+    'hex:replaceBiomePlaceholder',
+    replaceMapBiomePlaceholderInputSchema,
+    replaceMapBiomePlaceholderResultSchema
   ),
   'hex.create': write(
     'hex:create',

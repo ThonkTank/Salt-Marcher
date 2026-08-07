@@ -169,6 +169,48 @@ describe('CoreProcessSupervisor', () => {
     await supervisor.closeGracefully()
   })
 
+  it('forwards revisioned biome and encounter-table invalidations', async () => {
+    const { supervisor, children } = harness()
+    const biomeListener = vi.fn()
+    const tableListener = vi.fn()
+    supervisor.onBiomesChanged(biomeListener)
+    supervisor.onEncounterTablesChanged(tableListener)
+    children[0]?.ready()
+    children[0]?.emit('message', {
+      kind: 'biomes.changed',
+      notice: {
+        revision: 4,
+        changedBiomeIds: ['forest'],
+        reason: 'updated'
+      }
+    })
+    children[0]?.emit('message', {
+      kind: 'encounter-tables.changed',
+      notice: {
+        installationRevision: 3,
+        campaignRevision: 7,
+        changedTableIds: ['00000000-0000-4000-8000-000000000001'],
+        scope: 'installation',
+        reason: 'deleted'
+      }
+    })
+
+    expect(biomeListener).toHaveBeenCalledWith({
+      revision: 4,
+      changedBiomeIds: ['forest'],
+      reason: 'updated'
+    })
+    expect(tableListener).toHaveBeenCalledWith({
+      installationRevision: 3,
+      campaignRevision: 7,
+      changedTableIds: ['00000000-0000-4000-8000-000000000001'],
+      scope: 'installation',
+      reason: 'deleted'
+    })
+    children[0]?.emit('exit', 0)
+    await supervisor.closeGracefully()
+  })
+
   it.each([
     ['invalid reply', { nonsense: true }],
     [

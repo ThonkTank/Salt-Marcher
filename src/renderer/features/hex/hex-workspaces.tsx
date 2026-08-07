@@ -7,11 +7,11 @@ import type {
   HexMapCatalogSnapshot,
   HexMapView,
   HexRouteEvaluation,
-  HexTerrainCatalog,
+  HexBiomeCatalog,
   HexTravelSnapshot
 } from '../../../shared/contracts/hex.js'
 import { HexMapCanvas } from './hex-map-canvas.js'
-import { HexChunkCache } from './hex-chunk-cache.js'
+import { HexChunkCache, mergeHexBiomeCatalog } from './hex-chunk-cache.js'
 import './hex.css'
 import { hexCapabilities } from './hex-capabilities.js'
 import {
@@ -181,35 +181,43 @@ export function SessionHexMap(props: {
     new HexChunkCache((mapId, keys) => capabilities.hex.readChunks(mapId, keys))
   )
   const mapRefreshRequest = useRef(0)
+  const biomeRefreshRequest = useRef(0)
   const sceneId = props.snapshot.scene.focusedSceneId
   const onError = props.onError
   const setSnapshot = props.setSnapshot
   const [catalog, setCatalog] = useState<HexMapCatalogSnapshot | null>(null)
-  const [terrains, setTerrains] = useState<HexTerrainCatalog | null>(null)
+  const [biomes, setBiomes] = useState<HexBiomeCatalog | null>(null)
   const [map, setMap] = useState<HexMapView | null>(null)
   const [travel, setTravel] = useState<HexTravelSnapshot | null>(null)
   const [selected, setSelected] = useState<AxialCoordinate | null>(null)
   const [mode, setMode] = useState<'inspect' | 'position' | 'plan'>('inspect')
   const [waypoints, setWaypoints] = useState<AxialCoordinate[]>([])
   const [evaluation, setEvaluation] = useState<HexRouteEvaluation | null>(null)
+  const applyMap = useCallback((next: HexMapView | null) => {
+    setMap(next)
+    if (next)
+      setBiomes((current) =>
+        current ? mergeHexBiomeCatalog(current, next.biomes) : current
+      )
+  }, [])
   useEffect(() => () => chunkCache.current.clear(), [])
 
   useEffect(() => {
     void Promise.all([
       capabilities.hex.catalog(),
-      capabilities.hex.terrainCatalog(),
+      capabilities.hex.biomeCatalog(),
       capabilities.hexTravel.read(sceneId)
     ])
-      .then(async ([nextCatalog, nextTerrains, nextTravel]) => {
+      .then(async ([nextCatalog, nextBiomes, nextTravel]) => {
         setCatalog(nextCatalog)
-        setTerrains(nextTerrains)
+        setBiomes(nextBiomes)
         setTravel(nextTravel)
         const mapId = nextTravel.mapId ?? nextCatalog.maps[0]?.id
         const summary = nextCatalog.maps.find((entry) => entry.id === mapId)
-        setMap(summary ? await chunkCache.current.readMapView(summary) : null)
+        applyMap(summary ? await chunkCache.current.readMapView(summary) : null)
       })
       .catch(reportCapabilityError(onError))
-  }, [capabilities, onError, sceneId])
+  }, [applyMap, capabilities, onError, sceneId])
 
   useEffect(
     () =>
@@ -226,6 +234,29 @@ export function SessionHexMap(props: {
           .catch(reportCapabilityError(onError))
       }),
     [capabilities, onError, sceneId, setSnapshot]
+  )
+
+  useEffect(
+    () =>
+      capabilities.biomes.onChanged(() => {
+        const request = ++biomeRefreshRequest.current
+        if (map) chunkCache.current.invalidateMap(map.map.id)
+        void Promise.all([
+          capabilities.hex.biomeCatalog(),
+          map ? chunkCache.current.readMapView(map.map, map.center, true) : null
+        ])
+          .then(([baseline, nextMap]) => {
+            if (request !== biomeRefreshRequest.current) return
+            setBiomes(
+              nextMap
+                ? mergeHexBiomeCatalog(baseline, nextMap.biomes)
+                : baseline
+            )
+            if (nextMap) setMap(nextMap)
+          })
+          .catch(reportCapabilityError(onError))
+      }),
+    [capabilities.biomes, capabilities.hex, map, onError]
   )
 
   useEffect(
@@ -253,11 +284,11 @@ export function SessionHexMap(props: {
           .then((result) => {
             if (!result || request !== mapRefreshRequest.current) return
             setCatalog(result.nextCatalog)
-            setMap(result.nextMap)
+            applyMap(result.nextMap)
           })
           .catch(reportCapabilityError(onError))
       }),
-    [capabilities.hex, map, onError]
+    [applyMap, capabilities.hex, map, onError]
   )
 
   useEffect(() => {
@@ -274,7 +305,7 @@ export function SessionHexMap(props: {
     try {
       const summary = catalog?.maps.find((entry) => entry.id === mapId)
       if (!summary) return
-      setMap(await chunkCache.current.readMapView(summary))
+      applyMap(await chunkCache.current.readMapView(summary))
       setSelected(null)
       setWaypoints([])
     } catch (cause) {
@@ -328,7 +359,7 @@ export function SessionHexMap(props: {
     }
   }
 
-  if (!catalog || !terrains)
+  if (!catalog || !biomes)
     return <div className="session-map-empty">{message('hex.loading')}</div>
   if (catalog.maps.length === 0)
     return (
@@ -395,7 +426,7 @@ export function SessionHexMap(props: {
       </div>
       <HexMapCanvas
         snapshot={map}
-        terrains={terrains}
+        biomes={biomes}
         selected={selected}
         token={token}
         route={route}
@@ -403,7 +434,7 @@ export function SessionHexMap(props: {
         onViewportChange={(center) =>
           void chunkCache.current
             .readMapView(map.map, center)
-            .then(setMap)
+            .then(applyMap)
             .catch(reportCapabilityError(props.onError))
         }
         ariaLabel={formatMessage('hex.canvas.mapLabel', {
@@ -415,14 +446,14 @@ export function SessionHexMap(props: {
           {selectedTile
             ? formatMessage(
                 selectedTile.location
-                  ? 'hex.status.tileTerrainLocation'
-                  : 'hex.status.tileTerrain',
+                  ? 'hex.status.tileBiomeLocation'
+                  : 'hex.status.tileBiome',
                 {
                   q: selectedTile.q,
                   r: selectedTile.r,
-                  terrain:
-                    terrains.terrains.find(
-                      (terrain) => terrain.id === selectedTile.terrainId
+                  biome:
+                    biomes.biomes.find(
+                      (biome) => biome.id === selectedTile.biomeId
                     )?.label ?? '',
                   location: selectedTile.location?.displayName ?? ''
                 }
@@ -468,32 +499,40 @@ export function HexLocationPlacementDialog(props: {
     createHexLocationPlacementController(capabilities.hex)
   )
   const mapRefreshRequest = useRef(0)
+  const biomeRefreshRequest = useRef(0)
   const onError = props.onError
   const [catalog, setCatalog] = useState<HexMapCatalogSnapshot | null>(null)
-  const [terrains, setTerrains] = useState<HexTerrainCatalog | null>(null)
+  const [biomes, setBiomes] = useState<HexBiomeCatalog | null>(null)
   const [map, setMap] = useState<HexMapView | null>(null)
   const [selected, setSelected] = useState<AxialCoordinate | null>(null)
   const [existing, setExisting] = useState<{
     mapId: string
     contentRevision: number
   } | null>(null)
+  const applyMap = useCallback((next: HexMapView | null) => {
+    setMap(next)
+    if (next)
+      setBiomes((current) =>
+        current ? mergeHexBiomeCatalog(current, next.biomes) : current
+      )
+  }, [])
   useEffect(() => () => chunkCache.current.clear(), [])
   useEffect(() => {
     void Promise.all([
       capabilities.hex.catalog(),
-      capabilities.hex.terrainCatalog(),
+      capabilities.hex.biomeCatalog(),
       capabilities.hex.locateLocation(props.location.id)
     ])
-      .then(async ([nextCatalog, nextTerrains, placement]) => {
+      .then(async ([nextCatalog, nextBiomes, placement]) => {
         setCatalog(nextCatalog)
-        setTerrains(nextTerrains)
+        setBiomes(nextBiomes)
         const summary = placement
           ? nextCatalog.maps.find((entry) => entry.id === placement.mapId)
           : nextCatalog.maps[0]
         const initial = summary
           ? await chunkCache.current.readMapView(summary, placement?.coordinate)
           : null
-        setMap(initial)
+        applyMap(initial)
         if (placement) {
           setSelected(placement.coordinate)
           setExisting({
@@ -503,7 +542,29 @@ export function HexLocationPlacementDialog(props: {
         }
       })
       .catch(reportCapabilityError(onError))
-  }, [capabilities, onError, props.location.id])
+  }, [applyMap, capabilities, onError, props.location.id])
+  useEffect(
+    () =>
+      capabilities.biomes.onChanged(() => {
+        const request = ++biomeRefreshRequest.current
+        if (map) chunkCache.current.invalidateMap(map.map.id)
+        void Promise.all([
+          capabilities.hex.biomeCatalog(),
+          map ? chunkCache.current.readMapView(map.map, map.center, true) : null
+        ])
+          .then(([baseline, nextMap]) => {
+            if (request !== biomeRefreshRequest.current) return
+            setBiomes(
+              nextMap
+                ? mergeHexBiomeCatalog(baseline, nextMap.biomes)
+                : baseline
+            )
+            if (nextMap) setMap(nextMap)
+          })
+          .catch(reportCapabilityError(onError))
+      }),
+    [capabilities.biomes, capabilities.hex, map, onError]
+  )
   useEffect(
     () =>
       capabilities.hex.onChanged((notice) => {
@@ -534,7 +595,7 @@ export function HexLocationPlacementDialog(props: {
           .then((result) => {
             if (!result || request !== mapRefreshRequest.current) return
             setCatalog(result.nextCatalog)
-            setMap(result.nextMap)
+            applyMap(result.nextMap)
             setExisting(
               result.placement
                 ? {
@@ -547,11 +608,11 @@ export function HexLocationPlacementDialog(props: {
           })
           .catch(reportCapabilityError(onError))
       }),
-    [capabilities.hex, map, onError, props.location.id]
+    [applyMap, capabilities.hex, map, onError, props.location.id]
   )
   const changeMap = async (mapId: string) => {
     const summary = catalog?.maps.find((entry) => entry.id === mapId)
-    if (summary) setMap(await chunkCache.current.readMapView(summary))
+    if (summary) applyMap(await chunkCache.current.readMapView(summary))
     setSelected(null)
   }
   const place = async () => {
@@ -602,7 +663,7 @@ export function HexLocationPlacementDialog(props: {
           ×
         </button>
       </header>
-      {!catalog || !terrains ? (
+      {!catalog || !biomes ? (
         <p>{message('ui.karten.werden.geladen')}</p>
       ) : catalog.maps.length === 0 ? (
         <p>{message('ui.lege.zuerst.eine.hex.karte.an')}</p>
@@ -625,13 +686,13 @@ export function HexLocationPlacementDialog(props: {
           </select>
           <HexMapCanvas
             snapshot={map}
-            terrains={terrains}
+            biomes={biomes}
             selected={selected}
             onTileClick={setSelected}
             onViewportChange={(center) =>
               void chunkCache.current
                 .readMapView(map.map, center)
-                .then(setMap)
+                .then(applyMap)
                 .catch(reportCapabilityError(props.onError))
             }
             ariaLabel={formatMessage('hex.canvas.placementLabel', {

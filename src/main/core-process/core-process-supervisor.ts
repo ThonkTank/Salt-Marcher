@@ -35,6 +35,14 @@ import {
   type LocationSymbolChangeNotice
 } from '../../shared/contracts/location-symbol.js'
 import {
+  biomeChangeNoticeSchema,
+  type BiomeChangeNotice
+} from '../../shared/contracts/biome.js'
+import {
+  encounterTableChangeNoticeSchema,
+  type EncounterTableChangeNotice
+} from '../../shared/contracts/encounter-source.js'
+import {
   coreRestartDelay,
   interruptedOperationError,
   type CoreOperationMode
@@ -79,6 +87,12 @@ export class CoreProcessSupervisor {
   >()
   readonly #locationSymbolChangeListeners = new Set<
     (notice: LocationSymbolChangeNotice) => void
+  >()
+  readonly #biomeChangeListeners = new Set<
+    (notice: BiomeChangeNotice) => void
+  >()
+  readonly #encounterTableChangeListeners = new Set<
+    (notice: EncounterTableChangeNotice) => void
   >()
   readonly #pending = new Map<string, PendingRequest>()
 
@@ -141,6 +155,18 @@ export class CoreProcessSupervisor {
   ): () => void {
     this.#locationSymbolChangeListeners.add(listener)
     return () => this.#locationSymbolChangeListeners.delete(listener)
+  }
+
+  onBiomesChanged(listener: (notice: BiomeChangeNotice) => void): () => void {
+    this.#biomeChangeListeners.add(listener)
+    return () => this.#biomeChangeListeners.delete(listener)
+  }
+
+  onEncounterTablesChanged(
+    listener: (notice: EncounterTableChangeNotice) => void
+  ): () => void {
+    this.#encounterTableChangeListeners.add(listener)
+    return () => this.#encounterTableChangeListeners.delete(listener)
   }
 
   retry(): void {
@@ -258,22 +284,53 @@ export class CoreProcessSupervisor {
     }
     const event = coreEventSchema.safeParse(raw)
     if (event.success) {
-      if (event.data.kind === 'session.changed') {
-        const notice = sessionChangeNoticeSchema.parse(event.data.notice)
-        for (const listener of this.#sessionChangeListeners) listener(notice)
-      } else if (event.data.kind === 'reference.changed') {
-        const notice = referenceIndexChangeNoticeSchema.parse(event.data.notice)
-        for (const listener of this.#referenceChangeListeners) listener(notice)
-      } else if (event.data.kind === 'hex.changed') {
-        const notice = hexChangeNoticeSchema.parse(event.data.notice)
-        for (const listener of this.#hexChangeListeners) listener(notice)
-      } else if (event.data.kind === 'locations.changed') {
-        const notice = worldLocationChangeNoticeSchema.parse(event.data.notice)
-        for (const listener of this.#locationChangeListeners) listener(notice)
-      } else {
-        const notice = locationSymbolChangeNoticeSchema.parse(event.data.notice)
-        for (const listener of this.#locationSymbolChangeListeners)
-          listener(notice)
+      switch (event.data.kind) {
+        case 'session.changed': {
+          const notice = sessionChangeNoticeSchema.parse(event.data.notice)
+          for (const listener of this.#sessionChangeListeners) listener(notice)
+          break
+        }
+        case 'reference.changed': {
+          const notice = referenceIndexChangeNoticeSchema.parse(
+            event.data.notice
+          )
+          for (const listener of this.#referenceChangeListeners)
+            listener(notice)
+          break
+        }
+        case 'hex.changed': {
+          const notice = hexChangeNoticeSchema.parse(event.data.notice)
+          for (const listener of this.#hexChangeListeners) listener(notice)
+          break
+        }
+        case 'locations.changed': {
+          const notice = worldLocationChangeNoticeSchema.parse(
+            event.data.notice
+          )
+          for (const listener of this.#locationChangeListeners) listener(notice)
+          break
+        }
+        case 'location-symbols.changed': {
+          const notice = locationSymbolChangeNoticeSchema.parse(
+            event.data.notice
+          )
+          for (const listener of this.#locationSymbolChangeListeners)
+            listener(notice)
+          break
+        }
+        case 'biomes.changed': {
+          const notice = biomeChangeNoticeSchema.parse(event.data.notice)
+          for (const listener of this.#biomeChangeListeners) listener(notice)
+          break
+        }
+        case 'encounter-tables.changed': {
+          const notice = encounterTableChangeNoticeSchema.parse(
+            event.data.notice
+          )
+          for (const listener of this.#encounterTableChangeListeners)
+            listener(notice)
+          break
+        }
       }
       return
     }

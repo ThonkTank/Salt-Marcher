@@ -22,12 +22,15 @@ import { useWorldLocationProjectionController } from './use-world-location-proje
 import { WorldLocationDialog } from '../worldplanner/world-location-dialog.js'
 import { createWorldLocationCreationPort } from '../worldplanner/world-location-capabilities.js'
 import { useWorldLocationCreationWorkflow } from '../worldplanner/use-world-location-creation-workflow.js'
+import { biomeCatalogCapabilities } from './biome-catalog-capabilities.js'
+import { mergeHexBiomeCatalog } from './hex-chunk-cache.js'
 
 export default function HexEditor(props: {
   onError: (message: string) => void
 }) {
   const api = useCapabilityApi()
   const capabilities = useMemo(() => hexCapabilities(api), [api])
+  const biomeCatalog = useMemo(() => biomeCatalogCapabilities(api), [api])
   const locationCreationPort = useMemo(
     () => createWorldLocationCreationPort(api),
     [api]
@@ -35,7 +38,8 @@ export default function HexEditor(props: {
   const controller = useHexEditorController()
   const {
     catalog,
-    terrains,
+    biomes,
+    setBiomes,
     symbols,
     setSymbols,
     map,
@@ -43,10 +47,10 @@ export default function HexEditor(props: {
     setSelected,
     tool,
     setTool,
-    terrainMode,
-    setTerrainMode,
-    terrainId,
-    setTerrainId,
+    biomeMode,
+    setBiomeMode,
+    biomeId,
+    setBiomeId,
     brushLevel,
     setBrushLevel,
     locationId,
@@ -119,7 +123,7 @@ export default function HexEditor(props: {
     savingMessage: message('ui.speichern.laeuft')
   })
 
-  if (!catalog || !terrains || !locations.snapshot || !symbols)
+  if (!catalog || !biomes || !locations.snapshot || !symbols)
     return (
       <section className="workspace-panel">
         {message('ui.hex.editor.wird.geladen')}
@@ -154,13 +158,13 @@ export default function HexEditor(props: {
       />
       <HexCanvasSurface
         map={map}
-        terrains={terrains}
+        biomes={biomes}
         selected={selected}
         overlays={overlays}
         tool={tool}
         brushLevel={brushLevel}
-        terrainMode={terrainMode}
-        terrainId={terrainId}
+        biomeMode={biomeMode}
+        biomeId={biomeId}
         resetViewSignal={resetViewSignal}
         onSelect={(coordinate) => {
           setSelected(coordinate)
@@ -182,19 +186,48 @@ export default function HexEditor(props: {
         }}
       />
       <HexStatePane
+        map={map}
         selected={selected}
         tile={tile}
-        terrains={terrains}
+        biomes={biomes}
         locations={locations.snapshot}
         symbols={symbols}
         tool={tool}
-        terrainId={terrainId}
+        biomeId={biomeId}
         brushLevel={brushLevel}
-        terrainMode={terrainMode}
+        biomeMode={biomeMode}
         locationId={locationId}
-        onPaintMode={setTerrainMode}
+        onPaintMode={setBiomeMode}
         onBrushLevelChange={setBrushLevel}
-        onTerrainChange={setTerrainId}
+        onBiomeChange={setBiomeId}
+        onBiomeSelected={(biome) =>
+          setBiomes((current) =>
+            current
+              ? mergeHexBiomeCatalog(current, [
+                  {
+                    id: biome.id,
+                    label: biome.displayName,
+                    color: biome.color,
+                    passable: biome.passable,
+                    travelCost: biome.travelCost
+                  }
+                ])
+              : current
+          )
+        }
+        biomeCapabilities={biomeCatalog}
+        onReplaceBiomePlaceholder={() => {
+          if (!map || biomeId === 'to-be-replaced') return
+          void capabilities.hex
+            .replaceBiomePlaceholder({
+              commandId: crypto.randomUUID(),
+              mapId: map.map.id,
+              replacementBiomeId: biomeId,
+              expectedContentRevision: map.map.contentRevision
+            })
+            .catch(reportCapabilityError(props.onError))
+        }}
+        onBiomeError={props.onError}
         onLocationChange={(id) => {
           setLocationId(id)
           if (tool === 'location' && selected && tile && !tile.location)

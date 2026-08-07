@@ -25,6 +25,7 @@ import {
   useCreatureSearch
 } from '../creatures/creature-state.js'
 import { creaturesCapabilities } from '../creatures/creatures-capabilities.js'
+import { useBiomeOptionSearch } from '../creatures/use-biome-option-search.js'
 import {
   capabilityErrorText,
   reportCapabilityError
@@ -147,6 +148,12 @@ export function GroupDialog(props: {
   const [page, setPage] = useState<CreatureCatalogPage | null>(null)
   const [catalogTotal, setCatalogTotal] = useState(0)
   const [options, setOptions] = useState(emptyCreatureOptions)
+  const searchBiomeOptions = useBiomeOptionSearch(
+    api.biomes,
+    setOptions,
+    query.biomes,
+    props.onError
+  )
   const [tuning, setTuning] = useState<EncounterTuning>({
     difficulty: 'auto',
     amount: 'auto',
@@ -701,6 +708,7 @@ export function GroupDialog(props: {
             <CreatureFilters
               query={query}
               options={options}
+              searchBiomeOptions={searchBiomeOptions}
               changed={setQuery}
               clustered
             />

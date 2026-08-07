@@ -63,7 +63,7 @@ function harness() {
 }
 
 describe('chunked hex editor to session travel vertical slice', () => {
-  it('persists sparse terrain and placements with independent revisions', () => {
+  it('persists sparse biome and placements with independent revisions', () => {
     const { locations, maps, editing } = harness()
     const world = locations.create(
       {
@@ -79,7 +79,7 @@ describe('chunked hex editor to session travel vertical slice', () => {
       commandId: randomUUID(),
       mapId: map.id,
       mode: 'paint',
-      terrainId: 'forest',
+      biomeId: 'forest',
       path: [{ q: 1, r: 0 }],
       radius: 0,
       expectedContentRevision: 0,
@@ -91,7 +91,7 @@ describe('chunked hex editor to session travel vertical slice', () => {
       changedChunks: [{ mapId: map.id, key: { q: 0, r: 0 }, revision: 1 }]
     })
     expect(maps.readChunks(map.id, [{ q: 0, r: 0 }]).chunks[0]).toMatchObject({
-      authoredTiles: [{ q: 1, r: 0, terrainId: 'forest' }]
+      authoredTiles: [{ q: 1, r: 0, biomeId: 'forest' }]
     })
 
     const afterPaint = maps.catalog().maps.find((entry) => entry.id === map.id)!
@@ -153,7 +153,7 @@ describe('chunked hex editor to session travel vertical slice', () => {
       commandId: randomUUID(),
       mapId: map.id,
       mode: 'paint',
-      terrainId: 'mountain',
+      biomeId: 'mountain',
       path: [far],
       radius: 0,
       expectedContentRevision: 0,
@@ -161,7 +161,7 @@ describe('chunked hex editor to session travel vertical slice', () => {
     })
     expect(h.maps.readChunks(map.id, [key]).chunks[0]).toMatchObject({
       key,
-      authoredTiles: [{ ...far, terrainId: 'mountain' }]
+      authoredTiles: [{ ...far, biomeId: 'mountain' }]
     })
     expect(
       h.maps.readChunks(map.id, [{ q: 0, r: 0 }]).chunks[0]?.authoredTiles
@@ -176,7 +176,7 @@ describe('chunked hex editor to session travel vertical slice', () => {
       commandId,
       mapId: map.id,
       mode: 'paint',
-      terrainId: 'forest',
+      biomeId: 'forest',
       path: [{ q: 2, r: -1 }],
       radius: 0,
       expectedContentRevision: 0,
@@ -196,7 +196,7 @@ describe('chunked hex editor to session travel vertical slice', () => {
       commandId: randomUUID(),
       mapId: map.id,
       mode: 'paint',
-      terrainId: 'forest',
+      biomeId: 'forest',
       path: [{ q: 2, r: -1 }],
       radius: 0,
       expectedContentRevision: afterPaint.contentRevision,
@@ -235,7 +235,7 @@ describe('chunked hex editor to session travel vertical slice', () => {
     expect(
       h.maps.readChunks(map.id, [{ q: 0, r: -1 }]).chunks[0]
     ).toMatchObject({
-      authoredTiles: [{ q: 2, r: -1, terrainId: 'forest' }]
+      authoredTiles: [{ q: 2, r: -1, biomeId: 'forest' }]
     })
   })
 
@@ -259,7 +259,7 @@ describe('chunked hex editor to session travel vertical slice', () => {
         commandId: randomUUID(),
         mapId: map.id,
         mode: 'paint',
-        terrainId: 'grassland',
+        biomeId: 'grassland',
         path: [{ q: 0, r: 0 }],
         radius: 0,
         expectedContentRevision: 0,
@@ -321,7 +321,7 @@ describe('chunked hex editor to session travel vertical slice', () => {
         commandId: randomUUID(),
         mapId: map.id,
         mode: 'paint',
-        terrainId: 'forest',
+        biomeId: 'forest',
         path: [{ q, r: 0 }],
         radius: 0,
         expectedContentRevision: revision(),
@@ -349,7 +349,7 @@ describe('chunked hex editor to session travel vertical slice', () => {
       commandId: randomUUID(),
       mapId: map.id,
       mode: 'paint',
-      terrainId: 'water',
+      biomeId: 'water',
       path: [{ q: 100, r: 0 }],
       radius: 0,
       expectedContentRevision: revision(),
@@ -384,7 +384,7 @@ describe('chunked hex editor to session travel vertical slice', () => {
       commandId: randomUUID(),
       mapId: map.id,
       mode: 'paint',
-      terrainId: 'grassland',
+      biomeId: 'grassland',
       path: [
         { q: 0, r: 0 },
         { q: 1, r: 0 }
@@ -430,7 +430,7 @@ describe('chunked hex editor to session travel vertical slice', () => {
       commandId: randomUUID(),
       mapId: map.id,
       mode: 'erase',
-      terrainId: null,
+      biomeId: null,
       path: [{ q: 0, r: 0 }],
       radius: 0,
       expectedContentRevision: summary.contentRevision,
@@ -450,7 +450,7 @@ describe('chunked hex editor to session travel vertical slice', () => {
       commandId: randomUUID(),
       mapId: map.id,
       mode: 'erase',
-      terrainId: null,
+      biomeId: null,
       path: [{ q: 0, r: 0 }],
       radius: 0,
       expectedContentRevision: summary.contentRevision,
@@ -468,7 +468,7 @@ describe('chunked hex editor to session travel vertical slice', () => {
     })
     expect(
       h.maps.readChunks(map.id, [{ q: 0, r: 0 }]).chunks[0]!.authoredTiles
-    ).toEqual([{ q: 1, r: 0, terrainId: 'grassland' }])
+    ).toEqual([{ q: 1, r: 0, biomeId: 'grassland' }])
 
     const afterErase = h.maps
       .catalog()
@@ -506,7 +506,7 @@ describe('chunked hex editor to session travel vertical slice', () => {
       commandId: randomUUID(),
       mapId: map.id,
       mode: 'paint',
-      terrainId: 'grassland',
+      biomeId: 'grassland',
       path: [
         { q: 0, r: 0 },
         { q: 1, r: 0 }
@@ -563,17 +563,13 @@ describe('chunked hex editor to session travel vertical slice', () => {
     const map = h.maps.create('Lastprofil', h.maps.catalog().revision)
     const db = h.database()
     const insertTile = db.prepare(
-      `INSERT INTO hex_tile (map_id, q, r) VALUES (?, ?, ?)`
-    )
-    const insertTerrain = db.prepare(
-      `INSERT INTO hex_terrain (map_id, q, r, terrain_id)
+      `INSERT INTO hex_tile (map_id, q, r, biome_id)
        VALUES (?, ?, ?, 'forest')`
     )
     db.transaction(() => {
       for (let q = 0; q < 400; q += 1)
         for (let r = 0; r < 250; r += 1) {
           insertTile.run(map.id, q, r)
-          insertTerrain.run(map.id, q, r)
         }
       db.prepare(
         `INSERT INTO hex_chunk_revision (map_id, chunk_q, chunk_r, revision)

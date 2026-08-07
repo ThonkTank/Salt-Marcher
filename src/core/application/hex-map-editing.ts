@@ -147,7 +147,7 @@ export class HexMapEditingCommandHandler {
     const existing = maps.changedBrushTargets({
       mapId: input.mapId,
       mode: input.mode,
-      terrainId: input.terrainId,
+      biomeId: input.biomeId,
       coordinates
     })
     const coordinateIds = new Set(existing.map(tileId))
@@ -203,7 +203,7 @@ export class HexMapEditingCommandHandler {
       const patch = maps.applyBrushTargets({
         mapId: input.mapId,
         mode: input.mode,
-        terrainId: input.terrainId,
+        biomeId: input.biomeId,
         coordinates: existing,
         expectedContentRevision: input.expectedContentRevision
       })
@@ -403,7 +403,7 @@ export class HexMapEditingCommandHandler {
         reason: 'history_conflict'
       })
     const deleting = cells
-      .filter((cell) => cell.terrainId === null)
+      .filter((cell) => cell.biomeId === null)
       .filter((cell) => maps.tileExists(input.mapId, cell))
     const coordinateIds = new Set(deleting.map(tileId))
     const impact = eraseImpact(maps, party, travel, input.mapId, coordinateIds)

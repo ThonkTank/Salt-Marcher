@@ -18,7 +18,7 @@ function chunk(key: HexChunkKey, revision = 1): HexChunkSnapshot {
   return {
     key,
     revision,
-    authoredTiles: [{ q: key.q * 32, r: key.r * 32, terrainId: 'grassland' }],
+    authoredTiles: [{ q: key.q * 32, r: key.r * 32, biomeId: 'grassland' }],
     locations: []
   }
 }
@@ -28,7 +28,8 @@ describe('HexChunkCache', () => {
     const read = vi.fn((_mapId: string, keys: readonly HexChunkKey[]) =>
       Promise.resolve({
         map,
-        chunks: keys.map((key) => chunk(key))
+        chunks: keys.map((key) => chunk(key)),
+        biomes: []
       })
     )
     const cache = new HexChunkCache(read)
@@ -44,14 +45,22 @@ describe('HexChunkCache', () => {
     const read = vi.fn((_mapId: string, keys: readonly HexChunkKey[]) =>
       Promise.resolve({
         map,
+        biomes: [
+          {
+            id: revision === 2 ? ('forest' as const) : ('water' as const),
+            label: revision === 2 ? 'Wald' : 'Wasser',
+            color: revision === 2 ? '#3f704d' : '#397aa1',
+            passable: revision === 2,
+            travelCost: revision === 2 ? 4 : 1
+          }
+        ],
         chunks: keys.map((key) => ({
           ...chunk(key, revision),
           authoredTiles: [
             {
               q: key.q * 32,
               r: key.r * 32,
-              terrainId:
-                revision === 2 ? ('forest' as const) : ('water' as const)
+              biomeId: revision === 2 ? ('forest' as const) : ('water' as const)
             }
           ]
         }))
@@ -59,10 +68,16 @@ describe('HexChunkCache', () => {
     )
     const cache = new HexChunkCache(read)
     const first = await cache.readMapView(map, { q: 0, r: 0 }, false, 0)
-    expect(first.tiles[0]?.terrainId).toBe('forest')
+    expect(first.tiles[0]?.biomeId).toBe('forest')
+    expect(first.biomes).toEqual([
+      expect.objectContaining({ id: 'forest', label: 'Wald' })
+    ])
     revision = 1
     cache.invalidateChunks(map.id, [{ q: 0, r: 0 }])
     const second = await cache.readMapView(map, { q: 0, r: 0 }, false, 0)
-    expect(second.tiles[0]?.terrainId).toBe('forest')
+    expect(second.tiles[0]?.biomeId).toBe('forest')
+    expect(second.biomes).toEqual([
+      expect.objectContaining({ id: 'forest', label: 'Wald' })
+    ])
   })
 })

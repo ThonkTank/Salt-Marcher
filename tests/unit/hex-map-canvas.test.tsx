@@ -6,7 +6,7 @@ import type { ReactNode } from 'react'
 import type {
   AxialCoordinate,
   HexMapView,
-  HexTerrainCatalog
+  HexBiomeCatalog
 } from '../../src/shared/contracts/hex.js'
 import type { SaltMarcherApi } from '../../src/shared/contracts/capability-api.js'
 import { CapabilityProvider } from '../../src/renderer/capabilities/capability-provider.js'
@@ -81,13 +81,14 @@ const snapshot = {
     position: 0
   },
   center: { q: 0, r: 0 },
-  tiles: []
+  tiles: [],
+  biomes: []
 } satisfies HexMapView
 
-const terrains = {
-  version: 'saltmarcher-v1',
-  terrains: []
-} as unknown as HexTerrainCatalog
+const biomes = {
+  revision: 0,
+  biomes: []
+} as unknown as HexBiomeCatalog
 
 const api = {
   runtime: {
@@ -114,7 +115,7 @@ describe('HexMapCanvas', () => {
     const view = render(
       <HexMapCanvas
         snapshot={snapshot}
-        terrains={terrains}
+        biomes={biomes}
         selected={null}
         ariaLabel="Testkarte"
       />,
@@ -143,7 +144,7 @@ describe('HexMapCanvas', () => {
     const view = render(
       <HexMapCanvas
         snapshot={snapshot}
-        terrains={terrains}
+        biomes={biomes}
         selected={null}
         ariaLabel="Testkarte"
       />,
@@ -157,7 +158,7 @@ describe('HexMapCanvas', () => {
           ...snapshot,
           map: { ...snapshot.map, contentRevision: 1 }
         }}
-        terrains={terrains}
+        biomes={biomes}
         selected={{ q: 1, r: 0 }}
         ariaLabel="Testkarte"
       />
@@ -174,7 +175,7 @@ describe('HexMapCanvas', () => {
     const view = render(
       <HexMapCanvas
         snapshot={snapshot}
-        terrains={terrains}
+        biomes={biomes}
         selected={null}
         onTileClick={select}
         ariaLabel="Testkarte"
@@ -208,7 +209,7 @@ describe('HexMapCanvas', () => {
     const view = render(
       <HexMapCanvas
         snapshot={snapshot}
-        terrains={terrains}
+        biomes={biomes}
         selected={null}
         interaction="paint"
         onStrokeComplete={complete}
@@ -234,13 +235,14 @@ describe('HexMapCanvas', () => {
     pixi.init.mockResolvedValue(undefined)
     const customSnapshot: HexMapView = {
       ...snapshot,
+      biomes: [],
       tiles: [
         {
           id: '0:0',
           label: '0, 0',
           q: 0,
           r: 0,
-          terrainId: 'grassland',
+          biomeId: 'grassland',
           location: {
             q: 0,
             r: 0,
@@ -271,7 +273,7 @@ describe('HexMapCanvas', () => {
           <HexMapCanvas
             key={context}
             snapshot={customSnapshot}
-            terrains={terrains}
+            biomes={biomes}
             selected={null}
             ariaLabel={context}
           />

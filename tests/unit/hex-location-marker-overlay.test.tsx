@@ -25,13 +25,14 @@ const view: HexMapView = {
     position: 0
   },
   center: { q: 0, r: 0 },
+  biomes: [],
   tiles: [
     {
       q: 0,
       r: 0,
       id: '0:0',
       label: '0, 0',
-      terrainId: 'grassland',
+      biomeId: 'grassland',
       location: {
         q: 0,
         r: 0,

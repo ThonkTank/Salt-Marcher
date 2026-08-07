@@ -49,7 +49,19 @@ import type {
   SvgSymbolFileResult
 } from './location-symbol.js'
 import type {
+  BiomeCatalogMutationResult,
+  BiomeChangeNotice,
+  BiomeDefinition,
+  BiomeDeleteImpact,
+  BiomeDraft,
+  BiomeId,
+  BiomePage,
+  PaintableBiomeId
+} from './biome.js'
+import type {
+  EncounterTableChangeNotice,
   EncounterTableDraft,
+  EncounterTableScope,
   EncounterTableSnapshot,
   WorldFactionDraft,
   WorldFactionSnapshot
@@ -67,7 +79,9 @@ import type {
   HexEditorBootstrap,
   HexRuntimeOverlayProjection,
   HexRouteEvaluation,
-  HexTerrainCatalog,
+  ReplaceMapBiomePlaceholderInput,
+  ReplaceMapBiomePlaceholderResult,
+  HexBiomeCatalog,
   HexTravelSnapshot
 } from './hex.js'
 import type {
@@ -208,21 +222,52 @@ export interface SaltMarcherApi {
       listener: (notice: LocationSymbolChangeNotice) => void
     ): () => void
   }
+  biomes: {
+    search(query?: string, offset?: number, limit?: number): Promise<BiomePage>
+    detail(id: BiomeId): Promise<BiomeDefinition>
+    create(
+      commandId: string,
+      biome: BiomeDraft,
+      expectedRevision: number
+    ): Promise<BiomeCatalogMutationResult>
+    update(
+      commandId: string,
+      id: PaintableBiomeId,
+      biome: BiomeDraft,
+      expectedRevision: number
+    ): Promise<BiomeCatalogMutationResult>
+    deleteImpact(id: BiomeId): Promise<BiomeDeleteImpact>
+    delete(
+      commandId: string,
+      id: string,
+      expectedRevision: number
+    ): Promise<BiomeCatalogMutationResult>
+    onChanged(listener: (notice: BiomeChangeNotice) => void): () => void
+  }
   encounterTables: {
     read(): Promise<EncounterTableSnapshot>
     create(
+      commandId: string,
       table: EncounterTableDraft,
-      expectedRevision: number
+      expectedRevision: number,
+      scope?: EncounterTableScope
     ): Promise<EncounterTableSnapshot>
     update(
+      commandId: string,
       id: string,
       table: EncounterTableDraft,
-      expectedRevision: number
+      expectedRevision: number,
+      scope?: EncounterTableScope
     ): Promise<EncounterTableSnapshot>
     delete(
+      commandId: string,
       id: string,
-      expectedRevision: number
+      expectedRevision: number,
+      scope?: EncounterTableScope
     ): Promise<EncounterTableSnapshot>
+    onChanged(
+      listener: (notice: EncounterTableChangeNotice) => void
+    ): () => void
   }
   factions: {
     read(): Promise<WorldFactionSnapshot>
@@ -239,13 +284,16 @@ export interface SaltMarcherApi {
   }
   hex: {
     editorBootstrap(): Promise<HexEditorBootstrap>
-    terrainCatalog(): Promise<HexTerrainCatalog>
+    biomeCatalog(): Promise<HexBiomeCatalog>
     catalog(): Promise<HexMapCatalogSnapshot>
     locateLocation(locationId: string): Promise<HexLocationPlacementReference>
     readChunks(
       mapId: string,
       keys: readonly HexChunkKey[]
     ): Promise<HexChunkReadResult>
+    replaceBiomePlaceholder(
+      input: ReplaceMapBiomePlaceholderInput
+    ): Promise<ReplaceMapBiomePlaceholderResult>
     create(input: {
       commandId: string
       displayName: string

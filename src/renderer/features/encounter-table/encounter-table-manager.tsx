@@ -7,6 +7,7 @@ import type {
 import type {
   EncounterTable,
   EncounterTableDraft,
+  EncounterTableScope,
   EncounterTableSnapshot
 } from '../../../shared/contracts/encounter-source.js'
 import { formatMessage, message } from '../../i18n/messages.de.js'
@@ -33,6 +34,7 @@ import {
   encounterTableDraftValue
 } from './encounter-table-draft.js'
 import { CapabilityContext } from '../../capabilities/capability-context.js'
+import { useBiomeOptionSearch } from '../creatures/use-biome-option-search.js'
 
 type PendingAction = { kind: 'close' } | { kind: 'select'; id: string }
 
@@ -43,12 +45,14 @@ export function EncounterTableManager(props: {
   select: (table: EncounterTable | null) => void
   save: (
     table: EncounterTable | null,
-    draft: EncounterTableDraft
+    draft: EncounterTableDraft,
+    scope?: EncounterTableScope
   ) => Promise<EncounterTableSaveResult>
   saved: (snapshot: EncounterTableSnapshot, savedTableId: string) => void
   onError: (message: string) => void
   inspect: (creature: Creature) => void
   creaturePort?: CreatureCapabilityPort
+  allowInstallationScope?: boolean
 }) {
   const api = useContext(CapabilityContext)
   const [draft, dispatch] = useReducer(
@@ -62,10 +66,18 @@ export function EncounterTableManager(props: {
   })
   const [page, setPage] = useState<CreatureCatalogPage | null>(null)
   const [options, setOptions] = useState(emptyCreatureOptions)
+  const searchBiomeOptions = useBiomeOptionSearch(
+    api?.biomes,
+    setOptions,
+    query.biomes,
+    props.onError
+  )
   const [names, setNames] = useState<Readonly<Record<string, string>>>({})
   const [pending, setPending] = useState<PendingAction | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const [creationScope, setCreationScope] =
+    useState<EncounterTableScope>('campaign')
   const creaturePort = props.creaturePort ?? api?.creatures
   if (!creaturePort) throw new Error('Creature capability is not available')
   const dirty = encounterTableDraftDirty(draft)
@@ -134,7 +146,8 @@ export function EncounterTableManager(props: {
     try {
       const result = await props.save(
         props.table,
-        encounterTableDraftValue(draft)
+        encounterTableDraftValue(draft),
+        creationScope
       )
       props.saved(result.snapshot, result.savedTableId)
     } catch (cause) {
@@ -150,6 +163,7 @@ export function EncounterTableManager(props: {
     <CreatureCollectionCatalogPane
       query={query}
       options={options}
+      searchBiomeOptions={searchBiomeOptions}
       page={page}
       changed={setQuery}
       inspect={props.inspect}
@@ -191,6 +205,25 @@ export function EncounterTableManager(props: {
           }
         />
       </label>
+      {!props.table && props.allowInstallationScope && (
+        <label>
+          {message('encounterTable.scope')}
+          <select
+            aria-label={message('encounterTable.scopeLabel')}
+            value={creationScope}
+            onChange={(event) =>
+              setCreationScope(event.target.value as EncounterTableScope)
+            }
+          >
+            <option value="campaign">
+              {message('encounterTable.scopeCampaign')}
+            </option>
+            <option value="installation">
+              {message('encounterTable.scopeInstallation')}
+            </option>
+          </select>
+        </label>
+      )}
       <label>
         {message('ui.beschreibung')}
         <textarea

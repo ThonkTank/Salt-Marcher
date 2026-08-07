@@ -33,10 +33,21 @@ Catalog only composes its presentation with other providers.
 - Name search debounces before applying filters.
 - CR min/max clamps to a valid range and omits default full-range bounds from
   the query.
-- Size, type, subtype, biome, and alignment filters use searchable multi-select
-  popups.
+- Size, type, subtype, biome, alignment, encounter-table, and faction filters
+  use compact searchable multi-select popups. The location source uses the same
+  popup interaction as a searchable single-select. CR bounds remain compact
+  native selects.
+- Searchable filter popups match visible labels without case or diacritic
+  sensitivity, retain chosen values while searching, and expose each active
+  value through the removable filter chips.
 - Name, CR, size, type, subtype, biome, alignment, encounter-table, faction,
   and location selections publish only `EncounterPoolFilters`.
+- The visible German filter label is `Biom`. It uses stable IDs and labels from
+  the same installation-owned biome catalog as the Hex editor; it MUST NOT
+  maintain a second string-only environment list.
+- Canonical biome selection resolves candidates through the biome's linked
+  installation-wide Encounter Tables. The protected `Any` table contributes to
+  every biome without appearing as a selectable biome.
 - Every visible creature filter constrains generation. Encounter-table
   candidates are intersected with the filtered creature pool.
 - Encounter-table multi-selection publishes selected table IDs for the

@@ -5,13 +5,13 @@ import type {
   HexHistoryState,
   HexMapCatalogSnapshot,
   HexMapView,
-  HexTerrainCatalog,
-  HexTerrainId
+  HexBiomeCatalog,
+  HexBiomeId
 } from '../../../shared/contracts/hex.js'
 import type { LocationSymbolPage } from '../../../shared/contracts/location-symbol.js'
 
-export type EditorTool = 'select' | 'terrain' | 'location'
-export type TerrainMode = 'paint' | 'erase'
+export type EditorTool = 'select' | 'biome' | 'location'
+export type BiomeMode = 'paint' | 'erase'
 export type PendingErase = Readonly<{
   path: readonly AxialCoordinate[]
   radius: number
@@ -36,7 +36,7 @@ export type PendingHistory = Readonly<{
 export type HexEditorState = Readonly<{
   catalog: Readonly<{
     maps: HexMapCatalogSnapshot | null
-    terrains: HexTerrainCatalog | null
+    biomes: HexBiomeCatalog | null
     symbols: LocationSymbolPage | null
   }>
   activeMap: Readonly<{
@@ -48,8 +48,8 @@ export type HexEditorState = Readonly<{
   viewport: Readonly<{ resetSignal: number }>
   tool: Readonly<{
     kind: EditorTool
-    terrainMode: TerrainMode
-    terrainId: HexTerrainId
+    biomeMode: BiomeMode
+    biomeId: HexBiomeId
     brushLevel: number
     locationId: string
   }>
@@ -76,8 +76,8 @@ export type HexEditorAction =
     }>
   | Readonly<{ type: 'viewport.reset'; value: Update<number> }>
   | Readonly<{ type: 'tool.selected'; tool: EditorTool }>
-  | Readonly<{ type: 'terrain.mode-selected'; mode: TerrainMode }>
-  | Readonly<{ type: 'terrain.selected'; terrainId: HexTerrainId }>
+  | Readonly<{ type: 'biome.mode-selected'; mode: BiomeMode }>
+  | Readonly<{ type: 'biome.selected'; biomeId: HexBiomeId }>
   | Readonly<{ type: 'brush.level-changed'; level: number }>
   | Readonly<{ type: 'location.selected'; locationId: string }>
   | Readonly<{
@@ -96,7 +96,7 @@ export type HexEditorAction =
     }>
 
 export const initialHexEditorState: HexEditorState = {
-  catalog: { maps: null, terrains: null, symbols: null },
+  catalog: { maps: null, biomes: null, symbols: null },
   activeMap: {
     map: null,
     selected: null,
@@ -105,9 +105,9 @@ export const initialHexEditorState: HexEditorState = {
   },
   viewport: { resetSignal: 0 },
   tool: {
-    kind: 'terrain',
-    terrainMode: 'paint',
-    terrainId: 'grassland',
+    kind: 'biome',
+    biomeMode: 'paint',
+    biomeId: 'grassland',
     brushLevel: 1,
     locationId: ''
   },
@@ -159,10 +159,10 @@ export function hexEditorReducer(
       }
     case 'tool.selected':
       return { ...state, tool: { ...state.tool, kind: action.tool } }
-    case 'terrain.mode-selected':
-      return { ...state, tool: { ...state.tool, terrainMode: action.mode } }
-    case 'terrain.selected':
-      return { ...state, tool: { ...state.tool, terrainId: action.terrainId } }
+    case 'biome.mode-selected':
+      return { ...state, tool: { ...state.tool, biomeMode: action.mode } }
+    case 'biome.selected':
+      return { ...state, tool: { ...state.tool, biomeId: action.biomeId } }
     case 'brush.level-changed':
       return { ...state, tool: { ...state.tool, brushLevel: action.level } }
     case 'location.selected':
@@ -203,7 +203,7 @@ export function useHexEditorController() {
       dispatch({ type: 'map.changed', key, value } as HexEditorAction)
   return {
     catalog: state.catalog.maps,
-    terrains: state.catalog.terrains,
+    biomes: state.catalog.biomes,
     symbols: state.catalog.symbols,
     map: state.activeMap.map,
     selected: state.activeMap.selected,
@@ -211,15 +211,15 @@ export function useHexEditorController() {
     name: state.activeMap.name,
     resetViewSignal: state.viewport.resetSignal,
     tool: state.tool.kind,
-    terrainMode: state.tool.terrainMode,
-    terrainId: state.tool.terrainId,
+    biomeMode: state.tool.biomeMode,
+    biomeId: state.tool.biomeId,
     brushLevel: state.tool.brushLevel,
     locationId: state.tool.locationId,
     history: state.command.history,
     pendingErase: state.confirmation.erase,
     pendingHistory: state.confirmation.history,
     setCatalog: catalogSetter('maps'),
-    setTerrains: catalogSetter('terrains'),
+    setBiomes: catalogSetter('biomes'),
     setSymbols: catalogSetter('symbols'),
     setMap: mapSetter('map'),
     setSelected: mapSetter('selected'),
@@ -228,10 +228,10 @@ export function useHexEditorController() {
     setResetViewSignal: (value: Update<number>) =>
       dispatch({ type: 'viewport.reset', value }),
     setTool: (tool: EditorTool) => dispatch({ type: 'tool.selected', tool }),
-    setTerrainMode: (mode: TerrainMode) =>
-      dispatch({ type: 'terrain.mode-selected', mode }),
-    setTerrainId: (terrainId: HexTerrainId) =>
-      dispatch({ type: 'terrain.selected', terrainId }),
+    setBiomeMode: (mode: BiomeMode) =>
+      dispatch({ type: 'biome.mode-selected', mode }),
+    setBiomeId: (biomeId: HexBiomeId) =>
+      dispatch({ type: 'biome.selected', biomeId }),
     setBrushLevel: (level: number) =>
       dispatch({ type: 'brush.level-changed', level }),
     setLocationId: (locationId: string) =>

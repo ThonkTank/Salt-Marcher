@@ -1,5 +1,7 @@
 import {
   type AxialCoordinate,
+  type HexBiomeCatalog,
+  type HexBiomeDefinition,
   type HexChunkKey,
   type HexChunkSnapshot,
   type HexMapSummary,
@@ -14,8 +16,21 @@ type ChunkReader = (
   mapId: string,
   keys: readonly HexChunkKey[]
 ) => Promise<
-  Readonly<{ map: HexMapSummary; chunks: readonly HexChunkSnapshot[] }>
+  Readonly<{
+    map: HexMapSummary
+    chunks: readonly HexChunkSnapshot[]
+    biomes: readonly HexBiomeDefinition[]
+  }>
 >
+
+export function mergeHexBiomeCatalog(
+  catalog: HexBiomeCatalog,
+  definitions: readonly HexBiomeDefinition[]
+): HexBiomeCatalog {
+  const byId = new Map(catalog.biomes.map((biome) => [biome.id, biome]))
+  for (const biome of definitions) byId.set(biome.id, biome)
+  return { revision: catalog.revision, biomes: [...byId.values()] }
+}
 
 export function chunkKeyForCoordinate(
   coordinate: AxialCoordinate
@@ -51,6 +66,10 @@ export class HexChunkCache {
   >()
   private readonly loadedContentRevision = new Map<string, number>()
   private readonly staleChunks = new Map<string, Set<string>>()
+  private readonly biomeDefinitions = new Map<
+    string,
+    Map<string, HexBiomeDefinition>
+  >()
 
   constructor(private readonly readChunks: ChunkReader) {}
 
@@ -83,6 +102,8 @@ export class HexChunkCache {
           keysToRead.slice(index, index + 64)
         )
         for (const chunk of result.chunks) this.absorb(map.id, chunk)
+        this.absorbBiomes(map.id, result.biomes)
+        this.pruneBiomeDefinitions(map.id)
         currentMap = result.map
       }
       this.loadedContentRevision.set(map.id, currentMap.contentRevision)
@@ -115,6 +136,7 @@ export class HexChunkCache {
   invalidateMap(mapId: string): void {
     this.loadedContentRevision.delete(mapId)
     this.staleChunks.delete(mapId)
+    this.biomeDefinitions.delete(mapId)
   }
 
   invalidateChunks(mapId: string, keys: readonly HexChunkKey[]): void {
@@ -130,6 +152,7 @@ export class HexChunkCache {
     this.cache.clear()
     this.loadedContentRevision.clear()
     this.staleChunks.clear()
+    this.biomeDefinitions.clear()
   }
 
   private touch(mapId: string, keys: readonly HexChunkKey[]): void {
@@ -142,6 +165,29 @@ export class HexChunkCache {
       mapCache.delete(id)
       mapCache.set(id, entry)
     }
+  }
+
+  private absorbBiomes(
+    mapId: string,
+    definitions: readonly HexBiomeDefinition[]
+  ): void {
+    let current = this.biomeDefinitions.get(mapId)
+    if (!current) {
+      current = new Map()
+      this.biomeDefinitions.set(mapId, current)
+    }
+    for (const definition of definitions) current.set(definition.id, definition)
+  }
+
+  private pruneBiomeDefinitions(mapId: string): void {
+    const definitions = this.biomeDefinitions.get(mapId)
+    if (!definitions) return
+    const referenced = new Set<string>()
+    for (const entry of this.cache.get(mapId)?.values() ?? [])
+      for (const tile of entry.snapshot.authoredTiles)
+        referenced.add(tile.biomeId)
+    for (const id of definitions.keys())
+      if (!referenced.has(id)) definitions.delete(id)
   }
 
   private assemble(
@@ -176,7 +222,11 @@ export class HexChunkCache {
           location: locations.get(id) ?? null
         }
       })
-    return { map, center, tiles } as HexMapView
+    const usedBiomeIds = new Set(tiles.map((tile) => tile.biomeId))
+    const biomes = [
+      ...(this.biomeDefinitions.get(map.id)?.values() ?? [])
+    ].filter((biome) => usedBiomeIds.has(biome.id))
+    return { map, center, tiles, biomes }
   }
 }
 

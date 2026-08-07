@@ -99,7 +99,8 @@ location snapshot, exact invalidation subscription, optimistic presentation
 drafts, and conflict recovery. Symbol and creation workflows submit typed
 actions to that owner instead of replacing catalog snapshots themselves.
 The bundle gate verifies this static dependency graph, a 900 KiB Workspace
-ceiling and a 2.75 MiB total normal-renderer ceiling.
+ceiling and a 2.80 MiB total normal-renderer ceiling. Feature-specific lazy
+entry ceilings remain independently enforced.
 
 Catalog is a composition root over Monster, Location, Faction, and Encounter
 Table controllers and views. Controller state remains mounted across section
@@ -153,9 +154,10 @@ one revisions-protected SQLite record rather than renderer storage or
 Main-process JSON.
 
 Hex maps use an unbounded axial coordinate space backed by sparse authored
-tile, terrain, and marker rows. Reads always request bounded chunks; the
-renderer may draw an empty unbounded guide grid, but only authored tiles have
-terrain or accept travel and markers. Travel progression
+tile, biome-ID, and marker rows. Reads always request bounded chunks and carry
+only the referenced installation-owned biome definitions; the renderer may
+draw an empty unbounded guide grid, but only authored tiles have biomes or
+accept travel and markers. Travel progression
 is clocked by the utility process and publishes revision changes. Reads are
 pure observations and never advance Scene time.
 

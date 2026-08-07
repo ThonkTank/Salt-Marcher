@@ -5,13 +5,13 @@ import {
 } from '../../src/renderer/features/hex/use-hex-editor-controller.js'
 
 describe('hex editor state machine', () => {
-  it('keeps tool choice, terrain submode and brush level independent', () => {
+  it('keeps tool choice, biome submode and brush level independent', () => {
     const selected = hexEditorReducer(initialHexEditorState, {
       type: 'tool.selected',
       tool: 'location'
     })
     const erased = hexEditorReducer(selected, {
-      type: 'terrain.mode-selected',
+      type: 'biome.mode-selected',
       mode: 'erase'
     })
     const resized = hexEditorReducer(erased, {
@@ -21,12 +21,12 @@ describe('hex editor state machine', () => {
 
     expect(resized.tool).toMatchObject({
       kind: 'location',
-      terrainMode: 'erase',
+      biomeMode: 'erase',
       brushLevel: 7
     })
     expect(initialHexEditorState.tool).toMatchObject({
-      kind: 'terrain',
-      terrainMode: 'paint',
+      kind: 'biome',
+      biomeMode: 'paint',
       brushLevel: 1
     })
   })

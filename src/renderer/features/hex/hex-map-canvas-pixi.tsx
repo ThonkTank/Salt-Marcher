@@ -13,8 +13,8 @@ import {
 import type {
   AxialCoordinate,
   HexMapView,
-  HexTerrainCatalog,
-  HexTerrainId
+  HexBiomeCatalog,
+  HexBiomeId
 } from '../../../shared/contracts/hex.js'
 import { expandHexBrush } from './hex-brush.js'
 import {
@@ -56,12 +56,12 @@ type CanvasState = {
     string,
     Readonly<{
       signature: string
-      terrain: Container
+      biome: Container
     }>
   >
   layers: Readonly<{
     grid: Container
-    terrain: Container
+    biome: Container
     overlays: Container
     preview: Container
     selection: Container
@@ -70,14 +70,14 @@ type CanvasState = {
 
 export type HexMapCanvasProps = {
   snapshot: HexMapView
-  terrains: HexTerrainCatalog
+  biomes: HexBiomeCatalog
   selected: AxialCoordinate | null
   token?: AxialCoordinate | null
   route?: readonly AxialCoordinate[]
   overlays?: readonly TravelOverlay[]
   interaction?: 'select' | 'paint' | 'erase' | 'location'
   brushRadius?: number
-  brushTerrainId?: HexTerrainId
+  brushBiomeId?: HexBiomeId
   resetViewSignal?: number
   onTileClick?: (coordinate: AxialCoordinate) => void
   onStrokeComplete?: (path: readonly AxialCoordinate[]) => void
@@ -157,8 +157,8 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
     const { layers } = current
     clearLayer(layers.preview)
     clearLayer(layers.selection)
-    const byTerrain = new Map(
-      currentProps.terrains.terrains.map((terrain) => [terrain.id, terrain])
+    const byBiome = new Map(
+      currentProps.biomes.biomes.map((biome) => [biome.id, biome])
     )
     const radius = currentProps.brushRadius ?? 0
     if (previewRef.current.length > 0) {
@@ -170,8 +170,8 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
           color:
             currentProps.interaction === 'erase'
               ? '#d6594c'
-              : (byTerrain.get(currentProps.brushTerrainId ?? 'grassland')
-                  ?.color ?? '#ffffff'),
+              : (byBiome.get(currentProps.brushBiomeId ?? 'grassland')?.color ??
+                '#ffffff'),
           alpha: 0.35
         })
       }
@@ -194,8 +194,8 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
     const { layers } = current
     clearLayer(layers.overlays)
     redrawGrid()
-    const byTerrain = new Map(
-      currentProps.terrains.terrains.map((terrain) => [terrain.id, terrain])
+    const byBiome = new Map(
+      currentProps.biomes.biomes.map((biome) => [biome.id, biome])
     )
     const byChunk = new Map<string, HexMapView['tiles'][number][]>()
     for (const tile of currentProps.snapshot.tiles) {
@@ -206,41 +206,49 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
     }
     for (const [id, drawing] of current.chunks)
       if (!byChunk.has(id)) {
-        layers.terrain.removeChild(drawing.terrain)
-        drawing.terrain.destroy({ children: true })
+        layers.biome.removeChild(drawing.biome)
+        drawing.biome.destroy({ children: true })
         current.chunks.delete(id)
       }
     for (const [id, chunk] of byChunk) {
       chunk.sort((left, right) => left.q - right.q || left.r - right.r)
       const signature = chunk
         .map((tile) => {
-          const terrain = byTerrain.get(tile.terrainId)
-          return `${tile.q}:${tile.r}:${tile.terrainId}:${terrain?.color ?? ''}`
+          const biome = byBiome.get(tile.biomeId)
+          return `${tile.q}:${tile.r}:${tile.biomeId}:${biome?.color ?? ''}`
         })
         .join('|')
       if (current.chunks.get(id)?.signature === signature) continue
       const previous = current.chunks.get(id)
       if (previous) {
-        layers.terrain.removeChild(previous.terrain)
-        previous.terrain.destroy({ children: true })
+        layers.biome.removeChild(previous.biome)
+        previous.biome.destroy({ children: true })
       }
-      const terrainContainer = new Container()
+      const biomeContainer = new Container()
       const graphics = new Graphics()
       for (const tile of chunk) {
         const point = center(tile)
-        const terrain = byTerrain.get(tile.terrainId)
-        if (terrain) {
+        const biome = byBiome.get(tile.biomeId)
+        if (biome) {
           graphics
             .poly(polygon(point.x, point.y, hexSize - 1))
-            .fill(terrain.color)
+            .fill(biome.color)
           graphics.stroke({ width: 1, color: '#263d38', alpha: 0.9 })
+          if (tile.biomeId === 'to-be-replaced') {
+            graphics
+              .moveTo(point.x - 8, point.y - 8)
+              .lineTo(point.x + 8, point.y + 8)
+              .moveTo(point.x + 8, point.y - 8)
+              .lineTo(point.x - 8, point.y + 8)
+              .stroke({ width: 2, color: '#ffe2f3', alpha: 0.9 })
+          }
         }
       }
-      terrainContainer.addChild(graphics)
-      layers.terrain.addChild(terrainContainer)
+      biomeContainer.addChild(graphics)
+      layers.biome.addChild(biomeContainer)
       current.chunks.set(id, {
         signature,
-        terrain: terrainContainer
+        biome: biomeContainer
       })
     }
 
@@ -321,7 +329,7 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
     const world = new Container()
     const layers = {
       grid: new Container(),
-      terrain: new Container(),
+      biome: new Container(),
       overlays: new Container(),
       preview: new Container(),
       selection: new Container()
@@ -373,7 +381,7 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
         element.append(application.canvas)
         world.addChild(
           layers.grid,
-          layers.terrain,
+          layers.biome,
           layers.overlays,
           layers.preview,
           layers.selection
@@ -508,7 +516,7 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
     if (current.mapId !== props.snapshot.map.id) {
       rememberCamera(current)
       current.chunks.clear()
-      clearLayer(current.layers.terrain)
+      clearLayer(current.layers.biome)
       current.mapId = props.snapshot.map.id
       const remembered = current.cameraByMap.get(current.mapId)
       if (remembered) {
@@ -520,7 +528,7 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
     redrawSafely()
   }, [
     props.snapshot,
-    props.terrains,
+    props.biomes,
     props.token,
     props.route,
     props.overlays,
@@ -536,7 +544,7 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
     props.selected,
     props.interaction,
     props.brushRadius,
-    props.brushTerrainId,
+    props.brushBiomeId,
     redrawTransientLayersSafely
   ])
 
@@ -626,7 +634,7 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
       <HexLocationMarkerOverlay ref={markerOverlay} snapshot={props.snapshot} />
       <span className="sr-only" aria-live="polite">
         {props.selected
-          ? `Hex q=${props.selected.q}, r=${props.selected.r}${selectedTile ? `, ${selectedTile.terrainId}${selectedTile.location ? `, ${selectedTile.location.displayName}` : ''}` : ', leer'}`
+          ? `Hex q=${props.selected.q}, r=${props.selected.r}${selectedTile ? `, ${selectedTile.biomeId}${selectedTile.location ? `, ${selectedTile.location.displayName}` : ''}` : ', leer'}`
           : ''}
       </span>
       {renderError && (

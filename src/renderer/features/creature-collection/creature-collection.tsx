@@ -17,6 +17,7 @@ import { formatMessage, message as uiMessage } from '../../i18n/messages.de.js'
 import { CreatureFilters, FilterChips } from '../creatures/creature-controls.js'
 import { CreatureInspector } from '../reference/creature-inspector.js'
 import { ModalCloseButton, ModalDialog } from '../../shell/modal-dialog.js'
+import type { SearchableSelectOption } from '../../shell/searchable-select.js'
 import './creature-collection.css'
 
 export function CreatureCollectionCatalogPane(props: {
@@ -24,6 +25,8 @@ export function CreatureCollectionCatalogPane(props: {
   options: CreatureFilterOptions
   page: CreatureCatalogPage | null
   changed: (query: CreatureCatalogQuery) => void
+  searchBiomeOptions?:
+    ((query: string) => Promise<readonly SearchableSelectOption[]>) | undefined
   add?: (creature: Creature) => void
   inspect: (creature: Creature) => void
   quantities?: Readonly<Record<string, number>>
@@ -58,11 +61,16 @@ export function CreatureCollectionCatalogPane(props: {
           <CreatureFilters
             query={props.query}
             options={props.options}
+            searchBiomeOptions={props.searchBiomeOptions}
             changed={props.changed}
             compact
           />
           <div className="creatures-filter-chips">
-            <FilterChips query={props.query} changed={props.changed} />
+            <FilterChips
+              query={props.query}
+              options={props.options}
+              changed={props.changed}
+            />
           </div>
         </>
       )}

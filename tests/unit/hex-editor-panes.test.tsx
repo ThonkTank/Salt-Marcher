@@ -3,15 +3,15 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { HexStatePane } from '../../src/renderer/features/hex/hex-editor-panes.js'
-import type { HexTerrainCatalog } from '../../src/shared/contracts/hex.js'
+import type { HexBiomeCatalog } from '../../src/shared/contracts/hex.js'
 import type { WorldLocationSnapshot } from '../../src/shared/contracts/world-location.js'
 import type { LocationSymbolPage } from '../../src/shared/contracts/location-symbol.js'
 
 afterEach(cleanup)
 
-const terrains: HexTerrainCatalog = {
-  version: 'saltmarcher-v1',
-  terrains: [
+const biomes: HexBiomeCatalog = {
+  revision: 0,
+  biomes: [
     ['grassland', 'Grasland', '#75934e', true, 1],
     ['desert', 'Wüste', '#c79a54', true, 1],
     ['forest', 'Wald', '#365f3d', true, 2],
@@ -24,9 +24,10 @@ const terrains: HexTerrainCatalog = {
     color,
     passable,
     travelCost
-  })) as HexTerrainCatalog['terrains']
+  })) as HexBiomeCatalog['biomes']
 }
 const locationId = '01900000-0000-7000-8000-000000000040'
+const secondLocationId = '01900000-0000-7000-8000-000000000042'
 const symbolId = '01900000-0000-7000-8000-000000000041'
 const locations: WorldLocationSnapshot = {
   revision: 1,
@@ -38,6 +39,24 @@ const locations: WorldLocationSnapshot = {
       region: 'Küste',
       notes: '',
       position: 0,
+      factionIds: [],
+      encounterTableIds: [],
+      mapPresentation: {
+        revision: 1,
+        titleOverride: null,
+        symbolId,
+        symbolSize: 44,
+        labelCurve: 0,
+        labelPosition: 'below'
+      }
+    },
+    {
+      id: secondLocationId,
+      displayName: 'Waldschrein',
+      kind: 'Schrein',
+      region: 'Dunkelwald',
+      notes: '',
+      position: 1,
       factionIds: [],
       encounterTableIds: [],
       mapPresentation: {
@@ -67,22 +86,22 @@ const symbols: LocationSymbolPage = {
   ]
 }
 
-function props(tool: 'select' | 'terrain' | 'location') {
+function props(tool: 'select' | 'biome' | 'location') {
   return {
     selected: { q: 0, r: 0 },
     tile: null,
-    terrains,
+    biomes,
     locations,
     symbols,
     selectedCustomSymbol: symbols.symbols[0]!,
     tool,
-    terrainMode: 'paint' as const,
-    terrainId: 'grassland' as const,
+    biomeMode: 'paint' as const,
+    biomeId: 'grassland' as const,
     brushLevel: 1,
     locationId,
     onPaintMode: vi.fn(),
     onBrushLevelChange: vi.fn(),
-    onTerrainChange: vi.fn(),
+    onBiomeChange: vi.fn(),
     onLocationChange: vi.fn(),
     onCreateLocation: vi.fn(),
     locationDialogOpen: false,
@@ -104,11 +123,11 @@ function props(tool: 'select' | 'terrain' | 'location') {
 }
 
 describe('hex editor state panes', () => {
-  it('renders the explicit selection, terrain and location modes', () => {
+  it('renders the explicit selection, biome and location modes', () => {
     const rendered = render(<HexStatePane {...props('select')} />)
     expect(screen.getByRole('heading', { name: 'Hexfeld' })).toBeVisible()
 
-    rendered.rerender(<HexStatePane {...props('terrain')} />)
+    rendered.rerender(<HexStatePane {...props('biome')} />)
     expect(screen.getByRole('button', { name: 'Malen' })).toHaveAttribute(
       'aria-pressed',
       'true'
@@ -123,7 +142,17 @@ describe('hex editor state panes', () => {
     rendered.rerender(<HexStatePane {...locationProps} />)
     fireEvent.click(screen.getByRole('button', { name: 'Ort erstellen' }))
     expect(locationProps.onCreateLocation).toHaveBeenCalledOnce()
-    expect(screen.getByRole('listbox', { name: 'Katalog-Orte' })).toBeVisible()
+    const locationSelect = screen.getByRole('combobox', {
+      name: 'Katalog-Orte'
+    })
+    expect(locationSelect).toHaveValue('Schwarzes Kap')
+    fireEvent.focus(locationSelect)
+    fireEvent.change(locationSelect, { target: { value: 'dunkelwald' } })
+    fireEvent.click(screen.getByRole('option', { name: /Waldschrein/ }))
+    expect(locationProps.onLocationChange).toHaveBeenCalledWith(
+      secondLocationId
+    )
+    expect(locationSelect).toHaveAttribute('aria-expanded', 'false')
     expect(screen.getByRole('slider', { name: 'Symbolgröße' })).toHaveAttribute(
       'aria-valuemin',
       '24'
@@ -133,6 +162,21 @@ describe('hex editor state panes', () => {
     ).toHaveAttribute('aria-valuemin', '-40')
     fireEvent.click(screen.getByRole('button', { name: 'Weiter' }))
     expect(locationProps.onSymbolPage).toHaveBeenCalledWith(24)
+  })
+
+  it('reflects an externally selected newly created location', () => {
+    const locationProps = props('location')
+    const rendered = render(<HexStatePane {...locationProps} />)
+    expect(screen.getByRole('combobox', { name: 'Katalog-Orte' })).toHaveValue(
+      'Schwarzes Kap'
+    )
+
+    rendered.rerender(
+      <HexStatePane {...locationProps} locationId={secondLocationId} />
+    )
+    expect(screen.getByRole('combobox', { name: 'Katalog-Orte' })).toHaveValue(
+      'Waldschrein'
+    )
   })
 
   it('commits discrete marker presentation changes immediately', () => {

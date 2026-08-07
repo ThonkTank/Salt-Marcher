@@ -37,6 +37,7 @@ import { CapabilityError } from '../../../shared/errors/capability-error.js'
 import { InstallationSettingsStore } from './installation-settings-store.js'
 import { initializeCreatureSchema } from '../../creatures/catalog.js'
 import { initializeLocationSymbolSchema } from '../../worldplanner/location-symbol-store.js'
+import { initializeBiomeCatalogSchema } from '../../biomes/biome-catalog.js'
 
 export type CampaignCreatePhase =
   | 'before-registry-entry'
@@ -94,6 +95,7 @@ export class CampaignStore {
         )
         .run(JSON.stringify(defaultInstallationPreferences))
       initializeCreatureSchema(this.installation)
+      initializeBiomeCatalogSchema(this.installation)
       initializeLocationSymbolSchema(this.installation)
       if (!installationExists)
         initializeDevelopmentSchemaVersion(this.installation)

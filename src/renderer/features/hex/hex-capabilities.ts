@@ -2,7 +2,7 @@ import type { SaltMarcherApi } from '../../../shared/contracts/capability-api.js
 
 export type HexCapabilities = Pick<
   SaltMarcherApi,
-  'hex' | 'hexTravel' | 'session' | 'locations' | 'locationSymbols'
+  'hex' | 'hexTravel' | 'session' | 'locations' | 'locationSymbols' | 'biomes'
 > & {
   runtime: Pick<SaltMarcherApi['runtime'], 'pickLocationSymbolFile'>
 }
@@ -15,6 +15,7 @@ export function hexCapabilities(api: SaltMarcherApi): HexCapabilities {
     session: api.session,
     locations: api.locations,
     locationSymbols: api.locationSymbols,
+    biomes: api.biomes,
     runtime: { pickLocationSymbolFile: api.runtime.pickLocationSymbolFile }
   }
 }

@@ -76,6 +76,16 @@ function connectCoreNotifications(supervisor: CoreProcessSupervisor): void {
       if (!isReadOnlyWindow(window.webContents))
         window.webContents.send('location-symbols:changed', notice)
   })
+  supervisor.onBiomesChanged((notice) => {
+    for (const window of BrowserWindow.getAllWindows())
+      if (!isReadOnlyWindow(window.webContents))
+        window.webContents.send('biomes:changed', notice)
+  })
+  supervisor.onEncounterTablesChanged((notice) => {
+    for (const window of BrowserWindow.getAllWindows())
+      if (!isReadOnlyWindow(window.webContents))
+        window.webContents.send('encounter-tables:changed', notice)
+  })
 }
 
 export async function stopApplication(): Promise<void> {

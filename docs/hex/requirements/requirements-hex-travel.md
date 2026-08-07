@@ -38,7 +38,7 @@ party-owned runtime position.
   the slowest movement speed; missing speed assumes 30 ft with a visible warning
 - every reached Hex checkpoint MUST commit Party position and Scene time
   together
-- the default 3-mile rule uses `mph = Speed / 10`, current terrain cost, and
+- the default 3-mile rule uses `mph = Speed / 10`, current biome cost, and
   one real second per in-game hour at 1x presentation speed
 - the surface MUST communicate current location or context plus visible travel
   status

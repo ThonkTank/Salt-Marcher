@@ -23,8 +23,7 @@ tables, generic map-canvas contracts, party roster persistence, compact
 Hex persistence MUST store:
 
 - maps, including stable id and display name
-- tiles, including owning map id and axial coordinate
-- terrain overrides keyed by map and tile coordinate
+- tiles, including owning map id, axial coordinate, and biome id
 - World Planner location placements keyed by foreign logical location ID, with
   exactly one owning tile coordinate
 - Scene-scoped runtime journeys with route, checkpoint, status, participants,
@@ -51,12 +50,14 @@ travel positions. That id is not stored in Hex tables; it is computed from the
 Hex axial coordinate and decoded by the Hex runtime readback. Hex persistence
 remains keyed by `map_id`, `q`, and `r`.
 
-### Authored Tiles And Terrain Overrides
+### Authored Tiles And Biomes
 
-Sparse tile rows record which axial coordinates exist on a map. Terrain
-override rows MUST reference an authored tile and use the Hex terrain
-vocabulary exposed by the editor requirements. An authored tile without an
-override resolves to Grassland; an absent row is not a generated tile.
+Sparse `hex_tile` rows record which axial coordinates exist on a map and carry
+one stable ID from the installation biome vocabulary. Campaign databases MUST
+NOT copy biome definitions or represent Grassland through a missing row; every
+authored tile has an explicit biome ID. An absent row is not a generated tile. Custom
+biome deletion rewrites usages to the protected `Zu ersetzen` ID in every
+active or recoverable trashed campaign before deleting its catalog row.
 
 ### Location Placements
 
@@ -79,7 +80,7 @@ Startup validates the one campaign-database development schema version.
 Semantic row validation remains on typed provider read/write paths and fails
 closed through the feature contract.
 
-- Loading an unknown terrain ID, malformed route, or malformed tile coordinate
+- Loading an unknown biome ID, malformed route, or malformed tile coordinate
   MUST fail visibly to the caller instead of
   silently repairing stored truth.
 - Viewport reads MUST query only sparse authored rows intersecting the requested
@@ -100,7 +101,7 @@ signature. Current Hex tables use foreign keys only inside the Hex owner;
 other features retain Hex identifiers as logical references.
 
 Hex stores a bounded persistent per-map edit history and idempotent command
-receipts. History contains only Hex-owned tile, terrain, and placement truth;
+receipts. History contains only Hex-owned tile, biome, and placement truth;
 it never snapshots Party or Journey aggregates.
 
 
