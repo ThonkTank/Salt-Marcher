@@ -2,15 +2,19 @@ import Database from 'better-sqlite3'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import {
   worldLocationDraftSchema,
-  createWorldLocationResultSchema,
+  worldLocationDeleteReceiptSchema,
+  worldLocationMutationReceiptSchema,
   worldLocationMapPresentationSchema,
   worldLocationSnapshotSchema,
+  worldLocationTagSearchInputSchema,
+  worldLocationTagSuggestionsSchema,
   defaultWorldLocationMapPresentation,
+  canonicalWorldLocationTag,
   type WorldLocationDraft,
   type WorldLocationMapPresentation,
   type WorldLocationMapPresentationPatch,
   type WorldLocationSnapshot,
-  type CreateWorldLocationResult
+  type WorldLocationMutationReceipt
 } from '../../shared/contracts/world-location.js'
 import {
   builtinLocationSymbolIdSchema,
@@ -41,13 +45,23 @@ export function initializeWorldLocationSchema(db: Database.Database): void {
     CREATE TABLE IF NOT EXISTS worldplanner_location (
       id TEXT PRIMARY KEY NOT NULL,
       display_name TEXT NOT NULL,
-      kind TEXT NOT NULL,
-      region TEXT NOT NULL,
+      read_aloud TEXT NOT NULL,
       notes TEXT NOT NULL,
       position INTEGER NOT NULL CHECK(position >= 0)
     );
     CREATE INDEX IF NOT EXISTS idx_worldplanner_location_name
       ON worldplanner_location(display_name COLLATE NOCASE, id);
+    CREATE TABLE IF NOT EXISTS worldplanner_location_tag (
+      location_id TEXT NOT NULL
+        REFERENCES worldplanner_location(id) ON DELETE CASCADE,
+      canonical_value TEXT NOT NULL,
+      display_value TEXT NOT NULL,
+      position INTEGER NOT NULL CHECK(position >= 0),
+      PRIMARY KEY (location_id, canonical_value),
+      UNIQUE (location_id, position)
+    );
+    CREATE INDEX IF NOT EXISTS idx_worldplanner_location_tag_canonical
+      ON worldplanner_location_tag(canonical_value, display_value);
     CREATE TABLE IF NOT EXISTS worldplanner_location_map_presentation (
       location_id TEXT PRIMARY KEY NOT NULL
         REFERENCES worldplanner_location(id) ON DELETE CASCADE,
@@ -111,6 +125,46 @@ export class WorldLocationStore {
     return new Map(rows.map((row) => [row.id, row.displayName]))
   }
 
+  suggestTags(query: string, limit = 6): readonly string[] {
+    const input = worldLocationTagSearchInputSchema.parse({ query, limit })
+    const canonical = canonicalWorldLocationTag(input.query)
+    const escaped = canonical.replace(/[\\%_]/g, '\\$&')
+    const rows = this.db
+      .prepare(
+        `SELECT canonicalValue, displayValue
+         FROM (
+           SELECT tag.canonical_value AS canonicalValue,
+                  tag.display_value AS displayValue,
+                  location.position AS locationPosition,
+                  tag.position AS tagPosition,
+                  ROW_NUMBER() OVER (
+                    PARTITION BY tag.canonical_value
+                    ORDER BY location.position, tag.position, location.id
+                  ) AS choice
+           FROM worldplanner_location_tag tag
+           JOIN worldplanner_location location ON location.id = tag.location_id
+           WHERE tag.canonical_value LIKE ? ESCAPE '\\'
+         )
+         WHERE choice = 1
+         ORDER BY CASE
+                    WHEN canonicalValue = ? THEN 0
+                    WHEN canonicalValue LIKE ? ESCAPE '\\' THEN 1
+                    ELSE 2
+                  END,
+                  locationPosition,
+                  tagPosition,
+                  displayValue COLLATE NOCASE,
+                  canonicalValue
+         LIMIT ?`
+      )
+      .all(`%${escaped}%`, canonical, `${escaped}%`, input.limit) as Array<{
+      displayValue: string
+    }>
+    return worldLocationTagSuggestionsSchema.parse(
+      rows.map((row) => row.displayValue)
+    )
+  }
+
   read(): WorldLocationSnapshot {
     const metadata = this.db
       .prepare(
@@ -125,11 +179,13 @@ export class WorldLocationStore {
       'worldplanner_location_encounter_table',
       'encounter_table_id'
     )
+    const tags = this.tagMap()
     const locations = this.db
       .prepare(
         `
         SELECT location.id, location.display_name AS displayName,
-               location.kind, location.region, location.notes, location.position,
+               location.read_aloud AS readAloud,
+               location.notes, location.position,
                presentation.revision AS mapRevision,
                presentation.title_override AS mapTitleOverride,
                presentation.symbol_id AS mapSymbolId,
@@ -147,8 +203,7 @@ export class WorldLocationStore {
         const location = raw as {
           id: string
           displayName: string
-          kind: string
-          region: string
+          readAloud: string
           notes: string
           position: number
           mapRevision: number
@@ -161,8 +216,8 @@ export class WorldLocationStore {
         return {
           id: location.id,
           displayName: location.displayName,
-          kind: location.kind,
-          region: location.region,
+          tags: tags.get(location.id) ?? [],
+          readAloud: location.readAloud,
           notes: location.notes,
           position: location.position,
           mapPresentation: {
@@ -186,112 +241,120 @@ export class WorldLocationStore {
   create(
     draft: WorldLocationDraft,
     expectedRevision: number
-  ): WorldLocationSnapshot {
-    return this.createResult(draft, expectedRevision).snapshot
-  }
-
-  createResult(
-    draft: WorldLocationDraft,
-    expectedRevision: number
-  ): CreateWorldLocationResult {
+  ): WorldLocationMutationReceipt {
     const parsed = worldLocationDraftSchema.parse(draft)
     let createdId = ''
-    this.mutate(expectedRevision, () => {
-      const position = (
+    return this.mutate(
+      expectedRevision,
+      () => {
+        const position = (
+          this.db
+            .prepare(
+              'SELECT COALESCE(MAX(position), -1) + 1 AS value FROM worldplanner_location'
+            )
+            .get() as { value: number }
+        ).value
+        const id = uuidv7()
+        createdId = id
         this.db
           .prepare(
-            'SELECT COALESCE(MAX(position), -1) + 1 AS value FROM worldplanner_location'
+            `INSERT INTO worldplanner_location
+           (id, display_name, read_aloud, notes, position)
+           VALUES (?, ?, ?, ?, ?)`
           )
-          .get() as { value: number }
-      ).value
-      const id = uuidv7()
-      createdId = id
-      this.db
-        .prepare(
-          `INSERT INTO worldplanner_location
-           (id, display_name, kind, region, notes, position)
-           VALUES (?, ?, ?, ?, ?, ?)`
-        )
-        .run(
-          id,
-          parsed.displayName,
-          parsed.kind,
-          parsed.region,
-          parsed.notes,
-          position
-        )
-      this.db
-        .prepare(
-          `INSERT INTO worldplanner_location_map_presentation
+          .run(id, parsed.displayName, parsed.readAloud, parsed.notes, position)
+        this.replaceTags(id, parsed.tags)
+        this.db
+          .prepare(
+            `INSERT INTO worldplanner_location_map_presentation
            (location_id, revision, title_override, symbol_id, symbol_size,
             label_curve, label_position)
            VALUES (?, 0, ?, ?, ?, ?, ?)`
+          )
+          .run(
+            id,
+            defaultWorldLocationMapPresentation.titleOverride,
+            defaultWorldLocationMapPresentation.symbolId,
+            defaultWorldLocationMapPresentation.symbolSize,
+            defaultWorldLocationMapPresentation.labelCurve,
+            defaultWorldLocationMapPresentation.labelPosition
+          )
+        this.replaceReferences(id, parsed.factionIds, parsed.encounterTableIds)
+      },
+      () => {
+        const snapshot = this.read()
+        const saved = snapshot.locations.find(
+          (location) => location.id === createdId
         )
-        .run(
-          id,
-          defaultWorldLocationMapPresentation.titleOverride,
-          defaultWorldLocationMapPresentation.symbolId,
-          defaultWorldLocationMapPresentation.symbolSize,
-          defaultWorldLocationMapPresentation.labelCurve,
-          defaultWorldLocationMapPresentation.labelPosition
-        )
-      this.replaceReferences(id, parsed.factionIds, parsed.encounterTableIds)
-    })
-    const snapshot = this.read()
-    const createdLocation = snapshot.locations.find(
-      (location) => location.id === createdId
+        if (!saved)
+          throw new Error(
+            'Created World Location is missing from its snapshot.'
+          )
+        return worldLocationMutationReceiptSchema.parse({ snapshot, saved })
+      }
     )
-    if (!createdLocation)
-      throw new Error('Created World Location is missing from its snapshot.')
-    return createWorldLocationResultSchema.parse({ snapshot, createdLocation })
   }
 
   update(
     id: string,
     draft: WorldLocationDraft,
     expectedRevision: number
-  ): WorldLocationSnapshot {
+  ): WorldLocationMutationReceipt {
     const parsed = worldLocationDraftSchema.parse(draft)
-    this.mutate(expectedRevision, () => {
-      const changed = this.db
-        .prepare(
-          `UPDATE worldplanner_location SET
-             display_name = ?, kind = ?, region = ?, notes = ?
+    return this.mutate(
+      expectedRevision,
+      () => {
+        const changed = this.db
+          .prepare(
+            `UPDATE worldplanner_location SET
+             display_name = ?, read_aloud = ?, notes = ?
            WHERE id = ?`
-        )
-        .run(
-          parsed.displayName,
-          parsed.kind,
-          parsed.region,
-          parsed.notes,
-          id
-        ).changes
-      if (changed === 0) throw new CapabilityError('not_found', false)
-      this.replaceReferences(id, parsed.factionIds, parsed.encounterTableIds)
-    })
-    return this.read()
+          )
+          .run(parsed.displayName, parsed.readAloud, parsed.notes, id).changes
+        if (changed === 0) throw new CapabilityError('not_found', false)
+        this.replaceTags(id, parsed.tags)
+        this.replaceReferences(id, parsed.factionIds, parsed.encounterTableIds)
+      },
+      () => {
+        const snapshot = this.read()
+        const saved = snapshot.locations.find((location) => location.id === id)
+        if (!saved)
+          throw new Error(
+            'Updated World Location is missing from its snapshot.'
+          )
+        return worldLocationMutationReceiptSchema.parse({ snapshot, saved })
+      }
+    )
   }
 
-  delete(id: string, expectedRevision: number): WorldLocationSnapshot {
-    this.mutate(expectedRevision, () => {
-      if (
+  delete(id: string, expectedRevision: number) {
+    return this.mutate(
+      expectedRevision,
+      () => {
+        if (
+          this.db
+            .prepare('DELETE FROM worldplanner_location WHERE id = ?')
+            .run(id).changes === 0
+        )
+          throw new CapabilityError('not_found', false)
         this.db
-          .prepare('DELETE FROM worldplanner_location WHERE id = ?')
-          .run(id).changes === 0
-      )
-        throw new CapabilityError('not_found', false)
-      this.db
-        .prepare(
-          'DELETE FROM worldplanner_location_faction WHERE location_id = ?'
-        )
-        .run(id)
-      this.db
-        .prepare(
-          'DELETE FROM worldplanner_location_encounter_table WHERE location_id = ?'
-        )
-        .run(id)
-    })
-    return this.read()
+          .prepare(
+            'DELETE FROM worldplanner_location_faction WHERE location_id = ?'
+          )
+          .run(id)
+        this.db
+          .prepare(
+            'DELETE FROM worldplanner_location_encounter_table WHERE location_id = ?'
+          )
+          .run(id)
+      },
+      () => {
+        return worldLocationDeleteReceiptSchema.parse({
+          snapshot: this.read(),
+          deletedId: id
+        })
+      }
+    )
   }
 
   updateMapPresentation(
@@ -443,6 +506,37 @@ export class WorldLocationStore {
     return result
   }
 
+  private tagMap(): Map<string, string[]> {
+    const result = new Map<string, string[]>()
+    const rows = this.db
+      .prepare(
+        `SELECT location_id AS locationId, display_value AS value
+         FROM worldplanner_location_tag
+         ORDER BY location_id, position`
+      )
+      .all() as Array<{ locationId: string; value: string }>
+    for (const row of rows)
+      result.set(row.locationId, [
+        ...(result.get(row.locationId) ?? []),
+        row.value
+      ])
+    return result
+  }
+
+  private replaceTags(locationId: string, tags: readonly string[]): void {
+    this.db
+      .prepare('DELETE FROM worldplanner_location_tag WHERE location_id = ?')
+      .run(locationId)
+    const insert = this.db.prepare(
+      `INSERT INTO worldplanner_location_tag
+       (location_id, canonical_value, display_value, position)
+       VALUES (?, ?, ?, ?)`
+    )
+    tags.forEach((tag, position) =>
+      insert.run(locationId, canonicalWorldLocationTag(tag), tag, position)
+    )
+  }
+
   private replaceReferences(
     locationId: string,
     factionIds: readonly string[],
@@ -486,7 +580,12 @@ export class WorldLocationStore {
       throw new CapabilityError('not_found', false)
   }
 
-  private mutate(expectedRevision: number, operation: () => void): void {
+  private mutate<Output>(
+    expectedRevision: number,
+    operation: () => void,
+    materialize: () => Output
+  ): Output {
+    let result: Output | undefined
     const mutation = () => {
       const current = (
         this.db
@@ -498,9 +597,13 @@ export class WorldLocationStore {
       if (current !== expectedRevision) throw new CapabilityError('stale', true)
       operation()
       this.bumpRevision()
+      result = materialize()
     }
     if (this.db.inTransaction) mutation()
     else this.db.transaction(mutation)()
+    if (result === undefined)
+      throw new Error('Location mutation has no result.')
+    return result
   }
 
   private bumpRevision(): void {
@@ -525,14 +628,12 @@ export class WorldLocationService {
     return this.withStore((store) => store.read())
   }
 
-  create(draft: WorldLocationDraft, expectedRevision: number) {
-    return this.withStore((store) => store.create(draft, expectedRevision))
+  suggestTags(query: string, limit = 6): readonly string[] {
+    return this.withStore((store) => store.suggestTags(query, limit))
   }
 
-  createResult(draft: WorldLocationDraft, expectedRevision: number) {
-    return this.withStore((store) =>
-      store.createResult(draft, expectedRevision)
-    )
+  create(draft: WorldLocationDraft, expectedRevision: number) {
+    return this.withStore((store) => store.create(draft, expectedRevision))
   }
 
   update(id: string, draft: WorldLocationDraft, expectedRevision: number) {

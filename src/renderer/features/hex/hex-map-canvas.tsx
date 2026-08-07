@@ -2,7 +2,7 @@ import type { ReactElement } from 'react'
 import type { HexMapCanvasProps } from './hex-map-canvas-pixi.js'
 import { ModuleHost } from '../../shell/module-host.js'
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
-import { message } from '../../i18n/messages.de.js'
+import { message } from '../../i18n/hex-runtime.de.js'
 
 const loadPixiCanvas = async () => {
   const module = await import('./hex-map-canvas-pixi.js')

@@ -1,0 +1,16 @@
+{
+  "recordedAt": "2026-08-07",
+  "reason": "Ratchet after removing unused Catalog surface snapshot and close props",
+  "dependencyRationale": "No dependency version changed; this is a 68-byte first-party route reduction",
+  "chunkRationale": "Catalog composition shrank in place; dynamic Related-Creation, Faction, and Pixi boundaries are unchanged",
+  "graphs": {
+    "shell": 773292,
+    "workspace": 1054966,
+    "session": 348618,
+    "catalog": 366282,
+    "hex": 354322,
+    "reference": 97770,
+    "pixi": 1636007,
+    "reachable": 3045295
+  }
+}

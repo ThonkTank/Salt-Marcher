@@ -34,10 +34,15 @@ Application and workspace modules now load through shell-owned failure
 isolation with structured renderer incidents and Main-controlled reload.
 Renderer feature ports are injected from React context; the mutable capability
 singleton has been removed. Pixi is loaded only at a visible Hex canvas. The
-common Workspace transitive graph is currently 814.9 KiB under its 900 KiB
-ceiling, and the normal renderer is capped at 2.80 MiB. The 0.05 MiB increase
+common Workspace JavaScript graph is currently 814.2 KiB under its 900 KiB
+ceiling. The normal renderer has a 3.20 MiB hard ceiling with ten percent held
+back as corrective-work reserve instead of operating at the previous 2.80 MiB
+byte boundary. The 0.05 MiB increase
 accounts for the bounded virtual biome catalog and CRUD surface added with
-schema 15 while all per-entry ceilings remain unchanged. Legacy WOFF duplicates
+schema 15; schema 16 replaced separate World Location kind and region fields
+with tags and read-aloud text, and schema 17 normalizes ordered location-owned
+tags into validated rows while all per-entry ceilings remain unchanged.
+Legacy WOFF duplicates
 are excluded, and typed message placeholders fail closed. The canonical check
 now also runs the complete Campaign-walking/Hex journey against the built
 application.
@@ -61,6 +66,18 @@ presentation, symbol, and creation reconciliation. The shared World Location
 editor uses a narrow World Planner port, and creation returns the exact new
 entity. Create-then-place remains an explicit two-step workflow so an authored
 location survives a rejected placement with a visible partial-success outcome.
+The dialog itself is Hex-agnostic and composes a generic side area; a Workspace
+integration owns its revision-free placement draft. Location tags use ordered
+relational rows and a bounded suggestion capability, selection controls share
+one keyboard-accessible combobox primitive, and the typed German copy catalog
+is assembled from bounded feature dictionaries.
+
+The editor application-layer refactor tracks its normative evidence in
+`application-layer-refactor-acceptance-matrix.md`. It moves the two-step
+Location save into a durable utility-process command without presenting it as
+atomic, replaces whole Encounter Table revision comparisons with scope
+snapshots, normalizes exact-entity mutation receipts, and moves nested editors
+to a shell-owned sibling overlay stack.
 
 ## Decisions
 
@@ -186,6 +203,10 @@ claiming completion of M3 or M5. Its approved expansion contains:
   Encounter Tables in Catalog; locations link factions and tables, factions
   own disposition, a primary table and optional finite inventory caps, while
   Scene stores only a stable focused-location reference
+- the shared location editor creates and immediately links missing Hex maps,
+  factions, and Encounter Tables through Workspace integration ports without
+  resetting its draft; the same map, faction, and table dialogs serve their
+  direct and nested entry points
 - one shared source resolver supplies both the visible Monster catalog and the
   Scene-group generator with union-within/intersection-across semantics,
   weighted deterministic ranking, finite caps, and explicit fallback/no-
@@ -196,7 +217,9 @@ claiming completion of M3 or M5. Its approved expansion contains:
 - Catalog, Session, Encounter Table, creature search, and creature collection
   are one-way renderer features rather than workspace-to-workspace imports.
   Their blocking surfaces use one portal-based modal stack with inert lower
-  layers, focus restoration, and a shared dirty-draft discard alert
+  layers, one shared scrim, visible contextual parents, focus restoration, and
+  a shared dirty-draft discard alert; modal-owned anchored popups retain the
+  same Escape and focus order
 - the Catalog composition root keeps all existing section-controller state
   alive while narrow injectable capability ports suppress reads from inactive
   sections; the shared creature-collection manager owns every named layout

@@ -68,12 +68,13 @@ describe('chunked hex editor to session travel vertical slice', () => {
     const world = locations.create(
       {
         displayName: 'Salzhafen',
+        tags: ['Hafen'],
         notes: '',
         factionIds: [],
         encounterTableIds: []
       },
       locations.read().revision
-    )
+    ).snapshot
     const map = maps.create('Küste', maps.catalog().revision)
     const painted = editing.applyBrushStroke({
       commandId: randomUUID(),
@@ -244,12 +245,13 @@ describe('chunked hex editor to session travel vertical slice', () => {
     const location = h.locations.create(
       {
         displayName: 'Wandernde Feste',
+        tags: ['Feste'],
         notes: '',
         factionIds: [],
         encounterTableIds: []
       },
       h.locations.read().revision
-    ).locations[0]!
+    ).snapshot.locations[0]!
     const first = h.maps.create('Erste Karte', h.maps.catalog().revision)
     const second = h.maps.create('Zweite Karte', h.maps.catalog().revision)
     const revision = (mapId: string) =>
@@ -373,12 +375,13 @@ describe('chunked hex editor to session travel vertical slice', () => {
     const world = h.locations.create(
       {
         displayName: 'Wachturm',
+        tags: ['Turm'],
         notes: '',
         factionIds: [],
         encounterTableIds: []
       },
       h.locations.read().revision
-    )
+    ).snapshot
     const map = h.maps.create('Grenzland', h.maps.catalog().revision)
     h.editing.applyBrushStroke({
       commandId: randomUUID(),
@@ -495,12 +498,13 @@ describe('chunked hex editor to session travel vertical slice', () => {
     const world = h.locations.create(
       {
         displayName: 'Startort',
+        tags: ['Start'],
         notes: '',
         factionIds: [],
         encounterTableIds: []
       },
       h.locations.read().revision
-    )
+    ).snapshot
     const map = h.maps.create('Marschland', h.maps.catalog().revision)
     h.editing.applyBrushStroke({
       commandId: randomUUID(),

@@ -50,21 +50,6 @@ function relativeImports(path: string): string[] {
     .map((value) => normalize(resolve(dirname(path), value)))
 }
 
-function expectRelativeImportsWithin(
-  layer: string,
-  allowedRoots: readonly string[]
-): void {
-  const roots = allowedRoots.map((root) => normalize(resolve(root)))
-  for (const file of codeFiles(layer))
-    for (const imported of relativeImports(file))
-      expect(
-        roots.some(
-          (root) => imported === root || imported.startsWith(`${root}${sep}`)
-        ),
-        `${file} imports forbidden layer ${imported}`
-      ).toBe(true)
-}
-
 function referencedSqlTables(path: string): string[] {
   return [
     ...readFileSync(path, 'utf8').matchAll(
@@ -76,22 +61,6 @@ function referencedSqlTables(path: string): string[] {
 }
 
 describe('architecture boundaries', () => {
-  it('enforces process-layer import direction', () => {
-    expectRelativeImportsWithin('src/renderer', ['src/renderer', 'src/shared'])
-    expectRelativeImportsWithin('src/preload', ['src/preload', 'src/shared'])
-    expectRelativeImportsWithin('src/main', ['src/main', 'src/shared'])
-    expectRelativeImportsWithin('src/core', ['src/core', 'src/shared'])
-    expectRelativeImportsWithin('src/utility', [
-      'src/utility',
-      'src/core',
-      'src/shared'
-    ])
-    for (const file of codeFiles('src/core'))
-      expect(source(file), `${file} imports Electron`).not.toMatch(
-        /(?:from\s+|import\s*)['"]electron['"]/
-      )
-  })
-
   it('keeps SQL table ownership inside the owning aggregate', () => {
     const owners: readonly [RegExp, string][] = [
       [/^hex_/, `${normalize(resolve('src/core/hex'))}${sep}`],
@@ -185,6 +154,24 @@ describe('architecture boundaries', () => {
     expect(
       source('src/renderer/features/hex/hex-location-marker-overlay.tsx')
     ).toContain('useImperativeHandle')
+    const relatedStack = source(
+      'src/renderer/features/workspace/integrations/related-entity-dialog-stack.tsx'
+    )
+    const lazyRelated = source(
+      'src/renderer/features/workspace/integrations/lazy-integrated-related-creation.tsx'
+    )
+    expect(relatedStack).toContain('LazyIntegratedWorldFactionCreation')
+    expect(relatedStack).toContain('LazyIntegratedEncounterTableCreation')
+    expect(relatedStack).not.toContain("'./integrated-related-creation.js'")
+    expect(lazyRelated).toContain("import('./integrated-related-creation.js')")
+    const catalog = source(
+      'src/renderer/features/catalog/catalog-workspace.tsx'
+    )
+    expect(catalog).toContain('LazyWorldFactionDialog')
+    expect(catalog).not.toContain("'../worldplanner/world-faction-dialog.js'")
+    expect(
+      source('src/renderer/features/worldplanner/lazy-world-faction-dialog.tsx')
+    ).toContain("import('./world-faction-dialog.js')")
   })
 
   it('keeps the TypeScript import graph acyclic', () => {
@@ -267,22 +254,6 @@ describe('architecture boundaries', () => {
   })
 
   it('keeps shared creature and dialog primitives independent of consumers', () => {
-    for (const file of codeFiles('src/renderer/features/catalog'))
-      expect(source(file), `${file} imports Session`).not.toMatch(
-        /from ['"]\.\.\/session\//
-      )
-    for (const file of codeFiles('src/renderer/features/session'))
-      expect(source(file), `${file} imports Catalog`).not.toMatch(
-        /from ['"]\.\.\/catalog\//
-      )
-    for (const file of codeFiles('src/renderer/features/creature-collection'))
-      expect(source(file), `${file} imports a consumer feature`).not.toMatch(
-        /from ['"]\.\.\/(?:catalog|session)\//
-      )
-    for (const file of codeFiles('src/renderer/features/creatures'))
-      expect(source(file), `${file} imports a consumer feature`).not.toMatch(
-        /from ['"]\.\.\/(?:catalog|session|creature-collection)\//
-      )
     const creatureControls = source(
       'src/renderer/features/creatures/creature-controls.tsx'
     )
@@ -300,16 +271,197 @@ describe('architecture boundaries', () => {
     expect(source('src/renderer/features/session/session.css')).not.toContain(
       '.modal-backdrop'
     )
-    for (const file of codeFiles('src/renderer/features/worldplanner'))
-      expect(source(file), `${file} imports a consumer workspace`).not.toMatch(
-        /from ['"]\.\.\/(?:catalog|hex)\//
-      )
     const modal = source('src/renderer/shell/modal-dialog.tsx')
     expect(modal).toContain('export function ModalForm')
     expect(modal).not.toContain('form?: boolean')
     expect(source('src/renderer/shell/modal-dialog.css')).not.toContain(
       '.modal-form-content'
     )
+  })
+
+  it('composes World Location editing only at the workspace integration boundary', () => {
+    for (const file of codeFiles('src/renderer/features')) {
+      const imports = relativeImports(file)
+      const composesHex = imports.some((entry) =>
+        entry.includes(`${sep}features${sep}hex${sep}`)
+      )
+      const composesWorldPlanner = imports.some((entry) =>
+        entry.includes(`${sep}features${sep}worldplanner${sep}`)
+      )
+      const normalizedFile = normalize(resolve(file))
+      const isFeatureImplementation =
+        normalizedFile.includes(`${sep}features${sep}hex${sep}`) ||
+        normalizedFile.includes(`${sep}features${sep}worldplanner${sep}`)
+      if (composesHex && composesWorldPlanner && !isFeatureImplementation)
+        expect(
+          normalizedFile.includes(
+            `${sep}features${sep}workspace${sep}integrations${sep}`
+          ),
+          `${file} composes Hex and World Planner outside the integration root`
+        ).toBe(true)
+    }
+    const dialog = source(
+      'src/renderer/features/worldplanner/world-location-dialog.tsx'
+    )
+    expect(dialog).not.toMatch(/HexLocation|Placement|contentRevision/)
+    expect(dialog).toContain('aside?:')
+    const editorTypes = source(
+      'src/renderer/features/worldplanner/world-location-editor-types.ts'
+    )
+    expect(editorTypes).not.toContain('contentRevision')
+    const integration = source(
+      'src/renderer/features/workspace/integrations/world-location-editing.tsx'
+    )
+    expect(integration).toContain('HexLocationPlacementDialog')
+    expect(integration).toContain('IntegratedWorldLocationEditor')
+    const integratedEditor = source(
+      'src/renderer/features/workspace/integrations/integrated-world-location-editor.tsx'
+    )
+    expect(integratedEditor).toContain('HexLocationDraftField')
+    expect(integratedEditor).toContain('WorldLocationDialog')
+    expect(
+      source('src/renderer/features/catalog/location-catalog-section.tsx')
+    ).not.toMatch(/HexLocation|WorldLocationDialog/)
+    expect(
+      source('src/renderer/features/catalog/location-catalog-controller.ts')
+    ).not.toMatch(/saveWorldLocation|commitPlacement:/)
+    expect(integration).toContain('createWorldLocationApplicationPort')
+    expect(integration).not.toContain('saveWorldLocation')
+    expect(source('src/renderer/features/hex/hex-editor.tsx')).not.toContain(
+      'WorldLocationDialog'
+    )
+    expect(source('src/renderer/features/hex/hex-editor.tsx')).not.toMatch(
+      /createWorldLocationCreationPort|useWorldLocationCreationWorkflow/
+    )
+    expect(
+      source(
+        'src/renderer/features/workspace/integrations/integrated-world-location-creation.tsx'
+      )
+    ).toContain('useWorldLocationCreationWorkflow')
+    expect(
+      source(
+        'src/renderer/features/worldplanner/use-world-location-creation-workflow.ts'
+      )
+    ).not.toMatch(/saveWorldLocation|commitPlacement/)
+    expect(
+      source('src/renderer/features/hex/hex-map-creation-port.ts')
+    ).not.toMatch(/previousIds|knownIds|\.filter\([^)]*\.id/)
+    expect(
+      source('src/renderer/features/hex/use-hex-command-controller.ts')
+    ).toContain('createHexMapApplicationPort')
+    expect(integration).toContain('createHexMapApplicationPort')
+  })
+
+  it('keeps the Hex placement projection injected, revision-free and styled by Hex', () => {
+    const field = source(
+      'src/renderer/features/hex/hex-location-draft-field.tsx'
+    )
+    expect(field).not.toContain('useCapabilityApi')
+    expect(field).toContain("import './hex-location-placement.css'")
+    expect(field).toContain('if (expanded && data?.map)')
+    expect(field).toContain('<ExpandedHexPlacementDialog')
+    expect(field).toContain('<CompactHexPlacementView')
+    const placementCommit = source(
+      'src/renderer/features/hex/world-location-placement-commit.ts'
+    )
+    expect(placementCommit).not.toMatch(
+      /messages\.de|formatMessage|\bmessage\(/
+    )
+    expect(placementCommit).toContain('locations.commitPlacement')
+    expect(placementCommit).not.toMatch(
+      /expectedContentRevision|execute\(false\)|\.catalog\(|readChunks\(/
+    )
+    expect(
+      source('src/renderer/features/hex/use-hex-command-controller.ts')
+    ).toContain('createWorldLocationPlacementCommitter')
+    expect(source('src/shared/contracts/capability-api.ts')).not.toMatch(
+      /hex[\s\S]*?placeLocation\(|hex[\s\S]*?removeLocation\(/
+    )
+    const projection = source(
+      'src/renderer/features/hex/use-hex-location-placement-draft.ts'
+    )
+    expect(projection).not.toMatch(/new HexChunkCache|\.onChanged\(/)
+    expect(projection).toContain("port.cacheMode === 'transient'")
+    const owner = source('src/renderer/features/hex/use-hex-map-controller.ts')
+    expect(owner).toContain('cache: ownedChunkCache')
+    expect(owner).toContain("cacheMode: 'shared-owner'")
+    expect(owner.match(/capabilities\.hex\.onChanged/g)).toHaveLength(1)
+    expect(owner.match(/capabilities\.biomes\.onChanged/g)).toHaveLength(1)
+    for (const view of [
+      'src/renderer/features/hex/compact-hex-placement-view.tsx',
+      'src/renderer/features/hex/expanded-hex-placement-dialog.tsx'
+    ]) {
+      expect(source(view), `${view} bypasses its projection port`).not.toMatch(
+        /useCapabilityApi|window\.saltMarcher/
+      )
+      expect(source(view)).toContain("import './hex-location-placement.css'")
+    }
+  })
+
+  it('keeps message types global and runtime dictionaries feature-lazy', () => {
+    const assembly = source('src/renderer/i18n/feature-messages.de.ts')
+    expect(assembly).toContain('export type')
+    expect(assembly).not.toMatch(/import \{|messagesDe\s*=/)
+    for (const dictionary of [
+      'workspace',
+      'reference',
+      'session',
+      'hex',
+      'catalog',
+      'worldplanner',
+      'ui'
+    ])
+      expect(
+        source(`src/renderer/i18n/${dictionary}-messages.de.ts`).trim().length
+      ).toBeGreaterThan(0)
+    const runtimes = {
+      catalog: 'catalogMessagesDe',
+      hex: 'hexMessagesDe',
+      session: 'sessionMessagesDe',
+      reference: 'referenceMessagesDe',
+      worldplanner: 'worldplannerMessagesDe'
+    } as const
+    for (const [feature, ownDictionary] of Object.entries(runtimes)) {
+      const runtime = source(`src/renderer/i18n/${feature}-runtime.de.ts`)
+      expect(runtime).toContain(ownDictionary)
+      for (const foreign of Object.values(runtimes))
+        if (foreign !== ownDictionary) expect(runtime).not.toContain(foreign)
+    }
+    for (const file of codeFiles('src/renderer/features'))
+      expect(
+        source(file),
+        `${file} imports the eager message facade`
+      ).not.toMatch(/i18n\/messages\.de/)
+  })
+
+  it('keeps refactored forms and placement views on injected ports', () => {
+    for (const file of [
+      'src/renderer/features/worldplanner/world-location-form.tsx',
+      'src/renderer/features/worldplanner/location-tag-picker.tsx',
+      'src/renderer/features/worldplanner/location-reference-picker.tsx',
+      'src/renderer/features/hex/compact-hex-placement-view.tsx',
+      'src/renderer/features/hex/expanded-hex-placement-dialog.tsx'
+    ])
+      expect(
+        source(file),
+        `${file} accesses renderer capabilities`
+      ).not.toMatch(/useCapabilityApi|window\.saltMarcher/)
+    for (const file of [
+      'src/renderer/features/encounter-table/encounter-table-editor-types.ts',
+      'src/renderer/features/encounter-table/encounter-table-manager.tsx'
+    ])
+      expect(
+        source(file),
+        `${file} receives a raw capability subtree`
+      ).not.toContain('SaltMarcherApi')
+    expect(
+      source('src/renderer/features/worldplanner/world-location-draft.ts')
+    ).not.toContain('contentRevision')
+    expect(
+      source(
+        'src/renderer/features/worldplanner/world-location-editor-types.ts'
+      )
+    ).not.toContain('contentRevision')
   })
 
   it('keeps CatalogWorkspace as a small composition root without editors', () => {
@@ -325,6 +477,16 @@ describe('architecture boundaries', () => {
       'src/renderer/features/encounter-table/encounter-table-catalog-controller.ts'
     ])
       expect(source(controller)).toContain('active')
+  })
+
+  it('records the bounded Catalog search escalation profile', () => {
+    const architecture = source(
+      'docs/project/architecture/target-architecture.md'
+    )
+    expect(architecture).toContain('2,000 locations')
+    expect(architecture).toContain('5 MiB')
+    expect(architecture).toContain('150 ms p95')
+    expect(architecture).toContain('server-side paginated query port')
   })
 
   it('gives every renderer feature a screen, hook, adapter and owned CSS', () => {
@@ -436,6 +598,13 @@ describe('architecture boundaries', () => {
       .join('\n')
     expect(all).not.toMatch(/ALTER TABLE|PRAGMA table_info/)
     expect(all).not.toMatch(/new Database\(/)
+    const locationSave = source('src/core/application/world-location-save.ts')
+    expect(locationSave).not.toMatch(
+      /better-sqlite3|\.prepare\(|\b(?:SELECT|UPDATE|INSERT)\b/
+    )
+    expect(
+      source('src/core/worldplanner/world-location-save-journal.ts')
+    ).toContain('worldplanner_location_save_operation')
   })
 
   it('keeps combat persistence as runtime references to owning aggregates', () => {

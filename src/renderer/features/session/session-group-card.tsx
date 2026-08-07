@@ -1,5 +1,6 @@
 import type { SceneGroup } from '../../../shared/contracts/scene.js'
-import { formatMessage, message } from '../../i18n/messages.de.js'
+import { formatXp } from '../../i18n/domain-formatters.de.js'
+import { formatMessage, message } from '../../i18n/session-runtime.de.js'
 import { ReadOnlyProse } from '../reference/read-only-prose.js'
 
 export function SessionGroupCard(props: {
@@ -38,7 +39,7 @@ export function SessionGroupCard(props: {
         <span className="group-meta">
           {disposition} · {aliveCount} lebend
           {deadCount > 0 ? ` · ${deadCount} tot` : ''} ·{' '}
-          {props.group.baseXp.toLocaleString()} XP
+          {formatXp(props.group.baseXp)}
         </span>
         <div className="row-actions">
           {props.edit && (

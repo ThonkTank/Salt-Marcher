@@ -34,15 +34,15 @@ describe('installation location symbols', () => {
       },
       0
     )
-    const symbolId = created.symbols[0]!.id
+    const symbolId = created.saved.id
     const locations = new WorldLocationService(
       () => campaigns.activeCampaignDatabase(),
       (id) => symbols.read().symbols.find((symbol) => symbol.id === id) ?? null
     )
     const world = locations.create(
-      { displayName: 'Kap', notes: '' },
+      { displayName: 'Kap', tags: ['Kap'], notes: '' },
       locations.read().revision
-    )
+    ).snapshot
     const presentation = locations.updateMapPresentation(
       world.locations[0]!.id,
       {
@@ -64,7 +64,7 @@ describe('installation location symbols', () => {
     })
 
     campaigns.create('Second')
-    expect(symbols.read()).toEqual(created)
+    expect(symbols.read()).toEqual(created.snapshot)
     campaigns.close()
   })
 
@@ -95,7 +95,10 @@ describe('installation location symbols', () => {
     const locations = new WorldLocationService(() =>
       campaigns.activeCampaignDatabase()
     )
-    const world = locations.create({ displayName: 'Kap', notes: '' }, 0)
+    const world = locations.create(
+      { displayName: 'Kap', tags: ['Kap'], notes: '' },
+      0
+    ).snapshot
     expect(() =>
       locations.updateMapPresentation(
         world.locations[0]!.id,
@@ -123,7 +126,7 @@ describe('installation location symbols', () => {
           pathData: 'M0 0 L10 10 Z'
         },
         revision
-      ).revision
+      ).snapshot.revision
     const first = symbols.search('Zeichen', 0, 24)
     const second = symbols.search('Zeichen', 24, 24)
     expect(first).toMatchObject({ revision: 26, total: 26, offset: 0 })
@@ -151,14 +154,16 @@ describe('installation location symbols', () => {
       },
       0
     )
-    const symbolId = created.symbols[0]!.id
+    const symbolId = created.saved.id
     const createUsage = (name: string) => {
       const locations = new WorldLocationService(
         () => campaigns.activeCampaignDatabase(),
         (id) => lifecycle.customSymbol(id)
       )
-      const location = locations.create({ displayName: name, notes: '' }, 0)
-        .locations[0]!
+      const location = locations.create(
+        { displayName: name, tags: ['Ort'], notes: '' },
+        0
+      ).snapshot.locations[0]!
       locations.updateMapPresentation(
         location.id,
         { symbolId },
@@ -183,14 +188,14 @@ describe('installation location symbols', () => {
     const applied = lifecycle.delete({
       commandId,
       id: symbolId,
-      expectedRevision: created.revision
+      expectedRevision: created.snapshot.revision
     })
     expect(applied.status).toBe('applied')
     expect(
       lifecycle.delete({
         commandId,
         id: symbolId,
-        expectedRevision: created.revision
+        expectedRevision: created.snapshot.revision
       }).status
     ).toBe('replayed')
     expect(
@@ -216,7 +221,8 @@ describe('installation location symbols', () => {
     const lifecycle = new LocationSymbolLifecycleService(campaigns)
     const location = new WorldLocationService(() =>
       campaigns.activeCampaignDatabase()
-    ).create({ displayName: 'Klippe', notes: '' }, 0).locations[0]!
+    ).create({ displayName: 'Klippe', tags: ['Klippe'], notes: '' }, 0).snapshot
+      .locations[0]!
     const input = {
       commandId: crypto.randomUUID(),
       displayName: 'Bake',
@@ -255,7 +261,8 @@ describe('installation location symbols', () => {
     const campaignId = campaigns.create('Recovery').activeCampaignId!
     const location = new WorldLocationService(() =>
       campaigns.activeCampaignDatabase()
-    ).create({ displayName: 'Klippe', notes: '' }, 0).locations[0]!
+    ).create({ displayName: 'Klippe', tags: ['Klippe'], notes: '' }, 0).snapshot
+      .locations[0]!
     const commandId = crypto.randomUUID()
     const pending = new LocationSymbolStore(
       campaigns.installationDatabase()
@@ -293,7 +300,8 @@ describe('installation location symbols', () => {
     const campaignId = campaigns.create('Assigned recovery').activeCampaignId!
     const location = new WorldLocationService(() =>
       campaigns.activeCampaignDatabase()
-    ).create({ displayName: 'Bake', notes: '' }, 0).locations[0]!
+    ).create({ displayName: 'Bake', tags: ['Bake'], notes: '' }, 0).snapshot
+      .locations[0]!
     const commandId = crypto.randomUUID()
     const source =
       '<svg viewBox="0 0 10 10"><path d="M0 10 L5 0 L10 10 Z"/></svg>'
@@ -353,17 +361,18 @@ describe('installation location symbols', () => {
       },
       0
     )
-    const symbolId = created.symbols[0]!.id
+    const symbolId = created.saved.id
     const location = new WorldLocationService(() =>
       campaigns.activeCampaignDatabase()
-    ).create({ displayName: 'Sturmkap', notes: '' }, 0).locations[0]!
+    ).create({ displayName: 'Sturmkap', tags: ['Kap'], notes: '' }, 0).snapshot
+      .locations[0]!
     lifecycle
       .locationStore(campaigns.activeCampaignDatabase())
       .updateMapPresentation(location.id, { symbolId }, 0)
     new LocationSymbolStore(campaigns.installationDatabase()).beginDeletion(
       crypto.randomUUID(),
       symbolId,
-      created.revision
+      created.snapshot.revision
     )
     campaigns.close()
 

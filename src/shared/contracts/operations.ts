@@ -55,19 +55,25 @@ import {
   setSceneLocationInputSchema
 } from './scene.js'
 import {
-  createWorldLocationInputSchema,
-  createWorldLocationResultSchema,
   deleteWorldLocationInputSchema,
-  updateWorldLocationInputSchema,
+  saveWorldLocationInputSchema,
+  worldLocationPlacementCommandSchema,
+  worldLocationPlacementCommitResultSchema,
   updateWorldLocationMapPresentationInputSchema,
   worldLocationMapPresentationSchema,
-  worldLocationSnapshotSchema
+  worldLocationDeleteReceiptSchema,
+  worldLocationSaveReceiptInputSchema,
+  worldLocationSaveReceiptSchema,
+  worldLocationSnapshotSchema,
+  worldLocationTagSearchInputSchema,
+  worldLocationTagSuggestionsSchema
 } from './world-location.js'
 import {
   createLocationSymbolInputSchema,
   deleteLocationSymbolInputSchema,
   importLocationSymbolInputSchema,
   importLocationSymbolResultSchema,
+  locationSymbolMutationReceiptSchema,
   locationSymbolDeleteImpactSchema,
   locationSymbolDeleteResultSchema,
   locationSymbolDetailInputSchema,
@@ -94,16 +100,23 @@ import {
   createWorldFactionInputSchema,
   deleteEncounterTableInputSchema,
   deleteWorldFactionInputSchema,
+  encounterTableCommandReceiptInputSchema,
+  encounterTableCommandReceiptSchema,
+  encounterTableDeleteReceiptSchema,
+  encounterTableMutationReceiptSchema,
   encounterTableSnapshotSchema,
   updateEncounterTableInputSchema,
   updateWorldFactionInputSchema,
+  worldFactionCommandReceiptInputSchema,
+  worldFactionCommandReceiptSchema,
+  worldFactionDeleteReceiptSchema,
+  worldFactionMutationReceiptSchema,
   worldFactionSnapshotSchema
 } from './encounter-source.js'
 import {
   applyHexBrushStrokeInputSchema,
   createHexMapInputSchema,
   evaluateHexRouteInputSchema,
-  editHexLocationInputSchema,
   hexChunkReadResultSchema,
   hexBrushStrokeResultSchema,
   hexLocationPlacementReferenceSchema,
@@ -122,7 +135,6 @@ import {
   readHexChunksInputSchema,
   replaceMapBiomePlaceholderInputSchema,
   replaceMapBiomePlaceholderResultSchema,
-  unplaceHexLocationInputSchema,
   setHexTravelMultiplierInputSchema,
   startHexTravelInputSchema,
   updateHexMapInputSchema
@@ -293,15 +305,25 @@ export const coreOperations = {
     referenceDocumentSchema
   ),
   'locations.read': read('locations:read', none, worldLocationSnapshotSchema),
-  'locations.create': write(
-    'locations:create',
-    createWorldLocationInputSchema,
-    createWorldLocationResultSchema
+  'locations.suggestTags': read(
+    'locations:suggest-tags',
+    worldLocationTagSearchInputSchema,
+    worldLocationTagSuggestionsSchema
   ),
-  'locations.update': write(
-    'locations:update',
-    updateWorldLocationInputSchema,
-    worldLocationSnapshotSchema
+  'locations.save': write(
+    'locations:save',
+    saveWorldLocationInputSchema,
+    worldLocationSaveReceiptSchema
+  ),
+  'locations.saveReceipt': read(
+    'locations:save-receipt',
+    worldLocationSaveReceiptInputSchema,
+    worldLocationSaveReceiptSchema.nullable()
+  ),
+  'locations.commitPlacement': write(
+    'locations:commit-placement',
+    worldLocationPlacementCommandSchema,
+    worldLocationPlacementCommitResultSchema
   ),
   'locations.updateMapPresentation': write(
     'locations:update-map-presentation',
@@ -311,12 +333,12 @@ export const coreOperations = {
   'locations.delete': write(
     'locations:delete',
     deleteWorldLocationInputSchema,
-    worldLocationSnapshotSchema
+    worldLocationDeleteReceiptSchema
   ),
   'locationSymbols.create': write(
     'location-symbols:create',
     createLocationSymbolInputSchema,
-    locationSymbolSnapshotSchema
+    locationSymbolMutationReceiptSchema
   ),
   'locationSymbols.search': read(
     'location-symbols:search',
@@ -383,36 +405,46 @@ export const coreOperations = {
     none,
     encounterTableSnapshotSchema
   ),
+  'encounterTables.commandReceipt': read(
+    'encounter-tables:command-receipt',
+    encounterTableCommandReceiptInputSchema,
+    encounterTableCommandReceiptSchema.nullable()
+  ),
   'encounterTables.create': write(
     'encounter-tables:create',
     createEncounterTableInputSchema,
-    encounterTableSnapshotSchema
+    encounterTableMutationReceiptSchema
   ),
   'encounterTables.update': write(
     'encounter-tables:update',
     updateEncounterTableInputSchema,
-    encounterTableSnapshotSchema
+    encounterTableMutationReceiptSchema
   ),
   'encounterTables.delete': write(
     'encounter-tables:delete',
     deleteEncounterTableInputSchema,
-    encounterTableSnapshotSchema
+    encounterTableDeleteReceiptSchema
   ),
   'factions.read': read('factions:read', none, worldFactionSnapshotSchema),
+  'factions.commandReceipt': read(
+    'factions:command-receipt',
+    worldFactionCommandReceiptInputSchema,
+    worldFactionCommandReceiptSchema.nullable()
+  ),
   'factions.create': write(
     'factions:create',
     createWorldFactionInputSchema,
-    worldFactionSnapshotSchema
+    worldFactionMutationReceiptSchema
   ),
   'factions.update': write(
     'factions:update',
     updateWorldFactionInputSchema,
-    worldFactionSnapshotSchema
+    worldFactionMutationReceiptSchema
   ),
   'factions.delete': write(
     'factions:delete',
     deleteWorldFactionInputSchema,
-    worldFactionSnapshotSchema
+    worldFactionDeleteReceiptSchema
   ),
   'session.read': read('session:read', none, liveSessionSnapshotSchema),
   'scene.focus': write(
@@ -606,16 +638,6 @@ export const coreOperations = {
     'hex:runtimeOverlays',
     hexMapIdInputSchema,
     hexRuntimeOverlayProjectionSchema
-  ),
-  'hex.placeLocation': write(
-    'hex:placeLocation',
-    editHexLocationInputSchema,
-    hexBrushStrokeResultSchema
-  ),
-  'hex.removeLocation': write(
-    'hex:removeLocation',
-    unplaceHexLocationInputSchema,
-    hexBrushStrokeResultSchema
   ),
   'hexTravel.read': read('hex-travel:read', sceneId, hexTravelSnapshotSchema),
   'hexTravel.evaluate': read(

@@ -1,0 +1,113 @@
+.hex-placement-dialog {
+  display: grid;
+  grid-template-rows: auto minmax(320px, 1fr) auto;
+  width: min(92vw, 1050px);
+  height: min(90vh, 760px);
+  padding: 1rem;
+  border: 1px solid var(--border-structural);
+  border-radius: var(--radius-0);
+  background: var(--surface-panel);
+  box-shadow: var(--shadow-dialog);
+  overflow: auto;
+  scrollbar-color: var(--surface-button) var(--surface-pane-sunken);
+  scrollbar-width: thin;
+}
+
+.hex-placement-dialog header,
+.hex-placement-dialog footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.hex-placement-dialog > .location-map-section {
+  min-height: 0;
+}
+
+.hex-placement-dialog > .location-map-section .location-map-frame {
+  height: min(460px, calc(100vh - 15rem));
+}
+
+.location-map-section {
+  display: grid;
+  gap: 8px;
+}
+
+.location-map-section > h3 {
+  margin: 0;
+  color: var(--text-muted);
+  font-family: var(--font-smallcaps);
+  font-size: var(--text-md);
+  font-weight: 400;
+  letter-spacing: var(--tracking-caps);
+}
+
+.location-map-selection-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.location-map-selection-row > select {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--border-2);
+  border-radius: 0;
+  background: var(--surface-control);
+  font: inherit;
+}
+
+.location-map-selection-row > span {
+  min-width: 0;
+  flex: 1;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.location-map-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.location-map-frame {
+  height: 190px;
+  overflow: hidden;
+  border: 1px solid var(--border-1);
+  box-shadow: var(--shadow-card);
+}
+
+.location-expanded-map-frame > *,
+.location-expanded-map-frame canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.location-map-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.location-map-status button {
+  white-space: nowrap;
+}
+
+.location-expanded-map-dialog {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: min(880px, calc(100vw - 2rem));
+  height: min(680px, calc(100vh - 2rem));
+}
+
+.location-expanded-map-frame {
+  min-height: 0;
+}
+
+.hex-placement-dialog :where(button, select):focus-visible,
+.location-map-frame:focus-within,
+.location-expanded-map-frame:focus-within {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}

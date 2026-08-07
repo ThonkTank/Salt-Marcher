@@ -1,4 +1,8 @@
-import { formatMessage, message } from '../../i18n/messages.de.js'
+import { formatMessage, message } from '../../i18n/session-runtime.de.js'
+import {
+  formatInteger,
+  formatPercent
+} from '../../i18n/domain-formatters.de.js'
 import { useState } from 'react'
 import type { Creature } from '../../../shared/contracts/encounter.js'
 import type {
@@ -97,9 +101,9 @@ export function SessionEncounterPanel(
                   </span>
                   <strong>{group.name}</strong>
                   <span>
-                    {Math.round(
-                      group.baseXp * (evaluation?.multiplier ?? 1)
-                    ).toLocaleString()}
+                    {formatInteger(
+                      Math.round(group.baseXp * (evaluation?.multiplier ?? 1))
+                    )}
                   </span>
                 </label>
               ))}
@@ -472,7 +476,7 @@ function ResolutionPanel(props: ScenarioProps & { combat: CombatSnapshot }) {
                     : message('encounter.dead')}
                 </small>
                 <span>
-                  {enemy.xp.toLocaleString()} {message('ui.xp.2')}
+                  {formatInteger(enemy.xp)} {message('ui.xp.2')}
                 </span>
               </li>
             ))}
@@ -507,7 +511,7 @@ function ResolutionPanel(props: ScenarioProps & { combat: CombatSnapshot }) {
           <input
             type="text"
             inputMode="numeric"
-            value={`${Math.round(fraction * 100)} %`}
+            value={formatPercent(Math.round(fraction * 100))}
             onChange={(event) => {
               const percentage = Number(event.target.value.replace(/\D/g, ''))
               setFraction(Math.max(0, Math.min(1, percentage / 100)))
@@ -522,15 +526,15 @@ function ResolutionPanel(props: ScenarioProps & { combat: CombatSnapshot }) {
         </div>
         <div>
           <dt>{message('encounter.eligibleXp')}</dt>
-          <dd>{eligible.toLocaleString()}</dd>
+          <dd>{formatInteger(eligible)}</dd>
         </div>
         <div>
           <dt>{message('ui.gesamt')}</dt>
-          <dd>{awarded.toLocaleString()}</dd>
+          <dd>{formatInteger(awarded)}</dd>
         </div>
         <div>
           <dt>{message('ui.xp.pro.spieler')}</dt>
-          <dd>{perPlayer.toLocaleString()}</dd>
+          <dd>{formatInteger(perPlayer)}</dd>
         </div>
       </dl>
       <p className="loot-summary">{resolution.lootSummary}</p>

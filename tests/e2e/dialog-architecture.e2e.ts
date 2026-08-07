@@ -1,8 +1,15 @@
 import { browser, expect } from '@wdio/globals'
-import type { Browser as WdioBrowser } from 'webdriverio'
+import type {
+  Browser as WdioBrowser,
+  ChainablePromiseElement
+} from 'webdriverio'
 import {
+  clickWhenInteractable,
+  expectEditorFrameGeometry,
   expectAccessibleInBothThemes,
-  expectElementGolden
+  expectElementGolden,
+  setElectronWindowSize,
+  setWindowToMinimumResponsiveSize
 } from './support/e2e-assertions.js'
 
 describe('dialog architecture', () => {
@@ -29,9 +36,8 @@ describe('dialog architecture', () => {
       'input[role="combobox"][aria-label="Größe"]'
     )
     await sizeFilter.setValue('hu')
-    const huge = await manager.$('[role="option"]*=Huge')
-    await huge.waitForDisplayed()
-    await huge.click()
+    const huge = await client.$('[role="option"]*=Huge')
+    await clickWhenInteractable(huge)
     const hugeChip = await manager.$('button=Huge ×')
     await expect(hugeChip).toBeExisting()
     await hugeChip.click()
@@ -57,8 +63,29 @@ describe('dialog architecture', () => {
     await (
       await manager.$('input[aria-label="Tabellenname"]')
     ).setValue('Direkte Tabelle')
+    await addCreatureToManager(client, manager, 'wolf', 'Wolf')
+    expect(
+      await client.execute(() => {
+        const link = [
+          ...document.querySelectorAll<HTMLButtonElement>(
+            '.creature-collection-catalog button.creature-collection-link'
+          )
+        ].find((candidate) => candidate.textContent?.trim() === 'Wolf')
+        link?.click()
+        return Boolean(link)
+      })
+    ).toBe(true)
+    await (
+      await manager.$('.encounter-table-roster button.creature-collection-link')
+    ).click()
     await (await manager.$('button=Erstellen')).click()
     await expect(manager).not.toBeExisting()
+    let inspector = await client.$('aside[aria-label="Monster Details"]')
+    await inspector.waitForDisplayed({ timeout: 5_000 })
+    await expect(await inspector.$('h2[aria-label="Wolf"]')).toBeExisting()
+    await (
+      await inspector.$('button[aria-label="Monster Details schließen"]')
+    ).click()
 
     await (await client.$('button=Fraktionen')).click()
     await clickVisibleCatalogCreate(client)
@@ -68,7 +95,8 @@ describe('dialog architecture', () => {
     await (
       await faction.$('input[aria-label="Fraktionsname"]')
     ).setValue('Hafenwache')
-    await (await faction.$('button=Neue Encounter-Tabelle')).click()
+    await (await faction.$('button.faction-table-card')).click()
+    await clickWhenInteractable(await client.$('button=Neue Encounter-Tabelle'))
     manager = await client.$('section.encounter-table-manager')
     await manager.waitForDisplayed()
 
@@ -81,6 +109,12 @@ describe('dialog architecture', () => {
     await (
       await manager.$('input[aria-label="Tabellenname"]')
     ).setValue('Verschachtelte Tabelle')
+    await addCreatureToManager(client, manager, 'wolf', 'Wolf')
+    await expectElementGolden(
+      client,
+      'stacked-faction-encounter-dialogs',
+      '.modal-backdrop[data-modal-bottom="true"]'
+    )
     await (await manager.$('button[aria-label="Dialog schließen"]')).click()
     discard = await client.$('[role="alertdialog"]')
     expect(await modalState(client)).toEqual({
@@ -94,76 +128,84 @@ describe('dialog architecture', () => {
     await expect(
       await manager.$('input[aria-label="Tabellenname"]')
     ).toHaveValue('Verschachtelte Tabelle')
-    await (await manager.$('button=Erstellen')).click()
+    await (await manager.$('button=Erstellen und verknüpfen')).click()
     await expect(
       await faction.$('input[aria-label="Fraktionsname"]')
     ).toHaveValue('Hafenwache')
     await expect(
-      await faction.$(
-        'select[aria-label="Primäre Encounter-Tabelle"] option:checked'
-      )
+      await faction.$('button.faction-table-card strong')
     ).toHaveText('Verschachtelte Tabelle')
+    await (await faction.$('button=Wohlgesonnen')).click()
+    await expectAccessibleInBothThemes(client)
+    await expectElementGolden(
+      client,
+      'world-faction-dialog',
+      'section.world-faction-dialog'
+    )
 
-    await setElectronWindowSize(client, 900, 650)
-    await (await faction.$('button=Neue Encounter-Tabelle')).click()
+    await setWindowToMinimumResponsiveSize(client)
+    await expectEditorFrameGeometry(client, '.world-faction-dialog')
+    const factionLayout = await client.execute(() => {
+      const dialog = document.querySelector<HTMLElement>(
+        '.world-faction-dialog'
+      )!
+      const body = dialog.querySelector<HTMLElement>(
+        '.world-faction-dialog-body'
+      )!
+      const footer = dialog.querySelector<HTMLElement>(
+        '.world-faction-dialog-footer'
+      )!
+      const bounds = dialog.getBoundingClientRect()
+      return {
+        bodyOverflow: getComputedStyle(body).overflowY,
+        footerInside: footer.getBoundingClientRect().bottom <= bounds.bottom,
+        horizontalDocumentScroll:
+          document.documentElement.scrollWidth >
+          document.documentElement.clientWidth,
+        right: bounds.right,
+        viewportWidth: window.innerWidth
+      }
+    })
+    expect(factionLayout).toMatchObject({
+      bodyOverflow: 'auto',
+      footerInside: true,
+      horizontalDocumentScroll: false
+    })
+    expect(factionLayout.right).toBeLessThanOrEqual(factionLayout.viewportWidth)
+    await expectAccessibleInBothThemes(client)
+    await (await faction.$('button.faction-table-card')).click()
+    await clickWhenInteractable(await client.$('button=Neue Encounter-Tabelle'))
     manager = await client.$('section.encounter-table-manager')
     await manager.waitForDisplayed()
     await assertManagerLayout(client, 'stacked')
     await expectAccessibleInBothThemes(client)
     await (await manager.$('button[aria-label="Dialog schließen"]')).click()
     await expect(manager).not.toBeExisting()
-    await (await faction.$('button=Abbrechen')).click()
-    discard = await client.$('[role="alertdialog"]')
-    await (await discard.$('button=Änderungen verwerfen')).click()
+    const crLink = await faction.$('button.faction-inventory-cr-link')
+    await crLink.waitForDisplayed({ timeout: 5_000 })
+    expect(await crLink.getText()).toMatch(/^CR (?:0[.,]25|1\/4)$/)
+    await crLink.click()
+    await (await faction.$('button=Erstellen')).click()
+    inspector = await client.$('aside[aria-label="Monster Details"]')
+    await inspector.waitForDisplayed({ timeout: 5_000 })
+    await expect(await inspector.$('h2[aria-label="Wolf"]')).toBeExisting()
   })
 })
 
-async function setElectronWindowSize(
+async function addCreatureToManager(
   client: WdioBrowser,
-  width: number,
-  height: number
+  manager: ChainablePromiseElement,
+  query: string,
+  name: string
 ) {
-  const electronClient = client as WdioBrowser & {
-    electron: {
-      execute: (
-        script: (
-          electron: typeof import('electron'),
-          width: number,
-          height: number
-        ) => boolean,
-        width: number,
-        height: number
-      ) => Promise<boolean>
-    }
-  }
-  const resized = await electronClient.electron.execute(
-    (electron, nextWidth, nextHeight) => {
-      const window =
-        electron.BrowserWindow.getFocusedWindow() ??
-        electron.BrowserWindow.getAllWindows().find(
-          (candidate) => !candidate.isDestroyed() && candidate.isVisible()
-        )
-      if (!window) return false
-      window.setSize(nextWidth, nextHeight)
-      return true
-    },
-    width,
-    height
-  )
-  expect(resized).toBe(true)
-  await client.waitUntil(
-    async () =>
-      (
-        await client.execute(() => ({
-          width: window.innerWidth,
-          height: window.innerHeight
-        }))
-      ).width <= width,
-    {
-      timeout: 15_000,
-      timeoutMsg: 'Renderer did not observe the window resize'
-    }
-  )
+  await (await manager.$('input[aria-label="Monster suchen"]')).setValue(query)
+  const add = await manager.$(`button[aria-label="${name} hinzufügen"]`)
+  await client.waitUntil(() => add.isExisting(), {
+    timeout: 5_000,
+    timeoutMsg: `Shared table dialog did not render ${name}.`
+  })
+  await add.click()
+  await expect(add).toBeDisabled()
 }
 
 async function openCatalogSection(client: WdioBrowser, label: string) {
@@ -175,8 +217,7 @@ async function clickVisibleCatalogCreate(client: WdioBrowser) {
   const host = await client.$('.catalog-section-host:not([hidden])')
   await host.waitForDisplayed()
   const create = await host.$('button=Erstellen')
-  await create.waitForClickable()
-  await create.click()
+  await clickWhenInteractable(create)
 }
 
 async function assertManagerLayout(

@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="_ds/saltmarcher-design-system-5a7b42f1-e043-4f3d-ad35-7cf7d4de883d/tokens/base.css">
+<link rel="stylesheet" href="_ds/saltmarcher-design-system-5a7b42f1-e043-4f3d-ad35-7cf7d4de883d/tokens/fonts.css">
+<link rel="stylesheet" href="_ds/saltmarcher-design-system-5a7b42f1-e043-4f3d-ad35-7cf7d4de883d/tokens/colors.css">
+<link rel="stylesheet" href="_ds/saltmarcher-design-system-5a7b42f1-e043-4f3d-ad35-7cf7d4de883d/tokens/typography.css">
+<link rel="stylesheet" href="_ds/saltmarcher-design-system-5a7b42f1-e043-4f3d-ad35-7cf7d4de883d/tokens/spacing.css">
+<link rel="stylesheet" href="_ds/saltmarcher-design-system-5a7b42f1-e043-4f3d-ad35-7cf7d4de883d/tokens/surfaces.css">
+<link rel="stylesheet" href="_ds/saltmarcher-design-system-5a7b42f1-e043-4f3d-ad35-7cf7d4de883d/tokens/motion.css">
+<link rel="stylesheet" href="_ds/saltmarcher-design-system-5a7b42f1-e043-4f3d-ad35-7cf7d4de883d/styles.css">
+<script src="_ds/saltmarcher-design-system-5a7b42f1-e043-4f3d-ad35-7cf7d4de883d/_ds_bundle.js"></script>
+<style>
+  :root { --scrim: #241a1080; --surface-sheet-flat: #fbf5e4; }
+  [data-theme='dark'] { --scrim: #000000b3; --surface-sheet-flat: #1c1610; }
+  .dlg-scroll::-webkit-scrollbar { width: 12px; }
+  .dlg-scroll::-webkit-scrollbar-track { background: #e2cea4; border-left: 1px solid var(--border-hair); }
+  .dlg-scroll::-webkit-scrollbar-thumb { background: var(--surface-button); border: 1px solid var(--border-structural); }
+  body { margin: 0; background: #e8d6ae; font-family: 'EB Garamond', Georgia, serif; color: #241a10; }
+  a { color: #8a2418; }
+  a:hover { color: #b8862b; }
+</style>
+</helmet>
+
+<section style="display:flex; flex-direction:column; gap:24px; padding:48px; background:var(--surface-desk); min-height:100vh; box-sizing:border-box">
+
+  <header style="display:flex; flex-direction:column; gap:6px; max-width:70ch">
+    <p style="margin:0; color:var(--text-eyebrow); font-family:var(--font-smallcaps); font-size:0.7rem; letter-spacing:var(--tracking-eyebrow); text-transform:uppercase">SALTMARCHER · Katalog › Orte</p>
+    <h1 style="margin:0; font-family:var(--font-display); font-weight:400; font-size:2rem; color:var(--text-1)">Orts-Dialog</h1>
+    <p style="margin:0; color:var(--text-2); line-height:1.5">Links das Blatt (was der Ort ist), rechts die Verknüpfungen (wo er liegt, wer dort ist). Fraktion, Encounter-Tabelle und Hexkarte lassen sich hier anlegen, ohne den Entwurf abzubrechen.</p>
+  </header>
+
+  <div style="display:grid; place-items:center; background:var(--scrim); padding:32px">
+    <section style="display:grid; grid-template-rows:auto minmax(0,1fr) auto; width:960px; height:700px; overflow:hidden; border:2px solid var(--border-structural); background:var(--surface-pane-sunken); box-shadow:var(--shadow-dialog)">
+      <header style="display:flex; align-items:flex-end; justify-content:space-between; gap:12px; border-bottom:1px solid var(--border-hair); background:var(--surface-card); padding:12px 16px 10px">
+        <div>
+          <p style="margin:0; color:var(--text-eyebrow); font-family:var(--font-smallcaps); font-size:0.7rem; letter-spacing:var(--tracking-eyebrow); text-transform:uppercase">World Planner › Orte</p>
+          <div style="display:flex; align-items:baseline; gap:2px">
+            <span style="flex:0 0 auto; border:1px solid var(--initial-border); border-bottom:0; background:var(--initial-face); color:var(--initial-ink); font-family:var(--font-initial); font-size:2.875rem; line-height:1; padding:7px 7px 0">O</span>
+            <h2 style="margin:0; color:var(--accent-rubric); font-family:var(--font-display); font-weight:400; font-size:var(--text-3xl); line-height:1">rt erstellen</h2>
+          </div>
+        </div>
+        <button type="button" style="width:26px; height:26px; border:1px solid var(--border-1); background:var(--surface-button); color:var(--text-2); font-size:var(--text-lg); line-height:1; padding:0; border-radius:0; cursor:pointer">×</button>
+      </header>
+
+      <div style="display:grid; grid-template-columns:minmax(0,1fr) 9px 400px; min-height:0">
+        <div class="dlg-scroll" style="display:grid; align-content:start; gap:14px; overflow:auto; scrollbar-width:thin; scrollbar-color:var(--border-structural) var(--surface-control); background:var(--surface-control); padding:16px 18px">
+          <label style="display:grid; gap:5px">
+            <span style="font-family:var(--font-smallcaps); letter-spacing:var(--tracking-caps); font-size:13px; color:var(--text-muted)">Name</span>
+            <input value="{{ d.name }}" onChange="{{ d.setName }}" placeholder="Ortsname" style="border:1px solid var(--border-2); background:var(--surface-control); color:var(--text-1); padding:7px 9px; font-family:var(--font-display); font-size:var(--text-xl); border-radius:0">
+          </label>
+
+          <div style="position:relative; display:grid; gap:5px">
+            <span style="font-family:var(--font-smallcaps); letter-spacing:var(--tracking-caps); font-size:13px; color:var(--text-muted)">Tags</span>
+            <div style="display:flex; flex-wrap:wrap; align-items:center; gap:4px; border:1px solid var(--border-2); background:var(--surface-control); padding:6px 7px">
+              <sc-for list="{{ d.tagChips }}" as="c" hint-placeholder-count="2">
+                <span style="display:inline-flex; align-items:center; gap:6px; border:1px solid var(--border-1); background:var(--surface-chip); color:var(--text-2); padding:3px 7px; font-size:15px">{{ c.label }}<button type="button" onClick="{{ c.remove }}" style="border:0; background:transparent; color:var(--text-muted); font:inherit; padding:0; cursor:pointer">×</button></span>
+              </sc-for>
+              <input value="{{ d.tagInput }}" onChange="{{ d.setTagInput }}" onKeyDown="{{ d.tagKey }}" placeholder="Ortstyp, Umgebung, Stichwort …" style="flex:1; min-width:11rem; border:0; background:transparent; color:inherit; font:inherit; font-size:15px; padding:2px">
+            </div>
+            <sc-if value="{{ d.tagOpen }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute; z-index:5; top:100%; left:0; right:0; display:grid; border:1px solid var(--border-structural); background:var(--surface-control); box-shadow:var(--shadow-card)">
+                <sc-for list="{{ d.tagSuggestions }}" as="s" hint-placeholder-count="4">
+                  <button type="button" onClick="{{ s.add }}" style="display:flex; justify-content:space-between; gap:10px; border:0; border-bottom:1px solid var(--border-hair); background:transparent; color:var(--text-1); font:inherit; font-size:14px; text-align:left; padding:5px 8px; cursor:pointer">{{ s.label }}<span style="color:var(--text-muted); font-size:13px; font-style:italic">{{ s.hint }}</span></button>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+
+          <div style="display:grid; gap:6px; border-top:2px solid var(--accent-rubric-line); padding-top:10px">
+            <h3 style="margin:0; color:var(--accent-rubric); font-family:var(--font-smallcaps); font-weight:400; font-size:var(--text-md); letter-spacing:var(--tracking-caps)">Vorlesetext</h3>
+            <textarea rows="4" placeholder="Was die Gruppe beim Ankommen sieht." style="resize:vertical; border:1px solid var(--border-2); background:var(--surface-sheet-flat); box-shadow:var(--sheet-glow); color:inherit; padding:9px 10px; font:inherit; font-style:italic; line-height:1.5; border-radius:0"></textarea>
+          </div>
+
+          <div style="display:grid; gap:6px; border-top:2px solid var(--accent-rubric-line); padding-top:10px">
+            <h3 style="margin:0; color:var(--accent-rubric); font-family:var(--font-smallcaps); font-weight:400; font-size:var(--text-md); letter-spacing:var(--tracking-caps)">GM-Notizen</h3>
+            <textarea rows="6" style="resize:vertical; border:1px solid var(--border-2); background:var(--surface-control); color:inherit; padding:9px 10px; font:inherit; line-height:1.5; border-radius:0"></textarea>
+          </div>
+        </div>
+
+        <div style="background:var(--divider-face)"></div>
+
+        <div class="dlg-scroll" style="display:grid; align-content:start; gap:14px; overflow:auto; scrollbar-width:thin; scrollbar-color:var(--border-structural) var(--surface-pane-sunken); background:var(--surface-pane-sunken); padding:16px 18px">
+          <div style="display:grid; gap:6px">
+            <span style="font-family:var(--font-smallcaps); letter-spacing:var(--tracking-caps); font-size:13px; color:var(--text-muted)">Hexkarte</span>
+            <div style="display:flex; gap:6px">
+              <select value="{{ d.mapId }}" onChange="{{ d.setMap }}" style="flex:1; min-width:0; min-height:2.15rem; border:1px solid var(--border-2); background:var(--surface-control); color:inherit; padding:0.35rem 0.5rem; border-radius:0; font:inherit">
+                <sc-for list="{{ d.mapOptions }}" as="m" hint-placeholder-count="3">
+                  <option value="{{ m.id }}">{{ m.label }}</option>
+                </sc-for>
+              </select>
+              <button type="button" style="flex:0 0 auto; border:1px solid var(--accent-rubric); background:var(--surface-button); color:var(--accent-rubric); font-family:var(--font-smallcaps); letter-spacing:var(--tracking-caps); font-size:14px; padding:5px 9px; border-radius:0; cursor:pointer; white-space:nowrap">Neue Karte</button>
+            </div>
+            <div style="position:relative; border:1px solid var(--border-1); background:#101a18; height:190px; overflow:hidden; box-shadow:var(--shadow-card)">
+              <svg viewBox="{{ mapBoxWide }}" width="100%" height="100%" style="display:block">
+                <sc-for list="{{ d.tiles }}" as="t" hint-placeholder-count="40">
+                  <polygon points="{{ t.points }}" fill="{{ t.fill }}" stroke="{{ t.stroke }}" stroke-width="{{ t.strokeWidth }}" onClick="{{ t.pick }}" style="cursor:pointer"></polygon>
+                </sc-for>
+              </svg>
+              <sc-for list="{{ d.mapMarkers }}" as="m" hint-placeholder-count="3">
+                <span style="{{ m.style }}"><span style="width:11px; height:11px; border:2px solid #3e2f1e; border-radius:999px; background:#f3d38a"></span><span style="color:#fff4d1; font-size:12px; text-shadow:0 1px 2px #000">{{ m.label }}</span></span>
+              </sc-for>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:8px">
+              <span style="color:var(--text-2); font-size:14px">{{ d.hexLabel }} · {{ d.terrainLabel }}</span>
+              <button type="button" style="border:1px solid var(--border-structural); background:var(--surface-button); color:inherit; font:inherit; font-size:14px; padding:4px 8px; border-radius:0; cursor:pointer">Große Karte …</button>
+            </div>
+          </div>
+
+          <div style="display:grid; gap:6px; border-top:2px solid var(--accent-rubric-line); padding-top:10px">
+            <h3 style="margin:0; color:var(--accent-rubric); font-family:var(--font-smallcaps); font-weight:400; font-size:var(--text-md); letter-spacing:var(--tracking-caps)">Verknüpfte Fraktionen</h3>
+            <div style="display:flex; flex-wrap:wrap; gap:4px">
+              <sc-for list="{{ d.factionChips }}" as="c" hint-placeholder-count="2">
+                <span style="display:inline-flex; align-items:center; gap:6px; border:1px solid var(--border-1); background:var(--surface-chip); color:var(--text-2); padding:4px 6px; font-size:14px">{{ c.label }}<button type="button" onClick="{{ c.remove }}" style="border:0; background:transparent; color:var(--text-muted); font:inherit; padding:0; cursor:pointer">×</button></span>
+              </sc-for>
+            </div>
+            <div style="display:flex; gap:6px">
+              <input value="{{ d.factionQuery }}" onChange="{{ d.setFactionQuery }}" placeholder="Fraktion suchen …" style="flex:1; min-width:0; border:1px solid var(--border-2); background:var(--surface-control); color:inherit; padding:5px 7px; font:inherit; font-size:14px; border-radius:0">
+              <button type="button" style="flex:0 0 auto; border:1px solid var(--accent-rubric); background:var(--surface-button); color:var(--accent-rubric); font-family:var(--font-smallcaps); letter-spacing:var(--tracking-caps); font-size:14px; padding:5px 9px; border-radius:0; cursor:pointer; white-space:nowrap">Neue Fraktion</button>
+            </div>
+            <sc-if value="{{ d.factionOpen }}" hint-placeholder-val="{{ false }}">
+              <div style="display:grid; border:1px solid var(--border-1); background:var(--surface-control)">
+                <sc-for list="{{ d.factionResults }}" as="r" hint-placeholder-count="3">
+                  <button type="button" onClick="{{ r.add }}" style="border:0; border-bottom:1px solid var(--border-hair); background:transparent; color:var(--text-1); font:inherit; font-size:14px; text-align:left; padding:5px 7px; cursor:pointer">{{ r.label }}</button>
+                </sc-for>
+              </div>
+            </sc-if>
+          </div>
+
+          <div style="display:grid; gap:6px; border-top:2px solid var(--accent-rubric-line); padding-top:10px">
+            <h3 style="margin:0; color:var(--accent-rubric); font-family:var(--font-smallcaps); font-weight:400; font-size:var(--text-md); letter-spacing:var(--tracking-caps)">Direkte Encounter-Tabellen</h3>
+            <div style="display:flex; flex-wrap:wrap; gap:4px">
+              <sc-for list="{{ d.tableChips }}" as="c" hint-placeholder-count="1">
+                <span style="display:inline-flex; align-items:center; gap:6px; border:1px solid var(--border-1); background:var(--surface-chip); color:var(--text-2); padding:4px 6px; font-size:14px">{{ c.label }}<button type="button" onClick="{{ c.remove }}" style="border:0; background:transparent; color:var(--text-muted); font:inherit; padding:0; cursor:pointer">×</button></span>
+              </sc-for>
+            </div>
+            <div style="display:flex; gap:6px">
+              <input value="{{ d.tableQuery }}" onChange="{{ d.setTableQuery }}" placeholder="Encounter-Tabelle suchen …" style="flex:1; min-width:0; border:1px solid var(--border-2); background:var(--surface-control); color:inherit; padding:5px 7px; font:inherit; font-size:14px; border-radius:0">
+              <button type="button" style="flex:0 0 auto; border:1px solid var(--accent-rubric); background:var(--surface-button); color:var(--accent-rubric); font-family:var(--font-smallcaps); letter-spacing:var(--tracking-caps); font-size:14px; padding:5px 9px; border-radius:0; cursor:pointer; white-space:nowrap">Neue Tabelle</button>
+            </div>
+            <sc-if value="{{ d.tableOpen }}" hint-placeholder-val="{{ false }}">
+              <div style="display:grid; border:1px solid var(--border-1); background:var(--surface-control)">
+                <sc-for list="{{ d.tableResults }}" as="r" hint-placeholder-count="3">
+                  <button type="button" onClick="{{ r.add }}" style="border:0; border-bottom:1px solid var(--border-hair); background:transparent; color:var(--text-1); font:inherit; font-size:14px; text-align:left; padding:5px 7px; cursor:pointer">{{ r.label }}</button>
+                </sc-for>
+              </div>
+            </sc-if>
+            <p style="margin:0; color:var(--text-muted); font-size:13px; font-style:italic; line-height:1.4">Fraktionstabellen zählen zusätzlich, wenn die Fraktion hier verknüpft ist.</p>
+          </div>
+        </div>
+      </div>
+
+      <footer style="display:flex; align-items:center; justify-content:space-between; gap:12px; border-top:1px solid var(--border-hair); background:var(--surface-card); padding:10px 16px">
+        <span style="color:var(--text-muted); font-size:13px; font-style:italic">{{ d.status }}</span>
+        <span style="display:flex; gap:8px">
+          <button type="button" style="border:1px solid var(--border-structural); background:var(--surface-button); color:inherit; font:inherit; padding:5px 10px; border-radius:0; cursor:pointer">Abbrechen</button>
+          <button type="button" style="border:1px solid var(--accent-rubric); background:var(--accent-rubric); color:var(--text-on-accent); font-family:var(--font-smallcaps); letter-spacing:var(--tracking-caps); font-size:15px; padding:5px 12px; border-radius:0; cursor:pointer">Erstellen</button>
+        </span>
+      </footer>
+    </section>
+  </div>
+
+  <p style="margin:0; color:var(--text-3); font-size:14px; line-height:1.5; max-width:70ch">Drei gleich gebaute Nebenaktionen: rubrikumrandeter Button neben dem jeweiligen Feld, immer beschriftet mit dem, was entsteht. Der Dialog öffnet sich gestapelt darüber; der Orts-Entwurf bleibt erhalten und das Ergebnis wird sofort verknüpft. Kartenwechsel setzt die Hexauswahl zurück; die Tag-Liste schlägt vorhandene Tags vor und legt beim Tippen neue an.</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1100,&quot;height&quot;:960}}">
+const FACTIONS = [
+  { id: 'f1', label: 'Zirkel der Salzwacht' },
+  { id: 'f2', label: 'Haus Vellmark' },
+  { id: 'f3', label: 'Grubenkönige' },
+  { id: 'f4', label: 'Bruderschaft vom stillen Ufer' }
+]
+const TABLES = [
+  { id: 't1', label: 'Küstenstraße bei Nacht' },
+  { id: 't2', label: 'Sumpfrand' },
+  { id: 't3', label: 'Tiefe Stollen' }
+]
+const TERRAINS = [
+  { id: 'grassland', label: 'Grasland', color: '#7f9b63' },
+  { id: 'desert', label: 'Ödland', color: '#c9a86a' },
+  { id: 'forest', label: 'Wald', color: '#3f704d' },
+  { id: 'swamp', label: 'Sumpf', color: '#536e62' },
+  { id: 'mountain', label: 'Gebirge', color: '#73777a' },
+  { id: 'water', label: 'Wasser', color: '#397aa1' }
+]
+const SIZE = 27
+const ROOT3 = Math.sqrt(3)
+
+function centerOf(q, r) {
+  return { x: SIZE * ROOT3 * (q + r / 2), y: SIZE * 1.5 * r }
+}
+function polygonPoints(x, y, size) {
+  return Array.from({ length: 6 }, (_, i) => {
+    const a = ((60 * i - 30) * Math.PI) / 180
+    return `${(x + size * Math.cos(a)).toFixed(1)},${(y + size * Math.sin(a)).toFixed(1)}`
+  }).join(' ')
+}
+function terrainOf(q, r, seed) {
+  const h = Math.abs(q * 7 + r * 13 + q * r * 3 + (seed || 0) * 11)
+  return TERRAINS[h % TERRAINS.length]
+}
+const MAPS = [
+  {
+    id: 'm1',
+    label: 'Salzmarsch — Nordküste',
+    seed: 0,
+    placed: [
+      { q: -3, r: -2, label: 'Vellmark' },
+      { q: 2, r: 1, label: 'Alter Leuchtturm' },
+      { q: -1, r: 3, label: 'Grube VII' }
+    ]
+  },
+  {
+    id: 'm2',
+    label: 'Vellmark-Hochland',
+    seed: 3,
+    placed: [
+      { q: 0, r: -3, label: 'Passwacht' },
+      { q: 3, r: 2, label: 'Steinerner Kreis' }
+    ]
+  },
+  {
+    id: 'm3',
+    label: 'Grube VII — Umland',
+    seed: 7,
+    placed: [{ q: -2, r: 0, label: 'Fördergerüst' }]
+  }
+]
+const TAG_LIBRARY = [
+  'Siedlung',
+  'Ruine',
+  'Dungeon',
+  'Bauwerk',
+  'Naturmal',
+  'Lager',
+  'Küste',
+  'Sumpf',
+  'Bergbau',
+  'Handelsposten',
+  'Heiligtum',
+  'Verlassen',
+  'Garnison',
+  'Strandgut'
+]
+const GRID = (() => {
+  const out = []
+  for (let r = -4; r <= 4; r++)
+    for (let q = -6; q <= 6; q++) {
+      const x = q + Math.floor(r / 2)
+      if (Math.abs(x) > 5) continue
+      out.push({ q: q, r })
+    }
+  return out
+})()
+const BOUNDS = GRID.reduce(
+  (acc, t) => {
+    const c = centerOf(t.q, t.r)
+    return {
+      minX: Math.min(acc.minX, c.x - SIZE),
+      maxX: Math.max(acc.maxX, c.x + SIZE),
+      minY: Math.min(acc.minY, c.y - SIZE),
+      maxY: Math.max(acc.maxY, c.y + SIZE)
+    }
+  },
+  { minX: 1e9, maxX: -1e9, minY: 1e9, maxY: -1e9 }
+)
+const VIEW = {
+  x: BOUNDS.minX,
+  y: BOUNDS.minY,
+  w: BOUNDS.maxX - BOUNDS.minX,
+  h: BOUNDS.maxY - BOUNDS.minY
+}
+
+class Component extends DCLogic {
+  state = {
+    d: {
+      name: 'Wracht der Morgenlicht',
+      tags: ['Ruine', 'Strandgut'],
+      tagInput: '',
+      factions: ['f4'],
+      factionQuery: '',
+      tables: ['t1'],
+      tableQuery: '',
+      hex: { q: -2, r: 2 },
+      mapId: 'm1'
+    }
+  }
+
+  patch(values) {
+    this.setState((s) => ({ d: Object.assign({}, s.d, values) }))
+  }
+
+  renderVals() {
+    const d = this.state.d
+    const p = (values) => this.patch(values)
+    const chip = (list, field, source) =>
+      list.map((id) => ({
+        label: (source.find((e) => e.id === id) || {}).label || id,
+        remove: () => p({ [field]: d[field].filter((e) => e !== id) })
+      }))
+    const search = (source, chosen, query) => {
+      const needle = query.trim().toLocaleLowerCase()
+      if (!needle) return []
+      return source
+        .filter(
+          (e) =>
+            !chosen.includes(e.id) && e.label.toLocaleLowerCase().includes(needle)
+        )
+        .slice(0, 5)
+    }
+    const factionResults = search(FACTIONS, d.factions, d.factionQuery)
+    const tableResults = search(TABLES, d.tables, d.tableQuery)
+    const map = MAPS.find((m) => m.id === d.mapId) || MAPS[0]
+    const terrain = d.hex ? terrainOf(d.hex.q, d.hex.r, map.seed) : null
+    const tiles = GRID.map((t) => {
+      const c = centerOf(t.q, t.r)
+      const selected = d.hex && d.hex.q === t.q && d.hex.r === t.r
+      return {
+        points: polygonPoints(c.x, c.y, SIZE - 1),
+        fill: terrainOf(t.q, t.r, map.seed).color,
+        stroke: selected ? '#ffffff' : '#263d38',
+        strokeWidth: selected ? 4 : 1,
+        pick: () => p({ hex: { q: t.q, r: t.r } })
+      }
+    })
+    const missing = []
+    if (!d.name.trim()) missing.push('Name')
+    if (d.tags.length === 0) missing.push('mindestens ein Tag')
+    const needle = d.tagInput.trim().toLocaleLowerCase()
+    const tagRows = TAG_LIBRARY.filter(
+      (t) => !d.tags.includes(t) && t.toLocaleLowerCase().includes(needle)
+    )
+      .slice(0, 5)
+      .map((t) => ({
+        label: t,
+        hint: 'vorhanden',
+        add: () => p({ tags: d.tags.concat(t), tagInput: '' })
+      }))
+    if (needle && !TAG_LIBRARY.some((t) => t.toLocaleLowerCase() === needle))
+      tagRows.unshift({
+        label: d.tagInput.trim(),
+        hint: 'neu anlegen',
+        add: () => p({ tags: d.tags.concat(d.tagInput.trim()), tagInput: '' })
+      })
+    return {
+      mapBoxWide: `${VIEW.x} ${VIEW.y} ${VIEW.w} ${VIEW.h}`,
+      d: {
+        name: d.name,
+        setName: (e) => p({ name: e.target.value }),
+        tagChips: d.tags.map((tag) => ({
+          label: tag,
+          remove: () => p({ tags: d.tags.filter((e) => e !== tag) })
+        })),
+        tagInput: d.tagInput,
+        setTagInput: (e) => p({ tagInput: e.target.value }),
+        tagKey: (e) => {
+          if (e.key !== 'Enter') return
+          e.preventDefault()
+          const value = e.currentTarget.value.trim()
+          if (!value || d.tags.includes(value)) return
+          p({ tags: d.tags.concat(value), tagInput: '' })
+        },
+        tagOpen: needle.length > 0,
+        tagSuggestions: tagRows,
+        factionChips: chip(d.factions, 'factions', FACTIONS),
+        factionQuery: d.factionQuery,
+        setFactionQuery: (e) => p({ factionQuery: e.target.value }),
+        factionOpen: factionResults.length > 0,
+        factionResults: factionResults.map((e) => ({
+          label: e.label,
+          add: () => p({ factions: d.factions.concat(e.id), factionQuery: '' })
+        })),
+        tableChips: chip(d.tables, 'tables', TABLES),
+        tableQuery: d.tableQuery,
+        setTableQuery: (e) => p({ tableQuery: e.target.value }),
+        tableOpen: tableResults.length > 0,
+        tableResults: tableResults.map((e) => ({
+          label: e.label,
+          add: () => p({ tables: d.tables.concat(e.id), tableQuery: '' })
+        })),
+        tiles,
+        mapId: map.id,
+        setMap: (e) => p({ mapId: e.target.value, hex: null }),
+        mapOptions: MAPS.map((m) => ({ id: m.id, label: m.label })),
+        mapMarkers: map.placed.map((m) => {
+          const c = centerOf(m.q, m.r)
+          const left = ((c.x - VIEW.x) / VIEW.w) * 100
+          const top = ((c.y - VIEW.y) / VIEW.h) * 100
+          const flip = left > 62
+          return {
+            label: m.label,
+            style: `position:absolute; left:${left.toFixed(2)}%; top:${top.toFixed(2)}%; margin:-6px 0 0 -6px; display:flex; flex-direction:${flip ? 'row-reverse' : 'row'}; align-items:center; gap:5px; pointer-events:none; white-space:nowrap; transform:${flip ? 'translateX(-100%) translateX(12px)' : 'none'}`
+          }
+        }),
+        hexLabel: d.hex ? `Hex ${d.hex.q} · ${d.hex.r}` : 'Noch nicht auf der Karte',
+        terrainLabel: terrain ? terrain.label : 'Kein Hex gewählt',
+        status: missing.length
+          ? `${missing.join(' und ')} ${missing.length > 1 ? 'sind' : 'ist'} erforderlich.`
+          : 'Bereit zum Anlegen.'
+      }
+    }
+  }
+}
+</script>
+</body>
+</html>

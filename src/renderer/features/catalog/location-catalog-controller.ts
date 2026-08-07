@@ -1,52 +1,51 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type { SaltMarcherApi } from '../../../shared/contracts/capability-api.js'
 import type {
   WorldLocation,
-  CreateWorldLocationResult,
   WorldLocationDraft,
   WorldLocationSnapshot
 } from '../../../shared/contracts/world-location.js'
 import type {
   EncounterTable,
-  EncounterTableSnapshot,
-  WorldFaction,
-  WorldFactionSnapshot
+  WorldFaction
 } from '../../../shared/contracts/encounter-source.js'
-import { capabilityErrorText } from '../../capabilities/capability-errors.js'
+import {
+  capabilityErrorText,
+  presentCapabilityError
+} from '../../capabilities/capability-errors.js'
+import type {
+  WorldLocationPlacementCommitResult,
+  WorldLocationPlacementFailure,
+  WorldLocationPlacementIntent,
+  WorldLocationEditorReferences,
+  WorldLocationEditorResource
+} from '../worldplanner/world-location-editor-types.js'
+import {
+  createWorldLocationApplicationPort,
+  type WorldLocationApplicationPort
+} from '../worldplanner/world-location-application.js'
 
-export type LocationCatalogPort = {
-  readLocations: () => Promise<WorldLocationSnapshot>
-  readTables: () => Promise<EncounterTableSnapshot>
-  readFactions: () => Promise<WorldFactionSnapshot>
+export type LocationCatalogPort = WorldLocationApplicationPort & {
   readSession: () => Promise<LiveSessionSnapshot>
-  createLocation: (
-    draft: WorldLocationDraft,
-    revision: number
-  ) => Promise<CreateWorldLocationResult>
-  updateLocation: (
-    id: string,
-    draft: WorldLocationDraft,
-    revision: number
-  ) => Promise<WorldLocationSnapshot>
-  deleteLocation: (
-    id: string,
-    revision: number
-  ) => Promise<WorldLocationSnapshot>
 }
 
+export type LocationPlacementRecovery = Readonly<{
+  locationId: string
+  failure: WorldLocationPlacementFailure
+  retry: () => Promise<WorldLocationPlacementCommitResult>
+}>
+
 export function createLocationCatalogPort(
-  api: SaltMarcherApi
+  api: Pick<
+    SaltMarcherApi,
+    'locations' | 'encounterTables' | 'factions' | 'session'
+  >
 ): LocationCatalogPort {
+  const locations = createWorldLocationApplicationPort(api)
   return {
-    readLocations: () => api.locations.read(),
-    readTables: () => api.encounterTables.read(),
-    readFactions: () => api.factions.read(),
-    readSession: () => api.session.read(),
-    createLocation: (draft, revision) => api.locations.create(draft, revision),
-    updateLocation: (id, draft, revision) =>
-      api.locations.update(id, draft, revision),
-    deleteLocation: (id, revision) => api.locations.delete(id, revision)
+    ...locations,
+    readSession: () => api.session.read()
   }
 }
 
@@ -68,8 +67,26 @@ export function useLocationCatalogController(
   const [editing, setEditing] = useState<WorldLocation | null | undefined>()
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [placing, setPlacing] = useState<WorldLocation | null>(null)
-  const [tables, setTables] = useState<EncounterTable[]>([])
-  const [factions, setFactions] = useState<WorldFaction[]>([])
+  const [tables, setTables] = useState<
+    WorldLocationEditorResource<readonly EncounterTable[]>
+  >({ status: 'loading' })
+  const [factions, setFactions] = useState<
+    WorldLocationEditorResource<readonly WorldFaction[]>
+  >({ status: 'loading' })
+  const tableRequest = useRef(0)
+  const factionRequest = useRef(0)
+  const [tableReload, setTableReload] = useState(0)
+  const [factionReload, setFactionReload] = useState(0)
+  const retryTables = useCallback(
+    () => setTableReload((value) => value + 1),
+    []
+  )
+  const retryFactions = useCallback(
+    () => setFactionReload((value) => value + 1),
+    []
+  )
+  const [placementRecovery, setPlacementRecovery] =
+    useState<LocationPlacementRecovery | null>(null)
 
   useEffect(() => {
     if (!active) return
@@ -77,17 +94,11 @@ export function useLocationCatalogController(
     void Promise.resolve().then(async () => {
       setLoading(true)
       try {
-        const [locations, tableSnapshot, factionSnapshot] = await Promise.all([
-          port.readLocations(),
-          port.readTables(),
-          port.readFactions()
-        ])
+        const locations = await port.readLocations()
         if (!current) return
         setSnapshot((known) =>
           locations.revision >= known.revision ? locations : known
         )
-        setTables([...tableSnapshot.tables])
-        setFactions([...factionSnapshot.factions])
         setSelected((known) =>
           known
             ? (locations.locations.find((entry) => entry.id === known.id) ??
@@ -105,6 +116,61 @@ export function useLocationCatalogController(
     }
   }, [active, onError, port])
 
+  const loadTables = useCallback(() => {
+    if (!active) return
+    const request = ++tableRequest.current
+    setTables({ status: 'loading' })
+    void port
+      .readTables()
+      .then((loaded) => {
+        if (request === tableRequest.current)
+          setTables({ status: 'ready', value: loaded })
+      })
+      .catch((cause: unknown) => {
+        if (request === tableRequest.current)
+          setTables({
+            status: 'failed',
+            message: capabilityErrorText(cause),
+            retry: retryTables
+          })
+      })
+  }, [active, port, retryTables])
+
+  const loadFactions = useCallback(() => {
+    if (!active) return
+    const request = ++factionRequest.current
+    setFactions({ status: 'loading' })
+    void port
+      .readFactions()
+      .then((loaded) => {
+        if (request === factionRequest.current)
+          setFactions({ status: 'ready', value: loaded })
+      })
+      .catch((cause: unknown) => {
+        if (request === factionRequest.current)
+          setFactions({
+            status: 'failed',
+            message: capabilityErrorText(cause),
+            retry: retryFactions
+          })
+      })
+  }, [active, port, retryFactions])
+
+  useEffect(() => {
+    if (!active) return
+    void Promise.resolve().then(loadTables)
+    return () => {
+      tableRequest.current += 1
+    }
+  }, [active, loadTables, tableReload])
+  useEffect(() => {
+    if (!active) return
+    void Promise.resolve().then(loadFactions)
+    return () => {
+      factionRequest.current += 1
+    }
+  }, [active, factionReload, loadFactions])
+
   useEffect(() => {
     if (!active) return
     const timer = window.setTimeout(() => setSearch(searchInput), 200)
@@ -118,8 +184,10 @@ export function useLocationCatalogController(
         (location) =>
           !needle ||
           location.displayName.toLocaleLowerCase().includes(needle) ||
-          location.kind.toLocaleLowerCase().includes(needle) ||
-          location.region.toLocaleLowerCase().includes(needle) ||
+          location.tags.some((tag) =>
+            tag.toLocaleLowerCase().includes(needle)
+          ) ||
+          location.readAloud.toLocaleLowerCase().includes(needle) ||
           location.notes.toLocaleLowerCase().includes(needle)
       )
       .toSorted((left, right) => {
@@ -128,45 +196,80 @@ export function useLocationCatalogController(
       })
   }, [direction, search, snapshot.locations])
 
-  async function save(draft: WorldLocationDraft) {
-    let result: { snapshot: WorldLocationSnapshot; selectedId: string }
+  async function save(
+    draft: WorldLocationDraft,
+    placement: WorldLocationPlacementIntent
+  ) {
+    let result: Awaited<ReturnType<LocationCatalogPort['save']>>
     try {
-      result = editing
-        ? {
-            snapshot: await port.updateLocation(
-              editing.id,
-              draft,
-              snapshot.revision
-            ),
-            selectedId: editing.id
-          }
-        : await port
-            .createLocation(draft, snapshot.revision)
-            .then((created) => ({
-              snapshot: created.snapshot,
-              selectedId: created.createdLocation.id
-            }))
+      result = await port.save(editing ?? null, draft, placement)
     } catch (cause) {
-      return { status: 'failed', message: capabilityErrorText(cause) } as const
+      return {
+        status: 'failed',
+        message: presentCapabilityError(cause, onError)
+      } as const
     }
-    const next = result.snapshot
+    const next = result.receipt.snapshot
+    const selectedId = result.receipt.saved.id
     setSnapshot(next)
-    setSelected(
-      next.locations.find((entry) => entry.id === result.selectedId) ?? null
-    )
-    setEditing(undefined)
+    setSelected(next.locations.find((entry) => entry.id === selectedId) ?? null)
+    if (result.receipt.status === 'partially-saved') {
+      const recovery: LocationPlacementRecovery = {
+        locationId: selectedId,
+        failure: result.receipt.placementFailure,
+        retry: result.retryPlacement
+      }
+      setPlacementRecovery(recovery)
+    } else {
+      setPlacementRecovery(null)
+      setEditing(undefined)
+    }
     try {
       setSession(await port.readSession())
     } catch (cause) {
       onError(capabilityErrorText(cause))
     }
-    return { status: 'saved' } as const
+    return result.receipt.status === 'partially-saved'
+      ? ({
+          status: 'partially-saved',
+          placementFailure: result.receipt.placementFailure,
+          retry: async () => {
+            const retried = await result.retryPlacement()
+            if (retried.status === 'rejected')
+              setPlacementRecovery({
+                locationId: selectedId,
+                failure: retried.failure,
+                retry: result.retryPlacement
+              })
+            else {
+              setPlacementRecovery(null)
+              setEditing(undefined)
+            }
+            return retried
+          }
+        } as const)
+      : ({ status: 'saved' } as const)
+  }
+
+  async function retryPlacement() {
+    if (!placementRecovery) return
+    const result = await placementRecovery.retry()
+    if (result.status === 'rejected') {
+      setPlacementRecovery({ ...placementRecovery, failure: result.failure })
+      return
+    }
+    setPlacementRecovery(null)
+    try {
+      setSession(await port.readSession())
+    } catch (cause) {
+      onError(capabilityErrorText(cause))
+    }
   }
 
   async function remove() {
     if (!selected) return
     try {
-      setSnapshot(await port.deleteLocation(selected.id, snapshot.revision))
+      setSnapshot(await port.remove(selected))
       setSelected(null)
       setDeleteConfirm(false)
       setSession(await port.readSession())
@@ -192,8 +295,8 @@ export function useLocationCatalogController(
     editing,
     deleteConfirm,
     placing,
-    tables,
-    factions,
+    references: { tables, factions } satisfies WorldLocationEditorReferences,
+    placementRecovery,
     visible,
     setSearchInput,
     commitSearch: () => setSearch(searchInput),
@@ -204,6 +307,7 @@ export function useLocationCatalogController(
     setDeleteConfirm,
     setPlacing,
     save,
+    retryPlacement,
     remove,
     placed
   }

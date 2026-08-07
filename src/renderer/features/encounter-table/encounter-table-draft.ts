@@ -7,6 +7,7 @@ export type EncounterTableDraftState = {
   displayName: string
   description: string
   weights: Readonly<Record<string, number>>
+  order: readonly string[]
   baseline: string
 }
 
@@ -20,14 +21,13 @@ export type EncounterTableDraftAction =
 function signature(
   displayName: string,
   description: string,
-  weights: Readonly<Record<string, number>>
+  weights: Readonly<Record<string, number>>,
+  order: readonly string[]
 ): string {
   return JSON.stringify({
     displayName,
     description,
-    entries: Object.entries(weights).toSorted(([left], [right]) =>
-      left.localeCompare(right)
-    )
+    entries: order.map((creatureId) => [creatureId, weights[creatureId]])
   })
 }
 
@@ -39,11 +39,13 @@ export function createEncounterTableDraftState(
   const weights = Object.fromEntries(
     table?.entries.map((entry) => [entry.creatureId, entry.weight]) ?? []
   )
+  const order = table?.entries.map((entry) => entry.creatureId) ?? []
   return {
     displayName,
     description,
     weights,
-    baseline: signature(displayName, description, weights)
+    order,
+    baseline: signature(displayName, description, weights, order)
   }
 }
 
@@ -60,7 +62,10 @@ export function encounterTableDraftReducer(
       weights: {
         ...state.weights,
         [action.creatureId]: state.weights[action.creatureId] ?? 1
-      }
+      },
+      order: state.order.includes(action.creatureId)
+        ? state.order
+        : [...state.order, action.creatureId]
     }
   if (action.kind === 'weight')
     return {
@@ -72,15 +77,23 @@ export function encounterTableDraftReducer(
     }
   const weights = { ...state.weights }
   delete weights[action.creatureId]
-  return { ...state, weights }
+  return {
+    ...state,
+    weights,
+    order: state.order.filter((creatureId) => creatureId !== action.creatureId)
+  }
 }
 
 export function encounterTableDraftDirty(
   state: EncounterTableDraftState
 ): boolean {
   return (
-    signature(state.displayName, state.description, state.weights) !==
-    state.baseline
+    signature(
+      state.displayName,
+      state.description,
+      state.weights,
+      state.order
+    ) !== state.baseline
   )
 }
 
@@ -90,9 +103,9 @@ export function encounterTableDraftValue(
   return {
     displayName: state.displayName,
     description: state.description,
-    entries: Object.entries(state.weights).map(([creatureId, weight]) => ({
+    entries: state.order.map((creatureId) => ({
       creatureId,
-      weight
+      weight: state.weights[creatureId]!
     }))
   }
 }

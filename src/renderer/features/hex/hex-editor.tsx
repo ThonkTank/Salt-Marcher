@@ -1,5 +1,5 @@
-import { formatMessage, message } from '../../i18n/messages.de.js'
-import { useMemo } from 'react'
+import { message } from '../../i18n/hex-runtime.de.js'
+import { useMemo, useState } from 'react'
 import './hex.css'
 import { hexCapabilities } from './hex-capabilities.js'
 import {
@@ -8,6 +8,7 @@ import {
 } from '../../capabilities/capability-errors.js'
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 import { HexImpactDialog } from './hex-impact-dialog.js'
+import { HexMapDialog } from './hex-map-dialog.js'
 import { useHexEditorController } from './use-hex-editor-controller.js'
 import {
   HexCanvasSurface,
@@ -19,22 +20,22 @@ import { useHexMapController } from './use-hex-map-controller.js'
 import { useHexCommandController } from './use-hex-command-controller.js'
 import { automaticLocationPlacementTarget } from './world-location-placement-target.js'
 import { useWorldLocationProjectionController } from './use-world-location-projection-controller.js'
-import { WorldLocationDialog } from '../worldplanner/world-location-dialog.js'
-import { createWorldLocationCreationPort } from '../worldplanner/world-location-capabilities.js'
-import { useWorldLocationCreationWorkflow } from '../worldplanner/use-world-location-creation-workflow.js'
 import { biomeCatalogCapabilities } from './biome-catalog-capabilities.js'
 import { mergeHexBiomeCatalog } from './hex-chunk-cache.js'
+import type { HexWorldLocationCreationIntegrationProps } from './hex-world-location-creation-port.js'
+import type { ReactNode } from 'react'
 
 export default function HexEditor(props: {
   onError: (message: string) => void
+  renderWorldLocationCreation: (
+    props: HexWorldLocationCreationIntegrationProps
+  ) => ReactNode
 }) {
   const api = useCapabilityApi()
   const capabilities = useMemo(() => hexCapabilities(api), [api])
   const biomeCatalog = useMemo(() => biomeCatalogCapabilities(api), [api])
-  const locationCreationPort = useMemo(
-    () => createWorldLocationCreationPort(api),
-    [api]
-  )
+  const [locationCreationOpen, setLocationCreationOpen] = useState(false)
+  const [mapCreationOpen, setMapCreationOpen] = useState(false)
   const controller = useHexEditorController()
   const {
     catalog,
@@ -100,29 +101,6 @@ export default function HexEditor(props: {
       props.onError(outcome.message)
     return outcome
   }
-  const locationCreation = useWorldLocationCreationWorkflow({
-    port: locationCreationPort,
-    currentRevision: () => locations.snapshotRef.current?.revision ?? null,
-    applyCreated: locations.applyCreated,
-    select: setLocationId,
-    place: async (locationId) => {
-      const target = automaticLocationPlacementTarget(
-        controller.map,
-        controller.selected
-      )
-      return target.status === 'eligible'
-        ? commands.placeLocation(locationId, target.coordinate)
-        : target
-    },
-    errorText: capabilityErrorText,
-    onPartialFailure: (detail) =>
-      props.onError(
-        formatMessage('hex.editor.locationCreatedPlacementFailed', { detail })
-      ),
-    unavailableMessage: message('hex.editor.locationCatalogUnavailable'),
-    savingMessage: message('ui.speichern.laeuft')
-  })
-
   if (!catalog || !biomes || !locations.snapshot || !symbols)
     return (
       <section className="workspace-panel">
@@ -144,9 +122,7 @@ export default function HexEditor(props: {
         tool={tool}
         name={name}
         history={history}
-        onCreate={() =>
-          void commands.create(message('hex.editor.defaultMapName'))
-        }
+        onCreate={() => setMapCreationOpen(true)}
         onEditValueChange={setName}
         onSave={() => void commands.saveMetadata()}
         onSelectMap={(mapId) => {
@@ -233,8 +209,8 @@ export default function HexEditor(props: {
           if (tool === 'location' && selected && tile && !tile.location)
             void placeLocation(id, selected)
         }}
-        onCreateLocation={() => void locationCreation.open()}
-        locationDialogOpen={locationCreation.dialogOpen}
+        onCreateLocation={() => setLocationCreationOpen(true)}
+        locationDialogOpen={locationCreationOpen}
         onPresentationChange={locations.updatePresentation}
         onPresentationCommit={locations.flushPresentation}
         selectedCustomSymbol={symbolManagement.selectedCustomSymbol}
@@ -266,12 +242,30 @@ export default function HexEditor(props: {
         }
         onRemoveLocation={() => void commands.removeLocation()}
       />
-      {locationCreation.dialogOpen && (
-        <WorldLocationDialog
-          location={null}
-          references={locationCreation.references}
-          close={locationCreation.close}
-          save={locationCreation.save}
+      {locationCreationOpen &&
+        props.renderWorldLocationCreation({
+          applyCreated: locations.applyCreated,
+          select: setLocationId,
+          initialPlacementHint: map
+            ? {
+                mapId: map.map.id,
+                coordinate:
+                  automaticLocationPlacementTarget(map, selected).status ===
+                  'eligible'
+                    ? selected
+                    : null
+              }
+            : null,
+          projectionPort: mapLifecycle.placementProjectionPort,
+          close: () => setLocationCreationOpen(false)
+        })}
+      {mapCreationOpen && (
+        <HexMapDialog
+          invocation={{ kind: 'catalog' }}
+          close={() => setMapCreationOpen(false)}
+          create={commands.create}
+          created={() => setMapCreationOpen(false)}
+          onError={props.onError}
         />
       )}
       {pendingErase && (

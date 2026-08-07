@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Creature } from '../../../shared/contracts/encounter.js'
 import type { CoreProcessStatus } from '../../../shared/contracts/runtime.js'
-import { message } from '../../i18n/messages.de.js'
+import { message } from '../../i18n/workspace-runtime.de.js'
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 import { useInstallationPreferences } from '../../shell/use-installation-preferences.js'
 import { CreatureInspector } from '../reference/creature-inspector.js'

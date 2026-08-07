@@ -1,4 +1,4 @@
-import { message } from '../../i18n/messages.de.js'
+import { message } from '../../i18n/workspace-runtime.de.js'
 import saltMarcherLogo from '../../assets/icons/salt-marcher.svg?url'
 import {
   workspaceDefinitions,

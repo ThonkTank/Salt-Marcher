@@ -1,18 +1,29 @@
 import { useEffect, useEffectEvent, useRef } from 'react'
 import type {
   AxialCoordinate,
-  HexBrushStrokeResult
+  HexBrushStrokeResult,
+  HexMapSummary
 } from '../../../shared/contracts/hex.js'
-import { message } from '../../i18n/messages.de.js'
+import { message } from '../../i18n/hex-runtime.de.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import { brushLevelToRadius } from './hex-brush.js'
 import type { HexCapabilities } from './hex-capabilities.js'
 import { HexCommandQueue } from './hex-command-queue.js'
 import { executeRecoverableHexCommand } from './hex-command-executor.js'
-import { createHexLocationPlacementController } from './hex-location-placement-controller.js'
-import type { WorldLocationPlacementOutcome } from '../worldplanner/world-location-editor-types.js'
+import { createHexMapApplicationPort } from './hex-map-creation-port.js'
+import { createWorldLocationPlacementCommitter } from './world-location-placement-commit.js'
+import type { WorldLocationPlacementFailure } from '../../../shared/contracts/world-location.js'
 import type { useHexEditorController } from './use-hex-editor-controller.js'
 import type { useHexMapController } from './use-hex-map-controller.js'
+
+type WorldLocationPlacementOutcome =
+  | Readonly<{ status: 'placed'; coordinate: AxialCoordinate }>
+  | Readonly<{
+      status: 'skipped'
+      reason: 'map_missing' | 'selection_missing' | 'tile_missing' | 'occupied'
+    }>
+  | Readonly<{ status: 'rejected'; message: string }>
+  | Readonly<{ status: 'failed'; message: string }>
 
 type EditorController = ReturnType<typeof useHexEditorController>
 type MapController = ReturnType<typeof useHexMapController>
@@ -30,7 +41,7 @@ export function useHexCommandController(options: {
   }, [options])
   const queue = useRef(new HexCommandQueue())
   const placement = useRef(
-    createHexLocationPlacementController(options.capabilities.hex)
+    createWorldLocationPlacementCommitter(options.capabilities)
   )
   const enqueue = <T>(operation: () => Promise<T>): Promise<T> =>
     queue.current.enqueue(operation)
@@ -49,6 +60,17 @@ export function useHexCommandController(options: {
               : result.reason === 'location_not_placed'
                 ? message('hex.editor.locationNotPlaced')
                 : message('hex.editor.staleMutation')
+
+  const placementFailureMessage = (failure: WorldLocationPlacementFailure) =>
+    failure.kind === 'occupied'
+      ? message('hex.editor.locationOccupied')
+      : failure.kind === 'map-missing'
+        ? message('hex.editor.mapMissing')
+        : failure.kind === 'tile-missing'
+          ? message('hex.editor.tileMissing')
+          : failure.kind === 'location-not-placed'
+            ? message('hex.editor.locationNotPlaced')
+            : message('hex.editor.staleMutation')
 
   const applyResult = async (
     result: HexBrushStrokeResult,
@@ -107,29 +129,20 @@ export function useHexCommandController(options: {
     return result
   }
 
-  const create = async (displayName: string) => {
-    const { editor, capabilities, maps, onError } = optionsRef.current
-    if (!editor.catalog) return
-    const commandId = crypto.randomUUID()
-    const expectedCatalogRevision = editor.catalog.revision
+  const create = async (displayName: string): Promise<HexMapSummary> => {
     return enqueue(async () => {
+      const { editor, capabilities, maps, onError } = optionsRef.current
       try {
-        const result = await executeRecoverableHexCommand(
-          commandId,
-          () =>
-            capabilities.hex.create({
-              commandId,
-              displayName,
-              expectedCatalogRevision
-            }),
-          (receiptId) => capabilities.hex.commandReceipt(receiptId)
-        )
-        if (result.status !== 'applied') return void (await applyResult(result))
+        const receipt = await createHexMapApplicationPort({
+          hex: capabilities.hex
+        }).createMap(displayName)
         editor.setSelected(null)
-        await applyResult(result)
-        await maps.refreshCatalog(result.maps[0]!.id)
+        await applyResult(receipt.commandResult)
+        await maps.refreshCatalog(receipt.saved.id)
+        return receipt.saved
       } catch (cause) {
         onError(capabilityErrorText(cause))
+        throw cause
       }
     })
   }
@@ -293,25 +306,21 @@ export function useHexCommandController(options: {
         status: 'skipped',
         reason: !target ? 'tile_missing' : 'occupied'
       }
-    const commandId = crypto.randomUUID()
     return enqueue(async () => {
       const current = maps.mapRef.current
       if (!current) return { status: 'skipped', reason: 'map_missing' } as const
       try {
-        const result = await placement.current.place({
-          commandId,
-          mapId: current.map.id,
-          locationId,
-          coordinate,
-          expectedContentRevision: current.map.contentRevision
+        const result = await placement.current(locationId, {
+          kind: 'place',
+          target: { mapId: current.map.id, coordinate }
         })
-        await applyResult(result, false)
-        return result.status === 'applied'
-          ? ({ status: 'placed', coordinate } as const)
-          : ({
-              status: 'rejected',
-              message: rejectedResultMessage(result)
-            } as const)
+        if (result.status === 'rejected')
+          return {
+            status: 'rejected',
+            message: placementFailureMessage(result.failure)
+          } as const
+        await maps.refreshCatalog(current.map.id)
+        return { status: 'placed', coordinate } as const
       } catch (cause) {
         return {
           status: 'failed',
@@ -328,19 +337,18 @@ export function useHexCommandController(options: {
       (tile) => tile.q === editor.selected!.q && tile.r === editor.selected!.r
     )
     if (!target?.location) return
-    const commandId = crypto.randomUUID()
     return enqueue(async () => {
       const current = maps.mapRef.current
       if (!current) return
       try {
-        await applyResult(
-          await placement.current.remove({
-            commandId,
-            mapId: current.map.id,
-            locationId: target.location!.locationId,
-            expectedContentRevision: current.map.contentRevision
-          })
-        )
+        const result = await placement.current(target.location!.locationId, {
+          kind: 'remove'
+        })
+        if (result.status === 'rejected') {
+          onError(placementFailureMessage(result.failure))
+          return
+        }
+        await maps.refreshCatalog(current.map.id)
       } catch (cause) {
         onError(capabilityErrorText(cause))
       }

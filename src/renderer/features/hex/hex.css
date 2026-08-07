@@ -704,18 +704,6 @@
   margin-right: auto;
 }
 
-.hex-placement-dialog {
-  display: grid;
-  grid-template-rows: auto auto minmax(320px, 1fr) auto;
-  width: min(92vw, 1050px);
-  height: min(90vh, 760px);
-  padding: 1rem;
-  border: 1px solid var(--border-structural);
-  border-radius: var(--radius-0);
-  background: var(--surface-panel);
-  box-shadow: var(--shadow-dialog);
-}
-
 .hex-erase-dialog {
   display: grid;
   gap: var(--space-5);
@@ -726,14 +714,6 @@
   border: 1px solid var(--border-structural);
   background: var(--surface-panel);
   box-shadow: var(--shadow-dialog);
-}
-
-.hex-placement-dialog header,
-.hex-placement-dialog footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
 }
 
 .travel-facts {

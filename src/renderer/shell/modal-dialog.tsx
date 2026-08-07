@@ -1,28 +1,20 @@
 import {
   createContext,
   useContext,
-  useEffect,
   useId,
   useLayoutEffect,
   useRef,
+  type CSSProperties,
   type ButtonHTMLAttributes,
   type FormHTMLAttributes,
   type ReactNode
 } from 'react'
 import { createPortal } from 'react-dom'
-import { ModalLayerContext } from './modal-layer.js'
+import { OverlayLayerContext } from './modal-layer.js'
 import './modal-dialog.css'
 
-const focusableSelector = [
-  'button:not([disabled])',
-  'input:not([disabled])',
-  'select:not([disabled])',
-  'textarea:not([disabled])',
-  '[href]',
-  '[tabindex]:not([tabindex="-1"])'
-].join(',')
-
 const ModalInstanceContext = createContext<{
+  id: string
   close: () => void
   busy: boolean
 } | null>(null)
@@ -37,7 +29,7 @@ export function ModalDialog(props: {
   busy?: boolean
   role?: 'dialog' | 'alertdialog'
 }) {
-  const layer = useContext(ModalLayerContext)
+  const layer = useContext(OverlayLayerContext)
   if (!layer)
     throw new Error('ModalDialog must be rendered inside ModalLayerProvider.')
   const { register, stack, unregister } = layer
@@ -45,87 +37,50 @@ export function ModalDialog(props: {
   const onClose = props.onClose
   const id = useId()
   const dialog = useRef<HTMLElement>(null)
-  const restoreFocus = useRef<HTMLElement | null>(null)
-  const focused = useRef(false)
-  const closing = useRef(false)
-  const top = stack.at(-1) === id
-
-  function trapTab(event: globalThis.KeyboardEvent) {
-    const focusable = [
-      ...(dialog.current?.querySelectorAll<HTMLElement>(focusableSelector) ??
-        [])
-    ]
-    if (focusable.length === 0) {
-      event.preventDefault()
-      dialog.current?.focus()
-      return
-    }
-    const first = focusable[0]
-    const last = focusable.at(-1)
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault()
-      last?.focus()
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault()
-      first?.focus()
-    }
-  }
+  const closeRef = useRef(onClose)
+  const busyRef = useRef(busy)
+  useLayoutEffect(() => {
+    closeRef.current = onClose
+    busyRef.current = busy
+  }, [busy, onClose])
+  const modalStack = stack.filter((entry) => entry.kind !== 'popup')
+  const stackIndex = modalStack.findIndex((entry) => entry.id === id)
+  const topModal = modalStack.at(-1)?.id === id
+  const topOverlay = stack.at(-1)
+  const interactive =
+    topOverlay?.id === id ||
+    (topOverlay?.kind === 'popup' && topOverlay.ownerId === id)
+  const depth = stackIndex < 0 ? 0 : modalStack.length - stackIndex - 1
+  const backdropStyle = {
+    zIndex: 30 + Math.max(0, stackIndex),
+    '--modal-stack-offset': `${depth * 11}px`,
+    '--modal-stack-opacity': depth === 0 ? 1 : depth === 1 ? 0.7 : 0.5
+  } as CSSProperties
 
   useLayoutEffect(() => {
-    restoreFocus.current =
+    const restoreFocus =
       document.activeElement instanceof HTMLElement
         ? document.activeElement
         : null
-    register(id)
-    return () => {
-      closing.current = true
-      unregister(id)
-      restoreFocus.current?.focus()
-    }
-  }, [id, register, unregister])
-
-  useEffect(() => {
-    if (!top) return
-    if (!focused.current) {
-      const first =
-        dialog.current?.querySelector<HTMLElement>(focusableSelector)
-      ;(first ?? dialog.current)?.focus()
-      focused.current = true
-    }
-    const keyDown = (event: globalThis.KeyboardEvent) => {
-      if (event.key === 'Escape' && !busy) {
-        event.preventDefault()
-        onClose()
-        return
-      }
-      if (event.key !== 'Tab') return
-      trapTab(event)
-    }
-    const keepFocusInside = (event: FocusEvent) => {
-      if (closing.current) return
-      if (
-        event.target instanceof Node &&
-        dialog.current &&
-        !dialog.current.contains(event.target)
-      ) {
-        const first =
-          dialog.current.querySelector<HTMLElement>(focusableSelector)
-        ;(first ?? dialog.current).focus()
-      }
-    }
-    document.addEventListener('keydown', keyDown)
-    document.addEventListener('focusin', keepFocusInside)
-    return () => {
-      document.removeEventListener('keydown', keyDown)
-      document.removeEventListener('focusin', keepFocusInside)
-    }
-  }, [busy, onClose, top])
+    register({
+      id,
+      kind: props.role === 'alertdialog' ? 'alertdialog' : 'modal',
+      ownerId: null,
+      element: () => dialog.current,
+      anchor: () => null,
+      dismiss: () => closeRef.current(),
+      busy: () => busyRef.current,
+      pointerDismiss: false,
+      restoreFocus
+    })
+    return () => unregister(id)
+  }, [id, props.role, register, unregister])
 
   const shared = {
     className: props.className,
     role: props.role ?? 'dialog',
-    'aria-modal': top || undefined,
-    'aria-hidden': !top || undefined,
+    'aria-modal': topModal || undefined,
+    'aria-hidden': !interactive || undefined,
     'aria-label': props.ariaLabel,
     'aria-labelledby': props.labelledBy,
     'aria-busy': props.busy || undefined,
@@ -136,8 +91,13 @@ export function ModalDialog(props: {
     <div
       className={props.backdropClassName ?? 'modal-backdrop'}
       role="presentation"
-      inert={!top || undefined}
-      aria-hidden={!top || undefined}
+      inert={!interactive || undefined}
+      aria-hidden={!interactive || undefined}
+      data-modal-index={stackIndex < 0 ? undefined : stackIndex}
+      data-modal-depth={stackIndex < 0 ? undefined : depth}
+      data-modal-bottom={stackIndex === 0 ? 'true' : 'false'}
+      data-modal-top={topModal ? 'true' : 'false'}
+      style={backdropStyle}
     >
       <section ref={dialog} {...shared}>
         {props.children}
@@ -146,7 +106,7 @@ export function ModalDialog(props: {
   )
   return createPortal(
     <ModalInstanceContext.Provider
-      value={{ close: props.onClose, busy: props.busy ?? false }}
+      value={{ id, close: props.onClose, busy: props.busy ?? false }}
     >
       {content}
     </ModalInstanceContext.Provider>,
@@ -162,6 +122,11 @@ export function ModalForm(props: FormHTMLAttributes<HTMLFormElement>) {
       className={`modal-form${className ? ` ${className}` : ''}`}
     />
   )
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function useModalOverlayOwnerId(): string | null {
+  return useContext(ModalInstanceContext)?.id ?? null
 }
 
 export function ModalCloseButton(

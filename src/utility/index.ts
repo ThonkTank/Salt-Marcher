@@ -32,6 +32,9 @@ import { PartyStore } from '../core/party/party-store.js'
 import { SceneStore } from '../core/scene/scene-store.js'
 import { CampaignUnitOfWork } from '../core/application/campaign-unit-of-work.js'
 import { WorldLocationDeletionCommandHandler } from '../core/application/world-location-deletion.js'
+import { WorldLocationSaveCommandHandler } from '../core/application/world-location-save.js'
+import { WorldLocationSaveJournal } from '../core/worldplanner/world-location-save-journal.js'
+import { WorldLocationPlacementService } from '../core/application/world-location-placement.js'
 import {
   BiomeCatalogService,
   type BiomeMapChange
@@ -101,6 +104,21 @@ const worldLocationDeletion = new WorldLocationDeletionCommandHandler(() => {
     locations: locationsForMap
   }
 })
+const worldLocationPlacement = new WorldLocationPlacementService(() => {
+  const db = activeDatabase()
+  return {
+    maps: new HexMapStore(db, locationStore(db)),
+    hexEditing
+  }
+})
+const worldLocationSave = new WorldLocationSaveCommandHandler(() => {
+  const database = activeDatabase()
+  return {
+    locations,
+    journal: new WorldLocationSaveJournal(database),
+    placement: worldLocationPlacement
+  }
+})
 const hexTravel = new HexTravelService(
   activeDatabase,
   Date.now,
@@ -117,9 +135,10 @@ const creatures = new CreatureCatalogService(
         label: biome.label
       }))
       .filter((biome) => biome.id !== placeholderBiomeId),
-    encounterTables: sources
-      .readTables()
-      .tables.map((table) => ({ id: table.id, label: table.displayName })),
+    encounterTables: [
+      ...sources.readTables().installation.tables,
+      ...sources.readTables().campaign.tables
+    ].map((table) => ({ id: table.id, label: table.displayName })),
     factions: sources.readFactions().factions.map((faction) => ({
       id: faction.id,
       label: faction.displayName
@@ -399,8 +418,8 @@ function publishEncounterTableChange(
     coreEventSchema.parse({
       kind: 'encounter-tables.changed',
       notice: {
-        installationRevision: snapshot.installationRevision,
-        campaignRevision: snapshot.campaignRevision,
+        installationRevision: snapshot.installation.revision,
+        campaignRevision: snapshot.campaign.revision,
         changedTableIds,
         scope,
         reason
@@ -567,25 +586,22 @@ const biomeHandlers = {
 
 const worldPlannerHandlers = {
   'locations.read': () => locations.read(),
-  'locations.create': (input) =>
+  'locations.suggestTags': (input) =>
+    locations.suggestTags(input.query, input.limit),
+  'locations.save': (input) =>
     mutateReferences(() => {
-      const result = locations.createResult(
-        input.location,
-        input.expectedRevision
-      )
-      publishLocationChange([result.createdLocation.id], 'catalog')
-      return result
+      const execution = worldLocationSave.execute(input)
+      publishLocationChange([execution.receipt.saved.id], 'catalog')
+      if (execution.hexResult) publishHexChange(execution.hexResult)
+      return execution.receipt
     }),
-  'locations.update': (input) =>
-    mutateReferences(() => {
-      const result = locations.update(
-        input.id,
-        input.location,
-        input.expectedRevision
-      )
-      publishLocationChange([input.id], 'catalog')
-      return result
-    }),
+  'locations.saveReceipt': (input) =>
+    worldLocationSave.receipt(input.commandId),
+  'locations.commitPlacement': (input) => {
+    const execution = worldLocationPlacement.execute(input)
+    if (execution.hexResult) publishHexChange(execution.hexResult)
+    return execution.result
+  },
   'locations.updateMapPresentation': (input) => {
     const result = locations.updateMapPresentation(
       input.id,
@@ -606,19 +622,11 @@ const worldPlannerHandlers = {
           [result.notice.changedChunk]
         )
       publishLocationChange([input.id], 'catalog')
-      return result.snapshot
+      return result.receipt
     }),
   'locationSymbols.create': (input) => {
-    const before = new Set(
-      locationSymbols.read().symbols.map((symbol) => symbol.id)
-    )
     const result = locationSymbols.create(input.symbol, input.expectedRevision)
-    publishSymbolChange(
-      result.symbols
-        .filter((symbol) => !before.has(symbol.id))
-        .map((symbol) => symbol.id),
-      'created'
-    )
+    publishSymbolChange([result.saved.id], 'created')
     return result
   },
   'locationSymbols.search': (input) =>
@@ -668,8 +676,9 @@ const worldPlannerHandlers = {
     }
   },
   'encounterTables.read': () => sources.readTables(),
+  'encounterTables.commandReceipt': (input) =>
+    sources.tableReceipt(input.commandId),
   'encounterTables.create': (input) => {
-    const before = new Set(sources.readTables().tables.map(({ id }) => id))
     const result = sources.createTable(
       input.commandId,
       input.table,
@@ -677,8 +686,8 @@ const worldPlannerHandlers = {
       input.scope
     )
     publishEncounterTableChange(
-      result,
-      result.tables.filter(({ id }) => !before.has(id)).map(({ id }) => id),
+      result.snapshot,
+      [result.saved.id],
       input.scope,
       'created'
     )
@@ -692,7 +701,12 @@ const worldPlannerHandlers = {
       input.expectedRevision,
       input.scope
     )
-    publishEncounterTableChange(result, [input.id], input.scope, 'updated')
+    publishEncounterTableChange(
+      result.snapshot,
+      [result.saved.id],
+      input.scope,
+      'updated'
+    )
     return result
   },
   'encounterTables.delete': (input) => {
@@ -706,28 +720,45 @@ const worldPlannerHandlers = {
       input.expectedRevision,
       input.scope
     )
-    publishEncounterTableChange(result, [input.id], input.scope, 'deleted')
+    publishEncounterTableChange(
+      result.snapshot,
+      [result.deletedId],
+      input.scope,
+      'deleted'
+    )
     if (linkedBiomeIds.length > 0) publishBiomeChange(linkedBiomeIds, 'updated')
     return result
   },
   'factions.read': () => sources.readFactions(),
+  'factions.commandReceipt': (input) => sources.factionReceipt(input.commandId),
   'factions.create': (input) =>
     mutateReferences(() =>
-      sources.createFaction(input.faction, input.expectedRevision)
+      sources.createFaction(
+        input.commandId,
+        input.faction,
+        input.expectedRevision
+      )
     ),
   'factions.update': (input) =>
     mutateReferences(() =>
-      sources.updateFaction(input.id, input.faction, input.expectedRevision)
+      sources.updateFaction(
+        input.commandId,
+        input.id,
+        input.faction,
+        input.expectedRevision
+      )
     ),
   'factions.delete': (input) =>
     mutateReferences(() =>
-      sources.deleteFaction(input.id, input.expectedRevision)
+      sources.deleteFaction(input.commandId, input.id, input.expectedRevision)
     )
 } satisfies Pick<
   CoreHandlers,
   | 'locations.read'
-  | 'locations.create'
-  | 'locations.update'
+  | 'locations.suggestTags'
+  | 'locations.save'
+  | 'locations.saveReceipt'
+  | 'locations.commitPlacement'
   | 'locations.updateMapPresentation'
   | 'locations.delete'
   | 'locationSymbols.create'
@@ -738,10 +769,12 @@ const worldPlannerHandlers = {
   | 'locationSymbols.delete'
   | 'locationSymbols.importAndAssign'
   | 'encounterTables.read'
+  | 'encounterTables.commandReceipt'
   | 'encounterTables.create'
   | 'encounterTables.update'
   | 'encounterTables.delete'
   | 'factions.read'
+  | 'factions.commandReceipt'
   | 'factions.create'
   | 'factions.update'
   | 'factions.delete'
@@ -959,9 +992,7 @@ const hexHandlers = {
   'hex.undo': (input) => hexEditing.undo(input),
   'hex.redo': (input) => hexEditing.redo(input),
   'hex.commandReceipt': (input) => hexEditing.commandReceipt(input.commandId),
-  'hex.runtimeOverlays': (input) => hexTravel.runtimeOverlays(input.mapId),
-  'hex.placeLocation': (input) => hexEditing.placeLocation(input),
-  'hex.removeLocation': (input) => hexEditing.removeLocation(input)
+  'hex.runtimeOverlays': (input) => hexTravel.runtimeOverlays(input.mapId)
 } satisfies Pick<
   CoreHandlers,
   | 'hex.biomeCatalog'
@@ -978,8 +1009,6 @@ const hexHandlers = {
   | 'hex.redo'
   | 'hex.commandReceipt'
   | 'hex.runtimeOverlays'
-  | 'hex.placeLocation'
-  | 'hex.removeLocation'
 >
 
 const travelHandlers = {
@@ -1059,9 +1088,7 @@ function dispatch(request: CoreRequest): Promise<unknown> {
       request.kind === 'hex.update' ||
       request.kind === 'hex.applyBrushStroke' ||
       request.kind === 'hex.undo' ||
-      request.kind === 'hex.redo' ||
-      request.kind === 'hex.placeLocation' ||
-      request.kind === 'hex.removeLocation'
+      request.kind === 'hex.redo'
     )
       publishHexChange(parsed)
     if (

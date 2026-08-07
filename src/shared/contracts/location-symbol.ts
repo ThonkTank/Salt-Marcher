@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { EntityMutationReceipt } from './entity-mutation.js'
 
 export const builtinLocationSymbolIdSchema = z.enum([
   'location',
@@ -72,6 +73,13 @@ export const locationSymbolSnapshotSchema = z
   .object({
     revision: z.number().int().nonnegative(),
     symbols: z.array(locationSymbolSchema)
+  })
+  .strict()
+
+export const locationSymbolMutationReceiptSchema = z
+  .object({
+    snapshot: locationSymbolSnapshotSchema,
+    saved: locationSymbolSchema
   })
   .strict()
 
@@ -201,6 +209,10 @@ export type LocationSymbolDraft = Readonly<
 >
 export type LocationSymbolSnapshot = Readonly<
   z.infer<typeof locationSymbolSnapshotSchema>
+>
+export type LocationSymbolMutationReceipt = EntityMutationReceipt<
+  LocationSymbol,
+  LocationSymbolSnapshot
 >
 export type LocationSymbolPage = Readonly<
   z.infer<typeof locationSymbolPageSchema>

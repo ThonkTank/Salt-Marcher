@@ -1,4 +1,4 @@
-import { message } from '../../i18n/messages.de.js'
+import { message } from '../../i18n/workspace-runtime.de.js'
 import type { WorkspaceUiError } from './use-workspace-errors.js'
 
 export function WorkspaceErrors(props: {

@@ -77,10 +77,63 @@ Encounter Tables compose those features without importing Catalog from Session
 or Session from Catalog. Each feature imports and owns its feature stylesheet;
 shell styles contain only application-wide primitives.
 
+Cross-feature World Location editing is composed only by
+`features/workspace/integrations`. Catalog, Hex, and World Planner do not import
+one another's concrete screens, controllers, capability adapters, or styles.
+The normative cross-feature journeys and their required evidence are tracked
+in the
+[World Location editor acceptance matrix](world-location-editor-acceptance-matrix.md).
+The integration receives narrow feature application ports and owns the optional
+Hex field and its staged placement state. A utility-process application command
+coordinates the deliberately sequential save-then-place workflow and returns a
+durable complete or partial-success receipt. User placement drafts contain only
+map identity and coordinates; the utility process resolves Hex state at commit
+time. An unknown IPC outcome is reconciled by the outer command identity and is
+never blindly replayed.
+
+The editing state has one explicit owner at every phase:
+
+| State | Owner | Lifetime |
+| --- | --- | --- |
+| location form draft and validation | World Planner dialog | one dialog instance |
+| tag suggestions | bounded World Planner read capability | one query response, maximum ten values |
+| optional placement draft | Workspace integration | one integrated editor instance |
+| map catalog, chunks, and exact invalidation | Hex placement projection port | projection lifetime |
+| location catalog revision | World Planner aggregate | resolved by the base-save workflow |
+| Hex content revision | Hex aggregate | resolved immediately before place/remove |
+| partial-save operation receipt | utility-process operation journal | until success or explicit retry |
+
+The durable save journal is a World Planner aggregate adapter in
+`core/worldplanner`, backed by the owner-prefixed
+`worldplanner_location_save_operation` table. The orchestration command in
+`core/application` depends only on the journal port and contains no SQL or
+database handle. Both the integrated Location save and the direct Hex
+location-placement tool reach the same revision-free placement command; the
+legacy renderer-owned revision/retry path is not a public capability.
+
+Save behavior is deliberately sequential and never presented as atomic. The
+base save and a durable partial receipt commit together before placement is
+attempted:
+
+| Base save | Placement | Result |
+| --- | --- | --- |
+| rejected | not attempted | failed; the editable draft remains |
+| applied | unchanged/applied | saved |
+| applied | typed rejection or unavailable | partially saved; the location remains durable and retry repeats placement only |
+
+The World Planner dialog exposes a generic side-area render port and does not
+contain Hex placement types, map revisions, capability access, or Hex styles.
+The compact and expanded placement views share one draft; opening the expanded
+view unmounts the compact heavy canvas, Cancel restores its baseline, and Apply
+keeps the staged selection without persisting it.
+
 The capability provider is the sole renderer composition boundary. Feature
-adapters receive its `SaltMarcherApi` value and return narrow ports; pure
-controllers and command executors receive those ports explicitly. Mutable
-module-level capability registries and renderer service locators are forbidden.
+application adapters receive its `SaltMarcherApi` value and return narrow,
+entity-focused ports; pure controllers and command executors receive those
+ports explicitly. Revision selection, command identities, receipt
+reconciliation, and snapshot accumulation live in those adapters rather than
+in React components. Mutable module-level capability registries and renderer
+service locators are forbidden.
 Workspace navigation is described by immutable `WorkspaceDefinition` records,
 including identity, label, icon, loader, neutral layout mode and recovery
 policy, rather than parallel conditionals in the shell. Its route host models
@@ -98,9 +151,13 @@ One Hex-owned World Location projection controller is the sole owner of its
 location snapshot, exact invalidation subscription, optimistic presentation
 drafts, and conflict recovery. Symbol and creation workflows submit typed
 actions to that owner instead of replacing catalog snapshots themselves.
-The bundle gate verifies this static dependency graph, a 900 KiB Workspace
-ceiling and a 2.80 MiB total normal-renderer ceiling. Feature-specific lazy
-entry ceilings remain independently enforced.
+The bundle gate verifies this static dependency graph, preserves the original
+entry and 900 KiB Workspace-JavaScript ceilings, and enforces separately
+calibrated complete initial, Workspace, feature, Pixi-leaf, and reachable-total
+graphs. The 3.20 MiB hard renderer ceiling protects the larger of ten percent
+or 256 KiB from ordinary growth. Exact budgets, accounting semantics, current
+calibration, and the required justification for any future increase live in
+the [renderer bundle inventory](renderer-bundle-inventory.md).
 
 Catalog is a composition root over Monster, Location, Faction, and Encounter
 Table controllers and views. Controller state remains mounted across section
@@ -110,17 +167,42 @@ testable without widening IPC. The creature-collection manager owns its header,
 named grid areas, catalog pane, draft pane, footer, and divider; consumers may
 choose only a fixed divider or the manager's accessible resizable model.
 The domain-owned World Location editor is shared by Catalog and Hex through a
-narrow creation port. Location creation returns both the next immutable
-snapshot and the exact created entity; consumers never infer command results by
-diffing aggregate IDs.
+narrow application port. Location, Faction, Encounter Table, and Hex Map saves
+return both the next immutable projection and the exact saved entity; consumers
+never infer command results by diffing aggregate IDs. A Workspace-owned
+integration adapter composes the editor with narrow map, faction, and
+encounter-table creation ports. Related editors are rendered as siblings in a
+Workspace-owned dialog stack, so the still-mounted parent draft receives the
+exact child record without nesting one modal form below another in the React
+tree.
+The shared faction dialog similarly composes the shared encounter-table dialog
+for create-and-select without owning Encounter Table persistence. Both dialogs
+publish renderer-local, entity-focused render contracts instead of importing
+one another's component implementation. Encounter-table snapshots expose
+installation and campaign as separate scope snapshots. Each scope carries its
+own revision, tables, and utility-computed picker summaries. A renderer
+application accumulator reconciles each scope independently, so React
+consumers neither compare partially ordered revisions nor issue one Creature
+detail request per entry merely to render table options.
 
-All blocking dialogs render through the shell-owned modal layer. The layer
-portals dialogs outside the application root, maintains a single ordered modal
-stack, makes the application and lower dialogs inert, traps focus only in the
-top dialog, restores focus on close, and centrally owns Escape and body-scroll
-handling. Potentially destructive close actions open a nested `alertdialog`
-when a draft is dirty. Dialog buttons therefore request one close command
-rather than directly manipulating unrelated workspace state.
+The current Location catalog keeps its in-memory snapshot search while the
+pre-release load profile remains below all of these measured escalation
+thresholds: 2,000 locations, a 5 MiB encoded Location snapshot, and 150 ms p95
+for filter-plus-sort on the low reference profile. Crossing any threshold in a
+representative fixture requires a bounded, server-side paginated query port
+before release; raising a threshold requires a recorded profile with the same
+fixture and hardware class. Tag suggestions are already independently bounded
+at the IPC contract and never require downloading the Location snapshot.
+
+All blocking dialogs render through the shell-owned overlay layer. The layer
+portals dialogs outside the application root, maintains one ordered stack for
+modals, alert dialogs, and anchored popups, makes the application and lower
+dialogs inert, traps focus only in the active scope, restores focus on close,
+and centrally owns Escape, outside-pointer dismissal, and body-scroll handling.
+The stack paints one shared scrim behind its bottom modal while lower dialogs
+remain visibly contextual beneath the active layer. Potentially destructive
+close actions open a sibling `alertdialog` when a draft is dirty. Form-like
+editors use one shell-owned fixed-header/scrolling-body/fixed-footer frame.
 
 ## Data ownership
 
@@ -171,8 +253,10 @@ blindly replayed.
 
 German messages expose separate plain and parameterized key types. Placeholder
 names are inferred from the message template, required at compile time and
-validated again at runtime. Electron bundles WOFF2 only; legacy WOFF copies are
-rejected by the bundle gate.
+validated again at runtime. Copy is split into bounded Workspace, Reference,
+Session, Hex, Catalog, and common UI dictionaries, with one typed assembly
+module. Electron bundles WOFF2 only; legacy WOFF copies are rejected by the
+bundle gate.
 
 Reference lookup follows the same boundary. A deterministic, attributed SRD
 artifact is checked into the application and loaded only by the utility

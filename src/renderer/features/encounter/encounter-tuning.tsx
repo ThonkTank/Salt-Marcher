@@ -1,6 +1,10 @@
 import type { EncounterTuning } from '../../../shared/contracts/encounter-tuning.js'
 import type { EncounterSelectionEvaluation } from '../../../shared/contracts/scene.js'
-import { message } from '../../i18n/messages.de.js'
+import { message } from '../../i18n/session-runtime.de.js'
+import {
+  formatInteger,
+  formatMultiplier
+} from '../../i18n/domain-formatters.de.js'
 
 export function DifficultySummary(props: {
   evaluation: Pick<
@@ -56,21 +60,21 @@ export function DifficultySummary(props: {
         </div>
         <div>
           <dt>{message('encounter.baseXp')}</dt>
-          <dd>{evaluation.baseXp.toLocaleString()}</dd>
+          <dd>{formatInteger(evaluation.baseXp)}</dd>
         </div>
         <div>
           <dt>{message('encounter.multiplier')}</dt>
-          <dd>× {evaluation.multiplier.toLocaleString('de-DE')}</dd>
+          <dd>× {formatMultiplier(evaluation.multiplier)}</dd>
         </div>
         <div className="adjusted-xp">
           <dt>{message('encounter.adjusted')}</dt>
-          <dd>{evaluation.adjustedXp.toLocaleString()}</dd>
+          <dd>{formatInteger(evaluation.adjustedXp)}</dd>
         </div>
         <div>
           <dt>
             {message('encounter.threshold')} {evaluation.difficultyLabel}
           </dt>
-          <dd>{thresholdForBand(evaluation).toLocaleString()}</dd>
+          <dd>{formatInteger(thresholdForBand(evaluation))}</dd>
         </div>
       </dl>
       <small className="difficulty-message">{evaluation.message}</small>

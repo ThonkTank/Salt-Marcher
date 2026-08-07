@@ -32,13 +32,23 @@ function harness() {
 describe('world locations', () => {
   it('returns the exact created entity with the next aggregate snapshot', () => {
     const { campaigns, locations } = harness()
-    const result = locations.createResult(
-      { displayName: 'Exakter Ort', notes: '' },
+    const result = locations.create(
+      {
+        displayName: 'Exakter Ort',
+        tags: ['Ruine', 'Küste'],
+        readAloud: 'Salz liegt in der Luft.',
+        notes: 'Nur für die Spielleitung.',
+        factionIds: [],
+        encounterTableIds: []
+      },
       0
     )
-    expect(result.createdLocation.displayName).toBe('Exakter Ort')
+    expect(result.saved.displayName).toBe('Exakter Ort')
+    expect(result.saved.tags).toEqual(['Ruine', 'Küste'])
+    expect(result.saved.readAloud).toBe('Salz liegt in der Luft.')
+    expect(result.saved.notes).toBe('Nur für die Spielleitung.')
     expect(result.snapshot.revision).toBe(1)
-    expect(result.snapshot.locations).toContainEqual(result.createdLocation)
+    expect(result.snapshot.locations).toContainEqual(result.saved)
     campaigns.close()
   })
 
@@ -46,32 +56,89 @@ describe('world locations', () => {
     const { campaigns, locations } = harness()
     let snapshot = locations.read()
     snapshot = locations.create(
-      { displayName: 'Saltmarsh', notes: 'Harbour town' },
+      { displayName: 'Saltmarsh', tags: ['Hafen'], notes: 'Harbour town' },
       snapshot.revision
-    )
+    ).snapshot
     const first = snapshot.locations[0]
     snapshot = locations.create(
-      { displayName: 'Saltmarsh', notes: 'Independent namesake' },
+      {
+        displayName: 'Saltmarsh',
+        tags: ['Namensvetter'],
+        notes: 'Independent namesake'
+      },
       snapshot.revision
-    )
+    ).snapshot
     expect(snapshot.locations).toHaveLength(2)
     expect(
       new Set(snapshot.locations.map((location) => location.id)).size
     ).toBe(2)
     expect(() =>
-      locations.update(first?.id ?? '', { displayName: 'Stale', notes: '' }, 0)
+      locations.update(
+        first?.id ?? '',
+        { displayName: 'Stale', tags: ['Ort'], notes: '' },
+        0
+      )
     ).toThrow('stale')
     snapshot = locations.update(
       first?.id ?? '',
-      { displayName: 'New Saltmarsh', notes: 'Updated' },
+      {
+        displayName: 'New Saltmarsh',
+        tags: ['Küste', 'Hafen', 'Markt'],
+        notes: 'Updated'
+      },
       snapshot.revision
-    )
+    ).snapshot
     expect(snapshot.locations[0]).toMatchObject({
       displayName: 'New Saltmarsh',
+      tags: ['Küste', 'Hafen', 'Markt'],
       notes: 'Updated'
     })
-    snapshot = locations.delete(first?.id ?? '', snapshot.revision)
+    const database = campaigns.activeCampaignDatabase()
+    expect(
+      database
+        .prepare(
+          'SELECT canonical_value AS canonical, display_value AS display, position FROM worldplanner_location_tag WHERE location_id = ? ORDER BY position'
+        )
+        .all(first?.id ?? '')
+    ).toEqual([
+      { canonical: 'küste', display: 'Küste', position: 0 },
+      { canonical: 'hafen', display: 'Hafen', position: 1 },
+      { canonical: 'markt', display: 'Markt', position: 2 }
+    ])
+    snapshot = locations.delete(first?.id ?? '', snapshot.revision).snapshot
     expect(snapshot.locations).toHaveLength(1)
+    expect(
+      database
+        .prepare(
+          'SELECT COUNT(*) AS count FROM worldplanner_location_tag WHERE location_id = ?'
+        )
+        .get(first?.id ?? '')
+    ).toEqual({ count: 0 })
+    campaigns.close()
+  })
+
+  it('suggests a bounded, canonicalized tag vocabulary from relational rows', () => {
+    const { campaigns, locations } = harness()
+    const snapshot = locations.create(
+      {
+        displayName: 'Erster Ort',
+        tags: ['Küste', 'Ruine', '100% sicher'],
+        notes: ''
+      },
+      0
+    ).snapshot
+    locations.create(
+      {
+        displayName: 'Zweiter Ort',
+        tags: ['KÜSTE', 'Hafen'],
+        notes: ''
+      },
+      snapshot.revision
+    )
+
+    expect(locations.suggestTags('üs')).toEqual(['Küste'])
+    expect(locations.suggestTags('%')).toEqual(['100% sicher'])
+    expect(locations.suggestTags('', 2)).toEqual(['Küste', 'Ruine'])
     campaigns.close()
   })
 
@@ -79,9 +146,13 @@ describe('world locations', () => {
     const { campaigns, locations, play } = harness()
     let world = locations.read()
     world = locations.create(
-      { displayName: 'The Docks', notes: 'Fog and warehouses' },
+      {
+        displayName: 'The Docks',
+        tags: ['Hafen'],
+        notes: 'Fog and warehouses'
+      },
       world.revision
-    )
+    ).snapshot
     const locationId = world.locations[0]?.id ?? ''
     let session = play.readSession()
     const sceneId = session.scene.focusedSceneId
@@ -112,9 +183,14 @@ describe('world locations', () => {
   it('resumes the exact location state after reopening the campaign', () => {
     const { campaigns, locations } = harness()
     const expected = locations.create(
-      { displayName: 'Abbey Isle', notes: 'Ruined cloister' },
+      {
+        displayName: 'Abbey Isle',
+        tags: ['Ruine'],
+        readAloud: 'Eine verfallene Abtei erhebt sich aus dem Nebel.',
+        notes: 'Ruined cloister'
+      },
       locations.read().revision
-    )
+    ).snapshot
     const root = roots[0] ?? ''
     campaigns.close()
 
@@ -131,9 +207,9 @@ describe('world locations', () => {
     let snapshot = locations.read()
     for (let index = 0; index < 30; index += 1)
       snapshot = locations.create(
-        { displayName: `Ort ${index}`, notes: '' },
+        { displayName: `Ort ${index}`, tags: ['Ort'], notes: '' },
         snapshot.revision
-      )
+      ).snapshot
     const database = campaigns.activeCampaignDatabase()
     let prepares = 0
     const counted = new Proxy(database, {
@@ -151,7 +227,7 @@ describe('world locations', () => {
 
     const bulk = new WorldLocationStore(counted).read()
     expect(bulk.locations).toHaveLength(30)
-    expect(prepares).toBe(4)
+    expect(prepares).toBe(5)
     expect(bulk.locations.every((entry) => entry.mapPresentation)).toBe(true)
     campaigns.close()
   })

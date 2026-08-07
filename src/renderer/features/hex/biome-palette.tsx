@@ -13,6 +13,7 @@ import {
 } from '../../../shared/contracts/biome.js'
 import { anyBiomeEncounterTableId } from '../../../shared/biomes/constants.js'
 import type { EncounterTable } from '../../../shared/contracts/encounter-source.js'
+import { encounterTables } from '../encounter-table/encounter-table-snapshot.js'
 import type { HexBiomeId } from '../../../shared/contracts/hex.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import {
@@ -21,7 +22,7 @@ import {
   ModalForm
 } from '../../shell/modal-dialog.js'
 import type { BiomeCatalogCapabilities } from './biome-catalog-capabilities.js'
-import { formatMessage, message } from '../../i18n/messages.de.js'
+import { formatMessage, message } from '../../i18n/hex-runtime.de.js'
 
 const PAGE_SIZE = 30
 const COLUMN_COUNT = 3
@@ -152,7 +153,7 @@ export function BiomePalette(props: {
       ])
       setEditing({
         biome: definition,
-        tables: tables.tables.filter(
+        tables: encounterTables(tables).filter(
           (table) =>
             table.scope === 'installation' &&
             table.id !== anyBiomeEncounterTableId

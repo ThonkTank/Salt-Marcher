@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import type { CampaignSnapshot } from '../../../shared/contracts/campaign.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
-import { message } from '../../i18n/messages.de.js'
+import { message } from '../../i18n/workspace-runtime.de.js'
 import {
   AdventuringDayDropdown,
   PartyDropdown

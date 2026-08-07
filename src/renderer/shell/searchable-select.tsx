@@ -1,12 +1,4 @@
 import {
-  FloatingPortal,
-  autoUpdate,
-  flip,
-  offset,
-  shift,
-  useFloating
-} from '@floating-ui/react'
-import {
   useCallback,
   useEffect,
   useId,
@@ -15,6 +7,7 @@ import {
   useState,
   type KeyboardEvent
 } from 'react'
+import { AnchoredPopup } from './anchored-popup.js'
 import './searchable-select.css'
 
 export interface SearchableSelectOption {
@@ -56,38 +49,21 @@ export type SearchableSelectProps =
 export function SearchableSelect(props: SearchableSelectProps) {
   const listboxId = useId()
   const inputRef = useRef<HTMLInputElement>(null)
-  const popupRef = useRef<HTMLDivElement>(null)
+  const [inputElement, setInputElement] = useState<HTMLInputElement | null>(
+    null
+  )
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [activeIndex, setActiveIndex] = useState(-1)
-  const [controlWidth, setControlWidth] = useState(0)
-  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null)
   const [remoteOptions, setRemoteOptions] = useState<
     readonly SearchableSelectOption[] | null
   >(null)
   const [loading, setLoading] = useState(false)
   const searchRequest = useRef(0)
-  const { refs, floatingStyles } = useFloating({
-    open,
-    placement: 'bottom-start',
-    strategy: 'fixed',
-    middleware: [offset(2), flip({ padding: 8 }), shift({ padding: 8 })],
-    whileElementsMounted: autoUpdate
-  })
-  const setInputRef = useCallback(
-    (node: HTMLInputElement | null) => {
-      inputRef.current = node
-      refs.setReference(node)
-    },
-    [refs]
-  )
-  const setPopupRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      popupRef.current = node
-      refs.setFloating(node)
-    },
-    [refs]
-  )
+  const setInputRef = useCallback((node: HTMLInputElement | null) => {
+    inputRef.current = node
+    setInputElement(node)
+  }, [])
   const selectedIds =
     props.mode === 'multiple' ? props.values : props.value ? [props.value] : []
   const selected = new Set(selectedIds)
@@ -141,10 +117,6 @@ export function SearchableSelect(props: SearchableSelectProps) {
 
   const openPopup = useCallback(() => {
     if (props.disabled) return
-    setControlWidth(inputRef.current?.getBoundingClientRect().width ?? 0)
-    setPortalRoot(
-      inputRef.current?.closest<HTMLElement>('[role="dialog"]') ?? null
-    )
     setQuery('')
     setRemoteOptions(null)
     setActiveIndex(-1)
@@ -157,21 +129,6 @@ export function SearchableSelect(props: SearchableSelectProps) {
     setRemoteOptions(null)
     setActiveIndex(-1)
   }, [])
-
-  useEffect(() => {
-    if (!open) return
-    const dismiss = (event: PointerEvent) => {
-      const target = event.target
-      if (!(target instanceof Node)) return
-      if (
-        !inputRef.current?.contains(target) &&
-        !popupRef.current?.contains(target)
-      )
-        closePopup()
-    }
-    document.addEventListener('pointerdown', dismiss)
-    return () => document.removeEventListener('pointerdown', dismiss)
-  }, [closePopup, open])
 
   function selectOption(option: SearchableSelectOption) {
     if (props.mode === 'single') {
@@ -283,60 +240,49 @@ export function SearchableSelect(props: SearchableSelectProps) {
           ▾
         </span>
       </span>
-      {open && (
-        <FloatingPortal root={portalRoot ?? undefined}>
-          <div
-            ref={setPopupRef}
-            className="searchable-select-popup"
-            style={{
-              ...floatingStyles,
-              width: Math.max(controlWidth, props.popupMinWidth ?? 0)
-            }}
-          >
-            <div
-              id={listboxId}
-              role="listbox"
-              aria-label={props.label}
-              aria-multiselectable={
-                props.mode === 'multiple' ? true : undefined
-              }
-              className="searchable-select-options"
-              aria-busy={loading || undefined}
+      <AnchoredPopup
+        open={open}
+        anchor={inputElement}
+        onDismiss={closePopup}
+        className="searchable-select-popup"
+        minWidth={props.popupMinWidth ?? 0}
+        matchAnchorWidth
+      >
+        <div
+          id={listboxId}
+          role="listbox"
+          aria-label={props.label}
+          aria-multiselectable={props.mode === 'multiple' ? true : undefined}
+          className="searchable-select-options"
+          aria-busy={loading || undefined}
+        >
+          {matches.map((option, index) => (
+            <button
+              id={`${listboxId}-option-${String(index)}`}
+              key={option.id}
+              type="button"
+              role="option"
+              tabIndex={-1}
+              aria-selected={selected.has(option.id)}
+              data-active={index === effectiveActiveIndex ? 'true' : undefined}
+              onPointerEnter={() => setActiveIndex(index)}
+              onPointerDown={(event) => event.preventDefault()}
+              onClick={() => selectOption(option)}
             >
-              {matches.map((option, index) => (
-                <button
-                  id={`${listboxId}-option-${String(index)}`}
-                  key={option.id}
-                  type="button"
-                  role="option"
-                  tabIndex={-1}
-                  aria-selected={selected.has(option.id)}
-                  data-active={
-                    index === effectiveActiveIndex ? 'true' : undefined
-                  }
-                  onPointerEnter={() => setActiveIndex(index)}
-                  onPointerDown={(event) => event.preventDefault()}
-                  onClick={() => selectOption(option)}
-                >
-                  <span>{option.label}</span>
-                  {option.description && <small>{option.description}</small>}
-                  {selected.has(option.id) && (
-                    <span
-                      className="searchable-select-check"
-                      aria-hidden="true"
-                    >
-                      ✓
-                    </span>
-                  )}
-                </button>
-              ))}
-              {matches.length === 0 && !loading && (
-                <p className="searchable-select-empty">{props.noResultsText}</p>
+              <span>{option.label}</span>
+              {option.description && <small>{option.description}</small>}
+              {selected.has(option.id) && (
+                <span className="searchable-select-check" aria-hidden="true">
+                  ✓
+                </span>
               )}
-            </div>
-          </div>
-        </FloatingPortal>
-      )}
+            </button>
+          ))}
+          {matches.length === 0 && !loading && (
+            <p className="searchable-select-empty">{props.noResultsText}</p>
+          )}
+        </div>
+      </AnchoredPopup>
     </div>
   )
 }

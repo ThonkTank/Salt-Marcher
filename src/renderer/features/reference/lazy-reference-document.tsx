@@ -3,7 +3,7 @@ import type {
   ReferenceDocument,
   ReferenceTarget
 } from '../../../shared/contracts/reference.js'
-import { message } from '../../i18n/messages.de.js'
+import { message } from '../../i18n/reference-runtime.de.js'
 
 const LazyDocument = lazy(async () => {
   const module = await import('./reference-ui.js')

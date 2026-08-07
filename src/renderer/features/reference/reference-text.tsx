@@ -13,7 +13,7 @@ import {
   referenceTargetKey,
   type ReferenceMatch
 } from './reference-matcher.js'
-import { message } from '../../i18n/messages.de.js'
+import { message } from '../../i18n/reference-runtime.de.js'
 
 export function ReferenceText(props: {
   children: string

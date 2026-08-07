@@ -78,20 +78,26 @@ import {
   updateInstallationSettingsInputSchema
 } from '../../shared/contracts/settings.js'
 import {
-  createWorldLocationInputSchema,
-  createWorldLocationResultSchema,
   deleteWorldLocationInputSchema,
+  saveWorldLocationInputSchema,
+  worldLocationPlacementCommandSchema,
+  worldLocationPlacementCommitResultSchema,
   updateWorldLocationMapPresentationInputSchema,
-  updateWorldLocationInputSchema,
   worldLocationChangeNoticeSchema,
+  worldLocationDeleteReceiptSchema,
   worldLocationMapPresentationSchema,
-  worldLocationSnapshotSchema
+  worldLocationSaveReceiptInputSchema,
+  worldLocationSaveReceiptSchema,
+  worldLocationSnapshotSchema,
+  worldLocationTagSearchInputSchema,
+  worldLocationTagSuggestionsSchema
 } from '../../shared/contracts/world-location.js'
 import {
   createLocationSymbolInputSchema,
   deleteLocationSymbolInputSchema,
   importLocationSymbolInputSchema,
   importLocationSymbolResultSchema,
+  locationSymbolMutationReceiptSchema,
   locationSymbolChangeNoticeSchema,
   locationSymbolDeleteImpactSchema,
   locationSymbolDeleteResultSchema,
@@ -118,10 +124,18 @@ import {
   createWorldFactionInputSchema,
   deleteEncounterTableInputSchema,
   deleteWorldFactionInputSchema,
+  encounterTableCommandReceiptInputSchema,
+  encounterTableCommandReceiptSchema,
+  encounterTableDeleteReceiptSchema,
   encounterTableChangeNoticeSchema,
+  encounterTableMutationReceiptSchema,
   encounterTableSnapshotSchema,
   updateEncounterTableInputSchema,
   updateWorldFactionInputSchema,
+  worldFactionCommandReceiptInputSchema,
+  worldFactionCommandReceiptSchema,
+  worldFactionDeleteReceiptSchema,
+  worldFactionMutationReceiptSchema,
   worldFactionSnapshotSchema
 } from '../../shared/contracts/encounter-source.js'
 import { hexChangeNoticeSchema } from '../../shared/contracts/hex.js'
@@ -397,24 +411,36 @@ const api: SaltMarcherApi = {
       freezeDeep(
         await invoke('locations:read', undefined, worldLocationSnapshotSchema)
       ),
-    create: async (location, expectedRevision) =>
+    suggestTags: async (query, limit = 6) =>
       freezeDeep(
         await invoke(
-          'locations:create',
-          createWorldLocationInputSchema.parse({ location, expectedRevision }),
-          createWorldLocationResultSchema
+          'locations:suggest-tags',
+          worldLocationTagSearchInputSchema.parse({ query, limit }),
+          worldLocationTagSuggestionsSchema
         )
       ),
-    update: async (id, location, expectedRevision) =>
+    save: async (input) =>
       freezeDeep(
         await invoke(
-          'locations:update',
-          updateWorldLocationInputSchema.parse({
-            id,
-            location,
-            expectedRevision
-          }),
-          worldLocationSnapshotSchema
+          'locations:save',
+          saveWorldLocationInputSchema.parse(input),
+          worldLocationSaveReceiptSchema
+        )
+      ),
+    saveReceipt: async (commandId) =>
+      freezeDeep(
+        await invoke(
+          'locations:save-receipt',
+          worldLocationSaveReceiptInputSchema.parse({ commandId }),
+          worldLocationSaveReceiptSchema.nullable()
+        )
+      ),
+    commitPlacement: async (input) =>
+      freezeDeep(
+        await invoke(
+          'locations:commit-placement',
+          worldLocationPlacementCommandSchema.parse(input),
+          worldLocationPlacementCommitResultSchema
         )
       ),
     updateMapPresentation: async (id, patch, expectedRevision) =>
@@ -434,7 +460,7 @@ const api: SaltMarcherApi = {
         await invoke(
           'locations:delete',
           deleteWorldLocationInputSchema.parse({ id, expectedRevision }),
-          worldLocationSnapshotSchema
+          worldLocationDeleteReceiptSchema
         )
       ),
     onChanged(listener) {
@@ -450,7 +476,7 @@ const api: SaltMarcherApi = {
         await invoke(
           'location-symbols:create',
           createLocationSymbolInputSchema.parse({ symbol, expectedRevision }),
-          locationSymbolSnapshotSchema
+          locationSymbolMutationReceiptSchema
         )
       ),
     search: async (query = '', offset = 0, limit = 24) =>
@@ -577,6 +603,14 @@ const api: SaltMarcherApi = {
           encounterTableSnapshotSchema
         )
       ),
+    commandReceipt: async (commandId) =>
+      freezeDeep(
+        await invoke(
+          'encounter-tables:command-receipt',
+          encounterTableCommandReceiptInputSchema.parse({ commandId }),
+          encounterTableCommandReceiptSchema.nullable()
+        )
+      ),
     create: async (commandId, table, expectedRevision, scope = 'campaign') =>
       freezeDeep(
         await invoke(
@@ -587,7 +621,7 @@ const api: SaltMarcherApi = {
             expectedRevision,
             scope
           }),
-          encounterTableSnapshotSchema
+          encounterTableMutationReceiptSchema
         )
       ),
     update: async (
@@ -607,7 +641,7 @@ const api: SaltMarcherApi = {
             expectedRevision,
             scope
           }),
-          encounterTableSnapshotSchema
+          encounterTableMutationReceiptSchema
         )
       ),
     delete: async (commandId, id, expectedRevision, scope = 'campaign') =>
@@ -620,7 +654,7 @@ const api: SaltMarcherApi = {
             expectedRevision,
             scope
           }),
-          encounterTableSnapshotSchema
+          encounterTableDeleteReceiptSchema
         )
       ),
     onChanged(listener) {
@@ -636,32 +670,49 @@ const api: SaltMarcherApi = {
       freezeDeep(
         await invoke('factions:read', undefined, worldFactionSnapshotSchema)
       ),
-    create: async (faction, expectedRevision) =>
+    commandReceipt: async (commandId) =>
+      freezeDeep(
+        await invoke(
+          'factions:command-receipt',
+          worldFactionCommandReceiptInputSchema.parse({ commandId }),
+          worldFactionCommandReceiptSchema.nullable()
+        )
+      ),
+    create: async (commandId, faction, expectedRevision) =>
       freezeDeep(
         await invoke(
           'factions:create',
-          createWorldFactionInputSchema.parse({ faction, expectedRevision }),
-          worldFactionSnapshotSchema
+          createWorldFactionInputSchema.parse({
+            commandId,
+            faction,
+            expectedRevision
+          }),
+          worldFactionMutationReceiptSchema
         )
       ),
-    update: async (id, faction, expectedRevision) =>
+    update: async (commandId, id, faction, expectedRevision) =>
       freezeDeep(
         await invoke(
           'factions:update',
           updateWorldFactionInputSchema.parse({
+            commandId,
             id,
             faction,
             expectedRevision
           }),
-          worldFactionSnapshotSchema
+          worldFactionMutationReceiptSchema
         )
       ),
-    delete: async (id, expectedRevision) =>
+    delete: async (commandId, id, expectedRevision) =>
       freezeDeep(
         await invoke(
           'factions:delete',
-          deleteWorldFactionInputSchema.parse({ id, expectedRevision }),
-          worldFactionSnapshotSchema
+          deleteWorldFactionInputSchema.parse({
+            commandId,
+            id,
+            expectedRevision
+          }),
+          worldFactionDeleteReceiptSchema
         )
       )
   },
@@ -694,11 +745,7 @@ const api: SaltMarcherApi = {
         listener(freezeDeep(hexChangeNoticeSchema.parse(raw)))
       ipcRenderer.on('hex:changed', handler)
       return () => ipcRenderer.removeListener('hex:changed', handler)
-    },
-    placeLocation: async (input) =>
-      freezeDeep(await invokeCore('hex.placeLocation', input)),
-    removeLocation: async (input) =>
-      freezeDeep(await invokeCore('hex.removeLocation', input))
+    }
   },
   hexTravel: {
     read: async (sceneId) =>

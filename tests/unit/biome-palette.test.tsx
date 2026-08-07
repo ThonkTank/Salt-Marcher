@@ -65,10 +65,8 @@ function fixture() {
     },
     encounterTables: {
       read: vi.fn().mockResolvedValue({
-        revision: 0,
-        installationRevision: 0,
-        campaignRevision: 0,
-        tables: []
+        installation: { revision: 0, tables: [], summaries: [] },
+        campaign: { revision: 0, tables: [], summaries: [] }
       })
     }
   } as unknown as BiomeCatalogCapabilities

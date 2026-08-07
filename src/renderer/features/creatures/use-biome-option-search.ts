@@ -3,10 +3,10 @@ import type { BiomePage } from '../../../shared/contracts/biome.js'
 import type { CreatureFilterOptions } from '../../../shared/contracts/encounter.js'
 import type { SearchableSelectOption } from '../../shell/searchable-select.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
-import type { SaltMarcherApi } from '../../../shared/contracts/capability-api.js'
+import type { BiomeOptionSearchPort } from './biome-option-search-port.js'
 
 export function useBiomeOptionSearch(
-  biomes: Pick<SaltMarcherApi['biomes'], 'search'> | undefined,
+  biomes: BiomeOptionSearchPort | undefined,
   setOptions: Dispatch<SetStateAction<CreatureFilterOptions>>,
   selectedIds: readonly string[] = [],
   onError?: (message: string) => void

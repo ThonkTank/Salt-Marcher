@@ -66,12 +66,17 @@ locations without inventing a second place or map source of truth.
 - the Hex editor MUST also provide a location-placement tool that selects one
   existing World Planner location and confirms its target authored tile
 - the location-placement tool MUST expose one compact searchable dropdown for
-  the active World Planner location; its popup MUST filter by location name,
-  kind, or region and MUST reflect locations selected by the create workflow
+  the active World Planner location; its popup MUST filter by location name or
+  tags and MUST reflect locations selected by the create workflow
 - the Hex editor location tool MUST let the user create a World Planner
-  location through the complete shared location editor; the created location
-  MUST become the active selection and MUST be placed immediately when the
-  current selection is an authored, unoccupied tile
+  location through the complete shared location editor; the current map and an
+  eligible authored, unoccupied tile initialize its staged placement, and the
+  created location MUST become the active selection
+- the shared location editor's compact and expanded map views MUST update one
+  staged placement draft; neither view mutates Hex truth before the parent
+  location editor is saved
+- clearing a previously persisted placement in the location editor MUST issue
+  an explicit removal command after the World Planner update succeeds
 - creating a location MUST NOT implicitly author a tile, replace an occupied
   tile, or create a Hex map; without an eligible tile the new location remains
   selected for the next explicit placement

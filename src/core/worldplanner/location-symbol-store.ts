@@ -3,6 +3,7 @@ import { CapabilityError } from '../../shared/errors/capability-error.js'
 import {
   builtinLocationSymbolCatalog,
   locationSymbolDraftSchema,
+  locationSymbolMutationReceiptSchema,
   locationSymbolPageSchema,
   locationSymbolSnapshotSchema,
   type LocationSymbolDraft
@@ -124,7 +125,7 @@ export class LocationSymbolStore {
     const normalizedName = symbol.displayName.toLocaleLowerCase('de')
     if (builtinNames.has(normalizedName))
       throw new CapabilityError('validation_failed', false)
-    this.db.transaction(() => {
+    return this.db.transaction(() => {
       const current = this.read()
       if (current.revision !== expectedRevision)
         throw new CapabilityError('stale', true)
@@ -136,6 +137,7 @@ export class LocationSymbolStore {
       )
         throw new CapabilityError('validation_failed', false)
       const position = current.symbols.length
+      const id = uuidv7()
       this.db
         .prepare(
           `INSERT INTO location_symbol
@@ -144,7 +146,7 @@ export class LocationSymbolStore {
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
         .run(
-          uuidv7(),
+          id,
           symbol.displayName,
           symbol.viewBox.minX,
           symbol.viewBox.minY,
@@ -159,8 +161,11 @@ export class LocationSymbolStore {
           'UPDATE location_symbol_metadata SET revision = revision + 1 WHERE singleton = 1'
         )
         .run()
+      const snapshot = this.read()
+      const saved = snapshot.symbols.find((entry) => entry.id === id)
+      if (!saved) throw new Error('Created Location Symbol is missing.')
+      return locationSymbolMutationReceiptSchema.parse({ snapshot, saved })
     })()
-    return this.read()
   }
 
   beginImport(input: {

@@ -1,4 +1,8 @@
-import { formatMessage, message } from '../../i18n/messages.de.js'
+import { formatMessage, message } from '../../i18n/session-runtime.de.js'
+import {
+  formatInteger,
+  formatPercent
+} from '../../i18n/domain-formatters.de.js'
 import { useState } from 'react'
 import type { PartySnapshot } from '../../../shared/contracts/live-session.js'
 import type {
@@ -167,7 +171,7 @@ export function AdventuringDayDropdown(props: {
               )}
               <div className="day-summary">
                 <strong>
-                  {calculation?.dailyBudget.toLocaleString() ?? 0}{' '}
+                  {formatInteger(calculation?.dailyBudget ?? 0)}{' '}
                   {message('ui.xp.2')}
                 </strong>
                 <span>
@@ -180,7 +184,7 @@ export function AdventuringDayDropdown(props: {
                 {mode === 'progress' && calculation && (
                   <span>
                     {calculation.completedDays} {message('ui.volle.tage')}{' '}
-                    {Math.round(calculation.dayProgress * 100)}
+                    {formatPercent(Math.round(calculation.dayProgress * 100))}
                     {message('ui.aktueller.tag')} {calculation.shortRests}{' '}
                     {message('ui.sr')} {calculation.longRests}{' '}
                     {message('ui.lr')}
@@ -299,9 +303,9 @@ export function PartyDropdown(props: {
                       value={member.xp}
                     />
                     <small>
-                      {member.xp.toLocaleString()} {message('ui.xp.2')}
+                      {formatInteger(member.xp)} {message('ui.xp.2')}
                       {member.nextLevelXp
-                        ? ` / ${member.nextLevelXp.toLocaleString()}`
+                        ? ` / ${formatInteger(member.nextLevelXp)}`
                         : ''}
                     </small>
                   </div>

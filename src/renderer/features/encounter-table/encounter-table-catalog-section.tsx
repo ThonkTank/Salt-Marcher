@@ -1,12 +1,17 @@
 import type { Creature } from '../../../shared/contracts/encounter.js'
-import { message } from '../../i18n/messages.de.js'
-import { EncounterTableManager } from './encounter-table-manager.js'
+import { message } from '../../i18n/catalog-runtime.de.js'
+import { EncounterTableDialog } from './encounter-table-manager.js'
 import type { EncounterTableCatalogController } from './encounter-table-catalog-controller.js'
+import type { CreatureCapabilityPort } from '../creatures/creatures-capabilities.js'
+import type { BiomeOptionSearchPort } from '../creatures/biome-option-search-port.js'
+import { TextActionButton } from '../../shell/text-action-button.js'
 
 export function EncounterTableCatalogSection(props: {
   controller: EncounterTableCatalogController
   onError: (message: string) => void
   inspect: (creature: Creature) => void
+  creatures: CreatureCapabilityPort
+  biomes: BiomeOptionSearchPort
 }) {
   const controller = props.controller
   return (
@@ -37,12 +42,11 @@ export function EncounterTableCatalogSection(props: {
             {controller.visible.map((table) => (
               <tr key={table.id}>
                 <td>
-                  <button
-                    className="link-button"
+                  <TextActionButton
                     onClick={() => controller.setEditing(table)}
                   >
                     {table.displayName}
-                  </button>
+                  </TextActionButton>
                 </td>
                 <td>
                   {table.scope === 'installation'
@@ -91,20 +95,20 @@ export function EncounterTableCatalogSection(props: {
         </span>
       </footer>
       {controller.editing !== undefined && (
-        <EncounterTableManager
+        <EncounterTableDialog
           key={controller.editing?.id ?? 'new'}
           table={controller.editing}
-          tables={controller.snapshot.tables}
           close={() => controller.setEditing(undefined)}
-          select={controller.setEditing}
           save={controller.save}
-          saved={(next) => {
-            controller.setSnapshot(next)
+          saved={(result) => {
+            controller.setSnapshot(result.snapshot)
             controller.setEditing(undefined)
           }}
           onError={props.onError}
           inspect={props.inspect}
-          allowInstallationScope
+          creaturePort={props.creatures}
+          biomePort={props.biomes}
+          invocation={{ kind: 'catalog' }}
         />
       )}
     </>

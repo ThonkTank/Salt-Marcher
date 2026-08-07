@@ -14,6 +14,7 @@ import { creatureCatalogQuerySchema } from '../../src/shared/contracts/encounter
 import { BiomeHexUsageStore } from '../../src/core/hex/biome-hex-usage-store.js'
 import { LivePlayService } from '../../src/core/encounter/live-combat.js'
 import { HexTravelService } from '../../src/core/hex/hex-travel.js'
+import type { EncounterTableSnapshot } from '../../src/shared/contracts/encounter-source.js'
 
 const roots: string[] = []
 const stores: CampaignStore[] = []
@@ -71,9 +72,9 @@ describe('installation biome catalog', () => {
       biomes.search({ query: 'Caves', offset: 0, limit: 10 }).biomes
     ).toMatchObject([{ id: 'cavern', displayName: 'Höhlen' }])
 
-    const installationTables = sources
-      .readTables()
-      .tables.filter((table) => table.scope === 'installation')
+    const installationTables = allTables(sources.readTables()).filter(
+      (table) => table.scope === 'installation'
+    )
     expect(installationTables).toHaveLength(36)
     expect(installationTables.every((table) => table.protected)).toBe(true)
     const resolved = sources.resolve(
@@ -104,9 +105,7 @@ describe('installation biome catalog', () => {
       0,
       'installation'
     )
-    const linkedTable = tables.tables.find(
-      (table) => table.displayName === 'Kristallbegegnungen'
-    )!
+    const linkedTable = tables.saved
     const created = biomes.create(
       randomUUID(),
       {
@@ -173,14 +172,12 @@ describe('installation biome catalog', () => {
 
   it('marks deleted map usages and replaces the placeholder map-wide', () => {
     const { campaigns, biomes, sources } = harness()
-    const globalTable = sources
-      .createTable(
-        randomUUID(),
-        { displayName: 'Bleibende Tabelle', description: '', entries: [] },
-        0,
-        'installation'
-      )
-      .tables.find((table) => table.displayName === 'Bleibende Tabelle')!
+    const globalTable = sources.createTable(
+      randomUUID(),
+      { displayName: 'Bleibende Tabelle', description: '', entries: [] },
+      0,
+      'installation'
+    ).saved
     const created = biomes.create(
       randomUUID(),
       {
@@ -227,7 +224,9 @@ describe('installation biome catalog', () => {
       { q: 1, r: 0, biomeId: placeholderBiomeId }
     ])
     expect(
-      sources.readTables().tables.some((table) => table.id === globalTable.id)
+      allTables(sources.readTables()).some(
+        (table) => table.id === globalTable.id
+      )
     ).toBe(true)
 
     const changes = biomes.replaceMapPlaceholder({
@@ -260,12 +259,13 @@ describe('installation biome catalog', () => {
     const location = locations.create(
       {
         displayName: 'Kristalltor',
+        tags: ['Tor'],
         notes: '',
         factionIds: [],
         encounterTableIds: []
       },
       0
-    ).locations[0]!
+    ).snapshot.locations[0]!
     const maps = new HexMapStore(database, locations)
     const map = maps.create({
       displayName: 'Kristallkarte',
@@ -416,3 +416,7 @@ describe('installation biome catalog', () => {
     campaigns.close()
   })
 })
+
+function allTables(snapshot: EncounterTableSnapshot) {
+  return [...snapshot.installation.tables, ...snapshot.campaign.tables]
+}

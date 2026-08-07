@@ -1,0 +1,85 @@
+.token-combobox {
+  position: relative;
+}
+
+.token-combobox-control,
+.token-combobox-selected,
+.token-combobox-input-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.token-combobox-input-row > input {
+  min-width: 0;
+  flex: 1;
+}
+
+.token-combobox-control > input {
+  flex: 1;
+  min-width: 11rem;
+}
+
+.token-combobox-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 7px;
+  border: 1px solid var(--border-1);
+  background: var(--surface-chip);
+  color: var(--text-2);
+  font-size: 15px;
+}
+
+.token-combobox-chip button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.token-combobox-options {
+  position: absolute;
+  z-index: 5;
+  top: 100%;
+  right: 0;
+  left: 0;
+  border: 1px solid var(--border-structural);
+  background: var(--surface-control);
+  box-shadow: var(--shadow-card);
+  max-height: min(18rem, 45vh);
+  overflow-y: auto;
+  scrollbar-color: var(--surface-button) var(--surface-pane-sunken);
+  scrollbar-width: thin;
+}
+
+.token-combobox-options button {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  padding: 5px 8px;
+  border: 0;
+  border-bottom: 1px solid var(--border-hair);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.token-combobox-options button:last-child {
+  border-bottom: 0;
+}
+
+.token-combobox-options button[data-active] {
+  background: var(--surface-button);
+}
+
+.token-combobox-options em {
+  color: var(--text-muted);
+}
+
+.token-combobox :where(input, button):focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}

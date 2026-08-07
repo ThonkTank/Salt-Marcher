@@ -5,7 +5,7 @@ import type {
   CombatSnapshot
 } from '../../../shared/contracts/live-session.js'
 import { combatConditions } from '../../../shared/contracts/live-session.js'
-import { formatMessage, message } from '../../i18n/messages.de.js'
+import { formatMessage, message } from '../../i18n/session-runtime.de.js'
 import { encounterCapabilities } from './encounter-capabilities.js'
 import { ModalDialog } from '../../shell/modal-dialog.js'
 import { ReadOnlyProse } from '../reference/read-only-prose.js'

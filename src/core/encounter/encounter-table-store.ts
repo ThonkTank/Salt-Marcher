@@ -1,14 +1,53 @@
 import Database from 'better-sqlite3'
+import { z } from 'zod'
 import {
+  encounterTableCommandReceiptSchema,
   encounterTableDraftSchema,
-  encounterTableSnapshotSchema,
+  encounterTableSchema,
+  type EncounterTable,
+  type EncounterTableCommandReceipt,
   type EncounterTableDraft,
-  type EncounterTableScope,
-  type EncounterTableSnapshot
+  type EncounterTableScope
 } from '../../shared/contracts/encounter-source.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import { uuidv7 } from '../../shared/ids/uuidv7.js'
 import { creatureById } from '../creatures/catalog.js'
+
+const encounterTableStoreSnapshotSchema = z
+  .object({
+    revision: z.number().int().nonnegative(),
+    tables: z.array(encounterTableSchema)
+  })
+  .strict()
+
+const encounterTableStoreMutationReceiptSchema = z
+  .object({
+    snapshot: encounterTableStoreSnapshotSchema,
+    saved: encounterTableSchema
+  })
+  .strict()
+
+const encounterTableStoreDeleteReceiptSchema = z
+  .object({
+    snapshot: encounterTableStoreSnapshotSchema,
+    deletedId: z.uuid()
+  })
+  .strict()
+
+const encounterTableStoreCommandReceiptSchema = z.union([
+  encounterTableStoreMutationReceiptSchema,
+  encounterTableStoreDeleteReceiptSchema
+])
+
+export type EncounterTableStoreSnapshot = Readonly<
+  z.infer<typeof encounterTableStoreSnapshotSchema>
+>
+export type EncounterTableStoreMutationReceipt = Readonly<
+  z.infer<typeof encounterTableStoreMutationReceiptSchema>
+>
+export type EncounterTableStoreDeleteReceipt = Readonly<
+  z.infer<typeof encounterTableStoreDeleteReceiptSchema>
+>
 
 export function initializeEncounterTableSchema(db: Database.Database): void {
   db.exec(`
@@ -39,7 +78,8 @@ export function initializeEncounterTableSchema(db: Database.Database): void {
       command_id TEXT PRIMARY KEY NOT NULL,
       operation TEXT NOT NULL CHECK(operation IN ('create', 'update', 'delete')),
       request_json TEXT NOT NULL,
-      result_json TEXT NOT NULL
+      result_json TEXT NOT NULL,
+      application_result_json TEXT
     );
     CREATE TABLE IF NOT EXISTS encounter_table_lifecycle_job (
       command_id TEXT PRIMARY KEY NOT NULL,
@@ -69,7 +109,7 @@ export class EncounterTableStore {
     private readonly scope: EncounterTableScope = 'campaign'
   ) {}
 
-  read(): EncounterTableSnapshot {
+  read(): EncounterTableStoreSnapshot {
     const rows = this.db
       .prepare(
         `SELECT id, scope, protected, display_name AS displayName, description, position
@@ -112,10 +152,8 @@ export class EncounterTableStore {
         entriesByTable.get(entry.tableId)!.push(value)
       else entriesByTable.set(entry.tableId, [value])
     }
-    return encounterTableSnapshotSchema.parse({
+    return encounterTableStoreSnapshotSchema.parse({
       revision: this.revision(),
-      installationRevision: this.scope === 'installation' ? this.revision() : 0,
-      campaignRevision: this.scope === 'campaign' ? this.revision() : 0,
       tables: rows.map((row) => ({
         ...row,
         protected: Boolean(row.protected),
@@ -130,6 +168,51 @@ export class EncounterTableStore {
         .prepare('SELECT 1 FROM encounter_table WHERE id = ? AND scope = ?')
         .get(id, this.scope) !== undefined
     )
+  }
+
+  commandReceipt(commandId: string) {
+    const row = this.db
+      .prepare(
+        `SELECT result_json AS resultJson
+         FROM encounter_table_command_receipt WHERE command_id = ?`
+      )
+      .get(commandId) as { resultJson: string } | undefined
+    return row
+      ? encounterTableStoreCommandReceiptSchema.parse(
+          JSON.parse(row.resultJson)
+        )
+      : null
+  }
+
+  applicationReceipt(commandId: string): EncounterTableCommandReceipt | null {
+    const row = this.db
+      .prepare(
+        `SELECT application_result_json AS resultJson
+         FROM encounter_table_command_receipt WHERE command_id = ?`
+      )
+      .get(commandId) as { resultJson: string | null } | undefined
+    return row?.resultJson
+      ? encounterTableCommandReceiptSchema.parse(JSON.parse(row.resultJson))
+      : null
+  }
+
+  completeApplicationReceipt(
+    commandId: string,
+    receipt: EncounterTableCommandReceipt
+  ): EncounterTableCommandReceipt {
+    const parsed = encounterTableCommandReceiptSchema.parse(receipt)
+    const existing = this.applicationReceipt(commandId)
+    if (existing) return existing
+    const changed = this.db
+      .prepare(
+        `UPDATE encounter_table_command_receipt
+         SET application_result_json = ?
+         WHERE command_id = ? AND application_result_json IS NULL`
+      )
+      .run(JSON.stringify(parsed), commandId).changes
+    if (changed === 0)
+      throw new Error('Encounter Table command receipt is missing.')
+    return this.applicationReceipt(commandId)!
   }
 
   containsCreature(id: string, creatureId: string): boolean {
@@ -166,10 +249,15 @@ export class EncounterTableStore {
     commandId: string,
     draft: EncounterTableDraft,
     expectedRevision: number
-  ): EncounterTableSnapshot {
+  ): EncounterTableStoreMutationReceipt {
     const parsed = encounterTableDraftSchema.parse(draft)
     const request = { draft: parsed, expectedRevision }
-    const replay = this.receipt(commandId, 'create', request)
+    const replay = this.receipt(
+      commandId,
+      'create',
+      request,
+      encounterTableStoreMutationReceiptSchema
+    )
     if (replay) return replay
     this.transact(() => {
       this.assertRevision(expectedRevision)
@@ -192,9 +280,23 @@ export class EncounterTableStore {
         .run(id, this.scope, parsed.displayName, parsed.description, position)
       this.replaceEntries(id, parsed.entries)
       this.bumpRevision()
-      this.writeReceipt(commandId, 'create', request, this.read())
+      const snapshot = this.read()
+      this.writeReceipt(
+        commandId,
+        'create',
+        request,
+        encounterTableStoreMutationReceiptSchema.parse({
+          snapshot,
+          saved: requireTable(snapshot.tables, id)
+        })
+      )
     })
-    return this.receipt(commandId, 'create', request)!
+    return this.receipt(
+      commandId,
+      'create',
+      request,
+      encounterTableStoreMutationReceiptSchema
+    )!
   }
 
   update(
@@ -202,10 +304,15 @@ export class EncounterTableStore {
     id: string,
     draft: EncounterTableDraft,
     expectedRevision: number
-  ): EncounterTableSnapshot {
+  ): EncounterTableStoreMutationReceipt {
     const parsed = encounterTableDraftSchema.parse(draft)
     const request = { id, draft: parsed, expectedRevision }
-    const replay = this.receipt(commandId, 'update', request)
+    const replay = this.receipt(
+      commandId,
+      'update',
+      request,
+      encounterTableStoreMutationReceiptSchema
+    )
     if (replay) return replay
     this.transact(() => {
       this.assertRevision(expectedRevision)
@@ -219,18 +326,37 @@ export class EncounterTableStore {
       if (changed === 0) throw new CapabilityError('not_found', false)
       this.replaceEntries(id, parsed.entries)
       this.bumpRevision()
-      this.writeReceipt(commandId, 'update', request, this.read())
+      const snapshot = this.read()
+      this.writeReceipt(
+        commandId,
+        'update',
+        request,
+        encounterTableStoreMutationReceiptSchema.parse({
+          snapshot,
+          saved: requireTable(snapshot.tables, id)
+        })
+      )
     })
-    return this.receipt(commandId, 'update', request)!
+    return this.receipt(
+      commandId,
+      'update',
+      request,
+      encounterTableStoreMutationReceiptSchema
+    )!
   }
 
   delete(
     commandId: string,
     id: string,
     expectedRevision: number
-  ): EncounterTableSnapshot {
+  ): EncounterTableStoreDeleteReceipt {
     const request = { id, expectedRevision }
-    const replay = this.receipt(commandId, 'delete', request)
+    const replay = this.receipt(
+      commandId,
+      'delete',
+      request,
+      encounterTableStoreDeleteReceiptSchema
+    )
     if (replay) return replay
     this.transact(() => {
       this.assertRevision(expectedRevision)
@@ -246,9 +372,22 @@ export class EncounterTableStore {
         .run(id, this.scope).changes
       if (changed === 0) throw new CapabilityError('not_found', false)
       this.bumpRevision()
-      this.writeReceipt(commandId, 'delete', request, this.read())
+      this.writeReceipt(
+        commandId,
+        'delete',
+        request,
+        encounterTableStoreDeleteReceiptSchema.parse({
+          snapshot: this.read(),
+          deletedId: id
+        })
+      )
     })
-    return this.receipt(commandId, 'delete', request)!
+    return this.receipt(
+      commandId,
+      'delete',
+      request,
+      encounterTableStoreDeleteReceiptSchema
+    )!
   }
 
   beginInstallationLifecycle(input: {
@@ -413,7 +552,7 @@ export class EncounterTableStore {
     commandId: string,
     operation: 'create' | 'update' | 'delete',
     request: unknown,
-    result: EncounterTableSnapshot
+    result: unknown
   ): void {
     this.db
       .prepare(
@@ -424,15 +563,16 @@ export class EncounterTableStore {
         commandId,
         operation,
         JSON.stringify(request),
-        JSON.stringify(encounterTableSnapshotSchema.parse(result))
+        JSON.stringify(result)
       )
   }
 
-  private receipt(
+  private receipt<Output>(
     commandId: string,
     operation: 'create' | 'update' | 'delete',
-    request: unknown
-  ): EncounterTableSnapshot | null {
+    request: unknown,
+    schema: z.ZodType<Output>
+  ): Output | null {
     const row = this.db
       .prepare(
         `SELECT operation, request_json AS requestJson, result_json AS resultJson
@@ -446,7 +586,7 @@ export class EncounterTableStore {
       row.requestJson !== JSON.stringify(request)
     )
       throw new CapabilityError('validation_failed', false)
-    return encounterTableSnapshotSchema.parse(JSON.parse(row.resultJson))
+    return schema.parse(JSON.parse(row.resultJson))
   }
 
   private lifecycleJob(commandId: string):
@@ -475,4 +615,13 @@ export class EncounterTableStore {
         }
       | undefined
   }
+}
+
+function requireTable(
+  tables: readonly EncounterTable[],
+  id: string
+): EncounterTable {
+  const table = tables.find((candidate) => candidate.id === id)
+  if (!table) throw new Error('Saved Encounter Table is missing.')
+  return table
 }

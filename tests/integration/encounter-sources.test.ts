@@ -13,6 +13,7 @@ import { EncounterSourceService } from '../../src/core/application/encounter-sou
 import { WorldLocationService } from '../../src/core/worldplanner/location-store.js'
 import { creatureCatalogQuerySchema } from '../../src/shared/contracts/encounter.js'
 import { EncounterTableStore } from '../../src/core/encounter/encounter-table-store.js'
+import type { EncounterTableSnapshot } from '../../src/shared/contracts/encounter-source.js'
 
 const roots: string[] = []
 
@@ -34,9 +35,10 @@ function harness() {
     (query) => sources.resolve(query),
     () => ({
       biomes: [],
-      encounterTables: sources
-        .readTables()
-        .tables.map((table) => ({ id: table.id, label: table.displayName })),
+      encounterTables: allTables(sources.readTables()).map((table) => ({
+        id: table.id,
+        label: table.displayName
+      })),
       factions: sources.readFactions().factions.map((faction) => ({
         id: faction.id,
         label: faction.displayName
@@ -61,7 +63,12 @@ const query = (values: Record<string, unknown> = {}) =>
 
 describe('encounter tables and factions', () => {
   it('binds command IDs to exactly one encounter-table request', () => {
-    const { campaigns, sources } = harness()
+    const { campaigns } = harness()
+    const sources = new EncounterSourceService(
+      () => campaigns.activeCampaignDatabase(),
+      () => campaigns.installationDatabase(),
+      (visitor) => campaigns.visitCampaignDatabases(visitor)
+    )
     const commandId = randomUUID()
     const draft = {
       displayName: 'Idempotent',
@@ -70,10 +77,47 @@ describe('encounter tables and factions', () => {
     }
     const first = sources.createTable(commandId, draft, 0)
     expect(sources.createTable(commandId, draft, 0)).toEqual(first)
+    expect(sources.tableReceipt(commandId)).toEqual(first)
+    sources.createTable(
+      randomUUID(),
+      {
+        displayName: 'Unabhängige globale Tabelle',
+        description: '',
+        entries: []
+      },
+      first.snapshot.installation.revision,
+      'installation'
+    )
+    expect(sources.createTable(commandId, draft, 0)).toEqual(first)
+    expect(sources.tableReceipt(commandId)).toEqual(first)
     expect(() =>
       sources.createTable(
         commandId,
         { ...draft, displayName: 'Andere Anfrage' },
+        0
+      )
+    ).toThrow('validation')
+    campaigns.close()
+  })
+
+  it('binds command IDs to exactly one faction request and exact receipt', () => {
+    const { campaigns, sources } = harness()
+    const commandId = randomUUID()
+    const draft = {
+      displayName: 'Idempotenter Bund',
+      notes: '',
+      disposition: 0,
+      primaryEncounterTableId: null,
+      inventory: []
+    }
+    const first = sources.createFaction(commandId, draft, 0)
+    expect(sources.createFaction(commandId, draft, 0)).toEqual(first)
+    expect(sources.factionReceipt(commandId)).toEqual(first)
+    expect(first.snapshot.factions).toContainEqual(first.saved)
+    expect(() =>
+      sources.createFaction(
+        commandId,
+        { ...draft, displayName: 'Andere Fraktion' },
         0
       )
     ).toThrow('validation')
@@ -99,18 +143,17 @@ describe('encounter tables and factions', () => {
         campaigns.visitCampaignDatabases(visitor)
       }
     )
-    const tableSnapshot = sources.createTable(
+    const tableReceipt = sources.createTable(
       randomUUID(),
       { displayName: 'Globaler Wachpool', description: '', entries: [] },
       0,
       'installation'
     )
-    const table = tableSnapshot.tables.find(
-      (candidate) => candidate.displayName === 'Globaler Wachpool'
-    )!
+    const table = tableReceipt.saved
     for (const campaignId of [firstId, secondId]) {
       campaigns.activate(campaignId)
       const faction = sources.createFaction(
+        randomUUID(),
         {
           displayName: `Wache ${campaignId}`,
           notes: '',
@@ -119,7 +162,7 @@ describe('encounter tables and factions', () => {
           inventory: []
         },
         0
-      ).factions[0]!
+      ).saved
       new WorldLocationService(
         () => campaigns.activeCampaignDatabase(),
         undefined,
@@ -127,6 +170,7 @@ describe('encounter tables and factions', () => {
       ).create(
         {
           displayName: `Tor ${campaignId}`,
+          tags: ['Tor'],
           notes: '',
           factionIds: [faction.id],
           encounterTableIds: [table.id]
@@ -145,12 +189,12 @@ describe('encounter tables and factions', () => {
       commandId,
       operation: 'delete',
       tableId: table.id,
-      expectedRevision: tableSnapshot.installationRevision
+      expectedRevision: tableReceipt.snapshot.installation.revision
     })
     installationTables.delete(
       commandId,
       table.id,
-      tableSnapshot.installationRevision
+      tableReceipt.snapshot.installation.revision
     )
 
     sources.recoverPendingInstallationTableLifecycles()
@@ -178,7 +222,7 @@ describe('encounter tables and factions', () => {
     expect(first).toBeDefined()
     expect(second).toBeDefined()
 
-    let tables = sources.createTable(
+    const patrolReceipt = sources.createTable(
       randomUUID(),
       {
         displayName: 'Coast Patrol',
@@ -190,18 +234,37 @@ describe('encounter tables and factions', () => {
       },
       0
     )
-    tables = sources.createTable(
+    let tables = patrolReceipt.snapshot
+    const orderedCreatures = [first!, second!].toSorted(
+      (left, right) => left.cr - right.cr || left.id.localeCompare(right.id)
+    )
+    expect(tables.campaign.summaries).toContainEqual({
+      id: patrolReceipt.saved.id,
+      scope: 'campaign',
+      displayName: 'Coast Patrol',
+      entryCount: 2,
+      challengeRatingRange: {
+        minimum: orderedCreatures[0]!.challengeRating,
+        maximum: orderedCreatures.at(-1)!.challengeRating
+      },
+      biomes: [
+        ...new Set(orderedCreatures.flatMap((creature) => creature.biomes))
+      ].toSorted()
+    })
+    const eliteReceipt = sources.createTable(
       randomUUID(),
       {
         displayName: 'Elite',
         description: '',
         entries: [{ creatureId: second!.id, weight: 4 }]
       },
-      tables.revision
+      tables.campaign.revision
     )
-    const patrolId = tables.tables[0]!.id
-    const eliteId = tables.tables[1]!.id
-    let factions = sources.createFaction(
+    tables = eliteReceipt.snapshot
+    const patrolId = patrolReceipt.saved.id
+    const eliteId = eliteReceipt.saved.id
+    const factionReceipt = sources.createFaction(
+      randomUUID(),
       {
         displayName: 'Sea Princes',
         notes: 'Hostile smugglers',
@@ -211,16 +274,17 @@ describe('encounter tables and factions', () => {
       },
       0
     )
-    const factionId = factions.factions[0]!.id
+    const factionId = factionReceipt.saved.id
     let world = locations.create(
       {
         displayName: 'Hidden Cove',
+        tags: ['Bucht'],
         notes: '',
         factionIds: [factionId],
         encounterTableIds: []
       },
       0
-    )
+    ).snapshot
 
     const resolved = sources.resolve(
       query({ encounterTableIds: [patrolId], factionIds: [factionId] })
@@ -242,7 +306,7 @@ describe('encounter tables and factions', () => {
     const filtered = catalog.search(query({ factionIds: [factionId] }))
     expect(filtered.rows.map((creature) => creature.id)).toEqual([second!.id])
 
-    tables = sources.updateTable(
+    const updatedTable = sources.updateTable(
       randomUUID(),
       eliteId,
       {
@@ -250,15 +314,21 @@ describe('encounter tables and factions', () => {
         description: 'Changed membership',
         entries: [{ creatureId: first!.id, weight: 4 }]
       },
-      tables.revision
+      tables.campaign.revision
     )
-    factions = sources.readFactions()
+    tables = updatedTable.snapshot
+    let factions = sources.readFactions()
     expect(factions.factions[0]).toMatchObject({
       primaryEncounterTableId: eliteId,
       inventory: []
     })
 
-    tables = sources.deleteTable(randomUUID(), eliteId, tables.revision)
+    const deletedTable = sources.deleteTable(
+      randomUUID(),
+      eliteId,
+      tables.campaign.revision
+    )
+    tables = deletedTable.snapshot
     factions = sources.readFactions()
     world = locations.read()
     expect(factions.factions[0]).toMatchObject({
@@ -266,7 +336,7 @@ describe('encounter tables and factions', () => {
       inventory: []
     })
     expect(world.locations[0]!.factionIds).toEqual([factionId])
-    expect(tables.tables).toHaveLength(1)
+    expect(allTables(tables)).toHaveLength(1)
     campaigns.close()
   })
 
@@ -282,9 +352,10 @@ describe('encounter tables and factions', () => {
       },
       0
     )
-    const tableId = tables.tables[0]!.id
+    const tableId = tables.saved.id
     expect(() =>
       sources.createFaction(
+        randomUUID(),
         {
           displayName: 'Invalid stock',
           notes: '',
@@ -297,6 +368,7 @@ describe('encounter tables and factions', () => {
     ).toThrow('validation')
     expect(() =>
       sources.createFaction(
+        randomUUID(),
         {
           displayName: 'Missing source',
           notes: '',
@@ -320,7 +392,7 @@ describe('encounter tables and factions', () => {
       { displayName: 'Empty', description: '', entries: [] },
       0
     )
-    const emptyId = tables.tables[0]!.id
+    const emptyId = tables.saved.id
     const resolved = sources.resolve(query({ encounterTableIds: [emptyId] }))
     expect(resolved.catalogFallback).toBe(false)
     expect(resolved.candidates).toEqual([])
@@ -346,11 +418,12 @@ describe('encounter tables and factions', () => {
       0
     )
     const factions = sources.createFaction(
+      randomUUID(),
       {
         displayName: 'Watch',
         notes: '',
         disposition: 10,
-        primaryEncounterTableId: tables.tables[0]!.id,
+        primaryEncounterTableId: tables.saved.id,
         inventory: [{ creatureId: creature.id, maximum: 1 }]
       },
       0
@@ -358,12 +431,13 @@ describe('encounter tables and factions', () => {
     const world = locations.create(
       {
         displayName: 'Gate',
+        tags: ['Tor'],
         notes: '',
-        factionIds: [factions.factions[0]!.id],
+        factionIds: [factions.saved.id],
         encounterTableIds: []
       },
       0
-    )
+    ).snapshot
     let party = play.readParty()
     for (const member of party.members)
       party = play.setMembership(member.id, true, party.revision)
@@ -400,9 +474,13 @@ describe('encounter tables and factions', () => {
     ])
     expect(generation.context).toMatchObject({
       locationId: world.locations[0]!.id,
-      effectiveFactionIds: [factions.factions[0]!.id],
+      effectiveFactionIds: [factions.saved.id],
       catalogFallback: false
     })
     campaigns.close()
   })
 })
+
+function allTables(snapshot: EncounterTableSnapshot) {
+  return [...snapshot.installation.tables, ...snapshot.campaign.tables]
+}

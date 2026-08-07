@@ -165,14 +165,23 @@ describe('live session capability contracts', () => {
   it('validates location drafts and revisioned updates', () => {
     expect(
       createWorldLocationInputSchema.safeParse({
-        location: { displayName: 'Saltmarsh', notes: 'Harbour town' },
+        location: {
+          displayName: 'Saltmarsh',
+          tags: ['Hafen'],
+          notes: 'Harbour town'
+        },
         expectedRevision: 0
       }).success
     ).toBe(true)
     expect(
       updateWorldLocationInputSchema.safeParse({
         id: '0184d1f4-bba7-7c9c-9d89-5f1c0f36a030',
-        location: { displayName: ' ', notes: '', copiedMap: true },
+        location: {
+          displayName: ' ',
+          tags: ['Ort'],
+          notes: '',
+          copiedMap: true
+        },
         expectedRevision: 1
       }).success
     ).toBe(false)

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
-  CreateWorldLocationResult,
   WorldLocationMapPresentation,
+  WorldLocationSaveReceipt,
   WorldLocationSnapshot
 } from '../../../shared/contracts/world-location.js'
 import type { HexCapabilities } from './hex-capabilities.js'
@@ -57,7 +57,7 @@ export function useWorldLocationProjectionController(options: {
   )
 
   const applyCreated = useCallback(
-    (result: CreateWorldLocationResult) => mergeExternal(result.snapshot),
+    (result: WorldLocationSaveReceipt) => mergeExternal(result.snapshot),
     [mergeExternal]
   )
 

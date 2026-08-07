@@ -16,7 +16,7 @@ import type {
   LocationSymbolPage,
   LocationSymbol
 } from '../../../shared/contracts/location-symbol.js'
-import { formatMessage, message } from '../../i18n/messages.de.js'
+import { formatMessage, message } from '../../i18n/hex-runtime.de.js'
 import { HexMapCanvas } from './hex-map-canvas.js'
 import type {
   EditorOverlay,
@@ -429,10 +429,9 @@ function LocationPanel(props: Parameters<typeof HexStatePane>[0]) {
       props.locations.locations.map((location) => ({
         id: location.id,
         label: location.displayName,
-        searchText: `${location.kind} ${location.region}`,
+        searchText: location.tags.join(' '),
         description:
-          [location.kind, location.region].filter(Boolean).join(' · ') ||
-          message('hex.editor.locationFallback')
+          location.tags.join(' · ') || message('hex.editor.locationFallback')
       })),
     [props.locations.locations]
   )

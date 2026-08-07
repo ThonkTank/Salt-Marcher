@@ -1,4 +1,11 @@
-import { formatMessage, message as uiMessage } from '../../i18n/messages.de.js'
+import {
+  formatMessage,
+  message as uiMessage
+} from '../../i18n/session-runtime.de.js'
+import {
+  formatInteger,
+  formatMultiplier
+} from '../../i18n/domain-formatters.de.js'
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import type {
   Creature,
@@ -33,7 +40,7 @@ import {
 import { sessionCapabilities } from './session-capabilities.js'
 import { DiscardChangesDialog } from '../../shell/modal-dialog.js'
 import {
-  CreatureCollectionCatalogPane,
+  CreatureBuilderCatalogTable,
   CreatureCollectionManagerDialog
 } from '../creature-collection/creature-collection.js'
 import {
@@ -755,7 +762,7 @@ export function GroupDialog(props: {
           </div>
         }
         catalog={
-          <CreatureCollectionCatalogPane
+          <CreatureBuilderCatalogTable
             className="group-manager-catalog"
             query={query}
             options={options}
@@ -820,7 +827,7 @@ export function GroupDialog(props: {
                             <strong>{displayName}</strong>
                             <small>
                               {uiMessage('ui.cr')} {fact?.cr ?? '—'} ·{' '}
-                              {(fact?.xp ?? 0).toLocaleString()}{' '}
+                              {formatInteger(fact?.xp ?? 0)}{' '}
                               {uiMessage('ui.xp.2')}
                               {fact?.available === false
                                 ? ` · ${uiMessage('group.unavailable')}`
@@ -1012,12 +1019,12 @@ function GroupDraftEvaluation(props: {
       <div className="group-draft-evaluation-row">
         <strong>{difficultyLabel}</strong>
         <span>
-          {(evaluation?.adjustedXp ?? 0).toLocaleString('de-DE')} XP{' '}
+          {formatInteger(evaluation?.adjustedXp ?? 0)} XP{' '}
           {uiMessage('encounter.adjusted').toLocaleLowerCase()}
         </span>
         <small>
           {evaluation
-            ? `${uiMessage('encounter.threshold')} ${difficultyLabel} ${threshold.toLocaleString('de-DE')}`
+            ? `${uiMessage('encounter.threshold')} ${difficultyLabel} ${formatInteger(threshold)}`
             : uiMessage('group.evaluationPending')}
         </small>
         <div className="group-history-actions">
@@ -1043,9 +1050,9 @@ function GroupDraftEvaluation(props: {
         <span style={{ width: `${position}%` }} />
       </div>
       <small>
-        {(evaluation?.baseXp ?? 0).toLocaleString('de-DE')}{' '}
-        {uiMessage('group.baseXp')} · {uiMessage('encounter.multiplier')} ×{' '}
-        {(evaluation?.multiplier ?? 1).toLocaleString('de-DE')} ·{' '}
+        {formatInteger(evaluation?.baseXp ?? 0)} {uiMessage('group.baseXp')} ·{' '}
+        {uiMessage('encounter.multiplier')} ×{' '}
+        {formatMultiplier(evaluation?.multiplier ?? 1)} ·{' '}
         {evaluation?.creatureCount ?? 0} {uiMessage('ui.wesen')}
       </small>
     </div>

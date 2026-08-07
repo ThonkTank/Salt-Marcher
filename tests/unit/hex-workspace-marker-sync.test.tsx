@@ -28,10 +28,10 @@ vi.mock('../../src/renderer/features/hex/hex-map-canvas.js', () => ({
   )
 }))
 
-import {
-  HexLocationPlacementDialog,
-  SessionHexMap
-} from '../../src/renderer/features/hex/hex-workspaces.js'
+import { HexLocationPlacementDialog } from '../../src/renderer/features/hex/hex-location-placement-dialog.js'
+import { createHexLocationPlacementProjectionPort } from '../../src/renderer/features/hex/hex-location-placement-port.js'
+import { createWorldLocationPlacementCommitter } from '../../src/renderer/features/hex/world-location-placement-commit.js'
+import { SessionHexMap } from '../../src/renderer/features/hex/hex-workspaces.js'
 
 const campaignId = '01900000-0000-7000-8000-000000000080'
 const mapId = '01900000-0000-7000-8000-000000000081'
@@ -61,7 +61,9 @@ function capabilityFixture() {
     })
   const api = {
     runtime: { pickLocationSymbolFile: vi.fn() },
-    locations: {},
+    locations: {
+      commitPlacement: vi.fn().mockResolvedValue({ status: 'applied' })
+    },
     locationSymbols: {},
     biomes: {
       onChanged: vi.fn().mockReturnValue(() => undefined)
@@ -129,6 +131,7 @@ function capabilityFixture() {
                 : []
             })
         ),
+      commandReceipt: vi.fn().mockResolvedValue(null),
       onChanged
     },
     hexTravel: {
@@ -209,6 +212,10 @@ describe('shared Hex marker synchronization', () => {
           close={vi.fn()}
           onPlaced={vi.fn()}
           onError={vi.fn()}
+          port={createHexLocationPlacementProjectionPort(fixture.api)}
+          mapCreation={{ createMap: vi.fn() }}
+          commitPlacement={createWorldLocationPlacementCommitter(fixture.api)}
+          failureText={(failure) => failure.kind}
         />
       </Providers>
     )

@@ -1,5 +1,5 @@
 import type { HexEraseImpact } from '../../../shared/contracts/hex.js'
-import { formatMessage, message } from '../../i18n/messages.de.js'
+import { formatMessage, message } from '../../i18n/hex-runtime.de.js'
 import { ModalDialog } from '../../shell/modal-dialog.js'
 
 export function HexImpactDialog(props: {

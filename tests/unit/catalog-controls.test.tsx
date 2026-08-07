@@ -1,7 +1,12 @@
 // @vitest-environment jsdom
 
 import '@testing-library/jest-dom/vitest'
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import {
+  cleanup,
+  fireEvent,
+  render as testingRender,
+  screen
+} from '@testing-library/react'
 import { useState } from 'react'
 import { afterEach, describe, expect, it } from 'vitest'
 import type {
@@ -13,6 +18,10 @@ import {
   FilterChips
 } from '../../src/renderer/features/catalog/catalog-controls.js'
 import { emptyQuery } from '../../src/renderer/features/catalog/catalog-state.js'
+import { ModalLayerProvider } from '../../src/renderer/shell/modal-layer.js'
+
+const render = (ui: Parameters<typeof testingRender>[0]) =>
+  testingRender(ui, { wrapper: ModalLayerProvider })
 
 const options: CreatureFilterOptions = {
   challengeRatings: ['0', '1/2', '1'],

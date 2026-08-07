@@ -1,9 +1,20 @@
 // @vitest-environment jsdom
 
 import '@testing-library/jest-dom/vitest'
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render as testingRender,
+  screen
+} from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { SearchableSelect } from '../../src/renderer/shell/searchable-select.js'
+import { ModalLayerProvider } from '../../src/renderer/shell/modal-layer.js'
+import { ModalDialog } from '../../src/renderer/shell/modal-dialog.js'
+
+const render = (ui: Parameters<typeof testingRender>[0]) =>
+  testingRender(ui, { wrapper: ModalLayerProvider })
 
 const options = [
   { id: 'coast', label: 'Küste', searchText: 'Meer' },
@@ -181,7 +192,7 @@ describe('SearchableSelect', () => {
 
   it('keeps a popup inside its owning modal dialog', () => {
     render(
-      <section role="dialog" aria-label="Editor">
+      <ModalDialog className="editor" ariaLabel="Editor" onClose={vi.fn()}>
         <SearchableSelect
           mode="single"
           label="Ort"
@@ -192,14 +203,13 @@ describe('SearchableSelect', () => {
           noResultsText="Kein Treffer"
           changed={vi.fn()}
         />
-      </section>
+      </ModalDialog>
     )
 
     fireEvent.focus(screen.getByRole('combobox', { name: 'Ort' }))
     const dialog = screen.getByRole('dialog', { name: 'Editor' })
-    expect(dialog).toContainElement(
-      screen.getByRole('listbox', { name: 'Ort' })
-    )
+    expect(dialog).not.toHaveAttribute('aria-hidden')
+    expect(screen.getByRole('listbox', { name: 'Ort' })).toBeVisible()
   })
 
   it('debounces remote option searches and renders only the returned page', async () => {

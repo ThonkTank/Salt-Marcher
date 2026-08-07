@@ -8,8 +8,8 @@ import { useFactionCatalogController } from '../../src/renderer/features/catalog
 import { useEncounterTableCatalogController } from '../../src/renderer/features/encounter-table/encounter-table-catalog-controller.js'
 import type { CreatureCapabilityPort } from '../../src/renderer/features/creatures/creatures-capabilities.js'
 import type { LocationCatalogPort } from '../../src/renderer/features/catalog/location-catalog-controller.js'
-import type { FactionCatalogPort } from '../../src/renderer/features/catalog/faction-catalog-controller.js'
-import type { EncounterTableCatalogPort } from '../../src/renderer/features/encounter-table/encounter-table-catalog-controller.js'
+import type { WorldFactionApplicationPort } from '../../src/renderer/features/worldplanner/world-faction-application.js'
+import type { EncounterTableApplicationPort } from '../../src/renderer/features/encounter-table/encounter-table-application.js'
 import type { Creature } from '../../src/shared/contracts/encounter.js'
 import type { WorldLocation } from '../../src/shared/contracts/world-location.js'
 import type {
@@ -23,8 +23,8 @@ const setSession = vi.fn()
 const location = {
   id: '01900000-0000-7000-8000-000000000010',
   displayName: 'Hafen',
-  kind: '',
-  region: '',
+  tags: ['Siedlung'],
+  readAloud: '',
   notes: '',
   position: 0,
   factionIds: [],
@@ -56,6 +56,10 @@ const table = {
   position: 0,
   entries: []
 } as EncounterTable
+const tableSnapshot = {
+  installation: { revision: 0, tables: [], summaries: [] },
+  campaign: { revision: 1, tables: [table], summaries: [] }
+}
 
 function ports() {
   const creatureFilterOptions = vi.fn().mockResolvedValue({
@@ -87,39 +91,33 @@ function ports() {
       revision: 1,
       locations: [location]
     }),
-    readTables: vi.fn().mockResolvedValue({
-      revision: 1,
-      installationRevision: 0,
-      campaignRevision: 1,
-      tables: [table]
-    }),
-    readFactions: vi
+    readTables: vi
       .fn()
-      .mockResolvedValue({ revision: 1, factions: [faction] }),
+      .mockResolvedValue({
+        ...tableSnapshot
+      })
+      .mockResolvedValue([table]),
+    readFactions: vi.fn().mockResolvedValue([faction]),
     readSession: vi.fn().mockResolvedValue({}),
-    createLocation: vi.fn(),
-    updateLocation: vi.fn(),
-    deleteLocation: vi.fn()
+    save: vi.fn(),
+    remove: vi.fn()
   } as unknown as LocationCatalogPort
   const factions = {
     readFactions: vi
       .fn()
       .mockResolvedValue({ revision: 1, factions: [faction] }),
-    readTables: vi.fn().mockResolvedValue({ revision: 1, tables: [table] }),
-    createFaction: vi.fn(),
-    updateFaction: vi.fn(),
+    readTables: vi.fn().mockResolvedValue(tableSnapshot),
+    saveFaction: vi.fn(),
     deleteFaction: vi.fn(),
-    createTable: vi.fn(),
-    updateTable: vi.fn(),
+    saveTable: vi.fn(),
     onTablesChanged: vi.fn().mockReturnValue(() => undefined)
-  } as FactionCatalogPort
+  } as WorldFactionApplicationPort
   const encounterTables = {
-    read: vi.fn().mockResolvedValue({ revision: 1, tables: [table] }),
-    create: vi.fn(),
-    update: vi.fn(),
+    read: vi.fn().mockResolvedValue(tableSnapshot),
+    save: vi.fn(),
     remove: vi.fn(),
     onChanged: vi.fn().mockReturnValue(() => undefined)
-  } as EncounterTableCatalogPort
+  } as EncounterTableApplicationPort
   return {
     creature,
     locations,
@@ -221,5 +219,35 @@ describe('catalog controllers', () => {
     expect(port.locations.readLocations).toHaveBeenCalledOnce()
     expect(port.factions.readFactions).toHaveBeenCalledOnce()
     expect(port.encounterTables.read).toHaveBeenCalledOnce()
+  })
+
+  it('keeps locations and factions ready while tables fail and retry independently', async () => {
+    const port = ports()
+    vi.mocked(port.locations.readTables)
+      .mockRejectedValueOnce(new Error('tables offline'))
+      .mockResolvedValueOnce([table])
+    const hook = renderHook(() =>
+      useLocationCatalogController(true, onError, setSession, port.locations)
+    )
+    await waitFor(() =>
+      expect(hook.result.current.references.tables.status).toBe('failed')
+    )
+    expect(hook.result.current.references.factions).toEqual({
+      status: 'ready',
+      value: [faction]
+    })
+    expect(hook.result.current.snapshot.locations).toEqual([location])
+    const failed = hook.result.current.references.tables
+    if (failed.status !== 'failed') throw new Error('Expected table failure')
+    act(() => failed.retry())
+    await waitFor(() =>
+      expect(hook.result.current.references.tables).toEqual({
+        status: 'ready',
+        value: [table]
+      })
+    )
+    expect(port.locations.readFactions).toHaveBeenCalledOnce()
+    expect(port.locations.readLocations).toHaveBeenCalledOnce()
+    expect(port.locations.readTables).toHaveBeenCalledTimes(2)
   })
 })

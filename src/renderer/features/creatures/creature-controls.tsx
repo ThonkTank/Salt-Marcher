@@ -1,4 +1,4 @@
-import { formatMessage, message } from '../../i18n/messages.de.js'
+import { formatMessage, message } from '../../i18n/catalog-runtime.de.js'
 import type { ReactNode } from 'react'
 import type {
   CreatureCatalogQuery,

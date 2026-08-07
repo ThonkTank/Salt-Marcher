@@ -1,4 +1,4 @@
-import { message as uiMessage } from '../../i18n/messages.de.js'
+import { message as uiMessage } from '../../i18n/session-runtime.de.js'
 import { useEffect, useRef, useState } from 'react'
 import type {
   CreatureCatalogPage,
@@ -32,7 +32,7 @@ import { SessionPanelLayout } from './session-panel-layout.js'
 import { SessionGroupCard } from './session-group-card.js'
 import { ScenePartyCard } from './scene-party-card.js'
 import { GroupDialog } from './group-dialog.js'
-import { CreatureCollectionCatalogPane } from '../creature-collection/creature-collection.js'
+import { CreatureInspectorCatalogTable } from '../creature-collection/creature-collection.js'
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 import { useBiomeOptionSearch } from '../creatures/use-biome-option-search.js'
 
@@ -318,14 +318,13 @@ export default function SessionWorkspace(props: {
           }}
         />
       ) : props.layout.centerTab === 'catalog' ? (
-        <CreatureCollectionCatalogPane
+        <CreatureInspectorCatalogTable
           query={catalogQuery}
           options={catalogOptions}
           searchBiomeOptions={searchBiomeOptions}
           page={catalogPage}
           changed={setCatalogQuery}
           inspect={(creature) => void openCreature(creature.id, 'Katalog')}
-          variant="inspector"
         />
       ) : (
         <>

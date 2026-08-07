@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { CampaignSnapshot } from '../../../shared/contracts/campaign.js'
-import { formatMessage, message } from '../../i18n/messages.de.js'
+import { formatMessage, message } from '../../i18n/workspace-runtime.de.js'
 
 interface CampaignMenuProps {
   snapshot: CampaignSnapshot

@@ -30,8 +30,8 @@ function snapshot(
       {
         id: locationId,
         displayName: 'Kap',
-        kind: '',
-        region: '',
+        tags: ['Ort'],
+        readAloud: '',
         notes: '',
         position: 0,
         factionIds: [],
@@ -148,11 +148,14 @@ describe('world location projection controller', () => {
     act(() => result.current.replace(snapshot()))
     act(() =>
       result.current.applyCreated({
+        status: 'saved',
+        commandId: '01900000-0000-7000-8000-000000000099',
         snapshot: {
           revision: 5,
           locations: [...snapshot().locations, created]
         },
-        createdLocation: created
+        saved: created,
+        placement: 'unchanged'
       })
     )
     act(() => result.current.applySymbolAssignment(created.id, 'settlement', 2))

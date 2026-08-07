@@ -1,4 +1,4 @@
-import { message } from '../../i18n/messages.de.js'
+import { message } from '../../i18n/hex-runtime.de.js'
 // Installs Pixi's static CSP-safe shader and uniform synchronizers.
 import 'pixi.js/unsafe-eval'
 import { Container, Graphics, Text, WebGLRenderer } from 'pixi.js'

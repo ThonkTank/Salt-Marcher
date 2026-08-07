@@ -1,0 +1,15 @@
+.text-action-button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--text-1);
+  font: inherit;
+  font-weight: 650;
+  text-align: start;
+}
+
+.text-action-button:hover {
+  background: transparent;
+  color: var(--accent-gold);
+  text-decoration: underline;
+}

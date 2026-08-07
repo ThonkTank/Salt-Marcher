@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
-import { message } from '../../i18n/messages.de.js'
+import { message } from '../../i18n/session-runtime.de.js'
 import { sessionCapabilities } from './session-capabilities.js'
 import { ModalDialog } from '../../shell/modal-dialog.js'
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'

@@ -90,9 +90,13 @@ describe('reference service', () => {
   it('isolates exact campaign terms by explicit campaign id', () => {
     const { campaigns, locations, references } = harness()
     const world = locations.create(
-      { displayName: 'Slow', notes: 'Magic Missile is forbidden here.' },
+      {
+        displayName: 'Slow',
+        tags: ['Ort'],
+        notes: 'Magic Missile is forbidden here.'
+      },
       locations.read().revision
-    )
+    ).snapshot
     const campaignId = campaigns.activeCampaignId()
     const location = world.locations[0]!
     const before = references.campaignIndex(campaignId)
@@ -103,7 +107,11 @@ describe('reference service', () => {
 
     locations.update(
       location.id,
-      { displayName: 'The Quiet Keep', notes: location.notes },
+      {
+        displayName: 'The Quiet Keep',
+        tags: location.tags,
+        notes: location.notes
+      },
       world.revision
     )
     const renamed = references.campaignIndex(campaignId)

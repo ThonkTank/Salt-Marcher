@@ -1,6 +1,6 @@
 import type { ComponentType } from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
-import { message } from '../../i18n/messages.de.js'
+import { message } from '../../i18n/session-runtime.de.js'
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 import { ModuleHost } from '../../shell/module-host.js'
 

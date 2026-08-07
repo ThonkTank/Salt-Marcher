@@ -1,6 +1,6 @@
 import type { SaltMarcherApi } from '../../../shared/contracts/capability-api.js'
 import type { WorkspaceSurfaceProps } from './workspace-surface-props.js'
-import { formatMessage, message } from '../../i18n/messages.de.js'
+import { formatMessage, message } from '../../i18n/workspace-runtime.de.js'
 import { ModuleHost } from '../../shell/module-host.js'
 import {
   workspaceDefinition,

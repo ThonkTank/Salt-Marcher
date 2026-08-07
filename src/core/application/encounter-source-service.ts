@@ -2,17 +2,28 @@ import Database from 'better-sqlite3'
 import type { CreatureCatalogQuery } from '../../shared/contracts/encounter.js'
 import type {
   EncounterTable,
+  EncounterTableCommandReceipt,
+  EncounterTableDeleteReceipt,
   EncounterTableDraft,
+  EncounterTableMutationReceipt,
   EncounterTableScope,
+  EncounterTableSnapshot,
   WorldFaction,
   WorldFactionDraft
+} from '../../shared/contracts/encounter-source.js'
+import {
+  encounterTableDeleteReceiptSchema,
+  encounterTableMutationReceiptSchema,
+  encounterTableSnapshotSchema,
+  encounterTableSummarySchema,
+  worldFactionDeleteReceiptSchema
 } from '../../shared/contracts/encounter-source.js'
 import { EncounterTableStore } from '../encounter/encounter-table-store.js'
 import { WorldFactionStore } from '../worldplanner/faction-store.js'
 import { WorldLocationStore } from '../worldplanner/location-store.js'
-import { encounterTableSnapshotSchema } from '../../shared/contracts/encounter-source.js'
 import { anyBiomeEncounterTableId } from '../../shared/contracts/biome.js'
 import { BiomeCatalogStore } from '../biomes/biome-catalog.js'
+import { creatureById } from '../creatures/catalog.js'
 
 export type ResolvedSourceCandidate = Readonly<{
   creatureId: string
@@ -43,11 +54,37 @@ export class EncounterSourceService {
     const campaign = this.withStores(({ tables }) => tables.read())
     const installation = this.installationTables()?.read()
     return encounterTableSnapshotSchema.parse({
-      revision: Math.max(campaign.revision, installation?.revision ?? 0),
-      installationRevision: installation?.revision ?? 0,
-      campaignRevision: campaign.revision,
-      tables: [...(installation?.tables ?? []), ...campaign.tables]
+      installation: scopeProjection(
+        installation?.revision ?? 0,
+        installation?.tables ?? []
+      ),
+      campaign: scopeProjection(campaign.revision, campaign.tables)
     })
+  }
+
+  tableReceipt(commandId: string) {
+    const campaignTables = this.withStores(({ tables }) => tables)
+    const installationTables = this.installationTables()
+    const campaign = campaignTables.commandReceipt(commandId)
+    const installation = installationTables?.commandReceipt(commandId)
+    if (campaign && installation)
+      throw new Error('Encounter Table command identity exists in both scopes.')
+    const receipt = campaign ?? installation
+    if (!receipt) return null
+    const owner = campaign ? campaignTables : installationTables!
+    const completed = owner.applicationReceipt(commandId)
+    if (completed) return completed
+    const reconstructed =
+      'saved' in receipt
+        ? encounterTableMutationReceiptSchema.parse({
+            snapshot: this.readTables(),
+            saved: receipt.saved
+          })
+        : encounterTableDeleteReceiptSchema.parse({
+            snapshot: this.readTables(),
+            deletedId: receipt.deletedId
+          })
+    return owner.completeApplicationReceipt(commandId, reconstructed)
   }
 
   createTable(
@@ -58,11 +95,15 @@ export class EncounterSourceService {
   ) {
     if (scope === 'installation') {
       const tables = this.requireInstallationTables()
-      tables.create(commandId, draft, revision)
-      return this.readTables()
+      const result = tables.create(commandId, draft, revision)
+      return this.completeTableMutationReceipt(tables, commandId, result.saved)
     }
-    this.withStores(({ tables }) => tables.create(commandId, draft, revision))
-    return this.readTables()
+    const result = this.withStores(({ tables }) =>
+      tables.create(commandId, draft, revision)
+    )
+    return this.withStores(({ tables }) =>
+      this.completeTableMutationReceipt(tables, commandId, result.saved)
+    )
   }
 
   updateTable(
@@ -81,7 +122,7 @@ export class EncounterSourceService {
         expectedRevision: revision,
         draft
       })
-      tables.update(commandId, id, draft, revision)
+      const result = tables.update(commandId, id, draft, revision)
       this.visitCampaignDatabases?.(({ id: campaignId, database }) => {
         tables.beginCampaignLifecycle(commandId, campaignId)
         if (tables.campaignLifecycleCompleted(commandId, campaignId)) return
@@ -94,18 +135,23 @@ export class EncounterSourceService {
         tables.completeCampaignLifecycle(commandId, campaignId)
       })
       tables.completeInstallationLifecycle(commandId)
-      return this.readTables()
+      return this.completeTableMutationReceipt(tables, commandId, result.saved)
     }
-    return this.withStores(({ db, tables, factions }) => {
+    const result = this.withStores(({ db, tables, factions }) => {
+      let saved: EncounterTable | null = null
       db.transaction(() => {
-        tables.update(commandId, id, draft, revision)
+        saved = tables.update(commandId, id, draft, revision).saved
         factions.pruneInventoryForTable(
           id,
           draft.entries.map((entry) => entry.creatureId)
         )
       })()
-      return this.readTables()
+      if (!saved) throw new Error('Updated Encounter Table is missing.')
+      return saved
     })
+    return this.withStores(({ tables }) =>
+      this.completeTableMutationReceipt(tables, commandId, result)
+    )
   }
 
   deleteTable(
@@ -136,16 +182,18 @@ export class EncounterSourceService {
         tables.completeCampaignLifecycle(commandId, campaignId)
       })
       tables.completeInstallationLifecycle(commandId)
-      return this.readTables()
+      return this.completeTableDeleteReceipt(tables, commandId, id)
     }
-    return this.withStores(({ db, tables, factions, locations }) => {
+    this.withStores(({ db, tables, factions, locations }) => {
       db.transaction(() => {
         tables.delete(commandId, id, revision)
         factions.clearPrimaryEncounterTable(id)
         locations.unlinkEncounterTable(id)
       })()
-      return this.readTables()
     })
+    return this.withStores(({ tables }) =>
+      this.completeTableDeleteReceipt(tables, commandId, id)
+    )
   }
 
   recoverPendingInstallationTableLifecycles(): void {
@@ -176,23 +224,36 @@ export class EncounterSourceService {
     return this.withStores(({ factions }) => factions.read())
   }
 
-  createFaction(draft: WorldFactionDraft, revision: number) {
-    return this.withStores(({ factions }) => factions.create(draft, revision))
+  factionReceipt(commandId: string) {
+    return this.withStores(({ factions }) => factions.commandReceipt(commandId))
   }
 
-  updateFaction(id: string, draft: WorldFactionDraft, revision: number) {
+  createFaction(commandId: string, draft: WorldFactionDraft, revision: number) {
     return this.withStores(({ factions }) =>
-      factions.update(id, draft, revision)
+      factions.create(commandId, draft, revision)
     )
   }
 
-  deleteFaction(id: string, revision: number) {
+  updateFaction(
+    commandId: string,
+    id: string,
+    draft: WorldFactionDraft,
+    revision: number
+  ) {
+    return this.withStores(({ factions }) =>
+      factions.update(commandId, id, draft, revision)
+    )
+  }
+
+  deleteFaction(commandId: string, id: string, revision: number) {
     return this.withStores(({ db, factions, locations }) => {
+      let receipt: ReturnType<WorldFactionStore['delete']> | null = null
       db.transaction(() => {
-        factions.delete(id, revision)
+        receipt = factions.delete(commandId, id, revision)
         locations.unlinkFaction(id)
       })()
-      return factions.read()
+      if (!receipt) throw new Error('Deleted World Faction receipt is missing.')
+      return worldFactionDeleteReceiptSchema.parse(receipt)
     })
   }
 
@@ -200,7 +261,7 @@ export class EncounterSourceService {
     return this.withStores(({ factions, locations }) =>
       resolveEncounterSource(
         query,
-        this.readTables().tables,
+        allTables(this.readTables()),
         factions.read().factions,
         locations.read().locations,
         this.installationDatabase?.()
@@ -243,6 +304,79 @@ export class EncounterSourceService {
     if (!tables) throw new Error('Installation encounter tables unavailable')
     return tables
   }
+
+  private completeTableMutationReceipt(
+    tables: EncounterTableStore,
+    commandId: string,
+    saved: EncounterTable
+  ): EncounterTableMutationReceipt {
+    return encounterTableMutationReceiptSchema.parse(
+      this.completeTableReceipt(tables, commandId, {
+        snapshot: this.readTables(),
+        saved
+      })
+    )
+  }
+
+  private completeTableDeleteReceipt(
+    tables: EncounterTableStore,
+    commandId: string,
+    deletedId: string
+  ): EncounterTableDeleteReceipt {
+    return encounterTableDeleteReceiptSchema.parse(
+      this.completeTableReceipt(tables, commandId, {
+        snapshot: this.readTables(),
+        deletedId
+      })
+    )
+  }
+
+  private completeTableReceipt(
+    tables: EncounterTableStore,
+    commandId: string,
+    receipt: EncounterTableCommandReceipt
+  ): EncounterTableCommandReceipt {
+    return tables.completeApplicationReceipt(commandId, receipt)
+  }
+}
+
+function scopeProjection(revision: number, tables: readonly EncounterTable[]) {
+  return {
+    revision,
+    tables,
+    summaries: tables.map((table) => summarizeTable(table))
+  }
+}
+
+function summarizeTable(table: EncounterTable) {
+  const facts = table.entries
+    .map((entry) => creatureById(entry.creatureId))
+    .filter((creature) => creature !== undefined)
+    .toSorted(
+      (left, right) => left.cr - right.cr || left.id.localeCompare(right.id)
+    )
+  const first = facts[0]
+  const last = facts.at(-1)
+  return encounterTableSummarySchema.parse({
+    id: table.id,
+    scope: table.scope,
+    displayName: table.displayName,
+    entryCount: table.entries.length,
+    challengeRatingRange:
+      first && last
+        ? {
+            minimum: first.challengeRating,
+            maximum: last.challengeRating
+          }
+        : null,
+    biomes: [
+      ...new Set(facts.flatMap((creature) => creature.biomes))
+    ].toSorted()
+  })
+}
+
+function allTables(snapshot: EncounterTableSnapshot) {
+  return [...snapshot.installation.tables, ...snapshot.campaign.tables]
 }
 
 function campaignFactionStore(

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type {
   AxialCoordinate,
   HexBiomeCatalog,
@@ -9,6 +9,10 @@ import type { HexCapabilities } from './hex-capabilities.js'
 import { HexChunkCache, mergeHexBiomeCatalog } from './hex-chunk-cache.js'
 import type { useHexEditorController } from './use-hex-editor-controller.js'
 import type { useWorldLocationProjectionController } from './use-world-location-projection-controller.js'
+import type {
+  HexLocationPlacementProjectionPort,
+  HexPlacementProjectionChange
+} from './hex-location-placement-port.js'
 
 type EditorController = ReturnType<typeof useHexEditorController>
 type LocationProjectionController = ReturnType<
@@ -34,10 +38,18 @@ export function useHexMapController(options: {
   useEffect(() => {
     mapRef.current = options.editor.map
   }, [options.editor.map])
-  const chunkCache = useRef(
-    new HexChunkCache((mapId, keys) =>
-      options.capabilities.hex.readChunks(mapId, keys)
-    )
+  const [ownedChunkCache] = useState(
+    () =>
+      new HexChunkCache((mapId, keys) =>
+        options.capabilities.hex.readChunks(mapId, keys)
+      )
+  )
+  const chunkCache = useMemo(
+    () => ({ current: ownedChunkCache }),
+    [ownedChunkCache]
+  )
+  const placementProjectionListeners = useRef(
+    new Set<(change: HexPlacementProjectionChange) => void>()
   )
 
   const readOverlays = useCallback(
@@ -62,7 +74,7 @@ export function useHexMapController(options: {
     ) => {
       viewportHalfExtent.current = halfExtent
       const request = ++viewportRequest.current
-      const next = await chunkCache.current.readMapView(
+      const next = await ownedChunkCache.readMapView(
         currentMap.map,
         center,
         false,
@@ -75,7 +87,7 @@ export function useHexMapController(options: {
         )
       }
     },
-    []
+    [ownedChunkCache]
   )
 
   const refreshCatalog = useCallback(
@@ -100,7 +112,7 @@ export function useHexMapController(options: {
         })
         return
       }
-      const nextMap = await chunkCache.current.readMapView(
+      const nextMap = await ownedChunkCache.readMapView(
         summary,
         current?.map.id === summary.id ? current.center : undefined
       )
@@ -118,7 +130,7 @@ export function useHexMapController(options: {
       editor.setHistory(history)
       editor.setOverlays(overlays)
     },
-    [readOverlays]
+    [ownedChunkCache, readOverlays]
   )
 
   const refreshBiomes = useCallback(async () => {
@@ -129,8 +141,8 @@ export function useHexMapController(options: {
     const current = mapRef.current
     let biomes: HexBiomeCatalog = baseline
     if (current) {
-      chunkCache.current.invalidateMap(current.map.id)
-      const nextMap = await chunkCache.current.readMapView(
+      ownedChunkCache.invalidateMap(current.map.id)
+      const nextMap = await ownedChunkCache.readMapView(
         current.map,
         current.center,
         true,
@@ -143,7 +155,7 @@ export function useHexMapController(options: {
     editor.setBiomes(biomes)
     if (!biomes.biomes.some((biome) => biome.id === editor.biomeId))
       editor.setBiomeId('grassland')
-  }, [])
+  }, [ownedChunkCache])
 
   useEffect(() => {
     const request = ++mapSelectionRequest.current
@@ -162,7 +174,7 @@ export function useHexMapController(options: {
         editor.setLocationId(bootstrap.locations.locations[0]?.id ?? '')
         const first = bootstrap.catalog.maps[0]
         if (!first) return
-        const nextMap = await chunkCache.current.readMapView(first)
+        const nextMap = await ownedChunkCache.readMapView(first)
         if (request !== mapSelectionRequest.current) return
         editor.setMap(nextMap)
         editor.setBiomes(mergeHexBiomeCatalog(bootstrap.biomes, nextMap.biomes))
@@ -180,23 +192,25 @@ export function useHexMapController(options: {
       mapSelectionRequest.current += 1
       biomeRequest.current += 1
     }
-  }, [options.capabilities, readOverlays])
+  }, [options.capabilities, ownedChunkCache, readOverlays])
 
   useEffect(
     () =>
       options.capabilities.hex.onChanged((notice) => {
         for (const mapId of notice.mapIds)
-          chunkCache.current.invalidateChunks(
+          ownedChunkCache.invalidateChunks(
             mapId,
             notice.changedChunks
               .filter((chunk) => chunk.mapId === mapId)
               .map((chunk) => chunk.key)
           )
+        for (const listener of placementProjectionListeners.current)
+          listener({ kind: 'hex', notice })
         const current = mapRef.current
         if (!current || !notice.mapIds.includes(current.map.id)) return
         const request = ++viewportRequest.current
         void Promise.all([
-          chunkCache.current.readMapView(
+          ownedChunkCache.readMapView(
             current.map,
             current.center,
             false,
@@ -217,20 +231,43 @@ export function useHexMapController(options: {
           })
           .catch(reportCapabilityError(optionsRef.current.onError))
       }),
-    [options.capabilities.hex, readOverlays]
+    [options.capabilities.hex, ownedChunkCache, readOverlays]
   )
 
   useEffect(
     () =>
-      options.capabilities.biomes.onChanged(() => {
+      options.capabilities.biomes.onChanged((notice) => {
+        const current = mapRef.current
+        if (current) ownedChunkCache.invalidateMap(current.map.id)
+        for (const listener of placementProjectionListeners.current)
+          listener({ kind: 'biomes', notice })
         void refreshBiomes().catch(
           reportCapabilityError(optionsRef.current.onError)
         )
       }),
-    [options.capabilities.biomes, refreshBiomes]
+    [options.capabilities.biomes, ownedChunkCache, refreshBiomes]
   )
 
-  useEffect(() => () => chunkCache.current.clear(), [])
+  useEffect(() => () => ownedChunkCache.clear(), [ownedChunkCache])
+
+  const placementProjectionPort = useMemo<HexLocationPlacementProjectionPort>(
+    () => ({
+      currentCatalog: () => optionsRef.current.editor.catalog,
+      currentBiomeCatalog: () => optionsRef.current.editor.biomes,
+      readCatalog: () => optionsRef.current.capabilities.hex.catalog(),
+      readBiomeCatalog: () =>
+        optionsRef.current.capabilities.hex.biomeCatalog(),
+      locateLocation: (locationId) =>
+        optionsRef.current.capabilities.hex.locateLocation(locationId),
+      cache: ownedChunkCache,
+      cacheMode: 'shared-owner',
+      subscribe: (listener) => {
+        placementProjectionListeners.current.add(listener)
+        return () => placementProjectionListeners.current.delete(listener)
+      }
+    }),
+    [ownedChunkCache]
+  )
 
   return {
     chunkCache,
@@ -240,6 +277,7 @@ export function useHexMapController(options: {
     readOverlays,
     loadViewport,
     refreshCatalog,
-    refreshBiomes
+    refreshBiomes,
+    placementProjectionPort
   }
 }

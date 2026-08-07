@@ -2,15 +2,16 @@ import type {
   WorldLocation,
   WorldLocationDraft
 } from '../../../shared/contracts/world-location.js'
-import type {
-  EncounterTable,
-  WorldFaction
-} from '../../../shared/contracts/encounter-source.js'
-import { formatMessage, message } from '../../i18n/messages.de.js'
+import { formatMessage, message } from '../../i18n/catalog-runtime.de.js'
 import { IlluminatedHeading } from '../../shell/illuminated-heading.js'
-import { HexLocationPlacementDialog } from '../hex/hex-workspaces.js'
-import { WorldLocationDialog } from '../worldplanner/world-location-dialog.js'
-import type { WorldLocationSubmitResult } from '../worldplanner/world-location-editor-types.js'
+import { TextActionButton } from '../../shell/text-action-button.js'
+import type {
+  WorldLocationEditingIntegration,
+  WorldLocationEditorReferences,
+  WorldLocationPlacementIntent,
+  WorldLocationSubmitResult
+} from '../worldplanner/world-location-editor-types.js'
+import type { LocationPlacementRecovery } from './location-catalog-controller.js'
 
 export function LocationCatalogSection(props: {
   visible: readonly WorldLocation[]
@@ -21,8 +22,7 @@ export function LocationCatalogSection(props: {
   selected: WorldLocation | null
   editing: WorldLocation | null | undefined
   placing: WorldLocation | null
-  tables: readonly EncounterTable[]
-  factions: readonly WorldFaction[]
+  references: WorldLocationEditorReferences
   deleteConfirm: boolean
   setSearchInput: (value: string) => void
   commitSearch: () => void
@@ -31,10 +31,16 @@ export function LocationCatalogSection(props: {
   edit: (location: WorldLocation | null | undefined) => void
   place: (location: WorldLocation | null) => void
   setDeleteConfirm: (value: boolean) => void
-  save: (draft: WorldLocationDraft) => Promise<WorldLocationSubmitResult>
+  save: (
+    draft: WorldLocationDraft,
+    placement: WorldLocationPlacementIntent
+  ) => Promise<WorldLocationSubmitResult>
   remove: () => void
   placed: () => void
   onError: (message: string) => void
+  worldLocationEditing: WorldLocationEditingIntegration
+  placementRecovery: LocationPlacementRecovery | null
+  retryPlacement: () => void
 }) {
   return (
     <>
@@ -74,15 +80,14 @@ export function LocationCatalogSection(props: {
             {props.visible.map((location) => (
               <tr key={location.id} className="catalog-row">
                 <td>
-                  <button
-                    className="link-button"
+                  <TextActionButton
                     onClick={() => {
                       props.select(location)
                       props.setDeleteConfirm(false)
                     }}
                   >
                     {location.displayName}
-                  </button>
+                  </TextActionButton>
                 </td>
                 <td>{location.notes || '—'}</td>
               </tr>
@@ -102,6 +107,18 @@ export function LocationCatalogSection(props: {
                 })}
         </span>
       </footer>
+      {props.placementRecovery && (
+        <div className="catalog-placement-recovery" role="alert">
+          <span>
+            {props.worldLocationEditing.placementFailureText(
+              props.placementRecovery.failure
+            )}
+          </span>
+          <button type="button" onClick={props.retryPlacement}>
+            {message('action.retry')}
+          </button>
+        </div>
+      )}
       {props.selected && (
         <LocationInspector
           location={props.selected}
@@ -119,26 +136,21 @@ export function LocationCatalogSection(props: {
           remove={props.remove}
         />
       )}
-      {props.editing !== undefined && (
-        <WorldLocationDialog
-          location={props.editing}
-          references={{
-            status: 'ready',
-            factions: props.factions,
-            tables: props.tables
-          }}
-          close={() => props.edit(undefined)}
-          save={props.save}
-        />
-      )}
-      {props.placing && (
-        <HexLocationPlacementDialog
-          location={props.placing}
-          close={() => props.place(null)}
-          onPlaced={props.placed}
-          onError={props.onError}
-        />
-      )}
+      {props.editing !== undefined &&
+        props.worldLocationEditing.renderEditor({
+          location: props.editing,
+          references: props.references,
+          close: () => props.edit(undefined),
+          onError: props.onError,
+          save: props.save
+        })}
+      {props.placing &&
+        props.worldLocationEditing.renderPlacementDialog({
+          location: props.placing,
+          close: () => props.place(null),
+          onPlaced: props.placed,
+          onError: props.onError
+        })}
     </>
   )
 }

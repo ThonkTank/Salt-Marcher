@@ -16,14 +16,14 @@ import type { CreatureCapabilityPort } from '../creatures/creatures-capabilities
 import type { BiomeChangeNotice } from '../../../shared/contracts/biome.js'
 import type { EncounterTableChangeNotice } from '../../../shared/contracts/encounter-source.js'
 import type { BiomePage } from '../../../shared/contracts/biome.js'
-import type { SaltMarcherApi } from '../../../shared/contracts/capability-api.js'
+import type { BiomeOptionSearchPort } from '../creatures/biome-option-search-port.js'
 
 export function useMonsterCatalogController(
   active: boolean,
   onError: (message: string) => void,
   inspect: (creature: Creature) => void,
   port: CreatureCapabilityPort,
-  biomePort?: Pick<SaltMarcherApi['biomes'], 'search'>,
+  biomePort?: BiomeOptionSearchPort,
   onBiomesChanged?: (
     listener: (notice: BiomeChangeNotice) => void
   ) => () => void,

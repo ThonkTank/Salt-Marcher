@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import type { WorldLocationSnapshot } from '../../shared/contracts/world-location.js'
+import type { WorldLocationDeleteReceipt } from '../../shared/contracts/world-location.js'
 import type { CampaignUnitOfWork } from './campaign-unit-of-work.js'
 import type { HexMapStore } from '../hex/hex-map-store.js'
 import type { HexEditJournalStore } from '../hex/hex-edit-journal-store.js'
@@ -9,7 +9,7 @@ export type WorldLocationDeletionContext = Readonly<{
   maps: Pick<HexMapStore, 'unlinkDeletedLocation'>
   journal: Pick<HexEditJournalStore, 'removeLocationReferences'>
   locations: Readonly<{
-    delete(id: string, expectedRevision: number): WorldLocationSnapshot
+    delete(id: string, expectedRevision: number): WorldLocationDeleteReceipt
   }>
 }>
 
@@ -23,9 +23,9 @@ export class WorldLocationDeletionCommandHandler {
     return unitOfWork.run(() => {
       const change = maps.unlinkDeletedLocation(input.id)
       journal.removeLocationReferences(input.id)
-      const snapshot = locations.delete(input.id, input.expectedRevision)
+      const receipt = locations.delete(input.id, input.expectedRevision)
       return {
-        snapshot,
+        receipt,
         notice: change
           ? {
               campaignCommandId: randomUUID(),

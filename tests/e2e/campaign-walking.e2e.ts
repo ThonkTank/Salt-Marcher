@@ -1,6 +1,7 @@
 import { browser, expect } from '@wdio/globals'
 import type { Browser as WdioBrowser } from 'webdriverio'
 import {
+  clickWhenInteractable,
   expectAccessible,
   expectAccessibleInBothThemes,
   expectElementGolden
@@ -122,14 +123,13 @@ describe('campaign walking skeleton', () => {
     await createLocation(client, 'Leuchtturmklippe', 'Zeichen an der Küste.')
     await (await client.$('button[aria-label="Hex-Editor"]')).click()
     await (await client.$('button=Neu')).click()
-    await expect(
-      await client.$('[role="region"][aria-label="Hex-Editor Neue Hex-Karte"]')
-    ).toBeExisting()
-    await (await client.$('button=Umbenennen')).click()
+    const createMap = await client.$(
+      '[role="dialog"][aria-label="Hexkarte erstellen"]'
+    )
     await (
-      await client.$('input[aria-label="Kartenname"]')
+      await createMap.$('input[aria-label="Kartenname"]')
     ).setValue('Salzmarsch-Küste')
-    await (await client.$('button=Speichern')).click()
+    await (await createMap.$('button=Erstellen')).click()
     const mapHost = await client.$(
       '[role="region"][aria-label="Hex-Editor Salzmarsch-Küste"]'
     )
@@ -152,6 +152,17 @@ describe('campaign walking skeleton', () => {
     await mapCanvas.click()
     await waitForHexContentRevision(client, 'Salzmarsch-Küste', 1)
     await expectAccessibleInBothThemes(client)
+    await client.execute(() => {
+      const viewport = document.querySelector<HTMLElement>(
+        '.hex-biome-viewport'
+      )
+      if (!viewport) throw new Error('Biome palette viewport missing')
+      viewport.scrollTop = 0
+      viewport.dispatchEvent(new Event('scroll', { bubbles: true }))
+    })
+    await expect(
+      await client.$('.hex-biome-tile[aria-pressed="true"]')
+    ).toBeExisting()
     await expectElementGolden(
       client,
       'hex-editor-biome-light',
@@ -274,7 +285,7 @@ describe('campaign walking skeleton', () => {
       await editLocation.$('input[aria-label="Ortsname"]')
     ).setValue('Salzmarschhafen')
     await (
-      await editLocation.$('textarea[aria-label="Ortsnotizen"]')
+      await editLocation.$('textarea[aria-label="GM-Notizen"]')
     ).setValue('Nebel, Lagerhäuser und eine geschäftige Anlegestelle.')
     await (await editLocation.$('button=Speichern')).click()
     await expect(
@@ -309,10 +320,12 @@ describe('campaign walking skeleton', () => {
     const factionDialog = await client.$(
       '[role="dialog"][aria-label="Fraktion erstellen"]'
     )
+    await factionDialog.waitForDisplayed({ timeout: 10_000 })
     await (
       await factionDialog.$('input[aria-label="Fraktionsname"]')
     ).setValue('Hafenwache')
-    await (await factionDialog.$('button=Neue Encounter-Tabelle')).click()
+    await (await factionDialog.$('button.faction-table-card')).click()
+    await clickWhenInteractable(await client.$('button=Neue Encounter-Tabelle'))
     const tableDialog = await client.$('section.encounter-table-manager')
     const tableGeometry = await client.execute(() => {
       const layout = document.querySelector('.creature-collection-layout')!
@@ -333,7 +346,7 @@ describe('campaign walking skeleton', () => {
     })
     expect(tableGeometry).toEqual({
       seamWidth: 9,
-      draftWidth: 424,
+      draftWidth: 627,
       ordered: true
     })
     await (
@@ -358,16 +371,14 @@ describe('campaign walking skeleton', () => {
       timeoutMsg: 'Shared table manager did not render the filtered Wolf.'
     })
     await addTableWolf.click()
-    await (await tableDialog.$('button=Erstellen')).click()
+    await (await tableDialog.$('button=Erstellen und verknüpfen')).click()
     await expect(
       await factionDialog.$('input[aria-label="Fraktionsname"]')
     ).toHaveValue('Hafenwache')
     await client.waitUntil(
       async () =>
         (await (
-          await factionDialog.$(
-            'select[aria-label="Primäre Encounter-Tabelle"] option:checked'
-          )
+          await factionDialog.$('button.faction-table-card strong')
         ).getText()) === 'Wachpatrouille',
       {
         timeout: 15_000,
@@ -383,10 +394,8 @@ describe('campaign walking skeleton', () => {
     await (await client.$('button=Wachpatrouille')).click()
     const reopenedTable = await client.$('section.encounter-table-manager')
     await expect(
-      await reopenedTable.$(
-        'select[aria-label="Encounter-Tabelle auswählen"] option:checked'
-      )
-    ).toHaveText('Wachpatrouille')
+      await reopenedTable.$('input[aria-label="Tabellenname"]')
+    ).toHaveValue('Wachpatrouille')
     await (
       await reopenedTable.$('textarea[aria-label="Tabellenbeschreibung"]')
     ).setValue('Nicht speichern')
@@ -830,7 +839,9 @@ async function createLocation(
   await (await client.$('button=Erstellen')).click()
   const dialog = await client.$('[role="dialog"][aria-label="Ort erstellen"]')
   await (await dialog.$('input[aria-label="Ortsname"]')).setValue(name)
-  await (await dialog.$('textarea[aria-label="Ortsnotizen"]')).setValue(notes)
+  await (await dialog.$('input[aria-label="Tags"]')).setValue('Schauplatz')
+  await client.keys(['Enter'])
+  await (await dialog.$('textarea[aria-label="GM-Notizen"]')).setValue(notes)
   await (await dialog.$('button=Erstellen')).click()
   await expect(await client.$(`h2[aria-label="${name}"]`)).toBeExisting()
 }

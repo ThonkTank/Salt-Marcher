@@ -38,6 +38,7 @@ import { InstallationSettingsStore } from './installation-settings-store.js'
 import { initializeCreatureSchema } from '../../creatures/catalog.js'
 import { initializeLocationSymbolSchema } from '../../worldplanner/location-symbol-store.js'
 import { initializeBiomeCatalogSchema } from '../../biomes/biome-catalog.js'
+import { initializeWorldLocationSaveJournalSchema } from '../../worldplanner/world-location-save-journal.js'
 
 export type CampaignCreatePhase =
   | 'before-registry-entry'
@@ -335,6 +336,7 @@ export class CampaignStore {
     initializeEncounterTableSchema(campaign)
     initializeWorldFactionSchema(campaign)
     initializeHexSchema(campaign)
+    initializeWorldLocationSaveJournalSchema(campaign)
     initializeDevelopmentSchemaVersion(campaign)
     campaign.close()
   }

@@ -1,4 +1,3 @@
-import type { PlainMessageKey } from '../../i18n/messages.de.js'
 import type { SurfaceId } from '../../shell/module-host.js'
 import type { ModuleRecoveryPolicy } from '../../shell/module-host.js'
 import type { ComponentType } from 'react'
@@ -11,7 +10,7 @@ export type WorkspaceId = Exclude<SurfaceId, 'application'>
 
 export type WorkspaceDefinition = Readonly<{
   id: WorkspaceId
-  label: PlainMessageKey
+  label: 'nav.session' | 'nav.hex' | 'nav.catalog'
   icon: string
   layout: 'cockpit' | 'scroll'
   load: () => Promise<{ default: ComponentType<WorkspaceSurfaceProps> }>

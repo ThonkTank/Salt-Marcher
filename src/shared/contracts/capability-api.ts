@@ -30,11 +30,14 @@ import type {
   InstallationSettings
 } from './settings.js'
 import type {
-  WorldLocationDraft,
-  CreateWorldLocationResult,
   WorldLocationChangeNotice,
+  WorldLocationDeleteReceipt,
   WorldLocationMapPresentation,
   WorldLocationMapPresentationPatch,
+  SaveWorldLocationInput,
+  WorldLocationPlacementCommand,
+  WorldLocationPlacementCommitResult,
+  WorldLocationSaveReceipt,
   WorldLocationSnapshot
 } from './world-location.js'
 import type {
@@ -44,6 +47,7 @@ import type {
   LocationSymbolDeleteResult,
   LocationSymbolPage,
   LocationSymbol,
+  LocationSymbolMutationReceipt,
   ImportLocationSymbolResult,
   LocationSymbolSnapshot,
   SvgSymbolFileResult
@@ -60,10 +64,16 @@ import type {
 } from './biome.js'
 import type {
   EncounterTableChangeNotice,
+  EncounterTableCommandReceipt,
   EncounterTableDraft,
+  EncounterTableDeleteReceipt,
+  EncounterTableMutationReceipt,
   EncounterTableScope,
   EncounterTableSnapshot,
   WorldFactionDraft,
+  WorldFactionCommandReceipt,
+  WorldFactionDeleteReceipt,
+  WorldFactionMutationReceipt,
   WorldFactionSnapshot
 } from './encounter-source.js'
 import type {
@@ -171,28 +181,28 @@ export interface SaltMarcherApi {
   }
   locations: {
     read(): Promise<WorldLocationSnapshot>
-    create(
-      location: WorldLocationDraft,
-      expectedRevision: number
-    ): Promise<CreateWorldLocationResult>
-    update(
-      id: string,
-      location: WorldLocationDraft,
-      expectedRevision: number
-    ): Promise<WorldLocationSnapshot>
+    suggestTags(query: string, limit?: number): Promise<readonly string[]>
+    save(input: SaveWorldLocationInput): Promise<WorldLocationSaveReceipt>
+    saveReceipt(commandId: string): Promise<WorldLocationSaveReceipt | null>
+    commitPlacement(
+      input: WorldLocationPlacementCommand
+    ): Promise<WorldLocationPlacementCommitResult>
     updateMapPresentation(
       id: string,
       patch: WorldLocationMapPresentationPatch,
       expectedRevision: number
     ): Promise<WorldLocationMapPresentation>
-    delete(id: string, expectedRevision: number): Promise<WorldLocationSnapshot>
+    delete(
+      id: string,
+      expectedRevision: number
+    ): Promise<WorldLocationDeleteReceipt>
     onChanged(listener: (notice: WorldLocationChangeNotice) => void): () => void
   }
   locationSymbols: {
     create(
       symbol: LocationSymbolDraft,
       expectedRevision: number
-    ): Promise<LocationSymbolSnapshot>
+    ): Promise<LocationSymbolMutationReceipt>
     search(
       query?: string,
       offset?: number,
@@ -246,41 +256,53 @@ export interface SaltMarcherApi {
   }
   encounterTables: {
     read(): Promise<EncounterTableSnapshot>
+    commandReceipt(
+      commandId: string
+    ): Promise<EncounterTableCommandReceipt | null>
     create(
       commandId: string,
       table: EncounterTableDraft,
       expectedRevision: number,
       scope?: EncounterTableScope
-    ): Promise<EncounterTableSnapshot>
+    ): Promise<EncounterTableMutationReceipt>
     update(
       commandId: string,
       id: string,
       table: EncounterTableDraft,
       expectedRevision: number,
       scope?: EncounterTableScope
-    ): Promise<EncounterTableSnapshot>
+    ): Promise<EncounterTableMutationReceipt>
     delete(
       commandId: string,
       id: string,
       expectedRevision: number,
       scope?: EncounterTableScope
-    ): Promise<EncounterTableSnapshot>
+    ): Promise<EncounterTableDeleteReceipt>
     onChanged(
       listener: (notice: EncounterTableChangeNotice) => void
     ): () => void
   }
   factions: {
     read(): Promise<WorldFactionSnapshot>
+    commandReceipt(
+      commandId: string
+    ): Promise<WorldFactionCommandReceipt | null>
     create(
+      commandId: string,
       faction: WorldFactionDraft,
       expectedRevision: number
-    ): Promise<WorldFactionSnapshot>
+    ): Promise<WorldFactionMutationReceipt>
     update(
+      commandId: string,
       id: string,
       faction: WorldFactionDraft,
       expectedRevision: number
-    ): Promise<WorldFactionSnapshot>
-    delete(id: string, expectedRevision: number): Promise<WorldFactionSnapshot>
+    ): Promise<WorldFactionMutationReceipt>
+    delete(
+      commandId: string,
+      id: string,
+      expectedRevision: number
+    ): Promise<WorldFactionDeleteReceipt>
   }
   hex: {
     editorBootstrap(): Promise<HexEditorBootstrap>
@@ -324,19 +346,6 @@ export interface SaltMarcherApi {
     commandReceipt(commandId: string): Promise<HexBrushStrokeResult | null>
     runtimeOverlays(mapId: string): Promise<HexRuntimeOverlayProjection>
     onChanged(listener: (notice: HexChangeNotice) => void): () => void
-    placeLocation(input: {
-      commandId: string
-      mapId: string
-      locationId: string
-      coordinate: AxialCoordinate
-      expectedContentRevision: number
-    }): Promise<HexBrushStrokeResult>
-    removeLocation(input: {
-      commandId: string
-      mapId: string
-      locationId: string
-      expectedContentRevision: number
-    }): Promise<HexBrushStrokeResult>
   }
   hexTravel: {
     read(sceneId: string): Promise<HexTravelSnapshot>

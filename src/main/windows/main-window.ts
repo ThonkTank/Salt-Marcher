@@ -3,14 +3,15 @@ import { hardenWebContents } from '../security/security.js'
 import { outputPath } from '../application-lifecycle/runtime-paths.js'
 import { isE2eRuntime } from '../application-lifecycle/e2e-runtime.js'
 import { observeRendererProcess } from './renderer-observability.js'
+import { mainWindowGeometry } from '../../shared/contracts/window-geometry.js'
 
 export function createMainWindow(): BrowserWindow {
   const window = new BrowserWindow({
     title: 'SaltMarcher',
-    width: 1280,
-    height: 800,
-    minWidth: 720,
-    minHeight: 540,
+    width: mainWindowGeometry.defaultWidth,
+    height: mainWindowGeometry.defaultHeight,
+    minWidth: mainWindowGeometry.minimumWidth,
+    minHeight: mainWindowGeometry.minimumHeight,
     autoHideMenuBar: true,
     show: false,
     webPreferences: {

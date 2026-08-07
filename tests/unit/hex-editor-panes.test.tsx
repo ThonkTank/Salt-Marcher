@@ -1,11 +1,20 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import {
+  cleanup,
+  fireEvent,
+  render as testingRender,
+  screen
+} from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { HexStatePane } from '../../src/renderer/features/hex/hex-editor-panes.js'
 import type { HexBiomeCatalog } from '../../src/shared/contracts/hex.js'
 import type { WorldLocationSnapshot } from '../../src/shared/contracts/world-location.js'
 import type { LocationSymbolPage } from '../../src/shared/contracts/location-symbol.js'
+import { ModalLayerProvider } from '../../src/renderer/shell/modal-layer.js'
+
+const render = (ui: Parameters<typeof testingRender>[0]) =>
+  testingRender(ui, { wrapper: ModalLayerProvider })
 
 afterEach(cleanup)
 
@@ -35,8 +44,8 @@ const locations: WorldLocationSnapshot = {
     {
       id: locationId,
       displayName: 'Schwarzes Kap',
-      kind: 'Ruine',
-      region: 'Küste',
+      tags: ['Ruine', 'Küste'],
+      readAloud: '',
       notes: '',
       position: 0,
       factionIds: [],
@@ -53,8 +62,8 @@ const locations: WorldLocationSnapshot = {
     {
       id: secondLocationId,
       displayName: 'Waldschrein',
-      kind: 'Schrein',
-      region: 'Dunkelwald',
+      tags: ['Schrein', 'Dunkelwald'],
+      readAloud: '',
       notes: '',
       position: 1,
       factionIds: [],

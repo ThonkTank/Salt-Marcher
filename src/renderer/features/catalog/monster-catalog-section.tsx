@@ -1,4 +1,9 @@
-import { formatMessage, message } from '../../i18n/messages.de.js'
+import { formatMessage, message } from '../../i18n/catalog-runtime.de.js'
+import {
+  formatChallengeRating,
+  formatInteger
+} from '../../i18n/domain-formatters.de.js'
+import { TextActionButton } from '../../shell/text-action-button.js'
 import {
   CreatureFilters,
   FilterChips,
@@ -55,20 +60,19 @@ export function MonsterCatalogSection(props: {
             {props.controller.page?.rows.map((creature) => (
               <tr key={creature.id} className="catalog-row">
                 <td>
-                  <button
-                    className="link-button"
+                  <TextActionButton
                     onClick={() => void props.controller.open(creature)}
                   >
                     {creature.name}
-                  </button>
+                  </TextActionButton>
                 </td>
-                <td>{creature.challengeRating}</td>
+                <td>{formatChallengeRating(creature.challengeRating)}</td>
                 <td>
                   {creature.type}
                   {creature.subtype ? ` (${creature.subtype})` : ''}
                 </td>
                 <td>{creature.size}</td>
-                <td>{creature.xp.toLocaleString()}</td>
+                <td>{formatInteger(creature.xp)}</td>
               </tr>
             ))}
           </tbody>

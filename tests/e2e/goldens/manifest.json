@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "goldens": [
+    {
+      "name": "hex-editor-biome-light",
+      "suite": "create",
+      "selector": ".hex-editor-workspace",
+      "viewport": { "width": 1280, "height": 800 }
+    },
+    {
+      "name": "hex-editor-location-dark",
+      "suite": "create",
+      "selector": ".hex-editor-workspace",
+      "viewport": { "width": 1280, "height": 800 }
+    },
+    {
+      "name": "hex-editor-selection-light-200",
+      "suite": "create",
+      "selector": ".hex-editor-state",
+      "viewport": { "width": 1280, "height": 800 }
+    },
+    {
+      "name": "initiative",
+      "suite": "create",
+      "selector": "aside[aria-label=\"Szenario Panel\"]",
+      "viewport": { "width": 1280, "height": 800 }
+    },
+    {
+      "name": "combat",
+      "suite": "create",
+      "selector": "aside[aria-label=\"Szenario Panel\"]",
+      "viewport": { "width": 1280, "height": 800 }
+    },
+    {
+      "name": "resolution",
+      "suite": "create",
+      "selector": "aside[aria-label=\"Szenario Panel\"]",
+      "viewport": { "width": 1280, "height": 800 }
+    },
+    {
+      "name": "group-management",
+      "suite": "create",
+      "selector": "section[aria-labelledby=\"group-builder-title\"]",
+      "viewport": { "width": 1280, "height": 800 }
+    },
+    {
+      "name": "world-location-placement-compact",
+      "suite": "hexLocation",
+      "selector": ".location-map-section",
+      "viewport": { "width": 1280, "height": 800 }
+    },
+    {
+      "name": "world-location-placement-expanded",
+      "suite": "hexLocation",
+      "selector": ".location-expanded-map-dialog",
+      "viewport": { "width": 1280, "height": 800 }
+    },
+    {
+      "name": "world-location-dialog",
+      "suite": "hexLocation",
+      "selector": "section.location-dialog",
+      "viewport": { "width": 1280, "height": 800 }
+    },
+    {
+      "name": "stacked-location-faction-dialogs",
+      "suite": "hexLocation",
+      "selector": ".modal-backdrop[data-modal-bottom=\"true\"]",
+      "viewport": { "width": 1280, "height": 800 }
+    },
+    {
+      "name": "dialog-architecture",
+      "suite": "dialogs",
+      "selector": "section.encounter-table-manager",
+      "viewport": { "width": 1150, "height": 700 }
+    },
+    {
+      "name": "stacked-faction-encounter-dialogs",
+      "suite": "dialogs",
+      "selector": ".modal-backdrop[data-modal-bottom=\"true\"]",
+      "viewport": { "width": 1150, "height": 700 }
+    },
+    {
+      "name": "world-faction-dialog",
+      "suite": "dialogs",
+      "selector": "section.world-faction-dialog",
+      "viewport": { "width": 1150, "height": 700 }
+    }
+  ]
+}

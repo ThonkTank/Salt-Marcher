@@ -11,6 +11,7 @@ import {
   ModalForm
 } from '../../src/renderer/shell/modal-dialog.js'
 import { ModalLayerProvider } from '../../src/renderer/shell/modal-layer.js'
+import { AnchoredPopup } from '../../src/renderer/shell/anchored-popup.js'
 
 function Fixture(props: { closed: () => void }) {
   const [open, setOpen] = useState(false)
@@ -119,6 +120,12 @@ describe('ModalDialog', () => {
     expect(
       document.querySelector('[aria-label="Außendialog"]')
     ).toHaveAttribute('aria-hidden', 'true')
+    const backdrops = [...document.querySelectorAll('.modal-backdrop')]
+    expect(backdrops).toHaveLength(2)
+    expect(backdrops[0]).toHaveAttribute('data-modal-bottom', 'true')
+    expect(backdrops[0]).toHaveAttribute('data-modal-depth', '1')
+    expect(backdrops[1]).toHaveAttribute('data-modal-bottom', 'false')
+    expect(backdrops[1]).toHaveAttribute('data-modal-depth', '0')
 
     fireEvent.keyDown(document, { key: 'Escape' })
     expect(
@@ -130,6 +137,195 @@ describe('ModalDialog', () => {
     fireEvent.keyDown(document, { key: 'Escape' })
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
     expect(document.body.style.overflow).toBe('')
+  })
+
+  it('applies one scrim, cumulative depth styling and top-only behavior through four layers', () => {
+    function FourLayerFixture() {
+      const [depth, setDepth] = useState(0)
+      return (
+        <>
+          <button onClick={() => setDepth(1)}>Ebene 1 öffnen</button>
+          {depth >= 1 && (
+            <ModalDialog
+              className="level-1"
+              ariaLabel="Ebene 1"
+              onClose={() => setDepth(0)}
+            >
+              <button onClick={() => setDepth(2)}>Ebene 2 öffnen</button>
+            </ModalDialog>
+          )}
+          {depth >= 2 && (
+            <ModalDialog
+              className="level-2"
+              ariaLabel="Ebene 2"
+              onClose={() => setDepth(1)}
+            >
+              <button onClick={() => setDepth(3)}>Ebene 3 öffnen</button>
+            </ModalDialog>
+          )}
+          {depth >= 3 && (
+            <ModalDialog
+              className="level-3"
+              ariaLabel="Ebene 3"
+              onClose={() => setDepth(2)}
+            >
+              <button onClick={() => setDepth(4)}>Ebene 4 öffnen</button>
+            </ModalDialog>
+          )}
+          {depth >= 4 && (
+            <ModalDialog
+              className="level-4"
+              ariaLabel="Ebene 4"
+              onClose={() => setDepth(3)}
+            >
+              <button>Oberste Aktion</button>
+            </ModalDialog>
+          )}
+        </>
+      )
+    }
+
+    render(
+      <ModalLayerProvider>
+        <FourLayerFixture />
+      </ModalLayerProvider>
+    )
+    const rootOpener = screen.getByRole('button', { name: 'Ebene 1 öffnen' })
+    rootOpener.focus()
+    fireEvent.click(rootOpener)
+    fireEvent.click(screen.getByRole('button', { name: 'Ebene 2 öffnen' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Ebene 3 öffnen' }))
+    const fourthOpener = screen.getByRole('button', { name: 'Ebene 4 öffnen' })
+    fireEvent.click(fourthOpener)
+
+    const backdrops = [
+      ...document.querySelectorAll<HTMLElement>('.modal-backdrop')
+    ]
+    expect(backdrops).toHaveLength(4)
+    expect(
+      backdrops.filter((layer) => layer.dataset['modalBottom'] === 'true')
+    ).toHaveLength(1)
+    expect(backdrops.map((layer) => layer.dataset['modalDepth'])).toEqual([
+      '3',
+      '2',
+      '1',
+      '0'
+    ])
+    expect(
+      backdrops.map((layer) =>
+        layer.style.getPropertyValue('--modal-stack-offset')
+      )
+    ).toEqual(['33px', '22px', '11px', '0px'])
+    expect(
+      backdrops.map((layer) =>
+        layer.style.getPropertyValue('--modal-stack-opacity')
+      )
+    ).toEqual(['0.5', '0.5', '0.7', '1'])
+    expect(
+      backdrops.filter((layer) => layer.hasAttribute('inert'))
+    ).toHaveLength(3)
+    expect(
+      screen
+        .getAllByRole('dialog', { hidden: true })
+        .filter((dialog) => dialog.hasAttribute('aria-modal'))
+    ).toHaveLength(1)
+    expect(screen.getByRole('button', { name: 'Oberste Aktion' })).toHaveFocus()
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(fourthOpener).toHaveFocus()
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.getByRole('button', { name: 'Ebene 3 öffnen' })).toHaveFocus()
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.getByRole('button', { name: 'Ebene 2 öffnen' })).toHaveFocus()
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(rootOpener).toHaveFocus()
+  })
+
+  it('dispatches pointer and Escape through popup, alert, child and parent', () => {
+    function OverlayFixture() {
+      const [parent, setParent] = useState(false)
+      const [child, setChild] = useState(false)
+      const [alert, setAlert] = useState(false)
+      const [popup, setPopup] = useState(false)
+      const [anchor, setAnchor] = useState<HTMLButtonElement | null>(null)
+      return (
+        <>
+          <button onClick={() => setParent(true)}>Parent öffnen</button>
+          {parent && (
+            <ModalDialog
+              className="parent"
+              ariaLabel="Parent"
+              onClose={() => setParent(false)}
+            >
+              <button onClick={() => setChild(true)}>Child öffnen</button>
+            </ModalDialog>
+          )}
+          {child && (
+            <ModalDialog
+              className="child"
+              ariaLabel="Child"
+              onClose={() => setChild(false)}
+            >
+              <button onClick={() => setAlert(true)}>Alert öffnen</button>
+            </ModalDialog>
+          )}
+          {alert && (
+            <ModalDialog
+              role="alertdialog"
+              className="alert"
+              ariaLabel="Alert"
+              onClose={() => setAlert(false)}
+            >
+              <button
+                ref={setAnchor}
+                aria-label="Popup öffnen"
+                onClick={() => setPopup(true)}
+              >
+                Popup öffnen
+              </button>
+              <AnchoredPopup
+                open={popup}
+                anchor={anchor}
+                className="test-popup"
+                onDismiss={() => setPopup(false)}
+              >
+                <div role="menu">Popup-Inhalt</div>
+              </AnchoredPopup>
+            </ModalDialog>
+          )}
+        </>
+      )
+    }
+
+    render(
+      <ModalLayerProvider>
+        <OverlayFixture />
+      </ModalLayerProvider>
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Parent öffnen' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Child öffnen' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Alert öffnen' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Popup öffnen' }))
+    expect(screen.getByRole('menu')).toBeVisible()
+
+    fireEvent.pointerDown(document.body)
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(screen.getByRole('alertdialog', { name: 'Alert' })).toBeVisible()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Popup öffnen' }))
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(screen.getByRole('alertdialog', { name: 'Alert' })).toBeVisible()
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Child' })).toBeVisible()
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(
+      screen.queryByRole('dialog', { name: 'Child' })
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: 'Parent' })).toBeVisible()
+    fireEvent.keyDown(document, { key: 'Escape' })
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('renders discard confirmation as a focused alert dialog', () => {
@@ -200,5 +396,47 @@ describe('ModalDialog', () => {
     expect(dialog.querySelector('form')).toBeInTheDocument()
     fireEvent.click(screen.getByRole('button', { name: 'Speichern' }))
     expect(submit).toHaveBeenCalledOnce()
+  })
+
+  it('does not submit a parent modal form through a sibling child dialog', () => {
+    const parentSubmit = vi.fn()
+    const childSubmit = vi.fn()
+    render(
+      <ModalLayerProvider>
+        <ModalDialog
+          className="parent-form-dialog"
+          ariaLabel="Elternformular"
+          onClose={vi.fn()}
+        >
+          <ModalForm
+            onSubmit={(event) => {
+              event.preventDefault()
+              parentSubmit()
+            }}
+          >
+            <button>Elternaktion</button>
+          </ModalForm>
+        </ModalDialog>
+        <ModalDialog
+          className="child-form-dialog"
+          ariaLabel="Kindformular"
+          onClose={vi.fn()}
+        >
+          <ModalForm
+            onSubmit={(event) => {
+              event.preventDefault()
+              childSubmit()
+            }}
+          >
+            <button>Kind speichern</button>
+          </ModalForm>
+        </ModalDialog>
+      </ModalLayerProvider>
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Kind speichern' }))
+
+    expect(childSubmit).toHaveBeenCalledOnce()
+    expect(parentSubmit).not.toHaveBeenCalled()
   })
 })

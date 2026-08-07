@@ -1,4 +1,8 @@
-import { message } from '../../i18n/messages.de.js'
+import { message } from '../../i18n/reference-runtime.de.js'
+import {
+  formatChallengeRating,
+  formatInteger
+} from '../../i18n/domain-formatters.de.js'
 import type { Creature } from '../../../shared/contracts/encounter.js'
 import { IlluminatedHeading } from '../../shell/illuminated-heading.js'
 import type { ReferenceTarget } from '../../../shared/contracts/reference.js'
@@ -54,8 +58,9 @@ export function CreatureInspector(props: {
         ) : null}
         {', '}
         <ReadOnlyProse path={path}>{c.alignment}</ReadOnlyProse> ·{' '}
-        {message('ui.herausforderung')} {c.challengeRating} (
-        {c.xp.toLocaleString()} {message('ui.xp')}
+        {message('ui.herausforderung')}{' '}
+        {formatChallengeRating(c.challengeRating)} ({formatInteger(c.xp)}{' '}
+        {message('ui.xp')}
       </p>
       <hr />
       <div className="ability-grid">

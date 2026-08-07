@@ -13,29 +13,43 @@ import type {
   CreatureCatalogQuery,
   CreatureFilterOptions
 } from '../../../shared/contracts/encounter.js'
-import { formatMessage, message as uiMessage } from '../../i18n/messages.de.js'
+import {
+  formatMessage,
+  message as uiMessage
+} from '../../i18n/catalog-runtime.de.js'
 import { CreatureFilters, FilterChips } from '../creatures/creature-controls.js'
 import { CreatureInspector } from '../reference/creature-inspector.js'
+import {
+  formatChallengeRating,
+  formatInteger
+} from '../../i18n/domain-formatters.de.js'
 import { ModalCloseButton, ModalDialog } from '../../shell/modal-dialog.js'
 import type { SearchableSelectOption } from '../../shell/searchable-select.js'
 import './creature-collection.css'
 
-export function CreatureCollectionCatalogPane(props: {
+type CreatureCollectionCatalogProps = Readonly<{
   query: CreatureCatalogQuery
   options: CreatureFilterOptions
   page: CreatureCatalogPage | null
   changed: (query: CreatureCatalogQuery) => void
   searchBiomeOptions?:
     ((query: string) => Promise<readonly SearchableSelectOption[]>) | undefined
-  add?: (creature: Creature) => void
   inspect: (creature: Creature) => void
-  quantities?: Readonly<Record<string, number>>
-  variant?: 'builder' | 'inspector'
   controls?: boolean
   showBiome?: boolean
   footerStatus?: string
   className?: string
-}) {
+}>
+
+type CreatureBuilderCatalogProps = CreatureCollectionCatalogProps &
+  Readonly<{
+    add: (creature: Creature) => void
+    quantities: Readonly<Record<string, number>>
+  }>
+
+export function CreatureBuilderCatalogTable(
+  props: CreatureBuilderCatalogProps
+) {
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set())
 
   function toggleExpanded(creatureId: string) {
@@ -47,6 +61,126 @@ export function CreatureCollectionCatalogPane(props: {
     })
   }
 
+  return (
+    <CreatureCollectionCatalogFrame {...props}>
+      <table className="creature-collection-table">
+        <CatalogHead showBiome={props.showBiome ?? false} actions />
+        <tbody>
+          {props.page?.rows.map((creature) => {
+            const open = expanded.has(creature.id)
+            const quantity = props.quantities[creature.id] ?? 0
+            return (
+              <Fragment key={creature.id}>
+                <tr
+                  className={`creature-collection-row${open ? ' expanded' : ''}`}
+                >
+                  <td>
+                    <CreatureNameCell
+                      creature={creature}
+                      inspect={props.inspect}
+                      expanded={open}
+                      toggle={() => toggleExpanded(creature.id)}
+                    />
+                  </td>
+                  <CreatureFactsCells
+                    creature={creature}
+                    showBiome={props.showBiome ?? false}
+                  />
+                  <td>
+                    {quantity > 0 ? (
+                      <span className="creature-collection-in-draft">
+                        {formatMessage('catalog.inGroup', { quantity })}
+                      </span>
+                    ) : (
+                      <AddCreatureButton creature={creature} add={props.add} />
+                    )}
+                  </td>
+                </tr>
+                {open && (
+                  <tr className="creature-collection-expanded-row">
+                    <td colSpan={props.showBiome ? 6 : 5}>
+                      <CreatureInspector creature={creature} embedded />
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
+            )
+          })}
+        </tbody>
+      </table>
+    </CreatureCollectionCatalogFrame>
+  )
+}
+
+export function CreatureInspectorCatalogTable(
+  props: CreatureCollectionCatalogProps
+) {
+  return (
+    <CreatureCollectionCatalogFrame {...props}>
+      <table className="creature-collection-table">
+        <CatalogHead showBiome={props.showBiome ?? false} actions={false} />
+        <tbody>
+          {props.page?.rows.map((creature) => (
+            <tr className="creature-collection-row" key={creature.id}>
+              <td>
+                <CreatureNameCell creature={creature} inspect={props.inspect} />
+              </td>
+              <CreatureFactsCells
+                creature={creature}
+                showBiome={props.showBiome ?? false}
+              />
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </CreatureCollectionCatalogFrame>
+  )
+}
+
+export function EncounterTableCreatureCatalogTable(
+  props: CreatureBuilderCatalogProps
+) {
+  return (
+    <CreatureCollectionCatalogFrame {...props}>
+      <table className="creature-collection-table">
+        <thead>
+          <tr>
+            <th>{uiMessage('ui.monster')}</th>
+            <th>{uiMessage('ui.cr')}</th>
+            <th>{uiMessage('ui.aktionen')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {props.page?.rows.map((creature) => {
+            const selected = (props.quantities[creature.id] ?? 0) > 0
+            return (
+              <tr className="creature-collection-row" key={creature.id}>
+                <td>
+                  <CreatureNameCell
+                    creature={creature}
+                    inspect={props.inspect}
+                  />
+                </td>
+                <td>{formatChallengeRating(creature.challengeRating)}</td>
+                <td>
+                  <AddCreatureButton
+                    creature={creature}
+                    add={props.add}
+                    selected={selected}
+                  />
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </CreatureCollectionCatalogFrame>
+  )
+}
+
+function CreatureCollectionCatalogFrame(
+  props: CreatureCollectionCatalogProps & { children: ReactNode }
+) {
   return (
     <section
       className={`creature-collection-pane${props.className ? ` ${props.className}` : ''}`}
@@ -75,143 +209,135 @@ export function CreatureCollectionCatalogPane(props: {
         </>
       )}
       <div className="creature-collection-table-wrap">
-        <table className="creature-collection-table">
-          <thead>
-            <tr>
-              <th>{uiMessage('ui.monster')}</th>
-              <th>{uiMessage('ui.cr')}</th>
-              <th>{uiMessage('ui.typ')}</th>
-              {props.showBiome && <th>{uiMessage('catalog.environment')}</th>}
-              <th>{uiMessage('ui.xp.2')}</th>
-              {props.variant !== 'inspector' && (
-                <th>{uiMessage('ui.aktionen')}</th>
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            {props.page?.rows.map((creature) => {
-              const open = expanded.has(creature.id)
-              const quantity = props.quantities?.[creature.id] ?? 0
-              return (
-                <Fragment key={creature.id}>
-                  <tr
-                    className={
-                      open
-                        ? 'creature-collection-row expanded'
-                        : 'creature-collection-row'
-                    }
-                  >
-                    <td>
-                      <span className="creature-collection-name-cell">
-                        <button
-                          type="button"
-                          className="creature-collection-expand"
-                          aria-expanded={open}
-                          aria-label={formatMessage(
-                            open
-                              ? 'catalog.hideCreature'
-                              : 'catalog.showCreature',
-                            { name: creature.name }
-                          )}
-                          onClick={() =>
-                            props.variant === 'inspector'
-                              ? props.inspect(creature)
-                              : toggleExpanded(creature.id)
-                          }
-                        >
-                          {open ? '▾' : '▸'}
-                        </button>
-                        <button
-                          type="button"
-                          className="creature-collection-link"
-                          onClick={() => props.inspect(creature)}
-                        >
-                          {creature.name}
-                        </button>
-                      </span>
-                    </td>
-                    <td>{creature.challengeRating}</td>
-                    <td>{creature.type}</td>
-                    {props.showBiome && (
-                      <td>{creature.biomes.join(', ') || '—'}</td>
-                    )}
-                    <td>{creature.xp.toLocaleString()}</td>
-                    {props.variant !== 'inspector' && (
-                      <td>
-                        {quantity > 0 ? (
-                          <span className="creature-collection-in-draft">
-                            {formatMessage('catalog.inGroup', { quantity })}
-                          </span>
-                        ) : (
-                          <button
-                            type="button"
-                            aria-label={formatMessage('catalog.addCreature', {
-                              name: creature.name
-                            })}
-                            onClick={() => props.add?.(creature)}
-                          >
-                            +
-                          </button>
-                        )}
-                      </td>
-                    )}
-                  </tr>
-                  {open && props.variant !== 'inspector' && (
-                    <tr className="creature-collection-expanded-row">
-                      <td colSpan={props.showBiome ? 6 : 5}>
-                        <CreatureInspector creature={creature} embedded />
-                      </td>
-                    </tr>
-                  )}
-                </Fragment>
-              )
-            })}
-          </tbody>
-        </table>
+        {props.children}
         {props.page?.status === 'empty' && (
           <p className="creature-collection-empty">{props.page.message}</p>
         )}
       </div>
-      <footer className="creature-collection-pane-footer">
-        <span>
-          {props.footerStatus ||
-            props.page?.message ||
-            formatMessage('catalog.monsterCount', {
-              count: props.page?.total ?? 0
-            })}
-        </span>
-        <div>
-          <button
-            type="button"
-            disabled={!props.page || props.query.offset === 0}
-            onClick={() =>
-              props.changed({
-                ...props.query,
-                offset: Math.max(0, props.query.offset - props.query.limit)
-              })
-            }
-          >
-            {uiMessage('ui.zurueck')}
-          </button>
-          <span>{Math.floor(props.query.offset / props.query.limit) + 1}</span>
-          <button
-            type="button"
-            disabled={
-              !props.page ||
-              props.query.offset + props.query.limit >= props.page.total
-            }
-            onClick={() =>
-              props.changed({
-                ...props.query,
-                offset: props.query.offset + props.query.limit
-              })
-            }
-          >
-            {uiMessage('ui.weiter')}
-          </button>
-        </div>
-      </footer>
+      <CatalogPagination {...props} />
     </section>
+  )
+}
+
+function CatalogHead(props: { showBiome: boolean; actions: boolean }) {
+  return (
+    <thead>
+      <tr>
+        <th>{uiMessage('ui.monster')}</th>
+        <th>{uiMessage('ui.cr')}</th>
+        <th>{uiMessage('ui.typ')}</th>
+        {props.showBiome && <th>{uiMessage('catalog.environment')}</th>}
+        <th>{uiMessage('ui.xp.2')}</th>
+        {props.actions && <th>{uiMessage('ui.aktionen')}</th>}
+      </tr>
+    </thead>
+  )
+}
+
+function CreatureNameCell(props: {
+  creature: Creature
+  inspect: (creature: Creature) => void
+  expanded?: boolean
+  toggle?: () => void
+}) {
+  return (
+    <span className="creature-collection-name-cell">
+      {props.toggle && (
+        <button
+          type="button"
+          className="creature-collection-expand"
+          aria-expanded={props.expanded}
+          aria-label={formatMessage(
+            props.expanded ? 'catalog.hideCreature' : 'catalog.showCreature',
+            { name: props.creature.name }
+          )}
+          onClick={props.toggle}
+        >
+          {props.expanded ? '▾' : '▸'}
+        </button>
+      )}
+      <button
+        type="button"
+        className="creature-collection-link"
+        onClick={() => props.inspect(props.creature)}
+      >
+        {props.creature.name}
+      </button>
+    </span>
+  )
+}
+
+function CreatureFactsCells(props: { creature: Creature; showBiome: boolean }) {
+  return (
+    <>
+      <td>{formatChallengeRating(props.creature.challengeRating)}</td>
+      <td>{props.creature.type}</td>
+      {props.showBiome && <td>{props.creature.biomes.join(', ') || '—'}</td>}
+      <td>{formatInteger(props.creature.xp)}</td>
+    </>
+  )
+}
+
+function AddCreatureButton(props: {
+  creature: Creature
+  add: (creature: Creature) => void
+  selected?: boolean
+}) {
+  return (
+    <button
+      type="button"
+      disabled={props.selected}
+      aria-label={formatMessage('catalog.addCreature', {
+        name: props.creature.name
+      })}
+      onClick={() => props.add(props.creature)}
+    >
+      {props.selected ? '✓' : '+'}
+    </button>
+  )
+}
+
+function CatalogPagination(props: CreatureCollectionCatalogProps) {
+  return (
+    <footer className="creature-collection-pane-footer">
+      <span>
+        {props.footerStatus ||
+          props.page?.message ||
+          formatMessage('catalog.monsterCount', {
+            count: props.page?.total ?? 0
+          })}
+      </span>
+      <div>
+        <button
+          type="button"
+          disabled={!props.page || props.query.offset === 0}
+          onClick={() =>
+            props.changed({
+              ...props.query,
+              offset: Math.max(0, props.query.offset - props.query.limit)
+            })
+          }
+        >
+          {uiMessage('ui.zurueck')}
+        </button>
+        <span>{Math.floor(props.query.offset / props.query.limit) + 1}</span>
+        <button
+          type="button"
+          disabled={
+            !props.page ||
+            props.query.offset + props.query.limit >= props.page.total
+          }
+          onClick={() =>
+            props.changed({
+              ...props.query,
+              offset: props.query.offset + props.query.limit
+            })
+          }
+        >
+          {uiMessage('ui.weiter')}
+        </button>
+      </div>
+    </footer>
   )
 }
 
@@ -277,8 +403,10 @@ export function CreatureCollectionManagerDialog(props: {
   const titleId = props.titleId ?? generatedTitleId
   return (
     <ModalDialog
-      className={`creature-collection-manager${props.className ? ` ${props.className}` : ''}`}
-      labelledBy={titleId}
+      className={`creature-collection-manager${props.tools ? ' creature-collection-manager-with-tools' : ''}${props.className ? ` ${props.className}` : ''}`}
+      {...(props.heading && !props.titleId
+        ? { ariaLabel: props.title }
+        : { labelledBy: titleId })}
       onClose={props.close}
       {...(props.busy === undefined ? {} : { busy: props.busy })}
     >

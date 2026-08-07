@@ -1,4 +1,8 @@
 import { z } from 'zod'
+import type {
+  EntityDeleteReceipt,
+  EntityMutationReceipt
+} from './entity-mutation.js'
 
 export const encounterTableScopeSchema = z.enum(['installation', 'campaign'])
 
@@ -44,12 +48,35 @@ export const encounterTableDraftSchema = z
   })
   .strict()
 
-export const encounterTableSnapshotSchema = z
+export const encounterTableSummarySchema = z
+  .object({
+    id: z.uuid(),
+    scope: encounterTableScopeSchema,
+    displayName: z.string().min(1).max(100),
+    entryCount: z.number().int().nonnegative(),
+    challengeRatingRange: z
+      .object({
+        minimum: z.string().min(1),
+        maximum: z.string().min(1)
+      })
+      .strict()
+      .nullable(),
+    biomes: z.array(z.string())
+  })
+  .strict()
+
+export const encounterTableScopeSnapshotSchema = z
   .object({
     revision: z.number().int().nonnegative(),
-    installationRevision: z.number().int().nonnegative().default(0),
-    campaignRevision: z.number().int().nonnegative().default(0),
-    tables: z.array(encounterTableSchema)
+    tables: z.array(encounterTableSchema),
+    summaries: z.array(encounterTableSummarySchema)
+  })
+  .strict()
+
+export const encounterTableSnapshotSchema = z
+  .object({
+    installation: encounterTableScopeSnapshotSchema,
+    campaign: encounterTableScopeSnapshotSchema
   })
   .strict()
 
@@ -104,6 +131,10 @@ const encounterTableMutationBaseSchema = mutationBaseSchema
   .extend({ commandId: z.uuid() })
   .strict()
 
+const worldFactionMutationBaseSchema = mutationBaseSchema
+  .extend({ commandId: z.uuid() })
+  .strict()
+
 export const createEncounterTableInputSchema = encounterTableMutationBaseSchema
   .extend({
     scope: encounterTableScopeSchema.default('campaign'),
@@ -131,18 +162,70 @@ export const encounterTableChangeNoticeSchema = z
   .strict()
   .readonly()
 
-export const createWorldFactionInputSchema = mutationBaseSchema
+export const createWorldFactionInputSchema = worldFactionMutationBaseSchema
   .extend({ faction: worldFactionDraftSchema })
   .strict()
 export const updateWorldFactionInputSchema = createWorldFactionInputSchema
   .extend({ id: z.uuid() })
   .strict()
-export const deleteWorldFactionInputSchema = mutationBaseSchema
+export const deleteWorldFactionInputSchema = worldFactionMutationBaseSchema
   .extend({ id: z.uuid() })
+  .strict()
+
+export const encounterTableMutationReceiptSchema = z
+  .object({
+    snapshot: encounterTableSnapshotSchema,
+    saved: encounterTableSchema
+  })
+  .strict()
+
+export const encounterTableDeleteReceiptSchema = z
+  .object({
+    snapshot: encounterTableSnapshotSchema,
+    deletedId: z.uuid()
+  })
+  .strict()
+
+export const encounterTableCommandReceiptSchema = z.union([
+  encounterTableMutationReceiptSchema,
+  encounterTableDeleteReceiptSchema
+])
+
+export const encounterTableCommandReceiptInputSchema = z
+  .object({ commandId: z.uuid() })
+  .strict()
+
+export const worldFactionMutationReceiptSchema = z
+  .object({
+    snapshot: worldFactionSnapshotSchema,
+    saved: worldFactionSchema
+  })
+  .strict()
+
+export const worldFactionDeleteReceiptSchema = z
+  .object({
+    snapshot: worldFactionSnapshotSchema,
+    deletedId: z.uuid()
+  })
+  .strict()
+
+export const worldFactionCommandReceiptSchema = z.union([
+  worldFactionMutationReceiptSchema,
+  worldFactionDeleteReceiptSchema
+])
+
+export const worldFactionCommandReceiptInputSchema = z
+  .object({ commandId: z.uuid() })
   .strict()
 
 export type EncounterTable = Readonly<z.infer<typeof encounterTableSchema>>
 export type EncounterTableScope = z.infer<typeof encounterTableScopeSchema>
+export type EncounterTableSummary = Readonly<
+  z.infer<typeof encounterTableSummarySchema>
+>
+export type EncounterTableScopeSnapshot = Readonly<
+  z.infer<typeof encounterTableScopeSnapshotSchema>
+>
 export type EncounterTableDraft = Readonly<
   z.infer<typeof encounterTableDraftSchema>
 >
@@ -159,3 +242,19 @@ export type WorldFactionDraft = Readonly<
 export type WorldFactionSnapshot = Readonly<
   z.infer<typeof worldFactionSnapshotSchema>
 >
+export type EncounterTableMutationReceipt = EntityMutationReceipt<
+  EncounterTable,
+  EncounterTableSnapshot
+>
+export type EncounterTableDeleteReceipt =
+  EntityDeleteReceipt<EncounterTableSnapshot>
+export type EncounterTableCommandReceipt =
+  EncounterTableMutationReceipt | EncounterTableDeleteReceipt
+export type WorldFactionMutationReceipt = EntityMutationReceipt<
+  WorldFaction,
+  WorldFactionSnapshot
+>
+export type WorldFactionDeleteReceipt =
+  EntityDeleteReceipt<WorldFactionSnapshot>
+export type WorldFactionCommandReceipt =
+  WorldFactionMutationReceipt | WorldFactionDeleteReceipt

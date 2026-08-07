@@ -1,12 +1,10 @@
-import { message } from '../../i18n/messages.de.js'
-import { useMemo, useState } from 'react'
+import { message } from '../../i18n/catalog-runtime.de.js'
+import { Suspense, useMemo, useState } from 'react'
 import type { Creature } from '../../../shared/contracts/encounter.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import { EncounterTableCatalogSection } from '../encounter-table/encounter-table-catalog-section.js'
-import {
-  createEncounterTableCatalogPort,
-  useEncounterTableCatalogController
-} from '../encounter-table/encounter-table-catalog-controller.js'
+import { useEncounterTableCatalogController } from '../encounter-table/encounter-table-catalog-controller.js'
+import { createEncounterTableApplicationPort } from '../encounter-table/encounter-table-application.js'
 import { MonsterCatalogSection } from './monster-catalog-section.js'
 import { useMonsterCatalogController } from './monster-catalog-controller.js'
 import { LocationCatalogSection } from './location-catalog-section.js'
@@ -15,28 +13,43 @@ import {
   useLocationCatalogController
 } from './location-catalog-controller.js'
 import { FactionCatalogSection } from './faction-catalog-section.js'
-import {
-  createFactionCatalogPort,
-  useFactionCatalogController
-} from './faction-catalog-controller.js'
+import { useFactionCatalogController } from './faction-catalog-controller.js'
+import { createWorldFactionApplicationPort } from '../worldplanner/world-faction-application.js'
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 import './catalog.css'
+import type { WorldLocationEditingIntegration } from '../worldplanner/world-location-editor-types.js'
+import { catalogCapabilities } from './catalog-capabilities.js'
+import { useRelatedEntityDialogStack } from '../workspace/integrations/related-entity-dialog-stack.js'
+import { LazyWorldFactionDialog } from '../worldplanner/lazy-world-faction-dialog.js'
+import { createCatalogEditorPorts } from './catalog-editor-ports.js'
 
 type CatalogWorkspaceProps = {
-  snapshot: LiveSessionSnapshot
   setSnapshot: (snapshot: LiveSessionSnapshot) => void
-  close: () => void
   onError: (message: string) => void
   inspect: (creature: Creature) => void
+  worldLocationEditing: WorldLocationEditingIntegration
 }
 
 export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
   const api = useCapabilityApi()
-  const locationPort = useMemo(() => createLocationCatalogPort(api), [api])
-  const factionPort = useMemo(() => createFactionCatalogPort(api), [api])
+  const catalog = useMemo(() => catalogCapabilities(api), [api])
+  const editorPorts = useMemo(() => createCatalogEditorPorts(api), [api])
+  const relatedDialogs = useRelatedEntityDialogStack({
+    port: api,
+    inspect: props.inspect,
+    onError: props.onError
+  })
+  const locationPort = useMemo(
+    () => createLocationCatalogPort(catalog),
+    [catalog]
+  )
+  const factionPort = useMemo(
+    () => createWorldFactionApplicationPort(catalog),
+    [catalog]
+  )
   const encounterTablePort = useMemo(
-    () => createEncounterTableCatalogPort(api),
-    [api]
+    () => createEncounterTableApplicationPort(catalog),
+    [catalog]
   )
   const onBiomesChanged = useMemo(
     () => (listener: Parameters<typeof api.biomes.onChanged>[0]) =>
@@ -44,9 +57,9 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
     [api]
   )
   const onEncounterTablesChanged = useMemo(
-    () => (listener: Parameters<typeof api.encounterTables.onChanged>[0]) =>
-      api.encounterTables.onChanged(listener),
-    [api]
+    () => (listener: Parameters<typeof catalog.encounterTables.onChanged>[0]) =>
+      catalog.encounterTables.onChanged(listener),
+    [catalog]
   )
   const [section, setSection] = useState<
     'monsters' | 'locations' | 'factions' | 'encounterTables'
@@ -55,8 +68,8 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
     section === 'monsters',
     props.onError,
     props.inspect,
-    api.creatures,
-    api.biomes,
+    editorPorts.creatures,
+    editorPorts.biomes,
     onBiomesChanged,
     onEncounterTablesChanged
   )
@@ -119,8 +132,7 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
             selected={locationController.selected}
             editing={locationController.editing}
             placing={locationController.placing}
-            tables={locationController.tables}
-            factions={locationController.factions}
+            references={locationController.references}
             deleteConfirm={locationController.deleteConfirm}
             setSearchInput={locationController.setSearchInput}
             commitSearch={locationController.commitSearch}
@@ -133,6 +145,9 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
             remove={() => void locationController.remove()}
             placed={() => void locationController.placed()}
             onError={props.onError}
+            worldLocationEditing={props.worldLocationEditing}
+            placementRecovery={locationController.placementRecovery}
+            retryPlacement={() => void locationController.retryPlacement()}
           />
         ) : (
           <>
@@ -140,11 +155,7 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
               className="catalog-section-host"
               hidden={section !== 'factions'}
             >
-              <FactionCatalogSection
-                controller={factionController}
-                onError={props.onError}
-                inspect={props.inspect}
-              />
+              <FactionCatalogSection controller={factionController} />
             </div>
             <div
               className="catalog-section-host"
@@ -154,11 +165,33 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
                 controller={encounterTableController}
                 onError={props.onError}
                 inspect={props.inspect}
+                creatures={editorPorts.creatures}
+                biomes={editorPorts.biomes}
               />
             </div>
           </>
         )}
       </div>
+      {factionController.editing !== undefined && (
+        <Suspense fallback={null}>
+          <LazyWorldFactionDialog
+            key={factionController.editing?.id ?? 'new-faction'}
+            faction={factionController.editing}
+            tableSnapshot={factionController.tableSnapshot}
+            close={() => factionController.setEditing(undefined)}
+            save={factionController.saveFaction}
+            saved={() => factionController.setEditing(undefined)}
+            requestTableCreation={(created) =>
+              relatedDialogs.requestTableCreation('faction-link', created)
+            }
+            onError={props.onError}
+            inspect={props.inspect}
+            creatures={editorPorts.creatureFacts}
+            invocation={{ kind: 'catalog' }}
+          />
+        </Suspense>
+      )}
+      {relatedDialogs.dialogs}
     </section>
   )
 }
