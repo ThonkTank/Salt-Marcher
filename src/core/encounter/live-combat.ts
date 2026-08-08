@@ -47,6 +47,10 @@ import {
 } from '../scene/group-generator.js'
 import { WorldLocationStore } from '../worldplanner/location-store.js'
 import { EncounterSourceService } from '../application/encounter-source-service.js'
+import {
+  defaultGeneratorConfig,
+  type GeneratorConfig
+} from '../../shared/contracts/generator-presets.js'
 import { CampaignUnitOfWork } from '../application/campaign-unit-of-work.js'
 
 const sourceSchema = z.discriminatedUnion('kind', [
@@ -240,7 +244,9 @@ export class LivePlayService {
     private readonly campaignDatabase: () => Database.Database,
     private readonly biomeDefinition: (
       id: HexBiomeId
-    ) => HexBiomeDefinition = defaultBiomeDefinition
+    ) => HexBiomeDefinition = defaultBiomeDefinition,
+    private readonly generatorConfig: () => GeneratorConfig = () =>
+      defaultGeneratorConfig
   ) {}
 
   readParty() {
@@ -457,7 +463,7 @@ export class LivePlayService {
     entries: readonly SceneGroupDraftEntry[],
     mode: GroupGenerationMode,
     filters: CreatureCatalogQuery,
-    tuning: EncounterTuning,
+    _tuning: EncounterTuning,
     seed: number,
     expectedRevision: number
   ): SceneGroupDraftGeneration {
@@ -467,14 +473,14 @@ export class LivePlayService {
       const partySnapshot = party.read()
       const focused = scene.focused(partySnapshot.members)
       if (focused.id !== sceneId) throw new CapabilityError('not_found', false)
-      const resolvedFilters = { ...filters, locationId: focused.locationId }
+      const resolvedFilters = { ...filters }
       return generateSceneGroupDraft(
         focused,
         scene.assignedParty(partySnapshot.members, sceneId),
         entries,
         mode,
         resolvedFilters,
-        tuning,
+        this.generatorConfig(),
         seed,
         expectedRevision,
         new EncounterSourceService(this.campaignDatabase).resolve(

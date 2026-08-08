@@ -78,6 +78,13 @@ import {
   updateInstallationSettingsInputSchema
 } from '../../shared/contracts/settings.js'
 import {
+  generatorPresetAssignInputSchema,
+  generatorPresetCreateInputSchema,
+  generatorPresetDeleteInputSchema,
+  generatorPresetSnapshotSchema,
+  generatorPresetUpdateInputSchema
+} from '../../shared/contracts/generator-presets.js'
+import {
   deleteWorldLocationInputSchema,
   saveWorldLocationInputSchema,
   worldLocationPlacementCommandSchema,
@@ -296,6 +303,61 @@ const api: SaltMarcherApi = {
             expectedRevision
           }),
           installationSettingsSchema
+        )
+      )
+  },
+  generatorPresets: {
+    read: async () =>
+      freezeDeep(
+        await invoke(
+          'generator-presets:read',
+          undefined,
+          generatorPresetSnapshotSchema
+        )
+      ),
+    create: async (name, config, expectedRevision) =>
+      freezeDeep(
+        await invoke(
+          'generator-presets:create',
+          generatorPresetCreateInputSchema.parse({
+            name,
+            config,
+            expectedRevision
+          }),
+          generatorPresetSnapshotSchema
+        )
+      ),
+    update: async (id, name, config, expectedRevision) =>
+      freezeDeep(
+        await invoke(
+          'generator-presets:update',
+          generatorPresetUpdateInputSchema.parse({
+            id,
+            name,
+            config,
+            expectedRevision
+          }),
+          generatorPresetSnapshotSchema
+        )
+      ),
+    delete: async (id, expectedRevision) =>
+      freezeDeep(
+        await invoke(
+          'generator-presets:delete',
+          generatorPresetDeleteInputSchema.parse({ id, expectedRevision }),
+          generatorPresetSnapshotSchema
+        )
+      ),
+    assign: async (campaignId, presetId, expectedRevision) =>
+      freezeDeep(
+        await invoke(
+          'generator-presets:assign',
+          generatorPresetAssignInputSchema.parse({
+            campaignId,
+            presetId,
+            expectedRevision
+          }),
+          generatorPresetSnapshotSchema
         )
       )
   },

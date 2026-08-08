@@ -94,8 +94,8 @@ export const sessionMessagesDe = {
   'group.catalogCount':
     '{filtered} von {total} Monstern · Filter gelten für Liste und Generator',
   'group.filteredMonsters': '{count} gefilterte Monster',
-  'group.generatedFilled': 'zuletzt {count} ergänzt (Seed {seed})',
-  'group.generatedReplaced': 'zuletzt {count} erzeugt (Seed {seed})',
+  'group.generatedFilled': 'zuletzt {count} ergänzt',
+  'group.generatedReplaced': 'zuletzt {count} erzeugt',
   'group.unavailable': 'nicht kampffähig',
   'group.levels': 'Stufen',
   'group.unsaved': 'ungespeicherte Änderungen',

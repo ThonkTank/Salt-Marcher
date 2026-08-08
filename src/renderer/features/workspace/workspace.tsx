@@ -139,6 +139,7 @@ export function WorkspaceApp() {
           onError={featureError}
           theme={theme}
           toggleTheme={toggleTheme}
+          generatorPresets={api.generatorPresets}
         />
         <div className="shell-body">
           <WorkspaceRail

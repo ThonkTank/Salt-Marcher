@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import type { CampaignSnapshot } from '../../../shared/contracts/campaign.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
+import type { GeneratorPresetCapability } from '../../../shared/contracts/capability-api.js'
 import { message } from '../../i18n/workspace-runtime.de.js'
 import {
   AdventuringDayDropdown,
@@ -37,6 +38,7 @@ export function WorkspaceTopBar(props: {
   onError: (message: string) => void
   theme: 'light' | 'dark'
   toggleTheme: () => void
+  generatorPresets: GeneratorPresetCapability
 }) {
   const active = props.campaigns.activeCampaignId !== null
   const activeCampaign = props.campaigns.campaigns.find(
@@ -81,6 +83,7 @@ export function WorkspaceTopBar(props: {
         forced={!active}
         dismiss={() => props.setCampaignMenuOpen(false)}
         {...props.campaignActions}
+        generatorPresets={props.generatorPresets}
       />
       {active && props.session && (
         <nav

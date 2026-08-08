@@ -405,6 +405,27 @@ describe('encounter tables and factions', () => {
     campaigns.close()
   })
 
+  it('does not fall back globally for a location without a direct table', () => {
+    const { campaigns, sources, locations } = harness()
+    const location = locations.create(
+      {
+        displayName: 'Unconfigured Location',
+        tags: ['Test'],
+        notes: '',
+        factionIds: [],
+        encounterTableIds: []
+      },
+      0
+    ).saved
+
+    expect(sources.resolve(query({ locationId: location.id }))).toMatchObject({
+      candidates: [],
+      catalogFallback: false,
+      sourceIssue: 'location_missing_table'
+    })
+    campaigns.close()
+  })
+
   it('uses the focused location faction and inventory cap in generation', () => {
     const { campaigns, sources, locations, play } = harness()
     const creature = creatures.find((entry) => entry.xp > 0)!
@@ -434,7 +455,7 @@ describe('encounter tables and factions', () => {
         tags: ['Tor'],
         notes: '',
         factionIds: [factions.saved.id],
-        encounterTableIds: []
+        encounterTableIds: [tables.saved.id]
       },
       0
     ).snapshot
@@ -459,7 +480,7 @@ describe('encounter tables and factions', () => {
       sceneId,
       [],
       'replace',
-      query(),
+      query({ locationId: world.locations[0]!.id }),
       {
         difficulty: 'medium',
         amount: 'many',
@@ -470,13 +491,97 @@ describe('encounter tables and factions', () => {
       session.scene.revision
     )
     expect(generation.entries).toEqual([
-      expect.objectContaining({ creatureId: creature.id, quantity: 1 })
+      expect.objectContaining({ creatureId: creature.id, quantity: 2 })
     ])
     expect(generation.context).toMatchObject({
       locationId: world.locations[0]!.id,
       effectiveFactionIds: [factions.saved.id],
       catalogFallback: false
     })
+    campaigns.close()
+  })
+
+  it('honors an explicit dialog location over the focused scene location', () => {
+    const { campaigns, sources, locations, play } = harness()
+    const [focusedCreature, selectedCreature] = creatures.filter(
+      (entry) => entry.xp > 0
+    )
+    const focusedTable = sources.createTable(
+      randomUUID(),
+      {
+        displayName: 'Focused Source',
+        description: '',
+        entries: [{ creatureId: focusedCreature!.id, weight: 10 }]
+      },
+      0
+    ).saved
+    const selectedTable = sources.createTable(
+      randomUUID(),
+      {
+        displayName: 'Selected Source',
+        description: '',
+        entries: [{ creatureId: selectedCreature!.id, weight: 10 }]
+      },
+      1
+    ).saved
+    const focusedLocation = locations.create(
+      {
+        displayName: 'Focused',
+        tags: ['Test'],
+        notes: '',
+        factionIds: [],
+        encounterTableIds: [focusedTable.id]
+      },
+      0
+    ).saved
+    const selectedLocation = locations.create(
+      {
+        displayName: 'Selected',
+        tags: ['Test'],
+        notes: '',
+        factionIds: [],
+        encounterTableIds: [selectedTable.id]
+      },
+      1
+    ).saved
+
+    let party = play.readParty()
+    for (const member of party.members)
+      party = play.setMembership(member.id, true, party.revision)
+    let session = play.readSession()
+    const sceneId = session.scene.focusedSceneId
+    for (const member of party.members)
+      session = play.assignScenePartyMember(
+        sceneId,
+        member.id,
+        true,
+        session.scene.revision
+      )
+    session = play.setSceneLocation(
+      sceneId,
+      focusedLocation.id,
+      session.scene.revision
+    )
+
+    const generation = play.generateGroupDraft(
+      sceneId,
+      [],
+      'replace',
+      query({ locationId: selectedLocation.id }),
+      {
+        difficulty: 'medium',
+        amount: 'many',
+        balance: 'auto',
+        diversity: 'auto'
+      },
+      7,
+      session.scene.revision
+    )
+
+    expect(generation.entries).toEqual([
+      expect.objectContaining({ creatureId: selectedCreature!.id })
+    ])
+    expect(generation.context.locationId).toBe(selectedLocation.id)
     campaigns.close()
   })
 })

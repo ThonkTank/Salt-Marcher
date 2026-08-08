@@ -156,6 +156,13 @@ import {
   sessionGenerationEncounterInputSchema,
   sessionGenerationEncounterResultSchema
 } from './session-generation.js'
+import {
+  generatorPresetAssignInputSchema,
+  generatorPresetCreateInputSchema,
+  generatorPresetDeleteInputSchema,
+  generatorPresetSnapshotSchema,
+  generatorPresetUpdateInputSchema
+} from './generator-presets.js'
 
 export type OperationMode = 'read' | 'write'
 export type WindowRole = 'gm' | 'passive' | 'qualification'
@@ -246,6 +253,31 @@ export const coreOperations = {
     'settings:update',
     updateInstallationSettingsInputSchema,
     installationSettingsSchema
+  ),
+  'generatorPresets.read': read(
+    'generator-presets:read',
+    none,
+    generatorPresetSnapshotSchema
+  ),
+  'generatorPresets.create': write(
+    'generator-presets:create',
+    generatorPresetCreateInputSchema,
+    generatorPresetSnapshotSchema
+  ),
+  'generatorPresets.update': write(
+    'generator-presets:update',
+    generatorPresetUpdateInputSchema,
+    generatorPresetSnapshotSchema
+  ),
+  'generatorPresets.delete': write(
+    'generator-presets:delete',
+    generatorPresetDeleteInputSchema,
+    generatorPresetSnapshotSchema
+  ),
+  'generatorPresets.assign': write(
+    'generator-presets:assign',
+    generatorPresetAssignInputSchema,
+    generatorPresetSnapshotSchema
   ),
   'projection.read': read('projection:read', none, passiveProjectionSchema, [
     'passive'

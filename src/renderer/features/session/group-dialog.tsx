@@ -18,7 +18,6 @@ import type {
   SceneGroupDisposition
 } from '../../../shared/contracts/scene.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
-import { TuningControls } from '../encounter/encounter-tuning.js'
 import { encounterCapabilities } from '../encounter/encounter-capabilities.js'
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 import {
@@ -161,7 +160,7 @@ export function GroupDialog(props: {
     query.biomes,
     props.onError
   )
-  const [tuning, setTuning] = useState<EncounterTuning>({
+  const [tuning] = useState<EncounterTuning>({
     difficulty: 'auto',
     amount: 'auto',
     balance: 'auto',
@@ -428,7 +427,7 @@ export function GroupDialog(props: {
 
   async function generate(mode: 'fill' | 'replace') {
     if (!canGenerate) return
-    const nextSeed = seed + 1
+    const nextSeed = generationSeed()
     setBusy(true)
     try {
       const result = await sessionCapabilities(api).scene.generateGroupDraft(
@@ -488,8 +487,7 @@ export function GroupDialog(props: {
             count:
               mode === 'fill'
                 ? Math.max(0, nextCount - previousCount)
-                : nextCount,
-            seed: nextSeed
+                : nextCount
           }
         )
       )
@@ -733,7 +731,6 @@ export function GroupDialog(props: {
                 aria-label={uiMessage('group.generator')}
               >
                 <strong>{uiMessage('group.generator')}</strong>
-                <TuningControls tuning={tuning} changed={setTuning} />
                 <div className="group-generator-actions">
                   <button
                     type="button"
@@ -995,6 +992,12 @@ export function GroupDialog(props: {
       )}
     </>
   )
+}
+
+function generationSeed(): number {
+  const values = new Uint32Array(1)
+  crypto.getRandomValues(values)
+  return values[0]!
 }
 
 function GroupDraftEvaluation(props: {

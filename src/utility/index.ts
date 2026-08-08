@@ -31,6 +31,8 @@ import { HexEditJournalStore } from '../core/hex/hex-edit-journal-store.js'
 import { PartyStore } from '../core/party/party-store.js'
 import { SceneStore } from '../core/scene/scene-store.js'
 import { CampaignUnitOfWork } from '../core/application/campaign-unit-of-work.js'
+import { GeneratorPresetStore } from '../core/persistence/sqlite/generator-preset-store.js'
+import { defaultGeneratorConfig } from '../shared/contracts/generator-presets.js'
 import { WorldLocationDeletionCommandHandler } from '../core/application/world-location-deletion.js'
 import { WorldLocationSaveCommandHandler } from '../core/application/world-location-save.js'
 import { WorldLocationSaveJournal } from '../core/worldplanner/world-location-save-journal.js'
@@ -66,6 +68,9 @@ if (
     'Utility process requires a data root, reference database, catalog root, and parent port'
   )
 const campaigns = openDevelopmentCampaignStore(root)
+const generatorPresets = new GeneratorPresetStore(
+  campaigns.installationDatabase()
+)
 const sessionGenerationCatalog = new BundledEncounterCatalogProvider(
   sessionGenerationCatalogRoot
 )
@@ -94,7 +99,13 @@ const biomeService = new BiomeCatalogService(campaigns)
 const biomeProjection = (
   id: Parameters<typeof biomeService.hexDefinition>[0]
 ) => biomeService.hexDefinition(id)
-const play = new LivePlayService(activeDatabase, biomeProjection)
+const play = new LivePlayService(activeDatabase, biomeProjection, () => {
+  try {
+    return generatorPresets.configFor(campaigns.list().activeCampaignId).config
+  } catch {
+    return defaultGeneratorConfig
+  }
+})
 const hex = new HexMapService(activeDatabase, locationStore)
 const hexEditing = new HexMapEditingCommandHandler(() => {
   const db = activeDatabase()
@@ -493,6 +504,36 @@ const campaignHandlers = {
   'settings.read': () => campaigns.readSettings(),
   'settings.update': (input) =>
     campaigns.updateSettings(input.patch, input.expectedRevision),
+  'generatorPresets.read': () =>
+    generatorPresets.read(campaigns.list().activeCampaignId),
+  'generatorPresets.create': (input) =>
+    generatorPresets.create(
+      input.name,
+      input.config,
+      input.expectedRevision,
+      campaigns.list().activeCampaignId
+    ),
+  'generatorPresets.update': (input) =>
+    generatorPresets.update(
+      input.id,
+      input.name,
+      input.config,
+      input.expectedRevision,
+      campaigns.list().activeCampaignId
+    ),
+  'generatorPresets.delete': (input) =>
+    generatorPresets.delete(
+      input.id,
+      input.expectedRevision,
+      campaigns.list().activeCampaignId
+    ),
+  'generatorPresets.assign': (input) =>
+    generatorPresets.assign(
+      input.campaignId,
+      input.presetId,
+      input.expectedRevision,
+      campaigns.list().activeCampaignId
+    ),
   'projection.read': () => emptyPassiveProjection
 } satisfies Pick<
   CoreHandlers,
@@ -505,6 +546,11 @@ const campaignHandlers = {
   | 'campaign.deleteForever'
   | 'settings.read'
   | 'settings.update'
+  | 'generatorPresets.read'
+  | 'generatorPresets.create'
+  | 'generatorPresets.update'
+  | 'generatorPresets.delete'
+  | 'generatorPresets.assign'
   | 'projection.read'
 >
 

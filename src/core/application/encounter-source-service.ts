@@ -38,6 +38,7 @@ export type ResolvedEncounterSource = Readonly<{
   locationId: string | null
   catalogFallback: boolean
   biomeFiltering: boolean
+  sourceIssue: 'location_missing_table' | 'location_empty_table' | null
 }>
 
 /** Coordinates aggregate-owned stores and recoverable cross-database lifecycles. */
@@ -411,6 +412,7 @@ export function resolveEncounterSource(
   const dimensions: Dimension[] = []
   const effectiveTables = new Set<string>()
   const effectiveFactions = new Set<string>()
+  let sourceIssue: ResolvedEncounterSource['sourceIssue'] = null
 
   if (query.biomes.length > 0 && installationDatabase) {
     dimensions.push(
@@ -440,7 +442,18 @@ export function resolveEncounterSource(
 
   if (query.locationId !== null) {
     const location = locations.find((value) => value.id === query.locationId)
-    if (location) {
+    if (!location || location.encounterTableIds.length === 0) {
+      sourceIssue = 'location_missing_table'
+    } else {
+      const locationTables = location.encounterTableIds.map((id) =>
+        tableById.get(id)
+      )
+      if (
+        locationTables.some(
+          (table) => table === undefined || table.entries.length === 0
+        )
+      )
+        sourceIssue = 'location_empty_table'
       const before = effectiveTables.size
       const fromTables = tableDimension(
         location.encounterTableIds,
@@ -461,23 +474,26 @@ export function resolveEncounterSource(
 
   if (effectiveTables.size === 0)
     return {
-      candidates: null,
+      candidates: sourceIssue === null ? null : [],
       effectiveEncounterTableIds: [],
       effectiveFactionIds: [...effectiveFactions],
       locationId: query.locationId,
-      catalogFallback: true,
-      biomeFiltering: installationDatabase !== undefined
+      catalogFallback: sourceIssue === null,
+      biomeFiltering: installationDatabase !== undefined,
+      sourceIssue
     }
 
+  const candidates = [...intersectDimensions(dimensions)].map(
+    ([creatureId, value]) => ({ creatureId, ...value })
+  )
   return {
-    candidates: [...intersectDimensions(dimensions)].map(
-      ([creatureId, value]) => ({ creatureId, ...value })
-    ),
+    candidates: sourceIssue === null ? candidates : [],
     effectiveEncounterTableIds: [...effectiveTables],
     effectiveFactionIds: [...effectiveFactions],
     locationId: query.locationId,
     catalogFallback: false,
-    biomeFiltering: installationDatabase !== undefined
+    biomeFiltering: installationDatabase !== undefined,
+    sourceIssue
   }
 }
 

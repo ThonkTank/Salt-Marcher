@@ -18,6 +18,10 @@ import type {
 import type { AdventuringDayCalculation, PartyCharacterDraft } from './party.js'
 import type { EncounterTuning } from './encounter-tuning.js'
 import type {
+  GeneratorConfig,
+  GeneratorPresetSnapshot
+} from './generator-presets.js'
+import type {
   EncounterSelectionEvaluation,
   GroupGenerationMode,
   SceneGroupDraftEntry,
@@ -118,6 +122,27 @@ export interface CampaignCapability extends CampaignReadCapability {
   deleteForever(id: string, confirmationName: string): Promise<CampaignSnapshot>
 }
 
+export interface GeneratorPresetCapability {
+  read(): Promise<GeneratorPresetSnapshot>
+  create(
+    name: string,
+    config: GeneratorConfig,
+    expectedRevision: number
+  ): Promise<GeneratorPresetSnapshot>
+  update(
+    id: string,
+    name: string,
+    config: GeneratorConfig,
+    expectedRevision: number
+  ): Promise<GeneratorPresetSnapshot>
+  delete(id: string, expectedRevision: number): Promise<GeneratorPresetSnapshot>
+  assign(
+    campaignId: string,
+    presetId: string | null,
+    expectedRevision: number
+  ): Promise<GeneratorPresetSnapshot>
+}
+
 export interface SaltMarcherApi {
   campaigns: CampaignReadCapability | CampaignCapability
   runtime: Readonly<{
@@ -139,6 +164,7 @@ export interface SaltMarcherApi {
       expectedRevision: number
     ): Promise<InstallationSettings>
   }
+  generatorPresets: GeneratorPresetCapability
   party: {
     read(): Promise<PartySnapshot>
     create(

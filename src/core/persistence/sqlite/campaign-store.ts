@@ -39,6 +39,7 @@ import { initializeCreatureSchema } from '../../creatures/catalog.js'
 import { initializeLocationSymbolSchema } from '../../worldplanner/location-symbol-store.js'
 import { initializeBiomeCatalogSchema } from '../../biomes/biome-catalog.js'
 import { initializeWorldLocationSaveJournalSchema } from '../../worldplanner/world-location-save-journal.js'
+import { initializeGeneratorPresetSchema } from './generator-preset-store.js'
 
 export type CampaignCreatePhase =
   | 'before-registry-entry'
@@ -90,6 +91,7 @@ export class CampaignStore {
         preferences_json TEXT NOT NULL
       );
       `)
+      initializeGeneratorPresetSchema(this.installation)
       this.installation
         .prepare(
           'INSERT OR IGNORE INTO installation_settings (singleton, revision, preferences_json) VALUES (1, 0, ?)'

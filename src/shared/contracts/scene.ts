@@ -233,7 +233,12 @@ export const sceneGroupDraftGenerationSchema = z
         existingGroupCount: z.number().int().nonnegative(),
         effectiveEncounterTableIds: z.array(z.string()),
         effectiveFactionIds: z.array(z.string()),
-        catalogFallback: z.boolean()
+        catalogFallback: z.boolean(),
+        sourceIssue: z
+          .enum(['location_missing_table', 'location_empty_table'])
+          .nullable(),
+        generatorPresetId: z.string().nullable(),
+        generatorPresetRevision: z.number().int().nonnegative().nullable()
       })
       .strict(),
     quality: z.enum(['exact', 'fallback', 'none']),
