@@ -65,6 +65,8 @@ export const workspaceMessagesDe = {
   'generator.maxCombination': 'Max. Kombination',
   'generator.save': 'Speichern',
   'generator.assign': 'Für aktive Kampagne zuweisen',
+  'generator.loading': 'Generator-Presets werden geladen …',
+  'generator.retry': 'Erneut laden',
   'generator.easy': 'Leicht',
   'generator.medium': 'Mittel',
   'generator.hard': 'Schwer',

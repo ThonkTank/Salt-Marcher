@@ -2,7 +2,9 @@ import { z } from 'zod'
 import { encounterTuningSchema } from './encounter-tuning.js'
 
 export const generatorPresetSchemaVersion = 1 as const
-export const systemGeneratorPresetId = '00000000-0000-0000-0000-000000000001'
+export const systemGeneratorPresetId = '00000000-0000-4000-8000-000000000001'
+export const legacySystemGeneratorPresetId =
+  '00000000-0000-0000-0000-000000000001'
 
 const countSchema = z
   .object({

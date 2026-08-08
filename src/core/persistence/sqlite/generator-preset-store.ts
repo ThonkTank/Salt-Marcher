@@ -5,6 +5,7 @@ import {
   defaultGeneratorConfig,
   generatorPresetSchema,
   generatorPresetSnapshotSchema,
+  legacySystemGeneratorPresetId,
   systemGeneratorPresetId,
   type GeneratorConfig,
   type GeneratorPresetSnapshot
@@ -13,6 +14,16 @@ import {
 export function initializeGeneratorPresetSchema(db: Database.Database): void {
   db.exec(`CREATE TABLE IF NOT EXISTS generator_presets (id TEXT PRIMARY KEY, name TEXT NOT NULL, schema_version INTEGER NOT NULL, protected INTEGER NOT NULL, revision INTEGER NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, config_json TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS campaign_generator_presets (campaign_id TEXT PRIMARY KEY, preset_id TEXT NOT NULL REFERENCES generator_presets(id) ON DELETE RESTRICT);`)
+  const migrateLegacySystemPreset = db.transaction(() => {
+    db.prepare(
+      'UPDATE campaign_generator_presets SET preset_id=? WHERE preset_id=?'
+    ).run(systemGeneratorPresetId, legacySystemGeneratorPresetId)
+    db.prepare('UPDATE generator_presets SET id=? WHERE id=?').run(
+      systemGeneratorPresetId,
+      legacySystemGeneratorPresetId
+    )
+  })
+  migrateLegacySystemPreset()
   const now = new Date().toISOString()
   db.prepare(
     'INSERT OR IGNORE INTO generator_presets (id,name,schema_version,protected,revision,created_at,updated_at,config_json) VALUES (?,?,?,?,?,?,?,?)'
@@ -38,13 +49,7 @@ export class GeneratorPresetStore {
         'SELECT id,name,schema_version AS schemaVersion,revision,protected,created_at AS createdAt,updated_at AS updatedAt,config_json AS configJson FROM generator_presets ORDER BY protected DESC, name ASC'
       )
       .all() as Array<Record<string, unknown>>
-    const presets = rows.map((row) =>
-      generatorPresetSchema.parse({
-        ...row,
-        protected: row['protected'] === 1,
-        config: parseJson(row['configJson'] as string)
-      })
-    )
+    const presets = rows.map((row) => parsePresetRow(row))
     const assignments = this.db
       .prepare(
         'SELECT campaign_id AS campaignId,preset_id AS presetId FROM campaign_generator_presets'
@@ -145,11 +150,7 @@ export class GeneratorPresetStore {
       )
       .get(id) as Record<string, unknown> | undefined
     if (!row) throw new CapabilityError('not_found', false)
-    return generatorPresetSchema.parse({
-      ...row,
-      protected: row['protected'] === 1,
-      config: parseJson(row['configJson'] as string)
-    })
+    return parsePresetRow(row)
   }
   private assertRevision(expected: number) {
     const rows = this.db
@@ -162,4 +163,17 @@ export class GeneratorPresetStore {
 
 function parseJson(value: string): unknown {
   return JSON.parse(value) as unknown
+}
+
+function parsePresetRow(row: Record<string, unknown>) {
+  return generatorPresetSchema.parse({
+    id: row['id'],
+    name: row['name'],
+    schemaVersion: row['schemaVersion'],
+    revision: row['revision'],
+    protected: row['protected'] === 1,
+    createdAt: row['createdAt'],
+    updatedAt: row['updatedAt'],
+    config: parseJson(row['configJson'] as string)
+  })
 }

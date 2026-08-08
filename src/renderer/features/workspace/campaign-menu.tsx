@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import type { CampaignSnapshot } from '../../../shared/contracts/campaign.js'
 import { formatMessage, message } from '../../i18n/workspace-runtime.de.js'
 import type { GeneratorPresetCapability } from '../../../shared/contracts/capability-api.js'
 import { defaultGeneratorConfig } from '../../../shared/contracts/generator-presets.js'
+import { ModalCloseButton, ModalDialog } from '../../shell/modal-dialog.js'
 
 interface CampaignMenuProps {
   snapshot: CampaignSnapshot
@@ -16,10 +17,12 @@ interface CampaignMenuProps {
   restore: (id: string) => Promise<void>
   deleteForever: (id: string, confirmationName: string) => Promise<void>
   generatorPresets: GeneratorPresetCapability
+  onError: (message: string) => void
 }
 
 export function CampaignMenu(props: CampaignMenuProps) {
   const { dismiss, forced, open, snapshot } = props
+  const { generatorPresets, onError } = props
   const menuRef = useRef<HTMLElement>(null)
   const createInputRef = useRef<HTMLInputElement>(null)
   const [newName, setNewName] = useState('')
@@ -37,9 +40,10 @@ export function CampaignMenu(props: CampaignMenuProps) {
     'root'
   )
   const [settingsTab, setSettingsTab] = useState<'generator'>('generator')
+  const [presetError, setPresetError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!open) return
+    if (!open || menuView !== 'root') return
     const dismissOnPointer = (event: PointerEvent) => {
       const target = event.target
       if (!(target instanceof Node)) return
@@ -59,72 +63,90 @@ export function CampaignMenu(props: CampaignMenuProps) {
       document.removeEventListener('pointerdown', dismissOnPointer)
       document.removeEventListener('keydown', dismissOnEscape)
     }
-  }, [dismiss, forced, open])
+  }, [dismiss, forced, menuView, open])
 
   useEffect(() => {
     if (open && forced && snapshot.campaigns.length === 0)
       createInputRef.current?.focus()
   }, [forced, open, snapshot.campaigns.length])
 
-  if (!open) return null
-
-  if (menuView === 'root')
-    return (
-      <section
-        ref={menuRef}
-        id="campaign-menu"
-        className="campaign-menu"
-        aria-labelledby="campaign-menu-title"
-      >
-        <header>
-          <div>
-            <p className="section-kicker">{message('app.menu')}</p>
-            <h2 id="campaign-menu-title">{message('app.menu')}</h2>
-          </div>
-          {!forced && (
-            <button
-              type="button"
-              className="compact"
-              onClick={dismiss}
-              aria-label={message('action.close')}
-            >
-              ×
-            </button>
-          )}
-        </header>
-        <div className="campaign-menu-section">
-          <button
-            type="button"
-            className="campaign-select"
-            onClick={() => setMenuView('campaigns')}
-          >
-            <strong>{message('menu.manageCampaigns')}</strong>
-            <small>{message('menu.manageCampaignsHint')}</small>
-          </button>
-          <button
-            type="button"
-            className="campaign-select"
-            onClick={() => setMenuView('settings')}
-          >
-            <strong>{message('menu.settings')}</strong>
-            <small>{message('menu.settingsHint')}</small>
-          </button>
+  const rootMenu = (
+    <section
+      ref={menuRef}
+      id="campaign-menu"
+      className="campaign-menu"
+      aria-labelledby="campaign-menu-title"
+    >
+      <header>
+        <div>
+          <p className="section-kicker">{message('app.menu')}</p>
+          <h2 id="campaign-menu-title">{message('app.menu')}</h2>
         </div>
-      </section>
-    )
+        {!forced && (
+          <button
+            type="button"
+            className="compact"
+            onClick={dismiss}
+            aria-label={message('action.close')}
+          >
+            ×
+          </button>
+        )}
+      </header>
+      <div className="campaign-menu-section">
+        <button
+          type="button"
+          className="campaign-select"
+          onClick={() => setMenuView('campaigns')}
+        >
+          <strong>{message('menu.manageCampaigns')}</strong>
+          <small>{message('menu.manageCampaignsHint')}</small>
+        </button>
+        <button
+          type="button"
+          className="campaign-select"
+          onClick={() => setMenuView('settings')}
+        >
+          <strong>{message('menu.settings')}</strong>
+          <small>{message('menu.settingsHint')}</small>
+        </button>
+      </div>
+    </section>
+  )
 
-  async function loadPresets() {
-    const next = await props.generatorPresets.read()
-    setPresetSnapshot(next)
-    const selected =
-      next.presets.find(
-        (p) => p.id === (next.activePresetId ?? next.presets[0]?.id)
-      ) ?? next.presets[0]
-    if (selected) {
-      setPresetId(selected.id)
-      setPresetName(selected.name)
-      setPresetConfig(selected.config)
+  const loadPresets = useCallback(async () => {
+    setPresetError(null)
+    try {
+      const next = await generatorPresets.read()
+      setPresetSnapshot(next)
+      const selected =
+        next.presets.find(
+          (p) => p.id === (next.activePresetId ?? next.presets[0]?.id)
+        ) ?? next.presets[0]
+      if (selected) {
+        setPresetId(selected.id)
+        setPresetName(selected.name)
+        setPresetConfig(selected.config)
+      }
+    } catch (cause) {
+      const text =
+        cause instanceof Error ? cause.message : message('error.unknown')
+      setPresetError(text)
+      onError(text)
     }
+  }, [generatorPresets, onError])
+
+  useEffect(() => {
+    if (open && menuView === 'settings' && presetSnapshot === null)
+      queueMicrotask(() => void loadPresets())
+  }, [loadPresets, menuView, open, presetSnapshot])
+
+  if (!open) return null
+  if (menuView === 'root') return rootMenu
+
+  const closeSubmenu = () => {
+    setMenuView('root')
+    dismiss()
   }
 
   async function submitCreate(event: FormEvent) {
@@ -144,7 +166,7 @@ export function CampaignMenu(props: CampaignMenuProps) {
     (campaign) => campaign.id === deletingId
   )
 
-  return (
+  const submenu = (
     <section
       ref={menuRef}
       id="campaign-menu"
@@ -160,24 +182,12 @@ export function CampaignMenu(props: CampaignMenuProps) {
               : message('nav.campaigns')}
           </h2>
         </div>
-        {!forced && (
-          <button
-            type="button"
-            className="compact"
-            onClick={dismiss}
-            aria-label={message('action.close')}
-          >
-            ×
-          </button>
-        )}
-        <button
-          type="button"
-          className="compact"
-          onClick={() => setMenuView('root')}
-          aria-label={message('action.back')}
+        <ModalCloseButton
+          aria-label={message('action.close')}
+          disabled={forced && menuView === 'campaigns'}
         >
-          ←
-        </button>
+          ×
+        </ModalCloseButton>
       </header>
 
       {menuView === 'settings' && (
@@ -354,9 +364,15 @@ export function CampaignMenu(props: CampaignMenuProps) {
       {menuView === 'settings' && settingsTab === 'generator' && (
         <div className="campaign-menu-section generator-presets">
           <h3>{message('generator.advanced')}</h3>
-          <button type="button" onClick={() => void loadPresets()}>
-            {message('generator.open')}
-          </button>
+          {presetError && <p role="alert">{presetError}</p>}
+          {!presetSnapshot && !presetError && (
+            <p role="status">{message('generator.loading')}</p>
+          )}
+          {presetError && (
+            <button type="button" onClick={() => void loadPresets()}>
+              {message('generator.retry')}
+            </button>
+          )}
           {presetSnapshot && (
             <form
               onSubmit={(event) => {
@@ -483,5 +499,19 @@ export function CampaignMenu(props: CampaignMenuProps) {
         </div>
       )}
     </section>
+  )
+
+  return (
+    <ModalDialog
+      className="campaign-settings-dialog"
+      ariaLabel={
+        menuView === 'settings'
+          ? message('menu.settings')
+          : message('menu.manageCampaigns')
+      }
+      onClose={closeSubmenu}
+    >
+      {submenu}
+    </ModalDialog>
   )
 }

@@ -20,6 +20,11 @@ import {
   configureSqlite,
   currentDevelopmentSchemaVersion
 } from '../../src/core/persistence/sqlite/database.js'
+import { GeneratorPresetStore } from '../../src/core/persistence/sqlite/generator-preset-store.js'
+import {
+  legacySystemGeneratorPresetId,
+  systemGeneratorPresetId
+} from '../../src/shared/contracts/generator-presets.js'
 
 const roots: string[] = []
 
@@ -29,6 +34,23 @@ afterEach(() => {
 })
 
 describe('CampaignStore', () => {
+  it('reads generator presets and migrates the legacy system preset id', () => {
+    const root = mkdtempSync(join(tmpdir(), 'salt-marcher-campaign-store-'))
+    roots.push(root)
+    const campaigns = new CampaignStore(root)
+    const database = campaigns.installationDatabase()
+    database
+      .prepare('UPDATE generator_presets SET id=? WHERE id=?')
+      .run(legacySystemGeneratorPresetId, systemGeneratorPresetId)
+
+    const snapshot = new GeneratorPresetStore(database).read(null)
+
+    expect(snapshot.presets).toHaveLength(1)
+    expect(snapshot.presets[0]?.id).toBe(systemGeneratorPresetId)
+    expect(snapshot.presets[0]?.config.maxCounts.standard).toBe(6)
+    campaigns.close()
+  })
+
   it('returns deeply frozen snapshots', () => {
     const root = mkdtempSync(join(tmpdir(), 'salt-marcher-campaign-store-'))
     roots.push(root)

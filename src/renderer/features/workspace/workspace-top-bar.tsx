@@ -84,6 +84,7 @@ export function WorkspaceTopBar(props: {
         dismiss={() => props.setCampaignMenuOpen(false)}
         {...props.campaignActions}
         generatorPresets={props.generatorPresets}
+        onError={props.onError}
       />
       {active && props.session && (
         <nav
