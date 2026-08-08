@@ -19,10 +19,16 @@ import {
 import {
   adjustInitiativeInputSchema,
   changeHpInputSchema,
+  combatCommandResultSchema,
   combatRevisionInputSchema,
   confirmInitiativeInputSchema,
+  joinCombatGroupInputSchema,
   liveSessionSnapshotSchema,
+  moveCombatPhaseInputSchema,
   prepareCombatInputSchema,
+  sceneGroupCommandResultSchema,
+  setConcentrationInputSchema,
+  setExhaustionInputSchema,
   toggleConditionInputSchema,
   updateResolutionInputSchema
 } from '../../shared/contracts/live-session.js'
@@ -40,8 +46,12 @@ import {
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import type { SaltMarcherApi } from '../../shared/contracts/capability-api.js'
 import {
+  coreOperations,
   mainOperationForChannel,
-  operationForChannel
+  operationForChannel,
+  type CoreOperationInput,
+  type CoreOperationKind,
+  type CoreOperationOutput
 } from '../../shared/contracts/operations.js'
 import {
   assignScenePartyInputSchema,
@@ -68,42 +78,82 @@ import {
   updateInstallationSettingsInputSchema
 } from '../../shared/contracts/settings.js'
 import {
-  createWorldLocationInputSchema,
+  generatorPresetAssignInputSchema,
+  generatorPresetCreateInputSchema,
+  generatorPresetDeleteInputSchema,
+  generatorPresetSnapshotSchema,
+  generatorPresetUpdateInputSchema
+} from '../../shared/contracts/generator-presets.js'
+import {
   deleteWorldLocationInputSchema,
-  updateWorldLocationInputSchema,
-  worldLocationSnapshotSchema
+  saveWorldLocationInputSchema,
+  worldLocationPlacementCommandSchema,
+  worldLocationPlacementCommitResultSchema,
+  updateWorldLocationMapPresentationInputSchema,
+  worldLocationChangeNoticeSchema,
+  worldLocationDeleteReceiptSchema,
+  worldLocationMapPresentationSchema,
+  worldLocationSaveReceiptInputSchema,
+  worldLocationSaveReceiptSchema,
+  worldLocationSnapshotSchema,
+  worldLocationTagSearchInputSchema,
+  worldLocationTagSuggestionsSchema
 } from '../../shared/contracts/world-location.js'
+import {
+  createLocationSymbolInputSchema,
+  deleteLocationSymbolInputSchema,
+  importLocationSymbolInputSchema,
+  importLocationSymbolResultSchema,
+  locationSymbolMutationReceiptSchema,
+  locationSymbolChangeNoticeSchema,
+  locationSymbolDeleteImpactSchema,
+  locationSymbolDeleteResultSchema,
+  locationSymbolDetailInputSchema,
+  locationSymbolPageSchema,
+  locationSymbolSchema,
+  locationSymbolSearchInputSchema,
+  locationSymbolSnapshotSchema,
+  updateLocationSymbolInputSchema
+} from '../../shared/contracts/location-symbol.js'
+import {
+  biomeCatalogMutationResultSchema,
+  biomeChangeNoticeSchema,
+  biomeDeleteImpactSchema,
+  biomeDefinitionSchema,
+  biomePageSchema,
+  biomeSearchInputSchema,
+  createBiomeInputSchema,
+  deleteBiomeInputSchema,
+  updateBiomeInputSchema
+} from '../../shared/contracts/biome.js'
 import {
   createEncounterTableInputSchema,
   createWorldFactionInputSchema,
   deleteEncounterTableInputSchema,
   deleteWorldFactionInputSchema,
+  encounterTableCommandReceiptInputSchema,
+  encounterTableCommandReceiptSchema,
+  encounterTableDeleteReceiptSchema,
+  encounterTableChangeNoticeSchema,
+  encounterTableMutationReceiptSchema,
   encounterTableSnapshotSchema,
   updateEncounterTableInputSchema,
   updateWorldFactionInputSchema,
+  worldFactionCommandReceiptInputSchema,
+  worldFactionCommandReceiptSchema,
+  worldFactionDeleteReceiptSchema,
+  worldFactionMutationReceiptSchema,
   worldFactionSnapshotSchema
 } from '../../shared/contracts/encounter-source.js'
+import { hexChangeNoticeSchema } from '../../shared/contracts/hex.js'
 import {
-  createHexMapInputSchema,
-  evaluateHexRouteInputSchema,
-  hexChunkReadResultSchema,
-  hexChunkSnapshotSchema,
-  hexMapCatalogSnapshotSchema,
-  hexLocationPlacementReferenceSchema,
-  hexMapSummarySchema,
-  hexRouteEvaluationSchema,
-  hexTerrainCatalogSchema,
-  hexTravelSnapshotSchema,
-  mutateHexTravelInputSchema,
-  paintHexTerrainInputSchema,
-  placeHexLocationInputSchema,
-  positionHexPartyInputSchema,
-  readHexChunksInputSchema,
-  removeHexLocationInputSchema,
-  setHexTravelMultiplierInputSchema,
-  startHexTravelInputSchema,
-  updateHexMapInputSchema
-} from '../../shared/contracts/hex.js'
+  referenceCampaignIndexInputSchema,
+  referenceDocumentSchema,
+  referenceIndexSchema,
+  referenceIndexChangeNoticeSchema,
+  referenceTargetSchema
+} from '../../shared/contracts/reference.js'
+import { sessionGenerationEncounterInputSchema } from '../../shared/contracts/session-generation.js'
 
 async function invoke<T>(
   channel: string,
@@ -127,14 +177,43 @@ async function invoke<T>(
       ])
       .parse(raw)
     if (!result.ok)
-      throw new CapabilityError(
-        result.error.code,
-        result.error.retryable,
-        result.error.data
-      )
+      throw new CapabilityError(result.error.code, result.error.retryable)
     const value = schema.safeParse(result.payload)
     if (!value.success) throw new CapabilityError('protocol_violation', false)
     return value.data!
+  } catch (error) {
+    if (error instanceof CapabilityError) throw error
+    throw new CapabilityError('core_unavailable', true)
+  }
+}
+
+async function invokeCore<K extends CoreOperationKind>(
+  kind: K,
+  input: CoreOperationInput<K>
+): Promise<CoreOperationOutput<K>> {
+  const operation = coreOperations[kind]
+  if (operation.channel === null)
+    throw new CapabilityError('protocol_violation', false)
+  const request = operation.input.safeParse(input)
+  if (!request.success) throw new CapabilityError('validation_failed', false)
+  try {
+    const raw: unknown = await ipcRenderer.invoke(
+      operation.channel,
+      request.data
+    )
+    const result = z
+      .discriminatedUnion('ok', [
+        z.object({ ok: z.literal(true), payload: z.unknown() }).passthrough(),
+        z
+          .object({ ok: z.literal(false), error: capabilityFailureSchema })
+          .passthrough()
+      ])
+      .parse(raw)
+    if (!result.ok)
+      throw new CapabilityError(result.error.code, result.error.retryable)
+    const value = operation.output.safeParse(result.payload)
+    if (!value.success) throw new CapabilityError('protocol_violation', false)
+    return value.data as CoreOperationOutput<K>
   } catch (error) {
     if (error instanceof CapabilityError) throw error
     throw new CapabilityError('core_unavailable', true)
@@ -158,6 +237,10 @@ async function invokeMain<T>(channel: string, input: unknown): Promise<T> {
 
 const live = async (channel: string, input: unknown) =>
   freezeDeep(await invoke(channel, input, liveSessionSnapshotSchema))
+const combatCommand = async (channel: string, input: unknown) =>
+  freezeDeep(await invoke(channel, input, combatCommandResultSchema))
+const sceneGroupCommand = async (channel: string, input: unknown) =>
+  freezeDeep(await invoke(channel, input, sceneGroupCommandResultSchema))
 
 const api: SaltMarcherApi = {
   campaigns: {
@@ -220,6 +303,61 @@ const api: SaltMarcherApi = {
             expectedRevision
           }),
           installationSettingsSchema
+        )
+      )
+  },
+  generatorPresets: {
+    read: async () =>
+      freezeDeep(
+        await invoke(
+          'generator-presets:read',
+          undefined,
+          generatorPresetSnapshotSchema
+        )
+      ),
+    create: async (name, config, expectedRevision) =>
+      freezeDeep(
+        await invoke(
+          'generator-presets:create',
+          generatorPresetCreateInputSchema.parse({
+            name,
+            config,
+            expectedRevision
+          }),
+          generatorPresetSnapshotSchema
+        )
+      ),
+    update: async (id, name, config, expectedRevision) =>
+      freezeDeep(
+        await invoke(
+          'generator-presets:update',
+          generatorPresetUpdateInputSchema.parse({
+            id,
+            name,
+            config,
+            expectedRevision
+          }),
+          generatorPresetSnapshotSchema
+        )
+      ),
+    delete: async (id, expectedRevision) =>
+      freezeDeep(
+        await invoke(
+          'generator-presets:delete',
+          generatorPresetDeleteInputSchema.parse({ id, expectedRevision }),
+          generatorPresetSnapshotSchema
+        )
+      ),
+    assign: async (campaignId, presetId, expectedRevision) =>
+      freezeDeep(
+        await invoke(
+          'generator-presets:assign',
+          generatorPresetAssignInputSchema.parse({
+            campaignId,
+            presetId,
+            expectedRevision
+          }),
+          generatorPresetSnapshotSchema
         )
       )
   },
@@ -302,29 +440,82 @@ const api: SaltMarcherApi = {
       invoke('creatures:filterOptions', undefined, creatureFilterOptionsSchema),
     detail: (id) => invoke('creatures:detail', { id }, creatureSchema)
   },
+  references: {
+    staticIndex: async () =>
+      freezeDeep(
+        await invoke('references:static-index', undefined, referenceIndexSchema)
+      ),
+    campaignIndex: async (campaignId) =>
+      freezeDeep(
+        await invoke(
+          'references:campaign-index',
+          referenceCampaignIndexInputSchema.parse({ campaignId }),
+          referenceIndexSchema
+        )
+      ),
+    detail: async (target) =>
+      freezeDeep(
+        await invoke(
+          'references:detail',
+          referenceTargetSchema.parse(target),
+          referenceDocumentSchema
+        )
+      ),
+    onCampaignIndexChanged(listener) {
+      const handler = (_event: Electron.IpcRendererEvent, raw: unknown) =>
+        listener(freezeDeep(referenceIndexChangeNoticeSchema.parse(raw)))
+      ipcRenderer.on('references:index-changed', handler)
+      return () =>
+        ipcRenderer.removeListener('references:index-changed', handler)
+    }
+  },
   locations: {
     read: async () =>
       freezeDeep(
         await invoke('locations:read', undefined, worldLocationSnapshotSchema)
       ),
-    create: async (location, expectedRevision) =>
+    suggestTags: async (query, limit = 6) =>
       freezeDeep(
         await invoke(
-          'locations:create',
-          createWorldLocationInputSchema.parse({ location, expectedRevision }),
-          worldLocationSnapshotSchema
+          'locations:suggest-tags',
+          worldLocationTagSearchInputSchema.parse({ query, limit }),
+          worldLocationTagSuggestionsSchema
         )
       ),
-    update: async (id, location, expectedRevision) =>
+    save: async (input) =>
       freezeDeep(
         await invoke(
-          'locations:update',
-          updateWorldLocationInputSchema.parse({
+          'locations:save',
+          saveWorldLocationInputSchema.parse(input),
+          worldLocationSaveReceiptSchema
+        )
+      ),
+    saveReceipt: async (commandId) =>
+      freezeDeep(
+        await invoke(
+          'locations:save-receipt',
+          worldLocationSaveReceiptInputSchema.parse({ commandId }),
+          worldLocationSaveReceiptSchema.nullable()
+        )
+      ),
+    commitPlacement: async (input) =>
+      freezeDeep(
+        await invoke(
+          'locations:commit-placement',
+          worldLocationPlacementCommandSchema.parse(input),
+          worldLocationPlacementCommitResultSchema
+        )
+      ),
+    updateMapPresentation: async (id, patch, expectedRevision) =>
+      freezeDeep(
+        await invoke(
+          'locations:update-map-presentation',
+          updateWorldLocationMapPresentationInputSchema.parse({
             id,
-            location,
+            patch,
             expectedRevision
           }),
-          worldLocationSnapshotSchema
+          worldLocationMapPresentationSchema
         )
       ),
     delete: async (id, expectedRevision) =>
@@ -332,9 +523,139 @@ const api: SaltMarcherApi = {
         await invoke(
           'locations:delete',
           deleteWorldLocationInputSchema.parse({ id, expectedRevision }),
-          worldLocationSnapshotSchema
+          worldLocationDeleteReceiptSchema
         )
-      )
+      ),
+    onChanged(listener) {
+      const handler = (_event: Electron.IpcRendererEvent, raw: unknown) =>
+        listener(freezeDeep(worldLocationChangeNoticeSchema.parse(raw)))
+      ipcRenderer.on('locations:changed', handler)
+      return () => ipcRenderer.removeListener('locations:changed', handler)
+    }
+  },
+  locationSymbols: {
+    create: async (symbol, expectedRevision) =>
+      freezeDeep(
+        await invoke(
+          'location-symbols:create',
+          createLocationSymbolInputSchema.parse({ symbol, expectedRevision }),
+          locationSymbolMutationReceiptSchema
+        )
+      ),
+    search: async (query = '', offset = 0, limit = 24) =>
+      freezeDeep(
+        await invoke(
+          'location-symbols:search',
+          locationSymbolSearchInputSchema.parse({ query, offset, limit }),
+          locationSymbolPageSchema
+        )
+      ),
+    detail: async (id) =>
+      freezeDeep(
+        await invoke(
+          'location-symbols:detail',
+          locationSymbolDetailInputSchema.parse({ id }),
+          locationSymbolSchema
+        )
+      ),
+    update: async (id, displayName, expectedRevision) =>
+      freezeDeep(
+        await invoke(
+          'location-symbols:update',
+          updateLocationSymbolInputSchema.parse({
+            id,
+            displayName,
+            expectedRevision
+          }),
+          locationSymbolSnapshotSchema
+        )
+      ),
+    deleteImpact: async (id) =>
+      freezeDeep(
+        await invoke(
+          'location-symbols:delete-impact',
+          { id },
+          locationSymbolDeleteImpactSchema
+        )
+      ),
+    delete: async (commandId, id, expectedRevision) =>
+      freezeDeep(
+        await invoke(
+          'location-symbols:delete',
+          deleteLocationSymbolInputSchema.parse({
+            commandId,
+            id,
+            expectedRevision
+          }),
+          locationSymbolDeleteResultSchema
+        )
+      ),
+    importAndAssign: async (input) =>
+      freezeDeep(
+        await invoke(
+          'location-symbols:import-and-assign',
+          importLocationSymbolInputSchema.parse(input),
+          importLocationSymbolResultSchema
+        )
+      ),
+    onChanged(listener) {
+      const handler = (_event: Electron.IpcRendererEvent, raw: unknown) =>
+        listener(freezeDeep(locationSymbolChangeNoticeSchema.parse(raw)))
+      ipcRenderer.on('location-symbols:changed', handler)
+      return () =>
+        ipcRenderer.removeListener('location-symbols:changed', handler)
+    }
+  },
+  biomes: {
+    search: async (query = '', offset = 0, limit = 60) =>
+      freezeDeep(
+        await invoke(
+          'biomes:search',
+          biomeSearchInputSchema.parse({ query, offset, limit }),
+          biomePageSchema
+        )
+      ),
+    detail: async (id) =>
+      freezeDeep(await invoke('biomes:detail', { id }, biomeDefinitionSchema)),
+    create: async (commandId, biome, expectedRevision) =>
+      freezeDeep(
+        await invoke(
+          'biomes:create',
+          createBiomeInputSchema.parse({ commandId, biome, expectedRevision }),
+          biomeCatalogMutationResultSchema
+        )
+      ),
+    update: async (commandId, id, biome, expectedRevision) =>
+      freezeDeep(
+        await invoke(
+          'biomes:update',
+          updateBiomeInputSchema.parse({
+            commandId,
+            id,
+            biome,
+            expectedRevision
+          }),
+          biomeCatalogMutationResultSchema
+        )
+      ),
+    deleteImpact: async (id) =>
+      freezeDeep(
+        await invoke('biomes:delete-impact', { id }, biomeDeleteImpactSchema)
+      ),
+    delete: async (commandId, id, expectedRevision) =>
+      freezeDeep(
+        await invoke(
+          'biomes:delete',
+          deleteBiomeInputSchema.parse({ commandId, id, expectedRevision }),
+          biomeCatalogMutationResultSchema
+        )
+      ),
+    onChanged(listener) {
+      const handler = (_event: Electron.IpcRendererEvent, raw: unknown) =>
+        listener(freezeDeep(biomeChangeNoticeSchema.parse(raw)))
+      ipcRenderer.on('biomes:changed', handler)
+      return () => ipcRenderer.removeListener('biomes:changed', handler)
+    }
   },
   encounterTables: {
     read: async () =>
@@ -345,220 +666,190 @@ const api: SaltMarcherApi = {
           encounterTableSnapshotSchema
         )
       ),
-    create: async (table, expectedRevision) =>
+    commandReceipt: async (commandId) =>
+      freezeDeep(
+        await invoke(
+          'encounter-tables:command-receipt',
+          encounterTableCommandReceiptInputSchema.parse({ commandId }),
+          encounterTableCommandReceiptSchema.nullable()
+        )
+      ),
+    create: async (commandId, table, expectedRevision, scope = 'campaign') =>
       freezeDeep(
         await invoke(
           'encounter-tables:create',
-          createEncounterTableInputSchema.parse({ table, expectedRevision }),
-          encounterTableSnapshotSchema
+          createEncounterTableInputSchema.parse({
+            commandId,
+            table,
+            expectedRevision,
+            scope
+          }),
+          encounterTableMutationReceiptSchema
         )
       ),
-    update: async (id, table, expectedRevision) =>
+    update: async (
+      commandId,
+      id,
+      table,
+      expectedRevision,
+      scope = 'campaign'
+    ) =>
       freezeDeep(
         await invoke(
           'encounter-tables:update',
           updateEncounterTableInputSchema.parse({
+            commandId,
             id,
             table,
-            expectedRevision
+            expectedRevision,
+            scope
           }),
-          encounterTableSnapshotSchema
+          encounterTableMutationReceiptSchema
         )
       ),
-    delete: async (id, expectedRevision) =>
+    delete: async (commandId, id, expectedRevision, scope = 'campaign') =>
       freezeDeep(
         await invoke(
           'encounter-tables:delete',
-          deleteEncounterTableInputSchema.parse({ id, expectedRevision }),
-          encounterTableSnapshotSchema
+          deleteEncounterTableInputSchema.parse({
+            commandId,
+            id,
+            expectedRevision,
+            scope
+          }),
+          encounterTableDeleteReceiptSchema
         )
-      )
+      ),
+    onChanged(listener) {
+      const handler = (_event: Electron.IpcRendererEvent, raw: unknown) =>
+        listener(freezeDeep(encounterTableChangeNoticeSchema.parse(raw)))
+      ipcRenderer.on('encounter-tables:changed', handler)
+      return () =>
+        ipcRenderer.removeListener('encounter-tables:changed', handler)
+    }
   },
   factions: {
     read: async () =>
       freezeDeep(
         await invoke('factions:read', undefined, worldFactionSnapshotSchema)
       ),
-    create: async (faction, expectedRevision) =>
+    commandReceipt: async (commandId) =>
+      freezeDeep(
+        await invoke(
+          'factions:command-receipt',
+          worldFactionCommandReceiptInputSchema.parse({ commandId }),
+          worldFactionCommandReceiptSchema.nullable()
+        )
+      ),
+    create: async (commandId, faction, expectedRevision) =>
       freezeDeep(
         await invoke(
           'factions:create',
-          createWorldFactionInputSchema.parse({ faction, expectedRevision }),
-          worldFactionSnapshotSchema
+          createWorldFactionInputSchema.parse({
+            commandId,
+            faction,
+            expectedRevision
+          }),
+          worldFactionMutationReceiptSchema
         )
       ),
-    update: async (id, faction, expectedRevision) =>
+    update: async (commandId, id, faction, expectedRevision) =>
       freezeDeep(
         await invoke(
           'factions:update',
           updateWorldFactionInputSchema.parse({
+            commandId,
             id,
             faction,
             expectedRevision
           }),
-          worldFactionSnapshotSchema
+          worldFactionMutationReceiptSchema
         )
       ),
-    delete: async (id, expectedRevision) =>
+    delete: async (commandId, id, expectedRevision) =>
       freezeDeep(
         await invoke(
           'factions:delete',
-          deleteWorldFactionInputSchema.parse({ id, expectedRevision }),
-          worldFactionSnapshotSchema
+          deleteWorldFactionInputSchema.parse({
+            commandId,
+            id,
+            expectedRevision
+          }),
+          worldFactionDeleteReceiptSchema
         )
       )
   },
   hex: {
-    terrainCatalog: async () =>
-      freezeDeep(
-        await invoke('hex:terrainCatalog', undefined, hexTerrainCatalogSchema)
-      ),
-    catalog: async () =>
-      freezeDeep(
-        await invoke('hex:catalog', undefined, hexMapCatalogSnapshotSchema)
-      ),
+    editorBootstrap: () => invokeCore('hex.editorBootstrap', undefined),
+    biomeCatalog: async () =>
+      freezeDeep(await invokeCore('hex.biomeCatalog', undefined)),
+    catalog: async () => freezeDeep(await invokeCore('hex.catalog', undefined)),
     locateLocation: (locationId) =>
-      invoke(
-        'hex:locateLocation',
-        { locationId },
-        hexLocationPlacementReferenceSchema
-      ),
+      invokeCore('hex.locateLocation', { locationId }),
     readChunks: async (mapId, keys) =>
       freezeDeep(
-        await invoke(
-          'hex:readChunks',
-          readHexChunksInputSchema.parse({ mapId, keys }),
-          hexChunkReadResultSchema
-        )
+        await invokeCore('hex.readChunks', { mapId, keys: [...keys] })
       ),
-    create: async (displayName, expectedCatalogRevision) =>
-      freezeDeep(
-        await invoke(
-          'hex:create',
-          createHexMapInputSchema.parse({
-            displayName,
-            expectedCatalogRevision
-          }),
-          hexMapSummarySchema
-        )
-      ),
-    updateMetadata: async (mapId, displayName, expectedMetadataRevision) =>
-      freezeDeep(
-        await invoke(
-          'hex:update',
-          updateHexMapInputSchema.parse({
-            mapId,
-            displayName,
-            expectedMetadataRevision
-          }),
-          hexMapSummarySchema
-        )
-      ),
-    paint: async (mapId, coordinate, terrainId, expectedChunkRevision) =>
-      freezeDeep(
-        await invoke(
-          'hex:paint',
-          paintHexTerrainInputSchema.parse({
-            mapId,
-            coordinate,
-            terrainId,
-            expectedChunkRevision
-          }),
-          hexChunkSnapshotSchema
-        )
-      ),
-    placeLocation: async (mapId, locationId, coordinate, expectedRevision) =>
-      freezeDeep(
-        await invoke(
-          'hex:placeLocation',
-          placeHexLocationInputSchema.parse({
-            mapId,
-            locationId,
-            coordinate,
-            expectedContentRevision: expectedRevision
-          }),
-          hexChunkReadResultSchema
-        )
-      ),
-    removeLocation: async (mapId, locationId, expectedContentRevision) =>
-      freezeDeep(
-        await invoke(
-          'hex:removeLocation',
-          removeHexLocationInputSchema.parse({
-            mapId,
-            locationId,
-            expectedContentRevision
-          }),
-          hexChunkReadResultSchema
-        )
-      )
+    replaceBiomePlaceholder: async (input) =>
+      freezeDeep(await invokeCore('hex.replaceBiomePlaceholder', input)),
+    create: async (input) => freezeDeep(await invokeCore('hex.create', input)),
+    updateMetadata: async (input) =>
+      freezeDeep(await invokeCore('hex.update', input)),
+    applyBrushStroke: async (input) =>
+      freezeDeep(await invokeCore('hex.applyBrushStroke', input)),
+    history: (mapId) => invokeCore('hex.history', { mapId }),
+    undo: (input) => invokeCore('hex.undo', input),
+    redo: (input) => invokeCore('hex.redo', input),
+    commandReceipt: (commandId) =>
+      invokeCore('hex.commandReceipt', { commandId }),
+    runtimeOverlays: (mapId) => invokeCore('hex.runtimeOverlays', { mapId }),
+    onChanged(listener) {
+      const handler = (_event: Electron.IpcRendererEvent, raw: unknown) =>
+        listener(freezeDeep(hexChangeNoticeSchema.parse(raw)))
+      ipcRenderer.on('hex:changed', handler)
+      return () => ipcRenderer.removeListener('hex:changed', handler)
+    }
   },
   hexTravel: {
     read: async (sceneId) =>
-      freezeDeep(
-        await invoke('hex-travel:read', { sceneId }, hexTravelSnapshotSchema)
-      ),
+      freezeDeep(await invokeCore('hexTravel.read', { sceneId })),
     evaluate: (sceneId, mapId, waypoints) =>
-      invoke(
-        'hex-travel:evaluate',
-        evaluateHexRouteInputSchema.parse({ sceneId, mapId, waypoints }),
-        hexRouteEvaluationSchema
-      ),
+      invokeCore('hexTravel.evaluate', {
+        sceneId,
+        mapId,
+        waypoints: [...waypoints]
+      }),
     position: async (sceneId, mapId, coordinate, expectedSceneRevision) =>
       freezeDeep(
-        await invoke(
-          'hex-travel:position',
-          positionHexPartyInputSchema.parse({
-            sceneId,
-            mapId,
-            coordinate,
-            expectedSceneRevision
-          }),
-          hexTravelSnapshotSchema
-        )
+        await invokeCore('hexTravel.position', {
+          sceneId,
+          mapId,
+          coordinate,
+          expectedSceneRevision
+        })
       ),
     start: async (sceneId, mapId, waypoints, multiplier, expectedRevision) =>
       freezeDeep(
-        await invoke(
-          'hex-travel:start',
-          startHexTravelInputSchema.parse({
-            sceneId,
-            mapId,
-            waypoints,
-            multiplier,
-            expectedRevision
-          }),
-          hexTravelSnapshotSchema
-        )
-      ),
-    pause: (sceneId, expectedRevision) =>
-      invoke(
-        'hex-travel:pause',
-        mutateHexTravelInputSchema.parse({ sceneId, expectedRevision }),
-        hexTravelSnapshotSchema
-      ),
-    resume: (sceneId, expectedRevision) =>
-      invoke(
-        'hex-travel:resume',
-        mutateHexTravelInputSchema.parse({ sceneId, expectedRevision }),
-        hexTravelSnapshotSchema
-      ),
-    abort: (sceneId, expectedRevision) =>
-      invoke(
-        'hex-travel:abort',
-        mutateHexTravelInputSchema.parse({ sceneId, expectedRevision }),
-        hexTravelSnapshotSchema
-      ),
-    setMultiplier: (sceneId, multiplier, expectedRevision) =>
-      invoke(
-        'hex-travel:setMultiplier',
-        setHexTravelMultiplierInputSchema.parse({
+        await invokeCore('hexTravel.start', {
           sceneId,
+          mapId,
+          waypoints: [...waypoints],
           multiplier,
           expectedRevision
-        }),
-        hexTravelSnapshotSchema
-      )
+        })
+      ),
+    pause: (sceneId, expectedRevision) =>
+      invokeCore('hexTravel.pause', { sceneId, expectedRevision }),
+    resume: (sceneId, expectedRevision) =>
+      invokeCore('hexTravel.resume', { sceneId, expectedRevision }),
+    abort: (sceneId, expectedRevision) =>
+      invokeCore('hexTravel.abort', { sceneId, expectedRevision }),
+    setMultiplier: (sceneId, multiplier, expectedRevision) =>
+      invokeCore('hexTravel.setMultiplier', {
+        sceneId,
+        multiplier,
+        expectedRevision
+      })
   },
   session: {
     read: () => live('session:read', undefined),
@@ -568,6 +859,15 @@ const api: SaltMarcherApi = {
       ipcRenderer.on('session:changed', handler)
       return () => ipcRenderer.removeListener('session:changed', handler)
     }
+  },
+  sessionGeneration: {
+    generateEncounterIntents: async (input) =>
+      freezeDeep(
+        await invokeCore(
+          'sessionGeneration.generateEncounterIntents',
+          sessionGenerationEncounterInputSchema.parse(input)
+        )
+      )
   },
   scene: {
     focus: (sceneId, expectedRevision) =>
@@ -591,9 +891,10 @@ const api: SaltMarcherApi = {
       note,
       disposition,
       entries,
-      expectedRevision
+      expectedRevision,
+      expectedGroupRevision
     ) =>
-      live(
+      sceneGroupCommand(
         'scene:saveGroup',
         saveSceneGroupInputSchema.parse({
           sceneId,
@@ -602,26 +903,27 @@ const api: SaltMarcherApi = {
           note,
           disposition,
           entries,
-          expectedRevision
+          expectedRevision,
+          expectedGroupRevision
         })
       ),
-    setGroupArchived: (sceneId, groupId, archived, expectedRevision) =>
-      live(
+    setGroupArchived: (sceneId, groupId, archived, expectedGroupRevision) =>
+      sceneGroupCommand(
         'scene:setGroupArchived',
         setSceneGroupArchivedInputSchema.parse({
           sceneId,
           groupId,
           archived,
-          expectedRevision
+          expectedGroupRevision
         })
       ),
-    deleteGroup: (sceneId, groupId, expectedRevision) =>
-      live(
+    deleteGroup: (sceneId, groupId, expectedGroupRevision) =>
+      sceneGroupCommand(
         'scene:deleteGroup',
         deleteSceneGroupInputSchema.parse({
           sceneId,
           groupId,
-          expectedRevision
+          expectedGroupRevision
         })
       ),
     assignPartyMember: (sceneId, partyMemberId, assigned, expectedRevision) =>
@@ -685,7 +987,7 @@ const api: SaltMarcherApi = {
   },
   combat: {
     prepare: (sceneId, groupIds, expectedSceneRevision) =>
-      live(
+      combatCommand(
         'combat:prepare',
         prepareCombatInputSchema.parse({
           sceneId,
@@ -693,33 +995,53 @@ const api: SaltMarcherApi = {
           expectedSceneRevision
         })
       ),
+    joinGroup: (
+      sceneId,
+      groupId,
+      expectedGroupRevision,
+      expectedCombatRevision
+    ) =>
+      combatCommand(
+        'combat:joinGroup',
+        joinCombatGroupInputSchema.parse({
+          sceneId,
+          groupId,
+          expectedGroupRevision,
+          expectedCombatRevision
+        })
+      ),
     rollInitiative: (expectedRevision) =>
-      live(
+      combatCommand(
         'combat:rollInitiative',
         combatRevisionInputSchema.parse({ expectedRevision })
       ),
     confirmInitiative: (values, expectedRevision) =>
-      live(
+      combatCommand(
         'combat:confirmInitiative',
         confirmInitiativeInputSchema.parse({ values, expectedRevision })
       ),
     advanceTurn: (expectedRevision) =>
-      live(
+      combatCommand(
         'combat:advanceTurn',
         combatRevisionInputSchema.parse({ expectedRevision })
       ),
+    retreatTurn: (expectedRevision) =>
+      combatCommand(
+        'combat:retreatTurn',
+        combatRevisionInputSchema.parse({ expectedRevision })
+      ),
     adjustInitiative: (id, initiative, expectedRevision) =>
-      live(
+      combatCommand(
         'combat:adjustInitiative',
         adjustInitiativeInputSchema.parse({ id, initiative, expectedRevision })
       ),
     changeHp: (cardId, amount, healing, expectedRevision) =>
-      live(
+      combatCommand(
         'combat:changeHp',
         changeHpInputSchema.parse({ cardId, amount, healing, expectedRevision })
       ),
     toggleCondition: (cardId, condition, active, expectedRevision) =>
-      live(
+      combatCommand(
         'combat:toggleCondition',
         toggleConditionInputSchema.parse({
           cardId,
@@ -728,35 +1050,56 @@ const api: SaltMarcherApi = {
           expectedRevision
         })
       ),
+    setConcentration: (cardId, concentrating, expectedRevision) =>
+      combatCommand(
+        'combat:setConcentration',
+        setConcentrationInputSchema.parse({
+          cardId,
+          concentrating,
+          expectedRevision
+        })
+      ),
+    setExhaustion: (cardId, exhaustionLevel, expectedRevision) =>
+      combatCommand(
+        'combat:setExhaustion',
+        setExhaustionInputSchema.parse({
+          cardId,
+          exhaustionLevel,
+          expectedRevision
+        })
+      ),
     undo: (expectedRevision) =>
-      live(
+      combatCommand(
         'combat:undo',
         combatRevisionInputSchema.parse({ expectedRevision })
       ),
     end: (expectedRevision) =>
-      live('combat:end', combatRevisionInputSchema.parse({ expectedRevision })),
-    updateResolution: (
-      selectedEnemyIds,
-      thresholdFraction,
-      xpFraction,
-      expectedRevision
-    ) =>
-      live(
+      combatCommand(
+        'combat:end',
+        combatRevisionInputSchema.parse({ expectedRevision })
+      ),
+    moveToPhase: (target, expectedRevision) =>
+      combatCommand(
+        'combat:moveToPhase',
+        moveCombatPhaseInputSchema.parse({ target, expectedRevision })
+      ),
+    updateResolution: (selectedEnemyIds, mode, xpFraction, expectedRevision) =>
+      combatCommand(
         'combat:updateResolution',
         updateResolutionInputSchema.parse({
           selectedEnemyIds,
-          thresholdFraction,
+          mode,
           xpFraction,
           expectedRevision
         })
       ),
     awardXp: (expectedRevision) =>
-      live(
+      combatCommand(
         'combat:awardXp',
         combatRevisionInputSchema.parse({ expectedRevision })
       ),
     complete: (expectedRevision) =>
-      live(
+      combatCommand(
         'combat:complete',
         combatRevisionInputSchema.parse({ expectedRevision })
       )
@@ -768,6 +1111,11 @@ const api: SaltMarcherApi = {
     gpuObservation: () => invokeMain('runtime:gpu-observation', undefined),
     coreStatus: () => invokeMain('runtime:core-status', undefined),
     retryCore: () => invokeMain('runtime:retry-core', undefined),
+    reportRendererIncident: (incident) =>
+      invokeMain('runtime:report-renderer-incident', incident),
+    reloadRenderer: () => invokeMain('runtime:reload-renderer', undefined),
+    pickLocationSymbolFile: () =>
+      invokeMain('runtime:pick-location-symbol-file', undefined),
     onCoreStatus(listener: (status: CoreProcessStatus) => void) {
       const handler = (_event: Electron.IpcRendererEvent, raw: unknown) =>
         listener(coreProcessStatusSchema.parse(raw))

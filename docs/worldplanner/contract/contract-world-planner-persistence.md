@@ -28,8 +28,10 @@ World Planner persistence stores:
   bounded PC-disposition base, and NPC membership
 - faction statblock inventory limit rows, including whether a statblock is
   finite or unlimited
-- location identity, display name, notes, linked factions, and linked
-  encounter tables
+- location identity, display name, ordered free-form tags, separate read-aloud
+  text and GM notes, linked factions, and linked encounter tables
+- normalized World Location save-command input and its durable complete or
+  partial receipt, keyed by one stable command identity
 
 The active Electron slice materializes location and faction metadata, faction
 inventory, location-to-faction links, and location-to-table links. Foreign
@@ -66,10 +68,25 @@ World Planner persistence does not store:
 
 ## Validation And Error Behavior
 
-Owner startup readiness validates the feature-declared target schema signature; semantic row validation remains on typed provider read/write paths and fails closed through the feature contract.
+Startup validates the one whole-database development schema version; semantic
+row validation remains on typed provider read/write paths and fails closed
+through the feature contract. World Planner owns its DDL and SQL but no
+independent schema version or migration ledger.
+
+The `worldplanner_location_save_operation` journal table is owned by the World
+Planner location aggregate. Its adapter commits the base Location mutation and
+the provisional partial receipt together. The cross-aggregate application
+handler receives that adapter as a port and must not prepare SQL itself.
 
 - Writes must reject malformed NPC, faction, location, creature statblock, or
   encounter-table references.
+- Location tags are stored as ordered location-owned rows. Every location has
+  between one and twenty non-empty values of at most forty characters. A
+  normalized key prevents case-only or Unicode-normalization duplicates; no tag
+  registry or type enum is persisted.
+- Tag suggestions are a bounded read projection over those relational rows.
+  The query returns at most ten canonical-distinct display values, preserves
+  the first authored spelling, and does not expose a mutable tag registry.
 - Writes must reject duplicate membership or duplicate link rows instead of
   silently persisting ambiguous truth.
 - NPC deletion must remove faction membership in the same saved state.
@@ -94,16 +111,15 @@ existing Session Planner, Encounter, EncounterTable, Creatures, Party, Dungeon,
 or Hex tables in the current backend slice.
 
 Compatibility obligations begin with the first released format.
-Before the first released format, owner startup creates the complete current schema
-directly as owner version `1`, only on an empty World Planner namespace, and
-validates its exact table, relationship, constraint, index, and owner-object
-inventory.
+Before the first released format, shared startup creates the complete current
+whole-database development schema directly. World Planner owns its DDL and SQL
+but no independent version or ledger. Unsupported isolated development
+databases are discarded and recreated without feature-local `ALTER`, repair,
+membership normalization, copy, drop, or version claims.
 
-Unversioned partial, superseded, structurally damaged, adjacent-owner-object,
-and newer shapes fail closed unchanged. Startup performs no `ALTER`, repair,
-membership normalization, copy, drop, or version claim. Until activation,
-unsupported development databases are discarded and recreated from the current
-product.
+The deterministic example-data command, optional diagnostic export, and the
+release criteria that end this reset policy are defined by the
+[data format freeze checklist](../../project/architecture/data-format-freeze-checklist.md).
 
 Later Session Planner-owned references to World Planner locations belong to the
 Session Planner persistence contract and do not change this owner boundary.

@@ -2,10 +2,10 @@ import type { SaltMarcherApi } from '../../../shared/contracts/capability-api.js
 
 export type CatalogCapabilities = Pick<
   SaltMarcherApi,
-  'creatures' | 'encounterTables' | 'factions' | 'locations' | 'session'
+  'factions' | 'locations' | 'session' | 'encounterTables'
 >
 
 /** Narrow feature adapter; Catalog owns all access to its preload groups. */
-export function catalogCapabilities(): CatalogCapabilities {
-  return window.saltMarcher
+export function catalogCapabilities(api: SaltMarcherApi): CatalogCapabilities {
+  return api
 }

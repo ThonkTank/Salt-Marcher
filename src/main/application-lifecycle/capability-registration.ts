@@ -1,4 +1,4 @@
-import { app, ipcMain } from 'electron'
+import { app, dialog, ipcMain, type IpcMainInvokeEvent } from 'electron'
 import type { CoreProcessSupervisor } from '../core-process/core-process-supervisor.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import {
@@ -12,6 +12,7 @@ import { runtimeGpuObservationSchema } from '../../shared/qualification/runtime-
 import { roleCanInvoke } from './operation-authorization.js'
 import { roleForEvent } from './window-role.js'
 import { gpuObservation } from './runtime-observation.js'
+import { readLocationSymbolFile } from './location-symbol-file.js'
 
 export function registerCapabilities(core: CoreProcessSupervisor): void {
   for (const [rawKind, definition] of Object.entries(coreOperations)) {
@@ -36,8 +37,8 @@ export function registerCapabilities(core: CoreProcessSupervisor): void {
     ipcMain.handle(definition.channel, async (event, raw) => {
       if (!definition.roles.includes(roleForEvent(event)))
         throw new CapabilityError('read_only', false)
-      definition.input.parse(raw)
-      return definition.output.parse(await handlers[kind]())
+      const input = definition.input.parse(raw)
+      return definition.output.parse(await handlers[kind](event, input))
     })
   }
 }
@@ -59,8 +60,38 @@ function mainHandlers(core: CoreProcessSupervisor) {
     'runtime.retryCore': () => {
       core.retry()
       return core.status()
+    },
+    'runtime.reportRendererIncident': (_event, rawIncident: unknown) => {
+      const incident =
+        mainOperations['runtime.reportRendererIncident'].input.parse(
+          rawIncident
+        )
+      console.error(
+        JSON.stringify({
+          event: 'renderer-incident',
+          occurredAt: new Date().toISOString(),
+          ...incident
+        })
+      )
+    },
+    'runtime.reloadRenderer': (event) => {
+      setImmediate(() => {
+        if (!event.sender.isDestroyed()) event.sender.reload()
+      })
+    },
+    'runtime.pickLocationSymbolFile': async () => {
+      const selection = await dialog.showOpenDialog({
+        properties: ['openFile'],
+        filters: [{ name: 'SVG', extensions: ['svg'] }]
+      })
+      if (selection.canceled || !selection.filePaths[0])
+        return { status: 'cancelled' as const }
+      return readLocationSymbolFile(selection.filePaths[0])
     }
-  } satisfies Record<MainOperationKind, () => unknown>
+  } satisfies Record<
+    MainOperationKind,
+    (event: IpcMainInvokeEvent, input: unknown) => unknown
+  >
 }
 
 async function invokeGeneric(
@@ -76,10 +107,7 @@ async function invokeGeneric(
       ok: false,
       error: {
         code,
-        retryable,
-        ...(error instanceof CapabilityError && error.data
-          ? { data: error.data }
-          : {})
+        retryable
       }
     }
   }

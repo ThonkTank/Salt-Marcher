@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { creatureCatalogQuerySchema } from './encounter.js'
 import { encounterTuningSchema } from './encounter-tuning.js'
+import { combatStatusSchema } from './combat-status.js'
 
 export const sceneGroupEntrySchema = z
   .object({
@@ -8,8 +9,19 @@ export const sceneGroupEntrySchema = z
     creatureId: z.string().min(1),
     displayName: z.string().min(1),
     quantity: z.number().int().positive(),
+    aliveQuantity: z.number().int().nonnegative(),
+    deadQuantity: z.number().int().nonnegative(),
     position: z.number().int().nonnegative(),
-    available: z.boolean()
+    available: z.boolean(),
+    members: z.array(
+      combatStatusSchema
+        .extend({
+          id: z.uuid(),
+          currentHp: z.number().int().nonnegative(),
+          position: z.number().int().nonnegative()
+        })
+        .strict()
+    )
   })
   .strict()
 
@@ -22,6 +34,7 @@ export const sceneGroupDispositionSchema = z.enum([
 export const sceneGroupSchema = z
   .object({
     id: z.uuid(),
+    revision: z.number().int().nonnegative(),
     name: z.string().min(1).max(100),
     note: z.string().max(1_000),
     disposition: sceneGroupDispositionSchema,
@@ -67,9 +80,13 @@ export const sceneSnapshotSchema = z
 export const sceneGroupDraftEntrySchema = z
   .object({
     creatureId: z.string().min(1),
-    quantity: z.number().int().positive().max(999)
+    quantity: z.number().int().nonnegative().max(999),
+    deadQuantity: z.number().int().nonnegative().max(999).optional()
   })
   .strict()
+  .refine((entry) => entry.quantity + (entry.deadQuantity ?? 0) > 0, {
+    message: 'At least one living or dead member is required.'
+  })
 
 const groupEntriesInputSchema = z.array(sceneGroupDraftEntrySchema)
 
@@ -81,7 +98,8 @@ export const saveSceneGroupInputSchema = z
     note: z.string().trim().max(1_000),
     disposition: sceneGroupDispositionSchema,
     entries: groupEntriesInputSchema,
-    expectedRevision: z.number().int().nonnegative()
+    expectedRevision: z.number().int().nonnegative(),
+    expectedGroupRevision: z.number().int().nonnegative().nullable()
   })
   .strict()
 
@@ -89,7 +107,7 @@ export const deleteSceneGroupInputSchema = z
   .object({
     sceneId: z.uuid(),
     groupId: z.uuid(),
-    expectedRevision: z.number().int().nonnegative()
+    expectedGroupRevision: z.number().int().nonnegative()
   })
   .strict()
 
@@ -98,7 +116,7 @@ export const setSceneGroupArchivedInputSchema = z
     sceneId: z.uuid(),
     groupId: z.uuid(),
     archived: z.boolean(),
-    expectedRevision: z.number().int().nonnegative()
+    expectedGroupRevision: z.number().int().nonnegative()
   })
   .strict()
 
@@ -215,7 +233,12 @@ export const sceneGroupDraftGenerationSchema = z
         existingGroupCount: z.number().int().nonnegative(),
         effectiveEncounterTableIds: z.array(z.string()),
         effectiveFactionIds: z.array(z.string()),
-        catalogFallback: z.boolean()
+        catalogFallback: z.boolean(),
+        sourceIssue: z
+          .enum(['location_missing_table', 'location_empty_table'])
+          .nullable(),
+        generatorPresetId: z.string().nullable(),
+        generatorPresetRevision: z.number().int().nonnegative().nullable()
       })
       .strict(),
     quality: z.enum(['exact', 'fallback', 'none']),

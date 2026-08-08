@@ -34,11 +34,7 @@ const api: PassiveE2eApi = {
       )
     )
     if (!result.ok)
-      throw new CapabilityError(
-        result.error.code,
-        result.error.retryable,
-        result.error.data
-      )
+      throw new CapabilityError(result.error.code, result.error.retryable)
     return freeze(passiveProjectionSchema.parse(result.payload))
   },
   onProjectionChanged(listener) {

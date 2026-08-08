@@ -16,8 +16,9 @@ payloads and lifecycle.
   location ID, and order
 - `scene_party_member`: ordered Party character foreign IDs
 - `scene_npc`: ordered World Planner NPC foreign IDs
-- `scene_group` and `scene_group_entry`: ordered, named Scene-owned groups of
-  Creature catalog foreign IDs and positive quantities; Creature facts remain
+- `scene_group`, `scene_group_entry`, and `scene_group_member`: ordered, named
+  Scene-owned groups of Creature catalog foreign IDs and stable members;
+  members store current HP and conditions while Creature facts remain
   Creatures-owned
 - `scene_participant_state`: Scene-owned per-scene defeated state and quick
   notes for an assigned PC, NPC, or mob, keyed by participant kind and the
@@ -29,7 +30,9 @@ stored in Scene tables.
 
 ## Validation And Errors
 
-Owner startup readiness validates the feature-declared target schema signature; semantic row validation remains on typed provider read/write paths and fails closed through the feature contract.
+Startup validates the one whole-database development schema version; semantic
+row validation remains on typed provider read/write paths and fails closed
+through the feature contract.
 
 Scene IDs and all present foreign references MUST be positive. The database
 enforces one row per scene assignment plus global uniqueness of both PC and NPC
@@ -54,18 +57,14 @@ MUST NOT overwrite a newer Scene revision.
 ## Compatibility And Migration
 
 Before the first released format,
-`scene` supports exactly the complete current schema at owner version 1. One
-guarded initializer creates all six Scene tables in a fresh owner namespace.
+`scene` supports exactly the complete current whole-database development
+schema. The initializer creates all six Scene tables directly.
 There is no additive v1-v3 build-up, predecessor repair, backfill, or workspace
 translation.
 
-The exact owner inventory covers every table, index, view, and trigger named
-with `scene_` or `idx_scene_`. An unversioned partial namespace, a recorded
-version-1 shape that differs from the exact current DDL, an adjacent retired
-Scene object, or a newer owner version MUST fail without mutating stored rows,
-schema objects, or ledger state. Initialization failure MUST NOT fabricate a
-ledger entry. Unsupported development databases are reinitialized rather than
-migrated before the first released format.
+Unsupported isolated development databases are reinitialized by the shared
+persistence lifecycle; Scene does not maintain a separate version, ledger, or
+in-place repair path.
 
 Missing World Planner records remain visible as unresolved stable references
 until the GM removes or replaces them; inactive Party members are removed

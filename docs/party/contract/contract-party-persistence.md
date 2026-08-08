@@ -13,8 +13,8 @@ This document is normative for the `party` feature's persistence path.
 
 ## Mandatory Schema
 
-- The feature-owned persistence schema declaration is the canonical in-code
-  schema owner.
+- The feature-owned persistence declaration owns Party DDL and SQL, not an
+  independent schema version or migration ledger.
 - The schema currently owns:
   - `player_characters`
   - `party_roster_metadata`
@@ -22,10 +22,8 @@ This document is normative for the `party` feature's persistence path.
   overworld locations plus the party-token attachment flag. These columns are
   part of character state, not a campaign-level travel table and not dungeon
   authored truth.
-- owner startup creates the complete current schema directly as owner version
-  `1`, and only when the Party object namespace is empty
-- startup validates the exact table definitions and complete Party-owned object
-  inventory before the store becomes ready
+- shared startup creates and validates the complete current whole-database
+  development schema before the store becomes ready
 
 ## Current Mapping
 
@@ -43,8 +41,8 @@ space:
 - dungeon travel location stores map id, local owner id, local tile coordinate,
   level, location kind, and heading
 - overworld travel location stores overworld map id and tile id
-- party-token attachment stores whether a character currently follows the
-  shared party token position
+- explicit travel state distinguishes detached, attached-but-unpositioned, and
+  positioned characters; positioned rows alone carry map and tile references
 
 The Party SQLite adapter maps those columns through private records into Party
 domain values. Dungeon persistence remains responsible for authored map
@@ -52,7 +50,9 @@ truth only; it does not persist character positions.
 
 ## Validation And Error Behavior
 
-Owner startup readiness validates the feature-declared target schema signature; semantic row validation remains on typed provider read/write paths and fails closed through the feature contract.
+Startup validates the one whole-database development schema version; semantic
+row validation remains on typed provider read/write paths and fails closed
+through the feature contract.
 
 - party writes MUST reject malformed character identity, roster, progression,
   or travel-location payloads instead of silently persisting partial character
@@ -73,11 +73,10 @@ Owner startup readiness validates the feature-declared target schema signature; 
 ## Current Schema Lifecycle
 
 Compatibility obligations begin with the first released format.
-Before the first released format, only the current direct version-`1` schema is accepted.
-Unversioned partial, superseded, structurally damaged, adjacent-owner-object,
-and newer shapes fail closed without `ALTER`, repair, backfill, copy, drop,
-normalization, or a version claim. They must be discarded and recreated from
-the current product.
+Before the first released format, only the current whole-database development
+schema is accepted. Unsupported isolated development databases are discarded
+and recreated by the shared persistence lifecycle without feature-local
+`ALTER`, repair, backfill, copy, drop, normalization, or version claims.
 
 ## Stability Rules
 

@@ -1,0 +1,46 @@
+import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import {
+  parseVisualGoldenUpdateArguments,
+  selectedVisualGoldens,
+  type VisualGoldenEntry
+} from '../../scripts/visual-golden-policy.js'
+
+const entries: readonly VisualGoldenEntry[] = [
+  {
+    name: 'location-dialog',
+    suite: 'locations',
+    selector: '.location-dialog',
+    viewport: { width: 720, height: 540 }
+  }
+]
+
+describe('visual golden update policy', () => {
+  it('rejects unrestricted and unknown updates', () => {
+    expect(() => selectedVisualGoldens('1', entries)).toThrow('forbidden')
+    expect(() => selectedVisualGoldens('missing', entries)).toThrow('Unknown')
+    expect(() => parseVisualGoldenUpdateArguments([], entries)).toThrow(
+      '--golden'
+    )
+  })
+
+  it('accepts an explicit manifest name', () => {
+    expect([
+      ...parseVisualGoldenUpdateArguments(
+        ['--', '--golden', 'location-dialog'],
+        entries
+      )
+    ]).toEqual(['location-dialog'])
+  })
+
+  it('drives selector, suite and viewport from the manifest at capture time', () => {
+    const assertions = readFileSync(
+      'tests/e2e/support/e2e-assertions.ts',
+      'utf8'
+    )
+    expect(assertions).toContain('entry.selector')
+    expect(assertions).toContain('entry.suite')
+    expect(assertions).toContain('entry.viewport.width')
+    expect(assertions).toContain('entry.viewport.height')
+  })
+})

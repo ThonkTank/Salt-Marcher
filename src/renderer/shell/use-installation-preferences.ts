@@ -6,8 +6,13 @@ import type {
 } from '../../shared/contracts/settings.js'
 import { capabilityErrorCode } from '../../shared/errors/capability-error.js'
 import { capabilityErrorMessage, message } from '../i18n/messages.de.js'
+import { useCapabilityApi } from '../capabilities/use-capability-api.js'
 
-export function useInstallationPreferences(onError: (message: string) => void) {
+export function useInstallationPreferences(
+  onError: (message: string) => void,
+  enabled = true
+) {
+  const capabilityApi = useCapabilityApi()
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const [sessionLayout, setSessionLayout] = useState(
     defaultSessionLayoutPreference
@@ -18,7 +23,8 @@ export function useInstallationPreferences(onError: (message: string) => void) {
   const writeQueue = useRef<Promise<void>>(Promise.resolve())
 
   useEffect(() => {
-    void window.saltMarcher.settings
+    if (!enabled) return
+    void capabilityApi.settings
       .read()
       .then((value) => {
         settings.current = value
@@ -28,7 +34,7 @@ export function useInstallationPreferences(onError: (message: string) => void) {
         setTheme(value.preferences.theme)
       })
       .catch((cause: unknown) => onError(capabilityErrorMessage(cause)))
-  }, [onError])
+  }, [capabilityApi, enabled, onError])
 
   useEffect(() => {
     document.documentElement.dataset['theme'] = theme
@@ -41,12 +47,12 @@ export function useInstallationPreferences(onError: (message: string) => void) {
           let current = settings.current
           if (current === null) return
           try {
-            current = await window.saltMarcher.settings.update(
+            current = await capabilityApi.settings.update(
               patch,
               current.revision
             )
           } catch (cause) {
-            const fresh = await window.saltMarcher.settings.read()
+            const fresh = await capabilityApi.settings.read()
             if (capabilityErrorCode(cause) === 'outcome_unknown') {
               current = fresh
               const committed = Object.entries(patch).every(
@@ -61,7 +67,7 @@ export function useInstallationPreferences(onError: (message: string) => void) {
                   : message('settings.outcome_not_committed')
               )
             } else if (capabilityErrorCode(cause) === 'stale') {
-              current = await window.saltMarcher.settings.update(
+              current = await capabilityApi.settings.update(
                 patch,
                 fresh.revision
               )
@@ -73,7 +79,7 @@ export function useInstallationPreferences(onError: (message: string) => void) {
         })
         .catch((cause: unknown) => onError(capabilityErrorMessage(cause)))
     },
-    [onError]
+    [capabilityApi, onError]
   )
 
   useEffect(() => {

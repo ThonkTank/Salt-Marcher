@@ -1,0 +1,55 @@
+.modal-app-root {
+  display: contents;
+}
+
+.modal-layer-root {
+  position: relative;
+  z-index: 30;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--scrim);
+  padding: 1rem;
+}
+
+.modal-backdrop[data-modal-bottom='false'] {
+  background: transparent;
+}
+
+.modal-backdrop > [role='dialog'],
+.modal-backdrop > [role='alertdialog'] {
+  opacity: var(--modal-stack-opacity, 1);
+  transform: translate(
+    calc(var(--modal-stack-offset, 0px) * -1),
+    var(--modal-stack-offset, 0px)
+  );
+  transform-origin: center;
+}
+
+.modal-backdrop[aria-hidden='true'] {
+  pointer-events: none;
+}
+
+.discard-changes-dialog {
+  display: grid;
+  width: min(28rem, calc(100vw - 2rem));
+  gap: var(--space-6);
+  border: 1px solid var(--border-danger);
+  background: var(--surface-panel);
+  box-shadow: var(--shadow-dialog);
+  padding: var(--space-8);
+}
+
+.discard-changes-dialog p {
+  margin: 0;
+}
+
+.discard-changes-dialog footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-4);
+}

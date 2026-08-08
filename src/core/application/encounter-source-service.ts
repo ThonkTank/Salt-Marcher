@@ -2,13 +2,28 @@ import Database from 'better-sqlite3'
 import type { CreatureCatalogQuery } from '../../shared/contracts/encounter.js'
 import type {
   EncounterTable,
+  EncounterTableCommandReceipt,
+  EncounterTableDeleteReceipt,
   EncounterTableDraft,
+  EncounterTableMutationReceipt,
+  EncounterTableScope,
+  EncounterTableSnapshot,
   WorldFaction,
   WorldFactionDraft
+} from '../../shared/contracts/encounter-source.js'
+import {
+  encounterTableDeleteReceiptSchema,
+  encounterTableMutationReceiptSchema,
+  encounterTableSnapshotSchema,
+  encounterTableSummarySchema,
+  worldFactionDeleteReceiptSchema
 } from '../../shared/contracts/encounter-source.js'
 import { EncounterTableStore } from '../encounter/encounter-table-store.js'
 import { WorldFactionStore } from '../worldplanner/faction-store.js'
 import { WorldLocationStore } from '../worldplanner/location-store.js'
+import { anyBiomeEncounterTableId } from '../../shared/contracts/biome.js'
+import { BiomeCatalogStore } from '../biomes/biome-catalog.js'
+import { creatureById } from '../creatures/catalog.js'
 
 export type ResolvedSourceCandidate = Readonly<{
   creatureId: string
@@ -22,75 +37,235 @@ export type ResolvedEncounterSource = Readonly<{
   effectiveFactionIds: readonly string[]
   locationId: string | null
   catalogFallback: boolean
+  biomeFiltering: boolean
+  sourceIssue: 'location_missing_table' | 'location_empty_table' | null
 }>
 
-/** Coordinates aggregate-owned stores; all cross-aggregate work is transactional. */
+/** Coordinates aggregate-owned stores and recoverable cross-database lifecycles. */
 export class EncounterSourceService {
-  constructor(private readonly campaignDatabase: () => Database.Database) {}
+  constructor(
+    private readonly campaignDatabase: () => Database.Database,
+    private readonly installationDatabase?: () => Database.Database,
+    private readonly visitCampaignDatabases?: (
+      visitor: (campaign: { id: string; database: Database.Database }) => void
+    ) => void
+  ) {}
 
   readTables() {
-    return this.withStores(({ tables }) => tables.read())
+    const campaign = this.withStores(({ tables }) => tables.read())
+    const installation = this.installationTables()?.read()
+    return encounterTableSnapshotSchema.parse({
+      installation: scopeProjection(
+        installation?.revision ?? 0,
+        installation?.tables ?? []
+      ),
+      campaign: scopeProjection(campaign.revision, campaign.tables)
+    })
   }
 
-  createTable(draft: EncounterTableDraft, revision: number) {
-    return this.withStores(({ tables }) => tables.create(draft, revision))
+  tableReceipt(commandId: string) {
+    const campaignTables = this.withStores(({ tables }) => tables)
+    const installationTables = this.installationTables()
+    const campaign = campaignTables.commandReceipt(commandId)
+    const installation = installationTables?.commandReceipt(commandId)
+    if (campaign && installation)
+      throw new Error('Encounter Table command identity exists in both scopes.')
+    const receipt = campaign ?? installation
+    if (!receipt) return null
+    const owner = campaign ? campaignTables : installationTables!
+    const completed = owner.applicationReceipt(commandId)
+    if (completed) return completed
+    const reconstructed =
+      'saved' in receipt
+        ? encounterTableMutationReceiptSchema.parse({
+            snapshot: this.readTables(),
+            saved: receipt.saved
+          })
+        : encounterTableDeleteReceiptSchema.parse({
+            snapshot: this.readTables(),
+            deletedId: receipt.deletedId
+          })
+    return owner.completeApplicationReceipt(commandId, reconstructed)
   }
 
-  updateTable(id: string, draft: EncounterTableDraft, revision: number) {
-    return this.withStores(({ db, tables, factions }) => {
+  createTable(
+    commandId: string,
+    draft: EncounterTableDraft,
+    revision: number,
+    scope: EncounterTableScope = 'campaign'
+  ) {
+    if (scope === 'installation') {
+      const tables = this.requireInstallationTables()
+      const result = tables.create(commandId, draft, revision)
+      return this.completeTableMutationReceipt(tables, commandId, result.saved)
+    }
+    const result = this.withStores(({ tables }) =>
+      tables.create(commandId, draft, revision)
+    )
+    return this.withStores(({ tables }) =>
+      this.completeTableMutationReceipt(tables, commandId, result.saved)
+    )
+  }
+
+  updateTable(
+    commandId: string,
+    id: string,
+    draft: EncounterTableDraft,
+    revision: number,
+    scope: EncounterTableScope = 'campaign'
+  ) {
+    if (scope === 'installation') {
+      const tables = this.requireInstallationTables()
+      tables.beginInstallationLifecycle({
+        commandId,
+        operation: 'update',
+        tableId: id,
+        expectedRevision: revision,
+        draft
+      })
+      const result = tables.update(commandId, id, draft, revision)
+      this.visitCampaignDatabases?.(({ id: campaignId, database }) => {
+        tables.beginCampaignLifecycle(commandId, campaignId)
+        if (tables.campaignLifecycleCompleted(commandId, campaignId)) return
+        database.transaction(() => {
+          campaignFactionStore(database, tables).pruneInventoryForTable(
+            id,
+            draft.entries.map((entry) => entry.creatureId)
+          )
+        })()
+        tables.completeCampaignLifecycle(commandId, campaignId)
+      })
+      tables.completeInstallationLifecycle(commandId)
+      return this.completeTableMutationReceipt(tables, commandId, result.saved)
+    }
+    const result = this.withStores(({ db, tables, factions }) => {
+      let saved: EncounterTable | null = null
       db.transaction(() => {
-        tables.update(id, draft, revision)
+        saved = tables.update(commandId, id, draft, revision).saved
         factions.pruneInventoryForTable(
           id,
           draft.entries.map((entry) => entry.creatureId)
         )
       })()
-      return tables.read()
+      if (!saved) throw new Error('Updated Encounter Table is missing.')
+      return saved
     })
+    return this.withStores(({ tables }) =>
+      this.completeTableMutationReceipt(tables, commandId, result)
+    )
   }
 
-  deleteTable(id: string, revision: number) {
-    return this.withStores(({ db, tables, factions, locations }) => {
+  deleteTable(
+    commandId: string,
+    id: string,
+    revision: number,
+    scope: EncounterTableScope = 'campaign'
+  ) {
+    if (scope === 'installation') {
+      const db = this.installationDatabase?.()
+      if (!db) throw new Error('Installation encounter tables unavailable')
+      const tables = this.requireInstallationTables()
+      tables.beginInstallationLifecycle({
+        commandId,
+        operation: 'delete',
+        tableId: id,
+        expectedRevision: revision
+      })
+      tables.delete(commandId, id, revision)
+      new BiomeCatalogStore(db).unlinkEncounterTable(id)
+      this.visitCampaignDatabases?.(({ id: campaignId, database }) => {
+        tables.beginCampaignLifecycle(commandId, campaignId)
+        if (tables.campaignLifecycleCompleted(commandId, campaignId)) return
+        database.transaction(() => {
+          campaignFactionStore(database, tables).clearPrimaryEncounterTable(id)
+          new WorldLocationStore(database).unlinkEncounterTable(id)
+        })()
+        tables.completeCampaignLifecycle(commandId, campaignId)
+      })
+      tables.completeInstallationLifecycle(commandId)
+      return this.completeTableDeleteReceipt(tables, commandId, id)
+    }
+    this.withStores(({ db, tables, factions, locations }) => {
       db.transaction(() => {
-        tables.delete(id, revision)
+        tables.delete(commandId, id, revision)
         factions.clearPrimaryEncounterTable(id)
         locations.unlinkEncounterTable(id)
       })()
-      return tables.read()
     })
+    return this.withStores(({ tables }) =>
+      this.completeTableDeleteReceipt(tables, commandId, id)
+    )
+  }
+
+  recoverPendingInstallationTableLifecycles(): void {
+    const tables = this.installationTables()
+    if (!tables) return
+    for (const job of tables.pendingInstallationLifecycles()) {
+      if (job.operation === 'update') {
+        if (!job.draft)
+          throw new Error('Encounter update lifecycle has no draft')
+        this.updateTable(
+          job.commandId,
+          job.tableId,
+          job.draft,
+          job.expectedRevision,
+          'installation'
+        )
+      } else
+        this.deleteTable(
+          job.commandId,
+          job.tableId,
+          job.expectedRevision,
+          'installation'
+        )
+    }
   }
 
   readFactions() {
     return this.withStores(({ factions }) => factions.read())
   }
 
-  createFaction(draft: WorldFactionDraft, revision: number) {
-    return this.withStores(({ factions }) => factions.create(draft, revision))
+  factionReceipt(commandId: string) {
+    return this.withStores(({ factions }) => factions.commandReceipt(commandId))
   }
 
-  updateFaction(id: string, draft: WorldFactionDraft, revision: number) {
+  createFaction(commandId: string, draft: WorldFactionDraft, revision: number) {
     return this.withStores(({ factions }) =>
-      factions.update(id, draft, revision)
+      factions.create(commandId, draft, revision)
     )
   }
 
-  deleteFaction(id: string, revision: number) {
+  updateFaction(
+    commandId: string,
+    id: string,
+    draft: WorldFactionDraft,
+    revision: number
+  ) {
+    return this.withStores(({ factions }) =>
+      factions.update(commandId, id, draft, revision)
+    )
+  }
+
+  deleteFaction(commandId: string, id: string, revision: number) {
     return this.withStores(({ db, factions, locations }) => {
+      let receipt: ReturnType<WorldFactionStore['delete']> | null = null
       db.transaction(() => {
-        factions.delete(id, revision)
+        receipt = factions.delete(commandId, id, revision)
         locations.unlinkFaction(id)
       })()
-      return factions.read()
+      if (!receipt) throw new Error('Deleted World Faction receipt is missing.')
+      return worldFactionDeleteReceiptSchema.parse(receipt)
     })
   }
 
   resolve(query: CreatureCatalogQuery): ResolvedEncounterSource {
-    return this.withStores(({ tables, factions, locations }) =>
+    return this.withStores(({ factions, locations }) =>
       resolveEncounterSource(
         query,
-        tables.read().tables,
+        allTables(this.readTables()),
         factions.read().factions,
-        locations.read().locations
+        locations.read().locations,
+        this.installationDatabase?.()
       )
     )
   }
@@ -105,17 +280,118 @@ export class EncounterSourceService {
   ): T {
     const db = this.campaignDatabase()
     const tables = new EncounterTableStore(db)
+    const installationTables = this.installationTables()
     return work({
       db,
       tables,
       factions: new WorldFactionStore(db, {
-        containsTable: (id) => tables.contains(id),
+        containsTable: (id) =>
+          tables.contains(id) || Boolean(installationTables?.contains(id)),
         containsCreature: (tableId, creatureId) =>
-          tables.containsCreature(tableId, creatureId)
+          tables.containsCreature(tableId, creatureId) ||
+          Boolean(installationTables?.containsCreature(tableId, creatureId))
       }),
       locations: new WorldLocationStore(db)
     })
   }
+
+  private installationTables(): EncounterTableStore | null {
+    const db = this.installationDatabase?.()
+    return db ? new EncounterTableStore(db, 'installation') : null
+  }
+
+  private requireInstallationTables(): EncounterTableStore {
+    const tables = this.installationTables()
+    if (!tables) throw new Error('Installation encounter tables unavailable')
+    return tables
+  }
+
+  private completeTableMutationReceipt(
+    tables: EncounterTableStore,
+    commandId: string,
+    saved: EncounterTable
+  ): EncounterTableMutationReceipt {
+    return encounterTableMutationReceiptSchema.parse(
+      this.completeTableReceipt(tables, commandId, {
+        snapshot: this.readTables(),
+        saved
+      })
+    )
+  }
+
+  private completeTableDeleteReceipt(
+    tables: EncounterTableStore,
+    commandId: string,
+    deletedId: string
+  ): EncounterTableDeleteReceipt {
+    return encounterTableDeleteReceiptSchema.parse(
+      this.completeTableReceipt(tables, commandId, {
+        snapshot: this.readTables(),
+        deletedId
+      })
+    )
+  }
+
+  private completeTableReceipt(
+    tables: EncounterTableStore,
+    commandId: string,
+    receipt: EncounterTableCommandReceipt
+  ): EncounterTableCommandReceipt {
+    return tables.completeApplicationReceipt(commandId, receipt)
+  }
+}
+
+function scopeProjection(revision: number, tables: readonly EncounterTable[]) {
+  return {
+    revision,
+    tables,
+    summaries: tables.map((table) => summarizeTable(table))
+  }
+}
+
+function summarizeTable(table: EncounterTable) {
+  const facts = table.entries
+    .map((entry) => creatureById(entry.creatureId))
+    .filter((creature) => creature !== undefined)
+    .toSorted(
+      (left, right) => left.cr - right.cr || left.id.localeCompare(right.id)
+    )
+  const first = facts[0]
+  const last = facts.at(-1)
+  return encounterTableSummarySchema.parse({
+    id: table.id,
+    scope: table.scope,
+    displayName: table.displayName,
+    entryCount: table.entries.length,
+    challengeRatingRange:
+      first && last
+        ? {
+            minimum: first.challengeRating,
+            maximum: last.challengeRating
+          }
+        : null,
+    biomes: [
+      ...new Set(facts.flatMap((creature) => creature.biomes))
+    ].toSorted()
+  })
+}
+
+function allTables(snapshot: EncounterTableSnapshot) {
+  return [...snapshot.installation.tables, ...snapshot.campaign.tables]
+}
+
+function campaignFactionStore(
+  db: Database.Database,
+  installationTables: EncounterTableStore
+): WorldFactionStore {
+  const campaignTables = new EncounterTableStore(db)
+  return new WorldFactionStore(db, {
+    containsTable: (id) =>
+      campaignTables.contains(id) || installationTables.contains(id),
+    containsCreature: (tableId, creatureId) =>
+      campaignTables.containsCreature(tableId, creatureId) ||
+      installationTables.containsCreature(tableId, creatureId)
+  })
 }
 
 type Dimension = Map<string, { weight: number; maximum: number | null }>
@@ -128,13 +404,26 @@ export function resolveEncounterSource(
     id: string
     factionIds: readonly string[]
     encounterTableIds: readonly string[]
-  }[]
+  }[],
+  installationDatabase?: Database.Database
 ): ResolvedEncounterSource {
   const tableById = new Map(tables.map((table) => [table.id, table]))
   const factionById = new Map(factions.map((faction) => [faction.id, faction]))
   const dimensions: Dimension[] = []
   const effectiveTables = new Set<string>()
   const effectiveFactions = new Set<string>()
+  let sourceIssue: ResolvedEncounterSource['sourceIssue'] = null
+
+  if (query.biomes.length > 0 && installationDatabase) {
+    dimensions.push(
+      biomeSourceDimension(
+        query.biomes,
+        tableById,
+        effectiveTables,
+        installationDatabase
+      )
+    )
+  }
 
   addTableDimension(
     query.encounterTableIds,
@@ -153,7 +442,18 @@ export function resolveEncounterSource(
 
   if (query.locationId !== null) {
     const location = locations.find((value) => value.id === query.locationId)
-    if (location) {
+    if (!location || location.encounterTableIds.length === 0) {
+      sourceIssue = 'location_missing_table'
+    } else {
+      const locationTables = location.encounterTableIds.map((id) =>
+        tableById.get(id)
+      )
+      if (
+        locationTables.some(
+          (table) => table === undefined || table.entries.length === 0
+        )
+      )
+        sourceIssue = 'location_empty_table'
       const before = effectiveTables.size
       const fromTables = tableDimension(
         location.encounterTableIds,
@@ -174,22 +474,46 @@ export function resolveEncounterSource(
 
   if (effectiveTables.size === 0)
     return {
-      candidates: null,
+      candidates: sourceIssue === null ? null : [],
       effectiveEncounterTableIds: [],
       effectiveFactionIds: [...effectiveFactions],
       locationId: query.locationId,
-      catalogFallback: true
+      catalogFallback: sourceIssue === null,
+      biomeFiltering: installationDatabase !== undefined,
+      sourceIssue
     }
 
+  const candidates = [...intersectDimensions(dimensions)].map(
+    ([creatureId, value]) => ({ creatureId, ...value })
+  )
   return {
-    candidates: [...intersectDimensions(dimensions)].map(
-      ([creatureId, value]) => ({ creatureId, ...value })
-    ),
+    candidates: sourceIssue === null ? candidates : [],
     effectiveEncounterTableIds: [...effectiveTables],
     effectiveFactionIds: [...effectiveFactions],
     locationId: query.locationId,
-    catalogFallback: false
+    catalogFallback: false,
+    biomeFiltering: installationDatabase !== undefined,
+    sourceIssue
   }
+}
+
+function biomeSourceDimension(
+  biomeIds: readonly string[],
+  tables: ReadonlyMap<string, EncounterTable>,
+  effective: Set<string>,
+  db: Database.Database
+): Dimension {
+  const linked = new BiomeCatalogStore(db).encounterTableIdsForBiomes(biomeIds)
+  const result = tableDimension(linked, tables, effective)
+  const any = tableDimension([anyBiomeEncounterTableId], tables, effective)
+  for (const [id, value] of any) {
+    const current = result.get(id)
+    result.set(id, {
+      weight: Math.max(current?.weight ?? 0, value.weight),
+      maximum: current?.maximum ?? value.maximum
+    })
+  }
+  return result
 }
 
 function addTableDimension(

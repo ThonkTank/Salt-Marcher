@@ -1,4 +1,8 @@
-import { formatMessage, message } from '../../i18n/messages.de.js'
+import { formatMessage, message } from '../../i18n/session-runtime.de.js'
+import {
+  formatInteger,
+  formatPercent
+} from '../../i18n/domain-formatters.de.js'
 import { useState } from 'react'
 import type { PartySnapshot } from '../../../shared/contracts/live-session.js'
 import type {
@@ -8,6 +12,7 @@ import type {
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import './party.css'
 import { partyCapabilities } from './party-capabilities.js'
+import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 import { useAdventuringDayCalculation } from './use-adventuring-day-calculation.js'
 
 export function AdventuringDayDropdown(props: {
@@ -166,7 +171,7 @@ export function AdventuringDayDropdown(props: {
               )}
               <div className="day-summary">
                 <strong>
-                  {calculation?.dailyBudget.toLocaleString() ?? 0}{' '}
+                  {formatInteger(calculation?.dailyBudget ?? 0)}{' '}
                   {message('ui.xp.2')}
                 </strong>
                 <span>
@@ -179,7 +184,7 @@ export function AdventuringDayDropdown(props: {
                 {mode === 'progress' && calculation && (
                   <span>
                     {calculation.completedDays} {message('ui.volle.tage')}{' '}
-                    {Math.round(calculation.dayProgress * 100)}
+                    {formatPercent(Math.round(calculation.dayProgress * 100))}
                     {message('ui.aktueller.tag')} {calculation.shortRests}{' '}
                     {message('ui.sr')} {calculation.longRests}{' '}
                     {message('ui.lr')}
@@ -212,6 +217,7 @@ export function PartyDropdown(props: {
   onError: (message: string) => void
   triggerLabel?: string
 }) {
+  const api = useCapabilityApi()
   const [search, setSearch] = useState('')
   const [busy, setBusy] = useState(false)
   const [editor, setEditor] = useState<PartyCharacter | 'new' | null>(null)
@@ -297,9 +303,9 @@ export function PartyDropdown(props: {
                       value={member.xp}
                     />
                     <small>
-                      {member.xp.toLocaleString()} {message('ui.xp.2')}
+                      {formatInteger(member.xp)} {message('ui.xp.2')}
                       {member.nextLevelXp
-                        ? ` / ${member.nextLevelXp.toLocaleString()}`
+                        ? ` / ${formatInteger(member.nextLevelXp)}`
                         : ''}
                     </small>
                   </div>
@@ -323,7 +329,7 @@ export function PartyDropdown(props: {
                       disabled={busy}
                       onClick={() =>
                         void run(() =>
-                          partyCapabilities().party.setMembership(
+                          partyCapabilities(api).party.setMembership(
                             member.id,
                             false,
                             props.party.revision
@@ -348,7 +354,7 @@ export function PartyDropdown(props: {
                       <button
                         onClick={() =>
                           void run(() =>
-                            partyCapabilities().party.adjustXp(
+                            partyCapabilities(api).party.adjustXp(
                               member.id,
                               -xpDelta,
                               props.party.revision
@@ -361,7 +367,7 @@ export function PartyDropdown(props: {
                       <button
                         onClick={() =>
                           void run(() =>
-                            partyCapabilities().party.adjustXp(
+                            partyCapabilities(api).party.adjustXp(
                               member.id,
                               xpDelta,
                               props.party.revision
@@ -383,7 +389,10 @@ export function PartyDropdown(props: {
               disabled={busy || active.length === 0}
               onClick={() =>
                 void run(() =>
-                  partyCapabilities().party.rest('short', props.party.revision)
+                  partyCapabilities(api).party.rest(
+                    'short',
+                    props.party.revision
+                  )
                 )
               }
             >
@@ -393,7 +402,10 @@ export function PartyDropdown(props: {
               disabled={busy || active.length === 0}
               onClick={() =>
                 void run(() =>
-                  partyCapabilities().party.rest('long', props.party.revision)
+                  partyCapabilities(api).party.rest(
+                    'long',
+                    props.party.revision
+                  )
                 )
               }
             >
@@ -426,7 +438,7 @@ export function PartyDropdown(props: {
                     disabled={busy}
                     onClick={() =>
                       void run(() =>
-                        partyCapabilities().party.setMembership(
+                        partyCapabilities(api).party.setMembership(
                           member.id,
                           !member.active,
                           props.party.revision
@@ -459,11 +471,11 @@ export function PartyDropdown(props: {
                 void run(async () => {
                   const snapshot =
                     editor === 'new'
-                      ? await partyCapabilities().party.create(
+                      ? await partyCapabilities(api).party.create(
                           draft,
                           props.party.revision
                         )
-                      : await partyCapabilities().party.update(
+                      : await partyCapabilities(api).party.update(
                           editor.id,
                           draft,
                           props.party.revision
@@ -477,10 +489,9 @@ export function PartyDropdown(props: {
                 : {
                     remove: () =>
                       void run(async () => {
-                        const snapshot = await partyCapabilities().party.delete(
-                          editor.id,
-                          props.party.revision
-                        )
+                        const snapshot = await partyCapabilities(
+                          api
+                        ).party.delete(editor.id, props.party.revision)
                         setEditor(null)
                         setDeleteConfirm(false)
                         return snapshot

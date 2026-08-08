@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   changeHpInputSchema,
-  prepareCombatInputSchema
+  prepareCombatInputSchema,
+  setExhaustionInputSchema,
+  toggleConditionInputSchema
 } from '../../src/shared/contracts/live-session.js'
 import {
   evaluateSceneGroupDraftInputSchema,
@@ -31,6 +33,7 @@ describe('live session capability contracts', () => {
         note: '',
         disposition: 'neutral',
         expectedRevision: 0,
+        expectedGroupRevision: null,
         entries: []
       }).success
     ).toBe(true)
@@ -42,6 +45,7 @@ describe('live session capability contracts', () => {
         note: '',
         disposition: 'hostile',
         expectedRevision: 0,
+        expectedGroupRevision: null,
         entries: [{ creatureId: 'goblin', quantity: 0 }]
       }).success
     ).toBe(false)
@@ -72,6 +76,31 @@ describe('live session capability contracts', () => {
         expectedRevision: 3
       }).success
     ).toBe(false)
+  })
+
+  it('keeps conditions language-neutral and models special statuses separately', () => {
+    const base = {
+      cardId: 'monster-card:1',
+      active: true,
+      expectedRevision: 3
+    }
+    expect(
+      toggleConditionInputSchema.safeParse({ ...base, condition: 'prone' })
+        .success
+    ).toBe(true)
+    expect(
+      toggleConditionInputSchema.safeParse({
+        ...base,
+        condition: 'Concentration'
+      }).success
+    ).toBe(false)
+    expect(
+      setExhaustionInputSchema.safeParse({
+        cardId: base.cardId,
+        exhaustionLevel: 6,
+        expectedRevision: base.expectedRevision
+      }).success
+    ).toBe(true)
   })
 
   it('validates transient draft evaluation and generation modes', () => {
@@ -136,14 +165,23 @@ describe('live session capability contracts', () => {
   it('validates location drafts and revisioned updates', () => {
     expect(
       createWorldLocationInputSchema.safeParse({
-        location: { displayName: 'Saltmarsh', notes: 'Harbour town' },
+        location: {
+          displayName: 'Saltmarsh',
+          tags: ['Hafen'],
+          notes: 'Harbour town'
+        },
         expectedRevision: 0
       }).success
     ).toBe(true)
     expect(
       updateWorldLocationInputSchema.safeParse({
         id: '0184d1f4-bba7-7c9c-9d89-5f1c0f36a030',
-        location: { displayName: ' ', notes: '', copiedMap: true },
+        location: {
+          displayName: ' ',
+          tags: ['Ort'],
+          notes: '',
+          copiedMap: true
+        },
         expectedRevision: 1
       }).success
     ).toBe(false)
@@ -152,6 +190,7 @@ describe('live session capability contracts', () => {
   it('validates weighted tables and bounded faction inventory', () => {
     expect(
       createEncounterTableInputSchema.safeParse({
+        commandId: '00000000-0000-4000-8000-000000000001',
         expectedRevision: 0,
         table: {
           displayName: 'Harbour Patrol',
@@ -162,6 +201,7 @@ describe('live session capability contracts', () => {
     ).toBe(true)
     expect(
       createEncounterTableInputSchema.safeParse({
+        commandId: '00000000-0000-4000-8000-000000000002',
         expectedRevision: 0,
         table: {
           displayName: 'Broken',

@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "campaign": "Campaign A",
+  "sessionLayout": {
+    "controlPaneWidth": 290,
+    "scenarioPaneWidth": 274,
+    "centerTab": "details"
+  },
+  "locations": [
+    {
+      "displayName": "Salzmarschhafen",
+      "tags": ["Hafen", "Siedlung"],
+      "readAloud": "Masten und Möwen zeichnen sich im salzigen Nebel ab.",
+      "notes": "Editor-Fixture für den unabhängigen Restart-Test."
+    }
+  ],
+  "sceneLocation": "Salzmarschhafen"
+}

@@ -1,120 +1,107 @@
-import { message } from '../../i18n/messages.de.js'
-import { useEffect, useState, type FormEvent } from 'react'
-import type {
-  AxialCoordinate,
-  HexMapCatalogSnapshot,
-  HexMapView,
-  HexTerrainCatalog,
-  HexTerrainId
-} from '../../../shared/contracts/hex.js'
-import {
-  absorbChunk,
-  chunkRevision,
-  invalidateHexMap,
-  readHexMapView
-} from './hex-chunk-cache.js'
-import { HexMapCanvas } from './hex-map-canvas.js'
+import { message } from '../../i18n/hex-runtime.de.js'
+import { useMemo, useState } from 'react'
 import './hex.css'
 import { hexCapabilities } from './hex-capabilities.js'
 import {
   capabilityErrorText,
   reportCapabilityError
 } from '../../capabilities/capability-errors.js'
+import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
+import { HexImpactDialog } from './hex-impact-dialog.js'
+import { HexMapDialog } from './hex-map-dialog.js'
+import { useHexEditorController } from './use-hex-editor-controller.js'
+import {
+  HexCanvasSurface,
+  HexCatalogPane,
+  HexStatePane
+} from './hex-editor-panes.js'
+import { useLocationSymbolController } from './use-location-symbol-controller.js'
+import { useHexMapController } from './use-hex-map-controller.js'
+import { useHexCommandController } from './use-hex-command-controller.js'
+import { automaticLocationPlacementTarget } from './world-location-placement-target.js'
+import { useWorldLocationProjectionController } from './use-world-location-projection-controller.js'
+import { biomeCatalogCapabilities } from './biome-catalog-capabilities.js'
+import { mergeHexBiomeCatalog } from './hex-chunk-cache.js'
+import type { HexWorldLocationCreationIntegrationProps } from './hex-world-location-creation-port.js'
+import type { ReactNode } from 'react'
 
 export default function HexEditor(props: {
   onError: (message: string) => void
+  renderWorldLocationCreation: (
+    props: HexWorldLocationCreationIntegrationProps
+  ) => ReactNode
 }) {
-  const [catalog, setCatalog] = useState<HexMapCatalogSnapshot | null>(null)
-  const [terrains, setTerrains] = useState<HexTerrainCatalog | null>(null)
-  const [map, setMap] = useState<HexMapView | null>(null)
-  const [selected, setSelected] = useState<AxialCoordinate | null>(null)
-  const [tool, setTool] = useState<'select' | 'paint'>('select')
-  const [terrainId, setTerrainId] = useState<HexTerrainId>('grassland')
-  const [newName, setNewName] = useState('Neue Hex-Karte')
-  const [name, setName] = useState('')
-
-  const refreshCatalog = async (preferred?: string) => {
-    const next = await hexCapabilities().hex.catalog()
-    setCatalog(next)
-    const mapId = preferred ?? map?.map.id ?? next.maps[0]?.id
-    const summary = next.maps.find((entry) => entry.id === mapId)
-    if (!summary) {
-      setMap(null)
-      return
-    }
-    const nextMap = await readHexMapView(summary)
-    setMap(nextMap)
-    setName(nextMap.map.displayName)
+  const api = useCapabilityApi()
+  const capabilities = useMemo(() => hexCapabilities(api), [api])
+  const biomeCatalog = useMemo(() => biomeCatalogCapabilities(api), [api])
+  const [locationCreationOpen, setLocationCreationOpen] = useState(false)
+  const [mapCreationOpen, setMapCreationOpen] = useState(false)
+  const controller = useHexEditorController()
+  const {
+    catalog,
+    biomes,
+    setBiomes,
+    symbols,
+    setSymbols,
+    map,
+    selected,
+    setSelected,
+    tool,
+    setTool,
+    biomeMode,
+    setBiomeMode,
+    biomeId,
+    setBiomeId,
+    brushLevel,
+    setBrushLevel,
+    locationId,
+    setLocationId,
+    overlays,
+    pendingErase,
+    setPendingErase,
+    pendingHistory,
+    setPendingHistory,
+    resetViewSignal,
+    name,
+    setName,
+    history
+  } = controller
+  const locations = useWorldLocationProjectionController({
+    capabilities: capabilities.locations,
+    onError: (cause) => props.onError(capabilityErrorText(cause))
+  })
+  const symbolManagement = useLocationSymbolController({
+    capabilities,
+    page: symbols,
+    setPage: setSymbols,
+    locationId,
+    locationsRef: locations.snapshotRef,
+    applySymbolAssignment: locations.applySymbolAssignment,
+    onError: (cause) => props.onError(capabilityErrorText(cause))
+  })
+  const mapLifecycle = useHexMapController({
+    capabilities,
+    editor: controller,
+    locations,
+    onError: props.onError
+  })
+  const { loadViewport, refreshCatalog } = mapLifecycle
+  const commands = useHexCommandController({
+    capabilities,
+    editor: controller,
+    maps: mapLifecycle,
+    onError: props.onError
+  })
+  const placeLocation = async (
+    locationId: string,
+    coordinate: NonNullable<typeof controller.selected>
+  ) => {
+    const outcome = await commands.placeLocation(locationId, coordinate)
+    if (outcome.status === 'rejected' || outcome.status === 'failed')
+      props.onError(outcome.message)
+    return outcome
   }
-
-  useEffect(() => {
-    void Promise.all([
-      hexCapabilities().hex.catalog(),
-      hexCapabilities().hex.terrainCatalog()
-    ])
-      .then(async ([nextCatalog, nextTerrains]) => {
-        setCatalog(nextCatalog)
-        setTerrains(nextTerrains)
-        const first = nextCatalog.maps[0]
-        if (first) {
-          const nextMap = await readHexMapView(first)
-          setMap(nextMap)
-          setName(nextMap.map.displayName)
-        }
-      })
-      .catch(reportCapabilityError(props.onError))
-  }, [props.onError])
-
-  const create = async (event: FormEvent) => {
-    event.preventDefault()
-    if (!catalog) return
-    try {
-      const created = await hexCapabilities().hex.create(
-        newName,
-        catalog.revision
-      )
-      await refreshCatalog(created.id)
-    } catch (cause) {
-      props.onError(capabilityErrorText(cause))
-    }
-  }
-
-  const saveMetadata = async () => {
-    if (!map) return
-    try {
-      const next = await hexCapabilities().hex.updateMetadata(
-        map.map.id,
-        name,
-        map.map.metadataRevision
-      )
-      await refreshCatalog(next.id)
-    } catch (cause) {
-      props.onError(capabilityErrorText(cause))
-    }
-  }
-
-  const tileClick = async (coordinate: AxialCoordinate) => {
-    setSelected(coordinate)
-    if (!map || tool !== 'paint') return
-    try {
-      const chunk = await hexCapabilities().hex.paint(
-        map.map.id,
-        coordinate,
-        terrainId,
-        chunkRevision(map.map.id, coordinate)
-      )
-      absorbChunk(map.map.id, chunk)
-      invalidateHexMap(map.map.id)
-      const nextCatalog = await hexCapabilities().hex.catalog()
-      setCatalog(nextCatalog)
-      const summary = nextCatalog.maps.find((entry) => entry.id === map.map.id)
-      if (summary) setMap(await readHexMapView(summary, map.center, true))
-    } catch (cause) {
-      props.onError(capabilityErrorText(cause))
-    }
-  }
-
-  if (!catalog || !terrains)
+  if (!catalog || !biomes || !locations.snapshot || !symbols)
     return (
       <section className="workspace-panel">
         {message('ui.hex.editor.wird.geladen')}
@@ -122,131 +109,192 @@ export default function HexEditor(props: {
     )
   const tile =
     selected && map
-      ? map.tiles.find(
+      ? (map.tiles.find(
           (candidate) =>
             candidate.q === selected.q && candidate.r === selected.r
-        )
+        ) ?? null)
       : null
   return (
     <section className="hex-editor-workspace">
-      <aside className="hex-editor-controls">
-        <form onSubmit={(event) => void create(event)}>
-          <h2>{message('ui.hex.karten')}</h2>
-          <input
-            aria-label={message('ui.neue.karte')}
-            value={newName}
-            onChange={(event) => setNewName(event.target.value)}
-          />
-          <button disabled={!newName.trim()}>{message('ui.neu')}</button>
-        </form>
-        <label>
-          {message('ui.karte')}
-          <select
-            value={map?.map.id ?? ''}
-            onChange={(event) =>
-              void refreshCatalog(event.target.value).catch(
-                reportCapabilityError(props.onError)
-              )
-            }
-          >
-            <option value="">{message('ui.keine.karte')}</option>
-            {catalog.maps.map((entry) => (
-              <option key={entry.id} value={entry.id}>
-                {entry.displayName}
-              </option>
-            ))}
-          </select>
-        </label>
-        {map && (
-          <>
-            <label>
-              {message('ui.name')}
-              <input
-                value={name}
-                onChange={(event) => setName(event.target.value)}
-              />
-            </label>
-            <button onClick={() => void saveMetadata()}>
-              {message('ui.kartendaten.speichern')}
-            </button>
-            <div className="tool-row">
-              <button
-                aria-pressed={tool === 'select'}
-                onClick={() => setTool('select')}
-              >
-                {message('ui.auswahl')}
-              </button>
-              <button
-                aria-pressed={tool === 'paint'}
-                onClick={() => setTool('paint')}
-              >
-                {message('ui.terrain.malen')}
-              </button>
-            </div>
-            <label>
-              {message('ui.terrain')}
-              <select
-                value={terrainId}
-                onChange={(event) =>
-                  setTerrainId(event.target.value as HexTerrainId)
-                }
-              >
-                {terrains.terrains.map((terrain) => (
-                  <option key={terrain.id} value={terrain.id}>
-                    {terrain.label} ·{' '}
-                    {terrain.passable
-                      ? `${terrain.travelCost}×`
-                      : message('hex.impassable')}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </>
-        )}
-      </aside>
-      <section
-        className="hex-editor-map"
-        aria-label={message('ui.kartenansicht')}
-      >
-        {map ? (
-          <HexMapCanvas
-            snapshot={map}
-            terrains={terrains}
-            selected={selected}
-            onTileClick={(coordinate) => void tileClick(coordinate)}
-            onViewportChange={(center) =>
-              void readHexMapView(map.map, center)
-                .then(setMap)
-                .catch(reportCapabilityError(props.onError))
-            }
-            ariaLabel={`Hex-Editor ${map.map.displayName}`}
-          />
-        ) : (
-          <div className="session-map-empty">
-            {message('ui.erstelle.eine.hex.karte')}
-          </div>
-        )}
-      </section>
-      <aside className="hex-editor-state">
-        <h2>{message('ui.hexfeld')}</h2>
-        {tile ? (
-          <>
-            <strong>{tile.label}</strong>
-            <p>
-              {
-                terrains.terrains.find(
-                  (terrain) => terrain.id === tile.terrainId
-                )?.label
+      <HexCatalogPane
+        catalog={catalog}
+        map={map}
+        tool={tool}
+        name={name}
+        history={history}
+        onCreate={() => setMapCreationOpen(true)}
+        onEditValueChange={setName}
+        onSave={() => void commands.saveMetadata()}
+        onSelectMap={(mapId) => {
+          setSelected(null)
+          void refreshCatalog(mapId).catch(reportCapabilityError(props.onError))
+        }}
+        onSelectTool={setTool}
+        onHistory={(direction) => void commands.changeHistory(direction)}
+      />
+      <HexCanvasSurface
+        map={map}
+        biomes={biomes}
+        selected={selected}
+        overlays={overlays}
+        tool={tool}
+        brushLevel={brushLevel}
+        biomeMode={biomeMode}
+        biomeId={biomeId}
+        resetViewSignal={resetViewSignal}
+        onSelect={(coordinate) => {
+          setSelected(coordinate)
+          if (tool !== 'location') return
+          const target = map?.tiles.find(
+            (candidate) =>
+              candidate.q === coordinate.q && candidate.r === coordinate.r
+          )
+          if (target?.location) setLocationId(target.location.locationId)
+          else if (target && locationId)
+            void placeLocation(locationId, coordinate)
+        }}
+        onStroke={(path) => void commands.applyStroke(path)}
+        onViewportChange={(center, halfExtent) => {
+          if (!map) return
+          void loadViewport(map, center, halfExtent).catch(
+            reportCapabilityError(props.onError)
+          )
+        }}
+      />
+      <HexStatePane
+        map={map}
+        selected={selected}
+        tile={tile}
+        biomes={biomes}
+        locations={locations.snapshot}
+        symbols={symbols}
+        tool={tool}
+        biomeId={biomeId}
+        brushLevel={brushLevel}
+        biomeMode={biomeMode}
+        locationId={locationId}
+        onPaintMode={setBiomeMode}
+        onBrushLevelChange={setBrushLevel}
+        onBiomeChange={setBiomeId}
+        onBiomeSelected={(biome) =>
+          setBiomes((current) =>
+            current
+              ? mergeHexBiomeCatalog(current, [
+                  {
+                    id: biome.id,
+                    label: biome.displayName,
+                    color: biome.color,
+                    passable: biome.passable,
+                    travelCost: biome.travelCost
+                  }
+                ])
+              : current
+          )
+        }
+        biomeCapabilities={biomeCatalog}
+        onReplaceBiomePlaceholder={() => {
+          if (!map || biomeId === 'to-be-replaced') return
+          void capabilities.hex
+            .replaceBiomePlaceholder({
+              commandId: crypto.randomUUID(),
+              mapId: map.map.id,
+              replacementBiomeId: biomeId,
+              expectedContentRevision: map.map.contentRevision
+            })
+            .catch(reportCapabilityError(props.onError))
+        }}
+        onBiomeError={props.onError}
+        onLocationChange={(id) => {
+          setLocationId(id)
+          if (tool === 'location' && selected && tile && !tile.location)
+            void placeLocation(id, selected)
+        }}
+        onCreateLocation={() => setLocationCreationOpen(true)}
+        locationDialogOpen={locationCreationOpen}
+        onPresentationChange={locations.updatePresentation}
+        onPresentationCommit={locations.flushPresentation}
+        selectedCustomSymbol={symbolManagement.selectedCustomSymbol}
+        onSymbolSearch={(query) =>
+          void symbolManagement
+            .search(query)
+            .catch(reportCapabilityError(props.onError))
+        }
+        onSymbolPage={(offset) =>
+          void symbolManagement
+            .page(offset)
+            .catch(reportCapabilityError(props.onError))
+        }
+        onImportSymbol={(displayName) =>
+          void symbolManagement
+            .importAndAssign(displayName)
+            .catch(reportCapabilityError(props.onError))
+        }
+        onRenameSymbol={(id, displayName) =>
+          void symbolManagement
+            .rename(id, displayName)
+            .catch(reportCapabilityError(props.onError))
+        }
+        onInspectSymbolDelete={symbolManagement.inspectDelete}
+        onDeleteSymbol={(id) =>
+          void symbolManagement
+            .remove(id)
+            .catch(reportCapabilityError(props.onError))
+        }
+        onRemoveLocation={() => void commands.removeLocation()}
+      />
+      {locationCreationOpen &&
+        props.renderWorldLocationCreation({
+          applyCreated: locations.applyCreated,
+          select: setLocationId,
+          initialPlacementHint: map
+            ? {
+                mapId: map.map.id,
+                coordinate:
+                  automaticLocationPlacementTarget(map, selected).status ===
+                  'eligible'
+                    ? selected
+                    : null
               }
-            </p>
-            <p>
-              {tile.location?.displayName ?? message('hex.noNamedLocation')}
-            </p>
-          </>
-        ) : (
-          <p>{message('ui.waehle.ein.hexfeld.aus')}</p>
-        )}
-      </aside>
+            : null,
+          projectionPort: mapLifecycle.placementProjectionPort,
+          close: () => setLocationCreationOpen(false)
+        })}
+      {mapCreationOpen && (
+        <HexMapDialog
+          invocation={{ kind: 'catalog' }}
+          close={() => setMapCreationOpen(false)}
+          create={commands.create}
+          created={() => setMapCreationOpen(false)}
+          onError={props.onError}
+        />
+      )}
+      {pendingErase && (
+        <HexImpactDialog
+          impact={pendingErase.impact}
+          cancel={() => setPendingErase(null)}
+          confirm={() =>
+            void commands.applyCoordinates(
+              pendingErase.path,
+              pendingErase.confirmationToken,
+              pendingErase.radius,
+              pendingErase.commandId
+            )
+          }
+        />
+      )}
+      {pendingHistory && (
+        <HexImpactDialog
+          impact={pendingHistory.impact}
+          cancel={() => setPendingHistory(null)}
+          confirm={() =>
+            void commands.changeHistory(
+              pendingHistory.direction,
+              pendingHistory.confirmationToken,
+              pendingHistory.commandId
+            )
+          }
+        />
+      )}
     </section>
   )
 }

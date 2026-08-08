@@ -33,6 +33,8 @@ caching, and passive pointer capture.
 - the canvas MUST support adopter-provided labels, markers, and runtime travel
   tokens without turning them into canvas-owned domain meaning
 - the canvas MUST remain reusable for both square-grid and hex-grid adopters
+- renderer initialization MUST work under the application's strict content
+  security policy without enabling dynamic code evaluation
 - the canvas MAY host different adopter-facing scene presentations, for
   example tile-first or graph-like scenes, while keeping the same passive
   interaction model
@@ -58,6 +60,8 @@ caching, and passive pointer capture.
   changes the scene
 - adopter-owned overlay on or off states presented through the shared canvas
 - adopter-owned runtime marker states such as current token position
+- explicit renderer-unavailable state that retains navigation and map facts
+  and offers a new initialization attempt
 
 ## Acceptance Criteria
 
@@ -67,5 +71,7 @@ caching, and passive pointer capture.
 - the canvas can show empty, loaded, and overlay-bearing scenes without
   inventing adopter-specific placeholder data
 - adopter-native coordinate conversion happens outside the passive canvas
+- retry after an initialization failure creates one fresh renderer without
+  changing adopter-owned map data
 
 ## References

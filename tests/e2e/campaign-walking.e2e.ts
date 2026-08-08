@@ -1,6 +1,11 @@
 import { browser, expect } from '@wdio/globals'
-import { AxeBuilder } from '@axe-core/webdriverio'
 import type { Browser as WdioBrowser } from 'webdriverio'
+import {
+  clickWhenInteractable,
+  expectAccessible,
+  expectAccessibleInBothThemes,
+  expectElementGolden
+} from './support/e2e-assertions.js'
 
 describe('campaign walking skeleton', () => {
   it('creates and switches the selected campaign', async () => {
@@ -115,23 +120,147 @@ describe('campaign walking skeleton', () => {
 
   it('keeps a newly created hex map inside the workspace', async () => {
     const client = browser as unknown as WdioBrowser
+    await createLocation(client, 'Leuchtturmklippe', 'Zeichen an der Küste.')
     await (await client.$('button[aria-label="Hex-Editor"]')).click()
-    await (
-      await client.$('input[aria-label="Neue Karte"]')
-    ).setValue('Salzmarsch-Küste')
     await (await client.$('button=Neu')).click()
-    await expect(
-      await client.$('[role="img"][aria-label="Hex-Editor Salzmarsch-Küste"]')
-    ).toBeExisting()
+    const createMap = await client.$(
+      '[role="dialog"][aria-label="Hexkarte erstellen"]'
+    )
+    await (
+      await createMap.$('input[aria-label="Kartenname"]')
+    ).setValue('Salzmarsch-Küste')
+    await (await createMap.$('button=Erstellen')).click()
+    const mapHost = await client.$(
+      '[role="region"][aria-label="Hex-Editor Salzmarsch-Küste"]'
+    )
+    await expect(mapHost).toBeExisting()
+    const mapCanvas = await mapHost.$('canvas')
+    await mapCanvas.waitForExist({ timeout: 5_000 })
+    await expect(await client.$('.hex-canvas-render-error')).not.toBeExisting()
+    const canvasSize = await client.execute(() => {
+      const canvas = document.querySelector<HTMLCanvasElement>(
+        '[role="region"][aria-label="Hex-Editor Salzmarsch-Küste"] canvas'
+      )
+      return canvas
+        ? { width: canvas.width, height: canvas.height }
+        : { width: 0, height: 0 }
+    })
+    expect(canvasSize.width).toBeGreaterThan(0)
+    expect(canvasSize.height).toBeGreaterThan(0)
 
     await expectHexEditorLayout(client)
+    await mapCanvas.click()
+    await waitForHexContentRevision(client, 'Salzmarsch-Küste', 1)
     await expectAccessibleInBothThemes(client)
+    await client.execute(() => {
+      const viewport = document.querySelector<HTMLElement>(
+        '.hex-biome-viewport'
+      )
+      if (!viewport) throw new Error('Biome palette viewport missing')
+      viewport.scrollTop = 0
+      viewport.dispatchEvent(new Event('scroll', { bubbles: true }))
+    })
+    await expect(
+      await client.$('.hex-biome-tile[aria-pressed="true"]')
+    ).toBeExisting()
+    await expectElementGolden(
+      client,
+      'hex-editor-biome-light',
+      '.hex-editor-workspace'
+    )
+    await (
+      await client.$('button[aria-label="Zum Kerzenlichtmodus wechseln"]')
+    ).click()
+    await (await client.$('button=Ort platzieren')).click()
+    await client.execute(async () => {
+      const api = window.saltMarcher
+      const [world, symbols] = await Promise.all([
+        api.locations.read(),
+        api.locationSymbols.search('', 0, 24)
+      ])
+      const location = world.locations.find(
+        (entry) => entry.displayName === 'Leuchtturmklippe'
+      )
+      if (!location) throw new Error('E2E location missing')
+      await api.locationSymbols.importAndAssign({
+        commandId: crypto.randomUUID(),
+        displayName: 'Leuchtturm',
+        source:
+          '<svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="M4 22 L10 4 L14 4 L20 22 Z"/></svg>',
+        locationId: location.id,
+        expectedSymbolRevision: symbols.revision,
+        expectedPresentationRevision: location.mapPresentation.revision
+      })
+    })
+    await (await client.$('button[aria-label="Leuchtturm"]')).waitForExist()
+    await mapCanvas.click()
+    await waitForLocationPlacement(client, 'Leuchtturmklippe', true)
+    await expectElementGolden(
+      client,
+      'hex-editor-location-dark',
+      '.hex-editor-workspace'
+    )
+    const renameSymbol = await (
+      await client.$('label*=Eigenes Symbol umbenennen')
+    ).$('input')
+    await renameSymbol.setValue('Bake')
+    await client.keys(['Tab'])
+    await (await client.$('button[aria-label="Bake"]')).waitForExist()
+    await (await client.$('button=Symbol löschen')).click()
+    await (await client.$('button=Löschen und ersetzen')).click()
+    await (
+      await client.$('button[aria-label="Bake"]')
+    ).waitForExist({ reverse: true })
+    await client.waitUntil(
+      () =>
+        client.execute(async () => {
+          const world = await window.saltMarcher.locations.read()
+          return (
+            world.locations.find(
+              (entry) => entry.displayName === 'Leuchtturmklippe'
+            )?.mapPresentation.symbolId === 'location'
+          )
+        }),
+      {
+        timeout: 5_000,
+        timeoutMsg: 'Deleted custom symbol was not replaced by the built-in.'
+      }
+    )
+    await (await client.$('button=Biom malen')).click()
+    await (await client.$('button=Radieren')).click()
+    await mapCanvas.click()
+    const eraseDialog = await client.$(
+      '[role="dialog"][aria-label="Belegte Hexes löschen?"]'
+    )
+    await eraseDialog.waitForExist()
+    await expect(await eraseDialog.$('li*=Leuchtturmklippe')).toBeExisting()
+    await (await eraseDialog.$('button=Hexes und Bezüge entfernen')).click()
+    await waitForLocationPlacement(client, 'Leuchtturmklippe', false)
+    await (
+      await client.$('button[aria-label="Zum Pergamentmodus wechseln"]')
+    ).click()
+    await (await client.$('button=Auswahl')).click()
+    await mapCanvas.click()
     await client.execute(() => {
       document.documentElement.style.zoom = '2'
     })
     await expectAccessible(client)
+    await expectHexEditorStackedLayout(client)
+    await client.execute(() => {
+      document
+        .querySelector('.hex-editor-state')
+        ?.scrollIntoView({ block: 'start' })
+    })
+    await expectElementGolden(
+      client,
+      'hex-editor-selection-light-200',
+      '.hex-editor-state'
+    )
     await client.execute(() => {
       document.documentElement.style.zoom = ''
+      document
+        .querySelector('.hex-editor-workspace')
+        ?.scrollIntoView({ block: 'start' })
     })
     await (
       await client.$('button[aria-label="Zum Kerzenlichtmodus wechseln"]')
@@ -149,12 +278,14 @@ describe('campaign walking skeleton', () => {
     const client = browser as unknown as WdioBrowser
     await createLocation(client, 'Saltmarsh', 'A busy harbour town.')
     await (await client.$('button=Bearbeiten')).click()
-    const editLocation = await client.$('form[aria-label="Ort bearbeiten"]')
+    const editLocation = await client.$(
+      '[role="dialog"][aria-label="Ort bearbeiten"]'
+    )
     await (
       await editLocation.$('input[aria-label="Ortsname"]')
     ).setValue('Salzmarschhafen')
     await (
-      await editLocation.$('textarea[aria-label="Ortsnotizen"]')
+      await editLocation.$('textarea[aria-label="GM-Notizen"]')
     ).setValue('Nebel, Lagerhäuser und eine geschäftige Anlegestelle.')
     await (await editLocation.$('button=Speichern')).click()
     await expect(
@@ -187,18 +318,48 @@ describe('campaign walking skeleton', () => {
     await (await client.$('button=Fraktionen')).click()
     await (await client.$('button=Erstellen')).click()
     const factionDialog = await client.$(
-      'form[aria-label="Fraktion erstellen"]'
+      '[role="dialog"][aria-label="Fraktion erstellen"]'
     )
+    await factionDialog.waitForDisplayed({ timeout: 10_000 })
     await (
       await factionDialog.$('input[aria-label="Fraktionsname"]')
     ).setValue('Hafenwache')
-    await (await factionDialog.$('button=Neue Encounter-Tabelle')).click()
-    const tableDialog = await client.$(
-      'section[aria-labelledby="encounter-table-manager-title"]'
-    )
+    await (await factionDialog.$('button.faction-table-card')).click()
+    await clickWhenInteractable(await client.$('button=Neue Encounter-Tabelle'))
+    const tableDialog = await client.$('section.encounter-table-manager')
+    const tableGeometry = await client.execute(() => {
+      const layout = document.querySelector('.creature-collection-layout')!
+      const catalog = layout
+        .querySelector('.creature-collection-catalog')!
+        .getBoundingClientRect()
+      const seam = layout
+        .querySelector('.creature-collection-divider')!
+        .getBoundingClientRect()
+      const draft = layout
+        .querySelector('.creature-collection-draft')!
+        .getBoundingClientRect()
+      return {
+        seamWidth: Math.round(seam.width),
+        draftWidth: Math.round(draft.width),
+        ordered: catalog.right <= seam.left && seam.right <= draft.left
+      }
+    })
+    expect(tableGeometry).toEqual({
+      seamWidth: 9,
+      draftWidth: 627,
+      ordered: true
+    })
     await (
       await tableDialog.$('input[aria-label="Tabellenname"]')
     ).setValue('Wachpatrouille')
+    await (await tableDialog.$('button[aria-label="Dialog schließen"]')).click()
+    const keepDraftAlert = await client.$('[role="alertdialog"]')
+    await expect(keepDraftAlert).toBeDisplayed()
+    await (await keepDraftAlert.$('button=Abbrechen')).click()
+    await expect(await client.$('[role="alertdialog"]')).not.toBeExisting()
+    await expect(
+      await tableDialog.$('input[aria-label="Tabellenname"]')
+    ).toHaveValue('Wachpatrouille')
     await (
       await tableDialog.$('input[aria-label="Monster suchen"]')
     ).setValue('wolf')
@@ -210,15 +371,20 @@ describe('campaign walking skeleton', () => {
       timeoutMsg: 'Shared table manager did not render the filtered Wolf.'
     })
     await addTableWolf.click()
-    await (await tableDialog.$('button=Erstellen')).click()
+    await (await tableDialog.$('button=Erstellen und verknüpfen')).click()
     await expect(
       await factionDialog.$('input[aria-label="Fraktionsname"]')
     ).toHaveValue('Hafenwache')
-    await expect(
-      await factionDialog.$(
-        'select[aria-label="Primäre Encounter-Tabelle"] option:checked'
-      )
-    ).toHaveText('Wachpatrouille')
+    await client.waitUntil(
+      async () =>
+        (await (
+          await factionDialog.$('button.faction-table-card strong')
+        ).getText()) === 'Wachpatrouille',
+      {
+        timeout: 15_000,
+        timeoutMsg: 'New encounter table was not selected in the faction draft.'
+      }
+    )
     await (
       await factionDialog.$('input[aria-label="Maximum Wolf"]')
     ).setValue('2')
@@ -226,17 +392,21 @@ describe('campaign walking skeleton', () => {
     await expect(await client.$('button=Hafenwache')).toBeExisting()
     await (await client.$('button=Encounter-Tabellen')).click()
     await (await client.$('button=Wachpatrouille')).click()
-    const reopenedTable = await client.$(
-      'section[aria-labelledby="encounter-table-manager-title"]'
-    )
+    const reopenedTable = await client.$('section.encounter-table-manager')
     await expect(
-      await reopenedTable.$(
-        'select[aria-label="Encounter-Tabelle auswählen"] option:checked'
-      )
-    ).toHaveText('Wachpatrouille')
+      await reopenedTable.$('input[aria-label="Tabellenname"]')
+    ).toHaveValue('Wachpatrouille')
     await (
-      await reopenedTable.$('button[aria-label="Dialog schließen"]')
-    ).click()
+      await reopenedTable.$('textarea[aria-label="Tabellenbeschreibung"]')
+    ).setValue('Nicht speichern')
+    const tableFooter = await reopenedTable.$(
+      'footer.creature-collection-manager-footer'
+    )
+    await (await tableFooter.$('button=Abbrechen')).click()
+    const discardDraftAlert = await client.$('[role="alertdialog"]')
+    await expect(discardDraftAlert).toBeDisplayed()
+    await (await discardDraftAlert.$('button=Änderungen verwerfen')).click()
+    await expect(reopenedTable).not.toBeExisting()
     await (await client.$('button[aria-label="Session"]')).click()
 
     await (await client.$('button=Party')).click()
@@ -284,6 +454,15 @@ describe('campaign walking skeleton', () => {
       timeout: 5_000,
       timeoutMsg: 'Filtered Wolf catalog row was not rendered.'
     })
+    const tableFilter = await client.$(
+      'input[role="combobox"][aria-label="Tabelle"]'
+    )
+    await tableFilter.setValue('wach')
+    const tableOption = await client.$('[role="option"]*=Wachpatrouille')
+    await tableOption.waitForDisplayed()
+    await tableOption.click()
+    await expect(await client.$('button=Wachpatrouille ×')).toBeExisting()
+    await client.keys(['Escape'])
     await expect(await client.$('button=+ Encounter')).not.toBeExisting()
     await expectAccessibleInBothThemes(client)
 
@@ -301,22 +480,38 @@ describe('campaign walking skeleton', () => {
     await expect(await groupSelection.$('option:checked')).toHaveText(
       'Neue Gruppe'
     )
-    await expect(await groupDialog.$('button=Neue Gruppe')).toBeExisting()
+    await expect(await groupDialog.$('button*=Neue Gruppe')).toBeExisting()
+    await expect(
+      await groupDialog.$('section[aria-label="Filter und Generator"]')
+    ).toBeExisting()
+    const draftDivider = await groupDialog.$(
+      '[aria-label="Breite des Gruppenentwurfs"]'
+    )
+    await expect(draftDivider).toHaveAttribute('aria-valuenow', '460')
+    await pressDividerKey(client, 'Breite des Gruppenentwurfs', 'ArrowLeft')
+    await expect(draftDivider).toHaveAttribute('aria-valuenow', '470')
     await (
       await groupDialog.$('input[aria-label="Gruppenname"]')
     ).setValue('Wolf Pack')
     await (
       await groupDialog.$('textarea[aria-label="Gruppennotiz"]')
-    ).setValue('Lauert in den Dünen westlich der Furt.')
+    ).setValue('Lauert Prone in den Dünen; Stunned bei Alarm.')
     const generate = await groupDialog.$('button=Neu generieren')
     await client.waitUntil(() => generate.isEnabled(), {
       timeout: 5_000,
       timeoutMsg: 'Generator was not available for the new group draft.'
     })
     await generate.click()
-    const clearGenerated = await groupDialog.$('button=Leeren')
-    await clearGenerated.waitForExist({ timeout: 5_000 })
-    await clearGenerated.click()
+    await expectGroupManagementGolden(client)
+    await expect(await groupDialog.$('button=Leeren')).not.toBeExisting()
+    const undoGenerated = await groupDialog.$(
+      'button[aria-label="Änderung zurücknehmen"]'
+    )
+    await client.waitUntil(() => undoGenerated.isEnabled(), {
+      timeout: 5_000,
+      timeoutMsg: 'Generated group draft did not become undoable.'
+    })
+    await undoGenerated.click()
     const dialogSearch = await groupDialog.$(
       'input[aria-label="Monster suchen"]'
     )
@@ -337,8 +532,104 @@ describe('campaign walking skeleton', () => {
     await (await groupDialog.$('button=Speichern')).click()
     await expect(await client.$('strong=Wolf Pack')).toBeExisting()
     await expect(await client.$('.group-note')).toHaveText(
-      'Lauert in den Dünen westlich der Furt.'
+      'Lauert Prone in den Dünen; Stunned bei Alarm.'
     )
+
+    const groupNote = await client.$('.group-note')
+    const proneReference = await groupNote.$('button=Prone')
+    const pronePreview = await client.$(
+      'section[role="region"][aria-label="Referenz: Prone"]'
+    )
+    await client.execute(() => {
+      const term = [
+        ...document.querySelectorAll<HTMLButtonElement>(
+          '.group-note .reference-term'
+        )
+      ].find((button) => button.textContent === 'Prone')
+      term?.focus()
+    })
+    await pronePreview.waitForExist({ timeout: 5_000 })
+    await client.execute(() => {
+      const term = [
+        ...document.querySelectorAll<HTMLButtonElement>(
+          '.reference-hover-card .reference-term'
+        )
+      ].find((button) => button.textContent === 'movement')
+      term?.focus()
+    })
+    const movementPreview = await client.$(
+      'section[role="region"][aria-label="Referenz: movement"]'
+    )
+    await expect(movementPreview).toBeExisting()
+    await client.keys('Escape')
+    await movementPreview.waitForExist({ reverse: true, timeout: 5_000 })
+    await client.execute(() => {
+      const term = [
+        ...document.querySelectorAll<HTMLButtonElement>(
+          '.group-note .reference-term'
+        )
+      ].find((button) => button.textContent === 'Prone')
+      term?.focus()
+    })
+    const reopenedPronePreview = await client.$(
+      'section[role="region"][aria-label="Referenz: Prone"]'
+    )
+    await reopenedPronePreview.waitForExist({ timeout: 5_000 })
+    await (
+      await reopenedPronePreview.$('button[aria-label="Prone anheften"]')
+    ).click()
+    const pinnedProne = await client.$(
+      'section[aria-label="Angeheftete Referenz: Prone"]'
+    )
+    await pinnedProne.waitForExist({ timeout: 5_000 })
+    const movePinned = await pinnedProne.$(
+      'button[aria-label="Prone verschieben"]'
+    )
+    await movePinned.click()
+    await client.keys(['SHIFT', 'ARROWRIGHT'])
+    await (await pinnedProne.$('button[aria-label="Prone schließen"]')).click()
+
+    await proneReference.click()
+    let referenceDocument = await client.$('.reference-document')
+    await expect(await referenceDocument.$('h2=Prone')).toBeExisting()
+    await (await groupNote.$('button=Stunned')).click()
+    referenceDocument = await client.$('.reference-document')
+    await expect(await referenceDocument.$('h2=Stunned')).toBeExisting()
+    await (await client.$('button[aria-label="Zurück"]')).click()
+    referenceDocument = await client.$('.reference-document')
+    await expect(await referenceDocument.$('h2=Prone')).toBeExisting()
+    await (await client.$('button[aria-label="Vor"]')).click()
+    referenceDocument = await client.$('.reference-document')
+    await expect(await referenceDocument.$('h2=Stunned')).toBeExisting()
+
+    await client.execute(() => {
+      document.documentElement.style.zoom = '200%'
+    })
+    await expectAccessible(client)
+    await client.execute(() => {
+      document.documentElement.style.zoom = ''
+    })
+
+    await (await client.$('.workspace-heading')).moveTo()
+    await client.keys('Escape')
+    await (
+      await client.$('.reference-hover-card')
+    ).waitForExist({
+      reverse: true,
+      timeout: 5_000
+    })
+    await client.execute(() => {
+      for (const close of document.querySelectorAll<HTMLButtonElement>(
+        '.reference-pinned-window button[aria-label$=" schließen"]'
+      ))
+        close.click()
+    })
+    await (
+      await client.$('.reference-pinned-window')
+    ).waitForExist({
+      reverse: true,
+      timeout: 5_000
+    })
 
     await (await client.$('button=Gruppen managen')).click()
     const reopenedGroupDialog = await client.$(
@@ -348,7 +639,7 @@ describe('campaign walking skeleton', () => {
       'select[aria-label="Gruppe auswählen"]'
     )
     await reopenedSelection.selectByVisibleText('Wolf Pack')
-    await (await reopenedGroupDialog.$('button=Neue Gruppe')).click()
+    await (await reopenedGroupDialog.$('button*=Neue Gruppe')).click()
     const emptyGroupName = await reopenedGroupDialog.$(
       'input[aria-label="Gruppenname"]'
     )
@@ -373,6 +664,17 @@ describe('campaign walking skeleton', () => {
     await expect(
       await client.$('button[aria-current="step"]*=Initiative')
     ).toBeExisting()
+    await expectScenarioGolden(client, 'initiative')
+    await (await client.$('button=Kampf starten')).click()
+    await expect(
+      await client.$('button[aria-current="step"]*=Kampf')
+    ).toBeExisting()
+    await expectScenarioGolden(client, 'combat')
+    await (
+      await (await client.$('.combat-panel footer')).$('button*=Auflösung')
+    ).click()
+    await expect(await client.$('.resolution-panel')).toBeExisting()
+    await expectScenarioGolden(client, 'resolution')
   })
 
   it('survives the pseudo locale without accessibility regressions', async () => {
@@ -384,29 +686,6 @@ describe('campaign walking skeleton', () => {
     await expectAccessible(client)
   })
 })
-
-async function expectAccessible(client: WdioBrowser): Promise<void> {
-  const accessibility = await new AxeBuilder({ client })
-    .setLegacyMode()
-    .analyze()
-  expect(accessibility.violations).toHaveLength(0)
-}
-
-async function expectAccessibleInBothThemes(
-  client: WdioBrowser
-): Promise<void> {
-  await expectAccessible(client)
-  await client.execute(() => {
-    document.querySelector<HTMLButtonElement>('.theme-toggle')?.click()
-  })
-  try {
-    await expectAccessible(client)
-  } finally {
-    await client.execute(() => {
-      document.querySelector<HTMLButtonElement>('.theme-toggle')?.click()
-    })
-  }
-}
 
 async function waitForCampaignInput(
   client: WdioBrowser,
@@ -464,6 +743,92 @@ async function expectHexEditorLayout(client: WdioBrowser): Promise<void> {
   expect(layout?.shellRight).toBeLessThanOrEqual(layout?.viewportWidth ?? 0)
 }
 
+async function expectHexEditorStackedLayout(
+  client: WdioBrowser
+): Promise<void> {
+  const geometry = await client.execute(() => {
+    const workspace = document.querySelector('.hex-editor-workspace')
+    const map = document.querySelector('.hex-editor-map')
+    const state = document.querySelector('.hex-editor-state')
+    if (
+      !(workspace instanceof HTMLElement) ||
+      !(map instanceof HTMLElement) ||
+      !(state instanceof HTMLElement)
+    )
+      return null
+    const workspaceBounds = workspace.getBoundingClientRect()
+    const mapBounds = map.getBoundingClientRect()
+    const stateBounds = state.getBoundingClientRect()
+    return {
+      columns: getComputedStyle(workspace).gridTemplateColumns,
+      workspaceWidth: Math.round(workspaceBounds.width),
+      stateWidth: Math.round(stateBounds.width),
+      mapBottom: Math.round(mapBounds.bottom),
+      stateTop: Math.round(stateBounds.top)
+    }
+  })
+  expect(geometry).not.toBeNull()
+  expect(geometry?.columns.split(' ')).toHaveLength(1)
+  expect(geometry?.stateWidth).toBe(geometry?.workspaceWidth)
+  expect(geometry?.stateTop).toBeGreaterThanOrEqual(
+    (geometry?.mapBottom ?? 0) - 1
+  )
+}
+
+async function waitForHexContentRevision(
+  client: WdioBrowser,
+  mapName: string,
+  minimumRevision: number
+): Promise<void> {
+  await client.waitUntil(
+    () =>
+      client.execute(
+        async (name, minimum) => {
+          const catalog = await window.saltMarcher.hex.catalog()
+          return (
+            (catalog.maps.find((entry) => entry.displayName === name)
+              ?.contentRevision ?? -1) >= minimum
+          )
+        },
+        mapName,
+        minimumRevision
+      ),
+    {
+      timeout: 5_000,
+      timeoutMsg: `Hex map ${mapName} did not reach revision ${minimumRevision}.`
+    }
+  )
+}
+
+async function waitForLocationPlacement(
+  client: WdioBrowser,
+  locationName: string,
+  expectedPlaced: boolean
+): Promise<void> {
+  await client.waitUntil(
+    () =>
+      client.execute(
+        async (name, expected) => {
+          const world = await window.saltMarcher.locations.read()
+          const location = world.locations.find(
+            (entry) => entry.displayName === name
+          )
+          if (!location) return false
+          const placement = await window.saltMarcher.hex.locateLocation(
+            location.id
+          )
+          return (placement !== null) === expected
+        },
+        locationName,
+        expectedPlaced
+      ),
+    {
+      timeout: 5_000,
+      timeoutMsg: `Location ${locationName} placement did not become ${String(expectedPlaced)}.`
+    }
+  )
+}
+
 async function createLocation(
   client: WdioBrowser,
   name: string,
@@ -472,9 +837,11 @@ async function createLocation(
   await (await client.$('button[aria-label="Katalog"]')).click()
   await (await client.$('button=Orte')).click()
   await (await client.$('button=Erstellen')).click()
-  const dialog = await client.$('form[aria-label="Ort erstellen"]')
+  const dialog = await client.$('[role="dialog"][aria-label="Ort erstellen"]')
   await (await dialog.$('input[aria-label="Ortsname"]')).setValue(name)
-  await (await dialog.$('textarea[aria-label="Ortsnotizen"]')).setValue(notes)
+  await (await dialog.$('input[aria-label="Tags"]')).setValue('Schauplatz')
+  await client.keys(['Enter'])
+  await (await dialog.$('textarea[aria-label="GM-Notizen"]')).setValue(notes)
   await (await dialog.$('button=Erstellen')).click()
   await expect(await client.$(`h2[aria-label="${name}"]`)).toBeExisting()
 }
@@ -512,5 +879,20 @@ async function pressDividerKey(
     },
     label,
     key
+  )
+}
+
+async function expectScenarioGolden(
+  client: WdioBrowser,
+  name: 'initiative' | 'combat' | 'resolution'
+): Promise<void> {
+  await expectElementGolden(client, name, 'aside[aria-label="Szenario Panel"]')
+}
+
+async function expectGroupManagementGolden(client: WdioBrowser): Promise<void> {
+  await expectElementGolden(
+    client,
+    'group-management',
+    'section[aria-labelledby="group-builder-title"]'
   )
 }

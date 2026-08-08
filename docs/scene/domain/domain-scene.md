@@ -17,7 +17,8 @@ and the collection of `RunningScene` records.
 Each `RunningScene` owns its title, notes, optional Session Planner provenance,
 one optional World Planner location reference, ordered PC references, ordered
 World Planner NPC references, and ordered named creature groups. A group owns
-positive quantities of Creature catalog references, never copied statblocks.
+stable individual members referencing the Creature catalog plus their mutable
+current HP and conditions, never copied statblocks.
 
 ## Invariants
 
@@ -27,7 +28,8 @@ positive quantities of Creature catalog references, never copied statblocks.
 - A PC reference can occur in at most one running scene.
 - An NPC reference can occur in at most one running scene.
 - A running scene has zero or one location and any number of NPC references.
-- A running scene may have any number of named, non-empty creature groups.
+- A running scene may have any number of named creature groups. Living and dead
+  members are counted independently; only living members are Encounter-ready.
 - Multiple running scenes may reference the same location.
 - Every prepared-scene import creates a new independent copy with provenance;
   importing the same prepared source again is valid and creates another copy.

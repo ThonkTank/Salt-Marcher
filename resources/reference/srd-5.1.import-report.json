@@ -1,0 +1,460 @@
+{
+  "documents": 1657,
+  "terms": 1518,
+  "ambiguousTerms": 49,
+  "ambiguities": [
+    {
+      "term": "Fighting Style: Great Weapon Fighting",
+      "candidates": [
+        "srd:srd-5.1:ability:features:fighter-fighting-style-great-weapon-fighting",
+        "srd:srd-5.1:ability:features:fighting-style-great-weapon-fighting"
+      ]
+    },
+    {
+      "term": "Fighting Style: Two-Weapon Fighting",
+      "candidates": [
+        "srd:srd-5.1:ability:features:fighter-fighting-style-two-weapon-fighting",
+        "srd:srd-5.1:ability:features:ranger-fighting-style-two-weapon-fighting"
+      ]
+    },
+    {
+      "term": "Otherworldly Patron feature",
+      "candidates": [
+        "srd:srd-5.1:ability:features:otherworldly-patron-improvement-1",
+        "srd:srd-5.1:ability:features:otherworldly-patron-improvement-2",
+        "srd:srd-5.1:ability:features:otherworldly-patron-improvement-3"
+      ]
+    },
+    {
+      "term": "Fighting Style: Protection",
+      "candidates": [
+        "srd:srd-5.1:ability:features:fighter-fighting-style-protection",
+        "srd:srd-5.1:ability:features:fighting-style-protection"
+      ]
+    },
+    {
+      "term": "Monastic Tradition feature",
+      "candidates": [
+        "srd:srd-5.1:ability:features:monastic-tradition-improvement-1",
+        "srd:srd-5.1:ability:features:monastic-tradition-improvement-2",
+        "srd:srd-5.1:ability:features:monastic-tradition-improvement-3"
+      ]
+    },
+    {
+      "term": "Ability Score Improvement",
+      "candidates": [
+        "srd:srd-5.1:ability:features:barbarian-ability-score-improvement-1",
+        "srd:srd-5.1:ability:features:barbarian-ability-score-improvement-2",
+        "srd:srd-5.1:ability:features:barbarian-ability-score-improvement-3",
+        "srd:srd-5.1:ability:features:barbarian-ability-score-improvement-4",
+        "srd:srd-5.1:ability:features:barbarian-ability-score-improvement-5",
+        "srd:srd-5.1:ability:features:bard-ability-score-improvement-1",
+        "srd:srd-5.1:ability:features:bard-ability-score-improvement-2",
+        "srd:srd-5.1:ability:features:bard-ability-score-improvement-3",
+        "srd:srd-5.1:ability:features:bard-ability-score-improvement-4",
+        "srd:srd-5.1:ability:features:bard-ability-score-improvement-5",
+        "srd:srd-5.1:ability:features:cleric-ability-score-improvement-1",
+        "srd:srd-5.1:ability:features:cleric-ability-score-improvement-2",
+        "srd:srd-5.1:ability:features:cleric-ability-score-improvement-3",
+        "srd:srd-5.1:ability:features:cleric-ability-score-improvement-4",
+        "srd:srd-5.1:ability:features:cleric-ability-score-improvement-5",
+        "srd:srd-5.1:ability:features:druid-ability-score-improvement-1",
+        "srd:srd-5.1:ability:features:druid-ability-score-improvement-2",
+        "srd:srd-5.1:ability:features:druid-ability-score-improvement-3",
+        "srd:srd-5.1:ability:features:druid-ability-score-improvement-4",
+        "srd:srd-5.1:ability:features:druid-ability-score-improvement-5",
+        "srd:srd-5.1:ability:features:fighter-ability-score-improvement-1",
+        "srd:srd-5.1:ability:features:fighter-ability-score-improvement-2",
+        "srd:srd-5.1:ability:features:fighter-ability-score-improvement-3",
+        "srd:srd-5.1:ability:features:fighter-ability-score-improvement-4",
+        "srd:srd-5.1:ability:features:fighter-ability-score-improvement-5",
+        "srd:srd-5.1:ability:features:fighter-ability-score-improvement-6",
+        "srd:srd-5.1:ability:features:fighter-ability-score-improvement-7",
+        "srd:srd-5.1:ability:features:monk-ability-score-improvement-1",
+        "srd:srd-5.1:ability:features:monk-ability-score-improvement-2",
+        "srd:srd-5.1:ability:features:monk-ability-score-improvement-3",
+        "srd:srd-5.1:ability:features:monk-ability-score-improvement-4",
+        "srd:srd-5.1:ability:features:monk-ability-score-improvement-5",
+        "srd:srd-5.1:ability:features:paladin-ability-score-improvement-1",
+        "srd:srd-5.1:ability:features:paladin-ability-score-improvement-2",
+        "srd:srd-5.1:ability:features:paladin-ability-score-improvement-3",
+        "srd:srd-5.1:ability:features:paladin-ability-score-improvement-4",
+        "srd:srd-5.1:ability:features:paladin-ability-score-improvement-5",
+        "srd:srd-5.1:ability:features:ranger-ability-score-improvement-1",
+        "srd:srd-5.1:ability:features:ranger-ability-score-improvement-2",
+        "srd:srd-5.1:ability:features:ranger-ability-score-improvement-3",
+        "srd:srd-5.1:ability:features:ranger-ability-score-improvement-4",
+        "srd:srd-5.1:ability:features:ranger-ability-score-improvement-5",
+        "srd:srd-5.1:ability:features:rogue-ability-score-improvement-1",
+        "srd:srd-5.1:ability:features:rogue-ability-score-improvement-2",
+        "srd:srd-5.1:ability:features:rogue-ability-score-improvement-3",
+        "srd:srd-5.1:ability:features:rogue-ability-score-improvement-4",
+        "srd:srd-5.1:ability:features:rogue-ability-score-improvement-5",
+        "srd:srd-5.1:ability:features:rogue-ability-score-improvement-6",
+        "srd:srd-5.1:ability:features:sorcerer-ability-score-improvement-1",
+        "srd:srd-5.1:ability:features:sorcerer-ability-score-improvement-2",
+        "srd:srd-5.1:ability:features:sorcerer-ability-score-improvement-3",
+        "srd:srd-5.1:ability:features:sorcerer-ability-score-improvement-4",
+        "srd:srd-5.1:ability:features:sorcerer-ability-score-improvement-5",
+        "srd:srd-5.1:ability:features:warlock-ability-score-improvement-1",
+        "srd:srd-5.1:ability:features:warlock-ability-score-improvement-2",
+        "srd:srd-5.1:ability:features:warlock-ability-score-improvement-3",
+        "srd:srd-5.1:ability:features:warlock-ability-score-improvement-4",
+        "srd:srd-5.1:ability:features:warlock-ability-score-improvement-5",
+        "srd:srd-5.1:ability:features:wizard-ability-score-improvement-1",
+        "srd:srd-5.1:ability:features:wizard-ability-score-improvement-2",
+        "srd:srd-5.1:ability:features:wizard-ability-score-improvement-3",
+        "srd:srd-5.1:ability:features:wizard-ability-score-improvement-4",
+        "srd:srd-5.1:ability:features:wizard-ability-score-improvement-5"
+      ]
+    },
+    {
+      "term": "Martial Archetype feature",
+      "candidates": [
+        "srd:srd-5.1:ability:features:martial-archetype-improvement-1",
+        "srd:srd-5.1:ability:features:martial-archetype-improvement-2",
+        "srd:srd-5.1:ability:features:martial-archetype-improvement-3",
+        "srd:srd-5.1:ability:features:martial-archetype-improvement-4"
+      ]
+    },
+    {
+      "term": "Roguish Archetype feature",
+      "candidates": [
+        "srd:srd-5.1:ability:features:roguish-archetype-improvement-1",
+        "srd:srd-5.1:ability:features:roguish-archetype-improvement-2",
+        "srd:srd-5.1:ability:features:roguish-archetype-improvement-3"
+      ]
+    },
+    {
+      "term": "Arcane Tradition feature",
+      "candidates": [
+        "srd:srd-5.1:ability:features:arcane-tradition-improvement-1",
+        "srd:srd-5.1:ability:features:arcane-tradition-improvement-2",
+        "srd:srd-5.1:ability:features:arcane-tradition-improvement-3"
+      ]
+    },
+    {
+      "term": "Ranger Archetype feature",
+      "candidates": [
+        "srd:srd-5.1:ability:features:ranger-archetype-improvement-1",
+        "srd:srd-5.1:ability:features:ranger-archetype-improvement-2",
+        "srd:srd-5.1:ability:features:ranger-archetype-improvement-3"
+      ]
+    },
+    {
+      "term": "Sorcerous Origin feature",
+      "candidates": [
+        "srd:srd-5.1:ability:features:sorcerous-origin-improvement-1",
+        "srd:srd-5.1:ability:features:sorcerous-origin-improvement-2",
+        "srd:srd-5.1:ability:features:sorcerous-origin-improvement-3"
+      ]
+    },
+    {
+      "term": "Attack Rolls and Damage",
+      "candidates": [
+        "srd:srd-5.1:rule:rule-section:using-each-ability:dexterity:attack-rolls-and-damage",
+        "srd:srd-5.1:rule:rule-section:using-each-ability:strength:attack-rolls-and-damage"
+      ]
+    },
+    {
+      "term": "Fighting Style: Archery",
+      "candidates": [
+        "srd:srd-5.1:ability:features:fighter-fighting-style-archery",
+        "srd:srd-5.1:ability:features:ranger-fighting-style-archery"
+      ]
+    },
+    {
+      "term": "Fighting Style: Defense",
+      "candidates": [
+        "srd:srd-5.1:ability:features:fighter-fighting-style-defense",
+        "srd:srd-5.1:ability:features:fighting-style-defense",
+        "srd:srd-5.1:ability:features:ranger-fighting-style-defense"
+      ]
+    },
+    {
+      "term": "Fighting Style: Dueling",
+      "candidates": [
+        "srd:srd-5.1:ability:features:fighter-fighting-style-dueling",
+        "srd:srd-5.1:ability:features:fighting-style-dueling",
+        "srd:srd-5.1:ability:features:ranger-fighting-style-dueling"
+      ]
+    },
+    {
+      "term": "Sphere of Annihilation",
+      "candidates": [
+        "srd:srd-5.1:item:magic-items:sphere-of-annihilation",
+        "srd:srd-5.1:rule:rule-section:traps:sample-traps:sphere-of-annihilation"
+      ]
+    },
+    {
+      "term": "Divine Domain feature",
+      "candidates": [
+        "srd:srd-5.1:ability:features:divine-domain-improvement-1",
+        "srd:srd-5.1:ability:features:divine-domain-improvement-2",
+        "srd:srd-5.1:ability:features:divine-domain-improvement-3",
+        "srd:srd-5.1:ability:features:divine-domain-improvement-4"
+      ]
+    },
+    {
+      "term": "Bard College feature",
+      "candidates": [
+        "srd:srd-5.1:ability:features:bard-college-improvement-1",
+        "srd:srd-5.1:ability:features:bard-college-improvement-2"
+      ]
+    },
+    {
+      "term": "Druid Circle feature",
+      "candidates": [
+        "srd:srd-5.1:ability:features:druid-circle-improvement-1",
+        "srd:srd-5.1:ability:features:druid-circle-improvement-2",
+        "srd:srd-5.1:ability:features:druid-circle-improvement-3"
+      ]
+    },
+    {
+      "term": "Spellcasting Ability",
+      "candidates": [
+        "srd:srd-5.1:rule:rule-section:using-each-ability:charisma:spellcasting-ability",
+        "srd:srd-5.1:rule:rule-section:using-each-ability:intelligence:spellcasting-ability",
+        "srd:srd-5.1:rule:rule-section:using-each-ability:wisdom:spellcasting-ability"
+      ]
+    },
+    {
+      "term": "Sacred Oath feature",
+      "candidates": [
+        "srd:srd-5.1:ability:features:sacred-oath-improvement-1",
+        "srd:srd-5.1:ability:features:sacred-oath-improvement-2",
+        "srd:srd-5.1:ability:features:sacred-oath-improvement-3"
+      ]
+    },
+    {
+      "term": "Unarmored Movement",
+      "candidates": [
+        "srd:srd-5.1:ability:features:unarmored-movement-1",
+        "srd:srd-5.1:ability:features:unarmored-movement-2"
+      ]
+    },
+    {
+      "term": "Difficult Terrain",
+      "candidates": [
+        "srd:srd-5.1:rule:rule-section:movement-and-position:difficult-terrain",
+        "srd:srd-5.1:rule:rule-section:movement:speed:difficult-terrain"
+      ]
+    },
+    {
+      "term": "Potion of Healing",
+      "candidates": [
+        "srd:srd-5.1:item:magic-items:potion-of-healing",
+        "srd:srd-5.1:item:magic-items:potion-of-healing-common"
+      ]
+    },
+    {
+      "term": "Unarmored Defense",
+      "candidates": [
+        "srd:srd-5.1:ability:features:barbarian-unarmored-defense",
+        "srd:srd-5.1:ability:features:monk-unarmored-defense"
+      ]
+    },
+    {
+      "term": "Magical Secrets",
+      "candidates": [
+        "srd:srd-5.1:ability:features:magical-secrets-1",
+        "srd:srd-5.1:ability:features:magical-secrets-2",
+        "srd:srd-5.1:ability:features:magical-secrets-3"
+      ]
+    },
+    {
+      "term": "Fighting Style",
+      "candidates": [
+        "srd:srd-5.1:ability:features:fighter-fighting-style",
+        "srd:srd-5.1:ability:features:paladin-fighting-style",
+        "srd:srd-5.1:ability:features:ranger-fighting-style"
+      ]
+    },
+    {
+      "term": "Circle Spells",
+      "candidates": [
+        "srd:srd-5.1:ability:features:circle-spells-1",
+        "srd:srd-5.1:ability:features:circle-spells-2",
+        "srd:srd-5.1:ability:features:circle-spells-3",
+        "srd:srd-5.1:ability:features:circle-spells-4"
+      ]
+    },
+    {
+      "term": "Domain Spells",
+      "candidates": [
+        "srd:srd-5.1:ability:features:domain-spells-1",
+        "srd:srd-5.1:ability:features:domain-spells-2",
+        "srd:srd-5.1:ability:features:domain-spells-3",
+        "srd:srd-5.1:ability:features:domain-spells-4",
+        "srd:srd-5.1:ability:features:domain-spells-5"
+      ]
+    },
+    {
+      "term": "Land's Stride",
+      "candidates": [
+        "srd:srd-5.1:ability:features:druid-lands-stride",
+        "srd:srd-5.1:ability:features:ranger-lands-stride"
+      ]
+    },
+    {
+      "term": "Timeless Body",
+      "candidates": [
+        "srd:srd-5.1:ability:features:druid-timeless-body",
+        "srd:srd-5.1:ability:features:monk-timeless-body"
+      ]
+    },
+    {
+      "term": "Constitution",
+      "candidates": [
+        "srd:srd-5.1:ability:ability-scores:con",
+        "srd:srd-5.1:rule:rule-section:using-each-ability:constitution"
+      ]
+    },
+    {
+      "term": "Extra Attack",
+      "candidates": [
+        "srd:srd-5.1:ability:features:barbarian-extra-attack",
+        "srd:srd-5.1:ability:features:extra-attack-1",
+        "srd:srd-5.1:ability:features:monk-extra-attack",
+        "srd:srd-5.1:ability:features:paladin-extra-attack",
+        "srd:srd-5.1:ability:features:ranger-extra-attack"
+      ]
+    },
+    {
+      "term": "Intelligence",
+      "candidates": [
+        "srd:srd-5.1:ability:ability-scores:int",
+        "srd:srd-5.1:rule:rule-section:ability-checks:skills:intelligence",
+        "srd:srd-5.1:rule:rule-section:using-each-ability:intelligence"
+      ]
+    },
+    {
+      "term": "Outer Planes",
+      "candidates": [
+        "srd:srd-5.1:rule:rule-section:the-planes-of-existence:beyond-the-material:outer-planes",
+        "srd:srd-5.1:rule:rule-section:the-planes-of-existence:beyond-the-material:outer-planes:outer-planes"
+      ]
+    },
+    {
+      "term": "Path feature",
+      "candidates": [
+        "srd:srd-5.1:ability:features:primal-path-improvement-1",
+        "srd:srd-5.1:ability:features:primal-path-improvement-2",
+        "srd:srd-5.1:ability:features:primal-path-improvement-3"
+      ]
+    },
+    {
+      "term": "Darkvision",
+      "candidates": [
+        "srd:srd-5.1:ability:traits:darkvision",
+        "srd:srd-5.1:rule:rule-section:the-environment:vision-and-light:darkvision",
+        "srd:srd-5.1:spell:spells:darkvision"
+      ]
+    },
+    {
+      "term": "Hit Points",
+      "candidates": [
+        "srd:srd-5.1:rule:rule-section:damage-and-healing:hit-points",
+        "srd:srd-5.1:rule:rule-section:using-each-ability:constitution:hit-points"
+      ]
+    },
+    {
+      "term": "Initiative",
+      "candidates": [
+        "srd:srd-5.1:rule:rule-section:the-order-of-combat:initiative",
+        "srd:srd-5.1:rule:rule-section:using-each-ability:dexterity:initiative"
+      ]
+    },
+    {
+      "term": "Dexterity",
+      "candidates": [
+        "srd:srd-5.1:ability:ability-scores:dex",
+        "srd:srd-5.1:rule:rule-section:ability-checks:skills:dexterity",
+        "srd:srd-5.1:rule:rule-section:using-each-ability:dexterity"
+      ]
+    },
+    {
+      "term": "Expertise",
+      "candidates": [
+        "srd:srd-5.1:ability:features:bard-expertise-1",
+        "srd:srd-5.1:ability:features:bard-expertise-2",
+        "srd:srd-5.1:ability:features:rogue-expertise-1",
+        "srd:srd-5.1:ability:features:rogue-expertise-2"
+      ]
+    },
+    {
+      "term": "Metamagic",
+      "candidates": [
+        "srd:srd-5.1:ability:features:metamagic-1",
+        "srd:srd-5.1:ability:features:metamagic-2",
+        "srd:srd-5.1:ability:features:metamagic-3"
+      ]
+    },
+    {
+      "term": "Reactions",
+      "candidates": [
+        "srd:srd-5.1:rule:rule-section:casting-a-spell:casting-time:reactions",
+        "srd:srd-5.1:rule:rule-section:the-order-of-combat:reactions"
+      ]
+    },
+    {
+      "term": "Charisma",
+      "candidates": [
+        "srd:srd-5.1:ability:ability-scores:cha",
+        "srd:srd-5.1:rule:rule-section:ability-checks:skills:charisma",
+        "srd:srd-5.1:rule:rule-section:using-each-ability:charisma"
+      ]
+    },
+    {
+      "term": "Strength",
+      "candidates": [
+        "srd:srd-5.1:ability:ability-scores:str",
+        "srd:srd-5.1:rule:rule-section:ability-checks:skills:strength",
+        "srd:srd-5.1:rule:rule-section:using-each-ability:strength"
+      ]
+    },
+    {
+      "term": "Evasion",
+      "candidates": [
+        "srd:srd-5.1:ability:features:monk-evasion",
+        "srd:srd-5.1:ability:features:rogue-evasion"
+      ]
+    },
+    {
+      "term": "Shield",
+      "candidates": [
+        "srd:srd-5.1:item:equipment:shield",
+        "srd:srd-5.1:spell:spells:shield"
+      ]
+    },
+    {
+      "term": "Wisdom",
+      "candidates": [
+        "srd:srd-5.1:ability:ability-scores:wis",
+        "srd:srd-5.1:rule:rule-section:ability-checks:skills:wisdom",
+        "srd:srd-5.1:rule:rule-section:using-each-ability:wisdom"
+      ]
+    },
+    {
+      "term": "Light",
+      "candidates": [
+        "srd:srd-5.1:rule:weapon-properties:light",
+        "srd:srd-5.1:spell:spells:light"
+      ]
+    }
+  ],
+  "targetCollisions": [],
+  "addedDefinitionIds": [],
+  "removedDefinitionIds": [],
+  "incompleteDocuments": [],
+  "creatureQuality": {
+    "creatures": 334,
+    "addedCreatureIds": [],
+    "removedCreatureIds": [],
+    "missingBiomeEnrichment": [],
+    "orphanedBiomeEnrichment": [],
+    "incompleteCreatures": [],
+    "partIdCollisions": [],
+    "appliedPartIdOverrides": []
+  }
+}

@@ -22,6 +22,11 @@ function harness() {
   return { campaigns, play }
 }
 
+function sessionAfter(play: LivePlayService, command: () => unknown) {
+  command()
+  return play.readSession()
+}
+
 describe('live party, scene groups and combat', () => {
   it('seeds four inactive roster characters exactly once', () => {
     const { campaigns, play } = harness()
@@ -105,14 +110,17 @@ describe('live party, scene groups and combat', () => {
     party = play.setMembership(party.members[0]!.id, true, party.revision)
     let session = play.readSession()
     const sceneId = session.scene.focusedSceneId
-    session = play.saveSceneGroup(
-      sceneId,
-      null,
-      'Wölfe',
-      '',
-      'hostile',
-      [{ creatureId: 'wolf', quantity: 2 }],
-      session.scene.revision
+    session = sessionAfter(play, () =>
+      play.saveSceneGroup(
+        sceneId,
+        null,
+        'Wölfe',
+        '',
+        'hostile',
+        [{ creatureId: 'wolf', quantity: 2 }],
+        session.scene.revision,
+        null
+      )
     )
     play.prepareCombat(sceneId, session.scene.revision, [
       session.scene.scenes[0]!.groups[0]!.id
@@ -123,12 +131,14 @@ describe('live party, scene groups and combat', () => {
     expect(
       session.combat?.initiativeRows.filter((row) => row.kind === 'party')
     ).toHaveLength(2)
-    session = play.confirmInitiative(
-      session.combat!.revision,
-      session.combat!.initiativeRows.map((row) => ({
-        id: row.id,
-        initiative: row.initiative
-      }))
+    session = sessionAfter(play, () =>
+      play.confirmInitiative(
+        session.combat!.revision,
+        session.combat!.initiativeRows.map((row) => ({
+          id: row.id,
+          initiative: row.initiative
+        }))
+      )
     )
     const activeCardId = session.combat?.cards.find((card) => card.active)?.id
 
@@ -158,26 +168,31 @@ describe('live party, scene groups and combat', () => {
         true,
         session.scene.revision
       )
-    session = play.saveSceneGroup(
-      sceneId,
-      null,
-      'Goblin Patrol',
-      'Hält sich im Unterholz verborgen.',
-      'hostile',
-      [{ creatureId: 'goblin', quantity: 4 }],
-      session.scene.revision
+    session = sessionAfter(play, () =>
+      play.saveSceneGroup(
+        sceneId,
+        null,
+        'Goblin Patrol',
+        'Hält sich im Unterholz verborgen.',
+        'hostile',
+        [{ creatureId: 'goblin', quantity: 4 }],
+        session.scene.revision,
+        null
+      )
     )
     const groupId = session.scene.scenes[0]?.groups[0]?.id
     expect(groupId).toBeDefined()
 
-    session = play.prepareCombat(sceneId, session.scene.revision, [
-      groupId ?? ''
-    ])
+    session = sessionAfter(play, () =>
+      play.prepareCombat(sceneId, session.scene.revision, [groupId ?? ''])
+    )
     expect(session.combat?.phase).toBe('initiative')
     const partyInitiative = session.combat?.initiativeRows
       .filter((row) => row.kind === 'party')
       .map((row) => ({ id: row.id, initiative: row.initiative }))
-    session = play.rollInitiative(session.combat?.revision ?? -1)
+    session = sessionAfter(play, () =>
+      play.rollInitiative(session.combat?.revision ?? -1)
+    )
     expect(
       session.combat?.initiativeRows
         .filter((row) => row.kind === 'party')
@@ -188,61 +203,118 @@ describe('live party, scene groups and combat', () => {
         id: row.id,
         initiative: row.initiative
       })) ?? []
-    session = play.confirmInitiative(
-      session.combat?.revision ?? -1,
-      initiatives
+    session = sessionAfter(play, () =>
+      play.confirmInitiative(session.combat?.revision ?? -1, initiatives)
     )
     const monsterCard = session.combat?.cards.find(
       (card) => !card.playerCharacter
     )
     expect(monsterCard).toMatchObject({ count: 4, creatureId: 'goblin' })
 
-    session = play.changeHp(
-      session.combat?.revision ?? -1,
-      monsterCard?.id ?? '',
-      8,
-      false
+    session = sessionAfter(play, () =>
+      play.changeHp(
+        session.combat?.revision ?? -1,
+        monsterCard?.id ?? '',
+        8,
+        false
+      )
     )
     expect(
       session.combat?.cards.find((card) => card.id === monsterCard?.id)
     ).toMatchObject({ currentHp: 6, maxHp: 7, aliveCount: 3, count: 4 })
-    session = play.toggleCombatCondition(
-      session.combat?.revision ?? -1,
-      monsterCard?.id ?? '',
-      'Liegend',
-      true
+    expect(session.scene.scenes[0]?.groups[0]?.entries[0]).toMatchObject({
+      aliveQuantity: 3,
+      deadQuantity: 1
+    })
+    session = sessionAfter(play, () =>
+      play.toggleCombatCondition(
+        session.combat?.revision ?? -1,
+        monsterCard?.id ?? '',
+        'prone',
+        true
+      )
     )
     expect(
       session.combat?.cards.find((card) => card.id === monsterCard?.id)
         ?.conditions
-    ).toEqual(['Liegend'])
-    expect(session.combat?.undoLabel).toContain('Liegend')
-    session = play.undoCombat(session.combat?.revision ?? -1)
+    ).toEqual(['prone'])
+    expect(
+      session.scene.scenes[0]?.groups[0]?.entries[0]?.members.some((member) =>
+        member.conditions.includes('prone')
+      )
+    ).toBe(true)
+    expect(session.combat?.undoLabel).toContain('prone')
+    session = sessionAfter(play, () =>
+      play.setCombatConcentration(
+        session.combat?.revision ?? -1,
+        monsterCard?.id ?? '',
+        true
+      )
+    )
+    session = sessionAfter(play, () =>
+      play.setCombatExhaustion(
+        session.combat?.revision ?? -1,
+        monsterCard?.id ?? '',
+        3
+      )
+    )
+    expect(
+      session.combat?.cards.find((card) => card.id === monsterCard?.id)
+    ).toMatchObject({ concentrating: true, exhaustionLevel: 3 })
+    session = sessionAfter(play, () =>
+      play.undoCombat(session.combat?.revision ?? -1)
+    )
+    expect(
+      session.combat?.cards.find((card) => card.id === monsterCard?.id)
+    ).toMatchObject({ concentrating: true, exhaustionLevel: 0 })
+    session = sessionAfter(play, () =>
+      play.undoCombat(session.combat?.revision ?? -1)
+    )
+    expect(
+      session.combat?.cards.find((card) => card.id === monsterCard?.id)
+    ).toMatchObject({ concentrating: false, exhaustionLevel: 0 })
+    session = sessionAfter(play, () =>
+      play.undoCombat(session.combat?.revision ?? -1)
+    )
     expect(
       session.combat?.cards.find((card) => card.id === monsterCard?.id)
     ).toMatchObject({ currentHp: 6, conditions: [] })
-    session = play.undoCombat(session.combat?.revision ?? -1)
+    session = sessionAfter(play, () =>
+      play.undoCombat(session.combat?.revision ?? -1)
+    )
     expect(
       session.combat?.cards.find((card) => card.id === monsterCard?.id)
     ).toMatchObject({ currentHp: 7, aliveCount: 4 })
+    expect(session.scene.scenes[0]?.groups[0]?.entries[0]).toMatchObject({
+      aliveQuantity: 4,
+      deadQuantity: 0
+    })
 
-    session = play.changeHp(
-      session.combat?.revision ?? -1,
-      monsterCard?.id ?? '',
-      28,
-      false
+    session = sessionAfter(play, () =>
+      play.changeHp(
+        session.combat?.revision ?? -1,
+        monsterCard?.id ?? '',
+        28,
+        false
+      )
     )
     expect(session.combat?.allEnemiesDefeated).toBe(true)
-    session = play.endCombat(session.combat?.revision ?? -1)
+    session = sessionAfter(play, () =>
+      play.endCombat(session.combat?.revision ?? -1)
+    )
     const enemyIds =
       session.combat?.resolution?.enemies.map((enemy) => enemy.id) ?? []
-    session = play.updateResolution(
-      session.combat?.revision ?? -1,
-      enemyIds,
-      1,
-      1
+    session = sessionAfter(play, () =>
+      play.updateResolution(
+        session.combat?.revision ?? -1,
+        enemyIds,
+        'manual',
+        1
+      )
     )
-    session = play.awardXp(session.combat?.revision ?? -1)
+    session = sessionAfter(play, () =>
+      play.awardXp(session.combat?.revision ?? -1)
+    )
 
     expect(session.combat?.resolution?.xpAwarded).toBe(true)
     expect(session.combat?.resolution?.perPlayerXp).toBe(100)
@@ -257,7 +329,7 @@ describe('live party, scene groups and combat', () => {
     campaigns.close()
   })
 
-  it('persists group disposition and archive state without mutating combat', () => {
+  it('persists group disposition and unlinks archived groups from combat', () => {
     const { campaigns, play } = harness()
     const party = play.readParty()
     const memberId = party.members[0]?.id ?? ''
@@ -270,14 +342,17 @@ describe('live party, scene groups and combat', () => {
       true,
       session.scene.revision
     )
-    session = play.saveSceneGroup(
-      sceneId,
-      null,
-      'Hafenwache',
-      '',
-      'allied',
-      [],
-      session.scene.revision
+    session = sessionAfter(play, () =>
+      play.saveSceneGroup(
+        sceneId,
+        null,
+        'Hafenwache',
+        '',
+        'allied',
+        [],
+        session.scene.revision,
+        null
+      )
     )
     const emptyGroup = session.scene.scenes[0]?.groups[0]
     expect(emptyGroup).toMatchObject({
@@ -294,27 +369,34 @@ describe('live party, scene groups and combat', () => {
       ).canStart
     ).toBe(false)
 
-    session = play.saveSceneGroup(
-      sceneId,
-      null,
-      'Goblins',
-      '',
-      'hostile',
-      [{ creatureId: 'goblin', quantity: 2 }],
-      session.scene.revision
+    session = sessionAfter(play, () =>
+      play.saveSceneGroup(
+        sceneId,
+        null,
+        'Goblins',
+        '',
+        'hostile',
+        [{ creatureId: 'goblin', quantity: 2 }],
+        session.scene.revision,
+        null
+      )
     )
     const combatGroup = session.scene.scenes[0]?.groups[1]
-    session = play.prepareCombat(sceneId, session.scene.revision, [
-      combatGroup?.id ?? ''
-    ])
-    const combatBeforeArchive = session.combat
-    session = play.setSceneGroupArchived(
-      sceneId,
-      combatGroup?.id ?? '',
-      true,
-      session.scene.revision
+    session = sessionAfter(play, () =>
+      play.prepareCombat(sceneId, session.scene.revision, [
+        combatGroup?.id ?? ''
+      ])
     )
-    expect(session.combat).toEqual(combatBeforeArchive)
+    session = sessionAfter(play, () =>
+      play.setSceneGroupArchived(
+        sceneId,
+        combatGroup?.id ?? '',
+        true,
+        combatGroup?.revision ?? -1
+      )
+    )
+    expect(session.combat?.selectedGroupIds).toEqual([])
+    expect(session.combat?.initiativeRows).toHaveLength(1)
     expect(
       session.scene.scenes[0]?.groups.find(
         (group) => group.id === combatGroup?.id
@@ -328,13 +410,96 @@ describe('live party, scene groups and combat', () => {
       )
     ).toThrow('validation')
 
-    session = play.deleteSceneGroup(
-      sceneId,
-      combatGroup?.id ?? '',
-      session.scene.revision
+    session = sessionAfter(play, () =>
+      play.deleteSceneGroup(
+        sceneId,
+        combatGroup?.id ?? '',
+        session.scene.scenes[0]?.groups.find(
+          (group) => group.id === combatGroup?.id
+        )?.revision ?? -1
+      )
     )
-    expect(session.combat).toEqual(combatBeforeArchive)
+    expect(session.combat?.selectedGroupIds).toEqual([])
     expect(session.scene.scenes[0]?.groups).toHaveLength(1)
+    campaigns.close()
+  })
+
+  it('keeps linked group membership live and joins explicit reinforcements', () => {
+    const { campaigns, play } = harness()
+    const party = play.readParty()
+    play.setMembership(party.members[0]!.id, true, party.revision)
+    let session = play.readSession()
+    const sceneId = session.scene.focusedSceneId
+    session = sessionAfter(play, () =>
+      play.saveSceneGroup(
+        sceneId,
+        null,
+        'Wölfe',
+        '',
+        'hostile',
+        [{ creatureId: 'wolf', quantity: 2 }],
+        session.scene.revision,
+        null
+      )
+    )
+    const wolves = session.scene.scenes[0]!.groups[0]!
+    session = sessionAfter(play, () =>
+      play.prepareCombat(sceneId, session.scene.revision, [wolves.id])
+    )
+    session = sessionAfter(play, () =>
+      play.confirmInitiative(
+        session.combat!.revision,
+        session.combat!.initiativeRows.map((row) => ({
+          id: row.id,
+          initiative: row.initiative
+        }))
+      )
+    )
+    session = sessionAfter(play, () =>
+      play.saveSceneGroup(
+        sceneId,
+        wolves.id,
+        wolves.name,
+        wolves.note,
+        wolves.disposition,
+        [{ creatureId: 'wolf', quantity: 3 }],
+        session.scene.revision,
+        wolves.revision
+      )
+    )
+    expect(
+      session.combat?.cards
+        .filter((card) => card.creatureId === 'wolf')
+        .reduce((sum, card) => sum + card.count, 0)
+    ).toBe(3)
+
+    session = sessionAfter(play, () =>
+      play.saveSceneGroup(
+        sceneId,
+        null,
+        'Goblins',
+        '',
+        'hostile',
+        [{ creatureId: 'goblin', quantity: 2 }],
+        session.scene.revision,
+        null
+      )
+    )
+    const goblins = session.scene.scenes[0]!.groups[1]!
+    session = sessionAfter(play, () =>
+      play.joinCombatGroup(
+        sceneId,
+        goblins.id,
+        goblins.revision,
+        session.combat!.revision
+      )
+    )
+    expect(session.combat?.selectedGroupIds).toEqual([wolves.id, goblins.id])
+    expect(
+      session.combat?.cards
+        .filter((card) => card.creatureId === 'goblin')
+        .reduce((sum, card) => sum + card.count, 0)
+    ).toBe(2)
     campaigns.close()
   })
 
@@ -350,35 +515,46 @@ describe('live party, scene groups and combat', () => {
       true,
       session.scene.revision
     )
-    session = play.saveSceneGroup(
-      sceneId,
-      null,
-      'Wolves',
-      'Streift im Dünengras westlich der Furt.',
-      'hostile',
-      [{ creatureId: 'wolf', quantity: 2 }],
-      session.scene.revision
+    session = sessionAfter(play, () =>
+      play.saveSceneGroup(
+        sceneId,
+        null,
+        'Wolves',
+        'Streift im Dünengras westlich der Furt.',
+        'hostile',
+        [{ creatureId: 'wolf', quantity: 2 }],
+        session.scene.revision,
+        null
+      )
     )
-    session = play.prepareCombat(sceneId, session.scene.revision, [
-      session.scene.scenes[0]?.groups[0]?.id ?? ''
-    ])
-    session = play.confirmInitiative(
-      session.combat?.revision ?? -1,
-      session.combat?.initiativeRows.map((row) => ({
-        id: row.id,
-        initiative: row.initiative
-      })) ?? []
+    session = sessionAfter(play, () =>
+      play.prepareCombat(sceneId, session.scene.revision, [
+        session.scene.scenes[0]?.groups[0]?.id ?? ''
+      ])
+    )
+    session = sessionAfter(play, () =>
+      play.confirmInitiative(
+        session.combat?.revision ?? -1,
+        session.combat?.initiativeRows.map((row) => ({
+          id: row.id,
+          initiative: row.initiative
+        })) ?? []
+      )
     )
     const monsterCard = session.combat?.cards.find(
       (card) => !card.playerCharacter
     )
-    session = play.toggleCombatCondition(
-      session.combat?.revision ?? -1,
-      monsterCard?.id ?? '',
-      'Vergiftet',
-      true
+    session = sessionAfter(play, () =>
+      play.toggleCombatCondition(
+        session.combat?.revision ?? -1,
+        monsterCard?.id ?? '',
+        'poisoned',
+        true
+      )
     )
-    session = play.advanceTurn(session.combat?.revision ?? -1)
+    session = sessionAfter(play, () =>
+      play.advanceTurn(session.combat?.revision ?? -1)
+    )
     const expected = session.combat
     campaigns.close()
 
@@ -407,18 +583,23 @@ describe('live party, scene groups and combat', () => {
       true,
       session.scene.revision
     )
-    session = play.saveSceneGroup(
-      firstSceneId,
-      null,
-      'Wölfe',
-      '',
-      'hostile',
-      [{ creatureId: 'wolf', quantity: 2 }],
-      session.scene.revision
+    session = sessionAfter(play, () =>
+      play.saveSceneGroup(
+        firstSceneId,
+        null,
+        'Wölfe',
+        '',
+        'hostile',
+        [{ creatureId: 'wolf', quantity: 2 }],
+        session.scene.revision,
+        null
+      )
     )
-    session = play.prepareCombat(firstSceneId, session.scene.revision, [
-      session.scene.scenes[0]?.groups[0]?.id ?? ''
-    ])
+    session = sessionAfter(play, () =>
+      play.prepareCombat(firstSceneId, session.scene.revision, [
+        session.scene.scenes[0]?.groups[0]?.id ?? ''
+      ])
+    )
     const firstCombat = session.combat
 
     const secondSceneId = uuidv7()
@@ -434,6 +615,168 @@ describe('live party, scene groups and combat', () => {
     expect(session.combat).toBeNull()
     session = play.focusScene(firstSceneId, session.scene.revision)
     expect(session.combat).toEqual(firstCombat)
+    campaigns.close()
+  })
+
+  it('coordinates concurrent group edits with group revisions instead of the scene root', () => {
+    const { campaigns, play } = harness()
+    let session = play.readSession()
+    const sceneId = session.scene.focusedSceneId
+    session = sessionAfter(play, () =>
+      play.saveSceneGroup(
+        sceneId,
+        null,
+        'Wölfe',
+        '',
+        'hostile',
+        [{ creatureId: 'wolf', quantity: 1 }],
+        session.scene.revision,
+        null
+      )
+    )
+    session = sessionAfter(play, () =>
+      play.saveSceneGroup(
+        sceneId,
+        null,
+        'Goblins',
+        '',
+        'hostile',
+        [{ creatureId: 'goblin', quantity: 1 }],
+        session.scene.revision,
+        null
+      )
+    )
+    const staleSceneRevision = session.scene.revision
+    const [wolves, goblins] = session.scene.scenes[0]!.groups
+
+    sessionAfter(play, () =>
+      play.saveSceneGroup(
+        sceneId,
+        wolves!.id,
+        'Grauwölfe',
+        '',
+        'hostile',
+        [{ creatureId: 'wolf', quantity: 1 }],
+        staleSceneRevision,
+        wolves!.revision
+      )
+    )
+    session = sessionAfter(play, () =>
+      play.saveSceneGroup(
+        sceneId,
+        goblins!.id,
+        'Höhlengoblins',
+        '',
+        'hostile',
+        [{ creatureId: 'goblin', quantity: 1 }],
+        staleSceneRevision,
+        goblins!.revision
+      )
+    )
+
+    expect(session.scene.scenes[0]!.groups.map((group) => group.name)).toEqual([
+      'Grauwölfe',
+      'Höhlengoblins'
+    ])
+    expect(() =>
+      play.saveSceneGroup(
+        sceneId,
+        wolves!.id,
+        'Veralteter Name',
+        '',
+        'hostile',
+        [{ creatureId: 'wolf', quantity: 1 }],
+        session.scene.revision,
+        wolves!.revision
+      )
+    ).toThrow('stale')
+    campaigns.close()
+  })
+
+  it('rewinds combat navigation without undoing persistent TP or conditions', () => {
+    const { campaigns, play } = harness()
+    const party = play.readParty()
+    play.setMembership(party.members[0]!.id, true, party.revision)
+    let session = play.readSession()
+    const sceneId = session.scene.focusedSceneId
+    session = sessionAfter(play, () =>
+      play.saveSceneGroup(
+        sceneId,
+        null,
+        'Wölfe',
+        '',
+        'hostile',
+        [{ creatureId: 'wolf', quantity: 2 }],
+        session.scene.revision,
+        null
+      )
+    )
+    session = sessionAfter(play, () =>
+      play.prepareCombat(sceneId, session.scene.revision, [
+        session.scene.scenes[0]!.groups[0]!.id
+      ])
+    )
+    session = sessionAfter(play, () =>
+      play.confirmInitiative(
+        session.combat!.revision,
+        session.combat!.initiativeRows.map((row) => ({
+          id: row.id,
+          initiative: row.initiative
+        }))
+      )
+    )
+    const monster = session.combat!.cards.find((card) => !card.playerCharacter)!
+    const hpResult = play.changeHp(
+      session.combat!.revision,
+      monster.id,
+      3,
+      false
+    )
+    expect(hpResult.scenePatch?.upsertedGroups).toHaveLength(1)
+    session = play.readSession()
+    session = sessionAfter(play, () =>
+      play.toggleCombatCondition(
+        session.combat!.revision,
+        monster.id,
+        'prone',
+        true
+      )
+    )
+    const memberState =
+      session.scene.scenes[0]!.groups[0]!.entries[0]!.members.map(
+        ({ currentHp, conditions }) => ({ currentHp, conditions })
+      )
+    const turn = {
+      round: session.combat!.round,
+      active: session.combat!.cards.find((card) => card.active)!.id
+    }
+    const advanceResult = play.advanceTurn(session.combat!.revision)
+    expect(advanceResult.scenePatch).toBeNull()
+    session = play.readSession()
+    session = sessionAfter(play, () =>
+      play.retreatTurn(session.combat!.revision)
+    )
+    expect(session.combat!.round).toBe(turn.round)
+    expect(session.combat!.cards.find((card) => card.active)!.id).toBe(
+      turn.active
+    )
+
+    session = sessionAfter(play, () => play.endCombat(session.combat!.revision))
+    session = sessionAfter(play, () =>
+      play.moveCombatToPhase(session.combat!.revision, 'combat')
+    )
+    session = sessionAfter(play, () =>
+      play.moveCombatToPhase(session.combat!.revision, 'initiative')
+    )
+    expect(session.combat).toMatchObject({
+      phase: 'initiative',
+      undoLabel: null
+    })
+    expect(
+      session.scene.scenes[0]!.groups[0]!.entries[0]!.members.map(
+        ({ currentHp, conditions }) => ({ currentHp, conditions })
+      )
+    ).toEqual(memberState)
     campaigns.close()
   })
 })

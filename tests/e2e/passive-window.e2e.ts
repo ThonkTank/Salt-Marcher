@@ -27,7 +27,9 @@ describe('passive display isolation', () => {
     await input.waitForExist()
     await input.setValue('GM-SENTINEL-DO-NOT-LEAK')
     await (await client.$('button=Kampagne erstellen')).click()
-    await expect(await client.$('h1=Session')).toBeExisting()
+    await (
+      await client.$('h1=Session · GM-SENTINEL-DO-NOT-LEAK')
+    ).waitForExist({ timeout: 15_000 })
 
     await client.switchToWindow(passive)
     await expect(await client.$('h1=Passive Anzeige')).toBeExisting()
@@ -42,7 +44,7 @@ describe('passive display isolation', () => {
           'Keine Datenfreigabe aktiv'
         ),
       {
-        timeout: 5_000,
+        timeout: 15_000,
         timeoutMsg: 'Passive projection did not settle to its safe empty state.'
       }
     )

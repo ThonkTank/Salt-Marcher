@@ -1,24 +1,16 @@
 import { z } from 'zod'
 import { partyCharacterSchema, partySnapshotSchema } from './party.js'
-import { sceneSnapshotSchema } from './scene.js'
+import { sceneGroupSchema, sceneSnapshotSchema } from './scene.js'
 import { hexTravelSnapshotSchema } from './hex.js'
+import {
+  combatConditionSchema,
+  combatConditions,
+  exhaustionLevelSchema,
+  type CombatCondition
+} from './combat-status.js'
 
 export { partyCharacterSchema as partyMemberSchema, partySnapshotSchema }
-
-export const combatConditions = [
-  'Liegend',
-  'Betäubt',
-  'Konzentration',
-  'Gefesselt',
-  'Verlangsamt',
-  'Verängstigt',
-  'Blind',
-  'Vergiftet',
-  'Gelähmt',
-  'Bezaubert'
-] as const
-
-export const combatConditionSchema = z.enum(combatConditions)
+export { combatConditionSchema, combatConditions }
 
 export const initiativeRowSchema = z
   .object({
@@ -46,6 +38,8 @@ export const combatCardSchema = z
     count: z.number().int().positive(),
     aliveCount: z.number().int().nonnegative(),
     conditions: z.array(combatConditionSchema),
+    concentrating: z.boolean(),
+    exhaustionLevel: exhaustionLevelSchema,
     detail: z.string()
   })
   .strict()
@@ -60,10 +54,12 @@ export const resultEnemySchema = z
   })
   .strict()
 
+export const resolutionModeSchema = z.enum(['defeated', 'manual'])
+
 export const resolutionSchema = z
   .object({
     enemies: z.array(resultEnemySchema),
-    thresholdFraction: z.number().min(0).max(1),
+    mode: resolutionModeSchema,
     xpFraction: z.number().min(0).max(1),
     eligibleXp: z.number().int().nonnegative(),
     awardedXp: z.number().int().nonnegative(),
@@ -173,18 +169,75 @@ export const toggleConditionInputSchema = combatRevisionInputSchema
   })
   .strict()
 
+export const setConcentrationInputSchema = combatRevisionInputSchema
+  .extend({
+    cardId: z.string().min(1),
+    concentrating: z.boolean()
+  })
+  .strict()
+
+export const setExhaustionInputSchema = combatRevisionInputSchema
+  .extend({
+    cardId: z.string().min(1),
+    exhaustionLevel: exhaustionLevelSchema
+  })
+  .strict()
+
 export const updateResolutionInputSchema = combatRevisionInputSchema
   .extend({
     selectedEnemyIds: z.array(z.string().min(1)),
-    thresholdFraction: z.number().min(0).max(1),
+    mode: resolutionModeSchema,
     xpFraction: z.number().min(0).max(1)
+  })
+  .strict()
+
+export const joinCombatGroupInputSchema = z
+  .object({
+    sceneId: z.uuid(),
+    groupId: z.uuid(),
+    expectedGroupRevision: z.number().int().nonnegative(),
+    expectedCombatRevision: z.number().int().nonnegative()
+  })
+  .strict()
+
+export const moveCombatPhaseInputSchema = combatRevisionInputSchema
+  .extend({ target: z.enum(['selection', 'initiative', 'combat']) })
+  .strict()
+
+export const sceneGroupPatchSchema = z
+  .object({
+    sceneId: z.uuid(),
+    sceneRevision: z.number().int().nonnegative(),
+    upsertedGroups: z.array(sceneGroupSchema),
+    removedGroupIds: z.array(z.uuid())
+  })
+  .strict()
+
+export const combatCommandResultSchema = z
+  .object({
+    combat: combatSnapshotSchema.nullable(),
+    scenePatch: sceneGroupPatchSchema.nullable(),
+    party: partySnapshotSchema.nullable()
+  })
+  .strict()
+
+export const sceneGroupCommandResultSchema = z
+  .object({
+    scenePatch: sceneGroupPatchSchema,
+    combat: combatSnapshotSchema.nullable()
   })
   .strict()
 
 export type PartyMember = Readonly<z.infer<typeof partyCharacterSchema>>
 export type PartySnapshot = Readonly<z.infer<typeof partySnapshotSchema>>
 export type CombatSnapshot = Readonly<z.infer<typeof combatSnapshotSchema>>
-export type CombatCondition = z.infer<typeof combatConditionSchema>
+export type { CombatCondition }
+export type CombatCommandResult = Readonly<
+  z.infer<typeof combatCommandResultSchema>
+>
+export type SceneGroupCommandResult = Readonly<
+  z.infer<typeof sceneGroupCommandResultSchema>
+>
 export type LiveSessionSnapshot = Readonly<
   z.infer<typeof liveSessionSnapshotSchema>
 >

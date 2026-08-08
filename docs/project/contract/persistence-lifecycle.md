@@ -20,6 +20,12 @@ feature-store ledger, owner readiness phase, compatibility adapter, or
 conversion promise. SQLite and prepared statements stay with the aggregate
 that owns their truth.
 
+At startup, a whole-database version mismatch causes the application to remove
+only its fixed `development-data` directory and build the current schema from
+scratch. This is the intentionally minimal no-legacy behavior: incompatible
+rows are discarded automatically, while unrelated sibling paths and failures
+other than a version mismatch are left untouched and reported normally.
+
 Campaign creation is an explicit exception to a single-file transaction:
 
 ```text

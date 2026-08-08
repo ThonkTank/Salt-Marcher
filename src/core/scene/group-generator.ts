@@ -4,6 +4,10 @@ import type {
   CreatureCatalogQuery
 } from '../../shared/contracts/encounter.js'
 import type { EncounterTuning } from '../../shared/contracts/encounter-tuning.js'
+import {
+  defaultGeneratorConfig,
+  type GeneratorConfig
+} from '../../shared/contracts/generator-presets.js'
 import type { PartyMember } from '../../shared/contracts/live-session.js'
 import {
   encounterSelectionEvaluationSchema,
@@ -52,7 +56,14 @@ export function evaluateSceneGroups(
   const evaluation = evaluateSceneGroupDraft(
     scene.id,
     assignedParty,
-    groups.flatMap((group) => group.entries)
+    groups.flatMap((group) =>
+      group.entries
+        .filter((entry) => entry.aliveQuantity > 0)
+        .map((entry) => ({
+          creatureId: entry.creatureId,
+          quantity: entry.aliveQuantity
+        }))
+    )
   )
   return encounterSelectionEvaluationSchema.parse({
     ...evaluation,
@@ -125,7 +136,7 @@ export function generateSceneGroupDraft(
   input: readonly SceneGroupDraftEntry[],
   mode: GroupGenerationMode,
   filters: CreatureCatalogQuery,
-  tuning: EncounterTuning,
+  tuning: EncounterTuning | GeneratorConfig,
   seed: number,
   sceneRevision: number,
   source: ResolvedEncounterSource = {
@@ -133,7 +144,9 @@ export function generateSceneGroupDraft(
     effectiveEncounterTableIds: [],
     effectiveFactionIds: [],
     locationId: filters.locationId,
-    catalogFallback: true
+    catalogFallback: true,
+    biomeFiltering: false,
+    sourceIssue: null
   }
 ): SceneGroupDraftGeneration {
   if (
@@ -142,16 +155,20 @@ export function generateSceneGroupDraft(
   )
     throw new CapabilityError('validation_failed', false)
 
+  const config: GeneratorConfig =
+    'tuning' in tuning ? tuning : { ...defaultGeneratorConfig, tuning }
   const base = mode === 'fill' ? normalizeEntries(input) : []
   const thresholds = partyThresholds(assignedParty)
   const resolvedDifficulty =
-    tuning.difficulty === 'auto' ? 'medium' : tuning.difficulty
+    config.tuning.difficulty === 'auto'
+      ? config.autoDifficulty
+      : config.tuning.difficulty
   const band = { easy: 0, medium: 1, hard: 2, deadly: 3 }[resolvedDifficulty]
   const lower = thresholds[band] ?? 0
   const upper =
     band < 3
-      ? (thresholds[band + 1] ?? Math.round(lower * 1.35))
-      : Math.round(lower * 1.35)
+      ? (thresholds[band + 1] ?? Math.round(lower * config.upperBandMultiplier))
+      : Math.round(lower * config.upperBandMultiplier)
   const target = Math.round((lower + upper) / 2)
   const baseEvaluation = evaluateSceneGroupDraft(scene.id, assignedParty, base)
 
@@ -180,7 +197,7 @@ export function generateSceneGroupDraft(
       (source.candidates === null || sourceByCreature.has(creature.id)) &&
       creatureMatchesQuery(creature, filters)
   )
-  const maxCount = preferredMaximum(tuning.amount)
+  const maxCount = preferredMaximum(config.tuning.amount, config.maxCounts)
   const options = generateOptions(
     base,
     pool,
@@ -189,11 +206,13 @@ export function generateSceneGroupDraft(
     target,
     assignedParty.length,
     maxCount,
-    tuning,
+    config,
     sourceByCreature
   )
   const option =
-    options.length > 0 ? weightedOption(options.slice(0, 5), seed) : undefined
+    options.length > 0
+      ? weightedOption(options.slice(0, config.topOptionCount), seed)
+      : undefined
   const entries = option?.entries ?? base
 
   return generationResult(
@@ -204,9 +223,13 @@ export function generateSceneGroupDraft(
     resolvedDifficulty,
     !option ? 'none' : option.exact ? 'exact' : 'fallback',
     !option
-      ? pool.length === 0
-        ? 'Keine Monster entsprechen den gewählten Filtern.'
-        : 'Mit den gewählten Mengenregeln konnte die Gruppe nicht ergänzt werden.'
+      ? source.sourceIssue === 'location_missing_table'
+        ? 'Der gewählte Ort benötigt mindestens eine Encounter-Tabelle.'
+        : source.sourceIssue === 'location_empty_table'
+          ? 'Die Encounter-Tabelle des gewählten Orts enthält keine Monster.'
+          : pool.length === 0
+            ? 'Keine Monster entsprechen den gewählten Filtern.'
+            : 'Mit den gewählten Mengenregeln konnte die Gruppe nicht ergänzt werden.'
       : option.exact
         ? 'Das gewünschte Schwierigkeitsband wurde getroffen.'
         : 'Beste verfügbare Annäherung.',
@@ -242,12 +265,15 @@ function generationResult(
     evaluation: evaluateSceneGroupDraft(scene.id, assignedParty, entries),
     context: {
       sceneTitle: scene.title,
-      locationId: scene.locationId,
+      locationId: source.locationId,
       locationName: scene.locationName,
       existingGroupCount: scene.groups.length,
       effectiveEncounterTableIds: source.effectiveEncounterTableIds,
       effectiveFactionIds: source.effectiveFactionIds,
-      catalogFallback: source.catalogFallback
+      catalogFallback: source.catalogFallback,
+      sourceIssue: source.sourceIssue,
+      generatorPresetId: null,
+      generatorPresetRevision: null
     },
     quality,
     message: source.catalogFallback
@@ -266,8 +292,15 @@ function existingDisplayName(scene: RunningScene, creatureId: string): string {
   return `Nicht verfügbares Monster (${creatureId})`
 }
 
-function preferredMaximum(amount: EncounterTuning['amount']): number {
-  return amount === 'few' ? 3 : amount === 'many' ? 10 : 6
+function preferredMaximum(
+  amount: EncounterTuning['amount'],
+  counts: GeneratorConfig['maxCounts']
+): number {
+  return amount === 'few'
+    ? counts.few
+    : amount === 'many'
+      ? counts.many
+      : counts.standard
 }
 
 function generateOptions(
@@ -278,7 +311,7 @@ function generateOptions(
   target: number,
   partySize: number,
   maxCount: number,
-  tuning: EncounterTuning,
+  config: GeneratorConfig,
   sourceByCreature: ReadonlyMap<
     string,
     { weight: number; maximum: number | null }
@@ -305,8 +338,8 @@ function generateOptions(
 
   const rankedPool = [...pool]
     .sort((a, b) => Math.abs(target - a.xp) - Math.abs(target - b.xp))
-    .slice(0, 24)
-  if (remaining >= 2) {
+    .slice(0, config.rankedPoolSize)
+  if (remaining >= 2 && config.maxCombinationSize >= 2) {
     for (let left = 0; left < rankedPool.length; left += 1) {
       for (let right = left + 1; right < rankedPool.length; right += 1) {
         if (!canAdd(rankedPool[left]!.id, base, sourceByCreature)) continue
@@ -320,7 +353,7 @@ function generateOptions(
   }
 
   if (remaining >= 3) {
-    const diversePool = rankedPool.slice(0, 12)
+    const diversePool = rankedPool.slice(0, config.diversePoolSize)
     for (let first = 0; first < diversePool.length; first += 1) {
       for (let second = first + 1; second < diversePool.length; second += 1) {
         for (let third = second + 1; third < diversePool.length; third += 1) {
@@ -352,7 +385,7 @@ function generateOptions(
     const score =
       bandDistance(adjustedXp, lower, upper) * 1000 +
       Math.abs(target - adjustedXp) +
-      tuningPenalty(entries, target, tuning)
+      tuningPenalty(entries, target, config)
     const weight = addition.reduce(
       (sum, entry) =>
         sum +
@@ -397,7 +430,7 @@ function weightedOption(
     0
   )
   if (total === 0) return undefined
-  let cursor = seed % total
+  let cursor = mixSeed(seed) % total
   for (const option of options) {
     cursor -= Math.max(1, option.weight)
     if (cursor < 0) return option
@@ -405,29 +438,43 @@ function weightedOption(
   return options.at(-1)
 }
 
+function mixSeed(seed: number): number {
+  let value = (seed >>> 0) + 0x9e3779b9
+  value = Math.imul(value ^ (value >>> 16), 0x85ebca6b)
+  value = Math.imul(value ^ (value >>> 13), 0xc2b2ae35)
+  return (value ^ (value >>> 16)) >>> 0
+}
+
 function tuningPenalty(
   entries: readonly DraftEntry[],
   target: number,
-  tuning: EncounterTuning
+  config: GeneratorConfig
 ): number {
   const distinct = entries.length
   const desiredCount =
-    tuning.amount === 'few' ? 2 : tuning.amount === 'many' ? 8 : 4
-  const amountPenalty = Math.abs(count(entries) - desiredCount) * target * 0.02
+    config.tuning.amount === 'few'
+      ? config.desiredCounts.few
+      : config.tuning.amount === 'many'
+        ? config.desiredCounts.many
+        : config.desiredCounts.standard
+  const amountPenalty =
+    Math.abs(count(entries) - desiredCount) *
+    target *
+    config.amountPenaltyWeight
   const diversityPenalty =
-    tuning.diversity === 'low'
-      ? Math.max(0, distinct - 1) * target * 0.08
-      : tuning.diversity === 'high'
-        ? Math.max(0, 3 - distinct) * target * 0.08
+    config.tuning.diversity === 'low'
+      ? Math.max(0, distinct - 1) * target * config.diversityPenaltyWeight
+      : config.tuning.diversity === 'high'
+        ? Math.max(0, 3 - distinct) * target * config.diversityPenaltyWeight
         : 0
   const xp = entries.map((entry) => creatureById(entry.creatureId)?.xp ?? 0)
   const maximum = Math.max(1, ...xp)
   const spread = (Math.max(...xp) - Math.min(...xp)) / maximum
   const balancePenalty =
-    tuning.balance === 'even'
-      ? spread * target * 0.08
-      : tuning.balance === 'varied'
-        ? (1 - spread) * target * 0.08
+    config.tuning.balance === 'even'
+      ? spread * target * config.balancePenaltyWeight
+      : config.tuning.balance === 'varied'
+        ? (1 - spread) * target * config.balancePenaltyWeight
         : 0
   return amountPenalty + diversityPenalty + balancePenalty
 }
@@ -461,6 +508,7 @@ function mergeEntries(
       Math.min(999, (quantities.get(entry.creatureId) ?? 0) + entry.quantity)
     )
   return [...quantities.entries()]
+    .filter(([, quantity]) => quantity > 0)
     .map(([creatureId, quantity]) => ({ creatureId, quantity }))
     .sort((a, b) => a.creatureId.localeCompare(b.creatureId))
 }

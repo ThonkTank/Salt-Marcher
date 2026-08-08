@@ -9,7 +9,8 @@ Inspector surfaces so the user can:
 - record NPC appearance, behavior, history, and notes
 - organize NPCs into factions
 - define faction encounter-table and optional statblock inventory limits
-- define locations and link them to factions and encounter tables
+- define tagged locations with separate read-aloud text and GM notes, and link
+  them to factions and encounter tables
 - use factions and locations as encounter-generation source constraints
 - add NPCs to combat through the Encounter state tab
 - confirm combat losses manually and reactivate defeated NPCs later
@@ -38,8 +39,12 @@ Inspector surfaces so the user can:
 6. The user optionally sets finite faction stock limits per creature
    statblock from the faction's primary encounter table. Missing limits mean
    unlimited stock; unrelated statblocks cannot be added directly.
-7. The user creates locations, links factions, and attaches location-owned
-   encounter tables.
+7. The user creates locations with a name and at least one free-form tag,
+   optionally records read-aloud text separately from GM notes, links factions,
+   attaches location-owned encounter tables, and stages an optional Hex
+   placement in the same editor. Missing maps, factions, and encounter tables
+   can be created from that editor; each created record is linked without
+   resetting the location draft.
 8. The user chooses factions or a location in the Catalog to limit
    random encounter generation.
 9. The user adds NPCs to combat.
@@ -78,7 +83,17 @@ Inspector surfaces so the user can:
 - configure faction stock as finite or unlimited per creature statblock
 - create a missing encounter table from above the faction editor without
   losing the faction draft; the saved table becomes the selected primary table
+- create a missing map, faction, or encounter table from the location editor
+  without losing any location field; the saved record becomes selected or
+  linked immediately
 - configure location-to-faction and location-to-table links
+- edit campaign-wide free-form location tags and a separate read-aloud field
+- suggest matching campaign tags through a bounded, canonical-distinct read
+  without introducing a separately editable tag registry
+- stage a location placement or removal in the shared editor without mutating
+  Hex truth until the location is saved
+- inspect another map or create a map without implicitly moving an existing
+  location; placement changes only through an explicit selection or removal
 - remove faction membership and location links without deleting the referenced
   provider records
 - select factions and locations in encounter-generation controls
@@ -95,6 +110,12 @@ Inspector surfaces so the user can:
 
 - World Planner persists authored NPC, faction, location, lifecycle, notes,
   links, and inventory-limit truth as its own feature state.
+- a location editor requires a non-empty name and at least one tag; tags are
+  bounded free-form strings rather than a fixed type or region enum
+- read-aloud text and GM notes remain distinct fields
+- Catalog and Hex use the same location dialog implementation, Catalog and
+  inline creation use the same faction dialog implementation, and every table
+  creation or edit uses the same encounter-table dialog implementation
 - the shell exposes no separate World Planner left-bar entry and no World
   Planner-owned state pane
 - Catalog list selection opens World Planner details and existing editing
@@ -130,6 +151,18 @@ tables. Factions own notes, disposition, an optional primary encounter table,
 and optional finite creature inventory caps. These sources constrain both the
 visible monster catalog and Scene-group generation. NPC membership and durable
 combat-loss workflows remain deferred.
+Catalog and Hex compose the same complete domain-owned World Location editor.
+Its creation command returns the exact created location together with the next
+catalog snapshot, while each consumer retains ownership of its surrounding
+workflow. The editor stages an optional map selection; saving persists the
+World Planner mutation first and then performs the explicit Hex placement or
+removal command. A failed second command leaves the saved location intact and
+reports the partial success. The workspace integration boundary supplies the
+editor's related-record creators. Inline map, faction, and encounter-table
+creation use the same dialogs as their direct Catalog or Hex entry points and
+return the exact new record to the still-mounted location draft. Faction table
+selection remains an anchored, searchable popup and retains inline table
+creation.
 
 ## References
 

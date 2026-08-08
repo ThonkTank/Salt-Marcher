@@ -17,7 +17,31 @@ import {
   sessionChangeNoticeSchema,
   type SessionChangeNotice
 } from '../../shared/contracts/session-change.js'
+import {
+  referenceIndexChangeNoticeSchema,
+  type ReferenceIndexChangeNotice
+} from '../../shared/contracts/reference.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
+import {
+  hexChangeNoticeSchema,
+  type HexChangeNotice
+} from '../../shared/contracts/hex.js'
+import {
+  worldLocationChangeNoticeSchema,
+  type WorldLocationChangeNotice
+} from '../../shared/contracts/world-location.js'
+import {
+  locationSymbolChangeNoticeSchema,
+  type LocationSymbolChangeNotice
+} from '../../shared/contracts/location-symbol.js'
+import {
+  biomeChangeNoticeSchema,
+  type BiomeChangeNotice
+} from '../../shared/contracts/biome.js'
+import {
+  encounterTableChangeNoticeSchema,
+  type EncounterTableChangeNotice
+} from '../../shared/contracts/encounter-source.js'
 import {
   coreRestartDelay,
   interruptedOperationError,
@@ -54,11 +78,29 @@ export class CoreProcessSupervisor {
   readonly #sessionChangeListeners = new Set<
     (notice: SessionChangeNotice) => void
   >()
+  readonly #referenceChangeListeners = new Set<
+    (notice: ReferenceIndexChangeNotice) => void
+  >()
+  readonly #hexChangeListeners = new Set<(notice: HexChangeNotice) => void>()
+  readonly #locationChangeListeners = new Set<
+    (notice: WorldLocationChangeNotice) => void
+  >()
+  readonly #locationSymbolChangeListeners = new Set<
+    (notice: LocationSymbolChangeNotice) => void
+  >()
+  readonly #biomeChangeListeners = new Set<
+    (notice: BiomeChangeNotice) => void
+  >()
+  readonly #encounterTableChangeListeners = new Set<
+    (notice: EncounterTableChangeNotice) => void
+  >()
   readonly #pending = new Map<string, PendingRequest>()
 
   constructor(
     private readonly dataRoot: string,
     private readonly path: string,
+    private readonly referenceDatabasePath: string,
+    private readonly sessionGenerationCatalogRoot: string,
     private readonly processFactory: ProcessFactory = (utilityPath, args) =>
       utilityProcess.fork(utilityPath, [...args], { stdio: 'pipe' })
   ) {
@@ -88,6 +130,44 @@ export class CoreProcessSupervisor {
   ): () => void {
     this.#sessionChangeListeners.add(listener)
     return () => this.#sessionChangeListeners.delete(listener)
+  }
+
+  onReferenceChanged(
+    listener: (notice: ReferenceIndexChangeNotice) => void
+  ): () => void {
+    this.#referenceChangeListeners.add(listener)
+    return () => this.#referenceChangeListeners.delete(listener)
+  }
+
+  onHexChanged(listener: (notice: HexChangeNotice) => void): () => void {
+    this.#hexChangeListeners.add(listener)
+    return () => this.#hexChangeListeners.delete(listener)
+  }
+
+  onLocationsChanged(
+    listener: (notice: WorldLocationChangeNotice) => void
+  ): () => void {
+    this.#locationChangeListeners.add(listener)
+    return () => this.#locationChangeListeners.delete(listener)
+  }
+
+  onLocationSymbolsChanged(
+    listener: (notice: LocationSymbolChangeNotice) => void
+  ): () => void {
+    this.#locationSymbolChangeListeners.add(listener)
+    return () => this.#locationSymbolChangeListeners.delete(listener)
+  }
+
+  onBiomesChanged(listener: (notice: BiomeChangeNotice) => void): () => void {
+    this.#biomeChangeListeners.add(listener)
+    return () => this.#biomeChangeListeners.delete(listener)
+  }
+
+  onEncounterTablesChanged(
+    listener: (notice: EncounterTableChangeNotice) => void
+  ): () => void {
+    this.#encounterTableChangeListeners.add(listener)
+    return () => this.#encounterTableChangeListeners.delete(listener)
   }
 
   retry(): void {
@@ -205,8 +285,54 @@ export class CoreProcessSupervisor {
     }
     const event = coreEventSchema.safeParse(raw)
     if (event.success) {
-      const notice = sessionChangeNoticeSchema.parse(event.data.notice)
-      for (const listener of this.#sessionChangeListeners) listener(notice)
+      switch (event.data.kind) {
+        case 'session.changed': {
+          const notice = sessionChangeNoticeSchema.parse(event.data.notice)
+          for (const listener of this.#sessionChangeListeners) listener(notice)
+          break
+        }
+        case 'reference.changed': {
+          const notice = referenceIndexChangeNoticeSchema.parse(
+            event.data.notice
+          )
+          for (const listener of this.#referenceChangeListeners)
+            listener(notice)
+          break
+        }
+        case 'hex.changed': {
+          const notice = hexChangeNoticeSchema.parse(event.data.notice)
+          for (const listener of this.#hexChangeListeners) listener(notice)
+          break
+        }
+        case 'locations.changed': {
+          const notice = worldLocationChangeNoticeSchema.parse(
+            event.data.notice
+          )
+          for (const listener of this.#locationChangeListeners) listener(notice)
+          break
+        }
+        case 'location-symbols.changed': {
+          const notice = locationSymbolChangeNoticeSchema.parse(
+            event.data.notice
+          )
+          for (const listener of this.#locationSymbolChangeListeners)
+            listener(notice)
+          break
+        }
+        case 'biomes.changed': {
+          const notice = biomeChangeNoticeSchema.parse(event.data.notice)
+          for (const listener of this.#biomeChangeListeners) listener(notice)
+          break
+        }
+        case 'encounter-tables.changed': {
+          const notice = encounterTableChangeNoticeSchema.parse(
+            event.data.notice
+          )
+          for (const listener of this.#encounterTableChangeListeners)
+            listener(notice)
+          break
+        }
+      }
       return
     }
     const result = coreResultSchema.safeParse(raw)
@@ -217,11 +343,7 @@ export class CoreProcessSupervisor {
     clearTimeout(pending.timer)
     if (!result.data.ok) {
       pending.reject(
-        new CapabilityError(
-          result.data.error.code,
-          result.data.error.retryable,
-          result.data.error.data
-        )
+        new CapabilityError(result.data.error.code, result.data.error.retryable)
       )
       return
     }
@@ -260,7 +382,11 @@ export class CoreProcessSupervisor {
     )
       return
     this.setStatus(this.#firstReadyResolved ? 'recovering' : 'starting')
-    const child = this.processFactory(this.path, [this.dataRoot])
+    const child = this.processFactory(this.path, [
+      this.dataRoot,
+      this.referenceDatabasePath,
+      this.sessionGenerationCatalogRoot
+    ])
     this.#process = child
     this.#readyTimer = setTimeout(() => {
       if (this.#process !== child || this.#status === 'ready') return

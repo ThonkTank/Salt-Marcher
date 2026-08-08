@@ -1,3 +1,6 @@
+// Installs Pixi's no-eval fallbacks so qualification runs under the same
+// strict content security policy as the product renderer.
+import 'pixi.js/unsafe-eval'
 import { Application, Container, Graphics } from 'pixi.js'
 import { useEffect, useRef, useState, type ReactElement } from 'react'
 import {

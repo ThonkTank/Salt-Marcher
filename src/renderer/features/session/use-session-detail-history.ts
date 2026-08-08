@@ -1,12 +1,16 @@
-import { useReducer } from 'react'
-import type { Creature } from '../../../shared/contracts/encounter.js'
+import { useReducer, useState } from 'react'
+import type {
+  ReferenceDocument,
+  ReferenceTarget
+} from '../../../shared/contracts/reference.js'
+import { referenceTargetKey } from '../../../shared/reference/reference-target-key.js'
 
 export type DetailHistory = Readonly<{
   entries: readonly DetailHistoryEntry[]
   index: number
 }>
 export type DetailHistoryEntry = Readonly<{
-  creature: Creature
+  target: ReferenceTarget
   breadcrumb: string
 }>
 export type DetailHistoryState = Readonly<Record<string, DetailHistory>>
@@ -41,14 +45,15 @@ export function reduceDetailHistory(
     }
   const current = previous.entries[previous.index]
   if (
-    current?.creature.id === action.entry.creature.id &&
+    current &&
+    sameTarget(current.target, action.entry.target) &&
     current.breadcrumb === action.entry.breadcrumb
   )
     return state
   const entries = [
     ...previous.entries.slice(0, previous.index + 1),
     action.entry
-  ]
+  ].slice(-100)
   return {
     ...state,
     [action.sceneId]: { entries, index: entries.length - 1 }
@@ -57,15 +62,40 @@ export function reduceDetailHistory(
 
 export function useSessionDetailHistory(sceneId: string) {
   const [state, dispatch] = useReducer(reduceDetailHistory, {})
+  const [documents, setDocuments] = useState(
+    () => new Map<string, ReferenceDocument>()
+  )
   const history = state[sceneId] ?? emptyHistory
+  const currentTarget = history.entries[history.index]?.target
   return {
     history,
-    detail: history.entries[history.index]?.creature ?? null,
+    detail: currentTarget
+      ? (documents.get(referenceTargetKey(currentTarget)) ?? null)
+      : null,
     breadcrumb: history.entries[history.index]?.breadcrumb ?? null,
-    openDetail: (creature: Creature, breadcrumb: string) =>
-      dispatch({ type: 'open', sceneId, entry: { creature, breadcrumb } }),
+    openDetail: (document: ReferenceDocument, breadcrumb: string) => {
+      setDocuments((current) => {
+        const next = new Map(current)
+        next.set(referenceTargetKey(document.target), document)
+        return next
+      })
+      dispatch({
+        type: 'open',
+        sceneId,
+        entry: { target: document.target, breadcrumb }
+      })
+    },
     moveHistory: (offset: number) =>
       dispatch({ type: 'move', sceneId, offset }),
     closeDetail: () => dispatch({ type: 'close', sceneId })
   } as const
+}
+
+function sameTarget(
+  left: ReferenceTarget | undefined,
+  right: ReferenceTarget
+): boolean {
+  return (
+    left !== undefined && referenceTargetKey(left) === referenceTargetKey(right)
+  )
 }

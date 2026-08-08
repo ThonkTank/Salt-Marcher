@@ -1,6 +1,12 @@
 import { z } from 'zod'
 import { capabilityFailureSchema } from './campaign.js'
 import { sessionChangeNoticeSchema } from './session-change.js'
+import { referenceIndexChangeNoticeSchema } from './reference.js'
+import { hexChangeNoticeSchema } from './hex.js'
+import { worldLocationChangeNoticeSchema } from './world-location.js'
+import { locationSymbolChangeNoticeSchema } from './location-symbol.js'
+import { biomeChangeNoticeSchema } from './biome.js'
+import { encounterTableChangeNoticeSchema } from './encounter-source.js'
 import {
   coreOperations,
   isCoreOperationKind,
@@ -69,12 +75,50 @@ export const coreResultSchema = z.discriminatedUnion('ok', [
     .strict()
 ])
 
-export const coreEventSchema = z
-  .object({
-    kind: z.literal('session.changed'),
-    notice: sessionChangeNoticeSchema
-  })
-  .strict()
+export const coreEventSchema = z.discriminatedUnion('kind', [
+  z
+    .object({
+      kind: z.literal('session.changed'),
+      notice: sessionChangeNoticeSchema
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('reference.changed'),
+      notice: referenceIndexChangeNoticeSchema
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('hex.changed'),
+      notice: hexChangeNoticeSchema
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('locations.changed'),
+      notice: worldLocationChangeNoticeSchema
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('location-symbols.changed'),
+      notice: locationSymbolChangeNoticeSchema
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('biomes.changed'),
+      notice: biomeChangeNoticeSchema
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('encounter-tables.changed'),
+      notice: encounterTableChangeNoticeSchema
+    })
+    .strict()
+])
 
 export type CoreHandlers = {
   [K in CoreOperationKind]: (input: CoreOperationInput<K>) => unknown

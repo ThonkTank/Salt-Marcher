@@ -64,9 +64,16 @@ function createPartyTables(db: Database.Database): void {
       xp_since_long_rest INTEGER NOT NULL CHECK(xp_since_long_rest >= 0),
       movement_speed_feet INTEGER CHECK(movement_speed_feet BETWEEN 0 AND 999),
       travel_map_id TEXT,
-      travel_tile_id TEXT,
-      attached_to_party_token INTEGER NOT NULL DEFAULT 0 CHECK(attached_to_party_token IN (0, 1)),
-      position INTEGER NOT NULL CHECK(position >= 0)
+      travel_q INTEGER,
+      travel_r INTEGER,
+      travel_state TEXT NOT NULL DEFAULT 'detached'
+        CHECK(travel_state IN ('detached', 'attached-unpositioned', 'hex-positioned')),
+      position INTEGER NOT NULL CHECK(position >= 0),
+      CHECK(
+        (travel_state = 'hex-positioned' AND travel_map_id IS NOT NULL AND travel_q IS NOT NULL AND travel_r IS NOT NULL)
+        OR
+        (travel_state IN ('detached', 'attached-unpositioned') AND travel_map_id IS NULL AND travel_q IS NULL AND travel_r IS NULL)
+      )
     );
     CREATE TABLE IF NOT EXISTS party_xp_awards (
       combat_id TEXT PRIMARY KEY NOT NULL,
@@ -87,8 +94,8 @@ export class PartyStore {
         `
         SELECT id, name, player_name, level, passive_perception, armor_class,
                active, xp, xp_since_short_rest, xp_since_long_rest,
-               movement_speed_feet, travel_map_id, travel_tile_id,
-               attached_to_party_token
+               movement_speed_feet, travel_map_id, travel_q, travel_r,
+               travel_state
         FROM player_characters ORDER BY position, id
       `
       )
@@ -173,16 +180,79 @@ export class PartyStore {
     return this.read()
   }
 
-  setTravelPosition(ids: readonly string[], mapId: string, tile: string): void {
+  setTravelPosition(
+    ids: readonly string[],
+    mapId: string,
+    coordinate: Readonly<{ q: number; r: number }>
+  ): void {
     const update = this.db.prepare(
       `UPDATE player_characters
-       SET travel_map_id = ?, travel_tile_id = ?, attached_to_party_token = 1
+       SET travel_map_id = ?, travel_q = ?, travel_r = ?,
+           travel_state = 'hex-positioned'
        WHERE id = ?`
     )
     for (const id of ids) {
-      if (update.run(mapId, tile, id).changes !== 1)
+      if (update.run(mapId, coordinate.q, coordinate.r, id).changes !== 1)
         throw new CapabilityError('not_found', false)
     }
+    this.db
+      .prepare(
+        'UPDATE party_roster_metadata SET revision = revision + 1 WHERE singleton = 1'
+      )
+      .run()
+  }
+
+  hexTravelImpacts(
+    mapId: string,
+    tileIds: ReadonlySet<string>
+  ): Array<{
+    memberId: string
+    displayName: string
+    q: number
+    r: number
+  }> {
+    const targets = [...tileIds].map((id) => {
+      const separator = id.indexOf(':')
+      return {
+        q: Number(id.slice(0, separator)),
+        r: Number(id.slice(separator + 1))
+      }
+    })
+    return this.db
+      .prepare(
+        `WITH targets(q, r) AS (
+           SELECT CAST(json_extract(value, '$.q') AS INTEGER),
+                  CAST(json_extract(value, '$.r') AS INTEGER)
+           FROM json_each(?)
+         )
+         SELECT character.id AS memberId, character.name AS displayName,
+                character.travel_q AS q, character.travel_r AS r
+         FROM targets
+         JOIN player_characters character
+           ON character.travel_map_id = ?
+          AND character.travel_q = targets.q
+          AND character.travel_r = targets.r
+         WHERE character.travel_state = 'hex-positioned'
+         ORDER BY character.position, character.id`
+      )
+      .all(JSON.stringify(targets), mapId) as Array<{
+      memberId: string
+      displayName: string
+      q: number
+      r: number
+    }>
+  }
+
+  clearHexTravelPositions(mapId: string, tileIds: ReadonlySet<string>): void {
+    const impacts = this.hexTravelImpacts(mapId, tileIds)
+    if (impacts.length === 0) return
+    const clear = this.db.prepare(
+      `UPDATE player_characters
+       SET travel_map_id = NULL, travel_q = NULL, travel_r = NULL,
+           travel_state = 'attached-unpositioned'
+       WHERE id = ?`
+    )
+    for (const impact of impacts) clear.run(impact.memberId)
     this.db
       .prepare(
         'UPDATE party_roster_metadata SET revision = revision + 1 WHERE singleton = 1'
@@ -356,15 +426,18 @@ function rowPartyMember(row: unknown): PartyCharacter {
         ? null
         : Number(value['movement_speed_feet']),
     travelPosition:
+      value['travel_state'] === 'hex-positioned' &&
       typeof value['travel_map_id'] === 'string' &&
-      typeof value['travel_tile_id'] === 'string'
+      typeof value['travel_q'] === 'number' &&
+      typeof value['travel_r'] === 'number'
         ? {
             kind: 'hex',
             mapId: value['travel_map_id'],
-            tileId: value['travel_tile_id']
+            q: value['travel_q'],
+            r: value['travel_r']
           }
         : null,
-    attachedToPartyToken: Number(value['attached_to_party_token']) === 1,
+    attachedToPartyToken: value['travel_state'] !== 'detached',
     active: Number(value['active']) === 1,
     xp: Number(value['xp']),
     currentLevelFloor: level === null ? 0 : levelXp[level - 1]!,

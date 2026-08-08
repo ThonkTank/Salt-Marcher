@@ -41,7 +41,7 @@
 }
 
 .scenario-panel:has(.scenario-crumbs) {
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
 }
 
 .scenario-scroll {
@@ -57,9 +57,8 @@
 .scenario-crumbs {
   display: flex;
   align-items: center;
-  gap: 3px;
-  border-bottom: 1px solid var(--border-hair);
-  padding: 5px 10px 4px;
+  gap: var(--space-3);
+  padding: 0;
   background: transparent;
 }
 
@@ -511,12 +510,12 @@
 }
 
 .hp-dialog-backdrop {
-  position: fixed;
+  position: absolute;
   z-index: 50;
   inset: 0;
   display: grid;
   place-items: center;
-  padding: var(--space-8);
+  padding: var(--space-5);
   background: #120c07aa;
 }
 
@@ -574,6 +573,20 @@
   letter-spacing: var(--tracking-caps);
 }
 
+.hp-dialog h3 span {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  letter-spacing: 0;
+}
+
+.hp-dialog-hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-style: italic;
+}
+
 .condition-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -587,9 +600,21 @@
 }
 
 .condition-grid button.active {
-  border-color: var(--accent-rubric);
-  background: var(--accent-rubric);
-  color: var(--text-on-accent);
+  border-color: var(--accent-gold);
+  background: var(--surface-chip);
+  color: var(--text-1);
+}
+
+.condition-mark {
+  color: var(--border-2);
+}
+
+.condition-grid button.active .condition-mark {
+  color: var(--accent-gold);
+}
+
+.hp-dialog-close {
+  justify-self: end;
 }
 
 .resolution-panel > h2 {
@@ -896,6 +921,54 @@
   padding: 0;
 }
 
+.scenario-panel {
+  position: relative;
+}
+
+.scenario-panel > header .scenario-crumbs button {
+  font-size: var(--text-xs);
+}
+
+.scenario-content {
+  border: 0;
+  padding: var(--space-6);
+}
+
+.combat-panel,
+.initiative-panel {
+  padding: 0;
+}
+
+.combat-panel {
+  gap: 0;
+}
+
+.resolution-panel {
+  padding: var(--space-6);
+}
+
+.resolution-controls input {
+  width: 56px;
+  margin-left: auto;
+  text-align: right;
+}
+
+.resolution-controls label:first-child {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.resolution-controls label:last-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.scenario-content > footer.tool-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 @media (max-width: 760px) {
   .scenario-crumbs button {
     overflow: hidden;
@@ -906,4 +979,56 @@
   .condition-grid {
     grid-template-columns: 1fr;
   }
+}
+@media (max-width: 700px) {
+  .encounter {
+    grid-template-columns: 1fr;
+  }
+
+  .encounter-summary {
+    padding: 1.25rem 0 0;
+    border-top: 1px solid var(--border-hair);
+    border-left: 0;
+  }
+}
+.scenario-content > footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.scenario-content h2 {
+  margin: 0;
+  font-family: var(--font-smallcaps);
+  font-size: 0.95rem;
+  font-weight: var(--weight-display);
+  letter-spacing: var(--tracking-caps);
+}
+
+.initiative-list,
+.combat-cards,
+.result-enemies {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.initiative-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+  border: 1px solid var(--border-1);
+  border-radius: var(--radius-0);
+  background: var(--surface-control);
+  padding: 0.5rem;
+}
+
+.combat-card small {
+  overflow: hidden;
+  color: var(--text-3);
+  text-overflow: ellipsis;
 }

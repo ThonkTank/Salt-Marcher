@@ -27,10 +27,11 @@ Saving it is a Scene command and does not create Encounter runtime state.
 3. The GM selects one or more Scene groups.
 4. Every selection change publishes Party thresholds, creature count, base XP,
    adjusted XP, difficulty, and a startability message.
-5. A valid selection is snapshotted into Initiative; Combat then owns its
-   individual runtime HP, initiative, round, turn, and result state.
+5. A valid selection links the living Scene group members into Initiative.
+   Scene continues to own their HP, death and conditions; Combat owns
+   initiative, card packing, round, turn and result state.
 6. Resolution may award XP once to the participating Scene Party and returns to
-   group selection without changing Scene groups.
+   group selection while retaining every group member's final state.
 
 ## Expected Capabilities
 
@@ -38,7 +39,8 @@ Saving it is a Scene command and does not create Encounter runtime state.
 - reject unavailable creatures, an empty group selection, or an empty assigned
   Party before Initiative
 - preserve selected Scene group identities as Combat provenance
-- keep a running Combat unchanged when a source Scene group is later edited
+- reconcile edits to a linked Scene group immediately while retaining round
+  and active turn where possible
 - reconcile assigned PC changes while retaining initiative, HP, round, and
   active turn where applicable
 - aggregate matching monsters into the specified runtime mob cards while
@@ -50,7 +52,8 @@ Saving it is a Scene command and does not create Encounter runtime state.
 - evaluation is read-only and changes immediately with the selected group set
 - adjusted XP uses the selected Scene groups and only assigned active PCs
 - Combat cannot be started from Catalog rows, generator output, saved plans, or
-  foreign Scene groups
+  foreign Scene groups; an explicit reinforcement action may link another
+  persisted group during Combat
 - Initiative, Combat, Resolution, XP-award status, and selected source group IDs
   survive restart
 - switching the scenario dropdown to `Reise` does not stop a running Encounter

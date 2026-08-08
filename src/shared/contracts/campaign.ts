@@ -46,12 +46,14 @@ export function freezeCampaignSnapshot(
 
 export const capabilityErrorCodeSchema = z.enum([
   'validation_failed',
+  'unsupported_svg',
+  'svg_too_large',
+  'file_read_failed',
   'stale',
   'not_found',
   'read_only',
   'timeout',
   'outcome_unknown',
-  'development_data_incompatible',
   'core_unavailable',
   'protocol_violation',
   'internal'
@@ -61,10 +63,7 @@ export const capabilityFailureSchema = z
   .object({
     code: capabilityErrorCodeSchema,
     retryable: z.boolean(),
-    data: z
-      .object({ developmentDataPath: z.string().min(1) })
-      .strict()
-      .optional()
+    data: z.never().optional()
   })
   .strict()
 

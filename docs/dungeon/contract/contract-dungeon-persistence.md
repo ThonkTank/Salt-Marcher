@@ -55,30 +55,24 @@ Persisted authored truth includes:
 
 ## Schema Ownership
 
-- the feature-owned Dungeon persistence schema declaration is the in-code
-  schema owner
+- the feature-owned Dungeon persistence declaration owns Dungeon DDL and SQL,
+  not an independent schema version or migration ledger
 - `dungeon_topology_elements` is authoritative for persisted topology identity
 - detail tables remain source-local storage and correlation detail, not
   alternate semantic owners
 
-The current owner target has one direct schema initializer and owner-ledger
-version `1`. The version identifies only this current target; it does not imply
-a supported predecessor chain.
+The current whole-database development target has one direct initializer and
+no feature-local version or ledger.
 
 Compatibility obligations begin with the first released format.
-Before the first released format, the initializer runs only when no Dungeon-owned table or
-view exists. Any pre-existing development shape, incomplete current-target
-signature, or different nonzero owner-ledger version fails closed. The
-application MUST NOT add columns, drop tables, delete rows, advance the owner
-ledger, or otherwise convert such a database. A developer may discard and
-recreate a development database outside the product, but that is not a runtime
-migration contract.
+Before the first released format, unsupported isolated development databases
+are reinitialized by the shared persistence lifecycle. Dungeon MUST NOT add a
+feature-local migration chain or ledger.
 
 After initialization, every startup validates the exact Dungeon object inventory,
 declared column types, nullability and defaults, primary and unique constraints,
 checks, complete map/chunk/bounds/route and other foreign-key signatures, table
-flags, and named indexes before the Dungeon store becomes ready. An adjacent
-retired Dungeon object at owner version 1 fails closed rather than being ignored.
+flags, and named indexes before the Dungeon store becomes ready.
 Current-format authored rows survive restart unchanged. Physical integrity,
 foreign-key integrity, transaction rollback, snapshot, and recovery guarantees
 remain owned by the shared persistence lifecycle.
@@ -286,9 +280,9 @@ behavior.
 
 ## Validation And Error Behavior
 
-Owner startup readiness validates the feature-declared target schema signature
-against a separate non-mutating reference schema; semantic row validation remains
-on typed provider read/write paths and fails closed through the feature contract.
+Startup validates the one whole-database development schema version; semantic
+row validation remains on typed provider read/write paths and fails closed
+through the feature contract.
 
 - authored persistence writes MUST reject incomplete identity, topology, or
   semantic-binding payloads instead of synthesizing replacement authored truth

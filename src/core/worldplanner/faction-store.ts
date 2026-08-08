@@ -1,8 +1,13 @@
 import Database from 'better-sqlite3'
+import { z } from 'zod'
 import {
   worldFactionDraftSchema,
+  worldFactionCommandReceiptSchema,
+  worldFactionDeleteReceiptSchema,
+  worldFactionMutationReceiptSchema,
   worldFactionSnapshotSchema,
   type WorldFactionDraft,
+  type WorldFaction,
   type WorldFactionSnapshot
 } from '../../shared/contracts/encounter-source.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
@@ -36,6 +41,12 @@ export function initializeWorldFactionSchema(db: Database.Database): void {
     );
     CREATE INDEX IF NOT EXISTS idx_worldplanner_faction_name
       ON worldplanner_faction(display_name COLLATE NOCASE, id);
+    CREATE TABLE IF NOT EXISTS worldplanner_faction_command_receipt (
+      command_id TEXT PRIMARY KEY NOT NULL,
+      operation TEXT NOT NULL CHECK(operation IN ('create', 'update', 'delete')),
+      request_json TEXT NOT NULL,
+      result_json TEXT NOT NULL
+    );
   `)
   db.prepare(
     'INSERT OR IGNORE INTO worldplanner_faction_metadata (singleton, revision) VALUES (1, 0)'
@@ -54,6 +65,18 @@ export class WorldFactionStore {
         .prepare('SELECT 1 FROM worldplanner_faction WHERE id = ?')
         .get(id) !== undefined
     )
+  }
+
+  commandReceipt(commandId: string) {
+    const row = this.db
+      .prepare(
+        `SELECT result_json AS resultJson
+         FROM worldplanner_faction_command_receipt WHERE command_id = ?`
+      )
+      .get(commandId) as { resultJson: string } | undefined
+    return row
+      ? worldFactionCommandReceiptSchema.parse(JSON.parse(row.resultJson))
+      : null
   }
 
   read(): WorldFactionSnapshot {
@@ -86,11 +109,21 @@ export class WorldFactionStore {
   }
 
   create(
+    commandId: string,
     draft: WorldFactionDraft,
     expectedRevision: number
-  ): WorldFactionSnapshot {
+  ) {
     const parsed = worldFactionDraftSchema.parse(draft)
-    this.mutate(expectedRevision, () => {
+    const request = { draft: parsed, expectedRevision }
+    const replay = this.receipt(
+      commandId,
+      'create',
+      request,
+      worldFactionMutationReceiptSchema
+    )
+    if (replay) return replay
+    this.transact(() => {
+      this.assertRevision(expectedRevision)
       this.assertReferences(parsed)
       const position = (
         this.db
@@ -115,17 +148,36 @@ export class WorldFactionStore {
           position
         )
       this.replaceInventory(id, parsed.inventory)
+      this.bumpRevision()
+      const snapshot = this.read()
+      const saved = requireFaction(snapshot.factions, id)
+      this.writeReceipt(commandId, 'create', request, { snapshot, saved })
     })
-    return this.read()
+    return this.receipt(
+      commandId,
+      'create',
+      request,
+      worldFactionMutationReceiptSchema
+    )!
   }
 
   update(
+    commandId: string,
     id: string,
     draft: WorldFactionDraft,
     expectedRevision: number
-  ): WorldFactionSnapshot {
+  ) {
     const parsed = worldFactionDraftSchema.parse(draft)
-    this.mutate(expectedRevision, () => {
+    const request = { id, draft: parsed, expectedRevision }
+    const replay = this.receipt(
+      commandId,
+      'update',
+      request,
+      worldFactionMutationReceiptSchema
+    )
+    if (replay) return replay
+    this.transact(() => {
+      this.assertRevision(expectedRevision)
       this.assertReferences(parsed)
       const changed = this.db
         .prepare(
@@ -141,18 +193,46 @@ export class WorldFactionStore {
         ).changes
       if (changed === 0) throw new CapabilityError('not_found', false)
       this.replaceInventory(id, parsed.inventory)
+      this.bumpRevision()
+      const snapshot = this.read()
+      const saved = requireFaction(snapshot.factions, id)
+      this.writeReceipt(commandId, 'update', request, { snapshot, saved })
     })
-    return this.read()
+    return this.receipt(
+      commandId,
+      'update',
+      request,
+      worldFactionMutationReceiptSchema
+    )!
   }
 
-  delete(id: string, expectedRevision: number): WorldFactionSnapshot {
-    this.mutate(expectedRevision, () => {
+  delete(commandId: string, id: string, expectedRevision: number) {
+    const request = { id, expectedRevision }
+    const replay = this.receipt(
+      commandId,
+      'delete',
+      request,
+      worldFactionDeleteReceiptSchema
+    )
+    if (replay) return replay
+    this.transact(() => {
+      this.assertRevision(expectedRevision)
       const changed = this.db
         .prepare('DELETE FROM worldplanner_faction WHERE id = ?')
         .run(id).changes
       if (changed === 0) throw new CapabilityError('not_found', false)
+      this.bumpRevision()
+      this.writeReceipt(commandId, 'delete', request, {
+        snapshot: this.read(),
+        deletedId: id
+      })
     })
-    return this.read()
+    return this.receipt(
+      commandId,
+      'delete',
+      request,
+      worldFactionDeleteReceiptSchema
+    )!
   }
 
   clearPrimaryEncounterTable(encounterTableId: string): void {
@@ -250,15 +330,14 @@ export class WorldFactionStore {
     ).revision
   }
 
-  private mutate(expectedRevision: number, operation: () => void): void {
-    const mutation = () => {
-      if (this.revision() !== expectedRevision)
-        throw new CapabilityError('stale', true)
-      operation()
-      this.bumpRevision()
-    }
-    if (this.db.inTransaction) mutation()
-    else this.db.transaction(mutation)()
+  private assertRevision(expectedRevision: number): void {
+    if (this.revision() !== expectedRevision)
+      throw new CapabilityError('stale', true)
+  }
+
+  private transact(operation: () => void): void {
+    if (this.db.inTransaction) operation()
+    else this.db.transaction(operation)()
   }
 
   private bumpRevision(): void {
@@ -268,4 +347,54 @@ export class WorldFactionStore {
       )
       .run()
   }
+
+  private writeReceipt(
+    commandId: string,
+    operation: 'create' | 'update' | 'delete',
+    request: unknown,
+    result: unknown
+  ): void {
+    this.db
+      .prepare(
+        `INSERT INTO worldplanner_faction_command_receipt
+         (command_id, operation, request_json, result_json) VALUES (?, ?, ?, ?)`
+      )
+      .run(
+        commandId,
+        operation,
+        JSON.stringify(request),
+        JSON.stringify(result)
+      )
+  }
+
+  private receipt<Output>(
+    commandId: string,
+    operation: 'create' | 'update' | 'delete',
+    request: unknown,
+    schema: z.ZodType<Output>
+  ): Output | null {
+    const row = this.db
+      .prepare(
+        `SELECT operation, request_json AS requestJson, result_json AS resultJson
+         FROM worldplanner_faction_command_receipt WHERE command_id = ?`
+      )
+      .get(commandId) as
+      { operation: string; requestJson: string; resultJson: string } | undefined
+    if (!row) return null
+    if (
+      row.operation !== operation ||
+      row.requestJson !== JSON.stringify(request)
+    )
+      throw new CapabilityError('validation_failed', false)
+    return schema.parse(JSON.parse(row.resultJson))
+  }
+}
+
+function requireFaction(
+  factions: readonly WorldFaction[],
+  id: string
+): WorldFaction {
+  const faction = factions.find((candidate) => candidate.id === id)
+  if (!faction) throw new Error('Saved World Faction is missing.')
+  return faction
 }

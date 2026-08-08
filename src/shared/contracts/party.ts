@@ -13,7 +13,8 @@ export const partyCharacterSchema = z
       .object({
         kind: z.literal('hex'),
         mapId: z.uuid(),
-        tileId: z.string().min(1)
+        q: z.number().int().safe(),
+        r: z.number().int().safe()
       })
       .strict()
       .nullable(),

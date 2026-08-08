@@ -142,37 +142,34 @@ again; idempotency makes that retry safe.
 ## Migration And Compatibility
 
 Compatibility obligations begin with the first released format.
-Before the first released format, the Session Planner owner's only supported schema is the
-current target at owner version 1. One direct initializer creates every current
+Before the first released format, Session Planner supports only the current
+whole-database development schema. One direct initializer creates every current
 table and index, including manual loot notes and generated reward references.
 It never creates, reads, copies, repairs, or drops a loot-placeholder table or
 another development-only predecessor shape.
 
 An empty store initializes transactionally and reaches the exact current target.
-Any pre-existing incomplete or superseded development shape fails closed without
-schema repair, data conversion, destructive cleanup, or owner-version rewrite.
+Unsupported isolated development databases are reinitialized by the shared
+persistence lifecycle without feature-local schema repair or version rewrite.
 The exact target includes the complete owner object inventory, column types,
 nullability and defaults, primary and unique constraints, checks, indexes, and
-all Session-Planner-internal cascading relationships. An adjacent retired owner
-object at recorded version 1 is therefore incompatible rather than ignored.
-Initializer or final-signature failure rolls back every table, index, row, and
-owner-version change made by that attempt. Current-format sessions, manual notes,
+all Session-Planner-internal cascading relationships. Initializer failure rolls
+back every table, index, and row made by that attempt. Current-format sessions, manual notes,
 and generated reward references remain readable across ordinary restart and the
 platform-owned backup/recovery lifecycle.
 
-After activation, subsequent owner versions become immutable predecessor
-contracts. A future migration must then preserve every supported shape through
+After activation, subsequent whole-database versions become immutable
+predecessor contracts. A future migration must preserve every supported shape through
 the shared backup, validation, rollback, and recovery boundary; it must not
-rewrite version 1.
+rewrite a released predecessor.
 
 Real user data is never deleted or rewritten destructively without the
 owner-approved backup boundary.
 
 ## Error Contract
 
-Owner startup readiness validates the exact feature-declared version-1 target
-signature through a separate non-mutating reference schema. It does not repair
-a mismatched structure. Semantic row validation
+Startup validates the one whole-database development schema version. It does
+not repair a mismatched structure. Semantic row validation
 remains on typed provider read/write paths and fails closed through the feature
 contract.
 

@@ -6,12 +6,9 @@ import {
 export class CapabilityError extends Error {
   public constructor(
     public readonly code: CapabilityErrorCode,
-    public readonly retryable: boolean,
-    public readonly data?: Readonly<{ developmentDataPath: string }>
+    public readonly retryable: boolean
   ) {
-    super(
-      data?.developmentDataPath ? `${code}: ${data.developmentDataPath}` : code
-    )
+    super(code)
     this.name = 'CapabilityError'
   }
 }

@@ -16,7 +16,6 @@ import { freezeCampaignSnapshot } from '../../../shared/contracts/campaign.js'
 import { uuidv7 } from '../../../shared/ids/uuidv7.js'
 import { initializePartySchema, PartyStore } from '../../party/party-store.js'
 import { initializeSceneSchema } from '../../scene/scene-store.js'
-import { migrateSceneSchemaV3ToV4 } from '../../scene/scene-migrations.js'
 import { initializeCombatSchema } from '../../encounter/live-combat.js'
 import { initializeWorldLocationSchema } from '../../worldplanner/location-store.js'
 import { initializeEncounterTableSchema } from '../../encounter/encounter-table-store.js'
@@ -25,8 +24,9 @@ import { initializeHexSchema } from '../../hex/hex-map-store.js'
 import {
   assertDevelopmentSchemaVersion,
   configureSqlite,
-  initializeDevelopmentSchemaVersion,
-  migrateDevelopmentSchema
+  currentDevelopmentSchemaVersion,
+  IncompatibleDevelopmentDataError,
+  initializeDevelopmentSchemaVersion
 } from './database.js'
 import {
   defaultInstallationPreferences,
@@ -36,6 +36,10 @@ import {
 import { CapabilityError } from '../../../shared/errors/capability-error.js'
 import { InstallationSettingsStore } from './installation-settings-store.js'
 import { initializeCreatureSchema } from '../../creatures/catalog.js'
+import { initializeLocationSymbolSchema } from '../../worldplanner/location-symbol-store.js'
+import { initializeBiomeCatalogSchema } from '../../biomes/biome-catalog.js'
+import { initializeWorldLocationSaveJournalSchema } from '../../worldplanner/world-location-save-journal.js'
+import { initializeGeneratorPresetSchema } from './generator-preset-store.js'
 
 export type CampaignCreatePhase =
   | 'before-registry-entry'
@@ -67,17 +71,8 @@ export class CampaignStore {
     this.installationSettings = new InstallationSettingsStore(this.installation)
     try {
       configureSqlite(this.installation)
-      if (installationExists) {
-        migrateDevelopmentSchema(
-          this.installation,
-          () => undefined,
-          () =>
-            this.installation.exec(
-              'ALTER TABLE campaigns ADD COLUMN trashed_at TEXT'
-            )
-        )
+      if (installationExists)
         assertDevelopmentSchemaVersion(this.installation, this.dataRoot)
-      }
       this.installation.exec(`
       CREATE TABLE IF NOT EXISTS campaigns (
         id TEXT PRIMARY KEY NOT NULL,
@@ -96,12 +91,15 @@ export class CampaignStore {
         preferences_json TEXT NOT NULL
       );
       `)
+      initializeGeneratorPresetSchema(this.installation)
       this.installation
         .prepare(
           'INSERT OR IGNORE INTO installation_settings (singleton, revision, preferences_json) VALUES (1, 0, ?)'
         )
         .run(JSON.stringify(defaultInstallationPreferences))
       initializeCreatureSchema(this.installation)
+      initializeBiomeCatalogSchema(this.installation)
+      initializeLocationSymbolSchema(this.installation)
       if (!installationExists)
         initializeDevelopmentSchemaVersion(this.installation)
       this.recoverIncompleteCreations()
@@ -265,6 +263,47 @@ export class CampaignStore {
     return this.installation
   }
 
+  visitCampaignDatabases<T>(
+    visitor: (campaign: {
+      id: string
+      name: string
+      trashed: boolean
+      database: Database.Database
+    }) => T
+  ): T[] {
+    const activeId = this.list().activeCampaignId
+    const rows = this.installation
+      .prepare(
+        "SELECT id, name, trashed_at AS trashedAt FROM campaigns WHERE status = 'ready' ORDER BY created_at"
+      )
+      .all() as { id: string; name: string; trashedAt: string | null }[]
+    return rows.map((row) => {
+      if (row.id === activeId && this.activeCampaign)
+        return visitor({
+          id: row.id,
+          name: row.name,
+          trashed: false,
+          database: this.activeCampaign
+        })
+      const path = row.trashedAt
+        ? join(this.trashDirectory(row.id), 'campaign.sqlite')
+        : this.campaignPath(row.id)
+      const database = new Database(path)
+      try {
+        configureSqlite(database)
+        assertDevelopmentSchemaVersion(database)
+        return visitor({
+          id: row.id,
+          name: row.name,
+          trashed: row.trashedAt !== null,
+          database
+        })
+      } finally {
+        database.close()
+      }
+    })
+  }
+
   activeCampaignId(): string {
     const id = this.list().activeCampaignId
     if (id === null) throw new CapabilityError('not_found', false)
@@ -299,6 +338,7 @@ export class CampaignStore {
     initializeEncounterTableSchema(campaign)
     initializeWorldFactionSchema(campaign)
     initializeHexSchema(campaign)
+    initializeWorldLocationSaveJournalSchema(campaign)
     initializeDevelopmentSchemaVersion(campaign)
     campaign.close()
   }
@@ -484,7 +524,6 @@ export class CampaignStore {
     const next = new Database(this.campaignPath(id))
     try {
       configureSqlite(next)
-      migrateDevelopmentSchema(next, () => migrateSceneSchemaV3ToV4(next))
       assertDevelopmentSchemaVersion(next, this.campaignDirectory(id))
     } catch (error) {
       next.close()
@@ -492,5 +531,27 @@ export class CampaignStore {
     }
     this.activeCampaign?.close()
     this.activeCampaign = next
+  }
+}
+
+/**
+ * Development data is deliberately disposable before the first stable data
+ * format. Only the fixed Electron development-data directory may be reset.
+ */
+export function openDevelopmentCampaignStore(dataRoot: string): CampaignStore {
+  try {
+    return new CampaignStore(dataRoot)
+  } catch (error) {
+    if (!(error instanceof IncompatibleDevelopmentDataError)) throw error
+    if (dataRoot.split(/[\\/]/).at(-1) !== 'development-data') throw error
+    rmSync(dataRoot, { recursive: true, force: true })
+    console.info(
+      JSON.stringify({
+        component: 'development-data',
+        event: 'schema-reset',
+        schemaVersion: currentDevelopmentSchemaVersion
+      })
+    )
+    return new CampaignStore(dataRoot)
   }
 }

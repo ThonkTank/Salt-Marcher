@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
-import { message } from '../../i18n/messages.de.js'
+import { message } from '../../i18n/session-runtime.de.js'
 import { sessionCapabilities } from './session-capabilities.js'
+import { ModalDialog } from '../../shell/modal-dialog.js'
+import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 
 export function ScenePartyCard(props: {
   snapshot: LiveSessionSnapshot
@@ -10,6 +12,7 @@ export function ScenePartyCard(props: {
   setSnapshot: (snapshot: LiveSessionSnapshot) => void
   onError: (message: string) => void
 }) {
+  const api = useCapabilityApi()
   const [open, setOpen] = useState(false)
   const activeMembers = props.snapshot.party.members.filter(
     (member) => member.active
@@ -24,7 +27,7 @@ export function ScenePartyCard(props: {
   async function assign(memberId: string, assigned: boolean) {
     try {
       props.setSnapshot(
-        await sessionCapabilities().scene.assignPartyMember(
+        await sessionCapabilities(api).scene.assignPartyMember(
           props.sceneId,
           memberId,
           assigned,
@@ -67,66 +70,63 @@ export function ScenePartyCard(props: {
       </article>
 
       {open && (
-        <div className="modal-backdrop" role="presentation">
-          <section
-            className="scene-party-dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="scene-party-dialog-title"
-          >
-            <header>
-              <div>
-                <p className="section-kicker">{message('ui.party')}</p>
-                <h2 id="scene-party-dialog-title">
-                  {message('party.sceneManage')}
-                </h2>
-              </div>
-              <button
-                type="button"
-                className="compact"
-                aria-label={message('ui.dialog.schliessen')}
-                onClick={() => setOpen(false)}
-              >
-                ×
-              </button>
-            </header>
-            <p className="panel-hint">{message('party.sceneManageHint')}</p>
-            {activeMembers.length === 0 ? (
-              <p className="empty-state">
-                {message('ui.keine.aktiven.mitglieder')}
-              </p>
-            ) : (
-              <ul className="scene-party-list">
-                {activeMembers.map((member) => {
-                  const assigned = scene.partyMemberIds.includes(member.id)
-                  return (
-                    <li key={member.id}>
-                      <span>
-                        <strong>{member.name}</strong>
-                        <small>
-                          {message('ui.lv')} {member.level ?? '—'}
-                        </small>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => void assign(member.id, !assigned)}
-                      >
-                        {assigned
-                          ? message('ui.entfernen')
-                          : message('session.assignToScene')}
-                      </button>
-                    </li>
-                  )
-                })}
-              </ul>
-            )}
-            <footer>
-              <button type="button" onClick={() => setOpen(false)}>
-                {message('action.close')}
-              </button>
-            </footer>
-          </section>
-        </div>
+        <ModalDialog
+          className="scene-party-dialog"
+          labelledBy="scene-party-dialog-title"
+          onClose={() => setOpen(false)}
+        >
+          <header>
+            <div>
+              <p className="section-kicker">{message('ui.party')}</p>
+              <h2 id="scene-party-dialog-title">
+                {message('party.sceneManage')}
+              </h2>
+            </div>
+            <button
+              type="button"
+              className="compact"
+              aria-label={message('ui.dialog.schliessen')}
+              onClick={() => setOpen(false)}
+            >
+              ×
+            </button>
+          </header>
+          <p className="panel-hint">{message('party.sceneManageHint')}</p>
+          {activeMembers.length === 0 ? (
+            <p className="session-empty-state">
+              {message('ui.keine.aktiven.mitglieder')}
+            </p>
+          ) : (
+            <ul className="scene-party-list">
+              {activeMembers.map((member) => {
+                const assigned = scene.partyMemberIds.includes(member.id)
+                return (
+                  <li key={member.id}>
+                    <span>
+                      <strong>{member.name}</strong>
+                      <small>
+                        {message('ui.lv')} {member.level ?? '—'}
+                      </small>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => void assign(member.id, !assigned)}
+                    >
+                      {assigned
+                        ? message('ui.entfernen')
+                        : message('session.assignToScene')}
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+          <footer>
+            <button type="button" onClick={() => setOpen(false)}>
+              {message('action.close')}
+            </button>
+          </footer>
+        </ModalDialog>
       )}
     </>
   )

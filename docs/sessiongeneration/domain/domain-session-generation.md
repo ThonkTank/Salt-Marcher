@@ -41,6 +41,13 @@ There is no update command. A changed request produces a different run.
 generation result before it becomes durable. It is complete and immutable but
 is not stored truth and cannot be observed as a partial `GeneratedRun`.
 
+The current Electron slice exposes only the transient encounter-intent stage
+through the utility capability
+`sessionGeneration.generateEncounterIntents`. It deliberately does not create
+a `GeneratedRun`, write SQLite state, resolve concrete creatures, or generate
+rewards. A later Session Planner command will compose this stage with reward,
+packing, persistence, and explicit GM acceptance.
+
 Encounter intents describe CR, role, XP, and quantity requirements. They do not
 contain selected creature identity and never claim to be a concrete Encounter.
 Reward detail remains Session Generation truth; consumers retain stable
@@ -63,6 +70,10 @@ immutable `ReferenceCatalogSnapshot`. Its named stages are:
 The same normalized input, engine version, and catalog content hash produce the
 same domain values. Wall-clock time, locale defaults, database order, hash
 iteration, and volatile randomness cannot influence output.
+
+The bundled catalog is a versioned offline snapshot. The utility process owns
+its file access and verifies every manifest-listed table before the pure engine
+receives the immutable encounter projection.
 
 ## Invariants
 

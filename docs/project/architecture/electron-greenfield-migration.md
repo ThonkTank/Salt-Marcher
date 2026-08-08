@@ -30,6 +30,54 @@ an owning capability adapter and keep asynchronous or reducer state in feature
 hooks. Static JSX copy and accessibility labels come from the typed German
 message catalog. The utility dispatcher composes typed aggregate-specific
 handler maps. Architecture tests prevent these boundaries from regressing.
+Application and workspace modules now load through shell-owned failure
+isolation with structured renderer incidents and Main-controlled reload.
+Renderer feature ports are injected from React context; the mutable capability
+singleton has been removed. Pixi is loaded only at a visible Hex canvas. The
+common Workspace JavaScript graph is currently 814.2 KiB under its 900 KiB
+ceiling. The normal renderer has a 3.20 MiB hard ceiling with ten percent held
+back as corrective-work reserve instead of operating at the previous 2.80 MiB
+byte boundary. The 0.05 MiB increase
+accounts for the bounded virtual biome catalog and CRUD surface added with
+schema 15; schema 16 replaced separate World Location kind and region fields
+with tags and read-aloud text, and schema 17 normalizes ordered location-owned
+tags into validated rows while all per-entry ceilings remain unchanged.
+Legacy WOFF duplicates
+are excluded, and typed message placeholders fail closed. The canonical check
+now also runs the complete Campaign-walking/Hex journey against the built
+application.
+The Hex editor now composes catalog, canvas and state panes around its reducer;
+Pixi drawing, camera logic and gesture state have distinct testable boundaries,
+and both initialization and later canvas-cycle failures retain their cause in
+renderer incidents. Its production shell now follows the high-fidelity
+three-tool design: the utility process persists location-owned map presentation,
+Main performs bounded SVG file selection, an installation-wide one-path symbol
+catalog owns custom glyph data, and the renderer combines Pixi biomes with an
+inline SVG marker and curved-label overlay. Map presentation has its own
+optimistic revision and patch command; chunk projections carry complete,
+immutable marker render data so other map surfaces do not join renderer-side
+catalog snapshots. Location and symbol mutations publish explicit invalidation
+events. Symbol search is paged, SVG validation runs only in the utility process,
+and symbol deletion is a durable installation command which replaces references
+with the built-in `location` marker across active and trashed campaigns before
+removing the catalog entry.
+The Hex location projection now has one renderer owner for catalog,
+presentation, symbol, and creation reconciliation. The shared World Location
+editor uses a narrow World Planner port, and creation returns the exact new
+entity. Create-then-place remains an explicit two-step workflow so an authored
+location survives a rejected placement with a visible partial-success outcome.
+The dialog itself is Hex-agnostic and composes a generic side area; a Workspace
+integration owns its revision-free placement draft. Location tags use ordered
+relational rows and a bounded suggestion capability, selection controls share
+one keyboard-accessible combobox primitive, and the typed German copy catalog
+is assembled from bounded feature dictionaries.
+
+The editor application-layer refactor tracks its normative evidence in
+`application-layer-refactor-acceptance-matrix.md`. It moves the two-step
+Location save into a durable utility-process command without presenting it as
+atomic, replaces whole Encounter Table revision comparisons with scope
+snapshots, normalizes exact-entity mutation receipts, and moves nested editors
+to a shell-owned sibling overlay stack.
 
 ## Decisions
 
@@ -89,6 +137,15 @@ catalogs, encounter lifecycle, editable loot, and pure TypeScript rules.
 Implement confirmed behavior anew with Golden Masters, reference snapshots,
 seeds, stable ordering, and explainable diffs.
 
+Current progress: the `saltmarcher-v2` encounter-intent capability now runs in
+the utility process over a packaged, manifest-verified session-generation
+catalog. It covers session XP, exact encounter-target allocation, the Sheet-v1
+automatic encounter-count rule, role/CR candidate construction, deterministic
+selection, difficulty, bossiness, and integrity audits. The capability returns
+structured immutable intents and is not yet a Session Planner UI or persisted
+GeneratedRun. Loot generation, generated-run persistence, concrete creature
+resolution, and planner integration remain separate follow-up slices.
+
 ### M6 — completeness and first data-format release
 
 Music/autoplay, import/export, backup/recovery/salvage, tutorial, optional
@@ -104,6 +161,10 @@ installers, and all 78 confirmed GM-core cases. Then freeze the SQLite format.
 
 The Go/No-Go decision follows package 4. Do not broaden feature work before
 that decision.
+
+This is a feature freeze: only qualification evidence, defects, security,
+fault containment, diagnostics, dependency-boundary work and changes required
+to reach the M1 Go/No-Go may enter before the decision is recorded.
 
 ## Open blockers
 
@@ -123,30 +184,38 @@ claiming completion of M3 or M5. Its approved expansion contains:
   the Party atomically assigns the PC to the focused Scene
 - anchored burger-menu Campaign CRUD without an icon-rail Campaign workspace,
   including rename, recoverable trash/restore, exact-name permanent deletion,
-  and crash-reconciled `.trash`/`.deleting` directory transitions in schema v5
+  and crash-reconciled `.trash`/`.deleting` directory transitions in the
+  complete greenfield schema v8
 - the productive Monster section of the common Catalog, backed by a versioned
-  local SRD 5.1 resource; the other Catalog sections remain later slices
+  local SRD 5.1 resource; Items, saved Encounters, and NPCs remain later
+  Catalog products
 - one focused persistent runtime Scene with explicit PC assignments and named
-  GM creature groups carrying an optional note, visual disposition, and archive
-  state; the v3-to-v4 migration gives existing notes the empty value; one
+  GM creature groups carrying an optional note, visual disposition, archive
+  state, aggregate revision, and stable Scene-owned members; incompatible
+  pre-v8 development data is discarded and rebuilt instead of migrated; one
   two-pane builder creates empty or populated groups and combines the shared
   filtered creature catalog, transient manual editing, live balancing, and
   fill-or-replace generation for new or existing groups before an explicit save
 - a scenario dropdown for Encounter and read-only Reise; Encounter consumes
   only selected Scene groups and owns difficulty evaluation, Initiative,
-  Combat, and Resolution, with a four-phase breadcrumb, monster-only initiative
-  rolls, individual mob HP/conditions, bounded persisted undo, and the explicit
-  no-loot state until Loot migrates
+  Combat turn state, and Resolution, with a four-phase breadcrumb, monster-only
+  initiative rolls, Scene-owned individual member HP/conditions, bounded
+  persisted undo, Group-Manager reinforcement, and the explicit no-loot state
+  until Loot migrates
 - a persistent three-column Session surface with independently resizable
   control/group and scenario columns around a flexible Details/Katalog/Karte
-  center, focused-scene control, shared catalog filtering, scene-local detail
-  history, inline and active-monster-following statblocks, and an honest
+  center, focused-scene control, shared catalog filtering, app-lifetime
+  Campaign/Scene-scoped detail history, inline and active-monster-following statblocks, and an honest
   provider-ready map/route-planning shell; Combat is persisted independently per
   running Scene
 - campaign-local World Planner location and faction CRUD plus authored
   Encounter Tables in Catalog; locations link factions and tables, factions
   own disposition, a primary table and optional finite inventory caps, while
   Scene stores only a stable focused-location reference
+- the shared location editor creates and immediately links missing Hex maps,
+  factions, and Encounter Tables through Workspace integration ports without
+  resetting its draft; the same map, faction, and table dialogs serve their
+  direct and nested entry points
 - one shared source resolver supplies both the visible Monster catalog and the
   Scene-group generator with union-within/intersection-across semantics,
   weighted deterministic ranking, finite caps, and explicit fallback/no-
@@ -154,11 +223,32 @@ claiming completion of M3 or M5. Its approved expansion contains:
 - Scene groups and Encounter Tables share one two-pane creature-collection
   manager component rather than parallel look-alike dialogs; faction stock is
   edited only from the selected table's creature membership
-- one campaign-local Hex vertical slice now connects a Pixi editor, static
-  catalog-backed terrain IDs, World Planner location placement, focused-Scene
+- Catalog, Session, Encounter Table, creature search, and creature collection
+  are one-way renderer features rather than workspace-to-workspace imports.
+  Their blocking surfaces use one portal-based modal stack with inert lower
+  layers, one shared scrim, visible contextual parents, focus restoration, and
+  a shared dirty-draft discard alert; modal-owned anchored popups retain the
+  same Escape and focus order
+- the Catalog composition root keeps all existing section-controller state
+  alive while narrow injectable capability ports suppress reads from inactive
+  sections; the shared creature-collection manager owns every named layout
+  area and exposes fixed or accessible resizable divider models instead of an
+  implicit child-order contract
+- one campaign-local Hex vertical slice now connects a Pixi editor, shared
+  installation-owned biome IDs, World Planner location placement, focused-Scene
   Party position, waypoint route planning, durable checkpoints and Scene time,
-  and the Session Karte/Reise surfaces; editable Terrain catalog CRUD remains a
-  later slice
+  and the Session Karte/Reise surfaces; its editor exposes visible brush levels
+  `1..10` over mathematical radii `0..9`, immediate catalog-location placement,
+  location-owned marker presentation, and installation-wide custom one-path SVG
+  symbols; a paged virtual palette owns protected built-ins and unlimited
+  custom biome CRUD, installation-wide weighted encounter pools, and recoverable
+  cross-campaign placeholder replacement after custom-biome deletion
+- one offline reference-graph slice compiles attributed SRD 5.1 rules and
+  creatures from one pinned archive into deterministic local artifacts,
+  publishes separate static and campaign world indexes from the utility
+  process, highlights read-only Session prose, opens typed details
+  in Scene-local history, supports recursively nested hover cards, and keeps
+  explicitly pinned cards as movable memory-only windows
 
 Encounter-table, faction, and location filter controls appear only when their
 owning providers publish real options. NPC membership, loot links, and stock

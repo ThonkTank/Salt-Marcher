@@ -1,6 +1,6 @@
 import type { CampaignSnapshot } from './campaign.js'
 import type { RuntimeGpuObservation } from '../qualification/runtime-observation.js'
-import type { CoreProcessStatus } from './runtime.js'
+import type { CoreProcessStatus, RendererIncident } from './runtime.js'
 import type { SessionChangeNotice } from './session-change.js'
 import type {
   Creature,
@@ -9,12 +9,18 @@ import type {
   CreatureFilterOptions
 } from './encounter.js'
 import type {
+  CombatCommandResult,
   CombatCondition,
   LiveSessionSnapshot,
-  PartySnapshot
+  PartySnapshot,
+  SceneGroupCommandResult
 } from './live-session.js'
 import type { AdventuringDayCalculation, PartyCharacterDraft } from './party.js'
 import type { EncounterTuning } from './encounter-tuning.js'
+import type {
+  GeneratorConfig,
+  GeneratorPresetSnapshot
+} from './generator-presets.js'
 import type {
   EncounterSelectionEvaluation,
   GroupGenerationMode,
@@ -28,28 +34,80 @@ import type {
   InstallationSettings
 } from './settings.js'
 import type {
-  WorldLocationDraft,
+  WorldLocationChangeNotice,
+  WorldLocationDeleteReceipt,
+  WorldLocationMapPresentation,
+  WorldLocationMapPresentationPatch,
+  SaveWorldLocationInput,
+  WorldLocationPlacementCommand,
+  WorldLocationPlacementCommitResult,
+  WorldLocationSaveReceipt,
   WorldLocationSnapshot
 } from './world-location.js'
 import type {
+  LocationSymbolDraft,
+  LocationSymbolChangeNotice,
+  LocationSymbolDeleteImpact,
+  LocationSymbolDeleteResult,
+  LocationSymbolPage,
+  LocationSymbol,
+  LocationSymbolMutationReceipt,
+  ImportLocationSymbolResult,
+  LocationSymbolSnapshot,
+  SvgSymbolFileResult
+} from './location-symbol.js'
+import type {
+  BiomeCatalogMutationResult,
+  BiomeChangeNotice,
+  BiomeDefinition,
+  BiomeDeleteImpact,
+  BiomeDraft,
+  BiomeId,
+  BiomePage,
+  PaintableBiomeId
+} from './biome.js'
+import type {
+  EncounterTableChangeNotice,
+  EncounterTableCommandReceipt,
   EncounterTableDraft,
+  EncounterTableDeleteReceipt,
+  EncounterTableMutationReceipt,
+  EncounterTableScope,
   EncounterTableSnapshot,
   WorldFactionDraft,
+  WorldFactionCommandReceipt,
+  WorldFactionDeleteReceipt,
+  WorldFactionMutationReceipt,
   WorldFactionSnapshot
 } from './encounter-source.js'
 import type {
   AxialCoordinate,
+  ApplyHexBrushStrokeInput,
+  HexBrushStrokeResult,
   HexChunkKey,
   HexChunkReadResult,
-  HexChunkSnapshot,
   HexMapCatalogSnapshot,
   HexLocationPlacementReference,
-  HexMapSummary,
+  HexHistoryState,
+  HexChangeNotice,
+  HexEditorBootstrap,
+  HexRuntimeOverlayProjection,
   HexRouteEvaluation,
-  HexTerrainCatalog,
-  HexTerrainId,
+  ReplaceMapBiomePlaceholderInput,
+  ReplaceMapBiomePlaceholderResult,
+  HexBiomeCatalog,
   HexTravelSnapshot
 } from './hex.js'
+import type {
+  ReferenceDocument,
+  ReferenceIndex,
+  ReferenceIndexChangeNotice,
+  ReferenceTarget
+} from './reference.js'
+import type {
+  SessionGenerationEncounterInput,
+  SessionGenerationEncounterResult
+} from './session-generation.js'
 
 export interface CampaignReadCapability {
   list(): Promise<CampaignSnapshot>
@@ -64,6 +122,27 @@ export interface CampaignCapability extends CampaignReadCapability {
   deleteForever(id: string, confirmationName: string): Promise<CampaignSnapshot>
 }
 
+export interface GeneratorPresetCapability {
+  read(): Promise<GeneratorPresetSnapshot>
+  create(
+    name: string,
+    config: GeneratorConfig,
+    expectedRevision: number
+  ): Promise<GeneratorPresetSnapshot>
+  update(
+    id: string,
+    name: string,
+    config: GeneratorConfig,
+    expectedRevision: number
+  ): Promise<GeneratorPresetSnapshot>
+  delete(id: string, expectedRevision: number): Promise<GeneratorPresetSnapshot>
+  assign(
+    campaignId: string,
+    presetId: string | null,
+    expectedRevision: number
+  ): Promise<GeneratorPresetSnapshot>
+}
+
 export interface SaltMarcherApi {
   campaigns: CampaignReadCapability | CampaignCapability
   runtime: Readonly<{
@@ -73,6 +152,9 @@ export interface SaltMarcherApi {
     gpuObservation(): Promise<RuntimeGpuObservation>
     coreStatus(): Promise<CoreProcessStatus>
     retryCore(): Promise<CoreProcessStatus>
+    reportRendererIncident(incident: RendererIncident): Promise<void>
+    reloadRenderer(): Promise<void>
+    pickLocationSymbolFile(): Promise<SvgSymbolFileResult>
     onCoreStatus(listener: (status: CoreProcessStatus) => void): () => void
   }>
   settings: {
@@ -82,6 +164,7 @@ export interface SaltMarcherApi {
       expectedRevision: number
     ): Promise<InstallationSettings>
   }
+  generatorPresets: GeneratorPresetCapability
   party: {
     read(): Promise<PartySnapshot>
     create(
@@ -118,82 +201,181 @@ export interface SaltMarcherApi {
     filterOptions(): Promise<CreatureFilterOptions>
     detail(id: string): Promise<Creature>
   }
+  references: {
+    staticIndex(): Promise<ReferenceIndex>
+    campaignIndex(campaignId: string): Promise<ReferenceIndex>
+    detail(target: ReferenceTarget): Promise<ReferenceDocument>
+    onCampaignIndexChanged(
+      listener: (notice: ReferenceIndexChangeNotice) => void
+    ): () => void
+  }
   locations: {
     read(): Promise<WorldLocationSnapshot>
-    create(
-      location: WorldLocationDraft,
-      expectedRevision: number
-    ): Promise<WorldLocationSnapshot>
-    update(
+    suggestTags(query: string, limit?: number): Promise<readonly string[]>
+    save(input: SaveWorldLocationInput): Promise<WorldLocationSaveReceipt>
+    saveReceipt(commandId: string): Promise<WorldLocationSaveReceipt | null>
+    commitPlacement(
+      input: WorldLocationPlacementCommand
+    ): Promise<WorldLocationPlacementCommitResult>
+    updateMapPresentation(
       id: string,
-      location: WorldLocationDraft,
+      patch: WorldLocationMapPresentationPatch,
       expectedRevision: number
-    ): Promise<WorldLocationSnapshot>
-    delete(id: string, expectedRevision: number): Promise<WorldLocationSnapshot>
-  }
-  encounterTables: {
-    read(): Promise<EncounterTableSnapshot>
-    create(
-      table: EncounterTableDraft,
-      expectedRevision: number
-    ): Promise<EncounterTableSnapshot>
-    update(
-      id: string,
-      table: EncounterTableDraft,
-      expectedRevision: number
-    ): Promise<EncounterTableSnapshot>
+    ): Promise<WorldLocationMapPresentation>
     delete(
       id: string,
       expectedRevision: number
-    ): Promise<EncounterTableSnapshot>
+    ): Promise<WorldLocationDeleteReceipt>
+    onChanged(listener: (notice: WorldLocationChangeNotice) => void): () => void
+  }
+  locationSymbols: {
+    create(
+      symbol: LocationSymbolDraft,
+      expectedRevision: number
+    ): Promise<LocationSymbolMutationReceipt>
+    search(
+      query?: string,
+      offset?: number,
+      limit?: number
+    ): Promise<LocationSymbolPage>
+    detail(id: string): Promise<LocationSymbol>
+    update(
+      id: string,
+      displayName: string,
+      expectedRevision: number
+    ): Promise<LocationSymbolSnapshot>
+    deleteImpact(id: string): Promise<LocationSymbolDeleteImpact>
+    delete(
+      commandId: string,
+      id: string,
+      expectedRevision: number
+    ): Promise<LocationSymbolDeleteResult>
+    importAndAssign(input: {
+      commandId: string
+      displayName: string
+      source: string
+      locationId: string
+      expectedSymbolRevision: number
+      expectedPresentationRevision: number
+    }): Promise<ImportLocationSymbolResult>
+    onChanged(
+      listener: (notice: LocationSymbolChangeNotice) => void
+    ): () => void
+  }
+  biomes: {
+    search(query?: string, offset?: number, limit?: number): Promise<BiomePage>
+    detail(id: BiomeId): Promise<BiomeDefinition>
+    create(
+      commandId: string,
+      biome: BiomeDraft,
+      expectedRevision: number
+    ): Promise<BiomeCatalogMutationResult>
+    update(
+      commandId: string,
+      id: PaintableBiomeId,
+      biome: BiomeDraft,
+      expectedRevision: number
+    ): Promise<BiomeCatalogMutationResult>
+    deleteImpact(id: BiomeId): Promise<BiomeDeleteImpact>
+    delete(
+      commandId: string,
+      id: string,
+      expectedRevision: number
+    ): Promise<BiomeCatalogMutationResult>
+    onChanged(listener: (notice: BiomeChangeNotice) => void): () => void
+  }
+  encounterTables: {
+    read(): Promise<EncounterTableSnapshot>
+    commandReceipt(
+      commandId: string
+    ): Promise<EncounterTableCommandReceipt | null>
+    create(
+      commandId: string,
+      table: EncounterTableDraft,
+      expectedRevision: number,
+      scope?: EncounterTableScope
+    ): Promise<EncounterTableMutationReceipt>
+    update(
+      commandId: string,
+      id: string,
+      table: EncounterTableDraft,
+      expectedRevision: number,
+      scope?: EncounterTableScope
+    ): Promise<EncounterTableMutationReceipt>
+    delete(
+      commandId: string,
+      id: string,
+      expectedRevision: number,
+      scope?: EncounterTableScope
+    ): Promise<EncounterTableDeleteReceipt>
+    onChanged(
+      listener: (notice: EncounterTableChangeNotice) => void
+    ): () => void
   }
   factions: {
     read(): Promise<WorldFactionSnapshot>
+    commandReceipt(
+      commandId: string
+    ): Promise<WorldFactionCommandReceipt | null>
     create(
+      commandId: string,
       faction: WorldFactionDraft,
       expectedRevision: number
-    ): Promise<WorldFactionSnapshot>
+    ): Promise<WorldFactionMutationReceipt>
     update(
+      commandId: string,
       id: string,
       faction: WorldFactionDraft,
       expectedRevision: number
-    ): Promise<WorldFactionSnapshot>
-    delete(id: string, expectedRevision: number): Promise<WorldFactionSnapshot>
+    ): Promise<WorldFactionMutationReceipt>
+    delete(
+      commandId: string,
+      id: string,
+      expectedRevision: number
+    ): Promise<WorldFactionDeleteReceipt>
   }
   hex: {
-    terrainCatalog(): Promise<HexTerrainCatalog>
+    editorBootstrap(): Promise<HexEditorBootstrap>
+    biomeCatalog(): Promise<HexBiomeCatalog>
     catalog(): Promise<HexMapCatalogSnapshot>
     locateLocation(locationId: string): Promise<HexLocationPlacementReference>
     readChunks(
       mapId: string,
       keys: readonly HexChunkKey[]
     ): Promise<HexChunkReadResult>
-    create(
-      displayName: string,
+    replaceBiomePlaceholder(
+      input: ReplaceMapBiomePlaceholderInput
+    ): Promise<ReplaceMapBiomePlaceholderResult>
+    create(input: {
+      commandId: string
+      displayName: string
       expectedCatalogRevision: number
-    ): Promise<HexMapSummary>
-    updateMetadata(
-      mapId: string,
-      displayName: string,
+    }): Promise<HexBrushStrokeResult>
+    updateMetadata(input: {
+      commandId: string
+      mapId: string
+      displayName: string
       expectedMetadataRevision: number
-    ): Promise<HexMapSummary>
-    paint(
-      mapId: string,
-      coordinate: AxialCoordinate,
-      terrainId: HexTerrainId,
-      expectedChunkRevision: number
-    ): Promise<HexChunkSnapshot>
-    placeLocation(
-      mapId: string,
-      locationId: string,
-      coordinate: AxialCoordinate,
+    }): Promise<HexBrushStrokeResult>
+    applyBrushStroke(
+      input: ApplyHexBrushStrokeInput
+    ): Promise<HexBrushStrokeResult>
+    history(mapId: string): Promise<HexHistoryState>
+    undo(input: {
+      commandId: string
+      mapId: string
       expectedContentRevision: number
-    ): Promise<HexChunkReadResult>
-    removeLocation(
-      mapId: string,
-      locationId: string,
+      confirmationToken: string | null
+    }): Promise<HexBrushStrokeResult>
+    redo(input: {
+      commandId: string
+      mapId: string
       expectedContentRevision: number
-    ): Promise<HexChunkReadResult>
+      confirmationToken: string | null
+    }): Promise<HexBrushStrokeResult>
+    commandReceipt(commandId: string): Promise<HexBrushStrokeResult | null>
+    runtimeOverlays(mapId: string): Promise<HexRuntimeOverlayProjection>
+    onChanged(listener: (notice: HexChangeNotice) => void): () => void
   }
   hexTravel: {
     read(sceneId: string): Promise<HexTravelSnapshot>
@@ -231,6 +413,11 @@ export interface SaltMarcherApi {
     read(): Promise<LiveSessionSnapshot>
     onChanged(listener: (notice: SessionChangeNotice) => void): () => void
   }
+  sessionGeneration: {
+    generateEncounterIntents(
+      input: SessionGenerationEncounterInput
+    ): Promise<SessionGenerationEncounterResult>
+  }
   scene: {
     focus(
       sceneId: string,
@@ -247,20 +434,21 @@ export interface SaltMarcherApi {
       name: string,
       note: string,
       disposition: SceneGroupDisposition,
-      entries: readonly { creatureId: string; quantity: number }[],
-      expectedRevision: number
-    ): Promise<LiveSessionSnapshot>
+      entries: readonly SceneGroupDraftEntry[],
+      expectedRevision: number,
+      expectedGroupRevision: number | null
+    ): Promise<SceneGroupCommandResult>
     deleteGroup(
       sceneId: string,
       groupId: string,
-      expectedRevision: number
-    ): Promise<LiveSessionSnapshot>
+      expectedGroupRevision: number
+    ): Promise<SceneGroupCommandResult>
     setGroupArchived(
       sceneId: string,
       groupId: string,
       archived: boolean,
-      expectedRevision: number
-    ): Promise<LiveSessionSnapshot>
+      expectedGroupRevision: number
+    ): Promise<SceneGroupCommandResult>
     assignPartyMember(
       sceneId: string,
       partyMemberId: string,
@@ -294,39 +482,60 @@ export interface SaltMarcherApi {
       sceneId: string,
       groupIds: readonly string[],
       expectedSceneRevision: number
-    ): Promise<LiveSessionSnapshot>
-    rollInitiative(expectedRevision: number): Promise<LiveSessionSnapshot>
+    ): Promise<CombatCommandResult>
+    joinGroup(
+      sceneId: string,
+      groupId: string,
+      expectedGroupRevision: number,
+      expectedCombatRevision: number
+    ): Promise<CombatCommandResult>
+    rollInitiative(expectedRevision: number): Promise<CombatCommandResult>
     confirmInitiative(
       values: readonly { id: string; initiative: number }[],
       expectedRevision: number
-    ): Promise<LiveSessionSnapshot>
-    advanceTurn(expectedRevision: number): Promise<LiveSessionSnapshot>
+    ): Promise<CombatCommandResult>
+    advanceTurn(expectedRevision: number): Promise<CombatCommandResult>
+    retreatTurn(expectedRevision: number): Promise<CombatCommandResult>
     adjustInitiative(
       id: string,
       initiative: number,
       expectedRevision: number
-    ): Promise<LiveSessionSnapshot>
+    ): Promise<CombatCommandResult>
     changeHp(
       cardId: string,
       amount: number,
       healing: boolean,
       expectedRevision: number
-    ): Promise<LiveSessionSnapshot>
+    ): Promise<CombatCommandResult>
     toggleCondition(
       cardId: string,
       condition: CombatCondition,
       active: boolean,
       expectedRevision: number
-    ): Promise<LiveSessionSnapshot>
-    undo(expectedRevision: number): Promise<LiveSessionSnapshot>
-    end(expectedRevision: number): Promise<LiveSessionSnapshot>
+    ): Promise<CombatCommandResult>
+    setConcentration(
+      cardId: string,
+      concentrating: boolean,
+      expectedRevision: number
+    ): Promise<CombatCommandResult>
+    setExhaustion(
+      cardId: string,
+      exhaustionLevel: number,
+      expectedRevision: number
+    ): Promise<CombatCommandResult>
+    undo(expectedRevision: number): Promise<CombatCommandResult>
+    end(expectedRevision: number): Promise<CombatCommandResult>
+    moveToPhase(
+      target: 'selection' | 'initiative' | 'combat',
+      expectedRevision: number
+    ): Promise<CombatCommandResult>
     updateResolution(
       selectedEnemyIds: readonly string[],
-      thresholdFraction: number,
+      mode: 'defeated' | 'manual',
       xpFraction: number,
       expectedRevision: number
-    ): Promise<LiveSessionSnapshot>
-    awardXp(expectedRevision: number): Promise<LiveSessionSnapshot>
-    complete(expectedRevision: number): Promise<LiveSessionSnapshot>
+    ): Promise<CombatCommandResult>
+    awardXp(expectedRevision: number): Promise<CombatCommandResult>
+    complete(expectedRevision: number): Promise<CombatCommandResult>
   }
 }

@@ -7,7 +7,7 @@ import {
   isReadOnlyWindow
 } from '../windows/secondary-window.js'
 import { configureSecurity } from '../security/security.js'
-import { outputPath } from './runtime-paths.js'
+import { outputPath, resourcePath } from './runtime-paths.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import { coreProcessStatusSchema } from '../../shared/contracts/runtime.js'
 import {
@@ -23,7 +23,9 @@ export async function startApplication(): Promise<void> {
   configureSecurity()
   core = new CoreProcessSupervisor(
     join(app.getPath('userData'), 'development-data'),
-    outputPath('main', 'utility.js')
+    outputPath('main', 'utility.js'),
+    resourcePath('reference', 'srd-5.1.sqlite'),
+    resourcePath('sessiongeneration', 'catalog-2026-07-16')
   )
   connectCoreNotifications(core)
   void core.waitUntilReady().catch(() => {
@@ -56,6 +58,35 @@ function connectCoreNotifications(supervisor: CoreProcessSupervisor): void {
         )
     }
   })
+  supervisor.onReferenceChanged((notice) => {
+    for (const window of BrowserWindow.getAllWindows())
+      window.webContents.send('references:index-changed', notice)
+  })
+  supervisor.onHexChanged((notice) => {
+    for (const window of BrowserWindow.getAllWindows())
+      if (!isReadOnlyWindow(window.webContents))
+        window.webContents.send('hex:changed', notice)
+  })
+  supervisor.onLocationsChanged((notice) => {
+    for (const window of BrowserWindow.getAllWindows())
+      if (!isReadOnlyWindow(window.webContents))
+        window.webContents.send('locations:changed', notice)
+  })
+  supervisor.onLocationSymbolsChanged((notice) => {
+    for (const window of BrowserWindow.getAllWindows())
+      if (!isReadOnlyWindow(window.webContents))
+        window.webContents.send('location-symbols:changed', notice)
+  })
+  supervisor.onBiomesChanged((notice) => {
+    for (const window of BrowserWindow.getAllWindows())
+      if (!isReadOnlyWindow(window.webContents))
+        window.webContents.send('biomes:changed', notice)
+  })
+  supervisor.onEncounterTablesChanged((notice) => {
+    for (const window of BrowserWindow.getAllWindows())
+      if (!isReadOnlyWindow(window.webContents))
+        window.webContents.send('encounter-tables:changed', notice)
+  })
 }
 
 export async function stopApplication(): Promise<void> {
@@ -66,4 +97,20 @@ export async function stopApplication(): Promise<void> {
 export function waitForCoreReady(): Promise<void> {
   if (core === undefined) throw new CapabilityError('core_unavailable', true)
   return core.waitUntilReady()
+}
+
+export async function runSessionGenerationSmoke(): Promise<void> {
+  if (core === undefined) throw new CapabilityError('core_unavailable', true)
+  await core.waitUntilReady()
+  const result = await core.requestOperation(
+    'sessionGeneration.generateEncounterIntents',
+    {
+      party: [{ level: 3, count: 4 }],
+      adventureDayFraction: '0.6',
+      encounterCount: 1,
+      seed: 179974
+    }
+  )
+  if (result.status !== 'success' || result.encounters.length !== 1)
+    throw new Error('Packaged session-generation capability smoke failed')
 }

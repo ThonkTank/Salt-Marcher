@@ -7,9 +7,10 @@ workspace. Scene owns focus and ordered, named creature groups; Live Session
 owns neither Party membership nor creature facts.
 
 Party publishes the current Roster, membership, and XP through `PartyApi`.
-Creatures publishes current statblocks. Encounter owns the active Combat
-memento, including Initiative, individual combatants, HP, turn, round, and
-Resolution state.
+Creatures publishes current statblocks. Scene owns stable individual creature
+group members, including current HP, language-neutral SRD condition IDs,
+concentration, and the numeric exhaustion level. Encounter references those
+members and owns Initiative, card packing, turn, round, and Resolution state.
 
 The live-play application service coordinates the membership transition with
 Scene: a newly active Party member is assigned to the focused Scene in the same
@@ -20,14 +21,14 @@ does not transfer ownership of Party membership to Scene.
 
 - group identity and order remain stable
 - a group has a non-blank name, an optional persisted note of at most 1,000
-  characters, a visual disposition, an archive flag, and zero or more positive
-  creature quantities
+  characters, a visual disposition, an archive flag, and zero or more stable
+  individual creature members grouped into separate living and dead counts
 - group entries contain references only; current display and Combat facts are
   resolved through Creatures
-- empty and archived groups cannot be copied into a new Combat; an already
-  copied Combat remains independent of later group archival or deletion
-- a Combat is keyed by Scene identity and captures its selected group
-  identities and runtime combat profiles
+- empty and archived groups cannot join Combat; archiving a linked group
+  removes its members from the running Combat
+- a Combat is keyed by Scene identity and retains selected group and member
+  references without copying their mutable HP or status truth
 - Resolution awards XP to the current active Party through an idempotent Combat
   identity
 - finishing Combat clears only Encounter runtime state

@@ -3,16 +3,20 @@
 The utility process alone opens campaign SQLite. Feature-owned adapters own
 their SQL and prepared statements.
 
-Live Session stores metadata, group headers, and group entries. Party stores
-the seeded Roster, membership, XP, and applied Combat award identities.
+Live Session stores metadata, group headers, entries, and stable individual
+group members with current HP, language-neutral condition IDs, concentration,
+and exhaustion level. Party stores the seeded Roster, membership, XP, and
+applied Combat award identities.
 Encounter stores one Zod-validated Combat memento per Scene identity. Focusing
 another Scene changes the projected Combat but never clears or overwrites the
 previous Scene's memento.
 
-The stored Combat memento includes phase, source groups, initiative sources,
-individual combatants, card membership, current HP, turn order, active turn,
-round, Resolution selection, sliders, and award status. Readback validates the
-complete memento before publication.
+The stored Combat memento includes phase, source group/member references,
+initiative sources, card membership, turn order, active turn, round, Resolution
+selection/mode, XP fraction, and award status. Mutable monster HP and status
+are read from Scene members. Concentration and exhaustion are not encoded as
+pseudo-conditions. Readback validates the complete projection before
+publication.
 
 An XP award first records the Combat identity in Party's idempotency set. A
 retry with the same identity changes no XP. Session and Encounter never write

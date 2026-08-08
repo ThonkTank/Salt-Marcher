@@ -136,3 +136,40 @@
   margin: var(--space-4) 0;
   font-family: var(--font-display);
 }
+@media (max-width: 700px) {
+  .work-area {
+    padding: 1rem;
+  }
+}
+.layout-cockpit {
+  display: flex;
+  overflow: hidden;
+  padding: 0;
+}
+
+.layout-scroll {
+  overflow: auto;
+}
+
+.module-load-state {
+  display: grid;
+  width: 100%;
+  max-width: none;
+  min-height: 100%;
+  flex: 1;
+  place-content: center;
+  justify-items: center;
+  gap: var(--space-5);
+  text-align: center;
+}
+
+.module-load-state > * {
+  margin: 0;
+}
+
+.workspace-recovery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+}
