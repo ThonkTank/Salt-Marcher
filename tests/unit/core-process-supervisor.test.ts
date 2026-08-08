@@ -51,6 +51,7 @@ function harness() {
     '/data',
     '/utility.js',
     '/reference.sqlite',
+    '/sessiongeneration',
     () => {
       const child = new FakeUtilityProcess()
       children.push(child)

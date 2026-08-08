@@ -100,6 +100,10 @@ import type {
   ReferenceIndexChangeNotice,
   ReferenceTarget
 } from './reference.js'
+import type {
+  SessionGenerationEncounterInput,
+  SessionGenerationEncounterResult
+} from './session-generation.js'
 
 export interface CampaignReadCapability {
   list(): Promise<CampaignSnapshot>
@@ -382,6 +386,11 @@ export interface SaltMarcherApi {
   session: {
     read(): Promise<LiveSessionSnapshot>
     onChanged(listener: (notice: SessionChangeNotice) => void): () => void
+  }
+  sessionGeneration: {
+    generateEncounterIntents(
+      input: SessionGenerationEncounterInput
+    ): Promise<SessionGenerationEncounterResult>
   }
   scene: {
     focus(

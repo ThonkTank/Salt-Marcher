@@ -43,6 +43,7 @@ export const config = {
     hexLocation: ['./tests/e2e/hex-location-workflow.e2e.ts'],
     restart: ['./tests/e2e/campaign-restart.e2e.ts'],
     dialogs: ['./tests/e2e/dialog-architecture.e2e.ts'],
+    sessionGeneration: ['./tests/e2e/session-generation.e2e.ts'],
     workspaces: ['./tests/e2e/workspace-isolation.e2e.ts']
   },
   maxInstances: 1,

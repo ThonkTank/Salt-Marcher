@@ -61,6 +61,16 @@ function referencedSqlTables(path: string): string[] {
 }
 
 describe('architecture boundaries', () => {
+  it('keeps session generation pure in core and file access in utility', () => {
+    for (const file of codeFiles('src/core/session-generation')) {
+      const content = readFileSync(file, 'utf8')
+      expect(content).not.toMatch(/node:fs|\?raw|src\/renderer/)
+    }
+    expect(
+      source('src/utility/session-generation/catalog-provider.ts')
+    ).toContain("from 'node:fs'")
+  })
+
   it('keeps SQL table ownership inside the owning aggregate', () => {
     const owners: readonly [RegExp, string][] = [
       [/^hex_/, `${normalize(resolve('src/core/hex'))}${sep}`],

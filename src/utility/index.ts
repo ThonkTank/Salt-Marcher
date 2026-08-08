@@ -50,13 +50,29 @@ import { ReferenceService } from '../core/reference/reference-service.js'
 import { ReferenceCatalogAdapter } from '../core/reference/reference-catalog-adapter.js'
 import { referenceTargetKey } from '../shared/reference/reference-target-key.js'
 import { randomUUID } from 'node:crypto'
+import { BundledEncounterCatalogProvider } from './session-generation/catalog-provider.js'
+import { sha256EncounterEntropy } from './session-generation/sha256-entropy.js'
+import { SessionGenerationService } from './session-generation/session-generation-service.js'
 const root = process.argv[2]
 const referenceDatabasePath = process.argv[3]
-if (!root || !referenceDatabasePath || !process.parentPort)
+const sessionGenerationCatalogRoot = process.argv[4]
+if (
+  !root ||
+  !referenceDatabasePath ||
+  !sessionGenerationCatalogRoot ||
+  !process.parentPort
+)
   throw new Error(
-    'Utility process requires a data root, reference database, and parent port'
+    'Utility process requires a data root, reference database, catalog root, and parent port'
   )
 const campaigns = openDevelopmentCampaignStore(root)
+const sessionGenerationCatalog = new BundledEncounterCatalogProvider(
+  sessionGenerationCatalogRoot
+)
+const sessionGenerationService = new SessionGenerationService(
+  sessionGenerationCatalog,
+  sha256EncounterEntropy
+)
 const activeDatabase = () => campaigns.activeCampaignDatabase()
 const symbolLifecycle = new LocationSymbolLifecycleService(campaigns)
 const locationSymbols = symbolLifecycle.symbols
@@ -850,6 +866,11 @@ const sessionHandlers = {
   | 'scene.generateGroupDraft'
 >
 
+const sessionGenerationHandlers = {
+  'sessionGeneration.generateEncounterIntents': (input) =>
+    sessionGenerationService.generateEncounterIntents(input)
+} satisfies Pick<CoreHandlers, 'sessionGeneration.generateEncounterIntents'>
+
 const encounterHandlers = {
   'encounter.evaluate': (input) =>
     play.evaluateEncounter(
@@ -1048,6 +1069,7 @@ const handlers = {
   ...biomeHandlers,
   ...worldPlannerHandlers,
   ...sessionHandlers,
+  ...sessionGenerationHandlers,
   ...encounterHandlers,
   ...hexHandlers,
   ...travelHandlers,

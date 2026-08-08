@@ -24,7 +24,8 @@ export async function startApplication(): Promise<void> {
   core = new CoreProcessSupervisor(
     join(app.getPath('userData'), 'development-data'),
     outputPath('main', 'utility.js'),
-    resourcePath('reference', 'srd-5.1.sqlite')
+    resourcePath('reference', 'srd-5.1.sqlite'),
+    resourcePath('sessiongeneration', 'catalog-2026-07-16')
   )
   connectCoreNotifications(core)
   void core.waitUntilReady().catch(() => {
@@ -96,4 +97,20 @@ export async function stopApplication(): Promise<void> {
 export function waitForCoreReady(): Promise<void> {
   if (core === undefined) throw new CapabilityError('core_unavailable', true)
   return core.waitUntilReady()
+}
+
+export async function runSessionGenerationSmoke(): Promise<void> {
+  if (core === undefined) throw new CapabilityError('core_unavailable', true)
+  await core.waitUntilReady()
+  const result = await core.requestOperation(
+    'sessionGeneration.generateEncounterIntents',
+    {
+      party: [{ level: 3, count: 4 }],
+      adventureDayFraction: '0.6',
+      encounterCount: 1,
+      seed: 179974
+    }
+  )
+  if (result.status !== 'success' || result.encounters.length !== 1)
+    throw new Error('Packaged session-generation capability smoke failed')
 }

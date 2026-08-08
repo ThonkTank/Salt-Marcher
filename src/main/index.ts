@@ -1,5 +1,6 @@
 import { app } from 'electron'
 import {
+  runSessionGenerationSmoke,
   startApplication,
   stopApplication,
   waitForCoreReady
@@ -11,6 +12,11 @@ void startApplication()
   .then(() => {
     if (smokeTest)
       void waitForCoreReady()
+        .then(() =>
+          process.argv.includes('--session-generation-smoke')
+            ? runSessionGenerationSmoke()
+            : undefined
+        )
         .then(() => app.quit())
         .catch((error: unknown) => {
           console.error('SaltMarcher core failed smoke readiness', error)

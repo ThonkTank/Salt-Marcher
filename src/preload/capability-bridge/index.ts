@@ -146,6 +146,7 @@ import {
   referenceIndexChangeNoticeSchema,
   referenceTargetSchema
 } from '../../shared/contracts/reference.js'
+import { sessionGenerationEncounterInputSchema } from '../../shared/contracts/session-generation.js'
 
 async function invoke<T>(
   channel: string,
@@ -796,6 +797,15 @@ const api: SaltMarcherApi = {
       ipcRenderer.on('session:changed', handler)
       return () => ipcRenderer.removeListener('session:changed', handler)
     }
+  },
+  sessionGeneration: {
+    generateEncounterIntents: async (input) =>
+      freezeDeep(
+        await invokeCore(
+          'sessionGeneration.generateEncounterIntents',
+          sessionGenerationEncounterInputSchema.parse(input)
+        )
+      )
   },
   scene: {
     focus: (sceneId, expectedRevision) =>

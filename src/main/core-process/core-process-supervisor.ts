@@ -100,6 +100,7 @@ export class CoreProcessSupervisor {
     private readonly dataRoot: string,
     private readonly path: string,
     private readonly referenceDatabasePath: string,
+    private readonly sessionGenerationCatalogRoot: string,
     private readonly processFactory: ProcessFactory = (utilityPath, args) =>
       utilityProcess.fork(utilityPath, [...args], { stdio: 'pipe' })
   ) {
@@ -383,7 +384,8 @@ export class CoreProcessSupervisor {
     this.setStatus(this.#firstReadyResolved ? 'recovering' : 'starting')
     const child = this.processFactory(this.path, [
       this.dataRoot,
-      this.referenceDatabasePath
+      this.referenceDatabasePath,
+      this.sessionGenerationCatalogRoot
     ])
     this.#process = child
     this.#readyTimer = setTimeout(() => {

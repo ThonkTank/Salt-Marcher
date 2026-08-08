@@ -137,6 +137,15 @@ catalogs, encounter lifecycle, editable loot, and pure TypeScript rules.
 Implement confirmed behavior anew with Golden Masters, reference snapshots,
 seeds, stable ordering, and explainable diffs.
 
+Current progress: the `saltmarcher-v2` encounter-intent capability now runs in
+the utility process over a packaged, manifest-verified session-generation
+catalog. It covers session XP, exact encounter-target allocation, the Sheet-v1
+automatic encounter-count rule, role/CR candidate construction, deterministic
+selection, difficulty, bossiness, and integrity audits. The capability returns
+structured immutable intents and is not yet a Session Planner UI or persisted
+GeneratedRun. Loot generation, generated-run persistence, concrete creature
+resolution, and planner integration remain separate follow-up slices.
+
 ### M6 — completeness and first data-format release
 
 Music/autoplay, import/export, backup/recovery/salvage, tutorial, optional

@@ -7,6 +7,8 @@ files:
 extraResources:
   - from: resources/reference
     to: reference
+  - from: resources/sessiongeneration
+    to: sessiongeneration
 asar: true
 asarUnpack:
   - node_modules/better-sqlite3/**

@@ -152,6 +152,10 @@ import {
   referenceIndexSchema,
   referenceTargetSchema
 } from './reference.js'
+import {
+  sessionGenerationEncounterInputSchema,
+  sessionGenerationEncounterResultSchema
+} from './session-generation.js'
 
 export type OperationMode = 'read' | 'write'
 export type WindowRole = 'gm' | 'passive' | 'qualification'
@@ -447,6 +451,11 @@ export const coreOperations = {
     worldFactionDeleteReceiptSchema
   ),
   'session.read': read('session:read', none, liveSessionSnapshotSchema),
+  'sessionGeneration.generateEncounterIntents': read(
+    'session-generation:generate-intents',
+    sessionGenerationEncounterInputSchema,
+    sessionGenerationEncounterResultSchema
+  ),
   'scene.focus': write(
     'scene:focus',
     focusSceneInputSchema,

@@ -1,7 +1,14 @@
 import { spawn } from 'node:child_process'
 import { join } from 'node:path'
 
-const suites = ['workspaces', 'create', 'hexLocation', 'restart', 'dialogs']
+const suites = [
+  'workspaces',
+  'create',
+  'hexLocation',
+  'restart',
+  'dialogs',
+  'sessionGeneration'
+]
 const concurrency = 2
 let nextSuite = 0
 let failed = false

@@ -16,6 +16,7 @@ try {
     executable,
     [
       '--smoke-test',
+      '--session-generation-smoke',
       ...(qualification ? ['--m1-qualification'] : []),
       ...(process.platform === 'linux' ? ['--no-sandbox'] : []),
       `--user-data-dir=${userData}`

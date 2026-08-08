@@ -8,6 +8,11 @@ result containing encounter intents, rewards, packing, warnings, and audits.
 After the result is saved and reopened, its structured meaning MUST be
 equivalent to the result first presented for the same generation.
 
+The current Electron implementation is an encounter-intent vertical slice. It
+exposes the complete encounter target and intent stage through the utility
+process, but does not yet persist a `GeneratedRun` or produce loot, packing, or
+concrete creature identities.
+
 Session Planner is the primary consumer. Encounter converts generated encounter
 intents into concrete rosters. Session Generation does not own UI, authored
 sessions, Party members, creature facts, or saved Encounter plans.
