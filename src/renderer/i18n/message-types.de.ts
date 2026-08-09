@@ -1,5 +1,7 @@
 import type { catalogMessagesDe } from './catalog-messages.de.js'
+import type { campaignMenuMessagesDe } from './campaign-menu-messages.de.js'
 import type { hexMessagesDe } from './hex-messages.de.js'
+import type { generatorMessagesDe } from './generator-messages.de.js'
 import type { referenceMessagesDe } from './reference-messages.de.js'
 import type { sessionMessagesDe } from './session-messages.de.js'
 import type { uiMessagesDe } from './ui-messages.de.js'
@@ -7,6 +9,8 @@ import type { workspaceMessagesDe } from './workspace-messages.de.js'
 import type { worldplannerMessagesDe } from './worldplanner-messages.de.js'
 
 type MessagesDe = typeof workspaceMessagesDe &
+  typeof campaignMenuMessagesDe &
+  typeof generatorMessagesDe &
   typeof referenceMessagesDe &
   typeof sessionMessagesDe &
   typeof hexMessagesDe &

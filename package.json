@@ -15,6 +15,7 @@
     "update:reference-goldens": "tsx scripts/update-reference-goldens.ts",
     "check:references": "tsx scripts/check-reference-artifact.ts",
     "check:session-generation": "tsx scripts/check-session-generation-artifact.ts",
+    "profile:encounter-selector": "tsx scripts/profile-encounter-selector.ts",
     "reference:dialog:render": "tsx scripts/render-dialog-reference.ts",
     "build": "electron-vite build && tsx scripts/build-passive-preload.ts",
     "build:qualification": "tsx scripts/build-qualification.ts",

@@ -15,6 +15,7 @@ import type { WorkspaceScenario } from './workspace-surface-props.js'
 import { WorkspaceTopBar } from './workspace-top-bar.js'
 import { workspaceDefinition } from './workspace-definition.js'
 import './workspace.css'
+import type { GeneratorPresetApplicationLoader } from './generator-preset-application.js'
 
 export function WorkspaceApp() {
   const api = useCapabilityApi()
@@ -47,6 +48,18 @@ export function WorkspaceApp() {
   )
   const [inspected, setInspected] = useState<Creature | null>(null)
   const active = coordinator.campaigns.activeCampaignId !== null
+  const loadGeneratorPresetApplication =
+    useCallback<GeneratorPresetApplicationLoader>(
+      async (campaignId) => {
+        const { createGeneratorPresetApplicationPort } =
+          await import('./generator-preset-application.js')
+        return createGeneratorPresetApplicationPort(
+          api.generatorPresets,
+          campaignId
+        )
+      },
+      [api.generatorPresets]
+    )
 
   useEffect(() => {
     void api.runtime.coreStatus().then(setCoreStatus)
@@ -106,7 +119,7 @@ export function WorkspaceApp() {
       }}
       onError={featureError}
     >
-      <main className="app-shell">
+      <main className="app-shell" data-renderer-ready="gm">
         <WorkspaceTopBar
           campaigns={coordinator.campaigns}
           campaignMenuOpen={coordinator.campaignMenuOpen}
@@ -139,7 +152,7 @@ export function WorkspaceApp() {
           onError={featureError}
           theme={theme}
           toggleTheme={toggleTheme}
-          generatorPresets={api.generatorPresets}
+          loadGeneratorPresetApplication={loadGeneratorPresetApplication}
         />
         <div className="shell-body">
           <WorkspaceRail

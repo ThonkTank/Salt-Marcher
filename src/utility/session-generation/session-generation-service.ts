@@ -8,6 +8,11 @@ import {
   CatalogProviderError,
   type BundledEncounterCatalogProvider
 } from './catalog-provider.js'
+import {
+  systemGeneratorPresetId,
+  type GeneratorPresetConfigV3
+} from '../../shared/contracts/generator-presets.js'
+import { defaultGeneratorConfig } from '../../shared/generator/system-generator-preset.js'
 
 export class SessionGenerationService {
   constructor(
@@ -15,7 +20,16 @@ export class SessionGenerationService {
       BundledEncounterCatalogProvider,
       'load'
     >,
-    private readonly entropy: EncounterEntropy
+    private readonly entropy: EncounterEntropy,
+    private readonly preset: () => {
+      id: string
+      revision: number
+      config: GeneratorPresetConfigV3
+    } = () => ({
+      id: systemGeneratorPresetId,
+      revision: 0,
+      config: defaultGeneratorConfig
+    })
   ) {}
 
   generateEncounterIntents(
@@ -25,7 +39,8 @@ export class SessionGenerationService {
       return generateSessionEncounters(
         input,
         this.catalogProvider.load(),
-        this.entropy
+        this.entropy,
+        this.preset()
       )
     } catch (error) {
       if (error instanceof CatalogProviderError)

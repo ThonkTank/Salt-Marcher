@@ -60,6 +60,7 @@ Saving it is a Scene command and does not create Encounter runtime state.
 
 ## References
 
+- [Encounter Generation Requirements](requirements-encounter-generation.md)
 - [Encounter Runtime State UI](requirements-encounter-state-tab.md)
 - [Encounter Domain Model](../domain/domain-encounter.md)
 - [Runtime Scene Requirements](../../scene/requirements/requirements-scene.md)

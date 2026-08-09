@@ -64,7 +64,8 @@ export const sessionMessagesDe = {
   'encounter.noneGroupsHint':
     'Lege eine Gruppe an oder bestücke sie im Gruppen-Builder.',
   'encounter.complete': 'XP vergeben und beenden',
-  'encounter.tuning.auto': 'Auto',
+  'encounter.tuning.preset': 'Preset',
+  'encounter.tuning.trivial': 'Trivial',
   'encounter.tuning.easy': 'Leicht',
   'encounter.tuning.medium': 'Mittel',
   'encounter.tuning.hard': 'Schwer',
@@ -86,7 +87,7 @@ export const sessionMessagesDe = {
   'group.disposition.hostile': 'Feindlich',
   'group.disposition.neutral': 'Neutral',
   'group.disposition.allied': 'Verbündet',
-  'group.validation.name': 'Ein Gruppenname ist erforderlich.',
+  'group.name.placeholder': 'Optional · automatisch Gruppe 1, 2, …',
   'group.validation.availableMonster':
     'Mindestens ein verfügbares Monster ist erforderlich.',
   'group.tools': 'Filter und Generator',

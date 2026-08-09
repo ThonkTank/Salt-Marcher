@@ -5,6 +5,8 @@ This manifest identifies where each kind of claim belongs.
 - **Product behavior:** [vision](vision.md), feature requirements, confirmed
   acceptance cases, static catalogs, reference tables, and Golden-Master
   fixtures.
+  Encounter generator and preset behavior is canonical in the
+  [Encounter Generation Requirements](../encounter/requirements/requirements-encounter-generation.md).
 - **Technical direction:** [target architecture](architecture/target-architecture.md),
   the [development persistence contract](contract/persistence-lifecycle.md),
   and the current Campaign registry contract. Feature persistence contracts for

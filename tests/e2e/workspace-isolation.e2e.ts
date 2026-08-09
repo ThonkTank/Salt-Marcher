@@ -7,7 +7,10 @@ describe('isolated workspace routes', () => {
     const campaignName = await client.$('#campaign-name')
     await campaignName.waitForDisplayed({ timeout: 30_000 })
     await campaignName.setValue('Workspace Isolation')
-    await (await client.$('button=Kampagne erstellen')).click()
+    await (await client.$('button=Anlegen')).click()
+    await (
+      await client.$('section[aria-label="Session Steuerung"]')
+    ).waitForExist({ timeout: 10_000 })
 
     const menu = await client.$('button[aria-label="Menü"]')
     await expect(menu).toBeExisting()

@@ -32,7 +32,10 @@ const manifest = JSON.parse(
 
 const entryKey = entryForSource('index.html')
 const workspaceKey = Object.keys(manifest).find(
-  (key) => key.startsWith('_workspace-') && manifest[key]?.file.endsWith('.js')
+  (key) =>
+    key.startsWith('_workspace-') &&
+    !key.startsWith('_workspace-runtime') &&
+    manifest[key]?.file.endsWith('.js')
 )
 if (!workspaceKey) throw new Error('Workspace chunk is missing')
 const sessionKey = entryForSource(
@@ -55,7 +58,13 @@ const catalogGraph = difference(staticFilesFor(catalogKey), workspaceGraph)
 const hexStaticGraph = staticFilesFor(hexKey)
 const hexGraph = difference(hexStaticGraph, workspaceGraph)
 const referenceGraph = difference(staticFilesFor(referenceKey), workspaceGraph)
-const pixiGraph = difference(reachableFilesFor(pixiKey), hexStaticGraph)
+// Vite records the HTML entry as a static import of dynamic leaves. Stop that
+// back-edge or an incremental Pixi graph incorrectly absorbs every sibling
+// route reachable from the application entry.
+const pixiGraph = difference(
+  reachableFilesFor(pixiKey, new Set([entryKey])),
+  hexStaticGraph
+)
 const reachableRenderer = reachableFilesFor(entryKey)
 
 const measuredGraphs = {
@@ -162,6 +171,10 @@ if ([...hexStaticGraph].some((file) => /hex-map-canvas-pixi/.test(file)))
   throw new Error('Pixi renderer code is statically reachable from Hex')
 if (!reachableRenderer.has(manifest[pixiKey]!.file))
   throw new Error('Pixi leaf is not dynamically reachable from the application')
+if (
+  [...pixiGraph].some((file) => /campaign-menu|encounter-generator/.test(file))
+)
+  throw new Error('Unrelated Workspace dialogs leaked into the Pixi graph')
 if ([...reachableRenderer].some((file) => /qualification|babylon/i.test(file)))
   throw new Error('Qualification-only rendering code is reachable from the app')
 if ([...reachableRenderer].some((file) => file.endsWith('.woff')))
@@ -302,14 +315,22 @@ function staticFilesFor(key: string): Set<string> {
   return filesFor(key, false)
 }
 
-function reachableFilesFor(key: string): Set<string> {
-  return filesFor(key, true)
+function reachableFilesFor(
+  key: string,
+  boundaries: ReadonlySet<string> = new Set()
+): Set<string> {
+  return filesFor(key, true, boundaries)
 }
 
-function filesFor(key: string, includeDynamic: boolean): Set<string> {
+function filesFor(
+  key: string,
+  includeDynamic: boolean,
+  boundaries: ReadonlySet<string> = new Set()
+): Set<string> {
   const result = new Set<string>()
   const seen = new Set<string>()
   const collect = (current: string): void => {
+    if (boundaries.has(current)) return
     if (seen.has(current)) return
     seen.add(current)
     const entry = manifest[current]

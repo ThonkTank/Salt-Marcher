@@ -107,7 +107,7 @@ input {
   border-right: 1px solid var(--border-hair);
   border-radius: 0;
   background: transparent;
-  font-size: var(--text-xl);
+  font-size: 20px;
 }
 
 .menu-button:hover {
@@ -175,7 +175,6 @@ input {
 
 .eyebrow {
   margin: 0 0 0.1rem;
-  color: var(--text-eyebrow);
 }
 
 .top-bar-status {

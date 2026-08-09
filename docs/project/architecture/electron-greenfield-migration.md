@@ -34,14 +34,21 @@ Application and workspace modules now load through shell-owned failure
 isolation with structured renderer incidents and Main-controlled reload.
 Renderer feature ports are injected from React context; the mutable capability
 singleton has been removed. Pixi is loaded only at a visible Hex canvas. The
-common Workspace JavaScript graph is currently 814.2 KiB under its 900 KiB
-ceiling. The normal renderer has a 3.20 MiB hard ceiling with ten percent held
+common Workspace JavaScript graph remains below the 829,440-byte refactor
+acceptance boundary. The normal renderer has a 3.20 MiB hard ceiling with ten percent held
 back as corrective-work reserve instead of operating at the previous 2.80 MiB
 byte boundary. The 0.05 MiB increase
 accounts for the bounded virtual biome catalog and CRUD surface added with
 schema 15; schema 16 replaced separate World Location kind and region fields
 with tags and read-aloud text, and schema 17 normalizes ordered location-owned
 tags into validated rows while all per-entry ceilings remain unchanged.
+Development schema 22, Generator Config V3, and Session engine
+`saltmarcher-v4` are current. Schema 21 is reset rather than migrated. The
+versioned behavior and ownership are recorded in the
+[Encounter Generation requirements](../../encounter/requirements/requirements-encounter-generation.md)
+and ADRs 0001/0002; this progress record does not duplicate them. The bundle
+inventory stops Pixi measurement at the HTML-entry back-edge so unrelated
+dynamic Workspace siblings cannot be charged to the Pixi leaf.
 Legacy WOFF duplicates
 are excluded, and typed message placeholders fail closed. The canonical check
 now also runs the complete Campaign-walking/Hex journey against the built
@@ -137,11 +144,11 @@ catalogs, encounter lifecycle, editable loot, and pure TypeScript rules.
 Implement confirmed behavior anew with Golden Masters, reference snapshots,
 seeds, stable ordering, and explainable diffs.
 
-Current progress: the `saltmarcher-v2` encounter-intent capability now runs in
+Current progress: the `saltmarcher-v4` encounter-intent capability now runs in
 the utility process over a packaged, manifest-verified session-generation
 catalog. It covers session XP, exact encounter-target allocation, the Sheet-v1
-automatic encounter-count rule, role/CR candidate construction, deterministic
-selection, difficulty, bossiness, and integrity audits. The capability returns
+automatic encounter-count rule, generated preset role/CR candidate construction,
+streaming lexicographic selection, difficulty, bossiness, and integrity audits. The capability returns
 structured immutable intents and is not yet a Session Planner UI or persisted
 GeneratedRun. Loot generation, generated-run persistence, concrete creature
 resolution, and planner integration remain separate follow-up slices.

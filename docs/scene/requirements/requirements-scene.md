@@ -51,8 +51,13 @@ copy.
   the assigned Party.
 - `Auffüllen` preserves the current roster as its generation basis, while `Neu
   generieren` replaces it. Both use optional location, catalog filters, tuning,
-  and a deterministic seed. An unsaved result is discarded only after
-  confirmation and never survives restart.
+  the effective preset, and a deterministic seed. Scene supplies concrete
+  source capacity and materializes the shared abstract composition exactly; it
+  never weakens a selected CR-Block. Shared Config V3, selection, stock, and
+  ranking behavior is defined by the
+  [Encounter Generation Requirements](../../encounter/requirements/requirements-encounter-generation.md).
+  An unsaved result is discarded only after confirmation and never survives
+  restart.
 - Encounter may select only persisted groups from the focused Scene.
 - Selected groups remain live-linked: Combat HP, death and conditions update
   the same stable Scene members, and saved group edits reconcile immediately.
@@ -60,6 +65,14 @@ copy.
   members. Archiving a linked group removes it from the running Combat.
 - PC and NPC changes during initiative or combat reconcile immediately while
   retaining existing initiative, HP, round, and active turn where applicable.
+- Each identical monster below the configured mob threshold receives its own
+  initiative slot. At the threshold, the identical set receives one mob slot;
+  this partition is fixed when initiative is prepared, remains stable when the
+  linked roster changes, and is restored unchanged after restart. Persistence
+  records the source Scene-entry ID and `individual`/`mob` partition kind
+  explicitly rather than deriving either from a row-ID suffix. The prepared
+  runtime also records the effective preset ID/revision, config hash, and mob
+  threshold.
 - A failed Encounter synchronization is visible as pending. The saved Scene
   workspace remains usable, while stale Encounter context MUST NOT be presented
   as synchronized. Initialization and refresh retry the saved revision.
@@ -83,5 +96,6 @@ copy.
 
 ## References
 
+- [Encounter Generation Requirements](../../encounter/requirements/requirements-encounter-generation.md)
 - [Scene Domain](../domain/domain-scene.md)
 - [Scene Persistence Contract](../contract/contract-scene-persistence.md)

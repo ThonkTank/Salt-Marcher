@@ -32,7 +32,7 @@ import { PartyStore } from '../core/party/party-store.js'
 import { SceneStore } from '../core/scene/scene-store.js'
 import { CampaignUnitOfWork } from '../core/application/campaign-unit-of-work.js'
 import { GeneratorPresetStore } from '../core/persistence/sqlite/generator-preset-store.js'
-import { defaultGeneratorConfig } from '../shared/contracts/generator-presets.js'
+import { defaultGeneratorConfig } from '../shared/generator/system-generator-preset.js'
 import { WorldLocationDeletionCommandHandler } from '../core/application/world-location-deletion.js'
 import { WorldLocationSaveCommandHandler } from '../core/application/world-location-save.js'
 import { WorldLocationSaveJournal } from '../core/worldplanner/world-location-save-journal.js'
@@ -76,7 +76,8 @@ const sessionGenerationCatalog = new BundledEncounterCatalogProvider(
 )
 const sessionGenerationService = new SessionGenerationService(
   sessionGenerationCatalog,
-  sha256EncounterEntropy
+  sha256EncounterEntropy,
+  () => generatorPresets.configFor(campaigns.list().activeCampaignId)
 )
 const activeDatabase = () => campaigns.activeCampaignDatabase()
 const symbolLifecycle = new LocationSymbolLifecycleService(campaigns)
@@ -101,7 +102,7 @@ const biomeProjection = (
 ) => biomeService.hexDefinition(id)
 const play = new LivePlayService(activeDatabase, biomeProjection, () => {
   try {
-    return generatorPresets.configFor(campaigns.list().activeCampaignId).config
+    return generatorPresets.configFor(campaigns.list().activeCampaignId)
   } catch {
     return defaultGeneratorConfig
   }
@@ -504,36 +505,14 @@ const campaignHandlers = {
   'settings.read': () => campaigns.readSettings(),
   'settings.update': (input) =>
     campaigns.updateSettings(input.patch, input.expectedRevision),
-  'generatorPresets.read': () =>
-    generatorPresets.read(campaigns.list().activeCampaignId),
-  'generatorPresets.create': (input) =>
-    generatorPresets.create(
-      input.name,
-      input.config,
-      input.expectedRevision,
-      campaigns.list().activeCampaignId
-    ),
-  'generatorPresets.update': (input) =>
-    generatorPresets.update(
-      input.id,
-      input.name,
-      input.config,
-      input.expectedRevision,
-      campaigns.list().activeCampaignId
-    ),
-  'generatorPresets.delete': (input) =>
-    generatorPresets.delete(
-      input.id,
-      input.expectedRevision,
-      campaigns.list().activeCampaignId
-    ),
-  'generatorPresets.assign': (input) =>
-    generatorPresets.assign(
-      input.campaignId,
-      input.presetId,
-      input.expectedRevision,
-      campaigns.list().activeCampaignId
-    ),
+  'generatorPresets.readEditor': (input) =>
+    generatorPresets.readEditor(input.campaignId),
+  'generatorPresets.create': (input) => generatorPresets.create(input),
+  'generatorPresets.update': (input) => generatorPresets.update(input),
+  'generatorPresets.delete': (input) => generatorPresets.delete(input),
+  'generatorPresets.assign': (input) => generatorPresets.assign(input),
+  'generatorPresets.commandReceipt': (input) =>
+    generatorPresets.commandReceipt(input.commandId),
   'projection.read': () => emptyPassiveProjection
 } satisfies Pick<
   CoreHandlers,
@@ -546,11 +525,12 @@ const campaignHandlers = {
   | 'campaign.deleteForever'
   | 'settings.read'
   | 'settings.update'
-  | 'generatorPresets.read'
+  | 'generatorPresets.readEditor'
   | 'generatorPresets.create'
   | 'generatorPresets.update'
   | 'generatorPresets.delete'
   | 'generatorPresets.assign'
+  | 'generatorPresets.commandReceipt'
   | 'projection.read'
 >
 

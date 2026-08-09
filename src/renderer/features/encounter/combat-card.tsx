@@ -157,7 +157,6 @@ export function CombatCardView(props: {
               <button
                 className="damage"
                 aria-label={message('encounter.damage')}
-                title={message('encounter.damage')}
                 disabled={!card.alive}
                 onClick={() => changeHp(false)}
               >
@@ -166,7 +165,6 @@ export function CombatCardView(props: {
               <button
                 className="heal"
                 aria-label={message('encounter.heal')}
-                title={message('encounter.heal')}
                 disabled={!card.alive}
                 onClick={() => changeHp(true)}
               >

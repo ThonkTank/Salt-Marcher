@@ -3,6 +3,7 @@
 ## Documentation Set
 
 - [Feature Spec](requirements/requirements-encounter.md)
+- [Canonical Encounter Generation](requirements/requirements-encounter-generation.md)
 - [Domain Model](domain/domain-encounter.md)
 - [Persistence](contract/contract-encounter-persistence.md)
 - [Saved Plans Contract](contract/contract-encounter-saved-plans.md)

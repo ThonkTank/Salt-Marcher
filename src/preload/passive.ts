@@ -9,7 +9,6 @@ import { capabilityFailureSchema } from '../shared/contracts/campaign.js'
 import { CapabilityError } from '../shared/errors/capability-error.js'
 import {
   coreOperations,
-  mainOperationForChannel,
   mainOperations
 } from '../shared/contracts/operations.js'
 
@@ -24,14 +23,14 @@ type PassiveE2eApi = PassiveDisplayApi & {
   >
 }
 
+const invokeIpc = (channel: string, input: unknown): Promise<unknown> =>
+  ipcRenderer.invoke(channel, input)
+
 const api: PassiveE2eApi = {
   async readProjection() {
     const operation = coreOperations['projection.read']
     const result = responseSchema.parse(
-      await ipcRenderer.invoke(
-        operation.channel!,
-        operation.input.parse(undefined)
-      )
+      await invokeIpc(operation.channel!, operation.input.parse(undefined))
     )
     if (!result.ok)
       throw new CapabilityError(result.error.code, result.error.retryable)
@@ -44,11 +43,11 @@ const api: PassiveE2eApi = {
     return () => ipcRenderer.removeListener('projection:changed', handler)
   },
   async coreStatus() {
-    const operation = mainOperationForChannel('runtime:core-status')
-    if (operation === null || operation[1].channel === null)
+    const operation = mainOperations['runtime.coreStatus']
+    if (operation.channel === null)
       throw new CapabilityError('protocol_violation', false)
     return coreProcessStatusSchema.parse(
-      await ipcRenderer.invoke(operation[1].channel, undefined)
+      await invokeIpc(operation.channel, undefined)
     )
   },
   onCoreStatus(listener) {
@@ -79,10 +78,7 @@ if (process.argv.includes('--passive-e2e-probe')) {
         await Promise.all(
           privilegedChannels.map(async (channel) => {
             try {
-              const result: unknown = await ipcRenderer.invoke(
-                channel,
-                undefined
-              )
+              const result = await invokeIpc(channel, undefined)
               const rejected =
                 result !== null &&
                 typeof result === 'object' &&

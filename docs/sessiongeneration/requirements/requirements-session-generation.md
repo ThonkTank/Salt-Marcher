@@ -29,8 +29,10 @@ Through Session Planner, a successful generation contributes:
 - stable run and treasure identities used by the prepared session
 
 Generated loot is structured result data. Formatted text is an optional derived
-rendering and MUST NOT be the only reward output. Engine and catalog versions
-are audit metadata, not user-selectable ruleset controls.
+rendering and MUST NOT be the only reward output. Engine and catalog versions,
+effective generator-preset identity and revision, and the generator-config hash
+are audit metadata. A preset is a user-selectable composition policy, not a
+catalog-version selector.
 
 ## Inputs And Validation
 
@@ -66,6 +68,14 @@ different active catalog rows. Exact selected candidates, items, containers,
 monetary totals, formatted text, spreadsheet row identities, and per-cell seed
 multipliers are outside compatibility.
 
+Session Generation retains its exact-sum target allocator and passes each
+allocated XP target to the shared composition selector. It returns abstract
+statblock requirements rather than concrete creature identities, and the
+encounter statblock count equals the sum of positive per-block slots. Preset
+ownership, Config V3, enumeration, hard constraints, ranking, diagnostics, and
+Scene parity are defined by the
+[Encounter Generation Requirements](../../encounter/requirements/requirements-encounter-generation.md).
+
 ## Golden Acceptance Boundary
 
 For two level-3 players, two level-4 players, adventure-day fraction `0.6`,
@@ -93,8 +103,8 @@ formatted-text snapshot is Golden compatibility.
 
 ## Acceptance Criteria
 
-- equal normalized input, engine version, and catalog content hash produce
-  equal structured results
+- equal normalized input, engine version, catalog content hash, and effective
+  generator-config hash produce equal structured results
 - encounter targets sum exactly to session XP
 - every applicable result retains seed, versions, content hash, structured
   encounters, rewards, packing, warnings, and audits
@@ -105,5 +115,6 @@ formatted-text snapshot is Golden compatibility.
 
 ## Sources
 
+- [Encounter Generation Requirements](../../encounter/requirements/requirements-encounter-generation.md)
 - [Session Planner Requirements](../../sessionplanner/requirements/requirements-session-planner.md)
 - [Encounter Requirements](../../encounter/requirements/requirements-encounter.md)

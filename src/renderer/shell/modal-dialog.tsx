@@ -28,6 +28,7 @@ export function ModalDialog(props: {
   backdropClassName?: string
   busy?: boolean
   role?: 'dialog' | 'alertdialog'
+  dismissOnBackdrop?: boolean
 }) {
   const layer = useContext(OverlayLayerContext)
   if (!layer)
@@ -98,6 +99,14 @@ export function ModalDialog(props: {
       data-modal-bottom={stackIndex === 0 ? 'true' : 'false'}
       data-modal-top={topModal ? 'true' : 'false'}
       style={backdropStyle}
+      onPointerDown={(event) => {
+        if (
+          props.dismissOnBackdrop &&
+          event.target === event.currentTarget &&
+          !busy
+        )
+          props.onClose()
+      }}
     >
       <section ref={dialog} {...shared}>
         {props.children}

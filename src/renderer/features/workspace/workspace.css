@@ -1,21 +1,50 @@
 .campaign-menu {
-  position: absolute;
-  z-index: 100;
-  top: 100%;
-  left: 0;
-  display: grid;
-  width: min(31rem, calc(100vw - 1rem));
-  max-height: calc(100vh - var(--topbar-h) - 0.75rem);
-  gap: var(--space-7);
-  overflow: auto;
+  width: 176px;
   border: var(--border-width-structural) solid var(--border-structural);
-  border-top: 0;
-  background: var(--surface-panel);
-  box-shadow: var(--shadow-panel);
-  padding: var(--space-8);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-dialog);
+  padding: var(--space-2);
 }
 
-.campaign-menu > header,
+.campaign-menu > nav {
+  display: grid;
+  gap: 1px;
+}
+
+.campaign-menu > nav > button {
+  border: 0;
+  background: transparent;
+  color: var(--text-1);
+  font-family: var(--font-smallcaps);
+  font-size: var(--text-base);
+  letter-spacing: var(--tracking-caps);
+  padding: var(--space-3) var(--space-6);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.campaign-menu > nav > button:hover {
+  background: var(--surface-button-hover);
+}
+
+.campaign-dialog {
+  width: min(31rem, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  border: var(--border-width-structural) solid var(--border-structural);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-dialog);
+  padding: var(--space-9);
+}
+
+.campaign-dialog-content,
+.campaign-menu-section,
+.campaign-delete-confirm {
+  display: grid;
+  gap: var(--space-7);
+}
+
+.campaign-dialog-content > header,
 .campaign-menu-list > li,
 .campaign-row-actions {
   display: flex;
@@ -24,30 +53,35 @@
   gap: var(--space-5);
 }
 
-.campaign-menu h2,
-.campaign-menu h3,
-.campaign-menu p {
+.campaign-dialog h2,
+.campaign-dialog p {
   margin: 0;
 }
 
-.campaign-menu h2 {
+.campaign-dialog h2 {
   font-family: var(--font-display);
   font-size: var(--text-xl);
 }
 
-.campaign-menu h3,
-.campaign-create label,
-.campaign-trash summary {
-  font-family: var(--font-smallcaps);
-  font-size: var(--text-ui);
-  letter-spacing: var(--tracking-caps);
+.campaign-dialog-content > header > button,
+.settings-dialog-header > button {
+  min-width: 2rem;
+  border: 0;
+  background: transparent;
+  color: var(--text-2);
+  font-size: var(--text-xl);
 }
 
-.campaign-create,
-.campaign-menu-section,
-.campaign-delete-confirm {
+.campaign-create {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: var(--space-4);
+}
+
+.primary {
+  border-color: var(--accent-rubric);
+  background: var(--accent-rubric);
+  color: var(--text-on-accent);
 }
 
 .campaign-menu-list {
@@ -61,7 +95,8 @@
 .campaign-menu-list > li {
   align-items: stretch;
   border: 1px solid var(--border-1);
-  background: var(--surface-card-flat);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-card);
   padding: var(--space-4);
 }
 
@@ -76,6 +111,11 @@
   text-align: left;
 }
 
+.campaign-select strong {
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+}
+
 .campaign-select small,
 .campaign-empty {
   color: var(--text-3);
@@ -88,6 +128,8 @@
 
 .campaign-row-actions button,
 .campaign-rename button {
+  border-color: transparent;
+  background: transparent;
   padding: 0.32rem 0.48rem;
   font-size: var(--text-ui);
 }
@@ -111,6 +153,9 @@
 .campaign-trash summary {
   cursor: pointer;
   margin-bottom: var(--space-5);
+  font-family: var(--font-smallcaps);
+  font-size: var(--text-ui);
+  letter-spacing: var(--tracking-caps);
 }
 
 .campaign-trashed-name {
@@ -136,11 +181,7 @@
   margin: var(--space-4) 0;
   font-family: var(--font-display);
 }
-@media (max-width: 700px) {
-  .work-area {
-    padding: 1rem;
-  }
-}
+
 .layout-cockpit {
   display: flex;
   overflow: hidden;
@@ -172,4 +213,10 @@
   flex-wrap: wrap;
   justify-content: center;
   gap: var(--space-3);
+}
+
+@media (max-width: 700px) {
+  .work-area {
+    padding: 1rem;
+  }
 }

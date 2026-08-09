@@ -3,30 +3,21 @@ import { z } from 'zod'
 import {
   activateCampaignInputSchema,
   campaignIdInputSchema,
-  campaignSnapshotSchema,
   capabilityFailureSchema,
   createCampaignInputSchema,
   freezeCampaignSnapshot,
   permanentlyDeleteCampaignInputSchema,
   renameCampaignInputSchema
 } from '../../shared/contracts/campaign.js'
-import {
-  creatureCatalogPageSchema,
-  creatureCatalogQuerySchema,
-  creatureFilterOptionsSchema,
-  creatureSchema
-} from '../../shared/contracts/encounter.js'
+import { creatureCatalogQuerySchema } from '../../shared/contracts/encounter.js'
 import {
   adjustInitiativeInputSchema,
   changeHpInputSchema,
-  combatCommandResultSchema,
   combatRevisionInputSchema,
   confirmInitiativeInputSchema,
   joinCombatGroupInputSchema,
-  liveSessionSnapshotSchema,
   moveCombatPhaseInputSchema,
   prepareCombatInputSchema,
-  sceneGroupCommandResultSchema,
   setConcentrationInputSchema,
   setExhaustionInputSchema,
   toggleConditionInputSchema,
@@ -34,11 +25,9 @@ import {
 } from '../../shared/contracts/live-session.js'
 import {
   adjustPartyXpInputSchema,
-  adventuringDayCalculationSchema,
   adventuringDayInputSchema,
   createPartyCharacterInputSchema,
   deletePartyCharacterInputSchema,
-  partySnapshotSchema,
   restPartyInputSchema,
   setMembershipInputSchema,
   updatePartyCharacterInputSchema
@@ -47,25 +36,24 @@ import { CapabilityError } from '../../shared/errors/capability-error.js'
 import type { SaltMarcherApi } from '../../shared/contracts/capability-api.js'
 import {
   coreOperations,
-  mainOperationForChannel,
-  operationForChannel,
+  mainOperations,
   type CoreOperationInput,
   type CoreOperationKind,
-  type CoreOperationOutput
+  type CoreOperationOutput,
+  type MainOperationInput,
+  type MainOperationKind,
+  type MainOperationOutput
 } from '../../shared/contracts/operations.js'
 import {
   assignScenePartyInputSchema,
   deleteSceneGroupInputSchema,
-  encounterSelectionEvaluationSchema,
   evaluateEncounterSelectionInputSchema,
   evaluateSceneGroupDraftInputSchema,
   focusSceneInputSchema,
   saveSceneGroupInputSchema,
   setSceneGroupArchivedInputSchema,
   setSceneLocationInputSchema,
-  sceneGroupDraftEvaluationSchema,
-  sceneGroupDraftGenerationRequestSchema,
-  sceneGroupDraftGenerationSchema
+  sceneGroupDraftGenerationRequestSchema
 } from '../../shared/contracts/scene.js'
 import {
   coreProcessStatusSchema,
@@ -74,53 +62,28 @@ import {
 import { sessionChangeNoticeSchema } from '../../shared/contracts/session-change.js'
 import {
   installationPreferencesSchema,
-  installationSettingsSchema,
   updateInstallationSettingsInputSchema
 } from '../../shared/contracts/settings.js'
-import {
-  generatorPresetAssignInputSchema,
-  generatorPresetCreateInputSchema,
-  generatorPresetDeleteInputSchema,
-  generatorPresetSnapshotSchema,
-  generatorPresetUpdateInputSchema
-} from '../../shared/contracts/generator-presets.js'
 import {
   deleteWorldLocationInputSchema,
   saveWorldLocationInputSchema,
   worldLocationPlacementCommandSchema,
-  worldLocationPlacementCommitResultSchema,
   updateWorldLocationMapPresentationInputSchema,
   worldLocationChangeNoticeSchema,
-  worldLocationDeleteReceiptSchema,
-  worldLocationMapPresentationSchema,
   worldLocationSaveReceiptInputSchema,
-  worldLocationSaveReceiptSchema,
-  worldLocationSnapshotSchema,
-  worldLocationTagSearchInputSchema,
-  worldLocationTagSuggestionsSchema
+  worldLocationTagSearchInputSchema
 } from '../../shared/contracts/world-location.js'
 import {
   createLocationSymbolInputSchema,
   deleteLocationSymbolInputSchema,
   importLocationSymbolInputSchema,
-  importLocationSymbolResultSchema,
-  locationSymbolMutationReceiptSchema,
   locationSymbolChangeNoticeSchema,
-  locationSymbolDeleteImpactSchema,
-  locationSymbolDeleteResultSchema,
   locationSymbolDetailInputSchema,
-  locationSymbolPageSchema,
-  locationSymbolSchema,
   locationSymbolSearchInputSchema,
-  locationSymbolSnapshotSchema,
   updateLocationSymbolInputSchema
 } from '../../shared/contracts/location-symbol.js'
 import {
-  biomeCatalogMutationResultSchema,
   biomeChangeNoticeSchema,
-  biomeDeleteImpactSchema,
-  biomeDefinitionSchema,
-  biomePageSchema,
   biomeSearchInputSchema,
   createBiomeInputSchema,
   deleteBiomeInputSchema,
@@ -132,60 +95,21 @@ import {
   deleteEncounterTableInputSchema,
   deleteWorldFactionInputSchema,
   encounterTableCommandReceiptInputSchema,
-  encounterTableCommandReceiptSchema,
-  encounterTableDeleteReceiptSchema,
   encounterTableChangeNoticeSchema,
-  encounterTableMutationReceiptSchema,
-  encounterTableSnapshotSchema,
   updateEncounterTableInputSchema,
   updateWorldFactionInputSchema,
-  worldFactionCommandReceiptInputSchema,
-  worldFactionCommandReceiptSchema,
-  worldFactionDeleteReceiptSchema,
-  worldFactionMutationReceiptSchema,
-  worldFactionSnapshotSchema
+  worldFactionCommandReceiptInputSchema
 } from '../../shared/contracts/encounter-source.js'
 import { hexChangeNoticeSchema } from '../../shared/contracts/hex.js'
 import {
   referenceCampaignIndexInputSchema,
-  referenceDocumentSchema,
-  referenceIndexSchema,
   referenceIndexChangeNoticeSchema,
   referenceTargetSchema
 } from '../../shared/contracts/reference.js'
 import { sessionGenerationEncounterInputSchema } from '../../shared/contracts/session-generation.js'
 
-async function invoke<T>(
-  channel: string,
-  input: unknown,
-  schema: { safeParse(value: unknown): { success: boolean; data?: T } }
-): Promise<T> {
-  try {
-    const operation = operationForChannel(channel)
-    if (operation === null)
-      throw new CapabilityError('protocol_violation', false)
-    const raw: unknown = await ipcRenderer.invoke(operation[1].channel!, input)
-    const result = z
-      .discriminatedUnion('ok', [
-        z.object({ ok: z.literal(true), payload: z.unknown() }).passthrough(),
-        z
-          .object({
-            ok: z.literal(false),
-            error: capabilityFailureSchema
-          })
-          .passthrough()
-      ])
-      .parse(raw)
-    if (!result.ok)
-      throw new CapabilityError(result.error.code, result.error.retryable)
-    const value = schema.safeParse(result.payload)
-    if (!value.success) throw new CapabilityError('protocol_violation', false)
-    return value.data!
-  } catch (error) {
-    if (error instanceof CapabilityError) throw error
-    throw new CapabilityError('core_unavailable', true)
-  }
-}
+const invokeIpc = (channel: string, input: unknown): Promise<unknown> =>
+  ipcRenderer.invoke(channel, input)
 
 async function invokeCore<K extends CoreOperationKind>(
   kind: K,
@@ -197,10 +121,7 @@ async function invokeCore<K extends CoreOperationKind>(
   const request = operation.input.safeParse(input)
   if (!request.success) throw new CapabilityError('validation_failed', false)
   try {
-    const raw: unknown = await ipcRenderer.invoke(
-      operation.channel,
-      request.data
-    )
+    const raw = await invokeIpc(operation.channel, request.data)
     const result = z
       .discriminatedUnion('ok', [
         z.object({ ok: z.literal(true), payload: z.unknown() }).passthrough(),
@@ -220,64 +141,53 @@ async function invokeCore<K extends CoreOperationKind>(
   }
 }
 
-async function invokeMain<T>(channel: string, input: unknown): Promise<T> {
-  const operation = mainOperationForChannel(channel)
-  if (operation === null) throw new CapabilityError('protocol_violation', false)
-  const request = operation[1].input.safeParse(input)
+async function invokeMain<K extends MainOperationKind>(
+  kind: K,
+  input: MainOperationInput<K>
+): Promise<MainOperationOutput<K>> {
+  const operation = mainOperations[kind]
+  if (operation.channel === null)
+    throw new CapabilityError('protocol_violation', false)
+  const request = operation.input.safeParse(input)
   if (!request.success) throw new CapabilityError('validation_failed', false)
   try {
-    return operation[1].output.parse(
-      await ipcRenderer.invoke(operation[1].channel!, request.data)
-    ) as T
+    return operation.output.parse(
+      await invokeIpc(operation.channel, request.data)
+    ) as MainOperationOutput<K>
   } catch (error) {
     if (error instanceof CapabilityError) throw error
     throw new CapabilityError('core_unavailable', true)
   }
 }
 
-const live = async (channel: string, input: unknown) =>
-  freezeDeep(await invoke(channel, input, liveSessionSnapshotSchema))
-const combatCommand = async (channel: string, input: unknown) =>
-  freezeDeep(await invoke(channel, input, combatCommandResultSchema))
-const sceneGroupCommand = async (channel: string, input: unknown) =>
-  freezeDeep(await invoke(channel, input, sceneGroupCommandResultSchema))
-
 const api: SaltMarcherApi = {
   campaigns: {
     async list() {
       return freezeCampaignSnapshot(
-        await invoke('campaign:list', undefined, campaignSnapshotSchema)
+        await invokeCore('campaign.list', undefined)
       )
     },
     async create(name) {
       const input = createCampaignInputSchema.parse({ name })
-      return freezeCampaignSnapshot(
-        await invoke('campaign:create', input, campaignSnapshotSchema)
-      )
+      return freezeCampaignSnapshot(await invokeCore('campaign.create', input))
     },
     async activate(id) {
       const input = activateCampaignInputSchema.parse({ id })
       return freezeCampaignSnapshot(
-        await invoke('campaign:activate', input, campaignSnapshotSchema)
+        await invokeCore('campaign.activate', input)
       )
     },
     async rename(id, name) {
       const input = renameCampaignInputSchema.parse({ id, name })
-      return freezeCampaignSnapshot(
-        await invoke('campaign:rename', input, campaignSnapshotSchema)
-      )
+      return freezeCampaignSnapshot(await invokeCore('campaign.rename', input))
     },
     async trash(id) {
       const input = campaignIdInputSchema.parse({ id })
-      return freezeCampaignSnapshot(
-        await invoke('campaign:trash', input, campaignSnapshotSchema)
-      )
+      return freezeCampaignSnapshot(await invokeCore('campaign.trash', input))
     },
     async restore(id) {
       const input = campaignIdInputSchema.parse({ id })
-      return freezeCampaignSnapshot(
-        await invoke('campaign:restore', input, campaignSnapshotSchema)
-      )
+      return freezeCampaignSnapshot(await invokeCore('campaign.restore', input))
     },
     async deleteForever(id, confirmationName) {
       const input = permanentlyDeleteCampaignInputSchema.parse({
@@ -285,180 +195,120 @@ const api: SaltMarcherApi = {
         confirmationName
       })
       return freezeCampaignSnapshot(
-        await invoke('campaign:deleteForever', input, campaignSnapshotSchema)
+        await invokeCore('campaign.deleteForever', input)
       )
     }
   },
   settings: {
-    read: async () =>
-      freezeDeep(
-        await invoke('settings:read', undefined, installationSettingsSchema)
-      ),
+    read: async () => freezeDeep(await invokeCore('settings.read', undefined)),
     update: async (patch, expectedRevision) =>
       freezeDeep(
-        await invoke(
-          'settings:update',
+        await invokeCore(
+          'settings.update',
           updateInstallationSettingsInputSchema.parse({
             patch: installationPreferencesSchema.partial().parse(patch),
             expectedRevision
-          }),
-          installationSettingsSchema
+          })
         )
       )
   },
   generatorPresets: {
-    read: async () =>
+    readEditor: async (input) =>
+      freezeDeep(await invokeCore('generatorPresets.readEditor', input)),
+    create: async (input) =>
+      freezeDeep(await invokeCore('generatorPresets.create', input)),
+    update: async (input) =>
+      freezeDeep(await invokeCore('generatorPresets.update', input)),
+    delete: async (input) =>
+      freezeDeep(await invokeCore('generatorPresets.delete', input)),
+    assign: async (input) =>
+      freezeDeep(await invokeCore('generatorPresets.assign', input)),
+    commandReceipt: async (commandId) =>
       freezeDeep(
-        await invoke(
-          'generator-presets:read',
-          undefined,
-          generatorPresetSnapshotSchema
-        )
-      ),
-    create: async (name, config, expectedRevision) =>
-      freezeDeep(
-        await invoke(
-          'generator-presets:create',
-          generatorPresetCreateInputSchema.parse({
-            name,
-            config,
-            expectedRevision
-          }),
-          generatorPresetSnapshotSchema
-        )
-      ),
-    update: async (id, name, config, expectedRevision) =>
-      freezeDeep(
-        await invoke(
-          'generator-presets:update',
-          generatorPresetUpdateInputSchema.parse({
-            id,
-            name,
-            config,
-            expectedRevision
-          }),
-          generatorPresetSnapshotSchema
-        )
-      ),
-    delete: async (id, expectedRevision) =>
-      freezeDeep(
-        await invoke(
-          'generator-presets:delete',
-          generatorPresetDeleteInputSchema.parse({ id, expectedRevision }),
-          generatorPresetSnapshotSchema
-        )
-      ),
-    assign: async (campaignId, presetId, expectedRevision) =>
-      freezeDeep(
-        await invoke(
-          'generator-presets:assign',
-          generatorPresetAssignInputSchema.parse({
-            campaignId,
-            presetId,
-            expectedRevision
-          }),
-          generatorPresetSnapshotSchema
-        )
+        await invokeCore('generatorPresets.commandReceipt', { commandId })
       )
   },
   party: {
-    read: async () =>
-      freezeDeep(await invoke('party:read', undefined, partySnapshotSchema)),
+    read: async () => freezeDeep(await invokeCore('party.read', undefined)),
     setMembership: async (id, active, expectedRevision) =>
       freezeDeep(
-        await invoke(
-          'party:setMembership',
-          setMembershipInputSchema.parse({ id, active, expectedRevision }),
-          partySnapshotSchema
+        await invokeCore(
+          'party.setMembership',
+          setMembershipInputSchema.parse({ id, active, expectedRevision })
         )
       ),
     create: async (character, expectedRevision) =>
       freezeDeep(
-        await invoke(
-          'party:create',
+        await invokeCore(
+          'party.create',
           createPartyCharacterInputSchema.parse({
             character,
             expectedRevision
-          }),
-          partySnapshotSchema
+          })
         )
       ),
     update: async (id, character, expectedRevision) =>
       freezeDeep(
-        await invoke(
-          'party:update',
+        await invokeCore(
+          'party.update',
           updatePartyCharacterInputSchema.parse({
             id,
             character,
             expectedRevision
-          }),
-          partySnapshotSchema
+          })
         )
       ),
     delete: async (id, expectedRevision) =>
       freezeDeep(
-        await invoke(
-          'party:delete',
-          deletePartyCharacterInputSchema.parse({ id, expectedRevision }),
-          partySnapshotSchema
+        await invokeCore(
+          'party.delete',
+          deletePartyCharacterInputSchema.parse({ id, expectedRevision })
         )
       ),
     adjustXp: async (id, delta, expectedRevision) =>
       freezeDeep(
-        await invoke(
-          'party:adjustXp',
-          adjustPartyXpInputSchema.parse({ id, delta, expectedRevision }),
-          partySnapshotSchema
+        await invokeCore(
+          'party.adjustXp',
+          adjustPartyXpInputSchema.parse({ id, delta, expectedRevision })
         )
       ),
     rest: async (type, expectedRevision) =>
       freezeDeep(
-        await invoke(
-          'party:rest',
-          restPartyInputSchema.parse({ type, expectedRevision }),
-          partySnapshotSchema
+        await invokeCore(
+          'party.rest',
+          restPartyInputSchema.parse({ type, expectedRevision })
         )
       ),
     calculateAdventuringDay: (rows, totalXp) =>
-      invoke(
-        'party:calculateAdventuringDay',
+      invokeCore(
+        'party.calculateAdventuringDay',
         adventuringDayInputSchema.parse({
           rows,
           ...(totalXp === undefined ? {} : { totalXp })
-        }),
-        adventuringDayCalculationSchema
+        })
       )
   },
   creatures: {
     search: (query) =>
-      invoke(
-        'creatures:search',
-        creatureCatalogQuerySchema.parse(query),
-        creatureCatalogPageSchema
-      ),
-    filterOptions: () =>
-      invoke('creatures:filterOptions', undefined, creatureFilterOptionsSchema),
-    detail: (id) => invoke('creatures:detail', { id }, creatureSchema)
+      invokeCore('creatures.search', creatureCatalogQuerySchema.parse(query)),
+    filterOptions: () => invokeCore('creatures.filterOptions', undefined),
+    detail: (id) => invokeCore('creatures.detail', { id })
   },
   references: {
     staticIndex: async () =>
-      freezeDeep(
-        await invoke('references:static-index', undefined, referenceIndexSchema)
-      ),
+      freezeDeep(await invokeCore('references.staticIndex', undefined)),
     campaignIndex: async (campaignId) =>
       freezeDeep(
-        await invoke(
-          'references:campaign-index',
-          referenceCampaignIndexInputSchema.parse({ campaignId }),
-          referenceIndexSchema
+        await invokeCore(
+          'references.campaignIndex',
+          referenceCampaignIndexInputSchema.parse({ campaignId })
         )
       ),
     detail: async (target) =>
       freezeDeep(
-        await invoke(
-          'references:detail',
-          referenceTargetSchema.parse(target),
-          referenceDocumentSchema
+        await invokeCore(
+          'references.detail',
+          referenceTargetSchema.parse(target)
         )
       ),
     onCampaignIndexChanged(listener) {
@@ -470,60 +320,51 @@ const api: SaltMarcherApi = {
     }
   },
   locations: {
-    read: async () =>
-      freezeDeep(
-        await invoke('locations:read', undefined, worldLocationSnapshotSchema)
-      ),
+    read: async () => freezeDeep(await invokeCore('locations.read', undefined)),
     suggestTags: async (query, limit = 6) =>
       freezeDeep(
-        await invoke(
-          'locations:suggest-tags',
-          worldLocationTagSearchInputSchema.parse({ query, limit }),
-          worldLocationTagSuggestionsSchema
+        await invokeCore(
+          'locations.suggestTags',
+          worldLocationTagSearchInputSchema.parse({ query, limit })
         )
       ),
     save: async (input) =>
       freezeDeep(
-        await invoke(
-          'locations:save',
-          saveWorldLocationInputSchema.parse(input),
-          worldLocationSaveReceiptSchema
+        await invokeCore(
+          'locations.save',
+          saveWorldLocationInputSchema.parse(input)
         )
       ),
     saveReceipt: async (commandId) =>
       freezeDeep(
-        await invoke(
-          'locations:save-receipt',
-          worldLocationSaveReceiptInputSchema.parse({ commandId }),
-          worldLocationSaveReceiptSchema.nullable()
+        await invokeCore(
+          'locations.saveReceipt',
+          worldLocationSaveReceiptInputSchema.parse({ commandId })
         )
       ),
     commitPlacement: async (input) =>
       freezeDeep(
-        await invoke(
-          'locations:commit-placement',
-          worldLocationPlacementCommandSchema.parse(input),
-          worldLocationPlacementCommitResultSchema
+        await invokeCore(
+          'locations.commitPlacement',
+          worldLocationPlacementCommandSchema.parse(input)
         )
       ),
     updateMapPresentation: async (id, patch, expectedRevision) =>
       freezeDeep(
-        await invoke(
-          'locations:update-map-presentation',
+        await invokeCore(
+          'locations.updateMapPresentation',
           updateWorldLocationMapPresentationInputSchema.parse({
             id,
             patch,
             expectedRevision
-          }),
-          worldLocationMapPresentationSchema
+          })
         )
       ),
     delete: async (id, expectedRevision) =>
       freezeDeep(
-        await invoke(
-          'locations:delete',
-          deleteWorldLocationInputSchema.parse({ id, expectedRevision }),
-          worldLocationDeleteReceiptSchema
+        await invokeCore(
+          'locations.delete',
+          deleteWorldLocationInputSchema.parse({ id, expectedRevision })
         )
       ),
     onChanged(listener) {
@@ -536,66 +377,54 @@ const api: SaltMarcherApi = {
   locationSymbols: {
     create: async (symbol, expectedRevision) =>
       freezeDeep(
-        await invoke(
-          'location-symbols:create',
-          createLocationSymbolInputSchema.parse({ symbol, expectedRevision }),
-          locationSymbolMutationReceiptSchema
+        await invokeCore(
+          'locationSymbols.create',
+          createLocationSymbolInputSchema.parse({ symbol, expectedRevision })
         )
       ),
     search: async (query = '', offset = 0, limit = 24) =>
       freezeDeep(
-        await invoke(
-          'location-symbols:search',
-          locationSymbolSearchInputSchema.parse({ query, offset, limit }),
-          locationSymbolPageSchema
+        await invokeCore(
+          'locationSymbols.search',
+          locationSymbolSearchInputSchema.parse({ query, offset, limit })
         )
       ),
     detail: async (id) =>
       freezeDeep(
-        await invoke(
-          'location-symbols:detail',
-          locationSymbolDetailInputSchema.parse({ id }),
-          locationSymbolSchema
+        await invokeCore(
+          'locationSymbols.detail',
+          locationSymbolDetailInputSchema.parse({ id })
         )
       ),
     update: async (id, displayName, expectedRevision) =>
       freezeDeep(
-        await invoke(
-          'location-symbols:update',
+        await invokeCore(
+          'locationSymbols.update',
           updateLocationSymbolInputSchema.parse({
             id,
             displayName,
             expectedRevision
-          }),
-          locationSymbolSnapshotSchema
+          })
         )
       ),
     deleteImpact: async (id) =>
-      freezeDeep(
-        await invoke(
-          'location-symbols:delete-impact',
-          { id },
-          locationSymbolDeleteImpactSchema
-        )
-      ),
+      freezeDeep(await invokeCore('locationSymbols.deleteImpact', { id })),
     delete: async (commandId, id, expectedRevision) =>
       freezeDeep(
-        await invoke(
-          'location-symbols:delete',
+        await invokeCore(
+          'locationSymbols.delete',
           deleteLocationSymbolInputSchema.parse({
             commandId,
             id,
             expectedRevision
-          }),
-          locationSymbolDeleteResultSchema
+          })
         )
       ),
     importAndAssign: async (input) =>
       freezeDeep(
-        await invoke(
-          'location-symbols:import-and-assign',
-          importLocationSymbolInputSchema.parse(input),
-          importLocationSymbolResultSchema
+        await invokeCore(
+          'locationSymbols.importAndAssign',
+          importLocationSymbolInputSchema.parse(input)
         )
       ),
     onChanged(listener) {
@@ -609,45 +438,38 @@ const api: SaltMarcherApi = {
   biomes: {
     search: async (query = '', offset = 0, limit = 60) =>
       freezeDeep(
-        await invoke(
-          'biomes:search',
-          biomeSearchInputSchema.parse({ query, offset, limit }),
-          biomePageSchema
+        await invokeCore(
+          'biomes.search',
+          biomeSearchInputSchema.parse({ query, offset, limit })
         )
       ),
-    detail: async (id) =>
-      freezeDeep(await invoke('biomes:detail', { id }, biomeDefinitionSchema)),
+    detail: async (id) => freezeDeep(await invokeCore('biomes.detail', { id })),
     create: async (commandId, biome, expectedRevision) =>
       freezeDeep(
-        await invoke(
-          'biomes:create',
-          createBiomeInputSchema.parse({ commandId, biome, expectedRevision }),
-          biomeCatalogMutationResultSchema
+        await invokeCore(
+          'biomes.create',
+          createBiomeInputSchema.parse({ commandId, biome, expectedRevision })
         )
       ),
     update: async (commandId, id, biome, expectedRevision) =>
       freezeDeep(
-        await invoke(
-          'biomes:update',
+        await invokeCore(
+          'biomes.update',
           updateBiomeInputSchema.parse({
             commandId,
             id,
             biome,
             expectedRevision
-          }),
-          biomeCatalogMutationResultSchema
+          })
         )
       ),
     deleteImpact: async (id) =>
-      freezeDeep(
-        await invoke('biomes:delete-impact', { id }, biomeDeleteImpactSchema)
-      ),
+      freezeDeep(await invokeCore('biomes.deleteImpact', { id })),
     delete: async (commandId, id, expectedRevision) =>
       freezeDeep(
-        await invoke(
-          'biomes:delete',
-          deleteBiomeInputSchema.parse({ commandId, id, expectedRevision }),
-          biomeCatalogMutationResultSchema
+        await invokeCore(
+          'biomes.delete',
+          deleteBiomeInputSchema.parse({ commandId, id, expectedRevision })
         )
       ),
     onChanged(listener) {
@@ -659,32 +481,24 @@ const api: SaltMarcherApi = {
   },
   encounterTables: {
     read: async () =>
-      freezeDeep(
-        await invoke(
-          'encounter-tables:read',
-          undefined,
-          encounterTableSnapshotSchema
-        )
-      ),
+      freezeDeep(await invokeCore('encounterTables.read', undefined)),
     commandReceipt: async (commandId) =>
       freezeDeep(
-        await invoke(
-          'encounter-tables:command-receipt',
-          encounterTableCommandReceiptInputSchema.parse({ commandId }),
-          encounterTableCommandReceiptSchema.nullable()
+        await invokeCore(
+          'encounterTables.commandReceipt',
+          encounterTableCommandReceiptInputSchema.parse({ commandId })
         )
       ),
     create: async (commandId, table, expectedRevision, scope = 'campaign') =>
       freezeDeep(
-        await invoke(
-          'encounter-tables:create',
+        await invokeCore(
+          'encounterTables.create',
           createEncounterTableInputSchema.parse({
             commandId,
             table,
             expectedRevision,
             scope
-          }),
-          encounterTableMutationReceiptSchema
+          })
         )
       ),
     update: async (
@@ -695,29 +509,27 @@ const api: SaltMarcherApi = {
       scope = 'campaign'
     ) =>
       freezeDeep(
-        await invoke(
-          'encounter-tables:update',
+        await invokeCore(
+          'encounterTables.update',
           updateEncounterTableInputSchema.parse({
             commandId,
             id,
             table,
             expectedRevision,
             scope
-          }),
-          encounterTableMutationReceiptSchema
+          })
         )
       ),
     delete: async (commandId, id, expectedRevision, scope = 'campaign') =>
       freezeDeep(
-        await invoke(
-          'encounter-tables:delete',
+        await invokeCore(
+          'encounterTables.delete',
           deleteEncounterTableInputSchema.parse({
             commandId,
             id,
             expectedRevision,
             scope
-          }),
-          encounterTableDeleteReceiptSchema
+          })
         )
       ),
     onChanged(listener) {
@@ -729,53 +541,46 @@ const api: SaltMarcherApi = {
     }
   },
   factions: {
-    read: async () =>
-      freezeDeep(
-        await invoke('factions:read', undefined, worldFactionSnapshotSchema)
-      ),
+    read: async () => freezeDeep(await invokeCore('factions.read', undefined)),
     commandReceipt: async (commandId) =>
       freezeDeep(
-        await invoke(
-          'factions:command-receipt',
-          worldFactionCommandReceiptInputSchema.parse({ commandId }),
-          worldFactionCommandReceiptSchema.nullable()
+        await invokeCore(
+          'factions.commandReceipt',
+          worldFactionCommandReceiptInputSchema.parse({ commandId })
         )
       ),
     create: async (commandId, faction, expectedRevision) =>
       freezeDeep(
-        await invoke(
-          'factions:create',
+        await invokeCore(
+          'factions.create',
           createWorldFactionInputSchema.parse({
             commandId,
             faction,
             expectedRevision
-          }),
-          worldFactionMutationReceiptSchema
+          })
         )
       ),
     update: async (commandId, id, faction, expectedRevision) =>
       freezeDeep(
-        await invoke(
-          'factions:update',
+        await invokeCore(
+          'factions.update',
           updateWorldFactionInputSchema.parse({
             commandId,
             id,
             faction,
             expectedRevision
-          }),
-          worldFactionMutationReceiptSchema
+          })
         )
       ),
     delete: async (commandId, id, expectedRevision) =>
       freezeDeep(
-        await invoke(
-          'factions:delete',
+        await invokeCore(
+          'factions.delete',
           deleteWorldFactionInputSchema.parse({
             commandId,
             id,
             expectedRevision
-          }),
-          worldFactionDeleteReceiptSchema
+          })
         )
       )
   },
@@ -852,7 +657,7 @@ const api: SaltMarcherApi = {
       })
   },
   session: {
-    read: () => live('session:read', undefined),
+    read: async () => freezeDeep(await invokeCore('session.read', undefined)),
     onChanged(listener) {
       const handler = (_event: Electron.IpcRendererEvent, raw: unknown) =>
         listener(freezeDeep(sessionChangeNoticeSchema.parse(raw)))
@@ -871,19 +676,19 @@ const api: SaltMarcherApi = {
   },
   scene: {
     focus: (sceneId, expectedRevision) =>
-      live(
-        'scene:focus',
+      invokeCore(
+        'scene.focus',
         focusSceneInputSchema.parse({ sceneId, expectedRevision })
-      ),
+      ).then(freezeDeep),
     setLocation: (sceneId, locationId, expectedRevision) =>
-      live(
-        'scene:setLocation',
+      invokeCore(
+        'scene.setLocation',
         setSceneLocationInputSchema.parse({
           sceneId,
           locationId,
           expectedRevision
         })
-      ),
+      ).then(freezeDeep),
     saveGroup: (
       sceneId,
       groupId,
@@ -894,8 +699,8 @@ const api: SaltMarcherApi = {
       expectedRevision,
       expectedGroupRevision
     ) =>
-      sceneGroupCommand(
-        'scene:saveGroup',
+      invokeCore(
+        'scene.saveGroup',
         saveSceneGroupInputSchema.parse({
           sceneId,
           groupId,
@@ -906,46 +711,45 @@ const api: SaltMarcherApi = {
           expectedRevision,
           expectedGroupRevision
         })
-      ),
+      ).then(freezeDeep),
     setGroupArchived: (sceneId, groupId, archived, expectedGroupRevision) =>
-      sceneGroupCommand(
-        'scene:setGroupArchived',
+      invokeCore(
+        'scene.setGroupArchived',
         setSceneGroupArchivedInputSchema.parse({
           sceneId,
           groupId,
           archived,
           expectedGroupRevision
         })
-      ),
+      ).then(freezeDeep),
     deleteGroup: (sceneId, groupId, expectedGroupRevision) =>
-      sceneGroupCommand(
-        'scene:deleteGroup',
+      invokeCore(
+        'scene.deleteGroup',
         deleteSceneGroupInputSchema.parse({
           sceneId,
           groupId,
           expectedGroupRevision
         })
-      ),
+      ).then(freezeDeep),
     assignPartyMember: (sceneId, partyMemberId, assigned, expectedRevision) =>
-      live(
-        'scene:assignPartyMember',
+      invokeCore(
+        'scene.assignPartyMember',
         assignScenePartyInputSchema.parse({
           sceneId,
           partyMemberId,
           assigned,
           expectedRevision
         })
-      ),
+      ).then(freezeDeep),
     evaluateGroupDraft: async (sceneId, entries, expectedRevision) =>
       freezeDeep(
-        await invoke(
-          'scene:evaluateGroupDraft',
+        await invokeCore(
+          'scene.evaluateGroupDraft',
           evaluateSceneGroupDraftInputSchema.parse({
             sceneId,
             entries,
             expectedRevision
-          }),
-          sceneGroupDraftEvaluationSchema
+          })
         )
       ),
     generateGroupDraft: async (
@@ -958,8 +762,8 @@ const api: SaltMarcherApi = {
       expectedRevision
     ) =>
       freezeDeep(
-        await invoke(
-          'scene:generateGroupDraft',
+        await invokeCore(
+          'scene.generateGroupDraft',
           sceneGroupDraftGenerationRequestSchema.parse({
             sceneId,
             entries,
@@ -968,154 +772,152 @@ const api: SaltMarcherApi = {
             tuning,
             seed,
             expectedRevision
-          }),
-          sceneGroupDraftGenerationSchema
+          })
         )
       )
   },
   encounter: {
     evaluate: (sceneId, groupIds, expectedRevision) =>
-      invoke(
-        'encounter:evaluate',
+      invokeCore(
+        'encounter.evaluate',
         evaluateEncounterSelectionInputSchema.parse({
           sceneId,
           groupIds,
           expectedRevision
-        }),
-        encounterSelectionEvaluationSchema
+        })
       )
   },
   combat: {
     prepare: (sceneId, groupIds, expectedSceneRevision) =>
-      combatCommand(
-        'combat:prepare',
+      invokeCore(
+        'combat.prepare',
         prepareCombatInputSchema.parse({
           sceneId,
           groupIds,
           expectedSceneRevision
         })
-      ),
+      ).then(freezeDeep),
     joinGroup: (
       sceneId,
       groupId,
       expectedGroupRevision,
       expectedCombatRevision
     ) =>
-      combatCommand(
-        'combat:joinGroup',
+      invokeCore(
+        'combat.joinGroup',
         joinCombatGroupInputSchema.parse({
           sceneId,
           groupId,
           expectedGroupRevision,
           expectedCombatRevision
         })
-      ),
+      ).then(freezeDeep),
     rollInitiative: (expectedRevision) =>
-      combatCommand(
-        'combat:rollInitiative',
+      invokeCore(
+        'combat.rollInitiative',
         combatRevisionInputSchema.parse({ expectedRevision })
-      ),
+      ).then(freezeDeep),
     confirmInitiative: (values, expectedRevision) =>
-      combatCommand(
-        'combat:confirmInitiative',
+      invokeCore(
+        'combat.confirmInitiative',
         confirmInitiativeInputSchema.parse({ values, expectedRevision })
-      ),
+      ).then(freezeDeep),
     advanceTurn: (expectedRevision) =>
-      combatCommand(
-        'combat:advanceTurn',
+      invokeCore(
+        'combat.advanceTurn',
         combatRevisionInputSchema.parse({ expectedRevision })
-      ),
+      ).then(freezeDeep),
     retreatTurn: (expectedRevision) =>
-      combatCommand(
-        'combat:retreatTurn',
+      invokeCore(
+        'combat.retreatTurn',
         combatRevisionInputSchema.parse({ expectedRevision })
-      ),
+      ).then(freezeDeep),
     adjustInitiative: (id, initiative, expectedRevision) =>
-      combatCommand(
-        'combat:adjustInitiative',
+      invokeCore(
+        'combat.adjustInitiative',
         adjustInitiativeInputSchema.parse({ id, initiative, expectedRevision })
-      ),
+      ).then(freezeDeep),
     changeHp: (cardId, amount, healing, expectedRevision) =>
-      combatCommand(
-        'combat:changeHp',
+      invokeCore(
+        'combat.changeHp',
         changeHpInputSchema.parse({ cardId, amount, healing, expectedRevision })
-      ),
+      ).then(freezeDeep),
     toggleCondition: (cardId, condition, active, expectedRevision) =>
-      combatCommand(
-        'combat:toggleCondition',
+      invokeCore(
+        'combat.toggleCondition',
         toggleConditionInputSchema.parse({
           cardId,
           condition,
           active,
           expectedRevision
         })
-      ),
+      ).then(freezeDeep),
     setConcentration: (cardId, concentrating, expectedRevision) =>
-      combatCommand(
-        'combat:setConcentration',
+      invokeCore(
+        'combat.setConcentration',
         setConcentrationInputSchema.parse({
           cardId,
           concentrating,
           expectedRevision
         })
-      ),
+      ).then(freezeDeep),
     setExhaustion: (cardId, exhaustionLevel, expectedRevision) =>
-      combatCommand(
-        'combat:setExhaustion',
+      invokeCore(
+        'combat.setExhaustion',
         setExhaustionInputSchema.parse({
           cardId,
           exhaustionLevel,
           expectedRevision
         })
-      ),
+      ).then(freezeDeep),
     undo: (expectedRevision) =>
-      combatCommand(
-        'combat:undo',
+      invokeCore(
+        'combat.undo',
         combatRevisionInputSchema.parse({ expectedRevision })
-      ),
+      ).then(freezeDeep),
     end: (expectedRevision) =>
-      combatCommand(
-        'combat:end',
+      invokeCore(
+        'combat.end',
         combatRevisionInputSchema.parse({ expectedRevision })
-      ),
+      ).then(freezeDeep),
     moveToPhase: (target, expectedRevision) =>
-      combatCommand(
-        'combat:moveToPhase',
+      invokeCore(
+        'combat.moveToPhase',
         moveCombatPhaseInputSchema.parse({ target, expectedRevision })
-      ),
+      ).then(freezeDeep),
     updateResolution: (selectedEnemyIds, mode, xpFraction, expectedRevision) =>
-      combatCommand(
-        'combat:updateResolution',
+      invokeCore(
+        'combat.updateResolution',
         updateResolutionInputSchema.parse({
           selectedEnemyIds,
           mode,
           xpFraction,
           expectedRevision
         })
-      ),
+      ).then(freezeDeep),
     awardXp: (expectedRevision) =>
-      combatCommand(
-        'combat:awardXp',
+      invokeCore(
+        'combat.awardXp',
         combatRevisionInputSchema.parse({ expectedRevision })
-      ),
+      ).then(freezeDeep),
     complete: (expectedRevision) =>
-      combatCommand(
-        'combat:complete',
+      invokeCore(
+        'combat.complete',
         combatRevisionInputSchema.parse({ expectedRevision })
-      )
+      ).then(freezeDeep)
   },
   runtime: Object.freeze({
     readOnly: process.argv.includes('--salt-marcher-read-only'),
     e2e: process.argv.includes('--salt-marcher-e2e'),
-    processMemoryBytes: () => invokeMain<number>('runtime:memory', undefined),
-    gpuObservation: () => invokeMain('runtime:gpu-observation', undefined),
-    coreStatus: () => invokeMain('runtime:core-status', undefined),
-    retryCore: () => invokeMain('runtime:retry-core', undefined),
+    processMemoryBytes: () => invokeMain('runtime.memory', undefined),
+    gpuObservation: () => invokeMain('runtime.gpuObservation', undefined),
+    coreStatus: () => invokeMain('runtime.coreStatus', undefined),
+    retryCore: () => invokeMain('runtime.retryCore', undefined),
     reportRendererIncident: (incident) =>
-      invokeMain('runtime:report-renderer-incident', incident),
-    reloadRenderer: () => invokeMain('runtime:reload-renderer', undefined),
+      invokeMain('runtime.reportRendererIncident', incident),
+    reloadRenderer: () => invokeMain('runtime.reloadRenderer', undefined),
     pickLocationSymbolFile: () =>
-      invokeMain('runtime:pick-location-symbol-file', undefined),
+      invokeMain('runtime.pickLocationSymbolFile', undefined),
     onCoreStatus(listener: (status: CoreProcessStatus) => void) {
       const handler = (_event: Electron.IpcRendererEvent, raw: unknown) =>
         listener(coreProcessStatusSchema.parse(raw))

@@ -1,0 +1,532 @@
+.encounter-settings-dialog {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  width: min(74rem, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow: hidden;
+  border: var(--border-width-structural) solid var(--border-structural);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-dialog);
+}
+
+.settings-dialog-header,
+.settings-dialog-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+  padding: var(--space-5) var(--space-7);
+}
+
+.settings-dialog-header {
+  border-bottom: var(--border-width-structural) solid var(--border-structural);
+}
+
+.settings-dialog-header h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+}
+
+.settings-dialog-body {
+  min-height: 0;
+  overflow: auto;
+  background: var(--surface-pane-sunken);
+  padding: var(--space-5);
+}
+
+.generator-settings-card {
+  display: grid;
+  gap: var(--space-5);
+  border: 1px solid var(--border-1);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-5) var(--space-6);
+}
+
+.generator-settings-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: var(--space-6);
+}
+
+.generator-settings-heading h3,
+.generator-settings-heading p,
+.generator-rules-grid h4 {
+  margin: 0;
+}
+
+.generator-settings-heading h3 {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+}
+
+.preset-toolbar {
+  display: flex;
+  align-items: end;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.preset-toolbar label {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.preset-toolbar label > span {
+  color: var(--text-3);
+  font-family: var(--font-smallcaps);
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-label);
+}
+
+.preset-toolbar input,
+.preset-toolbar select {
+  max-width: 12rem;
+}
+
+.preset-status {
+  width: 100%;
+  margin: 0;
+  color: var(--text-3);
+  font-size: var(--text-sm);
+  text-align: right;
+}
+
+.role-brush,
+.generator-conflict-actions {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.role-brush {
+  gap: var(--space-2);
+}
+
+.role-control {
+  display: inline-flex;
+  min-height: 1.75rem;
+  align-items: center;
+  gap: var(--space-2);
+  border: 1px solid var(--border-1);
+  background: var(--surface-button);
+  color: var(--text-2);
+  font-family: var(--font-smallcaps);
+  font-size: var(--text-ui);
+  letter-spacing: var(--tracking-label);
+  padding: var(--space-2) var(--space-3);
+}
+
+.role-control[aria-pressed='true'] {
+  border-color: var(--accent-rubric);
+}
+
+.role-control i,
+.role-label i {
+  width: 12px;
+  height: 12px;
+  border: 1px solid var(--border-1);
+  background: var(--role-background);
+}
+
+.role-none {
+  --role-background: var(--surface-card);
+  --role-color: var(--text-muted);
+}
+
+.role-minion {
+  --role-background: var(--surface-chip);
+  --role-color: var(--text-2);
+}
+
+.role-support {
+  --role-background: var(--accent-verdigris);
+  --role-color: var(--text-on-accent);
+}
+
+.role-standard {
+  --role-background: var(--accent-gold);
+  --role-color: var(--text-on-accent);
+}
+
+.role-elite {
+  --role-background: var(--accent-rubric);
+  --role-color: var(--text-on-accent);
+}
+
+.role-boss {
+  --role-background: var(--text-1);
+  --role-color: var(--surface-card);
+}
+
+.role-matrix-scroll {
+  max-width: 100%;
+  max-height: 27rem;
+  overflow: auto;
+  border: 1px solid var(--border-1);
+}
+
+.role-matrix {
+  width: 100%;
+  min-width: 68rem;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: var(--text-sm);
+}
+
+.role-matrix th,
+.role-matrix td {
+  height: 15px;
+  border: 1px solid var(--border-hair);
+  padding: 0;
+  text-align: center;
+}
+
+.role-matrix thead th {
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  background: var(--surface-pane-sunken);
+}
+
+.role-matrix th:first-child {
+  position: sticky;
+  z-index: 3;
+  left: 0;
+  width: 84px;
+  background: var(--surface-pane-sunken);
+}
+
+.role-matrix td button {
+  display: block;
+  width: 100%;
+  height: 15px;
+  border: 0;
+  background: var(--role-background);
+  color: var(--role-color);
+  font-size: 0.57rem;
+  line-height: 15px;
+  padding: 0;
+}
+
+.generator-rules-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
+  gap: var(--space-6);
+  border-top: 1px solid var(--border-hair);
+  padding-top: var(--space-5);
+}
+
+.generator-rule-column {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-6);
+}
+
+.generator-rules-grid h4 {
+  font-family: var(--font-smallcaps);
+  font-size: var(--text-base);
+  letter-spacing: var(--tracking-caps);
+}
+
+.difficulty-rules,
+.role-quantity-rules {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.difficulty-bar {
+  display: flex;
+  height: 20px;
+  border: 1px solid var(--border-2);
+  background: var(--surface-control);
+}
+
+.difficulty-bar > div {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.difficulty-bar > div > span {
+  display: block;
+  height: 100%;
+  background: var(--accent-rubric);
+}
+
+.difficulty-bar [role='separator'] {
+  position: absolute;
+  z-index: 1;
+  top: -5px;
+  right: -1px;
+  width: 3px;
+  height: 28px;
+  border: 0;
+  background: var(--text-1);
+  cursor: col-resize;
+  padding: 0;
+}
+
+.difficulty-bar [role='separator']:hover,
+.difficulty-bar [role='separator']:focus-visible {
+  background: var(--accent-gold);
+}
+
+.difficulty-labels {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: var(--space-2);
+}
+
+.difficulty-labels > div {
+  display: grid;
+  text-align: center;
+}
+
+.difficulty-labels span {
+  font-family: var(--font-smallcaps);
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-label);
+}
+
+.difficulty-labels strong {
+  color: var(--text-3);
+  font-size: var(--text-ui);
+  font-weight: inherit;
+}
+
+.quantity-table {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 52px 52px;
+  align-items: center;
+  border: 1px solid var(--border-1);
+  border-top: 0;
+}
+
+.quantity-header {
+  border-top: 1px solid var(--border-1);
+  background: var(--surface-pane-sunken);
+  color: var(--text-muted);
+  font-family: var(--font-smallcaps);
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-label);
+}
+
+.quantity-table > span,
+.quantity-table > input {
+  min-width: 0;
+  height: 24px;
+  border: 0;
+  border-right: 1px solid var(--border-1);
+}
+
+.quantity-table > span {
+  padding: 3px var(--space-3);
+}
+
+.quantity-table > input {
+  text-align: right;
+}
+
+.role-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.composition-list {
+  border: 1px solid var(--border-1);
+}
+
+.range-row,
+.scaled-range-row,
+.composition-select-row,
+.mob-row {
+  display: grid;
+  min-height: 32px;
+  align-items: center;
+  gap: var(--space-2);
+  border-bottom: 1px solid var(--border-1);
+  padding: var(--space-2) var(--space-3);
+}
+
+.range-row {
+  grid-template-columns: minmax(0, 1fr) 48px auto 48px;
+}
+
+.scaled-range-row {
+  grid-template-columns: minmax(0, 1fr) 38px 48px auto 38px 48px;
+}
+
+.composition-select-row {
+  grid-template-columns: minmax(0, 1fr) minmax(8rem, auto);
+}
+
+.mob-row {
+  grid-template-columns: minmax(0, 1fr) 52px auto;
+  border-bottom: 0;
+}
+
+.range-row > span,
+.scaled-range-row > span,
+.composition-select-row > span,
+.mob-row > span {
+  overflow: hidden;
+  color: var(--text-3);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.range-row input,
+.scaled-range-row input,
+.mob-row input {
+  min-width: 0;
+  width: 100%;
+  text-align: right;
+}
+
+.range-row em,
+.scaled-range-row em,
+.mob-row em {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-style: normal;
+}
+
+.scale-toggle {
+  width: 38px;
+  height: 22px;
+  border-color: var(--border-1);
+  background: var(--surface-button);
+  color: var(--text-3);
+  font-family: var(--font-smallcaps);
+  font-size: var(--text-sm);
+  padding: 0;
+}
+
+.scale-toggle[aria-pressed='true'] {
+  border-color: var(--accent-verdigris);
+  background: var(--accent-verdigris);
+  color: var(--text-on-accent);
+}
+
+.resolved-ranges,
+.combination-list > p,
+.generator-settings-status,
+.settings-dialog-footer p {
+  margin: 0;
+  color: var(--text-3);
+  font-style: italic;
+}
+
+.combination-rules > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.combination-rules > header span {
+  color: var(--text-3);
+  font-size: var(--text-sm);
+}
+
+.combination-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  border: 1px solid var(--border-1);
+  background: var(--surface-pane-sunken);
+  padding: var(--space-3);
+}
+
+.combination-picker .role-control {
+  min-height: 24px;
+  background: var(--surface-card);
+  font-size: var(--text-sm);
+  padding: 2px var(--space-2);
+}
+
+.combination-picker .role-control i {
+  width: 9px;
+  height: 9px;
+}
+
+.combination-picker .role-control[aria-pressed='true'] {
+  border-color: var(--text-1);
+}
+
+.combination-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.combination-chip {
+  display: inline-flex;
+  height: 22px;
+  align-items: center;
+  gap: 3px;
+  border: 1px solid var(--border-1);
+  background: var(--surface-chip);
+  padding-left: var(--space-2);
+}
+
+.combination-chip > i {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--text-2);
+  font-size: var(--text-sm);
+  font-style: normal;
+}
+
+.combination-chip b {
+  width: 7px;
+  height: 7px;
+  background: var(--role-background);
+}
+
+.combination-chip button {
+  height: 20px;
+  border: 0;
+  background: transparent;
+  padding: 0 var(--space-2);
+}
+
+.combination-chip button:hover {
+  color: var(--accent-rubric);
+}
+
+.generator-conflict-actions {
+  gap: var(--space-3);
+}
+
+.settings-dialog-footer {
+  border-top: 1px solid var(--border-1);
+}
+
+.settings-dialog-footer > div {
+  display: flex;
+  gap: var(--space-4);
+}
+
+@media (max-width: 900px) {
+  .generator-rules-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .generator-settings-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 700px) {
+  .settings-dialog-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

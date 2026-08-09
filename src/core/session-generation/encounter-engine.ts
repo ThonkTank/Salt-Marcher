@@ -12,18 +12,34 @@ import {
 import {
   buildEncounterIntents,
   buildSelectionIndex,
+  sessionCompositionCatalog,
   selectEncounter
 } from './encounter-selection-policy.js'
 import { canonicalDecimal } from './rational.js'
 import type { EncounterCatalog } from './catalog.js'
 import type { EncounterEntropy } from './deterministic-order.js'
+import {
+  systemGeneratorPresetId,
+  type GeneratorPresetConfigV3
+} from '../../shared/contracts/generator-presets.js'
+import { defaultGeneratorConfig } from '../../shared/generator/system-generator-preset.js'
+import { fingerprintGeneratorConfig } from './generator-config-fingerprint.js'
 
 export type { EncounterEntropy } from './deterministic-order.js'
 
 export function generateSessionEncounters(
   input: unknown,
   catalog: EncounterCatalog,
-  entropy: EncounterEntropy
+  entropy: EncounterEntropy,
+  preset: Readonly<{
+    id: string
+    revision: number
+    config: GeneratorPresetConfigV3
+  }> = {
+    id: systemGeneratorPresetId,
+    revision: 0,
+    config: defaultGeneratorConfig
+  }
 ): SessionGenerationEncounterResult {
   const parsed = sessionGenerationEncounterInputSchema.safeParse(input)
   if (!parsed.success)
@@ -45,15 +61,30 @@ export function generateSessionEncounters(
     catalog
   )
   const partyLevel = clamp(Math.round(context.averageLevel), 1, 20)
-  const selectionIndex = buildSelectionIndex(catalog, partyLevel)
+  if (targets.some((target) => target <= 0))
+    return deepFreeze({
+      status: 'unresolvable',
+      issues: [
+        {
+          code: 'no_candidate',
+          message: 'Encounter targets must be positive.'
+        }
+      ]
+    })
+  const selectionIndex = buildSelectionIndex(
+    sessionCompositionCatalog(catalog),
+    partyLevel,
+    preset.config
+  )
   const selected = targets.map((targetXp, index) =>
     selectEncounter(
       normalized.seed,
       index + 1,
       targetXp,
       selectionIndex,
-      catalog.patterns,
-      entropy
+      entropy,
+      preset.config,
+      context.partyCount
     )
   )
 
@@ -69,14 +100,30 @@ export function generateSessionEncounters(
     })
 
   const encounters = buildEncounterIntents(selected, normalized.party)
-  const warnings = selected
-    .filter((entry) => !entry.selectedFit)
-    .map((entry) => ({
-      code: 'candidate_outside_tolerance' as const,
-      encounterNumber: entry.encounterNumber,
-      message:
-        'No candidate was within the target tolerance; the closest available candidate was selected.'
-    }))
+  const warnings: Array<{
+    code: 'candidate_outside_tolerance' | 'constraints_approximated'
+    encounterNumber: number
+    message: string
+  }> = [
+    ...selected
+      .filter((entry) => !entry.selectedFit)
+      .map((entry) => ({
+        code: 'candidate_outside_tolerance' as const,
+        encounterNumber: entry.encounterNumber,
+        message:
+          'No candidate was within the target tolerance; the closest available candidate was selected.'
+      })),
+    ...selected
+      .filter((entry) => !entry.selectedSoftFit)
+      .map((entry) => ({
+        code: 'constraints_approximated' as const,
+        encounterNumber: entry.encounterNumber,
+        message:
+          entry.composition?.diagnostics
+            .map((diagnostic) => diagnostic.message)
+            .join(' ') ?? ''
+      }))
+  ]
   const audits = [
     {
       name: 'Encounter target sum',
@@ -125,6 +172,11 @@ export function generateSessionEncounters(
     engineVersion: SESSION_GENERATION_ENGINE_VERSION,
     catalogVersion: catalog.catalogVersion,
     catalogContentHash: catalog.catalogContentHash,
+    generatorPreset: {
+      id: preset.id,
+      revision: preset.revision,
+      configHash: fingerprintGeneratorConfig(preset.config)
+    },
     input: normalized,
     session: {
       partyCount: context.partyCount,

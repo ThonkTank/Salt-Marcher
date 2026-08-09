@@ -6,6 +6,11 @@ import {
   expectedCatalogHeaders,
   parseEncounterCatalog
 } from '../src/core/session-generation/catalog.js'
+import { generatorChallengeRatings } from '../src/shared/generator/generator-config-model.js'
+import {
+  defaultGeneratorConfig,
+  systemGeneratorPresetSource
+} from '../src/shared/generator/system-generator-preset.js'
 
 const root = resolve('resources/sessiongeneration/catalog-2026-07-16')
 const manifest = catalogManifestSchema.parse(
@@ -55,7 +60,7 @@ if (contentHash !== manifest.catalogContentHash)
     `Catalog content hash mismatch: expected ${manifest.catalogContentHash}, received ${contentHash}`
   )
 
-parseEncounterCatalog({
+const catalog = parseEncounterCatalog({
   manifest,
   tables: {
     progression: required(contents, 'DB_Progression.tsv'),
@@ -65,8 +70,51 @@ parseEncounterCatalog({
   }
 })
 
+const roleBandEntry = manifest.tables.find(
+  (entry) => entry.file === 'DB_EncounterRoleBands.tsv'
+)
+const patternEntry = manifest.tables.find(
+  (entry) => entry.file === 'DB_EncounterPatterns.tsv'
+)
+if (
+  systemGeneratorPresetSource.catalogVersion !== manifest.catalogVersion ||
+  systemGeneratorPresetSource.roleBandsSha256 !== roleBandEntry?.sha256 ||
+  systemGeneratorPresetSource.patternsSha256 !== patternEntry?.sha256
+)
+  throw new Error(
+    'Generated system-preset source metadata does not match the pinned catalog.'
+  )
+
+const crById = new Map(
+  catalog.challengeRatings.map((rating) => [rating.id, rating.label])
+)
+const generatedRoleMatrix = Array.from({ length: 20 }, (_, level) =>
+  generatorChallengeRatings.map((rating) => {
+    const band = catalog.roleBands.find(
+      (entry) =>
+        entry.active &&
+        entry.partyLevel === level + 1 &&
+        crById.get(entry.crId) === rating
+    )
+    return band?.role.toLowerCase()
+  })
+)
+const generatedRoleCombinations = catalog.patterns
+  .filter((pattern) => pattern.active)
+  .map((pattern) => pattern.roles.map((role) => role.toLowerCase()))
+
+if (
+  JSON.stringify(defaultGeneratorConfig.composition.roleMatrix) !==
+    JSON.stringify(generatedRoleMatrix) ||
+  JSON.stringify(defaultGeneratorConfig.composition.roleCombinations) !==
+    JSON.stringify(generatedRoleCombinations)
+)
+  throw new Error(
+    'Generated system preset differs from DB_EncounterRoleBands.tsv or DB_EncounterPatterns.tsv.'
+  )
+
 console.log(
-  `Session-generation catalog ${manifest.catalogVersion} verified (${manifest.tables.length} tables, ${manifest.catalogContentHash}).`
+  `Session-generation catalog ${manifest.catalogVersion} and generated system preset verified (${manifest.tables.length} tables, ${manifest.catalogContentHash}).`
 )
 
 function required(contents: ReadonlyMap<string, string>, file: string): string {

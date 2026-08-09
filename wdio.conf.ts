@@ -1,6 +1,8 @@
 import { cpSync, mkdirSync, rmSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { join } from 'node:path'
+import { waitForGmRendererReady } from './tests/e2e/support/e2e-ready.js'
+import type { Browser as WdioBrowser } from 'webdriverio'
 
 const suite =
   process.env['SALT_MARCHER_E2E_SUITE'] ?? argumentAfter('--suite') ?? 'all'
@@ -72,6 +74,13 @@ export const config = {
   logLevel: process.env['WDIO_LOG_LEVEL'] ?? 'warn',
   framework: 'mocha',
   reporters: ['spec'],
+  before: async (
+    _capabilities: unknown,
+    _specs: readonly string[],
+    client: WdioBrowser
+  ) => {
+    await waitForGmRendererReady(client)
+  },
   mochaOpts: { ui: 'bdd', timeout: 120_000 }
 }
 

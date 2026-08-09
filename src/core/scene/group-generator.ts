@@ -3,11 +3,11 @@ import type {
   Creature,
   CreatureCatalogQuery
 } from '../../shared/contracts/encounter.js'
-import type { EncounterTuning } from '../../shared/contracts/encounter-tuning.js'
 import {
-  defaultGeneratorConfig,
-  type GeneratorConfig
+  systemGeneratorPresetId,
+  type GeneratorPresetConfigV3
 } from '../../shared/contracts/generator-presets.js'
+import { generatorChallengeRatings } from '../../shared/generator/generator-config-model.js'
 import type { PartyMember } from '../../shared/contracts/live-session.js'
 import {
   encounterSelectionEvaluationSchema,
@@ -28,16 +28,17 @@ import {
 } from '../creatures/catalog.js'
 import { difficulty, multiplier, partyThresholds } from '../encounter/math.js'
 import type { ResolvedEncounterSource } from '../application/encounter-source-service.js'
+import {
+  buildSelectionIndex,
+  resolveRange,
+  selectEncounter,
+  statblockSlotsForBlocks,
+  type CompositionCatalog,
+  type FixedRoster
+} from '../session-generation/encounter-selection-policy.js'
+import { fingerprintGeneratorConfig } from '../session-generation/generator-config-fingerprint.js'
 
 type DraftEntry = { creatureId: string; quantity: number }
-
-type GeneratedOption = {
-  entries: DraftEntry[]
-  adjustedXp: number
-  exact: boolean
-  score: number
-  weight: number
-}
 
 export function evaluateSceneGroups(
   scene: RunningScene,
@@ -130,13 +131,17 @@ export function evaluateSceneGroupDraft(
   })
 }
 
+/**
+ * The Scene adapter materializes the same CR-block composition selected by the
+ * Session generator with concrete statblocks from the effective encounter source.
+ */
 export function generateSceneGroupDraft(
   scene: RunningScene,
   assignedParty: readonly PartyMember[],
   input: readonly SceneGroupDraftEntry[],
   mode: GroupGenerationMode,
   filters: CreatureCatalogQuery,
-  tuning: EncounterTuning | GeneratorConfig,
+  config: GeneratorPresetConfigV3,
   seed: number,
   sceneRevision: number,
   source: ResolvedEncounterSource = {
@@ -147,6 +152,10 @@ export function generateSceneGroupDraft(
     catalogFallback: true,
     biomeFiltering: false,
     sourceIssue: null
+  },
+  preset: Readonly<{ id: string; revision: number }> = {
+    id: systemGeneratorPresetId,
+    revision: 0
   }
 ): SceneGroupDraftGeneration {
   if (
@@ -155,23 +164,11 @@ export function generateSceneGroupDraft(
   )
     throw new CapabilityError('validation_failed', false)
 
-  const config: GeneratorConfig =
-    'tuning' in tuning ? tuning : { ...defaultGeneratorConfig, tuning }
   const base = mode === 'fill' ? normalizeEntries(input) : []
   const thresholds = partyThresholds(assignedParty)
-  const resolvedDifficulty =
-    config.tuning.difficulty === 'auto'
-      ? config.autoDifficulty
-      : config.tuning.difficulty
-  const band = { easy: 0, medium: 1, hard: 2, deadly: 3 }[resolvedDifficulty]
-  const lower = thresholds[band] ?? 0
-  const upper =
-    band < 3
-      ? (thresholds[band + 1] ?? Math.round(lower * config.upperBandMultiplier))
-      : Math.round(lower * config.upperBandMultiplier)
-  const target = Math.round((lower + upper) / 2)
+  const resolvedDifficulty = resolveDifficulty(config, seed)
+  const { lower, upper, target } = targetBand(resolvedDifficulty, thresholds)
   const baseEvaluation = evaluateSceneGroupDraft(scene.id, assignedParty, base)
-
   if (mode === 'fill' && baseEvaluation.adjustedXp >= lower) {
     const exact = baseEvaluation.adjustedXp < upper
     return generationResult(
@@ -182,9 +179,11 @@ export function generateSceneGroupDraft(
       resolvedDifficulty,
       exact ? 'exact' : 'fallback',
       exact
-        ? 'Die Gruppe liegt bereits im gewünschten Schwierigkeitsband.'
-        : 'Die Gruppe erreicht oder überschreitet das gewünschte Schwierigkeitsband und wurde nicht verändert.',
-      source
+        ? 'Die Scene-Gruppe liegt bereits im gewünschten Schwierigkeitsband.'
+        : 'Die Scene-Gruppe erreicht oder überschreitet das gewünschte Schwierigkeitsband und wurde nicht verändert.',
+      source,
+      preset,
+      config
     )
   }
 
@@ -197,23 +196,56 @@ export function generateSceneGroupDraft(
       (source.candidates === null || sourceByCreature.has(creature.id)) &&
       creatureMatchesQuery(creature, filters)
   )
-  const maxCount = preferredMaximum(config.tuning.amount, config.maxCounts)
-  const options = generateOptions(
-    base,
-    pool,
-    lower,
-    upper,
-    target,
-    assignedParty.length,
-    maxCount,
-    config,
-    sourceByCreature
+  const partyLevel = clamp(
+    Math.round(
+      assignedParty.reduce((sum, member) => sum + (member.level ?? 1), 0) /
+        assignedParty.length
+    ),
+    1,
+    20
   )
-  const option =
-    options.length > 0
-      ? weightedOption(options.slice(0, config.topOptionCount), seed)
-      : undefined
-  const entries = option?.entries ?? base
+  const capacities = creatureCapacities(pool, sourceByCreature, base)
+  const catalog = catalogFromCreatures(pool, capacities)
+  const index = buildSelectionIndex(catalog, partyLevel, config)
+  const fixed = fixedRoster(base, config)
+  const selected = selectEncounter(
+    seed,
+    1,
+    target,
+    index,
+    seededEntropy,
+    config,
+    assignedParty.length,
+    fixed
+  )
+  const additions = selected.composition
+    ? materializeBlocks(
+        selected.composition.blocks,
+        pool,
+        sourceByCreature,
+        base,
+        config,
+        seed
+      )
+    : []
+  const entries = mergeEntries(base, additions)
+  const materializedDiagnostics = compositionDiagnostics(
+    entries,
+    config,
+    assignedParty.length
+  )
+  const exact = selected.selectedFit && materializedDiagnostics.length === 0
+  const message = !selected.candidate
+    ? source.sourceIssue === 'location_missing_table'
+      ? 'Der gewählte Ort benötigt mindestens eine Encounter-Tabelle.'
+      : source.sourceIssue === 'location_empty_table'
+        ? 'Die Encounter-Tabelle des gewählten Orts enthält keine Monster.'
+        : pool.length === 0
+          ? 'Keine Monster entsprechen den gewählten Filtern.'
+          : 'Mit den Regeln für Rollen und CR-Blöcke konnte kein Encounter erzeugt werden.'
+    : exact
+      ? 'Das gewünschte Schwierigkeitsband und alle Zielbereiche wurden getroffen.'
+      : `Beste verfügbare Annäherung. ${materializedDiagnostics.join(' ')}`.trim()
 
   return generationResult(
     scene,
@@ -221,20 +253,271 @@ export function generateSceneGroupDraft(
     entries,
     sceneRevision,
     resolvedDifficulty,
-    !option ? 'none' : option.exact ? 'exact' : 'fallback',
-    !option
-      ? source.sourceIssue === 'location_missing_table'
-        ? 'Der gewählte Ort benötigt mindestens eine Encounter-Tabelle.'
-        : source.sourceIssue === 'location_empty_table'
-          ? 'Die Encounter-Tabelle des gewählten Orts enthält keine Monster.'
-          : pool.length === 0
-            ? 'Keine Monster entsprechen den gewählten Filtern.'
-            : 'Mit den gewählten Mengenregeln konnte die Gruppe nicht ergänzt werden.'
-      : option.exact
-        ? 'Das gewünschte Schwierigkeitsband wurde getroffen.'
-        : 'Beste verfügbare Annäherung.',
-    source
+    !selected.candidate || additions.length === 0
+      ? 'none'
+      : exact
+        ? 'exact'
+        : 'fallback',
+    message,
+    source,
+    preset,
+    config
   )
+}
+
+function catalogFromCreatures(
+  pool: readonly Creature[],
+  capacities: ReadonlyMap<
+    string,
+    { quantity: number; maximumSingle: number; statblocks: number }
+  >
+): CompositionCatalog {
+  const ratings = new Map<
+    string,
+    CompositionCatalog['challengeRatings'][number]
+  >()
+  for (const creature of pool) {
+    const label = crLabel(creature.cr)
+    const code = generatorChallengeRatings.indexOf(
+      label as (typeof generatorChallengeRatings)[number]
+    )
+    if (code < 0 || ratings.has(label)) continue
+    const capacity = capacities.get(label)
+    ratings.set(label, {
+      id: `scene-cr:${label.replace('/', '_')}`,
+      code: code - 3,
+      label,
+      xp: creature.xp,
+      active: true,
+      availableQuantity: capacity?.quantity ?? 0,
+      maximumSingleQuantity: capacity?.maximumSingle ?? 0,
+      availableStatblocks: capacity?.statblocks ?? 0
+    })
+  }
+  return { challengeRatings: [...ratings.values()] }
+}
+
+function creatureCapacities(
+  pool: readonly Creature[],
+  source: ReadonlyMap<string, { maximum: number | null }>,
+  base: readonly DraftEntry[]
+): ReadonlyMap<
+  string,
+  { quantity: number; maximumSingle: number; statblocks: number }
+> {
+  const result = new Map<
+    string,
+    { quantity: number; maximumSingle: number; statblocks: number }
+  >()
+  for (const creature of pool) {
+    const already =
+      base.find((entry) => entry.creatureId === creature.id)?.quantity ?? 0
+    const maximum = source.get(creature.id)?.maximum
+    const available = maximum == null ? 999 : Math.max(0, maximum - already)
+    const label = crLabel(creature.cr)
+    const current = result.get(label) ?? {
+      quantity: 0,
+      maximumSingle: 0,
+      statblocks: 0
+    }
+    result.set(label, {
+      quantity: current.quantity + available,
+      maximumSingle: Math.max(current.maximumSingle, available),
+      statblocks: current.statblocks + (available > 0 ? 1 : 0)
+    })
+  }
+  return result
+}
+
+function materializeBlocks(
+  blocks: readonly { challengeRating: string; quantity: number }[],
+  pool: readonly Creature[],
+  source: ReadonlyMap<string, { weight: number; maximum: number | null }>,
+  base: readonly DraftEntry[],
+  config: GeneratorPresetConfigV3,
+  seed: number
+): DraftEntry[] {
+  const remaining = new Map(
+    pool.map((creature) => {
+      const maximum = source.get(creature.id)?.maximum
+      const current =
+        base.find((entry) => entry.creatureId === creature.id)?.quantity ?? 0
+      return [
+        creature.id,
+        maximum == null ? 999 : Math.max(0, maximum - current)
+      ] as const
+    })
+  )
+  const result: DraftEntry[] = []
+  const desiredStatblocks = statblockSlotsForBlocks(blocks, config)
+  for (const [blockIndex, block] of blocks.entries()) {
+    const candidates = pool
+      .filter(
+        (creature) =>
+          crLabel(creature.cr) === block.challengeRating &&
+          (config.composition.mixing === 'one-per-cr-block'
+            ? (remaining.get(creature.id) ?? 0) >= block.quantity
+            : (remaining.get(creature.id) ?? 0) > 0)
+      )
+      .toSorted(
+        (left, right) =>
+          optionOrder(seed, blockIndex, left, source) -
+            optionOrder(seed, blockIndex, right, source) ||
+          left.id.localeCompare(right.id)
+      )
+    const count =
+      config.composition.mixing === 'one-per-cr-block'
+        ? 1
+        : clamp(
+            desiredStatblocks[blockIndex] ?? 1,
+            1,
+            Math.min(candidates.length, block.quantity)
+          )
+    const chosen = candidates
+      .toSorted(
+        (left, right) =>
+          (remaining.get(right.id) ?? 0) - (remaining.get(left.id) ?? 0) ||
+          optionOrder(seed, blockIndex, left, source) -
+            optionOrder(seed, blockIndex, right, source) ||
+          left.id.localeCompare(right.id)
+      )
+      .slice(0, count)
+    if (chosen.length !== count)
+      throw new Error('Selected composition cannot be materialized exactly.')
+    const allocations = new Map(chosen.map((creature) => [creature.id, 1]))
+    let unassigned = block.quantity - chosen.length
+    while (unassigned > 0) {
+      const available = chosen
+        .filter(
+          (creature) =>
+            (allocations.get(creature.id) ?? 0) <
+            (remaining.get(creature.id) ?? 0)
+        )
+        .toSorted(
+          (left, right) =>
+            (allocations.get(left.id) ?? 0) -
+              (allocations.get(right.id) ?? 0) ||
+            left.id.localeCompare(right.id)
+        )[0]
+      if (!available) break
+      allocations.set(available.id, (allocations.get(available.id) ?? 0) + 1)
+      unassigned -= 1
+    }
+    if (unassigned !== 0)
+      throw new Error('Selected composition exceeds concrete source stock.')
+    for (const creature of chosen) {
+      const quantity = allocations.get(creature.id) ?? 0
+      if (quantity <= 0) continue
+      result.push({ creatureId: creature.id, quantity })
+      remaining.set(creature.id, (remaining.get(creature.id) ?? 0) - quantity)
+    }
+  }
+  return mergeEntries([], result)
+}
+
+function optionOrder(
+  seed: number,
+  block: number,
+  creature: Creature,
+  source: ReadonlyMap<string, { weight: number }>
+): number {
+  const weight = Math.max(1, source.get(creature.id)?.weight ?? 1)
+  return (mixSeed(seed + block * 131 + textSeed(creature.id)) % 10_000) / weight
+}
+
+function resolveDifficulty(
+  config: GeneratorPresetConfigV3,
+  seed: number
+): 'trivial' | 'easy' | 'medium' | 'hard' | 'deadly' {
+  if (config.generationDefaults.difficulty !== 'weighted')
+    return config.generationDefaults.difficulty
+  const ordered = ['trivial', 'easy', 'medium', 'hard', 'deadly'] as const
+  let cursor = mixSeed(seed) % 100
+  for (const band of ordered) {
+    cursor -= config.scene.difficultyWeights[band]
+    if (cursor < 0) return band
+  }
+  return 'medium'
+}
+
+function compositionDiagnostics(
+  entries: readonly DraftEntry[],
+  config: GeneratorPresetConfigV3,
+  partySize: number
+): string[] {
+  const monsterCount = entries.reduce((sum, entry) => sum + entry.quantity, 0)
+  const initiativeSlots = entries.reduce(
+    (sum, entry) =>
+      sum +
+      (config.combat.mobThreshold > 0 &&
+      entry.quantity >= config.combat.mobThreshold
+        ? 1
+        : entry.quantity),
+    0
+  )
+  return [
+    softRangeMessage(
+      'Statblöcke',
+      entries.length,
+      config.composition.statblocks
+    ),
+    softRangeMessage(
+      'Monster',
+      monsterCount,
+      resolveRange(config.composition.monsters, partySize)
+    ),
+    softRangeMessage(
+      'Init-Slots',
+      initiativeSlots,
+      resolveRange(config.composition.initiativeSlots, partySize)
+    )
+  ].filter((entry): entry is string => entry !== null)
+}
+
+function fixedRoster(
+  entries: readonly DraftEntry[],
+  config: GeneratorPresetConfigV3
+): FixedRoster {
+  return {
+    units: entries.flatMap((entry) => {
+      const creature = creatureById(entry.creatureId)
+      return creature ? [{ unitXp: creature.xp, quantity: entry.quantity }] : []
+    }),
+    statblockCount: entries.length,
+    initiativeSlots: entries.reduce(
+      (sum, entry) =>
+        sum +
+        (config.combat.mobThreshold > 0 &&
+        entry.quantity >= config.combat.mobThreshold
+          ? 1
+          : entry.quantity),
+      0
+    )
+  }
+}
+
+function softRangeMessage(
+  label: string,
+  value: number,
+  range: { min: number; max: number }
+): string | null {
+  if (value >= range.min && value <= range.max) return null
+  return `${label}: ${value} liegt außerhalb ${range.min}–${range.max}.`
+}
+
+function targetBand(
+  band: 'trivial' | 'easy' | 'medium' | 'hard' | 'deadly',
+  thresholds: readonly number[]
+): { lower: number; upper: number; target: number } {
+  const index = { trivial: -1, easy: 0, medium: 1, hard: 2, deadly: 3 }[band]
+  const lower = index < 0 ? 0 : (thresholds[index] ?? 0)
+  const upper =
+    index < 0
+      ? (thresholds[0] ?? 0)
+      : index < 3
+        ? (thresholds[index + 1] ?? lower)
+        : Math.round(lower * 1.35)
+  return { lower, upper, target: Math.round((lower + upper) / 2) }
 }
 
 function generationResult(
@@ -245,7 +528,9 @@ function generationResult(
   resolvedDifficulty: string,
   quality: 'exact' | 'fallback' | 'none',
   message: string,
-  source: ResolvedEncounterSource
+  source: ResolvedEncounterSource,
+  preset: Readonly<{ id: string; revision: number }>,
+  config: GeneratorPresetConfigV3
 ): SceneGroupDraftGeneration {
   return sceneGroupDraftGenerationSchema.parse({
     sceneId: scene.id,
@@ -272,8 +557,9 @@ function generationResult(
       effectiveFactionIds: source.effectiveFactionIds,
       catalogFallback: source.catalogFallback,
       sourceIssue: source.sourceIssue,
-      generatorPresetId: null,
-      generatorPresetRevision: null
+      generatorPresetId: preset.id,
+      generatorPresetRevision: preset.revision,
+      generatorConfigHash: fingerprintGeneratorConfig(config)
     },
     quality,
     message: source.catalogFallback
@@ -292,203 +578,11 @@ function existingDisplayName(scene: RunningScene, creatureId: string): string {
   return `Nicht verfügbares Monster (${creatureId})`
 }
 
-function preferredMaximum(
-  amount: EncounterTuning['amount'],
-  counts: GeneratorConfig['maxCounts']
-): number {
-  return amount === 'few'
-    ? counts.few
-    : amount === 'many'
-      ? counts.many
-      : counts.standard
-}
-
-function generateOptions(
-  base: readonly DraftEntry[],
-  pool: readonly Creature[],
-  lower: number,
-  upper: number,
-  target: number,
-  partySize: number,
-  maxCount: number,
-  config: GeneratorConfig,
-  sourceByCreature: ReadonlyMap<
-    string,
-    { weight: number; maximum: number | null }
-  >
-): GeneratedOption[] {
-  const baseCount = count(base)
-  const remaining = maxCount - baseCount
-  if (remaining <= 0 || pool.length === 0) return []
-
-  const additions: DraftEntry[][] = []
-  for (const creature of pool) {
-    const maximum = sourceByCreature.get(creature.id)?.maximum ?? null
-    const already =
-      base.find((entry) => entry.creatureId === creature.id)?.quantity ?? 0
-    const available =
-      maximum === null ? remaining : Math.max(0, maximum - already)
-    for (
-      let quantity = 1;
-      quantity <= Math.min(remaining, available);
-      quantity += 1
-    )
-      additions.push([{ creatureId: creature.id, quantity }])
-  }
-
-  const rankedPool = [...pool]
-    .sort((a, b) => Math.abs(target - a.xp) - Math.abs(target - b.xp))
-    .slice(0, config.rankedPoolSize)
-  if (remaining >= 2 && config.maxCombinationSize >= 2) {
-    for (let left = 0; left < rankedPool.length; left += 1) {
-      for (let right = left + 1; right < rankedPool.length; right += 1) {
-        if (!canAdd(rankedPool[left]!.id, base, sourceByCreature)) continue
-        if (!canAdd(rankedPool[right]!.id, base, sourceByCreature)) continue
-        additions.push([
-          { creatureId: rankedPool[left]!.id, quantity: 1 },
-          { creatureId: rankedPool[right]!.id, quantity: 1 }
-        ])
-      }
-    }
-  }
-
-  if (remaining >= 3) {
-    const diversePool = rankedPool.slice(0, config.diversePoolSize)
-    for (let first = 0; first < diversePool.length; first += 1) {
-      for (let second = first + 1; second < diversePool.length; second += 1) {
-        for (let third = second + 1; third < diversePool.length; third += 1) {
-          if (!canAdd(diversePool[first]!.id, base, sourceByCreature)) continue
-          if (!canAdd(diversePool[second]!.id, base, sourceByCreature)) continue
-          if (!canAdd(diversePool[third]!.id, base, sourceByCreature)) continue
-          additions.push([
-            { creatureId: diversePool[first]!.id, quantity: 1 },
-            { creatureId: diversePool[second]!.id, quantity: 1 },
-            { creatureId: diversePool[third]!.id, quantity: 1 }
-          ])
-        }
-      }
-    }
-  }
-
-  const unique = new Map<string, GeneratedOption>()
-  for (const addition of additions) {
-    const entries = mergeEntries(base, addition)
-    const baseXp = entries.reduce(
-      (sum, entry) =>
-        sum + (creatureById(entry.creatureId)?.xp ?? 0) * entry.quantity,
-      0
-    )
-    const adjustedXp = Math.round(
-      baseXp * multiplier(count(entries), partySize)
-    )
-    const exact = adjustedXp >= lower && adjustedXp < upper
-    const score =
-      bandDistance(adjustedXp, lower, upper) * 1000 +
-      Math.abs(target - adjustedXp) +
-      tuningPenalty(entries, target, config)
-    const weight = addition.reduce(
-      (sum, entry) =>
-        sum +
-        (sourceByCreature.get(entry.creatureId)?.weight ?? 1) * entry.quantity,
-      0
-    )
-    const key = entries
-      .map((entry) => `${entry.creatureId}:${entry.quantity}`)
-      .join('|')
-    const current = unique.get(key)
-    if (!current || score < current.score)
-      unique.set(key, { entries, adjustedXp, exact, score, weight })
-  }
-
-  return [...unique.values()].sort(
-    (a, b) =>
-      Number(b.exact) - Number(a.exact) ||
-      a.score - b.score ||
-      b.weight - a.weight ||
-      a.adjustedXp - b.adjustedXp ||
-      rosterKey(a.entries).localeCompare(rosterKey(b.entries))
-  )
-}
-
-function canAdd(
-  creatureId: string,
-  base: readonly DraftEntry[],
-  source: ReadonlyMap<string, { maximum: number | null }>
-): boolean {
-  const maximum = source.get(creatureId)?.maximum ?? null
-  const current =
-    base.find((entry) => entry.creatureId === creatureId)?.quantity ?? 0
-  return maximum === null || current < maximum
-}
-
-function weightedOption(
-  options: readonly GeneratedOption[],
-  seed: number
-): GeneratedOption | undefined {
-  const total = options.reduce(
-    (sum, option) => sum + Math.max(1, option.weight),
-    0
-  )
-  if (total === 0) return undefined
-  let cursor = mixSeed(seed) % total
-  for (const option of options) {
-    cursor -= Math.max(1, option.weight)
-    if (cursor < 0) return option
-  }
-  return options.at(-1)
-}
-
-function mixSeed(seed: number): number {
-  let value = (seed >>> 0) + 0x9e3779b9
-  value = Math.imul(value ^ (value >>> 16), 0x85ebca6b)
-  value = Math.imul(value ^ (value >>> 13), 0xc2b2ae35)
-  return (value ^ (value >>> 16)) >>> 0
-}
-
-function tuningPenalty(
-  entries: readonly DraftEntry[],
-  target: number,
-  config: GeneratorConfig
-): number {
-  const distinct = entries.length
-  const desiredCount =
-    config.tuning.amount === 'few'
-      ? config.desiredCounts.few
-      : config.tuning.amount === 'many'
-        ? config.desiredCounts.many
-        : config.desiredCounts.standard
-  const amountPenalty =
-    Math.abs(count(entries) - desiredCount) *
-    target *
-    config.amountPenaltyWeight
-  const diversityPenalty =
-    config.tuning.diversity === 'low'
-      ? Math.max(0, distinct - 1) * target * config.diversityPenaltyWeight
-      : config.tuning.diversity === 'high'
-        ? Math.max(0, 3 - distinct) * target * config.diversityPenaltyWeight
-        : 0
-  const xp = entries.map((entry) => creatureById(entry.creatureId)?.xp ?? 0)
-  const maximum = Math.max(1, ...xp)
-  const spread = (Math.max(...xp) - Math.min(...xp)) / maximum
-  const balancePenalty =
-    config.tuning.balance === 'even'
-      ? spread * target * config.balancePenaltyWeight
-      : config.tuning.balance === 'varied'
-        ? (1 - spread) * target * config.balancePenaltyWeight
-        : 0
-  return amountPenalty + diversityPenalty + balancePenalty
-}
-
-function bandDistance(
-  adjustedXp: number,
-  lower: number,
-  upper: number
-): number {
-  return adjustedXp < lower
-    ? lower - adjustedXp
-    : adjustedXp >= upper
-      ? adjustedXp - upper + 1
-      : 0
+function crLabel(cr: number): string {
+  if (cr === 0.125) return '1/8'
+  if (cr === 0.25) return '1/4'
+  if (cr === 0.5) return '1/2'
+  return String(cr)
 }
 
 function normalizeEntries(
@@ -510,17 +604,36 @@ function mergeEntries(
   return [...quantities.entries()]
     .filter(([, quantity]) => quantity > 0)
     .map(([creatureId, quantity]) => ({ creatureId, quantity }))
-    .sort((a, b) => a.creatureId.localeCompare(b.creatureId))
+    .sort((left, right) => left.creatureId.localeCompare(right.creatureId))
 }
 
-function count(entries: readonly DraftEntry[]): number {
-  return entries.reduce((sum, entry) => sum + entry.quantity, 0)
+const seededEntropy = {
+  modulo(stream: string, modulus: number): number {
+    return mixSeed(textSeed(stream)) % modulus
+  },
+  unit(stream: string): number {
+    return mixSeed(textSeed(stream)) / 0x1_0000_0000
+  }
 }
 
-function rosterKey(entries: readonly DraftEntry[]): string {
-  return entries
-    .map((entry) => `${entry.creatureId}:${entry.quantity}`)
-    .join('|')
+function textSeed(value: string): number {
+  let hash = 2166136261
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+  }
+  return hash >>> 0
+}
+
+function mixSeed(seed: number): number {
+  let value = (seed >>> 0) + 0x9e3779b9
+  value = Math.imul(value ^ (value >>> 16), 0x85ebca6b)
+  value = Math.imul(value ^ (value >>> 13), 0xc2b2ae35)
+  return (value ^ (value >>> 16)) >>> 0
+}
+
+function clamp(value: number, minimum: number, maximum: number): number {
+  return Math.max(minimum, Math.min(maximum, value))
 }
 
 function title(value: string): string {

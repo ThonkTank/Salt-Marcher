@@ -484,14 +484,14 @@ describe('encounter tables and factions', () => {
       {
         difficulty: 'medium',
         amount: 'many',
-        balance: 'auto',
-        diversity: 'auto'
+        balance: 'preset',
+        diversity: 'preset'
       },
       7,
       session.scene.revision
     )
     expect(generation.entries).toEqual([
-      expect.objectContaining({ creatureId: creature.id, quantity: 2 })
+      expect.objectContaining({ creatureId: creature.id, quantity: 1 })
     ])
     expect(generation.context).toMatchObject({
       locationId: world.locations[0]!.id,
@@ -571,8 +571,8 @@ describe('encounter tables and factions', () => {
       {
         difficulty: 'medium',
         amount: 'many',
-        balance: 'auto',
-        diversity: 'auto'
+        balance: 'preset',
+        diversity: 'preset'
       },
       7,
       session.scene.revision

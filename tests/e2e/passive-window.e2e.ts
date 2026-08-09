@@ -26,7 +26,7 @@ describe('passive display isolation', () => {
     const input = await client.$('#campaign-name')
     await input.waitForExist()
     await input.setValue('GM-SENTINEL-DO-NOT-LEAK')
-    await (await client.$('button=Kampagne erstellen')).click()
+    await (await client.$('button=Anlegen')).click()
     await (
       await client.$('h1=Session · GM-SENTINEL-DO-NOT-LEAK')
     ).waitForExist({ timeout: 15_000 })

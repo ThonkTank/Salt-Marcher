@@ -19,7 +19,7 @@ describe('dialog architecture', () => {
     const campaignName = await client.$('#campaign-name')
     await campaignName.waitForDisplayed({ timeout: 10_000 })
     await campaignName.setValue('Dialog Architecture')
-    await (await client.$('button=Kampagne erstellen')).click()
+    await (await client.$('button=Anlegen')).click()
 
     await openCatalogSection(client, 'Encounter-Tabellen')
     await clickVisibleCatalogCreate(client)

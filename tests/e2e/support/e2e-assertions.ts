@@ -62,21 +62,44 @@ export async function setElectronWindowSize(
       ) => Promise<boolean>
     }
   }
-  const resized = await electronClient.electron.execute(
-    (electron, nextWidth, nextHeight) => {
-      const target =
-        electron.BrowserWindow.getFocusedWindow() ??
-        electron.BrowserWindow.getAllWindows().find(
-          (candidate) => !candidate.isDestroyed() && candidate.isVisible()
+  await client.waitUntil(
+    async () => {
+      try {
+        return await electronClient.electron.execute(
+          (electron, nextWidth, nextHeight) => {
+            const target =
+              electron.BrowserWindow.getFocusedWindow() ??
+              electron.BrowserWindow.getAllWindows().find(
+                (candidate) => !candidate.isDestroyed() && candidate.isVisible()
+              ) ??
+              electron.webContents
+                .getAllWebContents()
+                .map((contents) =>
+                  electron.BrowserWindow.fromWebContents(contents)
+                )
+                .find(
+                  (candidate) =>
+                    candidate !== null &&
+                    !candidate.isDestroyed() &&
+                    candidate.isVisible()
+                )
+            if (!target) return false
+            target.setSize(nextWidth, nextHeight)
+            return true
+          },
+          width,
+          height
         )
-      if (!target) return false
-      target.setSize(nextWidth, nextHeight)
-      return true
+      } catch {
+        return false
+      }
     },
-    width,
-    height
+    {
+      timeout: 10_000,
+      interval: 250,
+      timeoutMsg: 'No Electron window was available to resize.'
+    }
   )
-  if (!resized) throw new Error('No Electron window was available to resize.')
   await client.waitUntil(
     async () =>
       (

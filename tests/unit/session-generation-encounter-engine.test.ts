@@ -67,6 +67,11 @@ describe('session generation encounter engine', () => {
     if (result.status !== 'success') return
     expect(result.session.sessionXpTarget).toBe(3480)
     expect(result.session.averageLevel).toBeCloseTo(3.5, 2)
+    expect(result.generatorPreset).toMatchObject({
+      id: '00000000-0000-4000-8000-000000000001',
+      revision: 0
+    })
+    expect(result.generatorPreset.configHash).toMatch(/^[0-9a-f]{64}$/)
     expect(result.encounters.map((encounter) => encounter.targetXp)).toEqual([
       680, 1000, 1800
     ])
@@ -74,11 +79,94 @@ describe('session generation encounter engine', () => {
     expect(
       result.encounters.every((encounter) => encounter.blocks.length > 0)
     ).toBe(true)
+    expect(
+      result.encounters.every((encounter) => encounter.statblockCount > 0)
+    ).toBe(true)
+    expect(
+      result.encounters.every(
+        (encounter) =>
+          encounter.statblockCount ===
+          encounter.blocks.reduce((sum, block) => sum + block.statblockSlots, 0)
+      )
+    ).toBe(true)
     expect(result.encounters.map((encounter) => encounter.difficulty)).toEqual([
       'EASY',
       'MEDIUM',
       'DEADLY'
     ])
+    expect(
+      result.encounters.map((encounter) => ({
+        targetXp: encounter.targetXp,
+        adjustedXp: encounter.adjustedXp,
+        patternId: encounter.patternId,
+        blocks: encounter.blocks.map((block) => ({
+          role: block.role,
+          challengeRating: block.challengeRating,
+          quantity: block.quantity,
+          statblockSlots: block.statblockSlots
+        }))
+      }))
+    ).toMatchInlineSnapshot(`
+      [
+        {
+          "adjustedXp": 650,
+          "blocks": [
+            {
+              "challengeRating": "1",
+              "quantity": 1,
+              "role": "Standard",
+              "statblockSlots": 1,
+            },
+            {
+              "challengeRating": "1/8",
+              "quantity": 5,
+              "role": "Minion",
+              "statblockSlots": 1,
+            },
+          ],
+          "patternId": "preset:standard-minion",
+          "targetXp": 680,
+        },
+        {
+          "adjustedXp": 1000,
+          "blocks": [
+            {
+              "challengeRating": "2",
+              "quantity": 1,
+              "role": "Elite",
+              "statblockSlots": 1,
+            },
+            {
+              "challengeRating": "0",
+              "quantity": 5,
+              "role": "Minion",
+              "statblockSlots": 1,
+            },
+          ],
+          "patternId": "preset:elite-minion",
+          "targetXp": 1000,
+        },
+        {
+          "adjustedXp": 1800,
+          "blocks": [
+            {
+              "challengeRating": "3",
+              "quantity": 1,
+              "role": "Elite",
+              "statblockSlots": 1,
+            },
+            {
+              "challengeRating": "1/4",
+              "quantity": 4,
+              "role": "Minion",
+              "statblockSlots": 1,
+            },
+          ],
+          "patternId": "preset:elite-minion",
+          "targetXp": 1800,
+        },
+      ]
+    `)
   })
 
   it('is deterministic and independent of catalog row order', () => {

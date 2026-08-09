@@ -60,6 +60,40 @@ function referencedSqlTables(path: string): string[] {
     .filter((table): table is string => table !== undefined)
 }
 
+function directIpcInvokeOwners(path: string): string[] {
+  const content = readFileSync(path, 'utf8')
+  const tree = ts.createSourceFile(
+    path,
+    content,
+    ts.ScriptTarget.Latest,
+    true,
+    path.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
+  )
+  const owners: string[] = []
+  const visit = (node: ts.Node): void => {
+    if (
+      ts.isCallExpression(node) &&
+      ts.isPropertyAccessExpression(node.expression) &&
+      node.expression.expression.getText(tree) === 'ipcRenderer' &&
+      node.expression.name.text === 'invoke'
+    ) {
+      let current: ts.Node | undefined = node
+      while (current && !ts.isFunctionLike(current)) current = current.parent
+      const declaration = current?.parent
+      owners.push(
+        declaration &&
+          ts.isVariableDeclaration(declaration) &&
+          ts.isIdentifier(declaration.name)
+          ? declaration.name.text
+          : '<anonymous>'
+      )
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(tree)
+  return owners
+}
+
 describe('architecture boundaries', () => {
   it('keeps session generation pure in core and file access in utility', () => {
     for (const file of codeFiles('src/core/session-generation')) {
@@ -109,7 +143,7 @@ describe('architecture boundaries', () => {
     expect(windowSource).toContain("'passive.html'")
     expect(preload).not.toMatch(/campaign:|session:read|hex:|settings:/)
     expect(preload).toContain("coreOperations['projection.read']")
-    expect(preload).toContain("'runtime:core-status'")
+    expect(preload).toContain("mainOperations['runtime.coreStatus']")
   })
 
   it('keeps travel reads pure and progression in the utility process', () => {
@@ -182,6 +216,53 @@ describe('architecture boundaries', () => {
     expect(
       source('src/renderer/features/worldplanner/lazy-world-faction-dialog.tsx')
     ).toContain("import('./world-faction-dialog.js')")
+    const topBar = source(
+      'src/renderer/features/workspace/workspace-top-bar.tsx'
+    )
+    const burger = source('src/renderer/features/workspace/campaign-menu.tsx')
+    expect(topBar).toContain("import('./campaign-menu.js')")
+    expect(burger).toContain("import('./campaign-management-dialog.js')")
+    expect(burger).toContain(
+      "import('./encounter-generator-settings-route.js')"
+    )
+    expect(burger).not.toContain('<ModalDialog')
+    expect(
+      source('src/renderer/features/workspace/encounter-generator-settings.tsx')
+    ).not.toContain('GeneratorPresetCapability')
+  })
+
+  it('centralizes generator matrix, tuning and fingerprint semantics', () => {
+    const model = source('src/shared/generator/generator-config-model.ts')
+    const matrix = source(
+      'src/renderer/features/workspace/generator-role-matrix.tsx'
+    )
+    const painting = source(
+      'src/renderer/features/workspace/use-batched-matrix-paint.ts'
+    )
+    expect(model).toContain('export function roleAt')
+    expect(model).toContain('export function updateRoleCell')
+    expect(matrix).toContain('roleAt(')
+    expect(painting).toContain('roleAt(')
+    expect(painting).toContain('updateRoleCell(')
+    for (const content of [matrix, painting])
+      expect(content).not.toMatch(/roleMatrix\s*\[[^\]]+\]\s*\[/)
+
+    const tuning = source('src/shared/contracts/encounter-tuning.ts')
+    expect(tuning).toContain('EncounterTuningOverride')
+    expect(tuning).not.toMatch(/export type EncounterTuning\s*=/)
+    expect(source('src/shared/contracts/generator-presets.ts')).not.toContain(
+      'defaultGeneratorConfig'
+    )
+
+    const fingerprintCallers = [
+      'src/core/scene/group-generator.ts',
+      'src/core/session-generation/encounter-engine.ts',
+      'src/core/encounter/combat-service.ts'
+    ]
+    for (const file of fingerprintCallers)
+      expect(source(file), `${file} defines a local config hash`).toContain(
+        'fingerprintGeneratorConfig('
+      )
   })
 
   it('keeps the TypeScript import graph acyclic', () => {
@@ -414,6 +495,8 @@ describe('architecture boundaries', () => {
     expect(assembly).not.toMatch(/import \{|messagesDe\s*=/)
     for (const dictionary of [
       'workspace',
+      'campaign-menu',
+      'generator',
       'reference',
       'session',
       'hex',
@@ -594,6 +677,25 @@ describe('architecture boundaries', () => {
       ).toContain(match[1])
   })
 
+  it('allows direct IPC invokes only in the central preload adapters', () => {
+    const full = normalize(resolve('src/preload/capability-bridge/index.ts'))
+    const passive = normalize(resolve('src/preload/passive.ts'))
+    for (const file of codeFiles('src/preload')) {
+      const owners = directIpcInvokeOwners(file)
+      if (
+        normalize(resolve(file)) === full ||
+        normalize(resolve(file)) === passive
+      )
+        expect(owners, `${file} bypasses its invoke adapter`).toEqual([
+          'invokeIpc'
+        ])
+      else expect(owners, `${file} invokes IPC directly`).toEqual([])
+    }
+    const bridge = source('src/preload/capability-bridge/index.ts')
+    expect(bridge).not.toMatch(/operationForChannel|mainOperationForChannel/)
+    expect(bridge).not.toMatch(/async function invoke\s*</)
+  })
+
   it('opens schemas once and never migrates normal commands', () => {
     const all = [
       'src/core/scene/scene-store.ts',
@@ -618,16 +720,61 @@ describe('architecture boundaries', () => {
   })
 
   it('keeps combat persistence as runtime references to owning aggregates', () => {
-    const combat = source('src/core/encounter/live-combat.ts')
-    const combatantTable = combat.match(
+    const repository = source('src/core/encounter/combat-repository.ts')
+    const combatantTable = repository.match(
       /CREATE TABLE IF NOT EXISTS encounter_combatants \([\s\S]*?\n {4}\);/
     )?.[0]
     expect(combatantTable).toBeDefined()
     expect(combatantTable).not.toMatch(
       /current_hp|max_hp|armor_class|conditions|creature_id|name|detail|xp/
     )
-    expect(combat).not.toContain('threshold_fraction')
-    expect(combat).not.toContain('member_ids TEXT')
+    expect(repository).not.toContain('threshold_fraction')
+    expect(repository).not.toContain('member_ids TEXT')
+  })
+
+  it('isolates combat SQL and memento serialization in its repository', () => {
+    const repository = source('src/core/encounter/combat-repository.ts')
+    const reducer = source('src/core/encounter/combat-state-reducer.ts')
+    const service = source('src/core/encounter/combat-service.ts')
+    expect(repository).toContain('combatMementoSchema.parse')
+    expect(repository).toContain('encounter_combat_runtime')
+    expect(reducer).toContain('export function reduceCombatState')
+    expect(service).toContain('reduceCombatState')
+
+    for (const file of [
+      'src/core/encounter/live-combat.ts',
+      'src/core/encounter/combat-service.ts',
+      'src/core/encounter/combat-partition-policy.ts'
+    ]) {
+      const content = source(file)
+      expect(content, `${file} contains SQL`).not.toMatch(
+        /\b(?:db|database)\.prepare\(|\b(?:SELECT|INSERT|UPDATE|DELETE|CREATE TABLE)\b/
+      )
+      expect(content, `${file} knows combat table names`).not.toContain(
+        'encounter_combat_'
+      )
+      expect(content, `${file} serializes mementos`).not.toContain(
+        'combatMementoSchema'
+      )
+    }
+
+    const orchestrator = source('src/core/encounter/live-combat.ts')
+    expect(orchestrator).not.toMatch(
+      /\browId\b|CombatMemento|combatMementoSchema/
+    )
+  })
+
+  it('never infers combat partitions or display names from row IDs', () => {
+    const policy = source('src/core/encounter/combat-partition-policy.ts')
+    const service = source('src/core/encounter/combat-service.ts')
+    const repository = source('src/core/encounter/combat-repository.ts')
+    expect(policy).toContain("partitionKind: 'mob'")
+    expect(policy).toContain("partitionKind: 'individual'")
+    expect(repository).toContain('row.partitionKind')
+    for (const content of [policy, service, repository])
+      expect(content).not.toMatch(
+        /rowId\.(?:split|match|includes|startsWith|endsWith)|(?:split|match)\([^\n]*rowId/
+      )
   })
 
   it('keeps scene SQL private and routes renderer capabilities through its provider', () => {

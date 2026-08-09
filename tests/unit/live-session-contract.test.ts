@@ -8,6 +8,7 @@ import {
 import {
   evaluateSceneGroupDraftInputSchema,
   saveSceneGroupInputSchema,
+  sceneGroupSchema,
   sceneGroupDraftGenerationRequestSchema
 } from '../../src/shared/contracts/scene.js'
 import {
@@ -24,7 +25,7 @@ import {
 } from '../../src/shared/contracts/encounter-source.js'
 
 describe('live session capability contracts', () => {
-  it('allows empty named groups and rejects invalid quantities', () => {
+  it('allows empty groups with optional names and rejects invalid quantities', () => {
     expect(
       saveSceneGroupInputSchema.safeParse({
         sceneId: '0184d1f4-bba7-7c9c-9d89-5f1c0f36a030',
@@ -37,6 +38,19 @@ describe('live session capability contracts', () => {
         entries: []
       }).success
     ).toBe(true)
+    expect(
+      saveSceneGroupInputSchema.parse({
+        sceneId: '0184d1f4-bba7-7c9c-9d89-5f1c0f36a030',
+        groupId: null,
+        name: '   ',
+        note: '',
+        disposition: 'neutral',
+        expectedRevision: 0,
+        expectedGroupRevision: null,
+        entries: []
+      }).name
+    ).toBe('')
+    expect(sceneGroupSchema.shape.name.safeParse('').success).toBe(false)
     expect(
       saveSceneGroupInputSchema.safeParse({
         sceneId: '0184d1f4-bba7-7c9c-9d89-5f1c0f36a030',

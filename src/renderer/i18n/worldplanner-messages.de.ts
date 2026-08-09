@@ -37,9 +37,6 @@ export const worldplannerMessagesDe = {
   'faction.nameRequired': 'Ein Name ist erforderlich.',
   'faction.readySave': 'Bereit zum Speichern.',
   'location.factionBreadcrumb': 'World Planner › Orte › Ort erstellen',
-  'location.tableBreadcrumb': 'World Planner › Orte › Ort erstellen',
-  'location.factionTableBreadcrumb':
-    'World Planner › Orte › Ort erstellen › Fraktion erstellen',
   'hex.editor.locationOccupied':
     'Auf diesem Hex ist bereits ein anderer Ort platziert.',
   'hex.editor.mapMissing': 'Die gewählte Hex-Karte ist nicht mehr verfügbar.',

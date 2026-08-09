@@ -2,6 +2,30 @@
   "version": 1,
   "goldens": [
     {
+      "name": "campaign-dialog-light",
+      "suite": "create",
+      "selector": "section.campaign-dialog",
+      "viewport": { "width": 1280, "height": 800 }
+    },
+    {
+      "name": "campaign-dialog-dark",
+      "suite": "create",
+      "selector": "section.campaign-dialog",
+      "viewport": { "width": 1280, "height": 800 }
+    },
+    {
+      "name": "encounter-settings-light",
+      "suite": "create",
+      "selector": "section.encounter-settings-dialog",
+      "viewport": { "width": 1280, "height": 800 }
+    },
+    {
+      "name": "encounter-settings-dark",
+      "suite": "create",
+      "selector": "section.encounter-settings-dialog",
+      "viewport": { "width": 1280, "height": 800 }
+    },
+    {
       "name": "hex-editor-biome-light",
       "suite": "create",
       "selector": ".hex-editor-workspace",

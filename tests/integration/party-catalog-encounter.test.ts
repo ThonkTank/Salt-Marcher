@@ -139,8 +139,8 @@ describe('party and catalog parity slice', () => {
       {
         difficulty: 'medium',
         amount: 'standard',
-        balance: 'auto',
-        diversity: 'auto'
+        balance: 'preset',
+        diversity: 'preset'
       },
       0,
       session.scene.revision

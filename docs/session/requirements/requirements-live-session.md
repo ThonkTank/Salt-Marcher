@@ -22,16 +22,19 @@ tab. Scene owns runtime composition; Session does not own a second group list.
   Manual Scene removal remains stable until membership is toggled again.
 - `Gruppen managen` is the only creation and editing entry point. Its group
   selector and adjacent action start a transient `Neue Gruppe` draft; when no
-  active group exists, that draft is selected automatically. A new named group
-  may be saved empty. Disposition is descriptive metadata and does not assign a
-  Combat side.
+  active group exists, that draft is selected automatically. A new group may
+  be saved with an empty roster and without a custom name. Disposition is
+  descriptive metadata and does not assign a Combat side.
 - The dialog's left pane contains the Creature catalog with name, CR, size,
   type, subtype, biome, and alignment filters. The right pane selects an
-  existing Scene group or the new draft.
+  existing Scene group or the new draft. A blank or whitespace-only name is
+  replaced atomically on save with the smallest free `Gruppe N` name in that
+  Scene. Active and archived groups reserve their exact `Gruppe N` number;
+  this rule applies equally to new groups and renamed existing groups.
 - Catalog rows add monsters to the draft explicitly. The draft supports
-  quantity changes, removal, and an optional persisted group note. A name is
-  required; creatures are optional, but a non-empty draft needs at least one
-  available creature before saving.
+  quantity changes, removal, and an optional persisted group note. A custom
+  name is optional; creatures are optional, but a non-empty draft needs at
+  least one available creature before saving.
 - Every draft change shows base XP, adjusted XP, Party thresholds, creature
   count, multiplier, semantic difficulty band, and status without persisting
   the draft.

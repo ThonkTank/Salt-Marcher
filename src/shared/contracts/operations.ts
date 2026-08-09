@@ -157,11 +157,18 @@ import {
   sessionGenerationEncounterResultSchema
 } from './session-generation.js'
 import {
+  assignGeneratorPresetReceiptSchema,
+  createGeneratorPresetReceiptSchema,
+  deleteGeneratorPresetReceiptSchema,
   generatorPresetAssignInputSchema,
+  generatorPresetCommandReceiptInputSchema,
+  generatorPresetCommandReceiptSchema,
   generatorPresetCreateInputSchema,
   generatorPresetDeleteInputSchema,
-  generatorPresetSnapshotSchema,
-  generatorPresetUpdateInputSchema
+  generatorPresetEditorSnapshotSchema,
+  generatorPresetReadEditorInputSchema,
+  generatorPresetUpdateInputSchema,
+  updateGeneratorPresetReceiptSchema
 } from './generator-presets.js'
 
 export type OperationMode = 'read' | 'write'
@@ -254,30 +261,35 @@ export const coreOperations = {
     updateInstallationSettingsInputSchema,
     installationSettingsSchema
   ),
-  'generatorPresets.read': read(
-    'generator-presets:read',
-    none,
-    generatorPresetSnapshotSchema
+  'generatorPresets.readEditor': read(
+    'generator-presets:read-editor',
+    generatorPresetReadEditorInputSchema,
+    generatorPresetEditorSnapshotSchema
   ),
   'generatorPresets.create': write(
     'generator-presets:create',
     generatorPresetCreateInputSchema,
-    generatorPresetSnapshotSchema
+    createGeneratorPresetReceiptSchema
   ),
   'generatorPresets.update': write(
     'generator-presets:update',
     generatorPresetUpdateInputSchema,
-    generatorPresetSnapshotSchema
+    updateGeneratorPresetReceiptSchema
   ),
   'generatorPresets.delete': write(
     'generator-presets:delete',
     generatorPresetDeleteInputSchema,
-    generatorPresetSnapshotSchema
+    deleteGeneratorPresetReceiptSchema
   ),
   'generatorPresets.assign': write(
     'generator-presets:assign',
     generatorPresetAssignInputSchema,
-    generatorPresetSnapshotSchema
+    assignGeneratorPresetReceiptSchema
+  ),
+  'generatorPresets.commandReceipt': read(
+    'generator-presets:command-receipt',
+    generatorPresetCommandReceiptInputSchema,
+    generatorPresetCommandReceiptSchema.nullable()
   ),
   'projection.read': read('projection:read', none, passiveProjectionSchema, [
     'passive'
@@ -773,6 +785,12 @@ export type CoreOperationInput<K extends CoreOperationKind> = z.output<
 >
 export type CoreOperationOutput<K extends CoreOperationKind> = z.output<
   (typeof coreOperations)[K]['output']
+>
+export type MainOperationInput<K extends MainOperationKind> = z.output<
+  (typeof mainOperations)[K]['input']
+>
+export type MainOperationOutput<K extends MainOperationKind> = z.output<
+  (typeof mainOperations)[K]['output']
 >
 
 export function isCoreOperationKind(value: string): value is CoreOperationKind {

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-export const SESSION_GENERATION_ENGINE_VERSION = 'saltmarcher-v2' as const
+export const SESSION_GENERATION_ENGINE_VERSION = 'saltmarcher-v4' as const
 
 export const generationPartyLevelSchema = z
   .object({
@@ -59,6 +59,7 @@ export const encounterBlockSchema = z
     challengeRating: z.string().min(1),
     challengeRatingCode: z.number().int(),
     quantity: z.number().int().positive(),
+    statblockSlots: z.number().int().positive(),
     unitXp: z.number().int().nonnegative()
   })
   .strict()
@@ -74,7 +75,7 @@ export const encounterAuditSchema = z
 
 export const encounterWarningSchema = z
   .object({
-    code: z.enum(['candidate_outside_tolerance']),
+    code: z.enum(['candidate_outside_tolerance', 'constraints_approximated']),
     encounterNumber: z.number().int().positive(),
     message: z.string()
   })
@@ -90,9 +91,11 @@ export const encounterIntentSchema = z
     patternId: z.string().min(1),
     blocks: z.array(encounterBlockSchema).min(1),
     monsterCount: z.number().int().positive(),
+    statblockCount: z.number().int().positive(),
     effectiveMonsterCount: z.number().positive(),
     xpMultiplier: z.number().positive(),
     bossinessRank: z.number().int().positive(),
+    constraintDiagnostics: z.array(z.string()),
     displaySummary: z.string().min(1).optional()
   })
   .strict()
@@ -123,6 +126,13 @@ export const sessionGenerationEncounterSuccessSchema = z
     engineVersion: z.literal(SESSION_GENERATION_ENGINE_VERSION),
     catalogVersion: z.string().min(1),
     catalogContentHash: z.string().regex(/^[0-9a-f]{64}$/),
+    generatorPreset: z
+      .object({
+        id: z.uuid(),
+        revision: z.number().int().nonnegative(),
+        configHash: z.string().regex(/^[0-9a-f]{64}$/)
+      })
+      .strict(),
     input: sessionGenerationEncounterInputSchema,
     session: z
       .object({

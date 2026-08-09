@@ -18,6 +18,10 @@ lives under `docs/<feature>/`; see [docs/README.md](../README.md).
   source shape, boundaries, security model, and data ownership. Start here.
 - [Electron Greenfield Migration](architecture/electron-greenfield-migration.md)
   -- versioned roadmap, decisions, progress, and blockers.
+- [ADR 0001](architecture/decisions/0001-shared-encounter-composition-and-preset-ownership.md)
+  -- shared composition and installation-owned presets.
+- [ADR 0002](architecture/decisions/0002-persist-explicit-combat-partitions.md)
+  -- explicit persisted individual/mob partitions.
 
 ## Contracts
 

@@ -1,16 +1,16 @@
 {
-  "recordedAt": "2026-08-07",
-  "reason": "Ratchet after removing unused Catalog surface snapshot and close props",
-  "dependencyRationale": "No dependency version changed; this is a 68-byte first-party route reduction",
-  "chunkRationale": "Catalog composition shrank in place; dynamic Related-Creation, Faction, and Pixi boundaries are unchanged",
+  "recordedAt": "2026-08-09",
+  "reason": "Optional Scene group names allocate generic names while the reachable renderer remains below the fixed 3,104,870-byte refactor target",
+  "dependencyRationale": "No dependency version changed; common Workspace grew by 8 bytes while Session fell by 97 bytes and the reachable renderer fell by 89 bytes",
+  "chunkRationale": "The optional-name hint and save behavior remain in the existing Session leaf; route ownership and every bundle limit remain unchanged",
   "graphs": {
-    "shell": 773292,
-    "workspace": 1054966,
-    "session": 348618,
-    "catalog": 366282,
-    "hex": 354322,
+    "shell": 773252,
+    "workspace": 1045738,
+    "session": 347070,
+    "catalog": 365410,
+    "hex": 353671,
     "reference": 97770,
-    "pixi": 1636007,
-    "reachable": 3045295
+    "pixi": 1257760,
+    "reachable": 3104656
   }
 }

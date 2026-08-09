@@ -275,6 +275,7 @@ export class SceneStore {
         if (!creatureById(creatureId))
           throw new CapabilityError('not_found', false)
       const id = groupId ?? uuidv7()
+      const savedName = this.resolveGroupName(sceneId, id, name)
       savedId = id
       if (groupId) {
         const group = this.db
@@ -290,13 +291,13 @@ export class SceneStore {
           .prepare(
             'UPDATE scene_group SET name = ?, note = ?, disposition = ?, revision = revision + 1 WHERE id = ?'
           )
-          .run(name, note, disposition, id)
+          .run(savedName, note, disposition, id)
       } else {
         this.db
           .prepare(
             'INSERT INTO scene_group (id, scene_id, revision, name, note, disposition, archived, position) VALUES (?, ?, 0, ?, ?, ?, 0, COALESCE((SELECT MAX(position) + 1 FROM scene_group WHERE scene_id = ?), 0))'
           )
-          .run(id, sceneId, name, note, disposition, sceneId)
+          .run(id, sceneId, savedName, note, disposition, sceneId)
       }
       const existing = this.db
         .prepare(
@@ -332,6 +333,29 @@ export class SceneStore {
       })
     else this.mutate(expectedRevision, save)
     return savedId
+  }
+
+  private resolveGroupName(
+    sceneId: string,
+    groupId: string,
+    requestedName: string
+  ): string {
+    const normalized = requestedName.trim()
+    if (normalized) return normalized
+    const names = new Set(
+      (
+        this.db
+          .prepare(
+            'SELECT name FROM scene_group WHERE scene_id = ? AND id <> ?'
+          )
+          .all(sceneId, groupId) as Array<{ name: string }>
+      ).map((row) => row.name.trim())
+    )
+    for (let ordinal = 1; ordinal <= names.size + 1; ordinal += 1) {
+      const candidate = `Gruppe ${ordinal}`
+      if (!names.has(candidate)) return candidate
+    }
+    throw new Error('Unable to allocate a generic group name.')
   }
 
   memberState(memberId: string): {

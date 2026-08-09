@@ -4,7 +4,9 @@ import {
   clickWhenInteractable,
   expectAccessible,
   expectAccessibleInBothThemes,
-  expectElementGolden
+  expectElementGolden,
+  setElectronWindowSize,
+  setWindowToMinimumResponsiveSize
 } from './support/e2e-assertions.js'
 
 describe('campaign walking skeleton', () => {
@@ -13,9 +15,29 @@ describe('campaign walking skeleton', () => {
     const field = await client.$('#campaign-name')
     await waitForCampaignInput(client, field)
     await expectAccessibleInBothThemes(client)
+    await expectElementGolden(
+      client,
+      'campaign-dialog-light',
+      'section.campaign-dialog'
+    )
+    await client.execute(() => {
+      document.documentElement.dataset['theme'] = 'dark'
+    })
+    await expectElementGolden(
+      client,
+      'campaign-dialog-dark',
+      'section.campaign-dialog'
+    )
+    await client.execute(() => {
+      document.documentElement.dataset['theme'] = 'light'
+    })
     await field.setValue('Campaign A')
-    await (await client.$('button=Kampagne erstellen')).click()
-    await expect(await client.$('h1=Session · Campaign A')).toBeExisting()
+    await (await client.$('button=Anlegen')).click()
+    await (
+      await client.$('h1=Session · Campaign A')
+    ).waitForExist({
+      timeout: 10_000
+    })
     await expect(
       await client.$('section[aria-label="Session Steuerung"]')
     ).toBeExisting()
@@ -26,6 +48,80 @@ describe('campaign walking skeleton', () => {
     await expect(
       await client.$('aside[aria-label="Szenario Panel"]')
     ).toBeExisting()
+    await (await client.$('button[aria-label="Menü"]')).click()
+    await (
+      await (await client.$('#campaign-menu')).$('button=Einstellungen')
+    ).click()
+    await (
+      await client.$('section.encounter-settings-dialog')
+    ).waitForDisplayed({ timeout: 5_000 })
+    await expectElementGolden(
+      client,
+      'encounter-settings-light',
+      'section.encounter-settings-dialog'
+    )
+    await client.execute(() => {
+      document.documentElement.dataset['theme'] = 'dark'
+    })
+    await expectElementGolden(
+      client,
+      'encounter-settings-dark',
+      'section.encounter-settings-dialog'
+    )
+    await client.execute(() => {
+      document.documentElement.dataset['theme'] = 'light'
+    })
+    await setWindowToMinimumResponsiveSize(client)
+    await client.execute(() => {
+      document.documentElement.style.fontSize = '200%'
+    })
+    try {
+      await expectAccessible(client)
+      const scaled = await client.execute(() => {
+        const dialog = document.querySelector<HTMLElement>(
+          'section.encounter-settings-dialog'
+        )!
+        const body = dialog.querySelector<HTMLElement>('.settings-dialog-body')!
+        const rules = dialog.querySelector<HTMLElement>(
+          '.generator-rules-grid'
+        )!
+        const bounds = dialog.getBoundingClientRect()
+        return {
+          bounds: {
+            top: bounds.top,
+            right: bounds.right,
+            bottom: bounds.bottom,
+            left: bounds.left
+          },
+          viewport: { width: window.innerWidth, height: window.innerHeight },
+          bodyScrolls:
+            ['auto', 'scroll'].includes(getComputedStyle(body).overflowY) &&
+            body.scrollHeight > body.clientHeight,
+          ruleColumns:
+            getComputedStyle(rules).gridTemplateColumns.split(' ').length,
+          matrixCells: dialog.querySelectorAll('.role-matrix td button').length
+        }
+      })
+      expect(scaled.bounds.top).toBeGreaterThanOrEqual(0)
+      expect(scaled.bounds.left).toBeGreaterThanOrEqual(0)
+      expect(scaled.bounds.right).toBeLessThanOrEqual(scaled.viewport.width)
+      expect(scaled.bounds.bottom).toBeLessThanOrEqual(scaled.viewport.height)
+      expect(scaled).toMatchObject({
+        bodyScrolls: true,
+        ruleColumns: 1,
+        matrixCells: 680
+      })
+    } finally {
+      await client.execute(() => {
+        document.documentElement.style.fontSize = ''
+      })
+      await setElectronWindowSize(client, 1280, 800)
+    }
+    await (
+      await client.$(
+        'section.encounter-settings-dialog button[aria-label="Schließen"]'
+      )
+    ).click()
     const geometry = await client.execute(() => {
       const height = (selector: string) =>
         Math.round(
@@ -69,19 +165,26 @@ describe('campaign walking skeleton', () => {
     )
     await pressDividerKey(client, 'Breite der Szenariospalte', 'ArrowLeft')
     await expect(rightDivider).toHaveAttribute('aria-valuenow', '274')
-    await client.pause(400)
 
-    await (await client.$('button[aria-label="Menü"]')).click()
+    await openCampaignDialog(client)
     const nextField = await client.$('#campaign-name')
     await nextField.setValue('Campaign B')
-    await (await client.$('button=Kampagne erstellen')).click()
-    await expect(await client.$('h1=Session · Campaign B')).toBeExisting()
+    await (await client.$('button=Anlegen')).click()
+    await (
+      await client.$('h1=Session · Campaign B')
+    ).waitForExist({
+      timeout: 10_000
+    })
 
-    await (await client.$('button[aria-label="Menü"]')).click()
+    await openCampaignDialog(client)
     await (await client.$('button[aria-label="Campaign A"]')).click()
-    await expect(await client.$('h1=Session · Campaign A')).toBeExisting()
+    await (
+      await client.$('h1=Session · Campaign A')
+    ).waitForExist({
+      timeout: 10_000
+    })
 
-    await (await client.$('button[aria-label="Menü"]')).click()
+    await openCampaignDialog(client)
     let campaignBRow = await (
       await client.$('button[aria-label="Campaign B"]')
     ).$('..')
@@ -407,6 +510,23 @@ describe('campaign walking skeleton', () => {
     await expect(discardDraftAlert).toBeDisplayed()
     await (await discardDraftAlert.$('button=Änderungen verwerfen')).click()
     await expect(reopenedTable).not.toBeExisting()
+    await (await client.$('button=Orte')).click()
+    await (await client.$('button=Salzmarschhafen')).click()
+    await (await client.$('button=Bearbeiten')).click()
+    const locationDialog = await client.$(
+      '[role="dialog"][aria-label="Ort bearbeiten"]'
+    )
+    const encounterTableSearch = await locationDialog.$(
+      'input[aria-label="Encounter-Tabelle suchen …"]'
+    )
+    await encounterTableSearch.setValue('wach')
+    const encounterTableOption = await locationDialog.$(
+      '[role="option"]*=Wachpatrouille'
+    )
+    await encounterTableOption.waitForDisplayed({ timeout: 5_000 })
+    await encounterTableOption.click()
+    await (await locationDialog.$('button=Speichern')).click()
+    await (await client.$('button[aria-label="Ort Details schließen"]')).click()
     await (await client.$('button[aria-label="Session"]')).click()
 
     await (await client.$('button=Party')).click()
@@ -537,6 +657,7 @@ describe('campaign walking skeleton', () => {
 
     const groupNote = await client.$('.group-note')
     const proneReference = await groupNote.$('button=Prone')
+    await proneReference.waitForExist({ timeout: 5_000 })
     const pronePreview = await client.$(
       'section[role="region"][aria-label="Referenz: Prone"]'
     )
@@ -643,12 +764,18 @@ describe('campaign walking skeleton', () => {
     const emptyGroupName = await reopenedGroupDialog.$(
       'input[aria-label="Gruppenname"]'
     )
-    await emptyGroupName.setValue('Leere Patrouille')
+    await expect(emptyGroupName).toHaveAttribute(
+      'placeholder',
+      'Optional · automatisch Gruppe 1, 2, …'
+    )
+    await (
+      await reopenedGroupDialog.$('textarea[aria-label="Gruppennotiz"]')
+    ).setValue('Erhält automatisch einen Namen.')
     await reopenedSelection.selectByVisibleText('Wolf Pack')
     await reopenedSelection.selectByVisibleText('Neue Gruppe')
-    await expect(emptyGroupName).toHaveValue('Leere Patrouille')
+    await expect(emptyGroupName).toHaveValue('')
     await (await reopenedGroupDialog.$('button=Speichern')).click()
-    await expect(await client.$('strong=Leere Patrouille')).toBeExisting()
+    await expect(await client.$('strong=Gruppe 1')).toBeExisting()
 
     await (
       await client.$('select[aria-label="Szenario Auswahl"]')
@@ -709,6 +836,13 @@ async function waitForCampaignInput(
       { cause }
     )
   }
+}
+
+async function openCampaignDialog(client: WdioBrowser): Promise<void> {
+  await (await client.$('button[aria-label="Menü"]')).click()
+  const menu = await client.$('#campaign-menu')
+  await (await menu.$('button=Kampagnen')).click()
+  await (await client.$('#campaign-name')).waitForDisplayed({ timeout: 5_000 })
 }
 
 async function expectHexEditorLayout(client: WdioBrowser): Promise<void> {

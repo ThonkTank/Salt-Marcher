@@ -1,4 +1,4 @@
-import type { EncounterTuning } from '../../../shared/contracts/encounter-tuning.js'
+import type { EncounterTuningOverride } from '../../../shared/contracts/encounter-tuning.js'
 import type { EncounterSelectionEvaluation } from '../../../shared/contracts/scene.js'
 import { message } from '../../i18n/session-runtime.de.js'
 import {
@@ -103,12 +103,12 @@ function thresholdForBand(
 }
 
 export function TuningControls(props: {
-  tuning: EncounterTuning
-  changed: (tuning: EncounterTuning) => void
+  tuning: EncounterTuningOverride
+  changed: (tuning: EncounterTuningOverride) => void
 }) {
-  const select = <K extends keyof EncounterTuning>(
+  const select = <K extends keyof EncounterTuningOverride>(
     field: K,
-    values: readonly EncounterTuning[K][]
+    values: readonly EncounterTuningOverride[K][]
   ) => (
     <select
       aria-label={field}
@@ -116,7 +116,7 @@ export function TuningControls(props: {
       onChange={(event) =>
         props.changed({
           ...props.tuning,
-          [field]: event.target.value as EncounterTuning[K]
+          [field]: event.target.value as EncounterTuningOverride[K]
         })
       }
     >
@@ -131,19 +131,26 @@ export function TuningControls(props: {
     <div className="tuning-controls">
       <label>
         {message('ui.schwierigkeit')}
-        {select('difficulty', ['auto', 'easy', 'medium', 'hard', 'deadly'])}
+        {select('difficulty', [
+          'preset',
+          'trivial',
+          'easy',
+          'medium',
+          'hard',
+          'deadly'
+        ])}
       </label>
       <label>
         {message('ui.menge')}
-        {select('amount', ['auto', 'few', 'standard', 'many'])}
+        {select('amount', ['preset', 'few', 'standard', 'many'])}
       </label>
       <label>
         {message('ui.balance')}
-        {select('balance', ['auto', 'even', 'varied'])}
+        {select('balance', ['preset', 'even', 'varied'])}
       </label>
       <label>
         {message('ui.vielfalt')}
-        {select('diversity', ['auto', 'low', 'high'])}
+        {select('diversity', ['preset', 'low', 'high'])}
       </label>
     </div>
   )
@@ -152,7 +159,8 @@ export function TuningControls(props: {
 function tuningLabel(value: string): string {
   return (
     {
-      auto: message('encounter.tuning.auto'),
+      preset: message('encounter.tuning.preset'),
+      trivial: message('encounter.tuning.trivial'),
       easy: message('encounter.tuning.easy'),
       medium: message('encounter.tuning.medium'),
       hard: message('encounter.tuning.hard'),

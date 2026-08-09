@@ -22,22 +22,22 @@ report states which route-specific dependency set grew.
 for every graph. `BUNDLE_REPORT_GZIP=1` additionally prints per-graph gzip
 comparison values; raw emitted bytes remain the enforced metric.
 
-## Schema-20 application-layer refactor baseline
+## Schema-22 Generator architecture baseline
 
-Measured from the production build on 2026-08-07:
+Measured from the production build on 2026-08-09:
 
 | Graph | Raw bytes | Gzip comparison | Limit use |
 | --- | ---: | ---: | ---: |
-| Shell initial | 773,292 | 294,301 | 84.3% |
-| Complete common Workspace | 1,054,966 | 351,625 | 80.5% |
-| Session incremental | 348,618 | 67,188 | 76.0% |
-| Catalog incremental | 366,282 | 77,551 | 93.2% |
-| Hex incremental without Pixi | 354,322 | 80,008 | 90.1% |
-| Reference incremental | 97,770 | 22,592 | 74.6% |
-| Pixi dynamic leaf | 1,636,007 | 342,546 | 89.2% |
-| Reachable renderer | 3,045,295 | 774,179 | 90.8% of hard ceiling |
+| Shell initial | 773,252 | 294,302 | 84.3% |
+| Complete common Workspace | 1,045,738 | 350,377 | 79.8% |
+| Session incremental | 347,070 | 67,536 | 75.7% |
+| Catalog incremental | 365,410 | 77,940 | 92.9% |
+| Hex incremental without Pixi | 353,671 | 80,442 | 89.9% |
+| Reference incremental | 97,770 | 22,594 | 74.6% |
+| Pixi dynamic leaf | 1,257,760 | 271,483 | 68.5% |
+| Reachable renderer | 3,104,656 | 789,251 | 92.5% of hard ceiling |
 
-The hard ceiling therefore retains 310,148 raw bytes. The 90-percent warning is
+The hard ceiling therefore retains 250,787 raw bytes. The 90-percent warning is
 active and intentionally visible in `check:app`; it is not a second hard
 ceiling. Feature dictionaries are runtime-local: the type-only key assembly
 imports no values, and Catalog, Hex, Session, Reference, and World Planner
@@ -48,6 +48,19 @@ creation behind one dynamic boundary. Direct Catalog Faction editing is a
 dynamic dialog leaf as well; this refactor reduced the static Catalog graph by
 12,766 bytes from the recorded pre-refactor graph while preserving the shared
 application port.
+Burger navigation, campaign management, and the interaction-heavy Encounter
+Generator settings editor are dedicated dynamic leaves. Generator CSS and
+German copy follow the settings leaf, and its lightweight editor model does not
+import the Zod wire contract. The 20-by-34 matrix and preset controls therefore
+do not enter the common Workspace JavaScript graph until the GM opens Settings.
+Common Workspace JavaScript is 829,068 bytes, below the refactor target of 810
+KiB, and no dependency version changed for this baseline.
+
+The Pixi graph is incremental over Hex and stops at Vite's HTML-entry
+back-edge. Without that boundary, traversing the entry from the dynamic Pixi
+leaf incorrectly included unrelated sibling routes such as Campaign and
+generator settings. A guard rejects those dialogs if they reappear in the Pixi
+measurement.
 
 Every graph is also compared with
 `renderer-bundle-baseline.json`. Growth above 16 KiB fails and prints the

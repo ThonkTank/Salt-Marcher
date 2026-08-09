@@ -16,10 +16,18 @@ import type {
   SceneGroupCommandResult
 } from './live-session.js'
 import type { AdventuringDayCalculation, PartyCharacterDraft } from './party.js'
-import type { EncounterTuning } from './encounter-tuning.js'
+import type { EncounterTuningOverride } from './encounter-tuning.js'
 import type {
-  GeneratorConfig,
-  GeneratorPresetSnapshot
+  AssignGeneratorPresetCommand,
+  AssignGeneratorPresetReceipt,
+  CreateGeneratorPresetCommand,
+  CreateGeneratorPresetReceipt,
+  DeleteGeneratorPresetCommand,
+  DeleteGeneratorPresetReceipt,
+  GeneratorPresetCommandReceipt,
+  GeneratorPresetEditorSnapshot,
+  UpdateGeneratorPresetCommand,
+  UpdateGeneratorPresetReceipt
 } from './generator-presets.js'
 import type {
   EncounterSelectionEvaluation,
@@ -123,24 +131,24 @@ export interface CampaignCapability extends CampaignReadCapability {
 }
 
 export interface GeneratorPresetCapability {
-  read(): Promise<GeneratorPresetSnapshot>
+  readEditor(input: {
+    campaignId: string | null
+  }): Promise<GeneratorPresetEditorSnapshot>
   create(
-    name: string,
-    config: GeneratorConfig,
-    expectedRevision: number
-  ): Promise<GeneratorPresetSnapshot>
+    input: CreateGeneratorPresetCommand
+  ): Promise<CreateGeneratorPresetReceipt>
   update(
-    id: string,
-    name: string,
-    config: GeneratorConfig,
-    expectedRevision: number
-  ): Promise<GeneratorPresetSnapshot>
-  delete(id: string, expectedRevision: number): Promise<GeneratorPresetSnapshot>
+    input: UpdateGeneratorPresetCommand
+  ): Promise<UpdateGeneratorPresetReceipt>
+  delete(
+    input: DeleteGeneratorPresetCommand
+  ): Promise<DeleteGeneratorPresetReceipt>
   assign(
-    campaignId: string,
-    presetId: string | null,
-    expectedRevision: number
-  ): Promise<GeneratorPresetSnapshot>
+    input: AssignGeneratorPresetCommand
+  ): Promise<AssignGeneratorPresetReceipt>
+  commandReceipt(
+    commandId: string
+  ): Promise<GeneratorPresetCommandReceipt | null>
 }
 
 export interface SaltMarcherApi {
@@ -465,7 +473,7 @@ export interface SaltMarcherApi {
       entries: readonly SceneGroupDraftEntry[],
       mode: GroupGenerationMode,
       filters: CreatureCatalogQuery,
-      tuning: EncounterTuning,
+      tuning: EncounterTuningOverride,
       seed: number,
       expectedRevision: number
     ): Promise<SceneGroupDraftGeneration>

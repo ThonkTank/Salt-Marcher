@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { creatureCatalogQuerySchema } from './encounter.js'
-import { encounterTuningSchema } from './encounter-tuning.js'
+import { encounterTuningOverrideSchema } from './encounter-tuning.js'
 import { combatStatusSchema } from './combat-status.js'
 
 export const sceneGroupEntrySchema = z
@@ -94,7 +94,7 @@ export const saveSceneGroupInputSchema = z
   .object({
     sceneId: z.uuid(),
     groupId: z.uuid().nullable(),
-    name: z.string().trim().min(1).max(100),
+    name: z.string().trim().max(100),
     note: z.string().trim().max(1_000),
     disposition: sceneGroupDispositionSchema,
     entries: groupEntriesInputSchema,
@@ -153,7 +153,7 @@ export const sceneGroupDraftGenerationRequestSchema = z
     entries: z.array(sceneGroupDraftEntrySchema),
     mode: groupGenerationModeSchema,
     filters: creatureCatalogQuerySchema,
-    tuning: encounterTuningSchema,
+    tuning: encounterTuningOverrideSchema,
     seed: z.number().int().nonnegative()
   })
   .strict()
@@ -238,7 +238,11 @@ export const sceneGroupDraftGenerationSchema = z
           .enum(['location_missing_table', 'location_empty_table'])
           .nullable(),
         generatorPresetId: z.string().nullable(),
-        generatorPresetRevision: z.number().int().nonnegative().nullable()
+        generatorPresetRevision: z.number().int().nonnegative().nullable(),
+        generatorConfigHash: z
+          .string()
+          .regex(/^[0-9a-f]{64}$/)
+          .nullable()
       })
       .strict(),
     quality: z.enum(['exact', 'fallback', 'none']),

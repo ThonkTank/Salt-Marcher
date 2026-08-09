@@ -12,7 +12,7 @@ import type {
   CreatureCatalogPage,
   CreatureCatalogQuery
 } from '../../../shared/contracts/encounter.js'
-import type { EncounterTuning } from '../../../shared/contracts/encounter-tuning.js'
+import type { EncounterTuningOverride } from '../../../shared/contracts/encounter-tuning.js'
 import type {
   SceneGroup,
   SceneGroupDisposition
@@ -160,11 +160,11 @@ export function GroupDialog(props: {
     query.biomes,
     props.onError
   )
-  const [tuning] = useState<EncounterTuning>({
-    difficulty: 'auto',
-    amount: 'auto',
-    balance: 'auto',
-    diversity: 'auto'
+  const [tuning] = useState<EncounterTuningOverride>({
+    difficulty: 'preset',
+    amount: 'preset',
+    balance: 'preset',
+    diversity: 'preset'
   })
   const [pending, setPending] = useState<GroupDraftAction | null>(null)
   const [busy, setBusy] = useState(false)
@@ -499,10 +499,7 @@ export function GroupDialog(props: {
   }
 
   async function save() {
-    if (!active || !name.trim()) {
-      setMessage(uiMessage('group.validation.name'))
-      return
-    }
+    if (!active) return
     if (
       entries.length > 0 &&
       !entries.some((entry) => facts[entry.creatureId]?.available === true)
@@ -681,7 +678,7 @@ export function GroupDialog(props: {
             <input
               className="group-manager-name"
               aria-label={uiMessage('ui.gruppenname')}
-              placeholder={uiMessage('ui.gruppenname')}
+              placeholder={uiMessage('group.name.placeholder')}
               maxLength={100}
               disabled={!active}
               value={name}
@@ -968,7 +965,7 @@ export function GroupDialog(props: {
               <button
                 className="primary-action"
                 type="button"
-                disabled={busy || !active || !name.trim()}
+                disabled={busy || !active}
                 onClick={() => void save()}
               >
                 {uiMessage('action.save')}

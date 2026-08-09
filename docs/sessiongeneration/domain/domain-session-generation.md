@@ -17,10 +17,12 @@ saved Encounter plans.
 The public language contains typed values for:
 
 - `GenerationRunId`, normalized generation input, and seed
-- session summary, encounter target, encounter intent, and CR-and-role block
+- session summary, encounter target, encounter intent, and role-tagged CR-Block
+  with an abstract statblock-slot count
 - treasure plan, loot item line, packing row, and reward summary
 - warning and audit outcome
-- engine version, catalog version, and catalog content hash
+- engine version, catalog version, catalog content hash, effective preset
+  identity and revision, and generator-config hash
 
 Closed vocabulary crosses the boundary as enums or value types. Versions are
 audit metadata, not user-selectable ruleset labels.
@@ -48,8 +50,10 @@ a `GeneratedRun`, write SQLite state, resolve concrete creatures, or generate
 rewards. A later Session Planner command will compose this stage with reward,
 packing, persistence, and explicit GM acceptance.
 
-Encounter intents describe CR, role, XP, and quantity requirements. They do not
-contain selected creature identity and never claim to be a concrete Encounter.
+Encounter intents describe CR, role, XP, quantity, and abstract statblock-slot
+requirements per CR-Block. They do not contain selected creature identity and
+never claim to be a concrete Encounter. The encounter-level statblock count is
+derived as the sum of its per-block slot counts.
 Reward detail remains Session Generation truth; consumers retain stable
 references and resolve detail through Session Generation.
 
@@ -67,9 +71,10 @@ immutable `ReferenceCatalogSnapshot`. Its named stages are:
 7. reward aggregation and formatting
 8. warnings and hard audits
 
-The same normalized input, engine version, and catalog content hash produce the
-same domain values. Wall-clock time, locale defaults, database order, hash
-iteration, and volatile randomness cannot influence output.
+The same normalized input, engine version, catalog content hash, effective
+generator config, and seed produce the same domain values. Wall-clock time,
+locale defaults, database order, hash iteration, and volatile randomness cannot
+influence output.
 
 The bundled catalog is a versioned offline snapshot. The utility process owns
 its file access and verifies every manifest-listed table before the pure engine
@@ -93,8 +98,10 @@ receives the immutable encounter projection.
 - one run identity denotes exactly one normalized semantic result
 - exact catalog-row selection is not a cross-version invariant
 
-The complete encounter candidate search space is transient stage state. Only
-selected intents and candidate-coverage audits become run truth.
+The shared selector supplies one immutable composition and candidate-coverage
+audit. Its bounded streaming traversal and canonical ranking are owned by the
+[Encounter Generation Requirements](../../encounter/requirements/requirements-encounter-generation.md),
+not redefined by this consumer domain.
 
 ## Consistency Boundary
 

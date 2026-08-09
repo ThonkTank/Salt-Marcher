@@ -28,6 +28,8 @@ describe('campaign restart', () => {
     await (await client.$('button=Orte')).click()
     await expect(await client.$('button=Salzmarschhafen')).toBeExisting()
     await (await client.$('button[aria-label="Menü"]')).click()
+    const menu = await client.$('#campaign-menu')
+    await (await menu.$('button=Kampagnen')).click()
     const field = await client.$('#campaign-name')
     await client.waitUntil(() => field.isExisting(), {
       timeout: 5_000,
@@ -38,7 +40,11 @@ describe('campaign restart', () => {
     ).toBeExisting()
 
     await field.setValue('Campaign C')
-    await (await client.$('button=Kampagne erstellen')).click()
-    await expect(await client.$('h1=Session · Campaign C')).toBeExisting()
+    await (await client.$('button=Anlegen')).click()
+    await (
+      await client.$('h1=Session · Campaign C')
+    ).waitForExist({
+      timeout: 10_000
+    })
   })
 })

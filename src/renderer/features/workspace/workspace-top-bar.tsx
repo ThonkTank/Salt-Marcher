@@ -1,17 +1,22 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import type { CampaignSnapshot } from '../../../shared/contracts/campaign.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
-import type { GeneratorPresetCapability } from '../../../shared/contracts/capability-api.js'
 import { message } from '../../i18n/workspace-runtime.de.js'
 import {
   AdventuringDayDropdown,
   PartyDropdown
 } from '../party/party-controls.js'
-import { CampaignMenu } from './campaign-menu.js'
 import {
   workspaceDefinition,
   type WorkspaceId
 } from './workspace-definition.js'
+import type { GeneratorPresetApplicationLoader } from './generator-preset-application.js'
+
+const CampaignMenu = lazy(() =>
+  import('./campaign-menu.js').then((module) => ({
+    default: module.CampaignMenu
+  }))
+)
 
 type CampaignActions = Readonly<{
   create: (name: string) => Promise<void>
@@ -38,7 +43,7 @@ export function WorkspaceTopBar(props: {
   onError: (message: string) => void
   theme: 'light' | 'dark'
   toggleTheme: () => void
-  generatorPresets: GeneratorPresetCapability
+  loadGeneratorPresetApplication: GeneratorPresetApplicationLoader
 }) {
   const active = props.campaigns.activeCampaignId !== null
   const activeCampaign = props.campaigns.campaigns.find(
@@ -49,6 +54,7 @@ export function WorkspaceTopBar(props: {
   )
   const definition = workspaceDefinition(props.workspace)
   const setPartyOpen = props.setPartyOpen
+  const [menuAnchor, setMenuAnchor] = useState<HTMLButtonElement | null>(null)
 
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
@@ -66,9 +72,9 @@ export function WorkspaceTopBar(props: {
       className={`top-bar${props.workspace === 'session' ? ' session-context' : ''}`}
     >
       <button
+        ref={setMenuAnchor}
         className="menu-button"
         aria-label={message('app.menu')}
-        title={message('app.menu')}
         aria-expanded={props.campaignMenuOpen}
         aria-controls="campaign-menu"
         onClick={() =>
@@ -77,15 +83,26 @@ export function WorkspaceTopBar(props: {
       >
         <span aria-hidden="true">☰</span>
       </button>
-      <CampaignMenu
-        snapshot={props.campaigns}
-        open={props.campaignMenuOpen}
-        forced={!active}
-        dismiss={() => props.setCampaignMenuOpen(false)}
-        {...props.campaignActions}
-        generatorPresets={props.generatorPresets}
-        onError={props.onError}
-      />
+      {props.campaignMenuOpen && (
+        <Suspense fallback={null}>
+          <CampaignMenu
+            anchor={menuAnchor}
+            snapshot={props.campaigns}
+            open
+            forced={!active}
+            dismiss={() => props.setCampaignMenuOpen(false)}
+            {...props.campaignActions}
+            loadGeneratorPresetApplication={
+              props.loadGeneratorPresetApplication
+            }
+            partySize={
+              props.session?.party.members.filter((member) => member.active)
+                .length ?? 0
+            }
+            onError={props.onError}
+          />
+        </Suspense>
+      )}
       {active && props.session && (
         <nav
           className="shell-quick-actions"
@@ -127,7 +144,7 @@ export function WorkspaceTopBar(props: {
             )
           : active
             ? message('campaign.statusActive')
-            : message('campaign.statusChoose')}
+            : message('campaign.choose')}
       </p>
       <button
         className="theme-toggle"

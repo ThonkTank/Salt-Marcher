@@ -18,8 +18,6 @@ export const catalogMessagesDe = {
   'catalog.locationMissingTag': 'Mindestens ein Tag ist erforderlich.',
   'catalog.locationTableHint':
     'Fraktionstabellen zählen zusätzlich, wenn die Fraktion hier verknüpft ist.',
-  'catalog.locationPlacementFailed':
-    'Der Ort wurde gespeichert, aber die Kartenplatzierung schlug fehl: {detail}',
   'catalog.editFaction': 'Fraktion bearbeiten',
   'catalog.createFaction': 'Fraktion erstellen',
   'faction.tableBreadcrumb': 'Katalog › Fraktionen › Fraktion erstellen',
@@ -55,10 +53,6 @@ export const catalogMessagesDe = {
   'catalog.selectedCount': '{count} ausgewählt',
   'catalog.searchFilter': '{filter} durchsuchen …',
   'catalog.noFilterMatch': 'Keine passende Auswahl.',
-  'encounterTable.label': 'Encounter-Tabelle',
-  'encounterTable.select': 'Encounter-Tabelle auswählen',
-  'encounterTable.selectPlaceholder': 'Tabelle auswählen …',
-  'encounterTable.new': 'Neue Tabelle',
   'encounterTable.decreaseWeight': 'Gewicht {name} verringern',
   'encounterTable.increaseWeight': 'Gewicht {name} erhöhen',
   'encounterTable.removeCreature': '{name} entfernen',

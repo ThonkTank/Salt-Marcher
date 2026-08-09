@@ -15,7 +15,7 @@ describe('Hex World Location creation workflow', () => {
     const campaignName = await client.$('#campaign-name')
     await campaignName.waitForDisplayed({ timeout: 30_000 })
     await campaignName.setValue('Hex Location Workflow')
-    await (await client.$('button=Kampagne erstellen')).click()
+    await (await client.$('button=Anlegen')).click()
     await (await client.$('button[aria-label="Hex-Editor"]')).click()
     await (await client.$('button=Neu')).click()
     const createMap = await client.$(
