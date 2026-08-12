@@ -1,5 +1,6 @@
 import type { Creature } from '../../../shared/contracts/encounter.js'
 import type {
+  SceneGroup,
   SceneGroupDisposition,
   SceneGroupDraftEvaluation
 } from '../../../shared/contracts/scene.js'
@@ -175,4 +176,60 @@ export function groupDraftSignature(
     disposition,
     entries: groupDraftEntries(quantities, deadQuantities)
   })
+}
+
+export function groupDraftStateFromGroup(
+  group: SceneGroup | null | undefined
+): GroupDraftState {
+  const name = group?.name ?? ''
+  const note = group?.note ?? ''
+  const disposition = group?.disposition ?? 'hostile'
+  const quantities = Object.fromEntries(
+    group?.entries.map((entry) => [entry.creatureId, entry.aliveQuantity]) ?? []
+  )
+  const deadQuantities = Object.fromEntries(
+    group?.entries.map((entry) => [entry.creatureId, entry.deadQuantity]) ?? []
+  )
+  return {
+    name,
+    note,
+    disposition,
+    quantities,
+    deadQuantities,
+    facts: Object.fromEntries(
+      group?.entries.map((entry) => [
+        entry.creatureId,
+        {
+          displayName: entry.displayName,
+          cr: 0,
+          xp: 0,
+          available: entry.available
+        }
+      ]) ?? []
+    ),
+    baseline: groupDraftSignature(
+      name,
+      note,
+      disposition,
+      quantities,
+      deadQuantities
+    ),
+    evaluation: null,
+    seed: 0,
+    message: '',
+    generationSummary: '',
+    history: emptyGroupDraftHistory()
+  }
+}
+
+export function groupDraftStateDirty(draft: GroupDraftState): boolean {
+  return (
+    groupDraftSignature(
+      draft.name,
+      draft.note,
+      draft.disposition,
+      draft.quantities,
+      draft.deadQuantities
+    ) !== draft.baseline
+  )
 }

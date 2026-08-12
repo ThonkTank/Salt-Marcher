@@ -600,7 +600,8 @@ describe('architecture boundaries', () => {
     for (const owner of [
       'src/renderer/features/session-planner/session-planner-dialog-host.tsx',
       'src/renderer/features/session/session-workspace.tsx',
-      'src/renderer/features/session/group-dialog.tsx',
+      'src/renderer/features/session/group-manager-catalog.tsx',
+      'src/renderer/features/session/group-manager-draft-pane.tsx',
       'src/renderer/features/session/scene-party-card.tsx',
       'src/renderer/features/party/party-controls.tsx'
     ])
@@ -610,6 +611,13 @@ describe('architecture boundaries', () => {
     expect(
       source('src/renderer/features/workspace/encounter-generator-settings.tsx')
     ).toContain("import('./campaign-reward-rules-card.js')")
+    const sessionDialogHost = source(
+      'src/renderer/features/session/session-dialog-host.tsx'
+    )
+    expect(sessionDialogHost).toContain("import('./group-dialog.js')")
+    expect(sessionDialogHost).not.toContain(
+      "import { GroupDialog } from './group-dialog.js'"
+    )
   })
 
   it('keeps the focused Planner/Loot feedback loop complete', () => {
@@ -1144,9 +1152,9 @@ describe('architecture boundaries', () => {
   })
 
   it('composes both creature collection editors through the shared manager', () => {
-    expect(source('src/renderer/features/session/group-dialog.tsx')).toContain(
-      'CreatureCollectionManagerDialog'
-    )
+    expect(
+      source('src/renderer/features/session/group-manager-view.tsx')
+    ).toContain('CreatureCollectionManagerDialog')
     expect(
       source(
         'src/renderer/features/encounter-table/encounter-table-manager.tsx'

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useReducer, useState } from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type {
   Treasure,
@@ -14,10 +14,15 @@ import {
   emptyEditableTreasureContainer,
   emptyEditableTreasureItem,
   treasureDraftInvalid,
-  type EditableTreasureContainer,
-  type EditableTreasureDraft,
-  type EditableTreasureItem
+  type EditableTreasureDraft
 } from './treasure-draft.js'
+import {
+  reduceTreasureDraft,
+  type TreasureContainerPatch,
+  type TreasureDraftCommand,
+  type TreasureItemPatch
+} from './treasure-draft-reducer.js'
+import { treasureDraftEditorMessagesDe } from './treasure-draft-editor-messages.de.js'
 
 export function TreasureEditorDialog(props: {
   snapshot: LiveSessionSnapshot
@@ -34,53 +39,23 @@ export function TreasureEditorDialog(props: {
   const [anchor, setAnchor] = useState<TreasureAnchor>(
     props.treasure?.anchor ?? props.initialAnchor
   )
-  const [draft, setDraft] = useState<EditableTreasureDraft>(() => ({
-    label: props.treasure?.label ?? message('loot.new'),
-    items: props.treasure?.items.length
-      ? props.treasure.items.map((item) => ({
-          draftId: item.id,
-          persistedId: item.id,
-          name: item.name,
-          quantity: item.quantity,
-          unitValueCp: item.unitValueCp,
-          stackable: item.stackable,
-          containerId: item.containerId
-        }))
-      : [emptyEditableTreasureItem()],
-    containers:
-      props.treasure?.containers.map((container) => ({
-        draftId: container.id,
-        persistedId: container.id,
-        catalogContainerId:
-          container.provenance.kind === 'manual'
-            ? null
-            : container.provenance.catalogContainerId,
-        name: container.name,
-        capacity: container.capacity
-      })) ?? []
-  }))
+  const [draft, dispatchDraft] = useReducer(
+    (
+      current: EditableTreasureDraft,
+      command: TreasureDraftCommand
+    ): EditableTreasureDraft => reduceTreasureDraft(current, command, 'manual'),
+    props.treasure,
+    treasureDraftFrom
+  )
   const [saving, setSaving] = useState(false)
   const invalid = treasureDraftInvalid(draft)
 
-  function patchItem(id: string, patch: Partial<EditableTreasureItem>) {
-    setDraft((current) => ({
-      ...current,
-      items: current.items.map((item) =>
-        item.draftId === id ? { ...item, ...patch } : item
-      )
-    }))
+  function patchItem(id: string, patch: TreasureItemPatch) {
+    dispatchDraft({ kind: 'patch-item', id, patch })
   }
 
-  function patchContainer(
-    id: string,
-    patch: Partial<EditableTreasureContainer>
-  ) {
-    setDraft((current) => ({
-      ...current,
-      containers: current.containers.map((container) =>
-        container.draftId === id ? { ...container, ...patch } : container
-      )
-    }))
+  function patchContainer(id: string, patch: TreasureContainerPatch) {
+    dispatchDraft({ kind: 'patch-container', id, patch })
   }
 
   async function save() {
@@ -204,40 +179,26 @@ export function TreasureEditorDialog(props: {
       </label>
       <TreasureDraftFields
         draft={draft}
-        labelChanged={(label) => setDraft((current) => ({ ...current, label }))}
+        policy="manual"
+        messages={treasureDraftEditorMessagesDe()}
+        labelChanged={(label) => dispatchDraft({ kind: 'set-label', label })}
         patchItem={patchItem}
-        removeItem={(id) =>
-          setDraft((current) => ({
-            ...current,
-            items: current.items.filter((item) => item.draftId !== id)
-          }))
-        }
+        removeItem={(id) => dispatchDraft({ kind: 'remove-item', id })}
         patchContainer={patchContainer}
         removeContainer={(id) =>
-          setDraft((current) => ({
-            ...current,
-            containers: current.containers.filter(
-              (container) => container.draftId !== id
-            ),
-            items: current.items.map((item) =>
-              item.containerId === id ? { ...item, containerId: null } : item
-            )
-          }))
+          dispatchDraft({ kind: 'remove-container', id })
         }
         addItem={() =>
-          setDraft((current) => ({
-            ...current,
-            items: [...current.items, emptyEditableTreasureItem()]
-          }))
+          dispatchDraft({
+            kind: 'add-item',
+            item: emptyEditableTreasureItem()
+          })
         }
         addContainer={() =>
-          setDraft((current) => ({
-            ...current,
-            containers: [
-              ...current.containers,
-              emptyEditableTreasureContainer()
-            ]
-          }))
+          dispatchDraft({
+            kind: 'add-container',
+            container: emptyEditableTreasureContainer()
+          })
         }
       />
       <footer>
@@ -255,6 +216,34 @@ export function TreasureEditorDialog(props: {
       </footer>
     </ModalDialog>
   )
+}
+
+function treasureDraftFrom(treasure: Treasure | null): EditableTreasureDraft {
+  return {
+    label: treasure?.label ?? message('loot.new'),
+    items: treasure?.items.length
+      ? treasure.items.map((item) => ({
+          draftId: item.id,
+          persistedId: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          unitValueCp: item.unitValueCp,
+          stackable: item.stackable,
+          containerId: item.containerId
+        }))
+      : [emptyEditableTreasureItem()],
+    containers:
+      treasure?.containers.map((container) => ({
+        draftId: container.id,
+        persistedId: container.id,
+        catalogContainerId:
+          container.provenance.kind === 'manual'
+            ? null
+            : container.provenance.catalogContainerId,
+        name: container.name,
+        capacity: container.capacity
+      })) ?? []
+  }
 }
 
 function anchorKey(anchor: TreasureAnchor): string {
