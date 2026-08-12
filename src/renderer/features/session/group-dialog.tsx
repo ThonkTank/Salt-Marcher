@@ -237,7 +237,14 @@ export function GroupDialog(props: {
         })
     }, 120)
     return () => window.clearTimeout(timer)
-  }, [active, api, entries, focused.id, props.snapshot.scene.revision])
+  }, [
+    active,
+    api,
+    dispatchDraft,
+    entries,
+    focused.id,
+    props.snapshot.scene.revision
+  ])
 
   useEffect(() => {
     if (!selection) return
@@ -262,7 +269,7 @@ export function GroupDialog(props: {
         }
       })
     })
-  }, [api, focused.groups, selection])
+  }, [api, dispatchDraft, focused.groups, selection])
 
   function load(nextSelection: string | null) {
     const group = nextSelection
