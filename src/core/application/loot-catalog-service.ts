@@ -1,20 +1,19 @@
 import {
   lootCatalogPageSchema,
   lootCatalogQuerySchema,
-  type LootCatalogEntry,
   type LootCatalogPage,
   type LootCatalogQuery
 } from '../../shared/contracts/loot.js'
+import type { GeneratedRun } from '../../shared/contracts/session-generation.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
-import { compareText } from '../session-generation/deterministic-order.js'
-import {
-  lootRarities,
-  type FullSessionGenerationCatalog
-} from '../session-generation/loot-catalog.js'
-import { roundHalfUp } from '../session-generation/rational.js'
+import { type LootCatalogIndex } from '../loot/loot-catalog-index.js'
 
 export type LootCatalogPort = Readonly<{
-  loadFull(): FullSessionGenerationCatalog
+  readRun(runId: string): GeneratedRun | null
+  index(reference: {
+    catalogVersion: string
+    catalogContentHash: string
+  }): LootCatalogIndex
 }>
 
 export class LootCatalogService {
@@ -22,113 +21,33 @@ export class LootCatalogService {
 
   search(raw: LootCatalogQuery): LootCatalogPage {
     const query = lootCatalogQuerySchema.parse(raw)
-    const catalog = this.catalog.loadFull()
-    if (catalog.encounter.catalogContentHash !== query.catalogContentHash)
+    const run = this.catalog.readRun(query.runId)
+    if (!run || run.runKind !== 'group_reward')
+      throw new CapabilityError('not_found', false)
+    if (run.catalogContentHash !== query.catalogContentHash)
       throw new CapabilityError('stale', true)
-
-    const entries = projectEntries(catalog)
-    const matching = entries
-      .filter((entry) => matches(entry, query))
-      .toSorted(compareEntries)
+    const index = this.index(run.catalogVersion, run.catalogContentHash)
+    const matching = index.search(query)
     return deepFreeze(
       lootCatalogPageSchema.parse({
-        catalogContentHash: catalog.encounter.catalogContentHash,
+        runId: run.id,
+        catalogVersion: run.catalogVersion,
+        catalogContentHash: run.catalogContentHash,
         entries: matching.slice(query.offset, query.offset + query.limit),
         total: matching.length,
         offset: query.offset,
         limit: query.limit,
-        filterOptions: {
-          types: uniqueSorted(entries.map((entry) => entry.type)),
-          categories: uniqueSorted(
-            entries.flatMap((entry) =>
-              entry.category === null ? [] : [entry.category]
-            )
-          ),
-          rarities: lootRarities.filter((rarity) =>
-            entries.some(
-              (entry) => entry.kind === 'magic_item' && entry.rarity === rarity
-            )
-          )
-        }
+        filterOptions: index.filterOptions
       })
     )
   }
-}
 
-export function projectLootCatalogEntries(
-  catalog: FullSessionGenerationCatalog
-): readonly LootCatalogEntry[] {
-  return deepFreeze(projectEntries(catalog).toSorted(compareEntries))
-}
-
-function projectEntries(
-  catalog: FullSessionGenerationCatalog
-): LootCatalogEntry[] {
-  return [
-    ...catalog.items
-      .filter((item) => item.active)
-      .map((item): LootCatalogEntry => ({
-        kind: 'item',
-        id: item.id,
-        defaultName: item.name,
-        type: item.lootType,
-        category: item.category,
-        unitValueCp: Math.max(0, roundHalfUp(item.baseCp)),
-        stackable: item.valueForm === 'Quantity_Good',
-        magic: false,
-        rarity: null
-      })),
-    ...catalog.magicItems
-      .filter((item) => item.active)
-      .map((item): LootCatalogEntry => ({
-        kind: 'magic_item',
-        id: item.id,
-        defaultName: item.item,
-        type: item.type,
-        category: null,
-        unitValueCp: 0,
-        stackable: false,
-        magic: true,
-        rarity: item.rarity
-      })),
-    ...catalog.containers
-      .filter((container) => !container.hidden)
-      .map((container): LootCatalogEntry => ({
-        kind: 'container',
-        id: container.id,
-        defaultName: container.name,
-        type: 'container',
-        category: null,
-        capacity: container.capacity
-      }))
-  ]
-}
-
-function matches(entry: LootCatalogEntry, query: LootCatalogQuery): boolean {
-  const search = query.search.toLowerCase()
-  return (
-    entry.defaultName.toLowerCase().includes(search) &&
-    (query.types.length === 0 || query.types.includes(entry.type)) &&
-    (query.categories.length === 0 ||
-      (entry.category !== null && query.categories.includes(entry.category))) &&
-    (query.rarities.length === 0 ||
-      (entry.kind === 'magic_item' && query.rarities.includes(entry.rarity)))
-  )
-}
-
-function compareEntries(
-  left: LootCatalogEntry,
-  right: LootCatalogEntry
-): number {
-  return (
-    compareText(left.defaultName, right.defaultName) ||
-    compareText(left.kind, right.kind) ||
-    compareText(left.id, right.id)
-  )
-}
-
-function uniqueSorted(values: readonly string[]): readonly string[] {
-  return [...new Set(values)].toSorted(compareText)
+  private index(version: string, hash: string): LootCatalogIndex {
+    return this.catalog.index({
+      catalogVersion: version,
+      catalogContentHash: hash
+    })
+  }
 }
 
 function deepFreeze<T>(value: T): T {

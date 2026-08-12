@@ -11,6 +11,7 @@ import { SceneStore } from '../../src/core/scene/scene-store.js'
 import { WorldLocationStore } from '../../src/core/worldplanner/location-store.js'
 import { SessionGenerationService } from '../../src/utility/session-generation/session-generation-service.js'
 import { BundledEncounterCatalogProvider } from '../../src/utility/session-generation/catalog-provider.js'
+import { createLootCatalogIndex } from '../../src/core/loot/loot-catalog-index.js'
 import { sha256EncounterEntropy } from '../../src/utility/session-generation/sha256-entropy.js'
 import { systemGeneratorPresetId } from '../../src/shared/contracts/generator-presets.js'
 import { defaultGeneratorConfig } from '../../src/shared/generator/system-generator-preset.js'
@@ -79,6 +80,60 @@ describe('loot vertical slice', () => {
            ) VALUES (?, 'unknown', ?, ?, 1, '{}')`
         )
         .run(randomUUID(), 'f'.repeat(64), randomUUID())
+    ).toThrow()
+  })
+
+  it('enforces schema 27 provenance and metadata invariants in SQLite', () => {
+    const { db } = campaign()
+    expect(columns(db, 'loot_item')).toContain('catalog_entry_kind')
+    expect(columns(db, 'loot_container')).toContain('source_container_id')
+    const loot = new LootService(() => db)
+    const treasure = loot.create({
+      commandId: randomUUID(),
+      label: 'Constraints',
+      anchor: { kind: 'unplaced' },
+      items: [{ name: 'Münze', quantity: 1, unitValueCp: 1, stackable: true }]
+    })
+    const insert = db.prepare(
+      `INSERT INTO loot_item (
+         id, treasure_id, source_line_id, catalog_entry_kind, catalog_item_id,
+         name, quantity, unit_value_cp, stackable, magic, rarity, curse_name,
+         container_id, position
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?)`
+    )
+    expect(() =>
+      insert.run(
+        randomUUID(),
+        treasure.id,
+        null,
+        'magic_item',
+        'magic:test',
+        'Falsch',
+        1,
+        0,
+        0,
+        0,
+        null,
+        null,
+        1
+      )
+    ).toThrow()
+    expect(() =>
+      insert.run(
+        randomUUID(),
+        treasure.id,
+        null,
+        'item',
+        'item:test',
+        'Unteilbar',
+        2,
+        1,
+        0,
+        0,
+        null,
+        null,
+        1
+      )
     ).toThrow()
   })
 
@@ -409,7 +464,9 @@ describe('loot vertical slice', () => {
         party: new PartyStore(db),
         scenes: new SceneStore(db),
         rules,
-        catalog,
+        catalog: {
+          index: () => createLootCatalogIndex(catalog.loadFull())
+        },
         generatedRuns: new GeneratedRunStore(db),
         treasures: new TreasureStore(db),
         groupCommands: {
@@ -559,7 +616,12 @@ describe('loot vertical slice', () => {
     })
     expect(result.treasure.items[1]).toMatchObject({
       sourceLineId: null,
+      catalogEntryKind: 'item',
       catalogItemId: 'item:object:abacus',
+      provenance: {
+        kind: 'catalog',
+        catalogEntry: { kind: 'item', id: 'item:object:abacus' }
+      },
       name: 'Reise-Abakus',
       quantity: 2,
       unitValueCp: 250,
@@ -569,6 +631,7 @@ describe('loot vertical slice', () => {
     })
     expect(result.treasure.items[2]).toMatchObject({
       sourceLineId: null,
+      catalogEntryKind: 'magic_item',
       catalogItemId: 'magic:arcana:common:bead-of-nourishment',
       magic: true,
       rarity: 'Common',

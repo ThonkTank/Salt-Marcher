@@ -47,6 +47,31 @@ describe('capability contract', () => {
     expect(error.message).toBe('timeout')
   })
 
+  it('carries bounded structured validation issues without technical prose', () => {
+    const issue = {
+      code: 'generator_item_unknown' as const,
+      path: ['items', '0184d1f4-bba7-7c9c-9d89-5f1c0f36a031', 'origin'],
+      parameters: { sourceLineId: 'line-4' }
+    }
+    expect(
+      capabilityFailureSchema.parse({
+        code: 'validation_failed',
+        retryable: false,
+        issues: [issue]
+      }).issues
+    ).toEqual([issue])
+    expect(
+      capabilityFailureSchema.safeParse({
+        code: 'internal',
+        retryable: false,
+        issues: [issue]
+      }).success
+    ).toBe(false)
+    expect(
+      new CapabilityError('validation_failed', false, [issue]).issues
+    ).toEqual([issue])
+  })
+
   it('bounds structured renderer incidents and rejects attached user data', () => {
     expect(
       rendererIncidentSchema.parse({

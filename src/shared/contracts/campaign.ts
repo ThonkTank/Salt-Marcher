@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { capabilityErrorCodes } from '../errors/capability-error-code.js'
+import { capabilityIssueCodes } from '../errors/capability-issue.js'
 
 export type { CapabilityErrorCode } from '../errors/capability-error-code.js'
 
@@ -48,13 +49,36 @@ export function freezeCampaignSnapshot(
 }
 
 export const capabilityErrorCodeSchema = z.enum(capabilityErrorCodes)
+export const capabilityIssueSchema = z
+  .object({
+    code: z.enum(capabilityIssueCodes),
+    path: z
+      .array(z.union([z.string().max(100), z.number().int().nonnegative()]))
+      .max(12),
+    parameters: z
+      .record(
+        z.string().max(50),
+        z.union([z.string().max(200), z.number(), z.boolean(), z.null()])
+      )
+      .default({})
+  })
+  .strict()
 export const capabilityFailureSchema = z
   .object({
     code: capabilityErrorCodeSchema,
     retryable: z.boolean(),
+    issues: z.array(capabilityIssueSchema).max(100).optional(),
     data: z.never().optional()
   })
   .strict()
+  .superRefine((failure, context) => {
+    if (failure.issues && failure.code !== 'validation_failed')
+      context.addIssue({
+        code: 'custom',
+        path: ['issues'],
+        message: 'Structured issues are limited to validation failures.'
+      })
+  })
 
 export const createCampaignInputSchema = z
   .object({ name: z.string().trim().min(1, 'A name is required').max(100) })
