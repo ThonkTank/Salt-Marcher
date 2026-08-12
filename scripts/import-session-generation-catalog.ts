@@ -1,23 +1,29 @@
 import { createHash } from 'node:crypto'
 import {
   copyFileSync,
+  existsSync,
   mkdirSync,
   readFileSync,
+  renameSync,
   readdirSync,
   writeFileSync
 } from 'node:fs'
 import { basename, join, resolve } from 'node:path'
 import { expectedCatalogHeaders } from '../src/core/session-generation/catalog.js'
+import { sessionGenerationCatalogRegistrySchema } from '../src/core/session-generation/catalog-registry.js'
 
 const arguments_ = process.argv.slice(2)
 const sourceRoot = requiredArgument('--source-dir')
 const catalogVersion = requiredArgument('--catalog-version')
 const sourceUrl = requiredArgument('--source-url')
 const destinationRoot = resolve('resources/sessiongeneration', catalogVersion)
+const registryPath = resolve('resources/sessiongeneration/registry.json')
 const source = resolve(sourceRoot)
 const files = readdirSync(source)
   .filter((file) => file.endsWith('.tsv'))
   .toSorted(compareText)
+if (existsSync(destinationRoot))
+  throw new Error(`Catalog artifact already exists: ${catalogVersion}`)
 if (files.length === 0)
   throw new Error('No TSV files found in source directory.')
 const expectedFiles = Object.keys(expectedCatalogHeaders).toSorted(compareText)
@@ -74,8 +80,35 @@ writeFileSync(
   `${JSON.stringify(manifest, null, 2)}\n`,
   'utf8'
 )
+const currentRegistry = existsSync(registryPath)
+  ? sessionGenerationCatalogRegistrySchema.parse(
+      JSON.parse(readFileSync(registryPath, 'utf8'))
+    )
+  : null
+const activate = arguments_.includes('--activate') || currentRegistry === null
+const nextRegistry = sessionGenerationCatalogRegistrySchema.parse({
+  schemaVersion: 1,
+  currentCatalogVersion: activate
+    ? catalogVersion
+    : currentRegistry.currentCatalogVersion,
+  catalogs: [
+    ...(currentRegistry?.catalogs ?? []),
+    {
+      directory: catalogVersion,
+      catalogVersion,
+      catalogContentHash: manifest.catalogContentHash
+    }
+  ]
+})
+const temporaryRegistryPath = `${registryPath}.tmp-${process.pid}`
+writeFileSync(
+  temporaryRegistryPath,
+  `${JSON.stringify(nextRegistry, null, 2)}\n`,
+  'utf8'
+)
+renameSync(temporaryRegistryPath, registryPath)
 console.log(
-  `Imported ${tables.length} session-generation tables into ${destinationRoot}.`
+  `Imported ${tables.length} session-generation tables into ${destinationRoot}${activate ? ' and activated it' : ''}.`
 )
 
 function requiredArgument(name: string): string {

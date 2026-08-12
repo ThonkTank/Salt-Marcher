@@ -26,7 +26,7 @@ export async function startApplication(): Promise<void> {
     join(app.getPath('userData'), 'development-data'),
     outputPath('main', 'utility.js'),
     resourcePath('reference', 'srd-5.1.sqlite'),
-    resourcePath('sessiongeneration', 'catalog-2026-07-16')
+    resourcePath('sessiongeneration')
   )
   if (isE2eRuntime())
     ipcMain.handle('salt-marcher-e2e:terminate-utility', () =>

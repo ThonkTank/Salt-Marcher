@@ -1,18 +1,45 @@
 import { createHash } from 'node:crypto'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import {
   catalogManifestSchema,
   expectedCatalogHeaders,
   parseEncounterCatalog
 } from '../src/core/session-generation/catalog.js'
+import { sessionGenerationCatalogRegistrySchema } from '../src/core/session-generation/catalog-registry.js'
+import { BundledEncounterCatalogProvider } from '../src/utility/session-generation/catalog-provider.js'
 import { generatorChallengeRatings } from '../src/shared/generator/generator-config-model.js'
 import {
   defaultGeneratorConfig,
   systemGeneratorPresetSource
 } from '../src/shared/generator/system-generator-preset.js'
 
-const root = resolve('resources/sessiongeneration/catalog-2026-07-16')
+const registryRoot = resolve('resources/sessiongeneration')
+const registry = sessionGenerationCatalogRegistrySchema.parse(
+  JSON.parse(readFileSync(join(registryRoot, 'registry.json'), 'utf8'))
+)
+const registeredDirectories = registry.catalogs
+  .map((entry) => entry.directory)
+  .toSorted(compareText)
+const artifactDirectories = readdirSync(registryRoot, { withFileTypes: true })
+  .filter((entry) => entry.isDirectory() && entry.name.startsWith('catalog-'))
+  .map((entry) => entry.name)
+  .toSorted(compareText)
+if (
+  JSON.stringify(registeredDirectories) !== JSON.stringify(artifactDirectories)
+)
+  throw new Error('Catalog directories and registry entries differ.')
+for (const entry of registry.catalogs) {
+  const identity = new BundledEncounterCatalogProvider(
+    join(registryRoot, entry.directory)
+  )
+  expectCatalogIdentity(identity.identity(), entry)
+  identity.loadFull()
+}
+const currentEntry = registry.catalogs.find(
+  (entry) => entry.catalogVersion === registry.currentCatalogVersion
+)!
+const root = join(registryRoot, currentEntry.directory)
 const manifest = catalogManifestSchema.parse(
   JSON.parse(readFileSync(join(root, 'manifest.json'), 'utf8'))
 )
@@ -127,4 +154,17 @@ function compareText(left: string, right: string): number {
   if (left < right) return -1
   if (left > right) return 1
   return 0
+}
+
+function expectCatalogIdentity(
+  actual: { catalogVersion: string; catalogContentHash: string },
+  expected: { catalogVersion: string; catalogContentHash: string }
+): void {
+  if (
+    actual.catalogVersion !== expected.catalogVersion ||
+    actual.catalogContentHash !== expected.catalogContentHash
+  )
+    throw new Error(
+      `Catalog registry identity mismatch: ${expected.catalogVersion}`
+    )
 }

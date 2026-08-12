@@ -4,6 +4,7 @@ export const capabilityErrorCodes = [
   'unsupported_svg',
   'svg_too_large',
   'file_read_failed',
+  'catalog_unavailable',
   'stale',
   'not_found',
   'read_only',

@@ -50,20 +50,16 @@ import { ReferenceService } from '../core/reference/reference-service.js'
 import { ReferenceCatalogAdapter } from '../core/reference/reference-catalog-adapter.js'
 import { referenceTargetKey } from '../shared/reference/reference-target-key.js'
 import { randomUUID } from 'node:crypto'
-import { BundledEncounterCatalogProvider } from './session-generation/catalog-provider.js'
+import {
+  BundledSessionGenerationCatalogRegistry,
+  CatalogProviderError
+} from './session-generation/catalog-provider.js'
 import { sha256EncounterEntropy } from './session-generation/sha256-entropy.js'
 import { SessionGenerationService } from './session-generation/session-generation-service.js'
-import { LootService } from '../core/application/loot-service.js'
-import { LootProjectionStore } from '../core/loot/loot-projection-store.js'
 import { GeneratedEncounterPlanService } from '../core/encounter/generated-plan-service.js'
 import { SessionPlannerService } from './session-planner/session-planner-service.js'
 import { CampaignRulesService } from '../core/application/campaign-rules-service.js'
-import { GroupRewardCommandHandler } from '../core/application/group-reward-command-handler.js'
-import { GroupRewardCommitHandler } from '../core/application/group-reward-commit-handler.js'
-import { GeneratedRunStore } from '../core/session-generation/generated-run-store.js'
-import { LootOperationJournal } from '../core/loot/loot-operation-journal.js'
-import { TreasureStore } from '../core/loot/loot-store.js'
-import { LootCatalogService } from '../core/application/loot-catalog-service.js'
+import { createLootComposition } from './composition/loot.js'
 const root = process.argv[2]
 const referenceDatabasePath = process.argv[3]
 const sessionGenerationCatalogRoot = process.argv[4]
@@ -80,7 +76,7 @@ const campaigns = openDevelopmentCampaignStore(root)
 const generatorPresets = new GeneratorPresetStore(
   campaigns.installationDatabase()
 )
-const sessionGenerationCatalog = new BundledEncounterCatalogProvider(
+const sessionGenerationCatalog = new BundledSessionGenerationCatalogRegistry(
   sessionGenerationCatalogRoot
 )
 const sessionGenerationService = new SessionGenerationService(
@@ -91,17 +87,6 @@ const sessionGenerationService = new SessionGenerationService(
 )
 const activeDatabase = () => campaigns.activeCampaignDatabase()
 const campaignRules = new CampaignRulesService(activeDatabase)
-const loot = new LootService(activeDatabase)
-const lootCatalog = new LootCatalogService(sessionGenerationCatalog)
-const groupRewards = new GroupRewardCommandHandler(() => {
-  const db = activeDatabase()
-  return {
-    party: new PartyStore(db),
-    scenes: new SceneStore(db),
-    rules: campaignRules,
-    generation: sessionGenerationService
-  }
-})
 const encounterPlans = new GeneratedEncounterPlanService(activeDatabase)
 const sessionPlanner = new SessionPlannerService(
   activeDatabase,
@@ -137,38 +122,35 @@ const play = new LivePlayService(activeDatabase, biomeProjection, () => {
     return defaultGeneratorConfig
   }
 })
-const groupRewardCommits = new GroupRewardCommitHandler(
-  () => {
-    const db = activeDatabase()
-    return {
-      party: new PartyStore(db),
-      scenes: new SceneStore(db),
-      rules: campaignRules,
-      catalog: sessionGenerationCatalog,
-      generatedRuns: new GeneratedRunStore(db),
-      treasures: new TreasureStore(db),
-      groupCommands: {
-        save: (input) =>
-          play.saveSceneGroup(
-            input.sceneId,
-            input.groupId,
-            input.name,
-            input.note,
-            input.disposition,
-            input.entries,
-            input.expectedSceneRevision,
-            input.expectedGroupRevision,
-            input.prospectiveGroupId
-          ),
-        result: (sceneId, groupIds) => play.sceneGroupResult(sceneId, groupIds)
-      },
-      journal: new LootOperationJournal(db),
-      projections: new LootProjectionStore(db),
-      now: () => new Date().toISOString()
+const lootComposition = createLootComposition({
+  activeDatabase,
+  rules: campaignRules,
+  generation: sessionGenerationService,
+  loadCatalog: (reference) => {
+    try {
+      return sessionGenerationCatalog.loadFullByReference(reference)
+    } catch (error) {
+      if (error instanceof CatalogProviderError)
+        throw new CapabilityError('catalog_unavailable', false)
+      throw error
     }
   },
-  (work) => new CampaignUnitOfWork(activeDatabase()).run(work)
-)
+  groupCommands: {
+    save: (input) =>
+      play.saveSceneGroup(
+        input.sceneId,
+        input.groupId,
+        input.name,
+        input.note,
+        input.disposition,
+        input.entries,
+        input.expectedSceneRevision,
+        input.expectedGroupRevision,
+        input.prospectiveGroupId
+      ),
+    result: (sceneId, groupIds) => play.sceneGroupResult(sceneId, groupIds)
+  }
+})
 const hex = new HexMapService(activeDatabase, locationStore)
 const hexEditing = new HexMapEditingCommandHandler(() => {
   const db = activeDatabase()
@@ -349,7 +331,7 @@ function publishLootChange(
       kind: 'loot.changed',
       notice: {
         campaignId: campaigns.activeCampaignId(),
-        revision: new LootProjectionStore(activeDatabase()).revision(),
+        revision: lootComposition.projectionRevision(),
         reason
       }
     })
@@ -1062,37 +1044,6 @@ const sessionPlannerHandlers = {
   | 'sessionPlanner.cancelPreparation'
 >
 
-const lootHandlers = {
-  'loot.read': (input) => loot.read(input.treasureId),
-  'loot.catalog': (input) => lootCatalog.search(input),
-  'loot.generateForGroupDraft': (input) => groupRewards.generate(input),
-  'loot.commitGroupReward': (input) => groupRewardCommits.commit(input),
-  'loot.scene': (input) => loot.sceneProjection(input.sceneId),
-  'loot.inbox': (input) => loot.inbox(input),
-  'loot.create': (input) => loot.create(input),
-  'loot.update': (input) => loot.update(input),
-  'loot.move': (input) => loot.move(input),
-  'loot.acceptGenerated': (input) => loot.acceptGenerated(input),
-  'loot.distribute': (input) => loot.distribute(input),
-  'loot.ledger': (input) => loot.ledger(input.characterId),
-  'loot.correctLedger': (input) => loot.correctLedger(input)
-} satisfies Pick<
-  CoreHandlers,
-  | 'loot.read'
-  | 'loot.catalog'
-  | 'loot.generateForGroupDraft'
-  | 'loot.commitGroupReward'
-  | 'loot.scene'
-  | 'loot.inbox'
-  | 'loot.create'
-  | 'loot.update'
-  | 'loot.move'
-  | 'loot.acceptGenerated'
-  | 'loot.distribute'
-  | 'loot.ledger'
-  | 'loot.correctLedger'
->
-
 const encounterHandlers = {
   'encounter.evaluate': (input) =>
     play.evaluateEncounter(
@@ -1299,7 +1250,7 @@ const handlers = {
   ...sessionHandlers,
   ...encounterPlanHandlers,
   ...sessionPlannerHandlers,
-  ...lootHandlers,
+  ...lootComposition.handlers,
   ...encounterHandlers,
   ...hexHandlers,
   ...travelHandlers,
@@ -1326,7 +1277,7 @@ async function handleMessage(event: { data: unknown }): Promise<void> {
     if (r.kind === 'core.shutdown') setImmediate(() => process.exit(0))
   } catch (e) {
     const mapped = capabilityFailure(e)
-    failure(r.requestId, mapped.code, mapped.retryable)
+    failure(r.requestId, mapped.code, mapped.retryable, mapped.issues)
   }
 }
 
@@ -1385,14 +1336,16 @@ function respond(requestId: string, payload: unknown) {
 function failure(
   requestId: string,
   code: CapabilityErrorCode,
-  retryable = false
+  retryable = false,
+  issues: CapabilityError['issues'] = []
 ) {
   process.parentPort?.postMessage({
     requestId,
     ok: false,
     error: capabilityFailureSchema.parse({
       code,
-      retryable
+      retryable,
+      ...(issues.length > 0 ? { issues } : {})
     })
   })
 }
@@ -1400,11 +1353,13 @@ function failure(
 function capabilityFailure(error: unknown): {
   code: CapabilityErrorCode
   retryable: boolean
+  issues: CapabilityError['issues']
 } {
   if (error instanceof CapabilityError)
     return {
       code: error.code,
-      retryable: error.retryable
+      retryable: error.retryable,
+      issues: error.issues
     }
-  return { code: 'internal', retryable: false }
+  return { code: 'internal', retryable: false, issues: [] }
 }

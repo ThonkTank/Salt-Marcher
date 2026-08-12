@@ -389,7 +389,11 @@ export class CoreProcessSupervisor {
     clearTimeout(pending.timer)
     if (!result.data.ok) {
       pending.reject(
-        new CapabilityError(result.data.error.code, result.data.error.retryable)
+        new CapabilityError(
+          result.data.error.code,
+          result.data.error.retryable,
+          result.data.error.issues ?? []
+        )
       )
       return
     }

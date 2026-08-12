@@ -42,7 +42,11 @@ async function invokeCore<K extends CoreOperationKind>(
       ])
       .parse(raw)
     if (!result.ok)
-      throw new CapabilityError(result.error.code, result.error.retryable)
+      throw new CapabilityError(
+        result.error.code,
+        result.error.retryable,
+        result.error.issues ?? []
+      )
     const value = operation.output.safeParse(result.payload)
     if (!value.success) throw new CapabilityError('protocol_violation', false)
     return freezeDeep(value.data) as CoreOperationOutput<K>

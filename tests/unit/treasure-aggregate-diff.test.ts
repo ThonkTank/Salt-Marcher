@@ -112,9 +112,9 @@ function currentTreasure(): Treasure {
       item(ids.deletedItem, 'Notiz', 1, 0, ids.deletedContainer, 2)
     ],
     containers: [
-      { ...containerDraft(ids.retainedContainer, 'Beutel', 10), position: 0 },
-      { ...containerDraft(ids.updatedContainer, 'Schatulle', 5), position: 1 },
-      { ...containerDraft(ids.deletedContainer, 'Mappe', 2), position: 2 }
+      persistedContainer(ids.retainedContainer, 'Beutel', 10, 0),
+      persistedContainer(ids.updatedContainer, 'Schatulle', 5, 1),
+      persistedContainer(ids.deletedContainer, 'Mappe', 2, 2)
     ],
     totalValueCp: 16,
     allocatedValueCp: 2,
@@ -157,7 +157,9 @@ function item(
   return {
     id,
     sourceLineId: null,
+    catalogEntryKind: null,
     catalogItemId: null,
+    provenance: { kind: 'manual' },
     name,
     quantity,
     allocatedQuantity,
@@ -190,6 +192,20 @@ function itemDraft(
 
 function containerDraft(id: string, name: string, capacity: number) {
   return { id, catalogContainerId: null, name, capacity }
+}
+
+function persistedContainer(
+  id: string,
+  name: string,
+  capacity: number,
+  position: number
+) {
+  return {
+    ...containerDraft(id, name, capacity),
+    sourceContainerId: null,
+    provenance: { kind: 'manual' as const },
+    position
+  }
 }
 
 function expectValidationFailure(action: () => unknown): void {

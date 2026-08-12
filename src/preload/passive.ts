@@ -33,7 +33,11 @@ const api: PassiveE2eApi = {
       await invokeIpc(operation.channel!, operation.input.parse(undefined))
     )
     if (!result.ok)
-      throw new CapabilityError(result.error.code, result.error.retryable)
+      throw new CapabilityError(
+        result.error.code,
+        result.error.retryable,
+        result.error.issues ?? []
+      )
     return freeze(passiveProjectionSchema.parse(result.payload))
   },
   onProjectionChanged(listener) {
