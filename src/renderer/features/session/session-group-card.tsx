@@ -1,7 +1,10 @@
+import { useState } from 'react'
 import type { SceneGroup } from '../../../shared/contracts/scene.js'
+import type { Treasure } from '../../../shared/contracts/loot.js'
 import { formatXp } from '../../i18n/domain-formatters.de.js'
 import { formatMessage, message } from '../../i18n/session-runtime.de.js'
 import { ReadOnlyProse } from '../reference/read-only-prose.js'
+import { LootTreasureCard } from '../loot/loot-treasure-card.js'
 
 export function SessionGroupCard(props: {
   group: SceneGroup
@@ -12,7 +15,12 @@ export function SessionGroupCard(props: {
   deleteConfirming?: boolean
   cancelDelete?: () => void
   deleteGroup?: () => void
+  treasures?: readonly Treasure[]
+  createLoot?: () => void
+  editLoot?: (treasure: Treasure) => void
+  distribute?: (treasure: Treasure) => void
 }) {
+  const [lootOpen, setLootOpen] = useState(false)
   const count = props.group.entries.reduce(
     (total, entry) => total + entry.quantity,
     0
@@ -80,6 +88,40 @@ export function SessionGroupCard(props: {
         <p className="group-note">
           <ReadOnlyProse>{props.group.note}</ReadOnlyProse>
         </p>
+      )}
+      {(props.treasures?.length || props.createLoot) && (
+        <div className="group-loot">
+          <button
+            type="button"
+            className="group-loot-toggle"
+            aria-expanded={lootOpen}
+            onClick={() => setLootOpen((open) => !open)}
+          >
+            <span aria-hidden="true">{lootOpen ? '▾' : '▸'}</span>
+            {formatMessage('loot.groupCount', {
+              count: props.treasures?.length ?? 0
+            })}
+          </button>
+          {lootOpen && (
+            <div className="group-loot-list">
+              {props.treasures?.map((treasure) => {
+                return (
+                  <LootTreasureCard
+                    key={treasure.id}
+                    treasure={treasure}
+                    edit={(value) => props.editLoot?.(value)}
+                    distribute={(value) => props.distribute?.(value)}
+                  />
+                )
+              })}
+              {props.createLoot && (
+                <button className="group-loot-add" onClick={props.createLoot}>
+                  {message('loot.add')}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       )}
       {props.deleteConfirming && (
         <div className="group-delete-confirm" role="alert">

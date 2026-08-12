@@ -43,10 +43,8 @@ import {
 } from '../core/application/biome-catalog-service.js'
 import { CapabilityError } from '../shared/errors/capability-error.js'
 import { placeholderBiomeId } from '../shared/contracts/biome.js'
-import {
-  hexBrushStrokeResultSchema,
-  hexTravelSnapshotSchema
-} from '../shared/contracts/hex.js'
+import { hexBrushStrokeResultSchema } from '../shared/contracts/hex.js'
+import { hexTravelContextResultSchema } from '../shared/contracts/live-session.js'
 import { emptyPassiveProjection } from '../shared/contracts/passive-display.js'
 import { ReferenceService } from '../core/reference/reference-service.js'
 import { ReferenceCatalogAdapter } from '../core/reference/reference-catalog-adapter.js'
@@ -55,6 +53,17 @@ import { randomUUID } from 'node:crypto'
 import { BundledEncounterCatalogProvider } from './session-generation/catalog-provider.js'
 import { sha256EncounterEntropy } from './session-generation/sha256-entropy.js'
 import { SessionGenerationService } from './session-generation/session-generation-service.js'
+import { LootService } from '../core/application/loot-service.js'
+import { LootProjectionStore } from '../core/loot/loot-projection-store.js'
+import { GeneratedEncounterPlanService } from '../core/encounter/generated-plan-service.js'
+import { SessionPlannerService } from './session-planner/session-planner-service.js'
+import { CampaignRulesService } from '../core/application/campaign-rules-service.js'
+import { GroupRewardCommandHandler } from '../core/application/group-reward-command-handler.js'
+import { GroupRewardCommitHandler } from '../core/application/group-reward-commit-handler.js'
+import { GeneratedRunStore } from '../core/session-generation/generated-run-store.js'
+import { LootOperationJournal } from '../core/loot/loot-operation-journal.js'
+import { TreasureStore } from '../core/loot/loot-store.js'
+import { LootCatalogService } from '../core/application/loot-catalog-service.js'
 const root = process.argv[2]
 const referenceDatabasePath = process.argv[3]
 const sessionGenerationCatalogRoot = process.argv[4]
@@ -77,9 +86,30 @@ const sessionGenerationCatalog = new BundledEncounterCatalogProvider(
 const sessionGenerationService = new SessionGenerationService(
   sessionGenerationCatalog,
   sha256EncounterEntropy,
-  () => generatorPresets.configFor(campaigns.list().activeCampaignId)
+  () => generatorPresets.configFor(campaigns.list().activeCampaignId),
+  () => campaigns.activeCampaignDatabase()
 )
 const activeDatabase = () => campaigns.activeCampaignDatabase()
+const campaignRules = new CampaignRulesService(activeDatabase)
+const loot = new LootService(activeDatabase)
+const lootCatalog = new LootCatalogService(sessionGenerationCatalog)
+const groupRewards = new GroupRewardCommandHandler(() => {
+  const db = activeDatabase()
+  return {
+    party: new PartyStore(db),
+    scenes: new SceneStore(db),
+    rules: campaignRules,
+    generation: sessionGenerationService
+  }
+})
+const encounterPlans = new GeneratedEncounterPlanService(activeDatabase)
+const sessionPlanner = new SessionPlannerService(
+  activeDatabase,
+  sessionGenerationService,
+  encounterPlans,
+  publishPreparationChange,
+  schedulePreparationWork
+)
 const symbolLifecycle = new LocationSymbolLifecycleService(campaigns)
 const locationSymbols = symbolLifecycle.symbols
 const customSymbol = (id: string) => symbolLifecycle.customSymbol(id)
@@ -107,6 +137,38 @@ const play = new LivePlayService(activeDatabase, biomeProjection, () => {
     return defaultGeneratorConfig
   }
 })
+const groupRewardCommits = new GroupRewardCommitHandler(
+  () => {
+    const db = activeDatabase()
+    return {
+      party: new PartyStore(db),
+      scenes: new SceneStore(db),
+      rules: campaignRules,
+      catalog: sessionGenerationCatalog,
+      generatedRuns: new GeneratedRunStore(db),
+      treasures: new TreasureStore(db),
+      groupCommands: {
+        save: (input) =>
+          play.saveSceneGroup(
+            input.sceneId,
+            input.groupId,
+            input.name,
+            input.note,
+            input.disposition,
+            input.entries,
+            input.expectedSceneRevision,
+            input.expectedGroupRevision,
+            input.prospectiveGroupId
+          ),
+        result: (sceneId, groupIds) => play.sceneGroupResult(sceneId, groupIds)
+      },
+      journal: new LootOperationJournal(db),
+      projections: new LootProjectionStore(db),
+      now: () => new Date().toISOString()
+    }
+  },
+  (work) => new CampaignUnitOfWork(activeDatabase()).run(work)
+)
 const hex = new HexMapService(activeDatabase, locationStore)
 const hexEditing = new HexMapEditingCommandHandler(() => {
   const db = activeDatabase()
@@ -277,6 +339,63 @@ function publishSessionChange(
       }
     })
   )
+}
+
+function publishLootChange(
+  reason: 'created' | 'updated' | 'moved' | 'accepted' | 'distributed'
+): void {
+  process.parentPort?.postMessage(
+    coreEventSchema.parse({
+      kind: 'loot.changed',
+      notice: {
+        campaignId: campaigns.activeCampaignId(),
+        revision: new LootProjectionStore(activeDatabase()).revision(),
+        reason
+      }
+    })
+  )
+}
+
+function publishPreparationChange(notice: {
+  operationId: string
+  status:
+    | 'queued'
+    | 'generating'
+    | 'resolving_encounters'
+    | 'saving'
+    | 'succeeded'
+    | 'invalid'
+    | 'stale'
+    | 'failed'
+    | 'canceled'
+}): void {
+  process.parentPort?.postMessage(
+    coreEventSchema.parse({
+      kind: 'session-planner.preparation-changed',
+      notice: {
+        campaignId: campaigns.activeCampaignId(),
+        ...notice
+      }
+    })
+  )
+}
+
+function schedulePreparationWork(work: () => void): void {
+  const configured = Number(
+    process.env['SALT_MARCHER_E2E_PREPARATION_STAGE_DELAY_MS'] ?? 0
+  )
+  const delay =
+    process.env['SALT_MARCHER_E2E'] === 'true' &&
+    Number.isInteger(configured) &&
+    configured >= 0 &&
+    configured <= 5_000
+      ? configured
+      : 0
+  if (delay > 0) {
+    setTimeout(work, delay)
+    return
+  }
+  setImmediate(work)
 }
 
 function publishHexChange(payload: unknown): void {
@@ -460,6 +579,8 @@ symbolLifecycle.recoverPendingImports()
 symbolLifecycle.recoverPendingDeletions()
 biomeService.recoverPendingDeletions()
 sources.recoverPendingInstallationTableLifecycles()
+if (campaigns.list().activeCampaignId !== null)
+  sessionPlanner.recoverPendingPreparations()
 
 function scheduleNextBoundary(): void {
   if (travelTimer !== undefined) clearTimeout(travelTimer)
@@ -493,10 +614,16 @@ reconcileAndSchedule('campaign-reconcile')
 process.parentPort.postMessage(coreReadySchema.parse({ kind: 'core.ready' }))
 const campaignHandlers = {
   'campaign.list': () => campaigns.list(),
-  'campaign.create': (input) =>
-    mutateReferences(() => campaigns.create(input.name)),
-  'campaign.activate': (input) =>
-    mutateReferences(() => campaigns.activate(input.id)),
+  'campaign.create': (input) => {
+    const result = mutateReferences(() => campaigns.create(input.name))
+    sessionPlanner.recoverPendingPreparations()
+    return result
+  },
+  'campaign.activate': (input) => {
+    const result = mutateReferences(() => campaigns.activate(input.id))
+    sessionPlanner.recoverPendingPreparations()
+    return result
+  },
   'campaign.rename': (input) => campaigns.rename(input.id, input.name),
   'campaign.trash': (input) => campaigns.trash(input.id),
   'campaign.restore': (input) => campaigns.restore(input.id),
@@ -505,6 +632,10 @@ const campaignHandlers = {
   'settings.read': () => campaigns.readSettings(),
   'settings.update': (input) =>
     campaigns.updateSettings(input.patch, input.expectedRevision),
+  'campaignRules.read': () => campaignRules.read(),
+  'campaignRules.update': (input) => campaignRules.update(input),
+  'campaignRules.commandReceipt': (input) =>
+    campaignRules.commandReceipt(input.commandId),
   'generatorPresets.readEditor': (input) =>
     generatorPresets.readEditor(input.campaignId),
   'generatorPresets.create': (input) => generatorPresets.create(input),
@@ -525,6 +656,9 @@ const campaignHandlers = {
   | 'campaign.deleteForever'
   | 'settings.read'
   | 'settings.update'
+  | 'campaignRules.read'
+  | 'campaignRules.update'
+  | 'campaignRules.commandReceipt'
   | 'generatorPresets.readEditor'
   | 'generatorPresets.create'
   | 'generatorPresets.update'
@@ -892,10 +1026,72 @@ const sessionHandlers = {
   | 'scene.generateGroupDraft'
 >
 
-const sessionGenerationHandlers = {
-  'sessionGeneration.generateEncounterIntents': (input) =>
-    sessionGenerationService.generateEncounterIntents(input)
-} satisfies Pick<CoreHandlers, 'sessionGeneration.generateEncounterIntents'>
+const encounterPlanHandlers = {
+  'encounterPlans.summaries': (input) => encounterPlans.summaries(input),
+  'encounterPlans.search': (input) => encounterPlans.search(input)
+} satisfies Pick<
+  CoreHandlers,
+  'encounterPlans.summaries' | 'encounterPlans.search'
+>
+
+const sessionPlannerHandlers = {
+  'sessionPlanner.read': () => sessionPlanner.read(),
+  'sessionPlanner.create': (input) => sessionPlanner.create(input),
+  'sessionPlanner.open': (input) => sessionPlanner.open(input),
+  'sessionPlanner.switch': (input) => sessionPlanner.switch(input),
+  'sessionPlanner.rename': (input) => sessionPlanner.rename(input),
+  'sessionPlanner.save': (input) => sessionPlanner.save(input),
+  'sessionPlanner.delete': (input) => sessionPlanner.delete(input),
+  'sessionPlanner.startPreparation': (input) =>
+    sessionPlanner.startPreparation(input),
+  'sessionPlanner.preparationReceipt': (input) =>
+    sessionPlanner.preparationReceipt(input),
+  'sessionPlanner.cancelPreparation': (input) =>
+    sessionPlanner.cancelPreparation(input)
+} satisfies Pick<
+  CoreHandlers,
+  | 'sessionPlanner.read'
+  | 'sessionPlanner.create'
+  | 'sessionPlanner.open'
+  | 'sessionPlanner.switch'
+  | 'sessionPlanner.rename'
+  | 'sessionPlanner.save'
+  | 'sessionPlanner.delete'
+  | 'sessionPlanner.startPreparation'
+  | 'sessionPlanner.preparationReceipt'
+  | 'sessionPlanner.cancelPreparation'
+>
+
+const lootHandlers = {
+  'loot.read': (input) => loot.read(input.treasureId),
+  'loot.catalog': (input) => lootCatalog.search(input),
+  'loot.generateForGroupDraft': (input) => groupRewards.generate(input),
+  'loot.commitGroupReward': (input) => groupRewardCommits.commit(input),
+  'loot.scene': (input) => loot.sceneProjection(input.sceneId),
+  'loot.inbox': (input) => loot.inbox(input),
+  'loot.create': (input) => loot.create(input),
+  'loot.update': (input) => loot.update(input),
+  'loot.move': (input) => loot.move(input),
+  'loot.acceptGenerated': (input) => loot.acceptGenerated(input),
+  'loot.distribute': (input) => loot.distribute(input),
+  'loot.ledger': (input) => loot.ledger(input.characterId),
+  'loot.correctLedger': (input) => loot.correctLedger(input)
+} satisfies Pick<
+  CoreHandlers,
+  | 'loot.read'
+  | 'loot.catalog'
+  | 'loot.generateForGroupDraft'
+  | 'loot.commitGroupReward'
+  | 'loot.scene'
+  | 'loot.inbox'
+  | 'loot.create'
+  | 'loot.update'
+  | 'loot.move'
+  | 'loot.acceptGenerated'
+  | 'loot.distribute'
+  | 'loot.ledger'
+  | 'loot.correctLedger'
+>
 
 const encounterHandlers = {
   'encounter.evaluate': (input) =>
@@ -962,7 +1158,8 @@ const encounterHandlers = {
       input.mode,
       input.xpFraction
     ),
-  'combat.awardXp': (input) => play.awardXp(input.expectedRevision),
+  'combat.awardXp': (input) =>
+    play.awardXp(input.expectedRevision, input.expectedCampaignRulesRevision),
   'combat.complete': (input) => play.completeCombat(input.expectedRevision)
 } satisfies Pick<
   CoreHandlers,
@@ -1059,14 +1256,15 @@ const hexHandlers = {
 >
 
 const travelHandlers = {
-  'hexTravel.read': (input) => hexTravel.read(input.sceneId),
+  'hexTravel.read': (input) => travelContext(hexTravel.read(input.sceneId)),
   'hexTravel.evaluate': (input) => hexTravel.evaluate(input),
-  'hexTravel.position': (input) => hexTravel.position(input),
-  'hexTravel.start': (input) => hexTravel.start(input),
-  'hexTravel.pause': (input) => hexTravel.pause(input),
-  'hexTravel.resume': (input) => hexTravel.resume(input),
-  'hexTravel.abort': (input) => hexTravel.abort(input),
-  'hexTravel.setMultiplier': (input) => hexTravel.setMultiplier(input)
+  'hexTravel.position': (input) => travelContext(hexTravel.position(input)),
+  'hexTravel.start': (input) => travelContext(hexTravel.start(input)),
+  'hexTravel.pause': (input) => travelContext(hexTravel.pause(input)),
+  'hexTravel.resume': (input) => travelContext(hexTravel.resume(input)),
+  'hexTravel.abort': (input) => travelContext(hexTravel.abort(input)),
+  'hexTravel.setMultiplier': (input) =>
+    travelContext(hexTravel.setMultiplier(input))
 } satisfies Pick<
   CoreHandlers,
   | 'hexTravel.read'
@@ -1078,6 +1276,10 @@ const travelHandlers = {
   | 'hexTravel.abort'
   | 'hexTravel.setMultiplier'
 >
+
+function travelContext(travel: ReturnType<HexTravelService['read']>) {
+  return { travel, session: play.readSession() }
+}
 
 const lifecycleHandlers = {
   'core.shutdown': () => {
@@ -1095,7 +1297,9 @@ const handlers = {
   ...biomeHandlers,
   ...worldPlannerHandlers,
   ...sessionHandlers,
-  ...sessionGenerationHandlers,
+  ...encounterPlanHandlers,
+  ...sessionPlannerHandlers,
+  ...lootHandlers,
   ...encounterHandlers,
   ...hexHandlers,
   ...travelHandlers,
@@ -1143,10 +1347,25 @@ function dispatch(request: CoreRequest): Promise<unknown> {
       request.kind.startsWith('hexTravel.') &&
       request.kind !== 'hexTravel.read'
     ) {
-      const snapshot = hexTravelSnapshotSchema.safeParse(parsed)
-      if (snapshot.success)
-        publishSessionChange(snapshot.data, 'travel-command')
+      const result = hexTravelContextResultSchema.safeParse(parsed)
+      if (result.success)
+        publishSessionChange(result.data.travel, 'travel-command')
     }
+    const lootReason =
+      request.kind === 'loot.create'
+        ? 'created'
+        : request.kind === 'loot.update'
+          ? 'updated'
+          : request.kind === 'loot.move'
+            ? 'moved'
+            : request.kind === 'loot.acceptGenerated'
+              ? 'accepted'
+              : request.kind === 'loot.commitGroupReward'
+                ? 'accepted'
+                : request.kind === 'loot.distribute'
+                  ? 'distributed'
+                  : null
+    if (lootReason) publishLootChange(lootReason)
     if (
       coreOperations[request.kind].mode === 'write' &&
       request.kind !== 'settings.update' &&

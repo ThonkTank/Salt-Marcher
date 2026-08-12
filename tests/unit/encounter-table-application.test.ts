@@ -72,12 +72,13 @@ describe('EncounterTableApplicationPort', () => {
     await expect(current.port.save(null, draft, 'campaign')).resolves.toEqual(
       receipt
     )
-    expect(current.create).toHaveBeenCalledWith(
-      expect.any(String),
-      draft,
-      0,
-      'campaign'
-    )
+    const createInput = current.create.mock.calls[0]?.[0]
+    expect(typeof createInput?.commandId).toBe('string')
+    expect(createInput).toMatchObject({
+      table: draft,
+      expectedRevision: 0,
+      scope: 'campaign'
+    })
   })
 
   it('reconciles an unknown outcome without issuing a second mutation', async () => {
@@ -91,7 +92,8 @@ describe('EncounterTableApplicationPort', () => {
       receipt
     )
     expect(current.create).toHaveBeenCalledOnce()
-    expect(current.commandReceipt).toHaveBeenCalledWith(expect.any(String))
+    const receiptInput = current.commandReceipt.mock.calls[0]?.[0]
+    expect(typeof receiptInput?.commandId).toBe('string')
   })
 
   it('does not replay when the matching receipt is absent', async () => {

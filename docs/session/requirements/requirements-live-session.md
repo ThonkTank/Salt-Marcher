@@ -51,10 +51,15 @@ the current draft and adds filtered creatures until the requested difficulty
 band is reached; an already sufficient or stronger group remains unchanged.
 `Neu generieren` replaces only the draft roster. Both operations receive the
 focused Scene, assigned Party, optional Location, current draft, filters, and
-tuning. Generator results remain transient until explicitly saved and do not
-survive restart. Each selected group keeps its own transient draft while the
-dialog remains open, so switching groups does not lose work. Closing the dialog
-with any dirty draft requires explicit discard confirmation.
+tuning. A successful roster generation immediately creates an inline Loot
+preview for the same unsaved roster. Manual roster edits, undo, and redo remove
+that preview; `Loot neu würfeln` replaces only Loot. Seeds remain internal and
+independent. `Gruppe & Loot übernehmen` saves both owners atomically, while the
+ordinary save action remains group-only. Generator results remain transient
+until explicitly saved and do not survive restart. Each selected group keeps
+its own transient draft and Loot preview while the dialog remains open, so
+switching groups does not lose work. Closing the dialog with any dirty draft
+requires explicit discard confirmation.
 
 ## Three-column workspace
 
@@ -76,9 +81,11 @@ with any dirty draft requires explicit discard confirmation.
 - Holding direct pointer intent on a preview for five seconds, or choosing its
   pin action, creates a movable persistent card. Pinned cards survive center-tab
   and Scene changes but remain memory-only and clear on application restart.
-- Karte consumes the approved Hex provider. It shows the current token, supports
-  administrative placement, ordered waypoint planning, explicit start, and an
-  honest empty state when no map exists.
+- Karte consumes the approved Hex provider. Its borderless canvas shows the
+  current token and an honest empty state when no map exists; map selection,
+  accessible administrative placement, ordered waypoint planning, evaluation,
+  explicit start, and runtime controls share one Scene-scoped state with the
+  `Reise` scenario pane.
 - The right fixed-width column owns the full-height scenario pane. Two vertical
   dividers resize the left control/group column and right scenario column
   independently. Both widths and the center tab are stored app-wide in
@@ -87,8 +94,8 @@ with any dirty draft requires explicit discard confirmation.
 ## Combat Scenario
 
 1. The GM selects `Encounter` from the scenario dropdown. `Reise` is the other
-   current option and publishes no-context or approved Hex readback plus bounded
-   runtime controls.
+   current option and publishes no-context or the approved provider's
+   interactive travel console without automatically changing the center tab.
 2. The GM selects one or more groups belonging to the focused Scene. The
    assigned Scene Party is always selected.
 3. Every selection change shows base XP, adjusted XP, Party thresholds and the
@@ -100,7 +107,11 @@ with any dirty draft requires explicit discard confirmation.
    HP, damage, healing, conditions, a bounded 20-step undo history,
    Group-Manager reinforcement, and a direct transition to Resolution.
 6. Resolution exposes defeated-enemy selection, defeat threshold, XP fraction,
-   per-player XP, one idempotent Party award, and the current no-loot notice.
+   per-player XP, one idempotent Party award, and typed treasures anchored to
+   the selected groups. A treasure opens the shared distribution dialog. The
+   current campaign rule selects base or adjusted XP; the resolution exposes
+   both values, the selected basis, and its rule revision. A policy change
+   before award makes the older award request stale.
 7. Completing Resolution returns the scenario panel to selection while keeping
    the Scene and its groups unchanged.
 
@@ -139,3 +150,7 @@ SC combatants are reconciled while the active turn is retained where possible.
   to start
 - the same Combat identity cannot award XP twice
 - completing Combat never leaves the Session workspace
+- group cards may expose multiple anchored treasures; location treasures appear
+  in their own left-column section and unplaced treasures remain recoverable
+- closing a Loot distribution dialog writes nothing; only `Verteilung
+  abschließen` atomically creates allocations and character-ledger entries

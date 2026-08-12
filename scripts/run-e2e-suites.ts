@@ -1,15 +1,14 @@
 import { spawn } from 'node:child_process'
 import { join } from 'node:path'
+import {
+  e2eSuiteRegistry,
+  type E2eSuiteName
+} from '../tests/e2e/support/e2e-suite-registry.js'
 
-const suites = [
-  'workspaces',
-  'create',
-  'hexLocation',
-  'restart',
-  'dialogs',
-  'sessionGeneration'
-]
-const concurrency = 2
+const suites = e2eSuiteRegistry.map((suite) => suite.name)
+// Native Electron window control and visual-golden geometry are not isolated
+// reliably across concurrent electron-service instances on the same display.
+const concurrency = 1
 let nextSuite = 0
 let failed = false
 
@@ -29,7 +28,7 @@ await Promise.all(
   })
 )
 
-function runSuite(suite: string): Promise<number> {
+function runSuite(suite: E2eSuiteName): Promise<number> {
   return new Promise((resolve) => {
     const executable = join(process.cwd(), 'node_modules', '.bin', 'wdio')
     const child = spawn(executable, ['run', 'wdio.conf.ts', '--suite', suite], {

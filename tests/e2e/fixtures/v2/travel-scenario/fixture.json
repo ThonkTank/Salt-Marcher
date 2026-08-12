@@ -1,0 +1,36 @@
+{
+  "version": 2,
+  "campaign": "Reise-Abnahme",
+  "sessionLayout": {
+    "controlPaneWidth": 300,
+    "scenarioPaneWidth": 320,
+    "centerTab": "details"
+  },
+  "locations": [
+    {
+      "displayName": "Salzscheune",
+      "tags": ["Reiseziel"],
+      "readAloud": "",
+      "notes": ""
+    }
+  ],
+  "sceneLocation": null,
+  "party": [
+    {
+      "name": "Alrik",
+      "active": true,
+      "movementSpeedFeet": null
+    }
+  ],
+  "travelScenario": {
+    "mapName": "Reiseküste",
+    "tiles": [
+      { "q": 0, "r": 0, "biomeId": "grassland" },
+      { "q": 1, "r": 0, "biomeId": "forest" },
+      { "q": 2, "r": 0, "biomeId": "grassland" }
+    ],
+    "locationName": "Salzscheune",
+    "locationCoordinate": { "q": 0, "r": 0 },
+    "partyCoordinate": { "q": 0, "r": 0 }
+  }
+}

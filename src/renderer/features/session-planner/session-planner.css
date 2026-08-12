@@ -1,0 +1,441 @@
+.session-planner {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  background: var(--surface-app);
+  color: var(--text-1);
+}
+
+.session-planner-loading {
+  display: grid;
+  width: 100%;
+  place-items: center;
+}
+
+.planner-toolbar {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  min-height: 4.4rem;
+  align-items: end;
+  gap: var(--space-4);
+  border-bottom: var(--border-width-structural) solid var(--border-structural);
+  background: var(--surface-panel);
+  padding: var(--space-4) var(--space-6);
+}
+
+.planner-toolbar label,
+.planner-fields label,
+.planner-name-dialog label {
+  display: grid;
+  gap: var(--space-1);
+  color: var(--text-2);
+  font-family: var(--font-smallcaps);
+  font-size: var(--text-ui);
+  letter-spacing: var(--tracking-caps);
+}
+
+.planner-toolbar input,
+.planner-toolbar select {
+  width: 7.4rem;
+  min-height: 2rem;
+}
+
+.planner-session-actions,
+.planner-primary-actions {
+  display: flex;
+  align-items: end;
+  gap: var(--space-2);
+}
+
+.planner-session-actions select {
+  width: 12rem;
+}
+
+.planner-session-actions > button,
+.planner-primary-actions > button,
+.planner-participant-summary {
+  min-height: 2rem;
+  padding: var(--space-2) var(--space-3);
+}
+
+.planner-participant-summary {
+  white-space: nowrap;
+}
+
+.planner-primary-actions {
+  margin-left: auto;
+}
+
+.planner-participants {
+  position: absolute;
+  top: calc(100% + 1px);
+  left: 13rem;
+  display: grid;
+  width: min(28rem, calc(100vw - 6rem));
+  max-height: 18rem;
+  overflow: auto;
+  gap: var(--space-2);
+  border: var(--border-width-structural) solid var(--border-structural);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-dialog);
+  padding: var(--space-5);
+}
+
+.planner-participants label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-family: var(--font-body);
+  letter-spacing: normal;
+}
+
+.planner-progress {
+  position: absolute;
+  right: var(--space-6);
+  bottom: calc(-2.65rem - 1px);
+  display: flex;
+  min-width: 22rem;
+  justify-content: space-between;
+  gap: var(--space-4);
+  border: 1px solid var(--border-1);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-2) var(--space-4);
+}
+
+.planner-progress span {
+  color: var(--accent-rubric);
+  font-family: var(--font-smallcaps);
+  letter-spacing: var(--tracking-caps);
+}
+
+.planner-progress small {
+  color: var(--text-2);
+}
+
+.planner-body {
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-template-columns: minmax(15rem, 21rem) minmax(28rem, 1fr) minmax(
+      13rem,
+      18rem
+    );
+}
+
+.planner-scene-list,
+.planner-inspector,
+.planner-budget {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--space-7);
+}
+
+.planner-scene-list {
+  border-right: var(--border-width-structural) solid var(--border-structural);
+  background: var(--surface-panel);
+}
+
+.planner-scene-list > header,
+.planner-inspector-header,
+.planner-inspector-section > header,
+.planner-reward-card > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.planner-scene-list h2,
+.planner-inspector h2,
+.planner-budget h2,
+.planner-name-dialog h2,
+.planner-confirm-dialog h2 {
+  margin: 0;
+  font-family: var(--font-display);
+}
+
+.planner-scene-list ol {
+  display: grid;
+  gap: var(--space-4);
+  margin: var(--space-6) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.planner-scene-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  border: 1px solid var(--border-1);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-card);
+}
+
+.planner-scene-list li > button:first-child {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: 1.6rem minmax(0, 1fr);
+  gap: var(--space-1) var(--space-3);
+  border: 0;
+  background: transparent;
+  color: var(--text-1);
+  padding: var(--space-4);
+  text-align: left;
+}
+
+.planner-scene-list li > button:first-child.selected {
+  box-shadow: inset 3px 0 var(--accent-rubric);
+  background: var(--surface-button-hover);
+}
+
+.planner-scene-list li > button:first-child > span {
+  grid-row: 1 / span 2;
+  color: var(--accent-gold);
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+}
+
+.planner-scene-list li small {
+  overflow: hidden;
+  color: var(--text-3);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.planner-order-actions {
+  display: grid;
+  align-self: stretch;
+  border-left: 1px solid var(--border-1);
+}
+
+.planner-order-actions button {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.planner-rest-gap {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: var(--space-3);
+  border-top: 1px solid var(--border-1);
+  padding: var(--space-2) var(--space-4);
+  color: var(--text-3);
+  font-size: var(--text-ui);
+}
+
+.planner-rest-gap select {
+  min-width: 0;
+  flex: 1;
+}
+
+.planner-inspector {
+  background: var(--surface-app);
+}
+
+.planner-inspector-header {
+  border-bottom: var(--border-width-structural) solid var(--border-structural);
+  padding-bottom: var(--space-5);
+}
+
+.planner-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, 0.6fr);
+  gap: var(--space-4);
+  padding: var(--space-6) 0;
+}
+
+.planner-notes-field {
+  grid-column: 1 / -1;
+}
+
+.planner-fields input,
+.planner-fields select,
+.planner-fields textarea,
+.planner-search-field input,
+.planner-allocation-field input,
+.planner-manual-notes textarea {
+  width: 100%;
+}
+
+.planner-inspector-section {
+  border-top: 1px solid var(--border-1);
+  padding: var(--space-6) 0;
+}
+
+.planner-inspector-section h3 {
+  margin: 0;
+  font-family: var(--font-smallcaps);
+  letter-spacing: var(--tracking-caps);
+}
+
+.planner-encounter-summary,
+.planner-reward-card {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  border: 1px solid var(--border-1);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-5);
+}
+
+.planner-encounter-summary span,
+.planner-reward-card small,
+.planner-packing,
+.planner-budget p,
+.planner-empty,
+.planner-unavailable {
+  color: var(--text-3);
+}
+
+.planner-encounter-summary p,
+.planner-packing,
+.planner-reward-card p {
+  margin: 0;
+}
+
+.planner-search-field,
+.planner-allocation-field {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.planner-search-results {
+  display: grid;
+  max-height: 19rem;
+  overflow: auto;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+
+.planner-search-results > button {
+  display: grid;
+  gap: var(--space-1);
+  background: var(--surface-card);
+  text-align: left;
+}
+
+.planner-reward-list,
+.planner-manual-notes {
+  display: grid;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.planner-reward-card > header > div,
+.planner-reward-card li {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.planner-reward-card > header > span {
+  border: 1px solid var(--border-1);
+  padding: var(--space-1) var(--space-3);
+  color: var(--text-3);
+  font-size: var(--text-ui);
+}
+
+.planner-reward-card > header > span.placed {
+  border-color: var(--accent-gold);
+  color: var(--text-rubric-on-card);
+}
+
+.planner-reward-card ul {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding-left: var(--space-7);
+}
+
+.planner-reward-card footer,
+.planner-name-dialog footer,
+.planner-confirm-dialog footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+.planner-manual-notes > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-2);
+}
+
+.planner-budget {
+  border-left: var(--border-width-structural) solid var(--border-structural);
+  background: var(--surface-panel);
+}
+
+.planner-budget h2 {
+  margin-top: var(--space-3);
+  color: var(--text-rubric-on-card);
+}
+
+.planner-budget dl {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-6) 0;
+}
+
+.planner-budget dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  border-bottom: 1px solid var(--border-1);
+  padding-bottom: var(--space-2);
+}
+
+.planner-budget dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.planner-empty-inspector {
+  display: grid;
+  min-height: 60%;
+  place-content: center;
+  text-align: center;
+}
+
+.planner-empty-inspector p {
+  max-width: 35rem;
+  color: var(--text-3);
+}
+
+.planner-name-dialog,
+.planner-confirm-dialog {
+  display: grid;
+  width: min(32rem, calc(100vw - 2rem));
+  gap: var(--space-6);
+  border: var(--border-width-structural) solid var(--border-structural);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-dialog);
+  padding: var(--space-8);
+}
+
+.planner-name-dialog p,
+.planner-confirm-dialog p {
+  margin: 0;
+}
+
+@media (max-width: 1100px) {
+  .planner-body {
+    grid-template-columns: minmax(14rem, 19rem) minmax(26rem, 1fr);
+  }
+
+  .planner-budget {
+    display: none;
+  }
+
+  .planner-toolbar {
+    overflow-x: auto;
+  }
+}

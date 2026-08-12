@@ -3,13 +3,19 @@ import { spawnSync } from 'node:child_process'
 import { join } from 'node:path'
 import { waitForGmRendererReady } from './tests/e2e/support/e2e-ready.js'
 import type { Browser as WdioBrowser } from 'webdriverio'
+import {
+  e2eSuite,
+  e2eSuiteRegistry,
+  isE2eSuiteName
+} from './tests/e2e/support/e2e-suite-registry.js'
 
-const suite =
+const requestedSuite =
   process.env['SALT_MARCHER_E2E_SUITE'] ?? argumentAfter('--suite') ?? 'all'
-const fixtures: Record<string, string> = {
-  restart: 'editor-data'
-}
-const fixture = fixtures[suite] ?? 'empty-installation'
+if (requestedSuite !== 'all' && !isE2eSuiteName(requestedSuite))
+  throw new Error(`Unknown E2E suite: ${requestedSuite}`)
+const suite = requestedSuite
+const fixture =
+  suite === 'all' ? 'v1/empty-installation' : e2eSuite(suite).fixture
 const runId = process.env['SALT_MARCHER_E2E_RUN_ID'] ?? `${process.pid}`
 const userData = join(
   process.cwd(),
@@ -19,13 +25,13 @@ const userData = join(
 )
 process.env['SALT_MARCHER_E2E'] = 'true'
 process.env['SALT_MARCHER_E2E_SUITE'] = suite
+if (suite === 'sessionGeneration')
+  process.env['SALT_MARCHER_E2E_PREPARATION_STAGE_DELAY_MS'] ??= '3000'
 rmSync(userData, { recursive: true, force: true })
 mkdirSync(userData, { recursive: true })
-cpSync(
-  join(process.cwd(), 'tests', 'e2e', 'fixtures', 'v1', fixture),
-  userData,
-  { recursive: true }
-)
+cpSync(join(process.cwd(), 'tests', 'e2e', 'fixtures', fixture), userData, {
+  recursive: true
+})
 const materialized = spawnSync(
   join(process.cwd(), 'node_modules', '.bin', 'tsx'),
   ['scripts/materialize-e2e-fixture.ts', '--user-data', userData],
@@ -40,21 +46,13 @@ if (materialized.status !== 0)
 export const config = {
   runner: 'local',
   specs: ['./tests/e2e/**/*.e2e.ts'],
-  suites: {
-    create: ['./tests/e2e/campaign-walking.e2e.ts'],
-    hexLocation: ['./tests/e2e/hex-location-workflow.e2e.ts'],
-    restart: ['./tests/e2e/campaign-restart.e2e.ts'],
-    dialogs: ['./tests/e2e/dialog-architecture.e2e.ts'],
-    sessionGeneration: ['./tests/e2e/session-generation.e2e.ts'],
-    workspaces: ['./tests/e2e/workspace-isolation.e2e.ts']
-  },
+  suites: Object.fromEntries(
+    e2eSuiteRegistry.map((entry) => [entry.name, [entry.spec]])
+  ),
   maxInstances: 1,
   autoXvfb: true,
   services: [
-    [
-      'electron',
-      { captureMainProcessLogs: false, mainProcessLogLevel: 'error' }
-    ]
+    ['electron', { captureMainProcessLogs: true, mainProcessLogLevel: 'error' }]
   ],
   capabilities: [
     {
@@ -81,7 +79,7 @@ export const config = {
   ) => {
     await waitForGmRendererReady(client)
   },
-  mochaOpts: { ui: 'bdd', timeout: 120_000 }
+  mochaOpts: { ui: 'bdd', timeout: 180_000 }
 }
 
 function argumentAfter(name: string): string | undefined {

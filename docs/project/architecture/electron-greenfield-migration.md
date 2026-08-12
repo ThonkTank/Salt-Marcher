@@ -42,8 +42,8 @@ accounts for the bounded virtual biome catalog and CRUD surface added with
 schema 15; schema 16 replaced separate World Location kind and region fields
 with tags and read-aloud text, and schema 17 normalizes ordered location-owned
 tags into validated rows while all per-entry ceilings remain unchanged.
-Development schema 22, Generator Config V3, and Session engine
-`saltmarcher-v4` are current. Schema 21 is reset rather than migrated. The
+Development schema 26, Generator Config V3, and Session engine
+`saltmarcher-v5` are current. Schema 25 is reset rather than migrated. The
 versioned behavior and ownership are recorded in the
 [Encounter Generation requirements](../../encounter/requirements/requirements-encounter-generation.md)
 and ADRs 0001/0002; this progress record does not duplicate them. The bundle
@@ -78,6 +78,17 @@ integration owns its revision-free placement draft. Location tags use ordered
 relational rows and a bounded suggestion capability, selection controls share
 one keyboard-accessible combobox primitive, and the typed German copy catalog
 is assembled from bounded feature dictionaries.
+Session travel now follows the same ownership model: Session is a small layout
+composer with explicit map/scenario slots, the Workspace integration lazily
+selects a provider, Travel owns the generic reducer and request gates, and Hex
+owns the only current adapter. Hex mutations return Travel and Session
+projections together; evaluation failures and travel hints are structured codes
+rather than localized domain strings. Pointer handling is an exclusive gesture
+state machine, keyboard navigation is a Pixi-free command controller, and the
+former feature-wide Session/Hex stylesheets are split into component-owned
+files without reciprocal selectors.
+The travel E2E suite uses one versioned, materialized fixture registered in the
+central suite catalog rather than browser-side seed logic.
 
 The editor application-layer refactor tracks its normative evidence in
 `application-layer-refactor-acceptance-matrix.md`. It moves the two-step
@@ -144,14 +155,23 @@ catalogs, encounter lifecycle, editable loot, and pure TypeScript rules.
 Implement confirmed behavior anew with Golden Masters, reference snapshots,
 seeds, stable ordering, and explainable diffs.
 
-Current progress: the `saltmarcher-v4` encounter-intent capability now runs in
+Current progress: the `saltmarcher-v5` generation capability now runs in
 the utility process over a packaged, manifest-verified session-generation
 catalog. It covers session XP, exact encounter-target allocation, the Sheet-v1
 automatic encounter-count rule, generated preset role/CR candidate construction,
-streaming lexicographic selection, difficulty, bossiness, and integrity audits. The capability returns
-structured immutable intents and is not yet a Session Planner UI or persisted
-GeneratedRun. Loot generation, generated-run persistence, concrete creature
-resolution, and planner integration remain separate follow-up slices.
+streaming lexicographic selection, difficulty, bossiness, reward channels,
+normal and overstock treasures, item and magic resolution, packing, and
+integrity audits. Complete immutable GeneratedRuns are campaign-persisted and
+deduplicated by semantic-origin fingerprint in owner-prefixed root and child
+tables. The dedicated Session Planner authors persisted timelines and performs
+one staged Generate flow that commits the run, concrete Encounter-owned saved
+plans, rests, and typed reward references before one optimistic Planner
+replacement. Generated rewards materialize idempotently as editable Treasures.
+Loot owns exclusive unplaced/location/group anchors, unresolved-reference
+fallbacks, atomic partial distribution, original-result retry receipts, and a
+separate append-only Character Loot ledger with linked corrections. Session
+group/location cards, Encounter Resolution, Party/Roster, and the shared
+distribution dialog consume those typed capabilities.
 
 ### M6 — completeness and first data-format release
 
@@ -182,6 +202,14 @@ accessibility evidence is attached. This is a gate, not a reason to weaken the
 
 ## Approved vertical slice in progress
 
+**Go/No-Go scope record — 2026-08-09.** The owner-approved implementation
+exception includes the complete Session Planner and Loot vertical slice:
+immutable normalized GeneratedRuns, concrete generated Encounter plans, typed
+Treasure acceptance and anchoring, atomic distribution, and the Character Loot
+ledger. This records authorization before the slice's implementation without
+claiming that the open M1 qualification gate has passed or authorizing unrelated
+feature expansion.
+
 The first running-play slice crosses the roadmap labels deliberately without
 claiming completion of M3 or M5. Its approved expansion contains:
 
@@ -192,7 +220,7 @@ claiming completion of M3 or M5. Its approved expansion contains:
 - anchored burger-menu Campaign CRUD without an icon-rail Campaign workspace,
   including rename, recoverable trash/restore, exact-name permanent deletion,
   and crash-reconciled `.trash`/`.deleting` directory transitions in the
-  complete greenfield schema v8
+  complete greenfield schema v26
 - the productive Monster section of the common Catalog, backed by a versioned
   local SRD 5.1 resource; Items, saved Encounters, and NPCs remain later
   Catalog products
@@ -203,12 +231,34 @@ claiming completion of M3 or M5. Its approved expansion contains:
   two-pane builder creates empty or populated groups and combines the shared
   filtered creature catalog, transient manual editing, live balancing, and
   fill-or-replace generation for new or existing groups before an explicit save
-- a scenario dropdown for Encounter and read-only Reise; Encounter consumes
+- a scenario dropdown for Encounter and an interactive provider-owned Reise
+  console; Encounter consumes
   only selected Scene groups and owns difficulty evaluation, Initiative,
   Combat turn state, and Resolution, with a four-phase breadcrumb, monster-only
   initiative rolls, Scene-owned individual member HP/conditions, bounded
-  persisted undo, Group-Manager reinforcement, and the explicit no-loot state
-  until Loot migrates
+  persisted undo and Group-Manager reinforcement; Resolution consumes typed
+  group treasure identities and opens the shared Loot distribution dialog
+- a dedicated Session Planner rail workspace with persisted Session CRUD,
+  participants, ordered editable Scenes, rest gaps, saved Encounter search,
+  live XP budget, atomic dirty-save switching, and one cancellable preparation
+  flow that turns a complete GeneratedRun into concrete Encounter plans and
+  typed reward cards without an intermediate Apply step
+- immutable `saltmarcher-v5` GeneratedRuns over all 16 manifest-verified local
+  catalog tables, exact CP/rational budget stages, isolated named SHA-256
+  entropy streams, structured rewards/packing/audits, normalized child storage,
+  and idempotency by semantic-origin fingerprint; the public encounter-only
+  generation operation has been retired
+- campaign-local mutable Treasures with exactly one unplaced, location, or
+  Scene-group anchor, multiple treasures per anchor, repairable last-known
+  labels, idempotent generated acceptance, shared Encounter/Quest distribution,
+  transactionally coupled allocations and ledger awards, and append-only linked
+  ledger corrections
+- inline group-draft reward generation with normalized living/dead provenance,
+  hidden independent entropy, a renderer-local editable Treasure draft,
+  per-Group undo/redo caching and discard protection, an immutable-run-pinned
+  searchable Loot catalog, informational value/magic budgets, and one atomic
+  idempotent Group-plus-edited-Treasure confirmation command; the existing Loot
+  provenance columns support this without a schema migration
 - a persistent three-column Session surface with independently resizable
   control/group and scenario columns around a flexible Details/Katalog/Karte
   center, focused-scene control, shared catalog filtering, app-lifetime
@@ -244,7 +294,9 @@ claiming completion of M3 or M5. Its approved expansion contains:
 - one campaign-local Hex vertical slice now connects a Pixi editor, shared
   installation-owned biome IDs, World Planner location placement, focused-Scene
   Party position, waypoint route planning, durable checkpoints and Scene time,
-  and the Session Karte/Reise surfaces; its editor exposes visible brush levels
+  and the shared Session Karte/Reise state; Karte is a borderless canvas while
+  Reise owns map selection, accessible Party placement, route planning,
+  evaluation, and runtime transport controls; its editor exposes visible brush levels
   `1..10` over mathematical radii `0..9`, immediate catalog-location placement,
   location-owned marker presentation, and installation-wide custom one-path SVG
   symbols; a paged virtual palette owns protected built-ins and unlimited
@@ -258,8 +310,8 @@ claiming completion of M3 or M5. Its approved expansion contains:
   explicitly pinned cards as movable memory-only windows
 
 Encounter-table, faction, and location filter controls appear only when their
-owning providers publish real options. NPC membership, loot links, and stock
-consumption remain later work. The slice uses only secure typed capabilities
+owning providers publish real options. NPC membership and stock consumption
+remain later work. The slice uses only secure typed capabilities
 and utility-process-owned feature stores; it does not introduce copied creature
 truth, a Java compatibility layer, or claim that the open M1 qualification
 gate is complete.

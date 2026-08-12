@@ -7,6 +7,7 @@ import { CampaignStore } from '../../src/core/persistence/sqlite/campaign-store.
 import { uuidv7 } from '../../src/shared/ids/uuidv7.js'
 import type { GeneratorPresetConfigV3 } from '../../src/shared/contracts/generator-presets.js'
 import { defaultGeneratorConfig } from '../../src/shared/generator/system-generator-preset.js'
+import { CampaignRulesService } from '../../src/core/application/campaign-rules-service.js'
 
 const roots: string[] = []
 
@@ -467,20 +468,44 @@ describe('live party, scene groups and combat', () => {
         1
       )
     )
+    const staleRulesRevision =
+      session.combat?.resolution?.campaignRulesRevision ?? -1
+    new CampaignRulesService(() => campaigns.activeCampaignDatabase()).update({
+      commandId: uuidv7(),
+      expectedRevision: staleRulesRevision,
+      rewardXpBasis: 'adjusted'
+    })
+    expect(() =>
+      play.awardXp(session.combat?.revision ?? -1, staleRulesRevision)
+    ).toThrow('stale')
+    session = play.readSession()
+    expect(session.combat?.resolution).toMatchObject({
+      rewardXpBasis: 'adjusted',
+      eligibleBaseXp: 300,
+      eligibleAdjustedXp: 750,
+      eligibleRewardXp: 750,
+      campaignRulesRevision: 1
+    })
     session = sessionAfter(play, () =>
-      play.awardXp(session.combat?.revision ?? -1)
+      play.awardXp(
+        session.combat?.revision ?? -1,
+        session.combat?.resolution?.campaignRulesRevision ?? -1
+      )
     )
 
     expect(session.combat?.resolution?.xpAwarded).toBe(true)
-    expect(session.combat?.resolution?.perPlayerXp).toBe(150)
+    expect(session.combat?.resolution?.perPlayerXp).toBe(375)
     expect(
       session.party.members
         .filter((member) => member.active)
         .map((member) => member.xp)
-    ).toEqual([1050, 1050])
-    expect(() => play.awardXp(session.combat?.revision ?? -1)).toThrow(
-      'validation'
-    )
+    ).toEqual([1275, 1275])
+    expect(() =>
+      play.awardXp(
+        session.combat?.revision ?? -1,
+        session.combat?.resolution?.campaignRulesRevision ?? -1
+      )
+    ).toThrow('validation')
     campaigns.close()
   })
 

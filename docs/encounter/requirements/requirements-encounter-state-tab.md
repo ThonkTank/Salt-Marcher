@@ -20,8 +20,9 @@ groups already present in the focused runtime Scene.
 - `Combat` shows the four-step breadcrumb, round, active and completed turns,
   front-member mob HP, living count, AC, initiative, conditions, undo,
   Group-Manager reinforcement, and direct transition to Resolution.
-- `Resolution` shows defeated-enemy selection, XP controls, the no-loot notice,
-  one idempotent award action, and return to Selection.
+- `Resolution` shows defeated-enemy selection, XP controls, typed available
+  Treasures or the honest no-loot state, the shared distribution action, one
+  idempotent XP-award action, and return to Selection.
 - `Reise` shows either an approved compact Dungeon/Hex readback or the explicit
   `Kein aktiver Reisekontext` state. It exposes no movement commands.
 

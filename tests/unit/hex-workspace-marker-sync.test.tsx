@@ -2,7 +2,7 @@
 
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { ReactNode } from 'react'
+import { useEffect, useMemo, type ReactNode } from 'react'
 import type { SaltMarcherApi } from '../../src/shared/contracts/capability-api.js'
 import type {
   HexChangeNotice,
@@ -29,9 +29,11 @@ vi.mock('../../src/renderer/features/hex/hex-map-canvas.js', () => ({
 }))
 
 import { HexLocationPlacementDialog } from '../../src/renderer/features/hex/hex-location-placement-dialog.js'
-import { createHexLocationPlacementProjectionPort } from '../../src/renderer/features/hex/hex-location-placement-port.js'
+import { createHexMapProjectionPort } from '../../src/renderer/features/hex/hex-map-projection-port.js'
 import { createWorldLocationPlacementCommitter } from '../../src/renderer/features/hex/world-location-placement-commit.js'
 import { SessionHexMap } from '../../src/renderer/features/hex/hex-workspaces.js'
+import { createHexTravelProviderPort } from '../../src/renderer/features/hex/hex-travel-provider-port.js'
+import { useTravelController } from '../../src/renderer/features/travel/use-travel-controller.js'
 
 const campaignId = '01900000-0000-7000-8000-000000000080'
 const mapId = '01900000-0000-7000-8000-000000000081'
@@ -87,7 +89,12 @@ function capabilityFixture() {
       readChunks: vi
         .fn()
         .mockImplementation(
-          (_mapId: string, keys: readonly { q: number; r: number }[]) =>
+          ({
+            keys
+          }: {
+            mapId: string
+            keys: readonly { q: number; r: number }[]
+          }) =>
             Promise.resolve({
               map: summary,
               biomes: [],
@@ -132,15 +139,34 @@ function capabilityFixture() {
             })
         ),
       commandReceipt: vi.fn().mockResolvedValue(null),
+      runtimeOverlays: vi.fn().mockResolvedValue({ overlays: [] }),
       onChanged
     },
     hexTravel: {
       read: vi.fn().mockResolvedValue({
-        mapId,
-        current: null,
-        path: [],
-        hint: '',
-        status: 'ready'
+        travel: {
+          revision: 0,
+          sceneId,
+          mapId,
+          mapName: 'Küste',
+          current: null,
+          currentLabel: null,
+          locationId: null,
+          locationName: null,
+          path: [],
+          currentIndex: 0,
+          segmentStartedAt: null,
+          segmentEndsAt: null,
+          progress: 1,
+          remainingGameSeconds: 0,
+          gameTimeSeconds: 0,
+          effectiveSpeedFeet: 30,
+          assumedSpeedMemberNames: [],
+          multiplier: 1,
+          hintCode: 'ready',
+          status: 'ready'
+        },
+        session
       })
     },
     session: {
@@ -183,16 +209,28 @@ const location = {
   mapPresentation: { symbolId }
 } as unknown as WorldLocation
 
+function IntegratedSessionMap(props: { api: SaltMarcherApi }) {
+  const port = useMemo(
+    () => createHexTravelProviderPort(props.api),
+    [props.api]
+  )
+  useEffect(() => () => port.dispose(), [port])
+  const controller = useTravelController({
+    port,
+    snapshot: session,
+    setSnapshot: vi.fn(),
+    onError: vi.fn(),
+    active: true
+  })
+  return <SessionHexMap controller={controller} />
+}
+
 describe('shared Hex marker synchronization', () => {
   it('refreshes an open Session map after an exact marker invalidation', async () => {
     const fixture = capabilityFixture()
     render(
       <Providers api={fixture.api}>
-        <SessionHexMap
-          snapshot={session}
-          setSnapshot={vi.fn()}
-          onError={vi.fn()}
-        />
+        <IntegratedSessionMap api={fixture.api} />
       </Providers>
     )
     const marker = await screen.findByTestId('Hex-Karte Küste-marker')
@@ -212,7 +250,7 @@ describe('shared Hex marker synchronization', () => {
           close={vi.fn()}
           onPlaced={vi.fn()}
           onError={vi.fn()}
-          port={createHexLocationPlacementProjectionPort(fixture.api)}
+          port={createHexMapProjectionPort(fixture.api)}
           mapCreation={{ createMap: vi.fn() }}
           commitPlacement={createWorldLocationPlacementCommitter(fixture.api)}
           failureText={(failure) => failure.kind}

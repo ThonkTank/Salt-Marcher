@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useReducer, useState } from 'react'
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useReducer,
+  useState
+} from 'react'
 import './encounter-generator-settings.css'
 import type {
   GeneratorPresetConfigV3,
@@ -27,9 +34,16 @@ import {
   GeneratorRoleCombinations,
   GeneratorRoleQuantities
 } from './generator-composition-rules.js'
+import type { CampaignRewardRulesPort } from './campaign-reward-rules-port.js'
+
+const LazyCampaignRewardRulesCard = lazy(async () => {
+  const module = await import('./campaign-reward-rules-card.js')
+  return { default: module.CampaignRewardRulesCard }
+})
 
 export function EncounterGeneratorSettings(props: {
   application: GeneratorPresetApplicationPort
+  campaignRules?: CampaignRewardRulesPort
   activeCampaignId: string | null
   partySize: number
   onClose: () => void
@@ -212,6 +226,16 @@ export function EncounterGeneratorSettings(props: {
           </ModalCloseButton>
         </header>
         <div className="settings-dialog-body">
+          {props.campaignRules && (
+            <Suspense fallback={null}>
+              <LazyCampaignRewardRulesCard
+                key={props.activeCampaignId}
+                campaignRules={props.campaignRules}
+                activeCampaignId={props.activeCampaignId}
+                onError={props.onError}
+              />
+            </Suspense>
+          )}
           {!config || !snapshot ? (
             <p role="status">{message('g.loading')}</p>
           ) : (

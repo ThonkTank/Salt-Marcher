@@ -5,12 +5,13 @@ import type { WorkspaceSurfaceProps } from './workspace-surface-props.js'
 import sessionIcon from '../../assets/icons/session.svg?url'
 import hexIcon from '../../assets/icons/hex.svg?url'
 import catalogIcon from '../../assets/icons/catalog.svg?url'
+import plannerIcon from '../../assets/icons/planner.svg?url'
 
 export type WorkspaceId = Exclude<SurfaceId, 'application'>
 
 export type WorkspaceDefinition = Readonly<{
   id: WorkspaceId
-  label: 'nav.session' | 'nav.hex' | 'nav.catalog'
+  label: 'nav.session' | 'nav.planner' | 'nav.hex' | 'nav.catalog'
   icon: string
   layout: 'cockpit' | 'scroll'
   load: () => Promise<{ default: ComponentType<WorkspaceSurfaceProps> }>
@@ -30,6 +31,14 @@ export const workspaceDefinitions: readonly WorkspaceDefinition[] = [
     layout: 'cockpit',
     load: () => import('./surfaces/session-surface.js'),
     recovery: { ...recoverToSession, renderFailure: 'remount' }
+  },
+  {
+    id: 'planner',
+    label: 'nav.planner',
+    icon: plannerIcon,
+    layout: 'cockpit',
+    load: () => import('./surfaces/planner-surface.js'),
+    recovery: recoverToSession
   },
   {
     id: 'hex',

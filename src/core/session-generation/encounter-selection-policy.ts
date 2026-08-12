@@ -4,6 +4,7 @@ import type {
   EncounterRole
 } from './catalog.js'
 import { compareText, type EncounterEntropy } from './deterministic-order.js'
+import { encounterCandidateStream } from './entropy-streams.js'
 import {
   effectiveEncounterMultiplier,
   quantityMultiplier
@@ -57,7 +58,6 @@ export type SoftConstraintDiagnostic = Readonly<{
   minimum: number
   maximum: number
   normalizedDistance: number
-  message: string
 }>
 
 export type CompositionMetrics = Readonly<{
@@ -344,9 +344,9 @@ export function buildEncounterIntents(
       effectiveMonsterCount: composition.metrics.effectiveMonsterCount,
       xpMultiplier: composition.metrics.xpMultiplier,
       bossinessRank: ranks[index]!,
-      constraintDiagnostics: composition.diagnostics.map(
-        (diagnostic) => diagnostic.message
-      )
+      constraintDiagnostics: composition.diagnostics.map((diagnostic) => ({
+        ...diagnostic
+      }))
     }
   })
 }
@@ -376,19 +376,16 @@ function candidate(
   const diagnostics = [
     rangeDiagnostic(
       'statblocks',
-      'Statblöcke',
       statblockCount,
       config.composition.statblocks
     ),
     rangeDiagnostic(
       'monsters',
-      'Monster',
       monsterCount,
       resolveRange(config.composition.monsters, partySize)
     ),
     rangeDiagnostic(
       'initiativeSlots',
-      'Init-Slots',
       initiativeSlots,
       resolveRange(config.composition.initiativeSlots, partySize)
     )
@@ -615,7 +612,9 @@ function candidateEntropy(
   encounterNumber: number,
   entropy: EncounterEntropy
 ): number {
-  return entropy.unit(`${seed}|encounter:${encounterNumber}:${candidateId}`)
+  return entropy.unit(
+    encounterCandidateStream(seed, encounterNumber, candidateId)
+  )
 }
 
 function compareCandidateDomain(
@@ -648,7 +647,6 @@ export function resolveRange(
 
 function rangeDiagnostic(
   constraint: SoftConstraintDiagnostic['constraint'],
-  label: string,
   value: number,
   range: { min: number; max: number }
 ): SoftConstraintDiagnostic | null {
@@ -658,8 +656,7 @@ function rangeDiagnostic(
     value,
     minimum: range.min,
     maximum: range.max,
-    normalizedDistance: rangeDistance(value, range),
-    message: `${label}: ${value} liegt außerhalb ${formatNumber(range.min)}–${formatNumber(range.max)}.`
+    normalizedDistance: rangeDistance(value, range)
   }
 }
 
@@ -670,10 +667,6 @@ function rangeDistance(
   if (value < range.min) return (range.min - value) / Math.max(1, range.min)
   if (value > range.max) return (value - range.max) / Math.max(1, range.max)
   return 0
-}
-
-function formatNumber(value: number): string {
-  return Number.isInteger(value) ? String(value) : value.toFixed(1)
 }
 
 function estimatedInitiativeSlots(

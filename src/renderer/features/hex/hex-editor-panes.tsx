@@ -35,6 +35,8 @@ import { brushLevelToRadius } from './hex-brush.js'
 import type { BiomeCatalogCapabilities } from './biome-catalog-capabilities.js'
 import type { BiomeDefinition } from '../../../shared/contracts/biome.js'
 import { BiomePalette } from './biome-palette.js'
+import './hex-editor-panes.css'
+import './hex-location-tools.css'
 
 export function HexCatalogPane(props: {
   catalog: HexMapCatalogSnapshot

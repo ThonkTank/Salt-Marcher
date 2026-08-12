@@ -1,16 +1,16 @@
 {
-  "recordedAt": "2026-08-09",
-  "reason": "Optional Scene group names allocate generic names while the reachable renderer remains below the fixed 3,104,870-byte refactor target",
-  "dependencyRationale": "No dependency version changed; common Workspace grew by 8 bytes while Session fell by 97 bytes and the reachable renderer fell by 89 bytes",
-  "chunkRationale": "The optional-name hint and save behavior remain in the existing Session leaf; route ownership and every bundle limit remain unchanged",
+  "recordedAt": "2026-08-11",
+  "reason": "Editable group Loot drafts add the pinned catalog, inline editing, history, and budget while every fixed renderer ceiling remains unchanged",
+  "dependencyRationale": "No dependency version changed; the feature uses the existing React, capability, and Loot editor boundaries",
+  "chunkRationale": "The catalog and inline editor remain dedicated lazy leaves; only transient draft coordination stays in the Session route for roster invalidation and per-Group caching",
   "graphs": {
-    "shell": 773252,
-    "workspace": 1045738,
-    "session": 347070,
-    "catalog": 365410,
-    "hex": 353671,
-    "reference": 97770,
-    "pixi": 1257760,
-    "reachable": 3104656
+    "shell": 773304,
+    "workspace": 917164,
+    "session": 377686,
+    "catalog": 342291,
+    "hex": 337747,
+    "reference": 97910,
+    "pixi": 1077229,
+    "reachable": 2981101
   }
 }

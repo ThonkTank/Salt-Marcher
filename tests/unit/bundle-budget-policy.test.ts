@@ -6,6 +6,7 @@ import {
   excessiveBundleGrowth
 } from '../../scripts/bundle-budget-policy.js'
 import { parseBundleBaselineUpdateArguments } from '../../scripts/bundle-baseline-update.js'
+import { resolveBundleManifestEntry } from '../../scripts/bundle-manifest-entry.js'
 
 describe('bundle baseline growth policy', () => {
   it('allows exactly 16 KiB and reports only larger graph growth', () => {
@@ -71,5 +72,52 @@ describe('bundle baseline update arguments', () => {
       dependencyRationale: 'no dependency change',
       chunkRationale: 'shared shell code remains in the shell graph'
     })
+  })
+})
+
+describe('bundle manifest entry identity', () => {
+  const manifest = {
+    source: {
+      file: 'source.js',
+      src: 'features/example.ts',
+      name: 'renamed',
+      isDynamicEntry: true
+    },
+    fallback: {
+      file: 'fallback.js',
+      name: 'workspace',
+      isDynamicEntry: true
+    }
+  }
+
+  it('prefers the stable source path and falls back to a typed dynamic name', () => {
+    expect(
+      resolveBundleManifestEntry(manifest, {
+        label: 'example',
+        src: 'features/example.ts',
+        name: 'workspace',
+        isDynamicEntry: true
+      })
+    ).toBe('source')
+    expect(
+      resolveBundleManifestEntry(manifest, {
+        label: 'workspace',
+        src: 'features/missing.ts',
+        name: 'workspace',
+        isDynamicEntry: true
+      })
+    ).toBe('fallback')
+  })
+
+  it('reports every ambiguous graph candidate', () => {
+    expect(() =>
+      resolveBundleManifestEntry(
+        {
+          first: { file: 'first.js', name: 'leaf', isDynamicEntry: true },
+          second: { file: 'second.js', name: 'leaf', isDynamicEntry: true }
+        },
+        { label: 'leaf', name: 'leaf', isDynamicEntry: true }
+      )
+    ).toThrow(/first\.js[\s\S]*second\.js/)
   })
 })

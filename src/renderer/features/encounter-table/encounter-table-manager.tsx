@@ -34,7 +34,7 @@ import {
 } from './encounter-table-draft.js'
 import type { EncounterTableEditorRenderProps } from './encounter-table-editor-types.js'
 import type { EncounterTableSaveResult } from './encounter-table-editor-types.js'
-import { encounterTableEditorSubmissionSchema } from './encounter-table-editor-submission.js'
+import { parseEncounterTableEditorSubmission } from './encounter-table-editor-submission.js'
 import { allocateEncounterTableShares } from './encounter-table-shares.js'
 import {
   executePersistedSubmission,
@@ -140,7 +140,7 @@ export function EncounterTableDialog(props: EncounterTableEditorRenderProps) {
   }
 
   async function save() {
-    const submissionDraft = encounterTableEditorSubmissionSchema.safeParse(
+    const submissionDraft = parseEncounterTableEditorSubmission(
       encounterTableDraftValue(draft)
     )
     if (busy || persisted || !submissionDraft.success) return

@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import {
   parseVisualGoldenUpdateArguments,
   selectedVisualGoldens,
+  validateVisualGoldenSuites,
   type VisualGoldenEntry
 } from '../../scripts/visual-golden-policy.js'
 
@@ -42,5 +43,20 @@ describe('visual golden update policy', () => {
     expect(assertions).toContain('entry.suite')
     expect(assertions).toContain('entry.viewport.width')
     expect(assertions).toContain('entry.viewport.height')
+  })
+
+  it('rejects duplicate names and suites missing from the E2E registry', () => {
+    expect(() =>
+      validateVisualGoldenSuites(entries, new Set(['locations']))
+    ).not.toThrow()
+    expect(() =>
+      validateVisualGoldenSuites(entries, new Set(['other']))
+    ).toThrow('unknown E2E suite')
+    expect(() =>
+      validateVisualGoldenSuites(
+        [...entries, entries[0]!],
+        new Set(['locations'])
+      )
+    ).toThrow('Duplicate')
   })
 })

@@ -1,7 +1,7 @@
-import { useMemo, type ReactNode } from 'react'
+import { useEffect, useMemo, type ReactNode } from 'react'
 import { useCapabilityApi } from '../../../capabilities/use-capability-api.js'
 import { HexLocationPlacementDialog } from '../../hex/hex-location-placement-dialog.js'
-import { createHexLocationPlacementProjectionPort } from '../../hex/hex-location-placement-port.js'
+import { createHexMapProjectionPort } from '../../hex/hex-map-projection-port.js'
 import { createHexMapApplicationPort } from '../../hex/hex-map-creation-port.js'
 import { createWorldLocationPlacementCommitter } from '../../hex/world-location-placement-commit.js'
 import type { HexWorldLocationCreationIntegrationProps } from '../../hex/hex-world-location-creation-port.js'
@@ -34,8 +34,9 @@ export function useWorldLocationEditingIntegration(options: {
     inspect: options.inspect,
     onError: options.onError
   })
+  const port = useMemo(() => createHexMapProjectionPort(api), [api])
+  useEffect(() => () => port.dispose(), [port])
   return useMemo(() => {
-    const port = createHexLocationPlacementProjectionPort(api)
     const mapCreation = createHexMapApplicationPort(api)
     const creationPort = createWorldLocationApplicationPort(api)
     const commitPlacement = createWorldLocationPlacementCommitter(api)
@@ -56,7 +57,7 @@ export function useWorldLocationEditingIntegration(options: {
             port={port}
             mapCreation={mapCreation}
             suggestTags={(query, limit) =>
-              api.locations.suggestTags(query, limit)
+              api.locations.suggestTags({ query, limit: limit ?? 20 })
             }
             failureText={worldLocationPlacementFailureText}
             relatedCreation={relatedCreation}
@@ -72,7 +73,7 @@ export function useWorldLocationEditingIntegration(options: {
             {...props}
             port={creationPort}
             suggestTags={(query, limit) =>
-              api.locations.suggestTags(query, limit)
+              api.locations.suggestTags({ query, limit: limit ?? 20 })
             }
             relatedCreation={relatedCreation}
             mapCreation={mapCreation}
@@ -91,5 +92,5 @@ export function useWorldLocationEditingIntegration(options: {
         />
       )
     }
-  }, [api, options.onError, relatedDialogs])
+  }, [api, options.onError, port, relatedDialogs])
 }

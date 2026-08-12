@@ -37,16 +37,26 @@ const definitions: readonly BiomeDefinition[] = Array.from(
 )
 
 function fixture() {
-  const search = vi.fn((query: string, offset: number, limit: number) => {
-    void query
-    return Promise.resolve({
-      revision: 7,
-      total: definitions.length,
+  const search = vi.fn(
+    ({
+      query,
       offset,
-      limit,
-      biomes: definitions.slice(offset, offset + limit)
-    })
-  })
+      limit
+    }: {
+      query: string
+      offset: number
+      limit: number
+    }) => {
+      void query
+      return Promise.resolve({
+        revision: 7,
+        total: definitions.length,
+        offset,
+        limit,
+        biomes: definitions.slice(offset, offset + limit)
+      })
+    }
+  )
   const create = vi.fn().mockResolvedValue({
     revision: 8,
     biome: definitions[1]
@@ -54,7 +64,7 @@ function fixture() {
   const capabilities = {
     biomes: {
       search,
-      detail: vi.fn((id: string) =>
+      detail: vi.fn(({ id }: { id: string }) =>
         Promise.resolve(definitions.find((biome) => biome.id === id)!)
       ),
       create,
@@ -96,7 +106,9 @@ describe('BiomePalette', () => {
     expect(view.container.querySelectorAll('.hex-biome-tile')).toHaveLength(21)
     const viewport = view.container.querySelector('.hex-biome-viewport')!
     fireEvent.scroll(viewport, { target: { scrollTop: 1_280 } })
-    await waitFor(() => expect(search).toHaveBeenCalledWith('', 60, 30))
+    await waitFor(() =>
+      expect(search).toHaveBeenCalledWith({ query: '', offset: 60, limit: 30 })
+    )
     expect(
       view.container.querySelectorAll('.hex-biome-tile').length
     ).toBeLessThan(30)
@@ -115,12 +127,14 @@ describe('BiomePalette', () => {
     })
     fireEvent.click(screen.getByRole('button', { name: 'Erstellen' }))
     await waitFor(() => expect(create).toHaveBeenCalledOnce())
-    expect(create.mock.calls[0]?.[1]).toMatchObject({
-      displayName: 'Kristallsteppe',
-      passable: true,
-      travelCost: 1,
-      encounterTableIds: []
+    expect(create.mock.calls[0]?.[0]).toMatchObject({
+      biome: {
+        displayName: 'Kristallsteppe',
+        passable: true,
+        travelCost: 1,
+        encounterTableIds: []
+      },
+      expectedRevision: 7
     })
-    expect(create.mock.calls[0]?.[2]).toBe(7)
   })
 })

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { SESSION_GENERATION_ENGINE_VERSION } from '../../shared/contracts/session-generation.js'
 import type { EncounterEntropy } from '../../core/session-generation/deterministic-order.js'
+import type { EntropyStream } from '../../core/session-generation/entropy-streams.js'
 
 export const sha256EncounterEntropy: EncounterEntropy = {
   modulo(stream, modulus) {
@@ -13,7 +14,7 @@ export const sha256EncounterEntropy: EncounterEntropy = {
   }
 }
 
-function digest(stream: string): Buffer {
+function digest(stream: EntropyStream): Buffer {
   return createHash('sha256')
     .update(`${SESSION_GENERATION_ENGINE_VERSION}|${stream}`)
     .digest()

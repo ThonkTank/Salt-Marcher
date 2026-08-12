@@ -1,64 +1,71 @@
-# Hex Travel State Requirements
+# Hex Travel Console Requirements
 
 ## Goal
 
-Define the compact read-mostly travel-state surface shown in the runtime
-`Reise` tab for overworld or hex travel context.
+Define the Hex-owned interactive travel console shown in the Session `Reise`
+scenario pane beside the shared map canvas.
 
 ## Non-Goals
 
-- the interactive hex travel workspace
 - hex editor behavior
-- dungeon-specific travel context
+- Dungeon-specific travel controls
 - shared map-canvas contract design
+- a second copy of route or Party-position truth
 
 ## Visible Structure
 
-- one compact location row
-- one travel-status badge
-- a small key-value block for weather, time of day, and pace
-- one concise interaction or context hint
-- compact controls for opening the map, presentation speed, pause, resume, and
-  abort
+- one Hex-map selector
+- current named location or explicit coordinate/empty fallback
+- route-planning toggle, route clearing, and accessible Party placement
+- icon controls for start, pause/resume, stop, slower, and faster
+- a three-column route evaluation for duration, expanded Hex count, and cost
+- one concise selected-Hex row with coordinates, biome, and travel cost
+- `Karte öffnen` while another Session center tab is active
 
 ## Required Behavior
 
-- when the active party is travelling on a hex map, the runtime tab labeled
-  `Reise` MUST show hex travel context rather than a generic placeholder
-- the surface MUST communicate current location or lack of location
-- the surface MUST communicate visible overworld travel context such as
-  weather, time of day, and pace
-- the surface MUST remain compact and read-mostly
-- the surface MUST NOT duplicate the interactive hex travel workspace
-- when no current hex location is available, the surface MUST show an explicit
-  empty state
-- the surface MUST consume an approved Hex runtime readback and MUST NOT infer
-  Hex travel context from editor-only map selection
-- route planning, administrative placement, and route start MUST remain in the
-  map; runtime pause/resume/abort and presentation speed remain in this tab
-- Hex MUST publish its compact context as typed readback for the feature-neutral
-  Travel capability; Hex MUST NOT remain the permanent owner of the global
-  `travel` shell contribution
+- the console and center map MUST consume one Scene-scoped Hex renderer state
+- selecting another map MUST reset selection, route waypoints, and evaluation
+- route planning MUST remain explicit and each activated authored Hex MUST add
+  one ordered waypoint
+- `Löschen` MUST clear the complete transient route and evaluation
+- only travelling, paused, or blocked journeys MUST project a visible route;
+  completed and aborted journeys retain their history without leaving a route
+  on the map
+- start MUST remain disabled until the route evaluation is startable
+- pause/resume and stop MUST remain disabled without travelling, paused, or
+  blocked state
+- presentation speed MUST use the ordered values `1 | 2 | 5 | 10`; an edge
+  control is disabled and pre-start selection is passed into route start
+- Scene change events MUST refresh travel and Session state without accepting a
+  stale route evaluation or stale map read
+- selecting the `Reise` scenario MUST NOT automatically switch the center tab
+- Hex remains the owner of route validation and mutations; shell-level Travel
+  composition may delegate to Hex but MUST NOT duplicate that truth
 
 ## Visible States
 
-- no current location selected
-- active overworld or hex travel context
-- transient status change after movement
-- explicit no-context fallback while no matching Hex runtime readback exists
+- loading or no Hex map
+- unpositioned Party
+- ready with a current Hex or named location
+- route planning with pending, invalid, or startable evaluation
+- travelling, paused, blocked, completed, or aborted
 
 ## Acceptance Criteria
 
-- A user can read the core overworld travel context from the compact state
-  surface alone.
-- The surface remains clearly distinct from the full interactive travel view.
-- Lack of active hex travel context is shown explicitly.
-- Hex context appears only when an approved Hex runtime readback matches the
-  active party position.
+- The map canvas has no toolbar or status strip and fills its center-pane row.
+- All map selection, route, placement, and transport actions are reachable from
+  the `Reise` console or direct token drag.
+- Reaching or aborting a journey removes its route while the Party token,
+  current location, and final status remain visible.
+- A keyboard user can place the Party, add waypoints, and operate every travel
+  command.
+- The route facts agree with the utility-owned evaluation.
+- No-context and unavailable-map states remain explicit and non-destructive.
 
 ## References
 
 - [Hex Feature Requirements](./requirements-hex.md)
 - [Hex Travel Requirements](./requirements-hex-travel.md)
-- [Travel State Tab UI](../../project/requirements/requirements-travel-state-tab.md) (line 1)
+- [Travel Scenario UI](../../project/requirements/requirements-travel-state-tab.md)
 - [Travel Context Domain](../../travel/domain/domain-travel.md)

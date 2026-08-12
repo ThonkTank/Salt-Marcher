@@ -1,4 +1,5 @@
 import type { BiomePage } from '../../../shared/contracts/biome.js'
+import type { SaltMarcherApi } from '../../../shared/contracts/capability-api.js'
 
 /** Minimal application capability needed by biome option consumers. */
 export type BiomeOptionSearchPort = Readonly<{
@@ -6,9 +7,10 @@ export type BiomeOptionSearchPort = Readonly<{
 }>
 
 export function createBiomeOptionSearchPort(
-  port: BiomeOptionSearchPort
+  port: SaltMarcherApi['biomes']
 ): BiomeOptionSearchPort {
   return {
-    search: (query, offset, limit) => port.search(query, offset, limit)
+    search: (query = '', offset = 0, limit = 50) =>
+      port.search({ query, offset, limit })
   }
 }

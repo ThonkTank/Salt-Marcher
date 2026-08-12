@@ -21,6 +21,7 @@ export const workspaceMessagesDe = {
   'menu.settings': 'Einstellungen',
   'nav.campaigns': 'Kampagnen',
   'nav.session': 'Session',
+  'nav.planner': 'Session-Planer',
   'nav.catalog': 'Katalog',
   'nav.hex': 'Hex-Editor',
   'quick.weather': 'Wetter',
@@ -42,6 +43,8 @@ export const workspaceMessagesDe = {
   'error.unknown': 'Unbekannter Fehler',
   'passive.empty': 'Keine Datenfreigabe aktiv',
   'error.validation_failed': 'Die Eingabe ist ungültig.',
+  'error.idempotency_conflict':
+    'Diese Befehls-ID wurde bereits für eine andere Änderung verwendet.',
   'error.unsupported_svg':
     'Das SVG muss genau einen direkten Pfad ohne Transformationen oder weitere Grafikelemente enthalten.',
   'error.svg_too_large': 'Die SVG-Datei ist größer als 256 KiB.',

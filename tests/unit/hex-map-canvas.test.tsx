@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor
+} from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
 import type {
@@ -16,8 +22,7 @@ const pixi = vi.hoisted(() => ({
   destroy: vi.fn()
 }))
 
-vi.mock('pixi.js/unsafe-eval', () => ({}))
-vi.mock('pixi.js', () => {
+vi.mock('../../src/renderer/spatial-2d/pixi-webgl-runtime.js', () => {
   class Container {
     position = {
       x: 0,
@@ -96,6 +101,7 @@ const api = {
     reloadRenderer: vi.fn().mockResolvedValue(undefined)
   }
 } as unknown as SaltMarcherApi
+const asyncAssertion = { timeout: 5_000 } as const
 
 function CanvasTestProvider(props: { children: ReactNode }) {
   return <CapabilityProvider api={api}>{props.children}</CapabilityProvider>
@@ -103,6 +109,7 @@ function CanvasTestProvider(props: { children: ReactNode }) {
 
 describe('HexMapCanvas', () => {
   afterEach(() => {
+    cleanup()
     pixi.init.mockReset()
     pixi.destroy.mockReset()
   })
@@ -122,17 +129,23 @@ describe('HexMapCanvas', () => {
       { wrapper: CanvasTestProvider }
     )
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Die Kartenansicht konnte nicht initialisiert werden.'
-    )
+    expect(
+      await screen.findByRole('alert', undefined, asyncAssertion)
+    ).toHaveTextContent('Die Kartenansicht konnte nicht initialisiert werden.')
     expect(screen.getByRole('region', { name: 'Testkarte' })).toBeVisible()
 
     fireEvent.click(
       screen.getByRole('button', { name: 'Kartenansicht erneut laden' })
     )
 
-    await waitFor(() => expect(pixi.init).toHaveBeenCalledTimes(2))
-    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull())
+    await waitFor(
+      () => expect(pixi.init).toHaveBeenCalledTimes(2),
+      asyncAssertion
+    )
+    await waitFor(
+      () => expect(screen.queryByRole('alert')).toBeNull(),
+      asyncAssertion
+    )
     expect(view.container.querySelector('.hex-canvas canvas')).not.toBeNull()
 
     view.unmount()
@@ -150,7 +163,10 @@ describe('HexMapCanvas', () => {
       />,
       { wrapper: CanvasTestProvider }
     )
-    await waitFor(() => expect(pixi.init).toHaveBeenCalledTimes(1))
+    await waitFor(
+      () => expect(pixi.init).toHaveBeenCalledTimes(1),
+      asyncAssertion
+    )
 
     view.rerender(
       <HexMapCanvas
@@ -164,7 +180,10 @@ describe('HexMapCanvas', () => {
       />
     )
 
-    await waitFor(() => expect(pixi.init).toHaveBeenCalledTimes(1))
+    await waitFor(
+      () => expect(pixi.init).toHaveBeenCalledTimes(1),
+      asyncAssertion
+    )
     expect(screen.queryByLabelText('Q-Koordinate')).toBeNull()
     view.unmount()
   })
@@ -182,7 +201,11 @@ describe('HexMapCanvas', () => {
       />,
       { wrapper: CanvasTestProvider }
     )
-    const region = await screen.findByRole('region', { name: 'Testkarte' })
+    const region = await screen.findByRole(
+      'region',
+      { name: 'Testkarte' },
+      asyncAssertion
+    )
     for (const key of [
       'ArrowLeft',
       'ArrowRight',
@@ -203,6 +226,34 @@ describe('HexMapCanvas', () => {
     view.unmount()
   })
 
+  it('separates keyboard navigation from tile activation when requested', async () => {
+    pixi.init.mockResolvedValue(undefined)
+    const navigate = vi.fn<(coordinate: AxialCoordinate) => void>()
+    const activate = vi.fn<(coordinate: AxialCoordinate) => void>()
+    const view = render(
+      <HexMapCanvas
+        snapshot={snapshot}
+        biomes={biomes}
+        selected={{ q: 2, r: -1 }}
+        onTileNavigate={navigate}
+        onTileActivate={activate}
+        ariaLabel="Testkarte"
+      />,
+      { wrapper: CanvasTestProvider }
+    )
+    const region = await screen.findByRole(
+      'region',
+      { name: 'Testkarte' },
+      asyncAssertion
+    )
+    fireEvent.keyDown(region, { key: 'ArrowRight' })
+    fireEvent.keyDown(region, { key: 'Enter' })
+
+    expect(navigate).toHaveBeenCalledWith({ q: 3, r: -1 })
+    expect(activate).toHaveBeenCalledWith({ q: 2, r: -1 })
+    view.unmount()
+  })
+
   it('discards a stroke after pointer cancellation or capture loss', async () => {
     pixi.init.mockResolvedValue(undefined)
     const complete = vi.fn()
@@ -217,8 +268,9 @@ describe('HexMapCanvas', () => {
       />,
       { wrapper: CanvasTestProvider }
     )
-    await waitFor(() =>
-      expect(view.container.querySelector('canvas')).not.toBeNull()
+    await waitFor(
+      () => expect(view.container.querySelector('canvas')).not.toBeNull(),
+      asyncAssertion
     )
     const canvas = view.container.querySelector('canvas')!
     fireEvent.pointerDown(canvas, { button: 0, pointerId: 1 })

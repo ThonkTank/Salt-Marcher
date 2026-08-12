@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { canonicalWorldLocationTag } from '../../../shared/contracts/world-location.js'
+import { canonicalWorldLocationTag } from '../../../shared/values/world-location-values.js'
 import { formatMessage, message } from '../../i18n/worldplanner-runtime.de.js'
 import {
   TokenCombobox,

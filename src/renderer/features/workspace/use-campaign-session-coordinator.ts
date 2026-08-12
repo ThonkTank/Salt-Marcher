@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { CampaignSnapshot } from '../../../shared/contracts/campaign.js'
-import type {
-  CampaignCapability,
-  SaltMarcherApi
-} from '../../../shared/contracts/capability-api.js'
+import type { SaltMarcherApi } from '../../../shared/contracts/capability-api.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import type { WorkspaceId } from './workspace-definition.js'
@@ -51,7 +48,7 @@ export function useCampaignSessionCoordinator(
     return () => window.removeEventListener('saltmarcher:readback', readback)
   }, [enabled, load, reportError])
 
-  const campaignsWrite = api.campaigns as CampaignCapability
+  const campaignsWrite = api.campaigns
   async function run(operation: () => Promise<void>) {
     try {
       await operation()
@@ -71,23 +68,23 @@ export function useCampaignSessionCoordinator(
     readbackKey,
     createCampaign: (name: string) =>
       run(async () => {
-        setCampaigns(await campaignsWrite.create(name))
+        setCampaigns(await campaignsWrite.create({ name }))
         setSession(await api.session.read())
         setWorkspace('session')
         setCampaignMenuOpen(false)
       }),
     switchCampaign: (id: string) =>
       run(async () => {
-        setCampaigns(await campaignsWrite.activate(id))
+        setCampaigns(await campaignsWrite.activate({ id }))
         setSession(await api.session.read())
         setWorkspace('session')
         setCampaignMenuOpen(false)
       }),
     renameCampaign: (id: string, name: string) =>
-      run(async () => setCampaigns(await campaignsWrite.rename(id, name))),
+      run(async () => setCampaigns(await campaignsWrite.rename({ id, name }))),
     trashCampaign: (id: string) =>
       run(async () => {
-        const next = await campaignsWrite.trash(id)
+        const next = await campaignsWrite.trash({ id })
         setCampaigns(next)
         if (next.activeCampaignId === null) {
           setSession(null)
@@ -95,10 +92,12 @@ export function useCampaignSessionCoordinator(
         }
       }),
     restoreCampaign: (id: string) =>
-      run(async () => setCampaigns(await campaignsWrite.restore(id))),
+      run(async () => setCampaigns(await campaignsWrite.restore({ id }))),
     deleteCampaignForever: (id: string, confirmationName: string) =>
       run(async () =>
-        setCampaigns(await campaignsWrite.deleteForever(id, confirmationName))
+        setCampaigns(
+          await campaignsWrite.deleteForever({ id, confirmationName })
+        )
       )
   }
 }

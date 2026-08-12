@@ -1,0 +1,18 @@
+.tool-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.hex-erase-dialog {
+  display: grid;
+  gap: var(--space-5);
+  width: min(92vw, 36rem);
+  max-height: min(90vh, 42rem);
+  overflow: auto;
+  padding: var(--space-7);
+  border: 1px solid var(--border-structural);
+  background: var(--surface-panel);
+  box-shadow: var(--shadow-dialog);
+}

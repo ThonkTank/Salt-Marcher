@@ -51,12 +51,12 @@ const goldenInput = {
 } as const
 
 describe('session generation encounter engine', () => {
-  it('publishes the generator through the guarded core operation table', () => {
-    const operation =
-      coreOperations['sessionGeneration.generateEncounterIntents']
-    expect(operation.channel).toBe('session-generation:generate-intents')
-    expect(operation.mode).toBe('read')
-    expect(operation.roles).toEqual(['gm'])
+  it('keeps full-day generation internal to the Planner orchestration', () => {
+    expect(coreOperations).not.toHaveProperty('sessionGeneration.generate')
+    expect(coreOperations).not.toHaveProperty('sessionGeneration.readRun')
+    expect(coreOperations).not.toHaveProperty(
+      'sessionGeneration.generateEncounterIntents'
+    )
   })
 
   it('loads the spreadsheet encounter catalog and reproduces the target golden', () => {

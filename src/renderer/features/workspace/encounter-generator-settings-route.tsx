@@ -5,9 +5,11 @@ import type {
   GeneratorPresetApplicationPort
 } from './generator-preset-application.js'
 import { message } from '../../i18n/generator-runtime.de.js'
+import type { CampaignRewardRulesPort } from './campaign-reward-rules-port.js'
 
 type EncounterGeneratorSettingsRouteProps = {
   loadApplication: GeneratorPresetApplicationLoader
+  campaignRules?: CampaignRewardRulesPort
   activeCampaignId: string | null
   partySize: number
   onClose: () => void

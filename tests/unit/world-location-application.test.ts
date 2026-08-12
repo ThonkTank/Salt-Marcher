@@ -6,6 +6,7 @@ import type {
 } from '../../src/shared/contracts/world-location.js'
 import { CapabilityError } from '../../src/shared/errors/capability-error.js'
 import { saveWorldLocationInputSchema } from '../../src/shared/contracts/world-location.js'
+import type { SaltMarcherApi } from '../../src/shared/contracts/capability-api.js'
 
 const location: WorldLocation = {
   id: '01900000-0000-7000-8000-000000000070',
@@ -42,11 +43,14 @@ const draft = {
 }
 
 function api() {
+  const saveReceipt = vi
+    .fn<SaltMarcherApi['locations']['saveReceipt']>()
+    .mockResolvedValue(null)
   return {
     locations: {
       read: vi.fn().mockResolvedValue({ revision: 0, locations: [] }),
       save: vi.fn().mockResolvedValue(saved),
-      saveReceipt: vi.fn().mockResolvedValue(null),
+      saveReceipt,
       delete: vi.fn()
     },
     factions: { read: vi.fn() },
@@ -86,9 +90,8 @@ describe('WorldLocationApplicationPort', () => {
       port.save(null, draft, { kind: 'keep' })
     ).resolves.toMatchObject({ receipt: saved })
     expect(capabilities.locations.save).toHaveBeenCalledOnce()
-    expect(capabilities.locations.saveReceipt).toHaveBeenCalledWith(
-      expect.any(String)
-    )
+    const receiptInput = capabilities.locations.saveReceipt.mock.calls[0]?.[0]
+    expect(typeof receiptInput?.commandId).toBe('string')
   })
 
   it('does not replay an unknown outcome when its receipt is absent', async () => {
@@ -148,9 +151,9 @@ describe('WorldLocationApplicationPort', () => {
     const input = capabilities.locations.save.mock.calls[0]?.[0] as {
       commandId: string
     }
-    expect(capabilities.locations.saveReceipt).toHaveBeenCalledWith(
-      input.commandId
-    )
+    expect(capabilities.locations.saveReceipt).toHaveBeenCalledWith({
+      commandId: input.commandId
+    })
     expect(capabilities.locations.save).toHaveBeenCalledTimes(2)
   })
 })

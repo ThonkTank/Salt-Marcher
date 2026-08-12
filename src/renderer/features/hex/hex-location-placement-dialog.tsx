@@ -12,14 +12,14 @@ import type {
 } from '../worldplanner/world-location-editor-types.js'
 import { worldLocationPlacementIntent } from '../worldplanner/world-location-editor-types.js'
 import { HexLocationDraftField } from './hex-location-draft-field.js'
-import type { HexLocationPlacementProjectionPort } from './hex-location-placement-port.js'
+import type { HexMapProjectionPort } from './hex-map-projection-port.js'
 import type { HexMapApplicationPort } from './hex-map-creation-port.js'
 import { HexMapDialog } from './hex-map-dialog.js'
 import './hex-location-placement.css'
 
 export function HexLocationPlacementDialog(
   props: WorldLocationPlacementDialogRenderProps & {
-    port: HexLocationPlacementProjectionPort
+    port: HexMapProjectionPort
     mapCreation: HexMapApplicationPort
     commitPlacement: (
       locationId: string,

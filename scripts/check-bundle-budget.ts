@@ -12,57 +12,58 @@ import {
   bundleGraphRatchets,
   excessiveBundleGrowth
 } from './bundle-budget-policy.js'
-
-type ManifestEntry = {
-  file: string
-  src?: string
-  isEntry?: boolean
-  imports?: string[]
-  dynamicImports?: string[]
-  css?: string[]
-  assets?: string[]
-}
+import {
+  resolveBundleManifestEntry,
+  type BundleManifestEntry
+} from './bundle-manifest-entry.js'
 
 const KiB = 1024
 const MiB = KiB * KiB
 const rendererRoot = join(process.cwd(), 'out', 'renderer')
 const manifest = JSON.parse(
   readFileSync(join(rendererRoot, '.vite', 'manifest.json'), 'utf8')
-) as Record<string, ManifestEntry>
+) as Record<string, BundleManifestEntry>
 
 const entryKey = entryForSource('index.html')
-const workspaceKey = Object.keys(manifest).find(
-  (key) =>
-    key.startsWith('_workspace-') &&
-    !key.startsWith('_workspace-runtime') &&
-    manifest[key]?.file.endsWith('.js')
-)
-if (!workspaceKey) throw new Error('Workspace chunk is missing')
-const sessionKey = entryForSource(
-  'features/workspace/surfaces/session-surface.tsx'
-)
+const workspaceKey = entryForIdentity({
+  label: 'workspace',
+  src: 'features/workspace/workspace.tsx',
+  name: 'workspace',
+  isDynamicEntry: true
+})
+const sessionKey = entryForIdentity({
+  label: 'Session surface',
+  src: 'features/workspace/surfaces/session-surface.tsx',
+  name: 'session-surface',
+  isDynamicEntry: true
+})
 const catalogKey = entryForSource(
   'features/workspace/surfaces/catalog-surface.tsx'
 )
 const hexKey = entryForSource('features/workspace/surfaces/hex-surface.tsx')
 const referenceKey = entryForSource('features/reference/reference-ui.tsx')
-const pixiKey = Object.keys(manifest).find((key) =>
-  key.startsWith('_hex-map-canvas-pixi-')
-)
-if (!pixiKey) throw new Error('Pixi leaf chunk is missing')
+const pixiKey = entryForIdentity({
+  label: 'Hex Pixi canvas',
+  src: 'features/hex/hex-map-canvas-pixi.tsx',
+  name: 'hex-map-canvas-pixi',
+  isDynamicEntry: true
+})
 
 const shellInitial = staticFilesFor(entryKey)
-const workspaceGraph = staticFilesFor(workspaceKey)
-const sessionGraph = difference(staticFilesFor(sessionKey), workspaceGraph)
-const catalogGraph = difference(staticFilesFor(catalogKey), workspaceGraph)
+const sessionStaticGraph = staticFilesFor(sessionKey)
+const catalogStaticGraph = staticFilesFor(catalogKey)
 const hexStaticGraph = staticFilesFor(hexKey)
+// Manifest module names are stable source identities; hashed chunk keys are not.
+const workspaceGraph = staticFilesFor(workspaceKey)
+const sessionGraph = difference(sessionStaticGraph, workspaceGraph)
+const catalogGraph = difference(catalogStaticGraph, workspaceGraph)
 const hexGraph = difference(hexStaticGraph, workspaceGraph)
 const referenceGraph = difference(staticFilesFor(referenceKey), workspaceGraph)
-// Vite records the HTML entry as a static import of dynamic leaves. Stop that
-// back-edge or an incremental Pixi graph incorrectly absorbs every sibling
-// route reachable from the application entry.
+// Vite records both the HTML entry and the common Workspace chunk as static
+// imports of dynamic Pixi runtime leaves. Stop those application back-edges or
+// an incremental Pixi graph incorrectly absorbs every sibling Workspace route.
 const pixiGraph = difference(
-  reachableFilesFor(pixiKey, new Set([entryKey])),
+  reachableFilesFor(pixiKey, new Set([entryKey, workspaceKey])),
   hexStaticGraph
 )
 const reachableRenderer = reachableFilesFor(entryKey)
@@ -98,24 +99,20 @@ const graphBudgets = [
 const shellEntryBytes = fileBytes(new Set([manifest[entryKey]!.file]))
 assertBudget('Shell entry JavaScript', shellEntryBytes, 32 * KiB)
 const workspaceJavaScriptBytes = fileBytes(
-  staticJavaScriptFilesFor(workspaceKey)
+  new Set([...workspaceGraph].filter((file) => file.endsWith('.js')))
 )
 assertBudget(
   'Common Workspace JavaScript graph',
   workspaceJavaScriptBytes,
-  900 * KiB
+  810 * KiB
 )
 
-const hardRendererBudget = 3.2 * MiB
-const warningLimit = hardRendererBudget * 0.9
+const legacyRendererLimit = 3.2 * MiB
+const hardRendererBudget = legacyRendererLimit * 0.9
 const reachableBytes = fileBytes(reachableRenderer)
 if (reachableBytes > hardRendererBudget)
   throw new Error(
-    `Reachable renderer is ${reachableBytes} bytes; hard ceiling is ${Math.floor(hardRendererBudget)} bytes`
-  )
-if (reachableBytes > warningLimit)
-  console.warn(
-    `WARNING: reachable renderer uses ${percentage(reachableBytes, hardRendererBudget)}, above the 90% warning threshold.`
+    `Reachable renderer is ${reachableBytes} bytes; 90% target is ${Math.floor(hardRendererBudget)} bytes`
   )
 
 const baselineDocument = JSON.parse(
@@ -172,9 +169,13 @@ if ([...hexStaticGraph].some((file) => /hex-map-canvas-pixi/.test(file)))
 if (!reachableRenderer.has(manifest[pixiKey]!.file))
   throw new Error('Pixi leaf is not dynamically reachable from the application')
 if (
-  [...pixiGraph].some((file) => /campaign-menu|encounter-generator/.test(file))
+  [...pixiGraph].some((file) =>
+    /campaign-menu|encounter-generator|planner-surface|session-surface|catalog-surface|treasure-editor/.test(
+      file
+    )
+  )
 )
-  throw new Error('Unrelated Workspace dialogs leaked into the Pixi graph')
+  throw new Error('Unrelated Workspace routes leaked into the Pixi graph')
 if ([...reachableRenderer].some((file) => /qualification|babylon/i.test(file)))
   throw new Error('Qualification-only rendering code is reachable from the app')
 if ([...reachableRenderer].some((file) => file.endsWith('.woff')))
@@ -200,14 +201,20 @@ console.log(
   budgetLine(
     'Common Workspace JavaScript graph',
     workspaceJavaScriptBytes,
-    900 * KiB
+    810 * KiB
   ),
-  '(legacy gate)'
+  '(architecture target)'
 )
 for (const graph of graphBudgets)
   console.log(budgetLine(graph.label, graph.bytes, graph.budget, graph.files))
 console.log(
-  `${budgetLine('Reachable renderer', reachableBytes, hardRendererBudget, reachableRenderer)}; warning threshold ${Math.floor(warningLimit)} bytes`
+  budgetLine(
+    'Reachable renderer',
+    reachableBytes,
+    hardRendererBudget,
+    reachableRenderer
+  ),
+  '(90% of the legacy 3.2 MiB limit)'
 )
 
 function graphFiles(graph: string): ReadonlySet<string> {
@@ -261,11 +268,13 @@ function manifestPathForFile(file: string): string {
 }
 
 function entryForSource(source: string): string {
-  const key = Object.keys(manifest).find(
-    (candidate) => manifest[candidate]?.src === source
-  )
-  if (!key) throw new Error(`Manifest entry is missing for ${source}`)
-  return key
+  return entryForIdentity({ label: source, src: source })
+}
+
+function entryForIdentity(
+  identity: Parameters<typeof resolveBundleManifestEntry>[1]
+) {
+  return resolveBundleManifestEntry(manifest, identity)
 }
 
 function graphBudget(label: string, files: Set<string>, budget: number) {
@@ -341,21 +350,6 @@ function filesFor(
     for (const dependency of entry.imports ?? []) collect(dependency)
     if (includeDynamic)
       for (const dependency of entry.dynamicImports ?? []) collect(dependency)
-  }
-  collect(key)
-  return result
-}
-
-function staticJavaScriptFilesFor(key: string): Set<string> {
-  const result = new Set<string>()
-  const seen = new Set<string>()
-  const collect = (current: string): void => {
-    if (seen.has(current)) return
-    seen.add(current)
-    const entry = manifest[current]
-    if (!entry) throw new Error(`Manifest import missing: ${current}`)
-    result.add(entry.file)
-    for (const dependency of entry.imports ?? []) collect(dependency)
   }
   collect(key)
   return result

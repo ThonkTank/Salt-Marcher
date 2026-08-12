@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto'
 import {
   applyHexBrushStrokeInputSchema,
   createHexMapInputSchema,
@@ -25,6 +24,7 @@ import {
   hexChunkKeyFor,
   MAX_HEX_STROKE_CHUNKS
 } from '../../shared/hex/axial-geometry.js'
+import { fingerprint } from '../fingerprint.js'
 
 type HexEditingMapPort = Pick<
   HexMapStore,
@@ -503,26 +503,22 @@ function tokenFor(
   coordinates: readonly AxialCoordinate[],
   impact: HexEraseImpact
 ) {
-  return createHash('sha256')
-    .update(
-      JSON.stringify({
-        mapId,
-        revision,
-        coordinates: coordinates.map(tileId).sort(),
-        impact: {
-          locations: impact.locations
-            .map(({ locationId, q, r }) => ({ locationId, q, r }))
-            .sort((a, b) => a.locationId.localeCompare(b.locationId)),
-          journeys: impact.journeys
-            .map(({ sceneId, status }) => ({ sceneId, status }))
-            .sort((a, b) => a.sceneId.localeCompare(b.sceneId)),
-          partyMembers: impact.partyMembers
-            .map(({ memberId, q, r }) => ({ memberId, q, r }))
-            .sort((a, b) => a.memberId.localeCompare(b.memberId))
-        }
-      })
-    )
-    .digest('hex')
+  return fingerprint({
+    mapId,
+    revision,
+    coordinates: coordinates.map(tileId).sort(),
+    impact: {
+      locations: impact.locations
+        .map(({ locationId, q, r }) => ({ locationId, q, r }))
+        .sort((a, b) => a.locationId.localeCompare(b.locationId)),
+      journeys: impact.journeys
+        .map(({ sceneId, status }) => ({ sceneId, status }))
+        .sort((a, b) => a.sceneId.localeCompare(b.sceneId)),
+      partyMembers: impact.partyMembers
+        .map(({ memberId, q, r }) => ({ memberId, q, r }))
+        .sort((a, b) => a.memberId.localeCompare(b.memberId))
+    }
+  })
 }
 
 function emptyImpact(): HexEraseImpact {

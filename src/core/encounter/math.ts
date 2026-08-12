@@ -1,5 +1,5 @@
 import type { PartyMember } from '../../shared/contracts/live-session.js'
-import { baseEncounterMultiplier } from './xp-multipliers.js'
+import { encounterXpMultiplier } from '../../shared/encounter-xp.js'
 export const thresholds = [
   [25, 50, 75, 100],
   [50, 100, 150, 200],
@@ -35,11 +35,7 @@ export function partyThresholds(
     )
 }
 export function multiplier(count: number, partySize: number): number {
-  let m = baseEncounterMultiplier(count)
-  if (partySize < 3) m = baseEncounterMultiplier(count) + (count > 14 ? 1 : 0.5)
-  if (partySize > 5 && m > 1)
-    m = [1, 1, 1.5, 2, 2.5, 3][[1, 1.5, 2, 2.5, 3, 4].indexOf(m)] ?? m
-  return m
+  return encounterXpMultiplier(count, partySize)
 }
 export function difficulty(
   adjusted: number,

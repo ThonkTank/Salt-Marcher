@@ -546,6 +546,21 @@ describe('chunked hex editor to session travel vertical slice', () => {
     )
     const sceneId = session.scene.focusedSceneId
     const ready = h.travel.read(sceneId)
+    expect(
+      h.travel.evaluate({
+        sceneId,
+        mapId: map.id,
+        waypoints: [{ q: 1, r: 0 }]
+      })
+    ).toMatchObject({
+      status: 'ready',
+      totalTravelCost: 1,
+      totalGameSeconds: 3_600,
+      path: [
+        { q: 0, r: 0 },
+        { q: 1, r: 0 }
+      ]
+    })
     const travelling = h.travel.start({
       sceneId,
       mapId: map.id,
@@ -553,12 +568,177 @@ describe('chunked hex editor to session travel vertical slice', () => {
       multiplier: 1,
       expectedRevision: ready.revision
     })
+    expect(travelling.path).toEqual([
+      { q: 0, r: 0 },
+      { q: 1, r: 0 }
+    ])
     h.advance(1_001)
     expect(h.travel.read(sceneId)).toEqual(travelling)
-    expect(h.travel.tick().changed.at(-1)).toMatchObject({
+    const completed = h.travel.tick().changed.at(-1)
+    expect(completed).toMatchObject({
       status: 'completed',
       current: { q: 1, r: 0 },
+      path: [],
       gameTimeSeconds: 32_400
+    })
+    expect(h.travel.read(sceneId)).toEqual(completed)
+    expect(h.travel.runtimeOverlays(map.id).overlays).toContainEqual(
+      expect.objectContaining({
+        sceneId,
+        token: { q: 1, r: 0 },
+        route: []
+      })
+    )
+    expect(
+      h
+        .database()
+        .prepare(
+          `SELECT q, r FROM hex_journey_path
+           WHERE scene_id = ? ORDER BY position`
+        )
+        .all(sceneId)
+    ).toEqual([
+      { q: 0, r: 0 },
+      { q: 1, r: 0 }
+    ])
+  })
+
+  it('returns every structured route rejection with its blocking coordinate', () => {
+    const h = harness()
+    const map = h.maps.create('Routenregeln', h.maps.catalog().revision)
+    h.editing.applyBrushStroke({
+      commandId: randomUUID(),
+      mapId: map.id,
+      mode: 'paint',
+      biomeId: 'grassland',
+      path: [
+        { q: 0, r: 0 },
+        { q: 1, r: 0 }
+      ],
+      radius: 0,
+      expectedContentRevision: 0,
+      confirmationToken: null
+    })
+    const summary = h.maps.catalog().maps.find((entry) => entry.id === map.id)!
+    h.editing.applyBrushStroke({
+      commandId: randomUUID(),
+      mapId: map.id,
+      mode: 'paint',
+      biomeId: 'water',
+      path: [{ q: 2, r: 0 }],
+      radius: 0,
+      expectedContentRevision: summary.contentRevision,
+      confirmationToken: null
+    })
+
+    let session = h.play.readSession()
+    const sceneId = session.scene.focusedSceneId
+    expect(
+      h.travel.evaluate({ sceneId, mapId: map.id, waypoints: [{ q: 1, r: 0 }] })
+    ).toMatchObject({
+      status: 'rejected',
+      reason: 'party-unpositioned',
+      blockingCoordinate: null,
+      path: []
+    })
+
+    const member = session.party.members[0]!
+    h.play.setMembership(member.id, true, session.party.revision)
+    session = h.play.readSession()
+    session = h.play.assignScenePartyMember(
+      sceneId,
+      member.id,
+      true,
+      session.scene.revision
+    )
+    h.travel.position({
+      sceneId,
+      mapId: map.id,
+      coordinate: { q: 0, r: 0 },
+      expectedSceneRevision: session.scene.revision
+    })
+
+    expect(
+      h.travel.evaluate({ sceneId, mapId: map.id, waypoints: [] })
+    ).toMatchObject({
+      status: 'rejected',
+      reason: 'missing-waypoint',
+      blockingCoordinate: null,
+      path: [{ q: 0, r: 0 }]
+    })
+    expect(
+      h.travel.evaluate({
+        sceneId,
+        mapId: map.id,
+        waypoints: [{ q: 10_001, r: 0 }]
+      })
+    ).toMatchObject({
+      status: 'rejected',
+      reason: 'route-too-long',
+      blockingCoordinate: null
+    })
+    expect(
+      h.travel.evaluate({
+        sceneId,
+        mapId: map.id,
+        waypoints: [{ q: 3, r: 0 }]
+      })
+    ).toMatchObject({
+      status: 'rejected',
+      reason: 'impassable',
+      blockingCoordinate: { q: 2, r: 0 }
+    })
+    expect(
+      h.travel.evaluate({
+        sceneId,
+        mapId: map.id,
+        waypoints: [{ q: 1, r: -1 }]
+      })
+    ).toMatchObject({
+      status: 'rejected',
+      reason: 'outside-map',
+      blockingCoordinate: { q: 1, r: -1 }
+    })
+    expect(
+      h.travel.evaluate({
+        sceneId,
+        mapId: map.id,
+        waypoints: [{ q: 0, r: 0 }]
+      })
+    ).toMatchObject({
+      status: 'rejected',
+      reason: 'same-as-start',
+      blockingCoordinate: null,
+      path: [{ q: 0, r: 0 }]
+    })
+
+    const currentParty = h.play.readParty()
+    const currentMember = currentParty.members.find(
+      (candidate) => candidate.id === member.id
+    )!
+    h.play.updatePartyCharacter(
+      member.id,
+      {
+        name: currentMember.name,
+        playerName: currentMember.playerName,
+        level: currentMember.level,
+        passivePerception: currentMember.passivePerception,
+        armorClass: currentMember.armorClass,
+        movementSpeedFeet: 0
+      },
+      currentParty.revision
+    )
+    expect(
+      h.travel.evaluate({
+        sceneId,
+        mapId: map.id,
+        waypoints: [{ q: 1, r: 0 }]
+      })
+    ).toMatchObject({
+      status: 'rejected',
+      reason: 'movement-speed-unavailable',
+      blockingCoordinate: null,
+      effectiveSpeedFeet: 0
     })
   })
 

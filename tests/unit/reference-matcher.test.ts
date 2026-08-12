@@ -154,10 +154,11 @@ describe('reference matcher', () => {
     const prose = `${'ordinary prose '.repeat(3_570)} Rule Term 1517.`
     matchReferenceText(denseCompiled, prose)
     const durations = Array.from({ length: 3 }, () => {
-      const started = performance.now()
+      const started = process.cpuUsage()
       const matches = matchReferenceText(denseCompiled, prose)
       expect(matches.at(-1)?.text).toBe('Rule Term 1517')
-      return performance.now() - started
+      const elapsed = process.cpuUsage(started)
+      return (elapsed.user + elapsed.system) / 1_000
     })
     expect(Math.min(...durations)).toBeLessThan(16)
   })

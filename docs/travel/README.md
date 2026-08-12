@@ -2,14 +2,17 @@
 
 ## Purpose
 
-Travel owns selection and publication of one compact global runtime context for
-the active party. Dungeon and Hex retain their authored truth, movement rules,
-detailed travel workspaces, and feature-specific visible behavior. Party retains
-persisted runtime position.
+Travel owns the renderer-local controller protocol for one focused-Scene
+journey. Hex retains authored truth, movement rules, typed IPC commands, and
+feature-specific presentation. The Workspace integration selects the provider
+and composes its map and console into Session-owned layout slots; Party retains
+persisted runtime position. Hex is the only implemented provider. Dungeon is a
+future provider, not a dormant implementation or compatibility promise.
 
 ## Documentation Set
 
 - [Travel Context Domain](domain/domain-travel.md)
+- [Travel Provider Port](contract/contract-travel-provider-port.md)
 
 ## References
 

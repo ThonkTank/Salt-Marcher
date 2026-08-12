@@ -48,7 +48,7 @@ export function generateSessionEncounters(
       issues: parsed.error.issues.map((issue) => ({
         code: issueCodeForPath(issue.path[0]),
         path: issue.path.map(String),
-        message: issue.message
+        parameters: { validationCode: issue.code }
       }))
     })
 
@@ -67,7 +67,7 @@ export function generateSessionEncounters(
       issues: [
         {
           code: 'no_candidate',
-          message: 'Encounter targets must be positive.'
+          parameters: { reason: 'non_positive_target' }
         }
       ]
     })
@@ -94,7 +94,7 @@ export function generateSessionEncounters(
       issues: [
         {
           code: 'no_candidate',
-          message: 'No encounter candidate can satisfy the requested target.'
+          parameters: { reason: 'candidate_set_empty' }
         }
       ]
     })
@@ -103,57 +103,65 @@ export function generateSessionEncounters(
   const warnings: Array<{
     code: 'candidate_outside_tolerance' | 'constraints_approximated'
     encounterNumber: number
-    message: string
+    parameters: Readonly<Record<string, string | number | boolean | null>>
   }> = [
     ...selected
       .filter((entry) => !entry.selectedFit)
       .map((entry) => ({
         code: 'candidate_outside_tolerance' as const,
         encounterNumber: entry.encounterNumber,
-        message:
-          'No candidate was within the target tolerance; the closest available candidate was selected.'
+        parameters: {
+          targetXp: entry.target,
+          fitCandidateCount: entry.fitCandidateCount
+        }
       })),
     ...selected
       .filter((entry) => !entry.selectedSoftFit)
       .map((entry) => ({
         code: 'constraints_approximated' as const,
         encounterNumber: entry.encounterNumber,
-        message:
-          entry.composition?.diagnostics
-            .map((diagnostic) => diagnostic.message)
-            .join(' ') ?? ''
+        parameters: {
+          constraintCount: entry.composition?.diagnostics.length ?? 0
+        }
       }))
   ]
   const audits = [
     {
-      name: 'Encounter target sum',
+      code: 'encounter_target_sum' as const,
       passed:
         targets.reduce((sum, value) => sum + value, 0) ===
         context.sessionXpTarget,
       hard: true,
-      detail: `${targets.join('+')}=${context.sessionXpTarget}`
+      parameters: {
+        actual: targets.reduce((sum, value) => sum + value, 0),
+        expected: context.sessionXpTarget
+      }
     },
     {
-      name: 'Candidate coverage',
+      code: 'candidate_coverage' as const,
       passed: selected.every((entry) => entry.candidateCount > 0),
       hard: true,
-      detail: selected
-        .map((entry) => `${entry.encounterNumber}:${entry.candidateCount}`)
-        .join(', ')
+      parameters: {
+        encounterCount: selected.length,
+        zeroCandidateCount: selected.filter(
+          (entry) => entry.candidateCount === 0
+        ).length
+      }
     },
     {
-      name: 'Encounter selector fit',
+      code: 'encounter_selector_fit' as const,
       passed: selected.every((entry) => entry.selectedFit),
       hard: false,
-      detail: selected
-        .map((entry) => `${entry.encounterNumber}:${entry.fitCandidateCount}`)
-        .join(', ')
+      parameters: {
+        encounterCount: selected.length,
+        fitCount: selected.filter((entry) => entry.selectedFit).length
+      }
     },
     {
-      name: 'Deterministic seed path',
+      code: 'deterministic_seed_path' as const,
       passed: true,
       hard: true,
-      detail: 'Named SHA-256 entropy streams'
+      parameters: { algorithm: 'sha256_named_streams' }
     }
   ]
   if (audits.some((audit) => audit.hard && !audit.passed))
@@ -162,7 +170,7 @@ export function generateSessionEncounters(
       issues: [
         {
           code: 'hard_audit_failed',
-          message: 'Encounter generation failed an integrity audit.'
+          parameters: { stage: 'encounter_aggregation' }
         }
       ]
     })

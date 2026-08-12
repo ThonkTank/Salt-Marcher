@@ -5,6 +5,7 @@ import type {
   HexMapSummary
 } from '../../../shared/contracts/hex.js'
 import { executeRecoverableHexCommand } from './hex-command-executor.js'
+import type { HexCapabilities } from './hex-capabilities.js'
 
 export type HexMapCreationResult = Readonly<{
   snapshot: HexMapCatalogSnapshot
@@ -17,7 +18,7 @@ export type HexMapApplicationPort = Readonly<{
 }>
 
 export function createHexMapApplicationPort(
-  api: Pick<SaltMarcherApi, 'hex'>
+  api: Pick<SaltMarcherApi, 'hex'> | Pick<HexCapabilities, 'hex'>
 ): HexMapApplicationPort {
   return {
     createMap: async (displayName) => {
@@ -31,7 +32,10 @@ export function createHexMapApplicationPort(
             displayName,
             expectedCatalogRevision: before.revision
           }),
-        (receiptId) => api.hex.commandReceipt(receiptId)
+        (receiptId) =>
+          'updateMetadata' in api.hex
+            ? api.hex.commandReceipt(receiptId)
+            : api.hex.commandReceipt({ commandId: receiptId })
       )
       if (result.status !== 'applied')
         throw new Error('hex_map_create_rejected')

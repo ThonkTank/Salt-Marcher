@@ -11,6 +11,7 @@ import {
   type WorkspaceId
 } from './workspace-definition.js'
 import type { GeneratorPresetApplicationLoader } from './generator-preset-application.js'
+import type { CampaignRewardRulesPort } from './campaign-reward-rules-port.js'
 
 const CampaignMenu = lazy(() =>
   import('./campaign-menu.js').then((module) => ({
@@ -44,6 +45,7 @@ export function WorkspaceTopBar(props: {
   theme: 'light' | 'dark'
   toggleTheme: () => void
   loadGeneratorPresetApplication: GeneratorPresetApplicationLoader
+  campaignRules?: CampaignRewardRulesPort
 }) {
   const active = props.campaigns.activeCampaignId !== null
   const activeCampaign = props.campaigns.campaigns.find(
@@ -95,6 +97,9 @@ export function WorkspaceTopBar(props: {
             loadGeneratorPresetApplication={
               props.loadGeneratorPresetApplication
             }
+            {...(props.campaignRules
+              ? { campaignRules: props.campaignRules }
+              : {})}
             partySize={
               props.session?.party.members.filter((member) => member.active)
                 .length ?? 0

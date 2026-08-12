@@ -7,7 +7,8 @@ import {
 } from 'react'
 import type { RendererIncident } from '../../shared/contracts/runtime.js'
 
-export type SurfaceId = 'application' | 'session' | 'catalog' | 'hex'
+export type SurfaceId =
+  'application' | 'session' | 'planner' | 'catalog' | 'hex'
 
 export type ModuleFailure = Readonly<{
   phase: 'module-load' | 'render'

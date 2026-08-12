@@ -1,8 +1,9 @@
 import { browser, expect } from '@wdio/globals'
 import type { Browser as WdioBrowser } from 'webdriverio'
+import { expectAccessible } from './support/e2e-assertions.js'
 
 describe('generator preset integration', () => {
-  it('persists one copied assignment and exposes it to Scene and Session', async () => {
+  it('shows every durable Planner stage across an active Utility restart', async () => {
     const client = browser as unknown as WdioBrowser
     const campaignName = await client.$('#campaign-name')
     await campaignName.waitForDisplayed({ timeout: 30_000 })
@@ -38,7 +39,7 @@ describe('generator preset integration', () => {
     await (
       await client.$('h1=Session · Preset E2E')
     ).waitForExist({ timeout: 15_000 })
-    const proof = await client.execute(async () => {
+    const setup = await client.execute(async () => {
       const api = window.saltMarcher
       const presets = await api.generatorPresets.readEditor({
         campaignId: (await api.campaigns.list()).activeCampaignId
@@ -50,13 +51,17 @@ describe('generator preset integration', () => {
 
       let party = await api.party.read()
       for (const member of party.members)
-        party = await api.party.setMembership(member.id, true, party.revision)
+        party = await api.party.setMembership({
+          id: member.id,
+          active: true,
+          expectedRevision: party.revision
+        })
       const live = await api.session.read()
-      const scene = await api.scene.generateGroupDraft(
-        live.scene.focusedSceneId,
-        [],
-        'replace',
-        {
+      const scene = await api.scene.generateGroupDraft({
+        sceneId: live.scene.focusedSceneId,
+        entries: [],
+        mode: 'replace',
+        filters: {
           name: '',
           sizes: [],
           types: [],
@@ -71,23 +76,25 @@ describe('generator preset integration', () => {
           offset: 0,
           limit: 50
         },
-        {
+        tuning: {
           difficulty: 'preset',
           amount: 'preset',
           balance: 'preset',
           diversity: 'preset'
         },
-        179974,
-        live.scene.revision
-      )
-      const session = await api.sessionGeneration.generateEncounterIntents({
-        party: [{ level: 3, count: 4 }],
+        seed: 179974,
+        expectedRevision: live.scene.revision
+      })
+      const planner = await api.sessionPlanner.read()
+      await api.sessionPlanner.save({
+        sessionId: planner.session.id,
+        expectedRevision: planner.session.revision,
+        participantIds: party.members.map((member) => member.id),
         adventureDayFraction: '0.25',
         encounterCount: 1,
-        seed: 179974
+        selectedSceneId: null,
+        scenes: []
       })
-      if (session.status !== 'success')
-        throw new Error(`Session generator failed: ${session.status}`)
       return {
         custom: {
           id: custom.id,
@@ -100,19 +107,217 @@ describe('generator preset integration', () => {
           id: scene.context.generatorPresetId,
           revision: scene.context.generatorPresetRevision,
           hash: scene.context.generatorConfigHash
-        },
-        session: session.generatorPreset
+        }
       }
     })
 
-    expect(proof.custom.mobThreshold).toBe(7)
-    expect(proof.activePresetId).toBe(proof.custom.id)
-    expect(proof.assignment?.assignedPresetId).toBe(proof.custom.id)
-    expect(proof.scene.id).toBe(proof.custom.id)
-    expect(proof.scene.revision).toBe(proof.custom.revision)
-    expect(proof.scene.hash).toMatch(/^[0-9a-f]{64}$/)
-    expect(proof.session.id).toBe(proof.custom.id)
-    expect(proof.session.revision).toBe(proof.custom.revision)
-    expect(proof.session.configHash).toBe(proof.scene.hash)
+    await (await client.$('button[aria-label="Session-Planer"]')).click()
+    let plannerSurface = await client.$('section[aria-label="Session-Planer"]')
+    await plannerSurface.waitForDisplayed({ timeout: 15_000 })
+    await expectAccessible(client)
+    await (await plannerSurface.$('button=Vorbereiten')).click()
+    const queued = await plannerSurface.$('.planner-progress.state-queued')
+    await queued.waitForDisplayed({ timeout: 5_000 })
+    const beforeRestart = await client.execute(async () => {
+      const preparation = (await window.saltMarcher.sessionPlanner.read())
+        .preparation
+      if (!preparation) throw new Error('Queued preparation is missing')
+      return {
+        operationId: preparation.operationId,
+        status: preparation.status
+      }
+    })
+    expect(beforeRestart.status).toBe('queued')
+
+    await client.reloadSession()
+    await (
+      await client.$('h1=Session · Preset E2E')
+    ).waitForExist({
+      timeout: 30_000
+    })
+    await (await client.$('button[aria-label="Session-Planer"]')).click()
+    plannerSurface = await client.$('section[aria-label="Session-Planer"]')
+    await plannerSurface.waitForDisplayed({ timeout: 15_000 })
+    await client.execute(() => {
+      const root = document.documentElement
+      const record = () => {
+        const progress =
+          document.querySelector<HTMLElement>('.planner-progress')
+        if (!progress) return
+        const history = JSON.parse(
+          root.dataset['plannerStageHistory'] ?? '[]'
+        ) as string[]
+        const stage = [...progress.classList].find((entry) =>
+          entry.startsWith('state-')
+        )
+        if (stage && history.at(-1) !== stage)
+          root.dataset['plannerStageHistory'] = JSON.stringify([
+            ...history,
+            stage
+          ])
+      }
+      root.dataset['plannerStageHistory'] = '[]'
+      record()
+      new MutationObserver(record).observe(document.body, {
+        attributes: true,
+        attributeFilter: ['class'],
+        childList: true,
+        subtree: true
+      })
+    })
+    await client.waitUntil(
+      async () => {
+        try {
+          return await client
+            .$('.session-planner .planner-progress.state-ready')
+            .isDisplayed()
+        } catch {
+          return false
+        }
+      },
+      {
+        timeout: 45_000,
+        interval: 250,
+        timeoutMsg: 'Planner did not finish after the Electron restart.'
+      }
+    )
+
+    const afterRestart = await client.execute(async (operationId) => {
+      const api = window.saltMarcher
+      const found = await api.sessionPlanner.preparationReceipt({ operationId })
+      if (!found.receipt)
+        throw new Error('Planner receipt missing after restart')
+      const workspace = await api.sessionPlanner.read()
+      return {
+        status: found.receipt.status,
+        sceneCount: workspace.session.scenes.length,
+        artifacts: workspace.session.scenes.map((scene) => ({
+          id: scene.id,
+          encounterPlanId: scene.encounterPlanId,
+          rewards: scene.generatedRewards.map((reward) => ({
+            runId: reward.runId,
+            generatedTreasureId: reward.generatedTreasureId
+          }))
+        })),
+        stages: JSON.parse(
+          document.documentElement.dataset['plannerStageHistory'] ?? '[]'
+        ) as string[]
+      }
+    }, beforeRestart.operationId)
+
+    expect(setup.custom.mobThreshold).toBe(7)
+    expect(setup.activePresetId).toBe(setup.custom.id)
+    expect(setup.assignment?.assignedPresetId).toBe(setup.custom.id)
+    expect(setup.scene.id).toBe(setup.custom.id)
+    expect(setup.scene.revision).toBe(setup.custom.revision)
+    expect(setup.scene.hash).toMatch(/^[0-9a-f]{64}$/)
+    expect(afterRestart.status).toBe('succeeded')
+    expect(afterRestart.sceneCount).toBeGreaterThan(0)
+    expect(['state-queued', ...afterRestart.stages]).toEqual(
+      expect.arrayContaining([
+        'state-queued',
+        'state-generating',
+        'state-resolving-encounters',
+        'state-saving',
+        'state-ready'
+      ])
+    )
+
+    await (await plannerSurface.$('button=Vorbereiten')).click()
+    const confirmation = await client.$('.planner-confirm-dialog')
+    await confirmation.waitForDisplayed({ timeout: 5_000 })
+    await expectAccessible(client)
+    expect(
+      await client.execute(() => {
+        const dialog = document.querySelector('.planner-confirm-dialog')
+        return Boolean(
+          dialog &&
+          document.activeElement instanceof HTMLElement &&
+          dialog.contains(document.activeElement)
+        )
+      })
+    ).toBe(true)
+    await client.keys('Escape')
+    await confirmation.waitForExist({ reverse: true, timeout: 5_000 })
+
+    await (await plannerSurface.$('button=Vorbereiten')).click()
+    await confirmation.waitForDisplayed({ timeout: 5_000 })
+    await (await confirmation.$('button=Ersetzen und vorbereiten')).click()
+    await (
+      await plannerSurface.$('.planner-progress.state-generating')
+    ).waitForDisplayed({ timeout: 10_000 })
+    const interruptedOperation = await client.execute(async () => {
+      const preparation = (await window.saltMarcher.sessionPlanner.read())
+        .preparation
+      if (!preparation) throw new Error('Active preparation is missing')
+      return preparation.operationId
+    })
+    const utilityTerminated = await client.execute(async () => {
+      const e2eWindow = window as typeof window & {
+        __saltMarcherE2e?: Readonly<{
+          terminateUtility: () => Promise<boolean>
+        }>
+      }
+      return (await e2eWindow.__saltMarcherE2e?.terminateUtility()) ?? false
+    })
+    expect(utilityTerminated).toBe(true)
+    await client.waitUntil(
+      async () => {
+        const proof = await client.execute(async (operationId) => {
+          try {
+            if ((await window.saltMarcher.runtime.coreStatus()) !== 'ready')
+              return null
+            const receipt =
+              await window.saltMarcher.sessionPlanner.preparationReceipt({
+                operationId
+              })
+            if (receipt.receipt?.status !== 'succeeded') return null
+            const workspace = await window.saltMarcher.sessionPlanner.read()
+            return {
+              status: receipt.receipt.status,
+              artifacts: workspace.session.scenes.map((scene) => ({
+                id: scene.id,
+                encounterPlanId: scene.encounterPlanId,
+                rewards: scene.generatedRewards.map((reward) => ({
+                  runId: reward.runId,
+                  generatedTreasureId: reward.generatedTreasureId
+                }))
+              }))
+            }
+          } catch {
+            return null
+          }
+        }, interruptedOperation)
+        return proof !== null
+      },
+      {
+        timeout: 45_000,
+        interval: 250,
+        timeoutMsg: 'Planner did not recover after the Utility restart.'
+      }
+    )
+    const resumed = await client.execute(async (operationId) => {
+      const receipt =
+        await window.saltMarcher.sessionPlanner.preparationReceipt({
+          operationId
+        })
+      const workspace = await window.saltMarcher.sessionPlanner.read()
+      return {
+        status: receipt.receipt?.status ?? null,
+        artifacts: workspace.session.scenes.map((scene) => ({
+          id: scene.id,
+          encounterPlanId: scene.encounterPlanId,
+          rewards: scene.generatedRewards.map((reward) => ({
+            runId: reward.runId,
+            generatedTreasureId: reward.generatedTreasureId
+          }))
+        }))
+      }
+    }, interruptedOperation)
+    expect(resumed.status).toBe('succeeded')
+    expect(resumed.artifacts).toEqual(afterRestart.artifacts)
+    await (
+      await client.$('section[aria-label="Session-Planer"]')
+    ).waitForDisplayed({ timeout: 10_000 })
   })
 })

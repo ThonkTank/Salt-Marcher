@@ -1,500 +1,424 @@
 import { formatMessage, message } from '../../i18n/hex-runtime.de.js'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
+import { useMemo } from 'react'
+import { HexMapCanvas } from './hex-map-canvas.js'
+import './hex-travel.css'
 import type {
-  AxialCoordinate,
-  HexMapCatalogSnapshot,
-  HexMapView,
   HexRouteEvaluation,
-  HexBiomeCatalog,
   HexTravelSnapshot
 } from '../../../shared/contracts/hex.js'
-import { HexMapCanvas } from './hex-map-canvas.js'
-import { HexChunkCache, mergeHexBiomeCatalog } from './hex-chunk-cache.js'
-import './hex.css'
-import { hexCapabilities } from './hex-capabilities.js'
-import {
-  capabilityErrorText,
-  reportCapabilityError
-} from '../../capabilities/capability-errors.js'
-import { travelSegmentProgress, useTravelClock } from './use-travel-clock.js'
-import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
+import type { HexTravelController } from './hex-travel-provider-port.js'
+import { mergeHexBiomeCatalog } from './hex-chunk-cache.js'
+
+const multipliers = [1, 2, 5, 10] as const
+const activeTravelStatuses = new Set(['travelling', 'paused', 'blocked'])
 
 export function TravelScenario(props: {
-  snapshot: LiveSessionSnapshot
-  setSnapshot: (snapshot: LiveSessionSnapshot) => void
   openMap: () => void
-  onError: (message: string) => void
+  mapActive: boolean
+  controller: HexTravelController
 }) {
-  const api = useCapabilityApi()
-  const capabilities = useMemo(() => hexCapabilities(api), [api])
-  const focusedSceneId = props.snapshot.scene.focusedSceneId
-  const onError = props.onError
-  const setSnapshot = props.setSnapshot
-  const [travel, setTravel] = useState<HexTravelSnapshot | null>(null)
-  const clockNow = useTravelClock(travel)
-  const refresh = useCallback(async () => {
-    const next = await capabilities.hexTravel.read(focusedSceneId)
-    setTravel(next)
-    setSnapshot(await capabilities.session.read())
-  }, [capabilities, focusedSceneId, setSnapshot])
-  useEffect(() => {
-    void Promise.resolve().then(refresh).catch(reportCapabilityError(onError))
-  }, [onError, refresh])
-  useEffect(() => {
-    return capabilities.session.onChanged((notice) => {
-      if (notice.sceneId !== focusedSceneId) return
-      void refresh().catch(reportCapabilityError(onError))
-    })
-  }, [capabilities, focusedSceneId, onError, refresh])
-  const mutate = async (action: 'pause' | 'resume' | 'abort') => {
-    if (!travel) return
-    try {
-      setTravel(
-        await capabilities.hexTravel[action](focusedSceneId, travel.revision)
-      )
-      props.setSnapshot(await capabilities.session.read())
-    } catch (cause) {
-      props.onError(capabilityErrorText(cause))
-    }
+  const state = useHexTravelViewModel(props.controller)
+  if (props.controller.state.lifecycle === 'error')
+    return (
+      <section className="travel-console" aria-label={message('ui.reise')}>
+        <p className="travel-route-message" role="alert">
+          {props.controller.state.error}
+        </p>
+      </section>
+    )
+  const selectedTile = state.selected
+    ? (state.map?.tiles.find(
+        (tile) => tile.q === state.selected!.q && tile.r === state.selected!.r
+      ) ?? null)
+    : null
+  const selectedBiome = selectedTile
+    ? (state.biomes?.biomes.find(
+        (biome) => biome.id === selectedTile.biomeId
+      ) ?? null)
+    : null
+  const pauseOrResume =
+    state.travel?.status === 'paused' || state.travel?.status === 'blocked'
+  const travelActive = activeTravelStatuses.has(state.travel?.status ?? '')
+  const mutationsEnabled = props.controller.state.lifecycle === 'ready'
+  const multiplierIndex = multipliers.indexOf(state.multiplier)
+  const currentLocation =
+    state.travel?.locationName ||
+    state.travel?.currentLabel ||
+    message('ui.kein.ort.gesetzt')
+  const currentHex = state.selected
+    ? selectedTile && selectedBiome
+      ? formatMessage('hex.status.tileBiomeCost', {
+          q: state.selected.q,
+          r: state.selected.r,
+          biome: selectedBiome.label,
+          cost: formatNumber(selectedBiome.travelCost)
+        })
+      : formatMessage('hex.status.emptyTile', {
+          q: state.selected.q,
+          r: state.selected.r
+        })
+    : message('hex.status.noSelection')
+  const evaluation = state.evaluation
+  const routeValues =
+    evaluation?.status === 'ready'
+      ? {
+          duration: formatShortDuration(evaluation.totalGameSeconds),
+          hexes: Math.max(0, evaluation.path.length - 1).toString(),
+          cost: formatMessage('hex.costPoints', {
+            value: formatNumber(evaluation.totalTravelCost)
+          })
+        }
+      : { duration: '—', hexes: '—', cost: '—' }
+
+  const activateMapMode = (action: () => void) => {
+    action()
+    if (!props.mapActive) props.openMap()
   }
-  const context = props.snapshot.travel
+
   return (
-    <section className="scenario-content travel-context">
-      <p className="section-kicker">{message('ui.reise')}</p>
-      <h2>
-        {context.kind === 'hex'
-          ? context.locationName || context.currentLabel
-          : context.label}
-      </h2>
-      {context.kind === 'hex' ? (
-        <>
-          <p>
-            {context.mapName} · {formatGameTime(context.gameTimeSeconds)}
+    <section className="travel-console" aria-label={message('ui.reise')}>
+      <div className="travel-console-head">
+        <select
+          aria-label={message('ui.hex.karte')}
+          value={state.map?.map.id ?? ''}
+          disabled={!state.catalog || state.catalog.maps.length === 0}
+          onChange={(event) => void state.selectMap(event.target.value)}
+        >
+          {!state.catalog ? (
+            <option value="">{message('hex.loading')}</option>
+          ) : state.catalog.maps.length === 0 ? (
+            <option value="">{message('hex.none')}</option>
+          ) : (
+            state.catalog.maps.map((entry) => (
+              <option key={entry.id} value={entry.id}>
+                {entry.displayName}
+              </option>
+            ))
+          )}
+        </select>
+
+        <div className="travel-current-location">
+          <p>{message('ui.aktuelle.location')}</p>
+          <strong>{currentLocation}</strong>
+        </div>
+
+        {!props.mapActive && (
+          <button className="travel-open-map" onClick={props.openMap}>
+            {message('ui.karte.oeffnen')}
+          </button>
+        )}
+
+        <div className="travel-route-actions">
+          <button
+            className="primary-action"
+            aria-pressed={state.mode === 'plan'}
+            disabled={!state.map}
+            onClick={() => activateMapMode(state.togglePlanning)}
+          >
+            {message('ui.route.planen')}
+          </button>
+          <button
+            disabled={state.waypoints.length === 0 && !state.evaluation}
+            onClick={state.clearRoute}
+          >
+            {message('ui.loeschen')}
+          </button>
+          <button
+            className="travel-icon-button travel-position-button"
+            aria-label={message('ui.party.platzieren')}
+            aria-pressed={state.mode === 'position'}
+            disabled={!state.map || !mutationsEnabled}
+            onClick={() => activateMapMode(state.togglePositioning)}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="8" />
+              <circle className="travel-party-center" cx="12" cy="12" r="3" />
+            </svg>
+          </button>
+        </div>
+
+        <div
+          className="travel-transport"
+          role="group"
+          aria-label={message('ui.reisesteuerung')}
+        >
+          <TravelIconButton
+            kind="play"
+            label={message('ui.reise.starten')}
+            primary
+            disabled={!mutationsEnabled || state.evaluation?.status !== 'ready'}
+            onClick={() => void state.start()}
+          />
+          <TravelIconButton
+            kind={pauseOrResume ? 'play' : 'pause'}
+            label={
+              pauseOrResume ? message('ui.fortsetzen') : message('ui.pause')
+            }
+            disabled={!mutationsEnabled || !travelActive}
+            onClick={() => void state.pauseOrResume()}
+          />
+          <TravelIconButton
+            kind="stop"
+            label={message('ui.stopp')}
+            disabled={!mutationsEnabled || !travelActive}
+            onClick={() => void state.abort()}
+          />
+          <span className="travel-transport-separator" aria-hidden="true" />
+          <TravelIconButton
+            kind="slower"
+            label={message('ui.langsamer')}
+            disabled={!mutationsEnabled || multiplierIndex <= 0}
+            onClick={() => void state.stepMultiplier(-1)}
+          />
+          <span className="travel-multiplier">
+            {formatMessage('hex.multiplier', { value: state.multiplier })}
+          </span>
+          <TravelIconButton
+            kind="faster"
+            label={message('ui.schneller')}
+            disabled={
+              !mutationsEnabled || multiplierIndex >= multipliers.length - 1
+            }
+            onClick={() => void state.stepMultiplier(1)}
+          />
+        </div>
+      </div>
+
+      <div className="travel-console-body">
+        {state.travel && (
+          <p className="travel-route-message" role="status">
+            {travelHint(state.travel.hintCode)}
           </p>
-          <p>{context.hint}</p>
-          {travel &&
-            travel.segmentStartedAt !== null &&
-            travel.segmentEndsAt !== null && (
-              <progress
-                aria-label={message(
-                  'ui.fortschritt.des.aktuellen.reiseabschnitts'
-                )}
-                max={1}
-                value={travelSegmentProgress(
-                  travel.segmentStartedAt,
-                  travel.segmentEndsAt,
-                  clockNow
-                )}
-              />
-            )}
-          <dl className="travel-facts">
-            <div>
-              <dt>{message('ui.status')}</dt>
-              <dd>{context.status}</dd>
-            </div>
-            <div>
-              <dt>{message('ui.tempo')}</dt>
-              <dd>
-                {context.effectiveSpeedFeet} {message('ui.ft.runde')}
-              </dd>
-            </div>
-            <div>
-              <dt>{message('ui.rest')}</dt>
-              <dd>{formatDuration(context.remainingGameSeconds)}</dd>
-            </div>
-          </dl>
-          {context.assumedSpeedMemberNames.length > 0 && (
-            <p className="travel-warning">
-              {formatMessage('hex.assumedSpeed', {
-                names: context.assumedSpeedMemberNames.join(', ')
-              })}
-            </p>
-          )}
-          {travel && (
-            <label>
-              {message('ui.darstellungstempo')}
-              <select
-                value={travel.multiplier}
-                onChange={(event) =>
-                  void capabilities.hexTravel
-                    .setMultiplier(
-                      focusedSceneId,
-                      Number(event.target.value) as 1 | 2 | 5 | 10,
-                      travel.revision
-                    )
-                    .then(setTravel)
-                    .catch(reportCapabilityError(props.onError))
-                }
-              >
-                {[1, 2, 5, 10].map((value) => (
-                  <option key={value} value={value}>
-                    {formatMessage('hex.multiplier', { value })}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          <div className="row-actions">
-            <button onClick={props.openMap}>
-              {message('ui.karte.oeffnen')}
-            </button>
-            {travel?.status === 'travelling' && (
-              <button onClick={() => void mutate('pause')}>
-                {message('ui.pause')}
-              </button>
-            )}
-            {(travel?.status === 'paused' || travel?.status === 'blocked') && (
-              <button onClick={() => void mutate('resume')}>
-                {message('ui.fortsetzen')}
-              </button>
-            )}
-            {travel &&
-              ['travelling', 'paused', 'blocked'].includes(travel.status) && (
-                <button className="danger" onClick={() => void mutate('abort')}>
-                  {message('action.cancel')}
-                </button>
-              )}
-          </div>
-        </>
-      ) : (
-        <>
-          <p>{context.hint}</p>
-          <button onClick={props.openMap}>{message('ui.karte.oeffnen')}</button>
-        </>
-      )}
+        )}
+        <div className="travel-route-facts">
+          <TravelFact
+            label={message('ui.dauer')}
+            value={routeValues.duration}
+          />
+          <TravelFact label={message('ui.hex')} value={routeValues.hexes} />
+          <TravelFact label={message('ui.kosten')} value={routeValues.cost} />
+        </div>
+        {evaluation?.status === 'rejected' && (
+          <p className="travel-route-message" role="status">
+            {routeFailureMessage(evaluation)}
+          </p>
+        )}
+        {props.controller.state.lifecycle === 'stale' && (
+          <p className="travel-warning" role="status">
+            {props.controller.state.error ?? message('hex.travel.stale')}
+          </p>
+        )}
+        <p className="travel-current-hex">{currentHex}</p>
+        {state.travel?.assumedSpeedMemberNames.length ? (
+          <p className="travel-warning">
+            {formatMessage('hex.assumedSpeed', {
+              names: state.travel.assumedSpeedMemberNames.join(', ')
+            })}
+          </p>
+        ) : null}
+      </div>
     </section>
   )
 }
 
-export function SessionHexMap(props: {
-  snapshot: LiveSessionSnapshot
-  setSnapshot: (snapshot: LiveSessionSnapshot) => void
-  onError: (message: string) => void
-}) {
-  const api = useCapabilityApi()
-  const capabilities = useMemo(() => hexCapabilities(api), [api])
-  const chunkCache = useRef(
-    new HexChunkCache((mapId, keys) => capabilities.hex.readChunks(mapId, keys))
-  )
-  const mapRefreshRequest = useRef(0)
-  const biomeRefreshRequest = useRef(0)
-  const sceneId = props.snapshot.scene.focusedSceneId
-  const onError = props.onError
-  const setSnapshot = props.setSnapshot
-  const [catalog, setCatalog] = useState<HexMapCatalogSnapshot | null>(null)
-  const [biomes, setBiomes] = useState<HexBiomeCatalog | null>(null)
-  const [map, setMap] = useState<HexMapView | null>(null)
-  const [travel, setTravel] = useState<HexTravelSnapshot | null>(null)
-  const [selected, setSelected] = useState<AxialCoordinate | null>(null)
-  const [mode, setMode] = useState<'inspect' | 'position' | 'plan'>('inspect')
-  const [waypoints, setWaypoints] = useState<AxialCoordinate[]>([])
-  const [evaluation, setEvaluation] = useState<HexRouteEvaluation | null>(null)
-  const applyMap = useCallback((next: HexMapView | null) => {
-    setMap(next)
-    if (next)
-      setBiomes((current) =>
-        current ? mergeHexBiomeCatalog(current, next.biomes) : current
-      )
-  }, [])
-  useEffect(() => () => chunkCache.current.clear(), [])
-
-  useEffect(() => {
-    void Promise.all([
-      capabilities.hex.catalog(),
-      capabilities.hex.biomeCatalog(),
-      capabilities.hexTravel.read(sceneId)
-    ])
-      .then(async ([nextCatalog, nextBiomes, nextTravel]) => {
-        setCatalog(nextCatalog)
-        setBiomes(nextBiomes)
-        setTravel(nextTravel)
-        const mapId = nextTravel.mapId ?? nextCatalog.maps[0]?.id
-        const summary = nextCatalog.maps.find((entry) => entry.id === mapId)
-        applyMap(summary ? await chunkCache.current.readMapView(summary) : null)
-      })
-      .catch(reportCapabilityError(onError))
-  }, [applyMap, capabilities, onError, sceneId])
-
-  useEffect(
+export function SessionHexMap(props: { controller: HexTravelController }) {
+  const state = useHexTravelViewModel(props.controller)
+  const travel = state.travel
+  const token =
+    travel && travel.mapId === state.map?.map.id ? travel.current : null
+  const route =
+    state.evaluation?.path ??
+    (travel && travel.mapId === state.map?.map.id ? travel.path : [])
+  const visibleToken = state.tokenPreview ?? token
+  const mapLabel = useMemo(
     () =>
-      capabilities.session.onChanged((notice) => {
-        if (notice.sceneId !== sceneId) return
-        void Promise.all([
-          capabilities.hexTravel.read(sceneId),
-          capabilities.session.read()
-        ])
-          .then(([nextTravel, nextSession]) => {
-            setTravel(nextTravel)
-            setSnapshot(nextSession)
+      state.map
+        ? formatMessage('hex.canvas.mapLabel', {
+            name: state.map.map.displayName
           })
-          .catch(reportCapabilityError(onError))
-      }),
-    [capabilities, onError, sceneId, setSnapshot]
+        : '',
+    [state.map]
   )
 
-  useEffect(
-    () =>
-      capabilities.biomes.onChanged(() => {
-        const request = ++biomeRefreshRequest.current
-        if (map) chunkCache.current.invalidateMap(map.map.id)
-        void Promise.all([
-          capabilities.hex.biomeCatalog(),
-          map ? chunkCache.current.readMapView(map.map, map.center, true) : null
-        ])
-          .then(([baseline, nextMap]) => {
-            if (request !== biomeRefreshRequest.current) return
-            setBiomes(
-              nextMap
-                ? mergeHexBiomeCatalog(baseline, nextMap.biomes)
-                : baseline
-            )
-            if (nextMap) setMap(nextMap)
-          })
-          .catch(reportCapabilityError(onError))
-      }),
-    [capabilities.biomes, capabilities.hex, map, onError]
-  )
-
-  useEffect(
-    () =>
-      capabilities.hex.onChanged((notice) => {
-        if (!map || !notice.mapIds.includes(map.map.id)) return
-        const request = ++mapRefreshRequest.current
-        const changedKeys = notice.changedChunks
-          .filter((chunk) => chunk.mapId === map.map.id)
-          .map((chunk) => chunk.key)
-        chunkCache.current.invalidateChunks(map.map.id, changedKeys)
-        void capabilities.hex
-          .catalog()
-          .then(async (nextCatalog) => {
-            const summary = nextCatalog.maps.find(
-              (candidate) => candidate.id === map.map.id
-            )
-            if (!summary) return null
-            const nextMap = await chunkCache.current.readMapView(
-              summary,
-              map.center
-            )
-            return { nextCatalog, nextMap }
-          })
-          .then((result) => {
-            if (!result || request !== mapRefreshRequest.current) return
-            setCatalog(result.nextCatalog)
-            applyMap(result.nextMap)
-          })
-          .catch(reportCapabilityError(onError))
-      }),
-    [applyMap, capabilities.hex, map, onError]
-  )
-
-  useEffect(() => {
-    if (!map || mode !== 'plan' || waypoints.length === 0) return
-    void Promise.resolve()
-      .then(() =>
-        capabilities.hexTravel.evaluate(sceneId, map.map.id, waypoints)
-      )
-      .then(setEvaluation)
-      .catch(reportCapabilityError(onError))
-  }, [capabilities, map, mode, onError, sceneId, waypoints])
-
-  const selectMap = async (mapId: string) => {
-    try {
-      const summary = catalog?.maps.find((entry) => entry.id === mapId)
-      if (!summary) return
-      applyMap(await chunkCache.current.readMapView(summary))
-      setSelected(null)
-      setWaypoints([])
-    } catch (cause) {
-      props.onError(capabilityErrorText(cause))
-    }
-  }
-  const clickTile = (coordinate: AxialCoordinate) => {
-    setSelected(coordinate)
-    const authored = map?.tiles.some(
-      (tile) => tile.q === coordinate.q && tile.r === coordinate.r
-    )
-    if (mode === 'plan' && authored) {
-      setEvaluation(null)
-      setWaypoints((current) => [...current, coordinate])
-    }
-  }
-  const placeParty = async () => {
-    if (!map || !selected) return
-    try {
-      setTravel(
-        await capabilities.hexTravel.position(
-          sceneId,
-          map.map.id,
-          selected,
-          props.snapshot.scene.revision
-        )
-      )
-      props.setSnapshot(await capabilities.session.read())
-      setMode('inspect')
-    } catch (cause) {
-      props.onError(capabilityErrorText(cause))
-    }
-  }
-  const start = async () => {
-    if (!map || !travel || !evaluation?.canStart) return
-    try {
-      setTravel(
-        await capabilities.hexTravel.start(
-          sceneId,
-          map.map.id,
-          waypoints,
-          travel.multiplier,
-          travel.revision
-        )
-      )
-      props.setSnapshot(await capabilities.session.read())
-      setMode('inspect')
-      setWaypoints([])
-    } catch (cause) {
-      props.onError(capabilityErrorText(cause))
-    }
-  }
-
-  if (!catalog || !biomes)
-    return <div className="session-map-empty">{message('hex.loading')}</div>
-  if (catalog.maps.length === 0)
+  if (props.controller.state.lifecycle === 'error')
     return (
-      <div className="session-map-empty">
+      <div className="hex-travel-map-empty" role="alert">
+        {props.controller.state.error}
+      </div>
+    )
+  if (!state.catalog || !state.biomes)
+    return <div className="hex-travel-map-empty">{message('hex.loading')}</div>
+  if (state.catalog.maps.length === 0)
+    return (
+      <div className="hex-travel-map-empty">
         <strong>{message('hex.none')}</strong>
         <p>{message('ui.lege.zuerst.im.hex.editor.eine.karte.an')}</p>
       </div>
     )
-  if (!map)
-    return <div className="session-map-empty">{message('hex.loading')}</div>
-  const token = travel?.mapId === map.map.id ? travel.current : null
-  const route =
-    evaluation?.path ?? (travel?.mapId === map.map.id ? travel.path : [])
-  const selectedTile = selected
-    ? map.tiles.find((tile) => tile.q === selected.q && tile.r === selected.r)
-    : null
+  if (!state.map)
+    return <div className="hex-travel-map-empty">{message('hex.loading')}</div>
+
   return (
-    <div className="session-hex-map">
-      <div className="hex-map-toolbar">
-        <select
-          aria-label={message('ui.hex.karte')}
-          value={map.map.id}
-          onChange={(event) => void selectMap(event.target.value)}
-        >
-          {catalog.maps.map((entry) => (
-            <option key={entry.id} value={entry.id}>
-              {entry.displayName}
-            </option>
-          ))}
-        </select>
-        <button
-          aria-pressed={mode === 'inspect'}
-          onClick={() => setMode('inspect')}
-        >
-          {message('ui.auswahl')}
-        </button>
-        <button
-          aria-pressed={mode === 'position'}
-          onClick={() => setMode('position')}
-        >
-          {message('ui.party.platzieren')}
-        </button>
-        <button
-          aria-pressed={mode === 'plan'}
-          onClick={() => {
-            setMode('plan')
-            setWaypoints([])
-            setEvaluation(null)
-          }}
-        >
-          {message('ui.reise.planen')}
-        </button>
-        {mode === 'plan' && (
-          <button
-            disabled={waypoints.length === 0}
-            onClick={() => {
-              setEvaluation(null)
-              setWaypoints((current) => current.slice(0, -1))
-            }}
-          >
-            {message('ui.letzten.punkt.entfernen')}
-          </button>
-        )}
-      </div>
+    <div className="hex-travel-map">
       <HexMapCanvas
-        snapshot={map}
-        biomes={biomes}
-        selected={selected}
-        token={token}
+        snapshot={state.map}
+        biomes={state.biomes}
+        selected={state.selected}
+        token={visibleToken}
         route={route}
-        onTileClick={clickTile}
-        onViewportChange={(center) =>
-          void chunkCache.current
-            .readMapView(map.map, center)
-            .then(applyMap)
-            .catch(reportCapabilityError(props.onError))
+        overlays={state.map.overlays.filter((overlay) => !overlay.focused)}
+        draggableToken={
+          props.controller.state.lifecycle === 'ready' ? token : null
         }
-        ariaLabel={formatMessage('hex.canvas.mapLabel', {
-          name: map.map.displayName
-        })}
+        onTokenDrag={state.previewToken}
+        onTokenDrop={state.dropToken}
+        onTileClick={state.activateTile}
+        onTileNavigate={state.selectTile}
+        onTileActivate={state.activateTile}
+        onViewportChange={(center) => void state.readViewport(center)}
+        ariaLabel={mapLabel}
       />
-      <div className="hex-map-status">
-        <span>
-          {selectedTile
-            ? formatMessage(
-                selectedTile.location
-                  ? 'hex.status.tileBiomeLocation'
-                  : 'hex.status.tileBiome',
-                {
-                  q: selectedTile.q,
-                  r: selectedTile.r,
-                  biome:
-                    biomes.biomes.find(
-                      (biome) => biome.id === selectedTile.biomeId
-                    )?.label ?? '',
-                  location: selectedTile.location?.displayName ?? ''
-                }
-              )
-            : (travel?.hint ?? message('hex.selectTile'))}
-        </span>
-        {mode === 'position' && (
-          <button disabled={!selectedTile} onClick={() => void placeParty()}>
-            {message('ui.party.hier.platzieren')}
-          </button>
-        )}
-        {mode === 'plan' && (
-          <>
-            <span>{evaluation?.message ?? message('hex.chooseWaypoints')}</span>
-            {evaluation && (
-              <span>{formatDuration(evaluation.totalGameSeconds)}</span>
-            )}
-            <button
-              disabled={!evaluation?.canStart}
-              onClick={() => void start()}
-            >
-              {message('ui.reise.starten')}
-            </button>
-          </>
-        )}
-      </div>
     </div>
   )
 }
 
-function formatDuration(totalSeconds: number) {
-  const hours = Math.floor(totalSeconds / 3600)
-  const minutes = Math.floor((totalSeconds % 3600) / 60)
-  return formatMessage('hex.duration', { hours, minutes })
+function useHexTravelViewModel(controller: HexTravelController) {
+  const provider = controller.state.providerState
+  const map = controller.state.map
+  const biomes = useMemo(() => {
+    if (!provider) return null
+    return map
+      ? mergeHexBiomeCatalog(provider.biomes, map.biomes)
+      : provider.biomes
+  }, [map, provider])
+  return {
+    catalog: provider?.catalog ?? null,
+    biomes,
+    map,
+    travel: provider?.travel ?? null,
+    selected: controller.state.selected,
+    mode: controller.state.mode,
+    waypoints: controller.state.waypoints,
+    evaluation: controller.state.evaluation,
+    multiplier: controller.state.multiplier,
+    tokenPreview: controller.state.tokenPreview,
+    selectMap: controller.selectMap,
+    selectTile: controller.selectPosition,
+    activateTile: controller.activatePosition,
+    togglePlanning: controller.togglePlanning,
+    togglePositioning: controller.togglePositioning,
+    clearRoute: controller.clearRoute,
+    readViewport: controller.readViewport,
+    previewToken: controller.previewToken,
+    dropToken: controller.dropToken,
+    start: controller.start,
+    pauseOrResume: controller.pauseOrResume,
+    abort: controller.abort,
+    stepMultiplier: controller.stepMultiplier
+  }
 }
 
-function formatGameTime(totalSeconds: number) {
-  const day = Math.floor(totalSeconds / 86400) + 1
-  const inDay = totalSeconds % 86400
-  const hours = Math.floor(inDay / 3600)
-    .toString()
-    .padStart(2, '0')
-  const minutes = Math.floor((inDay % 3600) / 60)
-    .toString()
-    .padStart(2, '0')
-  return formatMessage('hex.gameTime', { day, hours, minutes })
+function routeFailureMessage(
+  evaluation: Extract<HexRouteEvaluation, { status: 'rejected' }>
+) {
+  const coordinate = evaluation.blockingCoordinate
+  switch (evaluation.reason) {
+    case 'outside-map':
+      return formatMessage('hex.route.rejected.outside-map', {
+        q: coordinate?.q ?? 0,
+        r: coordinate?.r ?? 0
+      })
+    case 'impassable':
+      return formatMessage('hex.route.rejected.impassable', {
+        q: coordinate?.q ?? 0,
+        r: coordinate?.r ?? 0
+      })
+    case 'party-unpositioned':
+      return message('hex.route.rejected.party-unpositioned')
+    case 'missing-waypoint':
+      return message('hex.route.rejected.missing-waypoint')
+    case 'route-too-long':
+      return message('hex.route.rejected.route-too-long')
+    case 'movement-speed-unavailable':
+      return message('hex.route.rejected.movement-speed-unavailable')
+    case 'same-as-start':
+      return message('hex.route.rejected.same-as-start')
+  }
+}
+
+function travelHint(code: HexTravelSnapshot['hintCode']) {
+  return message(`hex.travel.hint.${code}`)
+}
+
+function TravelFact(props: { label: string; value: string }) {
+  return (
+    <div>
+      <span>{props.label}</span>
+      <strong>{props.value}</strong>
+    </div>
+  )
+}
+
+function TravelIconButton(props: {
+  kind: 'play' | 'pause' | 'stop' | 'slower' | 'faster'
+  label: string
+  disabled: boolean
+  primary?: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      className={`travel-icon-button${props.primary ? ' primary-action' : ''}`}
+      aria-label={props.label}
+      disabled={props.disabled}
+      onClick={props.onClick}
+    >
+      <TravelIcon kind={props.kind} />
+    </button>
+  )
+}
+
+function TravelIcon(props: {
+  kind: 'play' | 'pause' | 'stop' | 'slower' | 'faster'
+}) {
+  if (props.kind === 'pause')
+    return (
+      <svg width="13" height="13" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="6" y="5" width="4" height="14" />
+        <rect x="14" y="5" width="4" height="14" />
+      </svg>
+    )
+  if (props.kind === 'stop')
+    return (
+      <svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="5" y="5" width="14" height="14" />
+      </svg>
+    )
+  const paths =
+    props.kind === 'play'
+      ? ['M7 4l13 8-13 8z']
+      : props.kind === 'slower'
+        ? ['M11 5v14l-9-7z', 'M21 5v14l-9-7z']
+        : ['M13 5v14l9-7z', 'M3 5v14l9-7z']
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" aria-hidden="true">
+      {paths.map((path) => (
+        <path key={path} d={path} />
+      ))}
+    </svg>
+  )
+}
+
+function formatShortDuration(totalSeconds: number) {
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  return minutes === 0
+    ? formatMessage('hex.durationHours', { hours })
+    : formatMessage('hex.duration', { hours, minutes })
+}
+
+function formatNumber(value: number) {
+  return new Intl.NumberFormat('de-DE', { maximumFractionDigits: 2 }).format(
+    value
+  )
 }

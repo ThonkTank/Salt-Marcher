@@ -1,0 +1,472 @@
+.loot-distribution-dialog,
+.treasure-editor-dialog,
+.character-loot-dialog,
+.loot-generator-dialog {
+  display: grid;
+  max-height: calc(100vh - 2rem);
+  gap: var(--space-6);
+  overflow: auto;
+  border: var(--border-width-structural) solid var(--border-structural);
+  background: var(--surface-panel);
+  box-shadow: var(--shadow-dialog);
+  padding: var(--space-8);
+}
+
+.loot-distribution-dialog,
+.treasure-editor-dialog,
+.character-loot-dialog {
+  width: min(46rem, calc(100vw - 3rem));
+}
+
+.loot-generator-dialog {
+  width: min(58rem, calc(100vw - 3rem));
+}
+
+.loot-distribution-dialog > header,
+.loot-distribution-dialog > footer,
+.treasure-editor-dialog > header,
+.treasure-editor-dialog > footer,
+.character-loot-dialog > header,
+.character-loot-dialog > footer,
+.loot-generator-dialog > header,
+.loot-generator-dialog > footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+}
+
+.loot-distribution-dialog h2,
+.treasure-editor-dialog h2,
+.character-loot-dialog h2,
+.loot-generator-dialog h2,
+.loot-distribution-dialog p,
+.treasure-editor-dialog p,
+.character-loot-dialog p,
+.loot-generator-dialog p {
+  margin: 0;
+}
+
+.loot-generator-inputs {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  align-items: end;
+}
+
+.group-loot-generator-inputs {
+  grid-template-columns: minmax(10rem, 16rem) auto;
+  justify-content: start;
+}
+
+.loot-generator-inputs label {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.generated-loot-results {
+  display: grid;
+  gap: 0.7rem;
+  max-height: 52vh;
+  overflow: auto;
+  margin-top: 0.8rem;
+}
+
+.generated-loot-results article {
+  border: 1px solid var(--line-strong);
+  padding: 0.65rem;
+}
+
+.generated-loot-results article > header,
+.generated-loot-results article > footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  border: 0;
+  padding: 0;
+}
+
+.generated-loot-results article > header > span:first-child {
+  display: grid;
+}
+
+.generated-loot-results article small {
+  color: var(--ink-muted);
+}
+
+.generated-loot-results article ul {
+  margin: 0.55rem 0;
+  padding-left: 1.25rem;
+}
+
+.generated-loot-summary {
+  margin: 0;
+  font-weight: 700;
+}
+
+.group-loot-inline-panel {
+  display: grid;
+  gap: var(--space-3);
+  border-top: var(--border-width-structural) solid var(--accent-rubric-line);
+  background: var(--surface-raised);
+  padding: var(--space-5) var(--space-6);
+}
+
+.group-loot-inline-panel > header,
+.group-loot-inline-actions,
+.group-loot-inline-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.group-loot-inline-panel > header > span {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.group-loot-inline-panel > header small {
+  color: var(--text-muted);
+  font-family: var(--font-smallcaps);
+  letter-spacing: var(--tracking-caps);
+}
+
+.group-loot-inline-panel > p,
+.group-loot-inline-error {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.group-loot-inline-error {
+  color: var(--text-danger);
+}
+
+.group-loot-inline-panel .generated-loot-results {
+  max-height: none;
+  overflow: visible;
+  margin-top: 0;
+}
+
+.group-loot-inline-actions {
+  justify-content: flex-end;
+}
+
+.group-loot-run {
+  color: var(--text-muted);
+  font-family: var(--font-smallcaps);
+  font-size: var(--text-sm);
+  letter-spacing: var(--tracking-caps);
+}
+
+.group-loot-budget {
+  display: grid;
+  gap: var(--space-2);
+  border: 1px solid var(--border-1);
+  background: var(--surface-card);
+  padding: var(--space-3) var(--space-4);
+}
+
+.group-loot-budget-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) auto;
+  align-items: end;
+  gap: var(--space-3);
+}
+
+.group-loot-budget-summary > span {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.group-loot-budget-summary small {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.group-loot-budget-meter {
+  height: 6px;
+  overflow: hidden;
+  background: var(--surface-control);
+}
+
+.group-loot-budget-meter > span {
+  display: block;
+  height: 100%;
+  background: var(--accent-gold);
+}
+
+.group-loot-budget.below .group-loot-budget-meter > span,
+.group-loot-budget.above .group-loot-budget-meter > span {
+  background: var(--text-danger);
+}
+
+.loot-distribution-items,
+.treasure-item-editor,
+.treasure-container-editor,
+.character-loot-list {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0;
+  padding: 0;
+}
+
+.loot-distribution-item {
+  border: 1px solid var(--line-strong);
+  padding: 0.65rem;
+}
+
+.loot-distribution-item > header {
+  align-items: baseline;
+  border: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 0 0.45rem;
+}
+
+.loot-distribution-item > header span,
+.character-loot-list small {
+  color: var(--ink-muted);
+  font-size: 0.75rem;
+}
+
+.loot-share-row {
+  display: grid;
+  gap: 0.4rem;
+  grid-template-columns: minmax(9rem, 1fr) 5rem auto;
+  margin-top: 0.35rem;
+}
+
+.loot-split-action,
+.loot-add-row {
+  margin-top: 0.5rem;
+}
+
+.loot-validation {
+  color: var(--text-danger);
+  margin: 0.7rem 0 0;
+}
+
+.loot-distribution-context,
+.loot-distribution-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3, 0.6rem);
+  border: 1px solid var(--line-soft);
+  background: var(--surface-raised);
+  padding: 0.55rem 0.7rem;
+}
+
+.loot-distribution-total {
+  margin-bottom: 0.75rem;
+}
+
+.loot-distribution-context span,
+.loot-distribution-total span,
+.loot-item-remainder {
+  color: var(--ink-muted);
+  font-size: 0.78rem;
+}
+
+.loot-item-remainder {
+  margin: 0.45rem 0 0;
+}
+
+.loot-label-field {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.treasure-item-editor-head,
+.treasure-item-editor-row {
+  display: grid;
+  gap: 0.4rem;
+  grid-template-columns:
+    minmax(10rem, 1fr) 5rem 7rem 4rem minmax(8rem, 0.7fr)
+    auto;
+}
+
+.treasure-container-editor-head,
+.treasure-container-editor-row {
+  display: grid;
+  gap: 0.4rem;
+  grid-template-columns: minmax(10rem, 1fr) 7rem auto;
+}
+
+.treasure-item-editor-head {
+  color: var(--ink-muted);
+  font-size: 0.72rem;
+  margin-top: 0.5rem;
+}
+
+.treasure-container-editor-head {
+  color: var(--ink-muted);
+  font-size: 0.72rem;
+  margin-top: 0.5rem;
+}
+
+.treasure-item-editor-row input[type='checkbox'] {
+  place-self: center;
+}
+
+.treasure-draft-fields {
+  container-type: inline-size;
+  display: grid;
+  gap: var(--space-3);
+}
+
+.treasure-item-editor-row > label,
+.treasure-container-editor-row > label {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.treasure-item-editor-row > label > span,
+.treasure-container-editor-row > label > span {
+  display: none;
+}
+
+.treasure-item-name-field small {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+@container (max-width: 44rem) {
+  .treasure-item-editor-head,
+  .treasure-container-editor-head {
+    display: none;
+  }
+
+  .treasure-item-editor-row,
+  .treasure-container-editor-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border: 1px solid var(--border-1);
+    background: var(--surface-card);
+    padding: var(--space-3);
+  }
+
+  .treasure-item-editor-row > label > span,
+  .treasure-container-editor-row > label > span {
+    display: inline;
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+  }
+
+  .treasure-item-name-field {
+    grid-column: 1 / -1;
+  }
+
+  .treasure-item-editor-row > button,
+  .treasure-container-editor-row > button {
+    justify-self: end;
+    align-self: end;
+  }
+
+  .group-loot-budget-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.loot-catalog-pane {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-height: 0;
+}
+
+.session-group-manager .loot-catalog-pane {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+.loot-catalog-filters {
+  display: grid;
+  grid-template-columns: minmax(10rem, 1fr) repeat(3, minmax(7rem, auto));
+  gap: var(--space-3);
+  border-bottom: 1px solid var(--border-1);
+  background: var(--surface-chrome);
+  padding: var(--space-3);
+}
+
+.loot-catalog-filters label {
+  display: grid;
+  gap: var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.loot-catalog-table td:first-child > strong,
+.loot-catalog-table td:first-child > small {
+  display: block;
+}
+
+.loot-catalog-table td:first-child > small {
+  color: var(--text-muted);
+}
+
+.loot-catalog-table td:last-child {
+  width: 3rem;
+}
+
+.character-loot-list {
+  list-style: none;
+}
+
+.character-loot-list li {
+  align-items: center;
+  border-bottom: 1px solid var(--line-soft);
+  display: flex;
+  justify-content: space-between;
+  padding: 0.55rem 0;
+}
+
+.character-loot-list li > span:first-child {
+  display: grid;
+}
+
+.character-loot-filters {
+  display: grid;
+  grid-template-columns: minmax(10rem, 1fr) auto auto;
+  gap: 0.45rem;
+  margin-bottom: 0.7rem;
+}
+
+.character-loot-list li {
+  gap: 0.6rem;
+}
+
+.character-loot-list li.superseded {
+  opacity: 0.62;
+}
+
+.character-loot-list li.superseded strong {
+  text-decoration: line-through;
+}
+
+.character-loot-correction {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) 5rem 7rem 9rem;
+  gap: 0.55rem;
+  border-top: 1px solid var(--line-strong);
+  margin-top: 0.8rem;
+  padding-top: 0.8rem;
+}
+
+.character-loot-correction h3,
+.character-loot-correction-reason,
+.character-loot-correction > div {
+  grid-column: 1 / -1;
+}
+
+.character-loot-correction label {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.character-loot-correction > div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}

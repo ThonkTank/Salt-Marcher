@@ -11,7 +11,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useState } from 'react'
 import { HexLocationDraftField } from '../../src/renderer/features/hex/hex-location-draft-field.js'
 import { HexMapDialog } from '../../src/renderer/features/hex/hex-map-dialog.js'
-import type { HexLocationPlacementProjectionPort } from '../../src/renderer/features/hex/hex-location-placement-port.js'
+import type { HexMapProjectionPort } from '../../src/renderer/features/hex/hex-map-projection-port.js'
 import type { HexMapApplicationPort } from '../../src/renderer/features/hex/hex-map-creation-port.js'
 import { HexChunkCache } from '../../src/renderer/features/hex/hex-chunk-cache.js'
 import type { WorldLocationPlacementState } from '../../src/renderer/features/worldplanner/world-location-editor-types.js'
@@ -45,7 +45,7 @@ const map = (id: string, position: number): HexMapSummary => ({
   position
 })
 
-function port(): HexLocationPlacementProjectionPort {
+function port(): HexMapProjectionPort {
   const maps = [map(mapAId, 0), map(mapBId, 1)]
   const readChunks = vi
     .fn()
@@ -75,7 +75,9 @@ function port(): HexLocationPlacementProjectionPort {
         ]
       })
     )
+  const cache = new HexChunkCache(readChunks)
   return {
+    cacheLifetime: 'transient',
     currentCatalog: () => null,
     currentBiomeCatalog: () => null,
     readCatalog: vi.fn().mockResolvedValue({ revision: 1, maps }),
@@ -92,9 +94,22 @@ function port(): HexLocationPlacementProjectionPort {
       ]
     }),
     locateLocation: vi.fn().mockResolvedValue(null),
-    cache: new HexChunkCache(readChunks),
-    cacheMode: 'transient',
-    subscribe: vi.fn().mockReturnValue(() => undefined)
+    readMap: vi.fn(
+      async (input: {
+        mapId: string
+        center?: { q: number; r: number }
+        force?: boolean
+        halfExtent?: number
+      }) =>
+        cache.readMapView(
+          maps.find((entry) => entry.id === input.mapId)!,
+          input.center,
+          input.force,
+          input.halfExtent
+        )
+    ),
+    subscribe: vi.fn().mockReturnValue(() => undefined),
+    dispose: vi.fn()
   }
 }
 

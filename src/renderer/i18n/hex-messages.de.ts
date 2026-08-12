@@ -1,7 +1,36 @@
 export const hexMessagesDe = {
+  'hex.travel.stale':
+    'Die Reisedaten werden aktualisiert. Änderungen sind vorübergehend gesperrt.',
+  'hex.travel.hint.travelling': 'Reise läuft.',
+  'hex.travel.hint.completed': 'Ziel erreicht.',
+  'hex.travel.hint.paused': 'Reise pausiert.',
+  'hex.travel.hint.aborted': 'Reise abgebrochen.',
+  'hex.travel.hint.map-edit-aborted':
+    'Reise wegen Kartenbearbeitung abgebrochen.',
+  'hex.travel.hint.party-changed':
+    'Reisegruppe geändert; Fortsetzung bestätigen.',
+  'hex.travel.hint.route-left-map': 'Die Route verlässt die angelegte Karte.',
+  'hex.travel.hint.blocked-biome': 'Das nächste Hex ist nicht mehr passierbar.',
+  'hex.travel.hint.no-speed':
+    'Die Reisegruppe besitzt keine positive Bewegungsrate.',
+  'hex.travel.hint.ready': 'Reise planen oder Party neu platzieren.',
+  'hex.travel.hint.unpositioned':
+    'Party zuerst auf einer Hex-Karte platzieren.',
   'hex.selectTile': 'Hexfeld auswählen.',
   'catalog.createLocation': 'Ort erstellen',
   'hex.chooseWaypoints': 'Wegpunkte auf der Karte wählen.',
+  'hex.route.rejected.party-unpositioned':
+    'Platziere die Party zuerst auf der Karte.',
+  'hex.route.rejected.missing-waypoint': 'Wähle mindestens einen Wegpunkt.',
+  'hex.route.rejected.route-too-long':
+    'Die Route ist zu lang. Wähle weniger Wegpunkte.',
+  'hex.route.rejected.movement-speed-unavailable':
+    'Für diese Party ist keine Reisegeschwindigkeit verfügbar.',
+  'hex.route.rejected.outside-map':
+    'Hex q={q}, r={r} liegt außerhalb der angelegten Karte.',
+  'hex.route.rejected.impassable': 'Hex q={q}, r={r} ist nicht passierbar.',
+  'hex.route.rejected.same-as-start':
+    'Das Ziel entspricht der aktuellen Position.',
   'hex.impassable': 'unpassierbar',
   'hex.noNamedLocation': 'Kein benannter Ort',
   'hex.brushRadius': 'Pinselradius',
@@ -97,7 +126,12 @@ export const hexMessagesDe = {
   'hex.canvas.placementLabel': 'Platzierung von {name}',
   'hex.status.tileBiome': 'q {q} · r {r} · {biome}',
   'hex.status.tileBiomeLocation': 'q {q} · r {r} · {biome} · {location}',
+  'hex.status.tileBiomeCost': 'q {q} · r {r} · {biome} · Kosten ×{cost}',
+  'hex.status.emptyTile': 'q {q} · r {r} · Leeres Hexfeld',
+  'hex.status.noSelection': 'Hexfeld auswählen.',
   'hex.duration': '{hours} Std. {minutes} Min.',
+  'hex.durationHours': '{hours} Std.',
+  'hex.costPoints': '{value} P',
   'hex.gameTime': 'Tag {day}, {hours}:{minutes}',
   'hex.assumedSpeed': '30 ft. angenommen für {names}.',
   'hex.multiplier': '{value}×',

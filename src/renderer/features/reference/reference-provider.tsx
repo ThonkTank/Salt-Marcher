@@ -95,7 +95,7 @@ export function ReferenceProvider(props: {
     if (!campaignId) return
     const refresh = () => {
       void capability
-        .campaignIndex(campaignId)
+        .campaignIndex({ campaignId })
         .then((next) => {
           if (campaignRequest.current === token)
             setCampaignIndices((current) => ({

@@ -6,6 +6,7 @@ import {
   coreOperations,
   mainOperations
 } from '../../src/shared/contracts/operations.js'
+import { capabilityEvents } from '../../src/shared/contracts/events.js'
 
 const source = (path: string) => readFileSync(join(process.cwd(), path), 'utf8')
 
@@ -95,6 +96,93 @@ function directIpcInvokeOwners(path: string): string[] {
 }
 
 describe('architecture boundaries', () => {
+  it('derives the public operation and event boundary from exact registries', () => {
+    const operations = { ...coreOperations, ...mainOperations }
+    for (const [kind, definition] of Object.entries(operations)) {
+      const [namespace, method] = kind.split('.')
+      expect(definition.namespace).toBe(namespace)
+      expect(definition.method).toBe(method)
+      expect(['read', 'write']).toContain(definition.mode)
+      expect(definition.deadlineMs).toBeGreaterThan(0)
+      expect(definition.roles.length).toBeGreaterThanOrEqual(
+        kind === 'core.shutdown' ? 0 : 1
+      )
+      expect(
+        ['ZodUndefined', 'ZodObject', 'ZodDiscriminatedUnion'].includes(
+          definition.input.constructor.name
+        ),
+        `${kind} is neither an undefined-input nor object-input operation`
+      ).toBe(true)
+    }
+
+    const forbidden = [
+      'sessionGeneration.generate',
+      'sessionGeneration.readRun',
+      'generatedEncounterPlans.prepare',
+      'generatedEncounterPlans.commit',
+      'sessionPlanner.begin',
+      'sessionPlanner.resolve',
+      'sessionPlanner.commit',
+      'session.generateLoot'
+    ]
+    for (const kind of forbidden) expect(operations).not.toHaveProperty(kind)
+
+    const utilityKeys = new Set(
+      [...source('src/utility/index.ts').matchAll(/^\s{2}'([^']+\.[^']+)':/gm)]
+        .map((match) => match[1])
+        .filter((kind): kind is string => kind !== undefined)
+    )
+    expect(utilityKeys).toEqual(new Set(Object.keys(coreOperations)))
+
+    const api = source('src/shared/contracts/capability-api.ts')
+    expect(api).toContain('DerivedOperationApi')
+    expect(api).toContain('DerivedEventApi')
+    expect(api).toContain("from './operations.js'")
+    expect(api).toContain("from './events.js'")
+
+    const preload = source('src/preload/capability-bridge/index.ts')
+    expect(preload).toContain('Object.entries(coreOperations)')
+    expect(preload).toContain('Object.entries(mainOperations)')
+    expect(preload).toContain('Object.entries(capabilityEvents)')
+    expect(preload).not.toMatch(
+      /contracts\/(?:loot|session-planner|hex|party|scene|encounter|world-location|biome)\.js/
+    )
+
+    const main = source('src/main/application-lifecycle/application.ts')
+    for (const kind of Object.keys(capabilityEvents)) {
+      expect(main, `${kind} is not routed by the event registry`).toContain(
+        `capabilityEvents['${kind}']`
+      )
+    }
+  })
+
+  it('erases every renderer import from schema-bearing contracts', () => {
+    for (const path of codeFiles('src/renderer')) {
+      const content = readFileSync(path, 'utf8')
+      const tree = ts.createSourceFile(
+        path,
+        content,
+        ts.ScriptTarget.Latest,
+        true,
+        path.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
+      )
+      for (const declaration of tree.statements) {
+        if (
+          !ts.isImportDeclaration(declaration) ||
+          !ts.isStringLiteral(declaration.moduleSpecifier) ||
+          !declaration.moduleSpecifier.text.includes('shared/contracts')
+        )
+          continue
+        const line =
+          tree.getLineAndCharacterOfPosition(declaration.getStart()).line + 1
+        expect(
+          declaration.importClause?.isTypeOnly,
+          `${path}:${line} retains a runtime contract import`
+        ).toBe(true)
+      }
+    }
+  })
+
   it('keeps session generation pure in core and file access in utility', () => {
     for (const file of codeFiles('src/core/session-generation')) {
       const content = readFileSync(file, 'utf8')
@@ -103,6 +191,25 @@ describe('architecture boundaries', () => {
     expect(
       source('src/utility/session-generation/catalog-provider.ts')
     ).toContain("from 'node:fs'")
+  })
+
+  it('publishes structured Generation and Preparation diagnostics without localized prose', () => {
+    const generationContract = source(
+      'src/shared/contracts/session-generation.ts'
+    )
+    const plannerContract = source('src/shared/contracts/session-planner.ts')
+    expect(generationContract).not.toMatch(/displayText|displaySummary/)
+    expect(plannerContract).toContain('sessionPreparationFailureSchema')
+    expect(plannerContract).toContain('parameters: z.record')
+    for (const file of [
+      ...codeFiles('src/core/session-generation'),
+      ...codeFiles('src/utility/session-generation'),
+      ...codeFiles('src/utility/session-planner')
+    ])
+      expect(
+        source(file),
+        `${file} contains localized Core output`
+      ).not.toMatch(/[ÄÖÜäöüß]/)
   })
 
   it('keeps SQL table ownership inside the owning aggregate', () => {
@@ -157,6 +264,10 @@ describe('architecture boundaries', () => {
     expect(utility).toContain('hexTravel.tick()')
     expect(utility).not.toContain('setInterval(')
     expect(utility).toContain('nextBoundaryDelay()')
+    expect(travel).toContain('hintCode')
+    expect(travel).not.toMatch(
+      /Reise läuft|Ziel erreicht|Reise pausiert|Reise abgebrochen|Party zuerst/
+    )
   })
 
   it('keeps module recovery and heavyweight rendering at explicit boundaries', () => {
@@ -166,8 +277,12 @@ describe('architecture boundaries', () => {
     const canvasImplementation = source(
       'src/renderer/features/hex/hex-map-canvas-pixi.tsx'
     )
+    const pixiRuntime = source('src/renderer/spatial-2d/pixi-webgl-runtime.ts')
     const gestureController = source(
       'src/renderer/features/hex/hex-canvas-gesture-controller.ts'
+    )
+    const keyboardController = source(
+      'src/renderer/features/hex/hex-canvas-keyboard-controller.ts'
     )
     expect(shell).toContain('<ModuleHost')
     expect(shell).toContain("import('../features/workspace/workspace.js')")
@@ -180,9 +295,14 @@ describe('architecture boundaries', () => {
     expect(definitions).toContain("import('./surfaces/hex-surface.js')")
     expect(canvasEntry).toContain("import('./hex-map-canvas-pixi.js')")
     expect(canvasEntry).not.toContain("from 'pixi.js'")
-    expect(canvasImplementation).toContain("from 'pixi.js'")
+    expect(canvasImplementation).toContain("pixi-webgl-runtime.js'")
+    expect(canvasImplementation).toContain('manageImports: false')
+    expect(pixiRuntime).toContain('WebGLRenderer.mjs')
+    expect(pixiRuntime).toContain('unsafe-eval/init.mjs')
     expect(canvasImplementation).toContain('attachHexCanvasGestures')
+    expect(canvasImplementation).toContain('hexCanvasKeyboardCommand')
     expect(gestureController).not.toContain("from 'pixi.js'")
+    expect(keyboardController).not.toContain("from 'pixi.js'")
     const editor = source('src/renderer/features/hex/hex-editor.tsx')
     expect(editor).toContain('<HexCatalogPane')
     expect(editor).toContain('<HexCanvasSurface')
@@ -316,32 +436,242 @@ describe('architecture boundaries', () => {
       expect(adapter).toContain('api: SaltMarcherApi')
       if (feature === 'hex') {
         expect(adapter).not.toContain('return api')
-        expect(adapter).toContain('hex: api.hex')
+        expect(adapter).toContain('hex: {')
+        expect(adapter).toContain('...api.hex')
         expect(adapter).toContain('locations: api.locations')
-        expect(adapter).toContain('locationSymbols: api.locationSymbols')
+        expect(adapter).toContain('locationSymbols: {')
+        expect(adapter).toContain('...api.locationSymbols')
         expect(adapter).toContain(
           'pickLocationSymbolFile: api.runtime.pickLocationSymbolFile'
         )
         expect(adapter).not.toMatch(/encounterTables|factions/)
-      } else expect(adapter).toContain('return api')
+      } else {
+        expect(adapter).not.toMatch(/\b(?:let|var)\s+(?:api|capabilities)\b/)
+        expect(adapter).not.toMatch(/window\.saltMarcher|ipcRenderer/)
+      }
     }
+  })
+
+  it('keeps Planner and Loot views behind one narrow capability adapter each', () => {
+    const features = [
+      {
+        directory: 'src/renderer/features/session-planner',
+        adapter: normalize(
+          resolve(
+            'src/renderer/features/session-planner/use-session-planner-ports.ts'
+          )
+        )
+      },
+      {
+        directory: 'src/renderer/features/loot',
+        adapter: normalize(
+          resolve('src/renderer/features/loot/use-loot-ports.ts')
+        )
+      }
+    ] as const
+
+    for (const feature of features)
+      for (const file of codeFiles(feature.directory)) {
+        const content = source(file)
+        if (normalize(resolve(file)) === feature.adapter) {
+          expect(content).toContain('useCapabilityApi')
+          expect(content).toContain('import type { SaltMarcherApi }')
+        } else {
+          expect(content, `${file} bypasses its narrow port`).not.toContain(
+            'useCapabilityApi'
+          )
+          expect(content, `${file} receives the general API`).not.toContain(
+            'SaltMarcherApi'
+          )
+        }
+      }
+
+    expect(
+      source(
+        'src/renderer/features/session-planner/session-planner-workspace.tsx'
+      ).split('\n').length
+    ).toBeLessThan(150)
+    for (const component of [
+      'budget-panel.tsx',
+      'preparation-status.tsx',
+      'scene-inspector.tsx',
+      'scene-sequence.tsx',
+      'session-catalog.tsx',
+      'session-planner-dialog-host.tsx'
+    ])
+      expect(
+        source(`src/renderer/features/session-planner/${component}`).trim()
+          .length
+      ).toBeGreaterThan(0)
+
+    const campaignRulesPort = source(
+      'src/renderer/features/workspace/campaign-reward-rules-port.ts'
+    )
+    expect(campaignRulesPort).toContain('CampaignRewardRulesPort')
+    expect(campaignRulesPort).toContain('SaltMarcherApi')
+    for (const view of [
+      'campaign-reward-rules-card.tsx',
+      'encounter-generator-settings.tsx',
+      'encounter-generator-settings-route.tsx',
+      'campaign-menu.tsx',
+      'workspace-top-bar.tsx'
+    ]) {
+      const content = source(`src/renderer/features/workspace/${view}`)
+      expect(content).toContain('CampaignRewardRulesPort')
+      expect(content).not.toContain('SaltMarcherApi')
+    }
+  })
+
+  it('composes owner-focused Loot handlers only at the Utility composition root', () => {
+    const root = source('src/core/application/loot-service.ts')
+    for (const component of [
+      'TreasureStore',
+      'LootProjectionStore',
+      'LootOperationJournal',
+      'LootCommandHandler',
+      'DistributeLootCommandHandler',
+      'CharacterLootService',
+      'LootQueryService'
+    ])
+      expect(root).toContain(`new ${component}`)
+
+    for (const file of [
+      'src/core/application/loot-command-handler.ts',
+      'src/core/application/distribute-loot-command-handler.ts',
+      'src/core/application/group-reward-command-handler.ts',
+      'src/core/application/group-reward-commit-handler.ts',
+      'src/core/application/character-loot-service.ts',
+      'src/core/application/loot-query-service.ts'
+    ]) {
+      const content = source(file)
+      expect(content, `${file} instantiates a concrete store`).not.toMatch(
+        /new [A-Z][A-Za-z]+Store\(/
+      )
+      expect(content, `${file} depends on SQLite`).not.toContain(
+        'better-sqlite3'
+      )
+      expect(content, `${file} contains SQL`).not.toMatch(
+        /\b(?:SELECT|INSERT|UPDATE|DELETE|CREATE TABLE)\b/
+      )
+    }
+
+    for (const aggregateStore of [
+      'src/core/loot/loot-store.ts',
+      'src/core/loot/character-loot-store.ts'
+    ]) {
+      const content = source(aggregateStore)
+      expect(
+        content,
+        `${aggregateStore} owns command-journal orchestration`
+      ).not.toContain('LootOperationJournal')
+      expect(
+        content,
+        `${aggregateStore} computes command fingerprints`
+      ).not.toContain('fingerprintExcluding')
+    }
+
+    const combat = source('src/core/encounter/combat-service.ts')
+    expect(combat).toContain('GroupTreasureReader')
+    expect(combat).not.toContain('TreasureStore')
+    const utility = source('src/utility/index.ts')
+    expect(utility).toContain('new GroupRewardCommandHandler')
+    expect(utility).toContain('generation: sessionGenerationService')
+  })
+
+  it('keeps Planner, Loot, and campaign rules behind lazy UI leaves', () => {
+    const plannerDefinition = source(
+      'src/renderer/features/workspace/workspace-definition.ts'
+    )
+    expect(plannerDefinition).toContain(
+      "import('./surfaces/planner-surface.js')"
+    )
+    for (const owner of [
+      'src/renderer/features/session-planner/session-planner-dialog-host.tsx',
+      'src/renderer/features/session/session-workspace.tsx',
+      'src/renderer/features/session/group-dialog.tsx',
+      'src/renderer/features/session/scene-party-card.tsx',
+      'src/renderer/features/party/party-controls.tsx'
+    ])
+      expect(source(owner), `${owner} eagerly imports a Loot dialog`).toMatch(
+        /import\(['"]\.\.\/loot\//
+      )
+    expect(
+      source('src/renderer/features/workspace/encounter-generator-settings.tsx')
+    ).toContain("import('./campaign-reward-rules-card.js')")
+  })
+
+  it('keeps the focused Planner/Loot feedback loop complete', () => {
+    const manifest = JSON.parse(source('package.json')) as {
+      scripts: Record<string, string>
+    }
+    const check = manifest.scripts['check:planner-loot'] ?? ''
+    for (const required of [
+      'pnpm typecheck',
+      'vitest run',
+      'tests/unit/architecture-boundaries.test.ts',
+      'tests/integration/generated-run-store.test.ts',
+      'tests/integration/session-planner-vertical-slice.test.ts',
+      'tests/integration/loot-projection-store.test.ts',
+      'pnpm build',
+      'pnpm test:bundle-budget'
+    ])
+      expect(check).toContain(required)
   })
 
   it('keeps renderer styling in tokens, shell and owning features', () => {
     expect(
       source('src/renderer/shell/app.css').split('\n').length
     ).toBeLessThan(600)
-    for (const feature of ['session', 'party', 'catalog', 'encounter', 'hex'])
+    for (const feature of ['session', 'party', 'catalog', 'encounter', 'hex']) {
+      const styles = readdirSync(`src/renderer/features/${feature}`).filter(
+        (file) => file.endsWith('.css')
+      )
       expect(
-        source(`src/renderer/features/${feature}/${feature}.css`).trim().length,
+        styles.length,
         `${feature} owns no feature styles`
       ).toBeGreaterThan(0)
+      if (feature === 'session' || feature === 'hex')
+        for (const style of styles)
+          expect(
+            source(`src/renderer/features/${feature}/${style}`).split('\n')
+              .length,
+            `${style} is still a feature-wide stylesheet`
+          ).toBeLessThan(650)
+    }
     expect(
       source('src/renderer/features/creatures/creatures.css').trim().length
     ).toBeGreaterThan(0)
     expect(source('src/renderer/shell/app.css')).not.toMatch(
       /\.(?:catalog|session|encounter|hex|party|group|creature)-/
     )
+  })
+
+  it('composes Session travel only at the workspace integration boundary', () => {
+    const session = codeFiles('src/renderer/features/session')
+      .map(source)
+      .join('\n')
+    expect(session).not.toMatch(/features\/hex|\.\.\/hex\//)
+    expect(session).not.toContain('useTravelController')
+    const travel = codeFiles('src/renderer/features/travel')
+      .map(source)
+      .join('\n')
+    expect(travel).not.toMatch(/features\/hex|\.\.\/hex\//)
+    expect(
+      source('src/renderer/features/workspace/integrations/session-travel.tsx')
+    ).toContain('useTravelController')
+    expect(
+      source('src/renderer/features/hex/hex-travel-provider-port.ts')
+    ).not.toContain('capabilities.session.read')
+    const sessionCss = readdirSync('src/renderer/features/session')
+      .filter((file) => file.endsWith('.css'))
+      .map((file) => source(`src/renderer/features/session/${file}`))
+      .join('\n')
+    const hexCss = readdirSync('src/renderer/features/hex')
+      .filter((file) => file.endsWith('.css'))
+      .map((file) => source(`src/renderer/features/hex/${file}`))
+      .join('\n')
+    expect(sessionCss).not.toMatch(/\.(?:hex|travel)-/)
+    expect(hexCss).not.toMatch(/\.session-/)
   })
 
   it('keeps shared creature and dialog primitives independent of consumers', () => {
@@ -359,9 +689,12 @@ describe('architecture boundaries', () => {
     expect(source('src/renderer/shell/modal-dialog.tsx')).toContain(
       "import './modal-dialog.css'"
     )
-    expect(source('src/renderer/features/session/session.css')).not.toContain(
-      '.modal-backdrop'
-    )
+    expect(
+      readdirSync('src/renderer/features/session')
+        .filter((file) => file.endsWith('.css'))
+        .map((file) => source(`src/renderer/features/session/${file}`))
+        .join('\n')
+    ).not.toContain('.modal-backdrop')
     const modal = source('src/renderer/shell/modal-dialog.tsx')
     expect(modal).toContain('export function ModalForm')
     expect(modal).not.toContain('form?: boolean')
@@ -472,10 +805,12 @@ describe('architecture boundaries', () => {
       'src/renderer/features/hex/use-hex-location-placement-draft.ts'
     )
     expect(projection).not.toMatch(/new HexChunkCache|\.onChanged\(/)
-    expect(projection).toContain("port.cacheMode === 'transient'")
+    expect(projection).not.toMatch(/invalidateChunks|invalidateMap/)
     const owner = source('src/renderer/features/hex/use-hex-map-controller.ts')
-    expect(owner).toContain('cache: ownedChunkCache')
-    expect(owner).toContain("cacheMode: 'shared-owner'")
+    expect(owner).toContain("cacheLifetime: 'shared-owner'")
+    expect(
+      source('src/renderer/features/hex/hex-travel-provider-port.ts')
+    ).toContain('createHexMapProjectionPort')
     expect(owner.match(/capabilities\.hex\.onChanged/g)).toHaveLength(1)
     expect(owner.match(/capabilities\.biomes\.onChanged/g)).toHaveLength(1)
     for (const view of [
@@ -595,7 +930,7 @@ describe('architecture boundaries', () => {
       const files = readdirSync(directory)
       expect(files).toContain(screen)
       expect(files).toContain(`${feature}-capabilities.ts`)
-      expect(files).toContain(`${feature}.css`)
+      expect(files.some((file) => file.endsWith('.css'))).toBe(true)
       expect(
         files.some(
           (file) => file.startsWith('use-') || file.endsWith('-state.ts')
@@ -812,7 +1147,7 @@ describe('architecture boundaries', () => {
       'src/renderer/features/reference/creature-inspector.tsx',
       'src/renderer/features/encounter/combat-card.tsx',
       'src/renderer/features/session/session-group-card.tsx',
-      'src/renderer/features/session/session-workspace.tsx'
+      'src/renderer/features/session/session-center-panel.tsx'
     ])
       expect(source(file), `${file} bypasses ReadOnlyProse`).toContain(
         'ReadOnlyProse'

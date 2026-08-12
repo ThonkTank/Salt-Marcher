@@ -35,6 +35,62 @@
   padding: var(--space-5);
 }
 
+.campaign-reward-rules-card {
+  display: grid;
+  grid-template-columns: minmax(15rem, 1fr) minmax(24rem, 1.4fr);
+  gap: var(--space-5);
+  border: 1px solid var(--border-1);
+  background: var(--surface-card);
+  box-shadow: var(--shadow-card);
+  margin-bottom: var(--space-5);
+  padding: var(--space-5) var(--space-6);
+}
+
+.campaign-reward-rules-card h3,
+.campaign-reward-rules-card p,
+.campaign-reward-rules-card fieldset {
+  margin: 0;
+}
+
+.campaign-reward-rules-card h3 {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+}
+
+.campaign-reward-rules-card > div p,
+.campaign-reward-rules-card small,
+.campaign-reward-rules-status {
+  color: var(--text-3);
+}
+
+.campaign-reward-rules-card fieldset {
+  display: grid;
+  gap: var(--space-3);
+  border: 0;
+  padding: 0;
+}
+
+.campaign-reward-rules-card legend {
+  margin-bottom: var(--space-2);
+  font-family: var(--font-smallcaps);
+  letter-spacing: var(--tracking-label);
+}
+
+.campaign-reward-rules-card label {
+  display: flex;
+  align-items: start;
+  gap: var(--space-3);
+}
+
+.campaign-reward-rules-card label span {
+  display: grid;
+}
+
+.campaign-reward-rules-status {
+  grid-column: 1 / -1;
+  min-height: 1.2em;
+}
+
 .generator-settings-card {
   display: grid;
   gap: var(--space-5);

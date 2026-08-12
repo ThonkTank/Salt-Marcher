@@ -91,6 +91,16 @@ map identity and coordinates; the utility process resolves Hex state at commit
 time. An unknown IPC outcome is reconciled by the outer command identity and is
 never blindly replayed.
 
+Session travel uses the same composition boundary. Session owns explicit map
+and scenario render slots and imports neither Hex nor Travel implementation.
+`features/travel` owns a provider-neutral reducer, request gates, and command
+protocol; `features/hex` adapts axial maps, chunk invalidations, evaluations,
+and commands; `features/workspace/integrations` lazily composes both. Hex is the
+only implemented provider. Dungeon remains future work. Route rejection crosses
+IPC as a reason code plus optional blocking coordinate, while localized copy
+stays in the renderer. Every successful Hex travel mutation returns the new
+travel and Session projections together from one utility command boundary.
+
 The editing state has one explicit owner at every phase:
 
 | State | Owner | Lifetime |
@@ -98,7 +108,7 @@ The editing state has one explicit owner at every phase:
 | location form draft and validation | World Planner dialog | one dialog instance |
 | tag suggestions | bounded World Planner read capability | one query response, maximum ten values |
 | optional placement draft | Workspace integration | one integrated editor instance |
-| map catalog, chunks, and exact invalidation | Hex placement projection port | projection lifetime |
+| map catalog, biomes, chunks, and exact invalidation | general Hex map projection port | explicit transient or shared-owner projection lifetime |
 | location catalog revision | World Planner aggregate | resolved by the base-save workflow |
 | Hex content revision | Hex aggregate | resolved immediately before place/remove |
 | partial-save operation receipt | utility-process operation journal | until success or explicit retry |
@@ -158,6 +168,9 @@ graphs. The 3.20 MiB hard renderer ceiling protects the larger of ten percent
 or 256 KiB from ordinary growth. Exact budgets, accounting semantics, current
 calibration, and the required justification for any future increase live in
 the [renderer bundle inventory](renderer-bundle-inventory.md).
+Generated chunk names are not architectural identities. The bundle inventory
+resolves the common Workspace graph and renderer leaves by stable manifest
+module identity rather than matching generated keys or hashes.
 
 Catalog is a composition root over Monster, Location, Faction, and Encounter
 Table controllers and views. Controller state remains mounted across section
@@ -242,6 +255,29 @@ draw an empty unbounded guide grid, but only authored tiles have biomes or
 accept travel and markers. Travel progression
 is clocked by the utility process and publishes revision changes. Reads are
 pure observations and never advance Scene time.
+
+Session Generation persists immutable `session` and `group_reward` run kinds
+as normalized owner tables. Engine and catalog versions are independent audit
+fields. Stored rows contain typed domain facts, not localized renderer copy or
+an aggregate JSON snapshot. Session Planner is the only whole-day workflow;
+Group management exposes the narrower group-draft reward generator. Its
+immutable preview records a prospective or persisted group identity and the
+complete normalized living/dead roster. Confirmation crosses Scene and Loot
+only through one Utility-owned transaction that saves the group, reconciles
+Combat, accepts the Treasure, and records its idempotent receipt atomically.
+
+Loot is a separate feature projection with its own revision and
+`loot.changed` event. `LiveSessionSnapshot` contains Party, Scene, Travel, and
+Combat truth but no Loot aggregate. Loot command receipts store canonical
+request fingerprints and exact original typed results. Campaign rules own the
+revisioned base-versus-adjusted XP policy used consistently by Combat awards
+and group-reward budgets.
+
+Session preparation is a durable staged journal. It freezes canonical input
+and party levels before generation, then references the immutable run and
+stores normalized prepared scenes before the final Session compare-and-swap.
+Utility-process restart resumes the latest active stage; cancel and failure are
+terminal audit states and never compensate immutable foreign artifacts.
 
 Hex editing commands carry stable command identities, publish exact changed
 chunk notices, and retain a bounded persistent per-map content history. Brush

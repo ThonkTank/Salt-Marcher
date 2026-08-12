@@ -40,6 +40,12 @@ import { initializeLocationSymbolSchema } from '../../worldplanner/location-symb
 import { initializeBiomeCatalogSchema } from '../../biomes/biome-catalog.js'
 import { initializeWorldLocationSaveJournalSchema } from '../../worldplanner/world-location-save-journal.js'
 import { initializeGeneratorPresetSchema } from './generator-preset-store.js'
+import { initializeSessionGenerationSchema } from '../../session-generation/generated-run-store.js'
+import { initializeLootSchema } from '../../loot/loot-store.js'
+import { initializeCharacterLootSchema } from '../../loot/character-loot-store.js'
+import { initializeEncounterPlanSchema } from '../../encounter/encounter-plan-store.js'
+import { initializeSessionPlannerSchema } from '../../session-planner/session-planner-store.js'
+import { initializeCampaignRulesSchema } from '../../application/campaign-rules-service.js'
 
 export type CampaignCreatePhase =
   | 'before-registry-entry'
@@ -339,6 +345,12 @@ export class CampaignStore {
     initializeWorldFactionSchema(campaign)
     initializeHexSchema(campaign)
     initializeWorldLocationSaveJournalSchema(campaign)
+    initializeCampaignRulesSchema(campaign)
+    initializeSessionGenerationSchema(campaign)
+    initializeEncounterPlanSchema(campaign)
+    initializeSessionPlannerSchema(campaign)
+    initializeLootSchema(campaign)
+    initializeCharacterLootSchema(campaign)
     initializeDevelopmentSchemaVersion(campaign)
     campaign.close()
   }

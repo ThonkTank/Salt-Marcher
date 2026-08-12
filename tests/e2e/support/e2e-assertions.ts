@@ -10,8 +10,10 @@ import { PNG } from 'pngjs'
 import { mainWindowGeometry } from '../../../src/shared/contracts/window-geometry.js'
 import {
   selectedVisualGoldens,
+  validateVisualGoldenSuites,
   type VisualGoldenEntry
 } from '../../../scripts/visual-golden-policy.js'
+import { e2eSuiteRegistry } from './e2e-suite-registry.js'
 
 const goldenManifest = JSON.parse(
   readFileSync(
@@ -19,6 +21,10 @@ const goldenManifest = JSON.parse(
     'utf8'
   )
 ) as { version: 1; goldens: VisualGoldenEntry[] }
+validateVisualGoldenSuites(
+  goldenManifest.goldens,
+  new Set(e2eSuiteRegistry.map((suite) => suite.name))
+)
 
 export async function expectAccessible(client: WdioBrowser): Promise<void> {
   const results = await new AxeBuilder({ client }).setLegacyMode().analyze()
@@ -125,8 +131,9 @@ export function setWindowToMinimumResponsiveSize(
 export async function clickWhenInteractable(
   element: ChainablePromiseElement
 ): Promise<void> {
+  await element.waitForExist({ timeout: 15_000 })
   await element.scrollIntoView({ block: 'center', inline: 'nearest' })
-  await element.waitForClickable({ timeout: 10_000 })
+  await element.waitForClickable({ timeout: 15_000 })
   await element.click()
 }
 
@@ -177,7 +184,8 @@ export async function expectEditorFrameGeometry(
 export async function expectElementGolden(
   client: WdioBrowser,
   name: string,
-  selector: string
+  selector: string,
+  resizeWindow = true
 ): Promise<void> {
   if (process.platform !== 'linux') return
   const entry = goldenManifest.goldens.find(
@@ -194,11 +202,12 @@ export async function expectElementGolden(
     throw new Error(
       `Golden ${name} belongs to suite ${entry.suite}, not ${suite}.`
     )
-  await setElectronWindowSize(
-    client,
-    entry.viewport.width,
-    entry.viewport.height
-  )
+  if (resizeWindow)
+    await setElectronWindowSize(
+      client,
+      entry.viewport.width,
+      entry.viewport.height
+    )
   const selected = selectedVisualGoldens(
     process.env['UPDATE_VISUAL_GOLDENS'],
     goldenManifest.goldens

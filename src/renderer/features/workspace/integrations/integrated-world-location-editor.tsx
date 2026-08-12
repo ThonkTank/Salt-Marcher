@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { HexLocationDraftField } from '../../hex/hex-location-draft-field.js'
 import { HexMapDialog } from '../../hex/hex-map-dialog.js'
-import type { HexLocationPlacementProjectionPort } from '../../hex/hex-location-placement-port.js'
+import type { HexMapProjectionPort } from '../../hex/hex-map-projection-port.js'
 import type { HexMapApplicationPort } from '../../hex/hex-map-creation-port.js'
 import type {
   WorldLocationEditorRenderProps,
@@ -15,7 +15,7 @@ import { presentCapabilityError } from '../../../capabilities/capability-errors.
 
 export function IntegratedWorldLocationEditor(
   props: WorldLocationEditorRenderProps & {
-    port: HexLocationPlacementProjectionPort
+    port: HexMapProjectionPort
     mapCreation: HexMapApplicationPort
     suggestTags: (query: string, limit?: number) => Promise<readonly string[]>
     failureText: (failure: WorldLocationPlacementFailure) => string

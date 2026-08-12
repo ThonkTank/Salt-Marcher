@@ -280,7 +280,7 @@ async function verifyCatalogPlacementJourneys(client: WdioBrowser) {
       (location) => location.displayName === 'Leuchtturmklippe'
     )
     if (!blocker) throw new Error('Placement blocker missing.')
-    const existing = await api.hex.locateLocation(blocker.id)
+    const existing = await api.hex.locateLocation({ locationId: blocker.id })
     if (!existing) throw new Error('Placement blocker is not on the map.')
     await api.locations.commitPlacement({
       commandId: crypto.randomUUID(),
@@ -318,7 +318,8 @@ async function waitForNamedLocationPlacement(
           )
           if (!location) return false
           return (
-            ((await api.hex.locateLocation(location.id)) !== null) ===
+            ((await api.hex.locateLocation({ locationId: location.id })) !==
+              null) ===
             shouldExist
           )
         },
@@ -404,9 +405,9 @@ async function expectLocationState(
             (entry) => entry.displayName === displayName
           )
           if (!location) return false
-          const placement = await window.saltMarcher.hex.locateLocation(
-            location.id
-          )
+          const placement = await window.saltMarcher.hex.locateLocation({
+            locationId: location.id
+          })
           return (placement !== null) === expectedPlaced
         },
         name,

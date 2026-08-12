@@ -99,4 +99,92 @@ describe('hex canvas gesture controller', () => {
     expect(select).toHaveBeenCalledWith({ q: 7, r: 9 })
     expect(zoom).toHaveBeenCalledOnce()
   })
+
+  it('drags only from the token and suppresses the following selection click', () => {
+    const harness = canvasHarness()
+    const preview = vi.fn()
+    const drop = vi.fn()
+    const select = vi.fn()
+    attachHexCanvasGestures({
+      canvas: harness.canvas,
+      interaction: () => 'select',
+      draggableToken: () => ({ q: 1, r: 1 }),
+      coordinateFor: (event) => ({ q: event.clientX, r: event.clientY }),
+      onPan: vi.fn(),
+      onPanEnd: vi.fn(),
+      onStrokePreview: vi.fn(),
+      onStrokeComplete: vi.fn(),
+      onStrokeCancel: vi.fn(),
+      onSelect: select,
+      onTokenPreview: preview,
+      onTokenDrop: drop,
+      onZoom: vi.fn()
+    })
+
+    harness.dispatch('pointerdown', {
+      button: 0,
+      pointerId: 3,
+      clientX: 1,
+      clientY: 1
+    })
+    harness.dispatch('pointermove', { clientX: 6, clientY: 1 })
+    harness.dispatch('pointerup', {
+      pointerId: 3,
+      clientX: 7,
+      clientY: 1
+    })
+    harness.dispatch('click', { button: 0, clientX: 7, clientY: 1 })
+
+    expect(preview).toHaveBeenLastCalledWith({ q: 7, r: 1 })
+    expect(drop).toHaveBeenCalledWith({ q: 7, r: 1 })
+    expect(select).not.toHaveBeenCalled()
+  })
+
+  it('keeps a token click as a normal selection and cancels a pending drag', () => {
+    const harness = canvasHarness()
+    const preview = vi.fn()
+    const drop = vi.fn()
+    const select = vi.fn()
+    attachHexCanvasGestures({
+      canvas: harness.canvas,
+      interaction: () => 'select',
+      draggableToken: () => ({ q: 2, r: 2 }),
+      coordinateFor: (event) => ({ q: event.clientX, r: event.clientY }),
+      onPan: vi.fn(),
+      onPanEnd: vi.fn(),
+      onStrokePreview: vi.fn(),
+      onStrokeComplete: vi.fn(),
+      onStrokeCancel: vi.fn(),
+      onSelect: select,
+      onTokenPreview: preview,
+      onTokenDrop: drop,
+      onZoom: vi.fn()
+    })
+
+    harness.dispatch('pointerdown', {
+      button: 0,
+      pointerId: 4,
+      clientX: 2,
+      clientY: 2
+    })
+    harness.dispatch('pointerup', {
+      pointerId: 4,
+      clientX: 2,
+      clientY: 2
+    })
+    harness.dispatch('click', { button: 0, clientX: 2, clientY: 2 })
+    expect(select).toHaveBeenCalledWith({ q: 2, r: 2 })
+    expect(drop).not.toHaveBeenCalled()
+
+    harness.dispatch('pointerdown', {
+      button: 0,
+      pointerId: 5,
+      clientX: 2,
+      clientY: 2
+    })
+    harness.dispatch('pointermove', { clientX: 8, clientY: 2 })
+    harness.dispatch('pointercancel', { pointerId: 5 })
+    expect(preview).toHaveBeenLastCalledWith(null)
+    expect(drop).not.toHaveBeenCalled()
+  })
 })

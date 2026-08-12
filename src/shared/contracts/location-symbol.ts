@@ -1,32 +1,13 @@
 import { z } from 'zod'
+import {
+  builtinLocationSymbolCatalog,
+  builtinLocationSymbolIds,
+  type BuiltinLocationSymbolId
+} from '../values/location-symbol-values.js'
 import type { EntityMutationReceipt } from './entity-mutation.js'
 
-export const builtinLocationSymbolIdSchema = z.enum([
-  'location',
-  'settlement',
-  'gate',
-  'lair',
-  'camp',
-  'landmark',
-  'treasure',
-  'party'
-])
-
-const builtinLocationSymbolCatalogValues = [
-  { id: 'location', displayName: 'Ort' },
-  { id: 'settlement', displayName: 'Siedlung' },
-  { id: 'gate', displayName: 'Tor' },
-  { id: 'lair', displayName: 'Bau' },
-  { id: 'camp', displayName: 'Lager' },
-  { id: 'landmark', displayName: 'Wegmarke' },
-  { id: 'treasure', displayName: 'Schatz' },
-  { id: 'party', displayName: 'Gruppe' }
-] as const
-
-/** One immutable manifest shared by validation, persistence and rendering. */
-export const builtinLocationSymbolCatalog = Object.freeze(
-  builtinLocationSymbolCatalogValues.map((entry) => Object.freeze(entry))
-) as readonly (typeof builtinLocationSymbolCatalogValues)[number][]
+export const builtinLocationSymbolIdSchema = z.enum(builtinLocationSymbolIds)
+export { builtinLocationSymbolCatalog }
 
 export const locationSymbolIdSchema = z.union([
   builtinLocationSymbolIdSchema,
@@ -199,9 +180,7 @@ export const svgSymbolFileResultSchema = z.discriminatedUnion('status', [
     .strict()
 ])
 
-export type BuiltinLocationSymbolId = z.infer<
-  typeof builtinLocationSymbolIdSchema
->
+export type { BuiltinLocationSymbolId }
 export type LocationSymbolId = z.infer<typeof locationSymbolIdSchema>
 export type LocationSymbol = Readonly<z.infer<typeof locationSymbolSchema>>
 export type LocationSymbolDraft = Readonly<

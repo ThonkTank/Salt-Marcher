@@ -1,0 +1,64 @@
+import { join } from 'node:path'
+import { describe, expect, it } from 'vitest'
+import { normalizeRewardBasis } from '../../src/core/session-generation/reward-basis-stage.js'
+import { calculateRewardBudget } from '../../src/core/session-generation/reward-budget-stage.js'
+import {
+  rewardXp,
+  unitValue
+} from '../../src/core/session-generation/reward-units.js'
+import { BundledEncounterCatalogProvider } from '../../src/utility/session-generation/catalog-provider.js'
+import { sha256EncounterEntropy } from '../../src/utility/session-generation/sha256-entropy.js'
+
+const catalog = new BundledEncounterCatalogProvider(
+  join(process.cwd(), 'resources/sessiongeneration/catalog-2026-07-16')
+).loadFull()
+
+describe('session generation reward stages', () => {
+  it('normalizes party order without mutating the source', () => {
+    const party = [
+      { level: 7, count: 0 },
+      { level: 3, count: 4 },
+      { level: 1, count: 1 }
+    ]
+    const output = normalizeRewardBasis({ party, rewardXp: rewardXp(3_480) })
+    expect(output.party).toEqual([
+      { level: 1, count: 1 },
+      { level: 3, count: 4 }
+    ])
+    expect(output.partyCount).toBe(5)
+    expect(party).toHaveLength(3)
+    expect(Object.isFrozen(output)).toBe(true)
+    expect(Object.isFrozen(output.party)).toBe(true)
+    expect(output.party.every(Object.isFrozen)).toBe(true)
+  })
+
+  it('derives the sheet-backed budget independently of item selection', () => {
+    const basis = normalizeRewardBasis({
+      party: [{ level: 3, count: 4 }],
+      rewardXp: rewardXp(2_880)
+    })
+    const output = calculateRewardBudget(
+      { basis, catalog, seed: 179_974, profile: 'session' },
+      sha256EncounterEntropy
+    )
+    expect(output.perCharacterXp.value).toEqual({
+      numerator: 720n,
+      denominator: 1n
+    })
+    expect(unitValue(output.goldBudgetCp)).toBe(45_120)
+    expect(Object.isFrozen(output)).toBe(true)
+    expect(Object.isFrozen(output.magicTargets)).toBe(true)
+  })
+
+  it('rejects duplicate active level rows before progression lookup', () => {
+    expect(() =>
+      normalizeRewardBasis({
+        party: [
+          { level: 3, count: 2 },
+          { level: 3, count: 2 }
+        ],
+        rewardXp: rewardXp(100)
+      })
+    ).toThrowError('duplicate_reward_party_level')
+  })
+})

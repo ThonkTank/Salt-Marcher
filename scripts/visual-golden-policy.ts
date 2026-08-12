@@ -5,6 +5,22 @@ export type VisualGoldenEntry = Readonly<{
   viewport: Readonly<{ width: number; height: number }>
 }>
 
+export function validateVisualGoldenSuites(
+  entries: readonly VisualGoldenEntry[],
+  suiteNames: ReadonlySet<string>
+): void {
+  const seen = new Set<string>()
+  for (const entry of entries) {
+    if (seen.has(entry.name))
+      throw new Error(`Duplicate visual golden name: ${entry.name}`)
+    seen.add(entry.name)
+    if (!suiteNames.has(entry.suite))
+      throw new Error(
+        `Visual golden ${entry.name} references unknown E2E suite ${entry.suite}.`
+      )
+  }
+}
+
 export function selectedVisualGoldens(
   value: string | undefined,
   entries: readonly VisualGoldenEntry[]

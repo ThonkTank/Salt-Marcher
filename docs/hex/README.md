@@ -3,9 +3,9 @@
 ## Purpose
 
 The `hex` feature owns hex-map-specific user-facing behavior such as overworld
-travel, compact Hex travel readback, tile inspection, and hex editor behavior.
-The feature-neutral Travel capability selects that readback for the runtime
-`Reise` tab when the party occupies a Hex location.
+travel, the shared Session map/console state, tile inspection, and hex editor
+behavior. The feature-neutral Travel capability selects the Hex contribution
+for the runtime `Reise` scenario while Hex retains its typed commands and truth.
 
 Generic shared map-canvas behavior remains canonical in `docs/maps/`.
 

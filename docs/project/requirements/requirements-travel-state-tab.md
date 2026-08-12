@@ -1,65 +1,42 @@
-# Reise-State-Tab UI
+# Reise-Szenario UI
 
 ## Component Purpose
 
-The Reise-State-Tab is the lower-right global runtime tab labeled `Reise` next
-to the Encounter state tab. It is independent from navigable interactive
-travel workspaces.
-
-- One feature-neutral Travel capability consumes Party position plus approved
-  Dungeon and Hex readbacks, selects the matching live context, and owns the
-  single global `Reise` contribution.
-- Feature-owned travel contexts keep their behavior requirements in their
-  feature requirement docs; this project-wide document owns only the shared
-  global state-tab shell behavior and the no-context-to-live-context selection
-  rule.
+The `Reise` entry in the Session scenario selector hosts the interactive travel
+console for the focused Scene. It composes the selected provider context while
+the provider continues to own movement rules, route truth, position, and
+persistence.
 
 ## Visible Surfaces
 
-- `COCKPIT_STATE` contains the content of the runtime tab labeled `Reise` when
-  that tab is selected in the global state-tab strip.
-- The explicit no-context state shows that no matching live travel context is
-  currently available.
-- When a live travel readback is available, the same compact state-tab surface
-  shows feature-owned travel context while staying distinct from the
-  interactive travel workspace.
+- `COCKPIT_STATE` contains the selected travel provider's console.
+- The center `Karte` tab contains only the provider's shared canvas and honest
+  loading or empty states.
+- A no-context state explains that no matching live travel context exists and
+  may offer an explicit map-opening action.
 
 ## Interactions
 
-- Selecting the runtime tab labeled `Reise` switches the global state pane
-  from Encounter content to the selected travel context or explicit no-context
-  state.
-- The live compact surface may dispatch provider-neutral pause, resume, abort,
-  presentation-speed, and open-map actions. Route planning, positioning,
-  starting, and editing remain in the owning map or editor surface.
-
-## Visible States
-
-- Selected: the lower-right state pane shows the matching compact travel
-  context or an explicit no-context state.
-- Not selected: the global state pane continues to show the currently selected
-  state tab instead of travel content.
-- No context: no approved readback matches the active Party position.
-- Live context: the lower-right state pane shows compact readback from the
-  owning travel feature and keeps movement commands out of the state tab.
+- Selecting `Reise` swaps the scenario pane without changing the center tab.
+- The active provider may expose map selection, route planning and clearing,
+  accessible placement, start, pause/resume, abort, and presentation speed.
+- `Karte öffnen` and actions that require the canvas may explicitly select the
+  center map tab.
+- The scenario shell delegates commands through the provider's typed API and
+  never reconstructs or persists movement truth itself.
 
 ## Acceptance Criteria
 
-- the Reise-State-Tab is a global runtime state-tab surface independent from
-  the navigable Travel left-bar tab
-- selecting the runtime tab labeled `Reise` swaps the state pane from
-  Encounter content to compact travel content
-- the no-context state remains command-free apart from opening an available map;
-  live context exposes only the bounded runtime controls above
-- a feature-owned live travel context can appear only through an approved
-  readback surface and without adding movement commands to this state tab
-- Dungeon and Hex MUST NOT register separate global `travel` contribution keys;
-  the feature-neutral Travel capability owns exactly one contribution and an
-  explicit no-context fallback
+- Exactly one travel console is shown for the focused Scene.
+- Hex travel presents one shared state across the map and scenario panes.
+- Selecting the scenario alone never navigates the center pane.
+- Provider absence, unavailable maps, and rejected commands are explicit.
+- Hex is the only current provider. A future Dungeon implementation must add a
+  real adapter and acceptance cases rather than a competing registration or
+  placeholder branch.
 
 ## References
 
-- [Encounter Runtime State UI](../../encounter/requirements/requirements-encounter-state-tab.md)
-- [Hex Travel State Requirements](../../hex/requirements/requirements-hex-travel-state.md)
+- [Hex Travel Console Requirements](../../hex/requirements/requirements-hex-travel-state.md)
 - [Dungeon Travel State Requirements](../../dungeon/requirements/requirements-dungeon-travel-state.md)
 - [Travel Context Domain](../../travel/domain/domain-travel.md)

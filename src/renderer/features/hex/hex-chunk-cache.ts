@@ -1,11 +1,11 @@
-import {
-  type AxialCoordinate,
-  type HexBiomeCatalog,
-  type HexBiomeDefinition,
-  type HexChunkKey,
-  type HexChunkSnapshot,
-  type HexMapSummary,
-  type HexMapView
+import type {
+  AxialCoordinate,
+  HexBiomeCatalog,
+  HexBiomeDefinition,
+  HexChunkKey,
+  HexChunkSnapshot,
+  HexMapSummary,
+  HexMapView
 } from '../../../shared/contracts/hex.js'
 
 const chunkSize = 32

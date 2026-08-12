@@ -19,9 +19,9 @@ import type {
 } from '../worldplanner/world-location-editor-types.js'
 import { mergeHexBiomeCatalog } from './hex-chunk-cache.js'
 import type {
-  HexLocationPlacementProjectionPort,
-  HexPlacementProjectionChange
-} from './hex-location-placement-port.js'
+  HexMapProjectionChange,
+  HexMapProjectionPort
+} from './hex-map-projection-port.js'
 import type { HexMapCreationResult } from './hex-map-creation-port.js'
 
 export type HexPlacementProjectionFailure = Readonly<{
@@ -47,7 +47,7 @@ export type HexPlacementProjectionState =
   | Readonly<{ status: 'failed'; error: HexPlacementProjectionFailure }>
 
 export function useHexLocationPlacementDraft(options: {
-  port: HexLocationPlacementProjectionPort
+  port: HexMapProjectionPort
   locationId: string | null
   initialHint: WorldLocationPlacementHint | null
   onReady: (state: WorldLocationPlacementState) => void
@@ -59,7 +59,6 @@ export function useHexLocationPlacementDraft(options: {
   const initialMapId = initialHint?.mapId
   const initialQ = initialHint?.coordinate?.q
   const initialR = initialHint?.coordinate?.r
-  const cache = port.cache
   const notifyReady = useEffectEvent(onReady)
   const onViewMapRef = useRef(onViewMap)
   const onChangeRef = useRef(onChange)
@@ -150,10 +149,10 @@ export function useHexLocationPlacementDraft(options: {
 
       if (summary) {
         try {
-          const nextMap = await cache.readMapView(
-            summary,
-            coordinate ?? { q: 0, r: 0 }
-          )
+          const nextMap = await port.readMap({
+            mapId: summary.id,
+            center: coordinate ?? { q: 0, r: 0 }
+          })
           if (request !== initializationRequest.current) return
           applyMap(nextMap)
         } catch (cause) {
@@ -176,20 +175,13 @@ export function useHexLocationPlacementDraft(options: {
     return () => {
       initializationRequest.current += 1
     }
-  }, [applyMap, cache, initialMapId, initialQ, initialR, locationId, port])
+  }, [applyMap, initialMapId, initialQ, initialR, locationId, port])
 
   const refreshHex = (
-    change: Extract<HexPlacementProjectionChange, { kind: 'hex' }>
+    change: Extract<HexMapProjectionChange, { kind: 'hex' }>
   ) => {
     const current = mapRef.current
     if (!current || !change.notice.mapIds.includes(current.map.id)) return
-    if (port.cacheMode === 'transient')
-      cache.invalidateChunks(
-        current.map.id,
-        change.notice.changedChunks
-          .filter((chunk) => chunk.mapId === current.map.id)
-          .map((chunk) => chunk.key)
-      )
     const request = ++hexRefreshRequest.current
     void port
       .readCatalog()
@@ -198,7 +190,10 @@ export function useHexLocationPlacementDraft(options: {
           (candidate) => candidate.id === current.map.id
         )
         if (!summary) throw new MissingProjectionMapError()
-        const nextMap = await cache.readMapView(summary, current.center)
+        const nextMap = await port.readMap({
+          mapId: summary.id,
+          center: current.center
+        })
         if (
           request !== hexRefreshRequest.current ||
           mapRef.current?.map.id !== current.map.id
@@ -227,12 +222,14 @@ export function useHexLocationPlacementDraft(options: {
   const refreshBiomes = () => {
     const current = mapRef.current
     const request = ++biomeRefreshRequest.current
-    if (current && port.cacheMode === 'transient')
-      cache.invalidateMap(current.map.id)
     void Promise.all([
       port.readBiomeCatalog(),
       current
-        ? cache.readMapView(current.map, current.center, true)
+        ? port.readMap({
+            mapId: current.map.id,
+            center: current.center,
+            force: true
+          })
         : Promise.resolve(null)
     ])
       .then(([nextBiomes, nextMap]) => {
@@ -255,7 +252,7 @@ export function useHexLocationPlacementDraft(options: {
   }
 
   const onProjectionChange = useEffectEvent(
-    (change: HexPlacementProjectionChange) => {
+    (change: HexMapProjectionChange) => {
       if (change.kind === 'hex') refreshHex(change)
       else refreshBiomes()
     }
@@ -268,7 +265,7 @@ export function useHexLocationPlacementDraft(options: {
     const request = ++mapRequest.current
     viewportRequest.current += 1
     try {
-      const next = await cache.readMapView(summary)
+      const next = await port.readMap({ mapId: summary.id })
       if (request !== mapRequest.current) return
       setFailure(null)
       applyMap(next)
@@ -284,7 +281,7 @@ export function useHexLocationPlacementDraft(options: {
     viewportRequest.current += 1
     setCatalog(result.snapshot)
     try {
-      const next = await cache.readMapView(result.saved)
+      const next = await port.readMap({ mapId: result.saved.id })
       if (request !== mapRequest.current) return
       setFailure(null)
       applyMap(next)
@@ -306,8 +303,8 @@ export function useHexLocationPlacementDraft(options: {
     if (!current) return
     const request = ++viewportRequest.current
     const mapId = current.map.id
-    void cache
-      .readMapView(current.map, center, false, halfExtent)
+    void port
+      .readMap({ mapId, center, halfExtent })
       .then((next) => {
         if (
           request !== viewportRequest.current ||

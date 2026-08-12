@@ -4,7 +4,7 @@ import type {
   CombatCommandResult,
   CombatSnapshot
 } from '../../../shared/contracts/live-session.js'
-import { combatConditions } from '../../../shared/contracts/live-session.js'
+import { combatConditions } from '../../../shared/values/combat-values.js'
 import { formatMessage, message } from '../../i18n/session-runtime.de.js'
 import { encounterCapabilities } from './encounter-capabilities.js'
 import { ModalDialog } from '../../shell/modal-dialog.js'
@@ -45,12 +45,12 @@ export function CombatCardView(props: {
 
   function changeHp(healing: boolean) {
     void props.action(() =>
-      encounterCapabilities(api).combat.changeHp(
-        card.id,
+      encounterCapabilities(api).combat.changeHp({
+        cardId: card.id,
         amount,
         healing,
-        props.combat.revision
-      )
+        expectedRevision: props.combat.revision
+      })
     )
   }
 
@@ -198,12 +198,12 @@ export function CombatCardView(props: {
                     aria-pressed={active}
                     onClick={() =>
                       void props.action(() =>
-                        encounterCapabilities(api).combat.toggleCondition(
-                          card.id,
+                        encounterCapabilities(api).combat.toggleCondition({
+                          cardId: card.id,
                           condition,
-                          !active,
-                          props.combat.revision
-                        )
+                          active: !active,
+                          expectedRevision: props.combat.revision
+                        })
                       )
                     }
                   >
@@ -221,11 +221,11 @@ export function CombatCardView(props: {
               aria-pressed={card.concentrating}
               onClick={() =>
                 void props.action(() =>
-                  encounterCapabilities(api).combat.setConcentration(
-                    card.id,
-                    !card.concentrating,
-                    props.combat.revision
-                  )
+                  encounterCapabilities(api).combat.setConcentration({
+                    cardId: card.id,
+                    concentrating: !card.concentrating,
+                    expectedRevision: props.combat.revision
+                  })
                 )
               }
             >
@@ -240,11 +240,11 @@ export function CombatCardView(props: {
                 value={card.exhaustionLevel}
                 onChange={(event) =>
                   void props.action(() =>
-                    encounterCapabilities(api).combat.setExhaustion(
-                      card.id,
-                      Number(event.target.value),
-                      props.combat.revision
-                    )
+                    encounterCapabilities(api).combat.setExhaustion({
+                      cardId: card.id,
+                      exhaustionLevel: Number(event.target.value),
+                      expectedRevision: props.combat.revision
+                    })
                   )
                 }
               >

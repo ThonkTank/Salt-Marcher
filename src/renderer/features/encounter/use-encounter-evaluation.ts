@@ -17,7 +17,11 @@ export function useEncounterEvaluation(
   useEffect(() => {
     let current = true
     void encounterCapabilities(api)
-      .encounter.evaluate(sceneId, selectedGroupIds, sceneRevision)
+      .encounter.evaluate({
+        sceneId,
+        groupIds: [...selectedGroupIds],
+        expectedRevision: sceneRevision
+      })
       .then((value) => {
         if (current) setEvaluation(value)
       })

@@ -1,0 +1,91 @@
+.hex-scroll-shell {
+  position: relative;
+  min-height: 0;
+}
+
+.hex-scroll-shell > [class] {
+  scrollbar-width: none;
+}
+
+.hex-scroll-shell > [class]::-webkit-scrollbar {
+  width: 0;
+}
+
+.hex-scroll-rail {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 9px;
+  border-left: 1px solid var(--border-hair);
+  background: var(--surface-control);
+  pointer-events: none;
+}
+
+.hex-scroll-rail i {
+  position: absolute;
+  right: 1px;
+  left: 1px;
+  border: 1px solid var(--border-structural);
+  background: var(--accent-gold);
+}
+
+.hex-slider {
+  position: relative;
+  height: 24px;
+  margin: -8px 5px 0;
+  touch-action: none;
+  cursor: pointer;
+}
+
+.hex-slider[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.hex-slider-track,
+.hex-slider-fill {
+  position: absolute;
+  top: 11px;
+  right: 0;
+  left: 0;
+  height: 2px;
+  background: var(--border-structural);
+}
+
+.hex-slider-fill {
+  right: auto;
+  background: var(--accent-gold);
+}
+
+.hex-slider-ticks {
+  position: absolute;
+  inset: 9px 0 auto;
+  display: flex;
+  justify-content: space-between;
+}
+
+.hex-slider-ticks i {
+  width: 1px;
+  height: 6px;
+  background: var(--border-hair);
+}
+
+.hex-slider-center {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  width: 1px;
+  height: 8px;
+  background: var(--border-structural);
+}
+
+.hex-slider-thumb {
+  position: absolute;
+  top: 5px;
+  width: 11px;
+  height: 15px;
+  margin-left: -6px;
+  border: 1px solid var(--border-structural);
+  background: var(--surface-button);
+}

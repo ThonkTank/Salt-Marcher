@@ -84,7 +84,7 @@ export function createGeneratorPresetApplicationPort(
       receipt = await invoke({ commandId, expectedRegistryRevision: revision })
     } catch (cause) {
       if (capabilityErrorCode(cause) !== 'outcome_unknown') throw cause
-      const recovered = await capability.commandReceipt(commandId)
+      const recovered = await capability.commandReceipt({ commandId })
       if (!recovered || recovered.kind !== kind) throw cause
       receipt = recovered as T
     }

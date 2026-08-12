@@ -1,6 +1,6 @@
 import { message } from '../../i18n/hex-runtime.de.js'
 import { useMemo, useState } from 'react'
-import './hex.css'
+import './hex-editor-layout.css'
 import { hexCapabilities } from './hex-capabilities.js'
 import {
   capabilityErrorText,
@@ -256,7 +256,7 @@ export default function HexEditor(props: {
                     : null
               }
             : null,
-          projectionPort: mapLifecycle.placementProjectionPort,
+          projectionPort: mapLifecycle.mapProjectionPort,
           close: () => setLocationCreationOpen(false)
         })}
       {mapCreationOpen && (

@@ -70,17 +70,17 @@ export function useWorldLocationProjectionController(options: {
     writes.current.add(id)
     try {
       const result =
-        await optionsRef.current.capabilities.updateMapPresentation(
+        await optionsRef.current.capabilities.updateMapPresentation({
           id,
-          {
+          patch: {
             titleOverride: presentation.titleOverride,
             symbolId: presentation.symbolId,
             symbolSize: presentation.symbolSize,
             labelCurve: presentation.labelCurve,
             labelPosition: presentation.labelPosition
           },
-          presentation.revision
-        )
+          expectedRevision: presentation.revision
+        })
       const superseded = versions.current.get(id) !== requestedVersion
       const latest = snapshotRef.current
       if (!latest) return

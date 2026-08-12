@@ -7,10 +7,10 @@ into concrete saved Encounter rosters. Session Planner is the consumer. The
 boundary contains no rewards, packing, audits, session scenes, repository
 types, or persistence rows.
 
-## Public Operations
+## Internal Import Ports And Public Read
 
 ```text
-prepareGeneratedBatch(PrepareGeneratedEncounterBatchCommand)
+selectGeneratedRosters(GeneratedRosterSelectionCommand)
   -> PreparedGeneratedEncounterBatchResult
 
 commitGeneratedBatch(CommitGeneratedEncounterBatchCommand)
@@ -20,7 +20,12 @@ loadGeneratedPlanSummaries(GeneratedEncounterPlanSummaryBatchQuery)
   -> GeneratedEncounterPlanSummaryBatchResult
 ```
 
-All operations are asynchronous. The summary query accepts unique Encounter
+Roster selection, canonical CR parsing, prepared-batch validation, and commit
+persistence are separate Encounter-owned components. Selection and commit are
+Utility-internal Session Planner worker ports, not Renderer capabilities. The
+saved-plan search and summary reads remain public for interactive Planner use.
+
+All ports are asynchronous. The summary query accepts unique Encounter
 plan identities and returns existing structured summaries in request order,
 with missing identities reported explicitly rather than omitted.
 
@@ -31,11 +36,11 @@ current inputs. Stored display names are last-known fallbacks only; resolvable
 current Creature names take precedence. A missing plan and a plan whose current
 creature facts cannot be resolved remain distinct ordered result states.
 
-The prepare command contains a stable preparation identity, generation-run
-identity, declared engine version, and an ordered non-empty list of intents.
-Each intent has one unique positive Encounter number, display label, target XP,
-difficulty, and non-empty ordered CR-and-role blocks with positive quantity and
-XP.
+The selection command contains generation-run identity, declared engine and
+catalog/preset meaning, and an ordered non-empty list of intents. Each intent
+has one unique positive Encounter ordinal, target XP, difficulty, and non-empty
+ordered CR-and-role blocks with positive quantity and XP. Generated display
+labels are renderer-derived from the ordinal.
 
 ## Batch Resolution
 
@@ -53,24 +58,26 @@ Success returns one `PreparedEncounterRoster` per intent in request order. Each
 contains:
 
 - Encounter number and normalized roster fingerprint
-- concrete stable creature identities, quantities, and display names
-- total creature count, adjusted XP, difficulty, and display summary
+- concrete stable creature identities and quantities
+- total creature count, adjusted XP, and difficulty
 
 Prepare performs no persistence write. If any intent is invalid or
 unresolvable, it returns no roster draft.
 
 ## Atomic Commit And Retry
 
-Commit accepts the stable preparation and generation-run identities plus the
-complete prepared batch. It revalidates batch identity, roster fingerprints,
-and saved-plan invariants, then inserts every plan, roster row, and
-generated-origin row in one Encounter transaction.
+Commit accepts the stable semantic batch origin and complete prepared batch. It
+revalidates batch identity, roster fingerprints, and saved-plan invariants,
+then inserts every plan, roster row, and generated-origin row in one Encounter
+transaction.
 
-Generated batch identity is unique by `(engineVersion, preparationIdentity)`
-and stores the normalized batch fingerprint and cardinality. An identical
-completed retry returns the existing ordered mapping without duplicate plans.
-A subset, superset, reordered batch, partial stored origin, or mismatched
-fingerprint returns `CONFLICT` and writes nothing.
+Generated batch identity is the canonical fingerprint of run origin,
+Encounter-engine version, catalog/preset meaning, and normalized roster
+content. Operation and preparation IDs are excluded. An identical completed
+retry or a new workflow with the same semantic origin returns the existing
+ordered mapping without duplicate plans. A subset, superset, reordered batch,
+partial stored origin, or mismatched fingerprint returns `CONFLICT` and writes
+nothing.
 
 Success returns exactly one Encounter plan ID and structured saved-plan summary
 per Encounter number. No partial mapping is returned.
@@ -78,9 +85,9 @@ per Encounter number. No partial mapping is returned.
 ## Status And Errors
 
 Statuses are `SUCCESS`, `INVALID_REQUEST`, `UNRESOLVABLE`, `CONFLICT`, and
-`STORAGE_FAILURE`. Display-safe messages contain no SQL, exception text, paths,
-catalog payloads, or creature detail. Non-success returns no applicable draft
-or committed mapping.
+`STORAGE_FAILURE`. Failures contain stable codes and structured parameters,
+not localized messages, SQL, exception text, paths, catalog payloads, or
+creature detail. Non-success returns no applicable draft or committed mapping.
 
 ## Persistence And Current Format
 
@@ -88,12 +95,12 @@ Saved plans retain optional generated origin, normalized roster fingerprint,
 declared batch cardinality, and order. Manual plans have no generated origin.
 Deleting or changing a Session Generation run does not cascade into Encounter.
 
-Preparation commits and reads use one canonical generated-origin
-representation containing preparation identity, engine version,
-generation-run identity, and a concrete roster fingerprint. Missing canonical
-identity fields make an internal pre-completion record invalid; no historical
-origin derivation, second writer, dual write, or compatibility carrier is part
-of this contract.
+Generated commits and reads use one canonical origin representation containing
+batch-origin fingerprint, engine/catalog/preset meaning, generation-run
+identity, Encounter ordinal, and concrete roster fingerprint. Missing
+canonical identity fields make an internal pre-completion record invalid; no
+historical origin derivation, second writer, dual write, or compatibility
+carrier is part of this contract.
 
 ## Performance Contract
 

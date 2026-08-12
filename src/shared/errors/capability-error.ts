@@ -1,7 +1,9 @@
 import {
-  capabilityErrorCodeSchema,
+  capabilityErrorCodes,
   type CapabilityErrorCode
-} from '../contracts/campaign.js'
+} from './capability-error-code.js'
+
+const capabilityErrorCodeSet = new Set<string>(capabilityErrorCodes)
 
 export class CapabilityError extends Error {
   public constructor(
@@ -19,6 +21,7 @@ export function capabilityErrorCode(
   if (error instanceof CapabilityError) return error.code
   if (error === null || typeof error !== 'object') return null
   const code = (error as { code?: unknown }).code
-  const parsed = capabilityErrorCodeSchema.safeParse(code)
-  return parsed.success ? parsed.data : null
+  return typeof code === 'string' && capabilityErrorCodeSet.has(code)
+    ? (code as CapabilityErrorCode)
+    : null
 }

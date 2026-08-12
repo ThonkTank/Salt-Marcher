@@ -14,6 +14,12 @@ import './party.css'
 import { partyCapabilities } from './party-capabilities.js'
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 import { useAdventuringDayCalculation } from './use-adventuring-day-calculation.js'
+import { lazy, Suspense } from 'react'
+
+const LazyCharacterLootLedgerDialog = lazy(async () => {
+  const module = await import('../loot/character-loot-ledger-dialog.js')
+  return { default: module.CharacterLootLedgerDialog }
+})
 
 export function AdventuringDayDropdown(props: {
   party: PartySnapshot
@@ -224,6 +230,9 @@ export function PartyDropdown(props: {
   const [deleteConfirm, setDeleteConfirm] = useState(false)
   const [xpMember, setXpMember] = useState<string | null>(null)
   const [xpDelta, setXpDelta] = useState(100)
+  const [ledgerCharacter, setLedgerCharacter] = useState<PartyCharacter | null>(
+    null
+  )
   const active = props.party.members.filter((member) => member.active)
   const leveled = active.filter(
     (member): member is PartyCharacter & { level: number } =>
@@ -321,6 +330,9 @@ export function PartyDropdown(props: {
                       }}
                     >
                       {message('ui.xp.2')}
+                    </button>
+                    <button onClick={() => setLedgerCharacter(member)}>
+                      {message('loot.ledgerOpen')}
                     </button>
                     <button onClick={() => setEditor(member)}>
                       {message('ui.bearbeiten')}
@@ -431,6 +443,9 @@ export function PartyDropdown(props: {
                   </small>
                 </span>
                 <div className="row-actions">
+                  <button onClick={() => setLedgerCharacter(member)}>
+                    {message('loot.ledgerOpen')}
+                  </button>
                   <button onClick={() => setEditor(member)}>
                     {message('ui.bearbeiten')}
                   </button>
@@ -501,6 +516,15 @@ export function PartyDropdown(props: {
           )}
         </section>
       )}
+      <Suspense fallback={null}>
+        {ledgerCharacter && (
+          <LazyCharacterLootLedgerDialog
+            character={ledgerCharacter}
+            close={() => setLedgerCharacter(null)}
+            onError={props.onError}
+          />
+        )}
+      </Suspense>
     </div>
   )
 }

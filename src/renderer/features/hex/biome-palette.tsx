@@ -6,10 +6,10 @@ import {
   useState,
   type UIEvent
 } from 'react'
-import {
-  type BiomeDefinition,
-  type BiomeDeleteImpact,
-  type BiomeDraft
+import type {
+  BiomeDefinition,
+  BiomeDeleteImpact,
+  BiomeDraft
 } from '../../../shared/contracts/biome.js'
 import { anyBiomeEncounterTableId } from '../../../shared/biomes/constants.js'
 import type { EncounterTable } from '../../../shared/contracts/encounter-source.js'
@@ -23,6 +23,7 @@ import {
 } from '../../shell/modal-dialog.js'
 import type { BiomeCatalogCapabilities } from './biome-catalog-capabilities.js'
 import { formatMessage, message } from '../../i18n/hex-runtime.de.js'
+import './biome-palette.css'
 
 const PAGE_SIZE = 30
 const COLUMN_COUNT = 3
@@ -69,7 +70,11 @@ export function BiomePalette(props: {
       if (requested.current.has(requestKey)) return
       requested.current.add(requestKey)
       try {
-        const result = await biomeApi.search(needle, offset, PAGE_SIZE)
+        const result = await biomeApi.search({
+          query: needle,
+          offset,
+          limit: PAGE_SIZE
+        })
         if (generation.current !== currentGeneration) return
         setPage((current) => {
           const minimum = Math.max(0, offset - PAGE_SIZE * 2)
@@ -148,7 +153,7 @@ export function BiomePalette(props: {
   async function openEditor(biome: BiomeDefinition | null) {
     try {
       const [definition, tables] = await Promise.all([
-        biome ? props.capabilities.biomes.detail(biome.id) : null,
+        biome ? props.capabilities.biomes.detail({ id: biome.id }) : null,
         props.capabilities.encounterTables.read()
       ])
       setEditing({
@@ -180,7 +185,7 @@ export function BiomePalette(props: {
         <button
           onClick={() =>
             void biomeApi
-              .detail(props.selectedId)
+              .detail({ id: props.selectedId })
               .then(openEditor)
               .catch((cause: unknown) => onError(capabilityErrorText(cause)))
           }
@@ -304,17 +309,17 @@ function BiomeEditorDialog(props: {
     try {
       const commandId = crypto.randomUUID()
       const result = props.biome
-        ? await props.capabilities.biomes.update(
+        ? await props.capabilities.biomes.update({
             commandId,
-            props.biome.id,
-            draft(),
-            props.revision
-          )
-        : await props.capabilities.biomes.create(
+            id: props.biome.id,
+            biome: draft(),
+            expectedRevision: props.revision
+          })
+        : await props.capabilities.biomes.create({
             commandId,
-            draft(),
-            props.revision
-          )
+            biome: draft(),
+            expectedRevision: props.revision
+          })
       await props.saved(result.biome)
     } catch (cause) {
       const errorText = capabilityErrorText(cause)
@@ -329,7 +334,9 @@ function BiomeEditorDialog(props: {
     if (!props.biome || props.biome.kind !== 'custom') return
     setBusy(true)
     try {
-      setImpact(await props.capabilities.biomes.deleteImpact(props.biome.id))
+      setImpact(
+        await props.capabilities.biomes.deleteImpact({ id: props.biome.id })
+      )
     } catch (cause) {
       props.onError(capabilityErrorText(cause))
     } finally {
@@ -341,11 +348,11 @@ function BiomeEditorDialog(props: {
     if (!props.biome || props.biome.kind !== 'custom') return
     setBusy(true)
     try {
-      await props.capabilities.biomes.delete(
-        crypto.randomUUID(),
-        props.biome.id,
-        props.revision
-      )
+      await props.capabilities.biomes.delete({
+        commandId: crypto.randomUUID(),
+        id: props.biome.id,
+        expectedRevision: props.revision
+      })
       setImpact(null)
       await props.saved(null)
     } catch (cause) {

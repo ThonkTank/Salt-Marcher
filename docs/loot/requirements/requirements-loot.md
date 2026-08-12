@@ -1,0 +1,130 @@
+# Loot Requirements
+
+## Goal And Scope
+
+Loot owns mutable, campaign-local treasures after explicit GM acceptance or
+manual creation. One treasure has exactly one current anchor: a World Planner
+location, a Scene group, or `unplaced`. Several treasures may share one owner.
+Moving the anchor changes the same treasure; repeated physical occurrences are
+independent treasures.
+
+Session Generation owns immutable generated proposals. Accepting a generated
+treasure copies its structured item and packing facts into Loot exactly once
+and records the run and generated-treasure provenance. The source run remains
+unchanged.
+
+## Live Session
+
+- the left group list shows a collapsible Loot section per group
+- location Loot appears in its own section below active groups
+- unplaced and unresolved Loot live in a separate paginated Inbox that is
+  loaded only when opened and can be reassigned
+- manual treasures, containers, item lines, and item-container assignments can
+  be created or edited; already allocated quantities remain protected
+- Encounter Resolution references typed treasure identities, never a free-text
+  Loot summary
+- the Session reads Loot through a dedicated revisioned projection and
+  `loot.changed` event; Loot is not embedded in `LiveSessionSnapshot`
+
+`loot.scene` contains only treasures anchored to the focused scene's groups or
+location plus the monotone Loot revision. `loot.inbox` owns cursor pagination
+for unplaced and unresolved treasures. Both projections batch-load their
+treasures, items, and containers. Anchor diagnosis reads narrow anchor rows
+before hydrating only actual unresolved results.
+
+## Group Reward Generation
+
+The Group manager may generate Loot for a new, changed, or unchanged
+non-archived group draft with an assigned leveled Party. The request captures
+the complete normalized roster, Scene, optional Group, Party, and campaign-rule
+revisions plus an internal seed. It produces exactly one immutable group-reward
+run and one normal Encounter-channel treasure proposal; it does not generate a
+whole adventuring day, quest reward, environment reward, or overstock.
+
+`Auffüllen` and `Neu generieren` immediately turn the generated proposal into
+an inline, renderer-local Treasure draft after the roster draft succeeds. Its
+label, item names, quantities, unit copper values, stackability, containers,
+capacities, and item-container assignments are editable. Items and containers
+have stable draft IDs and retain a discriminated origin pointing either to one
+immutable generated source line or to one catalog entry. The immutable run is
+never rewritten.
+
+The Group manager's left catalog switches between `Kreaturen` and `Loot`.
+`loot.catalog` is a Zod-validated, paginated read pinned to the generated run's
+`catalogContentHash`; a mismatching hash is stale. It searches active ordinary
+and magic items plus non-hidden containers and filters by type, category, and
+rarity. Results contain authoritative identity, default name, copper value
+rounded at the catalog boundary, stackability, magic/rarity, or container
+capacity. New Group-reward lines must come from this catalog; the ordinary
+Treasure editor continues to support free rows.
+
+Adding an unchanged stackable catalog item increments its existing quantity.
+Changed stackable items, non-stackable items, magic items, and containers are
+added as separate instances. Removing a container clears every assignment to
+it, and at least one item line is required. Draft edits support bounded
+undo/redo and are cached per Group draft. A manual roster change, roster
+undo/redo, fill, replacement generation, or Loot reroll replaces its draft;
+when the draft contains Loot edits, the GM must first confirm discarding them.
+The seed remains hidden and every reroll draws an independent seed.
+
+The inline budget header shows target copper, current non-magic copper,
+difference, a progress bar, and target/current magic count. The existing
+plus/minus 15 percent generator tolerance only classifies the draft; it never
+blocks confirmation. Existing groups use the same inline editor instead of a
+separate modal.
+
+`Gruppe & Loot übernehmen` submits the complete Treasure draft in one atomic,
+idempotent command. Utility revalidates generated origins against the immutable
+run and catalog origins against the run-pinned catalog. It derives immutable
+magic, rarity, curse, and provenance facts rather than trusting Renderer input,
+saves or updates the group, reconciles active Combat state, materializes the
+edited Treasure, and advances the Loot projection in one transaction. The
+canonical fingerprint includes the complete draft. Any failure writes neither
+the group nor the treasure. The ordinary `Speichern` action remains a
+group-only command.
+
+The campaign-wide reward rule selects base or adjusted Encounter XP. The same
+current rule and revision are used by Combat XP awards and group Loot budgets.
+Changing the rule makes an older confirmation stale rather than silently
+awarding or generating with another basis.
+
+## Distribution
+
+The shared distribution dialog uses the current active Party as its recipient
+set. Stackable quantities can be split between recipients. Non-stackable items
+cannot allocate more than one unit. Closing or cancelling the dialog persists
+nothing.
+
+`Verteilung abschließen` is one atomic, idempotent command. It validates the
+expected Party and Treasure revisions, active recipients, unique item and
+recipient rows, and remaining quantities. Success creates Treasure allocations
+and awarded character-ledger entries in the same transaction and advances the
+Treasure revision once. Any failure writes neither side.
+
+## Current Boundary
+
+The current slice reads awarded ledger entries with Treasure and generated
+reward provenance. A correction appends a linked replacement row, marks the
+original as superseded, and may correct its received/given-away/sold status;
+the original row is never rewritten. Independent sale/give-away workflows,
+Shop purchases, Quest authoring, and cumulative-loot compensation remain later
+commands. In particular, no compensation formula is inferred before its
+source-backed rule profile is approved.
+
+## Acceptance
+
+- multiple treasures at the same location or group survive restart
+- deleting or hiding an anchor does not delete its treasure; last-known labels
+  preserve repair context
+- accepting the same generated treasure twice does not duplicate it
+- a group-and-reward retry returns its original group patch and treasure
+- catalog search/filter/pagination is deterministic and rejects a catalog hash
+  other than the generated run's hash
+- edited, removed, and catalog-added lines retain authoritative provenance and
+  derived magic metadata after restart
+- a stale or mismatching group draft writes neither group nor treasure
+- replaying one completed distribution returns its original outcome
+- reusing any Loot command ID with different semantic input is rejected
+- stale revisions or inactive recipients roll back allocations and ledger rows
+- character ledgers retain quantity, value, award time, and provenance
+- ledger corrections retain both the original and linked correction rows

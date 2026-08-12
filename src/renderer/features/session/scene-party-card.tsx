@@ -1,10 +1,17 @@
-import { useState } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import { message } from '../../i18n/session-runtime.de.js'
 import { sessionCapabilities } from './session-capabilities.js'
 import { ModalDialog } from '../../shell/modal-dialog.js'
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
+import './session-dialogs.css'
+import type { PartyCharacter } from '../../../shared/contracts/party.js'
+
+const LazyCharacterLootLedgerDialog = lazy(async () => {
+  const module = await import('../loot/character-loot-ledger-dialog.js')
+  return { default: module.CharacterLootLedgerDialog }
+})
 
 export function ScenePartyCard(props: {
   snapshot: LiveSessionSnapshot
@@ -14,6 +21,9 @@ export function ScenePartyCard(props: {
 }) {
   const api = useCapabilityApi()
   const [open, setOpen] = useState(false)
+  const [ledgerCharacter, setLedgerCharacter] = useState<PartyCharacter | null>(
+    null
+  )
   const activeMembers = props.snapshot.party.members.filter(
     (member) => member.active
   )
@@ -61,8 +71,14 @@ export function ScenePartyCard(props: {
             </span>
           ) : (
             assignedMembers.map((member) => (
-              <span key={member.id}>
+              <span className="scene-party-member" key={member.id}>
                 {member.name} {message('ui.lv')} {member.level ?? '—'}
+                <button
+                  type="button"
+                  onClick={() => setLedgerCharacter(member)}
+                >
+                  {message('loot.ledgerOpen')}
+                </button>
               </span>
             ))
           )}
@@ -128,6 +144,15 @@ export function ScenePartyCard(props: {
           </footer>
         </ModalDialog>
       )}
+      <Suspense fallback={null}>
+        {ledgerCharacter && (
+          <LazyCharacterLootLedgerDialog
+            character={ledgerCharacter}
+            close={() => setLedgerCharacter(null)}
+            onError={props.onError}
+          />
+        )}
+      </Suspense>
     </>
   )
 }

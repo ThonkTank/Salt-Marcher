@@ -1,6 +1,7 @@
 import type { HexEraseImpact } from '../../../shared/contracts/hex.js'
 import { formatMessage, message } from '../../i18n/hex-runtime.de.js'
 import { ModalDialog } from '../../shell/modal-dialog.js'
+import './hex-impact-dialog.css'
 
 export function HexImpactDialog(props: {
   impact: HexEraseImpact

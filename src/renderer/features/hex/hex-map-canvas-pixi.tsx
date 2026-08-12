@@ -1,7 +1,10 @@
 import { message } from '../../i18n/hex-runtime.de.js'
-// Installs Pixi's static CSP-safe shader and uniform synchronizers.
-import 'pixi.js/unsafe-eval'
-import { Container, Graphics, Text, WebGLRenderer } from 'pixi.js'
+import {
+  Container,
+  Graphics,
+  Text,
+  WebGLRenderer
+} from '../../spatial-2d/pixi-webgl-runtime.js'
 import {
   useCallback,
   useEffect,
@@ -32,10 +35,12 @@ import {
   viewportMetrics
 } from './hex-pixi-camera.js'
 import { attachHexCanvasGestures } from './hex-canvas-gesture-controller.js'
+import { hexCanvasKeyboardCommand } from './hex-canvas-keyboard-controller.js'
 import {
   HexLocationMarkerOverlay,
   type HexLocationMarkerOverlayHandle
 } from './hex-location-marker-overlay.js'
+import './hex-canvas.css'
 
 type TravelOverlay = Readonly<{
   id: string
@@ -80,6 +85,11 @@ export type HexMapCanvasProps = {
   brushBiomeId?: HexBiomeId
   resetViewSignal?: number
   onTileClick?: (coordinate: AxialCoordinate) => void
+  onTileNavigate?: (coordinate: AxialCoordinate) => void
+  onTileActivate?: (coordinate: AxialCoordinate) => void
+  draggableToken?: AxialCoordinate | null
+  onTokenDrag?: (coordinate: AxialCoordinate | null) => void
+  onTokenDrop?: (coordinate: AxialCoordinate) => void
   onStrokeComplete?: (path: readonly AxialCoordinate[]) => void
   onViewportChange?: (center: AxialCoordinate, halfExtent: number) => void
   ariaLabel: string
@@ -368,6 +378,7 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
 
     void application
       .init({
+        manageImports: false,
         width: Math.max(1, element.clientWidth),
         height: Math.max(1, element.clientHeight),
         background: '#101a18',
@@ -421,6 +432,7 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
         detachGestures = attachHexCanvasGestures({
           canvas,
           interaction: () => latest.current.interaction,
+          draggableToken: () => latest.current.draggableToken ?? null,
           coordinateFor,
           onPan: (deltaX, deltaY) => {
             world.position.x += deltaX
@@ -447,6 +459,9 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
             redrawTransientLayersSafely()
           },
           onSelect: (coordinate) => latest.current.onTileClick?.(coordinate),
+          onTokenPreview: (coordinate) =>
+            latest.current.onTokenDrag?.(coordinate),
+          onTokenDrop: (coordinate) => latest.current.onTokenDrop?.(coordinate),
           onZoom: (event) => {
             const bounds = canvas.getBoundingClientRect()
             const worldX =
@@ -559,30 +574,20 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
 
   const keyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
     const selected = latest.current.selected ?? latest.current.snapshot.center
-    const delta =
-      event.key === 'ArrowLeft'
-        ? { q: -1, r: 0 }
-        : event.key === 'ArrowRight'
-          ? { q: 1, r: 0 }
-          : event.key === 'ArrowUp'
-            ? { q: 0, r: -1 }
-            : event.key === 'ArrowDown'
-              ? { q: 0, r: 1 }
-              : event.key.toLowerCase() === 'q'
-                ? { q: -1, r: 1 }
-                : event.key.toLowerCase() === 'e'
-                  ? { q: 1, r: -1 }
-                  : null
-    if (delta) {
-      event.preventDefault()
-      const next = {
-        q: selected.q + delta.q,
-        r: selected.r + delta.r
-      }
-      latest.current.onTileClick?.(next)
+    const command = hexCanvasKeyboardCommand({
+      key: event.key,
+      selected,
+      interaction: latest.current.interaction
+    })
+    if (!command) return
+    event.preventDefault()
+    if (command.kind === 'navigate') {
+      ;(latest.current.onTileNavigate ?? latest.current.onTileClick)?.(
+        command.coordinate
+      )
       const current = state.current
       if (current) {
-        const point = center(next)
+        const point = center(command.coordinate)
         const screenX =
           current.world.position.x + point.x * current.world.scale.x
         const screenY =
@@ -605,15 +610,14 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
           latest.current.onViewportChange?.(metrics.center, metrics.halfExtent)
         }
       }
-    } else if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault()
-      if (
-        latest.current.interaction === 'paint' ||
-        latest.current.interaction === 'erase'
-      )
-        latest.current.onStrokeComplete?.([selected])
-      else latest.current.onTileClick?.(selected)
+      return
     }
+    if (command.kind === 'stroke')
+      latest.current.onStrokeComplete?.([command.coordinate])
+    else;
+    ;(latest.current.onTileActivate ?? latest.current.onTileClick)?.(
+      command.coordinate
+    )
   }
 
   const selectedTile = props.selected

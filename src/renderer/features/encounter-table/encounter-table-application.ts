@@ -47,22 +47,24 @@ export function createEncounterTableApplicationPort(
       let receipt: EncounterTableMutationReceipt
       try {
         receipt = table
-          ? await api.encounterTables.update(
+          ? await api.encounterTables.update({
               commandId,
-              table.id,
-              draft,
-              encounterTableRevision(known, scope),
+              id: table.id,
+              table: draft,
+              expectedRevision: encounterTableRevision(known, scope),
               scope
-            )
-          : await api.encounterTables.create(
+            })
+          : await api.encounterTables.create({
               commandId,
-              draft,
-              encounterTableRevision(known, scope),
+              table: draft,
+              expectedRevision: encounterTableRevision(known, scope),
               scope
-            )
+            })
       } catch (cause) {
         if (capabilityErrorCode(cause) !== 'outcome_unknown') throw cause
-        const recovered = await api.encounterTables.commandReceipt(commandId)
+        const recovered = await api.encounterTables.commandReceipt({
+          commandId
+        })
         if (!recovered || !('saved' in recovered)) throw cause
         receipt = recovered
       }
@@ -73,15 +75,17 @@ export function createEncounterTableApplicationPort(
       const commandId = crypto.randomUUID()
       let receipt: EncounterTableDeleteReceipt
       try {
-        receipt = await api.encounterTables.delete(
+        receipt = await api.encounterTables.delete({
           commandId,
-          table.id,
-          encounterTableRevision(known, table.scope),
-          table.scope
-        )
+          id: table.id,
+          expectedRevision: encounterTableRevision(known, table.scope),
+          scope: table.scope
+        })
       } catch (cause) {
         if (capabilityErrorCode(cause) !== 'outcome_unknown') throw cause
-        const recovered = await api.encounterTables.commandReceipt(commandId)
+        const recovered = await api.encounterTables.commandReceipt({
+          commandId
+        })
         if (!recovered || !('deletedId' in recovered)) throw cause
         receipt = recovered
       }

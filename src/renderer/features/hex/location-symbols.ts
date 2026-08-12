@@ -6,13 +6,12 @@ import gateSvg from '../../assets/symbols/gate.svg?raw'
 import locationSvg from '../../assets/symbols/location.svg?raw'
 import partySvg from '../../assets/symbols/party.svg?raw'
 import treasureSvg from '../../assets/symbols/treasure.svg?raw'
-import {
-  locationSymbolDraftSchema,
-  builtinLocationSymbolCatalog,
-  type BuiltinLocationSymbolId,
-  type LocationSymbol,
-  type LocationSymbolDraft
+import type {
+  BuiltinLocationSymbolId,
+  LocationSymbol,
+  LocationSymbolDraft
 } from '../../../shared/contracts/location-symbol.js'
+import { builtinLocationSymbolCatalog } from '../../../shared/values/location-symbol-values.js'
 
 export type LocationSymbolViewBox = LocationSymbol['viewBox']
 
@@ -71,10 +70,26 @@ export function parseLocationSymbolSvg(
   if (values.length !== 4 || values.some((value) => !Number.isFinite(value)))
     throw new Error('Das SVG benötigt eine gültige ViewBox')
   const [minX, minY, width, height] = values as [number, number, number, number]
-  return locationSymbolDraftSchema.parse({
-    displayName,
+  const name = displayName.trim()
+  const pathData = (paths[0]!.getAttribute('d') ?? '').trim()
+  const fillRule = paths[0]!.getAttribute('fill-rule') ?? 'nonzero'
+  if (
+    name.length < 1 ||
+    name.length > 100 ||
+    width <= 0 ||
+    width > 1_000_000 ||
+    height <= 0 ||
+    height > 1_000_000 ||
+    pathData.length < 1 ||
+    pathData.length > 200_000 ||
+    !/^[MmLlHhVvCcSsQqTtAaZz0-9eE+.,\s-]+$/.test(pathData) ||
+    (fillRule !== 'nonzero' && fillRule !== 'evenodd')
+  )
+    throw new Error('Das SVG enthält ungültige Symboldaten')
+  return {
+    displayName: name,
     viewBox: { minX, minY, width, height },
-    pathData: paths[0]!.getAttribute('d') ?? '',
-    fillRule: paths[0]!.getAttribute('fill-rule') ?? 'nonzero'
-  })
+    pathData,
+    fillRule
+  }
 }

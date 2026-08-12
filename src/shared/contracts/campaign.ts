@@ -1,4 +1,7 @@
 import { z } from 'zod'
+import { capabilityErrorCodes } from '../errors/capability-error-code.js'
+
+export type { CapabilityErrorCode } from '../errors/capability-error-code.js'
 
 export const campaignSchema = z
   .object({
@@ -44,21 +47,7 @@ export function freezeCampaignSnapshot(
   })
 }
 
-export const capabilityErrorCodeSchema = z.enum([
-  'validation_failed',
-  'unsupported_svg',
-  'svg_too_large',
-  'file_read_failed',
-  'stale',
-  'not_found',
-  'read_only',
-  'timeout',
-  'outcome_unknown',
-  'core_unavailable',
-  'protocol_violation',
-  'internal'
-])
-export type CapabilityErrorCode = z.infer<typeof capabilityErrorCodeSchema>
+export const capabilityErrorCodeSchema = z.enum(capabilityErrorCodes)
 export const capabilityFailureSchema = z
   .object({
     code: capabilityErrorCodeSchema,

@@ -29,13 +29,28 @@ audit metadata, not user-selectable ruleset labels.
 
 ## Write Model And Derived State
 
-`GeneratedRun` is the immutable Session Generation write model. It owns:
+`GeneratedRun` is the immutable Session Generation write-model family. Its
+discriminator defines two closed variants:
+
+- `session` owns one complete generated day with encounters and rewards
+- `group_reward` owns one reward proposal for one live-scene group draft
+
+Every variant owns:
 
 - stable run identity and normalized input
 - catalog and engine identity
-- ordered encounter targets and encounter intents
 - ordered treasures, item lines, packing rows, and reward summary
-- optional formatted output, typed warnings, and audits
+- typed warnings and audits; localized formatting is renderer-derived and is
+  not stored run truth
+
+A `session` run additionally owns ordered encounter targets and encounter
+intents, the effective generator preset, and the day-level reward allocation.
+A `group_reward` run instead pins scene, prospective or persisted group
+identity, nullable group revision, normalized living/dead roster, party and
+campaign-rules revisions plus base, adjusted, and effective reward XP. Dead
+members remain provenance but do not contribute Encounter XP. It has exactly
+one normal Encounter-channel treasure and no encounter intents, quest reward,
+environment reward, or overstock allocation.
 
 There is no update command. A changed request produces a different run.
 
@@ -43,12 +58,15 @@ There is no update command. A changed request produces a different run.
 generation result before it becomes durable. It is complete and immutable but
 is not stored truth and cannot be observed as a partial `GeneratedRun`.
 
-The current Electron slice exposes only the transient encounter-intent stage
-through the utility capability
-`sessionGeneration.generateEncounterIntents`. It deliberately does not create
-a `GeneratedRun`, write SQLite state, resolve concrete creatures, or generate
-rewards. A later Session Planner command will compose this stage with reward,
-packing, persistence, and explicit GM acceptance.
+The Electron slice publishes the complete day capability
+`sessionGeneration.generate` and the group-bound reward capability
+`loot.generateForGroupDraft`. Each constructs its complete applicable result, passes
+all hard audits, fingerprints the semantic origin, and persists one immutable
+`GeneratedRun`. The earlier encounter-only public compatibility endpoint has
+been removed. Planner rewards retain the separate explicit generated-accept
+command. A group reward is confirmed through `loot.commitGroupReward`, which
+atomically persists its group draft and Treasure; an unconfirmed run mutates
+neither owner.
 
 Encounter intents describe CR, role, XP, quantity, and abstract statblock-slot
 requirements per CR-Block. They do not contain selected creature identity and
@@ -68,7 +86,7 @@ immutable `ReferenceCatalogSnapshot`. Its named stages are:
 4. treasure planning
 5. non-magic and magic item resolution
 6. packing
-7. reward aggregation and formatting
+7. reward aggregation
 8. warnings and hard audits
 
 The same normalized input, engine version, catalog content hash, effective
@@ -77,8 +95,9 @@ locale defaults, database order, hash iteration, and volatile randomness cannot
 influence output.
 
 The bundled catalog is a versioned offline snapshot. The utility process owns
-its file access and verifies every manifest-listed table before the pure engine
-receives the immutable encounter projection.
+its file access and verifies all 16 manifest-listed tables before the pure
+engine receives immutable encounter and loot projections. Runtime code never
+reads the source Google Sheet.
 
 ## Invariants
 
@@ -106,8 +125,8 @@ not redefined by this consumer domain.
 ## Consistency Boundary
 
 One `GeneratedRun` and all of its owned values form one immutable consistency
-boundary. A run pins engine version, catalog version, and catalog content hash
-and remains self-contained after creation.
+boundary. Every run pins its applicable component engine versions, catalog
+version, and catalog content hash and remains self-contained after creation.
 
 ## Sources
 

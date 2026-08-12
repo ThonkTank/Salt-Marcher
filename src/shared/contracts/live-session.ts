@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { partyCharacterSchema, partySnapshotSchema } from './party.js'
 import { sceneGroupSchema, sceneSnapshotSchema } from './scene.js'
 import { hexTravelSnapshotSchema } from './hex.js'
+import { rewardXpBasisSchema } from './campaign-rules.js'
 import {
   combatConditionSchema,
   combatConditions,
@@ -62,11 +63,16 @@ export const resolutionSchema = z
     mode: resolutionModeSchema,
     xpFraction: z.number().min(0).max(1),
     eligibleXp: z.number().int().nonnegative(),
+    eligibleBaseXp: z.number().int().nonnegative(),
+    eligibleAdjustedXp: z.number().int().nonnegative(),
+    eligibleRewardXp: z.number().int().nonnegative(),
+    rewardXpBasis: rewardXpBasisSchema,
+    campaignRulesRevision: z.number().int().nonnegative(),
     awardedXp: z.number().int().nonnegative(),
     perPlayerXp: z.number().int().nonnegative(),
     partySize: z.number().int().positive(),
     xpAwarded: z.boolean(),
-    lootSummary: z.string()
+    treasureIds: z.array(z.uuid())
   })
   .strict()
 
@@ -111,12 +117,19 @@ export const liveSessionSnapshotSchema = z
           effectiveSpeedFeet: true,
           assumedSpeedMemberNames: true,
           multiplier: true,
-          hint: true
+          hintCode: true
         })
         .extend({ kind: z.literal('hex') })
         .strict()
     ]),
     combat: combatSnapshotSchema.nullable()
+  })
+  .strict()
+
+export const hexTravelContextResultSchema = z
+  .object({
+    travel: hexTravelSnapshotSchema,
+    session: liveSessionSnapshotSchema
   })
   .strict()
 
@@ -144,6 +157,12 @@ export const confirmInitiativeInputSchema = z
 
 export const combatRevisionInputSchema = z
   .object({ expectedRevision: z.number().int().nonnegative() })
+  .strict()
+
+export const awardCombatXpInputSchema = combatRevisionInputSchema
+  .extend({
+    expectedCampaignRulesRevision: z.number().int().nonnegative()
+  })
   .strict()
 
 export const adjustInitiativeInputSchema = combatRevisionInputSchema
@@ -240,4 +259,7 @@ export type SceneGroupCommandResult = Readonly<
 >
 export type LiveSessionSnapshot = Readonly<
   z.infer<typeof liveSessionSnapshotSchema>
+>
+export type HexTravelContextResult = Readonly<
+  z.infer<typeof hexTravelContextResultSchema>
 >

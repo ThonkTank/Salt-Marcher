@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { defaultSessionLayoutPreferenceValue } from '../values/session-layout-values.js'
 
 const currentSessionLayoutPreferenceSchema = z
   .object({
@@ -32,8 +33,4 @@ export type SessionLayoutPreference = Readonly<
 >
 
 export const defaultSessionLayoutPreference: SessionLayoutPreference =
-  sessionLayoutPreferenceSchema.parse({
-    controlPaneWidth: 300,
-    scenarioPaneWidth: 264,
-    centerTab: 'details'
-  })
+  sessionLayoutPreferenceSchema.parse(defaultSessionLayoutPreferenceValue)

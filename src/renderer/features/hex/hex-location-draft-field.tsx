@@ -5,14 +5,14 @@ import { message } from '../../i18n/hex-runtime.de.js'
 import type { WorldLocationMapFieldProps } from '../worldplanner/world-location-editor-types.js'
 import { CompactHexPlacementView } from './compact-hex-placement-view.js'
 import { ExpandedHexPlacementDialog } from './expanded-hex-placement-dialog.js'
-import type { HexLocationPlacementProjectionPort } from './hex-location-placement-port.js'
+import type { HexMapProjectionPort } from './hex-map-projection-port.js'
 import type { HexMapApplicationPort } from './hex-map-creation-port.js'
 import { useHexLocationPlacementDraft } from './use-hex-location-placement-draft.js'
 import './hex-location-placement.css'
 
 export function HexLocationDraftField(
   props: WorldLocationMapFieldProps & {
-    port: HexLocationPlacementProjectionPort
+    port: HexMapProjectionPort
     mapCreation: HexMapApplicationPort
     requestMapCreation: (
       create: (displayName: string) => Promise<HexMapSummary>

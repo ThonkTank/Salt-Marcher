@@ -68,5 +68,20 @@ export const generatorMessagesDe = {
     'Das Preset wurde zwischenzeitlich geändert. Dein Entwurf bleibt erhalten.',
   'g.conflict.retry': 'Stand aktualisiert. Aktion erneut bestätigen.',
   'g.conflict.discard': 'Neueste Version laden',
-  'g.conflict.copy': 'Als Kopie speichern'
+  'g.conflict.copy': 'Als Kopie speichern',
+  'g.reward.title': 'Belohnungsregeln der Kampagne',
+  'g.reward.description':
+    'Diese Regel steuert sowohl Kampf-XP als auch den Wert gruppenbezogener Beute.',
+  'g.reward.basis': 'Verwendete Encounter-XP',
+  'g.reward.base': 'Basis-XP',
+  'g.reward.baseHint':
+    'Die Summe der Monster-XP ohne Multiplikator wird vergeben.',
+  'g.reward.adjusted': 'Angepasste XP',
+  'g.reward.adjustedHint':
+    'Der Encounter-Multiplikator für Gegnerzahl und Partygröße wird einbezogen.',
+  'g.reward.status.loading': 'Kampagnenregel wird geladen …',
+  'g.reward.status.saving': 'Kampagnenregel wird gespeichert …',
+  'g.reward.status.saved': 'Kampagnenregel gespeichert.',
+  'g.reward.status.stale':
+    'Die Regel wurde zwischenzeitlich geändert. Der aktuelle Stand wurde geladen.'
 } as const

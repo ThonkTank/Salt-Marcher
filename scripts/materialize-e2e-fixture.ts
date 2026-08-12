@@ -5,8 +5,13 @@ import { CampaignStore } from '../src/core/persistence/sqlite/campaign-store.js'
 import { WorldLocationService } from '../src/core/worldplanner/location-store.js'
 import { SceneStore } from '../src/core/scene/scene-store.js'
 import { sessionLayoutPreferenceSchema } from '../src/shared/contracts/session-layout.js'
+import { LivePlayService } from '../src/core/encounter/live-combat.js'
+import { HexMapStore } from '../src/core/hex/hex-map-store.js'
+import { HexTravelService } from '../src/core/hex/hex-travel.js'
+import { WorldLocationStore } from '../src/core/worldplanner/location-store.js'
+import { hexBiomeIdSchema } from '../src/shared/contracts/hex.js'
 
-const fixtureSchema = z
+const fixtureV1Schema = z
   .object({
     version: z.literal(1),
     campaign: z.string().min(1).nullable(),
@@ -24,6 +29,48 @@ const fixtureSchema = z
     sceneLocation: z.string().min(1).nullable()
   })
   .strict()
+
+const fixtureV2Schema = fixtureV1Schema
+  .omit({ version: true })
+  .extend({
+    version: z.literal(2),
+    party: z.array(
+      z
+        .object({
+          name: z.string().min(1),
+          active: z.boolean(),
+          movementSpeedFeet: z.number().int().positive().nullable()
+        })
+        .strict()
+    ),
+    travelScenario: z
+      .object({
+        mapName: z.string().min(1),
+        tiles: z.array(
+          z
+            .object({
+              q: z.number().int(),
+              r: z.number().int(),
+              biomeId: hexBiomeIdSchema
+            })
+            .strict()
+        ),
+        locationName: z.string().min(1),
+        locationCoordinate: z
+          .object({ q: z.number().int(), r: z.number().int() })
+          .strict(),
+        partyCoordinate: z
+          .object({ q: z.number().int(), r: z.number().int() })
+          .strict()
+      })
+      .strict()
+  })
+  .strict()
+
+const fixtureSchema = z.discriminatedUnion('version', [
+  fixtureV1Schema,
+  fixtureV2Schema
+])
 
 const userData = requiredArgument('--user-data')
 const fixturePath = resolve(userData, 'fixture.json')
@@ -53,6 +100,79 @@ try {
         },
         snapshot.revision
       ).snapshot
+    if (fixture.version === 2) {
+      const database = () => campaigns.activeCampaignDatabase()
+      const play = new LivePlayService(database)
+      let party = play.readParty()
+      for (const configured of fixture.party) {
+        const member = party.members.find(
+          (candidate) => candidate.name === configured.name
+        )
+        if (!member)
+          throw new Error(`Fixture party member is missing: ${configured.name}`)
+        party = play.updatePartyCharacter(
+          member.id,
+          {
+            name: member.name,
+            playerName: member.playerName,
+            level: member.level,
+            passivePerception: member.passivePerception,
+            armorClass: member.armorClass,
+            movementSpeedFeet: configured.movementSpeedFeet
+          },
+          party.revision
+        )
+        const updated = party.members.find(
+          (candidate) => candidate.id === member.id
+        )!
+        if (updated.active !== configured.active)
+          party = play.setMembership(
+            member.id,
+            configured.active,
+            party.revision
+          )
+      }
+      const location = snapshot.locations.find(
+        (candidate) =>
+          candidate.displayName === fixture.travelScenario.locationName
+      )
+      if (!location)
+        throw new Error(
+          `Fixture travel location is missing: ${fixture.travelScenario.locationName}`
+        )
+      const db = database()
+      const mapStore = new HexMapStore(db, new WorldLocationStore(db))
+      let map = mapStore.create({
+        displayName: fixture.travelScenario.mapName,
+        expectedCatalogRevision: mapStore.catalog().revision
+      })
+      const byBiome = Map.groupBy(
+        fixture.travelScenario.tiles,
+        (tile) => tile.biomeId
+      )
+      for (const [biomeId, tiles] of byBiome) {
+        map = mapStore.applyBrushTargets({
+          mapId: map.id,
+          mode: 'paint',
+          biomeId,
+          coordinates: tiles,
+          expectedContentRevision: map.contentRevision
+        }).map
+      }
+      map = mapStore.placeLocation({
+        mapId: map.id,
+        locationId: location.id,
+        coordinate: fixture.travelScenario.locationCoordinate,
+        expectedContentRevision: map.contentRevision
+      }).map
+      const session = play.readSession()
+      new HexTravelService(database).position({
+        sceneId: session.scene.focusedSceneId,
+        mapId: map.id,
+        coordinate: fixture.travelScenario.partyCoordinate,
+        expectedSceneRevision: session.scene.revision
+      })
+    }
     if (fixture.sceneLocation !== null) {
       const location = snapshot.locations.find(
         (candidate) => candidate.displayName === fixture.sceneLocation

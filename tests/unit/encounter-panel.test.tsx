@@ -90,6 +90,13 @@ describe('encounter scenario panel', () => {
         <ModalLayerProvider>
           <SessionEncounterPanel
             snapshot={combatSnapshot()}
+            loot={{
+              revision: 0,
+              sceneId,
+              locationId: null,
+              locationTreasures: [],
+              groupTreasures: []
+            }}
             setSnapshot={vi.fn()}
             close={vi.fn()}
             onError={vi.fn()}

@@ -232,7 +232,7 @@ async function settledWorkingSetSamples(): Promise<readonly number[]> {
   const values: number[] = []
   for (let sample = 0; sample < 3; sample += 1) {
     await settleRenderer()
-    values.push(await window.saltMarcher.runtime.processMemoryBytes())
+    values.push(await window.saltMarcher.runtime.memory())
   }
   return values
 }

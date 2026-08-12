@@ -8,14 +8,28 @@ result containing encounter intents, rewards, packing, warnings, and audits.
 After the result is saved and reopened, its structured meaning MUST be
 equivalent to the result first presented for the same generation.
 
-The current Electron implementation is an encounter-intent vertical slice. It
-exposes the complete encounter target and intent stage through the utility
-process, but does not yet persist a `GeneratedRun` or produce loot, packing, or
-concrete creature identities.
+The Utility implementation owns complete `saltmarcher-v5` generation as an
+internal orchestration capability. It is not a general Renderer operation.
+Complete runs are immutable and campaign-local. They include typed loot and
+packing and are persisted before presentation. Concrete creature identity
+remains an Encounter concern.
 
-Session Planner is the primary consumer. Encounter converts generated encounter
-intents into concrete rosters. Session Generation does not own UI, authored
-sessions, Party members, creature facts, or saved Encounter plans.
+Session Planner is the sole full-day UI consumer. Encounter converts generated
+encounter intents into concrete rosters. Group management may request a
+separate loot-only proposal for one prospective or persisted live-scene group
+draft. Session Generation
+does not own UI, authored sessions, Party members, creature facts, or saved
+Encounter plans.
+
+A group reward request MUST pin the scene revision, prospective or persisted
+group identity, nullable group revision, complete normalized living/dead
+roster, assigned party revision and level counts, current campaign-rules
+revision, configured XP basis, base XP, adjusted XP, effective reward XP, and
+seed. Dead members are preserved as source provenance but do not contribute XP.
+Its immutable result contains exactly one normal Encounter-channel treasure and
+no encounter intents, quest reward, environment reward, or overstock. It uses
+the independent reward-engine version and the same current XP policy as combat
+resolution.
 
 ## User-Observable Result
 
@@ -25,7 +39,7 @@ Through Session Planner, a successful generation contributes:
 - generated reward channels and encounter anchors
 - concrete generated item lines with quantity, value, magic, curse, and packing
   facts when applicable
-- display summaries, warnings, and audit outcome
+- renderer-derived display summaries, typed warnings, and audit outcome
 - stable run and treasure identities used by the prepared session
 
 Generated loot is structured result data. Formatted text is an optional derived
@@ -42,7 +56,8 @@ decimal. An explicit encounter count is from 1 through 10; omission activates
 deterministic automatic calculation. The seed is explicit.
 
 Invalid input produces no result. Catalog, generation, and saving failures are
-distinguishable and expose no partial result.
+distinguishable and expose no partial result. Issues, warnings, and audits use
+stable codes plus structured parameters; localized prose is renderer-owned.
 
 ## Adopted Rule-Parity Profile
 
@@ -59,7 +74,7 @@ The engine MUST preserve:
 - normal and overstock budgets, channel caps, theme and magic distribution,
   descending slots, dynamic line budgets, loot roles, candidate tolerances,
   bulk behavior, coins, adorned/useful/flavor items, magic, enspelling, curses,
-  packing, and formatting
+  and packing
 - positive modulo, explicit stable ordering, deterministic selection, typed
   fallbacks, hard audits, and budget tolerances
 
@@ -97,7 +112,8 @@ formatted-text snapshot is Golden compatibility.
   typed warnings
 - saved and reopened results retain the same encounters, rewards, packing,
   warnings, audits, seed, and recorded engine/catalog meaning
-- repeating an already completed request does not create visible duplicates
+- repeating the same semantic origin returns the existing run and does not
+  create visible duplicates
 - reward details remain available as structured fields rather than only as
   formatted text
 

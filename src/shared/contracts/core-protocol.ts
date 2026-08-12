@@ -7,6 +7,8 @@ import { worldLocationChangeNoticeSchema } from './world-location.js'
 import { locationSymbolChangeNoticeSchema } from './location-symbol.js'
 import { biomeChangeNoticeSchema } from './biome.js'
 import { encounterTableChangeNoticeSchema } from './encounter-source.js'
+import { lootChangeNoticeSchema } from './loot.js'
+import { sessionPreparationChangeNoticeSchema } from './session-planner.js'
 import {
   coreOperations,
   isCoreOperationKind,
@@ -76,6 +78,18 @@ export const coreResultSchema = z.discriminatedUnion('ok', [
 ])
 
 export const coreEventSchema = z.discriminatedUnion('kind', [
+  z
+    .object({
+      kind: z.literal('loot.changed'),
+      notice: lootChangeNoticeSchema
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('session-planner.preparation-changed'),
+      notice: sessionPreparationChangeNoticeSchema
+    })
+    .strict(),
   z
     .object({
       kind: z.literal('session.changed'),

@@ -8,6 +8,10 @@ import {
   type EncounterCatalog,
   type EncounterCatalogManifest
 } from '../../core/session-generation/catalog.js'
+import {
+  parseFullSessionGenerationCatalog,
+  type FullSessionGenerationCatalog
+} from '../../core/session-generation/loot-catalog.js'
 
 export class CatalogProviderError extends Error {
   constructor(
@@ -25,6 +29,9 @@ export class CatalogProviderError extends Error {
 
 export class BundledEncounterCatalogProvider {
   #cached: EncounterCatalog | CatalogProviderError | undefined
+  #full: FullSessionGenerationCatalog | CatalogProviderError | undefined
+  #manifest: EncounterCatalogManifest | undefined
+  #tableTexts: ReadonlyMap<string, string> | undefined
 
   constructor(private readonly root: string) {}
 
@@ -64,11 +71,34 @@ export class BundledEncounterCatalogProvider {
           patterns: requiredTable(tableTexts, 'DB_EncounterPatterns.tsv')
         }
       })
+      this.#manifest = manifest
+      this.#tableTexts = tableTexts
       this.#cached = catalog
       return catalog
     } catch (error) {
       const failure = toCatalogError(error)
       this.#cached = failure
+      throw failure
+    }
+  }
+
+  loadFull(): FullSessionGenerationCatalog {
+    if (this.#full instanceof CatalogProviderError) throw this.#full
+    if (this.#full !== undefined) return this.#full
+    try {
+      const encounter = this.load()
+      if (!this.#manifest || !this.#tableTexts)
+        throw new CatalogProviderError(
+          'catalog_unavailable',
+          'Verified catalog tables are unavailable'
+        )
+      const tables = Object.fromEntries(this.#tableTexts)
+      const full = parseFullSessionGenerationCatalog(encounter, tables)
+      this.#full = full
+      return full
+    } catch (error) {
+      const failure = toCatalogError(error)
+      this.#full = failure
       throw failure
     }
   }
@@ -144,7 +174,7 @@ function toCatalogError(error: unknown): CatalogProviderError {
   )
     return new CatalogProviderError(
       'catalog_reference_missing',
-      'Catalog reference is missing'
+      `Catalog reference is missing (${error.message})`
     )
   if (
     error instanceof Error &&
@@ -152,7 +182,7 @@ function toCatalogError(error: unknown): CatalogProviderError {
   )
     return new CatalogProviderError(
       'catalog_schema_invalid',
-      'Catalog schema is invalid'
+      `Catalog schema is invalid (${error.message})`
     )
   return new CatalogProviderError(
     'catalog_unavailable',

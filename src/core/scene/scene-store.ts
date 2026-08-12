@@ -265,7 +265,8 @@ export class SceneStore {
       deadQuantity?: number | undefined
     }[],
     expectedRevision: number,
-    expectedGroupRevision: number | null = null
+    expectedGroupRevision: number | null = null,
+    prospectiveGroupId?: string
   ): string {
     let savedId = groupId ?? ''
     const save = () => {
@@ -274,7 +275,7 @@ export class SceneStore {
       for (const creatureId of normalized.keys())
         if (!creatureById(creatureId))
           throw new CapabilityError('not_found', false)
-      const id = groupId ?? uuidv7()
+      const id = groupId ?? prospectiveGroupId ?? uuidv7()
       const savedName = this.resolveGroupName(sceneId, id, name)
       savedId = id
       if (groupId) {
@@ -293,6 +294,11 @@ export class SceneStore {
           )
           .run(savedName, note, disposition, id)
       } else {
+        if (
+          this.db.prepare('SELECT 1 FROM scene_group WHERE id = ?').get(id) !==
+          undefined
+        )
+          throw new CapabilityError('stale', true)
         this.db
           .prepare(
             'INSERT INTO scene_group (id, scene_id, revision, name, note, disposition, archived, position) VALUES (?, ?, 0, ?, ?, ?, 0, COALESCE((SELECT MAX(position) + 1 FROM scene_group WHERE scene_id = ?), 0))'

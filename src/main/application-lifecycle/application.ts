@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'node:path'
 import { CoreProcessSupervisor } from '../core-process/core-process-supervisor.js'
 import { createMainWindow } from '../windows/main-window.js'
@@ -9,12 +9,13 @@ import {
 import { configureSecurity } from '../security/security.js'
 import { outputPath, resourcePath } from './runtime-paths.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
-import { coreProcessStatusSchema } from '../../shared/contracts/runtime.js'
 import {
   emptyPassiveProjection,
   passiveProjectionSchema
 } from '../../shared/contracts/passive-display.js'
 import { registerCapabilities } from './capability-registration.js'
+import { capabilityEvents } from '../../shared/contracts/events.js'
+import { isE2eRuntime } from './e2e-runtime.js'
 
 let core: CoreProcessSupervisor | undefined
 
@@ -27,6 +28,10 @@ export async function startApplication(): Promise<void> {
     resourcePath('reference', 'srd-5.1.sqlite'),
     resourcePath('sessiongeneration', 'catalog-2026-07-16')
   )
+  if (isE2eRuntime())
+    ipcMain.handle('salt-marcher-e2e:terminate-utility', () =>
+      core?.terminateUtilityForE2e()
+    )
   connectCoreNotifications(core)
   void core.waitUntilReady().catch(() => {
     // The shell stays visible and exposes explicit recovery through core status.
@@ -44,13 +49,16 @@ function connectCoreNotifications(supervisor: CoreProcessSupervisor): void {
   supervisor.onStatus((status) => {
     for (const window of BrowserWindow.getAllWindows())
       window.webContents.send(
-        'runtime:core-status-changed',
-        coreProcessStatusSchema.parse(status)
+        capabilityEvents['runtime.onCoreStatus'].channel,
+        capabilityEvents['runtime.onCoreStatus'].payload.parse(status)
       )
   })
   supervisor.onSessionChanged((notice) => {
     for (const window of BrowserWindow.getAllWindows()) {
-      window.webContents.send('session:changed', notice)
+      window.webContents.send(
+        capabilityEvents['session.onChanged'].channel,
+        capabilityEvents['session.onChanged'].payload.parse(notice)
+      )
       if (isReadOnlyWindow(window.webContents))
         window.webContents.send(
           'projection:changed',
@@ -58,40 +66,80 @@ function connectCoreNotifications(supervisor: CoreProcessSupervisor): void {
         )
     }
   })
+  supervisor.onLootChanged((notice) => {
+    for (const window of BrowserWindow.getAllWindows())
+      if (!isReadOnlyWindow(window.webContents))
+        window.webContents.send(
+          capabilityEvents['loot.onChanged'].channel,
+          capabilityEvents['loot.onChanged'].payload.parse(notice)
+        )
+  })
+  supervisor.onPreparationChanged((notice) => {
+    for (const window of BrowserWindow.getAllWindows())
+      if (!isReadOnlyWindow(window.webContents))
+        window.webContents.send(
+          capabilityEvents['sessionPlanner.onPreparationChanged'].channel,
+          capabilityEvents['sessionPlanner.onPreparationChanged'].payload.parse(
+            notice
+          )
+        )
+  })
   supervisor.onReferenceChanged((notice) => {
     for (const window of BrowserWindow.getAllWindows())
-      window.webContents.send('references:index-changed', notice)
+      window.webContents.send(
+        capabilityEvents['references.onCampaignIndexChanged'].channel,
+        capabilityEvents['references.onCampaignIndexChanged'].payload.parse(
+          notice
+        )
+      )
   })
   supervisor.onHexChanged((notice) => {
     for (const window of BrowserWindow.getAllWindows())
       if (!isReadOnlyWindow(window.webContents))
-        window.webContents.send('hex:changed', notice)
+        window.webContents.send(
+          capabilityEvents['hex.onChanged'].channel,
+          capabilityEvents['hex.onChanged'].payload.parse(notice)
+        )
   })
   supervisor.onLocationsChanged((notice) => {
     for (const window of BrowserWindow.getAllWindows())
       if (!isReadOnlyWindow(window.webContents))
-        window.webContents.send('locations:changed', notice)
+        window.webContents.send(
+          capabilityEvents['locations.onChanged'].channel,
+          capabilityEvents['locations.onChanged'].payload.parse(notice)
+        )
   })
   supervisor.onLocationSymbolsChanged((notice) => {
     for (const window of BrowserWindow.getAllWindows())
       if (!isReadOnlyWindow(window.webContents))
-        window.webContents.send('location-symbols:changed', notice)
+        window.webContents.send(
+          capabilityEvents['locationSymbols.onChanged'].channel,
+          capabilityEvents['locationSymbols.onChanged'].payload.parse(notice)
+        )
   })
   supervisor.onBiomesChanged((notice) => {
     for (const window of BrowserWindow.getAllWindows())
       if (!isReadOnlyWindow(window.webContents))
-        window.webContents.send('biomes:changed', notice)
+        window.webContents.send(
+          capabilityEvents['biomes.onChanged'].channel,
+          capabilityEvents['biomes.onChanged'].payload.parse(notice)
+        )
   })
   supervisor.onEncounterTablesChanged((notice) => {
     for (const window of BrowserWindow.getAllWindows())
       if (!isReadOnlyWindow(window.webContents))
-        window.webContents.send('encounter-tables:changed', notice)
+        window.webContents.send(
+          capabilityEvents['encounterTables.onChanged'].channel,
+          capabilityEvents['encounterTables.onChanged'].payload.parse(notice)
+        )
   })
 }
 
 export async function stopApplication(): Promise<void> {
   await core?.closeGracefully()
   core = undefined
+  if (isE2eRuntime())
+    ipcMain.removeHandler('salt-marcher-e2e:terminate-utility')
 }
 
 export function waitForCoreReady(): Promise<void> {
@@ -102,15 +150,7 @@ export function waitForCoreReady(): Promise<void> {
 export async function runSessionGenerationSmoke(): Promise<void> {
   if (core === undefined) throw new CapabilityError('core_unavailable', true)
   await core.waitUntilReady()
-  const result = await core.requestOperation(
-    'sessionGeneration.generateEncounterIntents',
-    {
-      party: [{ level: 3, count: 4 }],
-      adventureDayFraction: '0.6',
-      encounterCount: 1,
-      seed: 179974
-    }
-  )
-  if (result.status !== 'success' || result.encounters.length !== 1)
-    throw new Error('Packaged session-generation capability smoke failed')
+  const result = await core.requestOperation('sessionPlanner.read', undefined)
+  if (!result.currentSessionId || result.sessions.length === 0)
+    throw new Error('Packaged session-planner capability smoke failed')
 }

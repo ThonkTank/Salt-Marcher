@@ -62,6 +62,48 @@
       "viewport": { "width": 1280, "height": 800 }
     },
     {
+      "name": "session-travel-light",
+      "suite": "travel",
+      "selector": ".session-mockup",
+      "viewport": { "width": 1280, "height": 800 }
+    },
+    {
+      "name": "session-travel-dark",
+      "suite": "travel",
+      "selector": ".session-mockup",
+      "viewport": { "width": 1280, "height": 800 }
+    },
+    {
+      "name": "session-travel-completed-light",
+      "suite": "travel",
+      "selector": ".session-mockup",
+      "viewport": { "width": 1280, "height": 800 }
+    },
+    {
+      "name": "session-loot-planner-light",
+      "suite": "loot",
+      "selector": ".session-planner",
+      "viewport": { "width": 1280, "height": 800 }
+    },
+    {
+      "name": "session-loot-planner-dark",
+      "suite": "loot",
+      "selector": ".session-planner",
+      "viewport": { "width": 1280, "height": 800 }
+    },
+    {
+      "name": "group-loot-preview-light",
+      "suite": "loot",
+      "selector": ".group-loot-inline-panel",
+      "viewport": { "width": 1280, "height": 800 }
+    },
+    {
+      "name": "group-loot-preview-dark",
+      "suite": "loot",
+      "selector": ".group-loot-inline-panel",
+      "viewport": { "width": 1280, "height": 800 }
+    },
+    {
       "name": "group-management",
       "suite": "create",
       "selector": "section[aria-labelledby=\"group-builder-title\"]",

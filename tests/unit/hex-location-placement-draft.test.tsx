@@ -3,8 +3,10 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { useHexLocationPlacementDraft } from '../../src/renderer/features/hex/use-hex-location-placement-draft.js'
-import type { HexLocationPlacementProjectionPort } from '../../src/renderer/features/hex/hex-location-placement-port.js'
-import type { HexPlacementProjectionChange } from '../../src/renderer/features/hex/hex-location-placement-port.js'
+import type {
+  HexMapProjectionChange,
+  HexMapProjectionPort
+} from '../../src/renderer/features/hex/hex-map-projection-port.js'
 import { HexChunkCache } from '../../src/renderer/features/hex/hex-chunk-cache.js'
 import type {
   HexChangeNotice,
@@ -60,30 +62,47 @@ function projectionFixture(
     keys: readonly HexChunkKey[]
   ) => Promise<HexChunkReadResult>
 ) {
-  let listener: ((change: HexPlacementProjectionChange) => void) | null = null
-  const port: HexLocationPlacementProjectionPort = {
+  let listener: ((change: HexMapProjectionChange) => void) | null = null
+  const cache = new HexChunkCache(readChunks)
+  const port: HexMapProjectionPort = {
+    cacheLifetime: 'transient',
     currentCatalog: () => null,
     currentBiomeCatalog: () => null,
     readCatalog: vi.fn().mockResolvedValue({ revision: 1, maps }),
     readBiomeCatalog: vi.fn().mockResolvedValue({ revision: 0, biomes: [] }),
     locateLocation: vi.fn().mockResolvedValue(null),
-    cache: new HexChunkCache(readChunks),
-    cacheMode: 'transient',
+    readMap: vi.fn((input: Parameters<HexMapProjectionPort['readMap']>[0]) =>
+      cache.readMapView(
+        maps.find((map) => map.id === input.mapId)!,
+        input.center,
+        input.force,
+        input.halfExtent
+      )
+    ),
     subscribe: vi
       .fn()
-      .mockImplementation(
-        (next: (change: HexPlacementProjectionChange) => void) => {
-          listener = next
-          return () => {
-            listener = null
-          }
+      .mockImplementation((next: (change: HexMapProjectionChange) => void) => {
+        listener = next
+        return () => {
+          listener = null
         }
-      )
+      }),
+    dispose: vi.fn()
   }
   return {
     port,
-    emitHex: (next: HexChangeNotice) =>
-      listener?.({ kind: 'hex', notice: next }),
+    cache,
+    emitHex: (next: HexChangeNotice) => {
+      if (port.cacheLifetime === 'transient')
+        for (const mapId of next.mapIds)
+          cache.invalidateChunks(
+            mapId,
+            next.changedChunks
+              .filter((chunk) => chunk.mapId === mapId)
+              .map((chunk) => chunk.key)
+          )
+      listener?.({ kind: 'hex', notice: next })
+    },
     emitBiomes: (next: BiomeChangeNotice) =>
       listener?.({ kind: 'biomes', notice: next })
   }
@@ -269,8 +288,8 @@ describe('useHexLocationPlacementDraft', () => {
       Promise.resolve(chunks(maps[0]!, keys))
     )
     const fixture = projectionFixture(readChunks)
-    Object.assign(fixture.port, { cacheMode: 'shared-owner' as const })
-    const invalidateChunks = vi.spyOn(fixture.port.cache, 'invalidateChunks')
+    Object.assign(fixture.port, { cacheLifetime: 'shared-owner' as const })
+    const invalidateChunks = vi.spyOn(fixture.cache, 'invalidateChunks')
     const hook = renderHook(() =>
       useHexLocationPlacementDraft({
         port: fixture.port,

@@ -20,6 +20,9 @@ import {
   reconcileMonsterSource
 } from './combat-partition-policy.js'
 import { CombatRepository } from './combat-repository.js'
+import type { GroupTreasureReader } from '../loot/group-treasure-reader.js'
+import type { CampaignRules } from '../../shared/contracts/campaign-rules.js'
+import { encounterXpMultiplier } from '../../shared/encounter-xp.js'
 import {
   projectedCards,
   reduceCombatState,
@@ -36,14 +39,20 @@ export class CombatService {
 
   constructor(
     db: Database.Database,
-    sceneId: string,
+    private readonly sceneId: string,
     private readonly scene: SceneStore,
     party: PartyStore,
     private readonly preset: {
       config: GeneratorPresetConfigV3
       id: string
       revision: number
-    }
+    },
+    private readonly groupTreasures?: GroupTreasureReader,
+    private readonly campaignRules: () => CampaignRules = () => ({
+      revision: 0,
+      rewardXpBasis: 'base',
+      updatedAt: new Date(0).toISOString()
+    })
   ) {
     this.repository = new CombatRepository(db, sceneId, scene, party)
   }
@@ -510,9 +519,18 @@ export class CombatService {
     const partySize = members.filter((member) => member.active).length
     if (partySize === 0) throw new CapabilityError('validation_failed', false)
     const selected = new Set(state.resolution.selectedEnemyIds)
-    const eligible = state.combatants
-      .filter((combatant) => selected.has(combatant.id))
-      .reduce((total, combatant) => total + combatant.xp, 0)
+    const selectedEnemies = state.combatants.filter((combatant) =>
+      selected.has(combatant.id)
+    )
+    const baseXp = selectedEnemies.reduce(
+      (total, combatant) => total + combatant.xp,
+      0
+    )
+    const adjustedXp = Math.round(
+      baseXp * encounterXpMultiplier(selectedEnemies.length, partySize)
+    )
+    const rules = this.campaignRules()
+    const eligible = rules.rewardXpBasis === 'adjusted' ? adjustedXp : baseXp
     return {
       combatId: state.id,
       xpEach: Math.floor((eligible * state.resolution.xpFraction) / partySize)
@@ -593,9 +611,20 @@ export class CombatService {
       members.filter((member) => member.active).length
     )
     const selected = new Set(state.resolution?.selectedEnemyIds ?? [])
-    const eligibleXp = state.combatants
-      .filter((combatant) => selected.has(combatant.id))
-      .reduce((total, combatant) => total + combatant.xp, 0)
+    const selectedEnemies = state.combatants.filter((combatant) =>
+      selected.has(combatant.id)
+    )
+    const eligibleBaseXp = selectedEnemies.reduce(
+      (total, combatant) => total + combatant.xp,
+      0
+    )
+    const eligibleAdjustedXp = Math.round(
+      eligibleBaseXp *
+        encounterXpMultiplier(selectedEnemies.length, activePartySize)
+    )
+    const rules = this.campaignRules()
+    const eligibleXp =
+      rules.rewardXpBasis === 'adjusted' ? eligibleAdjustedXp : eligibleBaseXp
     const awardedXp = Math.floor(
       eligibleXp * (state.resolution?.xpFraction ?? 1)
     )
@@ -635,12 +664,20 @@ export class CombatService {
             mode: state.resolution.mode,
             xpFraction: state.resolution.xpFraction,
             eligibleXp,
+            eligibleBaseXp,
+            eligibleAdjustedXp,
+            eligibleRewardXp: eligibleXp,
+            rewardXpBasis: rules.rewardXpBasis,
+            campaignRulesRevision: rules.revision,
             awardedXp,
             perPlayerXp: Math.floor(awardedXp / activePartySize),
             partySize: activePartySize,
             xpAwarded: state.resolution.xpAwarded,
-            lootSummary:
-              'Kein Loot · Loot-Persistenz ist in diesem Generator-Pass nicht angebunden.'
+            treasureIds:
+              this.groupTreasures?.treasureIdsForGroups(
+                this.sceneId,
+                state.selectedGroupIds
+              ) ?? []
           }
         : null
     })

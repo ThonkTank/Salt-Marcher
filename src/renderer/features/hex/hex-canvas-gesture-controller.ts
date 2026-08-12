@@ -3,10 +3,32 @@ import { coordinateId } from './hex-canvas-geometry.js'
 
 type Interaction = 'select' | 'paint' | 'erase' | 'location' | undefined
 
+type GestureState =
+  | Readonly<{ kind: 'idle' }>
+  | Readonly<{
+      kind: 'panning'
+      pointerId: number
+      lastX: number
+      lastY: number
+    }>
+  | Readonly<{
+      kind: 'stroking'
+      pointerId: number
+      path: readonly AxialCoordinate[]
+    }>
+  | Readonly<{
+      kind: 'token-candidate'
+      pointerId: number
+      originX: number
+      originY: number
+    }>
+  | Readonly<{ kind: 'token-dragging'; pointerId: number }>
+
 /** Owns pointer gesture state without depending on the Pixi adapter. */
 export function attachHexCanvasGestures(options: {
   canvas: HTMLCanvasElement
   interaction: () => Interaction
+  draggableToken?: () => AxialCoordinate | null
   coordinateFor: (event: PointerEvent | MouseEvent) => AxialCoordinate
   onPan: (deltaX: number, deltaY: number) => void
   onPanEnd: () => void
@@ -14,69 +36,151 @@ export function attachHexCanvasGestures(options: {
   onStrokeComplete: (path: readonly AxialCoordinate[]) => void
   onStrokeCancel: () => void
   onSelect: (coordinate: AxialCoordinate) => void
+  onTokenPreview?: (coordinate: AxialCoordinate | null) => void
+  onTokenDrop?: (coordinate: AxialCoordinate) => void
   onZoom: (event: WheelEvent) => void
 }): () => void {
   const { canvas } = options
-  let dragging = false
-  let stroking = false
-  let last = { x: 0, y: 0 }
-  let stroke: AxialCoordinate[] = []
+  let gesture: GestureState = { kind: 'idle' }
+  let suppressClick = false
 
   const pointerDown = (event: PointerEvent) => {
+    if (gesture.kind !== 'idle') return
     if (event.button === 1) {
-      dragging = true
-      last = { x: event.clientX, y: event.clientY }
+      gesture = {
+        kind: 'panning',
+        pointerId: event.pointerId,
+        lastX: event.clientX,
+        lastY: event.clientY
+      }
       canvas.setPointerCapture?.(event.pointerId)
       event.preventDefault()
       return
     }
     const interaction = options.interaction()
+    const coordinate = options.coordinateFor(event)
+    const token = options.draggableToken?.()
+    if (
+      event.button === 0 &&
+      interaction !== 'paint' &&
+      interaction !== 'erase' &&
+      token !== null &&
+      token !== undefined &&
+      coordinateId(token) === coordinateId(coordinate) &&
+      options.onTokenDrop
+    ) {
+      gesture = {
+        kind: 'token-candidate',
+        pointerId: event.pointerId,
+        originX: event.clientX,
+        originY: event.clientY
+      }
+      canvas.setPointerCapture?.(event.pointerId)
+      event.preventDefault()
+      return
+    }
     if (
       event.button !== 0 ||
       (interaction !== 'paint' && interaction !== 'erase')
     )
       return
-    stroking = true
-    stroke = [options.coordinateFor(event)]
-    options.onSelect(stroke[0]!)
-    options.onStrokePreview(stroke)
+    const strokeCoordinate = options.coordinateFor(event)
+    gesture = {
+      kind: 'stroking',
+      pointerId: event.pointerId,
+      path: [strokeCoordinate]
+    }
+    options.onSelect(strokeCoordinate)
+    options.onStrokePreview(gesture.path)
     canvas.setPointerCapture?.(event.pointerId)
     event.preventDefault()
   }
   const pointerMove = (event: PointerEvent) => {
-    if (dragging) {
-      options.onPan(event.clientX - last.x, event.clientY - last.y)
-      last = { x: event.clientX, y: event.clientY }
+    if (
+      'pointerId' in gesture &&
+      event.pointerId !== undefined &&
+      gesture.pointerId !== event.pointerId
+    )
+      return
+    if (gesture.kind === 'token-candidate') {
+      if (
+        Math.hypot(
+          event.clientX - gesture.originX,
+          event.clientY - gesture.originY
+        ) < 4
+      )
+        return
+      gesture = { kind: 'token-dragging', pointerId: gesture.pointerId }
+      options.onTokenPreview?.(options.coordinateFor(event))
       return
     }
-    if (!stroking) return
+    if (gesture.kind === 'token-dragging') {
+      options.onTokenPreview?.(options.coordinateFor(event))
+      return
+    }
+    if (gesture.kind === 'panning') {
+      options.onPan(
+        event.clientX - gesture.lastX,
+        event.clientY - gesture.lastY
+      )
+      gesture = {
+        ...gesture,
+        lastX: event.clientX,
+        lastY: event.clientY
+      }
+      return
+    }
+    if (gesture.kind !== 'stroking') return
     const coordinate = options.coordinateFor(event)
-    if (coordinateId(stroke.at(-1)!) === coordinateId(coordinate)) return
-    stroke = [...stroke, coordinate]
-    options.onStrokePreview(stroke)
+    if (coordinateId(gesture.path.at(-1)!) === coordinateId(coordinate)) return
+    gesture = { ...gesture, path: [...gesture.path, coordinate] }
+    options.onStrokePreview(gesture.path)
   }
   const pointerUp = (event: PointerEvent) => {
-    if (dragging) {
-      dragging = false
-      options.onPanEnd()
+    if (
+      'pointerId' in gesture &&
+      event.pointerId !== undefined &&
+      gesture.pointerId !== event.pointerId
+    )
+      return
+    if (gesture.kind === 'token-candidate') {
+      gesture = { kind: 'idle' }
+      canvas.releasePointerCapture?.(event.pointerId)
+      return
     }
-    if (stroking) {
-      stroking = false
-      const completed = stroke
-      stroke = []
+    if (gesture.kind === 'token-dragging') {
+      const coordinate = options.coordinateFor(event)
+      options.onTokenPreview?.(coordinate)
+      options.onTokenDrop?.(coordinate)
+      suppressClick = true
+    } else if (gesture.kind === 'panning') {
+      options.onPanEnd()
+    } else if (gesture.kind === 'stroking') {
+      const completed = gesture.path
       options.onStrokePreview([])
       options.onStrokeComplete(completed)
     }
+    gesture = { kind: 'idle' }
     canvas.releasePointerCapture?.(event.pointerId)
   }
   const pointerCancel = (event: PointerEvent) => {
-    dragging = false
-    stroking = false
-    stroke = []
-    options.onStrokeCancel()
+    if (
+      'pointerId' in gesture &&
+      event.pointerId !== undefined &&
+      gesture.pointerId !== event.pointerId
+    )
+      return
+    if (gesture.kind === 'stroking') options.onStrokeCancel()
+    if (gesture.kind === 'token-candidate' || gesture.kind === 'token-dragging')
+      options.onTokenPreview?.(null)
+    gesture = { kind: 'idle' }
     canvas.releasePointerCapture?.(event.pointerId)
   }
   const click = (event: MouseEvent) => {
+    if (suppressClick) {
+      suppressClick = false
+      return
+    }
     const interaction = options.interaction()
     if (
       event.button !== 0 ||

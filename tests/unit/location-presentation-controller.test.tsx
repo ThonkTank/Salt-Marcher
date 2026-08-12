@@ -56,11 +56,13 @@ afterEach(() => vi.useRealTimers())
 describe('world location projection controller', () => {
   it('updates optimistically and coalesces rapid slider changes', async () => {
     vi.useFakeTimers()
-    const updateMapPresentation = vi.fn().mockResolvedValue({
-      ...basePresentation,
-      revision: 1,
-      symbolSize: 60
-    })
+    const updateMapPresentation = vi
+      .fn<HexCapabilities['locations']['updateMapPresentation']>()
+      .mockResolvedValue({
+        ...basePresentation,
+        revision: 1,
+        symbolSize: 60
+      })
     const { result } = renderHook(() =>
       useWorldLocationProjectionController({
         capabilities: capabilities({ updateMapPresentation }),
@@ -86,11 +88,12 @@ describe('world location projection controller', () => {
 
     await act(async () => vi.advanceTimersByTimeAsync(180))
     expect(updateMapPresentation).toHaveBeenCalledOnce()
-    expect(updateMapPresentation).toHaveBeenCalledWith(
-      locationId,
-      expect.objectContaining({ symbolSize: 60 }),
-      0
-    )
+    const updateInput = updateMapPresentation.mock.calls[0]?.[0]
+    expect(updateInput).toMatchObject({
+      id: locationId,
+      expectedRevision: 0
+    })
+    expect(updateInput?.patch.symbolSize).toBe(60)
   })
 
   it('restores server truth on conflict and ignores stale catalog snapshots', async () => {

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import './hex-controls.css'
 
 export function HexScrollArea(props: {
   className: string

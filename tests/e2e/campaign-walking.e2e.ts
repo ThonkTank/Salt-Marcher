@@ -55,6 +55,18 @@ describe('campaign walking skeleton', () => {
     await (
       await client.$('section.encounter-settings-dialog')
     ).waitForDisplayed({ timeout: 5_000 })
+    expect(
+      await client.execute(() => {
+        const dialog = document.querySelector(
+          'section.encounter-settings-dialog'
+        )
+        return Boolean(
+          dialog &&
+          document.activeElement instanceof HTMLElement &&
+          dialog.contains(document.activeElement)
+        )
+      })
+    ).toBe(true)
     await expectElementGolden(
       client,
       'encounter-settings-light',
@@ -117,11 +129,9 @@ describe('campaign walking skeleton', () => {
       })
       await setElectronWindowSize(client, 1280, 800)
     }
-    await (
-      await client.$(
-        'section.encounter-settings-dialog button[aria-label="Schließen"]'
-      )
-    ).click()
+    const settingsDialog = await client.$('section.encounter-settings-dialog')
+    await client.keys('Escape')
+    await settingsDialog.waitForExist({ reverse: true, timeout: 5_000 })
     const geometry = await client.execute(() => {
       const height = (selector: string) =>
         Math.round(
@@ -279,7 +289,7 @@ describe('campaign walking skeleton', () => {
       const api = window.saltMarcher
       const [world, symbols] = await Promise.all([
         api.locations.read(),
-        api.locationSymbols.search('', 0, 24)
+        api.locationSymbols.search({ query: '', offset: 0, limit: 24 })
       ])
       const location = world.locations.find(
         (entry) => entry.displayName === 'Leuchtturmklippe'
@@ -948,9 +958,9 @@ async function waitForLocationPlacement(
             (entry) => entry.displayName === name
           )
           if (!location) return false
-          const placement = await window.saltMarcher.hex.locateLocation(
-            location.id
-          )
+          const placement = await window.saltMarcher.hex.locateLocation({
+            locationId: location.id
+          })
           return (placement !== null) === expected
         },
         locationName,

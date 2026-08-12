@@ -13,11 +13,15 @@ export function rational(numerator: bigint, denominator = 1n): Rational {
 }
 
 export function decimal(value: string): Rational {
-  const [whole, fractional = ''] = value.split('.')
-  return rational(
-    BigInt(`${whole}${fractional}`),
-    10n ** BigInt(fractional.length)
-  )
+  const match = /^(-?)(\d+)(?:\.(\d+))?(?:[eE]([+-]?\d+))?$/.exec(value)
+  if (!match) throw new Error('invalid_decimal')
+  const sign = match[1] === '-' ? -1n : 1n
+  const fractional = match[3] ?? ''
+  const digits = BigInt(`${match[2]}${fractional}`)
+  const power = Number(match[4] ?? '0') - fractional.length
+  return power >= 0
+    ? rational(sign * digits * 10n ** BigInt(power))
+    : rational(sign * digits, 10n ** BigInt(-power))
 }
 
 export function canonicalDecimal(value: string): string {
@@ -58,11 +62,37 @@ export function divide(left: Rational, right: Rational): Rational {
 }
 
 export function roundHalfUp(value: Rational): number {
+  const sign = value.numerator < 0n ? -1n : 1n
+  const absolute = value.numerator < 0n ? -value.numerator : value.numerator
   const rounded =
-    (value.numerator * 2n + value.denominator) / (2n * value.denominator)
+    sign * ((absolute * 2n + value.denominator) / (2n * value.denominator))
   const result = Number(rounded)
   if (!Number.isSafeInteger(result)) throw new Error('derived_integer_overflow')
   return result
+}
+
+export function floor(value: Rational): number {
+  const quotient = value.numerator / value.denominator
+  const adjusted =
+    value.numerator < 0n && value.numerator % value.denominator !== 0n
+      ? quotient - 1n
+      : quotient
+  const result = Number(adjusted)
+  if (!Number.isSafeInteger(result)) throw new Error('derived_integer_overflow')
+  return result
+}
+
+export function compare(left: Rational, right: Rational): number {
+  const delta =
+    left.numerator * right.denominator - right.numerator * left.denominator
+  return delta < 0n ? -1 : delta > 0n ? 1 : 0
+}
+
+export function absolute(value: Rational): Rational {
+  return rational(
+    value.numerator < 0n ? -value.numerator : value.numerator,
+    value.denominator
+  )
 }
 
 export function toNumber(value: Rational): number {

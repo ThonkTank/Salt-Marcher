@@ -43,6 +43,14 @@ import {
   type EncounterTableChangeNotice
 } from '../../shared/contracts/encounter-source.js'
 import {
+  lootChangeNoticeSchema,
+  type LootChangeNotice
+} from '../../shared/contracts/loot.js'
+import {
+  sessionPreparationChangeNoticeSchema,
+  type SessionPreparationChangeNotice
+} from '../../shared/contracts/session-planner.js'
+import {
   coreRestartDelay,
   interruptedOperationError,
   type CoreOperationMode
@@ -93,6 +101,10 @@ export class CoreProcessSupervisor {
   >()
   readonly #encounterTableChangeListeners = new Set<
     (notice: EncounterTableChangeNotice) => void
+  >()
+  readonly #lootChangeListeners = new Set<(notice: LootChangeNotice) => void>()
+  readonly #preparationChangeListeners = new Set<
+    (notice: SessionPreparationChangeNotice) => void
   >()
   readonly #pending = new Map<string, PendingRequest>()
 
@@ -170,12 +182,33 @@ export class CoreProcessSupervisor {
     return () => this.#encounterTableChangeListeners.delete(listener)
   }
 
+  onLootChanged(listener: (notice: LootChangeNotice) => void): () => void {
+    this.#lootChangeListeners.add(listener)
+    return () => this.#lootChangeListeners.delete(listener)
+  }
+
+  onPreparationChanged(
+    listener: (notice: SessionPreparationChangeNotice) => void
+  ): () => void {
+    this.#preparationChangeListeners.add(listener)
+    return () => this.#preparationChangeListeners.delete(listener)
+  }
+
   retry(): void {
     if (this.#closed || this.#closing) return
     this.#exitTimes.length = 0
     this.clearRestartTimer()
     this.setStatus('recovering')
     this.spawn()
+  }
+
+  /** Process-boundary probe registered only by the E2E runtime. It deliberately
+   * follows the normal crash/restart path instead of bypassing supervision. */
+  terminateUtilityForE2e(): boolean {
+    if (this.#closed || this.#closing || this.#process === undefined)
+      return false
+    this.#process.kill()
+    return true
   }
 
   requestOperation<K extends CoreOperationKind>(
@@ -289,6 +322,19 @@ export class CoreProcessSupervisor {
         case 'session.changed': {
           const notice = sessionChangeNoticeSchema.parse(event.data.notice)
           for (const listener of this.#sessionChangeListeners) listener(notice)
+          break
+        }
+        case 'loot.changed': {
+          const notice = lootChangeNoticeSchema.parse(event.data.notice)
+          for (const listener of this.#lootChangeListeners) listener(notice)
+          break
+        }
+        case 'session-planner.preparation-changed': {
+          const notice = sessionPreparationChangeNoticeSchema.parse(
+            event.data.notice
+          )
+          for (const listener of this.#preparationChangeListeners)
+            listener(notice)
           break
         }
         case 'reference.changed': {

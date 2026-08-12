@@ -3,22 +3,22 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import { IntegratedWorldLocationEditor } from '../../src/renderer/features/workspace/integrations/integrated-world-location-editor.js'
-import type { HexLocationPlacementProjectionPort } from '../../src/renderer/features/hex/hex-location-placement-port.js'
-import { HexChunkCache } from '../../src/renderer/features/hex/hex-chunk-cache.js'
+import type { HexMapProjectionPort } from '../../src/renderer/features/hex/hex-map-projection-port.js'
 import { ModalLayerProvider } from '../../src/renderer/shell/modal-layer.js'
 
 describe('IntegratedWorldLocationEditor', () => {
   it('keeps base location saving available when map projection fails', async () => {
     const save = vi.fn().mockResolvedValue({ status: 'saved' })
-    const port: HexLocationPlacementProjectionPort = {
+    const port: HexMapProjectionPort = {
+      cacheLifetime: 'transient',
       currentCatalog: () => null,
       currentBiomeCatalog: () => null,
       readCatalog: vi.fn().mockRejectedValue(new Error('maps offline')),
       readBiomeCatalog: vi.fn().mockResolvedValue({ revision: 0, biomes: [] }),
       locateLocation: vi.fn().mockResolvedValue(null),
-      cache: new HexChunkCache(() => Promise.reject(new Error('unused'))),
-      cacheMode: 'transient',
-      subscribe: vi.fn().mockReturnValue(() => undefined)
+      readMap: vi.fn().mockRejectedValue(new Error('maps offline')),
+      subscribe: vi.fn().mockReturnValue(() => undefined),
+      dispose: vi.fn()
     }
     render(
       <ModalLayerProvider>

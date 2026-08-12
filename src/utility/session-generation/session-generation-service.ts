@@ -1,9 +1,23 @@
-import { generateSessionEncounters } from '../../core/session-generation/encounter-engine.js'
+import type Database from 'better-sqlite3'
+import { GeneratedRunStore } from '../../core/session-generation/generated-run-store.js'
+import {
+  generateGroupRewardDraft,
+  generateSessionRunDraft
+} from '../../core/session-generation/loot-engine.js'
 import type { EncounterEntropy } from '../../core/session-generation/deterministic-order.js'
 import type {
-  SessionGenerationEncounterResult,
-  SessionGenerationEncounterInput
+  GeneratedRun,
+  GroupRewardGeneratedRun,
+  GroupRewardGenerationInput,
+  SessionGenerationEncounterInput,
+  SessionGenerationRunResult
 } from '../../shared/contracts/session-generation.js'
+import {
+  groupRewardGeneratedRunSchema,
+  sessionGeneratedRunSchema
+} from '../../shared/contracts/session-generation.js'
+import { uuidv7 } from '../../shared/ids/uuidv7.js'
+import { CapabilityError } from '../../shared/errors/capability-error.js'
 import {
   CatalogProviderError,
   type BundledEncounterCatalogProvider
@@ -13,12 +27,16 @@ import {
   type GeneratorPresetConfigV3
 } from '../../shared/contracts/generator-presets.js'
 import { defaultGeneratorConfig } from '../../shared/generator/system-generator-preset.js'
+import {
+  groupRewardRunOriginFingerprint,
+  sessionRunOriginFingerprint
+} from '../../core/session-generation/run-origin.js'
 
 export class SessionGenerationService {
   constructor(
     private readonly catalogProvider: Pick<
       BundledEncounterCatalogProvider,
-      'load'
+      'loadFull'
     >,
     private readonly entropy: EncounterEntropy,
     private readonly preset: () => {
@@ -29,32 +47,96 @@ export class SessionGenerationService {
       id: systemGeneratorPresetId,
       revision: 0,
       config: defaultGeneratorConfig
-    })
+    }),
+    private readonly activeDatabase?: () => Database.Database,
+    private readonly clock: () => Date = () => new Date()
   ) {}
 
-  generateEncounterIntents(
-    input: SessionGenerationEncounterInput
-  ): SessionGenerationEncounterResult {
+  generate(input: SessionGenerationEncounterInput): SessionGenerationRunResult {
     try {
-      return generateSessionEncounters(
+      const catalog = this.catalogProvider.loadFull()
+      const preset = this.preset()
+      const result = generateSessionRunDraft(
         input,
-        this.catalogProvider.load(),
+        catalog,
         this.entropy,
-        this.preset()
+        preset
       )
+      if (result.status !== 'success') return result
+      if (!this.activeDatabase)
+        throw new Error(
+          'A campaign database is required to persist generated runs'
+        )
+      const originFingerprint = sessionRunOriginFingerprint({
+        encounterEngineVersion: result.draft.engineVersion,
+        rewardEngineVersion: result.draft.rewardEngineVersion,
+        catalogContentHash: result.draft.catalogContentHash,
+        generatorPreset: result.draft.generatorPreset,
+        input: result.draft.input
+      })
+      const store = new GeneratedRunStore(this.activeDatabase())
+      const existing = store.findByFingerprint(originFingerprint)
+      if (existing) {
+        if (existing.runKind !== 'session')
+          throw new Error(
+            'Session generation origin resolved to another run kind'
+          )
+        return deepFreeze({ status: 'success', run: existing })
+      }
+      const run = sessionGeneratedRunSchema.parse({
+        ...result.draft,
+        id: uuidv7(),
+        originFingerprint,
+        generatedAt: this.clock().toISOString()
+      })
+      return deepFreeze({ status: 'success', run: store.save(run) })
     } catch (error) {
       if (error instanceof CatalogProviderError)
         return deepFreeze({
           status: 'catalog_error',
-          issues: [
-            {
-              code: error.code,
-              message: error.message
-            }
-          ]
+          issues: [{ code: error.code, parameters: {} }]
         })
       throw error
     }
+  }
+
+  readRun(runId: string): GeneratedRun {
+    if (!this.activeDatabase)
+      throw new Error('A campaign database is required to read generated runs')
+    const run = new GeneratedRunStore(this.activeDatabase()).read(runId)
+    if (!run) throw new CapabilityError('not_found', false)
+    return run
+  }
+
+  generateGroupReward(
+    input: GroupRewardGenerationInput
+  ): GroupRewardGeneratedRun {
+    if (!this.activeDatabase)
+      throw new Error(
+        'A campaign database is required to persist generated runs'
+      )
+    const catalog = this.catalogProvider.loadFull()
+    const draft = generateGroupRewardDraft(input, catalog, this.entropy)
+    const originFingerprint = groupRewardRunOriginFingerprint({
+      rewardEngineVersion: draft.rewardEngineVersion,
+      catalogContentHash: draft.catalogContentHash,
+      input: draft.input
+    })
+    const store = new GeneratedRunStore(this.activeDatabase())
+    const existing = store.findByFingerprint(originFingerprint)
+    if (existing) {
+      if (existing.runKind !== 'group_reward')
+        throw new Error('Group reward origin resolved to another run kind')
+      return existing
+    }
+    return store.save(
+      groupRewardGeneratedRunSchema.parse({
+        ...draft,
+        id: uuidv7(),
+        originFingerprint,
+        generatedAt: this.clock().toISOString()
+      })
+    )
   }
 }
 

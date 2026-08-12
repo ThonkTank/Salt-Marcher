@@ -136,6 +136,7 @@
   --text-rubric-on-control: #7a2017;
   --text-rubric-on-card: #7a2017;
   --text-rubric-on-sunken: #702017;
+  --text-danger: #7a2017;
 
   --accent-rubric: var(--sm-zinnober);
   --accent-rubric-line: var(--sm-zinnober-2);
@@ -196,6 +197,7 @@
   --accent-gold: var(--sm-goldink);
   --accent-verdigris: var(--sm-moss);
   --accent-danger: #a9473c;
+  --text-danger: #ef8170;
 
   --focus-ring: var(--sm-goldink);
   --shadow-card: none;

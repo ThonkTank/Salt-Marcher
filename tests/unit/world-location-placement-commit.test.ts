@@ -82,7 +82,7 @@ describe('world location placement committer', () => {
     current.commitPlacement.mockRejectedValueOnce(
       new CapabilityError('outcome_unknown', true)
     )
-    current.commandReceipt.mockImplementationOnce((commandId) =>
+    current.commandReceipt.mockImplementationOnce(({ commandId }) =>
       Promise.resolve(applied(commandId))
     )
 
@@ -92,7 +92,7 @@ describe('world location placement committer', () => {
     const command = current.commitPlacement.mock.calls[0]?.[0] as
       WorldLocationPlacementCommand | undefined
     const commandId = command?.commandId
-    expect(current.commandReceipt).toHaveBeenCalledWith(commandId)
+    expect(current.commandReceipt).toHaveBeenCalledWith({ commandId })
     expect(current.commitPlacement).toHaveBeenCalledOnce()
   })
 

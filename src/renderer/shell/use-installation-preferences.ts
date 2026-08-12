@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { defaultSessionLayoutPreference } from '../../shared/contracts/session-layout.js'
+import type { SessionLayoutPreference } from '../../shared/contracts/session-layout.js'
 import type {
   InstallationPreferences,
   InstallationSettings
 } from '../../shared/contracts/settings.js'
+import { defaultSessionLayoutPreferenceValue } from '../../shared/values/session-layout-values.js'
 import { capabilityErrorCode } from '../../shared/errors/capability-error.js'
 import { capabilityErrorMessage, message } from '../i18n/messages.de.js'
 import { useCapabilityApi } from '../capabilities/use-capability-api.js'
@@ -14,8 +15,8 @@ export function useInstallationPreferences(
 ) {
   const capabilityApi = useCapabilityApi()
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
-  const [sessionLayout, setSessionLayout] = useState(
-    defaultSessionLayoutPreference
+  const [sessionLayout, setSessionLayout] = useState<SessionLayoutPreference>(
+    defaultSessionLayoutPreferenceValue
   )
   const loaded = useRef(false)
   const savedLayout = useRef('')
@@ -47,10 +48,10 @@ export function useInstallationPreferences(
           let current = settings.current
           if (current === null) return
           try {
-            current = await capabilityApi.settings.update(
+            current = await capabilityApi.settings.update({
               patch,
-              current.revision
-            )
+              expectedRevision: current.revision
+            })
           } catch (cause) {
             const fresh = await capabilityApi.settings.read()
             if (capabilityErrorCode(cause) === 'outcome_unknown') {
@@ -67,10 +68,10 @@ export function useInstallationPreferences(
                   : message('settings.outcome_not_committed')
               )
             } else if (capabilityErrorCode(cause) === 'stale') {
-              current = await capabilityApi.settings.update(
+              current = await capabilityApi.settings.update({
                 patch,
-                fresh.revision
-              )
+                expectedRevision: fresh.revision
+              })
             } else {
               throw cause
             }

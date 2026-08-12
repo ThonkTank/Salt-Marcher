@@ -1,21 +1,7 @@
 import { z } from 'zod'
+import { combatConditions } from '../values/combat-values.js'
 
-export const combatConditions = [
-  'blinded',
-  'charmed',
-  'deafened',
-  'frightened',
-  'grappled',
-  'incapacitated',
-  'invisible',
-  'paralyzed',
-  'petrified',
-  'poisoned',
-  'prone',
-  'restrained',
-  'stunned',
-  'unconscious'
-] as const
+export { combatConditions }
 
 export const combatConditionSchema = z.enum(combatConditions)
 export const exhaustionLevelSchema = z.number().int().min(0).max(6)

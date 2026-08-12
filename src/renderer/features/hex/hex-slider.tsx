@@ -1,5 +1,6 @@
 import { useRef, type KeyboardEvent, type PointerEvent } from 'react'
 import { sliderValueAtClientX } from './hex-slider-geometry.js'
+import './hex-controls.css'
 
 export function HexSlider(props: {
   value: number

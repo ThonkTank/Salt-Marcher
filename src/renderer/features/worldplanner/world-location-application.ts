@@ -11,7 +11,6 @@ import type {
   WorldLocationSaveReceipt,
   WorldLocationSnapshot
 } from '../../../shared/contracts/world-location.js'
-import { worldLocationDraftSchema } from '../../../shared/contracts/world-location.js'
 import { capabilityErrorCode } from '../../../shared/errors/capability-error.js'
 import { encounterTables } from '../encounter-table/encounter-table-snapshot.js'
 import type { WorldLocationPlacementCommitResult } from './world-location-editor-types.js'
@@ -54,7 +53,9 @@ export function createWorldLocationApplicationPort(
       receipt = await api.locations.save(input)
     } catch (cause) {
       if (capabilityErrorCode(cause) !== 'outcome_unknown') throw cause
-      const recovered = await api.locations.saveReceipt(input.commandId)
+      const recovered = await api.locations.saveReceipt({
+        commandId: input.commandId
+      })
       if (!recovered) throw cause
       receipt = recovered
     }
@@ -71,7 +72,12 @@ export function createWorldLocationApplicationPort(
       const input: SaveWorldLocationInput = {
         commandId: crypto.randomUUID(),
         locationId: location?.id ?? null,
-        location: worldLocationDraftSchema.parse(draft),
+        location: {
+          ...draft,
+          readAloud: draft.readAloud ?? '',
+          factionIds: [...(draft.factionIds ?? [])],
+          encounterTableIds: [...(draft.encounterTableIds ?? [])]
+        },
         expectedRevision: known.revision,
         placement
       }
@@ -89,7 +95,10 @@ export function createWorldLocationApplicationPort(
     },
     remove: async (location) => {
       const known = await currentLocations()
-      const receipt = await api.locations.delete(location.id, known.revision)
+      const receipt = await api.locations.delete({
+        id: location.id,
+        expectedRevision: known.revision
+      })
       return accept(receipt.snapshot)
     }
   }

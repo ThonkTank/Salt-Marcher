@@ -49,16 +49,20 @@ export function createWorldFactionApplicationPort(
       let receipt: WorldFactionMutationReceipt
       try {
         receipt = faction
-          ? await api.factions.update(
+          ? await api.factions.update({
               commandId,
-              faction.id,
-              draft,
-              known.revision
-            )
-          : await api.factions.create(commandId, draft, known.revision)
+              id: faction.id,
+              faction: draft,
+              expectedRevision: known.revision
+            })
+          : await api.factions.create({
+              commandId,
+              faction: draft,
+              expectedRevision: known.revision
+            })
       } catch (cause) {
         if (capabilityErrorCode(cause) !== 'outcome_unknown') throw cause
-        const recovered = await api.factions.commandReceipt(commandId)
+        const recovered = await api.factions.commandReceipt({ commandId })
         if (!recovered || !('saved' in recovered)) throw cause
         receipt = recovered
       }
@@ -70,14 +74,14 @@ export function createWorldFactionApplicationPort(
       const commandId = crypto.randomUUID()
       let receipt: WorldFactionDeleteReceipt
       try {
-        receipt = await api.factions.delete(
+        receipt = await api.factions.delete({
           commandId,
-          faction.id,
-          known.revision
-        )
+          id: faction.id,
+          expectedRevision: known.revision
+        })
       } catch (cause) {
         if (capabilityErrorCode(cause) !== 'outcome_unknown') throw cause
-        const recovered = await api.factions.commandReceipt(commandId)
+        const recovered = await api.factions.commandReceipt({ commandId })
         if (!recovered || !('deletedId' in recovered)) throw cause
         receipt = recovered
       }

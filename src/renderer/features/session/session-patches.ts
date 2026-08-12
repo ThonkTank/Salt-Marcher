@@ -1,8 +1,7 @@
-import {
-  liveSessionSnapshotSchema,
-  type CombatCommandResult,
-  type LiveSessionSnapshot,
-  type SceneGroupCommandResult
+import type {
+  CombatCommandResult,
+  LiveSessionSnapshot,
+  SceneGroupCommandResult
 } from '../../../shared/contracts/live-session.js'
 import type { SceneGroup } from '../../../shared/contracts/scene.js'
 
@@ -44,7 +43,7 @@ function applyResult(
         )
       }
     : snapshot.scene
-  return liveSessionSnapshotSchema.parse({
+  return Object.freeze({
     ...snapshot,
     revision: scene.revision,
     party: party ?? snapshot.party,

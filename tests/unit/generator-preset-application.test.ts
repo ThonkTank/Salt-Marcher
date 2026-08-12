@@ -43,23 +43,25 @@ describe('generator preset application port', () => {
     const before = snapshot()
     let command: CreateGeneratorPresetCommand | null = null
     let commandId = ''
-    const commandReceipt = vi.fn((receiptCommandId: string) => {
-      const saved = {
-        ...before.registry.presets[0]!,
-        id: customId,
-        name: 'Recovered',
-        protected: false
-      }
-      return Promise.resolve({
-        kind: 'created' as const,
-        commandId: receiptCommandId,
-        saved,
-        registry: {
-          revision: 5,
-          presets: [...before.registry.presets, saved]
+    const commandReceipt = vi.fn(
+      ({ commandId: receiptCommandId }: { commandId: string }) => {
+        const saved = {
+          ...before.registry.presets[0]!,
+          id: customId,
+          name: 'Recovered',
+          protected: false
         }
-      })
-    })
+        return Promise.resolve({
+          kind: 'created' as const,
+          commandId: receiptCommandId,
+          saved,
+          registry: {
+            revision: 5,
+            presets: [...before.registry.presets, saved]
+          }
+        })
+      }
+    )
     const readEditor = vi.fn(() => Promise.resolve(before))
     const capability = {
       readEditor,
@@ -78,7 +80,7 @@ describe('generator preset application port', () => {
       expectedRegistryRevision: 4,
       name: 'Recovered'
     })
-    expect(commandReceipt).toHaveBeenCalledWith(commandId)
+    expect(commandReceipt).toHaveBeenCalledWith({ commandId })
     expect(result.receipt).toMatchObject({
       kind: 'created',
       saved: { id: customId }

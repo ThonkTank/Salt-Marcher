@@ -10,9 +10,9 @@ import { HexChunkCache, mergeHexBiomeCatalog } from './hex-chunk-cache.js'
 import type { useHexEditorController } from './use-hex-editor-controller.js'
 import type { useWorldLocationProjectionController } from './use-world-location-projection-controller.js'
 import type {
-  HexLocationPlacementProjectionPort,
-  HexPlacementProjectionChange
-} from './hex-location-placement-port.js'
+  HexMapProjectionChange,
+  HexMapProjectionPort
+} from './hex-map-projection-port.js'
 
 type EditorController = ReturnType<typeof useHexEditorController>
 type LocationProjectionController = ReturnType<
@@ -41,15 +41,15 @@ export function useHexMapController(options: {
   const [ownedChunkCache] = useState(
     () =>
       new HexChunkCache((mapId, keys) =>
-        options.capabilities.hex.readChunks(mapId, keys)
+        options.capabilities.hex.readChunks(mapId, [...keys])
       )
   )
   const chunkCache = useMemo(
     () => ({ current: ownedChunkCache }),
     [ownedChunkCache]
   )
-  const placementProjectionListeners = useRef(
-    new Set<(change: HexPlacementProjectionChange) => void>()
+  const mapProjectionListeners = useRef(
+    new Set<(change: HexMapProjectionChange) => void>()
   )
 
   const readOverlays = useCallback(
@@ -204,7 +204,7 @@ export function useHexMapController(options: {
               .filter((chunk) => chunk.mapId === mapId)
               .map((chunk) => chunk.key)
           )
-        for (const listener of placementProjectionListeners.current)
+        for (const listener of mapProjectionListeners.current)
           listener({ kind: 'hex', notice })
         const current = mapRef.current
         if (!current || !notice.mapIds.includes(current.map.id)) return
@@ -239,7 +239,7 @@ export function useHexMapController(options: {
       options.capabilities.biomes.onChanged((notice) => {
         const current = mapRef.current
         if (current) ownedChunkCache.invalidateMap(current.map.id)
-        for (const listener of placementProjectionListeners.current)
+        for (const listener of mapProjectionListeners.current)
           listener({ kind: 'biomes', notice })
         void refreshBiomes().catch(
           reportCapabilityError(optionsRef.current.onError)
@@ -250,8 +250,9 @@ export function useHexMapController(options: {
 
   useEffect(() => () => ownedChunkCache.clear(), [ownedChunkCache])
 
-  const placementProjectionPort = useMemo<HexLocationPlacementProjectionPort>(
+  const mapProjectionPort = useMemo<HexMapProjectionPort>(
     () => ({
+      cacheLifetime: 'shared-owner',
       currentCatalog: () => optionsRef.current.editor.catalog,
       currentBiomeCatalog: () => optionsRef.current.editor.biomes,
       readCatalog: () => optionsRef.current.capabilities.hex.catalog(),
@@ -259,12 +260,24 @@ export function useHexMapController(options: {
         optionsRef.current.capabilities.hex.biomeCatalog(),
       locateLocation: (locationId) =>
         optionsRef.current.capabilities.hex.locateLocation(locationId),
-      cache: ownedChunkCache,
-      cacheMode: 'shared-owner',
+      async readMap(input) {
+        const catalog =
+          optionsRef.current.editor.catalog ??
+          (await optionsRef.current.capabilities.hex.catalog())
+        const summary = catalog.maps.find((map) => map.id === input.mapId)
+        if (!summary) throw new Error(`Unknown hex map ${input.mapId}.`)
+        return ownedChunkCache.readMapView(
+          summary,
+          input.center,
+          input.force ?? false,
+          input.halfExtent
+        )
+      },
       subscribe: (listener) => {
-        placementProjectionListeners.current.add(listener)
-        return () => placementProjectionListeners.current.delete(listener)
-      }
+        mapProjectionListeners.current.add(listener)
+        return () => mapProjectionListeners.current.delete(listener)
+      },
+      dispose: () => undefined
     }),
     [ownedChunkCache]
   )
@@ -278,6 +291,6 @@ export function useHexMapController(options: {
     loadViewport,
     refreshCatalog,
     refreshBiomes,
-    placementProjectionPort
+    mapProjectionPort
   }
 }

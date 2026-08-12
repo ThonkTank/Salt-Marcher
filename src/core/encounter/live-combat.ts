@@ -45,6 +45,8 @@ import { resolveEncounterTuning } from '../../shared/contracts/encounter-tuning.
 import { CampaignUnitOfWork } from '../application/campaign-unit-of-work.js'
 export { initializeCombatSchema } from './combat-repository.js'
 import { CombatService } from './combat-service.js'
+import { SqliteGroupTreasureReader } from '../loot/group-treasure-reader.js'
+import { readCampaignRules } from '../application/campaign-rules-service.js'
 
 export class LivePlayService {
   constructor(
@@ -175,7 +177,8 @@ export class LivePlayService {
       deadQuantity?: number | undefined
     }[],
     expectedRevision: number,
-    expectedGroupRevision: number | null
+    expectedGroupRevision: number | null,
+    prospectiveGroupId?: string
   ): SceneGroupCommandResult {
     return this.withStores(({ party, scene, combat, unitOfWork }) => {
       return unitOfWork.run(() => {
@@ -187,7 +190,8 @@ export class LivePlayService {
           disposition,
           entries,
           expectedRevision,
-          expectedGroupRevision
+          expectedGroupRevision,
+          prospectiveGroupId
         )
         if (groupId && combat.includesGroup(groupId)) {
           const updated = scene
@@ -195,9 +199,26 @@ export class LivePlayService {
             .find((group) => group.id === groupId)
           if (updated) combat.reconcileGroup(updated)
         }
-        return this.sceneGroupResult(party, scene, combat, sceneId, [savedId])
+        return this.sceneGroupResultFromStores(party, scene, combat, sceneId, [
+          savedId
+        ])
       })
     })
+  }
+
+  sceneGroupResult(
+    sceneId: string,
+    groupIds: readonly string[]
+  ): SceneGroupCommandResult {
+    return this.withStores(({ party, scene, combatFor }) =>
+      this.sceneGroupResultFromStores(
+        party,
+        scene,
+        combatFor(sceneId),
+        sceneId,
+        groupIds
+      )
+    )
   }
 
   setSceneGroupArchived(
@@ -215,7 +236,9 @@ export class LivePlayService {
           expectedGroupRevision
         )
         if (archived) combat.unlinkGroup(groupId)
-        return this.sceneGroupResult(party, scene, combat, sceneId, [groupId])
+        return this.sceneGroupResultFromStores(party, scene, combat, sceneId, [
+          groupId
+        ])
       })
     })
   }
@@ -248,7 +271,9 @@ export class LivePlayService {
   ): SceneGroupCommandResult {
     return this.withStores(({ party, scene, combat }) => {
       scene.deleteGroup(sceneId, groupId, expectedGroupRevision)
-      return this.sceneGroupResult(party, scene, combat, sceneId, [groupId])
+      return this.sceneGroupResultFromStores(party, scene, combat, sceneId, [
+        groupId
+      ])
     })
   }
 
@@ -472,10 +497,15 @@ export class LivePlayService {
     )
   }
 
-  awardXp(expectedRevision: number): CombatCommandResult {
-    return this.withStores(({ party, scene, combat, unitOfWork }) => {
+  awardXp(
+    expectedRevision: number,
+    expectedCampaignRulesRevision: number
+  ): CombatCommandResult {
+    return this.withStores(({ party, scene, combat, unitOfWork, rules }) => {
       return unitOfWork.run(() => {
         combat.assertRevision(expectedRevision)
+        if (rules.revision !== expectedCampaignRulesRevision)
+          throw new CapabilityError('stale', true)
         const assigned = scene.assignedParty(party.read().members)
         const award = combat.xpAward(assigned)
         party.awardCombatXp(
@@ -537,7 +567,7 @@ export class LivePlayService {
     })
   }
 
-  private sceneGroupResult(
+  private sceneGroupResultFromStores(
     party: PartyStore,
     scene: SceneStore,
     combat: CombatService,
@@ -580,6 +610,10 @@ export class LivePlayService {
     ).read(scene.focusedSceneId())
     const partySnapshot = party.read()
     const sceneSnapshot = scene.snapshot(partySnapshot.members)
+    const focusedScene = sceneSnapshot.scenes.find(
+      (candidate) => candidate.id === sceneSnapshot.focusedSceneId
+    )
+    if (!focusedScene) throw new CapabilityError('not_found', false)
     return liveSessionSnapshotSchema.parse({
       revision: sceneSnapshot.revision,
       party: partySnapshot,
@@ -598,7 +632,7 @@ export class LivePlayService {
             effectiveSpeedFeet: travel.effectiveSpeedFeet,
             assumedSpeedMemberNames: travel.assumedSpeedMemberNames,
             multiplier: travel.multiplier,
-            hint: travel.hint
+            hintCode: travel.hintCode
           }
         : {
             kind: 'none',
@@ -617,6 +651,7 @@ export class LivePlayService {
       combatFor: (sceneId: string) => CombatService
       locations: WorldLocationStore
       unitOfWork: CampaignUnitOfWork
+      rules: ReturnType<typeof readCampaignRules>
     }) => T
   ): T {
     const db = this.campaignDatabase()
@@ -630,15 +665,26 @@ export class LivePlayService {
         party.read().members.some((member) => member.id === id && member.active)
     )
     const effectivePreset = this.effectiveGeneratorPreset()
+    const groupTreasures = new SqliteGroupTreasureReader(db)
+    const rules = readCampaignRules(db)
     const combatFor = (sceneId: string) =>
-      new CombatService(db, sceneId, scene, party, effectivePreset)
+      new CombatService(
+        db,
+        sceneId,
+        scene,
+        party,
+        effectivePreset,
+        groupTreasures,
+        () => readCampaignRules(db)
+      )
     return work({
       party,
       scene,
       combat: combatFor(scene.focusedSceneId()),
       combatFor,
       locations,
-      unitOfWork
+      unitOfWork,
+      rules
     })
   }
 

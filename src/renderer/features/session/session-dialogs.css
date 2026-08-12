@@ -1,0 +1,96 @@
+.group-dialog {
+  width: min(40rem, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  border: 1px solid var(--border-structural);
+  border-radius: var(--radius-0);
+  background: var(--surface-panel);
+  box-shadow: var(--shadow-dialog);
+  padding: 1rem;
+}
+
+.scene-party-dialog {
+  display: grid;
+  width: min(34rem, 100%);
+  max-height: calc(100vh - 2rem);
+  gap: var(--space-6);
+  overflow: auto;
+  border: 1px solid var(--border-structural);
+  background: var(--surface-panel);
+  box-shadow: var(--shadow-dialog);
+  padding: var(--space-8);
+}
+
+.scene-party-dialog > header,
+.scene-party-dialog > footer,
+.scene-party-list > li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+}
+
+.scene-party-dialog h2,
+.scene-party-dialog p {
+  margin: 0;
+}
+
+.scene-party-dialog h2 {
+  font-family: var(--font-display);
+}
+
+.scene-party-dialog > footer {
+  justify-content: flex-end;
+}
+
+.scene-party-list {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.scene-party-list > li {
+  border: 1px solid var(--border-1);
+  background: var(--surface-card-flat);
+  padding: var(--space-5);
+}
+
+.scene-party-list span {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.scene-party-list small {
+  color: var(--text-muted);
+}
+
+.group-dialog form,
+.group-dialog label {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.group-dialog form {
+  gap: 0.85rem;
+}
+
+.group-dialog footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.55rem;
+}
+
+.monster-picker {
+  max-height: 20rem;
+  overflow: auto;
+}
+
+.monster-picker label {
+  grid-template-columns: auto 4.5rem;
+  align-items: center;
+}
+
+/* Gruppenmanager redesign. The root namespace keeps the shared catalog/table
+   manager surfaces on their established layout. */

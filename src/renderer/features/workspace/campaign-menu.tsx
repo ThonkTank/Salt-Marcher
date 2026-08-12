@@ -3,6 +3,7 @@ import type { CampaignSnapshot } from '../../../shared/contracts/campaign.js'
 import { formatMessage, message } from '../../i18n/campaign-menu-runtime.de.js'
 import { AnchoredPopup } from '../../shell/anchored-popup.js'
 import type { GeneratorPresetApplicationLoader } from './generator-preset-application.js'
+import type { CampaignRewardRulesPort } from './campaign-reward-rules-port.js'
 
 const EncounterGeneratorSettingsRoute = lazy(() =>
   import('./encounter-generator-settings-route.js').then((module) => ({
@@ -29,6 +30,7 @@ interface CampaignMenuProps {
   restore: (id: string) => Promise<void>
   deleteForever: (id: string, confirmationName: string) => Promise<void>
   loadGeneratorPresetApplication: GeneratorPresetApplicationLoader
+  campaignRules?: CampaignRewardRulesPort
   onError: (message: string) => void
 }
 
@@ -55,6 +57,9 @@ export function CampaignMenu(props: CampaignMenuProps) {
       >
         <EncounterGeneratorSettingsRoute
           loadApplication={props.loadGeneratorPresetApplication}
+          {...(props.campaignRules
+            ? { campaignRules: props.campaignRules }
+            : {})}
           activeCampaignId={snapshot.activeCampaignId}
           partySize={props.partySize}
           onClose={closeMenu}

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { canonicalWorldLocationTag } from '../values/world-location-values.js'
 import { locationSymbolIdSchema } from './location-symbol.js'
 import type {
   EntityDeleteReceipt,
@@ -25,9 +26,7 @@ export const defaultWorldLocationMapPresentation = {
   labelPosition: 'below'
 } as const
 
-export function canonicalWorldLocationTag(value: string): string {
-  return value.trim().normalize('NFKC').toLowerCase()
-}
+export { canonicalWorldLocationTag }
 
 export const worldLocationTagsSchema = z
   .array(z.string().trim().min(1).max(40))

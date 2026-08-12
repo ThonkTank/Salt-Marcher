@@ -1,0 +1,45 @@
+.hex-panel-content {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.hex-panel-content h2 {
+  margin: 0;
+  font-family: var(--font-smallcaps);
+  font-size: 0.95rem;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+}
+
+.hex-panel-content label {
+  display: grid;
+  gap: 5px;
+  color: var(--text-2);
+  font-size: 14px;
+}
+
+.hex-panel-content input {
+  width: 100%;
+  min-height: 28px;
+  padding: 5px 6px;
+  border: 1px solid var(--border-2);
+  border-radius: 0;
+  background: var(--surface-control);
+}
+
+.hex-value-row,
+.hex-symbol-heading,
+.hex-biome-fact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.hex-value-row small,
+.hex-symbol-heading small,
+.hex-biome-fact small,
+.hex-muted {
+  color: var(--text-secondary);
+}

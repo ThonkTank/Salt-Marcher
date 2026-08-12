@@ -32,6 +32,10 @@ const maximumExpandedRouteSteps = 10_000
 type JourneyStatus =
   'travelling' | 'paused' | 'blocked' | 'completed' | 'aborted'
 
+function routeIsVisible(status: JourneyStatus): boolean {
+  return status === 'travelling' || status === 'paused' || status === 'blocked'
+}
+
 interface JourneyRow {
   sceneId: string
   revision: number
@@ -42,22 +46,7 @@ interface JourneyRow {
   multiplier: 1 | 2 | 5 | 10
   segmentStartedAt: number | null
   abortReason: 'user' | 'map-edit' | null
-  hintCode: string
-}
-
-function journeyHint(code: string): string {
-  const hints: Readonly<Record<string, string>> = {
-    travelling: 'Reise läuft.',
-    completed: 'Ziel erreicht.',
-    paused: 'Reise pausiert.',
-    aborted: 'Reise abgebrochen.',
-    'map-edit-aborted': 'Reise wegen Kartenbearbeitung abgebrochen.',
-    'party-changed': 'Reisegruppe geändert; Fortsetzung bestätigen.',
-    'route-left-map': 'Die Route verlässt die angelegte Karte.',
-    'blocked-biome': 'Das nächste Hex ist nicht mehr passierbar.',
-    'no-speed': 'Die Reisegruppe besitzt keine positive Bewegungsrate.'
-  }
-  return hints[code] ?? 'Reisezustand aktualisiert.'
+  hintCode: HexTravelSnapshot['hintCode']
 }
 
 export function axialDistance(a: AxialCoordinate, b: AxialCoordinate): number {
@@ -244,10 +233,8 @@ export class HexTravelStore {
     }
     const overlays = scenes.scenes.flatMap((scene) => {
       const journey = journeyByScene.get(scene.id)
-      const route =
-        journey && journey.status !== 'aborted'
-          ? (pathByScene.get(scene.id) ?? [])
-          : []
+      const storedRoute = pathByScene.get(scene.id) ?? []
+      const route = journey && routeIsVisible(journey.status) ? storedRoute : []
       const attachedPositions = party.members
         .filter(
           (member) =>
@@ -265,7 +252,11 @@ export class HexTravelStore {
         )
           ? { q: attachedPositions[0]!.q, r: attachedPositions[0]!.r }
           : null
-      const token = route[journey?.currentIndex ?? 0] ?? commonPosition
+      const journeyPosition =
+        journey && journey.status !== 'aborted'
+          ? (storedRoute[journey.currentIndex] ?? null)
+          : null
+      const token = journeyPosition ?? commonPosition
       if (!journey && !token) return []
       if (journey?.status === 'aborted' && !token) return []
       return [
@@ -401,7 +392,7 @@ export class HexTravelStore {
     if ((current?.revision ?? 0) !== input.expectedRevision)
       throw new CapabilityError('stale', true)
     const evaluation = this.route(input.sceneId, input.mapId, input.waypoints)
-    if (!evaluation.canStart)
+    if (evaluation.status !== 'ready')
       throw new CapabilityError('validation_failed', false)
     const partyMemberIds = this.scenes.partyMemberIds(input.sceneId)
     const status: JourneyStatus =
@@ -484,7 +475,7 @@ export class HexTravelStore {
   private mutate(
     input: z.infer<typeof mutateHexTravelInputSchema>,
     status: JourneyStatus,
-    hintCode: string,
+    hintCode: HexTravelSnapshot['hintCode'],
     abortReason: JourneyRow['abortReason']
   ) {
     this.requireJourney(input.sceneId, input.expectedRevision)
@@ -508,18 +499,18 @@ export class HexTravelStore {
     const speed = this.speed(sceneId)
     if (!position)
       return {
-        canStart: false,
-        message: 'Party zuerst auf der Karte platzieren.',
+        status: 'rejected',
+        reason: 'party-unpositioned',
+        blockingCoordinate: null,
         path: [],
-        totalGameSeconds: 0,
         ...speed
       }
     if (waypoints.length === 0)
       return {
-        canStart: false,
-        message: 'Mindestens ein Reiseziel wählen.',
+        status: 'rejected',
+        reason: 'missing-waypoint',
+        blockingCoordinate: null,
         path: [position],
-        totalGameSeconds: 0,
         ...speed
       }
     const stepCount = waypoints.reduce(
@@ -530,52 +521,61 @@ export class HexTravelStore {
     )
     if (stepCount > maximumExpandedRouteSteps)
       return {
-        canStart: false,
-        message: 'Die Route ist für einen einzelnen Reiseauftrag zu lang.',
+        status: 'rejected',
+        reason: 'route-too-long',
+        blockingCoordinate: null,
         path: [position],
-        totalGameSeconds: 0,
         ...speed
       }
     const path = expandWaypoints(position, waypoints)
     if (speed.effectiveSpeedFeet <= 0)
       return {
-        canStart: false,
-        message: 'Die Reisegruppe besitzt keine positive Bewegungsrate.',
+        status: 'rejected',
+        reason: 'movement-speed-unavailable',
+        blockingCoordinate: null,
         path: [...path],
-        totalGameSeconds: 0,
         ...speed
       }
     let totalGameSeconds = 0
+    let totalCost = 0
     for (const coordinate of path.slice(1)) {
       const biomeId = this.maps.biomeAt(mapId, coordinate)
       if (biomeId === null)
         return {
-          canStart: false,
-          message: 'Die Route verlässt die angelegte Karte.',
+          status: 'rejected',
+          reason: 'outside-map',
+          blockingCoordinate: coordinate,
           path: [...path],
-          totalGameSeconds: 0,
           ...speed
         }
       const biome = this.biomeDefinition(biomeId)
       if (!biome.passable)
         return {
-          canStart: false,
-          message: `${tileLabel(coordinate)} ist unpassierbar.`,
+          status: 'rejected',
+          reason: 'impassable',
+          blockingCoordinate: coordinate,
           path: [...path],
-          totalGameSeconds: 0,
           ...speed
         }
+      totalCost += biome.travelCost
       totalGameSeconds += travelGameSeconds(
         speed.effectiveSpeedFeet,
         biome.travelCost
       )
     }
+    if (path.length <= 1)
+      return {
+        status: 'rejected',
+        reason: 'same-as-start',
+        blockingCoordinate: null,
+        path: [...path],
+        ...speed
+      }
     return {
-      canStart: path.length > 1,
-      message:
-        path.length > 1 ? 'Route bereit.' : 'Das Ziel entspricht dem Start.',
+      status: 'ready',
       path: [...path],
       totalGameSeconds,
+      totalTravelCost: totalCost,
       ...speed
     }
   }
@@ -647,11 +647,12 @@ export class HexTravelStore {
 
   private snapshot(sceneId: string, journey: JourneyRow | null) {
     const scene = this.requireScene(sceneId)
-    const path =
-      journey && journey.status !== 'aborted' ? this.path(journey) : []
+    const storedPath = journey ? this.path(journey) : []
+    const path = journey && routeIsVisible(journey.status) ? storedPath : []
     const position =
-      (journey ? path[journey.currentIndex] : null) ??
-      this.scenePosition(sceneId)
+      (journey && journey.status !== 'aborted'
+        ? storedPath[journey.currentIndex]
+        : null) ?? this.scenePosition(sceneId)
     const mapId = journey?.mapId ?? this.positionMapId(sceneId)
     const map = mapId ? this.maps.summary(mapId) : null
     const placement =
@@ -693,11 +694,7 @@ export class HexTravelStore {
       gameTimeSeconds: scene.gameTimeSeconds,
       ...speed,
       multiplier: journey?.multiplier ?? 1,
-      hint:
-        (journey ? journeyHint(journey.hintCode) : null) ??
-        (position
-          ? 'Reise planen oder Party neu platzieren.'
-          : 'Party zuerst auf einer Hex-Karte platzieren.')
+      hintCode: journey ? journey.hintCode : position ? 'ready' : 'unpositioned'
     })
   }
 

@@ -27,6 +27,8 @@ Saving it is a Scene command and does not create Encounter runtime state.
 3. The GM selects one or more Scene groups.
 4. Every selection change publishes Party thresholds, creature count, base XP,
    adjusted XP, difficulty, and a startability message.
+   Resolution values rewards from the Campaign's current revisioned reward-XP
+   policy (`base` or `adjusted`), shared with Live Session and Loot.
 5. A valid selection links the living Scene group members into Initiative.
    Scene continues to own their HP, death and conditions; Combat owns
    initiative, card packing, round, turn and result state.
@@ -45,7 +47,8 @@ Saving it is a Scene command and does not create Encounter runtime state.
   active turn where applicable
 - aggregate matching monsters into the specified runtime mob cards while
   retaining per-individual HP
-- expose the explicit no-loot state until the Loot owner is available
+- expose typed available Treasure identities in Resolution and open the shared
+  distribution dialog; show an explicit no-loot state only when none exist
 
 ## Acceptance Criteria
 

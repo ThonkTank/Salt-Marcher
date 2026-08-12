@@ -57,10 +57,17 @@ The normalized session record stores:
 - ordered generated reward references with scene ID, typed generation-run ID,
   treasure ID, and last-known display label
 
-It MUST NOT store party membership or character detail, Encounter rosters,
+The authored Session tables MUST NOT store party membership or character detail, Encounter rosters,
 creature facts, copied World Planner detail, generated item lines, reward
-values, packing rows, audits, catalog rows, generation drafts, preparation
-fingerprints, or progress state.
+values, packing rows, audits, catalog rows, or generation drafts.
+
+The separate `session_preparation_operation` journal stores one canonical
+request fingerprint, target Session/revision, seed, exact day fraction,
+encounter count, frozen party-level counts, status, run identity, Encounter
+batch-origin fingerprint, cancel flag, structured failure stage/code/retryable
+parameters, committed Planner revision, and timestamps. Normalized
+preparation-scene and generated-reward rows retain a complete prepared
+replacement before final commit; they are not authored Session truth.
 
 Saved-plan query text, request epochs, result identities, overflow state, and
 search failures are runtime publication state and are not persisted. The
@@ -134,10 +141,18 @@ write fails, their immutable artifacts remain valid foreign truth. Retrying the
 same preparation reuses them; it does not create duplicates or delete them as
 compensation.
 
-This contract deliberately does not create a cross-feature transaction or a
-workflow journal in Session Planner persistence. In-flight preparation state is
-runtime state. A process restart may require the user to request preparation
-again; idempotency makes that retry safe.
+This contract deliberately does not create a cross-feature transaction.
+Instead, the workflow journal commits each durable hand-off represented by the
+public `queued`, `generating`, `resolving_encounters`, and `saving` receipt
+states. Startup resumes every nonterminal operation from the first phase not
+durably proven complete. Final Session replacement and terminal `succeeded`
+receipt commit in the same SQLite transaction. `invalid`, `stale`, `failed`,
+and `canceled` are the other terminal audit states.
+
+The public Renderer boundary exposes only `startPreparation`,
+`preparationReceipt`, `cancelPreparation`, and preparation-change notices. The
+worker's Run reconciliation, Encounter import, and final replacement methods
+are internal application ports, never Renderer capabilities.
 
 ## Migration And Compatibility
 
@@ -174,7 +189,8 @@ remains on typed provider read/write paths and fails closed through the feature
 contract.
 
 Validation errors identify the invalid command field or invariant without
-echoing authored content. Failure messages are display-safe and contain no SQL,
+echoing authored content. Public failures contain stage, stable code,
+retryability, and structured parameters; they contain no localized prose, SQL,
 exception text, paths, generated item payloads, or authored notes. A failure
 leaves the last stable workspace revision visible.
 

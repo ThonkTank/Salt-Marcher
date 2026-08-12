@@ -418,7 +418,19 @@ export const hexTravelSnapshotSchema = z
       z.literal(5),
       z.literal(10)
     ]),
-    hint: z.string()
+    hintCode: z.enum([
+      'travelling',
+      'completed',
+      'paused',
+      'aborted',
+      'map-edit-aborted',
+      'party-changed',
+      'route-left-map',
+      'blocked-biome',
+      'no-speed',
+      'ready',
+      'unpositioned'
+    ])
   })
   .strict()
 
@@ -430,16 +442,36 @@ export const evaluateHexRouteInputSchema = z
   })
   .strict()
 
-export const hexRouteEvaluationSchema = z
-  .object({
-    canStart: z.boolean(),
-    message: z.string(),
-    path: z.array(axialCoordinateSchema),
-    totalGameSeconds: z.number().int().nonnegative(),
-    effectiveSpeedFeet: z.number().int().nonnegative(),
-    assumedSpeedMemberNames: z.array(z.string())
-  })
-  .strict()
+export const hexRouteEvaluationSchema = z.discriminatedUnion('status', [
+  z
+    .object({
+      status: z.literal('ready'),
+      path: z.array(axialCoordinateSchema).min(2),
+      totalGameSeconds: z.number().int().nonnegative(),
+      totalTravelCost: z.number().nonnegative(),
+      effectiveSpeedFeet: z.number().int().positive(),
+      assumedSpeedMemberNames: z.array(z.string())
+    })
+    .strict(),
+  z
+    .object({
+      status: z.literal('rejected'),
+      reason: z.enum([
+        'party-unpositioned',
+        'missing-waypoint',
+        'route-too-long',
+        'movement-speed-unavailable',
+        'outside-map',
+        'impassable',
+        'same-as-start'
+      ]),
+      blockingCoordinate: axialCoordinateSchema.nullable(),
+      path: z.array(axialCoordinateSchema),
+      effectiveSpeedFeet: z.number().int().nonnegative(),
+      assumedSpeedMemberNames: z.array(z.string())
+    })
+    .strict()
+])
 
 export const positionHexPartyInputSchema = z
   .object({
@@ -533,4 +565,19 @@ export type HexTravelSnapshot = Readonly<
 >
 export type HexRouteEvaluation = Readonly<
   z.infer<typeof hexRouteEvaluationSchema>
+>
+export type EvaluateHexRouteInput = Readonly<
+  z.infer<typeof evaluateHexRouteInputSchema>
+>
+export type PositionHexPartyInput = Readonly<
+  z.infer<typeof positionHexPartyInputSchema>
+>
+export type StartHexTravelInput = Readonly<
+  z.infer<typeof startHexTravelInputSchema>
+>
+export type MutateHexTravelInput = Readonly<
+  z.infer<typeof mutateHexTravelInputSchema>
+>
+export type SetHexTravelMultiplierInput = Readonly<
+  z.infer<typeof setHexTravelMultiplierInputSchema>
 >

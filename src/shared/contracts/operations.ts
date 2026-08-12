@@ -15,11 +15,13 @@ import {
 } from './encounter.js'
 import {
   adjustInitiativeInputSchema,
+  awardCombatXpInputSchema,
   changeHpInputSchema,
   combatCommandResultSchema,
   combatRevisionInputSchema,
   confirmInitiativeInputSchema,
   joinCombatGroupInputSchema,
+  hexTravelContextResultSchema,
   liveSessionSnapshotSchema,
   moveCombatPhaseInputSchema,
   partySnapshotSchema,
@@ -123,7 +125,6 @@ import {
   hexMapCatalogSnapshotSchema,
   hexRouteEvaluationSchema,
   hexBiomeCatalogSchema,
-  hexTravelSnapshotSchema,
   hexHistoryStateSchema,
   hexCommandIdInputSchema,
   hexEditorBootstrapSchema,
@@ -143,6 +144,11 @@ import {
   installationSettingsSchema,
   updateInstallationSettingsInputSchema
 } from './settings.js'
+import {
+  campaignRulesCommandReceiptInputSchema,
+  campaignRulesSchema,
+  updateCampaignRulesInputSchema
+} from './campaign-rules.js'
 import { passiveProjectionSchema } from './passive-display.js'
 import { coreProcessStatusSchema, rendererIncidentSchema } from './runtime.js'
 import { runtimeGpuObservationSchema } from '../qualification/runtime-observation.js'
@@ -153,9 +159,48 @@ import {
   referenceTargetSchema
 } from './reference.js'
 import {
-  sessionGenerationEncounterInputSchema,
-  sessionGenerationEncounterResultSchema
-} from './session-generation.js'
+  generatedEncounterPlanSummaryBatchQuerySchema,
+  generatedEncounterPlanSummaryBatchResultSchema,
+  savedEncounterPlanSearchResultSchema,
+  searchSavedEncounterPlansQuerySchema
+} from './encounter-plans.js'
+import {
+  cancelSessionPreparationResultSchema,
+  createSessionPlanInputSchema,
+  deleteSessionPlanInputSchema,
+  openSessionPlanInputSchema,
+  renameSessionPlanInputSchema,
+  saveSessionPlanInputSchema,
+  sessionPreparationReceiptInputSchema,
+  sessionPreparationReceiptResultSchema,
+  sessionPlannerWorkspaceSchema,
+  startSessionPreparationInputSchema,
+  startSessionPreparationResultSchema,
+  switchSessionPlanInputSchema
+} from './session-planner.js'
+import {
+  acceptGeneratedTreasureInputSchema,
+  characterLootInputSchema,
+  characterLootLedgerSchema,
+  commitGroupRewardInputSchema,
+  commitGroupRewardResultSchema,
+  completeLootDistributionInputSchema,
+  correctCharacterLootInputSchema,
+  createTreasureInputSchema,
+  generateGroupDraftLootInputSchema,
+  generateGroupDraftLootResultSchema,
+  lootCatalogPageSchema,
+  lootCatalogQuerySchema,
+  lootDistributionResultSchema,
+  lootInboxInputSchema,
+  lootInboxPageSchema,
+  lootSceneProjectionSchema,
+  moveTreasureInputSchema,
+  sceneLootInputSchema,
+  treasureIdInputSchema,
+  treasureSchema,
+  updateTreasureInputSchema
+} from './loot.js'
 import {
   assignGeneratorPresetReceiptSchema,
   createGeneratorPresetReceiptSchema,
@@ -184,6 +229,8 @@ export interface OperationDefinition<
   readonly mode: OperationMode
   readonly roles: readonly WindowRole[]
   readonly deadlineMs: number
+  readonly namespace?: string
+  readonly method?: string
 }
 
 const read = <Input extends z.ZodType, Output extends z.ZodType>(
@@ -223,7 +270,7 @@ const locationId = z.object({ locationId: z.uuid() }).strict()
  * The one authoritative description of every renderer-to-core operation.
  * Main, preload and the utility dispatcher consume this table directly.
  */
-export const coreOperations = {
+const coreOperationDefinitions = {
   'campaign.list': read('campaign:list', none, campaignSnapshotSchema),
   'campaign.create': write(
     'campaign:create',
@@ -260,6 +307,17 @@ export const coreOperations = {
     'settings:update',
     updateInstallationSettingsInputSchema,
     installationSettingsSchema
+  ),
+  'campaignRules.read': read('campaign-rules:read', none, campaignRulesSchema),
+  'campaignRules.update': write(
+    'campaign-rules:update',
+    updateCampaignRulesInputSchema,
+    campaignRulesSchema
+  ),
+  'campaignRules.commandReceipt': read(
+    'campaign-rules:command-receipt',
+    campaignRulesCommandReceiptInputSchema,
+    campaignRulesSchema.nullable()
   ),
   'generatorPresets.readEditor': read(
     'generator-presets:read-editor',
@@ -495,10 +553,118 @@ export const coreOperations = {
     worldFactionDeleteReceiptSchema
   ),
   'session.read': read('session:read', none, liveSessionSnapshotSchema),
-  'sessionGeneration.generateEncounterIntents': read(
-    'session-generation:generate-intents',
-    sessionGenerationEncounterInputSchema,
-    sessionGenerationEncounterResultSchema
+  'encounterPlans.summaries': read(
+    'encounter-plans:summaries',
+    generatedEncounterPlanSummaryBatchQuerySchema,
+    generatedEncounterPlanSummaryBatchResultSchema
+  ),
+  'encounterPlans.search': read(
+    'encounter-plans:search',
+    searchSavedEncounterPlansQuerySchema,
+    savedEncounterPlanSearchResultSchema
+  ),
+  'sessionPlanner.read': read(
+    'session-planner:read',
+    none,
+    sessionPlannerWorkspaceSchema
+  ),
+  'sessionPlanner.create': write(
+    'session-planner:create',
+    createSessionPlanInputSchema,
+    sessionPlannerWorkspaceSchema
+  ),
+  'sessionPlanner.open': write(
+    'session-planner:open',
+    openSessionPlanInputSchema,
+    sessionPlannerWorkspaceSchema
+  ),
+  'sessionPlanner.switch': write(
+    'session-planner:switch',
+    switchSessionPlanInputSchema,
+    sessionPlannerWorkspaceSchema
+  ),
+  'sessionPlanner.rename': write(
+    'session-planner:rename',
+    renameSessionPlanInputSchema,
+    sessionPlannerWorkspaceSchema
+  ),
+  'sessionPlanner.save': write(
+    'session-planner:save',
+    saveSessionPlanInputSchema,
+    sessionPlannerWorkspaceSchema
+  ),
+  'sessionPlanner.delete': write(
+    'session-planner:delete',
+    deleteSessionPlanInputSchema,
+    sessionPlannerWorkspaceSchema
+  ),
+  'sessionPlanner.startPreparation': write(
+    'session-planner:start-preparation',
+    startSessionPreparationInputSchema,
+    startSessionPreparationResultSchema
+  ),
+  'sessionPlanner.preparationReceipt': read(
+    'session-planner:preparation-receipt',
+    sessionPreparationReceiptInputSchema,
+    sessionPreparationReceiptResultSchema
+  ),
+  'sessionPlanner.cancelPreparation': write(
+    'session-planner:cancel-preparation',
+    sessionPreparationReceiptInputSchema,
+    cancelSessionPreparationResultSchema
+  ),
+  'loot.read': read('loot:read', treasureIdInputSchema, treasureSchema),
+  'loot.catalog': read(
+    'loot:catalog',
+    lootCatalogQuerySchema,
+    lootCatalogPageSchema
+  ),
+  'loot.generateForGroupDraft': write(
+    'loot:generate-for-group-draft',
+    generateGroupDraftLootInputSchema,
+    generateGroupDraftLootResultSchema
+  ),
+  'loot.commitGroupReward': write(
+    'loot:commit-group-reward',
+    commitGroupRewardInputSchema,
+    commitGroupRewardResultSchema
+  ),
+  'loot.scene': read(
+    'loot:scene',
+    sceneLootInputSchema,
+    lootSceneProjectionSchema
+  ),
+  'loot.inbox': read('loot:inbox', lootInboxInputSchema, lootInboxPageSchema),
+  'loot.create': write(
+    'loot:create',
+    createTreasureInputSchema,
+    treasureSchema
+  ),
+  'loot.update': write(
+    'loot:update',
+    updateTreasureInputSchema,
+    treasureSchema
+  ),
+  'loot.move': write('loot:move', moveTreasureInputSchema, treasureSchema),
+  'loot.acceptGenerated': write(
+    'loot:accept-generated',
+    acceptGeneratedTreasureInputSchema,
+    treasureSchema
+  ),
+  'loot.distribute': write(
+    'loot:distribute',
+    completeLootDistributionInputSchema,
+    lootDistributionResultSchema
+  ),
+  'loot.ledger': read(
+    'loot:ledger',
+    characterLootInputSchema,
+    characterLootLedgerSchema
+  ),
+  'loot.correctLedger': write(
+    'loot:correct-ledger',
+    correctCharacterLootInputSchema,
+    characterLootLedgerSchema
   ),
   'scene.focus': write(
     'scene:focus',
@@ -622,7 +788,7 @@ export const coreOperations = {
   ),
   'combat.awardXp': write(
     'combat:awardXp',
-    combatRevisionInputSchema,
+    awardCombatXpInputSchema,
     combatCommandResultSchema
   ),
   'combat.complete': write(
@@ -692,7 +858,11 @@ export const coreOperations = {
     hexMapIdInputSchema,
     hexRuntimeOverlayProjectionSchema
   ),
-  'hexTravel.read': read('hex-travel:read', sceneId, hexTravelSnapshotSchema),
+  'hexTravel.read': read(
+    'hex-travel:read',
+    sceneId,
+    hexTravelContextResultSchema
+  ),
   'hexTravel.evaluate': read(
     'hex-travel:evaluate',
     evaluateHexRouteInputSchema,
@@ -701,42 +871,44 @@ export const coreOperations = {
   'hexTravel.position': write(
     'hex-travel:position',
     positionHexPartyInputSchema,
-    hexTravelSnapshotSchema
+    hexTravelContextResultSchema
   ),
   'hexTravel.start': write(
     'hex-travel:start',
     startHexTravelInputSchema,
-    hexTravelSnapshotSchema
+    hexTravelContextResultSchema
   ),
   'hexTravel.pause': write(
     'hex-travel:pause',
     mutateHexTravelInputSchema,
-    hexTravelSnapshotSchema
+    hexTravelContextResultSchema
   ),
   'hexTravel.resume': write(
     'hex-travel:resume',
     mutateHexTravelInputSchema,
-    hexTravelSnapshotSchema
+    hexTravelContextResultSchema
   ),
   'hexTravel.abort': write(
     'hex-travel:abort',
     mutateHexTravelInputSchema,
-    hexTravelSnapshotSchema
+    hexTravelContextResultSchema
   ),
   'hexTravel.setMultiplier': write(
     'hex-travel:setMultiplier',
     setHexTravelMultiplierInputSchema,
-    hexTravelSnapshotSchema
+    hexTravelContextResultSchema
   ),
   'core.shutdown': write(null, none, z.unknown(), [])
 } as const
+
+export const coreOperations = registerOperations(coreOperationDefinitions)
 
 /**
  * Main-owned capabilities use the same contract shape as Core operations.
  * Keeping them here means every renderer invocation has one authoritative
  * channel, input, output, mode, role and deadline definition.
  */
-export const mainOperations = {
+const mainOperationDefinitions = {
   'runtime.memory': read(
     'runtime:memory',
     none,
@@ -777,6 +949,36 @@ export const mainOperations = {
     ['gm']
   )
 } as const
+
+export const mainOperations = registerOperations(mainOperationDefinitions)
+
+function registerOperations<
+  const Definitions extends Readonly<Record<string, OperationDefinition>>
+>(
+  definitions: Definitions
+): {
+  readonly [Kind in keyof Definitions]: Definitions[Kind] &
+    Readonly<{ namespace: string; method: string }>
+} {
+  return Object.fromEntries(
+    Object.entries(definitions).map(([kind, definition]) => {
+      const separator = kind.indexOf('.')
+      if (separator < 1 || separator === kind.length - 1)
+        throw new Error(`invalid_operation_kind:${kind}`)
+      return [
+        kind,
+        {
+          ...definition,
+          namespace: kind.slice(0, separator),
+          method: kind.slice(separator + 1)
+        }
+      ]
+    })
+  ) as {
+    readonly [Kind in keyof Definitions]: Definitions[Kind] &
+      Readonly<{ namespace: string; method: string }>
+  }
+}
 
 export type CoreOperationKind = keyof typeof coreOperations
 export type MainOperationKind = keyof typeof mainOperations

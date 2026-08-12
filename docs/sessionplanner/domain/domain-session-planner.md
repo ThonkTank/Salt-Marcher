@@ -17,7 +17,8 @@ The feature publishes:
 
 - `SessionPlanId`, `SessionSceneId`, and optimistic `SessionRevision`
 - session catalog summaries and authored-session commands
-- `PrepareSessionCommand` and `PreparationStatus`
+- `StartPreparationCommand`, `PreparationReceipt`, and typed preparation
+  change notices
 - one immutable, revisioned `SessionPlannerWorkspaceSnapshot`
 - one revisioned prepared-scene catalog for Scene consumers
 
@@ -42,8 +43,10 @@ owns:
 
 It does not embed party details, Encounter rosters, creature details, World
 Planner records, generated item lines, packing rows, audits, or engine metadata.
-Preparation work that has not replaced the aggregate is transient derived
-state, never a second write model or authored truth.
+Preparation work that has not replaced the aggregate is operational journal
+state, never authored Session truth. The journal owns only the request
+fingerprint, frozen generation parameters, stage, immutable foreign artifact
+references, prepared replacement rows, and audit-safe failure/cancel status.
 
 ## Mutation Language And Invariants
 
@@ -83,6 +86,13 @@ Core invariants:
   identity and revision visible at intent time; Current is a read and
   navigation pointer, never an implicit write target
 - incomplete preparation never mutates `SessionPlan`
+- one preparation identity denotes one canonical request; retries with another
+  request are rejected
+- `queued`, `generating`, `resolving_encounters`, and `saving` survive a
+  utility-process restart and resume from the first phase not durably proven
+  complete
+- terminal `succeeded`, `invalid`, `stale`, `failed`, and `canceled` receipts
+  remain queryable by operation identity
 - prepared-content replacement applies to the exact session identity and
   revision it read; concurrent authored edits reject the replacement
 - removing a scene removes its planner-owned reward references without deleting

@@ -49,19 +49,7 @@ export const generatorChallengeRatings = [
 
 export type GeneratorRoleMatrix = GeneratorRoleCell[][]
 
-export function canonicalGeneratorConfigJson(value: unknown): string {
-  if (Array.isArray(value))
-    return `[${value.map(canonicalGeneratorConfigJson).join(',')}]`
-  if (value && typeof value === 'object')
-    return `{${Object.keys(value)
-      .sort()
-      .map(
-        (key) =>
-          `${JSON.stringify(key)}:${canonicalGeneratorConfigJson((value as Record<string, unknown>)[key])}`
-      )
-      .join(',')}}`
-  return JSON.stringify(value) ?? 'null'
-}
+export { canonicalJson as canonicalGeneratorConfigJson } from '../canonical-json.js'
 
 type CompositionComplexityInput = Readonly<{
   roleMatrix: GeneratorRoleMatrix

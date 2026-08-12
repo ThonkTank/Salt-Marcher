@@ -83,18 +83,25 @@ engine version, catalog version, or an intermediate Apply button.
 2. If replacing existing scenes, rests, generated reward references, or manual
    loot notes would be destructive, the planner asks for explicit confirmation
    before work starts. An empty session needs no confirmation.
-3. Preparation runs asynchronously. The existing workspace remains usable and
-   shows stage progress while encounters and rewards are prepared.
+3. `startPreparation` returns immediately with `confirmation_required` or an
+   accepted operation receipt. A Utility-owned queue performs generation,
+   Encounter import, and saving. The existing workspace remains usable and
+   follows progress through `preparationReceipt` and
+   `preparation.changed` notices.
 4. Success publishes the complete generated session as the current editable
    planner state without an intermediate preview or second Apply action.
 
-Cancellation remains available through the `saving` stage while the immutable,
-idempotent Session Generation and Encounter commits finish. It prevents the
-final Session Planner replacement but does not delete or compensate those
-foreign artifacts. After the final current-session identity and revision check
-passes and the final Planner commit begins, cancellation is no longer available
-and has no effect. Concurrent cancellation cannot suppress that commit's
-`ready`, `invalid`, or `failed` outcome.
+Cancellation durably records `cancel_requested`. The worker observes it before
+Generation, before Encounter commit, and before Planner commit. It prevents the
+final replacement only before that commit starts and never deletes or
+compensates immutable foreign artifacts. After the final identity/revision
+check and transaction begin, cancellation has no effect; the terminal receipt
+is authoritative.
+
+`cancelPreparation` is the only public cancellation operation. Together,
+`startPreparation`, `preparationReceipt`, and `cancelPreparation` form the one
+durable public preparation workflow; generation, Encounter import, and Planner
+commit remain internal worker stages rather than separately callable APIs.
 
 If the selected session or relevant inputs change while preparation is
 running, the older result MUST NOT replace the newer authored state. Invalid
@@ -122,16 +129,14 @@ Generated scenes and planner-owned metadata are editable after preparation.
 Editing or removing a scene does not mutate or delete the immutable generation
 run or Encounter-owned saved plan.
 
-## Visible Preparation States
+## Preparation Receipt And Visible States
 
-- `idle`: no preparation is running
-- `confirming-replacement`: destructive replacement awaits the user's choice
-- `generating`: Session Generation is computing encounters and rewards
-- `resolving-encounters`: concrete Encounter rosters are being prepared
-- `saving`: the complete prepared result is being saved
-- `ready`: the authored session contains the completed result
-- `invalid`: current inputs cannot produce a session
-- `failed`: a stage failed and authored truth is unchanged
+The public receipt uses the closed statuses `queued`, `generating`,
+`resolving_encounters`, `saving`, `succeeded`, `invalid`, `stale`, `failed`,
+and `canceled`. A failure contains stage, code, retryability, and structured
+parameters; it contains no localized message. Renderer presentation may map
+these states to localized `idle`, replacement confirmation, progress, ready,
+invalid, stale, failed, and canceled labels.
 
 The last stable workspace remains visible in every non-ready state.
 
@@ -170,7 +175,9 @@ The last stable workspace remains visible in every non-ready state.
   generated rewards without a second Apply action
 - destructive replacement requires confirmation; failed or stale preparation
   changes no authored session content
-- retry does not expose duplicate or partial generated content
+- retrying an operation returns its receipt; reusing its operation ID with a
+  different request is rejected and no retry exposes duplicate or partial
+  generated content
 - the UI stays responsive and meets the warmed reference-fixture target
 - selected-scene saved-plan search is demand-driven, publishes at most eight
   results plus overflow, preserves the inspector field while revisions apply,

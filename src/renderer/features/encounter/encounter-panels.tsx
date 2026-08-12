@@ -18,14 +18,21 @@ import { useEncounterEvaluation } from './use-encounter-evaluation.js'
 import { DifficultySummary } from './encounter-tuning.js'
 import { applyCombatCommandResult } from '../session/session-patches.js'
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
+import type {
+  LootSceneProjection,
+  Treasure
+} from '../../../shared/contracts/loot.js'
+import { encounterXpMultiplier } from '../../../shared/encounter-xp.js'
 
 type ScenarioProps = {
   snapshot: LiveSessionSnapshot
+  loot: LootSceneProjection
   setSnapshot: (snapshot: LiveSessionSnapshot) => void
   close: () => void
   onError: (message: string) => void
   manageGroups?: () => void
   reinforce?: () => void
+  distribute?: (treasure: Treasure) => void
 }
 
 export function SessionEncounterPanel(
@@ -49,11 +56,11 @@ export function SessionEncounterPanel(
   if (props.snapshot.combat) return <CombatScenario {...props} />
   async function direct() {
     await scenarioAction(props, () =>
-      encounterCapabilities(api).combat.prepare(
-        focused.id,
-        selected,
-        props.snapshot.scene.revision
-      )
+      encounterCapabilities(api).combat.prepare({
+        sceneId: focused.id,
+        groupIds: selected,
+        expectedSceneRevision: props.snapshot.scene.revision
+      })
     )
   }
   return (
@@ -175,10 +182,10 @@ export function EncounterCrumbs(props: ScenarioProps) {
         props.setSnapshot(
           applyCombatCommandResult(
             props.snapshot,
-            await encounterCapabilities(api).combat.moveToPhase(
-              'selection',
-              combat.revision
-            )
+            await encounterCapabilities(api).combat.moveToPhase({
+              target: 'selection',
+              expectedRevision: combat.revision
+            })
           )
         )
         return
@@ -186,10 +193,10 @@ export function EncounterCrumbs(props: ScenarioProps) {
       props.setSnapshot(
         applyCombatCommandResult(
           props.snapshot,
-          await encounterCapabilities(api).combat.moveToPhase(
+          await encounterCapabilities(api).combat.moveToPhase({
             target,
-            combat.revision
-          )
+            expectedRevision: combat.revision
+          })
         )
       )
     } catch (cause) {
@@ -232,9 +239,9 @@ function InitiativePanel(props: ScenarioProps & { combat: CombatSnapshot }) {
 
   async function rollMonsters() {
     try {
-      const updated = await encounterCapabilities(api).combat.rollInitiative(
-        props.combat.revision
-      )
+      const updated = await encounterCapabilities(api).combat.rollInitiative({
+        expectedRevision: props.combat.revision
+      })
       if (updated.combat) {
         setValues(
           Object.fromEntries(
@@ -297,13 +304,13 @@ function InitiativePanel(props: ScenarioProps & { combat: CombatSnapshot }) {
           className="primary-action"
           onClick={() =>
             void scenarioAction(props, () =>
-              encounterCapabilities(api).combat.confirmInitiative(
-                props.combat.initiativeRows.map((row) => ({
+              encounterCapabilities(api).combat.confirmInitiative({
+                values: props.combat.initiativeRows.map((row) => ({
                   id: row.id,
                   initiative: values[row.id] ?? row.initiative
                 })),
-                props.combat.revision
-              )
+                expectedRevision: props.combat.revision
+              })
             )
           }
         >
@@ -333,9 +340,9 @@ function CombatPanel(props: ScenarioProps & { combat: CombatSnapshot }) {
             }
             onClick={() =>
               void scenarioAction(props, () =>
-                encounterCapabilities(api).combat.retreatTurn(
-                  props.combat.revision
-                )
+                encounterCapabilities(api).combat.retreatTurn({
+                  expectedRevision: props.combat.revision
+                })
               )
             }
           >
@@ -345,9 +352,9 @@ function CombatPanel(props: ScenarioProps & { combat: CombatSnapshot }) {
             className="primary-action advance"
             onClick={() =>
               void scenarioAction(props, () =>
-                encounterCapabilities(api).combat.advanceTurn(
-                  props.combat.revision
-                )
+                encounterCapabilities(api).combat.advanceTurn({
+                  expectedRevision: props.combat.revision
+                })
               )
             }
           >
@@ -370,7 +377,9 @@ function CombatPanel(props: ScenarioProps & { combat: CombatSnapshot }) {
           disabled={!undoLabel}
           onClick={() =>
             void scenarioAction(props, () =>
-              encounterCapabilities(api).combat.undo(props.combat.revision)
+              encounterCapabilities(api).combat.undo({
+                expectedRevision: props.combat.revision
+              })
             )
           }
         >
@@ -389,7 +398,9 @@ function CombatPanel(props: ScenarioProps & { combat: CombatSnapshot }) {
           }
           onClick={() =>
             void scenarioAction(props, () =>
-              encounterCapabilities(api).combat.end(props.combat.revision)
+              encounterCapabilities(api).combat.end({
+                expectedRevision: props.combat.revision
+              })
             )
           }
         >
@@ -413,31 +424,37 @@ function ResolutionPanel(props: ScenarioProps & { combat: CombatSnapshot }) {
   )
   const [fraction, setFraction] = useState(resolution?.xpFraction ?? 1)
   if (!resolution) return null
+  const treasures = [
+    ...props.loot.locationTreasures,
+    ...props.loot.groupTreasures.flatMap((entry) => entry.treasures)
+  ].filter((treasure) => resolution.treasureIds.includes(treasure.id))
   const saveResolution = () =>
-    encounterCapabilities(api).combat.updateResolution(
-      selected,
+    encounterCapabilities(api).combat.updateResolution({
+      selectedEnemyIds: selected,
       mode,
-      fraction,
-      props.combat.revision
-    )
+      xpFraction: fraction,
+      expectedRevision: props.combat.revision
+    })
   async function complete() {
     try {
       let result = await saveResolution()
       let updated = applyCombatCommandResult(props.snapshot, result)
       if (!result.combat) throw new Error('Combat nicht verfügbar')
       if (!result.combat.resolution?.xpAwarded && perPlayer > 0) {
-        result = await encounterCapabilities(api).combat.awardXp(
-          result.combat.revision
-        )
+        result = await encounterCapabilities(api).combat.awardXp({
+          expectedRevision: result.combat.revision,
+          expectedCampaignRulesRevision:
+            result.combat.resolution!.campaignRulesRevision
+        })
         updated = applyCombatCommandResult(updated, result)
       }
       if (!result.combat) throw new Error('Combat nicht verfügbar')
       props.setSnapshot(
         applyCombatCommandResult(
           updated,
-          await encounterCapabilities(api).combat.complete(
-            result.combat.revision
-          )
+          await encounterCapabilities(api).combat.complete({
+            expectedRevision: result.combat.revision
+          })
         )
       )
     } catch (cause) {
@@ -447,7 +464,12 @@ function ResolutionPanel(props: ScenarioProps & { combat: CombatSnapshot }) {
   const eligible = resolution.enemies
     .filter((enemy) => selected.includes(enemy.id))
     .reduce((total, enemy) => total + enemy.xp, 0)
-  const awarded = Math.floor(eligible * fraction)
+  const adjusted = Math.round(
+    eligible * encounterXpMultiplier(selected.length, resolution.partySize)
+  )
+  const rewardEligible =
+    resolution.rewardXpBasis === 'adjusted' ? adjusted : eligible
+  const awarded = Math.floor(rewardEligible * fraction)
   const perPlayer = Math.floor(awarded / Math.max(1, resolution.partySize))
   return (
     <section className="scenario-content resolution-panel">
@@ -537,7 +559,21 @@ function ResolutionPanel(props: ScenarioProps & { combat: CombatSnapshot }) {
           <dd>{formatInteger(perPlayer)}</dd>
         </div>
       </dl>
-      <p className="loot-summary">{resolution.lootSummary}</p>
+      <div className="loot-summary">
+        {treasures.length === 0 ? (
+          <span>{message('loot.noneEncounter')}</span>
+        ) : (
+          treasures.map((treasure) => (
+            <button
+              type="button"
+              key={treasure.id}
+              onClick={() => props.distribute?.(treasure)}
+            >
+              {formatMessage('loot.distributeNamed', { name: treasure.label })}
+            </button>
+          ))
+        )}
+      </div>
       <footer>
         <button
           className="primary-action"

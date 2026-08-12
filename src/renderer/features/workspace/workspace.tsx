@@ -16,6 +16,7 @@ import { WorkspaceTopBar } from './workspace-top-bar.js'
 import { workspaceDefinition } from './workspace-definition.js'
 import './workspace.css'
 import type { GeneratorPresetApplicationLoader } from './generator-preset-application.js'
+import { createCampaignRewardRulesPort } from './campaign-reward-rules-port.js'
 
 export function WorkspaceApp() {
   const api = useCapabilityApi()
@@ -153,6 +154,7 @@ export function WorkspaceApp() {
           theme={theme}
           toggleTheme={toggleTheme}
           loadGeneratorPresetApplication={loadGeneratorPresetApplication}
+          campaignRules={createCampaignRewardRulesPort(api)}
         />
         <div className="shell-body">
           <WorkspaceRail
