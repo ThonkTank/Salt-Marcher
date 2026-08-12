@@ -1,6 +1,6 @@
 # Session Planner, Generation, and Loot refactor acceptance matrix
 
-Status: normative for development schema 26.
+Status: normative for development schema 27.
 
 This matrix is the completion ledger for the Session Planner, Session
 Generation, Encounter import, Reward XP, and Loot architecture refactor. A row
@@ -31,13 +31,13 @@ Status values:
 | SGL-10 | The session profile produces Encounter, Quest, Environment, and Overstock planning while the group profile produces exactly one normal Encounter reward. | Session Generation | Profile-specific stage inputs | Profile Golden tests independent of exact item selection | DONE |
 | SGL-11 | Generated domain truth has no renderer-formatted text or summaries. | Session Generation | Generated contracts | Schema/store introspection and renderer-presenter tests | DONE |
 
-## Relational development schema 26
+## Relational development schema 27
 
 | ID | Guarantee | Owner | Contract / command | Required direct evidence | Status |
 | --- | --- | --- | --- | --- | --- |
 | SGL-12 | Generated runs are a closed `session` / `group_reward` union with normalized owner tables for every declared child collection. | Session Generation persistence | `GeneratedRunStore` | Schema inventory and round-trip tests | DONE |
-| SGL-13 | No GeneratedRun domain payload is stored as JSON. Receipt JSON remains explicitly separate. | Session Generation persistence | Schema 26 | `PRAGMA table_info` introspection test | DONE |
-| SGL-14 | Run kind, channel, rarity, quantities, positions, and owner relationships fail closed through SQL constraints. | Session Generation persistence | Schema 26 DDL | Direct invalid-SQL constraint tests | DONE |
+| SGL-13 | No GeneratedRun domain payload is stored as JSON. Receipt JSON remains explicitly separate. | Session Generation persistence | Schema 27 | `PRAGMA table_info` introspection test | DONE |
+| SGL-14 | Run kind, channel, rarity, quantities, positions, owner relationships, and Loot provenance combinations fail closed through SQL constraints. | Session Generation / Loot persistence | Schema 27 DDL | Direct invalid-SQL constraint tests | DONE |
 | SGL-15 | Run hydration reads treasures, items, and containers in bounded batched queries and returns one deeply frozen contract from both `read` and `findByFingerprint`. | Session Generation persistence | `GeneratedRunStore` | Query-count, deep-freeze, and equality tests | DONE |
 | SGL-16 | Semantic run identity excludes workflow/command IDs and changes for engine, catalog, preset, policy, or group-revision meaning. | Session Generation | Origin fingerprint | Origin matrix tests | DONE |
 | SGL-17 | Campaign reward rules are campaign-owned, revisioned, CAS-updated, receipt-reconciled, and default to `base`. | Campaign Rules | `campaignRules.read/update/commandReceipt` | New-campaign, CAS, conflict, and lost-response tests | DONE |
@@ -45,7 +45,7 @@ Status values:
 | SGL-19 | Treasure drafts edit containers and item-container assignments while allocated quantities remain protected. | Loot | Treasure create/update contracts | Aggregate-diff and editor tests | DONE |
 | SGL-20 | Character ledger provenance is structured domain data and all arrows/labels are renderer-derived. | Character Loot | Ledger entry contract | Store round-trip and presenter tests | DONE |
 | SGL-21 | One monotone Loot metadata revision advances once per successful mutation and never on a retry. | Loot | Loot projection metadata | Command retry and invalidation tests | DONE |
-| SGL-22 | Preparation and Loot journals contain every specified operation, fingerprint, target, stage, recovery, error, and result field. | Planner / Loot persistence | Schema 26 journals | Schema inventory and recovery tests | DONE |
+| SGL-22 | Preparation and Loot journals contain every specified operation, fingerprint, target, stage, recovery, error, and result field. | Planner / Loot persistence | Schema 27 journals | Schema inventory and recovery tests | DONE |
 
 ## Reward XP and group reward generation
 
@@ -116,11 +116,11 @@ Status values:
 | SGL-65 | Planner, Group Loot preview, editor, distribution, ledger, and campaign rules are lazy leaves; renderer imports contracts as types only. | Renderer/build | Route and dialog imports | Manifest graph and static import tests | DONE |
 | SGL-66 | Reachable renderer is at most 90% of 3.20 MiB and common Workspace JavaScript at most 810 KiB. | Build architecture | Bundle budgets | Production manifest measurement | DONE |
 | SGL-67 | `check:planner-loot` runs affected unit/integration tests, typecheck, and bundle verification. | Developer feedback | Package script | Script registry/unit test | DONE |
-| SGL-68 | Eight isolated Electron suites remain in `pnpm check`; E2E covers process boundaries, recovery, accessibility, and principal visual flows. | End-to-end | E2E suite registry | Registry and canonical check | DONE |
+| SGL-68 | Nine isolated Electron suites remain in `pnpm check`; E2E covers process boundaries, recovery, accessibility, and principal visual flows. | End-to-end | E2E suite registry | Registry and canonical check | DONE |
 | SGL-69 | Planner preparation survives an Electron restart and a Utility restart during active work, while queued, generating, resolving, saving, and ready are visibly observed. | Planner E2E | Preparation event/receipt flow | Dedicated active-restart UI journey | DONE |
-| SGL-70 | Group Loot covers base, adjusted policy switch, stale protection, acceptance, edit, move, distribution, and Ledger. | Loot E2E | Group reward and Loot ports | Dedicated journey plus fast variants | DONE |
+| SGL-70 | Group-reward integration covers base/adjusted policy, stale protection, acceptance, move, distribution, and Ledger; the isolated v3-fixture Group Loot journey covers catalog editing, discard protection, atomic commit, and restart. | Loot integration/E2E | Group reward and Loot ports | Handler integration matrix plus focused editor journey | DONE |
 | SGL-71 | Updated Planner and Group Loot light/dark Goldens plus Planner, Settings, Group Loot, and Distribution keyboard/focus/Escape/Axe checks are enforced. | Renderer/E2E | Dialog surfaces | Component tests, named Goldens, and isolated Electron checks | DONE |
-| SGL-72 | The canonical `pnpm check` passes without baseline or budget increase. | Repository | Canonical check | One successful full invocation | DONE |
+| SGL-72 | The canonical `pnpm check` passes without baseline or budget increase. | Repository | Canonical check | One successful full invocation on the final SHA | DONE |
 
 ## Editable Group Loot draft extension
 
@@ -129,14 +129,14 @@ Status values:
 | SGL-73 | `loot.catalog` is Zod-validated, paginated, deterministic, pinned to the generated run catalog hash, and exposes active ordinary/magic items plus non-hidden containers with authoritative defaults and filters. | Loot catalog | `loot.catalog` | Contract/service search, filter, ordering, rounding, visibility, pagination, and stale-hash tests | DONE |
 | SGL-74 | The Group manager projects each immutable generated Treasure into an editable local draft with stable IDs, closed origins, reusable fields, catalog-only additions, merge rules, container detachment, undo/redo, per-Group caching, and discard protection. | Renderer Group management | Group Loot draft/editor/controller | Draft mutation, history, caching, invalidation, component, accessibility, and Golden tests | DONE |
 | SGL-75 | The draft budget reports non-magic copper against the generated target with informational plus/minus 15 percent classification and reports magic target/current separately; it never blocks confirmation. | Renderer Loot | Group Loot budget projector | Budget boundary unit tests and E2E value-change assertion | DONE |
-| SGL-76 | Atomic confirmation validates generated and pinned-catalog origins, derives magic/rarity/curse and provenance server-side, persists edited/removable/added lines and packing without a migration, fingerprints the full draft, and rolls every owner back on invalid or stale input. | Loot application/persistence | `loot.commitGroupReward`, generated-draft acceptance | Integration tests for metadata, assignments, exact retry/conflict, stale revisions, restart, and rollback | DONE |
+| SGL-76 | Atomic confirmation validates generated and pinned-catalog origins, derives magic/rarity/curse and explicit provenance server-side, persists edited/removable/added lines and packing through the Schema-27 aggregate writer, fingerprints the full draft, and rolls every owner back on invalid or stale input. | Loot application/persistence | `loot.commitGroupReward`, shared generated writer | Integration tests for metadata, assignments, exact retry/conflict, stale revisions, restart, and rollback | DONE |
 
 ## Current audit summary
 
-The 2026-08-11 implementation audit records all 76 rows as `DONE`, with no
-`PARTIAL` or `OPEN` rows. Each row has direct contract, architecture, unit,
-integration, bundle, component, or isolated Electron evidence named by the row;
-the final canonical `pnpm check` invocation also succeeded.
+The current audit records the complete canonical `pnpm check` on the final
+refactor SHA. Other rows retain their direct contract, architecture, unit,
+integration, bundle, component, or isolated Electron evidence and must be
+downgraded if that evidence no longer passes.
 
 This summary is informational. The row statuses and direct evidence govern
 completion and must be updated as the implementation advances.

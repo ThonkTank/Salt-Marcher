@@ -14,6 +14,7 @@ import type {
   EditableTreasureDraft,
   EditableTreasureItem
 } from './treasure-draft.js'
+import { reduceTreasureDraft } from './treasure-draft-reducer.js'
 
 export type GroupLootDraftItem = EditableTreasureItem & {
   origin: GroupRewardTreasureItemOrigin
@@ -39,6 +40,10 @@ export type GroupLootDraftHistory = Readonly<{
   baseline: string
   past: readonly GroupLootDraft[]
   future: readonly GroupLootDraft[]
+  transaction: Readonly<{
+    key: string
+    baseline: GroupLootDraft
+  }> | null
 }>
 
 export type GroupLootBudget = Readonly<{
@@ -103,7 +108,8 @@ export function createGroupLootDraftHistory(
     draft,
     baseline: groupLootDraftSignature(draft),
     past: [],
-    future: []
+    future: [],
+    transaction: null
   }
 }
 
@@ -119,6 +125,12 @@ export function mutateGroupLootDraft(
 ): GroupLootDraftHistory {
   const next = update(state.draft)
   if (next === state.draft) return state
+  if (state.transaction)
+    return {
+      ...state,
+      draft: next,
+      future: []
+    }
   return {
     ...state,
     draft: next,
@@ -127,29 +139,60 @@ export function mutateGroupLootDraft(
   }
 }
 
+export function beginGroupLootDraftTransaction(
+  state: GroupLootDraftHistory,
+  key: string
+): GroupLootDraftHistory {
+  if (state.transaction?.key === key) return state
+  const settled = endGroupLootDraftTransaction(state)
+  return {
+    ...settled,
+    transaction: { key, baseline: settled.draft }
+  }
+}
+
+export function endGroupLootDraftTransaction(
+  state: GroupLootDraftHistory
+): GroupLootDraftHistory {
+  const transaction = state.transaction
+  if (!transaction) return state
+  if (
+    groupLootDraftSignature(transaction.baseline) ===
+    groupLootDraftSignature(state.draft)
+  )
+    return { ...state, transaction: null }
+  return {
+    ...state,
+    past: [...state.past, transaction.baseline].slice(-50),
+    transaction: null
+  }
+}
+
 export function undoGroupLootDraft(
   state: GroupLootDraftHistory
 ): GroupLootDraftHistory {
-  const previous = state.past.at(-1)
-  if (!previous) return state
+  const settled = endGroupLootDraftTransaction(state)
+  const previous = settled.past.at(-1)
+  if (!previous) return settled
   return {
-    ...state,
+    ...settled,
     draft: previous,
-    past: state.past.slice(0, -1),
-    future: [state.draft, ...state.future]
+    past: settled.past.slice(0, -1),
+    future: [settled.draft, ...settled.future]
   }
 }
 
 export function redoGroupLootDraft(
   state: GroupLootDraftHistory
 ): GroupLootDraftHistory {
-  const next = state.future[0]
-  if (!next) return state
+  const settled = endGroupLootDraftTransaction(state)
+  const next = settled.future[0]
+  if (!next) return settled
   return {
-    ...state,
+    ...settled,
     draft: next,
-    past: [...state.past, state.draft].slice(-50),
-    future: state.future.slice(1)
+    past: [...settled.past, settled.draft].slice(-50),
+    future: settled.future.slice(1)
   }
 }
 
@@ -229,12 +272,11 @@ export function patchGroupLootItem(
   id: string,
   patch: Partial<EditableTreasureItem>
 ): GroupLootDraft {
-  return {
-    ...draft,
-    items: draft.items.map((item) =>
-      item.draftId === id ? { ...item, ...patch } : item
-    )
-  }
+  return reduceTreasureDraft(
+    draft,
+    { kind: 'patch-item', id, patch },
+    'catalog'
+  )
 }
 
 export function patchGroupLootContainer(
@@ -242,38 +284,25 @@ export function patchGroupLootContainer(
   id: string,
   patch: Partial<EditableTreasureContainer>
 ): GroupLootDraft {
-  return {
-    ...draft,
-    containers: draft.containers.map((container) =>
-      container.draftId === id ? { ...container, ...patch } : container
-    )
-  }
+  return reduceTreasureDraft(
+    draft,
+    { kind: 'patch-container', id, patch },
+    'catalog'
+  )
 }
 
 export function removeGroupLootItem(
   draft: GroupLootDraft,
   id: string
 ): GroupLootDraft {
-  if (draft.items.length === 1) return draft
-  return {
-    ...draft,
-    items: draft.items.filter((item) => item.draftId !== id)
-  }
+  return reduceTreasureDraft(draft, { kind: 'remove-item', id }, 'catalog')
 }
 
 export function removeGroupLootContainer(
   draft: GroupLootDraft,
   id: string
 ): GroupLootDraft {
-  return {
-    ...draft,
-    containers: draft.containers.filter(
-      (container) => container.draftId !== id
-    ),
-    items: draft.items.map((item) =>
-      item.containerId === id ? { ...item, containerId: null } : item
-    )
-  }
+  return reduceTreasureDraft(draft, { kind: 'remove-container', id }, 'catalog')
 }
 
 export function groupLootCommitDraft(

@@ -49,6 +49,8 @@ export const workspaceMessagesDe = {
     'Das SVG muss genau einen direkten Pfad ohne Transformationen oder weitere Grafikelemente enthalten.',
   'error.svg_too_large': 'Die SVG-Datei ist größer als 256 KiB.',
   'error.file_read_failed': 'Die SVG-Datei konnte nicht gelesen werden.',
+  'error.catalog_unavailable':
+    'Der für diese Generierung benötigte Katalog ist nicht installiert.',
   'error.stale': 'Die Daten wurden zwischenzeitlich geändert. Bitte neu laden.',
   'error.not_found': 'Der angeforderte Eintrag wurde nicht gefunden.',
   'error.read_only': 'Dieses Fenster hat nur Leserechte.',

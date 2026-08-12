@@ -22,22 +22,26 @@ report states which route-specific dependency set grew.
 for every graph. `BUNDLE_REPORT_GZIP=1` additionally prints per-graph gzip
 comparison values; raw emitted bytes remain the enforced metric.
 
-## Schema-26 editable group-reward measurement
+## Schema-27 editable group-reward measurement
 
-Measured from the production build on 2026-08-11:
+Measured from the production build on 2026-08-12:
 
 | Graph | Raw bytes | Gzip comparison | Limit use |
 | --- | ---: | ---: | ---: |
 | Shell initial | 773,304 | 294,314 | 84.3% |
-| Complete common Workspace | 917,164 | 328,773 | 70.0% |
-| Session incremental | 377,686 | 73,765 | 82.3% |
+| Complete common Workspace | 917,714 | not rebaselined | 70.0% |
+| Session incremental | 302,689 | not rebaselined | 66.0% |
 | Catalog incremental | 342,291 | 74,778 | 87.0% |
 | Hex incremental without Pixi | 337,747 | 79,274 | 85.9% |
 | Reference incremental | 97,910 | 22,713 | 74.7% |
 | Pixi dynamic leaf | 1,077,229 | 229,727 | 58.7% |
-| Reachable renderer | 2,981,101 | 764,792 | 98.7% of the 90% target; 88.8% of the legacy ceiling |
+| Reachable renderer | 2,987,661 | not rebaselined | 98.9% of the 90% target; 89.0% of the legacy ceiling |
 
-The hard refactor target therefore retains 38,797 raw bytes. Feature
+The hard refactor target therefore retains 32,237 raw bytes. The checked
+baseline was not raised for the 550-byte Workspace or 6,560-byte reachable
+growth; both remain visible below the 16-KiB review threshold. The Session
+baseline was ratcheted down by 74,997 bytes after the complete Group manager
+moved behind its lazy host. Feature
 dictionaries are runtime-local: the type-only key assembly
 imports no values, and Catalog, Hex, Session, Reference, and World Planner
 runtimes each import only the shared UI/base copy plus their own dictionary.
@@ -92,8 +96,11 @@ relaxed as part of feature work.
 - `check:e2e` builds once and runs the isolated Electron suites sequentially.
 - `check` is canonical and reuses the `check:app` build for its E2E stage.
 
-E2E fixture recipes live under the versioned `tests/e2e/fixtures/v1` and
-`tests/e2e/fixtures/v2` directories; every suite copies and materializes one
-into a unique User Data root. Visual Golden metadata lives in
+E2E fixture recipes live under the versioned `tests/e2e/fixtures/v1`,
+`tests/e2e/fixtures/v2`, and `tests/e2e/fixtures/v3` directories; every suite
+copies and materializes one into a unique User Data root. The Group Loot editor
+uses `v3/group-loot`, so catalog editing, discard protection, Goldens,
+accessibility, atomic commit, and restart verification no longer depend on the
+multi-minute Planner/distribution journey. Visual Golden metadata lives in
 `tests/e2e/goldens/manifest.json`. Updates require one or more explicit
 `--golden <name>` arguments; unrestricted environment updates are rejected.

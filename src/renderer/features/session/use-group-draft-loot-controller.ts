@@ -1,15 +1,19 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useReducer } from 'react'
 import type {
   CommitGroupRewardResult,
-  GenerateGroupDraftLootInput
+  GenerateGroupDraftLootInput,
+  LootCatalogEntry
 } from '../../../shared/contracts/loot.js'
 import type { GroupRewardGeneratedRun } from '../../../shared/contracts/session-generation.js'
 import type { SceneGroupDisposition } from '../../../shared/contracts/scene.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
-import { useGroupLootPort } from '../loot/use-loot-ports.js'
+import { capabilityErrorIssues } from '../../../shared/errors/capability-error.js'
+import type { CapabilityIssue } from '../../../shared/errors/capability-issue.js'
 import {
   addLootCatalogEntry,
+  beginGroupLootDraftTransaction,
   createGroupLootDraftHistory,
+  endGroupLootDraftTransaction,
   groupLootCommitDraft,
   groupLootDraftDirty,
   groupLootDraftFromRun,
@@ -23,15 +27,14 @@ import {
   type GroupLootDraft,
   type GroupLootDraftHistory
 } from '../loot/group-loot-draft.js'
-import type { LootCatalogEntry } from '../../../shared/contracts/loot.js'
 import type {
   EditableTreasureContainer,
   EditableTreasureItem
 } from '../loot/treasure-draft.js'
+import { useGroupLootPort } from '../loot/use-loot-ports.js'
 import { generationSeed } from './generation-seed.js'
 
 type GroupRewardEntry = GenerateGroupDraftLootInput['entries'][number]
-
 export type GroupDraftLootPhase =
   'idle' | 'generating' | 'ready' | 'committing' | 'error'
 
@@ -41,14 +44,62 @@ type PreviewState = Readonly<{
   seed: number | null
   phase: GroupDraftLootPhase
   error: string
+  issues: readonly CapabilityIssue[]
+  requestToken: string | null
 }>
+
+type ControllerState = Readonly<{
+  activeKey: string
+  sessions: Readonly<Record<string, PreviewState>>
+}>
+
+type ControllerAction =
+  | { kind: 'activate'; key: string }
+  | { kind: 'invalidate'; key: string }
+  | {
+      kind: 'begin'
+      key: string
+      requestToken: string
+      phase: 'generating' | 'committing'
+      seed?: number
+    }
+  | {
+      kind: 'generated'
+      key: string
+      requestToken: string
+      run: GroupRewardGeneratedRun
+      seed: number
+    }
+  | {
+      kind: 'completed'
+      key: string
+      requestToken: string
+    }
+  | {
+      kind: 'failed'
+      key: string
+      requestToken: string
+      error: string
+      issues: readonly CapabilityIssue[]
+    }
+  | {
+      kind: 'mutate'
+      key: string
+      update: (draft: GroupLootDraft) => GroupLootDraft
+    }
+  | { kind: 'undo'; key: string }
+  | { kind: 'redo'; key: string }
+  | { kind: 'begin-edit'; key: string; editKey: string }
+  | { kind: 'end-edit'; key: string }
 
 const emptyPreview = (): PreviewState => ({
   run: null,
   history: null,
   seed: null,
   phase: 'idle',
-  error: ''
+  error: '',
+  issues: [],
+  requestToken: null
 })
 
 export function useGroupDraftLootController(input: {
@@ -61,39 +112,19 @@ export function useGroupDraftLootController(input: {
   entries: readonly GroupRewardEntry[]
 }) {
   const loot = useGroupLootPort()
-  const previews = useRef(new Map<string, PreviewState>())
-  const activeKey = useRef(input.draftKey)
-  const requestSequence = useRef(0)
-  const [activePreview, setActivePreview] = useState<{
-    draftKey: string
-    state: PreviewState
-  }>(() => ({ draftKey: input.draftKey, state: emptyPreview() }))
-  const preview =
-    activePreview.draftKey === input.draftKey
-      ? activePreview.state
-      : emptyPreview()
-
+  const [state, dispatch] = useReducer(controllerReducer, {
+    activeKey: input.draftKey,
+    sessions: {}
+  })
   useEffect(() => {
-    activeKey.current = input.draftKey
-    requestSequence.current += 1
-    setActivePreview({
-      draftKey: input.draftKey,
-      state: previews.current.get(input.draftKey) ?? emptyPreview()
-    })
+    dispatch({ kind: 'activate', key: input.draftKey })
   }, [input.draftKey])
+  const preview = state.sessions[input.draftKey] ?? emptyPreview()
 
-  const store = useCallback((key: string, next: PreviewState) => {
-    previews.current.set(key, next)
-    if (activeKey.current === key)
-      setActivePreview({ draftKey: key, state: next })
-  }, [])
-
-  const invalidate = useCallback(() => {
-    requestSequence.current += 1
-    previews.current.delete(input.draftKey)
-    if (activeKey.current === input.draftKey)
-      setActivePreview({ draftKey: input.draftKey, state: emptyPreview() })
-  }, [input.draftKey])
+  const invalidate = useCallback(
+    () => dispatch({ kind: 'invalidate', key: input.draftKey }),
+    [input.draftKey]
+  )
 
   const generate = useCallback(
     async (
@@ -101,16 +132,16 @@ export function useGroupDraftLootController(input: {
       seedOverride: number = generationSeed(loot.e2e)
     ): Promise<boolean> => {
       if (entriesOverride.length === 0) {
-        invalidate()
+        dispatch({ kind: 'invalidate', key: input.draftKey })
         return false
       }
       const key = input.draftKey
-      const request = ++requestSequence.current
-      const previous = previews.current.get(key) ?? emptyPreview()
-      store(key, {
-        ...previous,
+      const requestToken = crypto.randomUUID()
+      dispatch({
+        kind: 'begin',
+        key,
+        requestToken,
         phase: 'generating',
-        error: '',
         seed: seedOverride
       })
       try {
@@ -125,39 +156,26 @@ export function useGroupDraftLootController(input: {
           entries: [...entriesOverride],
           seed: seedOverride
         })
-        if (requestSequence.current !== request) return false
-        store(key, {
+        dispatch({
+          kind: 'generated',
+          key,
+          requestToken,
           run: result.run,
-          history: createGroupLootDraftHistory(
-            groupLootDraftFromRun(result.run)
-          ),
-          phase: 'ready',
-          error: '',
           seed: seedOverride
         })
         return true
       } catch (cause) {
-        if (requestSequence.current !== request) return false
-        store(key, {
-          ...previous,
-          phase: 'error',
+        dispatch({
+          kind: 'failed',
+          key,
+          requestToken,
           error: capabilityErrorText(cause),
-          seed: seedOverride
+          issues: capabilityErrorIssues(cause)
         })
         return false
       }
     },
-    [input, invalidate, loot, store]
-  )
-
-  const retry = useCallback(
-    () => generate(input.entries, preview.seed ?? generationSeed(loot.e2e)),
-    [generate, input.entries, loot.e2e, preview.seed]
-  )
-
-  const reroll = useCallback(
-    () => generate(input.entries, generationSeed(loot.e2e)),
-    [generate, input.entries, loot.e2e]
+    [input, loot]
   )
 
   const commit = useCallback(
@@ -172,8 +190,8 @@ export function useGroupDraftLootController(input: {
       const history = preview.history
       if (!run || !treasure || !history) return null
       const key = input.draftKey
-      const request = ++requestSequence.current
-      store(key, { ...preview, phase: 'committing', error: '' })
+      const requestToken = crypto.randomUUID()
+      dispatch({ kind: 'begin', key, requestToken, phase: 'committing' })
       try {
         const result = await loot.commit({
           commandId: crypto.randomUUID(),
@@ -189,80 +207,26 @@ export function useGroupDraftLootController(input: {
           disposition: draft.disposition,
           entries: [...draft.entries]
         })
-        if (requestSequence.current === request)
-          store(key, { ...preview, phase: 'ready', error: '' })
+        dispatch({ kind: 'completed', key, requestToken })
         return result
       } catch (cause) {
-        if (requestSequence.current === request)
-          store(key, {
-            ...preview,
-            phase: 'error',
-            error: capabilityErrorText(cause)
-          })
+        dispatch({
+          kind: 'failed',
+          key,
+          requestToken,
+          error: capabilityErrorText(cause),
+          issues: capabilityErrorIssues(cause)
+        })
         return null
       }
     },
-    [input, loot, preview, store]
+    [input, loot, preview.history, preview.run]
   )
 
   const updateDraft = useCallback(
-    (update: (draft: GroupLootDraft) => GroupLootDraft) => {
-      const current = previews.current.get(input.draftKey)
-      if (!current?.history) return
-      store(input.draftKey, {
-        ...current,
-        history: mutateGroupLootDraft(current.history, update)
-      })
-    },
-    [input.draftKey, store]
-  )
-
-  const patchItem = useCallback(
-    (id: string, patch: Partial<EditableTreasureItem>) =>
-      updateDraft((draft) => patchGroupLootItem(draft, id, patch)),
-    [updateDraft]
-  )
-  const patchContainer = useCallback(
-    (id: string, patch: Partial<EditableTreasureContainer>) =>
-      updateDraft((draft) => patchGroupLootContainer(draft, id, patch)),
-    [updateDraft]
-  )
-  const removeItem = useCallback(
-    (id: string) => updateDraft((draft) => removeGroupLootItem(draft, id)),
-    [updateDraft]
-  )
-  const removeContainer = useCallback(
-    (id: string) => updateDraft((draft) => removeGroupLootContainer(draft, id)),
-    [updateDraft]
-  )
-  const addCatalogEntry = useCallback(
-    (entry: LootCatalogEntry) =>
-      updateDraft((draft) => addLootCatalogEntry(draft, entry)),
-    [updateDraft]
-  )
-  const undo = useCallback(() => {
-    const current = previews.current.get(input.draftKey)
-    if (!current?.history) return
-    store(input.draftKey, {
-      ...current,
-      history: undoGroupLootDraft(current.history)
-    })
-  }, [input.draftKey, store])
-  const redo = useCallback(() => {
-    const current = previews.current.get(input.draftKey)
-    if (!current?.history) return
-    store(input.draftKey, {
-      ...current,
-      history: redoGroupLootDraft(current.history)
-    })
-  }, [input.draftKey, store])
-
-  const hasDirtyDrafts = useCallback(
-    () =>
-      [...previews.current.values()].some(
-        (state) => state.history && groupLootDraftDirty(state.history)
-      ),
-    []
+    (update: (draft: GroupLootDraft) => GroupLootDraft) =>
+      dispatch({ kind: 'mutate', key: input.draftKey, update }),
+    [input.draftKey]
   )
 
   return {
@@ -272,19 +236,120 @@ export function useGroupDraftLootController(input: {
     canUndo: (preview.history?.past.length ?? 0) > 0,
     canRedo: (preview.history?.future.length ?? 0) > 0,
     generate,
-    retry,
-    reroll,
+    retry: () =>
+      generate(input.entries, preview.seed ?? generationSeed(loot.e2e)),
+    reroll: () => generate(input.entries, generationSeed(loot.e2e)),
     commit,
     invalidate,
     patchLabel: (label: string) =>
       updateDraft((draft) => ({ ...draft, label })),
-    patchItem,
-    patchContainer,
-    removeItem,
-    removeContainer,
-    addCatalogEntry,
-    undo,
-    redo,
-    hasDirtyDrafts
+    patchItem: (id: string, patch: Partial<EditableTreasureItem>) =>
+      updateDraft((draft) => patchGroupLootItem(draft, id, patch)),
+    patchContainer: (id: string, patch: Partial<EditableTreasureContainer>) =>
+      updateDraft((draft) => patchGroupLootContainer(draft, id, patch)),
+    removeItem: (id: string) =>
+      updateDraft((draft) => removeGroupLootItem(draft, id)),
+    removeContainer: (id: string) =>
+      updateDraft((draft) => removeGroupLootContainer(draft, id)),
+    addCatalogEntry: (entry: LootCatalogEntry) =>
+      updateDraft((draft) => addLootCatalogEntry(draft, entry)),
+    undo: () => dispatch({ kind: 'undo', key: input.draftKey }),
+    redo: () => dispatch({ kind: 'redo', key: input.draftKey }),
+    beginEdit: (editKey: string) =>
+      dispatch({ kind: 'begin-edit', key: input.draftKey, editKey }),
+    endEdit: () => dispatch({ kind: 'end-edit', key: input.draftKey }),
+    hasDirtyDrafts: () =>
+      Object.values(state.sessions).some(
+        (session) => session.history && groupLootDraftDirty(session.history)
+      )
+  }
+}
+
+export type GroupDraftLootController = ReturnType<
+  typeof useGroupDraftLootController
+>
+
+function controllerReducer(
+  state: ControllerState,
+  action: ControllerAction
+): ControllerState {
+  if (action.kind === 'activate')
+    return action.key === state.activeKey
+      ? state
+      : { ...state, activeKey: action.key }
+  if (action.kind === 'invalidate') {
+    if (!state.sessions[action.key]) return state
+    const { [action.key]: _removed, ...sessions } = state.sessions
+    void _removed
+    return { ...state, sessions }
+  }
+  const current = state.sessions[action.key] ?? emptyPreview()
+  let next: PreviewState
+  if (action.kind === 'begin')
+    next = {
+      ...current,
+      phase: action.phase,
+      error: '',
+      issues: [],
+      requestToken: action.requestToken,
+      ...(action.seed === undefined ? {} : { seed: action.seed })
+    }
+  else if (action.kind === 'generated') {
+    if (current.requestToken !== action.requestToken) return state
+    next = {
+      run: action.run,
+      history: createGroupLootDraftHistory(groupLootDraftFromRun(action.run)),
+      phase: 'ready',
+      error: '',
+      issues: [],
+      seed: action.seed,
+      requestToken: null
+    }
+  } else if (action.kind === 'completed') {
+    if (current.requestToken !== action.requestToken) return state
+    next = {
+      ...current,
+      phase: 'ready',
+      error: '',
+      issues: [],
+      requestToken: null
+    }
+  } else if (action.kind === 'failed') {
+    if (current.requestToken !== action.requestToken) return state
+    next = {
+      ...current,
+      phase: 'error',
+      error: action.error,
+      issues: action.issues,
+      requestToken: null
+    }
+  } else if (action.kind === 'mutate') {
+    if (!current.history) return state
+    next = {
+      ...current,
+      history: mutateGroupLootDraft(current.history, action.update)
+    }
+  } else if (action.kind === 'undo') {
+    if (!current.history) return state
+    next = { ...current, history: undoGroupLootDraft(current.history) }
+  } else if (action.kind === 'redo') {
+    if (!current.history) return state
+    next = { ...current, history: redoGroupLootDraft(current.history) }
+  } else if (action.kind === 'begin-edit') {
+    if (!current.history) return state
+    next = {
+      ...current,
+      history: beginGroupLootDraftTransaction(current.history, action.editKey)
+    }
+  } else {
+    if (!current.history) return state
+    next = {
+      ...current,
+      history: endGroupLootDraftTransaction(current.history)
+    }
+  }
+  return {
+    ...state,
+    sessions: { ...state.sessions, [action.key]: next }
   }
 }

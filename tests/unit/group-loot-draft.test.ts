@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   addLootCatalogEntry,
+  beginGroupLootDraftTransaction,
   createGroupLootDraftHistory,
+  endGroupLootDraftTransaction,
   groupLootBudget,
   groupLootCommitDraft,
   groupLootDraftDirty,
@@ -102,6 +104,25 @@ describe('group Loot draft', () => {
       magicTarget: 1,
       magicActual: 1
     })
+  })
+
+  it('coalesces one focused edit into a single undo step', () => {
+    const initial = groupLootDraftFromRun(run())
+    let history = createGroupLootDraftHistory(initial)
+    history = beginGroupLootDraftTransaction(history, 'label')
+    history = mutateGroupLootDraft(history, (draft) => ({
+      ...draft,
+      label: 'F'
+    }))
+    history = mutateGroupLootDraft(history, (draft) => ({
+      ...draft,
+      label: 'Fund'
+    }))
+    expect(history.past).toHaveLength(0)
+    history = endGroupLootDraftTransaction(history)
+    expect(history.past).toHaveLength(1)
+    history = undoGroupLootDraft(history)
+    expect(history.draft.label).toBe(initial.label)
   })
 })
 

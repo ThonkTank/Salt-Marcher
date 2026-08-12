@@ -10,6 +10,8 @@ import type {
   EditableTreasureContainer,
   EditableTreasureItem
 } from './treasure-draft.js'
+import type { CapabilityIssue } from '../../../shared/errors/capability-issue.js'
+import { treasureDraftEditorMessagesDe } from './treasure-draft-editor-messages.de.js'
 import './loot-dialogs.css'
 
 export function GroupLootInlinePanel(props: {
@@ -18,6 +20,7 @@ export function GroupLootInlinePanel(props: {
   draft: GroupLootDraft | null
   phase: GroupDraftLootPhase
   error: string
+  issues: readonly CapabilityIssue[]
   canGenerate: boolean
   canUndo: boolean
   canRedo: boolean
@@ -35,6 +38,8 @@ export function GroupLootInlinePanel(props: {
   removeContainer: (id: string) => void
   undo: () => void
   redo: () => void
+  beginEdit: (key: string) => void
+  endEdit: () => void
 }) {
   const busy = props.phase === 'generating' || props.phase === 'committing'
   const budget =
@@ -183,11 +188,16 @@ export function GroupLootInlinePanel(props: {
           </div>
           <TreasureDraftFields
             draft={editorDraft}
+            policy="catalog"
+            messages={treasureDraftEditorMessagesDe()}
+            issues={props.issues}
             labelChanged={props.patchLabel}
             patchItem={props.patchItem}
             removeItem={props.removeItem}
             patchContainer={props.patchContainer}
             removeContainer={props.removeContainer}
+            beginEdit={props.beginEdit}
+            endEdit={props.endEdit}
           />
           {invalid && (
             <p className="loot-validation" role="alert">

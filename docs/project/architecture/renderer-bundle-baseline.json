@@ -1,12 +1,12 @@
 {
-  "recordedAt": "2026-08-11",
-  "reason": "Editable group Loot drafts add the pinned catalog, inline editing, history, and budget while every fixed renderer ceiling remains unchanged",
+  "recordedAt": "2026-08-12",
+  "reason": "The complete Group manager moved behind a lazy Session leaf; only the 74,997-byte Session reduction is ratcheted and no graph baseline is raised",
   "dependencyRationale": "No dependency version changed; the feature uses the existing React, capability, and Loot editor boundaries",
-  "chunkRationale": "The catalog and inline editor remain dedicated lazy leaves; only transient draft coordination stays in the Session route for roster invalidation and per-Group caching",
+  "chunkRationale": "The Group manager, catalog, and inline editor are dedicated lazy leaves; the Session route now retains only its host boundary",
   "graphs": {
     "shell": 773304,
     "workspace": 917164,
-    "session": 377686,
+    "session": 302689,
     "catalog": 342291,
     "hex": 337747,
     "reference": 97910,

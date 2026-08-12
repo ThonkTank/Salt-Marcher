@@ -42,7 +42,7 @@ accounts for the bounded virtual biome catalog and CRUD surface added with
 schema 15; schema 16 replaced separate World Location kind and region fields
 with tags and read-aloud text, and schema 17 normalizes ordered location-owned
 tags into validated rows while all per-entry ceilings remain unchanged.
-Development schema 26, Generator Config V3, and Session engine
+Development schema 27, Generator Config V3, and Session engine
 `saltmarcher-v5` are current. Schema 25 is reset rather than migrated. The
 versioned behavior and ownership are recorded in the
 [Encounter Generation requirements](../../encounter/requirements/requirements-encounter-generation.md)
@@ -220,7 +220,7 @@ claiming completion of M3 or M5. Its approved expansion contains:
 - anchored burger-menu Campaign CRUD without an icon-rail Campaign workspace,
   including rename, recoverable trash/restore, exact-name permanent deletion,
   and crash-reconciled `.trash`/`.deleting` directory transitions in the
-  complete greenfield schema v26
+  complete greenfield schema v27
 - the productive Monster section of the common Catalog, backed by a versioned
   local SRD 5.1 resource; Items, saved Encounters, and NPCs remain later
   Catalog products

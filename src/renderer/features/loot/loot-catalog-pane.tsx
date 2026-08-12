@@ -17,12 +17,13 @@ const emptyOptions: LootCatalogPage['filterOptions'] = {
 }
 
 export function LootCatalogPane(props: {
+  runId: string
   catalogContentHash: string
   add: (entry: LootCatalogEntry) => void
 }) {
   const port = useLootCatalogPort()
   const [query, setQuery] = useState<
-    Omit<LootCatalogQuery, 'catalogContentHash'>
+    Omit<LootCatalogQuery, 'runId' | 'catalogContentHash'>
   >({
     search: '',
     types: [],
@@ -38,7 +39,11 @@ export function LootCatalogPane(props: {
   useEffect(() => {
     const token = ++request.current
     void port
-      .catalog({ ...query, catalogContentHash: props.catalogContentHash })
+      .catalog({
+        ...query,
+        runId: props.runId,
+        catalogContentHash: props.catalogContentHash
+      })
       .then((result) => {
         if (request.current !== token) return
         setPage(result)
@@ -48,11 +53,11 @@ export function LootCatalogPane(props: {
         if (request.current !== token) return
         setError(capabilityErrorText(cause))
       })
-  }, [port, props.catalogContentHash, query])
+  }, [port, props.catalogContentHash, props.runId, query])
 
   const options = page?.filterOptions ?? emptyOptions
   const update = (
-    patch: Partial<Omit<LootCatalogQuery, 'catalogContentHash'>>
+    patch: Partial<Omit<LootCatalogQuery, 'runId' | 'catalogContentHash'>>
   ) => setQuery((current) => ({ ...current, ...patch, offset: 0 }))
   return (
     <section

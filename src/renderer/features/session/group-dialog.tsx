@@ -3,12 +3,7 @@ import {
   message as uiMessage
 } from '../../i18n/session-runtime.de.js'
 import {
-  formatInteger,
-  formatMultiplier
-} from '../../i18n/domain-formatters.de.js'
-import {
-  lazy,
-  Suspense,
+  useCallback,
   useEffect,
   useMemo,
   useReducer,
@@ -39,7 +34,6 @@ import {
   applyCombatCommandResult,
   applySceneGroupCommandResult
 } from './session-patches.js'
-import { CreatureFilters, FilterChips } from '../creatures/creature-controls.js'
 import {
   emptyCreatureOptions,
   emptyQuery,
@@ -53,34 +47,37 @@ import {
 } from '../../capabilities/capability-errors.js'
 import { sessionCapabilities } from './session-capabilities.js'
 import { DiscardChangesDialog } from '../../shell/modal-dialog.js'
-import {
-  CreatureBuilderCatalogTable,
-  CreatureCollectionManagerDialog
-} from '../creature-collection/creature-collection.js'
+import { CreatureCollectionManagerDialog } from '../creature-collection/creature-collection.js'
 import {
   creatureFact,
-  emptyGroupDraftHistory,
   groupDraftEntries,
-  groupDraftReducer,
-  groupDraftSignature,
   newGroupDraftKey,
   type DraftCreatureFact,
-  type GroupDraftAction,
+  type GroupDraftMutation,
   type GroupDraftState
 } from './group-draft.js'
+import {
+  createGroupDraftSessions,
+  groupDraftSessionsDirty,
+  groupDraftSessionsReducer,
+  groupDraftStateDirty,
+  groupDraftStateFromGroup
+} from './group-draft-sessions.js'
+import { GroupManagerDraftPane } from './group-manager-draft-pane.js'
+import {
+  GroupManagerCatalogPane,
+  GroupManagerCatalogTools,
+  type GroupCatalogMode
+} from './group-manager-catalog.js'
+import {
+  groupManagerIntentNeedsConfirmation,
+  type GroupManagerGuard,
+  type GroupManagerIntent,
+  type PendingGroupManagerIntent
+} from './group-manager-intent.js'
 
 import { useGroupDraftLootController } from './use-group-draft-loot-controller.js'
 import { generationSeed } from './generation-seed.js'
-
-const LazyGroupLootInlinePanel = lazy(async () => {
-  const module = await import('../loot/group-loot-inline-panel.js')
-  return { default: module.GroupLootInlinePanel }
-})
-
-const LazyLootCatalogPane = lazy(async () => {
-  const module = await import('../loot/loot-catalog-pane.js')
-  return { default: module.LootCatalogPane }
-})
 
 export function GroupDialog(props: {
   snapshot: LiveSessionSnapshot
@@ -97,52 +94,22 @@ export function GroupDialog(props: {
     (scene) => scene.id === props.snapshot.scene.focusedSceneId
   )!
   const activeGroups = focused.groups.filter((group) => !group.archived)
-  const initialQuantities = Object.fromEntries(
-    props.group?.entries.map((entry) => [
-      entry.creatureId,
-      entry.aliveQuantity
-    ]) ?? []
-  )
-  const initialDeadQuantities = Object.fromEntries(
-    props.group?.entries.map((entry) => [
-      entry.creatureId,
-      entry.deadQuantity
-    ]) ?? []
-  )
-  const initialFacts = Object.fromEntries(
-    props.group?.entries.map((entry) => [
-      entry.creatureId,
-      {
-        displayName: entry.displayName,
-        cr: 0,
-        xp: 0,
-        available: entry.available
-      }
-    ]) ?? []
-  )
-  const [selection, setSelection] = useState<string | null>(
+  const initialSelection =
     props.group?.id ?? (activeGroups.length === 0 ? newGroupDraftKey : null)
+  const [draftSessions, dispatchDraftSessions] = useReducer(
+    groupDraftSessionsReducer,
+    createGroupDraftSessions(
+      initialSelection,
+      groupDraftStateFromGroup(props.group)
+    )
   )
-  const [draft, dispatchDraft] = useReducer(groupDraftReducer, {
-    name: props.group?.name ?? '',
-    note: props.group?.note ?? '',
-    disposition: props.group?.disposition ?? 'hostile',
-    quantities: initialQuantities,
-    deadQuantities: initialDeadQuantities,
-    facts: initialFacts,
-    baseline: groupDraftSignature(
-      props.group?.name ?? '',
-      props.group?.note ?? '',
-      props.group?.disposition ?? 'hostile',
-      initialQuantities,
-      initialDeadQuantities
-    ),
-    evaluation: null,
-    seed: 0,
-    message: '',
-    generationSummary: '',
-    history: emptyGroupDraftHistory()
-  })
+  const selection = draftSessions.activeKey
+  const draft = draftSessions.draft
+  const dispatchDraft = useCallback(
+    (mutation: GroupDraftMutation) =>
+      dispatchDraftSessions({ kind: 'mutate', mutation }),
+    []
+  )
   const {
     name,
     note,
@@ -150,9 +117,7 @@ export function GroupDialog(props: {
     quantities,
     deadQuantities,
     facts,
-    baseline,
     evaluation,
-    seed,
     message,
     generationSummary,
     history
@@ -195,17 +160,12 @@ export function GroupDialog(props: {
     balance: 'preset',
     diversity: 'preset'
   })
-  const [pending, setPending] = useState<GroupDraftAction | null>(null)
-  const [lootDiscardPending, setLootDiscardPending] = useState(false)
-  const pendingLootAction = useRef<(() => void) | null>(null)
+  const [pendingIntent, setPendingIntent] =
+    useState<PendingGroupManagerIntent | null>(null)
   const [busy, setBusy] = useState(false)
   const [prospectiveGroupId] = useState(() => crypto.randomUUID())
-  const [cachedDirty, setCachedDirty] = useState(false)
   const [draftPaneWidth, setDraftPaneWidth] = useState(460)
-  const [catalogMode, setCatalogMode] = useState<'creatures' | 'loot'>(
-    'creatures'
-  )
-  const drafts = useRef(new Map<string, GroupDraftState>())
+  const [catalogMode, setCatalogMode] = useState<GroupCatalogMode>('creatures')
   const evaluationRequest = useRef(0)
   const factsRequest = useRef(0)
   const entries = useMemo(
@@ -213,10 +173,7 @@ export function GroupDialog(props: {
     [deadQuantities, quantities]
   )
   const active = selection !== null
-  const dirty =
-    active &&
-    groupDraftSignature(name, note, disposition, quantities, deadQuantities) !==
-      baseline
+  const dirty = active && groupDraftStateDirty(draft)
   const assigned = props.snapshot.party.members.filter((member) =>
     focused.partyMemberIds.includes(member.id)
   )
@@ -308,131 +265,77 @@ export function GroupDialog(props: {
   }, [api, focused.groups, selection])
 
   function load(nextSelection: string | null) {
-    cacheCurrentDraft()
-    const cached = nextSelection ? drafts.current.get(nextSelection) : null
-    if (cached && nextSelection) {
-      drafts.current.delete(nextSelection)
-      setCachedDirty(hasDirtyDrafts())
-      setSelection(nextSelection)
-      dispatchDraft({ kind: 'replace', state: cached })
-      return
-    }
     const group = nextSelection
       ? focused.groups.find((candidate) => candidate.id === nextSelection)
       : undefined
-    const nextName = group?.name ?? ''
-    const nextNote = group?.note ?? ''
-    const nextDisposition = group?.disposition ?? 'hostile'
-    const nextQuantities = Object.fromEntries(
-      group?.entries.map((entry) => [entry.creatureId, entry.aliveQuantity]) ??
-        []
-    )
-    const nextDeadQuantities = Object.fromEntries(
-      group?.entries.map((entry) => [entry.creatureId, entry.deadQuantity]) ??
-        []
-    )
-    const nextFacts = Object.fromEntries(
-      group?.entries.map((entry) => [
-        entry.creatureId,
-        {
-          displayName: entry.displayName,
-          cr: 0,
-          xp: 0,
-          available: entry.available
-        }
-      ]) ?? []
-    )
-    setSelection(nextSelection)
-    setCachedDirty(hasDirtyDrafts())
-    dispatchDraft({
-      kind: 'replace',
-      state: {
-        name: nextName,
-        note: nextNote,
-        disposition: nextDisposition,
-        quantities: nextQuantities,
-        deadQuantities: nextDeadQuantities,
-        facts: nextFacts,
-        baseline: groupDraftSignature(
-          nextName,
-          nextNote,
-          nextDisposition,
-          nextQuantities,
-          nextDeadQuantities
-        ),
-        evaluation: null,
-        message: '',
-        seed: 0,
-        generationSummary: '',
-        history: emptyGroupDraftHistory()
-      }
+    dispatchDraftSessions({
+      kind: 'activate',
+      key: nextSelection,
+      fallback: groupDraftStateFromGroup(group)
     })
   }
 
-  function cacheCurrentDraft() {
-    if (!selection) return
-    drafts.current.set(selection, {
-      name,
-      note,
-      disposition,
-      quantities,
-      deadQuantities,
-      facts,
-      baseline,
-      evaluation,
-      seed,
-      message,
-      generationSummary,
-      history
-    })
-  }
-
-  function hasDirtyDrafts() {
-    return [...drafts.current.values()].some(
-      (draft) =>
-        groupDraftSignature(
-          draft.name,
-          draft.note,
-          draft.disposition,
-          draft.quantities,
-          draft.deadQuantities
-        ) !== draft.baseline
-    )
-  }
-
-  function perform(action: GroupDraftAction) {
-    setPending(null)
-    if (action.kind === 'close') props.close()
-    else load(action.selection)
-  }
-
-  function request(action: GroupDraftAction) {
-    if (action.kind === 'select') {
-      load(action.selection)
+  function requestIntent(intent: GroupManagerIntent, guard: GroupManagerGuard) {
+    if (
+      groupManagerIntentNeedsConfirmation(guard, {
+        anyGroup: groupDraftSessionsDirty(draftSessions),
+        currentLoot: lootController.dirty,
+        anyLoot: lootController.hasDirtyDrafts()
+      })
+    ) {
+      setPendingIntent({ intent, guard })
       return
     }
-    cacheCurrentDraft()
-    setCachedDirty(hasDirtyDrafts())
-    if (dirty || hasDirtyDrafts() || lootController.hasDirtyDrafts())
-      setPending(action)
-    else perform(action)
+    performIntent(intent)
   }
 
-  function protectLootReplacement(action: () => void, all = false) {
-    if (all ? lootController.hasDirtyDrafts() : lootController.dirty) {
-      pendingLootAction.current = action
-      setLootDiscardPending(true)
-      return
+  function performIntent(intent: GroupManagerIntent) {
+    setPendingIntent(null)
+    switch (intent.kind) {
+      case 'close':
+        props.close()
+        return
+      case 'add-creature':
+        applyAddCreature(intent.creature)
+        return
+      case 'change-quantity':
+        applyQuantityChange(
+          intent.creatureId,
+          intent.delta,
+          intent.quantityKind
+        )
+        return
+      case 'remove-creature':
+        applyRemoveCreature(intent.creatureId)
+        return
+      case 'roster-history':
+        applyRosterHistory(intent.direction)
+        return
+      case 'generate-roster':
+        void applyGenerate(intent.mode)
+        return
+      case 'regenerate-loot':
+        void (intent.mode === 'retry'
+          ? lootController.retry()
+          : lootController.reroll())
+        return
+      case 'save':
+        void applySave()
+        return
+      case 'archive':
+        void applyArchive()
+        return
+      case 'join-combat':
+        void applyJoinCombat()
     }
-    action()
   }
 
-  function addCreature(creature: Creature, confirmed = false) {
+  function addCreature(creature: Creature) {
+    requestIntent({ kind: 'add-creature', creature }, 'current-loot')
+  }
+
+  function applyAddCreature(creature: Creature) {
     if (!active) return
-    if (!confirmed && lootController.dirty) {
-      protectLootReplacement(() => addCreature(creature, true))
-      return
-    }
     lootController.invalidate()
     dispatchDraft({
       kind: 'roster',
@@ -453,15 +356,19 @@ export function GroupDialog(props: {
   function changeQuantity(
     creatureId: string,
     delta: number,
-    kind: 'alive' | 'dead' = 'alive',
-    confirmed = false
+    kind: 'alive' | 'dead' = 'alive'
   ) {
-    if (!confirmed && lootController.dirty) {
-      protectLootReplacement(() =>
-        changeQuantity(creatureId, delta, kind, true)
-      )
-      return
-    }
+    requestIntent(
+      { kind: 'change-quantity', creatureId, delta, quantityKind: kind },
+      'current-loot'
+    )
+  }
+
+  function applyQuantityChange(
+    creatureId: string,
+    delta: number,
+    kind: 'alive' | 'dead'
+  ) {
     lootController.invalidate()
     const current = kind === 'alive' ? quantities : deadQuantities
     const quantity = Math.max(
@@ -480,11 +387,11 @@ export function GroupDialog(props: {
     })
   }
 
-  function removeCreature(creatureId: string, confirmed = false) {
-    if (!confirmed && lootController.dirty) {
-      protectLootReplacement(() => removeCreature(creatureId, true))
-      return
-    }
+  function removeCreature(creatureId: string) {
+    requestIntent({ kind: 'remove-creature', creatureId }, 'current-loot')
+  }
+
+  function applyRemoveCreature(creatureId: string) {
     lootController.invalidate()
     const nextQuantities = { ...quantities }
     const nextDeadQuantities = { ...deadQuantities }
@@ -499,14 +406,11 @@ export function GroupDialog(props: {
     })
   }
 
-  function moveRosterHistory(
-    kind: 'undo-roster' | 'redo-roster',
-    confirmed = false
-  ) {
-    if (!confirmed && lootController.dirty) {
-      protectLootReplacement(() => moveRosterHistory(kind, true))
-      return
-    }
+  function moveRosterHistory(kind: 'undo-roster' | 'redo-roster') {
+    requestIntent({ kind: 'roster-history', direction: kind }, 'current-loot')
+  }
+
+  function applyRosterHistory(kind: 'undo-roster' | 'redo-roster') {
     lootController.invalidate()
     dispatchDraft({ kind })
   }
@@ -521,12 +425,12 @@ export function GroupDialog(props: {
     }
   }
 
-  async function generate(mode: 'fill' | 'replace', confirmed = false) {
+  function generate(mode: 'fill' | 'replace') {
+    requestIntent({ kind: 'generate-roster', mode }, 'current-loot')
+  }
+
+  async function applyGenerate(mode: 'fill' | 'replace') {
     if (!canGenerate) return
-    if (!confirmed && lootController.dirty) {
-      protectLootReplacement(() => void generate(mode, true))
-      return
-    }
     const nextSeed = generationSeed(api.runtime.e2e)
     setBusy(true)
     try {
@@ -602,12 +506,12 @@ export function GroupDialog(props: {
     }
   }
 
-  async function save(confirmed = false) {
+  function save() {
+    requestIntent({ kind: 'save' }, 'all-loot')
+  }
+
+  async function applySave() {
     if (!active) return
-    if (!confirmed && lootController.hasDirtyDrafts()) {
-      protectLootReplacement(() => void save(true), true)
-      return
-    }
     if (
       entries.length > 0 &&
       !entries.some((entry) => facts[entry.creatureId]?.available === true)
@@ -669,12 +573,12 @@ export function GroupDialog(props: {
     }
   }
 
-  async function archive(confirmed = false) {
+  function archive() {
+    requestIntent({ kind: 'archive' }, 'all-loot')
+  }
+
+  async function applyArchive() {
     if (!selection || selection === newGroupDraftKey) return
-    if (!confirmed && lootController.hasDirtyDrafts()) {
-      protectLootReplacement(() => void archive(true), true)
-      return
-    }
     setBusy(true)
     try {
       const currentGroup = focused.groups.find(
@@ -699,13 +603,13 @@ export function GroupDialog(props: {
     }
   }
 
-  async function joinCombat(confirmed = false) {
+  function joinCombat() {
+    requestIntent({ kind: 'join-combat' }, 'all-loot')
+  }
+
+  async function applyJoinCombat() {
     if (!selection || selection === newGroupDraftKey || !props.snapshot.combat)
       return
-    if (!confirmed && lootController.hasDirtyDrafts()) {
-      protectLootReplacement(() => void joinCombat(true), true)
-      return
-    }
     setBusy(true)
     try {
       const currentGroup = focused.groups.find(
@@ -754,10 +658,7 @@ export function GroupDialog(props: {
     .map((member) => member.level?.toString() ?? '—')
     .join(' / ')
   const anyDirty =
-    dirty ||
-    cachedDirty ||
-    lootController.dirty ||
-    lootController.hasDirtyDrafts()
+    groupDraftSessionsDirty(draftSessions) || lootController.hasDirtyDrafts()
   const canGenerateLoot = canGenerate && entries.length > 0
 
   return (
@@ -782,7 +683,7 @@ export function GroupDialog(props: {
         }
         closeLabel={uiMessage('ui.dialog.schliessen')}
         closeClassName="close"
-        close={() => request({ kind: 'close' })}
+        close={() => requestIntent({ kind: 'close' }, 'close')}
         busy={busy}
         toolsLabel={uiMessage('group.tools')}
         headerControls={
@@ -794,12 +695,7 @@ export function GroupDialog(props: {
               className="group-manager-selection"
               aria-label={uiMessage('group.select')}
               value={selection ?? ''}
-              onChange={(event) =>
-                request({
-                  kind: 'select',
-                  selection: event.target.value || null
-                })
-              }
+              onChange={(event) => load(event.target.value || null)}
             >
               <option value="">{uiMessage('group.selectPlaceholder')}</option>
               {activeGroups.map((group) => (
@@ -817,9 +713,7 @@ export function GroupDialog(props: {
             <button
               className="group-manager-new"
               type="button"
-              onClick={() =>
-                request({ kind: 'select', selection: newGroupDraftKey })
-              }
+              onClick={() => load(newGroupDraftKey)}
             >
               + {uiMessage('group.createTitle')}
             </button>
@@ -854,110 +748,34 @@ export function GroupDialog(props: {
           </>
         }
         tools={
-          <div>
-            <div
-              className="group-catalog-mode-tabs"
-              role="tablist"
-              aria-label={uiMessage('loot.catalogMode')}
-            >
-              <button
-                type="button"
-                role="tab"
-                aria-selected={effectiveCatalogMode === 'creatures'}
-                onClick={() => setCatalogMode('creatures')}
-              >
-                {uiMessage('loot.catalogCreatures')}
-              </button>
-              <button
-                type="button"
-                role="tab"
-                aria-selected={effectiveCatalogMode === 'loot'}
-                disabled={!lootController.run}
-                onClick={() => setCatalogMode('loot')}
-              >
-                {uiMessage('loot.catalogLoot')}
-              </button>
-            </div>
-            {effectiveCatalogMode === 'creatures' && (
-              <CreatureFilters
-                query={query}
-                options={options}
-                searchBiomeOptions={searchBiomeOptions}
-                changed={setQuery}
-                clustered
-              />
-            )}
-            <div className="group-tool-row">
-              <div className="group-filter-summary">
-                {effectiveCatalogMode === 'creatures' ? (
-                  <>
-                    <FilterChips
-                      query={query}
-                      changed={setQuery}
-                      options={options}
-                    />
-                    <span>{filterSummary}</span>
-                  </>
-                ) : (
-                  <span>{uiMessage('loot.catalogHint')}</span>
-                )}
-              </div>
-              <section
-                className="group-generator-card"
-                aria-label={uiMessage('group.generator')}
-              >
-                <strong>{uiMessage('group.generator')}</strong>
-                <div className="group-generator-actions">
-                  <button
-                    type="button"
-                    disabled={busy || !canGenerate}
-                    onClick={() => void generate('fill')}
-                  >
-                    {uiMessage('ui.auffuellen')}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={busy || !canGenerate}
-                    onClick={() => void generate('replace')}
-                  >
-                    {uiMessage('ui.neu.generieren')}
-                  </button>
-                </div>
-                {!canGenerate && (
-                  <small>
-                    {uiMessage(
-                      'ui.zum.generieren.braucht.die.scene.eine.zugewiesene.party'
-                    )}
-                  </small>
-                )}
-              </section>
-            </div>
-          </div>
+          <GroupManagerCatalogTools
+            mode={effectiveCatalogMode}
+            lootAvailable={Boolean(lootController.run)}
+            query={query}
+            options={options}
+            searchBiomeOptions={searchBiomeOptions}
+            queryChanged={setQuery}
+            modeChanged={setCatalogMode}
+            filterSummary={filterSummary}
+            busy={busy}
+            canGenerate={canGenerate}
+            generate={generate}
+          />
         }
         catalog={
-          effectiveCatalogMode === 'creatures' || !lootController.run ? (
-            <CreatureBuilderCatalogTable
-              className="group-manager-catalog"
-              query={query}
-              options={options}
-              page={page}
-              changed={setQuery}
-              add={addCreature}
-              inspect={(creature) => void inspect(creature)}
-              quantities={totalInDraft}
-              controls={false}
-              showBiome
-              footerStatus={catalogFooterStatus}
-            />
-          ) : (
-            <Suspense fallback={null}>
-              <LazyLootCatalogPane
-                key={lootController.run.catalogContentHash}
-                catalogContentHash={lootController.run.catalogContentHash}
-                add={lootController.addCatalogEntry}
-              />
-            </Suspense>
-          )
+          <GroupManagerCatalogPane
+            mode={effectiveCatalogMode}
+            run={lootController.run}
+            query={query}
+            options={options}
+            page={page}
+            queryChanged={setQuery}
+            addCreature={addCreature}
+            inspectCreature={(creature) => void inspect(creature)}
+            quantities={totalInDraft}
+            footerStatus={catalogFooterStatus}
+            addLoot={lootController.addCatalogEntry}
+          />
         }
         divider={{
           kind: 'resizable',
@@ -968,180 +786,36 @@ export function GroupDialog(props: {
           changed: setDraftPaneWidth
         }}
         draft={
-          <section
-            className="group-manager-draft-rim"
-            aria-label={uiMessage('ui.aktuelle.gruppe')}
-          >
-            <div className="group-manager-draft-sheet">
-              <GroupDraftEvaluation
-                evaluation={evaluation}
-                canUndo={history.past.length > 0}
-                canRedo={history.future.length > 0}
-                undo={() => moveRosterHistory('undo-roster')}
-                redo={() => moveRosterHistory('redo-roster')}
-              />
-              <div
-                className="group-draft-scroll"
-                tabIndex={0}
-                aria-label={uiMessage('ui.aktuelle.gruppe')}
-              >
-                {!active ? (
-                  <p className="session-group-empty">
-                    {uiMessage('ui.waehle.eine.gruppe.aus.oder.lege.eine.neue')}
-                  </p>
-                ) : entries.length === 0 ? (
-                  <p className="session-group-empty">
-                    {uiMessage('ui.monster.links.mit')} <strong>+</strong>{' '}
-                    {uiMessage('ui.hinzufuegen.oder.eine.gruppe.generieren')}
-                  </p>
-                ) : (
-                  <ul className="creature-collection-roster">
-                    {entries.map((entry) => {
-                      const fact = facts[entry.creatureId]
-                      const displayName = fact?.displayName ?? entry.creatureId
-                      return (
-                        <li
-                          key={entry.creatureId}
-                          className={
-                            fact?.available === false ? 'unavailable' : ''
-                          }
-                        >
-                          <span>
-                            <strong>{displayName}</strong>
-                            <small>
-                              {uiMessage('ui.cr')} {fact?.cr ?? '—'} ·{' '}
-                              {formatInteger(fact?.xp ?? 0)}{' '}
-                              {uiMessage('ui.xp.2')}
-                              {fact?.available === false
-                                ? ` · ${uiMessage('group.unavailable')}`
-                                : ''}
-                            </small>
-                          </span>
-                          <div className="group-roster-counts">
-                            <div className="creature-collection-quantity">
-                              <small>{uiMessage('group.alive')}</small>
-                              <button
-                                type="button"
-                                aria-label={formatMessage(
-                                  'group.decreaseAlive',
-                                  { name: displayName }
-                                )}
-                                onClick={() =>
-                                  changeQuantity(entry.creatureId, -1)
-                                }
-                              >
-                                −
-                              </button>
-                              <strong>{entry.quantity}</strong>
-                              <button
-                                type="button"
-                                aria-label={formatMessage(
-                                  'group.increaseAlive',
-                                  { name: displayName }
-                                )}
-                                onClick={() =>
-                                  changeQuantity(entry.creatureId, 1)
-                                }
-                              >
-                                +
-                              </button>
-                            </div>
-                            <div className="creature-collection-quantity">
-                              <small>{uiMessage('group.dead')}</small>
-                              <button
-                                type="button"
-                                aria-label={formatMessage(
-                                  'group.decreaseDead',
-                                  { name: displayName }
-                                )}
-                                onClick={() =>
-                                  changeQuantity(entry.creatureId, -1, 'dead')
-                                }
-                              >
-                                −
-                              </button>
-                              <strong>{entry.deadQuantity}</strong>
-                              <button
-                                type="button"
-                                aria-label={formatMessage(
-                                  'group.increaseDead',
-                                  { name: displayName }
-                                )}
-                                onClick={() =>
-                                  changeQuantity(entry.creatureId, 1, 'dead')
-                                }
-                              >
-                                +
-                              </button>
-                            </div>
-                          </div>
-                          <button
-                            className="remove"
-                            type="button"
-                            aria-label={formatMessage('group.removeCreature', {
-                              name: displayName
-                            })}
-                            onClick={() => removeCreature(entry.creatureId)}
-                          >
-                            ×
-                          </button>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                )}
-                {message && (
-                  <p className="group-draft-message" role="status">
-                    {message}
-                  </p>
-                )}
-                {active && (
-                  <Suspense fallback={null}>
-                    <LazyGroupLootInlinePanel
-                      groupName={name}
-                      run={lootController.run}
-                      draft={lootController.draft}
-                      phase={lootController.phase}
-                      error={lootController.error}
-                      canGenerate={canGenerateLoot}
-                      canUndo={lootController.canUndo}
-                      canRedo={lootController.canRedo}
-                      generate={() => void lootController.generate()}
-                      retry={() =>
-                        protectLootReplacement(
-                          () => void lootController.retry()
-                        )
-                      }
-                      reroll={() =>
-                        protectLootReplacement(
-                          () => void lootController.reroll()
-                        )
-                      }
-                      commit={() => void commitGroupReward()}
-                      patchLabel={lootController.patchLabel}
-                      patchItem={lootController.patchItem}
-                      removeItem={lootController.removeItem}
-                      patchContainer={lootController.patchContainer}
-                      removeContainer={lootController.removeContainer}
-                      undo={lootController.undo}
-                      redo={lootController.redo}
-                    />
-                  </Suspense>
-                )}
-              </div>
-              <label className="group-manager-note">
-                <span>{uiMessage('group.note')}</span>
-                <textarea
-                  aria-label={uiMessage('group.note')}
-                  maxLength={1000}
-                  rows={2}
-                  disabled={!active}
-                  value={note}
-                  onChange={(event) => setNote(event.target.value)}
-                />
-              </label>
-            </div>
-          </section>
+          <GroupManagerDraftPane
+            active={active}
+            name={name}
+            note={note}
+            message={message}
+            entries={entries}
+            facts={facts}
+            evaluation={evaluation}
+            canUndoRoster={history.past.length > 0}
+            canRedoRoster={history.future.length > 0}
+            canGenerateLoot={canGenerateLoot}
+            loot={lootController}
+            moveRosterHistory={moveRosterHistory}
+            changeQuantity={changeQuantity}
+            removeCreature={removeCreature}
+            retryLoot={() =>
+              requestIntent(
+                { kind: 'regenerate-loot', mode: 'retry' },
+                'current-loot'
+              )
+            }
+            rerollLoot={() =>
+              requestIntent(
+                { kind: 'regenerate-loot', mode: 'reroll' },
+                'current-loot'
+              )
+            }
+            commitLoot={() => void commitGroupReward()}
+            noteChanged={setNote}
+          />
         }
         footer={
           <>
@@ -1180,7 +854,7 @@ export function GroupDialog(props: {
               <button
                 className="secondary"
                 type="button"
-                onClick={() => request({ kind: 'close' })}
+                onClick={() => requestIntent({ kind: 'close' }, 'close')}
               >
                 {uiMessage('action.cancel')}
               </button>
@@ -1196,121 +870,23 @@ export function GroupDialog(props: {
           </>
         }
       />
-      {pending && (
+      {pendingIntent && (
         <DiscardChangesDialog
-          message={uiMessage('ui.ungespeicherte.aenderungen.verwerfen')}
+          message={
+            pendingIntent.guard === 'close'
+              ? uiMessage('ui.ungespeicherte.aenderungen.verwerfen')
+              : uiMessage('loot.discardQuestion')
+          }
           cancelLabel={uiMessage('action.cancel')}
           discardLabel={uiMessage('ui.aenderungen.verwerfen')}
-          onCancel={() => setPending(null)}
+          onCancel={() => setPendingIntent(null)}
           onDiscard={() => {
-            const action = pending
-            setPending(null)
-            perform(action)
-          }}
-        />
-      )}
-      {lootDiscardPending && (
-        <DiscardChangesDialog
-          message={uiMessage('loot.discardQuestion')}
-          cancelLabel={uiMessage('action.cancel')}
-          discardLabel={uiMessage('ui.aenderungen.verwerfen')}
-          onCancel={() => {
-            pendingLootAction.current = null
-            setLootDiscardPending(false)
-          }}
-          onDiscard={() => {
-            const action = pendingLootAction.current
-            pendingLootAction.current = null
-            setLootDiscardPending(false)
-            action?.()
+            const { intent } = pendingIntent
+            setPendingIntent(null)
+            performIntent(intent)
           }}
         />
       )}
     </>
   )
-}
-
-function GroupDraftEvaluation(props: {
-  evaluation: GroupDraftState['evaluation']
-  canUndo: boolean
-  canRedo: boolean
-  undo: () => void
-  redo: () => void
-}) {
-  const evaluation = props.evaluation
-  const maximum = Math.max(1, (evaluation?.partyThresholds[3] ?? 0) * 1.25)
-  const position = Math.min(
-    100,
-    Math.round(((evaluation?.adjustedXp ?? 0) / maximum) * 100)
-  )
-  const threshold = evaluation ? thresholdForEvaluation(evaluation) : 0
-  const difficultyLabel = evaluation
-    ? groupDifficultyLabel(evaluation.difficultyBand)
-    : '—'
-  return (
-    <div className="group-draft-evaluation" aria-live="polite">
-      <div className="group-draft-evaluation-row">
-        <strong>{difficultyLabel}</strong>
-        <span>
-          {formatInteger(evaluation?.adjustedXp ?? 0)} XP{' '}
-          {uiMessage('encounter.adjusted').toLocaleLowerCase()}
-        </span>
-        <small>
-          {evaluation
-            ? `${uiMessage('encounter.threshold')} ${difficultyLabel} ${formatInteger(threshold)}`
-            : uiMessage('group.evaluationPending')}
-        </small>
-        <div className="group-history-actions">
-          <button
-            type="button"
-            aria-label={uiMessage('group.undo')}
-            disabled={!props.canUndo}
-            onClick={props.undo}
-          >
-            ‹
-          </button>
-          <button
-            type="button"
-            aria-label={uiMessage('group.redo')}
-            disabled={!props.canRedo}
-            onClick={props.redo}
-          >
-            ›
-          </button>
-        </div>
-      </div>
-      <div className="group-difficulty-meter" aria-hidden="true">
-        <span style={{ width: `${position}%` }} />
-      </div>
-      <small>
-        {formatInteger(evaluation?.baseXp ?? 0)} {uiMessage('group.baseXp')} ·{' '}
-        {uiMessage('encounter.multiplier')} ×{' '}
-        {formatMultiplier(evaluation?.multiplier ?? 1)} ·{' '}
-        {evaluation?.creatureCount ?? 0} {uiMessage('ui.wesen')}
-      </small>
-    </div>
-  )
-}
-
-function groupDifficultyLabel(
-  band: NonNullable<GroupDraftState['evaluation']>['difficultyBand']
-): string {
-  if (band === 'trivial') return uiMessage('group.difficulty.trivial')
-  if (band === 'easy') return uiMessage('group.difficulty.easy')
-  if (band === 'medium') return uiMessage('group.difficulty.medium')
-  if (band === 'hard') return uiMessage('group.difficulty.hard')
-  if (band === 'deadly') return uiMessage('group.difficulty.deadly')
-  return uiMessage('group.difficulty.unavailable')
-}
-
-function thresholdForEvaluation(
-  evaluation: NonNullable<GroupDraftState['evaluation']>
-): number {
-  if (evaluation.difficultyBand === 'easy') return evaluation.partyThresholds[0]
-  if (evaluation.difficultyBand === 'medium')
-    return evaluation.partyThresholds[1]
-  if (evaluation.difficultyBand === 'hard') return evaluation.partyThresholds[2]
-  if (evaluation.difficultyBand === 'deadly')
-    return evaluation.partyThresholds[3]
-  return 0
 }
