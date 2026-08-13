@@ -30,4 +30,17 @@ describe('developer feedback partitions', () => {
         ?.targets.includes('scripts')
     ).toBe(true)
   })
+
+  it('starts package CLIs through Node instead of Windows command shims', () => {
+    const lintRunner = readFileSync('scripts/run-lint-partitions.ts', 'utf8')
+    const e2eRunner = readFileSync('scripts/run-e2e-suites.ts', 'utf8')
+    expect(lintRunner).toContain(
+      "packageRequire.resolve('eslint/package.json')"
+    )
+    expect(lintRunner).toContain('spawn(\n      process.execPath')
+    expect(lintRunner).not.toContain('eslint.cmd')
+    expect(e2eRunner).toContain("packageRequire.resolve('@wdio/cli')")
+    expect(e2eRunner).toContain('spawn(\n      process.execPath')
+    expect(e2eRunner).not.toContain('wdio.cmd')
+  })
 })

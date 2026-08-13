@@ -1,12 +1,21 @@
 import { spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import {
   e2eSuiteRegistry,
   isE2eSuiteName,
   type E2eSuiteName
 } from '../tests/e2e/support/e2e-suite-registry.js'
+
+const packageRequire = createRequire(import.meta.url)
+const wdioEntry = join(
+  dirname(packageRequire.resolve('@wdio/cli')),
+  '..',
+  'bin',
+  'wdio.js'
+)
 
 type SuiteStatus = 'pending' | 'passed' | 'failed'
 type SuiteResult = Readonly<{
@@ -100,21 +109,19 @@ if (failures.length > 0) {
 
 function runSuite(suite: E2eSuiteName, id: string): Promise<number> {
   return new Promise((resolveExit) => {
-    const executable = join(
-      process.cwd(),
-      'node_modules',
-      '.bin',
-      process.platform === 'win32' ? 'wdio.cmd' : 'wdio'
+    const child = spawn(
+      process.execPath,
+      [wdioEntry, 'run', 'wdio.conf.ts', '--suite', suite],
+      {
+        cwd: process.cwd(),
+        env: {
+          ...process.env,
+          SALT_MARCHER_E2E_SUITE: suite,
+          SALT_MARCHER_E2E_RUN_ID: id
+        },
+        stdio: 'inherit'
+      }
     )
-    const child = spawn(executable, ['run', 'wdio.conf.ts', '--suite', suite], {
-      cwd: process.cwd(),
-      env: {
-        ...process.env,
-        SALT_MARCHER_E2E_SUITE: suite,
-        SALT_MARCHER_E2E_RUN_ID: id
-      },
-      stdio: 'inherit'
-    })
     child.once('error', (error) => {
       console.error(error)
       resolveExit(1)
