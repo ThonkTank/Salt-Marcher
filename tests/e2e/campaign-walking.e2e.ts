@@ -91,22 +91,39 @@ describe('campaign walking skeleton', () => {
         )
       })
     ).toBe(true)
-    await expectElementGolden(
-      client,
-      'encounter-settings-light',
-      'section.encounter-settings-dialog'
-    )
+    const settingsGoldenFailures: string[] = []
+    try {
+      await expectElementGolden(
+        client,
+        'encounter-settings-light',
+        'section.encounter-settings-dialog'
+      )
+    } catch (error) {
+      settingsGoldenFailures.push(
+        error instanceof Error ? error.message : String(error)
+      )
+    }
     await client.execute(() => {
       document.documentElement.dataset['theme'] = 'dark'
     })
-    await expectElementGolden(
-      client,
-      'encounter-settings-dark',
-      'section.encounter-settings-dialog'
-    )
+    try {
+      await expectElementGolden(
+        client,
+        'encounter-settings-dark',
+        'section.encounter-settings-dialog'
+      )
+    } catch (error) {
+      settingsGoldenFailures.push(
+        error instanceof Error ? error.message : String(error)
+      )
+    }
     await client.execute(() => {
       document.documentElement.dataset['theme'] = 'light'
     })
+    if (settingsGoldenFailures.length > 0)
+      throw new Error(
+        `Encounter settings goldens failed: ${settingsGoldenFailures.join('; ')}`
+      )
     await setWindowToMinimumResponsiveSize(client)
     await client.execute(() => {
       document.documentElement.style.fontSize = '200%'
