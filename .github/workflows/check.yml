@@ -5,7 +5,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   check:
-    timeout-minutes: 15
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       # windows-latest currently provides a Visual Studio version that node-gyp
@@ -33,7 +33,7 @@ jobs:
       - run: pnpm test:packaged-qualification-smoke
         if: matrix.os != 'ubuntu-latest'
   e2e:
-    timeout-minutes: 15
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
