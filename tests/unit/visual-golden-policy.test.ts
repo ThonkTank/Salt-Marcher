@@ -4,6 +4,7 @@ import {
   parseVisualGoldenUpdateArguments,
   selectedVisualGoldens,
   validateVisualGoldenSuites,
+  visualGoldenBaselineDirectoryNames,
   type VisualGoldenEntry
 } from '../../scripts/visual-golden-policy.js'
 
@@ -32,6 +33,18 @@ describe('visual golden update policy', () => {
         entries
       )
     ]).toEqual(['location-dialog'])
+  })
+
+  it('resolves a validated runner-specific baseline before Linux fallback', () => {
+    expect(visualGoldenBaselineDirectoryNames(undefined)).toEqual(['linux'])
+    expect(visualGoldenBaselineDirectoryNames('  ')).toEqual(['linux'])
+    expect(visualGoldenBaselineDirectoryNames('ubuntu-24.04')).toEqual([
+      'linux-ubuntu-24.04',
+      'linux'
+    ])
+    expect(() => visualGoldenBaselineDirectoryNames('../unexpected')).toThrow(
+      'Invalid visual golden variant'
+    )
   })
 
   it('drives selector, suite and viewport from the manifest at capture time', () => {
