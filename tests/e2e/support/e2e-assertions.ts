@@ -137,6 +137,20 @@ export async function clickWhenInteractable(
   await element.click()
 }
 
+export async function replaceFieldValue(
+  client: WdioBrowser,
+  input: ChainablePromiseElement,
+  value: string
+): Promise<void> {
+  await input.click()
+  await client.keys([process.platform === 'darwin' ? 'Meta' : 'Control', 'a'])
+  await client.keys(value)
+  await client.waitUntil(async () => (await input.getValue()) === value, {
+    timeout: 5_000,
+    timeoutMsg: `Field value was not replaced with ${JSON.stringify(value)}.`
+  })
+}
+
 export async function expectEditorFrameGeometry(
   client: WdioBrowser,
   selector: string
