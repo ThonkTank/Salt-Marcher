@@ -1,11 +1,7 @@
 import { z } from 'zod'
+import { sessionGenerationCatalogReferenceSchema } from '../../shared/contracts/session-generation.js'
 
-export const sessionGenerationCatalogReferenceSchema = z
-  .object({
-    catalogVersion: z.string().min(1).max(100),
-    catalogContentHash: z.string().regex(/^[0-9a-f]{64}$/)
-  })
-  .strict()
+export { sessionGenerationCatalogReferenceSchema }
 
 export const sessionGenerationCatalogRegistryEntrySchema =
   sessionGenerationCatalogReferenceSchema.extend({

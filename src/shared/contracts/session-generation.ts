@@ -7,6 +7,13 @@ export const REWARD_ENGINE_VERSION = 'reward-v1' as const
 export const SESSION_GENERATION_ENGINE_VERSION =
   SESSION_ENCOUNTER_ENGINE_VERSION
 
+export const sessionGenerationCatalogReferenceSchema = z
+  .object({
+    catalogVersion: z.string().min(1).max(100),
+    catalogContentHash: z.string().regex(/^[0-9a-f]{64}$/)
+  })
+  .strict()
+
 export const generationPartyLevelSchema = z
   .object({
     level: z.number().int().min(1).max(20),
@@ -398,6 +405,9 @@ export const generatedRunIdInputSchema = z.object({ runId: z.uuid() }).strict()
 
 export type SessionGenerationEncounterInput = Readonly<
   z.infer<typeof sessionGenerationEncounterInputSchema>
+>
+export type SessionGenerationCatalogReference = Readonly<
+  z.infer<typeof sessionGenerationCatalogReferenceSchema>
 >
 export type EncounterIntent = Readonly<z.infer<typeof encounterIntentSchema>>
 export type EncounterAudit = Readonly<z.infer<typeof encounterAuditSchema>>
