@@ -64,6 +64,12 @@ describe('developer feedback partitions', () => {
     expect(e2eRunner).toContain('spawn(\n      process.execPath')
     expect(e2eRunner).not.toContain('wdio.cmd')
   })
+
+  it('normalizes discovered repository paths across operating systems', () => {
+    expect(repositoryPath('src\\core\\loot\\loot-store.ts')).toBe(
+      'src/core/loot/loot-store.ts'
+    )
+  })
 })
 
 describe('group Loot architecture refactor', () => {
@@ -163,6 +169,10 @@ function typescriptFiles(root: string): string[] {
   return readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
     const path = join(root, entry.name)
     if (entry.isDirectory()) return typescriptFiles(path)
-    return /\.tsx?$/.test(entry.name) ? [path] : []
+    return /\.tsx?$/.test(entry.name) ? [repositoryPath(path)] : []
   })
+}
+
+function repositoryPath(path: string): string {
+  return path.replaceAll('\\', '/')
 }
