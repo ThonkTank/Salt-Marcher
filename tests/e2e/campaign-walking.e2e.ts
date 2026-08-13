@@ -55,9 +55,16 @@ describe('campaign walking skeleton', () => {
     await (
       await client.$('section.encounter-settings-dialog')
     ).waitForDisplayed({ timeout: 5_000 })
-    await (
-      await client.$('.campaign-reward-rules-card')
-    ).waitForDisplayed({ timeout: 10_000 })
+    const campaignRulesCard = await client.$('.campaign-reward-rules-card')
+    await campaignRulesCard.waitForDisplayed({ timeout: 10_000 })
+    await client.waitUntil(
+      async () =>
+        (await campaignRulesCard.getAttribute('aria-busy')) === 'false',
+      {
+        timeout: 10_000,
+        timeoutMsg: 'Campaign reward rules did not finish loading.'
+      }
+    )
     await (
       await client.$('.generator-settings-card')
     ).waitForDisplayed({ timeout: 10_000 })
