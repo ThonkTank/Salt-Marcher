@@ -67,6 +67,7 @@ export function CampaignRewardRulesCard(props: {
     <section
       className="campaign-reward-rules-card"
       aria-labelledby="campaign-reward-rules-title"
+      aria-busy={busy || !rules}
     >
       <div>
         <h3 id="campaign-reward-rules-title">{message('g.reward.title')}</h3>
