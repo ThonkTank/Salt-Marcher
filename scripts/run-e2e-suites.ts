@@ -55,6 +55,7 @@ const runId = resumed?.runId ?? `${Date.now()}-${process.pid}`
 const summaryPath = resumePath
   ? resolve(resumePath)
   : resolve('.tmp', 'e2e-runs', runId, 'summary.json')
+const resultDirectory = join(dirname(summaryPath), 'suites')
 let results = selectedSuites.map(
   (name): SuiteResult =>
     resumed?.results.find((result) => result.name === name) ?? {
@@ -84,6 +85,7 @@ for (const suite of selectedSuites) {
         }
       : result
   )
+  writeSuiteResult(results.find((result) => result.name === suite)!)
   writeSummary()
 }
 
@@ -170,8 +172,23 @@ function writeSummary(): void {
     updatedAt: new Date().toISOString(),
     results
   }
-  mkdirSync(dirname(summaryPath), { recursive: true })
-  const temporary = `${summaryPath}.tmp-${process.pid}`
-  writeFileSync(temporary, `${JSON.stringify(summary, null, 2)}\n`)
-  renameSync(temporary, summaryPath)
+  writeJsonAtomically(summaryPath, summary)
+}
+
+function writeSuiteResult(result: SuiteResult): void {
+  writeJsonAtomically(join(resultDirectory, `${result.name}.json`), {
+    version: 1,
+    runId,
+    buildIdentity,
+    registryIdentity,
+    updatedAt: new Date().toISOString(),
+    result
+  })
+}
+
+function writeJsonAtomically(path: string, value: unknown): void {
+  mkdirSync(dirname(path), { recursive: true })
+  const temporary = `${path}.tmp-${process.pid}`
+  writeFileSync(temporary, `${JSON.stringify(value, null, 2)}\n`)
+  renameSync(temporary, path)
 }

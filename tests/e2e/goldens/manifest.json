@@ -80,18 +80,6 @@
       "viewport": { "width": 1280, "height": 800 }
     },
     {
-      "name": "session-loot-planner-light",
-      "suite": "loot",
-      "selector": ".session-planner",
-      "viewport": { "width": 1280, "height": 800 }
-    },
-    {
-      "name": "session-loot-planner-dark",
-      "suite": "loot",
-      "selector": ".session-planner",
-      "viewport": { "width": 1280, "height": 800 }
-    },
-    {
       "name": "group-loot-preview-light",
       "suite": "groupLoot",
       "selector": ".group-loot-inline-panel",

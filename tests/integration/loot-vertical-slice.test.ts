@@ -101,37 +101,92 @@ describe('loot vertical slice', () => {
          container_id, position
        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?)`
     )
-    expect(() =>
-      insert.run(
-        randomUUID(),
-        treasure.id,
+    const invalidRows: ReadonlyArray<readonly unknown[]> = [
+      // Catalog identity is all-null or all-present.
+      [null, null, 'item:test', 'Halbe Herkunft', 1, 0, 1, 0, null, null],
+      // Catalog kind must agree with magic.
+      [null, 'magic_item', 'magic:test', 'Falsche Art', 1, 0, 0, 0, null, null],
+      // Non-stackable items are singular.
+      [null, 'item', 'item:test', 'Unteilbar', 2, 1, 0, 0, null, null],
+      // Rarity and curses cannot leak into non-magical rows.
+      [null, 'item', 'item:test', 'Selten', 1, 0, 1, 0, 'Rare', null],
+      [null, 'item', 'item:test', 'Verflucht', 1, 0, 1, 0, null, 'Fluch'],
+      // Magic always has a rarity.
+      [
         null,
         'magic_item',
         'magic:test',
-        'Falsch',
+        'Ohne Seltenheit',
         1,
         0,
-        0,
-        0,
+        1,
+        1,
         null,
-        null,
-        1
-      )
-    ).toThrow()
+        null
+      ]
+    ]
+    invalidRows.forEach((row, position) =>
+      expect(() =>
+        insert.run(randomUUID(), treasure.id, ...row, position + 1)
+      ).toThrow()
+    )
+
+    insert.run(
+      randomUUID(),
+      treasure.id,
+      'source:item',
+      'magic_item',
+      'magic:test',
+      'Gültig',
+      1,
+      0,
+      0,
+      1,
+      'Rare',
+      'Fluch',
+      10
+    )
     expect(() =>
       insert.run(
         randomUUID(),
         treasure.id,
-        null,
-        'item',
-        'item:test',
-        'Unteilbar',
-        2,
+        'source:item',
+        'magic_item',
+        'magic:test',
+        'Doppelt',
         1,
         0,
         0,
+        1,
+        'Rare',
         null,
-        null,
+        11
+      )
+    ).toThrow()
+
+    const insertContainer = db.prepare(
+      `INSERT INTO loot_container (
+         id, treasure_id, source_container_id, catalog_container_id,
+         name, capacity, position
+       ) VALUES (?, ?, ?, ?, ?, ?, ?)`
+    )
+    insertContainer.run(
+      randomUUID(),
+      treasure.id,
+      'source:container',
+      'container:chest',
+      'Kiste',
+      10,
+      0
+    )
+    expect(() =>
+      insertContainer.run(
+        randomUUID(),
+        treasure.id,
+        'source:container',
+        'container:chest',
+        'Doppelte Kiste',
+        10,
         1
       )
     ).toThrow()
@@ -611,13 +666,13 @@ describe('loot vertical slice', () => {
     expect(result.treasure.label).toBe('Wolfsbeute bearbeitet')
     expect(result.treasure.items).toHaveLength(3)
     expect(result.treasure.items[0]).toMatchObject({
-      sourceLineId: run.treasures[0]!.items[0]!.id,
+      provenance: {
+        kind: 'generator',
+        sourceLineId: run.treasures[0]!.items[0]!.id
+      },
       name: `${run.treasures[0]!.items[0]!.name} bearbeitet`
     })
     expect(result.treasure.items[1]).toMatchObject({
-      sourceLineId: null,
-      catalogEntryKind: 'item',
-      catalogItemId: 'item:object:abacus',
       provenance: {
         kind: 'catalog',
         catalogEntry: { kind: 'item', id: 'item:object:abacus' }
@@ -630,9 +685,13 @@ describe('loot vertical slice', () => {
       curseName: null
     })
     expect(result.treasure.items[2]).toMatchObject({
-      sourceLineId: null,
-      catalogEntryKind: 'magic_item',
-      catalogItemId: 'magic:arcana:common:bead-of-nourishment',
+      provenance: {
+        kind: 'catalog',
+        catalogEntry: {
+          kind: 'magic_item',
+          id: 'magic:arcana:common:bead-of-nourishment'
+        }
+      },
       magic: true,
       rarity: 'Common',
       curseName: null

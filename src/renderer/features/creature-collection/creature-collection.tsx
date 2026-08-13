@@ -4,6 +4,7 @@ import {
   useState,
   type CSSProperties,
   type KeyboardEvent,
+  type KeyboardEventHandler,
   type PointerEvent,
   type ReactNode
 } from 'react'
@@ -398,6 +399,7 @@ export function CreatureCollectionManagerDialog(props: {
   toolsClassName?: string
   layoutClassName?: string
   footerClassName?: string
+  onKeyDown?: KeyboardEventHandler<HTMLElement>
 }) {
   const generatedTitleId = useId()
   const titleId = props.titleId ?? generatedTitleId
@@ -408,6 +410,7 @@ export function CreatureCollectionManagerDialog(props: {
         ? { ariaLabel: props.title }
         : { labelledBy: titleId })}
       onClose={props.close}
+      {...(props.onKeyDown ? { onKeyDown: props.onKeyDown } : {})}
       {...(props.busy === undefined ? {} : { busy: props.busy })}
     >
       <header className={props.headerClassName}>

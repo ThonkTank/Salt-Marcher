@@ -1,7 +1,4 @@
-import type {
-  GroupRewardTreasureDraft,
-  LootRarity
-} from '../../shared/contracts/loot.js'
+import type { GroupRewardTreasureDraft } from '../../shared/contracts/loot.js'
 import type { GeneratedTreasure } from '../../shared/contracts/session-generation.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import type {
@@ -9,35 +6,15 @@ import type {
   CapabilityIssueCode
 } from '../../shared/errors/capability-issue.js'
 import type { LootCatalogIndex } from './loot-catalog-index.js'
+import type {
+  MaterializedTreasure,
+  MaterializedTreasureContainer,
+  MaterializedTreasureItem
+} from './materialized-treasure.js'
 
-export type MaterializedGroupRewardContainer = Readonly<{
-  draftId: string
-  sourceContainerId: string | null
-  catalogContainerId: string | null
-  name: string
-  capacity: number
-}>
-
-export type MaterializedGroupRewardItem = Readonly<{
-  draftId: string
-  sourceLineId: string | null
-  catalogEntryKind: 'item' | 'magic_item' | null
-  catalogItemId: string | null
-  name: string
-  quantity: number
-  unitValueCp: number
-  stackable: boolean
-  magic: boolean
-  rarity: LootRarity | null
-  curseName: string | null
-  containerDraftId: string | null
-}>
-
-export type MaterializedGroupRewardTreasureDraft = Readonly<{
-  label: string
-  containers: readonly MaterializedGroupRewardContainer[]
-  items: readonly MaterializedGroupRewardItem[]
-}>
+export type MaterializedGroupRewardContainer = MaterializedTreasureContainer
+export type MaterializedGroupRewardItem = MaterializedTreasureItem
+export type MaterializedGroupRewardTreasureDraft = MaterializedTreasure
 
 export function materializeGroupRewardTreasureDraft(
   generated: GeneratedTreasure,

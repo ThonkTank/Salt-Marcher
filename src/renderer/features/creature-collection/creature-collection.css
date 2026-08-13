@@ -108,6 +108,16 @@
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(28rem, 1fr) minmax(20rem, auto);
     overflow-y: auto;
+    overflow-x: clip;
+  }
+
+  .creature-collection-layout > .creature-collection-catalog,
+  .creature-collection-layout > .creature-collection-draft,
+  .creature-collection-layout .creature-collection-table-wrap,
+  .creature-collection-layout .group-draft-scroll {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
   }
 
   .creature-collection-divider {

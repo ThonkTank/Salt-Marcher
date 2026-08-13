@@ -10,6 +10,13 @@ import { HexMapStore } from '../src/core/hex/hex-map-store.js'
 import { HexTravelService } from '../src/core/hex/hex-travel.js'
 import { WorldLocationStore } from '../src/core/worldplanner/location-store.js'
 import { hexBiomeIdSchema } from '../src/shared/contracts/hex.js'
+import { CampaignRulesService } from '../src/core/application/campaign-rules-service.js'
+import { BundledSessionGenerationCatalogRegistry } from '../src/utility/session-generation/catalog-provider.js'
+import { SessionGenerationService } from '../src/utility/session-generation/session-generation-service.js'
+import { sha256EncounterEntropy } from '../src/utility/session-generation/sha256-entropy.js'
+import { defaultGeneratorConfig } from '../src/shared/generator/system-generator-preset.js'
+import { systemGeneratorPresetId } from '../src/shared/contracts/generator-presets.js'
+import { TreasureStore } from '../src/core/loot/loot-store.js'
 
 const fixtureV1Schema = z
   .object({
@@ -84,10 +91,24 @@ const fixtureV3Schema = fixtureV1Schema
   })
   .strict()
 
+const fixtureV4Schema = fixtureV3Schema
+  .omit({ version: true })
+  .extend({
+    version: z.literal(4),
+    lootScenario: z
+      .object({
+        label: z.string().min(1),
+        seed: z.number().int().nonnegative().safe()
+      })
+      .strict()
+  })
+  .strict()
+
 const fixtureSchema = z.discriminatedUnion('version', [
   fixtureV1Schema,
   fixtureV2Schema,
-  fixtureV3Schema
+  fixtureV3Schema,
+  fixtureV4Schema
 ])
 
 const userData = requiredArgument('--user-data')
@@ -118,7 +139,11 @@ try {
         },
         snapshot.revision
       ).snapshot
-    if (fixture.version === 2 || fixture.version === 3) {
+    if (
+      fixture.version === 2 ||
+      fixture.version === 3 ||
+      fixture.version === 4
+    ) {
       const database = () => campaigns.activeCampaignDatabase()
       const play = new LivePlayService(database)
       let party = play.readParty()
@@ -166,8 +191,8 @@ try {
             live.scene.revision
           )
       }
-      if (fixture.version === 3) {
-        play.saveSceneGroup(
+      if (fixture.version === 3 || fixture.version === 4) {
+        const groupResult = play.saveSceneGroup(
           focusedSceneId,
           null,
           fixture.groupScenario.name,
@@ -183,6 +208,86 @@ try {
           live.scene.revision,
           null
         )
+        if (fixture.version === 4) {
+          const snapshot = play.readSession()
+          const scene = snapshot.scene.scenes.find(
+            (candidate) => candidate.id === focusedSceneId
+          )!
+          const group = groupResult.scenePatch.upsertedGroups.find(
+            (candidate) => candidate.name === fixture.groupScenario.name
+          )!
+          const groupEntries = group.entries.map((entry) => ({
+            creatureId: entry.creatureId,
+            quantity: entry.aliveQuantity,
+            deadQuantity: entry.deadQuantity
+          }))
+          const evaluation = play.evaluateGroupDraft(
+            scene.id,
+            groupEntries,
+            snapshot.scene.revision
+          )
+          const rules = new CampaignRulesService(database).read()
+          const generation = new SessionGenerationService(
+            new BundledSessionGenerationCatalogRegistry(
+              resolve('resources/sessiongeneration')
+            ),
+            sha256EncounterEntropy,
+            () => ({
+              id: systemGeneratorPresetId,
+              revision: 0,
+              config: defaultGeneratorConfig
+            }),
+            database
+          )
+          const run = generation.generateGroupReward({
+            party: [
+              ...party.members
+                .filter(
+                  (member) =>
+                    member.active &&
+                    member.level !== null &&
+                    scene.partyMemberIds.includes(member.id)
+                )
+                .map((member) => member.level!)
+                .reduce<Map<number, number>>((counts, level) => {
+                  counts.set(level, (counts.get(level) ?? 0) + 1)
+                  return counts
+                }, new Map())
+                .entries()
+            ].map(([level, count]) => ({ level, count })),
+            sceneId: scene.id,
+            groupId: group.id,
+            sceneRevision: snapshot.scene.revision,
+            groupRevision: group.revision,
+            groupEntries,
+            partyRevision: party.revision,
+            campaignRulesRevision: rules.revision,
+            rewardXpBasis: rules.rewardXpBasis,
+            baseXp: evaluation.baseXp,
+            adjustedXp: evaluation.adjustedXp,
+            rewardXp:
+              rules.rewardXpBasis === 'adjusted'
+                ? evaluation.adjustedXp
+                : evaluation.baseXp,
+            seed: fixture.lootScenario.seed
+          })
+          const generated = run.treasures[0]!
+          const units = generated.items.reduce(
+            (total, item) => total + item.quantity,
+            0
+          )
+          if (units < 2)
+            throw new Error(
+              'Fixture generated reward needs at least two distributable units.'
+            )
+          new TreasureStore(database()).acceptGenerated(
+            run,
+            generated,
+            fixture.lootScenario.label,
+            { kind: 'unplaced' },
+            new Date(0).toISOString()
+          )
+        }
       } else {
         const location = snapshot.locations.find(
           (candidate) =>

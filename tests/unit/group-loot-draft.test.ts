@@ -11,7 +11,6 @@ import {
   mutateGroupLootDraft,
   patchGroupLootItem,
   redoGroupLootDraft,
-  removeGroupLootContainer,
   undoGroupLootDraft
 } from '../../src/renderer/features/loot/group-loot-draft.js'
 import type {
@@ -85,9 +84,10 @@ describe('group Loot draft', () => {
     const initial = groupLootDraftFromRun(run())
     const containerId = initial.containers[0]!.draftId
     let history = createGroupLootDraftHistory(initial)
-    history = mutateGroupLootDraft(history, (draft) =>
-      removeGroupLootContainer(draft, containerId)
-    )
+    history = mutateGroupLootDraft(history, {
+      kind: 'remove-container',
+      id: containerId
+    })
     expect(history.draft.items[0]!.containerId).toBeNull()
     expect(groupLootDraftDirty(history)).toBe(true)
     history = undoGroupLootDraft(history)
@@ -110,14 +110,14 @@ describe('group Loot draft', () => {
     const initial = groupLootDraftFromRun(run())
     let history = createGroupLootDraftHistory(initial)
     history = beginGroupLootDraftTransaction(history, 'label')
-    history = mutateGroupLootDraft(history, (draft) => ({
-      ...draft,
+    history = mutateGroupLootDraft(history, {
+      kind: 'set-label',
       label: 'F'
-    }))
-    history = mutateGroupLootDraft(history, (draft) => ({
-      ...draft,
+    })
+    history = mutateGroupLootDraft(history, {
+      kind: 'set-label',
       label: 'Fund'
-    }))
+    })
     expect(history.past).toHaveLength(0)
     history = endGroupLootDraftTransaction(history)
     expect(history.past).toHaveLength(1)

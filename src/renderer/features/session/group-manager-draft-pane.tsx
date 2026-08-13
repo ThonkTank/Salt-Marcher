@@ -4,9 +4,10 @@ import {
   formatMessage,
   message as uiMessage
 } from '../../i18n/session-runtime.de.js'
-import type { GroupDraftLootController } from './use-group-draft-loot-controller.js'
 import type { DraftCreatureFact, GroupDraftState } from './group-draft.js'
 import { GroupDraftEvaluation } from './group-draft-evaluation.js'
+import type { GroupManagerController } from './use-group-manager-controller.js'
+import type { GroupWorkspaceMode } from './group-manager-state.js'
 
 const LazyGroupLootInlinePanel = lazy(async () => {
   const module = await import('../loot/group-loot-inline-panel.js')
@@ -20,7 +21,7 @@ type DraftEntry = Readonly<{
 }>
 
 type LootDraftController = Pick<
-  GroupDraftLootController,
+  GroupManagerController['loot'],
   | 'run'
   | 'draft'
   | 'phase'
@@ -41,10 +42,14 @@ type LootDraftController = Pick<
 >
 
 export function GroupManagerDraftPane(props: {
+  mode: GroupWorkspaceMode
+  modeChanged: (mode: GroupWorkspaceMode) => void
+  lootAvailable: boolean
   active: boolean
   name: string
   note: string
   message: string
+  externalConflict: boolean
   entries: readonly DraftEntry[]
   facts: Readonly<Record<string, DraftCreatureFact>>
   evaluation: GroupDraftState['evaluation']
@@ -70,19 +75,80 @@ export function GroupManagerDraftPane(props: {
       aria-label={uiMessage('ui.aktuelle.gruppe')}
     >
       <div className="group-manager-draft-sheet">
-        <GroupDraftEvaluation
-          evaluation={props.evaluation}
-          canUndo={props.canUndoRoster}
-          canRedo={props.canRedoRoster}
-          undo={() => props.moveRosterHistory('undo-roster')}
-          redo={() => props.moveRosterHistory('redo-roster')}
-        />
+        <div
+          className="group-workspace-mode-tabs"
+          role="tablist"
+          aria-label={uiMessage('loot.workspaceMode')}
+        >
+          <button
+            type="button"
+            role="tab"
+            aria-selected={props.mode === 'group'}
+            onClick={() => props.modeChanged('group')}
+          >
+            {uiMessage('loot.workspaceGroup')}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={props.mode === 'loot'}
+            disabled={!props.lootAvailable}
+            onClick={() => props.modeChanged('loot')}
+          >
+            {uiMessage('loot.workspaceLoot')}
+          </button>
+        </div>
+        {props.mode === 'group' && (
+          <GroupDraftEvaluation
+            evaluation={props.evaluation}
+            canUndo={props.canUndoRoster}
+            canRedo={props.canRedoRoster}
+            undo={() => props.moveRosterHistory('undo-roster')}
+            redo={() => props.moveRosterHistory('redo-roster')}
+          />
+        )}
         <div
           className="group-draft-scroll"
           tabIndex={0}
-          aria-label={uiMessage('ui.aktuelle.gruppe')}
+          aria-label={
+            props.mode === 'group'
+              ? uiMessage('ui.aktuelle.gruppe')
+              : uiMessage('loot.workspaceLoot')
+          }
         >
-          {!props.active ? (
+          {props.externalConflict && (
+            <p className="group-draft-message" role="alert">
+              {uiMessage('group.externalConflict')}
+            </p>
+          )}
+          {props.mode === 'loot' && props.active ? (
+            <Suspense fallback={null}>
+              <LazyGroupLootInlinePanel
+                groupName={props.name}
+                run={props.loot.run}
+                draft={props.loot.draft}
+                phase={props.loot.phase}
+                error={props.loot.error}
+                issues={props.loot.issues}
+                canGenerate={props.canGenerateLoot}
+                canUndo={props.loot.canUndo}
+                canRedo={props.loot.canRedo}
+                generate={() => void props.loot.generate()}
+                retry={props.retryLoot}
+                reroll={props.rerollLoot}
+                commit={props.commitLoot}
+                patchLabel={props.loot.patchLabel}
+                patchItem={props.loot.patchItem}
+                removeItem={props.loot.removeItem}
+                patchContainer={props.loot.patchContainer}
+                removeContainer={props.loot.removeContainer}
+                undo={props.loot.undo}
+                redo={props.loot.redo}
+                beginEdit={props.loot.beginEdit}
+                endEdit={props.loot.endEdit}
+              />
+            </Suspense>
+          ) : !props.active ? (
             <p className="session-group-empty">
               {uiMessage('ui.waehle.eine.gruppe.aus.oder.lege.eine.neue')}
             </p>
@@ -160,51 +226,25 @@ export function GroupManagerDraftPane(props: {
               })}
             </ul>
           )}
-          {props.message && (
+          {props.mode === 'group' && props.message && (
             <p className="group-draft-message" role="status">
               {props.message}
             </p>
           )}
-          {props.active && (
-            <Suspense fallback={null}>
-              <LazyGroupLootInlinePanel
-                groupName={props.name}
-                run={props.loot.run}
-                draft={props.loot.draft}
-                phase={props.loot.phase}
-                error={props.loot.error}
-                issues={props.loot.issues}
-                canGenerate={props.canGenerateLoot}
-                canUndo={props.loot.canUndo}
-                canRedo={props.loot.canRedo}
-                generate={() => void props.loot.generate()}
-                retry={props.retryLoot}
-                reroll={props.rerollLoot}
-                commit={props.commitLoot}
-                patchLabel={props.loot.patchLabel}
-                patchItem={props.loot.patchItem}
-                removeItem={props.loot.removeItem}
-                patchContainer={props.loot.patchContainer}
-                removeContainer={props.loot.removeContainer}
-                undo={props.loot.undo}
-                redo={props.loot.redo}
-                beginEdit={props.loot.beginEdit}
-                endEdit={props.loot.endEdit}
-              />
-            </Suspense>
-          )}
         </div>
-        <label className="group-manager-note">
-          <span>{uiMessage('group.note')}</span>
-          <textarea
-            aria-label={uiMessage('group.note')}
-            maxLength={1000}
-            rows={2}
-            disabled={!props.active}
-            value={props.note}
-            onChange={(event) => props.noteChanged(event.target.value)}
-          />
-        </label>
+        {props.mode === 'group' && (
+          <label className="group-manager-note">
+            <span>{uiMessage('group.note')}</span>
+            <textarea
+              aria-label={uiMessage('group.note')}
+              maxLength={1000}
+              rows={2}
+              disabled={!props.active}
+              value={props.note}
+              onChange={(event) => props.noteChanged(event.target.value)}
+            />
+          </label>
+        )}
       </div>
     </section>
   )

@@ -157,7 +157,11 @@ seeds, stable ordering, and explainable diffs.
 
 Current progress: the `saltmarcher-v5` generation capability now runs in
 the utility process over a packaged, manifest-verified session-generation
-catalog. It covers session XP, exact encounter-target allocation, the Sheet-v1
+catalog. A validated immutable artifact registry preserves historical catalogs
+by version and content hash, chooses one explicit active catalog for new runs,
+and lazily caches full catalogs and Loot indexes by hash. The importer refuses
+artifact replacement and atomically publishes registry changes. It covers
+session XP, exact encounter-target allocation, the Sheet-v1
 automatic encounter-count rule, generated preset role/CR candidate construction,
 streaming lexicographic selection, difficulty, bossiness, reward channels,
 normal and overstock treasures, item and magic resolution, packing, and
@@ -172,6 +176,16 @@ fallbacks, atomic partial distribution, original-result retry receipts, and a
 separate append-only Character Loot ledger with linked corrections. Session
 group/location cards, Encounter Resolution, Party/Roster, and the shared
 distribution dialog consume those typed capabilities.
+
+The editable Group reward now uses one renderer `GroupManagerState` owner for
+per-Group Group/Loot drafts, semantic histories, request tokens, discard
+intents, paired work views, and external conflicts. Narrow views and capability
+ports surround that reducer. Schema 27 distinguishes manual, generated, and
+ordinary/magic catalog provenance, and both plain generated acceptance and
+edited reward confirmation share one materialized-Treasure aggregate writer.
+The atomic coordinator has explicit source/revision guard and draft
+materialization phases. Group Loot editor and commit/restart evidence use two
+focused, resumable E2E suites with their own atomic result records.
 
 ### M6 — completeness and first data-format release
 

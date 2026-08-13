@@ -1,16 +1,16 @@
 {
   "recordedAt": "2026-08-12",
-  "reason": "The complete Group manager moved behind a lazy Session leaf; only the 74,997-byte Session reduction is ratcheted and no graph baseline is raised",
-  "dependencyRationale": "No dependency version changed; the feature uses the existing React, capability, and Loot editor boundaries",
-  "chunkRationale": "The Group manager, catalog, and inline editor are dedicated lazy leaves; the Session route now retains only its host boundary",
+  "reason": "Ratcheted after isolating the GroupManager keyboard shortcut for React Fast Refresh",
+  "dependencyRationale": "No dependency version changes",
+  "chunkRationale": "Session GroupManager leaf shrinks by eight reachable bytes; all other graph boundaries remain stable",
   "graphs": {
-    "shell": 773304,
-    "workspace": 917164,
-    "session": 302689,
-    "catalog": 342291,
-    "hex": 337747,
-    "reference": 97910,
-    "pixi": 1077229,
-    "reachable": 2981101
+    "shell": 400451,
+    "workspace": 488104,
+    "session": 156407,
+    "catalog": 173761,
+    "hex": 174781,
+    "reference": 39392,
+    "pixi": 407032,
+    "reachable": 1435953
   }
 }

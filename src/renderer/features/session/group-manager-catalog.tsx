@@ -6,7 +6,10 @@ import type {
   CreatureFilterOptions
 } from '../../../shared/contracts/encounter.js'
 import type { LootCatalogEntry } from '../../../shared/contracts/loot.js'
-import type { GroupRewardGeneratedRun } from '../../../shared/contracts/session-generation.js'
+import type {
+  LootCatalogPage,
+  LootCatalogQuery
+} from '../../../shared/contracts/loot.js'
 import type { SearchableSelectOption } from '../../shell/searchable-select.js'
 import { message } from '../../i18n/session-runtime.de.js'
 import { CreatureBuilderCatalogTable } from '../creature-collection/creature-collection.js'
@@ -17,7 +20,9 @@ const LazyLootCatalogPane = lazy(async () => {
   return { default: module.LootCatalogPane }
 })
 
-export type GroupCatalogMode = 'creatures' | 'loot'
+import type { GroupCatalogMode } from './group-manager-state.js'
+
+export type { GroupCatalogMode } from './group-manager-state.js'
 
 export function GroupManagerCatalogTools(props: {
   mode: GroupCatalogMode
@@ -118,7 +123,7 @@ export function GroupManagerCatalogTools(props: {
 
 export function GroupManagerCatalogPane(props: {
   mode: GroupCatalogMode
-  run: GroupRewardGeneratedRun | null
+  lootAvailable: boolean
   query: CreatureCatalogQuery
   options: CreatureFilterOptions
   page: CreatureCatalogPage | null
@@ -128,8 +133,15 @@ export function GroupManagerCatalogPane(props: {
   quantities: Readonly<Record<string, number>>
   footerStatus: string
   addLoot: (entry: LootCatalogEntry) => void
+  lootQuery: Omit<LootCatalogQuery, 'runId' | 'catalogContentHash'>
+  lootPage: LootCatalogPage | null
+  lootError: string
+  lootQueryChanged: (
+    patch: Partial<Omit<LootCatalogQuery, 'runId' | 'catalogContentHash'>>,
+    preserveOffset?: boolean
+  ) => void
 }) {
-  if (props.mode === 'creatures' || !props.run)
+  if (props.mode === 'creatures' || !props.lootAvailable)
     return (
       <CreatureBuilderCatalogTable
         className="group-manager-catalog"
@@ -149,9 +161,10 @@ export function GroupManagerCatalogPane(props: {
   return (
     <Suspense fallback={null}>
       <LazyLootCatalogPane
-        key={props.run.catalogContentHash}
-        runId={props.run.id}
-        catalogContentHash={props.run.catalogContentHash}
+        query={props.lootQuery}
+        page={props.lootPage}
+        error={props.lootError}
+        queryChanged={props.lootQueryChanged}
         add={props.addLoot}
       />
     </Suspense>

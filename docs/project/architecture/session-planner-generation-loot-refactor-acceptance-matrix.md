@@ -57,7 +57,7 @@ Status values:
 | SGL-26 | Group reward generation revalidates prospective or persisted non-archived group drafts, complete roster, scene, party, and campaign-rule revisions in Utility. | Loot / Group reward | `loot.generateForGroupDraft` | New, dirty, archived, deleted, and stale matrix tests | DONE |
 | SGL-27 | Group reward budgets use the same base/adjusted policy and multiplier semantics as Resolution. | Loot / Session Generation | Group reward command | Cross-feature parity tests | DONE |
 | SGL-28 | Preview writes only an immutable run; atomic confirmation validates the complete editable Treasure draft, creates or updates the group, and materializes exactly one group-anchored treasure with rollback across both owners. | Loot / Scene | `loot.commitGroupReward` | Edited/removed/catalog-added line, rollback, idempotency, revision, and provenance integration tests | DONE |
-| SGL-29 | Group generation automatically creates an inline editable Loot draft with hidden independent seeds; roster replacement is discard-protected, drafts are cached per Group, and Loot can be rerolled independently. | Renderer Group management | Group draft Loot controller | Mapping, history, invalidation, caching, component, and E2E tests | DONE |
+| SGL-29 | Group generation automatically creates an inline editable Loot draft with hidden independent seeds; roster replacement is discard-protected, drafts are cached per Group, and Loot can be rerolled independently. | Renderer Group management | `GroupManagerState` reducer/controller | Mapping, semantic history, invalidation, caching, component, and E2E tests | DONE |
 
 ## Loot application and projections
 
@@ -116,27 +116,45 @@ Status values:
 | SGL-65 | Planner, Group Loot preview, editor, distribution, ledger, and campaign rules are lazy leaves; renderer imports contracts as types only. | Renderer/build | Route and dialog imports | Manifest graph and static import tests | DONE |
 | SGL-66 | Reachable renderer is at most 90% of 3.20 MiB and common Workspace JavaScript at most 810 KiB. | Build architecture | Bundle budgets | Production manifest measurement | DONE |
 | SGL-67 | `check:planner-loot` runs affected unit/integration tests, typecheck, and bundle verification. | Developer feedback | Package script | Script registry/unit test | DONE |
-| SGL-68 | Nine isolated Electron suites remain in `pnpm check`; E2E covers process boundaries, recovery, accessibility, and principal visual flows. | End-to-end | E2E suite registry | Registry and canonical check | DONE |
+| SGL-68 | Ten isolated Electron suites remain in `pnpm check`; E2E covers process boundaries, recovery, accessibility, and principal visual flows. | End-to-end | E2E suite registry | Registry and canonical check | DONE |
 | SGL-69 | Planner preparation survives an Electron restart and a Utility restart during active work, while queued, generating, resolving, saving, and ready are visibly observed. | Planner E2E | Preparation event/receipt flow | Dedicated active-restart UI journey | DONE |
-| SGL-70 | Group-reward integration covers base/adjusted policy, stale protection, acceptance, move, distribution, and Ledger; the isolated v3-fixture Group Loot journey covers catalog editing, discard protection, atomic commit, and restart. | Loot integration/E2E | Group reward and Loot ports | Handler integration matrix plus focused editor journey | DONE |
-| SGL-71 | Updated Planner and Group Loot light/dark Goldens plus Planner, Settings, Group Loot, and Distribution keyboard/focus/Escape/Axe checks are enforced. | Renderer/E2E | Dialog surfaces | Component tests, named Goldens, and isolated Electron checks | DONE |
-| SGL-72 | The canonical `pnpm check` passes without baseline or budget increase. | Repository | Canonical check | One successful full invocation on the final SHA | DONE |
+| SGL-70 | Group-reward integration covers base/adjusted policy, stale protection, acceptance, move, distribution, and Ledger; separate v3 Group Loot journeys cover catalog editing/discard protection and atomic commit/restart, while v4 directly prepares the Distribution/Ledger journey. | Loot integration/E2E | Group reward and Loot ports | Handler integration matrix plus focused editor, commit, and distribution journeys | DONE |
+| SGL-71 | Updated Group-manager and Group Loot light/dark Goldens plus Planner, Settings, Group Loot, and Distribution keyboard/focus/Escape/Axe checks are enforced; every manifest Golden has an executable assertion. | Renderer/E2E | Dialog surfaces | Component tests, named Goldens, manifest coverage, and isolated Electron checks | DONE |
+| SGL-72 | The canonical `pnpm check` passes without baseline or budget increase. | Repository | Canonical check | One successful full invocation on the final SHA plus linked CI evidence | PARTIAL |
 
 ## Editable Group Loot draft extension
 
 | ID | Guarantee | Owner | Contract / command | Required direct evidence | Status |
 | --- | --- | --- | --- | --- | --- |
 | SGL-73 | `loot.catalog` is Zod-validated, paginated, deterministic, pinned to the generated run catalog hash, and exposes active ordinary/magic items plus non-hidden containers with authoritative defaults and filters. | Loot catalog | `loot.catalog` | Contract/service search, filter, ordering, rounding, visibility, pagination, and stale-hash tests | DONE |
-| SGL-74 | The Group manager projects each immutable generated Treasure into an editable local draft with stable IDs, closed origins, reusable fields, catalog-only additions, merge rules, container detachment, undo/redo, per-Group caching, and discard protection. | Renderer Group management | Group Loot draft/editor/controller | Draft mutation, history, caching, invalidation, component, accessibility, and Golden tests | DONE |
+| SGL-74 | The Group manager projects each immutable generated Treasure into an editable local draft with stable IDs, closed origins, reusable policy-driven fields, catalog-only additions, merge rules, atomic container detachment, semantic undo/redo with text coalescing, per-Group caching, and discard protection. | Renderer Group management | Group Loot draft reducer and `GroupManagerState` | Draft commands, history, caching, invalidation, component, accessibility, and Golden tests | DONE |
 | SGL-75 | The draft budget reports non-magic copper against the generated target with informational plus/minus 15 percent classification and reports magic target/current separately; it never blocks confirmation. | Renderer Loot | Group Loot budget projector | Budget boundary unit tests and E2E value-change assertion | DONE |
 | SGL-76 | Atomic confirmation validates generated and pinned-catalog origins, derives magic/rarity/curse and explicit provenance server-side, persists edited/removable/added lines and packing through the Schema-27 aggregate writer, fingerprints the full draft, and rolls every owner back on invalid or stale input. | Loot application/persistence | `loot.commitGroupReward`, shared generated writer | Integration tests for metadata, assignments, exact retry/conflict, stale revisions, restart, and rollback | DONE |
 
+## Architecture hardening evidence
+
+| ID | Guarantee | Owner | Contract / command | Required direct evidence | Status |
+| --- | --- | --- | --- | --- | --- |
+| SGL-77 | One immutable catalog registry validates unique versions/hashes, manifests and table hashes; historical artifacts remain resolvable and the importer never overwrites a published directory. | Session Generation catalog | Registry/provider/importer | Current/historical, duplicate, corrupted-artifact, activation, and overwrite tests | DONE |
+| SGL-78 | One prepared Loot index per catalog hash owns stable ordering, normalized search/filter data, and O(1) maps for each entry kind. | Loot catalog | `LootCatalogIndexCache` | Cache identity, ordering, filter, and lookup tests | DONE |
+| SGL-79 | Capability validation failures preserve closed issue codes, stable Draft-ID paths, and bounded primitive parameters across every process boundary; missing historical catalogs use `catalog_unavailable`. | Shared/Utility/Main/Preload/Renderer | Capability failure/error contract | Contract, propagation, and field-association tests | DONE |
+| SGL-80 | Schema 27 discriminates manual, generator, and ordinary/magic catalog provenance and enforces source uniqueness and metadata combinations in SQL. | Loot persistence | Treasure contract and DDL | Public-union round trip plus direct invalid-SQL tests | DONE |
+| SGL-81 | Plain generated acceptance and edited Group rewards materialize into one internal shape and use one aggregate writer; commit phases have deterministic error priority. | Loot application/persistence | Materializers, revision guard, aggregate writer | Architecture, handler-order, rollback, and writer integration tests | DONE |
+| SGL-82 | Exactly one reducer owns every Group-manager session, both histories, requests, views, pending intents, and conflicts; stale async results and unsafe transitions are centrally rejected. | Renderer Group management | `GroupManagerState` and intent guard | Exact-owner architecture test plus transition/token/conflict unit tests | DONE |
+| SGL-83 | Group manager views are pure recipients of narrow state/actions and the only capability-aware application adapter injects entity-focused ports. | Renderer Group management | View/controller/capability adapter | Static import/ownership and component tests | DONE |
+| SGL-84 | Lint and Vitest run in bounded sequential partitions, every TS/TSX source belongs to exactly one lint partition, and E2E suites produce atomic resumable per-suite evidence without automatic retries. | Developer feedback | Check and E2E runners | Partition coverage, suite registry, resume identity, and canonical-run evidence | DONE |
+
 ## Current audit summary
 
-The current audit records the complete canonical `pnpm check` on the final
-refactor SHA. Other rows retain their direct contract, architecture, unit,
-integration, bundle, component, or isolated Electron evidence and must be
-downgraded if that evidence no longer passes.
+The direct architecture, unit, integration, bundle, component, and focused
+Electron evidence is recorded by the named tests. A complete local `pnpm check`
+passed on 2026-08-13: 54 architecture, 395 unit, and 122 integration tests plus
+all ten sequential Electron suites passed; build, smoke, artifact, Golden, and
+bundle gates passed in the same invocation. The reachable renderer measured
+1,435,953 bytes without increasing a fixed ceiling.
+
+SGL-72 intentionally remains `PARTIAL` until that locally verified final tree
+also has linked green CI evidence. A local run alone must not promote it.
 
 This summary is informational. The row statuses and direct evidence govern
 completion and must be updated as the implementation advances.

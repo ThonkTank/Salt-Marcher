@@ -634,6 +634,7 @@ describe('campaign walking skeleton', () => {
     await generate.click()
     await expectGroupManagementGolden(client)
     await expect(await groupDialog.$('button=Leeren')).not.toBeExisting()
+    await (await groupDialog.$('button=Gruppe')).click()
     const undoGenerated = await groupDialog.$(
       'button[aria-label="Änderung zurücknehmen"]'
     )
@@ -660,6 +661,9 @@ describe('campaign walking skeleton', () => {
         increase?.click()
       })
     await (await groupDialog.$('button=Speichern')).click()
+    const confirmSave = await client.$('section[role="alertdialog"]')
+    await confirmSave.waitForDisplayed({ timeout: 5_000 })
+    await (await confirmSave.$('button=Änderungen verwerfen')).click()
     await expect(await client.$('strong=Wolf Pack')).toBeExisting()
     await expect(await client.$('.group-note')).toHaveText(
       'Lauert Prone in den Dünen; Stunned bei Alarm.'
@@ -785,6 +789,9 @@ describe('campaign walking skeleton', () => {
     await reopenedSelection.selectByVisibleText('Neue Gruppe')
     await expect(emptyGroupName).toHaveValue('')
     await (await reopenedGroupDialog.$('button=Speichern')).click()
+    const confirmNewGroupSave = await client.$('section[role="alertdialog"]')
+    await confirmNewGroupSave.waitForDisplayed({ timeout: 5_000 })
+    await (await confirmNewGroupSave.$('button=Änderungen verwerfen')).click()
     await expect(await client.$('strong=Gruppe 1')).toBeExisting()
 
     await (

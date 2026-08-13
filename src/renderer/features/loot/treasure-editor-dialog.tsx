@@ -14,13 +14,13 @@ import {
   emptyEditableTreasureContainer,
   emptyEditableTreasureItem,
   treasureDraftInvalid,
-  type EditableTreasureContainer,
-  type EditableTreasureDraft,
-  type EditableTreasureItem
+  type EditableTreasureDraft
 } from './treasure-draft.js'
 import {
   reduceTreasureDraft,
-  type TreasureDraftCommand
+  type TreasureContainerPatch,
+  type TreasureDraftCommand,
+  type TreasureItemPatch
 } from './treasure-draft-reducer.js'
 import { treasureDraftEditorMessagesDe } from './treasure-draft-editor-messages.de.js'
 
@@ -50,14 +50,11 @@ export function TreasureEditorDialog(props: {
   const [saving, setSaving] = useState(false)
   const invalid = treasureDraftInvalid(draft)
 
-  function patchItem(id: string, patch: Partial<EditableTreasureItem>) {
+  function patchItem(id: string, patch: TreasureItemPatch) {
     dispatchDraft({ kind: 'patch-item', id, patch })
   }
 
-  function patchContainer(
-    id: string,
-    patch: Partial<EditableTreasureContainer>
-  ) {
+  function patchContainer(id: string, patch: TreasureContainerPatch) {
     dispatchDraft({ kind: 'patch-container', id, patch })
   }
 
@@ -239,7 +236,10 @@ function treasureDraftFrom(treasure: Treasure | null): EditableTreasureDraft {
       treasure?.containers.map((container) => ({
         draftId: container.id,
         persistedId: container.id,
-        catalogContainerId: container.catalogContainerId,
+        catalogContainerId:
+          container.provenance.kind === 'manual'
+            ? null
+            : container.provenance.catalogContainerId,
         name: container.name,
         capacity: container.capacity
       })) ?? []

@@ -2,14 +2,14 @@ import type { GroupRewardGeneratedRun } from '../../../shared/contracts/session-
 import { formatInteger } from '../../i18n/domain-formatters.de.js'
 import { formatMessage, message } from '../../i18n/session-runtime.de.js'
 import { formatCopper } from '../../presenters/money.js'
-import type { GroupDraftLootPhase } from '../session/use-group-draft-loot-controller.js'
+import type { GroupDraftLootPhase } from '../session/group-manager-state.js'
 import { groupLootBudget, type GroupLootDraft } from './group-loot-draft.js'
 import { TreasureDraftFields } from './treasure-draft-fields.js'
 import { treasureDraftInvalid } from './treasure-draft.js'
 import type {
-  EditableTreasureContainer,
-  EditableTreasureItem
-} from './treasure-draft.js'
+  TreasureContainerPatch,
+  TreasureItemPatch
+} from './treasure-draft-reducer.js'
 import type { CapabilityIssue } from '../../../shared/errors/capability-issue.js'
 import { treasureDraftEditorMessagesDe } from './treasure-draft-editor-messages.de.js'
 import './loot-dialogs.css'
@@ -29,12 +29,9 @@ export function GroupLootInlinePanel(props: {
   reroll: () => void
   commit: () => void
   patchLabel: (label: string) => void
-  patchItem: (id: string, patch: Partial<EditableTreasureItem>) => void
+  patchItem: (id: string, patch: TreasureItemPatch) => void
   removeItem: (id: string) => void
-  patchContainer: (
-    id: string,
-    patch: Partial<EditableTreasureContainer>
-  ) => void
+  patchContainer: (id: string, patch: TreasureContainerPatch) => void
   removeContainer: (id: string) => void
   undo: () => void
   redo: () => void
@@ -45,32 +42,6 @@ export function GroupLootInlinePanel(props: {
   const budget =
     props.run && props.draft ? groupLootBudget(props.run, props.draft) : null
   const invalid = !props.draft || treasureDraftInvalid(props.draft)
-  const editorDraft = props.draft
-    ? {
-        ...props.draft,
-        items: props.draft.items.map((item) => ({
-          ...item,
-          ...(item.magic
-            ? {
-                detail: [
-                  item.rarity
-                    ? formatMessage('loot.magicRarity', {
-                        rarity: item.rarity
-                      })
-                    : message('loot.generated'),
-                  item.curseName
-                    ? formatMessage('loot.curseNamed', {
-                        name: item.curseName
-                      })
-                    : ''
-                ]
-                  .filter(Boolean)
-                  .join(' · ')
-              }
-            : {})
-        }))
-      }
-    : null
   return (
     <section className="group-loot-inline-panel" aria-live="polite">
       <header>
@@ -105,7 +76,7 @@ export function GroupLootInlinePanel(props: {
           </button>
         </div>
       )}
-      {props.run && props.draft && editorDraft && budget && (
+      {props.run && props.draft && budget && (
         <div className="generated-loot-results">
           <p className="generated-loot-summary">
             {formatMessage('loot.groupGeneratorBudget', {
@@ -187,7 +158,7 @@ export function GroupLootInlinePanel(props: {
             })}
           </div>
           <TreasureDraftFields
-            draft={editorDraft}
+            draft={props.draft}
             policy="catalog"
             messages={treasureDraftEditorMessagesDe()}
             issues={props.issues}
@@ -198,6 +169,20 @@ export function GroupLootInlinePanel(props: {
             removeContainer={props.removeContainer}
             beginEdit={props.beginEdit}
             endEdit={props.endEdit}
+            itemMetadata={(item) => {
+              if (!item.magic) return null
+              const detail = [
+                item.rarity
+                  ? formatMessage('loot.magicRarity', { rarity: item.rarity })
+                  : message('loot.generated'),
+                item.curseName
+                  ? formatMessage('loot.curseNamed', { name: item.curseName })
+                  : ''
+              ]
+                .filter(Boolean)
+                .join(' · ')
+              return <small>{detail}</small>
+            }}
           />
           {invalid && (
             <p className="loot-validation" role="alert">

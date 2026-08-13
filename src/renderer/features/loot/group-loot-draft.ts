@@ -14,7 +14,15 @@ import type {
   EditableTreasureDraft,
   EditableTreasureItem
 } from './treasure-draft.js'
-import { reduceTreasureDraft } from './treasure-draft-reducer.js'
+import {
+  applyTreasureDraftOperation,
+  planTreasureDraftOperation,
+  reduceTreasureDraft,
+  type TreasureContainerPatch,
+  type TreasureDraftCommand,
+  type TreasureDraftOperation,
+  type TreasureItemPatch
+} from './treasure-draft-reducer.js'
 
 export type GroupLootDraftItem = EditableTreasureItem & {
   origin: GroupRewardTreasureItemOrigin
@@ -38,13 +46,23 @@ export type GroupLootDraft = EditableTreasureDraft<
 export type GroupLootDraftHistory = Readonly<{
   draft: GroupLootDraft
   baseline: string
-  past: readonly GroupLootDraft[]
-  future: readonly GroupLootDraft[]
+  past: readonly GroupLootDraftOperation[]
+  future: readonly GroupLootDraftOperation[]
   transaction: Readonly<{
     key: string
-    baseline: GroupLootDraft
+    forward: readonly GroupLootDraftCommand[]
+    backward: readonly GroupLootDraftCommand[]
   }> | null
 }>
+
+export type GroupLootDraftCommand = TreasureDraftCommand<
+  GroupLootDraftItem,
+  GroupLootDraftContainer
+>
+export type GroupLootDraftOperation = TreasureDraftOperation<
+  GroupLootDraftItem,
+  GroupLootDraftContainer
+>
 
 export type GroupLootBudget = Readonly<{
   targetValueCp: number
@@ -57,12 +75,13 @@ export type GroupLootBudget = Readonly<{
 }>
 
 export function groupLootDraftFromRun(
-  run: GroupRewardGeneratedRun
+  run: GroupRewardGeneratedRun,
+  createId: () => string = () => crypto.randomUUID()
 ): GroupLootDraft {
   const treasure = run.treasures[0]!
   const containerDraftIds = new Map<string, string>()
   const containers = treasure.containers.map((container) => {
-    const draftId = crypto.randomUUID()
+    const draftId = createId()
     containerDraftIds.set(container.id, draftId)
     return {
       draftId,
@@ -77,7 +96,7 @@ export function groupLootDraftFromRun(
   })
   const items = treasure.items.map((item) => {
     return {
-      draftId: crypto.randomUUID(),
+      draftId: createId(),
       origin: { kind: 'generator' as const, sourceLineId: item.id },
       name: item.name,
       quantity: item.quantity,
@@ -121,20 +140,33 @@ export function replaceGroupLootDraft(
 
 export function mutateGroupLootDraft(
   state: GroupLootDraftHistory,
-  update: (draft: GroupLootDraft) => GroupLootDraft
+  command: GroupLootDraftCommand
 ): GroupLootDraftHistory {
-  const next = update(state.draft)
-  if (next === state.draft) return state
-  if (state.transaction)
+  const operation = planTreasureDraftOperation(state.draft, command, 'catalog')
+  if (!operation) return state
+  const draft = applyTreasureDraftOperation(
+    state.draft,
+    operation,
+    'forward',
+    'catalog'
+  )
+  if (state.transaction) {
+    const transaction = state.transaction
     return {
       ...state,
-      draft: next,
+      draft,
+      transaction: {
+        ...transaction,
+        forward: [...transaction.forward, ...operation.forward],
+        backward: [...operation.backward, ...transaction.backward]
+      },
       future: []
     }
+  }
   return {
     ...state,
-    draft: next,
-    past: [...state.past, state.draft].slice(-50),
+    draft,
+    past: [...state.past, operation].slice(-50),
     future: []
   }
 }
@@ -147,7 +179,7 @@ export function beginGroupLootDraftTransaction(
   const settled = endGroupLootDraftTransaction(state)
   return {
     ...settled,
-    transaction: { key, baseline: settled.draft }
+    transaction: { key, forward: [], backward: [] }
   }
 }
 
@@ -156,14 +188,13 @@ export function endGroupLootDraftTransaction(
 ): GroupLootDraftHistory {
   const transaction = state.transaction
   if (!transaction) return state
-  if (
-    groupLootDraftSignature(transaction.baseline) ===
-    groupLootDraftSignature(state.draft)
-  )
-    return { ...state, transaction: null }
+  if (transaction.forward.length === 0) return { ...state, transaction: null }
   return {
     ...state,
-    past: [...state.past, transaction.baseline].slice(-50),
+    past: [
+      ...state.past,
+      { forward: transaction.forward, backward: transaction.backward }
+    ].slice(-50),
     transaction: null
   }
 }
@@ -172,13 +203,18 @@ export function undoGroupLootDraft(
   state: GroupLootDraftHistory
 ): GroupLootDraftHistory {
   const settled = endGroupLootDraftTransaction(state)
-  const previous = settled.past.at(-1)
-  if (!previous) return settled
+  const operation = settled.past.at(-1)
+  if (!operation) return settled
   return {
     ...settled,
-    draft: previous,
+    draft: applyTreasureDraftOperation(
+      settled.draft,
+      operation,
+      'backward',
+      'catalog'
+    ),
     past: settled.past.slice(0, -1),
-    future: [settled.draft, ...settled.future]
+    future: [operation, ...settled.future]
   }
 }
 
@@ -186,33 +222,37 @@ export function redoGroupLootDraft(
   state: GroupLootDraftHistory
 ): GroupLootDraftHistory {
   const settled = endGroupLootDraftTransaction(state)
-  const next = settled.future[0]
-  if (!next) return settled
+  const operation = settled.future[0]
+  if (!operation) return settled
   return {
     ...settled,
-    draft: next,
-    past: [...settled.past, settled.draft].slice(-50),
+    draft: applyTreasureDraftOperation(
+      settled.draft,
+      operation,
+      'forward',
+      'catalog'
+    ),
+    past: [...settled.past, operation].slice(-50),
     future: settled.future.slice(1)
   }
 }
 
-export function addLootCatalogEntry(
+export function catalogLootDraftCommand(
   draft: GroupLootDraft,
-  entry: LootCatalogEntry
-): GroupLootDraft {
+  entry: LootCatalogEntry,
+  draftId: string
+): GroupLootDraftCommand {
   if (entry.kind === 'container')
     return {
-      ...draft,
-      containers: [
-        ...draft.containers,
-        {
-          draftId: crypto.randomUUID(),
-          catalogContainerId: entry.id,
-          origin: { kind: 'catalog', catalogContainerId: entry.id },
-          name: entry.defaultName,
-          capacity: entry.capacity
-        }
-      ]
+      kind: 'insert-container',
+      index: draft.containers.length,
+      container: {
+        draftId,
+        catalogContainerId: entry.id,
+        origin: { kind: 'catalog', catalogContainerId: entry.id },
+        name: entry.defaultName,
+        capacity: entry.capacity
+      }
     }
 
   if (entry.stackable) {
@@ -231,46 +271,53 @@ export function addLootCatalogEntry(
     )
     if (existing)
       return {
-        ...draft,
-        items: draft.items.map((item) =>
-          item.draftId === existing.draftId
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        )
+        kind: 'patch-item',
+        id: existing.draftId,
+        patch: { quantity: existing.quantity + 1 }
       }
   }
 
   return {
-    ...draft,
-    items: [
-      ...draft.items,
-      {
-        draftId: crypto.randomUUID(),
-        origin: {
-          kind: 'catalog',
-          entryKind: entry.kind,
-          catalogId: entry.id
-        },
-        name: entry.defaultName,
-        quantity: 1,
-        unitValueCp: entry.unitValueCp,
-        stackable: entry.stackable,
-        containerId: null,
-        magic: entry.magic,
-        rarity: entry.rarity,
-        curseName: null,
-        defaultName: entry.defaultName,
-        defaultUnitValueCp: entry.unitValueCp,
-        defaultStackable: entry.stackable
-      }
-    ]
+    kind: 'insert-item',
+    index: draft.items.length,
+    item: {
+      draftId,
+      origin: {
+        kind: 'catalog',
+        entryKind: entry.kind,
+        catalogId: entry.id
+      },
+      name: entry.defaultName,
+      quantity: 1,
+      unitValueCp: entry.unitValueCp,
+      stackable: entry.stackable,
+      containerId: null,
+      magic: entry.magic,
+      rarity: entry.rarity,
+      curseName: null,
+      defaultName: entry.defaultName,
+      defaultUnitValueCp: entry.unitValueCp,
+      defaultStackable: entry.stackable
+    }
   }
+}
+
+export function addLootCatalogEntry(
+  draft: GroupLootDraft,
+  entry: LootCatalogEntry,
+  draftId: string = crypto.randomUUID()
+): GroupLootDraft {
+  return reduceTreasureDraft(
+    draft,
+    catalogLootDraftCommand(draft, entry, draftId),
+    'catalog'
+  )
 }
 
 export function patchGroupLootItem(
   draft: GroupLootDraft,
   id: string,
-  patch: Partial<EditableTreasureItem>
+  patch: TreasureItemPatch
 ): GroupLootDraft {
   return reduceTreasureDraft(
     draft,
@@ -282,7 +329,7 @@ export function patchGroupLootItem(
 export function patchGroupLootContainer(
   draft: GroupLootDraft,
   id: string,
-  patch: Partial<EditableTreasureContainer>
+  patch: TreasureContainerPatch
 ): GroupLootDraft {
   return reduceTreasureDraft(
     draft,

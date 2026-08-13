@@ -59,6 +59,10 @@ describe('TreasureDraftFields', () => {
       'aria-invalid',
       'true'
     )
+    expect(screen.getByLabelText('Container')).toHaveAccessibleDescription(
+      'Invalid'
+    )
+    expect(screen.getByText('Invalid')).toBeVisible()
     expect(screen.getByLabelText('Item')).not.toHaveAttribute('aria-invalid')
   })
 })

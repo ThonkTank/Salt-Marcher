@@ -4,7 +4,11 @@ import type {
   EditableTreasureDraft,
   EditableTreasureItem
 } from './treasure-draft.js'
-import type { TreasureDraftPolicy } from './treasure-draft-reducer.js'
+import type {
+  TreasureContainerPatch,
+  TreasureDraftPolicy,
+  TreasureItemPatch
+} from './treasure-draft-reducer.js'
 
 export type TreasureDraftEditorMessages = Readonly<{
   label: string
@@ -32,17 +36,15 @@ export function TreasureDraftFields<
   messages: TreasureDraftEditorMessages
   issues?: readonly CapabilityIssue[]
   labelChanged: (label: string) => void
-  patchItem: (id: string, patch: Partial<EditableTreasureItem>) => void
+  patchItem: (id: string, patch: TreasureItemPatch) => void
   removeItem: (id: string) => void
-  patchContainer: (
-    id: string,
-    patch: Partial<EditableTreasureContainer>
-  ) => void
+  patchContainer: (id: string, patch: TreasureContainerPatch) => void
   removeContainer: (id: string) => void
   addItem?: () => void
   addContainer?: () => void
   beginEdit?: (key: string) => void
   endEdit?: () => void
+  itemMetadata?: (item: Item) => ReactNode
 }) {
   const m = props.messages
   return (
@@ -51,10 +53,15 @@ export function TreasureDraftFields<
         {m.label}
         <input
           value={props.draft.label}
-          aria-invalid={hasIssue(props.issues, 'label') || undefined}
+          {...issueAttributes(props.issues, 'label')}
           onFocus={() => props.beginEdit?.('label')}
           onBlur={props.endEdit}
           onChange={(event) => props.labelChanged(event.target.value)}
+        />
+        <FieldIssue
+          issues={props.issues}
+          path={['label']}
+          message={m.invalidField}
         />
       </label>
       <div className="treasure-container-editor">
@@ -72,14 +79,12 @@ export function TreasureDraftFields<
               <span>{m.container}</span>
               <input
                 aria-label={m.container}
-                aria-invalid={
-                  hasIssue(
-                    props.issues,
-                    'containers',
-                    container.draftId,
-                    'name'
-                  ) || undefined
-                }
+                {...issueAttributes(
+                  props.issues,
+                  'containers',
+                  container.draftId,
+                  'name'
+                )}
                 value={container.name}
                 onFocus={() =>
                   props.beginEdit?.(`containers.${container.draftId}.name`)
@@ -91,19 +96,22 @@ export function TreasureDraftFields<
                   })
                 }
               />
+              <FieldIssue
+                issues={props.issues}
+                path={['containers', container.draftId, 'name']}
+                message={m.invalidField}
+              />
             </label>
             <label>
               <span>{m.capacity}</span>
               <input
                 aria-label={m.capacity}
-                aria-invalid={
-                  hasIssue(
-                    props.issues,
-                    'containers',
-                    container.draftId,
-                    'capacity'
-                  ) || undefined
-                }
+                {...issueAttributes(
+                  props.issues,
+                  'containers',
+                  container.draftId,
+                  'capacity'
+                )}
                 type="number"
                 min={0}
                 value={container.capacity}
@@ -116,6 +124,11 @@ export function TreasureDraftFields<
                     capacity: Math.max(0, Number(event.target.value) || 0)
                   })
                 }
+              />
+              <FieldIssue
+                issues={props.issues}
+                path={['containers', container.draftId, 'capacity']}
+                message={m.invalidField}
               />
             </label>
             <button
@@ -152,10 +165,12 @@ export function TreasureDraftFields<
               <span>{m.item}</span>
               <input
                 aria-label={m.item}
-                aria-invalid={
-                  hasIssue(props.issues, 'items', item.draftId, 'name') ||
-                  undefined
-                }
+                {...issueAttributes(
+                  props.issues,
+                  'items',
+                  item.draftId,
+                  'name'
+                )}
                 value={item.name}
                 onFocus={() => props.beginEdit?.(`items.${item.draftId}.name`)}
                 onBlur={props.endEdit}
@@ -163,16 +178,24 @@ export function TreasureDraftFields<
                   props.patchItem(item.draftId, { name: event.target.value })
                 }
               />
-              {item.detail && <small>{item.detail}</small>}
+              {props.itemMetadata?.(item) ??
+                (item.detail ? <small>{item.detail}</small> : null)}
+              <FieldIssue
+                issues={props.issues}
+                path={['items', item.draftId, 'name']}
+                message={m.invalidField}
+              />
             </label>
             <label>
               <span>{m.quantity}</span>
               <input
                 aria-label={m.quantity}
-                aria-invalid={
-                  hasIssue(props.issues, 'items', item.draftId, 'quantity') ||
-                  undefined
-                }
+                {...issueAttributes(
+                  props.issues,
+                  'items',
+                  item.draftId,
+                  'quantity'
+                )}
                 type="number"
                 min={1}
                 value={item.quantity}
@@ -186,19 +209,22 @@ export function TreasureDraftFields<
                   })
                 }
               />
+              <FieldIssue
+                issues={props.issues}
+                path={['items', item.draftId, 'quantity']}
+                message={m.invalidField}
+              />
             </label>
             <label>
               <span>{m.valueCopper}</span>
               <input
                 aria-label={m.valueCopperLabel}
-                aria-invalid={
-                  hasIssue(
-                    props.issues,
-                    'items',
-                    item.draftId,
-                    'unitValueCp'
-                  ) || undefined
-                }
+                {...issueAttributes(
+                  props.issues,
+                  'items',
+                  item.draftId,
+                  'unitValueCp'
+                )}
                 type="number"
                 min={0}
                 value={item.unitValueCp}
@@ -212,6 +238,11 @@ export function TreasureDraftFields<
                   })
                 }
               />
+              <FieldIssue
+                issues={props.issues}
+                path={['items', item.draftId, 'unitValueCp']}
+                message={m.invalidField}
+              />
             </label>
             <label className="treasure-item-stackable-field">
               <span>{m.stackable}</span>
@@ -219,10 +250,6 @@ export function TreasureDraftFields<
                 aria-label={m.stackable}
                 type="checkbox"
                 checked={item.stackable}
-                onFocus={() =>
-                  props.beginEdit?.(`items.${item.draftId}.stackable`)
-                }
-                onBlur={props.endEdit}
                 onChange={(event) =>
                   props.patchItem(item.draftId, {
                     stackable: event.target.checked
@@ -234,19 +261,13 @@ export function TreasureDraftFields<
               <span>{m.container}</span>
               <select
                 aria-label={m.container}
-                aria-invalid={
-                  hasIssue(
-                    props.issues,
-                    'items',
-                    item.draftId,
-                    'containerId'
-                  ) || undefined
-                }
+                {...issueAttributes(
+                  props.issues,
+                  'items',
+                  item.draftId,
+                  'containerId'
+                )}
                 value={item.containerId ?? ''}
-                onFocus={() =>
-                  props.beginEdit?.(`items.${item.draftId}.containerId`)
-                }
-                onBlur={props.endEdit}
                 onChange={(event) =>
                   props.patchItem(item.draftId, {
                     containerId: event.target.value || null
@@ -260,6 +281,11 @@ export function TreasureDraftFields<
                   </option>
                 ))}
               </select>
+              <FieldIssue
+                issues={props.issues}
+                path={['items', item.draftId, 'containerId']}
+                message={m.invalidField}
+              />
             </label>
             <button
               type="button"
@@ -291,3 +317,35 @@ function hasIssue(
     ) ?? false
   )
 }
+
+function issueAttributes(
+  issues: readonly CapabilityIssue[] | undefined,
+  ...path: readonly string[]
+): Readonly<{
+  'aria-invalid'?: true
+  'aria-describedby'?: string
+}> {
+  return hasIssue(issues, ...path)
+    ? {
+        'aria-invalid': true,
+        'aria-describedby': issueId(path)
+      }
+    : {}
+}
+
+function FieldIssue(props: {
+  issues: readonly CapabilityIssue[] | undefined
+  path: readonly string[]
+  message: string
+}) {
+  return hasIssue(props.issues, ...props.path) ? (
+    <small className="treasure-field-issue" id={issueId(props.path)}>
+      {props.message}
+    </small>
+  ) : null
+}
+
+function issueId(path: readonly string[]): string {
+  return `treasure-issue-${path.join('-').replace(/[^a-zA-Z0-9_-]/g, '-')}`
+}
+import type { ReactNode } from 'react'

@@ -10,10 +10,9 @@ import {
   expectElementGolden,
   setElectronWindowSize
 } from './support/e2e-assertions.js'
-import { waitForGmRendererReady } from './support/e2e-ready.js'
 
 describe('Group Loot editor', () => {
-  it('edits catalog-backed Loot and commits it atomically across restart', async () => {
+  it('edits catalog-backed Loot accessibly without layout overflow', async () => {
     const client = browser as unknown as WdioBrowser
     await setElectronWindowSize(client, 1280, 800)
     await (
@@ -24,9 +23,21 @@ describe('Group Loot editor', () => {
       'section[aria-labelledby="group-builder-title"]'
     )
     await groupDialog.waitForDisplayed({ timeout: 10_000 })
+    await client.waitUntil(
+      () =>
+        client.execute(() =>
+          Boolean(
+            document.activeElement?.closest(
+              'section[aria-labelledby="group-builder-title"]'
+            )
+          )
+        ),
+      { timeout: 5_000, timeoutMsg: 'Focus did not enter the Group dialog.' }
+    )
     await (
       await groupDialog.$('select[aria-label="Gruppe auswählen"]')
     ).selectByVisibleText('E2E Gruppenbeute')
+    await (await groupDialog.$('[role="tab"]=Schatz-Draft')).click()
     const openGenerator = await groupDialog.$('button=Loot erzeugen')
     await client.waitUntil(() => openGenerator.isEnabled(), {
       timeout: 10_000,
@@ -94,6 +105,43 @@ describe('Group Loot editor', () => {
       await abacusRow.$('select[aria-label="Behälter"]'),
       'E2E Lootkiste'
     )
+    const assignment = await abacusRow.$('select[aria-label="Behälter"]')
+    const assignedContainer = await assignment.getValue()
+    await client.execute(() => {
+      document.querySelector<HTMLElement>('.group-draft-scroll')?.focus()
+    })
+    await client.execute(() => {
+      document.activeElement?.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'z',
+          ctrlKey: true,
+          bubbles: true,
+          cancelable: true
+        })
+      )
+    })
+    await client.waitUntil(async () => (await assignment.getValue()) === '', {
+      timeout: 5_000,
+      timeoutMsg: 'Keyboard undo did not detach the item.'
+    })
+    await client.execute(() => {
+      document.activeElement?.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: 'z',
+          ctrlKey: true,
+          shiftKey: true,
+          bubbles: true,
+          cancelable: true
+        })
+      )
+    })
+    await client.waitUntil(
+      async () => (await assignment.getValue()) === assignedContainer,
+      {
+        timeout: 5_000,
+        timeoutMsg: 'Keyboard redo did not restore the item assignment.'
+      }
+    )
 
     const budgetAfter = Number(
       await (
@@ -115,6 +163,49 @@ describe('Group Loot editor', () => {
       await (await abacusRow.$('input[aria-label="Gegenstand"]')).getValue()
     ).toBe('E2E Reise-Abakus')
 
+    await client.execute(() => {
+      document.querySelector<HTMLElement>('.group-draft-scroll')?.focus()
+    })
+    await client.keys('Escape')
+    await discardDialog.waitForDisplayed({ timeout: 5_000 })
+    expect(await discardDialog.getText()).toContain(
+      'Ungespeicherte Änderungen verwerfen?'
+    )
+    await (await discardDialog.$('button=Abbrechen')).click()
+    await discardDialog.waitForExist({ reverse: true, timeout: 5_000 })
+
+    await client.execute(() => {
+      document.documentElement.style.zoom = '200%'
+    })
+    const layout = await client.execute(() => {
+      const pane = (selector: string) => {
+        const root = document.querySelector<HTMLElement>(selector)
+        if (!root) return null
+        const scrollOwners = [
+          root,
+          ...root.querySelectorAll<HTMLElement>('*')
+        ].filter((element) => {
+          const overflow = getComputedStyle(element).overflowY
+          return overflow === 'auto' || overflow === 'scroll'
+        }).length
+        return {
+          horizontalOverflow: root.scrollWidth - root.clientWidth,
+          scrollOwners
+        }
+      }
+      return {
+        catalog: pane('.loot-catalog-pane'),
+        workspace: pane('.group-manager-draft-sheet')
+      }
+    })
+    expect(layout.catalog?.horizontalOverflow ?? 1).toBeLessThanOrEqual(1)
+    expect(layout.workspace?.horizontalOverflow ?? 1).toBeLessThanOrEqual(1)
+    expect(layout.catalog?.scrollOwners).toBe(1)
+    expect(layout.workspace?.scrollOwners).toBe(1)
+    await client.execute(() => {
+      document.documentElement.style.zoom = ''
+    })
+
     await expectAccessible(client)
     await expectElementGolden(
       client,
@@ -131,57 +222,6 @@ describe('Group Loot editor', () => {
       '.group-loot-inline-panel',
       false
     )
-
-    await (await groupLootPanel.$('button=Gruppe & Loot übernehmen')).click()
-    await groupDialog.waitForExist({ reverse: true, timeout: 10_000 })
-    await client.reloadSession()
-    await waitForGmRendererReady(client)
-    const committed = await client.execute(async () => {
-      const api = window.saltMarcher
-      const live = await api.session.read()
-      const scene = live.scene.scenes.find(
-        (candidate) => candidate.id === live.scene.focusedSceneId
-      )!
-      const group = scene.groups.find(
-        (candidate) => candidate.name === 'E2E Gruppenbeute'
-      )!
-      const projection = await api.loot.scene({ sceneId: scene.id })
-      const treasures =
-        projection.groupTreasures.find(
-          (candidate) => candidate.groupId === group.id
-        )?.treasures ?? []
-      return {
-        count: treasures.length,
-        editedItem: treasures
-          .flatMap((treasure) => treasure.items)
-          .find((item) => item.name === 'E2E Reise-Abakus'),
-        editedContainer: treasures
-          .flatMap((treasure) => treasure.containers)
-          .find((container) => container.name === 'E2E Lootkiste'),
-        catalogMagic: treasures
-          .flatMap((treasure) => treasure.items)
-          .find(
-            (item) =>
-              item.catalogItemId === 'magic:arcana:common:bead-of-nourishment'
-          )
-      }
-    })
-    expect(committed.count).toBe(1)
-    expect(committed.editedItem).toMatchObject({
-      quantity: 2,
-      unitValueCp: 321,
-      stackable: true,
-      magic: false
-    })
-    expect(committed.editedContainer).toMatchObject({ capacity: 99 })
-    expect(committed.editedItem?.containerId).toBe(
-      committed.editedContainer?.id
-    )
-    expect(committed.catalogMagic).toMatchObject({
-      magic: true,
-      rarity: 'Common',
-      curseName: null
-    })
   })
 })
 

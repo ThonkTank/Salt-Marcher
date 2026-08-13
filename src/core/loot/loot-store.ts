@@ -20,122 +20,12 @@ import {
   type TreasureAggregateDiff
 } from './treasure-aggregate-diff.js'
 import type { MaterializedGroupRewardTreasureDraft } from './group-reward-treasure-draft.js'
+import { materializeGeneratedTreasure } from './materialized-treasure.js'
+import { TreasureAggregateWriter } from './treasure-aggregate-writer.js'
 import {
   treasureContainerProvenance,
   treasureItemProvenance
 } from './treasure-provenance.js'
-
-export function initializeLootSchema(db: Database.Database): void {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS loot_treasure (
-      id TEXT PRIMARY KEY NOT NULL,
-      revision INTEGER NOT NULL CHECK(revision >= 0),
-      label TEXT NOT NULL,
-      anchor_kind TEXT NOT NULL CHECK(anchor_kind IN ('unplaced', 'location', 'group')),
-      location_id TEXT,
-      scene_id TEXT,
-      group_id TEXT,
-      last_known_label TEXT,
-      source_kind TEXT NOT NULL CHECK(source_kind IN ('manual', 'generated')),
-      source_run_id TEXT,
-      source_treasure_id TEXT,
-      distribution_state TEXT NOT NULL DEFAULT 'open'
-        CHECK(distribution_state IN ('open', 'partial', 'complete')),
-      created_at TEXT NOT NULL,
-      updated_at TEXT NOT NULL,
-      UNIQUE(source_run_id, source_treasure_id),
-      CHECK(
-        (anchor_kind = 'unplaced' AND location_id IS NULL AND scene_id IS NULL AND group_id IS NULL AND last_known_label IS NULL)
-        OR
-        (anchor_kind = 'location' AND location_id IS NOT NULL AND scene_id IS NULL AND group_id IS NULL AND last_known_label IS NOT NULL)
-        OR
-        (anchor_kind = 'group' AND location_id IS NULL AND scene_id IS NOT NULL AND group_id IS NOT NULL AND last_known_label IS NOT NULL)
-      ),
-      CHECK(
-        (source_kind = 'manual' AND source_run_id IS NULL AND source_treasure_id IS NULL)
-        OR
-        (source_kind = 'generated' AND source_run_id IS NOT NULL AND source_treasure_id IS NOT NULL)
-      )
-    );
-    CREATE TABLE IF NOT EXISTS loot_container (
-      id TEXT PRIMARY KEY NOT NULL,
-      treasure_id TEXT NOT NULL REFERENCES loot_treasure(id) ON DELETE CASCADE,
-      source_container_id TEXT,
-      catalog_container_id TEXT,
-      name TEXT NOT NULL,
-      capacity REAL NOT NULL CHECK(capacity >= 0),
-      position INTEGER NOT NULL CHECK(position >= 0),
-      UNIQUE(treasure_id, position),
-      UNIQUE(treasure_id, source_container_id)
-    );
-    CREATE TABLE IF NOT EXISTS loot_item (
-      id TEXT PRIMARY KEY NOT NULL,
-      treasure_id TEXT NOT NULL REFERENCES loot_treasure(id) ON DELETE CASCADE,
-      source_line_id TEXT,
-      catalog_entry_kind TEXT CHECK(catalog_entry_kind IN ('item', 'magic_item')),
-      catalog_item_id TEXT,
-      name TEXT NOT NULL,
-      quantity INTEGER NOT NULL CHECK(quantity > 0),
-      unit_value_cp INTEGER NOT NULL CHECK(unit_value_cp >= 0),
-      stackable INTEGER NOT NULL CHECK(stackable IN (0, 1)),
-      magic INTEGER NOT NULL CHECK(magic IN (0, 1)),
-      rarity TEXT,
-      curse_name TEXT,
-      container_id TEXT REFERENCES loot_container(id) ON DELETE SET NULL,
-      position INTEGER NOT NULL CHECK(position >= 0),
-      UNIQUE(treasure_id, position),
-      UNIQUE(treasure_id, source_line_id),
-      CHECK(stackable = 1 OR quantity = 1),
-      CHECK(
-        (catalog_item_id IS NULL AND catalog_entry_kind IS NULL)
-        OR
-        (catalog_item_id IS NOT NULL AND catalog_entry_kind IS NOT NULL)
-      ),
-      CHECK(
-        catalog_entry_kind IS NULL
-        OR (catalog_entry_kind = 'item' AND magic = 0)
-        OR (catalog_entry_kind = 'magic_item' AND magic = 1)
-      ),
-      CHECK(
-        (magic = 0 AND rarity IS NULL AND curse_name IS NULL)
-        OR (magic = 1 AND rarity IS NOT NULL)
-      )
-    );
-    CREATE TABLE IF NOT EXISTS loot_allocation (
-      id TEXT PRIMARY KEY NOT NULL,
-      command_id TEXT NOT NULL,
-      treasure_id TEXT NOT NULL,
-      item_id TEXT NOT NULL,
-      character_id TEXT NOT NULL,
-      quantity INTEGER NOT NULL CHECK(quantity > 0),
-      created_at TEXT NOT NULL,
-      UNIQUE(command_id, item_id, character_id)
-    );
-    CREATE INDEX IF NOT EXISTS loot_allocation_item
-      ON loot_allocation(item_id, created_at, id);
-    CREATE INDEX IF NOT EXISTS loot_treasure_location
-      ON loot_treasure(anchor_kind, location_id, updated_at, id);
-    CREATE INDEX IF NOT EXISTS loot_treasure_group
-      ON loot_treasure(anchor_kind, scene_id, group_id, updated_at, id);
-    CREATE TABLE IF NOT EXISTS loot_operation_receipt (
-      command_id TEXT PRIMARY KEY NOT NULL,
-      operation_type TEXT NOT NULL CHECK(operation_type IN (
-        'create','update','move','accept_generated','commit_group_reward',
-        'distribute','correct_ledger'
-      )),
-      request_fingerprint TEXT NOT NULL,
-      target_id TEXT NOT NULL,
-      result_schema_version INTEGER NOT NULL CHECK(result_schema_version = 1),
-      result_json TEXT NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS loot_metadata (
-      singleton INTEGER PRIMARY KEY NOT NULL CHECK(singleton = 1),
-      revision INTEGER NOT NULL CHECK(revision >= 0)
-    );
-    INSERT OR IGNORE INTO loot_metadata (singleton, revision)
-      VALUES (1, 0);
-  `)
-}
 
 type TreasureRow = Readonly<{
   id: string
@@ -155,7 +45,11 @@ type TreasureRow = Readonly<{
 }>
 
 export class TreasureStore {
-  constructor(private readonly db: Database.Database) {}
+  private readonly aggregateWriter: TreasureAggregateWriter
+
+  constructor(private readonly db: Database.Database) {
+    this.aggregateWriter = new TreasureAggregateWriter(db)
+  }
 
   read(id: string): Treasure | null {
     const row = this.row(id)
@@ -208,34 +102,7 @@ export class TreasureStore {
     return this.acceptMaterializedGenerated(
       run,
       generated,
-      {
-        label: label.trim(),
-        containers: generated.containers.map((container) => ({
-          draftId: container.id,
-          sourceContainerId: container.id,
-          catalogContainerId: container.catalogContainerId,
-          name: container.name,
-          capacity: container.capacity
-        })),
-        items: generated.items.map((item) => ({
-          draftId: item.id,
-          sourceLineId: item.id,
-          catalogEntryKind: item.catalogItemId
-            ? item.magic
-              ? 'magic_item'
-              : 'item'
-            : null,
-          catalogItemId: item.catalogItemId,
-          name: item.name,
-          quantity: item.quantity,
-          unitValueCp: item.unitValueCp,
-          stackable: item.stackable,
-          magic: item.magic,
-          rarity: item.rarity,
-          curseName: item.curseName,
-          containerDraftId: item.containerId
-        }))
-      },
+      materializeGeneratedTreasure(generated, label),
       anchor,
       now
     )
@@ -260,67 +127,12 @@ export class TreasureStore {
   ): Treasure {
     const existing = this.findByGenerated(run.id, generated.id)
     if (existing) return existing
-    const id = uuidv7()
-    this.insertTreasure({
-      id,
-      label: draft.label,
+    const id = this.aggregateWriter.insertGenerated({
+      runId: run.id,
+      generatedTreasureId: generated.id,
+      draft,
       anchor,
-      sourceKind: 'generated',
-      sourceRunId: run.id,
-      sourceTreasureId: generated.id,
       now
-    })
-    const containerIds = new Map<string, string>()
-    draft.containers.forEach((container, position) => {
-      const containerId = uuidv7()
-      containerIds.set(container.draftId, containerId)
-      this.db
-        .prepare(
-          `INSERT INTO loot_container (
-             id, treasure_id, source_container_id, catalog_container_id,
-             name, capacity, position
-           ) VALUES (?, ?, ?, ?, ?, ?, ?)`
-        )
-        .run(
-          containerId,
-          id,
-          container.sourceContainerId,
-          container.catalogContainerId,
-          container.name,
-          container.capacity,
-          position
-        )
-    })
-    draft.items.forEach((item, position) => {
-      const containerId = item.containerDraftId
-        ? containerIds.get(item.containerDraftId)
-        : null
-      if (item.containerDraftId && !containerId)
-        throw new CapabilityError('validation_failed', false)
-      this.db
-        .prepare(
-          `INSERT INTO loot_item (
-             id, treasure_id, source_line_id, catalog_entry_kind,
-             catalog_item_id, name, quantity, unit_value_cp, stackable, magic,
-             rarity, curse_name, container_id, position
-           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-        )
-        .run(
-          uuidv7(),
-          id,
-          item.sourceLineId,
-          item.catalogEntryKind,
-          item.catalogItemId,
-          item.name,
-          item.quantity,
-          item.unitValueCp,
-          Number(item.stackable),
-          Number(item.magic),
-          item.rarity,
-          item.curseName,
-          containerId,
-          position
-        )
     })
     return this.require(id)
   }
@@ -496,16 +308,20 @@ export class TreasureStore {
         containerId: string | null
         position: number
       }>
-    ).map((item) => ({
-      ...item,
-      stackable: Boolean(item.stackable),
-      magic: Boolean(item.magic),
-      provenance: treasureItemProvenance(
-        item.sourceLineId,
-        item.catalogEntryKind,
-        item.catalogItemId
-      )
-    }))
+    ).map((item) => {
+      const { sourceLineId, catalogEntryKind, catalogItemId, ...projection } =
+        item
+      return {
+        ...projection,
+        stackable: Boolean(item.stackable),
+        magic: Boolean(item.magic),
+        provenance: treasureItemProvenance(
+          sourceLineId,
+          catalogEntryKind,
+          catalogItemId
+        )
+      }
+    })
     const totalValueCp = items.reduce(
       (sum, item) => sum + item.quantity * item.unitValueCp,
       0
@@ -528,13 +344,17 @@ export class TreasureStore {
             }
           : { kind: 'manual' },
       items,
-      containers: containers.map((container) => ({
-        ...container,
-        provenance: treasureContainerProvenance(
-          container.sourceContainerId,
-          container.catalogContainerId
-        )
-      })),
+      containers: containers.map((container) => {
+        const { sourceContainerId, catalogContainerId, ...projection } =
+          container
+        return {
+          ...projection,
+          provenance: treasureContainerProvenance(
+            sourceContainerId,
+            catalogContainerId
+          )
+        }
+      }),
       totalValueCp,
       allocatedValueCp,
       distributionState: row.distributionState,
