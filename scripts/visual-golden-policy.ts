@@ -42,6 +42,16 @@ export function selectedVisualGoldens(
   return names
 }
 
+export function visualGoldenBaselineDirectoryNames(
+  variant: string | undefined
+): readonly string[] {
+  const normalized = variant?.trim()
+  if (!normalized) return ['linux']
+  if (!/^[a-z0-9]+(?:[.-][a-z0-9]+)*$/.test(normalized))
+    throw new Error(`Invalid visual golden variant: ${variant}`)
+  return [`linux-${normalized}`, 'linux']
+}
+
 export function parseVisualGoldenUpdateArguments(
   arguments_: readonly string[],
   entries: readonly VisualGoldenEntry[]

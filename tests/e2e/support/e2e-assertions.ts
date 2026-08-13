@@ -11,6 +11,7 @@ import { mainWindowGeometry } from '../../../src/shared/contracts/window-geometr
 import {
   selectedVisualGoldens,
   validateVisualGoldenSuites,
+  visualGoldenBaselineDirectoryNames,
   type VisualGoldenEntry
 } from '../../../scripts/visual-golden-policy.js'
 import { e2eSuiteRegistry } from './e2e-suite-registry.js'
@@ -236,15 +237,22 @@ export async function expectElementGolden(
   await client.execute(async () => {
     await document.fonts.ready
   })
-  const directory = join(process.cwd(), 'tests', 'e2e', 'goldens', 'linux')
+  const goldensDirectory = join(process.cwd(), 'tests', 'e2e', 'goldens')
   const artifacts = join(process.cwd(), '.tmp', 'visual-diffs')
-  mkdirSync(directory, { recursive: true })
   mkdirSync(artifacts, { recursive: true })
   const actualPath = join(artifacts, `${name}.png`)
-  const baselinePath = join(directory, `${name}.png`)
+  const defaultBaselinePath = join(goldensDirectory, 'linux', `${name}.png`)
+  const baselinePath = selected.has(name)
+    ? defaultBaselinePath
+    : (visualGoldenBaselineDirectoryNames(
+        process.env['SALT_MARCHER_VISUAL_GOLDEN_VARIANT']
+      )
+        .map((directory) => join(goldensDirectory, directory, `${name}.png`))
+        .find((candidate) => existsSync(candidate)) ?? defaultBaselinePath)
   const element = client.$(selector)
   const bytes = await Promise.resolve(element.saveScreenshot(actualPath))
   if (selected.has(name)) {
+    mkdirSync(join(goldensDirectory, 'linux'), { recursive: true })
     writeFileSync(baselinePath, bytes)
     return
   }
