@@ -219,6 +219,9 @@ export async function expectElementGolden(
       '*,*::before,*::after{animation:none!important;transition:none!important;caret-color:transparent!important}'
     document.head.append(style)
   })
+  await client.execute(async () => {
+    await document.fonts.ready
+  })
   const directory = join(process.cwd(), 'tests', 'e2e', 'goldens', 'linux')
   const artifacts = join(process.cwd(), '.tmp', 'visual-diffs')
   mkdirSync(directory, { recursive: true })
