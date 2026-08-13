@@ -43,4 +43,11 @@ jobs:
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: xvfb-run -a pnpm test:e2e
+      - name: Upload visual diffs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-diffs-e2e-${{ github.run_id }}
+          path: .tmp/visual-diffs
+          if-no-files-found: ignore
       - run: xvfb-run -a pnpm test:passive-e2e
