@@ -12,28 +12,20 @@ const manifest = JSON.parse(
     'utf8'
   )
 ) as { version: 1; goldens: VisualGoldenEntry[] }
-const selected = parseVisualGoldenUpdateArguments(
+const selection = parseVisualGoldenUpdateArguments(
   process.argv.slice(2),
   manifest.goldens
 )
-run('corepack', ['pnpm', 'build'])
-const suites = [
-  ...new Set(
-    manifest.goldens
-      .filter((entry) => selected.has(entry.name))
-      .map((entry) => entry.suite)
-  )
-]
-for (const suite of suites)
-  run(
-    join(process.cwd(), 'node_modules', '.bin', 'wdio'),
-    ['run', 'wdio.conf.ts', '--suite', suite],
-    {
-      UPDATE_VISUAL_GOLDENS: [...selected].join(','),
-      SALT_MARCHER_E2E_SUITE: suite,
-      SALT_MARCHER_E2E_RUN_ID: `golden-${process.pid}`
-    }
-  )
+if (!selection.reuseBuild) run('corepack', ['pnpm', 'build'])
+run(
+  join(process.cwd(), 'node_modules', '.bin', 'wdio'),
+  ['run', 'wdio.conf.ts', '--suite', selection.suite],
+  {
+    UPDATE_VISUAL_GOLDENS: [...selection.names].join(','),
+    SALT_MARCHER_E2E_SUITE: selection.suite,
+    SALT_MARCHER_E2E_RUN_ID: `golden-${process.pid}`
+  }
+)
 
 function run(
   command: string,

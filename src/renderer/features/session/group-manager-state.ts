@@ -120,6 +120,7 @@ export type GroupManagerAction =
   | {
       kind: 'roster-generated'
       key: string
+      token: string
       quantities: Record<string, number>
       deadQuantities: Record<string, number>
       facts: Readonly<Record<string, DraftCreatureFact>>
@@ -326,7 +327,9 @@ export function groupManagerReducer(
       group: { ...session.group, evaluation: action.evaluation }
     }))
   }
-  if (action.kind === 'roster-generated')
+  if (action.kind === 'roster-generated') {
+    if (!requestMatchesForKey(state, 'command', action.token, action.key))
+      return state
     return updateSession(state, action.key, (session) => ({
       ...session,
       group: {
@@ -345,6 +348,7 @@ export function groupManagerReducer(
       },
       loot: emptyLoot()
     }))
+  }
   if (action.kind === 'invalidate-loot')
     return updateSession(state, action.key, (session) => ({
       ...session,
@@ -362,30 +366,34 @@ export function groupManagerReducer(
         ...(action.seed === undefined ? {} : { seed: action.seed })
       }
     }))
-  if (action.kind === 'loot-generated')
+  if (action.kind === 'loot-generated') {
+    const target = state.sessions[action.key]
+    if (!target || target.loot.requestToken !== action.token) return state
     return updateSession(
       {
         ...state,
-        catalogMode: 'loot',
-        workspaceMode: 'loot'
+        ...(state.activeKey === action.key
+          ? {
+              catalogMode: 'loot' as const,
+              workspaceMode: 'loot' as const
+            }
+          : {})
       },
       action.key,
-      (session) =>
-        session.loot.requestToken !== action.token
-          ? session
-          : {
-              ...session,
-              loot: {
-                run: action.run,
-                history: createGroupLootDraftHistory(action.draft),
-                phase: 'ready',
-                error: '',
-                issues: [],
-                seed: action.seed,
-                requestToken: null
-              }
-            }
+      (session) => ({
+        ...session,
+        loot: {
+          run: action.run,
+          history: createGroupLootDraftHistory(action.draft),
+          phase: 'ready',
+          error: '',
+          issues: [],
+          seed: action.seed,
+          requestToken: null
+        }
+      })
     )
+  }
   if (action.kind === 'loot-committed')
     return updateSession(state, action.key, (session) =>
       session.loot.requestToken !== action.token

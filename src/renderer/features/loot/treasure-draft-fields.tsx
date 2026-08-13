@@ -311,10 +311,25 @@ function hasIssue(
   issues: readonly CapabilityIssue[] | undefined,
   ...path: readonly string[]
 ): boolean {
+  return issues?.some((issue) => issueMatchesControl(issue.path, path)) ?? false
+}
+
+function issueMatchesControl(
+  issuePath: CapabilityIssue['path'],
+  controlPath: readonly string[]
+): boolean {
+  if (controlPath.every((segment, index) => issuePath[index] === segment))
+    return true
+  const [collection, draftId, field] = controlPath
+  if (
+    field !== 'name' ||
+    (collection !== 'items' && collection !== 'containers')
+  )
+    return false
   return (
-    issues?.some((issue) =>
-      path.every((segment, index) => issue.path[index] === segment)
-    ) ?? false
+    issuePath[0] === collection &&
+    issuePath[1] === draftId &&
+    (issuePath[2] === 'origin' || issuePath[2] === 'id')
   )
 }
 

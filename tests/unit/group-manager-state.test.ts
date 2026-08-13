@@ -100,6 +100,61 @@ describe('group manager state', () => {
       evaluation: null
     })
     expect(unchanged).toBe(state)
+
+    state = groupManagerReducer(state, {
+      kind: 'request-began',
+      request: 'command',
+      token: 'new-command',
+      key: 'group-a'
+    })
+    expect(
+      groupManagerReducer(state, {
+        kind: 'roster-generated',
+        key: 'group-a',
+        token: 'old-command',
+        quantities: { wolf: 2 },
+        deadQuantities: {},
+        facts: {},
+        evaluation: null,
+        seed: 1,
+        message: '',
+        generationSummary: ''
+      })
+    ).toBe(state)
+  })
+
+  it('caches a delayed Loot result without switching the active workspace', () => {
+    const run = generatedRun()
+    let state = createGroupManagerState({
+      activeKey: 'group-a',
+      initialGroup: null,
+      prospectiveGroupId: 'prospective',
+      locationId: null
+    })
+    state = groupManagerReducer(state, {
+      kind: 'loot-request-began',
+      key: 'group-a',
+      token: 'loot-a',
+      phase: 'generating'
+    })
+    state = groupManagerReducer(state, {
+      kind: 'activate',
+      key: 'group-b',
+      fallback: groupDraftStateFromGroup(null),
+      sourceRevision: null
+    })
+    state = groupManagerReducer(state, {
+      kind: 'loot-generated',
+      key: 'group-a',
+      token: 'loot-a',
+      run,
+      draft: groupLootDraftFromRun(run, () => 'draft-item'),
+      seed: 1
+    })
+    expect(state.activeKey).toBe('group-b')
+    expect(state.workspaceMode).toBe('group')
+    expect(state.catalogMode).toBe('creatures')
+    expect(state.sessions['group-a']?.loot.run).toBe(run)
   })
 
   it('replaces clean external drafts and marks dirty drafts as conflicts', () => {

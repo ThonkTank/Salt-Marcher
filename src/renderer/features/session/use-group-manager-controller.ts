@@ -377,6 +377,7 @@ export function useGroupManagerController(
       dispatch({
         kind: 'roster-generated',
         key,
+        token,
         quantities,
         deadQuantities,
         facts: Object.fromEntries(

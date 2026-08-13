@@ -18,7 +18,10 @@ import { defaultGeneratorConfig } from '../../src/shared/generator/system-genera
 import { GeneratedRunStore } from '../../src/core/session-generation/generated-run-store.js'
 import { GroupRewardCommandHandler } from '../../src/core/application/group-reward-command-handler.js'
 import { CampaignRulesService } from '../../src/core/application/campaign-rules-service.js'
-import { GroupRewardCommitHandler } from '../../src/core/application/group-reward-commit-handler.js'
+import {
+  GroupRewardCommitHandler,
+  type GroupRewardCommitContext
+} from '../../src/core/application/group-reward-commit-handler.js'
 import { CampaignUnitOfWork } from '../../src/core/application/campaign-unit-of-work.js'
 import { LootOperationJournal } from '../../src/core/loot/loot-operation-journal.js'
 import { LootProjectionStore } from '../../src/core/loot/loot-projection-store.js'
@@ -514,37 +517,37 @@ describe('loot vertical slice', () => {
     expect(tableCount(db, 'loot_treasure')).toBe(0)
 
     const play = new LivePlayService(() => db)
-    const commit = new GroupRewardCommitHandler(
-      () => ({
-        party: new PartyStore(db),
-        scenes: new SceneStore(db),
-        rules,
-        catalog: {
-          index: () => createLootCatalogIndex(catalog.loadFull())
-        },
-        generatedRuns: new GeneratedRunStore(db),
-        treasures: new TreasureStore(db),
-        groupCommands: {
-          save: (input) =>
-            play.saveSceneGroup(
-              input.sceneId,
-              input.groupId,
-              input.name,
-              input.note,
-              input.disposition,
-              input.entries,
-              input.expectedSceneRevision,
-              input.expectedGroupRevision,
-              input.prospectiveGroupId
-            ),
-          result: (id, groupIds) => play.sceneGroupResult(id, groupIds)
-        },
-        journal: new LootOperationJournal(db),
-        projections: new LootProjectionStore(db),
-        now: () => '2026-08-09T10:01:00.000Z'
-      }),
-      (work) => new CampaignUnitOfWork(db).run(work)
-    )
+    const commitContext = (): GroupRewardCommitContext => ({
+      party: new PartyStore(db),
+      scenes: new SceneStore(db),
+      rules,
+      catalog: {
+        index: () => createLootCatalogIndex(catalog.loadFull())
+      },
+      generatedRuns: new GeneratedRunStore(db),
+      treasures: new TreasureStore(db),
+      groupCommands: {
+        save: (input) =>
+          play.saveSceneGroup(
+            input.sceneId,
+            input.groupId,
+            input.name,
+            input.note,
+            input.disposition,
+            input.entries,
+            input.expectedSceneRevision,
+            input.expectedGroupRevision,
+            input.prospectiveGroupId
+          ),
+        result: (id, groupIds) => play.sceneGroupResult(id, groupIds)
+      },
+      journal: new LootOperationJournal(db),
+      projections: new LootProjectionStore(db),
+      now: () => '2026-08-09T10:01:00.000Z'
+    })
+    const transact = <T>(work: () => T): T =>
+      new CampaignUnitOfWork(db).run(work)
+    const commit = new GroupRewardCommitHandler(commitContext, transact)
     const baseDraft = generatedTreasureDraft(run.treasures[0]!, 'Wolfsbeute')
     const addedContainerId = randomUUID()
     const treasureDraft: GroupRewardTreasureDraft = {
@@ -646,6 +649,51 @@ describe('loot vertical slice', () => {
     )
     expect(scenes.groups(sceneId)).toHaveLength(0)
     expect(tableCount(db, 'loot_treasure')).toBe(0)
+
+    const revisionBeforeFailures = new LootProjectionStore(db).revision()
+    const failAfterGroupWrite = new GroupRewardCommitHandler(() => {
+      const context = commitContext()
+      return {
+        ...context,
+        treasures: {
+          findByGenerated: (runId: string, treasureId: string) =>
+            context.treasures.findByGenerated(runId, treasureId),
+          acceptGeneratedDraft: (
+            ..._arguments: Parameters<TreasureStore['acceptGeneratedDraft']>
+          ) => {
+            throw new Error('injected treasure write failure')
+          }
+        }
+      }
+    }, transact)
+    expect(() => failAfterGroupWrite.commit(input)).toThrow(
+      'injected treasure write failure'
+    )
+    expect(scenes.groups(sceneId)).toHaveLength(0)
+    expect(tableCount(db, 'loot_treasure')).toBe(0)
+    expect(new LootProjectionStore(db).revision()).toBe(revisionBeforeFailures)
+    expect(tableCount(db, 'loot_operation_receipt')).toBe(0)
+
+    const failAfterTreasureWrite = new GroupRewardCommitHandler(() => {
+      const context = commitContext()
+      return {
+        ...context,
+        projections: {
+          bumpRevision: () => {
+            context.projections.bumpRevision()
+            throw new Error('injected projection failure')
+          }
+        }
+      }
+    }, transact)
+    expect(() => failAfterTreasureWrite.commit(input)).toThrow(
+      'injected projection failure'
+    )
+    expect(scenes.groups(sceneId)).toHaveLength(0)
+    expect(tableCount(db, 'loot_treasure')).toBe(0)
+    expect(new LootProjectionStore(db).revision()).toBe(revisionBeforeFailures)
+    expect(tableCount(db, 'loot_operation_receipt')).toBe(0)
+
     const result = commit.commit(input)
     expect(result.groupResult.scenePatch.sceneRevision).toBe(
       expectedSceneRevision + 1

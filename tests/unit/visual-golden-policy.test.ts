@@ -22,17 +22,44 @@ describe('visual golden update policy', () => {
     expect(() => selectedVisualGoldens('1', entries)).toThrow('forbidden')
     expect(() => selectedVisualGoldens('missing', entries)).toThrow('Unknown')
     expect(() => parseVisualGoldenUpdateArguments([], entries)).toThrow(
-      '--golden'
+      'Exactly one --golden'
     )
   })
 
-  it('accepts an explicit manifest name', () => {
-    expect([
-      ...parseVisualGoldenUpdateArguments(
-        ['--', '--golden', 'location-dialog'],
+  it('requires one matching suite and can reuse an existing build', () => {
+    const selection = parseVisualGoldenUpdateArguments(
+      [
+        '--',
+        '--golden',
+        'location-dialog',
+        '--suite',
+        'locations',
+        '--reuse-build'
+      ],
+      entries
+    )
+    expect([...selection.names]).toEqual(['location-dialog'])
+    expect(selection.suite).toBe('locations')
+    expect(selection.reuseBuild).toBe(true)
+    expect(() =>
+      parseVisualGoldenUpdateArguments(
+        ['--golden', 'location-dialog', '--suite', 'other'],
         entries
       )
-    ]).toEqual(['location-dialog'])
+    ).toThrow('belongs to suite locations')
+    expect(() =>
+      parseVisualGoldenUpdateArguments(
+        [
+          '--golden',
+          'location-dialog',
+          '--golden',
+          'location-dialog',
+          '--suite',
+          'locations'
+        ],
+        entries
+      )
+    ).toThrow('Exactly one --golden')
   })
 
   it('resolves a validated runner-specific baseline before Linux fallback', () => {

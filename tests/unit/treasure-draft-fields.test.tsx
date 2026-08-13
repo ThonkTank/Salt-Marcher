@@ -65,4 +65,61 @@ describe('TreasureDraftFields', () => {
     expect(screen.getByText('Invalid')).toBeVisible()
     expect(screen.getByLabelText('Item')).not.toHaveAttribute('aria-invalid')
   })
+
+  it('anchors row-level provenance issues on the row name control', () => {
+    render(
+      <TreasureDraftFields
+        policy="catalog"
+        messages={{
+          label: 'Label',
+          container: 'Container',
+          capacity: 'Capacity',
+          item: 'Item',
+          quantity: 'Quantity',
+          valueCopper: 'Value',
+          valueCopperLabel: 'Value copper',
+          stackable: 'Stackable',
+          noContainer: 'None',
+          removeContainer: 'Remove container',
+          removeItem: 'Remove item',
+          addContainer: 'Add container',
+          addItem: 'Add item',
+          invalidField: 'Invalid origin'
+        }}
+        draft={{
+          label: 'Fund',
+          containers: [],
+          items: [
+            {
+              draftId: 'item-a',
+              name: 'Coin',
+              quantity: 1,
+              unitValueCp: 1,
+              stackable: true,
+              containerId: null
+            }
+          ]
+        }}
+        issues={[
+          {
+            code: 'catalog_entry_unknown',
+            path: ['items', 'item-a', 'origin'],
+            parameters: { catalogId: 'missing' }
+          }
+        ]}
+        labelChanged={vi.fn()}
+        patchItem={vi.fn()}
+        removeItem={vi.fn()}
+        patchContainer={vi.fn()}
+        removeContainer={vi.fn()}
+      />
+    )
+    expect(screen.getByLabelText('Item')).toHaveAttribute(
+      'aria-invalid',
+      'true'
+    )
+    expect(screen.getByLabelText('Item')).toHaveAccessibleDescription(
+      'Invalid origin'
+    )
+  })
 })
