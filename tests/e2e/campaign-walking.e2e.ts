@@ -55,6 +55,12 @@ describe('campaign walking skeleton', () => {
     await (
       await client.$('section.encounter-settings-dialog')
     ).waitForDisplayed({ timeout: 5_000 })
+    await (
+      await client.$('.campaign-reward-rules-card')
+    ).waitForDisplayed({ timeout: 10_000 })
+    await (
+      await client.$('.generator-settings-card')
+    ).waitForDisplayed({ timeout: 10_000 })
     expect(
       await client.execute(() => {
         const dialog = document.querySelector(

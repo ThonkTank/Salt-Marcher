@@ -178,6 +178,7 @@ import {
   startSessionPreparationResultSchema,
   switchSessionPlanInputSchema
 } from './session-planner.js'
+import { sessionGenerationCatalogReferenceSchema } from './session-generation.js'
 import {
   acceptGeneratedTreasureInputSchema,
   characterLootInputSchema,
@@ -897,6 +898,12 @@ const coreOperationDefinitions = {
     'hex-travel:setMultiplier',
     setHexTravelMultiplierInputSchema,
     hexTravelContextResultSchema
+  ),
+  'core.sessionGenerationCatalog': read(
+    null,
+    none,
+    sessionGenerationCatalogReferenceSchema,
+    []
   ),
   'core.shutdown': write(null, none, z.unknown(), [])
 } as const

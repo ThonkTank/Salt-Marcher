@@ -655,13 +655,18 @@ const hexHandlers = createHexHandlers({
 const travelHandlers = createTravelHandlers({ travel: hexTravel, play })
 
 const lifecycleHandlers = {
+  'core.sessionGenerationCatalog': () =>
+    sessionGenerationCatalog.currentReference(),
   'core.shutdown': () => {
     if (travelTimer !== undefined) clearTimeout(travelTimer)
     referenceCatalog.close()
     campaigns.close()
     return null
   }
-} satisfies Pick<CoreHandlers, 'core.shutdown'>
+} satisfies Pick<
+  CoreHandlers,
+  'core.sessionGenerationCatalog' | 'core.shutdown'
+>
 
 const handlers = {
   ...campaignHandlers,
