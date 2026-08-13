@@ -29,3 +29,13 @@ export const lintPartitions = [
     targets: ['tests']
   }
 ] as const satisfies readonly LintPartition[]
+
+export function lintPartitionsFor(path: string): readonly string[] {
+  return lintPartitions
+    .filter((partition) =>
+      partition.targets.some(
+        (target) => path === target || path.startsWith(`${target}/`)
+      )
+    )
+    .map((partition) => partition.name)
+}

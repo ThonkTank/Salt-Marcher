@@ -1,6 +1,10 @@
-import { readdirSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { lintPartitions } from '../../scripts/lint-partitions.js'
+import {
+  lintPartitions,
+  lintPartitionsFor
+} from '../../scripts/lint-partitions.js'
 
 describe('developer feedback partitions', () => {
   it('assigns every top-level source owner to exactly one lint process', () => {
@@ -18,6 +22,23 @@ describe('developer feedback partitions', () => {
     }
     expect(sourceTargets).toContain('src/renderer')
     expect(sourceTargets).toContain('src/utility')
+  })
+
+  it('assigns every relevant TypeScript file to exactly one lint process', () => {
+    const files = [
+      ...typescriptFiles('src'),
+      ...typescriptFiles('scripts'),
+      ...typescriptFiles('tests'),
+      'electron.vite.config.ts',
+      'vitest.config.ts',
+      'wdio.conf.ts',
+      'wdio.passive.conf.ts'
+    ]
+    for (const file of files)
+      expect(
+        lintPartitionsFor(file),
+        `${file} must have exactly one lint owner`
+      ).toHaveLength(1)
   })
 
   it('keeps tests and scripts in explicit isolated partitions', () => {
@@ -43,4 +64,32 @@ describe('developer feedback partitions', () => {
     expect(e2eRunner).toContain('spawn(\n      process.execPath')
     expect(e2eRunner).not.toContain('wdio.cmd')
   })
+
+  it('normalizes discovered repository paths across operating systems', () => {
+    expect(repositoryPath('src\\core\\loot\\loot-store.ts')).toBe(
+      'src/core/loot/loot-store.ts'
+    )
+  })
+
+  it('keeps E2E evidence resumable, atomic, and free of hidden retries', () => {
+    const runner = readFileSync('scripts/run-e2e-suites.ts', 'utf8')
+    expect(runner).toContain("argumentAfter('--resume')")
+    expect(runner).toContain("repeatedArguments('--suite')")
+    expect(runner).toContain('buildIdentity !== buildIdentity')
+    expect(runner).toContain('writeSuiteResult(')
+    expect(runner).toContain('renameSync(temporary, path)')
+    expect(runner).not.toMatch(/retry|retries/i)
+  })
 })
+
+function typescriptFiles(root: string): string[] {
+  return readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(root, entry.name)
+    if (entry.isDirectory()) return typescriptFiles(path)
+    return /\.tsx?$/.test(entry.name) ? [repositoryPath(path)] : []
+  })
+}
+
+function repositoryPath(path: string): string {
+  return path.replaceAll('\\', '/')
+}
