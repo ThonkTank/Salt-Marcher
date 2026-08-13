@@ -5,7 +5,10 @@ import type {
   ChainablePromiseElement,
   Element as WdioElement
 } from 'webdriverio'
-import { setElectronWindowSize } from './support/e2e-assertions.js'
+import {
+  replaceFieldValue,
+  setElectronWindowSize
+} from './support/e2e-assertions.js'
 import { waitForGmRendererReady } from './support/e2e-ready.js'
 
 describe('Group Loot atomic commit', () => {
@@ -44,13 +47,19 @@ describe('Group Loot atomic commit', () => {
       'Gegenstand',
       'Abacus'
     )
-    await replaceValue(
+    await replaceFieldValue(
+      client,
       await abacus.$('input[aria-label="Gegenstand"]'),
       'E2E Reise-Abakus'
     )
     await (await abacus.$('input[aria-label="Teilbar"]')).click()
-    await replaceValue(await abacus.$('input[aria-label="Menge"]'), '2')
-    await replaceValue(
+    await replaceFieldValue(
+      client,
+      await abacus.$('input[aria-label="Menge"]'),
+      '2'
+    )
+    await replaceFieldValue(
+      client,
       await abacus.$('input[aria-label="Wert in Kupfermünzen"]'),
       '321'
     )
@@ -59,11 +68,16 @@ describe('Group Loot atomic commit', () => {
       'Behälter',
       'Pouch'
     )
-    await replaceValue(
+    await replaceFieldValue(
+      client,
       await container.$('input[aria-label="Behälter"]'),
       'E2E Lootkiste'
     )
-    await replaceValue(await container.$('input[aria-label="Kapazität"]'), '99')
+    await replaceFieldValue(
+      client,
+      await container.$('input[aria-label="Kapazität"]'),
+      '99'
+    )
     await selectOptionContaining(
       await abacus.$('select[aria-label="Behälter"]'),
       'E2E Lootkiste'
@@ -134,16 +148,6 @@ async function addCatalogEntry(
   const add = await catalog.$(`button[aria-label="${name} hinzufügen"]`)
   await add.waitForClickable({ timeout: 10_000 })
   await add.click()
-}
-
-async function replaceValue(
-  input: ChainablePromiseElement,
-  value: string
-): Promise<void> {
-  await input.click()
-  const client = browser as unknown as WdioBrowser
-  await client.keys(['Control', 'a'])
-  await client.keys(value)
 }
 
 async function findEditorRow(

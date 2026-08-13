@@ -8,6 +8,7 @@ import type {
 import {
   expectAccessible,
   expectElementGolden,
+  replaceFieldValue,
   setElectronWindowSize
 } from './support/e2e-assertions.js'
 
@@ -67,13 +68,19 @@ describe('Group Loot editor', () => {
       'Gegenstand',
       'Abacus'
     )
-    await replaceValue(
+    await replaceFieldValue(
+      client,
       await abacusRow.$('input[aria-label="Gegenstand"]'),
       'E2E Reise-Abakus'
     )
     await (await abacusRow.$('input[aria-label="Teilbar"]')).click()
-    await replaceValue(await abacusRow.$('input[aria-label="Menge"]'), '2')
-    await replaceValue(
+    await replaceFieldValue(
+      client,
+      await abacusRow.$('input[aria-label="Menge"]'),
+      '2'
+    )
+    await replaceFieldValue(
+      client,
       await abacusRow.$('input[aria-label="Wert in Kupfermünzen"]'),
       '321'
     )
@@ -83,11 +90,13 @@ describe('Group Loot editor', () => {
       'Behälter',
       'Pouch'
     )
-    await replaceValue(
+    await replaceFieldValue(
+      client,
       await catalogContainer.$('input[aria-label="Behälter"]'),
       'E2E Lootkiste'
     )
-    await replaceValue(
+    await replaceFieldValue(
+      client,
       await catalogContainer.$('input[aria-label="Kapazität"]'),
       '99'
     )
@@ -234,16 +243,6 @@ async function addCatalogEntry(
   const add = await catalog.$(`button[aria-label="${name} hinzufügen"]`)
   await add.waitForClickable({ timeout: 10_000 })
   await add.click()
-}
-
-async function replaceValue(
-  input: ChainablePromiseElement,
-  value: string
-): Promise<void> {
-  await input.click()
-  const client = browser as unknown as WdioBrowser
-  await client.keys(['Control', 'a'])
-  await client.keys(value)
 }
 
 async function findEditorRow(
