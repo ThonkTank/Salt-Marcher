@@ -1,5 +1,6 @@
 import { cpSync, mkdirSync, rmSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
+import { createRequire } from 'node:module'
 import { join } from 'node:path'
 import { waitForGmRendererReady } from './tests/e2e/support/e2e-ready.js'
 import type { Browser as WdioBrowser } from 'webdriverio'
@@ -8,6 +9,8 @@ import {
   e2eSuiteRegistry,
   isE2eSuiteName
 } from './tests/e2e/support/e2e-suite-registry.js'
+
+const packageRequire = createRequire(import.meta.url)
 
 const requestedSuite =
   process.env['SALT_MARCHER_E2E_SUITE'] ?? argumentAfter('--suite') ?? 'all'
@@ -33,8 +36,13 @@ cpSync(join(process.cwd(), 'tests', 'e2e', 'fixtures', fixture), userData, {
   recursive: true
 })
 const materialized = spawnSync(
-  join(process.cwd(), 'node_modules', '.bin', 'tsx'),
-  ['scripts/materialize-e2e-fixture.ts', '--user-data', userData],
+  process.execPath,
+  [
+    packageRequire.resolve('tsx/cli'),
+    'scripts/materialize-e2e-fixture.ts',
+    '--user-data',
+    userData
+  ],
   { cwd: process.cwd(), encoding: 'utf8' }
 )
 if (materialized.error) throw materialized.error
