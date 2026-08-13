@@ -68,6 +68,17 @@ describe('campaign walking skeleton', () => {
     await (
       await client.$('.generator-settings-card')
     ).waitForDisplayed({ timeout: 10_000 })
+    await (
+      await campaignRulesCard.$('input[type="radio"]:checked')
+    ).waitForExist({ timeout: 10_000 })
+    await client.execute(async () => {
+      const body = document.querySelector<HTMLElement>('.settings-dialog-body')
+      if (!body) throw new Error('Settings dialog body is missing.')
+      body.scrollTop = 0
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      })
+    })
     expect(
       await client.execute(() => {
         const dialog = document.querySelector(
