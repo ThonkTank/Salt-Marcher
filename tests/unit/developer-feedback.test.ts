@@ -74,24 +74,45 @@ describe('developer feedback partitions', () => {
       'src/core/loot/loot-store.ts'
     )
   })
-
-  it('keeps E2E evidence resumable, atomic, and free of hidden retries', () => {
-    const runner = readFileSync('scripts/run-e2e-suites.ts', 'utf8')
-    expect(runner).toContain("argumentAfter('--resume')")
-    expect(runner).toContain("repeatedArguments('--suite')")
-    expect(runner).toContain('buildIdentity !== buildIdentity')
-    expect(runner).toContain('writeSuiteResult(')
-    expect(runner).toContain('renameSync(temporary, path)')
-    expect(runner).not.toMatch(/retry|retries/i)
-  })
 })
 
-describe('group Loot persistence refactor', () => {
-  it('keeps Utility bootstrap thin and composes feature-owned handlers', () => {
+describe('group Loot architecture refactor', () => {
+  it('keeps one React reducer as the sole GroupManager state owner', () => {
+    const owners = typescriptFiles('src/renderer/features/session')
+      .filter((file) => /group-|use-group-/.test(file))
+      .filter((file) => readFileSync(file, 'utf8').includes('useReducer('))
+    expect(owners).toEqual([
+      'src/renderer/features/session/use-group-manager-controller.ts'
+    ])
+    const controller = readFileSync(owners[0]!, 'utf8')
+    expect(controller).not.toMatch(/useState|useRef/)
+    expect(
+      readFileSync(
+        'src/renderer/features/session/group-manager-state.ts',
+        'utf8'
+      )
+    ).toMatch(/sessions:[\s\S]*pendingIntent:[\s\S]*requests:/)
+  })
+
+  it('separates the capability adapter from pure GroupManager views', () => {
+    const dialog = readFileSync(
+      'src/renderer/features/session/group-dialog.tsx',
+      'utf8'
+    )
+    const view = readFileSync(
+      'src/renderer/features/session/group-manager-view.tsx',
+      'utf8'
+    )
+    expect(dialog.split('\n').length).toBeLessThan(40)
+    expect(dialog).toContain('useGroupManagerCapabilityPorts')
+    expect(view).not.toMatch(/useCapabilityApi|live-session|session-surface/)
+  })
+
+  it('keeps utility bootstrap tiny and generated SQL in one writer', () => {
     const entry = readFileSync('src/utility/index.ts', 'utf8')
-    const application = readFileSync('src/utility/application.ts', 'utf8')
     expect(entry.split('\n').length).toBeLessThan(10)
     expect(entry).toContain("import './application.js'")
+    const application = readFileSync('src/utility/application.ts', 'utf8')
     expect(application.split('\n').length).toBeLessThan(900)
     for (const module of [
       'biome',
@@ -107,19 +128,44 @@ describe('group Loot persistence refactor', () => {
       expect(
         readFileSync(`src/utility/composition/${module}.ts`, 'utf8')
       ).toContain('Pick<CoreHandlers')
+    expect(application).not.toContain("'campaign.list':")
+    expect(application).not.toContain("'loot.catalog':")
+    expect(application).not.toContain("'hex.editorBootstrap':")
+    const generatedSqlOwners = typescriptFiles('src/core/loot').filter((file) =>
+      /INSERT INTO loot_(?:treasure|container|item)/.test(
+        readFileSync(file, 'utf8')
+      )
+    )
+    expect(generatedSqlOwners).toContain(
+      'src/core/loot/treasure-aggregate-writer.ts'
+    )
+    const store = readFileSync('src/core/loot/loot-store.ts', 'utf8')
+    expect(store).toContain('this.aggregateWriter.insertGenerated')
   })
 
-  it('routes both generated acceptance paths through one aggregate writer', () => {
-    const store = readFileSync('src/core/loot/loot-store.ts', 'utf8')
-    const writer = readFileSync(
-      'src/core/loot/treasure-aggregate-writer.ts',
+  it('keeps E2E evidence resumable, atomic, and free of hidden retries', () => {
+    const runner = readFileSync('scripts/run-e2e-suites.ts', 'utf8')
+    expect(runner).toContain("argumentAfter('--resume')")
+    expect(runner).toContain("repeatedArguments('--suite')")
+    expect(runner).toContain('buildIdentity !== buildIdentity')
+    expect(runner).toContain('writeSuiteResult(')
+    expect(runner).toContain('renameSync(temporary, path)')
+    expect(runner).not.toMatch(/retry|retries/i)
+  })
+
+  it('publishes catalog artifacts without overwriting or implicit activation', () => {
+    const importer = readFileSync(
+      'scripts/import-session-generation-catalog.ts',
       'utf8'
     )
-    expect(store).toContain('this.aggregateWriter.insertGenerated')
-    expect(store).not.toContain('private acceptGeneratedDraft')
-    expect(writer).toContain('INSERT INTO loot_treasure')
-    expect(writer).toContain('INSERT INTO loot_container')
-    expect(writer).toContain('INSERT INTO loot_item')
+    expect(importer).toContain('if (existsSync(destinationRoot))')
+    expect(importer).toContain("arguments_.includes('--activate')")
+    expect(importer).toContain(
+      'renameSync(temporaryDestinationRoot, destinationRoot)'
+    )
+    expect(importer).toContain(
+      'renameSync(temporaryRegistryPath, registryPath)'
+    )
   })
 })
 

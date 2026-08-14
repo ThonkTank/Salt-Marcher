@@ -53,7 +53,11 @@ The Group manager's left catalog switches between `Kreaturen` and `Loot`.
 `loot.catalog` is a Zod-validated, paginated read addressed by `runId`. Utility
 derives that immutable run's `catalogVersion` and `catalogContentHash`; a
 mismatching expected hash is stale and a missing registered artifact is
-`catalog_unavailable`. It searches active ordinary
+`catalog_unavailable`. Published catalog artifacts are immutable and remain
+addressable through a validated registry after another catalog becomes active.
+The registry and every manifest/table hash are verified before use; full
+catalogs and their prepared Loot indexes are loaded lazily and cached by content
+hash. It searches active ordinary
 and magic items plus non-hidden containers and filters by type, category, and
 rarity. Results contain authoritative identity, default name, copper value
 rounded at the catalog boundary, stackability, magic/rarity, or container
@@ -64,10 +68,19 @@ Adding an unchanged stackable catalog item increments its existing quantity.
 Changed stackable items, non-stackable items, magic items, and containers are
 added as separate instances. Removing a container clears every assignment to
 it, and at least one item line is required. Draft edits support bounded
-undo/redo and are cached per Group draft. A manual roster change, roster
+semantic undo/redo and are cached per Group draft. Text editing from focus to
+blur forms one history entry; selections, toggles, additions, removal, and the
+atomic removal-and-detachment of a container each form one entry. A manual
+roster change, roster
 undo/redo, fill, replacement generation, or Loot reroll replaces its draft;
 when the draft contains Loot edits, the GM must first confirm discarding them.
 The seed remains hidden and every reroll draws an independent seed.
+
+One `GroupManagerState` reducer owns every Group session, both histories,
+request tokens, the paired Group/Creature and Treasure/Loot views, pending
+discard intents, and external revision conflicts. Late asynchronous results are
+ignored by token. Switching groups preserves the per-Group cache; external
+snapshots replace clean sessions and mark dirty sessions as conflicted.
 
 The inline budget header shows target copper, current non-magic copper,
 difference, a progress bar, and target/current magic count. The existing

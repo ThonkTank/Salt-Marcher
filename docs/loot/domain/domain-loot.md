@@ -34,6 +34,11 @@ array positions. Every item and container origin is a closed union:
   `catalogContentHash`
 
 The catalog read is a bounded projection rather than mutable domain state.
+Catalog identity is resolved through an immutable artifact registry by both
+version and content hash; activation changes only the catalog used for new
+generation and does not remove historical artifacts. One index per content
+hash owns normalized search text, stable sorting, filter options, and distinct
+constant-time identity maps for ordinary items, magic items, and containers.
 Search and type/category/rarity filters operate over active normal and magic
 items and non-hidden containers. Normal catalog value is rounded to copper at
 this boundary; magic value is excluded from the copper budget and represented
@@ -58,3 +63,11 @@ Group reward confirmation spans Scene, Combat reconciliation, immutable
 Generation lookup, and Loot materialization in one campaign transaction. Its
 idempotency fingerprint covers the complete normalized draft so the same
 command ID cannot silently accept different edits.
+
+The application coordinator has a fixed order: exact receipt replay, immutable
+source and revision guards, existing-materialization conflict detection,
+historical-catalog resolution and draft materialization, Group mutation,
+Treasure aggregate write, one projection-revision increment, and receipt. Both
+unchanged generated rewards and edited Group rewards first become the same
+internal `MaterializedTreasure` and then use the same Loot-owned aggregate
+writer.

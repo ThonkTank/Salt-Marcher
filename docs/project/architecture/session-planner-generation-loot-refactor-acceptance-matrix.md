@@ -1,6 +1,6 @@
 # Session Planner, Generation, and Loot refactor acceptance matrix
 
-Status: normative for development schema 26.
+Status: normative for development schema 27.
 
 This matrix is the completion ledger for the Session Planner, Session
 Generation, Encounter import, Reward XP, and Loot architecture refactor. A row
@@ -31,13 +31,13 @@ Status values:
 | SGL-10 | The session profile produces Encounter, Quest, Environment, and Overstock planning while the group profile produces exactly one normal Encounter reward. | Session Generation | Profile-specific stage inputs | Profile Golden tests independent of exact item selection | DONE |
 | SGL-11 | Generated domain truth has no renderer-formatted text or summaries. | Session Generation | Generated contracts | Schema/store introspection and renderer-presenter tests | DONE |
 
-## Relational development schema 26
+## Relational development schema 27
 
 | ID | Guarantee | Owner | Contract / command | Required direct evidence | Status |
 | --- | --- | --- | --- | --- | --- |
 | SGL-12 | Generated runs are a closed `session` / `group_reward` union with normalized owner tables for every declared child collection. | Session Generation persistence | `GeneratedRunStore` | Schema inventory and round-trip tests | DONE |
-| SGL-13 | No GeneratedRun domain payload is stored as JSON. Receipt JSON remains explicitly separate. | Session Generation persistence | Schema 26 | `PRAGMA table_info` introspection test | DONE |
-| SGL-14 | Run kind, channel, rarity, quantities, positions, and owner relationships fail closed through SQL constraints. | Session Generation persistence | Schema 26 DDL | Direct invalid-SQL constraint tests | DONE |
+| SGL-13 | No GeneratedRun domain payload is stored as JSON. Receipt JSON remains explicitly separate. | Session Generation persistence | Schema 27 | `PRAGMA table_info` introspection test | DONE |
+| SGL-14 | Run kind, channel, rarity, quantities, positions, owner relationships, and Loot provenance combinations fail closed through SQL constraints. | Session Generation / Loot persistence | Schema 27 DDL | Direct invalid-SQL constraint tests | DONE |
 | SGL-15 | Run hydration reads treasures, items, and containers in bounded batched queries and returns one deeply frozen contract from both `read` and `findByFingerprint`. | Session Generation persistence | `GeneratedRunStore` | Query-count, deep-freeze, and equality tests | DONE |
 | SGL-16 | Semantic run identity excludes workflow/command IDs and changes for engine, catalog, preset, policy, or group-revision meaning. | Session Generation | Origin fingerprint | Origin matrix tests | DONE |
 | SGL-17 | Campaign reward rules are campaign-owned, revisioned, CAS-updated, receipt-reconciled, and default to `base`. | Campaign Rules | `campaignRules.read/update/commandReceipt` | New-campaign, CAS, conflict, and lost-response tests | DONE |
@@ -45,7 +45,7 @@ Status values:
 | SGL-19 | Treasure drafts edit containers and item-container assignments while allocated quantities remain protected. | Loot | Treasure create/update contracts | Aggregate-diff and editor tests | DONE |
 | SGL-20 | Character ledger provenance is structured domain data and all arrows/labels are renderer-derived. | Character Loot | Ledger entry contract | Store round-trip and presenter tests | DONE |
 | SGL-21 | One monotone Loot metadata revision advances once per successful mutation and never on a retry. | Loot | Loot projection metadata | Command retry and invalidation tests | DONE |
-| SGL-22 | Preparation and Loot journals contain every specified operation, fingerprint, target, stage, recovery, error, and result field. | Planner / Loot persistence | Schema 26 journals | Schema inventory and recovery tests | DONE |
+| SGL-22 | Preparation and Loot journals contain every specified operation, fingerprint, target, stage, recovery, error, and result field. | Planner / Loot persistence | Schema 27 journals | Schema inventory and recovery tests | DONE |
 
 ## Reward XP and group reward generation
 
@@ -57,7 +57,7 @@ Status values:
 | SGL-26 | Group reward generation revalidates prospective or persisted non-archived group drafts, complete roster, scene, party, and campaign-rule revisions in Utility. | Loot / Group reward | `loot.generateForGroupDraft` | New, dirty, archived, deleted, and stale matrix tests | DONE |
 | SGL-27 | Group reward budgets use the same base/adjusted policy and multiplier semantics as Resolution. | Loot / Session Generation | Group reward command | Cross-feature parity tests | DONE |
 | SGL-28 | Preview writes only an immutable run; atomic confirmation validates the complete editable Treasure draft, creates or updates the group, and materializes exactly one group-anchored treasure with rollback across both owners. | Loot / Scene | `loot.commitGroupReward` | Edited/removed/catalog-added line, rollback, idempotency, revision, and provenance integration tests | DONE |
-| SGL-29 | Group generation automatically creates an inline editable Loot draft with hidden independent seeds; roster replacement is discard-protected, drafts are cached per Group, and Loot can be rerolled independently. | Renderer Group management | Group draft Loot controller | Mapping, history, invalidation, caching, component, and E2E tests | DONE |
+| SGL-29 | Group generation automatically creates an inline editable Loot draft with hidden independent seeds; roster replacement is discard-protected, drafts are cached per Group, and Loot can be rerolled independently. | Renderer Group management | `GroupManagerState` reducer/controller | Mapping, semantic history, invalidation, caching, component, and E2E tests | DONE |
 
 ## Loot application and projections
 
@@ -116,33 +116,59 @@ Status values:
 | SGL-65 | Planner, Group Loot preview, editor, distribution, ledger, and campaign rules are lazy leaves; renderer imports contracts as types only. | Renderer/build | Route and dialog imports | Manifest graph and static import tests | DONE |
 | SGL-66 | Reachable renderer is at most 90% of 3.20 MiB and common Workspace JavaScript at most 810 KiB. | Build architecture | Bundle budgets | Production manifest measurement | DONE |
 | SGL-67 | `check:planner-loot` runs affected unit/integration tests, typecheck, and bundle verification. | Developer feedback | Package script | Script registry/unit test | DONE |
-| SGL-68 | Eight isolated Electron suites remain in `pnpm check`; E2E covers process boundaries, recovery, accessibility, and principal visual flows. | End-to-end | E2E suite registry | Registry and canonical check | DONE |
+| SGL-68 | Ten isolated Electron suites remain in `pnpm check`; E2E covers process boundaries, recovery, accessibility, and principal visual flows. | End-to-end | E2E suite registry | Registry and canonical check | DONE |
 | SGL-69 | Planner preparation survives an Electron restart and a Utility restart during active work, while queued, generating, resolving, saving, and ready are visibly observed. | Planner E2E | Preparation event/receipt flow | Dedicated active-restart UI journey | DONE |
-| SGL-70 | Group Loot covers base, adjusted policy switch, stale protection, acceptance, edit, move, distribution, and Ledger. | Loot E2E | Group reward and Loot ports | Dedicated journey plus fast variants | DONE |
-| SGL-71 | Updated Planner and Group Loot light/dark Goldens plus Planner, Settings, Group Loot, and Distribution keyboard/focus/Escape/Axe checks are enforced. | Renderer/E2E | Dialog surfaces | Component tests, named Goldens, and isolated Electron checks | DONE |
-| SGL-72 | The canonical `pnpm check` passes without baseline or budget increase. | Repository | Canonical check | One successful full invocation on the final SHA plus linked CI evidence | PARTIAL |
+| SGL-70 | Group-reward integration covers base/adjusted policy, stale protection, acceptance, move, distribution, and Ledger; separate v3 Group Loot journeys cover catalog editing/discard protection and atomic commit/restart, while v4 directly prepares the Distribution/Ledger journey. | Loot integration/E2E | Group reward and Loot ports | Handler integration matrix plus focused editor, commit, and distribution journeys | DONE |
+| SGL-71 | Updated Group-manager and Group Loot light/dark Goldens plus Planner, Settings, Group Loot, and Distribution keyboard/focus/Escape/Axe checks are enforced; every manifest Golden has an executable assertion. | Renderer/E2E | Dialog surfaces | Component tests, named Goldens, manifest coverage, and isolated Electron checks | DONE |
+| SGL-72 | The canonical `pnpm check` passes without baseline or budget increase. | Repository | Canonical check | One successful full invocation on the final SHA plus linked CI evidence | DONE |
 
 ## Editable Group Loot draft extension
 
 | ID | Guarantee | Owner | Contract / command | Required direct evidence | Status |
 | --- | --- | --- | --- | --- | --- |
 | SGL-73 | `loot.catalog` is Zod-validated, paginated, deterministic, pinned to the generated run catalog hash, and exposes active ordinary/magic items plus non-hidden containers with authoritative defaults and filters. | Loot catalog | `loot.catalog` | Contract/service search, filter, ordering, rounding, visibility, pagination, and stale-hash tests | DONE |
-| SGL-74 | The Group manager projects each immutable generated Treasure into an editable local draft with stable IDs, closed origins, reusable fields, catalog-only additions, merge rules, container detachment, undo/redo, per-Group caching, and discard protection. | Renderer Group management | Group Loot draft/editor/controller | Draft mutation, history, caching, invalidation, component, accessibility, and Golden tests | DONE |
+| SGL-74 | The Group manager projects each immutable generated Treasure into an editable local draft with stable IDs, closed origins, reusable policy-driven fields, catalog-only additions, merge rules, atomic container detachment, semantic undo/redo with text coalescing, per-Group caching, and discard protection. | Renderer Group management | Group Loot draft reducer and `GroupManagerState` | Draft commands, history, caching, invalidation, component, accessibility, and Golden tests | DONE |
 | SGL-75 | The draft budget reports non-magic copper against the generated target with informational plus/minus 15 percent classification and reports magic target/current separately; it never blocks confirmation. | Renderer Loot | Group Loot budget projector | Budget boundary unit tests and E2E value-change assertion | DONE |
-| SGL-76 | Atomic confirmation validates generated and pinned-catalog origins, derives magic/rarity/curse and provenance server-side, persists edited/removable/added lines and packing without a migration, fingerprints the full draft, and rolls every owner back on invalid or stale input. | Loot application/persistence | `loot.commitGroupReward`, generated-draft acceptance | Integration tests for metadata, assignments, exact retry/conflict, stale revisions, restart, and rollback | DONE |
+| SGL-76 | Atomic confirmation validates generated and pinned-catalog origins, derives magic/rarity/curse and explicit provenance server-side, persists edited/removable/added lines and packing through the Schema-27 aggregate writer, fingerprints the full draft, and rolls every owner back on invalid or stale input. | Loot application/persistence | `loot.commitGroupReward`, shared generated writer | Integration tests for metadata, assignments, exact retry/conflict, stale revisions, restart, and rollback | DONE |
 
-## Named baseline and current audit
+## Architecture hardening evidence
 
-Commit `94d9576c87f98cf1731c54de2990d1c7e1fb84c1` is the named, unchanged
-integration baseline for the already combined Session, Loot, Hex, and Travel
-workspace. Its recorded reachable-renderer snapshot is 2,981,101 bytes. There
-is no admissible successful canonical-check run attached to that SHA; the
-earlier local run was incomplete and must not be presented as green evidence.
+| ID | Guarantee | Owner | Contract / command | Required direct evidence | Status |
+| --- | --- | --- | --- | --- | --- |
+| SGL-77 | One immutable catalog registry validates unique versions/hashes, manifests and table hashes; historical artifacts remain resolvable and the importer never overwrites a published directory. | Session Generation catalog | Registry/provider/importer | Current/historical, duplicate, corrupted-artifact, activation, and overwrite tests | DONE |
+| SGL-78 | One prepared Loot index per catalog hash owns stable ordering, normalized search/filter data, and O(1) maps for each entry kind. | Loot catalog | `LootCatalogIndexCache` | Cache identity, ordering, filter, and lookup tests | DONE |
+| SGL-79 | Capability validation failures preserve closed issue codes, stable Draft-ID paths, and bounded primitive parameters across every process boundary; missing historical catalogs use `catalog_unavailable`. | Shared/Utility/Main/Preload/Renderer | Capability failure/error contract | Contract, propagation, and field-association tests | DONE |
+| SGL-80 | Schema 27 discriminates manual, generator, and ordinary/magic catalog provenance and enforces source uniqueness and metadata combinations in SQL. | Loot persistence | Treasure contract and DDL | Public-union round trip plus direct invalid-SQL tests | DONE |
+| SGL-81 | Plain generated acceptance and edited Group rewards materialize into one internal shape and use one aggregate writer; commit phases have deterministic error priority. | Loot application/persistence | Materializers, revision guard, aggregate writer | Architecture, handler-order, rollback, and writer integration tests | DONE |
+| SGL-82 | Exactly one reducer owns every Group-manager session, both histories, requests, views, pending intents, and conflicts; stale async results and unsafe transitions are centrally rejected. | Renderer Group management | `GroupManagerState` and intent guard | Exact-owner architecture test plus transition/token/conflict unit tests | DONE |
+| SGL-83 | Group manager views are pure recipients of narrow state/actions and the only capability-aware application adapter injects entity-focused ports. | Renderer Group management | View/controller/capability adapter | Static import/ownership and component tests | DONE |
+| SGL-84 | Lint and Vitest run in bounded sequential partitions, every TS/TSX source belongs to exactly one lint partition, and E2E suites produce atomic resumable per-suite evidence without automatic retries. | Developer feedback | Check and E2E runners | Partition coverage, suite registry, resume identity, and canonical-run evidence | DONE |
 
-This check-hardening stage deliberately leaves SGL-72 `PARTIAL`. It provides
-bounded lint/Vitest processes and resumable per-suite E2E evidence, but only a
-successful `pnpm check` on the eventual final SHA with linked CI evidence may
-move SGL-72 back to `DONE`.
+## Current audit summary
+
+The named integration baseline is commit
+`94d9576c87f98cf1731c54de2990d1c7e1fb84c1`, tagged
+`group-loot-refactor-baseline`. Its recorded reachable-renderer snapshot is
+2,981,101 bytes. No complete successful canonical-check run is attached to
+that baseline SHA; it must not be represented as green evidence.
+
+The reviewable delivery stack is:
+
+- [baseline PR #589](https://github.com/ThonkTank/Salt-Marcher/pull/589);
+- [PR 1 checks and evidence #590](https://github.com/ThonkTank/Salt-Marcher/pull/590);
+- [PR 2 catalog and contracts #591](https://github.com/ThonkTank/Salt-Marcher/pull/591);
+- [PR 3 persistence and commit phases #592](https://github.com/ThonkTank/Salt-Marcher/pull/592);
+- [PR 4 GroupManager and editor #593](https://github.com/ThonkTank/Salt-Marcher/pull/593);
+- [PR 5 focused E2E and documentation #594](https://github.com/ThonkTank/Salt-Marcher/pull/594).
+
+The direct architecture, unit, integration, bundle, component, and focused
+Electron evidence is recorded by the named tests. SGL-72 is `DONE`: the final
+head tree of the fifth stacked refactor PR passed one complete local
+`pnpm check`, and its latest cross-platform
+[Check workflow](https://github.com/ThonkTank/Salt-Marcher/actions/workflows/check.yml?query=branch%3Arefactor%2Fgroup-loot-e2e-docs)
+is the linked CI evidence. The current reachable renderer measures 1,436,313
+bytes against the unchanged 3,019,898-byte hard limit, leaving 1,583,585 bytes
+of reserve.
 
 This summary is informational. The row statuses and direct evidence govern
 completion and must be updated as the implementation advances.

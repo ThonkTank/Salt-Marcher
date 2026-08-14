@@ -35,6 +35,14 @@ Renderer code has no SQLite or filesystem access. Generated-run creation,
 Treasure commands, distribution, ledger reads, and corrections execute in the
 utility process.
 
+The bundled Session Generation catalog root contains a schema-validated
+registry with one explicit active version and immutable directory/version/hash
+entries. Startup verifies registry uniqueness, each referenced manifest, the
+declared table shapes and hashes, and the aggregate content hash. New imports
+refuse to overwrite an existing artifact and publish the artifact before an
+atomic registry replacement; activation requires the explicit `--activate`
+option except for the first registered catalog.
+
 A `group_reward` source may refer to a prospective group and therefore stores
 a nullable group revision. Its normalized entry rows preserve living and dead
 quantities. `loot.commitGroupReward` validates that immutable source first and

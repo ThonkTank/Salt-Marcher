@@ -159,9 +159,6 @@ function item(
 ) {
   return {
     id,
-    sourceLineId: null,
-    catalogEntryKind: null,
-    catalogItemId: null,
     provenance: { kind: 'manual' },
     name,
     quantity,
@@ -205,7 +202,6 @@ function persistedContainer(
 ) {
   return {
     ...containerDraft(id, name, capacity),
-    sourceContainerId: null,
     provenance: { kind: 'manual' as const },
     position
   }

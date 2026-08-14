@@ -38,5 +38,13 @@ describe('E2E suite registry', () => {
         new Set(e2eSuiteRegistry.map((suite) => suite.name))
       )
     ).not.toThrow()
+    const e2eSources = e2eSuiteRegistry
+      .map((suite) => readFileSync(suite.spec, 'utf8'))
+      .join('\n')
+    for (const golden of manifest.goldens)
+      expect(
+        e2eSources,
+        `${golden.name} has no executable E2E assertion`
+      ).toContain(`'${golden.name}'`)
   })
 })

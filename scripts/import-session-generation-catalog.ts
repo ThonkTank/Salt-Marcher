@@ -6,6 +6,7 @@ import {
   readFileSync,
   renameSync,
   readdirSync,
+  rmSync,
   writeFileSync
 } from 'node:fs'
 import { basename, join, resolve } from 'node:path'
@@ -17,6 +18,10 @@ const sourceRoot = requiredArgument('--source-dir')
 const catalogVersion = requiredArgument('--catalog-version')
 const sourceUrl = requiredArgument('--source-url')
 const destinationRoot = resolve('resources/sessiongeneration', catalogVersion)
+const temporaryDestinationRoot = resolve(
+  'resources/sessiongeneration',
+  `.${catalogVersion}.tmp-${process.pid}`
+)
 const registryPath = resolve('resources/sessiongeneration/registry.json')
 const source = resolve(sourceRoot)
 const files = readdirSync(source)
@@ -35,7 +40,9 @@ if (
     'Source catalog table set does not match the expected snapshot schema.'
   )
 
-mkdirSync(destinationRoot, { recursive: true })
+if (existsSync(temporaryDestinationRoot))
+  rmSync(temporaryDestinationRoot, { recursive: true, force: true })
+mkdirSync(temporaryDestinationRoot, { recursive: true })
 const tables = files.map((file) => {
   const content = readFileSync(join(source, file), 'utf8')
   const lines = content.replace(/\r/g, '').trimEnd().split('\n')
@@ -50,7 +57,7 @@ const tables = files.map((file) => {
     rows === 0
   )
     throw new Error(`Invalid catalog table header or shape: ${file}`)
-  copyFileSync(join(source, file), join(destinationRoot, file))
+  copyFileSync(join(source, file), join(temporaryDestinationRoot, file))
   return {
     columns,
     file,
@@ -76,7 +83,7 @@ const manifest = {
   tables
 }
 writeFileSync(
-  join(destinationRoot, 'manifest.json'),
+  join(temporaryDestinationRoot, 'manifest.json'),
   `${JSON.stringify(manifest, null, 2)}\n`,
   'utf8'
 )
@@ -106,7 +113,19 @@ writeFileSync(
   `${JSON.stringify(nextRegistry, null, 2)}\n`,
   'utf8'
 )
-renameSync(temporaryRegistryPath, registryPath)
+let artifactInstalled = false
+try {
+  renameSync(temporaryDestinationRoot, destinationRoot)
+  artifactInstalled = true
+  renameSync(temporaryRegistryPath, registryPath)
+} catch (error) {
+  if (existsSync(temporaryDestinationRoot))
+    rmSync(temporaryDestinationRoot, { recursive: true, force: true })
+  if (artifactInstalled && existsSync(destinationRoot))
+    rmSync(destinationRoot, { recursive: true, force: true })
+  if (existsSync(temporaryRegistryPath)) rmSync(temporaryRegistryPath)
+  throw error
+}
 console.log(
   `Imported ${tables.length} session-generation tables into ${destinationRoot}${activate ? ' and activated it' : ''}.`
 )

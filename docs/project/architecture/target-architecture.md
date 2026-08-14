@@ -266,12 +266,43 @@ complete normalized living/dead roster. Confirmation crosses Scene and Loot
 only through one Utility-owned transaction that saves the group, reconciles
 Combat, accepts the Treasure, and records its idempotent receipt atomically.
 
+Session Generation catalogs are immutable artifacts behind one validated
+registry. New generation uses the explicitly active artifact; reads and commits
+for an existing run resolve its exact version and content hash even after a
+later artifact is activated. Verified full catalogs and prepared Loot search
+indexes are lazy caches keyed by content hash. Import publishes a new directory
+and registry atomically, never overwrites a published artifact, and changes the
+active version only explicitly.
+
+Group management is a renderer application boundary rather than a stateful
+view. One `GroupManagerState` reducer owns per-Group sessions, Group and Loot
+histories, request tokens, cached drafts, paired catalog/work views, serializable
+discard intents, and external conflicts. Its controller receives narrow
+Creature, Group, Loot, and lifecycle ports from the sole capability adapter;
+views import neither live Session surface types nor capability hooks. All
+discarding transitions use one intent policy and delayed responses can mutate
+state only when their token is current. The reusable Treasure editor receives
+messages, issues, commands, and an add policy instead of importing feature copy
+or authoritative catalog metadata.
+
 Loot is a separate feature projection with its own revision and
 `loot.changed` event. `LiveSessionSnapshot` contains Party, Scene, Travel, and
 Combat truth but no Loot aggregate. Loot command receipts store canonical
 request fingerprints and exact original typed results. Campaign rules own the
 revisioned base-versus-adjusted XP policy used consistently by Combat awards
 and group-reward budgets.
+
+Schema 27 represents Treasure item and container provenance as closed
+discriminated unions. SQL stores `catalog_entry_kind` and generated container
+identity with constraints for nullability, magic/rarity/curse combinations,
+stackability, quantity, and unique generated origins. Generated proposals and
+edited Group drafts both materialize into one internal Treasure shape and pass
+through one Loot-owned aggregate writer. Group-reward coordination orders
+receipt lookup, immutable-source and revision guards, catalog-backed
+materialization, Group mutation, Treasure write, revision bump, and receipt in
+one transaction. Validation failures can carry bounded issue codes, stable
+Draft-ID paths, and primitive parameters across Utility, Main, Preload, and
+Renderer without localized text or filesystem details.
 
 Session preparation is a durable staged journal. It freezes canonical input
 and party levels before generation, then references the immutable run and

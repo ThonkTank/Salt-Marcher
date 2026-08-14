@@ -1,0 +1,27 @@
+{
+  "version": 4,
+  "campaign": "Loot-Verteilung-Abnahme",
+  "sessionLayout": {
+    "controlPaneWidth": 300,
+    "scenarioPaneWidth": 320,
+    "centerTab": "details"
+  },
+  "locations": [],
+  "sceneLocation": null,
+  "party": [
+    {
+      "name": "Alrik",
+      "active": true,
+      "movementSpeedFeet": null
+    }
+  ],
+  "groupScenario": {
+    "name": "Verteilbare Beute",
+    "creatureId": "wolf",
+    "quantity": 3
+  },
+  "lootScenario": {
+    "label": "E2E-Belohnung",
+    "seed": 179974
+  }
+}

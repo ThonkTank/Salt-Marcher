@@ -11,11 +11,6 @@ import { BundledEncounterCatalogProvider } from '../../src/utility/session-gener
 const itemId = '01900000-0000-7000-8000-000000000001'
 const secondItemId = '01900000-0000-7000-8000-000000000002'
 const containerId = '01900000-0000-7000-8000-000000000003'
-const catalog = createLootCatalogIndex(
-  new BundledEncounterCatalogProvider(
-    join(process.cwd(), 'resources/sessiongeneration/catalog-2026-07-16')
-  ).loadFull()
-)
 
 describe('group reward treasure materialization issues', () => {
   it('reports stable issue codes and draft-id paths for invalid generator origins', () => {
@@ -142,7 +137,7 @@ function expectIssue(
   path: readonly string[]
 ): void {
   try {
-    materializeGroupRewardTreasureDraft(generated(), value, catalog)
+    materializeGroupRewardTreasureDraft(generated(), value, catalog())
   } catch (error) {
     expect(error).toBeInstanceOf(CapabilityError)
     expect((error as CapabilityError).issues).toEqual([
@@ -222,4 +217,12 @@ function generated(): GeneratedTreasure {
       }
     ]
   } as GeneratedTreasure
+}
+
+function catalog() {
+  return createLootCatalogIndex(
+    new BundledEncounterCatalogProvider(
+      join(process.cwd(), 'resources/sessiongeneration/catalog-2026-07-16')
+    ).loadFull()
+  )
 }

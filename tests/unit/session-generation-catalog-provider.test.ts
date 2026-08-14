@@ -14,6 +14,7 @@ import {
   BundledSessionGenerationCatalogRegistry
 } from '../../src/utility/session-generation/catalog-provider.js'
 import { parseFullSessionGenerationCatalog } from '../../src/core/session-generation/loot-catalog.js'
+import { sessionGenerationCatalogRegistrySchema } from '../../src/core/session-generation/catalog-registry.js'
 
 const catalogRoot = join(
   process.cwd(),
@@ -95,6 +96,28 @@ describe('bundled encounter catalog provider', () => {
 })
 
 describe('bundled session-generation catalog registry', () => {
+  it('rejects duplicate versions, duplicate hashes, and missing current entries', () => {
+    const entry = {
+      directory: 'catalog-first',
+      catalogVersion: 'catalog-first',
+      catalogContentHash: '1'.repeat(64)
+    }
+    expect(() =>
+      sessionGenerationCatalogRegistrySchema.parse({
+        schemaVersion: 1,
+        currentCatalogVersion: 'catalog-first',
+        catalogs: [entry, { ...entry, directory: 'catalog-second' }]
+      })
+    ).toThrow()
+    expect(() =>
+      sessionGenerationCatalogRegistrySchema.parse({
+        schemaVersion: 1,
+        currentCatalogVersion: 'catalog-missing',
+        catalogs: [entry]
+      })
+    ).toThrow()
+  })
+
   it('resolves immutable current and historical artifacts by version and hash', () => {
     const root = mkdtempSync(join(tmpdir(), 'salt-marcher-registry-'))
     temporaryRoots.push(root)
@@ -152,6 +175,34 @@ describe('bundled session-generation catalog registry', () => {
         catalogContentHash: '0'.repeat(64)
       })
     ).toThrow('Catalog is not registered')
+  })
+
+  it('fails construction when a registered historical artifact is corrupt', () => {
+    const root = mkdtempSync(join(tmpdir(), 'salt-marcher-registry-'))
+    temporaryRoots.push(root)
+    const directory = 'catalog-corrupt'
+    cpSync(catalogRoot, join(root, directory), { recursive: true })
+    const manifest = JSON.parse(
+      readFileSync(join(root, directory, 'manifest.json'), 'utf8')
+    ) as CatalogManifest
+    writeFileSync(join(root, directory, 'DB_CR.tsv'), 'corrupt\n')
+    writeFileSync(
+      join(root, 'registry.json'),
+      JSON.stringify({
+        schemaVersion: 1,
+        currentCatalogVersion: manifest.catalogVersion,
+        catalogs: [
+          {
+            directory,
+            catalogVersion: manifest.catalogVersion,
+            catalogContentHash: manifest.catalogContentHash
+          }
+        ]
+      })
+    )
+    expect(() => new BundledSessionGenerationCatalogRegistry(root)).toThrow(
+      'Catalog table shape mismatch'
+    )
   })
 })
 
