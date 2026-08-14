@@ -38,11 +38,16 @@ export const e2eSuiteRegistry = [
   {
     name: 'loot',
     spec: './tests/e2e/session-loot.e2e.ts',
-    fixture: 'v1/empty-installation'
+    fixture: 'v4/loot-distribution'
   },
   {
     name: 'groupLoot',
     spec: './tests/e2e/group-loot.e2e.ts',
+    fixture: 'v3/group-loot'
+  },
+  {
+    name: 'groupLootCommit',
+    spec: './tests/e2e/group-loot-commit.e2e.ts',
     fixture: 'v3/group-loot'
   },
   {

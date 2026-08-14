@@ -24,7 +24,7 @@ comparison values; raw emitted bytes remain the enforced metric.
 
 ## Architecture-hardened editable group-reward measurement
 
-Measured again by the complete local canonical check on 2026-08-14:
+Measured again by the complete local canonical check on 2026-08-13:
 
 | Graph | Raw bytes | Gzip comparison | Limit use |
 | --- | ---: | ---: | ---: |
@@ -98,12 +98,16 @@ relaxed as part of feature work.
 - `check` is canonical and reuses the `check:app` build for its E2E stage.
 
 E2E fixture recipes live under the versioned `tests/e2e/fixtures/v1`,
-`tests/e2e/fixtures/v2`, and `tests/e2e/fixtures/v3` directories; every suite
-copies and materializes one into a unique User Data root. The Group Loot editor
-uses `v3/group-loot`, so catalog editing, discard protection, Goldens,
-accessibility, atomic commit, and restart verification no longer depend on the
-multi-minute Planner/distribution journey. Every suite writes an atomic result
-record and a run can resume passed suites only when the build, registry, and
-selected-suite identities match. Visual Golden metadata lives in
+`tests/e2e/fixtures/v2`, `tests/e2e/fixtures/v3`, and
+`tests/e2e/fixtures/v4` directories; every suite
+copies and materializes one into a unique User Data root. Separate Group Loot
+editor and atomic commit/restart suites use `v3/group-loot`, so catalog editing,
+discard protection, Goldens, accessibility, commit, and restart verification no
+longer depend on the multi-minute Planner/distribution journey. Every suite
+writes an atomic result record and a run can resume passed suites only when the
+build, registry, and selected-suite identities match. Visual Golden metadata lives in
 `tests/e2e/goldens/manifest.json`. Updates require one or more explicit
 `--golden <name>` arguments; unrestricted environment updates are rejected.
+The v4 distribution fixture materializes a verified generated reward before
+Electron starts, so distribution, restart, Ledger, and provenance remain a
+focused journey instead of repeating the complete Planner-generation path.

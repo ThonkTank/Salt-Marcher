@@ -5,6 +5,12 @@ export type VisualGoldenEntry = Readonly<{
   viewport: Readonly<{ width: number; height: number }>
 }>
 
+export type VisualGoldenUpdateSelection = Readonly<{
+  names: ReadonlySet<string>
+  suite: string
+  reuseBuild: boolean
+}>
+
 export function validateVisualGoldenSuites(
   entries: readonly VisualGoldenEntry[],
   suiteNames: ReadonlySet<string>
@@ -55,22 +61,39 @@ export function visualGoldenBaselineDirectoryNames(
 export function parseVisualGoldenUpdateArguments(
   arguments_: readonly string[],
   entries: readonly VisualGoldenEntry[]
-): ReadonlySet<string> {
+): VisualGoldenUpdateSelection {
   const normalizedArguments =
     arguments_[0] === '--' ? arguments_.slice(1) : arguments_
   const names: string[] = []
+  let suite: string | undefined
+  let reuseBuild = false
   for (let index = 0; index < normalizedArguments.length; index += 1) {
-    if (normalizedArguments[index] !== '--golden')
-      throw new Error(
-        `Unexpected visual-update argument: ${normalizedArguments[index]}`
-      )
-    const name = normalizedArguments[index + 1]
-    if (!name || name.startsWith('--'))
-      throw new Error('--golden requires an explicit name')
-    names.push(name)
+    const argument = normalizedArguments[index]
+    if (argument === '--reuse-build') {
+      if (reuseBuild) throw new Error('--reuse-build may be specified once')
+      reuseBuild = true
+      continue
+    }
+    if (argument !== '--golden' && argument !== '--suite')
+      throw new Error(`Unexpected visual-update argument: ${argument}`)
+    const value = normalizedArguments[index + 1]
+    if (!value || value.startsWith('--'))
+      throw new Error(`${argument} requires an explicit value`)
+    if (argument === '--golden') names.push(value)
+    else {
+      if (suite !== undefined) throw new Error('--suite may be specified once')
+      suite = value
+    }
     index += 1
   }
-  if (names.length === 0)
-    throw new Error('At least one --golden <name> argument is required')
-  return selectedVisualGoldens(names.join(','), entries)
+  if (names.length !== 1)
+    throw new Error('Exactly one --golden <name> argument is required')
+  if (!suite) throw new Error('Exactly one --suite <name> is required')
+  const selected = selectedVisualGoldens(names.join(','), entries)
+  const golden = entries.find((entry) => entry.name === names[0])!
+  if (golden.suite !== suite)
+    throw new Error(
+      `Visual golden ${golden.name} belongs to suite ${golden.suite}, not ${suite}.`
+    )
+  return { names: selected, suite, reuseBuild }
 }
