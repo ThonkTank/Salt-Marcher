@@ -174,16 +174,20 @@ export class LootProjectionStore {
           catalogItemId: string | null
         }
       >
-    ).map((item) => ({
-      ...item,
-      stackable: Boolean(item.stackable),
-      magic: Boolean(item.magic),
-      provenance: treasureItemProvenance(
-        item.sourceLineId,
-        item.catalogEntryKind,
-        item.catalogItemId
-      )
-    }))
+    ).map((item) => {
+      const { sourceLineId, catalogEntryKind, catalogItemId, ...projection } =
+        item
+      return {
+        ...projection,
+        stackable: Boolean(item.stackable),
+        magic: Boolean(item.magic),
+        provenance: treasureItemProvenance(
+          sourceLineId,
+          catalogEntryKind,
+          catalogItemId
+        )
+      }
+    })
     return roots.map((row) => {
       const treasureItems = items.filter((item) => item.treasureId === row.id)
       return treasureSchema.parse({
@@ -207,11 +211,22 @@ export class LootProjectionStore {
           .filter((container) => container.treasureId === row.id)
           .map(({ treasureId, ...container }) => {
             void treasureId
+            const sourceContainerId = container['sourceContainerId'] as
+              string | null
+            const catalogContainerId = container['catalogContainerId'] as
+              string | null
+            const {
+              sourceContainerId: _source,
+              catalogContainerId: _catalog,
+              ...projection
+            } = container
+            void _source
+            void _catalog
             return {
-              ...container,
+              ...projection,
               provenance: treasureContainerProvenance(
-                container['sourceContainerId'] as string | null,
-                container['catalogContainerId'] as string | null
+                sourceContainerId,
+                catalogContainerId
               )
             }
           }),

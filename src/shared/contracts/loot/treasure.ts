@@ -75,8 +75,6 @@ export const treasureItemProvenanceSchema = z.discriminatedUnion('kind', [
 export const treasureContainerSchema = z
   .object({
     id: z.uuid(),
-    sourceContainerId: z.string().min(1).nullable(),
-    catalogContainerId: z.string().min(1).nullable(),
     provenance: treasureContainerProvenanceSchema,
     name: z.string().min(1),
     capacity: z.number().nonnegative(),
@@ -87,9 +85,6 @@ export const treasureContainerSchema = z
 export const treasureItemSchema = z
   .object({
     id: z.uuid(),
-    sourceLineId: z.string().min(1).nullable(),
-    catalogEntryKind: z.enum(['item', 'magic_item']).nullable(),
-    catalogItemId: z.string().min(1).nullable(),
     provenance: treasureItemProvenanceSchema,
     name: z.string().min(1),
     quantity: z.number().int().positive(),

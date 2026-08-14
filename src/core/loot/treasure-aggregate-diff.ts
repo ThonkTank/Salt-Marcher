@@ -106,7 +106,7 @@ export function buildTreasureAggregateDiff(
     if (!existing) insertedContainers.push({ draft, position })
     else {
       const same =
-        draft.catalogContainerId === existing.catalogContainerId &&
+        draft.catalogContainerId === catalogContainerId(existing) &&
         draft.name.trim() === existing.name &&
         draft.capacity === existing.capacity &&
         position === existing.position
@@ -128,6 +128,14 @@ export function buildTreasureAggregateDiff(
     deletedContainers,
     containerReassignments
   })
+}
+
+function catalogContainerId(
+  container: Treasure['containers'][number]
+): string | null {
+  return container.provenance.kind === 'manual'
+    ? null
+    : container.provenance.catalogContainerId
 }
 
 function assertUnique(values: readonly string[]): void {

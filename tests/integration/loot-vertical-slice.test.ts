@@ -18,7 +18,10 @@ import { defaultGeneratorConfig } from '../../src/shared/generator/system-genera
 import { GeneratedRunStore } from '../../src/core/session-generation/generated-run-store.js'
 import { GroupRewardCommandHandler } from '../../src/core/application/group-reward-command-handler.js'
 import { CampaignRulesService } from '../../src/core/application/campaign-rules-service.js'
-import { GroupRewardCommitHandler } from '../../src/core/application/group-reward-commit-handler.js'
+import {
+  GroupRewardCommitHandler,
+  type GroupRewardCommitContext
+} from '../../src/core/application/group-reward-commit-handler.js'
 import { CampaignUnitOfWork } from '../../src/core/application/campaign-unit-of-work.js'
 import { LootOperationJournal } from '../../src/core/loot/loot-operation-journal.js'
 import { LootProjectionStore } from '../../src/core/loot/loot-projection-store.js'
@@ -101,37 +104,92 @@ describe('loot vertical slice', () => {
          container_id, position
        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?)`
     )
-    expect(() =>
-      insert.run(
-        randomUUID(),
-        treasure.id,
+    const invalidRows: ReadonlyArray<readonly unknown[]> = [
+      // Catalog identity is all-null or all-present.
+      [null, null, 'item:test', 'Halbe Herkunft', 1, 0, 1, 0, null, null],
+      // Catalog kind must agree with magic.
+      [null, 'magic_item', 'magic:test', 'Falsche Art', 1, 0, 0, 0, null, null],
+      // Non-stackable items are singular.
+      [null, 'item', 'item:test', 'Unteilbar', 2, 1, 0, 0, null, null],
+      // Rarity and curses cannot leak into non-magical rows.
+      [null, 'item', 'item:test', 'Selten', 1, 0, 1, 0, 'Rare', null],
+      [null, 'item', 'item:test', 'Verflucht', 1, 0, 1, 0, null, 'Fluch'],
+      // Magic always has a rarity.
+      [
         null,
         'magic_item',
         'magic:test',
-        'Falsch',
+        'Ohne Seltenheit',
         1,
         0,
-        0,
-        0,
+        1,
+        1,
         null,
-        null,
-        1
-      )
-    ).toThrow()
+        null
+      ]
+    ]
+    invalidRows.forEach((row, position) =>
+      expect(() =>
+        insert.run(randomUUID(), treasure.id, ...row, position + 1)
+      ).toThrow()
+    )
+
+    insert.run(
+      randomUUID(),
+      treasure.id,
+      'source:item',
+      'magic_item',
+      'magic:test',
+      'Gültig',
+      1,
+      0,
+      0,
+      1,
+      'Rare',
+      'Fluch',
+      10
+    )
     expect(() =>
       insert.run(
         randomUUID(),
         treasure.id,
-        null,
-        'item',
-        'item:test',
-        'Unteilbar',
-        2,
+        'source:item',
+        'magic_item',
+        'magic:test',
+        'Doppelt',
         1,
         0,
         0,
+        1,
+        'Rare',
         null,
-        null,
+        11
+      )
+    ).toThrow()
+
+    const insertContainer = db.prepare(
+      `INSERT INTO loot_container (
+         id, treasure_id, source_container_id, catalog_container_id,
+         name, capacity, position
+       ) VALUES (?, ?, ?, ?, ?, ?, ?)`
+    )
+    insertContainer.run(
+      randomUUID(),
+      treasure.id,
+      'source:container',
+      'container:chest',
+      'Kiste',
+      10,
+      0
+    )
+    expect(() =>
+      insertContainer.run(
+        randomUUID(),
+        treasure.id,
+        'source:container',
+        'container:chest',
+        'Doppelte Kiste',
+        10,
         1
       )
     ).toThrow()
@@ -459,37 +517,37 @@ describe('loot vertical slice', () => {
     expect(tableCount(db, 'loot_treasure')).toBe(0)
 
     const play = new LivePlayService(() => db)
-    const commit = new GroupRewardCommitHandler(
-      () => ({
-        party: new PartyStore(db),
-        scenes: new SceneStore(db),
-        rules,
-        catalog: {
-          index: () => createLootCatalogIndex(catalog.loadFull())
-        },
-        generatedRuns: new GeneratedRunStore(db),
-        treasures: new TreasureStore(db),
-        groupCommands: {
-          save: (input) =>
-            play.saveSceneGroup(
-              input.sceneId,
-              input.groupId,
-              input.name,
-              input.note,
-              input.disposition,
-              input.entries,
-              input.expectedSceneRevision,
-              input.expectedGroupRevision,
-              input.prospectiveGroupId
-            ),
-          result: (id, groupIds) => play.sceneGroupResult(id, groupIds)
-        },
-        journal: new LootOperationJournal(db),
-        projections: new LootProjectionStore(db),
-        now: () => '2026-08-09T10:01:00.000Z'
-      }),
-      (work) => new CampaignUnitOfWork(db).run(work)
-    )
+    const commitContext = (): GroupRewardCommitContext => ({
+      party: new PartyStore(db),
+      scenes: new SceneStore(db),
+      rules,
+      catalog: {
+        index: () => createLootCatalogIndex(catalog.loadFull())
+      },
+      generatedRuns: new GeneratedRunStore(db),
+      treasures: new TreasureStore(db),
+      groupCommands: {
+        save: (input) =>
+          play.saveSceneGroup(
+            input.sceneId,
+            input.groupId,
+            input.name,
+            input.note,
+            input.disposition,
+            input.entries,
+            input.expectedSceneRevision,
+            input.expectedGroupRevision,
+            input.prospectiveGroupId
+          ),
+        result: (id, groupIds) => play.sceneGroupResult(id, groupIds)
+      },
+      journal: new LootOperationJournal(db),
+      projections: new LootProjectionStore(db),
+      now: () => '2026-08-09T10:01:00.000Z'
+    })
+    const transact = <T>(work: () => T): T =>
+      new CampaignUnitOfWork(db).run(work)
+    const commit = new GroupRewardCommitHandler(commitContext, transact)
     const baseDraft = generatedTreasureDraft(run.treasures[0]!, 'Wolfsbeute')
     const addedContainerId = randomUUID()
     const treasureDraft: GroupRewardTreasureDraft = {
@@ -591,6 +649,51 @@ describe('loot vertical slice', () => {
     )
     expect(scenes.groups(sceneId)).toHaveLength(0)
     expect(tableCount(db, 'loot_treasure')).toBe(0)
+
+    const revisionBeforeFailures = new LootProjectionStore(db).revision()
+    const failAfterGroupWrite = new GroupRewardCommitHandler(() => {
+      const context = commitContext()
+      return {
+        ...context,
+        treasures: {
+          findByGenerated: (runId: string, treasureId: string) =>
+            context.treasures.findByGenerated(runId, treasureId),
+          acceptGeneratedDraft: (
+            ..._arguments: Parameters<TreasureStore['acceptGeneratedDraft']>
+          ) => {
+            throw new Error('injected treasure write failure')
+          }
+        }
+      }
+    }, transact)
+    expect(() => failAfterGroupWrite.commit(input)).toThrow(
+      'injected treasure write failure'
+    )
+    expect(scenes.groups(sceneId)).toHaveLength(0)
+    expect(tableCount(db, 'loot_treasure')).toBe(0)
+    expect(new LootProjectionStore(db).revision()).toBe(revisionBeforeFailures)
+    expect(tableCount(db, 'loot_operation_receipt')).toBe(0)
+
+    const failAfterTreasureWrite = new GroupRewardCommitHandler(() => {
+      const context = commitContext()
+      return {
+        ...context,
+        projections: {
+          bumpRevision: () => {
+            context.projections.bumpRevision()
+            throw new Error('injected projection failure')
+          }
+        }
+      }
+    }, transact)
+    expect(() => failAfterTreasureWrite.commit(input)).toThrow(
+      'injected projection failure'
+    )
+    expect(scenes.groups(sceneId)).toHaveLength(0)
+    expect(tableCount(db, 'loot_treasure')).toBe(0)
+    expect(new LootProjectionStore(db).revision()).toBe(revisionBeforeFailures)
+    expect(tableCount(db, 'loot_operation_receipt')).toBe(0)
+
     const result = commit.commit(input)
     expect(result.groupResult.scenePatch.sceneRevision).toBe(
       expectedSceneRevision + 1
@@ -611,13 +714,13 @@ describe('loot vertical slice', () => {
     expect(result.treasure.label).toBe('Wolfsbeute bearbeitet')
     expect(result.treasure.items).toHaveLength(3)
     expect(result.treasure.items[0]).toMatchObject({
-      sourceLineId: run.treasures[0]!.items[0]!.id,
+      provenance: {
+        kind: 'generator',
+        sourceLineId: run.treasures[0]!.items[0]!.id
+      },
       name: `${run.treasures[0]!.items[0]!.name} bearbeitet`
     })
     expect(result.treasure.items[1]).toMatchObject({
-      sourceLineId: null,
-      catalogEntryKind: 'item',
-      catalogItemId: 'item:object:abacus',
       provenance: {
         kind: 'catalog',
         catalogEntry: { kind: 'item', id: 'item:object:abacus' }
@@ -630,9 +733,13 @@ describe('loot vertical slice', () => {
       curseName: null
     })
     expect(result.treasure.items[2]).toMatchObject({
-      sourceLineId: null,
-      catalogEntryKind: 'magic_item',
-      catalogItemId: 'magic:arcana:common:bead-of-nourishment',
+      provenance: {
+        kind: 'catalog',
+        catalogEntry: {
+          kind: 'magic_item',
+          id: 'magic:arcana:common:bead-of-nourishment'
+        }
+      },
       magic: true,
       rarity: 'Common',
       curseName: null

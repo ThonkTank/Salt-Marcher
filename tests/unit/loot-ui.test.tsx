@@ -176,9 +176,6 @@ function treasure(id: string, label: string, itemName: string): Treasure {
     items: [
       {
         id: id.replace(/.$/, '9'),
-        sourceLineId: null,
-        catalogEntryKind: null,
-        catalogItemId: null,
         provenance: { kind: 'manual' },
         name: itemName,
         quantity: 2,
