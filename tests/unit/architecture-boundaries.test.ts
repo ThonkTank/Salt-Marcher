@@ -127,8 +127,14 @@ describe('architecture boundaries', () => {
     ]
     for (const kind of forbidden) expect(operations).not.toHaveProperty(kind)
 
+    const utilitySources = [
+      source('src/utility/index.ts'),
+      ...codeFiles(join(process.cwd(), 'src/utility/composition')).map((path) =>
+        readFileSync(path, 'utf8')
+      )
+    ].join('\n')
     const utilityKeys = new Set(
-      [...source('src/utility/index.ts').matchAll(/^\s{2}'([^']+\.[^']+)':/gm)]
+      [...utilitySources.matchAll(/^\s+'([^']+\.[^']+)':/gm)]
         .map((match) => match[1])
         .filter((kind): kind is string => kind !== undefined)
     )
@@ -574,8 +580,11 @@ describe('architecture boundaries', () => {
     expect(combat).toContain('GroupTreasureReader')
     expect(combat).not.toContain('TreasureStore')
     const utility = source('src/utility/index.ts')
-    expect(utility).toContain('new GroupRewardCommandHandler')
+    const lootComposition = source('src/utility/composition/loot.ts')
+    expect(utility).toContain('createLootComposition')
     expect(utility).toContain('generation: sessionGenerationService')
+    expect(lootComposition).toContain('new GroupRewardCommandHandler')
+    expect(lootComposition).toContain('new GroupRewardCommitHandler')
   })
 
   it('keeps Planner, Loot, and campaign rules behind lazy UI leaves', () => {
