@@ -120,7 +120,7 @@ Status values:
 | SGL-69 | Planner preparation survives an Electron restart and a Utility restart during active work, while queued, generating, resolving, saving, and ready are visibly observed. | Planner E2E | Preparation event/receipt flow | Dedicated active-restart UI journey | DONE |
 | SGL-70 | Group-reward integration covers base/adjusted policy, stale protection, acceptance, move, distribution, and Ledger; separate v3 Group Loot journeys cover catalog editing/discard protection and atomic commit/restart, while v4 directly prepares the Distribution/Ledger journey. | Loot integration/E2E | Group reward and Loot ports | Handler integration matrix plus focused editor, commit, and distribution journeys | DONE |
 | SGL-71 | Updated Group-manager and Group Loot light/dark Goldens plus Planner, Settings, Group Loot, and Distribution keyboard/focus/Escape/Axe checks are enforced; every manifest Golden has an executable assertion. | Renderer/E2E | Dialog surfaces | Component tests, named Goldens, manifest coverage, and isolated Electron checks | DONE |
-| SGL-72 | The canonical `pnpm check` passes without baseline or budget increase. | Repository | Canonical check | One successful full invocation on the final SHA plus linked CI evidence | DONE |
+| SGL-72 | The canonical `pnpm check` passes without baseline or budget increase. | Repository | Canonical check | One successful full invocation on the final SHA plus linked CI evidence | PARTIAL |
 
 ## Editable Group Loot draft extension
 
@@ -146,16 +146,21 @@ Status values:
 
 ## Current audit summary
 
+The named integration baseline is commit
+`94d9576c87f98cf1731c54de2990d1c7e1fb84c1`, tagged
+`group-loot-refactor-baseline`. Its recorded reachable-renderer snapshot is
+2,981,101 bytes. No complete successful canonical-check run is attached to
+that baseline SHA; it must not be represented as green evidence.
+
 The direct architecture, unit, integration, bundle, component, and focused
-Electron evidence is recorded by the named tests. On 2026-08-14 the canonical
-`pnpm check` passed on final code SHA
-`2226468c2bbf93e10f1977169660bb7a8100e3f8` in the linked cross-platform
-[GitHub Actions run 31751190304](https://github.com/ThonkTank/Salt-Marcher/actions/runs/31751190304):
-56 architecture, 398 unit, and 122 integration tests plus all ten sequential
-Electron suites passed on Ubuntu, Windows, and macOS. Build, smoke, artifact,
-Golden, bundle, packaged-smoke, packaged-qualification-smoke, and the separate
-passive-Electron gate also passed. The reachable renderer measured 1,435,971
-bytes without increasing a fixed ceiling.
+Electron evidence is recorded by the named tests. A predecessor tree at
+`2226468c2bbf93e10f1977169660bb7a8100e3f8` passed the linked cross-platform
+[GitHub Actions run 31751190304](https://github.com/ThonkTank/Salt-Marcher/actions/runs/31751190304),
+but subsequent issue-propagation, request-token, rollback, and Golden-policy
+corrections changed the final tree. SGL-72 therefore remains `PARTIAL` until
+the head SHA of the fifth stacked refactor PR passes `pnpm check` and its
+linked CI run. The current reachable renderer measures 1,435,971 bytes without
+increasing a fixed ceiling.
 
 This summary is informational. The row statuses and direct evidence govern
 completion and must be updated as the implementation advances.
