@@ -86,6 +86,43 @@ describe('developer feedback partitions', () => {
   })
 })
 
+describe('group Loot persistence refactor', () => {
+  it('keeps Utility bootstrap thin and composes feature-owned handlers', () => {
+    const entry = readFileSync('src/utility/index.ts', 'utf8')
+    const application = readFileSync('src/utility/application.ts', 'utf8')
+    expect(entry.split('\n').length).toBeLessThan(10)
+    expect(entry).toContain("import './application.js'")
+    expect(application.split('\n').length).toBeLessThan(900)
+    for (const module of [
+      'biome',
+      'campaign',
+      'hex',
+      'live-play',
+      'loot',
+      'reference',
+      'session-planner',
+      'travel',
+      'world-planner'
+    ])
+      expect(
+        readFileSync(`src/utility/composition/${module}.ts`, 'utf8')
+      ).toContain('Pick<CoreHandlers')
+  })
+
+  it('routes both generated acceptance paths through one aggregate writer', () => {
+    const store = readFileSync('src/core/loot/loot-store.ts', 'utf8')
+    const writer = readFileSync(
+      'src/core/loot/treasure-aggregate-writer.ts',
+      'utf8'
+    )
+    expect(store).toContain('this.aggregateWriter.insertGenerated')
+    expect(store).not.toContain('private acceptGeneratedDraft')
+    expect(writer).toContain('INSERT INTO loot_treasure')
+    expect(writer).toContain('INSERT INTO loot_container')
+    expect(writer).toContain('INSERT INTO loot_item')
+  })
+})
+
 function typescriptFiles(root: string): string[] {
   return readdirSync(root, { withFileTypes: true }).flatMap((entry) => {
     const path = join(root, entry.name)

@@ -16,17 +16,15 @@ import type {
   GeneratedRun,
   GeneratedTreasure
 } from '../../shared/contracts/session-generation.js'
-import { CapabilityError } from '../../shared/errors/capability-error.js'
 import { fingerprintExcluding } from '../fingerprint.js'
 import {
   normalizeGroupRewardEntries,
   sameGroupRewardEntries
 } from '../session-generation/group-reward-source.js'
 import type { LootCatalogIndex } from '../loot/loot-catalog-index.js'
-import {
-  materializeGroupRewardTreasureDraft,
-  type MaterializedGroupRewardTreasureDraft
-} from '../loot/group-reward-treasure-draft.js'
+import type { MaterializedGroupRewardTreasureDraft } from '../loot/group-reward-treasure-draft.js'
+import { GroupRewardRevisionGuard } from './group-reward-revision-guard.js'
+import { GroupRewardDraftMaterializer } from './group-reward-draft-materializer.js'
 
 type GroupSaveInput = Readonly<{
   sceneId: string
@@ -119,52 +117,12 @@ export class GroupRewardCommitHandler {
       })
       if (receipt) return receipt.result
 
-      const run = context.generatedRuns.read(input.runId)
-      if (!run || run.runKind !== 'group_reward') notFound()
-      const generated = run.treasures.find(
-        (candidate) => candidate.id === input.generatedTreasureId
-      )
-      if (!generated) notFound()
-      requireMatchingSource(run, input)
-      const party = context.party.read()
-      if (party.revision !== run.input.partyRevision) stale()
-      const rules = context.rules.read()
-      if (rules.revision !== run.input.campaignRulesRevision) stale()
-      if (context.scenes.revision() !== input.expectedSceneRevision) stale()
-      const scene = context.scenes
-        .snapshot(party.members)
-        .scenes.find((candidate) => candidate.id === input.sceneId)
-      if (!scene) notFound()
-      const existingGroup = scene.groups.find(
-        (candidate) => candidate.id === input.groupId
-      )
-      if (input.expectedGroupRevision === null) {
-        if (existingGroup) stale()
-      } else {
-        if (!existingGroup) notFound()
-        if (existingGroup.archived) invalid()
-        if (existingGroup.revision !== input.expectedGroupRevision) stale()
-      }
-      if (context.treasures.findByGenerated(run.id, input.generatedTreasureId))
-        throw new CapabilityError('idempotency_conflict', false)
-
-      const needsCatalog =
-        input.treasureDraft.items.some(
-          (item) => item.origin.kind === 'catalog'
-        ) ||
-        input.treasureDraft.containers.some(
-          (container) => container.origin.kind === 'catalog'
-        )
-      const treasureDraft = materializeGroupRewardTreasureDraft(
-        generated,
-        input.treasureDraft,
-        needsCatalog
-          ? context.catalog.index({
-              catalogVersion: run.catalogVersion,
-              catalogContentHash: run.catalogContentHash
-            })
-          : null
-      )
+      const { run, generated, existingGroup } = new GroupRewardRevisionGuard(
+        context
+      ).validate(input)
+      const treasureDraft = new GroupRewardDraftMaterializer(
+        context
+      ).materialize(run, generated, input.treasureDraft)
 
       const changed =
         !existingGroup || !samePersistedGroup(existingGroup, input)
@@ -215,20 +173,6 @@ export class GroupRewardCommitHandler {
   }
 }
 
-function requireMatchingSource(
-  run: Extract<GeneratedRun, { runKind: 'group_reward' }>,
-  input: CommitGroupRewardInput
-): void {
-  if (
-    run.input.sceneId !== input.sceneId ||
-    run.input.groupId !== input.groupId ||
-    run.input.sceneRevision !== input.expectedSceneRevision ||
-    run.input.groupRevision !== input.expectedGroupRevision ||
-    !sameGroupRewardEntries(run.input.groupEntries, input.entries)
-  )
-    invalid()
-}
-
 function samePersistedGroup(
   group: SceneGroup,
   input: CommitGroupRewardInput
@@ -246,16 +190,4 @@ function samePersistedGroup(
       input.entries
     )
   )
-}
-
-function stale(): never {
-  throw new CapabilityError('stale', true)
-}
-
-function invalid(): never {
-  throw new CapabilityError('validation_failed', false)
-}
-
-function notFound(): never {
-  throw new CapabilityError('not_found', false)
 }

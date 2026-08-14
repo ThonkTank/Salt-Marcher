@@ -51,7 +51,10 @@ export function TreasureEditorDialog(props: {
       props.treasure?.containers.map((container) => ({
         draftId: container.id,
         persistedId: container.id,
-        catalogContainerId: container.catalogContainerId,
+        catalogContainerId:
+          container.provenance.kind === 'manual'
+            ? null
+            : container.provenance.catalogContainerId,
         name: container.name,
         capacity: container.capacity
       })) ?? []

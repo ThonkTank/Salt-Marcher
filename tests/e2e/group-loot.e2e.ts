@@ -176,7 +176,10 @@ describe('Group Loot editor', () => {
           .flatMap((treasure) => treasure.items)
           .find(
             (item) =>
-              item.catalogItemId === 'magic:arcana:common:bead-of-nourishment'
+              item.provenance.kind === 'catalog' &&
+              item.provenance.catalogEntry.kind === 'magic_item' &&
+              item.provenance.catalogEntry.id ===
+                'magic:arcana:common:bead-of-nourishment'
           )
       }
     })

@@ -139,7 +139,10 @@ function inputFrom(
     ),
     containers: treasure.containers.map((entry) => ({
       id: entry.id,
-      catalogContainerId: entry.catalogContainerId,
+      catalogContainerId:
+        entry.provenance.kind === 'manual'
+          ? null
+          : entry.provenance.catalogContainerId,
       name: entry.name,
       capacity: entry.capacity
     }))

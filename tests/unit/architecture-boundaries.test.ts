@@ -129,6 +129,7 @@ describe('architecture boundaries', () => {
 
     const utilitySources = [
       source('src/utility/index.ts'),
+      source('src/utility/application.ts'),
       ...codeFiles(join(process.cwd(), 'src/utility/composition')).map((path) =>
         readFileSync(path, 'utf8')
       )
@@ -264,7 +265,7 @@ describe('architecture boundaries', () => {
   it('keeps travel reads pure and progression in the utility process', () => {
     const travel = source('src/core/hex/hex-travel.ts')
     const renderer = source('src/renderer/features/hex/hex-workspaces.tsx')
-    const utility = source('src/utility/index.ts')
+    const utility = source('src/utility/application.ts')
     expect(travel).not.toMatch(
       /read\(requestedSceneId\?[\s\S]*?this\.advance\(journey\)/
     )
@@ -581,7 +582,7 @@ describe('architecture boundaries', () => {
     const combat = source('src/core/encounter/combat-service.ts')
     expect(combat).toContain('GroupTreasureReader')
     expect(combat).not.toContain('TreasureStore')
-    const utility = source('src/utility/index.ts')
+    const utility = source('src/utility/application.ts')
     const lootComposition = source('src/utility/composition/loot.ts')
     expect(utility).toContain('createLootComposition')
     expect(utility).toContain('generation: sessionGenerationService')
@@ -994,7 +995,7 @@ describe('architecture boundaries', () => {
     expect(
       source('src/main/application-lifecycle/capability-registration.ts')
     ).toContain('Object.entries(mainOperations)')
-    const utility = source('src/utility/index.ts')
+    const utility = source('src/utility/application.ts')
     expect(utility).toContain('satisfies CoreHandlers')
     for (const feature of [
       'campaign',
