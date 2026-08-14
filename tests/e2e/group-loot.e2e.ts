@@ -205,7 +205,7 @@ async function addCatalogEntry(
   name: string,
   editorLabel: 'Gegenstand' | 'Behälter'
 ): Promise<void> {
-  await search.setValue(name)
+  await replaceFieldValue(browser as unknown as WdioBrowser, search, name)
   const add = await catalog.$(`button[aria-label="${name} hinzufügen"]`)
   await add.waitForExist({ timeout: 10_000 })
   await browser.waitUntil(() => add.isEnabled(), {
