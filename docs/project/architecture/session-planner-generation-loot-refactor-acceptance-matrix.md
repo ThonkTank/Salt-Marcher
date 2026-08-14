@@ -120,7 +120,7 @@ Status values:
 | SGL-69 | Planner preparation survives an Electron restart and a Utility restart during active work, while queued, generating, resolving, saving, and ready are visibly observed. | Planner E2E | Preparation event/receipt flow | Dedicated active-restart UI journey | DONE |
 | SGL-70 | Group Loot covers base, adjusted policy switch, stale protection, acceptance, edit, move, distribution, and Ledger. | Loot E2E | Group reward and Loot ports | Dedicated journey plus fast variants | DONE |
 | SGL-71 | Updated Planner and Group Loot light/dark Goldens plus Planner, Settings, Group Loot, and Distribution keyboard/focus/Escape/Axe checks are enforced. | Renderer/E2E | Dialog surfaces | Component tests, named Goldens, and isolated Electron checks | DONE |
-| SGL-72 | The canonical `pnpm check` passes without baseline or budget increase. | Repository | Canonical check | One successful full invocation | DONE |
+| SGL-72 | The canonical `pnpm check` passes without baseline or budget increase. | Repository | Canonical check | One successful full invocation on the final SHA plus linked CI evidence | PARTIAL |
 
 ## Editable Group Loot draft extension
 
@@ -131,12 +131,18 @@ Status values:
 | SGL-75 | The draft budget reports non-magic copper against the generated target with informational plus/minus 15 percent classification and reports magic target/current separately; it never blocks confirmation. | Renderer Loot | Group Loot budget projector | Budget boundary unit tests and E2E value-change assertion | DONE |
 | SGL-76 | Atomic confirmation validates generated and pinned-catalog origins, derives magic/rarity/curse and provenance server-side, persists edited/removable/added lines and packing without a migration, fingerprints the full draft, and rolls every owner back on invalid or stale input. | Loot application/persistence | `loot.commitGroupReward`, generated-draft acceptance | Integration tests for metadata, assignments, exact retry/conflict, stale revisions, restart, and rollback | DONE |
 
-## Current audit summary
+## Named baseline and current audit
 
-The 2026-08-11 implementation audit records all 76 rows as `DONE`, with no
-`PARTIAL` or `OPEN` rows. Each row has direct contract, architecture, unit,
-integration, bundle, component, or isolated Electron evidence named by the row;
-the final canonical `pnpm check` invocation also succeeded.
+Commit `94d9576c87f98cf1731c54de2990d1c7e1fb84c1` is the named, unchanged
+integration baseline for the already combined Session, Loot, Hex, and Travel
+workspace. Its recorded reachable-renderer snapshot is 2,981,101 bytes. There
+is no admissible successful canonical-check run attached to that SHA; the
+earlier local run was incomplete and must not be presented as green evidence.
+
+This check-hardening stage deliberately leaves SGL-72 `PARTIAL`. It provides
+bounded lint/Vitest processes and resumable per-suite E2E evidence, but only a
+successful `pnpm check` on the eventual final SHA with linked CI evidence may
+move SGL-72 back to `DONE`.
 
 This summary is informational. The row statuses and direct evidence govern
 completion and must be updated as the implementation advances.
