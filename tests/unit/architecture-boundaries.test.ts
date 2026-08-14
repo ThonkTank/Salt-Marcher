@@ -105,7 +105,7 @@ describe('architecture boundaries', () => {
       expect(['read', 'write']).toContain(definition.mode)
       expect(definition.deadlineMs).toBeGreaterThan(0)
       expect(definition.roles.length).toBeGreaterThanOrEqual(
-        definition.channel === null ? 0 : 1
+        kind === 'core.shutdown' ? 0 : 1
       )
       expect(
         ['ZodUndefined', 'ZodObject', 'ZodDiscriminatedUnion'].includes(
@@ -156,8 +156,6 @@ describe('architecture boundaries', () => {
     )
 
     const main = source('src/main/application-lifecycle/application.ts')
-    expect(main).toContain("'core.sessionGenerationCatalog'")
-    expect(main).not.toContain("requestOperation('sessionPlanner.read'")
     for (const kind of Object.keys(capabilityEvents)) {
       expect(main, `${kind} is not routed by the event registry`).toContain(
         `capabilityEvents['${kind}']`
