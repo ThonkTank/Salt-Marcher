@@ -146,3 +146,7 @@
   margin-left: 0;
   padding: 3px var(--space-3);
 }
+
+[data-theme='dark'] .group-filter-summary .creatures-filter-reset {
+  color: var(--sm-candle-2);
+}
