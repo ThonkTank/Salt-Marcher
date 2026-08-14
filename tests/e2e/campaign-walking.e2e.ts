@@ -1,5 +1,8 @@
 import { browser, expect } from '@wdio/globals'
-import type { Browser as WdioBrowser } from 'webdriverio'
+import type {
+  Browser as WdioBrowser,
+  ChainablePromiseElement
+} from 'webdriverio'
 import {
   clickWhenInteractable,
   expectAccessible,
@@ -55,6 +58,30 @@ describe('campaign walking skeleton', () => {
     await (
       await client.$('section.encounter-settings-dialog')
     ).waitForDisplayed({ timeout: 5_000 })
+    const campaignRulesCard = await client.$('.campaign-reward-rules-card')
+    await campaignRulesCard.waitForDisplayed({ timeout: 10_000 })
+    await client.waitUntil(
+      async () =>
+        (await campaignRulesCard.getAttribute('aria-busy')) === 'false',
+      {
+        timeout: 10_000,
+        timeoutMsg: 'Campaign reward rules did not finish loading.'
+      }
+    )
+    await (
+      await client.$('.generator-settings-card')
+    ).waitForDisplayed({ timeout: 10_000 })
+    await (
+      await campaignRulesCard.$('input[type="radio"]:checked')
+    ).waitForExist({ timeout: 10_000 })
+    await client.execute(async () => {
+      const body = document.querySelector<HTMLElement>('.settings-dialog-body')
+      if (!body) throw new Error('Settings dialog body is missing.')
+      body.scrollTop = 0
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      })
+    })
     expect(
       await client.execute(() => {
         const dialog = document.querySelector(
@@ -67,22 +94,39 @@ describe('campaign walking skeleton', () => {
         )
       })
     ).toBe(true)
-    await expectElementGolden(
-      client,
-      'encounter-settings-light',
-      'section.encounter-settings-dialog'
-    )
+    const settingsGoldenFailures: string[] = []
+    try {
+      await expectElementGolden(
+        client,
+        'encounter-settings-light',
+        'section.encounter-settings-dialog'
+      )
+    } catch (error) {
+      settingsGoldenFailures.push(
+        error instanceof Error ? error.message : String(error)
+      )
+    }
     await client.execute(() => {
       document.documentElement.dataset['theme'] = 'dark'
     })
-    await expectElementGolden(
-      client,
-      'encounter-settings-dark',
-      'section.encounter-settings-dialog'
-    )
+    try {
+      await expectElementGolden(
+        client,
+        'encounter-settings-dark',
+        'section.encounter-settings-dialog'
+      )
+    } catch (error) {
+      settingsGoldenFailures.push(
+        error instanceof Error ? error.message : String(error)
+      )
+    }
     await client.execute(() => {
       document.documentElement.dataset['theme'] = 'light'
     })
+    if (settingsGoldenFailures.length > 0)
+      throw new Error(
+        `Encounter settings goldens failed: ${settingsGoldenFailures.join('; ')}`
+      )
     await setWindowToMinimumResponsiveSize(client)
     await client.execute(() => {
       document.documentElement.style.fontSize = '200%'
@@ -634,6 +678,8 @@ describe('campaign walking skeleton', () => {
     await generate.click()
     await expectGroupManagementGolden(client)
     await expect(await groupDialog.$('button=Leeren')).not.toBeExisting()
+    const groupView = await groupDialog.$('button=Gruppe')
+    if (await groupView.isExisting()) await groupView.click()
     const undoGenerated = await groupDialog.$(
       'button[aria-label="Änderung zurücknehmen"]'
     )
@@ -660,6 +706,7 @@ describe('campaign walking skeleton', () => {
         increase?.click()
       })
     await (await groupDialog.$('button=Speichern')).click()
+    await dismissLootDiscardPromptIfPresent(client, groupDialog)
     await expect(await client.$('strong=Wolf Pack')).toBeExisting()
     await expect(await client.$('.group-note')).toHaveText(
       'Lauert Prone in den Dünen; Stunned bei Alarm.'
@@ -785,6 +832,7 @@ describe('campaign walking skeleton', () => {
     await reopenedSelection.selectByVisibleText('Neue Gruppe')
     await expect(emptyGroupName).toHaveValue('')
     await (await reopenedGroupDialog.$('button=Speichern')).click()
+    await dismissLootDiscardPromptIfPresent(client, reopenedGroupDialog)
     await expect(await client.$('strong=Gruppe 1')).toBeExisting()
 
     await (
@@ -1004,6 +1052,27 @@ async function waitForSceneLocation(
       timeoutMsg: `Scene location did not become ${expected}.`
     }
   )
+}
+
+async function dismissLootDiscardPromptIfPresent(
+  client: WdioBrowser,
+  groupDialog: ChainablePromiseElement
+): Promise<void> {
+  const discardPrompt = await client.$('section[role="alertdialog"]')
+  await client.waitUntil(
+    async () =>
+      !(await groupDialog.isExisting()) || (await discardPrompt.isExisting()),
+    {
+      timeout: 5_000,
+      timeoutMsg:
+        'Group manager neither closed nor exposed the Loot discard prompt.'
+    }
+  )
+  if (await discardPrompt.isExisting()) {
+    await discardPrompt.waitForDisplayed({ timeout: 5_000 })
+    await (await discardPrompt.$('button=Änderungen verwerfen')).click()
+  }
+  await groupDialog.waitForExist({ reverse: true, timeout: 5_000 })
 }
 
 async function pressDividerKey(

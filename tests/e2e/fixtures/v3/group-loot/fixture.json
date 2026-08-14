@@ -1,0 +1,23 @@
+{
+  "version": 3,
+  "campaign": "Gruppenloot-Abnahme",
+  "sessionLayout": {
+    "controlPaneWidth": 300,
+    "scenarioPaneWidth": 320,
+    "centerTab": "details"
+  },
+  "locations": [],
+  "sceneLocation": null,
+  "party": [
+    {
+      "name": "Alrik",
+      "active": true,
+      "movementSpeedFeet": null
+    }
+  ],
+  "groupScenario": {
+    "name": "E2E Gruppenbeute",
+    "creatureId": "wolf",
+    "quantity": 3
+  }
+}

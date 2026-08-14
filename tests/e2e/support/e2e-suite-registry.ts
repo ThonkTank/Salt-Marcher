@@ -41,6 +41,11 @@ export const e2eSuiteRegistry = [
     fixture: 'v1/empty-installation'
   },
   {
+    name: 'groupLoot',
+    spec: './tests/e2e/group-loot.e2e.ts',
+    fixture: 'v3/group-loot'
+  },
+  {
     name: 'travel',
     spec: './tests/e2e/session-travel.e2e.ts',
     fixture: 'v2/travel-scenario'

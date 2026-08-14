@@ -93,13 +93,13 @@
     },
     {
       "name": "group-loot-preview-light",
-      "suite": "loot",
+      "suite": "groupLoot",
       "selector": ".group-loot-inline-panel",
       "viewport": { "width": 1280, "height": 800 }
     },
     {
       "name": "group-loot-preview-dark",
-      "suite": "loot",
+      "suite": "groupLoot",
       "selector": ".group-loot-inline-panel",
       "viewport": { "width": 1280, "height": 800 }
     },

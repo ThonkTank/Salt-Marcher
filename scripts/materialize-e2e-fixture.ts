@@ -30,19 +30,21 @@ const fixtureV1Schema = z
   })
   .strict()
 
+const partyFixtureSchema = z.array(
+  z
+    .object({
+      name: z.string().min(1),
+      active: z.boolean(),
+      movementSpeedFeet: z.number().int().positive().nullable()
+    })
+    .strict()
+)
+
 const fixtureV2Schema = fixtureV1Schema
   .omit({ version: true })
   .extend({
     version: z.literal(2),
-    party: z.array(
-      z
-        .object({
-          name: z.string().min(1),
-          active: z.boolean(),
-          movementSpeedFeet: z.number().int().positive().nullable()
-        })
-        .strict()
-    ),
+    party: partyFixtureSchema,
     travelScenario: z
       .object({
         mapName: z.string().min(1),
@@ -67,9 +69,25 @@ const fixtureV2Schema = fixtureV1Schema
   })
   .strict()
 
+const fixtureV3Schema = fixtureV1Schema
+  .omit({ version: true })
+  .extend({
+    version: z.literal(3),
+    party: partyFixtureSchema,
+    groupScenario: z
+      .object({
+        name: z.string().min(1),
+        creatureId: z.string().min(1),
+        quantity: z.number().int().positive()
+      })
+      .strict()
+  })
+  .strict()
+
 const fixtureSchema = z.discriminatedUnion('version', [
   fixtureV1Schema,
-  fixtureV2Schema
+  fixtureV2Schema,
+  fixtureV3Schema
 ])
 
 const userData = requiredArgument('--user-data')
@@ -100,7 +118,7 @@ try {
         },
         snapshot.revision
       ).snapshot
-    if (fixture.version === 2) {
+    if (fixture.version === 2 || fixture.version === 3) {
       const database = () => campaigns.activeCampaignDatabase()
       const play = new LivePlayService(database)
       let party = play.readParty()
@@ -132,46 +150,81 @@ try {
             party.revision
           )
       }
-      const location = snapshot.locations.find(
-        (candidate) =>
-          candidate.displayName === fixture.travelScenario.locationName
-      )
-      if (!location)
-        throw new Error(
-          `Fixture travel location is missing: ${fixture.travelScenario.locationName}`
+      let live = play.readSession()
+      const focusedSceneId = live.scene.focusedSceneId
+      for (const member of party.members.filter(
+        (candidate) => candidate.active
+      )) {
+        const scene = live.scene.scenes.find(
+          (candidate) => candidate.id === focusedSceneId
+        )!
+        if (!scene.partyMemberIds.includes(member.id))
+          live = play.assignScenePartyMember(
+            focusedSceneId,
+            member.id,
+            true,
+            live.scene.revision
+          )
+      }
+      if (fixture.version === 3) {
+        play.saveSceneGroup(
+          focusedSceneId,
+          null,
+          fixture.groupScenario.name,
+          '',
+          'hostile',
+          [
+            {
+              creatureId: fixture.groupScenario.creatureId,
+              quantity: fixture.groupScenario.quantity,
+              deadQuantity: 0
+            }
+          ],
+          live.scene.revision,
+          null
         )
-      const db = database()
-      const mapStore = new HexMapStore(db, new WorldLocationStore(db))
-      let map = mapStore.create({
-        displayName: fixture.travelScenario.mapName,
-        expectedCatalogRevision: mapStore.catalog().revision
-      })
-      const byBiome = Map.groupBy(
-        fixture.travelScenario.tiles,
-        (tile) => tile.biomeId
-      )
-      for (const [biomeId, tiles] of byBiome) {
-        map = mapStore.applyBrushTargets({
+      } else {
+        const location = snapshot.locations.find(
+          (candidate) =>
+            candidate.displayName === fixture.travelScenario.locationName
+        )
+        if (!location)
+          throw new Error(
+            `Fixture travel location is missing: ${fixture.travelScenario.locationName}`
+          )
+        const db = database()
+        const mapStore = new HexMapStore(db, new WorldLocationStore(db))
+        let map = mapStore.create({
+          displayName: fixture.travelScenario.mapName,
+          expectedCatalogRevision: mapStore.catalog().revision
+        })
+        const byBiome = Map.groupBy(
+          fixture.travelScenario.tiles,
+          (tile) => tile.biomeId
+        )
+        for (const [biomeId, tiles] of byBiome) {
+          map = mapStore.applyBrushTargets({
+            mapId: map.id,
+            mode: 'paint',
+            biomeId,
+            coordinates: tiles,
+            expectedContentRevision: map.contentRevision
+          }).map
+        }
+        map = mapStore.placeLocation({
           mapId: map.id,
-          mode: 'paint',
-          biomeId,
-          coordinates: tiles,
+          locationId: location.id,
+          coordinate: fixture.travelScenario.locationCoordinate,
           expectedContentRevision: map.contentRevision
         }).map
+        const session = play.readSession()
+        new HexTravelService(database).position({
+          sceneId: session.scene.focusedSceneId,
+          mapId: map.id,
+          coordinate: fixture.travelScenario.partyCoordinate,
+          expectedSceneRevision: session.scene.revision
+        })
       }
-      map = mapStore.placeLocation({
-        mapId: map.id,
-        locationId: location.id,
-        coordinate: fixture.travelScenario.locationCoordinate,
-        expectedContentRevision: map.contentRevision
-      }).map
-      const session = play.readSession()
-      new HexTravelService(database).position({
-        sceneId: session.scene.focusedSceneId,
-        mapId: map.id,
-        coordinate: fixture.travelScenario.partyCoordinate,
-        expectedSceneRevision: session.scene.revision
-      })
     }
     if (fixture.sceneLocation !== null) {
       const location = snapshot.locations.find(

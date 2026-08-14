@@ -48,6 +48,7 @@ describe('Session map and travel console', () => {
         toolbarCount: document.querySelectorAll('.hex-map-toolbar').length,
         statusCount: document.querySelectorAll('.hex-map-status').length,
         mapHeight: Math.round(mapBounds.height),
+        viewportHeight: window.innerHeight,
         widthDelta: Math.round(mapBounds.width - shellBounds.width),
         heightDelta: Math.round(mapBounds.height - shellBounds.height)
       }
@@ -58,7 +59,8 @@ describe('Session map and travel console', () => {
       widthDelta: 2,
       heightDelta: 2
     })
-    expect(geometry?.mapHeight).toBeGreaterThan(650)
+    if (!geometry) throw new Error('Travel map geometry is unavailable.')
+    expect(geometry.mapHeight).toBeGreaterThan(geometry.viewportHeight * 0.8)
 
     const dragToken = (fromQ: number, toQ: number) =>
       client.execute(
