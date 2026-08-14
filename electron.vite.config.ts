@@ -30,6 +30,10 @@ export default defineConfig({
   renderer: {
     build: {
       manifest: true,
+      // Renderer budgets measure emitted bytes. Electron-vite leaves renderer
+      // chunks readable unless minification is explicit, so keep production
+      // delivery and the ratcheted architecture budget aligned.
+      minify: 'esbuild',
       rollupOptions: {
         input: {
           ...(qualificationBuild

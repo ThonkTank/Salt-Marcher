@@ -1,6 +1,11 @@
+import { lazy, Suspense } from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type { SceneGroup } from '../../../shared/contracts/scene.js'
-import { GroupDialog } from './group-dialog.js'
+
+const LazyGroupDialog = lazy(async () => {
+  const module = await import('./group-dialog.js')
+  return { default: module.GroupDialog }
+})
 
 export function SessionDialogHost(props: {
   snapshot: LiveSessionSnapshot
@@ -15,15 +20,17 @@ export function SessionDialogHost(props: {
 }) {
   if (!props.open) return null
   return (
-    <GroupDialog
-      snapshot={props.snapshot}
-      group={props.group}
-      close={props.close}
-      saved={props.saved}
-      lootChanged={props.lootChanged}
-      inspect={(creature) => props.inspect(creature.id, creature.name)}
-      onError={props.onError}
-      reinforcementMode={props.reinforcementMode}
-    />
+    <Suspense fallback={null}>
+      <LazyGroupDialog
+        snapshot={props.snapshot}
+        group={props.group}
+        close={props.close}
+        saved={props.saved}
+        lootChanged={props.lootChanged}
+        inspect={(creature) => props.inspect(creature.id, creature.name)}
+        onError={props.onError}
+        reinforcementMode={props.reinforcementMode}
+      />
+    </Suspense>
   )
 }

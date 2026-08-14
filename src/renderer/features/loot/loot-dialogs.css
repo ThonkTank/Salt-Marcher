@@ -316,6 +316,8 @@
   container-type: inline-size;
   display: grid;
   gap: var(--space-3);
+  min-width: 0;
+  overflow-x: clip;
 }
 
 .treasure-item-editor-row > label,
@@ -332,6 +334,11 @@
 
 .treasure-item-name-field small {
   color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.treasure-field-issue {
+  color: var(--text-danger);
   font-size: var(--text-xs);
 }
 

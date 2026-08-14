@@ -5,6 +5,7 @@
   height: min(900px, calc(100vh - 68px));
   max-height: none;
   overflow: hidden;
+  overflow-x: clip;
   border: var(--border-width-structural) solid var(--border-structural);
   border-radius: var(--radius-0);
   background: var(--surface-pane-sunken);
@@ -144,4 +145,8 @@
 .group-filter-summary .creatures-filter-reset {
   margin-left: 0;
   padding: 3px var(--space-3);
+}
+
+[data-theme='dark'] .group-filter-summary .creatures-filter-reset {
+  color: var(--sm-candle-2);
 }

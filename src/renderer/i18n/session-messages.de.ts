@@ -100,6 +100,8 @@ export const sessionMessagesDe = {
   'group.unavailable': 'nicht kampffähig',
   'group.levels': 'Stufen',
   'group.unsaved': 'ungespeicherte Änderungen',
+  'group.externalConflict':
+    'Die Gruppe wurde außerhalb dieses Entwurfs geändert. Prüfe die Änderungen vor dem Speichern.',
   'group.draftWidth': 'Breite des Gruppenentwurfs',
   'group.undo': 'Änderung zurücknehmen',
   'group.redo': 'Änderung wiederholen',

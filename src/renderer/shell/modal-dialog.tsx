@@ -7,6 +7,7 @@ import {
   type CSSProperties,
   type ButtonHTMLAttributes,
   type FormHTMLAttributes,
+  type KeyboardEventHandler,
   type ReactNode
 } from 'react'
 import { createPortal } from 'react-dom'
@@ -29,6 +30,7 @@ export function ModalDialog(props: {
   busy?: boolean
   role?: 'dialog' | 'alertdialog'
   dismissOnBackdrop?: boolean
+  onKeyDown?: KeyboardEventHandler<HTMLElement>
 }) {
   const layer = useContext(OverlayLayerContext)
   if (!layer)
@@ -85,6 +87,7 @@ export function ModalDialog(props: {
     'aria-label': props.ariaLabel,
     'aria-labelledby': props.labelledBy,
     'aria-busy': props.busy || undefined,
+    onKeyDown: props.onKeyDown,
     tabIndex: -1
   } as const
   if (!layer.layer) return null

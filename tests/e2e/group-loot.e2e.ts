@@ -28,6 +28,7 @@ describe('Group Loot editor', () => {
     await (
       await groupDialog.$('select[aria-label="Gruppe auswählen"]')
     ).selectByVisibleText('E2E Gruppenbeute')
+    await (await groupDialog.$('[role="tab"]=Schatz-Draft')).click()
     const openGenerator = await groupDialog.$('button=Loot erzeugen')
     await client.waitUntil(() => openGenerator.isEnabled(), {
       timeout: 10_000,

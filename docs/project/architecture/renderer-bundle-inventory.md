@@ -22,22 +22,26 @@ report states which route-specific dependency set grew.
 for every graph. `BUNDLE_REPORT_GZIP=1` additionally prints per-graph gzip
 comparison values; raw emitted bytes remain the enforced metric.
 
-## Schema-26 editable group-reward measurement
+## Architecture-hardened editable group-reward measurement
 
-Measured from the production build on 2026-08-11:
+Measured again by the complete local canonical check on 2026-08-14:
 
 | Graph | Raw bytes | Gzip comparison | Limit use |
 | --- | ---: | ---: | ---: |
-| Shell initial | 773,304 | 294,314 | 84.3% |
-| Complete common Workspace | 917,164 | 328,773 | 70.0% |
-| Session incremental | 377,686 | 73,765 | 82.3% |
-| Catalog incremental | 342,291 | 74,778 | 87.0% |
-| Hex incremental without Pixi | 337,747 | 79,274 | 85.9% |
-| Reference incremental | 97,910 | 22,713 | 74.7% |
-| Pixi dynamic leaf | 1,077,229 | 229,727 | 58.7% |
-| Reachable renderer | 2,981,101 | 764,792 | 98.7% of the 90% target; 88.8% of the legacy ceiling |
+| Shell initial | 400,451 | 254,724 | 43.6% |
+| Complete common Workspace | 488,104 | 283,769 | 37.2% |
+| Session incremental | 156,407 | 44,570 | 34.1% |
+| Catalog incremental | 173,761 | 54,984 | 44.2% |
+| Hex incremental without Pixi | 174,781 | 59,263 | 44.4% |
+| Reference incremental | 39,392 | 14,802 | 30.1% |
+| Pixi dynamic leaf | 407,032 | 118,818 | 22.2% |
+| Reachable renderer | 1,435,953 | 565,164 | 47.5% of the 90% target; 42.8% of the legacy ceiling |
 
-The hard refactor target therefore retains 38,797 raw bytes. Feature
+The hard refactor target therefore retains 1,583,945 raw bytes. The checked
+baseline ratchets every measured graph down; the reachable snapshot falls by
+1,545,148 bytes from 2,981,101. The reduction comes from making the already
+configured production renderer minification explicit and retaining the Group
+manager behind its lazy host; no dependency version changed. Feature
 dictionaries are runtime-local: the type-only key assembly
 imports no values, and Catalog, Hex, Session, Reference, and World Planner
 runtimes each import only the shared UI/base copy plus their own dictionary.
@@ -52,7 +56,7 @@ Generator settings editor are dedicated dynamic leaves. Generator CSS and
 German copy follow the settings leaf, and its lightweight editor model does not
 import the Zod wire contract. The 20-by-34 matrix and preset controls therefore
 do not enter the common Workspace JavaScript graph until the GM opens Settings.
-Common Workspace JavaScript is 700,442 bytes, below the 810 KiB gate, and no
+Common Workspace JavaScript is 277,254 bytes, below the 810 KiB gate, and no
 dependency version changed for this baseline. The Planner remains its
 own dynamic route; the common growth is the typed capability and German message
 surface shared by Session, Planner, Encounter, Party, and Loot.
@@ -75,12 +79,13 @@ The command remeasures the production build, retains all hard route and total
 ceilings, and records all three rationales. A smaller graph fails the normal
 gate with a ratchet instruction and must be captured by the next reviewed
 baseline update before the canonical check.
-The 2026-08-11 measured snapshot explicitly records the editable Group Loot
-feature cost with the required change, dependency, and chunk rationales. Fixed
-route, Workspace, and 90-percent total ceilings are unchanged. The group-draft
-Loot controller remains in the Session route because it owns transient state
-and the narrow capability port; the catalog, structured editor, and their
-Loot presenter/CSS stay behind dedicated lazy boundaries.
+The 2026-08-12 measured snapshot explicitly records the architecture-hardened
+editable Group Loot graph with the required change, dependency, and chunk
+rationales. Fixed route, Workspace, and 90-percent total ceilings are unchanged.
+The single GroupManager controller/reducer remains in the Session route because
+it owns transient per-Group state and receives narrow capability ports; the
+catalog, structured editor, and their Loot presenter/CSS stay behind dedicated
+lazy boundaries.
 Initial-entry, common-Workspace, route, and total limits may not be silently
 relaxed as part of feature work.
 
@@ -92,8 +97,13 @@ relaxed as part of feature work.
 - `check:e2e` builds once and runs the isolated Electron suites sequentially.
 - `check` is canonical and reuses the `check:app` build for its E2E stage.
 
-E2E fixture recipes live under the versioned `tests/e2e/fixtures/v1` and
-`tests/e2e/fixtures/v2` directories; every suite copies and materializes one
-into a unique User Data root. Visual Golden metadata lives in
+E2E fixture recipes live under the versioned `tests/e2e/fixtures/v1`,
+`tests/e2e/fixtures/v2`, and `tests/e2e/fixtures/v3` directories; every suite
+copies and materializes one into a unique User Data root. The Group Loot editor
+uses `v3/group-loot`, so catalog editing, discard protection, Goldens,
+accessibility, atomic commit, and restart verification no longer depend on the
+multi-minute Planner/distribution journey. Every suite writes an atomic result
+record and a run can resume passed suites only when the build, registry, and
+selected-suite identities match. Visual Golden metadata lives in
 `tests/e2e/goldens/manifest.json`. Updates require one or more explicit
 `--golden <name>` arguments; unrestricted environment updates are rejected.

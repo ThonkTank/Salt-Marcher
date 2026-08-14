@@ -1,14 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
 import type {
   LootCatalogEntry,
   LootCatalogPage,
   LootCatalogQuery,
   LootRarity
 } from '../../../shared/contracts/loot.js'
-import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import { formatMessage, message } from '../../i18n/session-runtime.de.js'
 import { formatCopper } from '../../presenters/money.js'
-import { useLootCatalogPort } from './use-loot-ports.js'
 
 const emptyOptions: LootCatalogPage['filterOptions'] = {
   types: [],
@@ -17,48 +14,17 @@ const emptyOptions: LootCatalogPage['filterOptions'] = {
 }
 
 export function LootCatalogPane(props: {
-  runId: string
-  catalogContentHash: string
+  query: Omit<LootCatalogQuery, 'runId' | 'catalogContentHash'>
+  page: LootCatalogPage | null
+  error: string
+  queryChanged: (
+    patch: Partial<Omit<LootCatalogQuery, 'runId' | 'catalogContentHash'>>,
+    preserveOffset?: boolean
+  ) => void
   add: (entry: LootCatalogEntry) => void
 }) {
-  const port = useLootCatalogPort()
-  const [query, setQuery] = useState<
-    Omit<LootCatalogQuery, 'runId' | 'catalogContentHash'>
-  >({
-    search: '',
-    types: [],
-    categories: [],
-    rarities: [],
-    offset: 0,
-    limit: 30
-  })
-  const [page, setPage] = useState<LootCatalogPage | null>(null)
-  const [error, setError] = useState('')
-  const request = useRef(0)
-
-  useEffect(() => {
-    const token = ++request.current
-    void port
-      .catalog({
-        ...query,
-        runId: props.runId,
-        catalogContentHash: props.catalogContentHash
-      })
-      .then((result) => {
-        if (request.current !== token) return
-        setPage(result)
-        setError('')
-      })
-      .catch((cause) => {
-        if (request.current !== token) return
-        setError(capabilityErrorText(cause))
-      })
-  }, [port, props.catalogContentHash, props.runId, query])
-
-  const options = page?.filterOptions ?? emptyOptions
-  const update = (
-    patch: Partial<Omit<LootCatalogQuery, 'runId' | 'catalogContentHash'>>
-  ) => setQuery((current) => ({ ...current, ...patch, offset: 0 }))
+  const options = props.page?.filterOptions ?? emptyOptions
+  const update = props.queryChanged
   return (
     <section
       className="loot-catalog-pane group-manager-catalog"
@@ -69,14 +35,14 @@ export function LootCatalogPane(props: {
           <span>{message('loot.catalogSearch')}</span>
           <input
             type="search"
-            value={query.search}
+            value={props.query.search}
             onChange={(event) => update({ search: event.target.value })}
           />
         </label>
         <label>
           <span>{message('loot.catalogType')}</span>
           <select
-            value={query.types[0] ?? ''}
+            value={props.query.types[0] ?? ''}
             onChange={(event) =>
               update({ types: event.target.value ? [event.target.value] : [] })
             }
@@ -92,7 +58,7 @@ export function LootCatalogPane(props: {
         <label>
           <span>{message('loot.catalogCategory')}</span>
           <select
-            value={query.categories[0] ?? ''}
+            value={props.query.categories[0] ?? ''}
             onChange={(event) =>
               update({
                 categories: event.target.value ? [event.target.value] : []
@@ -108,7 +74,7 @@ export function LootCatalogPane(props: {
         <label>
           <span>{message('loot.catalogRarity')}</span>
           <select
-            value={query.rarities[0] ?? ''}
+            value={props.query.rarities[0] ?? ''}
             onChange={(event) =>
               update({
                 rarities: event.target.value
@@ -124,9 +90,9 @@ export function LootCatalogPane(props: {
           </select>
         </label>
       </div>
-      {error && (
+      {props.error && (
         <p className="group-loot-inline-error" role="alert">
-          {error}
+          {props.error}
         </p>
       )}
       <div className="creature-collection-table-wrap">
@@ -140,7 +106,7 @@ export function LootCatalogPane(props: {
             </tr>
           </thead>
           <tbody>
-            {page?.entries.map((entry) => (
+            {props.page?.entries.map((entry) => (
               <tr key={`${entry.kind}:${entry.id}`}>
                 <td>
                   <strong>{entry.defaultName}</strong>
@@ -163,7 +129,7 @@ export function LootCatalogPane(props: {
             ))}
           </tbody>
         </table>
-        {page?.entries.length === 0 && (
+        {props.page?.entries.length === 0 && (
           <p className="creature-collection-empty">
             {message('loot.catalogEmpty')}
           </p>
@@ -171,30 +137,34 @@ export function LootCatalogPane(props: {
       </div>
       <footer className="creature-collection-pane-footer">
         <span>
-          {formatMessage('loot.catalogCount', { count: page?.total ?? 0 })}
+          {formatMessage('loot.catalogCount', {
+            count: props.page?.total ?? 0
+          })}
         </span>
         <div>
           <button
             type="button"
-            disabled={query.offset === 0}
+            disabled={props.query.offset === 0}
             onClick={() =>
-              setQuery((current) => ({
-                ...current,
-                offset: Math.max(0, current.offset - current.limit)
-              }))
+              update(
+                {
+                  offset: Math.max(0, props.query.offset - props.query.limit)
+                },
+                true
+              )
             }
           >
             {message('loot.catalogPrevious')}
           </button>
-          <span>{Math.floor(query.offset / query.limit) + 1}</span>
+          <span>{Math.floor(props.query.offset / props.query.limit) + 1}</span>
           <button
             type="button"
-            disabled={!page || query.offset + query.limit >= page.total}
+            disabled={
+              !props.page ||
+              props.query.offset + props.query.limit >= props.page.total
+            }
             onClick={() =>
-              setQuery((current) => ({
-                ...current,
-                offset: current.offset + current.limit
-              }))
+              update({ offset: props.query.offset + props.query.limit }, true)
             }
           >
             {message('loot.catalogNext')}
