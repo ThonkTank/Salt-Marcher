@@ -658,9 +658,7 @@ describe('loot vertical slice', () => {
         treasures: {
           findByGenerated: (runId: string, treasureId: string) =>
             context.treasures.findByGenerated(runId, treasureId),
-          acceptGeneratedDraft: (
-            ..._arguments: Parameters<TreasureStore['acceptGeneratedDraft']>
-          ) => {
+          acceptGeneratedDraft: () => {
             throw new Error('injected treasure write failure')
           }
         }
