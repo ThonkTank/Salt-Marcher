@@ -953,6 +953,7 @@ export function GroupDialog(props: {
             <Suspense fallback={null}>
               <LazyLootCatalogPane
                 key={lootController.run.catalogContentHash}
+                runId={lootController.run.id}
                 catalogContentHash={lootController.run.catalogContentHash}
                 add={lootController.addCatalogEntry}
               />

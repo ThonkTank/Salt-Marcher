@@ -94,36 +94,6 @@ export const groupRewardTreasureDraftSchema = z
     items: z.array(groupRewardTreasureItemDraftSchema).min(1)
   })
   .strict()
-  .superRefine((draft, context) => {
-    const ids = new Set<string>()
-    for (const [index, container] of draft.containers.entries()) {
-      if (ids.has(container.id))
-        context.addIssue({
-          code: 'custom',
-          path: ['containers', index, 'id'],
-          message: 'Draft identities must be unique.'
-        })
-      ids.add(container.id)
-    }
-    for (const [index, item] of draft.items.entries()) {
-      if (ids.has(item.id))
-        context.addIssue({
-          code: 'custom',
-          path: ['items', index, 'id'],
-          message: 'Draft identities must be unique.'
-        })
-      ids.add(item.id)
-      if (
-        item.containerId !== null &&
-        !draft.containers.some((container) => container.id === item.containerId)
-      )
-        context.addIssue({
-          code: 'custom',
-          path: ['items', index, 'containerId'],
-          message: 'Assigned draft container does not exist.'
-        })
-    }
-  })
 
 export const commitGroupRewardInputSchema = z
   .object({

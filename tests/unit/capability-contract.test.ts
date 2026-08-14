@@ -70,6 +70,17 @@ describe('capability contract', () => {
     expect(
       new CapabilityError('validation_failed', false, [issue]).issues
     ).toEqual([issue])
+    expect(
+      coreResultSchema.parse({
+        requestId: '0184d1f4-bba7-7c9c-9d89-5f1c0f36a031',
+        ok: false,
+        error: {
+          code: 'validation_failed',
+          retryable: false,
+          issues: [issue]
+        }
+      })
+    ).toMatchObject({ error: { issues: [issue] } })
   })
 
   it('bounds structured renderer incidents and rejects attached user data', () => {
