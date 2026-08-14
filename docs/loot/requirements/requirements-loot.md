@@ -50,8 +50,10 @@ immutable generated source line or to one catalog entry. The immutable run is
 never rewritten.
 
 The Group manager's left catalog switches between `Kreaturen` and `Loot`.
-`loot.catalog` is a Zod-validated, paginated read pinned to the generated run's
-`catalogContentHash`; a mismatching hash is stale. It searches active ordinary
+`loot.catalog` is a Zod-validated, paginated read addressed by `runId`. Utility
+derives that immutable run's `catalogVersion` and `catalogContentHash`; a
+mismatching expected hash is stale and a missing registered artifact is
+`catalog_unavailable`. It searches active ordinary
 and magic items plus non-hidden containers and filters by type, category, and
 rarity. Results contain authoritative identity, default name, copper value
 rounded at the catalog boundary, stackability, magic/rarity, or container

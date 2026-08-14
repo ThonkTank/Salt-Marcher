@@ -20,6 +20,10 @@ import {
   type TreasureAggregateDiff
 } from './treasure-aggregate-diff.js'
 import type { MaterializedGroupRewardTreasureDraft } from './group-reward-treasure-draft.js'
+import {
+  treasureContainerProvenance,
+  treasureItemProvenance
+} from './treasure-provenance.js'
 
 export function initializeLootSchema(db: Database.Database): void {
   db.exec(`
@@ -56,16 +60,19 @@ export function initializeLootSchema(db: Database.Database): void {
     CREATE TABLE IF NOT EXISTS loot_container (
       id TEXT PRIMARY KEY NOT NULL,
       treasure_id TEXT NOT NULL REFERENCES loot_treasure(id) ON DELETE CASCADE,
+      source_container_id TEXT,
       catalog_container_id TEXT,
       name TEXT NOT NULL,
       capacity REAL NOT NULL CHECK(capacity >= 0),
       position INTEGER NOT NULL CHECK(position >= 0),
-      UNIQUE(treasure_id, position)
+      UNIQUE(treasure_id, position),
+      UNIQUE(treasure_id, source_container_id)
     );
     CREATE TABLE IF NOT EXISTS loot_item (
       id TEXT PRIMARY KEY NOT NULL,
       treasure_id TEXT NOT NULL REFERENCES loot_treasure(id) ON DELETE CASCADE,
       source_line_id TEXT,
+      catalog_entry_kind TEXT CHECK(catalog_entry_kind IN ('item', 'magic_item')),
       catalog_item_id TEXT,
       name TEXT NOT NULL,
       quantity INTEGER NOT NULL CHECK(quantity > 0),
@@ -76,7 +83,23 @@ export function initializeLootSchema(db: Database.Database): void {
       curse_name TEXT,
       container_id TEXT REFERENCES loot_container(id) ON DELETE SET NULL,
       position INTEGER NOT NULL CHECK(position >= 0),
-      UNIQUE(treasure_id, position)
+      UNIQUE(treasure_id, position),
+      UNIQUE(treasure_id, source_line_id),
+      CHECK(stackable = 1 OR quantity = 1),
+      CHECK(
+        (catalog_item_id IS NULL AND catalog_entry_kind IS NULL)
+        OR
+        (catalog_item_id IS NOT NULL AND catalog_entry_kind IS NOT NULL)
+      ),
+      CHECK(
+        catalog_entry_kind IS NULL
+        OR (catalog_entry_kind = 'item' AND magic = 0)
+        OR (catalog_entry_kind = 'magic_item' AND magic = 1)
+      ),
+      CHECK(
+        (magic = 0 AND rarity IS NULL AND curse_name IS NULL)
+        OR (magic = 1 AND rarity IS NOT NULL)
+      )
     );
     CREATE TABLE IF NOT EXISTS loot_allocation (
       id TEXT PRIMARY KEY NOT NULL,
@@ -182,75 +205,53 @@ export class TreasureStore {
     anchor: TreasureAnchor,
     now: string
   ): Treasure {
-    const existing = this.db
-      .prepare(
-        `SELECT id FROM loot_treasure
-         WHERE source_run_id = ? AND source_treasure_id = ?`
-      )
-      .get(run.id, generated.id) as { id: string } | undefined
-    if (existing) {
-      return this.require(existing.id)
-    }
-    const id = uuidv7()
-    this.insertTreasure({
-      id,
-      label: label.trim(),
-      anchor,
-      sourceKind: 'generated',
-      sourceRunId: run.id,
-      sourceTreasureId: generated.id,
-      now
-    })
-    const containerIds = new Map<string, string>()
-    generated.containers.forEach((container, position) => {
-      const containerId = uuidv7()
-      containerIds.set(container.id, containerId)
-      this.db
-        .prepare(
-          `INSERT INTO loot_container (
-             id, treasure_id, catalog_container_id, name, capacity, position
-           ) VALUES (?, ?, ?, ?, ?, ?)`
-        )
-        .run(
-          containerId,
-          id,
-          container.catalogContainerId,
-          container.name,
-          container.capacity,
-          position
-        )
-    })
-    generated.items.forEach((item, position) =>
-      this.db
-        .prepare(
-          `INSERT INTO loot_item (
-             id, treasure_id, source_line_id, catalog_item_id, name, quantity,
-             unit_value_cp, stackable, magic, rarity, curse_name, container_id,
-             position
-           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-        )
-        .run(
-          uuidv7(),
-          id,
-          item.id,
-          item.catalogItemId,
-          item.name,
-          item.quantity,
-          item.unitValueCp,
-          Number(item.stackable),
-          Number(item.magic),
-          item.rarity,
-          item.curseName,
-          item.containerId
-            ? (containerIds.get(item.containerId) ?? null)
+    return this.acceptMaterializedGenerated(
+      run,
+      generated,
+      {
+        label: label.trim(),
+        containers: generated.containers.map((container) => ({
+          draftId: container.id,
+          sourceContainerId: container.id,
+          catalogContainerId: container.catalogContainerId,
+          name: container.name,
+          capacity: container.capacity
+        })),
+        items: generated.items.map((item) => ({
+          draftId: item.id,
+          sourceLineId: item.id,
+          catalogEntryKind: item.catalogItemId
+            ? item.magic
+              ? 'magic_item'
+              : 'item'
             : null,
-          position
-        )
+          catalogItemId: item.catalogItemId,
+          name: item.name,
+          quantity: item.quantity,
+          unitValueCp: item.unitValueCp,
+          stackable: item.stackable,
+          magic: item.magic,
+          rarity: item.rarity,
+          curseName: item.curseName,
+          containerDraftId: item.containerId
+        }))
+      },
+      anchor,
+      now
     )
-    return this.require(id)
   }
 
   acceptGeneratedDraft(
+    run: GeneratedRun,
+    generated: GeneratedTreasure,
+    draft: MaterializedGroupRewardTreasureDraft,
+    anchor: TreasureAnchor,
+    now: string
+  ): Treasure {
+    return this.acceptMaterializedGenerated(run, generated, draft, anchor, now)
+  }
+
+  private acceptMaterializedGenerated(
     run: GeneratedRun,
     generated: GeneratedTreasure,
     draft: MaterializedGroupRewardTreasureDraft,
@@ -276,12 +277,14 @@ export class TreasureStore {
       this.db
         .prepare(
           `INSERT INTO loot_container (
-             id, treasure_id, catalog_container_id, name, capacity, position
-           ) VALUES (?, ?, ?, ?, ?, ?)`
+             id, treasure_id, source_container_id, catalog_container_id,
+             name, capacity, position
+           ) VALUES (?, ?, ?, ?, ?, ?, ?)`
         )
         .run(
           containerId,
           id,
+          container.sourceContainerId,
           container.catalogContainerId,
           container.name,
           container.capacity,
@@ -297,15 +300,16 @@ export class TreasureStore {
       this.db
         .prepare(
           `INSERT INTO loot_item (
-             id, treasure_id, source_line_id, catalog_item_id, name, quantity,
-             unit_value_cp, stackable, magic, rarity, curse_name, container_id,
-             position
-           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+             id, treasure_id, source_line_id, catalog_entry_kind,
+             catalog_item_id, name, quantity, unit_value_cp, stackable, magic,
+             rarity, curse_name, container_id, position
+           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
         )
         .run(
           uuidv7(),
           id,
           item.sourceLineId,
+          item.catalogEntryKind,
           item.catalogItemId,
           item.name,
           item.quantity,
@@ -445,15 +449,24 @@ export class TreasureStore {
   private project(row: TreasureRow): Treasure {
     const containers = this.db
       .prepare(
-        `SELECT id, catalog_container_id AS catalogContainerId, name,
-                capacity, position
+        `SELECT id, source_container_id AS sourceContainerId,
+                catalog_container_id AS catalogContainerId, name, capacity,
+                position
          FROM loot_container WHERE treasure_id = ? ORDER BY position, id`
       )
-      .all(row.id)
+      .all(row.id) as Array<{
+      id: string
+      sourceContainerId: string | null
+      catalogContainerId: string | null
+      name: string
+      capacity: number
+      position: number
+    }>
     const items = (
       this.db
         .prepare(
           `SELECT item.id, item.source_line_id AS sourceLineId,
+                  item.catalog_entry_kind AS catalogEntryKind,
                   item.catalog_item_id AS catalogItemId, item.name,
                   item.quantity,
                   COALESCE(SUM(allocation.quantity), 0) AS allocatedQuantity,
@@ -470,6 +483,7 @@ export class TreasureStore {
         .all(row.id) as Array<{
         id: string
         sourceLineId: string | null
+        catalogEntryKind: 'item' | 'magic_item' | null
         catalogItemId: string | null
         name: string
         quantity: number
@@ -485,7 +499,12 @@ export class TreasureStore {
     ).map((item) => ({
       ...item,
       stackable: Boolean(item.stackable),
-      magic: Boolean(item.magic)
+      magic: Boolean(item.magic),
+      provenance: treasureItemProvenance(
+        item.sourceLineId,
+        item.catalogEntryKind,
+        item.catalogItemId
+      )
     }))
     const totalValueCp = items.reduce(
       (sum, item) => sum + item.quantity * item.unitValueCp,
@@ -509,7 +528,13 @@ export class TreasureStore {
             }
           : { kind: 'manual' },
       items,
-      containers,
+      containers: containers.map((container) => ({
+        ...container,
+        provenance: treasureContainerProvenance(
+          container.sourceContainerId,
+          container.catalogContainerId
+        )
+      })),
       totalValueCp,
       allocatedValueCp,
       distributionState: row.distributionState,
@@ -560,10 +585,10 @@ export class TreasureStore {
     this.db
       .prepare(
         `INSERT INTO loot_item (
-           id, treasure_id, source_line_id, catalog_item_id, name, quantity,
-           unit_value_cp, stackable, magic, rarity, curse_name, container_id,
-           position
-         ) VALUES (?, ?, NULL, NULL, ?, ?, ?, ?, 0, NULL, NULL, ?, ?)`
+           id, treasure_id, source_line_id, catalog_entry_kind,
+           catalog_item_id, name, quantity, unit_value_cp, stackable, magic,
+           rarity, curse_name, container_id, position
+         ) VALUES (?, ?, NULL, NULL, NULL, ?, ?, ?, ?, 0, NULL, NULL, ?, ?)`
       )
       .run(
         draft.id ?? uuidv7(),
@@ -668,8 +693,9 @@ export class TreasureStore {
     this.db
       .prepare(
         `INSERT INTO loot_container (
-           id, treasure_id, catalog_container_id, name, capacity, position
-         ) VALUES (?, ?, ?, ?, ?, ?)`
+           id, treasure_id, source_container_id, catalog_container_id, name,
+           capacity, position
+         ) VALUES (?, ?, NULL, ?, ?, ?, ?)`
       )
       .run(
         draft.id,

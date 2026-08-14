@@ -1,6 +1,6 @@
 # Loot Persistence Contract
 
-Development schema 26 stores Loot in campaign SQLite:
+Development schema 27 stores Loot in campaign SQLite:
 
 - `loot_treasure`, `loot_container`, and `loot_item` are the Treasure aggregate
 - `loot_allocation` records completed recipient shares
@@ -39,17 +39,19 @@ A `group_reward` source may refer to a prospective group and therefore stores
 a nullable group revision. Its normalized entry rows preserve living and dead
 quantities. `loot.commitGroupReward` validates that immutable source first and
 then validates every submitted generated origin against that run and every
-catalog origin against the catalog named by its `catalogContentHash`. Utility
+catalog origin against the immutable registry artifact named by the run's
+`catalogVersion` and `catalogContentHash`. Utility
 derives generated source IDs, catalog IDs, magic, rarity, and curse metadata;
 only editable names, quantities, values, stackability, capacities, and packing
 assignments come from the draft.
 
-The dedicated generated-draft acceptance path writes the resulting aggregate
-through `loot_treasure`, `loot_container`, and `loot_item`. Existing nullable
-source and catalog columns preserve both provenance kinds, so this feature
-requires no schema migration. New persistence IDs are mapped from stable draft
-container IDs before item rows are inserted. The command fingerprint includes
-the complete Treasure draft.
+Generated and edited rewards materialize into one internal Treasure model and
+use one aggregate writer. `loot_item.catalog_entry_kind` distinguishes normal
+and magic catalog identities; generated item and container source IDs are
+unique within their Treasure. SQL constraints enforce the nullability, magic,
+rarity, curse, stackability, and quantity combinations. New persistence IDs
+are mapped from stable draft container IDs before item rows are inserted. The
+command fingerprint includes the complete Treasure draft.
 
 The handler then saves or updates the Scene group, reconciles Combat,
 materializes the edited Treasure, advances the Loot projection, and records the

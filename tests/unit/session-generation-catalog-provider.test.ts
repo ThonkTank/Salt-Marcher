@@ -5,10 +5,14 @@ import {
   rmSync,
   writeFileSync
 } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { BundledEncounterCatalogProvider } from '../../src/utility/session-generation/catalog-provider.js'
+import {
+  BundledEncounterCatalogProvider,
+  BundledSessionGenerationCatalogRegistry
+} from '../../src/utility/session-generation/catalog-provider.js'
 import { parseFullSessionGenerationCatalog } from '../../src/core/session-generation/loot-catalog.js'
 
 const catalogRoot = join(
@@ -89,3 +93,104 @@ describe('bundled encounter catalog provider', () => {
     ).toThrow('catalog_schema_invalid')
   })
 })
+
+describe('bundled session-generation catalog registry', () => {
+  it('resolves immutable current and historical artifacts by version and hash', () => {
+    const root = mkdtempSync(join(tmpdir(), 'salt-marcher-registry-'))
+    temporaryRoots.push(root)
+    const oldDirectory = 'catalog-old'
+    const nextDirectory = 'catalog-next'
+    cpSync(catalogRoot, join(root, oldDirectory), { recursive: true })
+    cpSync(catalogRoot, join(root, nextDirectory), { recursive: true })
+    const oldManifest = JSON.parse(
+      readFileSync(join(root, oldDirectory, 'manifest.json'), 'utf8')
+    ) as CatalogManifest
+    const nextManifest = createDistinctManifest(
+      join(root, nextDirectory),
+      oldManifest,
+      nextDirectory
+    )
+    writeFileSync(
+      join(root, 'registry.json'),
+      JSON.stringify({
+        schemaVersion: 1,
+        currentCatalogVersion: nextDirectory,
+        catalogs: [
+          {
+            directory: oldDirectory,
+            catalogVersion: oldManifest.catalogVersion,
+            catalogContentHash: oldManifest.catalogContentHash
+          },
+          {
+            directory: nextDirectory,
+            catalogVersion: nextManifest.catalogVersion,
+            catalogContentHash: nextManifest.catalogContentHash
+          }
+        ]
+      })
+    )
+
+    const registry = new BundledSessionGenerationCatalogRegistry(root)
+    expect(registry.currentReference()).toEqual({
+      catalogVersion: nextDirectory,
+      catalogContentHash: nextManifest.catalogContentHash
+    })
+    expect(
+      registry
+        .require({
+          catalogVersion: oldManifest.catalogVersion,
+          catalogContentHash: oldManifest.catalogContentHash
+        })
+        .identity()
+    ).toEqual({
+      catalogVersion: oldManifest.catalogVersion,
+      catalogContentHash: oldManifest.catalogContentHash
+    })
+    expect(() =>
+      registry.require({
+        catalogVersion: 'catalog-missing',
+        catalogContentHash: '0'.repeat(64)
+      })
+    ).toThrow('Catalog is not registered')
+  })
+})
+
+type CatalogManifest = {
+  catalogVersion: string
+  catalogContentHash: string
+  tables: Array<{ file: string; rows: number; columns: number; sha256: string }>
+  [key: string]: unknown
+}
+
+function createDistinctManifest(
+  root: string,
+  source: CatalogManifest,
+  catalogVersion: string
+): CatalogManifest {
+  const table = source.tables[0]!
+  const tablePath = join(root, table.file)
+  const content = `${readFileSync(tablePath, 'utf8')}\n`
+  writeFileSync(tablePath, content)
+  const tables = source.tables.map((entry) =>
+    entry.file === table.file
+      ? { ...entry, sha256: createHash('sha256').update(content).digest('hex') }
+      : entry
+  )
+  const canonical = [...tables]
+    .sort((left, right) =>
+      left.file < right.file ? -1 : left.file > right.file ? 1 : 0
+    )
+    .map(
+      (entry) =>
+        `${entry.file}\t${entry.rows}\t${entry.columns}\t${entry.sha256}\n`
+    )
+    .join('')
+  const manifest = {
+    ...source,
+    catalogVersion,
+    catalogContentHash: createHash('sha256').update(canonical).digest('hex'),
+    tables
+  }
+  writeFileSync(join(root, 'manifest.json'), JSON.stringify(manifest, null, 2))
+  return manifest
+}

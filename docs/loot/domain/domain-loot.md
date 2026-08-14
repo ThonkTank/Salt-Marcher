@@ -30,7 +30,8 @@ array positions. Every item and container origin is a closed union:
 - a generated origin references exactly one source line or source container in
   the immutable proposal
 - a catalog origin references an ordinary item, magic item, or visible
-  container in the catalog version pinned by `catalogContentHash`
+  container in the immutable registry artifact pinned by `catalogVersion` and
+  `catalogContentHash`
 
 The catalog read is a bounded projection rather than mutable domain state.
 Search and type/category/rarity filters operate over active normal and magic

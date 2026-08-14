@@ -9,6 +9,10 @@ import {
   type Treasure
 } from '../../shared/contracts/loot.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
+import {
+  treasureContainerProvenance,
+  treasureItemProvenance
+} from './treasure-provenance.js'
 
 type AnchorRow = Readonly<{
   id: string
@@ -131,6 +135,7 @@ export class LootProjectionStore {
     const containers = this.db
       .prepare(
         `SELECT treasure_id AS treasureId, id,
+                source_container_id AS sourceContainerId,
                 catalog_container_id AS catalogContainerId, name, capacity,
                 position
            FROM loot_container
@@ -143,6 +148,7 @@ export class LootProjectionStore {
         .prepare(
           `SELECT item.treasure_id AS treasureId, item.id,
                   item.source_line_id AS sourceLineId,
+                  item.catalog_entry_kind AS catalogEntryKind,
                   item.catalog_item_id AS catalogItemId, item.name,
                   item.quantity,
                   COALESCE(SUM(allocation.quantity), 0) AS allocatedQuantity,
@@ -163,12 +169,20 @@ export class LootProjectionStore {
           unitValueCp: number
           stackable: number
           magic: number
+          sourceLineId: string | null
+          catalogEntryKind: 'item' | 'magic_item' | null
+          catalogItemId: string | null
         }
       >
     ).map((item) => ({
       ...item,
       stackable: Boolean(item.stackable),
-      magic: Boolean(item.magic)
+      magic: Boolean(item.magic),
+      provenance: treasureItemProvenance(
+        item.sourceLineId,
+        item.catalogEntryKind,
+        item.catalogItemId
+      )
     }))
     return roots.map((row) => {
       const treasureItems = items.filter((item) => item.treasureId === row.id)
@@ -193,7 +207,13 @@ export class LootProjectionStore {
           .filter((container) => container.treasureId === row.id)
           .map(({ treasureId, ...container }) => {
             void treasureId
-            return container
+            return {
+              ...container,
+              provenance: treasureContainerProvenance(
+                container['sourceContainerId'] as string | null,
+                container['catalogContainerId'] as string | null
+              )
+            }
           }),
         totalValueCp: treasureItems.reduce(
           (sum, item) => sum + item.quantity * item.unitValueCp,

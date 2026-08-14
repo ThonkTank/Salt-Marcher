@@ -22,7 +22,7 @@ import {
   normalizeGroupRewardEntries,
   sameGroupRewardEntries
 } from '../session-generation/group-reward-source.js'
-import type { FullSessionGenerationCatalog } from '../session-generation/loot-catalog.js'
+import type { LootCatalogIndex } from '../loot/loot-catalog-index.js'
 import {
   materializeGroupRewardTreasureDraft,
   type MaterializedGroupRewardTreasureDraft
@@ -51,7 +51,12 @@ export type GroupRewardCommitContext = Readonly<{
     snapshot(party: PartySnapshot['members']): SceneSnapshot
   }>
   rules: Readonly<{ read(): CampaignRules }>
-  catalog: Readonly<{ loadFull(): FullSessionGenerationCatalog }>
+  catalog: Readonly<{
+    index(reference: {
+      catalogVersion: string
+      catalogContentHash: string
+    }): LootCatalogIndex
+  }>
   generatedRuns: Readonly<{ read(runId: string): GeneratedRun | null }>
   treasures: Readonly<{
     findByGenerated(runId: string, generatedTreasureId: string): Treasure | null
@@ -121,20 +126,6 @@ export class GroupRewardCommitHandler {
       )
       if (!generated) notFound()
       requireMatchingSource(run, input)
-      const needsCatalog =
-        input.treasureDraft.items.some(
-          (item) => item.origin.kind === 'catalog'
-        ) ||
-        input.treasureDraft.containers.some(
-          (container) => container.origin.kind === 'catalog'
-        )
-      const treasureDraft = materializeGroupRewardTreasureDraft(
-        generated,
-        input.treasureDraft,
-        needsCatalog ? context.catalog.loadFull() : null,
-        run.catalogContentHash
-      )
-
       const party = context.party.read()
       if (party.revision !== run.input.partyRevision) stale()
       const rules = context.rules.read()
@@ -156,6 +147,24 @@ export class GroupRewardCommitHandler {
       }
       if (context.treasures.findByGenerated(run.id, input.generatedTreasureId))
         throw new CapabilityError('idempotency_conflict', false)
+
+      const needsCatalog =
+        input.treasureDraft.items.some(
+          (item) => item.origin.kind === 'catalog'
+        ) ||
+        input.treasureDraft.containers.some(
+          (container) => container.origin.kind === 'catalog'
+        )
+      const treasureDraft = materializeGroupRewardTreasureDraft(
+        generated,
+        input.treasureDraft,
+        needsCatalog
+          ? context.catalog.index({
+              catalogVersion: run.catalogVersion,
+              catalogContentHash: run.catalogContentHash
+            })
+          : null
+      )
 
       const changed =
         !existingGroup || !samePersistedGroup(existingGroup, input)

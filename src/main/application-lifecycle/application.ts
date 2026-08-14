@@ -26,7 +26,7 @@ export async function startApplication(): Promise<void> {
     join(app.getPath('userData'), 'development-data'),
     outputPath('main', 'utility.js'),
     resourcePath('reference', 'srd-5.1.sqlite'),
-    resourcePath('sessiongeneration', 'catalog-2026-07-16')
+    resourcePath('sessiongeneration')
   )
   if (isE2eRuntime())
     ipcMain.handle('salt-marcher-e2e:terminate-utility', () =>
@@ -150,5 +150,10 @@ export function waitForCoreReady(): Promise<void> {
 export async function runSessionGenerationSmoke(): Promise<void> {
   if (core === undefined) throw new CapabilityError('core_unavailable', true)
   await core.waitUntilReady()
-  await core.requestOperation('campaign.list', undefined)
+  const identity = await core.requestOperation(
+    'core.sessionGenerationCatalog',
+    undefined
+  )
+  if (!identity.catalogVersion || !identity.catalogContentHash)
+    throw new Error('Packaged session-generation catalog smoke failed')
 }

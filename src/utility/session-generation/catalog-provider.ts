@@ -9,6 +9,10 @@ import {
   type EncounterCatalogManifest
 } from '../../core/session-generation/catalog.js'
 import {
+  sessionGenerationCatalogRegistrySchema,
+  type SessionGenerationCatalogReference
+} from '../../core/session-generation/catalog-registry.js'
+import {
   parseFullSessionGenerationCatalog,
   type FullSessionGenerationCatalog
 } from '../../core/session-generation/loot-catalog.js'
@@ -34,6 +38,14 @@ export class BundledEncounterCatalogProvider {
   #tableTexts: ReadonlyMap<string, string> | undefined
 
   constructor(private readonly root: string) {}
+
+  identity(): SessionGenerationCatalogReference {
+    const catalog = this.load()
+    return Object.freeze({
+      catalogVersion: catalog.catalogVersion,
+      catalogContentHash: catalog.catalogContentHash
+    })
+  }
 
   load(): EncounterCatalog {
     if (this.#cached instanceof CatalogProviderError) throw this.#cached
@@ -101,6 +113,77 @@ export class BundledEncounterCatalogProvider {
       this.#full = failure
       throw failure
     }
+  }
+}
+
+export class BundledSessionGenerationCatalogRegistry {
+  readonly #current: BundledEncounterCatalogProvider
+  readonly #byHash = new Map<string, BundledEncounterCatalogProvider>()
+  readonly #references = new Map<string, SessionGenerationCatalogReference>()
+
+  constructor(root: string) {
+    try {
+      const registry = sessionGenerationCatalogRegistrySchema.parse(
+        JSON.parse(readFileSync(join(root, 'registry.json'), 'utf8'))
+      )
+      for (const entry of registry.catalogs) {
+        const provider = new BundledEncounterCatalogProvider(
+          join(root, entry.directory)
+        )
+        const identity = provider.identity()
+        if (
+          identity.catalogVersion !== entry.catalogVersion ||
+          identity.catalogContentHash !== entry.catalogContentHash
+        )
+          throw new CatalogProviderError(
+            'catalog_hash_mismatch',
+            `Catalog registry identity mismatch: ${entry.directory}`
+          )
+        this.#byHash.set(entry.catalogContentHash, provider)
+        this.#references.set(entry.catalogContentHash, identity)
+      }
+      const currentEntry = registry.catalogs.find(
+        (entry) => entry.catalogVersion === registry.currentCatalogVersion
+      )!
+      this.#current = this.#byHash.get(currentEntry.catalogContentHash)!
+    } catch (error) {
+      throw toCatalogError(error)
+    }
+  }
+
+  load(): EncounterCatalog {
+    return this.#current.load()
+  }
+
+  loadFull(): FullSessionGenerationCatalog {
+    return this.#current.loadFull()
+  }
+
+  currentReference(): SessionGenerationCatalogReference {
+    return this.#current.identity()
+  }
+
+  require(
+    reference: SessionGenerationCatalogReference
+  ): BundledEncounterCatalogProvider {
+    const known = this.#references.get(reference.catalogContentHash)
+    const provider = this.#byHash.get(reference.catalogContentHash)
+    if (
+      !known ||
+      !provider ||
+      known.catalogVersion !== reference.catalogVersion
+    )
+      throw new CatalogProviderError(
+        'catalog_unavailable',
+        `Catalog is not registered: ${reference.catalogVersion}`
+      )
+    return provider
+  }
+
+  loadFullByReference(
+    reference: SessionGenerationCatalogReference
+  ): FullSessionGenerationCatalog {
+    return this.require(reference).loadFull()
   }
 }
 

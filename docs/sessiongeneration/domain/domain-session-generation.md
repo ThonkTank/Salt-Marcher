@@ -60,8 +60,8 @@ is not stored truth and cannot be observed as a partial `GeneratedRun`.
 
 The Electron slice publishes the complete day capability
 `sessionGeneration.generate` and the group-bound reward capability
-`loot.generateForGroupDraft`. Each constructs its complete applicable result, passes
-all hard audits, fingerprints the semantic origin, and persists one immutable
+`loot.generateForGroupDraft`. Each constructs its complete applicable result,
+passes all hard audits, fingerprints the semantic origin, and persists one immutable
 `GeneratedRun`. The earlier encounter-only public compatibility endpoint has
 been removed. Planner rewards retain the separate explicit generated-accept
 command. A group reward is confirmed through `loot.commitGroupReward`, which
@@ -94,7 +94,9 @@ generator config, and seed produce the same domain values. Wall-clock time,
 locale defaults, database order, hash iteration, and volatile randomness cannot
 influence output.
 
-The bundled catalog is a versioned offline snapshot. The utility process owns
+The bundled catalog is a registry of immutable, versioned offline snapshots.
+Generation uses the explicitly active artifact while reads and pending commits
+resolve their run's artifact by version and content hash. The utility process owns
 its file access and verifies all 16 manifest-listed tables before the pure
 engine receives immutable encounter and loot projections. Runtime code never
 reads the source Google Sheet.

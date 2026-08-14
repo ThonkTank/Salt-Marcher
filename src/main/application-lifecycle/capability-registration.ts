@@ -107,7 +107,10 @@ async function invokeGeneric(
       ok: false,
       error: {
         code,
-        retryable
+        retryable,
+        ...(error instanceof CapabilityError && error.issues.length > 0
+          ? { issues: error.issues }
+          : {})
       }
     }
   }

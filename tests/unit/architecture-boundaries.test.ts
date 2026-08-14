@@ -105,7 +105,7 @@ describe('architecture boundaries', () => {
       expect(['read', 'write']).toContain(definition.mode)
       expect(definition.deadlineMs).toBeGreaterThan(0)
       expect(definition.roles.length).toBeGreaterThanOrEqual(
-        kind === 'core.shutdown' ? 0 : 1
+        definition.channel === null ? 0 : 1
       )
       expect(
         ['ZodUndefined', 'ZodObject', 'ZodDiscriminatedUnion'].includes(
@@ -127,8 +127,14 @@ describe('architecture boundaries', () => {
     ]
     for (const kind of forbidden) expect(operations).not.toHaveProperty(kind)
 
+    const utilitySources = [
+      source('src/utility/index.ts'),
+      ...codeFiles(join(process.cwd(), 'src/utility/composition')).map((path) =>
+        readFileSync(path, 'utf8')
+      )
+    ].join('\n')
     const utilityKeys = new Set(
-      [...source('src/utility/index.ts').matchAll(/^\s{2}'([^']+\.[^']+)':/gm)]
+      [...utilitySources.matchAll(/^\s+'([^']+\.[^']+)':/gm)]
         .map((match) => match[1])
         .filter((kind): kind is string => kind !== undefined)
     )
@@ -149,6 +155,8 @@ describe('architecture boundaries', () => {
     )
 
     const main = source('src/main/application-lifecycle/application.ts')
+    expect(main).toContain("'core.sessionGenerationCatalog'")
+    expect(main).not.toContain("requestOperation('sessionPlanner.read'")
     for (const kind of Object.keys(capabilityEvents)) {
       expect(main, `${kind} is not routed by the event registry`).toContain(
         `capabilityEvents['${kind}']`
@@ -574,8 +582,11 @@ describe('architecture boundaries', () => {
     expect(combat).toContain('GroupTreasureReader')
     expect(combat).not.toContain('TreasureStore')
     const utility = source('src/utility/index.ts')
-    expect(utility).toContain('new GroupRewardCommandHandler')
+    const lootComposition = source('src/utility/composition/loot.ts')
+    expect(utility).toContain('createLootComposition')
     expect(utility).toContain('generation: sessionGenerationService')
+    expect(lootComposition).toContain('new GroupRewardCommandHandler')
+    expect(lootComposition).toContain('new GroupRewardCommitHandler')
   })
 
   it('keeps Planner, Loot, and campaign rules behind lazy UI leaves', () => {
