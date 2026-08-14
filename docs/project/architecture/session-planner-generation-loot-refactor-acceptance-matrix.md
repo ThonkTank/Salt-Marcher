@@ -152,6 +152,15 @@ The named integration baseline is commit
 2,981,101 bytes. No complete successful canonical-check run is attached to
 that baseline SHA; it must not be represented as green evidence.
 
+The reviewable delivery stack is:
+
+- [baseline PR #589](https://github.com/ThonkTank/Salt-Marcher/pull/589);
+- [PR 1 checks and evidence #590](https://github.com/ThonkTank/Salt-Marcher/pull/590);
+- [PR 2 catalog and contracts #591](https://github.com/ThonkTank/Salt-Marcher/pull/591);
+- [PR 3 persistence and commit phases #592](https://github.com/ThonkTank/Salt-Marcher/pull/592);
+- [PR 4 GroupManager and editor #593](https://github.com/ThonkTank/Salt-Marcher/pull/593);
+- [PR 5 focused E2E and documentation #594](https://github.com/ThonkTank/Salt-Marcher/pull/594).
+
 The direct architecture, unit, integration, bundle, component, and focused
 Electron evidence is recorded by the named tests. A predecessor tree at
 `2226468c2bbf93e10f1977169660bb7a8100e3f8` passed the linked cross-platform
