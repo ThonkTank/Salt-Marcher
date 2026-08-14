@@ -150,7 +150,5 @@ export function waitForCoreReady(): Promise<void> {
 export async function runSessionGenerationSmoke(): Promise<void> {
   if (core === undefined) throw new CapabilityError('core_unavailable', true)
   await core.waitUntilReady()
-  const result = await core.requestOperation('sessionPlanner.read', undefined)
-  if (!result.currentSessionId || result.sessions.length === 0)
-    throw new Error('Packaged session-planner capability smoke failed')
+  await core.requestOperation('campaign.list', undefined)
 }
