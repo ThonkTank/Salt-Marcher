@@ -48,9 +48,14 @@ describe('Group Loot editor', () => {
     const lootCatalog = await groupDialog.$('.loot-catalog-pane')
     await lootCatalog.waitForDisplayed({ timeout: 10_000 })
     const lootSearch = await lootCatalog.$('input[type="search"]')
-    await addCatalogEntry(lootCatalog, lootSearch, 'Abacus')
-    await addCatalogEntry(lootCatalog, lootSearch, 'Bead of Nourishment')
-    await addCatalogEntry(lootCatalog, lootSearch, 'Pouch')
+    await addCatalogEntry(lootCatalog, lootSearch, 'Abacus', 'Gegenstand')
+    await addCatalogEntry(
+      lootCatalog,
+      lootSearch,
+      'Bead of Nourishment',
+      'Gegenstand'
+    )
+    await addCatalogEntry(lootCatalog, lootSearch, 'Pouch', 'Behälter')
 
     const abacusRow = await findEditorRow(
       await groupLootPanel.$$('.treasure-item-editor-row'),
@@ -197,7 +202,8 @@ describe('Group Loot editor', () => {
 async function addCatalogEntry(
   catalog: ChainablePromiseElement,
   search: ChainablePromiseElement,
-  name: string
+  name: string,
+  editorLabel: 'Gegenstand' | 'Behälter'
 ): Promise<void> {
   await search.setValue(name)
   const add = await catalog.$(`button[aria-label="${name} hinzufügen"]`)
@@ -213,6 +219,23 @@ async function addCatalogEntry(
     if (!action) throw new Error(`${ariaLabel} catalog action is missing.`)
     action.click()
   }, `${name} hinzufügen`)
+  await browser.waitUntil(
+    () =>
+      browser.execute(
+        (label, value) =>
+          [
+            ...document.querySelectorAll<HTMLInputElement>(
+              `.group-loot-inline-panel input[aria-label="${label}"]`
+            )
+          ].some((field) => field.value === value),
+        editorLabel,
+        name
+      ),
+    {
+      timeout: 10_000,
+      timeoutMsg: `${name} did not materialize in the Loot draft.`
+    }
+  )
 }
 
 async function findEditorRow(
