@@ -201,8 +201,18 @@ async function addCatalogEntry(
 ): Promise<void> {
   await search.setValue(name)
   const add = await catalog.$(`button[aria-label="${name} hinzufügen"]`)
-  await add.waitForClickable({ timeout: 10_000 })
-  await add.click()
+  await add.waitForExist({ timeout: 10_000 })
+  await browser.waitUntil(() => add.isEnabled(), {
+    timeout: 10_000,
+    timeoutMsg: `${name} catalog action did not become enabled.`
+  })
+  await browser.execute((ariaLabel) => {
+    const action = document.querySelector<HTMLButtonElement>(
+      `button[aria-label="${ariaLabel}"]`
+    )
+    if (!action) throw new Error(`${ariaLabel} catalog action is missing.`)
+    action.click()
+  }, `${name} hinzufügen`)
 }
 
 async function findEditorRow(

@@ -1,5 +1,8 @@
 import { browser, expect } from '@wdio/globals'
-import type { Browser as WdioBrowser } from 'webdriverio'
+import type {
+  Browser as WdioBrowser,
+  ChainablePromiseElement
+} from 'webdriverio'
 import {
   clickWhenInteractable,
   expectAccessible,
@@ -675,7 +678,8 @@ describe('campaign walking skeleton', () => {
     await generate.click()
     await expectGroupManagementGolden(client)
     await expect(await groupDialog.$('button=Leeren')).not.toBeExisting()
-    await (await groupDialog.$('button=Gruppe')).click()
+    const groupView = await groupDialog.$('button=Gruppe')
+    if (await groupView.isExisting()) await groupView.click()
     const undoGenerated = await groupDialog.$(
       'button[aria-label="Änderung zurücknehmen"]'
     )
@@ -702,9 +706,7 @@ describe('campaign walking skeleton', () => {
         increase?.click()
       })
     await (await groupDialog.$('button=Speichern')).click()
-    const confirmSave = await client.$('section[role="alertdialog"]')
-    await confirmSave.waitForDisplayed({ timeout: 5_000 })
-    await (await confirmSave.$('button=Änderungen verwerfen')).click()
+    await dismissLootDiscardPromptIfPresent(client, groupDialog)
     await expect(await client.$('strong=Wolf Pack')).toBeExisting()
     await expect(await client.$('.group-note')).toHaveText(
       'Lauert Prone in den Dünen; Stunned bei Alarm.'
@@ -830,9 +832,7 @@ describe('campaign walking skeleton', () => {
     await reopenedSelection.selectByVisibleText('Neue Gruppe')
     await expect(emptyGroupName).toHaveValue('')
     await (await reopenedGroupDialog.$('button=Speichern')).click()
-    const confirmNewGroupSave = await client.$('section[role="alertdialog"]')
-    await confirmNewGroupSave.waitForDisplayed({ timeout: 5_000 })
-    await (await confirmNewGroupSave.$('button=Änderungen verwerfen')).click()
+    await dismissLootDiscardPromptIfPresent(client, reopenedGroupDialog)
     await expect(await client.$('strong=Gruppe 1')).toBeExisting()
 
     await (
@@ -1052,6 +1052,27 @@ async function waitForSceneLocation(
       timeoutMsg: `Scene location did not become ${expected}.`
     }
   )
+}
+
+async function dismissLootDiscardPromptIfPresent(
+  client: WdioBrowser,
+  groupDialog: ChainablePromiseElement
+): Promise<void> {
+  const discardPrompt = await client.$('section[role="alertdialog"]')
+  await client.waitUntil(
+    async () =>
+      !(await groupDialog.isExisting()) || (await discardPrompt.isExisting()),
+    {
+      timeout: 5_000,
+      timeoutMsg:
+        'Group manager neither closed nor exposed the Loot discard prompt.'
+    }
+  )
+  if (await discardPrompt.isExisting()) {
+    await discardPrompt.waitForDisplayed({ timeout: 5_000 })
+    await (await discardPrompt.$('button=Änderungen verwerfen')).click()
+  }
+  await groupDialog.waitForExist({ reverse: true, timeout: 5_000 })
 }
 
 async function pressDividerKey(
