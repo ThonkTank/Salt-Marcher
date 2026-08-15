@@ -9,6 +9,16 @@ export const workspaceMessagesDe = {
   'action.reloadApplication': 'Anwendung neu laden',
   'core.unavailable': 'Der lokale Programmkern ist nicht erreichbar.',
   'core.recovering': 'Der lokale Programmkern wird wiederhergestellt …',
+  'core.incompatibleData':
+    'Die Kampagnendaten stammen aus einer inkompatiblen Version. Alle Dateien wurden unverändert erhalten. Starte einen kompatiblen Build oder führe eine geprüfte Migration aus.',
+  'core.corruptData':
+    'Die Kampagnendaten sind beschädigt. Sie wurden nicht verändert. Stelle eine geprüfte Sicherung wieder her, bevor du fortfährst.',
+  'core.accessDenied':
+    'Der lokale Programmkern darf nicht auf die benötigten Daten zugreifen. Prüfe die Dateiberechtigungen; die Daten wurden nicht verändert.',
+  'core.resourceMissing':
+    'Eine benötigte Programmressource fehlt. Installiere denselben Build erneut; vorhandene Kampagnendaten wurden nicht verändert.',
+  'core.invalidConfiguration':
+    'Der lokale Programmkern wurde mit einer ungültigen Konfiguration gestartet. Installiere einen vollständig geprüften Build erneut.',
   'core.retry': 'Erneut starten',
   'action.close': 'Schließen',
   'action.cancel': 'Abbrechen',

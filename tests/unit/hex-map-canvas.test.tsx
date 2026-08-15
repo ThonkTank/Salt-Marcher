@@ -19,7 +19,8 @@ import { CapabilityProvider } from '../../src/renderer/capabilities/capability-p
 
 const pixi = vi.hoisted(() => ({
   init: vi.fn<() => Promise<void>>(),
-  destroy: vi.fn()
+  destroy: vi.fn(),
+  render: vi.fn()
 }))
 
 vi.mock('../../src/renderer/spatial-2d/pixi-webgl-runtime.js', () => {
@@ -63,7 +64,7 @@ vi.mock('../../src/renderer/spatial-2d/pixi-webgl-runtime.js', () => {
     canvas = document.createElement('canvas')
     init = pixi.init
     destroy = pixi.destroy
-    render = vi.fn()
+    render = pixi.render
     resize = vi.fn()
   }
 
@@ -112,6 +113,8 @@ describe('HexMapCanvas', () => {
     cleanup()
     pixi.init.mockReset()
     pixi.destroy.mockReset()
+    pixi.render.mockReset()
+    vi.unstubAllGlobals()
   })
 
   it('retries a failed renderer initialization without losing map access', async () => {
@@ -185,6 +188,111 @@ describe('HexMapCanvas', () => {
       asyncAssertion
     )
     expect(screen.queryByLabelText('Q-Koordinate')).toBeNull()
+    view.unmount()
+  })
+
+  it('renders only when the static canvas is invalidated', async () => {
+    const frames = new Map<number, FrameRequestCallback>()
+    let frameId = 0
+    const requestFrame = vi.fn((callback: FrameRequestCallback) => {
+      frameId += 1
+      frames.set(frameId, callback)
+      return frameId
+    })
+    const cancelFrame = vi.fn((id: number) => frames.delete(id))
+    vi.stubGlobal('requestAnimationFrame', requestFrame)
+    vi.stubGlobal('cancelAnimationFrame', cancelFrame)
+    pixi.init.mockResolvedValue(undefined)
+
+    const view = render(
+      <HexMapCanvas
+        snapshot={snapshot}
+        biomes={biomes}
+        selected={null}
+        ariaLabel="Testkarte"
+      />,
+      { wrapper: CanvasTestProvider }
+    )
+    await waitFor(() => expect(requestFrame).toHaveBeenCalledTimes(1))
+
+    const first = frames.get(1)!
+    frames.delete(1)
+    first(0)
+    expect(pixi.render).toHaveBeenCalledTimes(1)
+    expect(requestFrame).toHaveBeenCalledTimes(1)
+
+    view.rerender(
+      <HexMapCanvas
+        snapshot={snapshot}
+        biomes={biomes}
+        selected={{ q: 1, r: 0 }}
+        ariaLabel="Testkarte"
+      />
+    )
+    await waitFor(() => expect(requestFrame).toHaveBeenCalledTimes(2))
+    const second = frames.get(2)!
+    frames.delete(2)
+    second(16)
+    expect(pixi.render).toHaveBeenCalledTimes(2)
+    expect(requestFrame).toHaveBeenCalledTimes(2)
+
+    view.rerender(
+      <HexMapCanvas
+        snapshot={snapshot}
+        biomes={biomes}
+        selected={{ q: 2, r: 0 }}
+        ariaLabel="Testkarte"
+      />
+    )
+    await waitFor(() => expect(requestFrame).toHaveBeenCalledTimes(3))
+    view.unmount()
+    expect(cancelFrame).toHaveBeenCalledWith(3)
+    expect(frames.has(3)).toBe(false)
+  })
+
+  it('presents rapid pan changes once per available browser frame', async () => {
+    const frames = new Map<number, FrameRequestCallback>()
+    let frameId = 0
+    const requestFrame = vi.fn((callback: FrameRequestCallback) => {
+      frameId += 1
+      frames.set(frameId, callback)
+      return frameId
+    })
+    vi.stubGlobal('requestAnimationFrame', requestFrame)
+    vi.stubGlobal('cancelAnimationFrame', (id: number) => frames.delete(id))
+    pixi.init.mockResolvedValue(undefined)
+
+    const view = render(
+      <HexMapCanvas
+        snapshot={snapshot}
+        biomes={biomes}
+        selected={null}
+        ariaLabel="Testkarte"
+      />,
+      { wrapper: CanvasTestProvider }
+    )
+    await waitFor(() => expect(requestFrame).toHaveBeenCalledTimes(1))
+    frames.get(1)!(0)
+    frames.delete(1)
+    const canvas = view.container.querySelector('canvas')!
+
+    fireEvent.pointerDown(canvas, {
+      button: 1,
+      pointerId: 7,
+      clientX: 10,
+      clientY: 10
+    })
+    fireEvent.pointerMove(canvas, { pointerId: 7, clientX: 12, clientY: 11 })
+    fireEvent.pointerMove(canvas, { pointerId: 7, clientX: 15, clientY: 14 })
+    expect(requestFrame).toHaveBeenCalledTimes(2)
+    frames.get(2)!(16)
+    frames.delete(2)
+
+    fireEvent.pointerMove(canvas, { pointerId: 7, clientX: 18, clientY: 16 })
+    expect(requestFrame).toHaveBeenCalledTimes(3)
+    frames.get(3)!(32)
+    expect(pixi.render).toHaveBeenCalledTimes(3)
+    fireEvent.pointerUp(canvas, { pointerId: 7 })
     view.unmount()
   })
 

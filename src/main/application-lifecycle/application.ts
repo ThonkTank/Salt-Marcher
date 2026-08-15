@@ -1,5 +1,5 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { CoreProcessSupervisor } from '../core-process/core-process-supervisor.js'
 import { createMainWindow } from '../windows/main-window.js'
 import {
@@ -16,32 +16,90 @@ import {
 import { registerCapabilities } from './capability-registration.js'
 import { capabilityEvents } from '../../shared/contracts/events.js'
 import { isE2eRuntime } from './e2e-runtime.js'
+import { loadBuildInfo, windowTitleForBuild } from './build-info.js'
+import { runtimeEvidenceSchema } from '../../shared/contracts/runtime-evidence.js'
+import {
+  acquireProfileLock,
+  type ProfileLock
+} from '../local-profile/local-profile-lock.js'
 
 let core: CoreProcessSupervisor | undefined
+let localProfileLock: ProfileLock | undefined
 
 export async function startApplication(): Promise<void> {
   await app.whenReady()
   configureSecurity()
+  const buildInfo = loadBuildInfo()
+  const windowTitle = windowTitleForBuild(buildInfo)
+  if (buildInfo?.channel === 'local')
+    localProfileLock = acquireProfileLock(
+      join(dirname(app.getPath('userData')), 'runtime.lock'),
+      'application'
+    )
+  try {
+    startApplicationWithProfileLock(buildInfo, windowTitle)
+  } catch (error) {
+    localProfileLock?.release()
+    localProfileLock = undefined
+    throw error
+  }
+}
+
+function startApplicationWithProfileLock(
+  buildInfo: ReturnType<typeof loadBuildInfo>,
+  windowTitle: string
+): void {
+  if (buildInfo !== undefined)
+    console.info(
+      JSON.stringify({
+        component: 'build-identity',
+        event: 'loaded',
+        ...buildInfo
+      })
+    )
+  const packaged = app.isPackaged
   core = new CoreProcessSupervisor(
-    join(app.getPath('userData'), 'development-data'),
-    outputPath('main', 'utility.js'),
-    resourcePath('reference', 'srd-5.1.sqlite'),
-    resourcePath('sessiongeneration')
+    {
+      dataRoot: join(
+        app.getPath('userData'),
+        packaged ? 'campaign-data' : 'development-data'
+      ),
+      referenceDatabasePath: resourcePath('reference', 'srd-5.1.sqlite'),
+      sessionGenerationCatalogRoot: resourcePath('sessiongeneration'),
+      incompatibleDataPolicy: packaged ? 'preserve' : 'reset'
+    },
+    outputPath('main', 'utility.js')
   )
-  if (isE2eRuntime())
+  if (isE2eRuntime()) {
     ipcMain.handle('salt-marcher-e2e:terminate-utility', () =>
       core?.terminateUtilityForE2e()
     )
+    ipcMain.handle('salt-marcher-e2e:runtime-evidence', async () => {
+      if (core === undefined) throw new Error('Core is unavailable')
+      return runtimeEvidenceSchema.parse({
+        capturedAt: new Date().toISOString(),
+        supervisor: await core.runtimeMetrics(),
+        processes: app.getAppMetrics().map((metric) => ({
+          pid: metric.pid,
+          type: metric.type,
+          cpuPercent: Math.max(0, metric.cpu.percentCPUUsage),
+          idleWakeupsPerSecond: Math.max(0, metric.cpu.idleWakeupsPerSecond),
+          workingSetSizeKiB: Math.max(0, metric.memory.workingSetSize)
+        }))
+      })
+    })
+  }
   connectCoreNotifications(core)
   void core.waitUntilReady().catch(() => {
     // The shell stays visible and exposes explicit recovery through core status.
   })
 
   registerCapabilities(core)
-  createMainWindow()
+  createMainWindow(windowTitle)
   if (process.argv.includes('--passive-e2e')) createSecondaryWindow()
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createMainWindow()
+    if (BrowserWindow.getAllWindows().length === 0)
+      createMainWindow(windowTitle)
   })
 }
 
@@ -136,10 +194,17 @@ function connectCoreNotifications(supervisor: CoreProcessSupervisor): void {
 }
 
 export async function stopApplication(): Promise<void> {
-  await core?.closeGracefully()
-  core = undefined
-  if (isE2eRuntime())
-    ipcMain.removeHandler('salt-marcher-e2e:terminate-utility')
+  try {
+    await core?.closeGracefully()
+  } finally {
+    core = undefined
+    localProfileLock?.release()
+    localProfileLock = undefined
+    if (isE2eRuntime())
+      ipcMain.removeHandler('salt-marcher-e2e:terminate-utility')
+    if (isE2eRuntime())
+      ipcMain.removeHandler('salt-marcher-e2e:runtime-evidence')
+  }
 }
 
 export function waitForCoreReady(): Promise<void> {
@@ -156,4 +221,20 @@ export async function runSessionGenerationSmoke(): Promise<void> {
   )
   if (!identity.catalogVersion || !identity.catalogContentHash)
     throw new Error('Packaged session-generation catalog smoke failed')
+}
+
+export async function reportInstalledRuntimeVerification(): Promise<void> {
+  if (core === undefined) throw new CapabilityError('core_unavailable', true)
+  await core.waitUntilReady()
+  const build = loadBuildInfo()
+  const runtime = await core.runtimeMetrics()
+  console.info(
+    JSON.stringify({
+      component: 'installed-runtime-verification',
+      event: 'ready',
+      windowTitle: windowTitleForBuild(build),
+      build,
+      runtime
+    })
+  )
 }

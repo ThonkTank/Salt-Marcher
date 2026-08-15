@@ -5,10 +5,20 @@ export const coreProcessStatusSchema = z.enum([
   'ready',
   'recovering',
   'unavailable',
+  'incompatible-data',
+  'corrupt-data',
+  'access-denied',
+  'resource-missing',
+  'invalid-configuration',
   'closed'
 ])
 
 export type CoreProcessStatus = z.infer<typeof coreProcessStatusSchema>
+
+export const incompatibleDataPolicySchema = z.enum(['reset', 'preserve'])
+export type IncompatibleDataPolicy = z.infer<
+  typeof incompatibleDataPolicySchema
+>
 
 export const rendererIncidentSchema = z
   .object({

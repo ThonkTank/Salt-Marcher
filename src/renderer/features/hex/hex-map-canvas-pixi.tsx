@@ -1,8 +1,6 @@
 import { message } from '../../i18n/hex-runtime.de.js'
 import {
   Container,
-  Graphics,
-  Text,
   WebGLRenderer
 } from '../../spatial-2d/pixi-webgl-runtime.js'
 import {
@@ -19,19 +17,10 @@ import type {
   HexBiomeCatalog,
   HexBiomeId
 } from '../../../shared/contracts/hex.js'
-import { expandHexBrush } from './hex-brush.js'
-import {
-  center,
-  chunkId,
-  hexSize,
-  pixelToAxial,
-  polygon,
-  rootThree
-} from './hex-canvas-geometry.js'
+import { center, pixelToAxial } from './hex-canvas-geometry.js'
 import {
   rememberCamera,
   resetCamera,
-  viewportCenter,
   viewportMetrics
 } from './hex-pixi-camera.js'
 import { attachHexCanvasGestures } from './hex-canvas-gesture-controller.js'
@@ -41,36 +30,33 @@ import {
   type HexLocationMarkerOverlayHandle
 } from './hex-location-marker-overlay.js'
 import './hex-canvas.css'
-
-type TravelOverlay = Readonly<{
-  id: string
-  label: string
-  token: AxialCoordinate | null
-  route: readonly AxialCoordinate[]
-  focused?: boolean
-}>
+import {
+  RafRenderScheduler,
+  type RenderInvalidationReason
+} from './raf-render-scheduler.js'
+import {
+  clearHexPixiLayer,
+  createHexPixiLayers,
+  drawHexGrid,
+  drawHexTransientLayers,
+  synchronizeHexScene,
+  type HexPixiChunk,
+  type HexPixiLayers,
+  type TravelOverlay
+} from './hex-pixi-layers.js'
 
 type CanvasState = {
   application: WebGLRenderer
   world: Container
   element: HTMLDivElement
+  scheduler: RafRenderScheduler
+  renderCount: number
+  renderReasonCounts: Record<RenderInvalidationReason, number>
   mapId: string
   cameraByMap: Map<string, Readonly<{ x: number; y: number; scale: number }>>
   destroyed: boolean
-  chunks: Map<
-    string,
-    Readonly<{
-      signature: string
-      biome: Container
-    }>
-  >
-  layers: Readonly<{
-    grid: Container
-    biome: Container
-    overlays: Container
-    preview: Container
-    selection: Container
-  }>
+  chunks: Map<string, HexPixiChunk>
+  layers: HexPixiLayers
 }
 
 export type HexMapCanvasProps = {
@@ -120,9 +106,10 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
     []
   )
 
-  const clearLayer = useCallback((layer: Container) => {
-    for (const child of layer.removeChildren())
-      child.destroy({ children: true })
+  const invalidateRender = useCallback((reason: RenderInvalidationReason) => {
+    const current = state.current
+    if (!current || current.destroyed) return
+    current.scheduler.invalidate(reason)
   }, [])
 
   const syncCamera = useCallback(() => {
@@ -140,180 +127,41 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
   const redrawGrid = useCallback(() => {
     const current = state.current
     if (!current || current.destroyed) return
-    const { world, element, layers } = current
-    clearLayer(layers.grid)
-    const localCenter = viewportCenter(current)
-    const spanQ =
-      Math.ceil(
-        element.clientWidth / (hexSize * rootThree * world.scale.x) / 2
-      ) + 3
-    const spanR =
-      Math.ceil(element.clientHeight / (hexSize * 1.5 * world.scale.y) / 2) + 3
-    const grid = new Graphics()
-    for (let q = localCenter.q - spanQ; q <= localCenter.q + spanQ; q += 1)
-      for (let r = localCenter.r - spanR; r <= localCenter.r + spanR; r += 1) {
-        const point = center({ q, r })
-        grid
-          .poly(polygon(point.x, point.y, hexSize - 1))
-          .stroke({ width: 1, color: '#263d38', alpha: 0.45 })
-      }
-    layers.grid.addChild(grid)
-  }, [clearLayer])
+    drawHexGrid(current, current.layers.grid)
+    invalidateRender('scene')
+  }, [invalidateRender])
 
   const redrawTransientLayers = useCallback(() => {
     const current = state.current
     if (!current || current.destroyed) return
     const currentProps = latest.current
-    const { layers } = current
-    clearLayer(layers.preview)
-    clearLayer(layers.selection)
-    const byBiome = new Map(
-      currentProps.biomes.biomes.map((biome) => [biome.id, biome])
-    )
-    const radius = currentProps.brushRadius ?? 0
-    if (previewRef.current.length > 0) {
-      const preview = new Graphics()
-      for (const coordinate of expandHexBrush(previewRef.current, radius) ??
-        []) {
-        const point = center(coordinate)
-        preview.poly(polygon(point.x, point.y, hexSize - 3)).fill({
-          color:
-            currentProps.interaction === 'erase'
-              ? '#d6594c'
-              : (byBiome.get(currentProps.brushBiomeId ?? 'grassland')?.color ??
-                '#ffffff'),
-          alpha: 0.35
-        })
-      }
-      layers.preview.addChild(preview)
-    }
-    if (currentProps.selected) {
-      const point = center(currentProps.selected)
-      const selection = new Graphics()
-      selection
-        .poly(polygon(point.x, point.y, hexSize - 2))
-        .stroke({ width: 4, color: '#ffffff' })
-      layers.selection.addChild(selection)
-    }
-  }, [clearLayer])
+    drawHexTransientLayers(current.layers, {
+      biomes: currentProps.biomes,
+      selected: currentProps.selected,
+      interaction: currentProps.interaction,
+      brushRadius: currentProps.brushRadius,
+      brushBiomeId: currentProps.brushBiomeId,
+      preview: previewRef.current
+    })
+    invalidateRender('overlay')
+  }, [invalidateRender])
 
   const redraw = useCallback(() => {
     const current = state.current
     if (!current || current.destroyed) return
     const currentProps = latest.current
-    const { layers } = current
-    clearLayer(layers.overlays)
     redrawGrid()
-    const byBiome = new Map(
-      currentProps.biomes.biomes.map((biome) => [biome.id, biome])
-    )
-    const byChunk = new Map<string, HexMapView['tiles'][number][]>()
-    for (const tile of currentProps.snapshot.tiles) {
-      const id = chunkId(tile)
-      const chunk = byChunk.get(id) ?? []
-      chunk.push(tile)
-      byChunk.set(id, chunk)
-    }
-    for (const [id, drawing] of current.chunks)
-      if (!byChunk.has(id)) {
-        layers.biome.removeChild(drawing.biome)
-        drawing.biome.destroy({ children: true })
-        current.chunks.delete(id)
-      }
-    for (const [id, chunk] of byChunk) {
-      chunk.sort((left, right) => left.q - right.q || left.r - right.r)
-      const signature = chunk
-        .map((tile) => {
-          const biome = byBiome.get(tile.biomeId)
-          return `${tile.q}:${tile.r}:${tile.biomeId}:${biome?.color ?? ''}`
-        })
-        .join('|')
-      if (current.chunks.get(id)?.signature === signature) continue
-      const previous = current.chunks.get(id)
-      if (previous) {
-        layers.biome.removeChild(previous.biome)
-        previous.biome.destroy({ children: true })
-      }
-      const biomeContainer = new Container()
-      const graphics = new Graphics()
-      for (const tile of chunk) {
-        const point = center(tile)
-        const biome = byBiome.get(tile.biomeId)
-        if (biome) {
-          graphics
-            .poly(polygon(point.x, point.y, hexSize - 1))
-            .fill(biome.color)
-          graphics.stroke({ width: 1, color: '#263d38', alpha: 0.9 })
-          if (tile.biomeId === 'to-be-replaced') {
-            graphics
-              .moveTo(point.x - 8, point.y - 8)
-              .lineTo(point.x + 8, point.y + 8)
-              .moveTo(point.x + 8, point.y - 8)
-              .lineTo(point.x - 8, point.y + 8)
-              .stroke({ width: 2, color: '#ffe2f3', alpha: 0.9 })
-          }
-        }
-      }
-      biomeContainer.addChild(graphics)
-      layers.biome.addChild(biomeContainer)
-      current.chunks.set(id, {
-        signature,
-        biome: biomeContainer
-      })
-    }
-
-    const overlays = [
-      ...(currentProps.overlays ?? []),
-      ...(currentProps.token || currentProps.route
-        ? [
-            {
-              id: 'primary',
-              label: '',
-              token: currentProps.token ?? null,
-              route: currentProps.route ?? [],
-              focused: true
-            }
-          ]
-        : [])
-    ]
-    overlays.forEach((overlay, index) => {
-      if (overlay.route.length > 1) {
-        const route = new Graphics()
-        const first = center(overlay.route[0]!)
-        route.moveTo(first.x, first.y)
-        for (const coordinate of overlay.route.slice(1)) {
-          const point = center(coordinate)
-          route.lineTo(point.x, point.y)
-        }
-        route.stroke({
-          width: overlay.focused ? 5 : 3,
-          color: overlay.focused ? '#f2cc70' : '#89b8c2',
-          alpha: 0.85
-        })
-        layers.overlays.addChild(route)
-      }
-      if (overlay.token) {
-        const point = center(overlay.token)
-        const token = new Graphics()
-        token
-          .circle(point.x, point.y, overlay.focused ? 11 : 8)
-          .fill(overlay.focused ? '#d6594c' : '#4f96a6')
-        token.circle(point.x, point.y, 4).fill('#fff4e8')
-        token.stroke({ width: 2, color: '#421c19' })
-        layers.overlays.addChild(token)
-        if (overlay.label) {
-          const label = new Text({
-            text: overlay.label,
-            style: { fontSize: 11, fill: '#fff4d1' }
-          })
-          label.position.set(point.x + 12, point.y + index * 12)
-          layers.overlays.addChild(label)
-        }
-      }
+    synchronizeHexScene({
+      snapshot: currentProps.snapshot,
+      biomes: currentProps.biomes,
+      token: currentProps.token,
+      route: currentProps.route,
+      overlays: currentProps.overlays,
+      layers: current.layers,
+      chunks: current.chunks
     })
-
     redrawTransientLayers()
-  }, [clearLayer, redrawGrid, redrawTransientLayers])
+  }, [redrawGrid, redrawTransientLayers])
 
   const redrawSafely = useCallback(() => {
     try {
@@ -337,17 +185,10 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
     setRenderError(false)
     const application = new WebGLRenderer()
     const world = new Container()
-    const layers = {
-      grid: new Container(),
-      biome: new Container(),
-      overlays: new Container(),
-      preview: new Container(),
-      selection: new Container()
-    }
+    const layers = createHexPixiLayers()
     let disposed = false
     let resizeObserver: ResizeObserver | null = null
     let lastViewportNotice = 0
-    let animationFrame = 0
     let detachGestures: (() => void) | undefined
 
     const notifyViewport = () => {
@@ -367,6 +208,7 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
         return
       current.destroyed = true
       resizeObserver?.disconnect()
+      current.scheduler.dispose()
       try {
         world.destroy({ children: true })
         application.destroy(true)
@@ -397,29 +239,56 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
           layers.preview,
           layers.selection
         )
-        state.current = {
+        const scheduler = new RafRenderScheduler((reasons) => {
+          const current = state.current
+          if (
+            !current ||
+            current.application !== application ||
+            current.destroyed
+          )
+            return
+          try {
+            current.application.render(current.world)
+            current.renderCount += 1
+            for (const reason of reasons)
+              current.renderReasonCounts[reason] += 1
+            current.element.dataset['renderCount'] = String(current.renderCount)
+            current.element.dataset['lastRenderReasons'] = [...reasons].join(
+              ','
+            )
+            current.element.dataset['renderReasonCounts'] = JSON.stringify(
+              current.renderReasonCounts
+            )
+          } catch (cause) {
+            reportRendererFailure('canvas', cause)
+          }
+        })
+        const current: CanvasState = {
           application,
           world,
           element,
+          scheduler,
+          renderCount: 0,
+          renderReasonCounts: {
+            scene: 0,
+            camera: 0,
+            overlay: 0,
+            resize: 0
+          },
           mapId: latest.current.snapshot.map.id,
           cameraByMap: cameraMemory.current,
           destroyed: false,
           chunks: new Map(),
           layers
         }
+        element.dataset['renderCount'] = '0'
+        element.dataset['renderReasonCounts'] = JSON.stringify(
+          current.renderReasonCounts
+        )
+        state.current = current
         resetCamera(state.current, { q: 0, r: 0 })
         syncCamera()
         redrawSafely()
-        const renderFrame = () => {
-          if (disposed) return
-          try {
-            application.render(world)
-            animationFrame = requestAnimationFrame(renderFrame)
-          } catch (cause) {
-            reportRendererFailure('canvas', cause)
-          }
-        }
-        animationFrame = requestAnimationFrame(renderFrame)
 
         const canvas = application.canvas
         const coordinateFor = (event: PointerEvent | MouseEvent) => {
@@ -439,6 +308,7 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
             world.position.y += deltaY
             rememberCamera(state.current!)
             syncCamera()
+            invalidateRender('camera')
             notifyViewport()
           },
           onPanEnd: () => {
@@ -477,6 +347,7 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
               event.clientX - bounds.left - worldX * next,
               event.clientY - bounds.top - worldY * next
             )
+            invalidateRender('camera')
             redrawGrid()
             rememberCamera(state.current!)
             syncCamera()
@@ -488,12 +359,17 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
           }
         })
         if (typeof ResizeObserver !== 'undefined') {
+          let renderedWidth = Math.max(1, element.clientWidth)
+          let renderedHeight = Math.max(1, element.clientHeight)
           resizeObserver = new ResizeObserver(() => {
-            application.resize(
-              Math.max(1, element.clientWidth),
-              Math.max(1, element.clientHeight)
-            )
+            const width = Math.max(1, element.clientWidth)
+            const height = Math.max(1, element.clientHeight)
+            if (width === renderedWidth && height === renderedHeight) return
+            renderedWidth = width
+            renderedHeight = height
+            application.resize(width, height)
             syncCamera()
+            invalidateRender('resize')
             redrawGrid()
           })
           resizeObserver.observe(element)
@@ -512,7 +388,6 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
 
     return () => {
       disposed = true
-      cancelAnimationFrame(animationFrame)
       detachGestures?.()
       destroy()
     }
@@ -522,7 +397,8 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
     redrawTransientLayersSafely,
     renderAttempt,
     reportRendererFailure,
-    syncCamera
+    syncCamera,
+    invalidateRender
   ])
 
   useEffect(() => {
@@ -531,7 +407,7 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
     if (current.mapId !== props.snapshot.map.id) {
       rememberCamera(current)
       current.chunks.clear()
-      clearLayer(current.layers.biome)
+      clearHexPixiLayer(current.layers.biome)
       current.mapId = props.snapshot.map.id
       const remembered = current.cameraByMap.get(current.mapId)
       if (remembered) {
@@ -548,13 +424,17 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
     props.route,
     props.overlays,
     redrawSafely,
-    clearLayer,
     syncCamera
   ])
 
   useEffect(() => {
-    const frame = requestAnimationFrame(redrawTransientLayersSafely)
-    return () => cancelAnimationFrame(frame)
+    let active = true
+    queueMicrotask(() => {
+      if (active) redrawTransientLayersSafely()
+    })
+    return () => {
+      active = false
+    }
   }, [
     props.selected,
     props.interaction,
@@ -569,8 +449,9 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
     resetCamera(current, { q: 0, r: 0 })
     rememberCamera(current)
     syncCamera()
+    invalidateRender('camera')
     redrawGrid()
-  }, [props.resetViewSignal, redrawGrid, syncCamera])
+  }, [props.resetViewSignal, redrawGrid, syncCamera, invalidateRender])
 
   const keyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
     const selected = latest.current.selected ?? latest.current.snapshot.center
@@ -612,9 +493,10 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
       }
       return
     }
-    if (command.kind === 'stroke')
+    if (command.kind === 'stroke') {
       latest.current.onStrokeComplete?.([command.coordinate])
-    else;
+      return
+    }
     ;(latest.current.onTileActivate ?? latest.current.onTileClick)?.(
       command.coordinate
     )

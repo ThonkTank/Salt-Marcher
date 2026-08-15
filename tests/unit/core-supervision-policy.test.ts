@@ -31,6 +31,11 @@ describe('core supervision policy', () => {
   })
 
   it('backs off three times and then requires explicit recovery', () => {
-    expect([1, 2, 3, 4].map(coreRestartDelay)).toEqual([100, 500, 2_000, null])
+    expect([1, 2, 3, 4].map(coreRestartDelay)).toEqual([
+      1_000,
+      5_000,
+      15_000,
+      null
+    ])
   })
 })

@@ -5,9 +5,9 @@ import { isE2eRuntime } from '../application-lifecycle/e2e-runtime.js'
 import { observeRendererProcess } from './renderer-observability.js'
 import { mainWindowGeometry } from '../../shared/contracts/window-geometry.js'
 
-export function createMainWindow(): BrowserWindow {
+export function createMainWindow(title = 'SaltMarcher'): BrowserWindow {
   const window = new BrowserWindow({
-    title: 'SaltMarcher',
+    title,
     width: mainWindowGeometry.defaultWidth,
     height: mainWindowGeometry.defaultHeight,
     minWidth: mainWindowGeometry.minimumWidth,
@@ -24,6 +24,10 @@ export function createMainWindow(): BrowserWindow {
     }
   })
   window.setMenuBarVisibility(false)
+  window.on('page-title-updated', (event) => {
+    event.preventDefault()
+    window.setTitle(title)
+  })
   hardenWebContents(window.webContents)
   observeRendererProcess(window.webContents)
   window.once('ready-to-show', () => window.show())

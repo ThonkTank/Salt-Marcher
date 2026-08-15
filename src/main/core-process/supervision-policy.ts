@@ -5,7 +5,7 @@ import { CapabilityError } from '../../shared/errors/capability-error.js'
 export type CoreOperationMode = 'read' | 'write'
 
 export function coreOperationMode(
-  kind: CoreRequest['kind']
+  kind: CoreRequest['operation']
 ): CoreOperationMode {
   return coreOperations[kind].mode
 }
@@ -22,5 +22,5 @@ export function interruptedOperationError(
 }
 
 export function coreRestartDelay(crashCount: number): number | null {
-  return [100, 500, 2_000][crashCount - 1] ?? null
+  return [1_000, 5_000, 15_000][crashCount - 1] ?? null
 }

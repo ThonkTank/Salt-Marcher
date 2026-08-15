@@ -1,0 +1,13 @@
+{
+  "formatVersion": 1,
+  "schemaVersion": 27,
+  "roles": {
+    "installation": "schema-27-installation.sql",
+    "campaign": "schema-27-campaign.sql"
+  },
+  "expectedMigrationRegistryVersion": 1,
+  "expectedTargetVersions": {
+    "installation": 28,
+    "campaign": 28
+  }
+}

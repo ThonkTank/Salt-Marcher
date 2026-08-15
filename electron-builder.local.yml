@@ -1,0 +1,14 @@
+extends: ./electron-builder.yml
+appId: org.saltmarcher.local
+productName: SaltMarcher Local
+artifactName: SaltMarcher-Local-${version}.${ext}
+directories:
+  output: release/local
+extraMetadata:
+  desktopName: org.saltmarcher.local
+linux:
+  target: [AppImage]
+  executableName: salt-marcher-local
+  icon: resources/icons/salt-marcher.png
+  category: Game
+  syncDesktopName: true

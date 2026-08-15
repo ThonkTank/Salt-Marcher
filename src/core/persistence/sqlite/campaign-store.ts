@@ -22,12 +22,15 @@ import { initializeEncounterTableSchema } from '../../encounter/encounter-table-
 import { initializeWorldFactionSchema } from '../../worldplanner/faction-store.js'
 import { initializeHexSchema } from '../../hex/hex-map-store.js'
 import {
-  assertDevelopmentSchemaVersion,
+  assertSchemaVersion,
   configureSqlite,
-  currentDevelopmentSchemaVersion,
-  IncompatibleDevelopmentDataError,
-  initializeDevelopmentSchemaVersion
+  currentSchemaVersion,
+  IncompatibleDataError,
+  initializeSchemaVersion
 } from './database.js'
+import { preflightPersistence } from './persistence-preflight.js'
+import { initializeInstallationSchemaMetadata } from './installation-schema-migrations.js'
+import { initializeCampaignSchemaMetadata } from './campaign-schema-migrations.js'
 import {
   defaultInstallationPreferences,
   type InstallationPreferencesPatch,
@@ -46,6 +49,7 @@ import { initializeCharacterLootSchema } from '../../loot/character-loot-store.j
 import { initializeEncounterPlanSchema } from '../../encounter/encounter-plan-store.js'
 import { initializeSessionPlannerSchema } from '../../session-planner/session-planner-store.js'
 import { initializeCampaignRulesSchema } from '../../application/campaign-rules-service.js'
+import type { IncompatibleDataPolicy } from '../../../shared/contracts/runtime.js'
 
 export type CampaignCreatePhase =
   | 'before-registry-entry'
@@ -71,14 +75,17 @@ export class CampaignStore {
   ) {
     this.onCreatePhase = options.onCreatePhase
     const installationPath = join(dataRoot, 'installation.sqlite')
-    const installationExists = existsSync(installationPath)
+    const preflight = preflightPersistence(dataRoot)
+    if (preflight.kind === 'migration-required')
+      throw new IncompatibleDataError(dataRoot)
+    const installationExists = preflight.kind === 'ready'
     mkdirSync(dirname(installationPath), { recursive: true })
     this.installation = new Database(installationPath)
     this.installationSettings = new InstallationSettingsStore(this.installation)
     try {
       configureSqlite(this.installation)
       if (installationExists)
-        assertDevelopmentSchemaVersion(this.installation, this.dataRoot)
+        assertSchemaVersion(this.installation, this.dataRoot, 'installation')
       this.installation.exec(`
       CREATE TABLE IF NOT EXISTS campaigns (
         id TEXT PRIMARY KEY NOT NULL,
@@ -106,8 +113,10 @@ export class CampaignStore {
       initializeCreatureSchema(this.installation)
       initializeBiomeCatalogSchema(this.installation)
       initializeLocationSymbolSchema(this.installation)
-      if (!installationExists)
-        initializeDevelopmentSchemaVersion(this.installation)
+      if (!installationExists) {
+        initializeInstallationSchemaMetadata(this.installation)
+        initializeSchemaVersion(this.installation, 'installation')
+      }
       this.recoverIncompleteCreations()
       this.recoverCampaignDirectoryTransitions()
       this.openRecordedActiveCampaign()
@@ -297,7 +306,7 @@ export class CampaignStore {
       const database = new Database(path)
       try {
         configureSqlite(database)
-        assertDevelopmentSchemaVersion(database)
+        assertSchemaVersion(database, undefined, 'campaign')
         return visitor({
           id: row.id,
           name: row.name,
@@ -351,7 +360,8 @@ export class CampaignStore {
     initializeSessionPlannerSchema(campaign)
     initializeLootSchema(campaign)
     initializeCharacterLootSchema(campaign)
-    initializeDevelopmentSchemaVersion(campaign)
+    initializeCampaignSchemaMetadata(campaign)
+    initializeSchemaVersion(campaign, 'campaign')
     campaign.close()
   }
 
@@ -444,7 +454,7 @@ export class CampaignStore {
     let campaign: Database.Database | undefined
     try {
       campaign = new Database(path, { readonly: true })
-      assertDevelopmentSchemaVersion(campaign)
+      assertSchemaVersion(campaign, undefined, 'campaign')
       return (
         campaign
           .prepare(
@@ -536,7 +546,7 @@ export class CampaignStore {
     const next = new Database(this.campaignPath(id))
     try {
       configureSqlite(next)
-      assertDevelopmentSchemaVersion(next, this.campaignDirectory(id))
+      assertSchemaVersion(next, this.campaignDirectory(id), 'campaign')
     } catch (error) {
       next.close()
       throw error
@@ -546,22 +556,22 @@ export class CampaignStore {
   }
 }
 
-/**
- * Development data is deliberately disposable before the first stable data
- * format. Only the fixed Electron development-data directory may be reset.
- */
-export function openDevelopmentCampaignStore(dataRoot: string): CampaignStore {
+/** The caller owns the data-retention decision; paths never imply policy. */
+export function openCampaignStore(
+  dataRoot: string,
+  incompatibleDataPolicy: IncompatibleDataPolicy
+): CampaignStore {
   try {
     return new CampaignStore(dataRoot)
   } catch (error) {
-    if (!(error instanceof IncompatibleDevelopmentDataError)) throw error
-    if (dataRoot.split(/[\\/]/).at(-1) !== 'development-data') throw error
+    if (!(error instanceof IncompatibleDataError)) throw error
+    if (incompatibleDataPolicy === 'preserve') throw error
     rmSync(dataRoot, { recursive: true, force: true })
     console.info(
       JSON.stringify({
-        component: 'development-data',
+        component: 'campaign-store',
         event: 'schema-reset',
-        schemaVersion: currentDevelopmentSchemaVersion
+        schemaVersion: currentSchemaVersion
       })
     )
     return new CampaignStore(dataRoot)

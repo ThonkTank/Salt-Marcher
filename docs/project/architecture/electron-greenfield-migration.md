@@ -17,9 +17,10 @@ screen-reader qualification recorded in `m1-render-qualification.md`.
 
 The qualification harness is now a separate renderer entry and Babylon is no
 longer copied wholesale into the normal application. Runtime hardening now
-includes request deadlines, read/write interruption semantics, bounded Core
-restart, typed failures, one SQLite development schema version and connection
-policy, SQLite-owned installation preferences, utility-driven Hex travel,
+includes request deadlines, read/write interruption semantics, a
+generation-bound Core supervisor, typed bootstrap and terminal failures, one
+neutral SQLite schema version with read-only preflight and explicit migration
+contracts, SQLite-owned installation preferences, utility-driven Hex travel,
 unbounded sparse Hex viewports, and a dedicated fail-closed passive preload.
 Automated architecture and normal-bundle budget gates protect these boundaries.
 Every renderer invocation is now declared in the shared operation contracts;
@@ -42,7 +43,7 @@ accounts for the bounded virtual biome catalog and CRUD surface added with
 schema 15; schema 16 replaced separate World Location kind and region fields
 with tags and read-aloud text, and schema 17 normalizes ordered location-owned
 tags into validated rows while all per-entry ceilings remain unchanged.
-Development schema 27, Generator Config V3, and Session engine
+Schema 27, Generator Config V3, and Session engine
 `saltmarcher-v5` are current. Schema 25 is reset rather than migrated. The
 versioned behavior and ownership are recorded in the
 [Encounter Generation requirements](../../encounter/requirements/requirements-encounter-generation.md)
@@ -89,6 +90,60 @@ former feature-wide Session/Hex stylesheets are split into component-owned
 files without reciprocal selectors.
 The travel E2E suite uses one versioned, materialized fixture registered in the
 central suite catalog rather than browser-side seed logic.
+Pixi rendering is demand-driven: explicit scene, overlay, camera, and resize
+invalidations coalesce into one frame, unchanged resize observations are
+ignored, and the materialized Travel fixture proves a static interval with
+`renderDelta: 0` plus unchanged per-reason counters.
+
+The Linux manual-acceptance path now uses a separate `SaltMarcher Local`
+AppImage identity and XDG profile. Receipt format 2 carries commit, dirty
+state, workspace and app-input fingerprints, provenance build time, role
+schemas, migration registry, toolchain, platform, and the output hash manifest;
+that receipt is embedded in the package and the workspace fingerprint remains
+visible in the window title. Development opens only explicit reset-policy data, while every
+packaged process uses preserve policy and reports incompatible data as a
+terminal, non-restarting status. The local installer refuses stale or running
+artifacts and concurrent installers. It performs a recursive read-only SQLite
+preflight, refuses schema changes without a unique tested migration chain,
+creates permanent hash-manifested campaign-data backups, migrates only staged
+copies, and promotes immutable fingerprint-addressed deployments through one
+atomic `current` link. Every clean-channel build has a receipt containing
+hashes for all output files and an aggregate hash; packaging verifies it
+against the workspace. The single `pnpm handoff:app` path performs checks, a
+Local build/package pass, actual-AppImage smoke, backup/installation, and
+installed-runtime verification in that order. It is fresh by default; only
+explicit `--resume` reuses steps whose workspace, toolchain, output, artifact,
+and installed evidence exactly matches the atomic final receipt. `pnpm dev`
+remains HMR-only.
+
+## Runtime efficiency and delivery hardening — 2026-08-15
+
+The architecture-critique remediation was delivered in six independently
+verifiable phases:
+
+1. Core lifecycle flags and split message parsing were replaced by a
+   generation-bound state machine, discriminated protocol, request tracker,
+   event router, measured bootstrap phases, and terminal startup taxonomy.
+2. Pixi's implicit redraw behavior was replaced by an invalidation scheduler;
+   the real Travel fixture supplies the idle-render evidence.
+3. Persisted data is classified with a read-only preflight before any writable
+   connection. Schema names are environment-neutral and forward migrations
+   require one explicit registry chain and transactional contract tests. The
+   role contract is installation schema 28 at `installation.sqlite` and
+   campaign schema 28 at `campaigns/<id>/campaign.sqlite`; registry version 1
+   supports only the Golden-Master-backed 27 -> 28 path. The aggregate owners
+   retain their SQL, and the installer is the only offline migration authority.
+4. Local installation uses a lock, permanent verified backups, staged data
+   migration, immutable version deployments, atomic current selection, and
+   rollback/recovery paths.
+5. Clean output roots and receipt format 2 bind workspace and app-input
+   fingerprints, CLI-selected channel, role schemas, migration registry,
+   toolchain, platform, and every emitted byte. Development, Local, and release
+   outputs are isolated, and Linux qualification executes the actual AppImage.
+6. The five-step handoff is fresh by default. Explicit `--resume` validates
+   workspace, app-input, toolchain, output, artifact, and installation hashes;
+   every step records status, duration, evidence, and errors in one atomic
+   machine-readable receipt before installed generation-one runtime acceptance.
 
 The editor application-layer refactor tracks its normative evidence in
 `application-layer-refactor-acceptance-matrix.md`. It moves the two-step

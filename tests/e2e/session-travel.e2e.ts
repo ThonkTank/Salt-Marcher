@@ -1,5 +1,8 @@
 import { browser, expect } from '@wdio/globals'
 import type { Browser as WdioBrowser } from 'webdriverio'
+import { mkdirSync, renameSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
+import type { RuntimeEvidence } from '../../src/shared/contracts/runtime-evidence.js'
 import {
   expectAccessible,
   expectElementGolden,
@@ -25,6 +28,60 @@ describe('Session map and travel console', () => {
       '[role="region"][aria-label="Hex-Karte Reiseküste"]'
     )
     await mapRegion.waitForExist({ timeout: 10_000 })
+    let settlingRenderCount = -1
+    let stableSamples = 0
+    await client.waitUntil(
+      async () => {
+        const current = Number(
+          await mapRegion.getAttribute('data-render-count')
+        )
+        stableSamples = current === settlingRenderCount ? stableSamples + 1 : 0
+        settlingRenderCount = current
+        return stableSamples >= 4
+      },
+      {
+        timeout: 5_000,
+        interval: 250,
+        timeoutMsg: 'Travel map did not reach a stable render state.'
+      }
+    )
+    const idleRenderCountBefore = settlingRenderCount
+    const idleRenderReasonsBefore = JSON.parse(
+      (await mapRegion.getAttribute('data-render-reason-counts')) ?? '{}'
+    ) as Record<string, number>
+    const runtimeBefore = await readRuntimeEvidence(client)
+    await client.pause(1_000)
+    const idleRenderCountAfter = Number(
+      await mapRegion.getAttribute('data-render-count')
+    )
+    const idleRenderReasonsAfter = JSON.parse(
+      (await mapRegion.getAttribute('data-render-reason-counts')) ?? '{}'
+    ) as Record<string, number>
+    const runtimeAfter = await readRuntimeEvidence(client)
+    expect(idleRenderCountAfter).toBe(idleRenderCountBefore)
+    expect(runtimeAfter.supervisor.generation).toBe(
+      runtimeBefore.supervisor.generation
+    )
+    expect(runtimeAfter.supervisor.generation).toBe(1)
+    expect(runtimeBefore.supervisor.utility.activeDomainTimers).toBe(0)
+    expect(runtimeAfter.supervisor.utility.activeDomainTimers).toBe(0)
+    expect(runtimeAfter.supervisor.utility.scheduledWakeups).toBe(
+      runtimeBefore.supervisor.utility.scheduledWakeups
+    )
+    writeIdleEvidence({
+      observationMs: 1_000,
+      renderCountBefore: idleRenderCountBefore,
+      renderCountAfter: idleRenderCountAfter,
+      renderDelta: idleRenderCountAfter - idleRenderCountBefore,
+      renderReasonsBefore: idleRenderReasonsBefore,
+      renderReasonsAfter: idleRenderReasonsAfter,
+      utilityWakeupDelta:
+        runtimeAfter.supervisor.utility.scheduledWakeups -
+        runtimeBefore.supervisor.utility.scheduledWakeups,
+      runtimeBefore,
+      runtimeAfter,
+      cpuGate: 'evidence-only'
+    })
     await (await client.$('select[aria-label="Hex-Karte"]')).waitForExist()
     const partyCard = await client.$('.scene-party-card')
     await partyCard.waitForExist()
@@ -248,3 +305,52 @@ describe('Session map and travel console', () => {
     }
   })
 })
+
+function writeIdleEvidence(
+  evidence: Readonly<{
+    observationMs: number
+    renderCountBefore: number
+    renderCountAfter: number
+    renderDelta: number
+    renderReasonsBefore: Readonly<Record<string, number>>
+    renderReasonsAfter: Readonly<Record<string, number>>
+    utilityWakeupDelta: number
+    runtimeBefore: RuntimeEvidence
+    runtimeAfter: RuntimeEvidence
+    cpuGate: 'evidence-only'
+  }>
+): void {
+  const runId = process.env['SALT_MARCHER_E2E_RUN_ID'] ?? 'standalone'
+  const directory = join('.tmp', 'e2e-runs', runId, 'evidence')
+  const target = join(directory, 'travel-static-render.json')
+  const temporary = `${target}.tmp-${process.pid}`
+  mkdirSync(directory, { recursive: true })
+  writeFileSync(
+    temporary,
+    `${JSON.stringify(
+      {
+        version: 1,
+        kind: 'static-render-idle',
+        fixture: 'v2/travel-scenario',
+        recordedAt: new Date().toISOString(),
+        ...evidence
+      },
+      null,
+      2
+    )}\n`
+  )
+  renameSync(temporary, target)
+}
+
+function readRuntimeEvidence(client: WdioBrowser): Promise<RuntimeEvidence> {
+  return client.execute(async () => {
+    const e2eWindow = window as typeof window & {
+      __saltMarcherE2e?: {
+        runtimeEvidence: () => Promise<RuntimeEvidence>
+      }
+    }
+    if (!e2eWindow.__saltMarcherE2e)
+      throw new Error('E2E runtime evidence bridge is unavailable.')
+    return await e2eWindow.__saltMarcherE2e.runtimeEvidence()
+  }) as unknown as Promise<RuntimeEvidence>
+}

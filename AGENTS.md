@@ -24,7 +24,18 @@
 - SQL and prepared statements belong to their owning aggregate. Do not add a
   generic ORM or retain Java/JDBC abstractions.
 
-## Canonical check
+## Canonical handoff
 
-Run `pnpm check` before handing off a change. It runs formatting, linting,
-type checking, unit/integration tests, and the Electron smoke test.
+- Finish app-relevant changes to `src/`, `resources/`, dependencies, or
+  Electron/build/packaging configuration with `pnpm handoff:app`. It runs the
+  canonical checks, packages the exact checked workspace once, smoke-tests the
+  packaged application, backs up valuable local campaign data, and installs
+  the matching `SaltMarcher Local` AppImage, then verifies that installed
+  runtime. The default is always fresh; only `pnpm handoff:app -- --resume`
+  may reuse hash-validated completed steps.
+- Pure documentation or test-only changes finish with `pnpm check`.
+- `pnpm dev` is only the targeted HMR development loop; it is not a manual
+  acceptance or handoff path.
+- Every implementation that passes its applicable canonical handoff must be
+  committed and pushed automatically to `origin/main`. A green implementation
+  is not complete until that push succeeds.

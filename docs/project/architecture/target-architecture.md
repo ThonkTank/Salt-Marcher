@@ -25,11 +25,15 @@ disabled, a restrictive CSP, and local content only. It cannot access Node.js,
 the filesystem, or SQLite. Main and preload expose only explicit capabilities;
 they do not become service locators.
 
-The utility boundary is supervised. Every request has a ten-second deadline;
-interrupted reads fail retryably, while an interrupted write reports
-`outcome_unknown` and is never automatically replayed. Crashes restart with
-bounded backoff and the still-responsive shell exposes explicit recovery after
-the retry budget is exhausted.
+The utility boundary is supervised by one generation-bound state machine.
+Every request has a ten-second deadline; interrupted reads fail retryably,
+while an interrupted write reports `outcome_unknown` and is never
+automatically replayed. Messages from obsolete generations and terminating
+children are rejected. Startup configuration and ready/failure messages are
+validated as one discriminated protocol. Only retryable internal bootstrap
+failures enter bounded backoff; incompatible, corrupt, inaccessible, missing,
+or invalid startup resources produce terminal, user-visible states without a
+restart loop.
 
 Renderer recovery is also a process boundary. A shell-owned `ModuleHost`
 loads each application or workspace surface explicitly, distinguishes module
@@ -223,11 +227,12 @@ editors use one shell-owned fixed-header/scrolling-body/fixed-footer frame.
 Each campaign owns `campaigns/<id>/campaign.sqlite`. A utility process alone
 opens these stores. Until the first accepted real-use release, the application
 uses an isolated development data directory and schema changes may recreate
-it. That release freezes the SQLite format; only then do forward migrations
-begin.
+it under an explicit reset policy. Packaged/local-profile data is always
+preserved unless a registered and tested forward migration is promoted from a
+verified backup.
 
-No legacy data migration, compatibility bridge, Java runtime, JDBC layer, or
-generic ORM is part of this architecture.
+No legacy Java compatibility bridge, Java runtime, JDBC layer, or generic ORM
+is part of this architecture.
 
 World Location catalog data and its map presentation are separate revisioned
 records in the same campaign store. Map reads project the resolved built-in or
@@ -240,13 +245,79 @@ is rewritten to the built-in `location` fallback before deletion completes.
 The installation journal makes an interrupted deletion resumable.
 
 All SQLite connections enable foreign keys, WAL, full synchronous durability,
-and a bounded busy timeout. Development stores carry one whole-database schema
-version. On mismatch, startup removes only the fixed isolated
-`development-data` root and immediately creates the current schema; it neither
-runs migrations nor exposes a compatibility error as normal application
-behavior. Installation preferences, including theme and Session layout, use
-one revisions-protected SQLite record rather than renderer storage or
-Main-process JSON.
+and a bounded busy timeout. Stores carry one neutral whole-database schema
+version. The version contract is owned per database role rather than inferred
+from a filename discovered at runtime:
+
+| Role | Canonical path | Current | Supported forward path | Migration owner |
+| --- | --- | ---: | --- | --- |
+| installation | `installation.sqlite` | 28 | 27 -> 28 | `installation-schema-migrations.ts` |
+| campaign | `campaigns/<id>/campaign.sqlite` (including staged/recoverable campaign trees) | 28 | 27 -> 28 | `campaign-schema-migrations.ts` |
+
+The composed registry has contract version 1. It orders owner-provided steps
+but contains no aggregate SQL itself. A database at an older version without a
+complete, unique forward path is a terminal `migration-missing` outcome; a
+newer version is incompatible. There is no best-effort opening or implicit
+reset of preserved data.
+
+Before a writable connection, startup recursively snapshots the complete
+persistence tree, including WAL and SHM sidecars, without opening the source
+databases. It runs `quick_check` and reads `user_version` only on the temporary
+snapshot, then removes it. This keeps the source tree byte-for-byte and
+metadata-stable during preflight. Development may reset only its fixed isolated
+root under the explicit reset policy. Packaged data is preserved; supported
+migrations are applied by the offline installer to a staged copy of the
+complete tree in one transaction per database, validated, then promoted by
+directory rename. Missing paths, missing migration chains, corruption, and
+access failures remain distinct terminal outcomes. Installation preferences,
+including theme and Session layout, use one revisions-protected SQLite record
+rather than renderer storage or Main-process JSON.
+
+Pixi rendering is invalidation-driven. Scene, camera, overlay, and resize
+changes coalesce into one animation frame; a static map never schedules its
+successor. Resize notifications are ignored when pixel dimensions are
+unchanged. The Travel acceptance fixture records render counters and reason
+counters and requires a zero-render idle interval.
+
+Every build starts with an empty output directory and writes receipt format 2.
+It binds commit/dirty state, the full workspace fingerprint, a separate
+fingerprint of actual application build inputs, an explicit CLI-selected
+channel, both role schema versions, migration-registry version, Node/pnpm/
+Electron/electron-vite/electron-builder versions, platform/architecture, every
+output path, byte length, SHA-256, and an aggregate output hash. Build time is
+provenance only. The receipt excludes itself from the recursive output hash.
+Packaging rechecks workspace, app inputs, toolchain, channel, and every output
+byte, then embeds the complete receipt plus its hash and the AppImage hash in
+the artifact manifest. Development, Local, and release packages use
+`release/development`, `release/local`, and `release/release`; Linux smoke tests
+execute the actual AppImage. Local installation is serialized by the same exclusive
+profile lock that Main holds for the complete Local application lifetime. A
+stale lock is reclaimed only when its PID and Linux process identity (boot,
+start tick, executable) no longer match. The installer is an explicitly
+authorized offline-maintenance component outside Main and the utility process;
+it is the sole component allowed to migrate an inactive Local profile.
+
+Every installation persists an fsync-backed journal before backup, migration,
+deployment, each previous-file move, each promotion, and completion. On the
+next invocation, the journal and actual `current` pointer deterministically
+finish the new state or restore the old one. Backup copying hashes each source
+byte during its single copy pass and rereads only the backup for verification;
+backup manifests retain role-specific schema and both build identities.
+Backups and immutable deployments are never automatically deleted. The
+installer stages fingerprint-addressed deployments and atomically switches
+one `current` symlink only after all deployment files are durable. The handoff
+records evidence-backed checkpoints for check, package, packaged smoke, and
+backup/install plus installed-runtime verification. The default handoff is
+always fresh. Only explicit `--resume` considers completed steps, and then only
+when workspace, app-input, toolchain, output, artifact, and installed hashes
+still equal the atomically written receipt. Each step records status, start,
+duration, hashes, and any terminal error.
+
+Installed-runtime acceptance requires utility generation 1 to reach `ready`.
+The total utility bootstrap budget is 5000 ms; phase budgets are configuration
+250 ms, campaign store 2000 ms, generator presets 500 ms, Session Generation
+catalog 2000 ms, and recovery 1000 ms. These deterministic deadlines complement
+the idle render/wakeup counters; hardware CPU percentages remain evidence only.
 
 Hex maps use an unbounded axial coordinate space backed by sparse authored
 tile, biome-ID, and marker rows. Reads always request bounded chunks and carry

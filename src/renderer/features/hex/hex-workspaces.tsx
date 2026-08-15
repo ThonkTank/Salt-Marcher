@@ -1,5 +1,5 @@
 import { formatMessage, message } from '../../i18n/hex-runtime.de.js'
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { HexMapCanvas } from './hex-map-canvas.js'
 import './hex-travel.css'
 import type {
@@ -224,12 +224,25 @@ export function TravelScenario(props: {
 export function SessionHexMap(props: { controller: HexTravelController }) {
   const state = useHexTravelViewModel(props.controller)
   const travel = state.travel
-  const token =
-    travel && travel.mapId === state.map?.map.id ? travel.current : null
-  const route =
-    state.evaluation?.path ??
-    (travel && travel.mapId === state.map?.map.id ? travel.path : [])
+  const mapId = state.map?.map.id
+  const token = travel && travel.mapId === mapId ? travel.current : null
+  const route = useMemo(
+    () =>
+      state.evaluation?.path ??
+      (travel && travel.mapId === mapId ? travel.path : []),
+    [state.evaluation?.path, mapId, travel]
+  )
+  const overlays = useMemo(
+    () => state.map?.overlays.filter((overlay) => !overlay.focused) ?? [],
+    [state.map?.overlays]
+  )
   const visibleToken = state.tokenPreview ?? token
+  const readViewport = state.readViewport
+  const onViewportChange = useCallback(
+    (coordinate: Parameters<typeof readViewport>[0]) =>
+      void readViewport(coordinate),
+    [readViewport]
+  )
   const mapLabel = useMemo(
     () =>
       state.map
@@ -266,7 +279,7 @@ export function SessionHexMap(props: { controller: HexTravelController }) {
         selected={state.selected}
         token={visibleToken}
         route={route}
-        overlays={state.map.overlays.filter((overlay) => !overlay.focused)}
+        overlays={overlays}
         draggableToken={
           props.controller.state.lifecycle === 'ready' ? token : null
         }
@@ -275,7 +288,7 @@ export function SessionHexMap(props: { controller: HexTravelController }) {
         onTileClick={state.activateTile}
         onTileNavigate={state.selectTile}
         onTileActivate={state.activateTile}
-        onViewportChange={(center) => void state.readViewport(center)}
+        onViewportChange={onViewportChange}
         ariaLabel={mapLabel}
       />
     </div>

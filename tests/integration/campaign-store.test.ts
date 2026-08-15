@@ -12,13 +12,13 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   CampaignStore,
-  openDevelopmentCampaignStore
+  openCampaignStore
 } from '../../src/core/persistence/sqlite/campaign-store.js'
 import Database from 'better-sqlite3'
 import { CapabilityError } from '../../src/shared/errors/capability-error.js'
 import {
   configureSqlite,
-  currentDevelopmentSchemaVersion
+  currentSchemaVersion
 } from '../../src/core/persistence/sqlite/database.js'
 import { GeneratorPresetStore } from '../../src/core/persistence/sqlite/generator-preset-store.js'
 import { systemGeneratorPresetId } from '../../src/shared/contracts/generator-presets.js'
@@ -390,7 +390,7 @@ describe('CampaignStore', () => {
     db.pragma('user_version = 2')
     db.close()
 
-    const rebuilt = openDevelopmentCampaignStore(root)
+    const rebuilt = openCampaignStore(root, 'reset')
     expect(rebuilt.list()).toEqual({
       activeCampaignId: null,
       campaigns: [],
@@ -413,9 +413,26 @@ describe('CampaignStore', () => {
     db.pragma('user_version = 2')
     db.close()
 
-    const rebuilt = openDevelopmentCampaignStore(root)
+    const rebuilt = openCampaignStore(root, 'reset')
     expect(rebuilt.list().campaigns).toEqual([])
     rebuilt.close()
+  })
+
+  it('preserves incompatible data byte-for-byte under preserve policy', () => {
+    const parent = mkdtempSync(join(tmpdir(), 'salt-marcher-campaign-store-'))
+    roots.push(parent)
+    const root = join(parent, 'campaign-data')
+    const store = new CampaignStore(root)
+    store.create('Valuable Campaign')
+    store.close()
+    const databasePath = join(root, 'installation.sqlite')
+    const db = new Database(databasePath)
+    db.pragma('user_version = 2')
+    db.close()
+    const before = readFileSync(databasePath)
+
+    expect(() => openCampaignStore(root, 'preserve')).toThrow()
+    expect(readFileSync(databasePath)).toEqual(before)
   })
 
   it('does not treat arbitrary startup failures as disposable schema data', () => {
@@ -424,7 +441,7 @@ describe('CampaignStore', () => {
     const root = join(parent, 'development-data')
     writeFileSync(root, 'preserve')
 
-    expect(() => openDevelopmentCampaignStore(root)).toThrow()
+    expect(() => openCampaignStore(root, 'reset')).toThrow()
     expect(readFileSync(root, 'utf8')).toBe('preserve')
   })
 
@@ -440,7 +457,7 @@ describe('CampaignStore', () => {
     expect(db.pragma('foreign_keys', { simple: true })).toBe(1)
     expect(db.pragma('busy_timeout', { simple: true })).toBe(5000)
     expect(db.pragma('user_version', { simple: true })).toBe(
-      currentDevelopmentSchemaVersion
+      currentSchemaVersion
     )
 
     db.close()

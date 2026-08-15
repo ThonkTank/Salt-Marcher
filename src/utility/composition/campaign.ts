@@ -1,7 +1,7 @@
 import type { CoreHandlers } from '../../shared/contracts/core-protocol.js'
 import type { CampaignRulesService } from '../../core/application/campaign-rules-service.js'
 import type { GeneratorPresetStore } from '../../core/persistence/sqlite/generator-preset-store.js'
-import type { openDevelopmentCampaignStore } from '../../core/persistence/sqlite/campaign-store.js'
+import type { openCampaignStore } from '../../core/persistence/sqlite/campaign-store.js'
 import { emptyPassiveProjection } from '../../shared/contracts/passive-display.js'
 
 type CampaignHandlerName =
@@ -26,7 +26,7 @@ type CampaignHandlerName =
   | 'projection.read'
 
 export function createCampaignHandlers(dependencies: {
-  campaigns: ReturnType<typeof openDevelopmentCampaignStore>
+  campaigns: ReturnType<typeof openCampaignStore>
   campaignRules: CampaignRulesService
   generatorPresets: GeneratorPresetStore
   mutateReferences: <T>(work: () => T) => T

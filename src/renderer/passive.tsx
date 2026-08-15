@@ -60,10 +60,27 @@ export function PassiveDisplay() {
         {projection?.campaignId === null
           ? message('passive.empty')
           : message('passive.shared')}{' '}
-        {message('ui.core')} {coreStatus}
+        {message('ui.core')} {passiveCoreStatus(coreStatus)}
       </p>
     </main>
   )
+}
+
+function passiveCoreStatus(status: CoreProcessStatus): string {
+  switch (status) {
+    case 'incompatible-data':
+      return message('core.incompatibleData')
+    case 'corrupt-data':
+      return message('core.corruptData')
+    case 'access-denied':
+      return message('core.accessDenied')
+    case 'resource-missing':
+      return message('core.resourceMissing')
+    case 'invalid-configuration':
+      return message('core.invalidConfiguration')
+    default:
+      return status
+  }
 }
 
 createRoot(document.getElementById('root')!).render(

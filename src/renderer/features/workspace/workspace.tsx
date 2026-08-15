@@ -95,11 +95,7 @@ export function WorkspaceApp() {
     return (
       <main className="app-shell">
         <div className="core-status-banner" role="status">
-          <span>
-            {coreStatus === 'unavailable'
-              ? message('core.unavailable')
-              : message('core.recovering')}
-          </span>
+          <span>{coreStatusMessage(coreStatus)}</span>
           {coreStatus === 'unavailable' && (
             <button type="button" onClick={() => void api.runtime.retryCore()}>
               {message('core.retry')}
@@ -184,4 +180,23 @@ export function WorkspaceApp() {
       </main>
     </ReferenceProvider>
   )
+}
+
+function coreStatusMessage(status: CoreProcessStatus): string {
+  switch (status) {
+    case 'unavailable':
+      return message('core.unavailable')
+    case 'incompatible-data':
+      return message('core.incompatibleData')
+    case 'corrupt-data':
+      return message('core.corruptData')
+    case 'access-denied':
+      return message('core.accessDenied')
+    case 'resource-missing':
+      return message('core.resourceMissing')
+    case 'invalid-configuration':
+      return message('core.invalidConfiguration')
+    default:
+      return message('core.recovering')
+  }
 }

@@ -1,121 +1,71 @@
 import { randomUUID } from 'node:crypto'
 import { utilityProcess, type UtilityProcess } from 'electron'
-import { z } from 'zod'
-import { coreReadySchema } from '../../shared/contracts/campaign.js'
+import type { z } from 'zod'
 import {
-  coreEventSchema,
+  coreControlRequestSchema,
+  coreMessageSchema,
   coreRequestSchema,
-  coreResultSchema
+  coreRuntimeMetricsSchema,
+  coreStartupConfigurationSchema,
+  type CoreRuntimeMetrics,
+  type CoreStartupConfiguration,
+  type CoreStartupFailureReason
 } from '../../shared/contracts/core-protocol.js'
+import type { CoreProcessStatus } from '../../shared/contracts/runtime.js'
 import {
   coreOperations,
   type CoreOperationInput,
   type CoreOperationKind,
   type CoreOperationOutput
 } from '../../shared/contracts/operations.js'
-import {
-  sessionChangeNoticeSchema,
-  type SessionChangeNotice
-} from '../../shared/contracts/session-change.js'
-import {
-  referenceIndexChangeNoticeSchema,
-  type ReferenceIndexChangeNotice
-} from '../../shared/contracts/reference.js'
+import type { SessionChangeNotice } from '../../shared/contracts/session-change.js'
+import type { ReferenceIndexChangeNotice } from '../../shared/contracts/reference.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
+import type { HexChangeNotice } from '../../shared/contracts/hex.js'
+import type { WorldLocationChangeNotice } from '../../shared/contracts/world-location.js'
+import type { LocationSymbolChangeNotice } from '../../shared/contracts/location-symbol.js'
+import type { BiomeChangeNotice } from '../../shared/contracts/biome.js'
+import type { EncounterTableChangeNotice } from '../../shared/contracts/encounter-source.js'
+import type { LootChangeNotice } from '../../shared/contracts/loot.js'
+import type { SessionPreparationChangeNotice } from '../../shared/contracts/session-planner.js'
+import { coreRestartDelay } from './supervision-policy.js'
+import { CoreEventRouter } from './core-event-router.js'
+import { CoreRequestTracker } from './core-request-tracker.js'
 import {
-  hexChangeNoticeSchema,
-  type HexChangeNotice
-} from '../../shared/contracts/hex.js'
-import {
-  worldLocationChangeNoticeSchema,
-  type WorldLocationChangeNotice
-} from '../../shared/contracts/world-location.js'
-import {
-  locationSymbolChangeNoticeSchema,
-  type LocationSymbolChangeNotice
-} from '../../shared/contracts/location-symbol.js'
-import {
-  biomeChangeNoticeSchema,
-  type BiomeChangeNotice
-} from '../../shared/contracts/biome.js'
-import {
-  encounterTableChangeNoticeSchema,
-  type EncounterTableChangeNotice
-} from '../../shared/contracts/encounter-source.js'
-import {
-  lootChangeNoticeSchema,
-  type LootChangeNotice
-} from '../../shared/contracts/loot.js'
-import {
-  sessionPreparationChangeNoticeSchema,
-  type SessionPreparationChangeNotice
-} from '../../shared/contracts/session-planner.js'
-import {
-  coreRestartDelay,
-  interruptedOperationError,
-  type CoreOperationMode
-} from './supervision-policy.js'
+  acceptsCoreMessage,
+  lifecycleChild,
+  publicCoreStatus,
+  type CoreLifecycleState,
+  type RestartTerminationReason
+} from './core-process-lifecycle.js'
 
-const READY_DEADLINE_MS = 5_000
+const READY_DEADLINE_MS = 10_000
 const SHUTDOWN_DEADLINE_MS = 2_000
 
 type ProcessFactory = (path: string, args: readonly string[]) => UtilityProcess
 
-interface PendingRequest {
-  readonly resolve: (value: unknown) => void
-  readonly reject: (error: Error) => void
-  readonly schema: z.ZodType<unknown>
-  readonly mode: CoreOperationMode
-  readonly timer: NodeJS.Timeout
-  sent: boolean
-}
-
 export class CoreProcessSupervisor {
-  #process: UtilityProcess | undefined
+  #lifecycle: CoreLifecycleState = { phase: 'unavailable', generation: 0 }
   readonly #firstReady: Promise<void>
   #resolveFirstReady?: () => void
   #rejectFirstReady?: (error: Error) => void
-  #firstReadyResolved = false
-  #closed = false
-  #closing = false
+  #firstReadySettled = false
   #readyTimer: NodeJS.Timeout | undefined
   #restartTimer: NodeJS.Timeout | undefined
   readonly #exitTimes: number[] = []
-  #status: CoreProcessStatus = 'starting'
   readonly #statusListeners = new Set<(status: CoreProcessStatus) => void>()
-  readonly #sessionChangeListeners = new Set<
-    (notice: SessionChangeNotice) => void
-  >()
-  readonly #referenceChangeListeners = new Set<
-    (notice: ReferenceIndexChangeNotice) => void
-  >()
-  readonly #hexChangeListeners = new Set<(notice: HexChangeNotice) => void>()
-  readonly #locationChangeListeners = new Set<
-    (notice: WorldLocationChangeNotice) => void
-  >()
-  readonly #locationSymbolChangeListeners = new Set<
-    (notice: LocationSymbolChangeNotice) => void
-  >()
-  readonly #biomeChangeListeners = new Set<
-    (notice: BiomeChangeNotice) => void
-  >()
-  readonly #encounterTableChangeListeners = new Set<
-    (notice: EncounterTableChangeNotice) => void
-  >()
-  readonly #lootChangeListeners = new Set<(notice: LootChangeNotice) => void>()
-  readonly #preparationChangeListeners = new Set<
-    (notice: SessionPreparationChangeNotice) => void
-  >()
-  readonly #pending = new Map<string, PendingRequest>()
+  readonly #events = new CoreEventRouter()
+  readonly #requests = new CoreRequestTracker()
+  private readonly startupConfiguration: CoreStartupConfiguration
 
   constructor(
-    private readonly dataRoot: string,
+    startupConfiguration: CoreStartupConfiguration,
     private readonly path: string,
-    private readonly referenceDatabasePath: string,
-    private readonly sessionGenerationCatalogRoot: string,
     private readonly processFactory: ProcessFactory = (utilityPath, args) =>
       utilityProcess.fork(utilityPath, [...args], { stdio: 'pipe' })
   ) {
+    this.startupConfiguration =
+      coreStartupConfigurationSchema.parse(startupConfiguration)
     this.#firstReady = new Promise((resolve, reject) => {
       this.#resolveFirstReady = resolve
       this.#rejectFirstReady = reject
@@ -128,86 +78,75 @@ export class CoreProcessSupervisor {
   }
 
   status(): CoreProcessStatus {
-    return this.#status
+    return publicCoreStatus(this.#lifecycle)
   }
 
   onStatus(listener: (status: CoreProcessStatus) => void): () => void {
     this.#statusListeners.add(listener)
-    listener(this.#status)
+    listener(this.status())
     return () => this.#statusListeners.delete(listener)
   }
 
   onSessionChanged(
     listener: (notice: SessionChangeNotice) => void
   ): () => void {
-    this.#sessionChangeListeners.add(listener)
-    return () => this.#sessionChangeListeners.delete(listener)
+    return this.#events.on('session.changed', listener)
   }
 
   onReferenceChanged(
     listener: (notice: ReferenceIndexChangeNotice) => void
   ): () => void {
-    this.#referenceChangeListeners.add(listener)
-    return () => this.#referenceChangeListeners.delete(listener)
+    return this.#events.on('reference.changed', listener)
   }
 
   onHexChanged(listener: (notice: HexChangeNotice) => void): () => void {
-    this.#hexChangeListeners.add(listener)
-    return () => this.#hexChangeListeners.delete(listener)
+    return this.#events.on('hex.changed', listener)
   }
 
   onLocationsChanged(
     listener: (notice: WorldLocationChangeNotice) => void
   ): () => void {
-    this.#locationChangeListeners.add(listener)
-    return () => this.#locationChangeListeners.delete(listener)
+    return this.#events.on('locations.changed', listener)
   }
 
   onLocationSymbolsChanged(
     listener: (notice: LocationSymbolChangeNotice) => void
   ): () => void {
-    this.#locationSymbolChangeListeners.add(listener)
-    return () => this.#locationSymbolChangeListeners.delete(listener)
+    return this.#events.on('location-symbols.changed', listener)
   }
 
   onBiomesChanged(listener: (notice: BiomeChangeNotice) => void): () => void {
-    this.#biomeChangeListeners.add(listener)
-    return () => this.#biomeChangeListeners.delete(listener)
+    return this.#events.on('biomes.changed', listener)
   }
 
   onEncounterTablesChanged(
     listener: (notice: EncounterTableChangeNotice) => void
   ): () => void {
-    this.#encounterTableChangeListeners.add(listener)
-    return () => this.#encounterTableChangeListeners.delete(listener)
+    return this.#events.on('encounter-tables.changed', listener)
   }
 
   onLootChanged(listener: (notice: LootChangeNotice) => void): () => void {
-    this.#lootChangeListeners.add(listener)
-    return () => this.#lootChangeListeners.delete(listener)
+    return this.#events.on('loot.changed', listener)
   }
 
   onPreparationChanged(
     listener: (notice: SessionPreparationChangeNotice) => void
   ): () => void {
-    this.#preparationChangeListeners.add(listener)
-    return () => this.#preparationChangeListeners.delete(listener)
+    return this.#events.on('session-planner.preparation-changed', listener)
   }
 
   retry(): void {
-    if (this.#closed || this.#closing) return
+    if (this.#lifecycle.phase !== 'unavailable') return
     this.#exitTimes.length = 0
     this.clearRestartTimer()
-    this.setStatus('recovering')
     this.spawn()
   }
 
-  /** Process-boundary probe registered only by the E2E runtime. It deliberately
-   * follows the normal crash/restart path instead of bypassing supervision. */
+  /** Process-boundary probe registered only by the E2E runtime. */
   terminateUtilityForE2e(): boolean {
-    if (this.#closed || this.#closing || this.#process === undefined)
-      return false
-    this.#process.kill()
+    const state = this.#lifecycle
+    if (state.phase !== 'starting' && state.phase !== 'ready') return false
+    this.beginTermination(state.generation, state.child, 'restart', 'e2e-probe')
     return true
   }
 
@@ -225,12 +164,65 @@ export class CoreProcessSupervisor {
     )
   }
 
+  /** Internal runtime evidence; never registered as a renderer capability. */
+  runtimeMetrics(): Promise<
+    Readonly<{
+      generation: number
+      status: CoreProcessStatus
+      utility: CoreRuntimeMetrics
+    }>
+  > {
+    const state = this.#lifecycle
+    const child = lifecycleChild(state)
+    if (state.phase !== 'ready' || child === undefined)
+      return Promise.reject(new CapabilityError('core_unavailable', true))
+    const request = coreControlRequestSchema.parse({
+      kind: 'core.control',
+      requestId: randomUUID(),
+      control: 'runtime-metrics'
+    })
+    const result = this.#requests
+      .track(
+        request.requestId,
+        coreRuntimeMetricsSchema,
+        'read',
+        READY_DEADLINE_MS,
+        () => {
+          if (acceptsCoreMessage(this.#lifecycle, state.generation, child))
+            this.beginTermination(
+              state.generation,
+              child,
+              'restart',
+              'request-timeout'
+            )
+        }
+      )
+      .then((utility) => ({
+        generation: state.generation,
+        status: this.status(),
+        utility
+      }))
+    try {
+      child.postMessage(request)
+      this.#requests.markSent(request.requestId)
+    } catch {
+      this.#requests.rejectSend(request.requestId)
+      this.beginTermination(state.generation, child, 'restart', 'send-failed')
+    }
+    return result
+  }
+
   async closeGracefully(): Promise<void> {
-    if (this.#closed || this.#closing) return
-    this.#closing = true
+    const state = this.#lifecycle
+    if (state.phase === 'closed' || state.phase === 'closing') return
     this.clearRestartTimer()
-    const child = this.#process
-    if (child !== undefined && this.#status === 'ready') {
+    const child = lifecycleChild(state)
+    this.transition({
+      phase: 'closing',
+      generation: state.generation,
+      ...(child === undefined ? {} : { child })
+    })
+    if (child !== undefined && state.phase === 'ready') {
       try {
         await this.request(
           'core.shutdown',
@@ -240,11 +232,15 @@ export class CoreProcessSupervisor {
           true
         )
       } catch {
-        // The hard-stop below is the bounded fallback.
+        // The centralized hard-stop below is the bounded fallback.
       }
     }
-    if (this.#process === child && child !== undefined) child.kill()
-    this.finishClose()
+    const current = this.#lifecycle
+    if (child === undefined || lifecycleChild(current) !== child) {
+      this.finishClose()
+      return
+    }
+    this.beginTermination(current.generation, child, 'closed', 'shutdown')
   }
 
   private request<T>(
@@ -255,230 +251,248 @@ export class CoreProcessSupervisor {
     allowWhileClosing: boolean
   ): Promise<T> {
     const request = coreRequestSchema.parse({
+      kind: 'core.request',
       requestId: randomUUID(),
-      kind,
+      operation: kind,
       input
     })
-    return new Promise((resolve, reject) => {
-      const child = this.#process
-      if (
-        this.#closed ||
-        (!allowWhileClosing && this.#closing) ||
-        child === undefined ||
-        this.#status !== 'ready'
-      ) {
-        reject(new CapabilityError('core_unavailable', !this.#closed))
-        return
-      }
-      const definition = coreOperations[request.kind]
-      const timer = setTimeout(() => {
-        const pending = this.#pending.get(request.requestId)
-        if (pending === undefined) return
-        this.#pending.delete(request.requestId)
-        pending.reject(interruptedOperationError(pending.mode, 'timeout'))
-        this.log('request-timeout', {
-          operation: request.kind,
-          mode: pending.mode
-        })
-        if (this.#process === child) child.kill()
-      }, deadlineMs)
-      const pending: PendingRequest = {
-        resolve: resolve as (value: unknown) => void,
-        reject,
-        schema,
-        mode: definition.mode,
-        timer,
-        sent: false
-      }
-      this.#pending.set(request.requestId, pending)
-      try {
-        child.postMessage(request)
-        pending.sent = true
-      } catch {
-        clearTimeout(timer)
-        this.#pending.delete(request.requestId)
-        reject(new CapabilityError('core_unavailable', true))
-        this.log('send-failed', { operation: request.kind })
-        child.kill()
-      }
-    })
-  }
-
-  private handle(raw: unknown): void {
-    if (coreReadySchema.safeParse(raw).success) {
-      if (this.#status === 'ready') return this.protocol('duplicate-ready')
-      this.clearReadyTimer()
-      this.setStatus('ready')
-      if (!this.#firstReadyResolved) {
-        this.#firstReadyResolved = true
-        this.#resolveFirstReady?.()
-      }
-      this.log('ready')
-      return
-    }
-    const event = coreEventSchema.safeParse(raw)
-    if (event.success) {
-      switch (event.data.kind) {
-        case 'session.changed': {
-          const notice = sessionChangeNoticeSchema.parse(event.data.notice)
-          for (const listener of this.#sessionChangeListeners) listener(notice)
-          break
-        }
-        case 'loot.changed': {
-          const notice = lootChangeNoticeSchema.parse(event.data.notice)
-          for (const listener of this.#lootChangeListeners) listener(notice)
-          break
-        }
-        case 'session-planner.preparation-changed': {
-          const notice = sessionPreparationChangeNoticeSchema.parse(
-            event.data.notice
-          )
-          for (const listener of this.#preparationChangeListeners)
-            listener(notice)
-          break
-        }
-        case 'reference.changed': {
-          const notice = referenceIndexChangeNoticeSchema.parse(
-            event.data.notice
-          )
-          for (const listener of this.#referenceChangeListeners)
-            listener(notice)
-          break
-        }
-        case 'hex.changed': {
-          const notice = hexChangeNoticeSchema.parse(event.data.notice)
-          for (const listener of this.#hexChangeListeners) listener(notice)
-          break
-        }
-        case 'locations.changed': {
-          const notice = worldLocationChangeNoticeSchema.parse(
-            event.data.notice
-          )
-          for (const listener of this.#locationChangeListeners) listener(notice)
-          break
-        }
-        case 'location-symbols.changed': {
-          const notice = locationSymbolChangeNoticeSchema.parse(
-            event.data.notice
-          )
-          for (const listener of this.#locationSymbolChangeListeners)
-            listener(notice)
-          break
-        }
-        case 'biomes.changed': {
-          const notice = biomeChangeNoticeSchema.parse(event.data.notice)
-          for (const listener of this.#biomeChangeListeners) listener(notice)
-          break
-        }
-        case 'encounter-tables.changed': {
-          const notice = encounterTableChangeNoticeSchema.parse(
-            event.data.notice
-          )
-          for (const listener of this.#encounterTableChangeListeners)
-            listener(notice)
-          break
-        }
-      }
-      return
-    }
-    const result = coreResultSchema.safeParse(raw)
-    if (!result.success) return this.protocol('invalid-reply')
-    const pending = this.#pending.get(result.data.requestId)
-    if (pending === undefined) return this.protocol('unknown-request-id')
-    this.#pending.delete(result.data.requestId)
-    clearTimeout(pending.timer)
-    if (!result.data.ok) {
-      pending.reject(
+    const state = this.#lifecycle
+    const canRequest =
+      state.phase === 'ready' ||
+      (allowWhileClosing && state.phase === 'closing')
+    const child = lifecycleChild(state)
+    if (!canRequest || child === undefined)
+      return Promise.reject(
         new CapabilityError(
-          result.data.error.code,
-          result.data.error.retryable,
-          result.data.error.issues ?? []
+          'core_unavailable',
+          state.phase !== 'closed' && state.phase !== 'terminal'
         )
       )
+    const definition = coreOperations[request.operation]
+    const result = this.#requests.track(
+      request.requestId,
+      schema,
+      definition.mode,
+      deadlineMs,
+      () => {
+        this.log('request-timeout', {
+          operation: request.operation,
+          mode: definition.mode,
+          generation: state.generation
+        })
+        if (acceptsCoreMessage(this.#lifecycle, state.generation, child))
+          this.beginTermination(
+            state.generation,
+            child,
+            'restart',
+            'request-timeout'
+          )
+      }
+    )
+    try {
+      child.postMessage(request)
+      this.#requests.markSent(request.requestId)
+    } catch {
+      this.#requests.rejectSend(request.requestId)
+      this.log('send-failed', {
+        operation: request.operation,
+        generation: state.generation
+      })
+      this.beginTermination(state.generation, child, 'restart', 'send-failed')
+    }
+    return result
+  }
+
+  private handle(
+    generation: number,
+    child: UtilityProcess,
+    raw: unknown
+  ): void {
+    if (!acceptsCoreMessage(this.#lifecycle, generation, child)) return
+    const message = coreMessageSchema.safeParse(raw)
+    if (!message.success)
+      return this.protocol(generation, child, 'invalid-reply')
+    switch (message.data.kind) {
+      case 'core.ready': {
+        if (this.#lifecycle.phase !== 'starting')
+          return this.protocol(generation, child, 'duplicate-ready')
+        this.clearReadyTimer()
+        this.transition({ phase: 'ready', generation, child })
+        this.resolveFirstReady()
+        this.log('ready', { generation })
+        return
+      }
+      case 'core.startup-failed': {
+        this.clearReadyTimer()
+        this.#requests.failAll(new CapabilityError('core_unavailable', false))
+        this.log('startup-failed', {
+          generation,
+          reason: message.data.reason,
+          retryable: message.data.retryable
+        })
+        if (message.data.reason === 'internal')
+          this.beginTermination(
+            generation,
+            child,
+            'restart',
+            message.data.reason
+          )
+        else {
+          this.rejectFirstReady(false)
+          this.beginTermination(
+            generation,
+            child,
+            'terminal',
+            message.data.reason
+          )
+        }
+        return
+      }
+      case 'core.result': {
+        const disposition = this.#requests.settle(message.data)
+        if (disposition !== 'settled')
+          this.protocol(generation, child, disposition)
+        return
+      }
+      case 'core.diagnostics': {
+        const disposition = this.#requests.settleValue(
+          message.data.requestId,
+          message.data.metrics
+        )
+        if (disposition !== 'settled')
+          this.protocol(generation, child, disposition)
+        return
+      }
+      default:
+        this.#events.dispatch(message.data)
+    }
+  }
+
+  private protocol(
+    generation: number,
+    child: UtilityProcess,
+    cause: string
+  ): void {
+    this.log('protocol-violation', { cause, generation })
+    this.#requests.failAll(new CapabilityError('protocol_violation', false))
+    this.beginTermination(generation, child, 'restart', 'protocol-violation')
+  }
+
+  private beginTermination(
+    generation: number,
+    child: UtilityProcess,
+    disposition: 'restart' | 'terminal' | 'closed',
+    reason: RestartTerminationReason | CoreStartupFailureReason | 'shutdown'
+  ): void {
+    const state = this.#lifecycle
+    if (state.generation !== generation || lifecycleChild(state) !== child)
+      return
+    if (state.phase === 'terminating') {
+      if (disposition === 'closed' && state.disposition !== 'closed')
+        this.transition({ ...state, disposition: 'closed', reason: 'shutdown' })
       return
     }
-    const value = pending.schema.safeParse(result.data.payload)
-    if (!value.success) {
-      pending.reject(new CapabilityError('protocol_violation', false))
-      return this.protocol('invalid-payload')
-    }
-    pending.resolve(value.data)
-  }
-
-  private protocol(cause: string): void {
-    this.log('protocol-violation', { cause })
-    this.failPending(new CapabilityError('protocol_violation', false))
-    this.#process?.kill()
-  }
-
-  private failPending(readError: Error): void {
-    for (const pending of this.#pending.values()) {
-      clearTimeout(pending.timer)
-      pending.reject(
-        pending.mode === 'write' && pending.sent
-          ? new CapabilityError('outcome_unknown', false)
-          : readError
-      )
-    }
-    this.#pending.clear()
+    this.transition({
+      phase: 'terminating',
+      generation,
+      child,
+      disposition,
+      reason
+    })
+    child.kill()
   }
 
   private spawn(): void {
+    const state = this.#lifecycle
     if (
-      this.#closed ||
-      this.#closing ||
-      this.#process !== undefined ||
+      (state.phase !== 'unavailable' && state.phase !== 'backing-off') ||
       this.#restartTimer !== undefined
     )
       return
-    this.setStatus(this.#firstReadyResolved ? 'recovering' : 'starting')
-    const child = this.processFactory(this.path, [
-      this.dataRoot,
-      this.referenceDatabasePath,
-      this.sessionGenerationCatalogRoot
-    ])
-    this.#process = child
+    const generation = state.generation + 1
+    let child: UtilityProcess
+    try {
+      child = this.processFactory(this.path, [
+        JSON.stringify(this.startupConfiguration)
+      ])
+    } catch (error) {
+      this.log('spawn-failed', {
+        generation,
+        errorName: error instanceof Error ? error.name : 'Error'
+      })
+      this.scheduleRestart(generation)
+      return
+    }
+    this.transition({ phase: 'starting', generation, child })
     this.#readyTimer = setTimeout(() => {
-      if (this.#process !== child || this.#status === 'ready') return
-      this.log('ready-timeout', { deadlineMs: READY_DEADLINE_MS })
-      child.kill()
+      if (!acceptsCoreMessage(this.#lifecycle, generation, child)) return
+      this.log('ready-timeout', { deadlineMs: READY_DEADLINE_MS, generation })
+      this.beginTermination(generation, child, 'restart', 'ready-timeout')
     }, READY_DEADLINE_MS)
     child.stderr?.on('data', (chunk: Buffer | string) => {
+      if (!acceptsCoreMessage(this.#lifecycle, generation, child)) return
       const diagnostic = String(chunk)
-        .replaceAll(this.dataRoot, '<development-data>')
+        .replaceAll(this.startupConfiguration.dataRoot, '<data-root>')
         .trim()
         .slice(0, 2_000)
       this.log('stderr', {
+        generation,
         bytes: Buffer.byteLength(chunk),
         ...(diagnostic ? { diagnostic } : {})
       })
     })
-    child.on('message', (value) => this.handle(value))
-    child.on('exit', (code) => this.exited(child, code))
-    this.log('spawned')
+    child.on('message', (value) => this.handle(generation, child, value))
+    child.on('exit', (code) => this.exited(generation, child, code))
+    this.log('spawned', { generation })
   }
 
-  private exited(child: UtilityProcess, code: number | null): void {
-    if (this.#process !== child) return
+  private exited(
+    generation: number,
+    child: UtilityProcess,
+    code: number | null
+  ): void {
+    const state = this.#lifecycle
+    if (state.generation !== generation || lifecycleChild(state) !== child)
+      return
     this.clearReadyTimer()
-    this.#process = undefined
-    this.failPending(new CapabilityError('core_unavailable', true))
-    this.log('exited', { code })
-    if (this.#closed || this.#closing) {
+    this.#requests.failAll(new CapabilityError('core_unavailable', true))
+    this.log('exited', { code, generation })
+    if (state.phase === 'closing') {
       this.finishClose()
       return
     }
+    if (state.phase === 'terminating') {
+      if (state.disposition === 'closed') {
+        this.finishClose()
+        return
+      }
+      if (state.disposition === 'terminal') {
+        this.transition({
+          phase: 'terminal',
+          generation,
+          reason: state.reason as Exclude<CoreStartupFailureReason, 'internal'>
+        })
+        return
+      }
+    }
+    this.scheduleRestart(generation)
+  }
+
+  private scheduleRestart(generation: number): void {
     const now = Date.now()
     this.#exitTimes.push(now)
     while ((this.#exitTimes[0] ?? now) < now - 30_000) this.#exitTimes.shift()
     const delay = coreRestartDelay(this.#exitTimes.length)
     if (delay === null) {
-      this.setStatus('unavailable')
-      if (!this.#firstReadyResolved)
-        this.#rejectFirstReady?.(new CapabilityError('core_unavailable', true))
+      this.transition({ phase: 'unavailable', generation })
+      this.rejectFirstReady(true)
       return
     }
-    this.setStatus('recovering')
+    this.transition({
+      phase: 'backing-off',
+      generation,
+      attempt: this.#exitTimes.length
+    })
     this.#restartTimer = setTimeout(() => {
       this.#restartTimer = undefined
       this.spawn()
@@ -486,15 +500,34 @@ export class CoreProcessSupervisor {
   }
 
   private finishClose(): void {
-    if (this.#closed) return
-    this.#closed = true
-    this.#closing = false
+    if (this.#lifecycle.phase === 'closed') return
+    const generation = this.#lifecycle.generation
     this.clearReadyTimer()
     this.clearRestartTimer()
-    this.failPending(new CapabilityError('core_unavailable', false))
-    this.#process = undefined
-    this.setStatus('closed')
-    this.log('closed')
+    this.#requests.failAll(new CapabilityError('core_unavailable', false))
+    this.rejectFirstReady(false)
+    this.transition({ phase: 'closed', generation })
+    this.log('closed', { generation })
+  }
+
+  private resolveFirstReady(): void {
+    if (this.#firstReadySettled) return
+    this.#firstReadySettled = true
+    this.#resolveFirstReady?.()
+  }
+
+  private rejectFirstReady(retryable: boolean): void {
+    if (this.#firstReadySettled) return
+    this.#firstReadySettled = true
+    this.#rejectFirstReady?.(new CapabilityError('core_unavailable', retryable))
+  }
+
+  private transition(next: CoreLifecycleState): void {
+    const previousStatus = this.status()
+    this.#lifecycle = next
+    const nextStatus = this.status()
+    if (nextStatus === previousStatus) return
+    for (const listener of this.#statusListeners) listener(nextStatus)
   }
 
   private clearReadyTimer(): void {
@@ -507,23 +540,15 @@ export class CoreProcessSupervisor {
     this.#restartTimer = undefined
   }
 
-  private setStatus(status: CoreProcessStatus): void {
-    if (this.#status === status) return
-    this.#status = status
-    for (const listener of this.#statusListeners) listener(status)
-  }
-
   private log(event: string, details: Record<string, unknown> = {}): void {
     console.info(
       JSON.stringify({
         component: 'core-process-supervisor',
         event,
-        status: this.#status,
+        status: this.status(),
+        phase: this.#lifecycle.phase,
         ...details
       })
     )
   }
 }
-
-export type CoreProcessStatus =
-  'starting' | 'ready' | 'recovering' | 'unavailable' | 'closed'

@@ -1,16 +1,19 @@
 import {
   capabilityFailureSchema,
-  coreReadySchema,
   type CapabilityErrorCode
 } from '../shared/contracts/campaign.js'
 import {
+  coreControlRequestSchema,
+  coreDiagnosticsSchema,
   coreEventSchema,
+  coreReadySchema,
   coreRequestSchema,
+  coreStartupConfigurationSchema,
   type CoreHandlers,
   type CoreRequest
 } from '../shared/contracts/core-protocol.js'
 import { coreOperations } from '../shared/contracts/operations.js'
-import { openDevelopmentCampaignStore } from '../core/persistence/sqlite/campaign-store.js'
+import { openCampaignStore } from '../core/persistence/sqlite/campaign-store.js'
 import {
   CreatureCatalogService,
   creatures as creatureCatalogRows
@@ -71,24 +74,41 @@ import { createBiomeHandlers } from './composition/biome.js'
 import { createWorldPlannerHandlers } from './composition/world-planner.js'
 import { createHexHandlers } from './composition/hex.js'
 import { createTravelHandlers } from './composition/travel.js'
-const root = process.argv[2]
-const referenceDatabasePath = process.argv[3]
-const sessionGenerationCatalogRoot = process.argv[4]
-if (
-  !root ||
-  !referenceDatabasePath ||
-  !sessionGenerationCatalogRoot ||
-  !process.parentPort
+import {
+  bootstrapMetrics,
+  bootstrapPhase,
+  bootstrapReady
+} from './bootstrap-observability.js'
+
+const startup = bootstrapPhase('configuration', () =>
+  coreStartupConfigurationSchema.parse(JSON.parse(process.argv[2] ?? ''))
 )
-  throw new Error(
-    'Utility process requires a data root, reference database, catalog root, and parent port'
-  )
-const campaigns = openDevelopmentCampaignStore(root)
-const generatorPresets = new GeneratorPresetStore(
-  campaigns.installationDatabase()
+if (!process.parentPort)
+  throw new Error('Utility process requires an Electron parent port')
+const {
+  dataRoot: root,
+  referenceDatabasePath,
+  sessionGenerationCatalogRoot,
+  incompatibleDataPolicy
+} = startup
+const runtimeCounters = {
+  messagesReceived: 0,
+  requestsCompleted: 0,
+  eventsPublished: 0,
+  scheduledWakeups: 0
+}
+let pendingPreparationWakeups = 0
+const campaigns = bootstrapPhase('campaign-store', () =>
+  openCampaignStore(root, incompatibleDataPolicy)
 )
-const sessionGenerationCatalog = new BundledSessionGenerationCatalogRegistry(
-  sessionGenerationCatalogRoot
+const generatorPresets = bootstrapPhase(
+  'installation-services',
+  () => new GeneratorPresetStore(campaigns.installationDatabase())
+)
+const sessionGenerationCatalog = bootstrapPhase(
+  'session-generation-catalog',
+  () =>
+    new BundledSessionGenerationCatalogRegistry(sessionGenerationCatalogRoot)
 )
 const sessionGenerationService = new SessionGenerationService(
   sessionGenerationCatalog,
@@ -242,6 +262,11 @@ const references = new ReferenceService(
 )
 let travelTimer: NodeJS.Timeout | undefined
 
+function postCoreEvent(event: unknown): void {
+  runtimeCounters.eventsPublished += 1
+  process.parentPort?.postMessage(coreEventSchema.parse(event))
+}
+
 type ReferenceSnapshot = Readonly<{
   index: ReturnType<ReferenceService['campaignIndex']>
   documents: ReadonlyMap<string, string>
@@ -289,16 +314,14 @@ function publishReferenceChange(before: ReferenceSnapshot | null): void {
     )
     .filter(([key]) => before?.documents.get(key) !== after.documents.get(key))
     .map(([, target]) => target)
-  process.parentPort?.postMessage(
-    coreEventSchema.parse({
-      kind: 'reference.changed',
-      notice: {
-        campaignId,
-        revision: after.index.revision,
-        changedTargets
-      }
-    })
-  )
+  postCoreEvent({
+    kind: 'reference.changed',
+    notice: {
+      campaignId,
+      revision: after.index.revision,
+      changedTargets
+    }
+  })
 }
 
 function mutateReferences<T>(work: () => T): T {
@@ -318,32 +341,28 @@ function publishSessionChange(
   reason:
     'travel-boundary' | 'travel-command' | 'campaign-reconcile' | 'map-edit'
 ): void {
-  process.parentPort?.postMessage(
-    coreEventSchema.parse({
-      kind: 'session.changed',
-      notice: {
-        campaignId: campaigns.activeCampaignId(),
-        sceneId: snapshot.sceneId,
-        revision: snapshot.revision,
-        reason
-      }
-    })
-  )
+  postCoreEvent({
+    kind: 'session.changed',
+    notice: {
+      campaignId: campaigns.activeCampaignId(),
+      sceneId: snapshot.sceneId,
+      revision: snapshot.revision,
+      reason
+    }
+  })
 }
 
 function publishLootChange(
   reason: 'created' | 'updated' | 'moved' | 'accepted' | 'distributed'
 ): void {
-  process.parentPort?.postMessage(
-    coreEventSchema.parse({
-      kind: 'loot.changed',
-      notice: {
-        campaignId: campaigns.activeCampaignId(),
-        revision: lootComposition.projectionRevision(),
-        reason
-      }
-    })
-  )
+  postCoreEvent({
+    kind: 'loot.changed',
+    notice: {
+      campaignId: campaigns.activeCampaignId(),
+      revision: lootComposition.projectionRevision(),
+      reason
+    }
+  })
 }
 
 function publishPreparationChange(notice: {
@@ -359,15 +378,13 @@ function publishPreparationChange(notice: {
     | 'failed'
     | 'canceled'
 }): void {
-  process.parentPort?.postMessage(
-    coreEventSchema.parse({
-      kind: 'session-planner.preparation-changed',
-      notice: {
-        campaignId: campaigns.activeCampaignId(),
-        ...notice
-      }
-    })
-  )
+  postCoreEvent({
+    kind: 'session-planner.preparation-changed',
+    notice: {
+      campaignId: campaigns.activeCampaignId(),
+      ...notice
+    }
+  })
 }
 
 function schedulePreparationWork(work: () => void): void {
@@ -381,11 +398,17 @@ function schedulePreparationWork(work: () => void): void {
     configured <= 5_000
       ? configured
       : 0
+  pendingPreparationWakeups += 1
+  const execute = () => {
+    pendingPreparationWakeups -= 1
+    runtimeCounters.scheduledWakeups += 1
+    work()
+  }
   if (delay > 0) {
-    setTimeout(work, delay)
+    setTimeout(execute, delay)
     return
   }
-  setImmediate(work)
+  setImmediate(execute)
 }
 
 function publishHexChange(payload: unknown): void {
@@ -417,17 +440,15 @@ function publishHexNotice(
   mapIds: readonly string[],
   changedChunks: readonly unknown[]
 ): void {
-  process.parentPort?.postMessage(
-    coreEventSchema.parse({
-      kind: 'hex.changed',
-      notice: {
-        campaignId: campaigns.activeCampaignId(),
-        commandId,
-        mapIds,
-        changedChunks
-      }
-    })
-  )
+  postCoreEvent({
+    kind: 'hex.changed',
+    notice: {
+      campaignId: campaigns.activeCampaignId(),
+      commandId,
+      mapIds,
+      changedChunks
+    }
+  })
 }
 
 function biomeChangedChunks(mapId: string, changes: readonly BiomeMapChange[]) {
@@ -474,17 +495,15 @@ function publishLocationChange(
   changedLocationIds: readonly string[],
   reason: 'catalog' | 'presentation' | 'symbol-replacement'
 ): void {
-  process.parentPort?.postMessage(
-    coreEventSchema.parse({
-      kind: 'locations.changed',
-      notice: {
-        campaignId: campaigns.activeCampaignId(),
-        revision: locations.read().revision,
-        changedLocationIds,
-        reason
-      }
-    })
-  )
+  postCoreEvent({
+    kind: 'locations.changed',
+    notice: {
+      campaignId: campaigns.activeCampaignId(),
+      revision: locations.read().revision,
+      changedLocationIds,
+      reason
+    }
+  })
 }
 
 function publishLocationMarkerHexChanges(
@@ -517,32 +536,28 @@ function publishSymbolChange(
   changedSymbolIds: readonly string[],
   reason: 'created' | 'renamed' | 'deleted'
 ): void {
-  process.parentPort?.postMessage(
-    coreEventSchema.parse({
-      kind: 'location-symbols.changed',
-      notice: {
-        revision: locationSymbols.read().revision,
-        changedSymbolIds,
-        reason
-      }
-    })
-  )
+  postCoreEvent({
+    kind: 'location-symbols.changed',
+    notice: {
+      revision: locationSymbols.read().revision,
+      changedSymbolIds,
+      reason
+    }
+  })
 }
 
 function publishBiomeChange(
   changedBiomeIds: readonly string[],
   reason: 'created' | 'updated' | 'deleted'
 ): void {
-  process.parentPort?.postMessage(
-    coreEventSchema.parse({
-      kind: 'biomes.changed',
-      notice: {
-        revision: biomeService.catalog.revision(),
-        changedBiomeIds,
-        reason
-      }
-    })
-  )
+  postCoreEvent({
+    kind: 'biomes.changed',
+    notice: {
+      revision: biomeService.catalog.revision(),
+      changedBiomeIds,
+      reason
+    }
+  })
 }
 
 function publishEncounterTableChange(
@@ -551,26 +566,26 @@ function publishEncounterTableChange(
   scope: 'installation' | 'campaign',
   reason: 'created' | 'updated' | 'deleted'
 ): void {
-  process.parentPort?.postMessage(
-    coreEventSchema.parse({
-      kind: 'encounter-tables.changed',
-      notice: {
-        installationRevision: snapshot.installation.revision,
-        campaignRevision: snapshot.campaign.revision,
-        changedTableIds,
-        scope,
-        reason
-      }
-    })
-  )
+  postCoreEvent({
+    kind: 'encounter-tables.changed',
+    notice: {
+      installationRevision: snapshot.installation.revision,
+      campaignRevision: snapshot.campaign.revision,
+      changedTableIds,
+      scope,
+      reason
+    }
+  })
 }
 
-symbolLifecycle.recoverPendingImports()
-symbolLifecycle.recoverPendingDeletions()
-biomeService.recoverPendingDeletions()
-sources.recoverPendingInstallationTableLifecycles()
-if (campaigns.list().activeCampaignId !== null)
-  sessionPlanner.recoverPendingPreparations()
+bootstrapPhase('recovery', () => {
+  symbolLifecycle.recoverPendingImports()
+  symbolLifecycle.recoverPendingDeletions()
+  biomeService.recoverPendingDeletions()
+  sources.recoverPendingInstallationTableLifecycles()
+  if (campaigns.list().activeCampaignId !== null)
+    sessionPlanner.recoverPendingPreparations()
+})
 
 function scheduleNextBoundary(): void {
   if (travelTimer !== undefined) clearTimeout(travelTimer)
@@ -580,6 +595,7 @@ function scheduleNextBoundary(): void {
     if (delay === null) return
     travelTimer = setTimeout(() => {
       travelTimer = undefined
+      runtimeCounters.scheduledWakeups += 1
       reconcileAndSchedule('travel-boundary')
     }, delay)
     travelTimer.unref()
@@ -601,6 +617,7 @@ function reconcileAndSchedule(
 }
 
 reconcileAndSchedule('campaign-reconcile')
+bootstrapReady()
 process.parentPort.postMessage(coreReadySchema.parse({ kind: 'core.ready' }))
 const campaignHandlers = createCampaignHandlers({
   campaigns,
@@ -688,10 +705,32 @@ process.parentPort.on('message', (event) => {
 })
 
 async function handleMessage(event: { data: unknown }): Promise<void> {
+  runtimeCounters.messagesReceived += 1
+  const control = coreControlRequestSchema.safeParse(event.data)
+  if (control.success) {
+    process.parentPort?.postMessage(
+      coreDiagnosticsSchema.parse({
+        kind: 'core.diagnostics',
+        requestId: control.data.requestId,
+        metrics: {
+          ...runtimeCounters,
+          activeDomainTimers:
+            (travelTimer === undefined ? 0 : 1) + pendingPreparationWakeups,
+          uptimeMs: process.uptime() * 1_000,
+          bootstrap: bootstrapMetrics()
+        }
+      })
+    )
+    return
+  }
   const parsed = coreRequestSchema.safeParse(event.data)
   if (!parsed.success) {
     const envelope = z
-      .object({ requestId: z.uuid(), kind: z.string() })
+      .object({
+        kind: z.literal('core.request'),
+        requestId: z.uuid(),
+        operation: z.string()
+      })
       .safeParse(event.data)
     if (envelope.success) failure(envelope.data.requestId, 'validation_failed')
     return
@@ -700,56 +739,58 @@ async function handleMessage(event: { data: unknown }): Promise<void> {
   try {
     const payload = await dispatch(r)
     respond(r.requestId, payload)
-    if (r.kind === 'core.shutdown') setImmediate(() => process.exit(0))
+    if (r.operation === 'core.shutdown') setImmediate(() => process.exit(0))
   } catch (e) {
     const mapped = capabilityFailure(e)
     failure(r.requestId, mapped.code, mapped.retryable, mapped.issues)
+  } finally {
+    runtimeCounters.requestsCompleted += 1
   }
 }
 
 function dispatch(request: CoreRequest): Promise<unknown> {
-  const handler = handlers[request.kind] as (input: unknown) => unknown
+  const handler = handlers[request.operation] as (input: unknown) => unknown
   const result = handler(request.input)
   return Promise.resolve(result).then((payload) => {
-    const parsed = coreOperations[request.kind].output.parse(payload)
+    const parsed = coreOperations[request.operation].output.parse(payload)
     if (
-      request.kind === 'hex.create' ||
-      request.kind === 'hex.update' ||
-      request.kind === 'hex.applyBrushStroke' ||
-      request.kind === 'hex.undo' ||
-      request.kind === 'hex.redo'
+      request.operation === 'hex.create' ||
+      request.operation === 'hex.update' ||
+      request.operation === 'hex.applyBrushStroke' ||
+      request.operation === 'hex.undo' ||
+      request.operation === 'hex.redo'
     )
       publishHexChange(parsed)
     if (
-      request.kind.startsWith('hexTravel.') &&
-      request.kind !== 'hexTravel.read'
+      request.operation.startsWith('hexTravel.') &&
+      request.operation !== 'hexTravel.read'
     ) {
       const result = hexTravelContextResultSchema.safeParse(parsed)
       if (result.success)
         publishSessionChange(result.data.travel, 'travel-command')
     }
     const lootReason =
-      request.kind === 'loot.create'
+      request.operation === 'loot.create'
         ? 'created'
-        : request.kind === 'loot.update'
+        : request.operation === 'loot.update'
           ? 'updated'
-          : request.kind === 'loot.move'
+          : request.operation === 'loot.move'
             ? 'moved'
-            : request.kind === 'loot.acceptGenerated'
+            : request.operation === 'loot.acceptGenerated'
               ? 'accepted'
-              : request.kind === 'loot.commitGroupReward'
+              : request.operation === 'loot.commitGroupReward'
                 ? 'accepted'
-                : request.kind === 'loot.distribute'
+                : request.operation === 'loot.distribute'
                   ? 'distributed'
                   : null
     if (lootReason) publishLootChange(lootReason)
     if (
-      coreOperations[request.kind].mode === 'write' &&
-      request.kind !== 'settings.update' &&
-      request.kind !== 'core.shutdown'
+      coreOperations[request.operation].mode === 'write' &&
+      request.operation !== 'settings.update' &&
+      request.operation !== 'core.shutdown'
     )
       reconcileAndSchedule(
-        request.kind.startsWith('campaign.')
+        request.operation.startsWith('campaign.')
           ? 'campaign-reconcile'
           : 'travel-command'
       )
@@ -757,7 +798,12 @@ function dispatch(request: CoreRequest): Promise<unknown> {
   })
 }
 function respond(requestId: string, payload: unknown) {
-  process.parentPort?.postMessage({ requestId, ok: true, payload })
+  process.parentPort?.postMessage({
+    kind: 'core.result',
+    requestId,
+    ok: true,
+    payload
+  })
 }
 function failure(
   requestId: string,
@@ -766,6 +812,7 @@ function failure(
   issues: CapabilityError['issues'] = []
 ) {
   process.parentPort?.postMessage({
+    kind: 'core.result',
     requestId,
     ok: false,
     error: capabilityFailureSchema.parse({

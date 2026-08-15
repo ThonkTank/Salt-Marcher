@@ -24,6 +24,7 @@ describe('capability contract', () => {
   it('rejects unknown fields instead of silently dropping them', () => {
     expect(
       coreResultSchema.safeParse({
+        kind: 'core.result',
         requestId: '0184d1f4-bba7-7c9c-9d89-5f1c0f36a031',
         ok: false,
         error: { code: 'internal', retryable: false },
@@ -116,6 +117,7 @@ describe('capability contract', () => {
     expect(Object.isFrozen(snapshot.campaigns[0])).toBe(true)
     expect(
       coreResultSchema.parse({
+        kind: 'core.result',
         requestId: '0184d1f4-bba7-7c9c-9d89-5f1c0f36a031',
         ok: true,
         payload: snapshot

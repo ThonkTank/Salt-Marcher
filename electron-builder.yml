@@ -1,7 +1,7 @@
 appId: org.saltmarcher.app
 productName: SaltMarcher
 directories:
-  output: release
+  output: release/release
 files:
   - out/**
 extraResources:

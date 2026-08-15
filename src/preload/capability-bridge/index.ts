@@ -126,7 +126,9 @@ if (process.argv.includes('--salt-marcher-e2e'))
         invokeIpc(
           'salt-marcher-e2e:terminate-utility',
           undefined
-        ) as Promise<boolean>
+        ) as Promise<boolean>,
+      runtimeEvidence: () =>
+        invokeIpc('salt-marcher-e2e:runtime-evidence', undefined)
     })
   )
 

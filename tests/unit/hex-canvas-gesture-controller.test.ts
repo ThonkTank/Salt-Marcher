@@ -90,11 +90,15 @@ describe('hex canvas gesture controller', () => {
       clientY: 20
     })
     harness.dispatch('pointermove', { clientX: 14, clientY: 18 })
+    harness.dispatch('pointermove', { clientX: 17, clientY: 23 })
+    harness.dispatch('pointermove', { clientX: 16, clientY: 25 })
     harness.dispatch('pointerup', { pointerId: 2 })
     harness.dispatch('click', { button: 0, clientX: 7, clientY: 9 })
     harness.dispatch('wheel', { deltaY: -1 })
 
     expect(pan).toHaveBeenCalledWith(4, -2)
+    expect(pan).toHaveBeenNthCalledWith(2, 3, 5)
+    expect(pan).toHaveBeenNthCalledWith(3, -1, 2)
     expect(panEnd).toHaveBeenCalledOnce()
     expect(select).toHaveBeenCalledWith({ q: 7, r: 9 })
     expect(zoom).toHaveBeenCalledOnce()

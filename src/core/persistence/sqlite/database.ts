@@ -1,10 +1,31 @@
 import Database from 'better-sqlite3'
-export const currentDevelopmentSchemaVersion = 27
+export type DatabaseRole = 'installation' | 'campaign'
 
-export class IncompatibleDevelopmentDataError extends Error {
-  constructor(public readonly developmentDataPath?: string) {
-    super('Incompatible development data')
-    this.name = 'IncompatibleDevelopmentDataError'
+export const databaseSchemaVersions: Readonly<Record<DatabaseRole, number>> =
+  Object.freeze({ installation: 28, campaign: 28 })
+
+export const currentSchemaVersion = Math.max(
+  ...Object.values(databaseSchemaVersions)
+)
+
+export class IncompatibleDataError extends Error {
+  constructor(
+    public readonly dataPath?: string,
+    public readonly actualVersion?: number,
+    public readonly expectedVersion = currentSchemaVersion
+  ) {
+    super('Incompatible persisted data')
+    this.name = 'IncompatibleDataError'
+  }
+}
+
+export class CorruptDataError extends Error {
+  constructor(
+    public readonly dataPath: string,
+    options?: ErrorOptions
+  ) {
+    super(`Persisted data is corrupt: ${dataPath}`, options)
+    this.name = 'CorruptDataError'
   }
 }
 
@@ -15,17 +36,23 @@ export function configureSqlite(db: Database.Database): void {
   db.pragma('busy_timeout = 5000')
 }
 
-export function initializeDevelopmentSchemaVersion(
-  db: Database.Database
+export function initializeSchemaVersion(
+  db: Database.Database,
+  role: DatabaseRole
 ): void {
-  db.pragma(`user_version = ${currentDevelopmentSchemaVersion}`)
+  db.pragma(`user_version = ${databaseSchemaVersions[role]}`)
 }
 
-export function assertDevelopmentSchemaVersion(
+export function assertSchemaVersion(
   db: Database.Database,
-  developmentDataPath?: string
+  dataPath?: string,
+  role: DatabaseRole = 'campaign'
 ): void {
   const version = db.pragma('user_version', { simple: true }) as number
-  if (version !== currentDevelopmentSchemaVersion)
-    throw new IncompatibleDevelopmentDataError(developmentDataPath)
+  if (version !== databaseSchemaVersions[role])
+    throw new IncompatibleDataError(
+      dataPath,
+      version,
+      databaseSchemaVersions[role]
+    )
 }

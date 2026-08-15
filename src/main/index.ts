@@ -1,6 +1,7 @@
 import { app } from 'electron'
 import {
   runSessionGenerationSmoke,
+  reportInstalledRuntimeVerification,
   startApplication,
   stopApplication,
   waitForCoreReady
@@ -15,6 +16,11 @@ void startApplication()
         .then(() =>
           process.argv.includes('--session-generation-smoke')
             ? runSessionGenerationSmoke()
+            : undefined
+        )
+        .then(() =>
+          process.argv.includes('--installed-runtime-verification')
+            ? reportInstalledRuntimeVerification()
             : undefined
         )
         .then(() => app.quit())

@@ -110,8 +110,9 @@ describe('group Loot architecture refactor', () => {
 
   it('keeps utility bootstrap tiny and generated SQL in one writer', () => {
     const entry = readFileSync('src/utility/index.ts', 'utf8')
-    expect(entry.split('\n').length).toBeLessThan(10)
-    expect(entry).toContain("import './application.js'")
+    expect(entry.split('\n').length).toBeLessThan(20)
+    expect(entry).toContain("import('./application.js')")
+    expect(entry).toContain('coreStartupFailureSchema')
     const application = readFileSync('src/utility/application.ts', 'utf8')
     expect(application.split('\n').length).toBeLessThan(900)
     for (const module of [
