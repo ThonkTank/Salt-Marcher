@@ -13,6 +13,13 @@ import {
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import { uuidv7 } from '../../shared/ids/uuidv7.js'
 import { creatureById } from '../creatures/catalog.js'
+import type { WorldFactionSnapshot } from '../../shared/contracts/encounter-source.js'
+
+export interface WorldNpcFactionMembershipCoordinator {
+  read(): WorldFactionSnapshot
+  assertMembershipRevision(expectedRevision: number): void
+  recordMembershipChange(): void
+}
 
 export function initializeWorldNpcSchema(db: Database.Database): void {
   db.exec(`
@@ -56,7 +63,10 @@ export function initializeWorldNpcSchema(db: Database.Database): void {
 }
 
 export class WorldNpcStore {
-  constructor(private readonly db: Database.Database) {}
+  constructor(
+    private readonly db: Database.Database,
+    private readonly factions?: WorldNpcFactionMembershipCoordinator
+  ) {}
 
   read(): WorldNpcSnapshot {
     const rows = this.db
@@ -90,9 +100,14 @@ export class WorldNpcStore {
       : null
   }
 
-  create(commandId: string, draft: WorldNpcDraft, expectedRevision: number) {
+  create(
+    commandId: string,
+    draft: WorldNpcDraft,
+    expectedRevision: number,
+    expectedFactionRevision: number
+  ) {
     const parsed = worldNpcDraftSchema.parse(draft)
-    const request = { draft: parsed, expectedRevision }
+    const request = { draft: parsed, expectedRevision, expectedFactionRevision }
     const replay = this.receipt(
       commandId,
       'create',
@@ -102,6 +117,8 @@ export class WorldNpcStore {
     if (replay) return replay
     this.transact(() => {
       this.assertRevision(expectedRevision)
+      const factions = this.requireFactions()
+      factions.assertMembershipRevision(expectedFactionRevision)
       this.assertReferences(parsed)
       const id = uuidv7()
       const position = (
@@ -114,9 +131,11 @@ export class WorldNpcStore {
       this.insert(id, position, parsed)
       this.replaceFaction(id, parsed.factionId)
       this.bumpRevision()
+      if (parsed.factionId !== null) factions.recordMembershipChange()
       const snapshot = this.read()
       this.writeReceipt(commandId, 'create', request, {
         snapshot,
+        factionSnapshot: factions.read(),
         saved: requireNpc(snapshot.npcs, id)
       })
     })
@@ -132,10 +151,16 @@ export class WorldNpcStore {
     commandId: string,
     id: string,
     draft: WorldNpcDraft,
-    expectedRevision: number
+    expectedRevision: number,
+    expectedFactionRevision: number
   ) {
     const parsed = worldNpcDraftSchema.parse(draft)
-    const request = { id, draft: parsed, expectedRevision }
+    const request = {
+      id,
+      draft: parsed,
+      expectedRevision,
+      expectedFactionRevision
+    }
     const replay = this.receipt(
       commandId,
       'update',
@@ -145,7 +170,10 @@ export class WorldNpcStore {
     if (replay) return replay
     this.transact(() => {
       this.assertRevision(expectedRevision)
+      const factions = this.requireFactions()
+      factions.assertMembershipRevision(expectedFactionRevision)
       this.assertReferences(parsed)
+      const previousFactionId = this.factionId(id)
       const changed = this.db
         .prepare(
           `
@@ -170,9 +198,12 @@ export class WorldNpcStore {
       if (changed === 0) throw new CapabilityError('not_found', false)
       this.replaceFaction(id, parsed.factionId)
       this.bumpRevision()
+      if (previousFactionId !== parsed.factionId)
+        factions.recordMembershipChange()
       const snapshot = this.read()
       this.writeReceipt(commandId, 'update', request, {
         snapshot,
+        factionSnapshot: factions.read(),
         saved: requireNpc(snapshot.npcs, id)
       })
     })
@@ -184,8 +215,13 @@ export class WorldNpcStore {
     )!
   }
 
-  delete(commandId: string, id: string, expectedRevision: number) {
-    const request = { id, expectedRevision }
+  delete(
+    commandId: string,
+    id: string,
+    expectedRevision: number,
+    expectedFactionRevision: number
+  ) {
+    const request = { id, expectedRevision, expectedFactionRevision }
     const replay = this.receipt(
       commandId,
       'delete',
@@ -195,14 +231,19 @@ export class WorldNpcStore {
     if (replay) return replay
     this.transact(() => {
       this.assertRevision(expectedRevision)
+      const factions = this.requireFactions()
+      factions.assertMembershipRevision(expectedFactionRevision)
+      const previousFactionId = this.factionId(id)
       if (
         this.db.prepare('DELETE FROM worldplanner_npc WHERE id = ?').run(id)
           .changes === 0
       )
         throw new CapabilityError('not_found', false)
       this.bumpRevision()
+      if (previousFactionId !== null) factions.recordMembershipChange()
       this.writeReceipt(commandId, 'delete', request, {
         snapshot: this.read(),
+        factionSnapshot: factions.read(),
         deletedId: id
       })
     })
@@ -287,6 +328,21 @@ export class WorldNpcStore {
           'INSERT INTO worldplanner_faction_npc (npc_id, faction_id) VALUES (?, ?)'
         )
         .run(id, factionId)
+  }
+
+  private factionId(id: string): string | null {
+    const row = this.db
+      .prepare(
+        'SELECT faction_id AS factionId FROM worldplanner_faction_npc WHERE npc_id = ?'
+      )
+      .get(id) as { factionId: string } | undefined
+    return row?.factionId ?? null
+  }
+
+  private requireFactions(): WorldNpcFactionMembershipCoordinator {
+    if (!this.factions)
+      throw new Error('NPC faction membership coordinator is unavailable.')
+    return this.factions
   }
 
   private assertReferences(draft: z.output<typeof worldNpcDraftSchema>): void {

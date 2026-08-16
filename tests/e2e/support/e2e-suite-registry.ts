@@ -21,6 +21,11 @@ export const e2eSuiteRegistry = [
     fixture: 'v1/empty-installation'
   },
   {
+    name: 'npcCatalog',
+    spec: './tests/e2e/npc-catalog.e2e.ts',
+    fixture: 'v1/empty-installation'
+  },
+  {
     name: 'restart',
     spec: './tests/e2e/campaign-restart.e2e.ts',
     fixture: 'v1/editor-data'

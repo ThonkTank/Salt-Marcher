@@ -33,10 +33,12 @@ World Planner persistence stores:
 - normalized World Location save-command input and its durable complete or
   partial receipt, keyed by one stable command identity
 
-The active Electron slice materializes location and faction metadata, faction
-inventory, location-to-faction links, and location-to-table links. Foreign
-creature and encounter-table IDs remain logical references; cross-owner
-referential cleanup is orchestrated in one utility-process transaction.
+The active Electron slice materializes NPC metadata and command receipts,
+normalized single-faction NPC membership, location and faction metadata,
+faction inventory, location-to-faction links, and location-to-table links.
+Foreign creature and encounter-table IDs remain logical references;
+cross-owner referential cleanup is orchestrated in one utility-process
+transaction.
 
 World Planner persistence does not store:
 
@@ -65,6 +67,9 @@ World Planner persistence does not store:
   faction's primary encounter table. Changing or deleting the reference and
   removing a table entry prune invalid rows in the same transaction.
 - NPC membership rows enforce at most one faction for each NPC.
+- NPC create, update, and delete commands carry expected NPC and faction
+  revisions. Membership changes update both metadata rows in the same SQLite
+  transaction and durable receipts contain both resulting snapshots.
 
 ## Validation And Error Behavior
 
@@ -106,9 +111,10 @@ handler receives that adapter as a port and must not prepare SQL itself.
 
 ## Current Schema Lifecycle
 
-World Planner is a feature-owned persistence surface. It does not migrate
-existing Session Planner, Encounter, EncounterTable, Creatures, Party, Dungeon,
-or Hex tables in the current backend slice.
+World Planner is a feature-owned persistence surface. Campaign schema 29 adds
+the NPC tables through the registered 28-to-29 owner migration. It does not
+migrate existing Session Planner, Encounter, EncounterTable, Creatures,
+Dungeon, or Hex tables.
 
 Compatibility obligations begin with the first released format.
 Before the first released format, shared startup creates the complete current

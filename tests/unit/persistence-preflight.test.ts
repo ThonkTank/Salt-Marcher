@@ -180,6 +180,106 @@ describe('persistence preflight', () => {
     ).toBe(2)
     installationDatabase.close()
   })
+
+  it('migrates schema 28 campaign profiles without changing existing roster facts', () => {
+    const root = temporaryRoot()
+    const path = join(root, 'campaign.sqlite')
+    const database = new Database(path)
+    database.exec(`
+      CREATE TABLE player_characters (
+        id TEXT PRIMARY KEY NOT NULL,
+        name TEXT NOT NULL,
+        player_name TEXT,
+        level INTEGER,
+        passive_perception INTEGER,
+        armor_class INTEGER,
+        active INTEGER NOT NULL,
+        xp INTEGER NOT NULL,
+        xp_since_short_rest INTEGER NOT NULL,
+        xp_since_long_rest INTEGER NOT NULL,
+        movement_speed_feet INTEGER,
+        travel_map_id TEXT,
+        travel_q INTEGER,
+        travel_r INTEGER,
+        travel_state TEXT NOT NULL,
+        position INTEGER NOT NULL
+      );
+      INSERT INTO player_characters VALUES (
+        '01900000-0000-7000-8000-000000000301', 'DnD-Held', 'Spieler', 4,
+        15, 17, 1, 2700, 100, 200, 30, NULL, NULL, NULL, 'detached', 0
+      );
+      CREATE TABLE worldplanner_faction (
+        id TEXT PRIMARY KEY NOT NULL,
+        display_name TEXT NOT NULL,
+        notes TEXT NOT NULL,
+        disposition INTEGER NOT NULL,
+        primary_encounter_table_id TEXT,
+        position INTEGER NOT NULL
+      );
+      CREATE TABLE worldplanner_faction_metadata (
+        singleton INTEGER PRIMARY KEY NOT NULL,
+        revision INTEGER NOT NULL
+      );
+      INSERT INTO worldplanner_faction_metadata VALUES (1, 0);
+      CREATE TABLE worldplanner_location (
+        id TEXT PRIMARY KEY NOT NULL,
+        display_name TEXT NOT NULL,
+        read_aloud TEXT NOT NULL,
+        notes TEXT NOT NULL,
+        position INTEGER NOT NULL
+      );
+    `)
+    database.pragma('user_version = 28')
+
+    applySchemaMigrations(database, { path, role: 'campaign' })
+
+    expect(database.pragma('user_version', { simple: true })).toBe(29)
+    expect(
+      database
+        .prepare(
+          `SELECT name, player_name AS playerName, level, passive_perception AS passivePerception,
+                  armor_class AS armorClass, xp, species, character_class AS characterClass,
+                  passive_investigation AS passiveInvestigation,
+                  passive_insight AS passiveInsight
+           FROM player_characters`
+        )
+        .get()
+    ).toEqual({
+      name: 'DnD-Held',
+      playerName: 'Spieler',
+      level: 4,
+      passivePerception: 15,
+      armorClass: 17,
+      xp: 2700,
+      species: null,
+      characterClass: null,
+      passiveInvestigation: null,
+      passiveInsight: null
+    })
+    expect(
+      database
+        .prepare('SELECT count(*) FROM player_character_language')
+        .pluck()
+        .get()
+    ).toBe(0)
+    expect(
+      database
+        .prepare(
+          "SELECT migration_id FROM campaign_schema_migration WHERE migration_id = 'campaign-28-to-29-npcs-and-character-details'"
+        )
+        .pluck()
+        .get()
+    ).toBe('campaign-28-to-29-npcs-and-character-details')
+    expect(
+      database
+        .prepare(
+          "SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name IN ('worldplanner_npc', 'worldplanner_faction_npc', 'worldplanner_npc_command_receipt')"
+        )
+        .pluck()
+        .get()
+    ).toBe(3)
+    database.close()
+  })
 })
 
 describe('schema migration contract', () => {

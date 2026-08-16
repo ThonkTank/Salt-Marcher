@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -39,6 +40,7 @@ function harness() {
   return {
     campaigns,
     locations,
+    sources,
     references: new ReferenceService(
       catalog,
       { all: () => creatureCatalog, detail: (id) => creatures.detail(id) },
@@ -122,6 +124,88 @@ describe('reference service', () => {
     )
     expect(() => references.campaignIndex('another-campaign')).toThrow(
       'not_found'
+    )
+    campaigns.close()
+  })
+
+  it('indexes NPC names and returns current creature, faction and location facts', () => {
+    const { campaigns, locations, sources, references } = harness()
+    const faction = sources.createFaction(
+      randomUUID(),
+      {
+        displayName: 'Rosenhof',
+        notes: '',
+        disposition: 15,
+        primaryEncounterTableId: null,
+        inventory: []
+      },
+      0
+    ).saved
+    const location = locations.create(
+      {
+        displayName: 'Flussuferhöhle',
+        tags: ['Höhle'],
+        notes: ''
+      },
+      0
+    ).saved
+    const created = sources.createNpc(
+      randomUUID(),
+      {
+        displayName: 'Erika',
+        creatureId: 'sprite',
+        lifecycle: 'active',
+        appearance: 'Silberne Flügel.',
+        behavior: 'Neugierig.',
+        history: 'Tochter von Rosenschein.',
+        notes: 'Gerettet.',
+        dispositionModifier: 2,
+        factionId: faction.id,
+        locationId: location.id
+      },
+      0,
+      1
+    )
+    const campaignId = campaigns.activeCampaignId()
+    const indexed = references.campaignIndex(campaignId)
+    const candidate = indexed.terms.find((term) => term.term === 'Erika')
+      ?.candidates[0]
+    expect(candidate?.target).toEqual({
+      scope: 'campaign',
+      campaignId,
+      entityKind: 'npc',
+      entityId: created.saved.id
+    })
+    const detail = references.detail(candidate!.target)
+    expect(JSON.stringify(detail)).toContain('Sprite (sprite)')
+    expect(JSON.stringify(detail)).toContain('Rosenhof')
+    expect(JSON.stringify(detail)).toContain('Flussuferhöhle')
+    expect(JSON.stringify(detail)).toContain('Silberne Flügel.')
+
+    const factionsBefore = sources.readFactions().revision
+    sources.updateNpc(
+      randomUUID(),
+      created.saved.id,
+      {
+        displayName: created.saved.displayName,
+        creatureId: created.saved.creatureId,
+        lifecycle: created.saved.lifecycle,
+        appearance: created.saved.appearance,
+        behavior: created.saved.behavior,
+        history: created.saved.history,
+        notes: 'Aktualisiert.',
+        dispositionModifier: created.saved.dispositionModifier,
+        factionId: created.saved.factionId,
+        locationId: created.saved.locationId
+      },
+      created.snapshot.revision,
+      created.factionSnapshot.revision
+    )
+    const updatedIndex = references.campaignIndex(campaignId)
+    expect(updatedIndex.revision).not.toBe(indexed.revision)
+    expect(sources.readFactions().revision).toBe(factionsBefore)
+    expect(JSON.stringify(references.detail(candidate!.target))).toContain(
+      'Aktualisiert.'
     )
     campaigns.close()
   })

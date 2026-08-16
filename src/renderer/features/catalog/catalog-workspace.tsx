@@ -1,4 +1,4 @@
-import { Suspense, useMemo, useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import type { Creature } from '../../../shared/contracts/encounter.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import { EncounterTableCatalogSection } from '../encounter-table/encounter-table-catalog-section.js'
@@ -21,12 +21,13 @@ import { catalogCapabilities } from './catalog-capabilities.js'
 import { useRelatedEntityDialogStack } from '../workspace/integrations/related-entity-dialog-stack.js'
 import { LazyWorldFactionDialog } from '../worldplanner/lazy-world-faction-dialog.js'
 import { createCatalogEditorPorts } from './catalog-editor-ports.js'
-import { NpcCatalogSection } from './npc-catalog-section.js'
 import { useNpcCatalogController } from './npc-catalog-controller.js'
 import {
   CatalogSectionSelector,
   type CatalogSection
 } from './catalog-section-selector.js'
+
+const LazyNpcCatalogSection = lazy(() => import('./npc-catalog-section.js'))
 
 type CatalogWorkspaceProps = {
   setSnapshot: (snapshot: LiveSessionSnapshot) => void
@@ -90,7 +91,8 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
   const npcController = useNpcCatalogController(
     section === 'npcs',
     props.onError,
-    catalog
+    catalog,
+    editorPorts.creatures
   )
   const encounterTableController = useEncounterTableCatalogController(
     section === 'encounterTables',
@@ -140,9 +142,13 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
             >
               <FactionCatalogSection controller={factionController} />
             </div>
-            <div className="catalog-section-host" hidden={section !== 'npcs'}>
-              <NpcCatalogSection controller={npcController} />
-            </div>
+            {section === 'npcs' && (
+              <div className="catalog-section-host">
+                <Suspense fallback={null}>
+                  <LazyNpcCatalogSection controller={npcController} />
+                </Suspense>
+              </div>
+            )}
             <div
               className="catalog-section-host"
               hidden={section !== 'encounterTables'}

@@ -108,6 +108,14 @@ export class WorldFactionStore {
     })
   }
 
+  assertMembershipRevision(expectedRevision: number): void {
+    this.assertRevision(expectedRevision)
+  }
+
+  recordMembershipChange(): void {
+    this.bumpRevision()
+  }
+
   create(
     commandId: string,
     draft: WorldFactionDraft,

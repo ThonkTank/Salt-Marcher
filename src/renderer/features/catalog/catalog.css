@@ -1,9 +1,16 @@
+.app-shell:has(.npc-catalog-layout) {
+  height: 100vh;
+}
+
 .catalog-workspace {
   display: grid;
   grid-template-columns: minmax(28rem, 1fr);
   flex: 1;
+  height: 100%;
+  max-height: 100%;
   min-width: 0;
   min-height: 0;
+  overflow: hidden;
 }
 
 .catalog-browser {
@@ -23,6 +30,10 @@
   grid-row: 2 / -1;
   grid-template-rows: auto minmax(0, 1fr) auto;
   min-height: 0;
+}
+
+.catalog-section-host[hidden] {
+  display: none;
 }
 
 .catalog-section-selector,
@@ -189,6 +200,94 @@
 
 .npc-dialog-wide {
   grid-column: 1 / -1;
+}
+
+.npc-catalog-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(18rem, 24rem);
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.npc-catalog-browser {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  min-width: 0;
+  min-height: 0;
+}
+
+.npc-catalog-filters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.npc-catalog-filters > input {
+  grid-column: 1 / -1;
+  min-width: 0;
+}
+
+.npc-catalog-filters select,
+.npc-catalog-filters button {
+  width: 100%;
+  min-width: 0;
+}
+
+.catalog-table tbody tr.selected {
+  background: var(--surface-tab-active);
+}
+
+.npc-inspector {
+  min-width: 0;
+  overflow: auto;
+  border-left: 1px solid var(--border-structural);
+  background: var(--surface-sheet-flat);
+  padding: var(--space-7);
+}
+
+.npc-inspector header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-5);
+}
+
+.npc-inspector h2,
+.npc-inspector h3,
+.npc-inspector p {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.npc-inspector h2 {
+  margin-block: var(--space-2) var(--space-5);
+  color: var(--accent-rubric);
+  font-family: var(--font-display);
+}
+
+.npc-inspector h3 {
+  margin-block: var(--space-6) var(--space-2);
+  font-family: var(--font-smallcaps);
+}
+
+.npc-inspector dl {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+}
+
+.npc-inspector dl > div {
+  display: grid;
+  grid-template-columns: minmax(7rem, 0.8fr) minmax(0, 1fr);
+  gap: var(--space-4);
+}
+
+.npc-inspector dt {
+  color: var(--text-3);
+}
+
+.npc-inspector dd {
+  margin: 0;
 }
 
 .encounter-roster {
@@ -445,5 +544,20 @@
   .catalog-workspace {
     grid-template-columns: 1fr;
     min-width: 50rem;
+  }
+
+  .catalog-workspace:has(.npc-catalog-layout) {
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
+  }
+
+  .npc-catalog-layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(10rem, 40%);
+  }
+
+  .npc-inspector {
+    border-top: 1px solid var(--border-structural);
+    border-left: 0;
   }
 }

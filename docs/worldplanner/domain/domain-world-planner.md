@@ -96,6 +96,9 @@ Commands entering the model include:
 Core invariants:
 
 - one NPC belongs to at most one faction
+- a mutation that can change NPC membership compares both aggregate revisions;
+  a real membership change advances both NPC and faction revisions and returns
+  both immutable snapshots
 - effective PC disposition is the clamped faction base plus NPC modifier;
   `<= -15` is hostile, `>= +15` friendly, and the values between are neutral
 
@@ -122,6 +125,8 @@ Core invariants:
 - Encounter owns generation policy, saved encounter-plan roster truth, and
   combat runtime state. World Planner owns only durable NPC lifecycle and
   inventory effects confirmed from combat results.
+- The current slice does not project World Planner NPC identity into Encounter
+  runtime and does not infer losses from combat.
 - Session Planner owns its session-planning records and selected session
   state. Future location use in those records belongs to the Session Planner
   owner and may reference World Planner locations through stable IDs.

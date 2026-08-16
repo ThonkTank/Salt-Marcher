@@ -251,8 +251,8 @@ from a filename discovered at runtime:
 
 | Role | Canonical path | Current | Supported forward path | Migration owner |
 | --- | --- | ---: | --- | --- |
-| installation | `installation.sqlite` | 28 | 27 -> 28 | `installation-schema-migrations.ts` |
-| campaign | `campaigns/<id>/campaign.sqlite` (including staged/recoverable campaign trees) | 28 | 27 -> 28 | `campaign-schema-migrations.ts` |
+| installation | `installation.sqlite` | 29 | 27 -> 28 -> 29 | `installation-schema-migrations.ts` |
+| campaign | `campaigns/<id>/campaign.sqlite` (including staged/recoverable campaign trees) | 29 | 27 -> 28 -> 29 | `campaign-schema-migrations.ts` |
 
 The composed registry has contract version 1. It orders owner-provided steps
 but contains no aggregate SQL itself. A database at an older version without a

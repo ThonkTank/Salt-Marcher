@@ -235,9 +235,14 @@ export class EncounterSourceService {
     return this.withStores(({ npcs }) => npcs.commandReceipt(commandId))
   }
 
-  createNpc(commandId: string, draft: WorldNpcDraft, revision: number) {
+  createNpc(
+    commandId: string,
+    draft: WorldNpcDraft,
+    revision: number,
+    factionRevision: number
+  ) {
     return this.withStores(({ npcs }) =>
-      npcs.create(commandId, draft, revision)
+      npcs.create(commandId, draft, revision, factionRevision)
     )
   }
 
@@ -245,15 +250,23 @@ export class EncounterSourceService {
     commandId: string,
     id: string,
     draft: WorldNpcDraft,
-    revision: number
+    revision: number,
+    factionRevision: number
   ) {
     return this.withStores(({ npcs }) =>
-      npcs.update(commandId, id, draft, revision)
+      npcs.update(commandId, id, draft, revision, factionRevision)
     )
   }
 
-  deleteNpc(commandId: string, id: string, revision: number) {
-    return this.withStores(({ npcs }) => npcs.delete(commandId, id, revision))
+  deleteNpc(
+    commandId: string,
+    id: string,
+    revision: number,
+    factionRevision: number
+  ) {
+    return this.withStores(({ npcs }) =>
+      npcs.delete(commandId, id, revision, factionRevision)
+    )
   }
 
   factionReceipt(commandId: string) {
@@ -314,18 +327,19 @@ export class EncounterSourceService {
     const db = this.campaignDatabase()
     const tables = new EncounterTableStore(db)
     const installationTables = this.installationTables()
+    const factions = new WorldFactionStore(db, {
+      containsTable: (id) =>
+        tables.contains(id) || Boolean(installationTables?.contains(id)),
+      containsCreature: (tableId, creatureId) =>
+        tables.containsCreature(tableId, creatureId) ||
+        Boolean(installationTables?.containsCreature(tableId, creatureId))
+    })
     return work({
       db,
       tables,
-      factions: new WorldFactionStore(db, {
-        containsTable: (id) =>
-          tables.contains(id) || Boolean(installationTables?.contains(id)),
-        containsCreature: (tableId, creatureId) =>
-          tables.containsCreature(tableId, creatureId) ||
-          Boolean(installationTables?.containsCreature(tableId, creatureId))
-      }),
+      factions,
       locations: new WorldLocationStore(db),
-      npcs: new WorldNpcStore(db)
+      npcs: new WorldNpcStore(db, factions)
     })
   }
 

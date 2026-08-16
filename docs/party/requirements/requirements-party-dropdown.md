@@ -19,14 +19,16 @@ summary, and mutation controls use the Party feature's public mutation API.
 - The dropdown content shows a `PARTY` header, active member rows and rest
   actions plus a distinct `CHARAKTER-ROSTER` section containing every active or
   inactive PC. Roster rows expose stable Roster IDs so namesakes remain
-  distinguishable. Search matches name, player, or Roster ID.
+  distinguishable. Search matches name, player, species, class, languages,
+  passive scores, or Roster ID.
 - Active member rows are compact full-width two-line cards. The first line
   shows character and player identity, current and next level, an overlaid
   `current XP/next-level XP (%)` level-up meter, and popup-based XP correction.
   The second line shows combat/rest metadata plus edit and remove affordances.
 - The Roster create/edit editor is a secondary anchored dropdown. Only the
-  character name is required; player, level, passive perception, and AC are
-  optional and can be cleared again. Edit mode identifies the PC by stable ID
+  character name is required; player, species, class, ordered comma-separated
+  languages, level, all three passive scores, AC, and movement are optional
+  and can be cleared again. Edit mode identifies the PC by stable ID
   and retains explicit delete confirmation. The editor stays open on validation
   or storage failures and reports the field or mutation error inline.
 

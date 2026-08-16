@@ -15,6 +15,7 @@ import { partyCapabilities } from './party-capabilities.js'
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 import { useAdventuringDayCalculation } from './use-adventuring-day-calculation.js'
 import { lazy, Suspense } from 'react'
+import { partyCharacterMatchesSearch } from './party-search.js'
 
 const LazyCharacterLootLedgerDialog = lazy(async () => {
   const module = await import('../loot/character-loot-ledger-dialog.js')
@@ -245,9 +246,7 @@ export function PartyDropdown(props: {
       )
     : null
   const filtered = props.party.members.filter((member) =>
-    `${member.name} ${member.playerName ?? ''} ${member.id}`
-      .toLowerCase()
-      .includes(search.toLowerCase())
+    partyCharacterMatchesSearch(member, search)
   )
 
   async function run(operation: () => Promise<PartySnapshot>) {

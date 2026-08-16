@@ -43,7 +43,7 @@ accounts for the bounded virtual biome catalog and CRUD surface added with
 schema 15; schema 16 replaced separate World Location kind and region fields
 with tags and read-aloud text, and schema 17 normalizes ordered location-owned
 tags into validated rows while all per-entry ceilings remain unchanged.
-Schema 27, Generator Config V3, and Session engine
+Schema 29, Generator Config V3, and Session engine
 `saltmarcher-v5` are current. Schema 25 is reset rather than migrated. The
 versioned behavior and ownership are recorded in the
 [Encounter Generation requirements](../../encounter/requirements/requirements-encounter-generation.md)
@@ -116,6 +116,26 @@ explicit `--resume` reuses steps whose workspace, toolchain, output, artifact,
 and installed evidence exactly matches the atomic final receipt. `pnpm dev`
 remains HMR-only.
 
+## NPC catalog and preserved profile schema — 2026-08-16
+
+The active Catalog now includes a lazy-loaded campaign NPC vertical slice.
+NPC commands cross the restricted bridge with strict immutable carriers,
+idempotent receipts, and paired NPC/faction optimistic revisions for normalized
+single-faction membership. NPCs reference Creature-owned statblocks and may
+carry lifecycle, appearance, behavior, history, notes, disposition, faction,
+and location facts. Catalog supplies debounced search, status/faction/location
+filters, Inspector readback, guarded editing, and confirmed deletion. Reference
+indexing publishes exact NPC names and resolves current Creature, faction,
+location, and NPC facts.
+
+Party profile carriers and persistence now include optional species, class,
+ordered canonical-unique languages, passive Investigation, and passive Insight.
+Schema 29 adds these nullable fields, the language relation, NPC tables, and
+owner migration ledgers through the tested 28-to-29 path while preserving
+existing campaign rows. NPC Encounter participation, inferred combat losses,
+generator stock participation, and custom Creature statblocks remain outside
+this slice.
+
 ## Runtime efficiency and delivery hardening — 2026-08-15
 
 The architecture-critique remediation was delivered in six independently
@@ -129,9 +149,10 @@ verifiable phases:
 3. Persisted data is classified with a read-only preflight before any writable
    connection. Schema names are environment-neutral and forward migrations
    require one explicit registry chain and transactional contract tests. The
-   role contract is installation schema 28 at `installation.sqlite` and
-   campaign schema 28 at `campaigns/<id>/campaign.sqlite`; registry version 1
-   supports only the Golden-Master-backed 27 -> 28 path. The aggregate owners
+   role contract is installation schema 29 at `installation.sqlite` and
+   campaign schema 29 at `campaigns/<id>/campaign.sqlite`; registry version 1
+   supports the Golden-Master-backed 27 -> 28 path and the tested 28 -> 29
+   NPC/structured-PC migration. The aggregate owners
    retain their SQL, and the installer is the only offline migration authority.
 4. Local installation uses a lock, permanent verified backups, staged data
    migration, immutable version deployments, atomic current selection, and
@@ -290,9 +311,10 @@ claiming completion of M3 or M5. Its approved expansion contains:
   including rename, recoverable trash/restore, exact-name permanent deletion,
   and crash-reconciled `.trash`/`.deleting` directory transitions in the
   complete greenfield schema v27
-- the productive Monster section of the common Catalog, backed by a versioned
-  local SRD 5.1 resource; Items, saved Encounters, and NPCs remain later
-  Catalog products
+- the productive Monster and campaign-local NPC sections of the common
+  Catalog, backed by the versioned local SRD 5.1 resource; NPCs select existing
+  statblocks and support revisioned CRUD, filters and Inspector details, while
+  NPC Encounter participation remains a later product
 - one focused persistent runtime Scene with explicit PC assignments and named
   GM creature groups carrying an optional note, visual disposition, archive
   state, aggregate revision, and stable Scene-owned members; incompatible

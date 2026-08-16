@@ -20,7 +20,8 @@ Inspector surfaces so the user can:
 ## Non-Goals
 
 - editing creature statblocks or importing creature truth into World Planner
-- NPC creation and combat-loss workflows in the current Electron slice
+- NPC Encounter participation, automatic combat-loss accounting, and
+  post-combat loss confirmation in the current Electron slice
 - persisting encounter runtime combat state inside World Planner
 - storing party membership, dungeon map truth, or hex map truth
 - replacing saved encounter plans, the Encounter state tab, or the Session
@@ -138,19 +139,26 @@ Inspector surfaces so the user can:
 - an NPC belongs to at most one faction and its effective disposition is the
   clamped sum of faction base and NPC modifier
 - deleting an NPC removes its faction membership; deleting a faction removes
-  its location links; deleting a location removes only the location
+  its location links and NPC memberships; deleting a location clears only NPC
+  location references while preserving those NPCs
 - Creature statblocks, encounter-table membership, encounter rosters, party
   members, combat HP, dungeon maps, and hex maps stay in their owning
   contexts.
 
 ## Active Electron Slice
 
-The current Electron slice implements campaign-local location and faction CRUD
-through Catalog. Locations link any number of factions and direct encounter
-tables. Factions own notes, disposition, an optional primary encounter table,
-and optional finite creature inventory caps. These sources constrain both the
-visible monster catalog and Scene-group generation. NPC membership and durable
-combat-loss workflows remain deferred.
+The current Electron slice implements campaign-local NPC, location, and
+faction CRUD through Catalog. NPCs select one existing Creature statblock,
+carry active/defeated lifecycle, four prose fields, a bounded disposition
+modifier, and optional single faction and location references. The active NPC
+section provides debounced search, lifecycle/faction/location filters, an
+Inspector, a guarded editor, and confirmed deletion. NPC membership mutations
+compare both NPC and faction revisions and return both updated snapshots.
+Locations link any number of factions and direct encounter tables. Factions
+own notes, disposition, an optional primary encounter table, and optional
+finite creature inventory caps. These sources constrain both the visible
+monster catalog and Scene-group generation. NPC Encounter participation and
+durable combat-loss workflows remain deferred.
 Catalog and Hex compose the same complete domain-owned World Location editor.
 Its creation command returns the exact created location together with the next
 catalog snapshot, while each consumer retains ownership of its surrounding

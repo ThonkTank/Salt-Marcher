@@ -1,16 +1,16 @@
 {
-  "recordedAt": "2026-08-12",
-  "reason": "Ratcheted after isolating the GroupManager keyboard shortcut for React Fast Refresh",
+  "recordedAt": "2026-08-16",
+  "reason": "Scoped the NPC minimum-window containment rule to the lazy catalog route after Golden-Master validation",
   "dependencyRationale": "No dependency version changes",
-  "chunkRationale": "Session GroupManager leaf shrinks by eight reachable bytes; all other graph boundaries remain stable",
+  "chunkRationale": "The NPC-only shell containment selector stays in the catalog CSS chunk; the shared shell and Workspace graphs ratchet down while the catalog graph records the 49-byte scoped selector",
   "graphs": {
     "shell": 400451,
-    "workspace": 488104,
-    "session": 156407,
-    "catalog": 173761,
+    "workspace": 491380,
+    "session": 162944,
+    "catalog": 179833,
     "hex": 174781,
-    "reference": 39392,
-    "pixi": 407032,
-    "reachable": 1435953
+    "reference": 39420,
+    "pixi": 408625,
+    "reachable": 1461578
   }
 }

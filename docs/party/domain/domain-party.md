@@ -34,7 +34,8 @@ immutable, revisioned API state and mutation feedback through `PartyApi`.
 The authored write model is the persisted Campaign Roster and character state:
 
 - stable character identity
-- optional player identity, level, and combat-profile facts
+- optional player, species, class, ordered language, level, passive
+  Perception, passive Investigation, passive Insight, armor, and movement facts
 - explicit current-Party membership state
 - XP and rest progression without inventing a missing authored level
 - character-specific travel location and whether that character is attached to
@@ -69,8 +70,9 @@ Commands entering the aggregate are:
 Core invariants:
 
 - character identity remains stable across roster mutations
-- character name is the only universal creation requirement; player, level,
-  passive perception, and Armor Class preserve exact presence or absence
+- character name is the only universal creation requirement; player, species,
+  class, languages, level, passive scores, armor, and movement preserve exact
+  presence or absence
 - character creation always produces an inactive Roster member detached from
   Party travel and Scene participation
 - active and reserve membership is owned by the party aggregate, not by view

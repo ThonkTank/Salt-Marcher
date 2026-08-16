@@ -17,7 +17,12 @@ This document is normative for the `party` feature's persistence path.
   independent schema version or migration ledger.
 - The schema currently owns:
   - `player_characters`
+  - `player_character_language`
   - `party_roster_metadata`
+- `player_characters` stores optional species, class, passive Investigation,
+  and passive Insight beside the existing identity and combat profile.
+- `player_character_language` stores canonical case-insensitive unique
+  languages in authored order for each character.
 - `player_characters` stores character-owned travel columns for dungeon and
   overworld locations plus the party-token attachment flag. These columns are
   part of character state, not a campaign-level travel table and not dungeon
@@ -32,7 +37,8 @@ profile, and character-specific runtime travel context in the party write
 model. That travel context is represented as scalar references to the owning
 space:
 
-- `name` is required; `player_name`, `level`, `passive_perception`, and `ac`
+- `name` is required; `player_name`, `species`, `character_class`, `level`,
+  all passive scores, `armor_class`, and `movement_speed_feet`
   are nullable and preserve authored absence without sentinel values
 - a newly inserted Roster character defaults to inactive membership and no
   party-token attachment; activation and attachment require later explicit
@@ -73,10 +79,10 @@ through the feature contract.
 ## Current Schema Lifecycle
 
 Compatibility obligations begin with the first released format.
-Before the first released format, only the current whole-database development
-schema is accepted. Unsupported isolated development databases are discarded
-and recreated by the shared persistence lifecycle without feature-local
-`ALTER`, repair, backfill, copy, drop, normalization, or version claims.
+Campaign schema 29 owns the registered 28-to-29 forward migration that adds
+the nullable profile columns and normalized language table without changing
+existing Party rows, membership, progression, or travel facts. Unsupported
+older or newer formats remain rejected by the shared persistence lifecycle.
 
 ## Stability Rules
 

@@ -291,7 +291,8 @@ export function createWorldPlannerHandlers(dependencies: {
         const result = sources.createNpc(
           input.commandId,
           input.npc,
-          input.expectedRevision
+          input.expectedRevision,
+          input.expectedFactionRevision
         )
         publishNpcChange([result.saved.id], 'created')
         return result
@@ -302,7 +303,8 @@ export function createWorldPlannerHandlers(dependencies: {
           input.commandId,
           input.id,
           input.npc,
-          input.expectedRevision
+          input.expectedRevision,
+          input.expectedFactionRevision
         )
         publishNpcChange([result.saved.id], 'updated')
         return result
@@ -312,7 +314,8 @@ export function createWorldPlannerHandlers(dependencies: {
         const result = sources.deleteNpc(
           input.commandId,
           input.id,
-          input.expectedRevision
+          input.expectedRevision,
+          input.expectedFactionRevision
         )
         publishNpcChange([result.deletedId], 'deleted')
         return result

@@ -135,7 +135,16 @@ export class ReferenceService {
       return locationDocument(this.locationQueries.read(), target)
     if (target.entityKind === 'faction')
       return factionDocument(this.factionQueries.read(), target)
-    return npcDocument(this.npcQueries.read(), target)
+    const npcs = this.npcQueries.read()
+    const npc = npcs.npcs.find((entry) => entry.id === target.entityId)
+    if (!npc) throw new CapabilityError('not_found', false)
+    return npcDocument(
+      npcs,
+      this.factionQueries.read(),
+      this.locationQueries.read(),
+      this.creatureQueries.detail(npc.creatureId),
+      target
+    )
   }
 
   private assertCampaign(campaignId: string): void {
@@ -276,6 +285,9 @@ function factionDocument(
 
 function npcDocument(
   snapshot: WorldNpcSnapshot,
+  factions: WorldFactionSnapshot,
+  locations: WorldLocationSnapshot,
+  creature: Creature,
   target: Extract<ReferenceTarget, { scope: 'campaign' }>
 ): ReferenceDocument {
   const npc = snapshot.npcs.find((entry) => entry.id === target.entityId)
@@ -293,7 +305,17 @@ function npcDocument(
     npc.displayName,
     [
       ['Lifecycle', npc.lifecycle],
-      ['Statblock', npc.creatureId],
+      ['Creature', `${creature.name} (${npc.creatureId})`],
+      [
+        'Faction',
+        factions.factions.find((entry) => entry.id === npc.factionId)
+          ?.displayName ?? '—'
+      ],
+      [
+        'Location',
+        locations.locations.find((entry) => entry.id === npc.locationId)
+          ?.displayName ?? '—'
+      ],
       ['Disposition Modifier', String(npc.dispositionModifier)]
     ],
     body,

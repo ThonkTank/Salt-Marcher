@@ -3,6 +3,7 @@ import type {
   EntityDeleteReceipt,
   EntityMutationReceipt
 } from './entity-mutation.js'
+import { worldFactionSnapshotSchema } from './encounter-source.js'
 
 export const worldNpcLifecycleSchema = z.enum(['active', 'defeated'])
 
@@ -44,7 +45,8 @@ export const worldNpcSnapshotSchema = z
 const mutationBaseSchema = z
   .object({
     commandId: z.uuid(),
-    expectedRevision: z.number().int().nonnegative()
+    expectedRevision: z.number().int().nonnegative(),
+    expectedFactionRevision: z.number().int().nonnegative()
   })
   .strict()
 
@@ -62,10 +64,18 @@ export const worldNpcCommandReceiptInputSchema = z
   .strict()
 
 export const worldNpcMutationReceiptSchema = z
-  .object({ snapshot: worldNpcSnapshotSchema, saved: worldNpcSchema })
+  .object({
+    snapshot: worldNpcSnapshotSchema,
+    factionSnapshot: worldFactionSnapshotSchema,
+    saved: worldNpcSchema
+  })
   .strict()
 export const worldNpcDeleteReceiptSchema = z
-  .object({ snapshot: worldNpcSnapshotSchema, deletedId: z.uuid() })
+  .object({
+    snapshot: worldNpcSnapshotSchema,
+    factionSnapshot: worldFactionSnapshotSchema,
+    deletedId: z.uuid()
+  })
   .strict()
 export const worldNpcCommandReceiptSchema = z.union([
   worldNpcMutationReceiptSchema,
@@ -88,7 +98,13 @@ export type WorldNpcChangeNotice = Readonly<
   z.infer<typeof worldNpcChangeNoticeSchema>
 >
 export type WorldNpcMutationReceipt = EntityMutationReceipt<
-  WorldNpcSnapshot,
-  WorldNpc
->
-export type WorldNpcDeleteReceipt = EntityDeleteReceipt<WorldNpcSnapshot>
+  WorldNpc,
+  WorldNpcSnapshot
+> &
+  Readonly<{
+    factionSnapshot: z.infer<typeof worldFactionSnapshotSchema>
+  }>
+export type WorldNpcDeleteReceipt = EntityDeleteReceipt<WorldNpcSnapshot> &
+  Readonly<{
+    factionSnapshot: z.infer<typeof worldFactionSnapshotSchema>
+  }>

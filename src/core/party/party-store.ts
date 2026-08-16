@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import {
+  partyCharacterDraftSchema,
   partySnapshotSchema,
   type AdventuringDaySummary,
   type AdventuringDayCalculation,
@@ -160,6 +161,7 @@ export class PartyStore {
   }
 
   create(draft: PartyCharacterDraft, expectedRevision: number): PartySnapshot {
+    const parsed = partyCharacterDraftSchema.parse(draft)
     this.mutate(expectedRevision, () => {
       const position = (
         this.db
@@ -168,7 +170,7 @@ export class PartyStore {
           )
           .get() as { value: number }
       ).value
-      const xp = draft.level === null ? 0 : levelXp[draft.level - 1]!
+      const xp = parsed.level === null ? 0 : levelXp[parsed.level - 1]!
       const id = uuidv7()
       this.db
         .prepare(
@@ -183,20 +185,20 @@ export class PartyStore {
         )
         .run(
           id,
-          draft.name.trim(),
-          nullable(draft.playerName),
-          nullable(draft.species ?? null),
-          nullable(draft.characterClass ?? null),
-          draft.level,
-          draft.passivePerception,
-          draft.passiveInvestigation,
-          draft.passiveInsight,
-          draft.armorClass,
+          parsed.name,
+          nullable(parsed.playerName),
+          nullable(parsed.species),
+          nullable(parsed.characterClass),
+          parsed.level,
+          parsed.passivePerception,
+          parsed.passiveInvestigation,
+          parsed.passiveInsight,
+          parsed.armorClass,
           xp,
-          draft.movementSpeedFeet ?? null,
+          parsed.movementSpeedFeet,
           position
         )
-      this.replaceLanguages(id, draft.languages ?? [])
+      this.replaceLanguages(id, parsed.languages)
     })
     return this.read()
   }
@@ -206,15 +208,16 @@ export class PartyStore {
     draft: PartyCharacterDraft,
     expectedRevision: number
   ): PartySnapshot {
+    const parsed = partyCharacterDraftSchema.parse(draft)
     this.mutate(expectedRevision, () => {
       const current = this.db
         .prepare('SELECT xp FROM player_characters WHERE id = ?')
         .get(id) as { xp: number } | undefined
       if (!current) throw new CapabilityError('not_found', false)
       const xp =
-        draft.level === null
+        parsed.level === null
           ? current.xp
-          : Math.max(current.xp, levelXp[draft.level - 1]!)
+          : Math.max(current.xp, levelXp[parsed.level - 1]!)
       this.db
         .prepare(
           `
@@ -226,20 +229,20 @@ export class PartyStore {
         `
         )
         .run(
-          draft.name.trim(),
-          nullable(draft.playerName),
-          nullable(draft.species ?? null),
-          nullable(draft.characterClass ?? null),
-          draft.level,
-          draft.passivePerception,
-          draft.passiveInvestigation,
-          draft.passiveInsight,
-          draft.armorClass,
-          draft.movementSpeedFeet ?? null,
+          parsed.name,
+          nullable(parsed.playerName),
+          nullable(parsed.species),
+          nullable(parsed.characterClass),
+          parsed.level,
+          parsed.passivePerception,
+          parsed.passiveInvestigation,
+          parsed.passiveInsight,
+          parsed.armorClass,
+          parsed.movementSpeedFeet,
           xp,
           id
         )
-      this.replaceLanguages(id, draft.languages ?? [])
+      this.replaceLanguages(id, parsed.languages)
     })
     return this.read()
   }

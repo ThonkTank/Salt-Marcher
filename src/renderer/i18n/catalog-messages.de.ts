@@ -67,8 +67,17 @@ export const catalogMessagesDe = {
   'table.editTitle': 'Encounter-Tabelle bearbeiten',
   'npc.search': 'NPCs suchen',
   'npc.searchPlaceholder': 'NPCs suchen …',
+  'npc.statusFilter': 'NPC-Status filtern',
+  'npc.factionFilter': 'NPC-Fraktion filtern',
+  'npc.locationFilter': 'NPC-Ort filtern',
+  'npc.allFactions': 'Alle Fraktionen',
+  'npc.noFaction': 'Ohne Fraktion',
+  'npc.allLocations': 'Alle Orte',
+  'npc.noLocation': 'Ohne Ort',
   'npc.statblock': 'Statblock',
   'npc.statblockId': 'Statblock-ID',
+  'npc.chooseStatblock': 'Statblock auswählen',
+  'npc.searchStatblock': 'Statblock suchen …',
   'npc.faction': 'Fraktion',
   'npc.location': 'Ort',
   'npc.active': 'Aktiv',
@@ -78,5 +87,7 @@ export const catalogMessagesDe = {
   'npc.dispositionModifier': 'Gesinnungsmodifikator',
   'npc.appearance': 'Aussehen',
   'npc.behavior': 'Verhalten',
-  'npc.history': 'Geschichte'
+  'npc.history': 'Geschichte',
+  'npc.inspector': 'NPC-Inspector',
+  'npc.selectForInspector': 'NPC auswählen, um Details anzuzeigen.'
 } as const
