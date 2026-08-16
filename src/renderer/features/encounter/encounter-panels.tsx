@@ -28,7 +28,6 @@ type ScenarioProps = {
   snapshot: LiveSessionSnapshot
   loot: LootSceneProjection
   setSnapshot: (snapshot: LiveSessionSnapshot) => void
-  close: () => void
   onError: (message: string) => void
   manageGroups?: () => void
   reinforce?: () => void

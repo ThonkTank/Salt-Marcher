@@ -158,11 +158,16 @@ describe('live session capability contracts', () => {
       sessionLayoutPreferenceSchema.parse(defaultSessionLayoutPreference)
     ).toEqual(defaultSessionLayoutPreference)
     expect(
-      sessionLayoutPreferenceSchema.safeParse({
+      sessionLayoutPreferenceSchema.parse({
         ...defaultSessionLayoutPreference,
-        controlPaneWidth: 500
-      }).success
-    ).toBe(false)
+        controlPaneWidth: 500,
+        scenarioPaneWidth: 220
+      })
+    ).toEqual({
+      controlPaneWidth: 440,
+      scenarioPaneWidth: 264,
+      centerTab: 'details'
+    })
     expect(
       sessionLayoutPreferenceSchema.parse({
         leftFraction: 0.62,

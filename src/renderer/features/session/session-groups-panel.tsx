@@ -43,6 +43,28 @@ export function SessionGroupsPanel(props: {
 }) {
   const api = useCapabilityApi()
   const [deleteGroupId, setDeleteGroupId] = useState<string | null>(null)
+  const [expandedByScene, setExpandedByScene] = useState<
+    Record<string, string | null>
+  >({})
+  const activeGroups = props.focused.groups.filter((group) => !group.archived)
+  const storedExpansion = expandedByScene[props.focused.id]
+  const hasStoredExpansion = Object.prototype.hasOwnProperty.call(
+    expandedByScene,
+    props.focused.id
+  )
+  const expansionIsValid =
+    storedExpansion === null ||
+    storedExpansion === 'party' ||
+    props.focused.groups.some((group) => group.id === storedExpansion)
+  const expandedRow =
+    hasStoredExpansion && expansionIsValid
+      ? storedExpansion
+      : (activeGroups[0]?.id ?? 'party')
+  const toggleRow = (rowId: string) =>
+    setExpandedByScene((current) => ({
+      ...current,
+      [props.focused.id]: expandedRow === rowId ? null : rowId
+    }))
   const groupLoot = new Map(
     props.loot.groupTreasures.map((entry) => [entry.groupId, entry.treasures])
   )
@@ -62,18 +84,22 @@ export function SessionGroupsPanel(props: {
       <div className="groups-heading">
         <h2>{message('ui.gruppen')}</h2>
       </div>
-      <ScenePartyCard
-        snapshot={props.snapshot}
-        sceneId={props.focused.id}
-        setSnapshot={props.setSnapshot}
-        onError={props.onError}
-      />
-      {props.focused.groups
-        .filter((group) => !group.archived)
-        .map((group) => (
+      <div className="group-register">
+        <GroupRegisterHeading />
+        <ScenePartyCard
+          snapshot={props.snapshot}
+          sceneId={props.focused.id}
+          setSnapshot={props.setSnapshot}
+          onError={props.onError}
+          expanded={expandedRow === 'party'}
+          toggle={() => toggleRow('party')}
+        />
+        {activeGroups.map((group) => (
           <SessionGroupCard
             key={group.id}
             group={group}
+            expanded={expandedRow === group.id}
+            toggle={() => toggleRow(group.id)}
             inspect={(creatureId) => props.inspect(creatureId, group.name)}
             edit={() => props.edit(group)}
             treasures={groupLoot.get(group.id) ?? []}
@@ -89,6 +115,7 @@ export function SessionGroupsPanel(props: {
             }
           />
         ))}
+      </div>
       {props.focused.locationId && (
         <section className="location-loot-section">
           <header>
@@ -181,43 +208,62 @@ export function SessionGroupsPanel(props: {
       {props.focused.groups.some((group) => group.archived) && (
         <div className="inactive-groups">
           <h3>{message('group.inactive')}</h3>
-          {props.focused.groups
-            .filter((group) => group.archived)
-            .map((group) => (
-              <SessionGroupCard
-                key={group.id}
-                group={group}
-                inspect={(creatureId) => props.inspect(creatureId, group.name)}
-                restore={() =>
-                  void mutateGroup(() =>
-                    sessionCapabilities(api).scene.setGroupArchived(
-                      props.focused.id,
-                      group.id,
-                      false,
-                      group.revision
+          <div className="group-register archived-group-register">
+            <GroupRegisterHeading />
+            {props.focused.groups
+              .filter((group) => group.archived)
+              .map((group) => (
+                <SessionGroupCard
+                  key={group.id}
+                  group={group}
+                  expanded={expandedRow === group.id}
+                  toggle={() => toggleRow(group.id)}
+                  inspect={(creatureId) =>
+                    props.inspect(creatureId, group.name)
+                  }
+                  restore={() =>
+                    void mutateGroup(() =>
+                      sessionCapabilities(api).scene.setGroupArchived(
+                        props.focused.id,
+                        group.id,
+                        false,
+                        group.revision
+                      )
                     )
-                  )
-                }
-                deleteRequested={() => setDeleteGroupId(group.id)}
-                deleteConfirming={deleteGroupId === group.id}
-                cancelDelete={() => setDeleteGroupId(null)}
-                deleteGroup={() => {
-                  setDeleteGroupId(null)
-                  void mutateGroup(() =>
-                    sessionCapabilities(api).scene.deleteGroup(
-                      props.focused.id,
-                      group.id,
-                      group.revision
+                  }
+                  deleteRequested={() => setDeleteGroupId(group.id)}
+                  deleteConfirming={deleteGroupId === group.id}
+                  cancelDelete={() => setDeleteGroupId(null)}
+                  deleteGroup={() => {
+                    setDeleteGroupId(null)
+                    void mutateGroup(() =>
+                      sessionCapabilities(api).scene.deleteGroup(
+                        props.focused.id,
+                        group.id,
+                        group.revision
+                      )
                     )
-                  )
-                }}
-                treasures={groupLoot.get(group.id) ?? []}
-                distribute={props.distribute}
-                editLoot={props.editLoot}
-              />
-            ))}
+                  }}
+                  treasures={groupLoot.get(group.id) ?? []}
+                  distribute={props.distribute}
+                  editLoot={props.editLoot}
+                />
+              ))}
+          </div>
         </div>
       )}
     </section>
+  )
+}
+
+function GroupRegisterHeading() {
+  return (
+    <div className="register-head" aria-hidden="true">
+      <span />
+      <span>{message('ui.gruppe')}</span>
+      <span>{message('ui.zahl')}</span>
+      <span>{message('ui.xp.2')}</span>
+      <span />
+    </div>
   )
 }

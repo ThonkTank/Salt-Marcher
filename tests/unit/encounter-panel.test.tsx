@@ -98,7 +98,6 @@ describe('encounter scenario panel', () => {
               groupTreasures: []
             }}
             setSnapshot={vi.fn()}
-            close={vi.fn()}
             onError={vi.fn()}
             inspect={vi.fn()}
             reinforce={vi.fn()}

@@ -161,7 +161,7 @@ describe('campaign walking skeleton', () => {
       expect(scaled.bounds.bottom).toBeLessThanOrEqual(scaled.viewport.height)
       expect(scaled).toMatchObject({
         bodyScrolls: true,
-        ruleColumns: 1,
+        ruleColumns: 3,
         matrixCells: 680
       })
     } finally {
@@ -447,16 +447,13 @@ describe('campaign walking skeleton', () => {
     ).toBeExisting()
     await (await client.$('button[aria-label="Ort Details schließen"]')).click()
     await (await client.$('button[aria-label="Session"]')).click()
-    const sceneLocation = await client.$('select[aria-label="Scene-Ort"]')
-    await sceneLocation.selectByVisibleText('Salzmarschhafen')
+    await setSceneLocation(client, 'Salzmarschhafen')
     await waitForSceneLocation(client, 'Salzmarschhafen')
 
     await createLocation(client, 'Verfallener Turm', 'Soll gelöscht werden.')
     await (await client.$('button[aria-label="Ort Details schließen"]')).click()
     await (await client.$('button[aria-label="Session"]')).click()
-    await (
-      await client.$('select[aria-label="Scene-Ort"]')
-    ).selectByVisibleText('Verfallener Turm')
+    await setSceneLocation(client, 'Verfallener Turm')
     await (await client.$('button[aria-label="Katalog"]')).click()
     await (await client.$('button=Orte')).click()
     await (await client.$('button=Verfallener Turm')).click()
@@ -464,9 +461,7 @@ describe('campaign walking skeleton', () => {
     await (await client.$('button=Wirklich löschen')).click()
     await (await client.$('button[aria-label="Session"]')).click()
     await waitForSceneLocation(client, 'Nicht verfügbarer Ort')
-    await (
-      await client.$('select[aria-label="Scene-Ort"]')
-    ).selectByVisibleText('Salzmarschhafen')
+    await setSceneLocation(client, 'Salzmarschhafen')
 
     await (await client.$('button[aria-label="Katalog"]')).click()
     await (await client.$('button=Fraktionen')).click()
@@ -594,15 +589,16 @@ describe('campaign walking skeleton', () => {
     }
     await (await client.$('button[aria-label="Party-Panel schließen"]')).click()
 
-    const partyCard = await client.$('article.scene-party-card')
+    await (await client.$('.scene-party-card')).waitForExist()
+    const expandedParty = await client.$('.scene-party-expanded')
     await client.waitUntil(
-      async () => (await partyCard.$$('.group-members span').length) === 2,
+      async () => (await expandedParty.$$('.scene-party-member').length) === 2,
       {
         timeout: 5_000,
         timeoutMsg: 'New party members were not assigned to the focused scene.'
       }
     )
-    await (await partyCard.$('button=Bearbeiten')).click()
+    await (await expandedParty.$('button=Bearbeiten')).click()
     const scenePartyDialog = await client.$(
       'section[aria-labelledby="scene-party-dialog-title"]'
     )
@@ -614,7 +610,7 @@ describe('campaign walking skeleton', () => {
     ).toBeElementsArrayOfSize(0)
     await (await scenePartyDialog.$('button=Schließen')).click()
     await expect(
-      await partyCard.$$('.group-members span')
+      await expandedParty.$$('.scene-party-member')
     ).toBeElementsArrayOfSize(2)
 
     await (await client.$('button[aria-label="Katalog"]')).click()
@@ -833,11 +829,9 @@ describe('campaign walking skeleton', () => {
     const confirmNewGroupSave = await client.$('section[role="alertdialog"]')
     await confirmNewGroupSave.waitForDisplayed({ timeout: 5_000 })
     await (await confirmNewGroupSave.$('button=Änderungen verwerfen')).click()
-    await expect(await client.$('strong=Gruppe 1')).toBeExisting()
+    await expect(await client.$('.group-name=Gruppe 1')).toBeExisting()
 
-    await (
-      await client.$('select[aria-label="Szenario Auswahl"]')
-    ).selectByAttribute('value', 'encounter')
+    await (await client.$('[role="tab"]=Encounter')).click()
     const groupChoice = await client.$('label*=Wolf Pack')
     await (await groupChoice.$('input')).click()
     const prepare = await client.$('button=Initiative vorbereiten')
@@ -1045,13 +1039,26 @@ async function waitForSceneLocation(
   await client.waitUntil(
     async () =>
       (await (
-        await client.$('select[aria-label="Scene-Ort"] option:checked')
+        await client.$(
+          '.control-register .register-row:nth-child(2) .register-value'
+        )
       ).getText()) === expected,
     {
       timeout: 5_000,
       timeoutMsg: `Scene location did not become ${expected}.`
     }
   )
+}
+
+async function setSceneLocation(
+  client: WdioBrowser,
+  location: string
+): Promise<void> {
+  const row = await client.$('.control-register .register-row:nth-child(2)')
+  await (await row.$('button=Setzen')).click()
+  await (
+    await row.$('select[aria-label="Scene-Ort"]')
+  ).selectByVisibleText(location)
 }
 
 async function pressDividerKey(
@@ -1078,6 +1085,25 @@ async function expectScenarioGolden(
   client: WdioBrowser,
   name: 'initiative' | 'combat' | 'resolution'
 ): Promise<void> {
+  for (const width of [1024, 1280, 1600]) {
+    await setElectronWindowSize(client, width, 800)
+    const overflow = await client.execute(() => {
+      const panel = document.querySelector<HTMLElement>('.scenario-panel')
+      const workspace =
+        document.querySelector<HTMLElement>('.session-workspace')
+      if (!panel || !workspace) return null
+      const panelBounds = panel.getBoundingClientRect()
+      const workspaceBounds = workspace.getBoundingClientRect()
+      return {
+        panelOverflow: panel.scrollWidth - panel.clientWidth,
+        outsideWorkspace: panelBounds.right - workspaceBounds.right
+      }
+    })
+    expect(overflow).not.toBeNull()
+    expect(overflow?.panelOverflow).toBeLessThanOrEqual(1)
+    expect(overflow?.outsideWorkspace).toBeLessThanOrEqual(1)
+  }
+  await setElectronWindowSize(client, 1280, 800)
   await expectElementGolden(client, name, 'aside[aria-label="Szenario Panel"]')
 }
 

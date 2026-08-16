@@ -12,13 +12,14 @@ import type {
   LootSceneProjection,
   Treasure
 } from '../../../shared/contracts/loot.js'
+import type { WorkspaceScenario } from '../workspace/workspace-surface-props.js'
 
 export function SessionScenarioPanel(props: {
   snapshot: LiveSessionSnapshot
   loot: LootSceneProjection
   setSnapshot: (snapshot: LiveSessionSnapshot) => void
-  scenario: '' | 'encounter' | 'travel'
-  setScenario: (scenario: '' | 'encounter' | 'travel') => void
+  scenario: WorkspaceScenario
+  setScenario: (scenario: WorkspaceScenario) => void
   layout: SessionLayoutPreference
   setLayout: (layout: SessionLayoutPreference) => void
   onError: (message: string) => void
@@ -29,62 +30,91 @@ export function SessionScenarioPanel(props: {
   distribute: (treasure: Treasure) => void
 }) {
   return (
-    <aside
-      className={`scenario-panel${
-        props.scenario === 'travel' ? ' scenario-panel-travel' : ''
-      }`}
-      aria-label={message('ui.szenario.panel')}
-    >
+    <aside className="scenario-panel" aria-label={message('ui.szenario.panel')}>
       <header>
-        <select
+        <div
+          className="session-panel-tabs scenario-tabs"
+          role="tablist"
           aria-label={message('ui.szenario.auswahl')}
-          value={props.scenario}
-          onChange={(event) =>
-            props.setScenario(event.target.value as typeof props.scenario)
-          }
         >
-          <option value="">{message('ui.szenario.auswaehlen')}</option>
-          <option value="encounter">{message('ui.encounter')}</option>
-          <option value="travel">{message('ui.reise')}</option>
-        </select>
+          {(['encounter', 'travel'] as const).map((scenario) => {
+            const selected = props.scenario === scenario
+            return (
+              <button
+                key={scenario}
+                id={`scenario-tab-${scenario}`}
+                type="button"
+                role="tab"
+                aria-controls="scenario-tab-panel"
+                aria-selected={selected}
+                tabIndex={selected ? 0 : -1}
+                onClick={() => props.setScenario(scenario)}
+                onKeyDown={(event) => {
+                  if (
+                    !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(
+                      event.key
+                    )
+                  )
+                    return
+                  event.preventDefault()
+                  const next =
+                    event.key === 'ArrowLeft' || event.key === 'Home'
+                      ? 'encounter'
+                      : 'travel'
+                  props.setScenario(next)
+                  requestAnimationFrame(() =>
+                    document.getElementById(`scenario-tab-${next}`)?.focus()
+                  )
+                }}
+              >
+                {message(
+                  scenario === 'encounter' ? 'ui.encounter' : 'ui.reise'
+                )}
+              </button>
+            )
+          })}
+        </div>
         {props.scenario === 'encounter' && (
           <EncounterCrumbs
             snapshot={props.snapshot}
             loot={props.loot}
             setSnapshot={props.setSnapshot}
-            close={() => props.setScenario('')}
             onError={props.onError}
           />
         )}
       </header>
-      {!props.scenario ? (
-        <div className="scenario-empty">{message('ui.szenario.panel')}</div>
-      ) : props.scenario === 'travel' ? (
-        <div className="session-scenario-content-slot">
-          {props.travel.renderScenario({
-            openMap: () =>
-              props.setLayout({ ...props.layout, centerTab: 'map' }),
-            mapActive: props.layout.centerTab === 'map'
-          })}
-        </div>
-      ) : (
-        <SessionEncounterPanel
-          snapshot={props.snapshot}
-          loot={props.loot}
-          setSnapshot={props.setSnapshot}
-          close={() => props.setScenario('')}
-          onError={props.onError}
-          manageGroups={props.manageGroups}
-          reinforce={props.reinforce}
-          distribute={props.distribute}
-          inspect={(creature) => {
-            props.openReference(
-              { scope: 'creature', creatureId: creature.id },
-              `Encounter › ${creature.name}`
-            )
-          }}
-        />
-      )}
+      <div
+        id="scenario-tab-panel"
+        className="scenario-tab-panel"
+        role="tabpanel"
+        aria-labelledby={`scenario-tab-${props.scenario}`}
+      >
+        {props.scenario === 'travel' ? (
+          <div className="session-scenario-content-slot">
+            {props.travel.renderScenario({
+              openMap: () =>
+                props.setLayout({ ...props.layout, centerTab: 'map' }),
+              mapActive: props.layout.centerTab === 'map'
+            })}
+          </div>
+        ) : (
+          <SessionEncounterPanel
+            snapshot={props.snapshot}
+            loot={props.loot}
+            setSnapshot={props.setSnapshot}
+            onError={props.onError}
+            manageGroups={props.manageGroups}
+            reinforce={props.reinforce}
+            distribute={props.distribute}
+            inspect={(creature) => {
+              props.openReference(
+                { scope: 'creature', creatureId: creature.id },
+                `Encounter › ${creature.name}`
+              )
+            }}
+          />
+        )}
+      </div>
     </aside>
   )
 }

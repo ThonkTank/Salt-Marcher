@@ -2,7 +2,7 @@ import type { Creature } from '../../../shared/contracts/encounter.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type { SessionLayoutPreference } from '../../../shared/contracts/session-layout.js'
 
-export type WorkspaceScenario = '' | 'encounter' | 'travel'
+export type WorkspaceScenario = 'encounter' | 'travel'
 
 export type WorkspaceSurfaceProps = Readonly<{
   snapshot: LiveSessionSnapshot

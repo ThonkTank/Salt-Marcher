@@ -1,10 +1,32 @@
 import { z } from 'zod'
-import { defaultSessionLayoutPreferenceValue } from '../values/session-layout-values.js'
+import {
+  defaultSessionLayoutPreferenceValue,
+  sessionLayoutGeometry
+} from '../values/session-layout-values.js'
+
+const clampPaneWidth = (value: number, minimum: number, maximum: number) =>
+  Math.round(Math.max(minimum, Math.min(maximum, value)))
 
 const currentSessionLayoutPreferenceSchema = z
   .object({
-    controlPaneWidth: z.number().int().min(240).max(440),
-    scenarioPaneWidth: z.number().int().min(220).max(420),
+    controlPaneWidth: z
+      .number()
+      .transform((value) =>
+        clampPaneWidth(
+          value,
+          sessionLayoutGeometry.controlPane.min,
+          sessionLayoutGeometry.controlPane.max
+        )
+      ),
+    scenarioPaneWidth: z
+      .number()
+      .transform((value) =>
+        clampPaneWidth(
+          value,
+          sessionLayoutGeometry.scenarioPane.min,
+          sessionLayoutGeometry.scenarioPane.max
+        )
+      ),
     centerTab: z.enum(['details', 'catalog', 'map'])
   })
   .strict()

@@ -76,7 +76,7 @@ export function WorkspaceApp() {
         setGroupDialogOpen,
         scenario: coordinator.session.combat
           ? ('encounter' as const)
-          : (scenarios[focusedSceneId] ?? ''),
+          : (scenarios[focusedSceneId] ?? 'encounter'),
         setScenario: (scenario: WorkspaceScenario) =>
           setScenarios((current) => ({
             ...current,

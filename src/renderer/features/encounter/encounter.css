@@ -56,8 +56,11 @@
 
 .scenario-crumbs {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
+  row-gap: var(--space-1);
+  overflow: hidden;
   padding: 0;
   background: transparent;
 }
@@ -76,6 +79,7 @@
   font-size: 0.68rem;
   letter-spacing: var(--tracking-caps);
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .scenario-panel .scenario-crumbs button + button::before {
@@ -312,9 +316,12 @@
 }
 
 .initiative-groups .hint {
+  min-width: 0;
   margin-left: auto;
+  overflow: hidden;
   color: var(--text-3);
   font-style: italic;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -347,6 +354,13 @@
 .initiative-list input {
   width: 58px;
   text-align: center;
+}
+
+.initiative-list li > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .round-bar {
@@ -710,7 +724,7 @@
 .scenario-content > footer {
   align-items: stretch;
   gap: var(--space-4);
-  margin: auto -0.65rem -0.65rem;
+  margin-top: auto;
   padding: var(--space-6);
   background: var(--surface-card);
 }
@@ -803,11 +817,10 @@
 }
 
 .combat-card .name-line strong {
-  overflow: visible;
-  text-overflow: clip;
-  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   line-height: var(--leading-ui);
-  text-wrap: pretty;
 }
 
 .combat-card:not(.player-character) .name-line .armor-class {
@@ -970,11 +983,6 @@
 }
 
 @media (max-width: 760px) {
-  .scenario-crumbs button {
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
   .hp-dialog-controls,
   .condition-grid {
     grid-template-columns: 1fr;

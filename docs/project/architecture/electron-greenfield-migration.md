@@ -284,7 +284,7 @@ claiming completion of M3 or M5. Its approved expansion contains:
 
 - the complete Party roster dropdown, Party membership, progression, rests,
   and the separate Adventuring Day top-bar calculator; the focused Scene shows
-  Party as its first allied group card and owns only Scene assignment; joining
+  Party as the first allied row in the compact group register and owns only Scene assignment; joining
   the Party atomically assigns the PC to the focused Scene
 - anchored burger-menu Campaign CRUD without an icon-rail Campaign workspace,
   including rename, recoverable trash/restore, exact-name permanent deletion,
@@ -300,8 +300,8 @@ claiming completion of M3 or M5. Its approved expansion contains:
   two-pane builder creates empty or populated groups and combines the shared
   filtered creature catalog, transient manual editing, live balancing, and
   fill-or-replace generation for new or existing groups before an explicit save
-- a scenario dropdown for Encounter and an interactive provider-owned Reise
-  console; Encounter consumes
+- scenario tabs for Encounter and an interactive provider-owned Reise console;
+  Encounter consumes
   only selected Scene groups and owns difficulty evaluation, Initiative,
   Combat turn state, and Resolution, with a four-phase breadcrumb, monster-only
   initiative rolls, Scene-owned individual member HP/conditions, bounded

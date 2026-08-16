@@ -92,6 +92,14 @@ describe('Loot UI', () => {
     expect(screen.getByText('Ortsfund')).toBeTruthy()
     expect(screen.getByText(/Ortsperle/)).toBeTruthy()
     expect(screen.queryByText('Gruppenfund')).toBeNull()
+    expect(document.querySelectorAll('.group-expanded')).toHaveLength(1)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Party aufklappen' }))
+    expect(document.querySelectorAll('.group-expanded')).toHaveLength(1)
+    expect(screen.queryByRole('button', { name: 'Beute (1)' })).toBeNull()
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Schmuggler aufklappen' })
+    )
 
     fireEvent.click(screen.getByRole('button', { name: 'Beute (1)' }))
     expect(screen.getByText('Gruppenfund')).toBeTruthy()
@@ -99,6 +107,66 @@ describe('Loot UI', () => {
     fireEvent.click(screen.getAllByRole('button', { name: /Gruppenfund/ })[0]!)
     expect(screen.queryByText(/Gruppenring/)).toBeNull()
     expect(screen.getByText(/Ortsperle/)).toBeTruthy()
+  })
+
+  it('opens an individual character ledger from the compact party chip', async () => {
+    const focused = {
+      id: sceneId,
+      title: 'Testszene',
+      locationId: null,
+      locationName: '',
+      partyMemberIds: [characterId],
+      groups: []
+    } as unknown as SceneSnapshot['scenes'][number]
+    const snapshot = {
+      party: {
+        revision: 0,
+        members: [{ id: characterId, name: 'Alrik', level: 5, active: true }]
+      },
+      scene: { revision: 0, focusedSceneId: sceneId, scenes: [focused] }
+    } as unknown as LiveSessionSnapshot
+    const api = {
+      loot: {
+        ledger: vi.fn().mockResolvedValue({
+          characterId,
+          revision: 0,
+          entries: []
+        })
+      }
+    } as unknown as SaltMarcherApi
+
+    render(
+      <CapabilityProvider api={api}>
+        <ModalLayerProvider>
+          <SessionGroupsPanel
+            snapshot={snapshot}
+            loot={{
+              revision: 0,
+              sceneId,
+              locationId: null,
+              locationTreasures: [],
+              groupTreasures: []
+            }}
+            lootInbox={{ revision: 0, entries: [], nextCursor: null }}
+            lootInboxOpen
+            openLootInbox={vi.fn()}
+            loadMoreLoot={vi.fn()}
+            focused={focused}
+            setSnapshot={vi.fn()}
+            onError={vi.fn()}
+            inspect={vi.fn()}
+            edit={vi.fn()}
+            distribute={vi.fn()}
+            createLoot={vi.fn()}
+            editLoot={vi.fn()}
+          />
+        </ModalLayerProvider>
+      </CapabilityProvider>
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Beute: Alrik' }))
+    expect(await screen.findByRole('dialog')).toHaveTextContent('Alrik')
+    expect(await screen.findByText('Noch keine Beute erhalten.')).toBeVisible()
   })
 
   it('traps initial focus and Escape discards a local distribution draft', async () => {

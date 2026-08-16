@@ -8,23 +8,16 @@
   border: 1px solid var(--border-hair);
   padding: 0;
   background: var(--surface-pane-sunken-flat);
-}
-
-.scenario-panel-travel {
-  grid-template-rows: auto minmax(0, 1fr);
-  gap: var(--space-5);
-  border: 0;
-  background: transparent;
-}
-
-.scenario-panel-travel > header select {
-  min-height: var(--control-h);
-  border: 1px solid var(--border-2);
-  background: var(--surface-control);
-  padding: var(--field-pad);
+  overflow: hidden;
 }
 
 .session-scenario-content-slot {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.scenario-tab-panel {
   min-height: 0;
   overflow: hidden;
 }
@@ -47,7 +40,8 @@
 }
 
 .session-scenario-column {
-  padding: var(--space-5);
+  min-width: var(--scenario-pane-w);
+  padding: var(--pane-pad);
   background: var(--surface-pane-sunken);
 }
 
@@ -58,14 +52,13 @@
   padding: var(--space-6);
 }
 
-.scenario-panel > header select {
+.scenario-tabs {
   width: 100%;
 }
 
-.scenario-panel-travel > header {
-  gap: 0;
-  border: 0;
-  padding: 0;
+.scenario-tabs button {
+  min-width: 0;
+  flex: 1 1 0;
 }
 
 .scenario-panel button {
@@ -114,7 +107,6 @@
   border-color: var(--accent-gold);
 }
 
-.initiative-list input,
 .card-controls input,
 .monster-picker input[type='number'] {
   width: 4.5rem;

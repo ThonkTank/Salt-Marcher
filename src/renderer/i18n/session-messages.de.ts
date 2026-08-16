@@ -3,8 +3,6 @@ export const sessionMessagesDe = {
   'reference.loading': 'Referenz wird geladen …',
   'session.independentHint':
     'Szenen führen Gruppen, Details und Combat unabhängig.',
-  'session.additionalHint':
-    'Weitere simultane Szenen erscheinen automatisch in der Auswahl.',
   'session.assignToScene': 'Zur Scene',
   'party.noRestBudget': 'Kein Rastbudget',
   'party.restSummary': 'SR {shortRestXp} · LR {longRestXp}',
@@ -82,6 +80,8 @@ export const sessionMessagesDe = {
   'group.archive': 'Archivieren',
   'group.restore': 'Wiederherstellen',
   'group.empty': 'Noch keine Wesen',
+  'group.expand': '{name} aufklappen',
+  'group.collapse': '{name} zuklappen',
   'group.createTitle': 'Neue Gruppe',
   'group.disposition': 'Fraktion',
   'group.disposition.hostile': 'Feindlich',

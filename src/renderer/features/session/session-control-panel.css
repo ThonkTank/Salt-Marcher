@@ -1,8 +1,7 @@
 .session-control-panel {
-  display: flex;
+  display: grid;
   min-height: 0;
-  flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-5);
   overflow: auto;
   border-bottom: 1px solid var(--border-hair);
   background: transparent;
@@ -11,9 +10,11 @@
 
 .session-control-panel .panel-heading {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--space-6);
+  border-bottom: var(--border-width-structural) solid var(--accent-rubric-line);
+  padding-bottom: var(--space-4);
 }
 
 .session-control-panel h2,
@@ -21,13 +22,49 @@
   margin: 0;
 }
 
-.session-control-panel label {
+.control-register {
+  margin: 0;
+}
+
+.control-register > .register-row {
   display: grid;
-  gap: var(--space-2);
+  min-height: 34px;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.control-register > .register-row + .register-row {
+  border-top: 1px solid var(--border-hair);
+}
+
+.control-register > .register-row.active {
+  box-shadow: var(--active-marker);
+  padding-left: var(--space-6);
+}
+
+.register-row > .register-label {
   color: var(--text-muted);
-  font-size: var(--text-sm);
-  letter-spacing: var(--tracking-label);
-  text-transform: uppercase;
+  font: var(--text-sm) var(--font-smallcaps);
+  letter-spacing: var(--tracking-caps);
+}
+
+.register-row > .register-value {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.register-row > .register-value.unset {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.register-row > .register-editor {
+  min-width: 0;
+  grid-column: 2 / 4;
 }
 
 .session-control-panel select {
@@ -36,6 +73,21 @@
   padding: var(--field-pad);
   font-size: var(--text-base);
   text-transform: none;
+}
+
+.register-row > button {
+  min-height: 27px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-2);
+  padding: 0 var(--space-4);
+}
+
+.register-row > button:hover:not(:disabled),
+.register-row > button:focus-visible {
+  border-color: var(--border-structural);
+  background: var(--surface-button);
+  color: var(--text-1);
 }
 
 .session-control-panel .panel-heading button {

@@ -255,7 +255,7 @@
   --space-9: 20px;
   --space-10: 24px;
 
-  /* Shell-Geometrie — 1280 px Fensterbreite ist die Untergrenze */
+  /* Shell-Geometrie — 1024 px Fensterbreite ist die Untergrenze */
   --topbar-h: 66px;
   --rail-w: 66px;
   --icon-btn: 48px;

@@ -108,13 +108,13 @@ export async function setElectronWindowSize(
     }
   )
   await client.waitUntil(
-    async () =>
-      (
-        await client.execute(() => ({
-          width: window.innerWidth,
-          height: window.innerHeight
-        }))
-      ).width <= width,
+    async () => {
+      const observed = await client.execute(() => ({
+        width: window.innerWidth,
+        height: window.innerHeight
+      }))
+      return observed.width <= width && observed.width >= width - 32
+    },
     { timeout: 15_000, timeoutMsg: 'Renderer did not observe window resize' }
   )
 }

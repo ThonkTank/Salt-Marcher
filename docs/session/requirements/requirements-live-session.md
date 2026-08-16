@@ -64,9 +64,12 @@ requires explicit discard confirmation.
 ## Three-column workspace
 
 - The fixed-width left column owns the control panel and the remaining-height
-  group list. The control panel owns `Gruppen managen`, scene focus, and the
-  location selector. It assigns one current World Planner location or clears
-  the assignment without changing the Detail history.
+  group list. The control panel presents scene focus and location as compact
+  register rows whose selectors appear only while editing. It owns `Gruppen
+  managen` and assigns one current World Planner location or clears the
+  assignment without changing the Detail history. Party and Scene groups share
+  a compact register with aligned count and XP columns; at most one row exposes
+  its members, note, Loot, and actions.
 - The flexible center column switches between Details, Katalog, and Karte.
   Katalog reuses the shared filtered Creature collection and opens a selected
   creature in Details without losing its query and page state. Details has a
@@ -88,14 +91,17 @@ requires explicit discard confirmation.
   `Reise` scenario pane.
 - The right fixed-width column owns the full-height scenario pane. Two vertical
   dividers resize the left control/group column and right scenario column
-  independently. Both widths and the center tab are stored app-wide in
-  Electron user data; legacy four-panel preferences migrate to the defaults.
+  independently while preserving at least 360 px for the center. The left and
+  right minima are 280 px and 264 px. Both widths and the center tab are stored
+  app-wide in Electron user data; legacy or narrower preferences are normalized
+  on read. The application window is at least 1024 px wide.
 
 ## Combat Scenario
 
-1. The GM selects `Encounter` from the scenario dropdown. `Reise` is the other
-   current option and publishes no-context or the approved provider's
-   interactive travel console without automatically changing the center tab.
+1. The GM switches between the `Encounter` and `Reise` scenario tabs. A new
+   Scene starts on `Encounter`; `Reise` publishes no-context or the approved
+   provider's interactive travel console without automatically changing the
+   center tab.
 2. The GM selects one or more groups belonging to the focused Scene. The
    assigned Scene Party is always selected.
 3. Every selection change shows base XP, adjusted XP, Party thresholds and the

@@ -65,7 +65,7 @@ export function CombatCardView(props: {
             <span className="status-mark" aria-hidden="true">
               {card.active ? '◆' : card.alive ? '◇' : '†'}
             </span>
-            <strong>
+            <strong title={displayName}>
               <ReadOnlyProse>{displayName}</ReadOnlyProse>
             </strong>
             <span className="armor-class">

@@ -3,7 +3,10 @@ import type {
   PointerEvent as ReactPointerEvent,
   ReactNode
 } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { SessionLayoutPreference } from '../../../shared/contracts/session-layout.js'
+import { sessionLayoutGeometry } from '../../../shared/values/session-layout-values.js'
+import { clamp, fitSessionPaneWidths } from './session-panel-layout-geometry.js'
 
 export function SessionPanelLayout(props: {
   preference: SessionLayoutPreference
@@ -14,20 +17,39 @@ export function SessionPanelLayout(props: {
   scenario: ReactNode
 }) {
   const p = props.preference
+  const workspaceRef = useRef<HTMLDivElement>(null)
+  const [workspaceWidth, setWorkspaceWidth] = useState<number | null>(null)
+  useEffect(() => {
+    const workspace = workspaceRef.current
+    if (!workspace) return
+    const update = () =>
+      setWorkspaceWidth(workspace.getBoundingClientRect().width)
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(workspace)
+    return () => observer.disconnect()
+  }, [])
+  const effective = fitSessionPaneWidths(p, workspaceWidth)
   return (
-    <div className="session-workspace">
+    <div className="session-workspace" ref={workspaceRef}>
       <div
         className="session-column session-control-column"
-        style={{ width: p.controlPaneWidth }}
+        style={{ width: effective.controlPaneWidth }}
       >
         <div className="session-control-pane">{props.control}</div>
         <div className="session-pane">{props.groups}</div>
       </div>
       <SessionDivider
         edge="left"
-        value={p.controlPaneWidth}
+        value={effective.controlPaneWidth}
+        siblingWidth={effective.scenarioPaneWidth}
+        workspaceWidth={workspaceWidth}
         changed={(controlPaneWidth) =>
-          props.changed({ ...p, controlPaneWidth })
+          props.changed({
+            ...p,
+            controlPaneWidth,
+            scenarioPaneWidth: effective.scenarioPaneWidth
+          })
         }
         label="Breite der Steuerungsspalte"
       />
@@ -36,15 +58,21 @@ export function SessionPanelLayout(props: {
       </div>
       <SessionDivider
         edge="right"
-        value={p.scenarioPaneWidth}
+        value={effective.scenarioPaneWidth}
+        siblingWidth={effective.controlPaneWidth}
+        workspaceWidth={workspaceWidth}
         changed={(scenarioPaneWidth) =>
-          props.changed({ ...p, scenarioPaneWidth })
+          props.changed({
+            ...p,
+            controlPaneWidth: effective.controlPaneWidth,
+            scenarioPaneWidth
+          })
         }
         label="Breite der Szenariospalte"
       />
       <div
         className="session-column session-scenario-column"
-        style={{ width: p.scenarioPaneWidth }}
+        style={{ width: effective.scenarioPaneWidth }}
       >
         {props.scenario}
       </div>
@@ -55,6 +83,8 @@ export function SessionPanelLayout(props: {
 function SessionDivider(props: {
   edge: 'left' | 'right'
   value: number
+  siblingWidth: number
+  workspaceWidth: number | null
   changed: (value: number) => void
   label: string
 }) {
@@ -66,17 +96,19 @@ function SessionDivider(props: {
     const update = (clientX: number) => {
       const raw =
         props.edge === 'left' ? clientX - bounds.left : bounds.right - clientX
-      const limits = props.edge === 'left' ? [240, 440] : [220, 420]
-      props.changed(Math.round(Math.max(limits[0]!, Math.min(limits[1]!, raw))))
+      const limits = dividerLimits(props.edge, props.siblingWidth, bounds.width)
+      props.changed(clamp(raw, limits.min, limits.max))
     }
     update(event.clientX)
     const move = (next: PointerEvent) => update(next.clientX)
     const stop = () => {
       window.removeEventListener('pointermove', move)
       window.removeEventListener('pointerup', stop)
+      window.removeEventListener('pointercancel', stop)
     }
     window.addEventListener('pointermove', move)
     window.addEventListener('pointerup', stop, { once: true })
+    window.addEventListener('pointercancel', stop, { once: true })
   }
   const keyboard = (event: ReactKeyboardEvent<HTMLDivElement>) => {
     const direction =
@@ -84,26 +116,54 @@ function SessionDivider(props: {
     if (!direction) return
     event.preventDefault()
     const signedDirection = props.edge === 'left' ? direction : -direction
-    const limits = props.edge === 'left' ? [240, 440] : [220, 420]
+    const limits = dividerLimits(
+      props.edge,
+      props.siblingWidth,
+      props.workspaceWidth
+    )
     props.changed(
-      Math.max(
-        limits[0]!,
-        Math.min(limits[1]!, props.value + signedDirection * 10)
-      )
+      clamp(props.value + signedDirection * 10, limits.min, limits.max)
     )
   }
+  const limits = dividerLimits(
+    props.edge,
+    props.siblingWidth,
+    props.workspaceWidth
+  )
   return (
     <div
       className="session-divider session-divider-vertical"
       role="separator"
       aria-label={props.label}
       aria-orientation="vertical"
-      aria-valuemin={props.edge === 'left' ? 240 : 220}
-      aria-valuemax={props.edge === 'left' ? 440 : 420}
+      aria-valuemin={limits.min}
+      aria-valuemax={limits.max}
       aria-valuenow={props.value}
       tabIndex={0}
       onPointerDown={resize}
       onKeyDown={keyboard}
     />
   )
+}
+
+function dividerLimits(
+  edge: 'left' | 'right',
+  siblingWidth: number,
+  workspaceWidth: number | null
+) {
+  const configured =
+    edge === 'left'
+      ? sessionLayoutGeometry.controlPane
+      : sessionLayoutGeometry.scenarioPane
+  if (workspaceWidth === null) return configured
+  const available = Math.floor(
+    workspaceWidth -
+      siblingWidth -
+      sessionLayoutGeometry.centerMinimumWidth -
+      sessionLayoutGeometry.dividerWidth * 2
+  )
+  return {
+    min: configured.min,
+    max: Math.max(configured.min, Math.min(configured.max, available))
+  }
 }

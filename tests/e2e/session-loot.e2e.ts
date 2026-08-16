@@ -52,6 +52,7 @@ describe('Loot distribution and ledger', () => {
         treasureLabel: treasure.label,
         partialItemName: item.name,
         characterId: character.id,
+        characterName: character.name,
         partialRevision: partial.treasure.revision,
         runId: treasure.source.runId,
         generatedTreasureId: treasure.source.generatedTreasureId
@@ -133,9 +134,16 @@ describe('Loot distribution and ledger', () => {
       )
     ).toBe(true)
 
-    const lootButtons = await client.$$('button=Beute')
-    expect(lootButtons.length).toBeGreaterThan(0)
-    await lootButtons[0]!.click()
+    const partyCard = await client.$('.scene-party-card')
+    await partyCard.waitForExist({ timeout: 10_000 })
+    const partyExpansion = await partyCard.$('.group-expand')
+    if ((await partyExpansion.getAttribute('aria-expanded')) !== 'true')
+      await partyExpansion.click()
+    await (
+      await client.$(
+        `button.scene-party-member[aria-label="Beute: ${prepared.characterName}"]`
+      )
+    ).click()
     const ledgerDialog = await client.$('.character-loot-dialog')
     await ledgerDialog.waitForDisplayed({ timeout: 10_000 })
     await client.waitUntil(

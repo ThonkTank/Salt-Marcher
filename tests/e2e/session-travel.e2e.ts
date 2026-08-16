@@ -20,9 +20,7 @@ describe('Session map and travel console', () => {
     })
 
     await (await client.$('button=Karte')).click()
-    await (
-      await client.$('select[aria-label="Szenario Auswahl"]')
-    ).selectByAttribute('value', 'travel')
+    await (await client.$('[role="tab"]=Reise')).click()
 
     const mapRegion = await client.$(
       '[role="region"][aria-label="Hex-Karte Reiseküste"]'
@@ -85,8 +83,11 @@ describe('Session map and travel console', () => {
     await (await client.$('select[aria-label="Hex-Karte"]')).waitForExist()
     const partyCard = await client.$('.scene-party-card')
     await partyCard.waitForExist()
-    expect(await partyCard.getText()).toContain('Alrik')
-    expect(await partyCard.getText()).toContain('1 in dieser Scene')
+    const partyExpansion = await partyCard.$('.group-expand')
+    if ((await partyExpansion.getAttribute('aria-expanded')) !== 'true')
+      await partyExpansion.click()
+    expect(await client.$('.scene-party-expanded').getText()).toContain('Alrik')
+    expect(await partyCard.$('.count').getText()).toBe('1')
     const speedWarning = await client.$('.travel-warning')
     await speedWarning.waitForExist()
     expect(await speedWarning.getText()).toContain('Alrik')

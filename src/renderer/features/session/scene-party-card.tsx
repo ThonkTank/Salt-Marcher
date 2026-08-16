@@ -1,7 +1,7 @@
 import { lazy, Suspense, useState } from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
-import { message } from '../../i18n/session-runtime.de.js'
+import { formatMessage, message } from '../../i18n/session-runtime.de.js'
 import { sessionCapabilities } from './session-capabilities.js'
 import { ModalDialog } from '../../shell/modal-dialog.js'
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
@@ -18,6 +18,8 @@ export function ScenePartyCard(props: {
   sceneId: string
   setSnapshot: (snapshot: LiveSessionSnapshot) => void
   onError: (message: string) => void
+  expanded: boolean
+  toggle: () => void
 }) {
   const api = useCapabilityApi()
   const [open, setOpen] = useState(false)
@@ -51,39 +53,64 @@ export function ScenePartyCard(props: {
 
   return (
     <>
-      <article className="group-card disposition-allied scene-party-card">
-        <div className="group-card-title">
-          <span className="group-mark" aria-hidden="true" />
-          <strong>{message('ui.party')}</strong>
-          <span className="group-meta">
-            {assignedMembers.length} {message('ui.in.dieser.scene')}
-          </span>
-          <div className="row-actions">
-            <button type="button" onClick={() => setOpen(true)}>
-              {message('ui.bearbeiten')}
-            </button>
-          </div>
-        </div>
-        <div className="group-members">
-          {assignedMembers.length === 0 ? (
-            <span className="empty-group-label">
-              {message('encounter.noAssignedParty')}
-            </span>
-          ) : (
-            assignedMembers.map((member) => (
-              <span className="scene-party-member" key={member.id}>
-                {member.name} {message('ui.lv')} {member.level ?? '—'}
+      <div
+        className={`group-row disposition-allied scene-party-card${
+          props.expanded ? ' focused' : ''
+        }`}
+      >
+        <span
+          className="group-mark"
+          role="img"
+          aria-label={message('group.disposition.allied')}
+          title={message('group.disposition.allied')}
+        />
+        <span className="group-name" title={message('ui.party')}>
+          {message('ui.party')}
+        </span>
+        <span className="count">{assignedMembers.length}</span>
+        <span className="xp">—</span>
+        <button
+          type="button"
+          className="group-expand"
+          aria-expanded={props.expanded}
+          aria-label={formatMessage(
+            props.expanded ? 'group.collapse' : 'group.expand',
+            { name: message('ui.party') }
+          )}
+          onClick={props.toggle}
+        >
+          <span aria-hidden="true">{props.expanded ? '⌄' : '›'}</span>
+        </button>
+      </div>
+      {props.expanded && (
+        <div className="group-expanded scene-party-expanded">
+          <div className="group-members">
+            {assignedMembers.length === 0 ? (
+              <span className="empty-group-label">
+                {message('encounter.noAssignedParty')}
+              </span>
+            ) : (
+              assignedMembers.map((member) => (
                 <button
                   type="button"
+                  className="scene-party-member"
+                  key={member.id}
+                  title={`${message('loot.ledgerOpen')}: ${member.name}`}
+                  aria-label={`${message('loot.ledgerOpen')}: ${member.name}`}
                   onClick={() => setLedgerCharacter(member)}
                 >
-                  {message('loot.ledgerOpen')}
+                  {member.name} {message('ui.lv')} {member.level ?? '—'}
                 </button>
-              </span>
-            ))
-          )}
+              ))
+            )}
+            <div className="row-actions">
+              <button type="button" onClick={() => setOpen(true)}>
+                {message('ui.bearbeiten')}
+              </button>
+            </div>
+          </div>
         </div>
-      </article>
+      )}
 
       {open && (
         <ModalDialog

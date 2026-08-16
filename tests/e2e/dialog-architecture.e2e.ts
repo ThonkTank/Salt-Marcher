@@ -177,7 +177,7 @@ describe('dialog architecture', () => {
     await clickWhenInteractable(await client.$('button=Neue Encounter-Tabelle'))
     manager = await client.$('section.encounter-table-manager')
     await manager.waitForDisplayed()
-    await assertManagerLayout(client, 'stacked')
+    await assertManagerLayout(client, 'columns')
     await expectAccessibleInBothThemes(client)
     await (await manager.$('button[aria-label="Dialog schließen"]')).click()
     await expect(manager).not.toBeExisting()

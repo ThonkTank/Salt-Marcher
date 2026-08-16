@@ -87,3 +87,8 @@
   padding: 1rem;
   text-align: center;
 }
+
+.detail-empty h2 {
+  color: var(--text-2);
+  font-size: var(--text-xl);
+}

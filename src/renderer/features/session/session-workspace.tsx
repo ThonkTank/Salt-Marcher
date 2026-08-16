@@ -17,6 +17,7 @@ import type {
 } from '../../../shared/contracts/loot.js'
 import './session-workspace.css'
 import { useLootSceneController } from '../loot/use-loot-scene-controller.js'
+import type { WorkspaceScenario } from '../workspace/workspace-surface-props.js'
 
 const LazyRewardDistributionDialog = lazy(async () => {
   const module = await import('../loot/reward-distribution-dialog.js')
@@ -32,8 +33,8 @@ export default function SessionWorkspace(props: {
   setSnapshot: (snapshot: LiveSessionSnapshot) => void
   groupDialogOpen: boolean
   setGroupDialogOpen: (open: boolean) => void
-  scenario: '' | 'encounter' | 'travel'
-  setScenario: (scenario: '' | 'encounter' | 'travel') => void
+  scenario: WorkspaceScenario
+  setScenario: (scenario: WorkspaceScenario) => void
   layout: SessionLayoutPreference
   setLayout: (layout: SessionLayoutPreference) => void
   onError: (message: string) => void
