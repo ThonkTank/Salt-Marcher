@@ -11,7 +11,7 @@ for product data.
 
 ## Decision
 
-The installation owns the revisioned Generator Config V3 registry and explicit
+The installation owns the revisioned Generator Config V4 registry and explicit
 Campaign assignments. The system preset is an offline-generated checked-in
 artifact. Contract modules own schemas and types; product data and matrix
 helpers live outside the wire contract.

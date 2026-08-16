@@ -1,24 +1,25 @@
 import {
   generatorConfigSchema,
-  type GeneratorPresetConfigV3
+  type GeneratorPresetConfigV4
 } from '../contracts/generator-presets.js'
 import {
   generatorChallengeRatings,
   type GeneratorRole,
   type GeneratorRoleCell
 } from './generator-config-model.js'
+import { defaultGeneratorLootRules } from './default-loot-rules.js'
 
 /**
- * Generated from catalog-2026-07-16/DB_EncounterRoleBands.tsv and
+ * Generated from catalog-2026-08-16/DB_EncounterRoleBands.tsv and
  * DB_EncounterPatterns.tsv. The session-generation artifact check verifies the
  * compact generated representation against the pinned source tables.
  */
 export const systemGeneratorPresetSource = Object.freeze({
-  catalogVersion: 'catalog-2026-07-16',
+  catalogVersion: 'catalog-2026-08-16',
   roleBandsSha256:
-    '45e8a322e39c4762e2a22e02116932e3f19dfdb01a7cfc38c54ba14caca93ca6',
+    '4575163d8ab46e30f0c1a2b9835b96bac8dfe0008c4b04509b9419aa3f55a0ae',
   patternsSha256:
-    'd331a7e3fb724679f2e669cee01d881894d26a9d2ea987e3104f26eaa0b4fd91'
+    '7ecf49d71b5c800ec24b9ab47fbbfa5d46825fac4b22f3b28cacc66a730fb548'
 })
 
 const roleBandStarts = [
@@ -87,7 +88,7 @@ export const systemGeneratorRoleCombinations: GeneratorRole[][] = [
   ['boss', 'support', 'minion']
 ]
 
-export const defaultGeneratorConfig: GeneratorPresetConfigV3 =
+export const defaultGeneratorConfig: GeneratorPresetConfigV4 =
   generatorConfigSchema.parse({
     composition: {
       roleMatrix: systemGeneratorRoleMatrix(),
@@ -126,5 +127,6 @@ export const defaultGeneratorConfig: GeneratorPresetConfigV3 =
         deadly: 10
       }
     },
-    combat: { mobThreshold: 6 }
+    combat: { mobThreshold: 6 },
+    loot: defaultGeneratorLootRules
   })

@@ -35,6 +35,7 @@ import {
   GeneratorRoleQuantities
 } from './generator-composition-rules.js'
 import type { CampaignRewardRulesPort } from './campaign-reward-rules-port.js'
+import { GeneratorLootRulesEditor } from './generator-loot-rules.js'
 
 const LazyCampaignRewardRulesCard = lazy(async () => {
   const module = await import('./campaign-reward-rules-card.js')
@@ -282,6 +283,10 @@ export function EncounterGeneratorSettings(props: {
                   changed={changeConfig}
                 />
               </div>
+              <GeneratorLootRulesEditor
+                value={config.loot}
+                changed={(loot) => changeConfig({ ...config, loot })}
+              />
               {status && (
                 <p className="generator-settings-status" role="status">
                   {status}
@@ -349,6 +354,7 @@ export function EncounterGeneratorSettings(props: {
 
 function validGeneratorDraft(config: GeneratorPresetConfigV3): boolean {
   return (
+    validLootDraft(config.loot) &&
     Object.values(config.scene.difficultyWeights).reduce(
       (sum, weight) => sum + weight,
       0
@@ -356,6 +362,17 @@ function validGeneratorDraft(config: GeneratorPresetConfigV3): boolean {
     config.composition.roleCombinations.length > 0 &&
     config.composition.roleCombinations.length <= 32
   )
+}
+
+function validLootDraft(value: unknown): boolean {
+  if (typeof value === 'number') return Number.isFinite(value)
+  if (typeof value === 'string') return value.trim().length > 0
+  if (typeof value === 'boolean') return true
+  if (Array.isArray(value))
+    return value.length > 0 && value.every(validLootDraft)
+  if (value && typeof value === 'object')
+    return Object.values(value).every(validLootDraft)
+  return false
 }
 
 function report(error: unknown, onError: (message: string) => void): string {

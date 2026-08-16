@@ -43,7 +43,7 @@ accounts for the bounded virtual biome catalog and CRUD surface added with
 schema 15; schema 16 replaced separate World Location kind and region fields
 with tags and read-aloud text, and schema 17 normalizes ordered location-owned
 tags into validated rows while all per-entry ceilings remain unchanged.
-Schema 29, Generator Config V3, and Session engine
+Schema 30, Generator Config V4, and Session engine
 `saltmarcher-v5` are current. Schema 25 is reset rather than migrated. The
 versioned behavior and ownership are recorded in the
 [Encounter Generation requirements](../../encounter/requirements/requirements-encounter-generation.md)
@@ -334,11 +334,16 @@ claiming completion of M3 or M5. Its approved expansion contains:
   live XP budget, atomic dirty-save switching, and one cancellable preparation
   flow that turns a complete GeneratedRun into concrete Encounter plans and
   typed reward cards without an intermediate Apply step
-- immutable `saltmarcher-v5` GeneratedRuns over all 16 manifest-verified local
+- immutable `saltmarcher-v5` GeneratedRuns over all 21 manifest-verified local
   catalog tables, exact CP/rational budget stages, isolated named SHA-256
   entropy streams, structured rewards/packing/audits, normalized child storage,
   and idempotency by semantic-origin fingerprint; the public encounter-only
   generation operation has been retired
+- Sheet-parity Loot rules now live as fixed-shape editable Config-V4 preset
+  tables. Session and group rewards calculate the positive cumulative
+  post-reward XP deficit from Character-ledger item references, persist that
+  basis in normalized rows, accept a successful empty reward, and retain the
+  prior catalog artifact for historical run replay
 - campaign-local mutable Treasures with exactly one unplaced, location, or
   Scene-group anchor, multiple treasures per anchor, repairable last-known
   labels, idempotent generated acceptance, shared Encounter/Quest distribution,

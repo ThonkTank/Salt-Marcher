@@ -116,10 +116,12 @@ export class SessionGenerationService {
         'A campaign database is required to persist generated runs'
       )
     const catalog = this.catalogProvider.loadFull()
-    const draft = generateGroupRewardDraft(input, catalog, this.entropy)
+    const preset = this.preset()
+    const draft = generateGroupRewardDraft(input, catalog, this.entropy, preset)
     const originFingerprint = groupRewardRunOriginFingerprint({
       rewardEngineVersion: draft.rewardEngineVersion,
       catalogContentHash: draft.catalogContentHash,
+      generatorPreset: draft.generatorPreset,
       input: draft.input
     })
     const store = new GeneratedRunStore(this.activeDatabase())

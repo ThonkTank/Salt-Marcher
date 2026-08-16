@@ -1,0 +1,29 @@
+Container	Capacity_Units	Relation	Hide_In_Output	Notes	Packing_Priority	Mixable	Container_ID	Output_Singular	Output_Plural	Output_Relation
+Pocket	3.0	with	1	Virtuelle Kleidungstasche; nicht als Loot-Item	100.0	0	container:pocket	Pocket	Pockets	with
+Pouch	20.0	with	0	Kleiner Beutel; nicht als Loot-Item	30.0	1	container:pouch	Pouch	Pouches	with
+Satchel	10.0	with	0	Tasche für gemischte kleine Items; nicht als Loot-Item	40.0	1	container:satchel	Satchel	Satchels	with
+Bundle	10.0	of	0	Virtuelle Gruppierung; nicht als Loot-Item	80.0	1	container:bundle	Bundle	Bundles	with
+Sack	50.0	of	0	Einfacher Sack; nicht als Loot-Item	50.0	1	container:sack	Sack	Sacks	with
+Backpack	60.0	with	0	Migriert aus DB_LootItems	60.0	1	container:backpack	Backpack	Backpacks	with
+Basket	20.0	with	0	Migriert aus DB_LootItems	70.0	1	container:basket	Basket	Baskets	with
+Glass Bottle	16.0	with	0	Migriert aus DB_LootItems	207.0	0	container:glass-bottle	Glass Bottle	Glass Bottles	with
+Bucket	384.0	of	0	Migriert aus DB_LootItems	208.0	0	container:bucket	Bucket	Buckets	with
+Crossbow Bolt Case	20.0	with	0	Migriert aus DB_LootItems	209.0	0	container:crossbow-bolt-case	Crossbow Bolt Case	Crossbow Bolt Cases	with
+Map/Scroll Case	6.0	with	0	Migriert aus DB_LootItems	210.0	0	container:map-scroll-case	Map/Scroll Case	Map/Scroll Cases	with
+Component Pouch	20.0	with	0	Migriert aus DB_LootItems	211.0	0	container:component-pouch	Component Pouch	Component Pouchs	with
+Flask	8.0	with	0	Migriert aus DB_LootItems	212.0	0	container:flask	Flask	Flasks	with
+Jug	64.0	with	0	Migriert aus DB_LootItems	213.0	0	container:jug	Jug	Jugs	with
+Iron Pot	10.0	with	0	Migriert aus DB_LootItems	214.0	0	container:iron-pot	Iron Pot	Iron Pots	with
+Crate	200.0	of	0	Große Kiste; nicht als Loot-Item	20.0	1	container:crate	Crate	Crates	with
+Chest	100.0	with	0	Truhe; nicht als Loot-Item	10.0	1	container:chest	Chest	Chests	with
+Cart	1000.0	with	0	Karren oder große Ladung; nicht als Loot-Item	90.0	1	container:cart	Cart	Carts	with
+Quiver	20.0	of	0	Migriert aus DB_LootItems	218.0	0	container:quiver	Quiver	Quivers	with
+Vial	1.0	with	0	Migriert aus DB_LootItems	219.0	0	container:vial	Vial	Vials	with
+Vial Case	12.0	with	0	Phiolen-Etui; nicht als Loot-Item	220.0	0	container:vial-case	Vial Case	Vial Cases	with
+Waterskin	64.0	with	0	Migriert aus DB_LootItems	221.0	0	container:waterskin	Waterskin	Waterskins	with
+Scroll Tube	6.0	with	0	Schriftrollen-/Kartenröhre; nicht als Loot-Item	222.0	0	container:scroll-tube	Scroll Tube	Scroll Tubes	with
+Tool Roll	8.0	with	0	Werkzeugrolle; nicht als Loot-Item	223.0	0	container:tool-roll	Tool Roll	Tool Rolls	with
+Weapon Rack	20.0	with	0	Waffenständer; nicht als Loot-Item	224.0	0	container:weapon-rack	Weapon Rack	Weapon Racks	with
+Keg	640.0	of	0	Liquid container; capacity in fl oz.	225.0	0	container:keg	Keg	Kegs	with
+Barrel	5120.0	of	0	Large liquid container; capacity in fl oz.	226.0	0	container:barrel	Barrel	Barrels	with
+Pile	200.0	of	0	Loose heap for dry goods or many identical items; capacity is a packing unit, not a physical vessel.	75.0	1	container:pile	Pile	Piles	of

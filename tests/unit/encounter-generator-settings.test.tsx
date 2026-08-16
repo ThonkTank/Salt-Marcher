@@ -43,7 +43,7 @@ function presetHarness(): {
         {
           id: systemGeneratorPresetId,
           name: 'System-Default',
-          schemaVersion: 3,
+          schemaVersion: 4,
           revision: 0,
           protected: true,
           createdAt: now,
@@ -53,7 +53,7 @@ function presetHarness(): {
         {
           id: customId,
           name: 'Küstenwache',
-          schemaVersion: 3,
+          schemaVersion: 4,
           revision: 0,
           protected: false,
           createdAt: now,
@@ -76,7 +76,7 @@ function presetHarness(): {
       const saved = {
         id: copiedId,
         name,
-        schemaVersion: 3 as const,
+        schemaVersion: 4 as const,
         revision: 0,
         protected: false,
         createdAt: now,

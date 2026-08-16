@@ -13,7 +13,7 @@ import {
 } from './support/e2e-assertions.js'
 
 describe('Group Loot editor', () => {
-  it('edits catalog-backed Loot accessibly without layout overflow', async () => {
+  it('edits quantities and packing while keeping catalog definitions immutable', async () => {
     const client = browser as unknown as WdioBrowser
     await setElectronWindowSize(client, 1280, 800)
     await (
@@ -59,30 +59,30 @@ describe('Group Loot editor', () => {
     const lootCatalog = await groupDialog.$('.loot-catalog-pane')
     await lootCatalog.waitForDisplayed({ timeout: 10_000 })
     const lootSearch = await lootCatalog.$('input[type="search"]')
-    await addCatalogEntry(lootCatalog, lootSearch, 'Abacus')
+    await addCatalogEntry(lootCatalog, lootSearch, 'Lamp Oil (pint)')
     await addCatalogEntry(lootCatalog, lootSearch, 'Bead of Nourishment')
     await addCatalogEntry(lootCatalog, lootSearch, 'Pouch')
 
-    const abacusRow = await findEditorRow(
+    const lampOilRow = await findEditorRow(
       await groupLootPanel.$$('.treasure-item-editor-row'),
       'Gegenstand',
-      'Abacus'
+      'Lamp Oil (pint)'
     )
+    const lampOilName = await lampOilRow.$('input[aria-label="Gegenstand"]')
+    const lampOilValue = await lampOilRow.$(
+      'input[aria-label="Wert in Kupfermünzen"]'
+    )
+    const lampOilStackable = await lampOilRow.$('input[aria-label="Teilbar"]')
+    expect(await lampOilName.getAttribute('readonly')).not.toBeNull()
+    expect(await lampOilValue.getAttribute('readonly')).not.toBeNull()
+    expect(await lampOilStackable.isEnabled()).toBe(false)
+    expect(await lampOilStackable.isSelected()).toBe(true)
+    expect(await lampOilName.getValue()).toBe('Lamp Oil (pint)')
+    expect(await lampOilValue.getValue()).toBe('10')
     await replaceFieldValue(
       client,
-      await abacusRow.$('input[aria-label="Gegenstand"]'),
-      'E2E Reise-Abakus'
-    )
-    await (await abacusRow.$('input[aria-label="Teilbar"]')).click()
-    await replaceFieldValue(
-      client,
-      await abacusRow.$('input[aria-label="Menge"]'),
+      await lampOilRow.$('input[aria-label="Menge"]'),
       '2'
-    )
-    await replaceFieldValue(
-      client,
-      await abacusRow.$('input[aria-label="Wert in Kupfermünzen"]'),
-      '321'
     )
 
     const catalogContainer = await findEditorRow(
@@ -103,7 +103,7 @@ describe('Group Loot editor', () => {
     await client.waitUntil(
       async () =>
         (
-          await (await abacusRow.$('select[aria-label="Behälter"]')).getText()
+          await (await lampOilRow.$('select[aria-label="Behälter"]')).getText()
         ).includes('E2E Lootkiste'),
       {
         timeout: 10_000,
@@ -111,10 +111,10 @@ describe('Group Loot editor', () => {
       }
     )
     await selectOptionContaining(
-      await abacusRow.$('select[aria-label="Behälter"]'),
+      await lampOilRow.$('select[aria-label="Behälter"]'),
       'E2E Lootkiste'
     )
-    const assignment = await abacusRow.$('select[aria-label="Behälter"]')
+    const assignment = await lampOilRow.$('select[aria-label="Behälter"]')
     const assignedContainer = await assignment.getValue()
     await client.execute(() => {
       document.querySelector<HTMLElement>('.group-draft-scroll')?.focus()
@@ -168,9 +168,10 @@ describe('Group Loot editor', () => {
     )
     await (await discardDialog.$('button=Abbrechen')).click()
     await discardDialog.waitForExist({ reverse: true, timeout: 5_000 })
+    expect(await lampOilName.getValue()).toBe('Lamp Oil (pint)')
     expect(
-      await (await abacusRow.$('input[aria-label="Gegenstand"]')).getValue()
-    ).toBe('E2E Reise-Abakus')
+      await (await lampOilRow.$('input[aria-label="Menge"]')).getValue()
+    ).toBe('2')
 
     await client.execute(() => {
       document.querySelector<HTMLElement>('.group-draft-scroll')?.focus()

@@ -41,7 +41,9 @@ export function GroupLootInlinePanel(props: {
   const busy = props.phase === 'generating' || props.phase === 'committing'
   const budget =
     props.run && props.draft ? groupLootBudget(props.run, props.draft) : null
-  const invalid = !props.draft || treasureDraftInvalid(props.draft)
+  const emptyReward = props.run?.treasures.length === 0
+  const invalid =
+    !props.draft || (!emptyReward && treasureDraftInvalid(props.draft))
   return (
     <section className="group-loot-inline-panel" aria-live="polite">
       <header>
@@ -157,33 +159,38 @@ export function GroupLootInlinePanel(props: {
               run: props.run.id.slice(0, 8)
             })}
           </div>
-          <TreasureDraftFields
-            draft={props.draft}
-            policy="catalog"
-            messages={treasureDraftEditorMessagesDe()}
-            issues={props.issues}
-            labelChanged={props.patchLabel}
-            patchItem={props.patchItem}
-            removeItem={props.removeItem}
-            patchContainer={props.patchContainer}
-            removeContainer={props.removeContainer}
-            beginEdit={props.beginEdit}
-            endEdit={props.endEdit}
-            itemMetadata={(item) => {
-              if (!item.magic) return null
-              const detail = [
-                item.rarity
-                  ? formatMessage('loot.magicRarity', { rarity: item.rarity })
-                  : message('loot.generated'),
-                item.curseName
-                  ? formatMessage('loot.curseNamed', { name: item.curseName })
-                  : ''
-              ]
-                .filter(Boolean)
-                .join(' · ')
-              return <small>{detail}</small>
-            }}
-          />
+          {emptyReward ? (
+            <p>{message('loot.groupNoDeficit')}</p>
+          ) : (
+            <TreasureDraftFields
+              draft={props.draft}
+              policy="catalog"
+              messages={treasureDraftEditorMessagesDe()}
+              issues={props.issues}
+              labelChanged={props.patchLabel}
+              patchItem={props.patchItem}
+              removeItem={props.removeItem}
+              patchContainer={props.patchContainer}
+              removeContainer={props.removeContainer}
+              beginEdit={props.beginEdit}
+              endEdit={props.endEdit}
+              itemDefinitionReadOnly={() => true}
+              itemMetadata={(item) => {
+                if (!item.magic) return null
+                const detail = [
+                  item.rarity
+                    ? formatMessage('loot.magicRarity', { rarity: item.rarity })
+                    : message('loot.generated'),
+                  item.curseName
+                    ? formatMessage('loot.curseNamed', { name: item.curseName })
+                    : ''
+                ]
+                  .filter(Boolean)
+                  .join(' · ')
+                return <small>{detail}</small>
+              }}
+            />
+          )}
           {invalid && (
             <p className="loot-validation" role="alert">
               {message('loot.draftInvalid')}

@@ -9,9 +9,9 @@ Moving the anchor changes the same treasure; repeated physical occurrences are
 independent treasures.
 
 Session Generation owns immutable generated proposals. Accepting a generated
-treasure copies its structured item and packing facts into Loot exactly once
-and records the run and generated-treasure provenance. The source run remains
-unchanged.
+treasure materializes referenced catalog definitions and structured packing
+facts into Loot exactly once and records the run and generated-treasure
+provenance. The source run and catalog definitions remain unchanged.
 
 ## Live Session
 
@@ -37,14 +37,16 @@ before hydrating only actual unresolved results.
 The Group manager may generate Loot for a new, changed, or unchanged
 non-archived group draft with an assigned leveled Party. The request captures
 the complete normalized roster, Scene, optional Group, Party, and campaign-rule
-revisions plus an internal seed. It produces exactly one immutable group-reward
-run and one normal Encounter-channel treasure proposal; it does not generate a
+revisions plus an internal seed. It produces exactly one immutable group-reward run and
+zero or one normal Encounter-channel treasure proposal; it does not generate a
 whole adventuring day, quest reward, environment reward, or overstock.
 
 `Auffüllen` and `Neu generieren` immediately turn the generated proposal into
 an inline, renderer-local Treasure draft after the roster draft succeeds. Its
-label, item names, quantities, unit copper values, stackability, containers,
-capacities, and item-container assignments are editable. Items and containers
+label, quantities, containers, capacities, and item-container assignments are
+editable. Generated and catalog item names, unit values, stackability, magic,
+rarity, and curse facts are immutable and re-derived by Utility during
+confirmation. Items and containers
 have stable draft IDs and retain a discriminated origin pointing either to one
 immutable generated source line or to one catalog entry. The immutable run is
 never rewritten.
@@ -82,7 +84,8 @@ discard intents, and external revision conflicts. Late asynchronous results are
 ignored by token. Switching groups preserves the per-Group cache; external
 snapshots replace clean sessions and mark dirty sessions as conflicted.
 
-The inline budget header shows target copper, current non-magic copper,
+The inline budget header shows the positive post-fight ledger deficit, current
+draft non-magic copper,
 difference, a progress bar, and target/current magic count. The existing
 plus/minus 15 percent generator tolerance only classifies the draft; it never
 blocks confirmation. Existing groups use the same inline editor instead of a
@@ -93,7 +96,8 @@ idempotent command. Utility revalidates generated origins against the immutable
 run and catalog origins against the run-pinned catalog. It derives immutable
 magic, rarity, curse, and provenance facts rather than trusting Renderer input,
 saves or updates the group, reconciles active Combat state, materializes the
-edited Treasure, and advances the Loot projection in one transaction. The
+edited Treasure, and advances the Loot projection in one transaction. An empty
+deficit saves the Group without creating an empty Treasure. The
 canonical fingerprint includes the complete draft. Any failure writes neither
 the group nor the treasure. The ordinary `Speichern` action remains a
 group-only command.
@@ -121,10 +125,10 @@ Treasure revision once. Any failure writes neither side.
 The current slice reads awarded ledger entries with Treasure and generated
 reward provenance. A correction appends a linked replacement row, marks the
 original as superseded, and may correct its received/given-away/sold status;
-the original row is never rewritten. Independent sale/give-away workflows,
-Shop purchases, Quest authoring, and cumulative-loot compensation remain later
-commands. In particular, no compensation formula is inferred before its
-source-backed rule profile is approved.
+the original row is never rewritten. Cumulative-loot compensation uses the
+source-backed Config-V4 progression described by Session Generation.
+Independent sale/give-away workflows, Shop purchases, and Quest authoring
+remain later commands.
 
 ## Acceptance
 
@@ -143,3 +147,5 @@ source-backed rule profile is approved.
 - stale revisions or inactive recipients roll back allocations and ledger rows
 - character ledgers retain quantity, value, award time, and provenance
 - ledger corrections retain both the original and linked correction rows
+- generated budgeting counts effective cumulative grants through referenced
+  Treasure items and never rewards disposal a second time

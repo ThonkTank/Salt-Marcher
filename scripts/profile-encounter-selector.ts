@@ -12,7 +12,7 @@ import {
 import { maximumCompositionComplexity } from '../src/shared/generator/generator-config-model.js'
 import { defaultGeneratorConfig } from '../src/shared/generator/system-generator-preset.js'
 
-const catalogRoot = resolve('resources/sessiongeneration/catalog-2026-07-16')
+const catalogRoot = resolve('resources/sessiongeneration/catalog-2026-08-16')
 const read = (name: string) => readFileSync(join(catalogRoot, name), 'utf8')
 const catalog = parseEncounterCatalog({
   manifest: catalogManifestSchema.parse(JSON.parse(read('manifest.json'))),

@@ -1,16 +1,16 @@
 {
   "recordedAt": "2026-08-16",
-  "reason": "Scoped the NPC minimum-window containment rule to the lazy catalog route after Golden-Master validation",
-  "dependencyRationale": "No dependency version changes",
-  "chunkRationale": "The NPC-only shell containment selector stays in the catalog CSS chunk; the shared shell and Workspace graphs ratchet down while the catalog graph records the 49-byte scoped selector",
+  "reason": "Record Config-V4 loot settings and immutable referenced-item editing on top of the completed NPC catalog workflow.",
+  "dependencyRationale": "No runtime dependency was added; the delta is application-owned loot rules, messages, and editor wiring.",
+  "chunkRationale": "Loot settings stay in the existing lazy encounter-settings route and Group Loot stays in the existing lazy session surface; the completed NPC catalog remains isolated in its catalog chunk.",
   "graphs": {
     "shell": 400451,
-    "workspace": 491380,
+    "workspace": 491520,
     "session": 162944,
     "catalog": 179833,
     "hex": 174781,
     "reference": 39420,
     "pixi": 408625,
-    "reachable": 1461578
+    "reachable": 1465709
   }
 }

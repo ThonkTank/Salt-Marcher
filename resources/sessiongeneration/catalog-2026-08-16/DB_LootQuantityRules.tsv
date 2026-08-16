@@ -1,0 +1,15 @@
+Rule_ID	Selection_Path	Match_Field	Match_Value	Max_Qty	Priority	Active	Notes
+qty:carrier:quantity	carrier	VALUE_FORM	Quantity_Good	10000.0	100.0	1	Amount goods
+qty:carrier:art	carrier	CATEGORY	Art_Object	3.0	90.0	1	Art objects
+qty:carrier:gem	carrier	CATEGORY	Gemstone	10.0	90.0	1	Gemstones
+qty:carrier:ingot	carrier	CATEGORY	Ingot	20.0	90.0	1	Ingots
+qty:carrier:trade	carrier	CATEGORY	Trade_Good	250.0	90.0	1	Trade goods
+qty:carrier:default	carrier	DEFAULT	*	50.0	0.0	1	Carrier default
+qty:useful:quantity	useful	VALUE_FORM	Quantity_Good	10000.0	100.0	1	Amount goods
+qty:useful:ammunition	useful	CATEGORY	Ammunition	20.0	90.0	1	Ammunition
+qty:useful:potion	useful	CATEGORY	Potion	3.0	90.0	1	Potions
+qty:useful:poison	useful	CATEGORY	Poison	3.0	90.0	1	Poisons
+qty:useful:hazard	useful	CATEGORY	Hazard_Item	3.0	90.0	1	Hazard items
+qty:useful:default	useful	DEFAULT	*	1.0	0.0	1	Useful default
+qty:flavor:quantity	flavor	VALUE_FORM	Quantity_Good	10000.0	100.0	1	Amount goods
+qty:flavor:default	flavor	DEFAULT	*	50.0	0.0	1	Flavor default

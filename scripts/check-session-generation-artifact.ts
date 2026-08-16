@@ -3,7 +3,7 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import {
   catalogManifestSchema,
-  expectedCatalogHeaders,
+  catalogHeadersForVersion,
   parseEncounterCatalog
 } from '../src/core/session-generation/catalog.js'
 import { sessionGenerationCatalogRegistrySchema } from '../src/core/session-generation/catalog-registry.js'
@@ -43,7 +43,11 @@ const root = join(registryRoot, currentEntry.directory)
 const manifest = catalogManifestSchema.parse(
   JSON.parse(readFileSync(join(root, 'manifest.json'), 'utf8'))
 )
-const expectedFiles = Object.keys(expectedCatalogHeaders)
+const currentHeaders = catalogHeadersForVersion(
+  manifest.catalogVersion,
+  manifest.tables.map((entry) => entry.file)
+)
+const expectedFiles = Object.keys(currentHeaders)
 const manifestFiles = manifest.tables.map((entry) => entry.file)
 if (
   manifestFiles.length !== expectedFiles.length ||
@@ -59,7 +63,7 @@ for (const entry of manifest.tables) {
   const columns = lines[0]?.split('\t').length ?? 0
   const rows = Math.max(0, lines.length - 1)
   const header = lines[0]?.split('\t') ?? []
-  const expectedHeader = expectedCatalogHeaders[entry.file]
+  const expectedHeader = currentHeaders[entry.file]
   if (
     expectedHeader === undefined ||
     columns !== entry.columns ||

@@ -716,16 +716,16 @@ describe('loot vertical slice', () => {
         kind: 'generator',
         sourceLineId: run.treasures[0]!.items[0]!.id
       },
-      name: `${run.treasures[0]!.items[0]!.name} bearbeitet`
+      name: run.treasures[0]!.items[0]!.name
     })
     expect(result.treasure.items[1]).toMatchObject({
       provenance: {
         kind: 'catalog',
         catalogEntry: { kind: 'item', id: 'item:object:abacus' }
       },
-      name: 'Reise-Abakus',
+      name: 'Abacus',
       quantity: 2,
-      unitValueCp: 250,
+      unitValueCp: 200,
       magic: false,
       rarity: null,
       curseName: null

@@ -97,7 +97,7 @@ influence output.
 The bundled catalog is a registry of immutable, versioned offline snapshots.
 Generation uses the explicitly active artifact while reads and pending commits
 resolve their run's artifact by version and content hash. The utility process owns
-its file access and verifies all 16 manifest-listed tables before the pure
+its file access and verifies all 21 manifest-listed tables before the pure
 engine receives immutable encounter and loot projections. Runtime code never
 reads the source Google Sheet.
 

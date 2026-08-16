@@ -12,7 +12,7 @@ import {
 import { waitForGmRendererReady } from './support/e2e-ready.js'
 
 describe('Group Loot atomic commit', () => {
-  it('persists edited normal, magic, and packed catalog Loot across restart', async () => {
+  it('persists editable quantities and packing with referenced catalog facts', async () => {
     const client = browser as unknown as WdioBrowser
     await setElectronWindowSize(client, 1280, 800)
     await (
@@ -38,30 +38,31 @@ describe('Group Loot atomic commit', () => {
     const catalog = await dialog.$('.loot-catalog-pane')
     await catalog.waitForDisplayed({ timeout: 10_000 })
     const search = await catalog.$('input[type="search"]')
-    await addCatalogEntry(catalog, search, 'Abacus')
+    await addCatalogEntry(catalog, search, 'Lamp Oil (pint)')
     await addCatalogEntry(catalog, search, 'Bead of Nourishment')
     await addCatalogEntry(catalog, search, 'Pouch')
 
-    const abacus = await findEditorRow(
+    const lampOil = await findEditorRow(
       await panel.$$('.treasure-item-editor-row'),
       'Gegenstand',
-      'Abacus'
+      'Lamp Oil (pint)'
     )
+    const lampOilName = await lampOil.$('input[aria-label="Gegenstand"]')
+    const lampOilValue = await lampOil.$(
+      'input[aria-label="Wert in Kupfermünzen"]'
+    )
+    expect(await lampOilName.getAttribute('readonly')).not.toBeNull()
+    expect(await lampOilValue.getAttribute('readonly')).not.toBeNull()
+    expect(
+      await (await lampOil.$('input[aria-label="Teilbar"]')).isEnabled()
+    ).toBe(false)
+    expect(
+      await (await lampOil.$('input[aria-label="Teilbar"]')).isSelected()
+    ).toBe(true)
     await replaceFieldValue(
       client,
-      await abacus.$('input[aria-label="Gegenstand"]'),
-      'E2E Reise-Abakus'
-    )
-    await (await abacus.$('input[aria-label="Teilbar"]')).click()
-    await replaceFieldValue(
-      client,
-      await abacus.$('input[aria-label="Menge"]'),
+      await lampOil.$('input[aria-label="Menge"]'),
       '2'
-    )
-    await replaceFieldValue(
-      client,
-      await abacus.$('input[aria-label="Wert in Kupfermünzen"]'),
-      '321'
     )
     const container = await findEditorRow(
       await panel.$$('.treasure-container-editor-row'),
@@ -79,7 +80,7 @@ describe('Group Loot atomic commit', () => {
       '99'
     )
     await selectOptionContaining(
-      await abacus.$('select[aria-label="Behälter"]'),
+      await lampOil.$('select[aria-label="Behälter"]'),
       'E2E Lootkiste'
     )
 
@@ -105,7 +106,7 @@ describe('Group Loot atomic commit', () => {
         count: treasures.length,
         editedItem: treasures
           .flatMap((treasure) => treasure.items)
-          .find((item) => item.name === 'E2E Reise-Abakus'),
+          .find((item) => item.name === 'Lamp Oil (pint)'),
         editedContainer: treasures
           .flatMap((treasure) => treasure.containers)
           .find((candidate) => candidate.name === 'E2E Lootkiste'),
@@ -123,7 +124,7 @@ describe('Group Loot atomic commit', () => {
     expect(committed.count).toBe(1)
     expect(committed.editedItem).toMatchObject({
       quantity: 2,
-      unitValueCp: 321,
+      unitValueCp: 10,
       stackable: true,
       magic: false
     })

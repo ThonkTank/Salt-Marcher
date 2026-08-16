@@ -75,6 +75,8 @@ export const lootMessagesDe = {
   'loot.groupGenerateDraft': 'Loot erzeugen',
   'loot.groupRetry': 'Erneut versuchen',
   'loot.groupReroll': 'Loot neu würfeln',
+  'loot.groupNoDeficit':
+    'Die Party liegt nach diesem Kampf bereits auf oder über ihrem Loot-Soll. Es wird kein zusätzlicher Loot angelegt.',
   'loot.groupCommit': 'Gruppe & Loot übernehmen',
   'loot.groupCommitting': 'Gruppe & Loot werden übernommen…',
   'loot.discardQuestion': 'Eigene Loot-Änderungen verwerfen?',

@@ -1,4 +1,10 @@
 import type { EncounterEntropy } from './deterministic-order.js'
+import type { GeneratorLootRules } from '../../shared/contracts/generator-loot-rules.js'
+import type {
+  GeneratedRewardBasis,
+  LedgerRewardPartyMember
+} from '../../shared/contracts/session-generation.js'
+import { generatedRewardBasisSchema } from '../../shared/contracts/session-generation.js'
 import { rewardBudgetStream } from './entropy-streams.js'
 import {
   lootRarities,
@@ -16,6 +22,7 @@ import {
 import type { NormalizedRewardBasis } from './reward-basis-stage.js'
 import {
   goldPerXp,
+  copperPieces,
   magicPerXp,
   perCharacterRewardXp,
   rawMagicTarget,
@@ -39,6 +46,12 @@ export type RewardBudgetStageOutput = Readonly<{
   perCharacterXp: PerCharacterXp
   goldBudgetCp: CopperPieces
   magicTargets: Readonly<Record<LootRarity, number>>
+}>
+
+export type LedgerRewardBudgetStageOutput = Readonly<{
+  goldBudgetCp: CopperPieces
+  magicTargets: Readonly<Record<LootRarity, number>>
+  rewardBasis: GeneratedRewardBasis
 }>
 
 /**
@@ -77,6 +90,117 @@ export function calculateRewardBudget(
     goldBudgetCp: rewardGoldBudget(perCharacterXp, rates.goldPerXp),
     magicTargets: Object.freeze(magicTargets)
   })
+}
+
+/** Calculates the missing cumulative reward at projected post-reward XP. */
+export function calculateLedgerRewardBudget(
+  input: Readonly<{
+    members: readonly LedgerRewardPartyMember[]
+    rules: GeneratorLootRules
+    seed: number
+    profile: RewardBudgetProfile
+  }>,
+  entropy: EncounterEntropy
+): LedgerRewardBudgetStageOutput {
+  if (input.members.length === 0) throw new Error('missing_ledger_reward_party')
+  const targetGoldCp = Math.round(
+    input.members.reduce(
+      (sum, member) =>
+        sum +
+        goldTargetAtXp(member.currentXp + member.projectedXp, input.rules),
+      0
+    )
+  )
+  const currentGoldCp = input.members.reduce(
+    (sum, member) => sum + member.currentNonMagicCp,
+    0
+  )
+  const targetMagic = Object.fromEntries(
+    lootRarities.map((rarity, index) => {
+      const expected = input.members.reduce(
+        (sum, member) =>
+          sum +
+          magicTargetAtXp(
+            member.currentXp + member.projectedXp,
+            rarity,
+            input.rules
+          ),
+        0
+      )
+      const base = Math.floor(expected)
+      const streamKind =
+        input.profile === 'session' ? 'magic-target' : 'group-magic-target'
+      return [
+        rarity,
+        base +
+          (entropy.unit(rewardBudgetStream(input.seed, streamKind, index)) <
+          expected - base
+            ? 1
+            : 0)
+      ]
+    })
+  ) as Record<LootRarity, number>
+  const currentMagic = Object.fromEntries(
+    lootRarities.map((rarity) => [
+      rarity,
+      input.members.reduce(
+        (sum, member) => sum + member.currentMagic[rarity],
+        0
+      )
+    ])
+  ) as Record<LootRarity, number>
+  const magicDeficit = Object.fromEntries(
+    lootRarities.map((rarity) => [
+      rarity,
+      Math.max(0, targetMagic[rarity] - currentMagic[rarity])
+    ])
+  ) as Record<LootRarity, number>
+  const goldDeficitCp = Math.max(0, targetGoldCp - currentGoldCp)
+  return Object.freeze({
+    goldBudgetCp: copperPieces(goldDeficitCp),
+    magicTargets: Object.freeze(magicDeficit),
+    rewardBasis: generatedRewardBasisSchema.parse({
+      members: input.members,
+      targetGoldCp,
+      currentGoldCp,
+      goldDeficitCp,
+      targetMagic,
+      currentMagic,
+      magicDeficit
+    })
+  })
+}
+
+function goldTargetAtXp(xp: number, rules: GeneratorLootRules): number {
+  const rows = rules.progression
+  const last = rows.at(-1)!
+  if (xp >= last.xpAtLevel) return last.goldAtLevelCp
+  const lowerIndex = Math.max(
+    0,
+    rows.findLastIndex((row) => row.xpAtLevel <= xp)
+  )
+  const lower = rows[lowerIndex]!
+  const upper = rows[lowerIndex + 1]!
+  const fraction = (xp - lower.xpAtLevel) / (upper.xpAtLevel - lower.xpAtLevel)
+  return (
+    lower.goldAtLevelCp + (upper.goldAtLevelCp - lower.goldAtLevelCp) * fraction
+  )
+}
+
+function magicTargetAtXp(
+  xp: number,
+  rarity: LootRarity,
+  rules: GeneratorLootRules
+): number {
+  let target = 0
+  for (let index = 0; index < rules.progression.length - 1; index += 1) {
+    const row = rules.progression[index]!
+    const upper = rules.progression[index + 1]!.xpAtLevel
+    const elapsed = Math.max(0, Math.min(xp, upper) - row.xpAtLevel)
+    target += elapsed * row.magicPerXp[rarity]
+    if (xp <= upper) break
+  }
+  return target
 }
 
 function weightedProgressionRates(

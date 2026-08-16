@@ -2,8 +2,9 @@
 
 ## Goal And Scope
 
-Given normalized party levels, an adventure-day fraction, optional encounter
-count, and seed, Session Generation MUST produce one deterministic structured
+Given normalized party levels and character-ledger references, an
+adventure-day fraction, optional encounter count, and seed, Session Generation
+MUST produce one structured
 result containing encounter intents, rewards, packing, warnings, and audits.
 After the result is saved and reopened, its structured meaning MUST be
 equivalent to the result first presented for the same generation.
@@ -25,11 +26,14 @@ A group reward request MUST pin the scene revision, prospective or persisted
 group identity, nullable group revision, complete normalized living/dead
 roster, assigned party revision and level counts, current campaign-rules
 revision, configured XP basis, base XP, adjusted XP, effective reward XP, and
-seed. Dead members are preserved as source provenance but do not contribute XP.
-Its immutable result contains exactly one normal Encounter-channel treasure and
+seed. It also pins every participating character's current XP, projected XP,
+ledger revision, effective non-magic value, and magic counts. Dead members are
+preserved as source provenance but do not contribute XP. Its immutable result
+contains at most one normal Encounter-channel treasure and
 no encounter intents, quest reward, environment reward, or overstock. It uses
 the independent reward-engine version and the same current XP policy as combat
-resolution.
+resolution. A party with no positive gold or magic deficit produces a
+successful empty reward rather than a placeholder item.
 
 ## User-Observable Result
 
@@ -55,6 +59,18 @@ to a positive party size. The adventure-day fraction is an exact non-negative
 decimal. An explicit encounter count is from 1 through 10; omission activates
 deterministic automatic calculation. The seed is explicit.
 
+Exact candidate stability is not a compatibility promise; the immutable saved
+result and its catalog/config provenance are the replay authority. Reward
+budgeting is cumulative. For every participating character, Utility adds
+projected per-character reward XP to current XP, interpolates the editable gold
+progression through the level-20 cap, and integrates the editable rarity rates
+across crossed XP bands. It subtracts effective cumulative ledger grants,
+clamps every deficit at zero, and generates only the missing gold and rarity
+counts. Received, sold, and given-away grants all count; a superseded row does
+not count while its linked correction does. Ledger entries reference the
+owning Treasure item, so value, magic, and rarity are not copied into a second
+reward model.
+
 Invalid input produces no result. Catalog, generation, and saving failures are
 distinguishable and expose no partial result. Issues, warnings, and audits use
 stable codes plus structured parameters; localized prose is renderer-owned.
@@ -63,7 +79,7 @@ stable codes plus structured parameters; localized prose is renderer-owned.
 
 The target retains the executed rule groups in sections 3 through 15 of the
 preserved owner-provided reference as the `saltmarcher-v1` behavior profile.
-This is stage and invariant parity, not spreadsheet-row or exact-item parity.
+This is stage and invariant parity, not exact random-candidate parity.
 
 The engine MUST preserve:
 
@@ -75,10 +91,10 @@ The engine MUST preserve:
   descending slots, dynamic line budgets, loot roles, candidate tolerances,
   bulk behavior, coins, adorned/useful/flavor items, magic, enspelling, curses,
   and packing
-- positive modulo, explicit stable ordering, deterministic selection, typed
+- positive modulo, explicit ordering, typed
   fallbacks, hard audits, and budget tolerances
 
-SaltMarcher owns catalog content. The engine may use stable keyed entropy and
+SaltMarcher owns catalog content. The engine may use simplified entropy and
 different active catalog rows. Exact selected candidates, items, containers,
 monetary totals, formatted text, spreadsheet row identities, and per-cell seed
 multipliers are outside compatibility.
@@ -87,7 +103,7 @@ Session Generation retains its exact-sum target allocator and passes each
 allocated XP target to the shared composition selector. It returns abstract
 statblock requirements rather than concrete creature identities, and the
 encounter statblock count equals the sum of positive per-block slots. Preset
-ownership, Config V3, enumeration, hard constraints, ranking, diagnostics, and
+ownership, Config V4, enumeration, hard constraints, ranking, diagnostics, and
 Scene parity are defined by the
 [Encounter Generation Requirements](../../encounter/requirements/requirements-encounter-generation.md).
 
@@ -114,13 +130,15 @@ formatted-text snapshot is Golden compatibility.
   warnings, audits, seed, and recorded engine/catalog meaning
 - repeating the same semantic origin returns the existing run and does not
   create visible duplicates
+- the semantic origin includes the effective Config-V4 Loot rules and ledger
+  snapshot; a changed ledger creates a new calculation
 - reward details remain available as structured fields rather than only as
   formatted text
 
 ## Acceptance Criteria
 
-- equal normalized input, engine version, catalog content hash, and effective
-  generator-config hash produce equal structured results
+- every successful result is recoverable from its saved immutable run, catalog
+  content hash, and effective generator-config hash
 - encounter targets sum exactly to session XP
 - every applicable result retains seed, versions, content hash, structured
   encounters, rewards, packing, warnings, and audits

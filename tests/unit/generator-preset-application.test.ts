@@ -21,7 +21,7 @@ function snapshot(revision = 4): GeneratorPresetEditorSnapshot {
         {
           id: systemGeneratorPresetId,
           name: 'System-Default',
-          schemaVersion: 3,
+          schemaVersion: 4,
           revision: 0,
           protected: true,
           createdAt: now,

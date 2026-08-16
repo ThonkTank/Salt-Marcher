@@ -16,7 +16,7 @@ export type TreasurePlanningStreamKind =
   | 'group-loot-slots'
 
 export type ItemSelectionStreamKind =
-  'loot-item' | 'modifier-chance' | 'modifier'
+  'loot-item' | 'loot-form' | 'coin-profile' | 'modifier-chance' | 'modifier'
 
 export type MagicSelectionStreamKind =
   | 'magic-item'

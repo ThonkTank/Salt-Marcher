@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import type Database from 'better-sqlite3'
 import { GeneratedEncounterPlanService } from '../../core/encounter/generated-plan-service.js'
 import { TreasureStore } from '../../core/loot/loot-store.js'
+import { CharacterLootStore } from '../../core/loot/character-loot-store.js'
 import { dailyXp, PartyStore } from '../../core/party/party-store.js'
 import { SessionPlannerStore } from '../../core/session-planner/session-planner-store.js'
 import {
@@ -261,8 +262,47 @@ export class SessionPlannerService {
       this.phaseBoundary('before_generation', operation.id)
       let generated: ReturnType<SessionGenerationService['generate']>
       try {
+        const session = new SessionPlannerStore(db).require(operation.sessionId)
+        const partySnapshot = new PartyStore(db).read()
+        const members = session.participantIds.map((id) => {
+          const member = partySnapshot.members.find((entry) => entry.id === id)
+          if (!member || member.level === null)
+            throw new CapabilityError('stale', true)
+          return member
+        })
+        const sessionXpTarget = roundHalfUp(
+          multiply(
+            rational(
+              BigInt(
+                operation.party.reduce(
+                  (sum, entry) => sum + dailyXp[entry.level - 1]! * entry.count,
+                  0
+                )
+              )
+            ),
+            decimal(operation.adventureDayFraction)
+          )
+        )
+        const projectedXp = Math.floor(sessionXpTarget / members.length)
+        const balances = new Map(
+          new CharacterLootStore(db)
+            .rewardBalances(members.map((member) => member.id))
+            .map((balance) => [balance.characterId, balance])
+        )
         generated = this.generation.generate({
           party: [...operation.party],
+          ledgerParty: members.map((member) => {
+            const balance = balances.get(member.id)
+            if (!balance) throw new Error('missing_character_reward_balance')
+            return {
+              characterId: member.id,
+              currentXp: member.xp,
+              projectedXp,
+              ledgerRevision: balance.ledgerRevision,
+              currentNonMagicCp: balance.currentNonMagicCp,
+              currentMagic: balance.currentMagic
+            }
+          }),
           adventureDayFraction: operation.adventureDayFraction,
           ...(operation.encounterCount === null
             ? {}

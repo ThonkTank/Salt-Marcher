@@ -11,6 +11,7 @@ import type {
 } from '../../shared/contracts/session-generation.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import { sameGroupRewardEntries } from '../session-generation/group-reward-source.js'
+import type { CharacterRewardBalance } from '../loot/character-loot-store.js'
 
 export type GroupRewardRevisionContext = Readonly<{
   party: Readonly<{ read(): PartySnapshot }>
@@ -20,6 +21,11 @@ export type GroupRewardRevisionContext = Readonly<{
   }>
   rules: Readonly<{ read(): CampaignRules }>
   generatedRuns: Readonly<{ read(runId: string): GeneratedRun | null }>
+  characterLoot?: Readonly<{
+    rewardBalances(
+      characterIds: readonly string[]
+    ): readonly CharacterRewardBalance[]
+  }>
   treasures: Readonly<{
     findByGenerated(runId: string, generatedTreasureId: string): Treasure | null
   }>
@@ -47,6 +53,22 @@ export class GroupRewardRevisionGuard {
     if (party.revision !== run.input.partyRevision) stale()
     const rules = this.context.rules.read()
     if (rules.revision !== run.input.campaignRulesRevision) stale()
+    if (run.rewardBasis && this.context.characterLoot) {
+      const revisions = new Map(
+        this.context.characterLoot
+          .rewardBalances(
+            run.rewardBasis.members.map((member) => member.characterId)
+          )
+          .map((balance) => [balance.characterId, balance.ledgerRevision])
+      )
+      if (
+        run.rewardBasis.members.some(
+          (member) =>
+            revisions.get(member.characterId) !== member.ledgerRevision
+        )
+      )
+        stale()
+    }
     if (this.context.scenes.revision() !== input.expectedSceneRevision) stale()
     const scene = this.context.scenes
       .snapshot(party.members)

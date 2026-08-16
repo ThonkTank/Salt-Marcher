@@ -89,7 +89,10 @@ export const expectedCatalogHeaders: Readonly<
     'Notes',
     'Packing_Priority',
     'Mixable',
-    'Container_ID'
+    'Container_ID',
+    'Output_Singular',
+    'Output_Plural',
+    'Output_Relation'
   ],
   'DB_EncounterPatterns.tsv': [
     'Pattern_ID',
@@ -135,13 +138,12 @@ export const expectedCatalogHeaders: Readonly<
     'Loot_Form_Override',
     'Size_Class',
     'Capacity_Units',
-    'Allowed_Containers_Cache',
     'Utility_Score',
     'Value_Density_CP',
     'Value_Tier',
     'Loot_Class',
     'Loot_Type',
-    'Modular_Profile_Cache',
+    'Modular_Profile',
     'Can_Adorn',
     'Adornment_Type',
     'Unit_Label',
@@ -154,8 +156,6 @@ export const expectedCatalogHeaders: Readonly<
     'Modifier_Kind',
     'Name',
     'Loot_Type',
-    'Allowed_Profiles_Cache',
-    'Allowed_Categories_Cache',
     'Text_Template',
     'Details',
     'Component_Type',
@@ -169,6 +169,65 @@ export const expectedCatalogHeaders: Readonly<
     'Relation_Type',
     'Source_ID',
     'Target_ID',
+    'Active',
+    'Sort_Order',
+    'Notes'
+  ],
+  'DB_LootMix.tsv': [
+    'Mix_Level',
+    'Parent_ID',
+    'Option_ID',
+    'Share',
+    'Selection_Path',
+    'Active',
+    'Sort_Order',
+    'Notes'
+  ],
+  'DB_LootSelectionPolicy.tsv': [
+    'Path_ID',
+    'Fit_Weight',
+    'Theme_Weight',
+    'Jitter_Weight',
+    'Duplicate_Penalty',
+    'Near_Best_Gap_Pct',
+    'Shortlist_Size',
+    'Min_Fit_Pct',
+    'Max_Overfit_Pct',
+    'Variant_Shortlist_Size',
+    'Min_Base_Extra_CP',
+    'Preferred_Base_Extra_CP',
+    'Active',
+    'Notes'
+  ],
+  'DB_LootQuantityRules.tsv': [
+    'Rule_ID',
+    'Selection_Path',
+    'Match_Field',
+    'Match_Value',
+    'Max_Qty',
+    'Priority',
+    'Active',
+    'Notes'
+  ],
+  'DB_CoinProfiles.tsv': [
+    'Profile_ID',
+    'Unit_1_CP',
+    'Unit_2_CP',
+    'Unit_3_CP',
+    'Min_Low_Count',
+    'Max_Low_Count',
+    'Max_Middle_Count',
+    'Max_Budget_CP',
+    'Allowed_Containers',
+    'Active',
+    'Sort_Order',
+    'Notes'
+  ],
+  'DB_CoinDenominations.tsv': [
+    'Denomination_ID',
+    'Unit_CP',
+    'Singular_Label',
+    'Plural_Label',
     'Active',
     'Sort_Order',
     'Notes'
@@ -247,6 +306,79 @@ export const expectedCatalogHeaders: Readonly<
     'Source_Rows',
     'Spell_Colors'
   ]
+}
+
+const legacyCatalogVersion = 'catalog-2026-07-16'
+const {
+  'DB_LootMix.tsv': _legacyMix,
+  'DB_LootSelectionPolicy.tsv': _legacySelection,
+  'DB_LootQuantityRules.tsv': _legacyQuantity,
+  'DB_CoinProfiles.tsv': _legacyCoinProfiles,
+  'DB_CoinDenominations.tsv': _legacyCoinDenominations,
+  ...legacySharedHeaders
+} = expectedCatalogHeaders
+void _legacyMix
+void _legacySelection
+void _legacyQuantity
+void _legacyCoinProfiles
+void _legacyCoinDenominations
+
+const legacyExpectedCatalogHeaders: Readonly<
+  Record<string, readonly string[]>
+> = Object.freeze({
+  ...legacySharedHeaders,
+  'DB_Containers.tsv': expectedCatalogHeaders['DB_Containers.tsv']!.slice(0, 8),
+  'DB_LootItems.tsv': [
+    'Item_ID',
+    'Name',
+    'Category',
+    'Base_CP',
+    'Base_LB',
+    'Active',
+    'Notes',
+    'Loot_Form_Override',
+    'Size_Class',
+    'Capacity_Units',
+    'Allowed_Containers_Cache',
+    'Utility_Score',
+    'Value_Density_CP',
+    'Value_Tier',
+    'Loot_Class',
+    'Loot_Type',
+    'Modular_Profile_Cache',
+    'Can_Adorn',
+    'Adornment_Type',
+    'Unit_Label',
+    'Source',
+    'Source_Row',
+    'Value_Form'
+  ],
+  'DB_LootModifiers.tsv': [
+    'Modifier_ID',
+    'Modifier_Kind',
+    'Name',
+    'Loot_Type',
+    'Allowed_Profiles_Cache',
+    'Allowed_Categories_Cache',
+    'Text_Template',
+    'Details',
+    'Component_Type',
+    'Min_Qty',
+    'Max_Qty',
+    'Flat_Value_CP',
+    'Active',
+    'Source_Row'
+  ]
+})
+
+export function catalogHeadersForVersion(
+  catalogVersion: string,
+  tableFiles?: readonly string[]
+): Readonly<Record<string, readonly string[]>> {
+  return catalogVersion === legacyCatalogVersion ||
+    (tableFiles !== undefined && !tableFiles.includes('DB_LootMix.tsv'))
+    ? legacyExpectedCatalogHeaders
+    : expectedCatalogHeaders
 }
 
 export type EncounterCatalogSnapshot = Readonly<{
@@ -448,9 +580,9 @@ function nonnegative(row: Row, key: string): number {
 
 function bool(row: Row, key: string): boolean {
   const value = row[key]
-  if (value !== 'true' && value !== 'false')
+  if (value !== 'true' && value !== 'false' && value !== '1' && value !== '0')
     throw new Error(`catalog_schema_invalid:boolean_${key}`)
-  return value === 'true'
+  return value === 'true' || value === '1'
 }
 
 function assertUnique(

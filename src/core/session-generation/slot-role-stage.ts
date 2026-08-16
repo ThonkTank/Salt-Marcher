@@ -1,4 +1,6 @@
 import type { EncounterEntropy } from './deterministic-order.js'
+import type { GeneratorLootRules } from '../../shared/contracts/generator-loot-rules.js'
+import { defaultGeneratorLootRules } from '../../shared/generator/default-loot-rules.js'
 import { slotRoleStream, treasurePlanningStream } from './entropy-streams.js'
 import { decimal, multiply, rational, roundHalfUp } from './rational.js'
 import {
@@ -9,13 +11,12 @@ import {
   type RolePlannedTreasure
 } from './reward-stage-types.js'
 
-const roleShares = [0.25, 0.25, 0.3, 0.2] as const
-
 export type SlotRolePlanningInput = Readonly<{
   profile: 'session' | 'group_reward'
   seed: number
   adventureDayFraction?: string
   treasures: readonly RewardTreasurePlan[]
+  rules?: GeneratorLootRules
 }>
 
 /**
@@ -28,12 +29,14 @@ export function planSlotsAndRoles(
   entropy: EncounterEntropy
 ): readonly RolePlannedTreasure[] {
   if (input.treasures.length === 0) throw new Error('missing_treasure_plan')
+  const rules = input.rules ?? defaultGeneratorLootRules
   const totalSlots =
     input.profile === 'group_reward'
-      ? 3 +
-        entropy.modulo(
-          treasurePlanningStream(input.seed, 'group-loot-slots', 0),
-          3
+      ? Math.max(
+          1,
+          Math.round(
+            rules.treasure.slotTarget * rules.treasure.encounterTreasureRatio
+          )
         )
       : sessionSlotCount(input, entropy)
   const slots = descendingSlots(totalSlots, input.treasures.length)
@@ -42,7 +45,14 @@ export function planSlotsAndRoles(
     input.treasures.map((treasure, treasureIndex) => ({
       ...treasure,
       roles: Array.from({ length: slots[treasureIndex] ?? 1 }, (_, slot) => {
-        const role = chooseRole(input.seed, treasure.id, slot, counts, entropy)
+        const role = chooseRole(
+          input.seed,
+          treasure.id,
+          slot,
+          counts,
+          rules,
+          entropy
+        )
         counts.set(role, (counts.get(role) ?? 0) + 1)
         return role
       })
@@ -56,7 +66,13 @@ function sessionSlotCount(
 ): number {
   const fraction = decimal(input.adventureDayFraction ?? '1')
   const fullDaySlots =
-    6 + entropy.modulo(treasurePlanningStream(input.seed, 'loot-slots', 0), 5)
+    (input.rules ?? defaultGeneratorLootRules).treasure.slotMin +
+    entropy.modulo(
+      treasurePlanningStream(input.seed, 'loot-slots', 0),
+      (input.rules ?? defaultGeneratorLootRules).treasure.slotMax -
+        (input.rules ?? defaultGeneratorLootRules).treasure.slotMin +
+        1
+    )
   return Math.max(
     input.treasures.length,
     roundHalfUp(multiply(rational(BigInt(fullDaySlots)), fraction))
@@ -80,14 +96,22 @@ function chooseRole(
   treasureId: string,
   slot: number,
   counts: ReadonlyMap<LootRole, number>,
+  rules: GeneratorLootRules,
   entropy: EncounterEntropy
 ): LootRole {
+  const roleShares = [
+    rules.mix.roles.compactValue,
+    rules.mix.roles.complexValue,
+    rules.mix.roles.useful,
+    rules.mix.roles.flavor
+  ] as const
   const total = [...counts.values()].reduce((sum, count) => sum + count, 0)
   const weights = lootRoles.map((role, index) => {
     const actual = total === 0 ? 0 : (counts.get(role) ?? 0) / total
     return Math.max(
       0.01,
-      roleShares[index]! + (roleShares[index]! - actual) * 1.5
+      roleShares[index]! +
+        (roleShares[index]! - actual) * rules.balance.roleStrength
     )
   })
   let cursor =

@@ -94,18 +94,26 @@ export function materializeGroupRewardTreasureDraft(
           sourceLineId: origin.sourceLineId
         })
       usedGeneratedItems.add(origin.sourceLineId)
-      return materializedItem(item, {
-        sourceLineId: source.id,
-        catalogEntryKind: source.catalogItemId
-          ? source.magic
-            ? 'magic_item'
-            : 'item'
-          : null,
-        catalogItemId: source.catalogItemId,
-        magic: source.magic,
-        rarity: source.rarity,
-        curseName: source.curseName
-      })
+      return materializedItem(
+        item,
+        {
+          sourceLineId: source.id,
+          catalogEntryKind: source.catalogItemId
+            ? source.magic
+              ? 'magic_item'
+              : 'item'
+            : null,
+          catalogItemId: source.catalogItemId,
+          magic: source.magic,
+          rarity: source.rarity,
+          curseName: source.curseName
+        },
+        {
+          name: source.name,
+          unitValueCp: source.unitValueCp,
+          stackable: source.stackable
+        }
+      )
     }
     if (!catalog)
       throw new Error('Catalog index is required for catalog origins')
@@ -121,14 +129,27 @@ export function materializeGroupRewardTreasureDraft(
       }
       if (!source.active)
         invalid('catalog_entry_inactive', path, { catalogId: origin.catalogId })
-      return materializedItem(item, {
-        sourceLineId: null,
-        catalogEntryKind: 'item',
-        catalogItemId: source.id,
-        magic: false,
-        rarity: null,
-        curseName: null
-      })
+      const definition = catalog.entries.find(
+        (entry) => entry.kind === 'item' && entry.id === source.id
+      )
+      if (!definition || definition.kind !== 'item')
+        invalid('catalog_entry_unknown', path, { catalogId: origin.catalogId })
+      return materializedItem(
+        item,
+        {
+          sourceLineId: null,
+          catalogEntryKind: 'item',
+          catalogItemId: source.id,
+          magic: false,
+          rarity: null,
+          curseName: null
+        },
+        {
+          name: definition.defaultName,
+          unitValueCp: definition.unitValueCp,
+          stackable: definition.stackable
+        }
+      )
     }
     const source = catalog.magicItems.get(origin.catalogId)
     if (!source) {
@@ -141,14 +162,27 @@ export function materializeGroupRewardTreasureDraft(
     }
     if (!source.active)
       invalid('catalog_entry_inactive', path, { catalogId: origin.catalogId })
-    return materializedItem(item, {
-      sourceLineId: null,
-      catalogEntryKind: 'magic_item',
-      catalogItemId: source.id,
-      magic: true,
-      rarity: source.rarity,
-      curseName: null
-    })
+    const definition = catalog.entries.find(
+      (entry) => entry.kind === 'magic_item' && entry.id === source.id
+    )
+    if (!definition || definition.kind !== 'magic_item')
+      invalid('catalog_entry_unknown', path, { catalogId: origin.catalogId })
+    return materializedItem(
+      item,
+      {
+        sourceLineId: null,
+        catalogEntryKind: 'magic_item',
+        catalogItemId: source.id,
+        magic: true,
+        rarity: source.rarity,
+        curseName: null
+      },
+      {
+        name: definition.defaultName,
+        unitValueCp: definition.unitValueCp,
+        stackable: definition.stackable
+      }
+    )
   })
 
   return deepFreeze({ label: draft.label.trim(), containers, items })
@@ -164,15 +198,20 @@ function materializedItem(
     | 'magic'
     | 'rarity'
     | 'curseName'
-  >
+  >,
+  definition: Readonly<{
+    name: string
+    unitValueCp: number
+    stackable: boolean
+  }>
 ): MaterializedGroupRewardItem {
   return {
     draftId: item.id,
     ...authority,
-    name: item.name.trim(),
+    name: definition.name,
     quantity: item.quantity,
-    unitValueCp: item.unitValueCp,
-    stackable: item.stackable,
+    unitValueCp: definition.unitValueCp,
+    stackable: definition.stackable || item.quantity > 1,
     containerDraftId: item.containerId
   }
 }

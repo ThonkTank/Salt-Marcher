@@ -10,6 +10,9 @@ export const generatorMessagesDe = {
   'g.deadly': 'Tödlich',
   'g.title': 'Encounter Generator',
   'g.rules': 'Generator-Regeln',
+  'g.loot.title': 'Loot-Generierung',
+  'g.loot.hint':
+    'Feste Regeltabellen des Loot-Prototyps. Änderungen gelten nur für dieses Generator-Preset.',
   'g.saveCopy': 'Als Kopie speichern',
   'g.delete': 'Löschen',
   'g.brush': 'Rollen-Pinsel',

@@ -78,7 +78,13 @@ export function groupLootDraftFromRun(
   run: GroupRewardGeneratedRun,
   createId: () => string = () => crypto.randomUUID()
 ): GroupLootDraft {
-  const treasure = run.treasures[0]!
+  const treasure = run.treasures[0]
+  if (!treasure)
+    return {
+      label: 'Kein zusätzlicher Loot',
+      containers: [],
+      items: []
+    }
   const containerDraftIds = new Map<string, string>()
   const containers = treasure.containers.map((container) => {
     const draftId = createId()

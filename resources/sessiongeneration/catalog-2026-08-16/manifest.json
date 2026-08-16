@@ -1,0 +1,155 @@
+{
+  "catalogVersion": "catalog-2026-08-16",
+  "catalogContentHash": "59f4a9ab7b7164b9151d5339f41136701efa45a58666ee1cab7cff101b224a03",
+  "sourceSha256": "a3bb89c04b40beb65eb6e344a6a8e8e8f6570cde7b75012aa778b5555b64aac2",
+  "sourceUrl": "https://docs.google.com/spreadsheets/d/106AZXUTiRqKQ3bvh7FILYkZoHX1S_rAHZ4EcH7u2ino/edit",
+  "tables": [
+    {
+      "columns": 6,
+      "file": "DB_CR.tsv",
+      "name": "DB_CR",
+      "rows": 34,
+      "sha256": "59c11c85fd24306777f038bfc11741445ba18726c692fe534d64226a4582979c"
+    },
+    {
+      "columns": 7,
+      "file": "DB_CoinDenominations.tsv",
+      "name": "DB_CoinDenominations",
+      "rows": 5,
+      "sha256": "3f305de84cdd7a9b90a009febb154ecd953a990b3e3ab47664ec17e0bc800c2b"
+    },
+    {
+      "columns": 12,
+      "file": "DB_CoinProfiles.tsv",
+      "name": "DB_CoinProfiles",
+      "rows": 9,
+      "sha256": "f5dc8523fe463f6c3b732571a8f9ff7e2026950e0ea0edf73182ac275e839385"
+    },
+    {
+      "columns": 11,
+      "file": "DB_Containers.tsv",
+      "name": "DB_Containers",
+      "rows": 28,
+      "sha256": "05d2f6d7c8cda39f4626a5c4d3c1e07c9b00147600802175fb1dc00f4c184e15"
+    },
+    {
+      "columns": 7,
+      "file": "DB_EncounterPatterns.tsv",
+      "name": "DB_EncounterPatterns",
+      "rows": 24,
+      "sha256": "7ecf49d71b5c800ec24b9ab47fbbfa5d46825fac4b22f3b28cacc66a730fb548"
+    },
+    {
+      "columns": 6,
+      "file": "DB_EncounterRoleBands.tsv",
+      "name": "DB_EncounterRoleBands",
+      "rows": 680,
+      "sha256": "4575163d8ab46e30f0c1a2b9835b96bac8dfe0008c4b04509b9419aa3f55a0ae"
+    },
+    {
+      "columns": 14,
+      "file": "DB_EnspelledRules.tsv",
+      "name": "DB_EnspelledRules",
+      "rows": 45,
+      "sha256": "2f3468abc3c008a802a9123b483c858e927063ae9e474ba16e899c71f9dd13b0"
+    },
+    {
+      "columns": 22,
+      "file": "DB_LootItems.tsv",
+      "name": "DB_LootItems",
+      "rows": 681,
+      "sha256": "e98205331c485fdc8b31db1bd3d3163dc746be7eea40b6d5a0862d16426fb872"
+    },
+    {
+      "columns": 8,
+      "file": "DB_LootMix.tsv",
+      "name": "DB_LootMix",
+      "rows": 13,
+      "sha256": "b3bec8f2deb77ce31603dbc1a95f88db340d67bf672870e9596ef1320a5383bd"
+    },
+    {
+      "columns": 12,
+      "file": "DB_LootModifiers.tsv",
+      "name": "DB_LootModifiers",
+      "rows": 59,
+      "sha256": "3d64afaa4fc702f45aea49d1266db6ff3f76ec66527698bce57425d8a8610987"
+    },
+    {
+      "columns": 8,
+      "file": "DB_LootQuantityRules.tsv",
+      "name": "DB_LootQuantityRules",
+      "rows": 14,
+      "sha256": "6b6f7809d0ccd8d44b9b0d3f9fcec580822a9f76cf30aa21b867042cc8f4e0c7"
+    },
+    {
+      "columns": 6,
+      "file": "DB_LootRelations.tsv",
+      "name": "DB_LootRelations",
+      "rows": 2146,
+      "sha256": "a32cc89f2c0b7847dc325b828c2170aad465f752cf656250fd27a12edd4367a3"
+    },
+    {
+      "columns": 14,
+      "file": "DB_LootSelectionPolicy.tsv",
+      "name": "DB_LootSelectionPolicy",
+      "rows": 7,
+      "sha256": "cc6a74194a63ea3bff969de189879f82f11923fe3a8b911342a4537618994490"
+    },
+    {
+      "columns": 5,
+      "file": "DB_LootSources.tsv",
+      "name": "DB_LootSources",
+      "rows": 8,
+      "sha256": "ac7700997576e39ea665d040ace3ffb34db20701b6ee07786bdd5405a65734da"
+    },
+    {
+      "columns": 12,
+      "file": "DB_MagicCurses.tsv",
+      "name": "DB_MagicCurses",
+      "rows": 300,
+      "sha256": "12197ab74629b333a72d2d277b0d3533bb66fd77938bdf95149d2e502c530d62"
+    },
+    {
+      "columns": 7,
+      "file": "DB_MagicDecisionTypes.tsv",
+      "name": "DB_MagicDecisionTypes",
+      "rows": 5,
+      "sha256": "268501d4c8e7d097b61117a63ec51316dcc44ff326cc7e6f4d1b1d4052087057"
+    },
+    {
+      "columns": 10,
+      "file": "DB_MagicItems.tsv",
+      "name": "DB_MagicItems",
+      "rows": 552,
+      "sha256": "c0e646a9b36cac04d58097329434d7673e1a8afcea4662992f41147dfc5c9b7e"
+    },
+    {
+      "columns": 6,
+      "file": "DB_MagicVariants.tsv",
+      "name": "DB_MagicVariants",
+      "rows": 41,
+      "sha256": "6f9513f5172b5df22b80fa7379520ae1bba76f3195beda1b9912f83fa56c52d0"
+    },
+    {
+      "columns": 18,
+      "file": "DB_Progression.tsv",
+      "name": "DB_Progression",
+      "rows": 20,
+      "sha256": "da3155ac33eefee126d863559b7cf809b4a009a3ffb4947375e6e0ff09207ee7"
+    },
+    {
+      "columns": 4,
+      "file": "DB_Spells.tsv",
+      "name": "DB_Spells",
+      "rows": 450,
+      "sha256": "faee389d0ab43942be1cefebdd883ff7a2e1b04ad746e11046974edd4fd054b0"
+    },
+    {
+      "columns": 7,
+      "file": "DB_Themes.tsv",
+      "name": "DB_Themes",
+      "rows": 8,
+      "sha256": "c61ca48547ba5b8441483a1ac21151a783a6d658a6f6018639907f7e11350295"
+    }
+  ]
+}

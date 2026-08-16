@@ -19,6 +19,11 @@ export type SessionRunOrigin = Readonly<{
 export type GroupRewardRunOrigin = Readonly<{
   rewardEngineVersion: string
   catalogContentHash: string
+  generatorPreset?: Readonly<{
+    id: string
+    revision: number
+    configHash: string
+  }>
   input: GroupRewardGenerationInput
 }>
 
@@ -41,6 +46,7 @@ export function groupRewardRunOriginFingerprint(
     runKind: 'group_reward',
     rewardEngineVersion: origin.rewardEngineVersion,
     catalogContentHash: origin.catalogContentHash,
+    generatorPreset: origin.generatorPreset ?? null,
     input: origin.input
   })
 }

@@ -21,6 +21,39 @@ export const generationPartyLevelSchema = z
   })
   .strict()
 
+export const generatedMagicCountsSchema = z
+  .object({
+    Common: z.number().int().nonnegative(),
+    Uncommon: z.number().int().nonnegative(),
+    Rare: z.number().int().nonnegative(),
+    'Very Rare': z.number().int().nonnegative(),
+    Legendary: z.number().int().nonnegative()
+  })
+  .strict()
+
+export const ledgerRewardPartyMemberSchema = z
+  .object({
+    characterId: z.uuid(),
+    currentXp: z.number().int().nonnegative(),
+    projectedXp: z.number().int().nonnegative(),
+    ledgerRevision: z.number().int().nonnegative(),
+    currentNonMagicCp: z.number().int().nonnegative(),
+    currentMagic: generatedMagicCountsSchema
+  })
+  .strict()
+
+export const generatedRewardBasisSchema = z
+  .object({
+    members: z.array(ledgerRewardPartyMemberSchema).min(1),
+    targetGoldCp: z.number().int().nonnegative(),
+    currentGoldCp: z.number().int().nonnegative(),
+    goldDeficitCp: z.number().int().nonnegative(),
+    targetMagic: generatedMagicCountsSchema,
+    currentMagic: generatedMagicCountsSchema,
+    magicDeficit: generatedMagicCountsSchema
+  })
+  .strict()
+
 export const groupRewardSourceEntrySchema = z
   .object({
     creatureId: z.string().min(1),
@@ -35,6 +68,7 @@ export const groupRewardSourceEntrySchema = z
 export const sessionGenerationEncounterInputSchema = z
   .object({
     party: z.array(generationPartyLevelSchema).min(1),
+    ledgerParty: z.array(ledgerRewardPartyMemberSchema).optional(),
     adventureDayFraction: z.string().regex(/^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/),
     encounterCount: z.number().int().min(1).max(10).optional(),
     seed: z.number().int().nonnegative().safe()
@@ -59,6 +93,7 @@ export const sessionGenerationEncounterInputSchema = z
         path: ['party'],
         message: 'At least one active player is required.'
       })
+    validateLedgerParty(value.ledgerParty, active, context)
   })
 
 export const encounterRoleSchema = z.enum([
@@ -299,20 +334,13 @@ export const sessionGeneratedRunSchema = z
     input: sessionGenerationEncounterInputSchema,
     session: sessionGenerationEncounterSuccessSchema.shape.session.extend({
       goldBudgetCp: z.number().int().nonnegative(),
-      normalTreasureCount: z.number().int().positive(),
+      normalTreasureCount: z.number().int().nonnegative(),
       overstockTreasureCount: z.number().int().min(0).max(1),
-      magicTargets: z
-        .object({
-          Common: z.number().int().nonnegative(),
-          Uncommon: z.number().int().nonnegative(),
-          Rare: z.number().int().nonnegative(),
-          'Very Rare': z.number().int().nonnegative(),
-          Legendary: z.number().int().nonnegative()
-        })
-        .strict()
+      magicTargets: generatedMagicCountsSchema
     }),
+    rewardBasis: generatedRewardBasisSchema.nullable().default(null),
     encounters: z.array(encounterIntentSchema).min(1),
-    treasures: z.array(generatedTreasureSchema).min(1),
+    treasures: z.array(generatedTreasureSchema),
     rewardSummary: z
       .object({
         normalValueCp: z.number().int().nonnegative(),
@@ -328,6 +356,7 @@ export const sessionGeneratedRunSchema = z
 export const groupRewardGenerationInputSchema = z
   .object({
     party: z.array(generationPartyLevelSchema).min(1),
+    ledgerParty: z.array(ledgerRewardPartyMemberSchema).optional(),
     sceneId: z.uuid(),
     groupId: z.uuid(),
     sceneRevision: z.number().int().nonnegative(),
@@ -353,6 +382,11 @@ export const groupRewardGenerationInputSchema = z
         })
       creatureIds.add(entry.creatureId)
     }
+    validateLedgerParty(
+      value.ledgerParty,
+      value.party.reduce((sum, entry) => sum + entry.count, 0),
+      context
+    )
   })
 
 export const groupRewardGeneratedRunSchema = z
@@ -364,18 +398,18 @@ export const groupRewardGeneratedRunSchema = z
     rewardEngineVersion: z.literal(REWARD_ENGINE_VERSION),
     catalogVersion: z.string().min(1),
     catalogContentHash: z.string().regex(/^[0-9a-f]{64}$/),
-    input: groupRewardGenerationInputSchema,
-    goldBudgetCp: z.number().int().nonnegative(),
-    magicTargets: z
+    generatorPreset: z
       .object({
-        Common: z.number().int().nonnegative(),
-        Uncommon: z.number().int().nonnegative(),
-        Rare: z.number().int().nonnegative(),
-        'Very Rare': z.number().int().nonnegative(),
-        Legendary: z.number().int().nonnegative()
+        id: z.uuid(),
+        revision: z.number().int().nonnegative(),
+        configHash: z.string().regex(/^[0-9a-f]{64}$/)
       })
       .strict(),
-    treasures: z.array(generatedTreasureSchema).length(1),
+    input: groupRewardGenerationInputSchema,
+    rewardBasis: generatedRewardBasisSchema.nullable().default(null),
+    goldBudgetCp: z.number().int().nonnegative(),
+    magicTargets: generatedMagicCountsSchema,
+    treasures: z.array(generatedTreasureSchema).max(1),
     rewardSummary: z
       .object({
         normalValueCp: z.number().int().nonnegative(),
@@ -440,6 +474,34 @@ export type GroupRewardGeneratedRun = Readonly<
 export type GroupRewardGenerationInput = Readonly<
   z.infer<typeof groupRewardGenerationInputSchema>
 >
+export type LedgerRewardPartyMember = Readonly<
+  z.infer<typeof ledgerRewardPartyMemberSchema>
+>
+export type GeneratedRewardBasis = Readonly<
+  z.infer<typeof generatedRewardBasisSchema>
+>
 export type SessionGenerationRunResult = Readonly<
   z.infer<typeof sessionGenerationRunResultSchema>
 >
+
+function validateLedgerParty(
+  members: readonly { characterId: string }[] | undefined,
+  partyCount: number,
+  context: z.RefinementCtx
+): void {
+  if (!members) return
+  if (members.length !== partyCount)
+    context.addIssue({
+      code: 'custom',
+      path: ['ledgerParty'],
+      message: 'Ledger party must identify every active party member.'
+    })
+  if (
+    new Set(members.map((member) => member.characterId)).size !== members.length
+  )
+    context.addIssue({
+      code: 'custom',
+      path: ['ledgerParty'],
+      message: 'Ledger party character identities must be unique.'
+    })
+}

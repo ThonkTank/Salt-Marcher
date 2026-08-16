@@ -45,6 +45,7 @@ export function TreasureDraftFields<
   beginEdit?: (key: string) => void
   endEdit?: () => void
   itemMetadata?: (item: Item) => ReactNode
+  itemDefinitionReadOnly?: (item: Item) => boolean
 }) {
   const m = props.messages
   return (
@@ -165,6 +166,7 @@ export function TreasureDraftFields<
               <span>{m.item}</span>
               <input
                 aria-label={m.item}
+                readOnly={props.itemDefinitionReadOnly?.(item) ?? false}
                 {...issueAttributes(
                   props.issues,
                   'items',
@@ -219,6 +221,7 @@ export function TreasureDraftFields<
               <span>{m.valueCopper}</span>
               <input
                 aria-label={m.valueCopperLabel}
+                readOnly={props.itemDefinitionReadOnly?.(item) ?? false}
                 {...issueAttributes(
                   props.issues,
                   'items',
@@ -249,6 +252,7 @@ export function TreasureDraftFields<
               <input
                 aria-label={m.stackable}
                 type="checkbox"
+                disabled={props.itemDefinitionReadOnly?.(item) ?? false}
                 checked={item.stackable}
                 onChange={(event) =>
                   props.patchItem(item.draftId, {
@@ -290,7 +294,10 @@ export function TreasureDraftFields<
             <button
               type="button"
               aria-label={m.removeItem}
-              disabled={props.draft.items.length === 1}
+              disabled={
+                props.draft.items.length === 1 ||
+                (props.itemDefinitionReadOnly?.(item) ?? false)
+              }
               onClick={() => props.removeItem(item.draftId)}
             >
               −

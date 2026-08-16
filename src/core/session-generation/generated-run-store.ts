@@ -1,5 +1,6 @@
 import type Database from 'better-sqlite3'
 import {
+  generatedRewardBasisSchema,
   generatedRunSchema,
   groupRewardGeneratedRunSchema,
   sessionGeneratedRunSchema,
@@ -89,7 +90,7 @@ export function initializeSessionGenerationSchema(db: Database.Database): void {
       average_level REAL NOT NULL CHECK(average_level BETWEEN 1 AND 20),
       resolved_encounter_count INTEGER NOT NULL CHECK(resolved_encounter_count BETWEEN 1 AND 10),
       gold_budget_cp INTEGER NOT NULL CHECK(gold_budget_cp >= 0),
-      normal_treasure_count INTEGER NOT NULL CHECK(normal_treasure_count > 0),
+      normal_treasure_count INTEGER NOT NULL CHECK(normal_treasure_count >= 0),
       overstock_treasure_count INTEGER NOT NULL CHECK(overstock_treasure_count BETWEEN 0 AND 1),
       magic_common INTEGER NOT NULL CHECK(magic_common >= 0),
       magic_uncommon INTEGER NOT NULL CHECK(magic_uncommon >= 0),
@@ -142,6 +143,55 @@ export function initializeSessionGenerationSchema(db: Database.Database): void {
       FOREIGN KEY (run_id) REFERENCES session_generation_group_source(run_id)
         ON DELETE RESTRICT,
       CHECK(alive_quantity + dead_quantity > 0)
+    );
+
+    CREATE TABLE IF NOT EXISTS session_generation_group_preset (
+      run_id TEXT PRIMARY KEY NOT NULL REFERENCES session_generation_group_source(run_id)
+        ON DELETE RESTRICT,
+      preset_id TEXT NOT NULL,
+      preset_revision INTEGER NOT NULL CHECK(preset_revision >= 0),
+      preset_config_hash TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS session_generation_reward_basis (
+      run_id TEXT PRIMARY KEY NOT NULL REFERENCES session_generation_run(id)
+        ON DELETE RESTRICT,
+      target_gold_cp INTEGER NOT NULL CHECK(target_gold_cp >= 0),
+      current_gold_cp INTEGER NOT NULL CHECK(current_gold_cp >= 0),
+      gold_deficit_cp INTEGER NOT NULL CHECK(gold_deficit_cp >= 0),
+      target_common INTEGER NOT NULL CHECK(target_common >= 0),
+      target_uncommon INTEGER NOT NULL CHECK(target_uncommon >= 0),
+      target_rare INTEGER NOT NULL CHECK(target_rare >= 0),
+      target_very_rare INTEGER NOT NULL CHECK(target_very_rare >= 0),
+      target_legendary INTEGER NOT NULL CHECK(target_legendary >= 0),
+      current_common INTEGER NOT NULL CHECK(current_common >= 0),
+      current_uncommon INTEGER NOT NULL CHECK(current_uncommon >= 0),
+      current_rare INTEGER NOT NULL CHECK(current_rare >= 0),
+      current_very_rare INTEGER NOT NULL CHECK(current_very_rare >= 0),
+      current_legendary INTEGER NOT NULL CHECK(current_legendary >= 0),
+      deficit_common INTEGER NOT NULL CHECK(deficit_common >= 0),
+      deficit_uncommon INTEGER NOT NULL CHECK(deficit_uncommon >= 0),
+      deficit_rare INTEGER NOT NULL CHECK(deficit_rare >= 0),
+      deficit_very_rare INTEGER NOT NULL CHECK(deficit_very_rare >= 0),
+      deficit_legendary INTEGER NOT NULL CHECK(deficit_legendary >= 0)
+    );
+
+    CREATE TABLE IF NOT EXISTS session_generation_reward_member (
+      run_id TEXT NOT NULL REFERENCES session_generation_reward_basis(run_id)
+        ON DELETE RESTRICT,
+      position INTEGER NOT NULL CHECK(position >= 0),
+      character_id TEXT NOT NULL,
+      current_xp INTEGER NOT NULL CHECK(current_xp >= 0),
+      projected_xp INTEGER NOT NULL CHECK(projected_xp >= 0),
+      ledger_revision INTEGER NOT NULL CHECK(ledger_revision >= 0),
+      current_non_magic_cp INTEGER NOT NULL CHECK(current_non_magic_cp >= 0),
+      magic_common INTEGER NOT NULL CHECK(magic_common >= 0),
+      magic_uncommon INTEGER NOT NULL CHECK(magic_uncommon >= 0),
+      magic_rare INTEGER NOT NULL CHECK(magic_rare >= 0),
+      magic_very_rare INTEGER NOT NULL CHECK(magic_very_rare >= 0),
+      magic_legendary INTEGER NOT NULL CHECK(magic_legendary >= 0),
+      PRIMARY KEY (run_id, position),
+      UNIQUE (run_id, character_id)
     );
 
     CREATE TABLE IF NOT EXISTS session_generation_encounter (
@@ -406,7 +456,7 @@ export class GeneratedRunStore {
         run.session.averageLevel,
         run.session.encounterCount,
         run.session.goldBudgetCp,
-        run.session.normalTreasureCount,
+        Math.max(1, run.session.normalTreasureCount),
         run.session.overstockTreasureCount,
         run.session.magicTargets.Common,
         run.session.magicTargets.Uncommon,
@@ -417,6 +467,7 @@ export class GeneratedRunStore {
         run.rewardSummary.overstockValueCp,
         run.rewardSummary.magicCount
       )
+    this.insertRewardBasis(run)
     this.insertEncounters(run)
     this.insertTreasures(run)
     const warning = this.db.prepare(
@@ -503,6 +554,19 @@ export class GeneratedRunStore {
         run.rewardSummary.normalValueCp,
         run.rewardSummary.magicCount
       )
+    this.db
+      .prepare(
+        `INSERT INTO session_generation_group_preset (
+           run_id, preset_id, preset_revision, preset_config_hash
+         ) VALUES (?, ?, ?, ?)`
+      )
+      .run(
+        run.id,
+        run.generatorPreset.id,
+        run.generatorPreset.revision,
+        run.generatorPreset.configHash
+      )
+    this.insertRewardBasis(run)
     const insertGroupEntry = this.db.prepare(
       `INSERT INTO session_generation_group_entry (
          run_id, position, creature_id, alive_quantity, dead_quantity
@@ -533,6 +597,66 @@ export class GeneratedRunStore {
       )
       this.insertParameters('audit', run.id, position, entry.parameters)
     })
+  }
+
+  private insertRewardBasis(run: GeneratedRun): void {
+    if (!run.rewardBasis) return
+    const basis = run.rewardBasis
+    this.db
+      .prepare(
+        `INSERT INTO session_generation_reward_basis (
+           run_id, target_gold_cp, current_gold_cp, gold_deficit_cp,
+           target_common, target_uncommon, target_rare, target_very_rare,
+           target_legendary, current_common, current_uncommon, current_rare,
+           current_very_rare, current_legendary, deficit_common,
+           deficit_uncommon, deficit_rare, deficit_very_rare,
+           deficit_legendary
+         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      )
+      .run(
+        run.id,
+        basis.targetGoldCp,
+        basis.currentGoldCp,
+        basis.goldDeficitCp,
+        basis.targetMagic.Common,
+        basis.targetMagic.Uncommon,
+        basis.targetMagic.Rare,
+        basis.targetMagic['Very Rare'],
+        basis.targetMagic.Legendary,
+        basis.currentMagic.Common,
+        basis.currentMagic.Uncommon,
+        basis.currentMagic.Rare,
+        basis.currentMagic['Very Rare'],
+        basis.currentMagic.Legendary,
+        basis.magicDeficit.Common,
+        basis.magicDeficit.Uncommon,
+        basis.magicDeficit.Rare,
+        basis.magicDeficit['Very Rare'],
+        basis.magicDeficit.Legendary
+      )
+    const member = this.db.prepare(
+      `INSERT INTO session_generation_reward_member (
+         run_id, position, character_id, current_xp, projected_xp,
+         ledger_revision, current_non_magic_cp, magic_common, magic_uncommon,
+         magic_rare, magic_very_rare, magic_legendary
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    )
+    basis.members.forEach((entry, position) =>
+      member.run(
+        run.id,
+        position,
+        entry.characterId,
+        entry.currentXp,
+        entry.projectedXp,
+        entry.ledgerRevision,
+        entry.currentNonMagicCp,
+        entry.currentMagic.Common,
+        entry.currentMagic.Uncommon,
+        entry.currentMagic.Rare,
+        entry.currentMagic['Very Rare'],
+        entry.currentMagic.Legendary
+      )
+    )
   }
 
   private insertEncounters(run: SessionGeneratedRun): void {
@@ -823,6 +947,7 @@ export class GeneratedRunStore {
       hard: Boolean(entry.hard),
       parameters: auditParameters.get(position) ?? {}
     }))
+    const rewardBasis = this.readRewardBasis(row.id)
     return deepFreeze(
       sessionGeneratedRunSchema.parse({
         runKind: 'session',
@@ -840,6 +965,7 @@ export class GeneratedRunStore {
         },
         input: {
           party,
+          ...(rewardBasis ? { ledgerParty: rewardBasis.members } : {}),
           adventureDayFraction: row.adventureDayFraction,
           ...(row.encounterCountInput === null
             ? {}
@@ -853,7 +979,8 @@ export class GeneratedRunStore {
           averageLevel: row.averageLevel,
           encounterCount: row.resolvedEncounterCount,
           goldBudgetCp: row.goldBudgetCp,
-          normalTreasureCount: row.normalTreasureCount,
+          normalTreasureCount:
+            treasures.length === 0 ? 0 : row.normalTreasureCount,
           overstockTreasureCount: row.overstockTreasureCount,
           magicTargets: {
             Common: row.magicCommon,
@@ -863,6 +990,7 @@ export class GeneratedRunStore {
             Legendary: row.magicLegendary
           }
         },
+        rewardBasis,
         encounters,
         treasures,
         rewardSummary: {
@@ -928,6 +1056,15 @@ export class GeneratedRunStore {
           WHERE run_id = ? ORDER BY position`
       )
       .all(row.id)
+    const preset = this.db
+      .prepare(
+        `SELECT preset_id AS id, preset_revision AS revision,
+                preset_config_hash AS configHash
+           FROM session_generation_group_preset WHERE run_id = ?`
+      )
+      .get(row.id) as
+      { id: string; revision: number; configHash: string } | undefined
+    const rewardBasis = this.readRewardBasis(row.id)
     const auditParameters = this.readParameters('audit', row.id)
     const audits = (
       this.db
@@ -957,8 +1094,14 @@ export class GeneratedRunStore {
         rewardEngineVersion: row.rewardEngineVersion,
         catalogVersion: row.catalogVersion,
         catalogContentHash: row.catalogContentHash,
+        generatorPreset: preset ?? {
+          id: '00000000-0000-4000-8000-000000000001',
+          revision: 0,
+          configHash: '0'.repeat(64)
+        },
         input: {
           party,
+          ...(rewardBasis ? { ledgerParty: rewardBasis.members } : {}),
           sceneId: source.sceneId,
           groupId: source.groupId,
           sceneRevision: source.sceneRevision,
@@ -972,6 +1115,7 @@ export class GeneratedRunStore {
           rewardXp: source.rewardXp,
           seed: row.seed
         },
+        rewardBasis,
         goldBudgetCp: source.goldBudgetCp,
         magicTargets: {
           Common: source.magicCommon,
@@ -1048,6 +1192,82 @@ export class GeneratedRunStore {
         .filter((candidate) => candidate.treasureId === entry.id)
         .map((candidate) => candidate)
     })) as GeneratedRun['treasures']
+  }
+
+  private readRewardBasis(runId: string) {
+    const rows = this.db
+      .prepare(
+        `SELECT basis.target_gold_cp AS targetGoldCp,
+                basis.current_gold_cp AS currentGoldCp,
+                basis.gold_deficit_cp AS goldDeficitCp,
+                basis.target_common AS targetCommon,
+                basis.target_uncommon AS targetUncommon,
+                basis.target_rare AS targetRare,
+                basis.target_very_rare AS targetVeryRare,
+                basis.target_legendary AS targetLegendary,
+                basis.current_common AS currentCommon,
+                basis.current_uncommon AS currentUncommon,
+                basis.current_rare AS currentRare,
+                basis.current_very_rare AS currentVeryRare,
+                basis.current_legendary AS currentLegendary,
+                basis.deficit_common AS deficitCommon,
+                basis.deficit_uncommon AS deficitUncommon,
+                basis.deficit_rare AS deficitRare,
+                basis.deficit_very_rare AS deficitVeryRare,
+                basis.deficit_legendary AS deficitLegendary,
+                member.position, member.character_id AS characterId,
+                member.current_xp AS currentXp,
+                member.projected_xp AS projectedXp,
+                member.ledger_revision AS ledgerRevision,
+                member.current_non_magic_cp AS currentNonMagicCp,
+                member.magic_common AS magicCommon,
+                member.magic_uncommon AS magicUncommon,
+                member.magic_rare AS magicRare,
+                member.magic_very_rare AS magicVeryRare,
+                member.magic_legendary AS magicLegendary
+           FROM session_generation_reward_basis basis
+           LEFT JOIN session_generation_reward_member member
+             ON member.run_id = basis.run_id
+          WHERE basis.run_id = ? ORDER BY member.position`
+      )
+      .all(runId) as Array<Record<string, number | string | null>>
+    const basis = rows[0]
+    if (!basis) return null
+    const magic = (prefix: 'target' | 'current' | 'deficit') => ({
+      Common: Number(basis[`${prefix}Common`]),
+      Uncommon: Number(basis[`${prefix}Uncommon`]),
+      Rare: Number(basis[`${prefix}Rare`]),
+      'Very Rare': Number(basis[`${prefix}VeryRare`]),
+      Legendary: Number(basis[`${prefix}Legendary`])
+    })
+    return generatedRewardBasisSchema.parse({
+      members: rows.flatMap((row) =>
+        row['characterId'] === null
+          ? []
+          : [
+              {
+                characterId: row['characterId'],
+                currentXp: row['currentXp'],
+                projectedXp: row['projectedXp'],
+                ledgerRevision: row['ledgerRevision'],
+                currentNonMagicCp: row['currentNonMagicCp'],
+                currentMagic: {
+                  Common: row['magicCommon'],
+                  Uncommon: row['magicUncommon'],
+                  Rare: row['magicRare'],
+                  'Very Rare': row['magicVeryRare'],
+                  Legendary: row['magicLegendary']
+                }
+              }
+            ]
+      ),
+      targetGoldCp: basis['targetGoldCp'],
+      currentGoldCp: basis['currentGoldCp'],
+      goldDeficitCp: basis['goldDeficitCp'],
+      targetMagic: magic('target'),
+      currentMagic: magic('current'),
+      magicDeficit: magic('deficit')
+    })
   }
 
   private readParameters(owner: 'warning' | 'audit', runId: string) {

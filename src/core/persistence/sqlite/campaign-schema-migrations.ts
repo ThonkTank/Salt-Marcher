@@ -48,5 +48,70 @@ export const campaignSchemaMigrations: readonly SchemaMigration[] =
             'schema-29-bootstrap'
           )
       }
+    },
+    {
+      id: 'campaign-29-to-30-ledger-reward-basis',
+      role: 'campaign',
+      fromVersion: 29,
+      toVersion: 30,
+      migrate(database) {
+        initializeCampaignSchemaMetadata(database)
+        database.exec(`
+          CREATE TABLE session_generation_group_preset (
+            run_id TEXT PRIMARY KEY NOT NULL
+              REFERENCES session_generation_group_source(run_id) ON DELETE RESTRICT,
+            preset_id TEXT NOT NULL,
+            preset_revision INTEGER NOT NULL CHECK(preset_revision >= 0),
+            preset_config_hash TEXT NOT NULL
+          );
+          CREATE TABLE session_generation_reward_basis (
+            run_id TEXT PRIMARY KEY NOT NULL
+              REFERENCES session_generation_run(id) ON DELETE RESTRICT,
+            target_gold_cp INTEGER NOT NULL CHECK(target_gold_cp >= 0),
+            current_gold_cp INTEGER NOT NULL CHECK(current_gold_cp >= 0),
+            gold_deficit_cp INTEGER NOT NULL CHECK(gold_deficit_cp >= 0),
+            target_common INTEGER NOT NULL CHECK(target_common >= 0),
+            target_uncommon INTEGER NOT NULL CHECK(target_uncommon >= 0),
+            target_rare INTEGER NOT NULL CHECK(target_rare >= 0),
+            target_very_rare INTEGER NOT NULL CHECK(target_very_rare >= 0),
+            target_legendary INTEGER NOT NULL CHECK(target_legendary >= 0),
+            current_common INTEGER NOT NULL CHECK(current_common >= 0),
+            current_uncommon INTEGER NOT NULL CHECK(current_uncommon >= 0),
+            current_rare INTEGER NOT NULL CHECK(current_rare >= 0),
+            current_very_rare INTEGER NOT NULL CHECK(current_very_rare >= 0),
+            current_legendary INTEGER NOT NULL CHECK(current_legendary >= 0),
+            deficit_common INTEGER NOT NULL CHECK(deficit_common >= 0),
+            deficit_uncommon INTEGER NOT NULL CHECK(deficit_uncommon >= 0),
+            deficit_rare INTEGER NOT NULL CHECK(deficit_rare >= 0),
+            deficit_very_rare INTEGER NOT NULL CHECK(deficit_very_rare >= 0),
+            deficit_legendary INTEGER NOT NULL CHECK(deficit_legendary >= 0)
+          );
+          CREATE TABLE session_generation_reward_member (
+            run_id TEXT NOT NULL
+              REFERENCES session_generation_reward_basis(run_id) ON DELETE RESTRICT,
+            position INTEGER NOT NULL CHECK(position >= 0),
+            character_id TEXT NOT NULL,
+            current_xp INTEGER NOT NULL CHECK(current_xp >= 0),
+            projected_xp INTEGER NOT NULL CHECK(projected_xp >= 0),
+            ledger_revision INTEGER NOT NULL CHECK(ledger_revision >= 0),
+            current_non_magic_cp INTEGER NOT NULL CHECK(current_non_magic_cp >= 0),
+            magic_common INTEGER NOT NULL CHECK(magic_common >= 0),
+            magic_uncommon INTEGER NOT NULL CHECK(magic_uncommon >= 0),
+            magic_rare INTEGER NOT NULL CHECK(magic_rare >= 0),
+            magic_very_rare INTEGER NOT NULL CHECK(magic_very_rare >= 0),
+            magic_legendary INTEGER NOT NULL CHECK(magic_legendary >= 0),
+            PRIMARY KEY (run_id, position),
+            UNIQUE (run_id, character_id)
+          );
+        `)
+        database
+          .prepare(
+            'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run(
+            'campaign-29-to-30-ledger-reward-basis',
+            new Date().toISOString()
+          )
+      }
     }
   ])

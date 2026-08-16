@@ -17,6 +17,7 @@ import { TreasureStore } from '../../core/loot/loot-store.js'
 import { PartyStore } from '../../core/party/party-store.js'
 import { SceneStore } from '../../core/scene/scene-store.js'
 import { GeneratedRunStore } from '../../core/session-generation/generated-run-store.js'
+import { CharacterLootStore } from '../../core/loot/character-loot-store.js'
 import type { GroupRewardGenerationPort } from '../../core/application/group-reward-command-handler.js'
 
 type LootHandlerName =
@@ -64,6 +65,7 @@ export function createLootComposition(dependencies: {
       party: new PartyStore(db),
       scenes: new SceneStore(db),
       rules: dependencies.rules,
+      characterLoot: new CharacterLootStore(db),
       generation: dependencies.generation
     }
   })
@@ -78,6 +80,7 @@ export function createLootComposition(dependencies: {
           index: (reference) => catalogIndexes.require(reference)
         },
         generatedRuns: new GeneratedRunStore(db),
+        characterLoot: new CharacterLootStore(db),
         treasures: new TreasureStore(db),
         groupCommands: dependencies.groupCommands,
         journal: new LootOperationJournal(db),

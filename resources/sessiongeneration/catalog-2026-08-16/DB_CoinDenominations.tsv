@@ -1,0 +1,6 @@
+Denomination_ID	Unit_CP	Singular_Label	Plural_Label	Active	Sort_Order	Notes
+pp	1000.0	Platinum Coin	Platinum Coins	1	1.0	Current output vocabulary
+gp	100.0	Gold Coin	Gold Coins	1	2.0	Current output vocabulary
+ep	50.0	Electrum Coin	Electrum Coins	1	3.0	Current output vocabulary
+sp	10.0	Silver Coin	Silver Coins	1	4.0	Current output vocabulary
+cp	1.0	Copper Coin	Copper Coins	1	5.0	Current output vocabulary

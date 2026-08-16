@@ -1,0 +1,8 @@
+Path_ID	Fit_Weight	Theme_Weight	Jitter_Weight	Duplicate_Penalty	Near_Best_Gap_Pct	Shortlist_Size	Min_Fit_Pct	Max_Overfit_Pct	Variant_Shortlist_Size	Min_Base_Extra_CP	Preferred_Base_Extra_CP	Active	Notes
+coinage	0.0	0.0	0.0	0.0	0.0	9.0	0.0	0.05	0.0	0.0	0.0	1	Coin profile eligibility
+carrier	0.8	0.1	0.1	0.35	0.05	10.0	0.0	0.05	0.0	0.0	0.0	1	Current M2 carrier scoring
+adorned_base	0.8	0.1	0.1	0.35	0.0	5.0	0.0	0.05	0.0	1000.0	1500.0	1	Current M2 adorned base scoring
+adorned_modifier	0.8	0.0	0.2	0.0	0.0	5.0	0.0	0.05	0.0	0.0	0.0	1	Current M2 modifier scoring
+adorned_component	0.9	0.0	0.1	0.0	0.0	5.0	0.0	0.05	0.0	0.0	0.0	1	Current M2 component scoring
+useful	0.8	0.1	0.1	0.0	0.05	10.0	0.5	0.05	5.0	0.0	0.0	1	Current M2 useful scoring
+flavor	0.8	0.1	0.1	0.0	0.05	10.0	0.5	0.05	0.0	0.0	0.0	1	Current M2 flavor scoring

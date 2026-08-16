@@ -171,6 +171,25 @@ export function parseFullSessionGenerationCatalog(
       Legendary: magicPerXp(exactDecimalOrZero(row, 'Legendary_Per_XP'))
     }
   }))
+  const relations = rows(tables, 'DB_LootRelations.tsv').map((row) => ({
+    type: required(row, 'Relation_Type'),
+    sourceId: required(row, 'Source_ID'),
+    targetId: required(row, 'Target_ID'),
+    active: boolean(row, 'Active'),
+    sortOrder: finite(row, 'Sort_Order')
+  }))
+  const containers = rows(tables, 'DB_Containers.tsv').map((row) => ({
+    id: required(row, 'Container_ID'),
+    name: required(row, 'Container'),
+    capacity: finite(row, 'Capacity_Units'),
+    relation: required(row, 'Relation'),
+    hidden: boolean(row, 'Hide_In_Output'),
+    priority: finite(row, 'Packing_Priority'),
+    mixable: boolean(row, 'Mixable')
+  }))
+  const containerNameById = new Map(
+    containers.map((container) => [container.id, container.name])
+  )
   const items = rows(tables, 'DB_LootItems.tsv').map((row) => ({
     id: required(row, 'Item_ID'),
     name: required(row, 'Name'),
@@ -180,11 +199,22 @@ export function parseFullSessionGenerationCatalog(
     active: boolean(row, 'Active'),
     formOverride: optional(row, 'Loot_Form_Override'),
     capacity: finite(row, 'Capacity_Units'),
-    allowedContainerNames: list(row, 'Allowed_Containers_Cache'),
+    allowedContainerNames: relations
+      .filter(
+        (relation) =>
+          relation.active &&
+          relation.type === 'ITEM_CONTAINER' &&
+          relation.sourceId === required(row, 'Item_ID')
+      )
+      .map((relation) => containerNameById.get(relation.targetId))
+      .filter((name): name is string => name !== undefined),
     utilityScore: finite(row, 'Utility_Score'),
     lootClass: lootClass(required(row, 'Loot_Class')),
     lootType: required(row, 'Loot_Type'),
-    modularProfiles: list(row, 'Modular_Profile_Cache'),
+    modularProfiles:
+      list(row, 'Modular_Profile').length > 0
+        ? list(row, 'Modular_Profile')
+        : list(row, 'Modular_Profile_Cache'),
     canAdorn: boolean(row, 'Can_Adorn'),
     unitLabel: optional(row, 'Unit_Label') ?? 'item',
     valueForm: optional(row, 'Value_Form')
@@ -194,17 +224,24 @@ export function parseFullSessionGenerationCatalog(
     name: required(row, 'Name'),
     textTemplate: optional(row, 'Text_Template'),
     details: optional(row, 'Details'),
-    allowedProfiles: list(row, 'Allowed_Profiles_Cache'),
-    allowedCategories: list(row, 'Allowed_Categories_Cache'),
+    allowedProfiles: relations
+      .filter(
+        (relation) =>
+          relation.active &&
+          relation.type === 'MODIFIER_PROFILE' &&
+          relation.sourceId === required(row, 'Modifier_ID')
+      )
+      .map((relation) => relation.targetId),
+    allowedCategories: relations
+      .filter(
+        (relation) =>
+          relation.active &&
+          relation.type === 'MODIFIER_CATEGORY' &&
+          relation.sourceId === required(row, 'Modifier_ID')
+      )
+      .map((relation) => relation.targetId),
     flatValueCp: exactDecimal(row, 'Flat_Value_CP'),
     active: boolean(row, 'Active')
-  }))
-  const relations = rows(tables, 'DB_LootRelations.tsv').map((row) => ({
-    type: required(row, 'Relation_Type'),
-    sourceId: required(row, 'Source_ID'),
-    targetId: required(row, 'Target_ID'),
-    active: boolean(row, 'Active'),
-    sortOrder: finite(row, 'Sort_Order')
   }))
   const themes = rows(tables, 'DB_Themes.tsv').map((row) => ({
     id: required(row, 'Theme_ID'),
@@ -235,15 +272,6 @@ export function parseFullSessionGenerationCatalog(
     name: required(row, 'Spell'),
     level: integer(row, 'Level'),
     elements: list(row, 'Elements')
-  }))
-  const containers = rows(tables, 'DB_Containers.tsv').map((row) => ({
-    id: required(row, 'Container_ID'),
-    name: required(row, 'Container'),
-    capacity: finite(row, 'Capacity_Units'),
-    relation: required(row, 'Relation'),
-    hidden: boolean(row, 'Hide_In_Output'),
-    priority: finite(row, 'Packing_Priority'),
-    mixable: boolean(row, 'Mixable')
   }))
   const enspelledRules = rows(tables, 'DB_EnspelledRules.tsv').map((row) => ({
     id: required(row, 'Rule_ID'),
@@ -491,9 +519,9 @@ function integer(row: Row, key: string): number {
 
 function boolean(row: Row, key: string): boolean {
   const value = row[key]
-  if (value !== 'true' && value !== 'false')
+  if (value !== 'true' && value !== 'false' && value !== '1' && value !== '0')
     throw new Error(`catalog_schema_invalid:boolean_${key}`)
-  return value === 'true'
+  return value === 'true' || value === '1'
 }
 
 function list(row: Row, key: string): readonly string[] {

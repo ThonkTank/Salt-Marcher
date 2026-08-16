@@ -1,4 +1,6 @@
 import type { EncounterEntropy } from './deterministic-order.js'
+import type { GeneratorLootRules } from '../../shared/contracts/generator-loot-rules.js'
+import { defaultGeneratorLootRules } from '../../shared/generator/default-loot-rules.js'
 import { treasurePlanningStream } from './entropy-streams.js'
 import type { LootTheme } from './loot-catalog.js'
 import { decimal, divide, multiply, rational, roundHalfUp } from './rational.js'
@@ -10,6 +12,7 @@ export type SessionTreasurePlanningInput = Readonly<{
   goldBudgetCp: number
   encounterNumbers: readonly number[]
   themes: readonly LootTheme[]
+  rules?: GeneratorLootRules
 }>
 
 export type TreasurePlanningOutput = Readonly<{
@@ -29,33 +32,39 @@ export function planSessionTreasures(
 ): TreasurePlanningOutput {
   const themes = input.themes.filter((theme) => theme.active)
   if (themes.length === 0) throw new Error('reward_theme_unavailable')
+  const rules = input.rules ?? defaultGeneratorLootRules
   const fraction = decimal(input.adventureDayFraction)
+  const variance = rules.treasure.treasureCountVariance
   const fullDayTreasureCount =
-    2 +
-    entropy.modulo(treasurePlanningStream(input.seed, 'treasure-count', 0), 3)
+    rules.treasure.treasuresPerAdventureDay +
+    entropy.modulo(
+      treasurePlanningStream(input.seed, 'treasure-count', 0),
+      variance * 2 + 1
+    ) -
+    variance
   const totalTreasureCount = Math.max(
-    2,
-    Math.min(
-      4,
-      roundHalfUp(multiply(rational(BigInt(fullDayTreasureCount)), fraction))
-    )
+    rules.treasure.overstockShare > 0 ? 2 : 1,
+    roundHalfUp(multiply(rational(BigInt(fullDayTreasureCount)), fraction))
   )
-  const overstockTreasureCount = 1
+  const overstockTreasureCount =
+    rules.treasure.overstockShare > 0 && totalTreasureCount > 1 ? 1 : 0
   const normalTreasureCount = totalTreasureCount - overstockTreasureCount
   const targets = [
     ...splitBudget(input.goldBudgetCp, normalTreasureCount),
-    Math.max(
-      1,
-      roundHalfUp(
-        multiply(rational(BigInt(input.goldBudgetCp)), rational(1n, 5n))
-      )
-    )
+    ...(overstockTreasureCount
+      ? [
+          Math.max(
+            1,
+            Math.round(input.goldBudgetCp * rules.treasure.overstockShare)
+          )
+        ]
+      : [])
   ]
   let questUsed = false
   const usedAnchors = new Set<number>()
   const treasures = targets.map((targetValueCp, index) => {
     const stockClass =
-      index === targets.length - 1
+      overstockTreasureCount > 0 && index === targets.length - 1
         ? ('overstock' as const)
         : ('normal' as const)
     const channelRoll = entropy.unit(
@@ -63,10 +72,13 @@ export function planSessionTreasures(
     )
     let rewardChannel: RewardTreasurePlan['rewardChannel'] = 'environment'
     let anchorEncounterNumber: number | null = null
-    if (!questUsed && channelRoll < 0.4) {
+    if (!questUsed && channelRoll < rules.treasure.channels.quest) {
       rewardChannel = 'quest'
       questUsed = true
-    } else if (channelRoll < 0.8) {
+    } else if (
+      channelRoll <
+      rules.treasure.channels.quest + rules.treasure.channels.encounter
+    ) {
       const candidates = input.encounterNumbers.filter(
         (anchor) => !usedAnchors.has(anchor)
       )
@@ -108,6 +120,7 @@ export type GroupTreasurePlanningInput = Readonly<{
   seed: number
   goldBudgetCp: number
   themes: readonly LootTheme[]
+  rules?: GeneratorLootRules
 }>
 
 /**

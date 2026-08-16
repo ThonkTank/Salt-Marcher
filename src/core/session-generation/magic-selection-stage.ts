@@ -1,4 +1,6 @@
 import type { EncounterEntropy } from './deterministic-order.js'
+import type { GeneratorLootRules } from '../../shared/contracts/generator-loot-rules.js'
+import { defaultGeneratorLootRules } from '../../shared/generator/default-loot-rules.js'
 import { magicSelectionStream } from './entropy-streams.js'
 import {
   lootRarities,
@@ -19,6 +21,7 @@ export type MagicSelectionInput = Readonly<{
   treasures: readonly SelectedTreasureDraft[]
   targets: Readonly<Record<LootRarity, number>>
   catalog: FullSessionGenerationCatalog
+  rules?: GeneratorLootRules
 }>
 
 /**
@@ -31,6 +34,7 @@ export function selectMagicItems(
   entropy: EncounterEntropy
 ): readonly SelectedTreasureDraft[] {
   if (input.treasures.length === 0) throw new Error('missing_treasure_plan')
+  const rules = input.rules ?? defaultGeneratorLootRules
   const usedItems = new Set(
     input.treasures.flatMap((treasure) =>
       treasure.items.flatMap((item) =>
@@ -39,10 +43,25 @@ export function selectMagicItems(
     )
   )
   const items = input.treasures.map((treasure) => [...treasure.items])
+  const magicTotal = Object.values(input.targets).reduce(
+    (sum, count) => sum + count,
+    0
+  )
+  const overstockTarget = Math.round(magicTotal * rules.magic.overstockShare)
   let ordinal = 0
   for (const rarity of lootRarities)
     for (let count = 0; count < input.targets[rarity]; count += 1) {
-      const treasureIndex = ordinal % input.treasures.length
+      const desiredStock =
+        ordinal < overstockTarget ? ('overstock' as const) : ('normal' as const)
+      const eligibleTreasures = input.treasures
+        .map((treasure, index) => ({ treasure, index }))
+        .filter(({ treasure }) => treasure.stockClass === desiredStock)
+      const targetTreasures =
+        eligibleTreasures.length > 0
+          ? eligibleTreasures
+          : input.treasures.map((treasure, index) => ({ treasure, index }))
+      const treasureIndex =
+        targetTreasures[ordinal % targetTreasures.length]!.index
       const treasure = input.treasures[treasureIndex]!
       const pool = input.catalog.magicItems.filter(
         (item) =>
@@ -62,6 +81,7 @@ export function selectMagicItems(
         input.seed,
         ordinal,
         input.catalog,
+        rules,
         entropy
       )
       const selected: RewardItemDraft = {
@@ -190,12 +210,13 @@ function resolveCurse(
   seed: number,
   ordinal: number,
   catalog: FullSessionGenerationCatalog,
+  rules: GeneratorLootRules,
   entropy: EncounterEntropy
 ) {
   if (
     entropy.unit(
       magicSelectionStream(seed, 'curse-chance', item.id, ordinal)
-    ) >= 0.2
+    ) >= rules.magic.curseChance
   )
     return null
   const itemRarity = rarityIndex(item.rarity)

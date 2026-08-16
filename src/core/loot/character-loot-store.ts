@@ -9,6 +9,19 @@ import {
 } from '../../shared/contracts/loot.js'
 import { uuidv7 } from '../../shared/ids/uuidv7.js'
 
+export type CharacterRewardBalance = Readonly<{
+  characterId: string
+  ledgerRevision: number
+  currentNonMagicCp: number
+  currentMagic: Readonly<{
+    Common: number
+    Uncommon: number
+    Rare: number
+    'Very Rare': number
+    Legendary: number
+  }>
+}>
+
 export function initializeCharacterLootSchema(db: Database.Database): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS character_loot_ledger_metadata (
@@ -189,6 +202,74 @@ export class CharacterLootStore {
       characterId,
       revision,
       entries: rows.map((row) => rowToEntry(row))
+    })
+  }
+
+  /**
+   * Returns cumulative effective grants for reward compensation. Status is
+   * deliberately ignored: selling or giving an item away does not earn a
+   * replacement. Superseded rows are replaced by their correction row.
+   */
+  rewardBalances(
+    characterIds: readonly string[]
+  ): readonly CharacterRewardBalance[] {
+    const ids = [...new Set(characterIds)]
+    if (ids.length === 0) return []
+    const placeholders = ids.map(() => '?').join(',')
+    const rows = this.db
+      .prepare(
+        `SELECT entry.character_id AS characterId,
+                item.magic, item.rarity,
+                SUM(entry.quantity) AS quantity,
+                SUM(entry.quantity * item.unit_value_cp) AS valueCp
+           FROM character_loot_entry entry
+           JOIN loot_item item ON item.id = entry.treasure_item_id
+           LEFT JOIN character_loot_entry correction
+             ON correction.corrects_entry_id = entry.id
+          WHERE entry.character_id IN (${placeholders})
+            AND correction.id IS NULL
+          GROUP BY entry.character_id, item.magic, item.rarity`
+      )
+      .all(...ids) as Array<{
+      characterId: string
+      magic: number
+      rarity: string | null
+      quantity: number
+      valueCp: number
+    }>
+    const revisions = new Map(
+      (
+        this.db
+          .prepare(
+            `SELECT character_id AS characterId, revision
+               FROM character_loot_ledger_metadata
+              WHERE character_id IN (${placeholders})`
+          )
+          .all(...ids) as Array<{ characterId: string; revision: number }>
+      ).map((row) => [row.characterId, row.revision])
+    )
+    return ids.map((characterId) => {
+      const currentMagic = {
+        Common: 0,
+        Uncommon: 0,
+        Rare: 0,
+        'Very Rare': 0,
+        Legendary: 0
+      }
+      let currentNonMagicCp = 0
+      for (const row of rows.filter(
+        (entry) => entry.characterId === characterId
+      )) {
+        if (!row.magic) currentNonMagicCp += row.valueCp
+        else if (row.rarity && row.rarity in currentMagic)
+          currentMagic[row.rarity as keyof typeof currentMagic] += row.quantity
+      }
+      return Object.freeze({
+        characterId,
+        ledgerRevision: revisions.get(characterId) ?? 0,
+        currentNonMagicCp,
+        currentMagic: Object.freeze(currentMagic)
+      })
     })
   }
 

@@ -2,6 +2,8 @@ import type {
   EncounterAudit,
   GeneratedTreasure
 } from '../../shared/contracts/session-generation.js'
+import type { GeneratorLootRules } from '../../shared/contracts/generator-loot-rules.js'
+import { defaultGeneratorLootRules } from '../../shared/generator/default-loot-rules.js'
 import type { LootRarity } from './loot-catalog.js'
 import { freezeStage } from './reward-stage-types.js'
 
@@ -10,6 +12,7 @@ export type RewardAggregationInput = Readonly<{
   goldBudgetCp: number
   magicTargets: Readonly<Record<LootRarity, number>>
   expectedTreasureCount: number
+  rules?: GeneratorLootRules
 }>
 
 export type RewardAggregationOutput = Readonly<{
@@ -26,6 +29,7 @@ export type RewardAggregationOutput = Readonly<{
 export function aggregateReward(
   input: RewardAggregationInput
 ): RewardAggregationOutput {
+  const rules = input.rules ?? defaultGeneratorLootRules
   const normal = input.treasures.filter(
     (treasure) => treasure.stockClass === 'normal'
   )
@@ -80,13 +84,13 @@ export function aggregateReward(
     {
       code: 'normal_loot_budget_tolerance',
       passed:
-        Math.abs(normalValueCp - input.goldBudgetCp) * 20 <=
-        input.goldBudgetCp * 3,
+        Math.abs(normalValueCp - input.goldBudgetCp) <=
+        input.goldBudgetCp * rules.audit.normalBudgetTolerance,
       hard: false,
       parameters: {
         actualCp: normalValueCp,
         targetCp: input.goldBudgetCp,
-        tolerancePercent: 15
+        tolerancePercent: rules.audit.normalBudgetTolerance * 100
       }
     },
     {

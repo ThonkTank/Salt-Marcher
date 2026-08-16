@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3'
+import { defaultGeneratorLootRules } from '../../../shared/generator/default-loot-rules.js'
 import type { SchemaMigration } from './schema-migrations.js'
 
 export function initializeInstallationSchemaMetadata(
@@ -40,6 +41,58 @@ export const installationSchemaMigrations: readonly SchemaMigration[] =
             'INSERT OR IGNORE INTO installation_schema_migration (migration_id, applied_at) VALUES (?, ?)'
           )
           .run('installation-28-to-29-campaign-catalogs', 'schema-29-bootstrap')
+      }
+    },
+    {
+      id: 'installation-29-to-30-generator-loot-rules',
+      role: 'installation',
+      fromVersion: 29,
+      toVersion: 30,
+      migrate(database) {
+        initializeInstallationSchemaMetadata(database)
+        const hasPresets = Boolean(
+          database
+            .prepare(
+              `SELECT 1 FROM sqlite_master
+                WHERE type = 'table' AND name = 'generator_presets'`
+            )
+            .get()
+        )
+        const rows = hasPresets
+          ? (database
+              .prepare(
+                'SELECT id, config_json AS configJson FROM generator_presets'
+              )
+              .all() as Array<{ id: string; configJson: string }>)
+          : []
+        const update = hasPresets
+          ? database.prepare(
+              `UPDATE generator_presets
+                 SET schema_version = 4, config_json = ?, updated_at = ?
+               WHERE id = ?`
+            )
+          : null
+        const appliedAt = new Date().toISOString()
+        for (const row of rows) {
+          const config = JSON.parse(row.configJson) as Record<string, unknown>
+          update!.run(
+            JSON.stringify({ ...config, loot: defaultGeneratorLootRules }),
+            appliedAt,
+            row.id
+          )
+        }
+        if (rows.length > 0)
+          database
+            .prepare(
+              `UPDATE generator_preset_registry
+                  SET revision = revision + 1 WHERE singleton = 1`
+            )
+            .run()
+        database
+          .prepare(
+            'INSERT INTO installation_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run('installation-29-to-30-generator-loot-rules', appliedAt)
       }
     }
   ])

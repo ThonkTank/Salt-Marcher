@@ -263,8 +263,9 @@ describe('Session Planner vertical slice', () => {
       seed: 179_974
     })
     expect(duplicate.status).toBe('success')
-    if (duplicate.status === 'success') expect(duplicate.run.id).toBe(run.id)
-    expect(tableCount(db, 'session_generation_run')).toBe(1)
+    if (duplicate.status === 'success')
+      expect(duplicate.run.id).not.toBe(run.id)
+    expect(tableCount(db, 'session_generation_run')).toBe(2)
 
     harness.campaigns.close()
     stores.splice(stores.indexOf(harness.campaigns), 1)

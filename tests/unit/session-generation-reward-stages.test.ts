@@ -1,7 +1,11 @@
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { normalizeRewardBasis } from '../../src/core/session-generation/reward-basis-stage.js'
-import { calculateRewardBudget } from '../../src/core/session-generation/reward-budget-stage.js'
+import {
+  calculateLedgerRewardBudget,
+  calculateRewardBudget
+} from '../../src/core/session-generation/reward-budget-stage.js'
+import { defaultGeneratorLootRules } from '../../src/shared/generator/default-loot-rules.js'
 import {
   rewardXp,
   unitValue
@@ -60,5 +64,52 @@ describe('session generation reward stages', () => {
         rewardXp: rewardXp(100)
       })
     ).toThrowError('duplicate_reward_party_level')
+  })
+
+  it('pays only the missing cumulative ledger wealth at projected XP', () => {
+    const members = Array.from({ length: 4 }, (_, index) => ({
+      characterId: `018f47db-e17a-7000-8000-00000000000${String(index + 1)}`,
+      currentXp: 400,
+      projectedXp: 100,
+      ledgerRevision: 3,
+      currentNonMagicCp: 10_000,
+      currentMagic: {
+        Common: 10,
+        Uncommon: 0,
+        Rare: 0,
+        'Very Rare': 0,
+        Legendary: 0
+      }
+    }))
+    const output = calculateLedgerRewardBudget(
+      {
+        members,
+        rules: defaultGeneratorLootRules,
+        seed: 17,
+        profile: 'group_reward'
+      },
+      sha256EncounterEntropy
+    )
+    expect(output.rewardBasis.targetGoldCp).toBe(100_267)
+    expect(output.rewardBasis.currentGoldCp).toBe(40_000)
+    expect(unitValue(output.goldBudgetCp)).toBe(60_267)
+    expect(output.magicTargets.Common).toBe(0)
+
+    const settled = calculateLedgerRewardBudget(
+      {
+        members: members.map((member) => ({
+          ...member,
+          currentNonMagicCp: 30_000
+        })),
+        rules: defaultGeneratorLootRules,
+        seed: 17,
+        profile: 'group_reward'
+      },
+      sha256EncounterEntropy
+    )
+    expect(unitValue(settled.goldBudgetCp)).toBe(0)
+    expect(
+      Object.values(settled.magicTargets).every((value) => value === 0)
+    ).toBe(true)
   })
 })

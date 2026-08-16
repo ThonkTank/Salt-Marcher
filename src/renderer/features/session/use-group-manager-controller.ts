@@ -468,7 +468,7 @@ export function useGroupManagerController(
     const run = session?.loot.run
     const treasure = run?.treasures[0]
     const history = session?.loot.history
-    if (!key || !run || !treasure || !history) return null
+    if (!key || !run || !history) return null
     if (!validateAvailableMonster()) return null
     const token = crypto.randomUUID()
     dispatch({
@@ -478,6 +478,21 @@ export function useGroupManagerController(
       phase: 'committing'
     })
     try {
+      if (!treasure) {
+        const result = await ports.scene.saveGroup(
+          focused.id,
+          key === newGroupDraftKey ? null : key,
+          group.name.trim(),
+          group.note.trim(),
+          group.disposition,
+          entries,
+          props.snapshot.scene.revision,
+          selectedPersistedGroup?.revision ?? null
+        )
+        dispatch({ kind: 'loot-committed', key, token })
+        props.saved(applySceneGroupCommandResult(props.snapshot, result))
+        return null
+      }
       const result = await ports.loot.commitGroupReward({
         commandId: crypto.randomUUID(),
         runId: run.id,

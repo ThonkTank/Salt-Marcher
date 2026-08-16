@@ -1,4 +1,6 @@
 import type { GeneratedTreasure } from '../../shared/contracts/session-generation.js'
+import type { GeneratorLootRules } from '../../shared/contracts/generator-loot-rules.js'
+import { defaultGeneratorLootRules } from '../../shared/generator/default-loot-rules.js'
 import type { EncounterEntropy } from './deterministic-order.js'
 import { packingStream } from './entropy-streams.js'
 import type {
@@ -14,6 +16,7 @@ export type PackingStageInput = Readonly<{
   seed: number
   treasures: readonly SelectedTreasureDraft[]
   catalog: FullSessionGenerationCatalog
+  rules?: GeneratorLootRules
 }>
 
 /**
@@ -27,7 +30,13 @@ export function packTreasures(
 ): readonly GeneratedTreasure[] {
   return freezeStage(
     input.treasures.map((draft) =>
-      packTreasure(draft, input.seed, input.catalog, entropy)
+      packTreasure(
+        draft,
+        input.seed,
+        input.catalog,
+        input.rules ?? defaultGeneratorLootRules,
+        entropy
+      )
     )
   )
 }
@@ -36,6 +45,7 @@ function packTreasure(
   draft: SelectedTreasureDraft,
   seed: number,
   catalog: FullSessionGenerationCatalog,
+  rules: GeneratorLootRules,
   entropy: EncounterEntropy
 ): GeneratedTreasure {
   const containers: Array<
@@ -48,14 +58,25 @@ function packTreasure(
     const source = item.catalogItemId
       ? catalog.items.find((candidate) => candidate.id === item.catalogItemId)
       : null
+    const syntheticAllowed =
+      item.catalogItemId === null && item.role === 'compact_value'
+        ? [
+            ...new Set(
+              Object.values(rules.coins.profiles).flatMap(
+                (profile) => profile.allowedContainers
+              )
+            )
+          ]
+        : []
     const container = chooseContainer(
       item.capacity,
       item.quantity,
-      source?.allowedContainerNames ?? [],
+      source?.allowedContainerNames ?? syntheticAllowed,
       containers,
       seed,
       `${draft.id}:${index}`,
       catalog.containers,
+      rules,
       entropy
     )
     return { ...item, containerId: container?.id ?? null, position: index }
@@ -95,6 +116,7 @@ function chooseContainer(
   seed: number,
   key: string,
   catalog: readonly LootContainer[],
+  rules: GeneratorLootRules,
   entropy: EncounterEntropy
 ) {
   if (capacity <= 0) return null
@@ -108,9 +130,14 @@ function chooseContainer(
   const allowed = catalog.filter(
     (container) =>
       allowedNames.includes(container.name) ||
-      (quantity >= 5 && container.name === 'Pile')
+      (quantity >= rules.packing.pileMinQty && container.name === 'Pile')
   )
-  if (allowed.length === 0 && quantity === 1 && capacity <= 8) return null
+  if (
+    allowed.length === 0 &&
+    quantity <= rules.packing.loosePlacementMaxQty &&
+    capacity <= rules.packing.contextBulkMinLb
+  )
+    return null
   const pool =
     allowed.length > 0
       ? allowed
@@ -119,10 +146,18 @@ function chooseContainer(
     .map((container) => ({
       container,
       count: Math.max(1, Math.ceil(capacity / Math.max(1, container.capacity))),
+      fill:
+        capacity /
+        (Math.max(1, Math.ceil(capacity / Math.max(1, container.capacity))) *
+          Math.max(1, container.capacity)),
       tie: entropy.unit(packingStream(seed, key, container.id))
     }))
     .toSorted(
       (left, right) =>
+        Number(left.count > rules.packing.containerMaxCountFactor) -
+          Number(right.count > rules.packing.containerMaxCountFactor) ||
+        Number(left.fill < rules.packing.minimumFillRatio) -
+          Number(right.fill < rules.packing.minimumFillRatio) ||
         left.count - right.count ||
         left.container.priority - right.container.priority ||
         left.tie - right.tie

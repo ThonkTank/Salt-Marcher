@@ -12,6 +12,7 @@ import type {
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import { evaluateSceneGroupDraft } from '../scene/group-generator.js'
 import { normalizeGroupRewardEntries } from '../session-generation/group-reward-source.js'
+import type { CharacterRewardBalance } from '../loot/character-loot-store.js'
 
 export type GroupRewardGenerationPort = Readonly<{
   generateGroupReward(
@@ -26,6 +27,11 @@ export type GroupRewardCommandContext = Readonly<{
     snapshot(party: PartySnapshot['members']): SceneSnapshot
   }>
   rules: Readonly<{ read(): CampaignRules }>
+  characterLoot?: Readonly<{
+    rewardBalances(
+      characterIds: readonly string[]
+    ): readonly CharacterRewardBalance[]
+  }>
   generation: GroupRewardGenerationPort
 }>
 
@@ -77,10 +83,42 @@ export class GroupRewardCommandHandler {
       rules.rewardXpBasis === 'adjusted'
         ? evaluation.adjustedXp
         : evaluation.baseXp
+    const projectedXp = Math.floor(rewardXp / assigned.length)
+    const balances = new Map(
+      (
+        context.characterLoot?.rewardBalances(
+          assigned.map((member) => member.id)
+        ) ??
+        assigned.map((member) => ({
+          characterId: member.id,
+          ledgerRevision: 0,
+          currentNonMagicCp: 0,
+          currentMagic: {
+            Common: 0,
+            Uncommon: 0,
+            Rare: 0,
+            'Very Rare': 0,
+            Legendary: 0
+          }
+        }))
+      ).map((balance) => [balance.characterId, balance])
+    )
     const run = context.generation.generateGroupReward({
       party: [...counts.entries()]
         .toSorted(([left], [right]) => left - right)
         .map(([level, count]) => ({ level, count })),
+      ledgerParty: assigned.map((member) => {
+        const balance = balances.get(member.id)
+        if (!balance) throw new Error('missing_character_reward_balance')
+        return {
+          characterId: member.id,
+          currentXp: member.xp,
+          projectedXp,
+          ledgerRevision: balance.ledgerRevision,
+          currentNonMagicCp: balance.currentNonMagicCp,
+          currentMagic: balance.currentMagic
+        }
+      }),
       sceneId: scene.id,
       groupId: input.groupId,
       sceneRevision: input.expectedSceneRevision,

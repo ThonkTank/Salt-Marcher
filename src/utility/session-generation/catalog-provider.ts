@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   catalogManifestSchema,
+  catalogHeadersForVersion,
   expectedCatalogHeaders,
   parseEncounterCatalog,
   type EncounterCatalog,
@@ -56,7 +57,11 @@ export class BundledEncounterCatalogProvider {
         'utf8'
       )
       const manifest = catalogManifestSchema.parse(JSON.parse(manifestText))
-      const expectedFiles = Object.keys(expectedCatalogHeaders)
+      const expectedHeaders = catalogHeadersForVersion(
+        manifest.catalogVersion,
+        manifest.tables.map((entry) => entry.file)
+      )
+      const expectedFiles = Object.keys(expectedHeaders)
       const manifestFiles = manifest.tables.map((entry) => entry.file)
       if (
         manifestFiles.length !== expectedFiles.length ||
@@ -70,7 +75,7 @@ export class BundledEncounterCatalogProvider {
       const tableTexts = new Map<string, string>()
       for (const entry of manifest.tables) {
         const text = readFileSync(join(this.root, entry.file), 'utf8')
-        verifyTable(entry, text)
+        verifyTable(entry, text, expectedHeaders)
         tableTexts.set(entry.file, text)
       }
       verifyCatalogHash(manifest)
@@ -189,13 +194,16 @@ export class BundledSessionGenerationCatalogRegistry {
 
 function verifyTable(
   entry: EncounterCatalogManifest['tables'][number],
-  text: string
+  text: string,
+  expectedHeaders: Readonly<
+    Record<string, readonly string[]>
+  > = expectedCatalogHeaders
 ): void {
   const lines = text.replace(/\r/g, '').trimEnd().split('\n')
   const columns = lines[0]?.split('\t').length ?? 0
   const rows = Math.max(0, lines.length - 1)
   const header = lines[0]?.split('\t') ?? []
-  const expectedHeader = expectedCatalogHeaders[entry.file]
+  const expectedHeader = expectedHeaders[entry.file]
   if (
     expectedHeader === undefined ||
     columns !== entry.columns ||

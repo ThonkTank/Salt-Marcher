@@ -100,6 +100,61 @@
   padding: var(--space-5) var(--space-6);
 }
 
+.generator-loot-rules {
+  border-top: 1px solid var(--border-hair);
+  padding-top: var(--space-5);
+}
+
+.generator-loot-rules > summary,
+.generator-loot-rule-group > summary {
+  cursor: pointer;
+  font-family: var(--font-smallcaps);
+  letter-spacing: var(--tracking-label);
+}
+
+.generator-loot-rules > p {
+  color: var(--text-3);
+  font-size: var(--text-sm);
+}
+
+.generator-loot-rule-object {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.generator-loot-rule-group {
+  grid-column: 1 / -1;
+  border: 1px solid var(--border-hair);
+  padding: var(--space-3);
+}
+
+.generator-loot-rule-array {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.generator-loot-rule-field {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+  color: var(--text-3);
+  font-size: var(--text-sm);
+}
+
+.generator-loot-rule-field input {
+  width: 100%;
+  min-width: 0;
+}
+
+.generator-loot-rule-field.checkbox {
+  display: flex;
+  align-items: center;
+}
+
 .generator-settings-heading {
   display: flex;
   align-items: end;
