@@ -109,7 +109,7 @@ function chooseRole(
   const weights = lootRoles.map((role, index) => {
     const actual = total === 0 ? 0 : (counts.get(role) ?? 0) / total
     return Math.max(
-      0.01,
+      rules.balance.minimumRoleWeight,
       roleShares[index]! +
         (roleShares[index]! - actual) * rules.balance.roleStrength
     )

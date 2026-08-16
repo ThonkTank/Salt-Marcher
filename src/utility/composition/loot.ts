@@ -19,6 +19,7 @@ import { SceneStore } from '../../core/scene/scene-store.js'
 import { GeneratedRunStore } from '../../core/session-generation/generated-run-store.js'
 import { CharacterLootStore } from '../../core/loot/character-loot-store.js'
 import type { GroupRewardGenerationPort } from '../../core/application/group-reward-command-handler.js'
+import { ItemDefinitionResolver } from '../../core/loot/item-definition-resolver.js'
 
 type LootHandlerName =
   | 'loot.read'
@@ -48,30 +49,41 @@ export function createLootComposition(dependencies: {
     catalogVersion: string
     catalogContentHash: string
   }): FullSessionGenerationCatalog
+  currentCatalogReference(): {
+    catalogVersion: string
+    catalogContentHash: string
+  }
   groupCommands: GroupRewardCommitContext['groupCommands']
 }): LootComposition {
   const activeDatabase = dependencies.activeDatabase
-  const loot = new LootService(activeDatabase)
   const catalogIndexes = new LootCatalogIndexCache((reference) =>
     dependencies.loadCatalog(reference)
   )
+  const definitions = (db: Database.Database) =>
+    new ItemDefinitionResolver(db, (reference) =>
+      catalogIndexes.require(reference)
+    )
+  const loot = new LootService(activeDatabase, undefined, definitions)
   const catalog = new LootCatalogService({
     readRun: (runId) => new GeneratedRunStore(activeDatabase()).read(runId),
+    currentReference: () => dependencies.currentCatalogReference(),
     index: (reference) => catalogIndexes.require(reference)
   })
   const rewards = new GroupRewardCommandHandler(() => {
     const db = activeDatabase()
+    const itemDefinitions = definitions(db)
     return {
       party: new PartyStore(db),
       scenes: new SceneStore(db),
       rules: dependencies.rules,
-      characterLoot: new CharacterLootStore(db),
+      characterLoot: new CharacterLootStore(db, itemDefinitions),
       generation: dependencies.generation
     }
   })
   const commits = new GroupRewardCommitHandler(
     () => {
       const db = activeDatabase()
+      const itemDefinitions = definitions(db)
       return {
         party: new PartyStore(db),
         scenes: new SceneStore(db),
@@ -80,11 +92,11 @@ export function createLootComposition(dependencies: {
           index: (reference) => catalogIndexes.require(reference)
         },
         generatedRuns: new GeneratedRunStore(db),
-        characterLoot: new CharacterLootStore(db),
-        treasures: new TreasureStore(db),
+        characterLoot: new CharacterLootStore(db, itemDefinitions),
+        treasures: new TreasureStore(db, itemDefinitions),
         groupCommands: dependencies.groupCommands,
         journal: new LootOperationJournal(db),
-        projections: new LootProjectionStore(db),
+        projections: new LootProjectionStore(db, itemDefinitions),
         now: () => new Date().toISOString()
       }
     },

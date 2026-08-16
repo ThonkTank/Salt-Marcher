@@ -41,8 +41,9 @@ Through Session Planner, a successful generation contributes:
 
 - ordered encounter targets and typed role/CR composition intents
 - generated reward channels and encounter anchors
-- concrete generated item lines with quantity, value, magic, curse, and packing
-  facts when applicable
+- concrete generated item lines with a canonical item reference, quantity, and
+  packing; the immutable run-owned definition carries value, magic, rarity,
+  curse, and component facts
 - renderer-derived display summaries, typed warnings, and audit outcome
 - stable run and treasure identities used by the prepared session
 

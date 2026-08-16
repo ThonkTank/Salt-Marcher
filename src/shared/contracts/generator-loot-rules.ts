@@ -275,7 +275,11 @@ export const generatorLootRulesSchema = z
       .object({ curseChance: shareSchema, overstockShare: shareSchema })
       .strict(),
     balance: z
-      .object({ categoryStrength: weightSchema, roleStrength: weightSchema })
+      .object({
+        categoryStrength: weightSchema,
+        roleStrength: weightSchema,
+        minimumRoleWeight: z.number().positive().max(1)
+      })
       .strict(),
     audit: z.object({ normalBudgetTolerance: shareSchema }).strict()
   })

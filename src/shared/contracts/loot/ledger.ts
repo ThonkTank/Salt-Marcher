@@ -1,5 +1,10 @@
 import { z } from 'zod'
 import { treasureSchema } from './treasure.js'
+import {
+  itemDefinitionSchema,
+  itemReferenceKey,
+  itemReferenceSchema
+} from './item-definition.js'
 
 export const distributionShareSchema = z
   .object({ characterId: z.uuid(), quantity: z.number().int().positive() })
@@ -32,9 +37,9 @@ export const characterLootEntrySchema = z
     treasureId: z.uuid().nullable(),
     treasureItemId: z.uuid().nullable(),
     source: z.enum(['award', 'manual', 'purchase', 'correction']),
-    itemName: z.string().min(1),
+    itemReference: itemReferenceSchema,
+    definition: itemDefinitionSchema,
     quantity: z.number().int().positive(),
-    unitValueCp: z.number().int().nonnegative(),
     status: characterLootStatusSchema,
     provenance: z
       .object({
@@ -58,6 +63,23 @@ export const characterLootEntrySchema = z
     receivedAt: z.iso.datetime()
   })
   .strict()
+  .superRefine((entry, context) => {
+    if (
+      itemReferenceKey(entry.itemReference) !==
+      itemReferenceKey(entry.definition.reference)
+    )
+      context.addIssue({
+        code: 'custom',
+        path: ['definition', 'reference'],
+        message: 'Resolved definition does not match the item reference.'
+      })
+    if (!entry.definition.stackable && entry.quantity !== 1)
+      context.addIssue({
+        code: 'custom',
+        path: ['quantity'],
+        message: 'Non-stackable items must have quantity one.'
+      })
+  })
 
 export const characterLootLedgerSchema = z
   .object({
@@ -77,9 +99,7 @@ export const correctCharacterLootInputSchema = z
     characterId: z.uuid(),
     entryId: z.uuid(),
     expectedRevision: z.number().int().nonnegative(),
-    itemName: z.string().trim().min(1),
     quantity: z.number().int().positive(),
-    unitValueCp: z.number().int().nonnegative(),
     status: characterLootStatusSchema,
     reason: z.string().trim().min(1).max(500)
   })

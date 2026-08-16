@@ -12,7 +12,7 @@ import type { SessionGenerationEncounterInput } from '../../src/shared/contracts
 import type { EncounterEntropy } from '../../src/core/session-generation/deterministic-order.js'
 
 const catalog = new BundledEncounterCatalogProvider(
-  join(process.cwd(), 'resources/sessiongeneration/catalog-2026-07-16')
+  join(process.cwd(), 'resources/sessiongeneration/catalog-2026-08-16')
 ).loadFull()
 const preset = {
   id: systemGeneratorPresetId,
@@ -110,6 +110,9 @@ describe('session generation loot engine', () => {
     )
     expect(base.input.rewardXp).toBe(base.input.baseXp)
     expect(adjusted.input.rewardXp).toBe(adjusted.input.adjustedXp)
+    expect(base.treasures).toHaveLength(1)
+    expect(base.treasures[0]?.stockClass).toBe('normal')
+    expect(base.rewardSummary.overstockValueCp).toBe(0)
     expect(() =>
       generateGroupRewardDraft(
         { ...groupInput, rewardXp: groupInput.adjustedXp },
@@ -117,6 +120,67 @@ describe('session generation loot engine', () => {
         sha256EncounterEntropy
       )
     ).toThrowError('group_reward_xp_basis_mismatch')
+  })
+
+  it('returns structurally empty session and group rewards when the ledger is overprovided', () => {
+    const ledgerParty = Array.from({ length: 4 }, (_, index) => ({
+      characterId: `018f47db-e17a-7000-8000-00000000000${String(index + 1)}`,
+      currentXp: 400_000,
+      projectedXp: 1_000,
+      ledgerRevision: index,
+      currentNonMagicCp: 100_000_000,
+      currentMagic: {
+        Common: 100,
+        Uncommon: 100,
+        Rare: 100,
+        'Very Rare': 100,
+        Legendary: 100
+      }
+    }))
+    const session = generateSessionRunDraft(
+      { ...input, ledgerParty },
+      catalog,
+      sha256EncounterEntropy,
+      preset
+    )
+    expect(session.status).toBe('success')
+    if (session.status !== 'success') return
+    expect(session.draft.treasures).toEqual([])
+    expect(session.draft.itemDefinitions).toEqual([])
+    expect(session.draft.session).toMatchObject({
+      goldBudgetCp: 0,
+      normalTreasureCount: 0,
+      overstockTreasureCount: 0
+    })
+
+    const group = generateGroupRewardDraft(
+      {
+        party: [{ level: 3, count: 4 }],
+        ledgerParty,
+        sceneId: '018f47db-e17a-7000-8000-000000000010',
+        groupId: '018f47db-e17a-7000-8000-000000000011',
+        sceneRevision: 1,
+        groupRevision: 2,
+        groupEntries: [{ creatureId: 'wolf', quantity: 2, deadQuantity: 0 }],
+        partyRevision: 3,
+        campaignRulesRevision: 4,
+        rewardXpBasis: 'base',
+        baseXp: 200,
+        adjustedXp: 400,
+        rewardXp: 200,
+        seed: 9
+      },
+      catalog,
+      sha256EncounterEntropy,
+      preset
+    )
+    expect(group.treasures).toEqual([])
+    expect(group.itemDefinitions).toEqual([])
+    expect(group.rewardSummary).toEqual({
+      normalValueCp: 0,
+      overstockValueCp: 0,
+      magicCount: 0
+    })
   })
 
   it('keeps opaque group provenance out of reward entropy', () => {
@@ -245,21 +309,36 @@ describe('session generation loot engine', () => {
           treasure.containers.map((container) => container.position)
         ).toEqual(treasure.containers.map((_, position) => position))
         expect(
-          treasure.items.reduce((sum, item) => sum + item.totalValueCp, 0)
+          treasure.items.reduce((sum, item) => {
+            const definition = run.itemDefinitions.find(
+              (candidate) =>
+                candidate.reference.kind === 'generated' &&
+                item.itemReference.kind === 'generated' &&
+                candidate.reference.definitionId ===
+                  item.itemReference.definitionId
+            )!
+            return sum + item.quantity * definition.unitValueCp
+          }, 0)
         ).toBe(treasure.actualValueCp)
         for (const item of treasure.items) {
-          expect(item.totalValueCp).toBe(item.quantity * item.unitValueCp)
+          const definition = run.itemDefinitions.find(
+            (candidate) =>
+              candidate.reference.kind === 'generated' &&
+              item.itemReference.kind === 'generated' &&
+              candidate.reference.definitionId ===
+                item.itemReference.definitionId
+          )!
           expect(
             item.containerId === null ||
               treasure.containers.some(
                 (container) => container.id === item.containerId
               )
           ).toBe(true)
-          if (item.curseName) {
-            expect(item.magic).toBe(true)
-            expect(item.curseEffect).toBeTruthy()
+          if (definition.curse) {
+            expect(definition.magic).toBe(true)
+            expect(definition.curse.effect).toBeTruthy()
           }
-          if (!item.magic)
+          if (!definition.magic)
             roleCounts.set(item.role, (roleCounts.get(item.role) ?? 0) + 1)
         }
       }
@@ -271,4 +350,117 @@ describe('session generation loot engine', () => {
       'useful'
     ])
   })
+
+  it.each([
+    ['M0-01', 101, '0.6', undefined, [{ level: 1, count: 4 }]],
+    [
+      'M0-02',
+      202,
+      '1',
+      3,
+      [
+        { level: 2, count: 2 },
+        { level: 3, count: 2 }
+      ]
+    ],
+    ['M0-03', 303, '0.6', undefined, [{ level: 5, count: 4 }]],
+    [
+      'M0-04',
+      404,
+      '1',
+      undefined,
+      [
+        { level: 5, count: 1 },
+        { level: 6, count: 2 },
+        { level: 7, count: 1 }
+      ]
+    ],
+    ['M0-05', 505, '0.6', undefined, [{ level: 9, count: 4 }]],
+    [
+      'M0-06',
+      606,
+      '1',
+      4,
+      [
+        { level: 11, count: 2 },
+        { level: 12, count: 2 }
+      ]
+    ],
+    ['M0-07', 707, '0.6', undefined, [{ level: 13, count: 4 }]],
+    [
+      'M0-08',
+      808,
+      '1',
+      undefined,
+      [
+        { level: 14, count: 1 },
+        { level: 15, count: 2 },
+        { level: 16, count: 1 }
+      ]
+    ],
+    ['M0-09', 909, '0.6', undefined, [{ level: 17, count: 4 }]],
+    ['M0-10', 1010, '1', 6, [{ level: 20, count: 4 }]],
+    ['M0-11', 1111, '1', 2, [{ level: 5, count: 1 }]],
+    ['M0-12', 1212, '1', undefined, [{ level: 8, count: 8 }]]
+  ] as const)(
+    'matches Sheet regression structure %s',
+    (_caseId, seed, adventureDayFraction, encounterCount, party) => {
+      const result = generateSessionRunDraft(
+        {
+          party: party.map((entry) => ({ ...entry })),
+          adventureDayFraction,
+          ...(encounterCount === undefined ? {} : { encounterCount }),
+          seed
+        },
+        catalog,
+        sha256EncounterEntropy,
+        preset
+      )
+      expect(result.status).toBe('success')
+      if (result.status !== 'success') return
+      const run = result.draft
+      const definitions = new Map(
+        run.itemDefinitions.map((definition) => [
+          definition.reference.kind === 'generated'
+            ? definition.reference.definitionId
+            : '',
+          definition
+        ])
+      )
+      expect(run.encounters).toHaveLength(run.session.encounterCount)
+      expect(
+        run.treasures.filter((entry) => entry.stockClass === 'overstock')
+      ).toHaveLength(1)
+      expect(
+        run.treasures
+          .filter((entry) => entry.stockClass === 'normal')
+          .reduce((sum, entry) => sum + Number(entry.targetValueCp), 0)
+      ).toBe(run.session.goldBudgetCp)
+      expect(
+        run.treasures.every((treasure) =>
+          treasure.items.every((item) => {
+            if (item.itemReference.kind !== 'generated') return false
+            const definition = definitions.get(item.itemReference.definitionId)
+            return (
+              Boolean(definition) &&
+              (item.containerId === null ||
+                treasure.containers.some(
+                  (container) => container.id === item.containerId
+                ))
+            )
+          })
+        )
+      ).toBe(true)
+      expect(
+        run.itemDefinitions.some(
+          (definition) =>
+            definition.components.baseItemId ||
+            definition.components.coinDenominations.length > 0
+        )
+      ).toBe(true)
+      expect(
+        run.audits.filter((audit) => audit.hard).every((audit) => audit.passed)
+      ).toBe(true)
+    }
+  )
 })

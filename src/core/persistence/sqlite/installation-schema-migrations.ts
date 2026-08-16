@@ -94,5 +94,59 @@ export const installationSchemaMigrations: readonly SchemaMigration[] =
           )
           .run('installation-29-to-30-generator-loot-rules', appliedAt)
       }
+    },
+    {
+      id: 'installation-30-to-31-loot-contracts',
+      role: 'installation',
+      fromVersion: 30,
+      toVersion: 31,
+      migrate(database) {
+        initializeInstallationSchemaMetadata(database)
+        const hasPresets = Boolean(
+          database
+            .prepare(
+              `SELECT 1 FROM sqlite_master
+                WHERE type = 'table' AND name = 'generator_presets'`
+            )
+            .get()
+        )
+        if (hasPresets) {
+          const rows = database
+            .prepare(
+              'SELECT id, config_json AS configJson FROM generator_presets'
+            )
+            .all() as Array<{ id: string; configJson: string }>
+          const update = database.prepare(
+            'UPDATE generator_presets SET config_json = ?, updated_at = ? WHERE id = ?'
+          )
+          const appliedAt = new Date().toISOString()
+          for (const row of rows) {
+            const config = JSON.parse(row.configJson) as {
+              loot?: { balance?: Record<string, unknown> }
+            }
+            if (config.loot?.balance?.['minimumRoleWeight'] === undefined)
+              update.run(
+                JSON.stringify({
+                  ...config,
+                  loot: {
+                    ...config.loot,
+                    balance: {
+                      ...config.loot?.balance,
+                      minimumRoleWeight:
+                        defaultGeneratorLootRules.balance.minimumRoleWeight
+                    }
+                  }
+                }),
+                appliedAt,
+                row.id
+              )
+          }
+        }
+        database
+          .prepare(
+            'INSERT INTO installation_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run('installation-30-to-31-loot-contracts', new Date().toISOString())
+      }
     }
   ])

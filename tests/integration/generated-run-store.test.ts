@@ -22,7 +22,7 @@ afterEach(() => {
 })
 
 describe('GeneratedRunStore relational persistence', () => {
-  it('stores no GeneratedRun JSON columns and rejects invalid relational rows', () => {
+  it('stores no aggregate run blob, keeps item facts central, and rejects invalid rows', () => {
     const { db, run } = generatedSession()
     const tables = (
       db
@@ -40,13 +40,33 @@ describe('GeneratedRunStore relational persistence', () => {
         type: string
       }[]
       expect(
-        columns.some(
-          (column) =>
-            /json/i.test(column.name) || /^JSON$/i.test(column.type.trim())
-        ),
-        `${table} retains a JSON domain column`
+        columns.some((column) => column.name === 'run_json'),
+        `${table} retains an aggregate run blob`
       ).toBe(false)
     }
+    const itemColumns = (
+      db.prepare('PRAGMA table_info(session_generation_item)').all() as Array<{
+        name: string
+      }>
+    ).map((column) => column.name)
+    expect(itemColumns).toEqual([
+      'run_id',
+      'treasure_id',
+      'id',
+      'position',
+      'item_reference_json',
+      'role',
+      'quantity',
+      'container_id'
+    ])
+    expect(
+      db
+        .prepare(
+          'SELECT count(*) FROM session_generation_item_definition WHERE run_id = ?'
+        )
+        .pluck()
+        .get(run.id)
+    ).toBe(run.itemDefinitions.length)
 
     expect(() =>
       db
@@ -120,13 +140,11 @@ describe('GeneratedRunStore relational persistence', () => {
       db
         .prepare(
           `INSERT INTO session_generation_item (
-             run_id, treasure_id, id, position, role, name, quantity,
-             unit_value_cp, total_value_cp, stackable, magic, rarity,
-             capacity
-           ) VALUES (?, ?, ?, 999, 'magic', 'invalid', 1, 1, 1, 0, 1,
-                     'Mythic', 0)`
+             run_id, treasure_id, id, position, item_reference_json, role,
+             quantity, container_id
+           ) VALUES (?, ?, ?, 999, ?, 'invalid', 1, NULL)`
         )
-        .run(run.id, treasureId, randomUUID())
+        .run(run.id, treasureId, randomUUID(), '{"kind":"unknown"}')
     ).toThrow()
     expect(() =>
       db
@@ -170,7 +188,7 @@ function generatedSession() {
   const db = campaigns.activeCampaignDatabase()
   const generation = new SessionGenerationService(
     new BundledEncounterCatalogProvider(
-      join(process.cwd(), 'resources/sessiongeneration/catalog-2026-07-16')
+      join(process.cwd(), 'resources/sessiongeneration/catalog-2026-08-16')
     ),
     sha256EncounterEntropy,
     () => ({

@@ -63,6 +63,8 @@ import { GeneratedEncounterPlanService } from '../core/encounter/generated-plan-
 import { SessionPlannerService } from './session-planner/session-planner-service.js'
 import { CampaignRulesService } from '../core/application/campaign-rules-service.js'
 import { createLootComposition } from './composition/loot.js'
+import { ItemDefinitionResolver } from '../core/loot/item-definition-resolver.js'
+import { createLootCatalogIndex } from '../core/loot/loot-catalog-index.js'
 import { createCampaignHandlers } from './composition/campaign.js'
 import {
   createEncounterHandlers,
@@ -125,7 +127,14 @@ const sessionPlanner = new SessionPlannerService(
   sessionGenerationService,
   encounterPlans,
   publishPreparationChange,
-  schedulePreparationWork
+  schedulePreparationWork,
+  undefined,
+  (db) =>
+    new ItemDefinitionResolver(db, (reference) =>
+      createLootCatalogIndex(
+        sessionGenerationCatalog.loadFullByReference(reference)
+      )
+    )
 )
 const symbolLifecycle = new LocationSymbolLifecycleService(campaigns)
 const locationSymbols = symbolLifecycle.symbols
@@ -158,6 +167,7 @@ const lootComposition = createLootComposition({
   activeDatabase,
   rules: campaignRules,
   generation: sessionGenerationService,
+  currentCatalogReference: () => sessionGenerationCatalog.currentReference(),
   loadCatalog: (reference) => {
     try {
       return sessionGenerationCatalog.loadFullByReference(reference)

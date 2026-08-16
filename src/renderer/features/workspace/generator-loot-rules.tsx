@@ -54,6 +54,7 @@ function RuleObject(props: {
                     <RuleField
                       key={index}
                       name={`${label(key)} ${String(index + 1)}`}
+                      path={[...path, index]}
                       value={entry}
                       changed={(next) => props.changed([...path, index], next)}
                     />
@@ -73,7 +74,9 @@ function RuleObject(props: {
           <RuleField
             key={key}
             name={label(key)}
+            path={path}
             value={value}
+            locked={key === 'level' && props.path[0] === 'progression'}
             changed={(next) => props.changed(path, next)}
           />
         )
@@ -84,9 +87,18 @@ function RuleObject(props: {
 
 function RuleField(props: {
   name: string
+  path: Path
   value: unknown
+  locked?: boolean
   changed: (value: string | number | boolean) => void
 }) {
+  if (props.locked)
+    return (
+      <label className="generator-loot-rule-field">
+        <span>{props.name}</span>
+        <output aria-label={props.name}>{String(props.value)}</output>
+      </label>
+    )
   if (typeof props.value === 'boolean')
     return (
       <label className="generator-loot-rule-field checkbox">
@@ -102,6 +114,22 @@ function RuleField(props: {
     typeof props.value === 'number' || typeof props.value === 'string'
       ? props.value
       : ''
+  if (typeof props.value === 'string' && props.path.at(-2) === 'denominations')
+    return (
+      <label className="generator-loot-rule-field">
+        <span>{props.name}</span>
+        <select
+          value={props.value}
+          onChange={(event) => props.changed(event.currentTarget.value)}
+        >
+          {['pp', 'gp', 'ep', 'sp', 'cp'].map((denomination) => (
+            <option key={denomination} value={denomination}>
+              {denomination}
+            </option>
+          ))}
+        </select>
+      </label>
+    )
   return (
     <label className="generator-loot-rule-field">
       <span>{props.name}</span>

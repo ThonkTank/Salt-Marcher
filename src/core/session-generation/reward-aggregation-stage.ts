@@ -2,6 +2,10 @@ import type {
   EncounterAudit,
   GeneratedTreasure
 } from '../../shared/contracts/session-generation.js'
+import {
+  itemReferenceKey,
+  type ItemDefinition
+} from '../../shared/contracts/loot.js'
 import type { GeneratorLootRules } from '../../shared/contracts/generator-loot-rules.js'
 import { defaultGeneratorLootRules } from '../../shared/generator/default-loot-rules.js'
 import type { LootRarity } from './loot-catalog.js'
@@ -9,9 +13,11 @@ import { freezeStage } from './reward-stage-types.js'
 
 export type RewardAggregationInput = Readonly<{
   treasures: readonly GeneratedTreasure[]
+  itemDefinitions: readonly ItemDefinition[]
   goldBudgetCp: number
   magicTargets: Readonly<Record<LootRarity, number>>
   expectedTreasureCount: number
+  profile?: 'session' | 'group_reward'
   rules?: GeneratorLootRules
 }>
 
@@ -44,8 +50,23 @@ export function aggregateReward(
     (sum, count) => sum + count,
     0
   )
+  const definitions = new Map(
+    input.itemDefinitions.map((definition) => [
+      itemReferenceKey(definition.reference),
+      definition
+    ])
+  )
   const magicCount = input.treasures.reduce(
-    (sum, treasure) => sum + treasure.items.filter((item) => item.magic).length,
+    (sum, treasure) =>
+      sum +
+      treasure.items.reduce(
+        (count, item) =>
+          count +
+          (definitions.get(itemReferenceKey(item.itemReference))?.magic
+            ? item.quantity
+            : 0),
+        0
+      ),
     0
   )
   const anchors = input.treasures
@@ -124,6 +145,125 @@ export function aggregateReward(
             ).length,
           0
         )
+      }
+    },
+    {
+      code: 'item_definition_complete',
+      passed: input.treasures.every((treasure) =>
+        treasure.items.every((item) =>
+          definitions.has(itemReferenceKey(item.itemReference))
+        )
+      ),
+      hard: true,
+      parameters: {
+        definitionCount: definitions.size,
+        itemCount: input.treasures.reduce(
+          (count, treasure) => count + treasure.items.length,
+          0
+        )
+      }
+    },
+    {
+      code: 'item_value_consistency',
+      passed: input.treasures.every(
+        (treasure) =>
+          treasure.actualValueCp ===
+          treasure.items.reduce(
+            (sum, item) =>
+              sum +
+              item.quantity *
+                (definitions.get(itemReferenceKey(item.itemReference))
+                  ?.unitValueCp ?? 0),
+            0
+          )
+      ),
+      hard: true,
+      parameters: {
+        invalidTreasureCount: input.treasures.filter(
+          (treasure) =>
+            treasure.actualValueCp !==
+            treasure.items.reduce(
+              (sum, item) =>
+                sum +
+                item.quantity *
+                  (definitions.get(itemReferenceKey(item.itemReference))
+                    ?.unitValueCp ?? 0),
+              0
+            )
+        ).length
+      }
+    },
+    {
+      code: 'container_capacity',
+      passed: input.treasures.every((treasure) =>
+        treasure.containers.every(
+          (container) =>
+            treasure.items
+              .filter((item) => item.containerId === container.id)
+              .reduce(
+                (used, item) =>
+                  used +
+                  item.quantity *
+                    (definitions.get(itemReferenceKey(item.itemReference))
+                      ?.unitCapacity ?? 0),
+                0
+              ) <=
+            container.capacity + 1e-9
+        )
+      ),
+      hard: true,
+      parameters: {
+        containerCount: input.treasures.reduce(
+          (count, treasure) => count + treasure.containers.length,
+          0
+        )
+      }
+    },
+    {
+      code: 'coin_denomination_integrity',
+      passed: [...definitions.values()].every((definition) => {
+        if (definition.components.coinDenominations.length === 0) return true
+        return (
+          definition.components.coinDenominations.reduce(
+            (sum, coin) =>
+              sum +
+              coin.quantity *
+                rules.coins.denominations[coin.denominationId].valueCp,
+            0
+          ) === definition.unitValueCp
+        )
+      }),
+      hard: true,
+      parameters: {
+        coinDefinitionCount: [...definitions.values()].filter(
+          (definition) => definition.components.coinDenominations.length > 0
+        ).length
+      }
+    },
+    {
+      code: 'role_magic_consistency',
+      passed: input.treasures.every((treasure) =>
+        treasure.items.every(
+          (item) =>
+            (item.role === 'magic') ===
+            Boolean(
+              definitions.get(itemReferenceKey(item.itemReference))?.magic
+            )
+        )
+      ),
+      hard: true,
+      parameters: {}
+    },
+    {
+      code: 'stock_class_policy',
+      passed:
+        input.profile !== 'group_reward' ||
+        input.treasures.every((treasure) => treasure.stockClass === 'normal'),
+      hard: true,
+      parameters: {
+        overstockCount: input.treasures.filter(
+          (treasure) => treasure.stockClass === 'overstock'
+        ).length
       }
     }
   ]

@@ -8,6 +8,7 @@ import { LootService } from '../../src/core/application/loot-service.js'
 import { LootProjectionStore } from '../../src/core/loot/loot-projection-store.js'
 import { CampaignStore } from '../../src/core/persistence/sqlite/campaign-store.js'
 import { SceneStore } from '../../src/core/scene/scene-store.js'
+import { legacyLootItem } from '../helpers/loot-item.js'
 
 const roots: string[] = []
 const stores: CampaignStore[] = []
@@ -37,13 +38,13 @@ describe('Loot projections', () => {
       commandId: randomUUID(),
       label: 'Gruppenfund',
       anchor: { kind: 'group', sceneId, groupId, lastKnownLabel: 'ignored' },
-      items: [{ name: 'Ring', quantity: 1, unitValueCp: 10, stackable: false }]
+      items: [{ itemReference: legacyLootItem(db, 'Ring', 10), quantity: 1 }]
     })
     const unplaced = loot.create({
       commandId: randomUUID(),
       label: 'Inboxfund',
       anchor: { kind: 'unplaced' },
-      items: [{ name: 'Karte', quantity: 1, unitValueCp: 1, stackable: false }]
+      items: [{ itemReference: legacyLootItem(db, 'Karte', 1), quantity: 1 }]
     })
 
     const projection = loot.sceneProjection(sceneId)
@@ -83,10 +84,8 @@ describe('Loot projections', () => {
           ],
           items: [
             {
-              name: `Münze ${index}`,
-              quantity: 2,
-              unitValueCp: 1,
-              stackable: true
+              itemReference: legacyLootItem(db, `Münze ${index}`, 1, true),
+              quantity: 2
             }
           ]
         }).id
@@ -102,14 +101,14 @@ describe('Loot projections', () => {
     )
     expect(first.entries).toHaveLength(2)
     expect(first.nextCursor).not.toBeNull()
-    expect(firstCounter.queries()).toBe(4)
+    expect(firstCounter.queries()).toBe(5)
     expect(firstCounter.hydratedRootCounts()).toEqual([2, 2])
 
     const insertedAfterCursor = loot.create({
       commandId: randomUUID(),
       label: 'Später',
       anchor: { kind: 'unplaced' },
-      items: [{ name: 'Neu', quantity: 1, unitValueCp: 1, stackable: false }]
+      items: [{ itemReference: legacyLootItem(db, 'Neu', 1), quantity: 1 }]
     })
     const second = loot.inbox({ cursor: first.nextCursor, limit: 2 })
     const third = loot.inbox({ cursor: second.nextCursor, limit: 2 })

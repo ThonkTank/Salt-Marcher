@@ -56,11 +56,13 @@ export class SessionGenerationService {
     try {
       const catalog = this.catalogProvider.loadFull()
       const preset = this.preset()
+      const runId = uuidv7()
       const result = generateSessionRunDraft(
         input,
         catalog,
         this.entropy,
-        preset
+        preset,
+        runId
       )
       if (result.status !== 'success') return result
       if (!this.activeDatabase)
@@ -85,7 +87,7 @@ export class SessionGenerationService {
       }
       const run = sessionGeneratedRunSchema.parse({
         ...result.draft,
-        id: uuidv7(),
+        id: runId,
         originFingerprint,
         generatedAt: this.clock().toISOString()
       })
@@ -117,7 +119,14 @@ export class SessionGenerationService {
       )
     const catalog = this.catalogProvider.loadFull()
     const preset = this.preset()
-    const draft = generateGroupRewardDraft(input, catalog, this.entropy, preset)
+    const runId = uuidv7()
+    const draft = generateGroupRewardDraft(
+      input,
+      catalog,
+      this.entropy,
+      preset,
+      runId
+    )
     const originFingerprint = groupRewardRunOriginFingerprint({
       rewardEngineVersion: draft.rewardEngineVersion,
       catalogContentHash: draft.catalogContentHash,
@@ -134,7 +143,7 @@ export class SessionGenerationService {
     return store.save(
       groupRewardGeneratedRunSchema.parse({
         ...draft,
-        id: uuidv7(),
+        id: runId,
         originFingerprint,
         generatedAt: this.clock().toISOString()
       })

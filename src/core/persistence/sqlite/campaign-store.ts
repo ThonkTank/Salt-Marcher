@@ -47,6 +47,7 @@ import { initializeGeneratorPresetSchema } from './generator-preset-store.js'
 import { initializeSessionGenerationSchema } from '../../session-generation/generated-run-store.js'
 import { initializeLootSchema } from '../../loot/loot-schema.js'
 import { initializeCharacterLootSchema } from '../../loot/character-loot-store.js'
+import { initializeLegacyItemDefinitionSchema } from '../../loot/item-definition-resolver.js'
 import { initializeEncounterPlanSchema } from '../../encounter/encounter-plan-store.js'
 import { initializeSessionPlannerSchema } from '../../session-planner/session-planner-store.js'
 import { initializeCampaignRulesSchema } from '../../application/campaign-rules-service.js'
@@ -360,6 +361,7 @@ export class CampaignStore {
     initializeSessionGenerationSchema(campaign)
     initializeEncounterPlanSchema(campaign)
     initializeSessionPlannerSchema(campaign)
+    initializeLegacyItemDefinitionSchema(campaign)
     initializeLootSchema(campaign)
     initializeCharacterLootSchema(campaign)
     initializeCampaignSchemaMetadata(campaign)

@@ -1,67 +1,77 @@
-# Session Generation rule provenance
+# Session Generation Rule Provenance
 
-## Versioned source boundary
+## Versioned Source Boundary
 
-Runtime generation uses only the checked catalog
-`resources/sessiongeneration/catalog-2026-07-16`. The live spreadsheet is an
-upstream authoring source and is never read by Runtime or tests.
+Runtime generation uses only checked, immutable local catalog artifacts. The
+active artifact is `resources/sessiongeneration/catalog-2026-08-16`; the prior
+`catalog-2026-07-16` artifact remains registered for historical runs. Runtime
+and tests never read the live spreadsheet.
 
 - source URL: `https://docs.google.com/spreadsheets/d/106AZXUTiRqKQ3bvh7FILYkZoHX1S_rAHZ4EcH7u2ino`
-- source SHA-256: `f87f6046444b7bf17814fae71c17802f4f875bfe4e4c9ec75574a1fc01a07621`
-- catalog version: `catalog-2026-07-16`
-- catalog content SHA-256:
-  `c67ec3eb357ff74af27e00c2be8654d0baed40fab288b03239dd0948c132afca`
-- reward behavior profile: `reward-v1`
+- source SHA-256: `a3bb89c04b40beb65eb6e344a6a8e8e8f6570cde7b75012aa778b5555b64aac2`
+- active catalog version: `catalog-2026-08-16`
+- active catalog content SHA-256:
+  `59f4a9ab7b7164b9151d5339f41136701efa45a58666ee1cab7cff101b224a03`
+- reward behavior profile: `reward-v2`
 - encounter behavior profile: `encounter-v5`
 
-The manifest fixes every table's row count, column count, header, and SHA-256.
-The catalog checker verifies those facts before a typed snapshot reaches a
-generation stage.
+The manifest fixes all 21 tables' row/column counts, headers, and hashes. The
+registry and catalog checker verify them before typed data reaches a stage.
 
-## Rule-to-table map
+## Rule-To-Owner Map
 
-| Rule family and formula | Checked table inputs | Owning stage | Reference evidence |
+| Rule family | Checked/configured inputs | Owning stage | Reference evidence |
 | --- | --- | --- | --- |
-| Party daily XP is the sum of `count × Day_XP_Per_Character(level)`; the requested session target applies the exact day fraction at the documented integer allocation boundary. | `DB_Progression.tsv` | party/reward basis and Encounter target allocation | `session-generation-encounter-engine.test.ts`, rational boundary tests |
-| Per-character Reward XP is effective Reward XP divided by active party count. Session Reward XP is the allocated session target; group Reward XP is the current campaign-policy value for the normalized living roster. Dead quantities remain provenance and contribute no XP. | `DB_Progression.tsv`; stored group XP facts | party/reward basis | Reward-budget and group-policy parity tests |
-| Gold budget in copper is `roundHalfUp(perCharacterRewardXp × weighted Gold_Per_XP × 100)` with a minimum applicable budget of one copper. | `DB_Progression.tsv` | reward budget and magic targets | Reward-budget stage Golden |
-| Each rarity target is `floor(perCharacterRewardXp × weighted rarity-per-XP)` plus one deterministic Bernoulli draw for the rational remainder. | `DB_Progression.tsv` rarity-per-XP columns | reward budget and magic targets | Magic-target rounding and entropy tests |
-| CR labels, codes, and unit XP are canonical catalog facts; equivalent authored fraction spellings resolve through the one CR parser before selection. | `DB_CR.tsv` | Encounter roster selection/import | CR parser and Encounter selection tests |
-| Allowed role ranges by party level and CR come from active role-band rows. | `DB_EncounterRoleBands.tsv`, `DB_CR.tsv` | Encounter composition | Encounter selector tests |
-| Encounter patterns define ordered role combinations and block counts. | `DB_EncounterPatterns.tsv` | Encounter composition | Pattern and candidate Golden tests |
-| Session treasure count, normal/overstock split, and channel allocation use the full-session profile; a group reward fixes one normal Encounter channel. | Progression-derived budget plus profile policy | treasure planning and channels | Session/group profile Goldens |
-| Theme selection uses active themes and their magic/spell-color metadata. | `DB_Themes.tsv` | treasure planning and channels | Theme selection stability test |
-| Non-magic candidates, value, capacity, form, class, type, utility, density, adornment, and source facts come from active item rows. | `DB_LootItems.tsv`, `DB_LootSources.tsv` | slot/role planning and non-magic selection | Candidate tolerance and role Goldens |
-| Allowed item/modifier/theme/container relationships are explicit graph edges with stable sort order. | `DB_LootRelations.tsv` | non-magic selection, modifiers, packing | Relationship and fallback tests |
-| Modifier compatibility, quantity range, component type, text template, and flat value are catalog facts. | `DB_LootModifiers.tsv` | non-magic selection and modifiers | Modifier eligibility tests |
-| Magic roll bands, rarity, decision type, and item identity come from active magic rows. | `DB_MagicItems.tsv`, `DB_MagicDecisionTypes.tsv` | magic selection | Magic selection Golden |
-| Variant choice uses the active, stably ordered options of the selected group. | `DB_MagicVariants.tsv` | magic variants | Variant entropy stability test |
-| Enspelled eligibility and derived save/attack/charge facts use the matching chassis/spell-level rule; spell identity comes from the checked spell catalog. | `DB_EnspelledRules.tsv`, `DB_Spells.tsv` | magic variants | Enspelled boundary tests |
-| Curse eligibility uses rarity range, weight, trigger, applicability, and attunement facts; selection is deterministic within the eligible weighted set. | `DB_MagicCurses.tsv` | magic variants and curses | Curse eligibility and entropy tests |
-| Packing respects item capacity, relation eligibility, mixability, hiding, and stable packing priority. | `DB_Containers.tsv`, `DB_LootRelations.tsv`, item capacity facts | packing | Packing stage Golden |
-| Aggregates sum structured item values and magic counts; hard audits compare generated ownership, packing, count, and budget facts without formatted prose. | Outputs of all prior stages | aggregation and audits | Audit-code and stage Golden tests |
+| Session XP and exact encounter allocation | `DB_Progression.tsv`, Config V4 | Party basis and Encounter allocation | rational allocation and Encounter Golden tests |
+| Cumulative post-XP gold target | `DB_Progression.tsv` XP/gold anchors imported as editable Config-V4 anchors | Reward basis | mixed-XP, level boundary, and 355,000-XP cap tests |
+| Rarity targets across crossed XP bands | `DB_Progression.tsv` rarity rates imported into Config V4 | Reward basis | integrated rarity and probabilistic rounding tests |
+| Encounter CR facts | `DB_CR.tsv` | Encounter candidate construction | CR parser and selector tests |
+| Encounter role eligibility | `DB_EncounterRoleBands.tsv` | Encounter composition | role-band tests |
+| Encounter pattern composition | `DB_EncounterPatterns.tsv` | Encounter composition | pattern and candidate tests |
+| Treasure channels and themes | `DB_Themes.tsv`, Config-V4 channel shares and counts | Treasure planning | Session/Group structural regressions |
+| Slot roles and forms | `DB_LootMix.tsv`, Config-V4 role/form mix | Slot and role planning | twelve Sheet structural regressions |
+| Quantity limits | `DB_LootQuantityRules.tsv`, Config-V4 quantity tables | Non-magic selection | default parity and quantity tests |
+| Candidate scoring policy | `DB_LootSelectionPolicy.tsv`, Config-V4 fit, jitter, penalty, and shortlist values | Non-magic and magic selection | policy parity and shortlist tests |
+| Coin denominations | `DB_CoinDenominations.tsv`, Config-V4 values and labels | Coin selection and aggregation | denomination integrity tests |
+| Coin profiles | `DB_CoinProfiles.tsv`, Config-V4 profile mappings | Coin selection | profile parity and budget tests |
+| Ordinary candidates | `DB_LootItems.tsv`, `DB_LootSources.tsv` | Non-magic selection | carrier, adorned, useful, and flavor tests |
+| Modifier composites | `DB_LootModifiers.tsv` | Non-magic selection and definition assembly | modifier/component fit tests |
+| Relationship eligibility | `DB_LootRelations.tsv` only | Selection and packing indexes | relation addressability and fallback tests |
+| Magic decision and rarity bands | `DB_MagicItems.tsv`, `DB_MagicDecisionTypes.tsv` | Magic selection | rarity and decision-path tests |
+| Magic variants | `DB_MagicVariants.tsv` | Magic definition assembly | variant structural tests |
+| Spells and enspelling | `DB_Spells.tsv`, `DB_EnspelledRules.tsv` | Magic definition assembly | spell and enspelled boundary tests |
+| Curses | `DB_MagicCurses.tsv` and Config-V4 curse chance | Magic definition assembly | curse eligibility tests |
+| Packing and output grammar | `DB_Containers.tsv`, `DB_LootRelations.tsv`, Config-V4 fill/loose/pile/bulk rules | Packing | capacity, hidden-container, relation, and grammar tests |
 
-## Rounding and entropy ownership
+CR, encounter role bands, and encounter patterns remain catalog facts owned by
+the unchanged encounter pipeline. Config V4 exposes every effective Loot
+constant with fixed typed keys for levels, roles, rarities, policy paths, and
+denominations. Derived progression columns are not editable, preventing
+contradictory curves.
 
-All ratios enter generation as exact `Rational` values. Each row above names
-the stage that owns conversion to an integer. A later stage must not re-round a
-value already converted by its owner.
+## Result And Randomness Contract
 
-Entropy keys are versioned semantic builders. Their public vocabulary is
-limited to reward budget, treasure/channel, item selection, magic selection,
-variant/curse selection, and packing identities. Stage code passes typed facts
-to those builders and does not concatenate free labels.
+The engine may use a simple injected random source. Exact candidate choices,
+formatted output, and spreadsheet seed multipliers are not compatibility
+contracts. A completed run stores its selected definitions, component
+references, quantities, packing, warnings, audits, reward basis, preset
+identity/hash, and catalog identity. That immutable result—not algorithmic RNG
+stability—is the replay authority after restart.
 
-## Change rule
+Group rewards use only the clamped normal ledger deficit and never overstock.
+Session rewards distribute the normal deficit across the plan and report their
+configured overstock separately. Hard/soft audit decisions use stable codes
+and configured thresholds, not localized text.
 
-A change to a formula, checked table meaning, rounding point, entropy stream,
-or hard audit changes the applicable component engine version and its focused
-reference evidence. A catalog-row change updates the manifest hashes and
-catalog content hash without pretending to be an engine change. Runtime never
-falls back to live spreadsheet content.
+## Change Rule
+
+A formula, configuration meaning, stage boundary, hard audit, or result shape
+change updates the reward engine version and focused evidence. A catalog-row
+change publishes a new immutable artifact and content hash. Existing artifacts
+and saved run definitions remain addressable.
 
 ## References
 
 - [Session Generation domain](../domain/domain-session-generation.md)
 - [Session Generation requirements](../requirements/requirements-session-generation.md)
-- [Refactor acceptance matrix](../../project/architecture/session-planner-generation-loot-refactor-acceptance-matrix.md)
+- [Loot requirements](../../loot/requirements/requirements-loot.md)

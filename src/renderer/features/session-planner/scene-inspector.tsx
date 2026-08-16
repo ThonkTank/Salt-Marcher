@@ -12,6 +12,7 @@ import type { GeneratedTreasure } from '../../../shared/contracts/session-genera
 import { formatMessage, message } from '../../i18n/session-runtime.de.js'
 import { formatCopper } from '../../presenters/money.js'
 import {
+  generatedItemDefinitionFromList,
   generatedRewardLabel,
   generatedTreasureLabel
 } from '../loot/generated-loot-presenter.js'
@@ -218,6 +219,8 @@ export function SceneInspector(props: {
                     <GeneratedRewardCard
                       key={`${reward.runId}:${reward.generatedTreasureId}`}
                       treasure={reward.generatedTreasure}
+                      runId={reward.runId}
+                      itemDefinitions={reward.itemDefinitions}
                       ordinal={reward.treasureOrdinal}
                       placed={reward.placedTreasure}
                       place={() =>
@@ -396,6 +399,8 @@ function EncounterSearchResults(props: {
 }
 
 function GeneratedRewardCard(props: {
+  runId: string
+  itemDefinitions: SessionPlannerWorkspace['session']['scenes'][number]['generatedRewards'][number]['itemDefinitions']
   treasure: GeneratedTreasure
   ordinal: number
   placed: Treasure | null
@@ -428,25 +433,32 @@ function GeneratedRewardCard(props: {
         </span>
       </header>
       <ul>
-        {props.treasure.items.map((item) => (
-          <li key={item.id}>
-            <span>
-              {item.quantity}× {item.name}
-            </span>
-            <small>
-              {item.magic
-                ? formatMessage('loot.magicRarity', {
-                    rarity: item.rarity ?? message('loot.generated')
-                  })
-                : formatCopper(item.totalValueCp)}
-              {item.curseName
-                ? ` · ${formatMessage('loot.curseNamed', {
-                    name: item.curseName
-                  })}`
-                : ''}
-            </small>
-          </li>
-        ))}
+        {props.treasure.items.map((item) => {
+          const definition = generatedItemDefinitionFromList(
+            props.runId,
+            props.itemDefinitions,
+            item
+          )
+          return (
+            <li key={item.id}>
+              <span>
+                {item.quantity}× {definition.name}
+              </span>
+              <small>
+                {definition.magic
+                  ? formatMessage('loot.magicRarity', {
+                      rarity: definition.rarity ?? message('loot.generated')
+                    })
+                  : formatCopper(item.quantity * definition.unitValueCp)}
+                {definition.curse
+                  ? ` · ${formatMessage('loot.curseNamed', {
+                      name: definition.curse.name
+                    })}`
+                  : ''}
+              </small>
+            </li>
+          )
+        })}
       </ul>
       {props.treasure.containers.length > 0 && (
         <p className="planner-packing">

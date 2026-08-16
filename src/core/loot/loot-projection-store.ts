@@ -2,6 +2,8 @@ import type Database from 'better-sqlite3'
 import {
   lootInboxPageSchema,
   lootSceneProjectionSchema,
+  itemReferenceSchema,
+  itemReferenceKey,
   treasureSchema,
   type LootInboxInput,
   type LootInboxPage,
@@ -13,6 +15,7 @@ import {
   treasureContainerProvenance,
   treasureItemProvenance
 } from './treasure-provenance.js'
+import { ItemDefinitionResolver } from './item-definition-resolver.js'
 
 type AnchorRow = Readonly<{
   id: string
@@ -39,7 +42,18 @@ export type LootReferenceFacts = Readonly<{
 /** Projection-owned SQL. Roots, items, and containers are loaded in three
  * bounded queries; Inbox diagnostics hydrate only the selected page. */
 export class LootProjectionStore {
-  constructor(private readonly db: Database.Database) {}
+  private readonly definitions: ItemDefinitionResolver
+
+  constructor(
+    private readonly db: Database.Database,
+    definitions?: ItemDefinitionResolver
+  ) {
+    this.definitions =
+      definitions ??
+      new ItemDefinitionResolver(db, () => {
+        throw new Error('Catalog definition resolver is not configured')
+      })
+  }
 
   scene(
     sceneId: string,
@@ -143,17 +157,14 @@ export class LootProjectionStore {
           ORDER BY treasure_id, position, id`
       )
       .all(ids) as Array<Record<string, unknown> & { treasureId: string }>
-    const items = (
+    const itemRows = (
       this.db
         .prepare(
           `SELECT item.treasure_id AS treasureId, item.id,
                   item.source_line_id AS sourceLineId,
-                  item.catalog_entry_kind AS catalogEntryKind,
-                  item.catalog_item_id AS catalogItemId, item.name,
+                  item.item_reference_json AS itemReferenceJson,
                   item.quantity,
                   COALESCE(SUM(allocation.quantity), 0) AS allocatedQuantity,
-                  item.unit_value_cp AS unitValueCp, item.stackable, item.magic,
-                  item.rarity, item.curse_name AS curseName,
                   item.container_id AS containerId, item.position
              FROM loot_item item
              LEFT JOIN loot_allocation allocation ON allocation.item_id = item.id
@@ -161,30 +172,37 @@ export class LootProjectionStore {
             GROUP BY item.id
             ORDER BY item.treasure_id, item.position, item.id`
         )
-        .all(ids) as Array<
-        Record<string, unknown> & {
-          treasureId: string
-          quantity: number
-          allocatedQuantity: number
-          unitValueCp: number
-          stackable: number
-          magic: number
-          sourceLineId: string | null
-          catalogEntryKind: 'item' | 'magic_item' | null
-          catalogItemId: string | null
-        }
-      >
-    ).map((item) => {
-      const { sourceLineId, catalogEntryKind, catalogItemId, ...projection } =
-        item
+        .all(ids) as Array<{
+        id: string
+        treasureId: string
+        quantity: number
+        allocatedQuantity: number
+        sourceLineId: string | null
+        itemReferenceJson: string
+        containerId: string | null
+        position: number
+      }>
+    ).map((item) => ({
+      ...item,
+      itemReference: itemReferenceSchema.parse(
+        JSON.parse(item.itemReferenceJson)
+      )
+    }))
+    const definitions = this.definitions.resolveMany(
+      itemRows.map((item) => item.itemReference)
+    )
+    const items = itemRows.map((item) => {
+      const { sourceLineId, itemReferenceJson, ...projection } = item
+      void itemReferenceJson
+      const itemReference = item.itemReference
       return {
         ...projection,
-        stackable: Boolean(item.stackable),
-        magic: Boolean(item.magic),
+        itemReference,
+        definition: definitions.get(itemReferenceKey(itemReference))!,
         provenance: treasureItemProvenance(
           sourceLineId,
-          catalogEntryKind,
-          catalogItemId
+          itemReference.kind === 'catalog' ? itemReference.entryKind : null,
+          itemReference.kind === 'catalog' ? itemReference.catalogId : null
         )
       }
     })
@@ -231,11 +249,12 @@ export class LootProjectionStore {
             }
           }),
         totalValueCp: treasureItems.reduce(
-          (sum, item) => sum + item.quantity * item.unitValueCp,
+          (sum, item) => sum + item.quantity * item.definition.unitValueCp,
           0
         ),
         allocatedValueCp: treasureItems.reduce(
-          (sum, item) => sum + item.allocatedQuantity * item.unitValueCp,
+          (sum, item) =>
+            sum + item.allocatedQuantity * item.definition.unitValueCp,
           0
         ),
         distributionState: row.distributionState,

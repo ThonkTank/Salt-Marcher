@@ -123,6 +123,7 @@ function baseWorkspace(): SessionPlannerWorkspace {
     treasureOrdinal: 1,
     position: 0,
     status: 'ready' as const,
+    itemDefinitions: [],
     generatedTreasure: null,
     placedTreasure: null
   }

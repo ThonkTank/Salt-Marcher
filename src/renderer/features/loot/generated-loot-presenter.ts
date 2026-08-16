@@ -1,26 +1,58 @@
 import type {
+  GeneratedRun,
   GeneratedLootItem,
   GeneratedTreasure
 } from '../../../shared/contracts/session-generation.js'
 import { formatCopper } from '../../presenters/money.js'
 
-export function generatedItemText(item: GeneratedLootItem): string {
-  if (item.magic)
-    return `${item.name}${item.rarity ? ` [${item.rarity}]` : ''}${
-      item.curseName ? ' · verflucht' : ''
+export function generatedItemText(
+  run: GeneratedRun,
+  item: GeneratedLootItem
+): string {
+  const definition = generatedItemDefinition(run, item)
+  if (definition.magic)
+    return `${definition.name}${definition.rarity ? ` [${definition.rarity}]` : ''}${
+      definition.curse ? ' · verflucht' : ''
     }`
-  if (item.role === 'compact_value' && item.unitValueCp === 1)
+  if (item.role === 'compact_value' && definition.unitValueCp === 1)
     return `${item.quantity} KM`
-  const value = formatCopper(item.unitValueCp)
+  const value = formatCopper(definition.unitValueCp)
   return item.quantity > 1
-    ? `${item.quantity}× ${item.name} [je ${value}]`
-    : `${item.name} [${value}]`
+    ? `${item.quantity}× ${definition.name} [je ${value}]`
+    : `${definition.name} [${value}]`
 }
 
-export function generatedTreasureSummary(treasure: GeneratedTreasure): string {
+export function generatedTreasureSummary(
+  run: GeneratedRun,
+  treasure: GeneratedTreasure
+): string {
   return `${generatedTreasureLabel(treasure, 1)}: ${treasure.items
-    .map(generatedItemText)
+    .map((item) => generatedItemText(run, item))
     .join(', ')}`
+}
+
+export function generatedItemDefinition(
+  run: GeneratedRun,
+  item: GeneratedLootItem
+) {
+  return generatedItemDefinitionFromList(run.id, run.itemDefinitions, item)
+}
+
+export function generatedItemDefinitionFromList(
+  runId: string,
+  definitions: GeneratedRun['itemDefinitions'],
+  item: GeneratedLootItem
+) {
+  const reference = item.itemReference
+  if (reference.kind !== 'generated' || reference.runId !== runId)
+    throw new Error('Generated item reference is not owned by the run')
+  const definition = definitions.find(
+    (candidate) =>
+      candidate.reference.kind === 'generated' &&
+      candidate.reference.definitionId === reference.definitionId
+  )
+  if (!definition) throw new Error('Generated item definition is missing')
+  return definition
 }
 
 export function generatedTreasureLabel(

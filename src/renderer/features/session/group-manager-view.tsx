@@ -128,7 +128,6 @@ export function GroupManagerView(props: {
             }
             quantities={totalInDraft}
             footerStatus={catalogFooterStatus}
-            addLoot={loot.addCatalogEntry}
             lootQuery={state.lootCatalog.query}
             lootPage={state.lootCatalog.page}
             lootError={state.lootCatalog.error}

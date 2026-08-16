@@ -11,9 +11,10 @@ import { BundledEncounterCatalogProvider } from '../../src/utility/session-gener
 import { sha256EncounterEntropy as entropy } from '../../src/utility/session-generation/sha256-entropy.js'
 
 const catalog = new BundledEncounterCatalogProvider(
-  join(process.cwd(), 'resources/sessiongeneration/catalog-2026-07-16')
+  join(process.cwd(), 'resources/sessiongeneration/catalog-2026-08-16')
 ).loadFull()
 const seed = 179_974
+const runId = '00000000-0000-4000-8000-000000000099'
 
 function plans() {
   return planSessionTreasures(
@@ -41,7 +42,10 @@ function roles() {
 }
 
 function nonMagic() {
-  return selectNonMagicItems({ seed, treasures: roles(), catalog }, entropy)
+  return selectNonMagicItems(
+    { runId, seed, treasures: roles(), catalog },
+    entropy
+  )
 }
 
 const oneCommon = {
@@ -78,30 +82,35 @@ describe('session generation pure reward stages', () => {
   it('selects non-magic values without mutating role plans', () => {
     const source = roles()
     const output = selectNonMagicItems(
-      { seed, treasures: source, catalog },
+      { runId, seed, treasures: source, catalog },
       entropy
     )
     expect(output.every((entry) => entry.items.length > 0)).toBe(true)
     expect(
-      output[0]?.items.reduce((sum, item) => sum + item.totalValueCp, 0)
+      output[0]?.items.reduce(
+        (sum, item) => sum + item.quantity * item.definition.unitValueCp,
+        0
+      )
     ).toBe(45_120)
     expect('items' in source[0]!).toBe(false)
   })
 
   it('resolves exact magic targets independently of packing', () => {
     const output = selectMagicItems(
-      { seed, treasures: nonMagic(), targets: oneCommon, catalog },
+      { runId, seed, treasures: nonMagic(), targets: oneCommon, catalog },
       entropy
     )
     expect(
-      output.flatMap((entry) => entry.items).filter((item) => item.magic)
+      output
+        .flatMap((entry) => entry.items)
+        .filter((item) => item.definition.magic)
     ).toHaveLength(1)
     expect(output.every(Object.isFrozen)).toBe(true)
   })
 
   it('packs every assignment into its own Treasure', () => {
     const selected = selectMagicItems(
-      { seed, treasures: nonMagic(), targets: oneCommon, catalog },
+      { runId, seed, treasures: nonMagic(), targets: oneCommon, catalog },
       entropy
     )
     const output = packTreasures(
@@ -122,7 +131,7 @@ describe('session generation pure reward stages', () => {
 
   it('aggregates totals and structured integrity observations', () => {
     const selected = selectMagicItems(
-      { seed, treasures: nonMagic(), targets: oneCommon, catalog },
+      { runId, seed, treasures: nonMagic(), targets: oneCommon, catalog },
       entropy
     )
     const treasures = packTreasures(
@@ -131,9 +140,13 @@ describe('session generation pure reward stages', () => {
     )
     const output = aggregateReward({
       treasures,
+      itemDefinitions: selected.flatMap((treasure) =>
+        treasure.items.map((item) => item.definition)
+      ),
       goldBudgetCp: 45_120,
       magicTargets: oneCommon,
-      expectedTreasureCount: 2
+      expectedTreasureCount: 2,
+      profile: 'session'
     })
     expect(output.normalValueCp).toBe(45_120)
     expect(output.magicCount).toBe(1)

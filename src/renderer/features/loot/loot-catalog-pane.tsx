@@ -22,6 +22,7 @@ export function LootCatalogPane(props: {
     preserveOffset?: boolean
   ) => void
   add: (entry: LootCatalogEntry) => void
+  readOnly?: boolean
 }) {
   const options = props.page?.filterOptions ?? emptyOptions
   const update = props.queryChanged
@@ -102,7 +103,7 @@ export function LootCatalogPane(props: {
               <th>{message('loot.item')}</th>
               <th>{message('loot.catalogType')}</th>
               <th>{message('loot.catalogFacts')}</th>
-              <th>{message('loot.catalogAdd')}</th>
+              {!props.readOnly && <th>{message('loot.catalogAdd')}</th>}
             </tr>
           </thead>
           <tbody>
@@ -114,17 +115,19 @@ export function LootCatalogPane(props: {
                 </td>
                 <td>{entry.type}</td>
                 <td>{entryFacts(entry)}</td>
-                <td>
-                  <button
-                    type="button"
-                    aria-label={formatMessage('loot.catalogAddNamed', {
-                      name: entry.defaultName
-                    })}
-                    onClick={() => props.add(entry)}
-                  >
-                    +
-                  </button>
-                </td>
+                {!props.readOnly && (
+                  <td>
+                    <button
+                      type="button"
+                      aria-label={formatMessage('loot.catalogAddNamed', {
+                        name: entry.defaultName
+                      })}
+                      onClick={() => props.add(entry)}
+                    >
+                      +
+                    </button>
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

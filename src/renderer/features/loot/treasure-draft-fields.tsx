@@ -46,6 +46,9 @@ export function TreasureDraftFields<
   endEdit?: () => void
   itemMetadata?: (item: Item) => ReactNode
   itemDefinitionReadOnly?: (item: Item) => boolean
+  itemRemovalReadOnly?: (item: Item) => boolean
+  containerDefinitionReadOnly?: (container: Container) => boolean
+  containerRemovalReadOnly?: (container: Container) => boolean
 }) {
   const m = props.messages
   return (
@@ -80,6 +83,9 @@ export function TreasureDraftFields<
               <span>{m.container}</span>
               <input
                 aria-label={m.container}
+                readOnly={
+                  props.containerDefinitionReadOnly?.(container) ?? false
+                }
                 {...issueAttributes(
                   props.issues,
                   'containers',
@@ -107,6 +113,9 @@ export function TreasureDraftFields<
               <span>{m.capacity}</span>
               <input
                 aria-label={m.capacity}
+                readOnly={
+                  props.containerDefinitionReadOnly?.(container) ?? false
+                }
                 {...issueAttributes(
                   props.issues,
                   'containers',
@@ -135,6 +144,7 @@ export function TreasureDraftFields<
             <button
               type="button"
               aria-label={m.removeContainer}
+              disabled={props.containerRemovalReadOnly?.(container) ?? false}
               onClick={() => props.removeContainer(container.draftId)}
             >
               −
@@ -296,7 +306,7 @@ export function TreasureDraftFields<
               aria-label={m.removeItem}
               disabled={
                 props.draft.items.length === 1 ||
-                (props.itemDefinitionReadOnly?.(item) ?? false)
+                (props.itemRemovalReadOnly?.(item) ?? false)
               }
               onClick={() => props.removeItem(item.draftId)}
             >

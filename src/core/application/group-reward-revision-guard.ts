@@ -21,7 +21,7 @@ export type GroupRewardRevisionContext = Readonly<{
   }>
   rules: Readonly<{ read(): CampaignRules }>
   generatedRuns: Readonly<{ read(runId: string): GeneratedRun | null }>
-  characterLoot?: Readonly<{
+  characterLoot: Readonly<{
     rewardBalances(
       characterIds: readonly string[]
     ): readonly CharacterRewardBalance[]
@@ -33,7 +33,7 @@ export type GroupRewardRevisionContext = Readonly<{
 
 export type GuardedGroupRewardCommit = Readonly<{
   run: Extract<GeneratedRun, { runKind: 'group_reward' }>
-  generated: GeneratedTreasure
+  generated: GeneratedTreasure | null
   existingGroup: SceneGroup | undefined
 }>
 
@@ -43,17 +43,20 @@ export class GroupRewardRevisionGuard {
   validate(input: CommitGroupRewardInput): GuardedGroupRewardCommit {
     const run = this.context.generatedRuns.read(input.runId)
     if (!run || run.runKind !== 'group_reward') notFound()
-    const generated = run.treasures.find(
-      (candidate) => candidate.id === input.generatedTreasureId
-    )
-    if (!generated) notFound()
+    const generated = input.generatedTreasureId
+      ? (run.treasures.find(
+          (candidate) => candidate.id === input.generatedTreasureId
+        ) ?? null)
+      : null
+    if (input.generatedTreasureId && !generated) notFound()
+    if (!input.generatedTreasureId && run.treasures.length !== 0) invalid()
     requireMatchingSource(run, input)
 
     const party = this.context.party.read()
     if (party.revision !== run.input.partyRevision) stale()
     const rules = this.context.rules.read()
     if (rules.revision !== run.input.campaignRulesRevision) stale()
-    if (run.rewardBasis && this.context.characterLoot) {
+    if (run.rewardBasis) {
       const revisions = new Map(
         this.context.characterLoot
           .rewardBalances(
@@ -85,7 +88,8 @@ export class GroupRewardRevisionGuard {
       if (existingGroup.revision !== input.expectedGroupRevision) stale()
     }
     if (
-      this.context.treasures.findByGenerated(run.id, input.generatedTreasureId)
+      generated &&
+      this.context.treasures.findByGenerated(run.id, generated.id)
     )
       throw new CapabilityError('idempotency_conflict', false)
     return { run, generated, existingGroup }

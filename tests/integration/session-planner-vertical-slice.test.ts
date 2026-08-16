@@ -467,6 +467,42 @@ describe('Session Planner vertical slice', () => {
     ).toBe(3)
   })
 
+  it('rejects a generated reward when participant XP changes before preparation', () => {
+    const harness = createHarness()
+    const authored = saveGenerationInput(harness)
+    const operationId = randomUUID()
+    let changed = false
+    const planner = services(harness.campaigns, (phase) => {
+      if (phase !== 'after_run_commit' || changed) return
+      changed = true
+      const party = new PartyStore(harness.campaigns.activeCampaignDatabase())
+      const snapshot = party.read()
+      party.adjustXp(harness.memberIds[0]!, 1, snapshot.revision)
+    }).planner
+
+    expect(
+      planner.startPreparation({
+        operationId,
+        sessionId: authored.session.id,
+        expectedRevision: authored.session.revision,
+        seed: 681,
+        confirmedReplacement: false
+      }).status
+    ).toBe('accepted')
+    planner.runPreparationWorker(operationId)
+
+    expect(planner.preparationReceipt({ operationId }).receipt).toMatchObject({
+      status: 'stale',
+      failure: { stage: 'validation', code: 'reward_basis_changed' }
+    })
+    expect(
+      tableCount(
+        harness.campaigns.activeCampaignDatabase(),
+        'saved_encounter_plans'
+      )
+    ).toBe(0)
+  })
+
   it('cancels before the final planner write without compensating foreign artifacts', () => {
     const harness = createHarness()
     const authored = saveGenerationInput(harness)

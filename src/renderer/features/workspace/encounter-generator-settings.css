@@ -145,9 +145,16 @@
   font-size: var(--text-sm);
 }
 
-.generator-loot-rule-field input {
+.generator-loot-rule-field input,
+.generator-loot-rule-field select,
+.generator-loot-rule-field output {
   width: 100%;
   min-width: 0;
+}
+
+.generator-loot-rule-field output {
+  color: var(--text-2);
+  padding-block: var(--space-2);
 }
 
 .generator-loot-rule-field.checkbox {

@@ -17,9 +17,8 @@ type AwardDraft = Readonly<{
   characterId: string
   treasureId: string
   treasureItemId: string
-  itemName: string
+  itemReference: CharacterLootEntry['itemReference']
   quantity: number
-  unitValueCp: number
   provenance: CharacterLootEntry['provenance']
   rewardProvenance: CharacterLootEntry['rewardProvenance']
   receivedAt: string
@@ -138,7 +137,7 @@ export class DistributeLootCommandHandler {
       }
       if (allocated > item.quantity - item.allocatedQuantity) invalid()
       if (
-        !item.stackable &&
+        !item.definition.stackable &&
         allocated !== item.quantity - item.allocatedQuantity
       )
         invalid()
@@ -161,9 +160,8 @@ export class DistributeLootCommandHandler {
           characterId: share.characterId,
           treasureId: treasure.id,
           treasureItemId: item.id,
-          itemName: item.name,
+          itemReference: item.itemReference,
           quantity: share.quantity,
-          unitValueCp: item.unitValueCp,
           provenance: {
             kind: 'treasure_distribution',
             treasureLabel: treasure.label,

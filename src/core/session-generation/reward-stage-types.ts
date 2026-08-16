@@ -1,4 +1,7 @@
-import type { GeneratedTreasure } from '../../shared/contracts/session-generation.js'
+import type {
+  ItemDefinition,
+  ItemReference
+} from '../../shared/contracts/loot.js'
 import type { LootTheme } from './loot-catalog.js'
 
 export const lootRoles = [
@@ -24,10 +27,14 @@ export type RolePlannedTreasure = RewardTreasurePlan &
     roles: readonly LootRole[]
   }>
 
-export type RewardItemDraft = Omit<
-  GeneratedTreasure['items'][number],
-  'containerId' | 'position'
->
+export type RewardItemDraft = Readonly<{
+  id: string
+  treasureId: string
+  itemReference: ItemReference
+  definition: ItemDefinition
+  role: 'compact_value' | 'complex_value' | 'useful' | 'flavor' | 'magic'
+  quantity: number
+}>
 
 export type SelectedTreasureDraft = RewardTreasurePlan &
   Readonly<{

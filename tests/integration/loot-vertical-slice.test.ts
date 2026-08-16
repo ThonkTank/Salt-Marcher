@@ -29,6 +29,8 @@ import { TreasureStore } from '../../src/core/loot/loot-store.js'
 import { LivePlayService } from '../../src/core/encounter/live-combat.js'
 import type { GeneratedTreasure } from '../../src/shared/contracts/session-generation.js'
 import type { GroupRewardTreasureDraft } from '../../src/shared/contracts/loot.js'
+import { legacyLootItem } from '../helpers/loot-item.js'
+import { ItemDefinitionResolver } from '../../src/core/loot/item-definition-resolver.js'
 
 const roots: string[] = []
 const stores: CampaignStore[] = []
@@ -64,16 +66,19 @@ describe('loot vertical slice', () => {
       'result_schema_version',
       'result_json'
     ])
-    for (const table of [
-      'loot_treasure',
-      'loot_container',
-      'loot_item',
-      'loot_allocation',
-      'character_loot_entry'
-    ])
-      expect(columns(db, table).some((column) => /json/i.test(column))).toBe(
-        false
-      )
+    expect(columns(db, 'loot_item')).toContain('item_reference_json')
+    expect(columns(db, 'character_loot_entry')).toContain('item_reference_json')
+    for (const copiedFact of [
+      'name',
+      'unit_value_cp',
+      'stackable',
+      'magic',
+      'rarity',
+      'curse_name'
+    ]) {
+      expect(columns(db, 'loot_item')).not.toContain(copiedFact)
+      expect(columns(db, 'character_loot_entry')).not.toContain(copiedFact)
+    }
     expect(() =>
       db
         .prepare(
@@ -86,67 +91,43 @@ describe('loot vertical slice', () => {
     ).toThrow()
   })
 
-  it('enforces schema 27 provenance and metadata invariants in SQLite', () => {
+  it('enforces schema 31 reference and provenance invariants in SQLite', () => {
     const { db } = campaign()
-    expect(columns(db, 'loot_item')).toContain('catalog_entry_kind')
+    expect(columns(db, 'loot_item')).toEqual([
+      'id',
+      'treasure_id',
+      'source_line_id',
+      'item_reference_json',
+      'quantity',
+      'container_id',
+      'position'
+    ])
     expect(columns(db, 'loot_container')).toContain('source_container_id')
     const loot = new LootService(() => db)
     const treasure = loot.create({
       commandId: randomUUID(),
       label: 'Constraints',
       anchor: { kind: 'unplaced' },
-      items: [{ name: 'Münze', quantity: 1, unitValueCp: 1, stackable: true }]
+      items: [
+        { itemReference: legacyLootItem(db, 'Münze', 1, true), quantity: 1 }
+      ]
     })
     const insert = db.prepare(
       `INSERT INTO loot_item (
-         id, treasure_id, source_line_id, catalog_entry_kind, catalog_item_id,
-         name, quantity, unit_value_cp, stackable, magic, rarity, curse_name,
+         id, treasure_id, source_line_id, item_reference_json, quantity,
          container_id, position
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, ?)`
+       ) VALUES (?, ?, ?, ?, ?, NULL, ?)`
     )
-    const invalidRows: ReadonlyArray<readonly unknown[]> = [
-      // Catalog identity is all-null or all-present.
-      [null, null, 'item:test', 'Halbe Herkunft', 1, 0, 1, 0, null, null],
-      // Catalog kind must agree with magic.
-      [null, 'magic_item', 'magic:test', 'Falsche Art', 1, 0, 0, 0, null, null],
-      // Non-stackable items are singular.
-      [null, 'item', 'item:test', 'Unteilbar', 2, 1, 0, 0, null, null],
-      // Rarity and curses cannot leak into non-magical rows.
-      [null, 'item', 'item:test', 'Selten', 1, 0, 1, 0, 'Rare', null],
-      [null, 'item', 'item:test', 'Verflucht', 1, 0, 1, 0, null, 'Fluch'],
-      // Magic always has a rarity.
-      [
-        null,
-        'magic_item',
-        'magic:test',
-        'Ohne Seltenheit',
-        1,
-        0,
-        1,
-        1,
-        null,
-        null
-      ]
-    ]
-    invalidRows.forEach((row, position) =>
-      expect(() =>
-        insert.run(randomUUID(), treasure.id, ...row, position + 1)
-      ).toThrow()
-    )
-
+    expect(() =>
+      insert.run(randomUUID(), treasure.id, null, null, 1, 1)
+    ).toThrow()
+    const reference = legacyLootItem(db, 'Gültig', 0)
     insert.run(
       randomUUID(),
       treasure.id,
       'source:item',
-      'magic_item',
-      'magic:test',
-      'Gültig',
+      JSON.stringify(reference),
       1,
-      0,
-      0,
-      1,
-      'Rare',
-      'Fluch',
       10
     )
     expect(() =>
@@ -154,15 +135,8 @@ describe('loot vertical slice', () => {
         randomUUID(),
         treasure.id,
         'source:item',
-        'magic_item',
-        'magic:test',
-        'Doppelt',
+        JSON.stringify(reference),
         1,
-        0,
-        0,
-        1,
-        'Rare',
-        null,
         11
       )
     ).toThrow()
@@ -196,14 +170,16 @@ describe('loot vertical slice', () => {
   })
 
   it('binds a command id to one semantic request and its original result', () => {
-    const { campaigns } = campaign()
+    const { campaigns, db } = campaign()
     const loot = new LootService(() => campaigns.activeCampaignDatabase())
     const commandId = randomUUID()
     const input = {
       commandId,
       label: 'Original',
       anchor: { kind: 'unplaced' as const },
-      items: [{ name: 'Münze', quantity: 1, unitValueCp: 1, stackable: true }]
+      items: [
+        { itemReference: legacyLootItem(db, 'Münze', 1, true), quantity: 1 }
+      ]
     }
     const original = loot.create(input)
     const updateInput = {
@@ -214,10 +190,9 @@ describe('loot vertical slice', () => {
       anchor: original.anchor,
       items: original.items.map((item) => ({
         id: item.id,
-        name: item.name,
+        itemReference: item.itemReference,
         quantity: item.quantity,
-        unitValueCp: item.unitValueCp,
-        stackable: item.stackable
+        containerId: item.containerId
       }))
     }
     const changed = loot.update(updateInput)
@@ -272,14 +247,16 @@ describe('loot vertical slice', () => {
       label: 'Truhe A',
       anchor,
       items: [
-        { name: 'Rubin', quantity: 1, unitValueCp: 5_000, stackable: false }
+        { itemReference: legacyLootItem(db, 'Rubin', 5_000), quantity: 1 }
       ]
     })
     loot.create({
       commandId: randomUUID(),
       label: 'Truhe B',
       anchor,
-      items: [{ name: 'Silber', quantity: 8, unitValueCp: 10, stackable: true }]
+      items: [
+        { itemReference: legacyLootItem(db, 'Silber', 10, true), quantity: 8 }
+      ]
     })
 
     const projection = loot.sceneProjection(sceneId)
@@ -340,7 +317,7 @@ describe('loot vertical slice', () => {
       rewardXpBasis: 'adjusted'
     })
     const catalog = new BundledEncounterCatalogProvider(
-      join(process.cwd(), 'resources/sessiongeneration/catalog-2026-07-16')
+      join(process.cwd(), 'resources/sessiongeneration/catalog-2026-08-16')
     )
     const generation = new SessionGenerationService(
       catalog,
@@ -360,6 +337,7 @@ describe('loot vertical slice', () => {
       party,
       scenes,
       rules: { read: () => rules },
+      characterLoot: new CharacterLootStore(db),
       generation
     }))
     const request = {
@@ -399,6 +377,19 @@ describe('loot vertical slice', () => {
       }
     })
     expect(generated.input.rewardXp).toBe(generated.input.adjustedXp)
+    expect(generated.rewardBasis?.members).toHaveLength(
+      generated.input.party.reduce((sum, entry) => sum + entry.count, 0)
+    )
+    expect(
+      generated.rewardBasis?.members.every(
+        (member) =>
+          member.projectedXp ===
+          Math.floor(
+            generated.input.rewardXp /
+              generated.input.party.reduce((sum, entry) => sum + entry.count, 0)
+          )
+      )
+    ).toBe(true)
     expect(generated.treasures).toHaveLength(1)
     expect(generated.treasures[0]!.rewardChannel).toBe('encounter')
     expect(tableCount(db, 'saved_encounter_plans')).toBe(0)
@@ -471,8 +462,10 @@ describe('loot vertical slice', () => {
       { creatureId: 'wolf', quantity: 3, deadQuantity: 1 }
     ] as const
     const catalog = new BundledEncounterCatalogProvider(
-      join(process.cwd(), 'resources/sessiongeneration/catalog-2026-07-16')
+      join(process.cwd(), 'resources/sessiongeneration/catalog-2026-08-16')
     )
+    const catalogIndex = createLootCatalogIndex(catalog.loadFull())
+    const definitions = new ItemDefinitionResolver(db, () => catalogIndex)
     const generation = new SessionGenerationService(
       catalog,
       sha256EncounterEntropy,
@@ -489,6 +482,7 @@ describe('loot vertical slice', () => {
       party,
       scenes,
       rules,
+      characterLoot: new CharacterLootStore(db, definitions),
       generation
     }))
     const expectedSceneRevision = scenes.revision()
@@ -525,7 +519,8 @@ describe('loot vertical slice', () => {
         index: () => createLootCatalogIndex(catalog.loadFull())
       },
       generatedRuns: new GeneratedRunStore(db),
-      treasures: new TreasureStore(db),
+      characterLoot: new CharacterLootStore(db, definitions),
+      treasures: new TreasureStore(db, definitions),
       groupCommands: {
         save: (input) =>
           play.saveSceneGroup(
@@ -542,64 +537,27 @@ describe('loot vertical slice', () => {
         result: (id, groupIds) => play.sceneGroupResult(id, groupIds)
       },
       journal: new LootOperationJournal(db),
-      projections: new LootProjectionStore(db),
+      projections: new LootProjectionStore(db, definitions),
       now: () => '2026-08-09T10:01:00.000Z'
     })
     const transact = <T>(work: () => T): T =>
       new CampaignUnitOfWork(db).run(work)
     const commit = new GroupRewardCommitHandler(commitContext, transact)
     const baseDraft = generatedTreasureDraft(run.treasures[0]!, 'Wolfsbeute')
-    const addedContainerId = randomUUID()
+    const firstGeneratedItem = run.treasures[0]!.items[0]!
+    const assignment = baseDraft.containers[0]?.id ?? null
     const treasureDraft: GroupRewardTreasureDraft = {
       label: 'Wolfsbeute bearbeitet',
-      containers: [
-        ...baseDraft.containers.slice(0, 1).map((container) => ({
-          ...container,
-          name: `${container.name} bearbeitet`
-        })),
-        {
-          id: addedContainerId,
-          origin: {
-            kind: 'catalog',
-            catalogContainerId: 'container:pouch'
-          },
-          name: 'Reisebeutel',
-          capacity: 25
-        }
-      ],
-      items: [
-        {
-          ...baseDraft.items[0]!,
-          name: `${baseDraft.items[0]!.name} bearbeitet`,
-          containerId: addedContainerId
-        },
-        {
-          id: randomUUID(),
-          origin: {
-            kind: 'catalog',
-            entryKind: 'item',
-            catalogId: 'item:object:abacus'
-          },
-          name: 'Reise-Abakus',
-          quantity: 2,
-          unitValueCp: 250,
-          stackable: true,
-          containerId: addedContainerId
-        },
-        {
-          id: randomUUID(),
-          origin: {
-            kind: 'catalog',
-            entryKind: 'magic_item',
-            catalogId: 'magic:arcana:common:bead-of-nourishment'
-          },
-          name: 'Perle der Wegzehrung',
-          quantity: 1,
-          unitValueCp: 0,
-          stackable: false,
-          containerId: null
-        }
-      ]
+      containers: baseDraft.containers,
+      items: baseDraft.items.map((item, index) =>
+        index === 0
+          ? {
+              ...item,
+              quantity: item.quantity + 1,
+              containerId: assignment
+            }
+          : item
+      )
     }
     const input = {
       commandId: randomUUID(),
@@ -631,18 +589,7 @@ describe('loot vertical slice', () => {
           commandId: randomUUID(),
           treasureDraft: {
             ...input.treasureDraft,
-            items: input.treasureDraft.items.map((item, index) =>
-              index === 1
-                ? {
-                    ...item,
-                    origin: {
-                      kind: 'catalog' as const,
-                      entryKind: 'item' as const,
-                      catalogId: 'item:missing'
-                    }
-                  }
-                : item
-            )
+            items: input.treasureDraft.items.slice(1)
           }
         }),
       'validation_failed'
@@ -693,6 +640,7 @@ describe('loot vertical slice', () => {
     expect(tableCount(db, 'loot_operation_receipt')).toBe(0)
 
     const result = commit.commit(input)
+    if (!result.treasure) throw new Error('Expected committed treasure')
     expect(result.groupResult.scenePatch.sceneRevision).toBe(
       expectedSceneRevision + 1
     )
@@ -710,44 +658,28 @@ describe('loot vertical slice', () => {
       lastKnownLabel: 'Wolfsrudel'
     })
     expect(result.treasure.label).toBe('Wolfsbeute bearbeitet')
-    expect(result.treasure.items).toHaveLength(3)
+    expect(result.treasure.items).toHaveLength(run.treasures[0]!.items.length)
     expect(result.treasure.items[0]).toMatchObject({
       provenance: {
         kind: 'generator',
-        sourceLineId: run.treasures[0]!.items[0]!.id
+        sourceLineId: firstGeneratedItem.id
       },
-      name: run.treasures[0]!.items[0]!.name
+      quantity: firstGeneratedItem.quantity + 1
     })
-    expect(result.treasure.items[1]).toMatchObject({
-      provenance: {
-        kind: 'catalog',
-        catalogEntry: { kind: 'item', id: 'item:object:abacus' }
-      },
-      name: 'Abacus',
-      quantity: 2,
-      unitValueCp: 200,
-      magic: false,
-      rarity: null,
-      curseName: null
-    })
-    expect(result.treasure.items[2]).toMatchObject({
-      provenance: {
-        kind: 'catalog',
-        catalogEntry: {
-          kind: 'magic_item',
-          id: 'magic:arcana:common:bead-of-nourishment'
-        }
-      },
-      magic: true,
-      rarity: 'Common',
-      curseName: null
-    })
-    const addedContainer = result.treasure.containers.find(
-      (container) => container.name === 'Reisebeutel'
-    )!
-    expect(addedContainer).toMatchObject({ name: 'Reisebeutel', capacity: 25 })
-    expect(result.treasure.items[0]!.containerId).toBe(addedContainer.id)
-    expect(result.treasure.items[1]!.containerId).toBe(addedContainer.id)
+    expect(result.treasure.items[0]!.definition.reference).toEqual(
+      firstGeneratedItem.itemReference
+    )
+    expect(
+      result.treasure.items.map((item) => item.definition.reference)
+    ).toEqual(run.treasures[0]!.items.map((item) => item.itemReference))
+    expect(
+      result.treasure.items.every(
+        (item) => item.provenance.kind === 'generator'
+      )
+    ).toBe(true)
+    expect(result.treasure.items[0]!.containerId).toBe(
+      assignment ? result.treasure.containers[0]!.id : null
+    )
     expect(commit.commit(input)).toEqual(result)
     expect(tableCount(db, 'loot_treasure')).toBe(1)
     expectIdempotencyConflict(() =>
@@ -787,6 +719,57 @@ describe('loot vertical slice', () => {
     expect(scenes.revision()).toBe(unchangedSceneRevision)
     expect(scenes.groups(sceneId)[0]!.revision).toBe(savedGroup.revision)
     expect(tableCount(db, 'loot_treasure')).toBe(2)
+
+    const settledRewards = new GroupRewardCommandHandler(() => ({
+      party,
+      scenes,
+      rules,
+      characterLoot: {
+        rewardBalances: (characterIds: readonly string[]) =>
+          characterIds.map((characterId) => ({
+            characterId,
+            ledgerRevision: 0,
+            currentNonMagicCp: 100_000_000,
+            currentMagic: {
+              Common: 100,
+              Uncommon: 100,
+              Rare: 100,
+              'Very Rare': 100,
+              Legendary: 100
+            }
+          }))
+      },
+      generation
+    }))
+    const emptyRun = settledRewards.generate({
+      sceneId,
+      groupId,
+      expectedSceneRevision: scenes.revision(),
+      expectedGroupRevision: savedGroup.revision,
+      expectedPartyRevision: party.read().revision,
+      expectedCampaignRulesRevision: rules.read().revision,
+      entries,
+      seed: 81_339
+    }).run
+    expect(emptyRun.treasures).toEqual([])
+    const lootRevisionBeforeEmpty = new LootProjectionStore(db).revision()
+    const emptyInput = {
+      ...input,
+      commandId: randomUUID(),
+      runId: emptyRun.id,
+      generatedTreasureId: null,
+      treasureDraft: null,
+      expectedSceneRevision: scenes.revision(),
+      expectedGroupRevision: savedGroup.revision
+    }
+    const emptyResult = commit.commit(emptyInput)
+    expect(emptyResult.treasure).toBeNull()
+    expect(emptyResult.groupResult.scenePatch.sceneRevision).toBe(
+      scenes.revision()
+    )
+    expect(commit.commit(emptyInput)).toEqual(emptyResult)
+    expect(tableCount(db, 'loot_treasure')).toBe(2)
+    expect(new LootProjectionStore(db).revision()).toBe(lootRevisionBeforeEmpty)
   })
 
   it('commits distribution and character provenance atomically and idempotently', () => {
@@ -801,10 +784,8 @@ describe('loot vertical slice', () => {
       anchor: { kind: 'unplaced' },
       items: [
         {
-          name: 'Goldmünzen',
-          quantity: 4,
-          unitValueCp: 100,
-          stackable: true
+          itemReference: legacyLootItem(db, 'Goldmünzen', 100, true),
+          quantity: 4
         }
       ]
     })
@@ -847,10 +828,9 @@ describe('loot vertical slice', () => {
       anchor: result.treasure.anchor,
       items: result.treasure.items.map((item) => ({
         id: item.id,
-        name: item.name,
+        itemReference: item.itemReference,
         quantity: item.quantity,
-        unitValueCp: item.unitValueCp,
-        stackable: item.stackable
+        containerId: item.containerId
       }))
     })
     expect(changed.label).toBe('Nach dem Award umbenannt')
@@ -884,8 +864,8 @@ describe('loot vertical slice', () => {
       label: 'Fund',
       anchor: { kind: 'unplaced' },
       items: [
-        { name: 'Münzen', quantity: 2, unitValueCp: 10, stackable: true },
-        { name: 'Ring', quantity: 1, unitValueCp: 50, stackable: false }
+        { itemReference: legacyLootItem(db, 'Münzen', 10, true), quantity: 2 },
+        { itemReference: legacyLootItem(db, 'Ring', 50), quantity: 1 }
       ]
     })
     expect(() =>
@@ -953,7 +933,9 @@ describe('loot vertical slice', () => {
         locationId: location.id,
         lastKnownLabel: 'client value'
       },
-      items: [{ name: 'Tauwerk', quantity: 2, unitValueCp: 5, stackable: true }]
+      items: [
+        { itemReference: legacyLootItem(db, 'Tauwerk', 5, true), quantity: 2 }
+      ]
     })
     loot.create({
       commandId: randomUUID(),
@@ -963,7 +945,7 @@ describe('loot vertical slice', () => {
         locationId: location.id,
         lastKnownLabel: 'client value'
       },
-      items: [{ name: 'Holz', quantity: 1, unitValueCp: 2, stackable: false }]
+      items: [{ itemReference: legacyLootItem(db, 'Holz', 2), quantity: 1 }]
     })
     expect(loot.sceneProjection(sceneId).locationTreasures).toHaveLength(2)
 
@@ -1023,7 +1005,7 @@ describe('loot vertical slice', () => {
   })
 
   it('supports partial, complete, stale, and non-stackable distribution rules', () => {
-    const { campaigns, party, members } = campaign()
+    const { campaigns, db, party, members } = campaign()
     const loot = new LootService(
       () => campaigns.activeCampaignDatabase(),
       () => new Date('2026-08-09T10:00:00.000Z')
@@ -1033,8 +1015,8 @@ describe('loot vertical slice', () => {
       label: 'Teilbarer Fund',
       anchor: { kind: 'unplaced' },
       items: [
-        { name: 'Silber', quantity: 4, unitValueCp: 10, stackable: true },
-        { name: 'Siegelring', quantity: 1, unitValueCp: 500, stackable: false }
+        { itemReference: legacyLootItem(db, 'Silber', 10, true), quantity: 4 },
+        { itemReference: legacyLootItem(db, 'Siegelring', 500), quantity: 1 }
       ]
     })
     expect(() =>
@@ -1115,7 +1097,9 @@ describe('loot vertical slice', () => {
       commandId: randomUUID(),
       label: 'Revisionierter Fund',
       anchor: { kind: 'unplaced' },
-      items: [{ name: 'Münzen', quantity: 3, unitValueCp: 10, stackable: true }]
+      items: [
+        { itemReference: legacyLootItem(db, 'Münzen', 10, true), quantity: 3 }
+      ]
     })
     const stalePartyRevision = party.read().revision
     const third = members[2]!
@@ -1196,12 +1180,20 @@ describe('loot vertical slice', () => {
       expectedRevision: accepted.revision,
       label: 'Vom GM bearbeitet',
       anchor: { kind: 'unplaced' },
+      containers: accepted.containers.map((container) => ({
+        id: container.id,
+        catalogContainerId:
+          container.provenance.kind === 'manual'
+            ? null
+            : container.provenance.catalogContainerId,
+        name: container.name,
+        capacity: container.capacity
+      })),
       items: accepted.items.map((item) => ({
         id: item.id,
-        name: item.name,
+        itemReference: item.itemReference,
         quantity: item.quantity,
-        unitValueCp: item.unitValueCp,
-        stackable: item.stackable
+        containerId: item.containerId
       }))
     })
     expect(
@@ -1242,15 +1234,13 @@ describe('loot vertical slice', () => {
   })
 
   it('retains the original ledger row and appends a linked correction', () => {
-    const { campaigns, party, members } = campaign()
+    const { campaigns, db, party, members } = campaign()
     const loot = new LootService(() => campaigns.activeCampaignDatabase())
     const treasure = loot.create({
       commandId: randomUUID(),
       label: 'Korrektur-Fund',
       anchor: { kind: 'unplaced' },
-      items: [
-        { name: 'Perle', quantity: 1, unitValueCp: 100, stackable: false }
-      ]
+      items: [{ itemReference: legacyLootItem(db, 'Perle', 100), quantity: 1 }]
     })
     const awarded = loot.distribute({
       commandId: randomUUID(),
@@ -1270,9 +1260,7 @@ describe('loot vertical slice', () => {
       characterId: members[0]!.id,
       entryId: awarded.id,
       expectedRevision: before.revision,
-      itemName: 'Schwarze Perle',
       quantity: 1,
-      unitValueCp: 150,
       status: 'sold',
       reason: 'Identifikation beim Händler'
     } as const
@@ -1287,8 +1275,11 @@ describe('loot vertical slice', () => {
     expect(correction).toMatchObject({
       correctsEntryId: original.id,
       correctionReason: 'Identifikation beim Händler',
-      itemName: 'Schwarze Perle',
       status: 'sold'
+    })
+    expect(correction.definition).toMatchObject({
+      name: 'Perle',
+      unitValueCp: 100
     })
     expect(
       new LootService(() => campaigns.activeCampaignDatabase()).correctLedger(
@@ -1328,11 +1319,9 @@ function generatedTreasureDraft(
     containers,
     items: treasure.items.map((item) => ({
       id: randomUUID(),
-      origin: { kind: 'generator', sourceLineId: item.id },
-      name: item.name,
+      sourceLineId: item.id,
+      itemReference: item.itemReference,
       quantity: item.quantity,
-      unitValueCp: item.unitValueCp,
-      stackable: item.stackable,
       containerId: item.containerId
         ? (containerIds.get(item.containerId) ?? null)
         : null

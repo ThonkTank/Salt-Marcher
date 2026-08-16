@@ -47,34 +47,12 @@ export function initializeLootSchema(db: Database.Database): void {
       id TEXT PRIMARY KEY NOT NULL,
       treasure_id TEXT NOT NULL REFERENCES loot_treasure(id) ON DELETE CASCADE,
       source_line_id TEXT,
-      catalog_entry_kind TEXT CHECK(catalog_entry_kind IN ('item', 'magic_item')),
-      catalog_item_id TEXT,
-      name TEXT NOT NULL,
+      item_reference_json TEXT NOT NULL,
       quantity INTEGER NOT NULL CHECK(quantity > 0),
-      unit_value_cp INTEGER NOT NULL CHECK(unit_value_cp >= 0),
-      stackable INTEGER NOT NULL CHECK(stackable IN (0, 1)),
-      magic INTEGER NOT NULL CHECK(magic IN (0, 1)),
-      rarity TEXT,
-      curse_name TEXT,
       container_id TEXT REFERENCES loot_container(id) ON DELETE SET NULL,
       position INTEGER NOT NULL CHECK(position >= 0),
       UNIQUE(treasure_id, position),
-      UNIQUE(treasure_id, source_line_id),
-      CHECK(stackable = 1 OR quantity = 1),
-      CHECK(
-        (catalog_item_id IS NULL AND catalog_entry_kind IS NULL)
-        OR
-        (catalog_item_id IS NOT NULL AND catalog_entry_kind IS NOT NULL)
-      ),
-      CHECK(
-        catalog_entry_kind IS NULL
-        OR (catalog_entry_kind = 'item' AND magic = 0)
-        OR (catalog_entry_kind = 'magic_item' AND magic = 1)
-      ),
-      CHECK(
-        (magic = 0 AND rarity IS NULL AND curse_name IS NULL)
-        OR (magic = 1 AND rarity IS NOT NULL)
-      )
+      UNIQUE(treasure_id, source_line_id)
     );
     CREATE TABLE IF NOT EXISTS loot_allocation (
       id TEXT PRIMARY KEY NOT NULL,

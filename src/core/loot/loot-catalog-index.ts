@@ -8,6 +8,7 @@ import {
   type FullSessionGenerationCatalog
 } from '../session-generation/loot-catalog.js'
 import { roundHalfUp } from '../session-generation/rational.js'
+import type { ItemDefinition } from '../../shared/contracts/loot.js'
 
 export type LootCatalogIndex = Readonly<{
   catalogVersion: string
@@ -41,30 +42,40 @@ export function createLootCatalogIndex(
   const entries: LootCatalogEntry[] = [
     ...catalog.items
       .filter((item) => item.active)
-      .map((item): LootCatalogEntry => ({
-        kind: 'item',
-        id: item.id,
-        defaultName: item.name,
-        type: item.lootType,
-        category: item.category,
-        unitValueCp: Math.max(0, roundHalfUp(item.baseCp)),
-        stackable: item.valueForm === 'Quantity_Good',
-        magic: false,
-        rarity: null
-      })),
+      .map((item): LootCatalogEntry => {
+        const definition = catalogDefinition(catalog, 'item', item.id)
+        return {
+          kind: 'item',
+          id: item.id,
+          defaultName: definition.name,
+          type: item.lootType,
+          category: item.category,
+          unitValueCp: definition.unitValueCp,
+          stackable: definition.stackable,
+          magic: false,
+          rarity: null,
+          itemReference: definition.reference,
+          definition
+        }
+      }),
     ...catalog.magicItems
       .filter((item) => item.active)
-      .map((item): LootCatalogEntry => ({
-        kind: 'magic_item',
-        id: item.id,
-        defaultName: item.item,
-        type: item.type,
-        category: null,
-        unitValueCp: 0,
-        stackable: false,
-        magic: true,
-        rarity: item.rarity
-      })),
+      .map((item): LootCatalogEntry => {
+        const definition = catalogDefinition(catalog, 'magic_item', item.id)
+        return {
+          kind: 'magic_item',
+          id: item.id,
+          defaultName: definition.name,
+          type: item.type,
+          category: null,
+          unitValueCp: 0,
+          stackable: false,
+          magic: true,
+          rarity: item.rarity,
+          itemReference: definition.reference,
+          definition
+        }
+      }),
     ...catalog.containers
       .filter((container) => !container.hidden)
       .map((container): LootCatalogEntry => ({
@@ -115,6 +126,68 @@ export function createLootCatalogIndex(
           )
           .map(({ entry }) => entry)
       )
+    }
+  })
+}
+
+function catalogDefinition(
+  catalog: FullSessionGenerationCatalog,
+  entryKind: 'item' | 'magic_item',
+  catalogId: string
+): ItemDefinition {
+  const reference = {
+    kind: 'catalog' as const,
+    catalogVersion: catalog.encounter.catalogVersion,
+    catalogContentHash: catalog.encounter.catalogContentHash,
+    entryKind,
+    catalogId
+  }
+  if (entryKind === 'item') {
+    const item = catalog.items.find((candidate) => candidate.id === catalogId)!
+    return Object.freeze({
+      reference,
+      name: item.name,
+      unitValueCp: Math.max(0, roundHalfUp(item.baseCp)),
+      unitCapacity: item.capacity,
+      stackable: item.valueForm === 'Quantity_Good',
+      magic: false,
+      rarity: null,
+      curse: null,
+      components: {
+        baseItemId: item.id,
+        modifierId: null,
+        componentId: null,
+        magicItemId: null,
+        magicVariantId: null,
+        spellId: null,
+        enspelledRuleId: null,
+        curseId: null,
+        coinDenominations: []
+      }
+    })
+  }
+  const item = catalog.magicItems.find(
+    (candidate) => candidate.id === catalogId
+  )!
+  return Object.freeze({
+    reference,
+    name: item.item,
+    unitValueCp: 0,
+    unitCapacity: 1,
+    stackable: false,
+    magic: true,
+    rarity: item.rarity,
+    curse: null,
+    components: {
+      baseItemId: null,
+      modifierId: null,
+      componentId: null,
+      magicItemId: item.id,
+      magicVariantId: null,
+      spellId: null,
+      enspelledRuleId: null,
+      curseId: null,
+      coinDenominations: []
     }
   })
 }

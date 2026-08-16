@@ -25,6 +25,7 @@ import type { LootCatalogIndex } from '../loot/loot-catalog-index.js'
 import type { MaterializedGroupRewardTreasureDraft } from '../loot/group-reward-treasure-draft.js'
 import { GroupRewardRevisionGuard } from './group-reward-revision-guard.js'
 import { GroupRewardDraftMaterializer } from './group-reward-draft-materializer.js'
+import type { CharacterRewardBalance } from '../loot/character-loot-store.js'
 
 type GroupSaveInput = Readonly<{
   sceneId: string
@@ -56,6 +57,11 @@ export type GroupRewardCommitContext = Readonly<{
     }): LootCatalogIndex
   }>
   generatedRuns: Readonly<{ read(runId: string): GeneratedRun | null }>
+  characterLoot: Readonly<{
+    rewardBalances(
+      characterIds: readonly string[]
+    ): readonly CharacterRewardBalance[]
+  }>
   treasures: Readonly<{
     findByGenerated(runId: string, generatedTreasureId: string): Treasure | null
     acceptGeneratedDraft(
@@ -120,9 +126,13 @@ export class GroupRewardCommitHandler {
       const { run, generated, existingGroup } = new GroupRewardRevisionGuard(
         context
       ).validate(input)
-      const treasureDraft = new GroupRewardDraftMaterializer(
-        context
-      ).materialize(run, generated, input.treasureDraft)
+      const treasureDraft =
+        generated && input.treasureDraft
+          ? new GroupRewardDraftMaterializer().materialize(
+              generated,
+              input.treasureDraft
+            )
+          : null
 
       const changed =
         !existingGroup || !samePersistedGroup(existingGroup, input)
@@ -143,19 +153,22 @@ export class GroupRewardCommitHandler {
         (candidate) => candidate.id === input.groupId
       )
       if (!savedGroup) throw new Error('Committed group is missing from result')
-      const treasure = context.treasures.acceptGeneratedDraft(
-        run,
-        generated,
-        treasureDraft,
-        {
-          kind: 'group',
-          sceneId: input.sceneId,
-          groupId: input.groupId,
-          lastKnownLabel: savedGroup.name
-        },
-        context.now()
-      )
-      context.projections.bumpRevision()
+      const treasure =
+        generated && treasureDraft
+          ? context.treasures.acceptGeneratedDraft(
+              run,
+              generated,
+              treasureDraft,
+              {
+                kind: 'group',
+                sceneId: input.sceneId,
+                groupId: input.groupId,
+                lastKnownLabel: savedGroup.name
+              },
+              context.now()
+            )
+          : null
+      if (treasure) context.projections.bumpRevision()
       const result = commitGroupRewardResultSchema.parse({
         groupResult,
         treasure

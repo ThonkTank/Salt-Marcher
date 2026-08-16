@@ -253,8 +253,36 @@ describe('group manager state', () => {
 })
 
 function generatedRun(): GroupRewardGeneratedRun {
+  const itemReference = {
+    kind: 'generated' as const,
+    runId: '01900000-0000-7000-8000-000000000010',
+    definitionId: 'generated:definition:1'
+  }
   return {
     id: '01900000-0000-7000-8000-000000000010',
+    itemDefinitions: [
+      {
+        reference: itemReference,
+        name: 'Test item',
+        unitValueCp: 10,
+        unitCapacity: 1,
+        stackable: false,
+        magic: false,
+        rarity: null,
+        curse: null,
+        components: {
+          baseItemId: 'item:test',
+          modifierId: null,
+          componentId: null,
+          magicItemId: null,
+          magicVariantId: null,
+          spellId: null,
+          enspelledRuleId: null,
+          curseId: null,
+          coinDenominations: []
+        }
+      }
+    ],
     treasures: [
       {
         id: 'generated:treasure:1',
@@ -264,14 +292,9 @@ function generatedRun(): GroupRewardGeneratedRun {
         items: [
           {
             id: 'generated:item:1',
-            catalogItemId: 'item:test',
-            name: 'Test item',
+            itemReference,
+            role: 'useful',
             quantity: 1,
-            unitValueCp: 10,
-            stackable: false,
-            magic: false,
-            rarity: null,
-            curseName: null,
             containerId: null
           }
         ]

@@ -1,8 +1,11 @@
-import { useReducer, useState } from 'react'
+import { useEffect, useReducer, useState, type Dispatch } from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type {
   Treasure,
-  TreasureAnchor
+  TreasureAnchor,
+  LootCatalogEntry,
+  LootCatalogPage,
+  LootCatalogQuery
 } from '../../../shared/contracts/loot.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import { ModalDialog } from '../../shell/modal-dialog.js'
@@ -10,9 +13,9 @@ import { formatMessage, message } from '../../i18n/session-runtime.de.js'
 import './loot-dialogs.css'
 import { useTreasureEditorPort } from './use-loot-ports.js'
 import { TreasureDraftFields } from './treasure-draft-fields.js'
+import { LootCatalogPane } from './loot-catalog-pane.js'
 import {
   emptyEditableTreasureContainer,
-  emptyEditableTreasureItem,
   treasureDraftInvalid,
   type EditableTreasureDraft
 } from './treasure-draft.js'
@@ -48,6 +51,35 @@ export function TreasureEditorDialog(props: {
     treasureDraftFrom
   )
   const [saving, setSaving] = useState(false)
+  const [catalogQuery, setCatalogQuery] = useState<
+    Omit<LootCatalogQuery, 'runId' | 'catalogContentHash'>
+  >({
+    search: '',
+    types: [],
+    categories: [],
+    rarities: [],
+    offset: 0,
+    limit: 30
+  })
+  const [catalogPage, setCatalogPage] = useState<LootCatalogPage | null>(null)
+  const [catalogError, setCatalogError] = useState('')
+  useEffect(() => {
+    let current = true
+    void loot
+      .catalog({ ...catalogQuery, runId: null, catalogContentHash: null })
+      .then((page) => {
+        if (current) {
+          setCatalogPage(page)
+          setCatalogError('')
+        }
+      })
+      .catch((cause: unknown) => {
+        if (current) setCatalogError(capabilityErrorText(cause))
+      })
+    return () => {
+      current = false
+    }
+  }, [catalogQuery, loot])
   const invalid = treasureDraftInvalid(draft)
 
   function patchItem(id: string, patch: TreasureItemPatch) {
@@ -63,10 +95,8 @@ export function TreasureEditorDialog(props: {
     setSaving(true)
     const items = draft.items.map((item) => ({
       id: item.persistedId,
-      name: item.name,
+      itemReference: item.itemReference!,
       quantity: item.quantity,
-      unitValueCp: item.unitValueCp,
-      stackable: item.stackable,
       containerId: item.containerId
     }))
     const containerDrafts = draft.containers.map((container) => ({
@@ -179,7 +209,7 @@ export function TreasureEditorDialog(props: {
       </label>
       <TreasureDraftFields
         draft={draft}
-        policy="manual"
+        policy="catalog"
         messages={treasureDraftEditorMessagesDe()}
         labelChanged={(label) => dispatchDraft({ kind: 'set-label', label })}
         patchItem={patchItem}
@@ -188,18 +218,26 @@ export function TreasureEditorDialog(props: {
         removeContainer={(id) =>
           dispatchDraft({ kind: 'remove-container', id })
         }
-        addItem={() =>
-          dispatchDraft({
-            kind: 'add-item',
-            item: emptyEditableTreasureItem()
-          })
-        }
+        itemDefinitionReadOnly={() => true}
         addContainer={() =>
           dispatchDraft({
             kind: 'add-container',
             container: emptyEditableTreasureContainer()
           })
         }
+      />
+      <LootCatalogPane
+        query={catalogQuery}
+        page={catalogPage}
+        error={catalogError}
+        queryChanged={(patch, preserveOffset = false) =>
+          setCatalogQuery((current) => ({
+            ...current,
+            ...patch,
+            offset: preserveOffset ? (patch.offset ?? current.offset) : 0
+          }))
+        }
+        add={(entry) => addCatalogEntry(entry, draft, dispatchDraft)}
       />
       <footer>
         <button type="button" onClick={props.close}>
@@ -225,13 +263,14 @@ function treasureDraftFrom(treasure: Treasure | null): EditableTreasureDraft {
       ? treasure.items.map((item) => ({
           draftId: item.id,
           persistedId: item.id,
-          name: item.name,
+          itemReference: item.itemReference,
+          name: item.definition.name,
           quantity: item.quantity,
-          unitValueCp: item.unitValueCp,
-          stackable: item.stackable,
+          unitValueCp: item.definition.unitValueCp,
+          stackable: item.definition.stackable,
           containerId: item.containerId
         }))
-      : [emptyEditableTreasureItem()],
+      : [],
     containers:
       treasure?.containers.map((container) => ({
         draftId: container.id,
@@ -244,6 +283,59 @@ function treasureDraftFrom(treasure: Treasure | null): EditableTreasureDraft {
         capacity: container.capacity
       })) ?? []
   }
+}
+
+function addCatalogEntry(
+  entry: LootCatalogEntry,
+  draft: EditableTreasureDraft,
+  dispatch: Dispatch<TreasureDraftCommand>
+): void {
+  if (entry.kind === 'container') {
+    dispatch({
+      kind: 'add-container',
+      container: {
+        draftId: crypto.randomUUID(),
+        catalogContainerId: entry.id,
+        name: entry.defaultName,
+        capacity: entry.capacity
+      }
+    })
+    return
+  }
+  if (entry.itemReference.kind !== 'catalog')
+    throw new Error('Catalog response contains a non-catalog item reference')
+  const itemReference = entry.itemReference
+  const existing = entry.stackable
+    ? draft.items.find(
+        (item) =>
+          item.itemReference?.kind === 'catalog' &&
+          item.itemReference.catalogContentHash ===
+            itemReference.catalogContentHash &&
+          item.itemReference.entryKind === entry.kind &&
+          item.itemReference.catalogId === entry.id &&
+          item.containerId === null
+      )
+    : null
+  if (existing) {
+    dispatch({
+      kind: 'patch-item',
+      id: existing.draftId,
+      patch: { quantity: existing.quantity + 1 }
+    })
+    return
+  }
+  dispatch({
+    kind: 'add-item',
+    item: {
+      draftId: crypto.randomUUID(),
+      itemReference,
+      name: entry.definition.name,
+      quantity: 1,
+      unitValueCp: entry.definition.unitValueCp,
+      stackable: entry.definition.stackable,
+      containerId: null
+    }
+  })
 }
 
 function anchorKey(anchor: TreasureAnchor): string {

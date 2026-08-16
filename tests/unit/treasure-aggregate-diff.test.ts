@@ -131,10 +131,9 @@ function inputFrom(
     items: treasure.items.map((entry) =>
       itemDraft(
         entry.id,
-        entry.name,
+        entry.definition.name,
         entry.quantity,
-        entry.containerId,
-        entry.unitValueCp
+        entry.containerId
       )
     ),
     containers: treasure.containers.map((entry) => ({
@@ -160,14 +159,10 @@ function item(
   return {
     id,
     provenance: { kind: 'manual' },
-    name,
+    itemReference: reference(name),
+    definition: definition(name),
     quantity,
     allocatedQuantity,
-    unitValueCp: 1,
-    stackable: true,
-    magic: false,
-    rarity: null,
-    curseName: null,
     containerId,
     position
   } as const
@@ -177,16 +172,41 @@ function itemDraft(
   id: string | undefined,
   name: string,
   quantity: number,
-  containerId: string | null,
-  unitValueCp = 1
+  containerId: string | null
 ) {
   return {
     ...(id ? { id } : {}),
-    name,
+    itemReference: reference(name),
     quantity,
-    unitValueCp,
-    stackable: true,
     containerId
+  }
+}
+
+function reference(name: string) {
+  return { kind: 'legacy' as const, definitionId: `test:${name}` }
+}
+
+function definition(name: string) {
+  return {
+    reference: reference(name),
+    name,
+    unitValueCp: 1,
+    unitCapacity: 1,
+    stackable: true,
+    magic: false,
+    rarity: null,
+    curse: null,
+    components: {
+      baseItemId: null,
+      modifierId: null,
+      componentId: null,
+      magicItemId: null,
+      magicVariantId: null,
+      spellId: null,
+      enspelledRuleId: null,
+      curseId: null,
+      coinDenominations: []
+    }
   }
 }
 

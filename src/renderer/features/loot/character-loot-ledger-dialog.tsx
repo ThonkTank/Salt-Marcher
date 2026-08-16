@@ -25,9 +25,7 @@ export function CharacterLootLedgerDialog(props: {
   const [correction, setCorrection] = useState<{
     entry: CharacterLootEntry
     commandId: string
-    itemName: string
     quantity: number
-    unitValueCp: number
     status: 'received' | 'given_away' | 'sold'
     reason: string
   } | null>(null)
@@ -45,7 +43,7 @@ export function CharacterLootLedgerDialog(props: {
     (entry) =>
       (status === 'all' || entry.status === status) &&
       (source === 'all' || entry.source === source) &&
-      `${entry.itemName} ${provenanceText(entry)}`
+      `${entry.definition.name} ${provenanceText(entry)}`
         .toLocaleLowerCase('de-DE')
         .includes(query.trim().toLocaleLowerCase('de-DE'))
   )
@@ -59,9 +57,7 @@ export function CharacterLootLedgerDialog(props: {
           characterId: character.id,
           entryId: correction.entry.id,
           expectedRevision: ledger.revision,
-          itemName: correction.itemName,
           quantity: correction.quantity,
-          unitValueCp: correction.unitValueCp,
           status: correction.status,
           reason: correction.reason
         })
@@ -143,7 +139,7 @@ export function CharacterLootLedgerDialog(props: {
                   <span>
                     <strong>
                       {entry.quantity > 1 ? `${entry.quantity}× ` : ''}
-                      {entry.itemName}
+                      {entry.definition.name}
                     </strong>
                     <small>
                       {provenanceText(entry)} · {statusLabel(entry.status)}
@@ -168,7 +164,9 @@ export function CharacterLootLedgerDialog(props: {
                     )}
                   </span>
                   <span>
-                    {formatCopper(entry.quantity * entry.unitValueCp)}
+                    {formatCopper(
+                      entry.quantity * entry.definition.unitValueCp
+                    )}
                   </span>
                   {!entry.supersededByEntryId && (
                     <button
@@ -177,9 +175,7 @@ export function CharacterLootLedgerDialog(props: {
                         setCorrection({
                           entry,
                           commandId: crypto.randomUUID(),
-                          itemName: entry.itemName,
                           quantity: entry.quantity,
-                          unitValueCp: entry.unitValueCp,
                           status: entry.status,
                           reason: ''
                         })
@@ -198,15 +194,6 @@ export function CharacterLootLedgerDialog(props: {
         <section className="character-loot-correction">
           <h3>{message('loot.correctTitle')}</h3>
           <label>
-            {message('loot.item')}
-            <input
-              value={correction.itemName}
-              onChange={(event) =>
-                setCorrection({ ...correction, itemName: event.target.value })
-              }
-            />
-          </label>
-          <label>
             {message('loot.quantity')}
             <input
               type="number"
@@ -216,20 +203,6 @@ export function CharacterLootLedgerDialog(props: {
                 setCorrection({
                   ...correction,
                   quantity: Math.max(1, Number(event.target.value) || 1)
-                })
-              }
-            />
-          </label>
-          <label>
-            {message('loot.valueCopper')}
-            <input
-              type="number"
-              min={0}
-              value={correction.unitValueCp}
-              onChange={(event) =>
-                setCorrection({
-                  ...correction,
-                  unitValueCp: Math.max(0, Number(event.target.value) || 0)
                 })
               }
             />
@@ -267,9 +240,7 @@ export function CharacterLootLedgerDialog(props: {
             </button>
             <button
               type="button"
-              disabled={
-                !correction.itemName.trim() || !correction.reason.trim()
-              }
+              disabled={!correction.reason.trim()}
               onClick={() => void saveCorrection()}
             >
               {message('loot.correctSave')}

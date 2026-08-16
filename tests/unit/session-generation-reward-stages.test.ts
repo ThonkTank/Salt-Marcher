@@ -14,7 +14,7 @@ import { BundledEncounterCatalogProvider } from '../../src/utility/session-gener
 import { sha256EncounterEntropy } from '../../src/utility/session-generation/sha256-entropy.js'
 
 const catalog = new BundledEncounterCatalogProvider(
-  join(process.cwd(), 'resources/sessiongeneration/catalog-2026-07-16')
+  join(process.cwd(), 'resources/sessiongeneration/catalog-2026-08-16')
 ).loadFull()
 
 describe('session generation reward stages', () => {
@@ -112,4 +112,89 @@ describe('session generation reward stages', () => {
       Object.values(settled.magicTargets).every((value) => value === 0)
     ).toBe(true)
   })
+
+  it('interpolates mixed post-XP gold targets and caps them at level 20', () => {
+    const mixed = calculateLedgerRewardBudget(
+      {
+        members: [
+          member('018f47db-e17a-7000-8000-000000000001', 0, 300),
+          member('018f47db-e17a-7000-8000-000000000002', 300, 600),
+          member('018f47db-e17a-7000-8000-000000000003', 6_500, 7_500)
+        ],
+        rules: defaultGeneratorLootRules,
+        seed: 1,
+        profile: 'session'
+      },
+      sha256EncounterEntropy
+    )
+    expect(mixed.rewardBasis.targetGoldCp).toBe(596_800)
+
+    const capped = calculateLedgerRewardBudget(
+      {
+        members: [
+          member('018f47db-e17a-7000-8000-000000000001', 355_000, 0),
+          member('018f47db-e17a-7000-8000-000000000002', 900_000, 50_000)
+        ],
+        rules: defaultGeneratorLootRules,
+        seed: 1,
+        profile: 'session'
+      },
+      sha256EncounterEntropy
+    )
+    expect(capped.rewardBasis.targetGoldCp).toBe(161_084_000)
+  })
+
+  it('integrates rarity bands before rounding and subtracts rarity balances', () => {
+    const output = calculateLedgerRewardBudget(
+      {
+        members: [
+          {
+            ...member('018f47db-e17a-7000-8000-000000000001', 6_500, 7_500),
+            currentMagic: {
+              Common: 1,
+              Uncommon: 1,
+              Rare: 0,
+              'Very Rare': 0,
+              Legendary: 0
+            }
+          }
+        ],
+        rules: defaultGeneratorLootRules,
+        seed: 1,
+        profile: 'group_reward'
+      },
+      { modulo: () => 0, unit: () => 0 }
+    )
+    expect(output.rewardBasis.targetMagic).toEqual({
+      Common: 2,
+      Uncommon: 1,
+      Rare: 0,
+      'Very Rare': 0,
+      Legendary: 0
+    })
+    expect(output.magicTargets).toEqual({
+      Common: 1,
+      Uncommon: 0,
+      Rare: 0,
+      'Very Rare': 0,
+      Legendary: 0
+    })
+  })
 })
+
+function member(characterId: string, currentXp: number, projectedXp: number) {
+  return {
+    characterId,
+    currentXp,
+    projectedXp,
+    ledgerRevision: 0,
+    currentNonMagicCp: 0,
+    currentMagic: {
+      Common: 0,
+      Uncommon: 0,
+      Rare: 0,
+      'Very Rare': 0,
+      Legendary: 0
+    }
+  }
+}

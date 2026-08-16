@@ -23,7 +23,7 @@ export type CharacterLootPort = Pick<
 
 export type TreasureEditorPort = Pick<
   SaltMarcherApi['loot'],
-  'create' | 'update'
+  'create' | 'update' | 'catalog'
 >
 
 export type RewardDistributionPort = Pick<SaltMarcherApi['loot'], 'distribute'>
@@ -68,7 +68,10 @@ export function useCharacterLootPort(): CharacterLootPort {
 
 export function useTreasureEditorPort(): TreasureEditorPort {
   const loot = useCapabilityApi().loot
-  return useMemo(() => ({ create: loot.create, update: loot.update }), [loot])
+  return useMemo(
+    () => ({ create: loot.create, update: loot.update, catalog: loot.catalog }),
+    [loot]
+  )
 }
 
 export function useRewardDistributionPort(): RewardDistributionPort {

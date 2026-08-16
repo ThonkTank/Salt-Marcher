@@ -3,6 +3,7 @@ import type Database from 'better-sqlite3'
 import { GeneratedEncounterPlanService } from '../../core/encounter/generated-plan-service.js'
 import { TreasureStore } from '../../core/loot/loot-store.js'
 import { CharacterLootStore } from '../../core/loot/character-loot-store.js'
+import { ItemDefinitionResolver } from '../../core/loot/item-definition-resolver.js'
 import { dailyXp, PartyStore } from '../../core/party/party-store.js'
 import { SessionPlannerStore } from '../../core/session-planner/session-planner-store.js'
 import {
@@ -71,7 +72,13 @@ export class SessionPlannerService {
         | 'before_planner_commit'
         | 'after_planner_commit',
       operationId: string
-    ) => void = () => undefined
+    ) => void = () => undefined,
+    private readonly definitionResolver: (
+      db: Database.Database
+    ) => ItemDefinitionResolver = (db) =>
+      new ItemDefinitionResolver(db, () => {
+        throw new Error('Catalog definition resolver is not configured')
+      })
   ) {}
 
   read(): SessionPlannerWorkspace {
@@ -285,7 +292,7 @@ export class SessionPlannerService {
         )
         const projectedXp = Math.floor(sessionXpTarget / members.length)
         const balances = new Map(
-          new CharacterLootStore(db)
+          new CharacterLootStore(db, this.definitionResolver(db))
             .rewardBalances(members.map((member) => member.id))
             .map((balance) => [balance.characterId, balance])
         )
@@ -350,6 +357,16 @@ export class SessionPlannerService {
             stage: 'encounter_import',
             code: 'generated_run_missing',
             retryable: false,
+            parameters: {}
+          })
+          this.publishCurrent(journal, operation.id)
+          return false
+        }
+        if (!this.rewardBasisIsCurrent(db, run, operation.sessionId)) {
+          journal.markFailure(operation.id, 'stale', {
+            stage: 'validation',
+            code: 'reward_basis_changed',
+            retryable: true,
             parameters: {}
           })
           this.publishCurrent(journal, operation.id)
@@ -422,6 +439,15 @@ export class SessionPlannerService {
         const target = planner.require(current.sessionId)
         if (target.revision !== current.expectedSessionRevision)
           throw new CapabilityError('stale', true)
+        const run = current.runId
+          ? new GeneratedRunStore(db).read(current.runId)
+          : null
+        if (
+          !run ||
+          run.runKind !== 'session' ||
+          !this.rewardBasisIsCurrent(db, run, current.sessionId)
+        )
+          throw new RewardBasisChangedError()
         const scenes = journal.scenes(operationId)
         const saved = planner.saveWithinTransaction({
           sessionId: target.id,
@@ -442,20 +468,77 @@ export class SessionPlannerService {
         operationId,
         error instanceof CapabilityError && error.code === 'stale'
           ? 'stale'
-          : 'failed',
+          : error instanceof RewardBasisChangedError
+            ? 'stale'
+            : 'failed',
         {
           stage: 'saving',
           code:
             error instanceof CapabilityError && error.code === 'stale'
               ? 'session_revision_changed'
-              : 'planner_commit_failed',
-          retryable: !(error instanceof CapabilityError),
+              : error instanceof RewardBasisChangedError
+                ? 'reward_basis_changed'
+                : 'planner_commit_failed',
+          retryable:
+            error instanceof RewardBasisChangedError ||
+            !(error instanceof CapabilityError),
           parameters: {}
         }
       )
     }
     this.publishCurrent(journal, operationId)
     return false
+  }
+
+  private rewardBasisIsCurrent(
+    db: Database.Database,
+    run: SessionGeneratedRun,
+    sessionId: string
+  ): boolean {
+    if (!run.rewardBasis) return true
+    const session = new SessionPlannerStore(db).require(sessionId)
+    const party = new PartyStore(db).read()
+    const members = session.participantIds.map((id) =>
+      party.members.find((member) => member.id === id)
+    )
+    if (
+      members.some((member) => !member || member.level === null) ||
+      members.length !== run.rewardBasis.members.length
+    )
+      return false
+    const currentMembers = members.filter(
+      (member): member is NonNullable<typeof member> => Boolean(member)
+    )
+    const levels = new Map<number, number>()
+    for (const member of currentMembers)
+      levels.set(member.level!, (levels.get(member.level!) ?? 0) + 1)
+    const currentParty = [...levels.entries()]
+      .toSorted(([left], [right]) => left - right)
+      .map(([level, count]) => ({ level, count }))
+    if (JSON.stringify(currentParty) !== JSON.stringify(run.input.party))
+      return false
+    const balances = new Map(
+      new CharacterLootStore(db, this.definitionResolver(db))
+        .rewardBalances(currentMembers.map((member) => member.id))
+        .map((balance) => [balance.characterId, balance])
+    )
+    const expectedProjectedXp = Math.floor(
+      run.session.sessionXpTarget / currentMembers.length
+    )
+    return run.rewardBasis.members.every((basis) => {
+      const member = currentMembers.find(
+        (candidate) => candidate.id === basis.characterId
+      )
+      const balance = balances.get(basis.characterId)
+      return (
+        member?.xp === basis.currentXp &&
+        basis.projectedXp === expectedProjectedXp &&
+        balance?.ledgerRevision === basis.ledgerRevision &&
+        balance.currentNonMagicCp === basis.currentNonMagicCp &&
+        JSON.stringify(balance.currentMagic) ===
+          JSON.stringify(basis.currentMagic)
+      )
+    })
   }
 
   private schedulePreparation(operationId: string): void {
@@ -521,7 +604,7 @@ export class SessionPlannerService {
         )
       ].map((runId) => [runId, new GeneratedRunStore(db).read(runId)] as const)
     )
-    const loot = new TreasureStore(db)
+    const loot = new TreasureStore(db, this.definitionResolver(db))
     const preparation = new SessionPreparationStore(db).latestActive(session.id)
     const scenes = session.scenes.map((scene) => ({
       ...scene,
@@ -532,15 +615,15 @@ export class SessionPlannerService {
         ? encounterProjection(plans.get(scene.encounterPlanId))
         : null,
       generatedRewards: scene.generatedRewards.map((reward) => {
+        const run = runs.get(reward.runId)
         const generatedTreasure =
-          runs
-            .get(reward.runId)
-            ?.treasures.find(
-              (treasure) => treasure.id === reward.generatedTreasureId
-            ) ?? null
+          run?.treasures.find(
+            (treasure) => treasure.id === reward.generatedTreasureId
+          ) ?? null
         return {
           ...reward,
           status: generatedTreasure ? ('ready' as const) : ('missing' as const),
+          itemDefinitions: run?.itemDefinitions ?? [],
           generatedTreasure,
           placedTreasure: loot.findByGenerated(
             reward.runId,
@@ -737,6 +820,8 @@ export class SessionPlannerService {
     return scenes.map((scene, position) => ({ ...scene, position }))
   }
 }
+
+class RewardBasisChangedError extends Error {}
 
 function encounterProjection(
   entry:

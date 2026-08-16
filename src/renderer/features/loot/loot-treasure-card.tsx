@@ -55,22 +55,23 @@ export function LootTreasureCard(props: {
           {props.treasure.items.map((item) => (
             <li key={item.id}>
               <span>
-                {item.quantity}× {item.name}
+                {item.quantity}× {item.definition.name}
               </span>
               <small>
                 {formatMessage('loot.distributionAllocated', {
                   allocated: item.allocatedQuantity,
                   total: item.quantity
                 })}{' '}
-                · {formatCopper(item.quantity * item.unitValueCp)}
-                {item.magic
+                · {formatCopper(item.quantity * item.definition.unitValueCp)}
+                {item.definition.magic
                   ? ` · ${formatMessage('loot.magicRarity', {
-                      rarity: item.rarity ?? message('loot.generated')
+                      rarity:
+                        item.definition.rarity ?? message('loot.generated')
                     })}`
                   : ''}
-                {item.curseName
+                {item.definition.curse
                   ? ` · ${formatMessage('loot.curseNamed', {
-                      name: item.curseName
+                      name: item.definition.curse.name
                     })}`
                   : ''}
               </small>

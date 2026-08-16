@@ -2,7 +2,6 @@ import { browser, expect } from '@wdio/globals'
 import type {
   Browser as WdioBrowser,
   ChainablePromiseArray,
-  ChainablePromiseElement,
   Element as WdioElement
 } from 'webdriverio'
 import {
@@ -12,7 +11,7 @@ import {
 import { waitForGmRendererReady } from './support/e2e-ready.js'
 
 describe('Group Loot atomic commit', () => {
-  it('persists editable quantities and packing with referenced catalog facts', async () => {
+  it('persists editable quantity and packing with generated references', async () => {
     const client = browser as unknown as WdioBrowser
     await setElectronWindowSize(client, 1280, 800)
     await (
@@ -33,58 +32,56 @@ describe('Group Loot atomic commit', () => {
     const panel = await dialog.$('.group-loot-inline-panel')
     await (
       await panel.$('.generated-loot-results')
-    ).waitForDisplayed({ timeout: 15_000 })
+    ).waitForDisplayed({
+      timeout: 15_000
+    })
 
     const catalog = await dialog.$('.loot-catalog-pane')
     await catalog.waitForDisplayed({ timeout: 10_000 })
-    const search = await catalog.$('input[type="search"]')
-    await addCatalogEntry(catalog, search, 'Lamp Oil (pint)')
-    await addCatalogEntry(catalog, search, 'Bead of Nourishment')
-    await addCatalogEntry(catalog, search, 'Pouch')
-
-    const lampOil = await findEditorRow(
-      await panel.$$('.treasure-item-editor-row'),
-      'Gegenstand',
-      'Lamp Oil (pint)'
-    )
-    const lampOilName = await lampOil.$('input[aria-label="Gegenstand"]')
-    const lampOilValue = await lampOil.$(
-      'input[aria-label="Wert in Kupfermünzen"]'
-    )
-    expect(await lampOilName.getAttribute('readonly')).not.toBeNull()
-    expect(await lampOilValue.getAttribute('readonly')).not.toBeNull()
-    expect(
-      await (await lampOil.$('input[aria-label="Teilbar"]')).isEnabled()
-    ).toBe(false)
-    expect(
-      await (await lampOil.$('input[aria-label="Teilbar"]')).isSelected()
-    ).toBe(true)
-    await replaceFieldValue(
-      client,
-      await lampOil.$('input[aria-label="Menge"]'),
-      '2'
-    )
-    const container = await findEditorRow(
-      await panel.$$('.treasure-container-editor-row'),
-      'Behälter',
-      'Pouch'
-    )
-    await replaceFieldValue(
-      client,
-      await container.$('input[aria-label="Behälter"]'),
-      'E2E Lootkiste'
-    )
-    await replaceFieldValue(
-      client,
-      await container.$('input[aria-label="Kapazität"]'),
-      '99'
-    )
-    await selectOptionContaining(
-      await lampOil.$('select[aria-label="Behälter"]'),
-      'E2E Lootkiste'
+    expect(await catalog.$$('button[aria-label$=" hinzufügen"]')).toHaveLength(
+      0
     )
 
-    await (await panel.$('button=Gruppe & Loot übernehmen')).click()
+    const item = await findStackableItem(
+      await panel.$$('.treasure-item-editor-row')
+    )
+    const itemName = await (
+      await item.$('input[aria-label="Gegenstand"]')
+    ).getValue()
+    const quantity = await item.$('input[aria-label="Menge"]')
+    const committedQuantity = Number(await quantity.getValue()) + 1
+    await replaceFieldValue(client, quantity, String(committedQuantity))
+
+    const container = await panel.$('.treasure-container-editor-row')
+    await container.waitForDisplayed({ timeout: 5_000 })
+    const containerName = await (
+      await container.$('input[aria-label="Behälter"]')
+    ).getValue()
+    const assignment = await item.$('select[aria-label="Behälter"]')
+    await assignment.selectByVisibleText(containerName)
+
+    const commit = await panel.$('button=Gruppe & Loot übernehmen')
+    expect(await commit.isEnabled()).toBe(true)
+    await commit.click()
+    try {
+      await client.waitUntil(
+        async () =>
+          !(await dialog.isExisting()) ||
+          (await (await panel.$('.group-loot-inline-error')).isDisplayed()),
+        { timeout: 10_000, timeoutMsg: 'Group Loot commit did not settle.' }
+      )
+    } catch (cause) {
+      throw new Error(
+        `Group Loot commit did not settle: ${await panel.getText()}`,
+        { cause }
+      )
+    }
+    if (await dialog.isExisting())
+      throw new Error(
+        `Group Loot commit failed: ${await (
+          await panel.$('.group-loot-inline-error')
+        ).getText()}`
+      )
     await dialog.waitForExist({ reverse: true, timeout: 10_000 })
     await client.reloadSession()
     await waitForGmRendererReady(client)
@@ -104,77 +101,30 @@ describe('Group Loot atomic commit', () => {
         )?.treasures ?? []
       return {
         count: treasures.length,
-        editedItem: treasures
-          .flatMap((treasure) => treasure.items)
-          .find((item) => item.name === 'Lamp Oil (pint)'),
-        editedContainer: treasures
-          .flatMap((treasure) => treasure.containers)
-          .find((candidate) => candidate.name === 'E2E Lootkiste'),
-        catalogMagic: treasures
-          .flatMap((treasure) => treasure.items)
-          .find(
-            (item) =>
-              item.provenance.kind === 'catalog' &&
-              item.provenance.catalogEntry.kind === 'magic_item' &&
-              item.provenance.catalogEntry.id ===
-                'magic:arcana:common:bead-of-nourishment'
-          )
+        items: treasures.flatMap((treasure) => treasure.items),
+        containers: treasures.flatMap((treasure) => treasure.containers)
       }
     })
-    expect(committed.count).toBe(1)
-    expect(committed.editedItem).toMatchObject({
-      quantity: 2,
-      unitValueCp: 10,
-      stackable: true,
-      magic: false
-    })
-    expect(committed.editedContainer).toMatchObject({ capacity: 99 })
-    expect(committed.editedItem?.containerId).toBe(
-      committed.editedContainer?.id
+    const committedItem = committed.items.find(
+      (candidate) => candidate.definition.name === itemName
     )
-    expect(committed.catalogMagic).toMatchObject({
-      magic: true,
-      rarity: 'Common',
-      curseName: null
+    const committedContainer = committed.containers.find(
+      (candidate) => candidate.name === containerName
+    )
+    expect(committed.count).toBe(1)
+    expect(committedItem).toMatchObject({
+      quantity: committedQuantity,
+      provenance: { kind: 'generator' }
     })
+    expect(committedItem?.containerId).toBe(committedContainer?.id)
   })
 })
 
-async function addCatalogEntry(
-  catalog: ChainablePromiseElement,
-  search: ChainablePromiseElement,
-  name: string
-): Promise<void> {
-  await search.setValue(name)
-  const add = await catalog.$(`button[aria-label="${name} hinzufügen"]`)
-  await add.waitForClickable({ timeout: 10_000 })
-  await add.click()
-}
-
-async function findEditorRow(
-  rows: readonly WdioElement[] | ChainablePromiseArray,
-  label: string,
-  value: string
+async function findStackableItem(
+  rows: readonly WdioElement[] | ChainablePromiseArray
 ): Promise<WdioElement> {
   for await (const row of rows)
-    if (
-      (await (await row.$(`input[aria-label="${label}"]`)).getValue()) === value
-    )
+    if (await (await row.$('input[aria-label="Teilbar"]')).isSelected())
       return row
-  throw new Error(`${value} editor row is missing.`)
-}
-
-async function selectOptionContaining(
-  select: ChainablePromiseElement,
-  label: string
-): Promise<void> {
-  const options = await select.$$('option')
-  for await (const option of options) {
-    if (!(await option.getText()).includes(label)) continue
-    const value = await option.getAttribute('value')
-    if (value === null) throw new Error(`Select option ${label} has no value.`)
-    await select.selectByAttribute('value', value)
-    return
-  }
-  throw new Error(`Select option ${label} is missing.`)
+  throw new Error('Generated Group Loot has no stackable item row.')
 }

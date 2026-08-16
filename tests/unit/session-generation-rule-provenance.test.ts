@@ -10,9 +10,24 @@ const provenance = readFileSync(
   ),
   'utf8'
 )
+const registry = JSON.parse(
+  readFileSync(join(root, 'resources/sessiongeneration/registry.json'), 'utf8')
+) as {
+  currentCatalogVersion: string
+  catalogs: Array<{ catalogVersion: string; directory: string }>
+}
+const activeCatalog = registry.catalogs.find(
+  (catalog) => catalog.catalogVersion === registry.currentCatalogVersion
+)
+if (!activeCatalog) throw new Error('Active catalog is missing from registry')
 const manifest = JSON.parse(
   readFileSync(
-    join(root, 'resources/sessiongeneration/catalog-2026-07-16/manifest.json'),
+    join(
+      root,
+      'resources/sessiongeneration',
+      activeCatalog.directory,
+      'manifest.json'
+    ),
     'utf8'
   )
 ) as {
@@ -24,10 +39,10 @@ const manifest = JSON.parse(
 describe('Session Generation rule provenance', () => {
   it('pins the checked catalog version and content hash', () => {
     expect(provenance).toContain(
-      `catalog version: \`${manifest.catalogVersion}\``
+      `active catalog version: \`${manifest.catalogVersion}\``
     )
     expect(provenance).toContain(`\`${manifest.catalogContentHash}\``)
-    expect(provenance).toContain('is never read by Runtime or tests')
+    expect(provenance).toContain('never read the live spreadsheet')
   })
 
   it('maps every checked source table to a versioned rule family', () => {

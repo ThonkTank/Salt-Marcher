@@ -61,10 +61,9 @@ export class TreasureAggregateWriter {
 
     const insertItem = this.db.prepare(
       `INSERT INTO loot_item (
-         id, treasure_id, source_line_id, catalog_entry_kind,
-         catalog_item_id, name, quantity, unit_value_cp, stackable, magic,
-         rarity, curse_name, container_id, position
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         id, treasure_id, source_line_id, item_reference_json, quantity,
+         container_id, position
+       ) VALUES (?, ?, ?, ?, ?, ?, ?)`
     )
     input.draft.items.forEach((item, position) => {
       const containerId = item.containerDraftId
@@ -82,15 +81,8 @@ export class TreasureAggregateWriter {
         uuidv7(),
         id,
         item.sourceLineId,
-        item.catalogEntryKind,
-        item.catalogItemId,
-        item.name,
+        JSON.stringify(item.itemReference),
         item.quantity,
-        item.unitValueCp,
-        Number(item.stackable),
-        Number(item.magic),
-        item.rarity,
-        item.curseName,
         containerId,
         position
       )

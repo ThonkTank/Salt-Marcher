@@ -41,9 +41,13 @@ export type LootCatalogItem = Readonly<{
 
 export type LootModifier = Readonly<{
   id: string
+  kind: 'modular' | 'variant'
   name: string
   textTemplate: string | null
   details: string | null
+  componentType: string | null
+  minQuantity: number
+  maxQuantity: number
   allowedProfiles: readonly string[]
   allowedCategories: readonly string[]
   flatValueCp: Rational
@@ -94,6 +98,9 @@ export type LootContainer = Readonly<{
   name: string
   capacity: number
   relation: string
+  outputSingular: string
+  outputPlural: string
+  outputRelation: string
   hidden: boolean
   priority: number
   mixable: boolean
@@ -183,6 +190,12 @@ export function parseFullSessionGenerationCatalog(
     name: required(row, 'Container'),
     capacity: finite(row, 'Capacity_Units'),
     relation: required(row, 'Relation'),
+    outputSingular:
+      optional(row, 'Output_Singular') ?? required(row, 'Container'),
+    outputPlural:
+      optional(row, 'Output_Plural') ?? `${required(row, 'Container')}s`,
+    outputRelation:
+      optional(row, 'Output_Relation') ?? required(row, 'Relation'),
     hidden: boolean(row, 'Hide_In_Output'),
     priority: finite(row, 'Packing_Priority'),
     mixable: boolean(row, 'Mixable')
@@ -221,9 +234,13 @@ export function parseFullSessionGenerationCatalog(
   }))
   const modifiers = rows(tables, 'DB_LootModifiers.tsv').map((row) => ({
     id: required(row, 'Modifier_ID'),
+    kind: modifierKind(required(row, 'Modifier_Kind')),
     name: required(row, 'Name'),
     textTemplate: optional(row, 'Text_Template'),
     details: optional(row, 'Details'),
+    componentType: optional(row, 'Component_Type'),
+    minQuantity: finite(row, 'Min_Qty'),
+    maxQuantity: finite(row, 'Max_Qty'),
     allowedProfiles: relations
       .filter(
         (relation) =>
@@ -541,6 +558,12 @@ function rarity(row: Row, key: string): LootRarity {
 function lootClass(value: string): 'carrier' | 'useful' | 'flavor' {
   if (value !== 'carrier' && value !== 'useful' && value !== 'flavor')
     throw new Error('catalog_schema_invalid:loot_class')
+  return value
+}
+
+function modifierKind(value: string): LootModifier['kind'] {
+  if (value !== 'modular' && value !== 'variant')
+    throw new Error('catalog_schema_invalid:modifier_kind')
   return value
 }
 

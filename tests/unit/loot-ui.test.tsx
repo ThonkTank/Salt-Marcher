@@ -245,14 +245,30 @@ function treasure(id: string, label: string, itemName: string): Treasure {
       {
         id: id.replace(/.$/, '9'),
         provenance: { kind: 'manual' },
-        name: itemName,
+        itemReference: { kind: 'legacy', definitionId: `test:${id}` },
+        definition: {
+          reference: { kind: 'legacy', definitionId: `test:${id}` },
+          name: itemName,
+          unitValueCp: 10,
+          unitCapacity: 1,
+          stackable: true,
+          magic: false,
+          rarity: null,
+          curse: null,
+          components: {
+            baseItemId: null,
+            modifierId: null,
+            componentId: null,
+            magicItemId: null,
+            magicVariantId: null,
+            spellId: null,
+            enspelledRuleId: null,
+            curseId: null,
+            coinDenominations: []
+          }
+        },
         quantity: 2,
         allocatedQuantity: 0,
-        unitValueCp: 10,
-        stackable: true,
-        magic: false,
-        rarity: null,
-        curseName: null,
         containerId: null,
         position: 0
       }

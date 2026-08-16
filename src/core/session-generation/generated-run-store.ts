@@ -8,6 +8,7 @@ import {
   type GroupRewardGeneratedRun,
   type SessionGeneratedRun
 } from '../../shared/contracts/session-generation.js'
+import { itemDefinitionSchema } from '../../shared/contracts/loot.js'
 
 type RunRootRow = Readonly<{
   id: string
@@ -286,20 +287,10 @@ export function initializeSessionGenerationSchema(db: Database.Database): void {
       treasure_id TEXT NOT NULL,
       id TEXT NOT NULL,
       position INTEGER NOT NULL CHECK(position >= 0),
-      catalog_item_id TEXT,
+      item_reference_json TEXT NOT NULL,
       role TEXT NOT NULL CHECK(role IN ('compact_value','complex_value','useful','flavor','magic')),
-      name TEXT NOT NULL,
-      modifier TEXT,
       quantity INTEGER NOT NULL CHECK(quantity > 0),
-      unit_value_cp INTEGER NOT NULL CHECK(unit_value_cp >= 0),
-      total_value_cp INTEGER NOT NULL CHECK(total_value_cp >= 0),
-      stackable INTEGER NOT NULL CHECK(stackable IN (0,1)),
-      magic INTEGER NOT NULL CHECK(magic IN (0,1)),
-      rarity TEXT CHECK(rarity IS NULL OR rarity IN ('Common','Uncommon','Rare','Very Rare','Legendary')),
-      curse_name TEXT,
-      curse_effect TEXT,
       container_id TEXT,
-      capacity REAL NOT NULL CHECK(capacity >= 0),
       PRIMARY KEY (run_id, treasure_id, id),
       UNIQUE (run_id, treasure_id, position),
       FOREIGN KEY (run_id, treasure_id)
@@ -308,6 +299,16 @@ export function initializeSessionGenerationSchema(db: Database.Database): void {
       FOREIGN KEY (run_id, treasure_id, container_id)
         REFERENCES session_generation_container(run_id, treasure_id, id)
         ON DELETE RESTRICT
+    );
+
+    CREATE TABLE IF NOT EXISTS session_generation_item_definition (
+      run_id TEXT NOT NULL REFERENCES session_generation_run(id)
+        ON DELETE RESTRICT,
+      definition_id TEXT NOT NULL,
+      reference_json TEXT NOT NULL,
+      definition_json TEXT NOT NULL,
+      PRIMARY KEY (run_id, definition_id),
+      UNIQUE (run_id, reference_json)
     );
 
     CREATE TABLE IF NOT EXISTS session_generation_warning (
@@ -347,7 +348,10 @@ export function initializeSessionGenerationSchema(db: Database.Database): void {
         'encounter_target_sum','candidate_coverage','encounter_selector_fit',
         'deterministic_seed_path','treasure_count','unique_encounter_anchors',
         'treasure_assignment_complete','normal_loot_budget_tolerance',
-        'magic_item_count','packing_validity'
+        'magic_item_count','packing_validity','item_definition_complete',
+        'item_value_consistency','container_capacity',
+        'coin_denomination_integrity','role_magic_consistency',
+        'stock_class_policy'
       )),
       passed INTEGER NOT NULL CHECK(passed IN (0,1)),
       hard INTEGER NOT NULL CHECK(hard IN (0,1)),
@@ -756,6 +760,21 @@ export class GeneratedRunStore {
   }
 
   private insertTreasures(run: GeneratedRun): void {
+    const definition = this.db.prepare(
+      `INSERT INTO session_generation_item_definition (
+         run_id, definition_id, reference_json, definition_json
+       ) VALUES (?, ?, ?, ?)`
+    )
+    for (const candidate of run.itemDefinitions) {
+      if (candidate.reference.kind !== 'generated')
+        throw new Error('Generated run contains a non-generated definition')
+      definition.run(
+        run.id,
+        candidate.reference.definitionId,
+        JSON.stringify(candidate.reference),
+        JSON.stringify(candidate)
+      )
+    }
     const treasure = this.db.prepare(
       `INSERT INTO session_generation_treasure (
          run_id, run_kind, id, position, stock_class, reward_channel,
@@ -771,10 +790,9 @@ export class GeneratedRunStore {
     )
     const item = this.db.prepare(
       `INSERT INTO session_generation_item (
-         run_id, treasure_id, id, position, catalog_item_id, role, name,
-         modifier, quantity, unit_value_cp, total_value_cp, stackable, magic,
-         rarity, curse_name, curse_effect, container_id, capacity
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         run_id, treasure_id, id, position, item_reference_json, role,
+         quantity, container_id
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
     )
     run.treasures.forEach((entry, position) => {
       treasure.run(
@@ -807,20 +825,10 @@ export class GeneratedRunStore {
           entry.id,
           candidate.id,
           candidate.position,
-          candidate.catalogItemId,
+          JSON.stringify(candidate.itemReference),
           candidate.role,
-          candidate.name,
-          candidate.modifier,
           candidate.quantity,
-          candidate.unitValueCp,
-          candidate.totalValueCp,
-          Number(candidate.stackable),
-          Number(candidate.magic),
-          candidate.rarity,
-          candidate.curseName,
-          candidate.curseEffect,
-          candidate.containerId,
-          candidate.capacity
+          candidate.containerId
         )
       )
     })
@@ -992,6 +1000,7 @@ export class GeneratedRunStore {
         },
         rewardBasis,
         encounters,
+        itemDefinitions: this.readItemDefinitions(row.id),
         treasures,
         rewardSummary: {
           normalValueCp: row.normalValueCp,
@@ -1124,6 +1133,7 @@ export class GeneratedRunStore {
           'Very Rare': source.magicVeryRare,
           Legendary: source.magicLegendary
         },
+        itemDefinitions: this.readItemDefinitions(row.id),
         treasures: this.readTreasures(row.id),
         rewardSummary: {
           normalValueCp: source.normalValueCp,
@@ -1160,25 +1170,20 @@ export class GeneratedRunStore {
       this.db
         .prepare(
           `SELECT treasure_id AS treasureId, id,
-                  catalog_item_id AS catalogItemId, role, name, modifier,
-                  quantity, unit_value_cp AS unitValueCp,
-                  total_value_cp AS totalValueCp, stackable, magic, rarity,
-                  curse_name AS curseName, curse_effect AS curseEffect,
-                  container_id AS containerId, capacity, position
+                  item_reference_json AS itemReferenceJson, role, quantity,
+                  container_id AS containerId, position
              FROM session_generation_item
             WHERE run_id = ? ORDER BY treasure_id, position`
         )
         .all(runId) as Array<
         Record<string, unknown> & {
           treasureId: string
-          stackable: number
-          magic: number
+          itemReferenceJson: string
         }
       >
-    ).map((entry) => ({
+    ).map(({ itemReferenceJson, ...entry }) => ({
       ...entry,
-      stackable: Boolean(entry.stackable),
-      magic: Boolean(entry.magic)
+      itemReference: JSON.parse(itemReferenceJson) as unknown
     }))
     return treasureRows.map((entry) => ({
       ...entry,
@@ -1192,6 +1197,21 @@ export class GeneratedRunStore {
         .filter((candidate) => candidate.treasureId === entry.id)
         .map((candidate) => candidate)
     })) as GeneratedRun['treasures']
+  }
+
+  private readItemDefinitions(runId: string): GeneratedRun['itemDefinitions'] {
+    return this.db
+      .prepare(
+        `SELECT definition_json AS definitionJson
+           FROM session_generation_item_definition
+          WHERE run_id = ? ORDER BY definition_id`
+      )
+      .all(runId)
+      .map((row) =>
+        itemDefinitionSchema.parse(
+          JSON.parse((row as { definitionJson: string }).definitionJson)
+        )
+      )
   }
 
   private readRewardBasis(runId: string) {

@@ -6,6 +6,7 @@ import {
 import { sceneGroupDispositionSchema } from '../scene.js'
 import { sceneGroupCommandResultSchema } from '../live-session.js'
 import { treasureSchema } from './treasure.js'
+import { itemReferenceSchema } from './item-definition.js'
 
 export const generateGroupDraftLootInputSchema = z
   .object({
@@ -61,22 +62,12 @@ export const groupRewardTreasureContainerOriginSchema = z.discriminatedUnion(
 export const groupRewardTreasureItemDraftSchema = z
   .object({
     id: z.uuid(),
-    origin: groupRewardTreasureItemOriginSchema,
-    name: z.string().trim().min(1),
+    sourceLineId: z.string().min(1).nullable(),
+    itemReference: itemReferenceSchema,
     quantity: z.number().int().positive(),
-    unitValueCp: z.number().int().nonnegative(),
-    stackable: z.boolean(),
     containerId: z.uuid().nullable()
   })
   .strict()
-  .superRefine((item, context) => {
-    if (!item.stackable && item.quantity !== 1)
-      context.addIssue({
-        code: 'custom',
-        path: ['quantity'],
-        message: 'Non-stackable items must have quantity one.'
-      })
-  })
 
 export const groupRewardTreasureContainerDraftSchema = z
   .object({
@@ -99,8 +90,8 @@ export const commitGroupRewardInputSchema = z
   .object({
     commandId: z.uuid(),
     runId: z.uuid(),
-    generatedTreasureId: z.string().min(1),
-    treasureDraft: groupRewardTreasureDraftSchema,
+    generatedTreasureId: z.string().min(1).nullable(),
+    treasureDraft: groupRewardTreasureDraftSchema.nullable(),
     sceneId: z.uuid(),
     groupId: z.uuid(),
     expectedSceneRevision: z.number().int().nonnegative(),
@@ -111,11 +102,20 @@ export const commitGroupRewardInputSchema = z
     entries: z.array(groupRewardSourceEntrySchema).min(1)
   })
   .strict()
+  .refine(
+    (input) =>
+      (input.generatedTreasureId === null) === (input.treasureDraft === null),
+    {
+      message:
+        'Generated Treasure identity and draft must both be present or absent.',
+      path: ['treasureDraft']
+    }
+  )
 
 export const commitGroupRewardResultSchema = z
   .object({
     groupResult: sceneGroupCommandResultSchema,
-    treasure: treasureSchema
+    treasure: treasureSchema.nullable()
   })
   .strict()
 

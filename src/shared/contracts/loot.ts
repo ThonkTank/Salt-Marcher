@@ -1,3 +1,4 @@
+export * from './loot/item-definition.js'
 export * from './loot/catalog.js'
 export * from './loot/treasure.js'
 export * from './loot/group-reward.js'

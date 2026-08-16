@@ -8,7 +8,6 @@ import { capabilityErrorIssues } from '../../../shared/errors/capability-error.j
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import type { SearchableSelectOption } from '../../shell/searchable-select.js'
 import {
-  catalogLootDraftCommand,
   groupLootCommitDraft,
   groupLootDraftDirty,
   groupLootDraftFromRun,
@@ -478,26 +477,11 @@ export function useGroupManagerController(
       phase: 'committing'
     })
     try {
-      if (!treasure) {
-        const result = await ports.scene.saveGroup(
-          focused.id,
-          key === newGroupDraftKey ? null : key,
-          group.name.trim(),
-          group.note.trim(),
-          group.disposition,
-          entries,
-          props.snapshot.scene.revision,
-          selectedPersistedGroup?.revision ?? null
-        )
-        dispatch({ kind: 'loot-committed', key, token })
-        props.saved(applySceneGroupCommandResult(props.snapshot, result))
-        return null
-      }
       const result = await ports.loot.commitGroupReward({
         commandId: crypto.randomUUID(),
         runId: run.id,
-        generatedTreasureId: treasure.id,
-        treasureDraft: groupLootCommitDraft(history.draft),
+        generatedTreasureId: treasure?.id ?? null,
+        treasureDraft: treasure ? groupLootCommitDraft(history.draft) : null,
         sceneId: focused.id,
         groupId: rewardGroupId,
         expectedSceneRevision: props.snapshot.scene.revision,
@@ -508,7 +492,7 @@ export function useGroupManagerController(
         entries: [...entries]
       })
       dispatch({ kind: 'loot-committed', key, token })
-      props.lootChanged()
+      if (result.treasure) props.lootChanged()
       props.saved(
         applySceneGroupCommandResult(props.snapshot, result.groupResult)
       )
@@ -724,14 +708,6 @@ export function useGroupManagerController(
       removeItem: (id: string) => dispatchLoot({ kind: 'remove-item', id }),
       removeContainer: (id: string) =>
         dispatchLoot({ kind: 'remove-container', id }),
-      addCatalogEntry: (
-        entry: Parameters<typeof catalogLootDraftCommand>[1]
-      ) => {
-        if (!state.activeKey || !lootHistory) return
-        dispatchLoot(
-          catalogLootDraftCommand(lootHistory.draft, entry, crypto.randomUUID())
-        )
-      },
       undo: () => dispatchLootHistory('undo'),
       redo: () => dispatchLootHistory('redo'),
       beginEdit: (editKey: string) => {

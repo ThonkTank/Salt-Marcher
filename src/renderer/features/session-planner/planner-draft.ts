@@ -81,6 +81,7 @@ export function projectPlannerDraft(input: {
         ) ?? {
           ...reward,
           status: 'missing' as const,
+          itemDefinitions: [],
           generatedTreasure: null,
           placedTreasure: null
         }

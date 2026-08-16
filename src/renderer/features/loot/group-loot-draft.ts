@@ -4,11 +4,14 @@ import type {
   GroupRewardTreasureDraft,
   GroupRewardTreasureItemDraft,
   GroupRewardTreasureItemOrigin,
-  LootCatalogEntry,
+  ItemReference,
   LootRarity
 } from '../../../shared/contracts/loot.js'
 import type { GroupRewardGeneratedRun } from '../../../shared/contracts/session-generation.js'
-import { generatedTreasureLabel } from './generated-loot-presenter.js'
+import {
+  generatedItemDefinition,
+  generatedTreasureLabel
+} from './generated-loot-presenter.js'
 import type {
   EditableTreasureContainer,
   EditableTreasureDraft,
@@ -26,6 +29,8 @@ import {
 
 export type GroupLootDraftItem = EditableTreasureItem & {
   origin: GroupRewardTreasureItemOrigin
+  sourceLineId: string | null
+  itemReference: ItemReference
   magic: boolean
   rarity: LootRarity | null
   curseName: string | null
@@ -101,22 +106,25 @@ export function groupLootDraftFromRun(
     }
   })
   const items = treasure.items.map((item) => {
+    const definition = generatedItemDefinition(run, item)
     return {
       draftId: createId(),
       origin: { kind: 'generator' as const, sourceLineId: item.id },
-      name: item.name,
+      sourceLineId: item.id,
+      itemReference: item.itemReference,
+      name: definition.name,
       quantity: item.quantity,
-      unitValueCp: item.unitValueCp,
-      stackable: item.stackable,
+      unitValueCp: definition.unitValueCp,
+      stackable: definition.stackable,
       containerId: item.containerId
         ? (containerDraftIds.get(item.containerId) ?? null)
         : null,
-      magic: item.magic,
-      rarity: item.rarity,
-      curseName: item.curseName,
-      defaultName: item.name,
-      defaultUnitValueCp: item.unitValueCp,
-      defaultStackable: item.stackable
+      magic: definition.magic,
+      rarity: definition.rarity,
+      curseName: definition.curse?.name ?? null,
+      defaultName: definition.name,
+      defaultUnitValueCp: definition.unitValueCp,
+      defaultStackable: definition.stackable
     }
   })
   return {
@@ -243,83 +251,6 @@ export function redoGroupLootDraft(
   }
 }
 
-export function catalogLootDraftCommand(
-  draft: GroupLootDraft,
-  entry: LootCatalogEntry,
-  draftId: string
-): GroupLootDraftCommand {
-  if (entry.kind === 'container')
-    return {
-      kind: 'insert-container',
-      index: draft.containers.length,
-      container: {
-        draftId,
-        catalogContainerId: entry.id,
-        origin: { kind: 'catalog', catalogContainerId: entry.id },
-        name: entry.defaultName,
-        capacity: entry.capacity
-      }
-    }
-
-  if (entry.stackable) {
-    const existing = draft.items.find(
-      (item) =>
-        item.origin.kind === 'catalog' &&
-        item.origin.entryKind === entry.kind &&
-        item.origin.catalogId === entry.id &&
-        item.name === item.defaultName &&
-        item.name === entry.defaultName &&
-        item.unitValueCp === item.defaultUnitValueCp &&
-        item.unitValueCp === entry.unitValueCp &&
-        item.stackable === item.defaultStackable &&
-        item.stackable === entry.stackable &&
-        item.containerId === null
-    )
-    if (existing)
-      return {
-        kind: 'patch-item',
-        id: existing.draftId,
-        patch: { quantity: existing.quantity + 1 }
-      }
-  }
-
-  return {
-    kind: 'insert-item',
-    index: draft.items.length,
-    item: {
-      draftId,
-      origin: {
-        kind: 'catalog',
-        entryKind: entry.kind,
-        catalogId: entry.id
-      },
-      name: entry.defaultName,
-      quantity: 1,
-      unitValueCp: entry.unitValueCp,
-      stackable: entry.stackable,
-      containerId: null,
-      magic: entry.magic,
-      rarity: entry.rarity,
-      curseName: null,
-      defaultName: entry.defaultName,
-      defaultUnitValueCp: entry.unitValueCp,
-      defaultStackable: entry.stackable
-    }
-  }
-}
-
-export function addLootCatalogEntry(
-  draft: GroupLootDraft,
-  entry: LootCatalogEntry,
-  draftId: string = crypto.randomUUID()
-): GroupLootDraft {
-  return reduceTreasureDraft(
-    draft,
-    catalogLootDraftCommand(draft, entry, draftId),
-    'catalog'
-  )
-}
-
 export function patchGroupLootItem(
   draft: GroupLootDraft,
   id: string,
@@ -373,11 +304,9 @@ export function groupLootCommitDraft(
     ),
     items: draft.items.map((item): GroupRewardTreasureItemDraft => ({
       id: item.draftId,
-      origin: item.origin,
-      name: item.name,
+      sourceLineId: item.sourceLineId,
+      itemReference: item.itemReference,
       quantity: item.quantity,
-      unitValueCp: item.unitValueCp,
-      stackable: item.stackable,
       containerId: item.containerId
     }))
   }

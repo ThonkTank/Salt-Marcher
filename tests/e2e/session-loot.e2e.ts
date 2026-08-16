@@ -50,7 +50,7 @@ describe('Loot distribution and ledger', () => {
       return {
         treasureId: treasure.id,
         treasureLabel: treasure.label,
-        partialItemName: item.name,
+        partialItemName: item.definition.name,
         characterId: character.id,
         characterName: character.name,
         partialRevision: partial.treasure.revision,
@@ -116,7 +116,7 @@ describe('Loot distribution and ledger', () => {
           (item) => item.allocatedQuantity === item.quantity
         ),
         entryCount: ledger.entries.length,
-        itemNames: ledger.entries.map((entry) => entry.itemName),
+        itemNames: ledger.entries.map((entry) => entry.definition.name),
         provenance: ledger.entries.map((entry) => entry.rewardProvenance)
       }
     }, prepared)

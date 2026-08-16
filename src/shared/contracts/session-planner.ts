@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { savedEncounterPlanSummarySchema } from './encounter-plans.js'
-import { treasureSchema } from './loot.js'
+import { itemDefinitionSchema, treasureSchema } from './loot.js'
 import { generatedTreasureSchema } from './session-generation.js'
 
 const fractionSchema = z.string().regex(/^(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$/)
@@ -133,6 +133,7 @@ export const sessionPlannerGeneratedRewardProjectionSchema = z
     treasureOrdinal: z.number().int().positive(),
     position: z.number().int().nonnegative(),
     status: z.enum(['ready', 'missing']),
+    itemDefinitions: z.array(itemDefinitionSchema),
     generatedTreasure: generatedTreasureSchema.nullable(),
     placedTreasure: treasureSchema.nullable()
   })

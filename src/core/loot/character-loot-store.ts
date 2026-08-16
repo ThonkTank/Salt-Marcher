@@ -3,11 +3,15 @@ import { CapabilityError } from '../../shared/errors/capability-error.js'
 import {
   characterLootEntrySchema,
   characterLootLedgerSchema,
+  itemReferenceKey,
+  itemReferenceSchema,
   type CharacterLootEntry,
   type CharacterLootLedger,
-  type CorrectCharacterLootInput
+  type CorrectCharacterLootInput,
+  type ItemReference
 } from '../../shared/contracts/loot.js'
 import { uuidv7 } from '../../shared/ids/uuidv7.js'
+import { ItemDefinitionResolver } from './item-definition-resolver.js'
 
 export type CharacterRewardBalance = Readonly<{
   characterId: string
@@ -35,9 +39,8 @@ export function initializeCharacterLootSchema(db: Database.Database): void {
       treasure_id TEXT,
       treasure_item_id TEXT,
       source TEXT NOT NULL CHECK(source IN ('award', 'manual', 'purchase', 'correction')),
-      item_name TEXT NOT NULL,
+      item_reference_json TEXT NOT NULL,
       quantity INTEGER NOT NULL CHECK(quantity > 0),
-      unit_value_cp INTEGER NOT NULL CHECK(unit_value_cp >= 0),
       status TEXT NOT NULL CHECK(status IN ('received', 'given_away', 'sold')),
       provenance_kind TEXT NOT NULL CHECK(provenance_kind = 'treasure_distribution'),
       provenance_treasure_label TEXT NOT NULL,
@@ -73,9 +76,8 @@ type AwardDraft = Readonly<{
   characterId: string
   treasureId: string
   treasureItemId: string
-  itemName: string
+  itemReference: ItemReference
   quantity: number
-  unitValueCp: number
   provenance: CharacterLootEntry['provenance']
   rewardProvenance: Readonly<{
     runId: string
@@ -86,18 +88,29 @@ type AwardDraft = Readonly<{
 }>
 
 export class CharacterLootStore {
-  constructor(private readonly db: Database.Database) {}
+  private readonly definitions: ItemDefinitionResolver
+
+  constructor(
+    private readonly db: Database.Database,
+    definitions?: ItemDefinitionResolver
+  ) {
+    this.definitions =
+      definitions ??
+      new ItemDefinitionResolver(db, () => {
+        throw new Error('Catalog definition resolver is not configured')
+      })
+  }
 
   addAward(draft: AwardDraft): CharacterLootEntry {
     this.db
       .prepare(
         `INSERT INTO character_loot_entry (
            id, command_id, character_id, treasure_id, treasure_item_id,
-           source, item_name, quantity, unit_value_cp, status, provenance_kind,
+           source, item_reference_json, quantity, status, provenance_kind,
            provenance_treasure_label, provenance_recipient_name,
            source_run_id, generated_treasure_id, reward_channel,
            corrects_entry_id, correction_reason, received_at
-         ) VALUES (?, ?, ?, ?, ?, 'award', ?, ?, ?, 'received', ?, ?, ?, ?, ?, ?, NULL, NULL, ?)`
+         ) VALUES (?, ?, ?, ?, ?, 'award', ?, ?, 'received', ?, ?, ?, ?, ?, ?, NULL, NULL, ?)`
       )
       .run(
         draft.id,
@@ -105,9 +118,8 @@ export class CharacterLootStore {
         draft.characterId,
         draft.treasureId,
         draft.treasureItemId,
-        draft.itemName,
+        JSON.stringify(draft.itemReference),
         draft.quantity,
-        draft.unitValueCp,
         draft.provenance.kind,
         draft.provenance.treasureLabel,
         draft.provenance.recipientName,
@@ -142,11 +154,11 @@ export class CharacterLootStore {
       .prepare(
         `INSERT INTO character_loot_entry (
            id, command_id, character_id, treasure_id, treasure_item_id,
-           source, item_name, quantity, unit_value_cp, status, provenance_kind,
+           source, item_reference_json, quantity, status, provenance_kind,
            provenance_treasure_label, provenance_recipient_name,
            source_run_id, generated_treasure_id, reward_channel,
            corrects_entry_id, correction_reason, received_at
-         ) VALUES (?, ?, ?, ?, ?, 'correction', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         ) VALUES (?, ?, ?, ?, ?, 'correction', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
       )
       .run(
         uuidv7(),
@@ -154,9 +166,8 @@ export class CharacterLootStore {
         input.characterId,
         original.treasureId,
         original.treasureItemId,
-        input.itemName.trim(),
+        JSON.stringify(original.itemReference),
         input.quantity,
-        input.unitValueCp,
         input.status,
         original.provenance.kind,
         original.provenance.treasureLabel,
@@ -178,7 +189,7 @@ export class CharacterLootStore {
         `${entrySelect} WHERE entry.command_id = ? ORDER BY entry.received_at, entry.id`
       )
       .all(commandId)
-      .map((row) => rowToEntry(row))
+      .map((row) => rowToEntry(row, this.definitions))
   }
 
   ledger(characterId: string): CharacterLootLedger {
@@ -201,7 +212,7 @@ export class CharacterLootStore {
     return characterLootLedgerSchema.parse({
       characterId,
       revision,
-      entries: rows.map((row) => rowToEntry(row))
+      entries: rows.map((row) => rowToEntry(row, this.definitions))
     })
   }
 
@@ -219,23 +230,19 @@ export class CharacterLootStore {
     const rows = this.db
       .prepare(
         `SELECT entry.character_id AS characterId,
-                item.magic, item.rarity,
-                SUM(entry.quantity) AS quantity,
-                SUM(entry.quantity * item.unit_value_cp) AS valueCp
+                entry.item_reference_json AS itemReferenceJson,
+                entry.quantity
            FROM character_loot_entry entry
-           JOIN loot_item item ON item.id = entry.treasure_item_id
            LEFT JOIN character_loot_entry correction
              ON correction.corrects_entry_id = entry.id
           WHERE entry.character_id IN (${placeholders})
             AND correction.id IS NULL
-          GROUP BY entry.character_id, item.magic, item.rarity`
+          ORDER BY entry.character_id, entry.received_at, entry.id`
       )
       .all(...ids) as Array<{
       characterId: string
-      magic: number
-      rarity: string | null
+      itemReferenceJson: string
       quantity: number
-      valueCp: number
     }>
     const revisions = new Map(
       (
@@ -248,6 +255,15 @@ export class CharacterLootStore {
           .all(...ids) as Array<{ characterId: string; revision: number }>
       ).map((row) => [row.characterId, row.revision])
     )
+    const referencedRows = rows.map((row) => ({
+      ...row,
+      itemReference: itemReferenceSchema.parse(
+        JSON.parse(row.itemReferenceJson)
+      )
+    }))
+    const definitions = this.definitions.resolveMany(
+      referencedRows.map((row) => row.itemReference)
+    )
     return ids.map((characterId) => {
       const currentMagic = {
         Common: 0,
@@ -257,12 +273,14 @@ export class CharacterLootStore {
         Legendary: 0
       }
       let currentNonMagicCp = 0
-      for (const row of rows.filter(
+      for (const row of referencedRows.filter(
         (entry) => entry.characterId === characterId
       )) {
-        if (!row.magic) currentNonMagicCp += row.valueCp
-        else if (row.rarity && row.rarity in currentMagic)
-          currentMagic[row.rarity as keyof typeof currentMagic] += row.quantity
+        const definition = definitions.get(itemReferenceKey(row.itemReference))!
+        if (!definition.magic)
+          currentNonMagicCp += row.quantity * definition.unitValueCp
+        else if (definition.rarity && definition.rarity in currentMagic)
+          currentMagic[definition.rarity] += row.quantity
       }
       return Object.freeze({
         characterId,
@@ -275,7 +293,7 @@ export class CharacterLootStore {
 
   private require(id: string): CharacterLootEntry {
     const row = this.db.prepare(`${entrySelect} WHERE entry.id = ?`).get(id)
-    return rowToEntry(row)
+    return rowToEntry(row, this.definitions)
   }
 }
 
@@ -283,8 +301,8 @@ const entrySelect = `
   SELECT entry.id, entry.character_id AS characterId,
          entry.treasure_id AS treasureId,
          entry.treasure_item_id AS treasureItemId, entry.source,
-         entry.item_name AS itemName, entry.quantity,
-         entry.unit_value_cp AS unitValueCp, entry.status,
+         entry.item_reference_json AS itemReferenceJson, entry.quantity,
+         entry.status,
          entry.provenance_kind AS provenanceKind,
          entry.provenance_treasure_label AS provenanceTreasureLabel,
          entry.provenance_recipient_name AS provenanceRecipientName,
@@ -299,7 +317,10 @@ const entrySelect = `
     LEFT JOIN character_loot_entry correction
       ON correction.corrects_entry_id = entry.id`
 
-function rowToEntry(row: unknown): CharacterLootEntry {
+function rowToEntry(
+  row: unknown,
+  definitions: ItemDefinitionResolver
+): CharacterLootEntry {
   const value = row as Record<string, unknown>
   const {
     sourceRunId,
@@ -308,10 +329,14 @@ function rowToEntry(row: unknown): CharacterLootEntry {
     provenanceKind,
     provenanceTreasureLabel,
     provenanceRecipientName,
+    itemReferenceJson,
     ...entry
   } = value
+  const itemReference = JSON.parse(itemReferenceJson as string) as ItemReference
   return characterLootEntrySchema.parse({
     ...entry,
+    itemReference,
+    definition: definitions.resolve(itemReference),
     provenance: {
       kind: provenanceKind,
       treasureLabel: provenanceTreasureLabel,

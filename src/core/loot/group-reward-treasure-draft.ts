@@ -5,7 +5,6 @@ import type {
   CapabilityIssue,
   CapabilityIssueCode
 } from '../../shared/errors/capability-issue.js'
-import type { LootCatalogIndex } from './loot-catalog-index.js'
 import type {
   MaterializedTreasure,
   MaterializedTreasureContainer,
@@ -18,8 +17,7 @@ export type MaterializedGroupRewardTreasureDraft = MaterializedTreasure
 
 export function materializeGroupRewardTreasureDraft(
   generated: GeneratedTreasure,
-  draft: GroupRewardTreasureDraft,
-  catalog: LootCatalogIndex | null
+  draft: GroupRewardTreasureDraft
 ): MaterializedGroupRewardTreasureDraft {
   validateDraftIdentities(draft)
   const generatedContainers = new Map(
@@ -42,6 +40,13 @@ export function materializeGroupRewardTreasureDraft(
         invalid('generator_container_duplicate', path, {
           sourceContainerId: origin.sourceContainerId
         })
+      if (
+        container.name.trim() !== source.name ||
+        container.capacity !== source.capacity
+      )
+        invalid('generator_container_unknown', path, {
+          sourceContainerId: origin.sourceContainerId
+        })
       usedGeneratedContainers.add(origin.sourceContainerId)
       return {
         draftId: container.id,
@@ -51,25 +56,18 @@ export function materializeGroupRewardTreasureDraft(
         capacity: container.capacity
       }
     }
-    if (!catalog)
-      throw new Error('Catalog index is required for catalog origins')
-    const source = catalog.containers.get(origin.catalogContainerId)
-    if (!source)
-      invalid('catalog_container_unknown', path, {
-        catalogContainerId: origin.catalogContainerId
-      })
-    if (source.hidden)
-      invalid('catalog_container_hidden', path, {
-        catalogContainerId: origin.catalogContainerId
-      })
-    return {
-      draftId: container.id,
-      sourceContainerId: null,
-      catalogContainerId: source.id,
-      name: container.name.trim(),
-      capacity: container.capacity
-    }
+    invalid('generator_container_unknown', path, {
+      sourceContainerId: 'missing'
+    })
   })
+
+  const missingGeneratedContainer = generated.containers.find(
+    (container) => !usedGeneratedContainers.has(container.id)
+  )
+  if (missingGeneratedContainer)
+    invalid('generator_container_unknown', ['containers'], {
+      sourceContainerId: missingGeneratedContainer.id
+    })
 
   const containerDraftIds = new Set(
     containers.map((container) => container.draftId)
@@ -81,137 +79,52 @@ export function materializeGroupRewardTreasureDraft(
         ['items', item.id, 'containerId'],
         { containerId: item.containerId }
       )
-    const path = ['items', item.id, 'origin'] as const
-    const origin = item.origin
-    if (origin.kind === 'generator') {
-      const source = generatedItems.get(origin.sourceLineId)
+    const path = ['items', item.id, 'itemReference'] as const
+    if (item.sourceLineId) {
+      const source = generatedItems.get(item.sourceLineId)
       if (!source)
         invalid('generator_item_unknown', path, {
-          sourceLineId: origin.sourceLineId
+          sourceLineId: item.sourceLineId
         })
-      if (usedGeneratedItems.has(origin.sourceLineId))
+      if (usedGeneratedItems.has(item.sourceLineId))
         invalid('generator_item_duplicate', path, {
-          sourceLineId: origin.sourceLineId
+          sourceLineId: item.sourceLineId
         })
-      usedGeneratedItems.add(origin.sourceLineId)
-      return materializedItem(
-        item,
-        {
-          sourceLineId: source.id,
-          catalogEntryKind: source.catalogItemId
-            ? source.magic
-              ? 'magic_item'
-              : 'item'
-            : null,
-          catalogItemId: source.catalogItemId,
-          magic: source.magic,
-          rarity: source.rarity,
-          curseName: source.curseName
-        },
-        {
-          name: source.name,
-          unitValueCp: source.unitValueCp,
-          stackable: source.stackable
-        }
+      usedGeneratedItems.add(item.sourceLineId)
+      if (
+        source.itemReference.kind !== 'generated' ||
+        item.itemReference.kind !== 'generated' ||
+        source.itemReference.runId !== item.itemReference.runId ||
+        source.itemReference.definitionId !== item.itemReference.definitionId
       )
-    }
-    if (!catalog)
-      throw new Error('Catalog index is required for catalog origins')
-    if (origin.entryKind === 'item') {
-      const source = catalog.items.get(origin.catalogId)
-      if (!source) {
-        if (catalog.magicItems.has(origin.catalogId))
-          invalid('catalog_entry_kind_mismatch', path, {
-            catalogId: origin.catalogId,
-            expectedKind: 'item'
-          })
-        invalid('catalog_entry_unknown', path, { catalogId: origin.catalogId })
-      }
-      if (!source.active)
-        invalid('catalog_entry_inactive', path, { catalogId: origin.catalogId })
-      const definition = catalog.entries.find(
-        (entry) => entry.kind === 'item' && entry.id === source.id
-      )
-      if (!definition || definition.kind !== 'item')
-        invalid('catalog_entry_unknown', path, { catalogId: origin.catalogId })
-      return materializedItem(
-        item,
-        {
-          sourceLineId: null,
-          catalogEntryKind: 'item',
-          catalogItemId: source.id,
-          magic: false,
-          rarity: null,
-          curseName: null
-        },
-        {
-          name: definition.defaultName,
-          unitValueCp: definition.unitValueCp,
-          stackable: definition.stackable
-        }
-      )
-    }
-    const source = catalog.magicItems.get(origin.catalogId)
-    if (!source) {
-      if (catalog.items.has(origin.catalogId))
-        invalid('catalog_entry_kind_mismatch', path, {
-          catalogId: origin.catalogId,
-          expectedKind: 'magic_item'
+        invalid('generator_item_unknown', path, {
+          sourceLineId: item.sourceLineId
         })
-      invalid('catalog_entry_unknown', path, { catalogId: origin.catalogId })
+      return materializedItem(item, source.id)
     }
-    if (!source.active)
-      invalid('catalog_entry_inactive', path, { catalogId: origin.catalogId })
-    const definition = catalog.entries.find(
-      (entry) => entry.kind === 'magic_item' && entry.id === source.id
-    )
-    if (!definition || definition.kind !== 'magic_item')
-      invalid('catalog_entry_unknown', path, { catalogId: origin.catalogId })
-    return materializedItem(
-      item,
-      {
-        sourceLineId: null,
-        catalogEntryKind: 'magic_item',
-        catalogItemId: source.id,
-        magic: true,
-        rarity: source.rarity,
-        curseName: null
-      },
-      {
-        name: definition.defaultName,
-        unitValueCp: definition.unitValueCp,
-        stackable: definition.stackable
-      }
-    )
+    invalid('generator_item_unknown', path, { sourceLineId: 'missing' })
   })
+
+  const missingGeneratedItem = generated.items.find(
+    (item) => !usedGeneratedItems.has(item.id)
+  )
+  if (missingGeneratedItem)
+    invalid('generator_item_unknown', ['items'], {
+      sourceLineId: missingGeneratedItem.id
+    })
 
   return deepFreeze({ label: draft.label.trim(), containers, items })
 }
 
 function materializedItem(
   item: GroupRewardTreasureDraft['items'][number],
-  authority: Pick<
-    MaterializedGroupRewardItem,
-    | 'sourceLineId'
-    | 'catalogEntryKind'
-    | 'catalogItemId'
-    | 'magic'
-    | 'rarity'
-    | 'curseName'
-  >,
-  definition: Readonly<{
-    name: string
-    unitValueCp: number
-    stackable: boolean
-  }>
+  sourceLineId: string | null
 ): MaterializedGroupRewardItem {
   return {
     draftId: item.id,
-    ...authority,
-    name: definition.name,
+    sourceLineId,
+    itemReference: item.itemReference,
     quantity: item.quantity,
-    unitValueCp: definition.unitValueCp,
-    stackable: definition.stackable || item.quantity > 1,
     containerDraftId: item.containerId
   }
 }

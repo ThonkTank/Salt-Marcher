@@ -166,11 +166,11 @@ export function RewardDistributionDialog(props: {
             return (
               <section className="loot-distribution-item" key={item.id}>
                 <header>
-                  <strong>{item.name}</strong>
+                  <strong>{item.definition.name}</strong>
                   <span>
                     {formatMessage('loot.availableUnit', {
                       count: remaining,
-                      value: formatCopper(item.unitValueCp)
+                      value: formatCopper(item.definition.unitValueCp)
                     })}
                   </span>
                 </header>
@@ -178,7 +178,7 @@ export function RewardDistributionDialog(props: {
                   <div className="loot-share-row" key={`${item.id}:${index}`}>
                     <select
                       aria-label={formatMessage('loot.recipientFor', {
-                        name: item.name
+                        name: item.definition.name
                       })}
                       value={share.characterId}
                       onChange={(event) =>
@@ -196,7 +196,7 @@ export function RewardDistributionDialog(props: {
                     </select>
                     <input
                       aria-label={formatMessage('loot.quantityFor', {
-                        name: item.name
+                        name: item.definition.name
                       })}
                       type="number"
                       min={1}
@@ -224,7 +224,7 @@ export function RewardDistributionDialog(props: {
                     </button>
                   </div>
                 ))}
-                {item.stackable && remaining > 1 && (
+                {item.definition.stackable && remaining > 1 && (
                   <button
                     type="button"
                     className="loot-split-action"
@@ -290,13 +290,17 @@ function validateDistribution(
     if (selected.some((row) => row.quantity < 1))
       return message('loot.quantityPositive')
     if (quantity > item.quantity - item.allocatedQuantity)
-      return formatMessage('loot.overAllocated', { name: item.name })
+      return formatMessage('loot.overAllocated', {
+        name: item.definition.name
+      })
     if (
-      !item.stackable &&
+      !item.definition.stackable &&
       quantity !== 0 &&
       quantity !== item.quantity - item.allocatedQuantity
     )
-      return formatMessage('loot.notStackable', { name: item.name })
+      return formatMessage('loot.notStackable', {
+        name: item.definition.name
+      })
     assigned += quantity
   }
   return assigned > 0 ? null : message('loot.assignmentRequired')

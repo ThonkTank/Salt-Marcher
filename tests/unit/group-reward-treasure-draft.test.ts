@@ -1,40 +1,95 @@
-import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { materializeGroupRewardTreasureDraft } from '../../src/core/loot/group-reward-treasure-draft.js'
-import { createLootCatalogIndex } from '../../src/core/loot/loot-catalog-index.js'
 import type { GroupRewardTreasureDraft } from '../../src/shared/contracts/loot.js'
 import type { GeneratedTreasure } from '../../src/shared/contracts/session-generation.js'
 import { CapabilityError } from '../../src/shared/errors/capability-error.js'
 import type { CapabilityIssueCode } from '../../src/shared/errors/capability-issue.js'
-import { BundledEncounterCatalogProvider } from '../../src/utility/session-generation/catalog-provider.js'
 
 const itemId = '01900000-0000-7000-8000-000000000001'
 const secondItemId = '01900000-0000-7000-8000-000000000002'
 const containerId = '01900000-0000-7000-8000-000000000003'
 
-describe('group reward treasure materialization issues', () => {
-  it('reports stable issue codes and draft-id paths for invalid generator origins', () => {
+describe('group reward treasure materialization', () => {
+  it('accepts only quantity and generated-container assignment changes', () => {
+    const value = {
+      ...draft(),
+      items: [
+        { ...draft().items[0]!, quantity: 7 },
+        { ...draft().items[1]!, containerId }
+      ]
+    }
+
+    const result = materializeGroupRewardTreasureDraft(generated(), value)
+
+    expect(result.items).toMatchObject([
+      { sourceLineId: 'source-item', quantity: 7 },
+      {
+        sourceLineId: 'source-item-2',
+        quantity: 2,
+        containerDraftId: containerId
+      }
+    ])
+  })
+
+  it('rejects unknown, duplicate, replaced and missing generated items', () => {
+    expectIssue(
+      {
+        ...draft(),
+        items: [{ ...draft().items[0]!, sourceLineId: 'missing' }]
+      },
+      'generator_item_unknown',
+      ['items', itemId, 'itemReference']
+    )
+    expectIssue(
+      {
+        ...draft(),
+        items: [
+          draft().items[0]!,
+          {
+            ...draft().items[0]!,
+            id: secondItemId
+          }
+        ]
+      },
+      'generator_item_duplicate',
+      ['items', secondItemId, 'itemReference']
+    )
     expectIssue(
       {
         ...draft(),
         items: [
           {
             ...draft().items[0]!,
-            origin: { kind: 'generator', sourceLineId: 'missing' }
-          }
+            itemReference: generatedReference('replacement')
+          },
+          draft().items[1]!
         ]
       },
       'generator_item_unknown',
-      ['items', itemId, 'origin']
+      ['items', itemId, 'itemReference']
+    )
+    expectIssue(
+      { ...draft(), items: [draft().items[0]!] },
+      'generator_item_unknown',
+      ['items']
     )
     expectIssue(
       {
         ...draft(),
-        items: [draft().items[0]!, { ...draft().items[0]!, id: secondItemId }]
+        items: [
+          {
+            ...draft().items[0]!,
+            sourceLineId: null
+          },
+          draft().items[1]!
+        ]
       },
-      'generator_item_duplicate',
-      ['items', secondItemId, 'origin']
+      'generator_item_unknown',
+      ['items', itemId, 'itemReference']
     )
+  })
+
+  it('rejects added, removed, duplicated or edited generated containers', () => {
     expectIssue(
       {
         ...draft(),
@@ -62,56 +117,36 @@ describe('group reward treasure materialization issues', () => {
       'generator_container_duplicate',
       ['containers', '01900000-0000-7000-8000-000000000004', 'origin']
     )
-  })
-
-  it('reports catalog kind, activity, visibility, assignment and identity issues', () => {
-    expectIssue(catalogItem('item', 'item:missing'), 'catalog_entry_unknown', [
-      'items',
-      itemId,
-      'origin'
+    expectIssue(
+      {
+        ...draft(),
+        containers: [
+          {
+            ...draft().containers[0]!,
+            origin: {
+              kind: 'catalog',
+              catalogContainerId: 'container:chest'
+            }
+          }
+        ]
+      },
+      'generator_container_unknown',
+      ['containers', containerId, 'origin']
+    )
+    expectIssue({ ...draft(), containers: [] }, 'generator_container_unknown', [
+      'containers'
     ])
     expectIssue(
-      catalogItem('item', 'magic:arcana:common:bead-of-nourishment'),
-      'catalog_entry_kind_mismatch',
-      ['items', itemId, 'origin']
-    )
-    expectIssue(
-      catalogItem('item', 'item:material:oil-flask'),
-      'catalog_entry_inactive',
-      ['items', itemId, 'origin']
-    )
-    expectIssue(
       {
         ...draft(),
-        containers: [
-          {
-            ...draft().containers[0]!,
-            origin: {
-              kind: 'catalog',
-              catalogContainerId: 'container:missing'
-            }
-          }
-        ]
+        containers: [{ ...draft().containers[0]!, name: 'Bearbeitet' }]
       },
-      'catalog_container_unknown',
+      'generator_container_unknown',
       ['containers', containerId, 'origin']
     )
-    expectIssue(
-      {
-        ...draft(),
-        containers: [
-          {
-            ...draft().containers[0]!,
-            origin: {
-              kind: 'catalog',
-              catalogContainerId: 'container:pocket'
-            }
-          }
-        ]
-      },
-      'catalog_container_hidden',
-      ['containers', containerId, 'origin']
-    )
+  })
+
+  it('reports assignment and duplicate draft identities', () => {
     expectIssue(
       {
         ...draft(),
@@ -137,7 +172,7 @@ function expectIssue(
   path: readonly string[]
 ): void {
   try {
-    materializeGroupRewardTreasureDraft(generated(), value, catalog())
+    materializeGroupRewardTreasureDraft(generated(), value)
   } catch (error) {
     expect(error).toBeInstanceOf(CapabilityError)
     expect((error as CapabilityError).issues).toEqual([
@@ -146,21 +181,6 @@ function expectIssue(
     return
   }
   throw new Error(`Expected ${code}`)
-}
-
-function catalogItem(
-  entryKind: 'item' | 'magic_item',
-  catalogId: string
-): GroupRewardTreasureDraft {
-  return {
-    ...draft(),
-    items: [
-      {
-        ...draft().items[0]!,
-        origin: { kind: 'catalog', entryKind, catalogId }
-      }
-    ]
-  }
 }
 
 function draft(): GroupRewardTreasureDraft {
@@ -180,12 +200,17 @@ function draft(): GroupRewardTreasureDraft {
     items: [
       {
         id: itemId,
-        origin: { kind: 'generator', sourceLineId: 'source-item' },
-        name: 'Münzen',
+        sourceLineId: 'source-item',
+        itemReference: generatedReference('source-item'),
         quantity: 1,
-        unitValueCp: 1,
-        stackable: true,
         containerId
+      },
+      {
+        id: secondItemId,
+        sourceLineId: 'source-item-2',
+        itemReference: generatedReference('source-item-2'),
+        quantity: 2,
+        containerId: null
       }
     ]
   }
@@ -203,26 +228,32 @@ function generated(): GeneratedTreasure {
       }
     ],
     items: [
-      {
-        id: 'source-item',
-        catalogItemId: 'item:object:abacus',
-        name: 'Abacus',
-        quantity: 1,
-        unitValueCp: 200,
-        stackable: false,
-        magic: false,
-        rarity: null,
-        curseName: null,
-        containerId: 'source-container'
-      }
+      generatedItem('source-item', generatedReference('source-item'), 1),
+      generatedItem('source-item-2', generatedReference('source-item-2'), 2)
     ]
-  } as GeneratedTreasure
+  } as unknown as GeneratedTreasure
 }
 
-function catalog() {
-  return createLootCatalogIndex(
-    new BundledEncounterCatalogProvider(
-      join(process.cwd(), 'resources/sessiongeneration/catalog-2026-07-16')
-    ).loadFull()
-  )
+function generatedItem(
+  id: string,
+  itemReference: ReturnType<typeof generatedReference>,
+  quantity: number
+) {
+  return {
+    id,
+    treasureId: 'generated-treasure',
+    itemReference,
+    role: 'useful' as const,
+    quantity,
+    containerId: id === 'source-item' ? 'source-container' : null,
+    position: id === 'source-item' ? 0 : 1
+  }
+}
+
+function generatedReference(id: string) {
+  return {
+    kind: 'generated' as const,
+    runId: '01900000-0000-7000-8000-000000000099',
+    definitionId: `definition:${id}`
+  }
 }

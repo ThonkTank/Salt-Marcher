@@ -1,67 +1,87 @@
 # Loot Persistence Contract
 
-Development schema 27 stores Loot in campaign SQLite:
+Campaign and installation schema 31 are current. The migration registry is
+version 3.
 
-- `loot_treasure`, `loot_container`, and `loot_item` are the Treasure aggregate
-- `loot_allocation` records completed recipient shares
-- `loot_operation_receipt` binds every create, update, move, generated accept,
-  group-and-reward commit, distribution, or ledger-correction command ID to a
-  canonical request fingerprint and its typed original result; a different
-  request with the same ID fails with `idempotency_conflict`
-- `loot_metadata` revisions the separately loaded Loot projection
-  and backs the dedicated `loot.changed` invalidation event
-- `character_loot_ledger_metadata` and `character_loot_entry` are owned by
-  CharacterLoot and record award provenance plus append-only linked corrections
-- `session_generation_run` stores immutable session- or group-reward metadata
-  pinned to its unique semantic-origin fingerprint;
-  `session_generation_group_source`, `session_generation_group_entry`,
-  `session_generation_encounter`,
-  `session_generation_treasure`, `session_generation_item`,
-  `session_generation_container`, `session_generation_warning`, and
-  `session_generation_audit` store its ordered child records
+## Canonical Item Identity
+
+`ItemReference` is a closed union:
+
+- `catalog`: catalog version/content hash, entry kind, and catalog ID;
+- `generated`: immutable run ID and run-local definition ID;
+- `legacy`: immutable campaign-local legacy definition ID.
+
+`session_generation_item_definition` stores each generated `ItemDefinition`
+once. `loot_legacy_item_definition` stores definitions created only while
+migrating historical free rows. Catalog definitions remain in immutable
+manifest-verified artifacts. The resolver accepts one reference and loads its
+definition from exactly one of those sources.
+
+Definitions own name, copper value, unit capacity, stackability, magic,
+rarity, curse facts, and structured component identities for base item,
+modifier, component, magic item/variant, spell, enspelled rule, curse, and coin
+denominations.
+
+`session_generation_item`, `loot_item`, and `character_loot_entry` store an
+`item_reference_json` plus owner-specific facts. They do not store copied name,
+value, stackability, magic, rarity, or curse columns. IPC read models hydrate
+those facts after batched resolution.
+
+## Owner Tables
+
+- `loot_treasure`, `loot_container`, `loot_item`, and `loot_allocation` form
+  the mutable Treasure aggregate.
+- `character_loot_ledger_metadata` and `character_loot_entry` belong to
+  Character Loot and store awards, statuses, and append-only linked
+  corrections.
+- `loot_metadata` revisions the separately loaded Loot projection.
+- `loot_operation_receipt` binds each command ID to operation type, canonical
+  request fingerprint, target, result schema, and its original typed result.
+- `session_generation_run` and normalized source, reward-basis, definition,
+  Treasure, item, container, warning, audit, and parameter tables form the
+  immutable Generated Run owner. There is no aggregate `run_json` column.
 
 Foreign keys are used only inside an owner. Location, Scene, Group, character,
-catalog, and generated-source identities are logical references validated by
-application commands where applicable. This prevents another owner from
-cascading away Loot history.
+catalog, and generated identities are logical references validated by
+application commands so another owner cannot cascade away Loot history.
 
-The run root never stores one aggregate `run_json` blob or localized display
-text. Child facts are strictly Zod-validated when written and rehydrated,
-immutable run tables have no update operation, and renderer presenters derive
-localized summaries from typed values.
+## Generated Runs And Reward Basis
 
-All write inputs and read projections are Zod-validated at IPC boundaries.
-Renderer code has no SQLite or filesystem access. Generated-run creation,
-Treasure commands, distribution, ledger reads, and corrections execute in the
-utility process.
+Every run pins engine versions, catalog version/hash, generator preset
+ID/revision/config hash, input, output, and the Character Loot reward basis.
+The basis records participants, current/projected XP, ledger revisions, target
+gold/rarity state, actual effective state, and clamped deficits. Immutable
+children are ordered and Zod-validated on write and hydration.
 
-The bundled Session Generation catalog root contains a schema-validated
-registry with one explicit active version and immutable directory/version/hash
-entries. Startup verifies registry uniqueness, each referenced manifest, the
-declared table shapes and hashes, and the aggregate content hash. New imports
-refuse to overwrite an existing artifact and publish the artifact before an
-atomic registry replacement; activation requires the explicit `--activate`
-option except for the first registered catalog.
+Session runs permit zero or more Treasures. Group runs permit zero or one.
+Generated item rows refer to run-owned definitions; accepting a proposal keeps
+the same reference. Exact random selection is not reconstructed from the seed:
+the persisted immutable result is the replay authority.
 
-A `group_reward` source may refer to a prospective group and therefore stores
-a nullable group revision. Its normalized entry rows preserve living and dead
-quantities. `loot.commitGroupReward` validates that immutable source first and
-then validates every submitted generated origin against that run and every
-catalog origin against the immutable registry artifact named by the run's
-`catalogVersion` and `catalogContentHash`. Utility
-derives generated source IDs, catalog IDs, magic, rarity, and curse metadata;
-only editable names, quantities, values, stackability, capacities, and packing
-assignments come from the draft.
+## Group Commit
 
-Generated and edited rewards materialize into one internal Treasure model and
-use one aggregate writer. `loot_item.catalog_entry_kind` distinguishes normal
-and magic catalog identities; generated item and container source IDs are
-unique within their Treasure. SQL constraints enforce the nullability, magic,
-rarity, curse, stackability, and quantity combinations. New persistence IDs
-are mapped from stable draft container IDs before item rows are inserted. The
-command fingerprint includes the complete Treasure draft.
+`loot.commitGroupReward` accepts either a generated Treasure identity and a
+complete draft, or both values as `null` for an empty result. For a non-empty
+result, every generated source item and source container must occur exactly
+once. Item references and container facts must match the immutable run; only
+quantity and item-to-container assignment may differ.
 
-The handler then saves or updates the Scene group, reconciles Combat,
-materializes the edited Treasure, advances the Loot projection, and records the
-receipt in one campaign transaction. A failed validation or write rolls back
-every participating owner.
+The handler validates source and revision guards, saves the Scene Group,
+reconciles Combat, writes the Treasure through the common aggregate writer,
+increments the Loot projection once, and records the receipt in one campaign
+transaction. A failed check or write rolls back all participating owners. The
+request fingerprint includes the complete nullable Treasure draft.
+
+## Schema 30 To 31 Migration
+
+The tested migration preserves run, Treasure, ledger, source-line, allocation,
+and correction identities. Existing generated rows become `generated`
+references backed by one run-owned definition. Catalog-bound rows become
+catalog references. Unmappable free rows become shared immutable `legacy`
+definitions. Copied fact columns are removed after conversion.
+
+Old Loot receipts are cleared because their serialized result envelopes contain
+the retired copied-field shape; domain aggregates and provenance remain. Audit
+and parameter tables are rebuilt with the `reward-v2` audit vocabulary. Sparse
+development Golden Masters are handled conditionally, while populated
+migration fixtures verify reference sharing and restart hydration.

@@ -15,6 +15,7 @@ const draft = (): EditableTreasureDraft => ({
   items: [
     {
       draftId: 'item-a',
+      itemReference: null,
       name: 'Münzen',
       quantity: 2,
       unitValueCp: 1,
@@ -45,6 +46,7 @@ describe('treasure draft reducer', () => {
   it('allows free rows only under the manual policy', () => {
     const item = {
       draftId: 'item-b',
+      itemReference: null,
       name: 'Seil',
       quantity: 1,
       unitValueCp: 20,

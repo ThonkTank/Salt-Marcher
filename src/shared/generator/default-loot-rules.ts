@@ -214,6 +214,10 @@ export const defaultGeneratorLootRules: GeneratorLootRules =
       minimumFillRatio: 0.25
     },
     magic: { curseChance: 0.2, overstockShare: 0.2 },
-    balance: { categoryStrength: 0.5, roleStrength: 1.5 },
+    balance: {
+      categoryStrength: 0.5,
+      roleStrength: 1.5,
+      minimumRoleWeight: 0.01
+    },
     audit: { normalBudgetTolerance: 0.15 }
   })

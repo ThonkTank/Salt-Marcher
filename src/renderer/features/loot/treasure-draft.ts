@@ -1,6 +1,9 @@
+import type { ItemReference } from '../../../shared/contracts/loot.js'
+
 export type EditableTreasureItem = {
   draftId: string
   persistedId?: string
+  itemReference: ItemReference | null
   name: string
   quantity: number
   unitValueCp: number
@@ -29,6 +32,7 @@ export type EditableTreasureDraft<
 export function emptyEditableTreasureItem(): EditableTreasureItem {
   return {
     draftId: crypto.randomUUID(),
+    itemReference: null,
     name: '',
     quantity: 1,
     unitValueCp: 0,
@@ -52,6 +56,7 @@ export function treasureDraftInvalid(draft: EditableTreasureDraft): boolean {
     draft.items.length === 0 ||
     draft.items.some(
       (item) =>
+        !item.itemReference ||
         !item.name.trim() ||
         item.quantity < 1 ||
         item.unitValueCp < 0 ||

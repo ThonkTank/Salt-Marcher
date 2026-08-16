@@ -5,7 +5,6 @@ import type {
   CreatureCatalogQuery,
   CreatureFilterOptions
 } from '../../../shared/contracts/encounter.js'
-import type { LootCatalogEntry } from '../../../shared/contracts/loot.js'
 import type {
   LootCatalogPage,
   LootCatalogQuery
@@ -132,7 +131,6 @@ export function GroupManagerCatalogPane(props: {
   inspectCreature: (creature: Creature) => void
   quantities: Readonly<Record<string, number>>
   footerStatus: string
-  addLoot: (entry: LootCatalogEntry) => void
   lootQuery: Omit<LootCatalogQuery, 'runId' | 'catalogContentHash'>
   lootPage: LootCatalogPage | null
   lootError: string
@@ -161,11 +159,12 @@ export function GroupManagerCatalogPane(props: {
   return (
     <Suspense fallback={null}>
       <LazyLootCatalogPane
+        readOnly
         query={props.lootQuery}
         page={props.lootPage}
         error={props.lootError}
         queryChanged={props.lootQueryChanged}
-        add={props.addLoot}
+        add={() => undefined}
       />
     </Suspense>
   )

@@ -1,5 +1,8 @@
-import type { LootRarity } from '../../shared/contracts/loot.js'
-import type { GeneratedTreasure } from '../../shared/contracts/session-generation.js'
+import type { ItemReference } from '../../shared/contracts/loot.js'
+import type {
+  GeneratedRun,
+  GeneratedTreasure
+} from '../../shared/contracts/session-generation.js'
 
 export type MaterializedTreasureContainer = Readonly<{
   draftId: string
@@ -12,15 +15,8 @@ export type MaterializedTreasureContainer = Readonly<{
 export type MaterializedTreasureItem = Readonly<{
   draftId: string
   sourceLineId: string | null
-  catalogEntryKind: 'item' | 'magic_item' | null
-  catalogItemId: string | null
-  name: string
+  itemReference: ItemReference
   quantity: number
-  unitValueCp: number
-  stackable: boolean
-  magic: boolean
-  rarity: LootRarity | null
-  curseName: string | null
   containerDraftId: string | null
 }>
 
@@ -31,9 +27,24 @@ export type MaterializedTreasure = Readonly<{
 }>
 
 export function materializeGeneratedTreasure(
+  run: GeneratedRun,
   generated: GeneratedTreasure,
   label: string
 ): MaterializedTreasure {
+  const definitionIds = new Set(
+    run.itemDefinitions.flatMap((definition) =>
+      definition.reference.kind === 'generated'
+        ? [definition.reference.definitionId]
+        : []
+    )
+  )
+  for (const item of generated.items)
+    if (
+      item.itemReference.kind !== 'generated' ||
+      item.itemReference.runId !== run.id ||
+      !definitionIds.has(item.itemReference.definitionId)
+    )
+      throw new Error('Generated treasure item has no run-owned definition')
   return {
     label: label.trim(),
     containers: generated.containers.map((container) => ({
@@ -46,19 +57,8 @@ export function materializeGeneratedTreasure(
     items: generated.items.map((item) => ({
       draftId: item.id,
       sourceLineId: item.id,
-      catalogEntryKind: item.catalogItemId
-        ? item.magic
-          ? 'magic_item'
-          : 'item'
-        : null,
-      catalogItemId: item.catalogItemId,
-      name: item.name,
+      itemReference: item.itemReference,
       quantity: item.quantity,
-      unitValueCp: item.unitValueCp,
-      stackable: item.stackable,
-      magic: item.magic,
-      rarity: item.rarity,
-      curseName: item.curseName,
       containerDraftId: item.containerId
     }))
   }

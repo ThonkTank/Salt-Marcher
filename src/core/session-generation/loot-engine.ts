@@ -36,6 +36,8 @@ import {
   planSessionTreasures
 } from './treasure-planning-stage.js'
 
+const standaloneRunId = '00000000-0000-4000-8000-000000000099'
+
 export type GeneratedRunDraft = Omit<
   SessionGeneratedRun,
   'id' | 'originFingerprint' | 'generatedAt'
@@ -62,7 +64,8 @@ export function generateSessionRunDraft(
     id: systemGeneratorPresetId,
     revision: 0,
     config: defaultGeneratorConfig
-  }
+  },
+  runId = standaloneRunId
 ): GeneratedRunDraftResult {
   const encounter = generateSessionEncounters(
     input,
@@ -115,6 +118,7 @@ export function generateSessionRunDraft(
         },
         rewardBasis: 'rewardBasis' in budget ? budget.rewardBasis : null,
         encounters: encounter.encounters,
+        itemDefinitions: [],
         treasures: [],
         rewardSummary: {
           normalValueCp: 0,
@@ -150,6 +154,7 @@ export function generateSessionRunDraft(
   )
   const selected = selectNonMagicItems(
     {
+      runId,
       seed: input.seed,
       treasures: rolePlans,
       catalog,
@@ -159,6 +164,7 @@ export function generateSessionRunDraft(
   )
   const withMagic = selectMagicItems(
     {
+      runId,
       seed: input.seed,
       treasures: selected,
       targets: budget.magicTargets,
@@ -176,11 +182,16 @@ export function generateSessionRunDraft(
     },
     entropy
   )
+  const itemDefinitions = withMagic.flatMap((treasure) =>
+    treasure.items.map((item) => item.definition)
+  )
   const aggregation = aggregateReward({
     treasures,
+    itemDefinitions,
     goldBudgetCp,
     magicTargets: budget.magicTargets,
     expectedTreasureCount: planning.treasures.length,
+    profile: 'session',
     rules: preset.config.loot
   })
   if (aggregation.audits.some((audit) => audit.hard && !audit.passed))
@@ -213,6 +224,7 @@ export function generateSessionRunDraft(
       },
       rewardBasis: 'rewardBasis' in budget ? budget.rewardBasis : null,
       encounters: encounter.encounters,
+      itemDefinitions,
       treasures: [...treasures],
       rewardSummary: {
         normalValueCp: aggregation.normalValueCp,
@@ -237,7 +249,8 @@ export function generateGroupRewardDraft(
     id: systemGeneratorPresetId,
     revision: 0,
     config: defaultGeneratorConfig
-  }
+  },
+  runId = standaloneRunId
 ): GroupRewardDraft {
   const selectedRewardXp =
     input.rewardXpBasis === 'base'
@@ -283,6 +296,7 @@ export function generateGroupRewardDraft(
       rewardBasis: 'rewardBasis' in budget ? budget.rewardBasis : null,
       goldBudgetCp: 0,
       magicTargets: budget.magicTargets,
+      itemDefinitions: [],
       treasures: [],
       rewardSummary: {
         normalValueCp: 0,
@@ -311,6 +325,7 @@ export function generateGroupRewardDraft(
   )
   const selected = selectNonMagicItems(
     {
+      runId,
       seed: input.seed,
       treasures: rolePlans,
       catalog,
@@ -320,6 +335,7 @@ export function generateGroupRewardDraft(
   )
   const withMagic = selectMagicItems(
     {
+      runId,
       seed: input.seed,
       treasures: selected,
       targets: budget.magicTargets,
@@ -337,11 +353,16 @@ export function generateGroupRewardDraft(
     },
     entropy
   )
+  const itemDefinitions = withMagic.flatMap((treasure) =>
+    treasure.items.map((item) => item.definition)
+  )
   const aggregation = aggregateReward({
     treasures: [treasures[0]!],
+    itemDefinitions,
     goldBudgetCp,
     magicTargets: budget.magicTargets,
     expectedTreasureCount: 1,
+    profile: 'group_reward',
     rules: preset.config.loot
   })
   if (aggregation.audits.some((audit) => audit.hard && !audit.passed))
@@ -361,6 +382,7 @@ export function generateGroupRewardDraft(
     rewardBasis: 'rewardBasis' in budget ? budget.rewardBasis : null,
     goldBudgetCp,
     magicTargets: budget.magicTargets,
+    itemDefinitions,
     treasures: [treasures[0]!],
     rewardSummary: {
       normalValueCp: aggregation.normalValueCp,

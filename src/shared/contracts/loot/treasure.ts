@@ -1,5 +1,9 @@
 import { z } from 'zod'
-import { lootRaritySchema } from './catalog.js'
+import {
+  itemDefinitionSchema,
+  itemReferenceKey,
+  itemReferenceSchema
+} from './item-definition.js'
 
 export const treasureAnchorSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('unplaced') }).strict(),
@@ -86,14 +90,10 @@ export const treasureItemSchema = z
   .object({
     id: z.uuid(),
     provenance: treasureItemProvenanceSchema,
-    name: z.string().min(1),
+    itemReference: itemReferenceSchema,
+    definition: itemDefinitionSchema,
     quantity: z.number().int().positive(),
     allocatedQuantity: z.number().int().nonnegative(),
-    unitValueCp: z.number().int().nonnegative(),
-    stackable: z.boolean(),
-    magic: z.boolean(),
-    rarity: lootRaritySchema.nullable(),
-    curseName: z.string().min(1).nullable(),
     containerId: z.uuid().nullable(),
     position: z.number().int().nonnegative()
   })
@@ -104,6 +104,21 @@ export const treasureItemSchema = z
         code: 'custom',
         path: ['allocatedQuantity'],
         message: 'Allocated quantity exceeds the item quantity.'
+      })
+    if (
+      itemReferenceKey(item.itemReference) !==
+      itemReferenceKey(item.definition.reference)
+    )
+      context.addIssue({
+        code: 'custom',
+        path: ['definition', 'reference'],
+        message: 'Resolved definition does not match the item reference.'
+      })
+    if (!item.definition.stackable && item.quantity !== 1)
+      context.addIssue({
+        code: 'custom',
+        path: ['quantity'],
+        message: 'Non-stackable items must have quantity one.'
       })
   })
 
@@ -178,21 +193,11 @@ export const lootChangeNoticeSchema = z
 export const treasureItemDraftSchema = z
   .object({
     id: z.uuid().optional(),
-    name: z.string().trim().min(1),
+    itemReference: itemReferenceSchema,
     quantity: z.number().int().positive(),
-    unitValueCp: z.number().int().nonnegative(),
-    stackable: z.boolean(),
     containerId: z.uuid().nullable().default(null)
   })
   .strict()
-  .superRefine((item, context) => {
-    if (!item.stackable && item.quantity !== 1)
-      context.addIssue({
-        code: 'custom',
-        path: ['quantity'],
-        message: 'Non-stackable items must have quantity one.'
-      })
-  })
 
 export const treasureContainerDraftSchema = z
   .object({

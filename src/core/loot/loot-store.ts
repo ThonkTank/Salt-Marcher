@@ -1,6 +1,7 @@
 import type Database from 'better-sqlite3'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import {
+  itemReferenceSchema,
   treasureSchema,
   type ParsedCreateTreasureInput,
   type MoveTreasureInput,
@@ -22,6 +23,7 @@ import {
 import type { MaterializedGroupRewardTreasureDraft } from './group-reward-treasure-draft.js'
 import { materializeGeneratedTreasure } from './materialized-treasure.js'
 import { TreasureAggregateWriter } from './treasure-aggregate-writer.js'
+import { ItemDefinitionResolver } from './item-definition-resolver.js'
 import {
   treasureContainerProvenance,
   treasureItemProvenance
@@ -46,9 +48,18 @@ type TreasureRow = Readonly<{
 
 export class TreasureStore {
   private readonly aggregateWriter: TreasureAggregateWriter
+  private readonly definitions: ItemDefinitionResolver
 
-  constructor(private readonly db: Database.Database) {
+  constructor(
+    private readonly db: Database.Database,
+    definitions?: ItemDefinitionResolver
+  ) {
     this.aggregateWriter = new TreasureAggregateWriter(db)
+    this.definitions =
+      definitions ??
+      new ItemDefinitionResolver(db, () => {
+        throw new Error('Catalog definition resolver is not configured')
+      })
   }
 
   read(id: string): Treasure | null {
@@ -102,7 +113,7 @@ export class TreasureStore {
     return this.acceptMaterializedGenerated(
       run,
       generated,
-      materializeGeneratedTreasure(generated, label),
+      materializeGeneratedTreasure(run, generated, label),
       anchor,
       now
     )
@@ -278,13 +289,8 @@ export class TreasureStore {
       this.db
         .prepare(
           `SELECT item.id, item.source_line_id AS sourceLineId,
-                  item.catalog_entry_kind AS catalogEntryKind,
-                  item.catalog_item_id AS catalogItemId, item.name,
-                  item.quantity,
+                  item.item_reference_json AS itemReferenceJson, item.quantity,
                   COALESCE(SUM(allocation.quantity), 0) AS allocatedQuantity,
-                  item.unit_value_cp AS unitValueCp,
-                  item.stackable, item.magic, item.rarity,
-                  item.curse_name AS curseName,
                   item.container_id AS containerId, item.position
            FROM loot_item item
            LEFT JOIN loot_allocation allocation ON allocation.item_id = item.id
@@ -295,39 +301,34 @@ export class TreasureStore {
         .all(row.id) as Array<{
         id: string
         sourceLineId: string | null
-        catalogEntryKind: 'item' | 'magic_item' | null
-        catalogItemId: string | null
-        name: string
+        itemReferenceJson: string
         quantity: number
         allocatedQuantity: number
-        unitValueCp: number
-        stackable: number
-        magic: number
-        rarity: string | null
-        curseName: string | null
         containerId: string | null
         position: number
       }>
     ).map((item) => {
-      const { sourceLineId, catalogEntryKind, catalogItemId, ...projection } =
-        item
+      const { sourceLineId, itemReferenceJson, ...projection } = item
+      const itemReference = itemReferenceSchema.parse(
+        JSON.parse(itemReferenceJson)
+      )
       return {
         ...projection,
-        stackable: Boolean(item.stackable),
-        magic: Boolean(item.magic),
+        itemReference,
+        definition: this.definitions.resolve(itemReference),
         provenance: treasureItemProvenance(
           sourceLineId,
-          catalogEntryKind,
-          catalogItemId
+          itemReference.kind === 'catalog' ? itemReference.entryKind : null,
+          itemReference.kind === 'catalog' ? itemReference.catalogId : null
         )
       }
     })
     const totalValueCp = items.reduce(
-      (sum, item) => sum + item.quantity * item.unitValueCp,
+      (sum, item) => sum + item.quantity * item.definition.unitValueCp,
       0
     )
     const allocatedValueCp = items.reduce(
-      (sum, item) => sum + item.allocatedQuantity * item.unitValueCp,
+      (sum, item) => sum + item.allocatedQuantity * item.definition.unitValueCp,
       0
     )
     return treasureSchema.parse({
@@ -405,18 +406,15 @@ export class TreasureStore {
     this.db
       .prepare(
         `INSERT INTO loot_item (
-           id, treasure_id, source_line_id, catalog_entry_kind,
-           catalog_item_id, name, quantity, unit_value_cp, stackable, magic,
-           rarity, curse_name, container_id, position
-         ) VALUES (?, ?, NULL, NULL, NULL, ?, ?, ?, ?, 0, NULL, NULL, ?, ?)`
+           id, treasure_id, source_line_id, item_reference_json, quantity,
+           container_id, position
+         ) VALUES (?, ?, NULL, ?, ?, ?, ?)`
       )
       .run(
         draft.id ?? uuidv7(),
         treasureId,
-        draft.name.trim(),
+        JSON.stringify(draft.itemReference),
         draft.quantity,
-        draft.unitValueCp,
-        Number(draft.stackable),
         draft.containerId,
         position
       )
@@ -474,8 +472,7 @@ export class TreasureStore {
     for (const itemId of diff.deleted) deleteItem.run(itemId, treasureId)
     const updateItem = this.db.prepare(
       `UPDATE loot_item
-          SET name = ?, quantity = ?, unit_value_cp = ?, stackable = ?,
-              container_id = ?, position = ?
+          SET item_reference_json = ?, quantity = ?, container_id = ?, position = ?
         WHERE id = ? AND treasure_id = ?`
     )
     const items = [
@@ -489,10 +486,8 @@ export class TreasureStore {
         this.insertManualItem(treasureId, draft, position)
       else
         updateItem.run(
-          draft.name.trim(),
+          JSON.stringify(draft.itemReference),
           draft.quantity,
-          draft.unitValueCp,
-          Number(draft.stackable),
           draft.containerId,
           position,
           draft.id,

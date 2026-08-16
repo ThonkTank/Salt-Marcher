@@ -10,6 +10,10 @@ import { type LootCatalogIndex } from '../loot/loot-catalog-index.js'
 
 export type LootCatalogPort = Readonly<{
   readRun(runId: string): GeneratedRun | null
+  currentReference?(): {
+    catalogVersion: string
+    catalogContentHash: string
+  }
   index(reference: {
     catalogVersion: string
     catalogContentHash: string
@@ -21,18 +25,29 @@ export class LootCatalogService {
 
   search(raw: LootCatalogQuery): LootCatalogPage {
     const query = lootCatalogQuerySchema.parse(raw)
-    const run = this.catalog.readRun(query.runId)
-    if (!run || run.runKind !== 'group_reward')
+    const run = query.runId ? this.catalog.readRun(query.runId) : null
+    if (query.runId && (!run || run.runKind !== 'group_reward'))
       throw new CapabilityError('not_found', false)
-    if (run.catalogContentHash !== query.catalogContentHash)
+    if (run && run.catalogContentHash !== query.catalogContentHash)
       throw new CapabilityError('stale', true)
-    const index = this.index(run.catalogVersion, run.catalogContentHash)
+    const reference = run ?? this.catalog.currentReference?.()
+    if (!reference) throw new CapabilityError('catalog_unavailable', false)
+    if (
+      !run &&
+      query.catalogContentHash &&
+      query.catalogContentHash !== reference.catalogContentHash
+    )
+      throw new CapabilityError('stale', true)
+    const index = this.index(
+      reference.catalogVersion,
+      reference.catalogContentHash
+    )
     const matching = index.search(query)
     return deepFreeze(
       lootCatalogPageSchema.parse({
-        runId: run.id,
-        catalogVersion: run.catalogVersion,
-        catalogContentHash: run.catalogContentHash,
+        runId: run?.id ?? null,
+        catalogVersion: reference.catalogVersion,
+        catalogContentHash: reference.catalogContentHash,
         entries: matching.slice(query.offset, query.offset + query.limit),
         total: matching.length,
         offset: query.offset,

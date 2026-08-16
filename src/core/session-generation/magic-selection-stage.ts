@@ -1,4 +1,8 @@
 import type { EncounterEntropy } from './deterministic-order.js'
+import type {
+  ItemDefinition,
+  ItemReference
+} from '../../shared/contracts/loot.js'
 import type { GeneratorLootRules } from '../../shared/contracts/generator-loot-rules.js'
 import { defaultGeneratorLootRules } from '../../shared/generator/default-loot-rules.js'
 import { magicSelectionStream } from './entropy-streams.js'
@@ -17,6 +21,7 @@ import {
 } from './reward-stage-types.js'
 
 export type MagicSelectionInput = Readonly<{
+  runId: string
   seed: number
   treasures: readonly SelectedTreasureDraft[]
   targets: Readonly<Record<LootRarity, number>>
@@ -38,7 +43,10 @@ export function selectMagicItems(
   const usedItems = new Set(
     input.treasures.flatMap((treasure) =>
       treasure.items.flatMap((item) =>
-        item.catalogItemId ? [item.catalogItemId] : []
+        [
+          item.definition.components.baseItemId,
+          item.definition.components.magicItemId
+        ].filter((id): id is string => id !== null)
       )
     )
   )
@@ -84,29 +92,50 @@ export function selectMagicItems(
         rules,
         entropy
       )
-      const selected: RewardItemDraft = {
-        id: `${treasure.id}:item:${items[treasureIndex]!.length + 1}`,
-        treasureId: treasure.id,
-        catalogItemId: magic.id,
-        role: 'magic',
-        name: resolveMagicItem(
-          magic,
-          treasure.theme,
-          input.seed,
-          ordinal,
-          input.catalog,
-          entropy
-        ),
-        modifier: null,
-        quantity: 1,
+      const resolution = resolveMagicItem(
+        magic,
+        treasure.theme,
+        input.seed,
+        ordinal,
+        input.catalog,
+        entropy
+      )
+      const itemId = `${treasure.id}:item:${items[treasureIndex]!.length + 1}`
+      const itemReference = generatedItemReference(input.runId, itemId)
+      const definition: ItemDefinition = {
+        reference: itemReference,
+        name: resolution.name,
         unitValueCp: 0,
-        totalValueCp: 0,
+        unitCapacity: resolution.unitCapacity,
         stackable: false,
         magic: true,
         rarity,
-        curseName: curse?.name ?? null,
-        curseEffect: curse?.effect ?? null,
-        capacity: 0
+        curse: curse
+          ? {
+              catalogId: curse.id,
+              name: curse.name,
+              effect: curse.effect
+            }
+          : null,
+        components: {
+          baseItemId: resolution.baseItemId,
+          modifierId: null,
+          componentId: null,
+          magicItemId: magic.id,
+          magicVariantId: resolution.magicVariantId,
+          spellId: resolution.spellId,
+          enspelledRuleId: resolution.enspelledRuleId,
+          curseId: curse?.id ?? null,
+          coinDenominations: []
+        }
+      }
+      const selected: RewardItemDraft = {
+        id: itemId,
+        treasureId: treasure.id,
+        itemReference,
+        definition,
+        role: 'magic',
+        quantity: 1
       }
       items[treasureIndex]!.push(selected)
       ordinal += 1
@@ -126,9 +155,24 @@ function resolveMagicItem(
   ordinal: number,
   catalog: FullSessionGenerationCatalog,
   entropy: EncounterEntropy
-): string {
+): Readonly<{
+  name: string
+  baseItemId: string | null
+  magicVariantId: string | null
+  spellId: string | null
+  enspelledRuleId: string | null
+  unitCapacity: number
+}> {
+  const plain = (name = item.item) => ({
+    name,
+    baseItemId: null,
+    magicVariantId: null,
+    spellId: null,
+    enspelledRuleId: null,
+    unitCapacity: 0
+  })
   if (item.decisionType === 'fixed_variant')
-    return item.info1 ? `${item.item} · ${item.info1}` : item.item
+    return plain(item.info1 ? `${item.item} · ${item.info1}` : item.item)
   if (item.decisionType === 'variant_group' && item.info1) {
     const variants = catalog.magicVariants.filter(
       (variant) => variant.active && variant.groupKey === item.info1
@@ -140,7 +184,10 @@ function resolveMagicItem(
           Math.max(1, variants.length)
         )
       ]
-    return variant ? `${item.item} · ${variant.option}` : item.item
+    return {
+      ...plain(variant ? `${item.item} · ${variant.option}` : item.item),
+      magicVariantId: variant?.id ?? null
+    }
   }
   if (item.decisionType === 'spell_level') {
     const minimum = Number(item.info1 ?? 0)
@@ -159,7 +206,10 @@ function resolveMagicItem(
           Math.max(1, pool.length)
         )
       ]
-    return spell ? `${item.item} · ${spell.name}` : item.item
+    return {
+      ...plain(spell ? `${item.item} · ${spell.name}` : item.item),
+      spellId: spell?.id ?? null
+    }
   }
   if (item.decisionType === 'enspelled_item') {
     const rules = catalog.enspelledRules.filter(
@@ -175,7 +225,7 @@ function resolveMagicItem(
           Math.max(1, rules.length)
         )
       ]
-    if (!rule) return item.item
+    if (!rule) return plain()
     const matcher = new RegExp(rule.baseItemRegex, 'i')
     const bases = catalog.items.filter(
       (candidate) =>
@@ -200,9 +250,16 @@ function resolveMagicItem(
           Math.max(1, spells.length)
         )
       ]
-    return `Enspelled ${base?.name ?? item.item}${spell ? ` · ${spell.name}` : ''}`
+    return {
+      name: `Enspelled ${base?.name ?? item.item}${spell ? ` · ${spell.name}` : ''}`,
+      baseItemId: base?.id ?? null,
+      magicVariantId: null,
+      spellId: spell?.id ?? null,
+      enspelledRuleId: rule.id,
+      unitCapacity: base?.capacity ?? 0
+    }
   }
-  return item.item
+  return plain()
 }
 
 function resolveCurse(
@@ -238,4 +295,15 @@ function resolveCurse(
     if (roll <= 0) return curse
   }
   return candidates.at(-1) ?? null
+}
+
+function generatedItemReference(
+  runId: string,
+  itemId: string
+): ItemReference & { kind: 'generated' } {
+  return {
+    kind: 'generated',
+    runId,
+    definitionId: itemId.replace(':item:', ':definition:')
+  }
 }

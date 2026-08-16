@@ -175,6 +175,9 @@ export function GroupLootInlinePanel(props: {
               beginEdit={props.beginEdit}
               endEdit={props.endEdit}
               itemDefinitionReadOnly={() => true}
+              itemRemovalReadOnly={() => true}
+              containerDefinitionReadOnly={() => true}
+              containerRemovalReadOnly={() => true}
               itemMetadata={(item) => {
                 if (!item.magic) return null
                 const detail = [

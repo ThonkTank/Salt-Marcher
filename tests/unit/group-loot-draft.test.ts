@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-  addLootCatalogEntry,
   beginGroupLootDraftTransaction,
   createGroupLootDraftHistory,
   endGroupLootDraftTransaction,
@@ -13,11 +12,10 @@ import {
   redoGroupLootDraft,
   undoGroupLootDraft
 } from '../../src/renderer/features/loot/group-loot-draft.js'
-import type {
-  LootCatalogEntry,
-  LootRarity
-} from '../../src/shared/contracts/loot.js'
+import type { LootRarity } from '../../src/shared/contracts/loot.js'
 import type { GroupRewardGeneratedRun } from '../../src/shared/contracts/session-generation.js'
+
+const runId = '01900000-0000-7000-8000-000000000001'
 
 describe('group Loot draft', () => {
   it('maps generated rows to stable draft origins and container assignments', () => {
@@ -34,67 +32,52 @@ describe('group Loot draft', () => {
       }
     })
     expect(committed.items[0]).toMatchObject({
-      origin: {
-        kind: 'generator',
-        sourceLineId: 'treasure:1:item:1'
-      }
+      sourceLineId: 'treasure:1:item:1',
+      itemReference: generatedReference('coins')
     })
   })
 
-  it('merges only unchanged stackable catalog rows and instances magic and containers', () => {
-    let draft = groupLootDraftFromRun(run())
-    draft = addLootCatalogEntry(draft, normalEntry)
-    draft = addLootCatalogEntry(draft, normalEntry)
-    const first = draft.items.find(
-      (item) =>
-        item.origin.kind === 'catalog' &&
-        item.origin.catalogId === normalEntry.id
-    )!
-    expect(first.quantity).toBe(2)
-    draft = patchGroupLootItem(draft, first.draftId, { name: 'Bearbeitet' })
-    draft = addLootCatalogEntry(draft, normalEntry)
-    expect(
-      draft.items.filter(
-        (item) =>
-          item.origin.kind === 'catalog' &&
-          item.origin.catalogId === normalEntry.id
-      )
-    ).toHaveLength(2)
-    draft = addLootCatalogEntry(draft, magicEntry)
-    draft = addLootCatalogEntry(draft, magicEntry)
-    expect(
-      draft.items.filter(
-        (item) =>
-          item.origin.kind === 'catalog' &&
-          item.origin.catalogId === magicEntry.id
-      )
-    ).toHaveLength(2)
-    draft = addLootCatalogEntry(draft, containerEntry)
-    draft = addLootCatalogEntry(draft, containerEntry)
-    expect(
-      draft.containers.filter(
-        (container) =>
-          container.origin.kind === 'catalog' &&
-          container.origin.catalogContainerId === containerEntry.id
-      )
-    ).toHaveLength(2)
+  it('keeps the generated item set and references while editing instance state', () => {
+    const initial = groupLootDraftFromRun(run())
+    const first = initial.items[0]!
+    const second = initial.items[1]!
+    let draft = patchGroupLootItem(initial, first.draftId, {
+      quantity: first.quantity + 2,
+      containerId: null
+    })
+    draft = patchGroupLootItem(draft, second.draftId, {
+      containerId: initial.containers[0]!.draftId
+    })
+
+    const committed = groupLootCommitDraft(draft)
+    expect(committed.items).toHaveLength(initial.items.length)
+    expect(committed.items.map((item) => item.itemReference)).toEqual(
+      initial.items.map((item) => item.itemReference)
+    )
+    expect(committed.items[0]).toMatchObject({
+      quantity: first.quantity + 2,
+      containerId: null
+    })
+    expect(committed.items[1]!.containerId).toBe(initial.containers[0]!.draftId)
   })
 
-  it('undoes compound container removal, caches dirty meaning, and evaluates budget', () => {
+  it('undoes container assignment, caches dirty meaning, and evaluates budget', () => {
     const initial = groupLootDraftFromRun(run())
-    const containerId = initial.containers[0]!.draftId
+    const itemId = initial.items[0]!.draftId
     let history = createGroupLootDraftHistory(initial)
     history = mutateGroupLootDraft(history, {
-      kind: 'remove-container',
-      id: containerId
+      kind: 'patch-item',
+      id: itemId,
+      patch: { containerId: null }
     })
     expect(history.draft.items[0]!.containerId).toBeNull()
     expect(groupLootDraftDirty(history)).toBe(true)
     history = undoGroupLootDraft(history)
-    expect(history.draft.containers).toHaveLength(1)
-    expect(history.draft.items[0]!.containerId).toBe(containerId)
+    expect(history.draft.items[0]!.containerId).toBe(
+      initial.containers[0]!.draftId
+    )
     history = redoGroupLootDraft(history)
-    expect(history.draft.containers).toHaveLength(0)
+    expect(history.draft.items[0]!.containerId).toBeNull()
 
     expect(groupLootBudget(run(), initial)).toMatchObject({
       targetValueCp: 100,
@@ -126,39 +109,6 @@ describe('group Loot draft', () => {
   })
 })
 
-const normalEntry: LootCatalogEntry = {
-  kind: 'item',
-  id: 'item:test:coins',
-  defaultName: 'Coins',
-  type: 'currency',
-  category: 'Coin',
-  unitValueCp: 1,
-  stackable: true,
-  magic: false,
-  rarity: null
-}
-
-const magicEntry: LootCatalogEntry = {
-  kind: 'magic_item',
-  id: 'magic:test:ring',
-  defaultName: 'Magic Ring',
-  type: 'Arcana',
-  category: null,
-  unitValueCp: 0,
-  stackable: false,
-  magic: true,
-  rarity: 'Common'
-}
-
-const containerEntry: LootCatalogEntry = {
-  kind: 'container',
-  id: 'container:test:chest',
-  defaultName: 'Chest',
-  type: 'container',
-  category: null,
-  capacity: 100
-}
-
 function run(): GroupRewardGeneratedRun {
   const rarities: Record<LootRarity, number> = {
     Common: 1,
@@ -171,6 +121,10 @@ function run(): GroupRewardGeneratedRun {
     id: '01900000-0000-7000-8000-000000000001',
     goldBudgetCp: 100,
     magicTargets: rarities,
+    itemDefinitions: [
+      definition(generatedReference('coins'), 'Coins', 1, true, false, null),
+      definition(generatedReference('ring'), 'Ring', 0, false, true, 'Common')
+    ],
     treasures: [
       {
         id: 'treasure:1',
@@ -188,30 +142,59 @@ function run(): GroupRewardGeneratedRun {
         items: [
           {
             id: 'treasure:1:item:1',
-            catalogItemId: 'item:coins',
-            name: 'Coins',
+            treasureId: 'treasure:1',
+            itemReference: generatedReference('coins'),
+            role: 'compact_value',
             quantity: 100,
-            unitValueCp: 1,
-            stackable: true,
-            magic: false,
-            rarity: null,
-            curseName: null,
-            containerId: 'treasure:1:container:1'
+            containerId: 'treasure:1:container:1',
+            position: 0
           },
           {
             id: 'treasure:1:item:2',
-            catalogItemId: 'magic:ring',
-            name: 'Ring',
+            treasureId: 'treasure:1',
+            itemReference: generatedReference('ring'),
+            role: 'magic',
             quantity: 1,
-            unitValueCp: 0,
-            stackable: false,
-            magic: true,
-            rarity: 'Common',
-            curseName: null,
-            containerId: null
+            containerId: null,
+            position: 1
           }
         ]
       }
     ]
-  } as GroupRewardGeneratedRun
+  } as unknown as GroupRewardGeneratedRun
+}
+
+function generatedReference(id: string) {
+  return { kind: 'generated' as const, runId, definitionId: `definition:${id}` }
+}
+
+function definition(
+  reference: ReturnType<typeof generatedReference>,
+  name: string,
+  unitValueCp: number,
+  stackable: boolean,
+  magic: boolean,
+  rarity: LootRarity | null
+) {
+  return {
+    reference,
+    name,
+    unitValueCp,
+    unitCapacity: 1,
+    stackable,
+    magic,
+    rarity,
+    curse: null,
+    components: {
+      baseItemId: null,
+      modifierId: null,
+      componentId: null,
+      magicItemId: null,
+      magicVariantId: null,
+      spellId: null,
+      enspelledRuleId: null,
+      curseId: null,
+      coinDenominations: []
+    }
+  }
 }

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { itemDefinitionSchema, itemReferenceSchema } from './item-definition.js'
 
 export const lootRaritySchema = z.enum([
   'Common',
@@ -12,8 +13,12 @@ const lootCatalogTextListSchema = z.array(z.string().min(1))
 
 export const lootCatalogQuerySchema = z
   .object({
-    runId: z.uuid(),
-    catalogContentHash: z.string().regex(/^[0-9a-f]{64}$/),
+    runId: z.uuid().nullable().default(null),
+    catalogContentHash: z
+      .string()
+      .regex(/^[0-9a-f]{64}$/)
+      .nullable()
+      .default(null),
     search: z.string().trim().max(100).default(''),
     types: lootCatalogTextListSchema.default([]),
     categories: lootCatalogTextListSchema.default([]),
@@ -34,7 +39,9 @@ export const lootCatalogEntrySchema = z.discriminatedUnion('kind', [
       unitValueCp: z.number().int().nonnegative(),
       stackable: z.boolean(),
       magic: z.literal(false),
-      rarity: z.null()
+      rarity: z.null(),
+      itemReference: itemReferenceSchema,
+      definition: itemDefinitionSchema
     })
     .strict(),
   z
@@ -47,7 +54,9 @@ export const lootCatalogEntrySchema = z.discriminatedUnion('kind', [
       unitValueCp: z.literal(0),
       stackable: z.literal(false),
       magic: z.literal(true),
-      rarity: lootRaritySchema
+      rarity: lootRaritySchema,
+      itemReference: itemReferenceSchema,
+      definition: itemDefinitionSchema
     })
     .strict(),
   z
@@ -64,7 +73,7 @@ export const lootCatalogEntrySchema = z.discriminatedUnion('kind', [
 
 export const lootCatalogPageSchema = z
   .object({
-    runId: z.uuid(),
+    runId: z.uuid().nullable(),
     catalogVersion: z.string().min(1),
     catalogContentHash: z.string().regex(/^[0-9a-f]{64}$/),
     entries: z.array(lootCatalogEntrySchema),

@@ -55,11 +55,13 @@ function packTreasure(
     }
   > = []
   const items = draft.items.map((item, index) => {
-    const source = item.catalogItemId
-      ? catalog.items.find((candidate) => candidate.id === item.catalogItemId)
+    const source = item.definition.components.baseItemId
+      ? catalog.items.find(
+          (candidate) => candidate.id === item.definition.components.baseItemId
+        )
       : null
     const syntheticAllowed =
-      item.catalogItemId === null && item.role === 'compact_value'
+      item.definition.components.coinDenominations.length > 0
         ? [
             ...new Set(
               Object.values(rules.coins.profiles).flatMap(
@@ -69,7 +71,7 @@ function packTreasure(
           ]
         : []
     const container = chooseContainer(
-      item.capacity,
+      item.definition.unitCapacity * item.quantity,
       item.quantity,
       source?.allowedContainerNames ?? syntheticAllowed,
       containers,
@@ -79,7 +81,15 @@ function packTreasure(
       rules,
       entropy
     )
-    return { ...item, containerId: container?.id ?? null, position: index }
+    return {
+      id: item.id,
+      treasureId: item.treasureId,
+      itemReference: item.itemReference,
+      role: item.role,
+      quantity: item.quantity,
+      containerId: container?.id ?? null,
+      position: index
+    }
   })
   const publicContainers = containers.map((container) => ({
     id: container.id,
@@ -88,7 +98,10 @@ function packTreasure(
     capacity: container.capacity,
     position: container.position
   }))
-  const actualValueCp = items.reduce((sum, item) => sum + item.totalValueCp, 0)
+  const actualValueCp = draft.items.reduce(
+    (sum, item) => sum + item.definition.unitValueCp * item.quantity,
+    0
+  )
   return {
     id: draft.id,
     stockClass: draft.stockClass,
@@ -129,8 +142,9 @@ function chooseContainer(
   }
   const allowed = catalog.filter(
     (container) =>
-      allowedNames.includes(container.name) ||
-      (quantity >= rules.packing.pileMinQty && container.name === 'Pile')
+      (allowedNames.includes(container.name) ||
+        (quantity >= rules.packing.pileMinQty && container.name === 'Pile')) &&
+      (!container.hidden || capacity <= container.capacity)
   )
   if (
     allowed.length === 0 &&
@@ -142,34 +156,37 @@ function chooseContainer(
     allowed.length > 0
       ? allowed
       : catalog.filter((entry) => entry.name === 'Pile')
-  const selected = pool
-    .map((container) => ({
-      container,
-      count: Math.max(1, Math.ceil(capacity / Math.max(1, container.capacity))),
-      fill:
-        capacity /
-        (Math.max(1, Math.ceil(capacity / Math.max(1, container.capacity))) *
-          Math.max(1, container.capacity)),
-      tie: entropy.unit(packingStream(seed, key, container.id))
-    }))
-    .toSorted(
-      (left, right) =>
-        Number(left.count > rules.packing.containerMaxCountFactor) -
-          Number(right.count > rules.packing.containerMaxCountFactor) ||
-        Number(left.fill < rules.packing.minimumFillRatio) -
-          Number(right.fill < rules.packing.minimumFillRatio) ||
-        left.count - right.count ||
-        left.container.priority - right.container.priority ||
-        left.tie - right.tie
-    )[0]
+  const candidates = pool.map((container) => ({
+    container,
+    count: Math.max(1, Math.ceil(capacity / Math.max(1, container.capacity))),
+    fill:
+      capacity /
+      (Math.max(1, Math.ceil(capacity / Math.max(1, container.capacity))) *
+        Math.max(1, container.capacity)),
+    tie: entropy.unit(packingStream(seed, key, container.id))
+  }))
+  const bestCount = Math.min(...candidates.map((candidate) => candidate.count))
+  const selected = candidates.toSorted(
+    (left, right) =>
+      Number(left.count > bestCount * rules.packing.containerMaxCountFactor) -
+        Number(
+          right.count > bestCount * rules.packing.containerMaxCountFactor
+        ) ||
+      Number(left.fill < rules.packing.minimumFillRatio) -
+        Number(right.fill < rules.packing.minimumFillRatio) ||
+      left.count - right.count ||
+      left.container.priority - right.container.priority ||
+      left.tie - right.tie
+  )[0]
   if (!selected) return null
+  if (selected.container.hidden) return null
   const container = {
     id: `${key}:container`,
     catalogContainerId: selected.container.id,
     name:
       selected.count > 1
-        ? `${String(selected.count)}× ${selected.container.name}`
-        : selected.container.name,
+        ? `${String(selected.count)} ${selected.container.outputPlural}`
+        : selected.container.outputSingular,
     capacity: selected.container.capacity * selected.count,
     position: existing.length,
     remaining: selected.container.capacity * selected.count - capacity,

@@ -2,6 +2,7 @@ import type Database from 'better-sqlite3'
 import type { SchemaMigration } from './schema-migrations.js'
 import { migratePartySchema28To29 } from '../../party/party-store.js'
 import { initializeWorldNpcSchema } from '../../worldplanner/npc-store.js'
+import { migrateLootSchema30To31 } from '../../loot/loot-schema-31-migration.js'
 
 export function initializeCampaignSchemaMetadata(
   database: Database.Database
@@ -110,6 +111,24 @@ export const campaignSchemaMigrations: readonly SchemaMigration[] =
           )
           .run(
             'campaign-29-to-30-ledger-reward-basis',
+            new Date().toISOString()
+          )
+      }
+    },
+    {
+      id: 'campaign-30-to-31-canonical-item-references',
+      role: 'campaign',
+      fromVersion: 30,
+      toVersion: 31,
+      migrate(database) {
+        initializeCampaignSchemaMetadata(database)
+        migrateLootSchema30To31(database)
+        database
+          .prepare(
+            'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run(
+            'campaign-30-to-31-canonical-item-references',
             new Date().toISOString()
           )
       }

@@ -27,7 +27,7 @@ export type GroupRewardCommandContext = Readonly<{
     snapshot(party: PartySnapshot['members']): SceneSnapshot
   }>
   rules: Readonly<{ read(): CampaignRules }>
-  characterLoot?: Readonly<{
+  characterLoot: Readonly<{
     rewardBalances(
       characterIds: readonly string[]
     ): readonly CharacterRewardBalance[]
@@ -85,23 +85,9 @@ export class GroupRewardCommandHandler {
         : evaluation.baseXp
     const projectedXp = Math.floor(rewardXp / assigned.length)
     const balances = new Map(
-      (
-        context.characterLoot?.rewardBalances(
-          assigned.map((member) => member.id)
-        ) ??
-        assigned.map((member) => ({
-          characterId: member.id,
-          ledgerRevision: 0,
-          currentNonMagicCp: 0,
-          currentMagic: {
-            Common: 0,
-            Uncommon: 0,
-            Rare: 0,
-            'Very Rare': 0,
-            Legendary: 0
-          }
-        }))
-      ).map((balance) => [balance.characterId, balance])
+      context.characterLoot
+        .rewardBalances(assigned.map((member) => member.id))
+        .map((balance) => [balance.characterId, balance])
     )
     const run = context.generation.generateGroupReward({
       party: [...counts.entries()]

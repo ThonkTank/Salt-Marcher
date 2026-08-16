@@ -5,6 +5,7 @@ import type {
   TreasureItemDraft,
   ParsedUpdateTreasureInput
 } from '../../shared/contracts/loot.js'
+import { itemReferenceKey } from '../../shared/contracts/loot.js'
 
 export type PositionedItemDraft = Readonly<{
   draft: TreasureItemDraft
@@ -74,10 +75,9 @@ export function buildTreasureAggregateDiff(
     if (!existing) invalid()
     if (draft.quantity < existing.allocatedQuantity) invalid()
     const same =
-      draft.name.trim() === existing.name &&
+      itemReferenceKey(draft.itemReference) ===
+        itemReferenceKey(existing.itemReference) &&
       draft.quantity === existing.quantity &&
-      draft.unitValueCp === existing.unitValueCp &&
-      draft.stackable === existing.stackable &&
       draft.containerId === existing.containerId &&
       position === existing.position
     ;(same ? retained : updated).push({ draft, position })

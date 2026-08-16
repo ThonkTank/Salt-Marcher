@@ -1,8 +1,13 @@
 import { z } from 'zod'
 import { rewardXpBasisSchema } from './campaign-rules.js'
+import {
+  itemDefinitionSchema,
+  itemReferenceKey,
+  itemReferenceSchema
+} from './loot/item-definition.js'
 
 export const SESSION_ENCOUNTER_ENGINE_VERSION = 'encounter-v5' as const
-export const REWARD_ENGINE_VERSION = 'reward-v1' as const
+export const REWARD_ENGINE_VERSION = 'reward-v2' as const
 /** @deprecated Use the component engine versions on persisted runs. */
 export const SESSION_GENERATION_ENGINE_VERSION =
   SESSION_ENCOUNTER_ENGINE_VERSION
@@ -139,7 +144,13 @@ export const encounterAuditSchema = z
       'treasure_assignment_complete',
       'normal_loot_budget_tolerance',
       'magic_item_count',
-      'packing_validity'
+      'packing_validity',
+      'item_definition_complete',
+      'item_value_consistency',
+      'container_capacity',
+      'coin_denomination_integrity',
+      'role_magic_consistency',
+      'stock_class_policy'
     ]),
     passed: z.boolean(),
     hard: z.boolean(),
@@ -277,22 +288,10 @@ export const generatedLootItemSchema = z
   .object({
     id: z.string().min(1),
     treasureId: z.string().min(1),
-    catalogItemId: z.string().min(1).nullable(),
+    itemReference: itemReferenceSchema,
     role: generatedLootRoleSchema,
-    name: z.string().min(1),
-    modifier: z.string().min(1).nullable(),
     quantity: z.number().int().positive(),
-    unitValueCp: z.number().int().nonnegative(),
-    totalValueCp: z.number().int().nonnegative(),
-    stackable: z.boolean(),
-    magic: z.boolean(),
-    rarity: z
-      .enum(['Common', 'Uncommon', 'Rare', 'Very Rare', 'Legendary'])
-      .nullable(),
-    curseName: z.string().min(1).nullable(),
-    curseEffect: z.string().min(1).nullable(),
     containerId: z.string().min(1).nullable(),
-    capacity: z.number().nonnegative(),
     position: z.number().int().nonnegative()
   })
   .strict()
@@ -312,7 +311,7 @@ export const generatedTreasureSchema = z
   })
   .strict()
 
-export const sessionGeneratedRunSchema = z
+const sessionGeneratedRunObjectSchema = z
   .object({
     runKind: z.literal('session').default('session'),
     id: z.uuid(),
@@ -340,6 +339,7 @@ export const sessionGeneratedRunSchema = z
     }),
     rewardBasis: generatedRewardBasisSchema.nullable().default(null),
     encounters: z.array(encounterIntentSchema).min(1),
+    itemDefinitions: z.array(itemDefinitionSchema),
     treasures: z.array(generatedTreasureSchema),
     rewardSummary: z
       .object({
@@ -352,6 +352,9 @@ export const sessionGeneratedRunSchema = z
     audits: z.array(encounterAuditSchema)
   })
   .strict()
+
+export const sessionGeneratedRunSchema =
+  sessionGeneratedRunObjectSchema.superRefine(validateGeneratedItemDefinitions)
 
 export const groupRewardGenerationInputSchema = z
   .object({
@@ -389,7 +392,7 @@ export const groupRewardGenerationInputSchema = z
     )
   })
 
-export const groupRewardGeneratedRunSchema = z
+const groupRewardGeneratedRunObjectSchema = z
   .object({
     runKind: z.literal('group_reward'),
     id: z.uuid(),
@@ -409,6 +412,7 @@ export const groupRewardGeneratedRunSchema = z
     rewardBasis: generatedRewardBasisSchema.nullable().default(null),
     goldBudgetCp: z.number().int().nonnegative(),
     magicTargets: generatedMagicCountsSchema,
+    itemDefinitions: z.array(itemDefinitionSchema),
     treasures: z.array(generatedTreasureSchema).max(1),
     rewardSummary: z
       .object({
@@ -420,6 +424,11 @@ export const groupRewardGeneratedRunSchema = z
     audits: z.array(encounterAuditSchema)
   })
   .strict()
+
+export const groupRewardGeneratedRunSchema =
+  groupRewardGeneratedRunObjectSchema.superRefine(
+    validateGeneratedItemDefinitions
+  )
 
 export const generatedRunSchema = z.discriminatedUnion('runKind', [
   sessionGeneratedRunSchema,
@@ -436,6 +445,61 @@ export const sessionGenerationRunResultSchema = z.discriminatedUnion('status', [
 ])
 
 export const generatedRunIdInputSchema = z.object({ runId: z.uuid() }).strict()
+
+function validateGeneratedItemDefinitions(
+  run: Readonly<{
+    id: string
+    itemDefinitions: readonly z.infer<typeof itemDefinitionSchema>[]
+    treasures: readonly z.infer<typeof generatedTreasureSchema>[]
+  }>,
+  context: z.RefinementCtx
+): void {
+  const definitions = new Map<string, number>()
+  run.itemDefinitions.forEach((definition, index) => {
+    const reference = definition.reference
+    if (reference.kind !== 'generated' || reference.runId !== run.id)
+      context.addIssue({
+        code: 'custom',
+        path: ['itemDefinitions', index, 'reference'],
+        message: 'Run definitions must be owned by this generated run.'
+      })
+    const key = itemReferenceKey(reference)
+    if (definitions.has(key))
+      context.addIssue({
+        code: 'custom',
+        path: ['itemDefinitions', index, 'reference'],
+        message: 'Generated item definition references must be unique.'
+      })
+    definitions.set(key, index)
+  })
+  const used = new Set<string>()
+  run.treasures.forEach((treasure, treasureIndex) =>
+    treasure.items.forEach((item, itemIndex) => {
+      const key = itemReferenceKey(item.itemReference)
+      if (!definitions.has(key))
+        context.addIssue({
+          code: 'custom',
+          path: [
+            'treasures',
+            treasureIndex,
+            'items',
+            itemIndex,
+            'itemReference'
+          ],
+          message: 'Generated item line must reference one run definition.'
+        })
+      used.add(key)
+    })
+  )
+  run.itemDefinitions.forEach((definition, index) => {
+    if (!used.has(itemReferenceKey(definition.reference)))
+      context.addIssue({
+        code: 'custom',
+        path: ['itemDefinitions', index],
+        message: 'Generated item definitions must be referenced by a line.'
+      })
+  })
+}
 
 export type SessionGenerationEncounterInput = Readonly<
   z.infer<typeof sessionGenerationEncounterInputSchema>
@@ -460,6 +524,9 @@ export type SessionGenerationIssue = Readonly<
 >
 export type GeneratedLootItem = Readonly<
   z.infer<typeof generatedLootItemSchema>
+>
+export type GeneratedItemDefinition = Readonly<
+  z.infer<typeof itemDefinitionSchema>
 >
 export type GeneratedTreasure = Readonly<
   z.infer<typeof generatedTreasureSchema>
