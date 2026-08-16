@@ -64,5 +64,19 @@ export const catalogMessagesDe = {
   'table.readyCreate': 'Bereit zum Anlegen.',
   'table.readySave': 'Bereit zum Speichern.',
   'table.createTitle': 'Encounter-Tabelle erstellen',
-  'table.editTitle': 'Encounter-Tabelle bearbeiten'
+  'table.editTitle': 'Encounter-Tabelle bearbeiten',
+  'npc.search': 'NPCs suchen',
+  'npc.searchPlaceholder': 'NPCs suchen …',
+  'npc.statblock': 'Statblock',
+  'npc.statblockId': 'Statblock-ID',
+  'npc.faction': 'Fraktion',
+  'npc.location': 'Ort',
+  'npc.active': 'Aktiv',
+  'npc.defeated': 'Besiegt',
+  'npc.edit': 'NPC bearbeiten',
+  'npc.create': 'NPC erstellen',
+  'npc.dispositionModifier': 'Gesinnungsmodifikator',
+  'npc.appearance': 'Aussehen',
+  'npc.behavior': 'Verhalten',
+  'npc.history': 'Geschichte'
 } as const

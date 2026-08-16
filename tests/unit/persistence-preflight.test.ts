@@ -152,8 +152,8 @@ describe('persistence preflight', () => {
     const restarted = preflightPersistence(root)
     expect(restarted.kind).toBe('ready')
     expect(restarted.databases).toMatchObject([
-      { path: campaign, role: 'campaign', schemaVersion: 28 },
-      { path: installation, role: 'installation', schemaVersion: 28 }
+      { path: campaign, role: 'campaign', schemaVersion: 29 },
+      { path: installation, role: 'installation', schemaVersion: 29 }
     ])
     const installationDatabase = new Database(installation)
     expect(
@@ -167,7 +167,7 @@ describe('persistence preflight', () => {
         .prepare('SELECT COUNT(*) FROM installation_schema_migration')
         .pluck()
         .get()
-    ).toBe(1)
+    ).toBe(2)
     applySchemaMigrations(installationDatabase, {
       path: installation,
       role: 'installation'
@@ -177,7 +177,7 @@ describe('persistence preflight', () => {
         .prepare('SELECT COUNT(*) FROM installation_schema_migration')
         .pluck()
         .get()
-    ).toBe(1)
+    ).toBe(2)
     installationDatabase.close()
   })
 })

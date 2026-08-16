@@ -11,6 +11,7 @@ export type WorldLocationDeletionContext = Readonly<{
   locations: Readonly<{
     delete(id: string, expectedRevision: number): WorldLocationDeleteReceipt
   }>
+  npcs: Readonly<{ unlinkLocation(id: string): readonly string[] }>
 }>
 
 export class WorldLocationDeletionCommandHandler {
@@ -19,13 +20,15 @@ export class WorldLocationDeletionCommandHandler {
   ) {}
 
   execute(input: { id: string; expectedRevision: number }) {
-    const { unitOfWork, maps, journal, locations } = this.createContext()
+    const { unitOfWork, maps, journal, locations, npcs } = this.createContext()
     return unitOfWork.run(() => {
       const change = maps.unlinkDeletedLocation(input.id)
       journal.removeLocationReferences(input.id)
+      const unlinkedNpcIds = npcs.unlinkLocation(input.id)
       const receipt = locations.delete(input.id, input.expectedRevision)
       return {
         receipt,
+        unlinkedNpcIds,
         notice: change
           ? {
               campaignCommandId: randomUUID(),

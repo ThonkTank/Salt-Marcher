@@ -10,6 +10,11 @@ export function partyCapabilities(api: SaltMarcherApi) {
         api.party.create({
           character: {
             ...character,
+            species: character.species ?? null,
+            characterClass: character.characterClass ?? null,
+            languages: character.languages ?? [],
+            passiveInvestigation: character.passiveInvestigation ?? null,
+            passiveInsight: character.passiveInsight ?? null,
             movementSpeedFeet: character.movementSpeedFeet ?? null
           },
           expectedRevision
@@ -23,6 +28,11 @@ export function partyCapabilities(api: SaltMarcherApi) {
           id,
           character: {
             ...character,
+            species: character.species ?? null,
+            characterClass: character.characterClass ?? null,
+            languages: character.languages ?? [],
+            passiveInvestigation: character.passiveInvestigation ?? null,
+            passiveInsight: character.passiveInsight ?? null,
             movementSpeedFeet: character.movementSpeedFeet ?? null
           },
           expectedRevision

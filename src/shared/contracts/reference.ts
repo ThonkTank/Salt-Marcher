@@ -43,7 +43,7 @@ export const referenceTargetSchema = z.discriminatedUnion('scope', [
     .object({
       scope: z.literal('campaign'),
       campaignId: z.string().min(1).max(100),
-      entityKind: z.enum(['location', 'faction']),
+      entityKind: z.enum(['location', 'faction', 'npc']),
       entityId: z.string().min(1).max(100)
     })
     .strict()

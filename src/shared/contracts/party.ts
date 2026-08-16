@@ -5,8 +5,13 @@ export const partyCharacterSchema = z
     id: z.uuid(),
     name: z.string().min(1).max(100),
     playerName: z.string().max(100).nullable(),
+    species: z.string().max(100).nullable(),
+    characterClass: z.string().max(100).nullable(),
+    languages: z.array(z.string().min(1).max(100)).max(100),
     level: z.number().int().min(1).max(20).nullable(),
     passivePerception: z.number().int().min(0).max(99).nullable(),
+    passiveInvestigation: z.number().int().min(0).max(99).nullable(),
+    passiveInsight: z.number().int().min(0).max(99).nullable(),
     armorClass: z.number().int().min(0).max(99).nullable(),
     movementSpeedFeet: z.number().int().min(0).max(999).nullable(),
     travelPosition: z
@@ -50,8 +55,28 @@ export const partyCharacterDraftSchema = z
   .object({
     name: z.string().trim().min(1).max(100),
     playerName: z.string().trim().max(100).nullable(),
+    species: z.string().trim().max(100).nullable().default(null),
+    characterClass: z.string().trim().max(100).nullable().default(null),
+    languages: z
+      .array(z.string().trim().min(1).max(100))
+      .max(100)
+      .refine(
+        (values) =>
+          new Set(values.map((value) => value.toLocaleLowerCase())).size ===
+          values.length,
+        { message: 'Languages must be unique' }
+      )
+      .default([]),
     level: z.number().int().min(1).max(20).nullable(),
     passivePerception: z.number().int().min(0).max(99).nullable(),
+    passiveInvestigation: z
+      .number()
+      .int()
+      .min(0)
+      .max(99)
+      .nullable()
+      .default(null),
+    passiveInsight: z.number().int().min(0).max(99).nullable().default(null),
     armorClass: z.number().int().min(0).max(99).nullable(),
     movementSpeedFeet: z.number().int().min(0).max(999).nullable().default(null)
   })

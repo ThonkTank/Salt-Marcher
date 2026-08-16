@@ -39,6 +39,7 @@ import { defaultGeneratorConfig } from '../shared/generator/system-generator-pre
 import { WorldLocationDeletionCommandHandler } from '../core/application/world-location-deletion.js'
 import { WorldLocationSaveCommandHandler } from '../core/application/world-location-save.js'
 import { WorldLocationSaveJournal } from '../core/worldplanner/world-location-save-journal.js'
+import { WorldNpcStore } from '../core/worldplanner/npc-store.js'
 import { WorldLocationPlacementService } from '../core/application/world-location-placement.js'
 import {
   BiomeCatalogService,
@@ -204,7 +205,8 @@ const worldLocationDeletion = new WorldLocationDeletionCommandHandler(() => {
     unitOfWork: new CampaignUnitOfWork(db),
     maps: new HexMapStore(db, locationsForMap),
     journal: new HexEditJournalStore(db),
-    locations: locationsForMap
+    locations: locationsForMap,
+    npcs: new WorldNpcStore(db)
   }
 })
 const worldLocationPlacement = new WorldLocationPlacementService(() => {
@@ -258,6 +260,7 @@ const references = new ReferenceService(
   { all: () => creatureCatalogRows, detail: (id) => creatures.detail(id) },
   locations,
   { read: () => sources.readFactions() },
+  { read: () => sources.readNpcs() },
   () => campaigns.activeCampaignId()
 )
 let travelTimer: NodeJS.Timeout | undefined
@@ -578,6 +581,20 @@ function publishEncounterTableChange(
   })
 }
 
+function publishNpcChange(
+  changedNpcIds: readonly string[],
+  reason: 'created' | 'updated' | 'deleted' | 'reference-unlinked'
+): void {
+  postCoreEvent({
+    kind: 'npcs.changed',
+    notice: {
+      revision: sources.readNpcs().revision,
+      changedNpcIds,
+      reason
+    }
+  })
+}
+
 bootstrapPhase('recovery', () => {
   symbolLifecycle.recoverPendingImports()
   symbolLifecycle.recoverPendingDeletions()
@@ -650,7 +667,8 @@ const worldPlannerHandlers = createWorldPlannerHandlers({
   publishEncounterTableChange,
   publishBiomeChange,
   publishHexChange,
-  publishHexNotice
+  publishHexNotice,
+  publishNpcChange
 })
 
 const sessionHandlers = createSessionHandlers(play)

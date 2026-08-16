@@ -9,6 +9,7 @@ import { coreProcessStatusSchema } from './runtime.js'
 import { sessionChangeNoticeSchema } from './session-change.js'
 import { sessionPreparationChangeNoticeSchema } from './session-planner.js'
 import { worldLocationChangeNoticeSchema } from './world-location.js'
+import { worldNpcChangeNoticeSchema } from './world-npc.js'
 import type { WindowRole } from './operations.js'
 
 export type EventDefinition<Payload extends z.ZodType = z.ZodType> = Readonly<{
@@ -28,6 +29,11 @@ const definitions = {
   'locations.onChanged': {
     channel: 'locations:changed',
     payload: worldLocationChangeNoticeSchema,
+    roles: ['gm']
+  },
+  'npcs.onChanged': {
+    channel: 'npcs:changed',
+    payload: worldNpcChangeNoticeSchema,
     roles: ['gm']
   },
   'locationSymbols.onChanged': {

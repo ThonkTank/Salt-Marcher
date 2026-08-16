@@ -20,6 +20,7 @@ import { initializeCombatSchema } from '../../encounter/live-combat.js'
 import { initializeWorldLocationSchema } from '../../worldplanner/location-store.js'
 import { initializeEncounterTableSchema } from '../../encounter/encounter-table-store.js'
 import { initializeWorldFactionSchema } from '../../worldplanner/faction-store.js'
+import { initializeWorldNpcSchema } from '../../worldplanner/npc-store.js'
 import { initializeHexSchema } from '../../hex/hex-map-store.js'
 import {
   assertSchemaVersion,
@@ -352,6 +353,7 @@ export class CampaignStore {
     initializeWorldLocationSchema(campaign)
     initializeEncounterTableSchema(campaign)
     initializeWorldFactionSchema(campaign)
+    initializeWorldNpcSchema(campaign)
     initializeHexSchema(campaign)
     initializeWorldLocationSaveJournalSchema(campaign)
     initializeCampaignRulesSchema(campaign)

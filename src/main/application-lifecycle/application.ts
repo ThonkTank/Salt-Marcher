@@ -167,6 +167,14 @@ function connectCoreNotifications(supervisor: CoreProcessSupervisor): void {
           capabilityEvents['locations.onChanged'].payload.parse(notice)
         )
   })
+  supervisor.onNpcsChanged((notice) => {
+    for (const window of BrowserWindow.getAllWindows())
+      if (!isReadOnlyWindow(window.webContents))
+        window.webContents.send(
+          capabilityEvents['npcs.onChanged'].channel,
+          capabilityEvents['npcs.onChanged'].payload.parse(notice)
+        )
+  })
   supervisor.onLocationSymbolsChanged((notice) => {
     for (const window of BrowserWindow.getAllWindows())
       if (!isReadOnlyWindow(window.webContents))

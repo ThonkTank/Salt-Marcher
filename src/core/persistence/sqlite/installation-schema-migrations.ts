@@ -27,5 +27,19 @@ export const installationSchemaMigrations: readonly SchemaMigration[] =
           )
           .run('installation-27-to-28-migration-history', 'schema-28-bootstrap')
       }
+    },
+    {
+      id: 'installation-28-to-29-campaign-catalogs',
+      role: 'installation',
+      fromVersion: 28,
+      toVersion: 29,
+      migrate(database) {
+        initializeInstallationSchemaMetadata(database)
+        database
+          .prepare(
+            'INSERT OR IGNORE INTO installation_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run('installation-28-to-29-campaign-catalogs', 'schema-29-bootstrap')
+      }
     }
   ])

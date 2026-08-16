@@ -22,6 +22,7 @@ export const referenceMessagesDe = {
   'reference.kind.creature': 'Creature',
   'reference.kind.location': 'Location',
   'reference.kind.faction': 'Faction',
+  'reference.kind.npc': 'NPC',
   'reference.damageVulnerabilities': 'Damage Vulnerabilities',
   'reference.damageResistances': 'Damage Resistances',
   'reference.damageImmunities': 'Damage Immunities',

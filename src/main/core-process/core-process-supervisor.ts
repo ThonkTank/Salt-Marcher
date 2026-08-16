@@ -28,6 +28,7 @@ import type { BiomeChangeNotice } from '../../shared/contracts/biome.js'
 import type { EncounterTableChangeNotice } from '../../shared/contracts/encounter-source.js'
 import type { LootChangeNotice } from '../../shared/contracts/loot.js'
 import type { SessionPreparationChangeNotice } from '../../shared/contracts/session-planner.js'
+import type { WorldNpcChangeNotice } from '../../shared/contracts/world-npc.js'
 import { coreRestartDelay } from './supervision-policy.js'
 import { CoreEventRouter } from './core-event-router.js'
 import { CoreRequestTracker } from './core-request-tracker.js'
@@ -107,6 +108,10 @@ export class CoreProcessSupervisor {
     listener: (notice: WorldLocationChangeNotice) => void
   ): () => void {
     return this.#events.on('locations.changed', listener)
+  }
+
+  onNpcsChanged(listener: (notice: WorldNpcChangeNotice) => void): () => void {
+    return this.#events.on('npcs.changed', listener)
   }
 
   onLocationSymbolsChanged(

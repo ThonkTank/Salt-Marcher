@@ -157,6 +157,40 @@
   color: var(--text-muted);
 }
 
+.npc-dialog {
+  width: min(58rem, calc(100vw - 3rem));
+  max-height: calc(100vh - 3rem);
+  overflow: auto;
+  background: var(--surface-pane);
+  border: 1px solid var(--border-structural);
+  padding: var(--space-7);
+}
+
+.npc-dialog form,
+.npc-dialog label {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.npc-dialog header,
+.npc-dialog footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+}
+
+.npc-dialog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5);
+  margin-block: var(--space-6);
+}
+
+.npc-dialog-wide {
+  grid-column: 1 / -1;
+}
+
 .encounter-roster {
   display: grid;
   gap: 0.4rem;

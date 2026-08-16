@@ -15,6 +15,7 @@ import type {
 } from '../../shared/contracts/creature.js'
 import type { WorldLocationSnapshot } from '../../shared/contracts/world-location.js'
 import type { WorldFactionSnapshot } from '../../shared/contracts/encounter-source.js'
+import type { WorldNpcSnapshot } from '../../shared/contracts/world-npc.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import { referenceTargetKey } from '../../shared/reference/reference-target-key.js'
 import { creatureCatalogManifest } from '../creatures/catalog.js'
@@ -37,12 +38,17 @@ export interface ReferenceFactionQueries {
   read(): WorldFactionSnapshot
 }
 
+export interface ReferenceNpcQueries {
+  read(): WorldNpcSnapshot
+}
+
 export class ReferenceService {
   constructor(
     private readonly catalog: StaticReferenceCatalog,
     private readonly creatureQueries: ReferenceCreatureQueries,
     private readonly locationQueries: ReferenceLocationQueries,
     private readonly factionQueries: ReferenceFactionQueries,
+    private readonly npcQueries: ReferenceNpcQueries,
     private readonly activeCampaignId: () => string
   ) {}
 
@@ -75,6 +81,7 @@ export class ReferenceService {
     this.assertCampaign(campaignId)
     const locations = this.locationQueries.read()
     const factions = this.factionQueries.read()
+    const npcs = this.npcQueries.read()
     const terms = new Map<string, MutableTerm>()
     for (const location of locations.locations)
       addCandidate(terms, location.displayName, 'exact', {
@@ -96,9 +103,19 @@ export class ReferenceService {
         },
         title: faction.displayName
       })
+    for (const npc of npcs.npcs)
+      addCandidate(terms, npc.displayName, 'exact', {
+        target: {
+          scope: 'campaign',
+          campaignId,
+          entityKind: 'npc',
+          entityId: npc.id
+        },
+        title: npc.displayName
+      })
     return referenceIndexSchema.parse({
       scope: 'campaign',
-      revision: `${campaignId}:${locations.revision}:${factions.revision}`,
+      revision: `${campaignId}:${locations.revision}:${factions.revision}:${npcs.revision}`,
       terms: sortedTerms(terms)
     })
   }
@@ -114,9 +131,11 @@ export class ReferenceService {
         target
       )
     this.assertCampaign(target.campaignId)
-    return target.entityKind === 'location'
-      ? locationDocument(this.locationQueries.read(), target)
-      : factionDocument(this.factionQueries.read(), target)
+    if (target.entityKind === 'location')
+      return locationDocument(this.locationQueries.read(), target)
+    if (target.entityKind === 'faction')
+      return factionDocument(this.factionQueries.read(), target)
+    return npcDocument(this.npcQueries.read(), target)
   }
 
   private assertCampaign(campaignId: string): void {
@@ -251,6 +270,33 @@ function factionDocument(
       ['Finite Stock', String(faction.inventory.length)]
     ],
     faction.notes,
+    null
+  )
+}
+
+function npcDocument(
+  snapshot: WorldNpcSnapshot,
+  target: Extract<ReferenceTarget, { scope: 'campaign' }>
+): ReferenceDocument {
+  const npc = snapshot.npcs.find((entry) => entry.id === target.entityId)
+  if (!npc) throw new CapabilityError('not_found', false)
+  const body = [
+    npc.appearance && `Appearance: ${npc.appearance}`,
+    npc.behavior && `Behavior: ${npc.behavior}`,
+    npc.history && `History: ${npc.history}`,
+    npc.notes
+  ]
+    .filter(Boolean)
+    .join('\n\n')
+  return article(
+    target,
+    npc.displayName,
+    [
+      ['Lifecycle', npc.lifecycle],
+      ['Statblock', npc.creatureId],
+      ['Disposition Modifier', String(npc.dispositionModifier)]
+    ],
+    body,
     null
   )
 }

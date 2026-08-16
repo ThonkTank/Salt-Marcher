@@ -35,14 +35,51 @@ export function initializePartySchema(db: Database.Database): void {
     ).run()
     const insert = db.prepare(`
       INSERT INTO player_characters (
-        id, name, player_name, level, passive_perception, armor_class,
+        id, name, player_name, species, character_class, level,
+        passive_perception, passive_investigation, passive_insight, armor_class,
         active, xp, xp_since_short_rest, xp_since_long_rest, position
-      ) VALUES (?, ?, NULL, 3, NULL, NULL, 0, 900, 0, 0, ?)
+      ) VALUES (?, ?, NULL, NULL, NULL, 3, NULL, NULL, NULL, NULL, 0, 900, 0, 0, ?)
     `)
     seededCharacters.forEach((name, position) =>
       insert.run(uuidv7(), name, position)
     )
   })()
+}
+
+export function migratePartySchema28To29(db: Database.Database): void {
+  const hasParty =
+    db
+      .prepare(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'player_characters'"
+      )
+      .get() !== undefined
+  if (!hasParty) return
+  const columns = new Set(
+    (db.pragma('table_info(player_characters)') as Array<{ name: string }>).map(
+      (column) => column.name
+    )
+  )
+  if (!columns.has('species'))
+    db.exec('ALTER TABLE player_characters ADD COLUMN species TEXT')
+  if (!columns.has('character_class'))
+    db.exec('ALTER TABLE player_characters ADD COLUMN character_class TEXT')
+  if (!columns.has('passive_investigation'))
+    db.exec(
+      'ALTER TABLE player_characters ADD COLUMN passive_investigation INTEGER CHECK(passive_investigation BETWEEN 0 AND 99)'
+    )
+  if (!columns.has('passive_insight'))
+    db.exec(
+      'ALTER TABLE player_characters ADD COLUMN passive_insight INTEGER CHECK(passive_insight BETWEEN 0 AND 99)'
+    )
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS player_character_language (
+      character_id TEXT NOT NULL REFERENCES player_characters(id) ON DELETE CASCADE,
+      language TEXT NOT NULL,
+      position INTEGER NOT NULL CHECK(position >= 0),
+      PRIMARY KEY (character_id, language COLLATE NOCASE),
+      UNIQUE (character_id, position)
+    );
+  `)
 }
 
 function createPartyTables(db: Database.Database): void {
@@ -55,8 +92,12 @@ function createPartyTables(db: Database.Database): void {
       id TEXT PRIMARY KEY NOT NULL,
       name TEXT NOT NULL,
       player_name TEXT,
+      species TEXT,
+      character_class TEXT,
       level INTEGER CHECK(level BETWEEN 1 AND 20),
       passive_perception INTEGER CHECK(passive_perception BETWEEN 0 AND 99),
+      passive_investigation INTEGER CHECK(passive_investigation BETWEEN 0 AND 99),
+      passive_insight INTEGER CHECK(passive_insight BETWEEN 0 AND 99),
       armor_class INTEGER CHECK(armor_class BETWEEN 0 AND 99),
       active INTEGER NOT NULL CHECK(active IN (0, 1)),
       xp INTEGER NOT NULL CHECK(xp >= 0),
@@ -79,6 +120,13 @@ function createPartyTables(db: Database.Database): void {
       combat_id TEXT PRIMARY KEY NOT NULL,
       xp_each INTEGER NOT NULL CHECK(xp_each >= 0)
     );
+    CREATE TABLE IF NOT EXISTS player_character_language (
+      character_id TEXT NOT NULL REFERENCES player_characters(id) ON DELETE CASCADE,
+      language TEXT NOT NULL,
+      position INTEGER NOT NULL CHECK(position >= 0),
+      PRIMARY KEY (character_id, language COLLATE NOCASE),
+      UNIQUE (character_id, position)
+    );
   `)
 }
 
@@ -92,7 +140,8 @@ export class PartyStore {
     const members = this.db
       .prepare(
         `
-        SELECT id, name, player_name, level, passive_perception, armor_class,
+        SELECT id, name, player_name, species, character_class, level,
+               passive_perception, passive_investigation, passive_insight, armor_class,
                active, xp, xp_since_short_rest, xp_since_long_rest,
                movement_speed_feet, travel_map_id, travel_q, travel_r,
                travel_state
@@ -100,7 +149,9 @@ export class PartyStore {
       `
       )
       .all()
-      .map(rowPartyMember)
+      .map((row) =>
+        rowPartyMember(row, this.languages(String((row as { id: string }).id)))
+      )
     return partySnapshotSchema.parse({
       revision: metadata.revision,
       members,
@@ -118,27 +169,34 @@ export class PartyStore {
           .get() as { value: number }
       ).value
       const xp = draft.level === null ? 0 : levelXp[draft.level - 1]!
+      const id = uuidv7()
       this.db
         .prepare(
           `
           INSERT INTO player_characters (
-            id, name, player_name, level, passive_perception, armor_class,
+            id, name, player_name, species, character_class, level,
+            passive_perception, passive_investigation, passive_insight, armor_class,
             active, xp, xp_since_short_rest, xp_since_long_rest,
             movement_speed_feet, position
-          ) VALUES (?, ?, ?, ?, ?, ?, 0, ?, 0, 0, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 0, 0, ?, ?)
         `
         )
         .run(
-          uuidv7(),
+          id,
           draft.name.trim(),
           nullable(draft.playerName),
+          nullable(draft.species ?? null),
+          nullable(draft.characterClass ?? null),
           draft.level,
           draft.passivePerception,
+          draft.passiveInvestigation,
+          draft.passiveInsight,
           draft.armorClass,
           xp,
           draft.movementSpeedFeet ?? null,
           position
         )
+      this.replaceLanguages(id, draft.languages ?? [])
     })
     return this.read()
   }
@@ -161,7 +219,8 @@ export class PartyStore {
         .prepare(
           `
           UPDATE player_characters
-          SET name = ?, player_name = ?, level = ?, passive_perception = ?,
+          SET name = ?, player_name = ?, species = ?, character_class = ?, level = ?,
+              passive_perception = ?, passive_investigation = ?, passive_insight = ?,
               armor_class = ?, movement_speed_feet = ?, xp = ?
           WHERE id = ?
         `
@@ -169,13 +228,18 @@ export class PartyStore {
         .run(
           draft.name.trim(),
           nullable(draft.playerName),
+          nullable(draft.species ?? null),
+          nullable(draft.characterClass ?? null),
           draft.level,
           draft.passivePerception,
+          draft.passiveInvestigation,
+          draft.passiveInsight,
           draft.armorClass,
           draft.movementSpeedFeet ?? null,
           xp,
           id
         )
+      this.replaceLanguages(id, draft.languages ?? [])
     })
     return this.read()
   }
@@ -399,6 +463,28 @@ export class PartyStore {
       )
       .run()
   }
+
+  private languages(id: string): string[] {
+    return (
+      this.db
+        .prepare(
+          'SELECT language FROM player_character_language WHERE character_id = ? ORDER BY position'
+        )
+        .all(id) as { language: string }[]
+    ).map((row) => row.language)
+  }
+
+  private replaceLanguages(id: string, languages: readonly string[]): void {
+    this.db
+      .prepare('DELETE FROM player_character_language WHERE character_id = ?')
+      .run(id)
+    const insert = this.db.prepare(
+      'INSERT INTO player_character_language (character_id, language, position) VALUES (?, ?, ?)'
+    )
+    languages.forEach((language, position) =>
+      insert.run(id, language.trim(), position)
+    )
+  }
 }
 
 function nullable(value: string | null): string | null {
@@ -406,7 +492,10 @@ function nullable(value: string | null): string | null {
   return normalized === '' ? null : normalized
 }
 
-function rowPartyMember(row: unknown): PartyCharacter {
+function rowPartyMember(
+  row: unknown,
+  languages: readonly string[]
+): PartyCharacter {
   const value = row as Record<string, unknown>
   const level = value['level'] === null ? null : Number(value['level'])
   return {
@@ -414,11 +503,25 @@ function rowPartyMember(row: unknown): PartyCharacter {
     name: String(value['name']),
     playerName:
       typeof value['player_name'] === 'string' ? value['player_name'] : null,
+    species: typeof value['species'] === 'string' ? value['species'] : null,
+    characterClass:
+      typeof value['character_class'] === 'string'
+        ? value['character_class']
+        : null,
+    languages: [...languages],
     level,
     passivePerception:
       value['passive_perception'] === null
         ? null
         : Number(value['passive_perception']),
+    passiveInvestigation:
+      value['passive_investigation'] === null
+        ? null
+        : Number(value['passive_investigation']),
+    passiveInsight:
+      value['passive_insight'] === null
+        ? null
+        : Number(value['passive_insight']),
     armorClass:
       value['armor_class'] === null ? null : Number(value['armor_class']),
     movementSpeedFeet:

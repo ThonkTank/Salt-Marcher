@@ -32,6 +32,11 @@ type WorldPlannerHandlerName =
   | 'factions.create'
   | 'factions.update'
   | 'factions.delete'
+  | 'npcs.read'
+  | 'npcs.commandReceipt'
+  | 'npcs.create'
+  | 'npcs.update'
+  | 'npcs.delete'
 
 export function createWorldPlannerHandlers(dependencies: {
   locations: WorldLocationService
@@ -70,6 +75,10 @@ export function createWorldPlannerHandlers(dependencies: {
     mapIds: readonly string[],
     changedChunks: readonly unknown[]
   ) => void
+  publishNpcChange: (
+    ids: readonly string[],
+    reason: 'created' | 'updated' | 'deleted' | 'reference-unlinked'
+  ) => void
 }): Pick<CoreHandlers, WorldPlannerHandlerName> {
   const {
     locations,
@@ -86,7 +95,8 @@ export function createWorldPlannerHandlers(dependencies: {
     publishEncounterTableChange,
     publishBiomeChange,
     publishHexChange,
-    publishHexNotice
+    publishHexNotice,
+    publishNpcChange
   } = dependencies
   const locationSymbols = symbols.symbols
   return {
@@ -119,6 +129,8 @@ export function createWorldPlannerHandlers(dependencies: {
     'locations.delete': (input) =>
       mutateReferences(() => {
         const result = deletion.execute(input)
+        if (result.unlinkedNpcIds.length > 0)
+          publishNpcChange(result.unlinkedNpcIds, 'reference-unlinked')
         if (result.notice)
           publishHexNotice(
             result.notice.campaignCommandId,
@@ -258,8 +270,52 @@ export function createWorldPlannerHandlers(dependencies: {
         )
       ),
     'factions.delete': (input) =>
-      mutateReferences(() =>
-        sources.deleteFaction(input.commandId, input.id, input.expectedRevision)
-      )
+      mutateReferences(() => {
+        const linkedNpcIds = sources
+          .readNpcs()
+          .npcs.filter((npc) => npc.factionId === input.id)
+          .map((npc) => npc.id)
+        const result = sources.deleteFaction(
+          input.commandId,
+          input.id,
+          input.expectedRevision
+        )
+        if (linkedNpcIds.length > 0)
+          publishNpcChange(linkedNpcIds, 'reference-unlinked')
+        return result
+      }),
+    'npcs.read': () => sources.readNpcs(),
+    'npcs.commandReceipt': (input) => sources.npcReceipt(input.commandId),
+    'npcs.create': (input) =>
+      mutateReferences(() => {
+        const result = sources.createNpc(
+          input.commandId,
+          input.npc,
+          input.expectedRevision
+        )
+        publishNpcChange([result.saved.id], 'created')
+        return result
+      }),
+    'npcs.update': (input) =>
+      mutateReferences(() => {
+        const result = sources.updateNpc(
+          input.commandId,
+          input.id,
+          input.npc,
+          input.expectedRevision
+        )
+        publishNpcChange([result.saved.id], 'updated')
+        return result
+      }),
+    'npcs.delete': (input) =>
+      mutateReferences(() => {
+        const result = sources.deleteNpc(
+          input.commandId,
+          input.id,
+          input.expectedRevision
+        )
+        publishNpcChange([result.deletedId], 'deleted')
+        return result
+      })
   }
 }

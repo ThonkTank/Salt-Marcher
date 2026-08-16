@@ -44,6 +44,7 @@ function harness() {
       { all: () => creatureCatalog, detail: (id) => creatures.detail(id) },
       locations,
       { read: () => sources.readFactions() },
+      { read: () => sources.readNpcs() },
       () => campaigns.activeCampaignId()
     )
   }

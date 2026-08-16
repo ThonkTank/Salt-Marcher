@@ -541,10 +541,23 @@ function PartyEditor(props: {
   const [name, setName] = useState(props.member?.name ?? '')
   const [player, setPlayer] = useState(props.member?.playerName ?? '')
   const [level, setLevel] = useState(props.member?.level?.toString() ?? '')
+  const [species, setSpecies] = useState(props.member?.species ?? '')
+  const [characterClass, setCharacterClass] = useState(
+    props.member?.characterClass ?? ''
+  )
+  const [languages, setLanguages] = useState(
+    props.member?.languages.join(', ') ?? ''
+  )
   const [perception, setPerception] = useState(
     props.member?.passivePerception?.toString() ?? ''
   )
   const [armor, setArmor] = useState(props.member?.armorClass?.toString() ?? '')
+  const [investigation, setInvestigation] = useState(
+    props.member?.passiveInvestigation?.toString() ?? ''
+  )
+  const [insight, setInsight] = useState(
+    props.member?.passiveInsight?.toString() ?? ''
+  )
   const [movementSpeed, setMovementSpeed] = useState(
     props.member?.movementSpeedFeet?.toString() ?? ''
   )
@@ -558,8 +571,23 @@ function PartyEditor(props: {
         props.save({
           name,
           playerName: player.trim() || null,
+          species: species.trim() || null,
+          characterClass: characterClass.trim() || null,
+          languages: languages
+            .split(',')
+            .map((value) => value.trim())
+            .filter(
+              (value, index, all) =>
+                Boolean(value) &&
+                all.findIndex(
+                  (candidate) =>
+                    candidate.toLocaleLowerCase() === value.toLocaleLowerCase()
+                ) === index
+            ),
           level: optional(level),
           passivePerception: optional(perception),
+          passiveInvestigation: optional(investigation),
+          passiveInsight: optional(insight),
           armorClass: optional(armor),
           movementSpeedFeet: optional(movementSpeed)
         })
@@ -583,6 +611,26 @@ function PartyEditor(props: {
         placeholder={message('ui.spielername')}
         value={player}
         onChange={(event) => setPlayer(event.target.value)}
+      />
+      <div className="editor-numbers">
+        <input
+          aria-label={message('ui.spezies')}
+          placeholder={message('ui.spezies')}
+          value={species}
+          onChange={(event) => setSpecies(event.target.value)}
+        />
+        <input
+          aria-label={message('ui.klasse')}
+          placeholder={message('ui.klasse')}
+          value={characterClass}
+          onChange={(event) => setCharacterClass(event.target.value)}
+        />
+      </div>
+      <input
+        aria-label={message('ui.sprachen')}
+        placeholder={message('ui.sprachen.kommagetrennt')}
+        value={languages}
+        onChange={(event) => setLanguages(event.target.value)}
       />
       <div className="editor-numbers">
         <input
@@ -611,6 +659,24 @@ function PartyEditor(props: {
           placeholder={message('ui.ac.2')}
           value={armor}
           onChange={(event) => setArmor(event.target.value)}
+        />
+        <input
+          aria-label={message('ui.passive.investigation')}
+          type="number"
+          min="0"
+          max="99"
+          placeholder={message('ui.passive.investigation')}
+          value={investigation}
+          onChange={(event) => setInvestigation(event.target.value)}
+        />
+        <input
+          aria-label={message('ui.passive.insight')}
+          type="number"
+          min="0"
+          max="99"
+          placeholder={message('ui.passive.insight')}
+          value={insight}
+          onChange={(event) => setInsight(event.target.value)}
         />
       </div>
       <label>

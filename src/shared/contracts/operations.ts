@@ -216,6 +216,16 @@ import {
   generatorPresetUpdateInputSchema,
   updateGeneratorPresetReceiptSchema
 } from './generator-presets.js'
+import {
+  createWorldNpcInputSchema,
+  deleteWorldNpcInputSchema,
+  updateWorldNpcInputSchema,
+  worldNpcCommandReceiptInputSchema,
+  worldNpcCommandReceiptSchema,
+  worldNpcDeleteReceiptSchema,
+  worldNpcMutationReceiptSchema,
+  worldNpcSnapshotSchema
+} from './world-npc.js'
 
 export type OperationMode = 'read' | 'write'
 export type WindowRole = 'gm' | 'passive' | 'qualification'
@@ -552,6 +562,27 @@ const coreOperationDefinitions = {
     'factions:delete',
     deleteWorldFactionInputSchema,
     worldFactionDeleteReceiptSchema
+  ),
+  'npcs.read': read('npcs:read', none, worldNpcSnapshotSchema),
+  'npcs.commandReceipt': read(
+    'npcs:command-receipt',
+    worldNpcCommandReceiptInputSchema,
+    worldNpcCommandReceiptSchema.nullable()
+  ),
+  'npcs.create': write(
+    'npcs:create',
+    createWorldNpcInputSchema,
+    worldNpcMutationReceiptSchema
+  ),
+  'npcs.update': write(
+    'npcs:update',
+    updateWorldNpcInputSchema,
+    worldNpcMutationReceiptSchema
+  ),
+  'npcs.delete': write(
+    'npcs:delete',
+    deleteWorldNpcInputSchema,
+    worldNpcDeleteReceiptSchema
   ),
   'session.read': read('session:read', none, liveSessionSnapshotSchema),
   'encounterPlans.summaries': read(
