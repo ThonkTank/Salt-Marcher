@@ -182,7 +182,7 @@ items:
     requirement: "Aktuelle Schema-Matrix wird aus der Migrationsregistry erzeugt oder gegen sie geprüft."
     acceptance: "Code und Dokumentation weisen denselben Current-Wert und Pfad aus."
     evidence_required: "Generator/Gate plus Snapshot der Matrix."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: DOC-002
@@ -190,7 +190,7 @@ items:
     requirement: "CI lehnt abweichende aktuelle Schema-, Engine-, Config- oder Katalogangaben ab."
     acceptance: "Mutations-/Negativtest macht CI bei absichtlicher Drift rot."
     evidence_required: "Drift-Gate-Test."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: DOC-003
@@ -198,7 +198,7 @@ items:
     requirement: "Historische Dokumentation ist als historisch markiert und behauptet keinen aktuellen Stand."
     acceptance: "Suche findet keine konkurrierenden unmarkierten Current-Werte."
     evidence_required: "Dokumentationsaudit-Test."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: DOC-004
@@ -206,7 +206,7 @@ items:
     requirement: "Die lokale Spezifikation enthält auch relevante Formeln/Entscheidungen, nicht nur exportierte TSV-Tabellen."
     acceptance: "Paritätsfälle sind ohne Zugriff auf das Live-Sheet reproduzierbar."
     evidence_required: "Rule-IR oder vollständige Oracle-Fixtures."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: DOC-005
@@ -214,7 +214,7 @@ items:
     requirement: "Für jeden Fachfakt ist ein kanonischer Besitzer und eine Ableitungskette dokumentiert."
     acceptance: "TS-Defaults, TSV, UI-Metadaten und Dokumentation widersprechen sich nicht unabhängig."
     evidence_required: "Ownership-Dokument und automatischer Konsistenztest."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
 
@@ -223,7 +223,7 @@ items:
     requirement: "Neue Session-/Group-Reward-Commands besitzen verpflichtende aktuelle Eingaben."
     acceptance: "Fehlende Ledger-Basis ist statisch/vertraglich ungültig, nicht erst tief im Generator."
     evidence_required: "Zod-/Type-Contract-Negativtests."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: CONTRACT-002
@@ -231,7 +231,7 @@ items:
     requirement: "PersistedRewardV2 und neue Versionen sind als echte Versionsunion oder Upcaster lesbar."
     acceptance: "reward-v2-Runs hydrieren nach Einführung der neuen Engineversion weiterhin."
     evidence_required: "Historische Fixture-Hydration."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: CONTRACT-003
@@ -263,7 +263,7 @@ items:
     requirement: "Encounter Engine, Reward Engine, Config und Katalog besitzen unabhängige auditierbare Versionen."
     acceptance: "Änderung einer Dimension erzwingt nur deren korrekte Version und bewahrt die anderen."
     evidence_required: "Provenienz-/Versionierungstests."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
 
@@ -533,7 +533,7 @@ items:
     requirement: "Die geänderte Reward-Semantik erhält eine neue Reward-Engine-Version."
     acceptance: "Neue Runs verwenden nicht reward-v2; Provenienz benennt die tatsächlich implementierte Semantik."
     evidence_required: "Versionscontract, neuer Run und Provenienztest."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: REWARD-002
@@ -541,7 +541,7 @@ items:
     requirement: "Reward-Versionierung versteht mehrere historische Versionen."
     acceptance: "reward-v2 und neue Version hydrieren parallel; unbekannte Version scheitert typisiert."
     evidence_required: "Versionsunion-/Upcastertests."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: REWARD-003
@@ -581,7 +581,7 @@ items:
     requirement: "Engine-, Config- und Katalogänderung sind getrennte Provenienzdimensionen."
     acceptance: "Jede Dimension ist unabhängig im Run gespeichert und validiert."
     evidence_required: "Fingerprint-/Persistenztests."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: REWARD-008
@@ -589,7 +589,7 @@ items:
     requirement: "Reward-Zufall hängt nicht von deprecated SESSION_GENERATION_ENGINE_VERSION oder Encounter-Version ab."
     acceptance: "Reward verwendet eigene kleine RNG-/Versiongrenze."
     evidence_required: "Entropy-/Dependencytest."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: REWARD-009

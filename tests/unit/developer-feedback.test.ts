@@ -56,6 +56,8 @@ describe('developer feedback partitions', () => {
     const lintRunner = readFileSync('scripts/run-lint-partitions.ts', 'utf8')
     const e2eRunner = readFileSync('scripts/run-e2e-suites.ts', 'utf8')
     const e2eConfiguration = readFileSync('wdio.conf.ts', 'utf8')
+    const buildRunner = readFileSync('scripts/package-cli.ts', 'utf8')
+    const applicationBuild = readFileSync('scripts/build-app.ts', 'utf8')
     expect(lintRunner).toContain(
       "packageRequire.resolve('eslint/package.json')"
     )
@@ -67,6 +69,12 @@ describe('developer feedback partitions', () => {
     expect(e2eConfiguration).toContain("packageRequire.resolve('tsx/cli')")
     expect(e2eConfiguration).toContain('spawnSync(\n  process.execPath')
     expect(e2eConfiguration).not.toContain("'.bin', 'tsx'")
+    expect(buildRunner).toContain("packageRequire.resolve('tsx/cli')")
+    expect(buildRunner).toContain(
+      "packageRequire.resolve('electron-vite/package.json')"
+    )
+    expect(buildRunner).toContain('spawnSync(process.execPath')
+    expect(applicationBuild).not.toContain('corepack')
   })
 
   it('normalizes discovered repository paths across operating systems', () => {

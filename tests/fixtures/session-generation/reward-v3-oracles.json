@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "rewardEngineVersion": "reward-v3",
+  "cases": [
+    {
+      "id": "four-members-cumulative-deficit",
+      "input": {
+        "seed": 17,
+        "profile": "group_reward",
+        "members": [
+          {
+            "characterId": "018f47db-e17a-7000-8000-000000000001",
+            "currentXp": 400,
+            "projectedXp": 100,
+            "ledgerRevision": 3,
+            "currentNonMagicCp": 10000,
+            "currentMagic": {
+              "Common": 10,
+              "Uncommon": 0,
+              "Rare": 0,
+              "Very Rare": 0,
+              "Legendary": 0
+            }
+          },
+          {
+            "characterId": "018f47db-e17a-7000-8000-000000000002",
+            "currentXp": 400,
+            "projectedXp": 100,
+            "ledgerRevision": 3,
+            "currentNonMagicCp": 10000,
+            "currentMagic": {
+              "Common": 10,
+              "Uncommon": 0,
+              "Rare": 0,
+              "Very Rare": 0,
+              "Legendary": 0
+            }
+          },
+          {
+            "characterId": "018f47db-e17a-7000-8000-000000000003",
+            "currentXp": 400,
+            "projectedXp": 100,
+            "ledgerRevision": 3,
+            "currentNonMagicCp": 10000,
+            "currentMagic": {
+              "Common": 10,
+              "Uncommon": 0,
+              "Rare": 0,
+              "Very Rare": 0,
+              "Legendary": 0
+            }
+          },
+          {
+            "characterId": "018f47db-e17a-7000-8000-000000000004",
+            "currentXp": 400,
+            "projectedXp": 100,
+            "ledgerRevision": 3,
+            "currentNonMagicCp": 10000,
+            "currentMagic": {
+              "Common": 10,
+              "Uncommon": 0,
+              "Rare": 0,
+              "Very Rare": 0,
+              "Legendary": 0
+            }
+          }
+        ]
+      },
+      "intermediate": {
+        "postRewardXpByMember": [500, 500, 500, 500],
+        "targetGoldCp": 100267,
+        "currentGoldCp": 40000,
+        "goldDeficitCp": 60267
+      },
+      "expected": {
+        "goldBudgetCp": 60267,
+        "magicTargets": {
+          "Common": 0,
+          "Uncommon": 0,
+          "Rare": 0,
+          "Very Rare": 0,
+          "Legendary": 0
+        }
+      }
+    }
+  ]
+}

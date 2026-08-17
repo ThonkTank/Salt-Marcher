@@ -18,13 +18,17 @@ traceability record is [requirements-ledger.yaml](requirements-ledger.yaml).
 - Linux E2E captured `group-management` while the creature workspace was still
   selected. The checked-in Golden shows the completed Loot draft, so the
   baseline image is retained and the renderer/test readiness contract is fixed.
+- Candidate run `32036271035` proved all five sharded Linux E2E jobs and the
+  Linux runtime/AppImage job green. It also isolated two portable build defects:
+  Ubuntu smoke needed an Xvfb wrapper, while Windows could not spawn the
+  extensionless `corepack` shim from Node. Both are now regression-covered.
 
 ## Milestones
 
 | Milestone | State | Exit proof |
 | --- | --- | --- |
 | M0 · trustworthy integration baseline | in progress | candidate and main remote runs pending |
-| M1 · version and contract truth | pending | — |
+| M1 · version and contract truth | in progress | local focused gates green; remote candidate pending |
 | M2 · reward/loot vertical slice | pending | — |
 | M3 · world planner, roster, references | pending | — |
 | M4 · campaign import product path | pending | — |

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { SESSION_GENERATION_ENGINE_VERSION } from '../../shared/contracts/session-generation.js'
+import { SESSION_ENCOUNTER_ENGINE_VERSION } from '../../shared/contracts/session-generation.js'
 import type { EncounterEntropy } from '../../core/session-generation/deterministic-order.js'
 import type { EntropyStream } from '../../core/session-generation/entropy-streams.js'
 
@@ -15,7 +15,8 @@ export const sha256EncounterEntropy: EncounterEntropy = {
 }
 
 function digest(stream: EntropyStream): Buffer {
-  return createHash('sha256')
-    .update(`${SESSION_GENERATION_ENGINE_VERSION}|${stream}`)
-    .digest()
+  const versioned = stream.startsWith('reward-v')
+    ? stream
+    : `${SESSION_ENCOUNTER_ENGINE_VERSION}|${stream}`
+  return createHash('sha256').update(versioned).digest()
 }

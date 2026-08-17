@@ -24,7 +24,12 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      - run: pnpm check:portable
+      - name: Portable checks (Linux display)
+        if: runner.os == 'Linux'
+        run: xvfb-run -a pnpm check:portable
+      - name: Portable checks
+        if: runner.os != 'Linux'
+        run: pnpm check:portable
 
   linux-runtime:
     name: Linux · profile, AppImage, installed-runtime prerequisites

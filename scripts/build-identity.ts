@@ -26,7 +26,9 @@ const appBuildInputFiles = new Set([
   'tsconfig.node.json',
   'tsconfig.renderer.json',
   'scripts/build-passive-preload.ts',
+  'scripts/build-app.ts',
   'scripts/build-qualification.ts',
+  'scripts/package-cli.ts',
   'scripts/write-build-info.ts',
   'scripts/write-build-receipt.ts',
   'scripts/build-receipt.ts',
@@ -76,16 +78,17 @@ export function readBuildToolchain(
     devDependencies?: Record<string, unknown>
   }
   const versions = packageJson.devDependencies ?? {}
-  const pnpmResult = spawnSync('corepack', ['pnpm', '--version'], {
-    cwd: workspaceRoot,
-    encoding: 'utf8'
-  })
-  if (pnpmResult.error) throw pnpmResult.error
-  if (pnpmResult.status !== 0)
-    throw new Error(pnpmResult.stderr.trim() || 'Cannot determine pnpm version')
+  const packageManager = packageJson.packageManager
+  if (typeof packageManager !== 'string')
+    throw new Error('package.json does not pin packageManager')
+  const pnpmMatch = /^pnpm@([^+]+)(?:\+.*)?$/.exec(packageManager)
+  if (!pnpmMatch?.[1])
+    throw new Error(
+      `package.json has an invalid pnpm packageManager: ${packageManager}`
+    )
   return {
     node: process.version,
-    pnpm: pnpmResult.stdout.trim(),
+    pnpm: pnpmMatch[1],
     electron: dependencyVersion(versions, 'electron'),
     electronVite: dependencyVersion(versions, 'electron-vite'),
     electronBuilder: dependencyVersion(versions, 'electron-builder'),

@@ -82,6 +82,7 @@ definitions. Copied fact columns are removed after conversion.
 
 Old Loot receipts are cleared because their serialized result envelopes contain
 the retired copied-field shape; domain aggregates and provenance remain. Audit
-and parameter tables are rebuilt with the `reward-v2` audit vocabulary. Sparse
+and parameter tables are rebuilt with the then-current, now historical,
+`reward-v2` audit vocabulary. Sparse
 development Golden Masters are handled conditionally, while populated
 migration fixtures verify reference sharing and restart hydration.

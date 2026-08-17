@@ -73,8 +73,8 @@ describe('session generation pure reward stages', () => {
   it('plans one role per immutable slot', () => {
     const output = roles()
     expect(output.map((entry) => entry.roles)).toEqual([
-      ['compact_value', 'compact_value', 'flavor'],
-      ['useful', 'complex_value', 'complex_value']
+      ['complex_value', 'useful'],
+      ['flavor', 'compact_value']
     ])
     expect(output.every((entry) => Object.isFrozen(entry.roles))).toBe(true)
   })

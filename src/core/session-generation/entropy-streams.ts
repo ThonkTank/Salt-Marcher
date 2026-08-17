@@ -41,7 +41,7 @@ export function rewardBudgetStream(
   kind: RewardBudgetStreamKind,
   ordinal: number
 ): EntropyStream {
-  return encode(seed, kind, ordinal)
+  return encodeReward(seed, kind, ordinal)
 }
 
 export function treasurePlanningStream(
@@ -49,7 +49,7 @@ export function treasurePlanningStream(
   kind: TreasurePlanningStreamKind,
   ordinal: string | number
 ): EntropyStream {
-  return encode(seed, kind, ordinal)
+  return encodeReward(seed, kind, ordinal)
 }
 
 export function slotRoleStream(
@@ -57,7 +57,7 @@ export function slotRoleStream(
   treasureId: string,
   slot: number
 ): EntropyStream {
-  return encode(seed, `loot-role:${treasureId}`, slot)
+  return encodeReward(seed, `loot-role:${treasureId}`, slot)
 }
 
 export function itemSelectionStream(
@@ -68,7 +68,7 @@ export function itemSelectionStream(
   candidateId?: string
 ): EntropyStream {
   const label = `${kind}:${treasureId}${kind === 'loot-item' ? `:${slot}` : ''}`
-  return encode(seed, label, candidateId ?? slot)
+  return encodeReward(seed, label, candidateId ?? slot)
 }
 
 export function magicSelectionStream(
@@ -77,7 +77,7 @@ export function magicSelectionStream(
   subject: string,
   ordinal: number
 ): EntropyStream {
-  return encode(seed, `${kind}:${subject}`, ordinal)
+  return encodeReward(seed, `${kind}:${subject}`, ordinal)
 }
 
 export function packingStream(
@@ -85,7 +85,15 @@ export function packingStream(
   compatibilityKey: string,
   containerId: string
 ): EntropyStream {
-  return encode(seed, `container:${compatibilityKey}`, containerId)
+  return encodeReward(seed, `container:${compatibilityKey}`, containerId)
+}
+
+function encodeReward(
+  seed: number,
+  label: string,
+  ordinal?: string | number
+): EntropyStream {
+  return `${REWARD_ENGINE_VERSION}|${encode(seed, label, ordinal)}` as EntropyStream
 }
 
 function encode(
@@ -96,3 +104,4 @@ function encode(
   const suffix = ordinal === undefined ? '' : `|${ordinal}`
   return `${seed}|${label}${suffix}` as EntropyStream
 }
+import { REWARD_ENGINE_VERSION } from '../../shared/contracts/session-generation.js'

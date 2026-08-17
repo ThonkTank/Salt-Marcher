@@ -247,14 +247,12 @@ The installation journal makes an interrupted deletion resumable.
 All SQLite connections enable foreign keys, WAL, full synchronous durability,
 and a bounded busy timeout. Stores carry one neutral whole-database schema
 version. The version contract is owned per database role rather than inferred
-from a filename discovered at runtime:
+from a filename discovered at runtime. Current role versions and every complete
+forward path are derived from the executable registry and checked against the
+[version-truth matrix](version-truth.md); this document does not carry a second
+editable version table.
 
-| Role | Canonical path | Current | Supported forward path | Migration owner |
-| --- | --- | ---: | --- | --- |
-| installation | `installation.sqlite` | 29 | 27 -> 28 -> 29 | `installation-schema-migrations.ts` |
-| campaign | `campaigns/<id>/campaign.sqlite` (including staged/recoverable campaign trees) | 29 | 27 -> 28 -> 29 | `campaign-schema-migrations.ts` |
-
-The composed registry has contract version 1. It orders owner-provided steps
+The composed registry has the contract version recorded in that matrix. It orders owner-provided steps
 but contains no aggregate SQL itself. A database at an older version without a
 complete, unique forward path is a terminal `migration-missing` outcome; a
 newer version is incompatible. There is no best-effort opening or implicit

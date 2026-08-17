@@ -12,13 +12,20 @@ and tests never read the live spreadsheet.
 - active catalog version: `catalog-2026-08-16`
 - active catalog content SHA-256:
   `59f4a9ab7b7164b9151d5339f41136701efa45a58666ee1cab7cff101b224a03`
-- reward behavior profile: `reward-v2`
+- current reward behavior profile: `reward-v3`
+- readable historical reward profile: `reward-v2`
 - encounter behavior profile: `encounter-v5`
 
 The manifest fixes all 21 tables' row/column counts, headers, and hashes. The
 registry and catalog checker verify them before typed data reaches a stage.
 
 ## Rule-To-Owner Map
+
+The executable `generationRuleOwnership` registry closes the ownership classes:
+`domain_invariant` is unconditional domain behavior, `catalog_fact` belongs to
+one immutable published catalog, and `preset_rule` belongs to revisioned
+Generator Config V4. A rule cannot use a fallback class; adding an ownership
+entry requires one of these three values and a named owner.
 
 | Rule family | Checked/configured inputs | Owning stage | Reference evidence |
 | --- | --- | --- | --- |
@@ -69,6 +76,11 @@ A formula, configuration meaning, stage boundary, hard audit, or result shape
 change updates the reward engine version and focused evidence. A catalog-row
 change publishes a new immutable artifact and content hash. Existing artifacts
 and saved run definitions remain addressable.
+
+Config V4 is intentionally unchanged for Reward v3: this milestone changes the
+Reward version boundary, persisted-schema union, and entropy salt, but it does
+not change a Config field's shape or meaning. A future preset meaning or shape
+change must bump the config schema independently.
 
 ## References
 

@@ -1,6 +1,6 @@
 import type {
   GroupRewardGenerationInput,
-  SessionGenerationEncounterInput
+  SessionGenerationRunInput
 } from '../../shared/contracts/session-generation.js'
 import { fingerprint } from '../fingerprint.js'
 
@@ -13,7 +13,7 @@ export type SessionRunOrigin = Readonly<{
     revision: number
     configHash: string
   }>
-  input: SessionGenerationEncounterInput
+  input: SessionGenerationRunInput
 }>
 
 export type GroupRewardRunOrigin = Readonly<{

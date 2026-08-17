@@ -43,8 +43,10 @@ accounts for the bounded virtual biome catalog and CRUD surface added with
 schema 15; schema 16 replaced separate World Location kind and region fields
 with tags and read-aloud text, and schema 17 normalizes ordered location-owned
 tags into validated rows while all per-entry ceilings remain unchanged.
-Schema 31, migration registry 3, Generator Config V4, and Session engine
-`saltmarcher-v5` are current. Schema 25 is reset rather than migrated. The
+Schema 31, migration registry 3, Generator Config V4, Encounter engine
+`encounter-v5`, and Reward engine `reward-v3` are current. Persisted
+`reward-v2` runs remain readable. The checked
+[version-truth matrix](version-truth.md) owns these current values. Schema 25 is reset rather than migrated. The
 versioned behavior and ownership are recorded in the
 [Encounter Generation requirements](../../encounter/requirements/requirements-encounter-generation.md)
 and ADRs 0001/0002; this progress record does not duplicate them. The bundle

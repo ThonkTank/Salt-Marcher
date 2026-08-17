@@ -4,7 +4,7 @@ import {
   type GroupRewardGenerationInput,
   type SessionGeneratedRun,
   type SessionGenerationEncounterFailure,
-  type SessionGenerationEncounterInput
+  type SessionGenerationRunInput
 } from '../../shared/contracts/session-generation.js'
 import type { GeneratorPresetConfigV3 } from '../../shared/contracts/generator-presets.js'
 import { systemGeneratorPresetId } from '../../shared/contracts/generator-presets.js'
@@ -49,7 +49,7 @@ export type GroupRewardDraft = Omit<
 >
 
 export function generateSessionRunDraft(
-  input: SessionGenerationEncounterInput,
+  input: SessionGenerationRunInput,
   catalog: FullSessionGenerationCatalog,
   entropy: EncounterEntropy,
   preset: Readonly<{
@@ -105,7 +105,7 @@ export function generateSessionRunDraft(
         catalogVersion: encounter.catalogVersion,
         catalogContentHash: encounter.catalogContentHash,
         generatorPreset: encounter.generatorPreset,
-        input: encounter.input,
+        input: { ...encounter.input, ledgerParty: input.ledgerParty },
         session: {
           ...encounter.session,
           goldBudgetCp: 0,
@@ -212,7 +212,7 @@ export function generateSessionRunDraft(
       catalogVersion: encounter.catalogVersion,
       catalogContentHash: encounter.catalogContentHash,
       generatorPreset: encounter.generatorPreset,
-      input: encounter.input,
+      input: { ...encounter.input, ledgerParty: input.ledgerParty },
       session: {
         ...encounter.session,
         goldBudgetCp,

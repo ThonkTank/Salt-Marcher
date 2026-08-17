@@ -1,11 +1,14 @@
 import type Database from 'better-sqlite3'
 import {
   generatedRewardBasisSchema,
-  generatedRunSchema,
   groupRewardGeneratedRunSchema,
+  persistedGroupRewardGeneratedRunSchema,
+  persistedSessionGeneratedRunSchema,
   sessionGeneratedRunSchema,
   type GeneratedRun,
   type GroupRewardGeneratedRun,
+  type PersistedGroupRewardGeneratedRun,
+  type PersistedSessionGeneratedRun,
   type SessionGeneratedRun
 } from '../../shared/contracts/session-generation.js'
 import { itemDefinitionSchema } from '../../shared/contracts/loot.js'
@@ -395,9 +398,13 @@ export class GeneratedRunStore {
 
   save(run: SessionGeneratedRun): SessionGeneratedRun
   save(run: GroupRewardGeneratedRun): GroupRewardGeneratedRun
-  save(run: GeneratedRun): GeneratedRun
-  save(run: GeneratedRun): GeneratedRun {
-    const parsed = generatedRunSchema.parse(run)
+  save(
+    run: SessionGeneratedRun | GroupRewardGeneratedRun
+  ): SessionGeneratedRun | GroupRewardGeneratedRun {
+    const parsed =
+      run.runKind === 'session'
+        ? sessionGeneratedRunSchema.parse(run)
+        : groupRewardGeneratedRunSchema.parse(run)
     this.db
       .transaction(() =>
         parsed.runKind === 'session'
@@ -847,7 +854,7 @@ export class GeneratedRunStore {
       : this.hydrateGroupReward(row)
   }
 
-  private hydrateSession(row: RunRootRow): SessionGeneratedRun {
+  private hydrateSession(row: RunRootRow): PersistedSessionGeneratedRun {
     const party = this.db
       .prepare(
         `SELECT level, quantity AS count
@@ -957,7 +964,7 @@ export class GeneratedRunStore {
     }))
     const rewardBasis = this.readRewardBasis(row.id)
     return deepFreeze(
-      sessionGeneratedRunSchema.parse({
+      persistedSessionGeneratedRunSchema.parse({
         runKind: 'session',
         id: row.id,
         originFingerprint: row.originFingerprint,
@@ -1013,7 +1020,9 @@ export class GeneratedRunStore {
     )
   }
 
-  private hydrateGroupReward(row: RunRootRow): GroupRewardGeneratedRun {
+  private hydrateGroupReward(
+    row: RunRootRow
+  ): PersistedGroupRewardGeneratedRun {
     const source = this.db
       .prepare(
         `SELECT scene_id AS sceneId, group_id AS groupId,
@@ -1095,7 +1104,7 @@ export class GeneratedRunStore {
       parameters: auditParameters.get(position) ?? {}
     }))
     return deepFreeze(
-      groupRewardGeneratedRunSchema.parse({
+      persistedGroupRewardGeneratedRunSchema.parse({
         runKind: 'group_reward',
         id: row.id,
         originFingerprint: row.originFingerprint,

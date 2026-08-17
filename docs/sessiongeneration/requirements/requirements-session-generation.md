@@ -9,8 +9,10 @@ result containing encounter intents, rewards, packing, warnings, and audits.
 After the result is saved and reopened, its structured meaning MUST be
 equivalent to the result first presented for the same generation.
 
-The Utility implementation owns complete `saltmarcher-v5` generation as an
-internal orchestration capability. It is not a general Renderer operation.
+The Utility implementation owns `encounter-v5` encounter generation and
+`reward-v3` reward generation as one internal orchestration capability. It is
+not a general Renderer operation. Historical `reward-v2` persisted runs remain
+readable, while commands and new runs require `reward-v3`.
 Complete runs are immutable and campaign-local. They include typed loot and
 packing and are persisted before presentation. Concrete creature identity
 remains an Encounter concern.

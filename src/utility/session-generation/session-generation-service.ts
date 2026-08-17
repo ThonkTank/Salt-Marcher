@@ -9,7 +9,7 @@ import type {
   GeneratedRun,
   GroupRewardGeneratedRun,
   GroupRewardGenerationInput,
-  SessionGenerationEncounterInput,
+  SessionGenerationRunInput,
   SessionGenerationRunResult
 } from '../../shared/contracts/session-generation.js'
 import {
@@ -52,7 +52,7 @@ export class SessionGenerationService {
     private readonly clock: () => Date = () => new Date()
   ) {}
 
-  generate(input: SessionGenerationEncounterInput): SessionGenerationRunResult {
+  generate(input: SessionGenerationRunInput): SessionGenerationRunResult {
     try {
       const catalog = this.catalogProvider.loadFull()
       const preset = this.preset()
@@ -83,7 +83,10 @@ export class SessionGenerationService {
           throw new Error(
             'Session generation origin resolved to another run kind'
           )
-        return deepFreeze({ status: 'success', run: existing })
+        return deepFreeze({
+          status: 'success',
+          run: sessionGeneratedRunSchema.parse(existing)
+        })
       }
       const run = sessionGeneratedRunSchema.parse({
         ...result.draft,
@@ -138,7 +141,7 @@ export class SessionGenerationService {
     if (existing) {
       if (existing.runKind !== 'group_reward')
         throw new Error('Group reward origin resolved to another run kind')
-      return existing
+      return groupRewardGeneratedRunSchema.parse(existing)
     }
     return store.save(
       groupRewardGeneratedRunSchema.parse({

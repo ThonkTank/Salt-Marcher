@@ -8,6 +8,22 @@ import {
 
 const hashA = 'a'.repeat(64)
 const hashB = 'b'.repeat(64)
+const ledgerParty = [
+  {
+    characterId: '01900000-0000-7000-8000-000000000099',
+    currentXp: 900,
+    projectedXp: 100,
+    ledgerRevision: 1,
+    currentNonMagicCp: 0,
+    currentMagic: {
+      Common: 0,
+      Uncommon: 0,
+      Rare: 0,
+      'Very Rare': 0,
+      Legendary: 0
+    }
+  }
+]
 
 describe('generated run semantic origins', () => {
   it('excludes workflow identity and changes for every session meaning input', () => {
@@ -22,6 +38,7 @@ describe('generated run semantic origins', () => {
       },
       input: {
         party: [{ level: 3, count: 4 }],
+        ledgerParty,
         adventureDayFraction: '0.6',
         encounterCount: 3,
         seed: 42
@@ -57,6 +74,7 @@ describe('generated run semantic origins', () => {
       catalogContentHash: hashA,
       input: {
         party: [{ level: 3, count: 4 }],
+        ledgerParty,
         sceneId: '01900000-0000-7000-8000-000000000010',
         groupId: '01900000-0000-7000-8000-000000000011',
         sceneRevision: 2,

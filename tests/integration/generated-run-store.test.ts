@@ -22,6 +22,22 @@ afterEach(() => {
 })
 
 describe('GeneratedRunStore relational persistence', () => {
+  it('writes reward-v3 while hydrating reward-v2 and rejecting unknown versions', () => {
+    const { db, run } = generatedSession()
+    expect(run.rewardEngineVersion).toBe('reward-v3')
+    db.prepare(
+      'UPDATE session_generation_run SET reward_engine_version = ? WHERE id = ?'
+    ).run('reward-v2', run.id)
+    const legacy = new GeneratedRunStore(db).read(run.id)
+    expect(legacy?.rewardEngineVersion).toBe('reward-v2')
+    db.prepare(
+      'UPDATE session_generation_run SET reward_engine_version = ? WHERE id = ?'
+    ).run('reward-unknown', run.id)
+    expect(() => new GeneratedRunStore(db).read(run.id)).toThrow(
+      /reward-v2|reward-v3/
+    )
+  })
+
   it('stores no aggregate run blob, keeps item facts central, and rejects invalid rows', () => {
     const { db, run } = generatedSession()
     const tables = (

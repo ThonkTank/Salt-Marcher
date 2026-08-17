@@ -76,10 +76,10 @@ through the feature contract.
 - the required singleton metadata row MUST be present; reads do not reconstruct
   it from character rows
 
-## Current Schema Lifecycle
+## Schema 29 Migration History
 
 Compatibility obligations begin with the first released format.
-Campaign schema 29 owns the registered 28-to-29 forward migration that adds
+Campaign schema 29 introduced the registered 28-to-29 forward migration that adds
 the nullable profile columns and normalized language table without changing
 existing Party rows, membership, progression, or travel facts. Unsupported
 older or newer formats remain rejected by the shared persistence lifecycle.

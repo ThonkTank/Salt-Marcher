@@ -8,7 +8,10 @@ import { systemGeneratorPresetId } from '../../src/shared/contracts/generator-pr
 import { defaultGeneratorConfig } from '../../src/shared/generator/system-generator-preset.js'
 import { BundledEncounterCatalogProvider } from '../../src/utility/session-generation/catalog-provider.js'
 import { sha256EncounterEntropy } from '../../src/utility/session-generation/sha256-entropy.js'
-import type { SessionGenerationEncounterInput } from '../../src/shared/contracts/session-generation.js'
+import {
+  sessionGenerationRunInputSchema,
+  type SessionGenerationRunInput
+} from '../../src/shared/contracts/session-generation.js'
 import type { EncounterEntropy } from '../../src/core/session-generation/deterministic-order.js'
 
 const catalog = new BundledEncounterCatalogProvider(
@@ -19,7 +22,7 @@ const preset = {
   revision: 0,
   config: defaultGeneratorConfig
 }
-const input: SessionGenerationEncounterInput = {
+const input: SessionGenerationRunInput = {
   party: [{ level: 3, count: 4 }],
   ledgerParty: sessionLedger([{ level: 3, count: 4 }], '0.6'),
   adventureDayFraction: '0.6',
@@ -29,21 +32,13 @@ const input: SessionGenerationEncounterInput = {
 
 describe('session generation loot engine', () => {
   it('rejects new reward generation without the cumulative ledger basis', () => {
-    const result = generateSessionRunDraft(
-      { ...input, ledgerParty: undefined },
-      catalog,
-      sha256EncounterEntropy,
-      preset
-    )
-    expect(result).toMatchObject({
-      status: 'invalid_input',
-      issues: [
-        {
-          path: ['ledgerParty'],
-          parameters: { reason: 'missing_ledger_reward_party' }
-        }
-      ]
+    const result = sessionGenerationRunInputSchema.safeParse({
+      ...input,
+      ledgerParty: undefined
     })
+    expect(result.success).toBe(false)
+    if (result.success) return
+    expect(result.error.issues[0]?.path).toEqual(['ledgerParty'])
   })
 
   it('parses all source-backed loot tables and produces audited treasures', () => {

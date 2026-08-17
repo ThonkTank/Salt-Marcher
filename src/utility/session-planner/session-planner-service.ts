@@ -46,7 +46,7 @@ import {
 } from '../../shared/contracts/session-planner.js'
 import type {
   GeneratedRun,
-  SessionGeneratedRun
+  PersistedSessionGeneratedRun
 } from '../../shared/contracts/session-generation.js'
 import { SessionGenerationService } from '../session-generation/session-generation-service.js'
 import { fingerprintExcluding } from '../../core/fingerprint.js'
@@ -492,7 +492,7 @@ export class SessionPlannerService {
 
   private rewardBasisIsCurrent(
     db: Database.Database,
-    run: SessionGeneratedRun,
+    run: PersistedSessionGeneratedRun,
     sessionId: string
   ): boolean {
     if (!run.rewardBasis) return true
@@ -732,7 +732,7 @@ export class SessionPlannerService {
   }
 
   private generatedScenes(
-    run: SessionGeneratedRun,
+    run: PersistedSessionGeneratedRun,
     committed: Extract<
       CommittedGeneratedEncounterBatchResult,
       { status: 'SUCCESS' }

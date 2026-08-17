@@ -7,7 +7,8 @@ import {
 } from './loot/item-definition.js'
 
 export const SESSION_ENCOUNTER_ENGINE_VERSION = 'encounter-v5' as const
-export const REWARD_ENGINE_VERSION = 'reward-v2' as const
+export const REWARD_ENGINE_VERSION = 'reward-v3' as const
+export const rewardEngineVersionSchema = z.enum(['reward-v2', 'reward-v3'])
 /** @deprecated Use the component engine versions on persisted runs. */
 export const SESSION_GENERATION_ENGINE_VERSION =
   SESSION_ENCOUNTER_ENGINE_VERSION
@@ -70,7 +71,7 @@ export const groupRewardSourceEntrySchema = z
     message: 'At least one living or dead creature is required.'
   })
 
-export const sessionGenerationEncounterInputSchema = z
+const sessionGenerationEncounterInputObjectSchema = z
   .object({
     party: z.array(generationPartyLevelSchema).min(1),
     ledgerParty: z.array(ledgerRewardPartyMemberSchema).optional(),
@@ -79,27 +80,50 @@ export const sessionGenerationEncounterInputSchema = z
     seed: z.number().int().nonnegative().safe()
   })
   .strict()
-  .superRefine((value, context) => {
-    const levels = new Set<number>()
-    let active = 0
-    for (const entry of value.party) {
-      if (levels.has(entry.level))
-        context.addIssue({
-          code: 'custom',
-          path: ['party'],
-          message: 'Party levels must be unique.'
-        })
-      levels.add(entry.level)
-      active += entry.count
-    }
-    if (active < 1)
+
+function validateSessionGenerationInput(
+  value: Readonly<{
+    party: readonly z.infer<typeof generationPartyLevelSchema>[]
+    ledgerParty?:
+      readonly z.infer<typeof ledgerRewardPartyMemberSchema>[] | undefined
+  }>,
+  context: z.RefinementCtx
+): void {
+  const levels = new Set<number>()
+  let active = 0
+  for (const entry of value.party) {
+    if (levels.has(entry.level))
       context.addIssue({
         code: 'custom',
         path: ['party'],
-        message: 'At least one active player is required.'
+        message: 'Party levels must be unique.'
       })
-    validateLedgerParty(value.ledgerParty, active, context)
-  })
+    levels.add(entry.level)
+    active += entry.count
+  }
+  if (active < 1)
+    context.addIssue({
+      code: 'custom',
+      path: ['party'],
+      message: 'At least one active player is required.'
+    })
+  validateLedgerParty(value.ledgerParty, active, context)
+}
+
+export const sessionGenerationEncounterInputSchema =
+  sessionGenerationEncounterInputObjectSchema.superRefine(
+    validateSessionGenerationInput
+  )
+
+export const sessionGenerationRunInputSchema =
+  sessionGenerationEncounterInputObjectSchema
+    .extend({ ledgerParty: z.array(ledgerRewardPartyMemberSchema).min(1) })
+    .superRefine(validateSessionGenerationInput)
+
+const persistedSessionGenerationEncounterInputSchema =
+  sessionGenerationEncounterInputObjectSchema.superRefine(
+    validateSessionGenerationInput
+  )
 
 export const encounterRoleSchema = z.enum([
   'Minion',
@@ -330,7 +354,7 @@ const sessionGeneratedRunObjectSchema = z
         configHash: z.string().regex(/^[0-9a-f]{64}$/)
       })
       .strict(),
-    input: sessionGenerationEncounterInputSchema,
+    input: sessionGenerationRunInputSchema,
     session: sessionGenerationEncounterSuccessSchema.shape.session.extend({
       goldBudgetCp: z.number().int().nonnegative(),
       normalTreasureCount: z.number().int().nonnegative(),
@@ -356,10 +380,18 @@ const sessionGeneratedRunObjectSchema = z
 export const sessionGeneratedRunSchema =
   sessionGeneratedRunObjectSchema.superRefine(validateGeneratedItemDefinitions)
 
-export const groupRewardGenerationInputSchema = z
+export const persistedSessionGeneratedRunSchema =
+  sessionGeneratedRunObjectSchema
+    .extend({
+      rewardEngineVersion: rewardEngineVersionSchema.default('reward-v2'),
+      input: persistedSessionGenerationEncounterInputSchema
+    })
+    .superRefine(validateGeneratedItemDefinitions)
+
+const groupRewardGenerationInputObjectSchema = z
   .object({
     party: z.array(generationPartyLevelSchema).min(1),
-    ledgerParty: z.array(ledgerRewardPartyMemberSchema).optional(),
+    ledgerParty: z.array(ledgerRewardPartyMemberSchema).min(1),
     sceneId: z.uuid(),
     groupId: z.uuid(),
     sceneRevision: z.number().int().nonnegative(),
@@ -374,7 +406,9 @@ export const groupRewardGenerationInputSchema = z
     seed: z.number().int().nonnegative().safe()
   })
   .strict()
-  .superRefine((value, context) => {
+
+export const groupRewardGenerationInputSchema =
+  groupRewardGenerationInputObjectSchema.superRefine((value, context) => {
     const creatureIds = new Set<string>()
     for (const [index, entry] of value.groupEntries.entries()) {
       if (creatureIds.has(entry.creatureId))
@@ -390,6 +424,11 @@ export const groupRewardGenerationInputSchema = z
       value.party.reduce((sum, entry) => sum + entry.count, 0),
       context
     )
+  })
+
+const persistedGroupRewardGenerationInputSchema =
+  groupRewardGenerationInputObjectSchema.extend({
+    ledgerParty: z.array(ledgerRewardPartyMemberSchema).optional()
   })
 
 const groupRewardGeneratedRunObjectSchema = z
@@ -430,9 +469,17 @@ export const groupRewardGeneratedRunSchema =
     validateGeneratedItemDefinitions
   )
 
+export const persistedGroupRewardGeneratedRunSchema =
+  groupRewardGeneratedRunObjectSchema
+    .extend({
+      rewardEngineVersion: rewardEngineVersionSchema,
+      input: persistedGroupRewardGenerationInputSchema
+    })
+    .superRefine(validateGeneratedItemDefinitions)
+
 export const generatedRunSchema = z.discriminatedUnion('runKind', [
-  sessionGeneratedRunSchema,
-  groupRewardGeneratedRunSchema
+  persistedSessionGeneratedRunSchema,
+  persistedGroupRewardGeneratedRunSchema
 ])
 
 export const sessionGenerationRunSuccessSchema = z
@@ -504,6 +551,9 @@ function validateGeneratedItemDefinitions(
 export type SessionGenerationEncounterInput = Readonly<
   z.infer<typeof sessionGenerationEncounterInputSchema>
 >
+export type SessionGenerationRunInput = Readonly<
+  z.infer<typeof sessionGenerationRunInputSchema>
+>
 export type SessionGenerationCatalogReference = Readonly<
   z.infer<typeof sessionGenerationCatalogReferenceSchema>
 >
@@ -535,8 +585,14 @@ export type GeneratedRun = Readonly<z.infer<typeof generatedRunSchema>>
 export type SessionGeneratedRun = Readonly<
   z.infer<typeof sessionGeneratedRunSchema>
 >
+export type PersistedSessionGeneratedRun = Readonly<
+  z.infer<typeof persistedSessionGeneratedRunSchema>
+>
 export type GroupRewardGeneratedRun = Readonly<
   z.infer<typeof groupRewardGeneratedRunSchema>
+>
+export type PersistedGroupRewardGeneratedRun = Readonly<
+  z.infer<typeof persistedGroupRewardGeneratedRunSchema>
 >
 export type GroupRewardGenerationInput = Readonly<
   z.infer<typeof groupRewardGenerationInputSchema>

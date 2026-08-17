@@ -109,9 +109,9 @@ handler receives that adapter as a port and must not prepare SQL itself.
 - Failed writes must leave the last stable revisioned World Planner API state
   visible.
 
-## Current Schema Lifecycle
+## Schema 29 Migration History
 
-World Planner is a feature-owned persistence surface. Campaign schema 29 adds
+World Planner is a feature-owned persistence surface. Campaign schema 29 added
 the NPC tables through the registered 28-to-29 owner migration. It does not
 migrate existing Session Planner, Encounter, EncounterTable, Creatures,
 Dungeon, or Hex tables.
