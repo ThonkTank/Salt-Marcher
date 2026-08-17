@@ -236,6 +236,9 @@ export async function expectElementGolden(
   })
   await client.execute(async () => {
     await document.fonts.ready
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+    )
   })
   const goldensDirectory = join(process.cwd(), 'tests', 'e2e', 'goldens')
   const artifacts = join(process.cwd(), '.tmp', 'visual-diffs')

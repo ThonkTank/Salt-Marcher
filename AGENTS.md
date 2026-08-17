@@ -36,6 +36,9 @@
 - Pure documentation or test-only changes finish with `pnpm check`.
 - `pnpm dev` is only the targeted HMR development loop; it is not a manual
   acceptance or handoff path.
-- Every implementation that passes its applicable canonical handoff must be
-  committed and pushed automatically to `origin/main`. A green implementation
-  is not complete until that push succeeds.
+- Every implementation is committed to a clean candidate branch and pushed
+  there first. The exact candidate SHA must pass all required remote `Check`
+  jobs before `pnpm handoff:app` is run once for that immutable SHA. Only then
+  may the same SHA be fast-forwarded to `origin/main`; rebuilding, amending, or
+  pushing an unchecked SHA directly to `main` is not a valid handoff. A green
+  implementation is not complete until the promoted SHA is green on `main`.

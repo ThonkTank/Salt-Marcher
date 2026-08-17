@@ -6,14 +6,15 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
+
 jobs:
-  check:
+  portable:
+    name: Portable · ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
       # windows-latest currently provides a Visual Studio version that node-gyp
-      # cannot identify while compiling better-sqlite3.  Pin the supported
-      # Windows 2022 image so native modules build reproducibly.
+      # cannot identify while compiling better-sqlite3.
       matrix: { os: [ubuntu-latest, windows-2022, macos-latest] }
     runs-on: ${{ matrix.os }}
     steps:
@@ -23,21 +24,10 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      - run: xvfb-run -a pnpm check
-        if: matrix.os == 'ubuntu-latest'
-        env:
-          SALT_MARCHER_VISUAL_GOLDEN_VARIANT: ubuntu-24.04
-      - run: pnpm check
-        if: matrix.os != 'ubuntu-latest'
-      - run: xvfb-run -a pnpm test:packaged-smoke
-        if: matrix.os == 'ubuntu-latest'
-      - run: pnpm test:packaged-smoke
-        if: matrix.os != 'ubuntu-latest'
-      - run: xvfb-run -a pnpm test:packaged-qualification-smoke
-        if: matrix.os == 'ubuntu-latest'
-      - run: pnpm test:packaged-qualification-smoke
-        if: matrix.os != 'ubuntu-latest'
-  e2e:
+      - run: pnpm check:portable
+
+  linux-runtime:
+    name: Linux · profile, AppImage, installed-runtime prerequisites
     timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:
@@ -47,14 +37,58 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      - run: xvfb-run -a pnpm test:e2e
+      - run: pnpm check:linux
+      - run: xvfb-run -a pnpm test:packaged-smoke
+      - run: xvfb-run -a pnpm test:packaged-qualification-smoke
+
+  e2e:
+    name: Linux E2E · ${{ matrix.shard }}
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: workspaces-create-hex
+            suites: --suite workspaces --suite create --suite hexLocation
+          - shard: npc-restart-dialogs
+            suites: --suite npcCatalog --suite restart --suite dialogs
+          - shard: generation-loot
+            suites: --suite sessionGeneration --suite loot
+          - shard: group-loot-travel
+            suites: --suite groupLoot --suite groupLootCommit --suite travel
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.15.1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: xvfb-run -a pnpm test:e2e:built -- ${{ matrix.suites }}
         env:
           SALT_MARCHER_VISUAL_GOLDEN_VARIANT: ubuntu-24.04
-      - name: Upload visual diffs
+      - name: Upload complete E2E failure evidence
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: visual-diffs-e2e-${{ github.run_id }}
-          path: .tmp/visual-diffs
-          if-no-files-found: ignore
+          name: e2e-evidence-${{ matrix.shard }}-${{ github.run_id }}
+          path: |
+            .tmp/e2e-runs
+            .tmp/visual-diffs
+            .tmp/wdio-user-data
+          if-no-files-found: error
+          retention-days: 14
+
+  passive-e2e:
+    name: Linux E2E · passive window
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.15.1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
       - run: xvfb-run -a pnpm test:passive-e2e

@@ -669,6 +669,7 @@ describe('campaign walking skeleton', () => {
       timeoutMsg: 'Generator was not available for the new group draft.'
     })
     await generate.click()
+    await waitForGroupManagementReady(client)
     await expectGroupManagementGolden(client)
     await expect(await groupDialog.$('button=Leeren')).not.toBeExisting()
     await (await groupDialog.$('button=Gruppe')).click()
@@ -1112,5 +1113,33 @@ async function expectGroupManagementGolden(client: WdioBrowser): Promise<void> {
     client,
     'group-management',
     'section[aria-labelledby="group-builder-title"]'
+  )
+}
+
+async function waitForGroupManagementReady(client: WdioBrowser): Promise<void> {
+  await client.waitUntil(
+    async () =>
+      client.execute(() => {
+        const dialog = document.querySelector(
+          'section[aria-labelledby="group-builder-title"]'
+        )
+        const draft = dialog?.querySelector('.group-manager-draft-rim')
+        const catalog = dialog?.querySelector('.loot-catalog-pane')
+        const selectedTabs = dialog?.querySelectorAll(
+          'button[role="tab"][aria-selected="true"]'
+        )
+        return (
+          draft?.getAttribute('data-group-draft-ready') === 'true' &&
+          catalog?.getAttribute('data-loot-catalog-ready') === 'true' &&
+          selectedTabs?.length === 2 &&
+          dialog?.querySelector('.generated-loot-results') !== null
+        )
+      }),
+    {
+      timeout: 15_000,
+      interval: 100,
+      timeoutMsg:
+        'Group roster, Loot draft, catalog, and workspace layout did not become ready.'
+    }
   )
 }

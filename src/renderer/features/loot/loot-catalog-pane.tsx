@@ -30,6 +30,7 @@ export function LootCatalogPane(props: {
     <section
       className="loot-catalog-pane group-manager-catalog"
       aria-label={message('loot.catalog')}
+      data-loot-catalog-ready={props.page === null ? 'false' : 'true'}
     >
       <div className="loot-catalog-filters">
         <label>

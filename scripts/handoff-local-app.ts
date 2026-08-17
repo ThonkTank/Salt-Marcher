@@ -21,9 +21,12 @@ import { readBuildToolchain, readWorkspaceIdentity } from './build-identity.js'
 import { verifyBuildReceipt } from './build-receipt.js'
 import { sha256File } from './file-hash.js'
 import { localInstallationPaths } from './local-app-installation.js'
+import { assertCandidateReady } from './candidate-delivery.js'
 
 if (process.platform !== 'linux')
   throw new Error('SaltMarcher Local handoff currently targets Linux AppImage')
+
+assertCandidateReady()
 
 const steps = [
   'check',

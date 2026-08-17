@@ -1,6 +1,12 @@
 import { spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
+import {
+  createWriteStream,
+  mkdirSync,
+  readFileSync,
+  renameSync,
+  writeFileSync
+} from 'node:fs'
 import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import {
@@ -111,6 +117,10 @@ if (failures.length > 0) {
 
 function runSuite(suite: E2eSuiteName, id: string): Promise<number> {
   return new Promise((resolveExit) => {
+    mkdirSync(resultDirectory, { recursive: true })
+    const log = createWriteStream(join(resultDirectory, `${suite}.log`), {
+      flags: 'w'
+    })
     const child = spawn(
       process.execPath,
       [wdioEntry, 'run', 'wdio.conf.ts', '--suite', suite],
@@ -121,14 +131,22 @@ function runSuite(suite: E2eSuiteName, id: string): Promise<number> {
           SALT_MARCHER_E2E_SUITE: suite,
           SALT_MARCHER_E2E_RUN_ID: id
         },
-        stdio: 'inherit'
+        stdio: ['inherit', 'pipe', 'pipe']
       }
     )
+    child.stdout.on('data', (chunk: Buffer) => {
+      process.stdout.write(chunk)
+      log.write(chunk)
+    })
+    child.stderr.on('data', (chunk: Buffer) => {
+      process.stderr.write(chunk)
+      log.write(chunk)
+    })
     child.once('error', (error) => {
       console.error(error)
-      resolveExit(1)
+      log.end(`${error.stack ?? error.message}\n`, () => resolveExit(1))
     })
-    child.once('exit', (code) => resolveExit(code ?? 1))
+    child.once('exit', (code) => log.end(() => resolveExit(code ?? 1)))
   })
 }
 

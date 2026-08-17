@@ -73,6 +73,16 @@ export function GroupManagerDraftPane(props: {
     <section
       className="group-manager-draft-rim"
       aria-label={uiMessage('ui.aktuelle.gruppe')}
+      data-group-workspace-mode={props.mode}
+      data-group-loot-phase={props.loot.phase}
+      data-group-draft-ready={
+        props.mode === 'loot' &&
+        props.loot.phase === 'ready' &&
+        props.loot.run !== null &&
+        props.loot.draft !== null
+          ? 'true'
+          : 'false'
+      }
     >
       <div className="group-manager-draft-sheet">
         <div
