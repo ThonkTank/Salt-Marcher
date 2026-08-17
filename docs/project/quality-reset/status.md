@@ -33,8 +33,8 @@ traceability record is [requirements-ledger.yaml](requirements-ledger.yaml).
 | --- | --- | --- |
 | M0 · trustworthy integration baseline | in progress | candidate and main remote runs pending |
 | M1 · version and contract truth | in progress | local focused gates green; remote candidate pending |
-| M2 · reward/loot vertical slice | in progress | exact money, ID catalog, shared pipeline/index/packing, Config V5 and Schema 32 focused gates green |
-| M3 · world planner, roster, references | pending | — |
+| M2 · reward/loot vertical slice | verified | `3b9e70e73` + `242caff74`; `check:loot-parity` and architecture gates green |
+| M3 · world planner, roster, references | in progress | ownership/query/revision audit started |
 | M4 · campaign import product path | pending | — |
 | M5 · session UI and layout | pending | — |
 | M6 · focused verification and handoff | pending | — |
@@ -51,3 +51,16 @@ traceability record is [requirements-ledger.yaml](requirements-ledger.yaml).
   animation frames. Golden Masters are not timing synchronization primitives.
 - Delivery is candidate-first. Remote checks prove the immutable SHA before the
   single local handoff and exact-SHA promotion to `origin/main`.
+
+## M2 decisions
+
+- Reward v3 receives raw member snapshots and derives the aggregate party,
+  projected XP, cumulative deficits and stale comparison centrally.
+- Session and group rewards share one typed proposal pipeline, issue contract,
+  catalog index, seedable RNG boundary and packing policy.
+- Money remains rational through interpolation and price-times-quantity, with
+  half-up rounding only at the documented integer boundary.
+- Schema-30 Loot receipts are retained as a version-named archive instead of
+  being silently deleted; they are evidence, not replay authority.
+- `check:loot-parity` is the fast owner gate. Fast-check counterexamples retain
+  their seed, and E2E resume receipts retain every attempt log.

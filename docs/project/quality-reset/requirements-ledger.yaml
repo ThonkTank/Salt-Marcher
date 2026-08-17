@@ -524,121 +524,136 @@ items:
     requirement: "Aggregierte Levelcounts und Ledger-Mitglieder werden eliminiert oder vollständig semantisch abgeglichen."
     acceptance: "Level, Count, IDs und Teilnehmerbasis können nicht widersprüchlich generieren."
     evidence_required: "Mismatch-Negativtests."
-    status: in_progress
-    evidence: []
-    decision: null
+    status: verified
+    evidence:
+      - "3b9e70e73: reward-party.ts plus mismatch tests in session-generation-loot-engine.test.ts; pnpm check:loot-parity green."
+    decision: "Raw members are authoritative; aggregate level counts are derived once and contract validation rejects disagreement."
 
   - id: REWARD-001
     source: "Loot-Kritik – Reward-Logik geändert ohne Versionsbump"
     requirement: "Die geänderte Reward-Semantik erhält eine neue Reward-Engine-Version."
     acceptance: "Neue Runs verwenden nicht reward-v2; Provenienz benennt die tatsächlich implementierte Semantik."
     evidence_required: "Versionscontract, neuer Run und Provenienztest."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "9a64b3f4f: REWARD_ENGINE_VERSION reward-v3 and generated-run persistence tests."
     decision: null
   - id: REWARD-002
     source: "Loot-Kritik – Literalversion lehnt historische Runs ab"
     requirement: "Reward-Versionierung versteht mehrere historische Versionen."
     acceptance: "reward-v2 und neue Version hydrieren parallel; unbekannte Version scheitert typisiert."
     evidence_required: "Versionsunion-/Upcastertests."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: reward-v2/reward-v3 hydration and unknown-version rejection in generated-run-store.test.ts."
     decision: null
   - id: REWARD-003
     source: "Loot-Kritik – Ledger-Basis am falschen Ort"
     requirement: "Generator erhält rohe Teilnehmer-Snapshots und berechnet Partyaggregation, Reward-XP, projected XP und Defizit selbst."
     acceptance: "Session Planner und Group Handler implementieren diese Fachformeln nicht mehr."
     evidence_required: "Dependency-/Formeltests und entfernte Duplikate."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: reward-party.ts, reward-budget-stage.ts, and SessionRewardBasis remove caller-owned projected-XP formulas."
     decision: null
   - id: REWARD-004
     source: "Loot-Kritik – duplizierte XP-Regeln in Revisionsguards"
     requirement: "Stale-Revalidierung verwendet dieselbe zentrale Reward-Basisfunktion."
     acceptance: "Keine zweite floor-/Party-XP-Implementierung in Guards."
     evidence_required: "Code-Audit-Gate und Concurrent-Reward-Test."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: SessionRewardBasis.isCurrent reuses projectRewardMembers; session-planner recovery integration remains green."
     decision: null
   - id: REWARD-005
     source: "Loot-Kritik – Session-/Group-Pipeline dupliziert"
     requirement: "Session und Group Reward verwenden einen gemeinsamen Pipelinekern mit expliziter PlanPolicy."
     acceptance: "Budget, Selection, Magic, Packing und Aggregation existieren nur einmal."
     evidence_required: "Pipeline-Unit-Tests beider Policies und entfernte Doppelpfade."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "9a64b3f4f: reward-proposal-pipeline.ts is the shared PlanPolicy orchestrator; pipeline/oracle tests green."
     decision: null
   - id: REWARD-006
     source: "Loot-Kritik – unterschiedlicher Empty-/Audit-Fehlerpfad"
     requirement: "Empty Reward und Hard-Audit-Ergebnisse werden über konsistente typisierte Resultate behandelt."
     acceptance: "Session und Group erzeugen dieselben Issuecodes für denselben Fehler."
     evidence_required: "Cross-pipeline Contracttests."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: session and group drafts share SessionGenerationIssue and typed success/failure result contracts."
     decision: null
   - id: REWARD-007
     source: "Loot-Kritik – Config-Hash kein Ersatz für Engine-Version"
     requirement: "Engine-, Config- und Katalogänderung sind getrennte Provenienzdimensionen."
     acceptance: "Jede Dimension ist unabhängig im Run gespeichert und validiert."
     evidence_required: "Fingerprint-/Persistenztests."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "9a64b3f4f: independent encounter/reward/config/catalog provenance persisted and fingerprint-tested."
     decision: null
   - id: REWARD-008
     source: "Loot-Kritik – Entropie mit Encounter-Version gesalzen"
     requirement: "Reward-Zufall hängt nicht von deprecated SESSION_GENERATION_ENGINE_VERSION oder Encounter-Version ab."
     acceptance: "Reward verwendet eigene kleine RNG-/Versiongrenze."
     evidence_required: "Entropy-/Dependencytest."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "9a64b3f4f: reward-random.ts binds only REWARD_ENGINE_VERSION; entropy dependency tests green."
     decision: null
   - id: REWARD-009
     source: "Loot-Kritik – unnötig aufwendige Streamstruktur"
     requirement: "Reward-Randomisierung wird auf die kleinste nötige injizierbare seedbare RNG vereinfacht."
     acceptance: "Persistiertes Resultat bleibt Replay-Autorität; unnötige Streamkey-Kopplung ist entfernt."
     evidence_required: "Determinismus-/Resultatpersistenztests und gelöschte Streamregeln."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "9a64b3f4f: minimal injected RewardRandom replaces reward stream-family API; determinism and persisted-result tests green."
     decision: null
   - id: REWARD-010
     source: "Loot-Kritik – Item-Referenzarchitektur"
     requirement: "Katalog-, Generated- und Legacy-Definitionen bleiben die einzigen Item-Metadatenbesitzer."
     acceptance: "Treasure-/Character-Ledger enthalten Referenz plus Instanzdaten."
     evidence_required: "Schema-/Resolver-/Migrationtests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: schema-31 migration, resolver, generated-run and loot vertical tests prove reference-plus-instance storage."
     decision: null
   - id: REWARD-011
     source: "Loot-Kritik – alte Freitextzeilen"
     requirement: "Alte kopierte/freie Itemzeilen werden einmalig kanonisch zugeordnet."
     acceptance: "Jede Legacyzeile referenziert eine immutable Definition; keine Metadatenduplikation."
     evidence_required: "Schema-31-/Nachfolgemigrationfixture und Readback."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: loot-schema-31-migration fixture maps copied/free lines to immutable generated or legacy definitions and reads them back."
     decision: null
   - id: REWARD-012
     source: "Loot-Kritik – alte Loot-Operation-Receipts gelöscht"
     requirement: "Inkompatible Receipt-Migration ist explizit begründet, getestet und minimiert Datenverlust; zukünftige Versionswechsel besitzen einen klaren Pfad."
     acceptance: "Keine stille Löschung; Fixture dokumentiert zulässige Vorabversionspolitik."
     evidence_required: "Migrationstest und Decision Record."
-    status: open
-    evidence: []
-    decision: null
+    status: verified
+    evidence:
+      - "3b9e70e73: ADR 0003 and loot-schema-31-migration.test.ts preserve incompatible receipts in loot_operation_receipt_v30_archive."
+    decision: "Incompatible receipt rows are retained byte-for-byte as versioned historical evidence and never replayed as current results."
   - id: REWARD-013
     source: "Loot-Kritik – GeneratedRunStore/Planner übergroß"
     requirement: "Run-Persistenz wird nach Root, Reward-Basis, Definitions/Children und Hydration strukturiert."
     acceptance: "Owner-owned SQL bleibt, aber Verantwortungen sind separat testbar."
     evidence_required: "Modultests und Abhängigkeitsstruktur."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: generated-run-reward-basis-store.ts and generated-run-children-store.ts have direct integration assertions while GeneratedRunStore retains the transaction/root owner."
     decision: null
   - id: REWARD-014
     source: "Loot-Kritik – SessionPlanner bündelt State Machine und Mapping"
     requirement: "Preparation State Machine, Reward-Basis-Ermittlung und finaler Session-Mapper sind getrennte Verantwortungen."
     acceptance: "Jede Einheit besitzt fokussierte Tests und schmale Eingaben."
     evidence_required: "Planner-Architektur-/Integrationstests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: SessionRewardBasis and pure session-generated-scene-mapper are separate from the preparation worker; focused mapper and recovery tests green."
     decision: null
 
   - id: CATALOG-001
@@ -646,56 +661,63 @@ items:
     requirement: "Packingrelationen verwenden allowedContainerIds."
     acceptance: "Containerumbenennung ändert keine Zulässigkeit."
     evidence_required: "Rename-Regressionstest."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "9a64b3f4f: allowedContainerIds contract/import plus rename regression in reward pipeline stage tests."
     decision: null
   - id: CATALOG-002
     source: "Loot-Kritik – freie Relationstypen"
     requirement: "Katalogrelationen verwenden geschlossene typisierte Relationstypen."
     acceptance: "Unbekannte Relation wird beim Import abgewiesen."
     evidence_required: "Importer-/Schema-Negativtest."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "9a64b3f4f: closed relation union and catalog-provider unknown-relation negative test."
     decision: null
   - id: CATALOG-003
     source: "Loot-Kritik – normalisierte Strings/relationKey"
     requirement: "Canonical Matching verwendet IDs; tolerante Stringnormalisierung ist nur Suche/Importhilfe."
     acceptance: "Kollision zweier normalisierter Namen kann keine Relation vertauschen."
     evidence_required: "Kollisionsfixture."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "9a64b3f4f: canonical relation import maps exact source values to IDs; unknown/colliding alias fixtures reject."
     decision: null
   - id: CATALOG-004
     source: "Loot-Kritik – Category-/Profile-IDs"
     requirement: "Category-, Profile- und Sonderwerte werden bereits beim Import zu typisierten IDs normalisiert."
     acceptance: "Generator enthält keine Includes-Heuristiken für fachliche Klassifikation."
     evidence_required: "Importer-/Generator-Dependencytests."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "9a64b3f4f: category/profile/adornment/loot/value/unit/placement IDs are parsed before generation; indexed dependency tests green."
     decision: null
   - id: CATALOG-005
     source: "Loot-Kritik – LootCatalogIndex ungenutzt"
     requirement: "Generation verwendet einen vorberechneten Index mit Maps/Sets."
     acceptance: "Keine wiederholten Vollarrayscans und Namensrückauflösungen in Hot Stages."
     evidence_required: "Profil-/Querycount-Test und Code-Audit."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "9a64b3f4f: generation-catalog-index.ts is shared across all hot reward stages; query-count and direct index tests green."
     decision: null
   - id: CATALOG-006
     source: "Loot-Kritik – Coin-Profile speichern Namen"
     requirement: "Coin-Profile referenzieren Container-IDs und werden im Ergebnis identifizierbar bewahrt."
     acceptance: "Packing kann exakt das ausgewählte Profil validieren."
     evidence_required: "Coin-profile Persistenz-/Packingtest."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "9a64b3f4f: generated coin definitions persist coinProfileId and packing/audit use that exact profile."
     decision: null
   - id: CATALOG-007
     source: "Loot-Kritik – versionierte Katalogartefakte"
     requirement: "Published catalogs bleiben immutable, manifestverifiziert und historisch adressierbar."
     acceptance: "Neue Aktivierung überschreibt kein altes Artefakt oder bestehenden Run."
     evidence_required: "Registry-/Artifact-switch-Test."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: catalog-provider registry tests resolve immutable current and historical version/hash pairs and reject corrupt artifacts."
     decision: null
 
   - id: MONEY-001
@@ -703,32 +725,36 @@ items:
     requirement: "Alle Reward-/Ledger-Geldberechnungen verwenden exakte rationale Werte."
     acceptance: "Keine vorzeitige Math.round-/Float-Entscheidung in Budget, Auswahl oder Menge."
     evidence_required: "Static/code audit plus Rational-Unit-Tests."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: rational cumulative interpolation, exact item price-times-quantity, and safe sum paths; money/oracle tests green."
     decision: null
   - id: MONEY-002
     source: "Loot-Kritik – Sling Bullet 0.2 cp"
     requirement: "Artikel unter einem Kupferstück bleiben auswählbar und erhalten korrekte Mengen/Zeilenwerte."
     acceptance: "0.2-cp-Fixture wird nicht zu 0 verworfen."
     evidence_required: "Expliziter Fractional-CP-Oracle-Test."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: 0.2-cp quantity oracle in session-generation-money-boundaries.test.ts."
     decision: null
   - id: MONEY-003
     source: "Loot-Kritik – definierte Rundungsgrenze"
     requirement: "Rundung erfolgt erst nach rationalem Preis-mal-Menge an der dokumentierten Sheet-Grenze."
     acceptance: "Half-up-/Grenzfälle stimmen mit Oracle überein."
     evidence_required: "Boundarytable und Formula-Oracle."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: rational interpolation and item line half-up boundaries round exactly once."
     decision: null
   - id: MONEY-004
     source: "Loot-Kritik – fehlende Safe-Integer-Grenzen"
     requirement: "Editierbare XP-/Geldfelder besitzen Safe-Integer-/Rationalgrenzen."
     acceptance: "Überlaufende Eingaben werden typisiert abgewiesen."
     evidence_required: "Schema-Negativtests an allen Pfaden."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: XP/money Zod boundaries use safe integers and overflow negative tests fail closed."
     decision: null
 
   - id: CONFIG-001
@@ -736,56 +762,63 @@ items:
     requirement: "Jede effektive Regel ist als DomainInvariant, CatalogFact oder PresetRule klassifiziert."
     acceptance: "Keine unklassifizierte fachliche Konstante in Generatorstages."
     evidence_required: "Metatest/Inventory."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: lootRuleEffect inventory maps every preset leaf to an audited generator owner."
     decision: null
   - id: CONFIG-002
     source: "Loot-Kritik – harte Coin-/Adorned-/Bulk-Regeln"
     requirement: "Coin-Mindestmengen, Adorned-Menge, Bulk-/Compact-/Art-/Livestock-/Clothing-Regeln liegen beim korrekten Besitzer."
     acceptance: "Code enthält keine versteckten Presetentscheidungen oder als Config getarnte Invarianten."
     evidence_required: "Rule-inventory und Änderungstests."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: rule inventory and selection/packing boundary oracles cover coin, adorned, bulk, art, livestock and clothing ownership."
     decision: null
   - id: CONFIG-003
     source: "Loot-Kritik – Einheiten-/Pile-/Sonderstrings"
     requirement: "Einheiten, Pile und all/none/worn/handheld sind typisierte Katalog-/Domainfakten."
     acceptance: "Generator verzweigt nicht auf rohe Displaystrings."
     evidence_required: "Type-/Importer-/Generator-Tests."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "9a64b3f4f: typed unitKind/valueForm/placement and container IDs replace display-string branches."
     decision: null
   - id: CONFIG-004
     source: "Loot-Kritik – generischer Settings-Editor"
     requirement: "Settings besitzen typisierte Metadaten für deutsche Labels, Einheiten, Hilfetexte, Gruppen und Editorart."
     acceptance: "UI zeigt keine rohen Objektpfade als primäre Labels."
     evidence_required: "Metadata-contract und Renderer-Test."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "9a64b3f4f: loot-rule-metadata.ts supplies German labels, units, help, groups and editor kinds; renderer test rejects raw paths."
     decision: null
   - id: CONFIG-005
     source: "Loot-Kritik – fehlende Schema-Grenzen/Abhängigkeiten"
     requirement: "Editor verwendet Min/Max, Prozente, Abhängigkeiten und komplexe Progressionsdarstellung aus dem Metadaten-/Schemasystem."
     acceptance: "Ungültige Zwischenzustände sind feldbezogen erklärbar."
     evidence_required: "UI-/Schema-Grenztests."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "9a64b3f4f: metadata-driven bounds, percentages, dependencies and progression editor tests."
     decision: null
   - id: CONFIG-006
     source: "Loot-Kritik – lokale Draftvalidierung zu schwach"
     requirement: "Draftvalidierung prüft Anteilssummen, Reihenfolge, Grenzen und eindeutige Profile vor Save."
     acceptance: "Fehler erscheinen inline mit stabilem Feldpfad."
     evidence_required: "Reducer-/Form-Tests."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "9a64b3f4f: validateLootRuleDraft stable-path tests cover sums, order, boundaries, progression and unique profiles."
     decision: null
   - id: CONFIG-007
     source: "Loot-Kritik – Config-Eigenschaften ohne Wirkungsbeweis"
     requirement: "Jede PresetRule beeinflusst mindestens eine Generation oder ist ausdrücklich UI-only dokumentiert."
     acceptance: "Automatischer Metatest deckt alle Properties ab."
     evidence_required: "Config-coverage-Metatest."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: exhaustive preset-leaf effect metatest verifies an owning stage consumes every property root."
     decision: null
 
   - id: PACK-001
@@ -793,40 +826,45 @@ items:
     requirement: "Eine pure evaluatePacking-Policy wird für Auswahl und Audit verwendet."
     acceptance: "Generator und Audit können fachlich nicht auseinanderlaufen."
     evidence_required: "Gemeinsame Policytests; doppelte Logik entfernt."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "9a64b3f4f: pure evaluatePacking is used by selection and reward audit; decision-table tests green."
     decision: null
   - id: PACK-002
     source: "Loot-Kritik – Coin-Profil geht verloren"
     requirement: "Generierte Coin-Definition speichert die konkret ausgewählte Profile-ID."
     acceptance: "Audit verwendet nicht die Vereinigungsmenge aller Profile."
     evidence_required: "Persistenz-/Audit-Regressionsfall."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "9a64b3f4f: coinProfileId persistence and exact-profile audit regression."
     decision: null
   - id: PACK-003
     source: "Loot-Kritik – Displaynamen in Packing"
     requirement: "Packingkandidaten werden ausschließlich über Container-IDs bestimmt."
     acceptance: "Doppelte oder geänderte Namen brechen keine Regel."
     evidence_required: "Duplicate-/rename-container-Tests."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "9a64b3f4f: duplicate/rename-safe ID packing regression in reward pipeline stages."
     decision: null
   - id: PACK-004
     source: "Loot-Kritik – relationelles Packing und Pile"
     requirement: "Loose, existing container, new container und pile sind explizite Policyresultate mit stabilen Violationcodes."
     acceptance: "Jede Entscheidung ist auditierbar und Oracle-getestet."
     evidence_required: "Packing decision table."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "9a64b3f4f: packing-policy decision table asserts loose/container/pile and stable violation codes."
     decision: null
   - id: PACK-005
     source: "Loot-Kritik – Packing-Fallbacks"
     requirement: "Unzulässiger Containerfall erzeugt einen klaren Fehler/Fallback statt beliebiges Pile."
     acceptance: "Liquid-, amount-, worn- und handheld-Grenzen entsprechen Rule-Oracle."
     evidence_required: "Boundaryfixtures."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "9a64b3f4f: invalid container, liquid, amount, worn and handheld boundaries fail or fall back explicitly."
     decision: null
 
   - id: PIPE-001
@@ -834,32 +872,36 @@ items:
     requirement: "Pipelinephasen sind pure, eingefrorene Ergebnisse mit einem gemeinsamen Orchestrator."
     acceptance: "Session/Group variieren nur über explizite Policy und Envelope."
     evidence_required: "Stage-/orchestrator tests."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "9a64b3f4f: immutable reward-proposal-pipeline stages and explicit session/group PlanPolicy tests."
     decision: null
   - id: PIPE-002
     source: "Loot-Kritik – große Stores"
     requirement: "GeneratedRunStore-Unteraufgaben sind separat testbar, ohne Ownergrenze oder Transaktion zu zerreißen."
     acceptance: "Root, RewardBasis, Children und Hydration besitzen klare Module."
     evidence_required: "Integrationtests und SQL-ownership audit."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: owner-internal reward-basis and children repositories are directly integration-tested under GeneratedRunStore transaction ownership."
     decision: null
   - id: PIPE-003
     source: "Loot-Kritik – große Planner-Klasse"
     requirement: "Preparation State Machine ist von Reward-Basis und Session-Mapping getrennt."
     acceptance: "Keine Einheit koordiniert Worker, Recovery, Reward und Mapping zugleich."
     evidence_required: "Architecture and recovery tests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: preparation worker, SessionRewardBasis and pure generated-scene mapper have separate narrow inputs and tests."
     decision: null
   - id: PIPE-004
     source: "Loot-Kritik – zentrale gültige Fixture fehlt"
     requirement: "Komplexe Reward-Eingaben werden über einen kanonischen gültigen Testbuilder erzeugt."
     acceptance: "E2E-Materializer und Integrationstests duplizieren Ledgerfixtures nicht."
     evidence_required: "Builder und Compile-/fixture tests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: assembleRewardParty is shared by production handler/planner/E2E materializer; reward-party-builder supplies canonical store/stage fixtures."
     decision: null
 
   - id: LOOTTEST-001
@@ -867,64 +909,72 @@ items:
     requirement: "Testnamen beschreiben exakt die bewiesene Aussage."
     acceptance: "Invarianten heißen nicht Sheet-Parität ohne Oracle."
     evidence_required: "Testinventar-/Naming-Audit."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: structural invariant matrix renamed; Sheet parity name remains only on genuine stored oracle cases."
     decision: null
   - id: LOOTTEST-002
     source: "Loot-Kritik – fehlende Sheet-Erwartungswerte"
     requirement: "Repräsentative Sheet-/Rule-Ausgaben und Zwischenstufen sind eingecheckt."
     acceptance: "Budget, Pools, Mengen und Fallbackentscheidungen werden gegen konkrete Erwartungen geprüft."
     evidence_required: "Oracle-Fixtures."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: checked reward-v3 oracle fixture plus budget/pool/quantity/fallback stage expectations."
     decision: null
   - id: LOOTTEST-003
     source: "Loot-Kritik – Randomauswahl verdeckt Fehler"
     requirement: "Assertions prüfen deterministische Zwischenstufen vor der Randomauswahl."
     acceptance: "Falscher Kandidatenpool fällt unabhängig vom gezogenen Item auf."
     evidence_required: "Stage-oracle tests."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: stage tests assert indexed pools and role plans before random item assertions."
     decision: null
   - id: LOOTTEST-004
     source: "Loot-Kritik – fehlende Boundary-Fälle"
     requirement: "maxOverfit, Bulk-Schwelle, Coin-Profilgrenzen und Fractional CP besitzen explizite Tests."
     acceptance: "Jede Grenze hat below/at/above-Fälle."
     evidence_required: "Boundary test table."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: explicit maxOverfit, bulk, coin-profile, 0.2-cp and half-up boundary tables."
     decision: null
   - id: LOOTTEST-005
     source: "Loot-Kritik – fehlende Property Tests"
     requirement: "Gültige zufällige Configs werden durch Property Tests auf harte Invarianten geprüft."
     acceptance: "Shrinking liefert reproduzierbare Gegenbeispiele."
     evidence_required: "Property suite with seed capture."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: fast-check schema-valid rule property suite runs 30 shrinkable seeded cases and forbids emitted failed hard invariants."
     decision: null
   - id: LOOTTEST-006
     source: "Loot-Kritik – Defaults gegen TSV beweisen keine Formeln"
     requirement: "Default-/Hash-Tests werden klar von Algorithmusparität getrennt."
     acceptance: "Beide Ebenen besitzen eigene benannte Tests."
     evidence_required: "Test suite split."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: generator-loot-defaults pins source tables separately from reward oracle and stage suites."
     decision: null
   - id: LOOTTEST-007
     source: "Loot-Kritik – check:loot-parity"
     requirement: "Ein fokussierter Loot-Paritätscheck verwendet dieselben Builder und Oracles wie der vollständige Lauf."
     acceptance: "Er läuft im schnellen Zielkorridor und deckt alle kritischen Stages."
     evidence_required: "Script, Dauer und CI result."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: pnpm check:loot-parity covers 65 critical unit/integration cases in about six seconds."
     decision: null
   - id: LOOTTEST-008
     source: "Loot-Kritik – einzelner Flake kostet über 20 Minuten"
     requirement: "Ein E2E-Flake invalidiert nicht unnötig bereits hash-validierte unabhängige Ergebnisse."
     acceptance: "Gezielte Wiederaufnahme behält vollständige erste Fehlerdiagnose."
     evidence_required: "Controlled failure/resume test."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "242caff74: version-2 E2E receipts retain per-attempt logs/artifact paths, reuse only passed independent suites, and reject changed identities; controlled failure/resume tests green."
     decision: null
 
   - id: UI-001
@@ -1411,24 +1461,27 @@ items:
     requirement: "Magic-Theme-Priorität und Fallback sind Teil des versionierten Regelmodells und durch Oraclefälle belegt."
     acceptance: "Thematischer Pool wird bevorzugt, definierter Fallback greift nur bei leerem Pool."
     evidence_required: "Magic selection oracle."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "242caff74: magic selection oracle proves theme-first selection and fallback only for an empty themed pool."
     decision: null
   - id: REWARD-016
     source: "Loot-Kritik – Curse-Kontext"
     requirement: "Curse-Anwendbarkeit verwendet den typisierten Kontext der aufgelösten Basisdefinition."
     acceptance: "Keine relationKey-Kollision oder bloße Type-Substring-Prüfung bestimmt Curse-Auswahl."
     evidence_required: "Curse context collision/boundary tests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "242caff74: exact appliesToId collision test rejects a prefix-like curse context and selects only the typed match."
     decision: null
   - id: REWARD-017
     source: "Loot-Kritik – Coin-Eligibility und kontextuelles Bulk"
     requirement: "Coin-Eligibility, Mindestmengen und kontextuelle Bulk-Mengen sind lokal spezifiziert und oracle-getestet."
     acceptance: "Grenzen und Profile entsprechen der versionierten Regelquelle."
     evidence_required: "Coin/Bulk oracle fixtures."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: coin eligibility/minimum/profile and contextual bulk quantity oracles in reward pipeline stages."
     decision: null
   - id: UI-012
     source: "Sidebar-Kritik – WorkspaceScenario Ownership-Leak"
