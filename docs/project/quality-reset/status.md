@@ -35,7 +35,7 @@ traceability record is [requirements-ledger.yaml](requirements-ledger.yaml).
 | M1 · version and contract truth | in progress | local focused gates green; remote candidate pending |
 | M2 · reward/loot vertical slice | verified | `3b9e70e73` + `242caff74`; `check:loot-parity` and architecture gates green |
 | M3 · world planner, roster, references | verified | `38ef442f6` + `5c9971432`; `check:world-planner`, architecture and integration gates green |
-| M4 · campaign import product path | pending | — |
+| M4 · campaign import product path | verified | `2dd82e654`; `check:campaign-import`, architecture, portable unit and integration gates green |
 | M5 · session UI and layout | pending | — |
 | M6 · focused verification and handoff | pending | — |
 

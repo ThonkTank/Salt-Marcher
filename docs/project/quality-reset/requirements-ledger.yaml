@@ -272,80 +272,90 @@ items:
     requirement: "Ein versioniertes CampaignImportBundle ist dauerhaft eingecheckt und vertraglich definiert."
     acceptance: "Bundle enthält Quelle, Revision, Exporthash, Version und externe Schlüssel."
     evidence_required: "Schema und repräsentative Fixture."
-    status: open
-    evidence: []
-    decision: null
+    status: verified
+    evidence:
+      - "2dd82e654: CampaignImportBundle V1 contract and Tower-of-Time revision-6098 fixture bind source, revision, canonical hash, version, sections, and external keys."
+    decision: "V1 is a full source image containing all four supported sections."
   - id: IMPORT-002
     source: "Campaign/NPC-Kritik – temporäres Skript"
     requirement: "Utility-Service bietet validate, preview und apply als Produktfähigkeiten."
     acceptance: "Ad-hoc-Skripte sind entfernt oder nur dünne Aufrufer dieses Services."
     evidence_required: "Application-/Integrationstests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "2dd82e654: campaignImport.validate/preview/apply are Zod-registered Utility operations backed by CampaignImportService; no ad-hoc campaign script remains."
     decision: null
   - id: IMPORT-003
     source: "Campaign/NPC-Kritik – unbekannte Statblocks/Dubletten/mehrdeutige Namen"
     requirement: "Preview liefert einen lesbaren strukturierten Konflikt- und Auflösungsbericht."
     acceptance: "Alle Konflikte erscheinen vor apply mit stabilen Codes und Quellpfaden."
     evidence_required: "Konfliktfixtures und Presenter-Test."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "2dd82e654: structured conflict reports expose stable codes, paths, source paths, and parameters; unknown-statblock and missing-resolution fixtures pass."
     decision: null
   - id: IMPORT-004
     source: "Campaign/NPC-Kritik – gestagte Kampagne"
     requirement: "Import wird auf eine gestagte Kampagne angewendet und erst nach vollständigem Readback aktiviert."
     acceptance: "Fehler lässt aktive Kampagne unverändert; Erfolg aktiviert nur verifizierten Stand."
     evidence_required: "Crash-/Rollback-/Readback-Integrationstest."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "2dd82e654: CampaignStore stages fresh/cloned databases, performs domain readback and quick_check, atomically promotes, rolls back failures, and recovers interrupted replacement renames."
     decision: null
   - id: IMPORT-005
     source: "Campaign/NPC-Kritik – fehlende Provenienz"
     requirement: "Quell-ID, Revision, verwendete Abschnitte, Exporthash und Entscheidungen werden persistiert."
     acceptance: "Nach Import ist erklärbar, woher jede externe Zuordnung stammt."
     evidence_required: "Persistenzschema und Domain-Readback."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "2dd82e654: schema 34 persists source ID/revision/hash/sections/resolutions plus per-entity external key, internal ID, source path, and content hash."
     decision: null
   - id: IMPORT-006
     source: "Campaign/NPC-Kritik – Reimport und Hank-Sonderfall"
     requirement: "Externe Schlüssel machen Re- und Differenzimport idempotent."
     acceptance: "Doppelter Import erzeugt keine Dubletten; Ergänzung aktualisiert nur passende Entitäten."
     evidence_required: "Idempotenz-/Delta-Integrationstest."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "2dd82e654: identical reapply remains one campaign/seven entities; revision-6099 updates only pc:hank, preserves every internal ID and a local-only Party fact."
     decision: null
   - id: IMPORT-007
     source: "Campaign/NPC-Kritik – Zuordnung nur in Plan/Gespräch/Skript"
     requirement: "Sprach-, Rassen-, Orts-, Fraktions- und Statblockentscheidungen sind maschinenlesbar im Bundle oder Auflösungsmanifest."
     acceptance: "Kein entscheidungsrelevantes Mapping existiert nur als Gesprächsnotiz."
     evidence_required: "Fixture-/Manifestreview und Schema."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "2dd82e654: checked resolution manifest records Halbord/species, mixed languages, and every statblock, faction, and location choice with source path and reason code."
     decision: null
   - id: IMPORT-008
     source: "Campaign/NPC-Kritik – wechselnde Quellrevisionen 5980/6005/6098"
     requirement: "Importer erkennt und berichtet Quellrevision-/Hashänderungen deterministisch."
     acceptance: "Delta zwischen zwei Quellen wird vor apply aufgelistet."
     evidence_required: "Zwei Revisionsfixtures und Preview-Test."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "2dd82e654: checked 6098 source and 6099 delta fixtures have canonical hashes; preview deterministically reports only the Party section and rejects regressed/reused revisions."
     decision: null
   - id: IMPORT-009
     source: "Campaign/NPC-Kritik – fehlende Tower-of-Time-Fixture"
     requirement: "Eine wiederholbare reale Referenzimportfixture mit semantischem Golden Master ist eingecheckt."
     acceptance: "Fixture beweist Entitäten, Beziehungen, Provenienz und Reimport."
     evidence_required: "check:campaign-import."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "2dd82e654: Tower-of-Time semantic Golden verifies Hank PP 11/languages, relationships, provenance, unchanged replay, and focused check:campaign-import."
     decision: null
   - id: IMPORT-010
     source: "Campaign/NPC-Kritik – inkompatibler Pflege-Worktree"
     requirement: "Wartungs-/Importbefehle laufen nur über kompatiblen installierten Utility-Stand oder den im Receipt benannten Deployment-SHA."
     acceptance: "Inkompatibler Worktree wird vor Profilzugriff abgewiesen."
     evidence_required: "Versionsmismatch-Negativtest."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "2dd82e654: runtime guard mismatch test proves a nonmatching deployment receipt is rejected before the profile-opening callback; installed Utility and exact SHA pass."
     decision: null
 
   - id: WORLD-001
