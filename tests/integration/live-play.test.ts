@@ -8,6 +8,7 @@ import { uuidv7 } from '../../src/shared/ids/uuidv7.js'
 import type { GeneratorPresetConfigV3 } from '../../src/shared/contracts/generator-presets.js'
 import { defaultGeneratorConfig } from '../../src/shared/generator/system-generator-preset.js'
 import { CampaignRulesService } from '../../src/core/application/campaign-rules-service.js'
+import { seedExampleParty } from '../../src/core/party/party-example-seed.js'
 
 const roots: string[] = []
 
@@ -25,6 +26,7 @@ function harness(generatorPreset?: {
   roots.push(root)
   const campaigns = new CampaignStore(root)
   campaigns.create('Test Campaign')
+  seedExampleParty(campaigns.activeCampaignDatabase())
   const play = new LivePlayService(
     () => campaigns.activeCampaignDatabase(),
     undefined,
@@ -126,15 +128,24 @@ describe('live party, scene groups and combat', () => {
     campaigns.close()
   })
 
-  it('seeds four inactive roster characters exactly once', () => {
-    const { campaigns, play } = harness()
-    const first = play.readParty()
+  it('keeps production rosters empty and seeds examples only when requested', () => {
+    const root = mkdtempSync(join(tmpdir(), 'salt-marcher-empty-party-'))
+    roots.push(root)
+    const campaigns = new CampaignStore(root)
+    campaigns.create('Empty Party')
+    const play = new LivePlayService(() => campaigns.activeCampaignDatabase())
+
+    expect(play.readParty().members).toEqual([])
+    const first = seedExampleParty(campaigns.activeCampaignDatabase())
     campaigns.close()
 
-    const reopened = new CampaignStore(roots[0] ?? '')
+    const reopened = new CampaignStore(root)
     const second = new LivePlayService(() =>
       reopened.activeCampaignDatabase()
     ).readParty()
+    expect(() => seedExampleParty(reopened.activeCampaignDatabase())).toThrow(
+      'empty roster'
+    )
     reopened.close()
 
     expect(first.members.map((member) => member.name)).toEqual([

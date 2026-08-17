@@ -15,6 +15,7 @@ import { BiomeHexUsageStore } from '../../src/core/hex/biome-hex-usage-store.js'
 import { LivePlayService } from '../../src/core/encounter/live-combat.js'
 import { HexTravelService } from '../../src/core/hex/hex-travel.js'
 import type { EncounterTableSnapshot } from '../../src/shared/contracts/encounter-source.js'
+import { seedExampleParty } from '../../src/core/party/party-example-seed.js'
 
 const roots: string[] = []
 const stores: CampaignStore[] = []
@@ -31,6 +32,7 @@ function harness() {
   const campaigns = new CampaignStore(root)
   stores.push(campaigns)
   campaigns.create('Biom-Test')
+  seedExampleParty(campaigns.activeCampaignDatabase())
   const biomes = new BiomeCatalogService(campaigns)
   const sources = new EncounterSourceService(
     () => campaigns.activeCampaignDatabase(),

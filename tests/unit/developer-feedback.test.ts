@@ -156,7 +156,7 @@ describe('group Loot architecture refactor', () => {
     const runner = readFileSync('scripts/run-e2e-suites.ts', 'utf8')
     expect(runner).toContain("argumentAfter('--resume')")
     expect(runner).toContain("repeatedArguments('--suite')")
-    expect(runner).toContain('buildIdentity !== buildIdentity')
+    expect(runner).toContain('validateE2eResumeIdentity(resumed')
     expect(runner).toContain('writeSuiteResult(')
     expect(runner).toContain('renameSync(temporary, path)')
     expect(runner).not.toMatch(/retry|retries/i)

@@ -14,6 +14,7 @@ import { WorldLocationService } from '../../src/core/worldplanner/location-store
 import { creatureCatalogQuerySchema } from '../../src/shared/contracts/encounter.js'
 import { EncounterTableStore } from '../../src/core/encounter/encounter-table-store.js'
 import type { EncounterTableSnapshot } from '../../src/shared/contracts/encounter-source.js'
+import { seedExampleParty } from '../../src/core/party/party-example-seed.js'
 
 const roots: string[] = []
 
@@ -27,6 +28,7 @@ function harness() {
   roots.push(root)
   const campaigns = new CampaignStore(root)
   campaigns.create('Sources')
+  seedExampleParty(campaigns.activeCampaignDatabase())
   const path = () => campaigns.activeCampaignDatabase()
   const sources = new EncounterSourceService(path)
   const locations = new WorldLocationService(path)

@@ -244,6 +244,25 @@ describe('architecture boundaries', () => {
       }
   })
 
+  it('keeps Party rules independent from SQL and public carrier schemas', () => {
+    const domainPath = 'src/core/party/party-roster-domain.ts'
+    const domain = source(domainPath)
+    const store = source('src/core/party/party-store.ts')
+    expect(relativeImports(domainPath)).toEqual([])
+    expect(domain).not.toMatch(
+      /better-sqlite3|shared\/contracts|\bSELECT\b|\bUPDATE\b/
+    )
+    for (const rule of [
+      'applyXpAdjustment',
+      'applyRest',
+      'positionPartyAtHex',
+      'clearPartyHexPosition',
+      'adventuringDay'
+    ])
+      expect(store).toContain(rule)
+    expect(store).toContain('mapPartyCharacterRow')
+  })
+
   it('keeps installation settings out of renderer storage and main JSON files', () => {
     expect(source('src/renderer/src.tsx')).not.toContain('localStorage')
     expect(source('src/renderer/shell/app.tsx')).not.toContain('localStorage')

@@ -3,6 +3,7 @@ import { dirname, resolve } from 'node:path'
 import { CampaignStore } from '../src/core/persistence/sqlite/campaign-store.js'
 import { WorldLocationService } from '../src/core/worldplanner/location-store.js'
 import type { WorldLocationDraft } from '../src/shared/contracts/world-location.js'
+import { seedExampleParty } from '../src/core/party/party-example-seed.js'
 
 const seedLocations: readonly WorldLocationDraft[] = [
   {
@@ -50,6 +51,7 @@ if (existsSync(dataRoot)) {
 const campaigns = new CampaignStore(dataRoot)
 try {
   campaigns.create('Salzmarsch – Beispieldaten')
+  seedExampleParty(campaigns.activeCampaignDatabase())
   const locations = new WorldLocationService(() =>
     campaigns.activeCampaignDatabase()
   )

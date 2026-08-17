@@ -3,25 +3,27 @@ import { CapabilityError } from '../../shared/errors/capability-error.js'
 import {
   partyCharacterDraftSchema,
   partySnapshotSchema,
-  type AdventuringDaySummary,
-  type AdventuringDayCalculation,
-  type PartyCharacter,
   type PartyCharacterDraft,
   type PartySnapshot
 } from '../../shared/contracts/party.js'
 import { uuidv7 } from '../../shared/ids/uuidv7.js'
+import {
+  adventuringDay,
+  applyRest,
+  applyXpAdjustment,
+  clearPartyHexPosition,
+  initialXpForLevel,
+  positionPartyAtHex,
+  xpAfterLevelSelection
+} from './party-roster-domain.js'
+import { mapPartyCharacterRow } from './party-row-mapper.js'
 
-const seededCharacters = ['Alrik', 'Brynn', 'Cora', 'Dain'] as const
-
-export const levelXp = [
-  0, 300, 900, 2700, 6500, 14000, 23000, 34000, 48000, 64000, 85000, 100000,
-  120000, 140000, 165000, 195000, 225000, 265000, 305000, 355000
-] as const
-
-export const dailyXp = [
-  300, 600, 1200, 1700, 3500, 4000, 5000, 6000, 7500, 9000, 10500, 11500, 13500,
-  15000, 18000, 20000, 25000, 27000, 30000, 40000
-] as const
+export {
+  adventuringDay,
+  calculateAdventuringDay,
+  dailyXp,
+  levelXp
+} from './party-roster-domain.js'
 
 export function initializePartySchema(db: Database.Database): void {
   createPartyTables(db)
@@ -30,21 +32,9 @@ export function initializePartySchema(db: Database.Database): void {
     .prepare('SELECT 1 FROM party_roster_metadata WHERE singleton = 1')
     .get()
   if (metadata !== undefined) return
-  db.transaction(() => {
-    db.prepare(
-      'INSERT INTO party_roster_metadata (singleton, revision) VALUES (1, 0)'
-    ).run()
-    const insert = db.prepare(`
-      INSERT INTO player_characters (
-        id, name, player_name, species, character_class, level,
-        passive_perception, passive_investigation, passive_insight, armor_class,
-        active, xp, xp_since_short_rest, xp_since_long_rest, position
-      ) VALUES (?, ?, NULL, NULL, NULL, 3, NULL, NULL, NULL, NULL, 0, 900, 0, 0, ?)
-    `)
-    seededCharacters.forEach((name, position) =>
-      insert.run(uuidv7(), name, position)
-    )
-  })()
+  db.prepare(
+    'INSERT INTO party_roster_metadata (singleton, revision) VALUES (1, 0)'
+  ).run()
 }
 
 export function migratePartySchema28To29(db: Database.Database): void {
@@ -138,7 +128,7 @@ export class PartyStore {
     const metadata = this.db
       .prepare('SELECT revision FROM party_roster_metadata WHERE singleton = 1')
       .get() as { revision: number }
-    const members = this.db
+    const rows = this.db
       .prepare(
         `
         SELECT id, name, player_name, species, character_class, level,
@@ -149,10 +139,11 @@ export class PartyStore {
         FROM player_characters ORDER BY position, id
       `
       )
-      .all()
-      .map((row) =>
-        rowPartyMember(row, this.languages(String((row as { id: string }).id)))
-      )
+      .all() as Array<Record<string, unknown> & { id: string }>
+    const languages = this.languageMap()
+    const members = rows.map((row) =>
+      mapPartyCharacterRow(row, languages.get(row.id) ?? [])
+    )
     return partySnapshotSchema.parse({
       revision: metadata.revision,
       members,
@@ -170,7 +161,7 @@ export class PartyStore {
           )
           .get() as { value: number }
       ).value
-      const xp = parsed.level === null ? 0 : levelXp[parsed.level - 1]!
+      const xp = initialXpForLevel(parsed.level)
       const id = uuidv7()
       this.db
         .prepare(
@@ -214,10 +205,7 @@ export class PartyStore {
         .prepare('SELECT xp FROM player_characters WHERE id = ?')
         .get(id) as { xp: number } | undefined
       if (!current) throw new CapabilityError('not_found', false)
-      const xp =
-        parsed.level === null
-          ? current.xp
-          : Math.max(current.xp, levelXp[parsed.level - 1]!)
+      const xp = xpAfterLevelSelection(current.xp, parsed.level)
       this.db
         .prepare(
           `
@@ -252,6 +240,7 @@ export class PartyStore {
     mapId: string,
     coordinate: Readonly<{ q: number; r: number }>
   ): void {
+    const position = positionPartyAtHex(mapId, coordinate)
     const update = this.db.prepare(
       `UPDATE player_characters
        SET travel_map_id = ?, travel_q = ?, travel_r = ?,
@@ -259,7 +248,7 @@ export class PartyStore {
        WHERE id = ?`
     )
     for (const id of ids) {
-      if (update.run(mapId, coordinate.q, coordinate.r, id).changes !== 1)
+      if (update.run(position.mapId, position.q, position.r, id).changes !== 1)
         throw new CapabilityError('not_found', false)
     }
     this.db
@@ -313,13 +302,14 @@ export class PartyStore {
   clearHexTravelPositions(mapId: string, tileIds: ReadonlySet<string>): void {
     const impacts = this.hexTravelImpacts(mapId, tileIds)
     if (impacts.length === 0) return
+    const next = clearPartyHexPosition()
     const clear = this.db.prepare(
       `UPDATE player_characters
-       SET travel_map_id = NULL, travel_q = NULL, travel_r = NULL,
-           travel_state = 'attached-unpositioned'
+       SET travel_map_id = ?, travel_q = ?, travel_r = ?, travel_state = ?
        WHERE id = ?`
     )
-    for (const impact of impacts) clear.run(impact.memberId)
+    for (const impact of impacts)
+      clear.run(next.mapId, next.q, next.r, next.state, impact.memberId)
     this.db
       .prepare(
         'UPDATE party_roster_metadata SET revision = revision + 1 WHERE singleton = 1'
@@ -366,9 +356,7 @@ export class PartyStore {
         | { level: number | null; xp: number; shortXp: number; longXp: number }
         | undefined
       if (!member) throw new CapabilityError('not_found', false)
-      const floor = member.level === null ? 0 : levelXp[member.level - 1]!
-      const nextXp = Math.max(floor, member.xp + delta)
-      const applied = nextXp - member.xp
+      const next = applyXpAdjustment(member, delta)
       this.db
         .prepare(
           `
@@ -379,34 +367,29 @@ export class PartyStore {
           WHERE id = ?
         `
         )
-        .run(
-          nextXp,
-          Math.max(0, member.shortXp + applied),
-          Math.max(0, member.longXp + applied),
-          id
-        )
+        .run(next.xp, next.shortXp, next.longXp, id)
     })
     return this.read()
   }
 
   rest(type: 'short' | 'long', expectedRevision: number): PartySnapshot {
     this.mutate(expectedRevision, () => {
-      if (type === 'short')
-        this.db
-          .prepare(
-            'UPDATE player_characters SET xp_since_short_rest = 0 WHERE active = 1'
-          )
-          .run()
-      else
-        this.db
-          .prepare(
-            `
-            UPDATE player_characters
-            SET xp_since_short_rest = 0, xp_since_long_rest = 0
-            WHERE active = 1
-          `
-          )
-          .run()
+      const members = this.db
+        .prepare(
+          `SELECT id, xp_since_short_rest AS shortXp,
+                  xp_since_long_rest AS longXp
+           FROM player_characters WHERE active = 1`
+        )
+        .all() as Array<{ id: string; shortXp: number; longXp: number }>
+      const update = this.db.prepare(
+        `UPDATE player_characters
+         SET xp_since_short_rest = ?, xp_since_long_rest = ?
+         WHERE id = ?`
+      )
+      for (const member of members) {
+        const next = applyRest(member, type)
+        update.run(next.shortXp, next.longXp, member.id)
+      }
     })
     return this.read()
   }
@@ -467,14 +450,19 @@ export class PartyStore {
       .run()
   }
 
-  private languages(id: string): string[] {
-    return (
-      this.db
-        .prepare(
-          'SELECT language FROM player_character_language WHERE character_id = ? ORDER BY position'
-        )
-        .all(id) as { language: string }[]
-    ).map((row) => row.language)
+  private languageMap(): ReadonlyMap<string, readonly string[]> {
+    const result = new Map<string, string[]>()
+    const rows = this.db
+      .prepare(
+        'SELECT character_id AS characterId, language FROM player_character_language ORDER BY character_id, position'
+      )
+      .all() as Array<{ characterId: string; language: string }>
+    for (const row of rows) {
+      const values = result.get(row.characterId) ?? []
+      values.push(row.language)
+      result.set(row.characterId, values)
+    }
+    return result
   }
 
   private replaceLanguages(id: string, languages: readonly string[]): void {
@@ -493,125 +481,4 @@ export class PartyStore {
 function nullable(value: string | null): string | null {
   const normalized = value?.trim() ?? ''
   return normalized === '' ? null : normalized
-}
-
-function rowPartyMember(
-  row: unknown,
-  languages: readonly string[]
-): PartyCharacter {
-  const value = row as Record<string, unknown>
-  const level = value['level'] === null ? null : Number(value['level'])
-  return {
-    id: String(value['id']),
-    name: String(value['name']),
-    playerName:
-      typeof value['player_name'] === 'string' ? value['player_name'] : null,
-    species: typeof value['species'] === 'string' ? value['species'] : null,
-    characterClass:
-      typeof value['character_class'] === 'string'
-        ? value['character_class']
-        : null,
-    languages: [...languages],
-    level,
-    passivePerception:
-      value['passive_perception'] === null
-        ? null
-        : Number(value['passive_perception']),
-    passiveInvestigation:
-      value['passive_investigation'] === null
-        ? null
-        : Number(value['passive_investigation']),
-    passiveInsight:
-      value['passive_insight'] === null
-        ? null
-        : Number(value['passive_insight']),
-    armorClass:
-      value['armor_class'] === null ? null : Number(value['armor_class']),
-    movementSpeedFeet:
-      value['movement_speed_feet'] === null
-        ? null
-        : Number(value['movement_speed_feet']),
-    travelPosition:
-      value['travel_state'] === 'hex-positioned' &&
-      typeof value['travel_map_id'] === 'string' &&
-      typeof value['travel_q'] === 'number' &&
-      typeof value['travel_r'] === 'number'
-        ? {
-            kind: 'hex',
-            mapId: value['travel_map_id'],
-            q: value['travel_q'],
-            r: value['travel_r']
-          }
-        : null,
-    attachedToPartyToken: value['travel_state'] !== 'detached',
-    active: Number(value['active']) === 1,
-    xp: Number(value['xp']),
-    currentLevelFloor: level === null ? 0 : levelXp[level - 1]!,
-    nextLevelXp: level === null || level === 20 ? null : levelXp[level]!,
-    xpSinceShortRest: Number(value['xp_since_short_rest']),
-    xpSinceLongRest: Number(value['xp_since_long_rest'])
-  }
-}
-
-export function adventuringDay(
-  members: readonly PartyCharacter[]
-): AdventuringDaySummary {
-  const active = members.filter((member) => member.active)
-  const withLevel = active.filter(
-    (member): member is PartyCharacter & { level: number } =>
-      member.level !== null
-  )
-  const available = active.length > 0 && withLevel.length === active.length
-  return {
-    available,
-    partySize: active.length,
-    dailyBudget: available
-      ? withLevel.reduce((sum, member) => sum + dailyXp[member.level - 1]!, 0)
-      : 0,
-    shortRestXp: active.reduce(
-      (sum, member) => sum + member.xpSinceShortRest,
-      0
-    ),
-    longRestXp: active.reduce((sum, member) => sum + member.xpSinceLongRest, 0)
-  }
-}
-
-export function calculateAdventuringDay(
-  rows: readonly { level: number; count: number }[],
-  totalXp = 0
-): AdventuringDayCalculation {
-  const budget = rows.reduce(
-    (sum, row) => sum + dailyXp[row.level - 1]! * row.count,
-    0
-  )
-  if (budget === 0)
-    return {
-      dailyBudget: 0,
-      totalXp,
-      completedDays: 0,
-      dayProgress: 0,
-      shortRests: 0,
-      longRests: 0,
-      timeline: []
-    }
-  const completedDays = Math.floor(totalXp / budget)
-  const remainder = totalXp % budget
-  const partialRests = Math.min(2, Math.floor(remainder / (budget / 3)))
-  const timeline = Array.from(
-    { length: completedDays },
-    (_, index) => `Tag ${index + 1}: ${budget.toLocaleString()} XP · Long Rest`
-  )
-  if (remainder > 0)
-    timeline.push(
-      `Tag ${completedDays + 1}: ${remainder.toLocaleString()} / ${budget.toLocaleString()} XP`
-    )
-  return {
-    dailyBudget: budget,
-    totalXp,
-    completedDays,
-    dayProgress: remainder / budget,
-    shortRests: completedDays * 2 + partialRests,
-    longRests: completedDays,
-    timeline
-  }
 }

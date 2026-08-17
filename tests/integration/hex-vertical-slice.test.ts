@@ -17,6 +17,7 @@ import { WorldLocationStore } from '../../src/core/worldplanner/location-store.j
 import { PartyStore } from '../../src/core/party/party-store.js'
 import { SceneStore } from '../../src/core/scene/scene-store.js'
 import { CampaignUnitOfWork } from '../../src/core/application/campaign-unit-of-work.js'
+import { seedExampleParty } from '../../src/core/party/party-example-seed.js'
 
 const roots: string[] = []
 const campaignStores: CampaignStore[] = []
@@ -32,6 +33,7 @@ function harness() {
   const campaigns = new CampaignStore(root)
   campaignStores.push(campaigns)
   campaigns.create('Hex campaign')
+  seedExampleParty(campaigns.activeCampaignDatabase())
   const database = () => campaigns.activeCampaignDatabase()
   let now = 1_000
   const editing = new HexMapEditingCommandHandler(() => {

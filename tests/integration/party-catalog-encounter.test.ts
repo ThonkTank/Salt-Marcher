@@ -6,6 +6,7 @@ import { CreatureCatalogService } from '../../src/core/creatures/catalog.js'
 import { LivePlayService } from '../../src/core/encounter/live-combat.js'
 import { CampaignStore } from '../../src/core/persistence/sqlite/campaign-store.js'
 import { creatureCatalogQuerySchema } from '../../src/shared/contracts/encounter.js'
+import { seedExampleParty } from '../../src/core/party/party-example-seed.js'
 
 const roots: string[] = []
 
@@ -19,6 +20,7 @@ function harness() {
   roots.push(root)
   const campaigns = new CampaignStore(root)
   campaigns.create('Parity Campaign')
+  seedExampleParty(campaigns.activeCampaignDatabase())
   const play = new LivePlayService(() => campaigns.activeCampaignDatabase())
   const catalog = new CreatureCatalogService(() =>
     campaigns.installationDatabase()

@@ -15,6 +15,7 @@ import { BundledEncounterCatalogProvider } from '../../src/utility/session-gener
 import { SessionGenerationService } from '../../src/utility/session-generation/session-generation-service.js'
 import { sha256EncounterEntropy } from '../../src/utility/session-generation/sha256-entropy.js'
 import { SessionPlannerService } from '../../src/utility/session-planner/session-planner-service.js'
+import { seedExampleParty } from '../../src/core/party/party-example-seed.js'
 
 const roots: string[] = []
 const stores: CampaignStore[] = []
@@ -650,6 +651,7 @@ function createHarness() {
   const campaigns = new CampaignStore(root)
   stores.push(campaigns)
   campaigns.create('Planner test')
+  seedExampleParty(campaigns.activeCampaignDatabase())
   const party = new PartyStore(campaigns.activeCampaignDatabase())
   let snapshot = party.read()
   for (const [position, member] of snapshot.members.entries()) {

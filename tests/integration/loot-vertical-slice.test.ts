@@ -34,6 +34,7 @@ import type {
 import type { GroupRewardTreasureDraft } from '../../src/shared/contracts/loot.js'
 import { legacyLootItem } from '../helpers/loot-item.js'
 import { ItemDefinitionResolver } from '../../src/core/loot/item-definition-resolver.js'
+import { seedExampleParty } from '../../src/core/party/party-example-seed.js'
 
 const roots: string[] = []
 const stores: CampaignStore[] = []
@@ -51,10 +52,12 @@ function campaign() {
   stores.push(campaigns)
   campaigns.create('Loot test')
   const db = campaigns.activeCampaignDatabase()
+  seedExampleParty(db)
   const party = new PartyStore(db)
-  const members = party.read().members
-  party.setMembership(members[0]!.id, true, 0)
-  party.setMembership(members[1]!.id, true, 1)
+  let snapshot = party.read()
+  const members = snapshot.members
+  snapshot = party.setMembership(members[0]!.id, true, snapshot.revision)
+  party.setMembership(members[1]!.id, true, snapshot.revision)
   return { campaigns, db, party, members }
 }
 
@@ -223,6 +226,7 @@ describe('loot vertical slice', () => {
 
   it('anchors multiple treasures to a group and projects them into the scene', () => {
     const { campaigns, db, party } = campaign()
+    const partyRevision = party.read().revision
     const scenes = new SceneStore(db)
     const sceneId = scenes.focusedSceneId()
     const groupId = scenes.saveGroup(
@@ -271,7 +275,7 @@ describe('loot vertical slice', () => {
     expect(projection.groupTreasures[0]?.treasures[0]?.anchor).toMatchObject({
       lastKnownLabel: 'Bergungsort'
     })
-    expect(party.read().revision).toBe(2)
+    expect(party.read().revision).toBe(partyRevision)
   })
 
   it('generates one group reward from the campaign XP policy and saves its provenance', () => {
