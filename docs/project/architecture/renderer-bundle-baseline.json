@@ -1,16 +1,16 @@
 {
-  "recordedAt": "2026-08-16",
-  "reason": "Record Config-V4 loot settings and immutable referenced-item editing on top of the completed NPC catalog workflow.",
-  "dependencyRationale": "No runtime dependency was added; the delta is application-owned loot rules, messages, and editor wiring.",
-  "chunkRationale": "Loot settings stay in the existing lazy encounter-settings route and Group Loot stays in the existing lazy session surface; the completed NPC catalog remains isolated in its catalog chunk.",
+  "recordedAt": "2026-08-17",
+  "reason": "Record the versioned adaptive Session workspace, controller-owned UI state, and accessible layout primitives.",
+  "dependencyRationale": "No runtime dependency was added; growth is application-owned Session controls, NPC state, accessibility primitives, and scoped layout styling.",
+  "chunkRationale": "Session additions remain in the existing lazy session surface; reusable dialog and accessibility primitives remain in their existing shared or feature-lazy chunks, with no new eager shell route.",
   "graphs": {
     "shell": 400451,
-    "workspace": 491520,
-    "session": 162944,
-    "catalog": 179833,
+    "workspace": 491771,
+    "session": 164347,
+    "catalog": 182319,
     "hex": 174781,
     "reference": 39420,
     "pixi": 408625,
-    "reachable": 1465709
+    "reachable": 1482635
   }
 }
