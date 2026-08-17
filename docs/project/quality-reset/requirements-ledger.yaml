@@ -19,32 +19,36 @@ items:
     requirement: "Renderer bleibt ohne Node-, Dateisystem- und Datenbankzugriff."
     acceptance: "Architekturtest und Runtime-Konfiguration verhindern direkten Rendererzugriff."
     evidence_required: "Architekturtest plus Electron-Security-Konfiguration auf finalem SHA."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "8b075905d: the final architecture partition is green and continues to reject Node, filesystem, database, and unrestricted Electron imports from renderer code."
     decision: null
   - id: PRES-002
     source: "Campaign/NPC-Kritik – Was gut funktioniert hat"
     requirement: "Alle IPC-Grenzen bleiben mit strikten Zod-Verträgen validiert und liefern immutable Resultate."
     acceptance: "Kein neuer unvalidierter Renderer/Main/Utility-Kanal; Negativtests bestehen."
     evidence_required: "Contract-/Architekturtests und Operations-Registry."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "8b075905d: all 64 architecture/contract gates pass against the Zod operation registry, preload exposure, boundary parsing, and immutable result conventions."
     decision: null
   - id: PRES-003
     source: "Alle Kritiken – positive Grundarchitektur"
     requirement: "Domainlogik, SQLite, Generatoren und Hintergrundarbeit bleiben im Utility-Prozess."
     acceptance: "Main und Renderer enthalten keine zurückverlagerte Fach- oder SQL-Logik."
     evidence_required: "Dependency-/Architekturtests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "8b075905d: dependency gates remain green with SQL, stores, generators, imports, and background work owned by the Utility process."
     decision: null
   - id: PRES-004
     source: "Campaign/NPC-Kritik – Command Receipts"
     requirement: "Optimistische Revisionen, idempotente Command-Receipts und outcome_unknown-Reconciliation bleiben erhalten."
     acceptance: "Unterbrochene Writes werden nicht blind wiederholt und sind per Command-ID abgleichbar."
     evidence_required: "Crash-/Unknown-outcome-Integrationstests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "5c9971432 + 8b075905d: command-receipt integration tests and outcome_unknown controller tests reconcile the original command identity without blindly repeating persistence."
     decision: null
   - id: PRES-005
     source: "Campaign/NPC- und Sidebar-Kritik – Handoff-Sicherheit"
@@ -59,32 +63,36 @@ items:
     requirement: "ItemReference bleibt geschlossene Union; generierte Kombinationen bleiben run-eigene immutable Definitionen."
     acceptance: "Ledger kopiert keine Magic-/Rarity-/Wertmetadaten; Resolver liefert Definitionen."
     evidence_required: "Schema-/Migration-/Resolvertests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: ItemReference contract/migration/resolver tests keep the closed reference union and resolve run-owned generated definitions without copying catalog metadata into ledger rows."
     decision: null
   - id: PRES-007
     source: "Loot-Kritik – Was gut ist"
     requirement: "Generated Runs bleiben immutable und konkrete persistierte Resultate bleiben Replay-Autorität."
     acceptance: "Spätere Engine-/Katalogaktivierung verändert vorhandene Runs nicht."
     evidence_required: "Historische Run-Hydration und Katalogwechseltest."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: historical reward-v2 hydration, version/hash catalog resolution, and immutable-run integration tests preserve persisted generated results across current-engine changes."
     decision: null
   - id: PRES-008
     source: "Loot-Kritik – Was gut ist"
     requirement: "Group Commit und Distribution bleiben transaktional und idempotent; Loot bleibt aus LiveSessionSnapshot getrennt."
     acceptance: "Ein Commit ist atomar; Wiederholung dupliziert nichts; Session-Snapshot enthält kein Loot-Aggregat."
     evidence_required: "Transaktions-/Idempotenz- und Contracttests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: Loot integration tests prove atomic/idempotent Group commit and distribution; LiveSessionSnapshot contract tests keep Loot outside the session aggregate."
     decision: null
   - id: PRES-009
     source: "Sidebar-Kritik – positives Schlussurteil"
     requirement: "Axe, Golden Masters und Layout-Unit-Tests bleiben als gezielte Werkzeuge erhalten."
     acceptance: "Sie werden stabilisiert und fokussiert, nicht pauschal entfernt oder abgeschwächt."
     evidence_required: "Neue Suite-Struktur plus Beispiele real gefundener Fehler."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "8b075905d: axe remains in functional scenarios, Goldens move to an explicit owned visual pass, and layout/geometry units reject the formerly accepted stale 1024px resize while allowing accessible ellipsis."
     decision: null
 
   - id: GIT-001
@@ -247,16 +255,18 @@ items:
     requirement: "Validierung, benannte Migration und temporäre Laufzeitanpassung sind getrennt."
     acceptance: "Rohpräferenz, Migrationsergebnis und effective layout bleiben unterscheidbar."
     evidence_required: "Schema-/Migration-/Runtime-Fit-Tests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: SessionLayout V2 exposes distinct validation, named current/migrated/invalid results, immutable preferred state, measured available space, and derived effective fit."
     decision: null
   - id: CONTRACT-005
     source: "Campaign/NPC-Kritik – überbreite Revisionen"
     requirement: "Commands verlangen und erhöhen nur Revisionen tatsächlich berührter Aggregate."
     acceptance: "NPC-Notizsave scheitert nicht an unberührter Fraktionsrevision."
     evidence_required: "Concurrent-Revision-Integrationstest."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "5c9971432: world NPC integration saves a same-membership note/lifecycle update with an intentionally stale unrelated faction revision while preserving aggregate-local revisions."
     decision: null
   - id: CONTRACT-006
     source: "Loot-Kritik – unabhängige Versionen"
@@ -1287,88 +1297,99 @@ items:
     requirement: "Goldenaufnahme wartet auf fertigen Schatz-Draft und den erwarteten aktiven Tab."
     acceptance: "Der konkrete Race reproduziert vor Fix und besteht stabil nach Fix."
     evidence_required: "Focused regression repeated locally/CI."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "242caff74 + 8b075905d: the Group Loot test waits for the completed draft and active editor state; the isolated visual owner passed locally without modifying its Golden."
     decision: null
   - id: E2E-002
     source: "Sidebar-Kritik – campaign-walking über 1100 Zeilen"
     requirement: "Mega-Reise wird in kurze unabhängig startende fachliche Szenarien zerlegt."
     acceptance: "Ein Szenariofehler hinterlässt keinen Zustand für andere Features."
     evidence_required: "Suite registry and isolation tests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "8b075905d: the four campaign scenarios each start from the empty fixture, with every later scenario explicitly creating its own named campaign; the focused built suite passed all four."
     decision: null
   - id: E2E-003
     source: "Sidebar-Kritik – nth-child/CSS/deutsche Buttontexte"
     requirement: "E2E verwendet stabile semantische Selektoren."
     acceptance: "Reines CSS-/Copy-Refactoring bricht Verhaltenstests nicht."
     evidence_required: "Selector inventory/static gate."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "8b075905d: Session register rows expose semantic data-register-field selectors and the architecture gate rejects nth-child/nth-of-type and querySelector first/last coupling in E2E sources."
     decision: null
   - id: E2E-004
     source: "Sidebar-Kritik – Verhalten und Pixel-Goldens gekoppelt"
     requirement: "Funktionale E2E- und visuelle Suites sind getrennt."
     acceptance: "Ein Goldenupdate führt nicht die gesamte fachliche Reise aus."
     evidence_required: "Separate commands/suites."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "8b075905d: functional E2E runs with visual assertions disabled; test:visual:built executes only manifest-owned test patterns and passed all five owner suites independently."
     decision: null
   - id: E2E-005
     source: "Sidebar-Kritik – Golden CLI nur ein Name"
     requirement: "Golden-Update akzeptiert mehrere explizite Namen in einem Lauf."
     acceptance: "Zusammengehörige Bilder können gezielt gemeinsam aktualisiert werden."
     evidence_required: "CLI test."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "8b075905d: visual update parsing accepts multiple explicit names from one suite, rejects cross-suite batches, and has focused CLI policy tests."
     decision: null
   - id: E2E-006
     source: "Sidebar-Kritik – Resizeprüfung akzeptierte alten Wert"
     requirement: "Electron-Resize besitzt expliziten Renderer-/Layout-ready-Handshake."
     acceptance: "Test kann alten 1024-Wert nicht als erfolgreiche 1280-Größe akzeptieren."
     evidence_required: "Handshake regression test."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "8b075905d: Electron confirms exact outer bounds, renderer confirms content bounds, and Session confirms its ResizeObserver measurement plus data-session-layout-ready; focused built campaign/dialog suites passed."
     decision: null
   - id: E2E-007
     source: "Sidebar-Kritik – 32px-Toleranz plattformabhängig"
     requirement: "Viewportbeweis basiert auf bestätigtem Inhaltslayout, nicht nur pauschaler Pixel-Toleranz."
     acceptance: "Plattformrahmenabweichung ist getrennt von Workspacebreite modelliert."
     evidence_required: "Cross-environment geometry test."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "8b075905d: native frame, content viewport, and owned workspace widths are modeled separately with a one-pixel measurement allowance; the former blanket 32px tolerance is removed."
     decision: null
   - id: E2E-008
     source: "Sidebar-Kritik – Folgefehler nach offenem Dialog/Zoom"
     requirement: "Jede Suite startet aus eigener Fixture und garantiert Cleanup/Prozessende."
     acceptance: "Reihenfolge oder vorheriger Fehler verändert Folgeergebnis nicht."
     evidence_required: "Randomized-order/isolation run."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "8b075905d: every suite materializes a unique profile and exits its Electron process; seed 20260817 reordered restart before workspaces and both passed with atomic result receipt 1786993574590-769999."
     decision: null
   - id: E2E-009
     source: "Sidebar-Kritik – Überlaufprüfung zu streng"
     requirement: "Overflowtests unterscheiden legitime Truncation von unzulässigem Layoutverlust."
     acceptance: "Nachfahren werden nicht pauschal als Fehler gewertet."
     evidence_required: "Positive/negative overflow fixtures."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "8b075905d: positive/negative overflow fixtures distinguish owned accessible nowrap/ellipsis from controls or layout pixels escaping their owner."
     decision: null
   - id: E2E-010
     source: "Sidebar-Kritik – falsche Annahme Party initial geschlossen"
     requirement: "E2E-Fixtures und Assertions definieren Initialzustände ausdrücklich."
     acceptance: "Tests nehmen keine implizite Expansion/Sichtbarkeit an."
     evidence_required: "Fixture contract tests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "8b075905d: the registry contract fixes the campaign fixture as empty and explicit fixture materialization plus controller/E2E assertions define participant and expansion state."
     decision: null
   - id: E2E-011
     source: "Loot-Kritik – Timeout als Flake-Fix"
     requirement: "Timeouterhöhung allein gilt nicht als Race-/Flake-Reparatur."
     acceptance: "SessionGeneration-E2E besitzt Zustandsreadiness und stabile Laufzeitbegründung."
     evidence_required: "Repeated CI runs and removed/unneeded special timeout."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "242caff74: SessionGeneration waits on persisted domain readiness instead of sleeping or merely raising the timeout; focused built runs and candidate CI run 32037719930 are green for the owning shard."
     decision: null
 
   - id: HANDOFF-001
@@ -1511,8 +1532,9 @@ items:
     requirement: "Character-Loot-Balances werden zentral aus Item-Referenzen aufgelöst; verkaufte/weitergegebene Rewards bleiben im kumulativen Soll."
     acceptance: "Disposition eines Items senkt nicht rückwirkend das erhaltene Reward-Soll und erzeugt kein zweites Metadatenmodell."
     evidence_required: "Balance-/Disposition-Regressionsfälle."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: character-loot reward-balance tests resolve definitions from ItemReference and prove sold/corrected entries remain in cumulative received value without a second metadata model."
     decision: null
   - id: PARTY-007
     source: "Campaign/NPC-Kritik – PartyStore bündelt XP, Rest, Reise und Adventure Day"
@@ -1573,6 +1595,7 @@ items:
     requirement: "UI-Fachzustände werden primär in Controller-/Komponententests bewiesen; E2E bleibt auf Integrationsgrenzen fokussiert."
     acceptance: "Lokale Zustandsfehler benötigen keine Mega-E2E-Reise zur Abdeckung."
     evidence_required: "Test mapping from controller to minimal E2E."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b + 8b075905d: Session controller, NPC reducer, primitives, and adaptive layout are covered by focused component/unit tests; E2E is limited to process, persistence, accessibility, geometry, and visual integration boundaries."
     decision: null

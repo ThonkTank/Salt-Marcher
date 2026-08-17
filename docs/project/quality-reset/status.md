@@ -37,7 +37,7 @@ traceability record is [requirements-ledger.yaml](requirements-ledger.yaml).
 | M3 · world planner, roster, references | verified | `38ef442f6` + `5c9971432`; `check:world-planner`, architecture and integration gates green |
 | M4 · campaign import product path | verified | `2dd82e654`; `check:campaign-import`, architecture, portable unit and integration gates green |
 | M5 · session UI and layout | verified | `7ada6e15b`; controller/primitive/layout tests, 61 architecture gates and focused built E2E green |
-| M6 · focused verification and handoff | pending | — |
+| M6 · focused verification and handoff | in progress | `8b075905d`; fast, isolated functional, visual, and randomized-order gates green; remote candidate and single final handoff pending |
 
 ## M0 decisions
 
@@ -112,3 +112,21 @@ traceability record is [requirements-ledger.yaml](requirements-ledger.yaml).
 - Production rosters remain empty. E2E materialization creates every declared
   participant explicitly; Reward-v3 and stable scenario-scroll visual changes
   are captured only in their named Golden Masters.
+
+## M6 decisions
+
+- Functional Electron scenarios and visual comparison are separate canonical
+  stages. Functional runs keep axe and domain behavior but do not read pixels;
+  visual runs select only manifest-owned scenarios and never update implicitly.
+- Every Golden names both its suite and owning test pattern. The update command
+  accepts an explicit same-suite batch, while unrestricted or cross-suite
+  updates remain invalid.
+- Window verification separates native outer bounds, content bounds, and the
+  ResizeObserver-owned Session workspace. Layout readiness is an explicit DOM
+  handshake; the former blanket frame tolerance is removed.
+- Campaign scenarios start from the empty fixture and create their own domain
+  prerequisites. Semantic register selectors and a positional-selector gate
+  replace DOM-order coupling.
+- The E2E runner accepts a reproducible shuffle seed. Seed `20260817` ran
+  `restart` before `workspaces`; both passed from unique materialized profiles
+  with atomic summary receipt `1786993574590-769999`.
