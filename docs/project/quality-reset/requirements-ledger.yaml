@@ -353,48 +353,54 @@ items:
     requirement: "Ownership der NPC-Fraktionsmitgliedschaft ist eindeutig benannt und durch Domain/API/SQL konsistent."
     acceptance: "Nur ein Owner mutiert die Relation; alle anderen nutzen Ports."
     evidence_required: "Architekturdokument, Dependencytest und Storetest."
-    status: open
-    evidence: []
-    decision: null
+    status: verified
+    evidence:
+      - "5c9971432: WorldNpcApplicationService owns membership mutations; architecture and integration gates are green."
+    decision: "World Planner owns the NPC-faction relation; Encounter sources are consumers only."
   - id: WORLD-002
     source: "Campaign/NPC-Kritik – optionaler Fraktionskoordinator"
     requirement: "Membership-Port ist für mutierende World-Planner-Services verpflichtend."
     acceptance: "Keine Konfiguration, in der Reads funktionieren und Mutationen erst zur Laufzeit wegen fehlendem Port scheitern."
     evidence_required: "Konstruktionstyp-/Integrationstest."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "5c9971432: mutating service construction requires a WorldNpcFactionMembershipCoordinator factory."
     decision: null
   - id: WORLD-003
     source: "Campaign/NPC-Kritik – relationale Sicherungen"
     requirement: "NPC-location und faction-NPC-Relationen besitzen Foreign Keys und passende Delete-/Restrict-Semantik."
     acceptance: "Verwaiste IDs sind durch DB-Constraint unmöglich."
     evidence_required: "Migration plus FK-Negativtests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "5c9971432: schema 33 migration adds location SET NULL and faction membership CASCADE FKs; pragma and migration tests pass."
     decision: null
   - id: WORLD-004
     source: "Campaign/NPC-Kritik – direkte creatureById-Abhängigkeit"
     requirement: "World Planner verwendet einen injizierten CreatureReferenceResolver-Port."
     acceptance: "Store importiert keine konkrete statische Creature-Quelle."
     evidence_required: "Dependencytest und Custom-Resolver-Test."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "5c9971432: injected CreatureReferenceResolver plus dependency gate removes the concrete catalog import from WorldNpcStore."
     decision: null
   - id: WORLD-005
     source: "Campaign/NPC-Kritik – EncounterSourceService Sammelservice"
     requirement: "World-Planner-Anwendungsfälle liegen in einem dedizierten Application Service."
     acceptance: "EncounterSourceService besitzt keine NPC-CRUD-Durchleitungen mehr."
     evidence_required: "Architekturtest und entfernte Methoden."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "5c9971432: NPC CRUD moved to WorldNpcApplicationService and was removed from EncounterSourceService."
     decision: null
   - id: WORLD-006
     source: "Campaign/NPC-Kritik – Encounterquellen als Consumer"
     requirement: "Encounter-Quellenauflösung konsumiert schmale World-Planner-Projektionen statt den World Planner zu besitzen."
     acceptance: "Abhängigkeitsrichtung ist durch Ports und Tests erzwungen."
     evidence_required: "Dependency-/Applicationtest."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "5c9971432: architecture gate proves EncounterSourceService has no NPC owner methods or store dependency."
     decision: null
 
   - id: NPC-001
@@ -402,48 +408,54 @@ items:
     requirement: "NPC-Listen werden paginiert und enthalten keine großen Langtextdetails."
     acceptance: "NpcListPage ist begrenzt; NpcDetail lädt Textfelder erst bei Auswahl."
     evidence_required: "Contract, Querytest und Payloadmessung."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "5c9971432: npcs.search returns max-100 compact rows; npcs.detail loads long text on selection."
     decision: null
   - id: NPC-002
     source: "Campaign/NPC-Kritik – lokale Suche/Filter"
     requirement: "NPC-Suche und relevante Filterung erfolgen serverseitig; FTS5 kann hinter klarer Schwelle folgen."
     acceptance: "Renderer lädt nicht den gesamten Bestand zur Suche."
     evidence_required: "Query-/Controller-Test mit großer Fixture."
-    status: open
-    evidence: []
-    decision: null
+    status: verified
+    evidence:
+      - "5c9971432: SQL-backed search/filter inputs replace renderer whole-list filtering; controller and 5,000-row tests pass."
+    decision: "LIKE queries remain the measured path through 5,000 NPCs; FTS is deferred until the 250 ms p95 gate fails."
   - id: NPC-003
     source: "Campaign/NPC-Kritik – große Receipts"
     requirement: "NPC-Command-Receipts enthalten nur Ausgang, gespeicherte Entität und resultierende Revisionen."
     acceptance: "Keine vollständigen NPC-/Fraktionssnapshots in neuen Receipts."
     evidence_required: "Persistenz-/Payloadtest."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "5c9971432: receipt schemas and payload tests retain only saved/deleted outcome and NPC/faction revisions."
     decision: null
   - id: NPC-004
     source: "Campaign/NPC-Kritik – fehlende Retention"
     requirement: "Command-Receipt-Retention ist explizit, sicher und getestet."
     acceptance: "Wachstum ist begrenzt, ohne aktive Idempotenzfenster zu brechen."
     evidence_required: "Retentionpolicy und Alterungs-/Recoverytest."
-    status: open
-    evidence: []
-    decision: null
+    status: verified
+    evidence:
+      - "5c9971432: receipt retention is fixed at the newest 1,000 commands and replay of retained commands is tested."
+    decision: "The newest 1,000 command identities are the supported active idempotency window."
   - id: NPC-005
     source: "Campaign/NPC-Kritik – rohe Creature-ID in UI"
     requirement: "NpcListPage liefert aufgelösten Statblock-Anzeigenamen."
     acceptance: "UI zeigt keinen rohen technischen Identifier als primäre Beschriftung."
     evidence_required: "Projection-/Renderer-Test."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "5c9971432: list/detail projections resolve creature display names and renderer tests show Sprite rather than sprite."
     decision: null
   - id: NPC-006
     source: "Campaign/NPC-Kritik – fehlende Skalierungsschwellen"
     requirement: "Messbare Schwellen für Paging/FTS/Payload sind dokumentiert und durch repräsentative Fixture überwacht."
     acceptance: "Überschreitung löst Gate oder vorgesehenen Querypfad aus."
     evidence_required: "Profiltest mit Schwellenwerten."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "5c9971432: max page 100 and 5,000-row/250 ms p95 thresholds are executable in world-npc integration tests."
     decision: null
 
   - id: REF-001
@@ -451,73 +463,82 @@ items:
     requirement: "Jeder erfolgreiche Befehl meldet exakt geänderte Referenzziele."
     acceptance: "Keine globale Vorher-/Nachher-Serialisierung bei lokaler Mutation."
     evidence_required: "Command-/Invalidierungstest."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "5c9971432: typed change descriptors replace global before/after document serialization."
     decision: null
   - id: REF-002
     source: "Campaign/NPC-Kritik – quadratische Invalidierung"
     requirement: "Ein Dependency Index bestimmt ausschließlich abhängige Ziele."
     acceptance: "Änderung eines NPC invalidiert nur direkt/indirekt betroffene Dokumente."
     evidence_required: "Invalidierungsset- und Skalierungstest."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "5c9971432: ReferenceDependencyIndex tests prove one-NPC and faction-dependent invalidation across a 5,000-NPC fixture."
     decision: null
   - id: REF-003
     source: "Campaign/NPC-Kritik – Utility-Kompositionsdatei"
     requirement: "Referenzindex/-recompute besitzt einen eigenen Owner außerhalb utility/application.ts."
     acceptance: "Utility-Komposition verdrahtet und veröffentlicht nur."
     evidence_required: "Architekturtest und Modulstruktur."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "5c9971432: ReferenceChangeCoordinator owns dependency recompute; utility/application.ts only wires and publishes."
     decision: null
   - id: REF-004
     source: "Campaign/NPC-Kritik – abhängige Labels stale"
     requirement: "NPC-Projektion/Controller reagiert exakt auf NPC-, Fraktions-, Orts- und Creature-Änderungen."
     acceptance: "Externe Namensänderung aktualisiert sichtbare Labels ohne Vollreload."
     evidence_required: "Subscription-/Controller-Integrationstest."
-    status: open
-    evidence: []
-    decision: null
+    status: verified
+    evidence:
+      - "5c9971432: resolved projection plus NPC/faction/location subscriptions refresh labels; dependency index includes creature edges."
+    decision: "The bundled Creature catalog is immutable within a running build; catalog-version changes rebuild projections on startup."
 
   - id: PARTY-001
     source: "Campaign/NPC-Kritik – PartyStore vermischt Schichten"
     requirement: "PartyRoster-Domainmodell ist unabhängig von öffentlichen API-Schemas und SQL sichtbar."
     acceptance: "Domain importiert keine Shared-Contract-Schemas oder better-sqlite3."
     evidence_required: "Dependencytest und Domain-Unit-Tests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "38ef442f6: party-roster-domain has no SQL/shared-contract imports and focused domain/architecture tests pass."
     decision: null
   - id: PARTY-002
     source: "Campaign/NPC-Kritik – expliziter Mapper"
     requirement: "Mapper trennen Domain, Persistenzrows und IPC-Projektionen."
     acceptance: "Neue Profilspalte erfordert keine manuelle Duplizierung durch unverbundene Schichten."
     evidence_required: "Mappertests und Strukturreview."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "38ef442f6: explicit Party row mapper and mapper tests separate persistence rows from carrier projection."
     decision: null
   - id: PARTY-003
     source: "Campaign/NPC-Kritik – Sprach-N+1"
     requirement: "Sprachen und abhängige Partyzeilen werden gebündelt geladen."
     acceptance: "Queryanzahl wächst nicht linear mit Charakterzahl."
     evidence_required: "Query-count-Test."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "38ef442f6: one bundled language query and 64-character constant-query-count test."
     decision: null
   - id: PARTY-004
     source: "Campaign/NPC-Kritik – Democharaktere in Schemainitialisierung"
     requirement: "Neue produktive PartyRoster starten leer."
     acceptance: "Schemaerstellung legt keine Democharaktere an."
     evidence_required: "Fresh-database-Test."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "38ef442f6: fresh production database test proves revision-zero empty roster initialization."
     decision: null
   - id: PARTY-005
     source: "Campaign/NPC-Kritik – Fixtures/Seeds"
     requirement: "Beispieldaten entstehen ausschließlich über explizite Dev-/Test-Seeds."
     acceptance: "Produktionsinitialisierung und Fixtures sind getrennt."
     evidence_required: "Seed-Befehl und Production-init-Test."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "38ef442f6: explicit party-example-seed is used only by development/test harnesses."
     decision: null
   - id: PARTY-006
     source: "Loot-Kritik – zwei Partyrepräsentationen"
@@ -1453,8 +1474,9 @@ items:
     requirement: "XP-, Rest-, Reisepositions- und Adventuring-Day-Regeln liegen in benannten Domainfunktionen statt im SQL-Store."
     acceptance: "Party-Persistenz mappt und speichert; Fachregeln sind ohne Datenbank testbar."
     evidence_required: "Domain unit tests and Store dependency audit."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "38ef442f6: named pure XP, rest, travel-position and Adventuring Day transitions are store-wired and unit tested."
     decision: null
   - id: REWARD-015
     source: "Loot-Kritik – Theme-Priorität bei Magic Items"

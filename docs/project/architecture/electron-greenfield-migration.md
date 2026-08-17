@@ -138,6 +138,24 @@ existing campaign rows. NPC Encounter participation, inferred combat losses,
 generator stock participation, and custom Creature statblocks remain outside
 this slice.
 
+## World Planner ownership and query reset — 2026-08-17
+
+World Planner is the sole owner of NPC persistence and normalized faction
+membership. `WorldNpcApplicationService` requires a Creature reference resolver
+and faction membership coordinator for mutations; Encounter Source no longer
+forwards NPC commands. Schema 33 adds database-enforced location `SET NULL` and
+faction-membership `CASCADE` semantics through the tested 32-to-33 migration.
+
+The public NPC catalog uses bounded server-side search pages without profile
+prose and loads one resolved detail projection on selection. Receipts retain
+only the saved/deleted outcome and resulting revisions inside a 1,000-command
+idempotency window. A reverse Reference dependency index maps Creature,
+Faction, and Location changes to affected NPC documents; typed change
+descriptors replace whole-index/whole-document before-and-after serialization.
+Party schema initialization is empty, example characters are explicit fixture
+data, and persistence delegates XP, rest, travel-position, and Adventuring Day
+rules to database-independent domain functions.
+
 ## Runtime efficiency and delivery hardening — 2026-08-15
 
 The architecture-critique remediation was delivered in six independently

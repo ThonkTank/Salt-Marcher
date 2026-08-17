@@ -34,7 +34,7 @@ traceability record is [requirements-ledger.yaml](requirements-ledger.yaml).
 | M0 · trustworthy integration baseline | in progress | candidate and main remote runs pending |
 | M1 · version and contract truth | in progress | local focused gates green; remote candidate pending |
 | M2 · reward/loot vertical slice | verified | `3b9e70e73` + `242caff74`; `check:loot-parity` and architecture gates green |
-| M3 · world planner, roster, references | in progress | ownership/query/revision audit started |
+| M3 · world planner, roster, references | verified | `38ef442f6` + `5c9971432`; `check:world-planner`, architecture and integration gates green |
 | M4 · campaign import product path | pending | — |
 | M5 · session UI and layout | pending | — |
 | M6 · focused verification and handoff | pending | — |
@@ -64,3 +64,19 @@ traceability record is [requirements-ledger.yaml](requirements-ledger.yaml).
   being silently deleted; they are evidence, not replay authority.
 - `check:loot-parity` is the fast owner gate. Fast-check counterexamples retain
   their seed, and E2E resume receipts retain every attempt log.
+
+## M3 decisions
+
+- World Planner owns NPC-faction membership through a required mutation port;
+  Encounter sources no longer expose or forward NPC CRUD.
+- Schema 33 enforces NPC location and faction membership references. NPC lists
+  are server-filtered, capped at 100 rows, and keep long prose in on-demand
+  detail projections.
+- NPC command receipts retain the newest 1,000 identities and contain only the
+  outcome entity/deletion plus resulting NPC and faction revisions.
+- Reference change descriptors and a reverse dependency index replace global
+  before/after document serialization. Runtime NPC, faction, and location
+  events refresh resolved labels; Creature references are immutable per build.
+- Production Party rosters start empty. Example members are an explicit
+  dev/test seed, Party languages load in constant query count, and XP/rest/
+  travel/adventuring-day rules are independently unit tested.
