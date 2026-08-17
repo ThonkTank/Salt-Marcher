@@ -99,14 +99,15 @@ describe('Session map and travel console', () => {
     const geometry = await client.execute(() => {
       const map = document.querySelector<HTMLElement>('.hex-travel-map')
       const shell = map?.querySelector<HTMLElement>('.hex-canvas-shell')
-      if (!map || !shell) return null
+      const content = map?.closest<HTMLElement>('.session-center-content-slot')
+      if (!map || !shell || !content) return null
       const mapBounds = map.getBoundingClientRect()
       const shellBounds = shell.getBoundingClientRect()
       return {
         toolbarCount: document.querySelectorAll('.hex-map-toolbar').length,
         statusCount: document.querySelectorAll('.hex-map-status').length,
         mapHeight: Math.round(mapBounds.height),
-        viewportHeight: window.innerHeight,
+        contentHeight: Math.round(content.getBoundingClientRect().height),
         widthDelta: Math.round(mapBounds.width - shellBounds.width),
         heightDelta: Math.round(mapBounds.height - shellBounds.height)
       }
@@ -118,7 +119,10 @@ describe('Session map and travel console', () => {
       heightDelta: 2
     })
     if (!geometry) throw new Error('Travel map geometry is unavailable.')
-    expect(geometry.mapHeight).toBeGreaterThan(geometry.viewportHeight * 0.8)
+    expect(geometry.mapHeight).toBeGreaterThan(300)
+    expect(
+      Math.abs(geometry.mapHeight - geometry.contentHeight)
+    ).toBeLessThanOrEqual(1)
 
     const dragToken = (fromQ: number, toQ: number) =>
       client.execute(

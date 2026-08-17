@@ -5,7 +5,7 @@ const runtimeSha = 'a'.repeat(40)
 
 describe('campaign import runtime guard', () => {
   it('rejects a mismatched deployment receipt before profile access', () => {
-    const openProfile = vi.fn()
+    const openProfile = vi.fn((): undefined => undefined)
     expect(() =>
       openAuthorizedCampaignImportRuntime(
         { kind: 'deployment-receipt', deploymentSha: 'b'.repeat(40) },

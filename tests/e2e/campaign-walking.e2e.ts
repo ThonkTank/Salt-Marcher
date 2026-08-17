@@ -161,7 +161,7 @@ describe('campaign walking skeleton', () => {
       expect(scaled.bounds.bottom).toBeLessThanOrEqual(scaled.viewport.height)
       expect(scaled).toMatchObject({
         bodyScrolls: true,
-        ruleColumns: 3,
+        ruleColumns: 1,
         matrixCells: 680
       })
     } finally {
@@ -576,6 +576,16 @@ describe('campaign walking skeleton', () => {
     await (await client.$('button[aria-label="Session"]')).click()
 
     await (await client.$('button=Party')).click()
+    for (const name of ['Alrik', 'Brynn']) {
+      await (await client.$('button=Neuer Roster-Charakter')).click()
+      const editor = await client.$('form.party-editor')
+      await (
+        await editor.$('input[placeholder="Charaktername"]')
+      ).setValue(name)
+      await (await editor.$('input[aria-label="Level"]')).setValue('3')
+      await (await editor.$('button=Erstellen')).click()
+      await editor.waitForExist({ reverse: true, timeout: 5_000 })
+    }
     for (let active = 1; active <= 2; active += 1) {
       const addButtons = await client.$$('button=Zur Party')
       await addButtons[0]?.click()
@@ -1105,7 +1115,39 @@ async function expectScenarioGolden(
     expect(overflow?.outsideWorkspace).toBeLessThanOrEqual(1)
   }
   await setElectronWindowSize(client, 1280, 800)
-  await expectElementGolden(client, name, 'aside[aria-label="Szenario Panel"]')
+  await client.execute(async () => {
+    if (document.activeElement instanceof HTMLElement)
+      document.activeElement.blur()
+    const panel = document.querySelector<HTMLElement>(
+      'aside[aria-label="Szenario Panel"]'
+    )
+    const resetScroll = () => {
+      if (panel) {
+        panel.scrollTop = 0
+        panel.scrollLeft = 0
+      }
+      for (
+        let ancestor = panel?.parentElement ?? null;
+        ancestor;
+        ancestor = ancestor.parentElement
+      ) {
+        ancestor.scrollTop = 0
+        ancestor.scrollLeft = 0
+      }
+    }
+    resetScroll()
+    panel?.scrollIntoView({ block: 'start', inline: 'nearest' })
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+    )
+    resetScroll()
+  })
+  await expectElementGolden(
+    client,
+    name,
+    'aside[aria-label="Szenario Panel"]',
+    false
+  )
 }
 
 async function expectGroupManagementGolden(client: WdioBrowser): Promise<void> {

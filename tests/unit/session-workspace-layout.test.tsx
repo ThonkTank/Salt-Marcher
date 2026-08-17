@@ -4,7 +4,11 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CapabilityProvider } from '../../src/renderer/capabilities/capability-provider.js'
 import { SessionControlPanel } from '../../src/renderer/features/session/session-control-panel.js'
-import { fitSessionPaneWidths } from '../../src/renderer/features/session/session-panel-layout-geometry.js'
+import {
+  deriveSessionLayoutState,
+  dividerLimits,
+  measuredCenterIntrinsicWidth
+} from '../../src/renderer/features/session/session-panel-layout-geometry.js'
 import { SessionScenarioPanel } from '../../src/renderer/features/session/session-scenario-panel.js'
 import type { SaltMarcherApi } from '../../src/shared/contracts/capability-api.js'
 import type { LiveSessionSnapshot } from '../../src/shared/contracts/live-session.js'
@@ -43,31 +47,118 @@ function snapshot(): LiveSessionSnapshot {
 }
 
 describe('session workspace layout', () => {
-  it('fits oversized panes proportionally while preserving every minimum', () => {
+  it('fits scenario first while preserving preferred widths and every minimum', () => {
+    const preferred = {
+      schemaVersion: 2 as const,
+      controlPaneWidth: 440,
+      scenarioPaneWidth: 420,
+      centerTab: 'details' as const
+    }
     expect(
-      fitSessionPaneWidths(
-        { controlPaneWidth: 440, scenarioPaneWidth: 420 },
-        958
-      )
-    ).toEqual({ controlPaneWidth: 298, scenarioPaneWidth: 282 })
+      deriveSessionLayoutState(preferred, {
+        workspaceWidth: 958,
+        centerIntrinsicWidth: 360
+      })
+    ).toMatchObject({
+      preferred,
+      effective: { controlPaneWidth: 316, scenarioPaneWidth: 264 },
+      mode: 'full'
+    })
     expect(
-      fitSessionPaneWidths(
-        { controlPaneWidth: 300, scenarioPaneWidth: 264 },
-        958
-      )
-    ).toEqual({ controlPaneWidth: 300, scenarioPaneWidth: 264 })
+      deriveSessionLayoutState(preferred, {
+        workspaceWidth: 700,
+        centerIntrinsicWidth: 420
+      })
+    ).toMatchObject({ preferred, mode: 'compact' })
+    expect(
+      deriveSessionLayoutState(preferred, {
+        workspaceWidth: 512,
+        centerIntrinsicWidth: 720
+      })
+    ).toMatchObject({ preferred, mode: 'stacked' })
+  })
+
+  it.each([
+    {
+      name: 'native frame and rail leave a wide workspace',
+      workspaceWidth: 1240,
+      centerIntrinsicWidth: 420,
+      mode: 'full'
+    },
+    {
+      name: '200 percent scale leaves a compact workspace',
+      workspaceWidth: 720,
+      centerIntrinsicWidth: 440,
+      mode: 'compact'
+    },
+    {
+      name: 'pseudolocalized content raises the measured center minimum',
+      workspaceWidth: 900,
+      centerIntrinsicWidth: 620,
+      mode: 'compact'
+    },
+    {
+      name: 'temporary window shrink composes panels vertically',
+      workspaceWidth: 512,
+      centerIntrinsicWidth: 420,
+      mode: 'stacked'
+    }
+  ])('keeps preferences immutable when $name', (testCase) => {
+    const preferred = {
+      schemaVersion: 2 as const,
+      controlPaneWidth: 440,
+      scenarioPaneWidth: 420,
+      centerTab: 'details' as const
+    }
+    const state = deriveSessionLayoutState(preferred, testCase)
+    expect(state.mode).toBe(testCase.mode)
+    expect(state.preferred).toBe(preferred)
+    expect(preferred).toEqual({
+      schemaVersion: 2,
+      controlPaneWidth: 440,
+      scenarioPaneWidth: 420,
+      centerTab: 'details'
+    })
+  })
+
+  it('uses the same measured geometry for divider and fitted limits', () => {
+    expect(dividerLimits('left', 264, 958, 360)).toEqual({
+      min: 280,
+      max: 316
+    })
+    expect(dividerLimits('right', 316, 958, 360)).toEqual({
+      min: 264,
+      max: 264
+    })
+  })
+
+  it('does not mistake stacked allocation for intrinsic center demand', () => {
+    expect(
+      measuredCenterIntrinsicWidth({ clientWidth: 1_199, scrollWidth: 1_199 })
+    ).toBe(360)
+    expect(
+      measuredCenterIntrinsicWidth({ clientWidth: 500, scrollWidth: 620 })
+    ).toBe(620)
   })
 
   it('shows control selectors only while their register row is edited', () => {
-    const value = snapshot()
     render(
       <CapabilityProvider api={{} as SaltMarcherApi}>
         <SessionControlPanel
-          snapshot={value}
-          focused={value.scene.scenes[0]!}
-          setSnapshot={vi.fn()}
-          onError={vi.fn()}
-          manageGroups={vi.fn()}
+          model={{
+            focusedSceneId: sceneId,
+            focusedSceneTitle: 'Standardszene',
+            focusedLocationId: null,
+            focusedLocationLabel: 'Kein Ort',
+            scenes: [{ id: sceneId, title: 'Standardszene' }],
+            locationChoices: [],
+            locationUnavailable: false
+          }}
+          actions={{
+            focusScene: vi.fn(),
+            setSceneLocation: vi.fn(),
+            manageGroups: vi.fn()
+          }}
         />
       </CapabilityProvider>
     )
@@ -99,6 +190,7 @@ describe('session workspace layout', () => {
           scenario="encounter"
           setScenario={setScenario}
           layout={{
+            schemaVersion: 2,
             controlPaneWidth: 300,
             scenarioPaneWidth: 264,
             centerTab: 'details'

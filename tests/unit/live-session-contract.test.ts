@@ -13,6 +13,7 @@ import {
 } from '../../src/shared/contracts/scene.js'
 import {
   defaultSessionLayoutPreference,
+  migrateSessionLayoutPreference,
   sessionLayoutPreferenceSchema
 } from '../../src/shared/contracts/session-layout.js'
 import {
@@ -157,17 +158,32 @@ describe('live session capability contracts', () => {
     expect(
       sessionLayoutPreferenceSchema.parse(defaultSessionLayoutPreference)
     ).toEqual(defaultSessionLayoutPreference)
-    expect(
+    expect(() =>
       sessionLayoutPreferenceSchema.parse({
         ...defaultSessionLayoutPreference,
         controlPaneWidth: 500,
         scenarioPaneWidth: 220
       })
-    ).toEqual({
-      controlPaneWidth: 440,
-      scenarioPaneWidth: 264,
-      centerTab: 'details'
+    ).toThrow()
+    expect(
+      migrateSessionLayoutPreference({
+        controlPaneWidth: 340,
+        scenarioPaneWidth: 300,
+        centerTab: 'catalog'
+      })
+    ).toMatchObject({
+      kind: 'migrated',
+      migration: 'unversioned-pixels-to-v2',
+      preference: { schemaVersion: 2, controlPaneWidth: 340 }
     })
+    expect(
+      migrateSessionLayoutPreference({
+        schemaVersion: 2,
+        controlPaneWidth: 900,
+        scenarioPaneWidth: 20,
+        centerTab: 'details'
+      })
+    ).toMatchObject({ kind: 'invalid' })
     expect(
       sessionLayoutPreferenceSchema.parse({
         leftFraction: 0.62,
@@ -175,6 +191,7 @@ describe('live session capability contracts', () => {
         upperRightTab: 'map'
       })
     ).toEqual({
+      schemaVersion: 2,
       controlPaneWidth: 300,
       scenarioPaneWidth: 264,
       centerTab: 'map'

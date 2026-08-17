@@ -188,7 +188,7 @@ describe('local AppImage installation', () => {
   it('refuses a schema change when no tested migration exists', () => {
     const fixture = createFixture(build('a'))
     const paths = localInstallationPaths(fixture.xdg)
-    const databasePath = createDatabase(paths.campaignData, schemaVersion - 7)
+    const databasePath = createDatabase(paths.campaignData, schemaVersion - 8)
     const before = readFileSync(databasePath)
 
     expectFailure(() => installLocalApp(fixture.options), 'migration-missing')

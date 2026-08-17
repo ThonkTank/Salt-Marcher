@@ -149,11 +149,30 @@ try {
       const play = new LivePlayService(database)
       let party = play.readParty()
       for (const configured of fixture.party) {
-        const member = party.members.find(
+        let member = party.members.find(
           (candidate) => candidate.name === configured.name
         )
-        if (!member)
-          throw new Error(`Fixture party member is missing: ${configured.name}`)
+        if (!member) {
+          party = play.createPartyCharacter(
+            {
+              name: configured.name,
+              playerName: null,
+              species: null,
+              characterClass: null,
+              languages: [],
+              level: 3,
+              passivePerception: null,
+              passiveInvestigation: null,
+              passiveInsight: null,
+              armorClass: null,
+              movementSpeedFeet: configured.movementSpeedFeet
+            },
+            party.revision
+          )
+          member = party.members.find(
+            (candidate) => candidate.name === configured.name
+          )!
+        }
         party = play.updatePartyCharacter(
           member.id,
           {

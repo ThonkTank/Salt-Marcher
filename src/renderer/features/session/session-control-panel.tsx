@@ -1,39 +1,19 @@
 import { useState } from 'react'
-import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
-import type { SceneSnapshot } from '../../../shared/contracts/scene.js'
-import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
-import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import { message } from '../../i18n/session-runtime.de.js'
-import { sessionCapabilities } from './session-capabilities.js'
+import type {
+  SessionControlViewModel,
+  SessionWorkspaceActions
+} from './session-workspace-model.js'
 import './session-control-panel.css'
 
-type RunningScene = SceneSnapshot['scenes'][number]
-
 export function SessionControlPanel(props: {
-  snapshot: LiveSessionSnapshot
-  focused: RunningScene
-  setSnapshot: (snapshot: LiveSessionSnapshot) => void
-  onError: (message: string) => void
-  manageGroups: () => void
+  model: SessionControlViewModel
+  actions: Pick<
+    SessionWorkspaceActions,
+    'focusScene' | 'setSceneLocation' | 'manageGroups'
+  >
 }) {
-  const api = useCapabilityApi()
   const [editing, setEditing] = useState<'scene' | 'location' | null>(null)
-  const run = async (operation: () => Promise<LiveSessionSnapshot>) => {
-    try {
-      props.setSnapshot(await operation())
-      setEditing(null)
-    } catch (cause) {
-      props.onError(capabilityErrorText(cause))
-    }
-  }
-  const location = props.snapshot.scene.locationChoices.find(
-    (candidate) => candidate.id === props.focused.locationId
-  )
-  const locationLabel = props.focused.locationId
-    ? (location?.displayName ??
-      props.focused.locationName ??
-      message('ui.nicht.verfuegbarer.ort'))
-    : message('ui.kein.ort')
   return (
     <section
       className="session-control-panel"
@@ -41,7 +21,7 @@ export function SessionControlPanel(props: {
     >
       <div className="panel-heading">
         <h2>{message('ui.session.steuerung')}</h2>
-        <button onClick={props.manageGroups}>
+        <button onClick={props.actions.manageGroups}>
           {message('ui.gruppen.managen')}
         </button>
       </div>
@@ -53,19 +33,14 @@ export function SessionControlPanel(props: {
               <select
                 autoFocus
                 aria-label={message('ui.aktive.szene')}
-                value={props.focused.id}
+                value={props.model.focusedSceneId}
                 onBlur={() => setEditing(null)}
                 onChange={(event) => {
-                  const sceneId = event.target.value
-                  void run(() =>
-                    sessionCapabilities(api).scene.focus(
-                      sceneId,
-                      props.snapshot.scene.revision
-                    )
-                  )
+                  props.actions.focusScene(event.target.value)
+                  setEditing(null)
                 }}
               >
-                {props.snapshot.scene.scenes.map((scene) => (
+                {props.model.scenes.map((scene) => (
                   <option key={scene.id} value={scene.id}>
                     {scene.title}
                   </option>
@@ -74,12 +49,15 @@ export function SessionControlPanel(props: {
             </span>
           ) : (
             <>
-              <span className="register-value" title={props.focused.title}>
-                {props.focused.title}
+              <span
+                className="register-value"
+                title={props.model.focusedSceneTitle}
+              >
+                {props.model.focusedSceneTitle}
               </span>
               <button
                 type="button"
-                disabled={props.snapshot.scene.scenes.length < 2}
+                disabled={props.model.scenes.length < 2}
                 onClick={() => setEditing('scene')}
               >
                 {message('ui.wechseln')}
@@ -94,26 +72,21 @@ export function SessionControlPanel(props: {
               <select
                 autoFocus
                 aria-label={message('ui.scene.ort')}
-                value={props.focused.locationId ?? ''}
+                value={props.model.focusedLocationId ?? ''}
                 onBlur={() => setEditing(null)}
                 onChange={(event) => {
-                  const locationId = event.target.value || null
-                  void run(() =>
-                    sessionCapabilities(api).scene.setLocation(
-                      props.focused.id,
-                      locationId,
-                      props.snapshot.scene.revision
-                    )
-                  )
+                  props.actions.setSceneLocation(event.target.value || null)
+                  setEditing(null)
                 }}
               >
                 <option value="">{message('ui.kein.ort')}</option>
-                {props.focused.locationId && !location && (
-                  <option value={props.focused.locationId}>
-                    {message('ui.nicht.verfuegbarer.ort')}
-                  </option>
-                )}
-                {props.snapshot.scene.locationChoices.map((choice) => (
+                {props.model.focusedLocationId &&
+                  props.model.locationUnavailable && (
+                    <option value={props.model.focusedLocationId}>
+                      {message('ui.nicht.verfuegbarer.ort')}
+                    </option>
+                  )}
+                {props.model.locationChoices.map((choice) => (
                   <option key={choice.id} value={choice.id}>
                     {choice.displayName}
                   </option>
@@ -124,11 +97,11 @@ export function SessionControlPanel(props: {
             <>
               <span
                 className={`register-value${
-                  props.focused.locationId ? '' : ' unset'
+                  props.model.focusedLocationId ? '' : ' unset'
                 }`}
-                title={locationLabel}
+                title={props.model.focusedLocationLabel}
               >
-                {locationLabel}
+                {props.model.focusedLocationLabel}
               </span>
               <button type="button" onClick={() => setEditing('location')}>
                 {message('ui.setzen')}
@@ -137,7 +110,7 @@ export function SessionControlPanel(props: {
           )}
         </div>
       </div>
-      {props.snapshot.scene.scenes.length > 1 && (
+      {props.model.scenes.length > 1 && (
         <p className="panel-hint">{message('session.independentHint')}</p>
       )}
     </section>

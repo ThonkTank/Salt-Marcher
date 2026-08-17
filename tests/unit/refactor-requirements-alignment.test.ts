@@ -55,4 +55,22 @@ describe('Session Planner, Generation, Encounter, and Loot requirements', () => 
     ])
       expect(planner).toContain(status)
   })
+
+  it('defines measured adaptive Session layout and non-persisting fit', () => {
+    const session = requirement('session', 'requirements-live-session')
+    for (const term of [
+      '`preferred`',
+      '`available`',
+      '`effective`',
+      'native frame',
+      'Electron rail',
+      '200% scale',
+      'Pseudolocalized copy',
+      'Temporary shrink',
+      'never writes either preferred width'
+    ])
+      expect(session).toContain(term)
+    expect(session).toContain('native minimum is 720 px')
+    expect(session).not.toContain('at least 1024 px wide')
+  })
 })

@@ -4,34 +4,28 @@ import {
   sessionLayoutGeometry
 } from '../values/session-layout-values.js'
 
-const clampPaneWidth = (value: number, minimum: number, maximum: number) =>
-  Math.round(Math.max(minimum, Math.min(maximum, value)))
-
 const currentSessionLayoutPreferenceSchema = z
   .object({
+    schemaVersion: z.literal(2),
     controlPaneWidth: z
       .number()
-      .transform((value) =>
-        clampPaneWidth(
-          value,
-          sessionLayoutGeometry.controlPane.min,
-          sessionLayoutGeometry.controlPane.max
-        )
-      ),
+      .int()
+      .min(sessionLayoutGeometry.controlPane.min)
+      .max(sessionLayoutGeometry.controlPane.max),
     scenarioPaneWidth: z
       .number()
-      .transform((value) =>
-        clampPaneWidth(
-          value,
-          sessionLayoutGeometry.scenarioPane.min,
-          sessionLayoutGeometry.scenarioPane.max
-        )
-      ),
+      .int()
+      .min(sessionLayoutGeometry.scenarioPane.min)
+      .max(sessionLayoutGeometry.scenarioPane.max),
     centerTab: z.enum(['details', 'catalog', 'map'])
   })
   .strict()
 
-const legacySessionLayoutPreferenceSchema = z
+const unversionedPixelLayoutSchema = currentSessionLayoutPreferenceSchema.omit({
+  schemaVersion: true
+})
+
+const legacyFractionLayoutSchema = z
   .object({
     leftFraction: z.number(),
     rightTopFraction: z.number(),
@@ -39,20 +33,61 @@ const legacySessionLayoutPreferenceSchema = z
   })
   .strict()
 
-export const sessionLayoutPreferenceSchema = z
-  .union([
-    currentSessionLayoutPreferenceSchema,
-    legacySessionLayoutPreferenceSchema.transform((legacy) => ({
-      controlPaneWidth: 300,
-      scenarioPaneWidth: 264,
-      centerTab: legacy.upperRightTab
-    }))
-  ])
-  .pipe(currentSessionLayoutPreferenceSchema)
-
 export type SessionLayoutPreference = Readonly<
-  z.infer<typeof sessionLayoutPreferenceSchema>
+  z.infer<typeof currentSessionLayoutPreferenceSchema>
 >
 
+export type SessionLayoutMigrationResult =
+  | Readonly<{
+      kind: 'current'
+      preference: SessionLayoutPreference
+    }>
+  | Readonly<{
+      kind: 'migrated'
+      migration: 'unversioned-pixels-to-v2' | 'legacy-fractions-to-v2'
+      preference: SessionLayoutPreference
+    }>
+  | Readonly<{ kind: 'invalid'; issues: readonly z.core.$ZodIssue[] }>
+
+/** Validation, named persistence migration, and runtime fit remain separate. */
+export function migrateSessionLayoutPreference(
+  value: unknown
+): SessionLayoutMigrationResult {
+  const current = currentSessionLayoutPreferenceSchema.safeParse(value)
+  if (current.success) return { kind: 'current', preference: current.data }
+  const pixels = unversionedPixelLayoutSchema.safeParse(value)
+  if (pixels.success)
+    return {
+      kind: 'migrated',
+      migration: 'unversioned-pixels-to-v2',
+      preference: { schemaVersion: 2, ...pixels.data }
+    }
+  const fractions = legacyFractionLayoutSchema.safeParse(value)
+  if (fractions.success)
+    return {
+      kind: 'migrated',
+      migration: 'legacy-fractions-to-v2',
+      preference: {
+        schemaVersion: 2,
+        controlPaneWidth: 300,
+        scenarioPaneWidth: 264,
+        centerTab: fractions.data.upperRightTab
+      }
+    }
+  return { kind: 'invalid', issues: current.error.issues }
+}
+
+export const sessionLayoutPreferenceSchema = z.preprocess((value, context) => {
+  const result = migrateSessionLayoutPreference(value)
+  if (result.kind !== 'invalid') return result.preference
+  context.addIssue({
+    code: 'custom',
+    message: 'Invalid Session layout preference'
+  })
+  return z.NEVER
+}, currentSessionLayoutPreferenceSchema)
+
 export const defaultSessionLayoutPreference: SessionLayoutPreference =
-  sessionLayoutPreferenceSchema.parse(defaultSessionLayoutPreferenceValue)
+  currentSessionLayoutPreferenceSchema.parse(
+    defaultSessionLayoutPreferenceValue
+  )

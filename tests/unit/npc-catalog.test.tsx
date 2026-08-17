@@ -13,6 +13,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { CatalogCapabilities } from '../../src/renderer/features/catalog/catalog-capabilities.js'
 import { useNpcCatalogController } from '../../src/renderer/features/catalog/npc-catalog-controller.js'
 import NpcCatalogSection from '../../src/renderer/features/catalog/npc-catalog-section.js'
+import {
+  initialNpcCatalogState,
+  reduceNpcCatalogState
+} from '../../src/renderer/features/catalog/npc-catalog-state.js'
 import type { CreatureCapabilityPort } from '../../src/renderer/features/creatures/creatures-capabilities.js'
 import { ModalLayerProvider } from '../../src/renderer/shell/modal-layer.js'
 import type { WorldNpc } from '../../src/shared/contracts/world-npc.js'
@@ -106,7 +110,7 @@ function setup(active = true) {
     }
   )
   const search = vi.fn(
-    async (input: {
+    (input: {
       query: string
       lifecycle: WorldNpc['lifecycle'] | null
       factionId?: string | null
@@ -125,7 +129,7 @@ function setup(active = true) {
             .toLocaleLowerCase()
             .includes(input.query.toLocaleLowerCase())
       )
-      return {
+      return Promise.resolve({
         revision: all.length > 2 ? 4 : 3,
         rows: rows.map((npc) => ({
           id: npc.id,
@@ -144,22 +148,22 @@ function setup(active = true) {
         total: rows.length,
         offset: input.offset,
         limit: input.limit
-      }
+      })
     }
   )
   const api = {
     npcs: {
       search,
-      detail: vi.fn(async ({ id }: { id: string }) => {
+      detail: vi.fn(({ id }: { id: string }) => {
         const npc = all.find((candidate) => candidate.id === id)!
-        return {
+        return Promise.resolve({
           revision: all.length > 2 ? 4 : 3,
           npc,
           creatureDisplayName:
             npc.creatureId === 'sprite' ? 'Sprite' : 'Bandit',
           factionDisplayName: npc.factionId ? 'Rosenhof' : null,
           locationDisplayName: npc.locationId ? 'Flussuferhöhle' : null
-        }
+        })
       }),
       create,
       update: vi.fn(),
@@ -317,5 +321,76 @@ describe('NPC catalog UI', () => {
         appearance: 'Leuchtend.'
       }
     })
+  })
+})
+
+describe('NPC catalog lifecycle reducer', () => {
+  it('covers loading, ready, editing, saving and conflict with request tokens', () => {
+    const loading = reduceNpcCatalogState(initialNpcCatalogState, {
+      type: 'load-started',
+      token: 2
+    })
+    expect(
+      reduceNpcCatalogState(loading, { type: 'load-completed', token: 1 })
+    ).toBe(loading)
+    const ready = reduceNpcCatalogState(loading, {
+      type: 'load-completed',
+      token: 2
+    })
+    expect(ready).toEqual({ status: 'ready' })
+    const editing = reduceNpcCatalogState(ready, {
+      type: 'edit-started',
+      npc: erika
+    })
+    const saving = reduceNpcCatalogState(editing, {
+      type: 'save-started',
+      token: 5
+    })
+    expect(saving).toMatchObject({ status: 'saving', npc: erika, token: 5 })
+    expect(
+      reduceNpcCatalogState(saving, { type: 'save-completed', token: 4 })
+    ).toBe(saving)
+    expect(
+      reduceNpcCatalogState(saving, {
+        type: 'save-conflicted',
+        token: 5,
+        message: 'Revision geändert'
+      })
+    ).toEqual({
+      status: 'conflict',
+      npc: erika,
+      token: 5,
+      message: 'Revision geändert'
+    })
+  })
+
+  it('covers confirming and token-guarded deletion', () => {
+    const requested = reduceNpcCatalogState(
+      { status: 'ready' },
+      { type: 'delete-requested', npcId: erikaId }
+    )
+    const deleting = reduceNpcCatalogState(requested, {
+      type: 'delete-started',
+      npcId: erikaId,
+      token: 8
+    })
+    expect(deleting).toEqual({
+      status: 'deleting',
+      npcId: erikaId,
+      phase: 'saving',
+      token: 8
+    })
+    expect(
+      reduceNpcCatalogState(deleting, {
+        type: 'delete-completed',
+        token: 7
+      })
+    ).toBe(deleting)
+    expect(
+      reduceNpcCatalogState(deleting, {
+        type: 'delete-completed',
+        token: 8
+      })
+    ).toEqual({ status: 'ready' })
   })
 })

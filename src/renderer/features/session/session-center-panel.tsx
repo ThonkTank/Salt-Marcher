@@ -23,6 +23,7 @@ import { useReferenceContext } from '../reference/reference-context.js'
 import { message } from '../../i18n/session-runtime.de.js'
 import type { SessionTravelSlots } from './session-travel-slots.js'
 import './session-center-panel.css'
+import { AccessibleTabs } from '../shared/accessible-tabs.js'
 
 type RunningScene = SceneSnapshot['scenes'][number]
 
@@ -73,110 +74,98 @@ export function SessionCenterPanel(props: {
       }`}
       aria-label={message('ui.detailansicht')}
     >
-      <div className="session-panel-tabs" role="tablist">
-        <button
-          role="tab"
-          aria-selected={props.layout.centerTab === 'details'}
-          onClick={() =>
-            props.setLayout({ ...props.layout, centerTab: 'details' })
-          }
-        >
-          {message('ui.detail')}
-        </button>
-        <button
-          role="tab"
-          aria-selected={props.layout.centerTab === 'catalog'}
-          onClick={() =>
-            props.setLayout({ ...props.layout, centerTab: 'catalog' })
-          }
-        >
-          {message('nav.catalog')}
-        </button>
-        <button
-          role="tab"
-          aria-selected={props.layout.centerTab === 'map'}
-          onClick={() => props.setLayout({ ...props.layout, centerTab: 'map' })}
-        >
-          {message('ui.karte')}
-        </button>
-      </div>
-      {props.layout.centerTab === 'map' ? (
-        <div className="session-center-content-slot">
-          {props.travel.renderMap()}
-        </div>
-      ) : props.layout.centerTab === 'catalog' ? (
-        <CreatureInspectorCatalogTable
-          query={catalogQuery}
-          options={catalogOptions}
-          searchBiomeOptions={searchBiomeOptions}
-          page={catalogPage}
-          changed={setCatalogQuery}
-          inspect={(creature) => props.inspectCreature(creature.id, 'Katalog')}
-        />
-      ) : (
-        <>
-          <nav
-            className="detail-history"
-            aria-label={message('ui.detail.verlauf')}
-          >
-            <button
-              aria-label={message('ui.zurueck')}
-              disabled={history.index <= 0}
-              onClick={() => reference.moveNavigation(-1)}
-            >
-              ‹
-            </button>
-            <button
-              aria-label={message('ui.vor')}
-              disabled={history.index >= history.entries.length - 1}
-              onClick={() => reference.moveNavigation(1)}
-            >
-              ›
-            </button>
-            <span>
-              <ReadOnlyProse>
-                {breadcrumb ??
-                  (props.focused.locationName || props.focused.title)}
-              </ReadOnlyProse>
-            </span>
-            <button
-              className="detail-close"
-              aria-label={message('ui.detail.schliessen')}
-              disabled={history.index < 0}
-              onClick={reference.closeNavigation}
-            >
-              ×
-            </button>
-          </nav>
-          <div
-            className="detail-scroll"
-            tabIndex={0}
-            aria-label={message('ui.detailansicht')}
-          >
-            {history.loading ? (
-              <p className="reference-status" role="status">
-                {message('reference.loading')}
-              </p>
-            ) : detail ? (
-              <LazyReferenceDocument document={detail} />
-            ) : (
-              <div className="detail-empty">
-                <p className="section-kicker">{props.focused.title}</p>
-                <h2>
-                  <ReadOnlyProse>
-                    {props.focused.locationName || 'Keine Detailauswahl'}
-                  </ReadOnlyProse>
-                </h2>
-                <p>
-                  {message(
-                    'ui.waehle.ein.monster.aus.einer.gruppe.oder.spaeter'
-                  )}
-                </p>
-              </div>
-            )}
+      <AccessibleTabs
+        label={message('ui.detailansicht')}
+        className="session-panel-tabs"
+        panelClassName="session-center-tab-panel"
+        items={[
+          { value: 'details', label: message('ui.detail') },
+          { value: 'catalog', label: message('nav.catalog') },
+          { value: 'map', label: message('ui.karte') }
+        ]}
+        selected={props.layout.centerTab}
+        changed={(centerTab) => props.setLayout({ ...props.layout, centerTab })}
+      >
+        {props.layout.centerTab === 'map' ? (
+          <div className="session-center-content-slot">
+            {props.travel.renderMap()}
           </div>
-        </>
-      )}
+        ) : props.layout.centerTab === 'catalog' ? (
+          <CreatureInspectorCatalogTable
+            query={catalogQuery}
+            options={catalogOptions}
+            searchBiomeOptions={searchBiomeOptions}
+            page={catalogPage}
+            changed={setCatalogQuery}
+            inspect={(creature) =>
+              props.inspectCreature(creature.id, 'Katalog')
+            }
+          />
+        ) : (
+          <>
+            <nav
+              className="detail-history"
+              aria-label={message('ui.detail.verlauf')}
+            >
+              <button
+                aria-label={message('ui.zurueck')}
+                disabled={history.index <= 0}
+                onClick={() => reference.moveNavigation(-1)}
+              >
+                ‹
+              </button>
+              <button
+                aria-label={message('ui.vor')}
+                disabled={history.index >= history.entries.length - 1}
+                onClick={() => reference.moveNavigation(1)}
+              >
+                ›
+              </button>
+              <span>
+                <ReadOnlyProse>
+                  {breadcrumb ??
+                    (props.focused.locationName || props.focused.title)}
+                </ReadOnlyProse>
+              </span>
+              <button
+                className="detail-close"
+                aria-label={message('ui.detail.schliessen')}
+                disabled={history.index < 0}
+                onClick={reference.closeNavigation}
+              >
+                ×
+              </button>
+            </nav>
+            <div
+              className="detail-scroll"
+              tabIndex={0}
+              aria-label={message('ui.detailansicht')}
+            >
+              {history.loading ? (
+                <p className="reference-status" role="status">
+                  {message('reference.loading')}
+                </p>
+              ) : detail ? (
+                <LazyReferenceDocument document={detail} />
+              ) : (
+                <div className="detail-empty">
+                  <p className="section-kicker">{props.focused.title}</p>
+                  <h2>
+                    <ReadOnlyProse>
+                      {props.focused.locationName || 'Keine Detailauswahl'}
+                    </ReadOnlyProse>
+                  </h2>
+                  <p>
+                    {message(
+                      'ui.waehle.ein.monster.aus.einer.gruppe.oder.spaeter'
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </AccessibleTabs>
     </section>
   )
 }

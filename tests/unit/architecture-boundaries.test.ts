@@ -9,6 +9,8 @@ import {
 import { capabilityEvents } from '../../src/shared/contracts/events.js'
 
 const source = (path: string) => readFileSync(join(process.cwd(), path), 'utf8')
+const escapeRegex = (value: string): string =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 
 function codeFiles(directory: string): string[] {
   return readdirSync(directory)
@@ -284,10 +286,85 @@ describe('architecture boundaries', () => {
     expect(operations).toContain("'npcs.search'")
     expect(operations).toContain("'npcs.detail'")
     expect(operations).not.toContain("'npcs.read'")
+    expect(npcStore).toContain('creatureDisplayName')
+    expect(npcStore).toContain('factionDisplayName')
+    expect(npcStore).toContain('locationDisplayName')
     expect(utility).toContain('new ReferenceChangeCoordinator(')
     expect(utility).not.toMatch(
       /referenceSnapshot|JSON\.stringify\(references\.detail/
     )
+  })
+
+  it('keeps session and NPC views passive behind typed controllers', () => {
+    const workspace = source(
+      'src/renderer/features/session/session-workspace.tsx'
+    )
+    expect(workspace).toContain('useSessionWorkspaceController')
+    expect(workspace).not.toMatch(
+      /useCapabilityApi|sessionCapabilities|useLootSceneController|useState|useEffect/
+    )
+    for (const file of [
+      'src/renderer/features/session/scene-party-card.tsx',
+      'src/renderer/features/session/session-group-card.tsx',
+      'src/renderer/features/session/session-groups-panel.tsx',
+      'src/renderer/features/catalog/npc-catalog-browser.tsx',
+      'src/renderer/features/catalog/npc-catalog-inspector.tsx',
+      'src/renderer/features/catalog/npc-catalog-editor.tsx'
+    ])
+      expect(source(file), `${file} accesses capabilities`).not.toMatch(
+        /useCapabilityApi|window\.saltMarcher|Capabilities\(/
+      )
+    const npcState = source(
+      'src/renderer/features/catalog/npc-catalog-state.ts'
+    )
+    for (const status of [
+      'loading',
+      'ready',
+      'editing',
+      'saving',
+      'conflict',
+      'deleting'
+    ])
+      expect(npcState).toContain(`status: '${status}'`)
+    expect(
+      source('src/renderer/features/workspace/workspace-surface-props.ts')
+    ).toContain("from '../session/session-scenario.js'")
+    expect(
+      source('src/renderer/features/workspace/workspace-surface-props.ts')
+    ).not.toMatch(/type WorkspaceScenario|type SessionScenario\s*=/)
+  })
+
+  it('scopes session styles and keeps core encounter selectors singular', () => {
+    for (const file of [
+      'src/renderer/features/session/session-workspace.css',
+      'src/renderer/features/session/session-control-panel.css',
+      'src/renderer/features/session/session-center-panel.css',
+      'src/renderer/features/session/session-groups-panel.css',
+      'src/renderer/features/session/session-scenario-panel.css',
+      'src/renderer/features/encounter/encounter.css'
+    ])
+      expect(source(file).trimStart(), `${file} is globally unscoped`).toMatch(
+        /^@scope \(\.session-mockup\)/
+      )
+    const encounter = source('src/renderer/features/encounter/encounter.css')
+    for (const selector of [
+      '.scenario-content > footer',
+      '.initiative-list',
+      '.combat-cards',
+      '.combat-card',
+      '.resolution-panel'
+    ])
+      expect(
+        [
+          ...encounter.matchAll(
+            new RegExp(`^\\s*${escapeRegex(selector)}\\s*\\{`, 'gm')
+          )
+        ],
+        `${selector} has competing declarations`
+      ).toHaveLength(1)
+    expect(
+      source('src/renderer/features/worldplanner/world-faction-dialog.css')
+    ).not.toMatch(/1024px/)
   })
 
   it('keeps installation settings out of renderer storage and main JSON files', () => {
@@ -645,10 +722,8 @@ describe('architecture boundaries', () => {
     )
     for (const owner of [
       'src/renderer/features/session-planner/session-planner-dialog-host.tsx',
-      'src/renderer/features/session/session-workspace.tsx',
       'src/renderer/features/session/group-manager-catalog.tsx',
       'src/renderer/features/session/group-manager-draft-pane.tsx',
-      'src/renderer/features/session/scene-party-card.tsx',
       'src/renderer/features/party/party-controls.tsx'
     ])
       expect(source(owner), `${owner} eagerly imports a Loot dialog`).toMatch(
@@ -661,6 +736,7 @@ describe('architecture boundaries', () => {
       'src/renderer/features/session/session-dialog-host.tsx'
     )
     expect(sessionDialogHost).toContain("import('./group-dialog.js')")
+    expect(sessionDialogHost).toMatch(/import\(['"]\.\.\/loot\//)
     expect(sessionDialogHost).not.toContain(
       "import { GroupDialog } from './group-dialog.js'"
     )

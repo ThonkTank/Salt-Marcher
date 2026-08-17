@@ -1,12 +1,13 @@
-import type {
-  KeyboardEvent as ReactKeyboardEvent,
-  PointerEvent as ReactPointerEvent,
-  ReactNode
-} from 'react'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import type { SessionLayoutPreference } from '../../../shared/contracts/session-layout.js'
-import { sessionLayoutGeometry } from '../../../shared/values/session-layout-values.js'
-import { clamp, fitSessionPaneWidths } from './session-panel-layout-geometry.js'
+import { message } from '../../i18n/session-runtime.de.js'
+import { ResizeSeparator } from '../shared/resize-separator.js'
+import {
+  deriveSessionLayoutState,
+  dividerLimits,
+  measuredCenterIntrinsicWidth,
+  type SessionLayoutMeasurement
+} from './session-panel-layout-geometry.js'
 
 export function SessionPanelLayout(props: {
   preference: SessionLayoutPreference
@@ -16,154 +17,98 @@ export function SessionPanelLayout(props: {
   details: ReactNode
   scenario: ReactNode
 }) {
-  const p = props.preference
   const workspaceRef = useRef<HTMLDivElement>(null)
-  const [workspaceWidth, setWorkspaceWidth] = useState<number | null>(null)
+  const centerRef = useRef<HTMLDivElement>(null)
+  const [measurement, setMeasurement] = useState<SessionLayoutMeasurement>({
+    workspaceWidth: null,
+    centerIntrinsicWidth: 360
+  })
   useEffect(() => {
     const workspace = workspaceRef.current
-    if (!workspace) return
+    const center = centerRef.current
+    if (!workspace || !center) return
     const update = () =>
-      setWorkspaceWidth(workspace.getBoundingClientRect().width)
+      setMeasurement({
+        workspaceWidth: workspace.getBoundingClientRect().width,
+        centerIntrinsicWidth: measuredCenterIntrinsicWidth(center)
+      })
     update()
     const observer = new ResizeObserver(update)
     observer.observe(workspace)
+    observer.observe(center)
     return () => observer.disconnect()
   }, [])
-  const effective = fitSessionPaneWidths(p, workspaceWidth)
+  const state = deriveSessionLayoutState(props.preference, measurement)
+  const leftLimits = dividerLimits(
+    'left',
+    state.effective.scenarioPaneWidth,
+    measurement.workspaceWidth,
+    measurement.centerIntrinsicWidth
+  )
+  const rightLimits = dividerLimits(
+    'right',
+    state.effective.controlPaneWidth,
+    measurement.workspaceWidth,
+    measurement.centerIntrinsicWidth
+  )
   return (
-    <div className="session-workspace" ref={workspaceRef}>
+    <div
+      className="session-workspace"
+      data-layout-mode={state.mode}
+      data-session-layout-ready={measurement.workspaceWidth !== null}
+      data-workspace-width={measurement.workspaceWidth ?? undefined}
+      ref={workspaceRef}
+    >
       <div
         className="session-column session-control-column"
-        style={{ width: effective.controlPaneWidth }}
+        style={
+          state.mode === 'full'
+            ? { width: state.effective.controlPaneWidth }
+            : undefined
+        }
       >
         <div className="session-control-pane">{props.control}</div>
         <div className="session-pane">{props.groups}</div>
       </div>
-      <SessionDivider
-        edge="left"
-        value={effective.controlPaneWidth}
-        siblingWidth={effective.scenarioPaneWidth}
-        workspaceWidth={workspaceWidth}
-        changed={(controlPaneWidth) =>
-          props.changed({
-            ...p,
-            controlPaneWidth,
-            scenarioPaneWidth: effective.scenarioPaneWidth
-          })
-        }
-        label="Breite der Steuerungsspalte"
-      />
-      <div className="session-column session-center-column">
+      {state.mode === 'full' && (
+        <ResizeSeparator
+          edge="left"
+          value={state.effective.controlPaneWidth}
+          minimum={leftLimits.min}
+          maximum={leftLimits.max}
+          changed={(controlPaneWidth) =>
+            props.changed({ ...props.preference, controlPaneWidth })
+          }
+          label={message('session.layout.controlWidth')}
+          className="session-divider session-divider-vertical"
+        />
+      )}
+      <div className="session-column session-center-column" ref={centerRef}>
         {props.details}
       </div>
-      <SessionDivider
-        edge="right"
-        value={effective.scenarioPaneWidth}
-        siblingWidth={effective.controlPaneWidth}
-        workspaceWidth={workspaceWidth}
-        changed={(scenarioPaneWidth) =>
-          props.changed({
-            ...p,
-            controlPaneWidth: effective.controlPaneWidth,
-            scenarioPaneWidth
-          })
-        }
-        label="Breite der Szenariospalte"
-      />
+      {state.mode === 'full' && (
+        <ResizeSeparator
+          edge="right"
+          value={state.effective.scenarioPaneWidth}
+          minimum={rightLimits.min}
+          maximum={rightLimits.max}
+          changed={(scenarioPaneWidth) =>
+            props.changed({ ...props.preference, scenarioPaneWidth })
+          }
+          label={message('session.layout.scenarioWidth')}
+          className="session-divider session-divider-vertical"
+        />
+      )}
       <div
         className="session-column session-scenario-column"
-        style={{ width: effective.scenarioPaneWidth }}
+        style={
+          state.mode === 'full'
+            ? { width: state.effective.scenarioPaneWidth }
+            : undefined
+        }
       >
         {props.scenario}
       </div>
     </div>
   )
-}
-
-function SessionDivider(props: {
-  edge: 'left' | 'right'
-  value: number
-  siblingWidth: number
-  workspaceWidth: number | null
-  changed: (value: number) => void
-  label: string
-}) {
-  const resize = (event: ReactPointerEvent<HTMLDivElement>) => {
-    event.preventDefault()
-    const parent = event.currentTarget.parentElement
-    if (!parent) return
-    const bounds = parent.getBoundingClientRect()
-    const update = (clientX: number) => {
-      const raw =
-        props.edge === 'left' ? clientX - bounds.left : bounds.right - clientX
-      const limits = dividerLimits(props.edge, props.siblingWidth, bounds.width)
-      props.changed(clamp(raw, limits.min, limits.max))
-    }
-    update(event.clientX)
-    const move = (next: PointerEvent) => update(next.clientX)
-    const stop = () => {
-      window.removeEventListener('pointermove', move)
-      window.removeEventListener('pointerup', stop)
-      window.removeEventListener('pointercancel', stop)
-    }
-    window.addEventListener('pointermove', move)
-    window.addEventListener('pointerup', stop, { once: true })
-    window.addEventListener('pointercancel', stop, { once: true })
-  }
-  const keyboard = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    const direction =
-      event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0
-    if (!direction) return
-    event.preventDefault()
-    const signedDirection = props.edge === 'left' ? direction : -direction
-    const limits = dividerLimits(
-      props.edge,
-      props.siblingWidth,
-      props.workspaceWidth
-    )
-    props.changed(
-      clamp(props.value + signedDirection * 10, limits.min, limits.max)
-    )
-  }
-  const limits = dividerLimits(
-    props.edge,
-    props.siblingWidth,
-    props.workspaceWidth
-  )
-  return (
-    <div
-      className="session-divider session-divider-vertical"
-      role="separator"
-      aria-label={props.label}
-      aria-orientation="vertical"
-      aria-valuemin={limits.min}
-      aria-valuemax={limits.max}
-      aria-valuenow={props.value}
-      tabIndex={0}
-      onPointerDown={resize}
-      onKeyDown={keyboard}
-    />
-  )
-}
-
-function dividerLimits(
-  edge: 'left' | 'right',
-  siblingWidth: number,
-  workspaceWidth: number | null
-) {
-  const configured =
-    edge === 'left'
-      ? sessionLayoutGeometry.controlPane
-      : sessionLayoutGeometry.scenarioPane
-  if (workspaceWidth === null) return configured
-  const available = Math.floor(
-    workspaceWidth -
-      siblingWidth -
-      sessionLayoutGeometry.centerMinimumWidth -
-      sessionLayoutGeometry.dividerWidth * 2
-  )
-  return {
-    min: configured.min,
-    max: Math.max(configured.min, Math.min(configured.max, available))
-  }
 }

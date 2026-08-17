@@ -3,6 +3,10 @@
   --editor-dialog-block-size: min(520px, calc(100vh - 2rem));
 }
 
+.world-faction-dialog-body-scroll {
+  container-type: inline-size;
+}
+
 .world-faction-dialog-header,
 .world-faction-dialog-footer {
   display: flex;
@@ -292,20 +296,11 @@
   letter-spacing: var(--tracking-caps);
 }
 
-@media (max-width: 1024px) {
-  .world-faction-dialog {
-    height: min(900px, calc(100vh - 2rem));
-  }
-
+@container (max-width: 720px) {
   .world-faction-dialog-body {
     grid-template-columns: minmax(0, 1fr);
     align-content: start;
-    overflow: auto;
-  }
-
-  .world-faction-sheet-pane,
-  .world-faction-link-pane {
-    overflow: visible;
+    min-height: auto;
   }
 
   .world-faction-dialog-divider {

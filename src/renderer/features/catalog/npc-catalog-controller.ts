@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import type { CatalogCapabilities } from './catalog-capabilities.js'
 import type { WorldFactionSnapshot } from '../../../shared/contracts/encounter-source.js'
 import type { WorldLocation } from '../../../shared/contracts/world-location.js'
@@ -17,6 +17,10 @@ import {
 import type { CreatureCapabilityPort } from '../creatures/creatures-capabilities.js'
 import { emptyQuery } from '../creatures/creature-state.js'
 import type { SearchableSelectOption } from '../../shell/searchable-select.js'
+import {
+  initialNpcCatalogState,
+  reduceNpcCatalogState
+} from './npc-catalog-state.js'
 
 export type NpcLifecycleFilter = 'all' | WorldNpc['lifecycle']
 
@@ -48,22 +52,33 @@ export function useNpcCatalogController(
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [selectedProjection, setSelectedProjection] =
     useState<WorldNpcDetailProjection | null>(null)
-  const [editing, setEditing] = useState<WorldNpc | null | undefined>()
-  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [state, dispatch] = useReducer(
+    reduceNpcCatalogState,
+    initialNpcCatalogState
+  )
+  const pageRequest = useRef(0)
+  const referenceRequest = useRef(0)
+  const detailRequest = useRef(0)
+  const loadRequest = useRef(0)
+  const mutationRequest = useRef(0)
   const [creatureOptions, setCreatureOptions] = useState<
     readonly SearchableSelectOption[]
   >([])
 
   const loadReferences = useCallback(async () => {
+    const token = ++referenceRequest.current
     const [factions, locationSnapshot] = await Promise.all([
       api.factions.read(),
       api.locations.read()
     ])
-    setFactionSnapshot(factions)
-    setLocations(locationSnapshot.locations)
+    if (referenceRequest.current === token) {
+      setFactionSnapshot(factions)
+      setLocations(locationSnapshot.locations)
+    }
   }, [api])
 
   const loadPage = useCallback(async () => {
+    const token = ++pageRequest.current
     const result = await api.npcs.search({
       query: search,
       lifecycle: lifecycle === 'all' ? null : lifecycle,
@@ -77,17 +92,18 @@ export function useNpcCatalogController(
       offset: 0,
       limit: 50
     })
-    setPage(result)
+    if (pageRequest.current === token) setPage(result)
   }, [api, factionId, lifecycle, locationId, search])
 
   const loadSelected = useCallback(
     async (id: string | null) => {
+      const token = ++detailRequest.current
       if (id === null) {
         setSelectedProjection(null)
         return
       }
       const detail = await api.npcs.detail({ id })
-      setSelectedProjection(detail)
+      if (detailRequest.current === token) setSelectedProjection(detail)
     },
     [api]
   )
@@ -95,9 +111,13 @@ export function useNpcCatalogController(
   useEffect(() => {
     if (!active) return
     let current = true
+    const token = ++loadRequest.current
+    dispatch({ type: 'load-started', token })
     const load = async () => {
       try {
         await Promise.all([loadPage(), loadReferences()])
+        if (current && loadRequest.current === token)
+          dispatch({ type: 'load-completed', token })
       } catch (cause) {
         if (current) reportCapabilityError(onError)(cause)
       }
@@ -153,7 +173,17 @@ export function useNpcCatalogController(
 
   async function save(draft: WorldNpcDraft) {
     const commandId = crypto.randomUUID()
+    const token = ++mutationRequest.current
+    dispatch({ type: 'save-started', token })
+    const rejectSave = (cause: unknown) => {
+      dispatch({
+        type: 'save-conflicted',
+        token,
+        message: capabilityErrorText(cause)
+      })
+    }
     try {
+      const editing = editableNpc(state)
       const receipt = editing
         ? await api.npcs.update({
             commandId,
@@ -168,22 +198,35 @@ export function useNpcCatalogController(
             expectedRevision: page.revision,
             expectedFactionRevision: factionSnapshot.revision
           })
-      acceptMutation(receipt)
+      if (mutationRequest.current !== token) return
+      acceptMutation(receipt, token)
       await Promise.all([loadPage(), loadReferences()])
     } catch (cause) {
-      if (capabilityErrorCode(cause) !== 'outcome_unknown') throw cause
-      const recovered = await api.npcs.commandReceipt({ commandId })
-      if (!recovered || !('saved' in recovered)) throw cause
-      acceptMutation(recovered)
-      await Promise.all([loadPage(), loadReferences()])
+      if (capabilityErrorCode(cause) !== 'outcome_unknown') {
+        rejectSave(cause)
+        throw cause
+      }
+      try {
+        const recovered = await api.npcs.commandReceipt({ commandId })
+        if (!recovered || !('saved' in recovered)) throw cause
+        if (mutationRequest.current !== token) return
+        acceptMutation(recovered, token)
+        await Promise.all([loadPage(), loadReferences()])
+      } catch (recoveryCause) {
+        rejectSave(recoveryCause)
+        throw recoveryCause
+      }
     }
   }
 
-  function acceptMutation(receipt: {
-    revision: number
-    factionRevision: number
-    saved: WorldNpc
-  }) {
+  function acceptMutation(
+    receipt: {
+      revision: number
+      factionRevision: number
+      saved: WorldNpc
+    },
+    token: number
+  ) {
     setPage((current) => ({ ...current, revision: receipt.revision }))
     setFactionSnapshot((current) => ({
       ...current,
@@ -191,12 +234,14 @@ export function useNpcCatalogController(
     }))
     setSelectedId(receipt.saved.id)
     setSelectedProjection(null)
-    setEditing(undefined)
+    dispatch({ type: 'save-completed', token })
     void loadSelected(receipt.saved.id).catch(reportCapabilityError(onError))
   }
 
   async function remove(id: string) {
     const commandId = crypto.randomUUID()
+    const token = ++mutationRequest.current
+    dispatch({ type: 'delete-started', npcId: id, token })
     try {
       let receipt
       try {
@@ -212,6 +257,7 @@ export function useNpcCatalogController(
         if (!recovered || !('deletedId' in recovered)) throw cause
         receipt = recovered
       }
+      if (mutationRequest.current !== token) return
       setPage((current) => ({ ...current, revision: receipt.revision }))
       setFactionSnapshot((current) => ({
         ...current,
@@ -221,9 +267,10 @@ export function useNpcCatalogController(
       setSelectedProjection((current) =>
         current?.npc.id === id ? null : current
       )
-      setDeleteId(null)
+      dispatch({ type: 'delete-completed', token })
       await Promise.all([loadPage(), loadReferences()])
     } catch (cause) {
+      dispatch({ type: 'delete-canceled' })
       reportCapabilityError(onError)(cause)
     }
   }
@@ -238,10 +285,13 @@ export function useNpcCatalogController(
     lifecycle,
     factionId,
     locationId,
+    selectedId,
     selected: selectedProjection?.npc ?? null,
     selectedProjection,
-    editing,
-    deleteId,
+    status: state.status,
+    editing: editableNpc(state),
+    conflict: state.status === 'conflict' ? state.message : null,
+    deleteId: state.status === 'deleting' ? state.npcId : null,
     creatureOptions,
     searchCreatures,
     setSearchInput,
@@ -253,11 +303,31 @@ export function useNpcCatalogController(
       setSelectedProjection(null)
       void loadSelected(npc?.id ?? null).catch(reportCapabilityError(onError))
     },
-    setEditing,
-    setDeleteId,
+    setEditing: (npc: WorldNpc | null | undefined) =>
+      dispatch(
+        npc === undefined
+          ? { type: 'edit-canceled' }
+          : { type: 'edit-started', npc }
+      ),
+    setDeleteId: (id: string | null) =>
+      dispatch(
+        id === null
+          ? { type: 'delete-canceled' }
+          : { type: 'delete-requested', npcId: id }
+      ),
     save,
     remove
   }
+}
+
+function editableNpc(
+  state: ReturnType<typeof reduceNpcCatalogState>
+): WorldNpc | null | undefined {
+  return state.status === 'editing' ||
+    state.status === 'saving' ||
+    state.status === 'conflict'
+    ? state.npc
+    : undefined
 }
 
 function mergeOptions(

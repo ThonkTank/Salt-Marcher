@@ -1,9 +1,14 @@
 export const sessionMessagesDe = {
   'hex.loading': 'Karte wird geladen …',
   'reference.loading': 'Referenz wird geladen …',
+  'reference.contextCreature': '{context} › Kreatur',
+  'reference.catalogCreature': 'Katalog › {name}',
+  'reference.encounterCreature': 'Encounter › {name}',
   'session.independentHint':
     'Szenen führen Gruppen, Details und Combat unabhängig.',
   'session.assignToScene': 'Zur Scene',
+  'session.layout.controlWidth': 'Breite der Steuerungsspalte',
+  'session.layout.scenarioWidth': 'Breite der Szenariospalte',
   'party.noRestBudget': 'Kein Rastbudget',
   'party.restSummary': 'SR {shortRestXp} · LR {longRestXp}',
   'party.custom': 'Eigene Party',

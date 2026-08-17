@@ -1,193 +1,71 @@
-.scenario-panel {
-  display: grid;
-  grid-template-rows: auto 1fr;
-  min-height: 0;
-  min-width: 0;
-  height: 100%;
-  box-sizing: border-box;
-  border: 1px solid var(--border-hair);
-  padding: 0;
-  background: var(--surface-pane-sunken-flat);
-  overflow: hidden;
-}
+@scope (.session-mockup) {
+  .scenario-panel {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    min-height: 0;
+    min-width: 0;
+    height: 100%;
+    box-sizing: border-box;
+    overflow: clip;
+    border: 1px solid var(--border-hair);
+    padding: 0;
+    background: var(--surface-pane-sunken-flat);
+  }
 
-.session-scenario-content-slot {
-  height: 100%;
-  min-height: 0;
-  overflow: hidden;
-}
+  .session-scenario-content-slot,
+  .scenario-tab-panel {
+    min-height: 0;
+    overflow: clip;
+  }
 
-.scenario-tab-panel {
-  min-height: 0;
-  overflow: hidden;
-}
+  .session-scenario-content-slot {
+    height: 100%;
+  }
 
-.roster-life-count,
-.roster-dead-count {
-  display: grid;
-  grid-template-columns: auto 26px auto 26px;
-}
+  .session-scenario-column {
+    min-width: var(--scenario-pane-w);
+    padding: var(--pane-pad);
+    background: var(--surface-pane-sunken);
+  }
 
-.creature-collection-roster li {
-  grid-template-columns: minmax(0, 1fr) auto auto auto;
-}
+  .scenario-panel > header {
+    display: grid;
+    gap: var(--space-5);
+    border-bottom: 1px solid var(--border-hair);
+    padding: var(--space-6);
+  }
 
-.roster-life-count small,
-.roster-dead-count small {
-  color: var(--text-3);
-  font-family: var(--font-smallcaps);
-  text-transform: uppercase;
-}
+  .scenario-tabs {
+    width: 100%;
+  }
 
-.session-scenario-column {
-  min-width: var(--scenario-pane-w);
-  padding: var(--pane-pad);
-  background: var(--surface-pane-sunken);
-}
+  .scenario-tabs button {
+    min-width: 0;
+    flex: 1 1 0;
+  }
 
-.scenario-panel > header {
-  display: grid;
-  gap: var(--space-5);
-  border-bottom: 1px solid var(--border-hair);
-  padding: var(--space-6);
-}
+  .scenario-panel button {
+    padding: 0.45rem 0.3rem;
+    background: var(--surface-button);
+    font-size: 0.72rem;
+  }
 
-.scenario-tabs {
-  width: 100%;
-}
+  .scenario-panel button.primary-action {
+    border-color: var(--accent-rubric);
+    background: var(--accent-rubric);
+    color: var(--text-on-accent);
+    font-family: var(--font-smallcaps);
+    letter-spacing: var(--tracking-caps);
+  }
 
-.scenario-tabs button {
-  min-width: 0;
-  flex: 1 1 0;
-}
+  .scenario-panel button.primary-action:hover {
+    background: var(--accent-rubric-line);
+  }
 
-.scenario-panel button {
-  padding: 0.45rem 0.3rem;
-  background: var(--surface-button);
-  font-size: 0.72rem;
-}
-
-.scenario-empty {
-  display: grid;
-  place-items: center;
-  margin: var(--space-5);
-  border: 1px dashed var(--border-structural);
-  padding: var(--space-7);
-  color: var(--text-3);
-  font-size: 0.77rem;
-  text-align: center;
-}
-
-.scenario-content {
-  display: flex;
-  min-height: 0;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.65rem;
-  overflow: auto;
-  border: 1px solid var(--border-1);
-  padding: 0.65rem;
-}
-
-.scenario-content > button,
-.scenario-content footer button {
-  font-size: 0.78rem;
-}
-
-.scenario-choice {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  border: 1px solid var(--border-1);
-  border-radius: var(--radius-0);
-  padding: 0.55rem;
-}
-
-.scenario-choice.locked {
-  border-color: var(--accent-gold);
-}
-
-.card-controls input,
-.monster-picker input[type='number'] {
-  width: 4.5rem;
-}
-
-.combat-card {
-  display: grid;
-  gap: 0.35rem;
-  border: 1px solid var(--border-1);
-  border-radius: var(--radius-0);
-  background: var(--surface-card-flat);
-  padding: 0.6rem;
-}
-
-.combat-card.active {
-  border-color: var(--accent-gold);
-  box-shadow: inset 3px 0 var(--accent-gold);
-}
-
-.combat-card.dead {
-  opacity: 0.6;
-}
-
-.card-controls,
-.confirm-row {
-  display: flex;
-  gap: 0.3rem;
-}
-
-.primary-action,
-.accent {
-  border-color: var(--accent-rubric);
-  background: var(--accent-rubric);
-  color: var(--text-on-accent);
-  font-family: var(--font-smallcaps);
-  letter-spacing: var(--tracking-caps);
-}
-
-.scenario-panel button.primary-action {
-  border-color: var(--accent-rubric);
-  background: var(--accent-rubric);
-  color: var(--text-on-accent);
-}
-
-.groups-heading button.primary-action {
-  border-color: var(--accent-rubric);
-  background: var(--accent-rubric);
-  color: var(--text-on-accent);
-}
-
-.groups-heading button.primary-action:hover,
-.scenario-panel button.primary-action:hover {
-  background: var(--accent-rubric-line);
-}
-
-.primary-action:disabled,
-.scenario-panel button.primary-action:disabled {
-  border-color: var(--border-structural);
-  background: var(--surface-button);
-  color: var(--text-1);
-  opacity: 1;
-}
-
-.resolution-panel > label {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 0.25rem;
-}
-
-.resolution-panel input[type='range'] {
-  grid-column: 1 / 3;
-  width: 100%;
-}
-
-.result-enemies label {
-  display: flex;
-  gap: 0.4rem;
-}
-
-.loot-summary,
-.session-empty-state {
-  color: var(--text-3);
-  font-size: 0.8rem;
+  .scenario-panel button.primary-action:disabled {
+    border-color: var(--border-structural);
+    background: var(--surface-button);
+    color: var(--text-1);
+    opacity: 1;
+  }
 }

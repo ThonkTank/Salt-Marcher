@@ -167,7 +167,7 @@ describe('dialog architecture', () => {
       }
     })
     expect(factionLayout).toMatchObject({
-      bodyOverflow: 'auto',
+      bodyOverflow: 'visible',
       footerInside: true,
       horizontalDocumentScroll: false
     })
@@ -177,7 +177,7 @@ describe('dialog architecture', () => {
     await clickWhenInteractable(await client.$('button=Neue Encounter-Tabelle'))
     manager = await client.$('section.encounter-table-manager')
     await manager.waitForDisplayed()
-    await assertManagerLayout(client, 'columns')
+    await assertManagerLayout(client, 'stacked')
     await expectAccessibleInBothThemes(client)
     await (await manager.$('button[aria-label="Dialog schließen"]')).click()
     await expect(manager).not.toBeExisting()

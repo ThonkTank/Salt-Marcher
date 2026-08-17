@@ -390,11 +390,12 @@ function semanticProjection(
   const locationNames = new Map(
     locations.map((value) => [value.id, value.displayName])
   )
+  const sections: unknown = JSON.parse(source.sectionsJson)
   return {
     source: {
       id: source.id,
       revision: source.revision,
-      sections: JSON.parse(source.sectionsJson)
+      sections
     },
     party: party.map((member) => ({
       externalKey: external.get(`party:${member.id}`),

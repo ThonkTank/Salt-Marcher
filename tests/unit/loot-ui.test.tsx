@@ -8,13 +8,22 @@ import {
   waitFor
 } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { useState } from 'react'
 import { CapabilityProvider } from '../../src/renderer/capabilities/capability-provider.js'
 import { RewardDistributionDialog } from '../../src/renderer/features/loot/reward-distribution-dialog.js'
 import { SessionGroupsPanel } from '../../src/renderer/features/session/session-groups-panel.js'
+import type {
+  SessionExpansionTarget,
+  SessionGroupsViewModel,
+  SessionWorkspaceActions
+} from '../../src/renderer/features/session/session-workspace-model.js'
 import { ModalLayerProvider } from '../../src/renderer/shell/modal-layer.js'
 import type { SaltMarcherApi } from '../../src/shared/contracts/capability-api.js'
 import type { LiveSessionSnapshot } from '../../src/shared/contracts/live-session.js'
-import type { Treasure } from '../../src/shared/contracts/loot.js'
+import type {
+  LootSceneProjection,
+  Treasure
+} from '../../src/shared/contracts/loot.js'
 import type { SceneSnapshot } from '../../src/shared/contracts/scene.js'
 
 afterEach(cleanup)
@@ -69,22 +78,7 @@ describe('Loot UI', () => {
 
     render(
       <CapabilityProvider api={{} as SaltMarcherApi}>
-        <SessionGroupsPanel
-          snapshot={snapshot}
-          loot={loot}
-          lootInbox={{ revision: 2, entries: [], nextCursor: null }}
-          lootInboxOpen={false}
-          openLootInbox={vi.fn()}
-          loadMoreLoot={vi.fn()}
-          focused={focused}
-          setSnapshot={vi.fn()}
-          onError={vi.fn()}
-          inspect={vi.fn()}
-          edit={vi.fn()}
-          distribute={vi.fn()}
-          createLoot={vi.fn()}
-          editLoot={vi.fn()}
-        />
+        <GroupsPanelHarness snapshot={snapshot} loot={loot} focused={focused} />
       </CapabilityProvider>
     )
 
@@ -109,7 +103,7 @@ describe('Loot UI', () => {
     expect(screen.getByText(/Ortsperle/)).toBeTruthy()
   })
 
-  it('opens an individual character ledger from the compact party chip', async () => {
+  it('routes an individual character ledger request from the compact party chip', () => {
     const focused = {
       id: sceneId,
       title: 'Testszene',
@@ -125,48 +119,26 @@ describe('Loot UI', () => {
       },
       scene: { revision: 0, focusedSceneId: sceneId, scenes: [focused] }
     } as unknown as LiveSessionSnapshot
-    const api = {
-      loot: {
-        ledger: vi.fn().mockResolvedValue({
-          characterId,
-          revision: 0,
-          entries: []
-        })
-      }
-    } as unknown as SaltMarcherApi
+    const openLedger = vi.fn()
 
     render(
-      <CapabilityProvider api={api}>
-        <ModalLayerProvider>
-          <SessionGroupsPanel
-            snapshot={snapshot}
-            loot={{
-              revision: 0,
-              sceneId,
-              locationId: null,
-              locationTreasures: [],
-              groupTreasures: []
-            }}
-            lootInbox={{ revision: 0, entries: [], nextCursor: null }}
-            lootInboxOpen
-            openLootInbox={vi.fn()}
-            loadMoreLoot={vi.fn()}
-            focused={focused}
-            setSnapshot={vi.fn()}
-            onError={vi.fn()}
-            inspect={vi.fn()}
-            edit={vi.fn()}
-            distribute={vi.fn()}
-            createLoot={vi.fn()}
-            editLoot={vi.fn()}
-          />
-        </ModalLayerProvider>
-      </CapabilityProvider>
+      <GroupsPanelHarness
+        snapshot={snapshot}
+        loot={{
+          revision: 0,
+          sceneId,
+          locationId: null,
+          locationTreasures: [],
+          groupTreasures: []
+        }}
+        focused={focused}
+        initialExpansion={{ kind: 'party' }}
+        openLedger={openLedger}
+      />
     )
 
     fireEvent.click(screen.getByRole('button', { name: 'Beute: Alrik' }))
-    expect(await screen.findByRole('dialog')).toHaveTextContent('Alrik')
-    expect(await screen.findByText('Noch keine Beute erhalten.')).toBeVisible()
+    expect(openLedger).toHaveBeenCalledWith(snapshot.party.members[0])
   })
 
   it('traps initial focus and Escape discards a local distribution draft', async () => {
@@ -233,6 +205,101 @@ describe('Loot UI', () => {
     expect(await screen.findByLabelText('Empfänger für Silber')).toHaveValue('')
   })
 })
+
+function GroupsPanelHarness(props: {
+  snapshot: LiveSessionSnapshot
+  focused: SceneSnapshot['scenes'][number]
+  loot: LootSceneProjection
+  initialExpansion?: SessionExpansionTarget
+  openLedger?: SessionWorkspaceActions['openLedger']
+}) {
+  const [expansion, setExpansion] = useState<SessionExpansionTarget>(
+    props.initialExpansion ??
+      (props.focused.groups[0]
+        ? { kind: 'group', groupId: props.focused.groups[0].id }
+        : { kind: 'party' })
+  )
+  const actions = {
+    toggleRow: (target) =>
+      setExpansion((current) => (sameTarget(current, target) ? null : target)),
+    focusScene: vi.fn(),
+    setSceneLocation: vi.fn(),
+    editParty: vi.fn(),
+    openLedger: props.openLedger ?? vi.fn(),
+    inspectCreature: vi.fn(),
+    editGroup: vi.fn(),
+    manageGroups: vi.fn(),
+    reinforce: vi.fn(),
+    restoreGroup: vi.fn(),
+    requestGroupDelete: vi.fn(),
+    cancelGroupDelete: vi.fn(),
+    confirmGroupDelete: vi.fn(),
+    openLootInbox: vi.fn(),
+    loadMoreLoot: vi.fn(),
+    createLoot: vi.fn(),
+    editLoot: vi.fn(),
+    distribute: vi.fn(),
+    closeDialog: vi.fn(),
+    groupSaved: vi.fn(),
+    lootChanged: vi.fn(),
+    assignPartyMember: vi.fn()
+  } satisfies SessionWorkspaceActions
+  const groupLoot = new Map(
+    props.loot.groupTreasures.map((entry) => [entry.groupId, entry.treasures])
+  )
+  const members = props.snapshot.party.members.filter(
+    (member) =>
+      member.active && props.focused.partyMemberIds.includes(member.id)
+  )
+  const model = {
+    scene: props.focused,
+    activeRows: [
+      {
+        kind: 'party',
+        key: 'party',
+        name: 'Party',
+        count: members.length,
+        expanded: expansion?.kind === 'party',
+        members
+      },
+      ...props.focused.groups
+        .filter((group) => !group.archived)
+        .map((group) => ({
+          kind: 'active-group' as const,
+          key: group.id,
+          sceneId: props.focused.id,
+          group,
+          count: group.entries.reduce((sum, entry) => sum + entry.quantity, 0),
+          expanded:
+            expansion?.kind === 'group' && expansion.groupId === group.id,
+          treasures: groupLoot.get(group.id) ?? []
+        }))
+    ],
+    archivedRows: [],
+    locationLoot: props.loot.locationTreasures.map((treasure) => ({
+      kind: 'loot' as const,
+      placement: 'location' as const,
+      treasure
+    })),
+    inboxLoot: [],
+    inbox: { revision: props.loot.revision, entries: [], nextCursor: null },
+    inboxOpen: false
+  } satisfies SessionGroupsViewModel
+  return <SessionGroupsPanel model={model} actions={actions} />
+}
+
+function sameTarget(
+  left: SessionExpansionTarget,
+  right: Exclude<SessionExpansionTarget, null>
+) {
+  return (
+    left?.kind === right.kind &&
+    (left.kind === 'party' ||
+      (left.kind === 'group' &&
+        right.kind === 'group' &&
+        left.groupId === right.groupId))
+  )
+}
 
 function treasure(id: string, label: string, itemName: string): Treasure {
   return {

@@ -8,7 +8,10 @@ import { packTreasures } from '../../src/core/session-generation/packing-stage.j
 import { aggregateReward } from '../../src/core/session-generation/reward-aggregation-stage.js'
 import { planSlotsAndRoles } from '../../src/core/session-generation/slot-role-stage.js'
 import { planSessionTreasures } from '../../src/core/session-generation/treasure-planning-stage.js'
-import type { LootRarity } from '../../src/core/session-generation/loot-catalog.js'
+import type {
+  LootRarity,
+  MagicTypeId
+} from '../../src/core/session-generation/loot-catalog.js'
 import { BundledEncounterCatalogProvider } from '../../src/utility/session-generation/catalog-provider.js'
 import { sha256EncounterEntropy as entropy } from '../../src/utility/session-generation/sha256-entropy.js'
 import { defaultGeneratorLootRules } from '../../src/shared/generator/default-loot-rules.js'
@@ -168,8 +171,7 @@ describe('session generation pure reward stages', () => {
       .get('Common')!
       .find((item) => item.decisionType === 'none')!
     const sourceCurse = catalog.curses[0]!
-    const exactId =
-      `magic-type:${magic.type.toLowerCase()}` as `magic-type:${string}`
+    const exactId: MagicTypeId = `magic-type:${magic.type.toLowerCase()}`
     const selected = selectMagicItems(
       {
         runId,

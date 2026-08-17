@@ -50,6 +50,23 @@ describe('generator preset integration', () => {
       if (!custom) throw new Error('Copied E2E preset is missing after reload.')
 
       let party = await api.party.read()
+      if (party.members.length === 0)
+        party = await api.party.create({
+          character: {
+            name: 'Preset Participant',
+            playerName: null,
+            species: null,
+            characterClass: null,
+            languages: [],
+            level: 3,
+            passivePerception: null,
+            passiveInvestigation: null,
+            passiveInsight: null,
+            armorClass: null,
+            movementSpeedFeet: null
+          },
+          expectedRevision: party.revision
+        })
       for (const member of party.members)
         party = await api.party.setMembership({
           id: member.id,

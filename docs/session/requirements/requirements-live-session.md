@@ -89,12 +89,37 @@ requires explicit discard confirmation.
   accessible administrative placement, ordered waypoint planning, evaluation,
   explicit start, and runtime controls share one Scene-scoped state with the
   `Reise` scenario pane.
-- The right fixed-width column owns the full-height scenario pane. Two vertical
-  dividers resize the left control/group column and right scenario column
-  independently while preserving at least 360 px for the center. The left and
-  right minima are 280 px and 264 px. Both widths and the center tab are stored
-  app-wide in Electron user data; legacy or narrower preferences are normalized
-  on read. The application window is at least 1024 px wide.
+- The right preferred-width column owns the scenario pane. In full composition,
+  two vertical dividers resize the left control/group column and right scenario
+  column independently. The left range is 280–440 px, the right range is
+  264–420 px, each divider is 9 px, and the measured center content requires at
+  least 360 px. Divider ARIA limits and pointer/keyboard limits use this same
+  geometry.
+- The layout model keeps three truths separate: `preferred` is the versioned
+  user choice, `available` is the measured workspace after native frame and
+  Electron rail, and `effective` is the current fitted result. When full
+  composition contracts, the scenario side yields to 264 px before the control
+  side yields to 280 px. Automatic fitting never writes either preferred width.
+- If measured center content cannot fit the three-column minimum, the workspace
+  uses a two-column compact composition at 680 px or more and a stacked
+  composition below 680 px. Restoring space restores the unchanged preferred
+  widths. The application-wide native minimum is 720 px; Session does not raise
+  it and does not add a global CSS minimum.
+- Widths and the center tab are stored app-wide as schema version 2 in Electron
+  user data. Unversioned pixel preferences and legacy fraction preferences have
+  named migrations; invalid data, a successful migration, and a temporary
+  runtime fit remain distinguishable.
+
+### Normative layout acceptance matrix
+
+| Case | Available measurement | Required behavior |
+| --- | --- | --- |
+| Native frame and rail | Actual `.session-workspace` width, not outer-window width | Full composition fits from the measured owner geometry. |
+| 200% scale | 720 px workspace with a 440 px measured center | Compact composition; no global minimum and no preference write. |
+| Pseudolocalized copy | 900 px workspace with a 620 px measured center | Compact composition without clipping controls. |
+| Long group, creature, and combat names | Any composition | Name truncation preserves Count/XP/AC/status and exposes the complete accessible name. |
+| Temporary shrink | 512 px workspace | Stacked composition; restoring width restores the prior preferred widths. |
+| Scene/location controls | Any composition | Selectors appear only for the row being edited; group and location Loot actions remain in their owning expanded section. |
 
 ## Combat Scenario
 

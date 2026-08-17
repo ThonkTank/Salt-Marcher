@@ -11,7 +11,7 @@ import { useWorkspaceErrors } from './use-workspace-errors.js'
 import { WorkspaceErrors } from './workspace-errors.js'
 import { WorkspaceRail } from './workspace-rail.js'
 import { WorkspaceRouteHost } from './workspace-route-host.js'
-import type { WorkspaceScenario } from './workspace-surface-props.js'
+import type { SessionScenario } from '../session/session-scenario.js'
 import { WorkspaceTopBar } from './workspace-top-bar.js'
 import { workspaceDefinition } from './workspace-definition.js'
 import './workspace.css'
@@ -43,8 +43,7 @@ export function WorkspaceApp() {
     useInstallationPreferences(settingsError, coreStatus === 'ready')
   const [partyOpen, setPartyOpen] = useState(false)
   const [dayOpen, setDayOpen] = useState(false)
-  const [groupDialogOpen, setGroupDialogOpen] = useState(false)
-  const [scenarios, setScenarios] = useState<Record<string, WorkspaceScenario>>(
+  const [scenarios, setScenarios] = useState<Record<string, SessionScenario>>(
     {}
   )
   const [inspected, setInspected] = useState<Creature | null>(null)
@@ -72,12 +71,10 @@ export function WorkspaceApp() {
     ? {
         snapshot: coordinator.session,
         setSnapshot: coordinator.setSession,
-        groupDialogOpen,
-        setGroupDialogOpen,
         scenario: coordinator.session.combat
           ? ('encounter' as const)
           : (scenarios[focusedSceneId] ?? 'encounter'),
-        setScenario: (scenario: WorkspaceScenario) =>
+        setScenario: (scenario: SessionScenario) =>
           setScenarios((current) => ({
             ...current,
             [focusedSceneId]: scenario

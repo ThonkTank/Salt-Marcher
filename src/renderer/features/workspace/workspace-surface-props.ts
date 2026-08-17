@@ -1,16 +1,13 @@
 import type { Creature } from '../../../shared/contracts/encounter.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type { SessionLayoutPreference } from '../../../shared/contracts/session-layout.js'
-
-export type WorkspaceScenario = 'encounter' | 'travel'
+import type { SessionScenario } from '../session/session-scenario.js'
 
 export type WorkspaceSurfaceProps = Readonly<{
   snapshot: LiveSessionSnapshot
   setSnapshot: (snapshot: LiveSessionSnapshot) => void
-  groupDialogOpen: boolean
-  setGroupDialogOpen: (open: boolean) => void
-  scenario: WorkspaceScenario
-  setScenario: (scenario: WorkspaceScenario) => void
+  scenario: SessionScenario
+  setScenario: (scenario: SessionScenario) => void
   layout: SessionLayoutPreference
   setLayout: (layout: SessionLayoutPreference) => void
   inspect: (creature: Creature) => void
