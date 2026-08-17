@@ -483,8 +483,15 @@ export class CampaignStore {
       throw new Error('Imported campaign replacement is incomplete')
     rmSync(replacedDirectory, { recursive: true, force: true })
     mkdirSync(dirname(replacedDirectory), { recursive: true })
-    renameSync(currentDirectory, replacedDirectory)
+    // Windows does not allow a directory containing an open SQLite database
+    // to be renamed. Release the active handle before beginning the durable
+    // directory transition; the catch path reopens the recorded campaign.
+    if (previousActiveId === id) {
+      this.activeCampaign?.close()
+      this.activeCampaign = undefined
+    }
     try {
+      renameSync(currentDirectory, replacedDirectory)
       renameSync(stagedDirectory, currentDirectory)
       this.switchActiveCampaign(id)
       this.installation.transaction(() => {
@@ -497,6 +504,10 @@ export class CampaignStore {
       })()
       rmSync(replacedDirectory, { recursive: true, force: true })
     } catch (error) {
+      // switchActiveCampaign may already have opened the replacement. Close it
+      // before removing or renaming either directory on Windows.
+      this.activeCampaign?.close()
+      this.activeCampaign = undefined
       if (existsSync(currentDirectory))
         rmSync(currentDirectory, { recursive: true, force: true })
       if (existsSync(replacedDirectory))
