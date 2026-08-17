@@ -108,24 +108,27 @@ items:
     requirement: "Task-Branches verfolgen ihren tatsächlichen Upstream oder arbeiten als dokumentierter detached Worktree."
     acceptance: "Handoff lehnt falsche/alte Upstream-Zuordnung ab."
     evidence_required: "Git-Preflight-Test und Handoff-Receipt."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "5edc65490: candidate-delivery preflight rejects a candidate whose upstream is not origin/<candidate-branch>; focused state tests cover the mismatch."
     decision: null
   - id: GIT-003
     source: "Integration-State-Original – lokaler main 62 Commits zurück"
     requirement: "Lokaler main wird vor Nutzung fast-forward mit origin/main synchronisiert; Handoff verlässt sich nicht auf veralteten lokalen main."
     acceptance: "Baseline wird stets vom aufgelösten Remote-SHA erstellt."
     evidence_required: "Preflight-Code/Test mit veraltetem lokalen main."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "5edc65490: candidate state resolves origin/main with live ls-remote, fetches it, and checks ancestry without trusting local main; stale-local-main tests pass."
     decision: null
   - id: GIT-004
     source: "Sidebar-Kritik – parallele fremde Änderungen"
     requirement: "Fremde Worktree-Änderungen werden vor Prüfstart erkannt und niemals in Scope aufgenommen."
     acceptance: "Handoff arbeitet aus sauberem isoliertem Worktree und friert den SHA ein."
     evidence_required: "Dirty-/Concurrent-worktree-Test."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "5edc65490: preflight requires a clean candidate and the handoff freezes that SHA into an automatically isolated worktree; dirty/concurrent mutation tests pass."
     decision: null
   - id: GIT-005
     source: "Integration-State-Original – Änderungen trotz roter Checks auf main"
@@ -149,40 +152,45 @@ items:
     requirement: "Linux-spezifische Profil-, AppImage- und /proc-Tests laufen nur unter Linux."
     acceptance: "Windows/macOS führen diese Tests nicht aus; portable Tests bleiben erhalten."
     evidence_required: "Workflowdiff plus grüne Plattformjobs."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "5edc65490: Check separates portable and Linux runtime jobs; runs 32037719930 and 32058898917 prove macOS/Windows avoid /proc/AppImage tests while Linux prerequisites pass."
     decision: null
   - id: CI-003
     source: "Integration-State-Original – Fehler seit d8224d088"
     requirement: "Bekannte vorbestehende CI-Fehler werden als Baselineschuld behoben und nicht den drei Featurecommits zugeschrieben."
     acceptance: "Ursache und Einführungsstand sind dokumentiert; Reparatur ist eigenständig belegt."
     evidence_required: "Commit-/Blame-/Regressionstest."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "5edc65490: baseline audit traces the cross-platform /proc failure to d8224d088 and records the standalone workflow/preflight repair rather than attributing it to feature SHAs."
     decision: null
   - id: CI-004
     source: "Sidebar- und Loot-Kritik – teure vollständige Läufe"
     requirement: "Jeder Hauptslice besitzt einen schnellen offiziellen Checkpfad."
     acceptance: "Loot, World Planner, Campaign Import und Session UI haben fokussierte Checks mit gezielten Beweisen."
     evidence_required: "package scripts, Laufzeiten und CI-Jobs."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "5edc65490 + 2dd82e654 + 7ada6e15b: official check:loot-parity, check:world-planner, check:campaign-import, check:fast/app/e2e paths cover each principal slice before handoff."
     decision: null
   - id: CI-005
     source: "Campaign/NPC-Kritik – automatische Testauswahl und Parallelisierung"
     requirement: "Betroffene Tests werden anhand stabiler Abhängigkeiten ausgewählt; unabhängige E2E-Suites können parallel laufen."
     acceptance: "Änderungen starten passende Slice-Checks; Parallelisierung teilt keine Zustandsfixture."
     evidence_required: "Auswahltest, CI-Konfiguration und Laufzeitvergleich."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "5edc65490 + 8b075905d: workflow shards select stable named suites, every suite materializes a unique profile, and seeded randomized-order execution passes."
     decision: null
   - id: CI-006
     source: "Loot-/Sidebar-Kritik – fehlende Fehlerdiagnostik"
     requirement: "Fehlläufe bewahren vollständige stdout/stderr-, Screenshot-, Diff- und Zustandsartefakte."
     acceptance: "Die Ursache eines absichtlich fehlschlagenden Tests ist ohne Reproduktionslauf erkennbar."
     evidence_required: "Artefaktbeispiel eines kontrollierten Fehlers."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "242caff74: atomic run receipts preserve every attempt and terminal output; candidate run 32037719930 retained the failed Golden/race shard artifact used for diagnosis."
     decision: null
 
   - id: DOC-001
@@ -190,40 +198,45 @@ items:
     requirement: "Aktuelle Schema-Matrix wird aus der Migrationsregistry erzeugt oder gegen sie geprüft."
     acceptance: "Code und Dokumentation weisen denselben Current-Wert und Pfad aus."
     evidence_required: "Generator/Gate plus Snapshot der Matrix."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "7082057fa: version truth derives schema 34 and its migration path from the executable registries and checks the rendered matrix against them."
     decision: null
   - id: DOC-002
     source: "Campaign/NPC-Kritik – mehrere aktuelle Wahrheiten"
     requirement: "CI lehnt abweichende aktuelle Schema-, Engine-, Config- oder Katalogangaben ab."
     acceptance: "Mutations-/Negativtest macht CI bei absichtlicher Drift rot."
     evidence_required: "Drift-Gate-Test."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "7082057fa: check:version-truth rejects drift in schema, reward engine, config, catalog, migration, and build provenance; mutation tests are green."
     decision: null
   - id: DOC-003
     source: "Campaign/NPC-Kritik – historische Migrationsbeschreibungen"
     requirement: "Historische Dokumentation ist als historisch markiert und behauptet keinen aktuellen Stand."
     acceptance: "Suche findet keine konkurrierenden unmarkierten Current-Werte."
     evidence_required: "Dokumentationsaudit-Test."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "7082057fa: current-version ownership is centralized and documentation audits distinguish historical schema/version references from executable current truth."
     decision: null
   - id: DOC-004
     source: "Loot-Kritik – Sheet nicht reproduzierbar"
     requirement: "Die lokale Spezifikation enthält auch relevante Formeln/Entscheidungen, nicht nur exportierte TSV-Tabellen."
     acceptance: "Paritätsfälle sind ohne Zugriff auf das Live-Sheet reproduzierbar."
     evidence_required: "Rule-IR oder vollständige Oracle-Fixtures."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: checked-in Reward-v3 oracles and local rule classification/stage fixtures reproduce Sheet decisions without live spreadsheet access."
     decision: null
   - id: DOC-005
     source: "Alle Kritiken – redundante Wahrheiten"
     requirement: "Für jeden Fachfakt ist ein kanonischer Besitzer und eine Ableitungskette dokumentiert."
     acceptance: "TS-Defaults, TSV, UI-Metadaten und Dokumentation widersprechen sich nicht unabhängig."
     evidence_required: "Ownership-Dokument und automatischer Konsistenztest."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "7082057fa + 3b9e70e73: version-truth and reward provenance documents name the canonical owner and derivation chain; automated consistency gates reject independent drift."
     decision: null
 
   - id: CONTRACT-001
@@ -231,24 +244,27 @@ items:
     requirement: "Neue Session-/Group-Reward-Commands besitzen verpflichtende aktuelle Eingaben."
     acceptance: "Fehlende Ledger-Basis ist statisch/vertraglich ungültig, nicht erst tief im Generator."
     evidence_required: "Zod-/Type-Contract-Negativtests."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "7082057fa: current Session/Group Reward command schemas require the cumulative per-character ledger basis; negative contract tests reject omission at the boundary."
     decision: null
   - id: CONTRACT-002
     source: "Loot-Kritik – historische Run-Lesbarkeit"
     requirement: "PersistedRewardV2 und neue Versionen sind als echte Versionsunion oder Upcaster lesbar."
     acceptance: "reward-v2-Runs hydrieren nach Einführung der neuen Engineversion weiterhin."
     evidence_required: "Historische Fixture-Hydration."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "7082057fa + 3b9e70e73: persisted reward versions form an explicit union and GeneratedRunStore writes v3 while hydrating the historical reward-v2 fixture."
     decision: null
   - id: CONTRACT-003
     source: "Loot-Kritik – inkonsistente Fehlerbehandlung"
     requirement: "Session und Group Reward verwenden denselben typisierten Result-/Issue-Vertrag."
     acceptance: "Keine rohen Error-Strings für erwartbare Validierungsfehler."
     evidence_required: "Contracttests beider Pfade."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "3b9e70e73: Session and Group reward entrypoints share the same typed proposal/result/issue contracts; expected validation paths have no raw error-string API."
     decision: null
   - id: CONTRACT-004
     source: "Sidebar-Kritik – stille Normalisierung"
@@ -273,8 +289,9 @@ items:
     requirement: "Encounter Engine, Reward Engine, Config und Katalog besitzen unabhängige auditierbare Versionen."
     acceptance: "Änderung einer Dimension erzwingt nur deren korrekte Version und bewahrt die anderen."
     evidence_required: "Provenienz-/Versionierungstests."
-    status: in_progress
-    evidence: []
+    status: verified
+    evidence:
+      - "7082057fa: run origin and build/version truth independently record encounter engine, reward engine, config, and catalog versions; dimension-specific mutation tests pass."
     decision: null
 
   - id: IMPORT-001
@@ -1405,32 +1422,36 @@ items:
     requirement: "Handoff erzeugt automatisch einen sauberen immutable Worktree."
     acceptance: "Parallel auftauchende Änderungen können den laufenden Kandidaten nicht verändern."
     evidence_required: "Concurrent change test."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "5edc65490: handoff constructs a clean immutable worktree for the frozen candidate; concurrent workspace mutation tests cannot alter the checked candidate."
     decision: null
   - id: HANDOFF-003
     source: "Sidebar-Kritik – Prüfumfang nicht eingefroren"
     requirement: "SHA, Workspacefingerprint, Toolchain und Prüfumfang werden vor Start eingefroren."
     acceptance: "Änderung nach Start invalidiert oder bleibt außerhalb des isolierten Laufs."
     evidence_required: "Receipt and mutation test."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "5edc65490: receipt identity freezes commit, clean state, workspace/app-input fingerprints, toolchain hash, and a fixed five-step graph before execution."
     decision: null
   - id: HANDOFF-004
     source: "Alle Kritiken – wiederholte Builds/Checks"
     requirement: "Inhaltsadressierte Zwischenresultate werden nur bei identischen Inputs wiederverwendet."
     acceptance: "Cache trifft sicher; jede Input-/Toolchainänderung invalidiert."
     evidence_required: "Cache hit/miss tests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "5edc65490: only --resume may reuse completed stages and each reuse requires identical workspace, app-input, toolchain, output, artifact, and installation hashes."
     decision: null
   - id: HANDOFF-005
     source: "Sidebar-Kritik – Validierung, Installation und Push gekoppelt"
     requirement: "Kandidatenvalidierung, lokale Installation und main-Promotion sind explizite Stufen mit demselben Artefakt."
     acceptance: "Fehler einer Stufe veröffentlicht keine nachfolgende Stufe."
     evidence_required: "State-machine tests and receipt."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "5edc65490: candidate validation, package/smoke, backup/install, runtime verification, and exact-SHA promotion are explicit fail-closed stages sharing one hash chain."
     decision: null
   - id: HANDOFF-006
     source: "Sidebar-Kritik – AppImage-Handoff übersprungen"
@@ -1445,24 +1466,27 @@ items:
     requirement: "Schnelle Slice-Checks und strenger finaler Handoff sind getrennt."
     acceptance: "Entwicklerfeedback erfordert nicht jedes Mal Packaging/Installation; finaler Gate bleibt vollständig."
     evidence_required: "Scripts, durations, final handoff run."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "5edc65490 + 8b075905d: focused fast/app/slice/functional/visual commands provide development feedback while handoff:app retains the full final graph."
     decision: null
   - id: HANDOFF-008
     source: "Loot-Kritik – Suite Runner speichert zu wenig"
     requirement: "Handoff-/Suite-Receipts enthalten terminale Fehlerausgabe und relevante Artefaktpfade."
     acceptance: "Ein terminaler Fehler ist aus Receipt plus Artefakten diagnostizierbar."
     evidence_required: "Controlled failure receipt."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "242caff74: suite summaries retain per-attempt logs and artifact directories; handoff receipts retain terminal error text and evidence for each failed step."
     decision: null
   - id: HANDOFF-009
     source: "Integration-State-Original – Contributor-Handoff verletzt"
     requirement: "AGENTS, Workflow und Automationspfad definieren denselben grünen Abschlussvertrag."
     acceptance: "Kein Dokument verlangt einen unbewiesenen direkten main-Push."
     evidence_required: "Doc/workflow consistency gate."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "5edc65490: AGENTS, workflow, candidate verifier, handoff, and promotion state machine all require remote-proven candidate-first exact-SHA delivery."
     decision: null
   - id: HANDOFF-010
     source: "Campaign/NPC-Kritik – Domain Readback/quick_check"

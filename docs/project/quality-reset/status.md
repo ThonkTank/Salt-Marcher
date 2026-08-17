@@ -26,17 +26,21 @@ traceability record is [requirements-ledger.yaml](requirements-ledger.yaml).
   runtime, and four of five E2E shards green. Its retained failed-shard
   artifact identified an expected Reward-v3 Golden change and an asynchronous
   Travel Resume/Stop race; the race now waits for persisted travelling state.
+- Candidate run `32058898917` proved every Linux runtime/E2E shard green and
+  exposed the M5 graph increase at the explicit portable bundle-baseline gate.
+  The measured `5ada5360a` baseline records that application-owned Session
+  growth and its dependency/chunk rationale without changing any hard budget.
 
 ## Milestones
 
 | Milestone | State | Exit proof |
 | --- | --- | --- |
 | M0 · trustworthy integration baseline | in progress | candidate and main remote runs pending |
-| M1 · version and contract truth | in progress | local focused gates green; remote candidate pending |
+| M1 · version and contract truth | verified | `7082057fa`; version drift, contract negatives, historical hydration, and provenance gates green |
 | M2 · reward/loot vertical slice | verified | `3b9e70e73` + `242caff74`; `check:loot-parity` and architecture gates green |
 | M3 · world planner, roster, references | verified | `38ef442f6` + `5c9971432`; `check:world-planner`, architecture and integration gates green |
 | M4 · campaign import product path | verified | `2dd82e654`; `check:campaign-import`, architecture, portable unit and integration gates green |
-| M5 · session UI and layout | verified | `7ada6e15b`; controller/primitive/layout tests, 61 architecture gates and focused built E2E green |
+| M5 · session UI and layout | verified | `7ada6e15b` + `5ada5360a`; controller/primitive/layout tests, architecture gates, focused built E2E, and explicit bundle graph green |
 | M6 · focused verification and handoff | in progress | `8b075905d`; fast, isolated functional, visual, and randomized-order gates green; remote candidate and single final handoff pending |
 
 ## M0 decisions
