@@ -1,4 +1,5 @@
 import type {
+  ItemDefinition,
   GroupRewardTreasureContainerDraft,
   GroupRewardTreasureContainerOrigin,
   GroupRewardTreasureDraft,
@@ -7,6 +8,10 @@ import type {
   ItemReference,
   LootRarity
 } from '../../../shared/contracts/loot.js'
+import {
+  itemDefinitionLineValueCp,
+  itemReferenceKey
+} from '../../../shared/values/item-definition-values.js'
 import type { GroupRewardGeneratedRun } from '../../../shared/contracts/session-generation.js'
 import {
   generatedItemDefinition,
@@ -324,9 +329,23 @@ export function groupLootBudget(
   run: GroupRewardGeneratedRun,
   draft: GroupLootDraft
 ): GroupLootBudget {
+  const definitions = new Map<string, ItemDefinition>(
+    run.itemDefinitions.map((definition) => [
+      itemReferenceKey(definition.reference),
+      definition
+    ])
+  )
   const currentValueCp = draft.items
     .filter((item) => !item.magic)
-    .reduce((total, item) => total + item.quantity * item.unitValueCp, 0)
+    .reduce((total, item) => {
+      const definition = definitions.get(itemReferenceKey(item.itemReference))
+      return (
+        total +
+        (definition
+          ? itemDefinitionLineValueCp(definition, item.quantity)
+          : item.quantity * item.unitValueCp)
+      )
+    }, 0)
   const targetValueCp = run.goldBudgetCp
   const differenceCp = currentValueCp - targetValueCp
   const within = Math.abs(differenceCp) * 20 <= targetValueCp * 3

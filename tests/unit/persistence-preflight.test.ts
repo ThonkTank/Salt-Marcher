@@ -24,6 +24,7 @@ import {
   resolveSchemaMigrationPath,
   type SchemaMigration
 } from '../../src/core/persistence/sqlite/schema-migrations.js'
+import { defaultGeneratorConfig } from '../../src/shared/generator/system-generator-preset.js'
 
 const roots: string[] = []
 
@@ -139,7 +140,7 @@ describe('persistence preflight', () => {
     const planned = preflightPersistence(root)
 
     expect(planned.kind).toBe('migration-required')
-    expect(migrationRegistryVersion).toBe(3)
+    expect(migrationRegistryVersion).toBe(4)
     for (const entry of planned.databases) {
       const database = new Database(entry.path)
       applySchemaMigrations(database, {
@@ -152,8 +153,8 @@ describe('persistence preflight', () => {
     const restarted = preflightPersistence(root)
     expect(restarted.kind).toBe('ready')
     expect(restarted.databases).toMatchObject([
-      { path: campaign, role: 'campaign', schemaVersion: 31 },
-      { path: installation, role: 'installation', schemaVersion: 31 }
+      { path: campaign, role: 'campaign', schemaVersion: 32 },
+      { path: installation, role: 'installation', schemaVersion: 32 }
     ])
     const installationDatabase = new Database(installation)
     expect(
@@ -167,7 +168,7 @@ describe('persistence preflight', () => {
         .prepare('SELECT COUNT(*) FROM installation_schema_migration')
         .pluck()
         .get()
-    ).toBe(4)
+    ).toBe(5)
     applySchemaMigrations(installationDatabase, {
       path: installation,
       role: 'installation'
@@ -177,8 +178,54 @@ describe('persistence preflight', () => {
         .prepare('SELECT COUNT(*) FROM installation_schema_migration')
         .pluck()
         .get()
-    ).toBe(4)
+    ).toBe(5)
     installationDatabase.close()
+  })
+
+  it('upcasts Config V4 coin container names to Config V5 IDs', () => {
+    const path = join(temporaryRoot(), 'installation.sqlite')
+    const database = new Database(path)
+    database.exec(`
+      CREATE TABLE generator_presets (
+        id TEXT PRIMARY KEY, schema_version INTEGER NOT NULL,
+        config_json TEXT NOT NULL, updated_at TEXT NOT NULL
+      );
+    `)
+    const legacy = structuredClone(defaultGeneratorConfig) as unknown as {
+      loot: {
+        coins: {
+          profiles: Record<
+            string,
+            { allowedContainerIds?: string[]; allowedContainers?: string[] }
+          >
+        }
+      }
+    }
+    for (const profile of Object.values(legacy.loot.coins.profiles)) {
+      delete profile.allowedContainerIds
+      profile.allowedContainers = ['Pouch', 'Chest']
+    }
+    database
+      .prepare('INSERT INTO generator_presets VALUES (?, 4, ?, ?)')
+      .run('preset', JSON.stringify(legacy), 'before')
+    database.pragma('user_version = 31')
+
+    applySchemaMigrations(database, { path, role: 'installation' })
+
+    const migrated = database
+      .prepare(
+        'SELECT schema_version AS schemaVersion, config_json AS configJson FROM generator_presets'
+      )
+      .get() as { schemaVersion: number; configJson: string }
+    const config = JSON.parse(migrated.configJson) as typeof legacy
+    expect(migrated.schemaVersion).toBe(5)
+    expect(config.loot.coins.profiles['ppGp']).toMatchObject({
+      allowedContainerIds: ['container:pouch', 'container:chest']
+    })
+    expect(
+      config.loot.coins.profiles['ppGp']?.allowedContainers
+    ).toBeUndefined()
+    database.close()
   })
 
   it('migrates schema 28 campaign profiles without changing existing roster facts', () => {

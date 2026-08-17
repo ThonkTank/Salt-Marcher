@@ -132,5 +132,25 @@ export const campaignSchemaMigrations: readonly SchemaMigration[] =
             new Date().toISOString()
           )
       }
+    },
+    {
+      id: 'campaign-31-to-32-reward-participant-levels',
+      role: 'campaign',
+      fromVersion: 31,
+      toVersion: 32,
+      migrate(database) {
+        initializeCampaignSchemaMetadata(database)
+        database.exec(
+          'ALTER TABLE session_generation_reward_member ADD COLUMN level INTEGER CHECK(level BETWEEN 1 AND 20)'
+        )
+        database
+          .prepare(
+            'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run(
+            'campaign-31-to-32-reward-participant-levels',
+            new Date().toISOString()
+          )
+      }
     }
   ])

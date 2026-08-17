@@ -2,6 +2,11 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { defaultGeneratorLootRules } from '../../src/shared/generator/default-loot-rules.js'
+import {
+  lootRuleFieldMetadata,
+  lootRuleGroupLabel,
+  validateLootRuleDraft
+} from '../../src/shared/generator/loot-rule-metadata.js'
 
 const catalogRoot = join(
   process.cwd(),
@@ -116,7 +121,10 @@ describe('default generator loot rules', () => {
           maxLowCount: number(row, 'Max_Low_Count'),
           maxMiddleCount: number(row, 'Max_Middle_Count'),
           maxBudgetCp: number(row, 'Max_Budget_CP'),
-          allowedContainers: row['Allowed_Containers']!.split(',')
+          allowedContainerIds: row['Allowed_Containers']!.split(',').map(
+            (name) =>
+              `container:${name.toLowerCase().replaceAll(/[^a-z0-9]+/g, '-')}`
+          )
         }
       ])
     )
@@ -158,6 +166,50 @@ describe('default generator loot rules', () => {
     expect(defaultGeneratorLootRules.audit).toEqual({
       normalBudgetTolerance: 0.15
     })
+  })
+
+  it('provides editor metadata for every group and field', () => {
+    const missing: string[] = []
+    const visit = (value: unknown, path: readonly (string | number)[]) => {
+      if (Array.isArray(value)) {
+        value.forEach((entry, index) => visit(entry, [...path, index]))
+        return
+      }
+      if (value && typeof value === 'object') {
+        for (const [key, entry] of Object.entries(value)) {
+          if (entry && typeof entry === 'object' && !lootRuleGroupLabel(key))
+            missing.push([...path, key].join('.'))
+          visit(entry, [...path, key])
+        }
+        return
+      }
+      if (!lootRuleFieldMetadata(path, value)) missing.push(path.join('.'))
+    }
+    visit(defaultGeneratorLootRules, [])
+    expect(missing).toEqual([])
+    expect(validateLootRuleDraft(defaultGeneratorLootRules)).toEqual([])
+  })
+
+  it('reports stable field paths for share, order, and uniqueness errors', () => {
+    const invalid = structuredClone(defaultGeneratorLootRules)
+    invalid.mix.roles.compactValue = 0.9
+    invalid.treasure.slotTarget = invalid.treasure.slotMax + 1
+    invalid.coins.profiles.ppGp.denominations = ['pp', 'pp']
+    expect(
+      validateLootRuleDraft(invalid).map((issue) => ({
+        code: issue.code,
+        path: issue.path
+      }))
+    ).toEqual(
+      expect.arrayContaining([
+        { code: 'share_sum', path: ['mix', 'roles'] },
+        { code: 'invalid_order', path: ['treasure', 'slotMax'] },
+        {
+          code: 'duplicate_value',
+          path: ['coins', 'profiles', 'ppGp', 'denominations']
+        }
+      ])
+    )
   })
 })
 

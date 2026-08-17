@@ -218,7 +218,19 @@ describe('Session map and travel console', () => {
     await (await client.$('button[aria-label="Schneller"]')).click()
     await expect(await client.$('.travel-multiplier')).toHaveText('2×')
     await resume.click()
-    await (await client.$('button[aria-label="Stopp"]')).click()
+    await client.waitUntil(
+      () =>
+        client.execute(async () => {
+          const session = await window.saltMarcher.session.read()
+          return session.travel.kind === 'hex'
+            ? session.travel.status === 'travelling'
+            : false
+        }),
+      { timeout: 5_000, timeoutMsg: 'Travel did not resume.' }
+    )
+    const stop = await client.$('button[aria-label="Stopp"]')
+    await stop.waitForClickable({ timeout: 5_000 })
+    await stop.click()
     await client.waitUntil(
       () =>
         client.execute(async () => {

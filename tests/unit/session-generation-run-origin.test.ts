@@ -11,8 +11,8 @@ const hashB = 'b'.repeat(64)
 const ledgerParty = [
   {
     characterId: '01900000-0000-7000-8000-000000000099',
+    level: 3,
     currentXp: 900,
-    projectedXp: 100,
     ledgerRevision: 1,
     currentNonMagicCp: 0,
     currentMagic: {

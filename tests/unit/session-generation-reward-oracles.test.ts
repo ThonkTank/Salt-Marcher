@@ -5,6 +5,7 @@ import { unitValue } from '../../src/core/session-generation/reward-units.js'
 import { defaultGeneratorLootRules } from '../../src/shared/generator/default-loot-rules.js'
 import { REWARD_ENGINE_VERSION } from '../../src/shared/contracts/session-generation.js'
 import { sha256EncounterEntropy } from '../../src/utility/session-generation/sha256-entropy.js'
+import { createRewardRandom } from '../../src/core/session-generation/reward-random.js'
 
 const fixture = JSON.parse(
   readFileSync(
@@ -37,10 +38,13 @@ describe('Reward v3 local rule oracles', () => {
     for (const oracle of fixture.cases) {
       const output = calculateLedgerRewardBudget(
         { ...oracle.input, rules: defaultGeneratorLootRules },
-        sha256EncounterEntropy
+        createRewardRandom(
+          (oracle.input as typeof oracle.input & { seed: number }).seed,
+          sha256EncounterEntropy
+        )
       )
       expect(
-        oracle.input.members.map(
+        output.rewardBasis.members.map(
           (member) => member.currentXp + member.projectedXp
         ),
         oracle.id

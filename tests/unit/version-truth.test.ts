@@ -12,14 +12,14 @@ describe('version truth gate', () => {
     expect(truth.schemas).toEqual([
       {
         role: 'installation',
-        current: 31,
-        path: '27 -> 28 -> 29 -> 30 -> 31',
+        current: 32,
+        path: '27 -> 28 -> 29 -> 30 -> 31 -> 32',
         owner: 'installation-schema-migrations.ts'
       },
       {
         role: 'campaign',
-        current: 31,
-        path: '27 -> 28 -> 29 -> 30 -> 31',
+        current: 32,
+        path: '27 -> 28 -> 29 -> 30 -> 31 -> 32',
         owner: 'campaign-schema-migrations.ts'
       }
     ])

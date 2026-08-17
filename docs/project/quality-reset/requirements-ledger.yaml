@@ -239,7 +239,7 @@ items:
     requirement: "Session und Group Reward verwenden denselben typisierten Result-/Issue-Vertrag."
     acceptance: "Keine rohen Error-Strings für erwartbare Validierungsfehler."
     evidence_required: "Contracttests beider Pfade."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: CONTRACT-004
@@ -524,7 +524,7 @@ items:
     requirement: "Aggregierte Levelcounts und Ledger-Mitglieder werden eliminiert oder vollständig semantisch abgeglichen."
     acceptance: "Level, Count, IDs und Teilnehmerbasis können nicht widersprüchlich generieren."
     evidence_required: "Mismatch-Negativtests."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
 
@@ -549,7 +549,7 @@ items:
     requirement: "Generator erhält rohe Teilnehmer-Snapshots und berechnet Partyaggregation, Reward-XP, projected XP und Defizit selbst."
     acceptance: "Session Planner und Group Handler implementieren diese Fachformeln nicht mehr."
     evidence_required: "Dependency-/Formeltests und entfernte Duplikate."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: REWARD-004
@@ -557,7 +557,7 @@ items:
     requirement: "Stale-Revalidierung verwendet dieselbe zentrale Reward-Basisfunktion."
     acceptance: "Keine zweite floor-/Party-XP-Implementierung in Guards."
     evidence_required: "Code-Audit-Gate und Concurrent-Reward-Test."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: REWARD-005
@@ -565,7 +565,7 @@ items:
     requirement: "Session und Group Reward verwenden einen gemeinsamen Pipelinekern mit expliziter PlanPolicy."
     acceptance: "Budget, Selection, Magic, Packing und Aggregation existieren nur einmal."
     evidence_required: "Pipeline-Unit-Tests beider Policies und entfernte Doppelpfade."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: REWARD-006
@@ -573,7 +573,7 @@ items:
     requirement: "Empty Reward und Hard-Audit-Ergebnisse werden über konsistente typisierte Resultate behandelt."
     acceptance: "Session und Group erzeugen dieselben Issuecodes für denselben Fehler."
     evidence_required: "Cross-pipeline Contracttests."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: REWARD-007
@@ -597,7 +597,7 @@ items:
     requirement: "Reward-Randomisierung wird auf die kleinste nötige injizierbare seedbare RNG vereinfacht."
     acceptance: "Persistiertes Resultat bleibt Replay-Autorität; unnötige Streamkey-Kopplung ist entfernt."
     evidence_required: "Determinismus-/Resultatpersistenztests und gelöschte Streamregeln."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: REWARD-010
@@ -646,7 +646,7 @@ items:
     requirement: "Packingrelationen verwenden allowedContainerIds."
     acceptance: "Containerumbenennung ändert keine Zulässigkeit."
     evidence_required: "Rename-Regressionstest."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: CATALOG-002
@@ -654,7 +654,7 @@ items:
     requirement: "Katalogrelationen verwenden geschlossene typisierte Relationstypen."
     acceptance: "Unbekannte Relation wird beim Import abgewiesen."
     evidence_required: "Importer-/Schema-Negativtest."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: CATALOG-003
@@ -662,7 +662,7 @@ items:
     requirement: "Canonical Matching verwendet IDs; tolerante Stringnormalisierung ist nur Suche/Importhilfe."
     acceptance: "Kollision zweier normalisierter Namen kann keine Relation vertauschen."
     evidence_required: "Kollisionsfixture."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: CATALOG-004
@@ -670,7 +670,7 @@ items:
     requirement: "Category-, Profile- und Sonderwerte werden bereits beim Import zu typisierten IDs normalisiert."
     acceptance: "Generator enthält keine Includes-Heuristiken für fachliche Klassifikation."
     evidence_required: "Importer-/Generator-Dependencytests."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: CATALOG-005
@@ -678,7 +678,7 @@ items:
     requirement: "Generation verwendet einen vorberechneten Index mit Maps/Sets."
     acceptance: "Keine wiederholten Vollarrayscans und Namensrückauflösungen in Hot Stages."
     evidence_required: "Profil-/Querycount-Test und Code-Audit."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: CATALOG-006
@@ -686,7 +686,7 @@ items:
     requirement: "Coin-Profile referenzieren Container-IDs und werden im Ergebnis identifizierbar bewahrt."
     acceptance: "Packing kann exakt das ausgewählte Profil validieren."
     evidence_required: "Coin-profile Persistenz-/Packingtest."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: CATALOG-007
@@ -703,7 +703,7 @@ items:
     requirement: "Alle Reward-/Ledger-Geldberechnungen verwenden exakte rationale Werte."
     acceptance: "Keine vorzeitige Math.round-/Float-Entscheidung in Budget, Auswahl oder Menge."
     evidence_required: "Static/code audit plus Rational-Unit-Tests."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: MONEY-002
@@ -711,7 +711,7 @@ items:
     requirement: "Artikel unter einem Kupferstück bleiben auswählbar und erhalten korrekte Mengen/Zeilenwerte."
     acceptance: "0.2-cp-Fixture wird nicht zu 0 verworfen."
     evidence_required: "Expliziter Fractional-CP-Oracle-Test."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: MONEY-003
@@ -719,7 +719,7 @@ items:
     requirement: "Rundung erfolgt erst nach rationalem Preis-mal-Menge an der dokumentierten Sheet-Grenze."
     acceptance: "Half-up-/Grenzfälle stimmen mit Oracle überein."
     evidence_required: "Boundarytable und Formula-Oracle."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: MONEY-004
@@ -727,7 +727,7 @@ items:
     requirement: "Editierbare XP-/Geldfelder besitzen Safe-Integer-/Rationalgrenzen."
     acceptance: "Überlaufende Eingaben werden typisiert abgewiesen."
     evidence_required: "Schema-Negativtests an allen Pfaden."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
 
@@ -736,7 +736,7 @@ items:
     requirement: "Jede effektive Regel ist als DomainInvariant, CatalogFact oder PresetRule klassifiziert."
     acceptance: "Keine unklassifizierte fachliche Konstante in Generatorstages."
     evidence_required: "Metatest/Inventory."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: CONFIG-002
@@ -744,7 +744,7 @@ items:
     requirement: "Coin-Mindestmengen, Adorned-Menge, Bulk-/Compact-/Art-/Livestock-/Clothing-Regeln liegen beim korrekten Besitzer."
     acceptance: "Code enthält keine versteckten Presetentscheidungen oder als Config getarnte Invarianten."
     evidence_required: "Rule-inventory und Änderungstests."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: CONFIG-003
@@ -752,7 +752,7 @@ items:
     requirement: "Einheiten, Pile und all/none/worn/handheld sind typisierte Katalog-/Domainfakten."
     acceptance: "Generator verzweigt nicht auf rohe Displaystrings."
     evidence_required: "Type-/Importer-/Generator-Tests."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: CONFIG-004
@@ -760,7 +760,7 @@ items:
     requirement: "Settings besitzen typisierte Metadaten für deutsche Labels, Einheiten, Hilfetexte, Gruppen und Editorart."
     acceptance: "UI zeigt keine rohen Objektpfade als primäre Labels."
     evidence_required: "Metadata-contract und Renderer-Test."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: CONFIG-005
@@ -768,7 +768,7 @@ items:
     requirement: "Editor verwendet Min/Max, Prozente, Abhängigkeiten und komplexe Progressionsdarstellung aus dem Metadaten-/Schemasystem."
     acceptance: "Ungültige Zwischenzustände sind feldbezogen erklärbar."
     evidence_required: "UI-/Schema-Grenztests."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: CONFIG-006
@@ -776,7 +776,7 @@ items:
     requirement: "Draftvalidierung prüft Anteilssummen, Reihenfolge, Grenzen und eindeutige Profile vor Save."
     acceptance: "Fehler erscheinen inline mit stabilem Feldpfad."
     evidence_required: "Reducer-/Form-Tests."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: CONFIG-007
@@ -784,7 +784,7 @@ items:
     requirement: "Jede PresetRule beeinflusst mindestens eine Generation oder ist ausdrücklich UI-only dokumentiert."
     acceptance: "Automatischer Metatest deckt alle Properties ab."
     evidence_required: "Config-coverage-Metatest."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
 
@@ -793,7 +793,7 @@ items:
     requirement: "Eine pure evaluatePacking-Policy wird für Auswahl und Audit verwendet."
     acceptance: "Generator und Audit können fachlich nicht auseinanderlaufen."
     evidence_required: "Gemeinsame Policytests; doppelte Logik entfernt."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: PACK-002
@@ -801,7 +801,7 @@ items:
     requirement: "Generierte Coin-Definition speichert die konkret ausgewählte Profile-ID."
     acceptance: "Audit verwendet nicht die Vereinigungsmenge aller Profile."
     evidence_required: "Persistenz-/Audit-Regressionsfall."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: PACK-003
@@ -809,7 +809,7 @@ items:
     requirement: "Packingkandidaten werden ausschließlich über Container-IDs bestimmt."
     acceptance: "Doppelte oder geänderte Namen brechen keine Regel."
     evidence_required: "Duplicate-/rename-container-Tests."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: PACK-004
@@ -817,7 +817,7 @@ items:
     requirement: "Loose, existing container, new container und pile sind explizite Policyresultate mit stabilen Violationcodes."
     acceptance: "Jede Entscheidung ist auditierbar und Oracle-getestet."
     evidence_required: "Packing decision table."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: PACK-005
@@ -825,7 +825,7 @@ items:
     requirement: "Unzulässiger Containerfall erzeugt einen klaren Fehler/Fallback statt beliebiges Pile."
     acceptance: "Liquid-, amount-, worn- und handheld-Grenzen entsprechen Rule-Oracle."
     evidence_required: "Boundaryfixtures."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
 
@@ -834,7 +834,7 @@ items:
     requirement: "Pipelinephasen sind pure, eingefrorene Ergebnisse mit einem gemeinsamen Orchestrator."
     acceptance: "Session/Group variieren nur über explizite Policy und Envelope."
     evidence_required: "Stage-/orchestrator tests."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: PIPE-002
@@ -875,7 +875,7 @@ items:
     requirement: "Repräsentative Sheet-/Rule-Ausgaben und Zwischenstufen sind eingecheckt."
     acceptance: "Budget, Pools, Mengen und Fallbackentscheidungen werden gegen konkrete Erwartungen geprüft."
     evidence_required: "Oracle-Fixtures."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: LOOTTEST-003
@@ -883,7 +883,7 @@ items:
     requirement: "Assertions prüfen deterministische Zwischenstufen vor der Randomauswahl."
     acceptance: "Falscher Kandidatenpool fällt unabhängig vom gezogenen Item auf."
     evidence_required: "Stage-oracle tests."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: LOOTTEST-004
@@ -891,7 +891,7 @@ items:
     requirement: "maxOverfit, Bulk-Schwelle, Coin-Profilgrenzen und Fractional CP besitzen explizite Tests."
     acceptance: "Jede Grenze hat below/at/above-Fälle."
     evidence_required: "Boundary test table."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: LOOTTEST-005
@@ -907,7 +907,7 @@ items:
     requirement: "Default-/Hash-Tests werden klar von Algorithmusparität getrennt."
     acceptance: "Beide Ebenen besitzen eigene benannte Tests."
     evidence_required: "Test suite split."
-    status: open
+    status: in_progress
     evidence: []
     decision: null
   - id: LOOTTEST-007

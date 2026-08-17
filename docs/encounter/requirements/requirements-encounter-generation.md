@@ -3,7 +3,7 @@
 ## Purpose And Terminology
 
 This document is the canonical product source for generator-preset ownership,
-Generator Config V4, encounter composition, candidate ranking, and the
+Generator Config V5, encounter composition, candidate ranking, and the
 generator settings surface. Campaign, Scene, Session Generation, and Combat
 requirements define only how they consume this behavior.
 
@@ -15,7 +15,7 @@ requirements define only how they consume this behavior.
 - A preset is an installation-owned composition policy. Its assignment to a
   Campaign is explicit and independent of saving or copying the preset.
 
-## Preset Ownership And Config V4
+## Preset Ownership And Config V5
 
 The installation owns one revisioned preset registry and a protected system
 preset. A Campaign may point to one custom preset; no assignment means that the
@@ -169,7 +169,7 @@ Restart loads the explicit partition and reproduces it exactly.
 
 ## Acceptance Evidence
 
-Required evidence covers Config V4 contracts and artifact equality, registry
+Required evidence covers Config V5 contracts and artifact equality, registry
 foreign keys/receipts/recovery, exhaustive selector ranking and property tests,
 Scene/Session parity, a separate under-100-ms p95 profile, Combat threshold and
 restart edges, renderer dirty/conflict/pointer/keyboard/200-percent behavior,

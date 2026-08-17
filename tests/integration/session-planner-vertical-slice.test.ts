@@ -258,7 +258,13 @@ describe('Session Planner vertical slice', () => {
         { level: 3, count: 2 },
         { level: 4, count: 2 }
       ],
-      ledgerParty: run.rewardBasis!.members,
+      ledgerParty: run.rewardBasis!.members.map(
+        ({ projectedXp: _projectedXp, level, ...member }) => {
+          void _projectedXp
+          if (level === undefined) throw new Error('missing reward level')
+          return { ...member, level }
+        }
+      ),
       adventureDayFraction: '0.6',
       encounterCount: 3,
       seed: 179_974

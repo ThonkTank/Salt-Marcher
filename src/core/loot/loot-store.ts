@@ -1,6 +1,7 @@
 import type Database from 'better-sqlite3'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import {
+  itemDefinitionLineValueCp,
   itemReferenceSchema,
   treasureSchema,
   type ParsedCreateTreasureInput,
@@ -324,11 +325,14 @@ export class TreasureStore {
       }
     })
     const totalValueCp = items.reduce(
-      (sum, item) => sum + item.quantity * item.definition.unitValueCp,
+      (sum, item) =>
+        sum + itemDefinitionLineValueCp(item.definition, item.quantity),
       0
     )
     const allocatedValueCp = items.reduce(
-      (sum, item) => sum + item.allocatedQuantity * item.definition.unitValueCp,
+      (sum, item) =>
+        sum +
+        itemDefinitionLineValueCp(item.definition, item.allocatedQuantity),
       0
     )
     return treasureSchema.parse({

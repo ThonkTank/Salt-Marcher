@@ -24,34 +24,34 @@ registry and catalog checker verify them before typed data reaches a stage.
 The executable `generationRuleOwnership` registry closes the ownership classes:
 `domain_invariant` is unconditional domain behavior, `catalog_fact` belongs to
 one immutable published catalog, and `preset_rule` belongs to revisioned
-Generator Config V4. A rule cannot use a fallback class; adding an ownership
+Generator Config V5. A rule cannot use a fallback class; adding an ownership
 entry requires one of these three values and a named owner.
 
 | Rule family | Checked/configured inputs | Owning stage | Reference evidence |
 | --- | --- | --- | --- |
-| Session XP and exact encounter allocation | `DB_Progression.tsv`, Config V4 | Party basis and Encounter allocation | rational allocation and Encounter Golden tests |
-| Cumulative post-XP gold target | `DB_Progression.tsv` XP/gold anchors imported as editable Config-V4 anchors | Reward basis | mixed-XP, level boundary, and 355,000-XP cap tests |
-| Rarity targets across crossed XP bands | `DB_Progression.tsv` rarity rates imported into Config V4 | Reward basis | integrated rarity and probabilistic rounding tests |
+| Session XP and exact encounter allocation | `DB_Progression.tsv`, Config V5 | Party basis and Encounter allocation | rational allocation and Encounter Golden tests |
+| Cumulative post-XP gold target | `DB_Progression.tsv` XP/gold anchors imported as editable Config-V5 anchors | Reward basis | mixed-XP, level boundary, and 355,000-XP cap tests |
+| Rarity targets across crossed XP bands | `DB_Progression.tsv` rarity rates imported into Config V5 | Reward basis | integrated rarity and probabilistic rounding tests |
 | Encounter CR facts | `DB_CR.tsv` | Encounter candidate construction | CR parser and selector tests |
 | Encounter role eligibility | `DB_EncounterRoleBands.tsv` | Encounter composition | role-band tests |
 | Encounter pattern composition | `DB_EncounterPatterns.tsv` | Encounter composition | pattern and candidate tests |
-| Treasure channels and themes | `DB_Themes.tsv`, Config-V4 channel shares and counts | Treasure planning | Session/Group structural regressions |
-| Slot roles and forms | `DB_LootMix.tsv`, Config-V4 role/form mix | Slot and role planning | twelve Sheet structural regressions |
-| Quantity limits | `DB_LootQuantityRules.tsv`, Config-V4 quantity tables | Non-magic selection | default parity and quantity tests |
-| Candidate scoring policy | `DB_LootSelectionPolicy.tsv`, Config-V4 fit, jitter, penalty, and shortlist values | Non-magic and magic selection | policy parity and shortlist tests |
-| Coin denominations | `DB_CoinDenominations.tsv`, Config-V4 values and labels | Coin selection and aggregation | denomination integrity tests |
-| Coin profiles | `DB_CoinProfiles.tsv`, Config-V4 profile mappings | Coin selection | profile parity and budget tests |
+| Treasure channels and themes | `DB_Themes.tsv`, Config-V5 channel shares and counts | Treasure planning | Session/Group structural regressions |
+| Slot roles and forms | `DB_LootMix.tsv`, Config-V5 role/form mix | Slot and role planning | twelve Sheet structural regressions |
+| Quantity limits | `DB_LootQuantityRules.tsv`, Config-V5 quantity tables | Non-magic selection | default parity and quantity tests |
+| Candidate scoring policy | `DB_LootSelectionPolicy.tsv`, Config-V5 fit, jitter, penalty, and shortlist values | Non-magic and magic selection | policy parity and shortlist tests |
+| Coin denominations | `DB_CoinDenominations.tsv`, Config-V5 values and labels | Coin selection and aggregation | denomination integrity tests |
+| Coin profiles | `DB_CoinProfiles.tsv`, Config-V5 profile mappings | Coin selection | profile parity and budget tests |
 | Ordinary candidates | `DB_LootItems.tsv`, `DB_LootSources.tsv` | Non-magic selection | carrier, adorned, useful, and flavor tests |
 | Modifier composites | `DB_LootModifiers.tsv` | Non-magic selection and definition assembly | modifier/component fit tests |
 | Relationship eligibility | `DB_LootRelations.tsv` only | Selection and packing indexes | relation addressability and fallback tests |
 | Magic decision and rarity bands | `DB_MagicItems.tsv`, `DB_MagicDecisionTypes.tsv` | Magic selection | rarity and decision-path tests |
 | Magic variants | `DB_MagicVariants.tsv` | Magic definition assembly | variant structural tests |
 | Spells and enspelling | `DB_Spells.tsv`, `DB_EnspelledRules.tsv` | Magic definition assembly | spell and enspelled boundary tests |
-| Curses | `DB_MagicCurses.tsv` and Config-V4 curse chance | Magic definition assembly | curse eligibility tests |
-| Packing and output grammar | `DB_Containers.tsv`, `DB_LootRelations.tsv`, Config-V4 fill/loose/pile/bulk rules | Packing | capacity, hidden-container, relation, and grammar tests |
+| Curses | `DB_MagicCurses.tsv` and Config-V5 curse chance | Magic definition assembly | curse eligibility tests |
+| Packing and output grammar | `DB_Containers.tsv`, `DB_LootRelations.tsv`, Config-V5 fill/loose/pile/bulk rules | Packing | capacity, hidden-container, relation, and grammar tests |
 
 CR, encounter role bands, and encounter patterns remain catalog facts owned by
-the unchanged encounter pipeline. Config V4 exposes every effective Loot
+the unchanged encounter pipeline. Config V5 exposes every effective Loot
 constant with fixed typed keys for levels, roles, rarities, policy paths, and
 denominations. Derived progression columns are not editable, preventing
 contradictory curves.
@@ -77,10 +77,9 @@ change updates the reward engine version and focused evidence. A catalog-row
 change publishes a new immutable artifact and content hash. Existing artifacts
 and saved run definitions remain addressable.
 
-Config V4 is intentionally unchanged for Reward v3: this milestone changes the
-Reward version boundary, persisted-schema union, and entropy salt, but it does
-not change a Config field's shape or meaning. A future preset meaning or shape
-change must bump the config schema independently.
+Config V5 replaces coin-profile container display names with stable container
+IDs. Schema 32 upcasts persisted Config V4 presets; Reward engine provenance
+remains independently versioned as `reward-v3`.
 
 ## References
 

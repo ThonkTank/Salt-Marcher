@@ -18,7 +18,7 @@ without treating Campaign management as a running-play workspace.
   optional active-Campaign assignment; an unassigned Campaign uses the
   protected system preset.
 - Preset protection, copying, explicit assignment, conflicts, command-receipt
-  recovery, Config V4, and the settings interaction are defined once in the
+  recovery, Config V5, and the settings interaction are defined once in the
   [Encounter Generation Requirements](../../encounter/requirements/requirements-encounter-generation.md).
 - When no Campaign is active, the Campaign dialog opens automatically and
   cannot be dismissed until the GM creates or selects one. The workspace behind

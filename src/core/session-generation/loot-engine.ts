@@ -12,12 +12,9 @@ import { defaultGeneratorConfig } from '../../shared/generator/system-generator-
 import type { EncounterEntropy } from './deterministic-order.js'
 import { generateSessionEncounters } from './encounter-engine.js'
 import type { FullSessionGenerationCatalog } from './loot-catalog.js'
-import { selectMagicItems } from './magic-selection-stage.js'
-import { selectNonMagicItems } from './non-magic-selection-stage.js'
-import { packTreasures } from './packing-stage.js'
-import { aggregateReward } from './reward-aggregation-stage.js'
-import { calculateLedgerRewardBudget } from './reward-budget-stage.js'
 import { fingerprintGeneratorConfig } from './generator-config-fingerprint.js'
+import { createGenerationCatalogIndex } from './generation-catalog-index.js'
+import { generateRewardProposal } from './reward-proposal-pipeline.js'
 import { freezeStage } from './reward-stage-types.js'
 import {
   adjustedXp,
@@ -26,11 +23,6 @@ import {
   rewardXpFromBaseXp,
   unitValue
 } from './reward-units.js'
-import { planSlotsAndRoles } from './slot-role-stage.js'
-import {
-  planGroupRewardTreasure,
-  planSessionTreasures
-} from './treasure-planning-stage.js'
 
 const standaloneRunId = '00000000-0000-4000-8000-000000000099'
 
@@ -82,126 +74,33 @@ export function generateSessionRunDraft(
   )
   if (encounter.status !== 'success') return encounter
 
-  const budget = calculateLedgerRewardBudget(
+  const proposalResult = generateRewardProposal(
     {
+      runId,
+      seed: input.seed,
       members: input.ledgerParty,
+      rewardXp: encounter.session.sessionXpTarget,
       rules: preset.config.loot,
-      seed: input.seed,
-      profile: 'session'
-    },
-    entropy
-  )
-  const goldBudgetCp = unitValue(budget.goldBudgetCp)
-  if (
-    goldBudgetCp === 0 &&
-    Object.values(budget.magicTargets).every((count) => count === 0)
-  )
-    return freezeStage({
-      status: 'success',
-      draft: {
-        runKind: 'session',
-        engineVersion: encounter.engineVersion,
-        rewardEngineVersion: REWARD_ENGINE_VERSION,
-        catalogVersion: encounter.catalogVersion,
-        catalogContentHash: encounter.catalogContentHash,
-        generatorPreset: encounter.generatorPreset,
-        input: { ...encounter.input, ledgerParty: input.ledgerParty },
-        session: {
-          ...encounter.session,
-          goldBudgetCp: 0,
-          normalTreasureCount: 0,
-          overstockTreasureCount: 0,
-          magicTargets: budget.magicTargets
-        },
-        rewardBasis: budget.rewardBasis,
-        encounters: encounter.encounters,
-        itemDefinitions: [],
-        treasures: [],
-        rewardSummary: {
-          normalValueCp: 0,
-          overstockValueCp: 0,
-          magicCount: 0
-        },
-        warnings: encounter.warnings,
-        audits: encounter.audits
+      catalogIndex: createGenerationCatalogIndex(catalog),
+      planPolicy: {
+        kind: 'session',
+        adventureDayFraction: encounter.input.adventureDayFraction,
+        encounterNumbers: encounter.encounters.map(
+          (entry) => entry.encounterNumber
+        )
       }
-    })
-  const planning = planSessionTreasures(
-    {
-      seed: input.seed,
-      adventureDayFraction: encounter.input.adventureDayFraction,
-      goldBudgetCp,
-      encounterNumbers: encounter.encounters.map(
-        (entry) => entry.encounterNumber
-      ),
-      themes: catalog.themes,
-      rules: preset.config.loot
     },
     entropy
   )
-  const rolePlans = planSlotsAndRoles(
-    {
-      profile: 'session',
-      seed: input.seed,
-      adventureDayFraction: encounter.input.adventureDayFraction,
-      treasures: planning.treasures,
-      rules: preset.config.loot
-    },
-    entropy
-  )
-  const selected = selectNonMagicItems(
-    {
-      runId,
-      seed: input.seed,
-      treasures: rolePlans,
-      catalog,
-      rules: preset.config.loot
-    },
-    entropy
-  )
-  const withMagic = selectMagicItems(
-    {
-      runId,
-      seed: input.seed,
-      treasures: selected,
-      targets: budget.magicTargets,
-      catalog,
-      rules: preset.config.loot
-    },
-    entropy
-  )
-  const treasures = packTreasures(
-    {
-      seed: input.seed,
-      treasures: withMagic,
-      catalog,
-      rules: preset.config.loot
-    },
-    entropy
-  )
-  const itemDefinitions = withMagic.flatMap((treasure) =>
-    treasure.items.map((item) => item.definition)
-  )
-  const aggregation = aggregateReward({
-    treasures,
-    itemDefinitions,
-    goldBudgetCp,
-    magicTargets: budget.magicTargets,
-    expectedTreasureCount: planning.treasures.length,
-    profile: 'session',
-    rules: preset.config.loot,
-    catalog
-  })
-  if (aggregation.audits.some((audit) => audit.hard && !audit.passed))
+  if (proposalResult.status !== 'success')
     return freezeStage({
       status: 'unresolvable',
-      issues: [
-        {
-          code: 'hard_audit_failed',
-          parameters: { stage: 'reward_aggregation' }
-        }
-      ]
+      issues: proposalResult.issues.map((issue) => ({
+        code: issue.code,
+        parameters: { ...issue.parameters }
+      }))
     })
+  const proposal = proposalResult.proposal
 
   return freezeStage({
     status: 'success',
@@ -215,22 +114,18 @@ export function generateSessionRunDraft(
       input: { ...encounter.input, ledgerParty: input.ledgerParty },
       session: {
         ...encounter.session,
-        goldBudgetCp,
-        normalTreasureCount: planning.normalTreasureCount,
-        overstockTreasureCount: planning.overstockTreasureCount,
-        magicTargets: budget.magicTargets
+        goldBudgetCp: proposal.goldBudgetCp,
+        normalTreasureCount: proposal.normalTreasureCount,
+        overstockTreasureCount: proposal.overstockTreasureCount,
+        magicTargets: proposal.magicTargets
       },
-      rewardBasis: budget.rewardBasis,
+      rewardBasis: proposal.rewardBasis,
       encounters: encounter.encounters,
-      itemDefinitions,
-      treasures: [...treasures],
-      rewardSummary: {
-        normalValueCp: aggregation.normalValueCp,
-        overstockValueCp: aggregation.overstockValueCp,
-        magicCount: aggregation.magicCount
-      },
+      itemDefinitions: [...proposal.itemDefinitions],
+      treasures: [...proposal.treasures],
+      rewardSummary: proposal.rewardSummary,
       warnings: encounter.warnings,
-      audits: [...encounter.audits, ...aggregation.audits]
+      audits: [...encounter.audits, ...proposal.audits]
     }
   })
 }
@@ -258,106 +153,21 @@ export function generateGroupRewardDraft(
       : rewardXpFromAdjustedXp(adjustedXp(input.adjustedXp))
   if (unitValue(selectedRewardXp) !== input.rewardXp)
     throw new Error('group_reward_xp_basis_mismatch')
-  const budget = calculateLedgerRewardBudget(
+  const proposalResult = generateRewardProposal(
     {
+      runId,
+      seed: input.seed,
       members: input.ledgerParty,
+      rewardXp: input.rewardXp,
       rules: preset.config.loot,
-      seed: input.seed,
-      profile: 'group_reward'
+      catalogIndex: createGenerationCatalogIndex(catalog),
+      planPolicy: { kind: 'group_reward' }
     },
     entropy
   )
-  const goldBudgetCp = unitValue(budget.goldBudgetCp)
-  if (
-    goldBudgetCp === 0 &&
-    Object.values(budget.magicTargets).every((count) => count === 0)
-  )
-    return freezeStage({
-      runKind: 'group_reward',
-      rewardEngineVersion: REWARD_ENGINE_VERSION,
-      catalogVersion: catalog.encounter.catalogVersion,
-      catalogContentHash: catalog.encounter.catalogContentHash,
-      generatorPreset: {
-        id: preset.id,
-        revision: preset.revision,
-        configHash: fingerprintGeneratorConfig(preset.config)
-      },
-      input,
-      rewardBasis: budget.rewardBasis,
-      goldBudgetCp: 0,
-      magicTargets: budget.magicTargets,
-      itemDefinitions: [],
-      treasures: [],
-      rewardSummary: {
-        normalValueCp: 0,
-        overstockValueCp: 0,
-        magicCount: 0
-      },
-      audits: []
-    })
-  const planning = planGroupRewardTreasure(
-    {
-      seed: input.seed,
-      goldBudgetCp,
-      themes: catalog.themes,
-      rules: preset.config.loot
-    },
-    entropy
-  )
-  const rolePlans = planSlotsAndRoles(
-    {
-      profile: 'group_reward',
-      seed: input.seed,
-      treasures: planning.treasures,
-      rules: preset.config.loot
-    },
-    entropy
-  )
-  const selected = selectNonMagicItems(
-    {
-      runId,
-      seed: input.seed,
-      treasures: rolePlans,
-      catalog,
-      rules: preset.config.loot
-    },
-    entropy
-  )
-  const withMagic = selectMagicItems(
-    {
-      runId,
-      seed: input.seed,
-      treasures: selected,
-      targets: budget.magicTargets,
-      catalog,
-      rules: preset.config.loot
-    },
-    entropy
-  )
-  const treasures = packTreasures(
-    {
-      seed: input.seed,
-      treasures: withMagic,
-      catalog,
-      rules: preset.config.loot
-    },
-    entropy
-  )
-  const itemDefinitions = withMagic.flatMap((treasure) =>
-    treasure.items.map((item) => item.definition)
-  )
-  const aggregation = aggregateReward({
-    treasures: [treasures[0]!],
-    itemDefinitions,
-    goldBudgetCp,
-    magicTargets: budget.magicTargets,
-    expectedTreasureCount: 1,
-    profile: 'group_reward',
-    rules: preset.config.loot,
-    catalog
-  })
-  if (aggregation.audits.some((audit) => audit.hard && !audit.passed))
+  if (proposalResult.status !== 'success')
     throw new Error('group_reward_hard_audit_failed')
+  const proposal = proposalResult.proposal
 
   return freezeStage({
     runKind: 'group_reward',
@@ -370,16 +180,16 @@ export function generateGroupRewardDraft(
       configHash: fingerprintGeneratorConfig(preset.config)
     },
     input,
-    rewardBasis: budget.rewardBasis,
-    goldBudgetCp,
-    magicTargets: budget.magicTargets,
-    itemDefinitions,
-    treasures: [treasures[0]!],
+    rewardBasis: proposal.rewardBasis,
+    goldBudgetCp: proposal.goldBudgetCp,
+    magicTargets: proposal.magicTargets,
+    itemDefinitions: [...proposal.itemDefinitions],
+    treasures: [...proposal.treasures],
     rewardSummary: {
-      normalValueCp: aggregation.normalValueCp,
+      normalValueCp: proposal.rewardSummary.normalValueCp,
       overstockValueCp: 0,
-      magicCount: aggregation.magicCount
+      magicCount: proposal.rewardSummary.magicCount
     },
-    audits: [...aggregation.audits]
+    audits: [...proposal.audits]
   })
 }

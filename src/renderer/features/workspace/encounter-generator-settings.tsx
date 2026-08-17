@@ -36,6 +36,7 @@ import {
 } from './generator-composition-rules.js'
 import type { CampaignRewardRulesPort } from './campaign-reward-rules-port.js'
 import { GeneratorLootRulesEditor } from './generator-loot-rules.js'
+import { validateLootRuleDraft } from '../../../shared/generator/loot-rule-metadata.js'
 
 const LazyCampaignRewardRulesCard = lazy(async () => {
   const module = await import('./campaign-reward-rules-card.js')
@@ -365,14 +366,7 @@ function validGeneratorDraft(config: GeneratorPresetConfigV3): boolean {
 }
 
 function validLootDraft(value: unknown): boolean {
-  if (typeof value === 'number') return Number.isFinite(value)
-  if (typeof value === 'string') return value.trim().length > 0
-  if (typeof value === 'boolean') return true
-  if (Array.isArray(value))
-    return value.length > 0 && value.every(validLootDraft)
-  if (value && typeof value === 'object')
-    return Object.values(value).every(validLootDraft)
-  return false
+  return validateLootRuleDraft(value).length === 0
 }
 
 function report(error: unknown, onError: (message: string) => void): string {

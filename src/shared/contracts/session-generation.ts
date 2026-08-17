@@ -40,17 +40,25 @@ export const generatedMagicCountsSchema = z
 export const ledgerRewardPartyMemberSchema = z
   .object({
     characterId: z.uuid(),
+    level: z.number().int().min(1).max(20),
     currentXp: z.number().int().nonnegative(),
-    projectedXp: z.number().int().nonnegative(),
     ledgerRevision: z.number().int().nonnegative(),
     currentNonMagicCp: z.number().int().nonnegative(),
     currentMagic: generatedMagicCountsSchema
   })
   .strict()
 
+const generatedRewardPartyMemberSchema = ledgerRewardPartyMemberSchema
+  .extend({ projectedXp: z.number().int().nonnegative() })
+  .partial({ level: true })
+
+const legacyLedgerRewardPartyMemberSchema = ledgerRewardPartyMemberSchema
+  .omit({ level: true })
+  .extend({ projectedXp: z.number().int().nonnegative() })
+
 export const generatedRewardBasisSchema = z
   .object({
-    members: z.array(ledgerRewardPartyMemberSchema).min(1),
+    members: z.array(generatedRewardPartyMemberSchema).min(1),
     targetGoldCp: z.number().int().nonnegative(),
     currentGoldCp: z.number().int().nonnegative(),
     goldDeficitCp: z.number().int().nonnegative(),
@@ -85,7 +93,7 @@ function validateSessionGenerationInput(
   value: Readonly<{
     party: readonly z.infer<typeof generationPartyLevelSchema>[]
     ledgerParty?:
-      readonly z.infer<typeof ledgerRewardPartyMemberSchema>[] | undefined
+      readonly { characterId: string; level?: number | undefined }[] | undefined
   }>,
   context: z.RefinementCtx
 ): void {
@@ -107,7 +115,7 @@ function validateSessionGenerationInput(
       path: ['party'],
       message: 'At least one active player is required.'
     })
-  validateLedgerParty(value.ledgerParty, active, context)
+  validateLedgerParty(value.ledgerParty, value.party, context)
 }
 
 export const sessionGenerationEncounterInputSchema =
@@ -121,9 +129,18 @@ export const sessionGenerationRunInputSchema =
     .superRefine(validateSessionGenerationInput)
 
 const persistedSessionGenerationEncounterInputSchema =
-  sessionGenerationEncounterInputObjectSchema.superRefine(
-    validateSessionGenerationInput
-  )
+  sessionGenerationEncounterInputObjectSchema
+    .extend({
+      ledgerParty: z
+        .array(
+          z.union([
+            ledgerRewardPartyMemberSchema,
+            legacyLedgerRewardPartyMemberSchema
+          ])
+        )
+        .optional()
+    })
+    .superRefine(validateSessionGenerationInput)
 
 export const encounterRoleSchema = z.enum([
   'Minion',
@@ -419,16 +436,19 @@ export const groupRewardGenerationInputSchema =
         })
       creatureIds.add(entry.creatureId)
     }
-    validateLedgerParty(
-      value.ledgerParty,
-      value.party.reduce((sum, entry) => sum + entry.count, 0),
-      context
-    )
+    validateLedgerParty(value.ledgerParty, value.party, context)
   })
 
 const persistedGroupRewardGenerationInputSchema =
   groupRewardGenerationInputObjectSchema.extend({
-    ledgerParty: z.array(ledgerRewardPartyMemberSchema).optional()
+    ledgerParty: z
+      .array(
+        z.union([
+          ledgerRewardPartyMemberSchema,
+          legacyLedgerRewardPartyMemberSchema
+        ])
+      )
+      .optional()
   })
 
 const groupRewardGeneratedRunObjectSchema = z
@@ -608,11 +628,13 @@ export type SessionGenerationRunResult = Readonly<
 >
 
 function validateLedgerParty(
-  members: readonly { characterId: string }[] | undefined,
-  partyCount: number,
+  members:
+    readonly { characterId: string; level?: number | undefined }[] | undefined,
+  party: readonly { level: number; count: number }[],
   context: z.RefinementCtx
 ): void {
   if (!members) return
+  const partyCount = party.reduce((sum, entry) => sum + entry.count, 0)
   if (members.length !== partyCount)
     context.addIssue({
       code: 'custom',
@@ -627,4 +649,21 @@ function validateLedgerParty(
       path: ['ledgerParty'],
       message: 'Ledger party character identities must be unique.'
     })
+  if (members.every((member) => member.level !== undefined)) {
+    const memberCounts = new Map<number, number>()
+    for (const member of members)
+      memberCounts.set(
+        member.level!,
+        (memberCounts.get(member.level!) ?? 0) + 1
+      )
+    if (
+      party.some((entry) => memberCounts.get(entry.level) !== entry.count) ||
+      memberCounts.size !== party.filter((entry) => entry.count > 0).length
+    )
+      context.addIssue({
+        code: 'custom',
+        path: ['ledgerParty'],
+        message: 'Ledger party levels must match the aggregated party.'
+      })
+  }
 }

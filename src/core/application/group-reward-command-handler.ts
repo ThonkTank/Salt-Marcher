@@ -83,7 +83,6 @@ export class GroupRewardCommandHandler {
       rules.rewardXpBasis === 'adjusted'
         ? evaluation.adjustedXp
         : evaluation.baseXp
-    const projectedXp = Math.floor(rewardXp / assigned.length)
     const balances = new Map(
       context.characterLoot
         .rewardBalances(assigned.map((member) => member.id))
@@ -98,8 +97,8 @@ export class GroupRewardCommandHandler {
         if (!balance) throw new Error('missing_character_reward_balance')
         return {
           characterId: member.id,
+          level: member.level!,
           currentXp: member.xp,
-          projectedXp,
           ledgerRevision: balance.ledgerRevision,
           currentNonMagicCp: balance.currentNonMagicCp,
           currentMagic: balance.currentMagic

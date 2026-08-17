@@ -53,7 +53,7 @@ copy.
   generieren` replaces it. Both use optional location, catalog filters, tuning,
   the effective preset, and a deterministic seed. Scene supplies concrete
   source capacity and materializes the shared abstract composition exactly; it
-  never weakens a selected CR-Block. Shared Config V4, selection, stock, and
+  never weakens a selected CR-Block. Shared Config V5, selection, stock, and
   ranking behavior is defined by the
   [Encounter Generation Requirements](../../encounter/requirements/requirements-encounter-generation.md).
   An unsaved result is discarded only after confirmation and never survives

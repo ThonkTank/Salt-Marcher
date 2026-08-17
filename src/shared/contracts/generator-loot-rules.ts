@@ -111,7 +111,9 @@ const coinProfileSchema = z
     maxLowCount: countSchema,
     maxMiddleCount: countSchema,
     maxBudgetCp: positiveCountSchema,
-    allowedContainers: z.array(z.string().trim().min(1)).min(1)
+    allowedContainerIds: z
+      .array(z.string().regex(/^container:[a-z0-9-]+$/))
+      .min(1)
   })
   .strict()
   .superRefine((value, context) => {

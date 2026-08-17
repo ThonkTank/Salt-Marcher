@@ -20,38 +20,55 @@ export type LootProgression = Readonly<{
   magicPerXp: Readonly<Record<LootRarity, MagicPerXp>>
 }>
 
+export type LootCategoryId = `category:${string}`
+export type LootProfileId = `profile:${string}`
+export type LootAdornmentTypeId = `adornment:${string}`
+export type LootTypeId =
+  | 'loot-type:livestock'
+  | 'loot-type:material'
+  | 'loot-type:object'
+  | 'loot-type:vehicle'
+export type MagicTypeId = `magic-type:${string}`
+export type LootValueForm = 'quantity_good' | null
+
 export type LootCatalogItem = Readonly<{
   id: string
   name: string
-  category: string
+  categoryId: LootCategoryId
   baseCp: Rational
   baseLb: number
   active: boolean
   formOverride: string | null
   capacity: number
-  allowedContainerNames: readonly string[]
+  allowedContainerIds: readonly string[]
   utilityScore: number
   lootClass: 'carrier' | 'useful' | 'flavor'
-  lootType: string
-  modularProfiles: readonly string[]
+  lootTypeId: LootTypeId
+  modularProfileIds: readonly LootProfileId[]
   canAdorn: boolean
-  adornmentType: string | null
+  adornmentTypeId: LootAdornmentTypeId | null
   unitLabel: string
-  valueForm: string | null
+  unitKind: LootUnitKind
+  placement: LootPlacement
+  valueForm: LootValueForm
 }>
+
+export type LootUnitKind =
+  'count' | 'weight' | 'area_weight' | 'liquid_pint' | 'liquid_fl_oz'
+export type LootPlacement = 'worn' | 'handheld' | null
 
 export type LootModifier = Readonly<{
   id: string
   kind: 'modular' | 'variant'
-  lootType: string
+  lootTypeId: LootTypeId | 'all'
   name: string
   textTemplate: string | null
   details: string | null
-  componentType: string | null
+  componentTypeId: LootAdornmentTypeId | null
   minQuantity: number
   maxQuantity: number
-  allowedProfiles: readonly string[]
-  allowedCategories: readonly string[]
+  allowedProfileIds: readonly LootProfileId[]
+  allowedCategoryIds: readonly LootCategoryId[]
   flatValueCp: Rational
   active: boolean
 }>
@@ -114,6 +131,7 @@ export type EnspelledRule = Readonly<{
   spellLevel: number
   rarity: LootRarity
   baseItemRegex: string
+  baseItemIds: readonly string[]
   active: boolean
   maxBaseCapacity: number
 }>
@@ -123,19 +141,22 @@ export type MagicCurse = Readonly<{
   name: string
   effect: string
   weight: number
-  appliesTo: string
+  appliesToId: 'all' | LootCategoryId | MagicTypeId
   minRarity: LootRarity
   maxRarity: LootRarity
   active: boolean
 }>
 
 export type LootRelation = Readonly<{
-  type: string
+  type: LootRelationType
   sourceId: string
   targetId: string
   active: boolean
   sortOrder: number
 }>
+
+export type LootRelationType =
+  'ITEM_CONTAINER' | 'MODIFIER_CATEGORY' | 'MODIFIER_PROFILE' | 'THEME_CATEGORY'
 
 export type FullSessionGenerationCatalog = Readonly<{
   encounter: EncounterCatalog
@@ -180,13 +201,16 @@ export function parseFullSessionGenerationCatalog(
       Legendary: magicPerXp(exactDecimalOrZero(row, 'Legendary_Per_XP'))
     }
   }))
-  const relations = rows(tables, 'DB_LootRelations.tsv').map((row) => ({
-    type: required(row, 'Relation_Type'),
-    sourceId: required(row, 'Source_ID'),
-    targetId: required(row, 'Target_ID'),
-    active: boolean(row, 'Active'),
-    sortOrder: finite(row, 'Sort_Order')
-  }))
+  const relations = rows(tables, 'DB_LootRelations.tsv').map((row) => {
+    const type = lootRelationType(required(row, 'Relation_Type'))
+    return {
+      type,
+      sourceId: required(row, 'Source_ID'),
+      targetId: relationTargetId(type, required(row, 'Target_ID')),
+      active: boolean(row, 'Active'),
+      sortOrder: finite(row, 'Sort_Order')
+    }
+  })
   const containers = rows(tables, 'DB_Containers.tsv').map((row) => ({
     id: required(row, 'Container_ID'),
     name: required(row, 'Container'),
@@ -202,65 +226,69 @@ export function parseFullSessionGenerationCatalog(
     priority: finite(row, 'Packing_Priority'),
     mixable: boolean(row, 'Mixable')
   }))
-  const containerNameById = new Map(
-    containers.map((container) => [container.id, container.name])
-  )
   const items = rows(tables, 'DB_LootItems.tsv').map((row) => ({
     id: required(row, 'Item_ID'),
     name: required(row, 'Name'),
-    category: required(row, 'Category'),
+    categoryId: categoryId(required(row, 'Category')),
     baseCp: exactDecimal(row, 'Base_CP'),
     baseLb: finite(row, 'Base_LB'),
     active: boolean(row, 'Active'),
     formOverride: optional(row, 'Loot_Form_Override'),
     capacity: finite(row, 'Capacity_Units'),
-    allowedContainerNames: relations
+    allowedContainerIds: relations
       .filter(
         (relation) =>
           relation.active &&
           relation.type === 'ITEM_CONTAINER' &&
           relation.sourceId === required(row, 'Item_ID')
       )
-      .map((relation) => containerNameById.get(relation.targetId))
-      .filter((name): name is string => name !== undefined),
+      .map((relation) => relation.targetId),
     utilityScore: finite(row, 'Utility_Score'),
     lootClass: lootClass(required(row, 'Loot_Class')),
-    lootType: required(row, 'Loot_Type'),
-    modularProfiles:
+    lootTypeId: lootTypeId(required(row, 'Loot_Type')),
+    modularProfileIds:
       list(row, 'Modular_Profile').length > 0
-        ? list(row, 'Modular_Profile')
-        : list(row, 'Modular_Profile_Cache'),
+        ? list(row, 'Modular_Profile').map(profileId)
+        : list(row, 'Modular_Profile_Cache').map(profileId),
     canAdorn: boolean(row, 'Can_Adorn'),
-    adornmentType: optional(row, 'Adornment_Type'),
+    adornmentTypeId: optional(row, 'Adornment_Type')
+      ? adornmentTypeId(required(row, 'Adornment_Type'))
+      : null,
     unitLabel: optional(row, 'Unit_Label') ?? 'item',
-    valueForm: optional(row, 'Value_Form')
+    unitKind: lootUnitKind(optional(row, 'Unit_Label') ?? 'item'),
+    placement: lootPlacement(optional(row, 'Loot_Form_Override')),
+    valueForm: lootValueForm(optional(row, 'Value_Form'))
   }))
   const modifiers = rows(tables, 'DB_LootModifiers.tsv').map((row) => ({
     id: required(row, 'Modifier_ID'),
     kind: modifierKind(required(row, 'Modifier_Kind')),
-    lootType: required(row, 'Loot_Type'),
+    lootTypeId: modifierLootTypeId(required(row, 'Loot_Type')),
     name: required(row, 'Name'),
     textTemplate: optional(row, 'Text_Template'),
     details: optional(row, 'Details'),
-    componentType: optional(row, 'Component_Type'),
+    componentTypeId:
+      optional(row, 'Component_Type') === null ||
+      optional(row, 'Component_Type') === 'none'
+        ? null
+        : adornmentTypeId(required(row, 'Component_Type')),
     minQuantity: finite(row, 'Min_Qty'),
     maxQuantity: finite(row, 'Max_Qty'),
-    allowedProfiles: relations
+    allowedProfileIds: relations
       .filter(
         (relation) =>
           relation.active &&
           relation.type === 'MODIFIER_PROFILE' &&
           relation.sourceId === required(row, 'Modifier_ID')
       )
-      .map((relation) => relation.targetId),
-    allowedCategories: relations
+      .map((relation) => profileIdFromRelation(relation.targetId)),
+    allowedCategoryIds: relations
       .filter(
         (relation) =>
           relation.active &&
           relation.type === 'MODIFIER_CATEGORY' &&
           relation.sourceId === required(row, 'Modifier_ID')
       )
-      .map((relation) => relation.targetId),
+      .map((relation) => categoryIdFromRelation(relation.targetId)),
     flatValueCp: exactDecimal(row, 'Flat_Value_CP'),
     active: boolean(row, 'Active')
   }))
@@ -300,6 +328,15 @@ export function parseFullSessionGenerationCatalog(
     spellLevel: integer(row, 'Spell_Level'),
     rarity: rarity(row, 'Rarity'),
     baseItemRegex: required(row, 'Base_Item_Regex').replace(/^\(\?i\)/, ''),
+    baseItemIds: items
+      .filter((item) => {
+        const matcher = new RegExp(
+          required(row, 'Base_Item_Regex').replace(/^\(\?i\)/, ''),
+          'i'
+        )
+        return matcher.test(item.categoryId) || matcher.test(item.name)
+      })
+      .map((item) => item.id),
     active: boolean(row, 'Active'),
     maxBaseCapacity: finite(row, 'Max_Base_Capacity')
   }))
@@ -308,7 +345,7 @@ export function parseFullSessionGenerationCatalog(
     name: required(row, 'Name'),
     effect: required(row, 'Effect'),
     weight: finite(row, 'Weight'),
-    appliesTo: required(row, 'Applies_To'),
+    appliesToId: curseAppliesToId(required(row, 'Applies_To')),
     minRarity: rarity(row, 'Min_Rarity'),
     maxRarity: rarity(row, 'Max_Rarity'),
     active: boolean(row, 'Active')
@@ -389,31 +426,25 @@ export function parseFullSessionGenerationCatalog(
   const containerIds = new Set(containers.map((container) => container.id))
   const modifierIds = new Set(modifiers.map((modifier) => modifier.id))
   const themeIds = new Set(themes.map((theme) => theme.id))
-  const categories = new Set(
-    items.flatMap((item) => [
-      item.category,
-      catalogEntityKey('category', item.category)
-    ])
-  )
-  const profiles = new Set(
-    items.flatMap((item) =>
-      item.modularProfiles.flatMap((profile) => [
-        profile,
-        catalogEntityKey('profile', profile)
-      ])
-    )
-  )
+  const categories = new Set(items.map((item) => item.categoryId))
+  const profiles = new Set(items.flatMap((item) => item.modularProfileIds))
   const relationValidators: Readonly<
     Record<string, (relation: LootRelation) => boolean>
   > = {
     ITEM_CONTAINER: (relation) =>
       itemIds.has(relation.sourceId) && containerIds.has(relation.targetId),
     MODIFIER_CATEGORY: (relation) =>
-      modifierIds.has(relation.sourceId) && categories.has(relation.targetId),
+      modifierIds.has(relation.sourceId) &&
+      isCategoryId(relation.targetId) &&
+      categories.has(relation.targetId),
     MODIFIER_PROFILE: (relation) =>
-      modifierIds.has(relation.sourceId) && profiles.has(relation.targetId),
+      modifierIds.has(relation.sourceId) &&
+      isProfileId(relation.targetId) &&
+      profiles.has(relation.targetId),
     THEME_CATEGORY: (relation) =>
-      themeIds.has(relation.sourceId) && categories.has(relation.targetId)
+      themeIds.has(relation.sourceId) &&
+      isCategoryId(relation.targetId) &&
+      categories.has(relation.targetId)
   }
   for (const relation of relations.filter((relation) => relation.active)) {
     const validate = relationValidators[relation.type]
@@ -571,6 +602,96 @@ function modifierKind(value: string): LootModifier['kind'] {
   return value
 }
 
+function lootRelationType(value: string): LootRelationType {
+  if (
+    value !== 'ITEM_CONTAINER' &&
+    value !== 'MODIFIER_CATEGORY' &&
+    value !== 'MODIFIER_PROFILE' &&
+    value !== 'THEME_CATEGORY'
+  )
+    throw new Error('catalog_schema_invalid:loot_relation_type')
+  return value
+}
+
+function relationTargetId(type: LootRelationType, value: string): string {
+  if (type === 'THEME_CATEGORY') return categoryId(value)
+  return value
+}
+
+function lootUnitKind(value: string): LootUnitKind {
+  if (value === 'lb') return 'weight'
+  if (value === 'lb/sq yd') return 'area_weight'
+  if (value === 'pint') return 'liquid_pint'
+  if (value === 'fl oz') return 'liquid_fl_oz'
+  return 'count'
+}
+
+function lootPlacement(value: string | null): LootPlacement {
+  return value === 'worn' || value === 'handheld' ? value : null
+}
+
+function lootValueForm(value: string | null): LootValueForm {
+  if (value === null) return null
+  if (value === 'Quantity_Good') return 'quantity_good'
+  throw new Error('catalog_schema_invalid:value_form')
+}
+
+function categoryId(value: string): LootCategoryId {
+  if (value.startsWith('category:')) return categoryIdFromRelation(value)
+  const id = categoryIdsBySourceValue[value]
+  if (!id) throw new Error('catalog_schema_invalid:category')
+  return id
+}
+
+function categoryIdFromRelation(value: string): LootCategoryId {
+  if (!isCategoryId(value))
+    throw new Error('catalog_schema_invalid:category_id')
+  return value
+}
+
+function isCategoryId(value: string): value is LootCategoryId {
+  return /^category:[a-z0-9-]+$/.test(value)
+}
+
+function profileId(value: string): LootProfileId {
+  const id = profileIdsBySourceValue[value]
+  if (!id) throw new Error('catalog_schema_invalid:profile')
+  return id
+}
+
+function profileIdFromRelation(value: string): LootProfileId {
+  if (!isProfileId(value)) throw new Error('catalog_schema_invalid:profile_id')
+  return value
+}
+
+function isProfileId(value: string): value is LootProfileId {
+  return /^profile:[a-z0-9-]+$/.test(value)
+}
+
+function adornmentTypeId(value: string): LootAdornmentTypeId {
+  const id = adornmentTypeIdsBySourceValue[value]
+  if (!id) throw new Error('catalog_schema_invalid:adornment_type')
+  return id
+}
+
+function lootTypeId(value: string): LootTypeId {
+  const id = lootTypeIdsBySourceValue[value]
+  if (!id) throw new Error('catalog_schema_invalid:loot_type')
+  return id
+}
+
+function modifierLootTypeId(value: string): LootTypeId | 'all' {
+  return value === 'all' ? 'all' : lootTypeId(value)
+}
+
+function curseAppliesToId(value: string): 'all' | LootCategoryId | MagicTypeId {
+  if (value === 'all') return 'all'
+  if (value.startsWith('category:')) return categoryIdFromRelation(value)
+  const id = magicTypeIdsBySourceValue[value.replace(/^magic-type:/, '')]
+  if (!id) throw new Error('catalog_schema_invalid:curse_applies_to')
+  return id
+}
+
 function decision(value: string): MagicItem['decisionType'] {
   if (
     value !== 'none' &&
@@ -588,8 +709,92 @@ function assertUnique(values: readonly string[], label: string): void {
     throw new Error(`catalog_schema_invalid:duplicate_${label}`)
 }
 
-function catalogEntityKey(prefix: string, value: string): string {
-  return `${prefix}:${value.toLowerCase().replaceAll('_', '-')}`
+const categoryIdsBySourceValue: Readonly<Record<string, LootCategoryId>> = {
+  Ammunition: 'category:ammunition',
+  Arcane_Focus: 'category:arcane-focus',
+  Art_Object: 'category:art-object',
+  Book_Document: 'category:book-document',
+  Camp_Gear: 'category:camp-gear',
+  Clothing: 'category:clothing',
+  Component_Material: 'category:component-material',
+  Druidic_Focus: 'category:druidic-focus',
+  Equipment_Pack: 'category:equipment-pack',
+  Exploration_Gear: 'category:exploration-gear',
+  Firearm: 'category:firearm',
+  Gemstone: 'category:gemstone',
+  Hazard_Item: 'category:hazard-item',
+  Heavy_Armor: 'category:heavy-armor',
+  Holy_Symbol: 'category:holy-symbol',
+  Ingot: 'category:ingot',
+  Instrument: 'category:instrument',
+  Light_Armor: 'category:light-armor',
+  Light_Fire_Gear: 'category:light-fire-gear',
+  Livestock: 'category:livestock',
+  Martial_Melee_Weapon: 'category:martial-melee-weapon',
+  Martial_Ranged_Weapon: 'category:martial-ranged-weapon',
+  Medium_Armor: 'category:medium-armor',
+  Mount: 'category:mount',
+  Mount_Gear: 'category:mount-gear',
+  Poison: 'category:poison',
+  Potion: 'category:potion',
+  Restraint_Trap_Gear: 'category:restraint-trap-gear',
+  Ritual_Item: 'category:ritual-item',
+  Shield: 'category:shield',
+  Siege_Gear: 'category:siege-gear',
+  Simple_Melee_Weapon: 'category:simple-melee-weapon',
+  Simple_Ranged_Weapon: 'category:simple-ranged-weapon',
+  Survival_Supply: 'category:survival-supply',
+  Tool: 'category:tool',
+  Trade_Good: 'category:trade-good',
+  Utility_Gear: 'category:utility-gear',
+  Vehicle_Air_Space: 'category:vehicle-air-space',
+  Vehicle_Land: 'category:vehicle-land',
+  Vehicle_Water: 'category:vehicle-water'
+}
+
+const profileIdsBySourceValue: Readonly<Record<string, LootProfileId>> = {
+  ammunition: 'profile:ammunition',
+  arcane_focus: 'profile:arcane-focus',
+  armor: 'profile:armor',
+  art_object: 'profile:art-object',
+  blade_weapon: 'profile:blade-weapon',
+  book: 'profile:book',
+  druidic_focus: 'profile:druidic-focus',
+  firearm: 'profile:firearm',
+  gear: 'profile:gear',
+  holy_symbol: 'profile:holy-symbol',
+  instrument: 'profile:instrument',
+  mount_gear: 'profile:mount-gear',
+  pack_or_case: 'profile:pack-or-case',
+  ranged_weapon: 'profile:ranged-weapon',
+  relic: 'profile:relic',
+  shield: 'profile:shield',
+  textile: 'profile:textile',
+  tool: 'profile:tool',
+  utility_object: 'profile:utility-object'
+}
+
+const adornmentTypeIdsBySourceValue: Readonly<
+  Record<string, LootAdornmentTypeId>
+> = {
+  gem: 'adornment:gem',
+  inlay: 'adornment:inlay',
+  metal: 'adornment:metal',
+  textile: 'adornment:textile'
+}
+
+const lootTypeIdsBySourceValue: Readonly<Record<string, LootTypeId>> = {
+  livestock: 'loot-type:livestock',
+  material: 'loot-type:material',
+  object: 'loot-type:object',
+  vehicle: 'loot-type:vehicle'
+}
+
+const magicTypeIdsBySourceValue: Readonly<Record<string, MagicTypeId>> = {
+  Arcana: 'magic-type:arcana',
+  Armaments: 'magic-type:armaments',
+  Implements: 'magic-type:implements',
+  Relics: 'magic-type:relics'
 }
 
 function deepFreeze<T>(value: T): T {

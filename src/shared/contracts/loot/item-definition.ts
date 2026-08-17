@@ -1,4 +1,10 @@
 import { z } from 'zod'
+import { itemReferenceKey } from '../../values/item-definition-values.js'
+
+export {
+  itemDefinitionLineValueCp,
+  itemReferenceKey
+} from '../../values/item-definition-values.js'
 
 export const itemRaritySchema = z.enum([
   'Common',
@@ -60,6 +66,7 @@ export const itemDefinitionComponentsSchema = z
     spellId: z.string().min(1).nullable(),
     enspelledRuleId: z.string().min(1).nullable(),
     curseId: z.string().min(1).nullable(),
+    coinProfileId: z.string().min(1).nullable().optional(),
     coinDenominations: z.array(coinDenominationComponentSchema).max(5)
   })
   .strict()
@@ -69,6 +76,13 @@ export const itemDefinitionSchema = z
     reference: itemReferenceSchema,
     name: z.string().min(1),
     unitValueCp: z.number().int().nonnegative(),
+    exactUnitValueCp: z
+      .object({
+        numerator: z.string().regex(/^-?[0-9]+$/),
+        denominator: z.string().regex(/^[1-9][0-9]*$/)
+      })
+      .strict()
+      .optional(),
     unitCapacity: z.number().nonnegative(),
     stackable: z.boolean(),
     magic: z.boolean(),
@@ -139,19 +153,6 @@ export type ItemDefinitionComponents = Readonly<
   z.infer<typeof itemDefinitionComponentsSchema>
 >
 
-export function itemReferenceKey(reference: ItemReference): string {
-  if (reference.kind === 'catalog')
-    return [
-      'catalog',
-      reference.catalogContentHash,
-      reference.entryKind,
-      reference.catalogId
-    ].join(':')
-  if (reference.kind === 'generated')
-    return ['generated', reference.runId, reference.definitionId].join(':')
-  return ['legacy', reference.definitionId].join(':')
-}
-
 export const emptyItemDefinitionComponents: ItemDefinitionComponents =
   Object.freeze({
     baseItemId: null,
@@ -162,6 +163,7 @@ export const emptyItemDefinitionComponents: ItemDefinitionComponents =
     spellId: null,
     enspelledRuleId: null,
     curseId: null,
+    coinProfileId: null,
     coinDenominations: [] as Array<{
       denominationId: 'pp' | 'gp' | 'ep' | 'sp' | 'cp'
       quantity: number

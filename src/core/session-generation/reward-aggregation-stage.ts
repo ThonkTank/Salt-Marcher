@@ -3,16 +3,16 @@ import type {
   GeneratedTreasure
 } from '../../shared/contracts/session-generation.js'
 import {
+  itemDefinitionLineValueCp,
   itemReferenceKey,
   type ItemDefinition
 } from '../../shared/contracts/loot.js'
 import type { GeneratorLootRules } from '../../shared/contracts/generator-loot-rules.js'
 import { defaultGeneratorLootRules } from '../../shared/generator/default-loot-rules.js'
-import type {
-  FullSessionGenerationCatalog,
-  LootRarity
-} from './loot-catalog.js'
+import type { GenerationCatalogIndex } from './generation-catalog-index.js'
+import type { LootRarity } from './loot-catalog.js'
 import { freezeStage } from './reward-stage-types.js'
+import { evaluatePacking } from './packing-policy.js'
 
 export type RewardAggregationInput = Readonly<{
   treasures: readonly GeneratedTreasure[]
@@ -22,7 +22,7 @@ export type RewardAggregationInput = Readonly<{
   expectedTreasureCount: number
   profile?: 'session' | 'group_reward'
   rules?: GeneratorLootRules
-  catalog: FullSessionGenerationCatalog
+  catalogIndex: GenerationCatalogIndex
 }>
 
 export type RewardAggregationOutput = Readonly<{
@@ -166,11 +166,7 @@ export function aggregateReward(
         (treasure) =>
           treasure.actualValueCp ===
           treasure.items.reduce(
-            (sum, item) =>
-              sum +
-              item.quantity *
-                (definitions.get(itemReferenceKey(item.itemReference))
-                  ?.unitValueCp ?? 0),
+            (sum, item) => sum + definitionLineValue(definitions, item),
             0
           )
       ),
@@ -180,11 +176,7 @@ export function aggregateReward(
           (treasure) =>
             treasure.actualValueCp !==
             treasure.items.reduce(
-              (sum, item) =>
-                sum +
-                item.quantity *
-                  (definitions.get(itemReferenceKey(item.itemReference))
-                    ?.unitValueCp ?? 0),
+              (sum, item) => sum + definitionLineValue(definitions, item),
               0
             )
         ).length
@@ -267,41 +259,70 @@ export function aggregateReward(
   return freezeStage({ normalValueCp, overstockValueCp, magicCount, audits })
 }
 
+function definitionLineValue(
+  definitions: ReadonlyMap<string, ItemDefinition>,
+  item: GeneratedTreasure['items'][number]
+): number {
+  const definition = definitions.get(itemReferenceKey(item.itemReference))
+  return definition ? itemDefinitionLineValueCp(definition, item.quantity) : 0
+}
+
 function packingAssignmentValid(
   item: GeneratedTreasure['items'][number],
   treasure: GeneratedTreasure,
   definitions: ReadonlyMap<string, ItemDefinition>,
   input: RewardAggregationInput
 ): boolean {
-  if (item.containerId === null) return true
-  const container = treasure.containers.find(
-    (candidate) => candidate.id === item.containerId
-  )
-  if (!container?.catalogContainerId) return false
   const definition = definitions.get(itemReferenceKey(item.itemReference))
   if (!definition) return false
-  const catalogContainer = input.catalog.containers.find(
-    (candidate) => candidate.id === container.catalogContainerId
-  )
-  if (!catalogContainer) return false
-  if (definition.components.coinDenominations.length > 0)
-    return Object.values(
-      (input.rules ?? defaultGeneratorLootRules).coins.profiles
-    )
-      .flatMap((profile) => profile.allowedContainers)
-      .includes(catalogContainer.name)
-  const source = definition.components.baseItemId
-    ? input.catalog.items.find(
-        (candidate) => candidate.id === definition.components.baseItemId
-      )
+  const catalogContainerId = item.containerId
+    ? (treasure.containers.find(
+        (candidate) => candidate.id === item.containerId
+      )?.catalogContainerId ?? null)
     : null
-  if (!source) return false
-  if (source.allowedContainerNames.includes(catalogContainer.name)) return true
+  if (item.containerId !== null && catalogContainerId === null) return false
   const rules = input.rules ?? defaultGeneratorLootRules
-  const liquid = source.unitLabel === 'pint' || source.unitLabel === 'fl oz'
-  return (
-    catalogContainer.name === 'Pile' &&
-    !liquid &&
-    item.quantity >= rules.packing.pileMinQty
-  )
+  if (definition.components.coinDenominations.length > 0) {
+    const profile = Object.entries(rules.coins.profiles).find(
+      ([profileId]) => profileId === definition.components.coinProfileId
+    )?.[1]
+    if (!profile) return false
+    return evaluatePacking(
+      {
+        capacity: definition.unitCapacity * item.quantity,
+        quantity: item.quantity,
+        allowedContainerIds: profile.allowedContainerIds,
+        placement: null,
+        unitKind: 'count'
+      },
+      catalogContainerId,
+      rules
+    ).valid
+  }
+  const source = definition.components.baseItemId
+    ? input.catalogIndex.itemsById.get(definition.components.baseItemId)
+    : null
+  if (!source)
+    return evaluatePacking(
+      {
+        capacity: definition.unitCapacity * item.quantity,
+        quantity: item.quantity,
+        allowedContainerIds: [],
+        placement: null,
+        unitKind: 'count'
+      },
+      catalogContainerId,
+      rules
+    ).valid
+  return evaluatePacking(
+    {
+      capacity: definition.unitCapacity * item.quantity,
+      quantity: item.quantity,
+      allowedContainerIds: source.allowedContainerIds,
+      placement: source.placement,
+      unitKind: source.unitKind
+    },
+    catalogContainerId,
+    rules
+  ).valid
 }

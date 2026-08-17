@@ -44,7 +44,7 @@ describe('CampaignStore', () => {
     expect(snapshot.registry.presets).toHaveLength(1)
     expect(snapshot.registry.presets[0]).toMatchObject({
       id: systemGeneratorPresetId,
-      schemaVersion: 4,
+      schemaVersion: 5,
       config: { composition: { crBlocks: { min: 1, max: 3 } } }
     })
     expect(snapshot.assignment).toEqual({

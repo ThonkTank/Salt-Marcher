@@ -1,6 +1,6 @@
 import {
   generatorConfigSchema,
-  type GeneratorPresetConfigV4
+  type GeneratorPresetConfigV5
 } from '../contracts/generator-presets.js'
 import {
   generatorChallengeRatings,
@@ -88,7 +88,7 @@ export const systemGeneratorRoleCombinations: GeneratorRole[][] = [
   ['boss', 'support', 'minion']
 ]
 
-export const defaultGeneratorConfig: GeneratorPresetConfigV4 =
+export const defaultGeneratorConfig: GeneratorPresetConfigV5 =
   generatorConfigSchema.parse({
     composition: {
       roleMatrix: systemGeneratorRoleMatrix(),

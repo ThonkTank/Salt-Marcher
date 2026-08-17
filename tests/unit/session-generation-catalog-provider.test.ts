@@ -92,6 +92,28 @@ describe('bundled encounter catalog provider', () => {
     expect(() =>
       parseFullSessionGenerationCatalog(encounter, invalidActive)
     ).toThrow('catalog_schema_invalid')
+
+    const unknownRelation = {
+      ...tables,
+      'DB_LootRelations.tsv': tables['DB_LootRelations.tsv']!.replace(
+        'ITEM_CONTAINER\titem:object:abacus\tcontainer:pouch',
+        'ITEM_CONTAINER_TYPO\titem:object:abacus\tcontainer:pouch'
+      )
+    }
+    expect(() =>
+      parseFullSessionGenerationCatalog(encounter, unknownRelation)
+    ).toThrow('catalog_schema_invalid:loot_relation_type')
+
+    const fuzzyCategoryAlias = {
+      ...tables,
+      'DB_LootItems.tsv': tables['DB_LootItems.tsv']!.replace(
+        '\tArt_Object\t',
+        '\tArt Object\t'
+      )
+    }
+    expect(() =>
+      parseFullSessionGenerationCatalog(encounter, fuzzyCategoryAlias)
+    ).toThrow('catalog_schema_invalid:category')
   })
 })
 

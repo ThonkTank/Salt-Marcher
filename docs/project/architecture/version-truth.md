@@ -8,10 +8,10 @@ canonical check.
 
 | Role | Current schema | Complete forward path | Migration owner |
 | --- | ---: | --- | --- |
-| installation | 31 | `27 -> 28 -> 29 -> 30 -> 31` | `installation-schema-migrations.ts` |
-| campaign | 31 | `27 -> 28 -> 29 -> 30 -> 31` | `campaign-schema-migrations.ts` |
+| installation | 32 | `27 -> 28 -> 29 -> 30 -> 31 -> 32` | `installation-schema-migrations.ts` |
+| campaign | 32 | `27 -> 28 -> 29 -> 30 -> 31 -> 32` | `campaign-schema-migrations.ts` |
 
-Migration registry contract: **3**.
+Migration registry contract: **4**.
 
 ## Generation
 
@@ -19,7 +19,7 @@ Migration registry contract: **3**.
 | --- | --- | --- |
 | Encounter engine | `encounter-v5` | `session-generation.ts` |
 | Reward engine | `reward-v3` | `session-generation.ts` |
-| Generator config | `Config V4` | `generator-presets.ts` |
+| Generator config | `Config V5` | `generator-presets.ts` |
 | Session-generation catalog | `catalog-2026-08-16` | `resources/sessiongeneration/registry.json` |
 | Catalog content hash | `59f4a9ab7b7164b9151d5339f41136701efa45a58666ee1cab7cff101b224a03` | current catalog manifest |
 

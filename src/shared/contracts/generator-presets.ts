@@ -11,7 +11,7 @@ export type {
   GeneratorRoleCell,
   GeneratorRoleMatrix
 } from '../generator/generator-config-model.js'
-export const generatorPresetSchemaVersion = 4 as const
+export const generatorPresetSchemaVersion = 5 as const
 export const systemGeneratorPresetId = '00000000-0000-4000-8000-000000000001'
 export const generatorRoleSchema = z.enum(generatorRoles)
 export const generatorRoleCellSchema = z.enum(['none', ...generatorRoles])
@@ -154,12 +154,14 @@ export const generatorConfigSchema = z
   })
   .strict()
 
-export type GeneratorPresetConfigV4 = z.infer<typeof generatorConfigSchema>
-/** @deprecated Kept as a source-compatible alias while Config V4 rolls out. */
-export type GeneratorPresetConfigV3 = GeneratorPresetConfigV4
-export type GeneratorCompositionConfig = GeneratorPresetConfigV4['composition']
+export type GeneratorPresetConfigV5 = z.infer<typeof generatorConfigSchema>
+/** @deprecated Kept as source-compatible aliases while Config V5 rolls out. */
+export type GeneratorPresetConfigV4 = GeneratorPresetConfigV5
+/** @deprecated Kept as source-compatible aliases while Config V5 rolls out. */
+export type GeneratorPresetConfigV3 = GeneratorPresetConfigV5
+export type GeneratorCompositionConfig = GeneratorPresetConfigV5['composition']
 export type ResolvedGeneratorTuning =
-  GeneratorPresetConfigV4['generationDefaults']
+  GeneratorPresetConfigV5['generationDefaults']
 
 export const generatorPresetSchema = z
   .object({

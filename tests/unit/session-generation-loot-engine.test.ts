@@ -24,7 +24,7 @@ const preset = {
 }
 const input: SessionGenerationRunInput = {
   party: [{ level: 3, count: 4 }],
-  ledgerParty: sessionLedger([{ level: 3, count: 4 }], '0.6'),
+  ledgerParty: rewardLedger([{ level: 3, count: 4 }]),
   adventureDayFraction: '0.6',
   encounterCount: 2,
   seed: 179_974
@@ -35,6 +35,18 @@ describe('session generation loot engine', () => {
     const result = sessionGenerationRunInputSchema.safeParse({
       ...input,
       ledgerParty: undefined
+    })
+    expect(result.success).toBe(false)
+    if (result.success) return
+    expect(result.error.issues[0]?.path).toEqual(['ledgerParty'])
+  })
+
+  it('rejects a ledger roster whose member levels disagree with party counts', () => {
+    const result = sessionGenerationRunInputSchema.safeParse({
+      ...input,
+      ledgerParty: input.ledgerParty.map((member, index) =>
+        index === 0 ? { ...member, level: 4 } : member
+      )
     })
     expect(result.success).toBe(false)
     if (result.success) return
@@ -94,7 +106,7 @@ describe('session generation loot engine', () => {
   it('converts the selected base or adjusted group XP dimension explicitly', () => {
     const groupInput = {
       party: [{ level: 3, count: 4 }],
-      ledgerParty: groupLedger([{ level: 3, count: 4 }], 200),
+      ledgerParty: rewardLedger([{ level: 3, count: 4 }]),
       sceneId: '018f47db-e17a-7000-8000-000000000001',
       groupId: '018f47db-e17a-7000-8000-000000000002',
       sceneRevision: 1,
@@ -139,8 +151,8 @@ describe('session generation loot engine', () => {
   it('returns structurally empty session and group rewards when the ledger is overprovided', () => {
     const ledgerParty = Array.from({ length: 4 }, (_, index) => ({
       characterId: `018f47db-e17a-7000-8000-00000000000${String(index + 1)}`,
+      level: 3,
       currentXp: 400_000,
-      projectedXp: 1_000,
       ledgerRevision: index,
       currentNonMagicCp: 100_000_000,
       currentMagic: {
@@ -200,7 +212,7 @@ describe('session generation loot engine', () => {
   it('keeps opaque group provenance out of reward entropy', () => {
     const groupInput = {
       party: [{ level: 3, count: 4 }],
-      ledgerParty: groupLedger([{ level: 3, count: 4 }], 400),
+      ledgerParty: rewardLedger([{ level: 3, count: 4 }]),
       sceneId: '018f47db-e17a-7000-8000-000000000001',
       groupId: '018f47db-e17a-7000-8000-000000000002',
       sceneRevision: 1,
@@ -423,7 +435,7 @@ describe('session generation loot engine', () => {
       const result = generateSessionRunDraft(
         {
           party: party.map((entry) => ({ ...entry })),
-          ledgerParty: sessionLedger(party, adventureDayFraction),
+          ledgerParty: rewardLedger(party),
           adventureDayFraction,
           ...(encounterCount === undefined ? {} : { encounterCount }),
           seed
@@ -481,33 +493,8 @@ describe('session generation loot engine', () => {
   )
 })
 
-function sessionLedger(
-  party: readonly Readonly<{ level: number; count: number }>[],
-  adventureDayFraction: string
-) {
-  const partyCount = party.reduce((sum, entry) => sum + entry.count, 0)
-  const sessionXpTarget = Math.round(
-    party.reduce((sum, entry) => {
-      const row = catalog.encounter.progression.find(
-        (candidate) => candidate.level === entry.level
-      )!
-      return sum + row.dayXpPerCharacter * entry.count
-    }, 0) * Number(adventureDayFraction)
-  )
-  return ledgerAtLevelAnchors(party, Math.floor(sessionXpTarget / partyCount))
-}
-
-function groupLedger(
-  party: readonly Readonly<{ level: number; count: number }>[],
-  rewardXp: number
-) {
-  const partyCount = party.reduce((sum, entry) => sum + entry.count, 0)
-  return ledgerAtLevelAnchors(party, Math.floor(rewardXp / partyCount))
-}
-
-function ledgerAtLevelAnchors(
-  party: readonly Readonly<{ level: number; count: number }>[],
-  projectedXp: number
+function rewardLedger(
+  party: readonly Readonly<{ level: number; count: number }>[]
 ) {
   let ordinal = 0
   return party.flatMap((entry) => {
@@ -517,8 +504,8 @@ function ledgerAtLevelAnchors(
       ordinal += 1
       return {
         characterId: `018f47db-e17a-7000-8000-${String(ordinal).padStart(12, '0')}`,
+        level: entry.level,
         currentXp: progression.xpAtLevel,
-        projectedXp,
         ledgerRevision: 0,
         currentNonMagicCp: progression.goldAtLevelCp,
         currentMagic: {

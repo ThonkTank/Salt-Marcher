@@ -1,21 +1,23 @@
 import type { GeneratedTreasure } from '../../shared/contracts/session-generation.js'
+import { itemDefinitionLineValueCp } from '../../shared/contracts/loot.js'
 import type { GeneratorLootRules } from '../../shared/contracts/generator-loot-rules.js'
 import { defaultGeneratorLootRules } from '../../shared/generator/default-loot-rules.js'
-import type { EncounterEntropy } from './deterministic-order.js'
-import { packingStream } from './entropy-streams.js'
-import type {
-  FullSessionGenerationCatalog,
-  LootContainer
-} from './loot-catalog.js'
+import type { RewardRandom } from './reward-random.js'
+import type { GenerationCatalogIndex } from './generation-catalog-index.js'
+import {
+  evaluatePacking,
+  packingAllowedContainerIds,
+  type PackingPolicyInput
+} from './packing-policy.js'
+import type { LootContainer } from './loot-catalog.js'
 import {
   freezeStage,
   type SelectedTreasureDraft
 } from './reward-stage-types.js'
 
 export type PackingStageInput = Readonly<{
-  seed: number
   treasures: readonly SelectedTreasureDraft[]
-  catalog: FullSessionGenerationCatalog
+  catalogIndex: GenerationCatalogIndex
   rules?: GeneratorLootRules
 }>
 
@@ -26,16 +28,15 @@ export type PackingStageInput = Readonly<{
  */
 export function packTreasures(
   input: PackingStageInput,
-  entropy: EncounterEntropy
+  random: RewardRandom
 ): readonly GeneratedTreasure[] {
   return freezeStage(
     input.treasures.map((draft) =>
       packTreasure(
         draft,
-        input.seed,
-        input.catalog,
+        input.catalogIndex,
         input.rules ?? defaultGeneratorLootRules,
-        entropy
+        random
       )
     )
   )
@@ -43,10 +44,9 @@ export function packTreasures(
 
 function packTreasure(
   draft: SelectedTreasureDraft,
-  seed: number,
-  catalog: FullSessionGenerationCatalog,
+  catalogIndex: GenerationCatalogIndex,
   rules: GeneratorLootRules,
-  entropy: EncounterEntropy
+  random: RewardRandom
 ): GeneratedTreasure {
   const containers: Array<
     GeneratedTreasure['containers'][number] & {
@@ -56,32 +56,28 @@ function packTreasure(
   > = []
   const items = draft.items.map((item, index) => {
     const source = item.definition.components.baseItemId
-      ? catalog.items.find(
-          (candidate) => candidate.id === item.definition.components.baseItemId
-        )
+      ? catalogIndex.itemsById.get(item.definition.components.baseItemId)
       : null
+    const coinProfileId = item.definition.components.coinProfileId
     const syntheticAllowed =
-      item.definition.components.coinDenominations.length > 0
-        ? [
-            ...new Set(
-              Object.values(rules.coins.profiles).flatMap(
-                (profile) => profile.allowedContainers
-              )
-            )
-          ]
+      item.definition.components.coinDenominations.length > 0 && coinProfileId
+        ? (Object.entries(rules.coins.profiles).find(
+            ([profileId]) => profileId === coinProfileId
+          )?.[1].allowedContainerIds ?? [])
         : []
     const container = chooseContainer(
-      item.definition.unitCapacity * item.quantity,
-      item.quantity,
-      source?.allowedContainerNames ?? syntheticAllowed,
-      source?.formOverride ?? null,
-      source?.unitLabel ?? null,
+      {
+        capacity: item.definition.unitCapacity * item.quantity,
+        quantity: item.quantity,
+        allowedContainerIds: source?.allowedContainerIds ?? syntheticAllowed,
+        placement: source?.placement ?? null,
+        unitKind: source?.unitKind ?? 'count'
+      },
       containers,
-      seed,
       `${draft.id}:${index}`,
-      catalog.containers,
+      catalogIndex.catalog.containers,
       rules,
-      entropy
+      random
     )
     return {
       id: item.id,
@@ -101,7 +97,8 @@ function packTreasure(
     position: container.position
   }))
   const actualValueCp = draft.items.reduce(
-    (sum, item) => sum + item.definition.unitValueCp * item.quantity,
+    (sum, item) =>
+      sum + itemDefinitionLineValueCp(item.definition, item.quantity),
     0
   )
   return {
@@ -119,38 +116,21 @@ function packTreasure(
 }
 
 function chooseContainer(
-  capacity: number,
-  quantity: number,
-  allowedNames: readonly string[],
-  placement: string | null,
-  unitLabel: string | null,
+  policyInput: PackingPolicyInput,
   existing: Array<
     GeneratedTreasure['containers'][number] & {
       remaining: number
       mixable: boolean
     }
   >,
-  seed: number,
   key: string,
   catalog: readonly LootContainer[],
   rules: GeneratorLootRules,
-  entropy: EncounterEntropy
+  random: RewardRandom
 ) {
+  const capacity = policyInput.capacity
   if (capacity <= 0) return null
-  const amountUnit =
-    unitLabel !== null &&
-    ['lb', 'lb/sq yd', 'pint', 'fl oz'].includes(unitLabel)
-  const liquidUnit = unitLabel === 'pint' || unitLabel === 'fl oz'
-  const pileAllowed = quantity >= rules.packing.pileMinQty && !liquidUnit
-  const allowedIds = new Set(
-    catalog
-      .filter(
-        (container) =>
-          allowedNames.includes(container.name) ||
-          (pileAllowed && container.name === 'Pile')
-      )
-      .map((container) => container.id)
-  )
+  const allowedIds = packingAllowedContainerIds(policyInput, rules)
   const reusable = existing.find(
     (container) =>
       container.mixable &&
@@ -162,19 +142,9 @@ function chooseContainer(
     reusable.remaining -= capacity
     return reusable
   }
-  if (
-    allowedNames.length === 0 ||
-    (quantity <= rules.packing.loosePlacementMaxQty &&
-      (placement === 'worn' ||
-        placement === 'handheld' ||
-        (!amountUnit && capacity >= rules.packing.looseNonAmountMinCapacity)))
-  )
-    return null
+  if (evaluatePacking(policyInput, null, rules).valid) return null
   const allowed = catalog.filter(
-    (container) =>
-      (allowedNames.includes(container.name) ||
-        (pileAllowed && container.name === 'Pile')) &&
-      (!container.hidden || capacity <= container.capacity)
+    (container) => allowedIds.has(container.id) && !container.hidden
   )
   if (allowed.length === 0) return null
   const pool = allowed
@@ -185,7 +155,7 @@ function chooseContainer(
       capacity /
       (Math.max(1, Math.ceil(capacity / Math.max(1, container.capacity))) *
         Math.max(1, container.capacity)),
-    tie: entropy.unit(packingStream(seed, key, container.id))
+    tie: random.unit(`container:${key}`, container.id)
   }))
   const bestCount = Math.min(...candidates.map((candidate) => candidate.count))
   const selected = candidates.toSorted(
@@ -201,7 +171,6 @@ function chooseContainer(
       left.tie - right.tie
   )[0]
   if (!selected) return null
-  if (selected.container.hidden) return null
   const container = {
     id: `${key}:container`,
     catalogContainerId: selected.container.id,

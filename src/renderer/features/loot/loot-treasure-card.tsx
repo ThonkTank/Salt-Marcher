@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { Treasure } from '../../../shared/contracts/loot.js'
+import { itemDefinitionLineValueCp } from '../../../shared/values/item-definition-values.js'
 import { formatMessage, message } from '../../i18n/session-runtime.de.js'
 import { formatCopper } from '../../presenters/money.js'
 
@@ -62,7 +63,10 @@ export function LootTreasureCard(props: {
                   allocated: item.allocatedQuantity,
                   total: item.quantity
                 })}{' '}
-                · {formatCopper(item.quantity * item.definition.unitValueCp)}
+                ·{' '}
+                {formatCopper(
+                  itemDefinitionLineValueCp(item.definition, item.quantity)
+                )}
                 {item.definition.magic
                   ? ` · ${formatMessage('loot.magicRarity', {
                       rarity:

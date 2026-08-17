@@ -7,11 +7,12 @@
       "input": {
         "seed": 17,
         "profile": "group_reward",
+        "rewardXp": 400,
         "members": [
           {
             "characterId": "018f47db-e17a-7000-8000-000000000001",
+            "level": 3,
             "currentXp": 400,
-            "projectedXp": 100,
             "ledgerRevision": 3,
             "currentNonMagicCp": 10000,
             "currentMagic": {
@@ -24,8 +25,8 @@
           },
           {
             "characterId": "018f47db-e17a-7000-8000-000000000002",
+            "level": 3,
             "currentXp": 400,
-            "projectedXp": 100,
             "ledgerRevision": 3,
             "currentNonMagicCp": 10000,
             "currentMagic": {
@@ -38,8 +39,8 @@
           },
           {
             "characterId": "018f47db-e17a-7000-8000-000000000003",
+            "level": 3,
             "currentXp": 400,
-            "projectedXp": 100,
             "ledgerRevision": 3,
             "currentNonMagicCp": 10000,
             "currentMagic": {
@@ -52,8 +53,8 @@
           },
           {
             "characterId": "018f47db-e17a-7000-8000-000000000004",
+            "level": 3,
             "currentXp": 400,
-            "projectedXp": 100,
             "ledgerRevision": 3,
             "currentNonMagicCp": 10000,
             "currentMagic": {

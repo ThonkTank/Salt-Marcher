@@ -3,6 +3,7 @@ import type {
   GeneratedLootItem,
   GeneratedTreasure
 } from '../../../shared/contracts/session-generation.js'
+import { itemDefinitionLineValueCp } from '../../../shared/values/item-definition-values.js'
 import { formatCopper } from '../../presenters/money.js'
 
 export function generatedItemText(
@@ -16,9 +17,11 @@ export function generatedItemText(
     }`
   if (item.role === 'compact_value' && definition.unitValueCp === 1)
     return `${item.quantity} KM`
-  const value = formatCopper(definition.unitValueCp)
+  const value = formatCopper(
+    itemDefinitionLineValueCp(definition, item.quantity)
+  )
   return item.quantity > 1
-    ? `${item.quantity}× ${definition.name} [je ${value}]`
+    ? `${item.quantity}× ${definition.name} [gesamt ${value}]`
     : `${definition.name} [${value}]`
 }
 

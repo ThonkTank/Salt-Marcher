@@ -219,8 +219,8 @@ function generatedSession() {
     party: [{ level: 3, count: 4 }],
     ledgerParty: Array.from({ length: 4 }, (_, index) => ({
       characterId: `018f47db-e17a-7000-8000-${String(index + 1).padStart(12, '0')}`,
+      level: 3,
       currentXp: 900,
-      projectedXp: 720,
       ledgerRevision: 0,
       currentNonMagicCp: 37_600,
       currentMagic: emptyMagicCounts()

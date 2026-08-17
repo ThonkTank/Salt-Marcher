@@ -1,15 +1,14 @@
-import type { EncounterEntropy } from './deterministic-order.js'
 import type {
   ItemDefinition,
   ItemReference
 } from '../../shared/contracts/loot.js'
 import type { GeneratorLootRules } from '../../shared/contracts/generator-loot-rules.js'
 import { defaultGeneratorLootRules } from '../../shared/generator/default-loot-rules.js'
-import { magicSelectionStream } from './entropy-streams.js'
+import type { RewardRandom } from './reward-random.js'
+import type { GenerationCatalogIndex } from './generation-catalog-index.js'
 import {
   lootRarities,
   rarityIndex,
-  type FullSessionGenerationCatalog,
   type LootRarity,
   type LootTheme,
   type MagicItem
@@ -22,10 +21,9 @@ import {
 
 export type MagicSelectionInput = Readonly<{
   runId: string
-  seed: number
   treasures: readonly SelectedTreasureDraft[]
   targets: Readonly<Record<LootRarity, number>>
-  catalog: FullSessionGenerationCatalog
+  catalogIndex: GenerationCatalogIndex
   rules?: GeneratorLootRules
 }>
 
@@ -36,7 +34,7 @@ export type MagicSelectionInput = Readonly<{
  */
 export function selectMagicItems(
   input: MagicSelectionInput,
-  entropy: EncounterEntropy
+  random: RewardRandom
 ): readonly SelectedTreasureDraft[] {
   if (input.treasures.length === 0) throw new Error('missing_treasure_plan')
   const rules = input.rules ?? defaultGeneratorLootRules
@@ -71,11 +69,11 @@ export function selectMagicItems(
       const treasureIndex =
         targetTreasures[ordinal % targetTreasures.length]!.index
       const treasure = input.treasures[treasureIndex]!
-      const available = input.catalog.magicItems.filter(
+      const available = (
+        input.catalogIndex.magicItemsByRarity.get(rarity) ?? []
+      ).filter(
         (item) =>
-          item.active &&
-          item.rarity === rarity &&
-          (item.decisionType === 'enspelled_item' || !usedItems.has(item.id))
+          item.decisionType === 'enspelled_item' || !usedItems.has(item.id)
       )
       const themed = available.filter(
         (item) => item.type === treasure.theme.magicType
@@ -83,29 +81,22 @@ export function selectMagicItems(
       const pool = themed.length > 0 ? themed : available
       if (pool.length === 0) continue
       const magic =
-        pool[
-          entropy.modulo(
-            magicSelectionStream(input.seed, 'magic-item', rarity, ordinal),
-            pool.length
-          )
-        ]!
+        pool[random.modulo(`magic-item:${rarity}`, ordinal, pool.length)]!
       if (magic.decisionType !== 'enspelled_item') usedItems.add(magic.id)
       const resolution = resolveMagicItem(
         magic,
         treasure.theme,
-        input.seed,
         ordinal,
-        input.catalog,
-        entropy
+        input.catalogIndex,
+        random
       )
       const curse = resolveCurse(
         magic,
         resolution.baseItemId,
-        input.seed,
         ordinal,
-        input.catalog,
+        input.catalogIndex,
         rules,
-        entropy
+        random
       )
       const itemId = `${treasure.id}:item:${items[treasureIndex]!.length + 1}`
       const itemReference = generatedItemReference(input.runId, itemId)
@@ -158,10 +149,9 @@ export function selectMagicItems(
 function resolveMagicItem(
   item: MagicItem,
   theme: LootTheme,
-  seed: number,
   ordinal: number,
-  catalog: FullSessionGenerationCatalog,
-  entropy: EncounterEntropy
+  catalogIndex: GenerationCatalogIndex,
+  random: RewardRandom
 ): Readonly<{
   name: string
   baseItemId: string | null
@@ -181,13 +171,12 @@ function resolveMagicItem(
   if (item.decisionType === 'fixed_variant')
     return plain(item.info1 ? `${item.item} · ${item.info1}` : item.item)
   if (item.decisionType === 'variant_group' && item.info1) {
-    const variants = catalog.magicVariants.filter(
-      (variant) => variant.active && variant.groupKey === item.info1
-    )
+    const variants = catalogIndex.magicVariantsByGroup.get(item.info1) ?? []
     const variant =
       variants[
-        entropy.modulo(
-          magicSelectionStream(seed, 'magic-variant', item.id, ordinal),
+        random.modulo(
+          `magic-variant:${item.id}`,
+          ordinal,
           Math.max(1, variants.length)
         )
       ]
@@ -199,17 +188,19 @@ function resolveMagicItem(
   if (item.decisionType === 'spell_level') {
     const minimum = Number(item.info1 ?? 0)
     const maximum = Number(item.info2 ?? minimum)
-    const spells = catalog.spells.filter(
-      (spell) => spell.level >= minimum && spell.level <= maximum
-    )
+    const spells = Array.from(
+      { length: Math.max(0, maximum - minimum + 1) },
+      (_, offset) => catalogIndex.spellsByLevel.get(minimum + offset) ?? []
+    ).flat()
     const themed = spells.filter((spell) =>
       spell.elements.some((element) => theme.spellColors.includes(element))
     )
     const pool = themed.length > 0 ? themed : spells
     const spell =
       pool[
-        entropy.modulo(
-          magicSelectionStream(seed, 'magic-spell', item.id, ordinal),
+        random.modulo(
+          `magic-spell:${item.id}`,
+          ordinal,
           Math.max(1, pool.length)
         )
       ]
@@ -219,42 +210,42 @@ function resolveMagicItem(
     }
   }
   if (item.decisionType === 'enspelled_item') {
-    const rules = catalog.enspelledRules.filter(
-      (rule) =>
-        rule.active &&
-        rule.rarity === item.rarity &&
-        (!item.info1 || rule.chassis === item.info1)
-    )
+    const rules = (
+      catalogIndex.enspelledRulesByRarity.get(item.rarity) ?? []
+    ).filter((rule) => !item.info1 || rule.chassis === item.info1)
     const rule =
       rules[
-        entropy.modulo(
-          magicSelectionStream(seed, 'enspelled-rule', item.id, ordinal),
+        random.modulo(
+          `enspelled-rule:${item.id}`,
+          ordinal,
           Math.max(1, rules.length)
         )
       ]
     if (!rule) return plain()
-    const matcher = new RegExp(rule.baseItemRegex, 'i')
-    const bases = catalog.items.filter(
-      (candidate) =>
-        candidate.active &&
-        candidate.lootType === 'object' &&
-        candidate.capacity <= rule.maxBaseCapacity &&
-        (matcher.test(candidate.category) || matcher.test(candidate.name))
-    )
+    const bases = rule.baseItemIds
+      .map((id) => catalogIndex.itemsById.get(id))
+      .filter((candidate): candidate is NonNullable<typeof candidate> =>
+        Boolean(
+          candidate &&
+          candidate.active &&
+          candidate.lootTypeId === 'loot-type:object' &&
+          candidate.capacity <= rule.maxBaseCapacity
+        )
+      )
     const base =
       bases[
-        entropy.modulo(
-          magicSelectionStream(seed, 'enspelled-base', item.id, ordinal),
+        random.modulo(
+          `enspelled-base:${item.id}`,
+          ordinal,
           Math.max(1, bases.length)
         )
       ]
-    const spells = catalog.spells.filter(
-      (spell) => spell.level === rule.spellLevel
-    )
+    const spells = catalogIndex.spellsByLevel.get(rule.spellLevel) ?? []
     const spell =
       spells[
-        entropy.modulo(
-          magicSelectionStream(seed, 'enspelled-spell', item.id, ordinal),
+        random.modulo(
+          `enspelled-spell:${item.id}`,
+          ordinal,
           Math.max(1, spells.length)
         )
       ]
@@ -273,45 +264,33 @@ function resolveMagicItem(
 function resolveCurse(
   item: MagicItem,
   baseItemId: string | null,
-  seed: number,
   ordinal: number,
-  catalog: FullSessionGenerationCatalog,
+  catalogIndex: GenerationCatalogIndex,
   rules: GeneratorLootRules,
-  entropy: EncounterEntropy
+  random: RewardRandom
 ) {
   if (
-    entropy.unit(
-      magicSelectionStream(seed, 'curse-chance', item.id, ordinal)
-    ) >= rules.magic.curseChance
+    random.unit(`curse-chance:${item.id}`, ordinal) >= rules.magic.curseChance
   )
     return null
   const itemRarity = rarityIndex(item.rarity)
-  const curseContext =
-    (baseItemId
-      ? catalog.items.find((candidate) => candidate.id === baseItemId)?.category
-      : null) ?? item.type
-  const candidates = catalog.curses.filter(
+  const curseContextId =
+    (baseItemId ? catalogIndex.itemsById.get(baseItemId)?.categoryId : null) ??
+    `magic-type:${item.type.toLowerCase()}`
+  const candidates = catalogIndex.activeCurses.filter(
     (curse) =>
-      curse.active &&
       rarityIndex(curse.minRarity) <= itemRarity &&
       rarityIndex(curse.maxRarity) >= itemRarity &&
-      (curse.appliesTo === 'all' ||
-        relationKey(curseContext) === relationKey(curse.appliesTo))
+      (curse.appliesToId === 'all' || curseContextId === curse.appliesToId)
   )
   if (candidates.length === 0) return null
   const totalWeight = candidates.reduce((sum, curse) => sum + curse.weight, 0)
-  let roll =
-    entropy.unit(magicSelectionStream(seed, 'curse', item.id, ordinal)) *
-    totalWeight
+  let roll = random.unit(`curse:${item.id}`, ordinal) * totalWeight
   for (const curse of candidates) {
     roll -= curse.weight
     if (roll <= 0) return curse
   }
   return candidates.at(-1) ?? null
-}
-
-function relationKey(value: string): string {
-  return value.toLowerCase().replaceAll(/[^a-z0-9]/g, '')
 }
 
 function generatedItemReference(

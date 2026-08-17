@@ -22,6 +22,10 @@ traceability record is [requirements-ledger.yaml](requirements-ledger.yaml).
   Linux runtime/AppImage job green. It also isolated two portable build defects:
   Ubuntu smoke needed an Xvfb wrapper, while Windows could not spawn the
   extensionless `corepack` shim from Node. Both are now regression-covered.
+- Candidate run `32037719930` then proved Ubuntu, Windows, macOS, Linux
+  runtime, and four of five E2E shards green. Its retained failed-shard
+  artifact identified an expected Reward-v3 Golden change and an asynchronous
+  Travel Resume/Stop race; the race now waits for persisted travelling state.
 
 ## Milestones
 
@@ -29,7 +33,7 @@ traceability record is [requirements-ledger.yaml](requirements-ledger.yaml).
 | --- | --- | --- |
 | M0 · trustworthy integration baseline | in progress | candidate and main remote runs pending |
 | M1 · version and contract truth | in progress | local focused gates green; remote candidate pending |
-| M2 · reward/loot vertical slice | pending | — |
+| M2 · reward/loot vertical slice | in progress | exact money, ID catalog, shared pipeline/index/packing, Config V5 and Schema 32 focused gates green |
 | M3 · world planner, roster, references | pending | — |
 | M4 · campaign import product path | pending | — |
 | M5 · session UI and layout | pending | — |

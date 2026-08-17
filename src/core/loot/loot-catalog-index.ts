@@ -48,8 +48,10 @@ export function createLootCatalogIndex(
           kind: 'item',
           id: item.id,
           defaultName: definition.name,
-          type: item.lootType,
-          category: item.category,
+          type: item.lootTypeId.slice('loot-type:'.length),
+          category: item.categoryId
+            .slice('category:'.length)
+            .replaceAll('-', '_'),
           unitValueCp: definition.unitValueCp,
           stackable: definition.stackable,
           magic: false,
@@ -149,7 +151,7 @@ function catalogDefinition(
       name: item.name,
       unitValueCp: Math.max(0, roundHalfUp(item.baseCp)),
       unitCapacity: item.capacity,
-      stackable: item.valueForm === 'Quantity_Good',
+      stackable: item.valueForm === 'quantity_good',
       magic: false,
       rarity: null,
       curse: null,

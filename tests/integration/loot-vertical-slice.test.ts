@@ -91,7 +91,7 @@ describe('loot vertical slice', () => {
     ).toThrow()
   })
 
-  it('enforces schema 31 reference and provenance invariants in SQLite', () => {
+  it('enforces canonical reference and provenance invariants in SQLite', () => {
     const { db } = campaign()
     expect(columns(db, 'loot_item')).toEqual([
       'id',
@@ -1144,8 +1144,8 @@ describe('loot vertical slice', () => {
       party: [{ level: 3, count: 2 }],
       ledgerParty: members.slice(0, 2).map((member) => ({
         characterId: member.id,
+        level: member.level!,
         currentXp: member.xp,
-        projectedXp: 720,
         ledgerRevision: 0,
         currentNonMagicCp: 0,
         currentMagic: {

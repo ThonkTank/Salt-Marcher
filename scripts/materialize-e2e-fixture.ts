@@ -261,8 +261,8 @@ try {
             ].map(([level, count]) => ({ level, count })),
             ledgerParty: assignedMembers.map((member) => ({
               characterId: member.id,
+              level: member.level!,
               currentXp: member.xp,
-              projectedXp: Math.floor(rewardXp / assignedMembers.length),
               ledgerRevision: 0,
               currentNonMagicCp: 0,
               currentMagic: {

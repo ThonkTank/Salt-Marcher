@@ -11,6 +11,7 @@ import {
   type SessionPreparationRecord
 } from '../../core/session-planner/session-preparation-store.js'
 import { GeneratedRunStore } from '../../core/session-generation/generated-run-store.js'
+import { projectRewardMembers } from '../../core/session-generation/reward-budget-stage.js'
 import {
   decimal,
   floor,
@@ -277,20 +278,6 @@ export class SessionPlannerService {
             throw new CapabilityError('stale', true)
           return member
         })
-        const sessionXpTarget = roundHalfUp(
-          multiply(
-            rational(
-              BigInt(
-                operation.party.reduce(
-                  (sum, entry) => sum + dailyXp[entry.level - 1]! * entry.count,
-                  0
-                )
-              )
-            ),
-            decimal(operation.adventureDayFraction)
-          )
-        )
-        const projectedXp = Math.floor(sessionXpTarget / members.length)
         const balances = new Map(
           new CharacterLootStore(db, this.definitionResolver(db))
             .rewardBalances(members.map((member) => member.id))
@@ -303,8 +290,8 @@ export class SessionPlannerService {
             if (!balance) throw new Error('missing_character_reward_balance')
             return {
               characterId: member.id,
+              level: member.level!,
               currentXp: member.xp,
-              projectedXp,
               ledgerRevision: balance.ledgerRevision,
               currentNonMagicCp: balance.currentNonMagicCp,
               currentMagic: balance.currentMagic
@@ -522,22 +509,26 @@ export class SessionPlannerService {
         .rewardBalances(currentMembers.map((member) => member.id))
         .map((balance) => [balance.characterId, balance])
     )
-    const expectedProjectedXp = Math.floor(
-      run.session.sessionXpTarget / currentMembers.length
+    const expectedMembers = projectRewardMembers(
+      currentMembers.map((member) => {
+        const balance = balances.get(member.id)
+        if (!balance) throw new Error('missing_character_reward_balance')
+        return {
+          characterId: member.id,
+          level: member.level!,
+          currentXp: member.xp,
+          ledgerRevision: balance.ledgerRevision,
+          currentNonMagicCp: balance.currentNonMagicCp,
+          currentMagic: balance.currentMagic
+        }
+      }),
+      run.session.sessionXpTarget
     )
     return run.rewardBasis.members.every((basis) => {
-      const member = currentMembers.find(
-        (candidate) => candidate.id === basis.characterId
+      const expected = expectedMembers.find(
+        (candidate) => candidate.characterId === basis.characterId
       )
-      const balance = balances.get(basis.characterId)
-      return (
-        member?.xp === basis.currentXp &&
-        basis.projectedXp === expectedProjectedXp &&
-        balance?.ledgerRevision === basis.ledgerRevision &&
-        balance.currentNonMagicCp === basis.currentNonMagicCp &&
-        JSON.stringify(balance.currentMagic) ===
-          JSON.stringify(basis.currentMagic)
-      )
+      return JSON.stringify(expected) === JSON.stringify(basis)
     })
   }
 

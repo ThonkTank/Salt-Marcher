@@ -12,10 +12,13 @@ import {
 } from '../../src/core/session-generation/reward-units.js'
 import { BundledEncounterCatalogProvider } from '../../src/utility/session-generation/catalog-provider.js'
 import { sha256EncounterEntropy } from '../../src/utility/session-generation/sha256-entropy.js'
+import { createRewardRandom } from '../../src/core/session-generation/reward-random.js'
 
 const catalog = new BundledEncounterCatalogProvider(
   join(process.cwd(), 'resources/sessiongeneration/catalog-2026-08-16')
 ).loadFull()
+const random = (seed: number) =>
+  createRewardRandom(seed, sha256EncounterEntropy)
 
 describe('session generation reward stages', () => {
   it('normalizes party order without mutating the source', () => {
@@ -42,8 +45,8 @@ describe('session generation reward stages', () => {
       rewardXp: rewardXp(2_880)
     })
     const output = calculateRewardBudget(
-      { basis, catalog, seed: 179_974, profile: 'session' },
-      sha256EncounterEntropy
+      { basis, catalog, profile: 'session' },
+      random(179_974)
     )
     expect(output.perCharacterXp.value).toEqual({
       numerator: 720n,
@@ -69,8 +72,8 @@ describe('session generation reward stages', () => {
   it('pays only the missing cumulative ledger wealth at projected XP', () => {
     const members = Array.from({ length: 4 }, (_, index) => ({
       characterId: `018f47db-e17a-7000-8000-00000000000${String(index + 1)}`,
+      level: 3,
       currentXp: 400,
-      projectedXp: 100,
       ledgerRevision: 3,
       currentNonMagicCp: 10_000,
       currentMagic: {
@@ -84,14 +87,17 @@ describe('session generation reward stages', () => {
     const output = calculateLedgerRewardBudget(
       {
         members,
+        rewardXp: 400,
         rules: defaultGeneratorLootRules,
-        seed: 17,
         profile: 'group_reward'
       },
-      sha256EncounterEntropy
+      random(17)
     )
     expect(output.rewardBasis.targetGoldCp).toBe(100_267)
     expect(output.rewardBasis.currentGoldCp).toBe(40_000)
+    expect(
+      output.rewardBasis.members.map((member) => member.projectedXp)
+    ).toEqual([100, 100, 100, 100])
     expect(unitValue(output.goldBudgetCp)).toBe(60_267)
     expect(output.magicTargets.Common).toBe(0)
 
@@ -101,11 +107,11 @@ describe('session generation reward stages', () => {
           ...member,
           currentNonMagicCp: 30_000
         })),
+        rewardXp: 400,
         rules: defaultGeneratorLootRules,
-        seed: 17,
         profile: 'group_reward'
       },
-      sha256EncounterEntropy
+      random(17)
     )
     expect(unitValue(settled.goldBudgetCp)).toBe(0)
     expect(
@@ -117,29 +123,29 @@ describe('session generation reward stages', () => {
     const mixed = calculateLedgerRewardBudget(
       {
         members: [
-          member('018f47db-e17a-7000-8000-000000000001', 0, 300),
-          member('018f47db-e17a-7000-8000-000000000002', 300, 600),
-          member('018f47db-e17a-7000-8000-000000000003', 6_500, 7_500)
+          member('018f47db-e17a-7000-8000-000000000001', 0),
+          member('018f47db-e17a-7000-8000-000000000002', 600),
+          member('018f47db-e17a-7000-8000-000000000003', 13_700)
         ],
+        rewardXp: 900,
         rules: defaultGeneratorLootRules,
-        seed: 1,
         profile: 'session'
       },
-      sha256EncounterEntropy
+      random(1)
     )
     expect(mixed.rewardBasis.targetGoldCp).toBe(596_800)
 
     const capped = calculateLedgerRewardBudget(
       {
         members: [
-          member('018f47db-e17a-7000-8000-000000000001', 355_000, 0),
-          member('018f47db-e17a-7000-8000-000000000002', 900_000, 50_000)
+          member('018f47db-e17a-7000-8000-000000000001', 355_000),
+          member('018f47db-e17a-7000-8000-000000000002', 950_000)
         ],
+        rewardXp: 0,
         rules: defaultGeneratorLootRules,
-        seed: 1,
         profile: 'session'
       },
-      sha256EncounterEntropy
+      random(1)
     )
     expect(capped.rewardBasis.targetGoldCp).toBe(161_084_000)
   })
@@ -149,7 +155,7 @@ describe('session generation reward stages', () => {
       {
         members: [
           {
-            ...member('018f47db-e17a-7000-8000-000000000001', 6_500, 7_500),
+            ...member('018f47db-e17a-7000-8000-000000000001', 6_500),
             currentMagic: {
               Common: 1,
               Uncommon: 1,
@@ -159,8 +165,8 @@ describe('session generation reward stages', () => {
             }
           }
         ],
+        rewardXp: 7_500,
         rules: defaultGeneratorLootRules,
-        seed: 1,
         profile: 'group_reward'
       },
       { modulo: () => 0, unit: () => 0 }
@@ -182,11 +188,11 @@ describe('session generation reward stages', () => {
   })
 })
 
-function member(characterId: string, currentXp: number, projectedXp: number) {
+function member(characterId: string, currentXp: number) {
   return {
     characterId,
+    level: 1,
     currentXp,
-    projectedXp,
     ledgerRevision: 0,
     currentNonMagicCp: 0,
     currentMagic: {

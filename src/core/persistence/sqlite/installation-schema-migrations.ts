@@ -148,5 +148,71 @@ export const installationSchemaMigrations: readonly SchemaMigration[] =
           )
           .run('installation-30-to-31-loot-contracts', new Date().toISOString())
       }
+    },
+    {
+      id: 'installation-31-to-32-generator-config-v5',
+      role: 'installation',
+      fromVersion: 31,
+      toVersion: 32,
+      migrate(database) {
+        initializeInstallationSchemaMetadata(database)
+        const hasPresets = Boolean(
+          database
+            .prepare(
+              `SELECT 1 FROM sqlite_master
+                WHERE type = 'table' AND name = 'generator_presets'`
+            )
+            .get()
+        )
+        const appliedAt = new Date().toISOString()
+        if (hasPresets) {
+          const rows = database
+            .prepare(
+              'SELECT id, config_json AS configJson FROM generator_presets'
+            )
+            .all() as Array<{ id: string; configJson: string }>
+          const update = database.prepare(
+            `UPDATE generator_presets
+                SET schema_version = 5, config_json = ?, updated_at = ?
+              WHERE id = ?`
+          )
+          for (const row of rows)
+            update.run(
+              JSON.stringify(
+                upcastGeneratorConfigV5(JSON.parse(row.configJson))
+              ),
+              appliedAt,
+              row.id
+            )
+        }
+        database
+          .prepare(
+            'INSERT INTO installation_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run('installation-31-to-32-generator-config-v5', appliedAt)
+      }
     }
   ])
+
+function upcastGeneratorConfigV5(value: unknown): unknown {
+  if (!value || typeof value !== 'object') return value
+  const config = structuredClone(value) as Record<string, unknown>
+  const loot = config['loot'] as Record<string, unknown> | undefined
+  const coins = loot?.['coins'] as Record<string, unknown> | undefined
+  const profiles = coins?.['profiles'] as Record<string, unknown> | undefined
+  if (!profiles) return config
+  for (const profile of Object.values(profiles)) {
+    if (!profile || typeof profile !== 'object') continue
+    const record = profile as Record<string, unknown>
+    const legacy = record['allowedContainers']
+    if (Array.isArray(legacy))
+      record['allowedContainerIds'] = legacy.map(
+        (name) =>
+          `container:${String(name)
+            .toLowerCase()
+            .replaceAll(/[^a-z0-9]+/g, '-')}`
+      )
+    delete record['allowedContainers']
+  }
+  return config
+}

@@ -50,13 +50,13 @@ export const generationRuleOwnership: readonly ClassifiedGenerationRule[] =
     classifiedRule({
       id: 'reward-progression-and-mix',
       classification: 'preset_rule',
-      owner: 'Generator Config V4',
+      owner: 'Generator Config V5',
       rationale: 'Progression, shares, and thresholds are editable policy.'
     }),
     classifiedRule({
       id: 'selection-and-packing-policy',
       classification: 'preset_rule',
-      owner: 'Generator Config V4',
+      owner: 'Generator Config V5',
       rationale: 'Weights, tolerances, and packing thresholds are policy.'
     })
   ])

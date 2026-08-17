@@ -1,11 +1,10 @@
-import type { EncounterEntropy } from './deterministic-order.js'
 import type { GeneratorLootRules } from '../../shared/contracts/generator-loot-rules.js'
 import type {
   GeneratedRewardBasis,
   LedgerRewardPartyMember
 } from '../../shared/contracts/session-generation.js'
 import { generatedRewardBasisSchema } from '../../shared/contracts/session-generation.js'
-import { rewardBudgetStream } from './entropy-streams.js'
+import type { RewardRandom } from './reward-random.js'
 import {
   lootRarities,
   type FullSessionGenerationCatalog,
@@ -38,7 +37,6 @@ export type RewardBudgetProfile = 'session' | 'group_reward'
 export type RewardBudgetStageInput = Readonly<{
   basis: NormalizedRewardBasis
   catalog: FullSessionGenerationCatalog
-  seed: number
   profile: RewardBudgetProfile
 }>
 
@@ -61,7 +59,7 @@ export type LedgerRewardBudgetStageOutput = Readonly<{
  */
 export function calculateRewardBudget(
   input: RewardBudgetStageInput,
-  entropy: EncounterEntropy
+  random: RewardRandom
 ): RewardBudgetStageOutput {
   const rates = weightedProgressionRates(input.basis, input.catalog)
   const perCharacterXp = perCharacterRewardXp(
@@ -77,11 +75,7 @@ export function calculateRewardBudget(
         input.profile === 'session' ? 'magic-target' : 'group-magic-target'
       return [
         rarity,
-        base +
-          (entropy.unit(rewardBudgetStream(input.seed, streamKind, index)) <
-          toNumber(remainder)
-            ? 1
-            : 0)
+        base + (random.unit(streamKind, index) < toNumber(remainder) ? 1 : 0)
       ]
     })
   ) as Record<LootRarity, number>
@@ -96,28 +90,29 @@ export function calculateRewardBudget(
 export function calculateLedgerRewardBudget(
   input: Readonly<{
     members: readonly LedgerRewardPartyMember[]
+    rewardXp: number
     rules: GeneratorLootRules
-    seed: number
     profile: RewardBudgetProfile
   }>,
-  entropy: EncounterEntropy
+  random: RewardRandom
 ): LedgerRewardBudgetStageOutput {
   if (input.members.length === 0) throw new Error('missing_ledger_reward_party')
+  const projectedMembers = projectRewardMembers(input.members, input.rewardXp)
   const targetGoldCp = Math.round(
-    input.members.reduce(
+    projectedMembers.reduce(
       (sum, member) =>
         sum +
         goldTargetAtXp(member.currentXp + member.projectedXp, input.rules),
       0
     )
   )
-  const currentGoldCp = input.members.reduce(
+  const currentGoldCp = projectedMembers.reduce(
     (sum, member) => sum + member.currentNonMagicCp,
     0
   )
   const targetMagic = Object.fromEntries(
     lootRarities.map((rarity, index) => {
-      const expected = input.members.reduce(
+      const expected = projectedMembers.reduce(
         (sum, member) =>
           sum +
           magicTargetAtXp(
@@ -132,18 +127,14 @@ export function calculateLedgerRewardBudget(
         input.profile === 'session' ? 'magic-target' : 'group-magic-target'
       return [
         rarity,
-        base +
-          (entropy.unit(rewardBudgetStream(input.seed, streamKind, index)) <
-          expected - base
-            ? 1
-            : 0)
+        base + (random.unit(streamKind, index) < expected - base ? 1 : 0)
       ]
     })
   ) as Record<LootRarity, number>
   const currentMagic = Object.fromEntries(
     lootRarities.map((rarity) => [
       rarity,
-      input.members.reduce(
+      projectedMembers.reduce(
         (sum, member) => sum + member.currentMagic[rarity],
         0
       )
@@ -160,7 +151,7 @@ export function calculateLedgerRewardBudget(
     goldBudgetCp: copperPieces(goldDeficitCp),
     magicTargets: Object.freeze(magicDeficit),
     rewardBasis: generatedRewardBasisSchema.parse({
-      members: input.members,
+      members: projectedMembers,
       targetGoldCp,
       currentGoldCp,
       goldDeficitCp,
@@ -169,6 +160,19 @@ export function calculateLedgerRewardBudget(
       magicDeficit
     })
   })
+}
+
+export function projectRewardMembers(
+  members: readonly LedgerRewardPartyMember[],
+  rewardXp: number
+): readonly GeneratedRewardBasis['members'][number][] {
+  if (members.length === 0) throw new Error('missing_ledger_reward_party')
+  if (!Number.isSafeInteger(rewardXp) || rewardXp < 0)
+    throw new Error('invalid_reward_xp')
+  const projectedXp = Math.floor(rewardXp / members.length)
+  return Object.freeze(
+    members.map((member) => Object.freeze({ ...member, projectedXp }))
+  )
 }
 
 function goldTargetAtXp(xp: number, rules: GeneratorLootRules): number {

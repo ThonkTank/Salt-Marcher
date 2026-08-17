@@ -3,6 +3,7 @@ import { CapabilityError } from '../../shared/errors/capability-error.js'
 import {
   characterLootEntrySchema,
   characterLootLedgerSchema,
+  itemDefinitionLineValueCp,
   itemReferenceKey,
   itemReferenceSchema,
   type CharacterLootEntry,
@@ -278,7 +279,10 @@ export class CharacterLootStore {
       )) {
         const definition = definitions.get(itemReferenceKey(row.itemReference))!
         if (!definition.magic)
-          currentNonMagicCp += row.quantity * definition.unitValueCp
+          currentNonMagicCp += itemDefinitionLineValueCp(
+            definition,
+            row.quantity
+          )
         else if (definition.rarity && definition.rarity in currentMagic)
           currentMagic[definition.rarity] += row.quantity
       }

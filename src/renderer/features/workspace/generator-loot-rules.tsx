@@ -1,4 +1,10 @@
 import type { GeneratorLootRules } from '../../../shared/contracts/generator-loot-rules.js'
+import {
+  lootRuleFieldMetadata,
+  lootRuleGroupLabel,
+  validateLootRuleDraft,
+  type LootRuleDraftIssue
+} from '../../../shared/generator/loot-rule-metadata.js'
 import { message } from '../../i18n/generator-runtime.de.js'
 
 type Path = readonly (string | number)[]
@@ -7,6 +13,7 @@ export function GeneratorLootRulesEditor(props: {
   value: GeneratorLootRules
   changed: (value: GeneratorLootRules) => void
 }) {
+  const issues = validateLootRuleDraft(props.value)
   return (
     <details className="generator-loot-rules">
       <summary>{message('g.loot.title')}</summary>
@@ -14,6 +21,7 @@ export function GeneratorLootRulesEditor(props: {
       <RuleObject
         value={props.value as unknown as Record<string, unknown>}
         path={[]}
+        issues={issues}
         changed={(path, value) =>
           props.changed(updatePath(props.value, path, value))
         }
@@ -25,6 +33,7 @@ export function GeneratorLootRulesEditor(props: {
 function RuleObject(props: {
   value: Record<string, unknown>
   path: Path
+  issues: readonly LootRuleDraftIssue[]
   changed: (path: Path, value: unknown) => void
 }) {
   return (
@@ -34,28 +43,29 @@ function RuleObject(props: {
         if (isUnknownArray(value))
           return (
             <details key={key} className="generator-loot-rule-group">
-              <summary>{label(key)}</summary>
+              <summary>{lootRuleGroupLabel(key)}</summary>
               <div className="generator-loot-rule-array">
                 {value.map((entry, index) =>
                   isObject(entry) ? (
                     <details key={index}>
                       <summary>
                         {key === 'progression'
-                          ? `Level ${String(index + 1)}`
-                          : `${label(key)} ${String(index + 1)}`}
+                          ? `Stufe ${String(index + 1)}`
+                          : `${lootRuleGroupLabel(key)} ${String(index + 1)}`}
                       </summary>
                       <RuleObject
                         value={entry}
                         path={[...path, index]}
+                        issues={props.issues}
                         changed={props.changed}
                       />
                     </details>
                   ) : (
                     <RuleField
                       key={index}
-                      name={`${label(key)} ${String(index + 1)}`}
                       path={[...path, index]}
                       value={entry}
+                      issue={issueAt(props.issues, [...path, index])}
                       changed={(next) => props.changed([...path, index], next)}
                     />
                   )
@@ -66,17 +76,21 @@ function RuleObject(props: {
         if (isObject(value))
           return (
             <details key={key} className="generator-loot-rule-group">
-              <summary>{label(key)}</summary>
-              <RuleObject value={value} path={path} changed={props.changed} />
+              <summary>{lootRuleGroupLabel(key)}</summary>
+              <RuleObject
+                value={value}
+                path={path}
+                issues={props.issues}
+                changed={props.changed}
+              />
             </details>
           )
         return (
           <RuleField
             key={key}
-            name={label(key)}
             path={path}
             value={value}
-            locked={key === 'level' && props.path[0] === 'progression'}
+            issue={issueAt(props.issues, path)}
             changed={(next) => props.changed(path, next)}
           />
         )
@@ -86,65 +100,106 @@ function RuleObject(props: {
 }
 
 function RuleField(props: {
-  name: string
   path: Path
   value: unknown
-  locked?: boolean
+  issue?: LootRuleDraftIssue | undefined
   changed: (value: string | number | boolean) => void
 }) {
-  if (props.locked)
+  const metadata = lootRuleFieldMetadata(props.path, props.value)
+  if (!metadata) return null
+  const helpId = `loot-rule-help-${pathKey(props.path)}`
+  const errorId = `loot-rule-error-${pathKey(props.path)}`
+  const describedBy = [helpId, props.issue ? errorId : null]
+    .filter(Boolean)
+    .join(' ')
+  if (metadata.editor === 'readonly')
     return (
       <label className="generator-loot-rule-field">
-        <span>{props.name}</span>
-        <output aria-label={props.name}>{String(props.value)}</output>
+        <span>{metadata.label}</span>
+        <output aria-label={metadata.label}>{String(props.value)}</output>
+        <small id={helpId}>{metadata.help}</small>
       </label>
     )
   if (typeof props.value === 'boolean')
     return (
       <label className="generator-loot-rule-field checkbox">
         <input
+          aria-label={metadata.label}
           type="checkbox"
           checked={props.value}
           onChange={(event) => props.changed(event.currentTarget.checked)}
         />
-        <span>{props.name}</span>
+        <span>{metadata.label}</span>
+        <small id={helpId}>{metadata.help}</small>
       </label>
     )
   const fieldValue =
     typeof props.value === 'number' || typeof props.value === 'string'
       ? props.value
       : ''
-  if (typeof props.value === 'string' && props.path.at(-2) === 'denominations')
+  if (metadata.editor === 'select')
     return (
       <label className="generator-loot-rule-field">
-        <span>{props.name}</span>
+        <span>{metadata.label}</span>
         <select
-          value={props.value}
+          aria-label={metadata.label}
+          aria-describedby={describedBy}
+          value={String(props.value)}
           onChange={(event) => props.changed(event.currentTarget.value)}
         >
-          {['pp', 'gp', 'ep', 'sp', 'cp'].map((denomination) => (
+          {metadata.options?.map((denomination) => (
             <option key={denomination} value={denomination}>
               {denomination}
             </option>
           ))}
         </select>
+        <small id={helpId}>{metadata.help}</small>
+        {props.issue && (
+          <span id={errorId} role="alert">
+            {props.issue.message}
+          </span>
+        )}
       </label>
     )
   return (
     <label className="generator-loot-rule-field">
-      <span>{props.name}</span>
+      <span>
+        {metadata.label}
+        {metadata.unit ? ` (${metadata.unit})` : ''}
+      </span>
       <input
-        type={typeof props.value === 'number' ? 'number' : 'text'}
-        step={typeof props.value === 'number' ? 'any' : undefined}
-        value={String(fieldValue)}
+        aria-label={
+          metadata.unit
+            ? `${metadata.label} (${metadata.unit})`
+            : metadata.label
+        }
+        aria-describedby={describedBy}
+        aria-invalid={props.issue ? 'true' : undefined}
+        type={metadata.editor === 'text' ? 'text' : 'number'}
+        min={scale(metadata.min, metadata.editor)}
+        max={scale(metadata.max, metadata.editor)}
+        step={scale(metadata.step, metadata.editor)}
+        value={String(
+          metadata.editor === 'percentage' && typeof fieldValue === 'number'
+            ? fieldValue * 100
+            : fieldValue
+        )}
         onChange={(event) =>
           props.changed(
             typeof props.value === 'number'
-              ? event.currentTarget.valueAsNumber
+              ? metadata.editor === 'percentage'
+                ? event.currentTarget.valueAsNumber / 100
+                : event.currentTarget.valueAsNumber
               : event.currentTarget.value
           )
         }
       />
+      <small id={helpId}>{metadata.help}</small>
+      {props.issue && (
+        <span id={errorId} role="alert">
+          {props.issue.message}
+        </span>
+      )}
     </label>
   )
 }
@@ -166,9 +221,28 @@ function isUnknownArray(value: unknown): value is readonly unknown[] {
   return Array.isArray(value)
 }
 
-function label(value: string): string {
-  return value
-    .replaceAll('_', ' ')
-    .replace(/([a-z])([A-Z])/g, '$1 $2')
-    .replace(/^./, (first) => first.toUpperCase())
+function issueAt(
+  issues: readonly LootRuleDraftIssue[],
+  path: Path
+): LootRuleDraftIssue | undefined {
+  const key = JSON.stringify(path)
+  return issues.find((issue) => JSON.stringify(issue.path) === key)
+}
+
+function pathKey(path: Path): string {
+  return path
+    .map(String)
+    .join('-')
+    .replaceAll(/[^a-zA-Z0-9-]/g, '-')
+}
+
+function scale(
+  value: number | undefined,
+  editor: 'number' | 'percentage' | 'text' | 'select' | 'readonly'
+): number | undefined {
+  return value === undefined
+    ? undefined
+    : editor === 'percentage'
+      ? value * 100
+      : value
 }

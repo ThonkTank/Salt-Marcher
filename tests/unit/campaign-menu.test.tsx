@@ -28,7 +28,7 @@ function capability(): GeneratorPresetCapability {
         {
           id: systemGeneratorPresetId,
           name: 'System-Default',
-          schemaVersion: 4 as const,
+          schemaVersion: 5 as const,
           revision: 0,
           protected: true,
           createdAt: now,

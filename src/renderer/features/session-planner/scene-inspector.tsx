@@ -3,6 +3,7 @@ import type {
   SavedEncounterPlanSummary
 } from '../../../shared/contracts/encounter-plans.js'
 import type { Treasure } from '../../../shared/contracts/loot.js'
+import { itemDefinitionLineValueCp } from '../../../shared/values/item-definition-values.js'
 import type {
   SaveSessionPlanInput,
   SessionPlannerScene,
@@ -449,7 +450,9 @@ function GeneratedRewardCard(props: {
                   ? formatMessage('loot.magicRarity', {
                       rarity: definition.rarity ?? message('loot.generated')
                     })
-                  : formatCopper(item.quantity * definition.unitValueCp)}
+                  : formatCopper(
+                      itemDefinitionLineValueCp(definition, item.quantity)
+                    )}
                 {definition.curse
                   ? ` · ${formatMessage('loot.curseNamed', {
                       name: definition.curse.name

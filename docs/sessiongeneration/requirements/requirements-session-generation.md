@@ -106,7 +106,7 @@ Session Generation retains its exact-sum target allocator and passes each
 allocated XP target to the shared composition selector. It returns abstract
 statblock requirements rather than concrete creature identities, and the
 encounter statblock count equals the sum of positive per-block slots. Preset
-ownership, Config V4, enumeration, hard constraints, ranking, diagnostics, and
+ownership, Config V5, enumeration, hard constraints, ranking, diagnostics, and
 Scene parity are defined by the
 [Encounter Generation Requirements](../../encounter/requirements/requirements-encounter-generation.md).
 

@@ -17,17 +17,17 @@ describe('GeneratorLootRulesEditor', () => {
       />
     )
 
-    const levels = screen.getAllByLabelText('Level')
+    const levels = screen.getAllByLabelText('Stufe')
     expect(levels).toHaveLength(20)
     expect(levels.every((level) => level.tagName === 'OUTPUT')).toBe(true)
 
-    const profileDenominations = screen.getAllByLabelText('Denominations 1')
+    const profileDenominations = screen.getAllByLabelText('Münzarten 1')
     expect(profileDenominations).toHaveLength(9)
     expect(
       profileDenominations.every((field) => field.tagName === 'SELECT')
     ).toBe(true)
 
-    fireEvent.change(screen.getAllByLabelText('Gold At Level Cp')[0]!, {
+    fireEvent.change(screen.getAllByLabelText('Zielwert (KM)')[0]!, {
       target: { value: '12345' }
     })
     expect(changed).toHaveBeenCalledWith({

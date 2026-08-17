@@ -6,6 +6,7 @@ import {
   persistedSessionGeneratedRunSchema,
   sessionGeneratedRunSchema,
   type GeneratedRun,
+  type GeneratedRewardBasis,
   type GroupRewardGeneratedRun,
   type PersistedGroupRewardGeneratedRun,
   type PersistedSessionGeneratedRun,
@@ -185,6 +186,7 @@ export function initializeSessionGenerationSchema(db: Database.Database): void {
         ON DELETE RESTRICT,
       position INTEGER NOT NULL CHECK(position >= 0),
       character_id TEXT NOT NULL,
+      level INTEGER CHECK(level BETWEEN 1 AND 20),
       current_xp INTEGER NOT NULL CHECK(current_xp >= 0),
       projected_xp INTEGER NOT NULL CHECK(projected_xp >= 0),
       ledger_revision INTEGER NOT NULL CHECK(ledger_revision >= 0),
@@ -647,16 +649,17 @@ export class GeneratedRunStore {
       )
     const member = this.db.prepare(
       `INSERT INTO session_generation_reward_member (
-         run_id, position, character_id, current_xp, projected_xp,
+         run_id, position, character_id, level, current_xp, projected_xp,
          ledger_revision, current_non_magic_cp, magic_common, magic_uncommon,
          magic_rare, magic_very_rare, magic_legendary
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     basis.members.forEach((entry, position) =>
       member.run(
         run.id,
         position,
         entry.characterId,
+        entry.level ?? null,
         entry.currentXp,
         entry.projectedXp,
         entry.ledgerRevision,
@@ -980,7 +983,14 @@ export class GeneratedRunStore {
         },
         input: {
           party,
-          ...(rewardBasis ? { ledgerParty: rewardBasis.members } : {}),
+          ...(rewardBasis
+            ? {
+                ledgerParty: inputMembers(
+                  row.rewardEngineVersion,
+                  rewardBasis.members
+                )
+              }
+            : {}),
           adventureDayFraction: row.adventureDayFraction,
           ...(row.encounterCountInput === null
             ? {}
@@ -1119,7 +1129,14 @@ export class GeneratedRunStore {
         },
         input: {
           party,
-          ...(rewardBasis ? { ledgerParty: rewardBasis.members } : {}),
+          ...(rewardBasis
+            ? {
+                ledgerParty: inputMembers(
+                  row.rewardEngineVersion,
+                  rewardBasis.members
+                )
+              }
+            : {}),
           sceneId: source.sceneId,
           groupId: source.groupId,
           sceneRevision: source.sceneRevision,
@@ -1245,6 +1262,7 @@ export class GeneratedRunStore {
                 basis.deficit_very_rare AS deficitVeryRare,
                 basis.deficit_legendary AS deficitLegendary,
                 member.position, member.character_id AS characterId,
+                member.level,
                 member.current_xp AS currentXp,
                 member.projected_xp AS projectedXp,
                 member.ledger_revision AS ledgerRevision,
@@ -1276,6 +1294,7 @@ export class GeneratedRunStore {
           : [
               {
                 characterId: row['characterId'],
+                ...(row['level'] === null ? {} : { level: row['level'] }),
                 currentXp: row['currentXp'],
                 projectedXp: row['projectedXp'],
                 ledgerRevision: row['ledgerRevision'],
@@ -1368,6 +1387,23 @@ const runRootSelect = `
          session.magic_count AS magicCount
     FROM session_generation_run AS run
     LEFT JOIN session_generation_session AS session ON session.run_id = run.id`
+
+function inputMembers(
+  rewardEngineVersion: string,
+  members: GeneratedRewardBasis['members']
+): readonly Record<string, unknown>[] {
+  if (rewardEngineVersion === 'reward-v3')
+    return members.map(({ projectedXp: _projectedXp, ...member }) => {
+      void _projectedXp
+      if (member.level === undefined)
+        throw new Error('Current reward member is missing its level')
+      return member
+    })
+  return members.map(({ level: _level, ...member }) => {
+    void _level
+    return member
+  })
+}
 
 function deepFreeze<T>(value: T): T {
   if (value && typeof value === 'object' && !Object.isFrozen(value)) {

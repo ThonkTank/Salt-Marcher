@@ -4,6 +4,7 @@ import type {
   CharacterLootEntry,
   CharacterLootLedger
 } from '../../../shared/contracts/loot.js'
+import { itemDefinitionLineValueCp } from '../../../shared/values/item-definition-values.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import { ModalDialog } from '../../shell/modal-dialog.js'
 import { formatMessage, message } from '../../i18n/session-runtime.de.js'
@@ -165,7 +166,10 @@ export function CharacterLootLedgerDialog(props: {
                   </span>
                   <span>
                     {formatCopper(
-                      entry.quantity * entry.definition.unitValueCp
+                      itemDefinitionLineValueCp(
+                        entry.definition,
+                        entry.quantity
+                      )
                     )}
                   </span>
                   {!entry.supersededByEntryId && (

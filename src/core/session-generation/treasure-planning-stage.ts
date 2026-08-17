@@ -1,13 +1,11 @@
-import type { EncounterEntropy } from './deterministic-order.js'
 import type { GeneratorLootRules } from '../../shared/contracts/generator-loot-rules.js'
 import { defaultGeneratorLootRules } from '../../shared/generator/default-loot-rules.js'
-import { treasurePlanningStream } from './entropy-streams.js'
+import type { RewardRandom } from './reward-random.js'
 import type { LootTheme } from './loot-catalog.js'
 import { decimal, divide, multiply, rational, roundHalfUp } from './rational.js'
 import { freezeStage, type RewardTreasurePlan } from './reward-stage-types.js'
 
 export type SessionTreasurePlanningInput = Readonly<{
-  seed: number
   adventureDayFraction: string
   goldBudgetCp: number
   encounterNumbers: readonly number[]
@@ -28,7 +26,7 @@ export type TreasurePlanningOutput = Readonly<{
  */
 export function planSessionTreasures(
   input: SessionTreasurePlanningInput,
-  entropy: EncounterEntropy
+  random: RewardRandom
 ): TreasurePlanningOutput {
   const themes = input.themes.filter((theme) => theme.active)
   if (themes.length === 0) throw new Error('reward_theme_unavailable')
@@ -37,10 +35,7 @@ export function planSessionTreasures(
   const variance = rules.treasure.treasureCountVariance
   const fullDayTreasureCount =
     rules.treasure.treasuresPerAdventureDay +
-    entropy.modulo(
-      treasurePlanningStream(input.seed, 'treasure-count', 0),
-      variance * 2 + 1
-    ) -
+    random.modulo('treasure-count', 0, variance * 2 + 1) -
     variance
   const totalTreasureCount = Math.max(
     rules.treasure.overstockShare > 0 ? 2 : 1,
@@ -67,9 +62,7 @@ export function planSessionTreasures(
       overstockTreasureCount > 0 && index === targets.length - 1
         ? ('overstock' as const)
         : ('normal' as const)
-    const channelRoll = entropy.unit(
-      treasurePlanningStream(input.seed, 'treasure-channel', index)
-    )
+    const channelRoll = random.unit('treasure-channel', index)
     let rewardChannel: RewardTreasurePlan['rewardChannel'] = 'environment'
     let anchorEncounterNumber: number | null = null
     if (!questUsed && channelRoll < rules.treasure.channels.quest) {
@@ -86,10 +79,7 @@ export function planSessionTreasures(
         rewardChannel = 'encounter'
         anchorEncounterNumber =
           candidates[
-            entropy.modulo(
-              treasurePlanningStream(input.seed, 'encounter-anchor', index),
-              candidates.length
-            )
+            random.modulo('encounter-anchor', index, candidates.length)
           ]!
         usedAnchors.add(anchorEncounterNumber)
       }
@@ -99,13 +89,7 @@ export function planSessionTreasures(
       stockClass,
       rewardChannel,
       anchorEncounterNumber,
-      theme:
-        themes[
-          entropy.modulo(
-            treasurePlanningStream(input.seed, 'theme', index),
-            themes.length
-          )
-        ]!,
+      theme: themes[random.modulo('theme', index, themes.length)]!,
       targetValueCp
     }
   })
@@ -117,7 +101,6 @@ export function planSessionTreasures(
 }
 
 export type GroupTreasurePlanningInput = Readonly<{
-  seed: number
   goldBudgetCp: number
   themes: readonly LootTheme[]
   rules?: GeneratorLootRules
@@ -130,7 +113,7 @@ export type GroupTreasurePlanningInput = Readonly<{
  */
 export function planGroupRewardTreasure(
   input: GroupTreasurePlanningInput,
-  entropy: EncounterEntropy
+  random: RewardRandom
 ): TreasurePlanningOutput {
   const themes = input.themes.filter((theme) => theme.active)
   if (themes.length === 0) throw new Error('group_reward_theme_unavailable')
@@ -141,13 +124,7 @@ export function planGroupRewardTreasure(
         stockClass: 'normal',
         rewardChannel: 'encounter',
         anchorEncounterNumber: null,
-        theme:
-          themes[
-            entropy.modulo(
-              treasurePlanningStream(input.seed, 'group-theme', 0),
-              themes.length
-            )
-          ]!,
+        theme: themes[random.modulo('group-theme', 0, themes.length)]!,
         targetValueCp: input.goldBudgetCp
       }
     ],

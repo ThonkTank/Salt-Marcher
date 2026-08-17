@@ -100,7 +100,7 @@ const profile = (
   maxLowCount: 30,
   maxMiddleCount,
   maxBudgetCp,
-  allowedContainers: ['Pouch', 'Chest']
+  allowedContainerIds: ['container:pouch', 'container:chest']
 })
 
 /** Defaults transcribed from the live owner Sheet on 2026-08-16. */
