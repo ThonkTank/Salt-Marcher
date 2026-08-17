@@ -16,16 +16,27 @@ const selection = parseVisualGoldenUpdateArguments(
   process.argv.slice(2),
   manifest.goldens
 )
+const testPatterns = [...selection.names].map(
+  (name) => manifest.goldens.find((entry) => entry.name === name)!.testPattern
+)
 if (!selection.reuseBuild) run('corepack', ['pnpm', 'build'])
 run(
   join(process.cwd(), 'node_modules', '.bin', 'wdio'),
   ['run', 'wdio.conf.ts', '--suite', selection.suite],
   {
     UPDATE_VISUAL_GOLDENS: [...selection.names].join(','),
+    SALT_MARCHER_E2E_GREP: [...new Set(testPatterns)]
+      .map(escapeRegularExpression)
+      .join('|'),
     SALT_MARCHER_E2E_SUITE: selection.suite,
-    SALT_MARCHER_E2E_RUN_ID: `golden-${process.pid}`
+    SALT_MARCHER_E2E_RUN_ID: `golden-${process.pid}`,
+    SALT_MARCHER_VISUAL_MODE: 'true'
   }
 )
+
+function escapeRegularExpression(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
 
 function run(
   command: string,

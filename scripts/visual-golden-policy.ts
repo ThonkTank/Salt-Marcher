@@ -1,6 +1,7 @@
 export type VisualGoldenEntry = Readonly<{
   name: string
   suite: string
+  testPattern: string
   selector: string
   viewport: Readonly<{ width: number; height: number }>
 }>
@@ -24,6 +25,8 @@ export function validateVisualGoldenSuites(
       throw new Error(
         `Visual golden ${entry.name} references unknown E2E suite ${entry.suite}.`
       )
+    if (entry.testPattern.trim() === '')
+      throw new Error(`Visual golden ${entry.name} has no owning test pattern.`)
   }
 }
 
@@ -86,14 +89,16 @@ export function parseVisualGoldenUpdateArguments(
     }
     index += 1
   }
-  if (names.length !== 1)
-    throw new Error('Exactly one --golden <name> argument is required')
+  if (names.length === 0)
+    throw new Error('At least one --golden <name> argument is required')
   if (!suite) throw new Error('Exactly one --suite <name> is required')
   const selected = selectedVisualGoldens(names.join(','), entries)
-  const golden = entries.find((entry) => entry.name === names[0])!
-  if (golden.suite !== suite)
-    throw new Error(
-      `Visual golden ${golden.name} belongs to suite ${golden.suite}, not ${suite}.`
-    )
+  for (const name of selected) {
+    const golden = entries.find((entry) => entry.name === name)!
+    if (golden.suite !== suite)
+      throw new Error(
+        `Visual golden ${golden.name} belongs to suite ${golden.suite}, not ${suite}.`
+      )
+  }
   return { names: selected, suite, reuseBuild }
 }

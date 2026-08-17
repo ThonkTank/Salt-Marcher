@@ -8,6 +8,7 @@ import { join } from 'node:path'
 import pixelmatch from 'pixelmatch'
 import { PNG } from 'pngjs'
 import { mainWindowGeometry } from '../../../src/shared/contracts/window-geometry.js'
+import { rendererAcknowledgesWindowGeometry } from './e2e-window-geometry.js'
 import {
   selectedVisualGoldens,
   validateVisualGoldenSuites,
@@ -56,17 +57,21 @@ export async function setElectronWindowSize(
   width: number,
   height: number
 ): Promise<void> {
+  type WindowGeometry = Readonly<{
+    outerWidth: number
+    outerHeight: number
+    contentWidth: number
+    contentHeight: number
+  }>
   const electronClient = client as WdioBrowser & {
     electron: {
-      execute: (
+      execute: <Result, Arguments extends readonly unknown[]>(
         script: (
           electron: typeof import('electron'),
-          width: number,
-          height: number
-        ) => boolean,
-        width: number,
-        height: number
-      ) => Promise<boolean>
+          ...arguments_: Arguments
+        ) => Result,
+        ...arguments_: Arguments
+      ) => Promise<Result>
     }
   }
   await client.waitUntil(
@@ -107,15 +112,70 @@ export async function setElectronWindowSize(
       timeoutMsg: 'No Electron window was available to resize.'
     }
   )
+  let geometry: WindowGeometry | null = null
   await client.waitUntil(
     async () => {
-      const observed = await client.execute(() => ({
-        width: window.innerWidth,
-        height: window.innerHeight
-      }))
-      return observed.width <= width && observed.width >= width - 32
+      geometry = await electronClient.electron.execute((electron) => {
+        const target =
+          electron.BrowserWindow.getFocusedWindow() ??
+          electron.BrowserWindow.getAllWindows().find(
+            (candidate) => !candidate.isDestroyed() && candidate.isVisible()
+          ) ??
+          electron.webContents
+            .getAllWebContents()
+            .map((contents) => electron.BrowserWindow.fromWebContents(contents))
+            .find(
+              (candidate) =>
+                candidate !== null &&
+                !candidate.isDestroyed() &&
+                candidate.isVisible()
+            )
+        if (!target) return null
+        const outer = target.getBounds()
+        const content = target.getContentBounds()
+        return {
+          outerWidth: outer.width,
+          outerHeight: outer.height,
+          contentWidth: content.width,
+          contentHeight: content.height
+        }
+      })
+      return geometry?.outerWidth === width && geometry.outerHeight === height
     },
-    { timeout: 15_000, timeoutMsg: 'Renderer did not observe window resize' }
+    {
+      timeout: 15_000,
+      interval: 100,
+      timeoutMsg: 'Electron did not confirm the requested outer window size.'
+    }
+  )
+  const confirmed = geometry
+  if (!confirmed) throw new Error('Electron window geometry is unavailable.')
+  await client.waitUntil(
+    async () => {
+      const observed = await client.execute(() => {
+        const workspace =
+          document.querySelector<HTMLElement>('.session-workspace')
+        const measuredWidth = Number(workspace?.dataset['workspaceWidth'])
+        return {
+          innerWidth: window.innerWidth,
+          innerHeight: window.innerHeight,
+          workspace: workspace
+            ? {
+                ready: workspace.dataset['sessionLayoutReady'] === 'true',
+                measuredWidth,
+                renderedWidth: workspace.getBoundingClientRect().width
+              }
+            : null
+        }
+      })
+      return rendererAcknowledgesWindowGeometry(confirmed, observed)
+    },
+    {
+      timeout: 15_000,
+      interval: 100,
+      timeoutMsg:
+        'Renderer content geometry and owned layout did not acknowledge the Electron resize.'
+    }
   )
 }
 
@@ -203,6 +263,7 @@ export async function expectElementGolden(
   resizeWindow = true
 ): Promise<void> {
   if (process.platform !== 'linux') return
+  if (process.env['SALT_MARCHER_VISUAL_MODE'] !== 'true') return
   const entry = goldenManifest.goldens.find(
     (candidate) => candidate.name === name
   )

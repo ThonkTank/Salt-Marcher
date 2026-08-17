@@ -94,8 +94,9 @@ relaxed as part of feature work.
 - `check:fast` runs formatting, lint, type checking, unit/integration tests and
   static artifacts.
 - `check:app` builds once, then runs smoke and bundle checks against that build.
-- `check:e2e` builds once and runs the isolated Electron suites sequentially.
-- `check` is canonical and reuses the `check:app` build for its E2E stage.
+- `check:e2e` builds once, runs the isolated functional Electron suites
+  sequentially, then verifies each owned visual scenario independently.
+- `check` is canonical and reuses the `check:app` build for both E2E stages.
 
 E2E fixture recipes live under the versioned `tests/e2e/fixtures/v1`,
 `tests/e2e/fixtures/v2`, `tests/e2e/fixtures/v3`, and

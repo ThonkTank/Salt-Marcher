@@ -274,6 +274,7 @@ describe('campaign walking skeleton', () => {
 
   it('keeps a newly created hex map inside the workspace', async () => {
     const client = browser as unknown as WdioBrowser
+    await createFreshCampaign(client, 'Hex Workflow E2E')
     await createLocation(client, 'Leuchtturmklippe', 'Zeichen an der Küste.')
     await (await client.$('button[aria-label="Hex-Editor"]')).click()
     await (await client.$('button=Neu')).click()
@@ -425,11 +426,12 @@ describe('campaign walking skeleton', () => {
     ).click()
 
     await (await client.$('button[aria-label="Session"]')).click()
-    await expect(await client.$('h1=Session · Campaign A')).toBeExisting()
+    await expect(await client.$('h1=Session · Hex Workflow E2E')).toBeExisting()
   })
 
   it('builds a scene party, browses monsters and starts a scene group combat', async () => {
     const client = browser as unknown as WdioBrowser
+    await createFreshCampaign(client, 'Session Combat E2E')
     await createLocation(client, 'Saltmarsh', 'A busy harbour town.')
     await (await client.$('button=Bearbeiten')).click()
     const editLocation = await client.$(
@@ -869,6 +871,7 @@ describe('campaign walking skeleton', () => {
 
   it('survives the pseudo locale without accessibility regressions', async () => {
     const client = browser as unknown as WdioBrowser
+    await createFreshCampaign(client, 'Pseudo Locale E2E')
     const url = new URL(await client.getUrl())
     url.searchParams.set('locale', 'pseudo')
     await client.url(url.href)
@@ -899,6 +902,25 @@ async function waitForCampaignInput(
       { cause }
     )
   }
+}
+
+async function createFreshCampaign(
+  client: WdioBrowser,
+  name: string
+): Promise<void> {
+  let field = await client.$('#campaign-name')
+  if (!(await field.isExisting()) || !(await field.isDisplayed())) {
+    await openCampaignDialog(client)
+    field = await client.$('#campaign-name')
+  }
+  await waitForCampaignInput(client, field)
+  await field.setValue(name)
+  await (await client.$('button=Anlegen')).click()
+  await (
+    await client.$(`h1=Session · ${name}`)
+  ).waitForExist({
+    timeout: 10_000
+  })
 }
 
 async function openCampaignDialog(client: WdioBrowser): Promise<void> {
@@ -1050,9 +1072,7 @@ async function waitForSceneLocation(
   await client.waitUntil(
     async () =>
       (await (
-        await client.$(
-          '.control-register .register-row:nth-child(2) .register-value'
-        )
+        await client.$('[data-register-field="location"] .register-value')
       ).getText()) === expected,
     {
       timeout: 5_000,
@@ -1065,7 +1085,7 @@ async function setSceneLocation(
   client: WdioBrowser,
   location: string
 ): Promise<void> {
-  const row = await client.$('.control-register .register-row:nth-child(2)')
+  const row = await client.$('[data-register-field="location"]')
   await (await row.$('button=Setzen')).click()
   await (
     await row.$('select[aria-label="Scene-Ort"]')

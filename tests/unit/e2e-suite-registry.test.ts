@@ -46,5 +46,40 @@ describe('E2E suite registry', () => {
         e2eSources,
         `${golden.name} has no executable E2E assertion`
       ).toContain(`'${golden.name}'`)
+    for (const golden of manifest.goldens)
+      expect(e2eSources).toContain(golden.testPattern)
+  })
+
+  it('keeps behavior selectors free of positional DOM coupling', () => {
+    const e2eSources = e2eSuiteRegistry
+      .map((suite) => readFileSync(suite.spec, 'utf8'))
+      .join('\n')
+    expect(e2eSources).not.toMatch(/:nth-(?:child|of-type)\s*\(/)
+    expect(e2eSources).not.toMatch(
+      /querySelector(?:All)?\([^\n]*(?::first|:last)/
+    )
+  })
+
+  it('keeps campaign scenarios independently startable from the empty fixture', () => {
+    const campaign = readFileSync('tests/e2e/campaign-walking.e2e.ts', 'utf8')
+    expect(campaign.match(/\bit\('/g)).toHaveLength(4)
+    expect(campaign.match(/await createFreshCampaign\(/g)).toHaveLength(3)
+    expect(
+      e2eSuiteRegistry.find((suite) => suite.name === 'create')?.fixture
+    ).toBe('v1/empty-installation')
+  })
+
+  it('materializes a fresh per-suite profile and supports shuffled order', () => {
+    const configuration = readFileSync('wdio.conf.ts', 'utf8')
+    const runner = readFileSync('scripts/run-e2e-suites.ts', 'utf8')
+    expect(configuration).toContain('`${suite}-${runId}-${process.pid}`')
+    expect(configuration).toContain(
+      'rmSync(userData, { recursive: true, force: true })'
+    )
+    expect(configuration).toContain(
+      "cpSync(join(process.cwd(), 'tests', 'e2e', 'fixtures', fixture)"
+    )
+    expect(runner).toContain("argumentAfter('--shuffle-seed')")
+    expect(runner).toContain('shuffledSuiteOrder')
   })
 })

@@ -26,7 +26,7 @@ export function SessionControlPanel(props: {
         </button>
       </div>
       <div className="control-register">
-        <div className="register-row active">
+        <div className="register-row active" data-register-field="scene">
           <span className="register-label">{message('ui.szene')}</span>
           {editing === 'scene' ? (
             <span className="register-editor">
@@ -65,7 +65,7 @@ export function SessionControlPanel(props: {
             </>
           )}
         </div>
-        <div className="register-row">
+        <div className="register-row" data-register-field="location">
           <span className="register-label">{message('ui.ort')}</span>
           {editing === 'location' ? (
             <span className="register-editor">

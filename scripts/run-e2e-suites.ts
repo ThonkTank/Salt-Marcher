@@ -21,6 +21,7 @@ import {
   type E2eRunSummary,
   type E2eSuiteResult
 } from './e2e-run-receipt.js'
+import { shuffledSuiteOrder } from './e2e-suite-order.js'
 
 const packageRequire = createRequire(import.meta.url)
 const wdioEntry = join(
@@ -35,14 +36,18 @@ type RunSummary = E2eRunSummary<E2eSuiteName>
 
 const arguments_ = process.argv.slice(2).filter((entry) => entry !== '--')
 const resumePath = argumentAfter('--resume')
+const shuffleSeedValue = argumentAfter('--shuffle-seed')
 const requested = repeatedArguments('--suite')
 for (const name of requested)
   if (!isE2eSuiteName(name)) throw new Error(`Unknown E2E suite: ${name}`)
-const selectedSuites = (
+const registeredSuites = (
   requested.length > 0
     ? [...new Set(requested)]
     : e2eSuiteRegistry.map((suite) => suite.name)
 ) as E2eSuiteName[]
+const selectedSuites = shuffleSeedValue
+  ? shuffledSuiteOrder(registeredSuites, Number(shuffleSeedValue))
+  : registeredSuites
 const buildIdentity = fingerprintFiles([
   'out/main/index.js',
   'out/renderer/.vite/manifest.json'

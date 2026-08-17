@@ -22,9 +22,7 @@ describe('campaign restart', () => {
       await client.$('[aria-label="Breite der Szenariospalte"]')
     ).toHaveAttribute('aria-valuenow', '274')
     await expect(
-      await client.$(
-        '.control-register .register-row:nth-child(2) .register-value'
-      )
+      await client.$('[data-register-field="location"] .register-value')
     ).toHaveText('Salzmarschhafen')
     await (await client.$('button[aria-label="Katalog"]')).click()
     await (await client.$('button=Orte')).click()
