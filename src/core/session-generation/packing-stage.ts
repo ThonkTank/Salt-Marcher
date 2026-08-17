@@ -74,6 +74,8 @@ function packTreasure(
       item.definition.unitCapacity * item.quantity,
       item.quantity,
       source?.allowedContainerNames ?? syntheticAllowed,
+      source?.formOverride ?? null,
+      source?.unitLabel ?? null,
       containers,
       seed,
       `${draft.id}:${index}`,
@@ -120,6 +122,8 @@ function chooseContainer(
   capacity: number,
   quantity: number,
   allowedNames: readonly string[],
+  placement: string | null,
+  unitLabel: string | null,
   existing: Array<
     GeneratedTreasure['containers'][number] & {
       remaining: number
@@ -133,29 +137,47 @@ function chooseContainer(
   entropy: EncounterEntropy
 ) {
   if (capacity <= 0) return null
+  const amountUnit =
+    unitLabel !== null &&
+    ['lb', 'lb/sq yd', 'pint', 'fl oz'].includes(unitLabel)
+  const liquidUnit = unitLabel === 'pint' || unitLabel === 'fl oz'
+  const pileAllowed = quantity >= rules.packing.pileMinQty && !liquidUnit
+  const allowedIds = new Set(
+    catalog
+      .filter(
+        (container) =>
+          allowedNames.includes(container.name) ||
+          (pileAllowed && container.name === 'Pile')
+      )
+      .map((container) => container.id)
+  )
   const reusable = existing.find(
-    (container) => container.mixable && container.remaining >= capacity
+    (container) =>
+      container.mixable &&
+      container.catalogContainerId !== null &&
+      allowedIds.has(container.catalogContainerId) &&
+      container.remaining >= capacity
   )
   if (reusable) {
     reusable.remaining -= capacity
     return reusable
   }
+  if (
+    allowedNames.length === 0 ||
+    (quantity <= rules.packing.loosePlacementMaxQty &&
+      (placement === 'worn' ||
+        placement === 'handheld' ||
+        (!amountUnit && capacity >= rules.packing.looseNonAmountMinCapacity)))
+  )
+    return null
   const allowed = catalog.filter(
     (container) =>
       (allowedNames.includes(container.name) ||
-        (quantity >= rules.packing.pileMinQty && container.name === 'Pile')) &&
+        (pileAllowed && container.name === 'Pile')) &&
       (!container.hidden || capacity <= container.capacity)
   )
-  if (
-    allowed.length === 0 &&
-    quantity <= rules.packing.loosePlacementMaxQty &&
-    capacity <= rules.packing.contextBulkMinLb
-  )
-    return null
-  const pool =
-    allowed.length > 0
-      ? allowed
-      : catalog.filter((entry) => entry.name === 'Pile')
+  if (allowed.length === 0) return null
+  const pool = allowed
   const candidates = pool.map((container) => ({
     container,
     count: Math.max(1, Math.ceil(capacity / Math.max(1, container.capacity))),

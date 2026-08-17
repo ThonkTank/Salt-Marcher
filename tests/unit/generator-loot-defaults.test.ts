@@ -141,6 +141,7 @@ describe('default generator loot rules', () => {
       coinsPerCapacityUnit: 50,
       contextBulkMinLb: 20,
       loosePlacementMaxQty: 1,
+      looseNonAmountMinCapacity: 2,
       pileMinQty: 5,
       containerMaxCountFactor: 4,
       minimumFillRatio: 0.25

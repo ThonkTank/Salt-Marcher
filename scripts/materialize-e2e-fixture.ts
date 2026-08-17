@@ -239,15 +239,19 @@ try {
             }),
             database
           )
+          const assignedMembers = party.members.filter(
+            (member) =>
+              member.active &&
+              member.level !== null &&
+              scene.partyMemberIds.includes(member.id)
+          )
+          const rewardXp =
+            rules.rewardXpBasis === 'adjusted'
+              ? evaluation.adjustedXp
+              : evaluation.baseXp
           const run = generation.generateGroupReward({
             party: [
-              ...party.members
-                .filter(
-                  (member) =>
-                    member.active &&
-                    member.level !== null &&
-                    scene.partyMemberIds.includes(member.id)
-                )
+              ...assignedMembers
                 .map((member) => member.level!)
                 .reduce<Map<number, number>>((counts, level) => {
                   counts.set(level, (counts.get(level) ?? 0) + 1)
@@ -255,6 +259,20 @@ try {
                 }, new Map())
                 .entries()
             ].map(([level, count]) => ({ level, count })),
+            ledgerParty: assignedMembers.map((member) => ({
+              characterId: member.id,
+              currentXp: member.xp,
+              projectedXp: Math.floor(rewardXp / assignedMembers.length),
+              ledgerRevision: 0,
+              currentNonMagicCp: 0,
+              currentMagic: {
+                Common: 0,
+                Uncommon: 0,
+                Rare: 0,
+                'Very Rare': 0,
+                Legendary: 0
+              }
+            })),
             sceneId: scene.id,
             groupId: group.id,
             sceneRevision: snapshot.scene.revision,
@@ -265,10 +283,7 @@ try {
             rewardXpBasis: rules.rewardXpBasis,
             baseXp: evaluation.baseXp,
             adjustedXp: evaluation.adjustedXp,
-            rewardXp:
-              rules.rewardXpBasis === 'adjusted'
-                ? evaluation.adjustedXp
-                : evaluation.baseXp,
+            rewardXp,
             seed: fixture.lootScenario.seed
           })
           const generated = run.treasures[0]!

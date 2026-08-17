@@ -1142,6 +1142,20 @@ describe('loot vertical slice', () => {
     )
     const generated = generation.generate({
       party: [{ level: 3, count: 2 }],
+      ledgerParty: members.slice(0, 2).map((member) => ({
+        characterId: member.id,
+        currentXp: member.xp,
+        projectedXp: 720,
+        ledgerRevision: 0,
+        currentNonMagicCp: 0,
+        currentMagic: {
+          Common: 0,
+          Uncommon: 0,
+          Rare: 0,
+          'Very Rare': 0,
+          Legendary: 0
+        }
+      })),
       adventureDayFraction: '0.6',
       encounterCount: 2,
       seed: 1_000

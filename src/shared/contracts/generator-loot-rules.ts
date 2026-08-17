@@ -266,6 +266,7 @@ export const generatorLootRulesSchema = z
         coinsPerCapacityUnit: z.number().positive(),
         contextBulkMinLb: z.number().nonnegative(),
         loosePlacementMaxQty: countSchema,
+        looseNonAmountMinCapacity: z.number().nonnegative().default(2),
         pileMinQty: positiveCountSchema,
         containerMaxCountFactor: z.number().positive(),
         minimumFillRatio: shareSchema

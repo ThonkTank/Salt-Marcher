@@ -16,18 +16,14 @@ import { selectMagicItems } from './magic-selection-stage.js'
 import { selectNonMagicItems } from './non-magic-selection-stage.js'
 import { packTreasures } from './packing-stage.js'
 import { aggregateReward } from './reward-aggregation-stage.js'
-import { normalizeRewardBasis } from './reward-basis-stage.js'
-import { calculateRewardBudget } from './reward-budget-stage.js'
 import { calculateLedgerRewardBudget } from './reward-budget-stage.js'
 import { fingerprintGeneratorConfig } from './generator-config-fingerprint.js'
 import { freezeStage } from './reward-stage-types.js'
 import {
   adjustedXp,
   baseXp,
-  partyXp,
   rewardXpFromAdjustedXp,
   rewardXpFromBaseXp,
-  rewardXpFromPartyXp,
   unitValue
 } from './reward-units.js'
 import { planSlotsAndRoles } from './slot-role-stage.js'
@@ -67,6 +63,17 @@ export function generateSessionRunDraft(
   },
   runId = standaloneRunId
 ): GeneratedRunDraftResult {
+  if (!input.ledgerParty || input.ledgerParty.length === 0)
+    return freezeStage({
+      status: 'invalid_input',
+      issues: [
+        {
+          code: 'invalid_party',
+          path: ['ledgerParty'],
+          parameters: { reason: 'missing_ledger_reward_party' }
+        }
+      ]
+    })
   const encounter = generateSessionEncounters(
     input,
     catalog.encounter,
@@ -75,25 +82,15 @@ export function generateSessionRunDraft(
   )
   if (encounter.status !== 'success') return encounter
 
-  const basis = normalizeRewardBasis({
-    party: encounter.input.party,
-    rewardXp: rewardXpFromPartyXp(partyXp(encounter.session.sessionXpTarget))
-  })
-  const budget =
-    (input.ledgerParty?.length ?? 0) > 0
-      ? calculateLedgerRewardBudget(
-          {
-            members: input.ledgerParty!,
-            rules: preset.config.loot,
-            seed: input.seed,
-            profile: 'session'
-          },
-          entropy
-        )
-      : calculateRewardBudget(
-          { basis, catalog, seed: input.seed, profile: 'session' },
-          entropy
-        )
+  const budget = calculateLedgerRewardBudget(
+    {
+      members: input.ledgerParty,
+      rules: preset.config.loot,
+      seed: input.seed,
+      profile: 'session'
+    },
+    entropy
+  )
   const goldBudgetCp = unitValue(budget.goldBudgetCp)
   if (
     goldBudgetCp === 0 &&
@@ -116,7 +113,7 @@ export function generateSessionRunDraft(
           overstockTreasureCount: 0,
           magicTargets: budget.magicTargets
         },
-        rewardBasis: 'rewardBasis' in budget ? budget.rewardBasis : null,
+        rewardBasis: budget.rewardBasis,
         encounters: encounter.encounters,
         itemDefinitions: [],
         treasures: [],
@@ -192,7 +189,8 @@ export function generateSessionRunDraft(
     magicTargets: budget.magicTargets,
     expectedTreasureCount: planning.treasures.length,
     profile: 'session',
-    rules: preset.config.loot
+    rules: preset.config.loot,
+    catalog
   })
   if (aggregation.audits.some((audit) => audit.hard && !audit.passed))
     return freezeStage({
@@ -222,7 +220,7 @@ export function generateSessionRunDraft(
         overstockTreasureCount: planning.overstockTreasureCount,
         magicTargets: budget.magicTargets
       },
-      rewardBasis: 'rewardBasis' in budget ? budget.rewardBasis : null,
+      rewardBasis: budget.rewardBasis,
       encounters: encounter.encounters,
       itemDefinitions,
       treasures: [...treasures],
@@ -252,31 +250,23 @@ export function generateGroupRewardDraft(
   },
   runId = standaloneRunId
 ): GroupRewardDraft {
+  if (!input.ledgerParty || input.ledgerParty.length === 0)
+    throw new Error('missing_ledger_reward_party')
   const selectedRewardXp =
     input.rewardXpBasis === 'base'
       ? rewardXpFromBaseXp(baseXp(input.baseXp))
       : rewardXpFromAdjustedXp(adjustedXp(input.adjustedXp))
   if (unitValue(selectedRewardXp) !== input.rewardXp)
     throw new Error('group_reward_xp_basis_mismatch')
-  const basis = normalizeRewardBasis({
-    party: input.party,
-    rewardXp: selectedRewardXp
-  })
-  const budget =
-    (input.ledgerParty?.length ?? 0) > 0
-      ? calculateLedgerRewardBudget(
-          {
-            members: input.ledgerParty!,
-            rules: preset.config.loot,
-            seed: input.seed,
-            profile: 'group_reward'
-          },
-          entropy
-        )
-      : calculateRewardBudget(
-          { basis, catalog, seed: input.seed, profile: 'group_reward' },
-          entropy
-        )
+  const budget = calculateLedgerRewardBudget(
+    {
+      members: input.ledgerParty,
+      rules: preset.config.loot,
+      seed: input.seed,
+      profile: 'group_reward'
+    },
+    entropy
+  )
   const goldBudgetCp = unitValue(budget.goldBudgetCp)
   if (
     goldBudgetCp === 0 &&
@@ -293,7 +283,7 @@ export function generateGroupRewardDraft(
         configHash: fingerprintGeneratorConfig(preset.config)
       },
       input,
-      rewardBasis: 'rewardBasis' in budget ? budget.rewardBasis : null,
+      rewardBasis: budget.rewardBasis,
       goldBudgetCp: 0,
       magicTargets: budget.magicTargets,
       itemDefinitions: [],
@@ -363,7 +353,8 @@ export function generateGroupRewardDraft(
     magicTargets: budget.magicTargets,
     expectedTreasureCount: 1,
     profile: 'group_reward',
-    rules: preset.config.loot
+    rules: preset.config.loot,
+    catalog
   })
   if (aggregation.audits.some((audit) => audit.hard && !audit.passed))
     throw new Error('group_reward_hard_audit_failed')
@@ -379,7 +370,7 @@ export function generateGroupRewardDraft(
       configHash: fingerprintGeneratorConfig(preset.config)
     },
     input,
-    rewardBasis: 'rewardBasis' in budget ? budget.rewardBasis : null,
+    rewardBasis: budget.rewardBasis,
     goldBudgetCp,
     magicTargets: budget.magicTargets,
     itemDefinitions,

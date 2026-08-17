@@ -71,10 +71,16 @@ export function selectMagicItems(
       const treasureIndex =
         targetTreasures[ordinal % targetTreasures.length]!.index
       const treasure = input.treasures[treasureIndex]!
-      const pool = input.catalog.magicItems.filter(
+      const available = input.catalog.magicItems.filter(
         (item) =>
-          item.active && item.rarity === rarity && !usedItems.has(item.id)
+          item.active &&
+          item.rarity === rarity &&
+          (item.decisionType === 'enspelled_item' || !usedItems.has(item.id))
       )
+      const themed = available.filter(
+        (item) => item.type === treasure.theme.magicType
+      )
+      const pool = themed.length > 0 ? themed : available
       if (pool.length === 0) continue
       const magic =
         pool[
@@ -83,21 +89,22 @@ export function selectMagicItems(
             pool.length
           )
         ]!
-      usedItems.add(magic.id)
-      const curse = resolveCurse(
-        magic,
-        input.seed,
-        ordinal,
-        input.catalog,
-        rules,
-        entropy
-      )
+      if (magic.decisionType !== 'enspelled_item') usedItems.add(magic.id)
       const resolution = resolveMagicItem(
         magic,
         treasure.theme,
         input.seed,
         ordinal,
         input.catalog,
+        entropy
+      )
+      const curse = resolveCurse(
+        magic,
+        resolution.baseItemId,
+        input.seed,
+        ordinal,
+        input.catalog,
+        rules,
         entropy
       )
       const itemId = `${treasure.id}:item:${items[treasureIndex]!.length + 1}`
@@ -230,6 +237,7 @@ function resolveMagicItem(
     const bases = catalog.items.filter(
       (candidate) =>
         candidate.active &&
+        candidate.lootType === 'object' &&
         candidate.capacity <= rule.maxBaseCapacity &&
         (matcher.test(candidate.category) || matcher.test(candidate.name))
     )
@@ -264,6 +272,7 @@ function resolveMagicItem(
 
 function resolveCurse(
   item: MagicItem,
+  baseItemId: string | null,
   seed: number,
   ordinal: number,
   catalog: FullSessionGenerationCatalog,
@@ -277,13 +286,17 @@ function resolveCurse(
   )
     return null
   const itemRarity = rarityIndex(item.rarity)
+  const curseContext =
+    (baseItemId
+      ? catalog.items.find((candidate) => candidate.id === baseItemId)?.category
+      : null) ?? item.type
   const candidates = catalog.curses.filter(
     (curse) =>
       curse.active &&
       rarityIndex(curse.minRarity) <= itemRarity &&
       rarityIndex(curse.maxRarity) >= itemRarity &&
       (curse.appliesTo === 'all' ||
-        item.type.toLowerCase().includes(curse.appliesTo.toLowerCase()))
+        relationKey(curseContext) === relationKey(curse.appliesTo))
   )
   if (candidates.length === 0) return null
   const totalWeight = candidates.reduce((sum, curse) => sum + curse.weight, 0)
@@ -295,6 +308,10 @@ function resolveCurse(
     if (roll <= 0) return curse
   }
   return candidates.at(-1) ?? null
+}
+
+function relationKey(value: string): string {
+  return value.toLowerCase().replaceAll(/[^a-z0-9]/g, '')
 }
 
 function generatedItemReference(

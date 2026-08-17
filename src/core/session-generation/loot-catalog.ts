@@ -35,6 +35,7 @@ export type LootCatalogItem = Readonly<{
   lootType: string
   modularProfiles: readonly string[]
   canAdorn: boolean
+  adornmentType: string | null
   unitLabel: string
   valueForm: string | null
 }>
@@ -42,6 +43,7 @@ export type LootCatalogItem = Readonly<{
 export type LootModifier = Readonly<{
   id: string
   kind: 'modular' | 'variant'
+  lootType: string
   name: string
   textTemplate: string | null
   details: string | null
@@ -229,12 +231,14 @@ export function parseFullSessionGenerationCatalog(
         ? list(row, 'Modular_Profile')
         : list(row, 'Modular_Profile_Cache'),
     canAdorn: boolean(row, 'Can_Adorn'),
+    adornmentType: optional(row, 'Adornment_Type'),
     unitLabel: optional(row, 'Unit_Label') ?? 'item',
     valueForm: optional(row, 'Value_Form')
   }))
   const modifiers = rows(tables, 'DB_LootModifiers.tsv').map((row) => ({
     id: required(row, 'Modifier_ID'),
     kind: modifierKind(required(row, 'Modifier_Kind')),
+    lootType: required(row, 'Loot_Type'),
     name: required(row, 'Name'),
     textTemplate: optional(row, 'Text_Template'),
     details: optional(row, 'Details'),

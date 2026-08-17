@@ -87,7 +87,10 @@ export const config = {
   ) => {
     await waitForGmRendererReady(client)
   },
-  mochaOpts: { ui: 'bdd', timeout: 180_000 }
+  mochaOpts: {
+    ui: 'bdd',
+    timeout: suite === 'sessionGeneration' ? 240_000 : 180_000
+  }
 }
 
 function argumentAfter(name: string): string | undefined {

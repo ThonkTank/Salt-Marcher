@@ -201,12 +201,30 @@ function generatedSession() {
   )
   const result = generation.generate({
     party: [{ level: 3, count: 4 }],
+    ledgerParty: Array.from({ length: 4 }, (_, index) => ({
+      characterId: `018f47db-e17a-7000-8000-${String(index + 1).padStart(12, '0')}`,
+      currentXp: 900,
+      projectedXp: 720,
+      ledgerRevision: 0,
+      currentNonMagicCp: 37_600,
+      currentMagic: emptyMagicCounts()
+    })),
     adventureDayFraction: '0.6',
     encounterCount: 3,
     seed: 179_974
   })
   if (result.status !== 'success') throw new Error('Expected generated run')
   return { campaigns, db, run: result.run }
+}
+
+function emptyMagicCounts() {
+  return {
+    Common: 0,
+    Uncommon: 0,
+    Rare: 0,
+    'Very Rare': 0,
+    Legendary: 0
+  }
 }
 
 function countingDatabase(database: Database.Database): {

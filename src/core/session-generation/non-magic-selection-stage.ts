@@ -17,7 +17,6 @@ import {
   absolute,
   add,
   compare,
-  divide,
   multiply,
   rational,
   roundHalfUp,
@@ -77,14 +76,13 @@ export function selectNonMagicItems(
             rules,
             input.seed,
             slot,
-            entropy,
-            null
+            entropy
           )
           items.push(coinage)
           value += coinage.definition.unitValueCp * coinage.quantity
           continue
         }
-        const selected = selectCatalogItem(
+        const selection = selectCatalogItem(
           role,
           desiredForm,
           treasure.theme,
@@ -98,26 +96,14 @@ export function selectNonMagicItems(
           usedItems,
           usedCategories
         )
-        if (!selected) continue
+        if (!selection) continue
+        const { item: selected, quantity } = selection
         usedItems.add(selected.id)
         usedCategories.set(
           selected.category,
           (usedCategories.get(selected.category) ?? 0) + 1
         )
         const quantityGood = selected.valueForm === 'Quantity_Good'
-        const limit = quantityLimit(selected, role, rules)
-        const quantity =
-          limit > 1
-            ? Math.max(
-                1,
-                Math.min(
-                  limit,
-                  roundHalfUp(
-                    divide(rational(BigInt(slotBudget)), selected.baseCp)
-                  )
-                )
-              )
-            : 1
         const enhancement = resolveEnhancement(
           selected,
           role,
@@ -194,21 +180,6 @@ export function selectNonMagicItems(
         })
         value += totalValueCp
       }
-      const remaining = Math.round(treasure.targetValueCp) - value
-      if (remaining > 0)
-        items.push(
-          createCoinage(
-            input.runId,
-            treasure.id,
-            items.length,
-            remaining,
-            rules,
-            input.seed,
-            treasure.roles.length,
-            entropy,
-            ['cp']
-          )
-        )
       const { roles: _roles, ...plan } = treasure
       void _roles
       return { ...plan, items }
@@ -229,7 +200,7 @@ function selectCatalogItem(
   entropy: EncounterEntropy,
   usedItems: ReadonlySet<string>,
   usedCategories: ReadonlyMap<string, number>
-): LootCatalogItem | null {
+): Readonly<{ item: LootCatalogItem; quantity: number }> | null {
   const themeCategories = new Set(
     catalog.relations
       .filter(
@@ -240,15 +211,6 @@ function selectCatalogItem(
       )
       .map((relation) => relation.targetId)
   )
-  const candidates = catalog.items.filter(
-    (item) =>
-      item.active &&
-      compare(item.baseCp, rational(0n)) > 0 &&
-      roleMatches(item, role, desiredForm)
-  )
-  const themed = candidates.filter((item) => themeCategories.has(item.category))
-  const pool = themed.length > 0 ? themed : candidates
-  if (pool.length === 0) return null
   const policy =
     desiredForm === 'Adorned'
       ? rules.selection.adornedBase
@@ -257,6 +219,37 @@ function selectCatalogItem(
         : role === 'flavor'
           ? rules.selection.flavor
           : rules.selection.carrier
+  const candidates = catalog.items
+    .filter(
+      (item) =>
+        item.active &&
+        !usedItems.has(item.id) &&
+        compare(item.baseCp, rational(0n)) > 0
+    )
+    .map((item) => ({
+      item,
+      quantity: candidateQuantity(
+        item,
+        role,
+        desiredForm,
+        budget,
+        policy,
+        rules
+      )
+    }))
+    .filter(
+      (candidate) =>
+        candidate.quantity > 0 &&
+        roleMatches(
+          candidate.item,
+          role,
+          desiredForm,
+          candidate.quantity,
+          rules
+        )
+    )
+  const pool = candidates
+  if (pool.length === 0) return null
   const effectiveBudget = Math.max(
     1,
     desiredForm === 'Adorned' ? budget - policy.preferredBaseExtraCp : budget
@@ -274,22 +267,24 @@ function selectCatalogItem(
     rational(BigInt(Math.round(policy.minFit * 1_000_000)), 1_000_000n)
   )
   const fit = pool.filter(
-    (item) =>
-      compare(item.baseCp, upperBound) <= 0 &&
-      compare(item.baseCp, lowerBound) >= 0
+    (candidate) =>
+      compare(candidateLineValue(candidate), upperBound) <= 0 &&
+      compare(candidateLineValue(candidate), lowerBound) >= 0
   )
-  const affordable = pool.filter(
-    (item) => compare(item.baseCp, upperBound) <= 0
-  )
-  const ranked = (
-    fit.length > 0 ? fit : affordable.length > 0 ? affordable : pool
-  )
-    .map((item) => ({
-      item,
-      delta: absolute(subtract(budgetValue, item.baseCp)),
-      themed: themeCategories.has(item.category),
+  if (fit.length === 0) return null
+  const ranked = fit
+    .map((candidate) => ({
+      ...candidate,
+      delta: absolute(subtract(budgetValue, candidateLineValue(candidate))),
+      themed: themeCategories.has(candidate.item.category),
       tie: entropy.unit(
-        itemSelectionStream(seed, 'loot-item', treasureId, slot, item.id)
+        itemSelectionStream(
+          seed,
+          'loot-item',
+          treasureId,
+          slot,
+          candidate.item.id
+        )
       )
     }))
     .map((candidate) => ({
@@ -313,10 +308,17 @@ function selectCatalogItem(
       (left, right) =>
         right.score - left.score || compareText(left.item.id, right.item.id)
     )
-  const best = ranked[0]?.score
-  if (best === undefined) return null
+  const bestGap = ranked.reduce(
+    (best, candidate) => Math.min(best, rationalDistance(candidate.delta)),
+    Number.POSITIVE_INFINITY
+  )
+  if (!Number.isFinite(bestGap)) return null
   const shortlist = ranked
-    .filter((candidate) => candidate.score >= best - policy.nearBestGap)
+    .filter(
+      (candidate) =>
+        rationalDistance(candidate.delta) <=
+        bestGap + effectiveBudget * policy.nearBestGap
+    )
     .slice(0, policy.shortlistSize)
   return (
     shortlist[
@@ -324,14 +326,16 @@ function selectCatalogItem(
         itemSelectionStream(seed, 'loot-item', treasureId, slot, 'shortlist'),
         shortlist.length
       )
-    ]?.item ?? null
+    ] ?? null
   )
 }
 
 function roleMatches(
   item: LootCatalogItem,
   role: LootRole,
-  desiredForm: string | null
+  desiredForm: string | null,
+  quantity: number,
+  rules: GeneratorLootRules
 ): boolean {
   if (role === 'compact_value')
     return (
@@ -343,12 +347,64 @@ function roleMatches(
       item.lootClass === 'carrier' &&
       item.category !== 'Gemstone' &&
       item.category !== 'Ingot' &&
-      (desiredForm === 'Adorned' ||
-        desiredForm === null ||
-        item.valueForm === desiredForm ||
-        item.formOverride === desiredForm)
+      (desiredForm === 'Adorned'
+        ? item.modularProfiles.some((profile) => profile !== 'none') &&
+          item.allowedContainerNames.length > 0
+        : desiredForm === null ||
+          carrierForm(item, quantity, rules) === desiredForm)
     )
   return item.lootClass === role
+}
+
+function carrierForm(
+  item: LootCatalogItem,
+  quantity: number,
+  rules: GeneratorLootRules
+): string {
+  if (item.valueForm === 'Quantity_Good')
+    return item.baseLb * quantity >= rules.packing.contextBulkMinLb
+      ? 'Bulk_Good'
+      : 'Compact_Good'
+  if (
+    ['Ingot', 'Art_Object', 'Gemstone', 'Livestock', 'Clothing'].includes(
+      item.category
+    )
+  )
+    return item.category
+  return item.formOverride ?? 'Adorned'
+}
+
+function candidateQuantity(
+  item: LootCatalogItem,
+  role: LootRole,
+  desiredForm: string | null,
+  budgetCp: number,
+  policy: GeneratorLootRules['selection']['carrier'],
+  rules: GeneratorLootRules
+): number {
+  if (desiredForm === 'Adorned') return 1
+  const unitCp = roundHalfUp(item.baseCp)
+  if (unitCp <= 0) return 0
+  const cap = quantityLimit(item, role, rules)
+  const down = Math.min(cap, Math.floor(budgetCp / unitCp))
+  const up = Math.min(cap, Math.ceil(budgetCp / unitCp))
+  return unitCp * up <= budgetCp * (1 + policy.maxOverfit) &&
+    Math.abs(unitCp * up - budgetCp) < Math.abs(unitCp * down - budgetCp)
+    ? up
+    : down
+}
+
+function candidateLineValue(
+  candidate: Readonly<{
+    item: LootCatalogItem
+    quantity: number
+  }>
+) {
+  return multiply(candidate.item.baseCp, rational(BigInt(candidate.quantity)))
+}
+
+function rationalDistance(value: ReturnType<typeof absolute>): number {
+  return Number(value.numerator) / Number(value.denominator)
 }
 
 function resolveEnhancement(
@@ -381,6 +437,9 @@ function resolveEnhancement(
     (modifier) =>
       modifier.active &&
       modifier.kind === requiredKind &&
+      (modifier.lootType === 'all' || modifier.lootType === item.lootType) &&
+      (requiredKind !== 'variant' ||
+        compare(modifier.flatValueCp, rational(0n)) > 0) &&
       (modifier.allowedCategories.some(
         (category) => relationKey(category) === relationKey(item.category)
       ) ||
@@ -402,7 +461,9 @@ function resolveEnhancement(
     }
   const remainingBudgetCp = Math.max(0, budgetCp - roundHalfUp(item.baseCp))
   const shortlist = valueShortlist(
-    candidates,
+    candidates.filter(
+      (candidate) => roundHalfUp(candidate.flatValueCp) <= remainingBudgetCp
+    ),
     (candidate) => roundHalfUp(candidate.flatValueCp),
     remainingBudgetCp,
     policy,
@@ -452,10 +513,10 @@ function resolveEnhancement(
     catalog.items.filter(
       (candidate) =>
         candidate.active &&
+        candidate.canAdorn &&
         compare(candidate.baseCp, rational(0n)) > 0 &&
-        relationKey(candidate.category).includes(
+        relationKey(candidate.adornmentType ?? '') ===
           relationKey(modifier.componentType!)
-        )
     ),
     (candidate) => roundHalfUp(candidate.baseCp) * minimum,
     componentBudgetCp,
@@ -483,20 +544,26 @@ function resolveEnhancement(
   if (!component)
     return { modifier, component: null, componentQuantity: 0, detail }
   const maximum = Math.max(minimum, Math.floor(modifier.maxQuantity))
-  const affordable = Math.max(
-    minimum,
-    Math.floor(
-      Math.max(0, budgetCp - roundHalfUp(item.baseCp)) /
-        Math.max(1, roundHalfUp(component.baseCp))
-    )
+  const componentCp = Math.max(1, roundHalfUp(component.baseCp))
+  const targetRemainder = Math.max(
+    0,
+    budgetCp - roundHalfUp(item.baseCp) - roundHalfUp(modifier.flatValueCp)
   )
-  const boundedMaximum = Math.max(minimum, Math.min(maximum, affordable))
+  const down = Math.max(
+    minimum,
+    Math.min(maximum, Math.floor(targetRemainder / componentCp))
+  )
+  const up = Math.max(
+    minimum,
+    Math.min(maximum, Math.ceil(targetRemainder / componentCp))
+  )
   const componentQuantity =
-    minimum +
-    entropy.modulo(
-      itemSelectionStream(seed, 'modifier', treasureId, slot, 'component-qty'),
-      boundedMaximum - minimum + 1
-    )
+    componentCp * up <=
+      targetRemainder + budgetCp * componentPolicy.maxOverfit &&
+    Math.abs(componentCp * up - targetRemainder) <
+      Math.abs(componentCp * down - targetRemainder)
+      ? up
+      : down
   return { modifier, component, componentQuantity, detail }
 }
 
@@ -621,73 +688,102 @@ function createCoinage(
   rules: GeneratorLootRules,
   seed: number,
   slot: number,
-  entropy: EncounterEntropy,
-  forcedDenominations: readonly ('pp' | 'gp' | 'ep' | 'sp' | 'cp')[] | null
+  entropy: EncounterEntropy
 ): RewardItemDraft {
+  const maxOverfit = rules.selection.coinage.maxOverfit
   const profiles = Object.entries(rules.coins.profiles).filter(
-    ([, profile]) => budgetCp <= profile.maxBudgetCp
+    ([, profile]) =>
+      budgetCp <= profile.maxBudgetCp &&
+      minimumCoinProfileValue(profile, rules) <= budgetCp * (1 + maxOverfit)
   )
-  const pool = (
-    profiles.length > 0 ? profiles : Object.entries(rules.coins.profiles)
-  ).slice(0, rules.selection.coinage.shortlistSize)
-  const profile = forcedDenominations
-    ? {
-        denominations: [...forcedDenominations],
-        minLowCount: 0,
-        maxLowCount: 0,
-        maxMiddleCount: 0,
-        maxBudgetCp: Number.MAX_SAFE_INTEGER,
-        allowedContainers: Object.values(rules.coins.profiles).flatMap(
-          (entry) => entry.allowedContainers
-        )
-      }
-    : pool[
-        entropy.modulo(
-          itemSelectionStream(seed, 'coin-profile', treasureId, slot),
-          pool.length
-        )
-      ]![1]
-  let remainder = budgetCp
-  let coinCount = 0
+  const fallback = [['spCp', rules.coins.profiles.spCp]] as const
+  const pool = (profiles.length > 0 ? profiles : fallback).slice(
+    0,
+    rules.selection.coinage.shortlistSize
+  )
+  const profile =
+    pool[
+      entropy.modulo(
+        itemSelectionStream(seed, 'coin-profile', treasureId, slot),
+        pool.length
+      )
+    ]![1]
   const counts = new Map<string, number>()
   const low = profile.denominations.at(-1)!
   const lowDefinition = rules.coins.denominations[low]
-  const desiredLow =
+  const middleValue =
+    profile.denominations.length === 3
+      ? rules.coins.denominations[profile.denominations[1]!].valueCp
+      : 0
+  const high = profile.denominations[0]!
+  const highDefinition = rules.coins.denominations[high]
+  const maximumLow = Math.max(
+    profile.minLowCount,
+    Math.min(
+      profile.maxLowCount,
+      Math.floor(
+        (budgetCp * (1 + maxOverfit) - highDefinition.valueCp - middleValue) /
+          lowDefinition.valueCp
+      )
+    )
+  )
+  let lowCount =
     profile.minLowCount +
     entropy.modulo(
       itemSelectionStream(seed, 'coin-profile', treasureId, slot, 'low'),
-      profile.maxLowCount - profile.minLowCount + 1
+      maximumLow - profile.minLowCount + 1
     )
-  const lowCount =
-    desiredLow * lowDefinition.valueCp <= remainder ? desiredLow : 0
-  counts.set(low, lowCount)
-  remainder -= lowCount * lowDefinition.valueCp
+  let middleCount = 0
   if (profile.denominations.length === 3) {
     const middle = profile.denominations[1]!
     const middleDefinition = rules.coins.denominations[middle]
-    const middleCount = Math.min(
-      Math.floor(remainder / middleDefinition.valueCp),
-      entropy.modulo(
-        itemSelectionStream(seed, 'coin-profile', treasureId, slot, 'middle'),
-        profile.maxMiddleCount + 1
+    const maximumMiddle = Math.max(
+      1,
+      Math.min(
+        profile.maxMiddleCount,
+        Math.floor(
+          (budgetCp * (1 + maxOverfit) -
+            highDefinition.valueCp -
+            lowCount * lowDefinition.valueCp) /
+            middleDefinition.valueCp
+        )
       )
     )
+    middleCount =
+      1 +
+      entropy.modulo(
+        itemSelectionStream(seed, 'coin-profile', treasureId, slot, 'middle'),
+        maximumMiddle
+      )
     counts.set(middle, middleCount)
-    remainder -= middleCount * middleDefinition.valueCp
   }
-  const high = profile.denominations[0]!
-  const highDefinition = rules.coins.denominations[high]
-  const highCount = Math.floor(remainder / highDefinition.valueCp)
+  const highCount = Math.max(
+    1,
+    Math.floor(
+      (budgetCp -
+        middleCount * middleValue -
+        lowCount * lowDefinition.valueCp) /
+        highDefinition.valueCp
+    )
+  )
+  const initialValue =
+    highCount * highDefinition.valueCp +
+    middleCount * middleValue +
+    lowCount * lowDefinition.valueCp
+  if (initialValue === Math.round(budgetCp))
+    lowCount =
+      lowCount < maximumLow
+        ? lowCount + 1
+        : lowCount > profile.minLowCount
+          ? lowCount - 1
+          : lowCount + 1
+  counts.set(low, lowCount)
   counts.set(high, highCount)
-  remainder -= highCount * highDefinition.valueCp
+  let coinCount = 0
   for (const denomination of profile.denominations) {
     const count = counts.get(denomination) ?? 0
     if (count === 0) continue
     coinCount += count
-  }
-  if (remainder > 0) {
-    coinCount += remainder
-    counts.set('cp', (counts.get('cp') ?? 0) + remainder)
   }
   const denominations = [...counts.entries()]
     .filter(([, count]) => count > 0)
@@ -712,7 +808,13 @@ function createCoinage(
     definition: {
       reference: itemReference,
       name: name || 'Coinage',
-      unitValueCp: budgetCp,
+      unitValueCp: denominations.reduce(
+        (sum, coin) =>
+          sum +
+          coin.quantity *
+            rules.coins.denominations[coin.denominationId].valueCp,
+        0
+      ),
       unitCapacity: coinCount / rules.packing.coinsPerCapacityUnit,
       stackable: true,
       magic: false,
@@ -733,6 +835,19 @@ function createCoinage(
     role: 'compact_value',
     quantity: 1
   }
+}
+
+function minimumCoinProfileValue(
+  profile: GeneratorLootRules['coins']['profiles']['ppGp'],
+  rules: GeneratorLootRules
+): number {
+  const high = rules.coins.denominations[profile.denominations[0]!].valueCp
+  const low = rules.coins.denominations[profile.denominations.at(-1)!].valueCp
+  const middle =
+    profile.denominations.length === 3
+      ? rules.coins.denominations[profile.denominations[1]!].valueCp
+      : 0
+  return high + middle + profile.minLowCount * low
 }
 
 function generatedItemReference(

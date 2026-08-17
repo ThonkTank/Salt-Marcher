@@ -105,7 +105,55 @@ describe('session generation pure reward stages', () => {
         .flatMap((entry) => entry.items)
         .filter((item) => item.definition.magic)
     ).toHaveLength(1)
+    const magicTreasure = output.find((entry) =>
+      entry.items.some((item) => item.definition.magic)
+    )!
+    const magicDefinition = magicTreasure.items.find(
+      (item) => item.definition.magic
+    )!.definition
+    expect(
+      catalog.magicItems.find(
+        (item) => item.id === magicDefinition.components.magicItemId
+      )?.type
+    ).toBe(magicTreasure.theme.magicType)
     expect(output.every(Object.isFrozen)).toBe(true)
+  })
+
+  it('uses Sheet-style coin eligibility and contextual bulk quantities', () => {
+    const zeroEntropy = {
+      modulo: () => 0,
+      unit: () => 0
+    }
+    const basePlan = plans().treasures[0]!
+    const coin = selectNonMagicItems(
+      {
+        runId,
+        seed,
+        catalog,
+        treasures: [{ ...basePlan, roles: ['compact_value'] }]
+      },
+      zeroEntropy
+    )[0]!.items[0]!.definition
+    expect(coin.components.coinDenominations.length).toBeGreaterThanOrEqual(2)
+    expect(
+      coin.components.coinDenominations.at(-1)?.quantity
+    ).toBeGreaterThanOrEqual(5)
+    expect(coin.unitValueCp).toBeLessThanOrEqual(basePlan.targetValueCp * 1.05)
+
+    const bulk = selectNonMagicItems(
+      {
+        runId,
+        seed,
+        catalog,
+        treasures: [{ ...basePlan, roles: ['complex_value'] }]
+      },
+      zeroEntropy
+    )[0]!.items[0]!
+    const bulkSource = catalog.items.find(
+      (item) => item.id === bulk.definition.components.baseItemId
+    )!
+    expect(bulkSource.valueForm).toBe('Quantity_Good')
+    expect(bulkSource.baseLb * bulk.quantity).toBeGreaterThanOrEqual(20)
   })
 
   it('packs every assignment into its own Treasure', () => {
@@ -126,6 +174,28 @@ describe('session generation pure reward stages', () => {
         )
       )
     ).toBe(true)
+    const definitions = new Map(
+      selected.flatMap((treasure) =>
+        treasure.items.map((item) => [item.id, item.definition] as const)
+      )
+    )
+    for (const treasure of output)
+      for (const item of treasure.items) {
+        if (item.containerId === null) continue
+        const container = treasure.containers.find(
+          (entry) => entry.id === item.containerId
+        )!
+        const sourceId = definitions.get(item.id)?.components.baseItemId
+        if (!sourceId) continue
+        const source = catalog.items.find((entry) => entry.id === sourceId)!
+        const catalogContainer = catalog.containers.find(
+          (entry) => entry.id === container.catalogContainerId
+        )!
+        expect(
+          source.allowedContainerNames.includes(catalogContainer.name) ||
+            catalogContainer.name === 'Pile'
+        ).toBe(true)
+      }
     expect(output.every(Object.isFrozen)).toBe(true)
   })
 
@@ -146,7 +216,8 @@ describe('session generation pure reward stages', () => {
       goldBudgetCp: 45_120,
       magicTargets: oneCommon,
       expectedTreasureCount: 2,
-      profile: 'session'
+      profile: 'session',
+      catalog
     })
     expect(output.normalValueCp).toBe(45_120)
     expect(output.magicCount).toBe(1)

@@ -8,7 +8,10 @@ import {
 } from '../../shared/contracts/loot.js'
 import type { GeneratorLootRules } from '../../shared/contracts/generator-loot-rules.js'
 import { defaultGeneratorLootRules } from '../../shared/generator/default-loot-rules.js'
-import type { LootRarity } from './loot-catalog.js'
+import type {
+  FullSessionGenerationCatalog,
+  LootRarity
+} from './loot-catalog.js'
 import { freezeStage } from './reward-stage-types.js'
 
 export type RewardAggregationInput = Readonly<{
@@ -19,6 +22,7 @@ export type RewardAggregationInput = Readonly<{
   expectedTreasureCount: number
   profile?: 'session' | 'group_reward'
   rules?: GeneratorLootRules
+  catalog: FullSessionGenerationCatalog
 }>
 
 export type RewardAggregationOutput = Readonly<{
@@ -123,12 +127,8 @@ export function aggregateReward(
     {
       code: 'packing_validity',
       passed: input.treasures.every((treasure) =>
-        treasure.items.every(
-          (item) =>
-            item.containerId === null ||
-            treasure.containers.some(
-              (container) => container.id === item.containerId
-            )
+        treasure.items.every((item) =>
+          packingAssignmentValid(item, treasure, definitions, input)
         )
       ),
       hard: true,
@@ -138,10 +138,7 @@ export function aggregateReward(
             total +
             treasure.items.filter(
               (item) =>
-                item.containerId !== null &&
-                !treasure.containers.some(
-                  (container) => container.id === item.containerId
-                )
+                !packingAssignmentValid(item, treasure, definitions, input)
             ).length,
           0
         )
@@ -268,4 +265,43 @@ export function aggregateReward(
     }
   ]
   return freezeStage({ normalValueCp, overstockValueCp, magicCount, audits })
+}
+
+function packingAssignmentValid(
+  item: GeneratedTreasure['items'][number],
+  treasure: GeneratedTreasure,
+  definitions: ReadonlyMap<string, ItemDefinition>,
+  input: RewardAggregationInput
+): boolean {
+  if (item.containerId === null) return true
+  const container = treasure.containers.find(
+    (candidate) => candidate.id === item.containerId
+  )
+  if (!container?.catalogContainerId) return false
+  const definition = definitions.get(itemReferenceKey(item.itemReference))
+  if (!definition) return false
+  const catalogContainer = input.catalog.containers.find(
+    (candidate) => candidate.id === container.catalogContainerId
+  )
+  if (!catalogContainer) return false
+  if (definition.components.coinDenominations.length > 0)
+    return Object.values(
+      (input.rules ?? defaultGeneratorLootRules).coins.profiles
+    )
+      .flatMap((profile) => profile.allowedContainers)
+      .includes(catalogContainer.name)
+  const source = definition.components.baseItemId
+    ? input.catalog.items.find(
+        (candidate) => candidate.id === definition.components.baseItemId
+      )
+    : null
+  if (!source) return false
+  if (source.allowedContainerNames.includes(catalogContainer.name)) return true
+  const rules = input.rules ?? defaultGeneratorLootRules
+  const liquid = source.unitLabel === 'pint' || source.unitLabel === 'fl oz'
+  return (
+    catalogContainer.name === 'Pile' &&
+    !liquid &&
+    item.quantity >= rules.packing.pileMinQty
+  )
 }
