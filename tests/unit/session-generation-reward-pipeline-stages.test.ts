@@ -11,6 +11,7 @@ import { planSessionTreasures } from '../../src/core/session-generation/treasure
 import type { LootRarity } from '../../src/core/session-generation/loot-catalog.js'
 import { BundledEncounterCatalogProvider } from '../../src/utility/session-generation/catalog-provider.js'
 import { sha256EncounterEntropy as entropy } from '../../src/utility/session-generation/sha256-entropy.js'
+import { defaultGeneratorLootRules } from '../../src/shared/generator/default-loot-rules.js'
 
 const catalog = new BundledEncounterCatalogProvider(
   join(process.cwd(), 'resources/sessiongeneration/catalog-2026-08-16')
@@ -131,6 +132,70 @@ describe('session generation pure reward stages', () => {
       )?.type
     ).toBe(magicTreasure.theme.magicType)
     expect(output.every(Object.isFrozen)).toBe(true)
+  })
+
+  it('prefers the thematic magic pool and falls back only when it is empty', () => {
+    const treasure = nonMagic().find((entry) => entry.stockClass === 'normal')!
+    const common = catalogIndex.magicItemsByRarity.get('Common')!
+    const themed = common.find(
+      (item) => item.type === treasure.theme.magicType
+    )!
+    const fallback = common.find(
+      (item) => item.type !== treasure.theme.magicType
+    )!
+    const zero = { modulo: () => 0, unit: () => 1 }
+    const selectFrom = (items: typeof common) =>
+      selectMagicItems(
+        {
+          runId,
+          treasures: [treasure],
+          targets: oneCommon,
+          catalogIndex: {
+            ...catalogIndex,
+            magicItemsByRarity: new Map([['Common', items]])
+          }
+        },
+        zero
+      )[0]!.items.at(-1)!.definition.components.magicItemId
+
+    expect(selectFrom([fallback, themed])).toBe(themed.id)
+    expect(selectFrom([fallback])).toBe(fallback.id)
+  })
+
+  it('matches curse applicability by the exact typed context ID', () => {
+    const treasure = nonMagic().find((entry) => entry.stockClass === 'normal')!
+    const magic = catalogIndex.magicItemsByRarity
+      .get('Common')!
+      .find((item) => item.decisionType === 'none')!
+    const sourceCurse = catalog.curses[0]!
+    const exactId = `magic-type:${magic.type.toLowerCase()}`
+    const selected = selectMagicItems(
+      {
+        runId,
+        treasures: [treasure],
+        targets: oneCommon,
+        rules: {
+          ...defaultGeneratorLootRules,
+          magic: { ...defaultGeneratorLootRules.magic, curseChance: 1 }
+        },
+        catalogIndex: {
+          ...catalogIndex,
+          magicItemsByRarity: new Map([['Common', [magic]]]),
+          activeCurses: [
+            {
+              ...sourceCurse,
+              id: 'curse:collision',
+              appliesToId: `${exactId}-extra`
+            },
+            { ...sourceCurse, id: 'curse:exact', appliesToId: exactId }
+          ]
+        }
+      },
+      { modulo: () => 0, unit: () => 0 }
+    )
+    expect(selected[0]!.items.at(-1)!.definition.components.curseId).toBe(
+      'curse:exact'
+    )
   })
 
   it('uses Sheet-style coin eligibility and contextual bulk quantities', () => {

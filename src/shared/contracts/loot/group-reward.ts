@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import {
-  groupRewardGeneratedRunSchema,
+  groupRewardGenerationResultSchema,
   groupRewardSourceEntrySchema
 } from '../session-generation.js'
 import { sceneGroupDispositionSchema } from '../scene.js'
@@ -21,9 +21,8 @@ export const generateGroupDraftLootInputSchema = z
   })
   .strict()
 
-export const generateGroupDraftLootResultSchema = z
-  .object({ run: groupRewardGeneratedRunSchema })
-  .strict()
+export const generateGroupDraftLootResultSchema =
+  groupRewardGenerationResultSchema
 
 export const groupRewardTreasureItemOriginSchema = z.discriminatedUnion(
   'kind',

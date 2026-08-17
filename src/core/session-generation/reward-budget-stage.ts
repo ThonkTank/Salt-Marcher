@@ -12,11 +12,15 @@ import {
 } from './loot-catalog.js'
 import {
   add,
+  decimal,
+  divide,
   floor,
   multiply,
   rational,
+  roundHalfUp,
   subtract,
-  toNumber
+  toNumber,
+  type Rational
 } from './rational.js'
 import type { NormalizedRewardBasis } from './reward-basis-stage.js'
 import {
@@ -98,45 +102,48 @@ export function calculateLedgerRewardBudget(
 ): LedgerRewardBudgetStageOutput {
   if (input.members.length === 0) throw new Error('missing_ledger_reward_party')
   const projectedMembers = projectRewardMembers(input.members, input.rewardXp)
-  const targetGoldCp = Math.round(
+  const targetGoldCp = roundHalfUp(
     projectedMembers.reduce(
       (sum, member) =>
-        sum +
-        goldTargetAtXp(member.currentXp + member.projectedXp, input.rules),
-      0
+        add(
+          sum,
+          goldTargetAtXp(member.currentXp + member.projectedXp, input.rules)
+        ),
+      rational(0n)
     )
   )
-  const currentGoldCp = projectedMembers.reduce(
-    (sum, member) => sum + member.currentNonMagicCp,
-    0
+  const currentGoldCp = safeIntegerSum(
+    projectedMembers.map((member) => member.currentNonMagicCp)
   )
   const targetMagic = Object.fromEntries(
     lootRarities.map((rarity, index) => {
       const expected = projectedMembers.reduce(
         (sum, member) =>
-          sum +
-          magicTargetAtXp(
-            member.currentXp + member.projectedXp,
-            rarity,
-            input.rules
+          add(
+            sum,
+            magicTargetAtXp(
+              member.currentXp + member.projectedXp,
+              rarity,
+              input.rules
+            )
           ),
-        0
+        rational(0n)
       )
-      const base = Math.floor(expected)
+      const base = floor(expected)
+      const remainder = subtract(expected, rational(BigInt(base)))
       const streamKind =
         input.profile === 'session' ? 'magic-target' : 'group-magic-target'
       return [
         rarity,
-        base + (random.unit(streamKind, index) < expected - base ? 1 : 0)
+        base + (random.unit(streamKind, index) < toNumber(remainder) ? 1 : 0)
       ]
     })
   ) as Record<LootRarity, number>
   const currentMagic = Object.fromEntries(
     lootRarities.map((rarity) => [
       rarity,
-      projectedMembers.reduce(
-        (sum, member) => sum + member.currentMagic[rarity],
-        0
+      safeIntegerSum(
+        projectedMembers.map((member) => member.currentMagic[rarity])
       )
     ])
   ) as Record<LootRarity, number>
@@ -175,19 +182,26 @@ export function projectRewardMembers(
   )
 }
 
-function goldTargetAtXp(xp: number, rules: GeneratorLootRules): number {
+function goldTargetAtXp(xp: number, rules: GeneratorLootRules): Rational {
   const rows = rules.progression
   const last = rows.at(-1)!
-  if (xp >= last.xpAtLevel) return last.goldAtLevelCp
+  if (xp >= last.xpAtLevel) return rational(BigInt(last.goldAtLevelCp))
   const lowerIndex = Math.max(
     0,
     rows.findLastIndex((row) => row.xpAtLevel <= xp)
   )
   const lower = rows[lowerIndex]!
   const upper = rows[lowerIndex + 1]!
-  const fraction = (xp - lower.xpAtLevel) / (upper.xpAtLevel - lower.xpAtLevel)
-  return (
-    lower.goldAtLevelCp + (upper.goldAtLevelCp - lower.goldAtLevelCp) * fraction
+  const fraction = divide(
+    rational(BigInt(xp - lower.xpAtLevel)),
+    rational(BigInt(upper.xpAtLevel - lower.xpAtLevel))
+  )
+  return add(
+    rational(BigInt(lower.goldAtLevelCp)),
+    multiply(
+      rational(BigInt(upper.goldAtLevelCp - lower.goldAtLevelCp)),
+      fraction
+    )
   )
 }
 
@@ -195,16 +209,30 @@ function magicTargetAtXp(
   xp: number,
   rarity: LootRarity,
   rules: GeneratorLootRules
-): number {
-  let target = 0
+): Rational {
+  let target = rational(0n)
   for (let index = 0; index < rules.progression.length - 1; index += 1) {
     const row = rules.progression[index]!
     const upper = rules.progression[index + 1]!.xpAtLevel
     const elapsed = Math.max(0, Math.min(xp, upper) - row.xpAtLevel)
-    target += elapsed * row.magicPerXp[rarity]
+    target = add(
+      target,
+      multiply(
+        rational(BigInt(elapsed)),
+        decimal(String(row.magicPerXp[rarity]))
+      )
+    )
     if (xp <= upper) break
   }
   return target
+}
+
+function safeIntegerSum(values: readonly number[]): number {
+  const result = values.reduce((sum, value) => sum + BigInt(value), 0n)
+  const numeric = Number(result)
+  if (!Number.isSafeInteger(numeric))
+    throw new Error('derived_integer_overflow')
+  return numeric
 }
 
 function weightedProgressionRates(

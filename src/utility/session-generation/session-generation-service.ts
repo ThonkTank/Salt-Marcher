@@ -1,14 +1,14 @@
 import type Database from 'better-sqlite3'
 import { GeneratedRunStore } from '../../core/session-generation/generated-run-store.js'
 import {
-  generateGroupRewardDraft,
+  generateGroupRewardDraftResult,
   generateSessionRunDraft
 } from '../../core/session-generation/loot-engine.js'
 import type { EncounterEntropy } from '../../core/session-generation/deterministic-order.js'
 import type {
   GeneratedRun,
-  GroupRewardGeneratedRun,
   GroupRewardGenerationInput,
+  GroupRewardGenerationResult,
   SessionGenerationRunInput,
   SessionGenerationRunResult
 } from '../../shared/contracts/session-generation.js'
@@ -115,7 +115,7 @@ export class SessionGenerationService {
 
   generateGroupReward(
     input: GroupRewardGenerationInput
-  ): GroupRewardGeneratedRun {
+  ): GroupRewardGenerationResult {
     if (!this.activeDatabase)
       throw new Error(
         'A campaign database is required to persist generated runs'
@@ -123,13 +123,15 @@ export class SessionGenerationService {
     const catalog = this.catalogProvider.loadFull()
     const preset = this.preset()
     const runId = uuidv7()
-    const draft = generateGroupRewardDraft(
+    const draftResult = generateGroupRewardDraftResult(
       input,
       catalog,
       this.entropy,
       preset,
       runId
     )
+    if (draftResult.status !== 'success') return draftResult
+    const draft = draftResult.draft
     const originFingerprint = groupRewardRunOriginFingerprint({
       rewardEngineVersion: draft.rewardEngineVersion,
       catalogContentHash: draft.catalogContentHash,
@@ -141,16 +143,22 @@ export class SessionGenerationService {
     if (existing) {
       if (existing.runKind !== 'group_reward')
         throw new Error('Group reward origin resolved to another run kind')
-      return groupRewardGeneratedRunSchema.parse(existing)
-    }
-    return store.save(
-      groupRewardGeneratedRunSchema.parse({
-        ...draft,
-        id: runId,
-        originFingerprint,
-        generatedAt: this.clock().toISOString()
+      return deepFreeze({
+        status: 'success',
+        run: groupRewardGeneratedRunSchema.parse(existing)
       })
-    )
+    }
+    return deepFreeze({
+      status: 'success',
+      run: store.save(
+        groupRewardGeneratedRunSchema.parse({
+          ...draft,
+          id: runId,
+          originFingerprint,
+          generatedAt: this.clock().toISOString()
+        })
+      )
+    })
   }
 }
 

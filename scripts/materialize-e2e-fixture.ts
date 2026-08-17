@@ -17,6 +17,7 @@ import { sha256EncounterEntropy } from '../src/utility/session-generation/sha256
 import { defaultGeneratorConfig } from '../src/shared/generator/system-generator-preset.js'
 import { systemGeneratorPresetId } from '../src/shared/contracts/generator-presets.js'
 import { TreasureStore } from '../src/core/loot/loot-store.js'
+import { assembleRewardParty } from '../src/core/session-generation/reward-party.js'
 
 const fixtureV1Schema = z
   .object({
@@ -249,17 +250,8 @@ try {
             rules.rewardXpBasis === 'adjusted'
               ? evaluation.adjustedXp
               : evaluation.baseXp
-          const run = generation.generateGroupReward({
-            party: [
-              ...assignedMembers
-                .map((member) => member.level!)
-                .reduce<Map<number, number>>((counts, level) => {
-                  counts.set(level, (counts.get(level) ?? 0) + 1)
-                  return counts
-                }, new Map())
-                .entries()
-            ].map(([level, count]) => ({ level, count })),
-            ledgerParty: assignedMembers.map((member) => ({
+          const rewardParty = assembleRewardParty(
+            assignedMembers.map((member) => ({
               characterId: member.id,
               level: member.level!,
               currentXp: member.xp,
@@ -272,7 +264,11 @@ try {
                 'Very Rare': 0,
                 Legendary: 0
               }
-            })),
+            }))
+          )
+          const generatedResult = generation.generateGroupReward({
+            party: [...rewardParty.party],
+            ledgerParty: [...rewardParty.ledgerParty],
             sceneId: scene.id,
             groupId: group.id,
             sceneRevision: snapshot.scene.revision,
@@ -286,6 +282,11 @@ try {
             rewardXp,
             seed: fixture.lootScenario.seed
           })
+          if (generatedResult.status !== 'success')
+            throw new Error(
+              `Fixture reward generation failed: ${generatedResult.status}`
+            )
+          const run = generatedResult.run
           const generated = run.treasures[0]!
           const units = generated.items.reduce(
             (total, item) => total + item.quantity,

@@ -25,7 +25,7 @@ export const partyCharacterSchema = z
       .nullable(),
     attachedToPartyToken: z.boolean(),
     active: z.boolean(),
-    xp: z.number().int().nonnegative(),
+    xp: z.number().int().nonnegative().safe(),
     currentLevelFloor: z.number().int().nonnegative(),
     nextLevelXp: z.number().int().nonnegative().nullable(),
     xpSinceShortRest: z.number().int().nonnegative(),

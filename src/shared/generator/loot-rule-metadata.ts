@@ -11,7 +11,44 @@ export type LootRuleFieldMetadata = Readonly<{
   step?: number
   options?: readonly string[]
   dependencies: readonly string[]
+  effect: LootRuleEffect
 }>
+
+export type LootRuleEffect = Readonly<{
+  kind: 'generation'
+  owners: readonly string[]
+}>
+
+const effectOwners = {
+  progression: ['reward-budget-stage.ts'],
+  treasure: ['treasure-planning-stage.ts', 'slot-role-stage.ts'],
+  mix: ['slot-role-stage.ts', 'non-magic-selection-stage.ts'],
+  selection: ['non-magic-selection-stage.ts'],
+  quantityLimits: ['non-magic-selection-stage.ts'],
+  coins: [
+    'non-magic-selection-stage.ts',
+    'packing-stage.ts',
+    'reward-aggregation-stage.ts'
+  ],
+  packing: [
+    'packing-policy.ts',
+    'packing-stage.ts',
+    'non-magic-selection-stage.ts'
+  ],
+  magic: ['magic-selection-stage.ts'],
+  balance: ['slot-role-stage.ts', 'non-magic-selection-stage.ts'],
+  audit: ['reward-aggregation-stage.ts']
+} as const
+
+export function lootRuleEffect(
+  path: readonly (string | number)[]
+): LootRuleEffect | null {
+  const root = String(path[0]) as keyof typeof effectOwners
+  const owners = effectOwners[root]
+  return owners
+    ? Object.freeze({ kind: 'generation', owners: Object.freeze([...owners]) })
+    : null
+}
 
 export type LootRuleDraftIssue = Readonly<{
   code:
@@ -242,6 +279,8 @@ export function lootRuleFieldMetadata(
       ? `${baseLabel} ${String(last + 1)}`
       : baseLabel
   if (!label) return null
+  const effect = lootRuleEffect(path)
+  if (!effect) return null
   const percentage =
     percentageFields.has(key) || weightedShareParents.has(parent)
   const stringValue = typeof value === 'string'
@@ -279,7 +318,8 @@ export function lootRuleFieldMetadata(
           ? ['minLowCount']
           : key === 'preferredBaseExtraCp'
             ? ['minBaseExtraCp']
-            : []
+            : [],
+    effect
   })
 }
 

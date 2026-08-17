@@ -70,8 +70,17 @@ describe('loot schema 30 to 31 migration', () => {
       stackable: true
     })
     expect(
-      db.prepare('SELECT count(*) FROM loot_operation_receipt').pluck().get()
-    ).toBe(0)
+      db
+        .prepare('SELECT count(*) FROM loot_operation_receipt_v30_archive')
+        .pluck()
+        .get()
+    ).toBe(1)
+    expect(
+      db
+        .prepare(`SELECT command_id FROM loot_operation_receipt_v30_archive`)
+        .pluck()
+        .get()
+    ).toBe('old-receipt')
     db.close()
   })
 })

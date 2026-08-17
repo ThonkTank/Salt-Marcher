@@ -5,6 +5,7 @@ import { defaultGeneratorLootRules } from '../../src/shared/generator/default-lo
 import {
   lootRuleFieldMetadata,
   lootRuleGroupLabel,
+  lootRuleEffect,
   validateLootRuleDraft
 } from '../../src/shared/generator/loot-rule-metadata.js'
 
@@ -188,6 +189,39 @@ describe('default generator loot rules', () => {
     visit(defaultGeneratorLootRules, [])
     expect(missing).toEqual([])
     expect(validateLootRuleDraft(defaultGeneratorLootRules)).toEqual([])
+  })
+
+  it('maps every preset leaf to a generator owner that consumes its root', () => {
+    const missing: string[] = []
+    const visit = (value: unknown, path: readonly (string | number)[]) => {
+      if (Array.isArray(value)) {
+        value.forEach((entry, index) => visit(entry, [...path, index]))
+        return
+      }
+      if (value && typeof value === 'object') {
+        Object.entries(value).forEach(([key, entry]) =>
+          visit(entry, [...path, key])
+        )
+        return
+      }
+      const effect = lootRuleEffect(path)
+      if (!effect) {
+        missing.push(path.join('.'))
+        return
+      }
+      const root = String(path[0])
+      if (
+        !effect.owners.some((owner) =>
+          readFileSync(
+            join(process.cwd(), 'src/core/session-generation', owner),
+            'utf8'
+          ).includes(`rules.${root}`)
+        )
+      )
+        missing.push(path.join('.'))
+    }
+    visit(defaultGeneratorLootRules, [])
+    expect(missing).toEqual([])
   })
 
   it('reports stable field paths for share, order, and uniqueness errors', () => {

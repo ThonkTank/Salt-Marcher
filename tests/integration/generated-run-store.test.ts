@@ -6,11 +6,14 @@ import type Database from 'better-sqlite3'
 import { afterEach, describe, expect, it } from 'vitest'
 import { CampaignStore } from '../../src/core/persistence/sqlite/campaign-store.js'
 import { GeneratedRunStore } from '../../src/core/session-generation/generated-run-store.js'
+import { GeneratedRunChildrenStore } from '../../src/core/session-generation/generated-run-children-store.js'
+import { GeneratedRunRewardBasisStore } from '../../src/core/session-generation/generated-run-reward-basis-store.js'
 import { systemGeneratorPresetId } from '../../src/shared/contracts/generator-presets.js'
 import { defaultGeneratorConfig } from '../../src/shared/generator/system-generator-preset.js'
 import { BundledEncounterCatalogProvider } from '../../src/utility/session-generation/catalog-provider.js'
 import { SessionGenerationService } from '../../src/utility/session-generation/session-generation-service.js'
 import { sha256EncounterEntropy } from '../../src/utility/session-generation/sha256-entropy.js'
+import { buildRewardLedger } from '../fixtures/session-generation/reward-party-builder.js'
 
 const roots: string[] = []
 const stores: CampaignStore[] = []
@@ -22,6 +25,16 @@ afterEach(() => {
 })
 
 describe('GeneratedRunStore relational persistence', () => {
+  it('keeps reward basis and child hydration separately testable inside the owner', () => {
+    const { db, run } = generatedSession()
+    expect(new GeneratedRunRewardBasisStore(db).read(run.id)).toEqual(
+      run.rewardBasis
+    )
+    const children = new GeneratedRunChildrenStore(db)
+    expect(children.readDefinitions(run.id)).toEqual(run.itemDefinitions)
+    expect(children.readTreasures(run.id)).toEqual(run.treasures)
+  })
+
   it('writes reward-v3 while hydrating reward-v2 and rejecting unknown versions', () => {
     const { db, run } = generatedSession()
     expect(run.rewardEngineVersion).toBe('reward-v3')
@@ -217,30 +230,15 @@ function generatedSession() {
   )
   const result = generation.generate({
     party: [{ level: 3, count: 4 }],
-    ledgerParty: Array.from({ length: 4 }, (_, index) => ({
-      characterId: `018f47db-e17a-7000-8000-${String(index + 1).padStart(12, '0')}`,
-      level: 3,
-      currentXp: 900,
-      ledgerRevision: 0,
-      currentNonMagicCp: 37_600,
-      currentMagic: emptyMagicCounts()
-    })),
+    ledgerParty: buildRewardLedger([{ level: 3, count: 4 }], {
+      currentNonMagicCp: 37_600
+    }),
     adventureDayFraction: '0.6',
     encounterCount: 3,
     seed: 179_974
   })
   if (result.status !== 'success') throw new Error('Expected generated run')
   return { campaigns, db, run: result.run }
-}
-
-function emptyMagicCounts() {
-  return {
-    Common: 0,
-    Uncommon: 0,
-    Rare: 0,
-    'Very Rare': 0,
-    Legendary: 0
-  }
 }
 
 function countingDatabase(database: Database.Database): {

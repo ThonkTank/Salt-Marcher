@@ -36,7 +36,7 @@ export const lootCatalogEntrySchema = z.discriminatedUnion('kind', [
       defaultName: z.string().min(1),
       type: z.string().min(1),
       category: z.string().min(1),
-      unitValueCp: z.number().int().nonnegative(),
+      unitValueCp: z.number().int().nonnegative().safe(),
       stackable: z.boolean(),
       magic: z.literal(false),
       rarity: z.null(),

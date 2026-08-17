@@ -23,17 +23,17 @@ export const sessionGenerationCatalogReferenceSchema = z
 export const generationPartyLevelSchema = z
   .object({
     level: z.number().int().min(1).max(20),
-    count: z.number().int().nonnegative()
+    count: z.number().int().nonnegative().safe()
   })
   .strict()
 
 export const generatedMagicCountsSchema = z
   .object({
-    Common: z.number().int().nonnegative(),
-    Uncommon: z.number().int().nonnegative(),
-    Rare: z.number().int().nonnegative(),
-    'Very Rare': z.number().int().nonnegative(),
-    Legendary: z.number().int().nonnegative()
+    Common: z.number().int().nonnegative().safe(),
+    Uncommon: z.number().int().nonnegative().safe(),
+    Rare: z.number().int().nonnegative().safe(),
+    'Very Rare': z.number().int().nonnegative().safe(),
+    Legendary: z.number().int().nonnegative().safe()
   })
   .strict()
 
@@ -41,9 +41,9 @@ export const ledgerRewardPartyMemberSchema = z
   .object({
     characterId: z.uuid(),
     level: z.number().int().min(1).max(20),
-    currentXp: z.number().int().nonnegative(),
-    ledgerRevision: z.number().int().nonnegative(),
-    currentNonMagicCp: z.number().int().nonnegative(),
+    currentXp: z.number().int().nonnegative().safe(),
+    ledgerRevision: z.number().int().nonnegative().safe(),
+    currentNonMagicCp: z.number().int().nonnegative().safe(),
     currentMagic: generatedMagicCountsSchema
   })
   .strict()
@@ -59,9 +59,9 @@ const legacyLedgerRewardPartyMemberSchema = ledgerRewardPartyMemberSchema
 export const generatedRewardBasisSchema = z
   .object({
     members: z.array(generatedRewardPartyMemberSchema).min(1),
-    targetGoldCp: z.number().int().nonnegative(),
-    currentGoldCp: z.number().int().nonnegative(),
-    goldDeficitCp: z.number().int().nonnegative(),
+    targetGoldCp: z.number().int().nonnegative().safe(),
+    currentGoldCp: z.number().int().nonnegative().safe(),
+    goldDeficitCp: z.number().int().nonnegative().safe(),
     targetMagic: generatedMagicCountsSchema,
     currentMagic: generatedMagicCountsSchema,
     magicDeficit: generatedMagicCountsSchema
@@ -220,9 +220,9 @@ export const encounterConstraintDiagnosticSchema = z
 export const encounterIntentSchema = z
   .object({
     encounterNumber: z.number().int().positive(),
-    targetXp: z.number().int().nonnegative(),
-    adjustedXp: z.number().int().nonnegative(),
-    xpDelta: z.number().int(),
+    targetXp: z.number().int().nonnegative().safe(),
+    adjustedXp: z.number().int().nonnegative().safe(),
+    xpDelta: z.number().int().safe(),
     difficulty: encounterDifficultyBandSchema,
     patternId: z.string().min(1),
     blocks: z.array(encounterBlockSchema).min(1),
@@ -331,7 +331,7 @@ export const generatedLootItemSchema = z
     treasureId: z.string().min(1),
     itemReference: itemReferenceSchema,
     role: generatedLootRoleSchema,
-    quantity: z.number().int().positive(),
+    quantity: z.number().int().positive().safe(),
     containerId: z.string().min(1).nullable(),
     position: z.number().int().nonnegative()
   })
@@ -346,7 +346,7 @@ export const generatedTreasureSchema = z
     themeId: z.string().min(1),
     theme: z.string().min(1),
     targetValueCp: z.string().regex(/^-?[0-9]+(?:\.[0-9]+)?$/),
-    actualValueCp: z.number().int().nonnegative(),
+    actualValueCp: z.number().int().nonnegative().safe(),
     items: z.array(generatedLootItemSchema).min(1),
     containers: z.array(generatedPackingContainerSchema)
   })
@@ -373,7 +373,7 @@ const sessionGeneratedRunObjectSchema = z
       .strict(),
     input: sessionGenerationRunInputSchema,
     session: sessionGenerationEncounterSuccessSchema.shape.session.extend({
-      goldBudgetCp: z.number().int().nonnegative(),
+      goldBudgetCp: z.number().int().nonnegative().safe(),
       normalTreasureCount: z.number().int().nonnegative(),
       overstockTreasureCount: z.number().int().min(0).max(1),
       magicTargets: generatedMagicCountsSchema
@@ -384,8 +384,8 @@ const sessionGeneratedRunObjectSchema = z
     treasures: z.array(generatedTreasureSchema),
     rewardSummary: z
       .object({
-        normalValueCp: z.number().int().nonnegative(),
-        overstockValueCp: z.number().int().nonnegative(),
+        normalValueCp: z.number().int().nonnegative().safe(),
+        overstockValueCp: z.number().int().nonnegative().safe(),
         magicCount: z.number().int().nonnegative()
       })
       .strict(),
@@ -417,9 +417,9 @@ const groupRewardGenerationInputObjectSchema = z
     partyRevision: z.number().int().nonnegative(),
     campaignRulesRevision: z.number().int().nonnegative(),
     rewardXpBasis: rewardXpBasisSchema,
-    baseXp: z.number().int().nonnegative(),
-    adjustedXp: z.number().int().nonnegative(),
-    rewardXp: z.number().int().nonnegative(),
+    baseXp: z.number().int().nonnegative().safe(),
+    adjustedXp: z.number().int().nonnegative().safe(),
+    rewardXp: z.number().int().nonnegative().safe(),
     seed: z.number().int().nonnegative().safe()
   })
   .strict()
@@ -469,13 +469,13 @@ const groupRewardGeneratedRunObjectSchema = z
       .strict(),
     input: groupRewardGenerationInputSchema,
     rewardBasis: generatedRewardBasisSchema.nullable().default(null),
-    goldBudgetCp: z.number().int().nonnegative(),
+    goldBudgetCp: z.number().int().nonnegative().safe(),
     magicTargets: generatedMagicCountsSchema,
     itemDefinitions: z.array(itemDefinitionSchema),
     treasures: z.array(generatedTreasureSchema).max(1),
     rewardSummary: z
       .object({
-        normalValueCp: z.number().int().nonnegative(),
+        normalValueCp: z.number().int().nonnegative().safe(),
         overstockValueCp: z.literal(0),
         magicCount: z.number().int().nonnegative()
       })
@@ -510,6 +510,15 @@ export const sessionGenerationRunResultSchema = z.discriminatedUnion('status', [
   sessionGenerationRunSuccessSchema,
   sessionGenerationEncounterFailureSchema
 ])
+
+export const groupRewardGenerationSuccessSchema = z
+  .object({ status: z.literal('success'), run: groupRewardGeneratedRunSchema })
+  .strict()
+
+export const groupRewardGenerationResultSchema = z.discriminatedUnion(
+  'status',
+  [groupRewardGenerationSuccessSchema, sessionGenerationEncounterFailureSchema]
+)
 
 export const generatedRunIdInputSchema = z.object({ runId: z.uuid() }).strict()
 
@@ -616,6 +625,9 @@ export type PersistedGroupRewardGeneratedRun = Readonly<
 >
 export type GroupRewardGenerationInput = Readonly<
   z.infer<typeof groupRewardGenerationInputSchema>
+>
+export type GroupRewardGenerationResult = Readonly<
+  z.infer<typeof groupRewardGenerationResultSchema>
 >
 export type LedgerRewardPartyMember = Readonly<
   z.infer<typeof ledgerRewardPartyMemberSchema>

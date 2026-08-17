@@ -2,6 +2,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
   generateGroupRewardDraft,
+  generateGroupRewardDraftResult,
   generateSessionRunDraft
 } from '../../src/core/session-generation/loot-engine.js'
 import { systemGeneratorPresetId } from '../../src/shared/contracts/generator-presets.js'
@@ -13,6 +14,7 @@ import {
   type SessionGenerationRunInput
 } from '../../src/shared/contracts/session-generation.js'
 import type { EncounterEntropy } from '../../src/core/session-generation/deterministic-order.js'
+import { buildRewardLedger as rewardLedger } from '../fixtures/session-generation/reward-party-builder.js'
 
 const catalog = new BundledEncounterCatalogProvider(
   join(process.cwd(), 'resources/sessiongeneration/catalog-2026-08-16')
@@ -139,13 +141,22 @@ describe('session generation loot engine', () => {
     expect(base.treasures).toHaveLength(1)
     expect(base.treasures[0]?.stockClass).toBe('normal')
     expect(base.rewardSummary.overstockValueCp).toBe(0)
-    expect(() =>
-      generateGroupRewardDraft(
+    expect(
+      generateGroupRewardDraftResult(
         { ...groupInput, rewardXp: groupInput.adjustedXp },
         catalog,
         sha256EncounterEntropy
       )
-    ).toThrowError('group_reward_xp_basis_mismatch')
+    ).toEqual({
+      status: 'invalid_input',
+      issues: [
+        {
+          code: 'invalid_party',
+          path: ['rewardXp'],
+          parameters: { reason: 'reward_xp_basis_mismatch' }
+        }
+      ]
+    })
   })
 
   it('returns structurally empty session and group rewards when the ledger is overprovided', () => {
@@ -430,7 +441,7 @@ describe('session generation loot engine', () => {
     ['M0-11', 1111, '1', 2, [{ level: 5, count: 1 }]],
     ['M0-12', 1212, '1', undefined, [{ level: 8, count: 8 }]]
   ] as const)(
-    'matches Sheet regression structure %s',
+    'preserves generated-run structural invariants %s',
     (_caseId, seed, adventureDayFraction, encounterCount, party) => {
       const result = generateSessionRunDraft(
         {
@@ -492,30 +503,3 @@ describe('session generation loot engine', () => {
     }
   )
 })
-
-function rewardLedger(
-  party: readonly Readonly<{ level: number; count: number }>[]
-) {
-  let ordinal = 0
-  return party.flatMap((entry) => {
-    const progression =
-      defaultGeneratorConfig.loot.progression[entry.level - 1]!
-    return Array.from({ length: entry.count }, () => {
-      ordinal += 1
-      return {
-        characterId: `018f47db-e17a-7000-8000-${String(ordinal).padStart(12, '0')}`,
-        level: entry.level,
-        currentXp: progression.xpAtLevel,
-        ledgerRevision: 0,
-        currentNonMagicCp: progression.goldAtLevelCp,
-        currentMagic: {
-          Common: 0,
-          Uncommon: 0,
-          Rare: 0,
-          'Very Rare': 0,
-          Legendary: 0
-        }
-      }
-    })
-  })
-}

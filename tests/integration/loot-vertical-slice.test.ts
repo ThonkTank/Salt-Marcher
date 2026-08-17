@@ -27,7 +27,10 @@ import { LootOperationJournal } from '../../src/core/loot/loot-operation-journal
 import { LootProjectionStore } from '../../src/core/loot/loot-projection-store.js'
 import { TreasureStore } from '../../src/core/loot/loot-store.js'
 import { LivePlayService } from '../../src/core/encounter/live-combat.js'
-import type { GeneratedTreasure } from '../../src/shared/contracts/session-generation.js'
+import type {
+  GeneratedTreasure,
+  GroupRewardGenerationResult
+} from '../../src/shared/contracts/session-generation.js'
 import type { GroupRewardTreasureDraft } from '../../src/shared/contracts/loot.js'
 import { legacyLootItem } from '../helpers/loot-item.js'
 import { ItemDefinitionResolver } from '../../src/core/loot/item-definition-resolver.js'
@@ -366,7 +369,7 @@ describe('loot vertical slice', () => {
       expectCapabilityCode(() => groupRewards.generate(changed), 'stale')
     expect(tableCount(db, 'session_generation_run')).toBe(0)
 
-    const generated = groupRewards.generate(request).run
+    const generated = successfulGroupRun(groupRewards.generate(request))
     expect(generated).toMatchObject({
       runKind: 'group_reward',
       input: {
@@ -486,16 +489,18 @@ describe('loot vertical slice', () => {
       generation
     }))
     const expectedSceneRevision = scenes.revision()
-    const run = rewards.generate({
-      sceneId,
-      groupId,
-      expectedSceneRevision,
-      expectedGroupRevision: null,
-      expectedPartyRevision: party.read().revision,
-      expectedCampaignRulesRevision: rules.read().revision,
-      entries,
-      seed: 81_337
-    }).run
+    const run = successfulGroupRun(
+      rewards.generate({
+        sceneId,
+        groupId,
+        expectedSceneRevision,
+        expectedGroupRevision: null,
+        expectedPartyRevision: party.read().revision,
+        expectedCampaignRulesRevision: rules.read().revision,
+        entries,
+        seed: 81_337
+      })
+    )
     expect(run.input.groupEntries).toEqual(entries)
     expect(run.input.baseXp).toBe(150)
     expect(columns(db, 'session_generation_group_entry')).toEqual([
@@ -691,16 +696,18 @@ describe('loot vertical slice', () => {
 
     const savedGroup = scenes.groups(sceneId)[0]!
     const unchangedSceneRevision = scenes.revision()
-    const secondRun = rewards.generate({
-      sceneId,
-      groupId,
-      expectedSceneRevision: unchangedSceneRevision,
-      expectedGroupRevision: savedGroup.revision,
-      expectedPartyRevision: party.read().revision,
-      expectedCampaignRulesRevision: rules.read().revision,
-      entries,
-      seed: 81_338
-    }).run
+    const secondRun = successfulGroupRun(
+      rewards.generate({
+        sceneId,
+        groupId,
+        expectedSceneRevision: unchangedSceneRevision,
+        expectedGroupRevision: savedGroup.revision,
+        expectedPartyRevision: party.read().revision,
+        expectedCampaignRulesRevision: rules.read().revision,
+        entries,
+        seed: 81_338
+      })
+    )
     const unchanged = commit.commit({
       ...input,
       commandId: randomUUID(),
@@ -741,16 +748,18 @@ describe('loot vertical slice', () => {
       },
       generation
     }))
-    const emptyRun = settledRewards.generate({
-      sceneId,
-      groupId,
-      expectedSceneRevision: scenes.revision(),
-      expectedGroupRevision: savedGroup.revision,
-      expectedPartyRevision: party.read().revision,
-      expectedCampaignRulesRevision: rules.read().revision,
-      entries,
-      seed: 81_339
-    }).run
+    const emptyRun = successfulGroupRun(
+      settledRewards.generate({
+        sceneId,
+        groupId,
+        expectedSceneRevision: scenes.revision(),
+        expectedGroupRevision: savedGroup.revision,
+        expectedPartyRevision: party.read().revision,
+        expectedCampaignRulesRevision: rules.read().revision,
+        entries,
+        seed: 81_339
+      })
+    )
     expect(emptyRun.treasures).toEqual([])
     const lootRevisionBeforeEmpty = new LootProjectionStore(db).revision()
     const emptyInput = {
@@ -1341,6 +1350,13 @@ function generatedTreasureDraft(
         : null
     }))
   }
+}
+
+function successfulGroupRun(result: GroupRewardGenerationResult) {
+  expect(result.status).toBe('success')
+  if (result.status !== 'success')
+    throw new Error(`Expected group reward success, received ${result.status}`)
+  return result.run
 }
 
 function expectIdempotencyConflict(action: () => unknown): void {

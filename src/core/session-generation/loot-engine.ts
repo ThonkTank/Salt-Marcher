@@ -40,6 +40,10 @@ export type GroupRewardDraft = Omit<
   'id' | 'originFingerprint' | 'generatedAt'
 >
 
+export type GroupRewardDraftResult =
+  | Readonly<{ status: 'success'; draft: GroupRewardDraft }>
+  | SessionGenerationEncounterFailure
+
 export function generateSessionRunDraft(
   input: SessionGenerationRunInput,
   catalog: FullSessionGenerationCatalog,
@@ -130,7 +134,7 @@ export function generateSessionRunDraft(
   })
 }
 
-export function generateGroupRewardDraft(
+export function generateGroupRewardDraftResult(
   input: GroupRewardGenerationInput,
   catalog: FullSessionGenerationCatalog,
   entropy: EncounterEntropy,
@@ -144,15 +148,33 @@ export function generateGroupRewardDraft(
     config: defaultGeneratorConfig
   },
   runId = standaloneRunId
-): GroupRewardDraft {
+): GroupRewardDraftResult {
   if (!input.ledgerParty || input.ledgerParty.length === 0)
-    throw new Error('missing_ledger_reward_party')
+    return freezeStage({
+      status: 'invalid_input',
+      issues: [
+        {
+          code: 'invalid_party',
+          path: ['ledgerParty'],
+          parameters: { reason: 'missing_ledger_reward_party' }
+        }
+      ]
+    })
   const selectedRewardXp =
     input.rewardXpBasis === 'base'
       ? rewardXpFromBaseXp(baseXp(input.baseXp))
       : rewardXpFromAdjustedXp(adjustedXp(input.adjustedXp))
   if (unitValue(selectedRewardXp) !== input.rewardXp)
-    throw new Error('group_reward_xp_basis_mismatch')
+    return freezeStage({
+      status: 'invalid_input',
+      issues: [
+        {
+          code: 'invalid_party',
+          path: ['rewardXp'],
+          parameters: { reason: 'reward_xp_basis_mismatch' }
+        }
+      ]
+    })
   const proposalResult = generateRewardProposal(
     {
       runId,
@@ -166,30 +188,51 @@ export function generateGroupRewardDraft(
     entropy
   )
   if (proposalResult.status !== 'success')
-    throw new Error('group_reward_hard_audit_failed')
+    return freezeStage({
+      status: 'unresolvable',
+      issues: proposalResult.issues.map((issue) => ({
+        code: issue.code,
+        parameters: { ...issue.parameters }
+      }))
+    })
   const proposal = proposalResult.proposal
 
   return freezeStage({
-    runKind: 'group_reward',
-    rewardEngineVersion: REWARD_ENGINE_VERSION,
-    catalogVersion: catalog.encounter.catalogVersion,
-    catalogContentHash: catalog.encounter.catalogContentHash,
-    generatorPreset: {
-      id: preset.id,
-      revision: preset.revision,
-      configHash: fingerprintGeneratorConfig(preset.config)
-    },
-    input,
-    rewardBasis: proposal.rewardBasis,
-    goldBudgetCp: proposal.goldBudgetCp,
-    magicTargets: proposal.magicTargets,
-    itemDefinitions: [...proposal.itemDefinitions],
-    treasures: [...proposal.treasures],
-    rewardSummary: {
-      normalValueCp: proposal.rewardSummary.normalValueCp,
-      overstockValueCp: 0,
-      magicCount: proposal.rewardSummary.magicCount
-    },
-    audits: [...proposal.audits]
+    status: 'success',
+    draft: {
+      runKind: 'group_reward',
+      rewardEngineVersion: REWARD_ENGINE_VERSION,
+      catalogVersion: catalog.encounter.catalogVersion,
+      catalogContentHash: catalog.encounter.catalogContentHash,
+      generatorPreset: {
+        id: preset.id,
+        revision: preset.revision,
+        configHash: fingerprintGeneratorConfig(preset.config)
+      },
+      input,
+      rewardBasis: proposal.rewardBasis,
+      goldBudgetCp: proposal.goldBudgetCp,
+      magicTargets: proposal.magicTargets,
+      itemDefinitions: [...proposal.itemDefinitions],
+      treasures: [...proposal.treasures],
+      rewardSummary: {
+        normalValueCp: proposal.rewardSummary.normalValueCp,
+        overstockValueCp: 0,
+        magicCount: proposal.rewardSummary.magicCount
+      },
+      audits: [...proposal.audits]
+    }
   })
+}
+
+/** @deprecated Prefer the typed result when expected failures must cross a boundary. */
+export function generateGroupRewardDraft(
+  ...parameters: Parameters<typeof generateGroupRewardDraftResult>
+): GroupRewardDraft {
+  const result = generateGroupRewardDraftResult(...parameters)
+  if (result.status !== 'success')
+    throw new Error(
+      String(result.issues[0]?.parameters['reason'] ?? result.status)
+    )
+  return result.draft
 }

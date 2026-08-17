@@ -6,18 +6,19 @@ import type { CampaignRules } from '../../shared/contracts/campaign-rules.js'
 import type { PartySnapshot } from '../../shared/contracts/party.js'
 import type { SceneSnapshot } from '../../shared/contracts/scene.js'
 import type {
-  GroupRewardGeneratedRun,
-  GroupRewardGenerationInput
+  GroupRewardGenerationInput,
+  GroupRewardGenerationResult
 } from '../../shared/contracts/session-generation.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import { evaluateSceneGroupDraft } from '../scene/group-generator.js'
 import { normalizeGroupRewardEntries } from '../session-generation/group-reward-source.js'
+import { assembleRewardParty } from '../session-generation/reward-party.js'
 import type { CharacterRewardBalance } from '../loot/character-loot-store.js'
 
 export type GroupRewardGenerationPort = Readonly<{
   generateGroupReward(
     input: GroupRewardGenerationInput
-  ): GroupRewardGeneratedRun
+  ): GroupRewardGenerationResult
 }>
 
 export type GroupRewardCommandContext = Readonly<{
@@ -38,7 +39,7 @@ export type GroupRewardCommandContext = Readonly<{
 export class GroupRewardCommandHandler {
   constructor(private readonly context: () => GroupRewardCommandContext) {}
 
-  generate(raw: unknown): { run: GroupRewardGeneratedRun } {
+  generate(raw: unknown): GroupRewardGenerationResult {
     const input = generateGroupDraftLootInputSchema.parse(raw)
     const context = this.context()
     const party = context.party.read()
@@ -76,9 +77,6 @@ export class GroupRewardCommandHandler {
     const evaluation = evaluateSceneGroupDraft(scene.id, assigned, groupEntries)
     if (!evaluation.canStart)
       throw new CapabilityError('validation_failed', false)
-    const counts = new Map<number, number>()
-    for (const member of assigned)
-      counts.set(member.level!, (counts.get(member.level!) ?? 0) + 1)
     const rewardXp =
       rules.rewardXpBasis === 'adjusted'
         ? evaluation.adjustedXp
@@ -88,11 +86,8 @@ export class GroupRewardCommandHandler {
         .rewardBalances(assigned.map((member) => member.id))
         .map((balance) => [balance.characterId, balance])
     )
-    const run = context.generation.generateGroupReward({
-      party: [...counts.entries()]
-        .toSorted(([left], [right]) => left - right)
-        .map(([level, count]) => ({ level, count })),
-      ledgerParty: assigned.map((member) => {
+    const rewardParty = assembleRewardParty(
+      assigned.map((member) => {
         const balance = balances.get(member.id)
         if (!balance) throw new Error('missing_character_reward_balance')
         return {
@@ -103,7 +98,11 @@ export class GroupRewardCommandHandler {
           currentNonMagicCp: balance.currentNonMagicCp,
           currentMagic: balance.currentMagic
         }
-      }),
+      })
+    )
+    const result = context.generation.generateGroupReward({
+      party: [...rewardParty.party],
+      ledgerParty: [...rewardParty.ledgerParty],
       sceneId: scene.id,
       groupId: input.groupId,
       sceneRevision: input.expectedSceneRevision,
@@ -117,6 +116,6 @@ export class GroupRewardCommandHandler {
       rewardXp,
       seed: input.seed
     })
-    return generateGroupDraftLootResultSchema.parse({ run })
+    return generateGroupDraftLootResultSchema.parse(result)
   }
 }

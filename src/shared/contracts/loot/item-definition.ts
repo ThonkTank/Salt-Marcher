@@ -75,7 +75,7 @@ export const itemDefinitionSchema = z
   .object({
     reference: itemReferenceSchema,
     name: z.string().min(1),
-    unitValueCp: z.number().int().nonnegative(),
+    unitValueCp: z.number().int().nonnegative().safe(),
     exactUnitValueCp: z
       .object({
         numerator: z.string().regex(/^-?[0-9]+$/),

@@ -440,6 +440,16 @@ export function useGroupManagerController(
         entries: [...rewardEntries],
         seed
       })
+      if (result.status !== 'success') {
+        dispatch({
+          kind: 'loot-failed',
+          key,
+          token,
+          error: result.issues[0]?.code ?? result.status,
+          issues: []
+        })
+        return false
+      }
       const draft = groupLootDraftFromRun(result.run, () => crypto.randomUUID())
       dispatch({
         kind: 'loot-generated',

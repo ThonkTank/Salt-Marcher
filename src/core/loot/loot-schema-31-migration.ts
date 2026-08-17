@@ -36,10 +36,13 @@ export function migrateLootSchema30To31(db: Database.Database): void {
   migrateGenerationAudits(db)
   migrateTreasureItems(db)
   migrateLedgerItems(db)
-  // Receipts contain schema-30 projections with copied facts and cannot be
-  // replayed against the stricter schema-31 result contracts.
+  // Schema-30 receipts contain result projections with copied item facts and
+  // cannot be replayed against schema-31 contracts. Preserve the opaque rows
+  // for diagnosis while freeing the canonical name for the current schema.
   if (tableExists(db, 'loot_operation_receipt'))
-    db.prepare('DELETE FROM loot_operation_receipt').run()
+    db.exec(
+      'ALTER TABLE loot_operation_receipt RENAME TO loot_operation_receipt_v30_archive'
+    )
 }
 
 function migrateGenerationAudits(db: Database.Database): void {

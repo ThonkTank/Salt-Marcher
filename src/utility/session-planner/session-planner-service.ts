@@ -1,8 +1,6 @@
-import { createHash } from 'node:crypto'
 import type Database from 'better-sqlite3'
 import { GeneratedEncounterPlanService } from '../../core/encounter/generated-plan-service.js'
 import { TreasureStore } from '../../core/loot/loot-store.js'
-import { CharacterLootStore } from '../../core/loot/character-loot-store.js'
 import { ItemDefinitionResolver } from '../../core/loot/item-definition-resolver.js'
 import { dailyXp, PartyStore } from '../../core/party/party-store.js'
 import { SessionPlannerStore } from '../../core/session-planner/session-planner-store.js'
@@ -11,7 +9,6 @@ import {
   type SessionPreparationRecord
 } from '../../core/session-planner/session-preparation-store.js'
 import { GeneratedRunStore } from '../../core/session-generation/generated-run-store.js'
-import { projectRewardMembers } from '../../core/session-generation/reward-budget-stage.js'
 import {
   decimal,
   floor,
@@ -21,10 +18,7 @@ import {
 } from '../../core/session-generation/rational.js'
 import { WorldLocationStore } from '../../core/worldplanner/location-store.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
-import type {
-  CommittedGeneratedEncounterBatchResult,
-  SavedEncounterPlanSummary
-} from '../../shared/contracts/encounter-plans.js'
+import type { SavedEncounterPlanSummary } from '../../shared/contracts/encounter-plans.js'
 import {
   cancelSessionPreparationResultSchema,
   createSessionPlanInputSchema,
@@ -40,7 +34,6 @@ import {
   startSessionPreparationResultSchema,
   switchSessionPlanInputSchema,
   type SaveSessionPlanInput,
-  type SessionPlannerScene,
   type SessionPlannerWorkspace,
   type SessionPreparationReceipt,
   type StartSessionPreparationResult
@@ -51,6 +44,8 @@ import type {
 } from '../../shared/contracts/session-generation.js'
 import { SessionGenerationService } from '../session-generation/session-generation-service.js'
 import { fingerprintExcluding } from '../../core/fingerprint.js'
+import { SessionRewardBasis } from './session-reward-basis.js'
+import { mapGeneratedScenes } from './session-generated-scene-mapper.js'
 
 export class SessionPlannerService {
   private readonly scheduled = new Set<string>()
@@ -270,33 +265,17 @@ export class SessionPlannerService {
       this.phaseBoundary('before_generation', operation.id)
       let generated: ReturnType<SessionGenerationService['generate']>
       try {
-        const session = new SessionPlannerStore(db).require(operation.sessionId)
-        const partySnapshot = new PartyStore(db).read()
-        const members = session.participantIds.map((id) => {
-          const member = partySnapshot.members.find((entry) => entry.id === id)
-          if (!member || member.level === null)
-            throw new CapabilityError('stale', true)
-          return member
-        })
-        const balances = new Map(
-          new CharacterLootStore(db, this.definitionResolver(db))
-            .rewardBalances(members.map((member) => member.id))
-            .map((balance) => [balance.characterId, balance])
+        const rewardParty = new SessionRewardBasis(
+          db,
+          this.definitionResolver
+        ).snapshot(operation.sessionId)
+        if (
+          JSON.stringify(rewardParty.party) !== JSON.stringify(operation.party)
         )
+          throw new CapabilityError('stale', true)
         generated = this.generation.generate({
-          party: [...operation.party],
-          ledgerParty: members.map((member) => {
-            const balance = balances.get(member.id)
-            if (!balance) throw new Error('missing_character_reward_balance')
-            return {
-              characterId: member.id,
-              level: member.level!,
-              currentXp: member.xp,
-              ledgerRevision: balance.ledgerRevision,
-              currentNonMagicCp: balance.currentNonMagicCp,
-              currentMagic: balance.currentMagic
-            }
-          }),
+          party: [...rewardParty.party],
+          ledgerParty: [...rewardParty.ledgerParty],
           adventureDayFraction: operation.adventureDayFraction,
           ...(operation.encounterCount === null
             ? {}
@@ -401,7 +380,7 @@ export class SessionPlannerService {
         journal.saveEncounterResult(
           operation.id,
           prepared.prepared.batchFingerprint,
-          this.generatedScenes(run, committed)
+          mapGeneratedScenes(run, committed)
         )
         this.phaseBoundary('after_encounter_commit', operation.id)
         operation = journal.read(operation.id)!
@@ -482,54 +461,10 @@ export class SessionPlannerService {
     run: PersistedSessionGeneratedRun,
     sessionId: string
   ): boolean {
-    if (!run.rewardBasis) return true
-    const session = new SessionPlannerStore(db).require(sessionId)
-    const party = new PartyStore(db).read()
-    const members = session.participantIds.map((id) =>
-      party.members.find((member) => member.id === id)
+    return new SessionRewardBasis(db, this.definitionResolver).isCurrent(
+      run,
+      sessionId
     )
-    if (
-      members.some((member) => !member || member.level === null) ||
-      members.length !== run.rewardBasis.members.length
-    )
-      return false
-    const currentMembers = members.filter(
-      (member): member is NonNullable<typeof member> => Boolean(member)
-    )
-    const levels = new Map<number, number>()
-    for (const member of currentMembers)
-      levels.set(member.level!, (levels.get(member.level!) ?? 0) + 1)
-    const currentParty = [...levels.entries()]
-      .toSorted(([left], [right]) => left - right)
-      .map(([level, count]) => ({ level, count }))
-    if (JSON.stringify(currentParty) !== JSON.stringify(run.input.party))
-      return false
-    const balances = new Map(
-      new CharacterLootStore(db, this.definitionResolver(db))
-        .rewardBalances(currentMembers.map((member) => member.id))
-        .map((balance) => [balance.characterId, balance])
-    )
-    const expectedMembers = projectRewardMembers(
-      currentMembers.map((member) => {
-        const balance = balances.get(member.id)
-        if (!balance) throw new Error('missing_character_reward_balance')
-        return {
-          characterId: member.id,
-          level: member.level!,
-          currentXp: member.xp,
-          ledgerRevision: balance.ledgerRevision,
-          currentNonMagicCp: balance.currentNonMagicCp,
-          currentMagic: balance.currentMagic
-        }
-      }),
-      run.session.sessionXpTarget
-    )
-    return run.rewardBasis.members.every((basis) => {
-      const expected = expectedMembers.find(
-        (candidate) => candidate.characterId === basis.characterId
-      )
-      return JSON.stringify(expected) === JSON.stringify(basis)
-    })
   }
 
   private schedulePreparation(operationId: string): void {
@@ -721,95 +656,6 @@ export class SessionPlannerService {
         throw new CapabilityError('validation_failed', false)
     }
   }
-
-  private generatedScenes(
-    run: PersistedSessionGeneratedRun,
-    committed: Extract<
-      CommittedGeneratedEncounterBatchResult,
-      { status: 'SUCCESS' }
-    >
-  ): readonly SessionPlannerScene[] {
-    const scenes: SessionPlannerScene[] = committed.mappings.map(
-      (mapping, position) => ({
-        id: deterministicUuid(
-          `${run.originFingerprint}|encounter|${mapping.encounterNumber}`
-        ),
-        titleKind: 'generated_encounter',
-        title: null,
-        notes: '',
-        locationId: null,
-        encounterPlanId: mapping.planId,
-        allocatedXp: mapping.summary.adjustedXp,
-        position,
-        restAfter: null,
-        manualLootNotes: [],
-        generatedRewards: []
-      })
-    )
-    const byEncounter = new Map(
-      committed.mappings.map((mapping, position) => [
-        mapping.encounterNumber,
-        scenes[position]!
-      ])
-    )
-    const channelScenes = new Map<
-      'quest' | 'environment',
-      SessionPlannerScene
-    >()
-    for (const [treasureIndex, treasure] of run.treasures.entries()) {
-      let scene: SessionPlannerScene | undefined
-      if (treasure.rewardChannel === 'encounter')
-        scene = treasure.anchorEncounterNumber
-          ? byEncounter.get(treasure.anchorEncounterNumber)
-          : undefined
-      else {
-        scene = channelScenes.get(treasure.rewardChannel)
-        if (!scene) {
-          scene = {
-            id: deterministicUuid(
-              `${run.originFingerprint}|reward|${treasure.rewardChannel}`
-            ),
-            titleKind:
-              treasure.rewardChannel === 'quest'
-                ? 'generated_quest_rewards'
-                : 'generated_environment_rewards',
-            title: null,
-            notes: '',
-            locationId: null,
-            encounterPlanId: null,
-            allocatedXp: 0,
-            position: scenes.length,
-            restAfter: null,
-            manualLootNotes: [],
-            generatedRewards: []
-          }
-          channelScenes.set(treasure.rewardChannel, scene)
-          scenes.push(scene)
-        }
-      }
-      if (!scene) throw new Error('generated_reward_anchor_missing')
-      scene.generatedRewards.push({
-        runId: run.id,
-        generatedTreasureId: treasure.id,
-        rewardChannel: treasure.rewardChannel,
-        anchorEncounterNumber: treasure.anchorEncounterNumber,
-        treasureOrdinal: treasureIndex + 1,
-        position: scene.generatedRewards.length
-      })
-    }
-    const restCount = Math.min(
-      scenes.length - 1,
-      floor(multiply(decimal(run.input.adventureDayFraction), rational(2n)))
-    )
-    for (let rest = 1; rest <= restCount; rest += 1) {
-      const position = Math.min(
-        scenes.length - 2,
-        Math.floor((rest * scenes.length) / (restCount + 1))
-      )
-      scenes[position] = { ...scenes[position]!, restAfter: 'short' }
-    }
-    return scenes.map((scene, position) => ({ ...scene, position }))
-  }
 }
 
 class RewardBasisChangedError extends Error {}
@@ -866,12 +712,4 @@ function isTerminal(status: SessionPreparationReceipt['status']): boolean {
   return ['succeeded', 'invalid', 'stale', 'failed', 'canceled'].includes(
     status
   )
-}
-
-function deterministicUuid(value: string): string {
-  const bytes = createHash('sha256').update(value).digest().subarray(0, 16)
-  bytes[6] = (bytes[6]! & 0x0f) | 0x50
-  bytes[8] = (bytes[8]! & 0x3f) | 0x80
-  const hex = bytes.toString('hex')
-  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`
 }
