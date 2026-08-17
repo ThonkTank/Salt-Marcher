@@ -168,7 +168,8 @@ describe('session generation pure reward stages', () => {
       .get('Common')!
       .find((item) => item.decisionType === 'none')!
     const sourceCurse = catalog.curses[0]!
-    const exactId = `magic-type:${magic.type.toLowerCase()}`
+    const exactId =
+      `magic-type:${magic.type.toLowerCase()}` as `magic-type:${string}`
     const selected = selectMagicItems(
       {
         runId,
@@ -185,7 +186,7 @@ describe('session generation pure reward stages', () => {
             {
               ...sourceCurse,
               id: 'curse:collision',
-              appliesToId: `${exactId}-extra`
+              appliesToId: `${exactId}-extra` as `magic-type:${string}`
             },
             { ...sourceCurse, id: 'curse:exact', appliesToId: exactId }
           ]

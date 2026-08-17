@@ -14,6 +14,13 @@ import {
   isE2eSuiteName,
   type E2eSuiteName
 } from '../tests/e2e/support/e2e-suite-registry.js'
+import {
+  initializeE2eResults,
+  recordE2eAttempt,
+  validateE2eResumeIdentity,
+  type E2eRunSummary,
+  type E2eSuiteResult
+} from './e2e-run-receipt.js'
 
 const packageRequire = createRequire(import.meta.url)
 const wdioEntry = join(
@@ -23,22 +30,8 @@ const wdioEntry = join(
   'wdio.js'
 )
 
-type SuiteStatus = 'pending' | 'passed' | 'failed'
-type SuiteResult = Readonly<{
-  name: E2eSuiteName
-  status: SuiteStatus
-  exitCode: number | null
-  durationMs: number | null
-}>
-type RunSummary = Readonly<{
-  version: 1
-  runId: string
-  buildIdentity: string
-  registryIdentity: string
-  selectedSuites: readonly E2eSuiteName[]
-  updatedAt: string
-  results: readonly SuiteResult[]
-}>
+type SuiteResult = E2eSuiteResult<E2eSuiteName>
+type RunSummary = E2eRunSummary<E2eSuiteName>
 
 const arguments_ = process.argv.slice(2).filter((entry) => entry !== '--')
 const resumePath = argumentAfter('--resume')
@@ -56,30 +49,19 @@ const buildIdentity = fingerprintFiles([
 ])
 const registryIdentity = sha256(JSON.stringify(e2eSuiteRegistry))
 const resumed = resumePath ? readSummary(resolve(resumePath)) : null
-if (
-  resumed &&
-  (resumed.buildIdentity !== buildIdentity ||
-    resumed.registryIdentity !== registryIdentity ||
-    JSON.stringify(resumed.selectedSuites) !== JSON.stringify(selectedSuites))
-)
-  throw new Error(
-    'Cannot resume: build, suite registry, or selected suite set changed.'
-  )
+if (resumed)
+  validateE2eResumeIdentity(resumed, {
+    buildIdentity,
+    registryIdentity,
+    selectedSuites
+  })
 
 const runId = resumed?.runId ?? `${Date.now()}-${process.pid}`
 const summaryPath = resumePath
   ? resolve(resumePath)
   : resolve('.tmp', 'e2e-runs', runId, 'summary.json')
 const resultDirectory = join(dirname(summaryPath), 'suites')
-let results = selectedSuites.map(
-  (name): SuiteResult =>
-    resumed?.results.find((result) => result.name === name) ?? {
-      name,
-      status: 'pending',
-      exitCode: null,
-      durationMs: null
-    }
-)
+let results = initializeE2eResults(selectedSuites, resumed)
 writeSummary()
 
 for (const suite of selectedSuites) {
@@ -89,17 +71,16 @@ for (const suite of selectedSuites) {
     continue
   }
   const startedAt = Date.now()
-  const exitCode = await runSuite(suite, runId)
-  results = results.map((result) =>
-    result.name === suite
-      ? {
-          name: suite,
-          status: exitCode === 0 ? 'passed' : 'failed',
-          exitCode,
-          durationMs: Date.now() - startedAt
-        }
-      : result
-  )
+  const attempt = current.attempts.length + 1
+  const paths = suiteAttemptPaths(suite, attempt)
+  const exitCode = await runSuite(suite, runId, paths.logPath)
+  results = recordE2eAttempt(results, suite, {
+    attempt,
+    status: exitCode === 0 ? 'passed' : 'failed',
+    exitCode,
+    durationMs: Date.now() - startedAt,
+    ...paths
+  })
   writeSuiteResult(results.find((result) => result.name === suite)!)
   writeSummary()
 }
@@ -115,10 +96,14 @@ if (failures.length > 0) {
   console.log(`All E2E suites passed. Summary: ${summaryPath}`)
 }
 
-function runSuite(suite: E2eSuiteName, id: string): Promise<number> {
+function runSuite(
+  suite: E2eSuiteName,
+  id: string,
+  logPath: string
+): Promise<number> {
   return new Promise((resolveExit) => {
     mkdirSync(resultDirectory, { recursive: true })
-    const log = createWriteStream(join(resultDirectory, `${suite}.log`), {
+    const log = createWriteStream(logPath, {
       flags: 'w'
     })
     const child = spawn(
@@ -148,6 +133,16 @@ function runSuite(suite: E2eSuiteName, id: string): Promise<number> {
     })
     child.once('exit', (code) => log.end(() => resolveExit(code ?? 1)))
   })
+}
+
+function suiteAttemptPaths(
+  suite: E2eSuiteName,
+  attempt: number
+): Readonly<{ logPath: string; artifactDirectory: string }> {
+  return {
+    logPath: join(resultDirectory, `${suite}.attempt-${attempt}.log`),
+    artifactDirectory: resolve('.tmp', 'visual-diffs')
+  }
 }
 
 function argumentAfter(name: string): string | undefined {
@@ -183,13 +178,13 @@ function sha256(value: string): string {
 
 function readSummary(path: string): RunSummary {
   const value = JSON.parse(readFileSync(path, 'utf8')) as RunSummary
-  if (value.version !== 1) throw new Error('Unsupported E2E summary version.')
+  if (value.version !== 2) throw new Error('Unsupported E2E summary version.')
   return value
 }
 
 function writeSummary(): void {
   const summary: RunSummary = {
-    version: 1,
+    version: 2,
     runId,
     buildIdentity,
     registryIdentity,
