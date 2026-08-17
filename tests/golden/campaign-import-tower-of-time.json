@@ -1,0 +1,41 @@
+{
+  "source": {
+    "id": "google-doc:tower-of-time",
+    "revision": 6098,
+    "sections": ["party", "locations", "factions", "npcs"]
+  },
+  "party": [
+    {
+      "externalKey": "pc:hank",
+      "name": "Hank",
+      "species": "Half-Orc",
+      "languages": ["Common", "Orc"],
+      "passivePerception": 11
+    },
+    {
+      "externalKey": "pc:mira",
+      "name": "Mira",
+      "species": "Human",
+      "languages": ["Common", "Draconic"],
+      "passivePerception": 12
+    }
+  ],
+  "locations": ["Tower of Time", "Lower Vault"],
+  "factions": ["Clockwork Custodians"],
+  "npcs": [
+    {
+      "externalKey": "npc:chronologer-vey",
+      "name": "Chronologer Vey",
+      "creatureId": "cultist",
+      "faction": "Clockwork Custodians",
+      "location": "Tower of Time"
+    },
+    {
+      "externalKey": "npc:oren",
+      "name": "Oren",
+      "creatureId": "commoner",
+      "faction": null,
+      "location": "Lower Vault"
+    }
+  ]
+}

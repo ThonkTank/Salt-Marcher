@@ -43,7 +43,7 @@ accounts for the bounded virtual biome catalog and CRUD surface added with
 schema 15; schema 16 replaced separate World Location kind and region fields
 with tags and read-aloud text, and schema 17 normalizes ordered location-owned
 tags into validated rows while all per-entry ceilings remain unchanged.
-Schema 33, migration registry 5, Generator Config V5, Encounter engine
+Schema 34, migration registry 6, Generator Config V5, Encounter engine
 `encounter-v5`, and Reward engine `reward-v3` are current. Persisted
 `reward-v2` runs remain readable. The checked
 [version-truth matrix](version-truth.md) owns these current values. Schema 25 is reset rather than migrated. The
@@ -156,6 +156,25 @@ Party schema initialization is empty, example characters are explicit fixture
 data, and persistence delegates XP, rest, travel-position, and Adventuring Day
 rules to database-independent domain functions.
 
+## Campaign import product capability — 2026-08-17
+
+`CampaignImportBundle` V1 is the durable, Zod-validated intermediate format.
+It binds source identity, revision, canonical export hash, declared sections,
+external entity keys, and explicit species, language, statblock, faction, and
+location decisions. Utility owns `validate`, `preview`, and `apply`; renderer
+and Main never receive filesystem or SQLite access.
+
+Apply builds a complete schema-34 campaign database under isolated staging,
+runs domain readback and SQLite `quick_check`, then activates it. Re-import
+replaces the prior imported database at the same campaign identity only after
+the staged image passes. Source revision, hash, sections, resolutions, and
+external-key mappings are persisted for deterministic preview and idempotent
+delta handling. The Tower-of-Time revision-6098 fixture and semantic Golden
+cover Hank's PP/languages and the prior mixed-language mapping decisions.
+Filesystem maintenance callers must prove the exact deployment-receipt SHA
+before opening a profile; normal calls run through the compatible installed
+Utility process.
+
 ## Runtime efficiency and delivery hardening — 2026-08-15
 
 The architecture-critique remediation was delivered in six independently
@@ -169,13 +188,13 @@ verifiable phases:
 3. Persisted data is classified with a read-only preflight before any writable
    connection. Schema names are environment-neutral and forward migrations
    require one explicit registry chain and transactional contract tests. The
-   role contract is installation schema 33 at `installation.sqlite` and
-   campaign schema 33 at `campaigns/<id>/campaign.sqlite`; registry version 5
+   role contract is installation schema 34 at `installation.sqlite` and
+   campaign schema 34 at `campaigns/<id>/campaign.sqlite`; registry version 6
    supports the Golden-Master-backed 27 -> 28 path, the 28 -> 29
    NPC/structured-PC migration, the 29 -> 30 application migration, and the
    populated 30 -> 31 canonical-item migration, and the 31 -> 32 Config-V5 and
    raw reward-member migration, and the 32 -> 33 World Planner relational
-   integrity migration. The aggregate owners
+   integrity migration, and the 33 -> 34 import provenance/registry migration. The aggregate owners
    retain their SQL, and the installer is the only offline migration authority.
 4. Local installation uses a lock, permanent verified backups, staged data
    migration, immutable version deployments, atomic current selection, and

@@ -68,6 +68,7 @@ import { createLootComposition } from './composition/loot.js'
 import { ItemDefinitionResolver } from '../core/loot/item-definition-resolver.js'
 import { createLootCatalogIndex } from '../core/loot/loot-catalog-index.js'
 import { createCampaignHandlers } from './composition/campaign.js'
+import { CampaignImportService } from '../core/campaign-import/campaign-import-service.js'
 import {
   createEncounterHandlers,
   createPartyHandlers,
@@ -167,6 +168,10 @@ const creatureReferences = new Map(
 const creatureReferenceResolver = {
   resolve: (id: string) => creatureReferences.get(id) ?? null
 }
+const campaignImport = new CampaignImportService(
+  campaigns,
+  creatureReferenceResolver
+)
 const worldNpcs = new WorldNpcApplicationService(
   activeDatabase,
   creatureReferenceResolver,
@@ -648,6 +653,7 @@ bootstrapReady()
 process.parentPort.postMessage(coreReadySchema.parse({ kind: 'core.ready' }))
 const campaignHandlers = createCampaignHandlers({
   campaigns,
+  campaignImport,
   campaignRules,
   generatorPresets,
   mutateReferences,

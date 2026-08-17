@@ -4,6 +4,7 @@ import type { GeneratorPresetStore } from '../../core/persistence/sqlite/generat
 import type { openCampaignStore } from '../../core/persistence/sqlite/campaign-store.js'
 import { emptyPassiveProjection } from '../../shared/contracts/passive-display.js'
 import type { ReferenceChangeDescriptor } from '../../core/reference/reference-change-coordinator.js'
+import type { CampaignImportService } from '../../core/campaign-import/campaign-import-service.js'
 
 type CampaignHandlerName =
   | 'campaign.list'
@@ -13,6 +14,9 @@ type CampaignHandlerName =
   | 'campaign.trash'
   | 'campaign.restore'
   | 'campaign.deleteForever'
+  | 'campaignImport.validate'
+  | 'campaignImport.preview'
+  | 'campaignImport.apply'
   | 'settings.read'
   | 'settings.update'
   | 'campaignRules.read'
@@ -28,6 +32,7 @@ type CampaignHandlerName =
 
 export function createCampaignHandlers(dependencies: {
   campaigns: ReturnType<typeof openCampaignStore>
+  campaignImport: CampaignImportService
   campaignRules: CampaignRulesService
   generatorPresets: GeneratorPresetStore
   mutateReferences: <T>(
@@ -38,6 +43,7 @@ export function createCampaignHandlers(dependencies: {
 }): Pick<CoreHandlers, CampaignHandlerName> {
   const {
     campaigns,
+    campaignImport,
     campaignRules,
     generatorPresets,
     mutateReferences,
@@ -66,6 +72,16 @@ export function createCampaignHandlers(dependencies: {
     'campaign.restore': (input) => campaigns.restore(input.id),
     'campaign.deleteForever': (input) =>
       campaigns.deleteForever(input.id, input.confirmationName),
+    'campaignImport.validate': (input) => campaignImport.validate(input.bundle),
+    'campaignImport.preview': (input) => campaignImport.preview(input.bundle),
+    'campaignImport.apply': (input) => {
+      const result = mutateReferences(
+        () => campaignImport.apply(input.bundle),
+        () => [{ kind: 'campaign' }]
+      )
+      recoverPendingPreparations()
+      return result
+    },
     'settings.read': () => campaigns.readSettings(),
     'settings.update': (input) =>
       campaigns.updateSettings(input.patch, input.expectedRevision),

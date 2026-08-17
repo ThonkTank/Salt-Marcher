@@ -1,0 +1,17 @@
+{
+  "format": "campaign-import-source-delta-v1",
+  "sourceId": "google-doc:tower-of-time",
+  "baseRevision": 6098,
+  "baseExportHash": "9507968766a91a07f1c793151dbe43146204c5e1e1e66706ad917200d56a58ae",
+  "revision": 6099,
+  "exportHash": "58c82107444d189970843be4c0a22d4b85b2fd7de8f6265c25ba8e307f74fc6b",
+  "changes": [
+    {
+      "section": "party",
+      "externalKey": "pc:hank",
+      "path": "passivePerception",
+      "before": 11,
+      "after": 12
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 import type Database from 'better-sqlite3'
 import { defaultGeneratorLootRules } from '../../../shared/generator/default-loot-rules.js'
 import type { SchemaMigration } from './schema-migrations.js'
+import { initializeCampaignImportInstallationSchema } from '../../campaign-import/campaign-import-store.js'
 
 export function initializeInstallationSchemaMetadata(
   database: Database.Database
@@ -204,6 +205,24 @@ export const installationSchemaMigrations: readonly SchemaMigration[] =
             'INSERT INTO installation_schema_migration (migration_id, applied_at) VALUES (?, ?)'
           )
           .run('installation-32-to-33-role-alignment', new Date().toISOString())
+      }
+    },
+    {
+      id: 'installation-33-to-34-import-registry',
+      role: 'installation',
+      fromVersion: 33,
+      toVersion: 34,
+      migrate(database) {
+        initializeInstallationSchemaMetadata(database)
+        initializeCampaignImportInstallationSchema(database)
+        database
+          .prepare(
+            'INSERT INTO installation_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run(
+            'installation-33-to-34-import-registry',
+            new Date().toISOString()
+          )
       }
     }
   ])

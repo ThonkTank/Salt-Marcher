@@ -1,5 +1,6 @@
 import {
   existsSync,
+  copyFileSync,
   mkdirSync,
   readdirSync,
   renameSync,
@@ -52,6 +53,10 @@ import { initializeEncounterPlanSchema } from '../../encounter/encounter-plan-st
 import { initializeSessionPlannerSchema } from '../../session-planner/session-planner-store.js'
 import { initializeCampaignRulesSchema } from '../../application/campaign-rules-service.js'
 import type { IncompatibleDataPolicy } from '../../../shared/contracts/runtime.js'
+import {
+  initializeCampaignImportInstallationSchema,
+  initializeCampaignImportSchema
+} from '../../campaign-import/campaign-import-store.js'
 
 export type CampaignCreatePhase =
   | 'before-registry-entry'
@@ -115,6 +120,7 @@ export class CampaignStore {
       initializeCreatureSchema(this.installation)
       initializeBiomeCatalogSchema(this.installation)
       initializeLocationSymbolSchema(this.installation)
+      initializeCampaignImportInstallationSchema(this.installation)
       if (!installationExists) {
         initializeInstallationSchemaMetadata(this.installation)
         initializeSchemaVersion(this.installation, 'installation')
@@ -276,6 +282,64 @@ export class CampaignStore {
     return this.activeCampaign
   }
 
+  /**
+   * Builds an import in an isolated database and exposes it only after the
+   * caller's complete domain readback succeeds. Re-import replaces the prior
+   * image at the same campaign identity, so external identities stay singular.
+   */
+  stageImportedCampaign(
+    name: string,
+    existingId: string | null,
+    populateAndVerify: (database: Database.Database) => void
+  ): Readonly<{ campaignId: string; snapshot: CampaignSnapshot }> {
+    const id = existingId ?? uuidv7()
+    if (existingId !== null) this.requireSafeCampaignId(existingId)
+    const previousActiveId = this.list().activeCampaignId
+    const createdAt = new Date().toISOString()
+    rmSync(this.stagedCampaignDirectory(id), { recursive: true, force: true })
+    if (existingId === null)
+      this.installation
+        .prepare(
+          "INSERT INTO campaigns (id, name, created_at, status) VALUES (?, ?, ?, 'creating')"
+        )
+        .run(id, name, createdAt)
+    try {
+      if (existingId === null) this.createStagedCampaignStore(id)
+      else this.cloneCampaignToStage(id)
+      const staged = new Database(this.stagedCampaignPath(id))
+      try {
+        configureSqlite(staged)
+        assertSchemaVersion(
+          staged,
+          this.stagedCampaignDirectory(id),
+          'campaign'
+        )
+        populateAndVerify(staged)
+        if (staged.pragma('quick_check', { simple: true }) !== 'ok')
+          throw new Error('Imported campaign failed quick_check')
+      } finally {
+        staged.close()
+      }
+      if (!this.isValidCampaignStore(this.stagedCampaignPath(id)))
+        throw new Error('Imported campaign failed staged store validation')
+      if (existingId === null) {
+        this.finalizeCampaignCreation(id)
+      } else {
+        this.replaceCampaignFromStage(id, name, previousActiveId)
+      }
+      return { campaignId: id, snapshot: this.list() }
+    } catch (error) {
+      rmSync(this.stagedCampaignDirectory(id), { recursive: true, force: true })
+      if (existingId === null) {
+        rmSync(this.campaignDirectory(id), { recursive: true, force: true })
+        this.installation
+          .prepare("DELETE FROM campaigns WHERE id = ? AND status = 'creating'")
+          .run(id)
+      }
+      throw error
+    }
+  }
+
   installationDatabase(): Database.Database {
     return this.installation
   }
@@ -364,9 +428,28 @@ export class CampaignStore {
     initializeLegacyItemDefinitionSchema(campaign)
     initializeLootSchema(campaign)
     initializeCharacterLootSchema(campaign)
+    initializeCampaignImportSchema(campaign)
     initializeCampaignSchemaMetadata(campaign)
     initializeSchemaVersion(campaign, 'campaign')
     campaign.close()
+  }
+
+  private cloneCampaignToStage(id: string): void {
+    const stagedPath = this.stagedCampaignPath(id)
+    mkdirSync(dirname(stagedPath), { recursive: true })
+    let source: Database.Database | undefined
+    try {
+      source =
+        this.list().activeCampaignId === id && this.activeCampaign
+          ? this.activeCampaign
+          : new Database(this.campaignPath(id))
+      configureSqlite(source)
+      assertSchemaVersion(source, this.campaignDirectory(id), 'campaign')
+      source.pragma('wal_checkpoint(FULL)')
+      copyFileSync(this.campaignPath(id), stagedPath)
+    } finally {
+      if (source !== this.activeCampaign) source?.close()
+    }
   }
 
   private finalizeCampaignCreation(id: string): void {
@@ -388,6 +471,46 @@ export class CampaignStore {
     this.switchActiveCampaign(id)
   }
 
+  private replaceCampaignFromStage(
+    id: string,
+    name: string,
+    previousActiveId: string | null
+  ): void {
+    const currentDirectory = this.campaignDirectory(id)
+    const stagedDirectory = this.stagedCampaignDirectory(id)
+    const replacedDirectory = this.replacedCampaignDirectory(id)
+    if (!existsSync(currentDirectory) || !existsSync(stagedDirectory))
+      throw new Error('Imported campaign replacement is incomplete')
+    rmSync(replacedDirectory, { recursive: true, force: true })
+    mkdirSync(dirname(replacedDirectory), { recursive: true })
+    renameSync(currentDirectory, replacedDirectory)
+    try {
+      renameSync(stagedDirectory, currentDirectory)
+      this.switchActiveCampaign(id)
+      this.installation.transaction(() => {
+        this.installation
+          .prepare(
+            "UPDATE campaigns SET name = ? WHERE id = ? AND status = 'ready' AND trashed_at IS NULL"
+          )
+          .run(name, id)
+        this.setActive(id)
+      })()
+      rmSync(replacedDirectory, { recursive: true, force: true })
+    } catch (error) {
+      if (existsSync(currentDirectory))
+        rmSync(currentDirectory, { recursive: true, force: true })
+      if (existsSync(replacedDirectory))
+        renameSync(replacedDirectory, currentDirectory)
+      if (previousActiveId === null)
+        this.installation
+          .prepare("DELETE FROM settings WHERE key = 'active_campaign_id'")
+          .run()
+      else this.setActive(previousActiveId)
+      if (previousActiveId !== null) this.switchActiveCampaign(previousActiveId)
+      throw error
+    }
+  }
+
   private recoverIncompleteCreations(): void {
     const incomplete = this.installation
       .prepare("SELECT id FROM campaigns WHERE status = 'creating'")
@@ -406,6 +529,21 @@ export class CampaignStore {
   }
 
   private recoverCampaignDirectoryTransitions(): void {
+    const replacingParent = join(this.dataRoot, 'campaigns', '.replacing')
+    if (existsSync(replacingParent))
+      for (const id of readdirSync(replacingParent)) {
+        if (!this.isSafeCampaignId(id)) continue
+        const current = this.campaignDirectory(id)
+        const replaced = this.replacedCampaignDirectory(id)
+        if (existsSync(current))
+          rmSync(replaced, { recursive: true, force: true })
+        else renameSync(replaced, current)
+        rmSync(this.stagedCampaignDirectory(id), {
+          recursive: true,
+          force: true
+        })
+      }
+
     const deletingParent = join(this.dataRoot, 'campaigns', '.deleting')
     if (existsSync(deletingParent))
       for (const id of readdirSync(deletingParent)) {
@@ -488,6 +626,10 @@ export class CampaignStore {
 
   private stagedCampaignDirectory(id: string): string {
     return join(this.dataRoot, 'campaigns', '.creating', id)
+  }
+
+  private replacedCampaignDirectory(id: string): string {
+    return join(this.dataRoot, 'campaigns', '.replacing', id)
   }
 
   private campaignPath(id: string): string {

@@ -8,6 +8,7 @@ import {
 import { initializeWorldLocationSchema } from '../../worldplanner/location-store.js'
 import { initializeWorldFactionSchema } from '../../worldplanner/faction-store.js'
 import { migrateLootSchema30To31 } from '../../loot/loot-schema-31-migration.js'
+import { initializeCampaignImportSchema } from '../../campaign-import/campaign-import-store.js'
 
 export function initializeCampaignSchemaMetadata(
   database: Database.Database
@@ -176,6 +177,21 @@ export const campaignSchemaMigrations: readonly SchemaMigration[] =
             'campaign-32-to-33-world-planner-relations',
             new Date().toISOString()
           )
+      }
+    },
+    {
+      id: 'campaign-33-to-34-import-provenance',
+      role: 'campaign',
+      fromVersion: 33,
+      toVersion: 34,
+      migrate(database) {
+        initializeCampaignSchemaMetadata(database)
+        initializeCampaignImportSchema(database)
+        database
+          .prepare(
+            'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run('campaign-33-to-34-import-provenance', new Date().toISOString())
       }
     }
   ])

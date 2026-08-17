@@ -1,0 +1,160 @@
+{
+  "bundleVersion": 1,
+  "source": {
+    "id": "google-doc:tower-of-time",
+    "revision": 6098,
+    "exportedAt": "2026-08-01T12:00:00.000Z",
+    "exportHash": "9507968766a91a07f1c793151dbe43146204c5e1e1e66706ad917200d56a58ae",
+    "sections": ["party", "locations", "factions", "npcs"]
+  },
+  "campaign": {
+    "externalKey": "campaign:tower-of-time",
+    "name": "Tower of Time"
+  },
+  "party": [
+    {
+      "externalKey": "pc:hank",
+      "name": "Hank",
+      "playerName": "Aaron",
+      "species": { "source": "Halbord", "resolved": "Half-Orc" },
+      "characterClass": "Fighter",
+      "languages": [
+        { "source": "Gemeinsprache", "resolved": "Common" },
+        { "source": "Orkisch", "resolved": "Orc" }
+      ],
+      "level": 3,
+      "passivePerception": 11,
+      "passiveInvestigation": 10,
+      "passiveInsight": 9,
+      "armorClass": 17,
+      "movementSpeedFeet": 30
+    },
+    {
+      "externalKey": "pc:mira",
+      "name": "Mira",
+      "playerName": "Sam",
+      "species": { "source": "Human", "resolved": "Human" },
+      "characterClass": "Wizard",
+      "languages": [
+        { "source": "Common", "resolved": "Common" },
+        { "source": "Draconic", "resolved": "Draconic" }
+      ],
+      "level": 3,
+      "passivePerception": 12,
+      "passiveInvestigation": 15,
+      "passiveInsight": 13,
+      "armorClass": 13,
+      "movementSpeedFeet": 30
+    }
+  ],
+  "locations": [
+    {
+      "externalKey": "location:tower-of-time",
+      "displayName": "Tower of Time",
+      "tags": ["tower", "ruin"],
+      "readAloud": "A cracked clock face turns against a sky without stars.",
+      "notes": "Primary expedition site."
+    },
+    {
+      "externalKey": "location:lower-vault",
+      "displayName": "Lower Vault",
+      "tags": ["dungeon", "clockwork"],
+      "readAloud": "Brass gears breathe behind the stonework.",
+      "notes": "Accessible through the tower cellar."
+    }
+  ],
+  "factions": [
+    {
+      "externalKey": "faction:clockwork-custodians",
+      "displayName": "Clockwork Custodians",
+      "notes": "Protect the sealed mechanisms beneath the tower.",
+      "disposition": -10
+    }
+  ],
+  "npcs": [
+    {
+      "externalKey": "npc:chronologer-vey",
+      "displayName": "Chronologer Vey",
+      "creature": { "source": "Kultist", "resolvedId": "cultist" },
+      "lifecycle": "active",
+      "appearance": "Ink-stained robes threaded with brass wire.",
+      "behavior": "Counts every pause before answering.",
+      "history": "The last mortal keeper of the tower calendar.",
+      "notes": "Knows why the lower clock stopped.",
+      "dispositionModifier": -5,
+      "factionExternalKey": "faction:clockwork-custodians",
+      "locationExternalKey": "location:tower-of-time"
+    },
+    {
+      "externalKey": "npc:oren",
+      "displayName": "Oren",
+      "creature": { "source": "Commoner", "resolvedId": "commoner" },
+      "lifecycle": "active",
+      "appearance": "A tired porter carrying a stopped pocket watch.",
+      "behavior": "Avoids the tower after sunset.",
+      "history": "Delivered supplies before the custodians returned.",
+      "notes": "Can identify the lower-vault service entrance.",
+      "dispositionModifier": 5,
+      "factionExternalKey": null,
+      "locationExternalKey": "location:lower-vault"
+    }
+  ],
+  "resolutions": [
+    {
+      "path": "party.0.species",
+      "kind": "species",
+      "sourceValue": "Halbord",
+      "resolvedValue": "Half-Orc",
+      "reasonCode": "canonical-english-species"
+    },
+    {
+      "path": "party.0.languages.0",
+      "kind": "language",
+      "sourceValue": "Gemeinsprache",
+      "resolvedValue": "Common",
+      "reasonCode": "canonical-english-language"
+    },
+    {
+      "path": "party.0.languages.1",
+      "kind": "language",
+      "sourceValue": "Orkisch",
+      "resolvedValue": "Orc",
+      "reasonCode": "canonical-english-language"
+    },
+    {
+      "path": "npcs.0.creature",
+      "kind": "statblock",
+      "sourceValue": "Kultist",
+      "resolvedValue": "cultist",
+      "reasonCode": "srd-5.1-statblock"
+    },
+    {
+      "path": "npcs.0.factionExternalKey",
+      "kind": "faction",
+      "sourceValue": "Clockwork Custodians",
+      "resolvedValue": "faction:clockwork-custodians",
+      "reasonCode": "source-external-key"
+    },
+    {
+      "path": "npcs.0.locationExternalKey",
+      "kind": "location",
+      "sourceValue": "Tower of Time",
+      "resolvedValue": "location:tower-of-time",
+      "reasonCode": "source-external-key"
+    },
+    {
+      "path": "npcs.1.creature",
+      "kind": "statblock",
+      "sourceValue": "Commoner",
+      "resolvedValue": "commoner",
+      "reasonCode": "srd-5.1-statblock"
+    },
+    {
+      "path": "npcs.1.locationExternalKey",
+      "kind": "location",
+      "sourceValue": "Lower Vault",
+      "resolvedValue": "location:lower-vault",
+      "reasonCode": "source-external-key"
+    }
+  ]
+}

@@ -140,7 +140,7 @@ describe('persistence preflight', () => {
     const planned = preflightPersistence(root)
 
     expect(planned.kind).toBe('migration-required')
-    expect(migrationRegistryVersion).toBe(5)
+    expect(migrationRegistryVersion).toBe(6)
     for (const entry of planned.databases) {
       const database = new Database(entry.path)
       applySchemaMigrations(database, {
@@ -153,8 +153,8 @@ describe('persistence preflight', () => {
     const restarted = preflightPersistence(root)
     expect(restarted.kind).toBe('ready')
     expect(restarted.databases).toMatchObject([
-      { path: campaign, role: 'campaign', schemaVersion: 33 },
-      { path: installation, role: 'installation', schemaVersion: 33 }
+      { path: campaign, role: 'campaign', schemaVersion: 34 },
+      { path: installation, role: 'installation', schemaVersion: 34 }
     ])
     const installationDatabase = new Database(installation)
     expect(
@@ -168,7 +168,7 @@ describe('persistence preflight', () => {
         .prepare('SELECT COUNT(*) FROM installation_schema_migration')
         .pluck()
         .get()
-    ).toBe(6)
+    ).toBe(7)
     applySchemaMigrations(installationDatabase, {
       path: installation,
       role: 'installation'
@@ -178,8 +178,25 @@ describe('persistence preflight', () => {
         .prepare('SELECT COUNT(*) FROM installation_schema_migration')
         .pluck()
         .get()
-    ).toBe(6)
+    ).toBe(7)
+    expect(
+      installationDatabase
+        .prepare(
+          "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'campaign_import_registry'"
+        )
+        .get()
+    ).toBeDefined()
     installationDatabase.close()
+    const campaignDatabase = new Database(campaign)
+    expect(
+      campaignDatabase
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('campaign_import_provenance', 'campaign_import_entity') ORDER BY name"
+        )
+        .pluck()
+        .all()
+    ).toEqual(['campaign_import_entity', 'campaign_import_provenance'])
+    campaignDatabase.close()
   })
 
   it('upcasts Config V4 coin container names to Config V5 IDs', () => {

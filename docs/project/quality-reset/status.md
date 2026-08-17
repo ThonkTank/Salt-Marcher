@@ -80,3 +80,18 @@ traceability record is [requirements-ledger.yaml](requirements-ledger.yaml).
 - Production Party rosters start empty. Example members are an explicit
   dev/test seed, Party languages load in constant query count, and XP/rest/
   travel/adventuring-day rules are independently unit tested.
+
+## M4 decisions
+
+- Campaign import is a Utility-owned product capability with strict V1 bundle,
+  previewable conflicts, staged apply, complete domain readback, and
+  `quick_check` before activation.
+- Schema 34 stores source revision/hash/sections/resolutions and external-key
+  mappings; the installation registry keeps one campaign identity per source.
+- Identical reapply is a no-op. Delta preview compares entity content hashes
+  and reports only changed source sections; a changed image replaces the prior
+  campaign only after staged verification succeeds.
+- The revision-6098 Tower-of-Time fixture and semantic Golden preserve Hank's
+  PP 11/languages and every language, species, statblock, faction, and location
+  decision. Maintenance callers are deployment-SHA guarded before profile
+  access; normal import runs through the installed Utility process.

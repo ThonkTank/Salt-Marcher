@@ -8,6 +8,12 @@ import {
   renameCampaignInputSchema
 } from './campaign.js'
 import {
+  campaignImportApplyInputSchema,
+  campaignImportApplyResultSchema,
+  campaignImportReportSchema,
+  campaignImportValidateInputSchema
+} from './campaign-import.js'
+import {
   creatureCatalogPageSchema,
   creatureCatalogQuerySchema,
   creatureFilterOptionsSchema,
@@ -315,6 +321,21 @@ const coreOperationDefinitions = {
     'campaign:deleteForever',
     permanentlyDeleteCampaignInputSchema,
     campaignSnapshotSchema
+  ),
+  'campaignImport.validate': read(
+    'campaign-import:validate',
+    campaignImportValidateInputSchema,
+    campaignImportReportSchema
+  ),
+  'campaignImport.preview': read(
+    'campaign-import:preview',
+    campaignImportValidateInputSchema,
+    campaignImportReportSchema
+  ),
+  'campaignImport.apply': write(
+    'campaign-import:apply',
+    campaignImportApplyInputSchema,
+    campaignImportApplyResultSchema
   ),
   'settings.read': read('settings:read', none, installationSettingsSchema),
   'settings.update': write(
