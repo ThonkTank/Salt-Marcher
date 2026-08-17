@@ -36,7 +36,7 @@ traceability record is [requirements-ledger.yaml](requirements-ledger.yaml).
 | M2 · reward/loot vertical slice | verified | `3b9e70e73` + `242caff74`; `check:loot-parity` and architecture gates green |
 | M3 · world planner, roster, references | verified | `38ef442f6` + `5c9971432`; `check:world-planner`, architecture and integration gates green |
 | M4 · campaign import product path | verified | `2dd82e654`; `check:campaign-import`, architecture, portable unit and integration gates green |
-| M5 · session UI and layout | pending | — |
+| M5 · session UI and layout | verified | `7ada6e15b`; controller/primitive/layout tests, 61 architecture gates and focused built E2E green |
 | M6 · focused verification and handoff | pending | — |
 
 ## M0 decisions
@@ -95,3 +95,20 @@ traceability record is [requirements-ledger.yaml](requirements-ledger.yaml).
   PP 11/languages and every language, species, statblock, faction, and location
   decision. Maintenance callers are deployment-SHA guarded before profile
   access; normal import runs through the installed Utility process.
+
+## M5 decisions
+
+- Session workspace control, group, Loot, reference and blocking-dialog behavior
+  lives behind one controller/view-model boundary. Encounter remains its own
+  scenario orchestrator instead of being absorbed into that workspace controller.
+- Layout state separates versioned preferred widths, measured available space
+  and effective fitted widths. Scenario yields first; compact and stacked modes
+  never overwrite preference, and the native application minimum is 720x540.
+- Session and Encounter styles are feature-scoped. Encounter owns its effective
+  card/resolution cascade, while the World Faction dialog responds to its own
+  container width rather than a Session-related 1024px viewport workaround.
+- Tabs, resize separators, compact registers and accessible truncation are shared
+  primitives with keyboard, pointer-lifecycle, ARIA-boundary and semantic tests.
+- Production rosters remain empty. E2E materialization creates every declared
+  participant explicitly; Reward-v3 and stable scenario-scroll visual changes
+  are captured only in their named Golden Masters.

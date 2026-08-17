@@ -1013,88 +1013,99 @@ items:
     requirement: "Ein Session-Workspace-Controller besitzt Commands, Revisionen, Snapshotakkumulation und Fehlerbehandlung."
     acceptance: "SessionWorkspace-View koordiniert keine Domaincommands oder vollständigen Snapshots."
     evidence_required: "Controller tests and dependency audit."
-    status: open
-    evidence: []
-    decision: null
+    status: verified
+    evidence:
+      - "7ada6e15b: useSessionWorkspaceController owns scene/group commands, revisions, snapshot patching, errors, expansion, dialog, Loot and reference actions; controller and dependency-audit tests are green."
+    decision: "Encounter remains a separately owned scenario orchestrator; the workspace controller owns workspace control/group/dialog behavior and exposes only its view-model/actions."
   - id: UI-002
     source: "Sidebar-Kritik – große React-Unterbäume/Callbacks"
     requirement: "Views erhalten kleine View-Models und klar benannte Aktionen statt großer Callback-Bündel."
     acceptance: "Props bilden nur gültige, fachlich diskriminierte Zustände ab."
     evidence_required: "Type tests/component API review."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: discriminated SessionWorkspaceViewModel/SessionWorkspaceActions replace callback bundles across passive control, register, card and dialog views; typecheck and component tests are green."
     decision: null
   - id: UI-003
     source: "Sidebar-Kritik – SessionGroupsPanel mischt Aufgaben"
     requirement: "Registerdarstellung, Expansion, Loot-Inbox, Archiv und Löschung sind getrennte passive Komponenten/Controlleraktionen."
     acceptance: "Panel selbst besitzt keine fachliche Orchestrierung."
     evidence_required: "Component/controller tests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: SessionGroupsPanel composes passive CompactRegister rows while expansion, inbox, archive, restore and deletion transitions live in the workspace controller; focused tests are green."
     decision: null
   - id: UI-004
     source: "Sidebar-Kritik – optionale Props in SessionGroupCard"
     requirement: "Party, aktive Gruppe, archivierte Gruppe und Loot verwenden diskriminierte Zeilenmodelle."
     acceptance: "Ungültige Kombinationen wie Löschzustand ohne Aktion sind typseitig unmöglich."
     evidence_required: "Compile/type tests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: party, active-group, archived-group and Loot rows are a discriminated SessionRegisterRow union with state-specific fields/actions; compile and render tests are green."
     decision: null
   - id: UI-005
     source: "Sidebar-Kritik – ScenePartyCard bündelt Dialog und Assignment"
     requirement: "Partyzeile, Partyeditor, Ledgerdialog und Assignment werden klar komponiert."
     acceptance: "Zeilenview hält keinen Domain-/Dialog-Lifecycle."
     evidence_required: "Component structure and interaction tests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: ScenePartyCard is passive, SessionPartyDialog owns editing/assignment composition, and the central host owns ledger/editor lifecycle; controller/component tests are green."
     decision: null
   - id: UI-006
     source: "Sidebar-Kritik – SessionScenarioPanel implementiert Tabs selbst"
     requirement: "Szenariotabs verwenden ein geprüftes zugängliches Primitive und getrennte Featureorchestrierung."
     acceptance: "Keine festen manuellen Tab-IDs/Fokuslogik in der Featureview."
     evidence_required: "Keyboard/a11y tests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: Session scenario and center navigation use the shared AccessibleTabs primitive with generated IDs and arrow/Home/End focus behavior; isolated keyboard/a11y and campaign pseudolocale tests are green."
     decision: null
   - id: UI-007
     source: "Sidebar-Kritik – zentrale Dialogzustände"
     requirement: "Blocking Dialogs werden durch einen zentralen Dialog-Host/Stack verwaltet."
     acceptance: "Karten halten keine unabhängigen konkurrierenden Modallifecycles."
     evidence_required: "Dialog stack integration tests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: discriminated SessionDialogState and SessionDialogHost centrally compose Party, ledger, group, treasure and distribution modals; cards retain no competing modal lifecycle."
     decision: null
   - id: UI-008
     source: "Campaign/NPC-Kritik – NPC-Controller zu viele Zustände"
     requirement: "NPC-Controller verwendet expliziten Reducer mit loading, ready, editing, saving, conflict und deleting."
     acceptance: "Transitions sind exhaustiv und verspätete Responses token-gesichert."
     evidence_required: "Reducer transition table tests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: npcCatalogReducer exhaustively models loading, ready, editing, saving, conflict and deleting with request-token guards; transition-table tests are green."
     decision: null
   - id: UI-009
     source: "Campaign/NPC-Kritik – fehlende anwendungsnahe Projektion"
     requirement: "NPC-Projektionsport führt NPC, Creature-Anzeige, Fraktion und Ort server-/applicationnah zusammen."
     acceptance: "Renderer führt keine losen Ganzlistensnapshots zusammen."
     evidence_required: "Projection contract/integration test."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: NPC list/detail ports consume Utility projections containing Creature display, faction and location data; architecture gates reject renderer-side whole-list joins."
     decision: null
   - id: UI-010
     source: "Campaign/NPC-Kritik – Browser/Inspector/Editor gebündelt"
     requirement: "NPC Browser, Inspector und Editor sind getrennte passive Komponenten."
     acceptance: "Jede Komponente ist isoliert testbar und besitzt keinen Capabilityzugriff."
     evidence_required: "Component tests and dependency gate."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: NpcCatalogBrowser, NpcCatalogInspector and NpcCatalogEditor are separate passive components behind one controller; component and dependency tests are green."
     decision: null
   - id: UI-011
     source: "Sidebar-Kritik – Expansion sentinel 'party'"
     requirement: "Expansion-/Auswahlzustände verwenden diskriminierte Typen statt impliziter String-Sentinels."
     acceptance: "Unbekannte/inkonsistente Expansion ist typseitig unmöglich."
     evidence_required: "Reducer/type tests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: SessionExpansionTarget uses none/party/group discriminants and validates scene-local group identities; controller tests cover toggle and stale-target fallback."
     decision: null
 
   - id: LAYOUT-001
@@ -1102,56 +1113,63 @@ items:
     requirement: "Layoutmodell repräsentiert preferred, available und effective widths explizit."
     acceptance: "Runtime-Fit verändert preferred widths nicht ohne Benutzeraktion."
     evidence_required: "State-machine unit tests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: deriveSessionLayoutState exposes preferred, measured available and fitted effective widths; shrink/restore tests prove fitting never writes preference."
     decision: null
   - id: LAYOUT-002
     source: "Sidebar-Kritik – verstreute Minima/Maxima/Divider"
     requirement: "Eine dokumentierte Geometrieformel besitzt Minima, Maxima, Divider und Fitregeln."
     acceptance: "CSS, ARIA und Persistenz leiten dieselben Grenzen ab."
     evidence_required: "Geometry tests and single-source audit."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: sessionLayoutGeometry is the single source for 280–440/264–420 ranges, 9px dividers and 360px center demand used by fit, divider limits, ARIA and persistence tests."
     decision: null
   - id: LAYOUT-003
     source: "Sidebar-Kritik – Zentrum-Minimum arithmetische Annahme"
     requirement: "Adaptive Regeln berücksichtigen reale Inhalts-/Viewportbedingungen statt nur eine versteckte Konstante."
     acceptance: "Definierte responsive Fälle bestehen ohne globales Fensterlimit."
     evidence_required: "Viewport matrix tests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: ResizeObserver measures the owned workspace and raises center demand only for real intrinsic overflow; full/compact/stacked viewport-matrix and built E2E cases are green."
     decision: null
   - id: LAYOUT-004
     source: "Sidebar-Kritik – Pointer/Window Listener in UI"
     requirement: "Dividergesten und globale Listener liegen in einem getesteten Layoutprimitive/Controller."
     acceptance: "Cleanup, Capture und Keyboardresize sind deterministisch."
     evidence_required: "Pointer/keyboard lifecycle tests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: shared ResizeSeparator owns pointer capture, document listeners, cleanup and keyboard increments; isolated lifecycle/ARIA tests are green."
     decision: null
   - id: LAYOUT-005
     source: "Sidebar-Kritik – globale Mindestbreite 1024"
     requirement: "Sessionlayout erhöht nicht die native Mindestgröße der gesamten Anwendung."
     acceptance: "Andere Workspaces/Dialoge funktionieren bei 200 Prozent ohne Session-Workaround."
     evidence_required: "Window/dialog visual acceptance."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: native minimum is 720x540, Session adds no global minimum, and the World Faction dialog plus nested manager pass real-minimum responsive/a11y E2E."
     decision: null
   - id: LAYOUT-006
     source: "Sidebar-Kritik – stille Fractionmigration"
     requirement: "Layoutpräferenz besitzt explizite Schemaversion und benannte Migration."
     acceptance: "Migriert, beschädigt und temporär fitted sind unterscheidbar."
     evidence_required: "Migration fixtures."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: SessionLayout V2 has explicit schemaVersion and named legacy-pixel/fraction migrations with current/migrated/invalid results; migration fixtures are green."
     decision: null
   - id: LAYOUT-007
     source: "Sidebar-Kritik – proportionaler Fit eventuell unerwartet"
     requirement: "Fitverhalten ist als Nutzerregel ausdrücklich entschieden, dokumentiert und acceptance-getestet."
     acceptance: "Keine bloß mathematisch zufällige Proportion ohne Produktvertrag."
     evidence_required: "Requirement plus state tests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: live-session requirements specify scenario-first yielding and compact/stacked transitions; state tests prove the documented non-proportional rule."
     decision: null
 
   - id: CSS-001
@@ -1159,48 +1177,54 @@ items:
     requirement: "Session-/Encounterstyles sind per CSS Module oder konsequentem Feature-Scope gekapselt."
     acceptance: "Generische globale Klassen wie group-row/count/xp beeinflussen keine Nachbarfeatures."
     evidence_required: "Style-boundary gate and visual tests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: Session and Encounter CSS are encapsulated with @scope (.session-mockup); style-boundary gates and scenario/travel Goldens are green."
     decision: null
   - id: CSS-002
     source: "Sidebar-Kritik – überschreibende Regeln in encounter.css"
     requirement: "Doppelte/überschreibende Kernselektoren werden konsolidiert und komponentenbezogen aufgeteilt."
     acceptance: "Wirksame Regel ist aus zuständiger Datei eindeutig ableitbar."
     evidence_required: "Duplicate-selector audit and visual regression."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: duplicate Encounter core selectors and cross-file overrides were consolidated into the Encounter owner; the duplicate-selector audit and named Goldens are green."
     decision: null
   - id: CSS-003
     source: "Sidebar-Kritik – AC-Überlauf durch spätere Namensregel"
     requirement: "Combat-/AC-Textüberlauf besitzt lokalen getesteten Layoutvertrag."
     acceptance: "Lange Namen überschreiben AC/Status nicht; legitime Truncation bleibt erlaubt."
     evidence_required: "Long-name visual/unit test."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: combat names use accessible local truncation while AC/status remain non-shrinking; long-name component and layout assertions are green."
     decision: null
   - id: CSS-004
     source: "Sidebar-Kritik – world-faction-dialog Breakpoint"
     requirement: "Sessionbedingte kompensierende Regeln in World-Planner-/Dialogstyles werden entfernt."
     acceptance: "World Faction Dialog benötigt keinen Sidebar-spezifischen 1024px-Fix."
     evidence_required: "Style diff and dialog acceptance."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: the World Faction 1024px viewport compensation is removed; a dialog-owned 720px container query stacks its body and real-minimum dialog E2E is green."
     decision: null
   - id: CSS-005
     source: "Sidebar-Kritik – featurebezogene Dateien aber globale Wirkung"
     requirement: "Jedes Feature importiert und besitzt seine Styles; Shell enthält nur globale Primitive."
     acceptance: "Keine Sibling-Feature-Styleimports oder Quellreihenfolgeabhängigkeit."
     evidence_required: "Dependency/style ownership test."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: Encounter owns its cards/resolution styles and Session owns only its shell; architecture tests reject sibling style imports and cascade-order dependencies."
     decision: null
   - id: CSS-006
     source: "Sidebar-Kritik – erster globaler min-width Ansatz"
     requirement: "Alle verbliebenen globalen min-width-Kompensationen aus der Sidebararbeit sind entfernt."
     acceptance: "Responsive Verhalten wird lokal/adaptiv gelöst."
     evidence_required: "CSS audit and scale tests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: global Session min-width compensations are absent; measured adaptive composition, 200-percent acceptance and real 720px dialog behavior are green."
     decision: null
 
   - id: A11Y-001
@@ -1208,48 +1232,54 @@ items:
     requirement: "Tabs, ResizablePanels, CompactRegister und ExpandableRow sind zugängliche Primitive, sofern mehrfach verwendet."
     acceptance: "Keine lokalen halbfertigen Duplikate; Primitive besitzen isolierte a11y tests."
     evidence_required: "Primitive inventory and axe/keyboard tests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: shared AccessibleTabs, ResizeSeparator, CompactRegister and ExpandableRegisterRow primitives replace local duplicates; isolated keyboard/semantic tests are green."
     decision: null
   - id: A11Y-002
     source: "Sidebar-Kritik – Register weder Tabelle noch beschriftete Liste"
     requirement: "Compact Register besitzt korrekte Tabellen- oder Listen-/Gridsemantik mit Spaltenbezeichnungen."
     acceptance: "Screenreader erhalten Name, Count, XP und Statuskontext."
     evidence_required: "Accessibility tree/axe tests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: CompactRegister exposes grid/row/columnheader/cell semantics and named Status/Name/Count/XP/Actions columns; accessibility component tests are green."
     decision: null
   - id: A11Y-003
     source: "Sidebar-Kritik – title für abgeschnittene Texte"
     requirement: "Truncation bietet vollständigen zugänglichen Namen für Maus, Tastatur und Screenreader."
     acceptance: "Nicht ausschließlich title-Attribut."
     evidence_required: "Keyboard/screenreader-oriented component test."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: AccessibleTruncatedText exposes the full aria-label and keyboard focus in addition to pointer title; component tests cover the complete accessible name."
     decision: null
   - id: A11Y-004
     source: "Sidebar-Kritik – ungültiges dl"
     requirement: "Ersetzte neutrale Elemente werden durch semantisch vollständige Struktur statt nur axe-fehlerfreie Divs abgelöst."
     acceptance: "Semantik entspricht visueller Beziehung."
     evidence_required: "DOM semantics test."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: compact register headers, rows, cells and expanded-row colspan encode the visual relationships as a complete semantic grid; DOM semantics tests are green."
     decision: null
   - id: A11Y-005
     source: "Sidebar-Kritik – ARIA-Grenzen getrennt vom Layout"
     requirement: "ARIA-valuemin/max/now stammen aus demselben Layoutzustand wie Fit/Persistenz."
     acceptance: "Screenreaderwert und reale Dividergrenze stimmen überein."
     evidence_required: "Resizable panel a11y tests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: ResizeSeparator receives value/minimum/maximum from the same derived layout state used for fitting and updates; ARIA boundary tests are green."
     decision: null
   - id: A11Y-006
     source: "Sidebar-Kritik – deutsche/englische Begriffe und JSX Breadcrumbs"
     requirement: "Alle sichtbaren und zugänglichen Texte verwenden die typisierte Übersetzungsschicht."
     acceptance: "Keine direkt zusammengesetzten deutschen Breadcrumbs oder gemischten Accessibility-Namen."
     evidence_required: "i18n static gate and pseudolocale tests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: scenario breadcrumbs and all new labels route through typed Session messages; static i18n gates and the built pseudolocale/axe campaign case are green."
     decision: null
 
   - id: E2E-001
@@ -1435,40 +1465,45 @@ items:
     requirement: "Sessionlayout-Anforderungen berücksichtigen native Rahmen, Electron-Rail und tatsächliche Workspacebreite."
     acceptance: "Geometriefälle sind explizit und getestet."
     evidence_required: "Requirement matrix and tests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: live-session requirements contain a normative native-frame/rail/workspace matrix, while ResizeObserver geometry tests use the actual owner width."
     decision: null
   - id: REQ-002
     source: "Sidebar-Kritik – 200 Prozent/Pseudolokalisierung/lange Namen"
     requirement: "200-Prozent-Skalierung, Pseudolokalisierung und lange Namen sind normative Acceptance-Fälle."
     acceptance: "Alle Fälle bestehen ohne globale Mindestbreite."
     evidence_required: "Visual/a11y acceptance artifacts."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: 200-percent, pseudolocalized copy and long names are normative matrix rows; built campaign axe/viewport checks and accessible truncation tests are green without a global minimum."
     decision: null
   - id: REQ-003
     source: "Sidebar-Kritik – temporäre Verkleinerung/Persistenz"
     requirement: "Anforderung definiert Verhalten bei temporärer Verkleinerung und ob/was persistiert wird."
     acceptance: "Automatischer Fit überschreibt keine Wunschbreiten."
     evidence_required: "State acceptance test."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: the requirement explicitly separates preferred/available/effective truth; temporary 512px stacked fit and restore tests preserve the prior preference."
     decision: null
   - id: REQ-004
     source: "Sidebar-Kritik – Expansion veränderte Sichtbarkeitsannahmen"
     requirement: "Sichtbarkeit von Szenen-/Ortauswahl und Lootaktionen ist als Produktverhalten entschieden und getestet."
     acceptance: "Tests folgen explizitem Vertrag statt zufälligem Altzustand."
     evidence_required: "Requirement and focused UI/E2E tests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: requirements place scene/location selectors only in the edited row and Loot actions in their owning expansion; passive register/controller and campaign tests prove visibility."
     decision: null
   - id: REQ-005
     source: "Alle Kritiken – lokale Änderung zu breit"
     requirement: "Architektur- und Stylegrenzen messen, dass lokale Sliceänderungen keine unverbundenen Features berühren."
     acceptance: "Repräsentative Sidebar-, NPC- und Rewardänderungen bleiben in ihren Owners plus shared contracts/tests."
     evidence_required: "Dependency gates and change-surface audit."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: dependency/style gates keep Session, NPC and Encounter changes in owner slices plus shared primitives/contracts; all 61 architecture/requirements assertions are green."
     decision: null
 
   - id: PRES-010
@@ -1520,16 +1555,18 @@ items:
     requirement: "Sessionfachliche Scenario-Typen werden vom Session-Slice besessen und nur über schmale Workspace-Ports exponiert."
     acceptance: "Workspace-Prop-Modell definiert keine Session-Domainwahrheit."
     evidence_required: "Type ownership/dependency test."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: SessionScenario is owned by features/session and Workspace imports only the narrow Session surface port; type ownership/dependency tests are green."
     decision: null
   - id: LAYOUT-008
     source: "Sidebar-Kritik – Normalisierung ohne Migrationsnachweis"
     requirement: "Layoutmigrationen liefern ein testbares Resultat beziehungsweise sichere Diagnose statt stiller Transformation."
     acceptance: "Regulär migrierte und beschädigte Präferenzen sind unterscheidbar."
     evidence_required: "Migration result/log tests."
-    status: open
-    evidence: []
+    status: verified
+    evidence:
+      - "7ada6e15b: named migrationSessionLayoutPreference returns current/migrated/invalid diagnostics instead of silently normalizing; corrupt and legacy fixtures are green."
     decision: null
   - id: E2E-012
     source: "Sidebar-Kritik – Komponenten-/Controller-Tests vor breiter E2E-Schicht"
