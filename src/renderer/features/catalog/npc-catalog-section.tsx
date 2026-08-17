@@ -102,14 +102,14 @@ export default function NpcCatalogSection(props: {
                       {npc.displayName}
                     </TextActionButton>
                   </td>
-                  <td>{npc.creatureId}</td>
+                  <td>{npc.creatureDisplayName}</td>
                   <td>
                     {npc.lifecycle === 'active'
                       ? message('npc.active')
                       : message('npc.defeated')}
                   </td>
-                  <td>{factionName(npc.factionId)}</td>
-                  <td>{locationName(npc.locationId)}</td>
+                  <td>{npc.factionDisplayName ?? '—'}</td>
+                  <td>{npc.locationDisplayName ?? '—'}</td>
                   <td className="row-actions">
                     {controller.deleteId === npc.id ? (
                       <>
@@ -139,7 +139,7 @@ export default function NpcCatalogSection(props: {
         </div>
         <footer className="catalog-footer">
           <span>
-            {controller.visible.length} {message('ui.npcs')}
+            {controller.total} {message('ui.npcs')}
           </span>
         </footer>
       </div>
@@ -160,7 +160,10 @@ export default function NpcCatalogSection(props: {
             <dl>
               <NpcFact
                 label={message('npc.statblock')}
-                value={controller.selected.creatureId}
+                value={
+                  controller.selectedProjection?.creatureDisplayName ??
+                  controller.selected.creatureId
+                }
               />
               <NpcFact
                 label={message('ui.status')}
@@ -172,11 +175,17 @@ export default function NpcCatalogSection(props: {
               />
               <NpcFact
                 label={message('npc.faction')}
-                value={factionName(controller.selected.factionId)}
+                value={
+                  controller.selectedProjection?.factionDisplayName ??
+                  factionName(controller.selected.factionId)
+                }
               />
               <NpcFact
                 label={message('npc.location')}
-                value={locationName(controller.selected.locationId)}
+                value={
+                  controller.selectedProjection?.locationDisplayName ??
+                  locationName(controller.selected.locationId)
+                }
               />
               <NpcFact
                 label={message('npc.dispositionModifier')}

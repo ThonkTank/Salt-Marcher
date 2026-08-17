@@ -40,6 +40,9 @@ import { WorldLocationDeletionCommandHandler } from '../core/application/world-l
 import { WorldLocationSaveCommandHandler } from '../core/application/world-location-save.js'
 import { WorldLocationSaveJournal } from '../core/worldplanner/world-location-save-journal.js'
 import { WorldNpcStore } from '../core/worldplanner/npc-store.js'
+import { WorldNpcApplicationService } from '../core/application/world-npc-application-service.js'
+import { WorldFactionStore } from '../core/worldplanner/faction-store.js'
+import { EncounterTableStore } from '../core/encounter/encounter-table-store.js'
 import { WorldLocationPlacementService } from '../core/application/world-location-placement.js'
 import {
   BiomeCatalogService,
@@ -51,7 +54,6 @@ import { hexBrushStrokeResultSchema } from '../shared/contracts/hex.js'
 import { hexTravelContextResultSchema } from '../shared/contracts/live-session.js'
 import { ReferenceService } from '../core/reference/reference-service.js'
 import { ReferenceCatalogAdapter } from '../core/reference/reference-catalog-adapter.js'
-import { referenceTargetKey } from '../shared/reference/reference-target-key.js'
 import { randomUUID } from 'node:crypto'
 import {
   BundledSessionGenerationCatalogRegistry,
@@ -77,6 +79,10 @@ import { createBiomeHandlers } from './composition/biome.js'
 import { createWorldPlannerHandlers } from './composition/world-planner.js'
 import { createHexHandlers } from './composition/hex.js'
 import { createTravelHandlers } from './composition/travel.js'
+import {
+  ReferenceChangeCoordinator,
+  type ReferenceChangeDescriptor
+} from '../core/reference/reference-change-coordinator.js'
 import {
   bootstrapMetrics,
   bootstrapPhase,
@@ -152,6 +158,33 @@ const sources = new EncounterSourceService(
       visitor({ id, database })
     )
 )
+const creatureReferences = new Map(
+  creatureCatalogRows.map((creature) => [
+    creature.id,
+    { id: creature.id, displayName: creature.name }
+  ])
+)
+const creatureReferenceResolver = {
+  resolve: (id: string) => creatureReferences.get(id) ?? null
+}
+const worldNpcs = new WorldNpcApplicationService(
+  activeDatabase,
+  creatureReferenceResolver,
+  (database) => {
+    const campaignTables = new EncounterTableStore(database)
+    const installationTables = new EncounterTableStore(
+      campaigns.installationDatabase(),
+      'installation'
+    )
+    return new WorldFactionStore(database, {
+      containsTable: (id) =>
+        campaignTables.contains(id) || installationTables.contains(id),
+      containsCreature: (tableId, creatureId) =>
+        campaignTables.containsCreature(tableId, creatureId) ||
+        installationTables.containsCreature(tableId, creatureId)
+    })
+  }
+)
 const biomeService = new BiomeCatalogService(campaigns)
 const biomeProjection = (
   id: Parameters<typeof biomeService.hexDefinition>[0]
@@ -216,7 +249,7 @@ const worldLocationDeletion = new WorldLocationDeletionCommandHandler(() => {
     maps: new HexMapStore(db, locationsForMap),
     journal: new HexEditJournalStore(db),
     locations: locationsForMap,
-    npcs: new WorldNpcStore(db)
+    npcs: new WorldNpcStore(db, creatureReferenceResolver)
   }
 })
 const worldLocationPlacement = new WorldLocationPlacementService(() => {
@@ -270,8 +303,21 @@ const references = new ReferenceService(
   { all: () => creatureCatalogRows, detail: (id) => creatures.detail(id) },
   locations,
   { read: () => sources.readFactions() },
-  { read: () => sources.readNpcs() },
+  { read: () => worldNpcs.readAllForReferences() },
   () => campaigns.activeCampaignId()
+)
+const referenceChanges = new ReferenceChangeCoordinator(
+  () => campaigns.activeCampaignId(),
+  (campaignId) => references.campaignIndex(campaignId),
+  {
+    all: () => worldNpcs.referenceDependencies(),
+    one: (id) => worldNpcs.referenceDependency(id)
+  },
+  (notice) =>
+    postCoreEvent({
+      kind: 'reference.changed',
+      notice
+    })
 )
 let travelTimer: NodeJS.Timeout | undefined
 
@@ -280,72 +326,12 @@ function postCoreEvent(event: unknown): void {
   process.parentPort?.postMessage(coreEventSchema.parse(event))
 }
 
-type ReferenceSnapshot = Readonly<{
-  index: ReturnType<ReferenceService['campaignIndex']>
-  documents: ReadonlyMap<string, string>
-}>
-
-function referenceSnapshot(): ReferenceSnapshot {
-  const campaignId = campaigns.activeCampaignId()
-  const index = references.campaignIndex(campaignId)
-  const targets = new Map(
-    index.terms.flatMap((term) =>
-      term.candidates.map(
-        (candidate) =>
-          [referenceTargetKey(candidate.target), candidate.target] as const
-      )
-    )
-  )
-  return {
-    index,
-    documents: new Map(
-      [...targets].map(([key, target]) => [
-        key,
-        JSON.stringify(references.detail(target))
-      ])
-    )
-  }
-}
-
-function publishReferenceChange(before: ReferenceSnapshot | null): void {
-  const campaignId = campaigns.activeCampaignId()
-  const after = referenceSnapshot()
-  const targets = (snapshot: ReferenceSnapshot | null) =>
-    new Map(
-      (snapshot?.index.terms ?? []).flatMap((term) =>
-        term.candidates.map(
-          (candidate) =>
-            [referenceTargetKey(candidate.target), candidate.target] as const
-        )
-      )
-    )
-  const oldTargets = targets(before)
-  const newTargets = targets(after)
-  const changedTargets = [...oldTargets, ...newTargets]
-    .filter(
-      ([key], index, all) => all.findIndex(([other]) => other === key) === index
-    )
-    .filter(([key]) => before?.documents.get(key) !== after.documents.get(key))
-    .map(([, target]) => target)
-  postCoreEvent({
-    kind: 'reference.changed',
-    notice: {
-      campaignId,
-      revision: after.index.revision,
-      changedTargets
-    }
-  })
-}
-
-function mutateReferences<T>(work: () => T): T {
-  let before: ReferenceSnapshot | null = null
-  try {
-    before = referenceSnapshot()
-  } catch {
-    // Creating the first campaign has no previous campaign reference index.
-  }
+function mutateReferences<T>(
+  work: () => T,
+  changes: (result: T) => readonly ReferenceChangeDescriptor[]
+): T {
   const result = work()
-  publishReferenceChange(before)
+  referenceChanges.record(changes(result))
   return result
 }
 
@@ -598,8 +584,22 @@ function publishNpcChange(
   postCoreEvent({
     kind: 'npcs.changed',
     notice: {
-      revision: sources.readNpcs().revision,
+      revision: worldNpcs.search({ limit: 1 }).revision,
       changedNpcIds,
+      reason
+    }
+  })
+}
+
+function publishFactionChange(
+  changedFactionIds: readonly string[],
+  reason: 'created' | 'updated' | 'deleted'
+): void {
+  postCoreEvent({
+    kind: 'factions.changed',
+    notice: {
+      revision: sources.readFactions().revision,
+      changedFactionIds,
       reason
     }
   })
@@ -669,6 +669,7 @@ const worldPlannerHandlers = createWorldPlannerHandlers({
   deletion: worldLocationDeletion,
   symbols: symbolLifecycle,
   sources,
+  worldNpcs,
   biomes: biomeService,
   mutateReferences,
   publishLocationChange,
@@ -678,7 +679,8 @@ const worldPlannerHandlers = createWorldPlannerHandlers({
   publishBiomeChange,
   publishHexChange,
   publishHexNotice,
-  publishNpcChange
+  publishNpcChange,
+  publishFactionChange
 })
 
 const sessionHandlers = createSessionHandlers(play)

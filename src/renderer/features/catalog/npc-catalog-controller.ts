@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { CatalogCapabilities } from './catalog-capabilities.js'
 import type { WorldFactionSnapshot } from '../../../shared/contracts/encounter-source.js'
 import type { WorldLocation } from '../../../shared/contracts/world-location.js'
 import type {
   WorldNpc,
+  WorldNpcDetailProjection,
   WorldNpcDraft,
-  WorldNpcSnapshot
+  WorldNpcListRow,
+  WorldNpcPage
 } from '../../../shared/contracts/world-npc.js'
 import { capabilityErrorCode } from '../../../shared/errors/capability-error.js'
 import {
@@ -18,16 +20,21 @@ import type { SearchableSelectOption } from '../../shell/searchable-select.js'
 
 export type NpcLifecycleFilter = 'all' | WorldNpc['lifecycle']
 
+const emptyPage: WorldNpcPage = {
+  revision: 0,
+  rows: [],
+  total: 0,
+  offset: 0,
+  limit: 50
+}
+
 export function useNpcCatalogController(
   active: boolean,
   onError: (message: string) => void,
   api: CatalogCapabilities,
   creatures: CreatureCapabilityPort
 ) {
-  const [snapshot, setSnapshot] = useState<WorldNpcSnapshot>({
-    revision: 0,
-    npcs: []
-  })
+  const [page, setPage] = useState<WorldNpcPage>(emptyPage)
   const [factionSnapshot, setFactionSnapshot] = useState<WorldFactionSnapshot>({
     revision: 0,
     factions: []
@@ -39,77 +46,96 @@ export function useNpcCatalogController(
   const [factionId, setFactionId] = useState<string>('all')
   const [locationId, setLocationId] = useState<string>('all')
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedProjection, setSelectedProjection] =
+    useState<WorldNpcDetailProjection | null>(null)
   const [editing, setEditing] = useState<WorldNpc | null | undefined>()
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [creatureOptions, setCreatureOptions] = useState<
     readonly SearchableSelectOption[]
   >([])
 
+  const loadReferences = useCallback(async () => {
+    const [factions, locationSnapshot] = await Promise.all([
+      api.factions.read(),
+      api.locations.read()
+    ])
+    setFactionSnapshot(factions)
+    setLocations(locationSnapshot.locations)
+  }, [api])
+
+  const loadPage = useCallback(async () => {
+    const result = await api.npcs.search({
+      query: search,
+      lifecycle: lifecycle === 'all' ? null : lifecycle,
+      creatureId: null,
+      ...(factionId === 'all'
+        ? {}
+        : { factionId: factionId === 'none' ? null : factionId }),
+      ...(locationId === 'all'
+        ? {}
+        : { locationId: locationId === 'none' ? null : locationId }),
+      offset: 0,
+      limit: 50
+    })
+    setPage(result)
+  }, [api, factionId, lifecycle, locationId, search])
+
+  const loadSelected = useCallback(
+    async (id: string | null) => {
+      if (id === null) {
+        setSelectedProjection(null)
+        return
+      }
+      const detail = await api.npcs.detail({ id })
+      setSelectedProjection(detail)
+    },
+    [api]
+  )
+
   useEffect(() => {
     if (!active) return
     let current = true
-    const load = () =>
-      Promise.all([api.npcs.read(), api.factions.read(), api.locations.read()])
-        .then(([npcs, factions, locationSnapshot]) => {
-          if (!current) return
-          setSnapshot(npcs)
-          setFactionSnapshot(factions)
-          setLocations(locationSnapshot.locations)
-        })
-        .catch(reportCapabilityError(onError))
+    const load = async () => {
+      try {
+        await Promise.all([loadPage(), loadReferences()])
+      } catch (cause) {
+        if (current) reportCapabilityError(onError)(cause)
+      }
+    }
     void load()
-    const unsubscribe = api.npcs.onChanged(() => {
-      void load()
-    })
+    const reload = () => {
+      if (!current) return
+      void Promise.all([
+        loadPage(),
+        loadReferences(),
+        loadSelected(selectedId)
+      ]).catch(reportCapabilityError(onError))
+    }
+    const unsubscribeNpcs = api.npcs.onChanged(reload)
+    const unsubscribeLocations = api.locations.onChanged(reload)
+    const unsubscribeFactions = api.factions.onChanged(reload)
     return () => {
       current = false
-      unsubscribe()
+      unsubscribeNpcs()
+      unsubscribeLocations()
+      unsubscribeFactions()
     }
-  }, [active, api, onError])
+  }, [active, api, loadPage, loadReferences, loadSelected, onError, selectedId])
 
   useEffect(() => {
     const timer = window.setTimeout(() => setSearch(searchInput), 200)
     return () => window.clearTimeout(timer)
   }, [searchInput])
 
-  const visible = useMemo(() => {
-    const needle = search.trim().toLocaleLowerCase()
-    return snapshot.npcs.filter(
-      (npc) =>
-        (lifecycle === 'all' || npc.lifecycle === lifecycle) &&
-        (factionId === 'all' ||
-          (factionId === 'none'
-            ? npc.factionId === null
-            : npc.factionId === factionId)) &&
-        (locationId === 'all' ||
-          (locationId === 'none'
-            ? npc.locationId === null
-            : npc.locationId === locationId)) &&
-        [
-          npc.displayName,
-          npc.creatureId,
-          npc.appearance,
-          npc.behavior,
-          npc.history,
-          npc.notes
-        ]
-          .join(' ')
-          .toLocaleLowerCase()
-          .includes(needle)
-    )
-  }, [factionId, lifecycle, locationId, search, snapshot.npcs])
-
-  const selected = snapshot.npcs.find((npc) => npc.id === selectedId) ?? null
-
   const searchCreatures = useCallback(
     async (query: string): Promise<readonly SearchableSelectOption[]> => {
       try {
-        const page = await creatures.search({
+        const result = await creatures.search({
           ...emptyQuery,
           name: query,
           limit: 40
         })
-        const options = page.rows.map((creature) => ({
+        const options = result.rows.map((creature) => ({
           id: creature.id,
           label: creature.name,
           searchText: `${creature.id} ${creature.type} ${creature.subtype ?? ''}`,
@@ -133,33 +159,40 @@ export function useNpcCatalogController(
             commandId,
             id: editing.id,
             npc: draft,
-            expectedRevision: snapshot.revision,
+            expectedRevision: page.revision,
             expectedFactionRevision: factionSnapshot.revision
           })
         : await api.npcs.create({
             commandId,
             npc: draft,
-            expectedRevision: snapshot.revision,
+            expectedRevision: page.revision,
             expectedFactionRevision: factionSnapshot.revision
           })
       acceptMutation(receipt)
+      await Promise.all([loadPage(), loadReferences()])
     } catch (cause) {
       if (capabilityErrorCode(cause) !== 'outcome_unknown') throw cause
       const recovered = await api.npcs.commandReceipt({ commandId })
       if (!recovered || !('saved' in recovered)) throw cause
       acceptMutation(recovered)
+      await Promise.all([loadPage(), loadReferences()])
     }
   }
 
   function acceptMutation(receipt: {
-    snapshot: WorldNpcSnapshot
-    factionSnapshot: WorldFactionSnapshot
+    revision: number
+    factionRevision: number
     saved: WorldNpc
   }) {
-    setSnapshot(receipt.snapshot)
-    setFactionSnapshot(receipt.factionSnapshot)
+    setPage((current) => ({ ...current, revision: receipt.revision }))
+    setFactionSnapshot((current) => ({
+      ...current,
+      revision: receipt.factionRevision
+    }))
     setSelectedId(receipt.saved.id)
+    setSelectedProjection(null)
     setEditing(undefined)
+    void loadSelected(receipt.saved.id).catch(reportCapabilityError(onError))
   }
 
   async function remove(id: string) {
@@ -170,7 +203,7 @@ export function useNpcCatalogController(
         receipt = await api.npcs.delete({
           commandId,
           id,
-          expectedRevision: snapshot.revision,
+          expectedRevision: page.revision,
           expectedFactionRevision: factionSnapshot.revision
         })
       } catch (cause) {
@@ -179,25 +212,34 @@ export function useNpcCatalogController(
         if (!recovered || !('deletedId' in recovered)) throw cause
         receipt = recovered
       }
-      setSnapshot(receipt.snapshot)
-      setFactionSnapshot(receipt.factionSnapshot)
+      setPage((current) => ({ ...current, revision: receipt.revision }))
+      setFactionSnapshot((current) => ({
+        ...current,
+        revision: receipt.factionRevision
+      }))
       setSelectedId((current) => (current === id ? null : current))
+      setSelectedProjection((current) =>
+        current?.npc.id === id ? null : current
+      )
       setDeleteId(null)
+      await Promise.all([loadPage(), loadReferences()])
     } catch (cause) {
       reportCapabilityError(onError)(cause)
     }
   }
 
   return {
-    snapshot,
-    visible,
+    snapshot: page,
+    visible: page.rows,
+    total: page.total,
     factions: factionSnapshot.factions,
     locations,
     searchInput,
     lifecycle,
     factionId,
     locationId,
-    selected,
+    selected: selectedProjection?.npc ?? null,
+    selectedProjection,
     editing,
     deleteId,
     creatureOptions,
@@ -206,7 +248,11 @@ export function useNpcCatalogController(
     setLifecycle,
     setFactionId,
     setLocationId,
-    setSelected: (npc: WorldNpc | null) => setSelectedId(npc?.id ?? null),
+    setSelected: (npc: WorldNpcListRow | null) => {
+      setSelectedId(npc?.id ?? null)
+      setSelectedProjection(null)
+      void loadSelected(npc?.id ?? null).catch(reportCapabilityError(onError))
+    },
     setEditing,
     setDeleteId,
     save,

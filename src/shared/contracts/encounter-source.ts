@@ -123,6 +123,15 @@ export const worldFactionSnapshotSchema = z
   })
   .strict()
 
+export const worldFactionChangeNoticeSchema = z
+  .object({
+    revision: z.number().int().nonnegative(),
+    changedFactionIds: z.array(z.uuid()),
+    reason: z.enum(['created', 'updated', 'deleted'])
+  })
+  .strict()
+  .readonly()
+
 const mutationBaseSchema = z
   .object({ expectedRevision: z.number().int().nonnegative() })
   .strict()
@@ -234,6 +243,9 @@ export type EncounterTableSnapshot = Readonly<
 >
 export type EncounterTableChangeNotice = Readonly<
   z.infer<typeof encounterTableChangeNoticeSchema>
+>
+export type WorldFactionChangeNotice = Readonly<
+  z.infer<typeof worldFactionChangeNoticeSchema>
 >
 export type WorldFaction = Readonly<z.infer<typeof worldFactionSchema>>
 export type WorldFactionDraft = Readonly<

@@ -1,7 +1,12 @@
 import type Database from 'better-sqlite3'
 import type { SchemaMigration } from './schema-migrations.js'
 import { migratePartySchema28To29 } from '../../party/party-store.js'
-import { initializeWorldNpcSchema } from '../../worldplanner/npc-store.js'
+import {
+  initializeWorldNpcSchema,
+  migrateWorldNpcSchema32To33
+} from '../../worldplanner/npc-store.js'
+import { initializeWorldLocationSchema } from '../../worldplanner/location-store.js'
+import { initializeWorldFactionSchema } from '../../worldplanner/faction-store.js'
 import { migrateLootSchema30To31 } from '../../loot/loot-schema-31-migration.js'
 
 export function initializeCampaignSchemaMetadata(
@@ -149,6 +154,26 @@ export const campaignSchemaMigrations: readonly SchemaMigration[] =
           )
           .run(
             'campaign-31-to-32-reward-participant-levels',
+            new Date().toISOString()
+          )
+      }
+    },
+    {
+      id: 'campaign-32-to-33-world-planner-relations',
+      role: 'campaign',
+      fromVersion: 32,
+      toVersion: 33,
+      migrate(database) {
+        initializeCampaignSchemaMetadata(database)
+        initializeWorldLocationSchema(database)
+        initializeWorldFactionSchema(database)
+        migrateWorldNpcSchema32To33(database)
+        database
+          .prepare(
+            'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run(
+            'campaign-32-to-33-world-planner-relations',
             new Date().toISOString()
           )
       }

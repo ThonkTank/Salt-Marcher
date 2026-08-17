@@ -12,6 +12,9 @@ import { CampaignStore } from '../../src/core/persistence/sqlite/campaign-store.
 import { ReferenceCatalogAdapter } from '../../src/core/reference/reference-catalog-adapter.js'
 import { ReferenceService } from '../../src/core/reference/reference-service.js'
 import { WorldLocationService } from '../../src/core/worldplanner/location-store.js'
+import { WorldNpcApplicationService } from '../../src/core/application/world-npc-application-service.js'
+import { EncounterTableStore } from '../../src/core/encounter/encounter-table-store.js'
+import { WorldFactionStore } from '../../src/core/worldplanner/faction-store.js'
 
 const roots: string[] = []
 const catalogs: ReferenceCatalogAdapter[] = []
@@ -30,6 +33,20 @@ function harness() {
   const database = () => campaigns.activeCampaignDatabase()
   const locations = new WorldLocationService(database)
   const sources = new EncounterSourceService(database)
+  const npcResolver = {
+    resolve(id: string) {
+      const creature = creatureCatalog.find((candidate) => candidate.id === id)
+      return creature ? { id: creature.id, displayName: creature.name } : null
+    }
+  }
+  const npcs = new WorldNpcApplicationService(database, npcResolver, (db) => {
+    const tables = new EncounterTableStore(db)
+    return new WorldFactionStore(db, {
+      containsTable: (id) => tables.contains(id),
+      containsCreature: (tableId, creatureId) =>
+        tables.containsCreature(tableId, creatureId)
+    })
+  })
   const creatures = new CreatureCatalogService(() =>
     campaigns.installationDatabase()
   )
@@ -41,12 +58,13 @@ function harness() {
     campaigns,
     locations,
     sources,
+    npcs,
     references: new ReferenceService(
       catalog,
       { all: () => creatureCatalog, detail: (id) => creatures.detail(id) },
       locations,
       { read: () => sources.readFactions() },
-      { read: () => sources.readNpcs() },
+      { read: () => npcs.readAllForReferences() },
       () => campaigns.activeCampaignId()
     )
   }
@@ -129,7 +147,7 @@ describe('reference service', () => {
   })
 
   it('indexes NPC names and returns current creature, faction and location facts', () => {
-    const { campaigns, locations, sources, references } = harness()
+    const { campaigns, locations, sources, npcs, references } = harness()
     const faction = sources.createFaction(
       randomUUID(),
       {
@@ -149,7 +167,7 @@ describe('reference service', () => {
       },
       0
     ).saved
-    const created = sources.createNpc(
+    const created = npcs.create(
       randomUUID(),
       {
         displayName: 'Erika',
@@ -183,7 +201,7 @@ describe('reference service', () => {
     expect(JSON.stringify(detail)).toContain('Silberne Flügel.')
 
     const factionsBefore = sources.readFactions().revision
-    sources.updateNpc(
+    npcs.update(
       randomUUID(),
       created.saved.id,
       {
@@ -198,8 +216,8 @@ describe('reference service', () => {
         factionId: created.saved.factionId,
         locationId: created.saved.locationId
       },
-      created.snapshot.revision,
-      created.factionSnapshot.revision
+      created.revision,
+      created.factionRevision
     )
     const updatedIndex = references.campaignIndex(campaignId)
     expect(updatedIndex.revision).not.toBe(indexed.revision)

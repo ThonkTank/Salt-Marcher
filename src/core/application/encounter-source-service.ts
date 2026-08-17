@@ -21,8 +21,6 @@ import {
 import { EncounterTableStore } from '../encounter/encounter-table-store.js'
 import { WorldFactionStore } from '../worldplanner/faction-store.js'
 import { WorldLocationStore } from '../worldplanner/location-store.js'
-import { WorldNpcStore } from '../worldplanner/npc-store.js'
-import type { WorldNpcDraft } from '../../shared/contracts/world-npc.js'
 import { anyBiomeEncounterTableId } from '../../shared/contracts/biome.js'
 import { BiomeCatalogStore } from '../biomes/biome-catalog.js'
 import { creatureById } from '../creatures/catalog.js'
@@ -227,48 +225,6 @@ export class EncounterSourceService {
     return this.withStores(({ factions }) => factions.read())
   }
 
-  readNpcs() {
-    return this.withStores(({ npcs }) => npcs.read())
-  }
-
-  npcReceipt(commandId: string) {
-    return this.withStores(({ npcs }) => npcs.commandReceipt(commandId))
-  }
-
-  createNpc(
-    commandId: string,
-    draft: WorldNpcDraft,
-    revision: number,
-    factionRevision: number
-  ) {
-    return this.withStores(({ npcs }) =>
-      npcs.create(commandId, draft, revision, factionRevision)
-    )
-  }
-
-  updateNpc(
-    commandId: string,
-    id: string,
-    draft: WorldNpcDraft,
-    revision: number,
-    factionRevision: number
-  ) {
-    return this.withStores(({ npcs }) =>
-      npcs.update(commandId, id, draft, revision, factionRevision)
-    )
-  }
-
-  deleteNpc(
-    commandId: string,
-    id: string,
-    revision: number,
-    factionRevision: number
-  ) {
-    return this.withStores(({ npcs }) =>
-      npcs.delete(commandId, id, revision, factionRevision)
-    )
-  }
-
   factionReceipt(commandId: string) {
     return this.withStores(({ factions }) => factions.commandReceipt(commandId))
   }
@@ -291,12 +247,11 @@ export class EncounterSourceService {
   }
 
   deleteFaction(commandId: string, id: string, revision: number) {
-    return this.withStores(({ db, factions, locations, npcs }) => {
+    return this.withStores(({ db, factions, locations }) => {
       let receipt: ReturnType<WorldFactionStore['delete']> | null = null
       db.transaction(() => {
         receipt = factions.delete(commandId, id, revision)
         locations.unlinkFaction(id)
-        npcs.unlinkFaction(id)
       })()
       if (!receipt) throw new Error('Deleted World Faction receipt is missing.')
       return worldFactionDeleteReceiptSchema.parse(receipt)
@@ -321,7 +276,6 @@ export class EncounterSourceService {
       tables: EncounterTableStore
       factions: WorldFactionStore
       locations: WorldLocationStore
-      npcs: WorldNpcStore
     }) => T
   ): T {
     const db = this.campaignDatabase()
@@ -338,8 +292,7 @@ export class EncounterSourceService {
       db,
       tables,
       factions,
-      locations: new WorldLocationStore(db),
-      npcs: new WorldNpcStore(db, factions)
+      locations: new WorldLocationStore(db)
     })
   }
 

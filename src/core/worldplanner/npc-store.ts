@@ -3,17 +3,29 @@ import { z } from 'zod'
 import {
   worldNpcCommandReceiptSchema,
   worldNpcDeleteReceiptSchema,
+  worldNpcDetailProjectionSchema,
+  worldNpcPageSchema,
+  worldNpcSearchInputSchema,
+  worldNpcSchema,
   worldNpcDraftSchema,
   worldNpcMutationReceiptSchema,
   worldNpcSnapshotSchema,
   type WorldNpc,
   type WorldNpcDraft,
+  type WorldNpcPage,
+  type WorldNpcSearchInput,
   type WorldNpcSnapshot
 } from '../../shared/contracts/world-npc.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import { uuidv7 } from '../../shared/ids/uuidv7.js'
-import { creatureById } from '../creatures/catalog.js'
 import type { WorldFactionSnapshot } from '../../shared/contracts/encounter-source.js'
+import type { NpcReferenceDependencies } from '../reference/reference-change-coordinator.js'
+
+export const WORLD_NPC_RECEIPT_RETENTION_LIMIT = 1_000
+
+export interface CreatureReferenceResolver {
+  resolve(id: string): Readonly<{ id: string; displayName: string }> | null
+}
 
 export interface WorldNpcFactionMembershipCoordinator {
   read(): WorldFactionSnapshot
@@ -37,12 +49,12 @@ export function initializeWorldNpcSchema(db: Database.Database): void {
       history TEXT NOT NULL,
       notes TEXT NOT NULL,
       disposition_modifier INTEGER NOT NULL CHECK(disposition_modifier BETWEEN -50 AND 50),
-      location_id TEXT,
+      location_id TEXT REFERENCES worldplanner_location(id) ON DELETE SET NULL,
       position INTEGER NOT NULL CHECK(position >= 0)
     );
     CREATE TABLE IF NOT EXISTS worldplanner_faction_npc (
       npc_id TEXT PRIMARY KEY NOT NULL REFERENCES worldplanner_npc(id) ON DELETE CASCADE,
-      faction_id TEXT NOT NULL
+      faction_id TEXT NOT NULL REFERENCES worldplanner_faction(id) ON DELETE CASCADE
     );
     CREATE INDEX IF NOT EXISTS idx_worldplanner_faction_npc_faction
       ON worldplanner_faction_npc(faction_id, npc_id);
@@ -62,13 +74,64 @@ export function initializeWorldNpcSchema(db: Database.Database): void {
   ).run()
 }
 
+export function migrateWorldNpcSchema32To33(db: Database.Database): void {
+  db.exec(`
+    CREATE TABLE worldplanner_npc_v33 (
+      id TEXT PRIMARY KEY NOT NULL,
+      display_name TEXT NOT NULL,
+      creature_id TEXT NOT NULL,
+      lifecycle TEXT NOT NULL CHECK(lifecycle IN ('active', 'defeated')),
+      appearance TEXT NOT NULL,
+      behavior TEXT NOT NULL,
+      history TEXT NOT NULL,
+      notes TEXT NOT NULL,
+      disposition_modifier INTEGER NOT NULL CHECK(disposition_modifier BETWEEN -50 AND 50),
+      location_id TEXT REFERENCES worldplanner_location(id) ON DELETE SET NULL,
+      position INTEGER NOT NULL CHECK(position >= 0)
+    );
+    INSERT INTO worldplanner_npc_v33
+      (id, display_name, creature_id, lifecycle, appearance, behavior, history,
+       notes, disposition_modifier, location_id, position)
+    SELECT npc.id, npc.display_name, npc.creature_id, npc.lifecycle,
+           npc.appearance, npc.behavior, npc.history, npc.notes,
+           npc.disposition_modifier,
+           CASE WHEN location.id IS NULL THEN NULL ELSE npc.location_id END,
+           npc.position
+    FROM worldplanner_npc npc
+    LEFT JOIN worldplanner_location location ON location.id = npc.location_id;
+
+    CREATE TABLE worldplanner_faction_npc_v33 (
+      npc_id TEXT PRIMARY KEY NOT NULL
+        REFERENCES worldplanner_npc_v33(id) ON DELETE CASCADE,
+      faction_id TEXT NOT NULL
+        REFERENCES worldplanner_faction(id) ON DELETE CASCADE
+    );
+    INSERT INTO worldplanner_faction_npc_v33 (npc_id, faction_id)
+    SELECT membership.npc_id, membership.faction_id
+    FROM worldplanner_faction_npc membership
+    JOIN worldplanner_npc_v33 npc ON npc.id = membership.npc_id
+    JOIN worldplanner_faction faction ON faction.id = membership.faction_id;
+
+    DROP TABLE worldplanner_faction_npc;
+    DROP TABLE worldplanner_npc;
+    ALTER TABLE worldplanner_npc_v33 RENAME TO worldplanner_npc;
+    ALTER TABLE worldplanner_faction_npc_v33 RENAME TO worldplanner_faction_npc;
+    CREATE INDEX idx_worldplanner_faction_npc_faction
+      ON worldplanner_faction_npc(faction_id, npc_id);
+    CREATE INDEX idx_worldplanner_npc_name
+      ON worldplanner_npc(display_name COLLATE NOCASE, id);
+    CREATE INDEX idx_worldplanner_npc_location
+      ON worldplanner_npc(location_id, id);
+  `)
+}
+
 export class WorldNpcStore {
   constructor(
     private readonly db: Database.Database,
-    private readonly factions?: WorldNpcFactionMembershipCoordinator
+    private readonly creatures: CreatureReferenceResolver
   ) {}
 
-  read(): WorldNpcSnapshot {
+  readAllForReferences(): WorldNpcSnapshot {
     const rows = this.db
       .prepare(
         `
@@ -89,6 +152,160 @@ export class WorldNpcStore {
     })
   }
 
+  referenceDependencies(): readonly NpcReferenceDependencies[] {
+    return this.db
+      .prepare(
+        `SELECT npc.id AS npcId, npc.creature_id AS creatureId,
+                membership.faction_id AS factionId,
+                npc.location_id AS locationId
+         FROM worldplanner_npc npc
+         LEFT JOIN worldplanner_faction_npc membership ON membership.npc_id = npc.id
+         ORDER BY npc.id`
+      )
+      .all() as NpcReferenceDependencies[]
+  }
+
+  referenceDependency(id: string): NpcReferenceDependencies | null {
+    const row = this.db
+      .prepare(
+        `SELECT npc.id AS npcId, npc.creature_id AS creatureId,
+                membership.faction_id AS factionId,
+                npc.location_id AS locationId
+         FROM worldplanner_npc npc
+         LEFT JOIN worldplanner_faction_npc membership ON membership.npc_id = npc.id
+         WHERE npc.id = ?`
+      )
+      .get(id) as NpcReferenceDependencies | undefined
+    return row ?? null
+  }
+
+  search(input: WorldNpcSearchInput): WorldNpcPage {
+    const query = worldNpcSearchInputSchema.parse(input)
+    const clauses: string[] = []
+    const parameters: unknown[] = []
+    if (query.query !== '') {
+      clauses.push(`(
+        npc.display_name LIKE ? ESCAPE '\\' COLLATE NOCASE OR
+        npc.appearance LIKE ? ESCAPE '\\' COLLATE NOCASE OR
+        npc.behavior LIKE ? ESCAPE '\\' COLLATE NOCASE OR
+        npc.history LIKE ? ESCAPE '\\' COLLATE NOCASE OR
+        npc.notes LIKE ? ESCAPE '\\' COLLATE NOCASE
+      )`)
+      const value = `%${escapeLike(query.query)}%`
+      parameters.push(value, value, value, value, value)
+    }
+    if (query.lifecycle !== null) {
+      clauses.push('npc.lifecycle = ?')
+      parameters.push(query.lifecycle)
+    }
+    if (query.creatureId !== null) {
+      clauses.push('npc.creature_id = ?')
+      parameters.push(query.creatureId)
+    }
+    addNullableFilter(
+      clauses,
+      parameters,
+      'membership.faction_id',
+      query.factionId
+    )
+    addNullableFilter(clauses, parameters, 'npc.location_id', query.locationId)
+    const where = clauses.length === 0 ? '' : `WHERE ${clauses.join(' AND ')}`
+    const total = (
+      this.db
+        .prepare(
+          `SELECT COUNT(*) AS total
+           FROM worldplanner_npc npc
+           LEFT JOIN worldplanner_faction_npc membership ON membership.npc_id = npc.id
+           ${where}`
+        )
+        .get(...parameters) as { total: number }
+    ).total
+    const rows = this.db
+      .prepare(
+        `SELECT npc.id, npc.display_name AS displayName,
+                npc.creature_id AS creatureId, npc.lifecycle,
+                npc.disposition_modifier AS dispositionModifier,
+                membership.faction_id AS factionId,
+                faction.display_name AS factionDisplayName,
+                npc.location_id AS locationId,
+                location.display_name AS locationDisplayName,
+                npc.position
+         FROM worldplanner_npc npc
+         LEFT JOIN worldplanner_faction_npc membership ON membership.npc_id = npc.id
+         LEFT JOIN worldplanner_faction faction ON faction.id = membership.faction_id
+         LEFT JOIN worldplanner_location location ON location.id = npc.location_id
+         ${where}
+         ORDER BY npc.position, npc.id LIMIT ? OFFSET ?`
+      )
+      .all(...parameters, query.limit, query.offset) as Array<
+      Record<string, unknown> & { creatureId: string }
+    >
+    return worldNpcPageSchema.parse({
+      revision: this.revision(),
+      rows: rows.map((row) => ({
+        ...row,
+        creatureDisplayName:
+          this.creatures.resolve(row.creatureId)?.displayName ?? row.creatureId
+      })),
+      total,
+      offset: query.offset,
+      limit: query.limit
+    })
+  }
+
+  detail(id: string): WorldNpc | null {
+    const row = this.db
+      .prepare(
+        `SELECT npc.id, npc.display_name AS displayName,
+                npc.creature_id AS creatureId, npc.lifecycle,
+                npc.appearance, npc.behavior, npc.history, npc.notes,
+                npc.disposition_modifier AS dispositionModifier,
+                membership.faction_id AS factionId,
+                npc.location_id AS locationId, npc.position
+         FROM worldplanner_npc npc
+         LEFT JOIN worldplanner_faction_npc membership ON membership.npc_id = npc.id
+         WHERE npc.id = ?`
+      )
+      .get(id)
+    return row ? worldNpcSchema.parse(row) : null
+  }
+
+  detailProjection(id: string) {
+    const npc = this.detail(id)
+    if (!npc) throw new CapabilityError('not_found', false)
+    const creature = this.creatures.resolve(npc.creatureId)
+    if (!creature) throw new CapabilityError('not_found', false)
+    return worldNpcDetailProjectionSchema.parse({
+      revision: this.revision(),
+      npc,
+      creatureDisplayName: creature.displayName,
+      factionDisplayName: npc.factionId
+        ? this.referenceDisplayName('worldplanner_faction', npc.factionId)
+        : null,
+      locationDisplayName: npc.locationId
+        ? this.referenceDisplayName('worldplanner_location', npc.locationId)
+        : null
+    })
+  }
+
+  linkedToFaction(factionId: string): readonly string[] {
+    return (
+      this.db
+        .prepare(
+          'SELECT npc_id AS id FROM worldplanner_faction_npc WHERE faction_id = ? ORDER BY npc_id'
+        )
+        .all(factionId) as Array<{ id: string }>
+    ).map((row) => row.id)
+  }
+
+  recordExternalReferenceChange(ids: readonly string[]): void {
+    if (ids.length > 0) this.bumpRevision()
+  }
+
+  currentRevision(): number {
+    return this.revision()
+  }
+
   commandReceipt(commandId: string) {
     const row = this.db
       .prepare(
@@ -104,7 +321,8 @@ export class WorldNpcStore {
     commandId: string,
     draft: WorldNpcDraft,
     expectedRevision: number,
-    expectedFactionRevision: number
+    expectedFactionRevision: number | null,
+    factions: WorldNpcFactionMembershipCoordinator
   ) {
     const parsed = worldNpcDraftSchema.parse(draft)
     const request = { draft: parsed, expectedRevision, expectedFactionRevision }
@@ -117,8 +335,10 @@ export class WorldNpcStore {
     if (replay) return replay
     this.transact(() => {
       this.assertRevision(expectedRevision)
-      const factions = this.requireFactions()
-      factions.assertMembershipRevision(expectedFactionRevision)
+      if (parsed.factionId !== null)
+        factions.assertMembershipRevision(
+          requireFactionRevision(expectedFactionRevision)
+        )
       this.assertReferences(parsed)
       const id = uuidv7()
       const position = (
@@ -132,11 +352,11 @@ export class WorldNpcStore {
       this.replaceFaction(id, parsed.factionId)
       this.bumpRevision()
       if (parsed.factionId !== null) factions.recordMembershipChange()
-      const snapshot = this.read()
+      const saved = requireNpc(this.detail(id))
       this.writeReceipt(commandId, 'create', request, {
-        snapshot,
-        factionSnapshot: factions.read(),
-        saved: requireNpc(snapshot.npcs, id)
+        revision: this.revision(),
+        factionRevision: factions.read().revision,
+        saved
       })
     })
     return this.receipt(
@@ -152,7 +372,8 @@ export class WorldNpcStore {
     id: string,
     draft: WorldNpcDraft,
     expectedRevision: number,
-    expectedFactionRevision: number
+    expectedFactionRevision: number | null,
+    factions: WorldNpcFactionMembershipCoordinator
   ) {
     const parsed = worldNpcDraftSchema.parse(draft)
     const request = {
@@ -170,10 +391,13 @@ export class WorldNpcStore {
     if (replay) return replay
     this.transact(() => {
       this.assertRevision(expectedRevision)
-      const factions = this.requireFactions()
-      factions.assertMembershipRevision(expectedFactionRevision)
       this.assertReferences(parsed)
       const previousFactionId = this.factionId(id)
+      const membershipChanged = previousFactionId !== parsed.factionId
+      if (membershipChanged)
+        factions.assertMembershipRevision(
+          requireFactionRevision(expectedFactionRevision)
+        )
       const changed = this.db
         .prepare(
           `
@@ -198,13 +422,12 @@ export class WorldNpcStore {
       if (changed === 0) throw new CapabilityError('not_found', false)
       this.replaceFaction(id, parsed.factionId)
       this.bumpRevision()
-      if (previousFactionId !== parsed.factionId)
-        factions.recordMembershipChange()
-      const snapshot = this.read()
+      if (membershipChanged) factions.recordMembershipChange()
+      const saved = requireNpc(this.detail(id))
       this.writeReceipt(commandId, 'update', request, {
-        snapshot,
-        factionSnapshot: factions.read(),
-        saved: requireNpc(snapshot.npcs, id)
+        revision: this.revision(),
+        factionRevision: factions.read().revision,
+        saved
       })
     })
     return this.receipt(
@@ -219,7 +442,8 @@ export class WorldNpcStore {
     commandId: string,
     id: string,
     expectedRevision: number,
-    expectedFactionRevision: number
+    expectedFactionRevision: number | null,
+    factions: WorldNpcFactionMembershipCoordinator
   ) {
     const request = { id, expectedRevision, expectedFactionRevision }
     const replay = this.receipt(
@@ -231,9 +455,11 @@ export class WorldNpcStore {
     if (replay) return replay
     this.transact(() => {
       this.assertRevision(expectedRevision)
-      const factions = this.requireFactions()
-      factions.assertMembershipRevision(expectedFactionRevision)
       const previousFactionId = this.factionId(id)
+      if (previousFactionId !== null)
+        factions.assertMembershipRevision(
+          requireFactionRevision(expectedFactionRevision)
+        )
       if (
         this.db.prepare('DELETE FROM worldplanner_npc WHERE id = ?').run(id)
           .changes === 0
@@ -242,8 +468,8 @@ export class WorldNpcStore {
       this.bumpRevision()
       if (previousFactionId !== null) factions.recordMembershipChange()
       this.writeReceipt(commandId, 'delete', request, {
-        snapshot: this.read(),
-        factionSnapshot: factions.read(),
+        revision: this.revision(),
+        factionRevision: factions.read().revision,
         deletedId: id
       })
     })
@@ -339,14 +565,18 @@ export class WorldNpcStore {
     return row?.factionId ?? null
   }
 
-  private requireFactions(): WorldNpcFactionMembershipCoordinator {
-    if (!this.factions)
-      throw new Error('NPC faction membership coordinator is unavailable.')
-    return this.factions
+  private referenceDisplayName(
+    table: 'worldplanner_faction' | 'worldplanner_location',
+    id: string
+  ): string | null {
+    const row = this.db
+      .prepare(`SELECT display_name AS displayName FROM ${table} WHERE id = ?`)
+      .get(id) as { displayName: string } | undefined
+    return row?.displayName ?? null
   }
 
   private assertReferences(draft: z.output<typeof worldNpcDraftSchema>): void {
-    if (!creatureById(draft.creatureId))
+    if (!this.creatures.resolve(draft.creatureId))
       throw new CapabilityError('not_found', false)
     if (
       draft.factionId !== null &&
@@ -410,6 +640,15 @@ export class WorldNpcStore {
         JSON.stringify(request),
         JSON.stringify(result)
       )
+    this.db
+      .prepare(
+        `DELETE FROM worldplanner_npc_command_receipt
+         WHERE command_id NOT IN (
+           SELECT command_id FROM worldplanner_npc_command_receipt
+           ORDER BY rowid DESC LIMIT ?
+         )`
+      )
+      .run(WORLD_NPC_RECEIPT_RETENTION_LIMIT)
   }
 
   private receipt<Output>(
@@ -437,8 +676,30 @@ export class WorldNpcStore {
   }
 }
 
-function requireNpc(npcs: readonly WorldNpc[], id: string): WorldNpc {
-  const npc = npcs.find((candidate) => candidate.id === id)
+function requireNpc(npc: WorldNpc | null): WorldNpc {
   if (!npc) throw new Error('Saved NPC is missing.')
   return npc
+}
+
+function requireFactionRevision(value: number | null): number {
+  if (value === null) throw new CapabilityError('validation_failed', false)
+  return value
+}
+
+function escapeLike(value: string): string {
+  return value.replace(/[\\%_]/g, '\\$&')
+}
+
+function addNullableFilter(
+  clauses: string[],
+  parameters: unknown[],
+  column: string,
+  value: string | null | undefined
+): void {
+  if (value === undefined) return
+  if (value === null) clauses.push(`${column} IS NULL`)
+  else {
+    clauses.push(`${column} = ?`)
+    parameters.push(value)
+  }
 }

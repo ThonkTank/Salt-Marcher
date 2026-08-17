@@ -191,6 +191,20 @@ export const installationSchemaMigrations: readonly SchemaMigration[] =
           )
           .run('installation-31-to-32-generator-config-v5', appliedAt)
       }
+    },
+    {
+      id: 'installation-32-to-33-role-alignment',
+      role: 'installation',
+      fromVersion: 32,
+      toVersion: 33,
+      migrate(database) {
+        initializeInstallationSchemaMetadata(database)
+        database
+          .prepare(
+            'INSERT INTO installation_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run('installation-32-to-33-role-alignment', new Date().toISOString())
+      }
     }
   ])
 

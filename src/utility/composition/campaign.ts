@@ -3,6 +3,7 @@ import type { CampaignRulesService } from '../../core/application/campaign-rules
 import type { GeneratorPresetStore } from '../../core/persistence/sqlite/generator-preset-store.js'
 import type { openCampaignStore } from '../../core/persistence/sqlite/campaign-store.js'
 import { emptyPassiveProjection } from '../../shared/contracts/passive-display.js'
+import type { ReferenceChangeDescriptor } from '../../core/reference/reference-change-coordinator.js'
 
 type CampaignHandlerName =
   | 'campaign.list'
@@ -29,7 +30,10 @@ export function createCampaignHandlers(dependencies: {
   campaigns: ReturnType<typeof openCampaignStore>
   campaignRules: CampaignRulesService
   generatorPresets: GeneratorPresetStore
-  mutateReferences: <T>(work: () => T) => T
+  mutateReferences: <T>(
+    work: () => T,
+    changes: (result: T) => readonly ReferenceChangeDescriptor[]
+  ) => T
   recoverPendingPreparations: () => void
 }): Pick<CoreHandlers, CampaignHandlerName> {
   const {
@@ -42,12 +46,18 @@ export function createCampaignHandlers(dependencies: {
   return {
     'campaign.list': () => campaigns.list(),
     'campaign.create': (input) => {
-      const result = mutateReferences(() => campaigns.create(input.name))
+      const result = mutateReferences(
+        () => campaigns.create(input.name),
+        () => [{ kind: 'campaign' }]
+      )
       recoverPendingPreparations()
       return result
     },
     'campaign.activate': (input) => {
-      const result = mutateReferences(() => campaigns.activate(input.id))
+      const result = mutateReferences(
+        () => campaigns.activate(input.id),
+        () => [{ kind: 'campaign' }]
+      )
       recoverPendingPreparations()
       return result
     },

@@ -85,44 +85,96 @@ const locations = {
 }
 
 function setup(active = true) {
+  const all = [erika, bandit]
   const create = vi.fn(
     (input: {
       expectedRevision: number
       expectedFactionRevision: number
       npc: Omit<WorldNpc, 'id' | 'position'>
-    }) =>
-      Promise.resolve({
-        snapshot: {
-          revision: 4,
-          npcs: [
-            erika,
-            bandit,
-            {
-              ...input.npc,
-              id: '01900000-0000-7000-8000-000000000105',
-              position: 2
-            }
-          ]
-        },
-        factionSnapshot: { ...factions, revision: 6 },
-        saved: {
-          ...input.npc,
-          id: '01900000-0000-7000-8000-000000000105',
-          position: 2
-        }
+    }) => {
+      const saved = {
+        ...input.npc,
+        id: '01900000-0000-7000-8000-000000000105',
+        position: 2
+      }
+      all.push(saved)
+      return Promise.resolve({
+        revision: 4,
+        factionRevision: 6,
+        saved
       })
+    }
+  )
+  const search = vi.fn(
+    async (input: {
+      query: string
+      lifecycle: WorldNpc['lifecycle'] | null
+      factionId?: string | null
+      locationId?: string | null
+      offset: number
+      limit: number
+    }) => {
+      const rows = all.filter(
+        (npc) =>
+          (input.lifecycle === null || npc.lifecycle === input.lifecycle) &&
+          (input.factionId === undefined ||
+            npc.factionId === input.factionId) &&
+          (input.locationId === undefined ||
+            npc.locationId === input.locationId) &&
+          npc.displayName
+            .toLocaleLowerCase()
+            .includes(input.query.toLocaleLowerCase())
+      )
+      return {
+        revision: all.length > 2 ? 4 : 3,
+        rows: rows.map((npc) => ({
+          id: npc.id,
+          displayName: npc.displayName,
+          creatureId: npc.creatureId,
+          creatureDisplayName:
+            npc.creatureId === 'sprite' ? 'Sprite' : 'Bandit',
+          lifecycle: npc.lifecycle,
+          dispositionModifier: npc.dispositionModifier,
+          factionId: npc.factionId,
+          factionDisplayName: npc.factionId ? 'Rosenhof' : null,
+          locationId: npc.locationId,
+          locationDisplayName: npc.locationId ? 'Flussuferhöhle' : null,
+          position: npc.position
+        })),
+        total: rows.length,
+        offset: input.offset,
+        limit: input.limit
+      }
+    }
   )
   const api = {
     npcs: {
-      read: vi.fn().mockResolvedValue({ revision: 3, npcs: [erika, bandit] }),
+      search,
+      detail: vi.fn(async ({ id }: { id: string }) => {
+        const npc = all.find((candidate) => candidate.id === id)!
+        return {
+          revision: all.length > 2 ? 4 : 3,
+          npc,
+          creatureDisplayName:
+            npc.creatureId === 'sprite' ? 'Sprite' : 'Bandit',
+          factionDisplayName: npc.factionId ? 'Rosenhof' : null,
+          locationDisplayName: npc.locationId ? 'Flussuferhöhle' : null
+        }
+      }),
       create,
       update: vi.fn(),
       delete: vi.fn(),
       commandReceipt: vi.fn(),
       onChanged: vi.fn().mockReturnValue(() => undefined)
     },
-    factions: { read: vi.fn().mockResolvedValue(factions) },
-    locations: { read: vi.fn().mockResolvedValue(locations) }
+    factions: {
+      read: vi.fn().mockResolvedValue(factions),
+      onChanged: vi.fn().mockReturnValue(() => undefined)
+    },
+    locations: {
+      read: vi.fn().mockResolvedValue(locations),
+      onChanged: vi.fn().mockReturnValue(() => undefined)
+    }
   } as unknown as CatalogCapabilities
   const creatures = {
     search: vi.fn().mockResolvedValue({
@@ -142,8 +194,9 @@ function setup(active = true) {
       message: ''
     })
   } as unknown as CreatureCapabilityPort
+  const onError = vi.fn()
   function Harness() {
-    const controller = useNpcCatalogController(active, vi.fn(), api, creatures)
+    const controller = useNpcCatalogController(active, onError, api, creatures)
     return <NpcCatalogSection controller={controller} />
   }
   render(
@@ -159,7 +212,7 @@ afterEach(cleanup)
 describe('NPC catalog UI', () => {
   it('does not read catalog aggregates while its lazy section is inactive', () => {
     const { api } = setup(false)
-    expect(api.npcs.read).not.toHaveBeenCalled()
+    expect(api.npcs.search).not.toHaveBeenCalled()
     expect(api.factions.read).not.toHaveBeenCalled()
     expect(api.locations.read).not.toHaveBeenCalled()
   })
@@ -170,9 +223,11 @@ describe('NPC catalog UI', () => {
     fireEvent.change(screen.getByLabelText('NPC-Status filtern'), {
       target: { value: 'defeated' }
     })
-    expect(screen.queryByRole('button', { name: 'Erika' })).toBeNull()
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Erika' })).toBeNull()
+    )
     expect(
-      screen.getByRole('button', { name: 'Überlebender Bandit' })
+      await screen.findByRole('button', { name: 'Überlebender Bandit' })
     ).toBeVisible()
 
     fireEvent.change(screen.getByLabelText('NPC-Status filtern'), {
@@ -181,10 +236,12 @@ describe('NPC catalog UI', () => {
     fireEvent.change(screen.getByLabelText('NPC-Fraktion filtern'), {
       target: { value: factionId }
     })
-    expect(screen.getByRole('button', { name: 'Erika' })).toBeVisible()
-    expect(
-      screen.queryByRole('button', { name: 'Überlebender Bandit' })
-    ).toBeNull()
+    expect(await screen.findByRole('button', { name: 'Erika' })).toBeVisible()
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Überlebender Bandit' })
+      ).toBeNull()
+    )
     fireEvent.change(screen.getByLabelText('NPC-Ort filtern'), {
       target: { value: locationId }
     })
@@ -204,7 +261,7 @@ describe('NPC catalog UI', () => {
     const inspector = screen.getByRole('complementary', {
       name: 'NPC-Inspector'
     })
-    expect(within(inspector).getByText('Silberne Flügel.')).toBeVisible()
+    expect(await within(inspector).findByText('Silberne Flügel.')).toBeVisible()
     expect(within(inspector).getByText('Rosenhof')).toBeVisible()
     fireEvent.click(
       within(inspector).getByRole('button', { name: 'Bearbeiten' })

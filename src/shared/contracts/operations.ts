@@ -223,8 +223,11 @@ import {
   worldNpcCommandReceiptInputSchema,
   worldNpcCommandReceiptSchema,
   worldNpcDeleteReceiptSchema,
+  worldNpcDetailInputSchema,
+  worldNpcDetailProjectionSchema,
   worldNpcMutationReceiptSchema,
-  worldNpcSnapshotSchema
+  worldNpcPageSchema,
+  worldNpcSearchInputSchema
 } from './world-npc.js'
 
 export type OperationMode = 'read' | 'write'
@@ -563,7 +566,16 @@ const coreOperationDefinitions = {
     deleteWorldFactionInputSchema,
     worldFactionDeleteReceiptSchema
   ),
-  'npcs.read': read('npcs:read', none, worldNpcSnapshotSchema),
+  'npcs.search': read(
+    'npcs:search',
+    worldNpcSearchInputSchema,
+    worldNpcPageSchema
+  ),
+  'npcs.detail': read(
+    'npcs:detail',
+    worldNpcDetailInputSchema,
+    worldNpcDetailProjectionSchema
+  ),
   'npcs.commandReceipt': read(
     'npcs:command-receipt',
     worldNpcCommandReceiptInputSchema,

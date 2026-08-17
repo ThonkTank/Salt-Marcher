@@ -6,6 +6,8 @@ import type { WorldLocationDeletionCommandHandler } from '../../core/application
 import type { WorldLocationPlacementService } from '../../core/application/world-location-placement.js'
 import type { WorldLocationSaveCommandHandler } from '../../core/application/world-location-save.js'
 import type { WorldLocationService } from '../../core/worldplanner/location-store.js'
+import type { WorldNpcApplicationService } from '../../core/application/world-npc-application-service.js'
+import type { ReferenceChangeDescriptor } from '../../core/reference/reference-change-coordinator.js'
 
 type WorldPlannerHandlerName =
   | 'locations.read'
@@ -32,7 +34,8 @@ type WorldPlannerHandlerName =
   | 'factions.create'
   | 'factions.update'
   | 'factions.delete'
-  | 'npcs.read'
+  | 'npcs.search'
+  | 'npcs.detail'
   | 'npcs.commandReceipt'
   | 'npcs.create'
   | 'npcs.update'
@@ -45,8 +48,12 @@ export function createWorldPlannerHandlers(dependencies: {
   deletion: WorldLocationDeletionCommandHandler
   symbols: LocationSymbolLifecycleService
   sources: EncounterSourceService
+  worldNpcs: WorldNpcApplicationService
   biomes: BiomeCatalogService
-  mutateReferences: <T>(work: () => T) => T
+  mutateReferences: <T>(
+    work: () => T,
+    changes: (result: T) => readonly ReferenceChangeDescriptor[]
+  ) => T
   publishLocationChange: (
     ids: readonly string[],
     reason: 'catalog' | 'presentation' | 'symbol-replacement'
@@ -79,6 +86,10 @@ export function createWorldPlannerHandlers(dependencies: {
     ids: readonly string[],
     reason: 'created' | 'updated' | 'deleted' | 'reference-unlinked'
   ) => void
+  publishFactionChange: (
+    ids: readonly string[],
+    reason: 'created' | 'updated' | 'deleted'
+  ) => void
 }): Pick<CoreHandlers, WorldPlannerHandlerName> {
   const {
     locations,
@@ -87,6 +98,7 @@ export function createWorldPlannerHandlers(dependencies: {
     deletion,
     symbols,
     sources,
+    worldNpcs,
     biomes,
     mutateReferences,
     publishLocationChange,
@@ -96,7 +108,8 @@ export function createWorldPlannerHandlers(dependencies: {
     publishBiomeChange,
     publishHexChange,
     publishHexNotice,
-    publishNpcChange
+    publishNpcChange,
+    publishFactionChange
   } = dependencies
   const locationSymbols = symbols.symbols
   return {
@@ -104,12 +117,15 @@ export function createWorldPlannerHandlers(dependencies: {
     'locations.suggestTags': (input) =>
       locations.suggestTags(input.query, input.limit),
     'locations.save': (input) =>
-      mutateReferences(() => {
-        const execution = save.execute(input)
-        publishLocationChange([execution.receipt.saved.id], 'catalog')
-        if (execution.hexResult) publishHexChange(execution.hexResult)
-        return execution.receipt
-      }),
+      mutateReferences(
+        () => {
+          const execution = save.execute(input)
+          publishLocationChange([execution.receipt.saved.id], 'catalog')
+          if (execution.hexResult) publishHexChange(execution.hexResult)
+          return execution.receipt
+        },
+        (receipt) => [{ kind: 'location', id: receipt.saved.id }]
+      ),
     'locations.saveReceipt': (input) => save.receipt(input.commandId),
     'locations.commitPlacement': (input) => {
       const execution = placement.execute(input)
@@ -127,19 +143,22 @@ export function createWorldPlannerHandlers(dependencies: {
       return result
     },
     'locations.delete': (input) =>
-      mutateReferences(() => {
-        const result = deletion.execute(input)
-        if (result.unlinkedNpcIds.length > 0)
-          publishNpcChange(result.unlinkedNpcIds, 'reference-unlinked')
-        if (result.notice)
-          publishHexNotice(
-            result.notice.campaignCommandId,
-            [result.notice.map.id],
-            [result.notice.changedChunk]
-          )
-        publishLocationChange([input.id], 'catalog')
-        return result.receipt
-      }),
+      mutateReferences(
+        () => {
+          const result = deletion.execute(input)
+          if (result.unlinkedNpcIds.length > 0)
+            publishNpcChange(result.unlinkedNpcIds, 'reference-unlinked')
+          if (result.notice)
+            publishHexNotice(
+              result.notice.campaignCommandId,
+              [result.notice.map.id],
+              [result.notice.changedChunk]
+            )
+          publishLocationChange([input.id], 'catalog')
+          return result.receipt
+        },
+        () => [{ kind: 'location', id: input.id }]
+      ),
     'locationSymbols.create': (input) => {
       const result = locationSymbols.create(
         input.symbol,
@@ -253,72 +272,95 @@ export function createWorldPlannerHandlers(dependencies: {
     'factions.commandReceipt': (input) =>
       sources.factionReceipt(input.commandId),
     'factions.create': (input) =>
-      mutateReferences(() =>
-        sources.createFaction(
-          input.commandId,
-          input.faction,
-          input.expectedRevision
-        )
+      mutateReferences(
+        () => {
+          const result = sources.createFaction(
+            input.commandId,
+            input.faction,
+            input.expectedRevision
+          )
+          publishFactionChange([result.saved.id], 'created')
+          return result
+        },
+        (receipt) => [{ kind: 'faction', id: receipt.saved.id }]
       ),
     'factions.update': (input) =>
-      mutateReferences(() =>
-        sources.updateFaction(
-          input.commandId,
-          input.id,
-          input.faction,
-          input.expectedRevision
-        )
+      mutateReferences(
+        () => {
+          const result = sources.updateFaction(
+            input.commandId,
+            input.id,
+            input.faction,
+            input.expectedRevision
+          )
+          publishFactionChange([result.saved.id], 'updated')
+          return result
+        },
+        () => [{ kind: 'faction', id: input.id }]
       ),
     'factions.delete': (input) =>
-      mutateReferences(() => {
-        const linkedNpcIds = sources
-          .readNpcs()
-          .npcs.filter((npc) => npc.factionId === input.id)
-          .map((npc) => npc.id)
-        const result = sources.deleteFaction(
-          input.commandId,
-          input.id,
-          input.expectedRevision
-        )
-        if (linkedNpcIds.length > 0)
-          publishNpcChange(linkedNpcIds, 'reference-unlinked')
-        return result
-      }),
-    'npcs.read': () => sources.readNpcs(),
-    'npcs.commandReceipt': (input) => sources.npcReceipt(input.commandId),
+      mutateReferences(
+        () => {
+          const linkedNpcIds = worldNpcs.linkedToFaction(input.id)
+          const result = sources.deleteFaction(
+            input.commandId,
+            input.id,
+            input.expectedRevision
+          )
+          publishFactionChange([input.id], 'deleted')
+          if (linkedNpcIds.length > 0) {
+            worldNpcs.recordExternalReferenceChange(linkedNpcIds)
+            publishNpcChange(linkedNpcIds, 'reference-unlinked')
+          }
+          return result
+        },
+        () => [{ kind: 'faction', id: input.id }]
+      ),
+    'npcs.search': (input) => worldNpcs.search(input),
+    'npcs.detail': (input) => worldNpcs.detail(input.id),
+    'npcs.commandReceipt': (input) => worldNpcs.commandReceipt(input.commandId),
     'npcs.create': (input) =>
-      mutateReferences(() => {
-        const result = sources.createNpc(
-          input.commandId,
-          input.npc,
-          input.expectedRevision,
-          input.expectedFactionRevision
-        )
-        publishNpcChange([result.saved.id], 'created')
-        return result
-      }),
+      mutateReferences(
+        () => {
+          const result = worldNpcs.create(
+            input.commandId,
+            input.npc,
+            input.expectedRevision,
+            input.expectedFactionRevision
+          )
+          publishNpcChange([result.saved.id], 'created')
+          return result
+        },
+        (receipt) => [{ kind: 'npc', id: receipt.saved.id }]
+      ),
     'npcs.update': (input) =>
-      mutateReferences(() => {
-        const result = sources.updateNpc(
-          input.commandId,
-          input.id,
-          input.npc,
-          input.expectedRevision,
-          input.expectedFactionRevision
-        )
-        publishNpcChange([result.saved.id], 'updated')
-        return result
-      }),
+      mutateReferences(
+        () => {
+          const result = worldNpcs.update(
+            input.commandId,
+            input.id,
+            input.npc,
+            input.expectedRevision,
+            input.expectedFactionRevision
+          )
+          publishNpcChange([result.saved.id], 'updated')
+          return result
+        },
+        (receipt) => [{ kind: 'npc', id: receipt.saved.id }]
+      ),
     'npcs.delete': (input) =>
-      mutateReferences(() => {
-        const result = sources.deleteNpc(
-          input.commandId,
-          input.id,
-          input.expectedRevision,
-          input.expectedFactionRevision
-        )
-        publishNpcChange([result.deletedId], 'deleted')
-        return result
-      })
+      mutateReferences(
+        () => {
+          const result = worldNpcs.delete(
+            input.commandId,
+            input.id,
+            input.expectedRevision,
+            input.expectedFactionRevision
+          )
+          publishNpcChange([result.deletedId], 'deleted')
+          return result
+        },
+        (receipt) => [{ kind: 'npc', id: receipt.deletedId }]
+      )
   }
 }

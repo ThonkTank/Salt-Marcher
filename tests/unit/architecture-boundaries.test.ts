@@ -263,6 +263,33 @@ describe('architecture boundaries', () => {
     expect(store).toContain('mapPartyCharacterRow')
   })
 
+  it('keeps NPC ownership and invalidation inside explicit World Planner services', () => {
+    const encounterSources = source(
+      'src/core/application/encounter-source-service.ts'
+    )
+    const npcStore = source('src/core/worldplanner/npc-store.ts')
+    const operations = source('src/shared/contracts/operations.ts')
+    const utility = source('src/utility/application.ts')
+    expect(encounterSources).not.toMatch(
+      /WorldNpcStore|createNpc|updateNpc|deleteNpc|readNpcs/
+    )
+    expect(npcStore).not.toContain("from '../creatures/catalog.js'")
+    expect(npcStore).toContain('CreatureReferenceResolver')
+    expect(npcStore).toContain(
+      'REFERENCES worldplanner_location(id) ON DELETE SET NULL'
+    )
+    expect(npcStore).toContain(
+      'REFERENCES worldplanner_faction(id) ON DELETE CASCADE'
+    )
+    expect(operations).toContain("'npcs.search'")
+    expect(operations).toContain("'npcs.detail'")
+    expect(operations).not.toContain("'npcs.read'")
+    expect(utility).toContain('new ReferenceChangeCoordinator(')
+    expect(utility).not.toMatch(
+      /referenceSnapshot|JSON\.stringify\(references\.detail/
+    )
+  })
+
   it('keeps installation settings out of renderer storage and main JSON files', () => {
     expect(source('src/renderer/src.tsx')).not.toContain('localStorage')
     expect(source('src/renderer/shell/app.tsx')).not.toContain('localStorage')

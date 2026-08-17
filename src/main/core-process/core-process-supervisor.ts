@@ -25,7 +25,10 @@ import type { HexChangeNotice } from '../../shared/contracts/hex.js'
 import type { WorldLocationChangeNotice } from '../../shared/contracts/world-location.js'
 import type { LocationSymbolChangeNotice } from '../../shared/contracts/location-symbol.js'
 import type { BiomeChangeNotice } from '../../shared/contracts/biome.js'
-import type { EncounterTableChangeNotice } from '../../shared/contracts/encounter-source.js'
+import type {
+  EncounterTableChangeNotice,
+  WorldFactionChangeNotice
+} from '../../shared/contracts/encounter-source.js'
 import type { LootChangeNotice } from '../../shared/contracts/loot.js'
 import type { SessionPreparationChangeNotice } from '../../shared/contracts/session-planner.js'
 import type { WorldNpcChangeNotice } from '../../shared/contracts/world-npc.js'
@@ -112,6 +115,12 @@ export class CoreProcessSupervisor {
 
   onNpcsChanged(listener: (notice: WorldNpcChangeNotice) => void): () => void {
     return this.#events.on('npcs.changed', listener)
+  }
+
+  onFactionsChanged(
+    listener: (notice: WorldFactionChangeNotice) => void
+  ): () => void {
+    return this.#events.on('factions.changed', listener)
   }
 
   onLocationSymbolsChanged(

@@ -6,7 +6,10 @@ import { hexChangeNoticeSchema } from './hex.js'
 import { worldLocationChangeNoticeSchema } from './world-location.js'
 import { locationSymbolChangeNoticeSchema } from './location-symbol.js'
 import { biomeChangeNoticeSchema } from './biome.js'
-import { encounterTableChangeNoticeSchema } from './encounter-source.js'
+import {
+  encounterTableChangeNoticeSchema,
+  worldFactionChangeNoticeSchema
+} from './encounter-source.js'
 import { worldNpcChangeNoticeSchema } from './world-npc.js'
 import { lootChangeNoticeSchema } from './loot.js'
 import { sessionPreparationChangeNoticeSchema } from './session-planner.js'
@@ -230,6 +233,12 @@ export const coreEventSchema = z.discriminatedUnion('kind', [
     .object({
       kind: z.literal('npcs.changed'),
       notice: worldNpcChangeNoticeSchema
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('factions.changed'),
+      notice: worldFactionChangeNoticeSchema
     })
     .strict()
 ])

@@ -1,6 +1,9 @@
 import type { z } from 'zod'
 import { biomeChangeNoticeSchema } from './biome.js'
-import { encounterTableChangeNoticeSchema } from './encounter-source.js'
+import {
+  encounterTableChangeNoticeSchema,
+  worldFactionChangeNoticeSchema
+} from './encounter-source.js'
 import { hexChangeNoticeSchema } from './hex.js'
 import { locationSymbolChangeNoticeSchema } from './location-symbol.js'
 import { lootChangeNoticeSchema } from './loot.js'
@@ -34,6 +37,11 @@ const definitions = {
   'npcs.onChanged': {
     channel: 'npcs:changed',
     payload: worldNpcChangeNoticeSchema,
+    roles: ['gm']
+  },
+  'factions.onChanged': {
+    channel: 'factions:changed',
+    payload: worldFactionChangeNoticeSchema,
     roles: ['gm']
   },
   'locationSymbols.onChanged': {
