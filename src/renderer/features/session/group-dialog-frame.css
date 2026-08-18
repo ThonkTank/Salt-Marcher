@@ -13,15 +13,6 @@
   padding: 0;
 }
 
-.session-group-manager select {
-  min-height: 2.15rem;
-  border: 1px solid var(--border-2);
-  border-radius: var(--radius-0);
-  background: var(--surface-control);
-  color: inherit;
-  padding: 0.35rem 0.5rem;
-}
-
 .session-group-manager .group-manager-header {
   display: flex;
   align-items: center;
