@@ -57,6 +57,10 @@ import {
   initializeCampaignImportInstallationSchema,
   initializeCampaignImportSchema
 } from '../../campaign-import/campaign-import-store.js'
+import {
+  CampaignDirectoryTransition,
+  type CampaignDirectoryTransitionReceipt
+} from './campaign-directory-transition.js'
 
 export type CampaignCreatePhase =
   | 'before-registry-entry'
@@ -64,9 +68,23 @@ export type CampaignCreatePhase =
   | 'after-store-created'
   | 'before-ready'
 
+export type CampaignReplacePhase =
+  | 'before-original-move'
+  | 'after-original-move'
+  | 'before-replacement-promote'
+  | 'after-replacement-promote'
+  | 'before-replacement-open'
+  | 'after-replacement-open'
+  | 'before-registry-commit'
+  | 'after-registry-commit'
+  | 'before-cleanup'
+  | 'after-cleanup'
+
 export interface CampaignStoreOptions {
   /** Test seam for simulating a process interruption at durable create boundaries. */
   onCreatePhase?: (phase: CampaignCreatePhase) => void
+  /** Failure-injection seam at real replacement transition boundaries. */
+  onReplacePhase?: (phase: CampaignReplacePhase) => void
 }
 
 export class CampaignStore {
@@ -75,12 +93,20 @@ export class CampaignStore {
   private activeCampaign: Database.Database | undefined
   private readonly onCreatePhase:
     ((phase: CampaignCreatePhase) => void) | undefined
+  private readonly onReplacePhase:
+    ((phase: CampaignReplacePhase) => void) | undefined
+  private readonly directoryTransition: CampaignDirectoryTransition
 
   constructor(
     private readonly dataRoot: string,
     options: CampaignStoreOptions = {}
   ) {
     this.onCreatePhase = options.onCreatePhase
+    this.onReplacePhase = options.onReplacePhase
+    this.directoryTransition = new CampaignDirectoryTransition(
+      dataRoot,
+      (path) => this.isValidCampaignStore(path)
+    )
     const installationPath = join(dataRoot, 'installation.sqlite')
     const preflight = preflightPersistence(dataRoot)
     if (preflight.kind === 'migration-required')
@@ -329,7 +355,15 @@ export class CampaignStore {
       }
       return { campaignId: id, snapshot: this.list() }
     } catch (error) {
-      rmSync(this.stagedCampaignDirectory(id), { recursive: true, force: true })
+      if (
+        existingId === null ||
+        (this.directoryTransition.receipt(id) === null &&
+          this.isValidCampaignStore(this.campaignPath(id)))
+      )
+        rmSync(this.stagedCampaignDirectory(id), {
+          recursive: true,
+          force: true
+        })
       if (existingId === null) {
         rmSync(this.campaignDirectory(id), { recursive: true, force: true })
         this.installation
@@ -476,13 +510,18 @@ export class CampaignStore {
     name: string,
     previousActiveId: string | null
   ): void {
-    const currentDirectory = this.campaignDirectory(id)
-    const stagedDirectory = this.stagedCampaignDirectory(id)
-    const replacedDirectory = this.replacedCampaignDirectory(id)
-    if (!existsSync(currentDirectory) || !existsSync(stagedDirectory))
-      throw new Error('Imported campaign replacement is incomplete')
-    rmSync(replacedDirectory, { recursive: true, force: true })
-    mkdirSync(dirname(replacedDirectory), { recursive: true })
+    const previous = this.installation
+      .prepare(
+        "SELECT name FROM campaigns WHERE id = ? AND status = 'ready' AND trashed_at IS NULL"
+      )
+      .get(id) as { name: string } | undefined
+    if (previous === undefined) throw new CapabilityError('not_found', false)
+    let receipt = this.directoryTransition.begin({
+      campaignId: id,
+      previousName: previous.name,
+      replacementName: name,
+      previousActiveId
+    })
     // Windows does not allow a directory containing an open SQLite database
     // to be renamed. Release the active handle before beginning the durable
     // directory transition; the catch path reopens the recorded campaign.
@@ -491,9 +530,18 @@ export class CampaignStore {
       this.activeCampaign = undefined
     }
     try {
-      renameSync(currentDirectory, replacedDirectory)
-      renameSync(stagedDirectory, currentDirectory)
+      this.onReplacePhase?.('before-original-move')
+      receipt = this.directoryTransition.moveOriginal(receipt)
+      this.onReplacePhase?.('after-original-move')
+      this.onReplacePhase?.('before-replacement-promote')
+      receipt = this.directoryTransition.promoteReplacement(receipt)
+      this.onReplacePhase?.('after-replacement-promote')
+      this.onReplacePhase?.('before-replacement-open')
       this.switchActiveCampaign(id)
+      if (this.activeCampaign?.pragma('quick_check', { simple: true }) !== 'ok')
+        throw new Error('Promoted campaign failed quick_check')
+      this.onReplacePhase?.('after-replacement-open')
+      this.onReplacePhase?.('before-registry-commit')
       this.installation.transaction(() => {
         this.installation
           .prepare(
@@ -501,23 +549,25 @@ export class CampaignStore {
           )
           .run(name, id)
         this.setActive(id)
+        this.installation
+          .prepare(
+            'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value'
+          )
+          .run(this.transitionCommitKey(id), receipt.transitionId)
       })()
-      rmSync(replacedDirectory, { recursive: true, force: true })
+      receipt = this.directoryTransition.markVerified(receipt)
+      this.onReplacePhase?.('after-registry-commit')
+      this.onReplacePhase?.('before-cleanup')
+      receipt = this.directoryTransition.completeFilesystem(receipt)
+      this.onReplacePhase?.('after-cleanup')
+      this.directoryTransition.finish(receipt)
+      this.clearTransitionCommit(receipt)
     } catch (error) {
       // switchActiveCampaign may already have opened the replacement. Close it
       // before removing or renaming either directory on Windows.
       this.activeCampaign?.close()
       this.activeCampaign = undefined
-      if (existsSync(currentDirectory))
-        rmSync(currentDirectory, { recursive: true, force: true })
-      if (existsSync(replacedDirectory))
-        renameSync(replacedDirectory, currentDirectory)
-      if (previousActiveId === null)
-        this.installation
-          .prepare("DELETE FROM settings WHERE key = 'active_campaign_id'")
-          .run()
-      else this.setActive(previousActiveId)
-      if (previousActiveId !== null) this.switchActiveCampaign(previousActiveId)
+      this.recoverCampaignDirectoryTransition(receipt)
       throw error
     }
   }
@@ -540,19 +590,15 @@ export class CampaignStore {
   }
 
   private recoverCampaignDirectoryTransitions(): void {
+    for (const receipt of this.directoryTransition.receipts())
+      this.recoverCampaignDirectoryTransition(receipt, false)
+
     const replacingParent = join(this.dataRoot, 'campaigns', '.replacing')
     if (existsSync(replacingParent))
       for (const id of readdirSync(replacingParent)) {
         if (!this.isSafeCampaignId(id)) continue
-        const current = this.campaignDirectory(id)
-        const replaced = this.replacedCampaignDirectory(id)
-        if (existsSync(current))
-          rmSync(replaced, { recursive: true, force: true })
-        else renameSync(replaced, current)
-        rmSync(this.stagedCampaignDirectory(id), {
-          recursive: true,
-          force: true
-        })
+        if (this.directoryTransition.receipt(id) === null)
+          this.directoryTransition.recoverLegacy(id)
       }
 
     const deletingParent = join(this.dataRoot, 'campaigns', '.deleting')
@@ -582,6 +628,53 @@ export class CampaignStore {
         throw new Error('Campaign exists in both active and trash storage')
       this.moveDirectory(source, destination)
     }
+  }
+
+  private recoverCampaignDirectoryTransition(
+    receipt: CampaignDirectoryTransitionReceipt,
+    reopen = true
+  ): void {
+    const committed = this.installation
+      .prepare('SELECT value FROM settings WHERE key = ?')
+      .get(this.transitionCommitKey(receipt.campaignId)) as
+      { value: string } | undefined
+    if (committed?.value === receipt.transitionId) {
+      this.directoryTransition.rollForwardFilesystem(receipt)
+      this.directoryTransition.finish(receipt)
+      this.clearTransitionCommit(receipt)
+      if (reopen) this.switchActiveCampaign(receipt.campaignId)
+      return
+    }
+
+    this.directoryTransition.rollbackFilesystem(receipt)
+    this.installation.transaction(() => {
+      this.installation
+        .prepare('UPDATE campaigns SET name = ? WHERE id = ?')
+        .run(receipt.previousName, receipt.campaignId)
+      if (receipt.previousActiveId === null)
+        this.installation
+          .prepare("DELETE FROM settings WHERE key = 'active_campaign_id'")
+          .run()
+      else this.setActive(receipt.previousActiveId)
+      this.installation
+        .prepare('DELETE FROM settings WHERE key = ?')
+        .run(this.transitionCommitKey(receipt.campaignId))
+    })()
+    this.directoryTransition.finish(receipt)
+    if (reopen && receipt.previousActiveId !== null)
+      this.switchActiveCampaign(receipt.previousActiveId)
+  }
+
+  private transitionCommitKey(campaignId: string): string {
+    return `campaign_directory_transition:${campaignId}`
+  }
+
+  private clearTransitionCommit(
+    receipt: CampaignDirectoryTransitionReceipt
+  ): void {
+    this.installation
+      .prepare('DELETE FROM settings WHERE key = ? AND value = ?')
+      .run(this.transitionCommitKey(receipt.campaignId), receipt.transitionId)
   }
 
   private removeIncompleteCreation(id: string): void {
@@ -637,10 +730,6 @@ export class CampaignStore {
 
   private stagedCampaignDirectory(id: string): string {
     return join(this.dataRoot, 'campaigns', '.creating', id)
-  }
-
-  private replacedCampaignDirectory(id: string): string {
-    return join(this.dataRoot, 'campaigns', '.replacing', id)
   }
 
   private campaignPath(id: string): string {
