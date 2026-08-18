@@ -18,6 +18,10 @@ import {
   type MainOperationOutput
 } from '../../shared/contracts/operations.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
+import {
+  assertExactOperationKeys,
+  operationKindsForRole
+} from '../../shared/contracts/operations/registry.js'
 
 const invokeIpc = (channel: string, input: unknown): Promise<unknown> =>
   ipcRenderer.invoke(channel, input)
@@ -78,9 +82,11 @@ async function invokeMain<K extends MainOperationKind>(
 type Facade = Record<string, Record<string, unknown>>
 
 const facade: Facade = {}
+const exposedOperationKinds: string[] = []
 
 for (const [kind, operation] of Object.entries(coreOperations)) {
   if (operation.channel === null || !operation.roles.includes('gm')) continue
+  exposedOperationKinds.push(kind)
   installMethod(kind, (input) =>
     invokeCore(kind as CoreOperationKind, input as never)
   )
@@ -88,10 +94,20 @@ for (const [kind, operation] of Object.entries(coreOperations)) {
 
 for (const [kind, operation] of Object.entries(mainOperations)) {
   if (operation.channel === null || !operation.roles.includes('gm')) continue
+  exposedOperationKinds.push(kind)
   installMethod(kind, (input) =>
     invokeMain(kind as MainOperationKind, input as never)
   )
 }
+
+assertExactOperationKeys(
+  'preload',
+  [
+    ...operationKindsForRole(coreOperations, 'gm'),
+    ...operationKindsForRole(mainOperations, 'gm')
+  ],
+  exposedOperationKinds
+)
 
 for (const [kind, event] of Object.entries(capabilityEvents)) {
   if (!event.roles.includes('gm')) continue

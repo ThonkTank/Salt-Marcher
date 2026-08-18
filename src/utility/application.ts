@@ -14,6 +14,7 @@ import {
   type CoreRequest
 } from '../shared/contracts/core-protocol.js'
 import { coreOperations } from '../shared/contracts/operations.js'
+import { assertExactOperationKeys } from '../shared/contracts/operations/registry.js'
 import { openCampaignStore } from '../core/persistence/sqlite/campaign-store.js'
 import {
   CreatureCatalogService,
@@ -738,6 +739,12 @@ const handlers = {
   ...travelHandlers,
   ...lifecycleHandlers
 } satisfies CoreHandlers
+
+assertExactOperationKeys(
+  'utility_handlers',
+  Object.keys(coreOperations),
+  Object.keys(handlers)
+)
 
 process.parentPort.on('message', (event) => {
   void handleMessage(event)

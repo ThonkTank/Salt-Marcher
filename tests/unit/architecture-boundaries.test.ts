@@ -299,7 +299,7 @@ describe('architecture boundaries', () => {
       'src/core/application/encounter-source-service.ts'
     )
     const npcStore = source('src/core/worldplanner/npc-store.ts')
-    const operations = source('src/shared/contracts/operations.ts')
+    const operations = source('src/shared/contracts/operations/npcs.ts')
     const utility = source('src/utility/application.ts')
     expect(encounterSources).not.toMatch(
       /WorldNpcStore|createNpc|updateNpc|deleteNpc|readNpcs/
