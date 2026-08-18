@@ -12,6 +12,11 @@ describe('E2E runner diagnostics', () => {
       )
     ).toBe('known-noise')
     expect(
+      classifyE2eLogLine(
+        "WebDriverError: unknown command: 'Browser.getWindowForTarget' wasn't found"
+      )
+    ).toBe('known-noise')
+    expect(
       classifyE2eLogLine('ERROR Browser.getWindowForTarget destroyed the app')
     ).toBe('diagnostic')
     expect(classifyE2eLogLine('WARN unexpected renderer warning')).toBe(

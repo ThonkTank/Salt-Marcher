@@ -139,7 +139,7 @@ export async function executeE2eRun(input: {
 }
 
 export function classifyE2eLogLine(line: string): 'known-noise' | 'diagnostic' {
-  return /Browser\.getWindowForTarget.*(?:not supported|unsupported|fallback)/i.test(
+  return /(?:Browser\.getWindowForTarget.*(?:not supported|unsupported|fallback)|unknown command:\s*'Browser\.getWindowForTarget' wasn't found)/i.test(
     line
   )
     ? 'known-noise'

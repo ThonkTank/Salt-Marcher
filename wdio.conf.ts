@@ -4,6 +4,7 @@ import { createRequire } from 'node:module'
 import { join } from 'node:path'
 import { waitForGmRendererReady } from './tests/e2e/support/e2e-ready.js'
 import type { Browser as WdioBrowser } from 'webdriverio'
+import { browser } from '@wdio/globals'
 import {
   e2eSuite,
   e2eSuiteRegistry,
@@ -86,6 +87,17 @@ export const config = {
     client: WdioBrowser
   ) => {
     await waitForGmRendererReady(client)
+  },
+  afterTest: async (
+    test: { title: string },
+    _context: unknown,
+    result: { passed: boolean }
+  ) => {
+    if (result.passed) return
+    const directory = join(process.cwd(), '.tmp', 'visual-diffs')
+    mkdirSync(directory, { recursive: true })
+    const title = test.title.replaceAll(/[^a-zA-Z0-9_-]+/g, '-').slice(0, 80)
+    await browser.saveScreenshot(join(directory, `${suite}-${title}.png`))
   },
   mochaOpts: {
     ui: 'bdd',

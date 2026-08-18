@@ -894,7 +894,9 @@ async function createFreshCampaign(
   name: string
 ): Promise<void> {
   let field = await client.$('#campaign-name')
-  if (!(await field.isExisting()) || !(await field.isDisplayed())) {
+  try {
+    await field.waitForDisplayed({ timeout: 5_000 })
+  } catch {
     await openCampaignDialog(client)
     field = await client.$('#campaign-name')
   }
@@ -910,8 +912,11 @@ async function createFreshCampaign(
 
 async function openCampaignDialog(client: WdioBrowser): Promise<void> {
   await (await client.$('button[aria-label="Menü"]')).click()
-  const menu = await client.$('#campaign-menu')
-  await (await menu.$('button=Kampagnen')).click()
+  const menu = await client.$('nav#campaign-menu')
+  await menu.waitForDisplayed({ timeout: 5_000 })
+  const campaigns = await menu.$('button=Kampagnen')
+  await campaigns.waitForClickable({ timeout: 5_000 })
+  await campaigns.click()
   await (await client.$('#campaign-name')).waitForDisplayed({ timeout: 5_000 })
 }
 
