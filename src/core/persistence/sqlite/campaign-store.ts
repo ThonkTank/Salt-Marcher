@@ -1,13 +1,3 @@
-import {
-  existsSync,
-  copyFileSync,
-  mkdirSync,
-  readdirSync,
-  renameSync,
-  rmSync,
-  rmdirSync
-} from 'node:fs'
-import { dirname, join } from 'node:path'
 import Database from 'better-sqlite3'
 import type { CampaignSnapshot } from '../../../shared/contracts/campaign.js'
 import { uuidv7 } from '../../../shared/ids/uuidv7.js'
@@ -15,41 +5,34 @@ import {
   assertSchemaVersion,
   configureSqlite,
   databaseSchemaVersions,
-  IncompatibleDataError,
-  initializeSchemaVersion
+  IncompatibleDataError
 } from './database.js'
-import { preflightPersistence } from './persistence-preflight.js'
-import { initializeInstallationSchemaMetadata } from './installation-schema-migrations.js'
 import {
-  defaultInstallationPreferences,
   type InstallationPreferencesPatch,
   type InstallationSettings
 } from '../../../shared/contracts/settings.js'
 import { CapabilityError } from '../../../shared/errors/capability-error.js'
-import { InstallationSettingsStore } from './installation-settings-store.js'
-import { initializeCreatureSchema } from '../../creatures/catalog.js'
-import { initializeLocationSymbolSchema } from '../../worldplanner/location-symbol-store.js'
-import { initializeBiomeCatalogSchema } from '../../biomes/biome-catalog.js'
-import { initializeGeneratorPresetSchema } from './generator-preset-store.js'
 import type { IncompatibleDataPolicy } from '../../../shared/contracts/runtime.js'
-import {
-  CampaignImportStore,
-  initializeCampaignImportInstallationSchema
-} from '../../campaign-import/campaign-import-store.js'
+import type { CampaignImportStore } from '../../campaign-import/campaign-import-store.js'
 import {
   CampaignDirectoryTransition,
   type CampaignDirectoryTransitionReceipt
 } from './campaign-directory-transition.js'
 import { CampaignConnectionManager } from './campaign-connection-manager.js'
-import { CampaignRegistryRepository } from './campaign-registry-repository.js'
 import {
-  CampaignSchemaBootstrapper,
+  type CampaignSchemaBootstrapper,
   createDefaultCampaignSchemaBootstrapper
 } from './campaign-schema-bootstrapper.js'
 import {
   sqliteDatabaseAccess,
   type SqliteDatabaseAccess
 } from './database-access.js'
+import {
+  CampaignFilesystem,
+  isSafeCampaignId,
+  resetPersistenceRoot
+} from './campaign-filesystem.js'
+import { InstallationDatabaseOwner } from './installation-database-owner.js'
 
 export type CampaignCreatePhase =
   | 'before-registry-entry'
@@ -78,92 +61,49 @@ export interface CampaignStoreOptions {
 }
 
 export class CampaignStore {
-  private readonly installation: Database.Database
-  private readonly registry: CampaignRegistryRepository
-  private readonly installationSettings: InstallationSettingsStore
-  private readonly campaignImports: CampaignImportStore
+  private readonly installationOwner: InstallationDatabaseOwner
   private readonly connections = new CampaignConnectionManager()
   private readonly onCreatePhase:
     ((phase: CampaignCreatePhase) => void) | undefined
   private readonly onReplacePhase:
     ((phase: CampaignReplacePhase) => void) | undefined
   private readonly directoryTransition: CampaignDirectoryTransition
-  private readonly schemaBootstrapper: CampaignSchemaBootstrapper
+  private readonly filesystem: CampaignFilesystem
   private readonly activePersistence: SqliteDatabaseAccess
-  private readonly installationPersistence: SqliteDatabaseAccess
 
-  constructor(
-    private readonly dataRoot: string,
-    options: CampaignStoreOptions = {}
-  ) {
+  constructor(dataRoot: string, options: CampaignStoreOptions = {}) {
     this.onCreatePhase = options.onCreatePhase
     this.onReplacePhase = options.onReplacePhase
     this.activePersistence = sqliteDatabaseAccess((visitor) =>
       this.connections.visit(visitor)
     )
-    this.schemaBootstrapper =
+    const schemaBootstrapper =
       options.schemaBootstrapper ?? createDefaultCampaignSchemaBootstrapper()
+    this.filesystem = new CampaignFilesystem(dataRoot, schemaBootstrapper)
     this.directoryTransition = new CampaignDirectoryTransition(
       dataRoot,
-      (path) => this.isValidCampaignStore(path)
+      (path) => this.filesystem.isValidCampaignStore(path)
     )
-    const installationPath = join(dataRoot, 'installation.sqlite')
-    const preflight = preflightPersistence(dataRoot)
-    if (preflight.kind === 'migration-required')
-      throw new IncompatibleDataError(dataRoot)
-    const installationExists = preflight.kind === 'ready'
-    mkdirSync(dirname(installationPath), { recursive: true })
-    this.installation = new Database(installationPath)
-    this.installationPersistence = sqliteDatabaseAccess((visitor) =>
-      visitor(this.installation)
-    )
-    this.registry = new CampaignRegistryRepository(this.installation)
-    this.campaignImports = new CampaignImportStore(this.installation)
-    this.installationSettings = new InstallationSettingsStore(this.installation)
+    this.installationOwner = new InstallationDatabaseOwner(dataRoot)
     try {
-      configureSqlite(this.installation)
-      if (installationExists)
-        assertSchemaVersion(this.installation, this.dataRoot, 'installation')
-      this.registry.initialize()
-      this.installation.exec(`
-      CREATE TABLE IF NOT EXISTS installation_settings (
-        singleton INTEGER PRIMARY KEY NOT NULL CHECK(singleton = 1),
-        revision INTEGER NOT NULL CHECK(revision >= 0),
-        preferences_json TEXT NOT NULL
-      );
-      `)
-      initializeGeneratorPresetSchema(this.installation)
-      this.installation
-        .prepare(
-          'INSERT OR IGNORE INTO installation_settings (singleton, revision, preferences_json) VALUES (1, 0, ?)'
-        )
-        .run(JSON.stringify(defaultInstallationPreferences))
-      initializeCreatureSchema(this.installation)
-      initializeBiomeCatalogSchema(this.installation)
-      initializeLocationSymbolSchema(this.installation)
-      initializeCampaignImportInstallationSchema(this.installation)
-      if (!installationExists) {
-        initializeInstallationSchemaMetadata(this.installation)
-        initializeSchemaVersion(this.installation, 'installation')
-      }
       this.recoverIncompleteCreations()
       this.recoverCampaignDirectoryTransitions()
       this.openRecordedActiveCampaign()
     } catch (error) {
-      this.installation.close()
+      this.installationOwner.close()
       throw error
     }
   }
 
   list(): CampaignSnapshot {
-    return this.registry.snapshot()
+    return this.installationOwner.registry.snapshot()
   }
 
   create(name: string): CampaignSnapshot {
     const id = uuidv7()
     const createdAt = new Date().toISOString()
     this.onCreatePhase?.('before-registry-entry')
-    this.registry.beginCreation(id, name, createdAt)
+    this.installationOwner.registry.beginCreation(id, name, createdAt)
     this.onCreatePhase?.('after-creating-entry')
     this.createStagedCampaignStore(id)
     this.onCreatePhase?.('after-store-created')
@@ -172,62 +112,62 @@ export class CampaignStore {
   }
 
   activate(id: string): CampaignSnapshot {
-    this.registry.requireAvailable(id)
+    this.installationOwner.registry.requireAvailable(id)
     this.switchActiveCampaign(id)
-    this.registry.setActive(id)
+    this.installationOwner.registry.setActive(id)
     return this.list()
   }
 
   rename(id: string, name: string): CampaignSnapshot {
-    this.registry.rename(id, name)
+    this.installationOwner.registry.rename(id, name)
     return this.list()
   }
 
   trash(id: string): CampaignSnapshot {
     this.requireSafeCampaignId(id)
-    this.registry.requireAvailable(id)
+    this.installationOwner.registry.requireAvailable(id)
 
     if (this.list().activeCampaignId === id) {
       this.connections.release(id)
     }
-    this.registry.trash(id, new Date().toISOString())
-    this.moveDirectory(this.campaignDirectory(id), this.trashDirectory(id))
+    this.installationOwner.registry.trash(id, new Date().toISOString())
+    this.filesystem.moveCampaignToTrash(id)
     return this.list()
   }
 
   restore(id: string): CampaignSnapshot {
     this.requireSafeCampaignId(id)
-    this.registry.requireTrashed(id)
+    this.installationOwner.registry.requireTrashed(id)
 
-    this.moveDirectory(this.trashDirectory(id), this.campaignDirectory(id))
-    this.registry.restore(id)
+    this.filesystem.restoreCampaignFromTrash(id)
+    this.installationOwner.registry.restore(id)
     return this.list()
   }
 
   deleteForever(id: string, confirmationName: string): CampaignSnapshot {
     this.requireSafeCampaignId(id)
-    this.registry.requireDeletionName(id, confirmationName)
+    this.installationOwner.registry.requireDeletionName(id, confirmationName)
 
-    this.moveDirectory(this.trashDirectory(id), this.deletingDirectory(id))
-    this.registry.delete(id)
-    rmSync(this.deletingDirectory(id), { recursive: true, force: true })
+    this.filesystem.stageTrashForDeletion(id)
+    this.installationOwner.registry.delete(id)
+    this.filesystem.finishDeletion(id)
     return this.list()
   }
 
   readSettings(): InstallationSettings {
-    return this.installationSettings.read()
+    return this.installationOwner.readSettings()
   }
 
   updateSettings(
     patch: InstallationPreferencesPatch,
     expectedRevision: number
   ): InstallationSettings {
-    return this.installationSettings.update(patch, expectedRevision)
+    return this.installationOwner.updateSettings(patch, expectedRevision)
   }
 
   close(): void {
     this.connections.close()
-    this.installation.close()
+    this.installationOwner.close()
   }
 
   activeCampaignPersistence(): SqliteDatabaseAccess {
@@ -235,7 +175,7 @@ export class CampaignStore {
   }
 
   installationPersistenceAccess(): SqliteDatabaseAccess {
-    return this.installationPersistence
+    return this.installationOwner.persistenceAccess()
   }
 
   /**
@@ -260,25 +200,29 @@ export class CampaignStore {
     if (existingId !== null) this.requireSafeCampaignId(existingId)
     const previousActiveId = this.list().activeCampaignId
     const createdAt = new Date().toISOString()
-    rmSync(this.stagedCampaignDirectory(id), { recursive: true, force: true })
+    this.filesystem.discardStagedCampaign(id)
     if (existingId === null)
-      this.registry.insertImportCreation(id, name, createdAt)
+      this.installationOwner.registry.insertImportCreation(id, name, createdAt)
     try {
       if (existingId === null) this.createStagedCampaignStore(id)
       else this.cloneCampaignToStage(id)
-      const staged = new Database(this.stagedCampaignPath(id))
+      const staged = new Database(this.filesystem.stagedCampaignPath(id))
       try {
         configureSqlite(staged)
         assertSchemaVersion(
           staged,
-          this.stagedCampaignDirectory(id),
+          this.filesystem.stagedCampaignDirectory(id),
           'campaign'
         )
         const evidence = populateAndVerify(staged)
         if (staged.pragma('quick_check', { simple: true }) !== 'ok')
           throw new Error('Imported campaign failed quick_check')
         staged.close()
-        if (!this.isValidCampaignStore(this.stagedCampaignPath(id)))
+        if (
+          !this.filesystem.isValidCampaignStore(
+            this.filesystem.stagedCampaignPath(id)
+          )
+        )
           throw new Error('Imported campaign failed staged store validation')
         const directoryTransition =
           existingId === null
@@ -298,22 +242,21 @@ export class CampaignStore {
       if (
         existingId === null ||
         (this.directoryTransition.receipt(id) === null &&
-          this.isValidCampaignStore(this.campaignPath(id)))
+          this.filesystem.isValidCampaignStore(
+            this.filesystem.campaignPath(id)
+          ))
       )
-        rmSync(this.stagedCampaignDirectory(id), {
-          recursive: true,
-          force: true
-        })
+        this.filesystem.discardStagedCampaign(id)
       if (existingId === null) {
-        rmSync(this.campaignDirectory(id), { recursive: true, force: true })
-        this.registry.removeIncompleteCreation(id)
+        this.filesystem.discardCurrentCampaign(id)
+        this.installationOwner.registry.removeIncompleteCreation(id)
       }
       throw error
     }
   }
 
   campaignImportRepository(): CampaignImportStore {
-    return this.campaignImports
+    return this.installationOwner.campaignImports
   }
 
   discardFailedImportedCampaign(
@@ -323,18 +266,12 @@ export class CampaignStore {
     this.requireSafeCampaignId(campaignId)
     if (this.connections.activeId() === campaignId)
       this.connections.release(campaignId)
-    this.registry.delete(campaignId)
-    rmSync(this.stagedCampaignDirectory(campaignId), {
-      recursive: true,
-      force: true
-    })
-    rmSync(this.campaignDirectory(campaignId), {
-      recursive: true,
-      force: true
-    })
+    this.installationOwner.registry.delete(campaignId)
+    this.filesystem.discardStagedCampaign(campaignId)
+    this.filesystem.discardCurrentCampaign(campaignId)
     if (previousActiveCampaignId !== null) {
-      this.registry.requireAvailable(previousActiveCampaignId)
-      this.registry.setActive(previousActiveCampaignId)
+      this.installationOwner.registry.requireAvailable(previousActiveCampaignId)
+      this.installationOwner.registry.setActive(previousActiveCampaignId)
       this.switchActiveCampaign(previousActiveCampaignId)
     }
   }
@@ -358,7 +295,7 @@ export class CampaignStore {
     }) => T
   ): T[] {
     const activeId = this.list().activeCampaignId
-    const rows = this.registry.readyRows()
+    const rows = this.installationOwner.registry.readyRows()
     return rows.map((row) => {
       if (row.id === activeId && this.connections.activeId() === row.id)
         return this.connections.visit((database) =>
@@ -370,8 +307,8 @@ export class CampaignStore {
           })
         )
       const path = row.trashedAt
-        ? join(this.trashDirectory(row.id), 'campaign.sqlite')
-        : this.campaignPath(row.id)
+        ? `${this.filesystem.trashDirectory(row.id)}/campaign.sqlite`
+        : this.filesystem.campaignPath(row.id)
       const database = new Database(path)
       try {
         configureSqlite(database)
@@ -398,30 +335,19 @@ export class CampaignStore {
   activeCampaignPath(): string {
     const id = this.list().activeCampaignId
     if (id === null) throw new CapabilityError('not_found', false)
-    return this.campaignPath(id)
+    return this.filesystem.campaignPath(id)
   }
 
   private createStagedCampaignStore(id: string): void {
-    const campaignPath = this.stagedCampaignPath(id)
-    mkdirSync(dirname(campaignPath), { recursive: true })
-    const campaign = new Database(campaignPath)
-    configureSqlite(campaign)
-    this.schemaBootstrapper.initialize(campaign)
-    campaign.close()
+    this.filesystem.createStagedCampaign(id)
   }
 
   private cloneCampaignToStage(id: string): void {
-    const stagedPath = this.stagedCampaignPath(id)
-    mkdirSync(dirname(stagedPath), { recursive: true })
     const borrowedActive = this.connections.activeId() === id
-    const copy = (source: Database.Database) => {
-      configureSqlite(source)
-      assertSchemaVersion(source, this.campaignDirectory(id), 'campaign')
-      source.pragma('wal_checkpoint(FULL)')
-      copyFileSync(this.campaignPath(id), stagedPath)
-    }
+    const copy = (source: Database.Database) =>
+      this.filesystem.cloneCampaignToStage(id, source)
     if (borrowedActive) return this.connections.visit(copy)
-    const source = new Database(this.campaignPath(id))
+    const source = new Database(this.filesystem.campaignPath(id))
     try {
       copy(source)
     } finally {
@@ -430,14 +356,9 @@ export class CampaignStore {
   }
 
   private finalizeCampaignCreation(id: string): void {
-    const stagedDirectory = this.stagedCampaignDirectory(id)
-    const campaignDirectory = this.campaignDirectory(id)
-    if (existsSync(stagedDirectory) && !existsSync(campaignDirectory))
-      renameSync(stagedDirectory, campaignDirectory)
-    if (!this.isValidCampaignStore(this.campaignPath(id)))
-      throw new Error('Campaign store creation did not complete')
+    this.filesystem.promoteStagedCreation(id)
     this.onCreatePhase?.('before-ready')
-    this.registry.markReadyAndActivate(id)
+    this.installationOwner.registry.markReadyAndActivate(id)
     this.switchActiveCampaign(id)
   }
 
@@ -455,7 +376,7 @@ export class CampaignStore {
     name: string,
     previousActiveId: string | null
   ): CampaignDirectoryTransitionReceipt {
-    const previousName = this.registry.previousName(id)
+    const previousName = this.installationOwner.registry.previousName(id)
     let receipt = this.directoryTransition.begin({
       campaignId: id,
       previousName,
@@ -485,7 +406,7 @@ export class CampaignStore {
         throw new Error('Promoted campaign failed quick_check')
       this.onReplacePhase?.('after-replacement-open')
       this.onReplacePhase?.('before-registry-commit')
-      this.registry.commitReplacement(receipt, name)
+      this.installationOwner.registry.commitReplacement(receipt, name)
       receipt = this.directoryTransition.markVerified(receipt)
       this.onReplacePhase?.('after-registry-commit')
       this.onReplacePhase?.('before-cleanup')
@@ -504,9 +425,9 @@ export class CampaignStore {
   }
 
   private recoverIncompleteCreations(): void {
-    for (const id of this.registry.creatingIds()) {
-      if (!this.isSafeCampaignId(id)) {
-        this.registry.removeIncompleteCreation(id)
+    for (const id of this.installationOwner.registry.creatingIds()) {
+      if (!isSafeCampaignId(id)) {
+        this.installationOwner.registry.removeIncompleteCreation(id)
         continue
       }
       try {
@@ -521,30 +442,22 @@ export class CampaignStore {
     for (const receipt of this.directoryTransition.receipts())
       this.recoverCampaignDirectoryTransition(receipt, false)
 
-    const replacingParent = join(this.dataRoot, 'campaigns', '.replacing')
-    if (existsSync(replacingParent))
-      for (const id of readdirSync(replacingParent)) {
-        if (!this.isSafeCampaignId(id)) continue
-        if (this.directoryTransition.receipt(id) === null)
-          this.directoryTransition.recoverLegacy(id)
-      }
+    for (const id of this.filesystem.legacyReplacementIds()) {
+      if (!isSafeCampaignId(id)) continue
+      if (this.directoryTransition.receipt(id) === null)
+        this.directoryTransition.recoverLegacy(id)
+    }
 
-    const deletingParent = join(this.dataRoot, 'campaigns', '.deleting')
-    if (existsSync(deletingParent))
-      for (const id of readdirSync(deletingParent)) {
-        if (!this.isSafeCampaignId(id)) continue
-        this.registry.delete(id)
-        rmSync(this.deletingDirectory(id), { recursive: true, force: true })
-      }
+    for (const id of this.filesystem.pendingDeletionIds()) {
+      if (!isSafeCampaignId(id)) continue
+      this.installationOwner.registry.delete(id)
+      this.filesystem.finishDeletion(id)
+    }
 
-    for (const id of this.registry.trashedIds()) {
-      if (!this.isSafeCampaignId(id))
+    for (const id of this.installationOwner.registry.trashedIds()) {
+      if (!isSafeCampaignId(id))
         throw new Error('Unsafe campaign identifier in trash registry')
-      const source = this.campaignDirectory(id)
-      const destination = this.trashDirectory(id)
-      if (existsSync(source) && existsSync(destination))
-        throw new Error('Campaign exists in both active and trash storage')
-      this.moveDirectory(source, destination)
+      this.filesystem.assertAndConvergeTrashedCampaign(id)
     }
   }
 
@@ -552,7 +465,7 @@ export class CampaignStore {
     receipt: CampaignDirectoryTransitionReceipt,
     reopen = true
   ): void {
-    if (this.registry.replacementCommit(receipt)) {
+    if (this.installationOwner.registry.replacementCommit(receipt)) {
       this.directoryTransition.rollForwardFilesystem(receipt)
       this.directoryTransition.finish(receipt)
       this.clearTransitionCommit(receipt)
@@ -561,7 +474,7 @@ export class CampaignStore {
     }
 
     this.directoryTransition.rollbackFilesystem(receipt)
-    this.registry.restoreReplacementRegistry(receipt)
+    this.installationOwner.registry.restoreReplacementRegistry(receipt)
     this.directoryTransition.finish(receipt)
     if (reopen && receipt.previousActiveId !== null)
       this.switchActiveCampaign(receipt.previousActiveId)
@@ -570,84 +483,17 @@ export class CampaignStore {
   private clearTransitionCommit(
     receipt: CampaignDirectoryTransitionReceipt
   ): void {
-    this.registry.clearReplacementCommit(receipt)
+    this.installationOwner.registry.clearReplacementCommit(receipt)
   }
 
   private removeIncompleteCreation(id: string): void {
-    rmSync(this.stagedCampaignDirectory(id), { recursive: true, force: true })
-    rmSync(this.campaignDirectory(id), { recursive: true, force: true })
-    try {
-      rmdirSync(join(this.dataRoot, 'campaigns', '.creating'))
-    } catch {
-      // Another incomplete creation may still own the shared staging parent.
-    }
-    this.registry.removeIncompleteCreation(id)
-  }
-
-  private isValidCampaignStore(path: string): boolean {
-    if (!existsSync(path)) return false
-    let campaign: Database.Database | undefined
-    try {
-      campaign = new Database(path, { readonly: true })
-      assertSchemaVersion(campaign, undefined, 'campaign')
-      return (
-        campaign
-          .prepare(
-            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'campaign_runtime'"
-          )
-          .get() !== undefined &&
-        campaign.pragma('quick_check', { simple: true }) === 'ok'
-      )
-    } catch {
-      return false
-    } finally {
-      campaign?.close()
-    }
-  }
-
-  private campaignDirectory(id: string): string {
-    return join(this.dataRoot, 'campaigns', id)
-  }
-
-  private trashDirectory(id: string): string {
-    return join(this.dataRoot, 'campaigns', '.trash', id)
-  }
-
-  private deletingDirectory(id: string): string {
-    return join(this.dataRoot, 'campaigns', '.deleting', id)
-  }
-
-  private stagedCampaignDirectory(id: string): string {
-    return join(this.dataRoot, 'campaigns', '.creating', id)
-  }
-
-  private campaignPath(id: string): string {
-    return join(this.campaignDirectory(id), 'campaign.sqlite')
-  }
-
-  private stagedCampaignPath(id: string): string {
-    return join(this.stagedCampaignDirectory(id), 'campaign.sqlite')
-  }
-
-  private isSafeCampaignId(id: string): boolean {
-    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      id
-    )
+    this.filesystem.discardIncompleteCampaign(id)
+    this.installationOwner.registry.removeIncompleteCreation(id)
   }
 
   private requireSafeCampaignId(id: string): void {
-    if (!this.isSafeCampaignId(id))
+    if (!isSafeCampaignId(id))
       throw new CapabilityError('validation_failed', false)
-  }
-
-  private moveDirectory(source: string, destination: string): void {
-    const sourceExists = existsSync(source)
-    const destinationExists = existsSync(destination)
-    if (!sourceExists && destinationExists) return
-    if (!sourceExists || destinationExists)
-      throw new Error('Campaign directory transition is inconsistent')
-    mkdirSync(dirname(destination), { recursive: true })
-    renameSync(source, destination)
   }
 
   private openRecordedActiveCampaign(): void {
@@ -656,14 +502,14 @@ export class CampaignStore {
       this.switchActiveCampaign(id)
       return
     }
-    this.registry.clearRecordedActive()
+    this.installationOwner.registry.clearRecordedActive()
   }
 
   private switchActiveCampaign(id: string): void {
     this.connections.switch({
       id,
-      databasePath: this.campaignPath(id),
-      dataPath: this.campaignDirectory(id)
+      databasePath: this.filesystem.campaignPath(id),
+      dataPath: this.filesystem.campaignDirectory(id)
     })
   }
 }
@@ -678,7 +524,7 @@ export function openCampaignStore(
   } catch (error) {
     if (!(error instanceof IncompatibleDataError)) throw error
     if (incompatibleDataPolicy === 'preserve') throw error
-    rmSync(dataRoot, { recursive: true, force: true })
+    resetPersistenceRoot(dataRoot)
     console.info(
       JSON.stringify({
         component: 'campaign-store',
