@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "name": "campaign-import",
+  "typecheck": true,
+  "tests": [
+    "tests/unit/campaign-import-adapter-registry.test.ts",
+    "tests/unit/campaign-import-runtime-guard.test.ts",
+    "tests/unit/version-truth.test.ts",
+    "tests/unit/persistence-preflight.test.ts",
+    "tests/integration/campaign-import.test.ts"
+  ],
+  "maxWorkers": 2
+}

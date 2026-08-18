@@ -14,7 +14,7 @@ import { uuidv7 } from '../../../shared/ids/uuidv7.js'
 import {
   assertSchemaVersion,
   configureSqlite,
-  currentSchemaVersion,
+  databaseSchemaVersions,
   IncompatibleDataError,
   initializeSchemaVersion
 } from './database.js'
@@ -32,7 +32,10 @@ import { initializeLocationSymbolSchema } from '../../worldplanner/location-symb
 import { initializeBiomeCatalogSchema } from '../../biomes/biome-catalog.js'
 import { initializeGeneratorPresetSchema } from './generator-preset-store.js'
 import type { IncompatibleDataPolicy } from '../../../shared/contracts/runtime.js'
-import { initializeCampaignImportInstallationSchema } from '../../campaign-import/campaign-import-store.js'
+import {
+  CampaignImportStore,
+  initializeCampaignImportInstallationSchema
+} from '../../campaign-import/campaign-import-store.js'
 import {
   CampaignDirectoryTransition,
   type CampaignDirectoryTransitionReceipt
@@ -74,6 +77,7 @@ export class CampaignStore {
   private readonly installation: Database.Database
   private readonly registry: CampaignRegistryRepository
   private readonly installationSettings: InstallationSettingsStore
+  private readonly campaignImports: CampaignImportStore
   private readonly connections = new CampaignConnectionManager()
   private readonly onCreatePhase:
     ((phase: CampaignCreatePhase) => void) | undefined
@@ -102,6 +106,7 @@ export class CampaignStore {
     mkdirSync(dirname(installationPath), { recursive: true })
     this.installation = new Database(installationPath)
     this.registry = new CampaignRegistryRepository(this.installation)
+    this.campaignImports = new CampaignImportStore(this.installation)
     this.installationSettings = new InstallationSettingsStore(this.installation)
     try {
       configureSqlite(this.installation)
@@ -222,12 +227,20 @@ export class CampaignStore {
    * caller's complete domain readback succeeds. Re-import replaces the prior
    * image at the same campaign identity, so external identities stay singular.
    */
-  stageImportedCampaign(
+  stageImportedCampaign<T>(
     name: string,
     existingId: string | null,
-    populateAndVerify: (database: Database.Database) => void
-  ): Readonly<{ campaignId: string; snapshot: CampaignSnapshot }> {
-    const id = existingId ?? uuidv7()
+    populateAndVerify: (database: Database.Database) => T,
+    reservedId?: string
+  ): Readonly<{
+    campaignId: string
+    snapshot: CampaignSnapshot
+    quickCheck: 'ok'
+    evidence: T
+    directoryTransition: unknown
+  }> {
+    const id = existingId ?? reservedId ?? uuidv7()
+    if (reservedId !== undefined) this.requireSafeCampaignId(reservedId)
     if (existingId !== null) this.requireSafeCampaignId(existingId)
     const previousActiveId = this.list().activeCampaignId
     const createdAt = new Date().toISOString()
@@ -245,20 +258,26 @@ export class CampaignStore {
           this.stagedCampaignDirectory(id),
           'campaign'
         )
-        populateAndVerify(staged)
+        const evidence = populateAndVerify(staged)
         if (staged.pragma('quick_check', { simple: true }) !== 'ok')
           throw new Error('Imported campaign failed quick_check')
-      } finally {
         staged.close()
+        if (!this.isValidCampaignStore(this.stagedCampaignPath(id)))
+          throw new Error('Imported campaign failed staged store validation')
+        const directoryTransition =
+          existingId === null
+            ? this.finalizeImportedCampaignCreation(id)
+            : this.replaceCampaignFromStage(id, name, previousActiveId)
+        return {
+          campaignId: id,
+          snapshot: this.list(),
+          quickCheck: 'ok',
+          evidence,
+          directoryTransition
+        }
+      } finally {
+        if (staged.open) staged.close()
       }
-      if (!this.isValidCampaignStore(this.stagedCampaignPath(id)))
-        throw new Error('Imported campaign failed staged store validation')
-      if (existingId === null) {
-        this.finalizeCampaignCreation(id)
-      } else {
-        this.replaceCampaignFromStage(id, name, previousActiveId)
-      }
-      return { campaignId: id, snapshot: this.list() }
     } catch (error) {
       if (
         existingId === null ||
@@ -279,6 +298,43 @@ export class CampaignStore {
 
   installationDatabase(): Database.Database {
     return this.installation
+  }
+
+  campaignImportRepository(): CampaignImportStore {
+    return this.campaignImports
+  }
+
+  discardFailedImportedCampaign(
+    campaignId: string,
+    previousActiveCampaignId: string | null
+  ): void {
+    this.requireSafeCampaignId(campaignId)
+    if (this.connections.activeId() === campaignId)
+      this.connections.release(campaignId)
+    this.registry.delete(campaignId)
+    rmSync(this.stagedCampaignDirectory(campaignId), {
+      recursive: true,
+      force: true
+    })
+    rmSync(this.campaignDirectory(campaignId), {
+      recursive: true,
+      force: true
+    })
+    if (previousActiveCampaignId !== null) {
+      this.registry.requireAvailable(previousActiveCampaignId)
+      this.registry.setActive(previousActiveCampaignId)
+      this.switchActiveCampaign(previousActiveCampaignId)
+    }
+  }
+
+  visitCampaignDatabase<T>(
+    campaignId: string,
+    visitor: (database: Database.Database) => T
+  ): T | null {
+    const result = this.visitCampaignDatabases(({ id, database }) =>
+      id === campaignId ? visitor(database) : null
+    ).find((value): value is T => value !== null)
+    return result ?? null
   }
 
   visitCampaignDatabases<T>(
@@ -370,11 +426,20 @@ export class CampaignStore {
     this.switchActiveCampaign(id)
   }
 
+  private finalizeImportedCampaignCreation(id: string): Readonly<{
+    kind: 'creation'
+    campaignId: string
+    phase: 'complete'
+  }> {
+    this.finalizeCampaignCreation(id)
+    return { kind: 'creation', campaignId: id, phase: 'complete' }
+  }
+
   private replaceCampaignFromStage(
     id: string,
     name: string,
     previousActiveId: string | null
-  ): void {
+  ): CampaignDirectoryTransitionReceipt {
     const previousName = this.registry.previousName(id)
     let receipt = this.directoryTransition.begin({
       campaignId: id,
@@ -413,6 +478,7 @@ export class CampaignStore {
       this.onReplacePhase?.('after-cleanup')
       this.directoryTransition.finish(receipt)
       this.clearTransitionCommit(receipt)
+      return receipt
     } catch (error) {
       // switchActiveCampaign may already have opened the replacement. Close it
       // before removing or renaming either directory on Windows.
@@ -602,7 +668,7 @@ export function openCampaignStore(
       JSON.stringify({
         component: 'campaign-store',
         event: 'schema-reset',
-        schemaVersion: currentSchemaVersion
+        schemaVersions: databaseSchemaVersions
       })
     )
     return new CampaignStore(dataRoot)

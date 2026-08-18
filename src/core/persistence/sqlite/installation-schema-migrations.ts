@@ -1,7 +1,10 @@
 import type Database from 'better-sqlite3'
 import { defaultGeneratorLootRules } from '../../../shared/generator/default-loot-rules.js'
 import type { SchemaMigration } from './schema-migrations.js'
-import { initializeCampaignImportInstallationSchema } from '../../campaign-import/campaign-import-store.js'
+import {
+  initializeCampaignImportRegistrySchema,
+  initializeCampaignImportSagaSchema
+} from '../../campaign-import/campaign-import-store.js'
 
 export function initializeInstallationSchemaMetadata(
   database: Database.Database
@@ -214,7 +217,7 @@ export const installationSchemaMigrations: readonly SchemaMigration[] =
       toVersion: 34,
       migrate(database) {
         initializeInstallationSchemaMetadata(database)
-        initializeCampaignImportInstallationSchema(database)
+        initializeCampaignImportRegistrySchema(database)
         database
           .prepare(
             'INSERT INTO installation_schema_migration (migration_id, applied_at) VALUES (?, ?)'
@@ -223,6 +226,21 @@ export const installationSchemaMigrations: readonly SchemaMigration[] =
             'installation-33-to-34-import-registry',
             new Date().toISOString()
           )
+      }
+    },
+    {
+      id: 'installation-34-to-35-import-saga',
+      role: 'installation',
+      fromVersion: 34,
+      toVersion: 35,
+      migrate(database) {
+        initializeInstallationSchemaMetadata(database)
+        initializeCampaignImportSagaSchema(database)
+        database
+          .prepare(
+            'INSERT INTO installation_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run('installation-34-to-35-import-saga', new Date().toISOString())
       }
     }
   ])

@@ -7,14 +7,16 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   campaignImportBundleSchema,
   type CampaignImportBundle
 } from '../../src/shared/contracts/campaign-import.js'
 import {
+  CampaignImportInterruption,
   CampaignImportService,
-  campaignImportExportHash
+  campaignImportExportHash,
+  type CampaignImportSagaBoundary
 } from '../../src/core/campaign-import/campaign-import-service.js'
 import { creatures } from '../../src/core/creatures/catalog.js'
 import { CampaignStore } from '../../src/core/persistence/sqlite/campaign-store.js'
@@ -120,7 +122,100 @@ describe('CampaignImportService', () => {
     })
     expect(campaigns.list().campaigns).toHaveLength(1)
     expect(entityCount(campaigns.activeCampaignDatabase())).toBe(7)
+    expect(
+      campaigns.campaignImportRepository().latestSagaForSource(bundle.source.id)
+    ).toMatchObject({
+      phase: 'complete',
+      terminalResult: 'applied',
+      quickCheck: 'ok',
+      domainReadbacks: [
+        { name: 'factions', passed: true },
+        { name: 'locations', passed: true },
+        { name: 'party', passed: true },
+        { name: 'npcs', passed: true }
+      ]
+    })
     campaigns.close()
+  })
+
+  it.each([
+    ['planned', 'failed', 'rolled_back'],
+    ['staging', 'failed', 'rolled_back'],
+    ['campaign_replaced', 'complete', 'recovered'],
+    ['registry_committed', 'complete', 'recovered'],
+    ['complete', 'complete', 'applied']
+  ] as const)(
+    'converges after restart from the %s saga boundary',
+    (boundary, expectedPhase, expectedResult) => {
+      const root = mkdtempSync(join(tmpdir(), 'salt-marcher-import-saga-'))
+      roots.push(root)
+      const bundle = fixture()
+      const interruptedCampaigns = new CampaignStore(root)
+      const interruptedService = new CampaignImportService(
+        interruptedCampaigns,
+        resolver,
+        {
+          onSagaPhase: (phase) => interruptAt(boundary, phase)
+        }
+      )
+      expect(() => interruptedService.apply(bundle)).toThrow(
+        CampaignImportInterruption
+      )
+      interruptedCampaigns.close()
+
+      const recoveredCampaigns = new CampaignStore(root)
+      new CampaignImportService(recoveredCampaigns, resolver)
+      const receipt = recoveredCampaigns
+        .campaignImportRepository()
+        .latestSagaForSource(bundle.source.id)
+      expect(receipt).toMatchObject({
+        phase: expectedPhase,
+        terminalResult: expectedResult
+      })
+      if (expectedPhase === 'complete') {
+        expect(receipt?.quickCheck).toBe('ok')
+        expect(
+          receipt?.domainReadbacks.map(({ name, passed }) => ({ name, passed }))
+        ).toEqual([
+          { name: 'factions', passed: true },
+          { name: 'locations', passed: true },
+          { name: 'party', passed: true },
+          { name: 'npcs', passed: true }
+        ])
+        expect(recoveredCampaigns.list().campaigns).toHaveLength(1)
+      } else expect(recoveredCampaigns.list().campaigns).toHaveLength(0)
+      recoveredCampaigns.close()
+    }
+  )
+
+  it('keeps a published replacement resumable when the registry commit fails', () => {
+    const root = mkdtempSync(join(tmpdir(), 'salt-marcher-import-registry-'))
+    roots.push(root)
+    const bundle = fixture()
+    const interruptedCampaigns = new CampaignStore(root)
+    const repository = interruptedCampaigns.campaignImportRepository()
+    vi.spyOn(repository, 'commitRegistryForSaga').mockImplementationOnce(() => {
+      throw new Error('injected registry failure')
+    })
+    const service = new CampaignImportService(interruptedCampaigns, resolver)
+
+    expect(() => service.apply(bundle)).toThrow('injected registry failure')
+    expect(repository.latestSagaForSource(bundle.source.id)).toMatchObject({
+      phase: 'campaign_replaced',
+      terminalResult: null,
+      quickCheck: 'ok'
+    })
+    interruptedCampaigns.close()
+
+    const recoveredCampaigns = new CampaignStore(root)
+    new CampaignImportService(recoveredCampaigns, resolver)
+    expect(
+      recoveredCampaigns
+        .campaignImportRepository()
+        .latestSagaForSource(bundle.source.id)
+    ).toMatchObject({ phase: 'complete', terminalResult: 'recovered' })
+    expect(recoveredCampaigns.list().campaigns).toHaveLength(1)
+    recoveredCampaigns.close()
   })
 
   it('previews and applies a one-fact source delta under the same external identities', () => {
@@ -302,6 +397,13 @@ function harness() {
     campaigns,
     service: new CampaignImportService(campaigns, resolver)
   }
+}
+
+function interruptAt(
+  expected: CampaignImportSagaBoundary,
+  actual: CampaignImportSagaBoundary
+): void {
+  if (actual === expected) throw new CampaignImportInterruption(actual)
 }
 
 function fixture(): CampaignImportBundle {

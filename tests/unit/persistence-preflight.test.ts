@@ -14,7 +14,7 @@ import Database from 'better-sqlite3'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   CorruptDataError,
-  currentSchemaVersion,
+  databaseSchemaVersions,
   IncompatibleDataError
 } from '../../src/core/persistence/sqlite/database.js'
 import { preflightPersistence } from '../../src/core/persistence/sqlite/persistence-preflight.js'
@@ -49,11 +49,11 @@ describe('persistence preflight', () => {
     const root = temporaryRoot()
     const installation = createDatabase(
       join(root, 'installation.sqlite'),
-      currentSchemaVersion
+      databaseSchemaVersions.installation
     )
     const campaign = createDatabase(
       join(root, 'campaigns', 'one', 'campaign.sqlite'),
-      currentSchemaVersion
+      databaseSchemaVersions.campaign
     )
     const before = [readFileSync(installation), readFileSync(campaign)]
 
@@ -74,7 +74,7 @@ describe('persistence preflight', () => {
     const root = temporaryRoot()
     const installation = createDatabase(
       join(root, 'installation.sqlite'),
-      currentSchemaVersion
+      databaseSchemaVersions.installation
     )
     const writer = new Database(installation)
     writer.pragma('journal_mode = WAL')
@@ -112,7 +112,7 @@ describe('persistence preflight', () => {
       const root = temporaryRoot()
       const path = createDatabase(
         join(root, 'installation.sqlite'),
-        currentSchemaVersion
+        databaseSchemaVersions.installation
       )
       const before = readFileSync(path)
       chmodSync(path, 0o000)
@@ -140,7 +140,7 @@ describe('persistence preflight', () => {
     const planned = preflightPersistence(root)
 
     expect(planned.kind).toBe('migration-required')
-    expect(migrationRegistryVersion).toBe(6)
+    expect(migrationRegistryVersion).toBe(7)
     for (const entry of planned.databases) {
       const database = new Database(entry.path)
       applySchemaMigrations(database, {
@@ -154,7 +154,7 @@ describe('persistence preflight', () => {
     expect(restarted.kind).toBe('ready')
     expect(restarted.databases).toMatchObject([
       { path: campaign, role: 'campaign', schemaVersion: 34 },
-      { path: installation, role: 'installation', schemaVersion: 34 }
+      { path: installation, role: 'installation', schemaVersion: 35 }
     ])
     const installationDatabase = new Database(installation)
     expect(
@@ -168,7 +168,7 @@ describe('persistence preflight', () => {
         .prepare('SELECT COUNT(*) FROM installation_schema_migration')
         .pluck()
         .get()
-    ).toBe(7)
+    ).toBe(8)
     applySchemaMigrations(installationDatabase, {
       path: installation,
       role: 'installation'
@@ -178,11 +178,18 @@ describe('persistence preflight', () => {
         .prepare('SELECT COUNT(*) FROM installation_schema_migration')
         .pluck()
         .get()
-    ).toBe(7)
+    ).toBe(8)
     expect(
       installationDatabase
         .prepare(
           "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'campaign_import_registry'"
+        )
+        .get()
+    ).toBeDefined()
+    expect(
+      installationDatabase
+        .prepare(
+          "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'campaign_import_saga'"
         )
         .get()
     ).toBeDefined()
@@ -298,7 +305,7 @@ describe('persistence preflight', () => {
     applySchemaMigrations(database, { path, role: 'campaign' })
 
     expect(database.pragma('user_version', { simple: true })).toBe(
-      currentSchemaVersion
+      databaseSchemaVersions.campaign
     )
     expect(
       database
@@ -363,7 +370,7 @@ describe('schema migration contract', () => {
       id: 'campaign-26-to-current',
       role: 'campaign',
       fromVersion: 26,
-      toVersion: currentSchemaVersion,
+      toVersion: databaseSchemaVersions.campaign,
       migrate(database) {
         database.exec('CREATE TABLE migrated_current (id INTEGER PRIMARY KEY)')
       }
@@ -375,7 +382,7 @@ describe('schema migration contract', () => {
       resolveSchemaMigrationPath(
         'campaign',
         25,
-        currentSchemaVersion,
+        databaseSchemaVersions.campaign,
         migrations
       )
     ).toEqual(migrations)
@@ -383,15 +390,17 @@ describe('schema migration contract', () => {
       resolveSchemaMigrationPath(
         'campaign',
         24,
-        currentSchemaVersion,
+        databaseSchemaVersions.campaign,
         migrations
       )
     ).toBeNull()
     expect(() =>
-      resolveSchemaMigrationPath('campaign', 25, currentSchemaVersion, [
-        ...migrations,
-        migrations[0]!
-      ])
+      resolveSchemaMigrationPath(
+        'campaign',
+        25,
+        databaseSchemaVersions.campaign,
+        [...migrations, migrations[0]!]
+      )
     ).toThrow(/ambiguous/)
   })
 
@@ -402,7 +411,7 @@ describe('schema migration contract', () => {
     applySchemaMigrations(database, { path, role: 'campaign' }, migrations)
 
     expect(database.pragma('user_version', { simple: true })).toBe(
-      currentSchemaVersion
+      databaseSchemaVersions.campaign
     )
     expect(
       database
@@ -433,7 +442,7 @@ describe('schema migration contract', () => {
         id: 'installation-27-to-28-failure',
         role: 'installation',
         fromVersion: 27,
-        toVersion: currentSchemaVersion,
+        toVersion: databaseSchemaVersions.installation,
         migrate() {
           throw new Error('injected migration failure')
         }

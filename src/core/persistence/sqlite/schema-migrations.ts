@@ -7,7 +7,7 @@ import {
 import { installationSchemaMigrations } from './installation-schema-migrations.js'
 import { campaignSchemaMigrations } from './campaign-schema-migrations.js'
 
-export const migrationRegistryVersion = 6
+export const migrationRegistryVersion = 7
 
 export type SchemaMigrationContext = Readonly<{
   path: string

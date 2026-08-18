@@ -1,10 +1,75 @@
 import type Database from 'better-sqlite3'
+import { fingerprint } from '../fingerprint.js'
 import {
   campaignImportBundleSchema,
   type CampaignImportBundle
 } from '../../shared/contracts/campaign-import.js'
+import { z } from 'zod'
+
+export const campaignImportSagaPhaseSchema = z.enum([
+  'planned',
+  'staging',
+  'campaign_replaced',
+  'registry_committed',
+  'complete',
+  'failed'
+])
+
+export type CampaignImportSagaPhase = z.infer<
+  typeof campaignImportSagaPhaseSchema
+>
+
+export const campaignImportSagaReceiptSchema = z
+  .object({
+    importId: z.uuid(),
+    sourceId: z.string().min(1),
+    sourceRevision: z.number().int().nonnegative(),
+    exportHash: z.string().regex(/^[0-9a-f]{64}$/),
+    targetCampaignId: z.uuid(),
+    previousActiveCampaignId: z.uuid().nullable(),
+    previousCampaignFingerprint: z
+      .string()
+      .regex(/^[0-9a-f]{64}$/)
+      .nullable(),
+    replacementCampaignFingerprint: z
+      .string()
+      .regex(/^[0-9a-f]{64}$/)
+      .nullable(),
+    phase: campaignImportSagaPhaseSchema,
+    bundle: campaignImportBundleSchema,
+    sectionPlans: z.record(z.string(), z.unknown()),
+    sectionResults: z.record(z.string(), z.unknown()),
+    directoryTransition: z.unknown().nullable(),
+    quickCheck: z.literal('ok').nullable(),
+    domainReadbacks: z.array(
+      z
+        .object({
+          name: z.string().min(1),
+          expected: z.unknown(),
+          actual: z.unknown(),
+          passed: z.boolean()
+        })
+        .strict()
+    ),
+    terminalResult: z.enum(['applied', 'recovered', 'rolled_back']).nullable(),
+    error: z.string().nullable(),
+    createdAt: z.iso.datetime(),
+    updatedAt: z.iso.datetime()
+  })
+  .strict()
+
+export type CampaignImportSagaReceipt = Readonly<
+  z.infer<typeof campaignImportSagaReceiptSchema>
+>
 
 export function initializeCampaignImportInstallationSchema(
+  db: Database.Database
+): void {
+  initializeCampaignImportRegistrySchema(db)
+  initializeCampaignImportSagaSchema(db)
+}
+
+export function initializeCampaignImportRegistrySchema(
   db: Database.Database
 ): void {
   db.exec(`
@@ -16,6 +81,36 @@ export function initializeCampaignImportInstallationSchema(
       export_hash TEXT NOT NULL,
       updated_at TEXT NOT NULL
     );
+  `)
+}
+
+export function initializeCampaignImportSagaSchema(
+  db: Database.Database
+): void {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS campaign_import_saga (
+      import_id TEXT PRIMARY KEY NOT NULL,
+      source_id TEXT NOT NULL,
+      source_revision INTEGER NOT NULL CHECK(source_revision >= 0),
+      export_hash TEXT NOT NULL,
+      target_campaign_id TEXT NOT NULL,
+      previous_active_campaign_id TEXT,
+      previous_campaign_fingerprint TEXT,
+      replacement_campaign_fingerprint TEXT,
+      phase TEXT NOT NULL CHECK(phase IN ('planned', 'staging', 'campaign_replaced', 'registry_committed', 'complete', 'failed')),
+      bundle_json TEXT NOT NULL,
+      section_plans_json TEXT NOT NULL,
+      section_results_json TEXT NOT NULL,
+      directory_transition_json TEXT,
+      quick_check TEXT CHECK(quick_check IS NULL OR quick_check = 'ok'),
+      domain_readbacks_json TEXT NOT NULL,
+      terminal_result TEXT CHECK(terminal_result IS NULL OR terminal_result IN ('applied', 'recovered', 'rolled_back')),
+      error TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS campaign_import_saga_pending
+      ON campaign_import_saga(phase, updated_at);
   `)
 }
 
@@ -57,6 +152,12 @@ export interface CampaignImportEntityMapping {
   readonly internalId: string
 }
 
+export interface CampaignImportProvenance {
+  readonly sourceId: string
+  readonly sourceRevision: number
+  readonly exportHash: string
+}
+
 export class CampaignImportStore {
   constructor(private readonly installation: Database.Database) {}
 
@@ -73,6 +174,169 @@ export class CampaignImportStore {
       )
       .get(sourceId) as PreviousCampaignImport | undefined
     return row ?? null
+  }
+
+  beginSaga(input: {
+    importId: string
+    bundle: CampaignImportBundle
+    targetCampaignId: string
+    previousActiveCampaignId: string | null
+    previousCampaignFingerprint: string | null
+    sectionPlans: Readonly<Record<string, unknown>>
+  }): CampaignImportSagaReceipt {
+    const bundle = campaignImportBundleSchema.parse(input.bundle)
+    const timestamp = new Date().toISOString()
+    this.installation
+      .prepare(
+        `INSERT INTO campaign_import_saga
+          (import_id, source_id, source_revision, export_hash,
+           target_campaign_id, previous_active_campaign_id,
+           previous_campaign_fingerprint,
+           replacement_campaign_fingerprint, phase, bundle_json,
+           section_plans_json, section_results_json,
+           directory_transition_json, quick_check, domain_readbacks_json,
+           terminal_result, error, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, NULL, 'planned', ?, ?, '{}', NULL, NULL,
+                 '[]', NULL, NULL, ?, ?)`
+      )
+      .run(
+        input.importId,
+        bundle.source.id,
+        bundle.source.revision,
+        bundle.source.exportHash,
+        input.targetCampaignId,
+        input.previousActiveCampaignId,
+        input.previousCampaignFingerprint,
+        JSON.stringify(bundle),
+        JSON.stringify(input.sectionPlans),
+        timestamp,
+        timestamp
+      )
+    return this.requireSaga(input.importId)
+  }
+
+  advanceSaga(
+    importId: string,
+    expected: CampaignImportSagaPhase,
+    phase: CampaignImportSagaPhase,
+    evidence: Partial<
+      Pick<
+        CampaignImportSagaReceipt,
+        | 'replacementCampaignFingerprint'
+        | 'sectionResults'
+        | 'directoryTransition'
+        | 'quickCheck'
+        | 'domainReadbacks'
+        | 'terminalResult'
+        | 'error'
+      >
+    > = {}
+  ): CampaignImportSagaReceipt {
+    const current = this.requireSaga(importId)
+    if (current.phase !== expected)
+      throw new Error(
+        `Campaign import saga ${importId} expected ${expected}, got ${current.phase}`
+      )
+    const next = campaignImportSagaReceiptSchema.parse({
+      ...current,
+      ...evidence,
+      phase,
+      updatedAt: new Date().toISOString()
+    })
+    const result = this.installation
+      .prepare(
+        `UPDATE campaign_import_saga
+            SET replacement_campaign_fingerprint = ?, phase = ?,
+                section_results_json = ?, directory_transition_json = ?,
+                quick_check = ?, domain_readbacks_json = ?,
+                terminal_result = ?, error = ?, updated_at = ?
+          WHERE import_id = ? AND phase = ?`
+      )
+      .run(
+        next.replacementCampaignFingerprint,
+        next.phase,
+        JSON.stringify(next.sectionResults),
+        next.directoryTransition === null
+          ? null
+          : JSON.stringify(next.directoryTransition),
+        next.quickCheck,
+        JSON.stringify(next.domainReadbacks),
+        next.terminalResult,
+        next.error,
+        next.updatedAt,
+        importId,
+        expected
+      )
+    if (result.changes !== 1)
+      throw new Error('Campaign import saga phase changed concurrently')
+    return next
+  }
+
+  pendingSagas(): readonly CampaignImportSagaReceipt[] {
+    return (
+      this.installation
+        .prepare(
+          "SELECT * FROM campaign_import_saga WHERE phase NOT IN ('complete', 'failed') ORDER BY created_at"
+        )
+        .all() as CampaignImportSagaRow[]
+    ).map(parseSagaRow)
+  }
+
+  saga(importId: string): CampaignImportSagaReceipt | null {
+    const row = this.installation
+      .prepare('SELECT * FROM campaign_import_saga WHERE import_id = ?')
+      .get(importId) as CampaignImportSagaRow | undefined
+    return row ? parseSagaRow(row) : null
+  }
+
+  latestSagaForSource(sourceId: string): CampaignImportSagaReceipt | null {
+    const row = this.installation
+      .prepare(
+        `SELECT * FROM campaign_import_saga WHERE source_id = ?
+         ORDER BY created_at DESC, import_id DESC LIMIT 1`
+      )
+      .get(sourceId) as CampaignImportSagaRow | undefined
+    return row ? parseSagaRow(row) : null
+  }
+
+  commitRegistryForSaga(importId: string): CampaignImportSagaReceipt {
+    const saga = this.requireSaga(importId)
+    if (saga.phase !== 'campaign_replaced')
+      throw new Error(`Campaign import saga cannot commit from ${saga.phase}`)
+    this.installation.transaction(() => {
+      this.recordRegistry(saga.bundle, saga.targetCampaignId)
+      this.advanceSaga(importId, 'campaign_replaced', 'registry_committed')
+    })()
+    return this.requireSaga(importId)
+  }
+
+  completeSaga(
+    importId: string,
+    terminalResult: 'applied' | 'recovered'
+  ): CampaignImportSagaReceipt {
+    return this.advanceSaga(importId, 'registry_committed', 'complete', {
+      terminalResult
+    })
+  }
+
+  failSaga(
+    importId: string,
+    error: string,
+    terminalResult: 'rolled_back' = 'rolled_back'
+  ): CampaignImportSagaReceipt {
+    const current = this.requireSaga(importId)
+    if (current.phase === 'complete' || current.phase === 'failed')
+      return current
+    return this.advanceSaga(importId, current.phase, 'failed', {
+      error,
+      terminalResult
+    })
+  }
+
+  private requireSaga(importId: string): CampaignImportSagaReceipt {
+    const saga = this.saga(importId)
+    if (!saga) throw new Error(`Campaign import saga not found: ${importId}`)
+    return saga
   }
 
   recordRegistry(bundle: CampaignImportBundle, campaignId: string): void {
@@ -133,6 +397,34 @@ export class CampaignImportStore {
       .all(sourceId) as CampaignImportEntityMapping[]
   }
 
+  provenance(
+    db: Database.Database,
+    sourceId: string
+  ): CampaignImportProvenance | null {
+    const row = db
+      .prepare(
+        `SELECT source_id AS sourceId, source_revision AS sourceRevision,
+                export_hash AS exportHash
+           FROM campaign_import_provenance WHERE source_id = ?`
+      )
+      .get(sourceId) as CampaignImportProvenance | undefined
+    return row ?? null
+  }
+
+  campaignFingerprint(db: Database.Database, sourceId: string): string | null {
+    const provenance = this.provenance(db, sourceId)
+    if (!provenance) return null
+    const entities = db
+      .prepare(
+        `SELECT entity_kind AS kind, external_key AS externalKey,
+                internal_id AS internalId, content_hash AS contentHash
+           FROM campaign_import_entity WHERE source_id = ?
+           ORDER BY entity_kind, external_key`
+      )
+      .all(sourceId)
+    return fingerprint({ provenance, entities })
+  }
+
   recordProvenance(
     db: Database.Database,
     bundle: CampaignImportBundle,
@@ -187,4 +479,53 @@ export class CampaignImportStore {
         entity.contentHash
       )
   }
+}
+
+interface CampaignImportSagaRow {
+  import_id: string
+  source_id: string
+  source_revision: number
+  export_hash: string
+  target_campaign_id: string
+  previous_active_campaign_id: string | null
+  previous_campaign_fingerprint: string | null
+  replacement_campaign_fingerprint: string | null
+  phase: string
+  bundle_json: string
+  section_plans_json: string
+  section_results_json: string
+  directory_transition_json: string | null
+  quick_check: string | null
+  domain_readbacks_json: string
+  terminal_result: string | null
+  error: string | null
+  created_at: string
+  updated_at: string
+}
+
+function parseSagaRow(row: CampaignImportSagaRow): CampaignImportSagaReceipt {
+  return campaignImportSagaReceiptSchema.parse({
+    importId: row.import_id,
+    sourceId: row.source_id,
+    sourceRevision: row.source_revision,
+    exportHash: row.export_hash,
+    targetCampaignId: row.target_campaign_id,
+    previousActiveCampaignId: row.previous_active_campaign_id,
+    previousCampaignFingerprint: row.previous_campaign_fingerprint,
+    replacementCampaignFingerprint: row.replacement_campaign_fingerprint,
+    phase: row.phase,
+    bundle: JSON.parse(row.bundle_json) as unknown,
+    sectionPlans: JSON.parse(row.section_plans_json) as unknown,
+    sectionResults: JSON.parse(row.section_results_json) as unknown,
+    directoryTransition:
+      row.directory_transition_json === null
+        ? null
+        : (JSON.parse(row.directory_transition_json) as unknown),
+    quickCheck: row.quick_check,
+    domainReadbacks: JSON.parse(row.domain_readbacks_json) as unknown,
+    terminalResult: row.terminal_result,
+    error: row.error,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at
+  })
 }

@@ -18,7 +18,7 @@ import Database from 'better-sqlite3'
 import { CapabilityError } from '../../src/shared/errors/capability-error.js'
 import {
   configureSqlite,
-  currentSchemaVersion
+  databaseSchemaVersions
 } from '../../src/core/persistence/sqlite/database.js'
 import { GeneratorPresetStore } from '../../src/core/persistence/sqlite/generator-preset-store.js'
 import { systemGeneratorPresetId } from '../../src/shared/contracts/generator-presets.js'
@@ -457,7 +457,7 @@ describe('CampaignStore', () => {
     expect(db.pragma('foreign_keys', { simple: true })).toBe(1)
     expect(db.pragma('busy_timeout', { simple: true })).toBe(5000)
     expect(db.pragma('user_version', { simple: true })).toBe(
-      currentSchemaVersion
+      databaseSchemaVersions.installation
     )
 
     db.close()
