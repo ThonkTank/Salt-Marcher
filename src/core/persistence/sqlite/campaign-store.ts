@@ -61,6 +61,7 @@ import {
   CampaignDirectoryTransition,
   type CampaignDirectoryTransitionReceipt
 } from './campaign-directory-transition.js'
+import { CampaignConnectionManager } from './campaign-connection-manager.js'
 
 export type CampaignCreatePhase =
   | 'before-registry-entry'
@@ -90,7 +91,7 @@ export interface CampaignStoreOptions {
 export class CampaignStore {
   private readonly installation: Database.Database
   private readonly installationSettings: InstallationSettingsStore
-  private activeCampaign: Database.Database | undefined
+  private readonly connections = new CampaignConnectionManager()
   private readonly onCreatePhase:
     ((phase: CampaignCreatePhase) => void) | undefined
   private readonly onReplacePhase:
@@ -235,8 +236,7 @@ export class CampaignStore {
     if (campaign === undefined) throw new CapabilityError('not_found', false)
 
     if (this.list().activeCampaignId === id) {
-      this.activeCampaign?.close()
-      this.activeCampaign = undefined
+      this.connections.release(id)
     }
     this.installation.transaction(() => {
       this.installation
@@ -297,15 +297,12 @@ export class CampaignStore {
   }
 
   close(): void {
-    this.activeCampaign?.close()
-    this.activeCampaign = undefined
+    this.connections.close()
     this.installation.close()
   }
 
   activeCampaignDatabase(): Database.Database {
-    if (this.activeCampaign === undefined)
-      throw new CapabilityError('not_found', false)
-    return this.activeCampaign
+    return this.connections.compatibilityDatabase()
   }
 
   /**
@@ -393,12 +390,12 @@ export class CampaignStore {
       )
       .all() as { id: string; name: string; trashedAt: string | null }[]
     return rows.map((row) => {
-      if (row.id === activeId && this.activeCampaign)
+      if (row.id === activeId && this.connections.activeId() === row.id)
         return visitor({
           id: row.id,
           name: row.name,
           trashed: false,
-          database: this.activeCampaign
+          database: this.connections.compatibilityDatabase()
         })
       const path = row.trashedAt
         ? join(this.trashDirectory(row.id), 'campaign.sqlite')
@@ -472,17 +469,17 @@ export class CampaignStore {
     const stagedPath = this.stagedCampaignPath(id)
     mkdirSync(dirname(stagedPath), { recursive: true })
     let source: Database.Database | undefined
+    const borrowedActive = this.connections.activeId() === id
     try {
-      source =
-        this.list().activeCampaignId === id && this.activeCampaign
-          ? this.activeCampaign
-          : new Database(this.campaignPath(id))
+      source = borrowedActive
+        ? this.connections.compatibilityDatabase()
+        : new Database(this.campaignPath(id))
       configureSqlite(source)
       assertSchemaVersion(source, this.campaignDirectory(id), 'campaign')
       source.pragma('wal_checkpoint(FULL)')
       copyFileSync(this.campaignPath(id), stagedPath)
     } finally {
-      if (source !== this.activeCampaign) source?.close()
+      if (!borrowedActive) source?.close()
     }
   }
 
@@ -526,8 +523,7 @@ export class CampaignStore {
     // to be renamed. Release the active handle before beginning the durable
     // directory transition; the catch path reopens the recorded campaign.
     if (previousActiveId === id) {
-      this.activeCampaign?.close()
-      this.activeCampaign = undefined
+      this.connections.release(id)
     }
     try {
       this.onReplacePhase?.('before-original-move')
@@ -538,7 +534,11 @@ export class CampaignStore {
       this.onReplacePhase?.('after-replacement-promote')
       this.onReplacePhase?.('before-replacement-open')
       this.switchActiveCampaign(id)
-      if (this.activeCampaign?.pragma('quick_check', { simple: true }) !== 'ok')
+      if (
+        this.connections.visit((database) =>
+          database.pragma('quick_check', { simple: true })
+        ) !== 'ok'
+      )
         throw new Error('Promoted campaign failed quick_check')
       this.onReplacePhase?.('after-replacement-open')
       this.onReplacePhase?.('before-registry-commit')
@@ -565,8 +565,7 @@ export class CampaignStore {
     } catch (error) {
       // switchActiveCampaign may already have opened the replacement. Close it
       // before removing or renaming either directory on Windows.
-      this.activeCampaign?.close()
-      this.activeCampaign = undefined
+      this.connections.close()
       this.recoverCampaignDirectoryTransition(receipt)
       throw error
     }
@@ -789,16 +788,11 @@ export class CampaignStore {
   }
 
   private switchActiveCampaign(id: string): void {
-    const next = new Database(this.campaignPath(id))
-    try {
-      configureSqlite(next)
-      assertSchemaVersion(next, this.campaignDirectory(id), 'campaign')
-    } catch (error) {
-      next.close()
-      throw error
-    }
-    this.activeCampaign?.close()
-    this.activeCampaign = next
+    this.connections.switch({
+      id,
+      databasePath: this.campaignPath(id),
+      dataPath: this.campaignDirectory(id)
+    })
   }
 }
 
