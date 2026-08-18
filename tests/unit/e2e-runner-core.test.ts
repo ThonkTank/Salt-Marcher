@@ -29,6 +29,12 @@ describe('E2E runner diagnostics', () => {
     expect(classifyE2eFailure(1, 'session not created: Electron exited')).toBe(
       'infrastructure'
     )
+    expect(
+      classifyE2eFailure(
+        1,
+        'WebDriverError: The operation was aborted due to timeout when running "http://localhost:44289/session" with method "POST"'
+      )
+    ).toBe('infrastructure')
     expect(classifyE2eFailure(1, 'AssertionError: expected button')).toBe(
       'product'
     )

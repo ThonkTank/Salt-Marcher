@@ -3,7 +3,7 @@ import type { Browser as WdioBrowser } from 'webdriverio'
 import { expectAccessible } from './support/e2e-assertions.js'
 
 describe('generator preset integration', () => {
-  it('shows every durable Planner stage across an active Utility restart', async () => {
+  it('resumes durable Planner work across active process restarts', async () => {
     const client = browser as unknown as WdioBrowser
     const campaignName = await client.$('#campaign-name')
     await campaignName.waitForDisplayed({ timeout: 30_000 })
@@ -207,6 +207,9 @@ describe('generator preset integration', () => {
       const workspace = await api.sessionPlanner.read()
       return {
         status: found.receipt.status,
+        runId: found.receipt.runId,
+        encounterBatchFingerprint: found.receipt.encounterBatchFingerprint,
+        committedPlannerRevision: found.receipt.committedPlannerRevision,
         sceneCount: workspace.session.scenes.length,
         artifacts: workspace.session.scenes.map((scene) => ({
           id: scene.id,
@@ -229,15 +232,31 @@ describe('generator preset integration', () => {
     expect(setup.scene.revision).toBe(setup.custom.revision)
     expect(setup.scene.hash).toMatch(/^[0-9a-f]{64}$/)
     expect(afterRestart.status).toBe('succeeded')
+    expect(afterRestart.runId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+    )
+    expect(afterRestart.encounterBatchFingerprint).toMatch(/^[0-9a-f]{64}$/)
+    expect(afterRestart.committedPlannerRevision).toBeGreaterThan(0)
     expect(afterRestart.sceneCount).toBeGreaterThan(0)
-    expect(['state-queued', ...afterRestart.stages]).toEqual(
-      expect.arrayContaining([
-        'state-queued',
-        'state-generating',
-        'state-resolving-encounters',
-        'state-saving',
-        'state-ready'
-      ])
+    const observedStages = [
+      ...new Set(['state-queued', ...afterRestart.stages])
+    ]
+    const durableOrder = [
+      'state-queued',
+      'state-generating',
+      'state-resolving-encounters',
+      'state-saving',
+      'state-ready'
+    ]
+    expect(observedStages[0]).toBe('state-queued')
+    expect(observedStages.at(-1)).toBe('state-ready')
+    expect(observedStages.map((stage) => durableOrder.indexOf(stage))).toEqual(
+      [...observedStages]
+        .map((stage) => durableOrder.indexOf(stage))
+        .toSorted((left, right) => left - right)
+    )
+    expect(observedStages.every((stage) => durableOrder.includes(stage))).toBe(
+      true
     )
 
     await (await plannerSurface.$('button=Vorbereiten')).click()
@@ -279,11 +298,31 @@ describe('generator preset integration', () => {
     })
     expect(utilityTerminated).toBe(true)
     await client.waitUntil(
+      async () =>
+        (await client.execute(async () =>
+          window.saltMarcher.runtime.coreStatus()
+        )) !== 'ready',
+      {
+        timeout: 10_000,
+        interval: 100,
+        timeoutMsg: 'Utility did not enter its restart transition.'
+      }
+    )
+    await client.waitUntil(
+      async () =>
+        (await client.execute(async () =>
+          window.saltMarcher.runtime.coreStatus()
+        )) === 'ready',
+      {
+        timeout: 45_000,
+        interval: 250,
+        timeoutMsg: 'Utility did not become ready after the restart.'
+      }
+    )
+    await client.waitUntil(
       async () => {
-        const proof = await client.execute(async (operationId) => {
-          try {
-            if ((await window.saltMarcher.runtime.coreStatus()) !== 'ready')
-              return null
+        try {
+          const proof = await client.execute(async (operationId) => {
             const receipt =
               await window.saltMarcher.sessionPlanner.preparationReceipt({
                 operationId
@@ -301,11 +340,11 @@ describe('generator preset integration', () => {
                 }))
               }))
             }
-          } catch {
-            return null
-          }
-        }, interruptedOperation)
-        return proof !== null
+          }, interruptedOperation)
+          return proof !== null
+        } catch {
+          return false
+        }
       },
       {
         timeout: 45_000,

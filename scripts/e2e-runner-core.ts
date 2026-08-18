@@ -151,7 +151,7 @@ export function classifyE2eFailure(
   log: string
 ): 'product' | 'infrastructure' | null {
   if (exitCode === 0) return null
-  return /(?:session not created|ECONNREFUSED|ENOSPC|Xvfb|Electron[^\n]*exited before|unable to connect[^\n]*webdriver)/i.test(
+  return /(?:session not created|operation was aborted due to timeout[^\n]*\/session[^\n]*method "POST"|ECONNREFUSED|ENOSPC|Xvfb|Electron[^\n]*exited before|unable to connect[^\n]*webdriver)/i.test(
     log
   )
     ? 'infrastructure'

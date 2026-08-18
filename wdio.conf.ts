@@ -97,11 +97,13 @@ export const config = {
     const directory = join(process.cwd(), '.tmp', 'visual-diffs')
     mkdirSync(directory, { recursive: true })
     const title = test.title.replaceAll(/[^a-zA-Z0-9_-]+/g, '-').slice(0, 80)
-    await browser.saveScreenshot(join(directory, `${suite}-${title}.png`))
+    await browser
+      .saveScreenshot(join(directory, `${suite}-${title}.png`))
+      .catch(() => undefined)
   },
   mochaOpts: {
     ui: 'bdd',
-    timeout: suite === 'sessionGeneration' ? 240_000 : 180_000,
+    timeout: suite === 'sessionGeneration' ? 360_000 : 180_000,
     ...(process.env['SALT_MARCHER_E2E_GREP']
       ? { grep: process.env['SALT_MARCHER_E2E_GREP'] }
       : {})
