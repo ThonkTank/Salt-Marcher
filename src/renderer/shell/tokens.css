@@ -132,6 +132,7 @@
   --text-3: var(--sm-ink-3);
   --text-muted: var(--sm-ink-4);
   --text-on-accent: #f8eed6;
+  --text-on-accent-line: #f8eed6;
   --text-eyebrow: #70451f;
   --text-rubric-on-control: #7a2017;
   --text-rubric-on-card: #7a2017;
@@ -187,6 +188,7 @@
   --text-3: var(--sm-candle-3);
   --text-muted: var(--sm-candle-4);
   --text-on-accent: #fffdf6;
+  --text-on-accent-line: #21170d;
   --text-eyebrow: var(--sm-gold);
   --text-rubric-on-control: #e8c882;
   --text-rubric-on-card: #e8c882;

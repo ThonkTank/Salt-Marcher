@@ -2,6 +2,16 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 describe('session style ownership', () => {
+  it('uses the theme-specific contrast token for primary hover states', () => {
+    const tokens = file('src/renderer/shell/tokens.css')
+    const scenario = file(
+      'src/renderer/features/session/session-scenario-panel.css'
+    )
+    const travel = file('src/renderer/features/hex/hex-travel.css')
+    expect(tokens.match(/--text-on-accent-line:/g)).toHaveLength(2)
+    expect(scenario).toContain('color: var(--text-on-accent-line)')
+    expect(travel).toContain('color: var(--text-on-accent-line)')
+  })
   it('keeps workspace CSS limited to layout composition', () => {
     const workspace = css('session-workspace.css')
     expect(workspace).toContain('@scope (.session-mockup)')
@@ -23,5 +33,9 @@ describe('session style ownership', () => {
 })
 
 function css(name: string): string {
-  return readFileSync(`src/renderer/features/session/${name}`, 'utf8')
+  return file(`src/renderer/features/session/${name}`)
+}
+
+function file(path: string): string {
+  return readFileSync(path, 'utf8')
 }

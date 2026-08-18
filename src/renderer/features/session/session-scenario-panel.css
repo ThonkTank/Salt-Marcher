@@ -60,6 +60,7 @@
 
   .scenario-panel button.primary-action:hover {
     background: var(--accent-rubric-line);
+    color: var(--text-on-accent-line);
   }
 
   .scenario-panel button.primary-action:disabled {

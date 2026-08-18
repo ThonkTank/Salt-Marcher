@@ -180,7 +180,7 @@
 .travel-console button.primary-action:hover:not(:disabled),
 .travel-console button[aria-pressed='true']:hover:not(:disabled) {
   background: var(--accent-rubric-line);
-  color: var(--text-on-accent);
+  color: var(--text-on-accent-line);
 }
 
 .travel-console button:focus-visible,
