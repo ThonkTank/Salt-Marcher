@@ -1,6 +1,16 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { z } from 'zod'
+import {
+  githubWorkflowRunSchema,
+  handoffInvocationHistorySchema,
+  handoffReceiptSchema,
+  readRequiredJobManifest,
+  verifyRequiredJobs,
+  type GithubWorkflowRun,
+  type WorkflowEvidence
+} from './delivery-contract.js'
 
 const shaPattern = /^[a-f0-9]{40}$/
 
@@ -12,7 +22,7 @@ export type CandidateState = Readonly<{
   remoteMain: string
   clean: boolean
   mainIsAncestor: boolean
-  successfulCheckUrl: string | null
+  candidate: WorkflowEvidence | null
 }>
 
 export function assertCandidateState(state: CandidateState): void {
@@ -27,8 +37,10 @@ export function assertCandidateState(state: CandidateState): void {
     throw new Error('Candidate checkout differs from its pushed remote SHA.')
   if (!state.mainIsAncestor)
     throw new Error('Candidate is not based on the current remote main SHA.')
-  if (!state.successfulCheckUrl)
-    throw new Error('No successful remote Check workflow proves this SHA.')
+  if (!state.candidate)
+    throw new Error('No complete required-job set proves this candidate SHA.')
+  if (state.candidate.headSha !== state.head)
+    throw new Error('Candidate workflow evidence proves another SHA.')
 }
 
 export function parseRemoteHead(output: string): string {
@@ -38,23 +50,19 @@ export function parseRemoteHead(output: string): string {
   return sha!
 }
 
-export function successfulCheckUrl(
-  runs: readonly Readonly<{
-    headSha: string
-    status: string
-    conclusion: string
-    url: string
-  }>[],
+export function successfulCandidateEvidence(
+  runs: readonly GithubWorkflowRun[],
   head: string
-): string | null {
-  return (
-    runs.find(
-      (run) =>
-        run.headSha === head &&
-        run.status === 'completed' &&
-        run.conclusion === 'success'
-    )?.url ?? null
-  )
+): WorkflowEvidence | null {
+  const manifest = readRequiredJobManifest()
+  for (const run of runs)
+    if (
+      run.headSha === head &&
+      run.status === 'completed' &&
+      run.conclusion === 'success'
+    )
+      return verifyRequiredJobs(manifest, run, head)
+  return null
 }
 
 export function readCandidateState(): CandidateState {
@@ -80,25 +88,59 @@ export function readCandidateState(): CandidateState {
     remoteMain,
     head
   ])
-  const runs = JSON.parse(
-    command('gh', [
-      'run',
-      'list',
-      '--workflow',
-      'Check',
-      '--commit',
-      head,
-      '--limit',
-      '20',
-      '--json',
-      'headSha,status,conclusion,url'
-    ])
-  ) as ReadonlyArray<{
-    headSha: string
-    status: string
-    conclusion: string
-    url: string
-  }>
+  const manifest = readRequiredJobManifest()
+  const runSummaries = z
+    .array(
+      z
+        .object({
+          databaseId: z.number().int().positive(),
+          headSha: z.string(),
+          status: z.string(),
+          conclusion: z.string().nullable(),
+          url: z.string(),
+          attempt: z.number().int().positive()
+        })
+        .passthrough()
+    )
+    .parse(
+      JSON.parse(
+        command('gh', [
+          'run',
+          'list',
+          '--workflow',
+          manifest.workflowName,
+          '--commit',
+          head,
+          '--limit',
+          '20',
+          '--json',
+          'databaseId,headSha,status,conclusion,url,attempt'
+        ])
+      )
+    )
+  const successful = runSummaries.find(
+    (run) =>
+      run.headSha === head &&
+      run.status === 'completed' &&
+      run.conclusion === 'success'
+  )
+  const candidate = successful
+    ? verifyRequiredJobs(
+        manifest,
+        githubWorkflowRunSchema.parse(
+          JSON.parse(
+            command('gh', [
+              'run',
+              'view',
+              String(successful.databaseId),
+              '--json',
+              'databaseId,headSha,status,conclusion,url,attempt,jobs'
+            ])
+          )
+        ),
+        head
+      )
+    : null
   return {
     branch,
     upstream,
@@ -107,7 +149,7 @@ export function readCandidateState(): CandidateState {
     remoteMain,
     clean,
     mainIsAncestor,
-    successfulCheckUrl: successfulCheckUrl(runs, head)
+    candidate
   }
 }
 
@@ -117,28 +159,47 @@ export function assertCandidateReady(): CandidateState {
   return state
 }
 
-export function assertCompletedHandoffReceipt(head: string): void {
-  const path = resolve('.tmp', 'handoff-local-app', 'handoff-receipt.json')
+export function assertCompletedHandoffReceipt(
+  head: string,
+  candidate: WorkflowEvidence,
+  workspaceRoot = process.cwd()
+): void {
+  const path = resolve(
+    workspaceRoot,
+    '.tmp',
+    'handoff-local-app',
+    'handoff-receipt.json'
+  )
   if (!existsSync(path)) throw new Error('Final handoff receipt is missing.')
-  const receipt = JSON.parse(readFileSync(path, 'utf8')) as {
-    status?: unknown
-    identity?: { commit?: unknown; dirty?: unknown }
-    steps?: Array<{ status?: unknown }>
-  }
+  const receipt = handoffReceiptSchema.parse(
+    JSON.parse(readFileSync(path, 'utf8'))
+  )
+  const history = handoffInvocationHistorySchema.parse(
+    JSON.parse(
+      readFileSync(
+        resolve(workspaceRoot, '.tmp', 'handoff-local-app', 'invocations.json'),
+        'utf8'
+      )
+    )
+  )
+  const invocations = history.invocations.filter(
+    ({ applicationSha }) => applicationSha === head
+  )
   if (
     receipt.status !== 'complete' ||
-    receipt.identity?.commit !== head ||
+    receipt.identity.commit !== head ||
     receipt.identity.dirty !== false ||
-    !Array.isArray(receipt.steps) ||
-    receipt.steps.length === 0 ||
-    receipt.steps.some((step) => step.status !== 'completed')
+    JSON.stringify(receipt.identity.candidate) !== JSON.stringify(candidate) ||
+    receipt.steps.some((step) => step.status !== 'completed') ||
+    invocations.length !== 1 ||
+    invocations[0]?.invocationId !== receipt.invocationId
   )
     throw new Error('Final handoff receipt does not prove this clean SHA.')
 }
 
 export function promoteCandidate(state: CandidateState): void {
   assertCandidateState(state)
-  assertCompletedHandoffReceipt(state.head)
+  assertCompletedHandoffReceipt(state.head, state.candidate!)
   command('git', ['push', 'origin', `${state.head}:refs/heads/main`])
 }
 

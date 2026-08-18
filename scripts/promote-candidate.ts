@@ -8,6 +8,7 @@ console.info(
     event: 'candidate-promoted',
     sha: state.head,
     previousMain: state.remoteMain,
-    check: state.successfulCheckUrl
+    check: state.candidate?.url,
+    requiredJobs: state.candidate?.jobs
   })
 )

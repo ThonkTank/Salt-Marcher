@@ -5,6 +5,7 @@ import { spawnSync } from 'node:child_process'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   computeAppBuildInputFingerprint,
+  computeAppBuildInputFingerprintAtRef,
   computeWorkspaceFingerprint
 } from '../../scripts/build-identity.js'
 import {
@@ -70,6 +71,61 @@ describe('build identity', () => {
     expect(computeAppBuildInputFingerprint(root)).not.toBe(firstApp)
   })
 
+  it('compares app inputs across immutable application and evidence commits', () => {
+    const root = mkdtempSync(join(tmpdir(), 'salt-marcher-ref-identity-'))
+    roots.push(root)
+    git(root, 'init')
+    mkdirSync(join(root, 'src'))
+    mkdirSync(join(root, 'docs'))
+    writeFileSync(join(root, 'src', 'app.ts'), 'first')
+    writeFileSync(join(root, 'docs', 'evidence.json'), '{}')
+    git(root, 'add', 'src/app.ts', 'docs/evidence.json')
+    git(
+      root,
+      '-c',
+      'user.name=Test',
+      '-c',
+      'user.email=test@example.com',
+      'commit',
+      '-m',
+      'application'
+    )
+    const application = gitOutput(root, 'rev-parse', 'HEAD')
+
+    writeFileSync(join(root, 'docs', 'evidence.json'), '{"complete":true}')
+    git(root, 'add', 'docs/evidence.json')
+    git(
+      root,
+      '-c',
+      'user.name=Test',
+      '-c',
+      'user.email=test@example.com',
+      'commit',
+      '-m',
+      'evidence'
+    )
+    const evidence = gitOutput(root, 'rev-parse', 'HEAD')
+    expect(computeAppBuildInputFingerprintAtRef(root, evidence)).toBe(
+      computeAppBuildInputFingerprintAtRef(root, application)
+    )
+
+    writeFileSync(join(root, 'src', 'app.ts'), 'second')
+    git(root, 'add', 'src/app.ts')
+    git(
+      root,
+      '-c',
+      'user.name=Test',
+      '-c',
+      'user.email=test@example.com',
+      'commit',
+      '-m',
+      'changed app'
+    )
+    expect(computeAppBuildInputFingerprintAtRef(root, 'HEAD')).not.toBe(
+      computeAppBuildInputFingerprintAtRef(root, application)
+    )
+  })
+
   it('validates and abbreviates embedded build information', () => {
     const info = buildInfoSchema.parse({
       channel: 'local',
@@ -101,4 +157,10 @@ function testToolchain() {
 function git(root: string, ...arguments_: string[]): void {
   const result = spawnSync('git', arguments_, { cwd: root, encoding: 'utf8' })
   if (result.status !== 0) throw new Error(result.stderr)
+}
+
+function gitOutput(root: string, ...arguments_: string[]): string {
+  const result = spawnSync('git', arguments_, { cwd: root, encoding: 'utf8' })
+  if (result.status !== 0) throw new Error(result.stderr)
+  return result.stdout.trim()
 }

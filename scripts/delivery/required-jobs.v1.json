@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "workflowName": "Check",
+  "jobs": [
+    {
+      "name": "Portable · ubuntu-latest",
+      "platformRole": "portable-linux"
+    },
+    {
+      "name": "Portable · windows-2022",
+      "platformRole": "portable-windows-native-sqlite"
+    },
+    {
+      "name": "Portable · macos-latest",
+      "platformRole": "portable-macos-native-sqlite"
+    },
+    {
+      "name": "Linux · profile, AppImage, installed-runtime prerequisites",
+      "platformRole": "linux-package-runtime"
+    },
+    {
+      "name": "Linux E2E · workspaces-create-hex",
+      "platformRole": "linux-e2e-workspaces-create-hex"
+    },
+    {
+      "name": "Linux E2E · npc-restart-dialogs",
+      "platformRole": "linux-e2e-npc-restart-dialogs"
+    },
+    {
+      "name": "Linux E2E · generation-loot",
+      "platformRole": "linux-e2e-generation-loot"
+    },
+    {
+      "name": "Linux E2E · group-loot-travel",
+      "platformRole": "linux-e2e-group-loot-travel"
+    },
+    {
+      "name": "Linux E2E · passive window",
+      "platformRole": "linux-e2e-passive-window"
+    }
+  ]
+}

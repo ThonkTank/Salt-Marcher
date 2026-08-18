@@ -68,6 +68,46 @@ export function computeAppBuildInputFingerprint(
   return computeFilesFingerprint(workspaceRoot, files)
 }
 
+export function computeAppBuildInputFingerprintAtRef(
+  workspaceRoot: string,
+  ref: string
+): string {
+  const output = gitBuffer(workspaceRoot, [
+    'ls-tree',
+    '-r',
+    '-z',
+    '--full-tree',
+    ref
+  ])
+  const entries = output
+    .toString('utf8')
+    .split('\0')
+    .filter(Boolean)
+    .map((record) => {
+      const match = /^(\d+) blob ([0-9a-f]{40})\t(.+)$/.exec(record)
+      if (!match?.[1] || !match[2] || !match[3])
+        throw new Error(`Unsupported Git tree entry: ${record}`)
+      return { mode: match[1], object: match[2], path: match[3] }
+    })
+    .filter(
+      ({ path }) =>
+        appBuildInputFiles.has(path) ||
+        appBuildInputRoots.some((root) => path.startsWith(root))
+    )
+    .sort((left, right) =>
+      left.path < right.path ? -1 : left.path > right.path ? 1 : 0
+    )
+  const hash = createHash('sha256')
+  for (const entry of entries) {
+    const content = gitBuffer(workspaceRoot, ['cat-file', 'blob', entry.object])
+    hash.update(`${Buffer.byteLength(entry.path)}:`)
+    hash.update(entry.path)
+    hash.update(`:${entry.mode === '100755' ? 1 : 0}:${content.length}:`)
+    hash.update(content)
+  }
+  return hash.digest('hex')
+}
+
 export function readBuildToolchain(
   workspaceRoot = process.cwd()
 ): BuildToolchain {
@@ -150,15 +190,22 @@ function fileContent(path: string, stats: Stats): Buffer {
 }
 
 function git(workspaceRoot: string, arguments_: readonly string[]): string {
+  return gitBuffer(workspaceRoot, arguments_).toString('utf8')
+}
+
+function gitBuffer(
+  workspaceRoot: string,
+  arguments_: readonly string[]
+): Buffer {
   const result = spawnSync('git', arguments_, {
     cwd: workspaceRoot,
-    encoding: 'utf8',
     maxBuffer: 64 * 1024 * 1024
   })
   if (result.error) throw result.error
   if (result.status !== 0)
     throw new Error(
-      result.stderr.trim() || `git ${arguments_.join(' ')} failed`
+      result.stderr.toString('utf8').trim() ||
+        `git ${arguments_.join(' ')} failed`
     )
   return result.stdout
 }
