@@ -133,7 +133,7 @@ export function readSuccessfulWorkflowEvidence(
   return null
 }
 
-export const postPromotionJobName = 'Post-promotion · candidate attestation'
+export const postPromotionJobName = 'Main · promotion/evidence attestation'
 
 export function successfulPostPromotionEvidence(
   run: GithubWorkflowRun,

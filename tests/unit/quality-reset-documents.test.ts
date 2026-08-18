@@ -3,6 +3,7 @@ import type { FinalEvidence } from '../../scripts/delivery-contract.js'
 import {
   expectedFollowupRequirementIds,
   followupLedgerSchema,
+  readFollowupLedger,
   summarizeLedger
 } from '../../scripts/quality-reset-ledger.js'
 import {
@@ -25,6 +26,11 @@ const ledger = followupLedgerSchema.parse({
 
 describe('quality-reset generated documents', () => {
   it('requires the exact handoff requirement identity set', () => {
+    const checkedIn = readFollowupLedger()
+    expect(checkedIn.requirements.map(({ id }) => id)).toEqual(
+      expectedFollowupRequirementIds
+    )
+    expect(summarizeLedger(checkedIn.requirements).open).toBe(0)
     expect(ledger.requirements).toHaveLength(64)
     expect(() =>
       followupLedgerSchema.parse({

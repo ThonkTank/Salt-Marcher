@@ -81,7 +81,7 @@ describe('CI platform partitions', () => {
   it('runs only candidate attestation after the exact SHA reaches main', () => {
     const postPromotion = workflow.slice(workflow.indexOf('  post-promotion:'))
     expect(postPromotion).toContain("if: github.event_name == 'push'")
-    expect(postPromotion).toContain('pnpm delivery:verify-post-promotion')
+    expect(postPromotion).toContain('pnpm delivery:verify-main-push')
     expect(postPromotion).not.toContain('pnpm build')
     expect(postPromotion).not.toContain('pnpm test')
   })

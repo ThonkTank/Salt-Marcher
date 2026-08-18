@@ -235,7 +235,7 @@ const evidence = finalEvidenceSchema.parse({
       'corepack pnpm check:session-ui',
       'corepack pnpm check:delivery',
       `gh run view ${candidate.runId}`,
-      'corepack pnpm delivery:verify-evidence HEAD^ HEAD'
+      `corepack pnpm delivery:verify-evidence ${identity.commit}`
     ]
   }
 })

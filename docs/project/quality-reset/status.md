@@ -1,4 +1,10 @@
-# Quality reset status
+# Historical quality-reset status (superseded)
+
+> This file is the preserved execution snapshot of the first quality reset at
+> `c25c20a9ab574ee64c193d82db05c7fab7ae0f8c`. It is not a live completion
+> source. Current closure is generated mechanically in `live-status.md` from
+> `final-evidence.json` and `followup-requirements-ledger.json`; until those
+> allowlisted evidence files exist, the follow-up remains incomplete.
 
 This record executes the staged quality reset from the authoritative handoff
 package against remote baseline

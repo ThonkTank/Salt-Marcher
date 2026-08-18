@@ -1,8 +1,14 @@
 # Electron greenfield migration
 
-## Status
+## Historical status record
 
-**Current milestone: M1 — qualification in progress.** M0 is complete. The
+> This versioned document records the greenfield migration decisions at the
+> time they were made. It is not the current delivery or completion status.
+> Executable schema/engine/catalog state lives in `version-truth.md`; current
+> quality-reset closure is generated in
+> `../quality-reset/live-status.md` from final evidence.
+
+**Recorded milestone: M1 — qualification was in progress.** M0 was complete. The
 retired implementation is preserved by tag `javafx-final-2026-07-27` and the
 `stable` branch at the same final JavaFX commit. The
 secure Electron shell, utility-process SQLite
@@ -328,14 +334,14 @@ This is a feature freeze: only qualification evidence, defects, security,
 fault containment, diagnostics, dependency-boundary work and changes required
 to reach the M1 Go/No-Go may enter before the decision is recorded.
 
-## Open blockers
+## Historical blockers at the recorded milestone
 
-M1 cannot yet be accepted until the recorded integrated-GPU qualification and
+At this point in the migration, M1 could not be accepted until the recorded integrated-GPU qualification and
 accessibility evidence is attached. This is a gate, not a reason to weaken the
 16-ms/50-ms budgets. Store reproducible measurements in
 `docs/project/evidence/`; track current CI state in the relevant pull request.
 
-## Approved vertical slice in progress
+## Approved historical vertical slice
 
 **Go/No-Go scope record — 2026-08-09.** The owner-approved implementation
 exception includes the complete Session Planner and Loot vertical slice:
