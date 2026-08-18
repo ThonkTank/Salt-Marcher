@@ -15,6 +15,14 @@ describe('generated run schema ownership', () => {
       'src/core/session-generation/generated-run-row-codec.ts',
       'utf8'
     )
+    const sessionRepository = readFileSync(
+      'src/core/session-generation/session-generated-run-repository.ts',
+      'utf8'
+    )
+    const groupRepository = readFileSync(
+      'src/core/session-generation/group-reward-generated-run-repository.ts',
+      'utf8'
+    )
     expect(repository).not.toContain('CREATE TABLE')
     expect(repository).toContain("from './generated-run-schema.js'")
     expect(schema).toContain(
@@ -26,5 +34,13 @@ describe('generated run schema ownership', () => {
     expect(repository).not.toContain('const runRootSelect')
     expect(codec).toContain("z.discriminatedUnion('runKind'")
     expect(codec).toContain("rewardEngineVersion === 'reward-v3'")
+    expect(repository).not.toContain('INSERT INTO session_generation_run')
+    expect(repository).toContain('SessionGeneratedRunRepository')
+    expect(repository).toContain('GroupRewardGeneratedRunRepository')
+    for (const owner of [sessionRepository, groupRepository]) {
+      expect(owner).toContain('INSERT INTO session_generation_run')
+      expect(owner).toContain('.transaction(')
+      expect(owner).toContain('.immediate()')
+    }
   })
 })
