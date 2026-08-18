@@ -418,13 +418,15 @@ describe('architecture boundaries', () => {
     const travel = source('src/core/hex/hex-travel.ts')
     const renderer = source('src/renderer/features/hex/hex-workspaces.tsx')
     const utility = source('src/utility/application.ts')
+    const scheduling = source('src/utility/domain-scheduling.ts')
     expect(travel).not.toMatch(
       /read\(requestedSceneId\?[\s\S]*?this\.advance\(journey\)/
     )
     expect(renderer).not.toMatch(/setInterval\([\s\S]{0,120}hexTravel/)
-    expect(utility).toContain('hexTravel.tick()')
+    expect(utility).toContain('new TravelBoundaryScheduler(')
+    expect(scheduling).toContain('this.travel.tick()')
     expect(utility).not.toContain('setInterval(')
-    expect(utility).toContain('nextBoundaryDelay()')
+    expect(scheduling).toContain('nextBoundaryDelay()')
     expect(travel).toContain('hintCode')
     expect(travel).not.toMatch(
       /Reise läuft|Ziel erreicht|Reise pausiert|Reise abgebrochen|Party zuerst/

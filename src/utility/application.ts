@@ -1,17 +1,8 @@
-import {
-  capabilityFailureSchema,
-  type CapabilityErrorCode
-} from '../shared/contracts/campaign.js'
 import type Database from 'better-sqlite3'
 import {
-  coreControlRequestSchema,
-  coreDiagnosticsSchema,
-  coreEventSchema,
   coreReadySchema,
-  coreRequestSchema,
   coreStartupConfigurationSchema,
-  type CoreHandlers,
-  type CoreRequest
+  type CoreHandlers
 } from '../shared/contracts/core-protocol.js'
 import { coreOperations } from '../shared/contracts/operations.js'
 import { assertExactOperationKeys } from '../shared/contracts/operations/registry.js'
@@ -21,15 +12,10 @@ import {
   creatures as creatureCatalogRows
 } from '../core/creatures/catalog.js'
 import { LivePlayService } from '../core/encounter/live-combat.js'
-import { z } from 'zod'
 import { WorldLocationService } from '../core/worldplanner/location-store.js'
 import { LocationSymbolLifecycleService } from '../core/application/location-symbol-lifecycle.js'
 import { EncounterSourceService } from '../core/application/encounter-source-service.js'
-import {
-  chunkKeyFor,
-  HexMapService,
-  HexMapStore
-} from '../core/hex/hex-map-store.js'
+import { HexMapService, HexMapStore } from '../core/hex/hex-map-store.js'
 import { HexMapEditingCommandHandler } from '../core/application/hex-map-editing.js'
 import { HexTravelService, HexTravelStore } from '../core/hex/hex-travel.js'
 import { HexEditJournalStore } from '../core/hex/hex-edit-journal-store.js'
@@ -46,17 +32,12 @@ import { WorldNpcApplicationService } from '../core/application/world-npc-applic
 import { WorldFactionStore } from '../core/worldplanner/faction-store.js'
 import { EncounterTableStore } from '../core/encounter/encounter-table-store.js'
 import { WorldLocationPlacementService } from '../core/application/world-location-placement.js'
-import {
-  BiomeCatalogService,
-  type BiomeMapChange
-} from '../core/application/biome-catalog-service.js'
+import { BiomeCatalogService } from '../core/application/biome-catalog-service.js'
 import { CapabilityError } from '../shared/errors/capability-error.js'
 import { placeholderBiomeId } from '../shared/contracts/biome.js'
-import { hexBrushStrokeResultSchema } from '../shared/contracts/hex.js'
 import { hexTravelContextResultSchema } from '../shared/contracts/live-session.js'
 import { ReferenceService } from '../core/reference/reference-service.js'
 import { ReferenceCatalogAdapter } from '../core/reference/reference-catalog-adapter.js'
-import { randomUUID } from 'node:crypto'
 import {
   BundledSessionGenerationCatalogRegistry,
   CatalogProviderError
@@ -82,15 +63,14 @@ import { createBiomeHandlers } from './composition/biome.js'
 import { createWorldPlannerHandlers } from './composition/world-planner.js'
 import { createHexHandlers } from './composition/hex.js'
 import { createTravelHandlers } from './composition/travel.js'
+import { ReferenceChangeCoordinator } from '../core/reference/reference-change-coordinator.js'
+import { bootstrapPhase, bootstrapReady } from './bootstrap-observability.js'
+import { startUtilityDispatcher } from './runtime-dispatcher.js'
 import {
-  ReferenceChangeCoordinator,
-  type ReferenceChangeDescriptor
-} from '../core/reference/reference-change-coordinator.js'
-import {
-  bootstrapMetrics,
-  bootstrapPhase,
-  bootstrapReady
-} from './bootstrap-observability.js'
+  PreparationWorkScheduler,
+  TravelBoundaryScheduler
+} from './domain-scheduling.js'
+import { CoreEventSink, createDomainEventPublishers } from './domain-events.js'
 
 const startup = bootstrapPhase('configuration', () =>
   coreStartupConfigurationSchema.parse(JSON.parse(process.argv[2] ?? ''))
@@ -109,7 +89,9 @@ const runtimeCounters = {
   eventsPublished: 0,
   scheduledWakeups: 0
 }
-let pendingPreparationWakeups = 0
+const preparationScheduler = new PreparationWorkScheduler(() => {
+  runtimeCounters.scheduledWakeups += 1
+})
 const campaigns = bootstrapPhase('campaign-store', () =>
   openCampaignStore(root, incompatibleDataPolicy)
 )
@@ -132,20 +114,6 @@ const sessionGenerationService = new SessionGenerationService(
 const activePersistence = campaigns.activeCampaignPersistence()
 const campaignRules = new CampaignRulesService(activePersistence)
 const encounterPlans = new GeneratedEncounterPlanService(activePersistence)
-const sessionPlanner = new SessionPlannerService(
-  activePersistence,
-  sessionGenerationService,
-  encounterPlans,
-  publishPreparationChange,
-  schedulePreparationWork,
-  undefined,
-  (db) =>
-    new ItemDefinitionResolver(db, (reference) =>
-      createLootCatalogIndex(
-        sessionGenerationCatalog.loadFullByReference(reference)
-      )
-    )
-)
 const symbolLifecycle = new LocationSymbolLifecycleService(campaigns)
 const locationSymbols = symbolLifecycle.symbols
 const customSymbol = (id: string) => symbolLifecycle.customSymbol(id)
@@ -315,6 +283,7 @@ const references = new ReferenceService(
   { read: () => worldNpcs.readAllForReferences() },
   () => campaigns.activeCampaignId()
 )
+const eventSink = new CoreEventSink(process.parentPort, runtimeCounters)
 const referenceChanges = new ReferenceChangeCoordinator(
   () => campaigns.activeCampaignId(),
   (campaignId) => references.campaignIndex(campaignId),
@@ -323,296 +292,56 @@ const referenceChanges = new ReferenceChangeCoordinator(
     one: (id) => worldNpcs.referenceDependency(id)
   },
   (notice) =>
-    postCoreEvent({
+    eventSink.post({
       kind: 'reference.changed',
       notice
     })
 )
-let travelTimer: NodeJS.Timeout | undefined
+const {
+  mutateReferences,
+  publishSessionChange,
+  publishLootChange,
+  publishPreparationChange,
+  publishHexChange,
+  publishHexNotice,
+  biomeChangedChunks,
+  publishBiomeMapChanges,
+  publishLocationChange,
+  publishLocationMarkerHexChanges,
+  publishSymbolChange,
+  publishBiomeChange,
+  publishEncounterTableChange,
+  publishNpcChange,
+  publishFactionChange
+} = createDomainEventPublishers({
+  sink: eventSink,
+  campaigns,
+  referenceChanges,
+  hex,
+  hexTravel,
+  play,
+  loot: lootComposition,
+  locations,
+  locationSymbols,
+  biomes: biomeService,
+  encounterSources: sources,
+  worldNpcs
+})
 
-function postCoreEvent(event: unknown): void {
-  runtimeCounters.eventsPublished += 1
-  process.parentPort?.postMessage(coreEventSchema.parse(event))
-}
-
-function mutateReferences<T>(
-  work: () => T,
-  changes: (result: T) => readonly ReferenceChangeDescriptor[]
-): T {
-  const result = work()
-  referenceChanges.record(changes(result))
-  return result
-}
-
-function publishSessionChange(
-  snapshot: ReturnType<HexTravelService['read']>,
-  reason:
-    'travel-boundary' | 'travel-command' | 'campaign-reconcile' | 'map-edit'
-): void {
-  postCoreEvent({
-    kind: 'session.changed',
-    notice: {
-      campaignId: campaigns.activeCampaignId(),
-      sceneId: snapshot.sceneId,
-      revision: snapshot.revision,
-      reason
-    }
-  })
-}
-
-function publishLootChange(
-  reason: 'created' | 'updated' | 'moved' | 'accepted' | 'distributed'
-): void {
-  postCoreEvent({
-    kind: 'loot.changed',
-    notice: {
-      campaignId: campaigns.activeCampaignId(),
-      revision: lootComposition.projectionRevision(),
-      reason
-    }
-  })
-}
-
-function publishPreparationChange(notice: {
-  operationId: string
-  status:
-    | 'queued'
-    | 'generating'
-    | 'resolving_encounters'
-    | 'saving'
-    | 'succeeded'
-    | 'invalid'
-    | 'stale'
-    | 'failed'
-    | 'canceled'
-}): void {
-  postCoreEvent({
-    kind: 'session-planner.preparation-changed',
-    notice: {
-      campaignId: campaigns.activeCampaignId(),
-      ...notice
-    }
-  })
-}
-
-function schedulePreparationWork(work: () => void): void {
-  const configured = Number(
-    process.env['SALT_MARCHER_E2E_PREPARATION_STAGE_DELAY_MS'] ?? 0
-  )
-  const delay =
-    process.env['SALT_MARCHER_E2E'] === 'true' &&
-    Number.isInteger(configured) &&
-    configured >= 0 &&
-    configured <= 5_000
-      ? configured
-      : 0
-  pendingPreparationWakeups += 1
-  const execute = () => {
-    pendingPreparationWakeups -= 1
-    runtimeCounters.scheduledWakeups += 1
-    work()
-  }
-  if (delay > 0) {
-    setTimeout(execute, delay)
-    return
-  }
-  setImmediate(execute)
-}
-
-function publishHexChange(payload: unknown): void {
-  const result = hexBrushStrokeResultSchema.safeParse(payload)
-  if (!result.success || result.data.status !== 'applied') return
-  const applied = result.data
-  if (!applied.changed) return
-  publishHexNotice(
-    applied.commandId,
-    applied.maps.map((map) => map.id),
-    applied.changedChunks
-  )
-  const changedScenes = new Set(
-    applied.impact.journeys.map((journey) => journey.sceneId)
-  )
-  const changedMembers = new Set(
-    applied.impact.partyMembers.map((member) => member.memberId)
-  )
-  if (changedMembers.size > 0)
-    for (const scene of play.readSession().scene.scenes)
-      if (scene.partyMemberIds.some((memberId) => changedMembers.has(memberId)))
-        changedScenes.add(scene.id)
-  for (const sceneId of changedScenes)
-    publishSessionChange(hexTravel.read(sceneId), 'map-edit')
-}
-
-function publishHexNotice(
-  commandId: string,
-  mapIds: readonly string[],
-  changedChunks: readonly unknown[]
-): void {
-  postCoreEvent({
-    kind: 'hex.changed',
-    notice: {
-      campaignId: campaigns.activeCampaignId(),
-      commandId,
-      mapIds,
-      changedChunks
-    }
-  })
-}
-
-function biomeChangedChunks(mapId: string, changes: readonly BiomeMapChange[]) {
-  const keys = new Map(
-    changes
-      .filter((change) => change.mapId === mapId)
-      .map((change) => {
-        const key = change.key
-        return [`${key.q}:${key.r}`, key] as const
-      })
-  )
-  if (keys.size === 0) return []
-  const changed = []
-  const values = [...keys.values()]
-  for (let index = 0; index < values.length; index += 64)
-    changed.push(
-      ...hex
-        .readChunks(mapId, values.slice(index, index + 64))
-        .chunks.map((chunk) => ({
-          mapId,
-          key: chunk.key,
-          revision: chunk.revision
-        }))
+const sessionPlanner = new SessionPlannerService(
+  activePersistence,
+  sessionGenerationService,
+  encounterPlans,
+  publishPreparationChange,
+  preparationScheduler.schedule,
+  undefined,
+  (db) =>
+    new ItemDefinitionResolver(db, (reference) =>
+      createLootCatalogIndex(
+        sessionGenerationCatalog.loadFullByReference(reference)
+      )
     )
-  return changed
-}
-
-function publishBiomeMapChanges(
-  commandId: string,
-  changes: readonly BiomeMapChange[]
-): void {
-  let campaignId: string
-  try {
-    campaignId = campaigns.activeCampaignId()
-  } catch {
-    return
-  }
-  const active = changes.filter((change) => change.campaignId === campaignId)
-  for (const mapId of new Set(active.map((change) => change.mapId)))
-    publishHexNotice(commandId, [mapId], biomeChangedChunks(mapId, active))
-}
-
-function publishLocationChange(
-  changedLocationIds: readonly string[],
-  reason: 'catalog' | 'presentation' | 'symbol-replacement'
-): void {
-  postCoreEvent({
-    kind: 'locations.changed',
-    notice: {
-      campaignId: campaigns.activeCampaignId(),
-      revision: locations.read().revision,
-      changedLocationIds,
-      reason
-    }
-  })
-}
-
-function publishLocationMarkerHexChanges(
-  locationIds: readonly string[],
-  commandId: string = randomUUID()
-): void {
-  const placements = locationIds
-    .map((locationId) => hex.locateLocation(locationId))
-    .filter((placement) => placement !== null)
-  if (placements.length === 0) return
-  const changedChunks = new Map(
-    placements.map((placement) => {
-      const key = chunkKeyFor(placement.coordinate)
-      const chunk = hex.readChunks(placement.mapId, [key]).chunks[0]
-      if (!chunk) throw new CapabilityError('internal', false)
-      return [
-        `${placement.mapId}:${key.q}:${key.r}`,
-        { mapId: placement.mapId, key, revision: chunk.revision }
-      ] as const
-    })
-  )
-  publishHexNotice(
-    commandId,
-    [...new Set(placements.map((placement) => placement.mapId))],
-    [...changedChunks.values()]
-  )
-}
-
-function publishSymbolChange(
-  changedSymbolIds: readonly string[],
-  reason: 'created' | 'renamed' | 'deleted'
-): void {
-  postCoreEvent({
-    kind: 'location-symbols.changed',
-    notice: {
-      revision: locationSymbols.read().revision,
-      changedSymbolIds,
-      reason
-    }
-  })
-}
-
-function publishBiomeChange(
-  changedBiomeIds: readonly string[],
-  reason: 'created' | 'updated' | 'deleted'
-): void {
-  postCoreEvent({
-    kind: 'biomes.changed',
-    notice: {
-      revision: biomeService.catalog.revision(),
-      changedBiomeIds,
-      reason
-    }
-  })
-}
-
-function publishEncounterTableChange(
-  snapshot: ReturnType<EncounterSourceService['readTables']>,
-  changedTableIds: readonly string[],
-  scope: 'installation' | 'campaign',
-  reason: 'created' | 'updated' | 'deleted'
-): void {
-  postCoreEvent({
-    kind: 'encounter-tables.changed',
-    notice: {
-      installationRevision: snapshot.installation.revision,
-      campaignRevision: snapshot.campaign.revision,
-      changedTableIds,
-      scope,
-      reason
-    }
-  })
-}
-
-function publishNpcChange(
-  changedNpcIds: readonly string[],
-  reason: 'created' | 'updated' | 'deleted' | 'reference-unlinked'
-): void {
-  postCoreEvent({
-    kind: 'npcs.changed',
-    notice: {
-      revision: worldNpcs.search({ limit: 1 }).revision,
-      changedNpcIds,
-      reason
-    }
-  })
-}
-
-function publishFactionChange(
-  changedFactionIds: readonly string[],
-  reason: 'created' | 'updated' | 'deleted'
-): void {
-  postCoreEvent({
-    kind: 'factions.changed',
-    notice: {
-      revision: sources.readFactions().revision,
-      changedFactionIds,
-      reason
-    }
-  })
-}
+)
 
 bootstrapPhase('recovery', () => {
   symbolLifecycle.recoverPendingImports()
@@ -623,36 +352,14 @@ bootstrapPhase('recovery', () => {
     sessionPlanner.recoverPendingPreparations()
 })
 
-function scheduleNextBoundary(): void {
-  if (travelTimer !== undefined) clearTimeout(travelTimer)
-  travelTimer = undefined
-  try {
-    const delay = hexTravel.nextBoundaryDelay()
-    if (delay === null) return
-    travelTimer = setTimeout(() => {
-      travelTimer = undefined
-      runtimeCounters.scheduledWakeups += 1
-      reconcileAndSchedule('travel-boundary')
-    }, delay)
-    travelTimer.unref()
-  } catch {
-    // No active campaign is a normal idle state for the installation.
+const travelScheduler = new TravelBoundaryScheduler(
+  hexTravel,
+  publishSessionChange,
+  () => {
+    runtimeCounters.scheduledWakeups += 1
   }
-}
-
-function reconcileAndSchedule(
-  reason: 'travel-boundary' | 'travel-command' | 'campaign-reconcile'
-): void {
-  try {
-    const tick = hexTravel.tick()
-    for (const snapshot of tick.changed) publishSessionChange(snapshot, reason)
-  } catch {
-    // No active campaign is a normal idle state for the installation.
-  }
-  scheduleNextBoundary()
-}
-
-reconcileAndSchedule('campaign-reconcile')
+)
+travelScheduler.reconcile('campaign-reconcile')
 bootstrapReady()
 process.parentPort.postMessage(coreReadySchema.parse({ kind: 'core.ready' }))
 const campaignHandlers = createCampaignHandlers({
@@ -715,7 +422,7 @@ const lifecycleHandlers = {
   'core.sessionGenerationCatalog': () =>
     sessionGenerationCatalog.currentReference(),
   'core.shutdown': () => {
-    if (travelTimer !== undefined) clearTimeout(travelTimer)
+    travelScheduler.close()
     referenceCatalog.close()
     campaigns.close()
     return null
@@ -746,59 +453,13 @@ assertExactOperationKeys(
   Object.keys(handlers)
 )
 
-process.parentPort.on('message', (event) => {
-  void handleMessage(event)
-})
-
-async function handleMessage(event: { data: unknown }): Promise<void> {
-  runtimeCounters.messagesReceived += 1
-  const control = coreControlRequestSchema.safeParse(event.data)
-  if (control.success) {
-    process.parentPort?.postMessage(
-      coreDiagnosticsSchema.parse({
-        kind: 'core.diagnostics',
-        requestId: control.data.requestId,
-        metrics: {
-          ...runtimeCounters,
-          activeDomainTimers:
-            (travelTimer === undefined ? 0 : 1) + pendingPreparationWakeups,
-          uptimeMs: process.uptime() * 1_000,
-          bootstrap: bootstrapMetrics()
-        }
-      })
-    )
-    return
-  }
-  const parsed = coreRequestSchema.safeParse(event.data)
-  if (!parsed.success) {
-    const envelope = z
-      .object({
-        kind: z.literal('core.request'),
-        requestId: z.uuid(),
-        operation: z.string()
-      })
-      .safeParse(event.data)
-    if (envelope.success) failure(envelope.data.requestId, 'validation_failed')
-    return
-  }
-  const r = parsed.data
-  try {
-    const payload = await dispatch(r)
-    respond(r.requestId, payload)
-    if (r.operation === 'core.shutdown') setImmediate(() => process.exit(0))
-  } catch (e) {
-    const mapped = capabilityFailure(e)
-    failure(r.requestId, mapped.code, mapped.retryable, mapped.issues)
-  } finally {
-    runtimeCounters.requestsCompleted += 1
-  }
-}
-
-function dispatch(request: CoreRequest): Promise<unknown> {
-  const handler = handlers[request.operation] as (input: unknown) => unknown
-  const result = handler(request.input)
-  return Promise.resolve(result).then((payload) => {
-    const parsed = coreOperations[request.operation].output.parse(payload)
+startUtilityDispatcher({
+  parentPort: process.parentPort,
+  handlers,
+  counters: runtimeCounters,
+  activeDomainTimers: () =>
+    travelScheduler.activeTimers() + preparationScheduler.activeWakeups(),
+  afterOperation(request, payload) {
     if (
       request.operation === 'hex.create' ||
       request.operation === 'hex.update' ||
@@ -806,12 +467,12 @@ function dispatch(request: CoreRequest): Promise<unknown> {
       request.operation === 'hex.undo' ||
       request.operation === 'hex.redo'
     )
-      publishHexChange(parsed)
+      publishHexChange(payload)
     if (
       request.operation.startsWith('hexTravel.') &&
       request.operation !== 'hexTravel.read'
     ) {
-      const result = hexTravelContextResultSchema.safeParse(parsed)
+      const result = hexTravelContextResultSchema.safeParse(payload)
       if (result.success)
         publishSessionChange(result.data.travel, 'travel-command')
     }
@@ -835,50 +496,10 @@ function dispatch(request: CoreRequest): Promise<unknown> {
       request.operation !== 'settings.update' &&
       request.operation !== 'core.shutdown'
     )
-      reconcileAndSchedule(
+      travelScheduler.reconcile(
         request.operation.startsWith('campaign.')
           ? 'campaign-reconcile'
           : 'travel-command'
       )
-    return parsed
-  })
-}
-function respond(requestId: string, payload: unknown) {
-  process.parentPort?.postMessage({
-    kind: 'core.result',
-    requestId,
-    ok: true,
-    payload
-  })
-}
-function failure(
-  requestId: string,
-  code: CapabilityErrorCode,
-  retryable = false,
-  issues: CapabilityError['issues'] = []
-) {
-  process.parentPort?.postMessage({
-    kind: 'core.result',
-    requestId,
-    ok: false,
-    error: capabilityFailureSchema.parse({
-      code,
-      retryable,
-      ...(issues.length > 0 ? { issues } : {})
-    })
-  })
-}
-
-function capabilityFailure(error: unknown): {
-  code: CapabilityErrorCode
-  retryable: boolean
-  issues: CapabilityError['issues']
-} {
-  if (error instanceof CapabilityError)
-    return {
-      code: error.code,
-      retryable: error.retryable,
-      issues: error.issues
-    }
-  return { code: 'internal', retryable: false, issues: [] }
-}
+  }
+})
