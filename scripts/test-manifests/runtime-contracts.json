@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "name": "runtime-contracts",
+  "typecheck": true,
+  "tests": [
+    "tests/unit/architecture-boundaries.test.ts",
+    "tests/unit/refactor-requirements-alignment.test.ts",
+    "tests/unit/operation-registry.test.ts",
+    "tests/unit/runtime-registry-boundary.test.ts",
+    "tests/unit/utility-runtime-dispatcher.test.ts",
+    "tests/unit/runtime-observation.test.ts",
+    "tests/unit/operation-authorization.test.ts"
+  ],
+  "maxWorkers": 2
+}

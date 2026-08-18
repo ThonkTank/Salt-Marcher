@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "name": "persistence-modules",
+  "typecheck": true,
+  "tests": [
+    "tests/unit/generated-run-schema-ownership.test.ts",
+    "tests/unit/world-npc-persistence-ownership.test.ts",
+    "tests/unit/world-npc-contract.test.ts",
+    "tests/unit/persistence-preflight.test.ts",
+    "tests/integration/generated-run-store.test.ts",
+    "tests/integration/world-npc.test.ts"
+  ],
+  "maxWorkers": 2
+}

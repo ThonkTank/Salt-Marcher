@@ -299,6 +299,10 @@ describe('architecture boundaries', () => {
       'src/core/application/encounter-source-service.ts'
     )
     const npcStore = source('src/core/worldplanner/npc-store.ts')
+    const npcSchema = source('src/core/worldplanner/world-npc-schema.ts')
+    const npcQueries = source(
+      'src/core/worldplanner/world-npc-query-repository.ts'
+    )
     const operations = source('src/shared/contracts/operations/npcs.ts')
     const utility = source('src/utility/application.ts')
     expect(encounterSources).not.toMatch(
@@ -306,18 +310,18 @@ describe('architecture boundaries', () => {
     )
     expect(npcStore).not.toContain("from '../creatures/catalog.js'")
     expect(npcStore).toContain('CreatureReferenceResolver')
-    expect(npcStore).toContain(
+    expect(npcSchema).toContain(
       'REFERENCES worldplanner_location(id) ON DELETE SET NULL'
     )
-    expect(npcStore).toContain(
+    expect(npcSchema).toContain(
       'REFERENCES worldplanner_faction(id) ON DELETE CASCADE'
     )
     expect(operations).toContain("'npcs.search'")
     expect(operations).toContain("'npcs.detail'")
     expect(operations).not.toContain("'npcs.read'")
-    expect(npcStore).toContain('creatureDisplayName')
-    expect(npcStore).toContain('factionDisplayName')
-    expect(npcStore).toContain('locationDisplayName')
+    expect(npcQueries).toContain('creatureDisplayName')
+    expect(npcQueries).toContain('factionDisplayName')
+    expect(npcQueries).toContain('locationDisplayName')
     expect(utility).toContain('new ReferenceChangeCoordinator(')
     expect(utility).not.toMatch(
       /referenceSnapshot|JSON\.stringify\(references\.detail/
