@@ -44,11 +44,10 @@ describe('session workspace controller', () => {
 
     act(() => view.result.current.actions.editParty())
     expect(view.result.current.model.dialog).toEqual({ kind: 'party-editor' })
-    act(() => view.result.current.actions.manageGroups())
+    act(() => view.result.current.actions.createGroup())
     expect(view.result.current.model.dialog).toEqual({
       kind: 'group-editor',
-      group: null,
-      reinforcement: false
+      group: null
     })
     act(() => view.result.current.actions.closeDialog())
     expect(view.result.current.model.dialog).toEqual({ kind: 'none' })

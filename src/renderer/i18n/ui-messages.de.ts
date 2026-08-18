@@ -83,7 +83,6 @@ export const uiMessagesDe = {
   'ui.groesse': 'Größe',
   'ui.gruppe': 'Gruppe',
   'ui.gruppen': 'Gruppen',
-  'ui.gruppen.managen': 'Gruppen managen',
   'ui.gruppenname': 'Gruppenname',
   'ui.hard': '· Hard',
   'ui.herausforderung': 'Herausforderung',

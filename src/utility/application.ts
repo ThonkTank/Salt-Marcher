@@ -127,6 +127,10 @@ const sessionGenerationService = new SessionGenerationService(
   () => campaigns.activeCampaignDatabase()
 )
 const activeDatabase = () => campaigns.activeCampaignDatabase()
+const activePartyProgression = () =>
+  generatorPresets
+    .configFor(campaigns.list().activeCampaignId)
+    .config.loot.progression.map((row) => row.xpAtLevel)
 const campaignRules = new CampaignRulesService(activeDatabase)
 const encounterPlans = new GeneratedEncounterPlanService(activeDatabase)
 const sessionPlanner = new SessionPlannerService(
@@ -141,7 +145,8 @@ const sessionPlanner = new SessionPlannerService(
       createLootCatalogIndex(
         sessionGenerationCatalog.loadFullByReference(reference)
       )
-    )
+    ),
+  activePartyProgression
 )
 const symbolLifecycle = new LocationSymbolLifecycleService(campaigns)
 const locationSymbols = symbolLifecycle.symbols

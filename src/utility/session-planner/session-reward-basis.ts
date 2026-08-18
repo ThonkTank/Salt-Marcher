@@ -2,6 +2,7 @@ import type Database from 'better-sqlite3'
 import { CharacterLootStore } from '../../core/loot/character-loot-store.js'
 import { ItemDefinitionResolver } from '../../core/loot/item-definition-resolver.js'
 import { PartyStore } from '../../core/party/party-store.js'
+import type { PartyLevelProgression } from '../../core/party/party-roster-domain.js'
 import { SessionPlannerStore } from '../../core/session-planner/session-planner-store.js'
 import { projectRewardMembers } from '../../core/session-generation/reward-budget-stage.js'
 import {
@@ -17,16 +18,16 @@ export class SessionRewardBasis {
     private readonly db: Database.Database,
     private readonly definitionResolver: (
       db: Database.Database
-    ) => ItemDefinitionResolver
+    ) => ItemDefinitionResolver,
+    private readonly progression?: PartyLevelProgression
   ) {}
 
   snapshot(sessionId: string): RewardPartySnapshot {
     const session = new SessionPlannerStore(this.db).require(sessionId)
-    const party = new PartyStore(this.db).read()
+    const party = new PartyStore(this.db, this.progression).read()
     const members = session.participantIds.map((id) => {
       const member = party.members.find((entry) => entry.id === id)
-      if (!member || member.level === null)
-        throw new CapabilityError('stale', true)
+      if (!member) throw new CapabilityError('stale', true)
       return member
     })
     const balances = new Map(
@@ -40,7 +41,7 @@ export class SessionRewardBasis {
         if (!balance) throw new Error('missing_character_reward_balance')
         return {
           characterId: member.id,
-          level: member.level!,
+          level: member.level,
           currentXp: member.xp,
           ledgerRevision: balance.ledgerRevision,
           currentNonMagicCp: balance.currentNonMagicCp,

@@ -26,8 +26,7 @@ export function SessionScenarioPanel(props: {
   onError: (message: string) => void
   travel: SessionTravelSlots
   openReference: (target: ReferenceTarget, breadcrumb: string) => void
-  manageGroups: () => void
-  reinforce: () => void
+  createGroup: () => void
   distribute: (treasure: Treasure) => void
 }) {
   return (
@@ -68,8 +67,7 @@ export function SessionScenarioPanel(props: {
             loot={props.loot}
             setSnapshot={props.setSnapshot}
             onError={props.onError}
-            manageGroups={props.manageGroups}
-            reinforce={props.reinforce}
+            createGroup={props.createGroup}
             distribute={props.distribute}
             inspect={(creature) => {
               props.openReference(

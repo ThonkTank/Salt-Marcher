@@ -14,7 +14,7 @@
   .group-register > .register-head,
   .group-register > .group-row {
     display: grid;
-    grid-template-columns: 9px minmax(0, 1fr) 28px 52px 24px;
+    grid-template-columns: 9px minmax(0, 1fr) 28px 52px minmax(24px, auto);
     align-items: center;
     gap: var(--space-4);
     padding-left: var(--space-5);
@@ -84,6 +84,19 @@
     color: var(--text-2);
     padding: 0;
     font-size: var(--text-sm);
+  }
+
+  .register-row-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--space-2);
+  }
+
+  .register-row-actions > button:not(.group-expand) {
+    min-height: 24px;
+    padding: 2px var(--space-3);
+    font-size: var(--text-xs);
   }
 
   .group-expand:hover,

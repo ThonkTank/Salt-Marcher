@@ -174,7 +174,7 @@ const groupLabels: Readonly<Record<string, string>> = {
   ppGpEp: 'Platin/Gold/Elektrum',
   ppGpSp: 'Platin/Gold/Silber',
   profiles: 'Münzprofile',
-  progression: 'Stufenprogression',
+  progression: 'Stufenaufstieg / XP-Schwellen',
   quantityLimits: 'Mengengrenzen',
   roles: 'Slotrollen',
   selection: 'Auswahlregeln',

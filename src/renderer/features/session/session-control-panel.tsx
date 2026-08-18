@@ -10,7 +10,7 @@ export function SessionControlPanel(props: {
   model: SessionControlViewModel
   actions: Pick<
     SessionWorkspaceActions,
-    'focusScene' | 'setSceneLocation' | 'manageGroups'
+    'focusScene' | 'setSceneLocation' | 'createGroup'
   >
 }) {
   const [editing, setEditing] = useState<'scene' | 'location' | null>(null)
@@ -21,8 +21,8 @@ export function SessionControlPanel(props: {
     >
       <div className="panel-heading">
         <h2>{message('ui.session.steuerung')}</h2>
-        <button onClick={props.actions.manageGroups}>
-          {message('ui.gruppen.managen')}
+        <button onClick={props.actions.createGroup}>
+          {message('group.createAction')}
         </button>
       </div>
       <div className="control-register">

@@ -8,6 +8,8 @@ export const dailyXp = [
   15000, 18000, 20000, 25000, 27000, 30000, 40000
 ] as const
 
+export type PartyLevelProgression = readonly number[]
+
 export type PartyRosterMember = Readonly<{
   active: boolean
   level: number | null
@@ -33,31 +35,48 @@ export type AdventuringDayCalculation = Readonly<{
   timeline: readonly string[]
 }>
 
-export function levelFloor(level: number | null): number {
-  return level === null ? 0 : levelXp[level - 1]!
+export function levelForXp(
+  xp: number,
+  progression: PartyLevelProgression = levelXp
+): number {
+  const reached = progression.findLastIndex((threshold) => threshold <= xp)
+  return Math.max(1, Math.min(20, reached + 1))
 }
 
-export function initialXpForLevel(level: number | null): number {
-  return levelFloor(level)
+export function levelFloor(
+  level: number | null,
+  progression: PartyLevelProgression = levelXp
+): number {
+  return progression[(level ?? 1) - 1] ?? progression[0] ?? 0
+}
+
+export function initialXpForLevel(
+  level: number | null,
+  progression: PartyLevelProgression = levelXp
+): number {
+  return levelFloor(level, progression)
 }
 
 export function xpAfterLevelSelection(
   currentXp: number,
-  level: number | null
+  selectedLevel: number | null,
+  progression: PartyLevelProgression = levelXp
 ): number {
-  return level === null ? currentXp : Math.max(currentXp, levelFloor(level))
+  const normalizedLevel = selectedLevel ?? 1
+  return normalizedLevel === levelForXp(currentXp, progression)
+    ? currentXp
+    : levelFloor(normalizedLevel, progression)
 }
 
 export function applyXpAdjustment(
   member: Readonly<{
-    level: number | null
     xp: number
     shortXp: number
     longXp: number
   }>,
   delta: number
 ): Readonly<{ xp: number; shortXp: number; longXp: number }> {
-  const xp = Math.max(levelFloor(member.level), member.xp + delta)
+  const xp = Math.max(0, member.xp + delta)
   const applied = xp - member.xp
   return {
     xp,

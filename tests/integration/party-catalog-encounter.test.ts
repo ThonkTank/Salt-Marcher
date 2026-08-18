@@ -34,7 +34,7 @@ function sessionAfter(play: LivePlayService, command: () => unknown) {
 }
 
 describe('party and catalog parity slice', () => {
-  it('preserves absent character facts and caps XP correction at the level floor', () => {
+  it('preserves absent character facts and derives level in both XP directions', () => {
     const { campaigns, play } = harness()
     let party = play.readParty()
     party = play.createPartyCharacter(
@@ -52,7 +52,7 @@ describe('party and catalog parity slice', () => {
       name: 'Namesake',
       active: false,
       playerName: null,
-      level: null,
+      level: 1,
       passivePerception: null,
       armorClass: null
     })
@@ -70,9 +70,9 @@ describe('party and catalog parity slice', () => {
     )
     party = play.adjustPartyXp(created?.id ?? '', -1_000_000, party.revision)
     expect(party.members.at(-1)).toMatchObject({
-      level: 5,
-      xp: 6500,
-      currentLevelFloor: 6500
+      level: 1,
+      xp: 0,
+      currentLevelFloor: 0
     })
     campaigns.close()
   })

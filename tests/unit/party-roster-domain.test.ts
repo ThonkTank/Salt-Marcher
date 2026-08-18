@@ -6,23 +6,31 @@ import {
   calculateAdventuringDay,
   clearPartyHexPosition,
   initialXpForLevel,
+  levelForXp,
   positionPartyAtHex,
   xpAfterLevelSelection,
   levelFloor
 } from '../../src/core/party/party-roster-domain.js'
 
 describe('Party roster domain', () => {
-  it('caps downward XP corrections at the current level floor', () => {
+  it('derives levels in both directions and caps XP corrections at zero', () => {
     expect(
-      applyXpAdjustment(
-        { level: 5, xp: 7_000, shortXp: 700, longXp: 1_200 },
-        -2_000
-      )
-    ).toEqual({ xp: 6_500, shortXp: 200, longXp: 700 })
+      applyXpAdjustment({ xp: 7_000, shortXp: 700, longXp: 1_200 }, -8_000)
+    ).toEqual({ xp: 0, shortXp: 0, longXp: 0 })
     expect(levelFloor(null)).toBe(0)
     expect(initialXpForLevel(5)).toBe(6_500)
-    expect(xpAfterLevelSelection(7_000, 4)).toBe(7_000)
-    expect(xpAfterLevelSelection(7_000, null)).toBe(7_000)
+    expect(levelForXp(7_000)).toBe(5)
+    expect(levelForXp(2_699)).toBe(3)
+    expect(xpAfterLevelSelection(7_000, 5)).toBe(7_000)
+    expect(xpAfterLevelSelection(7_000, 4)).toBe(2_700)
+    expect(xpAfterLevelSelection(7_000, null)).toBe(0)
+  })
+
+  it('uses configured XP thresholds for derived and selected levels', () => {
+    const progression = Array.from({ length: 20 }, (_, index) => index * 100)
+    expect(levelForXp(250, progression)).toBe(3)
+    expect(xpAfterLevelSelection(250, 4, progression)).toBe(300)
+    expect(xpAfterLevelSelection(250, 3, progression)).toBe(250)
   })
 
   it('applies rest counters and travel positions as pure transitions', () => {

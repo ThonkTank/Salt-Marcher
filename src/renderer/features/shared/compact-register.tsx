@@ -30,6 +30,7 @@ export function ExpandableRegisterRow(props: {
   expanded: boolean
   expandLabel: string
   cells: readonly ReactNode[]
+  rowAction?: ReactNode
   toggle: () => void
   children: ReactNode
 }) {
@@ -41,7 +42,8 @@ export function ExpandableRegisterRow(props: {
             {cell}
           </div>
         ))}
-        <div role="cell">
+        <div className="register-row-actions" role="cell">
+          {props.rowAction}
           <button
             type="button"
             className="group-expand"

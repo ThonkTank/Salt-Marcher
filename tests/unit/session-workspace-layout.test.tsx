@@ -157,13 +157,16 @@ describe('session workspace layout', () => {
           actions={{
             focusScene: vi.fn(),
             setSceneLocation: vi.fn(),
-            manageGroups: vi.fn()
+            createGroup: vi.fn()
           }}
         />
       </CapabilityProvider>
     )
 
     expect(screen.queryByRole('combobox')).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Gruppe erstellen' })
+    ).toBeVisible()
     expect(screen.getByRole('button', { name: 'Wechseln' })).toBeDisabled()
     fireEvent.click(screen.getByRole('button', { name: 'Setzen' }))
     expect(screen.getByRole('combobox', { name: 'Scene-Ort' })).toBeVisible()
@@ -199,8 +202,7 @@ describe('session workspace layout', () => {
           onError={vi.fn()}
           travel={{ renderMap: vi.fn(), renderScenario: vi.fn() }}
           openReference={vi.fn()}
-          manageGroups={vi.fn()}
-          reinforce={vi.fn()}
+          createGroup={vi.fn()}
           distribute={vi.fn()}
         />
       </CapabilityProvider>

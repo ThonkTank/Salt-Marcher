@@ -55,8 +55,7 @@ export default function SessionWorkspace(props: {
       onError={props.onError}
       travel={props.travel}
       openReference={reference.openReference}
-      manageGroups={actions.manageGroups}
-      reinforce={actions.reinforce}
+      createGroup={actions.createGroup}
       distribute={actions.distribute}
     />
   )

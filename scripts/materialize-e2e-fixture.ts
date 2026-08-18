@@ -272,7 +272,7 @@ try {
           const rewardParty = assembleRewardParty(
             assignedMembers.map((member) => ({
               characterId: member.id,
-              level: member.level!,
+              level: member.level,
               currentXp: member.xp,
               ledgerRevision: 0,
               currentNonMagicCp: 0,

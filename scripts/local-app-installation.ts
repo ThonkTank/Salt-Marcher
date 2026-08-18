@@ -37,7 +37,7 @@ import { sha256File } from './file-hash.js'
 import {
   CorruptDataError,
   configureSqlite,
-  currentSchemaVersion,
+  databaseSchemaVersions,
   IncompatibleDataError
 } from '../src/core/persistence/sqlite/database.js'
 import {
@@ -324,8 +324,9 @@ function readArtifactManifest(
       throw new Error('Artifact is not from the local channel')
     if (
       manifest.receipt.build.schemaVersions.installation !==
-        currentSchemaVersion ||
-      manifest.receipt.build.schemaVersions.campaign !== currentSchemaVersion
+        databaseSchemaVersions.installation ||
+      manifest.receipt.build.schemaVersions.campaign !==
+        databaseSchemaVersions.campaign
     )
       throw new Error('Artifact schema does not match this installer')
     if (

@@ -22,6 +22,29 @@ describe('Party store', () => {
     })
   })
 
+  it('creates at level 1 and derives level changes from configured XP', () => {
+    const database = openDatabase()
+    initializePartySchema(database)
+    const progression = Array.from({ length: 20 }, (_, index) => index * 100)
+    const party = new PartyStore(database, progression)
+    const created = party.create(
+      {
+        name: 'Aria',
+        playerName: null,
+        passivePerception: null,
+        armorClass: null
+      },
+      0
+    )
+    const id = created.members[0]!.id
+
+    expect(created.members[0]).toMatchObject({ xp: 0, level: 1 })
+    const advanced = party.adjustXp(id, 250, created.revision)
+    expect(advanced.members[0]).toMatchObject({ xp: 250, level: 3 })
+    const corrected = party.adjustXp(id, -200, advanced.revision)
+    expect(corrected.members[0]).toMatchObject({ xp: 50, level: 1 })
+  })
+
   it('loads languages with a constant query count as the roster grows', () => {
     const statements: string[] = []
     const database = openDatabase((statement) => statements.push(statement))

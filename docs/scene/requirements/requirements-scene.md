@@ -46,9 +46,10 @@ copy.
 - Friendly NPCs enter the scene Encounter as allies, hostile NPCs as enemies,
   and neutral NPCs remain visible context without joining combat.
 - The scene location automatically constrains later Encounter generation.
-- `Gruppen managen` combines the filtered Creature catalog with one transient
-  group draft. Manual changes and generation are evaluated immediately against
-  the assigned Party.
+- `Gruppe erstellen` opens one transient new-group draft; `Bearbeiten` on a
+  persisted group opens that group directly. Both combine the filtered Creature
+  catalog with the single selected draft. Manual changes and generation are
+  evaluated immediately against the assigned Party.
 - `Auffüllen` preserves the current roster as its generation basis, while `Neu
   generieren` replaces it. Both use optional location, catalog filters, tuning,
   the effective preset, and a deterministic seed. Scene supplies concrete

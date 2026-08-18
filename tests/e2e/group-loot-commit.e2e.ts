@@ -17,14 +17,12 @@ describe('Group Loot atomic commit', () => {
     await (
       await client.$('h1=Session · Gruppenloot-Abnahme')
     ).waitForExist({ timeout: 15_000 })
-    await (await client.$('button=Gruppen managen')).click()
+    const groupRow = await client.$('.group-row*=E2E Gruppenbeute')
+    await (await groupRow.$('button=Bearbeiten')).click()
     const dialog = await client.$(
       'section[aria-labelledby="group-builder-title"]'
     )
     await dialog.waitForDisplayed({ timeout: 10_000 })
-    await (
-      await dialog.$('select[aria-label="Gruppe auswählen"]')
-    ).selectByVisibleText('E2E Gruppenbeute')
     await (await dialog.$('[role="tab"]=Schatz-Draft')).click()
     const generate = await dialog.$('button=Loot erzeugen')
     await client.waitUntil(() => generate.isEnabled(), { timeout: 10_000 })

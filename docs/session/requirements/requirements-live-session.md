@@ -20,14 +20,14 @@ tab. Scene owns runtime composition; Session does not own a second group list.
 - Activating a Roster PC through `Zur Party` assigns that PC atomically to the
   focused Scene. Removing Party membership removes the PC from every Scene.
   Manual Scene removal remains stable until membership is toggled again.
-- `Gruppen managen` is the only creation and editing entry point. Its group
-  selector and adjacent action start a transient `Neue Gruppe` draft; when no
-  active group exists, that draft is selected automatically. A new group may
+- `Gruppe erstellen` always opens one transient new-group draft. Every active
+  group row exposes `Bearbeiten`, which opens that group directly without an
+  internal group selector. A new group may
   be saved with an empty roster and without a custom name. Disposition is
   descriptive metadata and does not assign a Combat side.
 - The dialog's left pane contains the Creature catalog with name, CR, size,
-  type, subtype, biome, and alignment filters. The right pane selects an
-  existing Scene group or the new draft. A blank or whitespace-only name is
+  type, subtype, biome, and alignment filters. The right pane edits the single
+  group selected by the opening action. A blank or whitespace-only name is
   replaced atomically on save with the smallest free `Gruppe N` name in that
   Scene. Active and archived groups reserve their exact `Gruppe N` number;
   this rule applies equally to new groups and renamed existing groups.
@@ -56,17 +56,15 @@ preview for the same unsaved roster. Manual roster edits, undo, and redo remove
 that preview; `Loot neu würfeln` replaces only Loot. Seeds remain internal and
 independent. `Gruppe & Loot übernehmen` saves both owners atomically, while the
 ordinary save action remains group-only. Generator results remain transient
-until explicitly saved and do not survive restart. Each selected group keeps
-its own transient draft and Loot preview while the dialog remains open, so
-switching groups does not lose work. Closing the dialog with any dirty draft
-requires explicit discard confirmation.
+until explicitly saved and do not survive restart. Closing the dialog with a
+dirty draft requires explicit discard confirmation.
 
 ## Three-column workspace
 
 - The fixed-width left column owns the control panel and the remaining-height
   group list. The control panel presents scene focus and location as compact
-  register rows whose selectors appear only while editing. It owns `Gruppen
-  managen` and assigns one current World Planner location or clears the
+  register rows whose selectors appear only while editing. It owns `Gruppe
+  erstellen` and assigns one current World Planner location or clears the
   assignment without changing the Detail history. Party and Scene groups share
   a compact register with aligned count and XP columns; at most one row exposes
   its members, note, Loot, and actions.
@@ -135,8 +133,9 @@ requires explicit discard confirmation.
 4. Initiative values can be edited before Combat starts. The Party reports its
    values manually; the roll action rolls only monster initiatives.
 5. Combat exposes a four-step breadcrumb, turn and round progression, monster
-   HP, damage, healing, conditions, a bounded 20-step undo history,
-   Group-Manager reinforcement, and a direct transition to Resolution.
+   HP, damage, healing, conditions, a bounded 20-step undo history, and a direct
+   transition to Resolution. HP editing opens a modal and closes after a
+   successful damage or healing command.
 6. Resolution exposes defeated-enemy selection, defeat threshold, XP fraction,
    per-player XP, one idempotent Party award, and typed treasures anchored to
    the selected groups. A treasure opens the shared distribution dialog. The

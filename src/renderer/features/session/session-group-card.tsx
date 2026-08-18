@@ -40,6 +40,13 @@ export function SessionGroupCard(props: {
         { name: group.name }
       )}
       toggle={toggle}
+      rowAction={
+        props.row.kind === 'active-group' ? (
+          <button type="button" onClick={() => props.actions.editGroup(group)}>
+            {message('ui.bearbeiten')}
+          </button>
+        ) : null
+      }
       cells={[
         <span
           key="mark"
@@ -91,11 +98,7 @@ export function SessionGroupCard(props: {
               })}
             </button>
           )}
-          {props.row.kind === 'active-group' ? (
-            <button onClick={() => props.actions.editGroup(group)}>
-              {message('ui.bearbeiten')}
-            </button>
-          ) : (
+          {props.row.kind !== 'active-group' && (
             <>
               <button onClick={() => props.actions.restoreGroup(group)}>
                 {message('group.restore')}

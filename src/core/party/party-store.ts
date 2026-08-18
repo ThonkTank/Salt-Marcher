@@ -13,7 +13,9 @@ import {
   applyXpAdjustment,
   clearPartyHexPosition,
   initialXpForLevel,
+  levelXp,
   positionPartyAtHex,
+  type PartyLevelProgression,
   xpAfterLevelSelection
 } from './party-roster-domain.js'
 import { mapPartyCharacterRow } from './party-row-mapper.js'
@@ -35,6 +37,74 @@ export function initializePartySchema(db: Database.Database): void {
   db.prepare(
     'INSERT INTO party_roster_metadata (singleton, revision) VALUES (1, 0)'
   ).run()
+}
+
+export function migratePartySchema34To35(db: Database.Database): void {
+  const hasParty = Boolean(
+    db
+      .prepare(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'player_characters'"
+      )
+      .get()
+  )
+  if (!hasParty) {
+    initializePartySchema(db)
+    return
+  }
+  db.exec(`
+    CREATE TABLE player_characters_v35 (
+      id TEXT PRIMARY KEY NOT NULL,
+      name TEXT NOT NULL,
+      player_name TEXT,
+      species TEXT,
+      character_class TEXT,
+      passive_perception INTEGER CHECK(passive_perception BETWEEN 0 AND 99),
+      passive_investigation INTEGER CHECK(passive_investigation BETWEEN 0 AND 99),
+      passive_insight INTEGER CHECK(passive_insight BETWEEN 0 AND 99),
+      armor_class INTEGER CHECK(armor_class BETWEEN 0 AND 99),
+      active INTEGER NOT NULL CHECK(active IN (0, 1)),
+      xp INTEGER NOT NULL CHECK(xp >= 0),
+      xp_since_short_rest INTEGER NOT NULL CHECK(xp_since_short_rest >= 0),
+      xp_since_long_rest INTEGER NOT NULL CHECK(xp_since_long_rest >= 0),
+      movement_speed_feet INTEGER CHECK(movement_speed_feet BETWEEN 0 AND 999),
+      travel_map_id TEXT,
+      travel_q INTEGER,
+      travel_r INTEGER,
+      travel_state TEXT NOT NULL DEFAULT 'detached'
+        CHECK(travel_state IN ('detached', 'attached-unpositioned', 'hex-positioned')),
+      position INTEGER NOT NULL CHECK(position >= 0),
+      CHECK(
+        (travel_state = 'hex-positioned' AND travel_map_id IS NOT NULL AND travel_q IS NOT NULL AND travel_r IS NOT NULL)
+        OR
+        (travel_state IN ('detached', 'attached-unpositioned') AND travel_map_id IS NULL AND travel_q IS NULL AND travel_r IS NULL)
+      )
+    );
+    INSERT INTO player_characters_v35 (
+      id, name, player_name, species, character_class,
+      passive_perception, passive_investigation, passive_insight, armor_class,
+      active, xp, xp_since_short_rest, xp_since_long_rest, movement_speed_feet,
+      travel_map_id, travel_q, travel_r, travel_state, position
+    )
+    SELECT id, name, player_name, species, character_class,
+           passive_perception, passive_investigation, passive_insight, armor_class,
+           active, xp, xp_since_short_rest, xp_since_long_rest, movement_speed_feet,
+           travel_map_id, travel_q, travel_r, travel_state, position
+      FROM player_characters;
+    CREATE TABLE player_character_language_v35 (
+      character_id TEXT NOT NULL REFERENCES player_characters_v35(id) ON DELETE CASCADE,
+      language TEXT NOT NULL,
+      position INTEGER NOT NULL CHECK(position >= 0),
+      PRIMARY KEY (character_id, language COLLATE NOCASE),
+      UNIQUE (character_id, position)
+    );
+    INSERT INTO player_character_language_v35 (character_id, language, position)
+      SELECT character_id, language, position FROM player_character_language;
+    DROP TABLE player_character_language;
+    DROP TABLE player_characters;
+    ALTER TABLE player_characters_v35 RENAME TO player_characters;
+    ALTER TABLE player_character_language_v35 RENAME TO player_character_language;
+  `)
+  initializePartySchema(db)
 }
 
 export function migratePartySchema28To29(db: Database.Database): void {
@@ -85,7 +155,6 @@ function createPartyTables(db: Database.Database): void {
       player_name TEXT,
       species TEXT,
       character_class TEXT,
-      level INTEGER CHECK(level BETWEEN 1 AND 20),
       passive_perception INTEGER CHECK(passive_perception BETWEEN 0 AND 99),
       passive_investigation INTEGER CHECK(passive_investigation BETWEEN 0 AND 99),
       passive_insight INTEGER CHECK(passive_insight BETWEEN 0 AND 99),
@@ -122,7 +191,10 @@ function createPartyTables(db: Database.Database): void {
 }
 
 export class PartyStore {
-  constructor(private readonly db: Database.Database) {}
+  constructor(
+    private readonly db: Database.Database,
+    private readonly progression: PartyLevelProgression = levelXp
+  ) {}
 
   read(): PartySnapshot {
     const metadata = this.db
@@ -131,7 +203,7 @@ export class PartyStore {
     const rows = this.db
       .prepare(
         `
-        SELECT id, name, player_name, species, character_class, level,
+        SELECT id, name, player_name, species, character_class,
                passive_perception, passive_investigation, passive_insight, armor_class,
                active, xp, xp_since_short_rest, xp_since_long_rest,
                movement_speed_feet, travel_map_id, travel_q, travel_r,
@@ -142,7 +214,7 @@ export class PartyStore {
       .all() as Array<Record<string, unknown> & { id: string }>
     const languages = this.languageMap()
     const members = rows.map((row) =>
-      mapPartyCharacterRow(row, languages.get(row.id) ?? [])
+      mapPartyCharacterRow(row, languages.get(row.id) ?? [], this.progression)
     )
     return partySnapshotSchema.parse({
       revision: metadata.revision,
@@ -161,17 +233,17 @@ export class PartyStore {
           )
           .get() as { value: number }
       ).value
-      const xp = initialXpForLevel(parsed.level)
+      const xp = initialXpForLevel(parsed.level, this.progression)
       const id = uuidv7()
       this.db
         .prepare(
           `
           INSERT INTO player_characters (
-            id, name, player_name, species, character_class, level,
+            id, name, player_name, species, character_class,
             passive_perception, passive_investigation, passive_insight, armor_class,
             active, xp, xp_since_short_rest, xp_since_long_rest,
             movement_speed_feet, position
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 0, 0, ?, ?)
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, 0, 0, ?, ?)
         `
         )
         .run(
@@ -180,7 +252,6 @@ export class PartyStore {
           nullable(parsed.playerName),
           nullable(parsed.species),
           nullable(parsed.characterClass),
-          parsed.level,
           parsed.passivePerception,
           parsed.passiveInvestigation,
           parsed.passiveInsight,
@@ -205,12 +276,16 @@ export class PartyStore {
         .prepare('SELECT xp FROM player_characters WHERE id = ?')
         .get(id) as { xp: number } | undefined
       if (!current) throw new CapabilityError('not_found', false)
-      const xp = xpAfterLevelSelection(current.xp, parsed.level)
+      const xp = xpAfterLevelSelection(
+        current.xp,
+        parsed.level,
+        this.progression
+      )
       this.db
         .prepare(
           `
           UPDATE player_characters
-          SET name = ?, player_name = ?, species = ?, character_class = ?, level = ?,
+          SET name = ?, player_name = ?, species = ?, character_class = ?,
               passive_perception = ?, passive_investigation = ?, passive_insight = ?,
               armor_class = ?, movement_speed_feet = ?, xp = ?
           WHERE id = ?
@@ -221,7 +296,6 @@ export class PartyStore {
           nullable(parsed.playerName),
           nullable(parsed.species),
           nullable(parsed.characterClass),
-          parsed.level,
           parsed.passivePerception,
           parsed.passiveInvestigation,
           parsed.passiveInsight,
@@ -347,14 +421,12 @@ export class PartyStore {
       const member = this.db
         .prepare(
           `
-          SELECT level, xp, xp_since_short_rest AS shortXp,
+          SELECT xp, xp_since_short_rest AS shortXp,
                  xp_since_long_rest AS longXp
           FROM player_characters WHERE id = ?
         `
         )
-        .get(id) as
-        | { level: number | null; xp: number; shortXp: number; longXp: number }
-        | undefined
+        .get(id) as { xp: number; shortXp: number; longXp: number } | undefined
       if (!member) throw new CapabilityError('not_found', false)
       const next = applyXpAdjustment(member, delta)
       this.db

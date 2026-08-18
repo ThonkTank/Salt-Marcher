@@ -18,7 +18,8 @@ describe('Group Loot editor', () => {
     await (
       await client.$('h1=Session · Gruppenloot-Abnahme')
     ).waitForExist({ timeout: 15_000 })
-    await (await client.$('button=Gruppen managen')).click()
+    const groupRow = await client.$('.group-row*=E2E Gruppenbeute')
+    await (await groupRow.$('button=Bearbeiten')).click()
     const dialog = await client.$(
       'section[aria-labelledby="group-builder-title"]'
     )
@@ -34,9 +35,6 @@ describe('Group Loot editor', () => {
         ),
       { timeout: 5_000, timeoutMsg: 'Focus did not enter the Group dialog.' }
     )
-    await (
-      await dialog.$('select[aria-label="Gruppe auswählen"]')
-    ).selectByVisibleText('E2E Gruppenbeute')
     await (await dialog.$('[role="tab"]=Schatz-Draft')).click()
     const generate = await dialog.$('button=Loot erzeugen')
     await client.waitUntil(() => generate.isEnabled(), {
