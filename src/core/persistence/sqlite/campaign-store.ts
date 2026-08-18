@@ -9,11 +9,7 @@ import {
 } from 'node:fs'
 import { dirname, join } from 'node:path'
 import Database from 'better-sqlite3'
-import type {
-  Campaign,
-  CampaignSnapshot
-} from '../../../shared/contracts/campaign.js'
-import { freezeCampaignSnapshot } from '../../../shared/contracts/campaign.js'
+import type { CampaignSnapshot } from '../../../shared/contracts/campaign.js'
 import { uuidv7 } from '../../../shared/ids/uuidv7.js'
 import { initializePartySchema, PartyStore } from '../../party/party-store.js'
 import { initializeSceneSchema } from '../../scene/scene-store.js'
@@ -62,6 +58,7 @@ import {
   type CampaignDirectoryTransitionReceipt
 } from './campaign-directory-transition.js'
 import { CampaignConnectionManager } from './campaign-connection-manager.js'
+import { CampaignRegistryRepository } from './campaign-registry-repository.js'
 
 export type CampaignCreatePhase =
   | 'before-registry-entry'
@@ -90,6 +87,7 @@ export interface CampaignStoreOptions {
 
 export class CampaignStore {
   private readonly installation: Database.Database
+  private readonly registry: CampaignRegistryRepository
   private readonly installationSettings: InstallationSettingsStore
   private readonly connections = new CampaignConnectionManager()
   private readonly onCreatePhase:
@@ -115,23 +113,14 @@ export class CampaignStore {
     const installationExists = preflight.kind === 'ready'
     mkdirSync(dirname(installationPath), { recursive: true })
     this.installation = new Database(installationPath)
+    this.registry = new CampaignRegistryRepository(this.installation)
     this.installationSettings = new InstallationSettingsStore(this.installation)
     try {
       configureSqlite(this.installation)
       if (installationExists)
         assertSchemaVersion(this.installation, this.dataRoot, 'installation')
+      this.registry.initialize()
       this.installation.exec(`
-      CREATE TABLE IF NOT EXISTS campaigns (
-        id TEXT PRIMARY KEY NOT NULL,
-        name TEXT NOT NULL,
-        created_at TEXT NOT NULL,
-        trashed_at TEXT,
-        status TEXT NOT NULL DEFAULT 'ready' CHECK(status IN ('creating', 'ready'))
-      );
-      CREATE TABLE IF NOT EXISTS settings (
-        key TEXT PRIMARY KEY NOT NULL,
-        value TEXT NOT NULL
-      );
       CREATE TABLE IF NOT EXISTS installation_settings (
         singleton INTEGER PRIMARY KEY NOT NULL CHECK(singleton = 1),
         revision INTEGER NOT NULL CHECK(revision >= 0),
@@ -162,41 +151,14 @@ export class CampaignStore {
   }
 
   list(): CampaignSnapshot {
-    const campaigns = this.installation
-      .prepare(
-        "SELECT id, name, created_at AS createdAt FROM campaigns WHERE status = 'ready' AND trashed_at IS NULL ORDER BY created_at ASC"
-      )
-      .all() as Campaign[]
-    const trashedCampaigns = this.installation
-      .prepare(
-        "SELECT id, name, created_at AS createdAt, trashed_at AS trashedAt FROM campaigns WHERE status = 'ready' AND trashed_at IS NOT NULL ORDER BY trashed_at DESC"
-      )
-      .all() as CampaignSnapshot['trashedCampaigns']
-    const active = this.installation
-      .prepare("SELECT value FROM settings WHERE key = 'active_campaign_id'")
-      .get() as { value: string } | undefined
-    return freezeCampaignSnapshot({
-      campaigns,
-      trashedCampaigns: [...trashedCampaigns],
-      activeCampaignId:
-        active !== undefined &&
-        campaigns.some((campaign) => campaign.id === active.value)
-          ? active.value
-          : null
-    })
+    return this.registry.snapshot()
   }
 
   create(name: string): CampaignSnapshot {
     const id = uuidv7()
     const createdAt = new Date().toISOString()
     this.onCreatePhase?.('before-registry-entry')
-    this.installation.transaction(() => {
-      this.installation
-        .prepare(
-          "INSERT INTO campaigns (id, name, created_at, status) VALUES (?, ?, ?, 'creating')"
-        )
-        .run(id, name, createdAt)
-    })()
+    this.registry.beginCreation(id, name, createdAt)
     this.onCreatePhase?.('after-creating-entry')
     this.createStagedCampaignStore(id)
     this.onCreatePhase?.('after-store-created')
@@ -205,82 +167,44 @@ export class CampaignStore {
   }
 
   activate(id: string): CampaignSnapshot {
-    const exists = this.installation
-      .prepare(
-        "SELECT 1 FROM campaigns WHERE id = ? AND status = 'ready' AND trashed_at IS NULL"
-      )
-      .get(id)
-    if (exists === undefined) throw new CapabilityError('not_found', false)
+    this.registry.requireAvailable(id)
     this.switchActiveCampaign(id)
-    this.setActive(id)
+    this.registry.setActive(id)
     return this.list()
   }
 
   rename(id: string, name: string): CampaignSnapshot {
-    const result = this.installation
-      .prepare(
-        "UPDATE campaigns SET name = ? WHERE id = ? AND status = 'ready' AND trashed_at IS NULL"
-      )
-      .run(name, id)
-    if (result.changes === 0) throw new CapabilityError('not_found', false)
+    this.registry.rename(id, name)
     return this.list()
   }
 
   trash(id: string): CampaignSnapshot {
     this.requireSafeCampaignId(id)
-    const campaign = this.installation
-      .prepare(
-        "SELECT 1 FROM campaigns WHERE id = ? AND status = 'ready' AND trashed_at IS NULL"
-      )
-      .get(id)
-    if (campaign === undefined) throw new CapabilityError('not_found', false)
+    this.registry.requireAvailable(id)
 
     if (this.list().activeCampaignId === id) {
       this.connections.release(id)
     }
-    this.installation.transaction(() => {
-      this.installation
-        .prepare('UPDATE campaigns SET trashed_at = ? WHERE id = ?')
-        .run(new Date().toISOString(), id)
-      this.clearActive(id)
-    })()
+    this.registry.trash(id, new Date().toISOString())
     this.moveDirectory(this.campaignDirectory(id), this.trashDirectory(id))
     return this.list()
   }
 
   restore(id: string): CampaignSnapshot {
     this.requireSafeCampaignId(id)
-    const campaign = this.installation
-      .prepare(
-        "SELECT 1 FROM campaigns WHERE id = ? AND status = 'ready' AND trashed_at IS NOT NULL"
-      )
-      .get(id)
-    if (campaign === undefined) throw new CapabilityError('not_found', false)
+    this.registry.requireTrashed(id)
 
     this.moveDirectory(this.trashDirectory(id), this.campaignDirectory(id))
-    const result = this.installation
-      .prepare('UPDATE campaigns SET trashed_at = NULL WHERE id = ?')
-      .run(id)
-    if (result.changes === 0) throw new CapabilityError('not_found', false)
+    this.registry.restore(id)
     return this.list()
   }
 
   deleteForever(id: string, confirmationName: string): CampaignSnapshot {
     this.requireSafeCampaignId(id)
-    const campaign = this.installation
-      .prepare(
-        "SELECT name FROM campaigns WHERE id = ? AND status = 'ready' AND trashed_at IS NOT NULL"
-      )
-      .get(id) as { name: string } | undefined
-    if (campaign === undefined) throw new CapabilityError('not_found', false)
-    if (campaign.name !== confirmationName)
-      throw new CapabilityError('validation_failed', false)
+    this.registry.requireDeletionName(id, confirmationName)
 
     this.moveDirectory(this.trashDirectory(id), this.deletingDirectory(id))
-    this.installation.transaction(() => {
-      this.clearActive(id)
-      this.installation.prepare('DELETE FROM campaigns WHERE id = ?').run(id)
-    })()
+    this.registry.delete(id)
     rmSync(this.deletingDirectory(id), { recursive: true, force: true })
     return this.list()
   }
@@ -321,11 +245,7 @@ export class CampaignStore {
     const createdAt = new Date().toISOString()
     rmSync(this.stagedCampaignDirectory(id), { recursive: true, force: true })
     if (existingId === null)
-      this.installation
-        .prepare(
-          "INSERT INTO campaigns (id, name, created_at, status) VALUES (?, ?, ?, 'creating')"
-        )
-        .run(id, name, createdAt)
+      this.registry.insertImportCreation(id, name, createdAt)
     try {
       if (existingId === null) this.createStagedCampaignStore(id)
       else this.cloneCampaignToStage(id)
@@ -363,9 +283,7 @@ export class CampaignStore {
         })
       if (existingId === null) {
         rmSync(this.campaignDirectory(id), { recursive: true, force: true })
-        this.installation
-          .prepare("DELETE FROM campaigns WHERE id = ? AND status = 'creating'")
-          .run(id)
+        this.registry.removeIncompleteCreation(id)
       }
       throw error
     }
@@ -384,11 +302,7 @@ export class CampaignStore {
     }) => T
   ): T[] {
     const activeId = this.list().activeCampaignId
-    const rows = this.installation
-      .prepare(
-        "SELECT id, name, trashed_at AS trashedAt FROM campaigns WHERE status = 'ready' ORDER BY created_at"
-      )
-      .all() as { id: string; name: string; trashedAt: string | null }[]
+    const rows = this.registry.readyRows()
     return rows.map((row) => {
       if (row.id === activeId && this.connections.activeId() === row.id)
         return visitor({
@@ -491,14 +405,7 @@ export class CampaignStore {
     if (!this.isValidCampaignStore(this.campaignPath(id)))
       throw new Error('Campaign store creation did not complete')
     this.onCreatePhase?.('before-ready')
-    this.installation.transaction(() => {
-      this.installation
-        .prepare(
-          "UPDATE campaigns SET status = 'ready' WHERE id = ? AND status = 'creating'"
-        )
-        .run(id)
-      this.setActive(id)
-    })()
+    this.registry.markReadyAndActivate(id)
     this.switchActiveCampaign(id)
   }
 
@@ -507,15 +414,10 @@ export class CampaignStore {
     name: string,
     previousActiveId: string | null
   ): void {
-    const previous = this.installation
-      .prepare(
-        "SELECT name FROM campaigns WHERE id = ? AND status = 'ready' AND trashed_at IS NULL"
-      )
-      .get(id) as { name: string } | undefined
-    if (previous === undefined) throw new CapabilityError('not_found', false)
+    const previousName = this.registry.previousName(id)
     let receipt = this.directoryTransition.begin({
       campaignId: id,
-      previousName: previous.name,
+      previousName,
       replacementName: name,
       previousActiveId
     })
@@ -542,19 +444,7 @@ export class CampaignStore {
         throw new Error('Promoted campaign failed quick_check')
       this.onReplacePhase?.('after-replacement-open')
       this.onReplacePhase?.('before-registry-commit')
-      this.installation.transaction(() => {
-        this.installation
-          .prepare(
-            "UPDATE campaigns SET name = ? WHERE id = ? AND status = 'ready' AND trashed_at IS NULL"
-          )
-          .run(name, id)
-        this.setActive(id)
-        this.installation
-          .prepare(
-            'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value'
-          )
-          .run(this.transitionCommitKey(id), receipt.transitionId)
-      })()
+      this.registry.commitReplacement(receipt, name)
       receipt = this.directoryTransition.markVerified(receipt)
       this.onReplacePhase?.('after-registry-commit')
       this.onReplacePhase?.('before-cleanup')
@@ -572,12 +462,9 @@ export class CampaignStore {
   }
 
   private recoverIncompleteCreations(): void {
-    const incomplete = this.installation
-      .prepare("SELECT id FROM campaigns WHERE status = 'creating'")
-      .all() as { id: string }[]
-    for (const { id } of incomplete) {
+    for (const id of this.registry.creatingIds()) {
       if (!this.isSafeCampaignId(id)) {
-        this.installation.prepare('DELETE FROM campaigns WHERE id = ?').run(id)
+        this.registry.removeIncompleteCreation(id)
         continue
       }
       try {
@@ -604,21 +491,11 @@ export class CampaignStore {
     if (existsSync(deletingParent))
       for (const id of readdirSync(deletingParent)) {
         if (!this.isSafeCampaignId(id)) continue
-        this.installation.transaction(() => {
-          this.clearActive(id)
-          this.installation
-            .prepare('DELETE FROM campaigns WHERE id = ?')
-            .run(id)
-        })()
+        this.registry.delete(id)
         rmSync(this.deletingDirectory(id), { recursive: true, force: true })
       }
 
-    const trashed = this.installation
-      .prepare(
-        "SELECT id FROM campaigns WHERE status = 'ready' AND trashed_at IS NOT NULL"
-      )
-      .all() as { id: string }[]
-    for (const { id } of trashed) {
+    for (const id of this.registry.trashedIds()) {
       if (!this.isSafeCampaignId(id))
         throw new Error('Unsafe campaign identifier in trash registry')
       const source = this.campaignDirectory(id)
@@ -633,11 +510,7 @@ export class CampaignStore {
     receipt: CampaignDirectoryTransitionReceipt,
     reopen = true
   ): void {
-    const committed = this.installation
-      .prepare('SELECT value FROM settings WHERE key = ?')
-      .get(this.transitionCommitKey(receipt.campaignId)) as
-      { value: string } | undefined
-    if (committed?.value === receipt.transitionId) {
+    if (this.registry.replacementCommit(receipt)) {
       this.directoryTransition.rollForwardFilesystem(receipt)
       this.directoryTransition.finish(receipt)
       this.clearTransitionCommit(receipt)
@@ -646,34 +519,16 @@ export class CampaignStore {
     }
 
     this.directoryTransition.rollbackFilesystem(receipt)
-    this.installation.transaction(() => {
-      this.installation
-        .prepare('UPDATE campaigns SET name = ? WHERE id = ?')
-        .run(receipt.previousName, receipt.campaignId)
-      if (receipt.previousActiveId === null)
-        this.installation
-          .prepare("DELETE FROM settings WHERE key = 'active_campaign_id'")
-          .run()
-      else this.setActive(receipt.previousActiveId)
-      this.installation
-        .prepare('DELETE FROM settings WHERE key = ?')
-        .run(this.transitionCommitKey(receipt.campaignId))
-    })()
+    this.registry.restoreReplacementRegistry(receipt)
     this.directoryTransition.finish(receipt)
     if (reopen && receipt.previousActiveId !== null)
       this.switchActiveCampaign(receipt.previousActiveId)
   }
 
-  private transitionCommitKey(campaignId: string): string {
-    return `campaign_directory_transition:${campaignId}`
-  }
-
   private clearTransitionCommit(
     receipt: CampaignDirectoryTransitionReceipt
   ): void {
-    this.installation
-      .prepare('DELETE FROM settings WHERE key = ? AND value = ?')
-      .run(this.transitionCommitKey(receipt.campaignId), receipt.transitionId)
+    this.registry.clearReplacementCommit(receipt)
   }
 
   private removeIncompleteCreation(id: string): void {
@@ -684,14 +539,7 @@ export class CampaignStore {
     } catch {
       // Another incomplete creation may still own the shared staging parent.
     }
-    this.installation.transaction(() => {
-      this.installation.prepare('DELETE FROM campaigns WHERE id = ?').run(id)
-      this.installation
-        .prepare(
-          "DELETE FROM settings WHERE key = 'active_campaign_id' AND value = ?"
-        )
-        .run(id)
-    })()
+    this.registry.removeIncompleteCreation(id)
   }
 
   private isValidCampaignStore(path: string): boolean {
@@ -760,31 +608,13 @@ export class CampaignStore {
     renameSync(source, destination)
   }
 
-  private setActive(id: string): void {
-    this.installation
-      .prepare(
-        "INSERT INTO settings (key, value) VALUES ('active_campaign_id', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
-      )
-      .run(id)
-  }
-
-  private clearActive(id: string): void {
-    this.installation
-      .prepare(
-        "DELETE FROM settings WHERE key = 'active_campaign_id' AND value = ?"
-      )
-      .run(id)
-  }
-
   private openRecordedActiveCampaign(): void {
     const id = this.list().activeCampaignId
     if (id !== null) {
       this.switchActiveCampaign(id)
       return
     }
-    this.installation
-      .prepare("DELETE FROM settings WHERE key = 'active_campaign_id'")
-      .run()
+    this.registry.clearRecordedActive()
   }
 
   private switchActiveCampaign(id: string): void {
