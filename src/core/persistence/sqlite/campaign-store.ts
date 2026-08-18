@@ -11,14 +11,6 @@ import { dirname, join } from 'node:path'
 import Database from 'better-sqlite3'
 import type { CampaignSnapshot } from '../../../shared/contracts/campaign.js'
 import { uuidv7 } from '../../../shared/ids/uuidv7.js'
-import { initializePartySchema, PartyStore } from '../../party/party-store.js'
-import { initializeSceneSchema } from '../../scene/scene-store.js'
-import { initializeCombatSchema } from '../../encounter/live-combat.js'
-import { initializeWorldLocationSchema } from '../../worldplanner/location-store.js'
-import { initializeEncounterTableSchema } from '../../encounter/encounter-table-store.js'
-import { initializeWorldFactionSchema } from '../../worldplanner/faction-store.js'
-import { initializeWorldNpcSchema } from '../../worldplanner/npc-store.js'
-import { initializeHexSchema } from '../../hex/hex-map-store.js'
 import {
   assertSchemaVersion,
   configureSqlite,
@@ -28,7 +20,6 @@ import {
 } from './database.js'
 import { preflightPersistence } from './persistence-preflight.js'
 import { initializeInstallationSchemaMetadata } from './installation-schema-migrations.js'
-import { initializeCampaignSchemaMetadata } from './campaign-schema-migrations.js'
 import {
   defaultInstallationPreferences,
   type InstallationPreferencesPatch,
@@ -39,26 +30,19 @@ import { InstallationSettingsStore } from './installation-settings-store.js'
 import { initializeCreatureSchema } from '../../creatures/catalog.js'
 import { initializeLocationSymbolSchema } from '../../worldplanner/location-symbol-store.js'
 import { initializeBiomeCatalogSchema } from '../../biomes/biome-catalog.js'
-import { initializeWorldLocationSaveJournalSchema } from '../../worldplanner/world-location-save-journal.js'
 import { initializeGeneratorPresetSchema } from './generator-preset-store.js'
-import { initializeSessionGenerationSchema } from '../../session-generation/generated-run-store.js'
-import { initializeLootSchema } from '../../loot/loot-schema.js'
-import { initializeCharacterLootSchema } from '../../loot/character-loot-store.js'
-import { initializeLegacyItemDefinitionSchema } from '../../loot/item-definition-resolver.js'
-import { initializeEncounterPlanSchema } from '../../encounter/encounter-plan-store.js'
-import { initializeSessionPlannerSchema } from '../../session-planner/session-planner-store.js'
-import { initializeCampaignRulesSchema } from '../../application/campaign-rules-service.js'
 import type { IncompatibleDataPolicy } from '../../../shared/contracts/runtime.js'
-import {
-  initializeCampaignImportInstallationSchema,
-  initializeCampaignImportSchema
-} from '../../campaign-import/campaign-import-store.js'
+import { initializeCampaignImportInstallationSchema } from '../../campaign-import/campaign-import-store.js'
 import {
   CampaignDirectoryTransition,
   type CampaignDirectoryTransitionReceipt
 } from './campaign-directory-transition.js'
 import { CampaignConnectionManager } from './campaign-connection-manager.js'
 import { CampaignRegistryRepository } from './campaign-registry-repository.js'
+import {
+  CampaignSchemaBootstrapper,
+  createDefaultCampaignSchemaBootstrapper
+} from './campaign-schema-bootstrapper.js'
 
 export type CampaignCreatePhase =
   | 'before-registry-entry'
@@ -83,6 +67,7 @@ export interface CampaignStoreOptions {
   onCreatePhase?: (phase: CampaignCreatePhase) => void
   /** Failure-injection seam at real replacement transition boundaries. */
   onReplacePhase?: (phase: CampaignReplacePhase) => void
+  schemaBootstrapper?: CampaignSchemaBootstrapper
 }
 
 export class CampaignStore {
@@ -95,6 +80,7 @@ export class CampaignStore {
   private readonly onReplacePhase:
     ((phase: CampaignReplacePhase) => void) | undefined
   private readonly directoryTransition: CampaignDirectoryTransition
+  private readonly schemaBootstrapper: CampaignSchemaBootstrapper
 
   constructor(
     private readonly dataRoot: string,
@@ -102,6 +88,8 @@ export class CampaignStore {
   ) {
     this.onCreatePhase = options.onCreatePhase
     this.onReplacePhase = options.onReplacePhase
+    this.schemaBootstrapper =
+      options.schemaBootstrapper ?? createDefaultCampaignSchemaBootstrapper()
     this.directoryTransition = new CampaignDirectoryTransition(
       dataRoot,
       (path) => this.isValidCampaignStore(path)
@@ -348,34 +336,7 @@ export class CampaignStore {
     mkdirSync(dirname(campaignPath), { recursive: true })
     const campaign = new Database(campaignPath)
     configureSqlite(campaign)
-    campaign.exec(
-      'CREATE TABLE IF NOT EXISTS campaign_runtime (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL)'
-    )
-    initializePartySchema(campaign)
-    initializeSceneSchema(
-      campaign,
-      new PartyStore(campaign)
-        .read()
-        .members.filter((member) => member.active)
-        .map((member) => member.id)
-    )
-    initializeCombatSchema(campaign)
-    initializeWorldLocationSchema(campaign)
-    initializeEncounterTableSchema(campaign)
-    initializeWorldFactionSchema(campaign)
-    initializeWorldNpcSchema(campaign)
-    initializeHexSchema(campaign)
-    initializeWorldLocationSaveJournalSchema(campaign)
-    initializeCampaignRulesSchema(campaign)
-    initializeSessionGenerationSchema(campaign)
-    initializeEncounterPlanSchema(campaign)
-    initializeSessionPlannerSchema(campaign)
-    initializeLegacyItemDefinitionSchema(campaign)
-    initializeLootSchema(campaign)
-    initializeCharacterLootSchema(campaign)
-    initializeCampaignImportSchema(campaign)
-    initializeCampaignSchemaMetadata(campaign)
-    initializeSchemaVersion(campaign, 'campaign')
+    this.schemaBootstrapper.initialize(campaign)
     campaign.close()
   }
 

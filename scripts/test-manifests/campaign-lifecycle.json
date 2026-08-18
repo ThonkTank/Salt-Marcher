@@ -6,6 +6,7 @@
     "tests/unit/campaign-directory-transition.test.ts",
     "tests/unit/campaign-connection-manager.test.ts",
     "tests/unit/campaign-registry-repository.test.ts",
+    "tests/unit/campaign-schema-bootstrapper.test.ts",
     "tests/unit/persistence-preflight.test.ts",
     "tests/integration/campaign-store.test.ts",
     "tests/integration/campaign-replacement-safety.test.ts",
