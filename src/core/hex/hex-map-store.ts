@@ -25,6 +25,7 @@ import {
 } from '../../shared/hex/axial-geometry.js'
 import { uuidv7 } from '../../shared/ids/uuidv7.js'
 import { WorldLocationStore } from '../worldplanner/location-store.js'
+import type { SqliteDatabaseAccess } from '../persistence/sqlite/database-access.js'
 
 export { HEX_CHUNK_SIZE }
 
@@ -154,7 +155,7 @@ function uniqueChunkKeys(
 
 export class HexMapService {
   constructor(
-    private readonly campaignDatabase: () => Database.Database,
+    private readonly campaignDatabase: SqliteDatabaseAccess,
     private readonly locationLookup?: (
       db: Database.Database
     ) => HexLocationLookup
@@ -200,9 +201,10 @@ export class HexMapService {
   }
 
   private withStore<T>(work: (store: HexMapStore) => T): T {
-    const db = this.campaignDatabase()
-    const locations = this.locationLookup?.(db) ?? new WorldLocationStore(db)
-    return work(new HexMapStore(db, locations))
+    return this.campaignDatabase.use((db) => {
+      const locations = this.locationLookup?.(db) ?? new WorldLocationStore(db)
+      return work(new HexMapStore(db, locations))
+    })
   }
 }
 

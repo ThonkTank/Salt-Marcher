@@ -26,9 +26,10 @@ import {
   isGeneratedEncounterConflict,
   type StoredEncounterPlan
 } from './encounter-plan-store.js'
+import type { SqliteDatabaseAccess } from '../persistence/sqlite/database-access.js'
 
 export class GeneratedEncounterPlanService {
-  constructor(private readonly activeDatabase: () => Database.Database) {}
+  constructor(private readonly activeDatabase: SqliteDatabaseAccess) {}
 
   prepare(input: unknown): PreparedGeneratedEncounterBatchResult {
     const parsed = prepareGeneratedEncounterBatchCommandSchema.safeParse(input)
@@ -38,11 +39,13 @@ export class GeneratedEncounterPlanService {
         code: 'encounter_batch_invalid',
         parameters: {}
       })
-    const partySize = Math.max(
-      1,
-      new PartyStore(this.activeDatabase())
-        .read()
-        .members.filter((member) => member.active).length
+    const partySize = this.activeDatabase.use((database) =>
+      Math.max(
+        1,
+        new PartyStore(database)
+          .read()
+          .members.filter((member) => member.active).length
+      )
     )
     const selection = selectGeneratedRosters(parsed.data, creatures, partySize)
     if (selection.status === 'unresolvable')
@@ -87,9 +90,12 @@ export class GeneratedEncounterPlanService {
         code: 'batch_fingerprint_mismatch',
         parameters: {}
       })
-    const partySize = new PartyStore(this.activeDatabase())
-      .read()
-      .members.filter((member) => member.active).length
+    const partySize = this.activeDatabase.use(
+      (database) =>
+        new PartyStore(database)
+          .read()
+          .members.filter((member) => member.active).length
+    )
     if (
       !validatePreparedEncounterBatch(
         parsed.data.prepared,
@@ -103,18 +109,19 @@ export class GeneratedEncounterPlanService {
         parameters: {}
       })
     try {
-      const stored = new EncounterPlanStore(
-        this.activeDatabase()
-      ).commitGeneratedBatch(parsed.data.prepared)
-      const mappings = stored.map((entry) => {
-        const summary = this.summary(entry.plan)
-        if (!summary) throw new Error('unavailable_creature')
-        return {
-          encounterNumber: entry.encounterNumber,
-          planId: entry.plan.id,
-          summary
-        }
-      })
+      const mappings = this.activeDatabase.use((database) =>
+        new EncounterPlanStore(database)
+          .commitGeneratedBatch(parsed.data.prepared)
+          .map((entry) => {
+            const summary = this.summary(database, entry.plan)
+            if (!summary) throw new Error('unavailable_creature')
+            return {
+              encounterNumber: entry.encounterNumber,
+              planId: entry.plan.id,
+              summary
+            }
+          })
+      )
       return committedGeneratedEncounterBatchResultSchema.parse({
         status: 'SUCCESS',
         runId: parsed.data.prepared.runId,
@@ -135,35 +142,40 @@ export class GeneratedEncounterPlanService {
 
   summaries(input: unknown): GeneratedEncounterPlanSummaryBatchResult {
     const query = generatedEncounterPlanSummaryBatchQuerySchema.parse(input)
-    const plans = new EncounterPlanStore(this.activeDatabase()).readMany(
-      query.planIds
-    )
-    return generatedEncounterPlanSummaryBatchResultSchema.parse({
-      entries: plans.map((plan, index) => {
-        const planId = query.planIds[index]!
-        if (!plan) return { status: 'MISSING', planId }
-        const summary = this.summary(plan)
-        return summary
-          ? { status: 'READY', planId, summary }
-          : { status: 'UNAVAILABLE', planId }
+    return this.activeDatabase.use((database) => {
+      const plans = new EncounterPlanStore(database).readMany(query.planIds)
+      return generatedEncounterPlanSummaryBatchResultSchema.parse({
+        entries: plans.map((plan, index) => {
+          const planId = query.planIds[index]!
+          if (!plan) return { status: 'MISSING', planId }
+          const summary = this.summary(database, plan)
+          return summary
+            ? { status: 'READY', planId, summary }
+            : { status: 'UNAVAILABLE', planId }
+        })
       })
     })
   }
 
   search(input: unknown): SavedEncounterPlanSearchResult {
     const query = searchSavedEncounterPlansQuerySchema.parse(input)
-    return savedEncounterPlanSearchResultSchema.parse(
-      new EncounterPlanStore(this.activeDatabase()).search(query.query)
+    return this.activeDatabase.use((database) =>
+      savedEncounterPlanSearchResultSchema.parse(
+        new EncounterPlanStore(database).search(query.query)
+      )
     )
   }
 
-  private summary(plan: StoredEncounterPlan): SavedEncounterPlanSummary | null {
+  private summary(
+    database: Database.Database,
+    plan: StoredEncounterPlan
+  ): SavedEncounterPlanSummary | null {
     const resolved = plan.creatures.map((entry) => ({
       ...entry,
       creature: creatureById(entry.creatureId)
     }))
     if (resolved.some((entry) => !entry.creature)) return null
-    const currentParty = new PartyStore(this.activeDatabase()).read().members
+    const currentParty = new PartyStore(database).read().members
     const partySize = currentParty.filter((member) => member.active).length
     const creatureCount = resolved.reduce(
       (sum, entry) => sum + entry.quantity,

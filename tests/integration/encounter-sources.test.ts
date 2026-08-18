@@ -15,6 +15,10 @@ import { creatureCatalogQuerySchema } from '../../src/shared/contracts/encounter
 import { EncounterTableStore } from '../../src/core/encounter/encounter-table-store.js'
 import type { EncounterTableSnapshot } from '../../src/shared/contracts/encounter-source.js'
 import { seedExampleParty } from '../../src/core/party/party-example-seed.js'
+import {
+  activeCampaignDatabase,
+  installationDatabase
+} from '../support/campaign-store-test-access.js'
 
 const roots: string[] = []
 
@@ -28,12 +32,15 @@ function harness() {
   roots.push(root)
   const campaigns = new CampaignStore(root)
   campaigns.create('Sources')
-  seedExampleParty(campaigns.activeCampaignDatabase())
-  const path = () => campaigns.activeCampaignDatabase()
-  const sources = new EncounterSourceService(path)
-  const locations = new WorldLocationService(path)
+  seedExampleParty(activeCampaignDatabase(campaigns))
+  const sources = new EncounterSourceService(
+    campaigns.activeCampaignPersistence()
+  )
+  const locations = new WorldLocationService(
+    campaigns.activeCampaignPersistence()
+  )
   const catalog = new CreatureCatalogService(
-    () => campaigns.installationDatabase(),
+    campaigns.installationPersistenceAccess(),
     (query) => sources.resolve(query),
     () => ({
       biomes: [],
@@ -56,7 +63,7 @@ function harness() {
     sources,
     locations,
     catalog,
-    play: new LivePlayService(path)
+    play: new LivePlayService(campaigns.activeCampaignPersistence())
   }
 }
 
@@ -67,8 +74,8 @@ describe('encounter tables and factions', () => {
   it('binds command IDs to exactly one encounter-table request', () => {
     const { campaigns } = harness()
     const sources = new EncounterSourceService(
-      () => campaigns.activeCampaignDatabase(),
-      () => campaigns.installationDatabase(),
+      campaigns.activeCampaignPersistence(),
+      campaigns.installationPersistenceAccess(),
       (visitor) => campaigns.visitCampaignDatabases(visitor)
     )
     const commandId = randomUUID()
@@ -139,8 +146,8 @@ describe('encounter tables and factions', () => {
       (campaign) => campaign.name === 'Zweite Kampagne'
     )!.id
     const sources = new EncounterSourceService(
-      () => campaigns.activeCampaignDatabase(),
-      () => campaigns.installationDatabase(),
+      campaigns.activeCampaignPersistence(),
+      campaigns.installationPersistenceAccess(),
       (visitor) => {
         campaigns.visitCampaignDatabases(visitor)
       }
@@ -166,9 +173,9 @@ describe('encounter tables and factions', () => {
         0
       ).saved
       new WorldLocationService(
-        () => campaigns.activeCampaignDatabase(),
+        campaigns.activeCampaignPersistence(),
         undefined,
-        () => campaigns.installationDatabase()
+        campaigns.installationPersistenceAccess()
       ).create(
         {
           displayName: `Tor ${campaignId}`,
@@ -184,7 +191,7 @@ describe('encounter tables and factions', () => {
 
     const commandId = randomUUID()
     const installationTables = new EncounterTableStore(
-      campaigns.installationDatabase(),
+      installationDatabase(campaigns),
       'installation'
     )
     installationTables.beginInstallationLifecycle({
@@ -209,9 +216,9 @@ describe('encounter tables and factions', () => {
       })
       expect(
         new WorldLocationService(
-          () => campaigns.activeCampaignDatabase(),
+          campaigns.activeCampaignPersistence(),
           undefined,
-          () => campaigns.installationDatabase()
+          campaigns.installationPersistenceAccess()
         ).read().locations[0]?.encounterTableIds
       ).toEqual([])
     }

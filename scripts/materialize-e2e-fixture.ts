@@ -127,8 +127,8 @@ try {
         { sessionLayout: fixture.sessionLayout },
         campaigns.readSettings().revision
       )
-    const locations = new WorldLocationService(() =>
-      campaigns.activeCampaignDatabase()
+    const locations = new WorldLocationService(
+      campaigns.activeCampaignPersistence()
     )
     let snapshot = locations.read()
     for (const input of fixture.locations)
@@ -145,8 +145,10 @@ try {
       fixture.version === 3 ||
       fixture.version === 4
     ) {
-      const database = () => campaigns.activeCampaignDatabase()
-      const play = new LivePlayService(database)
+      const database = () =>
+        campaigns.activeCampaignPersistence().use((database) => database)
+      const activePersistence = campaigns.activeCampaignPersistence()
+      const play = new LivePlayService(activePersistence)
       let party = play.readParty()
       for (const configured of fixture.party) {
         let member = party.members.find(
@@ -246,7 +248,7 @@ try {
             groupEntries,
             snapshot.scene.revision
           )
-          const rules = new CampaignRulesService(database).read()
+          const rules = new CampaignRulesService(activePersistence).read()
           const generation = new SessionGenerationService(
             new BundledSessionGenerationCatalogRegistry(
               resolve('resources/sessiongeneration')
@@ -257,7 +259,7 @@ try {
               revision: 0,
               config: defaultGeneratorConfig
             }),
-            database
+            activePersistence
           )
           const assignedMembers = party.members.filter(
             (member) =>
@@ -358,7 +360,7 @@ try {
           expectedContentRevision: map.contentRevision
         }).map
         const session = play.readSession()
-        new HexTravelService(database).position({
+        new HexTravelService(activePersistence).position({
           sceneId: session.scene.focusedSceneId,
           mapId: map.id,
           coordinate: fixture.travelScenario.partyCoordinate,
@@ -375,7 +377,7 @@ try {
           `Fixture scene location is missing: ${fixture.sceneLocation}`
         )
       const scenes = new SceneStore(
-        campaigns.activeCampaignDatabase(),
+        campaigns.activeCampaignPersistence().use((database) => database),
         () => locations.read().locations
       )
       scenes.setLocation(

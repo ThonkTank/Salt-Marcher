@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { mkdtempSync, rmSync } from 'node:fs'
+import type Database from 'better-sqlite3'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -8,6 +9,7 @@ import {
   generatedEncounterBatchFingerprint
 } from '../../src/core/encounter/generated-plan-service.js'
 import { CampaignStore } from '../../src/core/persistence/sqlite/campaign-store.js'
+import { activeCampaignDatabase } from '../support/campaign-store-test-access.js'
 import { fingerprint } from '../../src/core/fingerprint.js'
 import { SESSION_GENERATION_ENGINE_VERSION } from '../../src/shared/contracts/session-generation.js'
 
@@ -32,7 +34,7 @@ describe('generated Encounter plans', () => {
     if (first.status !== 'SUCCESS') return
     expect(first.mappings.map((entry) => entry.encounterNumber)).toEqual([1, 2])
     expect(new Set(first.mappings.map((entry) => entry.planId)).size).toBe(2)
-    const db = campaigns.activeCampaignDatabase()
+    const db = activeCampaignDatabase(campaigns)
     expect(count(db, 'generated_encounter_plan_batches')).toBe(1)
     expect(count(db, 'generated_encounter_plan_origins')).toBe(2)
     expect(count(db, 'saved_encounter_plans')).toBe(2)
@@ -63,7 +65,7 @@ describe('generated Encounter plans', () => {
       'SUCCESS'
     )
     expect(
-      count(campaigns.activeCampaignDatabase(), 'saved_encounter_plans')
+      count(activeCampaignDatabase(campaigns), 'saved_encounter_plans')
     ).toBe(1)
 
     const invalidRunId = randomUUID()
@@ -93,11 +95,10 @@ describe('generated Encounter plans', () => {
     }
     expect(service.commit({ prepared: invalid }).status).toBe('INVALID_REQUEST')
     expect(
-      count(campaigns.activeCampaignDatabase(), 'saved_encounter_plans')
+      count(activeCampaignDatabase(campaigns), 'saved_encounter_plans')
     ).toBe(1)
     expect(
-      campaigns
-        .activeCampaignDatabase()
+      activeCampaignDatabase(campaigns)
         .prepare(
           'SELECT 1 FROM generated_encounter_plan_batches WHERE batch_origin_fingerprint = ?'
         )
@@ -136,8 +137,8 @@ function harness() {
   campaigns.create('Encounter plan test')
   return {
     campaigns,
-    service: new GeneratedEncounterPlanService(() =>
-      campaigns.activeCampaignDatabase()
+    service: new GeneratedEncounterPlanService(
+      campaigns.activeCampaignPersistence()
     )
   }
 }
@@ -172,10 +173,7 @@ function prepare(
   return result.prepared
 }
 
-function count(
-  db: ReturnType<CampaignStore['activeCampaignDatabase']>,
-  table: string
-) {
+function count(db: Database.Database, table: string) {
   return (
     db.prepare(`SELECT COUNT(*) AS value FROM ${table}`).get() as {
       value: number

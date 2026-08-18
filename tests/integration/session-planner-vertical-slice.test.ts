@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import type Database from 'better-sqlite3'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -16,6 +17,7 @@ import { SessionGenerationService } from '../../src/utility/session-generation/s
 import { sha256EncounterEntropy } from '../../src/utility/session-generation/sha256-entropy.js'
 import { SessionPlannerService } from '../../src/utility/session-planner/session-planner-service.js'
 import { seedExampleParty } from '../../src/core/party/party-example-seed.js'
+import { activeCampaignDatabase } from '../support/campaign-store-test-access.js'
 
 const roots: string[] = []
 const stores: CampaignStore[] = []
@@ -29,7 +31,7 @@ afterEach(() => {
 describe('Session Planner vertical slice', () => {
   it('keeps the durable preparation journal schema frozen and relational', () => {
     const harness = createHarness()
-    const db = harness.campaigns.activeCampaignDatabase()
+    const db = activeCampaignDatabase(harness.campaigns)
     expect(columns(db, 'session_preparation_operation')).toEqual([
       'id',
       'request_fingerprint',
@@ -115,7 +117,7 @@ describe('Session Planner vertical slice', () => {
     expect(switched.session.id).toBe(target.session.id)
     expect(
       new SessionPlannerStore(
-        harness.campaigns.activeCampaignDatabase()
+        activeCampaignDatabase(harness.campaigns)
       ).require(source.session.id)
     ).toMatchObject({
       revision: source.session.revision + 1,
@@ -228,7 +230,7 @@ describe('Session Planner vertical slice', () => {
         )
     ).toBe(true)
 
-    const db = harness.campaigns.activeCampaignDatabase()
+    const db = activeCampaignDatabase(harness.campaigns)
     const runRow = db
       .prepare('SELECT id FROM session_generation_run')
       .get() as { id: string }
@@ -278,7 +280,7 @@ describe('Session Planner vertical slice', () => {
     stores.splice(stores.indexOf(harness.campaigns), 1)
     const reopenedCampaigns = new CampaignStore(harness.root)
     stores.push(reopenedCampaigns)
-    const reopenedDb = reopenedCampaigns.activeCampaignDatabase()
+    const reopenedDb = activeCampaignDatabase(reopenedCampaigns)
     expect(new GeneratedRunStore(reopenedDb).read(run.id)).toEqual(immutableRun)
     expect(
       services(reopenedCampaigns)
@@ -325,8 +327,7 @@ describe('Session Planner vertical slice', () => {
       status: 'succeeded'
     })
     expect(
-      harness.campaigns
-        .activeCampaignDatabase()
+      activeCampaignDatabase(harness.campaigns)
         .prepare(
           'SELECT status FROM session_preparation_operation WHERE id = ?'
         )
@@ -384,7 +385,7 @@ describe('Session Planner vertical slice', () => {
       }))
     ).toEqual(firstArtifacts)
 
-    const db = harness.campaigns.activeCampaignDatabase()
+    const db = activeCampaignDatabase(harness.campaigns)
     expect(tableCount(db, 'session_generation_run')).toBe(1)
     expect(tableCount(db, 'generated_encounter_plan_batches')).toBe(1)
     expect(tableCount(db, 'saved_encounter_plans')).toBe(3)
@@ -427,7 +428,7 @@ describe('Session Planner vertical slice', () => {
     expect(resumed.preparationReceipt({ operationId }).receipt).toMatchObject({
       status: 'succeeded'
     })
-    const db = harness.campaigns.activeCampaignDatabase()
+    const db = activeCampaignDatabase(harness.campaigns)
     expect(tableCount(db, 'session_generation_run')).toBe(1)
     expect(tableCount(db, 'generated_encounter_plan_batches')).toBe(1)
     expect(tableCount(db, 'saved_encounter_plans')).toBe(3)
@@ -468,7 +469,7 @@ describe('Session Planner vertical slice', () => {
     })
     expect(
       tableCount(
-        harness.campaigns.activeCampaignDatabase(),
+        activeCampaignDatabase(harness.campaigns),
         'saved_encounter_plans'
       )
     ).toBe(3)
@@ -482,7 +483,7 @@ describe('Session Planner vertical slice', () => {
     const planner = services(harness.campaigns, (phase) => {
       if (phase !== 'after_run_commit' || changed) return
       changed = true
-      const party = new PartyStore(harness.campaigns.activeCampaignDatabase())
+      const party = new PartyStore(activeCampaignDatabase(harness.campaigns))
       const snapshot = party.read()
       party.adjustXp(harness.memberIds[0]!, 1, snapshot.revision)
     }).planner
@@ -504,7 +505,7 @@ describe('Session Planner vertical slice', () => {
     })
     expect(
       tableCount(
-        harness.campaigns.activeCampaignDatabase(),
+        activeCampaignDatabase(harness.campaigns),
         'saved_encounter_plans'
       )
     ).toBe(0)
@@ -528,7 +529,7 @@ describe('Session Planner vertical slice', () => {
     })
     harness.planner.runPreparationWorker(operationId)
     expect(harness.planner.read().session.scenes).toEqual([])
-    const db = harness.campaigns.activeCampaignDatabase()
+    const db = activeCampaignDatabase(harness.campaigns)
     expect(tableCount(db, 'session_generation_run')).toBe(0)
     expect(tableCount(db, 'saved_encounter_plans')).toBe(0)
   })
@@ -651,8 +652,8 @@ function createHarness() {
   const campaigns = new CampaignStore(root)
   stores.push(campaigns)
   campaigns.create('Planner test')
-  seedExampleParty(campaigns.activeCampaignDatabase())
-  const party = new PartyStore(campaigns.activeCampaignDatabase())
+  seedExampleParty(activeCampaignDatabase(campaigns))
+  const party = new PartyStore(activeCampaignDatabase(campaigns))
   let snapshot = party.read()
   for (const [position, member] of snapshot.members.entries()) {
     const level = position < 2 ? 3 : 4
@@ -684,7 +685,6 @@ function services(
   phaseBoundary: ConstructorParameters<typeof SessionPlannerService>[5] = () =>
     undefined
 ) {
-  const activeDatabase = () => campaigns.activeCampaignDatabase()
   const generation = new SessionGenerationService(
     new BundledEncounterCatalogProvider(
       join(process.cwd(), 'resources/sessiongeneration/catalog-2026-07-16')
@@ -695,15 +695,17 @@ function services(
       revision: 0,
       config: defaultGeneratorConfig
     }),
-    activeDatabase,
+    campaigns.activeCampaignPersistence(),
     () => new Date('2026-08-09T10:00:00.000Z')
   )
-  const encounterPlans = new GeneratedEncounterPlanService(activeDatabase)
+  const encounterPlans = new GeneratedEncounterPlanService(
+    campaigns.activeCampaignPersistence()
+  )
   return {
     generation,
     encounterPlans,
     planner: new SessionPlannerService(
-      activeDatabase,
+      campaigns.activeCampaignPersistence(),
       generation,
       encounterPlans,
       () => undefined,
@@ -772,10 +774,7 @@ function manualScene(id: string, title: string) {
   } as const
 }
 
-function tableCount(
-  db: ReturnType<CampaignStore['activeCampaignDatabase']>,
-  table: string
-): number {
+function tableCount(db: Database.Database, table: string): number {
   return (
     db.prepare(`SELECT COUNT(*) AS value FROM ${table}`).get() as {
       value: number
@@ -783,10 +782,7 @@ function tableCount(
   ).value
 }
 
-function columns(
-  db: ReturnType<CampaignStore['activeCampaignDatabase']>,
-  table: string
-): string[] {
+function columns(db: Database.Database, table: string): string[] {
   return (
     db.prepare(`PRAGMA table_info(${table})`).all() as Array<{
       name: string

@@ -24,6 +24,7 @@ import type {
   HexBiomeDefinition,
   HexBiomeId
 } from '../../shared/contracts/hex.js'
+import type { SqliteDatabaseAccess } from '../persistence/sqlite/database-access.js'
 
 const hexDistanceMiles = 3
 const speedToMphDivisor = 10
@@ -110,7 +111,7 @@ export function travelGameSeconds(speedFeet: number, cost: number): number {
 
 export class HexTravelService {
   constructor(
-    private readonly campaignDatabase: () => Database.Database,
+    private readonly campaignDatabase: SqliteDatabaseAccess,
     private readonly now: () => number = Date.now,
     private readonly biomeDefinition: (
       id: HexBiomeId
@@ -172,18 +173,19 @@ export class HexTravelService {
   }
 
   private withStore<T>(work: (store: HexTravelStore) => T): T {
-    const db = this.campaignDatabase()
-    const locations = new WorldLocationStore(db)
-    return work(
-      new HexTravelStore(
-        db,
-        new HexMapStore(db, locations),
-        new PartyStore(db),
-        new SceneStore(db, () => locations.read().locations),
-        this.now,
-        this.biomeDefinition
+    return this.campaignDatabase.use((db) => {
+      const locations = new WorldLocationStore(db)
+      return work(
+        new HexTravelStore(
+          db,
+          new HexMapStore(db, locations),
+          new PartyStore(db),
+          new SceneStore(db, () => locations.read().locations),
+          this.now,
+          this.biomeDefinition
+        )
       )
-    )
+    })
   }
 }
 

@@ -47,10 +47,14 @@ export { initializeCombatSchema } from './combat-repository.js'
 import { CombatService } from './combat-service.js'
 import { SqliteGroupTreasureReader } from '../loot/group-treasure-reader.js'
 import { readCampaignRules } from '../application/campaign-rules-service.js'
+import {
+  sqliteDatabaseAccess,
+  type SqliteDatabaseAccess
+} from '../persistence/sqlite/database-access.js'
 
 export class LivePlayService {
   constructor(
-    private readonly campaignDatabase: () => Database.Database,
+    private readonly campaignDatabase: SqliteDatabaseAccess,
     private readonly biomeDefinition: (
       id: HexBiomeId
     ) => HexBiomeDefinition = defaultBiomeDefinition,
@@ -135,15 +139,15 @@ export class LivePlayService {
   }
 
   readSession(): LiveSessionSnapshot {
-    return this.withStores(({ party, scene, combat }) =>
-      this.snapshotFrom(party, scene, combat)
+    return this.withStores(({ db, party, scene, combat }) =>
+      this.snapshotFrom(db, party, scene, combat)
     )
   }
 
   focusScene(sceneId: string, expectedRevision: number): LiveSessionSnapshot {
-    return this.withStores(({ party, scene, combatFor }) => {
+    return this.withStores(({ db, party, scene, combatFor }) => {
       scene.focus(sceneId, expectedRevision)
-      return this.snapshotFrom(party, scene, combatFor(sceneId))
+      return this.snapshotFrom(db, party, scene, combatFor(sceneId))
     })
   }
 
@@ -152,7 +156,7 @@ export class LivePlayService {
     locationId: string | null,
     expectedRevision: number
   ): LiveSessionSnapshot {
-    return this.withStores(({ party, scene, combat, locations }) => {
+    return this.withStores(({ db, party, scene, combat, locations }) => {
       if (
         locationId !== null &&
         !locations
@@ -161,7 +165,7 @@ export class LivePlayService {
       )
         throw new CapabilityError('not_found', false)
       scene.setLocation(sceneId, locationId, expectedRevision)
-      return this.snapshotFrom(party, scene, combat)
+      return this.snapshotFrom(db, party, scene, combat)
     })
   }
 
@@ -283,7 +287,7 @@ export class LivePlayService {
     assigned: boolean,
     expectedRevision: number
   ): LiveSessionSnapshot {
-    return this.withStores(({ party, scene, combat }) => {
+    return this.withStores(({ db, party, scene, combat }) => {
       scene.assignPartyMember(
         sceneId,
         partyMemberId,
@@ -291,7 +295,7 @@ export class LivePlayService {
         expectedRevision
       )
       combat.reconcileParty(scene.assignedParty(party.read().members, sceneId))
-      return this.snapshotFrom(party, scene, combat)
+      return this.snapshotFrom(db, party, scene, combat)
     })
   }
 
@@ -304,7 +308,7 @@ export class LivePlayService {
     seed: number,
     expectedRevision: number
   ): SceneGroupDraftGeneration {
-    return this.withStores(({ party, scene }) => {
+    return this.withStores(({ db, party, scene }) => {
       if (scene.revision() !== expectedRevision)
         throw new CapabilityError('stale', true)
       const partySnapshot = party.read()
@@ -325,9 +329,9 @@ export class LivePlayService {
         { ...preset.config, generationDefaults: tuning },
         seed,
         expectedRevision,
-        new EncounterSourceService(this.campaignDatabase).resolve(
-          resolvedFilters
-        ),
+        new EncounterSourceService(
+          sqliteDatabaseAccess((visitor) => visitor(db))
+        ).resolve(resolvedFilters),
         { id: preset.id, revision: preset.revision }
       )
     })
@@ -591,11 +595,11 @@ export class LivePlayService {
   }
 
   private snapshotFrom(
+    db: Database.Database,
     party: PartyStore,
     scene: SceneStore,
     combat: CombatService,
-    hexTravel?: HexTravelStore,
-    db = this.campaignDatabase()
+    hexTravel?: HexTravelStore
   ): LiveSessionSnapshot {
     const travel = (
       hexTravel ??
@@ -645,6 +649,7 @@ export class LivePlayService {
 
   private withStores<T>(
     work: (stores: {
+      db: Database.Database
       party: PartyStore
       scene: SceneStore
       combat: CombatService
@@ -654,37 +659,41 @@ export class LivePlayService {
       rules: ReturnType<typeof readCampaignRules>
     }) => T
   ): T {
-    const db = this.campaignDatabase()
-    const locations = new WorldLocationStore(db)
-    const unitOfWork = new CampaignUnitOfWork(db)
-    const party = new PartyStore(db)
-    const scene = new SceneStore(
-      db,
-      () => locations.read().locations,
-      (id) =>
-        party.read().members.some((member) => member.id === id && member.active)
-    )
-    const effectivePreset = this.effectiveGeneratorPreset()
-    const groupTreasures = new SqliteGroupTreasureReader(db)
-    const rules = readCampaignRules(db)
-    const combatFor = (sceneId: string) =>
-      new CombatService(
+    return this.campaignDatabase.use((db) => {
+      const locations = new WorldLocationStore(db)
+      const unitOfWork = new CampaignUnitOfWork(db)
+      const party = new PartyStore(db)
+      const scene = new SceneStore(
         db,
-        sceneId,
-        scene,
-        party,
-        effectivePreset,
-        groupTreasures,
-        () => readCampaignRules(db)
+        () => locations.read().locations,
+        (id) =>
+          party
+            .read()
+            .members.some((member) => member.id === id && member.active)
       )
-    return work({
-      party,
-      scene,
-      combat: combatFor(scene.focusedSceneId()),
-      combatFor,
-      locations,
-      unitOfWork,
-      rules
+      const effectivePreset = this.effectiveGeneratorPreset()
+      const groupTreasures = new SqliteGroupTreasureReader(db)
+      const rules = readCampaignRules(db)
+      const combatFor = (sceneId: string) =>
+        new CombatService(
+          db,
+          sceneId,
+          scene,
+          party,
+          effectivePreset,
+          groupTreasures,
+          () => readCampaignRules(db)
+        )
+      return work({
+        db,
+        party,
+        scene,
+        combat: combatFor(scene.focusedSceneId()),
+        combatFor,
+        locations,
+        unitOfWork,
+        rules
+      })
     })
   }
 

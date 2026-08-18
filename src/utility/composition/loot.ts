@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3'
+import type { SqliteDatabaseAccess } from '../../core/persistence/sqlite/database-access.js'
 import type { CoreHandlers } from '../../shared/contracts/core-protocol.js'
 import type { CampaignRules } from '../../shared/contracts/campaign-rules.js'
 import type { FullSessionGenerationCatalog } from '../../core/session-generation/loot-catalog.js'
@@ -42,7 +43,7 @@ export type LootComposition = Readonly<{
 }>
 
 export function createLootComposition(dependencies: {
-  activeDatabase: () => Database.Database
+  activeDatabase: SqliteDatabaseAccess
   rules: Readonly<{ read(): CampaignRules }>
   generation: GroupRewardGenerationPort
   loadCatalog(reference: {
@@ -55,7 +56,8 @@ export function createLootComposition(dependencies: {
   }
   groupCommands: GroupRewardCommitContext['groupCommands']
 }): LootComposition {
-  const activeDatabase = dependencies.activeDatabase
+  const activeDatabase = () =>
+    dependencies.activeDatabase.use((database) => database)
   const catalogIndexes = new LootCatalogIndexCache((reference) =>
     dependencies.loadCatalog(reference)
   )
@@ -63,7 +65,11 @@ export function createLootComposition(dependencies: {
     new ItemDefinitionResolver(db, (reference) =>
       catalogIndexes.require(reference)
     )
-  const loot = new LootService(activeDatabase, undefined, definitions)
+  const loot = new LootService(
+    dependencies.activeDatabase,
+    undefined,
+    definitions
+  )
   const catalog = new LootCatalogService({
     readRun: (runId) => new GeneratedRunStore(activeDatabase()).read(runId),
     currentReference: () => dependencies.currentCatalogReference(),

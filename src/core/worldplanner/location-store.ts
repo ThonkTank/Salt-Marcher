@@ -23,6 +23,7 @@ import {
 import { uuidv7 } from '../../shared/ids/uuidv7.js'
 import { EncounterTableStore } from '../encounter/encounter-table-store.js'
 import { WorldFactionStore } from './faction-store.js'
+import type { SqliteDatabaseAccess } from '../persistence/sqlite/database-access.js'
 
 export interface WorldLocationReferences {
   containsFaction(id: string): boolean
@@ -617,11 +618,11 @@ export class WorldLocationStore {
 
 export class WorldLocationService {
   constructor(
-    private readonly campaignDatabase: () => Database.Database,
+    private readonly campaignDatabase: SqliteDatabaseAccess,
     private readonly locationSymbol: (
       id: string
     ) => LocationSymbol | null = () => null,
-    private readonly installationDatabase?: () => Database.Database
+    private readonly installationDatabase?: SqliteDatabaseAccess
   ) {}
 
   read(): WorldLocationSnapshot {
@@ -655,27 +656,32 @@ export class WorldLocationService {
   }
 
   private withStore<T>(work: (store: WorldLocationStore) => T): T {
-    const db = this.campaignDatabase()
-    const tables = new EncounterTableStore(db)
-    const installationTables = this.installationDatabase
-      ? new EncounterTableStore(this.installationDatabase(), 'installation')
-      : null
-    const containsTable = (id: string) =>
-      tables.contains(id) || Boolean(installationTables?.contains(id))
-    const containsCreature = (tableId: string, creatureId: string) =>
-      tables.containsCreature(tableId, creatureId) ||
-      Boolean(installationTables?.containsCreature(tableId, creatureId))
-    const factions = new WorldFactionStore(db, {
-      containsTable,
-      containsCreature
+    return this.campaignDatabase.use((db) => {
+      const run = (installationTables: EncounterTableStore | null) => {
+        const tables = new EncounterTableStore(db)
+        const containsTable = (id: string) =>
+          tables.contains(id) || Boolean(installationTables?.contains(id))
+        const containsCreature = (tableId: string, creatureId: string) =>
+          tables.containsCreature(tableId, creatureId) ||
+          Boolean(installationTables?.containsCreature(tableId, creatureId))
+        const factions = new WorldFactionStore(db, {
+          containsTable,
+          containsCreature
+        })
+        return work(
+          new WorldLocationStore(db, {
+            containsFaction: (id) => factions.contains(id),
+            containsEncounterTable: containsTable,
+            containsLocationSymbol: (id) => this.locationSymbol(id) !== null,
+            locationSymbol: this.locationSymbol
+          })
+        )
+      }
+      return this.installationDatabase
+        ? this.installationDatabase.use((installation) =>
+            run(new EncounterTableStore(installation, 'installation'))
+          )
+        : run(null)
     })
-    return work(
-      new WorldLocationStore(db, {
-        containsFaction: (id) => factions.contains(id),
-        containsEncounterTable: containsTable,
-        containsLocationSymbol: (id) => this.locationSymbol(id) !== null,
-        locationSymbol: this.locationSymbol
-      })
-    )
   }
 }

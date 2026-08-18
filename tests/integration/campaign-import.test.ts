@@ -5,6 +5,7 @@ import {
   renameSync,
   rmSync
 } from 'node:fs'
+import type Database from 'better-sqlite3'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -24,6 +25,7 @@ import { PartyStore } from '../../src/core/party/party-store.js'
 import { WorldLocationStore } from '../../src/core/worldplanner/location-store.js'
 import { WorldFactionStore } from '../../src/core/worldplanner/faction-store.js'
 import { WorldNpcStore } from '../../src/core/worldplanner/npc-store.js'
+import { activeCampaignDatabase } from '../support/campaign-store-test-access.js'
 
 const roots: string[] = []
 const resolver = {
@@ -94,14 +96,13 @@ describe('CampaignImportService', () => {
       activeCampaignId: first.campaignId,
       campaigns: [{ id: first.campaignId, name: 'Tower of Time' }]
     })
-    expect(semanticProjection(campaigns.activeCampaignDatabase())).toEqual(
+    expect(semanticProjection(activeCampaignDatabase(campaigns))).toEqual(
       JSON.parse(
         readFileSync('tests/golden/campaign-import-tower-of-time.json', 'utf8')
       )
     )
     expect(
-      campaigns
-        .activeCampaignDatabase()
+      activeCampaignDatabase(campaigns)
         .prepare(
           `SELECT source_revision AS revision, export_hash AS exportHash,
                   sections_json AS sectionsJson, resolutions_json AS resolutionsJson
@@ -121,7 +122,7 @@ describe('CampaignImportService', () => {
       campaignId: first.campaignId
     })
     expect(campaigns.list().campaigns).toHaveLength(1)
-    expect(entityCount(campaigns.activeCampaignDatabase())).toBe(7)
+    expect(entityCount(activeCampaignDatabase(campaigns))).toBe(7)
     expect(
       campaigns.campaignImportRepository().latestSagaForSource(bundle.source.id)
     ).toMatchObject({
@@ -222,7 +223,7 @@ describe('CampaignImportService', () => {
     const { service, campaigns } = harness()
     const initial = fixture()
     const first = service.apply(initial)
-    const partyBefore = new PartyStore(campaigns.activeCampaignDatabase())
+    const partyBefore = new PartyStore(activeCampaignDatabase(campaigns))
     const localSnapshot = partyBefore.create(
       {
         name: 'Local-only companion',
@@ -240,8 +241,8 @@ describe('CampaignImportService', () => {
       partyBefore.read().revision
     )
     const localId = localSnapshot.members.at(-1)!.id
-    const beforeHashes = entityHashes(campaigns.activeCampaignDatabase())
-    const beforeIds = entityIds(campaigns.activeCampaignDatabase())
+    const beforeHashes = entityHashes(activeCampaignDatabase(campaigns))
+    const beforeIds = entityIds(activeCampaignDatabase(campaigns))
     const sourceDelta = JSON.parse(
       readFileSync(
         'tests/fixtures/campaign-import/tower-of-time-6099-delta.json',
@@ -310,22 +311,22 @@ describe('CampaignImportService', () => {
       status: 'applied',
       campaignId: first.campaignId
     })
-    const afterHashes = entityHashes(campaigns.activeCampaignDatabase())
-    const afterIds = entityIds(campaigns.activeCampaignDatabase())
+    const afterHashes = entityHashes(activeCampaignDatabase(campaigns))
+    const afterIds = entityIds(activeCampaignDatabase(campaigns))
     expect(afterHashes.get('party:pc:hank')).not.toBe(
       beforeHashes.get('party:pc:hank')
     )
     for (const [key, hash] of beforeHashes)
       if (key !== 'party:pc:hank') expect(afterHashes.get(key), key).toBe(hash)
     expect(afterIds).toEqual(beforeIds)
-    const members = new PartyStore(campaigns.activeCampaignDatabase()).read()
+    const members = new PartyStore(activeCampaignDatabase(campaigns)).read()
       .members
     const hank = members.find((member) => member.name === 'Hank')
     expect(hank?.passivePerception).toBe(12)
     expect(members).toContainEqual(
       expect.objectContaining({ id: localId, name: 'Local-only companion' })
     )
-    expect(entityCount(campaigns.activeCampaignDatabase())).toBe(7)
+    expect(entityCount(activeCampaignDatabase(campaigns))).toBe(7)
     campaigns.close()
   })
 
@@ -333,7 +334,7 @@ describe('CampaignImportService', () => {
     const { campaigns } = harness()
     const original = campaigns.create('Existing')
     const activeId = original.activeCampaignId
-    const party = new PartyStore(campaigns.activeCampaignDatabase())
+    const party = new PartyStore(activeCampaignDatabase(campaigns))
     party.create(
       {
         name: 'Must survive',
@@ -361,7 +362,7 @@ describe('CampaignImportService', () => {
       campaigns: [expect.objectContaining({ id: activeId, name: 'Existing' })]
     })
     expect(
-      new PartyStore(campaigns.activeCampaignDatabase()).read().members
+      new PartyStore(activeCampaignDatabase(campaigns)).read().members
     ).toEqual([expect.objectContaining({ name: 'Must survive' })])
     campaigns.close()
   })
@@ -383,7 +384,7 @@ describe('CampaignImportService', () => {
       campaigns: [expect.objectContaining({ id, name: 'Recover me' })]
     })
     expect(
-      recovered.activeCampaignDatabase().pragma('quick_check', { simple: true })
+      activeCampaignDatabase(recovered).pragma('quick_check', { simple: true })
     ).toBe('ok')
     recovered.close()
   })
@@ -417,9 +418,7 @@ function fixture(): CampaignImportBundle {
   )
 }
 
-function entityCount(
-  db: ReturnType<CampaignStore['activeCampaignDatabase']>
-): number {
+function entityCount(db: Database.Database): number {
   return (
     db
       .prepare('SELECT COUNT(*) AS count FROM campaign_import_entity')
@@ -429,9 +428,7 @@ function entityCount(
   ).count
 }
 
-function entityHashes(
-  db: ReturnType<CampaignStore['activeCampaignDatabase']>
-): ReadonlyMap<string, string> {
+function entityHashes(db: Database.Database): ReadonlyMap<string, string> {
   const rows = db
     .prepare(
       `SELECT entity_kind AS kind, external_key AS externalKey,
@@ -443,9 +440,7 @@ function entityHashes(
   )
 }
 
-function entityIds(
-  db: ReturnType<CampaignStore['activeCampaignDatabase']>
-): ReadonlyMap<string, string> {
+function entityIds(db: Database.Database): ReadonlyMap<string, string> {
   const rows = db
     .prepare(
       `SELECT entity_kind AS kind, external_key AS externalKey,
@@ -457,9 +452,7 @@ function entityIds(
   )
 }
 
-function semanticProjection(
-  db: ReturnType<CampaignStore['activeCampaignDatabase']>
-): unknown {
+function semanticProjection(db: Database.Database): unknown {
   const source = db
     .prepare(
       `SELECT source_id AS id, source_revision AS revision,

@@ -2,6 +2,7 @@ import {
   capabilityFailureSchema,
   type CapabilityErrorCode
 } from '../shared/contracts/campaign.js'
+import type Database from 'better-sqlite3'
 import {
   coreControlRequestSchema,
   coreDiagnosticsSchema,
@@ -111,9 +112,10 @@ let pendingPreparationWakeups = 0
 const campaigns = bootstrapPhase('campaign-store', () =>
   openCampaignStore(root, incompatibleDataPolicy)
 )
-const generatorPresets = bootstrapPhase(
-  'installation-services',
-  () => new GeneratorPresetStore(campaigns.installationDatabase())
+const generatorPresets = bootstrapPhase('installation-services', () =>
+  campaigns
+    .installationPersistenceAccess()
+    .use((database) => new GeneratorPresetStore(database))
 )
 const sessionGenerationCatalog = bootstrapPhase(
   'session-generation-catalog',
@@ -124,13 +126,13 @@ const sessionGenerationService = new SessionGenerationService(
   sessionGenerationCatalog,
   sha256EncounterEntropy,
   () => generatorPresets.configFor(campaigns.list().activeCampaignId),
-  () => campaigns.activeCampaignDatabase()
+  campaigns.activeCampaignPersistence()
 )
-const activeDatabase = () => campaigns.activeCampaignDatabase()
-const campaignRules = new CampaignRulesService(activeDatabase)
-const encounterPlans = new GeneratedEncounterPlanService(activeDatabase)
+const activePersistence = campaigns.activeCampaignPersistence()
+const campaignRules = new CampaignRulesService(activePersistence)
+const encounterPlans = new GeneratedEncounterPlanService(activePersistence)
 const sessionPlanner = new SessionPlannerService(
-  activeDatabase,
+  activePersistence,
   sessionGenerationService,
   encounterPlans,
   publishPreparationChange,
@@ -146,14 +148,16 @@ const sessionPlanner = new SessionPlannerService(
 const symbolLifecycle = new LocationSymbolLifecycleService(campaigns)
 const locationSymbols = symbolLifecycle.symbols
 const customSymbol = (id: string) => symbolLifecycle.customSymbol(id)
-const locationStore = (db: ReturnType<typeof activeDatabase>) =>
+const locationStore = (db: Database.Database) =>
   symbolLifecycle.locationStore(db)
-const locations = new WorldLocationService(activeDatabase, customSymbol, () =>
-  campaigns.installationDatabase()
+const locations = new WorldLocationService(
+  activePersistence,
+  customSymbol,
+  campaigns.installationPersistenceAccess()
 )
 const sources = new EncounterSourceService(
-  activeDatabase,
-  () => campaigns.installationDatabase(),
+  activePersistence,
+  campaigns.installationPersistenceAccess(),
   (visitor) =>
     void campaigns.visitCampaignDatabases(({ id, database }) =>
       visitor({ id, database })
@@ -172,21 +176,20 @@ const campaignImport = new CampaignImportService(
   campaigns,
   creatureReferenceResolver
 )
+const installationEncounterTables = campaigns
+  .installationPersistenceAccess()
+  .use((database) => new EncounterTableStore(database, 'installation'))
 const worldNpcs = new WorldNpcApplicationService(
-  activeDatabase,
+  activePersistence,
   creatureReferenceResolver,
   (database) => {
     const campaignTables = new EncounterTableStore(database)
-    const installationTables = new EncounterTableStore(
-      campaigns.installationDatabase(),
-      'installation'
-    )
     return new WorldFactionStore(database, {
       containsTable: (id) =>
-        campaignTables.contains(id) || installationTables.contains(id),
+        campaignTables.contains(id) || installationEncounterTables.contains(id),
       containsCreature: (tableId, creatureId) =>
         campaignTables.containsCreature(tableId, creatureId) ||
-        installationTables.containsCreature(tableId, creatureId)
+        installationEncounterTables.containsCreature(tableId, creatureId)
     })
   }
 )
@@ -194,7 +197,7 @@ const biomeService = new BiomeCatalogService(campaigns)
 const biomeProjection = (
   id: Parameters<typeof biomeService.hexDefinition>[0]
 ) => biomeService.hexDefinition(id)
-const play = new LivePlayService(activeDatabase, biomeProjection, () => {
+const play = new LivePlayService(activePersistence, biomeProjection, () => {
   try {
     return generatorPresets.configFor(campaigns.list().activeCampaignId)
   } catch {
@@ -202,7 +205,7 @@ const play = new LivePlayService(activeDatabase, biomeProjection, () => {
   }
 })
 const lootComposition = createLootComposition({
-  activeDatabase,
+  activeDatabase: activePersistence,
   rules: campaignRules,
   generation: sessionGenerationService,
   currentCatalogReference: () => sessionGenerationCatalog.currentReference(),
@@ -231,54 +234,54 @@ const lootComposition = createLootComposition({
     result: (sceneId, groupIds) => play.sceneGroupResult(sceneId, groupIds)
   }
 })
-const hex = new HexMapService(activeDatabase, locationStore)
-const hexEditing = new HexMapEditingCommandHandler(() => {
-  const db = activeDatabase()
-  const locationsForMap = locationStore(db)
-  const maps = new HexMapStore(db, locationsForMap)
-  const party = new PartyStore(db)
-  const scenes = new SceneStore(db, () => locationsForMap.read().locations)
-  return {
-    unitOfWork: new CampaignUnitOfWork(db),
-    maps,
-    party,
-    travel: new HexTravelStore(db, maps, party, scenes),
-    journal: new HexEditJournalStore(db)
-  }
-})
-const worldLocationDeletion = new WorldLocationDeletionCommandHandler(() => {
-  const db = activeDatabase()
-  const locationsForMap = locationStore(db)
-  return {
-    unitOfWork: new CampaignUnitOfWork(db),
-    maps: new HexMapStore(db, locationsForMap),
-    journal: new HexEditJournalStore(db),
-    locations: locationsForMap,
-    npcs: new WorldNpcStore(db, creatureReferenceResolver)
-  }
-})
-const worldLocationPlacement = new WorldLocationPlacementService(() => {
-  const db = activeDatabase()
-  return {
+const hex = new HexMapService(activePersistence, locationStore)
+const hexEditing = new HexMapEditingCommandHandler(() =>
+  activePersistence.use((db) => {
+    const locationsForMap = locationStore(db)
+    const maps = new HexMapStore(db, locationsForMap)
+    const party = new PartyStore(db)
+    const scenes = new SceneStore(db, () => locationsForMap.read().locations)
+    return {
+      unitOfWork: new CampaignUnitOfWork(db),
+      maps,
+      party,
+      travel: new HexTravelStore(db, maps, party, scenes),
+      journal: new HexEditJournalStore(db)
+    }
+  })
+)
+const worldLocationDeletion = new WorldLocationDeletionCommandHandler(() =>
+  activePersistence.use((db) => {
+    const locationsForMap = locationStore(db)
+    return {
+      unitOfWork: new CampaignUnitOfWork(db),
+      maps: new HexMapStore(db, locationsForMap),
+      journal: new HexEditJournalStore(db),
+      locations: locationsForMap,
+      npcs: new WorldNpcStore(db, creatureReferenceResolver)
+    }
+  })
+)
+const worldLocationPlacement = new WorldLocationPlacementService(() =>
+  activePersistence.use((db) => ({
     maps: new HexMapStore(db, locationStore(db)),
     hexEditing
-  }
-})
-const worldLocationSave = new WorldLocationSaveCommandHandler(() => {
-  const database = activeDatabase()
-  return {
+  }))
+)
+const worldLocationSave = new WorldLocationSaveCommandHandler(() =>
+  activePersistence.use((database) => ({
     locations,
     journal: new WorldLocationSaveJournal(database),
     placement: worldLocationPlacement
-  }
-})
+  }))
+)
 const hexTravel = new HexTravelService(
-  activeDatabase,
+  activePersistence,
   Date.now,
   biomeProjection
 )
 const creatures = new CreatureCatalogService(
-  () => campaigns.installationDatabase(),
+  campaigns.installationPersistenceAccess(),
   (query) => sources.resolve(query),
   () => ({
     biomes: biomeService

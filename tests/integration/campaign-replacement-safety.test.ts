@@ -8,6 +8,7 @@ import {
   type CampaignReplacePhase
 } from '../../src/core/persistence/sqlite/campaign-store.js'
 import { PartyStore } from '../../src/core/party/party-store.js'
+import { activeCampaignDatabase } from '../support/campaign-store-test-access.js'
 
 const roots: string[] = []
 
@@ -67,9 +68,9 @@ function assertFailureConverges(
     }
   })
   const targetId = campaigns.create('Original Registry').activeCampaignId!
-  const party = new PartyStore(campaigns.activeCampaignDatabase())
+  const party = new PartyStore(activeCampaignDatabase(campaigns))
   party.create(member('Original Domain'), party.read().revision)
-  campaigns.activeCampaignDatabase().pragma('wal_checkpoint(FULL)')
+  activeCampaignDatabase(campaigns).pragma('wal_checkpoint(FULL)')
   const originalHash = fileHash(campaignPath(root, targetId))
   const otherId = campaigns.create('Other Campaign').activeCampaignId!
   if (activity === 'active') campaigns.activate(targetId)

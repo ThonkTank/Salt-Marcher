@@ -8,11 +8,12 @@ import {
   type CreatureReferenceResolver,
   type WorldNpcFactionMembershipCoordinator
 } from '../worldplanner/npc-store.js'
+import type { SqliteDatabaseAccess } from '../persistence/sqlite/database-access.js'
 
 /** World Planner owns NPC persistence, reference validation and membership. */
 export class WorldNpcApplicationService {
   constructor(
-    private readonly campaignDatabase: () => Database.Database,
+    private readonly campaignDatabase: SqliteDatabaseAccess,
     private readonly creatures: CreatureReferenceResolver,
     private readonly factions: (
       database: Database.Database
@@ -20,27 +21,27 @@ export class WorldNpcApplicationService {
   ) {}
 
   search(input: WorldNpcSearchInput) {
-    return this.store().search(input)
+    return this.withStore((store) => store.search(input))
   }
 
   detail(id: string) {
-    return this.store().detailProjection(id)
+    return this.withStore((store) => store.detailProjection(id))
   }
 
   readAllForReferences() {
-    return this.store().readAllForReferences()
+    return this.withStore((store) => store.readAllForReferences())
   }
 
   referenceDependencies() {
-    return this.store().referenceDependencies()
+    return this.withStore((store) => store.referenceDependencies())
   }
 
   referenceDependency(id: string) {
-    return this.store().referenceDependency(id)
+    return this.withStore((store) => store.referenceDependency(id))
   }
 
   commandReceipt(commandId: string) {
-    return this.store().commandReceipt(commandId)
+    return this.withStore((store) => store.commandReceipt(commandId))
   }
 
   create(
@@ -49,13 +50,14 @@ export class WorldNpcApplicationService {
     revision: number,
     factionRevision: number | null
   ) {
-    const database = this.campaignDatabase()
-    return new WorldNpcStore(database, this.creatures).create(
-      commandId,
-      draft,
-      revision,
-      factionRevision,
-      this.factions(database)
+    return this.campaignDatabase.use((database) =>
+      new WorldNpcStore(database, this.creatures).create(
+        commandId,
+        draft,
+        revision,
+        factionRevision,
+        this.factions(database)
+      )
     )
   }
 
@@ -66,14 +68,15 @@ export class WorldNpcApplicationService {
     revision: number,
     factionRevision: number | null
   ) {
-    const database = this.campaignDatabase()
-    return new WorldNpcStore(database, this.creatures).update(
-      commandId,
-      id,
-      draft,
-      revision,
-      factionRevision,
-      this.factions(database)
+    return this.campaignDatabase.use((database) =>
+      new WorldNpcStore(database, this.creatures).update(
+        commandId,
+        id,
+        draft,
+        revision,
+        factionRevision,
+        this.factions(database)
+      )
     )
   }
 
@@ -83,25 +86,28 @@ export class WorldNpcApplicationService {
     revision: number,
     factionRevision: number | null
   ) {
-    const database = this.campaignDatabase()
-    return new WorldNpcStore(database, this.creatures).delete(
-      commandId,
-      id,
-      revision,
-      factionRevision,
-      this.factions(database)
+    return this.campaignDatabase.use((database) =>
+      new WorldNpcStore(database, this.creatures).delete(
+        commandId,
+        id,
+        revision,
+        factionRevision,
+        this.factions(database)
+      )
     )
   }
 
   linkedToFaction(factionId: string): readonly string[] {
-    return this.store().linkedToFaction(factionId)
+    return this.withStore((store) => store.linkedToFaction(factionId))
   }
 
   recordExternalReferenceChange(ids: readonly string[]): void {
-    this.store().recordExternalReferenceChange(ids)
+    this.withStore((store) => store.recordExternalReferenceChange(ids))
   }
 
-  private store(): WorldNpcStore {
-    return new WorldNpcStore(this.campaignDatabase(), this.creatures)
+  private withStore<T>(visitor: (store: WorldNpcStore) => T): T {
+    return this.campaignDatabase.use((database) =>
+      visitor(new WorldNpcStore(database, this.creatures))
+    )
   }
 }

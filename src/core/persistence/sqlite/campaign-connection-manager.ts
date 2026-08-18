@@ -54,10 +54,4 @@ export class CampaignConnectionManager {
     if (!this.active) throw new CapabilityError('not_found', false)
     return visitor(this.active.database)
   }
-
-  /** Temporary compatibility for aggregate constructors; removed in M2. */
-  compatibilityDatabase(): Database.Database {
-    if (!this.active) throw new CapabilityError('not_found', false)
-    return this.active.database
-  }
 }

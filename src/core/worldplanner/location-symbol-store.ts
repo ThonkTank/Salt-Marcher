@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3'
+import type { SqliteDatabaseAccess } from '../persistence/sqlite/database-access.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import {
   builtinLocationSymbolCatalog,
@@ -508,36 +509,45 @@ export class LocationSymbolStore {
 }
 
 export class LocationSymbolService {
-  constructor(private readonly database: () => Database.Database) {}
+  constructor(private readonly database: SqliteDatabaseAccess) {}
 
   read() {
-    return new LocationSymbolStore(this.database()).read()
+    return this.database.use((database) =>
+      new LocationSymbolStore(database).read()
+    )
   }
 
   create(symbol: LocationSymbolDraft, expectedRevision: number) {
-    return new LocationSymbolStore(this.database()).create(
-      symbol,
-      expectedRevision
+    return this.database.use((database) =>
+      new LocationSymbolStore(database).create(symbol, expectedRevision)
     )
   }
 
   search(query: string, offset: number, limit: number) {
-    return new LocationSymbolStore(this.database()).search(query, offset, limit)
+    return this.database.use((database) =>
+      new LocationSymbolStore(database).search(query, offset, limit)
+    )
   }
 
   detail(id: string) {
-    return new LocationSymbolStore(this.database()).detail(id)
+    return this.database.use((database) =>
+      new LocationSymbolStore(database).detail(id)
+    )
   }
 
   update(id: string, displayName: string, expectedRevision: number) {
-    return new LocationSymbolStore(this.database()).update(
-      id,
-      displayName,
-      expectedRevision
+    return this.database.use((database) =>
+      new LocationSymbolStore(database).update(
+        id,
+        displayName,
+        expectedRevision
+      )
     )
   }
 
   remove(id: string, expectedRevision: number): void {
-    new LocationSymbolStore(this.database()).remove(id, expectedRevision)
+    this.database.use((database) =>
+      new LocationSymbolStore(database).remove(id, expectedRevision)
+    )
   }
 }

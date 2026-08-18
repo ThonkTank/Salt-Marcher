@@ -23,6 +23,7 @@ import {
 import { GeneratorPresetStore } from '../../src/core/persistence/sqlite/generator-preset-store.js'
 import { systemGeneratorPresetId } from '../../src/shared/contracts/generator-presets.js'
 import { defaultGeneratorConfig } from '../../src/shared/generator/system-generator-preset.js'
+import { installationDatabase } from '../support/campaign-store-test-access.js'
 
 const roots: string[] = []
 
@@ -38,7 +39,7 @@ describe('CampaignStore', () => {
     const campaigns = new CampaignStore(root)
     const campaignId = campaigns.create('Explicit Context').activeCampaignId!
     const snapshot = new GeneratorPresetStore(
-      campaigns.installationDatabase()
+      installationDatabase(campaigns)
     ).readEditor(campaignId)
 
     expect(snapshot.registry.presets).toHaveLength(1)
@@ -61,7 +62,7 @@ describe('CampaignStore', () => {
     const campaigns = new CampaignStore(root)
     const campaign = campaigns.create('Preset Campaign')
     const campaignId = campaign.activeCampaignId ?? ''
-    const presets = new GeneratorPresetStore(campaigns.installationDatabase())
+    const presets = new GeneratorPresetStore(installationDatabase(campaigns))
 
     const initial = presets.readEditor(campaignId)
     expect(initial.registry.revision).toBe(0)
@@ -130,8 +131,7 @@ describe('CampaignStore', () => {
 
     campaigns.trash(campaignId)
     campaigns.deleteForever(campaignId, 'Preset Campaign')
-    const orphan = campaigns
-      .installationDatabase()
+    const orphan = installationDatabase(campaigns)
       .prepare(
         'SELECT campaign_id FROM campaign_generator_presets WHERE campaign_id=?'
       )
@@ -146,7 +146,7 @@ describe('CampaignStore', () => {
     const campaigns = new CampaignStore(root)
     const campaignA = campaigns.create('Campaign A').activeCampaignId!
     const campaignB = campaigns.create('Campaign B').activeCampaignId!
-    const presets = new GeneratorPresetStore(campaigns.installationDatabase())
+    const presets = new GeneratorPresetStore(installationDatabase(campaigns))
 
     const created = presets.create({
       commandId: '00000000-0000-4000-8000-000000000120',
@@ -201,7 +201,7 @@ describe('CampaignStore', () => {
     roots.push(root)
     const campaigns = new CampaignStore(root)
     const campaignId = campaigns.create('Journal').activeCampaignId!
-    const presets = new GeneratorPresetStore(campaigns.installationDatabase())
+    const presets = new GeneratorPresetStore(installationDatabase(campaigns))
     const commandId = '00000000-0000-4000-8000-000000000130'
     const created = presets.create({
       commandId,
@@ -224,8 +224,7 @@ describe('CampaignStore', () => {
         campaignId,
         presetId: null
       })
-    const count = campaigns
-      .installationDatabase()
+    const count = installationDatabase(campaigns)
       .prepare('SELECT COUNT(*) AS count FROM generator_preset_commands')
       .get() as { count: number }
     expect(count.count).toBe(512)

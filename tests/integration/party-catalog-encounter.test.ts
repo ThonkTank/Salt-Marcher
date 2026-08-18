@@ -7,6 +7,7 @@ import { LivePlayService } from '../../src/core/encounter/live-combat.js'
 import { CampaignStore } from '../../src/core/persistence/sqlite/campaign-store.js'
 import { creatureCatalogQuerySchema } from '../../src/shared/contracts/encounter.js'
 import { seedExampleParty } from '../../src/core/party/party-example-seed.js'
+import { activeCampaignDatabase } from '../support/campaign-store-test-access.js'
 
 const roots: string[] = []
 
@@ -20,10 +21,10 @@ function harness() {
   roots.push(root)
   const campaigns = new CampaignStore(root)
   campaigns.create('Parity Campaign')
-  seedExampleParty(campaigns.activeCampaignDatabase())
-  const play = new LivePlayService(() => campaigns.activeCampaignDatabase())
-  const catalog = new CreatureCatalogService(() =>
-    campaigns.installationDatabase()
+  seedExampleParty(activeCampaignDatabase(campaigns))
+  const play = new LivePlayService(campaigns.activeCampaignPersistence())
+  const catalog = new CreatureCatalogService(
+    campaigns.installationPersistenceAccess()
   )
   return { campaigns, play, catalog }
 }
@@ -176,8 +177,8 @@ describe('party and catalog parity slice', () => {
     campaigns.close()
 
     const reopened = new CampaignStore(roots[0] ?? '')
-    const resumed = new LivePlayService(() =>
-      reopened.activeCampaignDatabase()
+    const resumed = new LivePlayService(
+      reopened.activeCampaignPersistence()
     ).readSession()
     expect(resumed.combat).toEqual(expected)
     expect(resumed.scene.scenes[0]?.groups[0]?.name).toBe('Forest trouble')

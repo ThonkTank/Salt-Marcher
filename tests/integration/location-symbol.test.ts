@@ -9,6 +9,10 @@ import {
 } from '../../src/core/worldplanner/location-symbol-store.js'
 import { WorldLocationService } from '../../src/core/worldplanner/location-store.js'
 import { LocationSymbolLifecycleService } from '../../src/core/application/location-symbol-lifecycle.js'
+import {
+  activeCampaignDatabase,
+  installationDatabase
+} from '../support/campaign-store-test-access.js'
 
 const roots: string[] = []
 
@@ -23,8 +27,8 @@ describe('installation location symbols', () => {
     roots.push(root)
     const campaigns = new CampaignStore(root)
     campaigns.create('First')
-    const symbols = new LocationSymbolService(() =>
-      campaigns.installationDatabase()
+    const symbols = new LocationSymbolService(
+      campaigns.installationPersistenceAccess()
     )
     const created = symbols.create(
       {
@@ -36,7 +40,7 @@ describe('installation location symbols', () => {
     )
     const symbolId = created.saved.id
     const locations = new WorldLocationService(
-      () => campaigns.activeCampaignDatabase(),
+      campaigns.activeCampaignPersistence(),
       (id) => symbols.read().symbols.find((symbol) => symbol.id === id) ?? null
     )
     const world = locations.create(
@@ -73,8 +77,8 @@ describe('installation location symbols', () => {
     roots.push(root)
     const campaigns = new CampaignStore(root)
     campaigns.create('Validation')
-    const symbols = new LocationSymbolService(() =>
-      campaigns.installationDatabase()
+    const symbols = new LocationSymbolService(
+      campaigns.installationPersistenceAccess()
     )
     const draft = {
       displayName: 'Anker',
@@ -92,8 +96,8 @@ describe('installation location symbols', () => {
       'stale'
     )
 
-    const locations = new WorldLocationService(() =>
-      campaigns.activeCampaignDatabase()
+    const locations = new WorldLocationService(
+      campaigns.activeCampaignPersistence()
     )
     const world = locations.create(
       { displayName: 'Kap', tags: ['Kap'], notes: '' },
@@ -114,8 +118,8 @@ describe('installation location symbols', () => {
     roots.push(root)
     const campaigns = new CampaignStore(root)
     campaigns.create('Catalog')
-    const symbols = new LocationSymbolService(() =>
-      campaigns.installationDatabase()
+    const symbols = new LocationSymbolService(
+      campaigns.installationPersistenceAccess()
     )
     let revision = 0
     for (let index = 0; index < 26; index += 1)
@@ -157,7 +161,7 @@ describe('installation location symbols', () => {
     const symbolId = created.saved.id
     const createUsage = (name: string) => {
       const locations = new WorldLocationService(
-        () => campaigns.activeCampaignDatabase(),
+        campaigns.activeCampaignPersistence(),
         (id) => lifecycle.customSymbol(id)
       )
       const location = locations.create(
@@ -200,14 +204,14 @@ describe('installation location symbols', () => {
     ).toBe('replayed')
     expect(
       lifecycle
-        .locationStore(campaigns.activeCampaignDatabase())
+        .locationStore(activeCampaignDatabase(campaigns))
         .mapPresentation(firstLocationId).symbolId
     ).toBe('location')
     campaigns.restore(secondId)
     campaigns.activate(secondId)
     expect(
       lifecycle
-        .locationStore(campaigns.activeCampaignDatabase())
+        .locationStore(activeCampaignDatabase(campaigns))
         .mapPresentation(secondLocationId).symbolId
     ).toBe('location')
     campaigns.close()
@@ -219,8 +223,8 @@ describe('installation location symbols', () => {
     const campaigns = new CampaignStore(root)
     campaigns.create('Import')
     const lifecycle = new LocationSymbolLifecycleService(campaigns)
-    const location = new WorldLocationService(() =>
-      campaigns.activeCampaignDatabase()
+    const location = new WorldLocationService(
+      campaigns.activeCampaignPersistence()
     ).create({ displayName: 'Klippe', tags: ['Klippe'], notes: '' }, 0).snapshot
       .locations[0]!
     const input = {
@@ -248,7 +252,7 @@ describe('installation location symbols', () => {
     ).toThrow('validation_failed')
     expect(
       lifecycle
-        .locationStore(campaigns.activeCampaignDatabase())
+        .locationStore(activeCampaignDatabase(campaigns))
         .mapPresentation(location.id)
     ).toMatchObject({ symbolId: applied.createdSymbolId, revision: 1 })
     campaigns.close()
@@ -259,13 +263,13 @@ describe('installation location symbols', () => {
     roots.push(root)
     const campaigns = new CampaignStore(root)
     const campaignId = campaigns.create('Recovery').activeCampaignId!
-    const location = new WorldLocationService(() =>
-      campaigns.activeCampaignDatabase()
+    const location = new WorldLocationService(
+      campaigns.activeCampaignPersistence()
     ).create({ displayName: 'Klippe', tags: ['Klippe'], notes: '' }, 0).snapshot
       .locations[0]!
     const commandId = crypto.randomUUID()
     const pending = new LocationSymbolStore(
-      campaigns.installationDatabase()
+      installationDatabase(campaigns)
     ).beginImport({
       commandId,
       campaignId,
@@ -287,7 +291,7 @@ describe('installation location symbols', () => {
     expect(recovered.symbols.read().symbols).toEqual([])
     expect(
       recovered
-        .locationStore(reopened.activeCampaignDatabase())
+        .locationStore(activeCampaignDatabase(reopened))
         .mapPresentation(location.id).symbolId
     ).toBe('location')
     reopened.close()
@@ -298,14 +302,14 @@ describe('installation location symbols', () => {
     roots.push(root)
     const campaigns = new CampaignStore(root)
     const campaignId = campaigns.create('Assigned recovery').activeCampaignId!
-    const location = new WorldLocationService(() =>
-      campaigns.activeCampaignDatabase()
+    const location = new WorldLocationService(
+      campaigns.activeCampaignPersistence()
     ).create({ displayName: 'Bake', tags: ['Bake'], notes: '' }, 0).snapshot
       .locations[0]!
     const commandId = crypto.randomUUID()
     const source =
       '<svg viewBox="0 0 10 10"><path d="M0 10 L5 0 L10 10 Z"/></svg>'
-    const store = new LocationSymbolStore(campaigns.installationDatabase())
+    const store = new LocationSymbolStore(installationDatabase(campaigns))
     const pending = store.beginImport({
       commandId,
       campaignId,
@@ -320,7 +324,7 @@ describe('installation location symbols', () => {
     })
     const lifecycle = new LocationSymbolLifecycleService(campaigns)
     lifecycle
-      .locationStore(campaigns.activeCampaignDatabase())
+      .locationStore(activeCampaignDatabase(campaigns))
       .updateMapPresentation(
         location.id,
         { symbolId: pending.createdSymbolId },
@@ -362,14 +366,14 @@ describe('installation location symbols', () => {
       0
     )
     const symbolId = created.saved.id
-    const location = new WorldLocationService(() =>
-      campaigns.activeCampaignDatabase()
+    const location = new WorldLocationService(
+      campaigns.activeCampaignPersistence()
     ).create({ displayName: 'Sturmkap', tags: ['Kap'], notes: '' }, 0).snapshot
       .locations[0]!
     lifecycle
-      .locationStore(campaigns.activeCampaignDatabase())
+      .locationStore(activeCampaignDatabase(campaigns))
       .updateMapPresentation(location.id, { symbolId }, 0)
-    new LocationSymbolStore(campaigns.installationDatabase()).beginDeletion(
+    new LocationSymbolStore(installationDatabase(campaigns)).beginDeletion(
       crypto.randomUUID(),
       symbolId,
       created.snapshot.revision
@@ -382,7 +386,7 @@ describe('installation location symbols', () => {
     expect(recovered.symbols.read().symbols).toEqual([])
     expect(
       recovered
-        .locationStore(reopened.activeCampaignDatabase())
+        .locationStore(activeCampaignDatabase(reopened))
         .mapPresentation(location.id)
     ).toMatchObject({ symbolId: 'location', revision: 2 })
     reopened.close()

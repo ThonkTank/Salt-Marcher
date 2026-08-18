@@ -5,6 +5,8 @@ import { join } from 'node:path'
 import type Database from 'better-sqlite3'
 import { afterEach, describe, expect, it } from 'vitest'
 import { CampaignStore } from '../../src/core/persistence/sqlite/campaign-store.js'
+import { fixedSqliteDatabaseAccess } from '../../src/core/persistence/sqlite/database-access.js'
+import { activeCampaignDatabase } from '../support/campaign-store-test-access.js'
 import { GeneratedRunStore } from '../../src/core/session-generation/generated-run-store.js'
 import { GeneratedRunChildrenStore } from '../../src/core/session-generation/generated-run-children-store.js'
 import { GeneratedRunRewardBasisStore } from '../../src/core/session-generation/generated-run-reward-basis-store.js'
@@ -214,7 +216,7 @@ function generatedSession() {
   const campaigns = new CampaignStore(root)
   stores.push(campaigns)
   campaigns.create('Generated run test')
-  const db = campaigns.activeCampaignDatabase()
+  const db = activeCampaignDatabase(campaigns)
   const generation = new SessionGenerationService(
     new BundledEncounterCatalogProvider(
       join(process.cwd(), 'resources/sessiongeneration/catalog-2026-08-16')
@@ -225,7 +227,7 @@ function generatedSession() {
       revision: 0,
       config: defaultGeneratorConfig
     }),
-    () => db,
+    fixedSqliteDatabaseAccess(db),
     () => new Date('2026-08-09T10:00:00.000Z')
   )
   const result = generation.generate({

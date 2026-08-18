@@ -18,6 +18,7 @@ import type { WorldNpcDraft } from '../../src/shared/contracts/world-npc.js'
 import { WorldNpcApplicationService } from '../../src/core/application/world-npc-application-service.js'
 import { creatureById } from '../../src/core/creatures/catalog.js'
 import type Database from 'better-sqlite3'
+import { activeCampaignDatabase } from '../support/campaign-store-test-access.js'
 
 const roots: string[] = []
 afterEach(() => {
@@ -30,10 +31,12 @@ function harness() {
   roots.push(root)
   const campaigns = new CampaignStore(root)
   campaigns.create('NPCs')
-  const database = () => campaigns.activeCampaignDatabase()
-  const sources = new EncounterSourceService(database)
+  const database = () => activeCampaignDatabase(campaigns)
+  const sources = new EncounterSourceService(
+    campaigns.activeCampaignPersistence()
+  )
   const npcs = new WorldNpcApplicationService(
-    database,
+    campaigns.activeCampaignPersistence(),
     creatureResolver,
     (db) => factionStore(db)
   )

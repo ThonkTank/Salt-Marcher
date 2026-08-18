@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3'
+import type { SqliteDatabaseAccess } from '../../core/persistence/sqlite/database-access.js'
 import { GeneratedEncounterPlanService } from '../../core/encounter/generated-plan-service.js'
 import { TreasureStore } from '../../core/loot/loot-store.js'
 import { ItemDefinitionResolver } from '../../core/loot/item-definition-resolver.js'
@@ -51,7 +52,7 @@ export class SessionPlannerService {
   private readonly scheduled = new Set<string>()
 
   constructor(
-    private readonly activeDatabase: () => Database.Database,
+    private readonly databaseAccess: SqliteDatabaseAccess,
     private readonly generation: SessionGenerationService,
     private readonly encounters: GeneratedEncounterPlanService,
     private readonly preparationChanged: (notice: {
@@ -76,6 +77,10 @@ export class SessionPlannerService {
         throw new Error('Catalog definition resolver is not configured')
       })
   ) {}
+
+  private activeDatabase(): Database.Database {
+    return this.databaseAccess.use((database) => database)
+  }
 
   read(): SessionPlannerWorkspace {
     const store = new SessionPlannerStore(this.activeDatabase())

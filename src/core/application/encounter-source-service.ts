@@ -24,6 +24,7 @@ import { WorldLocationStore } from '../worldplanner/location-store.js'
 import { anyBiomeEncounterTableId } from '../../shared/contracts/biome.js'
 import { BiomeCatalogStore } from '../biomes/biome-catalog.js'
 import { creatureById } from '../creatures/catalog.js'
+import type { SqliteDatabaseAccess } from '../persistence/sqlite/database-access.js'
 
 export type ResolvedSourceCandidate = Readonly<{
   creatureId: string
@@ -43,13 +44,23 @@ export type ResolvedEncounterSource = Readonly<{
 
 /** Coordinates aggregate-owned stores and recoverable cross-database lifecycles. */
 export class EncounterSourceService {
+  private readonly installationTableOwner: EncounterTableStore | null
+  private readonly installationBiomeOwner: BiomeCatalogStore | null
+
   constructor(
-    private readonly campaignDatabase: () => Database.Database,
-    private readonly installationDatabase?: () => Database.Database,
+    private readonly campaignDatabase: SqliteDatabaseAccess,
+    installationDatabase?: SqliteDatabaseAccess,
     private readonly visitCampaignDatabases?: (
       visitor: (campaign: { id: string; database: Database.Database }) => void
     ) => void
-  ) {}
+  ) {
+    const owners = installationDatabase?.use((database) => ({
+      tables: new EncounterTableStore(database, 'installation'),
+      biomes: new BiomeCatalogStore(database)
+    }))
+    this.installationTableOwner = owners?.tables ?? null
+    this.installationBiomeOwner = owners?.biomes ?? null
+  }
 
   readTables() {
     const campaign = this.withStores(({ tables }) => tables.read())
@@ -162,8 +173,6 @@ export class EncounterSourceService {
     scope: EncounterTableScope = 'campaign'
   ) {
     if (scope === 'installation') {
-      const db = this.installationDatabase?.()
-      if (!db) throw new Error('Installation encounter tables unavailable')
       const tables = this.requireInstallationTables()
       tables.beginInstallationLifecycle({
         commandId,
@@ -172,7 +181,9 @@ export class EncounterSourceService {
         expectedRevision: revision
       })
       tables.delete(commandId, id, revision)
-      new BiomeCatalogStore(db).unlinkEncounterTable(id)
+      if (!this.installationBiomeOwner)
+        throw new Error('Installation biome catalog unavailable')
+      this.installationBiomeOwner.unlinkEncounterTable(id)
       this.visitCampaignDatabases?.(({ id: campaignId, database }) => {
         tables.beginCampaignLifecycle(commandId, campaignId)
         if (tables.campaignLifecycleCompleted(commandId, campaignId)) return
@@ -265,7 +276,7 @@ export class EncounterSourceService {
         allTables(this.readTables()),
         factions.read().factions,
         locations.read().locations,
-        this.installationDatabase?.()
+        this.installationBiomeOwner ?? undefined
       )
     )
   }
@@ -278,27 +289,27 @@ export class EncounterSourceService {
       locations: WorldLocationStore
     }) => T
   ): T {
-    const db = this.campaignDatabase()
-    const tables = new EncounterTableStore(db)
-    const installationTables = this.installationTables()
-    const factions = new WorldFactionStore(db, {
-      containsTable: (id) =>
-        tables.contains(id) || Boolean(installationTables?.contains(id)),
-      containsCreature: (tableId, creatureId) =>
-        tables.containsCreature(tableId, creatureId) ||
-        Boolean(installationTables?.containsCreature(tableId, creatureId))
-    })
-    return work({
-      db,
-      tables,
-      factions,
-      locations: new WorldLocationStore(db)
+    return this.campaignDatabase.use((db) => {
+      const tables = new EncounterTableStore(db)
+      const installationTables = this.installationTables()
+      const factions = new WorldFactionStore(db, {
+        containsTable: (id) =>
+          tables.contains(id) || Boolean(installationTables?.contains(id)),
+        containsCreature: (tableId, creatureId) =>
+          tables.containsCreature(tableId, creatureId) ||
+          Boolean(installationTables?.containsCreature(tableId, creatureId))
+      })
+      return work({
+        db,
+        tables,
+        factions,
+        locations: new WorldLocationStore(db)
+      })
     })
   }
 
   private installationTables(): EncounterTableStore | null {
-    const db = this.installationDatabase?.()
-    return db ? new EncounterTableStore(db, 'installation') : null
+    return this.installationTableOwner
   }
 
   private requireInstallationTables(): EncounterTableStore {
@@ -406,7 +417,7 @@ export function resolveEncounterSource(
     factionIds: readonly string[]
     encounterTableIds: readonly string[]
   }[],
-  installationDatabase?: Database.Database
+  biomeCatalog?: Pick<BiomeCatalogStore, 'encounterTableIdsForBiomes'>
 ): ResolvedEncounterSource {
   const tableById = new Map(tables.map((table) => [table.id, table]))
   const factionById = new Map(factions.map((faction) => [faction.id, faction]))
@@ -415,13 +426,13 @@ export function resolveEncounterSource(
   const effectiveFactions = new Set<string>()
   let sourceIssue: ResolvedEncounterSource['sourceIssue'] = null
 
-  if (query.biomes.length > 0 && installationDatabase) {
+  if (query.biomes.length > 0 && biomeCatalog) {
     dimensions.push(
       biomeSourceDimension(
         query.biomes,
         tableById,
         effectiveTables,
-        installationDatabase
+        biomeCatalog
       )
     )
   }
@@ -480,7 +491,7 @@ export function resolveEncounterSource(
       effectiveFactionIds: [...effectiveFactions],
       locationId: query.locationId,
       catalogFallback: sourceIssue === null,
-      biomeFiltering: installationDatabase !== undefined,
+      biomeFiltering: biomeCatalog !== undefined,
       sourceIssue
     }
 
@@ -493,7 +504,7 @@ export function resolveEncounterSource(
     effectiveFactionIds: [...effectiveFactions],
     locationId: query.locationId,
     catalogFallback: false,
-    biomeFiltering: installationDatabase !== undefined,
+    biomeFiltering: biomeCatalog !== undefined,
     sourceIssue
   }
 }
@@ -502,9 +513,9 @@ function biomeSourceDimension(
   biomeIds: readonly string[],
   tables: ReadonlyMap<string, EncounterTable>,
   effective: Set<string>,
-  db: Database.Database
+  biomeCatalog: Pick<BiomeCatalogStore, 'encounterTableIdsForBiomes'>
 ): Dimension {
-  const linked = new BiomeCatalogStore(db).encounterTableIdsForBiomes(biomeIds)
+  const linked = biomeCatalog.encounterTableIdsForBiomes(biomeIds)
   const result = tableDimension(linked, tables, effective)
   const any = tableDimension([anyBiomeEncounterTableId], tables, effective)
   for (const [id, value] of any) {

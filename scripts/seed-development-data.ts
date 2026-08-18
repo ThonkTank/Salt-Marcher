@@ -51,9 +51,9 @@ if (existsSync(dataRoot)) {
 const campaigns = new CampaignStore(dataRoot)
 try {
   campaigns.create('Salzmarsch – Beispieldaten')
-  seedExampleParty(campaigns.activeCampaignDatabase())
-  const locations = new WorldLocationService(() =>
-    campaigns.activeCampaignDatabase()
+  campaigns.activeCampaignPersistence().use(seedExampleParty)
+  const locations = new WorldLocationService(
+    campaigns.activeCampaignPersistence()
   )
   let revision = locations.read().revision
   for (const draft of seedLocations) {

@@ -18,6 +18,7 @@ import { PartyStore } from '../../src/core/party/party-store.js'
 import { SceneStore } from '../../src/core/scene/scene-store.js'
 import { CampaignUnitOfWork } from '../../src/core/application/campaign-unit-of-work.js'
 import { seedExampleParty } from '../../src/core/party/party-example-seed.js'
+import { activeCampaignDatabase } from '../support/campaign-store-test-access.js'
 
 const roots: string[] = []
 const campaignStores: CampaignStore[] = []
@@ -33,8 +34,8 @@ function harness() {
   const campaigns = new CampaignStore(root)
   campaignStores.push(campaigns)
   campaigns.create('Hex campaign')
-  seedExampleParty(campaigns.activeCampaignDatabase())
-  const database = () => campaigns.activeCampaignDatabase()
+  seedExampleParty(activeCampaignDatabase(campaigns))
+  const database = () => activeCampaignDatabase(campaigns)
   let now = 1_000
   const editing = new HexMapEditingCommandHandler(() => {
     const db = database()
@@ -52,11 +53,14 @@ function harness() {
   })
   return {
     campaigns,
-    play: new LivePlayService(database),
-    locations: new WorldLocationService(database),
-    maps: new HexMapService(database),
+    play: new LivePlayService(campaigns.activeCampaignPersistence()),
+    locations: new WorldLocationService(campaigns.activeCampaignPersistence()),
+    maps: new HexMapService(campaigns.activeCampaignPersistence()),
     editing,
-    travel: new HexTravelService(database, () => now),
+    travel: new HexTravelService(
+      campaigns.activeCampaignPersistence(),
+      () => now
+    ),
     advance(milliseconds: number) {
       now += milliseconds
     },

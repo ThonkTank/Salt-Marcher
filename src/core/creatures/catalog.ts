@@ -17,6 +17,7 @@ import {
   builtinBiomeSeeds,
   legacyCreatureBiomeMatches
 } from '../biomes/biome-seeds.js'
+import type { SqliteDatabaseAccess } from '../persistence/sqlite/database-access.js'
 
 type ReferenceOptions = Pick<
   CreatureFilterOptions,
@@ -48,7 +49,7 @@ const byId = new Map(creatures.map((creature) => [creature.id, creature]))
 
 export class CreatureCatalogService {
   constructor(
-    private readonly installationDatabase: () => Database.Database,
+    private readonly installationDatabase: SqliteDatabaseAccess,
     private readonly sourceResolver?: (
       query: CreatureCatalogQuery
     ) => ResolvedEncounterSource,
@@ -111,47 +112,50 @@ export class CreatureCatalogService {
   }
 
   filterOptions(): CreatureFilterOptions {
-    const db = this.installationDatabase()
-    const references = this.referenceOptions?.() ?? {
-      biomes: builtinBiomeSeeds.map((biome) => ({
-        id: biome.id,
-        label: biome.displayName
-      })),
-      encounterTables: [],
-      factions: [],
-      locations: []
-    }
-    const strings = (sql: string) =>
-      (db.prepare(sql).all() as { value: string }[]).map((row) => row.value)
-    return creatureFilterOptionsSchema.parse({
-      challengeRatings: strings(
-        'SELECT DISTINCT challenge_rating_text AS value FROM creatures ORDER BY challenge_rating, value'
-      ),
-      sizes: strings(
-        'SELECT DISTINCT size AS value FROM creatures ORDER BY value'
-      ),
-      types: strings(
-        'SELECT DISTINCT creature_type AS value FROM creatures ORDER BY value'
-      ),
-      subtypes: strings(
-        'SELECT DISTINCT subtype AS value FROM creature_subtypes ORDER BY value'
-      ),
-      biomes: references.biomes,
-      alignments: strings(
-        'SELECT DISTINCT alignment AS value FROM creatures ORDER BY value'
-      ),
-      encounterTables: references.encounterTables,
-      factions: references.factions,
-      locations: references.locations
+    return this.installationDatabase.use((db) => {
+      const references = this.referenceOptions?.() ?? {
+        biomes: builtinBiomeSeeds.map((biome) => ({
+          id: biome.id,
+          label: biome.displayName
+        })),
+        encounterTables: [],
+        factions: [],
+        locations: []
+      }
+      const strings = (sql: string) =>
+        (db.prepare(sql).all() as { value: string }[]).map((row) => row.value)
+      return creatureFilterOptionsSchema.parse({
+        challengeRatings: strings(
+          'SELECT DISTINCT challenge_rating_text AS value FROM creatures ORDER BY challenge_rating, value'
+        ),
+        sizes: strings(
+          'SELECT DISTINCT size AS value FROM creatures ORDER BY value'
+        ),
+        types: strings(
+          'SELECT DISTINCT creature_type AS value FROM creatures ORDER BY value'
+        ),
+        subtypes: strings(
+          'SELECT DISTINCT subtype AS value FROM creature_subtypes ORDER BY value'
+        ),
+        biomes: references.biomes,
+        alignments: strings(
+          'SELECT DISTINCT alignment AS value FROM creatures ORDER BY value'
+        ),
+        encounterTables: references.encounterTables,
+        factions: references.factions,
+        locations: references.locations
+      })
     })
   }
 
   detail(id: string): Creature {
-    const row = this.installationDatabase()
-      .prepare('SELECT detail_json AS detailJson FROM creatures WHERE id = ?')
-      .get(id) as { detailJson: string } | undefined
-    if (!row) throw new CapabilityError('not_found', false)
-    return creatureSchema.parse(JSON.parse(row.detailJson))
+    return this.installationDatabase.use((database) => {
+      const row = database
+        .prepare('SELECT detail_json AS detailJson FROM creatures WHERE id = ?')
+        .get(id) as { detailJson: string } | undefined
+      if (!row) throw new CapabilityError('not_found', false)
+      return creatureSchema.parse(JSON.parse(row.detailJson))
+    })
   }
 }
 

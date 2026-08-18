@@ -7,6 +7,7 @@ import {
   mainOperations
 } from '../../src/shared/contracts/operations.js'
 import { capabilityEvents } from '../../src/shared/contracts/events.js'
+import { campaignPersistenceBoundaryViolations } from '../../scripts/architecture/campaign-persistence-boundary.js'
 
 const source = (path: string) => readFileSync(join(process.cwd(), path), 'utf8')
 const escapeRegex = (value: string): string =>
@@ -98,6 +99,34 @@ function directIpcInvokeOwners(path: string): string[] {
 }
 
 describe('architecture boundaries', () => {
+  it('exposes campaign persistence through scoped ports instead of raw locators', () => {
+    const productionSources = Object.fromEntries(
+      codeFiles('src').map((path) => [path, readFileSync(path, 'utf8')])
+    )
+    expect(campaignPersistenceBoundaryViolations(productionSources)).toEqual([])
+
+    const mutation = campaignPersistenceBoundaryViolations({
+      'src/core/bad-service.ts': `
+        class BadStore {
+          activeCampaignDatabase() { return undefined }
+        }
+        campaigns.installationDatabase()
+      `
+    })
+    expect(mutation).toEqual([
+      {
+        path: 'src/core/bad-service.ts',
+        line: 3,
+        name: 'activeCampaignDatabase'
+      },
+      {
+        path: 'src/core/bad-service.ts',
+        line: 5,
+        name: 'installationDatabase'
+      }
+    ])
+  })
+
   it('derives the public operation and event boundary from exact registries', () => {
     const operations = { ...coreOperations, ...mainOperations }
     for (const [kind, definition] of Object.entries(operations)) {

@@ -1,4 +1,3 @@
-import type Database from 'better-sqlite3'
 import { GeneratedRunStore } from '../../core/session-generation/generated-run-store.js'
 import {
   generateGroupRewardDraftResult,
@@ -31,6 +30,7 @@ import {
   groupRewardRunOriginFingerprint,
   sessionRunOriginFingerprint
 } from '../../core/session-generation/run-origin.js'
+import type { SqliteDatabaseAccess } from '../../core/persistence/sqlite/database-access.js'
 
 export class SessionGenerationService {
   constructor(
@@ -48,7 +48,7 @@ export class SessionGenerationService {
       revision: 0,
       config: defaultGeneratorConfig
     }),
-    private readonly activeDatabase?: () => Database.Database,
+    private readonly activeDatabase?: SqliteDatabaseAccess,
     private readonly clock: () => Date = () => new Date()
   ) {}
 
@@ -76,25 +76,27 @@ export class SessionGenerationService {
         generatorPreset: result.draft.generatorPreset,
         input: result.draft.input
       })
-      const store = new GeneratedRunStore(this.activeDatabase())
-      const existing = store.findByFingerprint(originFingerprint)
-      if (existing) {
-        if (existing.runKind !== 'session')
-          throw new Error(
-            'Session generation origin resolved to another run kind'
-          )
-        return deepFreeze({
-          status: 'success',
-          run: sessionGeneratedRunSchema.parse(existing)
+      return this.activeDatabase.use((database) => {
+        const store = new GeneratedRunStore(database)
+        const existing = store.findByFingerprint(originFingerprint)
+        if (existing) {
+          if (existing.runKind !== 'session')
+            throw new Error(
+              'Session generation origin resolved to another run kind'
+            )
+          return deepFreeze({
+            status: 'success' as const,
+            run: sessionGeneratedRunSchema.parse(existing)
+          })
+        }
+        const run = sessionGeneratedRunSchema.parse({
+          ...result.draft,
+          id: runId,
+          originFingerprint,
+          generatedAt: this.clock().toISOString()
         })
-      }
-      const run = sessionGeneratedRunSchema.parse({
-        ...result.draft,
-        id: runId,
-        originFingerprint,
-        generatedAt: this.clock().toISOString()
+        return deepFreeze({ status: 'success' as const, run: store.save(run) })
       })
-      return deepFreeze({ status: 'success', run: store.save(run) })
     } catch (error) {
       if (error instanceof CatalogProviderError)
         return deepFreeze({
@@ -108,9 +110,11 @@ export class SessionGenerationService {
   readRun(runId: string): GeneratedRun {
     if (!this.activeDatabase)
       throw new Error('A campaign database is required to read generated runs')
-    const run = new GeneratedRunStore(this.activeDatabase()).read(runId)
-    if (!run) throw new CapabilityError('not_found', false)
-    return run
+    return this.activeDatabase.use((database) => {
+      const run = new GeneratedRunStore(database).read(runId)
+      if (!run) throw new CapabilityError('not_found', false)
+      return run
+    })
   }
 
   generateGroupReward(
@@ -138,26 +142,28 @@ export class SessionGenerationService {
       generatorPreset: draft.generatorPreset,
       input: draft.input
     })
-    const store = new GeneratedRunStore(this.activeDatabase())
-    const existing = store.findByFingerprint(originFingerprint)
-    if (existing) {
-      if (existing.runKind !== 'group_reward')
-        throw new Error('Group reward origin resolved to another run kind')
-      return deepFreeze({
-        status: 'success',
-        run: groupRewardGeneratedRunSchema.parse(existing)
-      })
-    }
-    return deepFreeze({
-      status: 'success',
-      run: store.save(
-        groupRewardGeneratedRunSchema.parse({
-          ...draft,
-          id: runId,
-          originFingerprint,
-          generatedAt: this.clock().toISOString()
+    return this.activeDatabase.use((database) => {
+      const store = new GeneratedRunStore(database)
+      const existing = store.findByFingerprint(originFingerprint)
+      if (existing) {
+        if (existing.runKind !== 'group_reward')
+          throw new Error('Group reward origin resolved to another run kind')
+        return deepFreeze({
+          status: 'success' as const,
+          run: groupRewardGeneratedRunSchema.parse(existing)
         })
-      )
+      }
+      return deepFreeze({
+        status: 'success' as const,
+        run: store.save(
+          groupRewardGeneratedRunSchema.parse({
+            ...draft,
+            id: runId,
+            originFingerprint,
+            generatedAt: this.clock().toISOString()
+          })
+        )
+      })
     })
   }
 }

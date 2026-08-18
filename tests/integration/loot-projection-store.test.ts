@@ -7,6 +7,8 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { LootService } from '../../src/core/application/loot-service.js'
 import { LootProjectionStore } from '../../src/core/loot/loot-projection-store.js'
 import { CampaignStore } from '../../src/core/persistence/sqlite/campaign-store.js'
+import { fixedSqliteDatabaseAccess } from '../../src/core/persistence/sqlite/database-access.js'
+import { activeCampaignDatabase } from '../support/campaign-store-test-access.js'
 import { SceneStore } from '../../src/core/scene/scene-store.js'
 import { legacyLootItem } from '../helpers/loot-item.js'
 
@@ -130,11 +132,11 @@ function harness() {
   const campaigns = new CampaignStore(root)
   stores.push(campaigns)
   campaigns.create('Loot projection test')
-  const db = campaigns.activeCampaignDatabase()
+  const db = activeCampaignDatabase(campaigns)
   return {
     db,
     loot: new LootService(
-      () => db,
+      fixedSqliteDatabaseAccess(db),
       () => new Date('2026-08-09T10:00:00.000Z')
     )
   }

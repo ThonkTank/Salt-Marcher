@@ -9,6 +9,7 @@ import type { GeneratorPresetConfigV3 } from '../../src/shared/contracts/generat
 import { defaultGeneratorConfig } from '../../src/shared/generator/system-generator-preset.js'
 import { CampaignRulesService } from '../../src/core/application/campaign-rules-service.js'
 import { seedExampleParty } from '../../src/core/party/party-example-seed.js'
+import { activeCampaignDatabase } from '../support/campaign-store-test-access.js'
 
 const roots: string[] = []
 
@@ -26,9 +27,9 @@ function harness(generatorPreset?: {
   roots.push(root)
   const campaigns = new CampaignStore(root)
   campaigns.create('Test Campaign')
-  seedExampleParty(campaigns.activeCampaignDatabase())
+  seedExampleParty(activeCampaignDatabase(campaigns))
   const play = new LivePlayService(
-    () => campaigns.activeCampaignDatabase(),
+    campaigns.activeCampaignPersistence(),
     undefined,
     generatorPreset ? () => generatorPreset : undefined
   )
@@ -133,17 +134,17 @@ describe('live party, scene groups and combat', () => {
     roots.push(root)
     const campaigns = new CampaignStore(root)
     campaigns.create('Empty Party')
-    const play = new LivePlayService(() => campaigns.activeCampaignDatabase())
+    const play = new LivePlayService(campaigns.activeCampaignPersistence())
 
     expect(play.readParty().members).toEqual([])
-    const first = seedExampleParty(campaigns.activeCampaignDatabase())
+    const first = seedExampleParty(activeCampaignDatabase(campaigns))
     campaigns.close()
 
     const reopened = new CampaignStore(root)
-    const second = new LivePlayService(() =>
-      reopened.activeCampaignDatabase()
+    const second = new LivePlayService(
+      reopened.activeCampaignPersistence()
     ).readParty()
-    expect(() => seedExampleParty(reopened.activeCampaignDatabase())).toThrow(
+    expect(() => seedExampleParty(activeCampaignDatabase(reopened))).toThrow(
       'empty roster'
     )
     reopened.close()
@@ -231,7 +232,7 @@ describe('live party, scene groups and combat', () => {
     )
 
     const secondSceneId = uuidv7()
-    const db = campaigns.activeCampaignDatabase()
+    const db = activeCampaignDatabase(campaigns)
     db.prepare(
       "INSERT INTO scene_running_scene (id, title, location_id, location_name, position) VALUES (?, 'Nebenszene', NULL, '', 1)"
     ).run(secondSceneId)
@@ -481,7 +482,7 @@ describe('live party, scene groups and combat', () => {
     )
     const staleRulesRevision =
       session.combat?.resolution?.campaignRulesRevision ?? -1
-    new CampaignRulesService(() => campaigns.activeCampaignDatabase()).update({
+    new CampaignRulesService(campaigns.activeCampaignPersistence()).update({
       commandId: uuidv7(),
       expectedRevision: staleRulesRevision,
       rewardXpBasis: 'adjusted'
@@ -728,7 +729,7 @@ describe('live party, scene groups and combat', () => {
     session = sessionAfter(play, () =>
       play.prepareCombat(sceneId, session.scene.revision, [goblins.id])
     )
-    const database = campaigns.activeCampaignDatabase()
+    const database = activeCampaignDatabase(campaigns)
     expect(
       database
         .prepare(
@@ -851,8 +852,8 @@ describe('live party, scene groups and combat', () => {
     campaigns.close()
 
     const reopened = new CampaignStore(roots[0] ?? '')
-    const resumed = new LivePlayService(() =>
-      reopened.activeCampaignDatabase()
+    const resumed = new LivePlayService(
+      reopened.activeCampaignPersistence()
     ).readSession()
     reopened.close()
 
@@ -895,7 +896,7 @@ describe('live party, scene groups and combat', () => {
     const firstCombat = session.combat
 
     const secondSceneId = uuidv7()
-    const db = campaigns.activeCampaignDatabase()
+    const db = activeCampaignDatabase(campaigns)
     db.prepare(
       "INSERT INTO scene_running_scene (id, title, location_id, location_name, position) VALUES (?, 'Nebenszene', NULL, '', 1)"
     ).run(secondSceneId)

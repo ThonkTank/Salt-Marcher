@@ -2,6 +2,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
+import type Database from 'better-sqlite3'
 import { afterEach, describe, expect, it } from 'vitest'
 import { LootService } from '../../src/core/application/loot-service.js'
 import { CharacterLootStore } from '../../src/core/loot/character-loot-store.js'
@@ -18,6 +19,8 @@ import { defaultGeneratorConfig } from '../../src/shared/generator/system-genera
 import { GeneratedRunStore } from '../../src/core/session-generation/generated-run-store.js'
 import { GroupRewardCommandHandler } from '../../src/core/application/group-reward-command-handler.js'
 import { CampaignRulesService } from '../../src/core/application/campaign-rules-service.js'
+import { fixedSqliteDatabaseAccess } from '../../src/core/persistence/sqlite/database-access.js'
+import { activeCampaignDatabase } from '../support/campaign-store-test-access.js'
 import {
   GroupRewardCommitHandler,
   type GroupRewardCommitContext
@@ -51,7 +54,7 @@ function campaign() {
   const campaigns = new CampaignStore(root)
   stores.push(campaigns)
   campaigns.create('Loot test')
-  const db = campaigns.activeCampaignDatabase()
+  const db = activeCampaignDatabase(campaigns)
   seedExampleParty(db)
   const party = new PartyStore(db)
   let snapshot = party.read()
@@ -109,7 +112,7 @@ describe('loot vertical slice', () => {
       'position'
     ])
     expect(columns(db, 'loot_container')).toContain('source_container_id')
-    const loot = new LootService(() => db)
+    const loot = new LootService(fixedSqliteDatabaseAccess(db))
     const treasure = loot.create({
       commandId: randomUUID(),
       label: 'Constraints',
@@ -177,7 +180,7 @@ describe('loot vertical slice', () => {
 
   it('binds a command id to one semantic request and its original result', () => {
     const { campaigns, db } = campaign()
-    const loot = new LootService(() => campaigns.activeCampaignDatabase())
+    const loot = new LootService(campaigns.activeCampaignPersistence())
     const commandId = randomUUID()
     const input = {
       commandId,
@@ -204,16 +207,14 @@ describe('loot vertical slice', () => {
     const changed = loot.update(updateInput)
     expect(changed.label).toBe('Später geändert')
     expect(
-      new LootService(() => campaigns.activeCampaignDatabase()).update(
-        updateInput
-      )
+      new LootService(campaigns.activeCampaignPersistence()).update(updateInput)
     ).toEqual(changed)
     expect(loot.update(updateInput)).toEqual(changed)
     expectIdempotencyConflict(() =>
       loot.update({ ...updateInput, label: 'Konflikt' })
     )
     expect(
-      new LootService(() => campaigns.activeCampaignDatabase()).create(input)
+      new LootService(campaigns.activeCampaignPersistence()).create(input)
     ).toEqual(original)
     expect(loot.create(input)).toEqual(original)
     try {
@@ -240,7 +241,7 @@ describe('loot vertical slice', () => {
       null
     )
     const loot = new LootService(
-      () => campaigns.activeCampaignDatabase(),
+      campaigns.activeCampaignPersistence(),
       () => new Date('2026-08-09T10:00:00.000Z')
     )
     const anchor = {
@@ -316,7 +317,7 @@ describe('loot vertical slice', () => {
       null
     )
     const rules = new CampaignRulesService(
-      () => campaigns.activeCampaignDatabase(),
+      campaigns.activeCampaignPersistence(),
       () => new Date('2026-08-09T10:00:00.000Z')
     ).update({
       commandId: randomUUID(),
@@ -334,7 +335,7 @@ describe('loot vertical slice', () => {
         revision: 0,
         config: defaultGeneratorConfig
       }),
-      () => campaigns.activeCampaignDatabase(),
+      campaigns.activeCampaignPersistence(),
       () => new Date('2026-08-09T10:00:00.000Z')
     )
     const group = scenes
@@ -402,8 +403,8 @@ describe('loot vertical slice', () => {
     expect(tableCount(db, 'saved_encounter_plans')).toBe(0)
     expect(tableCount(db, 'session_planner_scenes')).toBe(0)
     expect(tableCount(db, 'loot_treasure')).toBe(0)
-    const accepted = new LootService(() =>
-      campaigns.activeCampaignDatabase()
+    const accepted = new LootService(
+      campaigns.activeCampaignPersistence()
     ).acceptGenerated({
       commandId: randomUUID(),
       runId: generated.id,
@@ -481,10 +482,10 @@ describe('loot vertical slice', () => {
         revision: 0,
         config: defaultGeneratorConfig
       }),
-      () => db,
+      fixedSqliteDatabaseAccess(db),
       () => new Date('2026-08-09T10:00:00.000Z')
     )
-    const rules = new CampaignRulesService(() => db)
+    const rules = new CampaignRulesService(fixedSqliteDatabaseAccess(db))
     const rewards = new GroupRewardCommandHandler(() => ({
       party,
       scenes,
@@ -519,7 +520,7 @@ describe('loot vertical slice', () => {
     expect(scenes.groups(sceneId)).toHaveLength(0)
     expect(tableCount(db, 'loot_treasure')).toBe(0)
 
-    const play = new LivePlayService(() => db)
+    const play = new LivePlayService(fixedSqliteDatabaseAccess(db))
     const commitContext = (): GroupRewardCommitContext => ({
       party: new PartyStore(db),
       scenes: new SceneStore(db),
@@ -788,7 +789,7 @@ describe('loot vertical slice', () => {
   it('commits distribution and character provenance atomically and idempotently', () => {
     const { campaigns, db, party, members } = campaign()
     const loot = new LootService(
-      () => campaigns.activeCampaignDatabase(),
+      campaigns.activeCampaignPersistence(),
       () => new Date('2026-08-09T10:00:00.000Z')
     )
     const treasure = loot.create({
@@ -848,9 +849,7 @@ describe('loot vertical slice', () => {
     })
     expect(changed.label).toBe('Nach dem Award umbenannt')
     expect(
-      new LootService(() => campaigns.activeCampaignDatabase()).distribute(
-        input
-      )
+      new LootService(campaigns.activeCampaignPersistence()).distribute(input)
     ).toEqual(result)
     expect(loot.distribute(input)).toEqual(result)
     expectIdempotencyConflict(() =>
@@ -871,7 +870,7 @@ describe('loot vertical slice', () => {
 
   it('rolls back the whole distribution when a recipient is not active', () => {
     const { campaigns, db, party, members } = campaign()
-    const loot = new LootService(() => campaigns.activeCampaignDatabase())
+    const loot = new LootService(campaigns.activeCampaignPersistence())
     const treasure = loot.create({
       commandId: randomUUID(),
       label: 'Fund',
@@ -937,7 +936,7 @@ describe('loot vertical slice', () => {
       locations.read().revision
     ).saved
     scenes.setLocation(sceneId, location.id, scenes.revision())
-    const loot = new LootService(() => campaigns.activeCampaignDatabase())
+    const loot = new LootService(campaigns.activeCampaignPersistence())
     const first = loot.create({
       commandId: randomUUID(),
       label: 'Treibgut A',
@@ -987,7 +986,7 @@ describe('loot vertical slice', () => {
         .groupTreasures[0]?.treasures.map((treasure) => treasure.id)
     ).toContain(first.id)
     expect(
-      new LootService(() => campaigns.activeCampaignDatabase()).move(moveInput)
+      new LootService(campaigns.activeCampaignPersistence()).move(moveInput)
     ).toEqual(moved)
     expect(loot.move(moveInput)).toEqual(moved)
     expectIdempotencyConflict(() =>
@@ -1020,7 +1019,7 @@ describe('loot vertical slice', () => {
   it('supports partial, complete, stale, and non-stackable distribution rules', () => {
     const { campaigns, db, party, members } = campaign()
     const loot = new LootService(
-      () => campaigns.activeCampaignDatabase(),
+      campaigns.activeCampaignPersistence(),
       () => new Date('2026-08-09T10:00:00.000Z')
     )
     const treasure = loot.create({
@@ -1105,7 +1104,7 @@ describe('loot vertical slice', () => {
 
   it('rejects a stale Party revision before writing allocations or ledger rows', () => {
     const { campaigns, db, party, members } = campaign()
-    const loot = new LootService(() => campaigns.activeCampaignDatabase())
+    const loot = new LootService(campaigns.activeCampaignPersistence())
     const treasure = loot.create({
       commandId: randomUUID(),
       label: 'Revisionierter Fund',
@@ -1150,7 +1149,7 @@ describe('loot vertical slice', () => {
         revision: 0,
         config: defaultGeneratorConfig
       }),
-      () => campaigns.activeCampaignDatabase(),
+      campaigns.activeCampaignPersistence(),
       () => new Date('2026-08-09T10:00:00.000Z')
     )
     const generated = generation.generate({
@@ -1176,7 +1175,7 @@ describe('loot vertical slice', () => {
     expect(generated.status).toBe('success')
     if (generated.status !== 'success') return
     const source = generated.run.treasures[0]!
-    const loot = new LootService(() => campaigns.activeCampaignDatabase())
+    const loot = new LootService(campaigns.activeCampaignPersistence())
     const acceptInput = {
       commandId: randomUUID(),
       runId: generated.run.id,
@@ -1227,7 +1226,7 @@ describe('loot vertical slice', () => {
       new GeneratedRunStore(db).read(generated.run.id)?.treasures[0]
     ).toEqual(source)
     expect(
-      new LootService(() => campaigns.activeCampaignDatabase()).acceptGenerated(
+      new LootService(campaigns.activeCampaignPersistence()).acceptGenerated(
         acceptInput
       )
     ).toEqual(accepted)
@@ -1262,7 +1261,7 @@ describe('loot vertical slice', () => {
 
   it('retains the original ledger row and appends a linked correction', () => {
     const { campaigns, db, party, members } = campaign()
-    const loot = new LootService(() => campaigns.activeCampaignDatabase())
+    const loot = new LootService(campaigns.activeCampaignPersistence())
     const treasure = loot.create({
       commandId: randomUUID(),
       label: 'Korrektur-Fund',
@@ -1309,7 +1308,7 @@ describe('loot vertical slice', () => {
       unitValueCp: 100
     })
     expect(
-      new LootService(() => campaigns.activeCampaignDatabase()).correctLedger(
+      new LootService(campaigns.activeCampaignPersistence()).correctLedger(
         correctionInput
       )
     ).toEqual(corrected)
@@ -1381,10 +1380,7 @@ function expectCapabilityCode(action: () => unknown, code: string): void {
   }
 }
 
-function tableCount(
-  db: ReturnType<CampaignStore['activeCampaignDatabase']>,
-  table: string
-): number {
+function tableCount(db: Database.Database, table: string): number {
   return (
     db.prepare(`SELECT COUNT(*) AS value FROM ${table}`).get() as {
       value: number
@@ -1392,10 +1388,7 @@ function tableCount(
   ).value
 }
 
-function columns(
-  db: ReturnType<CampaignStore['activeCampaignDatabase']>,
-  table: string
-): string[] {
+function columns(db: Database.Database, table: string): string[] {
   return (
     db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>
   ).map((entry) => entry.name)

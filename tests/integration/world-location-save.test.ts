@@ -7,6 +7,7 @@ import { WorldLocationSaveCommandHandler } from '../../src/core/application/worl
 import { WorldLocationPlacementService } from '../../src/core/application/world-location-placement.js'
 import { EncounterSourceService } from '../../src/core/application/encounter-source-service.js'
 import { CampaignStore } from '../../src/core/persistence/sqlite/campaign-store.js'
+import { activeCampaignDatabase } from '../support/campaign-store-test-access.js'
 import { WorldLocationService } from '../../src/core/worldplanner/location-store.js'
 import { WorldLocationSaveJournal } from '../../src/core/worldplanner/world-location-save-journal.js'
 import { CapabilityError } from '../../src/shared/errors/capability-error.js'
@@ -26,15 +27,15 @@ function harness() {
   const campaigns = new CampaignStore(root)
   stores.push(campaigns)
   campaigns.create('Location save')
-  const database = campaigns.activeCampaignDatabase()
+  const database = activeCampaignDatabase(campaigns)
   const locations = new WorldLocationService(
-    () => database,
+    campaigns.activeCampaignPersistence(),
     undefined,
-    () => campaigns.installationDatabase()
+    campaigns.installationPersistenceAccess()
   )
   const sources = new EncounterSourceService(
-    () => database,
-    () => campaigns.installationDatabase()
+    campaigns.activeCampaignPersistence(),
+    campaigns.installationPersistenceAccess()
   )
   const placeLocation = vi.fn()
   const removeLocation = vi.fn()

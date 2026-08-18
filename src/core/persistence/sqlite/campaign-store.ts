@@ -46,6 +46,10 @@ import {
   CampaignSchemaBootstrapper,
   createDefaultCampaignSchemaBootstrapper
 } from './campaign-schema-bootstrapper.js'
+import {
+  sqliteDatabaseAccess,
+  type SqliteDatabaseAccess
+} from './database-access.js'
 
 export type CampaignCreatePhase =
   | 'before-registry-entry'
@@ -85,6 +89,8 @@ export class CampaignStore {
     ((phase: CampaignReplacePhase) => void) | undefined
   private readonly directoryTransition: CampaignDirectoryTransition
   private readonly schemaBootstrapper: CampaignSchemaBootstrapper
+  private readonly activePersistence: SqliteDatabaseAccess
+  private readonly installationPersistence: SqliteDatabaseAccess
 
   constructor(
     private readonly dataRoot: string,
@@ -92,6 +98,9 @@ export class CampaignStore {
   ) {
     this.onCreatePhase = options.onCreatePhase
     this.onReplacePhase = options.onReplacePhase
+    this.activePersistence = sqliteDatabaseAccess((visitor) =>
+      this.connections.visit(visitor)
+    )
     this.schemaBootstrapper =
       options.schemaBootstrapper ?? createDefaultCampaignSchemaBootstrapper()
     this.directoryTransition = new CampaignDirectoryTransition(
@@ -105,6 +114,9 @@ export class CampaignStore {
     const installationExists = preflight.kind === 'ready'
     mkdirSync(dirname(installationPath), { recursive: true })
     this.installation = new Database(installationPath)
+    this.installationPersistence = sqliteDatabaseAccess((visitor) =>
+      visitor(this.installation)
+    )
     this.registry = new CampaignRegistryRepository(this.installation)
     this.campaignImports = new CampaignImportStore(this.installation)
     this.installationSettings = new InstallationSettingsStore(this.installation)
@@ -218,8 +230,12 @@ export class CampaignStore {
     this.installation.close()
   }
 
-  activeCampaignDatabase(): Database.Database {
-    return this.connections.compatibilityDatabase()
+  activeCampaignPersistence(): SqliteDatabaseAccess {
+    return this.activePersistence
+  }
+
+  installationPersistenceAccess(): SqliteDatabaseAccess {
+    return this.installationPersistence
   }
 
   /**
@@ -296,10 +312,6 @@ export class CampaignStore {
     }
   }
 
-  installationDatabase(): Database.Database {
-    return this.installation
-  }
-
   campaignImportRepository(): CampaignImportStore {
     return this.campaignImports
   }
@@ -349,12 +361,14 @@ export class CampaignStore {
     const rows = this.registry.readyRows()
     return rows.map((row) => {
       if (row.id === activeId && this.connections.activeId() === row.id)
-        return visitor({
-          id: row.id,
-          name: row.name,
-          trashed: false,
-          database: this.connections.compatibilityDatabase()
-        })
+        return this.connections.visit((database) =>
+          visitor({
+            id: row.id,
+            name: row.name,
+            trashed: false,
+            database
+          })
+        )
       const path = row.trashedAt
         ? join(this.trashDirectory(row.id), 'campaign.sqlite')
         : this.campaignPath(row.id)
@@ -399,18 +413,19 @@ export class CampaignStore {
   private cloneCampaignToStage(id: string): void {
     const stagedPath = this.stagedCampaignPath(id)
     mkdirSync(dirname(stagedPath), { recursive: true })
-    let source: Database.Database | undefined
     const borrowedActive = this.connections.activeId() === id
-    try {
-      source = borrowedActive
-        ? this.connections.compatibilityDatabase()
-        : new Database(this.campaignPath(id))
+    const copy = (source: Database.Database) => {
       configureSqlite(source)
       assertSchemaVersion(source, this.campaignDirectory(id), 'campaign')
       source.pragma('wal_checkpoint(FULL)')
       copyFileSync(this.campaignPath(id), stagedPath)
+    }
+    if (borrowedActive) return this.connections.visit(copy)
+    const source = new Database(this.campaignPath(id))
+    try {
+      copy(source)
     } finally {
-      if (!borrowedActive) source?.close()
+      source.close()
     }
   }
 

@@ -14,6 +14,11 @@ import { creatureCatalogQuerySchema } from '../../src/shared/contracts/encounter
 import { BiomeHexUsageStore } from '../../src/core/hex/biome-hex-usage-store.js'
 import { LivePlayService } from '../../src/core/encounter/live-combat.js'
 import { HexTravelService } from '../../src/core/hex/hex-travel.js'
+import { fixedSqliteDatabaseAccess } from '../../src/core/persistence/sqlite/database-access.js'
+import {
+  activeCampaignDatabase,
+  installationDatabase
+} from '../support/campaign-store-test-access.js'
 import type { EncounterTableSnapshot } from '../../src/shared/contracts/encounter-source.js'
 import { seedExampleParty } from '../../src/core/party/party-example-seed.js'
 
@@ -32,11 +37,11 @@ function harness() {
   const campaigns = new CampaignStore(root)
   stores.push(campaigns)
   campaigns.create('Biom-Test')
-  seedExampleParty(campaigns.activeCampaignDatabase())
+  seedExampleParty(activeCampaignDatabase(campaigns))
   const biomes = new BiomeCatalogService(campaigns)
   const sources = new EncounterSourceService(
-    () => campaigns.activeCampaignDatabase(),
-    () => campaigns.installationDatabase()
+    campaigns.activeCampaignPersistence(),
+    campaigns.installationPersistenceAccess()
   )
   return { campaigns, biomes, sources }
 }
@@ -192,7 +197,7 @@ describe('installation biome catalog', () => {
       0
     )
     const customId = created.biome!.id
-    const database = campaigns.activeCampaignDatabase()
+    const database = activeCampaignDatabase(campaigns)
     const maps = new HexMapStore(database, new WorldLocationStore(database))
     const map = maps.create({
       displayName: 'Testkarte',
@@ -256,7 +261,7 @@ describe('installation biome catalog', () => {
       },
       0
     )
-    const database = campaigns.activeCampaignDatabase()
+    const database = activeCampaignDatabase(campaigns)
     const locations = new WorldLocationStore(database)
     const location = locations.create(
       {
@@ -290,7 +295,7 @@ describe('installation biome catalog', () => {
       expectedContentRevision: painted.map.contentRevision
     })
     const play = new LivePlayService(
-      () => database,
+      fixedSqliteDatabaseAccess(database),
       (id) => {
         const biome = biomes.catalog.require(id)
         return {
@@ -312,7 +317,7 @@ describe('installation biome catalog', () => {
       session.scene.revision
     )
     const travel = new HexTravelService(
-      () => database,
+      fixedSqliteDatabaseAccess(database),
       Date.now,
       (id) => {
         const biome = biomes.catalog.require(id)
@@ -363,8 +368,8 @@ describe('installation biome catalog', () => {
     for (const campaignId of [firstId, secondId]) {
       campaigns.activate(campaignId)
       const store = new HexMapStore(
-        campaigns.activeCampaignDatabase(),
-        new WorldLocationStore(campaigns.activeCampaignDatabase())
+        activeCampaignDatabase(campaigns),
+        new WorldLocationStore(activeCampaignDatabase(campaigns))
       )
       const map = store.create({
         displayName: `Karte ${campaignId}`,
@@ -382,24 +387,22 @@ describe('installation biome catalog', () => {
     campaigns.trash(firstId)
 
     const commandId = randomUUID()
-    campaigns
-      .installationDatabase()
+    installationDatabase(campaigns)
       .prepare(
         `INSERT INTO biome_deletion
          (command_id, biome_id, expected_revision, state)
          VALUES (?, ?, ?, 'pending')`
       )
       .run(commandId, biomeId, created.revision)
-    new BiomeHexUsageStore(
-      campaigns.activeCampaignDatabase(),
-      secondId
-    ).replace(biomeId, placeholderBiomeId)
+    new BiomeHexUsageStore(activeCampaignDatabase(campaigns), secondId).replace(
+      biomeId,
+      placeholderBiomeId
+    )
     biomes.catalog.remove(commandId, biomeId, created.revision)
 
     biomes.recoverPendingDeletions()
     expect(
-      campaigns
-        .installationDatabase()
+      installationDatabase(campaigns)
         .prepare('SELECT state FROM biome_deletion WHERE command_id = ?')
         .get(commandId)
     ).toEqual({ state: 'completed' })
@@ -407,8 +410,8 @@ describe('installation biome catalog', () => {
     for (const campaignId of [firstId, secondId]) {
       campaigns.activate(campaignId)
       const store = new HexMapStore(
-        campaigns.activeCampaignDatabase(),
-        new WorldLocationStore(campaigns.activeCampaignDatabase())
+        activeCampaignDatabase(campaigns),
+        new WorldLocationStore(activeCampaignDatabase(campaigns))
       )
       expect(
         store.readChunk(maps.get(campaignId)!, { q: 0, r: 0 }).authoredTiles[0]

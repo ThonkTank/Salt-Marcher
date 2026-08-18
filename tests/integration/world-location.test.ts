@@ -8,6 +8,7 @@ import {
   WorldLocationService,
   WorldLocationStore
 } from '../../src/core/worldplanner/location-store.js'
+import { activeCampaignDatabase } from '../support/campaign-store-test-access.js'
 
 const roots: string[] = []
 
@@ -21,11 +22,10 @@ function harness() {
   roots.push(root)
   const campaigns = new CampaignStore(root)
   campaigns.create('Locations')
-  const path = () => campaigns.activeCampaignDatabase()
   return {
     campaigns,
-    play: new LivePlayService(path),
-    locations: new WorldLocationService(path)
+    play: new LivePlayService(campaigns.activeCampaignPersistence()),
+    locations: new WorldLocationService(campaigns.activeCampaignPersistence())
   }
 }
 
@@ -93,7 +93,7 @@ describe('world locations', () => {
       tags: ['Küste', 'Hafen', 'Markt'],
       notes: 'Updated'
     })
-    const database = campaigns.activeCampaignDatabase()
+    const database = activeCampaignDatabase(campaigns)
     expect(
       database
         .prepare(
@@ -195,8 +195,8 @@ describe('world locations', () => {
     campaigns.close()
 
     const reopened = new CampaignStore(root)
-    const resumed = new WorldLocationService(() =>
-      reopened.activeCampaignDatabase()
+    const resumed = new WorldLocationService(
+      reopened.activeCampaignPersistence()
     ).read()
     reopened.close()
     expect(resumed).toEqual(expected)
@@ -210,7 +210,7 @@ describe('world locations', () => {
         { displayName: `Ort ${index}`, tags: ['Ort'], notes: '' },
         snapshot.revision
       ).snapshot
-    const database = campaigns.activeCampaignDatabase()
+    const database = activeCampaignDatabase(campaigns)
     let prepares = 0
     const counted = new Proxy(database, {
       get(target, property) {

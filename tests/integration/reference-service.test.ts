@@ -30,25 +30,32 @@ function harness() {
   roots.push(root)
   const campaigns = new CampaignStore(root)
   campaigns.create('References')
-  const database = () => campaigns.activeCampaignDatabase()
-  const locations = new WorldLocationService(database)
-  const sources = new EncounterSourceService(database)
+  const locations = new WorldLocationService(
+    campaigns.activeCampaignPersistence()
+  )
+  const sources = new EncounterSourceService(
+    campaigns.activeCampaignPersistence()
+  )
   const npcResolver = {
     resolve(id: string) {
       const creature = creatureCatalog.find((candidate) => candidate.id === id)
       return creature ? { id: creature.id, displayName: creature.name } : null
     }
   }
-  const npcs = new WorldNpcApplicationService(database, npcResolver, (db) => {
-    const tables = new EncounterTableStore(db)
-    return new WorldFactionStore(db, {
-      containsTable: (id) => tables.contains(id),
-      containsCreature: (tableId, creatureId) =>
-        tables.containsCreature(tableId, creatureId)
-    })
-  })
-  const creatures = new CreatureCatalogService(() =>
-    campaigns.installationDatabase()
+  const npcs = new WorldNpcApplicationService(
+    campaigns.activeCampaignPersistence(),
+    npcResolver,
+    (db) => {
+      const tables = new EncounterTableStore(db)
+      return new WorldFactionStore(db, {
+        containsTable: (id) => tables.contains(id),
+        containsCreature: (tableId, creatureId) =>
+          tables.containsCreature(tableId, creatureId)
+      })
+    }
+  )
+  const creatures = new CreatureCatalogService(
+    campaigns.installationPersistenceAccess()
   )
   const catalog = new ReferenceCatalogAdapter(
     resolve('resources/reference/srd-5.1.sqlite')

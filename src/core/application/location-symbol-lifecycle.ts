@@ -13,8 +13,8 @@ export class LocationSymbolLifecycleService {
   readonly symbols: LocationSymbolService
 
   constructor(private readonly campaigns: CampaignStore) {
-    this.symbols = new LocationSymbolService(() =>
-      this.campaigns.installationDatabase()
+    this.symbols = new LocationSymbolService(
+      this.campaigns.installationPersistenceAccess()
     )
   }
 
@@ -135,37 +135,37 @@ export class LocationSymbolLifecycleService {
     })
     if (job.state === 'cancelled')
       throw new CapabilityError('validation_failed', false)
-    const locations = this.locationStore(
-      this.campaigns.activeCampaignDatabase()
-    )
-    const current = locations.mapPresentation(input.locationId)
-    if (current.symbolId === job.createdSymbolId) {
-      store.completeImport(input.commandId)
-      return {
-        status: 'replayed' as const,
-        symbols: job.symbols,
-        presentation: current,
-        createdSymbolId: job.createdSymbolId
+    return this.campaigns.activeCampaignPersistence().use((database) => {
+      const locations = this.locationStore(database)
+      const current = locations.mapPresentation(input.locationId)
+      if (current.symbolId === job.createdSymbolId) {
+        store.completeImport(input.commandId)
+        return {
+          status: 'replayed' as const,
+          symbols: job.symbols,
+          presentation: current,
+          createdSymbolId: job.createdSymbolId
+        }
       }
-    }
-    if (job.state === 'completed') throw new CapabilityError('stale', true)
-    try {
-      const presentation = locations.updateMapPresentation(
-        input.locationId,
-        { symbolId: job.createdSymbolId },
-        job.expectedPresentationRevision
-      )
-      store.completeImport(input.commandId)
-      return {
-        status: 'applied' as const,
-        symbols: job.symbols,
-        presentation,
-        createdSymbolId: job.createdSymbolId
+      if (job.state === 'completed') throw new CapabilityError('stale', true)
+      try {
+        const presentation = locations.updateMapPresentation(
+          input.locationId,
+          { symbolId: job.createdSymbolId },
+          job.expectedPresentationRevision
+        )
+        store.completeImport(input.commandId)
+        return {
+          status: 'applied' as const,
+          symbols: job.symbols,
+          presentation,
+          createdSymbolId: job.createdSymbolId
+        }
+      } catch (error) {
+        store.cancelImport(input.commandId)
+        throw error
       }
-    } catch (error) {
-      store.cancelImport(input.commandId)
-      throw error
-    }
+    })
   }
 
   private replaceReferences(symbolId: string): string[] {
@@ -191,6 +191,8 @@ export class LocationSymbolLifecycleService {
   }
 
   private symbolStore(): LocationSymbolStore {
-    return new LocationSymbolStore(this.campaigns.installationDatabase())
+    return this.campaigns
+      .installationPersistenceAccess()
+      .use((database) => new LocationSymbolStore(database))
   }
 }

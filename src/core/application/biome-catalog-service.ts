@@ -30,9 +30,14 @@ export class BiomeCatalogService {
   private readonly deletionJournal: BiomeDeletionJournal
 
   constructor(private readonly campaigns: CampaignStore) {
-    const installation = campaigns.installationDatabase()
-    this.deletionJournal = new BiomeDeletionJournal(installation)
-    this.catalog = new BiomeCatalogStore(installation)
+    const owners = campaigns
+      .installationPersistenceAccess()
+      .use((installation) => ({
+        deletionJournal: new BiomeDeletionJournal(installation),
+        catalog: new BiomeCatalogStore(installation)
+      }))
+    this.deletionJournal = owners.deletionJournal
+    this.catalog = owners.catalog
   }
 
   search(input: unknown) {
@@ -170,16 +175,19 @@ export class BiomeCatalogService {
     const definition = this.catalog.require(replacement)
     if (definition.kind === 'placeholder')
       throw new CapabilityError('validation_failed', false)
-    const db = this.campaigns.activeCampaignDatabase()
-    return new BiomeHexUsageStore(
-      db,
-      this.campaigns.activeCampaignId()
-    ).replaceOnMap(
-      placeholderBiomeId,
-      replacement,
-      input.mapId,
-      input.expectedContentRevision
-    )
+    return this.campaigns
+      .activeCampaignPersistence()
+      .use((database) =>
+        new BiomeHexUsageStore(
+          database,
+          this.campaigns.activeCampaignId()
+        ).replaceOnMap(
+          placeholderBiomeId,
+          replacement,
+          input.mapId,
+          input.expectedContentRevision
+        )
+      )
   }
 
   recoverPendingDeletions(): void {

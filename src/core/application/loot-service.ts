@@ -28,6 +28,7 @@ import { CharacterLootService } from './character-loot-service.js'
 import { DistributeLootCommandHandler } from './distribute-loot-command-handler.js'
 import { LootCommandHandler } from './loot-command-handler.js'
 import { LootQueryService } from './loot-query-service.js'
+import type { SqliteDatabaseAccess } from '../persistence/sqlite/database-access.js'
 
 /**
  * Compatibility facade for the Utility composition root. Domain work is
@@ -40,7 +41,7 @@ export class LootService {
   private readonly queries: LootQueryService
 
   constructor(
-    private readonly activeDatabase: () => Database.Database,
+    private readonly databaseAccess: SqliteDatabaseAccess,
     private readonly clock: () => Date = () => new Date(),
     private readonly definitionResolver: (
       db: Database.Database
@@ -97,6 +98,10 @@ export class LootService {
         projections: new LootProjectionStore(db, definitions)
       }
     })
+  }
+
+  private activeDatabase(): Database.Database {
+    return this.databaseAccess.use((database) => database)
   }
 
   read(treasureId: string): Treasure {
