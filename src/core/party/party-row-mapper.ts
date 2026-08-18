@@ -1,12 +1,19 @@
 import type { PartyCharacter } from '../../shared/contracts/party.js'
-import { levelFloor, levelXp } from './party-roster-domain.js'
+import {
+  levelFloor,
+  levelForXp,
+  levelXp,
+  type PartyLevelProgression
+} from './party-roster-domain.js'
 
 export function mapPartyCharacterRow(
   row: unknown,
-  languages: readonly string[]
+  languages: readonly string[],
+  progression: PartyLevelProgression = levelXp
 ): PartyCharacter {
   const value = row as Record<string, unknown>
-  const level = value['level'] === null ? null : Number(value['level'])
+  const xp = Number(value['xp'])
+  const level = levelForXp(xp, progression)
   return {
     id: String(value['id']),
     name: String(value['name']),
@@ -51,9 +58,9 @@ export function mapPartyCharacterRow(
         : null,
     attachedToPartyToken: value['travel_state'] !== 'detached',
     active: Number(value['active']) === 1,
-    xp: Number(value['xp']),
-    currentLevelFloor: levelFloor(level),
-    nextLevelXp: level === null || level === 20 ? null : levelXp[level]!,
+    xp,
+    currentLevelFloor: levelFloor(level, progression),
+    nextLevelXp: level === 20 ? null : progression[level]!,
     xpSinceShortRest: Number(value['xp_since_short_rest']),
     xpSinceLongRest: Number(value['xp_since_long_rest'])
   }

@@ -92,7 +92,7 @@ export class GroupRewardCommandHandler {
         if (!balance) throw new Error('missing_character_reward_balance')
         return {
           characterId: member.id,
-          level: member.level!,
+          level: member.level,
           currentXp: member.xp,
           ledgerRevision: balance.ledgerRevision,
           currentNonMagicCp: balance.currentNonMagicCp,

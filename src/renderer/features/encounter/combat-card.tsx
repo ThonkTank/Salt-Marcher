@@ -10,11 +10,12 @@ import { encounterCapabilities } from './encounter-capabilities.js'
 import { ModalDialog } from '../../shell/modal-dialog.js'
 import { ReadOnlyProse } from '../reference/read-only-prose.js'
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
+import './combat-dialog.css'
 
 export function CombatCardView(props: {
   card: CombatSnapshot['cards'][number]
   combat: CombatSnapshot
-  action: (operation: () => Promise<CombatCommandResult>) => Promise<void>
+  action: (operation: () => Promise<CombatCommandResult>) => Promise<boolean>
 }) {
   const api = useCapabilityApi()
   const [amount, setAmount] = useState(1)
@@ -43,8 +44,8 @@ export function CombatCardView(props: {
     Number(card.concentrating) +
     Number(card.exhaustionLevel > 0)
 
-  function changeHp(healing: boolean) {
-    void props.action(() =>
+  async function changeHp(healing: boolean) {
+    const changed = await props.action(() =>
       encounterCapabilities(api).combat.changeHp({
         cardId: card.id,
         amount,
@@ -52,6 +53,7 @@ export function CombatCardView(props: {
         expectedRevision: props.combat.revision
       })
     )
+    if (changed) setDialogOpen(false)
   }
 
   return (
@@ -151,14 +153,17 @@ export function CombatCardView(props: {
                   setAmount(Math.max(1, Number(event.target.value) || 1))
                 }
                 onKeyDown={(event) => {
-                  if (event.key === 'Enter') changeHp(false)
+                  if (event.key === 'Enter') {
+                    event.preventDefault()
+                    void changeHp(false)
+                  }
                 }}
               />
               <button
                 className="damage"
                 aria-label={message('encounter.damage')}
                 disabled={!card.alive}
-                onClick={() => changeHp(false)}
+                onClick={() => void changeHp(false)}
               >
                 −
               </button>
@@ -166,7 +171,7 @@ export function CombatCardView(props: {
                 className="heal"
                 aria-label={message('encounter.heal')}
                 disabled={!card.alive}
-                onClick={() => changeHp(true)}
+                onClick={() => void changeHp(true)}
               >
                 +
               </button>

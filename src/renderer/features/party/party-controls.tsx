@@ -539,7 +539,7 @@ function PartyEditor(props: {
 }) {
   const [name, setName] = useState(props.member?.name ?? '')
   const [player, setPlayer] = useState(props.member?.playerName ?? '')
-  const [level, setLevel] = useState(props.member?.level?.toString() ?? '')
+  const [level, setLevel] = useState(props.member?.level.toString() ?? '1')
   const [species, setSpecies] = useState(props.member?.species ?? '')
   const [characterClass, setCharacterClass] = useState(
     props.member?.characterClass ?? ''
@@ -637,6 +637,7 @@ function PartyEditor(props: {
           type="number"
           min="1"
           max="20"
+          required
           placeholder={message('ui.level')}
           value={level}
           onChange={(event) => setLevel(event.target.value)}

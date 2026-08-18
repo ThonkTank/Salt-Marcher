@@ -57,7 +57,6 @@ export function SessionDialogHost(props: {
             )
           }
           onError={props.onError}
-          reinforcementMode={dialog.reinforcement}
         />
       )}
       {dialog.kind === 'character-ledger' && (

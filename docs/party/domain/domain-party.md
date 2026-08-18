@@ -34,10 +34,11 @@ immutable, revisioned API state and mutation feedback through `PartyApi`.
 The authored write model is the persisted Campaign Roster and character state:
 
 - stable character identity
-- optional player, species, class, ordered language, level, passive
+- optional player, species, class, ordered language, passive
   Perception, passive Investigation, passive Insight, armor, and movement facts
 - explicit current-Party membership state
-- XP and rest progression without inventing a missing authored level
+- XP as the authored progression source, with level derived from the active
+  campaign's configurable 20-level XP thresholds
 - character-specific travel location and whether that character is attached to
   the party token
 
@@ -71,28 +72,25 @@ Core invariants:
 
 - character identity remains stable across roster mutations
 - character name is the only universal creation requirement; player, species,
-  class, languages, level, passive scores, armor, and movement preserve exact
-  presence or absence
+  class, languages, passive scores, armor, and movement preserve exact presence
+  or absence. Omitted progression begins at XP 0 and therefore level 1.
 - character creation always produces an inactive Roster member detached from
   Party travel and Scene participation
 - active and reserve membership is owned by the party aggregate, not by view
   state, and changes only through the explicit membership command
-- XP and level progression remain internally consistent after award, signed
-  correction, and rest operations
-- editing identity or optional combat facts with the same authored level never
-  changes XP or rest progress; changing or clearing the authored level never
-  discards earned XP, while a raised level establishes at least that level's XP
-  floor
-- negative XP correction is capped at the current level's XP floor and reduces
-  rest-cadence XP counters by the applied correction amount without going below
-  zero
+- level is derived from XP after awards and signed corrections, including
+  automatic level gain and loss across configured thresholds
+- the editor's level control is an XP shortcut: leaving the derived level
+  unchanged preserves exact XP; choosing another level sets XP to that level's
+  configured threshold
+- negative XP correction is capped at XP 0 and reduces rest-cadence XP counters
+  by the applied correction amount without going below zero
 - character-specific travel location is stored with the character, not in a
   campaign-level model, shell session, dungeon map, or presentation model
 - the party token is derived from attached character travel state instead of
   being a separate write model
-- adventuring-day budget and progress calculations use party-owned level and
-  rest-budget policies and are exposed through Party API read carriers; an
-  automatic calculation requiring level does not run with a missing level
+- adventuring-day budget and progress calculations use the XP-derived level and
+  party-owned rest-budget policies exposed through Party API read carriers
 - external mutation enters through the owning roster aggregate
 
 ## Consistency Model

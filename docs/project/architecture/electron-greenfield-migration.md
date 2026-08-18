@@ -43,8 +43,8 @@ accounts for the bounded virtual biome catalog and CRUD surface added with
 schema 15; schema 16 replaced separate World Location kind and region fields
 with tags and read-aloud text, and schema 17 normalizes ordered location-owned
 tags into validated rows while all per-entry ceilings remain unchanged.
-Schema 34, migration registry 6, Generator Config V5, Encounter engine
-`encounter-v5`, and Reward engine `reward-v3` are current. Persisted
+Installation schema 34, campaign schema 35, migration registry 7, Generator
+Config V5, Encounter engine `encounter-v5`, and Reward engine `reward-v3` are current. Persisted
 `reward-v2` runs remain readable. The checked
 [version-truth matrix](version-truth.md) owns these current values. Schema 25 is reset rather than migrated. The
 versioned behavior and ownership are recorded in the
@@ -189,12 +189,13 @@ verifiable phases:
    connection. Schema names are environment-neutral and forward migrations
    require one explicit registry chain and transactional contract tests. The
    role contract is installation schema 34 at `installation.sqlite` and
-   campaign schema 34 at `campaigns/<id>/campaign.sqlite`; registry version 6
+   campaign schema 35 at `campaigns/<id>/campaign.sqlite`; registry version 7
    supports the Golden-Master-backed 27 -> 28 path, the 28 -> 29
    NPC/structured-PC migration, the 29 -> 30 application migration, and the
    populated 30 -> 31 canonical-item migration, and the 31 -> 32 Config-V5 and
    raw reward-member migration, and the 32 -> 33 World Planner relational
-   integrity migration, and the 33 -> 34 import provenance/registry migration. The aggregate owners
+   integrity migration, the 33 -> 34 import provenance/registry migration, and
+   the campaign-only 34 -> 35 derived-Party-level migration. The aggregate owners
    retain their SQL, and the installer is the only offline migration authority.
 4. Local installation uses a lock, permanent verified backups, staged data
    migration, immutable version deployments, atomic current selection, and
@@ -363,7 +364,7 @@ claiming completion of M3 or M5. Its approved expansion contains:
   GM creature groups carrying an optional note, visual disposition, archive
   state, aggregate revision, and stable Scene-owned members; incompatible
   pre-v8 development data is discarded and rebuilt instead of migrated; one
-  two-pane builder creates empty or populated groups and combines the shared
+  two-pane builder creates or directly edits one empty or populated group and combines the shared
   filtered creature catalog, transient manual editing, live balancing, and
   fill-or-replace generation for new or existing groups before an explicit save
 - scenario tabs for Encounter and an interactive provider-owned Reise console;
@@ -371,7 +372,7 @@ claiming completion of M3 or M5. Its approved expansion contains:
   only selected Scene groups and owns difficulty evaluation, Initiative,
   Combat turn state, and Resolution, with a four-phase breadcrumb, monster-only
   initiative rolls, Scene-owned individual member HP/conditions, bounded
-  persisted undo and Group-Manager reinforcement; Resolution consumes typed
+  persisted undo and a direct Resolution transition; Resolution consumes typed
   group treasure identities and opens the shared Loot distribution dialog
 - a dedicated Session Planner rail workspace with persisted Session CRUD,
   participants, ordered editable Scenes, rest gaps, saved Encounter search,

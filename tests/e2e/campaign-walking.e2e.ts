@@ -648,18 +648,14 @@ describe('campaign walking skeleton', () => {
     await (await client.$('button[aria-label="Session"]')).click()
     const groupsHeading = await client.$('.groups-heading')
     await expect(await groupsHeading.$('button=Neue Gruppe')).not.toBeExisting()
-    await (await client.$('button=Gruppen managen')).click()
+    await (await client.$('button=Gruppe erstellen')).click()
     const groupDialog = await client.$(
       'section[aria-labelledby="group-builder-title"]'
     )
     await expectAccessibleInBothThemes(client)
-    const groupSelection = await groupDialog.$(
-      'select[aria-label="Gruppe auswählen"]'
-    )
-    await expect(await groupSelection.$('option:checked')).toHaveText(
-      'Neue Gruppe'
-    )
-    await expect(await groupDialog.$('button*=Neue Gruppe')).toBeExisting()
+    await expect(
+      await groupDialog.$('select[aria-label="Gruppe auswählen"]')
+    ).not.toBeExisting()
     await expect(
       await groupDialog.$('section[aria-label="Filter und Generator"]')
     ).toBeExisting()
@@ -816,15 +812,10 @@ describe('campaign walking skeleton', () => {
       timeout: 5_000
     })
 
-    await (await client.$('button=Gruppen managen')).click()
+    await (await client.$('button=Gruppe erstellen')).click()
     const reopenedGroupDialog = await client.$(
       'section[aria-labelledby="group-builder-title"]'
     )
-    const reopenedSelection = await reopenedGroupDialog.$(
-      'select[aria-label="Gruppe auswählen"]'
-    )
-    await reopenedSelection.selectByVisibleText('Wolf Pack')
-    await (await reopenedGroupDialog.$('button*=Neue Gruppe')).click()
     const emptyGroupName = await reopenedGroupDialog.$(
       'input[aria-label="Gruppenname"]'
     )
@@ -835,8 +826,6 @@ describe('campaign walking skeleton', () => {
     await (
       await reopenedGroupDialog.$('textarea[aria-label="Gruppennotiz"]')
     ).setValue('Erhält automatisch einen Namen.')
-    await reopenedSelection.selectByVisibleText('Wolf Pack')
-    await reopenedSelection.selectByVisibleText('Neue Gruppe')
     await expect(emptyGroupName).toHaveValue('')
     await (await reopenedGroupDialog.$('button=Speichern')).click()
     const confirmNewGroupSave = await client.$('section[role="alertdialog"]')

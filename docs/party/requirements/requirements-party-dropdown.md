@@ -27,8 +27,9 @@ summary, and mutation controls use the Party feature's public mutation API.
   The second line shows combat/rest metadata plus edit and remove affordances.
 - The Roster create/edit editor is a secondary anchored dropdown. Only the
   character name is required; player, species, class, ordered comma-separated
-  languages, level, all three passive scores, AC, and movement are optional
-  and can be cleared again. Edit mode identifies the PC by stable ID
+  languages, all three passive scores, AC, and movement are optional and can be
+  cleared again. Level starts at 1 and remains an XP-backed shortcut. Edit mode
+  identifies the PC by stable ID
   and retains explicit delete confirmation. The editor stays open on validation
   or storage failures and reports the field or mutation error inline.
 
@@ -46,8 +47,12 @@ summary, and mutation controls use the Party feature's public mutation API.
   through the Party feature's public mutation API and refresh the dropdown
   snapshot after successful mutations.
 - Clicking a character's level-up meter opens a compact XP popup. `+XP` awards
-  XP, while `-XP` corrects previously awarded XP without lowering the
-  character below the current level's XP floor.
+  XP, while `-XP` corrects previously awarded XP down to zero. Crossing an
+  active campaign XP threshold changes level automatically in either direction.
+- The generator settings expose all 20 XP thresholds. Their defaults are the
+  standard D&D thresholds. Selecting a different level in the character editor
+  sets XP to that configured threshold; resaving the same derived level keeps
+  exact XP unchanged.
 - Character editor submission requires a non-blank name and validates only
   optional values that were entered. Failed validation does not close the
   editor or mutate the Roster.
@@ -79,12 +84,12 @@ summary, and mutation controls use the Party feature's public mutation API.
   mutations are presented as final state
 - create, edit, remove, rest, and XP-correction actions persist only through
   the Party feature's public mutation API
-- name-only creation succeeds, leaves every optional fact absent, and changes
-  neither current Party nor Scene/travel participation
+- name-only creation succeeds at XP 0 / level 1, leaves every optional fact
+  absent, and changes neither current Party nor Scene/travel participation
 - duplicate names remain independently editable and visibly distinguishable by
   stable Roster ID
-- clearing an optional player, level, passive-perception, or AC value restores
-  absence rather than a default or sentinel
+- clearing an optional player, passive-perception, or AC value restores absence
+  rather than a default or sentinel
 - current-Party membership changes only through a separate explicit action
 - `Zur Party` assigns all four seeded PCs to the focused Scene without another
   manual assignment step; with several Scenes it never targets an unfocused

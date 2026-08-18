@@ -20,7 +20,8 @@ This document is normative for the `party` feature's persistence path.
   - `player_character_language`
   - `party_roster_metadata`
 - `player_characters` stores optional species, class, passive Investigation,
-  and passive Insight beside the existing identity and combat profile.
+  and passive Insight beside the existing identity and combat profile. It
+  stores XP but not a redundant level column.
 - `player_character_language` stores canonical case-insensitive unique
   languages in authored order for each character.
 - `player_characters` stores character-owned travel columns for dungeon and
@@ -37,9 +38,11 @@ profile, and character-specific runtime travel context in the party write
 model. That travel context is represented as scalar references to the owning
 space:
 
-- `name` is required; `player_name`, `species`, `character_class`, `level`,
-  all passive scores, `armor_class`, and `movement_speed_feet`
+- `name` is required; `player_name`, `species`, `character_class`, all passive
+  scores, `armor_class`, and `movement_speed_feet`
   are nullable and preserve authored absence without sentinel values
+- `xp` is required and defaults to `0`; the published level is derived from the
+  active campaign's configured XP thresholds
 - a newly inserted Roster character defaults to inactive membership and no
   party-token attachment; activation and attachment require later explicit
   mutations
@@ -63,12 +66,11 @@ through the feature contract.
 - party writes MUST reject malformed character identity, roster, progression,
   or travel-location payloads instead of silently persisting partial character
   truth
-- a present level requires at least its rules-profile XP floor; XP since the
-  short rest cannot exceed XP since the long rest, and neither rest-progress
-  counter can exceed current XP
+- XP since the short rest cannot exceed XP since the long rest, and neither
+  rest-progress counter can exceed current XP
 - nullable optional facts MUST round-trip as SQL `NULL`; readers and writers
-  MUST NOT replace absence with level `1`, passive perception `10`, AC `10`, or
-  another compatibility/default value
+  MUST NOT replace absent passive perception, AC, or another optional fact with
+  a compatibility/default value
 - dungeon and overworld travel references MUST be validated as party-owned
   scalar location references rather than expanded into authored map truth
 - storage and schema failures MUST surface through Party API result statuses
@@ -83,6 +85,10 @@ Campaign schema 29 introduced the registered 28-to-29 forward migration that add
 the nullable profile columns and normalized language table without changing
 existing Party rows, membership, progression, or travel facts. Unsupported
 older or newer formats remain rejected by the shared persistence lifecycle.
+
+Campaign schema 35 removes the redundant authored `level` column. Existing XP,
+rest progress, identity, languages, combat profile, membership, and travel facts
+are copied unchanged; level is derived on read from the active XP thresholds.
 
 ## Stability Rules
 

@@ -18,8 +18,8 @@ groups already present in the focused runtime Scene.
 - `Initiative` separates Party and monster rows. Both remain editable, while
   the roll action applies only to monsters.
 - `Combat` shows the four-step breadcrumb, round, active and completed turns,
-  front-member mob HP, living count, AC, initiative, conditions, undo,
-  Group-Manager reinforcement, and direct transition to Resolution.
+  colored front-member mob HP, living count, AC, initiative, conditions, a
+  readable undo action, and direct transition to Resolution.
 - `Resolution` shows defeated-enemy selection, XP controls, typed available
   Treasures or the honest no-loot state, the shared distribution action, one
   idempotent XP-award action, and return to Selection.
@@ -44,9 +44,9 @@ groups already present in the focused runtime Scene.
 ## Acceptance Criteria
 
 - the dropdown visibly offers Encounter and Reise
-- Encounter exposes no separate Generate, tuning, saved-plan, Catalog-add, or
-  roster editor. Reinforcement reuses the Scene Group Manager and changes the
-  linked Scene group rather than creating an Encounter-owned roster.
+- Encounter exposes no separate Generate, tuning, saved-plan, Catalog-add,
+  reinforcement, or roster editor. Scene groups are created and edited in the
+  owning Scene group panel.
 - evaluation and Combat preparation reject stale or foreign Scene group IDs
 - evaluation and Combat preparation reject archived Scene groups; archiving a
   linked source group removes it from the running Combat

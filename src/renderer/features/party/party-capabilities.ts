@@ -13,6 +13,7 @@ export function partyCapabilities(api: SaltMarcherApi) {
             species: character.species ?? null,
             characterClass: character.characterClass ?? null,
             languages: character.languages ?? [],
+            level: character.level ?? null,
             passiveInvestigation: character.passiveInvestigation ?? null,
             passiveInsight: character.passiveInsight ?? null,
             movementSpeedFeet: character.movementSpeedFeet ?? null
@@ -31,6 +32,7 @@ export function partyCapabilities(api: SaltMarcherApi) {
             species: character.species ?? null,
             characterClass: character.characterClass ?? null,
             languages: character.languages ?? [],
+            level: character.level ?? null,
             passiveInvestigation: character.passiveInvestigation ?? null,
             passiveInsight: character.passiveInsight ?? null,
             movementSpeedFeet: character.movementSpeedFeet ?? null

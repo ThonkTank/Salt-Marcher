@@ -8,7 +8,7 @@ export const partyCharacterSchema = z
     species: z.string().max(100).nullable(),
     characterClass: z.string().max(100).nullable(),
     languages: z.array(z.string().min(1).max(100)).max(100),
-    level: z.number().int().min(1).max(20).nullable(),
+    level: z.number().int().min(1).max(20),
     passivePerception: z.number().int().min(0).max(99).nullable(),
     passiveInvestigation: z.number().int().min(0).max(99).nullable(),
     passiveInsight: z.number().int().min(0).max(99).nullable(),
@@ -67,7 +67,7 @@ export const partyCharacterDraftSchema = z
         { message: 'Languages must be unique' }
       )
       .default([]),
-    level: z.number().int().min(1).max(20).nullable(),
+    level: z.number().int().min(1).max(20).nullable().default(null),
     passivePerception: z.number().int().min(0).max(99).nullable(),
     passiveInvestigation: z
       .number()

@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
 
 import '@testing-library/jest-dom/vitest'
-import { fireEvent, render, screen, within } from '@testing-library/react'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within
+} from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CapabilityProvider } from '../../src/renderer/capabilities/capability-provider.js'
 import { SessionEncounterPanel } from '../../src/renderer/features/encounter/encounter-panels.js'
@@ -84,12 +90,19 @@ describe('encounter scenario panel', () => {
     } as unknown as SaltMarcherApi
   })
 
-  it('renders the compact three-action combat footer and panel HP dialog', () => {
+  it('renders a readable two-action footer and closes the HP modal after success', async () => {
+    const snapshot = combatSnapshot()
+    const changeHp = vi.fn().mockResolvedValue({
+      combat: { ...snapshot.combat!, revision: 4 },
+      scenePatch: null,
+      party: null
+    })
+    api = { ...api, combat: { changeHp } } as unknown as SaltMarcherApi
     render(
       <CapabilityProvider api={api}>
         <ModalLayerProvider>
           <SessionEncounterPanel
-            snapshot={combatSnapshot()}
+            snapshot={snapshot}
             loot={{
               revision: 0,
               sceneId,
@@ -100,16 +113,18 @@ describe('encounter scenario panel', () => {
             setSnapshot={vi.fn()}
             onError={vi.fn()}
             inspect={vi.fn()}
-            reinforce={vi.fn()}
           />
         </ModalLayerProvider>
       </CapabilityProvider>
     )
 
     const footer = screen.getByRole('button', {
-      name: 'Verstärkung'
+      name: 'Rückgängig'
     }).parentElement!
-    expect(within(footer).getAllByRole('button')).toHaveLength(3)
+    expect(within(footer).getAllByRole('button')).toHaveLength(2)
+    expect(
+      screen.queryByRole('button', { name: 'Verstärkung' })
+    ).not.toBeInTheDocument()
     expect(
       screen.queryByRole('button', { name: 'Bestätigen' })
     ).not.toBeInTheDocument()
@@ -129,5 +144,12 @@ describe('encounter scenario panel', () => {
     expect(
       within(dialog).getByText(`1 von ${combatConditions.length + 2}`)
     ).toBeInTheDocument()
+    fireEvent.click(
+      within(dialog).getByRole('button', { name: 'Schaden anwenden' })
+    )
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    )
+    expect(changeHp).toHaveBeenCalledOnce()
   })
 })

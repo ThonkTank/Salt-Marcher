@@ -66,7 +66,6 @@ export function useGroupManagerController(
     lootChanged: () => void
     inspect: (creature: Creature) => void
     onError: (message: string) => void
-    reinforcementMode: boolean
   },
   ports: GroupManagerPorts
 ) {
@@ -74,9 +73,7 @@ export function useGroupManagerController(
   const focused = props.snapshot.scene.scenes.find(
     (scene) => scene.id === props.snapshot.scene.focusedSceneId
   )!
-  const activeGroups = focused.groups.filter((group) => !group.archived)
-  const initialSelection =
-    props.group?.id ?? (activeGroups.length === 0 ? newGroupDraftKey : null)
+  const initialSelection = props.group?.id ?? newGroupDraftKey
   const [state, dispatch] = useReducer(groupManagerReducer, undefined, () =>
     createGroupManagerState({
       activeKey: initialSelection,
@@ -668,7 +665,6 @@ export function useGroupManagerController(
     state,
     dispatch,
     focused,
-    activeGroups,
     selection: state.activeKey,
     active: state.activeKey !== null,
     group,
@@ -676,16 +672,6 @@ export function useGroupManagerController(
     entries,
     assigned,
     selectedPersistedGroup,
-    groupInCombat: (groupId: string) =>
-      Boolean(props.snapshot.combat?.selectedGroupIds.includes(groupId)),
-    canJoinCombat: Boolean(
-      props.reinforcementMode &&
-      props.snapshot.combat?.phase === 'combat' &&
-      selectedPersistedGroup &&
-      !props.snapshot.combat.selectedGroupIds.includes(
-        selectedPersistedGroup.id
-      )
-    ),
     rewardGroupId,
     canGenerate,
     canGenerateLoot: canGenerate && entries.length > 0,

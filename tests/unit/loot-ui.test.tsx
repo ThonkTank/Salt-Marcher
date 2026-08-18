@@ -87,6 +87,7 @@ describe('Loot UI', () => {
     expect(screen.getByText(/Ortsperle/)).toBeTruthy()
     expect(screen.queryByText('Gruppenfund')).toBeNull()
     expect(document.querySelectorAll('.group-expanded')).toHaveLength(1)
+    expect(screen.getByRole('button', { name: 'Bearbeiten' })).toBeVisible()
 
     fireEvent.click(screen.getByRole('button', { name: 'Party aufklappen' }))
     expect(document.querySelectorAll('.group-expanded')).toHaveLength(1)
@@ -228,8 +229,7 @@ function GroupsPanelHarness(props: {
     openLedger: props.openLedger ?? vi.fn(),
     inspectCreature: vi.fn(),
     editGroup: vi.fn(),
-    manageGroups: vi.fn(),
-    reinforce: vi.fn(),
+    createGroup: vi.fn(),
     restoreGroup: vi.fn(),
     requestGroupDelete: vi.fn(),
     cancelGroupDelete: vi.fn(),

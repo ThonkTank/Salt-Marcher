@@ -1,8 +1,8 @@
 # Loot Persistence Contract
 
-Campaign and installation schema 34 are current. The migration registry is
-version 6; Loot's canonical-item change remains the 30-to-31 migration in that
-forward chain.
+Campaign schema 35 and installation schema 34 are current. The migration
+registry is version 7; Loot's canonical-item change remains the 30-to-31
+migration in that forward chain.
 
 ## Canonical Item Identity
 

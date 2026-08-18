@@ -6,7 +6,6 @@ import {
 } from '../../i18n/session-runtime.de.js'
 import { CreatureCollectionManagerDialog } from '../creature-collection/creature-collection.js'
 import { DiscardChangesDialog } from '../../shell/modal-dialog.js'
-import { newGroupDraftKey } from './group-draft.js'
 import {
   GroupManagerCatalogPane,
   GroupManagerCatalogTools
@@ -25,6 +24,9 @@ export function GroupManagerView(props: {
 }) {
   const controller = props.controller
   const { state, group, loot } = controller
+  const dialogTitle = controller.selectedPersistedGroup
+    ? uiMessage('group.editTitle')
+    : uiMessage('group.createAction')
   const totalInDraft = Object.fromEntries(
     Array.from(
       new Set([
@@ -84,9 +86,9 @@ export function GroupManagerView(props: {
         toolsClassName="group-manager-tools"
         layoutClassName="group-manager-workspace"
         footerClassName="group-manager-footer"
-        title={uiMessage('ui.gruppen.managen')}
+        title={dialogTitle}
         titleId="group-builder-title"
-        heading={<GroupManagerHeading />}
+        heading={<GroupManagerHeading title={dialogTitle} />}
         closeLabel={uiMessage('ui.dialog.schliessen')}
         closeClassName="close"
         close={controller.close}
@@ -199,15 +201,13 @@ function isEditableTarget(target: EventTarget | null): boolean {
   )
 }
 
-function GroupManagerHeading() {
+function GroupManagerHeading(props: { title: string }) {
   return (
     <div className="title-group">
       <span className="illuminated-initial" aria-hidden="true">
-        {uiMessage('ui.gruppen.managen').charAt(0)}
+        {props.title.charAt(0)}
       </span>
-      <h2 id="group-builder-title">
-        {uiMessage('ui.gruppen.managen').slice(1)}
-      </h2>
+      <h2 id="group-builder-title">{props.title.slice(1)}</h2>
     </div>
   )
 }
@@ -222,32 +222,6 @@ function GroupManagerHeader(props: {
       <span className="scene-crumb" title={props.sceneContext}>
         {props.sceneContext}
       </span>
-      <select
-        className="group-manager-selection"
-        aria-label={uiMessage('group.select')}
-        value={controller.selection ?? ''}
-        onChange={(event) => controller.activate(event.target.value || null)}
-      >
-        <option value="">{uiMessage('group.selectPlaceholder')}</option>
-        {controller.activeGroups.map((candidate) => (
-          <option key={candidate.id} value={candidate.id}>
-            {candidate.name}
-            {controller.groupInCombat(candidate.id)
-              ? ` · ${uiMessage('encounter.inCombat')}`
-              : ''}
-          </option>
-        ))}
-        <option value={newGroupDraftKey}>
-          {uiMessage('group.createTitle')}
-        </option>
-      </select>
-      <button
-        className="group-manager-new"
-        type="button"
-        onClick={() => controller.activate(newGroupDraftKey)}
-      >
-        + {uiMessage('group.createTitle')}
-      </button>
       <input
         className="group-manager-name"
         aria-label={uiMessage('ui.gruppenname')}
@@ -294,15 +268,6 @@ function GroupManagerFooter(props: {
         {controller.anyDirty ? ` · ${uiMessage('group.unsaved')}` : ''}
       </span>
       <div>
-        {controller.canJoinCombat && (
-          <button
-            type="button"
-            disabled={controller.busy || controller.dirty}
-            onClick={controller.joinCombat}
-          >
-            {uiMessage('encounter.joinCombat')}
-          </button>
-        )}
         {controller.selectedPersistedGroup && (
           <button
             className="danger"

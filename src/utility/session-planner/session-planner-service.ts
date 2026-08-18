@@ -2,7 +2,8 @@ import type Database from 'better-sqlite3'
 import { GeneratedEncounterPlanService } from '../../core/encounter/generated-plan-service.js'
 import { TreasureStore } from '../../core/loot/loot-store.js'
 import { ItemDefinitionResolver } from '../../core/loot/item-definition-resolver.js'
-import { dailyXp, PartyStore } from '../../core/party/party-store.js'
+import { dailyXp, levelXp, PartyStore } from '../../core/party/party-store.js'
+import type { PartyLevelProgression } from '../../core/party/party-roster-domain.js'
 import { SessionPlannerStore } from '../../core/session-planner/session-planner-store.js'
 import {
   SessionPreparationStore,
@@ -74,7 +75,8 @@ export class SessionPlannerService {
     ) => ItemDefinitionResolver = (db) =>
       new ItemDefinitionResolver(db, () => {
         throw new Error('Catalog definition resolver is not configured')
-      })
+      }),
+    private readonly progression: () => PartyLevelProgression = () => levelXp
   ) {}
 
   read(): SessionPlannerWorkspace {
@@ -156,14 +158,13 @@ export class SessionPlannerService {
         code: 'planner_replace_existing',
         parameters: { sceneCount: session.scenes.length }
       })
-    const party = new PartyStore(db).read()
+    const party = this.party(db).read()
     const selected = session.participantIds.map((id) =>
       party.members.find((member) => member.id === id)
     )
     const counts = new Map<number, number>()
     for (const member of selected)
-      if (member?.level !== null && member?.level !== undefined)
-        counts.set(member.level, (counts.get(member.level) ?? 0) + 1)
+      if (member) counts.set(member.level, (counts.get(member.level) ?? 0) + 1)
     const record = journal.start({
       id: parsed.operationId,
       requestFingerprint: fingerprint,
@@ -267,7 +268,8 @@ export class SessionPlannerService {
       try {
         const rewardParty = new SessionRewardBasis(
           db,
-          this.definitionResolver
+          this.definitionResolver,
+          this.progression()
         ).snapshot(operation.sessionId)
         if (
           JSON.stringify(rewardParty.party) !== JSON.stringify(operation.party)
@@ -461,10 +463,11 @@ export class SessionPlannerService {
     run: PersistedSessionGeneratedRun,
     sessionId: string
   ): boolean {
-    return new SessionRewardBasis(db, this.definitionResolver).isCurrent(
-      run,
-      sessionId
-    )
+    return new SessionRewardBasis(
+      db,
+      this.definitionResolver,
+      this.progression()
+    ).isCurrent(run, sessionId)
   }
 
   private schedulePreparation(operationId: string): void {
@@ -506,7 +509,7 @@ export class SessionPlannerService {
     const db = this.activeDatabase()
     const store = new SessionPlannerStore(db)
     const session = store.require(sessionId)
-    const party = new PartyStore(db).read()
+    const party = this.party(db).read()
     const locations = new WorldLocationStore(db).read().locations
     const locationLabels = new Map(
       locations.map((location) => [location.id, location.displayName] as const)
@@ -560,9 +563,9 @@ export class SessionPlannerService {
     }))
     const participants = session.participantIds
       .map((id) => party.members.find((member) => member.id === id))
-      .filter((member) => member?.level !== null)
+      .filter((member) => member !== undefined)
     const dayBudget = participants.reduce(
-      (sum, member) => sum + dailyXp[member!.level! - 1]!,
+      (sum, member) => sum + dailyXp[member.level - 1]!,
       0
     )
     const fraction = decimal(session.adventureDayFraction)
@@ -585,7 +588,7 @@ export class SessionPlannerService {
         id: member.id,
         name: member.name,
         level: member.level,
-        fullDayXp: member.level === null ? null : dailyXp[member.level - 1]!,
+        fullDayXp: dailyXp[member.level - 1]!,
         partyMember: member.active
       })),
       availableLocations: locations.map((location) => ({
@@ -605,7 +608,7 @@ export class SessionPlannerService {
 
   private validateAuthoredReferences(input: SaveSessionPlanInput): void {
     const partyIds = new Set(
-      new PartyStore(this.activeDatabase())
+      this.party(this.activeDatabase())
         .read()
         .members.map((member) => member.id)
     )
@@ -655,6 +658,10 @@ export class SessionPlannerService {
       )
         throw new CapabilityError('validation_failed', false)
     }
+  }
+
+  private party(db: Database.Database): PartyStore {
+    return new PartyStore(db, this.progression())
   }
 }
 

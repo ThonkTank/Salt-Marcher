@@ -657,14 +657,17 @@ export class LivePlayService {
     const db = this.campaignDatabase()
     const locations = new WorldLocationStore(db)
     const unitOfWork = new CampaignUnitOfWork(db)
-    const party = new PartyStore(db)
+    const effectivePreset = this.effectiveGeneratorPreset()
+    const party = new PartyStore(
+      db,
+      effectivePreset.config.loot.progression.map((row) => row.xpAtLevel)
+    )
     const scene = new SceneStore(
       db,
       () => locations.read().locations,
       (id) =>
         party.read().members.some((member) => member.id === id && member.active)
     )
-    const effectivePreset = this.effectiveGeneratorPreset()
     const groupTreasures = new SqliteGroupTreasureReader(db)
     const rules = readCampaignRules(db)
     const combatFor = (sceneId: string) =>

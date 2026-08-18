@@ -9,9 +9,9 @@ canonical check.
 | Role | Current schema | Complete forward path | Migration owner |
 | --- | ---: | --- | --- |
 | installation | 34 | `27 -> 28 -> 29 -> 30 -> 31 -> 32 -> 33 -> 34` | `installation-schema-migrations.ts` |
-| campaign | 34 | `27 -> 28 -> 29 -> 30 -> 31 -> 32 -> 33 -> 34` | `campaign-schema-migrations.ts` |
+| campaign | 35 | `27 -> 28 -> 29 -> 30 -> 31 -> 32 -> 33 -> 34 -> 35` | `campaign-schema-migrations.ts` |
 
-Migration registry contract: **6**.
+Migration registry contract: **7**.
 
 ## Generation
 

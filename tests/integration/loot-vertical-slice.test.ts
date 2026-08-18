@@ -1157,7 +1157,7 @@ describe('loot vertical slice', () => {
       party: [{ level: 3, count: 2 }],
       ledgerParty: members.slice(0, 2).map((member) => ({
         characterId: member.id,
-        level: member.level!,
+        level: member.level,
         currentXp: member.xp,
         ledgerRevision: 0,
         currentNonMagicCp: 0,

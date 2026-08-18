@@ -13,7 +13,6 @@ export type GroupDialogProps = Readonly<{
   lootChanged: () => void
   inspect: (creature: Creature) => void
   onError: (message: string) => void
-  reinforcementMode: boolean
 }>
 
 export function GroupDialog(props: GroupDialogProps) {

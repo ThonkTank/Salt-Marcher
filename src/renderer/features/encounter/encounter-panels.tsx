@@ -29,8 +29,7 @@ type ScenarioProps = {
   loot: LootSceneProjection
   setSnapshot: (snapshot: LiveSessionSnapshot) => void
   onError: (message: string) => void
-  manageGroups?: () => void
-  reinforce?: () => void
+  createGroup?: () => void
   distribute?: (treasure: Treasure) => void
 }
 
@@ -119,9 +118,9 @@ export function SessionEncounterPanel(
             <div className="scenario-empty-state">
               <h2>{message('encounter.noneGroupsTitle')}</h2>
               <p>{message('encounter.noneGroupsHint')}</p>
-              {props.manageGroups && (
-                <button className="primary-action" onClick={props.manageGroups}>
-                  {message('ui.gruppen.managen')}
+              {props.createGroup && (
+                <button className="primary-action" onClick={props.createGroup}>
+                  {message('group.createAction')}
                 </button>
               )}
             </div>
@@ -374,6 +373,11 @@ function CombatPanel(props: ScenarioProps & { combat: CombatSnapshot }) {
       <footer className="tool-row">
         <button
           disabled={!undoLabel}
+          title={
+            undoLabel
+              ? formatMessage('encounter.undoNamed', { label: undoLabel })
+              : message('encounter.undo')
+          }
           onClick={() =>
             void scenarioAction(props, () =>
               encounterCapabilities(api).combat.undo({
@@ -382,12 +386,7 @@ function CombatPanel(props: ScenarioProps & { combat: CombatSnapshot }) {
             )
           }
         >
-          {undoLabel
-            ? formatMessage('encounter.undoNamed', { label: undoLabel })
-            : message('encounter.undo')}
-        </button>
-        <button onClick={props.reinforce}>
-          {message('encounter.reinforcement')}
+          {message('encounter.undo')}
         </button>
         <button
           className={
@@ -591,12 +590,14 @@ function ResolutionPanel(props: ScenarioProps & { combat: CombatSnapshot }) {
 async function scenarioAction(
   props: Pick<ScenarioProps, 'snapshot' | 'setSnapshot' | 'onError'>,
   operation: () => Promise<CombatCommandResult>
-): Promise<void> {
+): Promise<boolean> {
   try {
     props.setSnapshot(
       applyCombatCommandResult(props.snapshot, await operation())
     )
+    return true
   } catch (cause) {
     props.onError(capabilityErrorText(cause))
+    return false
   }
 }

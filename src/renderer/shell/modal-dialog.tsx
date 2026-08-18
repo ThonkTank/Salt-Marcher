@@ -93,7 +93,7 @@ export function ModalDialog(props: {
   if (!layer.layer) return null
   const content = (
     <div
-      className={props.backdropClassName ?? 'modal-backdrop'}
+      className={`modal-backdrop${props.backdropClassName ? ` ${props.backdropClassName}` : ''}`}
       role="presentation"
       inert={!interactive || undefined}
       aria-hidden={!interactive || undefined}

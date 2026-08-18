@@ -15,6 +15,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   CorruptDataError,
   currentSchemaVersion,
+  databaseSchemaVersions,
   IncompatibleDataError
 } from '../../src/core/persistence/sqlite/database.js'
 import { preflightPersistence } from '../../src/core/persistence/sqlite/persistence-preflight.js'
@@ -25,6 +26,7 @@ import {
   type SchemaMigration
 } from '../../src/core/persistence/sqlite/schema-migrations.js'
 import { defaultGeneratorConfig } from '../../src/shared/generator/system-generator-preset.js'
+import { PartyStore } from '../../src/core/party/party-store.js'
 
 const roots: string[] = []
 
@@ -49,11 +51,11 @@ describe('persistence preflight', () => {
     const root = temporaryRoot()
     const installation = createDatabase(
       join(root, 'installation.sqlite'),
-      currentSchemaVersion
+      databaseSchemaVersions.installation
     )
     const campaign = createDatabase(
       join(root, 'campaigns', 'one', 'campaign.sqlite'),
-      currentSchemaVersion
+      databaseSchemaVersions.campaign
     )
     const before = [readFileSync(installation), readFileSync(campaign)]
 
@@ -74,7 +76,7 @@ describe('persistence preflight', () => {
     const root = temporaryRoot()
     const installation = createDatabase(
       join(root, 'installation.sqlite'),
-      currentSchemaVersion
+      databaseSchemaVersions.installation
     )
     const writer = new Database(installation)
     writer.pragma('journal_mode = WAL')
@@ -112,7 +114,7 @@ describe('persistence preflight', () => {
       const root = temporaryRoot()
       const path = createDatabase(
         join(root, 'installation.sqlite'),
-        currentSchemaVersion
+        databaseSchemaVersions.installation
       )
       const before = readFileSync(path)
       chmodSync(path, 0o000)
@@ -140,7 +142,7 @@ describe('persistence preflight', () => {
     const planned = preflightPersistence(root)
 
     expect(planned.kind).toBe('migration-required')
-    expect(migrationRegistryVersion).toBe(6)
+    expect(migrationRegistryVersion).toBe(7)
     for (const entry of planned.databases) {
       const database = new Database(entry.path)
       applySchemaMigrations(database, {
@@ -153,7 +155,7 @@ describe('persistence preflight', () => {
     const restarted = preflightPersistence(root)
     expect(restarted.kind).toBe('ready')
     expect(restarted.databases).toMatchObject([
-      { path: campaign, role: 'campaign', schemaVersion: 34 },
+      { path: campaign, role: 'campaign', schemaVersion: 35 },
       { path: installation, role: 'installation', schemaVersion: 34 }
     ])
     const installationDatabase = new Database(installation)
@@ -303,7 +305,7 @@ describe('persistence preflight', () => {
     expect(
       database
         .prepare(
-          `SELECT name, player_name AS playerName, level, passive_perception AS passivePerception,
+          `SELECT name, player_name AS playerName, passive_perception AS passivePerception,
                   armor_class AS armorClass, xp, species, character_class AS characterClass,
                   passive_investigation AS passiveInvestigation,
                   passive_insight AS passiveInsight
@@ -313,7 +315,6 @@ describe('persistence preflight', () => {
     ).toEqual({
       name: 'DnD-Held',
       playerName: 'Spieler',
-      level: 4,
       passivePerception: 15,
       armorClass: 17,
       xp: 2700,
@@ -328,6 +329,18 @@ describe('persistence preflight', () => {
         .pluck()
         .get()
     ).toBe(0)
+    expect(
+      (
+        database.pragma('table_info(player_characters)') as Array<{
+          name: string
+        }>
+      ).some((column) => column.name === 'level')
+    ).toBe(false)
+    expect(new PartyStore(database).read().members[0]).toMatchObject({
+      name: 'DnD-Held',
+      xp: 2700,
+      level: 4
+    })
     expect(
       database
         .prepare(
@@ -433,7 +446,7 @@ describe('schema migration contract', () => {
         id: 'installation-27-to-28-failure',
         role: 'installation',
         fromVersion: 27,
-        toVersion: currentSchemaVersion,
+        toVersion: databaseSchemaVersions.installation,
         migrate() {
           throw new Error('injected migration failure')
         }

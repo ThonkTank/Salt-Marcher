@@ -174,12 +174,8 @@ export function useSessionWorkspaceController(input: {
     openLedger: (character) =>
       setDialog({ kind: 'character-ledger', character }),
     inspectCreature: openCreature,
-    editGroup: (group) =>
-      setDialog({ kind: 'group-editor', group, reinforcement: false }),
-    manageGroups: () =>
-      setDialog({ kind: 'group-editor', group: null, reinforcement: false }),
-    reinforce: () =>
-      setDialog({ kind: 'group-editor', group: null, reinforcement: true }),
+    editGroup: (group) => setDialog({ kind: 'group-editor', group }),
+    createGroup: () => setDialog({ kind: 'group-editor', group: null }),
     restoreGroup: (group) =>
       void mutateGroup(
         (current) =>

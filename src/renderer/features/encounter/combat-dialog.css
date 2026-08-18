@@ -1,0 +1,126 @@
+.hp-dialog-backdrop {
+  padding: var(--space-5);
+  background: #120c07aa;
+}
+
+.hp-dialog {
+  display: grid;
+  width: min(440px, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  gap: var(--space-7);
+  overflow: auto;
+  border: 1px solid var(--border-structural);
+  padding: var(--space-7);
+  background: var(--surface-sheet);
+  box-shadow: var(--shadow-dialog);
+}
+
+.hp-dialog > header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+
+.hp-dialog > header > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-1);
+  font: var(--text-sm) var(--font-smallcaps);
+  letter-spacing: var(--tracking-caps);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hp-dialog output {
+  margin-left: auto;
+  flex: 0 0 auto;
+  color: var(--text-2);
+  font: var(--text-xs) var(--font-mono);
+  white-space: nowrap;
+}
+
+.hp-dialog .amount {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.hp-dialog .amount input {
+  width: 64px;
+  min-width: 0;
+  text-align: center;
+}
+
+.hp-dialog .amount button {
+  min-height: 32px;
+  flex: 1;
+  font: var(--text-md)/1 var(--font-mono);
+}
+
+.hp-dialog .damage {
+  border-color: var(--accent-danger);
+  color: var(--accent-danger);
+}
+
+.hp-dialog .heal {
+  border-color: var(--accent-verdigris);
+  color: var(--accent-verdigris);
+}
+
+.hp-dialog-hint {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-style: italic;
+}
+
+.hp-dialog h3 {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  color: var(--text-eyebrow);
+  font: var(--text-sm) var(--font-smallcaps);
+  letter-spacing: var(--tracking-caps);
+}
+
+.hp-dialog h3 span {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  letter-spacing: 0;
+}
+
+.hp-dialog .condition-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.hp-dialog .condition-grid button {
+  min-height: 30px;
+  text-align: left;
+}
+
+.hp-dialog .condition-grid button.active {
+  border-color: var(--accent-gold);
+  background: var(--surface-chip);
+  color: var(--text-1);
+}
+
+.hp-dialog .condition-mark {
+  color: var(--border-2);
+}
+
+.hp-dialog .condition-grid button.active .condition-mark {
+  color: var(--accent-gold);
+}
+
+.hp-dialog-close {
+  justify-self: end;
+}
+
+@media (max-width: 520px) {
+  .hp-dialog .condition-grid {
+    grid-template-columns: 1fr;
+  }
+}

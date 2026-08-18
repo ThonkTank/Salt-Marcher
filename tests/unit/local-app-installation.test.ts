@@ -23,10 +23,10 @@ import {
 } from '../../scripts/local-app-installation.js'
 import type { BuildInfo } from '../../src/shared/contracts/build-info.js'
 import type { SchemaMigration } from '../../src/core/persistence/sqlite/schema-migrations.js'
-import { currentSchemaVersion } from '../../src/core/persistence/sqlite/database.js'
+import { databaseSchemaVersions } from '../../src/core/persistence/sqlite/database.js'
 
 const roots: string[] = []
-const schemaVersion = currentSchemaVersion
+const schemaVersion = databaseSchemaVersions.installation
 
 afterEach(() => {
   for (const root of roots.splice(0))
@@ -449,7 +449,10 @@ function build(character: string): BuildInfo {
     workspaceFingerprint: character.repeat(64),
     appBuildInputFingerprint: character.repeat(64),
     builtAt: '2026-08-15T12:00:00.000Z',
-    schemaVersions: { installation: schemaVersion, campaign: schemaVersion },
+    schemaVersions: {
+      installation: databaseSchemaVersions.installation,
+      campaign: databaseSchemaVersions.campaign
+    },
     migrationRegistryVersion: 1,
     toolchain: {
       node: 'v22.19.0',

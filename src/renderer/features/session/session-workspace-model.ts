@@ -57,7 +57,6 @@ export type SessionDialogState =
   | Readonly<{
       kind: 'group-editor'
       group: SceneGroup | null
-      reinforcement: boolean
     }>
   | Readonly<{ kind: 'party-editor' }>
   | Readonly<{ kind: 'character-ledger'; character: PartyCharacter }>
@@ -105,8 +104,7 @@ export type SessionWorkspaceActions = Readonly<{
   openLedger: (character: PartyCharacter) => void
   inspectCreature: (creatureId: string, context: string) => void
   editGroup: (group: SceneGroup) => void
-  manageGroups: () => void
-  reinforce: () => void
+  createGroup: () => void
   restoreGroup: (group: SceneGroup) => void
   requestGroupDelete: (groupId: string) => void
   cancelGroupDelete: () => void
