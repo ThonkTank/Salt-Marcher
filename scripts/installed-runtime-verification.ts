@@ -1,12 +1,17 @@
 import { spawnSync } from 'node:child_process'
+import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { join } from 'node:path'
+import { join, relative } from 'node:path'
+import Database from 'better-sqlite3'
 import { localArtifactManifestSchema } from '../src/shared/contracts/build-info.js'
+import { preflightPersistence } from '../src/core/persistence/sqlite/persistence-preflight.js'
+import { installedRuntimeEvidenceSchema } from './delivery-contract.js'
+import { sha256File } from './file-hash.js'
 import {
   isInstalledLocalAppRunning,
   localInstallationPaths
 } from './local-app-installation.js'
-import { readFileSync } from 'node:fs'
+import { atomicWrite } from './safe-file-write.js'
 
 const paths = localInstallationPaths(
   process.env['XDG_DATA_HOME'] ?? join(homedir(), '.local', 'share')
@@ -95,12 +100,97 @@ if (isInstalledLocalAppRunning(paths.appImage))
     'Installed SaltMarcher process remained active after verification'
   )
 
+const preflight = preflightPersistence(paths.campaignData)
+if (preflight.kind !== 'ready' || preflight.databases.length === 0)
+  throw new Error('Installed profile does not contain ready campaign data')
+const installationPath = join(paths.campaignData, 'installation.sqlite')
+if (!existsSync(installationPath))
+  throw new Error('Installed profile has no installation database')
+const database = new Database(installationPath, {
+  readonly: true,
+  fileMustExist: true
+})
+let readyCampaignCount: number
+let activeCampaignId: string | null
+let activeCampaignExists: boolean
+try {
+  readyCampaignCount = (
+    database
+      .prepare(
+        "SELECT COUNT(*) AS count FROM campaigns WHERE status = 'ready' AND trashed_at IS NULL"
+      )
+      .get() as { count: number }
+  ).count
+  activeCampaignId =
+    (
+      database
+        .prepare("SELECT value FROM settings WHERE key = 'active_campaign_id'")
+        .get() as { value: string } | undefined
+    )?.value ?? null
+  activeCampaignExists =
+    activeCampaignId !== null &&
+    database
+      .prepare(
+        "SELECT 1 FROM campaigns WHERE id = ? AND status = 'ready' AND trashed_at IS NULL"
+      )
+      .get(activeCampaignId) !== undefined
+} finally {
+  database.close()
+}
+const domainReadbacks = [
+  {
+    name: 'installation.readyCampaignCount',
+    expected: 'at least 1',
+    actual: readyCampaignCount,
+    passed: readyCampaignCount >= 1
+  },
+  {
+    name: 'installation.activeCampaign',
+    expected: 'existing ready campaign',
+    actual: activeCampaignId,
+    passed: activeCampaignExists
+  },
+  ...preflight.databases.map((entry) => ({
+    name: `schema.${entry.role}.${relative(paths.campaignData, entry.path)}`,
+    expected: entry.expectedVersion,
+    actual: entry.schemaVersion,
+    passed: entry.schemaVersion === entry.expectedVersion
+  }))
+]
+if (domainReadbacks.some(({ passed }) => !passed))
+  throw new Error('Installed campaign domain readback failed')
+
+const persisted = installedRuntimeEvidenceSchema.parse({
+  artifactSha256: manifest.artifactSha256,
+  manifestSha256: sha256File(paths.installedManifest),
+  utilityReady: true,
+  generation: runtime.generation,
+  bootstrap,
+  quickChecks: preflight.databases.map((entry) => ({
+    path: relative(paths.campaignData, entry.path),
+    role: entry.role,
+    result: 'ok'
+  })),
+  domainReadbacks
+})
+atomicWrite(
+  join(
+    process.cwd(),
+    '.tmp',
+    'handoff-local-app',
+    'installed-runtime-evidence.json'
+  ),
+  `${JSON.stringify(persisted, null, 2)}\n`
+)
+
 console.info(
   JSON.stringify({
     component: 'installed-runtime-verification',
     event: 'passed',
     artifactSha256: manifest.artifactSha256,
     fingerprint: manifest.receipt.build.workspaceFingerprint,
-    bootstrap
+    bootstrap,
+    quickChecks: persisted.quickChecks.length,
+    domainReadbacks: persisted.domainReadbacks.length
   })
 )

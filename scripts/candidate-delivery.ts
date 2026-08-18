@@ -7,6 +7,7 @@ import {
   handoffInvocationHistorySchema,
   handoffReceiptSchema,
   readRequiredJobManifest,
+  shaSchema,
   verifyRequiredJobs,
   type GithubWorkflowRun,
   type WorkflowEvidence
@@ -127,6 +128,98 @@ export function readSuccessfulWorkflowEvidence(
       ],
       head
     )
+    if (evidence) return evidence
+  }
+  return null
+}
+
+export const postPromotionJobName = 'Post-promotion · candidate attestation'
+
+export function successfulPostPromotionEvidence(
+  run: GithubWorkflowRun,
+  head: string
+): WorkflowEvidence | null {
+  if (
+    run.headSha !== head ||
+    run.status !== 'completed' ||
+    run.conclusion !== 'success'
+  )
+    return null
+  const matching = run.jobs.filter(({ name }) => name === postPromotionJobName)
+  if (
+    matching.length !== 1 ||
+    matching[0]?.status !== 'completed' ||
+    matching[0]?.conclusion !== 'success'
+  )
+    return null
+  return {
+    runId: run.databaseId,
+    url: run.url,
+    attempt: run.attempt,
+    headSha: run.headSha,
+    requiredJobManifestVersion: readRequiredJobManifest().schemaVersion,
+    jobs: [
+      {
+        name: postPromotionJobName,
+        platformRole: 'post-promotion-candidate-attestation',
+        conclusion: 'success'
+      }
+    ]
+  }
+}
+
+export function readSuccessfulPostPromotionEvidence(
+  head: string
+): WorkflowEvidence | null {
+  const workflowName = readRequiredJobManifest().workflowName
+  const summaries = z
+    .array(
+      z
+        .object({
+          databaseId: z.number().int().positive(),
+          headSha: shaSchema,
+          status: z.string(),
+          conclusion: z.string().nullable()
+        })
+        .passthrough()
+    )
+    .parse(
+      JSON.parse(
+        command('gh', [
+          'run',
+          'list',
+          '--workflow',
+          workflowName,
+          '--commit',
+          head,
+          '--event',
+          'push',
+          '--limit',
+          '20',
+          '--json',
+          'databaseId,headSha,status,conclusion'
+        ])
+      )
+    )
+  for (const summary of summaries) {
+    if (
+      summary.headSha !== head ||
+      summary.status !== 'completed' ||
+      summary.conclusion !== 'success'
+    )
+      continue
+    const run = githubWorkflowRunSchema.parse(
+      JSON.parse(
+        command('gh', [
+          'run',
+          'view',
+          String(summary.databaseId),
+          '--json',
+          'databaseId,headSha,status,conclusion,url,attempt,jobs'
+        ])
+      )
+    )
+    const evidence = successfulPostPromotionEvidence(run, head)
     if (evidence) return evidence
   }
   return null

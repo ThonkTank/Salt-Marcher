@@ -130,6 +130,7 @@
         "manifestSha256",
         "utilityReady",
         "generation",
+        "bootstrap",
         "backup",
         "quickChecks",
         "domainReadbacks"
@@ -139,6 +140,21 @@
         "manifestSha256": { "$ref": "#/$defs/hash" },
         "utilityReady": { "const": true },
         "generation": { "type": "integer", "minimum": 1 },
+        "bootstrap": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["totalMs", "phases"],
+          "properties": {
+            "totalMs": { "type": "number", "minimum": 0 },
+            "phases": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "number",
+                "minimum": 0
+              }
+            }
+          }
+        },
         "backup": {
           "type": "object",
           "additionalProperties": false,

@@ -89,6 +89,9 @@
     "delivery:promote": "tsx scripts/promote-candidate.ts",
     "delivery:verify-evidence": "tsx scripts/verify-evidence-commit.ts",
     "delivery:verify-post-promotion": "tsx scripts/verify-post-promotion.ts",
+    "quality-reset:generate-evidence": "tsx scripts/generate-final-evidence.ts",
+    "quality-reset:generate-docs": "tsx scripts/generate-quality-reset-docs.ts",
+    "quality-reset:check-docs": "tsx scripts/generate-quality-reset-docs.ts --check",
     "package:qualification": "corepack pnpm build:qualification && tsx scripts/package-app.ts --channel release"
   },
   "dependencies": {

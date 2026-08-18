@@ -7,7 +7,9 @@ import {
   assertCompletedHandoffReceipt,
   assertCandidateState,
   parseRemoteHead,
+  postPromotionJobName,
   successfulCandidateEvidence,
+  successfulPostPromotionEvidence,
   type CandidateState
 } from '../../scripts/candidate-delivery.js'
 import { readRequiredJobManifest } from '../../scripts/delivery-contract.js'
@@ -71,6 +73,37 @@ describe('candidate delivery policy', () => {
       )?.url
     ).toBe(run.url)
     expect(successfulCandidateEvidence([run], 'c'.repeat(40))).toBeNull()
+  })
+
+  it('accepts only the successful post-promotion attestation job', () => {
+    const run = {
+      databaseId: 2,
+      headSha: valid.head,
+      status: 'completed',
+      conclusion: 'success',
+      url: 'https://github.example/check/2',
+      attempt: 1,
+      jobs: [
+        {
+          name: postPromotionJobName,
+          status: 'completed',
+          conclusion: 'success'
+        }
+      ]
+    }
+    expect(successfulPostPromotionEvidence(run, valid.head)?.jobs).toEqual([
+      {
+        name: postPromotionJobName,
+        platformRole: 'post-promotion-candidate-attestation',
+        conclusion: 'success'
+      }
+    ])
+    expect(
+      successfulPostPromotionEvidence(
+        { ...run, jobs: [{ ...run.jobs[0]!, conclusion: 'skipped' }] },
+        valid.head
+      )
+    ).toBeNull()
   })
 
   it('rejects stale upstreams, dirty trees, direct main, and unproved SHAs', () => {

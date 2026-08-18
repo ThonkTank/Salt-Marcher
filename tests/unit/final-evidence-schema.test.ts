@@ -131,6 +131,7 @@ function evidence() {
       manifestSha256: hash,
       utilityReady: true,
       generation: 1,
+      bootstrap: { totalMs: 10, phases: { configuration: 1 } },
       backup: {
         path: 'backups/1',
         manifestSha256: hash,

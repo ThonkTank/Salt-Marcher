@@ -93,6 +93,48 @@ export const workflowEvidenceSchema = z
 
 export type WorkflowEvidence = z.infer<typeof workflowEvidenceSchema>
 
+export const installedRuntimeEvidenceSchema = z
+  .object({
+    artifactSha256: fingerprintSchema,
+    manifestSha256: fingerprintSchema,
+    utilityReady: z.literal(true),
+    generation: z.number().int().positive(),
+    bootstrap: z
+      .object({
+        totalMs: z.number().nonnegative(),
+        phases: z.record(z.string().min(1), z.number().nonnegative())
+      })
+      .strict(),
+    quickChecks: z
+      .array(
+        z
+          .object({
+            path: z.string().min(1),
+            role: z.string().min(1),
+            result: z.literal('ok')
+          })
+          .strict()
+      )
+      .min(1),
+    domainReadbacks: z
+      .array(
+        z
+          .object({
+            name: z.string().min(1),
+            expected: z.unknown(),
+            actual: z.unknown(),
+            passed: z.literal(true)
+          })
+          .strict()
+      )
+      .min(1)
+  })
+  .strict()
+
+export type InstalledRuntimeEvidence = z.infer<
+  typeof installedRuntimeEvidenceSchema
+>
+
 export const handoffStepEvidenceSchema = z
   .object({
     workspaceFingerprint: fingerprintSchema,
@@ -320,6 +362,7 @@ export const finalEvidenceSchema = z
         manifestSha256: fingerprintSchema,
         utilityReady: z.literal(true),
         generation: z.number().int().positive(),
+        bootstrap: installedRuntimeEvidenceSchema.shape.bootstrap,
         backup: z
           .object({
             path: z.string().min(1),
