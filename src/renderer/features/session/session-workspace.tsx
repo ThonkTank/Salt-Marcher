@@ -1,4 +1,5 @@
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
+import type { Dispatch, SetStateAction } from 'react'
 import type { SessionLayoutPreference } from '../../../shared/contracts/session-layout.js'
 import { message } from '../../i18n/session-runtime.de.js'
 import { useReferenceContext } from '../reference/reference-context.js'
@@ -15,7 +16,7 @@ import './session-workspace.css'
 
 export default function SessionWorkspace(props: {
   snapshot: LiveSessionSnapshot
-  setSnapshot: (snapshot: LiveSessionSnapshot) => void
+  setSnapshot: Dispatch<SetStateAction<LiveSessionSnapshot>>
   scenario: SessionScenario
   setScenario: (scenario: SessionScenario) => void
   layout: SessionLayoutPreference

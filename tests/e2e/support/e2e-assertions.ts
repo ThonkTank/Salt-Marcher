@@ -15,7 +15,7 @@ import {
   visualGoldenBaselineDirectoryNames,
   type VisualGoldenEntry
 } from '../../../scripts/visual-golden-policy.js'
-import { e2eSuiteRegistry } from './e2e-suite-registry.js'
+import { e2eSuiteRegistry } from '../../../scripts/e2e-suite-registry.js'
 
 const goldenManifest = JSON.parse(
   readFileSync(

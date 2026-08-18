@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type SetStateAction } from 'react'
 import type { Creature } from '../../../shared/contracts/encounter.js'
+import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type { CoreProcessStatus } from '../../../shared/contracts/runtime.js'
 import { message } from '../../i18n/workspace-runtime.de.js'
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
@@ -67,10 +68,19 @@ export function WorkspaceApp() {
   }, [api.runtime])
 
   const focusedSceneId = coordinator.session?.scene.focusedSceneId ?? ''
+  const setCoordinatorSession = coordinator.setSession
+  const setSnapshot = useCallback(
+    (update: SetStateAction<LiveSessionSnapshot>) =>
+      setCoordinatorSession((current) => {
+        if (current === null) return null
+        return typeof update === 'function' ? update(current) : update
+      }),
+    [setCoordinatorSession]
+  )
   const surfaceProps = coordinator.session
     ? {
         snapshot: coordinator.session,
-        setSnapshot: coordinator.setSession,
+        setSnapshot,
         scenario: coordinator.session.combat
           ? ('encounter' as const)
           : (scenarios[focusedSceneId] ?? 'encounter'),

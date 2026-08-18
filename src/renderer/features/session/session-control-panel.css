@@ -19,9 +19,12 @@
     padding-bottom: var(--space-4);
   }
 
-  .session-control-panel h2,
-  .session-groups h2 {
+  .session-control-panel h2 {
     margin: 0;
+    font-family: var(--font-smallcaps);
+    font-size: 0.95rem;
+    font-weight: var(--weight-display);
+    letter-spacing: var(--tracking-caps);
   }
 
   .control-register {
@@ -72,6 +75,10 @@
   .session-control-panel select {
     width: 100%;
     min-height: var(--control-h);
+    border: 1px solid var(--border-2);
+    border-radius: var(--radius-0);
+    background: var(--surface-control);
+    color: inherit;
     padding: var(--field-pad);
     font-size: var(--text-base);
     text-transform: none;
@@ -103,13 +110,5 @@
     font-size: var(--text-ui);
     font-style: italic;
     line-height: var(--leading-prose);
-  }
-
-  .session-control-column .session-pane {
-    display: flex;
-  }
-
-  .session-control-column .session-groups {
-    flex: 1;
   }
 }

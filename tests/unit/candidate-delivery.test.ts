@@ -64,6 +64,12 @@ describe('candidate delivery policy', () => {
       }))
     }
     expect(successfulCandidateEvidence([run], valid.head)?.url).toBe(run.url)
+    expect(
+      successfulCandidateEvidence(
+        [{ ...run, jobs: run.jobs.slice(1) }, run],
+        valid.head
+      )?.url
+    ).toBe(run.url)
     expect(successfulCandidateEvidence([run], 'c'.repeat(40))).toBeNull()
   })
 

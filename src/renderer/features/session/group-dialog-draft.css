@@ -215,3 +215,7 @@
   color: var(--text-2);
   font-size: var(--text-sm);
 }
+.session-group-manager .inline-error,
+.session-group-manager .unavailable {
+  color: var(--text-error);
+}

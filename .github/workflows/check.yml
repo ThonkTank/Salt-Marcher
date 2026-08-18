@@ -3,19 +3,42 @@ on:
   pull_request:
   push:
     branches: [main]
+permissions:
+  contents: read
+  actions: read
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
   portable:
-    name: Portable · ${{ matrix.os }}
+    if: github.event_name == 'pull_request'
+    name: Portable · static and app
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.15.1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: xvfb-run -a pnpm check:portable:fast
+
+  native:
+    if: github.event_name == 'pull_request'
+    name: Native · ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
-      # windows-latest currently provides a Visual Studio version that node-gyp
-      # cannot identify while compiling better-sqlite3.
-      matrix: { os: [ubuntu-latest, windows-2022, macos-latest] }
+      matrix:
+        include:
+          - os: windows-2022
+            electron-cache: ~/AppData/Local/electron/Cache
+            builder-cache: ~/AppData/Local/electron-builder/Cache
+          - os: macos-latest
+            electron-cache: ~/Library/Caches/electron
+            builder-cache: ~/Library/Caches/electron-builder
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -23,16 +46,19 @@ jobs:
         with: { version: 10.15.1 }
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
+      - name: Cache native Electron toolchain
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ matrix.electron-cache }}
+            ${{ matrix.builder-cache }}
+          key: native-${{ runner.os }}-${{ runner.arch }}-node22-pnpm10-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm install --frozen-lockfile
-      - name: Portable checks (Linux display)
-        if: runner.os == 'Linux'
-        run: xvfb-run -a pnpm check:portable
-      - name: Portable checks
-        if: runner.os != 'Linux'
-        run: pnpm check:portable
+      - run: pnpm check:native
 
-  linux-runtime:
-    name: Linux · profile, AppImage, installed-runtime prerequisites
+  linux-build:
+    if: github.event_name == 'pull_request'
+    name: Linux build · reusable app
     timeout-minutes: 30
     runs-on: ubuntu-latest
     steps:
@@ -41,25 +67,85 @@ jobs:
         with: { version: 10.15.1 }
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
+      - name: Cache native Electron toolchain
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: native-${{ runner.os }}-${{ runner.arch }}-node22-pnpm10-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm install --frozen-lockfile
       - run: pnpm check:linux
-      - run: xvfb-run -a pnpm test:packaged-smoke
+      - run: pnpm build
+      - run: xvfb-run -a pnpm test:smoke:built
+      - run: pnpm test:bundle-budget
+      - run: pnpm exec tsx scripts/assert-built-workspace.ts --channel development
+      - name: Upload hash-validated Linux app build
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-app-${{ github.sha }}
+          path: out
+          if-no-files-found: error
+          retention-days: 2
+
+  linux-package:
+    if: github.event_name == 'pull_request'
+    name: Linux package · profile and AppImage
+    needs: linux-build
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.15.1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-app-${{ github.sha }}
+          path: out
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec tsx scripts/assert-built-workspace.ts --channel development
+      - run: pnpm package:development:built
+      - run: xvfb-run -a pnpm test:packaged-smoke:built
+
+  linux-qualification:
+    if: github.event_name == 'pull_request'
+    name: Linux qualification · packaged harness
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.15.1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - name: Cache native Electron toolchain
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/electron
+            ~/.cache/electron-builder
+          key: native-${{ runner.os }}-${{ runner.arch }}-node22-pnpm10-${{ hashFiles('pnpm-lock.yaml') }}
+      - run: pnpm install --frozen-lockfile
       - run: xvfb-run -a pnpm test:packaged-qualification-smoke
 
   e2e:
+    if: github.event_name == 'pull_request'
     name: Linux E2E · ${{ matrix.shard }}
+    needs: linux-build
     timeout-minutes: 30
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          - shard: workspaces-create-hex
-            suites: --suite workspaces --suite create --suite hexLocation
-          - shard: npc-restart-dialogs
-            suites: --suite npcCatalog --suite restart --suite dialogs
-          - shard: generation-loot
-            suites: --suite sessionGeneration --suite loot
+          - shard: campaign-workspaces
+            suites: --suite workspaces --suite campaignCreate --suite campaignHexMap --suite campaignCombat --suite campaignPseudoLocale
+          - shard: hex-npc-restart
+            suites: --suite hexLocation --suite npcCatalog --suite restart
+          - shard: dialogs-generation-loot
+            suites: --suite dialogs --suite sessionGeneration --suite loot
           - shard: group-loot-travel
             suites: --suite groupLoot --suite groupLootCommit --suite travel
     steps:
@@ -68,8 +154,12 @@ jobs:
         with: { version: 10.15.1 }
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-app-${{ github.sha }}
+          path: out
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build
+      - run: pnpm exec tsx scripts/assert-built-workspace.ts --channel development
       - run: xvfb-run -a pnpm test:e2e:built -- ${{ matrix.suites }}
         env:
           SALT_MARCHER_VISUAL_GOLDEN_VARIANT: ubuntu-24.04
@@ -85,8 +175,43 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  visual:
+    if: github.event_name == 'pull_request'
+    name: Linux Visual · goldens
+    needs: linux-build
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.15.1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-app-${{ github.sha }}
+          path: out
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec tsx scripts/assert-built-workspace.ts --channel development
+      - run: xvfb-run -a pnpm test:visual:built
+        env:
+          SALT_MARCHER_VISUAL_GOLDEN_VARIANT: ubuntu-24.04
+      - name: Upload complete visual failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-evidence-${{ github.run_id }}
+          path: |
+            .tmp/e2e-runs
+            .tmp/visual-diffs
+            .tmp/wdio-user-data
+          if-no-files-found: error
+          retention-days: 14
+
   passive-e2e:
+    if: github.event_name == 'pull_request'
     name: Linux E2E · passive window
+    needs: linux-build
     timeout-minutes: 15
     runs-on: ubuntu-latest
     steps:
@@ -95,5 +220,27 @@ jobs:
         with: { version: 10.15.1 }
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: pnpm }
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-app-${{ github.sha }}
+          path: out
       - run: pnpm install --frozen-lockfile
-      - run: xvfb-run -a pnpm test:passive-e2e
+      - run: pnpm exec tsx scripts/assert-built-workspace.ts --channel development
+      - run: xvfb-run -a pnpm test:passive-e2e:built
+
+  post-promotion:
+    if: github.event_name == 'push'
+    name: Post-promotion · candidate attestation
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.15.1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm delivery:verify-post-promotion
+        env:
+          GH_TOKEN: ${{ github.token }}

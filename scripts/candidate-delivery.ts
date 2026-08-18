@@ -60,34 +60,20 @@ export function successfulCandidateEvidence(
       run.headSha === head &&
       run.status === 'completed' &&
       run.conclusion === 'success'
-    )
-      return verifyRequiredJobs(manifest, run, head)
+    ) {
+      try {
+        return verifyRequiredJobs(manifest, run, head)
+      } catch {
+        // A lightweight main run can share the SHA; only a complete candidate
+        // job set is eligible as the application attestation.
+      }
+    }
   return null
 }
 
-export function readCandidateState(): CandidateState {
-  const branch = git(['symbolic-ref', '--quiet', '--short', 'HEAD'])
-  const upstream = git(['rev-parse', '--abbrev-ref', '@{upstream}'])
-  const head = git(['rev-parse', 'HEAD'])
-  const upstreamHead = git(['rev-parse', '@{upstream}'])
-  const clean =
-    git(['status', '--porcelain=v1', '--untracked-files=all']) === ''
-  const remoteMain = parseRemoteHead(
-    command('git', [
-      'ls-remote',
-      '--exit-code',
-      '--heads',
-      'origin',
-      'refs/heads/main'
-    ])
-  )
-  command('git', ['fetch', '--no-tags', 'origin', 'main'])
-  const mainIsAncestor = commandStatus('git', [
-    'merge-base',
-    '--is-ancestor',
-    remoteMain,
-    head
-  ])
+export function readSuccessfulWorkflowEvidence(
+  head: string
+): WorkflowEvidence | null {
   const manifest = readRequiredJobManifest()
   const runSummaries = z
     .array(
@@ -118,29 +104,58 @@ export function readCandidateState(): CandidateState {
         ])
       )
     )
-  const successful = runSummaries.find(
+  const completed = runSummaries.filter(
     (run) =>
       run.headSha === head &&
       run.status === 'completed' &&
       run.conclusion === 'success'
   )
-  const candidate = successful
-    ? verifyRequiredJobs(
-        manifest,
+  for (const run of completed) {
+    const evidence = successfulCandidateEvidence(
+      [
         githubWorkflowRunSchema.parse(
           JSON.parse(
             command('gh', [
               'run',
               'view',
-              String(successful.databaseId),
+              String(run.databaseId),
               '--json',
               'databaseId,headSha,status,conclusion,url,attempt,jobs'
             ])
           )
-        ),
-        head
-      )
-    : null
+        )
+      ],
+      head
+    )
+    if (evidence) return evidence
+  }
+  return null
+}
+
+export function readCandidateState(): CandidateState {
+  const branch = git(['symbolic-ref', '--quiet', '--short', 'HEAD'])
+  const upstream = git(['rev-parse', '--abbrev-ref', '@{upstream}'])
+  const head = git(['rev-parse', 'HEAD'])
+  const upstreamHead = git(['rev-parse', '@{upstream}'])
+  const clean =
+    git(['status', '--porcelain=v1', '--untracked-files=all']) === ''
+  const remoteMain = parseRemoteHead(
+    command('git', [
+      'ls-remote',
+      '--exit-code',
+      '--heads',
+      'origin',
+      'refs/heads/main'
+    ])
+  )
+  command('git', ['fetch', '--no-tags', 'origin', 'main'])
+  const mainIsAncestor = commandStatus('git', [
+    'merge-base',
+    '--is-ancestor',
+    remoteMain,
+    head
+  ])
+  const candidate = readSuccessfulWorkflowEvidence(head)
   return {
     branch,
     upstream,

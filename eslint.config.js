@@ -291,7 +291,10 @@ export default tseslint.config(
     }
   },
   {
-    files: ['tests/e2e/**/*.e2e.ts'],
+    files: [
+      'tests/e2e/**/*.e2e.ts',
+      'tests/e2e/support/campaign-walking-scenarios.ts'
+    ],
     rules: {
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-call': 'off',

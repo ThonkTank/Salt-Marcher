@@ -3,70 +3,70 @@
   "goldens": [
     {
       "name": "campaign-dialog-light",
-      "suite": "create",
+      "suite": "campaignCreate",
       "testPattern": "creates and switches the selected campaign",
       "selector": "section.campaign-dialog",
       "viewport": { "width": 1280, "height": 800 }
     },
     {
       "name": "campaign-dialog-dark",
-      "suite": "create",
+      "suite": "campaignCreate",
       "testPattern": "creates and switches the selected campaign",
       "selector": "section.campaign-dialog",
       "viewport": { "width": 1280, "height": 800 }
     },
     {
       "name": "encounter-settings-light",
-      "suite": "create",
+      "suite": "campaignCreate",
       "testPattern": "creates and switches the selected campaign",
       "selector": "section.encounter-settings-dialog",
       "viewport": { "width": 1280, "height": 800 }
     },
     {
       "name": "encounter-settings-dark",
-      "suite": "create",
+      "suite": "campaignCreate",
       "testPattern": "creates and switches the selected campaign",
       "selector": "section.encounter-settings-dialog",
       "viewport": { "width": 1280, "height": 800 }
     },
     {
       "name": "hex-editor-biome-light",
-      "suite": "create",
+      "suite": "campaignHexMap",
       "testPattern": "keeps a newly created hex map inside the workspace",
       "selector": ".hex-editor-workspace",
       "viewport": { "width": 1280, "height": 800 }
     },
     {
       "name": "hex-editor-location-dark",
-      "suite": "create",
+      "suite": "campaignHexMap",
       "testPattern": "keeps a newly created hex map inside the workspace",
       "selector": ".hex-editor-workspace",
       "viewport": { "width": 1280, "height": 800 }
     },
     {
       "name": "hex-editor-selection-light-200",
-      "suite": "create",
+      "suite": "campaignHexMap",
       "testPattern": "keeps a newly created hex map inside the workspace",
       "selector": ".hex-editor-state",
       "viewport": { "width": 1280, "height": 800 }
     },
     {
       "name": "initiative",
-      "suite": "create",
+      "suite": "campaignCombat",
       "testPattern": "builds a scene party, browses monsters and starts a scene group combat",
       "selector": "aside[aria-label=\"Szenario Panel\"]",
       "viewport": { "width": 1280, "height": 800 }
     },
     {
       "name": "combat",
-      "suite": "create",
+      "suite": "campaignCombat",
       "testPattern": "builds a scene party, browses monsters and starts a scene group combat",
       "selector": "aside[aria-label=\"Szenario Panel\"]",
       "viewport": { "width": 1280, "height": 800 }
     },
     {
       "name": "resolution",
-      "suite": "create",
+      "suite": "campaignCombat",
       "testPattern": "builds a scene party, browses monsters and starts a scene group combat",
       "selector": "aside[aria-label=\"Szenario Panel\"]",
       "viewport": { "width": 1280, "height": 800 }
@@ -108,7 +108,7 @@
     },
     {
       "name": "group-management",
-      "suite": "create",
+      "suite": "campaignCombat",
       "testPattern": "builds a scene party, browses monsters and starts a scene group combat",
       "selector": "section[aria-labelledby=\"group-builder-title\"]",
       "viewport": { "width": 1280, "height": 800 }

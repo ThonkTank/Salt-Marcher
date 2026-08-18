@@ -3,36 +3,48 @@
   "workflowName": "Check",
   "jobs": [
     {
-      "name": "Portable · ubuntu-latest",
-      "platformRole": "portable-linux"
+      "name": "Portable · static and app",
+      "platformRole": "portable-static-and-contracts"
     },
     {
-      "name": "Portable · windows-2022",
-      "platformRole": "portable-windows-native-sqlite"
+      "name": "Native · windows-2022",
+      "platformRole": "windows-native-sqlite-runtime"
     },
     {
-      "name": "Portable · macos-latest",
-      "platformRole": "portable-macos-native-sqlite"
+      "name": "Native · macos-latest",
+      "platformRole": "macos-native-sqlite-runtime"
     },
     {
-      "name": "Linux · profile, AppImage, installed-runtime prerequisites",
+      "name": "Linux build · reusable app",
+      "platformRole": "linux-app-build-authority"
+    },
+    {
+      "name": "Linux package · profile and AppImage",
       "platformRole": "linux-package-runtime"
     },
     {
-      "name": "Linux E2E · workspaces-create-hex",
-      "platformRole": "linux-e2e-workspaces-create-hex"
+      "name": "Linux qualification · packaged harness",
+      "platformRole": "linux-packaged-qualification-harness"
     },
     {
-      "name": "Linux E2E · npc-restart-dialogs",
-      "platformRole": "linux-e2e-npc-restart-dialogs"
+      "name": "Linux E2E · campaign-workspaces",
+      "platformRole": "linux-e2e-campaign-workspaces"
     },
     {
-      "name": "Linux E2E · generation-loot",
-      "platformRole": "linux-e2e-generation-loot"
+      "name": "Linux E2E · hex-npc-restart",
+      "platformRole": "linux-e2e-hex-npc-restart"
+    },
+    {
+      "name": "Linux E2E · dialogs-generation-loot",
+      "platformRole": "linux-e2e-dialogs-generation-loot"
     },
     {
       "name": "Linux E2E · group-loot-travel",
       "platformRole": "linux-e2e-group-loot-travel"
+    },
+    {
+      "name": "Linux Visual · goldens",
+      "platformRole": "linux-visual-goldens"
     },
     {
       "name": "Linux E2E · passive window",

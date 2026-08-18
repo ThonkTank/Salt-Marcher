@@ -1,6 +1,6 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { e2eSuiteRegistry } from '../e2e/support/e2e-suite-registry.js'
+import { e2eSuiteRegistry } from '../../scripts/e2e-suite-registry.js'
 import {
   validateVisualGoldenSuites,
   type VisualGoldenEntry
@@ -40,6 +40,9 @@ describe('E2E suite registry', () => {
     ).not.toThrow()
     const e2eSources = e2eSuiteRegistry
       .map((suite) => readFileSync(suite.spec, 'utf8'))
+      .concat(
+        readFileSync('tests/e2e/support/campaign-walking-scenarios.ts', 'utf8')
+      )
       .join('\n')
     for (const golden of manifest.goldens)
       expect(
@@ -61,12 +64,17 @@ describe('E2E suite registry', () => {
   })
 
   it('keeps campaign scenarios independently startable from the empty fixture', () => {
-    const campaign = readFileSync('tests/e2e/campaign-walking.e2e.ts', 'utf8')
-    expect(campaign.match(/\bit\('/g)).toHaveLength(4)
-    expect(campaign.match(/await createFreshCampaign\(/g)).toHaveLength(3)
-    expect(
-      e2eSuiteRegistry.find((suite) => suite.name === 'create')?.fixture
-    ).toBe('v1/empty-installation')
+    const campaigns = e2eSuiteRegistry.filter((suite) =>
+      suite.name.startsWith('campaign')
+    )
+    expect(campaigns).toHaveLength(4)
+    for (const campaign of campaigns) {
+      expect(campaign.fixture).toBe('v1/empty-installation')
+      expect(readFileSync(campaign.spec, 'utf8').match(/\bit\(/g)).toHaveLength(
+        1
+      )
+    }
+    expect(existsSync('tests/e2e/campaign-walking.e2e.ts')).toBe(false)
   })
 
   it('materializes a fresh per-suite profile and supports shuffled order', () => {

@@ -8,7 +8,7 @@ import {
   e2eSuite,
   e2eSuiteRegistry,
   isE2eSuiteName
-} from './tests/e2e/support/e2e-suite-registry.js'
+} from './scripts/e2e-suite-registry.js'
 
 const packageRequire = createRequire(import.meta.url)
 

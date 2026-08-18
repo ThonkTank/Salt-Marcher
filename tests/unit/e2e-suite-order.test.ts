@@ -3,7 +3,7 @@ import { shuffledSuiteOrder } from '../../scripts/e2e-suite-order.js'
 
 describe('E2E suite order', () => {
   it('creates a deterministic permutation without losing suite identity', () => {
-    const suites = ['create', 'dialogs', 'loot', 'travel'] as const
+    const suites = ['campaignCreate', 'dialogs', 'loot', 'travel'] as const
     const first = shuffledSuiteOrder(suites, 20260817)
     const second = shuffledSuiteOrder(suites, 20260817)
     expect(first).toEqual(second)
@@ -12,10 +12,10 @@ describe('E2E suite order', () => {
   })
 
   it('rejects invalid seeds', () => {
-    expect(() => shuffledSuiteOrder(['create'], -1)).toThrow(
+    expect(() => shuffledSuiteOrder(['campaignCreate'], -1)).toThrow(
       'non-negative safe integer'
     )
-    expect(() => shuffledSuiteOrder(['create'], Number.NaN)).toThrow(
+    expect(() => shuffledSuiteOrder(['campaignCreate'], Number.NaN)).toThrow(
       'non-negative safe integer'
     )
   })

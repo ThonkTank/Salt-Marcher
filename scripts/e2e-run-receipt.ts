@@ -5,6 +5,8 @@ export type E2eSuiteAttempt = Readonly<{
   durationMs: number
   logPath: string
   artifactDirectory: string
+  failureKind?: 'product' | 'infrastructure' | null
+  knownNoise?: number
 }>
 
 export type E2eSuiteResult<Name extends string = string> = Readonly<{

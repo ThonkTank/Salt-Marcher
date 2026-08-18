@@ -11,8 +11,23 @@ export const e2eSuiteRegistry = [
     fixture: 'v1/empty-installation'
   },
   {
-    name: 'create',
-    spec: './tests/e2e/campaign-walking.e2e.ts',
+    name: 'campaignCreate',
+    spec: './tests/e2e/campaign-create.e2e.ts',
+    fixture: 'v1/empty-installation'
+  },
+  {
+    name: 'campaignHexMap',
+    spec: './tests/e2e/campaign-hex-map.e2e.ts',
+    fixture: 'v1/empty-installation'
+  },
+  {
+    name: 'campaignCombat',
+    spec: './tests/e2e/campaign-combat.e2e.ts',
+    fixture: 'v1/empty-installation'
+  },
+  {
+    name: 'campaignPseudoLocale',
+    spec: './tests/e2e/campaign-pseudo-locale.e2e.ts',
     fixture: 'v1/empty-installation'
   },
   {

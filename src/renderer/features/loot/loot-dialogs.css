@@ -384,10 +384,6 @@
   min-height: 0;
 }
 
-.session-group-manager .loot-catalog-pane {
-  grid-template-rows: auto minmax(0, 1fr) auto;
-}
-
 .loot-catalog-filters {
   display: grid;
   grid-template-columns: minmax(10rem, 1fr) repeat(3, minmax(7rem, auto));

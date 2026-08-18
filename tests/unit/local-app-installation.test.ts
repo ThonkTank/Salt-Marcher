@@ -23,10 +23,10 @@ import {
 } from '../../scripts/local-app-installation.js'
 import type { BuildInfo } from '../../src/shared/contracts/build-info.js'
 import type { SchemaMigration } from '../../src/core/persistence/sqlite/schema-migrations.js'
-import { currentSchemaVersion } from '../../src/core/persistence/sqlite/database.js'
+import { databaseSchemaVersions } from '../../src/core/persistence/sqlite/database.js'
 
 const roots: string[] = []
-const schemaVersion = currentSchemaVersion
+const schemaVersion = databaseSchemaVersions.installation
 
 afterEach(() => {
   for (const root of roots.splice(0))
@@ -188,7 +188,7 @@ describe('local AppImage installation', () => {
   it('refuses a schema change when no tested migration exists', () => {
     const fixture = createFixture(build('a'))
     const paths = localInstallationPaths(fixture.xdg)
-    const databasePath = createDatabase(paths.campaignData, schemaVersion - 8)
+    const databasePath = createDatabase(paths.campaignData, schemaVersion - 9)
     const before = readFileSync(databasePath)
 
     expectFailure(() => installLocalApp(fixture.options), 'migration-missing')
@@ -449,7 +449,7 @@ function build(character: string): BuildInfo {
     workspaceFingerprint: character.repeat(64),
     appBuildInputFingerprint: character.repeat(64),
     builtAt: '2026-08-15T12:00:00.000Z',
-    schemaVersions: { installation: schemaVersion, campaign: schemaVersion },
+    schemaVersions: databaseSchemaVersions,
     migrationRegistryVersion: 1,
     toolchain: {
       node: 'v22.19.0',

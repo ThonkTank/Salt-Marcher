@@ -1,6 +1,11 @@
-import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import {
+  e2eSuiteRegistry,
+  isE2eSuiteName,
+  type E2eSuiteName
+} from './e2e-suite-registry.js'
+import { executeE2eRun } from './e2e-runner-core.js'
 import type { VisualGoldenEntry } from './visual-golden-policy.js'
 
 const manifest = JSON.parse(
@@ -9,37 +14,53 @@ const manifest = JSON.parse(
     'utf8'
   )
 ) as { version: 1; goldens: VisualGoldenEntry[] }
-const bySuite = new Map<string, Set<string>>()
+const patternsBySuite = new Map<E2eSuiteName, Set<string>>()
 for (const golden of manifest.goldens) {
-  const patterns = bySuite.get(golden.suite) ?? new Set<string>()
+  if (!isE2eSuiteName(golden.suite))
+    throw new Error(`Unknown visual E2E suite: ${golden.suite}`)
+  const patterns = patternsBySuite.get(golden.suite) ?? new Set<string>()
   patterns.add(golden.testPattern)
-  bySuite.set(golden.suite, patterns)
+  patternsBySuite.set(golden.suite, patterns)
 }
-for (const [suite, patterns] of bySuite) {
-  const result = spawnSync(
-    join(process.cwd(), 'node_modules', '.bin', 'wdio'),
-    ['run', 'wdio.conf.ts', '--suite', suite],
-    {
-      cwd: process.cwd(),
-      env: {
-        ...process.env,
-        SALT_MARCHER_E2E_GREP: [...patterns]
-          .map(escapeRegularExpression)
-          .join('|'),
-        SALT_MARCHER_E2E_SUITE: suite,
-        SALT_MARCHER_E2E_RUN_ID: `visual-${process.pid}-${suite}`,
-        SALT_MARCHER_VISUAL_MODE: 'true'
-      },
-      stdio: 'inherit'
-    }
-  )
-  if (result.error) throw result.error
-  if (result.status !== 0)
-    throw new Error(
-      `Visual suite ${suite} failed with exit status ${result.status ?? 'unknown'}`
-    )
-}
+const grepBySuite = new Map(
+  [...patternsBySuite].map(([suite, patterns]) => [
+    suite,
+    [...patterns].map(escapeRegularExpression).join('|')
+  ])
+)
+const requestedSuites = repeatedArguments('--suite')
+for (const suite of requestedSuites)
+  if (!isE2eSuiteName(suite) || !grepBySuite.has(suite))
+    throw new Error(`Unknown visual E2E suite: ${suite}`)
+const selectedSuites =
+  requestedSuites.length > 0
+    ? ([...new Set(requestedSuites)] as E2eSuiteName[])
+    : [...grepBySuite.keys()]
+const resumeIndex = process.argv.indexOf('--resume')
+const resumePath = resumeIndex >= 0 ? process.argv[resumeIndex + 1] : undefined
+if (resumeIndex >= 0 && !resumePath) throw new Error('--resume needs a value')
+
+await executeE2eRun({
+  mode: 'visual',
+  selectedSuites,
+  registry: e2eSuiteRegistry,
+  grepBySuite,
+  ...(resumePath ? { resumePath } : {})
+})
 
 function escapeRegularExpression(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function repeatedArguments(name: string): string[] {
+  const values: string[] = []
+  for (let index = 0; index < process.argv.length; index += 1) {
+    if (process.argv[index] !== name) continue
+    const value = process.argv[index + 1]
+    if (!value || value.startsWith('--'))
+      throw new Error(`${name} needs a value`)
+    values.push(value)
+    index += 1
+  }
+  return values
 }

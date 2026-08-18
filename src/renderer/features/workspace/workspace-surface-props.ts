@@ -1,11 +1,12 @@
 import type { Creature } from '../../../shared/contracts/encounter.js'
+import type { Dispatch, SetStateAction } from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type { SessionLayoutPreference } from '../../../shared/contracts/session-layout.js'
 import type { SessionScenario } from '../session/session-scenario.js'
 
 export type WorkspaceSurfaceProps = Readonly<{
   snapshot: LiveSessionSnapshot
-  setSnapshot: (snapshot: LiveSessionSnapshot) => void
+  setSnapshot: Dispatch<SetStateAction<LiveSessionSnapshot>>
   scenario: SessionScenario
   setScenario: (scenario: SessionScenario) => void
   layout: SessionLayoutPreference

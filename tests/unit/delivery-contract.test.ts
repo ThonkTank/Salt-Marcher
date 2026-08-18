@@ -15,8 +15,8 @@ describe('delivery contract', () => {
   it('loads an ordered, unique required-job manifest', () => {
     const manifest = readRequiredJobManifest()
     expect(manifest.schemaVersion).toBe(1)
-    expect(manifest.jobs).toHaveLength(9)
-    expect(new Set(manifest.jobs.map(({ name }) => name)).size).toBe(9)
+    expect(manifest.jobs).toHaveLength(12)
+    expect(new Set(manifest.jobs.map(({ name }) => name)).size).toBe(12)
     expect(() =>
       requiredJobManifestSchema.parse({
         ...manifest,

@@ -55,6 +55,7 @@ describe('developer feedback partitions', () => {
   it('starts package CLIs through Node instead of Windows command shims', () => {
     const lintRunner = readFileSync('scripts/run-lint-partitions.ts', 'utf8')
     const e2eRunner = readFileSync('scripts/run-e2e-suites.ts', 'utf8')
+    const e2eCore = readFileSync('scripts/e2e-runner-core.ts', 'utf8')
     const e2eConfiguration = readFileSync('wdio.conf.ts', 'utf8')
     const buildRunner = readFileSync('scripts/package-cli.ts', 'utf8')
     const applicationBuild = readFileSync('scripts/build-app.ts', 'utf8')
@@ -63,9 +64,9 @@ describe('developer feedback partitions', () => {
     )
     expect(lintRunner).toContain('spawn(\n      process.execPath')
     expect(lintRunner).not.toContain('eslint.cmd')
-    expect(e2eRunner).toContain("packageRequire.resolve('@wdio/cli')")
-    expect(e2eRunner).toContain('spawn(\n      process.execPath')
-    expect(e2eRunner).not.toContain('wdio.cmd')
+    expect(e2eCore).toContain("packageRequire.resolve('@wdio/cli')")
+    expect(e2eCore).toContain('spawn(\n      process.execPath')
+    expect(`${e2eRunner}\n${e2eCore}`).not.toContain('wdio.cmd')
     expect(e2eConfiguration).toContain("packageRequire.resolve('tsx/cli')")
     expect(e2eConfiguration).toContain('spawnSync(\n  process.execPath')
     expect(e2eConfiguration).not.toContain("'.bin', 'tsx'")
@@ -154,12 +155,13 @@ describe('group Loot architecture refactor', () => {
 
   it('keeps E2E evidence resumable, atomic, and free of hidden retries', () => {
     const runner = readFileSync('scripts/run-e2e-suites.ts', 'utf8')
+    const core = readFileSync('scripts/e2e-runner-core.ts', 'utf8')
     expect(runner).toContain("argumentAfter('--resume')")
     expect(runner).toContain("repeatedArguments('--suite')")
-    expect(runner).toContain('validateE2eResumeIdentity(resumed')
-    expect(runner).toContain('writeSuiteResult(')
-    expect(runner).toContain('renameSync(temporary, path)')
-    expect(runner).not.toMatch(/retry|retries/i)
+    expect(core).toContain('validateE2eResumeIdentity(resumed')
+    expect(core).toContain('writeSuiteResult(')
+    expect(core).toContain('renameSync(temporary, path)')
+    expect(`${runner}\n${core}`).not.toMatch(/retry|retries/i)
   })
 
   it('publishes catalog artifacts without overwriting or implicit activation', () => {

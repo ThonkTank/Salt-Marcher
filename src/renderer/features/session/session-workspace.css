@@ -5,57 +5,6 @@
     background: var(--surface-desk);
   }
 
-  .group-dialog header,
-  .groups-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.6rem;
-  }
-
-  .groups-heading h2,
-  .group-dialog h2 {
-    margin: 0;
-  }
-
-  .session-control-panel h2,
-  .session-groups h2 {
-    font-family: var(--font-smallcaps);
-    font-size: 0.95rem;
-    font-weight: var(--weight-display);
-    letter-spacing: var(--tracking-caps);
-  }
-
-  .monster-picker {
-    display: grid;
-    gap: 0.45rem;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .monster-picker li {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.55rem;
-    border: 1px solid var(--border-1);
-    border-radius: var(--radius-0);
-    background: var(--surface-control);
-    padding: 0.5rem;
-  }
-
-  .monster-picker span {
-    display: grid;
-    min-width: 0;
-  }
-
-  .monster-picker small {
-    overflow: hidden;
-    color: var(--text-3);
-    text-overflow: ellipsis;
-  }
-
   .session-layout {
     height: 100%;
     min-height: 35rem;
@@ -121,38 +70,12 @@
     cursor: col-resize;
   }
 
-  .groups-heading {
+  .session-control-column .session-pane {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-6);
-    margin-bottom: var(--space-5);
-    border-bottom: var(--border-width-structural) solid
-      var(--accent-rubric-line);
-    padding-bottom: var(--space-4);
   }
 
-  .inline-error,
-  .unavailable {
-    color: var(--text-error);
-  }
-
-  select {
-    min-height: 2.15rem;
-    border: 1px solid var(--border-2);
-    border-radius: var(--radius-0);
-    background: var(--surface-control);
-    color: inherit;
-    padding: 0.35rem 0.5rem;
-  }
-
-  progress {
-    width: 100%;
-    accent-color: var(--accent-gold);
-  }
-
-  .muted {
-    color: var(--text-muted);
+  .session-control-column .session-groups {
+    flex: 1;
   }
   .session-workspace[data-layout-mode='compact'] {
     display: grid;
