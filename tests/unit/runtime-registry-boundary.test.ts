@@ -1,0 +1,54 @@
+import { readFileSync } from 'node:fs'
+import { describe, expect, it } from 'vitest'
+import { runtimeRegistryBoundaryViolations } from '../../scripts/architecture/runtime-registry-boundary.js'
+
+const paths = [
+  'src/shared/contracts/operations.ts',
+  'src/utility/application.ts',
+  'src/preload/capability-bridge/index.ts'
+] as const
+
+describe('runtime registry architecture boundary', () => {
+  it('accepts the composed registry, preload, and Utility roots', () => {
+    expect(runtimeRegistryBoundaryViolations(actualSources())).toEqual([])
+  })
+
+  it.each([
+    [
+      'central operation',
+      'src/shared/contracts/operations.ts',
+      "\nconst mutation = { 'forbidden.read': {} }\n",
+      'central_operation_definition'
+    ],
+    [
+      'inline Utility function',
+      'src/utility/application.ts',
+      '\nfunction forbiddenInlineOwner(): void {}\n',
+      'inline_utility_function'
+    ]
+  ])('detects the %s mutation', (_name, path, mutation, code) => {
+    const sources = actualSources()
+    sources[path] = `${sources[path] ?? ''}${mutation}`
+    expect(runtimeRegistryBoundaryViolations(sources)).toContainEqual(
+      expect.objectContaining({ path, code })
+    )
+  })
+
+  it('detects removal of the preload completeness assertion', () => {
+    const sources = actualSources()
+    const path = 'src/preload/capability-bridge/index.ts'
+    sources[path] = (sources[path] ?? '').replace(
+      /assertExactOperationKeys\([\s\S]*?exposedOperationKinds\n\)/,
+      ''
+    )
+    expect(runtimeRegistryBoundaryViolations(sources)).toContainEqual(
+      expect.objectContaining({ path, code: 'missing_completeness_assertion' })
+    )
+  })
+})
+
+function actualSources(): Record<string, string> {
+  return Object.fromEntries(
+    paths.map((path) => [path, readFileSync(path, 'utf8')])
+  )
+}
