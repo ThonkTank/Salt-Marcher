@@ -8,7 +8,10 @@ import { join } from 'node:path'
 import pixelmatch from 'pixelmatch'
 import { PNG } from 'pngjs'
 import { mainWindowGeometry } from '../../../src/shared/contracts/window-geometry.js'
-import { rendererAcknowledgesWindowGeometry } from './e2e-window-geometry.js'
+import {
+  rendererAcknowledgesOuterWindowGeometry,
+  rendererAcknowledgesWindowGeometry
+} from './e2e-window-geometry.js'
 import {
   selectedVisualGoldens,
   validateVisualGoldenSuites,
@@ -74,44 +77,41 @@ export async function setElectronWindowSize(
       ) => Promise<Result>
     }
   }
-  await client.waitUntil(
-    async () => {
-      try {
-        return await electronClient.electron.execute(
-          (electron, nextWidth, nextHeight) => {
-            const target =
-              electron.BrowserWindow.getFocusedWindow() ??
-              electron.BrowserWindow.getAllWindows().find(
-                (candidate) => !candidate.isDestroyed() && candidate.isVisible()
-              ) ??
-              electron.webContents
-                .getAllWebContents()
-                .map((contents) =>
-                  electron.BrowserWindow.fromWebContents(contents)
-                )
-                .find(
+  const resizedWithElectron =
+    process.env['SALT_MARCHER_E2E_FORCE_BROWSER_RESIZE'] === 'true'
+      ? false
+      : await electronClient.electron
+          .execute(
+            (electron, nextWidth, nextHeight) => {
+              const target =
+                electron.BrowserWindow.getFocusedWindow() ??
+                electron.BrowserWindow.getAllWindows().find(
                   (candidate) =>
-                    candidate !== null &&
-                    !candidate.isDestroyed() &&
-                    candidate.isVisible()
-                )
-            if (!target) return false
-            target.setSize(nextWidth, nextHeight)
-            return true
-          },
-          width,
-          height
-        )
-      } catch {
-        return false
-      }
-    },
-    {
-      timeout: 10_000,
-      interval: 250,
-      timeoutMsg: 'No Electron window was available to resize.'
-    }
-  )
+                    !candidate.isDestroyed() && candidate.isVisible()
+                ) ??
+                electron.webContents
+                  .getAllWebContents()
+                  .map((contents) =>
+                    electron.BrowserWindow.fromWebContents(contents)
+                  )
+                  .find(
+                    (candidate) =>
+                      candidate !== null &&
+                      !candidate.isDestroyed() &&
+                      candidate.isVisible()
+                  )
+              if (!target) return false
+              target.setSize(nextWidth, nextHeight)
+              return true
+            },
+            width,
+            height
+          )
+          .catch(() => false)
+  if (!resizedWithElectron) {
+    await setWindowSizeThroughBrowser(client, width, height)
+    return
+  }
   let geometry: WindowGeometry | null = null
   await client.waitUntil(
     async () => {
@@ -175,6 +175,50 @@ export async function setElectronWindowSize(
       interval: 100,
       timeoutMsg:
         'Renderer content geometry and owned layout did not acknowledge the Electron resize.'
+    }
+  )
+}
+
+async function setWindowSizeThroughBrowser(
+  client: WdioBrowser,
+  width: number,
+  height: number
+): Promise<void> {
+  await client.execute(
+    (nextWidth, nextHeight) => window.resizeTo(nextWidth, nextHeight),
+    width,
+    height
+  )
+  await client.waitUntil(
+    async () => {
+      const observed = await client.execute(() => {
+        const workspace =
+          document.querySelector<HTMLElement>('.session-workspace')
+        const measuredWidth = Number(workspace?.dataset['workspaceWidth'])
+        return {
+          outerWidth: window.outerWidth,
+          outerHeight: window.outerHeight,
+          innerWidth: window.innerWidth,
+          innerHeight: window.innerHeight,
+          workspace: workspace
+            ? {
+                ready: workspace.dataset['sessionLayoutReady'] === 'true',
+                measuredWidth,
+                renderedWidth: workspace.getBoundingClientRect().width
+              }
+            : null
+        }
+      })
+      return rendererAcknowledgesOuterWindowGeometry(
+        { width, height },
+        observed
+      )
+    },
+    {
+      timeout: 15_000,
+      interval: 100,
+      timeoutMsg:
+        'Renderer outer geometry and owned layout did not acknowledge the browser resize.'
     }
   )
 }
