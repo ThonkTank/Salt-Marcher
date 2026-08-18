@@ -35,6 +35,9 @@ describe('E2E runner diagnostics', () => {
         'WebDriverError: The operation was aborted due to timeout when running "http://localhost:44289/session" with method "POST"'
       )
     ).toBe('infrastructure')
+    expect(classifyE2eFailure(1, 'WebDriverError: tab crashed')).toBe(
+      'infrastructure'
+    )
     expect(classifyE2eFailure(1, 'AssertionError: expected button')).toBe(
       'product'
     )

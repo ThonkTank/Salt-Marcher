@@ -297,61 +297,80 @@ describe('generator preset integration', () => {
       return (await e2eWindow.__saltMarcherE2e?.terminateUtility()) ?? false
     })
     expect(utilityTerminated).toBe(true)
-    await client.waitUntil(
-      async () =>
-        (await client.execute(async () =>
-          window.saltMarcher.runtime.coreStatus()
-        )) !== 'ready',
-      {
-        timeout: 10_000,
-        interval: 100,
-        timeoutMsg: 'Utility did not enter its restart transition.'
-      }
-    )
-    await client.waitUntil(
-      async () =>
-        (await client.execute(async () =>
-          window.saltMarcher.runtime.coreStatus()
-        )) === 'ready',
-      {
-        timeout: 45_000,
-        interval: 250,
-        timeoutMsg: 'Utility did not become ready after the restart.'
-      }
-    )
-    await client.waitUntil(
-      async () => {
-        try {
-          const proof = await client.execute(async (operationId) => {
-            const receipt =
-              await window.saltMarcher.sessionPlanner.preparationReceipt({
-                operationId
-              })
-            if (receipt.receipt?.status !== 'succeeded') return null
-            const workspace = await window.saltMarcher.sessionPlanner.read()
-            return {
-              status: receipt.receipt.status,
-              artifacts: workspace.session.scenes.map((scene) => ({
-                id: scene.id,
-                encounterPlanId: scene.encounterPlanId,
-                rewards: scene.generatedRewards.map((reward) => ({
-                  runId: reward.runId,
-                  generatedTreasureId: reward.generatedTreasureId
-                }))
-              }))
-            }
-          }, interruptedOperation)
-          return proof !== null
-        } catch {
-          return false
+    await client.setTimeout({ script: 5_000 })
+    try {
+      await client.waitUntil(
+        async () => {
+          try {
+            return (
+              (await client.execute(async () =>
+                window.saltMarcher.runtime.coreStatus()
+              )) !== 'ready'
+            )
+          } catch {
+            return false
+          }
+        },
+        {
+          timeout: 10_000,
+          interval: 100,
+          timeoutMsg: 'Utility did not enter its restart transition.'
         }
-      },
-      {
-        timeout: 45_000,
-        interval: 250,
-        timeoutMsg: 'Planner did not recover after the Utility restart.'
-      }
-    )
+      )
+      await client.waitUntil(
+        async () => {
+          try {
+            return (
+              (await client.execute(async () =>
+                window.saltMarcher.runtime.coreStatus()
+              )) === 'ready'
+            )
+          } catch {
+            return false
+          }
+        },
+        {
+          timeout: 45_000,
+          interval: 250,
+          timeoutMsg: 'Utility did not become ready after the restart.'
+        }
+      )
+      await client.waitUntil(
+        async () => {
+          try {
+            const proof = await client.execute(async (operationId) => {
+              const receipt =
+                await window.saltMarcher.sessionPlanner.preparationReceipt({
+                  operationId
+                })
+              if (receipt.receipt?.status !== 'succeeded') return null
+              const workspace = await window.saltMarcher.sessionPlanner.read()
+              return {
+                status: receipt.receipt.status,
+                artifacts: workspace.session.scenes.map((scene) => ({
+                  id: scene.id,
+                  encounterPlanId: scene.encounterPlanId,
+                  rewards: scene.generatedRewards.map((reward) => ({
+                    runId: reward.runId,
+                    generatedTreasureId: reward.generatedTreasureId
+                  }))
+                }))
+              }
+            }, interruptedOperation)
+            return proof !== null
+          } catch {
+            return false
+          }
+        },
+        {
+          timeout: 45_000,
+          interval: 250,
+          timeoutMsg: 'Planner did not recover after the Utility restart.'
+        }
+      )
+    } finally {
+      await client.setTimeout({ script: 30_000 })
+    }
     const resumed = await client.execute(async (operationId) => {
       const receipt =
         await window.saltMarcher.sessionPlanner.preparationReceipt({

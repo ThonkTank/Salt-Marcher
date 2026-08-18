@@ -30,7 +30,7 @@ const userData = join(
 process.env['SALT_MARCHER_E2E'] = 'true'
 process.env['SALT_MARCHER_E2E_SUITE'] = suite
 if (suite === 'sessionGeneration')
-  process.env['SALT_MARCHER_E2E_PREPARATION_STAGE_DELAY_MS'] ??= '3000'
+  process.env['SALT_MARCHER_E2E_PREPARATION_STAGE_DELAY_MS'] ??= '1000'
 rmSync(userData, { recursive: true, force: true })
 mkdirSync(userData, { recursive: true })
 cpSync(join(process.cwd(), 'tests', 'e2e', 'fixtures', fixture), userData, {

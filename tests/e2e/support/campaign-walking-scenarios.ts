@@ -629,7 +629,12 @@ export async function runCampaignCombatScenario(): Promise<void> {
   await tableOption.waitForDisplayed()
   await tableOption.click()
   await expect(await client.$('button=Wachpatrouille ×')).toBeExisting()
-  await client.keys(['Escape'])
+  await tableFilter.click()
+  await client.keys('Escape')
+  await expect(tableFilter).toHaveAttribute('aria-expanded', 'false')
+  await client
+    .$('[role="listbox"][aria-label="Tabelle"]')
+    .waitForExist({ reverse: true, timeout: 5_000 })
   await expect(await client.$('button=+ Encounter')).not.toBeExisting()
   await expectAccessibleInBothThemes(client)
 
