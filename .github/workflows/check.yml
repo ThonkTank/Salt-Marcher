@@ -85,6 +85,7 @@ jobs:
         with:
           name: linux-app-${{ github.sha }}
           path: out
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 2
 

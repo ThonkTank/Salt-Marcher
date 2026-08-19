@@ -56,6 +56,7 @@ describe('CI platform partitions', () => {
       workflow.indexOf('  linux-package:')
     )
     expect(linuxBuild.match(/^\s+- run: pnpm build$/gm)).toHaveLength(1)
+    expect(linuxBuild).toContain('include-hidden-files: true')
     const consumers = workflow.slice(workflow.indexOf('  linux-package:'))
     expect(consumers).not.toMatch(/^\s+- run: pnpm build$/m)
     expect(workflow).toContain('name: linux-app-${{ github.sha }}')
