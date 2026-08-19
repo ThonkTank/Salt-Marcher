@@ -5,6 +5,7 @@ import {
   expectAccessible,
   expectAccessibleInBothThemes,
   expectElementGolden,
+  replaceFieldValue,
   setElectronWindowSize,
   setWindowToMinimumResponsiveSize
 } from './e2e-assertions.js'
@@ -427,12 +428,16 @@ export async function runCampaignCombatScenario(): Promise<void> {
   const editLocation = await client.$(
     '[role="dialog"][aria-label="Ort bearbeiten"]'
   )
-  await (
-    await editLocation.$('input[aria-label="Ortsname"]')
-  ).setValue('Salzmarschhafen')
-  await (
-    await editLocation.$('textarea[aria-label="GM-Notizen"]')
-  ).setValue('Nebel, Lagerhäuser und eine geschäftige Anlegestelle.')
+  await replaceFieldValue(
+    client,
+    await editLocation.$('input[aria-label="Ortsname"]'),
+    'Salzmarschhafen'
+  )
+  await replaceFieldValue(
+    client,
+    await editLocation.$('textarea[aria-label="GM-Notizen"]'),
+    'Nebel, Lagerhäuser und eine geschäftige Anlegestelle.'
+  )
   await (await editLocation.$('button=Speichern')).click()
   await expect(
     await client.$('h2[aria-label="Salzmarschhafen"]')
