@@ -6,8 +6,11 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   computeAppBuildInputFingerprint,
   computeAppBuildInputFingerprintAtRef,
+  computeDeliveryInputFingerprint,
+  computeQualificationInputFingerprint,
   computeWorkspaceFingerprint
 } from '../../scripts/build-identity.js'
+import { classifyWorkspaceInput } from '../../scripts/workspace-input-classification.js'
 import {
   buildInfoSchema,
   shortBuildFingerprint
@@ -71,6 +74,92 @@ describe('build identity', () => {
     expect(computeAppBuildInputFingerprint(root)).not.toBe(firstApp)
   })
 
+  it('classifies build, qualification, delivery, and documentation inputs explicitly', () => {
+    expect(classifyWorkspaceInput('src/main/index.ts')).toEqual(['app-build'])
+    expect(classifyWorkspaceInput('resources/catalog/items.json')).toEqual([
+      'app-build'
+    ])
+    expect(classifyWorkspaceInput('tests/unit/build.test.ts')).toEqual([
+      'qualification'
+    ])
+    expect(classifyWorkspaceInput('.github/workflows/check.yml')).toEqual([
+      'delivery-tooling'
+    ])
+    expect(classifyWorkspaceInput('docs/project/vision.md')).toEqual([
+      'documentation'
+    ])
+    expect(classifyWorkspaceInput('pnpm-lock.yaml')).toEqual([
+      'app-build',
+      'qualification',
+      'delivery-tooling'
+    ])
+  })
+
+  it('changes only the fingerprints affected by representative mutations', () => {
+    const cases: readonly Readonly<{
+      path: string
+      changed: readonly ('app' | 'qualification' | 'delivery')[]
+    }>[] = [
+      { path: 'src/app.ts', changed: ['app'] },
+      { path: 'resources/catalog.json', changed: ['app'] },
+      { path: 'electron-builder.local.yml', changed: ['app'] },
+      { path: 'tests/unit/app.test.ts', changed: ['qualification'] },
+      { path: 'vitest.config.ts', changed: ['qualification'] },
+      { path: 'scripts/candidate-delivery.ts', changed: ['delivery'] },
+      { path: '.github/workflows/check.yml', changed: ['delivery'] },
+      { path: 'docs/note.md', changed: [] },
+      {
+        path: 'pnpm-lock.yaml',
+        changed: ['app', 'qualification', 'delivery']
+      }
+    ]
+
+    for (const mutation of cases) {
+      const root = classifiedFixture()
+      const before = inputFingerprints(root)
+      writeFileSync(join(root, mutation.path), 'mutated')
+      const after = inputFingerprints(root)
+      expect(changedFingerprints(before, after), mutation.path).toEqual(
+        mutation.changed
+      )
+    }
+  })
+
+  it('projects package metadata semantically for each input class', () => {
+    const productionRoot = classifiedFixture()
+    const productionBefore = inputFingerprints(productionRoot)
+    writePackage(productionRoot, {
+      dependencies: { react: '20.0.0' }
+    })
+    expect(
+      changedFingerprints(productionBefore, inputFingerprints(productionRoot))
+    ).toEqual(['app'])
+
+    const administrativeRoot = classifiedFixture()
+    const administrativeBefore = inputFingerprints(administrativeRoot)
+    writePackage(administrativeRoot, {
+      scripts: { maintenance: 'tsx scripts/maintenance.ts' }
+    })
+    expect(
+      changedFingerprints(
+        administrativeBefore,
+        inputFingerprints(administrativeRoot)
+      )
+    ).toEqual(['delivery'])
+
+    const qualificationRoot = classifiedFixture()
+    const qualificationBefore = inputFingerprints(qualificationRoot)
+    writePackage(qualificationRoot, {
+      scripts: { test: 'vitest run --changed' }
+    })
+    expect(
+      changedFingerprints(
+        qualificationBefore,
+        inputFingerprints(qualificationRoot)
+      )
+    ).toEqual(['qualification', 'delivery'])
+  })
+
   it('compares app inputs across immutable application and evidence commits', () => {
     const root = mkdtempSync(join(tmpdir(), 'salt-marcher-ref-identity-'))
     roots.push(root)
@@ -126,6 +215,54 @@ describe('build identity', () => {
     )
   })
 
+  it('uses the semantic package projection at immutable refs', () => {
+    const root = classifiedFixture()
+    git(
+      root,
+      '-c',
+      'user.name=Test',
+      '-c',
+      'user.email=test@example.com',
+      'commit',
+      '-m',
+      'baseline'
+    )
+    const baseline = gitOutput(root, 'rev-parse', 'HEAD')
+
+    writePackage(root, { scripts: { maintenance: 'tsx scripts/other.ts' } })
+    git(root, 'add', 'package.json')
+    git(
+      root,
+      '-c',
+      'user.name=Test',
+      '-c',
+      'user.email=test@example.com',
+      'commit',
+      '-m',
+      'administrative alias'
+    )
+    const administrative = gitOutput(root, 'rev-parse', 'HEAD')
+    expect(computeAppBuildInputFingerprintAtRef(root, administrative)).toBe(
+      computeAppBuildInputFingerprintAtRef(root, baseline)
+    )
+
+    writePackage(root, { dependencies: { react: '20.0.0' } })
+    git(root, 'add', 'package.json')
+    git(
+      root,
+      '-c',
+      'user.name=Test',
+      '-c',
+      'user.email=test@example.com',
+      'commit',
+      '-m',
+      'production dependency'
+    )
+    expect(computeAppBuildInputFingerprintAtRef(root, 'HEAD')).not.toBe(
+      computeAppBuildInputFingerprintAtRef(root, administrative)
+    )
+  })
+
   it('validates and abbreviates embedded build information', () => {
     const info = buildInfoSchema.parse({
       channel: 'local',
@@ -138,9 +275,85 @@ describe('build identity', () => {
       migrationRegistryVersion: 1,
       toolchain: testToolchain()
     })
-    expect(shortBuildFingerprint(info)).toBe('b'.repeat(12))
+    expect(shortBuildFingerprint(info)).toBe('c'.repeat(12))
   })
 })
+
+function classifiedFixture(): string {
+  const root = mkdtempSync(join(tmpdir(), 'salt-marcher-classification-'))
+  roots.push(root)
+  git(root, 'init')
+  for (const directory of [
+    'src',
+    'resources',
+    'tests/unit',
+    'docs',
+    'scripts',
+    '.github/workflows'
+  ])
+    mkdirSync(join(root, directory), { recursive: true })
+  writeFileSync(join(root, 'src/app.ts'), 'app')
+  writeFileSync(join(root, 'resources/catalog.json'), '{}')
+  writeFileSync(join(root, 'tests/unit/app.test.ts'), 'test')
+  writeFileSync(join(root, 'docs/note.md'), 'documentation')
+  writeFileSync(join(root, 'scripts/candidate-delivery.ts'), 'delivery')
+  writeFileSync(join(root, '.github/workflows/check.yml'), 'workflow')
+  writeFileSync(join(root, 'electron-builder.local.yml'), 'extends: base')
+  writeFileSync(join(root, 'vitest.config.ts'), 'qualification')
+  writeFileSync(join(root, 'pnpm-lock.yaml'), 'lockfileVersion: 9')
+  writeFileSync(join(root, 'pnpm-workspace.yaml'), 'packages: []')
+  writePackage(root)
+  git(root, 'add', '.')
+  return root
+}
+
+function writePackage(
+  root: string,
+  patch: Readonly<{
+    dependencies?: Readonly<Record<string, string>>
+    scripts?: Readonly<Record<string, string>>
+  }> = {}
+): void {
+  writeFileSync(
+    join(root, 'package.json'),
+    JSON.stringify({
+      name: 'fixture',
+      version: '1.0.0',
+      type: 'module',
+      main: 'out/main.js',
+      packageManager: 'pnpm@10.15.1',
+      scripts: {
+        build: 'tsx scripts/build-app.ts',
+        test: 'vitest run',
+        ...patch.scripts
+      },
+      dependencies: { react: '19.0.0', ...patch.dependencies },
+      devDependencies: {
+        electron: '43.2.0',
+        'electron-builder': '26.15.3',
+        'electron-vite': '5.0.0',
+        vitest: '4.1.10'
+      }
+    })
+  )
+}
+
+function inputFingerprints(root: string) {
+  return {
+    app: computeAppBuildInputFingerprint(root),
+    qualification: computeQualificationInputFingerprint(root),
+    delivery: computeDeliveryInputFingerprint(root)
+  }
+}
+
+function changedFingerprints(
+  before: ReturnType<typeof inputFingerprints>,
+  after: ReturnType<typeof inputFingerprints>
+): ('app' | 'qualification' | 'delivery')[] {
+  return (['app', 'qualification', 'delivery'] as const).filter(
+    (name) => before[name] !== after[name]
+  )
+}
 
 function testToolchain() {
   return {

@@ -3,7 +3,10 @@ import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { join, relative } from 'node:path'
 import Database from 'better-sqlite3'
-import { localArtifactManifestSchema } from '../src/shared/contracts/build-info.js'
+import {
+  localArtifactManifestSchema,
+  shortBuildFingerprint
+} from '../src/shared/contracts/build-info.js'
 import { preflightPersistence } from '../src/core/persistence/sqlite/persistence-preflight.js'
 import { installedRuntimeEvidenceSchema } from './delivery-contract.js'
 import { sha256File } from './file-hash.js'
@@ -58,10 +61,7 @@ if (verification.length !== 1)
     `Expected one runtime verification record, found ${verification.length}`
   )
 const evidence = verification[0]!
-const expectedFingerprint = manifest.receipt.build.workspaceFingerprint.slice(
-  0,
-  12
-)
+const expectedFingerprint = shortBuildFingerprint(manifest.receipt.build)
 if (evidence['windowTitle'] !== `SaltMarcher Local · ${expectedFingerprint}`)
   throw new Error(
     'Installed window title does not contain the current fingerprint'

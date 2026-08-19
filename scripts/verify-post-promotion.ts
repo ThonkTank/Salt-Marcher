@@ -1,6 +1,9 @@
 import { execFileSync } from 'node:child_process'
 import { z } from 'zod'
-import { readWorkspaceIdentity } from './build-identity.js'
+import {
+  readWorkspaceIdentity,
+  readWorkspaceInputFingerprints
+} from './build-identity.js'
 import { readSuccessfulWorkflowEvidence } from './candidate-delivery.js'
 import { shaSchema } from './delivery-contract.js'
 
@@ -17,6 +20,7 @@ if (!candidate)
     'No successful exact-SHA candidate run contains every required job.'
   )
 const identity = readWorkspaceIdentity(process.cwd())
+const inputFingerprints = readWorkspaceInputFingerprints(process.cwd())
 if (identity.commit !== expectedSha || identity.dirty)
   throw new Error(
     'Post-promotion workspace identity is not the clean main SHA.'
@@ -27,7 +31,7 @@ console.info(
     component: 'post-promotion',
     event: 'candidate-attestation-verified',
     applicationSha: expectedSha,
-    appBuildInputFingerprint: identity.appBuildInputFingerprint,
+    inputFingerprints,
     candidate
   })
 )

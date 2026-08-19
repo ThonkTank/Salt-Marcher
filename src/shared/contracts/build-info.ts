@@ -78,5 +78,5 @@ export const localArtifactManifestSchema = z
 export type LocalArtifactManifest = z.infer<typeof localArtifactManifestSchema>
 
 export function shortBuildFingerprint(buildInfo: BuildInfo): string {
-  return buildInfo.workspaceFingerprint.slice(0, 12)
+  return buildInfo.appBuildInputFingerprint.slice(0, 12)
 }

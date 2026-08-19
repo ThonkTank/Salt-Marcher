@@ -8,7 +8,7 @@ vi.mock('electron', () => ({
 import { windowTitleForBuild } from '../../src/main/application-lifecycle/build-info.js'
 
 describe('main build identity', () => {
-  it('keeps the local workspace fingerprint visible in the window title', () => {
+  it('keeps the local app-build fingerprint visible in the window title', () => {
     const build: BuildInfo = {
       channel: 'local',
       commit: 'a'.repeat(40),
@@ -29,7 +29,9 @@ describe('main build identity', () => {
       }
     }
 
-    expect(windowTitleForBuild(build)).toBe('SaltMarcher Local · 0123456789ab')
+    expect(windowTitleForBuild(build)).toBe(
+      `SaltMarcher Local · ${'f'.repeat(12)}`
+    )
     expect(windowTitleForBuild({ ...build, channel: 'release' })).toBe(
       'SaltMarcher'
     )

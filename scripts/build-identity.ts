@@ -9,6 +9,11 @@ import {
 import { spawnSync } from 'node:child_process'
 import { resolve } from 'node:path'
 import type { BuildToolchain } from '../src/shared/contracts/build-info.js'
+import {
+  classifyWorkspaceInput,
+  projectWorkspaceInput,
+  type WorkspaceInputClass
+} from './workspace-input-classification.js'
 
 export interface WorkspaceIdentity {
   readonly commit: string
@@ -17,23 +22,11 @@ export interface WorkspaceIdentity {
   readonly appBuildInputFingerprint: string
 }
 
-const appBuildInputRoots = ['src/', 'resources/']
-const appBuildInputFiles = new Set([
-  'package.json',
-  'pnpm-lock.yaml',
-  'electron.vite.config.ts',
-  'tsconfig.json',
-  'tsconfig.node.json',
-  'tsconfig.renderer.json',
-  'scripts/build-passive-preload.ts',
-  'scripts/build-app.ts',
-  'scripts/build-qualification.ts',
-  'scripts/package-cli.ts',
-  'scripts/write-build-info.ts',
-  'scripts/write-build-receipt.ts',
-  'scripts/build-receipt.ts',
-  'scripts/build-identity.ts'
-])
+export interface WorkspaceInputFingerprints {
+  readonly appBuildInputFingerprint: string
+  readonly qualificationInputFingerprint: string
+  readonly deliveryInputFingerprint: string
+}
 
 export function readWorkspaceIdentity(
   workspaceRoot = process.cwd()
@@ -60,17 +53,43 @@ export function computeWorkspaceFingerprint(
 export function computeAppBuildInputFingerprint(
   workspaceRoot = process.cwd()
 ): string {
-  const files = workspaceFiles(workspaceRoot).filter(
-    (path) =>
-      appBuildInputFiles.has(path) ||
-      appBuildInputRoots.some((root) => path.startsWith(root))
-  )
-  return computeFilesFingerprint(workspaceRoot, files)
+  return computeWorkspaceInputFingerprint(workspaceRoot, 'app-build')
+}
+
+export function computeQualificationInputFingerprint(
+  workspaceRoot = process.cwd()
+): string {
+  return computeWorkspaceInputFingerprint(workspaceRoot, 'qualification')
+}
+
+export function computeDeliveryInputFingerprint(
+  workspaceRoot = process.cwd()
+): string {
+  return computeWorkspaceInputFingerprint(workspaceRoot, 'delivery-tooling')
+}
+
+export function readWorkspaceInputFingerprints(
+  workspaceRoot = process.cwd()
+): WorkspaceInputFingerprints {
+  return {
+    appBuildInputFingerprint: computeAppBuildInputFingerprint(workspaceRoot),
+    qualificationInputFingerprint:
+      computeQualificationInputFingerprint(workspaceRoot),
+    deliveryInputFingerprint: computeDeliveryInputFingerprint(workspaceRoot)
+  }
 }
 
 export function computeAppBuildInputFingerprintAtRef(
   workspaceRoot: string,
   ref: string
+): string {
+  return computeWorkspaceInputFingerprintAtRef(workspaceRoot, ref, 'app-build')
+}
+
+export function computeWorkspaceInputFingerprintAtRef(
+  workspaceRoot: string,
+  ref: string,
+  inputClass: WorkspaceInputClass
 ): string {
   const output = gitBuffer(workspaceRoot, [
     'ls-tree',
@@ -89,23 +108,36 @@ export function computeAppBuildInputFingerprintAtRef(
         throw new Error(`Unsupported Git tree entry: ${record}`)
       return { mode: match[1], object: match[2], path: match[3] }
     })
-    .filter(
-      ({ path }) =>
-        appBuildInputFiles.has(path) ||
-        appBuildInputRoots.some((root) => path.startsWith(root))
-    )
+    .filter(({ path }) => classifyWorkspaceInput(path).includes(inputClass))
     .sort((left, right) =>
       left.path < right.path ? -1 : left.path > right.path ? 1 : 0
     )
   const hash = createHash('sha256')
   for (const entry of entries) {
-    const content = gitBuffer(workspaceRoot, ['cat-file', 'blob', entry.object])
+    const content = projectWorkspaceInput(
+      entry.path,
+      gitBuffer(workspaceRoot, ['cat-file', 'blob', entry.object]),
+      inputClass
+    )
     hash.update(`${Buffer.byteLength(entry.path)}:`)
     hash.update(entry.path)
     hash.update(`:${entry.mode === '100755' ? 1 : 0}:${content.length}:`)
     hash.update(content)
   }
   return hash.digest('hex')
+}
+
+function computeWorkspaceInputFingerprint(
+  workspaceRoot: string,
+  inputClass: WorkspaceInputClass
+): string {
+  return computeFilesFingerprint(
+    workspaceRoot,
+    workspaceFiles(workspaceRoot).filter((path) =>
+      classifyWorkspaceInput(path).includes(inputClass)
+    ),
+    inputClass
+  )
 }
 
 export function readBuildToolchain(
@@ -152,7 +184,8 @@ function workspaceFiles(workspaceRoot: string): string[] {
 
 function computeFilesFingerprint(
   workspaceRoot: string,
-  files: readonly string[]
+  files: readonly string[],
+  inputClass?: WorkspaceInputClass
 ): string {
   const hash = createHash('sha256')
   for (const relativePath of files) {
@@ -164,7 +197,11 @@ function computeFilesFingerprint(
       continue
     }
     const stats = lstatSync(absolutePath)
-    const content = fileContent(absolutePath, stats)
+    const content = projectWorkspaceInput(
+      relativePath,
+      fileContent(absolutePath, stats),
+      inputClass ?? 'documentation'
+    )
     hash.update(`${Buffer.byteLength(relativePath)}:`)
     hash.update(relativePath)
     hash.update(`:${stats.mode & 0o111}:${content.length}:`)
