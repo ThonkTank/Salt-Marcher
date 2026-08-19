@@ -3,8 +3,11 @@ import {
   appendHandoffInvocation,
   freshInvocationCount,
   handoffInvocationHistorySchema,
+  handoffReceiptSchema,
+  handoffSteps,
   readRequiredJobManifest,
   requiredJobManifestSchema,
+  resumeHandoffReceipt,
   verifyRequiredJobs,
   type GithubWorkflowRun
 } from '../../scripts/delivery-contract.js'
@@ -89,6 +92,49 @@ describe('delivery contract', () => {
       '00000000-0000-4000-8000-000000000001',
       '00000000-0000-4000-8000-000000000002'
     ])
+  })
+
+  it('preserves fresh invocation provenance across resume attempts', () => {
+    const createdAt = '2026-08-18T12:00:00.000Z'
+    const updatedAt = '2026-08-18T12:30:00.000Z'
+    const receipt = handoffReceiptSchema.parse({
+      formatVersion: 3,
+      invocationId: '00000000-0000-4000-8000-000000000001',
+      status: 'failed',
+      mode: 'fresh',
+      createdAt,
+      updatedAt: createdAt,
+      completedAt: null,
+      identity: {
+        commit: sha,
+        dirty: false,
+        workspaceFingerprint: 'b'.repeat(64),
+        appBuildInputFingerprint: 'c'.repeat(64),
+        toolchainHash: 'd'.repeat(64),
+        candidate: verifyRequiredJobs(
+          readRequiredJobManifest(),
+          successfulRun(),
+          sha
+        )
+      },
+      steps: handoffSteps.map((step) => ({
+        step,
+        status: 'pending',
+        startedAt: null,
+        durationMs: null,
+        evidence: null,
+        error: null
+      }))
+    })
+
+    expect(resumeHandoffReceipt(receipt, updatedAt)).toMatchObject({
+      invocationId: receipt.invocationId,
+      status: 'running',
+      mode: 'fresh',
+      createdAt,
+      updatedAt,
+      completedAt: null
+    })
   })
 })
 

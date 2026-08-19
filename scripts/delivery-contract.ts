@@ -192,6 +192,18 @@ export const handoffReceiptSchema = z
 export type HandoffReceipt = z.infer<typeof handoffReceiptSchema>
 export type HandoffStepEvidence = z.infer<typeof handoffStepEvidenceSchema>
 
+export function resumeHandoffReceipt(
+  receipt: HandoffReceipt,
+  updatedAt: string
+): HandoffReceipt {
+  return handoffReceiptSchema.parse({
+    ...receipt,
+    status: 'running',
+    updatedAt,
+    completedAt: null
+  })
+}
+
 export const handoffInvocationHistorySchema = z
   .object({
     formatVersion: z.literal(1),

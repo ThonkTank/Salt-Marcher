@@ -27,6 +27,7 @@ import {
   handoffReceiptSchema,
   handoffStepEvidenceSchema,
   handoffSteps,
+  resumeHandoffReceipt,
   type HandoffInvocationHistory,
   type HandoffReceipt,
   type HandoffStepEvidence,
@@ -345,13 +346,7 @@ function readResumableReceipt(): HandoffReceipt {
   )
   if (JSON.stringify(existing.identity) !== JSON.stringify(identity))
     throw new Error('Handoff receipt identity differs; start a fresh handoff')
-  return {
-    ...existing,
-    status: 'running',
-    mode: 'resume',
-    updatedAt: new Date().toISOString(),
-    completedAt: null
-  }
+  return resumeHandoffReceipt(existing, new Date().toISOString())
 }
 
 function resetFrom(step: HandoffStepName): void {
