@@ -5,9 +5,6 @@
   "tests": [
     "tests/unit/delivery-contract.test.ts",
     "tests/unit/candidate-delivery.test.ts",
-    "tests/unit/evidence-commit.test.ts",
-    "tests/unit/final-evidence-schema.test.ts",
-    "tests/unit/quality-reset-documents.test.ts",
     "tests/unit/build-identity.test.ts",
     "tests/unit/build-receipt.test.ts",
     "tests/unit/local-app-installation.test.ts",

@@ -5,8 +5,8 @@
 > This versioned document records the greenfield migration decisions at the
 > time they were made. It is not the current delivery or completion status.
 > Executable schema/engine/catalog state lives in `version-truth.md`; current
-> quality-reset closure is generated in
-> `../quality-reset/live-status.md` from final evidence.
+> work status lives in active GitHub issues and pull requests, while durable
+> measurement evidence belongs in `../evidence/`.
 
 **Recorded milestone: M1 — qualification was in progress.** M0 was complete. The
 retired implementation is preserved by tag `javafx-final-2026-07-27` and the

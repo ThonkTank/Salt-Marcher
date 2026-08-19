@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 const workflow = readFileSync('.github/workflows/check.yml', 'utf8')
+const mainPushVerification = readFileSync('scripts/verify-main-push.ts', 'utf8')
 const packageJson = JSON.parse(readFileSync('package.json', 'utf8')) as {
   scripts: Record<string, string>
 }
@@ -85,5 +86,13 @@ describe('CI platform partitions', () => {
     expect(postPromotion).toContain('pnpm delivery:verify-main-push')
     expect(postPromotion).not.toContain('pnpm build')
     expect(postPromotion).not.toContain('pnpm test')
+    expect(mainPushVerification).toContain('delivery:verify-post-promotion')
+    expect(mainPushVerification).not.toContain('evidence')
+    expect(Object.keys(packageJson.scripts)).not.toContain(
+      'delivery:verify-evidence'
+    )
+    expect(Object.keys(packageJson.scripts)).not.toContain(
+      'quality-reset:generate-evidence'
+    )
   })
 })
