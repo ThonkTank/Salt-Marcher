@@ -4,9 +4,9 @@ import {
   savedEncounterPlanSearchResultSchema,
   searchSavedEncounterPlansQuerySchema
 } from '../encounter-plans.js'
-import { read } from './registry.js'
+import { read, utilityOperationFragment } from './registry.js'
 
-export const encounterPlansOperationDefinitions = {
+export const encounterPlansOperationDefinitions = utilityOperationFragment({
   'encounterPlans.summaries': read(
     'encounter-plans:summaries',
     generatedEncounterPlanSummaryBatchQuerySchema,
@@ -17,4 +17,4 @@ export const encounterPlansOperationDefinitions = {
     searchSavedEncounterPlansQuerySchema,
     savedEncounterPlanSearchResultSchema
   )
-} as const
+})

@@ -18,11 +18,11 @@ import {
   replaceMapBiomePlaceholderResultSchema,
   updateHexMapInputSchema
 } from '../hex.js'
-import { none, read, write } from './registry.js'
+import { none, read, utilityOperationFragment, write } from './registry.js'
 
 const locationId = z.object({ locationId: z.uuid() }).strict()
 
-export const hexOperationDefinitions = {
+export const hexOperationDefinitions = utilityOperationFragment({
   'hex.biomeCatalog': read('hex:biomeCatalog', none, hexBiomeCatalogSchema),
   'hex.editorBootstrap': read(
     'hex:editorBootstrap',
@@ -85,4 +85,4 @@ export const hexOperationDefinitions = {
     hexMapIdInputSchema,
     hexRuntimeOverlayProjectionSchema
   )
-} as const
+})

@@ -21,9 +21,9 @@ import {
   treasureSchema,
   updateTreasureInputSchema
 } from '../loot.js'
-import { read, write } from './registry.js'
+import { read, utilityOperationFragment, write } from './registry.js'
 
-export const lootOperationDefinitions = {
+export const lootOperationDefinitions = utilityOperationFragment({
   'loot.read': read('loot:read', treasureIdInputSchema, treasureSchema),
   'loot.catalog': read(
     'loot:catalog',
@@ -77,4 +77,4 @@ export const lootOperationDefinitions = {
     correctCharacterLootInputSchema,
     characterLootLedgerSchema
   )
-} as const
+})

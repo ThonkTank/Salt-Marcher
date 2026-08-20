@@ -2,13 +2,15 @@ import {
   installationSettingsSchema,
   updateInstallationSettingsInputSchema
 } from '../settings.js'
-import { none, read, write } from './registry.js'
+import { none, read, utilityOperationFragment, write } from './registry.js'
 
-export const settingsOperationDefinitions = {
+export const settingsOperationDefinitions = utilityOperationFragment({
   'settings.read': read('settings:read', none, installationSettingsSchema),
   'settings.update': write(
     'settings:update',
     updateInstallationSettingsInputSchema,
-    installationSettingsSchema
+    installationSettingsSchema,
+    ['gm'],
+    null
   )
-} as const
+})

@@ -291,6 +291,7 @@ export class CoreProcessSupervisor {
       () => {
         this.log('request-timeout', {
           operation: request.operation,
+          diagnosticCategory: definition.diagnostics.category,
           mode: definition.mode,
           generation: state.generation
         })
@@ -310,6 +311,7 @@ export class CoreProcessSupervisor {
       this.#requests.rejectSend(request.requestId)
       this.log('send-failed', {
         operation: request.operation,
+        diagnosticCategory: definition.diagnostics.category,
         generation: state.generation
       })
       this.beginTermination(state.generation, child, 'restart', 'send-failed')

@@ -11,6 +11,12 @@ import {
   coreOperations,
   mainOperations
 } from '../shared/contracts/operations.js'
+import {
+  composeOperationDefinitions,
+  defineOperationHandlers,
+  operationAllowsRole,
+  operationDefinitionsForRole
+} from '../shared/contracts/operations/registry.js'
 
 const responseSchema = z.discriminatedUnion('ok', [
   z.object({ ok: z.literal(true), payload: z.unknown() }).strict(),
@@ -26,34 +32,48 @@ type PassiveE2eApi = PassiveDisplayApi & {
 const invokeIpc = (channel: string, input: unknown): Promise<unknown> =>
   ipcRenderer.invoke(channel, input)
 
-const api: PassiveE2eApi = {
-  async readProjection() {
-    const operation = coreOperations['projection.read']
-    const result = responseSchema.parse(
-      await invokeIpc(operation.channel!, operation.input.parse(undefined))
-    )
-    if (!result.ok)
-      throw new CapabilityError(
-        result.error.code,
-        result.error.retryable,
-        result.error.issues ?? []
+const passiveOperations = composeOperationDefinitions(
+  operationDefinitionsForRole(coreOperations, 'passive'),
+  operationDefinitionsForRole(mainOperations, 'passive')
+)
+
+const passiveHandlers = defineOperationHandlers(
+  'passive_preload',
+  passiveOperations,
+  {
+    'projection.read': async () => {
+      const operation = coreOperations['projection.read']
+      const result = responseSchema.parse(
+        await invokeIpc(operation.channel!, operation.input.parse(undefined))
       )
-    return freeze(passiveProjectionSchema.parse(result.payload))
-  },
+      if (!result.ok)
+        throw new CapabilityError(
+          result.error.code,
+          result.error.retryable,
+          result.error.issues ?? []
+        )
+      return freeze(passiveProjectionSchema.parse(result.payload))
+    },
+    'runtime.coreStatus': async () => {
+      const operation = mainOperations['runtime.coreStatus']
+      if (operation.channel === null)
+        throw new CapabilityError('protocol_violation', false)
+      return coreProcessStatusSchema.parse(
+        await invokeIpc(operation.channel, undefined)
+      )
+    }
+  }
+)
+
+const api: PassiveE2eApi = {
+  readProjection: () => passiveHandlers['projection.read'](),
   onProjectionChanged(listener) {
     const handler = (_event: Electron.IpcRendererEvent, raw: unknown) =>
       listener(freeze(passiveProjectionSchema.parse(raw)))
     ipcRenderer.on('projection:changed', handler)
     return () => ipcRenderer.removeListener('projection:changed', handler)
   },
-  async coreStatus() {
-    const operation = mainOperations['runtime.coreStatus']
-    if (operation.channel === null)
-      throw new CapabilityError('protocol_violation', false)
-    return coreProcessStatusSchema.parse(
-      await invokeIpc(operation.channel, undefined)
-    )
-  },
+  coreStatus: () => passiveHandlers['runtime.coreStatus'](),
   onCoreStatus(listener) {
     const handler = (_event: Electron.IpcRendererEvent, raw: unknown) =>
       listener(coreProcessStatusSchema.parse(raw))
@@ -73,8 +93,8 @@ if (process.argv.includes('--passive-e2e-probe')) {
       .filter(
         (definition) =>
           definition.channel !== null &&
-          definition.roles.includes('gm') &&
-          !definition.roles.includes('passive')
+          operationAllowsRole(definition, 'gm') &&
+          !operationAllowsRole(definition, 'passive')
       )
       .map((definition) => definition.channel!)
     return Object.freeze(

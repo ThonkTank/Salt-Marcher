@@ -8,9 +8,9 @@ import {
   encounterTableSnapshotSchema,
   updateEncounterTableInputSchema
 } from '../encounter-source.js'
-import { none, read, write } from './registry.js'
+import { none, read, utilityOperationFragment, write } from './registry.js'
 
-export const encounterTablesOperationDefinitions = {
+export const encounterTablesOperationDefinitions = utilityOperationFragment({
   'encounterTables.read': read(
     'encounter-tables:read',
     none,
@@ -36,4 +36,4 @@ export const encounterTablesOperationDefinitions = {
     deleteEncounterTableInputSchema,
     encounterTableDeleteReceiptSchema
   )
-} as const
+})

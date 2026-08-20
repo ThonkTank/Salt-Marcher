@@ -3,9 +3,9 @@ import {
   campaignRulesSchema,
   updateCampaignRulesInputSchema
 } from '../campaign-rules.js'
-import { none, read, write } from './registry.js'
+import { none, read, utilityOperationFragment, write } from './registry.js'
 
-export const campaignRulesOperationDefinitions = {
+export const campaignRulesOperationDefinitions = utilityOperationFragment({
   'campaignRules.read': read('campaign-rules:read', none, campaignRulesSchema),
   'campaignRules.update': write(
     'campaign-rules:update',
@@ -17,4 +17,4 @@ export const campaignRulesOperationDefinitions = {
     campaignRulesCommandReceiptInputSchema,
     campaignRulesSchema.nullable()
   )
-} as const
+})

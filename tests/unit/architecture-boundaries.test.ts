@@ -131,9 +131,19 @@ describe('architecture boundaries', () => {
     const operations = { ...coreOperations, ...mainOperations }
     for (const [kind, definition] of Object.entries(operations)) {
       const [namespace, method] = kind.split('.')
+      expect(definition.key).toBe(kind)
       expect(definition.namespace).toBe(namespace)
       expect(definition.method).toBe(method)
+      expect(definition.handler).toBe(
+        Object.hasOwn(coreOperations, kind) ? 'utility' : 'main'
+      )
+      expect(definition.diagnostics).toEqual({
+        category: namespace,
+        redactInput: true
+      })
       expect(['read', 'write']).toContain(definition.mode)
+      if (definition.mode === 'read' || definition.handler === 'main')
+        expect(definition.travelReconciliation).toBeNull()
       expect(definition.deadlineMs).toBeGreaterThan(0)
       expect(definition.roles.length).toBeGreaterThanOrEqual(
         definition.channel === null ? 0 : 1
@@ -145,6 +155,14 @@ describe('architecture boundaries', () => {
         `${kind} is neither an undefined-input nor object-input operation`
       ).toBe(true)
     }
+    expect(coreOperations['campaign.create'].travelReconciliation).toBe(
+      'campaign-reconcile'
+    )
+    expect(coreOperations['settings.update'].travelReconciliation).toBeNull()
+    expect(coreOperations['core.shutdown'].travelReconciliation).toBeNull()
+    expect(coreOperations['loot.create'].travelReconciliation).toBe(
+      'travel-command'
+    )
 
     const forbidden = [
       'sessionGeneration.generate',
@@ -157,20 +175,6 @@ describe('architecture boundaries', () => {
       'session.generateLoot'
     ]
     for (const kind of forbidden) expect(operations).not.toHaveProperty(kind)
-
-    const utilitySources = [
-      source('src/utility/index.ts'),
-      source('src/utility/application.ts'),
-      ...codeFiles(join(process.cwd(), 'src/utility/composition')).map((path) =>
-        readFileSync(path, 'utf8')
-      )
-    ].join('\n')
-    const utilityKeys = new Set(
-      [...utilitySources.matchAll(/^\s+'([^']+\.[^']+)':/gm)]
-        .map((match) => match[1])
-        .filter((kind): kind is string => kind !== undefined)
-    )
-    expect(utilityKeys).toEqual(new Set(Object.keys(coreOperations)))
 
     const api = source('src/shared/contracts/capability-api.ts')
     expect(api).toContain('DerivedOperationApi')
@@ -1161,21 +1165,8 @@ describe('architecture boundaries', () => {
       source('src/main/application-lifecycle/capability-registration.ts')
     ).toContain('Object.entries(mainOperations)')
     const utility = source('src/utility/application.ts')
-    expect(utility).toContain('satisfies CoreHandlers')
-    for (const feature of [
-      'campaign',
-      'party',
-      'creature',
-      'worldPlanner',
-      'session',
-      'encounter',
-      'hex',
-      'travel',
-      'lifecycle'
-    ]) {
-      expect(utility).toContain(`const ${feature}Handlers =`)
-      expect(utility).toContain(`...${feature}Handlers`)
-    }
+    expect(utility).toContain('composeOperationHandlers(')
+    expect(utility).not.toMatch(/^\s+'[^']+\.[^']+':/m)
     const preloadInvocations = [
       source('src/preload/capability-bridge/index.ts'),
       source('src/preload/passive.ts')

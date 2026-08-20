@@ -14,9 +14,9 @@ import {
   setSceneGroupArchivedInputSchema,
   setSceneLocationInputSchema
 } from '../scene.js'
-import { read, write } from './registry.js'
+import { read, utilityOperationFragment, write } from './registry.js'
 
-export const sceneOperationDefinitions = {
+export const sceneOperationDefinitions = utilityOperationFragment({
   'scene.focus': write(
     'scene:focus',
     focusSceneInputSchema,
@@ -57,4 +57,4 @@ export const sceneOperationDefinitions = {
     sceneGroupDraftGenerationRequestSchema,
     sceneGroupDraftGenerationSchema
   )
-} as const
+})

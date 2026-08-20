@@ -29,14 +29,20 @@ neutral SQLite schema version with read-only preflight and explicit migration
 contracts, SQLite-owned installation preferences, utility-driven Hex travel,
 unbounded sparse Hex viewports, and a dedicated fail-closed passive preload.
 Automated architecture and normal-bundle budget gates protect these boundaries.
-Every renderer invocation is now declared in the shared operation contracts;
-Main lifecycle, registration, runtime observation and role resolution are
-separate modules. Renderer styling is split into tokens, shell and owning
-feature styles. Session, Catalog, Hex, Party and Encounter each route through
-an owning capability adapter and keep asynchronous or reducer state in feature
-hooks. Static JSX copy and accessibility labels come from the typed German
-message catalog. The utility dispatcher composes typed aggregate-specific
-handler maps. Architecture tests prevent these boundaries from regressing.
+Every renderer invocation is now declared in one aggregate-owned operation
+fragment and composed into the shared Core or Main registry. The same
+declaration supplies schemas, read/write classification, handler owner,
+deadline and redacted diagnostics to Main, preload, supervision, and Utility.
+Typed fragment-bound handler maps and fail-closed runtime composition replace
+parallel handler-key inventories; successful-result effects remain with their
+owning composition, while the Utility root contains only generic lifecycle and
+composition policy. Main lifecycle, registration, runtime observation and role
+resolution are separate modules. Renderer styling is split into tokens, shell
+and owning feature styles. Session, Catalog, Hex, Party and Encounter each
+route through an owning capability adapter and keep asynchronous or reducer
+state in feature hooks. Static JSX copy and accessibility labels come from the
+typed German message catalog. AST and mutation tests prevent these boundaries
+from regressing.
 Application and workspace modules now load through shell-owned failure
 isolation with structured renderer incidents and Main-controlled reload.
 Renderer feature ports are injected from React context; the mutable capability

@@ -11,9 +11,9 @@ import {
   worldNpcPageSchema,
   worldNpcSearchInputSchema
 } from '../world-npc.js'
-import { read, write } from './registry.js'
+import { read, utilityOperationFragment, write } from './registry.js'
 
-export const npcsOperationDefinitions = {
+export const npcsOperationDefinitions = utilityOperationFragment({
   'npcs.search': read(
     'npcs:search',
     worldNpcSearchInputSchema,
@@ -44,4 +44,4 @@ export const npcsOperationDefinitions = {
     deleteWorldNpcInputSchema,
     worldNpcDeleteReceiptSchema
   )
-} as const
+})

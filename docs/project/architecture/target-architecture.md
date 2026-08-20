@@ -69,10 +69,18 @@ axe-core are mandatory parts of the target stack. Electron is pinned to one
 stable version at installation time. WebGL 2 is the rendering baseline;
 WebGPU is optional acceleration only.
 
-All renderer-to-Main invocations are declared in
-`src/shared/contracts/operations.ts` with channel, validated input/output,
-read/write mode, allowed window roles and deadline. Core kinds use the same
-table to type the supervisor protocol and the exhaustive utility handler map.
+Every renderer-to-Main invocation is declared once in its owning aggregate's
+operation fragment under `src/shared/contracts/operations/`. A declaration
+owns its key, channel, validated input/output, read/write mode, required handler
+process, allowed window roles, deadline, redacted diagnostic category, and any
+post-commit travel reconciliation. `operations.ts` only composes those
+fragments into the Core and Main registries. Shared protocol types, Main
+registration, both preloads, and Utility handler completeness derive from the
+composed registries. Duplicate, missing, extra, or wrong-process handlers fail
+closed; Utility composition modules bind handlers to whole fragments without
+maintaining parallel key unions. The Utility application root coordinates
+bootstrap, lifecycle, and composition and contains no aggregate operation-key
+inventory.
 
 Renderer features depend on shared renderer primitives, never on sibling
 workspaces. Creature search state and controls live in the `creatures` feature;

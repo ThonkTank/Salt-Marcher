@@ -137,7 +137,7 @@ describe('group Loot architecture refactor', () => {
     ])
       expect(
         readFileSync(`src/utility/composition/${module}.ts`, 'utf8')
-      ).toContain('Pick<CoreHandlers')
+      ).toContain('defineOperationHandlers')
     expect(application).not.toContain("'campaign.list':")
     expect(application).not.toContain("'loot.catalog':")
     expect(application).not.toContain("'hex.editorBootstrap':")

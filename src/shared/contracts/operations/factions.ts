@@ -8,9 +8,9 @@ import {
   worldFactionMutationReceiptSchema,
   worldFactionSnapshotSchema
 } from '../encounter-source.js'
-import { none, read, write } from './registry.js'
+import { none, read, utilityOperationFragment, write } from './registry.js'
 
-export const factionsOperationDefinitions = {
+export const factionsOperationDefinitions = utilityOperationFragment({
   'factions.read': read('factions:read', none, worldFactionSnapshotSchema),
   'factions.commandReceipt': read(
     'factions:command-receipt',
@@ -32,4 +32,4 @@ export const factionsOperationDefinitions = {
     deleteWorldFactionInputSchema,
     worldFactionDeleteReceiptSchema
   )
-} as const
+})

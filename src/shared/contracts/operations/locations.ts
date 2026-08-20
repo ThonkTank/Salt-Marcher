@@ -12,9 +12,9 @@ import {
   worldLocationTagSearchInputSchema,
   worldLocationTagSuggestionsSchema
 } from '../world-location.js'
-import { none, read, write } from './registry.js'
+import { none, read, utilityOperationFragment, write } from './registry.js'
 
-export const locationsOperationDefinitions = {
+export const locationsOperationDefinitions = utilityOperationFragment({
   'locations.read': read('locations:read', none, worldLocationSnapshotSchema),
   'locations.suggestTags': read(
     'locations:suggest-tags',
@@ -46,4 +46,4 @@ export const locationsOperationDefinitions = {
     deleteWorldLocationInputSchema,
     worldLocationDeleteReceiptSchema
   )
-} as const
+})

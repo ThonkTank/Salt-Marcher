@@ -32,42 +32,51 @@ import { coreLifecycleOperationDefinitions } from './operations/core-lifecycle.j
 
 export type {
   OperationDefinition,
+  OperationDiagnostics,
+  OperationHandlerOwner,
   OperationMode,
+  TravelReconciliationReason,
   WindowRole
 } from './operations/registry.js'
 
+export const coreOperationFragments = [
+  campaignOperationDefinitions,
+  campaignImportOperationDefinitions,
+  settingsOperationDefinitions,
+  campaignRulesOperationDefinitions,
+  generatorPresetsOperationDefinitions,
+  passiveProjectionOperationDefinitions,
+  partyOperationDefinitions,
+  creaturesOperationDefinitions,
+  referencesOperationDefinitions,
+  locationsOperationDefinitions,
+  locationSymbolsOperationDefinitions,
+  biomesOperationDefinitions,
+  encounterTablesOperationDefinitions,
+  factionsOperationDefinitions,
+  npcsOperationDefinitions,
+  sessionOperationDefinitions,
+  encounterPlansOperationDefinitions,
+  sessionPlannerOperationDefinitions,
+  lootOperationDefinitions,
+  sceneOperationDefinitions,
+  encounterOperationDefinitions,
+  combatOperationDefinitions,
+  hexOperationDefinitions,
+  hexTravelOperationDefinitions,
+  coreLifecycleOperationDefinitions
+] as const
+
+export const mainOperationFragments = [runtimeOperationDefinitions] as const
+
 export const coreOperations = registerOperations(
-  composeOperationDefinitions(
-    campaignOperationDefinitions,
-    campaignImportOperationDefinitions,
-    settingsOperationDefinitions,
-    campaignRulesOperationDefinitions,
-    generatorPresetsOperationDefinitions,
-    passiveProjectionOperationDefinitions,
-    partyOperationDefinitions,
-    creaturesOperationDefinitions,
-    referencesOperationDefinitions,
-    locationsOperationDefinitions,
-    locationSymbolsOperationDefinitions,
-    biomesOperationDefinitions,
-    encounterTablesOperationDefinitions,
-    factionsOperationDefinitions,
-    npcsOperationDefinitions,
-    sessionOperationDefinitions,
-    encounterPlansOperationDefinitions,
-    sessionPlannerOperationDefinitions,
-    lootOperationDefinitions,
-    sceneOperationDefinitions,
-    encounterOperationDefinitions,
-    combatOperationDefinitions,
-    hexOperationDefinitions,
-    hexTravelOperationDefinitions,
-    coreLifecycleOperationDefinitions
-  )
+  composeOperationDefinitions(...coreOperationFragments),
+  'utility'
 )
 
 export const mainOperations = registerOperations(
-  composeOperationDefinitions(runtimeOperationDefinitions)
+  composeOperationDefinitions(...mainOperationFragments),
+  'main'
 )
 
 export type CoreOperationKind = keyof typeof coreOperations

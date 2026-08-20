@@ -19,6 +19,7 @@ import {
   type CoreOperationInput,
   type CoreOperationKind
 } from './operations.js'
+import type { OperationHandlers } from './operations/registry.js'
 import { incompatibleDataPolicySchema } from './runtime.js'
 
 const requestIdSchema = z.uuid()
@@ -259,6 +260,4 @@ export const coreMessageSchema = z.union([
 
 export type CoreMessage = z.infer<typeof coreMessageSchema>
 
-export type CoreHandlers = {
-  [K in CoreOperationKind]: (input: CoreOperationInput<K>) => unknown
-}
+export type CoreHandlers = OperationHandlers<typeof coreOperations>

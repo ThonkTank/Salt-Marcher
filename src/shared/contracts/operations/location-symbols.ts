@@ -14,9 +14,9 @@ import {
   locationSymbolSnapshotSchema,
   updateLocationSymbolInputSchema
 } from '../location-symbol.js'
-import { read, write } from './registry.js'
+import { read, utilityOperationFragment, write } from './registry.js'
 
-export const locationSymbolsOperationDefinitions = {
+export const locationSymbolsOperationDefinitions = utilityOperationFragment({
   'locationSymbols.create': write(
     'location-symbols:create',
     createLocationSymbolInputSchema,
@@ -52,4 +52,4 @@ export const locationSymbolsOperationDefinitions = {
     importLocationSymbolInputSchema,
     importLocationSymbolResultSchema
   )
-} as const
+})

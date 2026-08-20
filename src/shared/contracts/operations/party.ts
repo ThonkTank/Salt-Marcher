@@ -9,9 +9,9 @@ import {
   setMembershipInputSchema,
   updatePartyCharacterInputSchema
 } from '../party.js'
-import { none, read, write } from './registry.js'
+import { none, read, utilityOperationFragment, write } from './registry.js'
 
-export const partyOperationDefinitions = {
+export const partyOperationDefinitions = utilityOperationFragment({
   'party.read': read('party:read', none, partySnapshotSchema),
   'party.setMembership': write(
     'party:setMembership',
@@ -44,4 +44,4 @@ export const partyOperationDefinitions = {
     adventuringDayInputSchema,
     adventuringDayCalculationSchema
   )
-} as const
+})

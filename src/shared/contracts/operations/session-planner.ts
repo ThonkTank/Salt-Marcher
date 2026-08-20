@@ -12,9 +12,9 @@ import {
   startSessionPreparationResultSchema,
   switchSessionPlanInputSchema
 } from '../session-planner.js'
-import { none, read, write } from './registry.js'
+import { none, read, utilityOperationFragment, write } from './registry.js'
 
-export const sessionPlannerOperationDefinitions = {
+export const sessionPlannerOperationDefinitions = utilityOperationFragment({
   'sessionPlanner.read': read(
     'session-planner:read',
     none,
@@ -65,4 +65,4 @@ export const sessionPlannerOperationDefinitions = {
     sessionPreparationReceiptInputSchema,
     cancelSessionPreparationResultSchema
   )
-} as const
+})

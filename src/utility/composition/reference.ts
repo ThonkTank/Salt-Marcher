@@ -1,27 +1,34 @@
-import type { CoreHandlers } from '../../shared/contracts/core-protocol.js'
+import { creaturesOperationDefinitions } from '../../shared/contracts/operations/creatures.js'
+import { referencesOperationDefinitions } from '../../shared/contracts/operations/references.js'
+import {
+  composeOperationDefinitions,
+  defineOperationHandlers,
+  type OperationHandlers
+} from '../../shared/contracts/operations/registry.js'
 import type { CreatureCatalogService } from '../../core/creatures/catalog.js'
 import type { ReferenceService } from '../../core/reference/reference-service.js'
 
-type ReferenceHandlerName =
-  | 'creatures.search'
-  | 'creatures.filterOptions'
-  | 'creatures.detail'
-  | 'references.staticIndex'
-  | 'references.campaignIndex'
-  | 'references.detail'
+const referenceHandlerOperations = composeOperationDefinitions(
+  creaturesOperationDefinitions,
+  referencesOperationDefinitions
+)
 
 export function createReferenceHandlers(dependencies: {
   creatures: CreatureCatalogService
   references: ReferenceService
-}): Pick<CoreHandlers, ReferenceHandlerName> {
+}): OperationHandlers<typeof referenceHandlerOperations> {
   const { creatures, references } = dependencies
-  return {
-    'creatures.search': (input) => creatures.search(input),
-    'creatures.filterOptions': () => creatures.filterOptions(),
-    'creatures.detail': (input) => creatures.detail(input.id),
-    'references.staticIndex': () => references.staticIndex(),
-    'references.campaignIndex': (input) =>
-      references.campaignIndex(input.campaignId),
-    'references.detail': (input) => references.detail(input)
-  }
+  return defineOperationHandlers(
+    'reference_handlers',
+    referenceHandlerOperations,
+    {
+      'creatures.search': (input) => creatures.search(input),
+      'creatures.filterOptions': () => creatures.filterOptions(),
+      'creatures.detail': (input) => creatures.detail(input.id),
+      'references.staticIndex': () => references.staticIndex(),
+      'references.campaignIndex': (input) =>
+        references.campaignIndex(input.campaignId),
+      'references.detail': (input) => references.detail(input)
+    }
+  )
 }

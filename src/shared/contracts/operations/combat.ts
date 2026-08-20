@@ -13,9 +13,9 @@ import {
   toggleConditionInputSchema,
   updateResolutionInputSchema
 } from '../live-session.js'
-import { write } from './registry.js'
+import { utilityOperationFragment, write } from './registry.js'
 
-export const combatOperationDefinitions = {
+export const combatOperationDefinitions = utilityOperationFragment({
   'combat.prepare': write(
     'combat:prepare',
     prepareCombatInputSchema,
@@ -101,4 +101,4 @@ export const combatOperationDefinitions = {
     combatRevisionInputSchema,
     combatCommandResultSchema
   )
-} as const
+})

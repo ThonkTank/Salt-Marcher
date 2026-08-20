@@ -1,6 +1,12 @@
 import type Database from 'better-sqlite3'
 import type { SqliteDatabaseAccess } from '../../core/persistence/sqlite/database-access.js'
-import type { CoreHandlers } from '../../shared/contracts/core-protocol.js'
+import { lootOperationDefinitions } from '../../shared/contracts/operations/loot.js'
+import {
+  defineOperationHandlers,
+  type OperationDefinition,
+  type OperationHandlers,
+  validatedOperationResult
+} from '../../shared/contracts/operations/registry.js'
 import type { CampaignRules } from '../../shared/contracts/campaign-rules.js'
 import type { FullSessionGenerationCatalog } from '../../core/session-generation/loot-catalog.js'
 import { CampaignUnitOfWork } from '../../core/application/campaign-unit-of-work.js'
@@ -22,23 +28,13 @@ import { CharacterLootStore } from '../../core/loot/character-loot-store.js'
 import type { GroupRewardGenerationPort } from '../../core/application/group-reward-command-handler.js'
 import { ItemDefinitionResolver } from '../../core/loot/item-definition-resolver.js'
 
-type LootHandlerName =
-  | 'loot.read'
-  | 'loot.catalog'
-  | 'loot.generateForGroupDraft'
-  | 'loot.commitGroupReward'
-  | 'loot.scene'
-  | 'loot.inbox'
-  | 'loot.create'
-  | 'loot.update'
-  | 'loot.move'
-  | 'loot.acceptGenerated'
-  | 'loot.distribute'
-  | 'loot.ledger'
-  | 'loot.correctLedger'
+export type LootChangeReason =
+  'created' | 'updated' | 'moved' | 'accepted' | 'distributed'
 
 export type LootComposition = Readonly<{
-  handlers: Pick<CoreHandlers, LootHandlerName>
+  createHandlers(
+    publishChange: (reason: LootChangeReason) => void
+  ): OperationHandlers<typeof lootOperationDefinitions>
   projectionRevision(): number
 }>
 
@@ -108,24 +104,60 @@ export function createLootComposition(dependencies: {
     },
     (work) => new CampaignUnitOfWork(activeDatabase()).run(work)
   )
-  const handlers = {
-    'loot.read': (input) => loot.read(input.treasureId),
-    'loot.catalog': (input) => catalog.search(input),
-    'loot.generateForGroupDraft': (input) => rewards.generate(input),
-    'loot.commitGroupReward': (input) => commits.commit(input),
-    'loot.scene': (input) => loot.sceneProjection(input.sceneId),
-    'loot.inbox': (input) => loot.inbox(input),
-    'loot.create': (input) => loot.create(input),
-    'loot.update': (input) => loot.update(input),
-    'loot.move': (input) => loot.move(input),
-    'loot.acceptGenerated': (input) => loot.acceptGenerated(input),
-    'loot.distribute': (input) => loot.distribute(input),
-    'loot.ledger': (input) => loot.ledger(input.characterId),
-    'loot.correctLedger': (input) => loot.correctLedger(input)
-  } satisfies Pick<CoreHandlers, LootHandlerName>
-
   return {
-    handlers,
+    createHandlers: (publishChange) => {
+      const publish = (
+        definition: Pick<OperationDefinition, 'output'>,
+        reason: LootChangeReason,
+        work: () => unknown
+      ): unknown =>
+        validatedOperationResult(definition, work(), () =>
+          publishChange(reason)
+        )
+      return defineOperationHandlers(
+        'loot_handlers',
+        lootOperationDefinitions,
+        {
+          'loot.read': (input) => loot.read(input.treasureId),
+          'loot.catalog': (input) => catalog.search(input),
+          'loot.generateForGroupDraft': (input) => rewards.generate(input),
+          'loot.commitGroupReward': (input) =>
+            publish(
+              lootOperationDefinitions['loot.commitGroupReward'],
+              'accepted',
+              () => commits.commit(input)
+            ),
+          'loot.scene': (input) => loot.sceneProjection(input.sceneId),
+          'loot.inbox': (input) => loot.inbox(input),
+          'loot.create': (input) =>
+            publish(lootOperationDefinitions['loot.create'], 'created', () =>
+              loot.create(input)
+            ),
+          'loot.update': (input) =>
+            publish(lootOperationDefinitions['loot.update'], 'updated', () =>
+              loot.update(input)
+            ),
+          'loot.move': (input) =>
+            publish(lootOperationDefinitions['loot.move'], 'moved', () =>
+              loot.move(input)
+            ),
+          'loot.acceptGenerated': (input) =>
+            publish(
+              lootOperationDefinitions['loot.acceptGenerated'],
+              'accepted',
+              () => loot.acceptGenerated(input)
+            ),
+          'loot.distribute': (input) =>
+            publish(
+              lootOperationDefinitions['loot.distribute'],
+              'distributed',
+              () => loot.distribute(input)
+            ),
+          'loot.ledger': (input) => loot.ledger(input.characterId),
+          'loot.correctLedger': (input) => loot.correctLedger(input)
+        }
+      )
+    },
     projectionRevision: () =>
       new LootProjectionStore(activeDatabase()).revision()
   }

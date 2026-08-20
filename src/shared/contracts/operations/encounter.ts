@@ -2,12 +2,12 @@ import {
   encounterSelectionEvaluationSchema,
   evaluateEncounterSelectionInputSchema
 } from '../scene.js'
-import { read } from './registry.js'
+import { read, utilityOperationFragment } from './registry.js'
 
-export const encounterOperationDefinitions = {
+export const encounterOperationDefinitions = utilityOperationFragment({
   'encounter.evaluate': read(
     'encounter:evaluate',
     evaluateEncounterSelectionInputSchema,
     encounterSelectionEvaluationSchema
   )
-} as const
+})

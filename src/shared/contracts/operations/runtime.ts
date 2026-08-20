@@ -2,9 +2,9 @@ import { z } from 'zod'
 import { svgSymbolFileResultSchema } from '../location-symbol.js'
 import { coreProcessStatusSchema, rendererIncidentSchema } from '../runtime.js'
 import { runtimeGpuObservationSchema } from '../../qualification/runtime-observation.js'
-import { none, read, write } from './registry.js'
+import { mainOperationFragment, none, read, write } from './registry.js'
 
-export const runtimeOperationDefinitions = {
+export const runtimeOperationDefinitions = mainOperationFragment({
   'runtime.memory': read(
     'runtime:memory',
     none,
@@ -27,21 +27,28 @@ export const runtimeOperationDefinitions = {
     'runtime:retry-core',
     none,
     coreProcessStatusSchema,
-    ['gm', 'qualification']
+    ['gm', 'qualification'],
+    null
   ),
   'runtime.reportRendererIncident': write(
     'runtime:report-renderer-incident',
     rendererIncidentSchema,
     none,
-    ['gm']
+    ['gm'],
+    null
   ),
-  'runtime.reloadRenderer': write('runtime:reload-renderer', none, none, [
-    'gm'
-  ]),
+  'runtime.reloadRenderer': write(
+    'runtime:reload-renderer',
+    none,
+    none,
+    ['gm'],
+    null
+  ),
   'runtime.pickLocationSymbolFile': write(
     'runtime:pick-location-symbol-file',
     none,
     svgSymbolFileResultSchema,
-    ['gm']
+    ['gm'],
+    null
   )
-} as const
+})

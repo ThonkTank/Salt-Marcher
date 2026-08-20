@@ -6,38 +6,50 @@ import {
   permanentlyDeleteCampaignInputSchema,
   renameCampaignInputSchema
 } from '../campaign.js'
-import { none, read, write } from './registry.js'
+import { none, read, utilityOperationFragment, write } from './registry.js'
 
-export const campaignOperationDefinitions = {
+export const campaignOperationDefinitions = utilityOperationFragment({
   'campaign.list': read('campaign:list', none, campaignSnapshotSchema),
   'campaign.create': write(
     'campaign:create',
     createCampaignInputSchema,
-    campaignSnapshotSchema
+    campaignSnapshotSchema,
+    ['gm'],
+    'campaign-reconcile'
   ),
   'campaign.activate': write(
     'campaign:activate',
     activateCampaignInputSchema,
-    campaignSnapshotSchema
+    campaignSnapshotSchema,
+    ['gm'],
+    'campaign-reconcile'
   ),
   'campaign.rename': write(
     'campaign:rename',
     renameCampaignInputSchema,
-    campaignSnapshotSchema
+    campaignSnapshotSchema,
+    ['gm'],
+    'campaign-reconcile'
   ),
   'campaign.trash': write(
     'campaign:trash',
     campaignIdInputSchema,
-    campaignSnapshotSchema
+    campaignSnapshotSchema,
+    ['gm'],
+    'campaign-reconcile'
   ),
   'campaign.restore': write(
     'campaign:restore',
     campaignIdInputSchema,
-    campaignSnapshotSchema
+    campaignSnapshotSchema,
+    ['gm'],
+    'campaign-reconcile'
   ),
   'campaign.deleteForever': write(
     'campaign:deleteForever',
     permanentlyDeleteCampaignInputSchema,
-    campaignSnapshotSchema
+    campaignSnapshotSchema,
+    ['gm'],
+    'campaign-reconcile'
   )
-} as const
+})

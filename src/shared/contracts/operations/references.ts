@@ -4,9 +4,9 @@ import {
   referenceIndexSchema,
   referenceTargetSchema
 } from '../reference.js'
-import { none, read } from './registry.js'
+import { none, read, utilityOperationFragment } from './registry.js'
 
-export const referencesOperationDefinitions = {
+export const referencesOperationDefinitions = utilityOperationFragment({
   'references.staticIndex': read(
     'references:static-index',
     none,
@@ -22,4 +22,4 @@ export const referencesOperationDefinitions = {
     referenceTargetSchema,
     referenceDocumentSchema
   )
-} as const
+})

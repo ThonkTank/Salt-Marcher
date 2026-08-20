@@ -3,6 +3,7 @@ import {
   type CoreOperationKind,
   type WindowRole
 } from '../../shared/contracts/operations.js'
+import { operationAllowsRole } from '../../shared/contracts/operations/registry.js'
 
 export function roleCanInvoke(
   role: WindowRole,
@@ -10,7 +11,7 @@ export function roleCanInvoke(
 ): boolean {
   const definition = coreOperations[kind]
   return (
-    definition.roles.includes(role) &&
+    operationAllowsRole(definition, role) &&
     (definition.mode === 'read' || role === 'gm')
   )
 }

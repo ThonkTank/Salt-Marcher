@@ -4,9 +4,9 @@ import {
   campaignImportReportSchema,
   campaignImportValidateInputSchema
 } from '../campaign-import.js'
-import { read, write } from './registry.js'
+import { read, utilityOperationFragment, write } from './registry.js'
 
-export const campaignImportOperationDefinitions = {
+export const campaignImportOperationDefinitions = utilityOperationFragment({
   'campaignImport.validate': read(
     'campaign-import:validate',
     campaignImportValidateInputSchema,
@@ -22,4 +22,4 @@ export const campaignImportOperationDefinitions = {
     campaignImportApplyInputSchema,
     campaignImportApplyResultSchema
   )
-} as const
+})

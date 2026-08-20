@@ -8,6 +8,10 @@ import {
   type MainOperationKind,
   type OperationDefinition
 } from '../../shared/contracts/operations.js'
+import {
+  defineContextualOperationHandlers,
+  operationAllowsRole
+} from '../../shared/contracts/operations/registry.js'
 import { runtimeGpuObservationSchema } from '../../shared/qualification/runtime-observation.js'
 import { roleCanInvoke } from './operation-authorization.js'
 import { roleForEvent } from './window-role.js'
@@ -35,16 +39,23 @@ export function registerCapabilities(core: CoreProcessSupervisor): void {
     if (definition.channel === null) continue
     const kind = rawKind as MainOperationKind
     ipcMain.handle(definition.channel, async (event, raw) => {
-      if (!definition.roles.includes(roleForEvent(event)))
+      if (!operationAllowsRole(definition, roleForEvent(event)))
         throw new CapabilityError('read_only', false)
       const input = definition.input.parse(raw)
-      return definition.output.parse(await handlers[kind](event, input))
+      const handler = handlers[kind] as (
+        event: IpcMainInvokeEvent,
+        input: unknown
+      ) => unknown
+      return definition.output.parse(await handler(event, input))
     })
   }
 }
 
 function mainHandlers(core: CoreProcessSupervisor) {
-  return {
+  return defineContextualOperationHandlers<
+    typeof mainOperations,
+    IpcMainInvokeEvent
+  >('main_handlers', mainOperations, {
     'runtime.memory': () =>
       app
         .getAppMetrics()
@@ -61,11 +72,7 @@ function mainHandlers(core: CoreProcessSupervisor) {
       core.retry()
       return core.status()
     },
-    'runtime.reportRendererIncident': (_event, rawIncident: unknown) => {
-      const incident =
-        mainOperations['runtime.reportRendererIncident'].input.parse(
-          rawIncident
-        )
+    'runtime.reportRendererIncident': (_event, incident) => {
       console.error(
         JSON.stringify({
           event: 'renderer-incident',
@@ -88,10 +95,7 @@ function mainHandlers(core: CoreProcessSupervisor) {
         return { status: 'cancelled' as const }
       return readLocationSymbolFile(selection.filePaths[0])
     }
-  } satisfies Record<
-    MainOperationKind,
-    (event: IpcMainInvokeEvent, input: unknown) => unknown
-  >
+  })
 }
 
 async function invokeGeneric(

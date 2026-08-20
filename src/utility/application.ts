@@ -1,11 +1,10 @@
 import type Database from 'better-sqlite3'
 import {
   coreReadySchema,
-  coreStartupConfigurationSchema,
-  type CoreHandlers
+  coreStartupConfigurationSchema
 } from '../shared/contracts/core-protocol.js'
 import { coreOperations } from '../shared/contracts/operations.js'
-import { assertExactOperationKeys } from '../shared/contracts/operations/registry.js'
+import { composeOperationHandlers } from '../shared/contracts/operations/registry.js'
 import { openCampaignStore } from '../core/persistence/sqlite/campaign-store.js'
 import {
   CreatureCatalogService,
@@ -35,7 +34,6 @@ import { WorldLocationPlacementService } from '../core/application/world-locatio
 import { BiomeCatalogService } from '../core/application/biome-catalog-service.js'
 import { CapabilityError } from '../shared/errors/capability-error.js'
 import { placeholderBiomeId } from '../shared/contracts/biome.js'
-import { hexTravelContextResultSchema } from '../shared/contracts/live-session.js'
 import { ReferenceService } from '../core/reference/reference-service.js'
 import { ReferenceCatalogAdapter } from '../core/reference/reference-catalog-adapter.js'
 import {
@@ -63,6 +61,7 @@ import { createBiomeHandlers } from './composition/biome.js'
 import { createWorldPlannerHandlers } from './composition/world-planner.js'
 import { createHexHandlers } from './composition/hex.js'
 import { createTravelHandlers } from './composition/travel.js'
+import { createLifecycleHandlers } from './composition/lifecycle.js'
 import { ReferenceChangeCoordinator } from '../core/reference/reference-change-coordinator.js'
 import { bootstrapPhase, bootstrapReady } from './bootstrap-observability.js'
 import { startUtilityDispatcher } from './runtime-dispatcher.js'
@@ -405,6 +404,7 @@ const sessionPlannerHandlers = createSessionPlannerHandlers({
   encounterPlans,
   sessionPlanner
 })
+const lootHandlers = lootComposition.createHandlers(publishLootChange)
 const encounterHandlers = createEncounterHandlers(play)
 
 const hexHandlers = createHexHandlers({
@@ -414,43 +414,39 @@ const hexHandlers = createHexHandlers({
   biomes: biomeService,
   locations,
   changedChunks: biomeChangedChunks,
-  publishNotice: publishHexNotice
+  publishNotice: publishHexNotice,
+  publishChange: publishHexChange
 })
-const travelHandlers = createTravelHandlers({ travel: hexTravel, play })
+const travelHandlers = createTravelHandlers({
+  travel: hexTravel,
+  play,
+  publishChange: publishSessionChange
+})
 
-const lifecycleHandlers = {
-  'core.sessionGenerationCatalog': () =>
-    sessionGenerationCatalog.currentReference(),
-  'core.shutdown': () => {
+const lifecycleHandlers = createLifecycleHandlers({
+  sessionGenerationCatalog: () => sessionGenerationCatalog.currentReference(),
+  shutdown: () => {
     travelScheduler.close()
     referenceCatalog.close()
     campaigns.close()
-    return null
   }
-} satisfies Pick<
-  CoreHandlers,
-  'core.sessionGenerationCatalog' | 'core.shutdown'
->
+})
 
-const handlers = {
-  ...campaignHandlers,
-  ...partyHandlers,
-  ...creatureHandlers,
-  ...biomeHandlers,
-  ...worldPlannerHandlers,
-  ...sessionHandlers,
-  ...sessionPlannerHandlers,
-  ...lootComposition.handlers,
-  ...encounterHandlers,
-  ...hexHandlers,
-  ...travelHandlers,
-  ...lifecycleHandlers
-} satisfies CoreHandlers
-
-assertExactOperationKeys(
+const handlers = composeOperationHandlers(
   'utility_handlers',
-  Object.keys(coreOperations),
-  Object.keys(handlers)
+  coreOperations,
+  campaignHandlers,
+  partyHandlers,
+  creatureHandlers,
+  biomeHandlers,
+  worldPlannerHandlers,
+  sessionHandlers,
+  sessionPlannerHandlers,
+  lootHandlers,
+  encounterHandlers,
+  hexHandlers,
+  travelHandlers,
+  lifecycleHandlers
 )
 
 startUtilityDispatcher({
@@ -459,47 +455,8 @@ startUtilityDispatcher({
   counters: runtimeCounters,
   activeDomainTimers: () =>
     travelScheduler.activeTimers() + preparationScheduler.activeWakeups(),
-  afterOperation(request, payload) {
-    if (
-      request.operation === 'hex.create' ||
-      request.operation === 'hex.update' ||
-      request.operation === 'hex.applyBrushStroke' ||
-      request.operation === 'hex.undo' ||
-      request.operation === 'hex.redo'
-    )
-      publishHexChange(payload)
-    if (
-      request.operation.startsWith('hexTravel.') &&
-      request.operation !== 'hexTravel.read'
-    ) {
-      const result = hexTravelContextResultSchema.safeParse(payload)
-      if (result.success)
-        publishSessionChange(result.data.travel, 'travel-command')
-    }
-    const lootReason =
-      request.operation === 'loot.create'
-        ? 'created'
-        : request.operation === 'loot.update'
-          ? 'updated'
-          : request.operation === 'loot.move'
-            ? 'moved'
-            : request.operation === 'loot.acceptGenerated'
-              ? 'accepted'
-              : request.operation === 'loot.commitGroupReward'
-                ? 'accepted'
-                : request.operation === 'loot.distribute'
-                  ? 'distributed'
-                  : null
-    if (lootReason) publishLootChange(lootReason)
-    if (
-      coreOperations[request.operation].mode === 'write' &&
-      request.operation !== 'settings.update' &&
-      request.operation !== 'core.shutdown'
-    )
-      travelScheduler.reconcile(
-        request.operation.startsWith('campaign.')
-          ? 'campaign-reconcile'
-          : 'travel-command'
-      )
+  afterOperation(request) {
+    const reason = coreOperations[request.operation].travelReconciliation
+    if (reason) travelScheduler.reconcile(reason)
   }
 })

@@ -12,9 +12,9 @@ import {
   generatorPresetUpdateInputSchema,
   updateGeneratorPresetReceiptSchema
 } from '../generator-presets.js'
-import { read, write } from './registry.js'
+import { read, utilityOperationFragment, write } from './registry.js'
 
-export const generatorPresetsOperationDefinitions = {
+export const generatorPresetsOperationDefinitions = utilityOperationFragment({
   'generatorPresets.readEditor': read(
     'generator-presets:read-editor',
     generatorPresetReadEditorInputSchema,
@@ -45,4 +45,4 @@ export const generatorPresetsOperationDefinitions = {
     generatorPresetCommandReceiptInputSchema,
     generatorPresetCommandReceiptSchema.nullable()
   )
-} as const
+})

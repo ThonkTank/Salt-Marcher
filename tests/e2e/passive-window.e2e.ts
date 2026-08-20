@@ -70,8 +70,8 @@ describe('passive display isolation', () => {
       .filter(
         (definition) =>
           definition.channel !== null &&
-          definition.roles.includes('gm') &&
-          !definition.roles.includes('passive')
+          (definition.roles as readonly string[]).includes('gm') &&
+          !(definition.roles as readonly string[]).includes('passive')
       )
       .map((definition) => definition.channel!)
       .sort()

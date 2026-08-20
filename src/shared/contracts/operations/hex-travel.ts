@@ -8,11 +8,11 @@ import {
   startHexTravelInputSchema
 } from '../hex.js'
 import { hexTravelContextResultSchema } from '../live-session.js'
-import { read, write } from './registry.js'
+import { read, utilityOperationFragment, write } from './registry.js'
 
 const sceneId = z.object({ sceneId: z.uuid() }).strict()
 
-export const hexTravelOperationDefinitions = {
+export const hexTravelOperationDefinitions = utilityOperationFragment({
   'hexTravel.read': read(
     'hex-travel:read',
     sceneId,
@@ -53,4 +53,4 @@ export const hexTravelOperationDefinitions = {
     setHexTravelMultiplierInputSchema,
     hexTravelContextResultSchema
   )
-} as const
+})

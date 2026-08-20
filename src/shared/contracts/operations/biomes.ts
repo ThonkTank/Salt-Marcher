@@ -9,9 +9,9 @@ import {
   deleteBiomeInputSchema,
   updateBiomeInputSchema
 } from '../biome.js'
-import { read, write } from './registry.js'
+import { read, utilityOperationFragment, write } from './registry.js'
 
-export const biomesOperationDefinitions = {
+export const biomesOperationDefinitions = utilityOperationFragment({
   'biomes.search': read(
     'biomes:search',
     biomeSearchInputSchema,
@@ -42,4 +42,4 @@ export const biomesOperationDefinitions = {
     deleteBiomeInputSchema,
     biomeCatalogMutationResultSchema
   )
-} as const
+})

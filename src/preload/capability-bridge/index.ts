@@ -20,6 +20,7 @@ import {
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import {
   assertExactOperationKeys,
+  operationAllowsRole,
   operationKindsForRole
 } from '../../shared/contracts/operations/registry.js'
 
@@ -85,7 +86,8 @@ const facade: Facade = {}
 const exposedOperationKinds: string[] = []
 
 for (const [kind, operation] of Object.entries(coreOperations)) {
-  if (operation.channel === null || !operation.roles.includes('gm')) continue
+  if (operation.channel === null || !operationAllowsRole(operation, 'gm'))
+    continue
   exposedOperationKinds.push(kind)
   installMethod(kind, (input) =>
     invokeCore(kind as CoreOperationKind, input as never)
@@ -93,7 +95,8 @@ for (const [kind, operation] of Object.entries(coreOperations)) {
 }
 
 for (const [kind, operation] of Object.entries(mainOperations)) {
-  if (operation.channel === null || !operation.roles.includes('gm')) continue
+  if (operation.channel === null || !operationAllowsRole(operation, 'gm'))
+    continue
   exposedOperationKinds.push(kind)
   installMethod(kind, (input) =>
     invokeMain(kind as MainOperationKind, input as never)
