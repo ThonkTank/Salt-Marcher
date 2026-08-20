@@ -118,9 +118,16 @@ copies, and promotes immutable fingerprint-addressed deployments through one
 atomic `current` link. Every clean-channel build has a receipt containing
 hashes for all output files and an aggregate hash; packaging verifies it
 against the workspace. The single `pnpm handoff:app` path advances the exact
-candidate SHA through candidate qualification, checks, a Local build/package
-pass, actual-AppImage smoke, backup creation, deployment staging, atomic
-activation, and installed-runtime verification in that order. Repeated calls
+candidate SHA through candidate qualification, remote-check attestation,
+validated acquisition of the exact CI-built Local package, local actual-AppImage
+smoke, backup creation, deployment staging, atomic activation, and
+installed-runtime verification in that order. Candidate CI binds the Local
+AppImage and embedded Build Receipt to its repository, run, attempt, SHA,
+app-input fingerprint, toolchain identity, manifest hash, and artifact hash in
+one strict immutable artifact. Every required PR job checks out that candidate
+head SHA explicitly rather than qualifying a synthetic merge commit. The
+handoff refuses extra files, another run or
+SHA, a changed local app input, or any broken hash link. Repeated calls
 revalidate and reuse only phases whose predecessor and output hashes still
 match the atomic SHA state. Explicit `--resume` records recovery intent without
 replacing the state's original provenance. `pnpm dev` remains HMR-only.
@@ -216,7 +223,12 @@ verifiable phases:
    artifact, backup, deployment, activation, and installation evidence before
    reusing it. Per-attempt audit records retain the original state's provenance,
    and every phase records status, duration, input/output hashes, evidence, and
-   errors before installed generation-one runtime acceptance.
+   errors before installed generation-one runtime acceptance. Required
+   candidate CI publishes a smoke-tested Local artifact whose outer receipt
+   binds the exact workflow run/attempt and the embedded Build Receipt. Handoff
+   reuses that artifact only after complete run, inventory, input, toolchain,
+   manifest, and byte-hash validation; host smoke, data backup, installation,
+   and runtime verification remain local.
 
 The editor application-layer refactor tracks its normative evidence in
 `application-layer-refactor-acceptance-matrix.md`. It moves the two-step

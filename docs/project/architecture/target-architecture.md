@@ -288,8 +288,16 @@ Packaging rechecks workspace, app inputs, toolchain, channel, and every output
 byte, then embeds the complete receipt plus its hash and the AppImage hash in
 the artifact manifest. Development, Local, and release packages use
 `release/development`, `release/local`, and `release/release`; Linux smoke tests
-execute the actual AppImage. Local installation is serialized by the same exclusive
-profile lock that Main holds for the complete Local application lifetime. A
+execute the actual AppImage. Candidate CI produces the Local package in the
+required Linux package job, smoke-tests it, and publishes exactly the AppImage,
+its artifact manifest, and a strict candidate-artifact receipt as one immutable
+run artifact. Every required pull-request job explicitly checks out the
+candidate head SHA recorded by the workflow run, never GitHub's synthetic merge
+commit. The outer receipt binds the GitHub repository, workflow run and
+attempt, exact application SHA, artifact name, app-input fingerprint, complete
+build-receipt hash, artifact-manifest hash, AppImage hash, and build-toolchain
+identity. Local installation is serialized by the same exclusive profile lock
+that Main holds for the complete Local application lifetime. A
 stale lock is reclaimed only when its PID and Linux process identity (boot,
 start tick, executable) no longer match. The installer is an explicitly
 authorized offline-maintenance component outside Main and the utility process;
@@ -313,8 +321,15 @@ Repeated invocations are safe and append audit attempts; they do not create a
 parallel state or replace the original state's provenance. Explicit `--resume`
 records recovery intent but follows the same validation rules. Auth, live
 candidate evidence, disk capacity, and installation availability are checked
-before a material state or attempt is created. Each phase records status,
-start, duration, hashes, and any terminal error.
+before a material state or attempt is created. The handoff downloads only the
+artifact belonging to the exact successful required-job run, verifies its
+closed three-file inventory and complete hash chain, and accepts it only when
+its clean SHA, workspace and app-input fingerprint match the local candidate.
+Remote required-job evidence satisfies `checked`; the downloaded Local package
+satisfies `packaged`. The actual downloaded AppImage is still smoke-tested on
+the handoff host before any campaign backup, deployment, activation, or
+installed-runtime verification. Each phase records status, start, duration,
+hashes, and any terminal error.
 Candidate promotion requires this completed exact-SHA state precisely when the
 candidate app-build fingerprint differs from `origin/main`; qualification,
 delivery-tooling, and documentation-only changes do not manufacture an

@@ -7,8 +7,8 @@ preserved as Git reference `javafx-final-2026-07-27`.
 
 ## Local application handoff
 
-For an app-relevant change, build, verify, package, smoke-test, back up and
-install the exact current workspace with:
+For an app-relevant change, validate and install the exact remotely qualified
+candidate with:
 
 ```bash
 pnpm handoff:app
@@ -21,6 +21,15 @@ the command safely revalidates and reuses completed phases whose input and
 output hashes still match. `pnpm handoff:app -- --resume` records explicit
 recovery intent without replacing the original state's provenance. Atomic state
 and per-attempt audit records live below `.tmp/handoff-local-app/`.
+
+The required candidate workflow builds and smoke-tests the Local AppImage once.
+Its immutable handoff artifact contains only that AppImage, its embedded Build
+Receipt manifest, and an outer receipt binding repository, workflow run and
+attempt, exact SHA, app-input fingerprint, toolchain identity, and all relevant
+hashes. Handoff downloads it from the exact successful run, rejects any extra or
+mismatched file or local app input, and smoke-tests the downloaded AppImage on
+the local host before touching campaign data. Backup, installation, and runtime
+verification are always local.
 
 Launch **SaltMarcher Local** from the desktop menu afterwards. Its title
 contains the first twelve characters of the embedded app-build fingerprint, so a

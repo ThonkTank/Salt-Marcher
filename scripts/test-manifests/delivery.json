@@ -9,6 +9,7 @@
     "tests/unit/candidate-delivery.test.ts",
     "tests/unit/build-identity.test.ts",
     "tests/unit/build-receipt.test.ts",
+    "tests/unit/candidate-artifact.test.ts",
     "tests/unit/local-app-installation.test.ts",
     "tests/unit/local-profile-lock.test.ts",
     "tests/unit/ci-workflow-policy.test.ts"

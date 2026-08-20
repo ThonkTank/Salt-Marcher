@@ -27,11 +27,13 @@
 ## Canonical handoff
 
 - Finish app-relevant changes to `src/`, `resources/`, dependencies, or
-  Electron/build/packaging configuration with `pnpm handoff:app`. It runs the
-  canonical checks, packages the exact checked workspace, smoke-tests the
-  packaged application, backs up valuable local campaign data, and installs
-  the matching `SaltMarcher Local` AppImage, then verifies that installed
-  runtime. Handoff state is keyed by the immutable application SHA. Repeated
+  Electron/build/packaging configuration with `pnpm handoff:app`. It validates
+  the complete required-job set and exact-SHA CI-built Local artifact, verifies
+  its receipt, app inputs, toolchain identity, manifest and bytes, smoke-tests
+  that downloaded AppImage on the handoff host, backs up valuable local
+  campaign data, installs the matching `SaltMarcher Local` AppImage, and
+  verifies that installed runtime. Handoff state is keyed by the immutable
+  application SHA. Repeated
   invocations for the same SHA must validate and reuse hash-proven phases
   idempotently; `pnpm handoff:app -- --resume` remains an explicit recovery
   intent but may not replace the provenance of the invocation that created the

@@ -157,6 +157,8 @@ export const handoffPhaseEvidenceSchema = z
     qualificationInputFingerprint: fingerprintSchema,
     deliveryInputFingerprint: fingerprintSchema,
     toolchainHash: fingerprintSchema,
+    candidateArtifactReceiptSha256: fingerprintSchema,
+    artifactManifestSha256: fingerprintSchema,
     buildOutputHash: fingerprintSchema.nullable(),
     artifactSha256: fingerprintSchema.nullable(),
     sourceDataHash: fingerprintSchema.nullable(),
@@ -182,7 +184,7 @@ export const handoffPhaseSchema = z
 
 export const handoffReceiptSchema = z
   .object({
-    formatVersion: z.literal(4),
+    formatVersion: z.literal(5),
     stateId: z.uuid(),
     originAttemptId: z.uuid(),
     activeAttemptId: z.uuid(),
@@ -284,7 +286,7 @@ export function createHandoffReceipt(
   timestamp: string
 ): HandoffReceipt {
   return handoffReceiptSchema.parse({
-    formatVersion: 4,
+    formatVersion: 5,
     stateId,
     originAttemptId: attemptId,
     activeAttemptId: attemptId,
@@ -409,7 +411,7 @@ export function readRequiredJobManifest(
   return requiredJobManifestSchema.parse(
     JSON.parse(
       readFileSync(
-        resolve(workspaceRoot, 'scripts', 'delivery', 'required-jobs.v1.json'),
+        resolve(workspaceRoot, 'scripts', 'delivery', 'required-jobs.v2.json'),
         'utf8'
       )
     )

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 const workflow = readFileSync('.github/workflows/check.yml', 'utf8')
 const mainPushVerification = readFileSync('scripts/verify-main-push.ts', 'utf8')
+const handoff = readFileSync('scripts/handoff-local-app.ts', 'utf8')
 const packageJson = JSON.parse(readFileSync('package.json', 'utf8')) as {
   scripts: Record<string, string>
 }
@@ -47,8 +48,28 @@ describe('CI platform partitions', () => {
     )
     expect(packageJob).toContain('pnpm package:development:built')
     expect(packageJob).toContain('pnpm test:packaged-smoke:built')
+    expect(packageJob).toContain('pnpm build:local')
+    expect(packageJob).toContain('pnpm package:local:built')
+    expect(packageJob).toContain('pnpm test:packaged-local-smoke:built')
+    expect(packageJob).toContain('pnpm candidate-artifact:write')
+    expect(packageJob).toContain(
+      'name: salt-marcher-local-${{ env.SALT_MARCHER_CHECKED_SHA }}-attempt-${{ github.run_attempt }}'
+    )
+    expect(packageJob).toContain('compression-level: 0')
     expect(workflow).toContain('name: Linux qualification · packaged harness')
     expect(workflow).toContain('pnpm test:packaged-qualification-smoke')
+  })
+
+  it('hands off the exact CI Local artifact without rebuilding it locally', () => {
+    expect(handoff).toContain("'gh'")
+    expect(handoff).toContain("'download'")
+    expect(handoff).toContain('candidateArtifactName(')
+    expect(handoff).toContain('verifyCandidateArtifactDirectory')
+    expect(handoff).not.toContain("run('checked', ['pnpm', 'check'])")
+    expect(handoff).not.toContain("run('packaged', ['pnpm', 'package:local'])")
+    expect(handoff).toContain("'test:packaged-local-smoke:built'")
+    expect(handoff).toContain("installationDefinition('backup-created')")
+    expect(handoff).toContain("phase: 'installed-runtime-verified'")
   })
 
   it('builds Linux once and validates the same receipt in every consumer', () => {
@@ -60,7 +81,15 @@ describe('CI platform partitions', () => {
     expect(linuxBuild).toContain('include-hidden-files: true')
     const consumers = workflow.slice(workflow.indexOf('  linux-package:'))
     expect(consumers).not.toMatch(/^\s+- run: pnpm build$/m)
-    expect(workflow).toContain('name: linux-app-${{ github.sha }}')
+    expect(workflow).toContain(
+      'SALT_MARCHER_CHECKED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}'
+    )
+    expect(workflow).toContain(
+      'name: linux-app-${{ env.SALT_MARCHER_CHECKED_SHA }}-attempt-${{ github.run_attempt }}'
+    )
+    expect(
+      workflow.match(/ref: ['"]?\$\{\{ env\.SALT_MARCHER_CHECKED_SHA \}\}/g)
+    ).toHaveLength(9)
     expect(workflow.match(/actions\/download-artifact@v4/g)).toHaveLength(4)
     expect(
       workflow.match(/assert-built-workspace\.ts --channel development/g)

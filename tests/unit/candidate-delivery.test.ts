@@ -41,7 +41,7 @@ const valid: CandidateState = {
     url: 'https://github.example/check/1',
     attempt: 1,
     headSha: 'b'.repeat(40),
-    requiredJobManifestVersion: 1,
+    requiredJobManifestVersion: 2,
     jobs: readRequiredJobManifest().jobs.map((job) => ({
       ...job,
       conclusion: 'success' as const
@@ -163,6 +163,8 @@ describe('candidate delivery policy', () => {
         qualificationInputFingerprint: hash,
         deliveryInputFingerprint: hash,
         toolchainHash: hash,
+        candidateArtifactReceiptSha256: hash,
+        artifactManifestSha256: hash,
         buildOutputHash: hash,
         artifactSha256: hash,
         sourceDataHash: hash,

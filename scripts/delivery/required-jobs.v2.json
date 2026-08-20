@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "workflowName": "Check",
   "jobs": [
     {
@@ -20,7 +20,7 @@
     },
     {
       "name": "Linux package · profile and AppImage",
-      "platformRole": "linux-package-runtime"
+      "platformRole": "linux-local-artifact-authority"
     },
     {
       "name": "Linux qualification · packaged harness",

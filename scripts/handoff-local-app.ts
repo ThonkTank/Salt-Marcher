@@ -13,15 +13,15 @@ import {
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import {
-  buildReceiptSchema,
-  localArtifactManifestSchema
-} from '../src/shared/contracts/build-info.js'
-import {
-  readBuildToolchain,
   readWorkspaceIdentity,
   readWorkspaceInputFingerprints
 } from './build-identity.js'
-import { verifyBuildReceipt } from './build-receipt.js'
+import {
+  acquireCandidateArtifact,
+  candidateArtifactName,
+  verifyCandidateArtifactDirectory,
+  type CandidateArtifactExpectation
+} from './candidate-artifact.js'
 import { assertCandidateReady } from './candidate-delivery.js'
 import {
   appendHandoffInvocation,
@@ -29,6 +29,7 @@ import {
   handoffReceiptSchema,
   installedRuntimeEvidenceSchema,
   parseHandoffInvocationHistory,
+  readRequiredJobManifest,
   sameHandoffApplicationIdentity,
   type HandoffIdentity,
   type HandoffInvocationHistory,
@@ -71,9 +72,49 @@ const artifactPath = resolve(
   `SaltMarcher-Local-${packageJson.version}.AppImage`
 )
 const artifactManifestPath = `${artifactPath}.manifest.json`
+const artifactRoot = dirname(artifactPath)
 const installation = localInstallationPaths(
   process.env['XDG_DATA_HOME'] ?? join(homedir(), '.local', 'share')
 )
+// Auth, network, candidate, workspace, installation availability and disk
+// capacity are all checked before an attempt or state file is created.
+const candidateState = assertCandidateReady()
+const workspace = readWorkspaceIdentity(workspaceRoot)
+const inputFingerprints = readWorkspaceInputFingerprints(workspaceRoot)
+if (isInstalledLocalAppRunning(installation.appImage))
+  throw new Error('SaltMarcher Local is running; close it before handoff')
+assertHandoffResourcePreflight(
+  readHandoffResourceSnapshot(
+    workspaceRoot,
+    installation.root,
+    installation.campaignData
+  )
+)
+const artifactExpectation: CandidateArtifactExpectation = {
+  repository: githubRepository(),
+  workflowName: readRequiredJobManifest().workflowName,
+  workflowRunId: candidateState.candidate!.runId,
+  workflowRunAttempt: candidateState.candidate!.attempt,
+  applicationSha: workspace.commit,
+  workspaceFingerprint: workspace.workspaceFingerprint,
+  appBuildInputFingerprint: workspace.appBuildInputFingerprint
+}
+const candidateArtifact = acquireCandidateArtifact({
+  destinationRoot: artifactRoot,
+  expected: artifactExpectation,
+  download: downloadCandidateArtifact
+})
+if (
+  candidateArtifact.artifactPath !== artifactPath ||
+  candidateArtifact.artifactManifestPath !== artifactManifestPath
+)
+  throw new Error('Candidate artifact uses an unexpected Local package name')
+const identity: HandoffIdentity = {
+  ...workspace,
+  ...inputFingerprints,
+  toolchainHash: candidateArtifact.receipt.toolchainHash,
+  candidate: candidateState.candidate!
+}
 const installOptions: InstallLocalAppOptions = {
   workspaceRoot,
   xdgDataHome:
@@ -88,28 +129,6 @@ const installOptions: InstallLocalAppOptions = {
   )
 }
 
-// Auth, network, candidate, workspace, installation availability and disk
-// capacity are all checked before an attempt or state file is created.
-const candidateState = assertCandidateReady()
-const workspace = readWorkspaceIdentity(workspaceRoot)
-const inputFingerprints = readWorkspaceInputFingerprints(workspaceRoot)
-const toolchain = readBuildToolchain(workspaceRoot)
-const identity: HandoffIdentity = {
-  ...workspace,
-  ...inputFingerprints,
-  toolchainHash: hashJson(toolchain),
-  candidate: candidateState.candidate!
-}
-if (isInstalledLocalAppRunning(installation.appImage))
-  throw new Error('SaltMarcher Local is running; close it before handoff')
-assertHandoffResourcePreflight(
-  readHandoffResourceSnapshot(
-    workspaceRoot,
-    installation.root,
-    installation.campaignData
-  )
-)
-
 const receiptDirectory = resolve(workspaceRoot, '.tmp', 'handoff-local-app')
 const statePath = resolve(
   receiptDirectory,
@@ -118,11 +137,6 @@ const statePath = resolve(
 )
 const receiptPath = resolve(receiptDirectory, 'handoff-receipt.json')
 const invocationHistoryPath = resolve(receiptDirectory, 'invocations.json')
-const checkSnapshotPath = resolve(
-  receiptDirectory,
-  'states',
-  `${workspace.commit}.checked-build-receipt.json`
-)
 const runtimeEvidencePath = resolve(
   receiptDirectory,
   'installed-runtime-evidence.json'
@@ -200,16 +214,16 @@ function phaseDefinitions(): readonly HandoffPhaseDefinition[] {
     {
       phase: 'candidate-qualified',
       execute: () => undefined,
-      collect: () => evidence()
+      collect: collectCandidateEvidence
     },
     {
       phase: 'checked',
-      execute: () => run('checked', ['pnpm', 'check']),
+      execute: () => undefined,
       collect: collectCheckedEvidence
     },
     {
       phase: 'packaged',
-      execute: () => run('packaged', ['pnpm', 'package:local']),
+      execute: () => undefined,
       collect: collectPackagedEvidence
     },
     {
@@ -256,26 +270,14 @@ function installationDefinition(
   }
 }
 
+function collectCandidateEvidence(): HandoffPhaseEvidence {
+  validCandidateArtifact()
+  return evidence()
+}
+
 function collectCheckedEvidence(): HandoffPhaseEvidence {
-  assertWorkspaceUnchanged()
-  let snapshot
-  try {
-    const current = verifyBuildReceipt(resolve(workspaceRoot, 'out'))
-    if (current.build.channel !== 'development' || !buildMatches(current.build))
-      throw new Error('Current output is not the checked development build')
-    snapshot = current
-    atomicWrite(checkSnapshotPath, `${JSON.stringify(snapshot, null, 2)}\n`)
-  } catch {
-    snapshot = buildReceiptSchema.parse(
-      JSON.parse(readFileSync(checkSnapshotPath, 'utf8'))
-    )
-    if (
-      snapshot.build.channel !== 'development' ||
-      !buildMatches(snapshot.build)
-    )
-      throw new Error('Checked build receipt snapshot is stale')
-  }
-  return evidence({ buildOutputHash: snapshot.outputHash })
+  const artifact = validCandidateArtifact()
+  return evidence({ buildOutputHash: artifact.receipt.outputHash })
 }
 
 function collectPackagedEvidence(): HandoffPhaseEvidence {
@@ -343,6 +345,8 @@ function evidence(
     qualificationInputFingerprint: identity.qualificationInputFingerprint,
     deliveryInputFingerprint: identity.deliveryInputFingerprint,
     toolchainHash: identity.toolchainHash,
+    candidateArtifactReceiptSha256: sha256File(candidateArtifact.receiptPath),
+    artifactManifestSha256: sha256File(artifactManifestPath),
     buildOutputHash: input.buildOutputHash ?? null,
     artifactSha256: input.artifactSha256 ?? null,
     sourceDataHash: input.sourceDataHash ?? null,
@@ -354,20 +358,16 @@ function evidence(
 }
 
 function validPackagedArtifact() {
-  assertWorkspaceUnchanged()
-  const output = verifyBuildReceipt(resolve(workspaceRoot, 'out'))
-  const manifest = localArtifactManifestSchema.parse(
-    JSON.parse(readFileSync(artifactManifestPath, 'utf8'))
-  )
-  if (
-    output.build.channel !== 'local' ||
-    !buildMatches(output.build) ||
-    JSON.stringify(manifest.receipt) !== JSON.stringify(output) ||
-    manifest.receiptSha256 !== hashJson(output) ||
-    manifest.artifactSha256 !== sha256File(artifactPath)
-  )
+  const artifact = validCandidateArtifact()
+  if (!buildMatches(artifact.receipt.build))
     throw new Error('Packaged Local artifact evidence is stale or inconsistent')
-  return manifest
+  return artifact
+}
+
+function validCandidateArtifact() {
+  assertWorkspaceUnchanged()
+  return verifyCandidateArtifactDirectory(artifactRoot, artifactExpectation)
+    .manifest
 }
 
 function buildMatches(build: {
@@ -418,6 +418,54 @@ function run(phase: string, arguments_: readonly string[]): void {
   if (result.error) throw result.error
   if (result.status !== 0)
     throw new Error(`Local handoff phase ${phase} failed with ${result.status}`)
+}
+
+function downloadCandidateArtifact(destination: string): void {
+  const result = spawnSync(
+    'gh',
+    [
+      'run',
+      'download',
+      String(candidateState.candidate!.runId),
+      '--name',
+      candidateArtifactName(
+        workspace.commit,
+        candidateState.candidate!.attempt
+      ),
+      '--dir',
+      destination
+    ],
+    {
+      cwd: workspaceRoot,
+      env: process.env,
+      stdio: 'inherit'
+    }
+  )
+  if (result.error) throw result.error
+  if (result.status !== 0)
+    throw new Error(`Candidate artifact download failed with ${result.status}`)
+}
+
+function githubRepository(): string {
+  const result = spawnSync(
+    'gh',
+    ['repo', 'view', '--json', 'nameWithOwner', '--jq', '.nameWithOwner'],
+    {
+      cwd: workspaceRoot,
+      env: process.env,
+      encoding: 'utf8'
+    }
+  )
+  if (result.error) throw result.error
+  if (result.status !== 0)
+    throw new Error(
+      result.stderr.trim() ||
+        'Could not resolve the authenticated GitHub repository'
+    )
+  const repository = result.stdout.trim()
+  if (!/^[^/\s]+\/[^/\s]+$/.test(repository))
+    throw new Error('GitHub returned an invalid repository identity')
+  return repository
 }
 
 function atomicWrite(path: string, content: string): void {

@@ -85,6 +85,9 @@ describe('build identity', () => {
     expect(classifyWorkspaceInput('.github/workflows/check.yml')).toEqual([
       'delivery-tooling'
     ])
+    expect(classifyWorkspaceInput('scripts/candidate-artifact.ts')).toEqual([
+      'delivery-tooling'
+    ])
     expect(classifyWorkspaceInput('docs/project/vision.md')).toEqual([
       'documentation'
     ])

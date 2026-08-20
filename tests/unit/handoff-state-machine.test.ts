@@ -179,7 +179,7 @@ function createFixture(failOnce?: HandoffPhaseName): {
         url: 'https://github.example/runs/1',
         attempt: 1,
         headSha: 'a'.repeat(40),
-        requiredJobManifestVersion: 1,
+        requiredJobManifestVersion: 2,
         jobs: [
           {
             name: 'required',
@@ -223,6 +223,8 @@ function phaseEvidence(character: string): HandoffPhaseEvidence {
     qualificationInputFingerprint: 'd'.repeat(64),
     deliveryInputFingerprint: 'e'.repeat(64),
     toolchainHash: 'f'.repeat(64),
+    candidateArtifactReceiptSha256: hash,
+    artifactManifestSha256: hash,
     buildOutputHash: hash,
     artifactSha256: hash,
     sourceDataHash: hash,
