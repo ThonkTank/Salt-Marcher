@@ -169,6 +169,16 @@ imports, calls, and structurally discovered owners. They do not encode file
 length, formatting, or local import aliases as architecture. Every semantic
 gate that replaces a source-text assertion carries a controlled mutation that
 demonstrates the protected boundary still fails closed.
+Local Electron E2E runs require explicit available-memory and free-swap
+headroom before launch. They preserve per-attempt logs and screenshots, use
+cgroup/kernel evidence to distinguish OOM from renderer tab crashes and product
+assertions, and stop the run after a confirmed OOM. WDIO receives the real
+Electron executable rather than its package shim, making `ldd` and fuse checks
+authoritative; package-name-only dependency hints are retained in raw logs but
+treated as diagnostic noise, while actual binary linkage failures remain
+visible. One app session is reused within a suite only. Suites keep fresh
+fixture-backed profiles and processes because even suites sharing a fixture
+mutate that profile.
 Workspace navigation is described by immutable `WorkspaceDefinition` records,
 including identity, label, icon, loader, neutral layout mode and recovery
 policy, rather than parallel conditionals in the shell. Its route host models

@@ -10,6 +10,11 @@ import {
   e2eSuiteRegistry,
   isE2eSuiteName
 } from './scripts/e2e-suite-registry.js'
+import {
+  isConfirmedTabCrash,
+  shouldAttemptFailureScreenshot
+} from './scripts/e2e-failure-diagnostics.js'
+import { electronTestApplication } from './scripts/electron-test-application.js'
 
 const packageRequire = createRequire(import.meta.url)
 
@@ -52,6 +57,18 @@ if (materialized.status !== 0)
     `Could not materialize E2E fixture ${fixture}: ${materialized.stderr}`
   )
 
+const testApplication = electronTestApplication(
+  join(process.cwd(), 'out', 'main', 'index.js'),
+  [
+    '--no-sandbox',
+    '--salt-marcher-e2e-runtime',
+    `--user-data-dir=${userData}`,
+    '--use-angle=swiftshader',
+    '--enable-unsafe-swiftshader'
+  ]
+)
+let rendererUnavailable = false
+
 export const config = {
   runner: 'local',
   specs: ['./tests/e2e/**/*.e2e.ts'],
@@ -66,16 +83,7 @@ export const config = {
   capabilities: [
     {
       browserName: 'electron',
-      'wdio:electronServiceOptions': {
-        appEntryPoint: join(process.cwd(), 'out', 'main', 'index.js'),
-        appArgs: [
-          '--no-sandbox',
-          '--salt-marcher-e2e-runtime',
-          `--user-data-dir=${userData}`,
-          '--use-angle=swiftshader',
-          '--enable-unsafe-swiftshader'
-        ]
-      }
+      'wdio:electronServiceOptions': testApplication
     }
   ],
   logLevel: process.env['WDIO_LOG_LEVEL'] ?? 'warn',
@@ -91,15 +99,23 @@ export const config = {
   afterTest: async (
     test: { title: string },
     _context: unknown,
-    result: { passed: boolean }
+    result: { passed: boolean; error?: unknown }
   ) => {
     if (result.passed) return
-    const directory = join(process.cwd(), '.tmp', 'visual-diffs')
+    if (!shouldAttemptFailureScreenshot(rendererUnavailable, result.error)) {
+      rendererUnavailable = true
+      return
+    }
+    const directory =
+      process.env['SALT_MARCHER_E2E_ARTIFACT_DIR'] ??
+      join(process.cwd(), '.tmp', 'visual-diffs')
     mkdirSync(directory, { recursive: true })
     const title = test.title.replaceAll(/[^a-zA-Z0-9_-]+/g, '-').slice(0, 80)
-    await browser
-      .saveScreenshot(join(directory, `${suite}-${title}.png`))
-      .catch(() => undefined)
+    try {
+      await browser.saveScreenshot(join(directory, `${suite}-${title}.png`))
+    } catch (error) {
+      rendererUnavailable ||= isConfirmedTabCrash(error)
+    }
   },
   mochaOpts: {
     ui: 'bdd',

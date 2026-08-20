@@ -346,7 +346,9 @@ export async function expectElementGolden(
     )
   })
   const goldensDirectory = join(process.cwd(), 'tests', 'e2e', 'goldens')
-  const artifacts = join(process.cwd(), '.tmp', 'visual-diffs')
+  const artifacts =
+    process.env['SALT_MARCHER_E2E_ARTIFACT_DIR'] ??
+    join(process.cwd(), '.tmp', 'visual-diffs')
   mkdirSync(artifacts, { recursive: true })
   const actualPath = join(artifacts, `${name}.png`)
   const defaultBaselinePath = join(goldensDirectory, 'linux', `${name}.png`)

@@ -79,6 +79,7 @@ describe('E2E suite registry', () => {
 
   it('materializes a fresh per-suite profile and supports shuffled order', () => {
     const configuration = readFileSync('wdio.conf.ts', 'utf8')
+    const passiveConfiguration = readFileSync('wdio.passive.conf.ts', 'utf8')
     const runner = readFileSync('scripts/run-e2e-suites.ts', 'utf8')
     expect(configuration).toContain('`${suite}-${runId}-${process.pid}`')
     expect(configuration).toContain(
@@ -87,6 +88,11 @@ describe('E2E suite registry', () => {
     expect(configuration).toContain(
       "cpSync(join(process.cwd(), 'tests', 'e2e', 'fixtures', fixture)"
     )
+    expect(configuration).toContain('electronTestApplication(')
+    expect(configuration).not.toContain('appEntryPoint:')
+    expect(passiveConfiguration).toContain('evaluateE2eResourcePreflight(')
+    expect(passiveConfiguration).toContain('electronTestApplication(')
+    expect(passiveConfiguration).not.toContain('appEntryPoint:')
     expect(runner).toContain("argumentAfter('--shuffle-seed')")
     expect(runner).toContain('shuffledSuiteOrder')
   })

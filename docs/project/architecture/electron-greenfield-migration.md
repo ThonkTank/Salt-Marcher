@@ -46,6 +46,12 @@ from regressing.
 Renderer controller ownership now derives from imports, hook calls, and the
 structurally discovered reducer owner; line-count gates, symbol-spelling checks,
 and duplicate controller inventories are not architectural contracts.
+Electron E2E execution now preflights memory/swap, resolves the actual Electron
+binary for native diagnostics, preserves artifacts per attempt, and classifies
+kernel OOM, tab crash, runner failure, and product assertion separately. A
+confirmed OOM stops remaining suites; a confirmed tab crash suppresses further
+renderer screenshot attempts. Cross-suite session reuse remains disallowed by
+fresh fixture/profile isolation, while tests inside one suite share its session.
 Renderer Session mutations and Group management now share one instance-bound
 async command coordinator with scope/entity request identity, latest-only and
 queue modes, `AbortSignal` cancellation, and explicit pending/success/stale/

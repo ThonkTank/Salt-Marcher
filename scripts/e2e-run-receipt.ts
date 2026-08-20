@@ -1,3 +1,6 @@
+import type { E2eFailureKind } from './e2e-failure-diagnostics.js'
+import type { E2eResourcePreflight } from './e2e-resource-preflight.js'
+
 export type E2eSuiteAttempt = Readonly<{
   attempt: number
   status: 'passed' | 'failed'
@@ -5,7 +8,7 @@ export type E2eSuiteAttempt = Readonly<{
   durationMs: number
   logPath: string
   artifactDirectory: string
-  failureKind?: 'product' | 'infrastructure' | null
+  failureKind?: E2eFailureKind
   knownNoise?: number
 }>
 
@@ -23,6 +26,7 @@ export type E2eRunSummary<Name extends string = string> = Readonly<{
   buildIdentity: string
   registryIdentity: string
   selectedSuites: readonly Name[]
+  resourcePreflight?: E2eResourcePreflight
   updatedAt: string
   results: readonly E2eSuiteResult<Name>[]
 }>

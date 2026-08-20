@@ -11,6 +11,18 @@ import { createRequire } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import type { E2eSuiteName } from './e2e-suite-registry.js'
 import {
+  classifyE2eFailure,
+  shouldAbortE2eRun,
+  type E2eFailureKind
+} from './e2e-failure-diagnostics.js'
+import {
+  cgroupOomKillAdvanced,
+  evaluateE2eResourcePreflight,
+  readCgroupMemoryEvents,
+  readE2eResourceSnapshot,
+  readRecentKernelOomLines
+} from './e2e-resource-preflight.js'
+import {
   initializeE2eResults,
   recordE2eAttempt,
   validateE2eResumeIdentity,
@@ -25,6 +37,8 @@ const wdioEntry = join(
   'bin',
   'wdio.js'
 )
+
+export { classifyE2eFailure } from './e2e-failure-diagnostics.js'
 
 export type E2eRunMode = 'functional' | 'visual'
 
@@ -62,7 +76,18 @@ export async function executeE2eRun(input: {
     : resolve('.tmp', 'e2e-runs', runId, 'summary.json')
   const resultDirectory = join(dirname(summaryPath), 'suites')
   let results = initializeE2eResults(input.selectedSuites, resumed)
+  const resourcePreflight = evaluateE2eResourcePreflight(
+    readE2eResourceSnapshot()
+  )
   writeSummary()
+  if (resourcePreflight.status === 'failed') {
+    console.error(
+      `Electron E2E resource preflight failed: ${resourcePreflight.reason}`
+    )
+    console.error(`Summary: ${summaryPath}`)
+    process.exitCode = 1
+    return
+  }
 
   for (const suite of input.selectedSuites) {
     const current = results.find((result) => result.name === suite)!
@@ -78,6 +103,7 @@ export async function executeE2eRun(input: {
       runId,
       mode: input.mode,
       logPath: paths.logPath,
+      artifactDirectory: paths.artifactDirectory,
       ...(input.grepBySuite?.get(suite)
         ? { grep: input.grepBySuite.get(suite)! }
         : {})
@@ -93,9 +119,16 @@ export async function executeE2eRun(input: {
     })
     writeSuiteResult(results.find((result) => result.name === suite)!)
     writeSummary()
+    if (shouldAbortE2eRun(execution.failureKind)) {
+      console.error(
+        `Stopping ${input.mode} E2E after ${suite}: ${execution.failureKind}`
+      )
+      break
+    }
   }
 
-  const failures = results.filter((result) => result.status !== 'passed')
+  const failures = results.filter((result) => result.status === 'failed')
+  const pending = results.filter((result) => result.status === 'pending')
   if (failures.length > 0) {
     console.error(
       `${input.mode} E2E failures: ${failures
@@ -105,6 +138,12 @@ export async function executeE2eRun(input: {
         })
         .join(', ')}`
     )
+    if (pending.length > 0)
+      console.error(
+        `Not started after terminal infrastructure failure: ${pending
+          .map(({ name }) => name)
+          .join(', ')}`
+      )
     console.error(`Resume with: --resume ${summaryPath}`)
     process.exitCode =
       failures.find((failure) => failure.exitCode)?.exitCode ?? 1
@@ -119,6 +158,7 @@ export async function executeE2eRun(input: {
       buildIdentity,
       registryIdentity,
       selectedSuites: input.selectedSuites,
+      resourcePreflight,
       updatedAt: new Date().toISOString(),
       results
     }
@@ -139,23 +179,11 @@ export async function executeE2eRun(input: {
 }
 
 export function classifyE2eLogLine(line: string): 'known-noise' | 'diagnostic' {
-  return /(?:Browser\.getWindowForTarget.*(?:not supported|unsupported|fallback)|unknown command:\s*'Browser\.getWindowForTarget' wasn't found)/i.test(
+  return /(?:Browser\.getWindowForTarget.*(?:not supported|unsupported|fallback)|unknown command:\s*'Browser\.getWindowForTarget' wasn't found|Linux Dependencies:.*packages may be missing|Missing:\s*libgtk-3-0|Install with:\s*sudo apt-get install libgtk-3-0)/i.test(
     line
   )
     ? 'known-noise'
     : 'diagnostic'
-}
-
-export function classifyE2eFailure(
-  exitCode: number,
-  log: string
-): 'product' | 'infrastructure' | null {
-  if (exitCode === 0) return null
-  return /(?:session not created|operation was aborted due to timeout[^\n]*\/session[^\n]*method "POST"|tab crashed|ECONNREFUSED|ENOSPC|Xvfb|Electron[^\n]*exited before|unable to connect[^\n]*webdriver)/i.test(
-    log
-  )
-    ? 'infrastructure'
-    : 'product'
 }
 
 async function runWdioSuite(input: {
@@ -163,19 +191,24 @@ async function runWdioSuite(input: {
   runId: string
   mode: E2eRunMode
   logPath: string
+  artifactDirectory: string
   grep?: string
 }): Promise<
   Readonly<{
     exitCode: number
-    failureKind: 'product' | 'infrastructure' | null
+    failureKind: E2eFailureKind
     knownNoise: number
   }>
 > {
   return new Promise((resolveExit) => {
     mkdirSync(dirname(input.logPath), { recursive: true })
+    mkdirSync(input.artifactDirectory, { recursive: true })
     const log = createWriteStream(input.logPath, { flags: 'w' })
     let diagnosticTail = ''
     let knownNoise = 0
+    let settled = false
+    const startedAt = Date.now()
+    const cgroupBefore = readCgroupMemoryEvents()
     const child = spawn(
       process.execPath,
       [wdioEntry, 'run', 'wdio.conf.ts', '--suite', input.suite],
@@ -185,6 +218,7 @@ async function runWdioSuite(input: {
           ...process.env,
           SALT_MARCHER_E2E_SUITE: input.suite,
           SALT_MARCHER_E2E_RUN_ID: input.runId,
+          SALT_MARCHER_E2E_ARTIFACT_DIR: input.artifactDirectory,
           ...(input.mode === 'visual'
             ? {
                 SALT_MARCHER_VISUAL_MODE: 'true',
@@ -212,21 +246,46 @@ async function runWdioSuite(input: {
     child.stdout.on('data', (chunk: Buffer) => forward(chunk, process.stdout))
     child.stderr.on('data', (chunk: Buffer) => forward(chunk, process.stderr))
     child.once('error', (error) => {
+      if (settled) return
+      settled = true
       diagnosticTail = `${diagnosticTail}\n${error.stack ?? error.message}`
       log.end(`${error.stack ?? error.message}\n`, () =>
         resolveExit({
           exitCode: 1,
-          failureKind: 'infrastructure',
+          failureKind: 'infrastructure-runner',
           knownNoise
         })
       )
     })
     child.once('exit', (code) => {
+      if (settled) return
+      settled = true
       const exitCode = code ?? 1
+      const cgroupAfter = readCgroupMemoryEvents()
+      const kernelLines =
+        exitCode === 0 ? [] : readRecentKernelOomLines(startedAt)
+      const cgroupOom = cgroupOomKillAdvanced(cgroupBefore, cgroupAfter)
+      const resourceDiagnostics = [
+        ...(cgroupOom
+          ? [
+              `cgroup oom_kill advanced from ${cgroupBefore?.oomKill} to ${cgroupAfter?.oomKill}`
+            ]
+          : []),
+        ...kernelLines
+      ]
+      if (resourceDiagnostics.length > 0) {
+        const evidence = `\n[e2e-resource-diagnostics]\n${resourceDiagnostics.join('\n')}\n`
+        diagnosticTail = `${diagnosticTail}${evidence}`.slice(-200_000)
+        log.write(evidence)
+      }
       log.end(() =>
         resolveExit({
           exitCode,
-          failureKind: classifyE2eFailure(exitCode, diagnosticTail),
+          failureKind: classifyE2eFailure(
+            exitCode,
+            diagnosticTail,
+            cgroupOom || kernelLines.length > 0
+          ),
           knownNoise
         })
       )
@@ -241,7 +300,10 @@ function suiteAttemptPaths(
 ): Readonly<{ logPath: string; artifactDirectory: string }> {
   return {
     logPath: join(resultDirectory, `${suite}.attempt-${attempt}.log`),
-    artifactDirectory: resolve('.tmp', 'visual-diffs')
+    artifactDirectory: join(
+      resultDirectory,
+      `${suite}.attempt-${attempt}.artifacts`
+    )
   }
 }
 
