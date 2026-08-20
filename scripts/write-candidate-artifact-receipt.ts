@@ -28,7 +28,7 @@ const environment = z
     workflowName: process.env['GITHUB_WORKFLOW'],
     workflowRunId: process.env['GITHUB_RUN_ID'],
     workflowRunAttempt: process.env['GITHUB_RUN_ATTEMPT'],
-    applicationSha: process.env['GITHUB_SHA']
+    applicationSha: process.env['SALT_MARCHER_CHECKED_SHA']
   })
 const root = resolve(workspaceRoot, 'release', 'local')
 const receipt = createCandidateArtifactReceipt({ root, ...environment })

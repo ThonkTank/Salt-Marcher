@@ -52,6 +52,7 @@ describe('CI platform partitions', () => {
     expect(packageJob).toContain('pnpm package:local:built')
     expect(packageJob).toContain('pnpm test:packaged-local-smoke:built')
     expect(packageJob).toContain('pnpm candidate-artifact:write')
+    expect(packageJob).not.toContain('GITHUB_SHA:')
     expect(packageJob).toContain(
       'name: salt-marcher-local-${{ env.SALT_MARCHER_CHECKED_SHA }}-attempt-${{ github.run_attempt }}'
     )

@@ -115,7 +115,7 @@ export function createCandidateArtifactReceipt(input: {
     build.commit !== input.applicationSha
   )
     throw new Error(
-      'Candidate artifact is not a clean Local build of GITHUB_SHA'
+      'Candidate artifact is not a clean Local build of the checked SHA'
     )
   const receipt = candidateArtifactReceiptSchema.parse({
     formatVersion: 1,

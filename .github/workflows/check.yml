@@ -119,8 +119,6 @@ jobs:
       - run: pnpm package:local:built
       - run: xvfb-run -a pnpm test:packaged-local-smoke:built
       - run: pnpm candidate-artifact:write
-        env:
-          GITHUB_SHA: ${{ env.SALT_MARCHER_CHECKED_SHA }}
       - name: Upload immutable Local handoff artifact
         uses: actions/upload-artifact@v4
         with:
