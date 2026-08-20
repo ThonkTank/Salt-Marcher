@@ -11,7 +11,7 @@ import {
   writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, relative } from 'node:path'
 import Database from 'better-sqlite3'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
@@ -65,6 +65,42 @@ describe('local AppImage installation', () => {
     const activated = advanceLocalAppInstallation(fixture.options, 'activated')
     expect(activated.installedSha256).toMatch(/^[a-f0-9]{64}$/)
     expect(readFileSync(paths.appImage, 'utf8')).toBe('artifact-a')
+  })
+
+  it('does not retain sidecars created while validating a WAL campaign backup', () => {
+    const fixture = createFixture(build('a'))
+    const paths = localInstallationPaths(fixture.xdg)
+    createDatabase(paths.campaignData, schemaVersion)
+    const campaignDirectory = join(
+      paths.campaignData,
+      'campaigns',
+      '00000000-0000-4000-8000-000000000001'
+    )
+    const campaignPath = createDatabase(
+      campaignDirectory,
+      databaseSchemaVersions.campaign,
+      true,
+      'campaign.sqlite'
+    )
+    expect(existsSync(`${campaignPath}-shm`)).toBe(false)
+    expect(existsSync(`${campaignPath}-wal`)).toBe(false)
+
+    const backup = advanceLocalAppInstallation(
+      fixture.options,
+      'backup-created'
+    )
+    const backupCampaign = join(
+      backup.backupPath!,
+      relative(paths.campaignData, campaignPath)
+    )
+    expect(existsSync(`${backupCampaign}-shm`)).toBe(false)
+    expect(existsSync(`${backupCampaign}-wal`)).toBe(false)
+
+    const repeated = advanceLocalAppInstallation(
+      fixture.options,
+      'backup-created'
+    )
+    expect(repeated.backupPath).toBe(backup.backupPath)
   })
 
   it('invalidates a backup checkpoint when campaign data changes', () => {
@@ -593,13 +629,19 @@ function identity(buildInfo: BuildInfo) {
   }
 }
 
-function createDatabase(root: string, version: number): string {
+function createDatabase(
+  root: string,
+  version: number,
+  writeAheadLog = false,
+  filename = 'installation.sqlite'
+): string {
   mkdirSync(root, { recursive: true })
-  const path = join(root, 'installation.sqlite')
+  const path = join(root, filename)
   const database = new Database(path)
   database.exec('CREATE TABLE valuable (content TEXT NOT NULL)')
   database.prepare('INSERT INTO valuable VALUES (?)').run('preserve me')
   database.pragma(`user_version = ${version}`)
+  if (writeAheadLog) database.pragma('journal_mode = WAL')
   database.close()
   return path
 }

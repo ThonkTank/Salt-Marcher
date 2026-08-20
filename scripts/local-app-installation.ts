@@ -908,13 +908,21 @@ function backupCampaignData(
   )
   try {
     const sourceHashes = copyTreeWithHashes(paths.campaignData, staging)
-    const backupHashes = hashTree(staging)
-    if (JSON.stringify(backupHashes) !== JSON.stringify(sourceHashes))
+    if (JSON.stringify(hashTree(staging)) !== JSON.stringify(sourceHashes))
       throw new Error('Backup hashes differ from campaign data')
     const copiedDatabases = sourceDatabases.map((database) =>
       join(staging, relative(paths.campaignData, database.path))
     )
     validateDatabases(copiedDatabases)
+    // Opening a copied WAL database read-only may create SQLite sidecars in
+    // the backup. They are validation artifacts, not source bytes. Remove only
+    // paths absent from the source inventory, then prove exact equality again.
+    const sourcePaths = new Set(sourceHashes.map(({ path }) => path))
+    for (const file of hashTree(staging))
+      if (!sourcePaths.has(file.path))
+        rmSync(join(staging, ...file.path.split('/')), { force: true })
+    if (JSON.stringify(hashTree(staging)) !== JSON.stringify(sourceHashes))
+      throw new Error('Database validation changed verified backup bytes')
     const previousBuild = readPreviousInstalledBuild(paths.installedManifest)
     const backupManifestPath = join(staging, 'backup-manifest.json')
     writeFileSync(
