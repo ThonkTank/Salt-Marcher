@@ -39,6 +39,23 @@ leftover `creating` row deterministically: a valid staged/final store is
 finished, while any incomplete or invalid store and its registry row are
 removed. The result is never a visible half-Campaign.
 
+Campaign replacement and Campaign import use one persisted publish lifecycle:
+
+```text
+staged -> validated -> swapped -> reopened -> registered -> verified -> finalized
+```
+
+`CampaignLifecycleCoordinator` is the sole owner of the invariant spanning the
+campaign filesystem, active connection, installation registry, import
+registration, and domain readback. Those resources expose narrow ports; import
+adds its registration and aggregate verification but does not run a second
+publish or recovery saga. Before the atomic registry commit, recovery restores
+the last validated Campaign. At or after that commit, recovery accepts the new
+Campaign only after store and registry readback. Replacement storage is cleaned
+only after both checks, so a failed restart never discards the only recoverable
+validated image. The persisted directory receipt is migrated in place from its
+previous schema; the installation and Campaign database formats are unchanged.
+
 ## Release Boundary
 
 The format is frozen only at the first accepted real-use release. Any later

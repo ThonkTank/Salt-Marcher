@@ -3,30 +3,36 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
+import { CampaignStore } from '../../src/core/persistence/sqlite/campaign-store.js'
 import {
-  CampaignStore,
-  type CampaignReplacePhase
-} from '../../src/core/persistence/sqlite/campaign-store.js'
+  CampaignLifecycleInterruption,
+  type CampaignLifecycleBoundary,
+  type CampaignLifecyclePhase
+} from '../../src/core/application/campaign-lifecycle-coordinator.js'
 import { PartyStore } from '../../src/core/party/party-store.js'
 import { activeCampaignDatabase } from '../support/campaign-store-test-access.js'
 
 const roots: string[] = []
 
 const rollbackPhases = [
+  'before-stage-validation',
+  'after-stage-validation',
   'before-original-move',
   'after-original-move',
   'before-replacement-promote',
   'after-replacement-promote',
-  'before-replacement-open',
-  'after-replacement-open',
+  'before-reopen',
+  'after-reopen',
   'before-registry-commit'
-] as const satisfies readonly CampaignReplacePhase[]
+] as const satisfies readonly CampaignLifecycleBoundary[]
 
 const rollForwardPhases = [
   'after-registry-commit',
+  'before-registry-readback',
+  'after-registry-readback',
   'before-cleanup',
   'after-cleanup'
-] as const satisfies readonly CampaignReplacePhase[]
+] as const satisfies readonly CampaignLifecycleBoundary[]
 
 afterEach(() => {
   for (const root of roots.splice(0))
@@ -49,18 +55,71 @@ describe('campaign replacement safety', () => {
         assertFailureConverges(activity, failurePhase, true)
     }
   )
+
+  it.each([
+    ['staged', false],
+    ['validated', false],
+    ['swapped', false],
+    ['reopened', false],
+    ['registered', true],
+    ['verified', true],
+    ['finalized', true]
+  ] as const satisfies readonly (readonly [CampaignLifecyclePhase, boolean])[])(
+    'recovers process termination after the durable %s phase',
+    (failurePhase, committed) => {
+      const root = mkdtempSync(join(tmpdir(), 'salt-marcher-replacement-'))
+      roots.push(root)
+      let armed = true
+      const campaigns = new CampaignStore(root, {
+        onLifecyclePhase(phase) {
+          if (armed && phase === failurePhase) {
+            armed = false
+            throw new CampaignLifecycleInterruption(phase)
+          }
+        }
+      })
+      const targetId = campaigns.create('Original Registry').activeCampaignId!
+      const party = new PartyStore(activeCampaignDatabase(campaigns))
+      party.create(member('Original Domain'), party.read().revision)
+
+      expect(() =>
+        campaigns.stageImportedCampaign(
+          'Replacement Registry',
+          targetId,
+          (staged) => {
+            staged
+              .prepare(
+                "UPDATE player_characters SET name = 'Replacement Domain'"
+              )
+              .run()
+          }
+        )
+      ).toThrow(CampaignLifecycleInterruption)
+      campaigns.close()
+
+      const restarted = new CampaignStore(root)
+      assertState(
+        restarted,
+        targetId,
+        targetId,
+        committed ? 'Replacement Registry' : 'Original Registry',
+        committed ? 'Replacement Domain' : 'Original Domain'
+      )
+      restarted.close()
+    }
+  )
 })
 
 function assertFailureConverges(
   activity: 'active' | 'inactive',
-  failurePhase: CampaignReplacePhase,
+  failurePhase: CampaignLifecycleBoundary,
   committed: boolean
 ): void {
   const root = mkdtempSync(join(tmpdir(), 'salt-marcher-replacement-'))
   roots.push(root)
   let armed = true
   const campaigns = new CampaignStore(root, {
-    onReplacePhase(phase) {
+    onLifecycleBoundary(phase) {
       if (armed && phase === failurePhase) {
         armed = false
         throw new Error(`injected ${phase}`)

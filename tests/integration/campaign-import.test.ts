@@ -8,7 +8,7 @@ import {
 import type Database from 'better-sqlite3'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import {
   campaignImportBundleSchema,
   type CampaignImportBundle
@@ -140,13 +140,15 @@ describe('CampaignImportService', () => {
   })
 
   it.each([
-    ['planned', 'failed', 'rolled_back'],
-    ['staging', 'failed', 'rolled_back'],
-    ['campaign_replaced', 'complete', 'recovered'],
-    ['registry_committed', 'complete', 'recovered'],
-    ['complete', 'complete', 'applied']
+    ['staged', 'failed', 'rolled_back'],
+    ['validated', 'failed', 'rolled_back'],
+    ['swapped', 'failed', 'rolled_back'],
+    ['reopened', 'failed', 'rolled_back'],
+    ['registered', 'complete', 'recovered'],
+    ['verified', 'complete', 'recovered'],
+    ['finalized', 'complete', 'recovered']
   ] as const)(
-    'converges after restart from the %s saga boundary',
+    'converges after restart from the shared %s lifecycle phase',
     (boundary, expectedPhase, expectedResult) => {
       const root = mkdtempSync(join(tmpdir(), 'salt-marcher-import-saga-'))
       roots.push(root)
@@ -156,7 +158,7 @@ describe('CampaignImportService', () => {
         interruptedCampaigns,
         resolver,
         {
-          onSagaPhase: (phase) => interruptAt(boundary, phase)
+          onLifecyclePhase: (phase) => interruptAt(boundary, phase)
         }
       )
       expect(() => interruptedService.apply(bundle)).toThrow(
@@ -193,18 +195,25 @@ describe('CampaignImportService', () => {
     const root = mkdtempSync(join(tmpdir(), 'salt-marcher-import-registry-'))
     roots.push(root)
     const bundle = fixture()
-    const interruptedCampaigns = new CampaignStore(root)
-    const repository = interruptedCampaigns.campaignImportRepository()
-    vi.spyOn(repository, 'commitRegistryForSaga').mockImplementationOnce(() => {
-      throw new Error('injected registry failure')
+    let armed = true
+    const interruptedCampaigns = new CampaignStore(root, {
+      onLifecycleBoundary(boundary) {
+        if (armed && boundary === 'after-registry-commit') {
+          armed = false
+          throw new Error('injected registry boundary failure')
+        }
+      }
     })
+    const repository = interruptedCampaigns.campaignImportRepository()
     const service = new CampaignImportService(interruptedCampaigns, resolver)
 
-    expect(() => service.apply(bundle)).toThrow('injected registry failure')
+    expect(() => service.apply(bundle)).toThrow(
+      'injected registry boundary failure'
+    )
     expect(repository.latestSagaForSource(bundle.source.id)).toMatchObject({
-      phase: 'campaign_replaced',
+      phase: 'staging',
       terminalResult: null,
-      quickCheck: 'ok'
+      quickCheck: null
     })
     interruptedCampaigns.close()
 

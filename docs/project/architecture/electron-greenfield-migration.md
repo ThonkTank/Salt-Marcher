@@ -189,6 +189,15 @@ Filesystem maintenance callers must prove the exact deployment-receipt SHA
 before opening a profile; normal calls run through the compatible installed
 Utility process.
 
+Replacement and import now publish through the same persisted seven-phase
+`CampaignLifecycleCoordinator`. The former directory transition and the import
+saga no longer make independent rollback or roll-forward decisions. Filesystem,
+connection, Campaign/import registration, and domain readback are narrow ports;
+the atomic registry marker is the recovery decision boundary. Startup retains
+the previous validated directory until the replacement store and registry
+projection have both been verified. Existing directory receipts are migrated
+in place without changing either SQLite data format.
+
 ## Runtime efficiency and delivery hardening — 2026-08-15
 
 The architecture-critique remediation was delivered in six independently

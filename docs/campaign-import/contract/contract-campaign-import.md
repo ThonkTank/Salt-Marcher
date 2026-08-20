@@ -27,6 +27,22 @@ image. Failed staging leaves the recorded active campaign and its directory
 unchanged. Identical bundles return `unchanged`; a newer source image replaces
 the prior imported image at the same campaign ID after verification.
 
+Publishing is delegated to the shared persisted Campaign lifecycle:
+`staged -> validated -> swapped -> reopened -> registered -> verified ->
+finalized`. The lifecycle coordinator, not the import service, owns filesystem
+rename, connection reopen, the atomic Campaign/import registry commit, registry
+readback, rollback/roll-forward, and cleanup. Import specializes staging with
+its adapters and specializes post-publish verification with provenance,
+aggregate readbacks, and the staged Campaign fingerprint. Its installation
+saga is durable audit evidence and reconciles receipts created before the
+shared lifecycle; it is not a second owner of Campaign publication.
+
+A process exit before the atomic registry commit rolls back to the previous
+validated Campaign. A commit marker makes recovery roll forward, but the old
+directory remains recoverable until the new store and both registry projections
+read back successfully. Recovery and cleanup are idempotent after every
+persisted lifecycle phase.
+
 Direct profile-opening maintenance tools are not an alternate import
 implementation. They must pass `openAuthorizedCampaignImportRuntime` with the
 exact deployment-receipt SHA before constructing CampaignStore. Product calls

@@ -15,9 +15,12 @@ import { CapabilityError } from '../../../shared/errors/capability-error.js'
 import type { IncompatibleDataPolicy } from '../../../shared/contracts/runtime.js'
 import type { CampaignImportStore } from '../../campaign-import/campaign-import-store.js'
 import {
-  CampaignDirectoryTransition,
-  type CampaignDirectoryTransitionReceipt
-} from './campaign-directory-transition.js'
+  CampaignLifecycleCoordinator,
+  type CampaignLifecycleBoundary,
+  type CampaignLifecycleOperation,
+  type CampaignLifecyclePhase,
+  type CampaignLifecycleReceipt
+} from '../../application/campaign-lifecycle-coordinator.js'
 import { CampaignConnectionManager } from './campaign-connection-manager.js'
 import {
   type CampaignSchemaBootstrapper,
@@ -32,6 +35,7 @@ import {
   isSafeCampaignId,
   resetPersistenceRoot
 } from './campaign-filesystem.js'
+import { FileCampaignLifecycleJournal } from './campaign-lifecycle-journal.js'
 import { InstallationDatabaseOwner } from './installation-database-owner.js'
 
 export type CampaignCreatePhase =
@@ -40,24 +44,30 @@ export type CampaignCreatePhase =
   | 'after-store-created'
   | 'before-ready'
 
-export type CampaignReplacePhase =
-  | 'before-original-move'
-  | 'after-original-move'
-  | 'before-replacement-promote'
-  | 'after-replacement-promote'
-  | 'before-replacement-open'
-  | 'after-replacement-open'
-  | 'before-registry-commit'
-  | 'after-registry-commit'
-  | 'before-cleanup'
-  | 'after-cleanup'
-
 export interface CampaignStoreOptions {
   /** Test seam for simulating a process interruption at durable create boundaries. */
   onCreatePhase?: (phase: CampaignCreatePhase) => void
-  /** Failure-injection seam at real replacement transition boundaries. */
-  onReplacePhase?: (phase: CampaignReplacePhase) => void
+  /** Failure-injection seam after a persisted Campaign lifecycle phase. */
+  onLifecyclePhase?: (
+    phase: CampaignLifecyclePhase,
+    receipt: CampaignLifecycleReceipt
+  ) => void
+  /** Failure-injection seam at real cross-resource transition boundaries. */
+  onLifecycleBoundary?: (boundary: CampaignLifecycleBoundary) => void
   schemaBootstrapper?: CampaignSchemaBootstrapper
+}
+
+export interface ImportedCampaignLifecycleOptions<T> {
+  readonly operation?: CampaignLifecycleOperation
+  readonly verifyPublished?: (
+    database: Database.Database,
+    stagedEvidence: T
+  ) => boolean
+  readonly onPhase?: (
+    phase: CampaignLifecyclePhase,
+    receipt: CampaignLifecycleReceipt
+  ) => void
+  readonly onBoundary?: (boundary: CampaignLifecycleBoundary) => void
 }
 
 export class CampaignStore {
@@ -65,29 +75,41 @@ export class CampaignStore {
   private readonly connections = new CampaignConnectionManager()
   private readonly onCreatePhase:
     ((phase: CampaignCreatePhase) => void) | undefined
-  private readonly onReplacePhase:
-    ((phase: CampaignReplacePhase) => void) | undefined
-  private readonly directoryTransition: CampaignDirectoryTransition
+  private readonly onLifecyclePhase:
+    CampaignStoreOptions['onLifecyclePhase'] | undefined
+  private readonly onLifecycleBoundary:
+    CampaignStoreOptions['onLifecycleBoundary'] | undefined
+  private readonly lifecycle: CampaignLifecycleCoordinator
   private readonly filesystem: CampaignFilesystem
   private readonly activePersistence: SqliteDatabaseAccess
 
   constructor(dataRoot: string, options: CampaignStoreOptions = {}) {
     this.onCreatePhase = options.onCreatePhase
-    this.onReplacePhase = options.onReplacePhase
+    this.onLifecyclePhase = options.onLifecyclePhase
+    this.onLifecycleBoundary = options.onLifecycleBoundary
     this.activePersistence = sqliteDatabaseAccess((visitor) =>
       this.connections.visit(visitor)
     )
     const schemaBootstrapper =
       options.schemaBootstrapper ?? createDefaultCampaignSchemaBootstrapper()
     this.filesystem = new CampaignFilesystem(dataRoot, schemaBootstrapper)
-    this.directoryTransition = new CampaignDirectoryTransition(
-      dataRoot,
-      (path) => this.filesystem.isValidCampaignStore(path)
-    )
     this.installationOwner = new InstallationDatabaseOwner(dataRoot)
+    this.lifecycle = new CampaignLifecycleCoordinator({
+      journal: new FileCampaignLifecycleJournal(dataRoot),
+      storage: this.filesystem,
+      connections: {
+        release: (campaignId) => {
+          this.connections.release(campaignId)
+        },
+        close: () => this.connections.close(),
+        reopen: (campaignId) => this.switchActiveCampaign(campaignId)
+      },
+      registration: this.installationOwner.campaignLifecycleRegistration()
+    })
     try {
+      this.lifecycle.recoverPending(false)
       this.recoverIncompleteCreations()
-      this.recoverCampaignDirectoryTransitions()
+      this.recoverCampaignStorage()
       this.openRecordedActiveCampaign()
     } catch (error) {
       this.installationOwner.close()
@@ -187,93 +209,97 @@ export class CampaignStore {
     name: string,
     existingId: string | null,
     populateAndVerify: (database: Database.Database) => T,
-    reservedId?: string
+    reservedId?: string,
+    lifecycleOptions: ImportedCampaignLifecycleOptions<T> = {}
   ): Readonly<{
     campaignId: string
     snapshot: CampaignSnapshot
     quickCheck: 'ok'
     evidence: T
-    directoryTransition: unknown
+    campaignLifecycle: CampaignLifecycleReceipt
   }> {
     const id = existingId ?? reservedId ?? uuidv7()
     if (reservedId !== undefined) this.requireSafeCampaignId(reservedId)
     if (existingId !== null) this.requireSafeCampaignId(existingId)
     const previousActiveId = this.list().activeCampaignId
     const createdAt = new Date().toISOString()
-    this.filesystem.discardStagedCampaign(id)
-    if (existingId === null)
-      this.installationOwner.registry.insertImportCreation(id, name, createdAt)
-    try {
-      if (existingId === null) this.createStagedCampaignStore(id)
-      else this.cloneCampaignToStage(id)
-      const staged = new Database(this.filesystem.stagedCampaignPath(id))
-      try {
-        configureSqlite(staged)
-        assertSchemaVersion(
-          staged,
-          this.filesystem.stagedCampaignDirectory(id),
-          'campaign'
-        )
-        const evidence = populateAndVerify(staged)
-        if (staged.pragma('quick_check', { simple: true }) !== 'ok')
-          throw new Error('Imported campaign failed quick_check')
-        staged.close()
+    const previousName =
+      existingId === null
+        ? null
+        : this.installationOwner.registry.previousName(id)
+    const operation = lifecycleOptions.operation ?? { kind: 'replacement' }
+    const execution = this.lifecycle.execute({
+      input: {
+        operation,
+        mode: existingId === null ? 'create' : 'replace',
+        campaignId: id,
+        previousName,
+        replacementName: name,
+        previousActiveId
+      },
+      stage: () => {
+        this.filesystem.discardStagedCampaign(id)
+        if (existingId === null) {
+          this.installationOwner.registry.insertImportCreation(
+            id,
+            name,
+            createdAt
+          )
+          this.createStagedCampaignStore(id)
+        } else this.cloneCampaignToStage(id)
+        const staged = new Database(this.filesystem.stagedCampaignPath(id))
+        try {
+          configureSqlite(staged)
+          assertSchemaVersion(
+            staged,
+            this.filesystem.stagedCampaignDirectory(id),
+            'campaign'
+          )
+          const evidence = populateAndVerify(staged)
+          if (staged.pragma('quick_check', { simple: true }) !== 'ok')
+            throw new Error('Imported campaign failed quick_check')
+          return Object.freeze({ evidence, quickCheck: 'ok' as const })
+        } finally {
+          staged.close()
+        }
+      },
+      validate: (staged) => {
         if (
           !this.filesystem.isValidCampaignStore(
             this.filesystem.stagedCampaignPath(id)
           )
         )
           throw new Error('Imported campaign failed staged store validation')
-        const directoryTransition =
-          existingId === null
-            ? this.finalizeImportedCampaignCreation(id)
-            : this.replaceCampaignFromStage(id, name, previousActiveId)
-        return {
-          campaignId: id,
-          snapshot: this.list(),
-          quickCheck: 'ok',
-          evidence,
-          directoryTransition
-        }
-      } finally {
-        if (staged.open) staged.close()
+        return staged
+      },
+      verify: (staged) =>
+        this.connections.visit(
+          (database) =>
+            database.pragma('quick_check', { simple: true }) === 'ok' &&
+            (lifecycleOptions.verifyPublished?.(database, staged.evidence) ??
+              true)
+        ),
+      result: (staged) => staged,
+      onPhase: (phase, receipt) => {
+        this.onLifecyclePhase?.(phase, receipt)
+        lifecycleOptions.onPhase?.(phase, receipt)
+      },
+      onBoundary: (boundary) => {
+        this.onLifecycleBoundary?.(boundary)
+        lifecycleOptions.onBoundary?.(boundary)
       }
-    } catch (error) {
-      if (
-        existingId === null ||
-        (this.directoryTransition.receipt(id) === null &&
-          this.filesystem.isValidCampaignStore(
-            this.filesystem.campaignPath(id)
-          ))
-      )
-        this.filesystem.discardStagedCampaign(id)
-      if (existingId === null) {
-        this.filesystem.discardCurrentCampaign(id)
-        this.installationOwner.registry.removeIncompleteCreation(id)
-      }
-      throw error
+    })
+    return {
+      campaignId: id,
+      snapshot: this.list(),
+      quickCheck: execution.result.quickCheck,
+      evidence: execution.result.evidence,
+      campaignLifecycle: execution.receipt
     }
   }
 
   campaignImportRepository(): CampaignImportStore {
     return this.installationOwner.campaignImports
-  }
-
-  discardFailedImportedCampaign(
-    campaignId: string,
-    previousActiveCampaignId: string | null
-  ): void {
-    this.requireSafeCampaignId(campaignId)
-    if (this.connections.activeId() === campaignId)
-      this.connections.release(campaignId)
-    this.installationOwner.registry.delete(campaignId)
-    this.filesystem.discardStagedCampaign(campaignId)
-    this.filesystem.discardCurrentCampaign(campaignId)
-    if (previousActiveCampaignId !== null) {
-      this.installationOwner.registry.requireAvailable(previousActiveCampaignId)
-      this.installationOwner.registry.setActive(previousActiveCampaignId)
-      this.switchActiveCampaign(previousActiveCampaignId)
-    }
   }
 
   visitCampaignDatabase<T>(
@@ -362,68 +388,6 @@ export class CampaignStore {
     this.switchActiveCampaign(id)
   }
 
-  private finalizeImportedCampaignCreation(id: string): Readonly<{
-    kind: 'creation'
-    campaignId: string
-    phase: 'complete'
-  }> {
-    this.finalizeCampaignCreation(id)
-    return { kind: 'creation', campaignId: id, phase: 'complete' }
-  }
-
-  private replaceCampaignFromStage(
-    id: string,
-    name: string,
-    previousActiveId: string | null
-  ): CampaignDirectoryTransitionReceipt {
-    const previousName = this.installationOwner.registry.previousName(id)
-    let receipt = this.directoryTransition.begin({
-      campaignId: id,
-      previousName,
-      replacementName: name,
-      previousActiveId
-    })
-    // Windows does not allow a directory containing an open SQLite database
-    // to be renamed. Release the active handle before beginning the durable
-    // directory transition; the catch path reopens the recorded campaign.
-    if (previousActiveId === id) {
-      this.connections.release(id)
-    }
-    try {
-      this.onReplacePhase?.('before-original-move')
-      receipt = this.directoryTransition.moveOriginal(receipt)
-      this.onReplacePhase?.('after-original-move')
-      this.onReplacePhase?.('before-replacement-promote')
-      receipt = this.directoryTransition.promoteReplacement(receipt)
-      this.onReplacePhase?.('after-replacement-promote')
-      this.onReplacePhase?.('before-replacement-open')
-      this.switchActiveCampaign(id)
-      if (
-        this.connections.visit((database) =>
-          database.pragma('quick_check', { simple: true })
-        ) !== 'ok'
-      )
-        throw new Error('Promoted campaign failed quick_check')
-      this.onReplacePhase?.('after-replacement-open')
-      this.onReplacePhase?.('before-registry-commit')
-      this.installationOwner.registry.commitReplacement(receipt, name)
-      receipt = this.directoryTransition.markVerified(receipt)
-      this.onReplacePhase?.('after-registry-commit')
-      this.onReplacePhase?.('before-cleanup')
-      receipt = this.directoryTransition.completeFilesystem(receipt)
-      this.onReplacePhase?.('after-cleanup')
-      this.directoryTransition.finish(receipt)
-      this.clearTransitionCommit(receipt)
-      return receipt
-    } catch (error) {
-      // switchActiveCampaign may already have opened the replacement. Close it
-      // before removing or renaming either directory on Windows.
-      this.connections.close()
-      this.recoverCampaignDirectoryTransition(receipt)
-      throw error
-    }
-  }
-
   private recoverIncompleteCreations(): void {
     for (const id of this.installationOwner.registry.creatingIds()) {
       if (!isSafeCampaignId(id)) {
@@ -438,14 +402,11 @@ export class CampaignStore {
     }
   }
 
-  private recoverCampaignDirectoryTransitions(): void {
-    for (const receipt of this.directoryTransition.receipts())
-      this.recoverCampaignDirectoryTransition(receipt, false)
-
+  private recoverCampaignStorage(): void {
     for (const id of this.filesystem.legacyReplacementIds()) {
       if (!isSafeCampaignId(id)) continue
-      if (this.directoryTransition.receipt(id) === null)
-        this.directoryTransition.recoverLegacy(id)
+      if (!this.lifecycle.hasPending(id))
+        this.lifecycle.recoverLegacyReplacement(id)
     }
 
     for (const id of this.filesystem.pendingDeletionIds()) {
@@ -459,31 +420,6 @@ export class CampaignStore {
         throw new Error('Unsafe campaign identifier in trash registry')
       this.filesystem.assertAndConvergeTrashedCampaign(id)
     }
-  }
-
-  private recoverCampaignDirectoryTransition(
-    receipt: CampaignDirectoryTransitionReceipt,
-    reopen = true
-  ): void {
-    if (this.installationOwner.registry.replacementCommit(receipt)) {
-      this.directoryTransition.rollForwardFilesystem(receipt)
-      this.directoryTransition.finish(receipt)
-      this.clearTransitionCommit(receipt)
-      if (reopen) this.switchActiveCampaign(receipt.campaignId)
-      return
-    }
-
-    this.directoryTransition.rollbackFilesystem(receipt)
-    this.installationOwner.registry.restoreReplacementRegistry(receipt)
-    this.directoryTransition.finish(receipt)
-    if (reopen && receipt.previousActiveId !== null)
-      this.switchActiveCampaign(receipt.previousActiveId)
-  }
-
-  private clearTransitionCommit(
-    receipt: CampaignDirectoryTransitionReceipt
-  ): void {
-    this.installationOwner.registry.clearReplacementCommit(receipt)
   }
 
   private removeIncompleteCreation(id: string): void {

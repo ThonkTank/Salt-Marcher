@@ -304,10 +304,29 @@ export class CampaignImportStore {
     if (saga.phase !== 'campaign_replaced')
       throw new Error(`Campaign import saga cannot commit from ${saga.phase}`)
     this.installation.transaction(() => {
-      this.recordRegistry(saga.bundle, saga.targetCampaignId)
+      // New work is registered atomically by CampaignLifecycleCoordinator.
+      // Missing registration identifies a pre-coordinator pending saga and is
+      // reconciled here so schema-35 recovery remains lossless.
+      if (!this.registryMatchesSaga(importId))
+        this.recordRegistry(saga.bundle, saga.targetCampaignId)
       this.advanceSaga(importId, 'campaign_replaced', 'registry_committed')
     })()
     return this.requireSaga(importId)
+  }
+
+  recordRegistryForSaga(importId: string): void {
+    const saga = this.requireSaga(importId)
+    this.recordRegistry(saga.bundle, saga.targetCampaignId)
+  }
+
+  registryMatchesSaga(importId: string): boolean {
+    const saga = this.requireSaga(importId)
+    const previous = this.previous(saga.sourceId)
+    return (
+      previous?.campaignId === saga.targetCampaignId &&
+      previous.revision === saga.sourceRevision &&
+      previous.exportHash === saga.exportHash
+    )
   }
 
   completeSaga(

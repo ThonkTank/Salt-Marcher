@@ -28,6 +28,10 @@ import {
   sqliteDatabaseAccess,
   type SqliteDatabaseAccess
 } from './database-access.js'
+import type {
+  CampaignLifecycleReceipt,
+  CampaignLifecycleRegistration
+} from '../../application/campaign-lifecycle-coordinator.js'
 
 /** Owns the installation database handle and its installation-scoped stores. */
 export class InstallationDatabaseOwner {
@@ -75,8 +79,33 @@ export class InstallationDatabaseOwner {
     return this.persistence
   }
 
+  campaignLifecycleRegistration(): CampaignLifecycleRegistration {
+    return {
+      commit: (receipt) => this.commitCampaignLifecycle(receipt),
+      isCommitted: (receipt) => this.registry.lifecycleCommit(receipt),
+      verify: (receipt) => this.verifyCampaignLifecycle(receipt),
+      rollback: (receipt) => this.registry.restoreLifecycleRegistry(receipt),
+      clear: (receipt) => this.registry.clearLifecycleCommit(receipt)
+    }
+  }
+
   close(): void {
     this.database.close()
+  }
+
+  private commitCampaignLifecycle(receipt: CampaignLifecycleReceipt): void {
+    this.registry.commitLifecycle(receipt, () => {
+      if (receipt.operation.kind === 'campaign-import')
+        this.campaignImports.recordRegistryForSaga(receipt.operation.importId)
+    })
+  }
+
+  private verifyCampaignLifecycle(receipt: CampaignLifecycleReceipt): boolean {
+    return (
+      this.registry.lifecycleReadback(receipt) &&
+      (receipt.operation.kind !== 'campaign-import' ||
+        this.campaignImports.registryMatchesSaga(receipt.operation.importId))
+    )
   }
 
   private initializeInstallationSchema(installationExists: boolean): void {

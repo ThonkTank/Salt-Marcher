@@ -5,7 +5,7 @@ import type {
 } from '../../../shared/contracts/campaign.js'
 import { freezeCampaignSnapshot } from '../../../shared/contracts/campaign.js'
 import { CapabilityError } from '../../../shared/errors/capability-error.js'
-import type { CampaignDirectoryTransitionReceipt } from './campaign-directory-transition.js'
+import type { CampaignLifecycleReceipt } from '../../application/campaign-lifecycle-coordinator.js'
 
 /** Owns installation-level campaign metadata and its transaction boundaries. */
 export class CampaignRegistryRepository {
@@ -188,52 +188,85 @@ export class CampaignRegistryRepository {
     })()
   }
 
-  commitReplacement(
-    receipt: CampaignDirectoryTransitionReceipt,
-    name: string
+  commitLifecycle(
+    receipt: CampaignLifecycleReceipt,
+    registerOperation: () => void = () => undefined
   ): void {
     this.database.transaction(() => {
-      this.database
-        .prepare(
-          "UPDATE campaigns SET name = ? WHERE id = ? AND status = 'ready' AND trashed_at IS NULL"
-        )
-        .run(name, receipt.campaignId)
+      const result =
+        receipt.mode === 'create'
+          ? this.database
+              .prepare(
+                "UPDATE campaigns SET name = ?, status = 'ready' WHERE id = ? AND status = 'creating' AND trashed_at IS NULL"
+              )
+              .run(receipt.replacementName, receipt.campaignId)
+          : this.database
+              .prepare(
+                "UPDATE campaigns SET name = ? WHERE id = ? AND status = 'ready' AND trashed_at IS NULL"
+              )
+              .run(receipt.replacementName, receipt.campaignId)
+      if (result.changes !== 1)
+        throw new Error('Campaign lifecycle registry target is unavailable')
       this.setActive(receipt.campaignId)
+      registerOperation()
       this.database
         .prepare(
           'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value'
         )
-        .run(this.transitionCommitKey(receipt.campaignId), receipt.transitionId)
+        .run(this.lifecycleCommitKey(receipt.campaignId), receipt.lifecycleId)
     })()
   }
 
-  replacementCommit(receipt: CampaignDirectoryTransitionReceipt): boolean {
-    const committed = this.database
-      .prepare('SELECT value FROM settings WHERE key = ?')
-      .get(this.transitionCommitKey(receipt.campaignId)) as
-      { value: string } | undefined
-    return committed?.value === receipt.transitionId
+  lifecycleCommit(receipt: CampaignLifecycleReceipt): boolean {
+    const committed = this.setting(this.lifecycleCommitKey(receipt.campaignId))
+    const legacy = this.setting(this.legacyCommitKey(receipt.campaignId))
+    return committed === receipt.lifecycleId || legacy === receipt.lifecycleId
   }
 
-  restoreReplacementRegistry(
-    receipt: CampaignDirectoryTransitionReceipt
-  ): void {
+  lifecycleReadback(receipt: CampaignLifecycleReceipt): boolean {
+    const campaign = this.database
+      .prepare(
+        'SELECT name, status, trashed_at AS trashedAt FROM campaigns WHERE id = ?'
+      )
+      .get(receipt.campaignId) as
+      { name: string; status: string; trashedAt: string | null } | undefined
+    return (
+      this.lifecycleCommit(receipt) &&
+      campaign?.name === receipt.replacementName &&
+      campaign.status === 'ready' &&
+      campaign.trashedAt === null &&
+      this.recordedActiveId() === receipt.campaignId
+    )
+  }
+
+  restoreLifecycleRegistry(receipt: CampaignLifecycleReceipt): void {
     this.database.transaction(() => {
-      this.database
-        .prepare('UPDATE campaigns SET name = ? WHERE id = ?')
-        .run(receipt.previousName, receipt.campaignId)
+      if (receipt.mode === 'create')
+        this.database
+          .prepare("DELETE FROM campaigns WHERE id = ? AND status = 'creating'")
+          .run(receipt.campaignId)
+      else
+        this.database
+          .prepare('UPDATE campaigns SET name = ? WHERE id = ?')
+          .run(receipt.previousName, receipt.campaignId)
       if (receipt.previousActiveId === null) this.clearRecordedActive()
       else this.setActive(receipt.previousActiveId)
       this.database
         .prepare('DELETE FROM settings WHERE key = ?')
-        .run(this.transitionCommitKey(receipt.campaignId))
+        .run(this.lifecycleCommitKey(receipt.campaignId))
+      this.database
+        .prepare('DELETE FROM settings WHERE key = ?')
+        .run(this.legacyCommitKey(receipt.campaignId))
     })()
   }
 
-  clearReplacementCommit(receipt: CampaignDirectoryTransitionReceipt): void {
+  clearLifecycleCommit(receipt: CampaignLifecycleReceipt): void {
     this.database
       .prepare('DELETE FROM settings WHERE key = ? AND value = ?')
-      .run(this.transitionCommitKey(receipt.campaignId), receipt.transitionId)
+      .run(this.lifecycleCommitKey(receipt.campaignId), receipt.lifecycleId)
+    this.database
+      .prepare('DELETE FROM settings WHERE key = ? AND value = ?')
+      .run(this.legacyCommitKey(receipt.campaignId), receipt.lifecycleId)
   }
 
   recordedActiveId(): string | null {
@@ -265,7 +298,18 @@ export class CampaignRegistryRepository {
       .run()
   }
 
-  private transitionCommitKey(campaignId: string): string {
+  private lifecycleCommitKey(campaignId: string): string {
+    return `campaign_lifecycle:${campaignId}`
+  }
+
+  private legacyCommitKey(campaignId: string): string {
     return `campaign_directory_transition:${campaignId}`
+  }
+
+  private setting(key: string): string | null {
+    const row = this.database
+      .prepare('SELECT value FROM settings WHERE key = ?')
+      .get(key) as { value: string } | undefined
+    return row?.value ?? null
   }
 }

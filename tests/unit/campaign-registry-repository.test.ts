@@ -39,7 +39,7 @@ describe('CampaignRegistryRepository', () => {
     database.close()
   })
 
-  it('commits and compensates replacement metadata atomically', () => {
+  it('commits, reads back, and compensates lifecycle metadata atomically', () => {
     const database = new Database(':memory:')
     const registry = new CampaignRegistryRepository(database)
     registry.initialize()
@@ -47,20 +47,24 @@ describe('CampaignRegistryRepository', () => {
     registry.beginCreation(id, 'Original', '2026-08-18T12:00:00.000Z')
     registry.markReadyAndActivate(id)
     const receipt = {
-      schemaVersion: 1 as const,
-      transitionId: '00000000-0000-4000-8000-000000000099',
+      schemaVersion: 2 as const,
+      lifecycleId: '00000000-0000-4000-8000-000000000099',
+      operation: { kind: 'replacement' as const },
+      mode: 'replace' as const,
       campaignId: id,
       previousName: 'Original',
       replacementName: 'Replacement',
       previousActiveId: id,
-      phase: 'replacement_promoted' as const,
+      phase: 'reopened' as const,
+      validation: { quickCheck: 'ok' },
       updatedAt: '2026-08-18T12:01:00.000Z'
     }
-    registry.commitReplacement(receipt, 'Replacement')
-    expect(registry.replacementCommit(receipt)).toBe(true)
+    registry.commitLifecycle(receipt)
+    expect(registry.lifecycleCommit(receipt)).toBe(true)
+    expect(registry.lifecycleReadback(receipt)).toBe(true)
     expect(registry.snapshot().campaigns[0]?.name).toBe('Replacement')
-    registry.restoreReplacementRegistry(receipt)
-    expect(registry.replacementCommit(receipt)).toBe(false)
+    registry.restoreLifecycleRegistry(receipt)
+    expect(registry.lifecycleCommit(receipt)).toBe(false)
     expect(registry.snapshot().campaigns[0]?.name).toBe('Original')
     database.close()
   })

@@ -9,6 +9,11 @@ import {
 } from 'node:fs'
 import { dirname, join } from 'node:path'
 import Database from 'better-sqlite3'
+import type {
+  CampaignLifecycleBoundary,
+  CampaignLifecycleReceipt,
+  CampaignLifecycleStorage
+} from '../../application/campaign-lifecycle-coordinator.js'
 import { assertSchemaVersion, configureSqlite } from './database.js'
 import type { CampaignSchemaBootstrapper } from './campaign-schema-bootstrapper.js'
 
@@ -20,7 +25,7 @@ export function isSafeCampaignId(id: string): boolean {
 }
 
 /** Owns campaign storage layout and non-transactional file operations. */
-export class CampaignFilesystem {
+export class CampaignFilesystem implements CampaignLifecycleStorage {
   constructor(
     private readonly dataRoot: string,
     private readonly schemaBootstrapper: CampaignSchemaBootstrapper
@@ -109,6 +114,108 @@ export class CampaignFilesystem {
     }
   }
 
+  swap(
+    receipt: CampaignLifecycleReceipt,
+    onBoundary: (boundary: CampaignLifecycleBoundary) => void
+  ): void {
+    const staged = this.stagedCampaignDirectory(receipt.campaignId)
+    const current = this.campaignDirectory(receipt.campaignId)
+    if (!this.isValidCampaignStore(this.stagedCampaignPath(receipt.campaignId)))
+      throw new Error('Campaign lifecycle requires a validated staged store')
+
+    if (receipt.mode === 'create') {
+      if (existsSync(current))
+        throw new Error('Campaign creation target already exists')
+      onBoundary('before-replacement-promote')
+      renameSync(staged, current)
+      onBoundary('after-replacement-promote')
+      return
+    }
+
+    const replaced = this.replacedDirectory(receipt.campaignId)
+    if (
+      !this.isValidCampaignStore(this.campaignPath(receipt.campaignId)) ||
+      existsSync(replaced)
+    )
+      throw new Error('Campaign replacement directory roles are inconsistent')
+    mkdirSync(dirname(replaced), { recursive: true })
+    onBoundary('before-original-move')
+    renameSync(current, replaced)
+    onBoundary('after-original-move')
+    onBoundary('before-replacement-promote')
+    renameSync(staged, current)
+    onBoundary('after-replacement-promote')
+  }
+
+  rollback(receipt: CampaignLifecycleReceipt): void {
+    const current = this.campaignDirectory(receipt.campaignId)
+    const staged = this.stagedCampaignDirectory(receipt.campaignId)
+    if (receipt.mode === 'create') {
+      rmSync(current, { recursive: true, force: true })
+      rmSync(staged, { recursive: true, force: true })
+      return
+    }
+
+    const replaced = this.replacedDirectory(receipt.campaignId)
+    if (existsSync(replaced)) {
+      if (!this.isValidCampaignStore(this.replacedPath(receipt.campaignId)))
+        throw new Error('Recorded original Campaign is not valid')
+      if (existsSync(current)) {
+        if (existsSync(staged))
+          throw new Error('Campaign lifecycle contains three ambiguous copies')
+        renameSync(current, staged)
+      }
+      renameSync(replaced, current)
+    }
+    if (!this.isValidCampaignStore(this.campaignPath(receipt.campaignId)))
+      throw new Error('Campaign lifecycle cannot restore a valid original')
+    rmSync(staged, { recursive: true, force: true })
+  }
+
+  isCurrentValid(receipt: CampaignLifecycleReceipt): boolean {
+    return this.isValidCampaignStore(this.campaignPath(receipt.campaignId))
+  }
+
+  finalize(receipt: CampaignLifecycleReceipt): void {
+    if (!this.isValidCampaignStore(this.campaignPath(receipt.campaignId)))
+      throw new Error('Cannot clean Campaign lifecycle before verification')
+    rmSync(this.replacedDirectory(receipt.campaignId), {
+      recursive: true,
+      force: true
+    })
+    rmSync(this.stagedCampaignDirectory(receipt.campaignId), {
+      recursive: true,
+      force: true
+    })
+  }
+
+  recoverLegacyReplacement(id: string): void {
+    if (!isSafeCampaignId(id))
+      throw new Error('Unsafe legacy Campaign replacement identifier')
+    const current = this.campaignDirectory(id)
+    const staged = this.stagedCampaignDirectory(id)
+    const replaced = this.replacedDirectory(id)
+    if (!existsSync(replaced)) return
+
+    if (!existsSync(current)) {
+      if (!this.isValidCampaignStore(this.replacedPath(id)))
+        throw new Error('Legacy Campaign replacement lost its valid original')
+      renameSync(replaced, current)
+    } else if (!this.isValidCampaignStore(this.campaignPath(id))) {
+      if (!this.isValidCampaignStore(this.replacedPath(id)))
+        throw new Error('Legacy Campaign replacement has no valid copy')
+      if (existsSync(staged))
+        throw new Error('Legacy Campaign replacement roles are ambiguous')
+      renameSync(current, staged)
+      renameSync(replaced, current)
+    }
+
+    if (!this.isValidCampaignStore(this.campaignPath(id)))
+      throw new Error('Legacy Campaign replacement recovery failed')
+    rmSync(replaced, { recursive: true, force: true })
+    rmSync(staged, { recursive: true, force: true })
+  }
+
   legacyReplacementIds(): readonly string[] {
     return this.childNames(join(this.dataRoot, 'campaigns', '.replacing'))
   }
@@ -148,6 +255,14 @@ export class CampaignFilesystem {
 
   private deletingDirectory(id: string): string {
     return join(this.dataRoot, 'campaigns', '.deleting', id)
+  }
+
+  private replacedDirectory(id: string): string {
+    return join(this.dataRoot, 'campaigns', '.replacing', id)
+  }
+
+  private replacedPath(id: string): string {
+    return join(this.replacedDirectory(id), 'campaign.sqlite')
   }
 
   private childNames(parent: string): readonly string[] {

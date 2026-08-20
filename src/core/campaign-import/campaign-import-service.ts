@@ -1,6 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import type Database from 'better-sqlite3'
 import {
+  CampaignLifecycleInterruption,
+  type CampaignLifecyclePhase,
+  type CampaignLifecycleReceipt
+} from '../application/campaign-lifecycle-coordinator.js'
+import {
   campaignImportBundleSchema,
   campaignImportReportSchema,
   type CampaignImportApplyResult,
@@ -25,7 +30,6 @@ import type {
   ImportedCampaignEntity
 } from './campaign-import-section-adapter.js'
 import {
-  type CampaignImportSagaPhase,
   type CampaignImportSagaReceipt,
   type CampaignImportStore
 } from './campaign-import-store.js'
@@ -39,21 +43,21 @@ const emptySummary = Object.freeze({
 
 type Conflict = CampaignImportReport['conflicts'][number]
 
-export type CampaignImportSagaBoundary = CampaignImportSagaPhase
+export type CampaignImportSagaBoundary = CampaignLifecyclePhase
 
 export interface CampaignImportServiceOptions {
   readonly adapters?: readonly CampaignImportSectionAdapter<unknown>[]
-  /** Failure seam that models termination after a durable Saga phase. */
-  readonly onSagaPhase?: (
+  /** Failure seam that models termination after a shared lifecycle phase. */
+  readonly onLifecyclePhase?: (
     phase: CampaignImportSagaBoundary,
-    receipt: CampaignImportSagaReceipt
+    receipt: CampaignLifecycleReceipt
   ) => void
 }
 
 /** Tests throw this to model process death; the live saga stays nonterminal. */
-export class CampaignImportInterruption extends Error {
-  constructor(readonly phase: CampaignImportSagaBoundary) {
-    super(`Campaign import interrupted after ${phase}`)
+export class CampaignImportInterruption extends CampaignLifecycleInterruption {
+  constructor(override readonly phase: CampaignImportSagaBoundary) {
+    super(phase)
     this.name = 'CampaignImportInterruption'
   }
 }
@@ -80,8 +84,8 @@ export function campaignImportExportHash(bundle: CampaignImportBundle): string {
 export class CampaignImportService {
   private readonly imports: CampaignImportStore
   private readonly adapters: CampaignImportAdapterRegistry
-  private readonly onSagaPhase:
-    CampaignImportServiceOptions['onSagaPhase'] | undefined
+  private readonly onLifecyclePhase:
+    CampaignImportServiceOptions['onLifecyclePhase'] | undefined
 
   constructor(
     private readonly campaigns: CampaignStore,
@@ -92,7 +96,7 @@ export class CampaignImportService {
     this.adapters = new CampaignImportAdapterRegistry(
       options.adapters ?? createDefaultCampaignImportAdapters()
     )
-    this.onSagaPhase = options.onSagaPhase
+    this.onLifecyclePhase = options.onLifecyclePhase
     this.recoverPendingImports()
   }
 
@@ -131,16 +135,27 @@ export class CampaignImportService {
       previousCampaignFingerprint: previousCampaignFingerprint ?? null,
       sectionPlans: serializePlans(plans)
     })
-    this.onSagaPhase?.('planned', receipt)
-
     try {
       receipt = this.imports.advanceSaga(importId, 'planned', 'staging')
-      this.onSagaPhase?.('staging', receipt)
       const staged = this.campaigns.stageImportedCampaign(
         bundle.campaign.name,
         previous?.campaignId ?? null,
         (database) => this.executePlans(database, bundle, plans),
-        targetCampaignId
+        targetCampaignId,
+        {
+          operation: { kind: 'campaign-import', importId },
+          verifyPublished: (database, stagedEvidence) => {
+            const published = this.inspectImportDatabase(database, receipt)
+            return (
+              published !== null &&
+              published.campaignFingerprint ===
+                stagedEvidence.campaignFingerprint &&
+              published.readbacks.every(({ passed }) => passed)
+            )
+          },
+          onPhase: (phase, lifecycleReceipt) =>
+            this.onLifecyclePhase?.(phase, lifecycleReceipt)
+        }
       )
       receipt = this.imports.advanceSaga(
         importId,
@@ -149,26 +164,25 @@ export class CampaignImportService {
         {
           replacementCampaignFingerprint: staged.evidence.campaignFingerprint,
           sectionResults: staged.evidence.sectionResults,
-          directoryTransition: staged.directoryTransition,
+          directoryTransition: staged.campaignLifecycle,
           quickCheck: staged.quickCheck,
           domainReadbacks: [...staged.evidence.readbacks]
         }
       )
-      this.onSagaPhase?.('campaign_replaced', receipt)
       receipt = this.imports.commitRegistryForSaga(importId)
-      this.onSagaPhase?.('registry_committed', receipt)
       receipt = this.imports.completeSaga(importId, 'applied')
-      this.onSagaPhase?.('complete', receipt)
       return resultFor('applied', staged.campaignId, bundle, summary)
     } catch (error) {
       if (error instanceof CampaignImportInterruption) throw error
       const durable = this.imports.saga(importId)
+      const registered = this.imports.registryMatchesSaga(importId)
       // Once the replacement is published, failing the receipt would make
       // new campaign content plus an old registry a terminal state. Keep the
       // saga resumable; startup deterministically commits the registry and
       // completes it. Earlier failures are safe to mark rolled back because
       // CampaignStore has not exposed the staged image.
       if (
+        !registered &&
         durable?.phase !== 'campaign_replaced' &&
         durable?.phase !== 'registry_committed'
       )
@@ -193,11 +207,6 @@ export class CampaignImportService {
       if (receipt.phase === 'staging') {
         const evidence = this.inspectPublishedImport(receipt)
         if (!evidence) {
-          if (receipt.previousCampaignFingerprint === null)
-            this.campaigns.discardFailedImportedCampaign(
-              receipt.targetCampaignId,
-              receipt.previousActiveCampaignId
-            )
           recovered.push(
             this.imports.failSaga(
               receipt.importId,
@@ -463,63 +472,66 @@ export class CampaignImportService {
   ): ImportExecutionEvidence | null {
     return this.campaigns.visitCampaignDatabase(
       receipt.targetCampaignId,
-      (database) => {
-        if (database.pragma('quick_check', { simple: true }) !== 'ok')
-          return null
-        const provenance = this.imports.provenance(database, receipt.sourceId)
-        if (
-          !provenance ||
-          provenance.sourceRevision !== receipt.sourceRevision ||
-          provenance.exportHash !== receipt.exportHash
-        )
-          return null
-        const mappings = this.imports.entityMappings(database, receipt.sourceId)
-        const hashes = this.imports.entityHashes(database, receipt.sourceId)
-        const context = emptyAdapterContext(
-          receipt.bundle,
-          this.creatures,
-          hashes,
-          mappings
-        )
-        const entities: ImportedCampaignEntity[] = mappings.map((mapping) => ({
-          ...mapping,
-          sourcePath: `${mapping.kind}.${mapping.externalKey}`,
-          contentHash:
-            hashes.get(`${mapping.kind}:${mapping.externalKey}`) ?? ''
-        }))
-        const readbacks: CampaignImportDomainReadback[] = []
-        const sectionResults: Record<string, unknown> = {}
-        for (const adapter of this.adapters.ordered()) {
-          const values = adapter.select(receipt.bundle)
-          const plan = adapter.diff(hashes, values, context)
-          const sectionEntities = entities.filter(
-            (entity) => entity.kind === adapter.section
-          )
-          const readBack = adapter.readBack(
-            database,
-            plan,
-            context,
-            sectionEntities
-          )
-          if (!readBack.passed) return null
-          readbacks.push(readBack)
-          sectionResults[adapter.section] = {
-            changedExternalKeys: [],
-            removedExternalKeys: [],
-            summary: adapter.summarize(readBack),
-            readBack,
-            recovery: true
-          }
-        }
-        const campaignFingerprint = this.imports.campaignFingerprint(
-          database,
-          receipt.sourceId
-        )
-        return campaignFingerprint
-          ? { campaignFingerprint, entities, readbacks, sectionResults }
-          : null
-      }
+      (database) => this.inspectImportDatabase(database, receipt)
     )
+  }
+
+  private inspectImportDatabase(
+    database: Database.Database,
+    receipt: CampaignImportSagaReceipt
+  ): ImportExecutionEvidence | null {
+    if (database.pragma('quick_check', { simple: true }) !== 'ok') return null
+    const provenance = this.imports.provenance(database, receipt.sourceId)
+    if (
+      !provenance ||
+      provenance.sourceRevision !== receipt.sourceRevision ||
+      provenance.exportHash !== receipt.exportHash
+    )
+      return null
+    const mappings = this.imports.entityMappings(database, receipt.sourceId)
+    const hashes = this.imports.entityHashes(database, receipt.sourceId)
+    const context = emptyAdapterContext(
+      receipt.bundle,
+      this.creatures,
+      hashes,
+      mappings
+    )
+    const entities: ImportedCampaignEntity[] = mappings.map((mapping) => ({
+      ...mapping,
+      sourcePath: `${mapping.kind}.${mapping.externalKey}`,
+      contentHash: hashes.get(`${mapping.kind}:${mapping.externalKey}`) ?? ''
+    }))
+    const readbacks: CampaignImportDomainReadback[] = []
+    const sectionResults: Record<string, unknown> = {}
+    for (const adapter of this.adapters.ordered()) {
+      const values = adapter.select(receipt.bundle)
+      const plan = adapter.diff(hashes, values, context)
+      const sectionEntities = entities.filter(
+        (entity) => entity.kind === adapter.section
+      )
+      const readBack = adapter.readBack(
+        database,
+        plan,
+        context,
+        sectionEntities
+      )
+      if (!readBack.passed) return null
+      readbacks.push(readBack)
+      sectionResults[adapter.section] = {
+        changedExternalKeys: [],
+        removedExternalKeys: [],
+        summary: adapter.summarize(readBack),
+        readBack,
+        recovery: true
+      }
+    }
+    const campaignFingerprint = this.imports.campaignFingerprint(
+      database,
+      receipt.sourceId
+    )
+    return campaignFingerprint
+      ? { campaignFingerprint, entities, readbacks, sectionResults }
+      : null
   }
 }
 

@@ -244,6 +244,18 @@ installation command: every campaign database, including recoverable trash,
 is rewritten to the built-in `location` fallback before deletion completes.
 The installation journal makes an interrupted deletion resumable.
 
+Campaign replacement and Campaign import share one Utility-owned,
+cross-resource publish state machine: `staged`, `validated`, `swapped`,
+`reopened`, `registered`, `verified`, `finalized`.
+`CampaignLifecycleCoordinator` alone decides rollback versus roll-forward and
+coordinates narrow filesystem, connection, registry, and domain-verification
+ports. Import contributes its atomic registry write and aggregate readback to
+those ports; its domain receipt does not duplicate lifecycle decisions.
+Recovery before the atomic registry marker restores the last validated image.
+Recovery after it validates the current store and registry projection before
+removing replacement storage. Journal writes and cleanup are monotonic and
+restartable.
+
 All SQLite connections enable foreign keys, WAL, full synchronous durability,
 and a bounded busy timeout. Stores carry one neutral whole-database schema
 version. The version contract is owned per database role rather than inferred
