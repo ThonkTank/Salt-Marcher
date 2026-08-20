@@ -4,6 +4,8 @@
   "typecheck": true,
   "tests": [
     "tests/unit/delivery-contract.test.ts",
+    "tests/unit/handoff-state-machine.test.ts",
+    "tests/unit/handoff-preflight.test.ts",
     "tests/unit/candidate-delivery.test.ts",
     "tests/unit/build-identity.test.ts",
     "tests/unit/build-receipt.test.ts",

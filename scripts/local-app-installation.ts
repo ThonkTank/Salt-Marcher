@@ -20,7 +20,15 @@ import {
   writeFileSync,
   writeSync
 } from 'node:fs'
-import { basename, dirname, join, relative, resolve, sep } from 'node:path'
+import {
+  basename,
+  dirname,
+  isAbsolute,
+  join,
+  relative,
+  resolve,
+  sep
+} from 'node:path'
 import Database from 'better-sqlite3'
 import { z } from 'zod'
 import {
@@ -123,7 +131,19 @@ export interface LocalInstallationResult {
   readonly paths: LocalInstallationPaths
   readonly build: BuildInfo
   readonly backupPath: string | undefined
+  readonly sourceDataHash: string
+  readonly backupManifestSha256: string | undefined
+  readonly deploymentPath: string | undefined
+  readonly deploymentManifestSha256: string | undefined
+  readonly installedSha256: string | undefined
 }
+
+export const localInstallationTargets = [
+  'backup-created',
+  'deployment-staged',
+  'activated'
+] as const
+export type LocalInstallationTarget = (typeof localInstallationTargets)[number]
 
 interface FileHash {
   readonly path: string
@@ -176,6 +196,13 @@ export function localInstallationPaths(
 export function installLocalApp(
   options: InstallLocalAppOptions
 ): LocalInstallationResult {
+  return advanceLocalAppInstallation(options, 'activated')
+}
+
+export function advanceLocalAppInstallation(
+  options: InstallLocalAppOptions,
+  target: LocalInstallationTarget
+): LocalInstallationResult {
   const paths = localInstallationPaths(options.xdgDataHome)
   const manifest = readArtifactManifest(options)
   const workspaceIdentity = (
@@ -195,14 +222,15 @@ export function installLocalApp(
     )
   mkdirSync(paths.root, { recursive: true })
   return withInstallationLock(paths, () =>
-    installLocalAppLocked(options, paths, manifest)
+    advanceLocalAppInstallationLocked(options, paths, manifest, target)
   )
 }
 
-function installLocalAppLocked(
+function advanceLocalAppInstallationLocked(
   options: InstallLocalAppOptions,
   paths: LocalInstallationPaths,
-  manifest: LocalArtifactManifest
+  manifest: LocalArtifactManifest,
+  target: LocalInstallationTarget
 ): LocalInstallationResult {
   if ((options.isAppRunning ?? isInstalledLocalAppRunning)(paths.appImage))
     throw new LocalInstallationError(
@@ -211,55 +239,131 @@ function installLocalAppLocked(
     )
 
   const now = options.now ?? (() => new Date())
-  recoverInterruptedInstallation(paths, options.schemaMigrations, now)
-  let preflight
-  try {
-    preflight = preflightPersistence(
-      paths.campaignData,
-      options.schemaMigrations
-    )
-  } catch (error) {
-    if (error instanceof IncompatibleDataError)
-      throw new LocalInstallationError(
-        'migration-missing',
-        `No tested migration exists from schema ${String(error.actualVersion)} to ${error.expectedVersion}`,
-        { cause: error }
-      )
-    if (error instanceof CorruptDataError)
-      throw new LocalInstallationError(
-        'data-corrupt',
-        `Campaign database failed SQLite quick_check: ${error.dataPath}`,
-        { cause: error }
-      )
-    throw error
+  let journal = readInstallJournal(paths.journal)
+  const matches = (candidate: LocalInstallJournal | null): boolean =>
+    candidate?.applicationSha === manifest.receipt.build.commit &&
+    candidate.buildFingerprint ===
+      manifest.receipt.build.workspaceFingerprint &&
+    candidate.appBuildInputFingerprint ===
+      manifest.receipt.build.appBuildInputFingerprint &&
+    candidate.artifactSha256 === manifest.artifactSha256
+  if (
+    journal !== null &&
+    (!matches(journal) ||
+      !['backup-complete', 'deployment-staged', 'completed'].includes(
+        journal.phase
+      ))
+  ) {
+    recoverInterruptedInstallation(paths, options.schemaMigrations, now)
+    journal = readInstallJournal(paths.journal)
   }
-  let journal = writeInstallJournal(
-    paths.journal,
-    createInstallJournal(manifest.receipt.build.workspaceFingerprint, now),
-    now
-  )
-  options.afterJournalWriteForTest?.(journal)
+  if (matches(journal) && journal !== null)
+    try {
+      if (journal.phase === 'backup-complete')
+        validateBackupCheckpoint(paths, journal)
+      if (journal.phase === 'deployment-staged') {
+        validateBackupCheckpoint(paths, journal)
+        validateDeploymentCheckpoint(paths, manifest, options, journal)
+      }
+      if (journal.phase === 'completed') {
+        validateBackupCheckpoint(paths, journal)
+        validateDeploymentCheckpoint(paths, manifest, options, journal)
+        try {
+          validateCompletedInstallation(paths, manifest, options.iconSourcePath)
+        } catch {
+          journal = writeInstallJournal(
+            paths.journal,
+            { ...journal, phase: 'deployment-staged', replacements: [] },
+            now
+          )
+        }
+      }
+    } catch {
+      journal = writeInstallJournal(
+        paths.journal,
+        { ...journal, phase: 'rolled-back' },
+        now
+      )
+    }
+  if (!matches(journal) || journal?.phase === 'rolled-back') {
+    journal = writeInstallJournal(
+      paths.journal,
+      createInstallJournal(
+        {
+          applicationSha: manifest.receipt.build.commit,
+          buildFingerprint: manifest.receipt.build.workspaceFingerprint,
+          appBuildInputFingerprint:
+            manifest.receipt.build.appBuildInputFingerprint,
+          artifactSha256: manifest.artifactSha256
+        },
+        now
+      ),
+      now
+    )
+    options.afterJournalWriteForTest?.(journal)
+  }
+  if (journal === null) throw new Error('Installation journal was not created')
+  let activeJournal: LocalInstallJournal = journal
   const updateJournal = (
     changes: Partial<
       Omit<LocalInstallJournal, 'formatVersion' | 'transactionId'>
     >
   ): void => {
-    journal = writeInstallJournal(
+    activeJournal = writeInstallJournal(
       paths.journal,
-      { ...journal, ...changes },
+      { ...activeJournal, ...changes },
       now
     )
-    options.afterJournalWriteForTest?.(journal)
+    options.afterJournalWriteForTest?.(activeJournal)
   }
   try {
-    const backupPath = backupCampaignData(
-      paths,
-      manifest.receipt.build,
-      preflight.databases,
-      now
-    )
-    updateJournal({ phase: 'backup-complete', backupPath: backupPath ?? null })
+    if (activeJournal.phase === 'completed') {
+      validateCompletedInstallation(paths, manifest, options.iconSourcePath)
+      return installationResult(paths, manifest, activeJournal)
+    }
 
+    if (activeJournal.phase === 'prepared') {
+      const preflight = readPersistencePreflight(
+        paths,
+        options.schemaMigrations
+      )
+      const sourceDataHash = hashFileInventory(
+        hashTreeOrEmpty(paths.campaignData)
+      )
+      const backup = backupCampaignData(
+        paths,
+        manifest.receipt.build,
+        preflight.databases,
+        now
+      )
+      updateJournal({
+        phase: 'backup-complete',
+        backupPath: backup?.path ?? null,
+        sourceDataHash,
+        campaignDataHash: sourceDataHash,
+        backupManifestSha256: backup?.manifestSha256 ?? null
+      })
+    } else validateBackupCheckpoint(paths, activeJournal)
+
+    if (target === 'backup-created')
+      return installationResult(paths, manifest, activeJournal)
+
+    if (activeJournal.phase === 'backup-complete') {
+      const deployment = stageDeployment(paths, manifest, options)
+      updateJournal({
+        phase: 'deployment-staged',
+        deploymentPath: deployment,
+        deploymentManifestSha256: sha256File(
+          join(deployment, 'artifact-manifest.json')
+        )
+      })
+    } else validateDeploymentCheckpoint(paths, manifest, options, activeJournal)
+
+    if (target === 'deployment-staged')
+      return installationResult(paths, manifest, activeJournal)
+
+    validateBackupCheckpoint(paths, activeJournal)
+    const preflight = readPersistencePreflight(paths, options.schemaMigrations)
     if (preflight.kind === 'migration-required')
       migrateCampaignData(
         paths,
@@ -268,8 +372,9 @@ function installLocalAppLocked(
         updateJournal
       )
 
-    const deployment = stageDeployment(paths, manifest, options)
-    updateJournal({ phase: 'deployment-staged', deploymentPath: deployment })
+    const deployment = activeJournal.deploymentPath
+    if (deployment === null)
+      throw new Error('Installation journal has no staged deployment')
     const desktopEntry = renderDesktopEntry(paths, manifest.receipt.build)
     replaceAtomically(
       [
@@ -293,23 +398,204 @@ function installLocalAppLocked(
     )
     mkdirSync(paths.profile, { recursive: true })
     updateJournal({ phase: 'completed' })
-    return { paths, build: manifest.receipt.build, backupPath }
+    validateCompletedInstallation(paths, manifest, options.iconSourcePath)
+    return installationResult(paths, manifest, activeJournal)
   } catch (error) {
     if (error instanceof LocalInstallCrashForTest) throw error
     recoverInterruptedInstallation(paths, options.schemaMigrations, now)
-    const recovered = readInstallJournal(paths.journal)
-    if (recovered !== null && recovered.phase !== 'completed')
-      writeInstallJournal(
-        paths.journal,
-        { ...recovered, phase: 'rolled-back' },
-        now
-      )
     if (error instanceof LocalInstallationError) throw error
     throw new LocalInstallationError(
       'atomic-replace-failed',
       'The local application could not be replaced; the previous installation was restored',
       { cause: error }
     )
+  }
+}
+
+export function inspectLocalAppInstallation(
+  options: InstallLocalAppOptions,
+  target: LocalInstallationTarget
+): LocalInstallationResult | null {
+  try {
+    const paths = localInstallationPaths(options.xdgDataHome)
+    const manifest = readArtifactManifest(options)
+    const journal = readInstallJournal(paths.journal)
+    if (
+      journal === null ||
+      journal.applicationSha !== manifest.receipt.build.commit ||
+      journal.buildFingerprint !==
+        manifest.receipt.build.workspaceFingerprint ||
+      journal.appBuildInputFingerprint !==
+        manifest.receipt.build.appBuildInputFingerprint ||
+      journal.artifactSha256 !== manifest.artifactSha256
+    )
+      return null
+    validateBackupCheckpoint(paths, journal)
+    if (target !== 'backup-created')
+      validateDeploymentCheckpoint(paths, manifest, options, journal)
+    if (target === 'activated') {
+      if (journal.phase !== 'completed') return null
+      validateCompletedInstallation(paths, manifest, options.iconSourcePath)
+    } else if (
+      target === 'deployment-staged' &&
+      !['deployment-staged', 'completed'].includes(journal.phase)
+    )
+      return null
+    else if (
+      target === 'backup-created' &&
+      !['backup-complete', 'deployment-staged', 'completed'].includes(
+        journal.phase
+      )
+    )
+      return null
+    return installationResult(paths, manifest, journal)
+  } catch {
+    return null
+  }
+}
+
+function readPersistencePreflight(
+  paths: LocalInstallationPaths,
+  migrations?: readonly SchemaMigration[]
+): PersistencePreflight {
+  try {
+    return preflightPersistence(paths.campaignData, migrations)
+  } catch (error) {
+    if (error instanceof IncompatibleDataError)
+      throw new LocalInstallationError(
+        'migration-missing',
+        `No tested migration exists from schema ${String(error.actualVersion)} to ${error.expectedVersion}`,
+        { cause: error }
+      )
+    if (error instanceof CorruptDataError)
+      throw new LocalInstallationError(
+        'data-corrupt',
+        `Campaign database failed SQLite quick_check: ${error.dataPath}`,
+        { cause: error }
+      )
+    throw error
+  }
+}
+
+function validateBackupCheckpoint(
+  paths: LocalInstallationPaths,
+  journal: LocalInstallJournal
+): void {
+  const currentHash = hashFileInventory(hashTreeOrEmpty(paths.campaignData))
+  if (
+    journal.sourceDataHash === null ||
+    journal.campaignDataHash === null ||
+    journal.campaignDataHash !== currentHash
+  )
+    throw new LocalInstallationError(
+      'data-corrupt',
+      'Campaign data changed after the verified backup checkpoint'
+    )
+  if (journal.backupPath === null) {
+    if (journal.backupManifestSha256 !== null)
+      throw new Error('Backup checkpoint has a hash without a backup')
+    return
+  }
+  const manifestPath = join(journal.backupPath, 'backup-manifest.json')
+  if (
+    !existsSync(manifestPath) ||
+    journal.backupManifestSha256 !== sha256File(manifestPath)
+  )
+    throw new LocalInstallationError(
+      'data-corrupt',
+      'Verified campaign backup is missing or changed'
+    )
+  const backupManifest = z
+    .object({
+      files: z.array(
+        z
+          .object({
+            path: z.string().min(1),
+            bytes: z.number().int().nonnegative(),
+            sha256: z.string().regex(/^[a-f0-9]{64}$/)
+          })
+          .strict()
+      )
+    })
+    .passthrough()
+    .parse(JSON.parse(readFileSync(manifestPath, 'utf8')))
+  const actualFiles = hashTree(journal.backupPath).filter(
+    ({ path }) => path !== 'backup-manifest.json'
+  )
+  if (
+    JSON.stringify(actualFiles) !== JSON.stringify(backupManifest.files) ||
+    hashFileInventory(actualFiles) !== journal.sourceDataHash
+  )
+    throw new LocalInstallationError(
+      'data-corrupt',
+      'Verified campaign backup contents changed'
+    )
+}
+
+function validateDeploymentCheckpoint(
+  paths: LocalInstallationPaths,
+  manifest: LocalArtifactManifest,
+  options: InstallLocalAppOptions,
+  journal: LocalInstallJournal
+): void {
+  if (journal.deploymentPath === null)
+    throw new Error('Installation journal has no staged deployment')
+  validateDeployment(journal.deploymentPath, manifest, options.iconSourcePath)
+  const manifestHash = sha256File(
+    join(journal.deploymentPath, 'artifact-manifest.json')
+  )
+  if (journal.deploymentManifestSha256 !== manifestHash)
+    throw new Error('Staged deployment manifest hash changed')
+  const relativeDeployment = relative(paths.deployments, journal.deploymentPath)
+  if (
+    relativeDeployment === '' ||
+    relativeDeployment.startsWith(`..${sep}`) ||
+    relativeDeployment === '..' ||
+    isAbsolute(relativeDeployment)
+  )
+    throw new Error('Staged deployment escaped the deployment root')
+}
+
+function validateCompletedInstallation(
+  paths: LocalInstallationPaths,
+  manifest: LocalArtifactManifest,
+  iconSourcePath: string
+): void {
+  const deployment = join(
+    paths.deployments,
+    manifest.receipt.build.workspaceFingerprint
+  )
+  validateDeployment(deployment, manifest, iconSourcePath)
+  if (!currentSelectsDeployment(paths.current, deployment))
+    throw new Error(
+      'Current installation does not select the staged deployment'
+    )
+  if (sha256File(paths.appImage) !== manifest.artifactSha256)
+    throw new Error('Activated AppImage hash differs from its artifact')
+  if (sha256File(paths.icon) !== sha256File(iconSourcePath))
+    throw new Error('Activated desktop icon differs from its source')
+  if (
+    readFileSync(paths.desktopEntry, 'utf8') !==
+    renderDesktopEntry(paths, manifest.receipt.build)
+  )
+    throw new Error('Activated desktop entry differs from its build')
+}
+
+function installationResult(
+  paths: LocalInstallationPaths,
+  manifest: LocalArtifactManifest,
+  journal: LocalInstallJournal
+): LocalInstallationResult {
+  return {
+    paths,
+    build: manifest.receipt.build,
+    backupPath: journal.backupPath ?? undefined,
+    sourceDataHash: journal.sourceDataHash ?? hashFileInventory([]),
+    backupManifestSha256: journal.backupManifestSha256 ?? undefined,
+    deploymentPath: journal.deploymentPath ?? undefined,
+    deploymentManifestSha256: journal.deploymentManifestSha256 ?? undefined,
+    installedSha256:
+      journal.phase === 'completed' ? sha256File(paths.appImage) : undefined
   }
 }
 
@@ -411,10 +697,22 @@ function recoverInterruptedInstallation(
       recovered = { ...journal, phase: 'completed' }
     } else {
       rollbackReplacements(journal.replacements)
-      recovered = { ...journal, phase: 'rolled-back' }
+      recovered = {
+        ...journal,
+        phase:
+          journal.deploymentPath === null ? 'rolled-back' : 'deployment-staged',
+        replacements: []
+      }
     }
   } else {
-    recovered = { ...journal, phase: 'rolled-back' }
+    recovered = {
+      ...journal,
+      phase:
+        journal.deploymentPath === null ? 'rolled-back' : 'deployment-staged',
+      campaignDataHash: hashFileInventory(hashTreeOrEmpty(paths.campaignData)),
+      migration: null,
+      replacements: []
+    }
   }
   writeInstallJournal(paths.journal, recovered, now)
 }
@@ -462,6 +760,9 @@ function migrateCampaignData(
       if (preflightPersistence(paths.campaignData, migrations).kind !== 'ready')
         throw new Error('Promoted persistence failed validation')
       updateJournal({ phase: 'data-promoted' })
+      updateJournal({
+        campaignDataHash: hashFileInventory(hashTreeOrEmpty(paths.campaignData))
+      })
       rmSync(rollback, { recursive: true, force: true })
     } catch (error) {
       rmSync(paths.campaignData, { recursive: true, force: true })
@@ -595,7 +896,7 @@ function backupCampaignData(
   nextBuild: BuildInfo,
   sourceDatabases: readonly PreflightDatabase[],
   now: () => Date
-): string | undefined {
+): { readonly path: string; readonly manifestSha256: string } | undefined {
   if (!directoryHasEntries(paths.campaignData)) return undefined
   mkdirSync(paths.backups, { recursive: true })
   const token = randomUUID()
@@ -615,8 +916,9 @@ function backupCampaignData(
     )
     validateDatabases(copiedDatabases)
     const previousBuild = readPreviousInstalledBuild(paths.installedManifest)
+    const backupManifestPath = join(staging, 'backup-manifest.json')
     writeFileSync(
-      join(staging, 'backup-manifest.json'),
+      backupManifestPath,
       `${JSON.stringify(
         {
           formatVersion: 1,
@@ -639,7 +941,10 @@ function backupCampaignData(
       'utf8'
     )
     renameSync(staging, target)
-    return target
+    return {
+      path: target,
+      manifestSha256: sha256File(join(target, 'backup-manifest.json'))
+    }
   } catch (error) {
     rmSync(staging, { recursive: true, force: true })
     if (error instanceof LocalInstallationError) throw error
@@ -774,7 +1079,7 @@ function replaceAtomically(
       if (existsSync(target)) rmSync(target, { force: true })
       if (existsSync(previous)) renameSync(previous, target)
     }
-    updateJournal({ phase: 'rolled-back', replacements: [] })
+    updateJournal({ phase: 'deployment-staged', replacements: [] })
     throw error
   } finally {
     for (const path of staged.values()) rmSync(path, { force: true })
@@ -917,6 +1222,14 @@ function hashTree(root: string): FileHash[] {
     bytes: statSync(path).size,
     sha256: sha256File(path)
   }))
+}
+
+function hashTreeOrEmpty(root: string): FileHash[] {
+  return existsSync(root) ? hashTree(root) : []
+}
+
+function hashFileInventory(files: readonly FileHash[]): string {
+  return createHash('sha256').update(JSON.stringify(files)).digest('hex')
 }
 
 /** Copies and hashes each source byte in the same pass; verification rereads only the backup. */

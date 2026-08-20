@@ -303,13 +303,22 @@ byte during its single copy pass and rereads only the backup for verification;
 backup manifests retain role-specific schema and both build identities.
 Backups and immutable deployments are never automatically deleted. The
 installer stages fingerprint-addressed deployments and atomically switches
-one `current` symlink only after all deployment files are durable. The handoff
-records evidence-backed checkpoints for check, package, packaged smoke, and
-backup/install plus installed-runtime verification. The default handoff is
-always fresh. Only explicit `--resume` considers completed steps, and then only
-when workspace, app-input, toolchain, output, artifact, and installed hashes
-still equal the atomically written receipt. Each step records status, start,
-duration, hashes, and any terminal error.
+one `current` symlink only after all deployment files are durable. For each
+immutable application SHA, the handoff advances one explicit state through
+`candidate-qualified`, `checked`, `packaged`, `packaged-smoke-passed`,
+`backup-created`, `deployment-staged`, `activated`, and
+`installed-runtime-verified`. Every phase binds its predecessor output and its
+own result by SHA-256 and is reusable only while current evidence still matches.
+Repeated invocations are safe and append audit attempts; they do not create a
+parallel state or replace the original state's provenance. Explicit `--resume`
+records recovery intent but follows the same validation rules. Auth, live
+candidate evidence, disk capacity, and installation availability are checked
+before a material state or attempt is created. Each phase records status,
+start, duration, hashes, and any terminal error.
+Candidate promotion requires this completed exact-SHA state precisely when the
+candidate app-build fingerprint differs from `origin/main`; qualification,
+delivery-tooling, and documentation-only changes do not manufacture an
+application handoff.
 
 Installed-runtime acceptance requires utility generation 1 to reach `ready`.
 The total utility bootstrap budget is 5000 ms; phase budgets are configuration

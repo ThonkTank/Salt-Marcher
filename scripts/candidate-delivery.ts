@@ -3,10 +3,15 @@ import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { z } from 'zod'
 import {
+  computeAppBuildInputFingerprint,
+  computeAppBuildInputFingerprintAtRef
+} from './build-identity.js'
+import {
   githubWorkflowRunSchema,
-  handoffInvocationHistorySchema,
   handoffReceiptSchema,
+  parseHandoffInvocationHistory,
   readRequiredJobManifest,
+  sameWorkflowQualification,
   shaSchema,
   verifyRequiredJobs,
   type GithubWorkflowRun,
@@ -282,7 +287,7 @@ export function assertCompletedHandoffReceipt(
   const receipt = handoffReceiptSchema.parse(
     JSON.parse(readFileSync(path, 'utf8'))
   )
-  const history = handoffInvocationHistorySchema.parse(
+  const history = parseHandoffInvocationHistory(
     JSON.parse(
       readFileSync(
         resolve(workspaceRoot, '.tmp', 'handoff-local-app', 'invocations.json'),
@@ -290,24 +295,38 @@ export function assertCompletedHandoffReceipt(
       )
     )
   )
-  const invocations = history.invocations.filter(
+  const attempts = history.invocations.filter(
     ({ applicationSha }) => applicationSha === head
   )
+  const attemptIds = new Set(attempts.map(({ attemptId }) => attemptId))
   if (
     receipt.status !== 'complete' ||
     receipt.identity.commit !== head ||
     receipt.identity.dirty !== false ||
-    JSON.stringify(receipt.identity.candidate) !== JSON.stringify(candidate) ||
-    receipt.steps.some((step) => step.status !== 'completed') ||
-    invocations.length !== 1 ||
-    invocations[0]?.invocationId !== receipt.invocationId
+    !sameWorkflowQualification(receipt.identity.candidate, candidate) ||
+    receipt.phases.some((phase) => phase.status !== 'completed') ||
+    !attemptIds.has(receipt.originAttemptId) ||
+    !attemptIds.has(receipt.activeAttemptId)
   )
     throw new Error('Final handoff receipt does not prove this clean SHA.')
 }
 
+export function requiresApplicationHandoff(
+  candidateAppBuildInputFingerprint: string,
+  mainAppBuildInputFingerprint: string
+): boolean {
+  return candidateAppBuildInputFingerprint !== mainAppBuildInputFingerprint
+}
+
 export function promoteCandidate(state: CandidateState): void {
   assertCandidateState(state)
-  assertCompletedHandoffReceipt(state.head, state.candidate!)
+  const workspaceRoot = process.cwd()
+  const applicationHandoffRequired = requiresApplicationHandoff(
+    computeAppBuildInputFingerprint(workspaceRoot),
+    computeAppBuildInputFingerprintAtRef(workspaceRoot, state.remoteMain)
+  )
+  if (applicationHandoffRequired)
+    assertCompletedHandoffReceipt(state.head, state.candidate!, workspaceRoot)
   command('git', ['push', 'origin', `${state.head}:refs/heads/main`])
 }
 

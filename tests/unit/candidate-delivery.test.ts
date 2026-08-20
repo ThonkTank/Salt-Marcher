@@ -8,11 +8,18 @@ import {
   assertCandidateState,
   parseRemoteHead,
   postPromotionJobName,
+  requiresApplicationHandoff,
   successfulCandidateEvidence,
   successfulPostPromotionEvidence,
   type CandidateState
 } from '../../scripts/candidate-delivery.js'
-import { readRequiredJobManifest } from '../../scripts/delivery-contract.js'
+import {
+  createHandoffReceipt,
+  handoffPhases,
+  handoffReceiptSchema,
+  hashHandoffValue,
+  readRequiredJobManifest
+} from '../../scripts/delivery-contract.js'
 
 const roots: string[] = []
 
@@ -43,6 +50,11 @@ const valid: CandidateState = {
 }
 
 describe('candidate delivery policy', () => {
+  it('requires local application handoff only when app-build inputs changed', () => {
+    expect(requiresApplicationHandoff('same', 'same')).toBe(false)
+    expect(requiresApplicationHandoff('candidate', 'main')).toBe(true)
+  })
+
   it('parses the live remote head without consulting local main', () => {
     expect(parseRemoteHead(`${'a'.repeat(40)}\trefs/heads/main\n`)).toBe(
       'a'.repeat(40)
@@ -119,52 +131,72 @@ describe('candidate delivery policy', () => {
       expect(() => assertCandidateState({ ...valid, ...patch })).toThrow()
   })
 
-  it('uses the shared strict receipt and append-only history for promotion', () => {
+  it('uses the strict completed SHA state and permits multiple audited attempts', () => {
     const root = mkdtempSync(join(tmpdir(), 'salt-marcher-delivery-'))
     roots.push(root)
     const directory = join(root, '.tmp', 'handoff-local-app')
     mkdirSync(directory, { recursive: true })
-    const invocationId = '00000000-0000-4000-8000-000000000001'
+    const originAttemptId = '00000000-0000-4000-8000-000000000001'
+    const activeAttemptId = '00000000-0000-4000-8000-000000000002'
     const timestamp = '2026-08-18T12:00:00.000Z'
     const hash = 'c'.repeat(64)
-    const receipt = {
-      formatVersion: 3,
-      invocationId,
-      status: 'complete',
-      mode: 'fresh',
-      createdAt: timestamp,
-      updatedAt: timestamp,
-      completedAt: timestamp,
-      identity: {
+    const initial = createHandoffReceipt(
+      {
         commit: valid.head,
         dirty: false,
         workspaceFingerprint: hash,
         appBuildInputFingerprint: hash,
+        qualificationInputFingerprint: hash,
+        deliveryInputFingerprint: hash,
         toolchainHash: hash,
-        candidate: valid.candidate
+        candidate: valid.candidate!
       },
-      steps: [
-        'check',
-        'package',
-        'packaged-smoke',
-        'backup-and-install',
-        'installed-runtime-verification'
-      ].map((step) => ({
-        step,
+      '00000000-0000-4000-8000-000000000010',
+      originAttemptId,
+      timestamp
+    )
+    let predecessor = hashHandoffValue(initial.identity)
+    const phases = handoffPhases.map((phase) => {
+      const evidence = {
+        workspaceFingerprint: hash,
+        appBuildInputFingerprint: hash,
+        qualificationInputFingerprint: hash,
+        deliveryInputFingerprint: hash,
+        toolchainHash: hash,
+        buildOutputHash: hash,
+        artifactSha256: hash,
+        sourceDataHash: hash,
+        backupManifestSha256: hash,
+        deploymentManifestSha256: hash,
+        runtimeEvidenceSha256: hash,
+        installedSha256: hash
+      }
+      const outputHash = hashHandoffValue({
+        phase,
+        inputHash: predecessor,
+        evidence
+      })
+      const record = {
+        phase,
         status: 'completed',
         startedAt: timestamp,
         durationMs: 1,
-        evidence: {
-          workspaceFingerprint: hash,
-          appBuildInputFingerprint: hash,
-          toolchainHash: hash,
-          outputHash: hash,
-          artifactSha256: hash,
-          installedSha256: hash
-        },
+        inputHash: predecessor,
+        outputHash,
+        evidence,
         error: null
-      }))
-    }
+      }
+      predecessor = outputHash
+      return record
+    })
+    const receipt = handoffReceiptSchema.parse({
+      ...initial,
+      activeAttemptId,
+      status: 'complete',
+      updatedAt: timestamp,
+      completedAt: timestamp,
+      phases
+    })
     writeFileSync(
       join(directory, 'handoff-receipt.json'),
       JSON.stringify(receipt)
@@ -172,13 +204,23 @@ describe('candidate delivery policy', () => {
     writeFileSync(
       join(directory, 'invocations.json'),
       JSON.stringify({
-        formatVersion: 1,
+        formatVersion: 2,
         invocations: [
           {
-            invocationId,
+            attemptId: originAttemptId,
             applicationSha: valid.head,
+            intent: 'advance',
             createdAt: timestamp,
-            receiptPath: 'receipt.json'
+            statePath: 'state.json',
+            auditPath: 'origin.json'
+          },
+          {
+            attemptId: activeAttemptId,
+            applicationSha: valid.head,
+            intent: 'resume',
+            createdAt: timestamp,
+            statePath: 'state.json',
+            auditPath: 'active.json'
           }
         ]
       })
@@ -186,6 +228,18 @@ describe('candidate delivery policy', () => {
 
     expect(() =>
       assertCompletedHandoffReceipt(valid.head, valid.candidate!, root)
+    ).not.toThrow()
+    expect(() =>
+      assertCompletedHandoffReceipt(
+        valid.head,
+        {
+          ...valid.candidate!,
+          runId: 2,
+          url: 'https://github.example/check/2',
+          attempt: 2
+        },
+        root
+      )
     ).not.toThrow()
     writeFileSync(
       join(directory, 'handoff-receipt.json'),

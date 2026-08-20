@@ -15,6 +15,7 @@ import { join } from 'node:path'
 import Database from 'better-sqlite3'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
+  advanceLocalAppInstallation,
   installLocalApp,
   LocalInstallCrashForTest,
   localInstallationPaths,
@@ -34,6 +35,123 @@ afterEach(() => {
 })
 
 describe('local AppImage installation', () => {
+  it('advances backup, deployment and activation idempotently', () => {
+    const fixture = createFixture(build('a'))
+    const paths = localInstallationPaths(fixture.xdg)
+    createDatabase(paths.campaignData, schemaVersion)
+
+    const backup = advanceLocalAppInstallation(
+      fixture.options,
+      'backup-created'
+    )
+    expect(backup.backupManifestSha256).toMatch(/^[a-f0-9]{64}$/)
+    expect(existsSync(paths.appImage)).toBe(false)
+    const backupCount = readdirSync(paths.backups).length
+
+    const repeated = advanceLocalAppInstallation(
+      fixture.options,
+      'backup-created'
+    )
+    expect(repeated.backupPath).toBe(backup.backupPath)
+    expect(readdirSync(paths.backups)).toHaveLength(backupCount)
+
+    const staged = advanceLocalAppInstallation(
+      fixture.options,
+      'deployment-staged'
+    )
+    expect(staged.deploymentManifestSha256).toMatch(/^[a-f0-9]{64}$/)
+    expect(existsSync(paths.appImage)).toBe(false)
+
+    const activated = advanceLocalAppInstallation(fixture.options, 'activated')
+    expect(activated.installedSha256).toMatch(/^[a-f0-9]{64}$/)
+    expect(readFileSync(paths.appImage, 'utf8')).toBe('artifact-a')
+  })
+
+  it('invalidates a backup checkpoint when campaign data changes', () => {
+    const fixture = createFixture(build('a'))
+    const paths = localInstallationPaths(fixture.xdg)
+    createDatabase(paths.campaignData, schemaVersion)
+    const first = advanceLocalAppInstallation(fixture.options, 'backup-created')
+    writeFileSync(join(paths.campaignData, 'after-backup.txt'), 'changed')
+
+    const second = advanceLocalAppInstallation(
+      fixture.options,
+      'deployment-staged'
+    )
+    expect(second.sourceDataHash).not.toBe(first.sourceDataHash)
+    expect(second.backupPath).not.toBe(first.backupPath)
+    expect(readdirSync(paths.backups)).toHaveLength(2)
+  })
+
+  it('invalidates a backup checkpoint when verified backup bytes change', () => {
+    const fixture = createFixture(build('a'))
+    const paths = localInstallationPaths(fixture.xdg)
+    createDatabase(paths.campaignData, schemaVersion)
+    const first = advanceLocalAppInstallation(fixture.options, 'backup-created')
+    writeFileSync(join(first.backupPath!, 'installation.sqlite'), 'tampered')
+
+    const second = advanceLocalAppInstallation(
+      fixture.options,
+      'deployment-staged'
+    )
+    expect(second.backupPath).not.toBe(first.backupPath)
+    expect(readdirSync(paths.backups)).toHaveLength(2)
+  })
+
+  it('repairs changed activation metadata without repeating the backup', () => {
+    const fixture = createFixture(build('a'))
+    createDatabase(
+      localInstallationPaths(fixture.xdg).campaignData,
+      schemaVersion
+    )
+    const first = installLocalApp(fixture.options)
+    const backupCount = readdirSync(first.paths.backups).length
+    writeFileSync(first.paths.desktopEntry, 'tampered')
+
+    const repaired = advanceLocalAppInstallation(fixture.options, 'activated')
+
+    expect(readFileSync(repaired.paths.desktopEntry, 'utf8')).toContain(
+      `SaltMarcher Local (${'a'.repeat(12)})`
+    )
+    expect(readFileSync(repaired.paths.appImage, 'utf8')).toBe('artifact-a')
+    expect(repaired.backupPath).toBe(first.backupPath)
+    expect(readdirSync(first.paths.backups)).toHaveLength(backupCount)
+  })
+
+  it('normalizes a completed v1 install journal before starting v2 state', () => {
+    const fixture = createFixture(build('a'))
+    const paths = localInstallationPaths(fixture.xdg)
+    mkdirSync(paths.root, { recursive: true })
+    writeFileSync(
+      paths.journal,
+      JSON.stringify({
+        formatVersion: 1,
+        transactionId: '00000000-0000-4000-8000-000000000001',
+        buildFingerprint: '9'.repeat(64),
+        phase: 'completed',
+        backupPath: null,
+        deploymentPath: null,
+        migration: null,
+        replacements: [],
+        createdAt: '2026-08-15T11:00:00.000Z',
+        updatedAt: '2026-08-15T11:00:00.000Z'
+      })
+    )
+
+    installLocalApp(fixture.options)
+
+    const journal = JSON.parse(readFileSync(paths.journal, 'utf8')) as Record<
+      string,
+      unknown
+    >
+    expect(journal).toMatchObject({
+      formatVersion: 2,
+      applicationSha: 'a'.repeat(40),
+      phase: 'completed'
+    })
+    expect(journal['artifactSha256']).toMatch(/^[a-f0-9]{64}$/)
+  })
+
   it('installs a fresh build into an isolated profile', () => {
     const fixture = createFixture(build('a'))
     const result = installLocalApp(fixture.options)
@@ -217,6 +335,9 @@ describe('local AppImage installation', () => {
     const result = installLocalApp(fixture.options)
 
     expect(result.backupPath).toBeDefined()
+    const repeated = installLocalApp(fixture.options)
+    expect(repeated.backupPath).toBe(result.backupPath)
+    expect(readdirSync(paths.backups)).toHaveLength(1)
     const database = new Database(databasePath, { readonly: true })
     expect(database.pragma('user_version', { simple: true })).toBe(
       schemaVersion

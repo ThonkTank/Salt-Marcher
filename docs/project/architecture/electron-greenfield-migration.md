@@ -117,12 +117,13 @@ creates permanent hash-manifested campaign-data backups, migrates only staged
 copies, and promotes immutable fingerprint-addressed deployments through one
 atomic `current` link. Every clean-channel build has a receipt containing
 hashes for all output files and an aggregate hash; packaging verifies it
-against the workspace. The single `pnpm handoff:app` path performs checks, a
-Local build/package pass, actual-AppImage smoke, backup/installation, and
-installed-runtime verification in that order. It is fresh by default; only
-explicit `--resume` reuses steps whose workspace, toolchain, output, artifact,
-and installed evidence exactly matches the atomic final receipt. `pnpm dev`
-remains HMR-only.
+against the workspace. The single `pnpm handoff:app` path advances the exact
+candidate SHA through candidate qualification, checks, a Local build/package
+pass, actual-AppImage smoke, backup creation, deployment staging, atomic
+activation, and installed-runtime verification in that order. Repeated calls
+revalidate and reuse only phases whose predecessor and output hashes still
+match the atomic SHA state. Explicit `--resume` records recovery intent without
+replacing the state's original provenance. `pnpm dev` remains HMR-only.
 
 ## NPC catalog and preserved profile schema — 2026-08-16
 
@@ -210,10 +211,12 @@ verifiable phases:
    fingerprints, CLI-selected channel, role schemas, migration registry,
    toolchain, platform, and every emitted byte. Development, Local, and release
    outputs are isolated, and Linux qualification executes the actual AppImage.
-6. The five-step handoff is fresh by default. Explicit `--resume` validates
-   workspace, app-input, toolchain, output, artifact, and installation hashes;
-   every step records status, duration, evidence, and errors in one atomic
-   machine-readable receipt before installed generation-one runtime acceptance.
+6. The eight-phase, SHA-keyed handoff is idempotent. Every invocation validates
+   candidate, workspace, app-input, qualification, delivery, toolchain, output,
+   artifact, backup, deployment, activation, and installation evidence before
+   reusing it. Per-attempt audit records retain the original state's provenance,
+   and every phase records status, duration, input/output hashes, evidence, and
+   errors before installed generation-one runtime acceptance.
 
 The editor application-layer refactor tracks its normative evidence in
 `application-layer-refactor-acceptance-matrix.md`. It moves the two-step

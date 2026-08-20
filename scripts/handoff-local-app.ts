@@ -16,43 +16,54 @@ import {
   buildReceiptSchema,
   localArtifactManifestSchema
 } from '../src/shared/contracts/build-info.js'
-import { readBuildToolchain, readWorkspaceIdentity } from './build-identity.js'
+import {
+  readBuildToolchain,
+  readWorkspaceIdentity,
+  readWorkspaceInputFingerprints
+} from './build-identity.js'
 import { verifyBuildReceipt } from './build-receipt.js'
-import { sha256File } from './file-hash.js'
-import { localInstallationPaths } from './local-app-installation.js'
 import { assertCandidateReady } from './candidate-delivery.js'
 import {
   appendHandoffInvocation,
-  handoffInvocationHistorySchema,
+  createHandoffReceipt,
   handoffReceiptSchema,
-  handoffStepEvidenceSchema,
-  handoffSteps,
-  resumeHandoffReceipt,
+  installedRuntimeEvidenceSchema,
+  parseHandoffInvocationHistory,
+  sameHandoffApplicationIdentity,
+  type HandoffIdentity,
   type HandoffInvocationHistory,
-  type HandoffReceipt,
-  type HandoffStepEvidence,
-  type HandoffStepName
+  type HandoffPhaseEvidence,
+  type HandoffReceipt
 } from './delivery-contract.js'
+import { sha256File } from './file-hash.js'
+import {
+  attachHandoffAttempt,
+  runHandoffStateMachine,
+  type HandoffPhaseDefinition
+} from './handoff-state-machine.js'
+import {
+  assertHandoffResourcePreflight,
+  readHandoffResourceSnapshot
+} from './handoff-preflight.js'
+import {
+  inspectLocalAppInstallation,
+  isInstalledLocalAppRunning,
+  localInstallationPaths,
+  type InstallLocalAppOptions,
+  type LocalInstallationTarget
+} from './local-app-installation.js'
 
 if (process.platform !== 'linux')
   throw new Error('SaltMarcher Local handoff currently targets Linux AppImage')
 
-const candidateState = assertCandidateReady()
-
+const resume = parseArguments(process.argv.slice(2))
 const workspaceRoot = process.cwd()
-const workspace = readWorkspaceIdentity(workspaceRoot)
-const toolchain = readBuildToolchain(workspaceRoot)
-const toolchainHash = hashJson(toolchain)
-const identity = {
-  ...workspace,
-  toolchainHash,
-  candidate: candidateState.candidate!
-}
 const packageJson = JSON.parse(
   readFileSync(resolve(workspaceRoot, 'package.json'), 'utf8')
 ) as { version?: unknown }
 if (typeof packageJson.version !== 'string')
   throw new Error('package.json does not contain a version')
+
 const artifactPath = resolve(
   workspaceRoot,
   'release',
@@ -63,227 +74,294 @@ const artifactManifestPath = `${artifactPath}.manifest.json`
 const installation = localInstallationPaths(
   process.env['XDG_DATA_HOME'] ?? join(homedir(), '.local', 'share')
 )
+const installOptions: InstallLocalAppOptions = {
+  workspaceRoot,
+  xdgDataHome:
+    process.env['XDG_DATA_HOME'] ?? join(homedir(), '.local', 'share'),
+  artifactPath,
+  artifactManifestPath,
+  iconSourcePath: resolve(
+    workspaceRoot,
+    'resources',
+    'icons',
+    'salt-marcher.png'
+  )
+}
+
+// Auth, network, candidate, workspace, installation availability and disk
+// capacity are all checked before an attempt or state file is created.
+const candidateState = assertCandidateReady()
+const workspace = readWorkspaceIdentity(workspaceRoot)
+const inputFingerprints = readWorkspaceInputFingerprints(workspaceRoot)
+const toolchain = readBuildToolchain(workspaceRoot)
+const identity: HandoffIdentity = {
+  ...workspace,
+  ...inputFingerprints,
+  toolchainHash: hashJson(toolchain),
+  candidate: candidateState.candidate!
+}
+if (isInstalledLocalAppRunning(installation.appImage))
+  throw new Error('SaltMarcher Local is running; close it before handoff')
+assertHandoffResourcePreflight(
+  readHandoffResourceSnapshot(
+    workspaceRoot,
+    installation.root,
+    installation.campaignData
+  )
+)
+
 const receiptDirectory = resolve(workspaceRoot, '.tmp', 'handoff-local-app')
+const statePath = resolve(
+  receiptDirectory,
+  'states',
+  `${workspace.commit}.json`
+)
 const receiptPath = resolve(receiptDirectory, 'handoff-receipt.json')
 const invocationHistoryPath = resolve(receiptDirectory, 'invocations.json')
 const checkSnapshotPath = resolve(
   receiptDirectory,
-  'checked-build-receipt.json'
+  'states',
+  `${workspace.commit}.checked-build-receipt.json`
 )
-const resume = process.argv.includes('--resume')
-if (
-  process.argv.some(
-    (argument) => argument.startsWith('--') && argument !== '--resume'
+const runtimeEvidencePath = resolve(
+  receiptDirectory,
+  'installed-runtime-evidence.json'
+)
+
+const attemptId = randomUUID()
+const timestamp = new Date().toISOString()
+const auditPath = resolve(receiptDirectory, 'attempts', `${attemptId}.json`)
+let receipt: HandoffReceipt
+if (existsSync(statePath)) {
+  const existing = handoffReceiptSchema.parse(
+    JSON.parse(readFileSync(statePath, 'utf8'))
   )
-)
-  throw new Error('The only supported handoff option is --resume')
-
-let receipt = resume ? readResumableReceipt() : freshReceipt()
-writeReceipt()
-
-for (const definition of stepDefinitions()) {
-  const step = definition.name
-  if (resume && completedStepIsReusable(step)) {
-    console.info(
-      JSON.stringify({
-        component: 'local-handoff',
-        event: 'step-resumed',
-        step
-      })
+  if (!sameHandoffApplicationIdentity(existing.identity, identity))
+    throw new Error(
+      'Handoff SHA state identity differs from the live candidate'
     )
-    continue
-  }
-  resetFrom(step)
-  executeStep(definition)
+  receipt = attachHandoffAttempt(existing, attemptId, timestamp)
+} else {
+  if (resume) throw new Error('No SHA handoff state exists to resume')
+  receipt = createHandoffReceipt(identity, randomUUID(), attemptId, timestamp)
 }
-const completedAt = new Date().toISOString()
-receipt = {
-  ...receipt,
-  status: 'complete',
-  updatedAt: completedAt,
-  completedAt
+
+const history = existsSync(invocationHistoryPath)
+  ? parseHandoffInvocationHistory(
+      JSON.parse(readFileSync(invocationHistoryPath, 'utf8'))
+    )
+  : ({ formatVersion: 2, invocations: [] } satisfies HandoffInvocationHistory)
+atomicWrite(
+  invocationHistoryPath,
+  `${JSON.stringify(
+    appendHandoffInvocation(history, {
+      attemptId,
+      applicationSha: workspace.commit,
+      intent: resume ? 'resume' : 'advance',
+      createdAt: timestamp,
+      statePath,
+      auditPath
+    }),
+    null,
+    2
+  )}\n`
+)
+
+const persist = (next: HandoffReceipt): void => {
+  receipt = handoffReceiptSchema.parse(next)
+  const content = `${JSON.stringify(receipt, null, 2)}\n`
+  atomicWrite(auditPath, content)
+  atomicWrite(statePath, content)
+  atomicWrite(receiptPath, content)
 }
-writeReceipt()
+persist(receipt)
+
+receipt = runHandoffStateMachine({
+  receipt,
+  definitions: phaseDefinitions(),
+  persist
+})
+
 console.info(
   JSON.stringify({
     component: 'local-handoff',
     event: 'completed',
+    stateId: receipt.stateId,
+    originAttemptId: receipt.originAttemptId,
+    activeAttemptId: receipt.activeAttemptId,
     receipt: receiptPath,
     artifactSha256: sha256File(artifactPath),
     installedSha256: sha256File(installation.appImage)
   })
 )
 
-interface HandoffStepDefinition {
-  readonly name: HandoffStepName
-  readonly command: readonly string[]
-  readonly collect: () => HandoffStepEvidence
-  readonly collectReusable: () => HandoffStepEvidence
-}
-
-function executeStep(definition: HandoffStepDefinition): void {
-  const step = definition.name
-  const startedAt = new Date()
-  updateStep(step, {
-    status: 'running',
-    startedAt: startedAt.toISOString(),
-    durationMs: null,
-    evidence: null,
-    error: null
-  })
-  try {
-    run(step, definition.command)
-    const evidence = definition.collect()
-    updateStep(step, {
-      status: 'completed',
-      startedAt: startedAt.toISOString(),
-      durationMs: Math.max(0, Date.now() - startedAt.getTime()),
-      evidence,
-      error: null
-    })
-  } catch (error) {
-    updateStep(step, {
-      status: 'failed',
-      startedAt: startedAt.toISOString(),
-      durationMs: Math.max(0, Date.now() - startedAt.getTime()),
-      evidence: null,
-      error: error instanceof Error ? error.message : String(error)
-    })
-    receipt = {
-      ...receipt,
-      status: 'failed',
-      updatedAt: new Date().toISOString()
-    }
-    writeReceipt()
-    throw error
-  }
-}
-
-function stepDefinitions(): readonly HandoffStepDefinition[] {
+function phaseDefinitions(): readonly HandoffPhaseDefinition[] {
   return [
     {
-      name: 'check',
-      command: ['pnpm', 'check'],
-      collect: collectCheckEvidence,
-      collectReusable: collectReusableCheckEvidence
+      phase: 'candidate-qualified',
+      execute: () => undefined,
+      collect: () => evidence()
     },
     {
-      name: 'package',
-      command: ['pnpm', 'package:local'],
-      collect: collectPackagedEvidence,
-      collectReusable: collectPackagedEvidence
+      phase: 'checked',
+      execute: () => run('checked', ['pnpm', 'check']),
+      collect: collectCheckedEvidence
     },
     {
-      name: 'packaged-smoke',
-      command: ['pnpm', 'test:packaged-local-smoke:built'],
-      collect: collectPackagedEvidence,
-      collectReusable: collectPackagedEvidence
+      phase: 'packaged',
+      execute: () => run('packaged', ['pnpm', 'package:local']),
+      collect: collectPackagedEvidence
     },
     {
-      name: 'backup-and-install',
-      command: ['pnpm', 'install:local:built'],
-      collect: collectInstalledEvidence,
-      collectReusable: collectInstalledEvidence
+      phase: 'packaged-smoke-passed',
+      execute: () =>
+        run('packaged-smoke-passed', [
+          'pnpm',
+          'test:packaged-local-smoke:built'
+        ]),
+      collect: collectPackagedEvidence
     },
+    installationDefinition('backup-created'),
+    installationDefinition('deployment-staged'),
+    installationDefinition('activated'),
     {
-      name: 'installed-runtime-verification',
-      command: [
-        'pnpm',
-        'exec',
-        'tsx',
-        'scripts/installed-runtime-verification.ts'
-      ],
-      collect: collectInstalledEvidence,
-      collectReusable: collectInstalledEvidence
+      phase: 'installed-runtime-verified',
+      execute: () =>
+        run('installed-runtime-verified', [
+          'pnpm',
+          'exec',
+          'tsx',
+          'scripts/installed-runtime-verification.ts'
+        ]),
+      collect: collectRuntimeEvidence
     }
   ]
 }
 
-function collectCheckEvidence(): HandoffStepEvidence {
-  const build = verifyBuildReceipt(resolve(workspaceRoot, 'out'))
-  if (
-    build.build.channel !== 'development' ||
-    !buildMatchesWorkspace(build.build)
-  )
-    throw new Error('Canonical check did not leave matching development output')
-  atomicWrite(checkSnapshotPath, `${JSON.stringify(build, null, 2)}\n`)
-  return evidence({ outputHash: build.outputHash })
+function installationDefinition(
+  target: LocalInstallationTarget
+): HandoffPhaseDefinition {
+  return {
+    phase: target,
+    execute: () =>
+      run(target, [
+        'pnpm',
+        'exec',
+        'tsx',
+        'scripts/install-local-app.ts',
+        '--through',
+        target
+      ]),
+    collect: () => collectInstallationEvidence(target)
+  }
 }
 
-function collectReusableCheckEvidence(): HandoffStepEvidence {
-  const snapshot = buildReceiptSchema.parse(
-    JSON.parse(readFileSync(checkSnapshotPath, 'utf8'))
-  )
-  if (!buildMatchesWorkspace(snapshot.build))
-    throw new Error('Checked receipt snapshot is stale')
-  return evidence({ outputHash: snapshot.outputHash })
+function collectCheckedEvidence(): HandoffPhaseEvidence {
+  assertWorkspaceUnchanged()
+  let snapshot
+  try {
+    const current = verifyBuildReceipt(resolve(workspaceRoot, 'out'))
+    if (current.build.channel !== 'development' || !buildMatches(current.build))
+      throw new Error('Current output is not the checked development build')
+    snapshot = current
+    atomicWrite(checkSnapshotPath, `${JSON.stringify(snapshot, null, 2)}\n`)
+  } catch {
+    snapshot = buildReceiptSchema.parse(
+      JSON.parse(readFileSync(checkSnapshotPath, 'utf8'))
+    )
+    if (
+      snapshot.build.channel !== 'development' ||
+      !buildMatches(snapshot.build)
+    )
+      throw new Error('Checked build receipt snapshot is stale')
+  }
+  return evidence({ buildOutputHash: snapshot.outputHash })
 }
 
-function collectPackagedEvidence(): HandoffStepEvidence {
+function collectPackagedEvidence(): HandoffPhaseEvidence {
   const manifest = validPackagedArtifact()
   return evidence({
-    outputHash: manifest.receipt.outputHash,
+    buildOutputHash: manifest.receipt.outputHash,
     artifactSha256: manifest.artifactSha256
   })
 }
 
-function collectInstalledEvidence(): HandoffStepEvidence {
-  const installed = localArtifactManifestSchema.parse(
-    JSON.parse(readFileSync(installation.installedManifest, 'utf8'))
-  )
+function collectInstallationEvidence(
+  target: LocalInstallationTarget
+): HandoffPhaseEvidence {
+  const installed = inspectLocalAppInstallation(installOptions, target)
+  if (installed === null)
+    throw new Error(`Local installation checkpoint is not reusable: ${target}`)
   const packaged = validPackagedArtifact()
-  if (JSON.stringify(installed) !== JSON.stringify(packaged))
-    throw new Error('Installed manifest does not equal the packaged manifest')
-  const installedSha256 = sha256File(installation.appImage)
-  if (installedSha256 !== packaged.artifactSha256)
-    throw new Error('Installed AppImage hash differs from packaged artifact')
   return evidence({
-    outputHash: packaged.receipt.outputHash,
+    buildOutputHash: packaged.receipt.outputHash,
     artifactSha256: packaged.artifactSha256,
-    installedSha256
+    sourceDataHash: installed.sourceDataHash,
+    ...(installed.backupManifestSha256 === undefined
+      ? {}
+      : { backupManifestSha256: installed.backupManifestSha256 }),
+    ...(installed.deploymentManifestSha256 === undefined
+      ? {}
+      : { deploymentManifestSha256: installed.deploymentManifestSha256 }),
+    ...(installed.installedSha256 === undefined
+      ? {}
+      : { installedSha256: installed.installedSha256 })
   })
 }
 
-function evidence(input: {
-  outputHash: string
-  artifactSha256?: string
-  installedSha256?: string
-}): HandoffStepEvidence {
-  return handoffStepEvidenceSchema.parse({
-    workspaceFingerprint: workspace.workspaceFingerprint,
-    appBuildInputFingerprint: workspace.appBuildInputFingerprint,
-    toolchainHash,
-    outputHash: input.outputHash,
-    artifactSha256: input.artifactSha256 ?? null,
-    installedSha256: input.installedSha256 ?? null
-  })
-}
-
-function completedStepIsReusable(step: HandoffStepName): boolean {
-  const record = receipt.steps.find((candidate) => candidate.step === step)
-  if (record?.status !== 'completed' || record.evidence === null) return false
-  try {
-    const current = definitionFor(step).collectReusable()
-    return JSON.stringify(current) === JSON.stringify(record.evidence)
-  } catch {
-    return false
+function collectRuntimeEvidence(): HandoffPhaseEvidence {
+  const installed = collectInstallationEvidence('activated')
+  const runtime = installedRuntimeEvidenceSchema.parse(
+    JSON.parse(readFileSync(runtimeEvidencePath, 'utf8'))
+  )
+  if (
+    runtime.artifactSha256 !== installed.artifactSha256 ||
+    runtime.manifestSha256 !== sha256File(installation.installedManifest)
+  )
+    throw new Error('Installed runtime evidence proves another artifact')
+  return {
+    ...installed,
+    runtimeEvidenceSha256: sha256File(runtimeEvidencePath)
   }
 }
 
-function definitionFor(step: HandoffStepName): HandoffStepDefinition {
-  const definition = stepDefinitions().find(({ name }) => name === step)
-  if (!definition) throw new Error(`Unknown handoff step: ${step}`)
-  return definition
+function evidence(
+  input: {
+    readonly buildOutputHash?: string
+    readonly artifactSha256?: string
+    readonly sourceDataHash?: string
+    readonly backupManifestSha256?: string
+    readonly deploymentManifestSha256?: string
+    readonly runtimeEvidenceSha256?: string
+    readonly installedSha256?: string
+  } = {}
+): HandoffPhaseEvidence {
+  assertWorkspaceUnchanged()
+  return {
+    workspaceFingerprint: identity.workspaceFingerprint,
+    appBuildInputFingerprint: identity.appBuildInputFingerprint,
+    qualificationInputFingerprint: identity.qualificationInputFingerprint,
+    deliveryInputFingerprint: identity.deliveryInputFingerprint,
+    toolchainHash: identity.toolchainHash,
+    buildOutputHash: input.buildOutputHash ?? null,
+    artifactSha256: input.artifactSha256 ?? null,
+    sourceDataHash: input.sourceDataHash ?? null,
+    backupManifestSha256: input.backupManifestSha256 ?? null,
+    deploymentManifestSha256: input.deploymentManifestSha256 ?? null,
+    runtimeEvidenceSha256: input.runtimeEvidenceSha256 ?? null,
+    installedSha256: input.installedSha256 ?? null
+  }
 }
 
 function validPackagedArtifact() {
+  assertWorkspaceUnchanged()
   const output = verifyBuildReceipt(resolve(workspaceRoot, 'out'))
   const manifest = localArtifactManifestSchema.parse(
     JSON.parse(readFileSync(artifactManifestPath, 'utf8'))
   )
   if (
     output.build.channel !== 'local' ||
-    !buildMatchesWorkspace(output.build) ||
+    !buildMatches(output.build) ||
     JSON.stringify(manifest.receipt) !== JSON.stringify(output) ||
     manifest.receiptSha256 !== hashJson(output) ||
     manifest.artifactSha256 !== sha256File(artifactPath)
@@ -292,7 +370,7 @@ function validPackagedArtifact() {
   return manifest
 }
 
-function buildMatchesWorkspace(build: {
+function buildMatches(build: {
   commit: string
   dirty: boolean
   workspaceFingerprint: string
@@ -300,118 +378,52 @@ function buildMatchesWorkspace(build: {
   toolchain: unknown
 }): boolean {
   return (
-    build.commit === workspace.commit &&
-    build.dirty === workspace.dirty &&
-    build.workspaceFingerprint === workspace.workspaceFingerprint &&
-    build.appBuildInputFingerprint === workspace.appBuildInputFingerprint &&
-    hashJson(build.toolchain) === toolchainHash
+    build.commit === identity.commit &&
+    build.dirty === identity.dirty &&
+    build.workspaceFingerprint === identity.workspaceFingerprint &&
+    build.appBuildInputFingerprint === identity.appBuildInputFingerprint &&
+    hashJson(build.toolchain) === identity.toolchainHash
   )
 }
 
-function freshReceipt(): HandoffReceipt {
-  const timestamp = new Date().toISOString()
-  const invocationId = randomUUID()
-  const fresh = handoffReceiptSchema.parse({
-    formatVersion: 3,
-    invocationId,
-    status: 'running',
-    mode: 'fresh',
-    createdAt: timestamp,
-    updatedAt: timestamp,
-    completedAt: null,
-    identity,
-    steps: handoffSteps.map((step) => ({
-      step,
-      status: 'pending',
-      startedAt: null,
-      durationMs: null,
-      evidence: null,
-      error: null
-    }))
-  })
-  appendInvocation({
-    invocationId,
-    applicationSha: workspace.commit,
-    createdAt: timestamp,
-    receiptPath: invocationReceiptPath(invocationId)
-  })
-  return fresh
-}
-
-function readResumableReceipt(): HandoffReceipt {
-  if (!existsSync(receiptPath))
-    throw new Error('No handoff receipt exists to resume')
-  const existing = handoffReceiptSchema.parse(
-    JSON.parse(readFileSync(receiptPath, 'utf8'))
+function assertWorkspaceUnchanged(): void {
+  const current = readWorkspaceIdentity(workspaceRoot)
+  const inputs = readWorkspaceInputFingerprints(workspaceRoot)
+  if (
+    JSON.stringify({ ...current, ...inputs }) !==
+    JSON.stringify({
+      commit: identity.commit,
+      dirty: identity.dirty,
+      workspaceFingerprint: identity.workspaceFingerprint,
+      appBuildInputFingerprint: identity.appBuildInputFingerprint,
+      qualificationInputFingerprint: identity.qualificationInputFingerprint,
+      deliveryInputFingerprint: identity.deliveryInputFingerprint
+    })
   )
-  if (JSON.stringify(existing.identity) !== JSON.stringify(identity))
-    throw new Error('Handoff receipt identity differs; start a fresh handoff')
-  return resumeHandoffReceipt(existing, new Date().toISOString())
+    throw new Error('Workspace identity changed during handoff')
 }
 
-function resetFrom(step: HandoffStepName): void {
-  const index = handoffSteps.indexOf(step)
-  receipt = {
-    ...receipt,
-    status: 'running',
-    updatedAt: new Date().toISOString(),
-    steps: receipt.steps.map((record) =>
-      handoffSteps.indexOf(record.step) < index
-        ? record
-        : {
-            step: record.step,
-            status: 'pending' as const,
-            startedAt: null,
-            durationMs: null,
-            evidence: null,
-            error: null
-          }
-    )
-  }
-  writeReceipt()
+function parseArguments(arguments_: readonly string[]): boolean {
+  if (arguments_.length === 0) return false
+  if (arguments_.length === 1 && arguments_[0] === '--resume') return true
+  throw new Error('The only supported handoff option is --resume')
 }
 
-function updateStep(
-  step: HandoffStepName,
-  update: Omit<HandoffReceipt['steps'][number], 'step'>
-): void {
-  receipt = {
-    ...receipt,
-    updatedAt: new Date().toISOString(),
-    steps: receipt.steps.map((record) =>
-      record.step === step ? { step, ...update } : record
-    )
-  }
-  writeReceipt()
-}
-
-function writeReceipt(): void {
-  receipt = handoffReceiptSchema.parse(receipt)
-  const content = `${JSON.stringify(receipt, null, 2)}\n`
-  atomicWrite(invocationReceiptPath(receipt.invocationId), content)
-  atomicWrite(receiptPath, content)
-}
-
-function appendInvocation(
-  invocation: HandoffInvocationHistory['invocations'][number]
-): void {
-  const history = existsSync(invocationHistoryPath)
-    ? handoffInvocationHistorySchema.parse(
-        JSON.parse(readFileSync(invocationHistoryPath, 'utf8'))
-      )
-    : { formatVersion: 1 as const, invocations: [] }
-  const next = appendHandoffInvocation(history, invocation)
-  atomicWrite(invocationHistoryPath, `${JSON.stringify(next, null, 2)}\n`)
-}
-
-function invocationReceiptPath(invocationId: string): string {
-  return resolve(receiptDirectory, 'invocations', `${invocationId}.json`)
+function run(phase: string, arguments_: readonly string[]): void {
+  const result = spawnSync('corepack', arguments_, {
+    cwd: workspaceRoot,
+    env: process.env,
+    stdio: 'inherit'
+  })
+  if (result.error) throw result.error
+  if (result.status !== 0)
+    throw new Error(`Local handoff phase ${phase} failed with ${result.status}`)
 }
 
 function atomicWrite(path: string, content: string): void {
   mkdirSync(dirname(path), { recursive: true })
-  const temporary = `${path}.next`
-  const descriptor = openSync(temporary, 'w', 0o600)
+  const temporary = `${path}.${randomUUID()}.next`
+  const descriptor = openSync(temporary, 'wx', 0o600)
   try {
     writeFileSync(descriptor, content)
     fsyncSync(descriptor)
@@ -425,20 +437,6 @@ function atomicWrite(path: string, content: string): void {
   } finally {
     closeSync(directory)
   }
-}
-
-function run(step: HandoffStepName, arguments_: readonly string[]): void {
-  console.info(
-    JSON.stringify({ component: 'local-handoff', event: 'step-started', step })
-  )
-  const result = spawnSync('corepack', arguments_, {
-    cwd: workspaceRoot,
-    env: process.env,
-    stdio: 'inherit'
-  })
-  if (result.error) throw result.error
-  if (result.status !== 0)
-    throw new Error(`Local handoff step ${step} failed with ${result.status}`)
 }
 
 function hashJson(value: unknown): string {

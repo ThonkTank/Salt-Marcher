@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
   appendHandoffInvocation,
-  freshInvocationCount,
+  continueHandoffReceipt,
+  createHandoffReceipt,
   handoffInvocationHistorySchema,
-  handoffReceiptSchema,
-  handoffSteps,
+  handoffPhases,
+  parseHandoffInvocationHistory,
   readRequiredJobManifest,
   requiredJobManifestSchema,
-  resumeHandoffReceipt,
+  sameHandoffApplicationIdentity,
   verifyRequiredJobs,
   type GithubWorkflowRun
 } from '../../scripts/delivery-contract.js'
@@ -79,62 +80,95 @@ describe('delivery contract', () => {
     ).toThrow()
   })
 
-  it('retains every fresh invocation and makes exactly-once machine-checkable', () => {
+  it('retains every safe attempt without treating duplicates as a violation', () => {
     const empty = handoffInvocationHistorySchema.parse({
-      formatVersion: 1,
+      formatVersion: 2,
       invocations: []
     })
     const first = appendHandoffInvocation(empty, invocation('1'))
     const second = appendHandoffInvocation(first, invocation('2'))
-    expect(freshInvocationCount(first, sha)).toBe(1)
-    expect(freshInvocationCount(second, sha)).toBe(2)
-    expect(second.invocations.map(({ invocationId }) => invocationId)).toEqual([
+    expect(second.invocations).toHaveLength(2)
+    expect(second.invocations.map(({ attemptId }) => attemptId)).toEqual([
       '00000000-0000-4000-8000-000000000001',
       '00000000-0000-4000-8000-000000000002'
     ])
   })
 
-  it('preserves fresh invocation provenance across resume attempts', () => {
+  it('migrates the legacy invocation audit without losing provenance', () => {
+    const migrated = parseHandoffInvocationHistory({
+      formatVersion: 1,
+      invocations: [
+        {
+          invocationId: '00000000-0000-4000-8000-000000000001',
+          applicationSha: sha,
+          createdAt: '2026-08-18T12:00:00.000Z',
+          receiptPath: 'legacy-receipt.json'
+        }
+      ]
+    })
+    expect(migrated).toMatchObject({
+      formatVersion: 2,
+      invocations: [
+        {
+          attemptId: '00000000-0000-4000-8000-000000000001',
+          intent: 'advance',
+          auditPath: 'legacy-receipt.json'
+        }
+      ]
+    })
+  })
+
+  it('preserves original state provenance across later attempts', () => {
     const createdAt = '2026-08-18T12:00:00.000Z'
     const updatedAt = '2026-08-18T12:30:00.000Z'
-    const receipt = handoffReceiptSchema.parse({
-      formatVersion: 3,
-      invocationId: '00000000-0000-4000-8000-000000000001',
-      status: 'failed',
-      mode: 'fresh',
-      createdAt,
-      updatedAt: createdAt,
-      completedAt: null,
-      identity: {
-        commit: sha,
-        dirty: false,
-        workspaceFingerprint: 'b'.repeat(64),
-        appBuildInputFingerprint: 'c'.repeat(64),
-        toolchainHash: 'd'.repeat(64),
-        candidate: verifyRequiredJobs(
-          readRequiredJobManifest(),
-          successfulRun(),
-          sha
-        )
-      },
-      steps: handoffSteps.map((step) => ({
-        step,
-        status: 'pending',
-        startedAt: null,
-        durationMs: null,
-        evidence: null,
-        error: null
-      }))
-    })
+    const origin = '00000000-0000-4000-8000-000000000001'
+    const later = '00000000-0000-4000-8000-000000000002'
+    const receipt = createHandoffReceipt(
+      identity(),
+      '00000000-0000-4000-8000-000000000010',
+      origin,
+      createdAt
+    )
 
-    expect(resumeHandoffReceipt(receipt, updatedAt)).toMatchObject({
-      invocationId: receipt.invocationId,
+    expect(continueHandoffReceipt(receipt, later, updatedAt)).toMatchObject({
+      stateId: receipt.stateId,
+      originAttemptId: origin,
+      activeAttemptId: later,
       status: 'running',
-      mode: 'fresh',
       createdAt,
       updatedAt,
-      completedAt: null
+      completedAt: null,
+      phases: handoffPhases.map((phase) => ({ phase }))
     })
+  })
+
+  it('accepts a new successful CI attempt for the same application identity', () => {
+    const existing = identity()
+    const current = {
+      ...identity(),
+      candidate: {
+        ...identity().candidate,
+        runId: 456,
+        url: 'https://github.example/actions/runs/456',
+        attempt: 3
+      }
+    }
+    expect(sameHandoffApplicationIdentity(existing, current)).toBe(true)
+    expect(
+      sameHandoffApplicationIdentity(existing, {
+        ...current,
+        deliveryInputFingerprint: '0'.repeat(64)
+      })
+    ).toBe(false)
+    expect(
+      sameHandoffApplicationIdentity(existing, {
+        ...current,
+        candidate: {
+          ...current.candidate,
+          jobs: current.candidate.jobs.slice(1)
+        }
+      })
+    ).toBe(false)
   })
 })
 
@@ -157,11 +191,30 @@ function successfulRun(): GithubWorkflowRun {
 }
 
 function invocation(suffix: string) {
-  const invocationId = `00000000-0000-4000-8000-${suffix.padStart(12, '0')}`
+  const attemptId = `00000000-0000-4000-8000-${suffix.padStart(12, '0')}`
   return {
-    invocationId,
+    attemptId,
     applicationSha: sha,
+    intent: 'advance' as const,
     createdAt: '2026-08-18T12:00:00.000Z',
-    receiptPath: `.tmp/handoff-local-app/invocations/${invocationId}.json`
+    statePath: `.tmp/handoff-local-app/states/${sha}.json`,
+    auditPath: `.tmp/handoff-local-app/attempts/${attemptId}.json`
+  }
+}
+
+function identity() {
+  return {
+    commit: sha,
+    dirty: false,
+    workspaceFingerprint: 'b'.repeat(64),
+    appBuildInputFingerprint: 'c'.repeat(64),
+    qualificationInputFingerprint: 'd'.repeat(64),
+    deliveryInputFingerprint: 'e'.repeat(64),
+    toolchainHash: 'f'.repeat(64),
+    candidate: verifyRequiredJobs(
+      readRequiredJobManifest(),
+      successfulRun(),
+      sha
+    )
   }
 }

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { z } from 'zod'
@@ -5,15 +6,18 @@ import { z } from 'zod'
 export const shaSchema = z.string().regex(/^[0-9a-f]{40}$/)
 export const fingerprintSchema = z.string().regex(/^[0-9a-f]{64}$/)
 
-export const handoffSteps = [
-  'check',
-  'package',
-  'packaged-smoke',
-  'backup-and-install',
-  'installed-runtime-verification'
+export const handoffPhases = [
+  'candidate-qualified',
+  'checked',
+  'packaged',
+  'packaged-smoke-passed',
+  'backup-created',
+  'deployment-staged',
+  'activated',
+  'installed-runtime-verified'
 ] as const
-export const handoffStepNameSchema = z.enum(handoffSteps)
-export type HandoffStepName = z.infer<typeof handoffStepNameSchema>
+export const handoffPhaseNameSchema = z.enum(handoffPhases)
+export type HandoffPhaseName = z.infer<typeof handoffPhaseNameSchema>
 
 export const requiredJobManifestSchema = z
   .object({
@@ -92,6 +96,18 @@ export const workflowEvidenceSchema = z
 
 export type WorkflowEvidence = z.infer<typeof workflowEvidenceSchema>
 
+export function sameWorkflowQualification(
+  existing: WorkflowEvidence,
+  current: WorkflowEvidence
+): boolean {
+  return (
+    existing.headSha === current.headSha &&
+    existing.requiredJobManifestVersion ===
+      current.requiredJobManifestVersion &&
+    JSON.stringify(existing.jobs) === JSON.stringify(current.jobs)
+  )
+}
+
 export const installedRuntimeEvidenceSchema = z
   .object({
     artifactSha256: fingerprintSchema,
@@ -134,34 +150,43 @@ export type InstalledRuntimeEvidence = z.infer<
   typeof installedRuntimeEvidenceSchema
 >
 
-export const handoffStepEvidenceSchema = z
+export const handoffPhaseEvidenceSchema = z
   .object({
     workspaceFingerprint: fingerprintSchema,
     appBuildInputFingerprint: fingerprintSchema,
+    qualificationInputFingerprint: fingerprintSchema,
+    deliveryInputFingerprint: fingerprintSchema,
     toolchainHash: fingerprintSchema,
-    outputHash: fingerprintSchema.nullable(),
+    buildOutputHash: fingerprintSchema.nullable(),
     artifactSha256: fingerprintSchema.nullable(),
+    sourceDataHash: fingerprintSchema.nullable(),
+    backupManifestSha256: fingerprintSchema.nullable(),
+    deploymentManifestSha256: fingerprintSchema.nullable(),
+    runtimeEvidenceSha256: fingerprintSchema.nullable(),
     installedSha256: fingerprintSchema.nullable()
   })
   .strict()
 
-export const handoffStepSchema = z
+export const handoffPhaseSchema = z
   .object({
-    step: handoffStepNameSchema,
+    phase: handoffPhaseNameSchema,
     status: z.enum(['pending', 'running', 'completed', 'failed']),
     startedAt: z.iso.datetime().nullable(),
     durationMs: z.number().int().nonnegative().nullable(),
-    evidence: handoffStepEvidenceSchema.nullable(),
+    inputHash: fingerprintSchema.nullable(),
+    outputHash: fingerprintSchema.nullable(),
+    evidence: handoffPhaseEvidenceSchema.nullable(),
     error: z.string().nullable()
   })
   .strict()
 
 export const handoffReceiptSchema = z
   .object({
-    formatVersion: z.literal(3),
-    invocationId: z.uuid(),
+    formatVersion: z.literal(4),
+    stateId: z.uuid(),
+    originAttemptId: z.uuid(),
+    activeAttemptId: z.uuid(),
     status: z.enum(['running', 'complete', 'failed']),
-    mode: z.enum(['fresh', 'resume']),
     createdAt: z.iso.datetime(),
     updatedAt: z.iso.datetime(),
     completedAt: z.iso.datetime().nullable(),
@@ -171,32 +196,124 @@ export const handoffReceiptSchema = z
         dirty: z.boolean(),
         workspaceFingerprint: fingerprintSchema,
         appBuildInputFingerprint: fingerprintSchema,
+        qualificationInputFingerprint: fingerprintSchema,
+        deliveryInputFingerprint: fingerprintSchema,
         toolchainHash: fingerprintSchema,
         candidate: workflowEvidenceSchema
       })
       .strict(),
-    steps: z.array(handoffStepSchema).length(handoffSteps.length)
+    phases: z.array(handoffPhaseSchema).length(handoffPhases.length)
   })
   .strict()
   .superRefine((receipt, context) => {
-    const actual = receipt.steps.map(({ step }) => step)
-    if (JSON.stringify(actual) !== JSON.stringify(handoffSteps))
+    const actual = receipt.phases.map(({ phase }) => phase)
+    if (JSON.stringify(actual) !== JSON.stringify(handoffPhases))
       context.addIssue({
         code: 'custom',
-        message: 'Handoff steps must be complete, unique, and ordered',
-        path: ['steps']
+        message: 'Handoff phases must be complete, unique, and ordered',
+        path: ['phases']
       })
+    if (
+      receipt.status === 'complete' &&
+      (receipt.completedAt === null ||
+        receipt.phases.some(({ status }) => status !== 'completed'))
+    )
+      context.addIssue({
+        code: 'custom',
+        message: 'Complete handoff state requires every phase and completedAt',
+        path: ['status']
+      })
+    if (receipt.status !== 'complete' && receipt.completedAt !== null)
+      context.addIssue({
+        code: 'custom',
+        message: 'Incomplete handoff state cannot have completedAt',
+        path: ['completedAt']
+      })
+    let predecessor = hashHandoffValue(receipt.identity)
+    let incompleteSeen = false
+    for (const [index, phase] of receipt.phases.entries()) {
+      if (phase.status !== 'completed') {
+        incompleteSeen = true
+        continue
+      }
+      if (incompleteSeen)
+        context.addIssue({
+          code: 'custom',
+          message: `Completed handoff phase follows an incomplete predecessor: ${phase.phase}`,
+          path: ['phases', index]
+        })
+      if (
+        phase.inputHash !== predecessor ||
+        phase.evidence === null ||
+        phase.outputHash !==
+          hashHandoffValue({
+            phase: phase.phase,
+            inputHash: phase.inputHash,
+            evidence: phase.evidence
+          })
+      )
+        context.addIssue({
+          code: 'custom',
+          message: `Completed handoff phase has an invalid hash chain: ${phase.phase}`,
+          path: ['phases', index]
+        })
+      predecessor = phase.outputHash ?? predecessor
+    }
   })
 
 export type HandoffReceipt = z.infer<typeof handoffReceiptSchema>
-export type HandoffStepEvidence = z.infer<typeof handoffStepEvidenceSchema>
+export type HandoffIdentity = HandoffReceipt['identity']
+export type HandoffPhaseEvidence = z.infer<typeof handoffPhaseEvidenceSchema>
 
-export function resumeHandoffReceipt(
+export function sameHandoffApplicationIdentity(
+  existing: HandoffIdentity,
+  current: HandoffIdentity
+): boolean {
+  const { candidate: existingCandidate, ...existingInputs } = existing
+  const { candidate: currentCandidate, ...currentInputs } = current
+  return (
+    JSON.stringify(existingInputs) === JSON.stringify(currentInputs) &&
+    sameWorkflowQualification(existingCandidate, currentCandidate)
+  )
+}
+
+export function createHandoffReceipt(
+  identity: HandoffIdentity,
+  stateId: string,
+  attemptId: string,
+  timestamp: string
+): HandoffReceipt {
+  return handoffReceiptSchema.parse({
+    formatVersion: 4,
+    stateId,
+    originAttemptId: attemptId,
+    activeAttemptId: attemptId,
+    status: 'running',
+    createdAt: timestamp,
+    updatedAt: timestamp,
+    completedAt: null,
+    identity,
+    phases: handoffPhases.map((phase) => ({
+      phase,
+      status: 'pending',
+      startedAt: null,
+      durationMs: null,
+      inputHash: null,
+      outputHash: null,
+      evidence: null,
+      error: null
+    }))
+  })
+}
+
+export function continueHandoffReceipt(
   receipt: HandoffReceipt,
+  attemptId: string,
   updatedAt: string
 ): HandoffReceipt {
   return handoffReceiptSchema.parse({
     ...receipt,
+    activeAttemptId: attemptId,
     status: 'running',
     updatedAt,
     completedAt: null
@@ -204,6 +321,40 @@ export function resumeHandoffReceipt(
 }
 
 export const handoffInvocationHistorySchema = z
+  .object({
+    formatVersion: z.literal(2),
+    invocations: z.array(
+      z
+        .object({
+          attemptId: z.uuid(),
+          applicationSha: shaSchema,
+          intent: z.enum(['advance', 'resume']),
+          createdAt: z.iso.datetime(),
+          statePath: z.string().min(1),
+          auditPath: z.string().min(1)
+        })
+        .strict()
+    )
+  })
+  .strict()
+  .superRefine((history, context) => {
+    const ids = new Set<string>()
+    for (const invocation of history.invocations) {
+      if (ids.has(invocation.attemptId))
+        context.addIssue({
+          code: 'custom',
+          message: `Duplicate handoff attempt: ${invocation.attemptId}`,
+          path: ['invocations']
+        })
+      ids.add(invocation.attemptId)
+    }
+  })
+
+export type HandoffInvocationHistory = z.infer<
+  typeof handoffInvocationHistorySchema
+>
+
+const legacyHandoffInvocationHistorySchema = z
   .object({
     formatVersion: z.literal(1),
     invocations: z.array(
@@ -218,22 +369,25 @@ export const handoffInvocationHistorySchema = z
     )
   })
   .strict()
-  .superRefine((history, context) => {
-    const ids = new Set<string>()
-    for (const invocation of history.invocations) {
-      if (ids.has(invocation.invocationId))
-        context.addIssue({
-          code: 'custom',
-          message: `Duplicate handoff invocation: ${invocation.invocationId}`,
-          path: ['invocations']
-        })
-      ids.add(invocation.invocationId)
-    }
-  })
 
-export type HandoffInvocationHistory = z.infer<
-  typeof handoffInvocationHistorySchema
->
+export function parseHandoffInvocationHistory(
+  value: unknown
+): HandoffInvocationHistory {
+  const current = handoffInvocationHistorySchema.safeParse(value)
+  if (current.success) return current.data
+  const legacy = legacyHandoffInvocationHistorySchema.parse(value)
+  return handoffInvocationHistorySchema.parse({
+    formatVersion: 2,
+    invocations: legacy.invocations.map((invocation) => ({
+      attemptId: invocation.invocationId,
+      applicationSha: invocation.applicationSha,
+      intent: 'advance',
+      createdAt: invocation.createdAt,
+      statePath: invocation.receiptPath,
+      auditPath: invocation.receiptPath
+    }))
+  })
+}
 
 export function appendHandoffInvocation(
   history: HandoffInvocationHistory,
@@ -245,13 +399,8 @@ export function appendHandoffInvocation(
   })
 }
 
-export function freshInvocationCount(
-  history: HandoffInvocationHistory,
-  applicationSha: string
-): number {
-  return history.invocations.filter(
-    (invocation) => invocation.applicationSha === applicationSha
-  ).length
+export function hashHandoffValue(value: unknown): string {
+  return createHash('sha256').update(JSON.stringify(value)).digest('hex')
 }
 
 export function readRequiredJobManifest(

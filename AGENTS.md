@@ -28,17 +28,25 @@
 
 - Finish app-relevant changes to `src/`, `resources/`, dependencies, or
   Electron/build/packaging configuration with `pnpm handoff:app`. It runs the
-  canonical checks, packages the exact checked workspace once, smoke-tests the
+  canonical checks, packages the exact checked workspace, smoke-tests the
   packaged application, backs up valuable local campaign data, and installs
   the matching `SaltMarcher Local` AppImage, then verifies that installed
-  runtime. The default is always fresh; only `pnpm handoff:app -- --resume`
-  may reuse hash-validated completed steps.
+  runtime. Handoff state is keyed by the immutable application SHA. Repeated
+  invocations for the same SHA must validate and reuse hash-proven phases
+  idempotently; `pnpm handoff:app -- --resume` remains an explicit recovery
+  intent but may not replace the provenance of the invocation that created the
+  SHA state.
 - Pure documentation or test-only changes finish with `pnpm check`.
+- Candidate promotion compares its app-build fingerprint with the current
+  `origin/main` app-build fingerprint. An unchanged app-build fingerprint does
+  not require a local application handoff; an app-relevant change cannot be
+  promoted without its completed exact-SHA handoff state.
 - `pnpm dev` is only the targeted HMR development loop; it is not a manual
   acceptance or handoff path.
 - Every implementation is committed to a clean candidate branch and pushed
   there first. The exact candidate SHA must pass all required remote `Check`
-  jobs before `pnpm handoff:app` is run once for that immutable SHA. Only then
-  may the same SHA be fast-forwarded to `origin/main`; rebuilding, amending, or
-  pushing an unchecked SHA directly to `main` is not a valid handoff. A green
-  implementation is not complete until the promoted SHA is green on `main`.
+  jobs before an app-relevant SHA may reach a completed canonical handoff.
+  Only then may the same SHA be fast-forwarded to `origin/main`; rebuilding,
+  amending, or pushing an unchecked SHA directly to `main` is not a valid
+  handoff. A green implementation is not complete until the promoted SHA is
+  green on `main`.

@@ -14,14 +14,16 @@ install the exact current workspace with:
 pnpm handoff:app
 ```
 
-This command always starts a fresh five-step handoff. After an interrupted run,
-`pnpm handoff:app -- --resume` is the only resuming form; it reuses a completed
-step only when workspace, app inputs, toolchain, output, artifact, and installed
-hashes still match its atomic machine-readable receipt in
-`.tmp/handoff-local-app/handoff-receipt.json`.
+This command advances one idempotent handoff state for the immutable application
+SHA through candidate qualification, check, package, packaged smoke, backup,
+deployment staging, activation, and installed-runtime verification. Repeating
+the command safely revalidates and reuses completed phases whose input and
+output hashes still match. `pnpm handoff:app -- --resume` records explicit
+recovery intent without replacing the original state's provenance. Atomic state
+and per-attempt audit records live below `.tmp/handoff-local-app/`.
 
 Launch **SaltMarcher Local** from the desktop menu afterwards. Its title
-contains the first twelve characters of the embedded workspace fingerprint, so a
+contains the first twelve characters of the embedded app-build fingerprint, so a
 stale installation is visible. Packaging and installation refuse output whose
 workspace/app-input fingerprint, commit, dirty state, toolchain or output bytes
 differ from the receipt. Build channels are explicit: `pnpm build:development`,
