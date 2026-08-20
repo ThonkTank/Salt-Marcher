@@ -95,12 +95,25 @@ describe('group Loot architecture refactor', () => {
     ])
     const controller = readFileSync(owners[0]!, 'utf8')
     expect(controller).not.toMatch(/useState|useRef/)
-    expect(
-      readFileSync(
-        'src/renderer/features/session/group-manager-state.ts',
+    const state = readFileSync(
+      'src/renderer/features/session/group-manager-state.ts',
+      'utf8'
+    )
+    expect(state).toMatch(/sessions:[\s\S]*pendingIntent:/)
+    expect(state).not.toMatch(/requestToken|RequestToken/)
+    expect(controller).toContain('useGroupManagerCommands')
+    expect(controller).toContain('useGroupManagerQueries')
+    for (const owner of [
+      'use-group-manager-commands.ts',
+      'use-group-manager-queries.ts'
+    ]) {
+      const source = readFileSync(
+        `src/renderer/features/session/${owner}`,
         'utf8'
       )
-    ).toMatch(/sessions:[\s\S]*pendingIntent:[\s\S]*requests:/)
+      expect(source).toContain('useAsyncCommandCoordinator')
+      expect(source).not.toMatch(/requestToken|latest[A-Z]\w*Request/)
+    }
   })
 
   it('separates the capability adapter from pure GroupManager views', () => {

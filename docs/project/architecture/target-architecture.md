@@ -156,6 +156,14 @@ ports explicitly. Revision selection, command identities, receipt
 reconciliation, and snapshot accumulation live in those adapters rather than
 in React components. Mutable module-level capability registries and renderer
 service locators are forbidden.
+Renderer-local asynchronous ordering has one instance-bound coordinator. A
+request is identified by scope and optional entity key and declares either
+latest-only or queue semantics; cancellation is carried by `AbortSignal`.
+The coordinator owns transient request tokens and pending, success, stale, and
+failure state. Feature controllers dispatch domain outcomes only after that
+coordinator accepts them, so reducers do not retain infrastructure tokens and
+an older result or failure cannot overwrite or obscure newer state. Coordinator
+instances belong to hooks and are never mutable module singletons.
 Workspace navigation is described by immutable `WorkspaceDefinition` records,
 including identity, label, icon, loader, neutral layout mode and recovery
 policy, rather than parallel conditionals in the shell. Its route host models
@@ -389,14 +397,15 @@ active version only explicitly.
 
 Group management is a renderer application boundary rather than a stateful
 view. One `GroupManagerState` reducer owns per-Group sessions, Group and Loot
-histories, request tokens, cached drafts, paired catalog/work views, serializable
-discard intents, and external conflicts. Its controller receives narrow
-Creature, Group, Loot, and lifecycle ports from the sole capability adapter;
-views import neither live Session surface types nor capability hooks. All
-discarding transitions use one intent policy and delayed responses can mutate
-state only when their token is current. The reusable Treasure editor receives
-messages, issues, commands, and an add policy instead of importing feature copy
-or authoritative catalog metadata.
+histories, cached drafts, paired catalog/work views, serializable discard
+intents, and external conflicts. Its thin composition controller receives
+narrow Creature, Group, Loot, and lifecycle ports from the sole capability
+adapter and delegates reads to a query hook and writes to a command hook; views
+import neither live Session surface types nor capability hooks. All discarding
+transitions use one intent policy, and only coordinator-accepted asynchronous
+outcomes reach the reducer. The reusable Treasure editor receives messages,
+issues, commands, and an add policy instead of importing feature copy or
+authoritative catalog metadata.
 
 Loot is a separate feature projection with its own revision and
 `loot.changed` event. `LiveSessionSnapshot` contains Party, Scene, Travel, and

@@ -58,13 +58,11 @@ describe('group manager state', () => {
     state = groupManagerReducer(state, {
       kind: 'loot-request-began',
       key: 'group-a',
-      token: 'request',
       phase: 'generating'
     })
     state = groupManagerReducer(state, {
       kind: 'loot-generated',
       key: 'group-a',
-      token: 'request',
       run,
       draft: groupLootDraftFromRun(run, () => 'draft-item'),
       seed: 1
@@ -80,7 +78,7 @@ describe('group manager state', () => {
     expect(activeGroupSession(state)?.loot.run).toBeNull()
   })
 
-  it('ignores stale async results by request token and draft key', () => {
+  it('applies coordinated async results to their addressed draft', () => {
     let state = createGroupManagerState({
       activeKey: 'group-a',
       initialGroup: null,
@@ -88,39 +86,29 @@ describe('group manager state', () => {
       locationId: null
     })
     state = groupManagerReducer(state, {
-      kind: 'request-began',
-      request: 'evaluation',
-      token: 'new',
-      key: 'group-a'
-    })
-    const unchanged = groupManagerReducer(state, {
       kind: 'evaluation-result',
-      token: 'old',
       key: 'group-a',
       evaluation: null
     })
-    expect(unchanged).toBe(state)
-
     state = groupManagerReducer(state, {
-      kind: 'request-began',
-      request: 'command',
-      token: 'new-command',
-      key: 'group-a'
+      kind: 'activate',
+      key: 'group-b',
+      fallback: groupDraftStateFromGroup(null),
+      sourceRevision: null
     })
-    expect(
-      groupManagerReducer(state, {
-        kind: 'roster-generated',
-        key: 'group-a',
-        token: 'old-command',
-        quantities: { wolf: 2 },
-        deadQuantities: {},
-        facts: {},
-        evaluation: null,
-        seed: 1,
-        message: '',
-        generationSummary: ''
-      })
-    ).toBe(state)
+    state = groupManagerReducer(state, {
+      kind: 'roster-generated',
+      key: 'group-a',
+      quantities: { wolf: 2 },
+      deadQuantities: {},
+      facts: {},
+      evaluation: null,
+      seed: 1,
+      message: '',
+      generationSummary: ''
+    })
+    expect(state.sessions['group-a']?.group.quantities).toEqual({ wolf: 2 })
+    expect(state.activeKey).toBe('group-b')
   })
 
   it('caches a delayed Loot result without switching the active workspace', () => {
@@ -134,7 +122,6 @@ describe('group manager state', () => {
     state = groupManagerReducer(state, {
       kind: 'loot-request-began',
       key: 'group-a',
-      token: 'loot-a',
       phase: 'generating'
     })
     state = groupManagerReducer(state, {
@@ -146,7 +133,6 @@ describe('group manager state', () => {
     state = groupManagerReducer(state, {
       kind: 'loot-generated',
       key: 'group-a',
-      token: 'loot-a',
       run,
       draft: groupLootDraftFromRun(run, () => 'draft-item'),
       seed: 1

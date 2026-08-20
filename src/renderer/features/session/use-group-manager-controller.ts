@@ -1,26 +1,16 @@
-import { useCallback, useEffect, useMemo, useReducer } from 'react'
+import { useEffect, useReducer } from 'react'
 import type { Creature } from '../../../shared/contracts/encounter.js'
-import type { EncounterTuningOverride } from '../../../shared/contracts/encounter-tuning.js'
-import type { CommitGroupRewardResult } from '../../../shared/contracts/loot.js'
 import type { SceneGroupDisposition } from '../../../shared/contracts/scene.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
-import { capabilityErrorIssues } from '../../../shared/errors/capability-error.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
-import type { SearchableSelectOption } from '../../shell/searchable-select.js'
 import {
-  groupLootCommitDraft,
   groupLootDraftDirty,
-  groupLootDraftFromRun,
   type GroupLootDraftCommand
 } from '../loot/group-loot-draft.js'
 import type {
   TreasureContainerPatch,
   TreasureItemPatch
 } from '../loot/treasure-draft-reducer.js'
-import {
-  applyCombatCommandResult,
-  applySceneGroupCommandResult
-} from './session-patches.js'
 import {
   creatureFact,
   groupDraftEntries,
@@ -36,8 +26,7 @@ import {
   groupManagerCurrentLootDirty,
   groupManagerReducer,
   groupDraftSessionDirty,
-  type GroupCatalogMode,
-  type GroupManagerRequestKind
+  type GroupCatalogMode
 } from './group-manager-state.js'
 import {
   groupManagerIntentGuard,
@@ -45,16 +34,9 @@ import {
   type GroupManagerIntent
 } from './group-manager-intent.js'
 import { generationSeed } from './generation-seed.js'
-import { formatMessage, message } from '../../i18n/session-runtime.de.js'
 import type { GroupManagerPorts } from './use-group-manager-capability-ports.js'
-import { emptyQuery } from '../creatures/creature-state.js'
-
-const tuning: EncounterTuningOverride = {
-  difficulty: 'preset',
-  amount: 'preset',
-  balance: 'preset',
-  diversity: 'preset'
-}
+import { useGroupManagerCommands } from './use-group-manager-commands.js'
+import { useGroupManagerQueries } from './use-group-manager-queries.js'
 
 export function useGroupManagerController(
   props: {
@@ -87,10 +69,7 @@ export function useGroupManagerController(
   )
   const session = activeGroupSession(state)
   const group = session?.group ?? groupDraftStateFromGroup(null)
-  const entries = useMemo(
-    () => groupDraftEntries(group.quantities, group.deadQuantities),
-    [group.deadQuantities, group.quantities]
-  )
+  const entries = groupDraftEntries(group.quantities, group.deadQuantities)
   const selectedPersistedGroup = focused.groups.find(
     (candidate) => candidate.id === state.activeKey
   )
@@ -109,137 +88,31 @@ export function useGroupManagerController(
     dispatch({ kind: 'sync-external', groups: focused.groups })
   }, [focused.groups])
 
-  useEffect(() => {
-    const token = crypto.randomUUID()
-    dispatch({ kind: 'request-began', request: 'creature-options', token })
-    void Promise.all([
-      ports.creatures.filterOptions(),
-      ports.creatures.search({
-        ...emptyQuery,
-        locationId: focused.locationId,
-        offset: 0,
-        limit: 1
-      })
-    ])
-      .then(([options, first]) =>
-        dispatch({
-          kind: 'creature-options',
-          token,
-          options,
-          total: first.total
-        })
-      )
-      .catch((cause) => {
-        dispatch({ kind: 'request-ended', request: 'creature-options', token })
-        onError(capabilityErrorText(cause))
-      })
-  }, [focused.locationId, onError, ports.creatures])
-
-  useEffect(() => {
-    const token = crypto.randomUUID()
-    dispatch({ kind: 'request-began', request: 'creature-search', token })
-    const timer = window.setTimeout(() => {
-      void ports.creatures
-        .search(state.creatureCatalog.query)
-        .then((page) => dispatch({ kind: 'creature-page', token, page }))
-        .catch((cause) =>
-          dispatch({
-            kind: 'catalog-error',
-            request: 'creature-search',
-            token,
-            error: capabilityErrorText(cause)
-          })
-        )
-    }, 200)
-    return () => window.clearTimeout(timer)
-  }, [ports.creatures, state.creatureCatalog.query])
-
-  useEffect(() => {
-    const key = state.activeKey
-    if (!key) return
-    const token = crypto.randomUUID()
-    dispatch({ kind: 'request-began', request: 'evaluation', token, key })
-    const timer = window.setTimeout(() => {
-      void ports.scene
-        .evaluateGroupDraft(focused.id, entries, props.snapshot.scene.revision)
-        .then((evaluation) =>
-          dispatch({
-            kind: 'evaluation-result',
-            key,
-            token,
-            evaluation
-          })
-        )
-        .catch((cause) =>
-          dispatch({
-            kind: 'request-message',
-            request: 'evaluation',
-            token,
-            key,
-            message: capabilityErrorText(cause)
-          })
-        )
-    }, 120)
-    return () => window.clearTimeout(timer)
-  }, [
+  const { searchBiomeOptions } = useGroupManagerQueries({
+    focused,
+    snapshot: props.snapshot,
+    state,
+    session,
+    group,
+    ports,
+    dispatch,
+    onError
+  })
+  const groupCommands = useGroupManagerCommands({
+    snapshot: props.snapshot,
+    focused,
+    state,
+    session,
+    group,
     entries,
-    focused.id,
-    ports.scene,
-    props.snapshot.scene.revision,
-    state.activeKey
-  ])
-
-  useEffect(() => {
-    const key = state.activeKey
-    if (!key || key === newGroupDraftKey) return
-    const persisted = focused.groups.find((candidate) => candidate.id === key)
-    if (!persisted) return
-    const token = crypto.randomUUID()
-    dispatch({ kind: 'request-began', request: 'facts', token, key })
-    void Promise.all(
-      persisted.entries.map((entry) =>
-        ports.creatures.detail(entry.creatureId).catch(() => null)
-      )
-    ).then((creatures) =>
-      dispatch({
-        kind: 'facts-result',
-        key,
-        token,
-        facts: Object.fromEntries(
-          creatures.flatMap((creature) =>
-            creature ? [[creature.id, creatureFact(creature)]] : []
-          )
-        )
-      })
-    )
-  }, [focused.groups, ports.creatures, state.activeKey])
-
-  useEffect(() => {
-    const run = session?.loot.run
-    if (!run || state.catalogMode !== 'loot') return
-    const token = crypto.randomUUID()
-    dispatch({ kind: 'request-began', request: 'loot-catalog', token })
-    void ports.loot
-      .catalog({
-        ...state.lootCatalog.query,
-        runId: run.id,
-        catalogContentHash: run.catalogContentHash
-      })
-      .then((page) => dispatch({ kind: 'loot-catalog-page', token, page }))
-      .catch((cause) =>
-        dispatch({
-          kind: 'catalog-error',
-          request: 'loot-catalog',
-          token,
-          error: capabilityErrorText(cause)
-        })
-      )
-  }, [
-    ports.loot,
-    session?.loot.run,
-    state.catalogMode,
-    state.lootCatalog.query
-  ])
+    selectedPersistedGroup,
+    rewardGroupId,
+    canGenerate,
+    ports,
+    dispatch,
+    saved: props.saved,
+    lootChanged: props.lootChanged
+  })
 
   function requestIntent(intent: GroupManagerIntent) {
     const guard = groupManagerIntentGuard(intent)
@@ -278,10 +151,10 @@ export function useGroupManagerController(
         mutateGroup({ kind: intent.direction })
         return
       case 'generate-roster':
-        void generateRoster(intent.mode)
+        void groupCommands.generateRoster(intent.mode)
         return
       case 'regenerate-loot':
-        void generateLoot(
+        void groupCommands.generateLoot(
           entries,
           intent.mode === 'retry'
             ? (session?.loot.seed ?? generationSeed(ports.runtime.e2e))
@@ -289,13 +162,13 @@ export function useGroupManagerController(
         )
         return
       case 'save':
-        void save()
+        void groupCommands.save()
         return
       case 'archive':
-        void archive()
+        void groupCommands.archive()
         return
       case 'join-combat':
-        void joinCombat()
+        void groupCommands.joinCombat()
     }
   }
 
@@ -352,307 +225,10 @@ export function useGroupManagerController(
     mutateGroup({ kind: 'roster', update: { quantities, deadQuantities } })
   }
 
-  async function generateRoster(mode: 'fill' | 'replace'): Promise<void> {
-    const key = state.activeKey
-    if (!key || !canGenerate) return
-    const token = beginRequest('command', key)
-    const seed = generationSeed(ports.runtime.e2e)
-    try {
-      const result = await ports.scene.generateGroupDraft(
-        focused.id,
-        entries,
-        mode,
-        state.creatureCatalog.query,
-        tuning,
-        seed,
-        props.snapshot.scene.revision
-      )
-      const quantities = Object.fromEntries(
-        result.entries.map((entry) => [entry.creatureId, entry.quantity])
-      )
-      const deadQuantities = mode === 'fill' ? group.deadQuantities : {}
-      const previousCount = totalQuantity(group.quantities)
-      const nextCount = totalQuantity(quantities)
-      dispatch({
-        kind: 'roster-generated',
-        key,
-        token,
-        quantities,
-        deadQuantities,
-        facts: Object.fromEntries(
-          result.entries.map((entry) => [
-            entry.creatureId,
-            {
-              displayName: entry.displayName,
-              cr: entry.cr,
-              xp: entry.xp,
-              available: entry.available
-            }
-          ])
-        ),
-        evaluation: result.evaluation,
-        seed,
-        message: result.message,
-        generationSummary: formatMessage(
-          mode === 'fill' ? 'group.generatedFilled' : 'group.generatedReplaced',
-          {
-            count:
-              mode === 'fill'
-                ? Math.max(0, nextCount - previousCount)
-                : nextCount
-          }
-        )
-      })
-      endRequest('command', token)
-      await generateLoot(
-        groupDraftEntries(quantities, deadQuantities),
-        generationSeed(ports.runtime.e2e),
-        key
-      )
-    } catch (cause) {
-      requestMessage('command', token, key, cause)
-    }
-  }
-
-  async function generateLoot(
-    rewardEntries = entries,
-    seed = generationSeed(ports.runtime.e2e),
-    key = state.activeKey
-  ): Promise<boolean> {
-    if (!key || rewardEntries.length === 0) return false
-    const token = crypto.randomUUID()
-    dispatch({
-      kind: 'loot-request-began',
-      key,
-      token,
-      phase: 'generating',
-      seed
-    })
-    try {
-      const rules = await ports.campaignRules.read()
-      const result = await ports.loot.generateForGroupDraft({
-        sceneId: focused.id,
-        groupId: rewardGroupId,
-        expectedSceneRevision: props.snapshot.scene.revision,
-        expectedGroupRevision: selectedPersistedGroup?.revision ?? null,
-        expectedPartyRevision: props.snapshot.party.revision,
-        expectedCampaignRulesRevision: rules.revision,
-        entries: [...rewardEntries],
-        seed
-      })
-      if (result.status !== 'success') {
-        dispatch({
-          kind: 'loot-failed',
-          key,
-          token,
-          error: result.issues[0]?.code ?? result.status,
-          issues: []
-        })
-        return false
-      }
-      const draft = groupLootDraftFromRun(result.run, () => crypto.randomUUID())
-      dispatch({
-        kind: 'loot-generated',
-        key,
-        token,
-        run: result.run,
-        draft,
-        seed
-      })
-      return true
-    } catch (cause) {
-      dispatch({
-        kind: 'loot-failed',
-        key,
-        token,
-        error: capabilityErrorText(cause),
-        issues: capabilityErrorIssues(cause)
-      })
-      return false
-    }
-  }
-
-  async function commitLoot(): Promise<CommitGroupRewardResult | null> {
-    const key = state.activeKey
-    const run = session?.loot.run
-    const treasure = run?.treasures[0]
-    const history = session?.loot.history
-    if (!key || !run || !history) return null
-    if (!validateAvailableMonster()) return null
-    const token = crypto.randomUUID()
-    dispatch({
-      kind: 'loot-request-began',
-      key,
-      token,
-      phase: 'committing'
-    })
-    try {
-      const result = await ports.loot.commitGroupReward({
-        commandId: crypto.randomUUID(),
-        runId: run.id,
-        generatedTreasureId: treasure?.id ?? null,
-        treasureDraft: treasure ? groupLootCommitDraft(history.draft) : null,
-        sceneId: focused.id,
-        groupId: rewardGroupId,
-        expectedSceneRevision: props.snapshot.scene.revision,
-        expectedGroupRevision: selectedPersistedGroup?.revision ?? null,
-        name: group.name.trim(),
-        note: group.note.trim(),
-        disposition: group.disposition,
-        entries: [...entries]
-      })
-      dispatch({ kind: 'loot-committed', key, token })
-      if (result.treasure) props.lootChanged()
-      props.saved(
-        applySceneGroupCommandResult(props.snapshot, result.groupResult)
-      )
-      return result
-    } catch (cause) {
-      dispatch({
-        kind: 'loot-failed',
-        key,
-        token,
-        error: capabilityErrorText(cause),
-        issues: capabilityErrorIssues(cause)
-      })
-      return null
-    }
-  }
-
-  async function save(): Promise<void> {
-    if (!state.activeKey || !validateAvailableMonster()) return
-    const token = beginRequest('command', state.activeKey)
-    try {
-      const result = await ports.scene.saveGroup(
-        focused.id,
-        state.activeKey === newGroupDraftKey ? null : state.activeKey,
-        group.name.trim(),
-        group.note.trim(),
-        group.disposition,
-        entries,
-        props.snapshot.scene.revision,
-        selectedPersistedGroup?.revision ?? null
-      )
-      endRequest('command', token)
-      props.saved(applySceneGroupCommandResult(props.snapshot, result))
-    } catch (cause) {
-      requestMessage('command', token, state.activeKey, cause)
-    }
-  }
-
-  async function archive(): Promise<void> {
-    const key = state.activeKey
-    if (!key || key === newGroupDraftKey || !selectedPersistedGroup) return
-    const token = beginRequest('command', key)
-    try {
-      const result = await ports.scene.setGroupArchived(
-        focused.id,
-        key,
-        true,
-        selectedPersistedGroup.revision
-      )
-      endRequest('command', token)
-      props.saved(applySceneGroupCommandResult(props.snapshot, result))
-    } catch (cause) {
-      requestMessage('command', token, key, cause)
-    }
-  }
-
-  async function joinCombat(): Promise<void> {
-    const key = state.activeKey
-    if (
-      !key ||
-      key === newGroupDraftKey ||
-      !selectedPersistedGroup ||
-      !props.snapshot.combat
-    )
-      return
-    const token = beginRequest('command', key)
-    try {
-      const result = await ports.combat.joinGroup({
-        sceneId: focused.id,
-        groupId: key,
-        expectedGroupRevision: selectedPersistedGroup.revision,
-        expectedCombatRevision: props.snapshot.combat.revision
-      })
-      endRequest('command', token)
-      props.saved(applyCombatCommandResult(props.snapshot, result))
-    } catch (cause) {
-      requestMessage('command', token, key, cause)
-    }
-  }
-
-  function validateAvailableMonster(): boolean {
-    if (
-      entries.length > 0 &&
-      !entries.some(
-        (entry) => group.facts[entry.creatureId]?.available === true
-      )
-    ) {
-      mutateGroup({
-        kind: 'message',
-        update: message('group.validation.availableMonster')
-      })
-      return false
-    }
-    return true
-  }
-
-  function beginRequest(request: GroupManagerRequestKind, key: string): string {
-    const token = crypto.randomUUID()
-    dispatch({ kind: 'request-began', request, token, key })
-    return token
-  }
-
-  function endRequest(request: GroupManagerRequestKind, token: string): void {
-    dispatch({ kind: 'request-ended', request, token })
-  }
-
-  function requestMessage(
-    request: GroupManagerRequestKind,
-    token: string,
-    key: string,
-    cause: unknown
-  ): void {
-    dispatch({
-      kind: 'request-message',
-      request,
-      token,
-      key,
-      message: capabilityErrorText(cause)
-    })
-  }
-
   const setGroupField = <Kind extends 'name' | 'note' | 'disposition'>(
     kind: Kind,
     update: Kind extends 'disposition' ? SceneGroupDisposition : string
   ) => mutateGroup({ kind, update } as GroupDraftMutation)
-
-  const searchBiomeOptions = useCallback(
-    async (query: string): Promise<readonly SearchableSelectOption[]> => {
-      const token = crypto.randomUUID()
-      dispatch({ kind: 'request-began', request: 'biome-search', token })
-      try {
-        const page = await ports.biomes.search({ query, offset: 0, limit: 60 })
-        const options = page.biomes.map((biome) => ({
-          id: biome.id,
-          label: biome.displayName
-        }))
-        dispatch({
-          kind: 'merge-biome-options',
-          token,
-          options,
-          selectedIds: state.creatureCatalog.query.biomes
-        })
-        return options
-      } catch (cause) {
-        endRequest('biome-search', token)
-        onError(capabilityErrorText(cause))
-        return []
-      }
-    },
-    [onError, ports.biomes, state.creatureCatalog.query.biomes]
-  )
 
   const loot = session?.loot ?? null
   const lootHistory = loot?.history ?? null
@@ -660,7 +236,7 @@ export function useGroupManagerController(
     lootHistory && groupLootDraftDirty(lootHistory)
   )
   const busy =
-    state.requests.command !== null ||
+    groupCommands.busy ||
     loot?.phase === 'generating' ||
     loot?.phase === 'committing'
 
@@ -706,10 +282,10 @@ export function useGroupManagerController(
       dirty: currentLootDirty,
       canUndo: (lootHistory?.past.length ?? 0) > 0,
       canRedo: (lootHistory?.future.length ?? 0) > 0,
-      generate: () => generateLoot(),
+      generate: () => groupCommands.generateLoot(),
       retry: () => requestIntent({ kind: 'regenerate-loot', mode: 'retry' }),
       reroll: () => requestIntent({ kind: 'regenerate-loot', mode: 'reroll' }),
-      commit: () => void commitLoot(),
+      commit: () => void groupCommands.commitLoot(),
       patchLabel: (label: string) => dispatchLoot({ kind: 'set-label', label }),
       patchItem: (id: string, patch: TreasureItemPatch) =>
         dispatchLoot({ kind: 'patch-item', id, patch }),
@@ -824,10 +400,3 @@ export function useGroupManagerController(
 export type GroupManagerController = ReturnType<
   typeof useGroupManagerController
 >
-
-function totalQuantity(quantities: Readonly<Record<string, number>>): number {
-  return Object.values(quantities).reduce(
-    (total, quantity) => total + quantity,
-    0
-  )
-}

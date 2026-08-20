@@ -1,0 +1,13 @@
+import { useEffect, useState, useSyncExternalStore } from 'react'
+import { AsyncCommandCoordinator } from './async-command-coordinator.js'
+
+export function useAsyncCommandCoordinator(): AsyncCommandCoordinator {
+  const [coordinator] = useState(() => new AsyncCommandCoordinator())
+  useSyncExternalStore(
+    coordinator.subscribe,
+    coordinator.snapshot,
+    coordinator.snapshot
+  )
+  useEffect(() => () => coordinator.cancelAll(), [coordinator])
+  return coordinator
+}

@@ -48,7 +48,6 @@ export type GroupManagerLootState = Readonly<{
   phase: GroupDraftLootPhase
   error: string
   issues: readonly CapabilityIssue[]
-  requestToken: string | null
 }>
 
 export type GroupDraftSession = Readonly<{
@@ -57,17 +56,6 @@ export type GroupDraftSession = Readonly<{
   loot: GroupManagerLootState
   externalConflict: boolean
 }>
-
-export type GroupManagerRequestKind =
-  | 'creature-options'
-  | 'creature-search'
-  | 'loot-catalog'
-  | 'evaluation'
-  | 'facts'
-  | 'biome-search'
-  | 'command'
-
-type RequestToken = Readonly<{ token: string; key: string | null }>
 
 type LootCatalogDraftQuery = Omit<
   LootCatalogQuery,
@@ -82,7 +70,6 @@ export type GroupManagerState = Readonly<{
   workspaceMode: GroupWorkspaceMode
   draftPaneWidth: number
   pendingIntent: PendingGroupManagerIntent | null
-  requests: Readonly<Record<GroupManagerRequestKind, RequestToken | null>>
   creatureCatalog: Readonly<{
     query: CreatureCatalogQuery
     page: CreatureCatalogPage | null
@@ -105,22 +92,20 @@ export type GroupManagerAction =
       sourceRevision: number | null
     }
   | { kind: 'mutate-group'; mutation: GroupDraftMutation }
+  | { kind: 'group-message'; key: string; message: string }
   | {
       kind: 'facts-result'
       key: string
-      token: string
       facts: Readonly<Record<string, DraftCreatureFact>>
     }
   | {
       kind: 'evaluation-result'
       key: string
-      token: string
       evaluation: GroupDraftState['evaluation']
     }
   | {
       kind: 'roster-generated'
       key: string
-      token: string
       quantities: Record<string, number>
       deadQuantities: Record<string, number>
       facts: Readonly<Record<string, DraftCreatureFact>>
@@ -133,23 +118,20 @@ export type GroupManagerAction =
   | {
       kind: 'loot-request-began'
       key: string
-      token: string
       phase: 'generating' | 'committing'
       seed?: number
     }
   | {
       kind: 'loot-generated'
       key: string
-      token: string
       run: GroupRewardGeneratedRun
       draft: GroupLootDraft
       seed: number
     }
-  | { kind: 'loot-committed'; key: string; token: string }
+  | { kind: 'loot-committed'; key: string }
   | {
       kind: 'loot-failed'
       key: string
-      token: string
       error: string
       issues: readonly CapabilityIssue[]
     }
@@ -158,49 +140,26 @@ export type GroupManagerAction =
   | { kind: 'loot-edit-began'; key: string; editKey: string }
   | { kind: 'loot-edit-ended'; key: string }
   | {
-      kind: 'request-began'
-      request: GroupManagerRequestKind
-      token: string
-      key?: string | null
-    }
-  | {
-      kind: 'request-ended'
-      request: GroupManagerRequestKind
-      token: string
-    }
-  | {
-      kind: 'request-message'
-      request: GroupManagerRequestKind
-      token: string
-      key: string
-      message: string
-    }
-  | {
       kind: 'creature-page'
-      token: string
       page: CreatureCatalogPage
     }
   | {
       kind: 'creature-options'
-      token: string
       options: CreatureFilterOptions
       total: number
     }
   | {
       kind: 'loot-catalog-page'
-      token: string
       page: LootCatalogPage
     }
   | {
       kind: 'catalog-error'
       request: 'creature-search' | 'loot-catalog'
-      token: string
       error: string
     }
   | { kind: 'creature-query'; query: CreatureCatalogQuery }
   | {
       kind: 'merge-biome-options'
-      token: string
       options: readonly { id: string; label: string }[]
       selectedIds: readonly string[]
     }
@@ -239,7 +198,6 @@ export function createGroupManagerState(input: {
     workspaceMode: 'group',
     draftPaneWidth: 460,
     pendingIntent: null,
-    requests: emptyRequests(),
     creatureCatalog: {
       query: { ...emptyQuery, locationId: input.locationId, limit: 30 },
       page: null,
@@ -300,14 +258,13 @@ export function groupManagerReducer(
         ? { loot: emptyLoot() }
         : {})
     }))
+  if (action.kind === 'group-message')
+    return updateSession(state, action.key, (session) => ({
+      ...session,
+      group: { ...session.group, message: action.message }
+    }))
   if (action.kind === 'facts-result') {
-    if (!requestMatchesForKey(state, 'facts', action.token, action.key))
-      return state
-    const cleared = {
-      ...state,
-      requests: { ...state.requests, facts: null }
-    }
-    return updateSession(cleared, action.key, (session) => ({
+    return updateSession(state, action.key, (session) => ({
       ...session,
       group: groupDraftReducer(session.group, {
         kind: 'facts',
@@ -316,20 +273,12 @@ export function groupManagerReducer(
     }))
   }
   if (action.kind === 'evaluation-result') {
-    if (!requestMatchesForKey(state, 'evaluation', action.token, action.key))
-      return state
-    const cleared = {
-      ...state,
-      requests: { ...state.requests, evaluation: null }
-    }
-    return updateSession(cleared, action.key, (session) => ({
+    return updateSession(state, action.key, (session) => ({
       ...session,
       group: { ...session.group, evaluation: action.evaluation }
     }))
   }
   if (action.kind === 'roster-generated') {
-    if (!requestMatchesForKey(state, 'command', action.token, action.key))
-      return state
     return updateSession(state, action.key, (session) => ({
       ...session,
       group: {
@@ -362,13 +311,10 @@ export function groupManagerReducer(
         phase: action.phase,
         error: '',
         issues: [],
-        requestToken: action.token,
         ...(action.seed === undefined ? {} : { seed: action.seed })
       }
     }))
   if (action.kind === 'loot-generated') {
-    const target = state.sessions[action.key]
-    if (!target || target.loot.requestToken !== action.token) return state
     return updateSession(
       {
         ...state,
@@ -388,42 +334,31 @@ export function groupManagerReducer(
           phase: 'ready',
           error: '',
           issues: [],
-          seed: action.seed,
-          requestToken: null
+          seed: action.seed
         }
       })
     )
   }
   if (action.kind === 'loot-committed')
-    return updateSession(state, action.key, (session) =>
-      session.loot.requestToken !== action.token
-        ? session
-        : {
-            ...session,
-            loot: {
-              ...session.loot,
-              phase: 'ready',
-              error: '',
-              issues: [],
-              requestToken: null
-            }
-          }
-    )
+    return updateSession(state, action.key, (session) => ({
+      ...session,
+      loot: {
+        ...session.loot,
+        phase: 'ready',
+        error: '',
+        issues: []
+      }
+    }))
   if (action.kind === 'loot-failed')
-    return updateSession(state, action.key, (session) =>
-      session.loot.requestToken !== action.token
-        ? session
-        : {
-            ...session,
-            loot: {
-              ...session.loot,
-              phase: 'error',
-              error: action.error,
-              issues: action.issues,
-              requestToken: null
-            }
-          }
-    )
+    return updateSession(state, action.key, (session) => ({
+      ...session,
+      loot: {
+        ...session.loot,
+        phase: 'error',
+        error: action.error,
+        issues: action.issues
+      }
+    }))
   if (action.kind === 'loot-command')
     return updateLootHistory(state, action.key, (history) =>
       mutateGroupLootDraft(history, action.command)
@@ -440,69 +375,32 @@ export function groupManagerReducer(
     )
   if (action.kind === 'loot-edit-ended')
     return updateLootHistory(state, action.key, endGroupLootDraftTransaction)
-  if (action.kind === 'request-began')
+  if (action.kind === 'creature-page')
     return {
       ...state,
-      requests: {
-        ...state.requests,
-        [action.request]: { token: action.token, key: action.key ?? null }
+      creatureCatalog: {
+        ...state.creatureCatalog,
+        page: action.page,
+        error: ''
       }
     }
-  if (action.kind === 'request-ended')
-    return requestMatches(state, action.request, action.token)
-      ? {
-          ...state,
-          requests: { ...state.requests, [action.request]: null }
-        }
-      : state
-  if (action.kind === 'request-message') {
-    if (!requestMatches(state, action.request, action.token)) return state
-    const cleared = {
-      ...state,
-      requests: { ...state.requests, [action.request]: null }
-    }
-    return updateSession(cleared, action.key, (session) => ({
-      ...session,
-      group: { ...session.group, message: action.message }
-    }))
-  }
-  if (action.kind === 'creature-page')
-    return requestMatches(state, 'creature-search', action.token)
-      ? {
-          ...state,
-          requests: { ...state.requests, 'creature-search': null },
-          creatureCatalog: {
-            ...state.creatureCatalog,
-            page: action.page,
-            error: ''
-          }
-        }
-      : state
   if (action.kind === 'creature-options')
-    return requestMatches(state, 'creature-options', action.token)
-      ? {
-          ...state,
-          requests: { ...state.requests, 'creature-options': null },
-          creatureCatalog: {
-            ...state.creatureCatalog,
-            options: action.options,
-            total: action.total
-          }
-        }
-      : state
-  if (action.kind === 'loot-catalog-page')
-    return requestMatches(state, 'loot-catalog', action.token)
-      ? {
-          ...state,
-          requests: { ...state.requests, 'loot-catalog': null },
-          lootCatalog: { ...state.lootCatalog, page: action.page, error: '' }
-        }
-      : state
-  if (action.kind === 'catalog-error') {
-    if (!requestMatches(state, action.request, action.token)) return state
     return {
       ...state,
-      requests: { ...state.requests, [action.request]: null },
+      creatureCatalog: {
+        ...state.creatureCatalog,
+        options: action.options,
+        total: action.total
+      }
+    }
+  if (action.kind === 'loot-catalog-page')
+    return {
+      ...state,
+      lootCatalog: { ...state.lootCatalog, page: action.page, error: '' }
+    }
+  if (action.kind === 'catalog-error') {
+    return {
+      ...state,
       ...(action.request === 'creature-search'
         ? {
             creatureCatalog: {
@@ -521,7 +419,6 @@ export function groupManagerReducer(
       creatureCatalog: { ...state.creatureCatalog, query: action.query }
     }
   if (action.kind === 'merge-biome-options') {
-    if (!requestMatches(state, 'biome-search', action.token)) return state
     const selected = new Set(action.selectedIds)
     const retained = state.creatureCatalog.options.biomes.filter(
       (option) => !isUuid(option.id) || selected.has(option.id)
@@ -530,7 +427,6 @@ export function groupManagerReducer(
     for (const option of action.options) biomes.set(option.id, option)
     return {
       ...state,
-      requests: { ...state.requests, 'biome-search': null },
       creatureCatalog: {
         ...state.creatureCatalog,
         options: {
@@ -616,20 +512,7 @@ function emptyLoot(): GroupManagerLootState {
     seed: null,
     phase: 'idle',
     error: '',
-    issues: [],
-    requestToken: null
-  }
-}
-
-function emptyRequests(): Record<GroupManagerRequestKind, null> {
-  return {
-    'creature-options': null,
-    'creature-search': null,
-    'loot-catalog': null,
-    evaluation: null,
-    facts: null,
-    'biome-search': null,
-    command: null
+    issues: []
   }
 }
 
@@ -669,24 +552,6 @@ function updateLootHistory(
         }
       : session
   )
-}
-
-function requestMatches(
-  state: GroupManagerState,
-  kind: GroupManagerRequestKind,
-  token: string
-): boolean {
-  return state.requests[kind]?.token === token
-}
-
-function requestMatchesForKey(
-  state: GroupManagerState,
-  kind: GroupManagerRequestKind,
-  token: string,
-  key: string
-): boolean {
-  const request = state.requests[kind]
-  return request?.token === token && request.key === key
 }
 
 function synchronizeExternalGroups(

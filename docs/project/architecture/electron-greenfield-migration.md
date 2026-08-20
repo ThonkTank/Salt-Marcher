@@ -43,6 +43,12 @@ route through an owning capability adapter and keep asynchronous or reducer
 state in feature hooks. Static JSX copy and accessibility labels come from the
 typed German message catalog. AST and mutation tests prevent these boundaries
 from regressing.
+Renderer Session mutations and Group management now share one instance-bound
+async command coordinator with scope/entity request identity, latest-only and
+queue modes, `AbortSignal` cancellation, and explicit pending/success/stale/
+failure state. Stale results and failures are rejected before they reach domain
+callbacks. Group query and write hooks own the asynchronous work, while the
+pure reducer and composition controller contain no request-token inventory.
 Application and workspace modules now load through shell-owned failure
 isolation with structured renderer incidents and Main-controlled reload.
 Renderer feature ports are injected from React context; the mutable capability
@@ -333,9 +339,10 @@ group/location cards, Encounter Resolution, Party/Roster, and the shared
 distribution dialog consume those typed capabilities.
 
 The Group reward now uses one renderer `GroupManagerState` owner for
-per-Group Group/Loot drafts, semantic histories, request tokens, discard
-intents, paired work views, and external conflicts. Narrow views and capability
-ports surround that reducer. Schema 31 introduced canonical item references in
+per-Group Group/Loot drafts, semantic histories, discard intents, paired work
+views, and external conflicts. Narrow views, query/write hooks, and capability
+ports surround that reducer; renderer request ordering belongs to the shared
+async coordinator rather than Group state. Schema 31 introduced canonical item references in
 Generated Runs, Treasures, and Character Loot while generated and legacy
 definitions each have one immutable owner. Group drafts keep the generated
 item/container set fixed and edit only quantity and packing. All generated
