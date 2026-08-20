@@ -164,6 +164,11 @@ failure state. Feature controllers dispatch domain outcomes only after that
 coordinator accepts them, so reducers do not retain infrastructure tokens and
 an older result or failure cannot overwrite or obscure newer state. Coordinator
 instances belong to hooks and are never mutable module singletons.
+Architecture gates for renderer ownership inspect TypeScript syntax trees,
+imports, calls, and structurally discovered owners. They do not encode file
+length, formatting, or local import aliases as architecture. Every semantic
+gate that replaces a source-text assertion carries a controlled mutation that
+demonstrates the protected boundary still fails closed.
 Workspace navigation is described by immutable `WorkspaceDefinition` records,
 including identity, label, icon, loader, neutral layout mode and recovery
 policy, rather than parallel conditionals in the shell. Its route host models

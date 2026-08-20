@@ -7,6 +7,7 @@ export type RuntimeRegistryViolation = Readonly<{
     | 'central_operation_definition'
     | 'missing_registry_composition'
     | 'inline_utility_function'
+    | 'inline_process_message_handler'
     | 'inline_aggregate_handler'
     | 'missing_utility_owner_import'
     | 'missing_handler_composition'
@@ -123,6 +124,10 @@ function inspectUtilityRoot(
   if (!hasCall(tree, 'composeOperationHandlers'))
     violations.push({ path, line: 1, code: 'missing_handler_composition' })
   walk(tree, (node) => {
+    if (isProcessParentMessageHandler(node))
+      violations.push(
+        violation(path, tree, node, 'inline_process_message_handler')
+      )
     if (
       ts.isPropertyAssignment(node) &&
       ts.isStringLiteral(node.name) &&
@@ -130,6 +135,25 @@ function inspectUtilityRoot(
     )
       violations.push(violation(path, tree, node, 'inline_aggregate_handler'))
   })
+}
+
+function isProcessParentMessageHandler(node: ts.Node): boolean {
+  if (
+    !ts.isCallExpression(node) ||
+    !ts.isPropertyAccessExpression(node.expression) ||
+    node.expression.name.text !== 'on'
+  )
+    return false
+  const parentPort = node.expression.expression
+  return (
+    ts.isPropertyAccessExpression(parentPort) &&
+    ts.isIdentifier(parentPort.expression) &&
+    parentPort.expression.text === 'process' &&
+    parentPort.name.text === 'parentPort' &&
+    node.arguments.some(
+      (argument) => ts.isStringLiteral(argument) && argument.text === 'message'
+    )
+  )
 }
 
 function inspectHandlerComposition(

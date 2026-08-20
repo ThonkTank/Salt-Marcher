@@ -43,6 +43,9 @@ route through an owning capability adapter and keep asynchronous or reducer
 state in feature hooks. Static JSX copy and accessibility labels come from the
 typed German message catalog. AST and mutation tests prevent these boundaries
 from regressing.
+Renderer controller ownership now derives from imports, hook calls, and the
+structurally discovered reducer owner; line-count gates, symbol-spelling checks,
+and duplicate controller inventories are not architectural contracts.
 Renderer Session mutations and Group management now share one instance-bound
 async command coordinator with scope/entity request identity, latest-only and
 queue modes, `AbortSignal` cancellation, and explicit pending/success/stale/

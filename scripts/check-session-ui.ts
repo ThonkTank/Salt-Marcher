@@ -6,7 +6,6 @@ run([
   'exec',
   'vitest',
   'run',
-  'tests/unit/session-controller-ownership.test.ts',
   'tests/unit/session-mutation-controller.test.tsx',
   'tests/unit/session-workspace-controller.test.tsx',
   'tests/unit/session-workspace-layout.test.tsx',

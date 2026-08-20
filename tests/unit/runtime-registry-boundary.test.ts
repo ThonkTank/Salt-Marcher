@@ -32,6 +32,12 @@ describe('runtime registry architecture boundary', () => {
       'src/utility/application.ts',
       '\nfunction forbiddenInlineOwner(): void {}\n',
       'inline_utility_function'
+    ],
+    [
+      'inline Utility process handler',
+      'src/utility/application.ts',
+      "\nprocess.parentPort.on('message', () => undefined)\n",
+      'inline_process_message_handler'
     ]
   ])('detects the %s mutation', (_name, path, mutation, code) => {
     const sources = actualSources()
@@ -62,6 +68,18 @@ describe('runtime registry architecture boundary', () => {
     )
     expect(runtimeRegistryBoundaryViolations(sources)).toContainEqual(
       expect.objectContaining({ path, code: 'missing_handler_composition' })
+    )
+  })
+
+  it('detects removal of a Utility owner import', () => {
+    const sources = actualSources()
+    const path = 'src/utility/application.ts'
+    sources[path] = (sources[path] ?? '').replace(
+      './domain-events.js',
+      './parallel-events.js'
+    )
+    expect(runtimeRegistryBoundaryViolations(sources)).toContainEqual(
+      expect.objectContaining({ path, code: 'missing_utility_owner_import' })
     )
   })
 

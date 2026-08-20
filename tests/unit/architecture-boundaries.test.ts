@@ -8,6 +8,7 @@ import {
 } from '../../src/shared/contracts/operations.js'
 import { capabilityEvents } from '../../src/shared/contracts/events.js'
 import { campaignPersistenceBoundaryViolations } from '../../scripts/architecture/campaign-persistence-boundary.js'
+import { rendererControllerBoundaryViolations } from '../../scripts/architecture/renderer-controller-boundary.js'
 
 const source = (path: string) => readFileSync(join(process.cwd(), path), 'utf8')
 const escapeRegex = (value: string): string =>
@@ -99,6 +100,86 @@ function directIpcInvokeOwners(path: string): string[] {
 }
 
 describe('architecture boundaries', () => {
+  it('derives renderer controller ownership from imports and calls', () => {
+    const sources = Object.fromEntries(
+      codeFiles('src/renderer').map((path) => [
+        path,
+        readFileSync(path, 'utf8')
+      ])
+    )
+    expect(rendererControllerBoundaryViolations(sources)).toEqual([])
+
+    const aliasedWorkspace = {
+      ...sources,
+      'src/renderer/features/session/session-workspace.tsx': sources[
+        'src/renderer/features/session/session-workspace.tsx'
+      ]!.replace(
+        'import { useSessionWorkspaceController }',
+        'import { useSessionWorkspaceController as useSessionController }'
+      ).replace('useSessionWorkspaceController({', 'useSessionController({')
+    }
+    expect(rendererControllerBoundaryViolations(aliasedWorkspace)).toEqual([])
+
+    const mutations = [
+      {
+        path: 'src/renderer/features/session/session-group-card.tsx',
+        source: `${sources['src/renderer/features/session/session-group-card.tsx']}\nuseCapabilityApi()\n`,
+        code: 'view_owns_controller_hook'
+      },
+      {
+        path: 'src/renderer/features/session/session-workspace.tsx',
+        source: `${sources['src/renderer/features/session/session-workspace.tsx']}\nuseState()\n`,
+        code: 'view_owns_controller_hook'
+      },
+      {
+        path: 'src/renderer/features/session/use-group-manager-commands.ts',
+        source: `${sources['src/renderer/features/session/use-group-manager-commands.ts']}\nuseReducer(null as never, null as never)\n`,
+        code: 'multiple_group_reducer_owners'
+      },
+      {
+        path: 'src/renderer/features/session/use-group-manager-controller.ts',
+        source: `${sources['src/renderer/features/session/use-group-manager-controller.ts']}\nuseRef(null)\n`,
+        code: 'group_controller_owns_local_state'
+      },
+      {
+        path: 'src/renderer/features/session/use-group-manager-queries.ts',
+        source: sources[
+          'src/renderer/features/session/use-group-manager-queries.ts'
+        ]!.replace(
+          '../shared/use-async-command-coordinator.js',
+          './parallel-command-coordinator.js'
+        ),
+        code: 'async_owner_missing_coordinator'
+      },
+      {
+        path: 'src/renderer/features/session-planner/budget-panel.tsx',
+        source: `import type { SaltMarcherApi } from '../../../shared/contracts/capability-api.js'\n${sources['src/renderer/features/session-planner/budget-panel.tsx']}`,
+        code: 'general_api_outside_adapter'
+      },
+      {
+        path: 'src/renderer/features/loot/use-loot-ports.ts',
+        source: sources[
+          'src/renderer/features/loot/use-loot-ports.ts'
+        ]!.replaceAll('useCapabilityApi', 'useGeneralApi'),
+        code: 'adapter_missing_api_boundary'
+      },
+      {
+        path: 'src/renderer/features/session/session-capabilities.ts',
+        source: `${sources['src/renderer/features/session/session-capabilities.ts']}\nlet api: unknown\n`,
+        code: 'mutable_capability_adapter'
+      }
+    ] as const
+    for (const mutation of mutations) {
+      const changed = { ...sources, [mutation.path]: mutation.source }
+      expect(
+        rendererControllerBoundaryViolations(changed),
+        `${mutation.code} mutation stayed green`
+      ).toContainEqual(
+        expect.objectContaining({ path: mutation.path, code: mutation.code })
+      )
+    }
+  })
+
   it('exposes campaign persistence through scoped ports instead of raw locators', () => {
     const productionSources = Object.fromEntries(
       codeFiles('src').map((path) => [path, readFileSync(path, 'utf8')])
@@ -332,45 +413,6 @@ describe('architecture boundaries', () => {
     )
   })
 
-  it('keeps session and NPC views passive behind typed controllers', () => {
-    const workspace = source(
-      'src/renderer/features/session/session-workspace.tsx'
-    )
-    expect(workspace).toContain('useSessionWorkspaceController')
-    expect(workspace).not.toMatch(
-      /useCapabilityApi|sessionCapabilities|useLootSceneController|useState|useEffect/
-    )
-    for (const file of [
-      'src/renderer/features/session/scene-party-card.tsx',
-      'src/renderer/features/session/session-group-card.tsx',
-      'src/renderer/features/session/session-groups-panel.tsx',
-      'src/renderer/features/catalog/npc-catalog-browser.tsx',
-      'src/renderer/features/catalog/npc-catalog-inspector.tsx',
-      'src/renderer/features/catalog/npc-catalog-editor.tsx'
-    ])
-      expect(source(file), `${file} accesses capabilities`).not.toMatch(
-        /useCapabilityApi|window\.saltMarcher|Capabilities\(/
-      )
-    const npcState = source(
-      'src/renderer/features/catalog/npc-catalog-state.ts'
-    )
-    for (const status of [
-      'loading',
-      'ready',
-      'editing',
-      'saving',
-      'conflict',
-      'deleting'
-    ])
-      expect(npcState).toContain(`status: '${status}'`)
-    expect(
-      source('src/renderer/features/workspace/workspace-surface-props.ts')
-    ).toContain("from '../session/session-scenario.js'")
-    expect(
-      source('src/renderer/features/workspace/workspace-surface-props.ts')
-    ).not.toMatch(/type WorkspaceScenario|type SessionScenario\s*=/)
-  })
-
   it('scopes session styles and keeps core encounter selectors singular', () => {
     for (const file of [
       'src/renderer/features/session/session-workspace.css',
@@ -585,96 +627,21 @@ describe('architecture boundaries', () => {
     for (const file of files) walk(file)
   })
 
-  it('injects renderer capabilities without mutable module state', () => {
-    expect(source('src/renderer/src.tsx')).not.toContain(
-      'installRendererCapabilityApi'
+  it('keeps the Hex capability projection explicitly narrow', () => {
+    const adapter = source('src/renderer/features/hex/hex-capabilities.ts')
+    expect(adapter).not.toContain('return api')
+    expect(adapter).toContain('hex: {')
+    expect(adapter).toContain('...api.hex')
+    expect(adapter).toContain('locations: api.locations')
+    expect(adapter).toContain('locationSymbols: {')
+    expect(adapter).toContain('...api.locationSymbols')
+    expect(adapter).toContain(
+      'pickLocationSymbolFile: api.runtime.pickLocationSymbolFile'
     )
-    expect(() =>
-      source('src/renderer/capabilities/renderer-capability-api.ts')
-    ).toThrow()
-    for (const feature of [
-      'catalog',
-      'creatures',
-      'encounter-table',
-      'encounter',
-      'hex',
-      'party',
-      'session'
-    ]) {
-      const adapter = source(
-        `src/renderer/features/${feature}/${feature}-capabilities.ts`
-      )
-      expect(adapter).toContain('api: SaltMarcherApi')
-      if (feature === 'hex') {
-        expect(adapter).not.toContain('return api')
-        expect(adapter).toContain('hex: {')
-        expect(adapter).toContain('...api.hex')
-        expect(adapter).toContain('locations: api.locations')
-        expect(adapter).toContain('locationSymbols: {')
-        expect(adapter).toContain('...api.locationSymbols')
-        expect(adapter).toContain(
-          'pickLocationSymbolFile: api.runtime.pickLocationSymbolFile'
-        )
-        expect(adapter).not.toMatch(/encounterTables|factions/)
-      } else {
-        expect(adapter).not.toMatch(/\b(?:let|var)\s+(?:api|capabilities)\b/)
-        expect(adapter).not.toMatch(/window\.saltMarcher|ipcRenderer/)
-      }
-    }
+    expect(adapter).not.toMatch(/encounterTables|factions/)
   })
 
-  it('keeps Planner and Loot views behind one narrow capability adapter each', () => {
-    const features = [
-      {
-        directory: 'src/renderer/features/session-planner',
-        adapter: normalize(
-          resolve(
-            'src/renderer/features/session-planner/use-session-planner-ports.ts'
-          )
-        )
-      },
-      {
-        directory: 'src/renderer/features/loot',
-        adapter: normalize(
-          resolve('src/renderer/features/loot/use-loot-ports.ts')
-        )
-      }
-    ] as const
-
-    for (const feature of features)
-      for (const file of codeFiles(feature.directory)) {
-        const content = source(file)
-        if (normalize(resolve(file)) === feature.adapter) {
-          expect(content).toContain('useCapabilityApi')
-          expect(content).toContain('import type { SaltMarcherApi }')
-        } else {
-          expect(content, `${file} bypasses its narrow port`).not.toContain(
-            'useCapabilityApi'
-          )
-          expect(content, `${file} receives the general API`).not.toContain(
-            'SaltMarcherApi'
-          )
-        }
-      }
-
-    expect(
-      source(
-        'src/renderer/features/session-planner/session-planner-workspace.tsx'
-      ).split('\n').length
-    ).toBeLessThan(150)
-    for (const component of [
-      'budget-panel.tsx',
-      'preparation-status.tsx',
-      'scene-inspector.tsx',
-      'scene-sequence.tsx',
-      'session-catalog.tsx',
-      'session-planner-dialog-host.tsx'
-    ])
-      expect(
-        source(`src/renderer/features/session-planner/${component}`).trim()
-          .length
-      ).toBeGreaterThan(0)
-
+  it('keeps campaign reward views behind their narrow port', () => {
     const campaignRulesPort = source(
       'src/renderer/features/workspace/campaign-reward-rules-port.ts'
     )
