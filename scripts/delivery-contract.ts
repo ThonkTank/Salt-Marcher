@@ -411,7 +411,7 @@ export function readRequiredJobManifest(
   return requiredJobManifestSchema.parse(
     JSON.parse(
       readFileSync(
-        resolve(workspaceRoot, 'scripts', 'delivery', 'required-jobs.v3.json'),
+        resolve(workspaceRoot, 'scripts', 'delivery', 'required-jobs.v4.json'),
         'utf8'
       )
     )

@@ -1,7 +1,6 @@
 import { browser, expect } from '@wdio/globals'
 import type { Browser as WdioBrowser } from 'webdriverio'
 import {
-  clickWhenInteractable,
   expectAccessible,
   expectAccessibleInBothThemes,
   expectElementGolden,
@@ -9,6 +8,7 @@ import {
   setElectronWindowSize,
   setWindowToMinimumResponsiveSize
 } from './e2e-assertions.js'
+import { clickWhenInteractable } from './e2e-interactions.js'
 
 export async function runCampaignCreationScenario(): Promise<void> {
   const client = browser as unknown as WdioBrowser
@@ -471,7 +471,10 @@ export async function runCampaignCombatScenario(): Promise<void> {
     await factionDialog.$('input[aria-label="Fraktionsname"]')
   ).setValue('Hafenwache')
   await (await factionDialog.$('button.faction-table-card')).click()
-  await clickWhenInteractable(await client.$('button=Neue Encounter-Tabelle'))
+  await clickWhenInteractable(
+    client,
+    async () => await client.$('button=Neue Encounter-Tabelle')
+  )
   const tableDialog = await client.$('section.encounter-table-manager')
   const tableGeometry = await client.execute(() => {
     const layout = document.querySelector('.creature-collection-layout')!

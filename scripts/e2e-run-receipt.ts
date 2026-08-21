@@ -1,6 +1,12 @@
 import type { E2eFailureKind } from './e2e-failure-diagnostics.js'
 import type { E2eResourcePreflight } from './e2e-resource-preflight.js'
 
+export type E2eRegressionWarnings = Readonly<{
+  windowRect: number
+  scrollFallback: number
+  staleElement: number
+}>
+
 export type E2eSuiteAttempt = Readonly<{
   attempt: number
   status: 'passed' | 'failed'
@@ -10,6 +16,7 @@ export type E2eSuiteAttempt = Readonly<{
   artifactDirectory: string
   failureKind?: E2eFailureKind
   knownNoise?: number
+  regressionWarnings?: E2eRegressionWarnings
 }>
 
 export type E2eSuiteResult<Name extends string = string> = Readonly<{
@@ -26,6 +33,8 @@ export type E2eRunSummary<Name extends string = string> = Readonly<{
   buildIdentity: string
   registryIdentity: string
   selectedSuites: readonly Name[]
+  ciShard?: string
+  shardDurationMs?: number
   resourcePreflight?: E2eResourcePreflight
   updatedAt: string
   results: readonly E2eSuiteResult<Name>[]
@@ -65,17 +74,25 @@ export function recordE2eAttempt<Name extends string>(
   )
 }
 
+export function e2eShardDurationMs<Name extends string>(
+  results: readonly E2eSuiteResult<Name>[]
+): number {
+  return results.reduce((total, result) => total + (result.durationMs ?? 0), 0)
+}
+
 export function validateE2eResumeIdentity<Name extends string>(
   summary: E2eRunSummary<Name>,
   expected: Readonly<{
     buildIdentity: string
     registryIdentity: string
     selectedSuites: readonly Name[]
+    ciShard?: string
   }>
 ): void {
   if (
     summary.buildIdentity !== expected.buildIdentity ||
     summary.registryIdentity !== expected.registryIdentity ||
+    summary.ciShard !== expected.ciShard ||
     JSON.stringify(summary.selectedSuites) !==
       JSON.stringify(expected.selectedSuites)
   )

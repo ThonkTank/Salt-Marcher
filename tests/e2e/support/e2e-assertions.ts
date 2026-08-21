@@ -233,15 +233,6 @@ export function setWindowToMinimumResponsiveSize(
   )
 }
 
-export async function clickWhenInteractable(
-  element: ChainablePromiseElement
-): Promise<void> {
-  await element.waitForExist({ timeout: 15_000 })
-  await element.scrollIntoView({ block: 'center', inline: 'nearest' })
-  await element.waitForClickable({ timeout: 15_000 })
-  await element.click()
-}
-
 export async function replaceFieldValue(
   client: WdioBrowser,
   input: ChainablePromiseElement,

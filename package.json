@@ -54,6 +54,7 @@
     "test:packaged-qualification-smoke": "corepack pnpm package:qualification && tsx scripts/packaged-smoke.ts --channel release --qualification",
     "test:e2e": "corepack pnpm build && corepack pnpm test:e2e:built",
     "test:e2e:built": "tsx scripts/run-e2e-suites.ts",
+    "e2e:ci-matrix": "tsx scripts/e2e-ci-matrix-cli.ts",
     "test:create:built": "tsx scripts/run-e2e-suites.ts --suite campaignCreate --suite campaignHexMap --suite campaignCombat --suite campaignPseudoLocale",
     "test:hex-location:built": "wdio run wdio.conf.ts --suite hexLocation",
     "test:dialogs:built": "wdio run wdio.conf.ts --suite dialogs",

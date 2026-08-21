@@ -23,9 +23,11 @@ import {
   readRecentKernelOomLines
 } from './e2e-resource-preflight.js'
 import {
+  e2eShardDurationMs,
   initializeE2eResults,
   recordE2eAttempt,
   validateE2eResumeIdentity,
+  type E2eRegressionWarnings,
   type E2eRunSummary,
   type E2eSuiteResult
 } from './e2e-run-receipt.js'
@@ -46,6 +48,7 @@ export async function executeE2eRun(input: {
   mode: E2eRunMode
   selectedSuites: readonly E2eSuiteName[]
   registry: unknown
+  ciShard?: string
   resumePath?: string
   grepBySuite?: ReadonlyMap<E2eSuiteName, string>
 }): Promise<void> {
@@ -67,7 +70,8 @@ export async function executeE2eRun(input: {
     validateE2eResumeIdentity(resumed, {
       buildIdentity,
       registryIdentity,
-      selectedSuites: input.selectedSuites
+      selectedSuites: input.selectedSuites,
+      ...(input.ciShard ? { ciShard: input.ciShard } : {})
     })
 
   const runId = resumed?.runId ?? `${input.mode}-${Date.now()}-${process.pid}`
@@ -115,6 +119,7 @@ export async function executeE2eRun(input: {
       durationMs: Date.now() - startedAt,
       failureKind: execution.failureKind,
       knownNoise: execution.knownNoise,
+      regressionWarnings: execution.regressionWarnings,
       ...paths
     })
     writeSuiteResult(results.find((result) => result.name === suite)!)
@@ -158,6 +163,12 @@ export async function executeE2eRun(input: {
       buildIdentity,
       registryIdentity,
       selectedSuites: input.selectedSuites,
+      ...(input.ciShard
+        ? {
+            ciShard: input.ciShard,
+            shardDurationMs: e2eShardDurationMs(results)
+          }
+        : {}),
       resourcePreflight,
       updatedAt: new Date().toISOString(),
       results
@@ -179,11 +190,42 @@ export async function executeE2eRun(input: {
 }
 
 export function classifyE2eLogLine(line: string): 'known-noise' | 'diagnostic' {
-  return /(?:Browser\.getWindowForTarget.*(?:not supported|unsupported|fallback)|unknown command:\s*'Browser\.getWindowForTarget' wasn't found|Linux Dependencies:.*packages may be missing|Missing:\s*libgtk-3-0|Install with:\s*sudo apt-get install libgtk-3-0)/i.test(
+  return /(?:Linux Dependencies:.*packages may be missing|Missing:\s*libgtk-3-0|Install with:\s*sudo apt-get install libgtk-3-0)/i.test(
     line
   )
     ? 'known-noise'
     : 'diagnostic'
+}
+
+export function countE2eRegressionWarnings(
+  output: string
+): E2eRegressionWarnings {
+  const counts = {
+    windowRect: 0,
+    scrollFallback: 0,
+    staleElement: 0
+  }
+  for (const line of output.split('\n')) {
+    if (/when running ["']window\/rect["']/i.test(line)) counts.windowRect += 1
+    if (/Re-attempting using .*Element\.scrollIntoView.*Web API/i.test(line))
+      counts.scrollFallback += 1
+    if (
+      /\bWARN\s+webdriver:\s+Request encountered a stale element\s+-\s+terminating request\b/i.test(
+        line
+      )
+    )
+      counts.staleElement += 1
+  }
+  return counts
+}
+
+export function e2eExitCodeWithWarningRegressions(
+  exitCode: number,
+  warnings: E2eRegressionWarnings
+): number {
+  return exitCode === 0 && Object.values(warnings).some((count) => count > 0)
+    ? 1
+    : exitCode
 }
 
 async function runWdioSuite(input: {
@@ -198,6 +240,7 @@ async function runWdioSuite(input: {
     exitCode: number
     failureKind: E2eFailureKind
     knownNoise: number
+    regressionWarnings: E2eRegressionWarnings
   }>
 > {
   return new Promise((resolveExit) => {
@@ -253,17 +296,18 @@ async function runWdioSuite(input: {
         resolveExit({
           exitCode: 1,
           failureKind: 'infrastructure-runner',
-          knownNoise
+          knownNoise,
+          regressionWarnings: countE2eRegressionWarnings(diagnosticTail)
         })
       )
     })
     child.once('exit', (code) => {
       if (settled) return
       settled = true
-      const exitCode = code ?? 1
+      const processExitCode = code ?? 1
       const cgroupAfter = readCgroupMemoryEvents()
       const kernelLines =
-        exitCode === 0 ? [] : readRecentKernelOomLines(startedAt)
+        processExitCode === 0 ? [] : readRecentKernelOomLines(startedAt)
       const cgroupOom = cgroupOomKillAdvanced(cgroupBefore, cgroupAfter)
       const resourceDiagnostics = [
         ...(cgroupOom
@@ -278,6 +322,17 @@ async function runWdioSuite(input: {
         diagnosticTail = `${diagnosticTail}${evidence}`.slice(-200_000)
         log.write(evidence)
       }
+      const regressionWarnings = countE2eRegressionWarnings(diagnosticTail)
+      const exitCode = e2eExitCodeWithWarningRegressions(
+        processExitCode,
+        regressionWarnings
+      )
+      if (exitCode !== processExitCode) {
+        const evidence = `\n[e2e-warning-regression] ${JSON.stringify(regressionWarnings)}\n`
+        diagnosticTail = `${diagnosticTail}${evidence}`.slice(-200_000)
+        log.write(evidence)
+        console.error(evidence.trim())
+      }
       log.end(() =>
         resolveExit({
           exitCode,
@@ -286,7 +341,8 @@ async function runWdioSuite(input: {
             diagnosticTail,
             cgroupOom || kernelLines.length > 0
           ),
-          knownNoise
+          knownNoise,
+          regressionWarnings
         })
       )
     })

@@ -4,13 +4,13 @@ import type {
   ChainablePromiseElement
 } from 'webdriverio'
 import {
-  clickWhenInteractable,
   expectEditorFrameGeometry,
   expectAccessibleInBothThemes,
   expectElementGolden,
   setElectronWindowSize,
   setWindowToMinimumResponsiveSize
 } from './support/e2e-assertions.js'
+import { clickWhenInteractable } from './support/e2e-interactions.js'
 
 describe('dialog architecture', () => {
   it('stacks, guards and responsively lays out direct and nested table managers', async () => {
@@ -36,8 +36,10 @@ describe('dialog architecture', () => {
       'input[role="combobox"][aria-label="Größe"]'
     )
     await sizeFilter.setValue('hu')
-    const huge = await client.$('[role="option"]*=Huge')
-    await clickWhenInteractable(huge)
+    await clickWhenInteractable(
+      client,
+      async () => await client.$('[role="option"]*=Huge')
+    )
     const hugeChip = await manager.$('button=Huge ×')
     await expect(hugeChip).toBeExisting()
     await hugeChip.click()
@@ -96,7 +98,10 @@ describe('dialog architecture', () => {
       await faction.$('input[aria-label="Fraktionsname"]')
     ).setValue('Hafenwache')
     await (await faction.$('button.faction-table-card')).click()
-    await clickWhenInteractable(await client.$('button=Neue Encounter-Tabelle'))
+    await clickWhenInteractable(
+      client,
+      async () => await client.$('button=Neue Encounter-Tabelle')
+    )
     manager = await client.$('section.encounter-table-manager')
     await manager.waitForDisplayed()
 
@@ -174,7 +179,10 @@ describe('dialog architecture', () => {
     expect(factionLayout.right).toBeLessThanOrEqual(factionLayout.viewportWidth)
     await expectAccessibleInBothThemes(client)
     await (await faction.$('button.faction-table-card')).click()
-    await clickWhenInteractable(await client.$('button=Neue Encounter-Tabelle'))
+    await clickWhenInteractable(
+      client,
+      async () => await client.$('button=Neue Encounter-Tabelle')
+    )
     manager = await client.$('section.encounter-table-manager')
     await manager.waitForDisplayed()
     await assertManagerLayout(client, 'stacked')
@@ -216,8 +224,13 @@ async function openCatalogSection(client: WdioBrowser, label: string) {
 async function clickVisibleCatalogCreate(client: WdioBrowser) {
   const host = await client.$('.catalog-section-host:not([hidden])')
   await host.waitForDisplayed()
-  const create = await host.$('button=Erstellen')
-  await clickWhenInteractable(create)
+  await clickWhenInteractable(
+    client,
+    async () =>
+      await (
+        await client.$('.catalog-section-host:not([hidden])')
+      ).$('button=Erstellen')
+  )
 }
 
 async function assertManagerLayout(

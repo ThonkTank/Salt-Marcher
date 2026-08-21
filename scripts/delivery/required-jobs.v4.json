@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "workflowName": "Check",
   "jobs": [
     {
@@ -43,8 +43,16 @@
       "platformRole": "linux-e2e-group-loot-travel"
     },
     {
-      "name": "Linux Visual · goldens",
-      "platformRole": "linux-visual-goldens"
+      "name": "Linux Visual · goldens-campaign",
+      "platformRole": "linux-visual-goldens-campaign"
+    },
+    {
+      "name": "Linux Visual · goldens-dialog-travel-loot",
+      "platformRole": "linux-visual-goldens-dialog-travel-loot"
+    },
+    {
+      "name": "Linux Visual · goldens-world-create",
+      "platformRole": "linux-visual-goldens-world-create"
     },
     {
       "name": "Linux E2E · passive window",

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  e2eShardDurationMs,
   initializeE2eResults,
   recordE2eAttempt,
   validateE2eResumeIdentity,
@@ -47,6 +48,7 @@ describe('E2E run receipt resume', () => {
       'flaky-suite.attempt-2.log'
     ])
     expect(completed.every((result) => result.status === 'passed')).toBe(true)
+    expect(e2eShardDurationMs(completed)).toBe(22)
   })
 
   it('rejects reuse after any build, registry, or suite-set change', () => {
@@ -56,6 +58,21 @@ describe('E2E run receipt resume', () => {
         buildIdentity: 'changed',
         registryIdentity: value.registryIdentity,
         selectedSuites: value.selectedSuites
+      })
+    ).toThrow('Cannot resume')
+  })
+
+  it('binds resume identity to the generated CI shard', () => {
+    const value = {
+      ...summary(initializeE2eResults(['one'], null)),
+      ciShard: 'a'
+    }
+    expect(() =>
+      validateE2eResumeIdentity(value, {
+        buildIdentity: value.buildIdentity,
+        registryIdentity: value.registryIdentity,
+        selectedSuites: value.selectedSuites,
+        ciShard: 'b'
       })
     ).toThrow('Cannot resume')
   })

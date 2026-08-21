@@ -8,6 +8,10 @@ import {
   replaceFieldValue,
   setElectronWindowSize
 } from './support/e2e-assertions.js'
+import {
+  clickWhenInteractable,
+  selectByVisibleTextWhenInteractable
+} from './support/e2e-interactions.js'
 import { waitForGmRendererReady } from './support/e2e-ready.js'
 
 describe('Group Loot atomic commit', () => {
@@ -17,18 +21,39 @@ describe('Group Loot atomic commit', () => {
     await (
       await client.$('h1=Session · Gruppenloot-Abnahme')
     ).waitForExist({ timeout: 15_000 })
-    await (await client.$('button=Gruppen managen')).click()
-    const dialog = await client.$(
-      'section[aria-labelledby="group-builder-title"]'
+    await clickWhenInteractable(
+      client,
+      async () => await client.$('button=Gruppen managen')
     )
+    const dialogSelector = 'section[aria-labelledby="group-builder-title"]'
+    let dialog = await client.$(dialogSelector)
     await dialog.waitForDisplayed({ timeout: 10_000 })
-    await (
-      await dialog.$('select[aria-label="Gruppe auswählen"]')
-    ).selectByVisibleText('E2E Gruppenbeute')
-    await (await dialog.$('[role="tab"]=Schatz-Draft')).click()
-    const generate = await dialog.$('button=Loot erzeugen')
-    await client.waitUntil(() => generate.isEnabled(), { timeout: 10_000 })
-    await generate.click()
+    await selectByVisibleTextWhenInteractable(
+      client,
+      async () =>
+        await (
+          await client.$(dialogSelector)
+        ).$('select[aria-label="Gruppe auswählen"]'),
+      'E2E Gruppenbeute'
+    )
+    await clickWhenInteractable(
+      client,
+      async () =>
+        await (await client.$(dialogSelector)).$('[role="tab"]=Schatz-Draft')
+    )
+    await client.waitUntil(
+      async () =>
+        await (
+          await (await client.$(dialogSelector)).$('button=Loot erzeugen')
+        ).isEnabled(),
+      { timeout: 10_000 }
+    )
+    await clickWhenInteractable(
+      client,
+      async () =>
+        await (await client.$(dialogSelector)).$('button=Loot erzeugen')
+    )
+    dialog = await client.$(dialogSelector)
     const panel = await dialog.$('.group-loot-inline-panel')
     await (
       await panel.$('.generated-loot-results')
@@ -57,32 +82,60 @@ describe('Group Loot atomic commit', () => {
     const containerName = await (
       await container.$('input[aria-label="Behälter"]')
     ).getValue()
-    const assignment = await item.$('select[aria-label="Behälter"]')
-    await assignment.selectByVisibleText(containerName)
+    await selectByVisibleTextWhenInteractable(
+      client,
+      async () => {
+        const currentDialog = await client.$(dialogSelector)
+        const currentPanel = await currentDialog.$('.group-loot-inline-panel')
+        const currentItem = await findStackableItem(
+          await currentPanel.$$('.treasure-item-editor-row')
+        )
+        return await currentItem.$('select[aria-label="Behälter"]')
+      },
+      containerName
+    )
 
     const commit = await panel.$('button=Gruppe & Loot übernehmen')
     expect(await commit.isEnabled()).toBe(true)
-    await commit.click()
+    await clickWhenInteractable(
+      client,
+      async () =>
+        await (
+          await (await client.$(dialogSelector)).$('.group-loot-inline-panel')
+        ).$('button=Gruppe & Loot übernehmen')
+    )
+    const readCommitState = async (): Promise<'pending' | 'closed' | 'error'> =>
+      await client.execute((selector) => {
+        const currentDialog = document.querySelector(selector)
+        if (!currentDialog) return 'closed'
+        const error = currentDialog.querySelector('.group-loot-inline-error')
+        return error && error.getClientRects().length > 0 ? 'error' : 'pending'
+      }, dialogSelector)
     try {
       await client.waitUntil(
-        async () =>
-          !(await dialog.isExisting()) ||
-          (await (await panel.$('.group-loot-inline-error')).isDisplayed()),
+        async () => (await readCommitState()) !== 'pending',
         { timeout: 10_000, timeoutMsg: 'Group Loot commit did not settle.' }
       )
     } catch (cause) {
+      const currentPanel = await (
+        await client.$(dialogSelector)
+      ).$('.group-loot-inline-panel')
       throw new Error(
-        `Group Loot commit did not settle: ${await panel.getText()}`,
+        `Group Loot commit did not settle: ${await currentPanel.getText()}`,
         { cause }
       )
     }
-    if (await dialog.isExisting())
+    const commitState = await readCommitState()
+    if (commitState === 'error')
       throw new Error(
-        `Group Loot commit failed: ${await (
-          await panel.$('.group-loot-inline-error')
-        ).getText()}`
+        `Group Loot commit failed: ${await client.execute(
+          (selector) =>
+            document
+              .querySelector(selector)
+              ?.querySelector('.group-loot-inline-error')?.textContent ?? '',
+          dialogSelector
+        )}`
       )
-    await dialog.waitForExist({ reverse: true, timeout: 10_000 })
     await client.reloadSession()
     await waitForGmRendererReady(client)
     const committed = await client.execute(async () => {

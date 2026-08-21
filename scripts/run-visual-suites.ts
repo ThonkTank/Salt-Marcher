@@ -2,9 +2,11 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import {
   e2eSuiteRegistry,
+  e2eSuiteHasType,
   isE2eSuiteName,
   type E2eSuiteName
 } from './e2e-suite-registry.js'
+import { e2eCiSuites } from './e2e-ci-matrix.js'
 import { executeE2eRun } from './e2e-runner-core.js'
 import type { VisualGoldenEntry } from './visual-golden-policy.js'
 
@@ -29,21 +31,29 @@ const grepBySuite = new Map(
   ])
 )
 const requestedSuites = repeatedArguments('--suite')
+const ciShard = argumentAfter('--ci-shard')
+if (ciShard && requestedSuites.length > 0)
+  throw new Error('--ci-shard and --suite cannot be combined')
 for (const suite of requestedSuites)
   if (!isE2eSuiteName(suite) || !grepBySuite.has(suite))
     throw new Error(`Unknown visual E2E suite: ${suite}`)
-const selectedSuites =
-  requestedSuites.length > 0
+const selectedSuites = ciShard
+  ? e2eCiSuites('visual', ciShard)
+  : requestedSuites.length > 0
     ? ([...new Set(requestedSuites)] as E2eSuiteName[])
-    : [...grepBySuite.keys()]
-const resumeIndex = process.argv.indexOf('--resume')
-const resumePath = resumeIndex >= 0 ? process.argv[resumeIndex + 1] : undefined
-if (resumeIndex >= 0 && !resumePath) throw new Error('--resume needs a value')
+    : e2eSuiteRegistry
+        .filter((suite) => e2eSuiteHasType(suite, 'visual'))
+        .map((suite) => suite.name)
+for (const suite of selectedSuites)
+  if (!grepBySuite.has(suite))
+    throw new Error(`Visual E2E suite has no golden patterns: ${suite}`)
+const resumePath = argumentAfter('--resume')
 
 await executeE2eRun({
   mode: 'visual',
   selectedSuites,
   registry: e2eSuiteRegistry,
+  ...(ciShard ? { ciShard } : {}),
   grepBySuite,
   ...(resumePath ? { resumePath } : {})
 })
@@ -63,4 +73,12 @@ function repeatedArguments(name: string): string[] {
     index += 1
   }
   return values
+}
+
+function argumentAfter(name: string): string | undefined {
+  const index = process.argv.indexOf(name)
+  if (index < 0) return undefined
+  const value = process.argv[index + 1]
+  if (!value || value.startsWith('--')) throw new Error(`${name} needs a value`)
+  return value
 }

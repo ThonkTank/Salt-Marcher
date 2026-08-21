@@ -179,7 +179,7 @@ function createFixture(failOnce?: HandoffPhaseName): {
         url: 'https://github.example/runs/1',
         attempt: 1,
         headSha: 'a'.repeat(40),
-        requiredJobManifestVersion: 3,
+        requiredJobManifestVersion: 4,
         jobs: [
           {
             name: 'required',

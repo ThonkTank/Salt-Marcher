@@ -125,7 +125,7 @@ describe('CI platform partitions', () => {
     expect(aggregate).toContain('SALT_MARCHER_NEEDS_JSON: ${{ toJSON(needs) }}')
   })
 
-  it('shards isolated functional and visual E2E while retaining evidence', () => {
+  it('consumes only registry-generated functional and visual E2E matrices', () => {
     for (const path of [
       '.tmp/e2e-runs',
       '.tmp/visual-diffs',
@@ -133,9 +133,22 @@ describe('CI platform partitions', () => {
     ])
       expect(workflow).toContain(path)
     expect(workflow).toContain('if-no-files-found: error')
-    expect(workflow).toContain('--suite workspaces --suite campaignCreate')
-    expect(workflow).toContain('name: Linux Visual · goldens')
-    expect(workflow).toContain('pnpm test:visual:built')
+    expect(workflow).toContain('id: e2e_matrix')
+    expect(workflow).toContain('run: pnpm e2e:ci-matrix')
+    expect(workflow).toContain(
+      'matrix: ${{ fromJSON(needs.linux-build.outputs.functional_e2e_matrix) }}'
+    )
+    expect(workflow).toContain(
+      'matrix: ${{ fromJSON(needs.linux-build.outputs.visual_e2e_matrix) }}'
+    )
+    expect(workflow).toContain('name: Linux Visual · ${{ matrix.shard }}')
+    expect(workflow).toContain(
+      'pnpm test:e2e:built -- --ci-shard "${{ matrix.shard }}"'
+    )
+    expect(workflow).toContain(
+      'pnpm test:visual:built -- --ci-shard "${{ matrix.shard }}"'
+    )
+    expect(workflow).not.toMatch(/--suite\s+(?:workspaces|campaignCreate)/)
   })
 
   it('runs only candidate attestation after the exact SHA reaches main', () => {

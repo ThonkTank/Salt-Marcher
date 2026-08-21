@@ -1,13 +1,13 @@
 import { browser, expect } from '@wdio/globals'
 import type { Browser as WdioBrowser } from 'webdriverio'
 import {
-  clickWhenInteractable,
   expectEditorFrameGeometry,
   expectAccessible,
   expectElementGolden,
   setElectronWindowSize,
   setWindowToMinimumResponsiveSize
 } from './support/e2e-assertions.js'
+import { clickWhenInteractable } from './support/e2e-interactions.js'
 
 describe('Hex World Location creation workflow', () => {
   it('creates, selects and safely auto-places complete World Locations', async () => {
@@ -140,7 +140,10 @@ async function createAndLinkRelatedRecords(client: WdioBrowser) {
     '.modal-backdrop[data-modal-bottom="true"]'
   )
   await (await faction.$('button.faction-table-card')).click()
-  await clickWhenInteractable(await client.$('button=Neue Encounter-Tabelle'))
+  await clickWhenInteractable(
+    client,
+    async () => await client.$('button=Neue Encounter-Tabelle')
+  )
   const factionTable = await client.$('section.encounter-table-manager')
   await (
     await factionTable.$('input[aria-label="Tabellenname"]')

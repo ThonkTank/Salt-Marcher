@@ -1,6 +1,9 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { e2eSuiteRegistry } from '../../scripts/e2e-suite-registry.js'
+import {
+  e2eSuiteHasType,
+  e2eSuiteRegistry
+} from '../../scripts/e2e-suite-registry.js'
 import {
   validateVisualGoldenSuites,
   type VisualGoldenEntry
@@ -51,6 +54,14 @@ describe('E2E suite registry', () => {
       ).toContain(`'${golden.name}'`)
     for (const golden of manifest.goldens)
       expect(e2eSources).toContain(golden.testPattern)
+    expect(
+      [...new Set(manifest.goldens.map((golden) => golden.suite))].toSorted()
+    ).toEqual(
+      e2eSuiteRegistry
+        .filter((suite) => e2eSuiteHasType(suite, 'visual'))
+        .map((suite) => suite.name)
+        .toSorted()
+    )
   })
 
   it('keeps behavior selectors free of positional DOM coupling', () => {

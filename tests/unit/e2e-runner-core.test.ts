@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   classifyE2eFailure,
-  classifyE2eLogLine
+  classifyE2eLogLine,
+  countE2eRegressionWarnings,
+  e2eExitCodeWithWarningRegressions
 } from '../../scripts/e2e-runner-core.js'
 import {
   shouldAbortE2eRun,
@@ -9,17 +11,17 @@ import {
 } from '../../scripts/e2e-failure-diagnostics.js'
 
 describe('E2E runner diagnostics', () => {
-  it('filters only the known Webdriver compatibility fallback', () => {
+  it('does not hide Webdriver interaction regressions as known noise', () => {
     expect(
       classifyE2eLogLine(
         'WARN Browser.getWindowForTarget is not supported; using fallback'
       )
-    ).toBe('known-noise')
+    ).toBe('diagnostic')
     expect(
       classifyE2eLogLine(
         "WebDriverError: unknown command: 'Browser.getWindowForTarget' wasn't found"
       )
-    ).toBe('known-noise')
+    ).toBe('diagnostic')
     expect(
       classifyE2eLogLine('ERROR Browser.getWindowForTarget destroyed the app')
     ).toBe('diagnostic')
@@ -37,6 +39,36 @@ describe('E2E runner diagnostics', () => {
     expect(
       classifyE2eLogLine('Could not verify fuse configuration: invalid binary')
     ).toBe('diagnostic')
+  })
+
+  it('requires zero window/rect, scroll fallback and stale-element warnings', () => {
+    const clean = countE2eRegressionWarnings('ordinary Webdriver output')
+    expect(clean).toEqual({
+      windowRect: 0,
+      scrollFallback: 0,
+      staleElement: 0
+    })
+    expect(e2eExitCodeWithWarningRegressions(0, clean)).toBe(0)
+
+    const warnings = countE2eRegressionWarnings(
+      [
+        'when running "window/rect" with method "GET"',
+        'Re-attempting using `Element.scrollIntoView` via Web API.',
+        'WARN webdriver: Request encountered a stale element - terminating request'
+      ].join('\n')
+    )
+    expect(warnings).toEqual({
+      windowRect: 1,
+      scrollFallback: 1,
+      staleElement: 1
+    })
+    expect(e2eExitCodeWithWarningRegressions(0, warnings)).toBe(1)
+    expect(e2eExitCodeWithWarningRegressions(7, warnings)).toBe(7)
+    expect(
+      countE2eRegressionWarnings(
+        'INFO webdriver: DATA {"script":"throw new Error(\\"stale element reference\\")"}'
+      ).staleElement
+    ).toBe(0)
   })
 
   it('distinguishes runner infrastructure from product failures', () => {

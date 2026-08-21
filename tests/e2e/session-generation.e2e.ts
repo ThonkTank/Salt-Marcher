@@ -1,6 +1,7 @@
 import { browser, expect } from '@wdio/globals'
 import type { Browser as WdioBrowser } from 'webdriverio'
 import { expectAccessible } from './support/e2e-assertions.js'
+import { clickWhenInteractable } from './support/e2e-interactions.js'
 
 describe('generator preset integration', () => {
   it('resumes durable Planner work across active process restarts', async () => {
@@ -259,8 +260,14 @@ describe('generator preset integration', () => {
       true
     )
 
-    await (await plannerSurface.$('button=Vorbereiten')).click()
-    const confirmation = await client.$('.planner-confirm-dialog')
+    await clickWhenInteractable(
+      client,
+      async () =>
+        await (
+          await client.$('section[aria-label="Session-Planer"]')
+        ).$('button=Vorbereiten')
+    )
+    let confirmation = await client.$('.planner-confirm-dialog')
     await confirmation.waitForDisplayed({ timeout: 5_000 })
     await expectAccessible(client)
     expect(
@@ -274,11 +281,26 @@ describe('generator preset integration', () => {
       })
     ).toBe(true)
     await client.keys('Escape')
-    await confirmation.waitForExist({ reverse: true, timeout: 5_000 })
+    await (
+      await client.$('.planner-confirm-dialog')
+    ).waitForExist({ reverse: true, timeout: 5_000 })
 
-    await (await plannerSurface.$('button=Vorbereiten')).click()
+    await clickWhenInteractable(
+      client,
+      async () =>
+        await (
+          await client.$('section[aria-label="Session-Planer"]')
+        ).$('button=Vorbereiten')
+    )
+    confirmation = await client.$('.planner-confirm-dialog')
     await confirmation.waitForDisplayed({ timeout: 5_000 })
-    await (await confirmation.$('button=Ersetzen und vorbereiten')).click()
+    await clickWhenInteractable(
+      client,
+      async () =>
+        await (
+          await client.$('.planner-confirm-dialog')
+        ).$('button=Ersetzen und vorbereiten')
+    )
     await (
       await plannerSurface.$('.planner-progress.state-generating')
     ).waitForDisplayed({ timeout: 10_000 })

@@ -65,6 +65,9 @@ jobs:
     name: Linux build · reusable app
     timeout-minutes: 30
     runs-on: ubuntu-latest
+    outputs:
+      functional_e2e_matrix: ${{ steps.e2e_matrix.outputs.functional }}
+      visual_e2e_matrix: ${{ steps.e2e_matrix.outputs.visual }}
     steps:
       - uses: actions/checkout@v4
         with: { ref: '${{ env.SALT_MARCHER_CHECKED_SHA }}' }
@@ -80,6 +83,8 @@ jobs:
             ~/.cache/electron-builder
           key: native-${{ runner.os }}-${{ runner.arch }}-node22-pnpm10-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm install --frozen-lockfile
+      - id: e2e_matrix
+        run: pnpm e2e:ci-matrix
       - run: pnpm check:linux
       - run: pnpm build
       - run: xvfb-run -a pnpm test:smoke:built
@@ -161,16 +166,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - shard: campaign-workspaces
-            suites: --suite workspaces --suite campaignCreate --suite campaignHexMap --suite campaignCombat --suite campaignPseudoLocale
-          - shard: hex-npc-restart
-            suites: --suite hexLocation --suite npcCatalog --suite restart
-          - shard: dialogs-generation-loot
-            suites: --suite dialogs --suite sessionGeneration --suite loot
-          - shard: group-loot-travel
-            suites: --suite groupLoot --suite groupLootCommit --suite travel
+      matrix: ${{ fromJSON(needs.linux-build.outputs.functional_e2e_matrix) }}
     steps:
       - uses: actions/checkout@v4
         with: { ref: '${{ env.SALT_MARCHER_CHECKED_SHA }}' }
@@ -184,7 +180,7 @@ jobs:
           path: out
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec tsx scripts/assert-built-workspace.ts --channel development
-      - run: xvfb-run -a pnpm test:e2e:built -- ${{ matrix.suites }}
+      - run: xvfb-run -a pnpm test:e2e:built -- --ci-shard "${{ matrix.shard }}"
         env:
           SALT_MARCHER_VISUAL_GOLDEN_VARIANT: ubuntu-24.04
       - name: Upload complete E2E failure evidence
@@ -201,10 +197,13 @@ jobs:
 
   visual:
     if: github.event_name == 'pull_request'
-    name: Linux Visual · goldens
+    name: Linux Visual · ${{ matrix.shard }}
     needs: linux-build
     timeout-minutes: 30
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.linux-build.outputs.visual_e2e_matrix) }}
     steps:
       - uses: actions/checkout@v4
         with: { ref: '${{ env.SALT_MARCHER_CHECKED_SHA }}' }
@@ -218,14 +217,14 @@ jobs:
           path: out
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec tsx scripts/assert-built-workspace.ts --channel development
-      - run: xvfb-run -a pnpm test:visual:built
+      - run: xvfb-run -a pnpm test:visual:built -- --ci-shard "${{ matrix.shard }}"
         env:
           SALT_MARCHER_VISUAL_GOLDEN_VARIANT: ubuntu-24.04
       - name: Upload complete visual failure evidence
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: visual-evidence-${{ github.run_id }}
+          name: visual-evidence-${{ matrix.shard }}-${{ github.run_id }}
           path: |
             .tmp/e2e-runs
             .tmp/visual-diffs
