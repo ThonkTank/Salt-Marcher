@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { readFileSync } from 'node:fs'
 import {
   parseVisualGoldenUpdateArguments,
   selectedVisualGoldens,
@@ -7,6 +6,7 @@ import {
   visualGoldenBaselineDirectoryNames,
   type VisualGoldenEntry
 } from '../../scripts/visual-golden-policy.js'
+import { readTypeScriptModule } from '../architecture/support/typescript-module.js'
 
 const entries: readonly VisualGoldenEntry[] = [
   {
@@ -105,19 +105,22 @@ describe('visual golden update policy', () => {
   })
 
   it('drives selector, suite and viewport from the manifest at capture time', () => {
-    const assertions = readFileSync(
-      'tests/e2e/support/e2e-assertions.ts',
-      'utf8'
+    const assertions = readTypeScriptModule(
+      'tests/e2e/support/e2e-assertions.ts'
     )
-    expect(assertions).toContain('entry.selector')
-    expect(assertions).toContain('entry.suite')
-    expect(assertions).toContain('entry.viewport.width')
-    expect(assertions).toContain('entry.viewport.height')
-    const updater = readFileSync('scripts/update-visual-golden.ts', 'utf8')
-    const verifier = readFileSync('scripts/run-visual-suites.ts', 'utf8')
-    expect(updater).toContain('SALT_MARCHER_E2E_GREP')
-    expect(updater).toContain('SALT_MARCHER_VISUAL_MODE')
-    expect(verifier).toContain('golden.testPattern')
+    expect(assertions.propertyAccesses).toEqual(
+      expect.arrayContaining([
+        'entry.selector',
+        'entry.suite',
+        'entry.viewport.width',
+        'entry.viewport.height'
+      ])
+    )
+    const updater = readTypeScriptModule('scripts/update-visual-golden.ts')
+    const verifier = readTypeScriptModule('scripts/run-visual-suites.ts')
+    expect(updater.objectProperties).toContain('SALT_MARCHER_E2E_GREP')
+    expect(updater.objectProperties).toContain('SALT_MARCHER_VISUAL_MODE')
+    expect(verifier.propertyAccesses).toContain('golden.testPattern')
   })
 
   it('rejects duplicate names and suites missing from the E2E registry', () => {

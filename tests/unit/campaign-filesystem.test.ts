@@ -1,9 +1,13 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { existsSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { CampaignFilesystem } from '../../src/core/persistence/sqlite/campaign-filesystem.js'
 import { createDefaultCampaignSchemaBootstrapper } from '../../src/core/persistence/sqlite/campaign-schema-bootstrapper.js'
+import {
+  hasImport,
+  readTypeScriptModule
+} from '../architecture/support/typescript-module.js'
 
 const roots: string[] = []
 const campaignId = '018f1f9c-4f5e-8a12-9234-123456789abc'
@@ -34,15 +38,19 @@ describe('CampaignFilesystem', () => {
   })
 
   it('keeps filesystem and aggregate schema mechanics out of CampaignStore', () => {
-    const source = readFileSync(
-      'src/core/persistence/sqlite/campaign-store.ts',
-      'utf8'
+    const module = readTypeScriptModule(
+      'src/core/persistence/sqlite/campaign-store.ts'
     )
-    expect(source).toContain('CampaignFilesystem')
-    expect(source).toContain('InstallationDatabaseOwner')
-    expect(source).not.toMatch(/from 'node:fs'/)
-    expect(source).not.toMatch(/\b(?:renameSync|rmSync|copyFileSync)\b/)
-    expect(source).not.toMatch(/\binitialize[A-Z]\w*Schema\b/)
+    expect(module.identifiers.has('CampaignFilesystem')).toBe(true)
+    expect(module.identifiers.has('InstallationDatabaseOwner')).toBe(true)
+    expect(hasImport(module, 'node:fs')).toBe(false)
+    for (const name of ['renameSync', 'rmSync', 'copyFileSync'])
+      expect(module.identifiers.has(name)).toBe(false)
+    expect(
+      [...module.identifiers].filter(
+        (name) => name.startsWith('initialize') && name.endsWith('Schema')
+      )
+    ).toEqual([])
   })
 })
 

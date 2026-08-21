@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { z } from 'zod'
 import {
@@ -17,6 +16,10 @@ import {
   coreOperations,
   mainOperations
 } from '../../src/shared/contracts/operations.js'
+import {
+  hasCall,
+  readTypeScriptModule
+} from '../architecture/support/typescript-module.js'
 
 describe('operation registry composition', () => {
   it('rejects duplicate operation ownership before object composition', () => {
@@ -116,8 +119,12 @@ describe('operation registry composition', () => {
   })
 
   it('keeps the public registry as composition instead of a contract catalog', () => {
-    const source = readFileSync('src/shared/contracts/operations.ts', 'utf8')
-    expect(source).toContain('composeOperationDefinitions(')
-    expect(source).not.toMatch(/^\s*'[A-Za-z]+\.[A-Za-z]+':/m)
+    const module = readTypeScriptModule('src/shared/contracts/operations.ts')
+    expect(hasCall(module, 'composeOperationDefinitions')).toBe(true)
+    expect(
+      module.objectProperties.filter((name) =>
+        /^[A-Za-z]+\.[A-Za-z]+$/.test(name)
+      )
+    ).toEqual([])
   })
 })

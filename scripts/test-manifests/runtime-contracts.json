@@ -3,7 +3,11 @@
   "name": "runtime-contracts",
   "typecheck": true,
   "tests": [
-    "tests/unit/architecture-boundaries.test.ts",
+    "tests/architecture/process-architecture.test.ts",
+    "tests/architecture/persistence-architecture.test.ts",
+    "tests/architecture/renderer-architecture.test.ts",
+    "tests/architecture/delivery-build-architecture.test.ts",
+    "tests/architecture/ui-style-architecture.test.ts",
     "tests/unit/refactor-requirements-alignment.test.ts",
     "tests/unit/operation-registry.test.ts",
     "tests/unit/runtime-registry-boundary.test.ts",
