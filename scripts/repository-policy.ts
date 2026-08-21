@@ -392,6 +392,6 @@ function gh(arguments_: readonly string[], input?: string): string {
     cwd: process.cwd(),
     encoding: 'utf8',
     input,
-    stdio: ['ignore', 'pipe', 'pipe']
+    stdio: [input === undefined ? 'ignore' : 'pipe', 'pipe', 'pipe']
   }).trim()
 }
