@@ -7,6 +7,7 @@ import {
   type BuildOutputFile,
   type BuildReceipt
 } from '../src/shared/contracts/build-info.js'
+import { localPersistenceFormatVersions } from '../src/shared/contracts/local-persistence-format-versions.js'
 import { sha256File } from './file-hash.js'
 
 const receiptName = 'build-receipt.json'
@@ -17,7 +18,7 @@ export function createBuildReceipt(outputRoot: string): BuildReceipt {
   )
   const files = Object.freeze(collectOutputFiles(outputRoot))
   return buildReceiptSchema.parse({
-    formatVersion: 2,
+    formatVersion: localPersistenceFormatVersions.buildReceipt,
     build,
     outputHash: hashOutputEntries(files),
     files

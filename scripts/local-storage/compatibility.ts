@@ -6,14 +6,14 @@ import {
   readSync,
   readdirSync
 } from 'node:fs'
-import { join, relative, sep } from 'node:path'
+import { join, relative, resolve, sep } from 'node:path'
 import {
   databaseSchemaVersions,
   type DatabaseRole
 } from '../../src/core/persistence/sqlite/database.js'
 import { resolveSchemaMigrationPath } from '../../src/core/persistence/sqlite/schema-migrations.js'
+import { localPersistenceFormatVersions } from '../../src/shared/contracts/local-persistence-format-versions.js'
 import type { LocalInstallationPaths } from '../local-installation/contract.js'
-import { sha256File } from '../file-hash.js'
 import type {
   CompatibilityArtifact,
   CompatibilityInspection,
@@ -86,14 +86,10 @@ export function inspectCompatibility(
         'deployment',
         deployment.fingerprint,
         deployment.path,
-        deployment.manifestFormatVersion === 2
-          ? 'current'
-          : 'legacy-reader-required',
+        'current',
         `deployment-manifest-v${deployment.manifestFormatVersion}`,
         deployment.retention === 'keep',
-        deployment.manifestFormatVersion === 2
-          ? 'Current receipt-backed deployment manifest'
-          : 'Known ownership-valid legacy deployment manifest'
+        'Current receipt-backed deployment manifest'
       )
     )
   for (const finding of options.findings.filter(
@@ -119,7 +115,7 @@ export function inspectCompatibility(
     options.paths.journal,
     'install-journal',
     'install-journal.json',
-    2,
+    localPersistenceFormatVersions.localInstallJournal,
     artifacts
   )
   scanLegacyRoot(options.paths, artifacts)
@@ -133,12 +129,10 @@ export function inspectCompatibility(
     )
   )
   return {
-    formatVersion: 1,
+    formatVersion:
+      localPersistenceFormatVersions.localStorageCompatibilityInspection,
     artifacts: ordered,
-    reachableLegacyCount: ordered.filter(
-      ({ status, applicationReachable }) =>
-        status === 'legacy-reader-required' && applicationReachable
-    ).length,
+    reachableLegacyCount: 0,
     reachableNonCurrentCount: ordered.filter(
       ({ status, applicationReachable }) =>
         status !== 'current' && applicationReachable
@@ -267,7 +261,7 @@ function scanLifecycleDirectory(
       join(directory, name),
       area,
       name,
-      2,
+      localPersistenceFormatVersions.campaignLifecycleReceipt,
       artifacts,
       'schemaVersion',
       reachable,
@@ -287,7 +281,7 @@ function scanHandoff(
           path,
           'handoff-state',
           relative(receiptDirectory, path),
-          6,
+          localPersistenceFormatVersions.handoffReceipt,
           artifacts,
           'formatVersion',
           directory === 'states'
@@ -305,12 +299,15 @@ function scanHandoffHistory(
       string,
       unknown
     >
-    if (value['formatVersion'] !== 2) {
+    if (
+      value['formatVersion'] !==
+      localPersistenceFormatVersions.handoffInvocationHistory
+    ) {
       scanVersionedJson(
         path,
         'handoff-history',
         'invocations.json',
-        2,
+        localPersistenceFormatVersions.handoffInvocationHistory,
         artifacts
       )
       return
@@ -319,7 +316,7 @@ function scanHandoffHistory(
     const invocations: unknown[] = Array.isArray(rawInvocations)
       ? (rawInvocations as unknown[])
       : []
-    const attemptsRoot = `${join(receiptDirectory, 'attempts')}${sep}`
+    const attemptsRoot = join(receiptDirectory, 'attempts')
     const oldLayout = invocations.some(
       (entry) => !usesCurrentAttemptLayout(entry, attemptsRoot)
     )
@@ -328,11 +325,11 @@ function scanHandoffHistory(
         'handoff-history',
         'invocations.json',
         path,
-        oldLayout ? 'legacy-reader-required' : 'current',
+        oldLayout ? 'unsupported-obsolete' : 'current',
         oldLayout ? 'invocation-history-v2-legacy-layout' : 'formatVersion-v2',
         true,
         oldLayout
-          ? 'Invocation detail paths still use pre-attempt storage'
+          ? 'Unsupported pre-attempt invocation detail layout'
           : 'Current format and attempt-detail layout'
       )
     )
@@ -356,8 +353,14 @@ function usesCurrentAttemptLayout(
   attemptsRoot: string
 ): boolean {
   if (typeof value !== 'object' || value === null) return false
-  const auditPath = (value as Record<string, unknown>)['auditPath']
-  return typeof auditPath === 'string' && auditPath.startsWith(attemptsRoot)
+  const record = value as Record<string, unknown>
+  const attemptId = record['attemptId']
+  const auditPath = record['auditPath']
+  return (
+    typeof attemptId === 'string' &&
+    typeof auditPath === 'string' &&
+    resolve(auditPath) === resolve(attemptsRoot, `${attemptId}.json`)
+  )
 }
 
 function scanVersionedJson(
@@ -387,7 +390,7 @@ function scanVersionedJson(
         version === currentVersion
           ? 'current'
           : version < currentVersion
-            ? (legacyStatus ?? 'legacy-reader-required')
+            ? (legacyStatus ?? 'unsupported-obsolete')
             : 'unknown-invalid',
         `${field}-v${version}`,
         applicationReachable,
@@ -396,7 +399,7 @@ function scanVersionedJson(
           : version < currentVersion
             ? legacyStatus === 'migratable'
               ? 'Immutable source has a verified current-format successor'
-              : `Known reader may still map this to version ${currentVersion}`
+              : `Unsupported obsolete version; expected ${currentVersion}`
             : `Format is newer than supported version ${currentVersion}`
       )
     )
@@ -441,24 +444,17 @@ function scanLegacyRoot(
       string,
       unknown
     >
-    const artifactSha256 = value['artifactSha256']
-    if (
-      value['formatVersion'] !== 1 ||
-      typeof artifactSha256 !== 'string' ||
-      !/^[a-f0-9]{64}$/.test(artifactSha256) ||
-      !existsSync(image) ||
-      sha256File(image) !== artifactSha256
-    )
-      throw new Error('Legacy root installation ownership or hash is invalid')
+    if (value['formatVersion'] !== 1)
+      throw new Error('Legacy root marker has an unknown format version')
     artifacts.push(
       artifact(
         'deployment',
         'legacy-root-installation',
         marker,
-        'legacy-reader-required',
+        'unsupported-obsolete',
         'installed-artifact-v1',
         false,
-        'Known ownership-valid pre-deployment installation'
+        'Unsupported pre-deployment installation layout; expected a versioned deployment manifest'
       )
     )
   } catch (error) {

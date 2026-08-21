@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { basename, resolve } from 'node:path'
 import { localArtifactManifestSchema } from '../src/shared/contracts/build-info.js'
+import { localPersistenceFormatVersions } from '../src/shared/contracts/local-persistence-format-versions.js'
 import { sha256File } from './file-hash.js'
 import { verifyBuildReceipt } from './build-receipt.js'
 
@@ -21,7 +22,7 @@ const receipt = verifyBuildReceipt(resolve(workspaceRoot, 'out'))
 if (receipt.build.channel !== 'local')
   throw new Error('Local packaging requires a local-channel build')
 const manifest = localArtifactManifestSchema.parse({
-  formatVersion: 2,
+  formatVersion: localPersistenceFormatVersions.localArtifactManifest,
   artifactFile: basename(artifactPath),
   artifactSha256: sha256File(artifactPath),
   receiptSha256: createHash('sha256')

@@ -1,16 +1,7 @@
-import {
-  existsSync,
-  mkdirSync,
-  readFileSync,
-  readdirSync,
-  writeFileSync
-} from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { handoffInvocationHistorySchema } from '../../scripts/delivery-contract.js'
-import { sha256File } from '../../scripts/file-hash.js'
-import { createInstallJournal } from '../../scripts/local-install-journal.js'
-import { hashTree } from '../../scripts/local-installation/campaign-file-inventory.js'
 import { applyAuditRetention } from '../../scripts/local-storage/audit-retention.js'
 import { inspectLocalStorage } from '../../scripts/local-storage/inspection.js'
 import {
@@ -26,7 +17,7 @@ afterEach(() => {
 })
 
 describe('local deployment retention', () => {
-  it('classifies a hash-valid v1 deployment and removes it through normal retention', () => {
+  it('rejects and preserves an obsolete v1 deployment manifest', () => {
     const fixture = createLocalStorageFixture()
     cleanup.push(fixture.cleanup)
     const legacy = fixture.deployment('a', '2026-01-01T12:00:00.000Z')
@@ -37,41 +28,47 @@ describe('local deployment retention', () => {
     makeLegacyDeployment(fixture.paths.deployments, legacy)
 
     const before = inspectLocalStorage(fixture)
-    expect(
-      before.compatibility.artifacts.find(({ name }) => name === legacy)
-    ).toMatchObject({
-      status: 'legacy-reader-required',
-      applicationReachable: false
-    })
-    expect(
-      before.deployments.find(({ fingerprint }) => fingerprint === legacy)
-    ).toMatchObject({ manifestFormatVersion: 1, retention: 'delete' })
+    expect(before.deployments).not.toContainEqual(
+      expect.objectContaining({ fingerprint: legacy })
+    )
+    expect(before.findings).toContainEqual(
+      expect.objectContaining({
+        name: legacy,
+        reason: 'Unsupported localArtifactManifest formatVersion 1; expected 2'
+      })
+    )
 
     applyDeploymentRetention({
       ...fixture,
       receiptDirectory: fixture.receiptDirectory,
       applicationSha: 'a'.repeat(40)
     })
-    expect(existsSync(join(fixture.paths.deployments, legacy))).toBe(false)
+    expect(existsSync(join(fixture.paths.deployments, legacy))).toBe(true)
   })
 
-  it('refuses compatibility evacuation without a verified Handoff backup', () => {
+  it('inventories but never cleans an obsolete root installation layout', () => {
     const fixture = createLocalStorageFixture()
     cleanup.push(fixture.cleanup)
-    const legacy = fixture.deployment('a', '2026-01-01T12:00:00.000Z')
-    const current = ['b', 'c', 'd'].map((character, index) =>
-      fixture.deployment(character, `2026-01-0${index + 2}T12:00:00.000Z`)
+    const current = fixture.deployment('d', '2026-01-04T12:00:00.000Z')
+    fixture.activate(current)
+    const legacyImage = join(fixture.paths.root, 'SaltMarcher.AppImage')
+    const legacyMarker = join(fixture.paths.root, 'installed-artifact.json')
+    writeFileSync(legacyImage, 'obsolete')
+    writeFileSync(
+      legacyMarker,
+      JSON.stringify({ formatVersion: 1, artifactSha256: 'a'.repeat(64) })
     )
-    fixture.activate(current[2]!)
-    makeLegacyDeployment(fixture.paths.deployments, legacy)
 
-    expect(() =>
-      applyStorageRetention({
-        ...fixture,
-        applicationSha: 'a'.repeat(40)
-      })
-    ).toThrow(/verified backup evidence/)
-    expect(existsSync(join(fixture.paths.deployments, legacy))).toBe(true)
+    expect(
+      inspectLocalStorage(fixture).compatibility.artifacts.find(
+        ({ name }) => name === 'legacy-root-installation'
+      )
+    ).toMatchObject({
+      status: 'unsupported-obsolete',
+      applicationReachable: false
+    })
+    expect(existsSync(legacyImage)).toBe(true)
+    expect(existsSync(legacyMarker)).toBe(true)
   })
 
   it('keeps the active, two newest inactive, and journal-referenced deployments', () => {
@@ -191,111 +188,6 @@ function makeLegacyDeployment(deployments: string, fingerprint: string): void {
     })
   )
 }
-
-function completedJournalWithBackup(
-  fixture: ReturnType<typeof createLocalStorageFixture>,
-  backupPath: string,
-  manifestSha256: string
-): void {
-  const now = () => new Date('2026-03-15T12:00:00.000Z')
-  const journal = createInstallJournal(
-    {
-      applicationSha: 'a'.repeat(40),
-      buildFingerprint: 'd'.repeat(64),
-      appBuildInputFingerprint: 'd'.repeat(64),
-      artifactSha256: 'e'.repeat(64)
-    },
-    now
-  )
-  writeFileSync(
-    fixture.paths.journal,
-    JSON.stringify({
-      ...journal,
-      phase: 'completed',
-      backupPath,
-      backupManifestSha256: manifestSha256
-    })
-  )
-}
-
-describe('compatibility evacuation', () => {
-  it('creates a verified current successor without mutating an immutable backup', () => {
-    const fixture = createLocalStorageFixture()
-    cleanup.push(fixture.cleanup)
-    const active = fixture.deployment('d', '2026-03-15T12:00:00.000Z')
-    fixture.activate(active)
-    const backupName = 'legacy-lifecycle-backup'
-    fixture.backup(backupName, '2026-03-15T11:00:00.000Z')
-    const backupPath = join(fixture.paths.backups, backupName)
-    const transitionDirectory = join(backupPath, 'campaigns', '.transitions')
-    mkdirSync(transitionDirectory, { recursive: true })
-    const transitionName = '00000000-0000-4000-8000-000000000001.json'
-    writeFileSync(
-      join(transitionDirectory, transitionName),
-      JSON.stringify({
-        schemaVersion: 1,
-        transitionId: '00000000-0000-4000-8000-000000000002',
-        campaignId: '00000000-0000-4000-8000-000000000001',
-        previousName: 'old',
-        replacementName: 'new',
-        previousActiveId: null,
-        phase: 'staged',
-        updatedAt: '2026-03-15T11:00:00.000Z'
-      })
-    )
-    const manifestPath = join(backupPath, 'backup-manifest.json')
-    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as Record<
-      string,
-      unknown
-    >
-    writeFileSync(
-      manifestPath,
-      JSON.stringify({
-        ...manifest,
-        files: hashTree(backupPath).filter(
-          ({ path }) => path !== 'backup-manifest.json'
-        )
-      })
-    )
-    const sourceManifestSha = sha256File(manifestPath)
-    completedJournalWithBackup(fixture, backupPath, sourceManifestSha)
-
-    const receipt = applyStorageRetention({
-      ...fixture,
-      applicationSha: 'a'.repeat(40),
-      now: () => new Date('2026-03-15T12:00:00.000Z')
-    })
-
-    expect(sha256File(manifestPath)).toBe(sourceManifestSha)
-    const successor = readdirSync(fixture.paths.backups).find((name) =>
-      name.startsWith(`${backupName}-compat-v2-`)
-    )
-    expect(successor).toBeDefined()
-    const migrated = JSON.parse(
-      readFileSync(
-        join(
-          fixture.paths.backups,
-          successor!,
-          'campaigns',
-          '.transitions',
-          transitionName
-        ),
-        'utf8'
-      )
-    ) as { schemaVersion: number }
-    expect(migrated.schemaVersion).toBe(2)
-    expect(receipt.compatibility.reachableLegacyCount).toBe(0)
-    expect(receipt.compatibility.reachableNonCurrentCount).toBe(0)
-    expect(
-      receipt.compatibility.artifacts.find(
-        ({ area, name, path }) =>
-          area === 'backup' &&
-          name === transitionName &&
-          path.startsWith(`${backupPath}/`)
-      )
-    ).toMatchObject({ status: 'migratable', applicationReachable: false })
-  })
-})
 
 describe('handoff audit retention', () => {
   it('keeps all nonterminal details, the newest 100 terminal details, and every SHA state', () => {

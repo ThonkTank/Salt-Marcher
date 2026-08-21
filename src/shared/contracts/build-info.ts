@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { localPersistenceFormatVersions } from './local-persistence-format-versions.js'
 
 const fingerprintSchema = z.string().regex(/^[0-9a-f]{64}$/)
 export const buildChannelSchema = z.enum(['development', 'local', 'release'])
@@ -54,7 +55,7 @@ export type BuildOutputFile = z.infer<typeof buildOutputFileSchema>
 
 export const buildReceiptSchema = z
   .object({
-    formatVersion: z.literal(2),
+    formatVersion: z.literal(localPersistenceFormatVersions.buildReceipt),
     build: buildInfoSchema,
     outputHash: fingerprintSchema,
     files: z.array(buildOutputFileSchema).readonly()
@@ -66,7 +67,9 @@ export type BuildReceipt = z.infer<typeof buildReceiptSchema>
 
 export const localArtifactManifestSchema = z
   .object({
-    formatVersion: z.literal(2),
+    formatVersion: z.literal(
+      localPersistenceFormatVersions.localArtifactManifest
+    ),
     artifactFile: z.string().min(1).max(255),
     artifactSha256: fingerprintSchema,
     receiptSha256: fingerprintSchema,

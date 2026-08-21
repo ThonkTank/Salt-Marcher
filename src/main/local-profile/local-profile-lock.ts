@@ -14,10 +14,11 @@ import {
 } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { z } from 'zod'
+import { localPersistenceFormatVersions } from '../../shared/contracts/local-persistence-format-versions.js'
 
 const profileLockSchema = z
   .object({
-    formatVersion: z.literal(1),
+    formatVersion: z.literal(localPersistenceFormatVersions.localProfileLock),
     token: z.uuid(),
     owner: z.enum(['application', 'installer']),
     pid: z.number().int().positive(),
@@ -74,7 +75,7 @@ export function acquireProfileLock(
     )
 
   const metadata = profileLockSchema.parse({
-    formatVersion: 1,
+    formatVersion: localPersistenceFormatVersions.localProfileLock,
     token: randomUUID(),
     owner,
     pid,

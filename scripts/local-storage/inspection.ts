@@ -9,6 +9,10 @@ import {
 import { dirname, join, relative, resolve, sep } from 'node:path'
 import { z } from 'zod'
 import { localArtifactManifestSchema } from '../../src/shared/contracts/build-info.js'
+import {
+  assertCurrentLocalPersistenceVersion,
+  localPersistenceFormatVersions
+} from '../../src/shared/contracts/local-persistence-format-versions.js'
 import { sha256File } from '../file-hash.js'
 import { readInstallJournal } from '../local-install-journal.js'
 import type { LocalInstallationPaths } from '../local-installation/contract.js'
@@ -43,7 +47,9 @@ type InspectedDeployment = Omit<
 
 const backupManifestSchema = z
   .object({
-    formatVersion: z.literal(1),
+    formatVersion: z.literal(
+      localPersistenceFormatVersions.campaignBackupManifest
+    ),
     createdAt: z.iso.datetime(),
     files: z.array(
       z
@@ -165,7 +171,7 @@ export function inspectLocalStorage(
   })
 
   return {
-    formatVersion: 1,
+    formatVersion: localPersistenceFormatVersions.localStorageInspection,
     installationRoot: options.paths.root,
     activeDeploymentFingerprint: active,
     deployments,
@@ -200,16 +206,8 @@ export function validateDeploymentDirectory(
     throw new Error('Deployment contains an unexpected file inventory')
   const manifestPath = join(path, 'artifact-manifest.json')
   const raw: unknown = JSON.parse(readFileSync(manifestPath, 'utf8'))
-  const parsed = localArtifactManifestSchema.safeParse(raw)
-  if (!parsed.success)
-    return validateLegacyDeployment(
-      path,
-      fingerprint,
-      iconSourcePath,
-      manifestPath,
-      raw
-    )
-  const manifest = parsed.data
+  assertCurrentLocalPersistenceVersion(raw, 'localArtifactManifest')
+  const manifest = localArtifactManifestSchema.parse(raw)
   if (manifest.receipt.build.channel !== 'local')
     throw new Error('Deployment manifest does not describe a Local build')
   if (manifest.receipt.build.workspaceFingerprint !== fingerprint)
@@ -236,54 +234,6 @@ export function validateDeploymentDirectory(
   }
 }
 
-const legacyDeploymentManifestSchema = z
-  .object({
-    formatVersion: z.literal(1),
-    artifactFile: z
-      .string()
-      .min(1)
-      .max(255)
-      .regex(/^[^/\\]+$/),
-    artifactSha256: z.string().regex(/^[a-f0-9]{64}$/),
-    build: z
-      .object({
-        channel: z.literal('local'),
-        commit: z.string().regex(/^[a-f0-9]{40}$/),
-        sourceFingerprint: z.string().regex(/^[a-f0-9]{64}$/),
-        dirty: z.boolean(),
-        builtAt: z.iso.datetime(),
-        schemaVersion: z.number().int().nonnegative()
-      })
-      .strict()
-  })
-  .strict()
-
-function validateLegacyDeployment(
-  path: string,
-  fingerprint: string,
-  iconSourcePath: string,
-  manifestPath: string,
-  raw: unknown
-): InspectedDeployment {
-  const manifest = legacyDeploymentManifestSchema.parse(raw)
-  if (manifest.build.sourceFingerprint !== fingerprint)
-    throw new Error('Legacy deployment directory and source fingerprint differ')
-  if (
-    sha256File(join(path, 'SaltMarcher.AppImage')) !== manifest.artifactSha256
-  )
-    throw new Error('Legacy deployment AppImage hash is invalid')
-  if (sha256File(join(path, 'icon.png')) !== sha256File(iconSourcePath))
-    throw new Error('Legacy deployment icon hash is invalid')
-  return {
-    fingerprint,
-    path,
-    builtAt: manifest.build.builtAt,
-    bytes: treeBytes(path),
-    manifestSha256: sha256File(manifestPath),
-    manifestFormatVersion: 1
-  }
-}
-
 export function validateBackupDirectory(
   path: string,
   name: string,
@@ -297,9 +247,9 @@ export function validateBackupDirectory(
     throw new Error('Backup entry is not an owned directory')
   const manifestPath = join(path, 'backup-manifest.json')
   if (!existsSync(manifestPath)) throw new Error('Backup manifest is missing')
-  const manifest = backupManifestSchema.parse(
-    JSON.parse(readFileSync(manifestPath, 'utf8'))
-  )
+  const raw: unknown = JSON.parse(readFileSync(manifestPath, 'utf8'))
+  assertCurrentLocalPersistenceVersion(raw, 'campaignBackupManifest')
+  const manifest = backupManifestSchema.parse(raw)
   const actual = hashTree(path).filter(
     ({ path: relativePath }) => relativePath !== 'backup-manifest.json'
   )

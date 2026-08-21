@@ -1,4 +1,10 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -42,44 +48,28 @@ describe('FileCampaignLifecycleJournal', () => {
     expect(journal.pending()).toEqual([])
   })
 
-  it.each([
-    ['staged', 'validated'],
-    ['original_moved', 'validated'],
-    ['replacement_promoted', 'swapped'],
-    ['verified', 'registered'],
-    ['complete', 'finalized']
-  ] as const)(
-    'migrates a schema-1 %s receipt to the shared %s phase',
-    (legacyPhase, expectedPhase) => {
-      const root = fixture()
-      const directory = join(root, 'campaigns', '.transitions')
-      mkdirSync(directory, { recursive: true })
-      writeFileSync(
-        join(directory, `${campaignId}.json`),
-        JSON.stringify({
-          schemaVersion: 1,
-          transitionId: '00000000-0000-4000-8000-000000000099',
-          campaignId,
-          previousName: 'Original',
-          replacementName: 'Replacement',
-          previousActiveId: campaignId,
-          phase: legacyPhase,
-          updatedAt: '2026-08-20T00:00:00.000Z'
-        })
-      )
+  it('rejects an obsolete schema-1 receipt without rewriting it', () => {
+    const root = fixture()
+    const directory = join(root, 'campaigns', '.transitions')
+    const path = join(directory, `${campaignId}.json`)
+    mkdirSync(directory, { recursive: true })
+    const legacy = JSON.stringify({
+      schemaVersion: 1,
+      transitionId: '00000000-0000-4000-8000-000000000099',
+      campaignId,
+      previousName: 'Original',
+      replacementName: 'Replacement',
+      previousActiveId: campaignId,
+      phase: 'staged',
+      updatedAt: '2026-08-20T00:00:00.000Z'
+    })
+    writeFileSync(path, legacy)
 
-      expect(new FileCampaignLifecycleJournal(root).pending()[0]).toMatchObject(
-        {
-          schemaVersion: 2,
-          lifecycleId: '00000000-0000-4000-8000-000000000099',
-          operation: { kind: 'replacement' },
-          mode: 'replace',
-          phase: expectedPhase,
-          validation: { migratedFromSchemaVersion: 1 }
-        }
-      )
-    }
-  )
+    expect(() => new FileCampaignLifecycleJournal(root).pending()).toThrow(
+      'Unsupported campaignLifecycleReceipt schemaVersion 1; expected 2'
+    )
+    expect(readFileSync(path, 'utf8')).toBe(legacy)
+  })
 })
 
 function fixture(): string {

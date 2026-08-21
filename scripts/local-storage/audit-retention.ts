@@ -7,6 +7,7 @@ import {
 } from 'node:fs'
 import { join } from 'node:path'
 import { z } from 'zod'
+import { localPersistenceFormatVersions } from '../../src/shared/contracts/local-persistence-format-versions.js'
 import {
   handoffInvocationHistorySchema,
   parseHandoffInvocationHistory,
@@ -44,7 +45,8 @@ export function applyAuditRetention(
     }
 
   const history = parseHandoffInvocationHistory(
-    JSON.parse(readFileSync(historyPath, 'utf8'))
+    JSON.parse(readFileSync(historyPath, 'utf8')),
+    options.receiptDirectory
   )
   const findings: StorageFinding[] = []
   const terminal = new Map<string, boolean>()
@@ -91,7 +93,7 @@ export function applyAuditRetention(
   )
 
   const next: HandoffInvocationHistory = handoffInvocationHistorySchema.parse({
-    formatVersion: 2,
+    formatVersion: localPersistenceFormatVersions.handoffInvocationHistory,
     invocations: retainedInvocations
   })
   if (removedInvocations.length > 0)

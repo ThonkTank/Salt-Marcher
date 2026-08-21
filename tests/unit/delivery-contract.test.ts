@@ -94,28 +94,42 @@ describe('delivery contract', () => {
     ])
   })
 
-  it('migrates the legacy invocation audit without losing provenance', () => {
-    const migrated = parseHandoffInvocationHistory({
-      formatVersion: 1,
-      invocations: [
+  it('rejects the obsolete invocation-history format', () => {
+    expect(() =>
+      parseHandoffInvocationHistory(
         {
-          invocationId: '00000000-0000-4000-8000-000000000001',
-          applicationSha: sha,
-          createdAt: '2026-08-18T12:00:00.000Z',
-          receiptPath: 'legacy-receipt.json'
-        }
-      ]
-    })
-    expect(migrated).toMatchObject({
-      formatVersion: 2,
-      invocations: [
+          formatVersion: 1,
+          invocations: [
+            {
+              invocationId: '00000000-0000-4000-8000-000000000001',
+              applicationSha: sha,
+              createdAt: '2026-08-18T12:00:00.000Z',
+              receiptPath: 'legacy-receipt.json'
+            }
+          ]
+        },
+        '.tmp/handoff-local-app'
+      )
+    ).toThrow(
+      'Unsupported handoffInvocationHistory formatVersion 1; expected 2'
+    )
+  })
+
+  it('rejects the obsolete per-invocation detail layout', () => {
+    expect(() =>
+      parseHandoffInvocationHistory(
         {
-          attemptId: '00000000-0000-4000-8000-000000000001',
-          intent: 'advance',
-          auditPath: 'legacy-receipt.json'
-        }
-      ]
-    })
+          formatVersion: 2,
+          invocations: [
+            {
+              ...invocation('1'),
+              auditPath: '.tmp/handoff-local-app/legacy-receipt.json'
+            }
+          ]
+        },
+        '.tmp/handoff-local-app'
+      )
+    ).toThrow('Unsupported Handoff attempt-detail layout')
   })
 
   it('preserves original state provenance across later attempts', () => {

@@ -6,6 +6,7 @@ import {
   type BuildInfo,
   type LocalArtifactManifest
 } from '../../src/shared/contracts/build-info.js'
+import { assertCurrentLocalPersistenceVersion } from '../../src/shared/contracts/local-persistence-format-versions.js'
 import { databaseSchemaVersions } from '../../src/core/persistence/sqlite/database.js'
 import {
   readWorkspaceIdentity,
@@ -13,7 +14,6 @@ import {
 } from '../build-identity.js'
 import { sha256File } from '../file-hash.js'
 import type { LocalInstallJournal } from '../local-install-journal.js'
-import { z } from 'zod'
 
 export type LocalInstallationFailure =
   | 'artifact-invalid'
@@ -23,6 +23,7 @@ export type LocalInstallationFailure =
   | 'data-corrupt'
   | 'migration-missing'
   | 'migration-failed'
+  | 'unsupported-version'
   | 'atomic-replace-failed'
 
 export class LocalInstallationError extends Error {
@@ -209,41 +210,17 @@ export function installationResult(
   }
 }
 
-const legacyInstalledManifestSchema = z
-  .object({
-    formatVersion: z.literal(1),
-    build: z
-      .object({
-        channel: z.enum(['development', 'local', 'release']),
-        commit: z.string().regex(/^[a-f0-9]{40}$/),
-        sourceFingerprint: z.string().regex(/^[a-f0-9]{64}$/),
-        dirty: z.boolean(),
-        builtAt: z.iso.datetime(),
-        schemaVersion: z.number().int().nonnegative()
-      })
-      .strict()
-  })
-  .passthrough()
-
 export function readPreviousInstalledBuild(path: string): unknown {
   if (!existsSync(path)) return null
   const value: unknown = JSON.parse(readFileSync(path, 'utf8'))
-  const current = localArtifactManifestSchema.safeParse(value)
-  if (current.success) return current.data.receipt.build
-  const legacy = legacyInstalledManifestSchema.parse(value).build
-  return {
-    channel: legacy.channel,
-    commit: legacy.commit,
-    dirty: legacy.dirty,
-    workspaceFingerprint: legacy.sourceFingerprint,
-    appBuildInputFingerprint: null,
-    builtAt: legacy.builtAt,
-    schemaVersions: {
-      installation: legacy.schemaVersion,
-      campaign: legacy.schemaVersion
-    },
-    migrationRegistryVersion: null,
-    toolchain: null,
-    provenanceFormat: 1
+  try {
+    assertCurrentLocalPersistenceVersion(value, 'localArtifactManifest')
+  } catch (error) {
+    throw new LocalInstallationError(
+      'unsupported-version',
+      error instanceof Error ? error.message : String(error),
+      { cause: error }
+    )
   }
+  return localArtifactManifestSchema.parse(value).receipt.build
 }

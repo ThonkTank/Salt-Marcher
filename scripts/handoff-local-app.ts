@@ -12,6 +12,7 @@ import {
 } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
+import { localPersistenceFormatVersions } from '../src/shared/contracts/local-persistence-format-versions.js'
 import {
   readWorkspaceIdentity,
   readWorkspaceInputFingerprints
@@ -53,7 +54,6 @@ import {
   type InstallLocalAppOptions,
   type LocalInstallationTarget
 } from './local-app-installation.js'
-import { removeSupersededLocalInstallation } from './local-installation-legacy.js'
 import {
   applyStorageRetention,
   collectStorageRetentionReceipt,
@@ -168,9 +168,13 @@ if (existsSync(statePath)) {
 
 const history = existsSync(invocationHistoryPath)
   ? parseHandoffInvocationHistory(
-      JSON.parse(readFileSync(invocationHistoryPath, 'utf8'))
+      JSON.parse(readFileSync(invocationHistoryPath, 'utf8')),
+      receiptDirectory
     )
-  : ({ formatVersion: 2, invocations: [] } satisfies HandoffInvocationHistory)
+  : ({
+      formatVersion: localPersistenceFormatVersions.handoffInvocationHistory,
+      invocations: []
+    } satisfies HandoffInvocationHistory)
 atomicWrite(
   invocationHistoryPath,
   `${JSON.stringify(
@@ -253,12 +257,6 @@ function phaseDefinitions(): readonly HandoffPhaseDefinition[] {
           'tsx',
           'scripts/installed-runtime-verification.ts'
         ])
-        removeSupersededLocalInstallation({
-          installationRoot: installation.root,
-          currentAppImage: installation.appImage,
-          currentManifest: installation.installedManifest,
-          runtimeEvidencePath
-        })
       },
       collect: collectRuntimeEvidence
     },

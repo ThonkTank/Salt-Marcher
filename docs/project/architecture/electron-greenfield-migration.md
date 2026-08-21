@@ -153,6 +153,18 @@ revalidate and reuse only phases whose predecessor and output hashes still
 match the atomic SHA state. Explicit `--resume` records recovery intent without
 replacing the state's original provenance. `pnpm dev` remains HMR-only.
 
+The local-format cleanup is complete. A typed allowlist now binds each local
+persistence contract to its current version, including the intentionally
+current version-one candidate, backup, profile-lock, and storage envelopes.
+Campaign-lifecycle v1, install-journal v1, installed/deployment-manifest v1,
+Handoff invocation-history v1, and the pre-`attempts/` audit layout are
+explicitly unsupported instead of being mapped on read. The pre-deployment
+root AppImage/marker remover and the one-time compatibility-evacuation path
+have been retired after the verified local evacuation. Storage inspection
+continues to preserve and report unsupported or unknown bytes fail-closed;
+application-reachable artifacts must all be current before Handoff evidence is
+accepted.
+
 ## NPC catalog and preserved profile schema — 2026-08-16
 
 The active Catalog now includes a lazy-loaded campaign NPC vertical slice.

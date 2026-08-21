@@ -279,23 +279,17 @@ export function assertCompletedHandoffReceipt(
   candidate: WorkflowEvidence,
   workspaceRoot = process.cwd()
 ): void {
-  const path = resolve(
-    workspaceRoot,
-    '.tmp',
-    'handoff-local-app',
-    'handoff-receipt.json'
-  )
+  const receiptDirectory = resolve(workspaceRoot, '.tmp', 'handoff-local-app')
+  const path = resolve(receiptDirectory, 'handoff-receipt.json')
   if (!existsSync(path)) throw new Error('Final handoff receipt is missing.')
   const receipt = handoffReceiptSchema.parse(
     JSON.parse(readFileSync(path, 'utf8'))
   )
   const history = parseHandoffInvocationHistory(
     JSON.parse(
-      readFileSync(
-        resolve(workspaceRoot, '.tmp', 'handoff-local-app', 'invocations.json'),
-        'utf8'
-      )
-    )
+      readFileSync(resolve(receiptDirectory, 'invocations.json'), 'utf8')
+    ),
+    receiptDirectory
   )
   const attempts = history.invocations.filter(
     ({ applicationSha }) => applicationSha === head

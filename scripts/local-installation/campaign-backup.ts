@@ -14,6 +14,10 @@ import {
   shortBuildFingerprint,
   type BuildInfo
 } from '../../src/shared/contracts/build-info.js'
+import {
+  assertCurrentLocalPersistenceVersion,
+  localPersistenceFormatVersions
+} from '../../src/shared/contracts/local-persistence-format-versions.js'
 import type { PreflightDatabase } from '../../src/core/persistence/sqlite/persistence-preflight.js'
 import { sha256File } from '../file-hash.js'
 import type { LocalInstallJournal } from '../local-install-journal.js'
@@ -61,6 +65,8 @@ export function validateBackupCheckpoint(
       'data-corrupt',
       'Verified campaign backup is missing or changed'
     )
+  const raw: unknown = JSON.parse(readFileSync(manifestPath, 'utf8'))
+  assertCurrentLocalPersistenceVersion(raw, 'campaignBackupManifest')
   const backupManifest = z
     .object({
       files: z.array(
@@ -74,7 +80,7 @@ export function validateBackupCheckpoint(
       )
     })
     .passthrough()
-    .parse(JSON.parse(readFileSync(manifestPath, 'utf8')))
+    .parse(raw)
   const actualFiles = hashTree(journal.backupPath).filter(
     ({ path }) => path !== 'backup-manifest.json'
   )
@@ -126,7 +132,7 @@ export function backupCampaignData(
       backupManifestPath,
       `${JSON.stringify(
         {
-          formatVersion: 1,
+          formatVersion: localPersistenceFormatVersions.campaignBackupManifest,
           createdAt: now().toISOString(),
           previousBuild,
           nextBuild,

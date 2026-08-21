@@ -19,28 +19,13 @@ import {
   type CampaignLifecycleReceipt
 } from '../../application/campaign-lifecycle-coordinator.js'
 import { uuidv7 } from '../../../shared/ids/uuidv7.js'
+import {
+  assertCurrentLocalPersistenceVersion,
+  localPersistenceFormatVersions
+} from '../../../shared/contracts/local-persistence-format-versions.js'
 
 const safeCampaignId =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
-
-const legacyReceiptSchema = z
-  .object({
-    schemaVersion: z.literal(1),
-    transitionId: z.uuid(),
-    campaignId: z.string().regex(safeCampaignId),
-    previousName: z.string().min(1),
-    replacementName: z.string().min(1),
-    previousActiveId: z.string().regex(safeCampaignId).nullable(),
-    phase: z.enum([
-      'staged',
-      'original_moved',
-      'replacement_promoted',
-      'verified',
-      'complete'
-    ]),
-    updatedAt: z.iso.datetime()
-  })
-  .strict()
 
 /** Persists lifecycle intent before any non-transactional directory move. */
 export class FileCampaignLifecycleJournal implements CampaignLifecycleJournal {
@@ -53,7 +38,7 @@ export class FileCampaignLifecycleJournal implements CampaignLifecycleJournal {
     if (this.has(input.campaignId))
       throw new Error('Campaign lifecycle already exists')
     return this.persist({
-      schemaVersion: 2,
+      schemaVersion: localPersistenceFormatVersions.campaignLifecycleReceipt,
       lifecycleId: uuidv7(),
       ...input,
       phase: 'staged',
@@ -151,24 +136,12 @@ export class FileCampaignLifecycleJournal implements CampaignLifecycleJournal {
 export function parseCampaignLifecycleReceipt(
   value: unknown
 ): CampaignLifecycleReceipt {
-  const current = campaignLifecycleReceiptSchema.safeParse(value)
-  if (current.success) return Object.freeze(current.data)
-  const legacy = legacyReceiptSchema.parse(value)
-  return Object.freeze(
-    campaignLifecycleReceiptSchema.parse({
-      schemaVersion: 2,
-      lifecycleId: legacy.transitionId,
-      operation: { kind: 'replacement' },
-      mode: 'replace',
-      campaignId: legacy.campaignId,
-      previousName: legacy.previousName,
-      replacementName: legacy.replacementName,
-      previousActiveId: legacy.previousActiveId,
-      phase: migrateLegacyPhase(legacy.phase),
-      validation: { migratedFromSchemaVersion: 1 },
-      updatedAt: legacy.updatedAt
-    })
+  assertCurrentLocalPersistenceVersion(
+    value,
+    'campaignLifecycleReceipt',
+    'schemaVersion'
   )
+  return Object.freeze(campaignLifecycleReceiptSchema.parse(value))
 }
 
 const phases: readonly CampaignLifecyclePhase[] = [
@@ -186,13 +159,4 @@ function isNextPhase(
   next: CampaignLifecyclePhase
 ): boolean {
   return phases.indexOf(next) === phases.indexOf(current) + 1
-}
-
-function migrateLegacyPhase(
-  phase: z.infer<typeof legacyReceiptSchema>['phase']
-): CampaignLifecyclePhase {
-  if (phase === 'staged' || phase === 'original_moved') return 'validated'
-  if (phase === 'replacement_promoted') return 'swapped'
-  if (phase === 'verified') return 'registered'
-  return 'finalized'
 }

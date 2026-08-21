@@ -11,6 +11,10 @@ import {
 } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { z } from 'zod'
+import {
+  assertCurrentLocalPersistenceVersion,
+  localPersistenceFormatVersions
+} from '../src/shared/contracts/local-persistence-format-versions.js'
 
 const replacementSchema = z
   .object({
@@ -50,16 +54,11 @@ const journalFields = {
   updatedAt: z.iso.datetime()
 } as const
 
-const legacyLocalInstallJournalSchema = z
-  .object({
-    formatVersion: z.literal(1),
-    ...journalFields
-  })
-  .strict()
-
 export const localInstallJournalSchema = z
   .object({
-    formatVersion: z.literal(2),
+    formatVersion: z.literal(
+      localPersistenceFormatVersions.localInstallJournal
+    ),
     applicationSha: z
       .string()
       .regex(/^[a-f0-9]{40}$/)
@@ -106,7 +105,7 @@ export function createInstallJournal(
 ): LocalInstallJournal {
   const timestamp = now().toISOString()
   return localInstallJournalSchema.parse({
-    formatVersion: 2,
+    formatVersion: localPersistenceFormatVersions.localInstallJournal,
     transactionId: randomUUID(),
     applicationSha: identity.applicationSha,
     buildFingerprint: identity.buildFingerprint,
@@ -129,20 +128,8 @@ export function createInstallJournal(
 export function readInstallJournal(path: string): LocalInstallJournal | null {
   if (!existsSync(path)) return null
   const value: unknown = JSON.parse(readFileSync(path, 'utf8'))
-  const current = localInstallJournalSchema.safeParse(value)
-  if (current.success) return current.data
-  const legacy = legacyLocalInstallJournalSchema.parse(value)
-  return localInstallJournalSchema.parse({
-    ...legacy,
-    formatVersion: 2,
-    applicationSha: null,
-    appBuildInputFingerprint: null,
-    artifactSha256: null,
-    sourceDataHash: null,
-    campaignDataHash: null,
-    backupManifestSha256: null,
-    deploymentManifestSha256: null
-  })
+  assertCurrentLocalPersistenceVersion(value, 'localInstallJournal')
+  return localInstallJournalSchema.parse(value)
 }
 
 export function writeInstallJournal(

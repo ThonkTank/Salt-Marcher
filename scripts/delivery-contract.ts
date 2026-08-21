@@ -1,7 +1,11 @@
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { basename, dirname, resolve } from 'node:path'
 import { z } from 'zod'
+import {
+  assertCurrentLocalPersistenceVersion,
+  localPersistenceFormatVersions
+} from '../src/shared/contracts/local-persistence-format-versions.js'
 
 export const shaSchema = z.string().regex(/^[0-9a-f]{40}$/)
 export const fingerprintSchema = z.string().regex(/^[0-9a-f]{64}$/)
@@ -202,7 +206,7 @@ export const handoffPhaseSchema = z
 
 export const handoffReceiptSchema = z
   .object({
-    formatVersion: z.literal(6),
+    formatVersion: z.literal(localPersistenceFormatVersions.handoffReceipt),
     stateId: z.uuid(),
     originAttemptId: z.uuid(),
     activeAttemptId: z.uuid(),
@@ -323,7 +327,7 @@ export function createHandoffReceipt(
   timestamp: string
 ): HandoffReceipt {
   return handoffReceiptSchema.parse({
-    formatVersion: 6,
+    formatVersion: localPersistenceFormatVersions.handoffReceipt,
     stateId,
     originAttemptId: attemptId,
     activeAttemptId: attemptId,
@@ -361,7 +365,9 @@ export function continueHandoffReceipt(
 
 export const handoffInvocationHistorySchema = z
   .object({
-    formatVersion: z.literal(2),
+    formatVersion: z.literal(
+      localPersistenceFormatVersions.handoffInvocationHistory
+    ),
     invocations: z.array(
       z
         .object({
@@ -386,6 +392,15 @@ export const handoffInvocationHistorySchema = z
           path: ['invocations']
         })
       ids.add(invocation.attemptId)
+      if (
+        basename(invocation.auditPath) !== `${invocation.attemptId}.json` ||
+        basename(dirname(invocation.auditPath)) !== 'attempts'
+      )
+        context.addIssue({
+          code: 'custom',
+          message: `Unsupported Handoff attempt-detail layout: ${invocation.auditPath}`,
+          path: ['invocations']
+        })
     }
   })
 
@@ -393,39 +408,24 @@ export type HandoffInvocationHistory = z.infer<
   typeof handoffInvocationHistorySchema
 >
 
-const legacyHandoffInvocationHistorySchema = z
-  .object({
-    formatVersion: z.literal(1),
-    invocations: z.array(
-      z
-        .object({
-          invocationId: z.uuid(),
-          applicationSha: shaSchema,
-          createdAt: z.iso.datetime(),
-          receiptPath: z.string().min(1)
-        })
-        .strict()
-    )
-  })
-  .strict()
-
 export function parseHandoffInvocationHistory(
-  value: unknown
+  value: unknown,
+  receiptDirectory: string
 ): HandoffInvocationHistory {
-  const current = handoffInvocationHistorySchema.safeParse(value)
-  if (current.success) return current.data
-  const legacy = legacyHandoffInvocationHistorySchema.parse(value)
-  return handoffInvocationHistorySchema.parse({
-    formatVersion: 2,
-    invocations: legacy.invocations.map((invocation) => ({
-      attemptId: invocation.invocationId,
-      applicationSha: invocation.applicationSha,
-      intent: 'advance',
-      createdAt: invocation.createdAt,
-      statePath: invocation.receiptPath,
-      auditPath: invocation.receiptPath
-    }))
-  })
+  assertCurrentLocalPersistenceVersion(value, 'handoffInvocationHistory')
+  const history = handoffInvocationHistorySchema.parse(value)
+  for (const invocation of history.invocations) {
+    const expected = resolve(
+      receiptDirectory,
+      'attempts',
+      `${invocation.attemptId}.json`
+    )
+    if (resolve(invocation.auditPath) !== expected)
+      throw new Error(
+        `Unsupported Handoff attempt-detail path: ${invocation.auditPath}; expected ${expected}`
+      )
+  }
+  return history
 }
 
 export function appendHandoffInvocation(

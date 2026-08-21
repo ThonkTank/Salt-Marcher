@@ -17,6 +17,7 @@ import {
   localArtifactManifestSchema,
   type LocalArtifactManifest
 } from '../src/shared/contracts/build-info.js'
+import { localPersistenceFormatVersions } from '../src/shared/contracts/local-persistence-format-versions.js'
 import { fingerprintSchema, shaSchema } from './delivery-contract.js'
 import { sha256File } from './file-hash.js'
 
@@ -35,7 +36,9 @@ const fileNameSchema = z
 
 export const candidateArtifactReceiptSchema = z
   .object({
-    formatVersion: z.literal(1),
+    formatVersion: z.literal(
+      localPersistenceFormatVersions.candidateArtifactReceipt
+    ),
     repository: z.string().regex(/^[^/\s]+\/[^/\s]+$/),
     workflowName: z.string().min(1),
     workflowRunId: z.number().int().positive(),
@@ -118,7 +121,7 @@ export function createCandidateArtifactReceipt(input: {
       'Candidate artifact is not a clean Local build of the checked SHA'
     )
   const receipt = candidateArtifactReceiptSchema.parse({
-    formatVersion: 1,
+    formatVersion: localPersistenceFormatVersions.candidateArtifactReceipt,
     repository: input.repository,
     workflowName: input.workflowName,
     workflowRunId: input.workflowRunId,

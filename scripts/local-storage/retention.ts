@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { z } from 'zod'
+import { localPersistenceFormatVersions } from '../../src/shared/contracts/local-persistence-format-versions.js'
 import type { LocalInstallationPaths } from '../local-installation/contract.js'
 import { withInstallationLock } from '../local-installation/installation-lock.js'
 import { applyAuditRetention } from './audit-retention.js'
@@ -10,7 +11,6 @@ import {
   type StorageRetentionReceipt
 } from './contract.js'
 import { atomicWrite, syncDirectory } from './filesystem.js'
-import { evacuateCompatibility } from './compatibility-evacuation.js'
 import {
   inspectLocalStorage,
   validateDeploymentDirectory
@@ -55,7 +55,9 @@ const deploymentResultSchema = z
   .strict()
 const progressSchema = z
   .object({
-    formatVersion: z.literal(1),
+    formatVersion: z.literal(
+      localPersistenceFormatVersions.storageRetentionProgress
+    ),
     applicationSha: z.string().regex(/^[a-f0-9]{40}$/),
     deployment: deploymentResultSchema
   })
@@ -73,7 +75,9 @@ const receiptSchema = progressSchema
       .strict(),
     compatibility: z
       .object({
-        formatVersion: z.literal(1),
+        formatVersion: z.literal(
+          localPersistenceFormatVersions.localStorageCompatibilityInspection
+        ),
         artifacts: z.array(
           z
             .object({
@@ -90,7 +94,7 @@ const receiptSchema = progressSchema
               status: z.enum([
                 'current',
                 'migratable',
-                'legacy-reader-required',
+                'unsupported-obsolete',
                 'unknown-invalid'
               ]),
               format: z.string(),
@@ -99,7 +103,7 @@ const receiptSchema = progressSchema
             })
             .strict()
         ),
-        reachableLegacyCount: z.number().int().nonnegative(),
+        reachableLegacyCount: z.literal(0),
         reachableNonCurrentCount: z.number().int().nonnegative(),
         unknownInvalidCount: z.number().int().nonnegative()
       })
@@ -117,7 +121,6 @@ export function applyStorageRetention(
       options.receiptDirectory,
       'storage-retention-progress.json'
     )
-    evacuateCompatibility(options)
     const prior = readProgress(progressPath, options.applicationSha)
     const current = applyDeploymentRetention({
       ...options,
@@ -126,7 +129,8 @@ export function applyStorageRetention(
           progressPath,
           `${JSON.stringify(
             {
-              formatVersion: 1,
+              formatVersion:
+                localPersistenceFormatVersions.storageRetentionProgress,
               applicationSha: options.applicationSha,
               deployment: combineDeploymentResults(prior, deployment)
             },
@@ -140,7 +144,8 @@ export function applyStorageRetention(
       progressPath,
       `${JSON.stringify(
         {
-          formatVersion: 1,
+          formatVersion:
+            localPersistenceFormatVersions.storageRetentionProgress,
           applicationSha: options.applicationSha,
           deployment
         },
@@ -160,7 +165,7 @@ export function applyStorageRetention(
         `Storage retention left ${compatibility.reachableNonCurrentCount} application-reachable non-current artifact(s)`
       )
     const receipt = receiptSchema.parse({
-      formatVersion: 1,
+      formatVersion: localPersistenceFormatVersions.storageRetentionReceipt,
       applicationSha: options.applicationSha,
       createdAt: (options.now ?? (() => new Date()))().toISOString(),
       deployment,

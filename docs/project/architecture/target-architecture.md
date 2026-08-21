@@ -402,23 +402,26 @@ removed.
 The read-only storage inventory also owns the compatibility topology across
 profile databases and lifecycle journals, every retained backup, active and
 retained deployments, the installation journal, and Handoff state and
-invocation history. It distinguishes current, migratable, reader-dependent
-legacy, and unknown-invalid artifacts. Unknown or integrity-invalid artifacts
-are preserved and are never made application-reachable merely to classify
-them. Current version-one contracts such as campaign-backup manifests remain
-explicitly allowlisted and are not legacy by number alone.
+invocation history. It distinguishes current, migratable, explicitly
+unsupported-obsolete, and unknown-invalid artifacts. Unknown,
+integrity-invalid, or obsolete artifacts are preserved and are never made
+application-reachable merely to classify them. A shared typed registry is the
+allowlist for every local persistence envelope. Its intentional version-one
+contracts include candidate-artifact receipts, campaign-backup manifests,
+profile locks, storage inventories, compatibility inventories, and retention
+progress/receipts; a version number has no meaning without its named contract.
 
-Known reader-dependent artifacts are evacuated only under the installation
-lock and after a verified current-profile backup. Mutable journals and audit
-indexes are atomically rewritten to their current contracts. Immutable backups
-are never rewritten in place: evacuation creates and verifies a current-format
-successor and records that provenance, while removal of the original remains
-an exact manual prune. A fresh current deployment must replace an active legacy
-deployment before the same ownership- and hash-validating retention boundary
-may remove obsolete inactive deployments. Handoff retention is reusable only
-when its post-operation compatibility scan reports that every
-application-reachable artifact is current; migratable or reader-dependent
-formats may remain only in verified immutable history.
+The one-time compatibility evacuation completed before its readers were
+removed. It is not a continuing retention or installation capability.
+Campaign-lifecycle receipts, install journals, installed/deployment manifests,
+Handoff invocation histories, and per-attempt audit layout now accept only
+their current contract and produce an explicit actual-versus-expected version
+error otherwise. The pre-deployment root AppImage/marker cleanup is absent;
+such bytes are inventory-only unsupported data and remain fail-closed. Older
+database schemas in immutable backups may remain classified as migratable,
+but are not application-reachable. Handoff retention is reusable only when its
+post-operation compatibility scan reports that every application-reachable
+artifact is current; its retained legacy-reader count is structurally zero.
 
 Remote required-job evidence satisfies `checked`; the downloaded Local package
 satisfies `packaged`. The actual downloaded AppImage is still smoke-tested on

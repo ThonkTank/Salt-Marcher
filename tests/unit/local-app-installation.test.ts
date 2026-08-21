@@ -154,38 +154,28 @@ describe('local AppImage installation', () => {
     expect(readdirSync(first.paths.backups)).toHaveLength(backupCount)
   })
 
-  it('normalizes a completed v1 install journal before starting v2 state', () => {
+  it('rejects an obsolete v1 install journal without rewriting it', () => {
     const fixture = createFixture(build('a'))
     const paths = localInstallationPaths(fixture.xdg)
     mkdirSync(paths.root, { recursive: true })
-    writeFileSync(
-      paths.journal,
-      JSON.stringify({
-        formatVersion: 1,
-        transactionId: '00000000-0000-4000-8000-000000000001',
-        buildFingerprint: '9'.repeat(64),
-        phase: 'completed',
-        backupPath: null,
-        deploymentPath: null,
-        migration: null,
-        replacements: [],
-        createdAt: '2026-08-15T11:00:00.000Z',
-        updatedAt: '2026-08-15T11:00:00.000Z'
-      })
-    )
-
-    installLocalApp(fixture.options)
-
-    const journal = JSON.parse(readFileSync(paths.journal, 'utf8')) as Record<
-      string,
-      unknown
-    >
-    expect(journal).toMatchObject({
-      formatVersion: 2,
-      applicationSha: 'a'.repeat(40),
-      phase: 'completed'
+    const legacy = JSON.stringify({
+      formatVersion: 1,
+      transactionId: '00000000-0000-4000-8000-000000000001',
+      buildFingerprint: '9'.repeat(64),
+      phase: 'completed',
+      backupPath: null,
+      deploymentPath: null,
+      migration: null,
+      replacements: [],
+      createdAt: '2026-08-15T11:00:00.000Z',
+      updatedAt: '2026-08-15T11:00:00.000Z'
     })
-    expect(journal['artifactSha256']).toMatch(/^[a-f0-9]{64}$/)
+    writeFileSync(paths.journal, legacy)
+
+    expect(() => installLocalApp(fixture.options)).toThrow(
+      'Unsupported localInstallJournal formatVersion 1; expected 2'
+    )
+    expect(readFileSync(paths.journal, 'utf8')).toBe(legacy)
   })
 
   it('installs a fresh build into an isolated profile', () => {
@@ -242,40 +232,31 @@ describe('local AppImage installation', () => {
     expect(readFileSync(databasePath)).toEqual(originalDatabase)
   })
 
-  it('retains v1 installed-build provenance while upgrading to a v2 receipt', () => {
+  it('rejects obsolete v1 installed-build provenance', () => {
     const fixture = createFixture(build('a'))
     const first = installLocalApp(fixture.options)
     createDatabase(first.paths.campaignData, schemaVersion)
-    writeFileSync(
-      first.paths.installedManifest,
-      JSON.stringify({
-        formatVersion: 1,
-        artifactFile: 'SaltMarcher-Local-0.1.0.AppImage',
-        artifactSha256: 'e'.repeat(64),
-        build: {
-          channel: 'local',
-          commit: 'a'.repeat(40),
-          sourceFingerprint: 'a'.repeat(64),
-          dirty: true,
-          builtAt: '2026-08-14T12:00:00.000Z',
-          schemaVersion: 27
-        }
-      })
-    )
+    const legacy = JSON.stringify({
+      formatVersion: 1,
+      artifactFile: 'SaltMarcher-Local-0.1.0.AppImage',
+      artifactSha256: 'e'.repeat(64),
+      build: {
+        channel: 'local',
+        commit: 'a'.repeat(40),
+        sourceFingerprint: 'a'.repeat(64),
+        dirty: true,
+        builtAt: '2026-08-14T12:00:00.000Z',
+        schemaVersion: 27
+      }
+    })
+    writeFileSync(first.paths.installedManifest, legacy)
     fixture.useBuild(build('b'))
 
-    const updated = installLocalApp(fixture.options)
-    const backup = JSON.parse(
-      readFileSync(join(updated.backupPath!, 'backup-manifest.json'), 'utf8')
-    ) as { previousBuild: Record<string, unknown> }
-
-    expect(backup.previousBuild).toMatchObject({
-      workspaceFingerprint: 'a'.repeat(64),
-      appBuildInputFingerprint: null,
-      schemaVersions: { installation: 27, campaign: 27 },
-      provenanceFormat: 1
-    })
-    expect(readFileSync(updated.paths.appImage, 'utf8')).toBe('artifact-b')
+    expect(() => installLocalApp(fixture.options)).toThrow(
+      'Unsupported localArtifactManifest formatVersion 1; expected 2'
+    )
+    expect(readFileSync(first.paths.installedManifest, 'utf8')).toBe(legacy)
+    expect(readFileSync(first.paths.appImage, 'utf8')).toBe('artifact-a')
   })
 
   it('keeps immutable versioned deployments and switches one current link', () => {

@@ -15,14 +15,14 @@ export interface ValidDeployment {
   readonly builtAt: string
   readonly bytes: number
   readonly manifestSha256: string
-  readonly manifestFormatVersion: 1 | 2
+  readonly manifestFormatVersion: 2
   readonly active: boolean
   readonly journalProtected: boolean
   readonly retention: 'keep' | 'delete'
 }
 
 export type CompatibilityStatus =
-  'current' | 'migratable' | 'legacy-reader-required' | 'unknown-invalid'
+  'current' | 'migratable' | 'unsupported-obsolete' | 'unknown-invalid'
 
 export interface CompatibilityArtifact {
   readonly area:
@@ -41,9 +41,9 @@ export interface CompatibilityArtifact {
 }
 
 export interface CompatibilityInspection {
-  readonly formatVersion: 1
+  readonly formatVersion: typeof localPersistenceFormatVersions.localStorageCompatibilityInspection
   readonly artifacts: readonly CompatibilityArtifact[]
-  readonly reachableLegacyCount: number
+  readonly reachableLegacyCount: 0
   readonly reachableNonCurrentCount: number
   readonly unknownInvalidCount: number
 }
@@ -60,7 +60,7 @@ export interface ValidBackup {
 }
 
 export interface LocalStorageInspection {
-  readonly formatVersion: 1
+  readonly formatVersion: typeof localPersistenceFormatVersions.localStorageInspection
   readonly installationRoot: string
   readonly activeDeploymentFingerprint: string | null
   readonly deployments: readonly ValidDeployment[]
@@ -89,7 +89,7 @@ export interface AuditRetentionResult {
 }
 
 export interface StorageRetentionReceipt {
-  readonly formatVersion: 1
+  readonly formatVersion: typeof localPersistenceFormatVersions.storageRetentionReceipt
   readonly applicationSha: string
   readonly createdAt: string
   readonly deployment: DeploymentRetentionResult
@@ -114,3 +114,4 @@ export const retainedInactiveDeployments = 2
 export const retainedRecentBackups = 5
 export const minimumBackupAgeMs = 30 * 24 * 60 * 60 * 1000
 export const retainedTerminalAuditEntries = 100
+import type { localPersistenceFormatVersions } from '../../src/shared/contracts/local-persistence-format-versions.js'

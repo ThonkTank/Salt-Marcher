@@ -135,7 +135,8 @@ describe('candidate delivery policy', () => {
     const root = mkdtempSync(join(tmpdir(), 'salt-marcher-delivery-'))
     roots.push(root)
     const directory = join(root, '.tmp', 'handoff-local-app')
-    mkdirSync(directory, { recursive: true })
+    const attempts = join(directory, 'attempts')
+    mkdirSync(attempts, { recursive: true })
     const originAttemptId = '00000000-0000-4000-8000-000000000001'
     const activeAttemptId = '00000000-0000-4000-8000-000000000002'
     const timestamp = '2026-08-18T12:00:00.000Z'
@@ -230,7 +231,7 @@ describe('candidate delivery policy', () => {
             intent: 'advance',
             createdAt: timestamp,
             statePath: 'state.json',
-            auditPath: 'origin.json'
+            auditPath: join(attempts, `${originAttemptId}.json`)
           },
           {
             attemptId: activeAttemptId,
@@ -238,7 +239,7 @@ describe('candidate delivery policy', () => {
             intent: 'resume',
             createdAt: timestamp,
             statePath: 'state.json',
-            auditPath: 'active.json'
+            auditPath: join(attempts, `${activeAttemptId}.json`)
           }
         ]
       })

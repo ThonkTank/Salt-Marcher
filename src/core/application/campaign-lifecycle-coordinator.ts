@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { localPersistenceFormatVersions } from '../../shared/contracts/local-persistence-format-versions.js'
 
 const safeCampaignId =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -33,7 +34,9 @@ export type CampaignLifecycleOperation = z.infer<
 
 export const campaignLifecycleReceiptSchema = z
   .object({
-    schemaVersion: z.literal(2),
+    schemaVersion: z.literal(
+      localPersistenceFormatVersions.campaignLifecycleReceipt
+    ),
     lifecycleId: z.uuid(),
     operation: campaignLifecycleOperationSchema,
     mode: z.enum(['create', 'replace']),
