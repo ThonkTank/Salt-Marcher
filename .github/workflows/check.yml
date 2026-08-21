@@ -254,6 +254,33 @@ jobs:
       - run: pnpm exec tsx scripts/assert-built-workspace.ts --channel development
       - run: xvfb-run -a pnpm test:passive-e2e:built
 
+  exact-sha-aggregate:
+    if: always() && github.event_name == 'pull_request'
+    name: Candidate · exact-SHA aggregate
+    needs:
+      - portable
+      - native
+      - linux-build
+      - linux-package
+      - linux-qualification
+      - e2e
+      - visual
+      - passive-e2e
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: '${{ env.SALT_MARCHER_CHECKED_SHA }}' }
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.15.1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm delivery:verify-exact-sha-aggregate
+        env:
+          SALT_MARCHER_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          SALT_MARCHER_NEEDS_JSON: ${{ toJSON(needs) }}
+
   post-promotion:
     if: github.event_name == 'push'
     name: Main · promotion/evidence attestation

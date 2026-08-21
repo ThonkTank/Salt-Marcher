@@ -17,6 +17,7 @@ import {
   type GithubWorkflowRun,
   type WorkflowEvidence
 } from './delivery-contract.js'
+import { verifyLiveRepositoryPolicy } from './repository-policy.js'
 
 const shaPattern = /^[a-f0-9]{40}$/
 
@@ -269,6 +270,7 @@ export function readCandidateState(): CandidateState {
 export function assertCandidateReady(): CandidateState {
   const state = readCandidateState()
   assertCandidateState(state)
+  verifyLiveRepositoryPolicy()
   return state
 }
 
@@ -320,6 +322,7 @@ export function requiresApplicationHandoff(
 
 export function promoteCandidate(state: CandidateState): void {
   assertCandidateState(state)
+  verifyLiveRepositoryPolicy()
   const workspaceRoot = process.cwd()
   const applicationHandoffRequired = requiresApplicationHandoff(
     computeAppBuildInputFingerprint(workspaceRoot),

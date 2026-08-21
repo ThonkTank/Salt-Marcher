@@ -90,11 +90,39 @@ describe('CI platform partitions', () => {
     )
     expect(
       workflow.match(/ref: ['"]?\$\{\{ env\.SALT_MARCHER_CHECKED_SHA \}\}/g)
-    ).toHaveLength(9)
+    ).toHaveLength(10)
     expect(workflow.match(/actions\/download-artifact@v4/g)).toHaveLength(4)
     expect(
       workflow.match(/assert-built-workspace\.ts --channel development/g)
     ).toHaveLength(5)
+  })
+
+  it('aggregates every candidate partition for the exact PR head SHA', () => {
+    const aggregate = workflow.slice(
+      workflow.indexOf('  exact-sha-aggregate:'),
+      workflow.indexOf('  post-promotion:')
+    )
+    expect(aggregate).toContain(
+      "if: always() && github.event_name == 'pull_request'"
+    )
+    expect(aggregate).toContain('name: Candidate · exact-SHA aggregate')
+    for (const dependency of [
+      'portable',
+      'native',
+      'linux-build',
+      'linux-package',
+      'linux-qualification',
+      'e2e',
+      'visual',
+      'passive-e2e'
+    ])
+      expect(aggregate).toContain(`- ${dependency}`)
+    expect(aggregate).toContain("ref: '${{ env.SALT_MARCHER_CHECKED_SHA }}'")
+    expect(aggregate).toContain('pnpm delivery:verify-exact-sha-aggregate')
+    expect(aggregate).toContain(
+      'SALT_MARCHER_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}'
+    )
+    expect(aggregate).toContain('SALT_MARCHER_NEEDS_JSON: ${{ toJSON(needs) }}')
   })
 
   it('shards isolated functional and visual E2E while retaining evidence', () => {

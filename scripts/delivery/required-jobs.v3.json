@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 3,
   "workflowName": "Check",
   "jobs": [
     {
@@ -49,6 +49,10 @@
     {
       "name": "Linux E2E · passive window",
       "platformRole": "linux-e2e-passive-window"
+    },
+    {
+      "name": "Candidate · exact-SHA aggregate",
+      "platformRole": "candidate-exact-sha-aggregate"
     }
   ]
 }
