@@ -113,24 +113,7 @@ export class FileCampaignLifecycleJournal implements CampaignLifecycleJournal {
 
   private parse(path: string): CampaignLifecycleReceipt {
     const value = JSON.parse(readFileSync(path, 'utf8')) as unknown
-    const current = campaignLifecycleReceiptSchema.safeParse(value)
-    if (current.success) return Object.freeze(current.data)
-    const legacy = legacyReceiptSchema.parse(value)
-    return Object.freeze(
-      campaignLifecycleReceiptSchema.parse({
-        schemaVersion: 2,
-        lifecycleId: legacy.transitionId,
-        operation: { kind: 'replacement' },
-        mode: 'replace',
-        campaignId: legacy.campaignId,
-        previousName: legacy.previousName,
-        replacementName: legacy.replacementName,
-        previousActiveId: legacy.previousActiveId,
-        phase: migrateLegacyPhase(legacy.phase),
-        validation: { migratedFromSchemaVersion: 1 },
-        updatedAt: legacy.updatedAt
-      })
-    )
+    return parseCampaignLifecycleReceipt(value)
   }
 
   private persist(
@@ -163,6 +146,29 @@ export class FileCampaignLifecycleJournal implements CampaignLifecycleJournal {
     if (!safeCampaignId.test(campaignId))
       throw new Error('Unsafe Campaign lifecycle identifier')
   }
+}
+
+export function parseCampaignLifecycleReceipt(
+  value: unknown
+): CampaignLifecycleReceipt {
+  const current = campaignLifecycleReceiptSchema.safeParse(value)
+  if (current.success) return Object.freeze(current.data)
+  const legacy = legacyReceiptSchema.parse(value)
+  return Object.freeze(
+    campaignLifecycleReceiptSchema.parse({
+      schemaVersion: 2,
+      lifecycleId: legacy.transitionId,
+      operation: { kind: 'replacement' },
+      mode: 'replace',
+      campaignId: legacy.campaignId,
+      previousName: legacy.previousName,
+      replacementName: legacy.replacementName,
+      previousActiveId: legacy.previousActiveId,
+      phase: migrateLegacyPhase(legacy.phase),
+      validation: { migratedFromSchemaVersion: 1 },
+      updatedAt: legacy.updatedAt
+    })
+  )
 }
 
 const phases: readonly CampaignLifecyclePhase[] = [

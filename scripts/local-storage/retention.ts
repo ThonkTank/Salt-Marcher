@@ -10,6 +10,7 @@ import {
   type StorageRetentionReceipt
 } from './contract.js'
 import { atomicWrite, syncDirectory } from './filesystem.js'
+import { evacuateCompatibility } from './compatibility-evacuation.js'
 import {
   inspectLocalStorage,
   validateDeploymentDirectory
@@ -27,7 +28,7 @@ export interface ApplyStorageRetentionOptions {
 
 const findingSchema = z
   .object({
-    area: z.enum(['deployments', 'backups', 'audit']),
+    area: z.enum(['deployments', 'backups', 'audit', 'compatibility']),
     name: z.string(),
     reason: z.string()
   })
@@ -69,6 +70,39 @@ const receiptSchema = progressSchema
         removedAttemptFiles: z.array(z.string()),
         findings: z.array(findingSchema)
       })
+      .strict(),
+    compatibility: z
+      .object({
+        formatVersion: z.literal(1),
+        artifacts: z.array(
+          z
+            .object({
+              area: z.enum([
+                'profile',
+                'backup',
+                'deployment',
+                'install-journal',
+                'handoff-state',
+                'handoff-history'
+              ]),
+              name: z.string(),
+              path: z.string(),
+              status: z.enum([
+                'current',
+                'migratable',
+                'legacy-reader-required',
+                'unknown-invalid'
+              ]),
+              format: z.string(),
+              applicationReachable: z.boolean(),
+              reason: z.string()
+            })
+            .strict()
+        ),
+        reachableLegacyCount: z.number().int().nonnegative(),
+        reachableNonCurrentCount: z.number().int().nonnegative(),
+        unknownInvalidCount: z.number().int().nonnegative()
+      })
       .strict()
   })
   .strict()
@@ -83,6 +117,7 @@ export function applyStorageRetention(
       options.receiptDirectory,
       'storage-retention-progress.json'
     )
+    evacuateCompatibility(options)
     const prior = readProgress(progressPath, options.applicationSha)
     const current = applyDeploymentRetention({
       ...options,
@@ -119,12 +154,18 @@ export function applyStorageRetention(
         ? {}
         : { removeFile: options.removeAuditFile })
     })
+    const compatibility = inspectLocalStorage(options).compatibility
+    if (compatibility.reachableNonCurrentCount !== 0)
+      throw new Error(
+        `Storage retention left ${compatibility.reachableNonCurrentCount} application-reachable non-current artifact(s)`
+      )
     const receipt = receiptSchema.parse({
       formatVersion: 1,
       applicationSha: options.applicationSha,
       createdAt: (options.now ?? (() => new Date()))().toISOString(),
       deployment,
-      audit
+      audit,
+      compatibility
     })
     atomicWrite(
       storageRetentionReceiptPath(options.receiptDirectory),
@@ -168,6 +209,15 @@ export function collectStorageRetentionReceipt(
   for (const fingerprint of receipt.deployment.deletedDeploymentFingerprints)
     if (existsSync(join(options.paths.deployments, fingerprint)))
       throw new Error(`Deleted deployment is present again: ${fingerprint}`)
+  if (inspection.compatibility.reachableNonCurrentCount !== 0)
+    throw new Error(
+      'Storage-retention receipt is stale; non-current storage remains reachable'
+    )
+  if (
+    JSON.stringify(inspection.compatibility) !==
+    JSON.stringify(receipt.compatibility)
+  )
+    throw new Error('Compatibility evidence differs from local storage')
   return receipt
 }
 

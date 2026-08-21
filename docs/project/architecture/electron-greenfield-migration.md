@@ -265,6 +265,12 @@ verifiable phases:
    Campaign backups are never automatically deleted and require exact,
    single-target manifest confirmation. Terminal invocation details are capped
    at 100 while SHA state receipts and nonterminal attempts remain durable.
+8. Compatibility evacuation runs within that post-runtime maintenance boundary
+   after the verified profile backup. Its read-only topology covers profile,
+   backups, deployments, installation journal, and Handoff audit state; known
+   reader-dependent formats are rewritten or succeeded without mutating
+   immutable backups, while unknown-invalid data remains quarantined by
+   validation and untouched.
 
 The editor application-layer refactor tracks its normative evidence in
 `application-layer-refactor-acceptance-matrix.md`. It moves the two-step

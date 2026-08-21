@@ -244,7 +244,10 @@ function phaseEvidence(
           releasedBytes: 0,
           retainedInvocations: 1,
           removedInvocations: 0,
-          removedAttemptFiles: []
+          removedAttemptFiles: [],
+          reachableLegacyCount: 0,
+          reachableNonCurrentCount: 0,
+          unknownInvalidCount: 0
         }
       : null
   }

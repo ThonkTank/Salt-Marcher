@@ -160,7 +160,10 @@ export const storageRetentionEvidenceSchema = z
     releasedBytes: z.number().int().nonnegative(),
     retainedInvocations: z.number().int().nonnegative(),
     removedInvocations: z.number().int().nonnegative(),
-    removedAttemptFiles: z.array(z.string())
+    removedAttemptFiles: z.array(z.string()),
+    reachableLegacyCount: z.literal(0),
+    reachableNonCurrentCount: z.literal(0),
+    unknownInvalidCount: z.number().int().nonnegative()
   })
   .strict()
 

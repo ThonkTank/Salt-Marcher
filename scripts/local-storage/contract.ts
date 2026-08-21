@@ -1,5 +1,5 @@
 export interface StorageFinding {
-  readonly area: 'deployments' | 'backups' | 'audit'
+  readonly area: 'deployments' | 'backups' | 'audit' | 'compatibility'
   readonly name: string
   readonly reason: string
 }
@@ -15,9 +15,37 @@ export interface ValidDeployment {
   readonly builtAt: string
   readonly bytes: number
   readonly manifestSha256: string
+  readonly manifestFormatVersion: 1 | 2
   readonly active: boolean
   readonly journalProtected: boolean
   readonly retention: 'keep' | 'delete'
+}
+
+export type CompatibilityStatus =
+  'current' | 'migratable' | 'legacy-reader-required' | 'unknown-invalid'
+
+export interface CompatibilityArtifact {
+  readonly area:
+    | 'profile'
+    | 'backup'
+    | 'deployment'
+    | 'install-journal'
+    | 'handoff-state'
+    | 'handoff-history'
+  readonly name: string
+  readonly path: string
+  readonly status: CompatibilityStatus
+  readonly format: string
+  readonly applicationReachable: boolean
+  readonly reason: string
+}
+
+export interface CompatibilityInspection {
+  readonly formatVersion: 1
+  readonly artifacts: readonly CompatibilityArtifact[]
+  readonly reachableLegacyCount: number
+  readonly reachableNonCurrentCount: number
+  readonly unknownInvalidCount: number
 }
 
 export interface ValidBackup {
@@ -41,6 +69,7 @@ export interface LocalStorageInspection {
   readonly backupBytes: number
   readonly findings: readonly StorageFinding[]
   readonly warnings: readonly StorageWarning[]
+  readonly compatibility: CompatibilityInspection
 }
 
 export interface DeploymentRetentionResult {
@@ -65,6 +94,7 @@ export interface StorageRetentionReceipt {
   readonly createdAt: string
   readonly deployment: DeploymentRetentionResult
   readonly audit: AuditRetentionResult
+  readonly compatibility: CompatibilityInspection
 }
 
 export interface BackupPruneResult {

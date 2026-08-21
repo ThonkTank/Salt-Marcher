@@ -182,7 +182,10 @@ describe('candidate delivery policy', () => {
                 releasedBytes: 0,
                 retainedInvocations: 2,
                 removedInvocations: 0,
-                removedAttemptFiles: []
+                removedAttemptFiles: [],
+                reachableLegacyCount: 0,
+                reachableNonCurrentCount: 0,
+                unknownInvalidCount: 0
               }
             : null
       }

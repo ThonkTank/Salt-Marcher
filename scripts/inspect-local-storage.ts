@@ -18,6 +18,7 @@ const paths = localInstallationPaths(
 )
 const inspection = inspectLocalStorage({
   paths,
+  receiptDirectory: resolve(workspaceRoot, '.tmp', 'handoff-local-app'),
   iconSourcePath: resolve(
     workspaceRoot,
     'resources',

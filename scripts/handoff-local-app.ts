@@ -368,6 +368,10 @@ function collectStorageRetentionEvidence(): HandoffPhaseEvidence {
     receiptDirectory,
     applicationSha: workspace.commit
   })
+  if (retained.compatibility.reachableNonCurrentCount !== 0)
+    throw new Error(
+      'Storage retention left application-reachable non-current storage'
+    )
   return {
     ...installed,
     storageRetention: {
@@ -383,7 +387,10 @@ function collectStorageRetentionEvidence(): HandoffPhaseEvidence {
       releasedBytes: retained.deployment.releasedBytes,
       retainedInvocations: retained.audit.retainedInvocations,
       removedInvocations: retained.audit.removedInvocations,
-      removedAttemptFiles: [...retained.audit.removedAttemptFiles]
+      removedAttemptFiles: [...retained.audit.removedAttemptFiles],
+      reachableLegacyCount: 0,
+      reachableNonCurrentCount: 0,
+      unknownInvalidCount: retained.compatibility.unknownInvalidCount
     }
   }
 }

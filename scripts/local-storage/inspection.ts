@@ -26,12 +26,14 @@ import {
   type ValidBackup,
   type ValidDeployment
 } from './contract.js'
+import { inspectCompatibility } from './compatibility.js'
 import { directDirectoryNames, treeBytes } from './filesystem.js'
 
 export interface InspectLocalStorageOptions {
   readonly paths: LocalInstallationPaths
   readonly iconSourcePath: string
   readonly now?: () => Date
+  readonly receiptDirectory?: string
 }
 
 type InspectedDeployment = Omit<
@@ -152,6 +154,15 @@ export function inspectLocalStorage(
       }
     })
   const warnings = storageWarnings(backupNames.length, backupBytes)
+  const compatibility = inspectCompatibility({
+    paths: options.paths,
+    deployments,
+    backups,
+    findings,
+    ...(options.receiptDirectory === undefined
+      ? {}
+      : { receiptDirectory: options.receiptDirectory })
+  })
 
   return {
     formatVersion: 1,
@@ -162,7 +173,8 @@ export function inspectLocalStorage(
     backupEntryCount: backupNames.length,
     backupBytes,
     findings: findings.sort(findingOrder),
-    warnings
+    warnings,
+    compatibility
   }
 }
 
@@ -187,9 +199,17 @@ export function validateDeploymentDirectory(
   )
     throw new Error('Deployment contains an unexpected file inventory')
   const manifestPath = join(path, 'artifact-manifest.json')
-  const manifest = localArtifactManifestSchema.parse(
-    JSON.parse(readFileSync(manifestPath, 'utf8'))
-  )
+  const raw: unknown = JSON.parse(readFileSync(manifestPath, 'utf8'))
+  const parsed = localArtifactManifestSchema.safeParse(raw)
+  if (!parsed.success)
+    return validateLegacyDeployment(
+      path,
+      fingerprint,
+      iconSourcePath,
+      manifestPath,
+      raw
+    )
+  const manifest = parsed.data
   if (manifest.receipt.build.channel !== 'local')
     throw new Error('Deployment manifest does not describe a Local build')
   if (manifest.receipt.build.workspaceFingerprint !== fingerprint)
@@ -211,7 +231,56 @@ export function validateDeploymentDirectory(
     path,
     builtAt: manifest.receipt.build.builtAt,
     bytes: treeBytes(path),
-    manifestSha256: sha256File(manifestPath)
+    manifestSha256: sha256File(manifestPath),
+    manifestFormatVersion: 2
+  }
+}
+
+const legacyDeploymentManifestSchema = z
+  .object({
+    formatVersion: z.literal(1),
+    artifactFile: z
+      .string()
+      .min(1)
+      .max(255)
+      .regex(/^[^/\\]+$/),
+    artifactSha256: z.string().regex(/^[a-f0-9]{64}$/),
+    build: z
+      .object({
+        channel: z.literal('local'),
+        commit: z.string().regex(/^[a-f0-9]{40}$/),
+        sourceFingerprint: z.string().regex(/^[a-f0-9]{64}$/),
+        dirty: z.boolean(),
+        builtAt: z.iso.datetime(),
+        schemaVersion: z.number().int().nonnegative()
+      })
+      .strict()
+  })
+  .strict()
+
+function validateLegacyDeployment(
+  path: string,
+  fingerprint: string,
+  iconSourcePath: string,
+  manifestPath: string,
+  raw: unknown
+): InspectedDeployment {
+  const manifest = legacyDeploymentManifestSchema.parse(raw)
+  if (manifest.build.sourceFingerprint !== fingerprint)
+    throw new Error('Legacy deployment directory and source fingerprint differ')
+  if (
+    sha256File(join(path, 'SaltMarcher.AppImage')) !== manifest.artifactSha256
+  )
+    throw new Error('Legacy deployment AppImage hash is invalid')
+  if (sha256File(join(path, 'icon.png')) !== sha256File(iconSourcePath))
+    throw new Error('Legacy deployment icon hash is invalid')
+  return {
+    fingerprint,
+    path,
+    builtAt: manifest.build.builtAt,
+    bytes: treeBytes(path),
+    manifestSha256: sha256File(manifestPath),
+    manifestFormatVersion: 1
   }
 }
 

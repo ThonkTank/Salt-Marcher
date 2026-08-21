@@ -399,6 +399,27 @@ retention keeps the newest 100 terminal records and every nonterminal record;
 only detail files no longer referenced after that classification may be
 removed.
 
+The read-only storage inventory also owns the compatibility topology across
+profile databases and lifecycle journals, every retained backup, active and
+retained deployments, the installation journal, and Handoff state and
+invocation history. It distinguishes current, migratable, reader-dependent
+legacy, and unknown-invalid artifacts. Unknown or integrity-invalid artifacts
+are preserved and are never made application-reachable merely to classify
+them. Current version-one contracts such as campaign-backup manifests remain
+explicitly allowlisted and are not legacy by number alone.
+
+Known reader-dependent artifacts are evacuated only under the installation
+lock and after a verified current-profile backup. Mutable journals and audit
+indexes are atomically rewritten to their current contracts. Immutable backups
+are never rewritten in place: evacuation creates and verifies a current-format
+successor and records that provenance, while removal of the original remains
+an exact manual prune. A fresh current deployment must replace an active legacy
+deployment before the same ownership- and hash-validating retention boundary
+may remove obsolete inactive deployments. Handoff retention is reusable only
+when its post-operation compatibility scan reports that every
+application-reachable artifact is current; migratable or reader-dependent
+formats may remain only in verified immutable history.
+
 Remote required-job evidence satisfies `checked`; the downloaded Local package
 satisfies `packaged`. The actual downloaded AppImage is still smoke-tested on
 the handoff host before any campaign backup, deployment, activation, or
