@@ -9,8 +9,11 @@ import {
 } from './support/architecture-gate.js'
 import {
   codeFiles,
+  hasImport,
   importCycles,
-  parseTypeScriptModule
+  parseTypeScriptModule,
+  readTypeScriptModule,
+  relativeImportGraph
 } from './support/typescript-module.js'
 
 legitimateLiteralGate({
@@ -44,6 +47,55 @@ architectureGate(
       codeFiles('tests').map((path) => [path, readFileSync(path, 'utf8')])
     )
     expect(rawSourceRegexViolations(sources)).toEqual([])
+  }
+)
+
+architectureGate(
+  'import-dependency-boundary',
+  'keeps local installation responsibilities directed and acyclic',
+  () => {
+    const internal = codeFiles('scripts/local-installation')
+    expect(
+      importCycles(
+        relativeImportGraph(['scripts/local-app-installation.ts', ...internal])
+      )
+    ).toEqual([])
+
+    const campaignModules = internal
+      .filter((path) => path.includes('/campaign-'))
+      .map(readTypeScriptModule)
+    for (const module of campaignModules) {
+      expect(hasImport(module, './deployment.js')).toBe(false)
+      expect(hasImport(module, './recovery.js')).toBe(false)
+    }
+
+    const deployment = readTypeScriptModule(
+      'scripts/local-installation/deployment.ts'
+    )
+    for (const campaignModule of [
+      './campaign-backup.js',
+      './campaign-file-inventory.js',
+      './campaign-migration.js'
+    ])
+      expect(hasImport(deployment, campaignModule)).toBe(false)
+  }
+)
+
+architectureGate(
+  'typed-contract',
+  'preserves the public local installation module surface',
+  async () => {
+    const installation = await import('../../scripts/local-app-installation.js')
+    expect(Object.keys(installation).sort()).toEqual([
+      'LocalInstallCrashForTest',
+      'LocalInstallationError',
+      'advanceLocalAppInstallation',
+      'inspectLocalAppInstallation',
+      'installLocalApp',
+      'isInstalledLocalAppRunning',
+      'localInstallationPaths',
+      'localInstallationTargets'
+    ])
   }
 )
 
