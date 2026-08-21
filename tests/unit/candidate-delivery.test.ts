@@ -171,7 +171,20 @@ describe('candidate delivery policy', () => {
         backupManifestSha256: hash,
         deploymentManifestSha256: hash,
         runtimeEvidenceSha256: hash,
-        installedSha256: hash
+        installedSha256: hash,
+        storageRetention:
+          phase === 'storage-retention-applied'
+            ? {
+                receiptSha256: hash,
+                activeDeploymentFingerprint: hash,
+                retainedDeploymentFingerprints: [hash],
+                deletedDeploymentFingerprints: [],
+                releasedBytes: 0,
+                retainedInvocations: 2,
+                removedInvocations: 0,
+                removedAttemptFiles: []
+              }
+            : null
       }
       const outputHash = hashHandoffValue({
         phase,

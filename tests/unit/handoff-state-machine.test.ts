@@ -197,7 +197,7 @@ function createFixture(failOnce?: HandoffPhaseName): {
   const evidence = new Map<HandoffPhaseName, HandoffPhaseEvidence>(
     handoffPhases.map((phase, index) => [
       phase,
-      phaseEvidence(index.toString(16))
+      phaseEvidence(index.toString(16), phase === 'storage-retention-applied')
     ])
   )
   let failed = false
@@ -215,7 +215,10 @@ function createFixture(failOnce?: HandoffPhaseName): {
   return { receipt, definitions, executions, evidence, now }
 }
 
-function phaseEvidence(character: string): HandoffPhaseEvidence {
+function phaseEvidence(
+  character: string,
+  storageRetention = false
+): HandoffPhaseEvidence {
   const hash = character.repeat(64)
   return {
     workspaceFingerprint: 'b'.repeat(64),
@@ -231,6 +234,18 @@ function phaseEvidence(character: string): HandoffPhaseEvidence {
     backupManifestSha256: hash,
     deploymentManifestSha256: hash,
     runtimeEvidenceSha256: hash,
-    installedSha256: hash
+    installedSha256: hash,
+    storageRetention: storageRetention
+      ? {
+          receiptSha256: hash,
+          activeDeploymentFingerprint: hash,
+          retainedDeploymentFingerprints: [hash],
+          deletedDeploymentFingerprints: [],
+          releasedBytes: 0,
+          retainedInvocations: 1,
+          removedInvocations: 0,
+          removedAttemptFiles: []
+        }
+      : null
   }
 }

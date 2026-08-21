@@ -14,7 +14,8 @@ export const handoffPhases = [
   'backup-created',
   'deployment-staged',
   'activated',
-  'installed-runtime-verified'
+  'installed-runtime-verified',
+  'storage-retention-applied'
 ] as const
 export const handoffPhaseNameSchema = z.enum(handoffPhases)
 export type HandoffPhaseName = z.infer<typeof handoffPhaseNameSchema>
@@ -150,6 +151,19 @@ export type InstalledRuntimeEvidence = z.infer<
   typeof installedRuntimeEvidenceSchema
 >
 
+export const storageRetentionEvidenceSchema = z
+  .object({
+    receiptSha256: fingerprintSchema,
+    activeDeploymentFingerprint: fingerprintSchema,
+    retainedDeploymentFingerprints: z.array(fingerprintSchema),
+    deletedDeploymentFingerprints: z.array(fingerprintSchema),
+    releasedBytes: z.number().int().nonnegative(),
+    retainedInvocations: z.number().int().nonnegative(),
+    removedInvocations: z.number().int().nonnegative(),
+    removedAttemptFiles: z.array(z.string())
+  })
+  .strict()
+
 export const handoffPhaseEvidenceSchema = z
   .object({
     workspaceFingerprint: fingerprintSchema,
@@ -165,7 +179,8 @@ export const handoffPhaseEvidenceSchema = z
     backupManifestSha256: fingerprintSchema.nullable(),
     deploymentManifestSha256: fingerprintSchema.nullable(),
     runtimeEvidenceSha256: fingerprintSchema.nullable(),
-    installedSha256: fingerprintSchema.nullable()
+    installedSha256: fingerprintSchema.nullable(),
+    storageRetention: storageRetentionEvidenceSchema.nullable()
   })
   .strict()
 
@@ -184,7 +199,7 @@ export const handoffPhaseSchema = z
 
 export const handoffReceiptSchema = z
   .object({
-    formatVersion: z.literal(5),
+    formatVersion: z.literal(6),
     stateId: z.uuid(),
     originAttemptId: z.uuid(),
     activeAttemptId: z.uuid(),
@@ -234,6 +249,25 @@ export const handoffReceiptSchema = z
     let predecessor = hashHandoffValue(receipt.identity)
     let incompleteSeen = false
     for (const [index, phase] of receipt.phases.entries()) {
+      if (
+        phase.phase === 'storage-retention-applied' &&
+        phase.status === 'completed' &&
+        phase.evidence?.storageRetention == null
+      )
+        context.addIssue({
+          code: 'custom',
+          message: 'Completed storage retention requires retention evidence',
+          path: ['phases', index, 'evidence', 'storageRetention']
+        })
+      if (
+        phase.phase !== 'storage-retention-applied' &&
+        phase.evidence?.storageRetention != null
+      )
+        context.addIssue({
+          code: 'custom',
+          message: 'Storage-retention evidence belongs only to its checkpoint',
+          path: ['phases', index, 'evidence', 'storageRetention']
+        })
       if (phase.status !== 'completed') {
         incompleteSeen = true
         continue
@@ -286,7 +320,7 @@ export function createHandoffReceipt(
   timestamp: string
 ): HandoffReceipt {
   return handoffReceiptSchema.parse({
-    formatVersion: 5,
+    formatVersion: 6,
     stateId,
     originAttemptId: attemptId,
     activeAttemptId: attemptId,

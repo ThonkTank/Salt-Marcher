@@ -357,14 +357,35 @@ next invocation, the journal and actual `current` pointer deterministically
 finish the new state or restore the old one. Backup copying hashes each source
 byte during its single copy pass and rereads only the backup for verification;
 backup manifests retain role-specific schema and both build identities.
-Backups and immutable deployments are never automatically deleted. The
-installer stages fingerprint-addressed deployments and atomically switches
+Campaign backups are never automatically deleted. They may be removed only by
+an explicit single-target maintenance command that proves the complete backup
+manifest and file inventory, refuses the five newest backups and backups under
+30 days old, and remains a dry-run without the exact manifest SHA. Crossing 50
+backups or 1 GiB produces a non-blocking storage warning only.
+`pnpm local-storage:inspect -- --json` is the read-only inventory boundary;
+`pnpm local-storage:prune -- --backup <name> --confirm-manifest-sha <sha>` is
+the sole deletion boundary and accepts exactly one direct-child backup name.
+
+Immutable deployments are eligible for automatic retention only after the
+installed runtime has been verified. Retention keeps the active deployment,
+the two newest valid inactive deployments, and every deployment referenced by
+a nonterminal installation journal. A deletion candidate must be a direct
+64-hex child whose directory fingerprint, artifact manifest, receipt hash,
+AppImage hash, icon hash, and ownership all validate immediately before
+removal. Unknown, damaged, ambiguous, journal-protected, or foreign entries are
+reported and preserved. Deletion failures fail the retention checkpoint but do
+not roll back the already verified installation.
+
+The installer stages fingerprint-addressed deployments and atomically switches
 one `current` symlink only after all deployment files are durable. For each
 immutable application SHA, the handoff advances one explicit state through
 `candidate-qualified`, `checked`, `packaged`, `packaged-smoke-passed`,
 `backup-created`, `deployment-staged`, `activated`, and
-`installed-runtime-verified`. Every phase binds its predecessor output and its
-own result by SHA-256 and is reusable only while current evidence still matches.
+`installed-runtime-verified`, then `storage-retention-applied`. The final
+checkpoint records retained and deleted deployment fingerprints, findings,
+warnings, and actually released bytes. Every phase binds its predecessor output
+and its own result by SHA-256 and is reusable only while current evidence still
+matches.
 Repeated invocations are safe and append audit attempts; they do not create a
 parallel state or replace the original state's provenance. Explicit `--resume`
 records recovery intent but follows the same validation rules. Auth, live
@@ -373,6 +394,11 @@ before a material state or attempt is created. The handoff downloads only the
 artifact belonging to the exact successful required-job run, verifies its
 closed three-file inventory and complete hash chain, and accepts it only when
 its clean SHA, workspace and app-input fingerprint match the local candidate.
+Final SHA-keyed state receipts are permanent. Invocation and per-attempt detail
+retention keeps the newest 100 terminal records and every nonterminal record;
+only detail files no longer referenced after that classification may be
+removed.
+
 Remote required-job evidence satisfies `checked`; the downloaded Local package
 satisfies `packaged`. The actual downloaded AppImage is still smoke-tested on
 the handoff host before any campaign backup, deployment, activation, or

@@ -259,6 +259,12 @@ verifiable phases:
    reuses that artifact only after complete run, inventory, input, toolchain,
    manifest, and byte-hash validation; host smoke, data backup, installation,
    and runtime verification remain local.
+7. Local storage retention is a post-runtime, hash-chained handoff checkpoint.
+   It keeps the active deployment, two valid inactive predecessors, and every
+   nonterminal-journal reference; invalid or foreign entries remain untouched.
+   Campaign backups are never automatically deleted and require exact,
+   single-target manifest confirmation. Terminal invocation details are capped
+   at 100 while SHA state receipts and nonterminal attempts remain durable.
 
 The editor application-layer refactor tracks its normative evidence in
 `application-layer-refactor-acceptance-matrix.md`. It moves the two-step

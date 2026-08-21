@@ -82,6 +82,10 @@ describe('CI platform partitions', () => {
       expect(handoff).toContain("'test:packaged-local-smoke:built'")
       expect(handoff).toContain("installationDefinition('backup-created')")
       expect(handoff).toContain("phase: 'installed-runtime-verified'")
+      expect(handoff).toContain("phase: 'storage-retention-applied'")
+      expect(
+        handoff.indexOf("phase: 'storage-retention-applied'")
+      ).toBeGreaterThan(handoff.indexOf("phase: 'installed-runtime-verified'"))
     }
   )
 

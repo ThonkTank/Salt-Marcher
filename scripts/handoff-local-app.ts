@@ -54,6 +54,11 @@ import {
   type LocalInstallationTarget
 } from './local-app-installation.js'
 import { removeSupersededLocalInstallation } from './local-installation-legacy.js'
+import {
+  applyStorageRetention,
+  collectStorageRetentionReceipt,
+  storageRetentionReceiptPath
+} from './local-storage/retention.js'
 
 if (process.platform !== 'linux')
   throw new Error('SaltMarcher Local handoff currently targets Linux AppImage')
@@ -256,6 +261,26 @@ function phaseDefinitions(): readonly HandoffPhaseDefinition[] {
         })
       },
       collect: collectRuntimeEvidence
+    },
+    {
+      phase: 'storage-retention-applied',
+      execute: () => {
+        const retention = applyStorageRetention({
+          paths: installation,
+          iconSourcePath: installOptions.iconSourcePath,
+          receiptDirectory,
+          applicationSha: workspace.commit
+        })
+        for (const warning of retention.deployment.warnings)
+          console.warn(
+            JSON.stringify({
+              component: 'local-storage',
+              event: 'capacity-warning',
+              ...warning
+            })
+          )
+      },
+      collect: collectStorageRetentionEvidence
     }
   ]
 }
@@ -335,6 +360,34 @@ function collectRuntimeEvidence(): HandoffPhaseEvidence {
   }
 }
 
+function collectStorageRetentionEvidence(): HandoffPhaseEvidence {
+  const installed = collectRuntimeEvidence()
+  const retained = collectStorageRetentionReceipt({
+    paths: installation,
+    iconSourcePath: installOptions.iconSourcePath,
+    receiptDirectory,
+    applicationSha: workspace.commit
+  })
+  return {
+    ...installed,
+    storageRetention: {
+      receiptSha256: sha256File(storageRetentionReceiptPath(receiptDirectory)),
+      activeDeploymentFingerprint:
+        retained.deployment.activeDeploymentFingerprint,
+      retainedDeploymentFingerprints: [
+        ...retained.deployment.retainedDeploymentFingerprints
+      ],
+      deletedDeploymentFingerprints: [
+        ...retained.deployment.deletedDeploymentFingerprints
+      ],
+      releasedBytes: retained.deployment.releasedBytes,
+      retainedInvocations: retained.audit.retainedInvocations,
+      removedInvocations: retained.audit.removedInvocations,
+      removedAttemptFiles: [...retained.audit.removedAttemptFiles]
+    }
+  }
+}
+
 function evidence(
   input: {
     readonly buildOutputHash?: string
@@ -344,6 +397,7 @@ function evidence(
     readonly deploymentManifestSha256?: string
     readonly runtimeEvidenceSha256?: string
     readonly installedSha256?: string
+    readonly storageRetention?: HandoffPhaseEvidence['storageRetention']
   } = {}
 ): HandoffPhaseEvidence {
   assertWorkspaceUnchanged()
@@ -361,7 +415,8 @@ function evidence(
     backupManifestSha256: input.backupManifestSha256 ?? null,
     deploymentManifestSha256: input.deploymentManifestSha256 ?? null,
     runtimeEvidenceSha256: input.runtimeEvidenceSha256 ?? null,
-    installedSha256: input.installedSha256 ?? null
+    installedSha256: input.installedSha256 ?? null,
+    storageRetention: input.storageRetention ?? null
   }
 }
 
