@@ -11,6 +11,7 @@
     "tests/unit/build-receipt.test.ts",
     "tests/unit/candidate-artifact.test.ts",
     "tests/unit/local-app-installation.test.ts",
+    "tests/unit/local-installation-legacy.test.ts",
     "tests/unit/local-profile-lock.test.ts",
     "tests/unit/ci-workflow-policy.test.ts"
   ],

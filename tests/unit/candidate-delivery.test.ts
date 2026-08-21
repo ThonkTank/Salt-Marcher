@@ -29,8 +29,8 @@ afterEach(() => {
 })
 
 const valid: CandidateState = {
-  branch: 'quality-reset/candidate',
-  upstream: 'origin/quality-reset/candidate',
+  branch: 'candidate/delivery-test',
+  upstream: 'origin/candidate/delivery-test',
   head: 'b'.repeat(40),
   upstreamHead: 'b'.repeat(40),
   remoteMain: 'a'.repeat(40),

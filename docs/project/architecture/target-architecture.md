@@ -179,6 +179,11 @@ treated as diagnostic noise, while actual binary linkage failures remain
 visible. One app session is reused within a suite only. Suites keep fresh
 fixture-backed profiles and processes because even suites sharing a fixture
 mutate that profile.
+The Local handoff removes the superseded root-level AppImage and its version-one
+ownership marker only after the immutable `current` deployment has passed
+installed-runtime verification and the legacy executable matches its recorded
+hash. Missing or mismatched ownership evidence fails closed and preserves the
+legacy file for manual inspection.
 Workspace navigation is described by immutable `WorkspaceDefinition` records,
 including identity, label, icon, loader, neutral layout mode and recovery
 policy, rather than parallel conditionals in the shell. Its route host models

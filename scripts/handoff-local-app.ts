@@ -53,6 +53,7 @@ import {
   type InstallLocalAppOptions,
   type LocalInstallationTarget
 } from './local-app-installation.js'
+import { removeSupersededLocalInstallation } from './local-installation-legacy.js'
 
 if (process.platform !== 'linux')
   throw new Error('SaltMarcher Local handoff currently targets Linux AppImage')
@@ -240,13 +241,20 @@ function phaseDefinitions(): readonly HandoffPhaseDefinition[] {
     installationDefinition('activated'),
     {
       phase: 'installed-runtime-verified',
-      execute: () =>
+      execute: () => {
         run('installed-runtime-verified', [
           'pnpm',
           'exec',
           'tsx',
           'scripts/installed-runtime-verification.ts'
-        ]),
+        ])
+        removeSupersededLocalInstallation({
+          installationRoot: installation.root,
+          currentAppImage: installation.appImage,
+          currentManifest: installation.installedManifest,
+          runtimeEvidencePath
+        })
+      },
       collect: collectRuntimeEvidence
     }
   ]
