@@ -82,6 +82,18 @@ maintaining parallel key unions. The Utility application root coordinates
 bootstrap, lifecycle, and composition and contains no aggregate operation-key
 inventory.
 
+Electron invocation failures never depend on JavaScript `Error` identity
+surviving context isolation. Main catches every registered invocation and
+returns one strict discriminated result DTO: immutable validated payload on
+success, or capability code, retryability, and bounded issues on failure. The
+preloads validate and freeze that DTO and expose the raw GM surface only as
+`saltMarcherBridge`; the renderer-owned capability adapter unwraps it and
+constructs the logical `CapabilityError` in the renderer realm. Error handling
+therefore uses `instanceof CapabilityError` only and never infers a domain code
+from arbitrary `message`, `name`, or `code` properties. The passive preload
+validates the same result envelope independently without acquiring the GM
+surface.
+
 Renderer features depend on shared renderer primitives, never on sibling
 workspaces. Creature search state and controls live in the `creatures` feature;
 the reusable two-pane editor lives in `creature-collection`; Session groups and
@@ -365,13 +377,25 @@ complete tree in one transaction per database, validated, then promoted by
 directory rename. Missing paths, missing migration chains, corruption, and
 access failures remain distinct terminal outcomes. Installation preferences,
 including theme and Session layout, use one revisions-protected SQLite record
-rather than renderer storage or Main-process JSON.
+rather than renderer storage or Main-process JSON. Its JSON column contains a
+strict version-one persistence envelope around the logical preferences value.
+Bootstrap, reads, and current writes accept only that envelope; the explicit
+installation-schema migration wraps the previous logical value without
+advancing its optimistic revision.
 
 Pixi rendering is invalidation-driven. Scene, camera, overlay, and resize
 changes coalesce into one animation frame; a static map never schedules its
 successor. Resize notifications are ignored when pixel dimensions are
 unchanged. The Travel acceptance fixture records render counters and reason
 counters and requires a zero-render idle interval.
+
+The canonical local check performs a read-only preflight before expensive
+work. It rejects insufficient memory plus swap headroom, workspace disk, or an
+incompatible Node/pnpm toolchain with measured reasons. A normal invocation is
+always fresh. Explicit `pnpm check --resume` may reuse only completed phases
+from an atomic state whose commit, workspace inputs, toolchain, check contract,
+and predecessor evidence still match; reusable build output is independently
+hash-validated before any built or packaged test is skipped.
 
 Every build starts with an empty output directory and writes receipt format 2.
 It binds commit/dirty state, the full workspace fingerprint, a separate
@@ -415,9 +439,16 @@ it is the sole component allowed to migrate an inactive Local profile.
 Every installation persists an fsync-backed journal before backup, migration,
 deployment, each previous-file move, each promotion, and completion. On the
 next invocation, the journal and actual `current` pointer deterministically
-finish the new state or restore the old one. Backup copying hashes each source
-byte during its single copy pass and rereads only the backup for verification;
-backup manifests retain role-specific schema and both build identities.
+finish the new state or restore the old one. Non-database files are copied and
+hashed in one pass. Each declared live SQLite database is instead captured
+through SQLite's Online Backup API into the staged backup, validated, stripped
+of SQLite-owned sidecars, and included in the manifest's logical data
+fingerprint. Exact declared `<database>-wal` and `<database>-shm` paths are
+excluded from the ordinary file copy; similarly named user files are not.
+Current backup manifests record this snapshot method, role-specific schema,
+both build identities, file hashes, and the logical source-data hash. Legacy
+format-one backups remain preserved and visible to inventory but are excluded
+from automatic restore and pruning.
 Campaign backups are never automatically deleted. They may be removed only by
 an explicit single-target maintenance command that proves the complete backup
 manifest and file inventory, refuses the five newest backups and backups under
@@ -459,6 +490,14 @@ Final SHA-keyed state receipts are permanent. Invocation and per-attempt detail
 retention keeps the newest 100 terminal records and every nonterminal record;
 only detail files no longer referenced after that classification may be
 removed.
+
+`pnpm handoff:app --dry-run` is a separate isolated rehearsal, not a handoff
+checkpoint. It may build a dirty workspace, snapshots a selected live profile
+with the same SQLite-online semantics, and exercises the actual packaged app
+under temporary XDG roots. It never creates canonical handoff receipts,
+retention state, permanent campaign backups, deployments, or a live
+activation, is incompatible with `--resume`, and removes its temporary root on
+success or failure.
 
 The read-only storage inventory also owns the compatibility topology across
 profile databases and lifecycle journals, every retained backup, active and

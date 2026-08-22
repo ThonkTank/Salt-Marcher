@@ -8,6 +8,50 @@
 > work status lives in active GitHub issues and pull requests, while durable
 > measurement evidence belongs in `../evidence/`.
 
+### Postmortem remediation closure — 2026-08-23
+
+The six implementation phases from the delivery and persistence postmortem are
+complete. Every final SHA below is an ancestor of
+`origin/main@52a0cc28cdb332406a4d03e0a14cc005eb7a0ff0`; each linked candidate
+run satisfied the exact-SHA aggregate, the matching CI-built AppImage passed
+one fresh local handoff, and the linked Main run attested the unchanged
+promotion.
+
+| Phase | Final SHA | Acceptance evidence |
+| --- | --- | --- |
+| 1 — candidate and artifact provenance | `335e2833f72febdead24be315942cb2d4d1f9837` | [PR #621](https://github.com/ThonkTank/Salt-Marcher/pull/621); [candidate 32597707414](https://github.com/ThonkTank/Salt-Marcher/actions/runs/32597707414); [Main 32598200956](https://github.com/ThonkTank/Salt-Marcher/actions/runs/32598200956) |
+| 2 — local preflight and resumable checks | `66be5981363dd610bc0de0e8ca74e108ea4a1913` | [PR #622](https://github.com/ThonkTank/Salt-Marcher/pull/622); [candidate 32600154649](https://github.com/ThonkTank/Salt-Marcher/actions/runs/32600154649); [Main 32600755714](https://github.com/ThonkTank/Salt-Marcher/actions/runs/32600755714) |
+| 3 — SQLite-consistent campaign backups | `e9583fecfe18f3f77c06ffe29e6c48f5c4fce679` | [PR #623](https://github.com/ThonkTank/Salt-Marcher/pull/623); [candidate 32600937641](https://github.com/ThonkTank/Salt-Marcher/actions/runs/32600937641); [Main 32601523921](https://github.com/ThonkTank/Salt-Marcher/actions/runs/32601523921) |
+| 4 — isolated handoff rehearsal | `98b2503bb6b9a3c8a32fefa96ca75a14d955ee5a` | [PR #624](https://github.com/ThonkTank/Salt-Marcher/pull/624); [candidate 32601609099](https://github.com/ThonkTank/Salt-Marcher/actions/runs/32601609099); [Main 32602291097](https://github.com/ThonkTank/Salt-Marcher/actions/runs/32602291097) |
+| 5 — explicit IPC results | `128d724291aa46baec5b9a949ee2ea2bf7c49145` | [PR #625](https://github.com/ThonkTank/Salt-Marcher/pull/625); [candidate 32603111507](https://github.com/ThonkTank/Salt-Marcher/actions/runs/32603111507), attempt 2; installed artifact `b763dc01ec50…`; [Main 32603836742](https://github.com/ThonkTank/Salt-Marcher/actions/runs/32603836742) |
+| 6 — versioned installation preferences | `52a0cc28cdb332406a4d03e0a14cc005eb7a0ff0` | [PR #626](https://github.com/ThonkTank/Salt-Marcher/pull/626); [candidate 32603878573](https://github.com/ThonkTank/Salt-Marcher/actions/runs/32603878573); installed artifact `1b3bfd2e0283…`, live schema 37 and preference envelope v1; [Main 32604384764](https://github.com/ThonkTank/Salt-Marcher/actions/runs/32604384764) |
+
+The delivery path now rejects insufficient local resources before expensive
+work, persists atomic hash-bound check progress for explicit resume, and can
+rehearse a dirty workspace and a snapshot of real campaign data under isolated
+temporary XDG roots without activation. Candidate artifacts and promotions
+remain immutable and exact-SHA-bound. CI pins the Node patch version because a
+floating major selector was observed to resolve two different patch releases
+between a reusable-build producer and consumer during one workflow run.
+
+Campaign backup manifest v2 records SQLite Online Backup as the snapshot
+method, validates the staged database, fingerprints logical source data, and
+owns only the exact declared SQLite sidecars. Format-one backups are preserved
+as historical bytes and are neither restored nor pruned automatically.
+
+Main-to-preload invocations now return strict success or failure DTOs. The GM
+preload exposes a validated raw `saltMarcherBridge`; the renderer adapter
+reconstructs `CapabilityError` locally, and arbitrary transported error
+properties no longer masquerade as domain codes. Installation preferences are
+stored in a strict version-one envelope. The 36-to-37 installation migration
+wraps the former logical value without incrementing its optimistic revision.
+
+The closing semantic audit guards these boundaries directly: online SQLite
+backup ownership, one exact CI Node runtime, explicit IPC results and
+renderer-realm errors, and versioned preference reads, bootstrap, migration,
+and writes. The target architecture carries the resulting normative contracts;
+the checks do not depend on raw regular expressions over TypeScript source.
+
 ### Architecture-debt closure — 2026-08-22
 
 The bounded architecture-debt program is complete through its implementation
@@ -139,7 +183,7 @@ accounts for the bounded virtual biome catalog and CRUD surface added with
 schema 15; schema 16 replaced separate World Location kind and region fields
 with tags and read-aloud text, and schema 17 normalizes ordered location-owned
 tags into validated rows while all per-entry ceilings remain unchanged.
-Campaign schema 34, installation schema 36, migration registry 8, Generator Config V5, Encounter engine
+Campaign schema 34, installation schema 37, migration registry 9, Generator Config V5, Encounter engine
 `encounter-v5`, and Reward engine `reward-v3` are current. Persisted
 `reward-v2` runs remain readable. The checked
 [version-truth matrix](version-truth.md) owns these current values. Schema 25 is reset rather than migrated. The
