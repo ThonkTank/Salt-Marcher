@@ -23,7 +23,7 @@ export function registerCapabilities(core: CoreProcessSupervisor): void {
     if (definition.channel === null) continue
     const kind = rawKind as CoreOperationKind
     ipcMain.handle(definition.channel, (event, raw) =>
-      invokeGeneric(async () => {
+      invokeGeneric(() => {
         if (!roleCanInvoke(roleForEvent(event), kind))
           throw new CapabilityError('read_only', false)
         const input = definition.input.safeParse(raw)
@@ -38,16 +38,20 @@ export function registerCapabilities(core: CoreProcessSupervisor): void {
   for (const [rawKind, definition] of Object.entries(mainOperations)) {
     if (definition.channel === null) continue
     const kind = rawKind as MainOperationKind
-    ipcMain.handle(definition.channel, async (event, raw) => {
-      if (!operationAllowsRole(definition, roleForEvent(event)))
-        throw new CapabilityError('read_only', false)
-      const input = definition.input.parse(raw)
-      const handler = handlers[kind] as (
-        event: IpcMainInvokeEvent,
-        input: unknown
-      ) => unknown
-      return definition.output.parse(await handler(event, input))
-    })
+    ipcMain.handle(definition.channel, (event, raw) =>
+      invokeGeneric(async () => {
+        if (!operationAllowsRole(definition, roleForEvent(event)))
+          throw new CapabilityError('read_only', false)
+        const input = definition.input.safeParse(raw)
+        if (!input.success)
+          throw new CapabilityError('validation_failed', false)
+        const handler = handlers[kind] as (
+          event: IpcMainInvokeEvent,
+          input: unknown
+        ) => unknown
+        return Promise.resolve(handler(event, input.data))
+      }, definition.output)
+    )
   }
 }
 

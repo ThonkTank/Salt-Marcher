@@ -1,10 +1,5 @@
-import {
-  capabilityErrorCodes,
-  type CapabilityErrorCode
-} from './capability-error-code.js'
+import { type CapabilityErrorCode } from './capability-error-code.js'
 import type { CapabilityIssue } from './capability-issue.js'
-
-const capabilityErrorCodeSet = new Set<string>(capabilityErrorCodes)
 
 export class CapabilityError extends Error {
   public constructor(
@@ -35,11 +30,5 @@ export function capabilityErrorIssues(
 export function capabilityErrorCode(
   error: unknown
 ): CapabilityErrorCode | null {
-  if (error instanceof CapabilityError) return error.code
-  if (error === null || typeof error !== 'object') return null
-  const candidate = error as { code?: unknown; message?: unknown }
-  for (const value of [candidate.code, candidate.message])
-    if (typeof value === 'string' && capabilityErrorCodeSet.has(value))
-      return value as CapabilityErrorCode
-  return null
+  return error instanceof CapabilityError ? error.code : null
 }

@@ -1,11 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import { z } from 'zod'
 import {
   passiveProjectionSchema,
   type PassiveDisplayApi
 } from '../shared/contracts/passive-display.js'
 import { coreProcessStatusSchema } from '../shared/contracts/runtime.js'
-import { capabilityFailureSchema } from '../shared/contracts/campaign.js'
+import { ipcResultSchema } from '../shared/contracts/ipc-result.js'
 import { CapabilityError } from '../shared/errors/capability-error.js'
 import {
   coreOperations,
@@ -17,11 +16,6 @@ import {
   operationAllowsRole,
   operationDefinitionsForRole
 } from '../shared/contracts/operations/registry.js'
-
-const responseSchema = z.discriminatedUnion('ok', [
-  z.object({ ok: z.literal(true), payload: z.unknown() }).strict(),
-  z.object({ ok: z.literal(false), error: capabilityFailureSchema }).strict()
-])
 
 type PassiveE2eApi = PassiveDisplayApi & {
   __e2eProbePrivilegedChannels?: () => Promise<
@@ -43,7 +37,7 @@ const passiveHandlers = defineOperationHandlers(
   {
     'projection.read': async () => {
       const operation = coreOperations['projection.read']
-      const result = responseSchema.parse(
+      const result = ipcResultSchema.parse(
         await invokeIpc(operation.channel!, operation.input.parse(undefined))
       )
       if (!result.ok)
@@ -58,9 +52,16 @@ const passiveHandlers = defineOperationHandlers(
       const operation = mainOperations['runtime.coreStatus']
       if (operation.channel === null)
         throw new CapabilityError('protocol_violation', false)
-      return coreProcessStatusSchema.parse(
+      const result = ipcResultSchema.parse(
         await invokeIpc(operation.channel, undefined)
       )
+      if (!result.ok)
+        throw new CapabilityError(
+          result.error.code,
+          result.error.retryable,
+          result.error.issues ?? []
+        )
+      return coreProcessStatusSchema.parse(result.payload)
     }
   }
 )

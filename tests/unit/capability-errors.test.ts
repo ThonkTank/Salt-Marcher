@@ -23,9 +23,9 @@ describe('capability error presentation policy', () => {
     expect(report).toHaveBeenCalledWith(text)
   })
 
-  it('recovers a known code from Electron reduced Error messages', () => {
+  it('does not infer capability codes from arbitrary Error messages', () => {
     expect(capabilityErrorText(new Error('internal'))).toBe(
-      'Ein interner Fehler ist aufgetreten.'
+      'Unbekannter Fehler'
     )
     expect(capabilityErrorText(new Error('not-a-capability-code'))).toBe(
       'Unbekannter Fehler'

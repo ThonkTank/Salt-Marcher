@@ -1,7 +1,9 @@
 import { contextBridge, ipcRenderer } from 'electron'
-import { z } from 'zod'
-import { capabilityFailureSchema } from '../../shared/contracts/campaign.js'
-import type { SaltMarcherApi } from '../../shared/contracts/capability-api.js'
+import type {
+  CapabilityBridge,
+  IpcResult
+} from '../../shared/contracts/ipc-result.js'
+import { ipcResultSchema } from '../../shared/contracts/ipc-result.js'
 import {
   capabilityEvents,
   type CapabilityEventKind,
@@ -17,7 +19,6 @@ import {
   type MainOperationKind,
   type MainOperationOutput
 } from '../../shared/contracts/operations.js'
-import { CapabilityError } from '../../shared/errors/capability-error.js'
 import {
   assertExactOperationKeys,
   operationAllowsRole,
@@ -30,53 +31,45 @@ const invokeIpc = (channel: string, input: unknown): Promise<unknown> =>
 async function invokeCore<K extends CoreOperationKind>(
   kind: K,
   input: CoreOperationInput<K>
-): Promise<CoreOperationOutput<K>> {
+): Promise<IpcResult<CoreOperationOutput<K>>> {
   const operation = coreOperations[kind]
-  if (operation.channel === null)
-    throw new CapabilityError('protocol_violation', false)
+  if (operation.channel === null) return failure('protocol_violation', false)
   const request = operation.input.safeParse(input)
-  if (!request.success) throw new CapabilityError('validation_failed', false)
+  if (!request.success) return failure('validation_failed', false)
   try {
     const raw = await invokeIpc(operation.channel, request.data)
-    const result = z
-      .discriminatedUnion('ok', [
-        z.object({ ok: z.literal(true), payload: z.unknown() }).passthrough(),
-        z
-          .object({ ok: z.literal(false), error: capabilityFailureSchema })
-          .passthrough()
-      ])
-      .parse(raw)
-    if (!result.ok)
-      throw new CapabilityError(
-        result.error.code,
-        result.error.retryable,
-        result.error.issues ?? []
-      )
+    const result = ipcResultSchema.parse(raw)
+    if (!result.ok) return freezeDeep(result)
     const value = operation.output.safeParse(result.payload)
-    if (!value.success) throw new CapabilityError('protocol_violation', false)
-    return freezeDeep(value.data) as CoreOperationOutput<K>
-  } catch (error) {
-    if (error instanceof CapabilityError) throw error
-    throw new CapabilityError('core_unavailable', true)
+    if (!value.success) return failure('protocol_violation', false)
+    return freezeDeep({ ok: true, payload: value.data }) as IpcResult<
+      CoreOperationOutput<K>
+    >
+  } catch {
+    return failure('core_unavailable', true)
   }
 }
 
 async function invokeMain<K extends MainOperationKind>(
   kind: K,
   input: MainOperationInput<K>
-): Promise<MainOperationOutput<K>> {
+): Promise<IpcResult<MainOperationOutput<K>>> {
   const operation = mainOperations[kind]
-  if (operation.channel === null)
-    throw new CapabilityError('protocol_violation', false)
+  if (operation.channel === null) return failure('protocol_violation', false)
   const request = operation.input.safeParse(input)
-  if (!request.success) throw new CapabilityError('validation_failed', false)
+  if (!request.success) return failure('validation_failed', false)
   try {
-    return freezeDeep(
-      operation.output.parse(await invokeIpc(operation.channel, request.data))
-    ) as MainOperationOutput<K>
-  } catch (error) {
-    if (error instanceof CapabilityError) throw error
-    throw new CapabilityError('core_unavailable', true)
+    const result = ipcResultSchema.parse(
+      await invokeIpc(operation.channel, request.data)
+    )
+    if (!result.ok) return freezeDeep(result)
+    const output = operation.output.safeParse(result.payload)
+    if (!output.success) return failure('protocol_violation', false)
+    return freezeDeep({ ok: true, payload: output.data }) as IpcResult<
+      MainOperationOutput<K>
+    >
+  } catch {
+    return failure('core_unavailable', true)
   }
 }
 
@@ -116,7 +109,7 @@ for (const [kind, event] of Object.entries(capabilityEvents)) {
   if (!event.roles.includes('gm')) continue
   installMethod(kind, (listener: unknown) => {
     if (typeof listener !== 'function')
-      throw new CapabilityError('validation_failed', false)
+      throw new TypeError('Capability event listener must be a function')
     const handler = (_event: Electron.IpcRendererEvent, raw: unknown): void => {
       const definition = capabilityEvents[kind as CapabilityEventKind]
       const notice = definition.payload.parse(
@@ -135,8 +128,8 @@ facade['runtime'] = Object.freeze({
   e2e: process.argv.includes('--salt-marcher-e2e')
 })
 
-const api = freezeDeep(facade) as SaltMarcherApi
-contextBridge.exposeInMainWorld('saltMarcher', api)
+const api = freezeDeep(facade) as CapabilityBridge
+contextBridge.exposeInMainWorld('saltMarcherBridge', api)
 if (process.argv.includes('--salt-marcher-e2e'))
   contextBridge.exposeInMainWorld(
     '__saltMarcherE2e',
@@ -169,4 +162,11 @@ function freezeDeep<T>(value: T): T {
     Object.freeze(value)
   }
   return value
+}
+
+function failure(
+  code: import('../../shared/errors/capability-error-code.js').CapabilityErrorCode,
+  retryable: boolean
+): IpcResult<never> {
+  return Object.freeze({ ok: false, error: Object.freeze({ code, retryable }) })
 }

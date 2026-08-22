@@ -28,6 +28,7 @@ import {
   SpatialQualificationModel,
   type SpatialQualificationState
 } from '../spatial-qualification-model.js'
+import { capabilityApi } from '../capabilities/capability-api.js'
 
 type WebglObservation = Readonly<{ version: string; renderer: string }>
 
@@ -232,7 +233,7 @@ async function settledWorkingSetSamples(): Promise<readonly number[]> {
   const values: number[] = []
   for (let sample = 0; sample < 3; sample += 1) {
     await settleRenderer()
-    values.push(await window.saltMarcher.runtime.memory())
+    values.push(await capabilityApi().runtime.memory())
   }
   return values
 }
@@ -297,7 +298,7 @@ async function downloadRuntimeObservation(
       displayWidth: window.screen.width,
       displayHeight: window.screen.height,
       devicePixelRatio: window.devicePixelRatio,
-      gpu: await window.saltMarcher.runtime.gpuObservation(),
+      gpu: await capabilityApi().runtime.gpuObservation(),
       webgl
     },
     populations,
