@@ -51,9 +51,9 @@ export function inspectCompatibility(
         backup.name,
         backup.path,
         'current',
-        'campaign-backup-manifest-v1',
+        'campaign-backup-manifest-v2',
         false,
-        'Version one is the current immutable backup envelope'
+        'Version two is the current SQLite snapshot backup envelope'
       )
     )
     scanDatabases(backup.path, 'backup', false, artifacts)
@@ -67,18 +67,22 @@ export function inspectCompatibility(
   }
   for (const finding of options.findings.filter(
     ({ area }) => area === 'backups'
-  ))
+  )) {
+    const legacy = finding.reason.startsWith(
+      'Legacy campaign backup manifest v1'
+    )
     artifacts.push(
       artifact(
         'backup',
         finding.name,
         join(options.paths.backups, finding.name),
-        'unknown-invalid',
-        'unverified',
+        legacy ? 'unsupported-obsolete' : 'unknown-invalid',
+        legacy ? 'campaign-backup-manifest-v1' : 'unverified',
         false,
         finding.reason
       )
     )
+  }
 
   for (const deployment of options.deployments)
     artifacts.push(

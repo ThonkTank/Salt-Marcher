@@ -20,11 +20,7 @@ import {
   LocalInstallationError,
   type LocalInstallationPaths
 } from './contract.js'
-import {
-  durableCampaignFileInventory,
-  hashFileInventory,
-  hashTreeOrEmpty
-} from './campaign-file-inventory.js'
+import { campaignDataHash } from './campaign-backup.js'
 
 export function readPersistencePreflight(
   paths: LocalInstallationPaths,
@@ -93,9 +89,7 @@ export function migrateCampaignData(
         throw new Error('Promoted persistence failed validation')
       updateJournal({ phase: 'data-promoted' })
       updateJournal({
-        campaignDataHash: hashFileInventory(
-          durableCampaignFileInventory(hashTreeOrEmpty(paths.campaignData))
-        )
+        campaignDataHash: campaignDataHash(paths)
       })
       rmSync(rollback, { recursive: true, force: true })
     } catch (error) {

@@ -15,7 +15,7 @@ describe('local persistence format allowlist', () => {
       handoffReceipt: 7,
       handoffInvocationHistory: 2,
       candidateArtifactReceipt: 1,
-      campaignBackupManifest: 1,
+      campaignBackupManifest: 2,
       localProfileLock: 1,
       localStorageInspection: 1,
       localStorageCompatibilityInspection: 1,
@@ -24,7 +24,6 @@ describe('local persistence format allowlist', () => {
     })
     expect(currentVersionOneLocalPersistenceContracts).toEqual([
       'candidateArtifactReceipt',
-      'campaignBackupManifest',
       'localProfileLock',
       'localStorageInspection',
       'localStorageCompatibilityInspection',
@@ -33,13 +32,13 @@ describe('local persistence format allowlist', () => {
     ])
   })
 
-  it('distinguishes an allowlisted version one from an obsolete version one', () => {
+  it('rejects obsolete version-one envelopes after a format advances', () => {
     expect(() =>
       assertCurrentLocalPersistenceVersion(
         { formatVersion: 1 },
         'campaignBackupManifest'
       )
-    ).not.toThrow()
+    ).toThrow('Unsupported campaignBackupManifest formatVersion 1; expected 2')
     expect(() =>
       assertCurrentLocalPersistenceVersion(
         { formatVersion: 1 },

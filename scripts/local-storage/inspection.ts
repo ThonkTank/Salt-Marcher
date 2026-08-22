@@ -16,7 +16,11 @@ import {
 import { sha256File } from '../file-hash.js'
 import { readInstallJournal } from '../local-install-journal.js'
 import type { LocalInstallationPaths } from '../local-installation/contract.js'
-import { hashTree } from '../local-installation/campaign-file-inventory.js'
+import {
+  hashFileInventory,
+  hashTree,
+  sqliteOwnedBackupInventory
+} from '../local-installation/campaign-file-inventory.js'
 import {
   backupBytesWarningThreshold,
   backupCountWarningThreshold,
@@ -51,6 +55,9 @@ const backupManifestSchema = z
       localPersistenceFormatVersions.campaignBackupManifest
     ),
     createdAt: z.iso.datetime(),
+    snapshotMethod: z.literal('sqlite-online-backup'),
+    sourceDataHash: z.string().regex(/^[a-f0-9]{64}$/),
+    databases: z.array(z.object({ path: z.string().min(1) }).passthrough()),
     files: z.array(
       z
         .object({
@@ -133,7 +140,11 @@ export function inspectLocalStorage(
       inspectedBackups.push(validateBackupDirectory(path, name, bytes))
     } catch (error) {
       backupBytes += bestEffortBytes(path)
-      findings.push({ area: 'backups', name, reason: errorMessage(error) })
+      findings.push({
+        area: 'backups',
+        name,
+        reason: backupFindingReason(path, error)
+      })
     }
   }
   const newestBackups = new Set(
@@ -182,6 +193,19 @@ export function inspectLocalStorage(
     warnings,
     compatibility
   }
+}
+
+function backupFindingReason(path: string, error: unknown): string {
+  try {
+    const value = JSON.parse(
+      readFileSync(join(path, 'backup-manifest.json'), 'utf8')
+    ) as Record<string, unknown>
+    if (value['formatVersion'] === 1)
+      return 'Legacy campaign backup manifest v1 is preserved; automatic restore and pruning are unsupported'
+  } catch {
+    // Preserve the original ownership/validation failure below.
+  }
+  return errorMessage(error)
 }
 
 export function validateDeploymentDirectory(
@@ -250,11 +274,16 @@ export function validateBackupDirectory(
   const raw: unknown = JSON.parse(readFileSync(manifestPath, 'utf8'))
   assertCurrentLocalPersistenceVersion(raw, 'campaignBackupManifest')
   const manifest = backupManifestSchema.parse(raw)
-  const actual = hashTree(path).filter(
-    ({ path: relativePath }) => relativePath !== 'backup-manifest.json'
+  const actual = sqliteOwnedBackupInventory(
+    hashTree(path).filter(
+      ({ path: relativePath }) => relativePath !== 'backup-manifest.json'
+    ),
+    manifest.databases.map((database) => database.path)
   )
   if (JSON.stringify(actual) !== JSON.stringify(manifest.files))
     throw new Error('Backup file inventory or hashes are invalid')
+  if (hashFileInventory(actual) !== manifest.sourceDataHash)
+    throw new Error('Backup logical data fingerprint is invalid')
   return {
     name,
     path,

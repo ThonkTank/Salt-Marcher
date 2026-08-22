@@ -2,11 +2,15 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  readdirSync,
   rmSync,
   renameSync,
   writeFileSync
 } from 'node:fs'
-import { join, relative, sep } from 'node:path'
+import { spawnSync } from 'node:child_process'
+import { tmpdir } from 'node:os'
+import { dirname, join, relative, sep } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { randomUUID } from 'node:crypto'
 import Database from 'better-sqlite3'
 import { z } from 'zod'
@@ -28,16 +32,32 @@ import {
 import {
   copyTreeWithHashes,
   directoryHasEntries,
-  durableCampaignFileInventory,
   hashFileInventory,
   hashTree,
-  hashTreeOrEmpty
+  sqliteOwnedBackupInventory
 } from './campaign-file-inventory.js'
 
 export function campaignDataHash(paths: LocalInstallationPaths): string {
-  return hashFileInventory(
-    durableCampaignFileInventory(hashTreeOrEmpty(paths.campaignData))
-  )
+  if (!directoryHasEntries(paths.campaignData)) return hashFileInventory([])
+  const snapshot = join(tmpdir(), `salt-marcher-backup-hash-${randomUUID()}`)
+  try {
+    return hashFileInventory(
+      snapshotCampaignData(
+        paths.campaignData,
+        snapshot,
+        sqliteDatabasePaths(paths.campaignData)
+      )
+    )
+  } catch (error) {
+    if (error instanceof LocalInstallationError) throw error
+    throw new LocalInstallationError(
+      'data-corrupt',
+      'Campaign data could not be fingerprinted through SQLite snapshots',
+      { cause: error }
+    )
+  } finally {
+    rmSync(snapshot, { recursive: true, force: true })
+  }
 }
 
 export function validateBackupCheckpoint(
@@ -72,6 +92,9 @@ export function validateBackupCheckpoint(
   assertCurrentLocalPersistenceVersion(raw, 'campaignBackupManifest')
   const backupManifest = z
     .object({
+      snapshotMethod: z.literal('sqlite-online-backup'),
+      sourceDataHash: z.string().regex(/^[a-f0-9]{64}$/),
+      databases: z.array(z.object({ path: z.string().min(1) }).passthrough()),
       files: z.array(
         z
           .object({
@@ -84,10 +107,14 @@ export function validateBackupCheckpoint(
     })
     .passthrough()
     .parse(raw)
-  const actualFiles = hashTree(journal.backupPath).filter(
-    ({ path }) => path !== 'backup-manifest.json'
+  const actualFiles = sqliteOwnedBackupInventory(
+    hashTree(journal.backupPath).filter(
+      ({ path }) => path !== 'backup-manifest.json'
+    ),
+    backupManifest.databases.map(({ path }) => path)
   )
   if (
+    backupManifest.sourceDataHash !== journal.sourceDataHash ||
     JSON.stringify(actualFiles) !== JSON.stringify(backupManifest.files) ||
     hashFileInventory(actualFiles) !== journal.sourceDataHash
   )
@@ -103,7 +130,13 @@ export function backupCampaignData(
   previousBuild: unknown,
   sourceDatabases: readonly PreflightDatabase[],
   now: () => Date
-): { readonly path: string; readonly manifestSha256: string } | undefined {
+):
+  | {
+      readonly path: string
+      readonly manifestSha256: string
+      readonly sourceDataHash: string
+    }
+  | undefined {
   if (!directoryHasEntries(paths.campaignData)) return undefined
   mkdirSync(paths.backups, { recursive: true })
   const token = randomUUID()
@@ -114,33 +147,22 @@ export function backupCampaignData(
     `${timestamp}-${shortBuildFingerprint(nextBuild)}-${token.slice(0, 8)}`
   )
   try {
-    const copiedHashes = copyTreeWithHashes(paths.campaignData, staging)
-    const sourceHashes = durableCampaignFileInventory(copiedHashes)
-    const durablePaths = new Set(sourceHashes.map(({ path }) => path))
-    for (const file of copiedHashes)
-      if (!durablePaths.has(file.path))
-        rmSync(join(staging, ...file.path.split('/')), { force: true })
-    if (JSON.stringify(hashTree(staging)) !== JSON.stringify(sourceHashes))
-      throw new Error('Backup hashes differ from campaign data')
+    const databasePaths = sourceDatabases.map(({ path }) => path)
+    snapshotCampaignData(paths.campaignData, staging, databasePaths)
     const copiedDatabases = sourceDatabases.map((database) =>
       join(staging, relative(paths.campaignData, database.path))
     )
     validateDatabases(copiedDatabases)
-    // Opening a copied WAL database read-only may create SQLite sidecars in
-    // the backup. They are validation artifacts, not source bytes. Remove only
-    // paths absent from the source inventory, then prove exact equality again.
-    const sourcePaths = new Set(sourceHashes.map(({ path }) => path))
-    for (const file of hashTree(staging))
-      if (!sourcePaths.has(file.path))
-        rmSync(join(staging, ...file.path.split('/')), { force: true })
-    if (JSON.stringify(hashTree(staging)) !== JSON.stringify(sourceHashes))
-      throw new Error('Database validation changed verified backup bytes')
+    removeDatabaseSidecars(copiedDatabases)
+    const sourceHashes = hashTree(staging)
+    const sourceDataHash = hashFileInventory(sourceHashes)
     const backupManifestPath = join(staging, 'backup-manifest.json')
     writeFileSync(
       backupManifestPath,
       `${JSON.stringify(
         {
           formatVersion: localPersistenceFormatVersions.campaignBackupManifest,
+          snapshotMethod: 'sqlite-online-backup',
           createdAt: now().toISOString(),
           previousBuild,
           nextBuild,
@@ -152,6 +174,7 @@ export function backupCampaignData(
             schemaVersion: database.schemaVersion,
             expectedVersion: database.expectedVersion
           })),
+          sourceDataHash,
           files: sourceHashes
         },
         null,
@@ -162,7 +185,8 @@ export function backupCampaignData(
     renameSync(staging, target)
     return {
       path: target,
-      manifestSha256: sha256File(join(target, 'backup-manifest.json'))
+      manifestSha256: sha256File(join(target, 'backup-manifest.json')),
+      sourceDataHash
     }
   } catch (error) {
     rmSync(staging, { recursive: true, force: true })
@@ -173,6 +197,68 @@ export function backupCampaignData(
       { cause: error }
     )
   }
+}
+
+function removeDatabaseSidecars(databasePaths: readonly string[]): void {
+  for (const databasePath of databasePaths)
+    for (const suffix of ['-wal', '-shm'])
+      rmSync(`${databasePath}${suffix}`, { force: true })
+}
+
+function snapshotCampaignData(
+  sourceRoot: string,
+  targetRoot: string,
+  databasePaths: readonly string[]
+): ReturnType<typeof hashTree> {
+  const owned = new Set(
+    databasePaths.flatMap((path) => {
+      const relativePath = relative(sourceRoot, path).split(sep).join('/')
+      return [relativePath, `${relativePath}-wal`, `${relativePath}-shm`]
+    })
+  )
+  copyTreeWithHashes(sourceRoot, targetRoot, (path) => !owned.has(path))
+  for (const source of databasePaths) {
+    const destination = join(targetRoot, relative(sourceRoot, source))
+    mkdirSync(dirname(destination), { recursive: true })
+    onlineBackupDatabase(source, destination)
+  }
+  return hashTree(targetRoot)
+}
+
+function onlineBackupDatabase(source: string, destination: string): void {
+  const worker = fileURLToPath(
+    new URL('../sqlite-online-backup-worker.ts', import.meta.url)
+  )
+  const result = spawnSync(
+    process.execPath,
+    ['--import', 'tsx', worker, source, destination],
+    { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
+  )
+  if (result.error) throw result.error
+  if (result.status !== 0)
+    throw new Error(
+      `SQLite online backup failed for ${source}: ${result.stderr.trim() || `exit ${result.status}`}`
+    )
+}
+
+function sqliteDatabasePaths(root: string): string[] {
+  if (!existsSync(root)) return []
+  const paths: string[] = []
+  const visit = (directory: string): void => {
+    for (const entry of readdirSync(directory, { withFileTypes: true })) {
+      const path = join(directory, entry.name)
+      if (entry.isSymbolicLink())
+        throw new LocalInstallationError(
+          'data-corrupt',
+          `Campaign data must not contain symbolic links: ${path}`
+        )
+      if (entry.isDirectory()) visit(path)
+      else if (entry.isFile() && entry.name.endsWith('.sqlite'))
+        paths.push(path)
+    }
+  }
+  visit(root)
+  return paths.sort((left, right) => left.localeCompare(right, 'en'))
 }
 
 function validateDatabases(paths: readonly string[]): void {

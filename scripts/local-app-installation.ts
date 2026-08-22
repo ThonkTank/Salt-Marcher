@@ -186,7 +186,6 @@ function advanceLocalAppInstallationLocked(
         paths,
         options.schemaMigrations
       )
-      const sourceDataHash = campaignDataHash(paths)
       const backup = backupCampaignData(
         paths,
         manifest.receipt.build,
@@ -194,6 +193,7 @@ function advanceLocalAppInstallationLocked(
         preflight.databases,
         now
       )
+      const sourceDataHash = backup?.sourceDataHash ?? campaignDataHash(paths)
       updateJournal({
         phase: 'backup-complete',
         backupPath: backup?.path ?? null,

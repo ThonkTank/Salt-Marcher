@@ -99,8 +99,11 @@ export function createLocalStorageFixture(): LocalStorageFixture {
       writeFileSync(
         join(path, 'backup-manifest.json'),
         JSON.stringify({
-          formatVersion: 1,
+          formatVersion: 2,
+          snapshotMethod: 'sqlite-online-backup',
           createdAt,
+          sourceDataHash: hash(JSON.stringify(hashTree(path))),
+          databases: [{ path: 'campaign.sqlite' }],
           files: hashTree(path)
         })
       )

@@ -1,4 +1,4 @@
-import { existsSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { pruneLocalBackup } from '../../scripts/local-storage/backup-prune.js'
@@ -105,5 +105,42 @@ describe('manual campaign-backup pruning', () => {
     expect(storageWarnings(0, backupBytesWarningThreshold + 1)).toEqual([
       expect.objectContaining({ code: 'backup-bytes-high' })
     ])
+  })
+
+  it('recognizes and preserves legacy v1 backups without offering restore or pruning', () => {
+    const fixture = createLocalStorageFixture()
+    cleanup.push(fixture.cleanup)
+    fixture.backup('legacy', '2025-01-01T12:00:00.000Z')
+    const manifestPath = join(
+      fixture.paths.backups,
+      'legacy',
+      'backup-manifest.json'
+    )
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as Record<
+      string,
+      unknown
+    >
+    writeFileSync(
+      manifestPath,
+      JSON.stringify({ ...manifest, formatVersion: 1 })
+    )
+
+    const inspection = inspectLocalStorage({
+      ...fixture,
+      now: () => new Date('2026-03-15T12:00:00.000Z')
+    })
+    expect(inspection.backups).toEqual([])
+    const finding = inspection.findings.find(
+      ({ area, name }) => area === 'backups' && name === 'legacy'
+    )
+    expect(finding?.reason).toContain('is preserved')
+    expect(
+      pruneLocalBackup({
+        ...fixture,
+        backup: 'legacy',
+        now: () => new Date('2026-03-15T12:00:00.000Z')
+      }).refusal
+    ).toContain('automatic restore and pruning are unsupported')
+    expect(existsSync(join(fixture.paths.backups, 'legacy'))).toBe(true)
   })
 })

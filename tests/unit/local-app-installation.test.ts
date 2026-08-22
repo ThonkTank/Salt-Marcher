@@ -129,7 +129,7 @@ describe('local AppImage installation', () => {
     expect(campaignDataHash(paths)).toBe(before)
   })
 
-  it('preserves a non-empty WAL without retaining its disposable SHM file', () => {
+  it('captures committed WAL data in one standalone SQLite snapshot', () => {
     const fixture = createFixture(build('a'))
     const paths = localInstallationPaths(fixture.xdg)
     createDatabase(paths.campaignData, schemaVersion)
@@ -160,10 +160,18 @@ describe('local AppImage installation', () => {
         relative(paths.campaignData, campaignPath)
       )
       expect(existsSync(`${backupCampaign}-shm`)).toBe(false)
-      expect(existsSync(`${backupCampaign}-wal`)).toBe(true)
-      expect(readFileSync(`${backupCampaign}-wal`).byteLength).toBeGreaterThan(
-        0
-      )
+      expect(existsSync(`${backupCampaign}-wal`)).toBe(false)
+      const snapshot = new Database(backupCampaign, {
+        readonly: true,
+        fileMustExist: true
+      })
+      try {
+        expect(
+          snapshot.prepare('SELECT content FROM valuable').pluck().all()
+        ).toContain('still in WAL')
+      } finally {
+        snapshot.close()
+      }
 
       const repeated = advanceLocalAppInstallation(
         fixture.options,
@@ -277,16 +285,25 @@ describe('local AppImage installation', () => {
     fixture.useBuild(build('b'))
     const second = installLocalApp(fixture.options)
     expect(second.backupPath).toBeDefined()
-    expect(
-      readFileSync(join(second.backupPath!, 'installation.sqlite'))
-    ).toEqual(originalDatabase)
+    const backupDatabase = readFileSync(
+      join(second.backupPath!, 'installation.sqlite')
+    )
+    expect(backupDatabase).not.toHaveLength(0)
     const backupManifest = JSON.parse(
       readFileSync(join(second.backupPath!, 'backup-manifest.json'), 'utf8')
-    ) as { files: Array<{ path: string; sha256: string }> }
+    ) as {
+      formatVersion: number
+      snapshotMethod: string
+      files: Array<{ path: string; bytes: number; sha256: string }>
+    }
+    expect(backupManifest).toMatchObject({
+      formatVersion: 2,
+      snapshotMethod: 'sqlite-online-backup'
+    })
     expect(backupManifest.files).toContainEqual({
       path: 'installation.sqlite',
-      bytes: originalDatabase.length,
-      sha256: hash(originalDatabase)
+      bytes: backupDatabase.length,
+      sha256: hash(backupDatabase)
     })
     expect(backupManifest.files).toContainEqual({
       path: 'notes.txt',

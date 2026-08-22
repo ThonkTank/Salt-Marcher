@@ -32,27 +32,29 @@ export function hashTreeOrEmpty(root: string): FileHash[] {
   return existsSync(root) ? hashTree(root) : []
 }
 
-export function durableCampaignFileInventory(
-  files: readonly FileHash[]
-): FileHash[] {
-  return files.filter(
-    ({ path, bytes }) =>
-      !path.endsWith('-shm') && !(path.endsWith('-wal') && bytes === 0)
-  )
-}
-
 export function hashFileInventory(files: readonly FileHash[]): string {
   return createHash('sha256').update(JSON.stringify(files)).digest('hex')
+}
+
+export function sqliteOwnedBackupInventory(
+  files: readonly FileHash[],
+  databasePaths: readonly string[]
+): FileHash[] {
+  const sidecars = new Set(
+    databasePaths.flatMap((path) => [`${path}-wal`, `${path}-shm`])
+  )
+  return files.filter(({ path }) => !sidecars.has(path))
 }
 
 /** Copies and hashes each source byte in the same pass; verification rereads only the backup. */
 export function copyTreeWithHashes(
   sourceRoot: string,
-  targetRoot: string
+  targetRoot: string,
+  include: (relativePath: string) => boolean = () => true
 ): FileHash[] {
   mkdirSync(targetRoot, { recursive: false })
   const hashes: FileHash[] = []
-  copyDirectory(sourceRoot, targetRoot, sourceRoot, hashes)
+  copyDirectory(sourceRoot, targetRoot, sourceRoot, hashes, include)
   syncPath(targetRoot)
   return hashes.sort((left, right) => left.path.localeCompare(right.path, 'en'))
 }
@@ -65,7 +67,8 @@ function copyDirectory(
   sourceDirectory: string,
   targetDirectory: string,
   sourceRoot: string,
-  hashes: FileHash[]
+  hashes: FileHash[],
+  include: (relativePath: string) => boolean
 ): void {
   for (const entry of readdirSync(sourceDirectory, { withFileTypes: true })) {
     const source = join(sourceDirectory, entry.name)
@@ -77,7 +80,7 @@ function copyDirectory(
       )
     if (entry.isDirectory()) {
       mkdirSync(target)
-      copyDirectory(source, target, sourceRoot, hashes)
+      copyDirectory(source, target, sourceRoot, hashes, include)
       syncPath(target)
       continue
     }
@@ -86,7 +89,9 @@ function copyDirectory(
         'data-corrupt',
         `Unsupported campaign data entry: ${source}`
       )
-    hashes.push(copyFileWithHash(source, target, sourceRoot))
+    const relativePath = relative(sourceRoot, source).split(sep).join('/')
+    if (include(relativePath))
+      hashes.push(copyFileWithHash(source, target, sourceRoot))
   }
 }
 

@@ -6,7 +6,7 @@ export const localPersistenceFormatVersions = Object.freeze({
   handoffReceipt: 7,
   handoffInvocationHistory: 2,
   candidateArtifactReceipt: 1,
-  campaignBackupManifest: 1,
+  campaignBackupManifest: 2,
   localProfileLock: 1,
   localStorageInspection: 1,
   localStorageCompatibilityInspection: 1,
