@@ -21,6 +21,7 @@ import {
   type LocalInstallationPaths
 } from './contract.js'
 import {
+  durableCampaignFileInventory,
   hashFileInventory,
   hashTreeOrEmpty
 } from './campaign-file-inventory.js'
@@ -92,7 +93,9 @@ export function migrateCampaignData(
         throw new Error('Promoted persistence failed validation')
       updateJournal({ phase: 'data-promoted' })
       updateJournal({
-        campaignDataHash: hashFileInventory(hashTreeOrEmpty(paths.campaignData))
+        campaignDataHash: hashFileInventory(
+          durableCampaignFileInventory(hashTreeOrEmpty(paths.campaignData))
+        )
       })
       rmSync(rollback, { recursive: true, force: true })
     } catch (error) {

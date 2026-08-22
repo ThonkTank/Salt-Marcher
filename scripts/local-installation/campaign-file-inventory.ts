@@ -32,6 +32,15 @@ export function hashTreeOrEmpty(root: string): FileHash[] {
   return existsSync(root) ? hashTree(root) : []
 }
 
+export function durableCampaignFileInventory(
+  files: readonly FileHash[]
+): FileHash[] {
+  return files.filter(
+    ({ path, bytes }) =>
+      !path.endsWith('-shm') && !(path.endsWith('-wal') && bytes === 0)
+  )
+}
+
 export function hashFileInventory(files: readonly FileHash[]): string {
   return createHash('sha256').update(JSON.stringify(files)).digest('hex')
 }

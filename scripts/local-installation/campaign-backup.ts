@@ -28,13 +28,16 @@ import {
 import {
   copyTreeWithHashes,
   directoryHasEntries,
+  durableCampaignFileInventory,
   hashFileInventory,
   hashTree,
   hashTreeOrEmpty
 } from './campaign-file-inventory.js'
 
 export function campaignDataHash(paths: LocalInstallationPaths): string {
-  return hashFileInventory(hashTreeOrEmpty(paths.campaignData))
+  return hashFileInventory(
+    durableCampaignFileInventory(hashTreeOrEmpty(paths.campaignData))
+  )
 }
 
 export function validateBackupCheckpoint(
@@ -111,7 +114,12 @@ export function backupCampaignData(
     `${timestamp}-${shortBuildFingerprint(nextBuild)}-${token.slice(0, 8)}`
   )
   try {
-    const sourceHashes = copyTreeWithHashes(paths.campaignData, staging)
+    const copiedHashes = copyTreeWithHashes(paths.campaignData, staging)
+    const sourceHashes = durableCampaignFileInventory(copiedHashes)
+    const durablePaths = new Set(sourceHashes.map(({ path }) => path))
+    for (const file of copiedHashes)
+      if (!durablePaths.has(file.path))
+        rmSync(join(staging, ...file.path.split('/')), { force: true })
     if (JSON.stringify(hashTree(staging)) !== JSON.stringify(sourceHashes))
       throw new Error('Backup hashes differ from campaign data')
     const copiedDatabases = sourceDatabases.map((database) =>

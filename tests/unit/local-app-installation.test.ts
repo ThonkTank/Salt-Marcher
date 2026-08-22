@@ -23,6 +23,7 @@ import {
   type InstallLocalAppOptions
 } from '../../scripts/local-app-installation.js'
 import type { BuildInfo } from '../../src/shared/contracts/build-info.js'
+import { campaignDataHash } from '../../scripts/local-installation/campaign-backup.js'
 import {
   schemaMigrations,
   type SchemaMigration
@@ -104,6 +105,74 @@ describe('local AppImage installation', () => {
       'backup-created'
     )
     expect(repeated.backupPath).toBe(backup.backupPath)
+  })
+
+  it('does not treat disposable SQLite sidecars as campaign data changes', () => {
+    const fixture = createFixture(build('a'))
+    const paths = localInstallationPaths(fixture.xdg)
+    const databasePath = createDatabase(paths.campaignData, schemaVersion, true)
+    const before = campaignDataHash(paths)
+
+    const database = new Database(databasePath, {
+      readonly: true,
+      fileMustExist: true
+    })
+    try {
+      expect(database.pragma('quick_check')).toEqual([{ quick_check: 'ok' }])
+    } finally {
+      database.close()
+    }
+
+    expect(existsSync(`${databasePath}-shm`)).toBe(true)
+    expect(existsSync(`${databasePath}-wal`)).toBe(true)
+    expect(readFileSync(`${databasePath}-wal`)).toHaveLength(0)
+    expect(campaignDataHash(paths)).toBe(before)
+  })
+
+  it('preserves a non-empty WAL without retaining its disposable SHM file', () => {
+    const fixture = createFixture(build('a'))
+    const paths = localInstallationPaths(fixture.xdg)
+    createDatabase(paths.campaignData, schemaVersion)
+    const campaignDirectory = join(
+      paths.campaignData,
+      'campaigns',
+      '00000000-0000-4000-8000-000000000001'
+    )
+    const campaignPath = createDatabase(
+      campaignDirectory,
+      databaseSchemaVersions.campaign,
+      true,
+      'campaign.sqlite'
+    )
+    const writer = new Database(campaignPath)
+    try {
+      writer.pragma('wal_autocheckpoint = 0')
+      writer.prepare('INSERT INTO valuable VALUES (?)').run('still in WAL')
+      expect(existsSync(`${campaignPath}-shm`)).toBe(true)
+      expect(existsSync(`${campaignPath}-wal`)).toBe(true)
+
+      const backup = advanceLocalAppInstallation(
+        fixture.options,
+        'backup-created'
+      )
+      const backupCampaign = join(
+        backup.backupPath!,
+        relative(paths.campaignData, campaignPath)
+      )
+      expect(existsSync(`${backupCampaign}-shm`)).toBe(false)
+      expect(existsSync(`${backupCampaign}-wal`)).toBe(true)
+      expect(readFileSync(`${backupCampaign}-wal`).byteLength).toBeGreaterThan(
+        0
+      )
+
+      const repeated = advanceLocalAppInstallation(
+        fixture.options,
+        'backup-created'
+      )
+      expect(repeated.backupPath).toBe(backup.backupPath)
+    } finally {
+      writer.close()
+    }
   })
 
   it('invalidates a backup checkpoint when campaign data changes', () => {
