@@ -105,13 +105,22 @@ never blindly replayed.
 
 Session travel uses the same composition boundary. Session owns explicit map
 and scenario render slots and imports neither Hex nor Travel implementation.
-`features/travel` owns a provider-neutral reducer, request gates, and command
-protocol; `features/hex` adapts axial maps, chunk invalidations, evaluations,
-and commands; `features/workspace/integrations` lazily composes both. Hex is the
-only implemented provider. Dungeon remains future work. Route rejection crosses
-IPC as a reason code plus optional blocking coordinate, while localized copy
-stays in the renderer. Every successful Hex travel mutation returns the new
-travel and Session projections together from one utility command boundary.
+`features/travel` owns a provider-neutral reducer and separate view-projection,
+query, command, and remote-reconciliation modules; `features/hex` adapts axial
+maps, chunk invalidations, evaluations, and commands;
+`features/workspace/integrations` lazily composes both. The thin Travel
+composition hook owns only one instance-bound async coordinator and wires those
+modules. Context, map, and evaluation reads use latest-only scope/entity keys;
+commands use one FIFO key per provider and focused Scene. View publication is
+additionally bound to provider identity and renderer-local intent, map, and
+route revisions, so a remote result that began before a newer local decision
+may refresh newer provider truth but cannot replace that decision. Scope
+cleanup cancels pending work and removes the provider subscription; stale or
+aborted outcomes do not enter the user error channel. Hex is the only
+implemented provider. Dungeon remains future work. Route rejection crosses IPC
+as a reason code plus optional blocking coordinate, while localized copy stays
+in the renderer. Every successful Hex travel mutation returns the new travel
+and Session projections together from one utility command boundary.
 
 The editing state has one explicit owner at every phase:
 

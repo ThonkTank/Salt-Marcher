@@ -81,6 +81,19 @@ active operation and recheck Session/intent authority after a succeeded
 workspace read, so late older preparation cannot replace a newer draft.
 Semantic architecture gates verify this composition and reject reintroduced
 manual Planner request epochs.
+The provider-neutral Travel renderer is now divided into view authority,
+latest-only queries, FIFO commands, and invalidation reconciliation. The
+former reducer-owned request factory and per-channel generations are removed;
+all Context, map, evaluation, and command work now reaches the shared,
+instance-bound async coordinator through explicit provider/Scene entity keys.
+Synchronous intent, map, and route revisions prevent an older remote response
+from replacing a newer local selection or route, while provider and Session
+revisions prevent an older read from replacing a newer command projection.
+Scope changes, deactivation, and unmount cancel pending acceptance and detach
+the subscription. Controlled-promise tests cover out-of-order reads, local
+intent during reconciliation, Scene changes, command FIFO/failure behavior,
+and unmount cancellation; semantic gates keep the composition split and reject
+the retired request factory.
 Application and workspace modules now load through shell-owned failure
 isolation with structured renderer incidents and Main-controlled reload.
 Renderer feature ports are injected from React context; the mutable capability

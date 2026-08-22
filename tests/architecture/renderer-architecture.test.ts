@@ -88,6 +88,75 @@ architectureGate(
 )
 
 architectureGate(
+  'behavior-integration',
+  'splits Travel async work across coordinator-owned boundaries',
+  () => {
+    const path = 'src/renderer/features/travel/use-travel-controller.ts'
+    const controller = readTypeScriptModule(path)
+    for (const call of [
+      'useAsyncCommandCoordinator',
+      'useTravelViewProjection',
+      'useTravelQueries',
+      'useTravelCommands',
+      'useTravelRemoteReconciliation'
+    ])
+      expect(hasCall(controller, call), call).toBe(true)
+    for (const infrastructure of [
+      'useEffect',
+      'useRef',
+      'AbortController',
+      'TravelRequestFactory'
+    ])
+      expect(controller.identifiers.has(infrastructure), infrastructure).toBe(
+        false
+      )
+    const queries = readTypeScriptModule(
+      'src/renderer/features/travel/use-travel-queries.ts'
+    )
+    expect(queries.stringLiterals).toContain('latest-only')
+    for (const scope of [
+      'travel.context-query',
+      'travel.map-query',
+      'travel.evaluation-query'
+    ])
+      expect(queries.stringLiterals, scope).toContain(scope)
+
+    const commands = readTypeScriptModule(
+      'src/renderer/features/travel/use-travel-commands.ts'
+    )
+    expect(commands.stringLiterals).toContain('queue')
+    expect(commands.stringLiterals).toContain('travel.command')
+
+    const reconciliation = readTypeScriptModule(
+      'src/renderer/features/travel/use-travel-remote-reconciliation.ts'
+    )
+    expect(hasCall(reconciliation, 'useEffect')).toBe(true)
+    expect(hasCall(reconciliation, 'cancelAll')).toBe(true)
+    expect(hasCall(reconciliation, 'subscribe')).toBe(true)
+
+    const projection = readTypeScriptModule(
+      'src/renderer/features/travel/travel-view-projection.ts'
+    )
+    expect(hasCall(projection, 'useState')).toBe(true)
+    expect(
+      projection.imports.some(({ specifier }) =>
+        specifier.includes('async-command-coordinator')
+      )
+    ).toBe(false)
+
+    for (const travelPath of codeFiles('src/renderer/features/travel')) {
+      const module = readTypeScriptModule(travelPath)
+      expect(module.identifiers.has('TravelRequestFactory'), travelPath).toBe(
+        false
+      )
+      expect(module.constructions, travelPath).not.toContain(
+        'AsyncCommandCoordinator'
+      )
+    }
+  }
+)
+
+architectureGate(
   'import-dependency-boundary',
   'erases every renderer import from schema-bearing contracts',
   () => {

@@ -2,9 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   initialTravelControllerState,
   travelControllerReducer,
-  TravelRequestFactory,
   type TravelControllerState,
-  type TravelRequest,
   type TravelScope
 } from '../../src/renderer/features/travel/travel-controller.js'
 
@@ -25,20 +23,7 @@ const scope: TravelScope = {
   providerIdentity: {}
 }
 
-function begin(
-  state: State,
-  factory: TravelRequestFactory,
-  channel: TravelRequest['channel']
-) {
-  const request = factory.next(scope, channel)
-  return {
-    request,
-    state: travelControllerReducer(state, { type: 'request-started', request })
-  }
-}
-
-function readyState() {
-  const factory = new TravelRequestFactory()
+function readyState(): State {
   let state = travelControllerReducer(
     initialTravelControllerState<
       Position,
@@ -48,23 +33,22 @@ function readyState() {
     >(),
     { type: 'activated', scope }
   )
-  const pending = begin(state, factory, 'context')
-  state = travelControllerReducer(pending.state, {
+  state = travelControllerReducer(state, {
+    type: 'request-started',
+    channel: 'context'
+  })
+  return travelControllerReducer(state, {
     type: 'projection-loaded',
-    request: pending.request,
     providerState: { revision: 1, status: 'ready' },
     mapId: 'coast',
     map: { id: 'coast' },
     multiplier: 1
   })
-  return { state, factory }
 }
 
-describe('travel controller state', () => {
+describe('travel controller view state', () => {
   it('keeps provider truth separate from transient route and token state', () => {
-    const ready = readyState()
-    let state = ready.state
-    const factory = ready.factory
+    let state = readyState()
     state = travelControllerReducer(state, { type: 'mode', mode: 'plan' })
     state = travelControllerReducer(state, {
       type: 'waypoint-added',
@@ -74,12 +58,11 @@ describe('travel controller state', () => {
       type: 'token-preview',
       position: { q: 2, r: 0 }
     })
-    const pending = begin(state, factory, 'context')
-    state = travelControllerReducer(pending.state, {
-      type: 'provider-updated',
-      request: pending.request,
+    state = travelControllerReducer(state, {
+      type: 'provider-reconciled',
       providerState: { revision: 2, status: 'travelling' },
-      multiplier: 2
+      multiplier: 2,
+      preserveLocal: true
     })
 
     expect(state).toMatchObject({
@@ -89,23 +72,19 @@ describe('travel controller state', () => {
       mode: 'plan',
       waypoints: [{ q: 1, r: 0 }],
       tokenPreview: { q: 2, r: 0 },
-      multiplier: 2
+      multiplier: 1
     })
   })
 
-  it('resets every draft on scene/provider changes and only map draft on map changes', () => {
-    const ready = readyState()
-    let state = ready.state
-    const factory = ready.factory
+  it('resets every draft on scope changes and only map draft on map changes', () => {
+    let state = readyState()
     state = travelControllerReducer(state, { type: 'mode', mode: 'plan' })
     state = travelControllerReducer(state, {
       type: 'waypoint-added',
       position: { q: 1, r: 0 }
     })
-    const mapPending = begin(state, factory, 'map')
-    state = travelControllerReducer(mapPending.state, {
+    state = travelControllerReducer(state, {
       type: 'map-selected',
-      request: mapPending.request,
       mapId: 'islands',
       map: { id: 'islands' }
     })
@@ -133,8 +112,8 @@ describe('travel controller state', () => {
     })
   })
 
-  it('retains a scene draft while inactive and requires refresh before ready', () => {
-    let { state } = readyState()
+  it('retains a Scene draft while inactive and requires refresh before ready', () => {
+    let state = readyState()
     state = travelControllerReducer(state, { type: 'mode', mode: 'plan' })
     state = travelControllerReducer(state, {
       type: 'waypoint-added',
@@ -153,7 +132,6 @@ describe('travel controller state', () => {
   })
 
   it('covers unavailable, initial error, and stale projection lifecycles', () => {
-    const factory = new TravelRequestFactory()
     let state = travelControllerReducer(
       initialTravelControllerState<
         Position,
@@ -163,19 +141,16 @@ describe('travel controller state', () => {
       >(),
       { type: 'activated', scope }
     )
-    let pending = begin(state, factory, 'context')
-    state = travelControllerReducer(pending.state, {
+    state = travelControllerReducer(state, {
       type: 'request-failed',
-      request: pending.request,
+      channel: 'context',
       message: 'offline'
     })
     expect(state).toMatchObject({ lifecycle: 'error', error: 'offline' })
 
     state = travelControllerReducer(state, { type: 'activated', scope })
-    pending = begin(state, factory, 'context')
-    state = travelControllerReducer(pending.state, {
+    state = travelControllerReducer(state, {
       type: 'projection-loaded',
-      request: pending.request,
       providerState: { revision: 0, status: 'unpositioned' },
       mapId: null,
       map: null,
@@ -183,11 +158,10 @@ describe('travel controller state', () => {
     })
     expect(state.lifecycle).toBe('unavailable')
 
-    ;({ state } = readyState())
-    pending = begin(state, factory, 'map')
-    state = travelControllerReducer(pending.state, {
+    state = readyState()
+    state = travelControllerReducer(state, {
       type: 'request-failed',
-      request: pending.request,
+      channel: 'map',
       message: 'refresh failed'
     })
     expect(state).toMatchObject({
@@ -198,31 +172,30 @@ describe('travel controller state', () => {
     })
   })
 
-  it('discards stale results by scene, provider and request generation in the reducer', () => {
-    const ready = readyState()
-    let state = ready.state
-    const factory = ready.factory
-    const older = begin(state, factory, 'map')
-    const newer = begin(older.state, factory, 'map')
-    state = travelControllerReducer(newer.state, {
-      type: 'map-refreshed',
-      request: older.request,
-      map: { id: 'old' }
-    })
-    expect(state.map).toEqual({ id: 'coast' })
+  it('keeps a command domain error until that command channel succeeds', () => {
+    let state = readyState()
     state = travelControllerReducer(state, {
-      type: 'map-refreshed',
-      request: newer.request,
-      map: { id: 'new' }
+      type: 'request-failed',
+      channel: 'command',
+      message: 'revision conflict'
     })
-    expect(state.map).toEqual({ id: 'new' })
-
-    const wrongScope = { ...newer.request, providerIdentity: {} }
     state = travelControllerReducer(state, {
-      type: 'map-refreshed',
-      request: wrongScope,
-      map: { id: 'wrong-provider' }
+      type: 'request-started',
+      channel: 'command'
     })
-    expect(state.map).toEqual({ id: 'new' })
+    expect(state.error).toBe('revision conflict')
+    state = travelControllerReducer(state, {
+      type: 'command-applied',
+      providerState: { revision: 2, status: 'travelling' },
+      multiplier: 1,
+      clearDraft: false,
+      preserveLocal: false
+    })
+    expect(state).toMatchObject({
+      lifecycle: 'ready',
+      error: null,
+      failureChannel: null,
+      providerState: { revision: 2 }
+    })
   })
 })
