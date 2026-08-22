@@ -140,7 +140,7 @@ describe('persistence preflight', () => {
     const planned = preflightPersistence(root)
 
     expect(planned.kind).toBe('migration-required')
-    expect(migrationRegistryVersion).toBe(8)
+    expect(migrationRegistryVersion).toBe(9)
     for (const entry of planned.databases) {
       const database = new Database(entry.path)
       applySchemaMigrations(database, {
@@ -154,7 +154,7 @@ describe('persistence preflight', () => {
     expect(restarted.kind).toBe('ready')
     expect(restarted.databases).toMatchObject([
       { path: campaign, role: 'campaign', schemaVersion: 34 },
-      { path: installation, role: 'installation', schemaVersion: 36 }
+      { path: installation, role: 'installation', schemaVersion: 37 }
     ])
     const installationDatabase = new Database(installation)
     expect(
@@ -168,7 +168,7 @@ describe('persistence preflight', () => {
         .prepare('SELECT COUNT(*) FROM installation_schema_migration')
         .pluck()
         .get()
-    ).toBe(9)
+    ).toBe(10)
     applySchemaMigrations(installationDatabase, {
       path: installation,
       role: 'installation'
@@ -178,7 +178,7 @@ describe('persistence preflight', () => {
         .prepare('SELECT COUNT(*) FROM installation_schema_migration')
         .pluck()
         .get()
-    ).toBe(9)
+    ).toBe(10)
     expect(
       installationDatabase
         .prepare(
@@ -238,12 +238,15 @@ describe('persistence preflight', () => {
       .get() as { revision: number; preferencesJson: string }
     expect(migrated.revision).toBe(8)
     expect(JSON.parse(migrated.preferencesJson)).toEqual({
-      theme: 'dark',
-      sessionLayout: {
-        schemaVersion: 2,
-        controlPaneWidth: 300,
-        scenarioPaneWidth: 264,
-        centerTab: 'details'
+      schemaVersion: 1,
+      preferences: {
+        theme: 'dark',
+        sessionLayout: {
+          schemaVersion: 2,
+          controlPaneWidth: 300,
+          scenarioPaneWidth: 264,
+          centerTab: 'details'
+        }
       }
     })
     expect(
@@ -266,7 +269,7 @@ describe('persistence preflight', () => {
     database.close()
   })
 
-  it('leaves current settings revisions unchanged during schema 35 to 36', () => {
+  it('wraps current settings without changing their logical revision', () => {
     const path = join(temporaryRoot(), 'installation.sqlite')
     const database = new Database(path)
     database.exec(`
@@ -300,6 +303,27 @@ describe('persistence preflight', () => {
         .pluck()
         .get()
     ).toBe(4)
+    expect(
+      JSON.parse(
+        database
+          .prepare(
+            'SELECT preferences_json FROM installation_settings WHERE singleton = 1'
+          )
+          .pluck()
+          .get() as string
+      )
+    ).toEqual({
+      schemaVersion: 1,
+      preferences: {
+        theme: 'light',
+        sessionLayout: {
+          schemaVersion: 2,
+          controlPaneWidth: 300,
+          scenarioPaneWidth: 264,
+          centerTab: 'catalog'
+        }
+      }
+    })
     database.close()
   })
 

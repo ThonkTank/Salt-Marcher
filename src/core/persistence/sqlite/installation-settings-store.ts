@@ -2,6 +2,8 @@ import type Database from 'better-sqlite3'
 import {
   defaultInstallationPreferences,
   installationPreferencesSchema,
+  persistedInstallationPreferences,
+  persistedInstallationPreferencesSchema,
   installationSettingsSchema,
   type InstallationPreferencesPatch,
   type InstallationSettings
@@ -19,9 +21,9 @@ export class InstallationSettingsStore {
       .get() as { revision: number; preferencesJson: string }
     return installationSettingsSchema.parse({
       revision: row.revision,
-      preferences: installationPreferencesSchema.parse(
+      preferences: persistedInstallationPreferencesSchema.parse(
         JSON.parse(row.preferencesJson) as unknown
-      )
+      ).preferences
     })
   }
 
@@ -39,7 +41,10 @@ export class InstallationSettingsStore {
       .prepare(
         'UPDATE installation_settings SET revision = revision + 1, preferences_json = ? WHERE singleton = 1 AND revision = ?'
       )
-      .run(JSON.stringify(preferences), expectedRevision)
+      .run(
+        JSON.stringify(persistedInstallationPreferences(preferences)),
+        expectedRevision
+      )
     if (changed.changes !== 1) throw new CapabilityError('stale', true)
     return this.read()
   }

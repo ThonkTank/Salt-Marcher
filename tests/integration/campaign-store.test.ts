@@ -374,6 +374,22 @@ describe('CampaignStore', () => {
     const reopened = new CampaignStore(root)
     expect(reopened.readSettings()).toEqual(updated)
     reopened.close()
+    const database = new Database(join(root, 'installation.sqlite'), {
+      readonly: true
+    })
+    const persisted: unknown = JSON.parse(
+      database
+        .prepare(
+          'SELECT preferences_json FROM installation_settings WHERE singleton = 1'
+        )
+        .pluck()
+        .get() as string
+    )
+    database.close()
+    expect(persisted).toEqual({
+      schemaVersion: 1,
+      preferences: updated.preferences
+    })
   })
 
   it('rebuilds incompatible development data without touching siblings', () => {

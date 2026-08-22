@@ -11,6 +11,7 @@ import { preflightPersistence } from './persistence-preflight.js'
 import { initializeInstallationSchemaMetadata } from './installation-schema-migrations.js'
 import {
   defaultInstallationPreferences,
+  persistedInstallationPreferences,
   type InstallationPreferencesPatch,
   type InstallationSettings
 } from '../../../shared/contracts/settings.js'
@@ -122,7 +123,11 @@ export class InstallationDatabaseOwner {
       .prepare(
         'INSERT OR IGNORE INTO installation_settings (singleton, revision, preferences_json) VALUES (1, 0, ?)'
       )
-      .run(JSON.stringify(defaultInstallationPreferences))
+      .run(
+        JSON.stringify(
+          persistedInstallationPreferences(defaultInstallationPreferences)
+        )
+      )
     initializeCreatureSchema(this.database)
     initializeBiomeCatalogSchema(this.database)
     initializeLocationSymbolSchema(this.database)

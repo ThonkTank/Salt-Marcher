@@ -11,6 +11,14 @@ export const installationPreferencesSchema = z
   })
   .strict()
 
+export const persistedInstallationPreferencesSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    preferences: installationPreferencesSchema
+  })
+  .strict()
+  .readonly()
+
 export const installationSettingsSchema = z
   .object({
     revision: z.number().int().nonnegative(),
@@ -35,11 +43,23 @@ export const defaultInstallationPreferences: InstallationPreferences =
     sessionLayout: defaultSessionLayoutPreference
   })
 
+export function persistedInstallationPreferences(
+  preferences: InstallationPreferences
+): PersistedInstallationPreferences {
+  return persistedInstallationPreferencesSchema.parse({
+    schemaVersion: 1,
+    preferences
+  })
+}
+
 export type InstallationPreferences = Readonly<
   z.infer<typeof installationPreferencesSchema>
 >
 export type InstallationPreferencesPatch = Readonly<
   z.infer<typeof installationPreferencesPatchSchema>
+>
+export type PersistedInstallationPreferences = Readonly<
+  z.infer<typeof persistedInstallationPreferencesSchema>
 >
 export type InstallationSettings = Readonly<
   z.infer<typeof installationSettingsSchema>

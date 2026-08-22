@@ -1,6 +1,9 @@
 import type Database from 'better-sqlite3'
 import { migrateSessionLayoutPreference } from '../../../shared/contracts/session-layout.js'
-import { installationPreferencesSchema } from '../../../shared/contracts/settings.js'
+import {
+  installationPreferencesSchema,
+  persistedInstallationPreferences
+} from '../../../shared/contracts/settings.js'
 import { defaultGeneratorLootRules } from '../../../shared/generator/default-loot-rules.js'
 import type { SchemaMigration } from './schema-migrations.js'
 import {
@@ -262,8 +265,52 @@ export const installationSchemaMigrations: readonly SchemaMigration[] =
             new Date().toISOString()
           )
       }
+    },
+    {
+      id: 'installation-36-to-37-preferences-envelope-v1',
+      role: 'installation',
+      fromVersion: 36,
+      toVersion: 37,
+      migrate(database) {
+        initializeInstallationSchemaMetadata(database)
+        wrapStoredInstallationPreferences(database)
+        database
+          .prepare(
+            'INSERT INTO installation_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run(
+            'installation-36-to-37-preferences-envelope-v1',
+            new Date().toISOString()
+          )
+      }
     }
   ])
+
+function wrapStoredInstallationPreferences(database: Database.Database): void {
+  const hasSettings = Boolean(
+    database
+      .prepare(
+        `SELECT 1 FROM sqlite_master
+          WHERE type = 'table' AND name = 'installation_settings'`
+      )
+      .get()
+  )
+  if (!hasSettings) return
+  const row = database
+    .prepare(
+      'SELECT preferences_json AS preferencesJson FROM installation_settings WHERE singleton = 1'
+    )
+    .get() as { preferencesJson: string } | undefined
+  if (!row) return
+  const preferences = installationPreferencesSchema.parse(
+    JSON.parse(row.preferencesJson) as unknown
+  )
+  database
+    .prepare(
+      'UPDATE installation_settings SET preferences_json = ? WHERE singleton = 1'
+    )
+    .run(JSON.stringify(persistedInstallationPreferences(preferences)))
+}
 
 function migrateStoredSessionLayout(database: Database.Database): void {
   const hasSettings = Boolean(
