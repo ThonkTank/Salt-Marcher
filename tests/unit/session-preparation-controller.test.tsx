@@ -89,6 +89,32 @@ describe('Session preparation controller', () => {
     expect(fixture.result.current.stage).toBe('failed')
     expect(fixture.onError).toHaveBeenCalledOnce()
   })
+
+  it('dismisses replacement confirmation without canceling missing durable work', async () => {
+    const fixture = renderPreparation({
+      startPreparation: () =>
+        Promise.resolve({
+          status: 'confirmation_required',
+          parameters: { sceneCount: 2 }
+        })
+    })
+    await act(async () =>
+      fixture.result.current.requestPreparation(
+        fixture.workspace,
+        operationId,
+        false,
+        17
+      )
+    )
+
+    expect(fixture.result.current.stage).toBe('confirming-replacement')
+    await act(async () => fixture.result.current.cancelPreparation())
+
+    expect(fixture.result.current.stage).toBe('ready')
+    expect(fixture.result.current.confirmation).toBeNull()
+    expect(fixture.planner.cancelPreparation).not.toHaveBeenCalled()
+    expect(fixture.onError).not.toHaveBeenCalled()
+  })
 })
 
 function renderPreparation(overrides: {
@@ -143,6 +169,7 @@ function renderPreparation(overrides: {
   return {
     ...hook,
     workspace,
+    planner,
     applyWorkspace,
     onError,
     get notice() {

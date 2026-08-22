@@ -140,7 +140,7 @@ describe('persistence preflight', () => {
     const planned = preflightPersistence(root)
 
     expect(planned.kind).toBe('migration-required')
-    expect(migrationRegistryVersion).toBe(7)
+    expect(migrationRegistryVersion).toBe(8)
     for (const entry of planned.databases) {
       const database = new Database(entry.path)
       applySchemaMigrations(database, {
@@ -154,7 +154,7 @@ describe('persistence preflight', () => {
     expect(restarted.kind).toBe('ready')
     expect(restarted.databases).toMatchObject([
       { path: campaign, role: 'campaign', schemaVersion: 34 },
-      { path: installation, role: 'installation', schemaVersion: 35 }
+      { path: installation, role: 'installation', schemaVersion: 36 }
     ])
     const installationDatabase = new Database(installation)
     expect(
@@ -168,7 +168,7 @@ describe('persistence preflight', () => {
         .prepare('SELECT COUNT(*) FROM installation_schema_migration')
         .pluck()
         .get()
-    ).toBe(8)
+    ).toBe(9)
     applySchemaMigrations(installationDatabase, {
       path: installation,
       role: 'installation'
@@ -178,7 +178,7 @@ describe('persistence preflight', () => {
         .prepare('SELECT COUNT(*) FROM installation_schema_migration')
         .pluck()
         .get()
-    ).toBe(8)
+    ).toBe(9)
     expect(
       installationDatabase
         .prepare(
@@ -204,6 +204,149 @@ describe('persistence preflight', () => {
         .all()
     ).toEqual(['campaign_import_entity', 'campaign_import_provenance'])
     campaignDatabase.close()
+  })
+
+  it('canonicalizes legacy Session layout settings during schema 35 to 36', () => {
+    const path = join(temporaryRoot(), 'installation.sqlite')
+    const database = new Database(path)
+    database.exec(`
+      CREATE TABLE installation_settings (
+        singleton INTEGER PRIMARY KEY NOT NULL CHECK(singleton = 1),
+        revision INTEGER NOT NULL CHECK(revision >= 0),
+        preferences_json TEXT NOT NULL
+      );
+    `)
+    database.prepare('INSERT INTO installation_settings VALUES (1, ?, ?)').run(
+      7,
+      JSON.stringify({
+        theme: 'dark',
+        sessionLayout: {
+          controlPaneWidth: 300,
+          scenarioPaneWidth: 242,
+          centerTab: 'details'
+        }
+      })
+    )
+    database.pragma('user_version = 35')
+
+    applySchemaMigrations(database, { path, role: 'installation' })
+
+    const migrated = database
+      .prepare(
+        'SELECT revision, preferences_json AS preferencesJson FROM installation_settings WHERE singleton = 1'
+      )
+      .get() as { revision: number; preferencesJson: string }
+    expect(migrated.revision).toBe(8)
+    expect(JSON.parse(migrated.preferencesJson)).toEqual({
+      theme: 'dark',
+      sessionLayout: {
+        schemaVersion: 2,
+        controlPaneWidth: 300,
+        scenarioPaneWidth: 264,
+        centerTab: 'details'
+      }
+    })
+    expect(
+      database
+        .prepare(
+          "SELECT migration_id FROM installation_schema_migration WHERE migration_id = 'installation-35-to-36-session-layout-v2'"
+        )
+        .pluck()
+        .get()
+    ).toBe('installation-35-to-36-session-layout-v2')
+    applySchemaMigrations(database, { path, role: 'installation' })
+    expect(
+      database
+        .prepare(
+          'SELECT revision FROM installation_settings WHERE singleton = 1'
+        )
+        .pluck()
+        .get()
+    ).toBe(8)
+    database.close()
+  })
+
+  it('leaves current settings revisions unchanged during schema 35 to 36', () => {
+    const path = join(temporaryRoot(), 'installation.sqlite')
+    const database = new Database(path)
+    database.exec(`
+      CREATE TABLE installation_settings (
+        singleton INTEGER PRIMARY KEY NOT NULL CHECK(singleton = 1),
+        revision INTEGER NOT NULL CHECK(revision >= 0),
+        preferences_json TEXT NOT NULL
+      );
+    `)
+    database.prepare('INSERT INTO installation_settings VALUES (1, ?, ?)').run(
+      4,
+      JSON.stringify({
+        theme: 'light',
+        sessionLayout: {
+          schemaVersion: 2,
+          controlPaneWidth: 300,
+          scenarioPaneWidth: 264,
+          centerTab: 'catalog'
+        }
+      })
+    )
+    database.pragma('user_version = 35')
+
+    applySchemaMigrations(database, { path, role: 'installation' })
+
+    expect(
+      database
+        .prepare(
+          'SELECT revision FROM installation_settings WHERE singleton = 1'
+        )
+        .pluck()
+        .get()
+    ).toBe(4)
+    database.close()
+  })
+
+  it('rolls back schema 35 when current-version layout settings are invalid', () => {
+    const path = join(temporaryRoot(), 'installation.sqlite')
+    const database = new Database(path)
+    database.exec(`
+      CREATE TABLE installation_settings (
+        singleton INTEGER PRIMARY KEY NOT NULL CHECK(singleton = 1),
+        revision INTEGER NOT NULL CHECK(revision >= 0),
+        preferences_json TEXT NOT NULL
+      );
+    `)
+    const preferencesJson = JSON.stringify({
+      theme: 'light',
+      sessionLayout: {
+        schemaVersion: 2,
+        controlPaneWidth: 300,
+        scenarioPaneWidth: 20,
+        centerTab: 'details'
+      }
+    })
+    database
+      .prepare('INSERT INTO installation_settings VALUES (1, 2, ?)')
+      .run(preferencesJson)
+    database.pragma('user_version = 35')
+
+    expect(() =>
+      applySchemaMigrations(database, { path, role: 'installation' })
+    ).toThrow(/Invalid stored Session layout/)
+
+    expect(database.pragma('user_version', { simple: true })).toBe(35)
+    expect(
+      database
+        .prepare(
+          'SELECT revision, preferences_json AS preferencesJson FROM installation_settings WHERE singleton = 1'
+        )
+        .get()
+    ).toEqual({ revision: 2, preferencesJson })
+    expect(
+      database
+        .prepare(
+          "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'installation_schema_migration'"
+        )
+        .get()
+    ).toBeUndefined()
+    database.close()
   })
 
   it('upcasts Config V4 coin container names to Config V5 IDs', () => {

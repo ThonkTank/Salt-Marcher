@@ -171,7 +171,6 @@ export function WorkspaceApp() {
           <div
             className={`work-area layout-${active ? definition.layout : 'scroll'}`}
           >
-            <WorkspaceErrors errors={errors} dismiss={dismiss} />
             <WorkspaceRouteHost
               active={active}
               workspace={coordinator.workspace}
@@ -181,6 +180,7 @@ export function WorkspaceApp() {
             />
           </div>
         </div>
+        <WorkspaceErrors errors={errors} dismiss={dismiss} />
         {inspected && (
           <CreatureInspector
             creature={inspected}

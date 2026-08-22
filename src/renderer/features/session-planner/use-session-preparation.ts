@@ -173,6 +173,15 @@ export function useSessionPreparation(options: {
   }, [read, requestPreparation, saveDraft, seed])
 
   const cancelPreparation = useCallback(async (): Promise<void> => {
+    if (confirmation) {
+      activeAbort.current?.abort('replacement-confirmation-canceled')
+      activeTarget.current = null
+      activeAbort.current = null
+      setConfirmation(null)
+      setStage('ready')
+      setStageMessage(message('planner.progressReady'))
+      return
+    }
     const target = activeTarget.current
     const signal = activeAbort.current?.signal
     if (!target || !signal) {
@@ -191,7 +200,7 @@ export function useSessionPreparation(options: {
     if (outcome.status === 'failure')
       onError(capabilityErrorText(outcome.cause))
     setConfirmation(null)
-  }, [coordinator, onError, planner, publishReceipt])
+  }, [confirmation, coordinator, onError, planner, publishReceipt])
 
   const authority = read()
   const sessionId = authority.workspace?.session.id ?? null

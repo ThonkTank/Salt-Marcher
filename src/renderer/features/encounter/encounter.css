@@ -31,16 +31,6 @@
     font-size: 0.85rem;
   }
 
-  .error-message {
-    width: min(100%, 72rem);
-    margin: 0 0 1rem;
-    border: 1px solid var(--border-error);
-    border-radius: var(--radius-0);
-    background: var(--surface-error);
-    color: var(--text-error);
-    padding: 0.75rem;
-  }
-
   .scenario-panel:has(.scenario-crumbs) {
     grid-template-rows: auto minmax(0, 1fr);
   }

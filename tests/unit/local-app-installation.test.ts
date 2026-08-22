@@ -23,7 +23,10 @@ import {
   type InstallLocalAppOptions
 } from '../../scripts/local-app-installation.js'
 import type { BuildInfo } from '../../src/shared/contracts/build-info.js'
-import type { SchemaMigration } from '../../src/core/persistence/sqlite/schema-migrations.js'
+import {
+  schemaMigrations,
+  type SchemaMigration
+} from '../../src/core/persistence/sqlite/schema-migrations.js'
 import { databaseSchemaVersions } from '../../src/core/persistence/sqlite/database.js'
 
 const roots: string[] = []
@@ -323,7 +326,15 @@ describe('local AppImage installation', () => {
   it('refuses a schema change when no tested migration exists', () => {
     const fixture = createFixture(build('a'))
     const paths = localInstallationPaths(fixture.xdg)
-    const databasePath = createDatabase(paths.campaignData, schemaVersion - 9)
+    const earliestInstallationSchema = Math.min(
+      ...schemaMigrations
+        .filter((migration) => migration.role === 'installation')
+        .map((migration) => migration.fromVersion)
+    )
+    const databasePath = createDatabase(
+      paths.campaignData,
+      earliestInstallationSchema - 1
+    )
     const before = readFileSync(databasePath)
 
     expectFailure(() => installLocalApp(fixture.options), 'migration-missing')

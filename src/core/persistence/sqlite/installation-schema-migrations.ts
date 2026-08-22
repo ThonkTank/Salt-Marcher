@@ -1,4 +1,6 @@
 import type Database from 'better-sqlite3'
+import { migrateSessionLayoutPreference } from '../../../shared/contracts/session-layout.js'
+import { installationPreferencesSchema } from '../../../shared/contracts/settings.js'
 import { defaultGeneratorLootRules } from '../../../shared/generator/default-loot-rules.js'
 import type { SchemaMigration } from './schema-migrations.js'
 import {
@@ -242,8 +244,62 @@ export const installationSchemaMigrations: readonly SchemaMigration[] =
           )
           .run('installation-34-to-35-import-saga', new Date().toISOString())
       }
+    },
+    {
+      id: 'installation-35-to-36-session-layout-v2',
+      role: 'installation',
+      fromVersion: 35,
+      toVersion: 36,
+      migrate(database) {
+        initializeInstallationSchemaMetadata(database)
+        migrateStoredSessionLayout(database)
+        database
+          .prepare(
+            'INSERT INTO installation_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run(
+            'installation-35-to-36-session-layout-v2',
+            new Date().toISOString()
+          )
+      }
     }
   ])
+
+function migrateStoredSessionLayout(database: Database.Database): void {
+  const hasSettings = Boolean(
+    database
+      .prepare(
+        `SELECT 1 FROM sqlite_master
+          WHERE type = 'table' AND name = 'installation_settings'`
+      )
+      .get()
+  )
+  if (!hasSettings) return
+  const row = database
+    .prepare(
+      'SELECT preferences_json AS preferencesJson FROM installation_settings WHERE singleton = 1'
+    )
+    .get() as { preferencesJson: string } | undefined
+  if (!row) return
+  const stored = JSON.parse(row.preferencesJson) as unknown
+  if (stored === null || typeof stored !== 'object' || Array.isArray(stored))
+    throw new Error('Invalid stored installation preferences')
+  const preferences = stored as Record<string, unknown>
+  const layout = migrateSessionLayoutPreference(preferences['sessionLayout'])
+  if (layout.kind === 'invalid')
+    throw new Error('Invalid stored Session layout preference')
+  installationPreferencesSchema.parse(preferences)
+  if (layout.kind === 'current') return
+  const migrated = installationPreferencesSchema.parse({
+    ...preferences,
+    sessionLayout: layout.preference
+  })
+  database
+    .prepare(
+      'UPDATE installation_settings SET revision = revision + 1, preferences_json = ? WHERE singleton = 1'
+    )
+    .run(JSON.stringify(migrated))
+}
 
 function upcastGeneratorConfigV5(value: unknown): unknown {
   if (!value || typeof value !== 'object') return value

@@ -254,6 +254,42 @@ input {
   padding: clamp(1.25rem, 3vw, 3rem);
 }
 
+.workspace-error-stack {
+  position: fixed;
+  z-index: 900;
+  top: calc(var(--topbar-h) + var(--space-5));
+  right: var(--space-7);
+  display: grid;
+  width: min(32rem, calc(100vw - var(--rail-w) - 2rem));
+  max-height: calc(100vh - var(--topbar-h) - 2rem);
+  gap: var(--space-3);
+  overflow-y: auto;
+  pointer-events: none;
+}
+
+.workspace-error-stack .error-message {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+  margin: 0;
+  border: 1px solid var(--border-error);
+  border-radius: var(--radius-0);
+  background: var(--surface-error);
+  box-shadow: var(--shadow-panel);
+  color: var(--text-error);
+  padding: var(--space-5);
+  pointer-events: auto;
+}
+
+.workspace-error-stack .error-message > span {
+  min-width: 0;
+}
+
+.workspace-error-stack .error-message > button {
+  flex: none;
+}
+
 .workspace-panel {
   width: min(100%, 72rem);
   border: 1px solid var(--border-1);

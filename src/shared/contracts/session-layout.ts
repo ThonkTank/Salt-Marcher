@@ -21,9 +21,13 @@ const currentSessionLayoutPreferenceSchema = z
   })
   .strict()
 
-const unversionedPixelLayoutSchema = currentSessionLayoutPreferenceSchema.omit({
-  schemaVersion: true
-})
+const unversionedPixelLayoutSchema = z
+  .object({
+    controlPaneWidth: z.number().finite(),
+    scenarioPaneWidth: z.number().finite(),
+    centerTab: z.enum(['details', 'catalog', 'map'])
+  })
+  .strict()
 
 const legacyFractionLayoutSchema = z
   .object({
@@ -60,7 +64,18 @@ export function migrateSessionLayoutPreference(
     return {
       kind: 'migrated',
       migration: 'unversioned-pixels-to-v2',
-      preference: { schemaVersion: 2, ...pixels.data }
+      preference: {
+        schemaVersion: 2,
+        controlPaneWidth: fitPaneWidth(
+          pixels.data.controlPaneWidth,
+          sessionLayoutGeometry.controlPane
+        ),
+        scenarioPaneWidth: fitPaneWidth(
+          pixels.data.scenarioPaneWidth,
+          sessionLayoutGeometry.scenarioPane
+        ),
+        centerTab: pixels.data.centerTab
+      }
     }
   const fractions = legacyFractionLayoutSchema.safeParse(value)
   if (fractions.success)
@@ -91,3 +106,10 @@ export const defaultSessionLayoutPreference: SessionLayoutPreference =
   currentSessionLayoutPreferenceSchema.parse(
     defaultSessionLayoutPreferenceValue
   )
+
+function fitPaneWidth(
+  value: number,
+  bounds: Readonly<{ min: number; max: number }>
+): number {
+  return Math.min(bounds.max, Math.max(bounds.min, Math.round(value)))
+}

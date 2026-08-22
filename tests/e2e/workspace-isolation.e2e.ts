@@ -32,4 +32,65 @@ describe('isolated workspace routes', () => {
     ).toBeExisting()
     await expect(menu).toBeExisting()
   })
+
+  it('keeps workspace geometry stable while shell errors are visible', async () => {
+    const client = browser as unknown as WdioBrowser
+    const geometry = await client.execute(async () => {
+      const shell = document.querySelector<HTMLElement>('.app-shell')
+      const workspace = document.querySelector<HTMLElement>('.session-mockup')
+      if (!shell || !workspace) return null
+      const snapshot = () => {
+        const bounds = workspace.getBoundingClientRect()
+        return {
+          left: bounds.left,
+          top: bounds.top,
+          width: bounds.width,
+          height: bounds.height
+        }
+      }
+      const before = snapshot()
+      const stack = document.createElement('div')
+      stack.className = 'workspace-error-stack'
+      const alert = document.createElement('p')
+      alert.className = 'error-message'
+      alert.setAttribute('role', 'alert')
+      const message = document.createElement('span')
+      message.textContent = 'Ein interner Fehler ist aufgetreten.'
+      const close = document.createElement('button')
+      close.textContent = 'Schließen'
+      alert.append(message, close)
+      stack.append(alert)
+      shell.append(stack)
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => resolve())
+      )
+      const after = snapshot()
+      const stackStyle = getComputedStyle(stack)
+      const stackBounds = stack.getBoundingClientRect()
+      const result = {
+        before,
+        after,
+        stackPosition: stackStyle.position,
+        stackHeight: stackBounds.height,
+        viewportHeight: window.innerHeight,
+        mountedOutsideWorkArea: stack.closest('.work-area') === null
+      }
+      stack.remove()
+      return result
+    })
+
+    if (!geometry) throw new Error('Session workspace geometry is unavailable')
+    if (JSON.stringify(geometry.before) !== JSON.stringify(geometry.after))
+      throw new Error(
+        `Workspace error changed cockpit geometry: ${JSON.stringify(geometry)}`
+      )
+    if (
+      geometry.stackPosition !== 'fixed' ||
+      !geometry.mountedOutsideWorkArea ||
+      geometry.stackHeight >= geometry.viewportHeight
+    )
+      throw new Error(
+        `Workspace error stack is not isolated: ${JSON.stringify(geometry)}`
+      )
+  })
 })

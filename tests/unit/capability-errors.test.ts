@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
 
 import { describe, expect, it, vi } from 'vitest'
-import { presentCapabilityError } from '../../src/renderer/capabilities/capability-errors.js'
+import {
+  capabilityErrorText,
+  presentCapabilityError
+} from '../../src/renderer/capabilities/capability-errors.js'
 import { CapabilityError } from '../../src/shared/errors/capability-error.js'
 
 describe('capability error presentation policy', () => {
@@ -18,6 +21,15 @@ describe('capability error presentation policy', () => {
     const text = presentCapabilityError(new Error('offline'), report)
     expect(report).toHaveBeenCalledOnce()
     expect(report).toHaveBeenCalledWith(text)
+  })
+
+  it('recovers a known code from Electron reduced Error messages', () => {
+    expect(capabilityErrorText(new Error('internal'))).toBe(
+      'Ein interner Fehler ist aufgetreten.'
+    )
+    expect(capabilityErrorText(new Error('not-a-capability-code'))).toBe(
+      'Unbekannter Fehler'
+    )
   })
 
   it('requests one readback and reports outcome-unknown exactly once', () => {

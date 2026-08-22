@@ -139,7 +139,7 @@ accounts for the bounded virtual biome catalog and CRUD surface added with
 schema 15; schema 16 replaced separate World Location kind and region fields
 with tags and read-aloud text, and schema 17 normalizes ordered location-owned
 tags into validated rows while all per-entry ceilings remain unchanged.
-Campaign schema 34, installation schema 35, migration registry 7, Generator Config V5, Encounter engine
+Campaign schema 34, installation schema 36, migration registry 8, Generator Config V5, Encounter engine
 `encounter-v5`, and Reward engine `reward-v3` are current. Persisted
 `reward-v2` runs remain readable. The checked
 [version-truth matrix](version-truth.md) owns these current values. Schema 25 is reset rather than migrated. The
@@ -313,14 +313,15 @@ verifiable phases:
 3. Persisted data is classified with a read-only preflight before any writable
    connection. Schema names are environment-neutral and forward migrations
    require one explicit registry chain and transactional contract tests. The
-   role contract is installation schema 35 at `installation.sqlite` and
-   campaign schema 34 at `campaigns/<id>/campaign.sqlite`; registry version 7
+   role contract is installation schema 36 at `installation.sqlite` and
+   campaign schema 34 at `campaigns/<id>/campaign.sqlite`; registry version 8
    supports the Golden-Master-backed 27 -> 28 path, the 28 -> 29
    NPC/structured-PC migration, the 29 -> 30 application migration, and the
    populated 30 -> 31 canonical-item migration, and the 31 -> 32 Config-V5 and
    raw reward-member migration, and the 32 -> 33 World Planner relational
    integrity migration, the 33 -> 34 import provenance/registry migration, and
-   the 34 -> 35 durable import-saga migration. The aggregate owners
+   the 34 -> 35 durable import-saga migration, and the 35 -> 36 canonical
+   Session-layout migration. The aggregate owners
    retain their SQL, and the installer is the only offline migration authority.
 4. Local installation uses a lock, permanent verified backups, staged data
    migration, immutable version deployments, atomic current selection, and

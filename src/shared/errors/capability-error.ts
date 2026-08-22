@@ -37,8 +37,9 @@ export function capabilityErrorCode(
 ): CapabilityErrorCode | null {
   if (error instanceof CapabilityError) return error.code
   if (error === null || typeof error !== 'object') return null
-  const code = (error as { code?: unknown }).code
-  return typeof code === 'string' && capabilityErrorCodeSet.has(code)
-    ? (code as CapabilityErrorCode)
-    : null
+  const candidate = error as { code?: unknown; message?: unknown }
+  for (const value of [candidate.code, candidate.message])
+    if (typeof value === 'string' && capabilityErrorCodeSet.has(value))
+      return value as CapabilityErrorCode
+  return null
 }

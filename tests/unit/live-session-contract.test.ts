@@ -178,6 +178,39 @@ describe('live session capability contracts', () => {
     })
     expect(
       migrateSessionLayoutPreference({
+        controlPaneWidth: 300.4,
+        scenarioPaneWidth: 242,
+        centerTab: 'details'
+      })
+    ).toEqual({
+      kind: 'migrated',
+      migration: 'unversioned-pixels-to-v2',
+      preference: {
+        schemaVersion: 2,
+        controlPaneWidth: 300,
+        scenarioPaneWidth: 264,
+        centerTab: 'details'
+      }
+    })
+    expect(
+      migrateSessionLayoutPreference({
+        controlPaneWidth: -10,
+        scenarioPaneWidth: 900,
+        centerTab: 'map'
+      })
+    ).toMatchObject({
+      kind: 'migrated',
+      preference: { controlPaneWidth: 280, scenarioPaneWidth: 420 }
+    })
+    expect(
+      migrateSessionLayoutPreference({
+        controlPaneWidth: Number.POSITIVE_INFINITY,
+        scenarioPaneWidth: 300,
+        centerTab: 'details'
+      })
+    ).toMatchObject({ kind: 'invalid' })
+    expect(
+      migrateSessionLayoutPreference({
         schemaVersion: 2,
         controlPaneWidth: 900,
         scenarioPaneWidth: 20,
