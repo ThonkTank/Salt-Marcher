@@ -37,6 +37,7 @@ export type TypeScriptScope = Readonly<{
   name: string
   calls: readonly string[]
   constructions: readonly string[]
+  propertyAccesses: readonly string[]
   identifiers: ReadonlySet<string>
   stringLiterals: readonly string[]
 }>
@@ -382,6 +383,7 @@ function readScope(
 ): TypeScriptScope {
   const calls: string[] = []
   const constructions: string[] = []
+  const propertyAccesses: string[] = []
   const identifiers = new Set<string>()
   const stringLiterals: string[] = []
   const visit = (child: ts.Node): void => {
@@ -389,6 +391,8 @@ function readScope(
     if (ts.isCallExpression(child)) calls.push(expressionPath(child.expression))
     if (ts.isNewExpression(child))
       constructions.push(expressionPath(child.expression))
+    if (ts.isPropertyAccessExpression(child))
+      propertyAccesses.push(expressionPath(child))
     if (ts.isIdentifier(child)) identifiers.add(child.text)
     if (ts.isStringLiteralLike(child)) stringLiterals.push(child.text)
     ts.forEachChild(child, visit)
@@ -402,5 +406,12 @@ function readScope(
           ts.isIdentifier(node.parent.name)
         ? node.parent.name.text
         : '<anonymous>'
-  return { name, calls, constructions, identifiers, stringLiterals }
+  return {
+    name,
+    calls,
+    constructions,
+    propertyAccesses,
+    identifiers,
+    stringLiterals
+  }
 }

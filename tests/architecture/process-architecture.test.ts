@@ -256,6 +256,41 @@ architectureGate(
   }
 )
 
+architectureGate(
+  'typed-contract',
+  'carries explicit IPC results and creates logical errors in the renderer realm',
+  () => {
+    const registration = readTypeScriptModule(
+      'src/main/application-lifecycle/capability-registration.ts'
+    )
+    expect(hasCall(registration, 'invokeGeneric')).toBe(true)
+    expect(scope(registration, 'invokeGeneric')?.identifiers.has('ok')).toBe(
+      true
+    )
+
+    const preload = readTypeScriptModule(
+      'src/preload/capability-bridge/index.ts'
+    )
+    expect(hasCall(preload, 'ipcResultSchema.parse')).toBe(true)
+    expect(preload.stringLiterals).toContain('saltMarcherBridge')
+    expect(preload.stringLiterals).not.toContain('saltMarcher')
+
+    const renderer = readTypeScriptModule(
+      'src/renderer/capabilities/capability-api.ts'
+    )
+    expect(renderer.constructions).toContain('CapabilityError')
+    expect(renderer.identifiers.has('unwrapResult')).toBe(true)
+    expect(hasImport(renderer, '../../shared/contracts/ipc-result.js')).toBe(
+      false
+    )
+
+    const errors = readTypeScriptModule('src/shared/errors/capability-error.ts')
+    expect(scope(errors, 'capabilityErrorCode')?.propertyAccesses).toEqual([
+      'error.code'
+    ])
+  }
+)
+
 legitimateLiteralGate({
   name: 'does not ship qualification code through the normal HTML entry',
   path: 'src/renderer/index.html',

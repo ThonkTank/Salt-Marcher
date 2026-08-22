@@ -17,8 +17,43 @@ import {
   hasCall,
   hasImport,
   readTypeScriptModule,
+  scope,
   type TypeScriptModule
 } from './support/typescript-module.js'
+
+architectureGate(
+  'typed-contract',
+  'versions every current installation-preference read and write',
+  () => {
+    const contract = readTypeScriptModule('src/shared/contracts/settings.ts')
+    expect(
+      contract.declarations.has('persistedInstallationPreferencesSchema')
+    ).toBe(true)
+
+    const store = readTypeScriptModule(
+      'src/core/persistence/sqlite/installation-settings-store.ts'
+    )
+    expect(hasCall(store, 'persistedInstallationPreferencesSchema.parse')).toBe(
+      true
+    )
+    expect(hasCall(store, 'persistedInstallationPreferences')).toBe(true)
+
+    const owner = readTypeScriptModule(
+      'src/core/persistence/sqlite/installation-database-owner.ts'
+    )
+    expect(hasCall(owner, 'persistedInstallationPreferences')).toBe(true)
+
+    const migrations = readTypeScriptModule(
+      'src/core/persistence/sqlite/installation-schema-migrations.ts'
+    )
+    const wrapper = scope(migrations, 'wrapStoredInstallationPreferences')
+    expect(wrapper?.calls).toContain('persistedInstallationPreferences')
+    expect(wrapper?.calls).toContain('installationPreferencesSchema.parse')
+    expect(migrations.stringLiterals).toContain(
+      'installation-36-to-37-preferences-envelope-v1'
+    )
+  }
+)
 
 architectureGate(
   'import-dependency-boundary',

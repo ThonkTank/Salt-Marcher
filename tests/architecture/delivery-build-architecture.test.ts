@@ -9,11 +9,13 @@ import {
 } from './support/architecture-gate.js'
 import {
   codeFiles,
+  hasCall,
   hasImport,
   importCycles,
   parseTypeScriptModule,
   readTypeScriptModule,
-  relativeImportGraph
+  relativeImportGraph,
+  scope
 } from './support/typescript-module.js'
 
 legitimateLiteralGate({
@@ -80,6 +82,49 @@ architectureGate(
       expect(hasImport(deployment, campaignModule)).toBe(false)
   }
 )
+
+architectureGate(
+  'behavior-integration',
+  'snapshots live SQLite databases through the online backup API',
+  () => {
+    const backup = readTypeScriptModule(
+      'scripts/local-installation/campaign-backup.ts'
+    )
+    const snapshot = scope(backup, 'snapshotCampaignDataWithDatabases')
+    expect(snapshot?.calls).toContain('onlineBackupDatabase')
+    expect(snapshot?.calls).toContain('copyTreeWithHashes')
+    expect(snapshot?.identifiers.has('owned')).toBe(true)
+
+    const worker = readTypeScriptModule(
+      'scripts/sqlite-online-backup-worker.ts'
+    )
+    expect(hasImport(worker, 'better-sqlite3')).toBe(true)
+    expect(hasCall(worker, 'database.backup')).toBe(true)
+
+    const inventory = readTypeScriptModule(
+      'scripts/local-installation/campaign-file-inventory.ts'
+    )
+    expect(inventory.declarations.has('sqliteOwnedBackupInventory')).toBe(true)
+    expect(
+      scope(inventory, 'sqliteOwnedBackupInventory')?.identifiers.has('bytes')
+    ).toBe(false)
+  }
+)
+
+legitimateLiteralGate({
+  name: 'pins one exact Node runtime across reusable-build CI jobs',
+  path: '.github/workflows/check.yml',
+  owner: 'candidate-artifact-toolchain',
+  rationale:
+    'The reusable build receipt includes the Node patch version, so every producer and consumer job must resolve the same literal runtime.',
+  inspect: (workflow) => {
+    const versions = [...workflow.matchAll(/node-version:\s*([^, }\n]+)/g)].map(
+      (match) => match[1]
+    )
+    expect(versions.length).toBeGreaterThan(0)
+    expect(new Set(versions)).toEqual(new Set(['22.23.2']))
+  }
+})
 
 architectureGate(
   'typed-contract',
