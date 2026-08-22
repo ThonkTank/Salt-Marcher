@@ -88,6 +88,7 @@
     "package:release:built": "tsx scripts/package-app.ts --channel release",
     "install:local:built": "tsx scripts/install-local-app.ts",
     "handoff:app": "tsx scripts/handoff-local-app.ts",
+    "handoff:status": "tsx scripts/handoff-status.ts",
     "local-storage:inspect": "tsx scripts/inspect-local-storage.ts",
     "local-storage:prune": "tsx scripts/prune-local-storage.ts",
     "candidate-artifact:write": "tsx scripts/write-candidate-artifact-receipt.ts",

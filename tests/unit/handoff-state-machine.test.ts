@@ -175,18 +175,28 @@ function createFixture(failOnce?: HandoffPhaseName): {
       deliveryInputFingerprint: 'e'.repeat(64),
       toolchainHash: 'f'.repeat(64),
       candidate: {
-        runId: 1,
-        url: 'https://github.example/runs/1',
-        attempt: 1,
-        headSha: 'a'.repeat(40),
-        requiredJobManifestVersion: 4,
-        jobs: [
-          {
-            name: 'required',
-            platformRole: 'test',
-            conclusion: 'success'
-          }
-        ]
+        workflow: {
+          runId: 1,
+          url: 'https://github.example/runs/1',
+          attempt: 1,
+          headSha: 'a'.repeat(40),
+          requiredJobManifestVersion: 4,
+          jobs: [
+            {
+              name: 'required',
+              platformRole: 'test',
+              conclusion: 'success'
+            }
+          ]
+        },
+        artifact: {
+          repository: 'owner/repository',
+          artifactId: 1,
+          artifactName: `salt-marcher-local-${'a'.repeat(40)}-attempt-1`,
+          workflowRunId: 1,
+          workflowRunAttempt: 1,
+          applicationSha: 'a'.repeat(40)
+        }
       }
     },
     '00000000-0000-4000-8000-000000000010',

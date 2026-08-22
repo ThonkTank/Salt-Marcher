@@ -19,7 +19,6 @@ import {
 } from './build-identity.js'
 import {
   acquireCandidateArtifact,
-  candidateArtifactName,
   verifyCandidateArtifactDirectory,
   type CandidateArtifactExpectation
 } from './candidate-artifact.js'
@@ -97,10 +96,10 @@ assertHandoffResourcePreflight(
   )
 )
 const artifactExpectation: CandidateArtifactExpectation = {
-  repository: githubRepository(),
+  repository: candidateState.candidate!.artifact.repository,
   workflowName: readRequiredJobManifest().workflowName,
-  workflowRunId: candidateState.candidate!.runId,
-  workflowRunAttempt: candidateState.candidate!.attempt,
+  workflowRunId: candidateState.candidate!.artifact.workflowRunId,
+  workflowRunAttempt: candidateState.candidate!.artifact.workflowRunAttempt,
   applicationSha: workspace.commit,
   workspaceFingerprint: workspace.workspaceFingerprint,
   appBuildInputFingerprint: workspace.appBuildInputFingerprint
@@ -494,12 +493,9 @@ function downloadCandidateArtifact(destination: string): void {
     [
       'run',
       'download',
-      String(candidateState.candidate!.runId),
+      String(candidateState.candidate!.artifact.workflowRunId),
       '--name',
-      candidateArtifactName(
-        workspace.commit,
-        candidateState.candidate!.attempt
-      ),
+      candidateState.candidate!.artifact.artifactName,
       '--dir',
       destination
     ],
@@ -512,28 +508,6 @@ function downloadCandidateArtifact(destination: string): void {
   if (result.error) throw result.error
   if (result.status !== 0)
     throw new Error(`Candidate artifact download failed with ${result.status}`)
-}
-
-function githubRepository(): string {
-  const result = spawnSync(
-    'gh',
-    ['repo', 'view', '--json', 'nameWithOwner', '--jq', '.nameWithOwner'],
-    {
-      cwd: workspaceRoot,
-      env: process.env,
-      encoding: 'utf8'
-    }
-  )
-  if (result.error) throw result.error
-  if (result.status !== 0)
-    throw new Error(
-      result.stderr.trim() ||
-        'Could not resolve the authenticated GitHub repository'
-    )
-  const repository = result.stdout.trim()
-  if (!/^[^/\s]+\/[^/\s]+$/.test(repository))
-    throw new Error('GitHub returned an invalid repository identity')
-  return repository
 }
 
 function atomicWrite(path: string, content: string): void {

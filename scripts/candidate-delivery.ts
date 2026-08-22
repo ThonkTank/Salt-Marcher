@@ -11,9 +11,11 @@ import {
   handoffReceiptSchema,
   parseHandoffInvocationHistory,
   readRequiredJobManifest,
-  sameWorkflowQualification,
+  sameCandidateQualification,
   shaSchema,
   verifyRequiredJobs,
+  type CandidateArtifactEvidence,
+  type CandidateQualification,
   type GithubWorkflowRun,
   type WorkflowEvidence
 } from './delivery-contract.js'
@@ -29,7 +31,7 @@ export type CandidateState = Readonly<{
   remoteMain: string
   clean: boolean
   mainIsAncestor: boolean
-  candidate: WorkflowEvidence | null
+  candidate: CandidateQualification | null
 }>
 
 export function assertCandidateState(state: CandidateState): void {
@@ -46,8 +48,10 @@ export function assertCandidateState(state: CandidateState): void {
     throw new Error('Candidate is not based on the current remote main SHA.')
   if (!state.candidate)
     throw new Error('No complete required-job set proves this candidate SHA.')
-  if (state.candidate.headSha !== state.head)
+  if (state.candidate.workflow.headSha !== state.head)
     throw new Error('Candidate workflow evidence proves another SHA.')
+  if (state.candidate.artifact.applicationSha !== state.head)
+    throw new Error('Candidate artifact evidence proves another SHA.')
 }
 
 export function parseRemoteHead(output: string): string {
@@ -137,6 +141,94 @@ export function readSuccessfulWorkflowEvidence(
     if (evidence) return evidence
   }
   return null
+}
+
+export type GithubArtifact = Readonly<{
+  id: number
+  name: string
+  expired: boolean
+}>
+
+export function selectCandidateArtifactEvidence(
+  artifacts: readonly GithubArtifact[],
+  expected: Readonly<{
+    repository: string
+    workflowRunId: number
+    workflowRunAttempt: number
+    applicationSha: string
+  }>
+): CandidateArtifactEvidence | null {
+  const prefix = `salt-marcher-local-${expected.applicationSha}-attempt-`
+  const matches = artifacts
+    .flatMap((artifact) => {
+      if (artifact.expired || !artifact.name.startsWith(prefix)) return []
+      const rawAttempt = artifact.name.slice(prefix.length)
+      if (!/^[1-9][0-9]*$/.test(rawAttempt)) return []
+      const workflowRunAttempt = Number(rawAttempt)
+      if (
+        !Number.isSafeInteger(workflowRunAttempt) ||
+        workflowRunAttempt > expected.workflowRunAttempt
+      )
+        return []
+      return [{ artifact, workflowRunAttempt }]
+    })
+    .sort((left, right) => right.artifact.id - left.artifact.id)
+  const selected = matches[0]
+  if (!selected) return null
+  return {
+    repository: expected.repository,
+    artifactId: selected.artifact.id,
+    artifactName: selected.artifact.name,
+    workflowRunId: expected.workflowRunId,
+    workflowRunAttempt: selected.workflowRunAttempt,
+    applicationSha: expected.applicationSha
+  }
+}
+
+export function readCandidateQualification(
+  head: string
+): CandidateQualification | null {
+  const workflow = readSuccessfulWorkflowEvidence(head)
+  if (!workflow) return null
+  const repository = readRepositoryIdentity()
+  const pages = z
+    .array(
+      z
+        .object({
+          artifacts: z.array(
+            z
+              .object({
+                id: z.number().int().positive(),
+                name: z.string().min(1),
+                expired: z.boolean()
+              })
+              .passthrough()
+          )
+        })
+        .passthrough()
+    )
+    .parse(
+      JSON.parse(
+        command('gh', [
+          'api',
+          '--paginate',
+          '--slurp',
+          `repos/${repository}/actions/runs/${workflow.runId}/artifacts?per_page=100`
+        ])
+      )
+    )
+  const artifacts = pages.flatMap((page) => page.artifacts)
+  const artifact = selectCandidateArtifactEvidence(artifacts, {
+    repository,
+    workflowRunId: workflow.runId,
+    workflowRunAttempt: workflow.attempt,
+    applicationSha: head
+  })
+  if (!artifact)
+    throw new Error(
+      `No unexpired Local handoff artifact proves ${head} in workflow run ${workflow.runId}. Run the complete Check workflow again; rerunning only failed jobs cannot recreate an expired artifact.`
+    )
+  return { workflow, artifact }
 }
 
 export const postPromotionJobName = 'Main · promotion/evidence attestation'
@@ -254,7 +346,7 @@ export function readCandidateState(): CandidateState {
     remoteMain,
     head
   ])
-  const candidate = readSuccessfulWorkflowEvidence(head)
+  const candidate = readCandidateQualification(head)
   return {
     branch,
     upstream,
@@ -276,7 +368,7 @@ export function assertCandidateReady(): CandidateState {
 
 export function assertCompletedHandoffReceipt(
   head: string,
-  candidate: WorkflowEvidence,
+  candidate: CandidateQualification,
   workspaceRoot = process.cwd()
 ): void {
   const receiptDirectory = resolve(workspaceRoot, '.tmp', 'handoff-local-app')
@@ -299,7 +391,7 @@ export function assertCompletedHandoffReceipt(
     receipt.status !== 'complete' ||
     receipt.identity.commit !== head ||
     receipt.identity.dirty !== false ||
-    !sameWorkflowQualification(receipt.identity.candidate, candidate) ||
+    !sameCandidateQualification(receipt.identity.candidate, candidate) ||
     receipt.phases.some((phase) => phase.status !== 'completed') ||
     !attemptIds.has(receipt.originAttemptId) ||
     !attemptIds.has(receipt.activeAttemptId)
@@ -329,6 +421,20 @@ export function promoteCandidate(state: CandidateState): void {
 
 function git(arguments_: readonly string[]): string {
   return command('git', arguments_).trim()
+}
+
+function readRepositoryIdentity(): string {
+  const repository = command('gh', [
+    'repo',
+    'view',
+    '--json',
+    'nameWithOwner',
+    '--jq',
+    '.nameWithOwner'
+  ]).trim()
+  if (!/^[^/\s]+\/[^/\s]+$/.test(repository))
+    throw new Error('GitHub returned an invalid repository identity')
+  return repository
 }
 
 function command(executable: string, arguments_: readonly string[]): string {

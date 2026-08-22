@@ -12,7 +12,7 @@ describe('local persistence format allowlist', () => {
       localArtifactManifest: 2,
       campaignLifecycleReceipt: 2,
       localInstallJournal: 2,
-      handoffReceipt: 6,
+      handoffReceipt: 7,
       handoffInvocationHistory: 2,
       candidateArtifactReceipt: 1,
       campaignBackupManifest: 1,

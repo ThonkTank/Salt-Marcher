@@ -162,9 +162,11 @@ describe('delivery contract', () => {
       ...identity(),
       candidate: {
         ...identity().candidate,
-        runId: 456,
-        url: 'https://github.example/actions/runs/456',
-        attempt: 3
+        workflow: {
+          ...identity().candidate.workflow,
+          url: 'https://github.example/actions/runs/123?attempt=3',
+          attempt: 3
+        }
       }
     }
     expect(sameHandoffApplicationIdentity(existing, current)).toBe(true)
@@ -179,7 +181,19 @@ describe('delivery contract', () => {
         ...current,
         candidate: {
           ...current.candidate,
-          jobs: current.candidate.jobs.slice(1)
+          workflow: {
+            ...current.candidate.workflow,
+            jobs: current.candidate.workflow.jobs.slice(1)
+          }
+        }
+      })
+    ).toBe(false)
+    expect(
+      sameHandoffApplicationIdentity(existing, {
+        ...current,
+        candidate: {
+          ...current.candidate,
+          artifact: { ...current.candidate.artifact, artifactId: 999 }
         }
       })
     ).toBe(false)
@@ -225,10 +239,20 @@ function identity() {
     qualificationInputFingerprint: 'd'.repeat(64),
     deliveryInputFingerprint: 'e'.repeat(64),
     toolchainHash: 'f'.repeat(64),
-    candidate: verifyRequiredJobs(
-      readRequiredJobManifest(),
-      successfulRun(),
-      sha
-    )
+    candidate: {
+      workflow: verifyRequiredJobs(
+        readRequiredJobManifest(),
+        successfulRun(),
+        sha
+      ),
+      artifact: {
+        repository: 'owner/repository',
+        artifactId: 12,
+        artifactName: `salt-marcher-local-${sha}-attempt-1`,
+        workflowRunId: 123,
+        workflowRunAttempt: 1,
+        applicationSha: sha
+      }
+    }
   }
 }

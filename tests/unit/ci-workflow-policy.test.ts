@@ -73,7 +73,12 @@ describe('CI platform partitions', () => {
     () => {
       expect(handoff).toContain("'gh'")
       expect(handoff).toContain("'download'")
-      expect(handoff).toContain('candidateArtifactName(')
+      expect(handoff).toContain(
+        'candidateState.candidate!.artifact.artifactName'
+      )
+      expect(handoff).toContain(
+        'candidateState.candidate!.artifact.workflowRunAttempt'
+      )
       expect(handoff).toContain('verifyCandidateArtifactDirectory')
       expect(handoff).not.toContain("run('checked', ['pnpm', 'check'])")
       expect(handoff).not.toContain(

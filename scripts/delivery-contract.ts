@@ -101,6 +101,57 @@ export const workflowEvidenceSchema = z
 
 export type WorkflowEvidence = z.infer<typeof workflowEvidenceSchema>
 
+export const candidateArtifactEvidenceSchema = z
+  .object({
+    repository: z.string().regex(/^[^/\s]+\/[^/\s]+$/),
+    artifactId: z.number().int().positive(),
+    artifactName: z.string().min(1).max(255),
+    workflowRunId: z.number().int().positive(),
+    workflowRunAttempt: z.number().int().positive(),
+    applicationSha: shaSchema
+  })
+  .strict()
+
+export type CandidateArtifactEvidence = z.infer<
+  typeof candidateArtifactEvidenceSchema
+>
+
+export const candidateQualificationSchema = z
+  .object({
+    workflow: workflowEvidenceSchema,
+    artifact: candidateArtifactEvidenceSchema
+  })
+  .strict()
+  .superRefine((qualification, context) => {
+    if (qualification.artifact.workflowRunId !== qualification.workflow.runId)
+      context.addIssue({
+        code: 'custom',
+        message: 'Candidate artifact belongs to another workflow run',
+        path: ['artifact', 'workflowRunId']
+      })
+    if (
+      qualification.artifact.applicationSha !== qualification.workflow.headSha
+    )
+      context.addIssue({
+        code: 'custom',
+        message: 'Candidate artifact belongs to another application SHA',
+        path: ['artifact', 'applicationSha']
+      })
+    if (
+      qualification.artifact.workflowRunAttempt > qualification.workflow.attempt
+    )
+      context.addIssue({
+        code: 'custom',
+        message:
+          'Candidate artifact was produced after the qualified run attempt',
+        path: ['artifact', 'workflowRunAttempt']
+      })
+  })
+
+export type CandidateQualification = z.infer<
+  typeof candidateQualificationSchema
+>
+
 export function sameWorkflowQualification(
   existing: WorkflowEvidence,
   current: WorkflowEvidence
@@ -110,6 +161,16 @@ export function sameWorkflowQualification(
     existing.requiredJobManifestVersion ===
       current.requiredJobManifestVersion &&
     JSON.stringify(existing.jobs) === JSON.stringify(current.jobs)
+  )
+}
+
+export function sameCandidateQualification(
+  existing: CandidateQualification,
+  current: CandidateQualification
+): boolean {
+  return (
+    sameWorkflowQualification(existing.workflow, current.workflow) &&
+    JSON.stringify(existing.artifact) === JSON.stringify(current.artifact)
   )
 }
 
@@ -223,7 +284,7 @@ export const handoffReceiptSchema = z
         qualificationInputFingerprint: fingerprintSchema,
         deliveryInputFingerprint: fingerprintSchema,
         toolchainHash: fingerprintSchema,
-        candidate: workflowEvidenceSchema
+        candidate: candidateQualificationSchema
       })
       .strict(),
     phases: z.array(handoffPhaseSchema).length(handoffPhases.length)
@@ -316,7 +377,7 @@ export function sameHandoffApplicationIdentity(
   const { candidate: currentCandidate, ...currentInputs } = current
   return (
     JSON.stringify(existingInputs) === JSON.stringify(currentInputs) &&
-    sameWorkflowQualification(existingCandidate, currentCandidate)
+    sameCandidateQualification(existingCandidate, currentCandidate)
   )
 }
 

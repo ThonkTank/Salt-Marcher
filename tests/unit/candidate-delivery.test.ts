@@ -9,6 +9,7 @@ import {
   parseRemoteHead,
   postPromotionJobName,
   requiresApplicationHandoff,
+  selectCandidateArtifactEvidence,
   successfulCandidateEvidence,
   successfulPostPromotionEvidence,
   type CandidateState
@@ -37,15 +38,25 @@ const valid: CandidateState = {
   clean: true,
   mainIsAncestor: true,
   candidate: {
-    runId: 1,
-    url: 'https://github.example/check/1',
-    attempt: 1,
-    headSha: 'b'.repeat(40),
-    requiredJobManifestVersion: 4,
-    jobs: readRequiredJobManifest().jobs.map((job) => ({
-      ...job,
-      conclusion: 'success' as const
-    }))
+    workflow: {
+      runId: 1,
+      url: 'https://github.example/check/1',
+      attempt: 2,
+      headSha: 'b'.repeat(40),
+      requiredJobManifestVersion: 4,
+      jobs: readRequiredJobManifest().jobs.map((job) => ({
+        ...job,
+        conclusion: 'success' as const
+      }))
+    },
+    artifact: {
+      repository: 'owner/repository',
+      artifactId: 10,
+      artifactName: `salt-marcher-local-${'b'.repeat(40)}-attempt-1`,
+      workflowRunId: 1,
+      workflowRunAttempt: 1,
+      applicationSha: 'b'.repeat(40)
+    }
   }
 }
 
@@ -114,6 +125,54 @@ describe('candidate delivery policy', () => {
       successfulPostPromotionEvidence(
         { ...run, jobs: [{ ...run.jobs[0]!, conclusion: 'skipped' }] },
         valid.head
+      )
+    ).toBeNull()
+  })
+
+  it('selects an exact, unexpired artifact independently of the aggregate attempt', () => {
+    const sha = valid.head
+    expect(
+      selectCandidateArtifactEvidence(
+        [
+          {
+            id: 12,
+            name: `salt-marcher-local-${sha}-attempt-3`,
+            expired: false
+          },
+          {
+            id: 11,
+            name: `salt-marcher-local-${sha}-attempt-1`,
+            expired: false
+          },
+          {
+            id: 10,
+            name: `salt-marcher-local-${sha}-attempt-2`,
+            expired: true
+          }
+        ],
+        {
+          repository: 'owner/repository',
+          workflowRunId: 7,
+          workflowRunAttempt: 2,
+          applicationSha: sha
+        }
+      )
+    ).toMatchObject({ artifactId: 11, workflowRunAttempt: 1 })
+    expect(
+      selectCandidateArtifactEvidence(
+        [
+          {
+            id: 1,
+            name: `salt-marcher-local-${'c'.repeat(40)}-attempt-1`,
+            expired: false
+          }
+        ],
+        {
+          repository: 'owner/repository',
+          workflowRunId: 7,
+          workflowRunAttempt: 2,
+          applicationSha: sha
+        }
       )
     ).toBeNull()
   })
@@ -253,9 +312,11 @@ describe('candidate delivery policy', () => {
         valid.head,
         {
           ...valid.candidate!,
-          runId: 2,
-          url: 'https://github.example/check/2',
-          attempt: 2
+          workflow: {
+            ...valid.candidate!.workflow,
+            url: 'https://github.example/check/1?attempt=2',
+            attempt: 2
+          }
         },
         root
       )

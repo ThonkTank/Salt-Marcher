@@ -8,7 +8,8 @@ console.info(
     event: 'candidate-promoted',
     sha: state.head,
     previousMain: state.remoteMain,
-    check: state.candidate?.url,
-    requiredJobs: state.candidate?.jobs
+    check: state.candidate?.workflow.url,
+    requiredJobs: state.candidate?.workflow.jobs,
+    artifact: state.candidate?.artifact
   })
 )
