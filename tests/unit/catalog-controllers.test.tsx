@@ -250,4 +250,43 @@ describe('catalog controllers', () => {
     expect(port.locations.readLocations).toHaveBeenCalledOnce()
     expect(port.locations.readTables).toHaveBeenCalledTimes(2)
   })
+
+  it('rejects a late Location result after the section becomes inactive', async () => {
+    const port = ports()
+    const pending = deferred<{
+      revision: number
+      locations: WorldLocation[]
+    }>()
+    vi.mocked(port.locations.readLocations).mockReturnValue(pending.promise)
+    const hook = renderHook(
+      ({ active }: { active: boolean }) =>
+        useLocationCatalogController(
+          active,
+          onError,
+          setSession,
+          port.locations
+        ),
+      { initialProps: { active: true } }
+    )
+    await waitFor(() =>
+      expect(port.locations.readLocations).toHaveBeenCalledOnce()
+    )
+    hook.rerender({ active: false })
+    await act(async () => {
+      pending.resolve({ revision: 9, locations: [location] })
+      await pending.promise
+    })
+    expect(hook.result.current.snapshot).toEqual({ revision: 0, locations: [] })
+    expect(onError).not.toHaveBeenCalled()
+  })
 })
+
+function deferred<Value>() {
+  let resolve!: (value: Value | PromiseLike<Value>) => void
+  let reject!: (cause?: unknown) => void
+  const promise = new Promise<Value>((done, fail) => {
+    resolve = done
+    reject = fail
+  })
+  return { promise, resolve, reject }
+}

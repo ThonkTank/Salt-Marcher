@@ -256,10 +256,18 @@ module identity rather than matching generated keys or hashes.
 Catalog is a composition root over Monster, Location, Faction, and Encounter
 Table controllers and views. Controller state remains mounted across section
 changes, while an explicit active flag prevents hidden sections from reading
-their providers. Narrow renderer-local capability ports make these rules
-testable without widening IPC. The creature-collection manager owns its header,
-named grid areas, catalog pane, draft pane, footer, and divider; consumers may
-choose only a fixed divider or the manager's accessible resizable model.
+their providers. NPC and Location each expose a thin composition controller
+over separate query, mutation, and immutable view-projection adapters. Each
+composition owns one instance-bound async coordinator; adapters receive it
+explicitly, and deactivation cancels the whole section scope. Query adapters
+use latest-only acceptance for pages, details, reference data, and independent
+reference retries. Mutation adapters retain command identity and receipt
+recovery but publish only coordinator-accepted results. Reducers contain no
+request epochs or infrastructure tokens. Narrow renderer-local capability
+ports make these rules testable without widening IPC. The creature-collection
+manager owns its header, named grid areas, catalog pane, draft pane, footer,
+and divider; consumers may choose only a fixed divider or the manager's
+accessible resizable model.
 The domain-owned World Location editor is shared by Catalog and Hex through a
 narrow application port. Location, Faction, Encounter Table, and Hex Map saves
 return both the next immutable projection and the exact saved entity; consumers
@@ -511,8 +519,12 @@ view. One `GroupManagerState` reducer owns per-Group sessions, Group and Loot
 histories, cached drafts, paired catalog/work views, serializable discard
 intents, and external conflicts. Its thin composition controller receives
 narrow Creature, Group, Loot, and lifecycle ports from the sole capability
-adapter and delegates reads to a query hook and writes to a command hook; views
-import neither live Session surface types nor capability hooks. All discarding
+adapter, creates one instance-bound async coordinator, and injects it into the
+existing query and command boundaries. Loot writes, intent execution, and the
+immutable view projection are separate modules; the composition controller
+only owns the reducer, derives its current inputs, and wires those boundaries.
+Views import neither live Session surface types nor capability hooks. Scene
+scope cleanup cancels pending reads and writes. All discarding
 transitions use one intent policy, and only coordinator-accepted asynchronous
 outcomes reach the reducer. The reusable Treasure editor receives messages,
 issues, commands, and an add policy instead of importing feature copy or

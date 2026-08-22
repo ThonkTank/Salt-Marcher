@@ -50,6 +50,65 @@ architectureGate(
 
 architectureGate(
   'behavior-integration',
+  'shares one Group coordinator across query and command boundaries',
+  () => {
+    const controller = readTypeScriptModule(
+      'src/renderer/features/session/use-group-manager-controller.ts'
+    )
+    for (const call of [
+      'useAsyncCommandCoordinator',
+      'useGroupManagerQueries',
+      'useGroupManagerCommands',
+      'createGroupManagerInteractions',
+      'projectGroupManagerView'
+    ])
+      expect(hasCall(controller, call), call).toBe(true)
+    for (const adapter of [
+      'src/renderer/features/session/use-group-manager-queries.ts',
+      'src/renderer/features/session/use-group-manager-commands.ts'
+    ]) {
+      const module = readTypeScriptModule(adapter)
+      expect(module.identifiers.has('AsyncCommandCoordinator')).toBe(true)
+      expect(module.identifiers.has('useAsyncCommandCoordinator')).toBe(false)
+    }
+  }
+)
+
+architectureGate(
+  'behavior-integration',
+  'splits NPC and Location catalogs into query, mutation and projection adapters',
+  () => {
+    for (const [path, calls] of [
+      [
+        'src/renderer/features/catalog/npc-catalog-controller.ts',
+        [
+          'useAsyncCommandCoordinator',
+          'useNpcCatalogQueries',
+          'useNpcCatalogMutations',
+          'projectNpcCatalog'
+        ]
+      ],
+      [
+        'src/renderer/features/catalog/location-catalog-controller.ts',
+        [
+          'useAsyncCommandCoordinator',
+          'useLocationCatalogQueries',
+          'useLocationCatalogMutations',
+          'useLocationCatalogProjection'
+        ]
+      ]
+    ] as const) {
+      const controller = readTypeScriptModule(path)
+      for (const call of calls)
+        expect(hasCall(controller, call), call).toBe(true)
+      expect(controller.identifiers.has('useRef')).toBe(false)
+      expect(controller.identifiers.has('AbortController')).toBe(false)
+    }
+  }
+)
+
+architectureGate(
+  'behavior-integration',
   'composes Hex writes from the shared async, transport and projection boundaries',
   () => {
     const controller = readTypeScriptModule(

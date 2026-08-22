@@ -3,7 +3,7 @@ import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import type { SearchableSelectOption } from '../../shell/searchable-select.js'
 import { emptyQuery } from '../creatures/creature-state.js'
-import { useAsyncCommandCoordinator } from '../../async/use-async-command-coordinator.js'
+import type { AsyncCommandCoordinator } from '../../async/async-command-coordinator.js'
 import {
   creatureFact,
   groupDraftEntries,
@@ -17,21 +17,23 @@ import type {
 } from './group-manager-state.js'
 import type { GroupManagerPorts } from './use-group-manager-capability-ports.js'
 
-export function useGroupManagerQueries(input: {
-  focused: LiveSessionSnapshot['scene']['scenes'][number]
-  snapshot: LiveSessionSnapshot
-  state: GroupManagerState
-  session: GroupDraftSession | null
-  group: GroupDraftState
-  ports: GroupManagerPorts
-  dispatch: Dispatch<GroupManagerAction>
-  onError: (message: string) => void
-}): Readonly<{
+export function useGroupManagerQueries(
+  input: {
+    focused: LiveSessionSnapshot['scene']['scenes'][number]
+    snapshot: LiveSessionSnapshot
+    state: GroupManagerState
+    session: GroupDraftSession | null
+    group: GroupDraftState
+    ports: GroupManagerPorts
+    dispatch: Dispatch<GroupManagerAction>
+    onError: (message: string) => void
+  },
+  commands: AsyncCommandCoordinator
+): Readonly<{
   searchBiomeOptions: (
     query: string
   ) => Promise<readonly SearchableSelectOption[]>
 }> {
-  const commands = useAsyncCommandCoordinator()
   const { dispatch, focused, onError, ports, session, snapshot, state } = input
 
   useEffect(() => {

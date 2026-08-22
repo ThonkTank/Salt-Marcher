@@ -1,16 +1,16 @@
 {
-  "recordedAt": "2026-08-17",
-  "reason": "Record the versioned adaptive Session workspace, controller-owned UI state, and accessible layout primitives.",
-  "dependencyRationale": "No runtime dependency was added; growth is application-owned Session controls, NPC state, accessibility primitives, and scoped layout styling.",
-  "chunkRationale": "Session additions remain in the existing lazy session surface; reusable dialog and accessibility primitives remain in their existing shared or feature-lazy chunks, with no new eager shell route.",
+  "recordedAt": "2026-08-22",
+  "reason": "Record Phase 10 Group, NPC, and Location query-mutation-projection boundaries with coordinator-owned stale-result suppression.",
+  "dependencyRationale": "No runtime dependency was added; growth is application-owned adapter wiring and deterministic scope isolation.",
+  "chunkRationale": "Group adapters remain in the existing dynamic group-dialog leaf; NPC and Location adapters remain in the existing Catalog lazy graph, with no new eager shell route.",
   "graphs": {
-    "shell": 400451,
-    "workspace": 491771,
-    "session": 164347,
-    "catalog": 182319,
-    "hex": 174781,
+    "shell": 400513,
+    "workspace": 494655,
+    "session": 169019,
+    "catalog": 185465,
+    "hex": 176449,
     "reference": 39420,
     "pixi": 408625,
-    "reachable": 1482635
+    "reachable": 1503616
   }
 }

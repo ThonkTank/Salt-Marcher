@@ -88,7 +88,17 @@ const locations = {
   ]
 }
 
-function setup(active = true) {
+function setup(
+  active = true,
+  searchOverride?: (input: {
+    query: string
+    lifecycle: WorldNpc['lifecycle'] | null
+    factionId?: string | null
+    locationId?: string | null
+    offset: number
+    limit: number
+  }) => Promise<unknown>
+) {
   const all = [erika, bandit]
   const create = vi.fn(
     (input: {
@@ -109,48 +119,45 @@ function setup(active = true) {
       })
     }
   )
-  const search = vi.fn(
-    (input: {
-      query: string
-      lifecycle: WorldNpc['lifecycle'] | null
-      factionId?: string | null
-      locationId?: string | null
-      offset: number
-      limit: number
-    }) => {
-      const rows = all.filter(
-        (npc) =>
-          (input.lifecycle === null || npc.lifecycle === input.lifecycle) &&
-          (input.factionId === undefined ||
-            npc.factionId === input.factionId) &&
-          (input.locationId === undefined ||
-            npc.locationId === input.locationId) &&
-          npc.displayName
-            .toLocaleLowerCase()
-            .includes(input.query.toLocaleLowerCase())
-      )
-      return Promise.resolve({
-        revision: all.length > 2 ? 4 : 3,
-        rows: rows.map((npc) => ({
-          id: npc.id,
-          displayName: npc.displayName,
-          creatureId: npc.creatureId,
-          creatureDisplayName:
-            npc.creatureId === 'sprite' ? 'Sprite' : 'Bandit',
-          lifecycle: npc.lifecycle,
-          dispositionModifier: npc.dispositionModifier,
-          factionId: npc.factionId,
-          factionDisplayName: npc.factionId ? 'Rosenhof' : null,
-          locationId: npc.locationId,
-          locationDisplayName: npc.locationId ? 'Flussuferhöhle' : null,
-          position: npc.position
-        })),
-        total: rows.length,
-        offset: input.offset,
-        limit: input.limit
-      })
-    }
-  )
+  const defaultSearch = (input: {
+    query: string
+    lifecycle: WorldNpc['lifecycle'] | null
+    factionId?: string | null
+    locationId?: string | null
+    offset: number
+    limit: number
+  }) => {
+    const rows = all.filter(
+      (npc) =>
+        (input.lifecycle === null || npc.lifecycle === input.lifecycle) &&
+        (input.factionId === undefined || npc.factionId === input.factionId) &&
+        (input.locationId === undefined ||
+          npc.locationId === input.locationId) &&
+        npc.displayName
+          .toLocaleLowerCase()
+          .includes(input.query.toLocaleLowerCase())
+    )
+    return Promise.resolve({
+      revision: all.length > 2 ? 4 : 3,
+      rows: rows.map((npc) => ({
+        id: npc.id,
+        displayName: npc.displayName,
+        creatureId: npc.creatureId,
+        creatureDisplayName: npc.creatureId === 'sprite' ? 'Sprite' : 'Bandit',
+        lifecycle: npc.lifecycle,
+        dispositionModifier: npc.dispositionModifier,
+        factionId: npc.factionId,
+        factionDisplayName: npc.factionId ? 'Rosenhof' : null,
+        locationId: npc.locationId,
+        locationDisplayName: npc.locationId ? 'Flussuferhöhle' : null,
+        position: npc.position
+      })),
+      total: rows.length,
+      offset: input.offset,
+      limit: input.limit
+    })
+  }
+  const search = vi.fn(searchOverride ?? defaultSearch)
   const api = {
     npcs: {
       search,
@@ -199,16 +206,32 @@ function setup(active = true) {
     })
   } as unknown as CreatureCapabilityPort
   const onError = vi.fn()
-  function Harness() {
-    const controller = useNpcCatalogController(active, onError, api, creatures)
+  function Harness(props: { active: boolean }) {
+    const controller = useNpcCatalogController(
+      props.active,
+      onError,
+      api,
+      creatures
+    )
     return <NpcCatalogSection controller={controller} />
   }
-  render(
+  const view = render(
     <ModalLayerProvider>
-      <Harness />
+      <Harness active={active} />
     </ModalLayerProvider>
   )
-  return { api, creatures, create }
+  return {
+    api,
+    creatures,
+    create,
+    onError,
+    rerenderActive: (next: boolean) =>
+      view.rerender(
+        <ModalLayerProvider>
+          <Harness active={next} />
+        </ModalLayerProvider>
+      )
+  }
 }
 
 afterEach(cleanup)
@@ -219,6 +242,40 @@ describe('NPC catalog UI', () => {
     expect(api.npcs.search).not.toHaveBeenCalled()
     expect(api.factions.read).not.toHaveBeenCalled()
     expect(api.locations.read).not.toHaveBeenCalled()
+  })
+
+  it('suppresses a late NPC failure after the section becomes inactive', async () => {
+    const pending = deferred<unknown>()
+    const { api, onError, rerenderActive } = setup(true, () => pending.promise)
+    await waitFor(() => expect(api.npcs.search).toHaveBeenCalledOnce())
+    rerenderActive(false)
+    pending.reject(new Error('obsolete NPC failure'))
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(onError).not.toHaveBeenCalled()
+  })
+
+  it('publishes only the latest NPC page when searches complete out of order', async () => {
+    const older = deferred<unknown>()
+    const newer = deferred<unknown>()
+    const search = vi
+      .fn()
+      .mockReturnValueOnce(older.promise)
+      .mockReturnValueOnce(newer.promise)
+    setup(true, search)
+    await waitFor(() => expect(search).toHaveBeenCalledOnce())
+    fireEvent.change(screen.getByLabelText('NPCs suchen'), {
+      target: { value: 'Erika' }
+    })
+    await waitFor(() => expect(search).toHaveBeenCalledTimes(2))
+    newer.resolve(pageFor(erika))
+    expect(await screen.findByRole('button', { name: 'Erika' })).toBeVisible()
+    older.resolve(pageFor(bandit))
+    await older.promise
+    expect(screen.getByRole('button', { name: 'Erika' })).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: 'Überlebender Bandit' })
+    ).toBeNull()
   })
 
   it('debounces text search and combines status, faction and location filters', async () => {
@@ -324,18 +381,47 @@ describe('NPC catalog UI', () => {
   })
 })
 
+function deferred<Value>() {
+  let resolve!: (value: Value | PromiseLike<Value>) => void
+  let reject!: (cause?: unknown) => void
+  const promise = new Promise<Value>((done, fail) => {
+    resolve = done
+    reject = fail
+  })
+  return { promise, resolve, reject }
+}
+
+function pageFor(npc: WorldNpc) {
+  return {
+    revision: 3,
+    rows: [
+      {
+        id: npc.id,
+        displayName: npc.displayName,
+        creatureId: npc.creatureId,
+        creatureDisplayName: npc.creatureId === 'sprite' ? 'Sprite' : 'Bandit',
+        lifecycle: npc.lifecycle,
+        dispositionModifier: npc.dispositionModifier,
+        factionId: npc.factionId,
+        factionDisplayName: npc.factionId ? 'Rosenhof' : null,
+        locationId: npc.locationId,
+        locationDisplayName: npc.locationId ? 'Flussuferhöhle' : null,
+        position: npc.position
+      }
+    ],
+    total: 1,
+    offset: 0,
+    limit: 50
+  }
+}
+
 describe('NPC catalog lifecycle reducer', () => {
-  it('covers loading, ready, editing, saving and conflict with request tokens', () => {
+  it('covers loading, ready, editing, saving and conflict', () => {
     const loading = reduceNpcCatalogState(initialNpcCatalogState, {
-      type: 'load-started',
-      token: 2
+      type: 'load-started'
     })
-    expect(
-      reduceNpcCatalogState(loading, { type: 'load-completed', token: 1 })
-    ).toBe(loading)
     const ready = reduceNpcCatalogState(loading, {
-      type: 'load-completed',
-      token: 2
+      type: 'load-completed'
     })
     expect(ready).toEqual({ status: 'ready' })
     const editing = reduceNpcCatalogState(ready, {
@@ -343,53 +429,38 @@ describe('NPC catalog lifecycle reducer', () => {
       npc: erika
     })
     const saving = reduceNpcCatalogState(editing, {
-      type: 'save-started',
-      token: 5
+      type: 'save-started'
     })
-    expect(saving).toMatchObject({ status: 'saving', npc: erika, token: 5 })
-    expect(
-      reduceNpcCatalogState(saving, { type: 'save-completed', token: 4 })
-    ).toBe(saving)
+    expect(saving).toMatchObject({ status: 'saving', npc: erika })
     expect(
       reduceNpcCatalogState(saving, {
         type: 'save-conflicted',
-        token: 5,
         message: 'Revision geändert'
       })
     ).toEqual({
       status: 'conflict',
       npc: erika,
-      token: 5,
       message: 'Revision geändert'
     })
   })
 
-  it('covers confirming and token-guarded deletion', () => {
+  it('covers confirming and deletion', () => {
     const requested = reduceNpcCatalogState(
       { status: 'ready' },
       { type: 'delete-requested', npcId: erikaId }
     )
     const deleting = reduceNpcCatalogState(requested, {
       type: 'delete-started',
-      npcId: erikaId,
-      token: 8
+      npcId: erikaId
     })
     expect(deleting).toEqual({
       status: 'deleting',
       npcId: erikaId,
-      phase: 'saving',
-      token: 8
+      phase: 'saving'
     })
     expect(
       reduceNpcCatalogState(deleting, {
-        type: 'delete-completed',
-        token: 7
-      })
-    ).toBe(deleting)
-    expect(
-      reduceNpcCatalogState(deleting, {
-        type: 'delete-completed',
-        token: 8
+        type: 'delete-completed'
       })
     ).toEqual({ status: 'ready' })
   })

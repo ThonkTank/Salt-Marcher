@@ -56,8 +56,11 @@ Renderer Session mutations and Group management now share one instance-bound
 async command coordinator with scope/entity request identity, latest-only and
 queue modes, `AbortSignal` cancellation, and explicit pending/success/stale/
 failure state. Stale results and failures are rejected before they reach domain
-callbacks. Group query and write hooks own the asynchronous work, while the
-pure reducer and composition controller contain no request-token inventory.
+callbacks. Group query and write hooks receive the single coordinator owned by
+their thin composition controller. Loot commands, intent execution, and view
+projection are separate bounded modules, while the pure reducer and
+composition controller contain no request-token inventory. Focused-Scene
+cleanup cancels obsolete Group work.
 Hex and installation-preference writes now use that same coordinator instead
 of feature-local Promise tails. Hex creation is queued per Campaign and
 existing-map writes per map ID; different map keys can progress independently,
@@ -544,6 +547,12 @@ per-Group undo/redo caching and discard protection, an immutable-run-pinned
   sections; the shared creature-collection manager owns every named layout
   area and exposes fixed or accessible resizable divider models instead of an
   implicit child-order contract
+- NPC and Location Catalog controllers compose separate query, mutation, and
+  projection adapters around one coordinator per mounted section. Manual
+  request counters and Promise-based acceptance guards are gone; section
+  deactivation cancels pending work, independent Location reference retries
+  remain isolated, and stale page, detail, mutation, and error outcomes cannot
+  publish
 - one campaign-local Hex vertical slice now connects a Pixi editor, shared
   installation-owned biome IDs, World Planner location placement, focused-Scene
   Party position, waypoint route planning, durable checkpoints and Scene time,

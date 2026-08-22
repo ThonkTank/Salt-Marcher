@@ -44,6 +44,10 @@ const sessionMutations =
   'src/renderer/features/session/use-session-mutation-controller.ts'
 const plannerController =
   'src/renderer/features/session-planner/use-session-planner-controller.ts'
+const npcCatalogController =
+  'src/renderer/features/catalog/npc-catalog-controller.ts'
+const locationCatalogController =
+  'src/renderer/features/catalog/location-catalog-controller.ts'
 
 const passiveViews = new Set([
   'src/renderer/features/session/scene-party-card.tsx',
@@ -77,6 +81,7 @@ export function rendererControllerBoundaryViolations(
   inspectSessionWorkspace(factsByPath, violations)
   inspectPassiveViews(factsByPath, violations)
   inspectGroupManager(factsByPath, violations)
+  inspectCatalogAdapters(factsByPath, violations)
   inspectSessionPlanner(factsByPath, violations)
   inspectNarrowPorts(factsByPath, violations)
   inspectFeatureCapabilityAdapters(factsByPath, violations)
@@ -229,6 +234,10 @@ function inspectGroupManager(
           violation(controller, 1, 'group_controller_owns_local_state', hook)
         )
     for (const [binding, specifier] of [
+      [
+        'useAsyncCommandCoordinator',
+        '../../async/use-async-command-coordinator.js'
+      ],
       ['useGroupManagerCommands', './use-group-manager-commands.js'],
       ['useGroupManagerQueries', './use-group-manager-queries.js']
     ] as const) {
@@ -237,19 +246,37 @@ function inspectGroupManager(
     }
   }
 
-  for (const path of [sessionMutations, groupCommands, groupQueries]) {
+  const mutationOwner = requireSource(sessionMutations, factsByPath, violations)
+  if (
+    mutationOwner &&
+    (!hasImportFrom(
+      mutationOwner,
+      'useAsyncCommandCoordinator',
+      '../../async/use-async-command-coordinator.js'
+    ) ||
+      !hasImportedCall(
+        mutationOwner,
+        'useAsyncCommandCoordinator',
+        '../../async/use-async-command-coordinator.js'
+      ))
+  )
+    violations.push(
+      violation(
+        mutationOwner,
+        1,
+        'async_owner_missing_coordinator',
+        'useAsyncCommandCoordinator'
+      )
+    )
+
+  for (const path of [groupCommands, groupQueries]) {
     const module = requireSource(path, factsByPath, violations)
     if (!module) continue
     if (
       !hasImportFrom(
         module,
-        'useAsyncCommandCoordinator',
-        '../../async/use-async-command-coordinator.js'
-      ) ||
-      !hasImportedCall(
-        module,
-        'useAsyncCommandCoordinator',
-        '../../async/use-async-command-coordinator.js'
+        'AsyncCommandCoordinator',
+        '../../async/async-command-coordinator.js'
       )
     )
       violations.push(
@@ -257,9 +284,62 @@ function inspectGroupManager(
           module,
           1,
           'async_owner_missing_coordinator',
-          'useAsyncCommandCoordinator'
+          'AsyncCommandCoordinator injection'
         )
       )
+  }
+}
+
+function inspectCatalogAdapters(
+  factsByPath: ReadonlyMap<string, ModuleFacts>,
+  violations: RendererControllerBoundaryViolation[]
+): void {
+  for (const [path, boundaries] of [
+    [
+      npcCatalogController,
+      [
+        ['useNpcCatalogQueries', './use-npc-catalog-queries.js'],
+        ['useNpcCatalogMutations', './use-npc-catalog-mutations.js'],
+        ['projectNpcCatalog', './npc-catalog-projection.js']
+      ]
+    ],
+    [
+      locationCatalogController,
+      [
+        ['useLocationCatalogQueries', './use-location-catalog-queries.js'],
+        ['useLocationCatalogMutations', './use-location-catalog-mutations.js'],
+        ['useLocationCatalogProjection', './location-catalog-projection.js']
+      ]
+    ]
+  ] as const) {
+    const controller = requireSource(path, factsByPath, violations)
+    if (!controller) continue
+    requireImport(
+      controller,
+      'useAsyncCommandCoordinator',
+      '../../async/use-async-command-coordinator.js',
+      violations
+    )
+    requireCall(
+      controller,
+      'useAsyncCommandCoordinator',
+      '../../async/use-async-command-coordinator.js',
+      violations
+    )
+    for (const [binding, specifier] of boundaries) {
+      requireImport(controller, binding, specifier, violations)
+      requireCall(controller, binding, specifier, violations)
+    }
+    for (const infrastructure of ['useRef', 'AbortController'])
+      if (hasCall(controller, infrastructure))
+        violations.push(
+          violation(
+            controller,
+            1,
+            'async_owner_missing_coordinator',
+            infrastructure
+          )
+        )
   }
 }
 

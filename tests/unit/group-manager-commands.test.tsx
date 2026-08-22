@@ -9,6 +9,7 @@ import {
   type GroupManagerAction
 } from '../../src/renderer/features/session/group-manager-state.js'
 import { useGroupManagerCommands } from '../../src/renderer/features/session/use-group-manager-commands.js'
+import { AsyncCommandCoordinator } from '../../src/renderer/async/async-command-coordinator.js'
 import type { GroupManagerPorts } from '../../src/renderer/features/session/use-group-manager-capability-ports.js'
 import type {
   LiveSessionSnapshot,
@@ -26,7 +27,10 @@ describe('group manager commands', () => {
     const saved = vi.fn()
     const dispatch = vi.fn<(action: GroupManagerAction) => void>()
     const input = commandInput(saveGroup, saved, dispatch)
-    const controller = renderHook(() => useGroupManagerCommands(input))
+    const coordinator = new AsyncCommandCoordinator()
+    const controller = renderHook(() =>
+      useGroupManagerCommands(input, coordinator)
+    )
 
     const first = controller.result.current.save()
     const second = controller.result.current.save()

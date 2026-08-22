@@ -1,32 +1,15 @@
-import type { Dispatch } from 'react'
 import type { EncounterTuningOverride } from '../../../shared/contracts/encounter-tuning.js'
-import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
-import type { CommitGroupRewardResult } from '../../../shared/contracts/loot.js'
-import type { SceneGroup } from '../../../shared/contracts/scene.js'
-import { capabilityErrorIssues } from '../../../shared/errors/capability-error.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import { formatMessage, message } from '../../i18n/session-runtime.de.js'
-import {
-  groupLootCommitDraft,
-  groupLootDraftFromRun
-} from '../loot/group-loot-draft.js'
-import { useAsyncCommandCoordinator } from '../../async/use-async-command-coordinator.js'
+import type { AsyncCommandCoordinator } from '../../async/async-command-coordinator.js'
 import { generationSeed } from './generation-seed.js'
-import {
-  groupDraftEntries,
-  newGroupDraftKey,
-  type GroupDraftState
-} from './group-draft.js'
-import type {
-  GroupDraftSession,
-  GroupManagerAction,
-  GroupManagerState
-} from './group-manager-state.js'
+import { groupDraftEntries, newGroupDraftKey } from './group-draft.js'
 import {
   applyCombatCommandResult,
   applySceneGroupCommandResult
 } from './session-patches.js'
-import type { GroupManagerPorts } from './use-group-manager-capability-ports.js'
+import type { GroupManagerCommandInput } from './group-manager-command-input.js'
+import { useGroupManagerLootCommands } from './use-group-manager-loot-commands.js'
 
 const tuning: EncounterTuningOverride = {
   difficulty: 'preset',
@@ -35,49 +18,35 @@ const tuning: EncounterTuningOverride = {
   diversity: 'preset'
 }
 
-export function useGroupManagerCommands(input: {
-  snapshot: LiveSessionSnapshot
-  focused: LiveSessionSnapshot['scene']['scenes'][number]
-  state: GroupManagerState
-  session: GroupDraftSession | null
-  group: GroupDraftState
-  entries: ReturnType<typeof groupDraftEntries>
-  selectedPersistedGroup: SceneGroup | undefined
-  rewardGroupId: string
-  canGenerate: boolean
-  ports: GroupManagerPorts
-  dispatch: Dispatch<GroupManagerAction>
-  saved: (snapshot: LiveSessionSnapshot) => void
-  lootChanged: () => void
-}): Readonly<{
+export function useGroupManagerCommands(
+  input: GroupManagerCommandInput,
+  commands: AsyncCommandCoordinator
+): Readonly<{
   generateRoster: (mode: 'fill' | 'replace') => Promise<void>
   generateLoot: (
     rewardEntries?: ReturnType<typeof groupDraftEntries>,
     seed?: number,
     key?: string | null
   ) => Promise<boolean>
-  commitLoot: () => Promise<CommitGroupRewardResult | null>
+  commitLoot: ReturnType<typeof useGroupManagerLootCommands>['commitLoot']
   save: () => Promise<void>
   archive: () => Promise<void>
   joinCombat: () => Promise<void>
   busy: boolean
 }> {
-  const commands = useAsyncCommandCoordinator()
   const {
     canGenerate,
     dispatch,
     entries,
     focused,
     group,
-    lootChanged,
     ports,
-    rewardGroupId,
     saved,
     selectedPersistedGroup,
-    session,
     snapshot,
     state
   } = input
+  const lootCommands = useGroupManagerLootCommands(input, commands)
 
   async function generateRoster(mode: 'fill' | 'replace'): Promise<void> {
     const key = state.activeKey
@@ -133,116 +102,12 @@ export function useGroupManagerCommands(input: {
           }
         )
       })
-      await generateLoot(
+      await lootCommands.generateLoot(
         groupDraftEntries(quantities, deadQuantities),
         generationSeed(ports.runtime.e2e),
         key
       )
     } else if (outcome.status === 'failure') failCommand(key, outcome.cause)
-  }
-
-  async function generateLoot(
-    rewardEntries = entries,
-    seed = generationSeed(ports.runtime.e2e),
-    key = state.activeKey
-  ): Promise<boolean> {
-    if (!key || rewardEntries.length === 0) return false
-    dispatch({
-      kind: 'loot-request-began',
-      key,
-      phase: 'generating',
-      seed
-    })
-    const outcome = await commands.run({
-      scope: 'group-manager.loot',
-      entityKey: key,
-      mode: 'latest-only',
-      execute: async () => {
-        const rules = await ports.campaignRules.read()
-        return ports.loot.generateForGroupDraft({
-          sceneId: focused.id,
-          groupId: rewardGroupId,
-          expectedSceneRevision: snapshot.scene.revision,
-          expectedGroupRevision: selectedPersistedGroup?.revision ?? null,
-          expectedPartyRevision: snapshot.party.revision,
-          expectedCampaignRulesRevision: rules.revision,
-          entries: [...rewardEntries],
-          seed
-        })
-      }
-    })
-    if (outcome.status === 'success') {
-      const result = outcome.value
-      if (result.status !== 'success') {
-        dispatch({
-          kind: 'loot-failed',
-          key,
-          error: result.issues[0]?.code ?? result.status,
-          issues: []
-        })
-        return false
-      }
-      const draft = groupLootDraftFromRun(result.run, () => crypto.randomUUID())
-      dispatch({
-        kind: 'loot-generated',
-        key,
-        run: result.run,
-        draft,
-        seed
-      })
-      return true
-    }
-    if (outcome.status === 'failure')
-      dispatch({
-        kind: 'loot-failed',
-        key,
-        error: capabilityErrorText(outcome.cause),
-        issues: capabilityErrorIssues(outcome.cause)
-      })
-    return false
-  }
-
-  async function commitLoot(): Promise<CommitGroupRewardResult | null> {
-    const key = state.activeKey
-    const run = session?.loot.run
-    const treasure = run?.treasures[0]
-    const history = session?.loot.history
-    if (!key || !run || !history || !validateAvailableMonster()) return null
-    dispatch({ kind: 'loot-request-began', key, phase: 'committing' })
-    const outcome = await commands.run({
-      scope: 'group-manager.loot',
-      entityKey: key,
-      mode: 'latest-only',
-      execute: () =>
-        ports.loot.commitGroupReward({
-          commandId: crypto.randomUUID(),
-          runId: run.id,
-          generatedTreasureId: treasure?.id ?? null,
-          treasureDraft: treasure ? groupLootCommitDraft(history.draft) : null,
-          sceneId: focused.id,
-          groupId: rewardGroupId,
-          expectedSceneRevision: snapshot.scene.revision,
-          expectedGroupRevision: selectedPersistedGroup?.revision ?? null,
-          name: group.name.trim(),
-          note: group.note.trim(),
-          disposition: group.disposition,
-          entries: [...entries]
-        })
-    })
-    if (outcome.status === 'success') {
-      dispatch({ kind: 'loot-committed', key })
-      if (outcome.value.treasure) lootChanged()
-      saved(applySceneGroupCommandResult(snapshot, outcome.value.groupResult))
-      return outcome.value
-    }
-    if (outcome.status === 'failure')
-      dispatch({
-        kind: 'loot-failed',
-        key,
-        error: capabilityErrorText(outcome.cause),
-        issues: capabilityErrorIssues(outcome.cause)
-      })
-    return null
   }
 
   async function save(): Promise<void> {
@@ -336,8 +201,8 @@ export function useGroupManagerCommands(input: {
 
   return {
     generateRoster,
-    generateLoot,
-    commitLoot,
+    generateLoot: lootCommands.generateLoot,
+    commitLoot: lootCommands.commitLoot,
     save,
     archive,
     joinCombat,
