@@ -68,6 +68,26 @@ architectureGate(
 )
 
 architectureGate(
+  'behavior-integration',
+  'keeps Session Planner composition thin across its domain controllers',
+  () => {
+    const controller = readTypeScriptModule(
+      'src/renderer/features/session-planner/use-session-planner-controller.ts'
+    )
+    for (const call of [
+      'useAsyncCommandCoordinator',
+      'useSessionPlannerWorkspace',
+      'useEncounterPlanSearch',
+      'useSessionPlannerSessionCommands',
+      'useSessionPreparation',
+      'useSessionRewardMaterialization'
+    ])
+      expect(hasCall(controller, call), call).toBe(true)
+    expect(controller.identifiers.has('searchEpoch')).toBe(false)
+  }
+)
+
+architectureGate(
   'import-dependency-boundary',
   'erases every renderer import from schema-bearing contracts',
   () => {

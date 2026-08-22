@@ -42,6 +42,8 @@ const groupQueries =
   'src/renderer/features/session/use-group-manager-queries.ts'
 const sessionMutations =
   'src/renderer/features/session/use-session-mutation-controller.ts'
+const plannerController =
+  'src/renderer/features/session-planner/use-session-planner-controller.ts'
 
 const passiveViews = new Set([
   'src/renderer/features/session/scene-party-card.tsx',
@@ -75,6 +77,7 @@ export function rendererControllerBoundaryViolations(
   inspectSessionWorkspace(factsByPath, violations)
   inspectPassiveViews(factsByPath, violations)
   inspectGroupManager(factsByPath, violations)
+  inspectSessionPlanner(factsByPath, violations)
   inspectNarrowPorts(factsByPath, violations)
   inspectFeatureCapabilityAdapters(factsByPath, violations)
 
@@ -84,6 +87,47 @@ export function rendererControllerBoundaryViolations(
       left.line - right.line ||
       left.code.localeCompare(right.code, 'en')
   )
+}
+
+function inspectSessionPlanner(
+  factsByPath: ReadonlyMap<string, ModuleFacts>,
+  violations: RendererControllerBoundaryViolation[]
+): void {
+  const module = requireSource(plannerController, factsByPath, violations)
+  if (!module) return
+  for (const [imported, specifier] of [
+    [
+      'useAsyncCommandCoordinator',
+      '../../async/use-async-command-coordinator.js'
+    ],
+    ['useSessionPlannerWorkspace', './use-session-planner-workspace.js'],
+    ['useEncounterPlanSearch', './use-encounter-plan-search.js'],
+    [
+      'useSessionPlannerSessionCommands',
+      './use-session-planner-session-commands.js'
+    ],
+    ['useSessionPreparation', './use-session-preparation.js'],
+    [
+      'useSessionRewardMaterialization',
+      './use-session-reward-materialization.js'
+    ]
+  ] as const) {
+    requireImport(module, imported, specifier, violations)
+    requireCall(module, imported, specifier, violations)
+  }
+  for (const infrastructure of ['useEffect', 'useRef', 'AbortController'])
+    if (
+      hasImportedCall(module, infrastructure) ||
+      hasCall(module, infrastructure)
+    )
+      violations.push(
+        violation(
+          module,
+          1,
+          'view_owns_controller_hook',
+          `Planner composition owns ${infrastructure}`
+        )
+      )
 }
 
 function inspectSessionWorkspace(

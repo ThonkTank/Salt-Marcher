@@ -179,6 +179,23 @@ map and location command modules, and an immutable result projector. Receipt
 recovery and cache/catalog/viewport projection are not implemented in the
 composition hook, and an off-screen map result cannot replace the current map
 view.
+
+The Session Planner composition hook wires separate workspace/draft, Session
+command, Encounter-search, preparation-lifecycle, and reward-materialization
+owners. Workspace state maintains a renderer-local authored-intent revision in
+addition to the persisted Session revision. Encounter search uses the shared
+coordinator's latest-only mode and binds acceptance to Session identity,
+Session revision, selected scene, authored intent, and normalized query; effect
+cleanup clears its debounce timer and aborts the obsolete request scope. It
+does not retain a manual request epoch. Preparation retains its durable
+operation identity but aborts renderer acceptance when the Session or authored
+intent changes, and only the active operation may reconcile a receipt or
+publish a succeeded workspace. Session commands remain revision-bound and
+serialize per displayed Session; a successful non-current result may refresh
+catalog summaries but cannot replace newer authored state. Reward
+materialization retains one idempotent command identity per generated reward
+and applies its refreshed workspace only while the initiating Session authority
+is still current.
 Architecture gates for renderer ownership inspect TypeScript syntax trees,
 imports, calls, and structurally discovered owners. They do not encode file
 length, formatting, or local import aliases as architecture. Every semantic

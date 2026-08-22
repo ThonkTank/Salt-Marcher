@@ -12,6 +12,10 @@ const migratedOwners = readdirSync(sessionDirectory)
       name.startsWith('use-group-manager-')
   )
   .map((name) => `${sessionDirectory}/${name}`)
+  .concat([
+    'src/renderer/features/session-planner/use-session-planner-controller.ts',
+    'src/renderer/features/session-planner/use-encounter-plan-search.ts'
+  ])
 
 describe('renderer async boundary', () => {
   it('keeps request infrastructure out of migrated domain controllers and state', () => {
@@ -37,6 +41,20 @@ describe('renderer async boundary', () => {
       'useRef-request-sequence',
       'useRef-request-sequence',
       'request-began'
+    ])
+  })
+
+  it('rejects a manual Planner search epoch', () => {
+    expect(
+      rendererAsyncBoundaryViolations({
+        'planner-search.ts': 'const searchEpoch = useRef(0)'
+      })
+    ).toEqual([
+      {
+        path: 'planner-search.ts',
+        line: 1,
+        mechanism: 'useRef-request-sequence'
+      }
     ])
   })
 

@@ -69,6 +69,18 @@ location-write, and catalog/cache/viewport projection modules; it retains no
 capability calls or parallel queue implementation. AST mutation gates reject a
 new renderer-local Promise-tail queue and verify that Hex composition reaches
 the shared coordinator and the separated command boundaries.
+The Session Planner renderer is now divided into workspace/draft authority,
+revision-bound Session commands, debounced Encounter queries, durable
+preparation lifecycle, and idempotent reward-materialization owners. Its thin
+composition hook contains no timer, request epoch, AbortController, or
+capability transport. Encounter lookup uses latest-only coordination and
+explicit cleanup across query, scene, Session, revision, authored-intent, and
+unmount changes; deterministic controlled-promise tests prove that out-of-order
+or canceled results cannot publish. Preparation notices reconcile only the
+active operation and recheck Session/intent authority after a succeeded
+workspace read, so late older preparation cannot replace a newer draft.
+Semantic architecture gates verify this composition and reject reintroduced
+manual Planner request epochs.
 Application and workspace modules now load through shell-owned failure
 isolation with structured renderer incidents and Main-controlled reload.
 Renderer feature ports are injected from React context; the mutable capability
