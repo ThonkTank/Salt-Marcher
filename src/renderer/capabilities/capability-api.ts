@@ -52,11 +52,7 @@ function unwrapResult(raw: unknown): unknown {
   if (result['ok'] !== false || !isCapabilityFailure(result['error']))
     throw new CapabilityError('protocol_violation', false)
   const error = result['error']
-  throw new CapabilityError(
-    error.code,
-    error.retryable,
-    error.issues ?? []
-  )
+  throw new CapabilityError(error.code, error.retryable, error.issues ?? [])
 }
 
 function isCapabilityFailure(value: unknown): value is {
