@@ -58,6 +58,17 @@ queue modes, `AbortSignal` cancellation, and explicit pending/success/stale/
 failure state. Stale results and failures are rejected before they reach domain
 callbacks. Group query and write hooks own the asynchronous work, while the
 pure reducer and composition controller contain no request-token inventory.
+Hex and installation-preference writes now use that same coordinator instead
+of feature-local Promise tails. Hex creation is queued per Campaign and
+existing-map writes per map ID; different map keys can progress independently,
+while same-map transport, receipt recovery and accepted projection remain one
+FIFO sequence. A canceled or superseded transport result cannot enter result
+projection, and one failed command cannot block a later entry. The Hex command
+composition hook is split from its transport/receipt, map-write,
+location-write, and catalog/cache/viewport projection modules; it retains no
+capability calls or parallel queue implementation. AST mutation gates reject a
+new renderer-local Promise-tail queue and verify that Hex composition reaches
+the shared coordinator and the separated command boundaries.
 Application and workspace modules now load through shell-owned failure
 isolation with structured renderer incidents and Main-controlled reload.
 Renderer feature ports are injected from React context; the mutable capability

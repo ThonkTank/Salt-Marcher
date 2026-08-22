@@ -10,7 +10,7 @@ import {
   groupLootCommitDraft,
   groupLootDraftFromRun
 } from '../loot/group-loot-draft.js'
-import { useAsyncCommandCoordinator } from '../shared/use-async-command-coordinator.js'
+import { useAsyncCommandCoordinator } from '../../async/use-async-command-coordinator.js'
 import { generationSeed } from './generation-seed.js'
 import {
   groupDraftEntries,

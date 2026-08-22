@@ -6,6 +6,11 @@ export type RendererAsyncBoundaryViolation = Readonly<{
   mechanism: string
 }>
 
+export type RendererPromiseQueueViolation = Readonly<{
+  path: string
+  line: number
+}>
+
 const forbiddenActionKinds = new Set([
   'request-began',
   'request-ended',
@@ -53,6 +58,46 @@ export function rendererAsyncBoundaryViolations(
   )
 }
 
+/** Rejects renderer-local Promise tails outside the shared coordinator. */
+export function rendererPromiseQueueViolations(
+  sources: Readonly<Record<string, string>>
+): RendererPromiseQueueViolation[] {
+  const violations: RendererPromiseQueueViolation[] = []
+  for (const [path, content] of Object.entries(sources)) {
+    if (path.endsWith('/async/async-command-coordinator.ts')) continue
+    const tree = ts.createSourceFile(
+      path,
+      content,
+      ts.ScriptTarget.Latest,
+      true,
+      path.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
+    )
+    const visit = (node: ts.Node): void => {
+      const initializer =
+        (ts.isVariableDeclaration(node) || ts.isPropertyDeclaration(node)) &&
+        node.initializer
+      if (
+        initializer &&
+        (isPromiseResolve(initializer) ||
+          (ts.isCallExpression(initializer) &&
+            ts.isIdentifier(initializer.expression) &&
+            initializer.expression.text === 'useRef' &&
+            isPromiseResolve(initializer.arguments[0])))
+      )
+        violations.push({
+          path,
+          line: tree.getLineAndCharacterOfPosition(node.getStart(tree)).line + 1
+        })
+      ts.forEachChild(node, visit)
+    }
+    visit(tree)
+  }
+  return violations.sort(
+    (left, right) =>
+      left.path.localeCompare(right.path, 'en') || left.line - right.line
+  )
+}
+
 function hasForbiddenInfrastructureName(
   node: ts.Node
 ): node is ts.NamedDeclaration & { name: ts.Identifier } {
@@ -81,5 +126,18 @@ function isManualRequestRef(argument: ts.Expression | undefined): boolean {
       (ts.isNewExpression(argument) &&
         ts.isIdentifier(argument.expression) &&
         argument.expression.text === 'Map'))
+  )
+}
+
+function isPromiseResolve(
+  expression: ts.Expression | undefined
+): expression is ts.CallExpression {
+  return Boolean(
+    expression &&
+    ts.isCallExpression(expression) &&
+    ts.isPropertyAccessExpression(expression.expression) &&
+    ts.isIdentifier(expression.expression.expression) &&
+    expression.expression.expression.text === 'Promise' &&
+    expression.expression.name.text === 'resolve'
   )
 }

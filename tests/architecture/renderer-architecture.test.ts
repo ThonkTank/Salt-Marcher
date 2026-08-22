@@ -49,6 +49,25 @@ architectureGate(
 )
 
 architectureGate(
+  'behavior-integration',
+  'composes Hex writes from the shared async, transport and projection boundaries',
+  () => {
+    const controller = readTypeScriptModule(
+      'src/renderer/features/hex/use-hex-command-controller.ts'
+    )
+    for (const call of [
+      'useAsyncCommandCoordinator',
+      'createHexCommandTransport',
+      'createHexMapWriteCommands',
+      'createHexLocationWriteCommands',
+      'projectHexCommandResult'
+    ])
+      expect(hasCall(controller, call), call).toBe(true)
+    expect(controller.identifiers.has('HexCommandQueue')).toBe(false)
+  }
+)
+
+architectureGate(
   'import-dependency-boundary',
   'erases every renderer import from schema-bearing contracts',
   () => {

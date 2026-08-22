@@ -77,25 +77,28 @@ export function WorkspaceApp() {
       }),
     [setCoordinatorSession]
   )
-  const surfaceProps = coordinator.session
-    ? {
-        snapshot: coordinator.session,
-        setSnapshot,
-        scenario: coordinator.session.combat
-          ? ('encounter' as const)
-          : (scenarios[focusedSceneId] ?? 'encounter'),
-        setScenario: (scenario: SessionScenario) =>
-          setScenarios((current) => ({
-            ...current,
-            [focusedSceneId]: scenario
-          })),
-        layout: sessionLayout,
-        setLayout: setSessionLayout,
-        inspect: setInspected,
-        onError: featureError,
-        returnToSession: () => coordinator.setWorkspace('session')
-      }
-    : null
+  const activeCampaignId = coordinator.campaigns.activeCampaignId
+  const surfaceProps =
+    coordinator.session && activeCampaignId
+      ? {
+          campaignId: activeCampaignId,
+          snapshot: coordinator.session,
+          setSnapshot,
+          scenario: coordinator.session.combat
+            ? ('encounter' as const)
+            : (scenarios[focusedSceneId] ?? 'encounter'),
+          setScenario: (scenario: SessionScenario) =>
+            setScenarios((current) => ({
+              ...current,
+              [focusedSceneId]: scenario
+            })),
+          layout: sessionLayout,
+          setLayout: setSessionLayout,
+          inspect: setInspected,
+          onError: featureError,
+          returnToSession: () => coordinator.setWorkspace('session')
+        }
+      : null
   const definition = workspaceDefinition(coordinator.workspace)
 
   if (coreStatus !== 'ready')

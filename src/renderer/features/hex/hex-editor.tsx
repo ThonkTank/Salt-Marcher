@@ -26,6 +26,7 @@ import type { HexWorldLocationCreationIntegrationProps } from './hex-world-locat
 import type { ReactNode } from 'react'
 
 export default function HexEditor(props: {
+  campaignId: string
   onError: (message: string) => void
   renderWorldLocationCreation: (
     props: HexWorldLocationCreationIntegrationProps
@@ -87,6 +88,7 @@ export default function HexEditor(props: {
   })
   const { loadViewport, refreshCatalog } = mapLifecycle
   const commands = useHexCommandController({
+    campaignId: props.campaignId,
     capabilities,
     editor: controller,
     maps: mapLifecycle,

@@ -1,6 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { rendererAsyncBoundaryViolations } from '../../scripts/architecture/renderer-async-boundary.js'
+import { rendererPromiseQueueViolations } from '../../scripts/architecture/renderer-async-boundary.js'
 
 const sessionDirectory = 'src/renderer/features/session'
 const migratedOwners = readdirSync(sessionDirectory)
@@ -38,4 +39,29 @@ describe('renderer async boundary', () => {
       'request-began'
     ])
   })
+
+  it('keeps Promise-tail queues behind the shared coordinator', () => {
+    const rendererSources = Object.fromEntries(
+      rendererFiles().map((path) => [path, readFileSync(path, 'utf8')])
+    )
+    expect(rendererPromiseQueueViolations(rendererSources)).toEqual([])
+    expect(
+      rendererPromiseQueueViolations({
+        'parallel-queue.ts': `
+          const writeQueue = useRef<Promise<void>>(Promise.resolve())
+        `
+      })
+    ).toEqual([{ path: 'parallel-queue.ts', line: 2 }])
+  })
 })
+
+function rendererFiles(directory = 'src/renderer'): string[] {
+  return readdirSync(directory).flatMap((name) => {
+    const path = `${directory}/${name}`
+    return name.includes('.')
+      ? /\.[cm]?[jt]sx?$/.test(name)
+        ? [path]
+        : []
+      : rendererFiles(path)
+  })
+}

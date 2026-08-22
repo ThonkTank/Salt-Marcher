@@ -53,6 +53,7 @@ export type AsyncCommand<Value> = AsyncCommandScope &
     mode: AsyncCommandMode
     signal?: AbortSignal
     execute: (execution: AsyncCommandExecution) => Promise<Value>
+    accept?: (value: Value, execution: AsyncCommandExecution) => unknown
   }>
 
 type Slot = {
@@ -108,6 +109,7 @@ export class AsyncCommandCoordinator {
     const outcome = slot.queue.then(() => {
       if (lifecycle !== this.#lifecycle)
         return staleOutcome<Value>(token, 'aborted')
+      if (command.signal?.aborted) return staleOutcome<Value>(token, 'aborted')
       slot.current = token
       return this.#execute(key, slot, token, lifecycle, command, false)
     })
@@ -132,6 +134,7 @@ export class AsyncCommandCoordinator {
     latestOnly: boolean
   ): Promise<AsyncCommandOutcome<Value>> {
     const controller = new AbortController()
+    const execution = Object.freeze({ token, signal: controller.signal })
     if (latestOnly) slot.latestController = controller
     slot.activeControllers.add(controller)
     const abort = () => controller.abort(command.signal?.reason)
@@ -142,7 +145,10 @@ export class AsyncCommandCoordinator {
       this.#setState(key, Object.freeze({ status: 'pending', token }))
 
     try {
-      const value = await command.execute({ token, signal: controller.signal })
+      const value = await command.execute(execution)
+      if (!this.#isCurrent(slot, token, lifecycle) || controller.signal.aborted)
+        return this.#stale(key, slot, token, lifecycle, controller)
+      await command.accept?.(value, execution)
       if (!this.#isCurrent(slot, token, lifecycle) || controller.signal.aborted)
         return this.#stale(key, slot, token, lifecycle, controller)
       const outcome: AsyncCommandOutcome<Value> = Object.freeze({

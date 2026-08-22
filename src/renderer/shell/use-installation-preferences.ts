@@ -8,12 +8,14 @@ import { defaultSessionLayoutPreferenceValue } from '../../shared/values/session
 import { capabilityErrorCode } from '../../shared/errors/capability-error.js'
 import { capabilityErrorMessage, message } from '../i18n/messages.de.js'
 import { useCapabilityApi } from '../capabilities/use-capability-api.js'
+import { useAsyncCommandCoordinator } from '../async/use-async-command-coordinator.js'
 
 export function useInstallationPreferences(
   onError: (message: string) => void,
   enabled = true
 ) {
   const capabilityApi = useCapabilityApi()
+  const commands = useAsyncCommandCoordinator()
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const [sessionLayout, setSessionLayout] = useState<SessionLayoutPreference>(
     defaultSessionLayoutPreferenceValue
@@ -21,7 +23,6 @@ export function useInstallationPreferences(
   const loaded = useRef(false)
   const savedLayout = useRef('')
   const settings = useRef<InstallationSettings | null>(null)
-  const writeQueue = useRef<Promise<void>>(Promise.resolve())
 
   useEffect(() => {
     if (!enabled) return
@@ -43,44 +44,55 @@ export function useInstallationPreferences(
 
   const save = useCallback(
     (patch: Partial<InstallationPreferences>) => {
-      writeQueue.current = writeQueue.current
-        .then(async () => {
-          let current = settings.current
-          if (current === null) return
-          try {
-            current = await capabilityApi.settings.update({
-              patch,
-              expectedRevision: current.revision
-            })
-          } catch (cause) {
-            const fresh = await capabilityApi.settings.read()
-            if (capabilityErrorCode(cause) === 'outcome_unknown') {
-              current = fresh
-              const committed = Object.entries(patch).every(
-                ([key, value]) =>
-                  JSON.stringify(
-                    fresh.preferences[key as keyof InstallationPreferences]
-                  ) === JSON.stringify(value)
-              )
-              onError(
-                committed
-                  ? message('settings.outcome_committed')
-                  : message('settings.outcome_not_committed')
-              )
-            } else if (capabilityErrorCode(cause) === 'stale') {
+      void commands
+        .run({
+          scope: 'installation.preferences',
+          mode: 'queue',
+          execute: async () => {
+            let current = settings.current
+            if (current === null) return null
+            let notice: string | null = null
+            try {
               current = await capabilityApi.settings.update({
                 patch,
-                expectedRevision: fresh.revision
+                expectedRevision: current.revision
               })
-            } else {
-              throw cause
+            } catch (cause) {
+              const fresh = await capabilityApi.settings.read()
+              if (capabilityErrorCode(cause) === 'outcome_unknown') {
+                current = fresh
+                const committed = Object.entries(patch).every(
+                  ([key, value]) =>
+                    JSON.stringify(
+                      fresh.preferences[key as keyof InstallationPreferences]
+                    ) === JSON.stringify(value)
+                )
+                notice = committed
+                  ? message('settings.outcome_committed')
+                  : message('settings.outcome_not_committed')
+              } else if (capabilityErrorCode(cause) === 'stale') {
+                current = await capabilityApi.settings.update({
+                  patch,
+                  expectedRevision: fresh.revision
+                })
+              } else {
+                throw cause
+              }
             }
+            return { settings: current, notice }
+          },
+          accept: (result) => {
+            if (result === null) return
+            settings.current = result.settings
+            if (result.notice) onError(result.notice)
           }
-          settings.current = current
         })
-        .catch((cause: unknown) => onError(capabilityErrorMessage(cause)))
+        .then((outcome) => {
+          if (outcome.status === 'failure')
+            onError(capabilityErrorMessage(outcome.cause))
+        })
     },
-    [capabilityApi, onError]
+    [capabilityApi, commands, onError]
   )
 
   useEffect(() => {

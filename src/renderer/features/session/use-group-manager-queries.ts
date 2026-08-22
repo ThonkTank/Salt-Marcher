@@ -3,7 +3,7 @@ import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import type { SearchableSelectOption } from '../../shell/searchable-select.js'
 import { emptyQuery } from '../creatures/creature-state.js'
-import { useAsyncCommandCoordinator } from '../shared/use-async-command-coordinator.js'
+import { useAsyncCommandCoordinator } from '../../async/use-async-command-coordinator.js'
 import {
   creatureFact,
   groupDraftEntries,

@@ -9,6 +9,7 @@ export default function HexSurface(props: WorkspaceSurfaceProps) {
   })
   return (
     <HexEditor
+      campaignId={props.campaignId}
       onError={props.onError}
       renderWorldLocationCreation={
         worldLocationEditing.renderCreationWithProjection

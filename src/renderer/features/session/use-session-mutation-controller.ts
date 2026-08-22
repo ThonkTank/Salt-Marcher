@@ -5,7 +5,7 @@ import type {
 } from '../../../shared/contracts/live-session.js'
 import type { SceneGroup } from '../../../shared/contracts/scene.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
-import { useAsyncCommandCoordinator } from '../shared/use-async-command-coordinator.js'
+import { useAsyncCommandCoordinator } from '../../async/use-async-command-coordinator.js'
 import { applySceneGroupCommandResult } from './session-patches.js'
 
 export function useSessionMutationController(input: {

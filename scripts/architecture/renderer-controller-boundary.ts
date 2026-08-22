@@ -200,12 +200,12 @@ function inspectGroupManager(
       !hasImportFrom(
         module,
         'useAsyncCommandCoordinator',
-        '../shared/use-async-command-coordinator.js'
+        '../../async/use-async-command-coordinator.js'
       ) ||
       !hasImportedCall(
         module,
         'useAsyncCommandCoordinator',
-        '../shared/use-async-command-coordinator.js'
+        '../../async/use-async-command-coordinator.js'
       )
     )
       violations.push(

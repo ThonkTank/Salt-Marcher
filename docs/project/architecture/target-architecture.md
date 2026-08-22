@@ -163,7 +163,22 @@ The coordinator owns transient request tokens and pending, success, stale, and
 failure state. Feature controllers dispatch domain outcomes only after that
 coordinator accepts them, so reducers do not retain infrastructure tokens and
 an older result or failure cannot overwrite or obscure newer state. Coordinator
-instances belong to hooks and are never mutable module singletons.
+instances belong to hooks and are never mutable module singletons. Queue mode
+is FIFO within one scope/entity key and independent across keys. Each entry runs
+transport first, rechecks lifecycle and cancellation, and only then runs its
+serialized acceptance callback; a failed entry does not poison the following
+tail, while a stale entry never reaches acceptance. Renderer features outside
+the coordinator do not own Promise-tail queues.
+
+Hex writes use the active Campaign as the creation scope and the immutable map
+ID as the existing-map scope. User input and target identity are captured at
+dispatch, while the expected map revision is selected inside the queued
+transport after the previous accepted projection. The Hex composition hook
+only wires the shared coordinator, a narrow transport/receipt-recovery port,
+map and location command modules, and an immutable result projector. Receipt
+recovery and cache/catalog/viewport projection are not implemented in the
+composition hook, and an off-screen map result cannot replace the current map
+view.
 Architecture gates for renderer ownership inspect TypeScript syntax trees,
 imports, calls, and structurally discovered owners. They do not encode file
 length, formatting, or local import aliases as architecture. Every semantic
