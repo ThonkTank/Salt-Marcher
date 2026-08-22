@@ -220,11 +220,10 @@ treated as diagnostic noise, while actual binary linkage failures remain
 visible. One app session is reused within a suite only. Suites keep fresh
 fixture-backed profiles and processes because even suites sharing a fixture
 mutate that profile.
-The Local handoff removes the superseded root-level AppImage and its version-one
-ownership marker only after the immutable `current` deployment has passed
-installed-runtime verification and the legacy executable matches its recorded
-hash. Missing or mismatched ownership evidence fails closed and preserves the
-legacy file for manual inspection.
+Superseded root-level AppImages and version-one ownership markers are not an
+installation cleanup input. The storage inventory reports them as unsupported,
+non-application-reachable data, and automated maintenance preserves them
+regardless of whether their former ownership evidence still validates.
 Workspace navigation is described by immutable `WorkspaceDefinition` records,
 including identity, label, icon, loader, neutral layout mode and recovery
 policy, rather than parallel conditionals in the shell. Its route host models
@@ -393,8 +392,21 @@ candidate head SHA recorded by the workflow run, never GitHub's synthetic merge
 commit. The outer receipt binds the GitHub repository, workflow run and
 attempt, exact application SHA, artifact name, app-input fingerprint, complete
 build-receipt hash, artifact-manifest hash, AppImage hash, and build-toolchain
-identity. Local installation is serialized by the same exclusive profile lock
-that Main holds for the complete Local application lifetime. A
+identity.
+
+The only supported `main` promotion is a linear fast-forward of that unchanged
+candidate SHA through the typed delivery orchestrator. Before the push, it
+verifies the live repository policy, the complete successful required-job
+manifest, the exact-SHA aggregate, and any application handoff required by a
+changed app-input fingerprint. GitHub independently enforces the managed
+SaltMarcher ruleset for `refs/heads/main`: the aggregate check is required and
+bound to GitHub Actions, deletion and non-fast-forward updates are denied, and
+there are no bypass actors. The classic branch protection remains an additive
+guard. A missing, stale, differently sourced, or differently hashed proof fails
+closed; documentation-only changes do not manufacture an application handoff.
+
+Local installation is serialized by the same exclusive profile lock that Main
+holds for the complete Local application lifetime. A
 stale lock is reclaimed only when its PID and Linux process identity (boot,
 start tick, executable) no longer match. The installer is an explicitly
 authorized offline-maintenance component outside Main and the utility process;

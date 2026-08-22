@@ -8,6 +8,36 @@
 > work status lives in active GitHub issues and pull requests, while durable
 > measurement evidence belongs in `../evidence/`.
 
+### Architecture-debt closure — 2026-08-22
+
+The bounded architecture-debt program is complete through its implementation
+phases. Every final SHA below is an ancestor of
+`origin/main@19f6bdfb3cacd6ac8f11a5d5541ccaaff5e01004`; its linked Main `Check`
+run completed successfully. Pull requests and workflow runs retain the detailed
+execution evidence rather than duplicating it in another report.
+
+| Phase | Final SHA | Acceptance evidence |
+| --- | --- | --- |
+| 1 — exact-SHA enforcement | `ec81cfc9a07756acace9390f6b734b0cc92ab8b3` | [PR #608](https://github.com/ThonkTank/Salt-Marcher/pull/608); [Main 32476315999](https://github.com/ThonkTank/Salt-Marcher/actions/runs/32476315999); live managed ruleset and aggregate verified |
+| 2 — E2E orchestration | `d684a46379b434f49510b2bcadd0d1046d1c14d9` | [PR #609](https://github.com/ThonkTank/Salt-Marcher/pull/609); candidate run `32489233969` attempts 2 and 3 fully green, forbidden warning counters zero; [Main 32491847962](https://github.com/ThonkTank/Salt-Marcher/actions/runs/32491847962) |
+| 3 — semantic architecture gates | `774e82da29fedb31bd39d2bf58414725c69823cc` | [PR #610](https://github.com/ThonkTank/Salt-Marcher/pull/610); split suites, controlled mutations, and zero raw TypeScript-source regex gates; [Main 32504347231](https://github.com/ThonkTank/Salt-Marcher/actions/runs/32504347231) |
+| 4 — installer boundaries | `8c8165ae1ebc7e7538eb08fe5bebc2670c0a4cdb` | [PR #611](https://github.com/ThonkTank/Salt-Marcher/pull/611); installer/recovery failure matrices and fresh handoff green; [Main 32513183976](https://github.com/ThonkTank/Salt-Marcher/actions/runs/32513183976) |
+| 5 — storage retention | `a058be8552d29ec776069e68cf805be2444fcacd` | [PR #612](https://github.com/ThonkTank/Salt-Marcher/pull/612); post-runtime retention leaves active plus two predecessors and preserves every backup; [Main 32519776711](https://github.com/ThonkTank/Salt-Marcher/actions/runs/32519776711) |
+| 6A — compatibility evacuation | `9d0c904d688645ad50bb097b6c746dfe9c346fa6` | [PR #613](https://github.com/ThonkTank/Salt-Marcher/pull/613); complete topology scan and verified evacuation, with no application-reachable non-current artifact; [Main 32531856509](https://github.com/ThonkTank/Salt-Marcher/actions/runs/32531856509) |
+| 6B — obsolete readers | `55f0f711e234911242581916ebc4af06dce47ce8` | [PR #614](https://github.com/ThonkTank/Salt-Marcher/pull/614); current-contract allowlist and explicit obsolete-version rejection, reachable legacy count zero; [Main 32536343396](https://github.com/ThonkTank/Salt-Marcher/actions/runs/32536343396) |
+| 7 — Hex async consolidation | `76d4581e03047f149a69199e429bde49db94ea9d` | [PR #615](https://github.com/ThonkTank/Salt-Marcher/pull/615); deterministic FIFO, scope isolation, failure and cancellation cases plus fresh handoff; [Main 32541565066](https://github.com/ThonkTank/Salt-Marcher/actions/runs/32541565066) |
+| 8 — Session Planner boundaries | `31db92f73d4357b1de88706b68f6df20b66ae39e` | [PR #616](https://github.com/ThonkTank/Salt-Marcher/pull/616); 99-line composition, controlled out-of-order cases, and fresh handoff; [Main 32545117174](https://github.com/ThonkTank/Salt-Marcher/actions/runs/32545117174) |
+| 9 — Travel boundaries | `ce1dc04f5c10440ee787e7d28497f469f9e0efd9` | [PR #617](https://github.com/ThonkTank/Salt-Marcher/pull/617); 143-line composition and deterministic query, command, scope, abort, and reconciliation cases plus fresh handoff; [Main 32548953154](https://github.com/ThonkTank/Salt-Marcher/actions/runs/32548953154) |
+| 10 — Group and Catalog boundaries | `19f6bdfb3cacd6ac8f11a5d5541ccaaff5e01004` | [PR #618](https://github.com/ThonkTank/Salt-Marcher/pull/618); bounded Group/NPC/Location adapters, 14 functional and 7 visual suites first-attempt green, fresh handoff `bfe1e582-ac3e-4c50-840f-a96cbca50464`; [Main 32554291115](https://github.com/ThonkTank/Salt-Marcher/actions/runs/32554291115) |
+
+The closing static audit found no reachable retired reader, renderer-local
+Promise-tail queue, raw regex gate over TypeScript source, or alternate Main
+promotion writer. The live storage inventory reported three valid retained
+deployments, `reachableLegacyCount = 0`, and `reachableNonCurrentCount = 0`.
+Unsupported or invalid historical backup bytes remain deliberately preserved
+and non-application-reachable. No IPC/preload contract, database schema,
+aggregate ownership, or product behavior changed during this closing audit.
+
 **Recorded milestone: M1 — qualification was in progress.** M0 was complete. The
 retired implementation is preserved by tag `javafx-final-2026-07-27` and the
 `stable` branch at the same final JavaFX commit. The
@@ -299,7 +329,7 @@ verifiable phases:
    fingerprints, CLI-selected channel, role schemas, migration registry,
    toolchain, platform, and every emitted byte. Development, Local, and release
    outputs are isolated, and Linux qualification executes the actual AppImage.
-6. The eight-phase, SHA-keyed handoff is idempotent. Every invocation validates
+6. The nine-checkpoint, SHA-keyed handoff is idempotent. Every invocation validates
    candidate, workspace, app-input, qualification, delivery, toolchain, output,
    artifact, backup, deployment, activation, and installation evidence before
    reusing it. Per-attempt audit records retain the original state's provenance,
