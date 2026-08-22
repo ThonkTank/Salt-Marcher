@@ -88,7 +88,7 @@
     "package:release": "corepack pnpm build:release && corepack pnpm package:release:built",
     "package:release:built": "tsx scripts/package-app.ts --channel release",
     "install:local:built": "tsx scripts/install-local-app.ts",
-    "handoff:app": "tsx scripts/handoff-local-app.ts",
+    "handoff:app": "tsx scripts/run-handoff.ts",
     "handoff:status": "tsx scripts/handoff-status.ts",
     "local-storage:inspect": "tsx scripts/inspect-local-storage.ts",
     "local-storage:prune": "tsx scripts/prune-local-storage.ts",

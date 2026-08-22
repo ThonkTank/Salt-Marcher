@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
-import { join, relative } from 'node:path'
+import { join, relative, resolve } from 'node:path'
 import Database from 'better-sqlite3'
 import {
   localArtifactManifestSchema,
@@ -19,6 +19,7 @@ import { atomicWrite } from './safe-file-write.js'
 const paths = localInstallationPaths(
   process.env['XDG_DATA_HOME'] ?? join(homedir(), '.local', 'share')
 )
+const evidencePath = parseEvidencePath(process.argv.slice(2))
 const manifest = localArtifactManifestSchema.parse(
   JSON.parse(readFileSync(paths.installedManifest, 'utf8'))
 )
@@ -173,15 +174,26 @@ const persisted = installedRuntimeEvidenceSchema.parse({
   })),
   domainReadbacks
 })
-atomicWrite(
-  join(
-    process.cwd(),
-    '.tmp',
-    'handoff-local-app',
-    'installed-runtime-evidence.json'
-  ),
-  `${JSON.stringify(persisted, null, 2)}\n`
-)
+atomicWrite(evidencePath, `${JSON.stringify(persisted, null, 2)}\n`)
+
+function parseEvidencePath(arguments_: readonly string[]): string {
+  if (arguments_.length === 0)
+    return join(
+      process.cwd(),
+      '.tmp',
+      'handoff-local-app',
+      'installed-runtime-evidence.json'
+    )
+  if (
+    arguments_.length === 2 &&
+    arguments_[0] === '--evidence-path' &&
+    arguments_[1] !== undefined
+  )
+    return resolve(arguments_[1])
+  throw new Error(
+    'Usage: installed-runtime-verification.ts [--evidence-path <path>]'
+  )
+}
 
 console.info(
   JSON.stringify({

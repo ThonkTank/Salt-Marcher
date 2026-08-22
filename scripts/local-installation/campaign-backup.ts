@@ -41,13 +41,7 @@ export function campaignDataHash(paths: LocalInstallationPaths): string {
   if (!directoryHasEntries(paths.campaignData)) return hashFileInventory([])
   const snapshot = join(tmpdir(), `salt-marcher-backup-hash-${randomUUID()}`)
   try {
-    return hashFileInventory(
-      snapshotCampaignData(
-        paths.campaignData,
-        snapshot,
-        sqliteDatabasePaths(paths.campaignData)
-      )
-    )
+    return hashFileInventory(snapshotCampaignData(paths.campaignData, snapshot))
   } catch (error) {
     if (error instanceof LocalInstallationError) throw error
     throw new LocalInstallationError(
@@ -148,7 +142,11 @@ export function backupCampaignData(
   )
   try {
     const databasePaths = sourceDatabases.map(({ path }) => path)
-    snapshotCampaignData(paths.campaignData, staging, databasePaths)
+    snapshotCampaignDataWithDatabases(
+      paths.campaignData,
+      staging,
+      databasePaths
+    )
     const copiedDatabases = sourceDatabases.map((database) =>
       join(staging, relative(paths.campaignData, database.path))
     )
@@ -205,7 +203,18 @@ function removeDatabaseSidecars(databasePaths: readonly string[]): void {
       rmSync(`${databasePath}${suffix}`, { force: true })
 }
 
-function snapshotCampaignData(
+export function snapshotCampaignData(
+  sourceRoot: string,
+  targetRoot: string
+): ReturnType<typeof hashTree> {
+  return snapshotCampaignDataWithDatabases(
+    sourceRoot,
+    targetRoot,
+    sqliteDatabasePaths(sourceRoot)
+  )
+}
+
+function snapshotCampaignDataWithDatabases(
   sourceRoot: string,
   targetRoot: string,
   databasePaths: readonly string[]
