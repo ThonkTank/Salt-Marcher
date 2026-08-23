@@ -43,6 +43,22 @@ Use `pnpm dev` only when actively developing with HMR. It intentionally keeps
 the fast source-driven loop and is not the manual acceptance path. The removed
 `pnpm start` command no longer surprises by rebuilding the complete renderer.
 
+For rapid owner feedback on one already implemented GM workflow, run:
+
+```bash
+pnpm iterate encounter
+```
+
+The supported areas are `characters`, `encounter`, `combat`, and `loot`.
+`pnpm iterate <area>` runs the area's focused typecheck and tests, then opens the
+real HMR application against disposable `development-data`. Its title shows the
+area, current twelve-character commit, and `+dirty` when the workspace differs
+from that commit. Use `--check-only` to stop after the focused verification.
+This iteration path never packages or installs an application and never opens
+the valuable Local `campaign-data`; it is provisional owner feedback, not a
+release acceptance or handoff. Accepted app changes still complete the exact
+candidate `pnpm handoff:app` path before promotion.
+
 ## Local Data
 
 HMR development uses the disposable `development-data` store with an explicit

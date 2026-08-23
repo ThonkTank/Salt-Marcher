@@ -265,6 +265,10 @@ SHA, a changed local app input, or any broken hash link. Repeated calls
 revalidate and reuse only phases whose predecessor and output hashes still
 match the atomic SHA state. Explicit `--resume` records recovery intent without
 replacing the state's original provenance. `pnpm dev` remains HMR-only.
+`pnpm iterate <characters|encounter|combat|loot>` is the bounded pre-completion
+owner-feedback path: it runs the selected focused manifest and opens that same
+HMR application with a visible source identity and disposable development
+data. It creates no package, installation, handoff state, or release evidence.
 
 The local-format cleanup is complete. A typed allowlist now binds each local
 persistence contract to its current version, including the intentionally

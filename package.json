@@ -8,6 +8,7 @@
   "main": "./out/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
+    "iterate": "tsx scripts/run-iteration.ts",
     "dev:data:seed": "tsx scripts/seed-development-data.ts",
     "dev:data:export": "tsx scripts/export-development-data.ts",
     "import:references": "tsx scripts/import-srd-references.ts",

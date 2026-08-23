@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "name": "characters",
+  "typecheck": true,
+  "tests": [
+    "tests/unit/party-profile-ui.test.tsx",
+    "tests/unit/party-roster-domain.test.ts",
+    "tests/unit/party-row-mapper.test.ts",
+    "tests/integration/party-store.test.ts",
+    "tests/integration/party-catalog-encounter.test.ts"
+  ],
+  "maxWorkers": 2
+}
