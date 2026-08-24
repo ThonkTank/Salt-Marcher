@@ -24,6 +24,9 @@ lives under `docs/<feature>/`; see [docs/README.md](../README.md).
 - [Frontend Robustness Acceptance Matrix](architecture/frontend-robustness-acceptance-matrix.md)
   -- required cross-phase guarantees, baseline owner inventory, and proof
   routes for the renderer-state migration.
+- [Frontend Implementation and Architecture Audit](evidence/frontend-implementation-architecture-audit-2026-08-24.md)
+  -- evidence-backed assessment of the current frontend stack, structural
+  fragility, retained decisions, and phased correction.
 - [Frontend Robustness FR0 Audit](evidence/frontend-robustness-fr0-audit.md) --
   reviewed baseline scope, negative findings, corrections, and closeout gates.
 - [ADR 0001](architecture/decisions/0001-shared-encounter-composition-and-preset-ownership.md)
