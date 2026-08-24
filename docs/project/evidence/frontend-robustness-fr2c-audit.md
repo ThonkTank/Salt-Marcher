@@ -135,6 +135,11 @@ it does not add a competing state owner or a second refresh channel.
    operation. Shared contracts now reject invalid active/available/trashed/
    deleted relationships, while Create and Rename acceptance additionally
    verifies the command's expected name.
+9. The first clean-host matrix showed that the pre-existing Session Generation
+   journey still assumed Utility recovery unmounted its open Settings dialog.
+   It attempted to reopen the burger menu through the intentionally retained
+   modal backdrop. The journey now continues with the same retained dialog and
+   only reopens Settings when that dialog is genuinely absent.
 
 ### Resulting ownership and recovery path
 
@@ -171,7 +176,7 @@ it does not add a competing state owner or a second refresh channel.
   receipt identity, and read back exactly one persisted Campaign.
 - `pnpm build` completed after the final source audit with 80 files and
   development output hash
-  `39ea39bca69e6858966740b725ffbb6d2100ed2e6b614063fa55f46b39ffc1db`.
+  `47a0281fb02dc5918a8dcdefac01b124bfb17bb8cda6daff033fa9adaff35aee`.
   Canonical exact-SHA artifact evidence remains a delivery step after commit
   and remote Check.
 
@@ -184,6 +189,11 @@ it does not add a competing state owner or a second refresh channel.
 - The first bounded Electron run exposed finding 5 because the receipt button
   disappeared after recovery readback. It passed after the explicit open-view
   lifetime fix.
+- The first clean-host remote matrix exposed finding 9 in the pre-existing
+  Session Generation journey: its next menu click was correctly intercepted
+  by the retained Settings modal. The focused local reproduction matched the
+  remote trace, so the journey's stale remount assumption was fixed rather
+  than retrying the failed product-classified shard.
 - Two focused runs exposed resource-sensitive historical tests: a full
   `CampaignStore` preserve-policy test took 30.85 seconds under parallel load
   but passed isolated in 26.43 seconds, and a lazy settings import exceeded the

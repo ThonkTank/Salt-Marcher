@@ -76,14 +76,14 @@ describe('generator preset integration', () => {
     await (
       await client.$('h1=Session · Preset E2E')
     ).waitForExist({ timeout: 15_000 })
-    let menu = await client.$('#campaign-menu')
-    if (!(await menu.isExisting())) {
-      await (await client.$('button[aria-label="Menü"]')).click()
-      menu = await client.$('#campaign-menu')
-    }
-    await menu.waitForDisplayed({ timeout: 10_000 })
-    await (await menu.$('button=Einstellungen')).click()
     dialog = await client.$('section.encounter-settings-dialog')
+    if (!(await dialog.isExisting())) {
+      await (await client.$('button[aria-label="Menü"]')).click()
+      const menu = await client.$('#campaign-menu')
+      await menu.waitForDisplayed({ timeout: 10_000 })
+      await (await menu.$('button=Einstellungen')).click()
+      dialog = await client.$('section.encounter-settings-dialog')
+    }
     await dialog.waitForDisplayed({ timeout: 10_000 })
     await (
       await dialog.$(
