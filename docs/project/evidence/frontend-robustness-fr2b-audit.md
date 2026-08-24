@@ -143,25 +143,30 @@ canonical exact-SHA application handoff before unchanged promotion.
    38 and migration-registry contract 10. The installer now creates and hashes
    the row before activation; runtime initialization remains idempotent. The
    key is still Campaign-owned and must not become a generic revision registry.
-5. The six explicitly typed action methods contain some mechanical duplication.
+5. The first replacement Candidate exposed one stale exact-value assertion in
+   `version-truth.test.ts`: executable registry and canonical document already
+   agreed on installation schema 38, while the test still expected 37. The
+   Candidate was rejected, the assertion now follows the same 37 to 38 path,
+   and the complete remote gate must run again on the corrected SHA.
+6. The six explicitly typed action methods contain some mechanical duplication.
    A generic helper was not introduced because it would weaken operation/input
    inference at the security boundary. The duplication is bounded to this one
    owner and is architecture-gated.
-6. A successful Campaign mutation can still be followed by a failed transport
+7. A successful Campaign mutation can still be followed by a failed transport
    reply or post-mutation publication effect. FR2B cannot safely infer that
    result from the old projection. This is the primary blocking debt for FR2C,
    which must add command identity and receipt-backed targeted reconciliation.
-7. The existing global readback/remount path remains active and can still
+8. The existing global readback/remount path remains active and can still
    discard view state after recovery. It is retained in the executable FR0
    baseline and prevents any FR2 completion claim before FR2C.
-8. Campaign import/replacement does not use the renderer menu queue. Its
+9. Campaign import/replacement does not use the renderer menu queue. Its
    registry commit and compensation now advance the same durable revision, so
    concurrent stale menu work fails safely, but coherent targeted renderer
    acceptance is still FR2C.
-9. The current phase proves projection-level switch ordering, not the final
+10. The current phase proves projection-level switch ordering, not the final
    production-route one-second p95, persisted next mutation after recovery, or
    owner acceptance. Those remain the FR2D go/no-go gate.
-10. The combined FR2A/FR2B Campaign Workspace owners moved reachable Renderer
+11. The combined FR2A/FR2B Campaign Workspace owners moved reachable Renderer
     growth to 18,209 bytes over the 2026-08-22 baseline, 1,825 bytes beyond the
     temporary 16-KiB spike window. The repo-owned workflow recorded a new
     rationale-bearing baseline instead of hiding the change: no dependency or
@@ -209,3 +214,9 @@ with two quick checks and four domain readbacks, then failed the post-runtime
 checkpoint because of the lazy revision initialization described in finding 4.
 That SHA is rejected and will not be promoted; final evidence must come from the
 replacement Candidate containing the migration follow-up.
+
+Replacement Candidate `6e84a12c1c83cd6437680ae70529cdc9723c353b`
+passed Linux build, packaged qualification, AppImage packaging, passive-window
+E2E, and native macOS before its Portable job found the stale schema-37 test
+expectation described in finding 5. It is also rejected and will not be
+promoted; final evidence must come from a new exact Candidate.
