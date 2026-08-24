@@ -140,7 +140,7 @@ describe('persistence preflight', () => {
     const planned = preflightPersistence(root)
 
     expect(planned.kind).toBe('migration-required')
-    expect(migrationRegistryVersion).toBe(9)
+    expect(migrationRegistryVersion).toBe(10)
     for (const entry of planned.databases) {
       const database = new Database(entry.path)
       applySchemaMigrations(database, {
@@ -154,7 +154,7 @@ describe('persistence preflight', () => {
     expect(restarted.kind).toBe('ready')
     expect(restarted.databases).toMatchObject([
       { path: campaign, role: 'campaign', schemaVersion: 34 },
-      { path: installation, role: 'installation', schemaVersion: 37 }
+      { path: installation, role: 'installation', schemaVersion: 38 }
     ])
     const installationDatabase = new Database(installation)
     expect(
@@ -168,7 +168,7 @@ describe('persistence preflight', () => {
         .prepare('SELECT COUNT(*) FROM installation_schema_migration')
         .pluck()
         .get()
-    ).toBe(10)
+    ).toBe(11)
     applySchemaMigrations(installationDatabase, {
       path: installation,
       role: 'installation'
@@ -178,7 +178,15 @@ describe('persistence preflight', () => {
         .prepare('SELECT COUNT(*) FROM installation_schema_migration')
         .pluck()
         .get()
-    ).toBe(10)
+    ).toBe(11)
+    expect(
+      installationDatabase
+        .prepare(
+          "SELECT value FROM settings WHERE key = 'campaign_registry_revision'"
+        )
+        .pluck()
+        .get()
+    ).toBe('0')
     expect(
       installationDatabase
         .prepare(
@@ -324,6 +332,40 @@ describe('persistence preflight', () => {
         }
       }
     })
+    database.close()
+  })
+
+  it('preserves a campaign registry revision already initialized at schema 37', () => {
+    const path = join(temporaryRoot(), 'installation.sqlite')
+    const database = new Database(path)
+    database.exec(`
+      CREATE TABLE settings (
+        key TEXT PRIMARY KEY NOT NULL,
+        value TEXT NOT NULL
+      );
+      INSERT INTO settings VALUES ('campaign_registry_revision', '7');
+    `)
+    database.pragma('user_version = 37')
+
+    applySchemaMigrations(database, { path, role: 'installation' })
+
+    expect(database.pragma('user_version', { simple: true })).toBe(38)
+    expect(
+      database
+        .prepare(
+          "SELECT value FROM settings WHERE key = 'campaign_registry_revision'"
+        )
+        .pluck()
+        .get()
+    ).toBe('7')
+    expect(
+      database
+        .prepare(
+          "SELECT migration_id FROM installation_schema_migration WHERE migration_id = 'installation-37-to-38-campaign-registry-revision'"
+        )
+        .pluck()
+        .get()
+    ).toBe('installation-37-to-38-campaign-registry-revision')
     database.close()
   })
 

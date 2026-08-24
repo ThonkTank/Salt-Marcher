@@ -9,6 +9,20 @@ import type { CampaignLifecycleReceipt } from '../../application/campaign-lifecy
 
 const registryRevisionKey = 'campaign_registry_revision'
 
+export function initializeCampaignRegistryRevision(
+  database: Database.Database
+): void {
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY NOT NULL,
+      value TEXT NOT NULL
+    );
+  `)
+  database
+    .prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)')
+    .run(registryRevisionKey, '0')
+}
+
 /** Owns installation-level campaign metadata and its transaction boundaries. */
 export class CampaignRegistryRepository {
   constructor(private readonly database: Database.Database) {}
@@ -22,14 +36,8 @@ export class CampaignRegistryRepository {
         trashed_at TEXT,
         status TEXT NOT NULL DEFAULT 'ready' CHECK(status IN ('creating', 'ready'))
       );
-      CREATE TABLE IF NOT EXISTS settings (
-        key TEXT PRIMARY KEY NOT NULL,
-        value TEXT NOT NULL
-      );
     `)
-    this.database
-      .prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)')
-      .run(registryRevisionKey, '0')
+    initializeCampaignRegistryRevision(this.database)
   }
 
   snapshot(): CampaignSnapshot {

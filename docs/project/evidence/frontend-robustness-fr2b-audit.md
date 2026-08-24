@@ -41,9 +41,9 @@ FR2B owns only the ordered command side of the Campaign Workspace root.
   check before connection or filesystem effects and again inside the registry
   transaction;
 - persistence: the installation `settings` table stores the monotonic Campaign
-  registry revision. Existing installations initialize it to zero without a
-  schema-shape change; every visible registry transition advances it exactly
-  once;
+  registry revision. Installation schema migration 37 to 38 creates revision
+  zero before application activation; every visible registry transition then
+  advances it exactly once;
 - recovery: completed create, import/replacement registry publication,
   compensation of an already visible lifecycle commit, and pending deletion
   recovery also preserve monotonic revision truth.
@@ -134,11 +134,15 @@ canonical exact-SHA application handoff before unchanged promotion.
 3. The first repository read converted a missing settings value through
    `Number(null)`, which could masquerade as revision zero after corruption.
    Missing and malformed durable revision state now both fail closed.
-4. Revision storage reuses the existing generic installation `settings` table
-   rather than increasing the installation schema version for one data row.
-   This preserves backward readability and avoids a shape migration, but the
-   key is deliberately Campaign-owned and must not become a generic revision
-   registry.
+4. The first implementation reused the existing installation `settings` table
+   without increasing its schema version. That looked backward-compatible but
+   made first runtime startup insert revision zero after the installer's
+   verified backup. The canonical handoff correctly rejected the now-changed
+   data checkpoint even though runtime verification itself passed. Bounded
+   follow-up replaced lazy cutover with official installation migration 37 to
+   38 and migration-registry contract 10. The installer now creates and hashes
+   the row before activation; runtime initialization remains idempotent. The
+   key is still Campaign-owned and must not become a generic revision registry.
 5. The six explicitly typed action methods contain some mechanical duplication.
    A generic helper was not introduced because it would weaken operation/input
    inference at the security boundary. The duplication is bounded to this one
@@ -175,6 +179,9 @@ is mandatory before the broader FR2 reference slice can pass its gate.
   files, and 125 tests passed;
 - Campaign store, replacement, import, and registry-revision integration suite:
   4 files and 44 tests passed after updating exact revision assertions;
+- persistence migration, local installer crash/recovery, registry, and restart
+  regression packet: 4 files and 52 tests passed with the new 37 to 38 path,
+  including preservation of an already initialized revision;
 - repository-wide Prettier, both TypeScript configurations, and all four lint
   partitions passed;
 - the Development Main/Utility, Preload, Passive Preload, and Renderer build
@@ -193,3 +200,12 @@ is mandatory before the broader FR2 reference slice can pass its gate.
 - Electron journeys, exact Candidate remote checks, canonical app handoff,
   installed-runtime proof, unchanged promotion, and green Main evidence remain
   pending and must be appended before promotion.
+
+The first exact Candidate `296f6e1aadce454c9b5e990f083e55f80a7f3945`
+passed all 15 remote jobs, including the 7m38s Campaign Workspace shard. Its
+handoff installed and runtime-verified artifact
+`e5370195f37276c3d7679bda47d500b8699fa98095afeb5c02c9b3ae646e0096`
+with two quick checks and four domain readbacks, then failed the post-runtime
+checkpoint because of the lazy revision initialization described in finding 4.
+That SHA is rejected and will not be promoted; final evidence must come from the
+replacement Candidate containing the migration follow-up.

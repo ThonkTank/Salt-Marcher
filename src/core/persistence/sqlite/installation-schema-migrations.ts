@@ -10,6 +10,7 @@ import {
   initializeCampaignImportRegistrySchema,
   initializeCampaignImportSagaSchema
 } from '../../campaign-import/campaign-import-store.js'
+import { initializeCampaignRegistryRevision } from './campaign-registry-repository.js'
 
 export function initializeInstallationSchemaMetadata(
   database: Database.Database
@@ -280,6 +281,24 @@ export const installationSchemaMigrations: readonly SchemaMigration[] =
           )
           .run(
             'installation-36-to-37-preferences-envelope-v1',
+            new Date().toISOString()
+          )
+      }
+    },
+    {
+      id: 'installation-37-to-38-campaign-registry-revision',
+      role: 'installation',
+      fromVersion: 37,
+      toVersion: 38,
+      migrate(database) {
+        initializeInstallationSchemaMetadata(database)
+        initializeCampaignRegistryRevision(database)
+        database
+          .prepare(
+            'INSERT INTO installation_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run(
+            'installation-37-to-38-campaign-registry-revision',
             new Date().toISOString()
           )
       }
