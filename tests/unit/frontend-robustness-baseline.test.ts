@@ -22,17 +22,23 @@ describe('FR0 frontend robustness baseline', () => {
     expect(routeHost.identifiers.has('readbackKey')).toBe(true)
   })
 
-  it('records that Campaign writes remain unqueued until FR2B', () => {
+  it('gates the FR2B Campaign FIFO owner while retaining FR2C readback debt', () => {
     const coordinator = readTypeScriptModule(
       'src/renderer/features/workspace/use-campaign-session-coordinator.ts'
     )
+    const projection = readTypeScriptModule(
+      'src/renderer/capabilities/campaign-workspace-projection.ts'
+    )
 
-    expect(coordinator.identifiers.has('useAsyncCommandCoordinator')).toBe(
-      false
-    )
-    expect(coordinator.calls).toEqual(
-      expect.arrayContaining(['api.campaigns.create', 'api.campaigns.activate'])
-    )
+    expect(projection.constructions).toContain('KeyedWriteCommandOwner')
+    expect(projection.stringLiterals).toContain('fifo-command')
+    expect(projection.stringLiterals).toContain('installation.campaign-catalog')
+    expect(
+      coordinator.propertyAccesses.some((access) =>
+        access.startsWith('api.campaigns.')
+      )
+    ).toBe(false)
+    expect(coordinator.identifiers.has('readbackKey')).toBe(true)
   })
 
   it('records current latest-only mutation owners without accepting them as target behavior', () => {

@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
+  activateCampaignInputSchema,
+  campaignIdInputSchema,
   capabilityFailureSchema,
+  createCampaignInputSchema,
+  permanentlyDeleteCampaignInputSchema,
+  renameCampaignInputSchema,
   freezeCampaignSnapshot
 } from '../../src/shared/contracts/campaign.js'
 import { coreResultSchema } from '../../src/shared/contracts/core-protocol.js'
@@ -8,6 +13,25 @@ import { CapabilityError } from '../../src/shared/errors/capability-error.js'
 import { rendererIncidentSchema } from '../../src/shared/contracts/runtime.js'
 
 describe('capability contract', () => {
+  it.each([
+    [createCampaignInputSchema, { name: 'Campaign' }],
+    [activateCampaignInputSchema, { id: crypto.randomUUID() }],
+    [renameCampaignInputSchema, { id: crypto.randomUUID(), name: 'Renamed' }],
+    [campaignIdInputSchema, { id: crypto.randomUUID() }],
+    [
+      permanentlyDeleteCampaignInputSchema,
+      { id: crypto.randomUUID(), confirmationName: 'Campaign' }
+    ]
+  ])(
+    'requires Campaign registry authority on every lifecycle input',
+    (schema, input) => {
+      expect(schema.safeParse(input).success).toBe(false)
+      expect(
+        schema.safeParse({ ...input, expectedRegistryRevision: 0 }).success
+      ).toBe(true)
+    }
+  )
+
   it('allows only documented typed failures', () => {
     expect(
       capabilityFailureSchema.parse({ code: 'not_found', retryable: false })
@@ -101,6 +125,7 @@ describe('capability contract', () => {
 
   it('freezes success snapshots at the capability boundary', () => {
     const snapshot = freezeCampaignSnapshot({
+      revision: 3,
       activeCampaignId: null,
       campaigns: [
         {

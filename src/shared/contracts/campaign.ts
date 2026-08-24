@@ -20,6 +20,7 @@ export const trashedCampaignSchema = campaignSchema.extend({
 
 export const campaignSnapshotSchema = z
   .object({
+    revision: z.number().int().nonnegative(),
     activeCampaignId: z.uuid().nullable(),
     campaigns: z.array(campaignSchema),
     trashedCampaigns: z.array(trashedCampaignSchema)
@@ -27,6 +28,7 @@ export const campaignSnapshotSchema = z
   .strict()
 
 export type CampaignSnapshot = Readonly<{
+  revision: number
   activeCampaignId: string | null
   campaigns: readonly Campaign[]
   trashedCampaigns: readonly Readonly<z.infer<typeof trashedCampaignSchema>>[]
@@ -36,6 +38,7 @@ export function freezeCampaignSnapshot(
   snapshot: z.infer<typeof campaignSnapshotSchema>
 ): CampaignSnapshot {
   return Object.freeze({
+    revision: snapshot.revision,
     activeCampaignId: snapshot.activeCampaignId,
     campaigns: Object.freeze(
       snapshot.campaigns.map((campaign) => Object.freeze({ ...campaign }))
@@ -81,22 +84,37 @@ export const capabilityFailureSchema = z
   })
 
 export const createCampaignInputSchema = z
-  .object({ name: z.string().trim().min(1, 'A name is required').max(100) })
+  .object({
+    expectedRegistryRevision: z.number().int().nonnegative(),
+    name: z.string().trim().min(1, 'A name is required').max(100)
+  })
   .strict()
 
-export const activateCampaignInputSchema = z.object({ id: z.uuid() }).strict()
+export const activateCampaignInputSchema = z
+  .object({
+    expectedRegistryRevision: z.number().int().nonnegative(),
+    id: z.uuid()
+  })
+  .strict()
 
 export const renameCampaignInputSchema = z
   .object({
+    expectedRegistryRevision: z.number().int().nonnegative(),
     id: z.uuid(),
     name: z.string().trim().min(1, 'A name is required').max(100)
   })
   .strict()
 
-export const campaignIdInputSchema = z.object({ id: z.uuid() }).strict()
+export const campaignIdInputSchema = z
+  .object({
+    expectedRegistryRevision: z.number().int().nonnegative(),
+    id: z.uuid()
+  })
+  .strict()
 
 export const permanentlyDeleteCampaignInputSchema = z
   .object({
+    expectedRegistryRevision: z.number().int().nonnegative(),
     id: z.uuid(),
     confirmationName: z.string().max(100)
   })

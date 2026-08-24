@@ -316,6 +316,7 @@ describe('CampaignStore', () => {
     reopened.close()
 
     expect(snapshot).toEqual({
+      revision: 0,
       campaigns: [],
       trashedCampaigns: [],
       activeCampaignId: null
@@ -335,6 +336,7 @@ describe('CampaignStore', () => {
 
     expect(() => store.create('Never Created')).toThrow('injected failure')
     expect(store.list()).toEqual({
+      revision: 0,
       campaigns: [],
       trashedCampaigns: [],
       activeCampaignId: null
@@ -407,6 +409,7 @@ describe('CampaignStore', () => {
 
     const rebuilt = openCampaignStore(root, 'reset')
     expect(rebuilt.list()).toEqual({
+      revision: 0,
       activeCampaignId: null,
       campaigns: [],
       trashedCampaigns: []
@@ -510,6 +513,7 @@ describe('CampaignStore', () => {
     )
     const deleted = store.deleteForever(id, 'Die Küstenstraße')
     expect(deleted).toEqual({
+      revision: 6,
       activeCampaignId: null,
       campaigns: [],
       trashedCampaigns: []
@@ -544,6 +548,7 @@ describe('CampaignStore', () => {
     )
     const recoveredDelete = new CampaignStore(root)
     expect(recoveredDelete.list()).toEqual({
+      revision: 2,
       activeCampaignId: null,
       campaigns: [],
       trashedCampaigns: []

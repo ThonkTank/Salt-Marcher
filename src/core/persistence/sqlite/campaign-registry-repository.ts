@@ -7,6 +7,8 @@ import { freezeCampaignSnapshot } from '../../../shared/contracts/campaign.js'
 import { CapabilityError } from '../../../shared/errors/capability-error.js'
 import type { CampaignLifecycleReceipt } from '../../application/campaign-lifecycle-coordinator.js'
 
+const registryRevisionKey = 'campaign_registry_revision'
+
 /** Owns installation-level campaign metadata and its transaction boundaries. */
 export class CampaignRegistryRepository {
   constructor(private readonly database: Database.Database) {}
@@ -25,6 +27,9 @@ export class CampaignRegistryRepository {
         value TEXT NOT NULL
       );
     `)
+    this.database
+      .prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)')
+      .run(registryRevisionKey, '0')
   }
 
   snapshot(): CampaignSnapshot {
@@ -40,6 +45,7 @@ export class CampaignRegistryRepository {
       .all() as CampaignSnapshot['trashedCampaigns']
     const activeId = this.recordedActiveId()
     return freezeCampaignSnapshot({
+      revision: this.revision(),
       campaigns,
       trashedCampaigns: [...trashedCampaigns],
       activeCampaignId:
@@ -50,8 +56,29 @@ export class CampaignRegistryRepository {
     })
   }
 
-  beginCreation(id: string, name: string, createdAt: string): void {
+  revision(): number {
+    const value = this.setting(registryRevisionKey)
+    if (value === null)
+      throw new Error('Campaign registry revision is unavailable')
+    const revision = Number(value)
+    if (!Number.isSafeInteger(revision) || revision < 0)
+      throw new Error('Campaign registry revision is invalid')
+    return revision
+  }
+
+  assertRevision(expectedRevision: number): void {
+    if (this.revision() !== expectedRevision)
+      throw new CapabilityError('stale', true)
+  }
+
+  beginCreation(
+    id: string,
+    name: string,
+    createdAt: string,
+    expectedRevision = this.revision()
+  ): void {
     this.database.transaction(() => {
+      this.assertRevision(expectedRevision)
       this.database
         .prepare(
           "INSERT INTO campaigns (id, name, created_at, status) VALUES (?, ?, ?, 'creating')"
@@ -68,14 +95,18 @@ export class CampaignRegistryRepository {
       .run(id, name, createdAt)
   }
 
-  markReadyAndActivate(id: string): void {
+  markReadyAndActivate(id: string, expectedRevision = this.revision()): void {
     this.database.transaction(() => {
-      this.database
+      this.assertRevision(expectedRevision)
+      const result = this.database
         .prepare(
           "UPDATE campaigns SET status = 'ready' WHERE id = ? AND status = 'creating'"
         )
         .run(id)
-      this.setActive(id)
+      if (result.changes !== 1)
+        throw new Error('Campaign creation registry target is unavailable')
+      this.writeActive(id)
+      this.advanceRevision()
     })()
   }
 
@@ -88,22 +119,32 @@ export class CampaignRegistryRepository {
     if (exists === undefined) throw new CapabilityError('not_found', false)
   }
 
-  rename(id: string, name: string): void {
-    const result = this.database
-      .prepare(
-        "UPDATE campaigns SET name = ? WHERE id = ? AND status = 'ready' AND trashed_at IS NULL"
-      )
-      .run(name, id)
-    if (result.changes === 0) throw new CapabilityError('not_found', false)
+  rename(id: string, name: string, expectedRevision = this.revision()): void {
+    this.database.transaction(() => {
+      this.assertRevision(expectedRevision)
+      const result = this.database
+        .prepare(
+          "UPDATE campaigns SET name = ? WHERE id = ? AND status = 'ready' AND trashed_at IS NULL"
+        )
+        .run(name, id)
+      if (result.changes === 0) throw new CapabilityError('not_found', false)
+      this.advanceRevision()
+    })()
   }
 
-  trash(id: string, trashedAt: string): void {
-    this.requireAvailable(id)
+  trash(
+    id: string,
+    trashedAt: string,
+    expectedRevision = this.revision()
+  ): void {
     this.database.transaction(() => {
+      this.assertRevision(expectedRevision)
+      this.requireAvailable(id)
       this.database
         .prepare('UPDATE campaigns SET trashed_at = ? WHERE id = ?')
         .run(trashedAt, id)
-      this.clearActive(id)
+      this.deleteActive(id)
+      this.advanceRevision()
     })()
   }
 
@@ -116,11 +157,15 @@ export class CampaignRegistryRepository {
     if (exists === undefined) throw new CapabilityError('not_found', false)
   }
 
-  restore(id: string): void {
-    const result = this.database
-      .prepare('UPDATE campaigns SET trashed_at = NULL WHERE id = ?')
-      .run(id)
-    if (result.changes === 0) throw new CapabilityError('not_found', false)
+  restore(id: string, expectedRevision = this.revision()): void {
+    this.database.transaction(() => {
+      this.assertRevision(expectedRevision)
+      this.requireTrashed(id)
+      this.database
+        .prepare('UPDATE campaigns SET trashed_at = NULL WHERE id = ?')
+        .run(id)
+      this.advanceRevision()
+    })()
   }
 
   requireDeletionName(id: string, confirmationName: string): void {
@@ -134,10 +179,15 @@ export class CampaignRegistryRepository {
       throw new CapabilityError('validation_failed', false)
   }
 
-  delete(id: string): void {
+  delete(id: string, expectedRevision = this.revision()): void {
     this.database.transaction(() => {
-      this.clearActive(id)
-      this.database.prepare('DELETE FROM campaigns WHERE id = ?').run(id)
+      this.assertRevision(expectedRevision)
+      const result = this.database
+        .prepare('DELETE FROM campaigns WHERE id = ?')
+        .run(id)
+      if (result.changes === 0) return
+      this.deleteActive(id)
+      this.advanceRevision()
     })()
   }
 
@@ -184,7 +234,7 @@ export class CampaignRegistryRepository {
   removeIncompleteCreation(id: string): void {
     this.database.transaction(() => {
       this.database.prepare('DELETE FROM campaigns WHERE id = ?').run(id)
-      this.clearActive(id)
+      this.deleteActive(id)
     })()
   }
 
@@ -207,13 +257,14 @@ export class CampaignRegistryRepository {
               .run(receipt.replacementName, receipt.campaignId)
       if (result.changes !== 1)
         throw new Error('Campaign lifecycle registry target is unavailable')
-      this.setActive(receipt.campaignId)
+      this.writeActive(receipt.campaignId)
       registerOperation()
       this.database
         .prepare(
           'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value'
         )
         .run(this.lifecycleCommitKey(receipt.campaignId), receipt.lifecycleId)
+      this.advanceRevision()
     })()
   }
 
@@ -241,6 +292,7 @@ export class CampaignRegistryRepository {
 
   restoreLifecycleRegistry(receipt: CampaignLifecycleReceipt): void {
     this.database.transaction(() => {
+      const restoresVisibleState = this.lifecycleCommit(receipt)
       if (receipt.mode === 'create')
         this.database
           .prepare("DELETE FROM campaigns WHERE id = ? AND status = 'creating'")
@@ -249,14 +301,15 @@ export class CampaignRegistryRepository {
         this.database
           .prepare('UPDATE campaigns SET name = ? WHERE id = ?')
           .run(receipt.previousName, receipt.campaignId)
-      if (receipt.previousActiveId === null) this.clearRecordedActive()
-      else this.setActive(receipt.previousActiveId)
+      if (receipt.previousActiveId === null) this.deleteRecordedActive()
+      else this.writeActive(receipt.previousActiveId)
       this.database
         .prepare('DELETE FROM settings WHERE key = ?')
         .run(this.lifecycleCommitKey(receipt.campaignId))
       this.database
         .prepare('DELETE FROM settings WHERE key = ?')
         .run(this.legacyCommitKey(receipt.campaignId))
+      if (restoresVisibleState) this.advanceRevision()
     })()
   }
 
@@ -276,7 +329,19 @@ export class CampaignRegistryRepository {
     return row?.value ?? null
   }
 
-  setActive(id: string): void {
+  setActive(id: string, expectedRevision = this.revision()): void {
+    this.database.transaction(() => {
+      this.assertRevision(expectedRevision)
+      this.writeActive(id)
+      this.advanceRevision()
+    })()
+  }
+
+  clearRecordedActive(): void {
+    this.deleteRecordedActive()
+  }
+
+  private writeActive(id: string): void {
     this.database
       .prepare(
         "INSERT INTO settings (key, value) VALUES ('active_campaign_id', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value"
@@ -284,7 +349,7 @@ export class CampaignRegistryRepository {
       .run(id)
   }
 
-  clearActive(id: string): void {
+  private deleteActive(id: string): void {
     this.database
       .prepare(
         "DELETE FROM settings WHERE key = 'active_campaign_id' AND value = ?"
@@ -292,10 +357,20 @@ export class CampaignRegistryRepository {
       .run(id)
   }
 
-  clearRecordedActive(): void {
+  private deleteRecordedActive(): void {
     this.database
       .prepare("DELETE FROM settings WHERE key = 'active_campaign_id'")
       .run()
+  }
+
+  private advanceRevision(): void {
+    const result = this.database
+      .prepare(
+        'UPDATE settings SET value = CAST(value AS INTEGER) + 1 WHERE key = ?'
+      )
+      .run(registryRevisionKey)
+    if (result.changes !== 1)
+      throw new Error('Campaign registry revision is unavailable')
   }
 
   private lifecycleCommitKey(campaignId: string): string {

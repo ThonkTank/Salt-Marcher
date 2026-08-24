@@ -1,16 +1,16 @@
 {
-  "recordedAt": "2026-08-22",
-  "reason": "Move workspace errors out of the Session cockpit and handle replacement-confirmation dismissal without issuing a nonexistent durable cancellation.",
+  "recordedAt": "2026-08-24",
+  "reason": "Adopt the provider-lived Campaign Workspace read and FIFO command owners with durable installation registry revisions.",
   "dependencyRationale": "No dependency changes.",
-  "chunkRationale": "Global alert markup and styles move from the Session chunk into the persistent workspace shell, while the Session planner gains a bounded local confirmation-cancel branch; all graph budgets retain substantial reserve.",
+  "chunkRationale": "Campaign Workspace authority, revision selection, FIFO acceptance, and strict lifecycle command adapters remain in the existing common Workspace and shared capability graphs; no route or dependency crosses a lazy boundary, and every hard graph budget retains substantial reserve.",
   "graphs": {
-    "shell": 401230,
-    "workspace": 495511,
-    "session": 168828,
-    "catalog": 185465,
-    "hex": 176449,
-    "reference": 39420,
-    "pixi": 408625,
-    "reachable": 1504429
+    "shell": 416472,
+    "workspace": 508360,
+    "session": 168918,
+    "catalog": 185608,
+    "hex": 176544,
+    "reference": 39450,
+    "pixi": 408635,
+    "reachable": 1522638
   }
 }

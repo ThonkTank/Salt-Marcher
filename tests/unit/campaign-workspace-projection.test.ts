@@ -129,6 +129,108 @@ describe('Campaign Workspace projection', () => {
     expect(read).toHaveBeenCalledOnce()
   })
 
+  it('queues same-authority commands and selects the accepted revision at transport time', async () => {
+    const created = deferred<ReturnType<typeof catalog>>()
+    const create = vi.fn<SaltMarcherApi['campaigns']['create']>(
+      () => created.promise
+    )
+    const rename = vi.fn<SaltMarcherApi['campaigns']['rename']>(() =>
+      Promise.resolve(catalog(campaignA, 6))
+    )
+    const projection = new CampaignWorkspaceProjection(
+      apiWithCampaigns({ create, rename })
+    )
+    projection.publishCampaigns(catalog(campaignA, 4))
+
+    const creating = projection.createCampaign('New')
+    await vi.waitFor(() => expect(create).toHaveBeenCalledOnce())
+    const renaming = projection.renameCampaign(campaignA, 'Renamed')
+    await Promise.resolve()
+    expect(rename).not.toHaveBeenCalled()
+
+    created.resolve(catalog(campaignA, 5))
+    await expect(creating).resolves.toMatchObject({ revision: 5 })
+    await expect(renaming).resolves.toMatchObject({ revision: 6 })
+    expect(create).toHaveBeenCalledWith({
+      expectedRegistryRevision: 4,
+      name: 'New'
+    })
+    expect(rename).toHaveBeenCalledWith({
+      expectedRegistryRevision: 5,
+      id: campaignA,
+      name: 'Renamed'
+    })
+  })
+
+  it('keeps queued A/B/A activation aligned with the matching Session cache', async () => {
+    const activatedB = deferred<ReturnType<typeof catalog>>()
+    const activatedA = deferred<ReturnType<typeof catalog>>()
+    const activate = vi
+      .fn<SaltMarcherApi['campaigns']['activate']>()
+      .mockImplementationOnce(() => activatedB.promise)
+      .mockImplementationOnce(() => activatedA.promise)
+    const projection = new CampaignWorkspaceProjection(
+      apiWithCampaigns({ activate })
+    )
+    const sessionA = session(7)
+    const sessionB = session(8)
+    projection.publishCampaigns(catalog(campaignA, 10))
+    projection.publishSession(campaignA, sessionA)
+    projection.publishSession(campaignB, sessionB)
+
+    const switchToB = projection.activateCampaign(campaignB)
+    const switchBackToA = projection.activateCampaign(campaignA)
+    await vi.waitFor(() => expect(activate).toHaveBeenCalledOnce())
+    expect(projection.snapshot()).toMatchObject({
+      sessionCampaignId: campaignA,
+      session: sessionA
+    })
+
+    activatedB.resolve(catalog(campaignB, 11))
+    await expect(switchToB).resolves.toMatchObject({ revision: 11 })
+    await vi.waitFor(() => expect(activate).toHaveBeenCalledTimes(2))
+    expect(activate.mock.calls[1]?.[0]).toEqual({
+      expectedRegistryRevision: 11,
+      id: campaignA
+    })
+    expect(projection.snapshot()).toMatchObject({
+      sessionCampaignId: campaignB,
+      session: sessionB
+    })
+
+    activatedA.resolve(catalog(campaignA, 12))
+    await expect(switchBackToA).resolves.toMatchObject({ revision: 12 })
+    expect(projection.snapshot()).toMatchObject({
+      sessionCampaignId: campaignA,
+      session: sessionA
+    })
+  })
+
+  it('does not let a failed command poison the next queued command', async () => {
+    const failure = new Error('create failed')
+    const create = vi.fn<SaltMarcherApi['campaigns']['create']>(() =>
+      Promise.reject(failure)
+    )
+    const rename = vi.fn<SaltMarcherApi['campaigns']['rename']>(() =>
+      Promise.resolve(catalog(campaignA, 5))
+    )
+    const projection = new CampaignWorkspaceProjection(
+      apiWithCampaigns({ create, rename })
+    )
+    projection.publishCampaigns(catalog(campaignA, 4))
+
+    const creating = projection.createCampaign('Fails')
+    const renaming = projection.renameCampaign(campaignA, 'Still runs')
+
+    await expect(creating).rejects.toBe(failure)
+    await expect(renaming).resolves.toMatchObject({ revision: 5 })
+    expect(rename).toHaveBeenCalledWith({
+      expectedRegistryRevision: 4,
+      id: campaignA,
+      name: 'Still runs'
+    })
+  })
+
   it('rejects a Session read whose Campaign is not the Utility active identity', () => {
     const readSession = vi.fn(() => session(1))
     const handlers = createSessionHandlers(
@@ -156,10 +258,24 @@ function api(
   } as unknown as SaltMarcherApi
 }
 
+function apiWithCampaigns(
+  campaigns: Partial<SaltMarcherApi['campaigns']>
+): SaltMarcherApi {
+  return {
+    campaigns: {
+      list: vi.fn(() => Promise.resolve(catalog(campaignA))),
+      ...campaigns
+    },
+    session: { read: vi.fn() }
+  } as unknown as SaltMarcherApi
+}
+
 function catalog(
-  activeCampaignId: string | null
+  activeCampaignId: string | null,
+  revision = 0
 ): Awaited<ReturnType<SaltMarcherApi['campaigns']['list']>> {
   return {
+    revision,
     activeCampaignId,
     campaigns: [campaignA, campaignB].map((id) => ({
       id,

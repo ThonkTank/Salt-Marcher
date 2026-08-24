@@ -51,7 +51,7 @@ export function createCampaignHandlers(dependencies: {
       'campaign.list': () => campaigns.list(),
       'campaign.create': (input) => {
         const result = mutateReferences(
-          () => campaigns.create(input.name),
+          () => campaigns.create(input.name, input.expectedRegistryRevision),
           () => [{ kind: 'campaign' }]
         )
         recoverPendingPreparations()
@@ -59,17 +59,24 @@ export function createCampaignHandlers(dependencies: {
       },
       'campaign.activate': (input) => {
         const result = mutateReferences(
-          () => campaigns.activate(input.id),
+          () => campaigns.activate(input.id, input.expectedRegistryRevision),
           () => [{ kind: 'campaign' }]
         )
         recoverPendingPreparations()
         return result
       },
-      'campaign.rename': (input) => campaigns.rename(input.id, input.name),
-      'campaign.trash': (input) => campaigns.trash(input.id),
-      'campaign.restore': (input) => campaigns.restore(input.id),
+      'campaign.rename': (input) =>
+        campaigns.rename(input.id, input.name, input.expectedRegistryRevision),
+      'campaign.trash': (input) =>
+        campaigns.trash(input.id, input.expectedRegistryRevision),
+      'campaign.restore': (input) =>
+        campaigns.restore(input.id, input.expectedRegistryRevision),
       'campaign.deleteForever': (input) =>
-        campaigns.deleteForever(input.id, input.confirmationName),
+        campaigns.deleteForever(
+          input.id,
+          input.confirmationName,
+          input.expectedRegistryRevision
+        ),
       'campaignImport.validate': (input) =>
         campaignImport.validate(input.bundle),
       'campaignImport.preview': (input) => campaignImport.preview(input.bundle),

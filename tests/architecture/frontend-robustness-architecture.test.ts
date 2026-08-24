@@ -166,9 +166,15 @@ architectureGate(
         (value) => value === 'KeyedReadProjectionOwner'
       )
     ).toHaveLength(2)
+    expect(
+      projection.constructions.filter(
+        (value) => value === 'KeyedWriteCommandOwner'
+      )
+    ).toHaveLength(1)
     expect(projection.stringLiterals).toContain('installation.campaign-catalog')
     expect(projection.stringLiterals).toContain('campaign.live-session')
     expect(projection.stringLiterals).toContain('read-projection')
+    expect(projection.stringLiterals).toContain('fifo-command')
 
     const coordinator = readTypeScriptModule(
       'src/renderer/features/workspace/use-campaign-session-coordinator.ts'
@@ -176,6 +182,17 @@ architectureGate(
     expect(coordinator.calls).toContain('useSyncExternalStore')
     expect(coordinator.propertyAccesses).not.toContain('api.campaigns.list')
     expect(coordinator.propertyAccesses).not.toContain('api.session.read')
+    for (const operation of [
+      'create',
+      'activate',
+      'rename',
+      'trash',
+      'restore',
+      'deleteForever'
+    ])
+      expect(coordinator.propertyAccesses).not.toContain(
+        `api.campaigns.${operation}`
+      )
     expect(coordinator.identifiers.has('setCampaigns')).toBe(false)
 
     const sessionContract = readTypeScriptModule(
@@ -189,6 +206,13 @@ architectureGate(
     const utility = readTypeScriptModule('src/utility/composition/live-play.ts')
     expect(utility.constructions).toContain('CapabilityError')
     expect(utility.propertyAccesses).toContain('input.campaignId')
+
+    const campaignUtility = readTypeScriptModule(
+      'src/utility/composition/campaign.ts'
+    )
+    expect(campaignUtility.propertyAccesses).toContain(
+      'input.expectedRegistryRevision'
+    )
   }
 )
 

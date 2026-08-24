@@ -8,6 +8,10 @@ import {
   type ReadProjectionOutcome,
   type ReadProjectionSnapshot
 } from '../async/keyed-read-projection-owner.js'
+import {
+  KeyedWriteCommandOwner,
+  type KeyedWriteCommandOutcome
+} from '../async/keyed-write-command-owner.js'
 import type {
   ReadProjectionExecution,
   RendererAuthorityKey
@@ -44,6 +48,7 @@ export type CampaignWorkspaceReadOutcome =
   | Readonly<{ status: 'failure'; cause: unknown }>
 
 const emptyCampaigns = Object.freeze({
+  revision: 0,
   activeCampaignId: null,
   campaigns: Object.freeze([]),
   trashedCampaigns: Object.freeze([])
@@ -66,6 +71,7 @@ export class CampaignWorkspaceProjection {
   readonly #api: SaltMarcherApi
   readonly #catalog: KeyedReadProjectionOwner<CampaignSnapshot>
   readonly #sessions: KeyedReadProjectionOwner<LiveSessionSnapshot>
+  readonly #commands: KeyedWriteCommandOwner
   readonly #catalogExecution: ReadProjectionExecution<
     SaltMarcherApi['campaigns']['list'],
     'installation.campaign-catalog'
@@ -83,12 +89,13 @@ export class CampaignWorkspaceProjection {
       api.campaigns.list()
     this.#catalog = new KeyedReadProjectionOwner(
       new AsyncCommandCoordinator(),
-      () => 0
+      (snapshot) => snapshot.revision
     )
     this.#sessions = new KeyedReadProjectionOwner(
       new AsyncCommandCoordinator(),
       (session) => session.revision
     )
+    this.#commands = new KeyedWriteCommandOwner(new AsyncCommandCoordinator())
     this.#catalogExecution = Object.freeze({
       kind: 'read-projection',
       authority: campaignCatalogAuthority,
@@ -156,6 +163,116 @@ export class CampaignWorkspaceProjection {
     return this.#catalog.publish(campaignCatalogAuthority, campaigns)
   }
 
+  public async createCampaign(name: string): Promise<CampaignSnapshot> {
+    const outcome = await this.#commands.run(
+      {
+        kind: 'fifo-command',
+        authority: campaignCatalogAuthority,
+        operation: this.#api.campaigns.create
+      },
+      async (operation) =>
+        operation({
+          expectedRegistryRevision: await this.#registryRevision(),
+          name
+        }),
+      (snapshot) => this.publishCampaigns(snapshot)
+    )
+    return settleCampaignWrite(outcome)
+  }
+
+  public async activateCampaign(id: string): Promise<CampaignSnapshot> {
+    const outcome = await this.#commands.run(
+      {
+        kind: 'fifo-command',
+        authority: campaignCatalogAuthority,
+        operation: this.#api.campaigns.activate
+      },
+      async (operation) =>
+        operation({
+          expectedRegistryRevision: await this.#registryRevision(),
+          id
+        }),
+      (snapshot) => this.publishCampaigns(snapshot)
+    )
+    return settleCampaignWrite(outcome)
+  }
+
+  public async renameCampaign(
+    id: string,
+    name: string
+  ): Promise<CampaignSnapshot> {
+    const outcome = await this.#commands.run(
+      {
+        kind: 'fifo-command',
+        authority: campaignCatalogAuthority,
+        operation: this.#api.campaigns.rename
+      },
+      async (operation) =>
+        operation({
+          expectedRegistryRevision: await this.#registryRevision(),
+          id,
+          name
+        }),
+      (snapshot) => this.publishCampaigns(snapshot)
+    )
+    return settleCampaignWrite(outcome)
+  }
+
+  public async trashCampaign(id: string): Promise<CampaignSnapshot> {
+    const outcome = await this.#commands.run(
+      {
+        kind: 'fifo-command',
+        authority: campaignCatalogAuthority,
+        operation: this.#api.campaigns.trash
+      },
+      async (operation) =>
+        operation({
+          expectedRegistryRevision: await this.#registryRevision(),
+          id
+        }),
+      (snapshot) => this.publishCampaigns(snapshot)
+    )
+    return settleCampaignWrite(outcome)
+  }
+
+  public async restoreCampaign(id: string): Promise<CampaignSnapshot> {
+    const outcome = await this.#commands.run(
+      {
+        kind: 'fifo-command',
+        authority: campaignCatalogAuthority,
+        operation: this.#api.campaigns.restore
+      },
+      async (operation) =>
+        operation({
+          expectedRegistryRevision: await this.#registryRevision(),
+          id
+        }),
+      (snapshot) => this.publishCampaigns(snapshot)
+    )
+    return settleCampaignWrite(outcome)
+  }
+
+  public async deleteCampaignForever(
+    id: string,
+    confirmationName: string
+  ): Promise<CampaignSnapshot> {
+    const outcome = await this.#commands.run(
+      {
+        kind: 'fifo-command',
+        authority: campaignCatalogAuthority,
+        operation: this.#api.campaigns.deleteForever
+      },
+      async (operation) =>
+        operation({
+          expectedRegistryRevision: await this.#registryRevision(),
+          id,
+          confirmationName
+        }),
+      (snapshot) => this.publishCampaigns(snapshot)
+    )
+    return settleCampaignWrite(outcome)
+  }
+
   public publishSession(
     campaignId: string,
     update:
@@ -177,6 +294,7 @@ export class CampaignWorkspaceProjection {
     this.#unsubscribeSession = null
     this.#catalog.dispose()
     this.#sessions.dispose()
+    this.#commands.dispose()
     this.#listeners.clear()
     this.#snapshot = idleSnapshot
   }
@@ -197,6 +315,19 @@ export class CampaignWorkspaceProjection {
       this.#sessions.invalidate(execution, { campaignId }),
       () => this.#sessions.ensure(execution, { campaignId })
     )
+  }
+
+  async #registryRevision(): Promise<number> {
+    const current = this.#catalog.current(campaignCatalogAuthority)
+    if (current) return current.revision
+    const outcome = await settleRead(
+      this.#catalog.ensure(this.#catalogExecution),
+      () => this.#catalog.ensure(this.#catalogExecution)
+    )
+    if (outcome.status === 'failure') throw outcome.cause
+    if (outcome.status === 'stale')
+      throw new Error('Campaign catalog read was superseded.')
+    return outcome.value.revision
   }
 
   readonly #synchronize = (): void => {
@@ -220,6 +351,25 @@ export class CampaignWorkspaceProjection {
     if (sameSnapshot(this.#snapshot, next)) return
     this.#snapshot = next
     for (const listener of this.#listeners) listener()
+  }
+}
+
+function settleCampaignWrite(
+  outcome: KeyedWriteCommandOutcome<CampaignSnapshot>
+): CampaignSnapshot {
+  switch (outcome.status) {
+    case 'success':
+      return outcome.value
+    case 'failure':
+      throw outcome.cause
+    case 'stale':
+      throw new Error(`Campaign command was ${outcome.reason}.`)
+    case 'blocked':
+      throw new Error(
+        `Campaign command is blocked by ${outcome.pendingCommandId}.`
+      )
+    case 'reconciliation-pending':
+      throw outcome.cause
   }
 }
 

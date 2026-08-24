@@ -270,6 +270,7 @@ describe('CoreProcessSupervisor', () => {
     const { supervisor, children } = harness()
     children[0]?.ready()
     const result = supervisor.requestOperation('campaign.create', {
+      expectedRegistryRevision: 0,
       name: 'Sent write'
     })
     children[0]?.emit('exit', 1)
@@ -309,9 +310,11 @@ describe('CoreProcessSupervisor', () => {
     const { supervisor, children } = harness()
     children[0]?.ready()
     const result = supervisor.requestOperation('campaign.create', {
+      expectedRegistryRevision: 0,
       name: 'Committed write'
     })
     children[0]?.succeed({
+      revision: 1,
       activeCampaignId: null,
       campaigns: [],
       trashedCampaigns: []
@@ -319,6 +322,7 @@ describe('CoreProcessSupervisor', () => {
     children[0]?.emit('exit', 1)
 
     await expect(result).resolves.toEqual({
+      revision: 1,
       activeCampaignId: null,
       campaigns: [],
       trashedCampaigns: []

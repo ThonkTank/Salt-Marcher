@@ -61,6 +61,7 @@ describe('campaign burger menu redesign', () => {
       <ModalLayerProvider>
         <CampaignMenu
           snapshot={{
+            revision: 0,
             activeCampaignId: null,
             campaigns: [],
             trashedCampaigns: []
@@ -107,6 +108,7 @@ describe('campaign burger menu redesign', () => {
       <ModalLayerProvider>
         <CampaignMenu
           snapshot={{
+            revision: 1,
             activeCampaignId: campaignId,
             campaigns: [{ id: campaignId, name: 'Salzmarsch', createdAt: now }],
             trashedCampaigns: []

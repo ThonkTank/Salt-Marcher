@@ -45,7 +45,6 @@ export function WorkspaceApp() {
   )
   const [coreStatus, setCoreStatus] = useState<CoreProcessStatus>('starting')
   const coordinator = useCampaignSessionCoordinator(
-    api,
     campaignError,
     coreStatus === 'ready'
   )

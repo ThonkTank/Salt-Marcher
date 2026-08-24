@@ -121,57 +121,88 @@ export class CampaignStore {
     return this.installationOwner.registry.snapshot()
   }
 
-  create(name: string): CampaignSnapshot {
+  create(
+    name: string,
+    expectedRevision = this.list().revision
+  ): CampaignSnapshot {
+    this.installationOwner.registry.assertRevision(expectedRevision)
     const id = uuidv7()
     const createdAt = new Date().toISOString()
     this.onCreatePhase?.('before-registry-entry')
-    this.installationOwner.registry.beginCreation(id, name, createdAt)
+    this.installationOwner.registry.beginCreation(
+      id,
+      name,
+      createdAt,
+      expectedRevision
+    )
     this.onCreatePhase?.('after-creating-entry')
     this.createStagedCampaignStore(id)
     this.onCreatePhase?.('after-store-created')
-    this.finalizeCampaignCreation(id)
+    this.finalizeCampaignCreation(id, expectedRevision)
     return this.list()
   }
 
-  activate(id: string): CampaignSnapshot {
+  activate(
+    id: string,
+    expectedRevision = this.list().revision
+  ): CampaignSnapshot {
+    this.installationOwner.registry.assertRevision(expectedRevision)
     this.installationOwner.registry.requireAvailable(id)
     this.switchActiveCampaign(id)
-    this.installationOwner.registry.setActive(id)
+    this.installationOwner.registry.setActive(id, expectedRevision)
     return this.list()
   }
 
-  rename(id: string, name: string): CampaignSnapshot {
-    this.installationOwner.registry.rename(id, name)
+  rename(
+    id: string,
+    name: string,
+    expectedRevision = this.list().revision
+  ): CampaignSnapshot {
+    this.installationOwner.registry.rename(id, name, expectedRevision)
     return this.list()
   }
 
-  trash(id: string): CampaignSnapshot {
+  trash(id: string, expectedRevision = this.list().revision): CampaignSnapshot {
     this.requireSafeCampaignId(id)
+    this.installationOwner.registry.assertRevision(expectedRevision)
     this.installationOwner.registry.requireAvailable(id)
 
     if (this.list().activeCampaignId === id) {
       this.connections.release(id)
     }
-    this.installationOwner.registry.trash(id, new Date().toISOString())
+    this.installationOwner.registry.trash(
+      id,
+      new Date().toISOString(),
+      expectedRevision
+    )
     this.filesystem.moveCampaignToTrash(id)
     return this.list()
   }
 
-  restore(id: string): CampaignSnapshot {
+  restore(
+    id: string,
+    expectedRevision = this.list().revision
+  ): CampaignSnapshot {
     this.requireSafeCampaignId(id)
+    this.installationOwner.registry.assertRevision(expectedRevision)
     this.installationOwner.registry.requireTrashed(id)
 
     this.filesystem.restoreCampaignFromTrash(id)
-    this.installationOwner.registry.restore(id)
+    this.installationOwner.registry.restore(id, expectedRevision)
     return this.list()
   }
 
-  deleteForever(id: string, confirmationName: string): CampaignSnapshot {
+  deleteForever(
+    id: string,
+    confirmationName: string,
+    expectedRevision = this.list().revision
+  ): CampaignSnapshot {
     this.requireSafeCampaignId(id)
+    this.installationOwner.registry.assertRevision(expectedRevision)
     this.installationOwner.registry.requireDeletionName(id, confirmationName)
 
     this.filesystem.stageTrashForDeletion(id)
-    this.installationOwner.registry.delete(id)
+    this.installationOwner.registry.delete(id, expectedRevision)
     this.filesystem.finishDeletion(id)
     return this.list()
   }
@@ -381,10 +412,13 @@ export class CampaignStore {
     }
   }
 
-  private finalizeCampaignCreation(id: string): void {
+  private finalizeCampaignCreation(
+    id: string,
+    expectedRevision = this.list().revision
+  ): void {
     this.filesystem.promoteStagedCreation(id)
     this.onCreatePhase?.('before-ready')
-    this.installationOwner.registry.markReadyAndActivate(id)
+    this.installationOwner.registry.markReadyAndActivate(id, expectedRevision)
     this.switchActiveCampaign(id)
   }
 
