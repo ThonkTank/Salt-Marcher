@@ -22,7 +22,7 @@ describe('FR0 frontend robustness baseline', () => {
     expect(routeHost.identifiers.has('readbackKey')).toBe(true)
   })
 
-  it('records that the Campaign root has no instance-bound async ordering', () => {
+  it('records that Campaign writes remain unqueued until FR2B', () => {
     const coordinator = readTypeScriptModule(
       'src/renderer/features/workspace/use-campaign-session-coordinator.ts'
     )
@@ -31,12 +31,7 @@ describe('FR0 frontend robustness baseline', () => {
       false
     )
     expect(coordinator.calls).toEqual(
-      expect.arrayContaining([
-        'api.campaigns.list',
-        'api.session.read',
-        'campaignsWrite.create',
-        'campaignsWrite.activate'
-      ])
+      expect.arrayContaining(['api.campaigns.create', 'api.campaigns.activate'])
     )
   })
 

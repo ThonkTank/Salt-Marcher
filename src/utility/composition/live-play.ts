@@ -9,6 +9,7 @@ import {
   type OperationHandlers
 } from '../../shared/contracts/operations/registry.js'
 import type { LivePlayService } from '../../core/encounter/live-combat.js'
+import { CapabilityError } from '../../shared/errors/capability-error.js'
 
 const sessionHandlerOperations = composeOperationDefinitions(
   sessionOperationDefinitions,
@@ -45,10 +46,15 @@ export function createPartyHandlers(
 }
 
 export function createSessionHandlers(
-  play: LivePlayService
+  play: LivePlayService,
+  activeCampaignId: () => string
 ): OperationHandlers<typeof sessionHandlerOperations> {
   return defineOperationHandlers('session_handlers', sessionHandlerOperations, {
-    'session.read': () => play.readSession(),
+    'session.read': (input) => {
+      if (input.campaignId !== activeCampaignId())
+        throw new CapabilityError('stale', true)
+      return play.readSession()
+    },
     'scene.focus': (input) =>
       play.focusScene(input.sceneId, input.expectedRevision),
     'scene.setLocation': (input) =>

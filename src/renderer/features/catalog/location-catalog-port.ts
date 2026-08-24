@@ -13,11 +13,12 @@ export function createLocationCatalogPort(
   api: Pick<
     SaltMarcherApi,
     'locations' | 'encounterTables' | 'factions' | 'session'
-  >
+  >,
+  campaignId: string
 ): LocationCatalogPort {
   const locations = createWorldLocationApplicationPort(api)
   return {
     ...locations,
-    readSession: () => api.session.read()
+    readSession: () => api.session.read({ campaignId })
   }
 }

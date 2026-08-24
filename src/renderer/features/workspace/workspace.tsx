@@ -174,7 +174,10 @@ export function WorkspaceApp() {
           setDayOpen={setDayOpen}
           setSession={(snapshot) => {
             coordinator.setSession(snapshot)
-            void api.session.read().then(coordinator.setSession)
+            if (activeCampaignId)
+              void api.session
+                .read({ campaignId: activeCampaignId })
+                .then(coordinator.setSession)
           }}
           startTravel={() => {
             if (focusedSceneId)

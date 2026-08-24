@@ -152,7 +152,8 @@ describe('generator preset integration', () => {
           active: true,
           expectedRevision: party.revision
         })
-      const live = await api.session.read()
+      const campaignId = (await api.campaigns.list()).activeCampaignId!
+      const live = await api.session.read({ campaignId })
       const scene = await api.scene.generateGroupDraft({
         sceneId: live.scene.focusedSceneId,
         entries: [],

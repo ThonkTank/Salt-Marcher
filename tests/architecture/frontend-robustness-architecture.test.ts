@@ -149,6 +149,49 @@ architectureGate(
   }
 )
 
+architectureGate(
+  'behavior-integration',
+  'binds Campaign catalog and active Session reads to one provider-owned projection',
+  () => {
+    const provider = readTypeScriptModule(
+      'src/renderer/capabilities/capability-provider.tsx'
+    )
+    expect(provider.constructions).toContain('CampaignWorkspaceProjection')
+
+    const projection = readTypeScriptModule(
+      'src/renderer/capabilities/campaign-workspace-projection.ts'
+    )
+    expect(
+      projection.constructions.filter(
+        (value) => value === 'KeyedReadProjectionOwner'
+      )
+    ).toHaveLength(2)
+    expect(projection.stringLiterals).toContain('installation.campaign-catalog')
+    expect(projection.stringLiterals).toContain('campaign.live-session')
+    expect(projection.stringLiterals).toContain('read-projection')
+
+    const coordinator = readTypeScriptModule(
+      'src/renderer/features/workspace/use-campaign-session-coordinator.ts'
+    )
+    expect(coordinator.calls).toContain('useSyncExternalStore')
+    expect(coordinator.propertyAccesses).not.toContain('api.campaigns.list')
+    expect(coordinator.propertyAccesses).not.toContain('api.session.read')
+    expect(coordinator.identifiers.has('setCampaigns')).toBe(false)
+
+    const sessionContract = readTypeScriptModule(
+      'src/shared/contracts/operations/session.ts'
+    )
+    expect(
+      sessionContract.identifiers.has('activeCampaignSessionInputSchema')
+    ).toBe(true)
+    expect(sessionContract.identifiers.has('none')).toBe(false)
+
+    const utility = readTypeScriptModule('src/utility/composition/live-play.ts')
+    expect(utility.constructions).toContain('CapabilityError')
+    expect(utility.propertyAccesses).toContain('input.campaignId')
+  }
+)
+
 function hasDirectSettingsRead(propertyAccesses: readonly string[]): boolean {
   return propertyAccesses.some((access) => access.endsWith('.settings.read'))
 }

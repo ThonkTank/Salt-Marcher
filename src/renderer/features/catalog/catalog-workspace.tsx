@@ -30,6 +30,7 @@ import {
 const LazyNpcCatalogSection = lazy(() => import('./npc-catalog-section.js'))
 
 type CatalogWorkspaceProps = {
+  campaignId: string
   setSnapshot: (snapshot: LiveSessionSnapshot) => void
   onError: (message: string) => void
   inspect: (creature: Creature) => void
@@ -46,8 +47,8 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
     onError: props.onError
   })
   const locationPort = useMemo(
-    () => createLocationCatalogPort(catalog),
-    [catalog]
+    () => createLocationCatalogPort(catalog, props.campaignId),
+    [catalog, props.campaignId]
   )
   const factionPort = useMemo(
     () => createWorldFactionApplicationPort(catalog),

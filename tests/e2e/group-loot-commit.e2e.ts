@@ -140,7 +140,8 @@ describe('Group Loot atomic commit', () => {
     await waitForGmRendererReady(client)
     const committed = await client.execute(async () => {
       const api = window.saltMarcher
-      const live = await api.session.read()
+      const campaignId = (await api.campaigns.list()).activeCampaignId!
+      const live = await api.session.read({ campaignId })
       const scene = live.scene.scenes.find(
         (candidate) => candidate.id === live.scene.focusedSceneId
       )!

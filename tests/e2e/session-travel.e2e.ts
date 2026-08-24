@@ -225,7 +225,9 @@ describe('Session map and travel console', () => {
     await client.waitUntil(
       () =>
         client.execute(async () => {
-          const session = await window.saltMarcher.session.read()
+          const campaignId = (await window.saltMarcher.campaigns.list())
+            .activeCampaignId!
+          const session = await window.saltMarcher.session.read({ campaignId })
           return session.travel.kind === 'hex'
             ? session.travel.status === 'travelling'
             : false
@@ -238,7 +240,9 @@ describe('Session map and travel console', () => {
     await client.waitUntil(
       () =>
         client.execute(async () => {
-          const session = await window.saltMarcher.session.read()
+          const campaignId = (await window.saltMarcher.campaigns.list())
+            .activeCampaignId!
+          const session = await window.saltMarcher.session.read({ campaignId })
           return session.travel.kind === 'hex'
             ? session.travel.status === 'aborted'
             : false
@@ -269,7 +273,9 @@ describe('Session map and travel console', () => {
     const completed = await client.waitUntil(
       () =>
         client.execute(async () => {
-          const session = await window.saltMarcher.session.read()
+          const campaignId = (await window.saltMarcher.campaigns.list())
+            .activeCampaignId!
+          const session = await window.saltMarcher.session.read({ campaignId })
           const context = await window.saltMarcher.hexTravel.read({
             sceneId: session.scene.focusedSceneId
           })

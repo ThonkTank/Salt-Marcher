@@ -399,7 +399,9 @@ const worldPlannerHandlers = createWorldPlannerHandlers({
   publishFactionChange
 })
 
-const sessionHandlers = createSessionHandlers(play)
+const sessionHandlers = createSessionHandlers(play, () =>
+  campaigns.activeCampaignId()
+)
 const sessionPlannerHandlers = createSessionPlannerHandlers({
   encounterPlans,
   sessionPlanner

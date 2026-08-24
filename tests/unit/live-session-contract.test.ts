@@ -24,8 +24,26 @@ import {
   createEncounterTableInputSchema,
   createWorldFactionInputSchema
 } from '../../src/shared/contracts/encounter-source.js'
+import { activeCampaignSessionInputSchema } from '../../src/shared/contracts/operations/session.js'
 
 describe('live session capability contracts', () => {
+  it('requires an explicit Campaign identity for the active Session read', () => {
+    expect(
+      activeCampaignSessionInputSchema.safeParse({
+        campaignId: '0184d1f4-bba7-7c9c-9d89-5f1c0f36a030'
+      }).success
+    ).toBe(true)
+    expect(activeCampaignSessionInputSchema.safeParse(undefined).success).toBe(
+      false
+    )
+    expect(
+      activeCampaignSessionInputSchema.safeParse({
+        campaignId: '0184d1f4-bba7-7c9c-9d89-5f1c0f36a030',
+        active: true
+      }).success
+    ).toBe(false)
+  })
+
   it('allows empty groups with optional names and rejects invalid quantities', () => {
     expect(
       saveSceneGroupInputSchema.safeParse({

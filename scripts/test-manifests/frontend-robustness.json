@@ -10,6 +10,7 @@
     "tests/unit/keyed-read-projection-owner.test.ts",
     "tests/unit/keyed-write-command-owner.test.ts",
     "tests/unit/installation-settings-projection.test.tsx",
+    "tests/unit/campaign-workspace-projection.test.ts",
     "tests/unit/generator-preset-application.test.ts",
     "tests/unit/generator-preset-reconciliation-ui.test.tsx",
     "tests/unit/core-process-supervisor.test.ts",

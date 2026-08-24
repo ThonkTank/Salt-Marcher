@@ -1,54 +1,66 @@
-import { useCallback, useEffect, useState } from 'react'
-import type { CampaignSnapshot } from '../../../shared/contracts/campaign.js'
+import {
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+  useSyncExternalStore
+} from 'react'
 import type { SaltMarcherApi } from '../../../shared/contracts/capability-api.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
+import { CapabilityContext } from '../../capabilities/capability-context.js'
+import type { CampaignWorkspaceReadOutcome } from '../../capabilities/campaign-workspace-projection.js'
 import type { WorkspaceId } from './workspace-definition.js'
-
-const emptyCampaigns: CampaignSnapshot = {
-  activeCampaignId: null,
-  campaigns: [],
-  trashedCampaigns: []
-}
 
 export function useCampaignSessionCoordinator(
   api: SaltMarcherApi,
   reportError: (message: string) => void,
   enabled = true
 ) {
-  const [campaigns, setCampaigns] = useState(emptyCampaigns)
-  const [session, setSession] = useState<LiveSessionSnapshot | null>(null)
+  const context = useContext(CapabilityContext)
+  if (!context) throw new Error('Capability provider missing')
+  const projection = context.campaignWorkspace
+  const root = useSyncExternalStore(
+    projection.subscribe,
+    projection.snapshot,
+    projection.snapshot
+  )
   const [campaignMenuOpen, setCampaignMenuOpen] = useState(false)
   const [workspace, setWorkspace] = useState<WorkspaceId>('session')
   const [readbackKey, setReadbackKey] = useState(0)
 
+  const reportRead = useCallback(
+    (outcome: CampaignWorkspaceReadOutcome) => {
+      if (outcome.status === 'failure')
+        reportError(capabilityErrorText(outcome.cause))
+    },
+    [reportError]
+  )
+
   const load = useCallback(async () => {
-    const next = await api.campaigns.list()
-    setCampaigns(next)
-    if (next.activeCampaignId === null) setCampaignMenuOpen(true)
-    setSession(next.activeCampaignId ? await api.session.read() : null)
-  }, [api])
+    const outcome = await projection.load()
+    reportRead(outcome)
+    if (
+      outcome.status === 'ready' &&
+      outcome.value.campaigns.activeCampaignId === null
+    )
+      setCampaignMenuOpen(true)
+  }, [projection, reportRead])
 
   useEffect(() => {
-    if (!enabled) return
-    void Promise.resolve()
-      .then(load)
-      .catch((cause: unknown) => reportError(capabilityErrorText(cause)))
-  }, [enabled, load, reportError])
+    if (enabled) void Promise.resolve().then(load)
+  }, [enabled, load])
 
   useEffect(() => {
     const readback = () => {
       if (!enabled) return
       setReadbackKey((current) => current + 1)
-      void load().catch((cause: unknown) =>
-        reportError(capabilityErrorText(cause))
-      )
+      void load()
     }
     window.addEventListener('saltmarcher:readback', readback)
     return () => window.removeEventListener('saltmarcher:readback', readback)
-  }, [enabled, load, reportError])
+  }, [enabled, load])
 
-  const campaignsWrite = api.campaigns
   async function run(operation: () => Promise<void>) {
     try {
       await operation()
@@ -57,10 +69,33 @@ export function useCampaignSessionCoordinator(
     }
   }
 
+  async function publishActiveCampaign(
+    campaigns: Awaited<ReturnType<SaltMarcherApi['campaigns']['create']>>
+  ): Promise<void> {
+    projection.publishCampaigns(campaigns)
+    reportRead(await projection.refreshActiveSession())
+  }
+
+  const activeCampaignId = root.campaigns.activeCampaignId
+
   return {
-    campaigns,
-    session,
-    setSession,
+    campaigns: root.campaigns,
+    session: root.session,
+    setSession: (
+      update:
+        | LiveSessionSnapshot
+        | ((current: LiveSessionSnapshot | null) => LiveSessionSnapshot | null)
+    ) => {
+      if (!activeCampaignId) return
+      if (typeof update === 'function') {
+        projection.publishSession(activeCampaignId, (current) => {
+          const next = update(current)
+          return next ?? current
+        })
+        return
+      }
+      projection.publishSession(activeCampaignId, update)
+    },
     campaignMenuOpen,
     setCampaignMenuOpen,
     workspace,
@@ -68,36 +103,35 @@ export function useCampaignSessionCoordinator(
     readbackKey,
     createCampaign: (name: string) =>
       run(async () => {
-        setCampaigns(await campaignsWrite.create({ name }))
-        setSession(await api.session.read())
+        await publishActiveCampaign(await api.campaigns.create({ name }))
         setWorkspace('session')
         setCampaignMenuOpen(false)
       }),
     switchCampaign: (id: string) =>
       run(async () => {
-        setCampaigns(await campaignsWrite.activate({ id }))
-        setSession(await api.session.read())
+        await publishActiveCampaign(await api.campaigns.activate({ id }))
         setWorkspace('session')
         setCampaignMenuOpen(false)
       }),
     renameCampaign: (id: string, name: string) =>
-      run(async () => setCampaigns(await campaignsWrite.rename({ id, name }))),
+      run(async () => {
+        projection.publishCampaigns(await api.campaigns.rename({ id, name }))
+      }),
     trashCampaign: (id: string) =>
       run(async () => {
-        const next = await campaignsWrite.trash({ id })
-        setCampaigns(next)
-        if (next.activeCampaignId === null) {
-          setSession(null)
-          setCampaignMenuOpen(true)
-        }
+        const next = await api.campaigns.trash({ id })
+        projection.publishCampaigns(next)
+        if (next.activeCampaignId === null) setCampaignMenuOpen(true)
       }),
     restoreCampaign: (id: string) =>
-      run(async () => setCampaigns(await campaignsWrite.restore({ id }))),
+      run(async () => {
+        projection.publishCampaigns(await api.campaigns.restore({ id }))
+      }),
     deleteCampaignForever: (id: string, confirmationName: string) =>
-      run(async () =>
-        setCampaigns(
-          await campaignsWrite.deleteForever({ id, confirmationName })
+      run(async () => {
+        projection.publishCampaigns(
+          await api.campaigns.deleteForever({ id, confirmationName })
         )
-      )
+      })
   }
 }
