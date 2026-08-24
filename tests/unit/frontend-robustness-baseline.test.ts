@@ -96,16 +96,4 @@ describe('FR0 frontend robustness baseline', () => {
       expect(module.stringLiterals, path).toContain('queue')
     }
   })
-
-  it('records that the derived renderer API erases operation mode metadata', () => {
-    const registry = readTypeScriptModule(
-      'src/shared/contracts/operations/registry.ts'
-    )
-    const api = readTypeScriptModule('src/shared/contracts/capability-api.ts')
-
-    expect(registry.stringLiterals).toEqual(
-      expect.arrayContaining(['read', 'write'])
-    )
-    expect(api.typeProperties.map(({ name }) => name)).not.toContain('mode')
-  })
 })

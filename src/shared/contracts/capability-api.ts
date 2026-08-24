@@ -1,11 +1,31 @@
 import type { z } from 'zod'
 import type { capabilityEvents } from './events.js'
 import type { coreOperations, mainOperations } from './operations.js'
+import type { OperationMode } from './operations/registry.js'
+
+declare const capabilityOperation: unique symbol
+
+export type CapabilityOperation<
+  Mode extends OperationMode,
+  Arguments extends readonly unknown[],
+  Output
+> = ((...arguments_: Arguments) => Promise<Output>) &
+  Readonly<{ [capabilityOperation]?: Mode }>
+
+export type CapabilityOperationMode<Operation> =
+  typeof capabilityOperation extends keyof Operation
+    ? Operation extends Readonly<{
+        [capabilityOperation]?: infer Mode extends OperationMode
+      }>
+      ? Mode
+      : never
+    : never
 
 type AnyDefinition = Readonly<{
   channel: string | null
   input: z.ZodType
   output: z.ZodType
+  mode: OperationMode
 }>
 
 type AnyEventDefinition = Readonly<{ payload: z.ZodType }>
@@ -16,13 +36,13 @@ type Namespace<Kind> = Kind extends `${infer Value}.${string}` ? Value : never
 type Method<Kind> = Kind extends `${string}.${infer Value}` ? Value : never
 type PublicNamespace<Value> = Value extends 'campaign' ? 'campaigns' : Value
 
-type OperationFunction<Definition extends AnyDefinition> = [
-  z.output<Definition['input']>
-] extends [undefined]
-  ? () => Promise<z.output<Definition['output']>>
-  : (
-      input: z.output<Definition['input']>
-    ) => Promise<z.output<Definition['output']>>
+type OperationFunction<Definition extends AnyDefinition> = CapabilityOperation<
+  Definition['mode'],
+  [z.output<Definition['input']>] extends [undefined]
+    ? readonly []
+    : readonly [input: z.output<Definition['input']>],
+  z.output<Definition['output']>
+>
 
 type PublicOperationKind<
   Registry extends Readonly<Record<string, AnyDefinition>>

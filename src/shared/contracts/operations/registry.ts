@@ -13,12 +13,13 @@ export interface OperationDiagnostics {
 export interface OperationDeclaration<
   Input extends z.ZodType = z.ZodType,
   Output extends z.ZodType = z.ZodType,
-  Roles extends readonly WindowRole[] = readonly WindowRole[]
+  Roles extends readonly WindowRole[] = readonly WindowRole[],
+  Mode extends OperationMode = OperationMode
 > {
   readonly channel: string | null
   readonly input: Input
   readonly output: Output
-  readonly mode: OperationMode
+  readonly mode: Mode
   readonly roles: Roles
   readonly deadlineMs: number
   readonly travelReconciliation: TravelReconciliationReason | null
@@ -27,8 +28,9 @@ export interface OperationDeclaration<
 export interface OperationDefinition<
   Input extends z.ZodType = z.ZodType,
   Output extends z.ZodType = z.ZodType,
-  Roles extends readonly WindowRole[] = readonly WindowRole[]
-> extends OperationDeclaration<Input, Output, Roles> {
+  Roles extends readonly WindowRole[] = readonly WindowRole[],
+  Mode extends OperationMode = OperationMode
+> extends OperationDeclaration<Input, Output, Roles, Mode> {
   readonly key: string
   readonly handler: OperationHandlerOwner
   readonly diagnostics: OperationDiagnostics
@@ -47,7 +49,7 @@ export function read<Input extends z.ZodType, Output extends z.ZodType>(
   channel: string | null,
   input: Input,
   output: Output
-): OperationDeclaration<Input, Output, readonly ['gm']>
+): OperationDeclaration<Input, Output, readonly ['gm'], 'read'>
 export function read<
   Input extends z.ZodType,
   Output extends z.ZodType,
@@ -57,13 +59,13 @@ export function read<
   input: Input,
   output: Output,
   roles: Roles
-): OperationDeclaration<Input, Output, Roles>
+): OperationDeclaration<Input, Output, Roles, 'read'>
 export function read<Input extends z.ZodType, Output extends z.ZodType>(
   channel: string | null,
   input: Input,
   output: Output,
   roles: readonly WindowRole[] = ['gm']
-): OperationDeclaration<Input, Output> {
+): OperationDeclaration<Input, Output, readonly WindowRole[], 'read'> {
   return {
     channel,
     input,
@@ -79,7 +81,7 @@ export function write<Input extends z.ZodType, Output extends z.ZodType>(
   channel: string | null,
   input: Input,
   output: Output
-): OperationDeclaration<Input, Output, readonly ['gm']>
+): OperationDeclaration<Input, Output, readonly ['gm'], 'write'>
 export function write<
   Input extends z.ZodType,
   Output extends z.ZodType,
@@ -90,14 +92,14 @@ export function write<
   output: Output,
   roles: Roles,
   travelReconciliation?: TravelReconciliationReason | null
-): OperationDeclaration<Input, Output, Roles>
+): OperationDeclaration<Input, Output, Roles, 'write'>
 export function write<Input extends z.ZodType, Output extends z.ZodType>(
   channel: string | null,
   input: Input,
   output: Output,
   roles: readonly WindowRole[] = ['gm'],
   travelReconciliation: TravelReconciliationReason | null = 'travel-command'
-): OperationDeclaration<Input, Output> {
+): OperationDeclaration<Input, Output, readonly WindowRole[], 'write'> {
   return {
     channel,
     input,
