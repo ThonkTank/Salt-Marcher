@@ -18,6 +18,14 @@ lives under `docs/<feature>/`; see [docs/README.md](../README.md).
   source shape, boundaries, security model, and data ownership. Start here.
 - [Electron Greenfield Migration](architecture/electron-greenfield-migration.md)
   -- versioned roadmap, decisions, progress, and blockers.
+- [Frontend Robustness Roadmap](architecture/frontend-robustness-roadmap.md) --
+  normative phased migration from distributed renderer state to keyed
+  projections, authority-bound commands, and targeted reconciliation.
+- [Frontend Robustness Acceptance Matrix](architecture/frontend-robustness-acceptance-matrix.md)
+  -- required cross-phase guarantees, baseline owner inventory, and proof
+  routes for the renderer-state migration.
+- [Frontend Robustness FR0 Audit](evidence/frontend-robustness-fr0-audit.md) --
+  reviewed baseline scope, negative findings, corrections, and closeout gates.
 - [ADR 0001](architecture/decisions/0001-shared-encounter-composition-and-preset-ownership.md)
   -- shared composition and installation-owned presets.
 - [ADR 0002](architecture/decisions/0002-persist-explicit-combat-partitions.md)

@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "name": "frontend-robustness",
+  "typecheck": true,
+  "tests": [
+    "tests/unit/frontend-robustness-baseline.test.ts",
+    "tests/unit/async-command-coordinator.test.ts",
+    "tests/unit/capability-errors.test.ts",
+    "tests/unit/session-mutation-controller.test.tsx",
+    "tests/unit/renderer-async-boundary.test.ts",
+    "tests/architecture/renderer-architecture.test.ts"
+  ],
+  "maxWorkers": 2
+}
