@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { SessionLayoutPreference } from '../../shared/contracts/session-layout.js'
-import type {
-  InstallationPreferences,
-  InstallationSettings
-} from '../../shared/contracts/settings.js'
+import type { InstallationPreferences } from '../../shared/contracts/settings.js'
 import { defaultSessionLayoutPreferenceValue } from '../../shared/values/session-layout-values.js'
 import { capabilityErrorCode } from '../../shared/errors/capability-error.js'
 import { capabilityErrorMessage, message } from '../i18n/messages.de.js'
 import { useCapabilityApi } from '../capabilities/use-capability-api.js'
 import { useAsyncCommandCoordinator } from '../async/use-async-command-coordinator.js'
+import { useInstallationSettingsProjection } from './use-installation-settings-projection.js'
 
 export function useInstallationPreferences(
   onError: (message: string) => void,
@@ -16,27 +14,34 @@ export function useInstallationPreferences(
 ) {
   const capabilityApi = useCapabilityApi()
   const commands = useAsyncCommandCoordinator()
+  const { snapshot: projectionSnapshot, projection } =
+    useInstallationSettingsProjection(enabled)
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const [sessionLayout, setSessionLayout] = useState<SessionLayoutPreference>(
     defaultSessionLayoutPreferenceValue
   )
   const loaded = useRef(false)
   const savedLayout = useRef('')
-  const settings = useRef<InstallationSettings | null>(null)
+  const reportedFailure = useRef<unknown>(null)
 
   useEffect(() => {
-    if (!enabled) return
-    void capabilityApi.settings
-      .read()
-      .then((value) => {
-        settings.current = value
-        loaded.current = true
-        savedLayout.current = JSON.stringify(value.preferences.sessionLayout)
-        setSessionLayout(value.preferences.sessionLayout)
-        setTheme(value.preferences.theme)
-      })
-      .catch((cause: unknown) => onError(capabilityErrorMessage(cause)))
-  }, [capabilityApi, enabled, onError])
+    const value = projectionSnapshot.value
+    if (loaded.current || value === null) return
+    loaded.current = true
+    savedLayout.current = JSON.stringify(value.preferences.sessionLayout)
+    setSessionLayout(value.preferences.sessionLayout)
+    setTheme(value.preferences.theme)
+  }, [projectionSnapshot.value])
+
+  useEffect(() => {
+    if (
+      projectionSnapshot.status === 'failure' &&
+      reportedFailure.current !== projectionSnapshot
+    ) {
+      reportedFailure.current = projectionSnapshot
+      onError(capabilityErrorMessage(projectionSnapshot.cause))
+    }
+  }, [onError, projectionSnapshot])
 
   useEffect(() => {
     document.documentElement.dataset['theme'] = theme
@@ -49,7 +54,7 @@ export function useInstallationPreferences(
           scope: 'installation.preferences',
           mode: 'queue',
           execute: async () => {
-            let current = settings.current
+            let current = projection.current()
             if (current === null) return null
             let notice: string | null = null
             try {
@@ -58,7 +63,7 @@ export function useInstallationPreferences(
                 expectedRevision: current.revision
               })
             } catch (cause) {
-              const fresh = await capabilityApi.settings.read()
+              const fresh = await projection.refresh()
               if (capabilityErrorCode(cause) === 'outcome_unknown') {
                 current = fresh
                 const committed = Object.entries(patch).every(
@@ -83,16 +88,19 @@ export function useInstallationPreferences(
           },
           accept: (result) => {
             if (result === null) return
-            settings.current = result.settings
+            projection.publish(result.settings)
             if (result.notice) onError(result.notice)
           }
         })
         .then((outcome) => {
-          if (outcome.status === 'failure')
+          if (
+            outcome.status === 'failure' &&
+            projection.snapshot().cause !== outcome.cause
+          )
             onError(capabilityErrorMessage(outcome.cause))
         })
     },
-    [capabilityApi, commands, onError]
+    [capabilityApi, commands, onError, projection]
   )
 
   useEffect(() => {

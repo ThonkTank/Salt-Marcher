@@ -7,6 +7,8 @@
     "tests/unit/renderer-execution-contract.test.ts",
     "tests/unit/operation-registry.test.ts",
     "tests/unit/async-command-coordinator.test.ts",
+    "tests/unit/keyed-read-projection-owner.test.ts",
+    "tests/unit/installation-settings-projection.test.tsx",
     "tests/unit/capability-errors.test.ts",
     "tests/unit/session-mutation-controller.test.tsx",
     "tests/unit/renderer-async-boundary.test.ts",

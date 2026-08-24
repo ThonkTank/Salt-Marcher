@@ -1,6 +1,10 @@
 import { expect } from 'vitest'
 import { architectureGate } from './support/architecture-gate.js'
-import { codeFiles, readTypeScriptModule } from './support/typescript-module.js'
+import {
+  codeFiles,
+  parseTypeScriptModule,
+  readTypeScriptModule
+} from './support/typescript-module.js'
 
 architectureGate(
   'typed-contract',
@@ -47,3 +51,53 @@ architectureGate(
         )
   }
 )
+
+architectureGate(
+  'behavior-integration',
+  'keeps installation settings reads behind the provider-owned keyed projection',
+  () => {
+    const provider = readTypeScriptModule(
+      'src/renderer/capabilities/capability-provider.tsx'
+    )
+    expect(provider.constructions).toContain('InstallationSettingsProjection')
+
+    const adapter = readTypeScriptModule(
+      'src/renderer/capabilities/installation-settings-projection.ts'
+    )
+    expect(adapter.constructions).toContain('AsyncCommandCoordinator')
+    expect(adapter.constructions).toContain('KeyedReadProjectionOwner')
+    expect(adapter.stringLiterals).toContain('installation.settings')
+    expect(adapter.stringLiterals).toContain('read-projection')
+
+    const owner = readTypeScriptModule(
+      'src/renderer/async/keyed-read-projection-owner.ts'
+    )
+    expect(owner.exportedDeclarations.has('KeyedReadProjectionOwner')).toBe(
+      true
+    )
+    expect(owner.stringLiterals).toContain('latest-only')
+
+    const hook = readTypeScriptModule(
+      'src/renderer/shell/use-installation-settings-projection.ts'
+    )
+    expect(hook.calls).toContain('useSyncExternalStore')
+
+    const preferences = readTypeScriptModule(
+      'src/renderer/shell/use-installation-preferences.ts'
+    )
+    expect(preferences.calls).toContain('useInstallationSettingsProjection')
+    expect(hasDirectSettingsRead(preferences.propertyAccesses)).toBe(false)
+
+    const controlledMutation = parseTypeScriptModule(
+      'controlled-direct-settings-read.ts',
+      'void capabilityApi.settings.read()'
+    )
+    expect(hasDirectSettingsRead(controlledMutation.propertyAccesses)).toBe(
+      true
+    )
+  }
+)
+
+function hasDirectSettingsRead(propertyAccesses: readonly string[]): boolean {
+  return propertyAccesses.some((access) => access.endsWith('.settings.read'))
+}
