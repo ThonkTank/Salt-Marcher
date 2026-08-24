@@ -1,13 +1,8 @@
 import { capabilityErrorCode } from '../../shared/errors/capability-error.js'
 import { capabilityErrorMessage } from '../i18n/messages.de.js'
 
-/**
- * Mutations with an unknown outcome trigger readback through the composition
- * root. The original command is never replayed.
- */
+/** Formats a transported capability failure without causing data-side effects. */
 export function capabilityErrorText(cause: unknown): string {
-  if (capabilityErrorCode(cause) === 'outcome_unknown')
-    window.dispatchEvent(new Event('saltmarcher:readback'))
   return capabilityErrorMessage(cause)
 }
 

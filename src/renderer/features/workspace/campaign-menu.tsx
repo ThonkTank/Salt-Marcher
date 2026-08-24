@@ -1,5 +1,8 @@
 import { lazy, Suspense, useCallback, useState } from 'react'
-import type { CampaignSnapshot } from '../../../shared/contracts/campaign.js'
+import type {
+  CampaignCommandReceipt,
+  CampaignSnapshot
+} from '../../../shared/contracts/campaign.js'
 import { formatMessage, message } from '../../i18n/campaign-menu-runtime.de.js'
 import { AnchoredPopup } from '../../shell/anchored-popup.js'
 import type { GeneratorPresetApplicationLoader } from './generator-preset-application.js'
@@ -23,26 +26,33 @@ interface CampaignMenuProps {
   forced: boolean
   partySize: number
   dismiss: () => void
-  create: (name: string) => Promise<void>
-  activate: (id: string) => Promise<void>
-  rename: (id: string, name: string) => Promise<void>
-  trash: (id: string) => Promise<void>
-  restore: (id: string) => Promise<void>
-  deleteForever: (id: string, confirmationName: string) => Promise<void>
+  create: (name: string) => Promise<boolean>
+  activate: (id: string) => Promise<boolean>
+  rename: (id: string, name: string) => Promise<boolean>
+  trash: (id: string) => Promise<boolean>
+  restore: (id: string) => Promise<boolean>
+  deleteForever: (id: string, confirmationName: string) => Promise<boolean>
+  reconciliationPending: boolean
+  reconcile: () => Promise<CampaignCommandReceipt | null>
   loadGeneratorPresetApplication: GeneratorPresetApplicationLoader
   campaignRules?: CampaignRewardRulesPort
   onError: (message: string) => void
 }
 
 export function CampaignMenu(props: CampaignMenuProps) {
-  const { dismiss, forced, open, snapshot } = props
-  const [view, setView] = useState<'menu' | 'campaigns' | 'settings'>('menu')
+  return props.open ? <OpenCampaignMenu {...props} /> : null
+}
+
+function OpenCampaignMenu(props: CampaignMenuProps) {
+  const { dismiss, forced, snapshot } = props
+  const [view, setView] = useState<'menu' | 'campaigns' | 'settings'>(
+    forced ? 'campaigns' : 'menu'
+  )
   const closeMenu = useCallback(() => {
     setView('menu')
     dismiss()
   }, [dismiss])
 
-  if (!open) return null
   const effectiveView = forced ? 'campaigns' : view
   if (effectiveView === 'settings')
     return (
@@ -80,6 +90,8 @@ export function CampaignMenu(props: CampaignMenuProps) {
           trash={props.trash}
           restore={props.restore}
           deleteForever={props.deleteForever}
+          reconciliationPending={props.reconciliationPending}
+          reconcile={props.reconcile}
           completed={() => setView('menu')}
         />
       </Suspense>

@@ -10,7 +10,6 @@ import {
 export function WorkspaceRouteHost(props: {
   active: boolean
   workspace: WorkspaceId
-  readbackKey: number
   surfaceProps: WorkspaceSurfaceProps | null
   runtime: SaltMarcherApi['runtime']
 }) {
@@ -26,7 +25,6 @@ export function WorkspaceRouteHost(props: {
   const definition = workspaceDefinition(props.workspace)
   return (
     <ModuleHost
-      key={`${definition.id}-boundary-${props.readbackKey}`}
       workspace={definition.id}
       load={definition.load}
       componentProps={props.surfaceProps}

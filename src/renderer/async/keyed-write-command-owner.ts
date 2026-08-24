@@ -81,6 +81,7 @@ type ReconciledCommandOptions<
   recoverReceipt: (
     receipt: Awaited<ReturnType<ReceiptRead>>
   ) => Awaited<ReturnType<Command>> | null
+  reconcileAbsentReceipt?: () => Promise<void>
   accept: (value: Awaited<ReturnType<Command>>) => unknown
 }>
 
@@ -278,7 +279,10 @@ export class KeyedWriteCommandOwner {
       })
     }
     const recovered = options.recoverReceipt(receipt)
-    if (recovered === null) throw originalCause
+    if (recovered === null) {
+      await options.reconcileAbsentReceipt?.()
+      throw originalCause
+    }
     return Object.freeze({
       status: 'accepted',
       value: recovered,

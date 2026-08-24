@@ -54,6 +54,15 @@ export const e2eSuiteRegistry = [
     }
   },
   {
+    name: 'campaignReconciliation',
+    spec: './tests/e2e/campaign-reconciliation.e2e.ts',
+    fixture: 'v1/empty-installation',
+    types: ['functional'],
+    ci: {
+      functional: { shard: 'campaign-workspaces', measuredSeconds: 95 }
+    }
+  },
+  {
     name: 'campaignHexMap',
     spec: './tests/e2e/campaign-hex-map.e2e.ts',
     fixture: 'v1/empty-installation',

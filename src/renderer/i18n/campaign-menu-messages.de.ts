@@ -19,5 +19,8 @@ export const campaignMenuMessagesDe = {
   'campaign.deleteForever': 'Endgültig löschen',
   'campaign.confirmDelete':
     'Zum endgültigen Löschen den Namen „{name}“ exakt eingeben.',
-  'campaign.confirmName': 'Kampagnenname zur Bestätigung'
+  'campaign.confirmName': 'Kampagnenname zur Bestätigung',
+  'campaign.reconciliationPending':
+    'Das Ergebnis der letzten Kampagnenaktion wird geprüft. Weitere Aktionen warten.',
+  'campaign.reconciliationCheck': 'Ergebnis prüfen'
 } as const

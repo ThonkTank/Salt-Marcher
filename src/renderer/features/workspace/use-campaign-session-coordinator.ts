@@ -6,9 +6,11 @@ import {
   useSyncExternalStore
 } from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
+import type { CampaignCommandReceipt } from '../../../shared/contracts/campaign.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import { CapabilityContext } from '../../capabilities/capability-context.js'
 import type { CampaignWorkspaceReadOutcome } from '../../capabilities/campaign-workspace-projection.js'
+import { CampaignReconciliationPendingError } from '../../capabilities/campaign-workspace-projection.js'
 import type { WorkspaceId } from './workspace-definition.js'
 
 export function useCampaignSessionCoordinator(
@@ -25,7 +27,6 @@ export function useCampaignSessionCoordinator(
   )
   const [campaignMenuOpen, setCampaignMenuOpen] = useState(false)
   const [workspace, setWorkspace] = useState<WorkspaceId>('session')
-  const [readbackKey, setReadbackKey] = useState(0)
 
   const reportRead = useCallback(
     (outcome: CampaignWorkspaceReadOutcome) => {
@@ -49,21 +50,31 @@ export function useCampaignSessionCoordinator(
     if (enabled) void Promise.resolve().then(load)
   }, [enabled, load])
 
-  useEffect(() => {
-    const readback = () => {
-      if (!enabled) return
-      setReadbackKey((current) => current + 1)
-      void load()
-    }
-    window.addEventListener('saltmarcher:readback', readback)
-    return () => window.removeEventListener('saltmarcher:readback', readback)
-  }, [enabled, load])
-
-  async function run(operation: () => Promise<void>) {
+  async function run(operation: () => Promise<void>): Promise<boolean> {
     try {
       await operation()
+      return true
     } catch (cause) {
-      reportError(capabilityErrorText(cause))
+      if (!(cause instanceof CampaignReconciliationPendingError))
+        reportError(capabilityErrorText(cause))
+      return false
+    }
+  }
+
+  async function reconcile(): Promise<CampaignCommandReceipt | null> {
+    try {
+      const receipt = await projection.reconcilePendingCommand()
+      if (receipt.snapshot.activeCampaignId)
+        await refreshAcceptedCampaignSession()
+      if (receipt.kind === 'created' || receipt.kind === 'activated') {
+        setWorkspace('session')
+        setCampaignMenuOpen(false)
+      }
+      return receipt
+    } catch (cause) {
+      if (!(cause instanceof CampaignReconciliationPendingError))
+        reportError(capabilityErrorText(cause))
+      return null
     }
   }
 
@@ -95,7 +106,8 @@ export function useCampaignSessionCoordinator(
     setCampaignMenuOpen,
     workspace,
     setWorkspace,
-    readbackKey,
+    campaignReconciliationPending: root.reconciliationCommandId !== null,
+    reconcileCampaign: reconcile,
     createCampaign: (name: string) =>
       run(async () => {
         await projection.createCampaign(name)

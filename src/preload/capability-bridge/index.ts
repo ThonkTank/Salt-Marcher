@@ -144,6 +144,11 @@ if (process.argv.includes('--salt-marcher-e2e'))
           'salt-marcher-e2e:interrupt-generator-preset-create',
           undefined
         ) as Promise<boolean>,
+      interruptCampaignCreate: () =>
+        invokeIpc(
+          'salt-marcher-e2e:interrupt-campaign-create',
+          undefined
+        ) as Promise<boolean>,
       runtimeEvidence: () =>
         invokeIpc('salt-marcher-e2e:runtime-evidence', undefined)
     })

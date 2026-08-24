@@ -1,10 +1,18 @@
 import {
   activateCampaignInputSchema,
+  activateCampaignReceiptSchema,
+  campaignCommandReceiptInputSchema,
+  campaignCommandReceiptSchema,
   campaignIdInputSchema,
-  campaignSnapshotSchema,
   createCampaignInputSchema,
+  createCampaignReceiptSchema,
+  deleteCampaignReceiptSchema,
   permanentlyDeleteCampaignInputSchema,
-  renameCampaignInputSchema
+  renameCampaignInputSchema,
+  renameCampaignReceiptSchema,
+  restoreCampaignReceiptSchema,
+  trashCampaignReceiptSchema,
+  campaignSnapshotSchema
 } from '../campaign.js'
 import { none, read, utilityOperationFragment, write } from './registry.js'
 
@@ -13,43 +21,48 @@ export const campaignOperationDefinitions = utilityOperationFragment({
   'campaign.create': write(
     'campaign:create',
     createCampaignInputSchema,
-    campaignSnapshotSchema,
+    createCampaignReceiptSchema,
     ['gm'],
     'campaign-reconcile'
   ),
   'campaign.activate': write(
     'campaign:activate',
     activateCampaignInputSchema,
-    campaignSnapshotSchema,
+    activateCampaignReceiptSchema,
     ['gm'],
     'campaign-reconcile'
   ),
   'campaign.rename': write(
     'campaign:rename',
     renameCampaignInputSchema,
-    campaignSnapshotSchema,
+    renameCampaignReceiptSchema,
     ['gm'],
     'campaign-reconcile'
   ),
   'campaign.trash': write(
     'campaign:trash',
     campaignIdInputSchema,
-    campaignSnapshotSchema,
+    trashCampaignReceiptSchema,
     ['gm'],
     'campaign-reconcile'
   ),
   'campaign.restore': write(
     'campaign:restore',
     campaignIdInputSchema,
-    campaignSnapshotSchema,
+    restoreCampaignReceiptSchema,
     ['gm'],
     'campaign-reconcile'
   ),
   'campaign.deleteForever': write(
     'campaign:deleteForever',
     permanentlyDeleteCampaignInputSchema,
-    campaignSnapshotSchema,
+    deleteCampaignReceiptSchema,
     ['gm'],
     'campaign-reconcile'
+  ),
+  'campaign.commandReceipt': read(
+    'campaign:command-receipt',
+    campaignCommandReceiptInputSchema,
+    campaignCommandReceiptSchema.nullable()
   )
 })

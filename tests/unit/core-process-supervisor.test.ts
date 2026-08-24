@@ -270,6 +270,7 @@ describe('CoreProcessSupervisor', () => {
     const { supervisor, children } = harness()
     children[0]?.ready()
     const result = supervisor.requestOperation('campaign.create', {
+      commandId: '00000000-0000-4000-8000-000000000002',
       expectedRegistryRevision: 0,
       name: 'Sent write'
     })
@@ -310,22 +311,45 @@ describe('CoreProcessSupervisor', () => {
     const { supervisor, children } = harness()
     children[0]?.ready()
     const result = supervisor.requestOperation('campaign.create', {
+      commandId: '00000000-0000-4000-8000-000000000003',
       expectedRegistryRevision: 0,
       name: 'Committed write'
     })
     children[0]?.succeed({
-      revision: 1,
-      activeCampaignId: null,
-      campaigns: [],
-      trashedCampaigns: []
+      kind: 'created',
+      commandId: '00000000-0000-4000-8000-000000000003',
+      campaignId: '00000000-0000-4000-8000-000000000004',
+      snapshot: {
+        revision: 1,
+        activeCampaignId: '00000000-0000-4000-8000-000000000004',
+        campaigns: [
+          {
+            id: '00000000-0000-4000-8000-000000000004',
+            name: 'Committed write',
+            createdAt: '2026-08-24T12:00:00.000Z'
+          }
+        ],
+        trashedCampaigns: []
+      }
     })
     children[0]?.emit('exit', 1)
 
     await expect(result).resolves.toEqual({
-      revision: 1,
-      activeCampaignId: null,
-      campaigns: [],
-      trashedCampaigns: []
+      kind: 'created',
+      commandId: '00000000-0000-4000-8000-000000000003',
+      campaignId: '00000000-0000-4000-8000-000000000004',
+      snapshot: {
+        revision: 1,
+        activeCampaignId: '00000000-0000-4000-8000-000000000004',
+        campaigns: [
+          {
+            id: '00000000-0000-4000-8000-000000000004',
+            name: 'Committed write',
+            createdAt: '2026-08-24T12:00:00.000Z'
+          }
+        ],
+        trashedCampaigns: []
+      }
     })
     await supervisor.closeGracefully()
   })

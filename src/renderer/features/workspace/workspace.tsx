@@ -44,6 +44,11 @@ export function WorkspaceApp() {
     [report]
   )
   const [coreStatus, setCoreStatus] = useState<CoreProcessStatus>('starting')
+  const [reachedReady, setReachedReady] = useState(false)
+  const acceptCoreStatus = useCallback((status: CoreProcessStatus) => {
+    setCoreStatus(status)
+    if (status === 'ready') setReachedReady(true)
+  }, [])
   const coordinator = useCampaignSessionCoordinator(
     campaignError,
     coreStatus === 'ready'
@@ -89,9 +94,9 @@ export function WorkspaceApp() {
   )
 
   useEffect(() => {
-    void api.runtime.coreStatus().then(setCoreStatus)
-    return api.runtime.onCoreStatus(setCoreStatus)
-  }, [api.runtime])
+    void api.runtime.coreStatus().then(acceptCoreStatus)
+    return api.runtime.onCoreStatus(acceptCoreStatus)
+  }, [acceptCoreStatus, api.runtime])
 
   const focusedSceneId = coordinator.session?.scene.focusedSceneId ?? ''
   const setCoordinatorSession = coordinator.setSession
@@ -127,17 +132,13 @@ export function WorkspaceApp() {
       : null
   const definition = workspaceDefinition(coordinator.workspace)
 
-  if (coreStatus !== 'ready')
+  if (!reachedReady)
     return (
       <main className="app-shell">
-        <div className="core-status-banner" role="status">
-          <span>{coreStatusMessage(coreStatus)}</span>
-          {coreStatus === 'unavailable' && (
-            <button type="button" onClick={() => void api.runtime.retryCore()}>
-              {message('core.retry')}
-            </button>
-          )}
-        </div>
+        <CoreStatusBanner
+          status={coreStatus}
+          retry={() => void api.runtime.retryCore()}
+        />
       </main>
     )
 
@@ -152,7 +153,17 @@ export function WorkspaceApp() {
       }}
       onError={featureError}
     >
-      <main className="app-shell" data-renderer-ready="gm">
+      <main
+        className="app-shell"
+        data-renderer-ready="gm"
+        aria-busy={coreStatus !== 'ready' || undefined}
+      >
+        {coreStatus !== 'ready' && (
+          <CoreStatusBanner
+            status={coreStatus}
+            retry={() => void api.runtime.retryCore()}
+          />
+        )}
         <WorkspaceTopBar
           campaigns={coordinator.campaigns}
           campaignMenuOpen={coordinator.campaignMenuOpen}
@@ -163,7 +174,9 @@ export function WorkspaceApp() {
             rename: coordinator.renameCampaign,
             trash: coordinator.trashCampaign,
             restore: coordinator.restoreCampaign,
-            deleteForever: coordinator.deleteCampaignForever
+            deleteForever: coordinator.deleteCampaignForever,
+            reconciliationPending: coordinator.campaignReconciliationPending,
+            reconcile: coordinator.reconcileCampaign
           }}
           workspace={coordinator.workspace}
           session={coordinator.session}
@@ -203,7 +216,6 @@ export function WorkspaceApp() {
             <WorkspaceRouteHost
               active={active}
               workspace={coordinator.workspace}
-              readbackKey={coordinator.readbackKey}
               surfaceProps={surfaceProps}
               runtime={api.runtime}
             />
@@ -218,6 +230,22 @@ export function WorkspaceApp() {
         )}
       </main>
     </ReferenceProvider>
+  )
+}
+
+function CoreStatusBanner(props: {
+  status: CoreProcessStatus
+  retry: () => void
+}) {
+  return (
+    <div className="core-status-banner" role="status">
+      <span>{coreStatusMessage(props.status)}</span>
+      {props.status === 'unavailable' && (
+        <button type="button" onClick={props.retry}>
+          {message('core.retry')}
+        </button>
+      )}
+    </div>
   )
 }
 

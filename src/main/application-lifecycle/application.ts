@@ -77,6 +77,9 @@ function startApplicationWithProfileLock(
     ipcMain.handle('salt-marcher-e2e:interrupt-generator-preset-create', () =>
       core?.interruptNextResultForE2e('generatorPresets.create')
     )
+    ipcMain.handle('salt-marcher-e2e:interrupt-campaign-create', () =>
+      core?.interruptNextResultForE2e('campaign.create')
+    )
     ipcMain.handle('salt-marcher-e2e:runtime-evidence', async () => {
       if (core === undefined) throw new Error('Core is unavailable')
       return runtimeEvidenceSchema.parse({

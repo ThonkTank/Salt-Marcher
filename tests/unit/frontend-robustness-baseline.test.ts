@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { readTypeScriptModule } from '../architecture/support/typescript-module.js'
 
 describe('FR0 frontend robustness baseline', () => {
-  it('records the current global outcome-unknown readback and remount chain', () => {
+  it('gates removal of the global outcome-unknown readback and remount chain', () => {
     const errors = readTypeScriptModule(
       'src/renderer/capabilities/capability-errors.ts'
     )
@@ -13,16 +13,16 @@ describe('FR0 frontend robustness baseline', () => {
       'src/renderer/features/workspace/workspace-route-host.tsx'
     )
 
-    expect(errors.stringLiterals).toContain('saltmarcher:readback')
-    expect(errors.calls).toContain('window.dispatchEvent')
-    expect(coordinator.calls).toContain('window.addEventListener')
-    expect(coordinator.identifiers.has('readbackKey')).toBe(true)
-    expect(coordinator.identifiers.has('setReadbackKey')).toBe(true)
-    expect(routeHost.jsxAttributeNames).toContain('key')
-    expect(routeHost.identifiers.has('readbackKey')).toBe(true)
+    expect(errors.stringLiterals).not.toContain('saltmarcher:readback')
+    expect(errors.calls).not.toContain('window.dispatchEvent')
+    expect(coordinator.stringLiterals).not.toContain('saltmarcher:readback')
+    expect(coordinator.identifiers.has('readbackKey')).toBe(false)
+    expect(coordinator.identifiers.has('setReadbackKey')).toBe(false)
+    expect(routeHost.jsxAttributeNames).not.toContain('key')
+    expect(routeHost.identifiers.has('readbackKey')).toBe(false)
   })
 
-  it('gates the FR2B Campaign FIFO owner while retaining FR2C readback debt', () => {
+  it('gates the FR2C Campaign receipt owner and targeted readback', () => {
     const coordinator = readTypeScriptModule(
       'src/renderer/features/workspace/use-campaign-session-coordinator.ts'
     )
@@ -31,14 +31,18 @@ describe('FR0 frontend robustness baseline', () => {
     )
 
     expect(projection.constructions).toContain('KeyedWriteCommandOwner')
-    expect(projection.stringLiterals).toContain('fifo-command')
+    expect(projection.stringLiterals).toContain('receipt-reconciliation')
     expect(projection.stringLiterals).toContain('installation.campaign-catalog')
     expect(
       coordinator.propertyAccesses.some((access) =>
         access.startsWith('api.campaigns.')
       )
     ).toBe(false)
-    expect(coordinator.identifiers.has('readbackKey')).toBe(true)
+    expect(coordinator.identifiers.has('readbackKey')).toBe(false)
+    expect(projection.calls).toContain('this.load')
+    expect(projection.propertyAccesses).toContain(
+      'this.#api.campaigns.commandReceipt'
+    )
   })
 
   it('records current latest-only mutation owners without accepting them as target behavior', () => {

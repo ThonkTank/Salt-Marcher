@@ -1,13 +1,25 @@
 import type Database from 'better-sqlite3'
 import type {
   Campaign,
+  CampaignCommandReceipt,
   CampaignSnapshot
 } from '../../../shared/contracts/campaign.js'
-import { freezeCampaignSnapshot } from '../../../shared/contracts/campaign.js'
+import {
+  campaignCommandReceiptSchema,
+  freezeCampaignSnapshot
+} from '../../../shared/contracts/campaign.js'
 import { CapabilityError } from '../../../shared/errors/capability-error.js'
 import type { CampaignLifecycleReceipt } from '../../application/campaign-lifecycle-coordinator.js'
 
 const registryRevisionKey = 'campaign_registry_revision'
+const commandReceiptLimit = 512
+
+export type CampaignCommandIdentity = Readonly<{
+  commandId: string
+  kind: CampaignCommandReceipt['kind']
+  requestJson: string
+  campaignId: string
+}>
 
 export function initializeCampaignRegistryRevision(
   database: Database.Database
@@ -21,6 +33,21 @@ export function initializeCampaignRegistryRevision(
   database
     .prepare('INSERT OR IGNORE INTO settings (key, value) VALUES (?, ?)')
     .run(registryRevisionKey, '0')
+}
+
+export function initializeCampaignCommandReceiptSchema(
+  database: Database.Database
+): void {
+  database.exec(`
+    CREATE TABLE IF NOT EXISTS campaign_commands (
+      command_id TEXT PRIMARY KEY NOT NULL,
+      operation_kind TEXT NOT NULL,
+      request_json TEXT NOT NULL,
+      campaign_id TEXT NOT NULL,
+      receipt_json TEXT,
+      created_at TEXT NOT NULL
+    );
+  `)
 }
 
 /** Owns installation-level campaign metadata and its transaction boundaries. */
@@ -38,6 +65,7 @@ export class CampaignRegistryRepository {
       );
     `)
     initializeCampaignRegistryRevision(this.database)
+    initializeCampaignCommandReceiptSchema(this.database)
   }
 
   snapshot(): CampaignSnapshot {
@@ -83,7 +111,8 @@ export class CampaignRegistryRepository {
     id: string,
     name: string,
     createdAt: string,
-    expectedRevision = this.revision()
+    expectedRevision = this.revision(),
+    command?: CampaignCommandIdentity
   ): void {
     this.database.transaction(() => {
       this.assertRevision(expectedRevision)
@@ -92,6 +121,7 @@ export class CampaignRegistryRepository {
           "INSERT INTO campaigns (id, name, created_at, status) VALUES (?, ?, ?, 'creating')"
         )
         .run(id, name, createdAt)
+      if (command) this.reserveCommand(command)
     })()
   }
 
@@ -103,8 +133,12 @@ export class CampaignRegistryRepository {
       .run(id, name, createdAt)
   }
 
-  markReadyAndActivate(id: string, expectedRevision = this.revision()): void {
-    this.database.transaction(() => {
+  markReadyAndActivate(
+    id: string,
+    expectedRevision = this.revision(),
+    command?: CampaignCommandIdentity
+  ): CampaignCommandReceipt | null {
+    return this.database.transaction(() => {
       this.assertRevision(expectedRevision)
       const result = this.database
         .prepare(
@@ -115,6 +149,7 @@ export class CampaignRegistryRepository {
         throw new Error('Campaign creation registry target is unavailable')
       this.writeActive(id)
       this.advanceRevision()
+      return command ? this.completeCommand(command) : null
     })()
   }
 
@@ -127,8 +162,13 @@ export class CampaignRegistryRepository {
     if (exists === undefined) throw new CapabilityError('not_found', false)
   }
 
-  rename(id: string, name: string, expectedRevision = this.revision()): void {
-    this.database.transaction(() => {
+  rename(
+    id: string,
+    name: string,
+    expectedRevision = this.revision(),
+    command?: CampaignCommandIdentity
+  ): CampaignCommandReceipt | null {
+    return this.database.transaction(() => {
       this.assertRevision(expectedRevision)
       const result = this.database
         .prepare(
@@ -137,15 +177,17 @@ export class CampaignRegistryRepository {
         .run(name, id)
       if (result.changes === 0) throw new CapabilityError('not_found', false)
       this.advanceRevision()
+      return command ? this.completeCommand(command) : null
     })()
   }
 
   trash(
     id: string,
     trashedAt: string,
-    expectedRevision = this.revision()
-  ): void {
-    this.database.transaction(() => {
+    expectedRevision = this.revision(),
+    command?: CampaignCommandIdentity
+  ): CampaignCommandReceipt | null {
+    return this.database.transaction(() => {
       this.assertRevision(expectedRevision)
       this.requireAvailable(id)
       this.database
@@ -153,6 +195,7 @@ export class CampaignRegistryRepository {
         .run(trashedAt, id)
       this.deleteActive(id)
       this.advanceRevision()
+      return command ? this.completeCommand(command) : null
     })()
   }
 
@@ -165,14 +208,19 @@ export class CampaignRegistryRepository {
     if (exists === undefined) throw new CapabilityError('not_found', false)
   }
 
-  restore(id: string, expectedRevision = this.revision()): void {
-    this.database.transaction(() => {
+  restore(
+    id: string,
+    expectedRevision = this.revision(),
+    command?: CampaignCommandIdentity
+  ): CampaignCommandReceipt | null {
+    return this.database.transaction(() => {
       this.assertRevision(expectedRevision)
       this.requireTrashed(id)
       this.database
         .prepare('UPDATE campaigns SET trashed_at = NULL WHERE id = ?')
         .run(id)
       this.advanceRevision()
+      return command ? this.completeCommand(command) : null
     })()
   }
 
@@ -187,16 +235,96 @@ export class CampaignRegistryRepository {
       throw new CapabilityError('validation_failed', false)
   }
 
-  delete(id: string, expectedRevision = this.revision()): void {
-    this.database.transaction(() => {
+  delete(
+    id: string,
+    expectedRevision = this.revision(),
+    command?: CampaignCommandIdentity
+  ): CampaignCommandReceipt | null {
+    return this.database.transaction(() => {
       this.assertRevision(expectedRevision)
       const result = this.database
         .prepare('DELETE FROM campaigns WHERE id = ?')
         .run(id)
-      if (result.changes === 0) return
+      if (result.changes === 0)
+        return command ? this.completeCommand(command) : null
       this.deleteActive(id)
       this.advanceRevision()
+      return command ? this.completeCommand(command) : null
     })()
+  }
+
+  setActive(
+    id: string,
+    expectedRevision = this.revision(),
+    command?: CampaignCommandIdentity
+  ): CampaignCommandReceipt | null {
+    return this.database.transaction(() => {
+      this.assertRevision(expectedRevision)
+      this.writeActive(id)
+      this.advanceRevision()
+      return command ? this.completeCommand(command) : null
+    })()
+  }
+
+  commandReceipt(commandId: string): CampaignCommandReceipt | null {
+    const row = this.commandRow(commandId)
+    if (!row?.receiptJson) return null
+    return deepFreeze(
+      campaignCommandReceiptSchema.parse(parseJson(row.receiptJson))
+    )
+  }
+
+  existingCommand(
+    command: CampaignCommandIdentity
+  ): CampaignCommandReceipt | null {
+    const row = this.commandRow(command.commandId)
+    if (!row) return null
+    this.assertCommandIdentity(row, command)
+    if (!row.receiptJson) throw new CapabilityError('outcome_unknown', true)
+    return deepFreeze(
+      campaignCommandReceiptSchema.parse(parseJson(row.receiptJson))
+    )
+  }
+
+  existingCommandForRequest(
+    commandId: string,
+    kind: CampaignCommandReceipt['kind'],
+    requestJson: string
+  ): CampaignCommandReceipt | null {
+    const row = this.commandRow(commandId)
+    if (!row) return null
+    if (row.operationKind !== kind || row.requestJson !== requestJson)
+      throw new CapabilityError('idempotency_conflict', false)
+    if (!row.receiptJson) throw new CapabilityError('outcome_unknown', true)
+    return deepFreeze(
+      campaignCommandReceiptSchema.parse(parseJson(row.receiptJson))
+    )
+  }
+
+  pendingCreationCommand(campaignId: string): CampaignCommandIdentity | null {
+    const row = this.database
+      .prepare(
+        `SELECT command_id AS commandId, operation_kind AS operationKind,
+          request_json AS requestJson, campaign_id AS campaignId
+         FROM campaign_commands
+         WHERE campaign_id = ? AND operation_kind = 'created' AND receipt_json IS NULL`
+      )
+      .get(campaignId) as
+      | {
+          commandId: string
+          operationKind: string
+          requestJson: string
+          campaignId: string
+        }
+      | undefined
+    return row
+      ? Object.freeze({
+          commandId: row.commandId,
+          kind: 'created',
+          requestJson: row.requestJson,
+          campaignId: row.campaignId
+        })
+      : null
   }
 
   previousName(id: string): string {
@@ -242,6 +370,11 @@ export class CampaignRegistryRepository {
   removeIncompleteCreation(id: string): void {
     this.database.transaction(() => {
       this.database.prepare('DELETE FROM campaigns WHERE id = ?').run(id)
+      this.database
+        .prepare(
+          'DELETE FROM campaign_commands WHERE campaign_id = ? AND receipt_json IS NULL'
+        )
+        .run(id)
       this.deleteActive(id)
     })()
   }
@@ -337,14 +470,6 @@ export class CampaignRegistryRepository {
     return row?.value ?? null
   }
 
-  setActive(id: string, expectedRevision = this.revision()): void {
-    this.database.transaction(() => {
-      this.assertRevision(expectedRevision)
-      this.writeActive(id)
-      this.advanceRevision()
-    })()
-  }
-
   clearRecordedActive(): void {
     this.deleteRecordedActive()
   }
@@ -381,6 +506,118 @@ export class CampaignRegistryRepository {
       throw new Error('Campaign registry revision is unavailable')
   }
 
+  private reserveCommand(command: CampaignCommandIdentity): void {
+    const existing = this.commandRow(command.commandId)
+    if (existing) {
+      this.assertCommandIdentity(existing, command)
+      throw new CapabilityError('outcome_unknown', true)
+    }
+    this.database
+      .prepare(
+        `INSERT INTO campaign_commands
+          (command_id, operation_kind, request_json, campaign_id, receipt_json, created_at)
+         VALUES (?, ?, ?, ?, NULL, ?)`
+      )
+      .run(
+        command.commandId,
+        command.kind,
+        command.requestJson,
+        command.campaignId,
+        new Date().toISOString()
+      )
+  }
+
+  private completeCommand(
+    command: CampaignCommandIdentity
+  ): CampaignCommandReceipt {
+    const receipt = deepFreeze(
+      campaignCommandReceiptSchema.parse({
+        kind: command.kind,
+        commandId: command.commandId,
+        campaignId: command.campaignId,
+        snapshot: this.snapshot()
+      })
+    )
+    const existing = this.commandRow(command.commandId)
+    if (existing) {
+      this.assertCommandIdentity(existing, command)
+      if (existing.receiptJson)
+        return deepFreeze(
+          campaignCommandReceiptSchema.parse(parseJson(existing.receiptJson))
+        )
+      this.database
+        .prepare(
+          'UPDATE campaign_commands SET receipt_json = ? WHERE command_id = ? AND receipt_json IS NULL'
+        )
+        .run(JSON.stringify(receipt), command.commandId)
+    } else {
+      this.database
+        .prepare(
+          `INSERT INTO campaign_commands
+            (command_id, operation_kind, request_json, campaign_id, receipt_json, created_at)
+           VALUES (?, ?, ?, ?, ?, ?)`
+        )
+        .run(
+          command.commandId,
+          command.kind,
+          command.requestJson,
+          command.campaignId,
+          JSON.stringify(receipt),
+          new Date().toISOString()
+        )
+    }
+    this.pruneCompletedCommands()
+    return receipt
+  }
+
+  private commandRow(commandId: string):
+    | {
+        operationKind: string
+        requestJson: string
+        campaignId: string
+        receiptJson: string | null
+      }
+    | undefined {
+    return this.database
+      .prepare(
+        `SELECT operation_kind AS operationKind, request_json AS requestJson,
+          campaign_id AS campaignId, receipt_json AS receiptJson
+         FROM campaign_commands WHERE command_id = ?`
+      )
+      .get(commandId) as
+      | {
+          operationKind: string
+          requestJson: string
+          campaignId: string
+          receiptJson: string | null
+        }
+      | undefined
+  }
+
+  private assertCommandIdentity(
+    row: { operationKind: string; requestJson: string; campaignId: string },
+    command: CampaignCommandIdentity
+  ): void {
+    if (
+      row.operationKind !== command.kind ||
+      row.requestJson !== command.requestJson ||
+      row.campaignId !== command.campaignId
+    )
+      throw new CapabilityError('idempotency_conflict', false)
+  }
+
+  private pruneCompletedCommands(): void {
+    this.database
+      .prepare(
+        `DELETE FROM campaign_commands WHERE command_id IN (
+          SELECT command_id FROM campaign_commands
+          WHERE receipt_json IS NOT NULL
+          ORDER BY created_at DESC, rowid DESC LIMIT -1 OFFSET ${commandReceiptLimit}
+        )`
+      )
+      .run()
+  }
+
   private lifecycleCommitKey(campaignId: string): string {
     return `campaign_lifecycle:${campaignId}`
   }
@@ -395,4 +632,17 @@ export class CampaignRegistryRepository {
       .get(key) as { value: string } | undefined
     return row?.value ?? null
   }
+}
+
+function parseJson(value: string): unknown {
+  return JSON.parse(value) as unknown
+}
+
+function deepFreeze<T>(value: T): T {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.freeze(value)
+    for (const child of Object.values(value as Record<string, unknown>))
+      deepFreeze(child)
+  }
+  return value
 }

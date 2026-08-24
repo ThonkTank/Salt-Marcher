@@ -83,42 +83,169 @@ export const capabilityFailureSchema = z
       })
   })
 
-export const createCampaignInputSchema = z
+const campaignCommandBaseInputSchema = z
   .object({
-    expectedRegistryRevision: z.number().int().nonnegative(),
+    commandId: z.uuid(),
+    expectedRegistryRevision: z.number().int().nonnegative()
+  })
+  .strict()
+
+export const createCampaignInputSchema = campaignCommandBaseInputSchema
+  .extend({
     name: z.string().trim().min(1, 'A name is required').max(100)
   })
   .strict()
 
-export const activateCampaignInputSchema = z
-  .object({
-    expectedRegistryRevision: z.number().int().nonnegative(),
+export const activateCampaignInputSchema = campaignCommandBaseInputSchema
+  .extend({
     id: z.uuid()
   })
   .strict()
 
-export const renameCampaignInputSchema = z
-  .object({
-    expectedRegistryRevision: z.number().int().nonnegative(),
+export const renameCampaignInputSchema = campaignCommandBaseInputSchema
+  .extend({
     id: z.uuid(),
     name: z.string().trim().min(1, 'A name is required').max(100)
   })
   .strict()
 
-export const campaignIdInputSchema = z
-  .object({
-    expectedRegistryRevision: z.number().int().nonnegative(),
+export const campaignIdInputSchema = campaignCommandBaseInputSchema
+  .extend({
     id: z.uuid()
   })
   .strict()
 
-export const permanentlyDeleteCampaignInputSchema = z
-  .object({
-    expectedRegistryRevision: z.number().int().nonnegative(),
-    id: z.uuid(),
-    confirmationName: z.string().max(100)
-  })
+export const permanentlyDeleteCampaignInputSchema =
+  campaignCommandBaseInputSchema
+    .extend({
+      id: z.uuid(),
+      confirmationName: z.string().max(100)
+    })
+    .strict()
+
+const campaignCommandReceiptBase = {
+  commandId: z.uuid(),
+  campaignId: z.uuid(),
+  snapshot: campaignSnapshotSchema
+} as const
+
+export const createCampaignReceiptSchema = z
+  .object({ ...campaignCommandReceiptBase, kind: z.literal('created') })
   .strict()
+  .superRefine((receipt, context) => {
+    if (
+      receipt.snapshot.activeCampaignId !== receipt.campaignId ||
+      !receipt.snapshot.campaigns.some(
+        (campaign) => campaign.id === receipt.campaignId
+      )
+    )
+      invalidReceipt(context)
+  })
+export const activateCampaignReceiptSchema = z
+  .object({ ...campaignCommandReceiptBase, kind: z.literal('activated') })
+  .strict()
+  .superRefine((receipt, context) => {
+    if (
+      receipt.snapshot.activeCampaignId !== receipt.campaignId ||
+      !receipt.snapshot.campaigns.some(
+        (campaign) => campaign.id === receipt.campaignId
+      )
+    )
+      invalidReceipt(context)
+  })
+export const renameCampaignReceiptSchema = z
+  .object({ ...campaignCommandReceiptBase, kind: z.literal('renamed') })
+  .strict()
+  .superRefine((receipt, context) => {
+    if (
+      !receipt.snapshot.campaigns.some(
+        (campaign) => campaign.id === receipt.campaignId
+      )
+    )
+      invalidReceipt(context)
+  })
+export const trashCampaignReceiptSchema = z
+  .object({ ...campaignCommandReceiptBase, kind: z.literal('trashed') })
+  .strict()
+  .superRefine((receipt, context) => {
+    if (
+      receipt.snapshot.activeCampaignId === receipt.campaignId ||
+      !receipt.snapshot.trashedCampaigns.some(
+        (campaign) => campaign.id === receipt.campaignId
+      )
+    )
+      invalidReceipt(context)
+  })
+export const restoreCampaignReceiptSchema = z
+  .object({ ...campaignCommandReceiptBase, kind: z.literal('restored') })
+  .strict()
+  .superRefine((receipt, context) => {
+    if (
+      !receipt.snapshot.campaigns.some(
+        (campaign) => campaign.id === receipt.campaignId
+      ) ||
+      receipt.snapshot.trashedCampaigns.some(
+        (campaign) => campaign.id === receipt.campaignId
+      )
+    )
+      invalidReceipt(context)
+  })
+export const deleteCampaignReceiptSchema = z
+  .object({ ...campaignCommandReceiptBase, kind: z.literal('deleted') })
+  .strict()
+  .superRefine((receipt, context) => {
+    if (
+      receipt.snapshot.campaigns.some(
+        (campaign) => campaign.id === receipt.campaignId
+      ) ||
+      receipt.snapshot.trashedCampaigns.some(
+        (campaign) => campaign.id === receipt.campaignId
+      )
+    )
+      invalidReceipt(context)
+  })
+export const campaignCommandReceiptSchema = z.discriminatedUnion('kind', [
+  createCampaignReceiptSchema,
+  activateCampaignReceiptSchema,
+  renameCampaignReceiptSchema,
+  trashCampaignReceiptSchema,
+  restoreCampaignReceiptSchema,
+  deleteCampaignReceiptSchema
+])
+export const campaignCommandReceiptInputSchema = z
+  .object({ commandId: z.uuid() })
+  .strict()
+
+export type CreateCampaignCommand = z.infer<typeof createCampaignInputSchema>
+export type ActivateCampaignCommand = z.infer<
+  typeof activateCampaignInputSchema
+>
+export type RenameCampaignCommand = z.infer<typeof renameCampaignInputSchema>
+export type CampaignIdCommand = z.infer<typeof campaignIdInputSchema>
+export type DeleteCampaignCommand = z.infer<
+  typeof permanentlyDeleteCampaignInputSchema
+>
+export type CreateCampaignReceipt = z.infer<typeof createCampaignReceiptSchema>
+export type ActivateCampaignReceipt = z.infer<
+  typeof activateCampaignReceiptSchema
+>
+export type RenameCampaignReceipt = z.infer<typeof renameCampaignReceiptSchema>
+export type TrashCampaignReceipt = z.infer<typeof trashCampaignReceiptSchema>
+export type RestoreCampaignReceipt = z.infer<
+  typeof restoreCampaignReceiptSchema
+>
+export type DeleteCampaignReceipt = z.infer<typeof deleteCampaignReceiptSchema>
+export type CampaignCommandReceipt = z.infer<
+  typeof campaignCommandReceiptSchema
+>
+
+function invalidReceipt(context: z.RefinementCtx): void {
+  context.addIssue({
+    code: 'custom',
+    path: ['snapshot'],
+    message: 'Campaign command receipt snapshot is inconsistent.'
+  })
+}
 
 export const coreReadySchema = z
   .object({ kind: z.literal('core.ready') })

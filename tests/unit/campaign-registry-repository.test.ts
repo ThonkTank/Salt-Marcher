@@ -81,4 +81,50 @@ describe('CampaignRegistryRepository', () => {
     expect(registry.snapshot().campaigns[0]?.name).toBe('Original')
     database.close()
   })
+
+  it('bounds durable Campaign command receipts and rejects identity reuse', () => {
+    const database = new Database(':memory:')
+    const registry = new CampaignRegistryRepository(database)
+    registry.initialize()
+    const campaignId = '00000000-0000-4000-8000-000000000010'
+    const firstCommand = {
+      commandId: '00000000-0000-4000-8000-000000000011',
+      kind: 'created' as const,
+      requestJson: JSON.stringify({ kind: 'created', name: 'Bounded' }),
+      campaignId
+    }
+    registry.beginCreation(
+      campaignId,
+      'Bounded',
+      '2026-08-24T12:00:00.000Z',
+      0,
+      firstCommand
+    )
+    const created = registry.markReadyAndActivate(campaignId, 0, firstCommand)
+    expect(registry.commandReceipt(firstCommand.commandId)).toEqual(created)
+    expect(registry.existingCommand(firstCommand)).toEqual(created)
+    expect(() =>
+      registry.existingCommand({
+        ...firstCommand,
+        requestJson: JSON.stringify({ kind: 'created', name: 'Different' })
+      })
+    ).toThrow(expect.objectContaining({ code: 'idempotency_conflict' }))
+
+    for (let index = 0; index < 512; index += 1) {
+      const commandId = `00000000-0000-4000-8000-${String(index + 1_000).padStart(12, '0')}`
+      registry.setActive(campaignId, registry.snapshot().revision, {
+        commandId,
+        kind: 'activated',
+        requestJson: JSON.stringify({ kind: 'activated', id: campaignId }),
+        campaignId
+      })
+    }
+
+    const count = database
+      .prepare('SELECT COUNT(*) AS count FROM campaign_commands')
+      .get() as { count: number }
+    expect(count.count).toBe(512)
+    expect(registry.commandReceipt(firstCommand.commandId)).toBeNull()
+    database.close()
+  })
 })

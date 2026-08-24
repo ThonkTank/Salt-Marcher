@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
-import { CampaignWorkspaceProjection } from '../../src/renderer/capabilities/campaign-workspace-projection.js'
+import {
+  CampaignReconciliationPendingError,
+  CampaignWorkspaceProjection
+} from '../../src/renderer/capabilities/campaign-workspace-projection.js'
 import { createSessionHandlers } from '../../src/utility/composition/live-play.js'
 import type { LivePlayService } from '../../src/core/encounter/live-combat.js'
 import type { SaltMarcherApi } from '../../src/shared/contracts/capability-api.js'
@@ -130,12 +133,18 @@ describe('Campaign Workspace projection', () => {
   })
 
   it('queues same-authority commands and selects the accepted revision at transport time', async () => {
-    const created = deferred<ReturnType<typeof catalog>>()
+    const created =
+      deferred<Awaited<ReturnType<SaltMarcherApi['campaigns']['create']>>>()
     const create = vi.fn<SaltMarcherApi['campaigns']['create']>(
       () => created.promise
     )
-    const rename = vi.fn<SaltMarcherApi['campaigns']['rename']>(() =>
-      Promise.resolve(catalog(campaignA, 6))
+    const rename = vi.fn<SaltMarcherApi['campaigns']['rename']>((input) =>
+      Promise.resolve({
+        kind: 'renamed',
+        commandId: input.commandId,
+        campaignId: input.id,
+        snapshot: catalog(campaignA, 6, { [campaignA]: 'Renamed' })
+      })
     )
     const projection = new CampaignWorkspaceProjection(
       apiWithCampaigns({ create, rename })
@@ -148,14 +157,25 @@ describe('Campaign Workspace projection', () => {
     await Promise.resolve()
     expect(rename).not.toHaveBeenCalled()
 
-    created.resolve(catalog(campaignA, 5))
+    created.resolve({
+      kind: 'created',
+      commandId: create.mock.calls[0]![0].commandId,
+      campaignId: campaignA,
+      snapshot: catalog(campaignA, 5, { [campaignA]: 'New' })
+    })
     await expect(creating).resolves.toMatchObject({ revision: 5 })
     await expect(renaming).resolves.toMatchObject({ revision: 6 })
-    expect(create).toHaveBeenCalledWith({
+    const createInput = create.mock.calls[0]![0]
+    expectCommandId(createInput.commandId)
+    expect(createInput).toEqual({
+      commandId: createInput.commandId,
       expectedRegistryRevision: 4,
       name: 'New'
     })
-    expect(rename).toHaveBeenCalledWith({
+    const renameInput = rename.mock.calls[0]![0]
+    expectCommandId(renameInput.commandId)
+    expect(renameInput).toEqual({
+      commandId: renameInput.commandId,
       expectedRegistryRevision: 5,
       id: campaignA,
       name: 'Renamed'
@@ -163,8 +183,10 @@ describe('Campaign Workspace projection', () => {
   })
 
   it('keeps queued A/B/A activation aligned with the matching Session cache', async () => {
-    const activatedB = deferred<ReturnType<typeof catalog>>()
-    const activatedA = deferred<ReturnType<typeof catalog>>()
+    const activatedB =
+      deferred<Awaited<ReturnType<SaltMarcherApi['campaigns']['activate']>>>()
+    const activatedA =
+      deferred<Awaited<ReturnType<SaltMarcherApi['campaigns']['activate']>>>()
     const activate = vi
       .fn<SaltMarcherApi['campaigns']['activate']>()
       .mockImplementationOnce(() => activatedB.promise)
@@ -186,10 +208,18 @@ describe('Campaign Workspace projection', () => {
       session: sessionA
     })
 
-    activatedB.resolve(catalog(campaignB, 11))
+    activatedB.resolve({
+      kind: 'activated',
+      commandId: activate.mock.calls[0]![0].commandId,
+      campaignId: campaignB,
+      snapshot: catalog(campaignB, 11)
+    })
     await expect(switchToB).resolves.toMatchObject({ revision: 11 })
     await vi.waitFor(() => expect(activate).toHaveBeenCalledTimes(2))
-    expect(activate.mock.calls[1]?.[0]).toEqual({
+    const activationInput = activate.mock.calls[1]![0]
+    expectCommandId(activationInput.commandId)
+    expect(activationInput).toEqual({
+      commandId: activationInput.commandId,
       expectedRegistryRevision: 11,
       id: campaignA
     })
@@ -198,7 +228,12 @@ describe('Campaign Workspace projection', () => {
       session: sessionB
     })
 
-    activatedA.resolve(catalog(campaignA, 12))
+    activatedA.resolve({
+      kind: 'activated',
+      commandId: activate.mock.calls[1]![0].commandId,
+      campaignId: campaignA,
+      snapshot: catalog(campaignA, 12)
+    })
     await expect(switchBackToA).resolves.toMatchObject({ revision: 12 })
     expect(projection.snapshot()).toMatchObject({
       sessionCampaignId: campaignA,
@@ -206,13 +241,221 @@ describe('Campaign Workspace projection', () => {
     })
   })
 
+  it('accepts an unknown Campaign write only through its exact durable receipt', async () => {
+    const unknown = new CapabilityError('outcome_unknown', true)
+    const create = vi.fn<SaltMarcherApi['campaigns']['create']>(() =>
+      Promise.reject(unknown)
+    )
+    const commandReceipt = vi.fn<SaltMarcherApi['campaigns']['commandReceipt']>(
+      ({ commandId }) =>
+        Promise.resolve({
+          kind: 'created',
+          commandId,
+          campaignId: campaignB,
+          snapshot: catalog(campaignB, 5, { [campaignB]: 'Recovered' })
+        })
+    )
+    const list = vi.fn<SaltMarcherApi['campaigns']['list']>(() =>
+      Promise.resolve(catalog(campaignA, 99))
+    )
+    const projection = new CampaignWorkspaceProjection(
+      apiWithCampaigns({ create, commandReceipt, list })
+    )
+    projection.publishCampaigns(catalog(campaignA, 4))
+
+    await expect(projection.createCampaign('Recovered')).resolves.toMatchObject(
+      {
+        revision: 5,
+        activeCampaignId: campaignB
+      }
+    )
+
+    expect(create).toHaveBeenCalledOnce()
+    expect(commandReceipt).toHaveBeenCalledWith({
+      commandId: create.mock.calls[0]![0].commandId
+    })
+    expect(list).not.toHaveBeenCalled()
+    expect(projection.snapshot()).toMatchObject({
+      campaigns: { revision: 5, activeCampaignId: campaignB },
+      reconciliationCommandId: null
+    })
+  })
+
+  it('blocks the Campaign authority while receipt lookup is interrupted and retries only that lookup', async () => {
+    const unknown = new CapabilityError('outcome_unknown', true)
+    const create = vi.fn<SaltMarcherApi['campaigns']['create']>(() =>
+      Promise.reject(unknown)
+    )
+    const rename = vi.fn<SaltMarcherApi['campaigns']['rename']>()
+    let receiptReads = 0
+    const commandReceipt = vi.fn<SaltMarcherApi['campaigns']['commandReceipt']>(
+      ({ commandId }) => {
+        receiptReads += 1
+        return receiptReads === 1
+          ? Promise.reject(new CapabilityError('core_unavailable', true))
+          : Promise.resolve({
+              kind: 'created',
+              commandId,
+              campaignId: campaignB,
+              snapshot: catalog(campaignB, 5, { [campaignB]: 'Recovered' })
+            })
+      }
+    )
+    const projection = new CampaignWorkspaceProjection(
+      apiWithCampaigns({ create, rename, commandReceipt })
+    )
+    projection.publishCampaigns(catalog(campaignA, 4))
+
+    await expect(projection.createCampaign('Recovered')).rejects.toMatchObject({
+      name: 'CampaignReconciliationPendingError'
+    })
+    const commandId = create.mock.calls[0]![0].commandId
+    expect(projection.snapshot().reconciliationCommandId).toBe(commandId)
+
+    await expect(
+      projection.renameCampaign(campaignA, 'Blocked')
+    ).rejects.toEqual(new CampaignReconciliationPendingError(commandId))
+    expect(rename).not.toHaveBeenCalled()
+
+    await expect(projection.reconcilePendingCommand()).resolves.toMatchObject({
+      kind: 'created',
+      commandId,
+      snapshot: { revision: 5 }
+    })
+    expect(create).toHaveBeenCalledOnce()
+    expect(commandReceipt).toHaveBeenCalledTimes(2)
+    expect(commandReceipt.mock.calls.map(([input]) => input.commandId)).toEqual(
+      [commandId, commandId]
+    )
+    expect(projection.snapshot().reconciliationCommandId).toBeNull()
+  })
+
+  it('uses targeted Campaign and Session readback when an exact receipt is absent and never replays the write', async () => {
+    const unknown = new CapabilityError('outcome_unknown', true)
+    const create = vi.fn<SaltMarcherApi['campaigns']['create']>(() =>
+      Promise.reject(unknown)
+    )
+    const commandReceipt = vi.fn<SaltMarcherApi['campaigns']['commandReceipt']>(
+      () => Promise.resolve(null)
+    )
+    const list = vi.fn<SaltMarcherApi['campaigns']['list']>(() =>
+      Promise.resolve(catalog(campaignB, 5))
+    )
+    const acceptedSession = session(9)
+    const read = vi.fn<SaltMarcherApi['session']['read']>(() =>
+      Promise.resolve(acceptedSession)
+    )
+    const projection = new CampaignWorkspaceProjection(
+      apiWithCampaigns({ create, commandReceipt, list }, { read })
+    )
+    projection.publishCampaigns(catalog(campaignA, 4))
+
+    await expect(projection.createCampaign('Unknown')).rejects.toBe(unknown)
+
+    expect(create).toHaveBeenCalledOnce()
+    expect(commandReceipt).toHaveBeenCalledOnce()
+    expect(list).toHaveBeenCalledOnce()
+    expect(read).toHaveBeenCalledWith({ campaignId: campaignB })
+    expect(projection.snapshot()).toMatchObject({
+      campaigns: { revision: 5, activeCampaignId: campaignB },
+      sessionCampaignId: campaignB,
+      session: acceptedSession,
+      reconciliationCommandId: null
+    })
+  })
+
+  it('finishes absent-receipt readback before the next Campaign transport selects its revision', async () => {
+    const unknown = new CapabilityError('outcome_unknown', true)
+    const readback = deferred<ReturnType<typeof catalog>>()
+    const create = vi.fn<SaltMarcherApi['campaigns']['create']>(() =>
+      Promise.reject(unknown)
+    )
+    const commandReceipt = vi.fn<SaltMarcherApi['campaigns']['commandReceipt']>(
+      () => Promise.resolve(null)
+    )
+    const list = vi.fn<SaltMarcherApi['campaigns']['list']>(
+      () => readback.promise
+    )
+    const rename = vi.fn<SaltMarcherApi['campaigns']['rename']>((input) =>
+      Promise.resolve({
+        kind: 'renamed',
+        commandId: input.commandId,
+        campaignId: input.id,
+        snapshot: catalog(campaignA, 6, {
+          [campaignA]: 'After readback'
+        })
+      })
+    )
+    const projection = new CampaignWorkspaceProjection(
+      apiWithCampaigns({ create, commandReceipt, list, rename })
+    )
+    projection.publishCampaigns(catalog(campaignA, 4))
+
+    const creating = projection.createCampaign('Unknown')
+    await vi.waitFor(() => expect(list).toHaveBeenCalledOnce())
+    const renaming = projection.renameCampaign(campaignA, 'After readback')
+    await Promise.resolve()
+    expect(rename).not.toHaveBeenCalled()
+
+    readback.resolve(catalog(campaignA, 5))
+    await expect(creating).rejects.toBe(unknown)
+    await expect(renaming).resolves.toMatchObject({ revision: 6 })
+    const renameInput = rename.mock.calls[0]![0]
+    expectCommandId(renameInput.commandId)
+    expect(renameInput).toEqual({
+      commandId: renameInput.commandId,
+      expectedRegistryRevision: 5,
+      id: campaignA,
+      name: 'After readback'
+    })
+  })
+
+  it('clears the pending UI state after an explicit check conclusively finds no receipt', async () => {
+    const unknown = new CapabilityError('outcome_unknown', true)
+    const create = vi.fn<SaltMarcherApi['campaigns']['create']>(() =>
+      Promise.reject(unknown)
+    )
+    const commandReceipt = vi
+      .fn<SaltMarcherApi['campaigns']['commandReceipt']>()
+      .mockRejectedValueOnce(new CapabilityError('core_unavailable', true))
+      .mockResolvedValueOnce(null)
+    const list = vi.fn<SaltMarcherApi['campaigns']['list']>(() =>
+      Promise.resolve(catalog(campaignA, 4))
+    )
+    const projection = new CampaignWorkspaceProjection(
+      apiWithCampaigns(
+        { create, commandReceipt, list },
+        {
+          read: vi.fn(() => Promise.resolve(session(4)))
+        }
+      )
+    )
+    projection.publishCampaigns(catalog(campaignA, 4))
+
+    await expect(projection.createCampaign('Unknown')).rejects.toBeInstanceOf(
+      CampaignReconciliationPendingError
+    )
+    await expect(projection.reconcilePendingCommand()).rejects.toBe(unknown)
+
+    expect(create).toHaveBeenCalledOnce()
+    expect(projection.snapshot().reconciliationCommandId).toBeNull()
+    await expect(projection.reconcilePendingCommand()).rejects.toThrow(
+      'No Campaign command is pending.'
+    )
+  })
+
   it('does not let a failed command poison the next queued command', async () => {
     const failure = new Error('create failed')
     const create = vi.fn<SaltMarcherApi['campaigns']['create']>(() =>
       Promise.reject(failure)
     )
-    const rename = vi.fn<SaltMarcherApi['campaigns']['rename']>(() =>
-      Promise.resolve(catalog(campaignA, 5))
+    const rename = vi.fn<SaltMarcherApi['campaigns']['rename']>((input) =>
+      Promise.resolve({
+        kind: 'renamed',
+        commandId: input.commandId,
+        campaignId: input.id,
+        snapshot: catalog(campaignA, 5, { [campaignA]: 'Still runs' })
+      })
     )
     const projection = new CampaignWorkspaceProjection(
       apiWithCampaigns({ create, rename })
@@ -224,7 +467,10 @@ describe('Campaign Workspace projection', () => {
 
     await expect(creating).rejects.toBe(failure)
     await expect(renaming).resolves.toMatchObject({ revision: 5 })
-    expect(rename).toHaveBeenCalledWith({
+    const renameInput = rename.mock.calls[0]![0]
+    expectCommandId(renameInput.commandId)
+    expect(renameInput).toEqual({
+      commandId: renameInput.commandId,
       expectedRegistryRevision: 4,
       id: campaignA,
       name: 'Still runs'
@@ -259,27 +505,33 @@ function api(
 }
 
 function apiWithCampaigns(
-  campaigns: Partial<SaltMarcherApi['campaigns']>
+  campaigns: Partial<SaltMarcherApi['campaigns']>,
+  sessionCapability: Partial<SaltMarcherApi['session']> = {}
 ): SaltMarcherApi {
   return {
     campaigns: {
       list: vi.fn(() => Promise.resolve(catalog(campaignA))),
+      commandReceipt: vi.fn(() => Promise.resolve(null)),
       ...campaigns
     },
-    session: { read: vi.fn() }
+    session: {
+      read: vi.fn(() => Promise.resolve(session(0))),
+      ...sessionCapability
+    }
   } as unknown as SaltMarcherApi
 }
 
 function catalog(
   activeCampaignId: string | null,
-  revision = 0
+  revision = 0,
+  names: Readonly<Record<string, string>> = {}
 ): Awaited<ReturnType<SaltMarcherApi['campaigns']['list']>> {
   return {
     revision,
     activeCampaignId,
     campaigns: [campaignA, campaignB].map((id) => ({
       id,
-      name: `Campaign ${id.at(-1)}`,
+      name: names[id] ?? `Campaign ${id.at(-1)}`,
       createdAt: now
     })),
     trashedCampaigns: []
@@ -296,4 +548,10 @@ function deferred<Value>() {
     resolve = done
   })
   return { promise, resolve }
+}
+
+function expectCommandId(value: string): void {
+  expect(value).toMatch(
+    /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  )
 }

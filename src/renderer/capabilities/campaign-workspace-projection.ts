@@ -1,7 +1,13 @@
-import type { CampaignSnapshot } from '../../shared/contracts/campaign.js'
+import type {
+  CampaignCommandReceipt,
+  CampaignSnapshot
+} from '../../shared/contracts/campaign.js'
 import type { SaltMarcherApi } from '../../shared/contracts/capability-api.js'
 import type { LiveSessionSnapshot } from '../../shared/contracts/live-session.js'
-import { capabilityErrorCode } from '../../shared/errors/capability-error.js'
+import {
+  CapabilityError,
+  capabilityErrorCode
+} from '../../shared/errors/capability-error.js'
 import { AsyncCommandCoordinator } from '../async/async-command-coordinator.js'
 import {
   KeyedReadProjectionOwner,
@@ -36,6 +42,7 @@ export type CampaignWorkspaceProjectionSnapshot = Readonly<{
   campaigns: CampaignSnapshot
   sessionCampaignId: string | null
   session: LiveSessionSnapshot | null
+  reconciliationCommandId: string | null
   cause: unknown
 }>
 
@@ -59,8 +66,24 @@ const idleSnapshot = Object.freeze({
   campaigns: emptyCampaigns,
   sessionCampaignId: null,
   session: null,
+  reconciliationCommandId: null,
   cause: null
 }) satisfies CampaignWorkspaceProjectionSnapshot
+
+type PendingCampaignReconciliation = Readonly<{
+  commandId: string
+  reconcile: () => Promise<CampaignCommandReceipt>
+}>
+
+export class CampaignReconciliationPendingError extends Error {
+  public readonly commandId: string
+
+  public constructor(commandId: string, cause?: unknown) {
+    super('Campaign command receipt reconciliation is pending.', { cause })
+    this.name = 'CampaignReconciliationPendingError'
+    this.commandId = commandId
+  }
+}
 
 /**
  * Provider-lived owner for the Campaign catalog and per-Campaign active
@@ -80,6 +103,7 @@ export class CampaignWorkspaceProjection {
   readonly #unsubscribeCatalog: () => void
   #unsubscribeSession: (() => void) | null = null
   #subscribedCampaignId: string | null = null
+  #pendingReconciliation: PendingCampaignReconciliation | null = null
   #snapshot: CampaignWorkspaceProjectionSnapshot = idleSnapshot
   #disposed = false
 
@@ -164,113 +188,210 @@ export class CampaignWorkspaceProjection {
   }
 
   public async createCampaign(name: string): Promise<CampaignSnapshot> {
-    const outcome = await this.#commands.run(
-      {
-        kind: 'fifo-command',
+    const commandId = crypto.randomUUID()
+    const outcome = await this.#commands.runReconciled({
+      execution: {
+        kind: 'receipt-reconciliation',
         authority: campaignCatalogAuthority,
-        operation: this.#api.campaigns.create
+        commandId,
+        command: this.#api.campaigns.create,
+        receiptRead: this.#api.campaigns.commandReceipt
       },
-      async (operation) =>
+      executeAtTransport: async (operation) =>
         operation({
+          commandId,
           expectedRegistryRevision: await this.#registryRevision(),
           name
         }),
-      (snapshot) => this.publishCampaigns(snapshot)
-    )
-    return settleCampaignWrite(outcome)
+      readReceipt: (operation, id) => operation({ commandId: id }),
+      recoverReceipt: (receipt) =>
+        receipt?.kind === 'created' && receipt.commandId === commandId
+          ? receipt
+          : null,
+      reconcileAbsentReceipt: this.#reconcileCampaignTruth,
+      accept: (receipt) => {
+        if (
+          receipt.snapshot.campaigns.find(
+            (campaign) => campaign.id === receipt.campaignId
+          )?.name !== name
+        )
+          throw new CapabilityError('protocol_violation', false)
+        return this.publishCampaigns(receipt.snapshot)
+      }
+    })
+    return (await this.#settleCampaignWrite(outcome)).snapshot
   }
 
   public async activateCampaign(id: string): Promise<CampaignSnapshot> {
-    const outcome = await this.#commands.run(
-      {
-        kind: 'fifo-command',
+    const commandId = crypto.randomUUID()
+    const outcome = await this.#commands.runReconciled({
+      execution: {
+        kind: 'receipt-reconciliation',
         authority: campaignCatalogAuthority,
-        operation: this.#api.campaigns.activate
+        commandId,
+        command: this.#api.campaigns.activate,
+        receiptRead: this.#api.campaigns.commandReceipt
       },
-      async (operation) =>
+      executeAtTransport: async (operation) =>
         operation({
+          commandId,
           expectedRegistryRevision: await this.#registryRevision(),
           id
         }),
-      (snapshot) => this.publishCampaigns(snapshot)
-    )
-    return settleCampaignWrite(outcome)
+      readReceipt: (operation, receiptCommandId) =>
+        operation({ commandId: receiptCommandId }),
+      recoverReceipt: (receipt) =>
+        receipt?.kind === 'activated' &&
+        receipt.commandId === commandId &&
+        receipt.campaignId === id
+          ? receipt
+          : null,
+      reconcileAbsentReceipt: this.#reconcileCampaignTruth,
+      accept: (receipt) => this.publishCampaigns(receipt.snapshot)
+    })
+    return (await this.#settleCampaignWrite(outcome)).snapshot
   }
 
   public async renameCampaign(
     id: string,
     name: string
   ): Promise<CampaignSnapshot> {
-    const outcome = await this.#commands.run(
-      {
-        kind: 'fifo-command',
+    const commandId = crypto.randomUUID()
+    const outcome = await this.#commands.runReconciled({
+      execution: {
+        kind: 'receipt-reconciliation',
         authority: campaignCatalogAuthority,
-        operation: this.#api.campaigns.rename
+        commandId,
+        command: this.#api.campaigns.rename,
+        receiptRead: this.#api.campaigns.commandReceipt
       },
-      async (operation) =>
+      executeAtTransport: async (operation) =>
         operation({
+          commandId,
           expectedRegistryRevision: await this.#registryRevision(),
           id,
           name
         }),
-      (snapshot) => this.publishCampaigns(snapshot)
-    )
-    return settleCampaignWrite(outcome)
+      readReceipt: (operation, receiptCommandId) =>
+        operation({ commandId: receiptCommandId }),
+      recoverReceipt: (receipt) =>
+        receipt?.kind === 'renamed' &&
+        receipt.commandId === commandId &&
+        receipt.campaignId === id
+          ? receipt
+          : null,
+      reconcileAbsentReceipt: this.#reconcileCampaignTruth,
+      accept: (receipt) => {
+        if (
+          receipt.snapshot.campaigns.find((campaign) => campaign.id === id)
+            ?.name !== name
+        )
+          throw new CapabilityError('protocol_violation', false)
+        return this.publishCampaigns(receipt.snapshot)
+      }
+    })
+    return (await this.#settleCampaignWrite(outcome)).snapshot
   }
 
   public async trashCampaign(id: string): Promise<CampaignSnapshot> {
-    const outcome = await this.#commands.run(
-      {
-        kind: 'fifo-command',
+    const commandId = crypto.randomUUID()
+    const outcome = await this.#commands.runReconciled({
+      execution: {
+        kind: 'receipt-reconciliation',
         authority: campaignCatalogAuthority,
-        operation: this.#api.campaigns.trash
+        commandId,
+        command: this.#api.campaigns.trash,
+        receiptRead: this.#api.campaigns.commandReceipt
       },
-      async (operation) =>
+      executeAtTransport: async (operation) =>
         operation({
+          commandId,
           expectedRegistryRevision: await this.#registryRevision(),
           id
         }),
-      (snapshot) => this.publishCampaigns(snapshot)
-    )
-    return settleCampaignWrite(outcome)
+      readReceipt: (operation, receiptCommandId) =>
+        operation({ commandId: receiptCommandId }),
+      recoverReceipt: (receipt) =>
+        receipt?.kind === 'trashed' &&
+        receipt.commandId === commandId &&
+        receipt.campaignId === id
+          ? receipt
+          : null,
+      reconcileAbsentReceipt: this.#reconcileCampaignTruth,
+      accept: (receipt) => this.publishCampaigns(receipt.snapshot)
+    })
+    return (await this.#settleCampaignWrite(outcome)).snapshot
   }
 
   public async restoreCampaign(id: string): Promise<CampaignSnapshot> {
-    const outcome = await this.#commands.run(
-      {
-        kind: 'fifo-command',
+    const commandId = crypto.randomUUID()
+    const outcome = await this.#commands.runReconciled({
+      execution: {
+        kind: 'receipt-reconciliation',
         authority: campaignCatalogAuthority,
-        operation: this.#api.campaigns.restore
+        commandId,
+        command: this.#api.campaigns.restore,
+        receiptRead: this.#api.campaigns.commandReceipt
       },
-      async (operation) =>
+      executeAtTransport: async (operation) =>
         operation({
+          commandId,
           expectedRegistryRevision: await this.#registryRevision(),
           id
         }),
-      (snapshot) => this.publishCampaigns(snapshot)
-    )
-    return settleCampaignWrite(outcome)
+      readReceipt: (operation, receiptCommandId) =>
+        operation({ commandId: receiptCommandId }),
+      recoverReceipt: (receipt) =>
+        receipt?.kind === 'restored' &&
+        receipt.commandId === commandId &&
+        receipt.campaignId === id
+          ? receipt
+          : null,
+      reconcileAbsentReceipt: this.#reconcileCampaignTruth,
+      accept: (receipt) => this.publishCampaigns(receipt.snapshot)
+    })
+    return (await this.#settleCampaignWrite(outcome)).snapshot
   }
 
   public async deleteCampaignForever(
     id: string,
     confirmationName: string
   ): Promise<CampaignSnapshot> {
-    const outcome = await this.#commands.run(
-      {
-        kind: 'fifo-command',
+    const commandId = crypto.randomUUID()
+    const outcome = await this.#commands.runReconciled({
+      execution: {
+        kind: 'receipt-reconciliation',
         authority: campaignCatalogAuthority,
-        operation: this.#api.campaigns.deleteForever
+        commandId,
+        command: this.#api.campaigns.deleteForever,
+        receiptRead: this.#api.campaigns.commandReceipt
       },
-      async (operation) =>
+      executeAtTransport: async (operation) =>
         operation({
+          commandId,
           expectedRegistryRevision: await this.#registryRevision(),
           id,
           confirmationName
         }),
-      (snapshot) => this.publishCampaigns(snapshot)
-    )
-    return settleCampaignWrite(outcome)
+      readReceipt: (operation, receiptCommandId) =>
+        operation({ commandId: receiptCommandId }),
+      recoverReceipt: (receipt) =>
+        receipt?.kind === 'deleted' &&
+        receipt.commandId === commandId &&
+        receipt.campaignId === id
+          ? receipt
+          : null,
+      reconcileAbsentReceipt: this.#reconcileCampaignTruth,
+      accept: (receipt) => this.publishCampaigns(receipt.snapshot)
+    })
+    return (await this.#settleCampaignWrite(outcome)).snapshot
+  }
+
+  public reconcilePendingCommand(): Promise<CampaignCommandReceipt> {
+    const pending = this.#pendingReconciliation
+    if (!pending)
+      return Promise.reject(new Error('No Campaign command is pending.'))
+    return pending.reconcile()
   }
 
   public publishSession(
@@ -295,6 +416,7 @@ export class CampaignWorkspaceProjection {
     this.#catalog.dispose()
     this.#sessions.dispose()
     this.#commands.dispose()
+    this.#pendingReconciliation = null
     this.#listeners.clear()
     this.#snapshot = idleSnapshot
   }
@@ -347,29 +469,58 @@ export class CampaignWorkspaceProjection {
     const session = campaignId
       ? this.#sessions.snapshot(campaignSessionAuthority(campaignId))
       : null
-    const next = composeSnapshot(catalog, campaignId, session)
+    const next = composeSnapshot(
+      catalog,
+      campaignId,
+      session,
+      this.#pendingReconciliation?.commandId ?? null
+    )
     if (sameSnapshot(this.#snapshot, next)) return
     this.#snapshot = next
     for (const listener of this.#listeners) listener()
   }
-}
 
-function settleCampaignWrite(
-  outcome: KeyedWriteCommandOutcome<CampaignSnapshot>
-): CampaignSnapshot {
-  switch (outcome.status) {
-    case 'success':
-      return outcome.value
-    case 'failure':
-      throw outcome.cause
-    case 'stale':
-      throw new Error(`Campaign command was ${outcome.reason}.`)
-    case 'blocked':
-      throw new Error(
-        `Campaign command is blocked by ${outcome.pendingCommandId}.`
-      )
-    case 'reconciliation-pending':
-      throw outcome.cause
+  async #settleCampaignWrite<Receipt extends CampaignCommandReceipt>(
+    outcome: KeyedWriteCommandOutcome<Receipt>
+  ): Promise<Receipt> {
+    switch (outcome.status) {
+      case 'success':
+        if (this.#pendingReconciliation?.commandId === outcome.value.commandId)
+          this.#clearPendingReconciliation()
+        return outcome.value
+      case 'failure':
+        this.#clearPendingReconciliation()
+        if (capabilityErrorCode(outcome.cause) === 'stale') await this.load()
+        throw outcome.cause
+      case 'stale':
+        this.#clearPendingReconciliation()
+        throw new Error(`Campaign command was ${outcome.reason}.`)
+      case 'blocked':
+        throw new CampaignReconciliationPendingError(outcome.pendingCommandId)
+      case 'reconciliation-pending': {
+        const pending: PendingCampaignReconciliation = Object.freeze({
+          commandId: outcome.commandId,
+          reconcile: async () =>
+            this.#settleCampaignWrite(await outcome.retry())
+        })
+        this.#pendingReconciliation = pending
+        this.#synchronize()
+        throw new CampaignReconciliationPendingError(
+          outcome.commandId,
+          outcome.cause
+        )
+      }
+    }
+  }
+
+  #clearPendingReconciliation(): void {
+    if (!this.#pendingReconciliation) return
+    this.#pendingReconciliation = null
+    this.#synchronize()
+  }
+
+  readonly #reconcileCampaignTruth = async (): Promise<void> => {
+    await this.load()
   }
 }
 
@@ -395,7 +546,8 @@ function projectWorkspaceOutcome(
 function composeSnapshot(
   catalog: ReadProjectionSnapshot<CampaignSnapshot>,
   campaignId: string | null,
-  session: ReadProjectionSnapshot<LiveSessionSnapshot> | null
+  session: ReadProjectionSnapshot<LiveSessionSnapshot> | null,
+  reconciliationCommandId: string | null
 ): CampaignWorkspaceProjectionSnapshot {
   const campaigns = catalog.value ?? emptyCampaigns
   const sessionValue = session?.value ?? null
@@ -417,6 +569,7 @@ function composeSnapshot(
     campaigns,
     sessionCampaignId: campaignId,
     session: sessionValue,
+    reconciliationCommandId,
     cause: cause ?? null
   })
 }
@@ -430,6 +583,7 @@ function sameSnapshot(
     current.campaigns === next.campaigns &&
     current.sessionCampaignId === next.sessionCampaignId &&
     current.session === next.session &&
+    current.reconciliationCommandId === next.reconciliationCommandId &&
     current.cause === next.cause
   )
 }

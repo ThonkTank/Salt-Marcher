@@ -174,7 +174,7 @@ architectureGate(
     expect(projection.stringLiterals).toContain('installation.campaign-catalog')
     expect(projection.stringLiterals).toContain('campaign.live-session')
     expect(projection.stringLiterals).toContain('read-projection')
-    expect(projection.stringLiterals).toContain('fifo-command')
+    expect(projection.stringLiterals).toContain('receipt-reconciliation')
 
     const coordinator = readTypeScriptModule(
       'src/renderer/features/workspace/use-campaign-session-coordinator.ts'
@@ -210,8 +210,9 @@ architectureGate(
     const campaignUtility = readTypeScriptModule(
       'src/utility/composition/campaign.ts'
     )
+    expect(campaignUtility.propertyAccesses).toContain('campaigns.create')
     expect(campaignUtility.propertyAccesses).toContain(
-      'input.expectedRegistryRevision'
+      'campaigns.commandReceipt'
     )
   }
 )

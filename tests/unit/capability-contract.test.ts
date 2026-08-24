@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   activateCampaignInputSchema,
+  campaignCommandReceiptSchema,
   campaignIdInputSchema,
   capabilityFailureSchema,
   createCampaignInputSchema,
@@ -28,6 +29,16 @@ describe('capability contract', () => {
       expect(schema.safeParse(input).success).toBe(false)
       expect(
         schema.safeParse({ ...input, expectedRegistryRevision: 0 }).success
+      ).toBe(false)
+      expect(
+        schema.safeParse({ ...input, commandId: crypto.randomUUID() }).success
+      ).toBe(false)
+      expect(
+        schema.safeParse({
+          ...input,
+          commandId: crypto.randomUUID(),
+          expectedRegistryRevision: 0
+        }).success
       ).toBe(true)
     }
   )
@@ -42,6 +53,43 @@ describe('capability contract', () => {
     expect(
       capabilityFailureSchema.safeParse({ error: 'database unavailable' })
         .success
+    ).toBe(false)
+  })
+
+  it('rejects Campaign receipts whose snapshot contradicts the lifecycle result', () => {
+    const commandId = crypto.randomUUID()
+    const campaignId = crypto.randomUUID()
+    const snapshot = {
+      revision: 1,
+      activeCampaignId: null,
+      campaigns: [],
+      trashedCampaigns: []
+    }
+
+    expect(
+      campaignCommandReceiptSchema.safeParse({
+        kind: 'created',
+        commandId,
+        campaignId,
+        snapshot
+      }).success
+    ).toBe(false)
+    expect(
+      campaignCommandReceiptSchema.safeParse({
+        kind: 'deleted',
+        commandId,
+        campaignId,
+        snapshot: {
+          ...snapshot,
+          campaigns: [
+            {
+              id: campaignId,
+              name: 'Still present',
+              createdAt: '2026-08-24T12:00:00.000Z'
+            }
+          ]
+        }
+      }).success
     ).toBe(false)
   })
 

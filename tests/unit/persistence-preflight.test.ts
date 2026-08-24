@@ -140,7 +140,7 @@ describe('persistence preflight', () => {
     const planned = preflightPersistence(root)
 
     expect(planned.kind).toBe('migration-required')
-    expect(migrationRegistryVersion).toBe(10)
+    expect(migrationRegistryVersion).toBe(11)
     for (const entry of planned.databases) {
       const database = new Database(entry.path)
       applySchemaMigrations(database, {
@@ -154,7 +154,7 @@ describe('persistence preflight', () => {
     expect(restarted.kind).toBe('ready')
     expect(restarted.databases).toMatchObject([
       { path: campaign, role: 'campaign', schemaVersion: 34 },
-      { path: installation, role: 'installation', schemaVersion: 38 }
+      { path: installation, role: 'installation', schemaVersion: 39 }
     ])
     const installationDatabase = new Database(installation)
     expect(
@@ -168,7 +168,7 @@ describe('persistence preflight', () => {
         .prepare('SELECT COUNT(*) FROM installation_schema_migration')
         .pluck()
         .get()
-    ).toBe(11)
+    ).toBe(12)
     applySchemaMigrations(installationDatabase, {
       path: installation,
       role: 'installation'
@@ -178,7 +178,7 @@ describe('persistence preflight', () => {
         .prepare('SELECT COUNT(*) FROM installation_schema_migration')
         .pluck()
         .get()
-    ).toBe(11)
+    ).toBe(12)
     expect(
       installationDatabase
         .prepare(
@@ -198,6 +198,13 @@ describe('persistence preflight', () => {
       installationDatabase
         .prepare(
           "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'campaign_import_saga'"
+        )
+        .get()
+    ).toBeDefined()
+    expect(
+      installationDatabase
+        .prepare(
+          "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'campaign_commands'"
         )
         .get()
     ).toBeDefined()
@@ -349,7 +356,7 @@ describe('persistence preflight', () => {
 
     applySchemaMigrations(database, { path, role: 'installation' })
 
-    expect(database.pragma('user_version', { simple: true })).toBe(38)
+    expect(database.pragma('user_version', { simple: true })).toBe(39)
     expect(
       database
         .prepare(

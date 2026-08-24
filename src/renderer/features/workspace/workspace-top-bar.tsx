@@ -1,5 +1,8 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
-import type { CampaignSnapshot } from '../../../shared/contracts/campaign.js'
+import type {
+  CampaignCommandReceipt,
+  CampaignSnapshot
+} from '../../../shared/contracts/campaign.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import { message } from '../../i18n/workspace-runtime.de.js'
 import {
@@ -20,12 +23,14 @@ const CampaignMenu = lazy(() =>
 )
 
 type CampaignActions = Readonly<{
-  create: (name: string) => Promise<void>
-  activate: (id: string) => Promise<void>
-  rename: (id: string, name: string) => Promise<void>
-  trash: (id: string) => Promise<void>
-  restore: (id: string) => Promise<void>
-  deleteForever: (id: string, confirmationName: string) => Promise<void>
+  create: (name: string) => Promise<boolean>
+  activate: (id: string) => Promise<boolean>
+  rename: (id: string, name: string) => Promise<boolean>
+  trash: (id: string) => Promise<boolean>
+  restore: (id: string) => Promise<boolean>
+  deleteForever: (id: string, confirmationName: string) => Promise<boolean>
+  reconciliationPending: boolean
+  reconcile: () => Promise<CampaignCommandReceipt | null>
 }>
 
 export function WorkspaceTopBar(props: {

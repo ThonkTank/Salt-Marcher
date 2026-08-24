@@ -104,7 +104,7 @@ describe('E2E suite registry', () => {
       const campaigns = e2eSuiteRegistry.filter((suite) =>
         suite.name.startsWith('campaign')
       )
-      expect(campaigns).toHaveLength(4)
+      expect(campaigns).toHaveLength(5)
       for (const campaign of campaigns) {
         expect(campaign.fixture).toBe('v1/empty-installation')
         expect(callCount(readTypeScriptModule(campaign.spec), 'it')).toBe(1)

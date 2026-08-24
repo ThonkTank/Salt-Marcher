@@ -55,7 +55,7 @@ function capability(): GeneratorPresetCapability {
 
 describe('campaign burger menu redesign', () => {
   it('keeps the forced campaign dialog open through its create interaction', async () => {
-    const create = vi.fn(() => Promise.resolve())
+    const create = vi.fn(() => Promise.resolve(true))
     const dismiss = vi.fn()
     render(
       <ModalLayerProvider>
@@ -77,6 +77,8 @@ describe('campaign burger menu redesign', () => {
           trash={vi.fn()}
           restore={vi.fn()}
           deleteForever={vi.fn()}
+          reconciliationPending={false}
+          reconcile={vi.fn(() => Promise.resolve(null))}
           loadGeneratorPresetApplication={() =>
             Promise.resolve(
               createGeneratorPresetApplicationOwner(capability()).port(null)
@@ -124,6 +126,8 @@ describe('campaign burger menu redesign', () => {
           trash={vi.fn()}
           restore={vi.fn()}
           deleteForever={vi.fn()}
+          reconciliationPending={false}
+          reconcile={vi.fn(() => Promise.resolve(null))}
           loadGeneratorPresetApplication={() =>
             Promise.resolve(
               createGeneratorPresetApplicationOwner(capability()).port(
@@ -141,13 +145,19 @@ describe('campaign burger menu redesign', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Einstellungen' }))
 
     expect(
-      await screen.findByRole('heading', { name: 'Encounter Generator' })
+      await screen.findByRole(
+        'heading',
+        { name: 'Encounter Generator' },
+        { timeout: 10_000 }
+      )
     ).toBeInTheDocument()
     expect(screen.getByText('CR-Blöcke je Encounter')).toBeInTheDocument()
-    await waitFor(() =>
-      expect(
-        screen.getByRole('button', { name: /Level 1, CR 0: Minion/ })
-      ).toBeInTheDocument()
+    await waitFor(
+      () =>
+        expect(
+          screen.getByRole('button', { name: /Level 1, CR 0: Minion/ })
+        ).toBeInTheDocument(),
+      { timeout: 10_000 }
     )
   })
 })

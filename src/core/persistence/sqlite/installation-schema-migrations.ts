@@ -10,7 +10,10 @@ import {
   initializeCampaignImportRegistrySchema,
   initializeCampaignImportSagaSchema
 } from '../../campaign-import/campaign-import-store.js'
-import { initializeCampaignRegistryRevision } from './campaign-registry-repository.js'
+import {
+  initializeCampaignCommandReceiptSchema,
+  initializeCampaignRegistryRevision
+} from './campaign-registry-repository.js'
 
 export function initializeInstallationSchemaMetadata(
   database: Database.Database
@@ -299,6 +302,24 @@ export const installationSchemaMigrations: readonly SchemaMigration[] =
           )
           .run(
             'installation-37-to-38-campaign-registry-revision',
+            new Date().toISOString()
+          )
+      }
+    },
+    {
+      id: 'installation-38-to-39-campaign-command-receipts',
+      role: 'installation',
+      fromVersion: 38,
+      toVersion: 39,
+      migrate(database) {
+        initializeInstallationSchemaMetadata(database)
+        initializeCampaignCommandReceiptSchema(database)
+        database
+          .prepare(
+            'INSERT INTO installation_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run(
+            'installation-38-to-39-campaign-command-receipts',
             new Date().toISOString()
           )
       }

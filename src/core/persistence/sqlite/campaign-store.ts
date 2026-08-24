@@ -1,5 +1,26 @@
 import Database from 'better-sqlite3'
-import type { CampaignSnapshot } from '../../../shared/contracts/campaign.js'
+import {
+  activateCampaignReceiptSchema,
+  createCampaignReceiptSchema,
+  deleteCampaignReceiptSchema,
+  freezeCampaignSnapshot,
+  renameCampaignReceiptSchema,
+  restoreCampaignReceiptSchema,
+  trashCampaignReceiptSchema,
+  type ActivateCampaignCommand,
+  type ActivateCampaignReceipt,
+  type CampaignCommandReceipt,
+  type CampaignIdCommand,
+  type CampaignSnapshot,
+  type CreateCampaignCommand,
+  type CreateCampaignReceipt,
+  type DeleteCampaignCommand,
+  type DeleteCampaignReceipt,
+  type RenameCampaignCommand,
+  type RenameCampaignReceipt,
+  type RestoreCampaignReceipt,
+  type TrashCampaignReceipt
+} from '../../../shared/contracts/campaign.js'
 import { uuidv7 } from '../../../shared/ids/uuidv7.js'
 import {
   assertSchemaVersion,
@@ -37,6 +58,7 @@ import {
 } from './campaign-filesystem.js'
 import { FileCampaignLifecycleJournal } from './campaign-lifecycle-journal.js'
 import { InstallationDatabaseOwner } from './installation-database-owner.js'
+import type { CampaignCommandIdentity } from './campaign-registry-repository.js'
 
 export type CampaignCreatePhase =
   | 'before-registry-entry'
@@ -121,48 +143,138 @@ export class CampaignStore {
     return this.installationOwner.registry.snapshot()
   }
 
+  create(input: CreateCampaignCommand): CreateCampaignReceipt
+  create(name: string, expectedRevision?: number): CampaignSnapshot
   create(
-    name: string,
-    expectedRevision = this.list().revision
-  ): CampaignSnapshot {
+    inputOrName: CreateCampaignCommand | string,
+    legacyExpectedRevision = this.list().revision
+  ): CreateCampaignReceipt | CampaignSnapshot {
+    const input = typeof inputOrName === 'string' ? null : inputOrName
+    const name = input?.name ?? (inputOrName as string)
+    const expectedRevision =
+      input?.expectedRegistryRevision ?? legacyExpectedRevision
+    const requestJson = input ? commandRequestJson('created', { name }) : null
+    if (input && requestJson) {
+      const existing =
+        this.installationOwner.registry.existingCommandForRequest(
+          input.commandId,
+          'created',
+          requestJson
+        )
+      if (existing)
+        return freezeReceipt(createCampaignReceiptSchema.parse(existing))
+    }
     this.installationOwner.registry.assertRevision(expectedRevision)
     const id = uuidv7()
+    const command =
+      input && requestJson
+        ? commandIdentity(input.commandId, 'created', requestJson, id)
+        : undefined
     const createdAt = new Date().toISOString()
     this.onCreatePhase?.('before-registry-entry')
     this.installationOwner.registry.beginCreation(
       id,
       name,
       createdAt,
-      expectedRevision
+      expectedRevision,
+      command
     )
     this.onCreatePhase?.('after-creating-entry')
     this.createStagedCampaignStore(id)
     this.onCreatePhase?.('after-store-created')
-    this.finalizeCampaignCreation(id, expectedRevision)
-    return this.list()
+    const receipt = this.finalizeCampaignCreation(id, expectedRevision, command)
+    return command
+      ? freezeReceipt(createCampaignReceiptSchema.parse(receipt))
+      : this.list()
   }
 
+  activate(input: ActivateCampaignCommand): ActivateCampaignReceipt
+  activate(id: string, expectedRevision?: number): CampaignSnapshot
   activate(
-    id: string,
-    expectedRevision = this.list().revision
-  ): CampaignSnapshot {
+    inputOrId: ActivateCampaignCommand | string,
+    legacyExpectedRevision = this.list().revision
+  ): ActivateCampaignReceipt | CampaignSnapshot {
+    const input = typeof inputOrId === 'string' ? null : inputOrId
+    const id = input?.id ?? (inputOrId as string)
+    const expectedRevision =
+      input?.expectedRegistryRevision ?? legacyExpectedRevision
+    const command = input
+      ? this.commandIdentity(input.commandId, 'activated', { id }, id)
+      : undefined
+    const existing = command
+      ? this.installationOwner.registry.existingCommand(command)
+      : null
+    if (existing)
+      return freezeReceipt(activateCampaignReceiptSchema.parse(existing))
     this.installationOwner.registry.assertRevision(expectedRevision)
     this.installationOwner.registry.requireAvailable(id)
+    const previousActiveId = this.list().activeCampaignId
     this.switchActiveCampaign(id)
-    this.installationOwner.registry.setActive(id, expectedRevision)
-    return this.list()
+    let receipt: CampaignCommandReceipt | null
+    try {
+      receipt = this.installationOwner.registry.setActive(
+        id,
+        expectedRevision,
+        command
+      )
+    } catch (cause) {
+      this.restoreActiveConnectionAfterFailedSwitch(previousActiveId, id)
+      throw cause
+    }
+    return command
+      ? freezeReceipt(activateCampaignReceiptSchema.parse(receipt))
+      : this.list()
   }
 
+  rename(input: RenameCampaignCommand): RenameCampaignReceipt
+  rename(id: string, name: string, expectedRevision?: number): CampaignSnapshot
   rename(
-    id: string,
-    name: string,
-    expectedRevision = this.list().revision
-  ): CampaignSnapshot {
-    this.installationOwner.registry.rename(id, name, expectedRevision)
-    return this.list()
+    inputOrId: RenameCampaignCommand | string,
+    legacyName?: string,
+    legacyExpectedRevision = this.list().revision
+  ): RenameCampaignReceipt | CampaignSnapshot {
+    const input = typeof inputOrId === 'string' ? null : inputOrId
+    const id = input?.id ?? (inputOrId as string)
+    const name = input?.name ?? legacyName!
+    const expectedRevision =
+      input?.expectedRegistryRevision ?? legacyExpectedRevision
+    const command = input
+      ? this.commandIdentity(input.commandId, 'renamed', { id, name }, id)
+      : undefined
+    const existing = command
+      ? this.installationOwner.registry.existingCommand(command)
+      : null
+    if (existing)
+      return freezeReceipt(renameCampaignReceiptSchema.parse(existing))
+    const receipt = this.installationOwner.registry.rename(
+      id,
+      name,
+      expectedRevision,
+      command
+    )
+    return command
+      ? freezeReceipt(renameCampaignReceiptSchema.parse(receipt))
+      : this.list()
   }
 
-  trash(id: string, expectedRevision = this.list().revision): CampaignSnapshot {
+  trash(input: CampaignIdCommand): TrashCampaignReceipt
+  trash(id: string, expectedRevision?: number): CampaignSnapshot
+  trash(
+    inputOrId: CampaignIdCommand | string,
+    legacyExpectedRevision = this.list().revision
+  ): TrashCampaignReceipt | CampaignSnapshot {
+    const input = typeof inputOrId === 'string' ? null : inputOrId
+    const id = input?.id ?? (inputOrId as string)
+    const expectedRevision =
+      input?.expectedRegistryRevision ?? legacyExpectedRevision
+    const command = input
+      ? this.commandIdentity(input.commandId, 'trashed', { id }, id)
+      : undefined
+    const existing = command
+      ? this.installationOwner.registry.existingCommand(command)
+      : null
+    if (existing)
+      return freezeReceipt(trashCampaignReceiptSchema.parse(existing))
     this.requireSafeCampaignId(id)
     this.installationOwner.registry.assertRevision(expectedRevision)
     this.installationOwner.registry.requireAvailable(id)
@@ -170,41 +282,98 @@ export class CampaignStore {
     if (this.list().activeCampaignId === id) {
       this.connections.release(id)
     }
-    this.installationOwner.registry.trash(
+    const receipt = this.installationOwner.registry.trash(
       id,
       new Date().toISOString(),
-      expectedRevision
+      expectedRevision,
+      command
     )
     this.filesystem.moveCampaignToTrash(id)
-    return this.list()
+    return command
+      ? freezeReceipt(trashCampaignReceiptSchema.parse(receipt))
+      : this.list()
   }
 
+  restore(input: CampaignIdCommand): RestoreCampaignReceipt
+  restore(id: string, expectedRevision?: number): CampaignSnapshot
   restore(
-    id: string,
-    expectedRevision = this.list().revision
-  ): CampaignSnapshot {
+    inputOrId: CampaignIdCommand | string,
+    legacyExpectedRevision = this.list().revision
+  ): RestoreCampaignReceipt | CampaignSnapshot {
+    const input = typeof inputOrId === 'string' ? null : inputOrId
+    const id = input?.id ?? (inputOrId as string)
+    const expectedRevision =
+      input?.expectedRegistryRevision ?? legacyExpectedRevision
+    const command = input
+      ? this.commandIdentity(input.commandId, 'restored', { id }, id)
+      : undefined
+    const existing = command
+      ? this.installationOwner.registry.existingCommand(command)
+      : null
+    if (existing)
+      return freezeReceipt(restoreCampaignReceiptSchema.parse(existing))
     this.requireSafeCampaignId(id)
     this.installationOwner.registry.assertRevision(expectedRevision)
     this.installationOwner.registry.requireTrashed(id)
 
     this.filesystem.restoreCampaignFromTrash(id)
-    this.installationOwner.registry.restore(id, expectedRevision)
-    return this.list()
+    const receipt = this.installationOwner.registry.restore(
+      id,
+      expectedRevision,
+      command
+    )
+    return command
+      ? freezeReceipt(restoreCampaignReceiptSchema.parse(receipt))
+      : this.list()
   }
 
+  deleteForever(input: DeleteCampaignCommand): DeleteCampaignReceipt
   deleteForever(
     id: string,
     confirmationName: string,
-    expectedRevision = this.list().revision
-  ): CampaignSnapshot {
+    expectedRevision?: number
+  ): CampaignSnapshot
+  deleteForever(
+    inputOrId: DeleteCampaignCommand | string,
+    legacyConfirmationName?: string,
+    legacyExpectedRevision = this.list().revision
+  ): DeleteCampaignReceipt | CampaignSnapshot {
+    const input = typeof inputOrId === 'string' ? null : inputOrId
+    const id = input?.id ?? (inputOrId as string)
+    const confirmationName = input?.confirmationName ?? legacyConfirmationName!
+    const expectedRevision =
+      input?.expectedRegistryRevision ?? legacyExpectedRevision
+    const command = input
+      ? this.commandIdentity(
+          input.commandId,
+          'deleted',
+          { id, confirmationName },
+          id
+        )
+      : undefined
+    const existing = command
+      ? this.installationOwner.registry.existingCommand(command)
+      : null
+    if (existing)
+      return freezeReceipt(deleteCampaignReceiptSchema.parse(existing))
     this.requireSafeCampaignId(id)
     this.installationOwner.registry.assertRevision(expectedRevision)
     this.installationOwner.registry.requireDeletionName(id, confirmationName)
 
     this.filesystem.stageTrashForDeletion(id)
-    this.installationOwner.registry.delete(id, expectedRevision)
+    const receipt = this.installationOwner.registry.delete(
+      id,
+      expectedRevision,
+      command
+    )
     this.filesystem.finishDeletion(id)
-    return this.list()
+    return command
+      ? freezeReceipt(deleteCampaignReceiptSchema.parse(receipt))
+      : this.list()
+  }
+
+  commandReceipt(commandId: string): CampaignCommandReceipt | null {
+    return this.installationOwner.registry.commandReceipt(commandId)
   }
 
   readSettings(): InstallationSettings {
@@ -414,12 +583,23 @@ export class CampaignStore {
 
   private finalizeCampaignCreation(
     id: string,
-    expectedRevision = this.list().revision
-  ): void {
+    expectedRevision = this.list().revision,
+    command?: CampaignCommandIdentity
+  ): CampaignCommandReceipt | null {
     this.filesystem.promoteStagedCreation(id)
     this.onCreatePhase?.('before-ready')
-    this.installationOwner.registry.markReadyAndActivate(id, expectedRevision)
+    const previousActiveId = this.list().activeCampaignId
     this.switchActiveCampaign(id)
+    try {
+      return this.installationOwner.registry.markReadyAndActivate(
+        id,
+        expectedRevision,
+        command
+      )
+    } catch (cause) {
+      this.restoreActiveConnectionAfterFailedSwitch(previousActiveId, id)
+      throw cause
+    }
   }
 
   private recoverIncompleteCreations(): void {
@@ -429,7 +609,12 @@ export class CampaignStore {
         continue
       }
       try {
-        this.finalizeCampaignCreation(id)
+        this.finalizeCampaignCreation(
+          id,
+          this.list().revision,
+          this.installationOwner.registry.pendingCreationCommand(id) ??
+            undefined
+        )
       } catch {
         this.removeIncompleteCreation(id)
       }
@@ -466,6 +651,32 @@ export class CampaignStore {
       throw new CapabilityError('validation_failed', false)
   }
 
+  private commandIdentity(
+    commandId: string,
+    kind: CampaignCommandReceipt['kind'],
+    request: Readonly<Record<string, string>>,
+    campaignId: string
+  ): CampaignCommandIdentity {
+    return commandIdentity(
+      commandId,
+      kind,
+      commandRequestJson(kind, request),
+      campaignId
+    )
+  }
+
+  private restoreActiveConnectionAfterFailedSwitch(
+    previousActiveId: string | null,
+    attemptedId: string
+  ): void {
+    if (previousActiveId === attemptedId) return
+    if (previousActiveId === null) {
+      this.connections.release(attemptedId)
+      return
+    }
+    this.switchActiveCampaign(previousActiveId)
+  }
+
   private openRecordedActiveCampaign(): void {
     const id = this.list().activeCampaignId
     if (id !== null) {
@@ -482,6 +693,31 @@ export class CampaignStore {
       dataPath: this.filesystem.campaignDirectory(id)
     })
   }
+}
+
+function commandIdentity(
+  commandId: string,
+  kind: CampaignCommandReceipt['kind'],
+  requestJson: string,
+  campaignId: string
+): CampaignCommandIdentity {
+  return Object.freeze({ commandId, kind, requestJson, campaignId })
+}
+
+function commandRequestJson(
+  kind: CampaignCommandReceipt['kind'],
+  request: Readonly<Record<string, string>>
+): string {
+  return JSON.stringify({ kind, ...request })
+}
+
+function freezeReceipt<Receipt extends CampaignCommandReceipt>(
+  receipt: Receipt
+): Receipt {
+  return Object.freeze({
+    ...receipt,
+    snapshot: freezeCampaignSnapshot(receipt.snapshot)
+  }) as Receipt
 }
 
 /** The caller owns the data-retention decision; paths never imply policy. */

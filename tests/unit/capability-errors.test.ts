@@ -32,7 +32,7 @@ describe('capability error presentation policy', () => {
     )
   })
 
-  it('requests one readback and reports outcome-unknown exactly once', () => {
+  it('presents outcome-unknown without causing a global data remount', () => {
     const report = vi.fn()
     const readback = vi.fn()
     window.addEventListener('saltmarcher:readback', readback, { once: true })
@@ -40,7 +40,7 @@ describe('capability error presentation policy', () => {
       new CapabilityError('outcome_unknown', true),
       report
     )
-    expect(readback).toHaveBeenCalledOnce()
+    expect(readback).not.toHaveBeenCalled()
     expect(report).toHaveBeenCalledOnce()
     expect(report).toHaveBeenCalledWith(text)
   })
