@@ -185,7 +185,11 @@ function presetHarness(): {
         snapshot
       })
     }),
-    assign: assignPreset
+    assign: assignPreset,
+    reconciliationPending: () => false,
+    reconcile: vi.fn<GeneratorPresetApplicationPort['reconcile']>(() =>
+      Promise.reject(new Error('not used'))
+    )
   }
   return { application, snapshot: () => snapshot, createPreset, assignPreset }
 }
@@ -193,6 +197,7 @@ function presetHarness(): {
 function renderSettings() {
   const harness = presetHarness()
   const onClose = vi.fn()
+  const onError = vi.fn()
   const result = render(
     <ModalLayerProvider>
       <EncounterGeneratorSettings
@@ -200,11 +205,11 @@ function renderSettings() {
         activeCampaignId={campaignId}
         partySize={5}
         onClose={onClose}
-        onError={vi.fn()}
+        onError={onError}
       />
     </ModalLayerProvider>
   )
-  return { ...result, ...harness, onClose }
+  return { ...result, ...harness, onClose, onError }
 }
 
 describe('encounter generator settings editor', () => {

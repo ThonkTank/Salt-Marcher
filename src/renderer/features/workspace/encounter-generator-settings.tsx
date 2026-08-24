@@ -18,7 +18,10 @@ import {
   ModalDialog
 } from '../../shell/modal-dialog.js'
 import { message } from '../../i18n/generator-runtime.de.js'
-import type { GeneratorPresetApplicationPort } from './generator-preset-application.js'
+import {
+  GeneratorPresetReconciliationPendingError,
+  type GeneratorPresetApplicationPort
+} from './generator-preset-application.js'
 import { capabilityErrorCode } from '../../../shared/errors/capability-error.js'
 import {
   generatorPresetEditorDirty,
@@ -58,7 +61,8 @@ export function EncounterGeneratorSettings(props: {
   const { snapshot, presetId, presetName, config, status, discardIntent } =
     editor
   const [combinationDraft, setCombinationDraft] = useState<GeneratorRole[]>([])
-  const busy = editor.phase === 'saving'
+  const reconciliationPending = editor.phase === 'reconciliation-pending'
+  const busy = editor.phase === 'saving' || reconciliationPending
   const conflict = editor.phase === 'conflict'
   const dirty = generatorPresetEditorDirty(editor)
   const changeConfig = useCallback(
@@ -74,6 +78,11 @@ export function EncounterGeneratorSettings(props: {
       .then((next) => {
         if (!live) return
         dispatch({ type: 'loaded', snapshot: next })
+        if (props.application.reconciliationPending())
+          dispatch({
+            type: 'reconciliation-pending',
+            status: message('g.reconciliation.pending')
+          })
       })
       .catch((error: unknown) => {
         const status = report(error, props.onError)
@@ -164,6 +173,42 @@ export function EncounterGeneratorSettings(props: {
     }
   }
 
+  const reconcile = async () => {
+    dispatch({ type: 'saving' })
+    try {
+      const result = await props.application.reconcile()
+      const receipt = result.receipt
+      switch (receipt.kind) {
+        case 'created':
+        case 'updated':
+          dispatch({
+            type: 'saved',
+            snapshot: result.snapshot,
+            presetId: receipt.saved.id,
+            status: message('g.reconciliation.confirmed')
+          })
+          return
+        case 'assigned':
+          dispatch({
+            type: 'registry-updated',
+            snapshot: result.snapshot,
+            status: message('g.reconciliation.confirmed')
+          })
+          return
+        case 'deleted':
+          dispatch({
+            type: 'registry-updated',
+            snapshot: result.snapshot,
+            status: message('g.reconciliation.confirmed'),
+            selectEffective: true
+          })
+          return
+      }
+    } catch (error) {
+      await handleMutationError(error, false)
+    }
+  }
+
   const requestClose = () => {
     if (dirty) dispatch({ type: 'request-discard', intent: { kind: 'close' } })
     else props.onClose()
@@ -192,6 +237,13 @@ export function EncounterGeneratorSettings(props: {
     error: unknown,
     draftConflict: boolean
   ) => {
+    if (error instanceof GeneratorPresetReconciliationPendingError) {
+      dispatch({
+        type: 'reconciliation-pending',
+        status: message('g.reconciliation.pending')
+      })
+      return
+    }
     if (capabilityErrorCode(error) !== 'stale') {
       dispatch({ type: 'error', status: report(error, props.onError) })
       return
@@ -245,53 +297,62 @@ export function EncounterGeneratorSettings(props: {
               className="generator-settings-card"
               aria-labelledby="generator-title"
             >
-              <GeneratorPresetToolbar
-                snapshot={snapshot}
-                presetId={presetId}
-                presetName={presetName}
-                busy={busy}
-                dirty={dirty}
-                activeCampaignId={props.activeCampaignId}
-                select={requestPreset}
-                rename={(name) => dispatch({ type: 'draft-name', name })}
-                save={() => void save()}
-                assign={() => void assign()}
-                remove={() => void remove()}
-              />
+              <fieldset className="generator-settings-fields" disabled={busy}>
+                <GeneratorPresetToolbar
+                  snapshot={snapshot}
+                  presetId={presetId}
+                  presetName={presetName}
+                  busy={busy}
+                  dirty={dirty}
+                  activeCampaignId={props.activeCampaignId}
+                  select={requestPreset}
+                  rename={(name) => dispatch({ type: 'draft-name', name })}
+                  save={() => void save()}
+                  assign={() => void assign()}
+                  remove={() => void remove()}
+                />
 
-              <GeneratorRoleMatrix config={config} changed={changeConfig} />
+                <GeneratorRoleMatrix config={config} changed={changeConfig} />
 
-              <div className="generator-rules-grid">
-                <div className="generator-rule-column">
-                  <GeneratorDifficultyDistribution
+                <div className="generator-rules-grid">
+                  <div className="generator-rule-column">
+                    <GeneratorDifficultyDistribution
+                      config={config}
+                      changed={changeConfig}
+                    />
+                    <GeneratorRoleQuantities
+                      config={config}
+                      changed={changeConfig}
+                    />
+                  </div>
+                  <GeneratorCompositionRules
                     config={config}
+                    partySize={props.partySize}
                     changed={changeConfig}
                   />
-                  <GeneratorRoleQuantities
+                  <GeneratorRoleCombinations
                     config={config}
+                    draft={combinationDraft}
+                    setDraft={setCombinationDraft}
                     changed={changeConfig}
                   />
                 </div>
-                <GeneratorCompositionRules
-                  config={config}
-                  partySize={props.partySize}
-                  changed={changeConfig}
+                <GeneratorLootRulesEditor
+                  value={config.loot}
+                  changed={(loot) => changeConfig({ ...config, loot })}
                 />
-                <GeneratorRoleCombinations
-                  config={config}
-                  draft={combinationDraft}
-                  setDraft={setCombinationDraft}
-                  changed={changeConfig}
-                />
-              </div>
-              <GeneratorLootRulesEditor
-                value={config.loot}
-                changed={(loot) => changeConfig({ ...config, loot })}
-              />
+              </fieldset>
               {status && (
                 <p className="generator-settings-status" role="status">
                   {status}
                 </p>
+              )}
+              {reconciliationPending && (
+                <div className="generator-conflict-actions">
+                  <button type="button" onClick={() => void reconcile()}>
+                    {message('g.reconciliation.check')}
+                  </button>
+                </div>
               )}
               {conflict && (
                 <div className="generator-conflict-actions">

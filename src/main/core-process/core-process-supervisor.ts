@@ -60,6 +60,8 @@ export class CoreProcessSupervisor {
   readonly #statusListeners = new Set<(status: CoreProcessStatus) => void>()
   readonly #events = new CoreEventRouter()
   readonly #requests = new CoreRequestTracker()
+  #e2eInterruptOperation: CoreOperationKind | null = null
+  #e2eInterruptRequestId: string | null = null
   private readonly startupConfiguration: CoreStartupConfiguration
 
   constructor(
@@ -161,6 +163,19 @@ export class CoreProcessSupervisor {
     const state = this.#lifecycle
     if (state.phase !== 'starting' && state.phase !== 'ready') return false
     this.beginTermination(state.generation, state.child, 'restart', 'e2e-probe')
+    return true
+  }
+
+  /** Drops one committed reply and restarts Utility; registered only in E2E. */
+  interruptNextResultForE2e(kind: CoreOperationKind): boolean {
+    if (
+      this.#lifecycle.phase !== 'ready' ||
+      coreOperations[kind].mode !== 'write' ||
+      this.#e2eInterruptOperation !== null ||
+      this.#e2eInterruptRequestId !== null
+    )
+      return false
+    this.#e2eInterruptOperation = kind
     return true
   }
 
@@ -307,6 +322,10 @@ export class CoreProcessSupervisor {
     try {
       child.postMessage(request)
       this.#requests.markSent(request.requestId)
+      if (this.#e2eInterruptOperation === request.operation) {
+        this.#e2eInterruptOperation = null
+        this.#e2eInterruptRequestId = request.requestId
+      }
     } catch {
       this.#requests.rejectSend(request.requestId)
       this.log('send-failed', {
@@ -365,6 +384,15 @@ export class CoreProcessSupervisor {
         return
       }
       case 'core.result': {
+        if (this.#e2eInterruptRequestId === message.data.requestId) {
+          this.#e2eInterruptRequestId = null
+          this.log('e2e-result-interrupted', {
+            generation,
+            requestId: message.data.requestId
+          })
+          this.beginTermination(generation, child, 'restart', 'e2e-probe')
+          return
+        }
         const disposition = this.#requests.settle(message.data)
         if (disposition !== 'settled')
           this.protocol(generation, child, disposition)
@@ -471,6 +499,8 @@ export class CoreProcessSupervisor {
     if (state.generation !== generation || lifecycleChild(state) !== child)
       return
     this.clearReadyTimer()
+    this.#e2eInterruptOperation = null
+    this.#e2eInterruptRequestId = null
     this.#requests.failAll(new CapabilityError('core_unavailable', true))
     this.log('exited', { code, generation })
     if (state.phase === 'closing') {

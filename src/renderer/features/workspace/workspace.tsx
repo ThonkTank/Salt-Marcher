@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useState, type SetStateAction } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type SetStateAction
+} from 'react'
 import type { Creature } from '../../../shared/contracts/encounter.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type { CoreProcessStatus } from '../../../shared/contracts/runtime.js'
@@ -16,7 +22,10 @@ import type { SessionScenario } from '../session/session-scenario.js'
 import { WorkspaceTopBar } from './workspace-top-bar.js'
 import { workspaceDefinition } from './workspace-definition.js'
 import './workspace.css'
-import type { GeneratorPresetApplicationLoader } from './generator-preset-application.js'
+import type {
+  GeneratorPresetApplicationLoader,
+  GeneratorPresetApplicationOwner
+} from './generator-preset-application.js'
 import { createCampaignRewardRulesPort } from './campaign-reward-rules-port.js'
 
 export function WorkspaceApp() {
@@ -49,18 +58,36 @@ export function WorkspaceApp() {
   )
   const [inspected, setInspected] = useState<Creature | null>(null)
   const active = coordinator.campaigns.activeCampaignId !== null
+  const generatorPresetOwner =
+    useRef<Promise<GeneratorPresetApplicationOwner> | null>(null)
   const loadGeneratorPresetApplication =
     useCallback<GeneratorPresetApplicationLoader>(
       async (campaignId) => {
-        const { createGeneratorPresetApplicationPort } =
-          await import('./generator-preset-application.js')
-        return createGeneratorPresetApplicationPort(
-          api.generatorPresets,
-          campaignId
-        )
+        const pending =
+          generatorPresetOwner.current ??
+          import('./generator-preset-application.js').then((module) =>
+            module.createGeneratorPresetApplicationOwner(api.generatorPresets)
+          )
+        generatorPresetOwner.current = pending
+        try {
+          return (await pending).port(campaignId)
+        } catch (error) {
+          if (generatorPresetOwner.current === pending)
+            generatorPresetOwner.current = null
+          throw error
+        }
       },
       [api.generatorPresets]
     )
+
+  useEffect(
+    () => () => {
+      const pending = generatorPresetOwner.current
+      generatorPresetOwner.current = null
+      void pending?.then((owner) => owner.dispose())
+    },
+    [api.generatorPresets]
+  )
 
   useEffect(() => {
     void api.runtime.coreStatus().then(setCoreStatus)

@@ -9,7 +9,7 @@ import {
 } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CampaignMenu } from '../../src/renderer/features/workspace/campaign-menu.js'
-import { createGeneratorPresetApplicationPort } from '../../src/renderer/features/workspace/generator-preset-application.js'
+import { createGeneratorPresetApplicationOwner } from '../../src/renderer/features/workspace/generator-preset-application.js'
 import { ModalLayerProvider } from '../../src/renderer/shell/modal-layer.js'
 import type { GeneratorPresetCapability } from '../../src/shared/contracts/capability-api.js'
 import { systemGeneratorPresetId } from '../../src/shared/contracts/generator-presets.js'
@@ -78,7 +78,7 @@ describe('campaign burger menu redesign', () => {
           deleteForever={vi.fn()}
           loadGeneratorPresetApplication={() =>
             Promise.resolve(
-              createGeneratorPresetApplicationPort(capability(), null)
+              createGeneratorPresetApplicationOwner(capability()).port(null)
             )
           }
           onError={vi.fn()}
@@ -124,7 +124,9 @@ describe('campaign burger menu redesign', () => {
           deleteForever={vi.fn()}
           loadGeneratorPresetApplication={() =>
             Promise.resolve(
-              createGeneratorPresetApplicationPort(capability(), campaignId)
+              createGeneratorPresetApplicationOwner(capability()).port(
+                campaignId
+              )
             )
           }
           onError={vi.fn()}

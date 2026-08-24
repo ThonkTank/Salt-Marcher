@@ -74,6 +74,9 @@ function startApplicationWithProfileLock(
     ipcMain.handle('salt-marcher-e2e:terminate-utility', () =>
       core?.terminateUtilityForE2e()
     )
+    ipcMain.handle('salt-marcher-e2e:interrupt-generator-preset-create', () =>
+      core?.interruptNextResultForE2e('generatorPresets.create')
+    )
     ipcMain.handle('salt-marcher-e2e:runtime-evidence', async () => {
       if (core === undefined) throw new Error('Core is unavailable')
       return runtimeEvidenceSchema.parse({
@@ -218,6 +221,10 @@ export async function stopApplication(): Promise<void> {
     localProfileLock = undefined
     if (isE2eRuntime())
       ipcMain.removeHandler('salt-marcher-e2e:terminate-utility')
+    if (isE2eRuntime())
+      ipcMain.removeHandler(
+        'salt-marcher-e2e:interrupt-generator-preset-create'
+      )
     if (isE2eRuntime())
       ipcMain.removeHandler('salt-marcher-e2e:runtime-evidence')
   }

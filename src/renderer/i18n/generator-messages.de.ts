@@ -72,6 +72,10 @@ export const generatorMessagesDe = {
   'g.conflict.retry': 'Stand aktualisiert. Aktion erneut bestätigen.',
   'g.conflict.discard': 'Neueste Version laden',
   'g.conflict.copy': 'Als Kopie speichern',
+  'g.reconciliation.pending':
+    'Speicherergebnis noch unklar. Prüfe zuerst den Befehlsbeleg.',
+  'g.reconciliation.check': 'Speicherergebnis prüfen',
+  'g.reconciliation.confirmed': 'Speicherergebnis bestätigt.',
   'g.reward.title': 'Belohnungsregeln der Kampagne',
   'g.reward.description':
     'Diese Regel steuert sowohl Kampf-XP als auch den Wert gruppenbezogener Beute.',

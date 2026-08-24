@@ -100,6 +100,15 @@
   padding: var(--space-5) var(--space-6);
 }
 
+.generator-settings-fields {
+  display: grid;
+  gap: var(--space-5);
+  min-width: 0;
+  margin: 0;
+  border: 0;
+  padding: 0;
+}
+
 .generator-loot-rules {
   border-top: 1px solid var(--border-hair);
   padding-top: var(--space-5);

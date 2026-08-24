@@ -98,6 +98,73 @@ architectureGate(
   }
 )
 
+architectureGate(
+  'behavior-integration',
+  'keeps generator preset writes behind one Workspace-lived FIFO receipt owner',
+  () => {
+    const owner = readTypeScriptModule(
+      'src/renderer/async/keyed-write-command-owner.ts'
+    )
+    expect(owner.exportedDeclarations.has('KeyedWriteCommandOwner')).toBe(true)
+    expect(owner.stringLiterals).toContain('queue')
+    expect(owner.stringLiterals).toContain('reconciliation-pending')
+
+    const application = readTypeScriptModule(
+      'src/renderer/features/workspace/generator-preset-application.ts'
+    )
+    expect(application.constructions).toContain('AsyncCommandCoordinator')
+    expect(application.constructions).toContain('KeyedWriteCommandOwner')
+    expect(application.stringLiterals).toContain(
+      'installation.generator-presets'
+    )
+    expect(
+      application.calls.some((call) => call.endsWith('.runReconciled'))
+    ).toBe(true)
+    expect(
+      application.exportedDeclarations.has(
+        'createGeneratorPresetApplicationPort'
+      )
+    ).toBe(false)
+    expect(hasLatestOnlyGeneratorWrite(application)).toBe(false)
+
+    const workspace = readTypeScriptModule(
+      'src/renderer/features/workspace/workspace.tsx'
+    )
+    expect(workspace.identifiers.has('generatorPresetOwner')).toBe(true)
+    expect(
+      workspace.calls.some((call) =>
+        call.endsWith('.createGeneratorPresetApplicationOwner')
+      )
+    ).toBe(true)
+
+    const controlledMutation = parseTypeScriptModule(
+      'controlled-latest-only-generator-write.ts',
+      `coordinator.run({
+        scope: 'generator-presets',
+        mode: 'latest-only',
+        execute: () => capability.generatorPresets.create(command)
+      })`
+    )
+    expect(hasLatestOnlyGeneratorWrite(controlledMutation)).toBe(true)
+  }
+)
+
 function hasDirectSettingsRead(propertyAccesses: readonly string[]): boolean {
   return propertyAccesses.some((access) => access.endsWith('.settings.read'))
+}
+
+function hasLatestOnlyGeneratorWrite(
+  module: ReturnType<typeof readTypeScriptModule>
+): boolean {
+  return (
+    module.stringLiterals.includes('latest-only') &&
+    module.propertyAccesses.some((access) =>
+      [
+        '.generatorPresets.create',
+        '.generatorPresets.update',
+        '.generatorPresets.delete',
+        '.generatorPresets.assign'
+      ].some((suffix) => access.endsWith(suffix))
+    )
+  )
 }

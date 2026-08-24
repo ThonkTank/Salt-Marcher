@@ -8,7 +8,13 @@ export type GeneratorPresetDiscardIntent =
   Readonly<{ kind: 'close' }> | Readonly<{ kind: 'preset'; id: string }>
 
 export type GeneratorPresetEditorPhase =
-  'loading' | 'ready' | 'saving' | 'discard-confirmation' | 'conflict' | 'error'
+  | 'loading'
+  | 'ready'
+  | 'saving'
+  | 'reconciliation-pending'
+  | 'discard-confirmation'
+  | 'conflict'
+  | 'error'
 
 export type GeneratorPresetEditorState = Readonly<{
   phase: GeneratorPresetEditorPhase
@@ -35,6 +41,7 @@ export type GeneratorPresetEditorAction =
   | Readonly<{ type: 'draft-name'; name: string }>
   | Readonly<{ type: 'draft-config'; config: GeneratorPresetConfigV3 }>
   | Readonly<{ type: 'saving' }>
+  | Readonly<{ type: 'reconciliation-pending'; status: string }>
   | Readonly<{
       type: 'saved'
       snapshot: GeneratorPresetEditorSnapshot
@@ -103,6 +110,13 @@ export function generatorPresetEditorReducer(
       return { ...state, config: action.config, status: null }
     case 'saving':
       return { ...state, phase: 'saving', status: null }
+    case 'reconciliation-pending':
+      return {
+        ...state,
+        phase: 'reconciliation-pending',
+        status: action.status,
+        discardIntent: null
+      }
     case 'registry-updated': {
       const next = {
         ...state,

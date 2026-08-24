@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CapabilityError } from '../../src/shared/errors/capability-error.js'
+import { defaultGeneratorConfig } from '../../src/shared/generator/system-generator-preset.js'
 
 vi.mock('electron', () => ({
   utilityProcess: { fork: vi.fn() }
@@ -274,6 +275,33 @@ describe('CoreProcessSupervisor', () => {
     children[0]?.emit('exit', 1)
 
     expect(await errorCode(result)).toBe('outcome_unknown')
+    await supervisor.closeGracefully()
+  })
+
+  it('interrupts one committed write reply through the E2E-only probe', async () => {
+    const { supervisor, children } = harness()
+    children[0]?.ready()
+    expect(
+      supervisor.interruptNextResultForE2e('generatorPresets.create')
+    ).toBe(true)
+    expect(
+      supervisor.interruptNextResultForE2e('generatorPresets.create')
+    ).toBe(false)
+    const result = supervisor.requestOperation('generatorPresets.create', {
+      commandId: '00000000-0000-4000-8000-000000000001',
+      expectedRegistryRevision: 0,
+      name: 'Committed preset',
+      config: defaultGeneratorConfig
+    })
+    children[0]?.succeed({
+      kind: 'created',
+      commandId: '00000000-0000-4000-8000-000000000001',
+      registry: { revision: 1, presets: [] },
+      saved: {}
+    })
+
+    expect(await errorCode(result)).toBe('outcome_unknown')
+    expect(children[0]?.killed).toBe(true)
     await supervisor.closeGracefully()
   })
 

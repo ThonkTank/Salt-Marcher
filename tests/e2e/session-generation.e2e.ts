@@ -18,18 +18,96 @@ describe('generator preset integration', () => {
     await (
       await (await client.$('#campaign-menu')).$('button=Einstellungen')
     ).click()
-    const dialog = await client.$('section.encounter-settings-dialog')
+    let dialog = await client.$('section.encounter-settings-dialog')
     await dialog.waitForDisplayed({ timeout: 5_000 })
     await (await dialog.$('.preset-toolbar input')).setValue('E2E Generator')
     await (
       await dialog.$('input[aria-label="Als Mob führen ab"]')
     ).setValue('7')
+    const interruptionArmed = await client.execute(async () => {
+      const e2eWindow = window as typeof window & {
+        __saltMarcherE2e?: Readonly<{
+          interruptGeneratorPresetCreate: () => Promise<boolean>
+        }>
+      }
+      return (
+        (await e2eWindow.__saltMarcherE2e?.interruptGeneratorPresetCreate()) ??
+        false
+      )
+    })
+    expect(interruptionArmed).toBe(true)
     await (await dialog.$('button=Als Kopie speichern')).click()
+    await client.waitUntil(
+      async () => {
+        try {
+          return (
+            (await client.execute(async () =>
+              window.saltMarcher.runtime.coreStatus()
+            )) !== 'ready'
+          )
+        } catch {
+          return false
+        }
+      },
+      {
+        timeout: 10_000,
+        interval: 100,
+        timeoutMsg: 'Preset write did not interrupt the Utility process.'
+      }
+    )
+    await client.waitUntil(
+      async () => {
+        try {
+          return (
+            (await client.execute(async () =>
+              window.saltMarcher.runtime.coreStatus()
+            )) === 'ready'
+          )
+        } catch {
+          return false
+        }
+      },
+      {
+        timeout: 45_000,
+        interval: 250,
+        timeoutMsg: 'Utility did not recover after the preset write.'
+      }
+    )
+    await (
+      await client.$('h1=Session · Preset E2E')
+    ).waitForExist({ timeout: 15_000 })
+    let menu = await client.$('#campaign-menu')
+    if (!(await menu.isExisting())) {
+      await (await client.$('button[aria-label="Menü"]')).click()
+      menu = await client.$('#campaign-menu')
+    }
+    await menu.waitForDisplayed({ timeout: 10_000 })
+    await (await menu.$('button=Einstellungen')).click()
+    dialog = await client.$('section.encounter-settings-dialog')
+    await dialog.waitForDisplayed({ timeout: 10_000 })
     await (
       await dialog.$(
-        'p=Das geschützte System-Preset wurde als Kopie gespeichert.'
+        'p=Speicherergebnis noch unklar. Prüfe zuerst den Befehlsbeleg.'
       )
-    ).waitForExist({ timeout: 5_000 })
+    ).waitForExist({ timeout: 10_000 })
+    expect(await (await dialog.$('.preset-toolbar input')).isEnabled()).toBe(
+      false
+    )
+    await (await dialog.$('button=Speicherergebnis prüfen')).click()
+    await (
+      await dialog.$('p=Speicherergebnis bestätigt.')
+    ).waitForExist({ timeout: 10_000 })
+    const recoveredPresetCount = await client.execute(async () => {
+      const activeCampaignId = (await window.saltMarcher.campaigns.list())
+        .activeCampaignId
+      const presets = await window.saltMarcher.generatorPresets.readEditor({
+        campaignId: activeCampaignId
+      })
+      return presets.registry.presets.filter(
+        (preset) => preset.name === 'E2E Generator'
+      ).length
+    })
+    expect(recoveredPresetCount).toBe(1)
     await (await dialog.$('button=Für aktive Kampagne zuweisen')).click()
     await (
       await dialog.$('p=Preset der aktiven Kampagne zugewiesen.')
