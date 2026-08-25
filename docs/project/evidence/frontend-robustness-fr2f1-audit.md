@@ -97,6 +97,15 @@ does not mutate Campaign data and has no reconciliation or unmount path.
     a multi-Scene fixture; the audit reduced current-format construction to the
     publicly bootstrapped standard Scene and records multi-Scene creation as an
     explicit `M3` absence.
+11. `saved_encounter_plans` can structurally distinguish authored and generated
+    plans, but the current product boundary only commits generated batches.
+    The initial wording promised one plan of each kind; the audit narrows the
+    fixture to a generated batch through `GeneratedEncounterPlanService` and
+    forbids direct SQL as substitute evidence for an authored save command.
+12. Factions expose numeric disposition and inventory, but no active/inactive
+    lifecycle. The initial fixture wording invented that state. The corrected
+    contract uses distinct dispositions and treats the complete
+    `WorldFactionStore.read()` snapshot as the oracle.
 
 ## Verification
 

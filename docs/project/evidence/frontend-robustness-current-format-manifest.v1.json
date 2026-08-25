@@ -27,8 +27,8 @@
       "authority": "campaign.encounter-plans",
       "stateClass": "durable-truth",
       "disposition": "fixture-load",
-      "fixturePlan": "Persist one saved and one generated Encounter plan through the owning stores.",
-      "oraclePlan": "Read both plan identities and revisions independently of the Session projection."
+      "fixturePlan": "Persist one generated Encounter plan batch through GeneratedEncounterPlanService; the current product has no authored-plan save command.",
+      "oraclePlan": "Read the generated plan identity and summary independently of the Session projection."
     },
     {
       "registration": "encounter-tables",
@@ -67,7 +67,7 @@
       "authority": "campaign.world-factions",
       "stateClass": "durable-truth",
       "disposition": "fixture-load",
-      "fixturePlan": "Persist related active and inactive Factions through WorldFactionStore.",
+      "fixturePlan": "Persist related Factions with distinct dispositions through WorldFactionStore; the current Faction model has no active lifecycle.",
       "oraclePlan": "Read exact Faction identities, relations, inventories, and revisions."
     },
     {
