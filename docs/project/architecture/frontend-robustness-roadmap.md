@@ -333,7 +333,8 @@ decision.
 | `FR2F2C2B` | Add the controlled World Location save interruption/reconciliation journey, then fail closed unless every manifest registration and installation dependency has exactly one primary disposition |
 | `FR2F3A` | Complete Current-Format production-route A/B/A equivalence plus focused-Scene next-action/restart oracle, without timing or Travel-render claims |
 | `FR2F3B` | Isolated Travel/SwiftShader disposition, independent of Campaign switching and production timing |
-| `FR2G` | Current-format production timing and owner architecture go/no-go; exact `QS-05` remains open for `FR7B` |
+| `FR2G1` | Current-format 5+100 production timing with complete useful-state equivalence and the focused-Scene next-action/restart oracle; preliminary evidence only |
+| `FR2G2` | Explicit owner architecture go/no-go for the Campaign Workspace replacement; exact `QS-05` remains open for `FR7B` |
 | `FR3A` | Running Play projection owner and selector/action boundary; no behavior migration yet |
 | `FR3B` | Scene and Party commands, patches, and dependent-pending behavior |
 | `FR3C` | Group and Combat command authorities, including crossed rapid actions |

@@ -1,15 +1,18 @@
 import { browser, expect } from '@wdio/globals'
+import { performance } from 'node:perf_hooks'
 import type { LiveSessionSnapshot } from '../../src/shared/contracts/live-session.js'
 import type { Browser as WdioBrowser } from 'webdriverio'
 
 const readinessTimeoutMs = 10_000
+const warmupCount = 5
+const sampleCount = 100
 const campaignNames = {
   A: 'Current Format A',
   B: 'Current Format B'
 } as const
 
-describe('Current-Format focused-Scene qualification', () => {
-  it('keeps A/B/A useful state coherent and preserves the next Scene mutation across restart', async () => {
+describe('Current-Format Campaign qualification', () => {
+  it('meets the warm-switch budget with coherent useful state and a durable next Scene mutation', async () => {
     const client = browser as unknown as WdioBrowser
     const campaigns = await campaignIdentities(client)
 
@@ -35,6 +38,48 @@ describe('Current-Format focused-Scene qualification', () => {
       )
     }
 
+    for (let index = 0; index < warmupCount; index += 1) {
+      progress(`warmup-${index}`)
+      const role = index % 2 === 0 ? 'B' : 'A'
+      const target = campaigns[role]
+      await switchCampaign(client, target.id, campaignNames[role])
+    }
+
+    const samples: number[] = []
+    for (let index = 0; index < sampleCount; index += 1) {
+      if (index % 10 === 0) progress(`sample-${index}`)
+      const role = index % 2 === 0 ? 'A' : 'B'
+      const target = campaigns[role]
+      samples.push(await switchCampaign(client, target.id, campaignNames[role]))
+      expect(await readSession(client, target.id)).toEqual(
+        role === 'A' ? baselineA : baselineB
+      )
+    }
+
+    const sorted = [...samples].sort((left, right) => left - right)
+    const p95Ms = sorted[94]!
+    const maximumMs = sorted.at(-1)!
+    process.stdout.write(
+      `${JSON.stringify({
+        kind: 'current-format-warm-switch-population',
+        fixtureIdentity: 'frontend-robustness-current-format-completion-v1',
+        profile: 'complete-current-format-not-rp-r-or-rp-l',
+        warmups: warmupCount,
+        samples: samples.map((value) => Number(value.toFixed(3))),
+        p95Ms: Number(p95Ms.toFixed(3)),
+        maximumMs: Number(maximumMs.toFixed(3)),
+        timeoutMs: readinessTimeoutMs
+      })}\n`
+    )
+    expect(samples).toHaveLength(sampleCount)
+    expect(maximumMs).toBeLessThan(readinessTimeoutMs)
+    expect(p95Ms).toBeLessThan(1_000)
+
+    progress('population-complete')
+    expect(await readSession(client, campaigns.B.id)).toEqual(baselineB)
+    await switchCampaign(client, campaigns.A.id, campaignNames.A)
+    expect(await readSession(client, campaigns.A.id)).toEqual(baselineA)
+
     const targetLocation = 'Unterbrochene Küstenwacht'
     progress('focused-scene-next-action')
     await setSceneLocation(client, targetLocation)
@@ -56,7 +101,12 @@ describe('Current-Format focused-Scene qualification', () => {
       `${JSON.stringify({
         kind: 'current-format-focused-scene-next-action',
         fixtureIdentity: 'frontend-robustness-current-format-completion-v1',
-        campaignOrder: ['B', 'A', 'B', 'A', 'B', 'A'],
+        profile: 'complete-current-format-not-rp-r-or-rp-l',
+        warmups: warmupCount,
+        samples: samples.map((value) => Number(value.toFixed(3))),
+        p95Ms: Number(p95Ms.toFixed(3)),
+        maximumMs: Number(maximumMs.toFixed(3)),
+        timeoutMs: readinessTimeoutMs,
         semanticEquivalence: true,
         nextMutation: {
           kind: 'scene-set-location',
@@ -68,7 +118,7 @@ describe('Current-Format focused-Scene qualification', () => {
           restartReadback: true
         },
         qualificationClaim:
-          'current-format-focused-scene-oracle-not-rp-r-or-rp-l'
+          'current-format-preliminary-not-rp-r-or-rp-l-or-qs-05'
       })}\n`
     )
   })
@@ -117,13 +167,15 @@ async function switchCampaign(
   client: WdioBrowser,
   campaignId: string,
   campaignName: string
-): Promise<void> {
+): Promise<number> {
   await openCampaignDialog(client)
   const target = await client.$(`button[aria-label="${campaignName}"]`)
   await target.waitForClickable({ timeout: 5_000 })
+  const startedAt = performance.now()
   await target.click()
   await waitForCampaignReady(client, campaignId)
   await waitForCampaignDialogClosed(client)
+  return performance.now() - startedAt
 }
 
 async function openCampaignDialog(client: WdioBrowser): Promise<void> {

@@ -101,12 +101,12 @@ export const e2eSuiteRegistry = [
     }
   },
   {
-    name: 'currentFormatNextAction',
+    name: 'currentFormatCampaignQualification',
     spec: './tests/e2e/current-format-next-action.e2e.ts',
     fixture: 'v5/current-format',
     types: ['functional'],
     ci: {
-      functional: { shard: 'hex-npc-restart', measuredSeconds: 176 }
+      functional: { shard: 'hex-npc-restart', measuredSeconds: 350 }
     }
   },
   {
