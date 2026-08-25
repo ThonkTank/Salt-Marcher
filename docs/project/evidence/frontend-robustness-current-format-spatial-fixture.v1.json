@@ -1,0 +1,123 @@
+{
+  "version": 1,
+  "identity": "frontend-robustness-current-format-spatial-v1",
+  "rootFixtureIdentity": "frontend-robustness-current-format-root-v1",
+  "liveFixtureIdentity": "frontend-robustness-current-format-live-v1",
+  "qualificationClaim": "partial-fr2f2b2-spatial-cohort-not-complete-current-format",
+  "coveredCampaignRegistrations": ["hex"],
+  "extendedCampaignRegistrations": ["world-locations", "party", "scene"],
+  "campaigns": [
+    {
+      "role": "A",
+      "materialization": {
+        "mapSemanticKey": "hex-map:salt-coast",
+        "mapName": "Salt Coast March",
+        "commandIds": {
+          "createMap": "00000000-0000-4000-8000-0000000000a1",
+          "paintRoute": "00000000-0000-4000-8000-0000000000a2",
+          "paintSparseSentinel": "00000000-0000-4000-8000-0000000000a3",
+          "placeLocation": "00000000-0000-4000-8000-0000000000a4"
+        },
+        "routeBiomeId": "grassland",
+        "routeCoordinates": [
+          { "q": 0, "r": 0 },
+          { "q": 1, "r": 0 },
+          { "q": 2, "r": 0 }
+        ],
+        "sparseSentinel": {
+          "coordinate": { "q": 100000, "r": -100000 },
+          "biomeId": "mountain"
+        },
+        "placedLocationExternalKey": "location:salt-harbor",
+        "placedLocationCoordinate": { "q": 1, "r": 0 },
+        "travel": {
+          "startCoordinate": { "q": 0, "r": 0 },
+          "waypoints": [{ "q": 2, "r": 0 }],
+          "multiplier": 1,
+          "startedAt": 1000000,
+          "advanceTo": 1001000,
+          "finalStatus": "paused"
+        }
+      },
+      "expected": {
+        "catalogRevision": 1,
+        "mapMetadataRevision": 0,
+        "mapContentRevision": 3,
+        "authoredTileCount": 4,
+        "chunkCount": 2,
+        "historyUndoLabel": "location_place",
+        "partyRevision": 6,
+        "sceneRevision": 8,
+        "combatRevision": 0,
+        "travelRevision": 2,
+        "travelStatus": "paused",
+        "currentIndex": 1,
+        "segmentGameSeconds": 3600,
+        "gameTimeSeconds": 32400,
+        "currentCoordinate": { "q": 1, "r": 0 },
+        "routeLength": 3,
+        "locationName": "Salt Harbor",
+        "segmentStartedAt": null,
+        "segmentEndsAt": null,
+        "nextBoundaryDelay": null,
+        "semanticSha256": "5b125785743dd73313874cb716171d68a1de704b867e56da2a0195a6e159bb42"
+      }
+    },
+    {
+      "role": "B",
+      "materialization": {
+        "mapSemanticKey": "hex-map:moon-marsh",
+        "mapName": "Moon Marsh Expanse",
+        "commandIds": {
+          "createMap": "00000000-0000-4000-8000-0000000000b1",
+          "paintRoute": "00000000-0000-4000-8000-0000000000b2",
+          "paintSparseSentinel": "00000000-0000-4000-8000-0000000000b3",
+          "placeLocation": "00000000-0000-4000-8000-0000000000b4"
+        },
+        "routeBiomeId": "swamp",
+        "routeCoordinates": [
+          { "q": 4, "r": -3 },
+          { "q": 5, "r": -3 },
+          { "q": 6, "r": -3 }
+        ],
+        "sparseSentinel": {
+          "coordinate": { "q": -100000, "r": 100000 },
+          "biomeId": "forest"
+        },
+        "placedLocationExternalKey": "location:moon-marsh",
+        "placedLocationCoordinate": { "q": 5, "r": -3 },
+        "travel": {
+          "startCoordinate": { "q": 4, "r": -3 },
+          "waypoints": [{ "q": 6, "r": -3 }],
+          "multiplier": 2,
+          "startedAt": 2000000,
+          "advanceTo": 2002400,
+          "finalStatus": "travelling"
+        }
+      },
+      "expected": {
+        "catalogRevision": 1,
+        "mapMetadataRevision": 0,
+        "mapContentRevision": 3,
+        "authoredTileCount": 4,
+        "chunkCount": 2,
+        "historyUndoLabel": "location_place",
+        "partyRevision": 6,
+        "sceneRevision": 8,
+        "combatRevision": 0,
+        "travelRevision": 1,
+        "travelStatus": "travelling",
+        "currentIndex": 1,
+        "segmentGameSeconds": 17280,
+        "gameTimeSeconds": 46080,
+        "currentCoordinate": { "q": 5, "r": -3 },
+        "routeLength": 3,
+        "locationName": "Moon Marsh",
+        "segmentStartedAt": 2002400,
+        "segmentEndsAt": 2004800,
+        "nextBoundaryDelay": 2400,
+        "semanticSha256": "14a9d77307f54834c527e4a069ed55c114f9d5ead3376805dbc33aa0d6c1aeb8"
+      }
+    }
+  ]
+}

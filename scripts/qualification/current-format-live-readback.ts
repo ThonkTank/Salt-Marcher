@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict'
-import { createHash } from 'node:crypto'
 import { LivePlayService } from '../../src/core/encounter/live-combat.js'
 import { CampaignStore } from '../../src/core/persistence/sqlite/campaign-store.js'
 import { fixedSqliteDatabaseAccess } from '../../src/core/persistence/sqlite/database-access.js'
@@ -20,6 +19,12 @@ import type {
   CurrentFormatLiveFixture
 } from './current-format-live-fixture.js'
 import type { CurrentFormatLiveMaterializationReceipt } from './current-format-live-materializer.js'
+import {
+  assertNoRawUuid,
+  collectUuids,
+  replaceSemanticIdentities,
+  semanticHash
+} from './qualification-semantic-oracle.js'
 
 export type CurrentFormatLiveCampaignReadback = Readonly<{
   role: 'A' | 'B'
@@ -182,12 +187,30 @@ function assertCampaign(
   )
 }
 
-function semanticLiveProjection(
+export function semanticLiveProjection(
   configured: CurrentFormatLiveCampaign,
   root: CurrentFormatRootCampaignReadback,
-  session: LiveSessionSnapshot
+  session: LiveSessionSnapshot,
+  additionalIdentities: ReadonlyMap<string, string> = new Map()
 ): unknown {
-  const identities = new Map<string, string>()
+  const identities = currentFormatLiveSemanticIdentities(
+    configured,
+    root,
+    session,
+    additionalIdentities
+  )
+  const projected = replaceSemanticIdentities(session, identities)
+  assertNoRawUuid(projected, `Campaign ${configured.role}`)
+  return projected
+}
+
+export function currentFormatLiveSemanticIdentities(
+  configured: CurrentFormatLiveCampaign,
+  root: CurrentFormatRootCampaignReadback,
+  session: LiveSessionSnapshot,
+  additionalIdentities: ReadonlyMap<string, string> = new Map()
+): ReadonlyMap<string, string> {
+  const identities = new Map<string, string>(additionalIdentities)
   for (const mapping of root.mappings)
     if (mapping.kind === 'party' || mapping.kind === 'locations')
       identities.set(mapping.internalId, mapping.externalKey)
@@ -248,64 +271,5 @@ function semanticLiveProjection(
     }
   }
   if (session.combat) identities.set(session.combat.id, 'combat:focused')
-
-  const projected = replaceSemanticIds(session, identities)
-  assertNoRawUuid(projected, configured.role)
-  return projected
-}
-
-function replaceSemanticIds(
-  value: unknown,
-  identities: ReadonlyMap<string, string>
-): unknown {
-  if (Array.isArray(value))
-    return value.map((entry) => replaceSemanticIds(entry, identities))
-  if (typeof value === 'object' && value !== null)
-    return Object.fromEntries(
-      Object.entries(value).map(([key, entry]) => [
-        key,
-        replaceSemanticIds(entry, identities)
-      ])
-    )
-  if (typeof value !== 'string') return value
-  let projected = value
-  for (const [id, semanticKey] of [...identities].sort(
-    ([left], [right]) => right.length - left.length
-  ))
-    projected = projected.replaceAll(id, semanticKey)
-  return projected
-}
-
-function assertNoRawUuid(value: unknown, role: 'A' | 'B'): void {
-  const serialized = JSON.stringify(value)
-  const match = serialized.match(
-    /[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i
-  )
-  if (match)
-    throw new Error(
-      `Campaign ${role} semantic projection left raw identity ${match[0]}.`
-    )
-}
-
-function semanticHash(value: unknown): string {
-  return createHash('sha256')
-    .update(JSON.stringify(canonicalize(value)))
-    .digest('hex')
-}
-
-function canonicalize(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(canonicalize)
-  if (typeof value !== 'object' || value === null) return value
-  return Object.fromEntries(
-    Object.entries(value as Record<string, unknown>)
-      .sort(([left], [right]) => left.localeCompare(right))
-      .map(([key, entry]) => [key, canonicalize(entry)])
-  )
-}
-
-function collectUuids(value: unknown): Set<string> {
-  const matches = JSON.stringify(value).match(
-    /[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/gi
-  )
-  return new Set(matches ?? [])
+  return identities
 }
