@@ -13,6 +13,7 @@
     "tests/unit/campaign-workspace-projection.test.ts",
     "tests/unit/campaign-registry-repository.test.ts",
     "tests/unit/campaign-reconciliation-ui.test.tsx",
+    "tests/unit/current-format-campaign-manifest.test.ts",
     "tests/unit/e2e-suite-registry.test.ts",
     "tests/unit/capability-contract.test.ts",
     "tests/unit/persistence-preflight.test.ts",

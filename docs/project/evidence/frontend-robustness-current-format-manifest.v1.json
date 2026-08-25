@@ -1,0 +1,253 @@
+{
+  "schemaVersion": 1,
+  "identity": {
+    "name": "frontend-robustness-current-format-v1",
+    "campaignDatabaseSchemaVersion": 34,
+    "qualificationClaim": "preliminary-current-format-reference-not-rp-r-or-rp-l"
+  },
+  "campaignOwners": [
+    {
+      "registration": "campaign-rules",
+      "authority": "campaign.rules",
+      "stateClass": "durable-truth",
+      "disposition": "fixture-load",
+      "fixturePlan": "Persist a non-default reward-XP rule through CampaignRulesService.",
+      "oraclePlan": "Read the exact rule identity and revision before and after switching."
+    },
+    {
+      "registration": "campaign-runtime",
+      "authority": "campaign.runtime",
+      "stateClass": "durable-truth",
+      "disposition": "initialize-only",
+      "fixturePlan": "Create the current structural runtime table only through CampaignSchemaBootstrapper.",
+      "oraclePlan": "Assert the table shape without inventing runtime rows the current application does not own."
+    },
+    {
+      "registration": "encounter-plans",
+      "authority": "campaign.encounter-plans",
+      "stateClass": "durable-truth",
+      "disposition": "fixture-load",
+      "fixturePlan": "Persist one saved and one generated Encounter plan through the owning stores.",
+      "oraclePlan": "Read both plan identities and revisions independently of the Session projection."
+    },
+    {
+      "registration": "encounter-tables",
+      "authority": "campaign.encounter-tables",
+      "stateClass": "durable-truth",
+      "disposition": "fixture-load",
+      "fixturePlan": "Persist one Campaign Encounter Table with entries through EncounterTableStore.",
+      "oraclePlan": "Read the table catalog and exact entry distribution after each switch."
+    },
+    {
+      "registration": "legacy-items",
+      "authority": "campaign.legacy-item-definitions",
+      "stateClass": "durable-truth",
+      "disposition": "fixture-load",
+      "fixturePlan": "Retain one current-format legacy item definition through its owning resolver path.",
+      "oraclePlan": "Resolve the same definition identity and value after restart."
+    },
+    {
+      "registration": "session-generation",
+      "authority": "campaign.session-generation-runs",
+      "stateClass": "durable-truth",
+      "disposition": "fixture-load",
+      "fixturePlan": "Persist one completed deterministic generation run through SessionGenerationService.",
+      "oraclePlan": "Read the run origin, inputs, established result, and audit rows by identity."
+    },
+    {
+      "registration": "session-planner",
+      "authority": "campaign.session-planner",
+      "stateClass": "durable-truth",
+      "disposition": "fixture-load",
+      "fixturePlan": "Persist one planned Session with participants, Scenes, rest, notes, and generated reward links.",
+      "oraclePlan": "Compare the complete planner workspace and preparation status after switching."
+    },
+    {
+      "registration": "world-factions",
+      "authority": "campaign.world-factions",
+      "stateClass": "durable-truth",
+      "disposition": "fixture-load",
+      "fixturePlan": "Persist related active and inactive Factions through WorldFactionStore.",
+      "oraclePlan": "Read exact Faction identities, relations, inventories, and revisions."
+    },
+    {
+      "registration": "world-locations",
+      "authority": "campaign.world-locations",
+      "stateClass": "durable-truth",
+      "disposition": "switch-oracle",
+      "fixturePlan": "Persist related Locations and assign one to the focused Scene.",
+      "oraclePlan": "Compare the Location catalog and focused Scene location identity."
+    },
+    {
+      "registration": "hex",
+      "authority": "campaign.hex-and-travel",
+      "stateClass": "durable-truth",
+      "disposition": "switch-oracle",
+      "fixturePlan": "Persist a sparse Hex map, placements, edit history, Party position, and active or paused journey.",
+      "oraclePlan": "Compare map revisions and the complete Scene-scoped travel projection."
+    },
+    {
+      "registration": "loot",
+      "authority": "campaign.loot",
+      "stateClass": "durable-truth",
+      "disposition": "fixture-load",
+      "fixturePlan": "Persist placed and unplaced typed treasures through TreasureStore.",
+      "oraclePlan": "Read exact treasure, container, item, provenance, and allocation identities."
+    },
+    {
+      "registration": "party",
+      "authority": "campaign.party-roster",
+      "stateClass": "durable-truth",
+      "disposition": "switch-oracle",
+      "fixturePlan": "Persist active and inactive Roster characters with distinct assignments and travel state.",
+      "oraclePlan": "Compare the complete PartySnapshot and Scene Party membership."
+    },
+    {
+      "registration": "world-location-save-journal",
+      "authority": "campaign.world-location-save-reconciliation",
+      "stateClass": "reconciliation",
+      "disposition": "reconciliation-journey",
+      "fixturePlan": "Create an interrupted committed save only through the controlled fault journey, never as stable fixture truth.",
+      "oraclePlan": "Reconcile by operation identity, prove one effect, then compare the saved Location."
+    },
+    {
+      "registration": "world-npcs",
+      "authority": "campaign.world-npcs",
+      "stateClass": "durable-truth",
+      "disposition": "fixture-load",
+      "fixturePlan": "Persist related NPCs with Location, Faction, and creature references through the application service.",
+      "oraclePlan": "Read exact NPC relations, scope, page membership, and revisions."
+    },
+    {
+      "registration": "campaign-import",
+      "authority": "campaign.import-provenance",
+      "stateClass": "durable-truth",
+      "disposition": "fixture-load",
+      "fixturePlan": "Import one deterministic current-format Campaign section set through CampaignImportService.",
+      "oraclePlan": "Read import registry, provenance, and imported entity identities without replay."
+    },
+    {
+      "registration": "character-loot",
+      "authority": "campaign.character-loot-ledger",
+      "stateClass": "durable-truth",
+      "disposition": "fixture-load",
+      "fixturePlan": "Persist one allocation and character-ledger entry through the atomic distribution owner.",
+      "oraclePlan": "Compare ledger revisions, entries, balances, and source identities."
+    },
+    {
+      "registration": "scene",
+      "authority": "campaign.running-scenes",
+      "stateClass": "durable-truth",
+      "disposition": "switch-oracle",
+      "fixturePlan": "Persist multiple Scenes, focus, Party assignments, active and archived Groups, notes, and members.",
+      "oraclePlan": "Compare the complete SceneSnapshot and use its focused Scene for the next mutation."
+    },
+    {
+      "registration": "combat",
+      "authority": "campaign.scene-combat",
+      "stateClass": "durable-truth",
+      "disposition": "switch-oracle",
+      "fixturePlan": "Persist distinct Combat phases for two Scene identities through LivePlayService.",
+      "oraclePlan": "Compare focused and non-focused Combat mementos, then restart."
+    },
+    {
+      "registration": "schema-metadata",
+      "authority": "campaign.schema-metadata",
+      "stateClass": "durable-truth",
+      "disposition": "initialize-only",
+      "fixturePlan": "Create current schema metadata only through CampaignSchemaBootstrapper.",
+      "oraclePlan": "Assert the current metadata row set before accepting the fixture."
+    },
+    {
+      "registration": "schema-version",
+      "authority": "campaign.sqlite-user-version",
+      "stateClass": "durable-truth",
+      "disposition": "initialize-only",
+      "fixturePlan": "Set SQLite user_version only through the schema bootstrap owner.",
+      "oraclePlan": "Reject a fixture whose Campaign database version is not exactly 34."
+    }
+  ],
+  "installationDependencies": [
+    {
+      "authority": "installation.campaign-registry",
+      "disposition": "switch-authority",
+      "fixturePlan": "Create Campaign A and B with stable distinct identities and activate A through CampaignStore.",
+      "oraclePlan": "Compare catalog revision, active identity, lifecycle receipts, and exact A/B/A activation order."
+    },
+    {
+      "authority": "installation.generator-presets",
+      "disposition": "shared-dependency",
+      "fixturePlan": "Assign distinct non-system preset identities to Campaign A and B.",
+      "oraclePlan": "Read the effective preset identity and revision for each active Campaign."
+    },
+    {
+      "authority": "installation.encounter-tables",
+      "disposition": "shared-dependency",
+      "fixturePlan": "Persist one shared Encounter Table referenced by Campaign data.",
+      "oraclePlan": "Resolve the same shared identity without copying it into Campaign truth."
+    },
+    {
+      "authority": "installation.biomes-and-symbols",
+      "disposition": "shared-dependency",
+      "fixturePlan": "Use system Biomes plus one installation-owned Location symbol referenced by both Campaigns.",
+      "oraclePlan": "Resolve shared definitions unchanged across switching and restart."
+    },
+    {
+      "authority": "installation.session-layout",
+      "disposition": "shared-view-state",
+      "fixturePlan": "Persist one schema-v2 app-wide Session layout preference.",
+      "oraclePlan": "Prove the preference remains installation-wide and unchanged rather than becoming per-Campaign truth."
+    }
+  ],
+  "absentTechnicalProfileClasses": [
+    {
+      "profileClass": "generic-campaign-object-reference-graph",
+      "currentStatus": "not-representable",
+      "evidence": "Current stores expose feature-specific entities but no complete generic 10,000-object text and reference owner.",
+      "owningProgramMilestone": "M2",
+      "qualificationPhase": "FR7B"
+    },
+    {
+      "profileClass": "complete-six-kind-record-cohort",
+      "currentStatus": "not-representable",
+      "evidence": "Notes, history, corrections, ledger, trade, and travel-checkpoint records do not yet share a complete Campaign record model.",
+      "owningProgramMilestone": "M6",
+      "qualificationPhase": "FR7B"
+    },
+    {
+      "profileClass": "simultaneous-runtime-masks",
+      "currentStatus": "not-representable",
+      "evidence": "Current Running Scenes and Party assignments have no durable eight-mask qualification owner.",
+      "owningProgramMilestone": "M3",
+      "qualificationPhase": "FR7B"
+    },
+    {
+      "profileClass": "generic-reusable-definitions",
+      "currentStatus": "not-representable",
+      "evidence": "Specialized definitions exist, but the complete reusable-definition cohort does not.",
+      "owningProgramMilestone": "M2",
+      "qualificationPhase": "FR7B"
+    },
+    {
+      "profileClass": "scheduled-candidates",
+      "currentStatus": "not-representable",
+      "evidence": "The current format has no complete independently timed actor-scheduling cohort.",
+      "owningProgramMilestone": "M3",
+      "qualificationPhase": "FR7B"
+    },
+    {
+      "profileClass": "dungeon-spatial-facts",
+      "currentStatus": "not-representable",
+      "evidence": "Sparse Hex facts are current-format truth; Dungeon cells and their complete spatial owner are not yet implemented.",
+      "owningProgramMilestone": "M4",
+      "qualificationPhase": "FR7B"
+    },
+    {
+      "profileClass": "campaign-owned-intact-local-media",
+      "currentStatus": "not-representable",
+      "evidence": "The current Campaign format has no owner for the normative local map, image, and audio file cohort.",
+      "owningProgramMilestone": "M6",
+      "qualificationPhase": "FR7B"
+    }
+  ]
+}
