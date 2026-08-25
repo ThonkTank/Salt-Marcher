@@ -1,0 +1,227 @@
+{
+  "version": 1,
+  "identity": "frontend-robustness-current-format-root-v1",
+  "qualificationClaim": "partial-fr2f2a-root-cohort-not-complete-current-format",
+  "coveredCampaignRegistrations": [
+    "campaign-runtime",
+    "world-factions",
+    "world-locations",
+    "party",
+    "world-npcs",
+    "campaign-import",
+    "schema-metadata",
+    "schema-version"
+  ],
+  "campaigns": [
+    {
+      "role": "A",
+      "bundle": {
+        "bundleVersion": 1,
+        "source": {
+          "id": "qualification:current-format-root-a",
+          "revision": 1,
+          "exportedAt": "2026-08-25T00:00:00.000Z",
+          "exportHash": "36a9c78485c7feca39f85e7640b81077cd432984264277d0dc6386febf06fa8a",
+          "sections": ["party", "locations", "factions", "npcs"]
+        },
+        "campaign": {
+          "externalKey": "campaign:current-format-root-a",
+          "name": "Current Format A"
+        },
+        "party": [
+          {
+            "externalKey": "pc:alrik",
+            "name": "Alrik",
+            "playerName": "Aaron",
+            "species": null,
+            "characterClass": "Ranger",
+            "languages": [],
+            "level": 3,
+            "passivePerception": 14,
+            "passiveInvestigation": 11,
+            "passiveInsight": 12,
+            "armorClass": 15,
+            "movementSpeedFeet": 30
+          }
+        ],
+        "locations": [
+          {
+            "externalKey": "location:salt-harbor",
+            "displayName": "Salt Harbor",
+            "tags": ["Harbor", "Settlement"],
+            "readAloud": "Masts disappear into the salt fog.",
+            "notes": "Root fixture A entry point."
+          },
+          {
+            "externalKey": "location:old-vault",
+            "displayName": "Old Vault",
+            "tags": ["Ruin"],
+            "readAloud": "Brass doors seal a silent stair.",
+            "notes": "Linked NPC destination."
+          }
+        ],
+        "factions": [
+          {
+            "externalKey": "faction:salt-wardens",
+            "displayName": "Salt Wardens",
+            "notes": "Guard the abandoned vault.",
+            "disposition": -20
+          }
+        ],
+        "npcs": [
+          {
+            "externalKey": "npc:warden-vey",
+            "displayName": "Warden Vey",
+            "creature": { "source": "Cultist", "resolvedId": "cultist" },
+            "lifecycle": "active",
+            "appearance": "A coat crusted with salt.",
+            "behavior": "Counts every visitor.",
+            "history": "Last keeper of the vault.",
+            "notes": "Knows the brass-door mechanism.",
+            "dispositionModifier": -5,
+            "factionExternalKey": "faction:salt-wardens",
+            "locationExternalKey": "location:salt-harbor"
+          },
+          {
+            "externalKey": "npc:oren",
+            "displayName": "Oren",
+            "creature": { "source": "Commoner", "resolvedId": "commoner" },
+            "lifecycle": "defeated",
+            "appearance": "A torn courier cloak.",
+            "behavior": "Silent.",
+            "history": "Reached the vault before the wardens.",
+            "notes": "Distinct lifecycle sentinel.",
+            "dispositionModifier": 5,
+            "factionExternalKey": null,
+            "locationExternalKey": "location:old-vault"
+          }
+        ],
+        "resolutions": [
+          {
+            "path": "npcs.0.creature",
+            "kind": "statblock",
+            "sourceValue": "Cultist",
+            "resolvedValue": "cultist",
+            "reasonCode": "srd-5.1-statblock"
+          },
+          {
+            "path": "npcs.0.factionExternalKey",
+            "kind": "faction",
+            "sourceValue": "Salt Wardens",
+            "resolvedValue": "faction:salt-wardens",
+            "reasonCode": "source-external-key"
+          },
+          {
+            "path": "npcs.0.locationExternalKey",
+            "kind": "location",
+            "sourceValue": "Salt Harbor",
+            "resolvedValue": "location:salt-harbor",
+            "reasonCode": "source-external-key"
+          },
+          {
+            "path": "npcs.1.creature",
+            "kind": "statblock",
+            "sourceValue": "Commoner",
+            "resolvedValue": "commoner",
+            "reasonCode": "srd-5.1-statblock"
+          },
+          {
+            "path": "npcs.1.locationExternalKey",
+            "kind": "location",
+            "sourceValue": "Old Vault",
+            "resolvedValue": "location:old-vault",
+            "reasonCode": "source-external-key"
+          }
+        ]
+      }
+    },
+    {
+      "role": "B",
+      "bundle": {
+        "bundleVersion": 1,
+        "source": {
+          "id": "qualification:current-format-root-b",
+          "revision": 1,
+          "exportedAt": "2026-08-25T00:00:00.000Z",
+          "exportHash": "675b75c9fe68e9f69c3ea2c85155209864233f903b6db0ede1ef2ff380ee18d0",
+          "sections": ["party", "locations", "factions", "npcs"]
+        },
+        "campaign": {
+          "externalKey": "campaign:current-format-root-b",
+          "name": "Current Format B"
+        },
+        "party": [
+          {
+            "externalKey": "pc:mira",
+            "name": "Mira",
+            "playerName": "Sam",
+            "species": null,
+            "characterClass": "Wizard",
+            "languages": [],
+            "level": 5,
+            "passivePerception": 12,
+            "passiveInvestigation": 16,
+            "passiveInsight": 13,
+            "armorClass": 13,
+            "movementSpeedFeet": 25
+          }
+        ],
+        "locations": [
+          {
+            "externalKey": "location:moon-marsh",
+            "displayName": "Moon Marsh",
+            "tags": ["Wetland", "Night"],
+            "readAloud": "Silver reeds move without wind.",
+            "notes": "Root fixture B sentinel."
+          }
+        ],
+        "factions": [
+          {
+            "externalKey": "faction:marsh-guides",
+            "displayName": "Marsh Guides",
+            "notes": "Keep the safe paths marked.",
+            "disposition": 25
+          }
+        ],
+        "npcs": [
+          {
+            "externalKey": "npc:guide-lyra",
+            "displayName": "Guide Lyra",
+            "creature": { "source": "Scout", "resolvedId": "scout" },
+            "lifecycle": "active",
+            "appearance": "Moon-white reed cloak.",
+            "behavior": "Speaks only while walking.",
+            "history": "Mapped the flooded causeway.",
+            "notes": "Campaign B relation sentinel.",
+            "dispositionModifier": 10,
+            "factionExternalKey": "faction:marsh-guides",
+            "locationExternalKey": "location:moon-marsh"
+          }
+        ],
+        "resolutions": [
+          {
+            "path": "npcs.0.creature",
+            "kind": "statblock",
+            "sourceValue": "Scout",
+            "resolvedValue": "scout",
+            "reasonCode": "srd-5.1-statblock"
+          },
+          {
+            "path": "npcs.0.factionExternalKey",
+            "kind": "faction",
+            "sourceValue": "Marsh Guides",
+            "resolvedValue": "faction:marsh-guides",
+            "reasonCode": "source-external-key"
+          },
+          {
+            "path": "npcs.0.locationExternalKey",
+            "kind": "location",
+            "sourceValue": "Moon Marsh",
+            "resolvedValue": "location:moon-marsh",
+            "reasonCode": "source-external-key"
+          }
+        ]
+      }
+    }
+  ]
+}

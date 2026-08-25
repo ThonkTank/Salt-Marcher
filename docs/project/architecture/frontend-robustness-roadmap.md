@@ -325,7 +325,9 @@ decision.
 | `FR2D` | Preliminary empty-profile warm-switch mechanics and evidence audit; never a gate-closing population |
 | `FR2E` | Correctly separate the current-format architecture gate from final `QS-05`, with an explicit applicability and absence record |
 | `FR2F1` | Executable Current-Format owner/applicability manifest with schema/owner drift gate and explicit future-profile absences |
-| `FR2F2` | Reproducible A/B materialization through owning persistence boundaries plus independent manifest readback |
+| `FR2F2A` | Static A/B root/import fixture, public Campaign-import materializer, and independent reopen readback for the root/import owner cohort |
+| `FR2F2B` | Extend A/B materialization/readback to the Live Play and spatial owner cohort without direct fixture SQL |
+| `FR2F2C` | Extend A/B materialization/readback to preparation, economy, and installation owners and fail closed unless every manifest disposition is covered exactly once |
 | `FR2F3` | Focused-Scene next-action/restart oracle and isolated Travel/SwiftShader disposition |
 | `FR2G` | Current-format production timing and owner architecture go/no-go; exact `QS-05` remains open for `FR7B` |
 | `FR3A` | Running Play projection owner and selector/action boundary; no behavior migration yet |

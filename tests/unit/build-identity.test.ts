@@ -82,6 +82,11 @@ describe('build identity', () => {
     expect(classifyWorkspaceInput('tests/unit/build.test.ts')).toEqual([
       'qualification'
     ])
+    expect(
+      classifyWorkspaceInput(
+        'scripts/qualification/current-format-root-readback.ts'
+      )
+    ).toEqual(['qualification'])
     expect(classifyWorkspaceInput('.github/workflows/check.yml')).toEqual([
       'delivery-tooling'
     ])
@@ -91,6 +96,11 @@ describe('build identity', () => {
     expect(classifyWorkspaceInput('docs/project/vision.md')).toEqual([
       'documentation'
     ])
+    expect(
+      classifyWorkspaceInput(
+        'docs/project/evidence/frontend-robustness-current-format-root-fixture.v1.json'
+      )
+    ).toEqual(['qualification', 'documentation'])
     expect(classifyWorkspaceInput('pnpm-lock.yaml')).toEqual([
       'app-build',
       'qualification',

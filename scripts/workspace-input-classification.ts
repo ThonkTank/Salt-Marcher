@@ -9,6 +9,9 @@ export type WorkspaceInputClass = (typeof workspaceInputClasses)[number]
 
 const documentationRoots = ['docs/'] as const
 const documentationFiles = new Set(['AGENTS.md', 'NOTICE', 'README.md'])
+const executableDocumentationPatterns = [
+  /^docs\/project\/evidence\/frontend-robustness-current-format-.*\.json$/
+] as const
 
 const appBuildRoots = ['src/', 'resources/'] as const
 const appBuildFiles = new Set([
@@ -81,6 +84,7 @@ const qualificationScriptPatterns = [
   /^scripts\/lint-/,
   /^scripts\/materialize-e2e-/,
   /^scripts\/packaged-smoke\./,
+  /^scripts\/qualification\//,
   /^scripts\/qualify-/,
   /^scripts\/require-platform\./,
   /^scripts\/run-(e2e-suites|focused-check|lint-partitions|render-qualification|smoke|visual-suites)\.ts$/,
@@ -103,7 +107,9 @@ export function classifyWorkspaceInput(
     documentationFiles.has(path) ||
     documentationRoots.some((root) => path.startsWith(root))
   )
-    return ['documentation']
+    return executableDocumentationPatterns.some((pattern) => pattern.test(path))
+      ? ['qualification', 'documentation']
+      : ['documentation']
 
   const classes = new Set<WorkspaceInputClass>()
   if (
