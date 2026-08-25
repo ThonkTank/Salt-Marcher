@@ -1,4 +1,6 @@
 import { readFileSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
+import { createRequire } from 'node:module'
 import { resolve } from 'node:path'
 import { z } from 'zod'
 import { CampaignStore } from '../src/core/persistence/sqlite/campaign-store.js'
@@ -18,6 +20,8 @@ import { defaultGeneratorConfig } from '../src/shared/generator/system-generator
 import { systemGeneratorPresetId } from '../src/shared/contracts/generator-presets.js'
 import { TreasureStore } from '../src/core/loot/loot-store.js'
 import { assembleRewardParty } from '../src/core/session-generation/reward-party.js'
+
+const packageRequire = createRequire(import.meta.url)
 
 const fixtureV1Schema = z
   .object({
@@ -105,11 +109,21 @@ const fixtureV4Schema = fixtureV3Schema
   })
   .strict()
 
+const fixtureV5Schema = z
+  .object({
+    version: z.literal(5),
+    currentFormatFixtureIdentity: z.literal(
+      'frontend-robustness-current-format-completion-v1'
+    )
+  })
+  .strict()
+
 const fixtureSchema = z.discriminatedUnion('version', [
   fixtureV1Schema,
   fixtureV2Schema,
   fixtureV3Schema,
-  fixtureV4Schema
+  fixtureV4Schema,
+  fixtureV5Schema
 ])
 
 const userData = requiredArgument('--user-data')
@@ -117,6 +131,26 @@ const fixturePath = resolve(userData, 'fixture.json')
 const fixture = fixtureSchema.parse(
   JSON.parse(readFileSync(fixturePath, 'utf8'))
 )
+if (fixture.version === 5) {
+  const materialized = spawnSync(
+    process.execPath,
+    [
+      packageRequire.resolve('tsx/cli'),
+      'scripts/qualify-current-format-completion.ts',
+      '--data-root',
+      resolve(userData, 'development-data')
+    ],
+    { cwd: process.cwd(), encoding: 'utf8' }
+  )
+  if (materialized.error) throw materialized.error
+  if (materialized.status !== 0)
+    throw new Error(
+      `Could not materialize Current-Format E2E fixture: ${materialized.stderr}`
+    )
+  process.stdout.write(materialized.stdout)
+  process.exit(0)
+}
+
 const campaigns = new CampaignStore(resolve(userData, 'development-data'))
 try {
   if (fixture.campaign === null) process.exitCode = 0

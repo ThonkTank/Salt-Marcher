@@ -101,6 +101,15 @@ export const e2eSuiteRegistry = [
     }
   },
   {
+    name: 'currentFormatNextAction',
+    spec: './tests/e2e/current-format-next-action.e2e.ts',
+    fixture: 'v5/current-format',
+    types: ['functional'],
+    ci: {
+      functional: { shard: 'hex-npc-restart', measuredSeconds: 176 }
+    }
+  },
+  {
     name: 'hexLocation',
     spec: './tests/e2e/hex-location-workflow.e2e.ts',
     fixture: 'v1/empty-installation',

@@ -331,7 +331,8 @@ decision.
 | `FR2F2C1` | Extend A/B materialization/readback to Campaign preparation owners plus their generator-preset and Encounter-Table installation dependencies; this is partial FR2F2C evidence only |
 | `FR2F2C2A` | Extend A/B materialization/readback to legacy item definitions, Loot, Character Loot, and the remaining biome/symbol and Session-layout installation dependencies; this remains partial FR2F2C evidence |
 | `FR2F2C2B` | Add the controlled World Location save interruption/reconciliation journey, then fail closed unless every manifest registration and installation dependency has exactly one primary disposition |
-| `FR2F3` | Focused-Scene next-action/restart oracle and isolated Travel/SwiftShader disposition |
+| `FR2F3A` | Complete Current-Format production-route A/B/A equivalence plus focused-Scene next-action/restart oracle, without timing or Travel-render claims |
+| `FR2F3B` | Isolated Travel/SwiftShader disposition, independent of Campaign switching and production timing |
 | `FR2G` | Current-format production timing and owner architecture go/no-go; exact `QS-05` remains open for `FR7B` |
 | `FR3A` | Running Play projection owner and selector/action boundary; no behavior migration yet |
 | `FR3B` | Scene and Party commands, patches, and dependent-pending behavior |
