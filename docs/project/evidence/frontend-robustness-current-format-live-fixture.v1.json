@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "identity": "frontend-robustness-current-format-live-v1",
+  "rootFixtureIdentity": "frontend-robustness-current-format-root-v1",
+  "qualificationClaim": "partial-fr2f2b1-live-cohort-not-complete-current-format",
+  "coveredCampaignRegistrations": ["scene", "combat"],
+  "extendedRootRegistrations": ["world-locations", "party"],
+  "campaigns": [
+    {
+      "role": "A",
+      "materialization": {
+        "importedActivePartyExternalKeys": ["pc:alrik"],
+        "addedInactiveParty": {
+          "semanticKey": "pc:ione",
+          "draft": {
+            "name": "Ione",
+            "playerName": "Taylor",
+            "species": "Human",
+            "characterClass": "Bard",
+            "languages": ["Common", "Elvish"],
+            "level": 2,
+            "passivePerception": 13,
+            "passiveInvestigation": 10,
+            "passiveInsight": 15,
+            "armorClass": 12,
+            "movementSpeedFeet": 30
+          }
+        },
+        "focusedLocationExternalKey": "location:salt-harbor",
+        "groups": [
+          {
+            "semanticKey": "group:salt-wolves",
+            "name": "Salt Wolves",
+            "note": "Two circle the harbor while one lies defeated.",
+            "disposition": "hostile",
+            "archived": false,
+            "entries": [
+              { "creatureId": "wolf", "quantity": 2, "deadQuantity": 1 }
+            ]
+          },
+          {
+            "semanticKey": "group:vault-watch",
+            "name": "Vault Watch",
+            "note": "Resolved negotiation retained in the archive.",
+            "disposition": "neutral",
+            "archived": true,
+            "entries": []
+          }
+        ],
+        "combatGroupSemanticKey": "group:salt-wolves"
+      },
+      "expected": {
+        "partyRevision": 3,
+        "sceneRevision": 5,
+        "combatRevision": 0,
+        "combatPhase": "initiative",
+        "activePartyCount": 1,
+        "inactivePartyCount": 1,
+        "groupCount": 2,
+        "archivedGroupCount": 1,
+        "focusedLocationName": "Salt Harbor",
+        "semanticSha256": "cbb66a99d3c72a5e9dd51c5f4bec562026346a7e56e23a2a7271238be7305034"
+      }
+    },
+    {
+      "role": "B",
+      "materialization": {
+        "importedActivePartyExternalKeys": ["pc:mira"],
+        "addedInactiveParty": {
+          "semanticKey": "pc:thorne",
+          "draft": {
+            "name": "Thorne",
+            "playerName": "Morgan",
+            "species": "Dwarf",
+            "characterClass": "Cleric",
+            "languages": ["Common", "Dwarvish"],
+            "level": 4,
+            "passivePerception": 16,
+            "passiveInvestigation": 11,
+            "passiveInsight": 17,
+            "armorClass": 18,
+            "movementSpeedFeet": 25
+          }
+        },
+        "focusedLocationExternalKey": "location:moon-marsh",
+        "groups": [
+          {
+            "semanticKey": "group:marsh-goblins",
+            "name": "Marsh Goblins",
+            "note": "Three scouts hold the flooded causeway.",
+            "disposition": "hostile",
+            "archived": false,
+            "entries": [
+              { "creatureId": "goblin", "quantity": 3, "deadQuantity": 0 }
+            ]
+          },
+          {
+            "semanticKey": "group:reed-guides",
+            "name": "Reed Guides",
+            "note": "A completed escort kept for reference.",
+            "disposition": "allied",
+            "archived": true,
+            "entries": [
+              { "creatureId": "scout", "quantity": 0, "deadQuantity": 1 }
+            ]
+          }
+        ],
+        "combatGroupSemanticKey": "group:marsh-goblins"
+      },
+      "expected": {
+        "partyRevision": 3,
+        "sceneRevision": 5,
+        "combatRevision": 0,
+        "combatPhase": "initiative",
+        "activePartyCount": 1,
+        "inactivePartyCount": 1,
+        "groupCount": 2,
+        "archivedGroupCount": 1,
+        "focusedLocationName": "Moon Marsh",
+        "semanticSha256": "fdede16729f51f3bd282d5527265867c6d61184c4d444f7f25a9f0478afc6038"
+      }
+    }
+  ]
+}
