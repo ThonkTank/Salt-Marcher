@@ -117,6 +117,19 @@ tests pass, including the six controlled-negative cases.
   preceding C1 audit; neither they nor their production paths are changed by
   this packet. The clean Candidate CI run remains the delivery gate.
 
+## Publication integrity follow-up
+
+Candidate SHA `de8092203ff9b50ea663b6c9b968c2da629c3681` passed the complete
+Candidate run `32841168382`. GitHub rebase-merge then rewrote only its committer
+and commit time to `4a30105e7e21b680186edc4c10d7c3c3f1c8cb52`; both commits have parent
+`e4b779fe7d9e7b5d693176bf69823e39f2f53d53` and tree
+`0f1af37b39260cbac11859e3f16d06a31f01c157`. The protected Main rule correctly
+rejected a force-with-lease correction.
+
+This documentation-only follow-up is therefore based on the current Main and
+must itself pass Candidate CI before its exact unchanged SHA is pushed as a
+non-forced Main fast-forward. Rebase-merge is not used for that correction.
+
 This packet changes qualification scripts, tests, evidence, and roadmap text
 only. It is not app-relevant and therefore uses the documentation/test delivery
 path rather than an application handoff.
