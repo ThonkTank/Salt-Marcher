@@ -12,6 +12,7 @@
     "schema-metadata",
     "schema-version"
   ],
+  "coveredInstallationAuthorities": ["installation.campaign-registry"],
   "campaigns": [
     {
       "role": "A",

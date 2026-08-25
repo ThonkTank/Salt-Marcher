@@ -67,18 +67,24 @@ export type CurrentFormatEconomyReadback = Readonly<{
   campaigns: readonly CurrentFormatEconomyCampaignReadback[]
 }>
 
+export type CurrentFormatEconomyProjectionExtensions = Readonly<{
+  downstreamLocationNames?: ReadonlyMap<'A' | 'B', ReadonlySet<string>>
+}>
+
 export function readCurrentFormatEconomyFixture(
   dataRoot: string,
   rootFixture: CurrentFormatRootFixture,
   liveFixture: CurrentFormatLiveFixture,
   spatialFixture: CurrentFormatSpatialFixture,
   preparationFixture: CurrentFormatPreparationFixture,
-  economyFixture: CurrentFormatEconomyFixture
+  economyFixture: CurrentFormatEconomyFixture,
+  downstreamExtensions: CurrentFormatEconomyProjectionExtensions = {}
 ): CurrentFormatEconomyReadback {
   const projectionExtensions = economyProjectionExtensions(
     dataRoot,
     rootFixture,
-    economyFixture
+    economyFixture,
+    downstreamExtensions
   )
   const preparation = readCurrentFormatPreparationFixture(
     dataRoot,
@@ -235,7 +241,8 @@ export function readCurrentFormatEconomyFixture(
 function economyProjectionExtensions(
   dataRoot: string,
   rootFixture: CurrentFormatRootFixture,
-  economyFixture: CurrentFormatEconomyFixture
+  economyFixture: CurrentFormatEconomyFixture,
+  projectionExtensions: CurrentFormatEconomyProjectionExtensions
 ): Readonly<{
   downstreamLocationChoiceIds: ReadonlyMap<'A' | 'B', ReadonlySet<string>>
   downstreamPlacedTreasureIds: ReadonlyMap<'A' | 'B', ReadonlySet<string>>
@@ -277,6 +284,21 @@ function economyProjectionExtensions(
         1,
         `Current-format economy Campaign ${configured.role} symbol Location is not singular.`
       )
+      const downstreamLocationIds = [
+        ...(projectionExtensions.downstreamLocationNames?.get(
+          configured.role
+        ) ?? new Set())
+      ].map((name) => {
+        const downstream = locations.locations.filter(
+          ({ displayName }) => displayName === name
+        )
+        assert.equal(
+          downstream.length,
+          1,
+          `Current-format economy Campaign ${configured.role} downstream Location ${name} is not singular.`
+        )
+        return downstream[0]!.id
+      })
       const inbox = campaigns.visitCampaignDatabase(registered.id, (database) =>
         new LootService(fixedSqliteDatabaseAccess(database)).inbox({
           cursor: null,
@@ -295,15 +317,15 @@ function economyProjectionExtensions(
       )
       return Object.freeze({
         role: configured.role,
-        locationChoiceId: matches[0]!.id,
+        locationChoiceIds: [matches[0]!.id, ...downstreamLocationIds],
         placedTreasureId: placedTreasures[0]!.treasure.id
       })
     })
     return Object.freeze({
       downstreamLocationChoiceIds: new Map(
-        rows.map(({ role, locationChoiceId }) => [
+        rows.map(({ role, locationChoiceIds }) => [
           role,
-          new Set([locationChoiceId])
+          new Set(locationChoiceIds)
         ])
       ),
       downstreamPlacedTreasureIds: new Map(

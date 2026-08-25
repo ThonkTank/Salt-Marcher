@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "identity": "frontend-robustness-current-format-completion-v1",
+  "economyFixtureIdentity": "frontend-robustness-current-format-economy-v1",
+  "qualificationClaim": "complete-fr2f2c-current-format-owner-coverage-not-rp-r-or-rp-l",
+  "coveredCampaignRegistrations": ["world-location-save-journal"],
+  "campaigns": [
+    {
+      "role": "A",
+      "materialization": {
+        "commandId": "01920000-0000-7000-8000-000000000101",
+        "locationSemanticKey": "location:interrupted-watch-a",
+        "locationName": "Unterbrochene Küstenwacht",
+        "locationTags": ["Wacht", "Wiederaufnahme"],
+        "locationNotes": "FR2F2C2B committed base before controlled placement interruption.",
+        "placementCoordinate": { "q": 2, "r": 0 }
+      },
+      "expected": {
+        "locationRevision": 5,
+        "mapContentRevision": 4,
+        "semanticSha256": "862037f4b248feb7fd0455baad01658ffb7e56846458e22682198248d15ff596"
+      }
+    },
+    {
+      "role": "B",
+      "materialization": {
+        "commandId": "01920000-0000-7000-8000-000000000102",
+        "locationSemanticKey": "location:interrupted-watch-b",
+        "locationName": "Unterbrochene Moorwacht",
+        "locationTags": ["Wacht", "Wiederaufnahme"],
+        "locationNotes": "FR2F2C2B committed base before controlled placement interruption.",
+        "placementCoordinate": { "q": 6, "r": -3 }
+      },
+      "expected": {
+        "locationRevision": 4,
+        "mapContentRevision": 4,
+        "semanticSha256": "516a909a2b25549561f66148a77c0ae30d23de195e1d04a461733bdcea610ebf"
+      }
+    }
+  ]
+}

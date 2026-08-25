@@ -430,10 +430,41 @@ function semanticSpatialProjection(
       )
     }
   }
+  const upstreamSpatial = {
+    ...spatial,
+    catalog: {
+      ...spatial.catalog,
+      maps: spatial.catalog.maps.map((map) =>
+        map.id === mapId
+          ? { ...map, contentRevision: configured.expected.mapContentRevision }
+          : map
+      )
+    },
+    chunks: {
+      ...spatial.chunks,
+      map: {
+        ...spatial.chunks.map,
+        contentRevision: configured.expected.mapContentRevision
+      },
+      chunks: spatial.chunks.chunks.map((chunk) => {
+        const locations = chunk.locations.filter(
+          ({ locationId }) => !downstreamLocationChoiceIds.has(locationId)
+        )
+        const removedCount = chunk.locations.length - locations.length
+        return locations.length === chunk.locations.length
+          ? chunk
+          : {
+              ...chunk,
+              revision: chunk.revision - removedCount,
+              locations
+            }
+      })
+    }
+  }
   const projection = replaceSemanticIdentities(
     {
       liveSession: upstreamSession,
-      hex: spatial
+      hex: upstreamSpatial
     },
     identities
   )

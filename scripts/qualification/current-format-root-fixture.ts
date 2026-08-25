@@ -18,6 +18,10 @@ export const currentFormatRootRegistrations = Object.freeze([
   'schema-version'
 ] as const)
 
+export const currentFormatRootInstallationAuthorities = Object.freeze([
+  'installation.campaign-registry'
+] as const)
+
 const campaignRoleSchema = z.enum(['A', 'B'])
 
 const rootCampaignSchema = z
@@ -37,6 +41,9 @@ export const currentFormatRootFixtureSchema = z
     coveredCampaignRegistrations: z
       .array(z.string())
       .length(currentFormatRootRegistrations.length),
+    coveredInstallationAuthorities: z
+      .array(z.string())
+      .length(currentFormatRootInstallationAuthorities.length),
     campaigns: z.array(rootCampaignSchema).length(2)
   })
   .strict()
@@ -98,6 +105,15 @@ export function validateCurrentFormatRootFixture(
     throw new Error(
       'Current-format root fixture coverage does not match the FR2F2A contract.'
     )
+  if (
+    fixture.coveredInstallationAuthorities.some(
+      (authority, index) =>
+        authority !== currentFormatRootInstallationAuthorities[index]
+    )
+  )
+    throw new Error(
+      'Current-format root installation coverage does not match the FR2F2A contract.'
+    )
   const manifestOwners = new Map(
     manifest.campaignOwners.map((owner) => [owner.registration, owner])
   )
@@ -105,6 +121,15 @@ export function validateCurrentFormatRootFixture(
     if (!manifestOwners.has(registration))
       throw new Error(
         `Current-format root fixture references unknown owner ${registration}.`
+      )
+  for (const authority of currentFormatRootInstallationAuthorities)
+    if (
+      !manifest.installationDependencies.some(
+        (dependency) => dependency.authority === authority
+      )
+    )
+      throw new Error(
+        `Current-format root fixture references unknown installation dependency ${authority}.`
       )
   const coveredRegistrationSet = new Set<string>(currentFormatRootRegistrations)
   const coveredInManifestOrder = manifest.campaignOwners
