@@ -139,7 +139,7 @@
       "authority": "campaign.running-scenes",
       "stateClass": "durable-truth",
       "disposition": "switch-oracle",
-      "fixturePlan": "Persist multiple Scenes, focus, Party assignments, active and archived Groups, notes, and members.",
+      "fixturePlan": "Populate the publicly bootstrapped focused standard Scene with Party assignments, active and archived Groups, notes, and members.",
       "oraclePlan": "Compare the complete SceneSnapshot and use its focused Scene for the next mutation."
     },
     {
@@ -147,8 +147,8 @@
       "authority": "campaign.scene-combat",
       "stateClass": "durable-truth",
       "disposition": "switch-oracle",
-      "fixturePlan": "Persist distinct Combat phases for two Scene identities through LivePlayService.",
-      "oraclePlan": "Compare focused and non-focused Combat mementos, then restart."
+      "fixturePlan": "Persist a non-empty Combat phase for the focused standard Scene through LivePlayService.",
+      "oraclePlan": "Compare the focused Combat memento through A/B/A and restart."
     },
     {
       "registration": "schema-metadata",
@@ -218,6 +218,13 @@
       "profileClass": "simultaneous-runtime-masks",
       "currentStatus": "not-representable",
       "evidence": "Current Running Scenes and Party assignments have no durable eight-mask qualification owner.",
+      "owningProgramMilestone": "M3",
+      "qualificationPhase": "FR7B"
+    },
+    {
+      "profileClass": "multiple-running-scene-creation",
+      "currentStatus": "not-representable",
+      "evidence": "The schema can retain multiple Running Scenes, but the current product exposes no owning command to create a second one; direct SQL is not fixture evidence.",
       "owningProgramMilestone": "M3",
       "qualificationPhase": "FR7B"
     },

@@ -34,7 +34,7 @@ manifest:
   owning-boundary fixture plan, and independent oracle plan;
 - separates installation switch authority, shared dependencies, and app-wide
   view state from Campaign truth;
-- names seven technical-profile classes the current format cannot represent,
+- names eight technical-profile classes the current format cannot represent,
   routes their implementation to the original `M2` through `M6` program
   milestones, and keeps their qualification in `FR7B`;
 - carries the literal claim
@@ -72,7 +72,7 @@ does not mutate Campaign data and has no reconciliation or unmount path.
    catalog equivalent to the Campaign schema list. Their identities are
    schema-validated and unique but cannot yet be automatically checked for
    completeness. FR2F2 must compare them to the concrete services it uses.
-4. The seven future-profile absences are coarse data-class boundaries, not an
+4. The eight future-profile absences are coarse data-class boundaries, not an
    executable final `RP-R`/`RP-L` construction manifest. The RP-L cohort
    ambiguity recorded by FR2E remains open for FR7B.
 5. `legacy-items` is compatibility-shaped current-format truth even though the
@@ -91,6 +91,12 @@ does not mutate Campaign data and has no reconciliation or unmount path.
    classes to frontend-robustness phases. The post-implementation audit
    corrected that scope leak: original program milestones own the missing
    capabilities; `FR7B` only qualifies them after they exist.
+10. The schema can retain multiple Running Scenes, but no current owning
+    product command creates a second Scene. Existing integration tests use
+    direct SQL for that setup. The initial manifest draft incorrectly planned
+    a multi-Scene fixture; the audit reduced current-format construction to the
+    publicly bootstrapped standard Scene and records multi-Scene creation as an
+    explicit `M3` absence.
 
 ## Verification
 
