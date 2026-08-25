@@ -156,6 +156,10 @@ export function WorkspaceApp() {
       <main
         className="app-shell"
         data-renderer-ready="gm"
+        data-active-campaign-id={activeCampaignId ?? ''}
+        data-session-campaign-id={coordinator.sessionCampaignId ?? ''}
+        data-session-revision={coordinator.session?.revision ?? ''}
+        data-active-workspace={coordinator.workspace}
         aria-busy={coreStatus !== 'ready' || undefined}
       >
         {coreStatus !== 'ready' && (

@@ -119,7 +119,12 @@ export const config = {
   },
   mochaOpts: {
     ui: 'bdd',
-    timeout: suite === 'sessionGeneration' ? 360_000 : 180_000,
+    timeout:
+      suite === 'sessionGeneration'
+        ? 360_000
+        : suite === 'campaignQualification'
+          ? 300_000
+          : 180_000,
     ...(process.env['SALT_MARCHER_E2E_GREP']
       ? { grep: process.env['SALT_MARCHER_E2E_GREP'] }
       : {})

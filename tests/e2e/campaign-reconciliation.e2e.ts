@@ -66,6 +66,33 @@ describe('Campaign receipt reconciliation', () => {
       ).length
     })
     expect(matchingCampaigns).toBe(1)
+
+    await (await client.$('button[aria-label="Menü"]')).click()
+    const menu = await client.$('nav#campaign-menu')
+    await menu.waitForDisplayed({ timeout: 5_000 })
+    await (await menu.$('button=Kampagnen')).click()
+    let row = await (await client.$('button[aria-label="Receipt E2E"]')).$('..')
+    await (await row.$('button=Umbenennen')).click()
+    await (
+      await row.$('input[aria-label="Umbenennen"]')
+    ).setValue('Receipt E2E confirmed')
+    row = await (await client.$('input[aria-label="Umbenennen"]')).$('..')
+    await (await row.$('button=Speichern')).click()
+    await (
+      await client.$('h1=Session · Receipt E2E confirmed')
+    ).waitForExist({ timeout: 10_000 })
+
+    await client.reloadSession()
+    await (
+      await client.$('h1=Session · Receipt E2E confirmed')
+    ).waitForExist({ timeout: 30_000 })
+    const renamed = await client.execute(async () => {
+      const snapshot = await window.saltMarcher.campaigns.list()
+      return snapshot.campaigns.filter(
+        (campaign) => campaign.name === 'Receipt E2E confirmed'
+      ).length
+    })
+    expect(renamed).toBe(1)
   })
 })
 

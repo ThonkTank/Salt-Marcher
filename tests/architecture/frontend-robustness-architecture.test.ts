@@ -217,6 +217,28 @@ architectureGate(
   }
 )
 
+architectureGate(
+  'behavior-integration',
+  'exposes identity-bound Campaign and Session readiness on the production root',
+  () => {
+    const workspace = readTypeScriptModule(
+      'src/renderer/features/workspace/workspace.tsx'
+    )
+    for (const marker of [
+      'data-active-campaign-id',
+      'data-session-campaign-id',
+      'data-session-revision',
+      'data-active-workspace'
+    ])
+      expect(workspace.jsxAttributeNames, marker).toContain(marker)
+
+    const coordinator = readTypeScriptModule(
+      'src/renderer/features/workspace/use-campaign-session-coordinator.ts'
+    )
+    expect(coordinator.identifiers.has('sessionCampaignId')).toBe(true)
+  }
+)
+
 function hasDirectSettingsRead(propertyAccesses: readonly string[]): boolean {
   return propertyAccesses.some((access) => access.endsWith('.settings.read'))
 }

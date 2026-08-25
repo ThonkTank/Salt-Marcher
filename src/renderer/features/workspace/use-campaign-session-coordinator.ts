@@ -86,6 +86,7 @@ export function useCampaignSessionCoordinator(
 
   return {
     campaigns: root.campaigns,
+    sessionCampaignId: root.sessionCampaignId,
     session: root.session,
     setSession: (
       update:

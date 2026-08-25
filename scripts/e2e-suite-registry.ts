@@ -92,6 +92,15 @@ export const e2eSuiteRegistry = [
     }
   },
   {
+    name: 'campaignQualification',
+    spec: './tests/e2e/campaign-qualification.e2e.ts',
+    fixture: 'v1/empty-installation',
+    types: ['functional'],
+    ci: {
+      functional: { shard: 'hex-npc-restart', measuredSeconds: 250 }
+    }
+  },
+  {
     name: 'hexLocation',
     spec: './tests/e2e/hex-location-workflow.e2e.ts',
     fixture: 'v1/empty-installation',
