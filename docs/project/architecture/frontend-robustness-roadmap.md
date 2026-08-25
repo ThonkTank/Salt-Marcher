@@ -92,6 +92,22 @@ After every phase:
 5. deliver every app-relevant exact Candidate SHA through remote `Check`,
    `pnpm handoff:app`, unchanged promotion, and a green Main run.
 
+### Qualification maturity
+
+Migration gates and final product qualification are deliberately separate.
+An early renderer migration gate uses all truth that the current product format
+can represent and exists to prove that the proposed ownership model is safer
+than the mechanism it replaces. It MUST NOT claim that a later technical-needs
+profile passed when the product does not yet implement every data class in that
+profile.
+
+The exact `RP-R`/`RP-L` populations, every supported operating system, and all
+state named by `QS-05` remain binding final qualification. They close in `FR7B`
+after the owning product phases have made those data classes representable.
+Deferring that final verdict does not permit scaled-down populations to be
+reported as `RP-R` or `RP-L`, and it does not permit a migration phase to omit a
+current-format production-route oracle.
+
 ## FR0 — baseline and acceptance contract
 
 ### Scope
@@ -159,10 +175,15 @@ After every phase:
 - rapid `A -> B -> A`, overlapping reads, switch-during-write, readback, restart,
   and the next mutation produce one coherent Campaign/Session truth;
 - no data recovery remounts a workspace or silently discards a draft;
-- `QS-05` warm-switch equivalence and the one-second p95 budget have production-
-  route evidence;
+- the complete current Campaign format has a reproducible applicability
+  manifest, production-route warm-switch population, complete useful-state
+  equivalence, and a focused-Scene next-action/restart oracle;
+- this reference population meets the one-second p95 budget but is labelled as
+  preliminary evidence, not as `RP-R`, `RP-L`, or completed `QS-05` evidence;
 - FR2 is a go/no-go gate. Later migration does not start until the reference
-  slice reduces lifecycle complexity and passes owner acceptance.
+  slice reduces lifecycle complexity and passes owner architecture acceptance;
+- exact `QS-05` qualification remains an `FR7B` exit condition after every
+  required Campaign data class exists.
 
 ## FR3 — live Session, Party, Encounter, Group, and Loot
 
@@ -301,7 +322,10 @@ decision.
 | `FR2A` | Identity-bound Campaign catalog and active-Session reads without overlapping publication |
 | `FR2B` | FIFO Campaign lifecycle commands with transport-time authority/revision selection |
 | `FR2C` | Targeted Campaign/Session reconciliation and removal of their readback remount path |
-| `FR2D` | Warm-switch production timing, next-action oracle, and owner go/no-go |
+| `FR2D` | Preliminary empty-profile warm-switch mechanics and evidence audit; never a gate-closing population |
+| `FR2E` | Correctly separate the current-format architecture gate from final `QS-05`, with an explicit applicability and absence record |
+| `FR2F` | Reproducible complete current-format fixture, focused-Scene next-action/restart oracle, and isolated Travel disposition |
+| `FR2G` | Current-format production timing and owner architecture go/no-go; exact `QS-05` remains open for `FR7B` |
 | `FR3A` | Running Play projection owner and selector/action boundary; no behavior migration yet |
 | `FR3B` | Scene and Party commands, patches, and dependent-pending behavior |
 | `FR3C` | Group and Combat command authorities, including crossed rapid actions |
@@ -317,7 +341,7 @@ decision.
 | `FR6B` | Travel read/write projection cutover and joint Session publication |
 | `FR6C` | Pixi/context-loss resource isolation and complete spatial journey gate |
 | `FR7A` | Semantic zero-inventory gates and removal of every legacy state path |
-| `FR7B` | Complete functional, failure, latency, scaling, and resource qualification |
+| `FR7B` | Complete functional, failure, latency, scaling, resource, and exact cross-OS `RP-R`/`RP-L` `QS-05` qualification |
 | `FR7C` | Exact-SHA handoff, installed-runtime audit, Main promotion, and owner acceptance |
 
 `FR1A` and `FR3A` may be test/contract-only only when they add no unused runtime

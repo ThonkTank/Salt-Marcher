@@ -163,3 +163,15 @@ FR2D remains no-go until all of the following are current and attached:
    explicit owner go/no-go.
 
 FR3 must not start while those conditions remain open.
+
+## Post-audit gate correction
+
+The evidence findings above remain valid, but the final sentence coupled the
+FR3 entry gate to data that FR3 and later product phases must first make fully
+representable. That interpretation is superseded by the
+[FR2E gate audit](frontend-robustness-fr2e-gate-audit.md).
+
+Exact cross-OS `RP-R`/`RP-L` `QS-05` evidence is still absent and MUST NOT be
+claimed. It is a final `FR7B` qualification gate. FR3 remains blocked for now by
+the incomplete current-format reference fixture and missing owner architecture
+acceptance, not by nonexistent future-format data.

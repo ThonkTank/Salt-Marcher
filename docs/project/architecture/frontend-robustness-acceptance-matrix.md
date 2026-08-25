@@ -41,7 +41,7 @@ as target behavior.
 | FR-A04 | A stale result updates at most its own cache key and never newer visible authored state | FR1 | authority-key controlled promises |
 | FR-A05 | Unknown write outcome reconciles by the same command identity and never blindly replays | FR1 | receipt present/absent/interrupted matrices |
 | FR-A06 | Data reconciliation never remounts an unrelated workspace or discards its draft | FR2 | mounted sentinel and draft-preservation Electron journey |
-| FR-A07 | Rapid Campaign switching restores coherent useful state and safely persists the next mutation | FR2 | `QS-05` A/B/A production timing and semantic oracle |
+| FR-A07 | Rapid Campaign switching restores coherent useful state and safely persists the next mutation | FR2 | FR2 current-format A/B/A production timing and semantic oracle; FR7 exact cross-OS `RP-R`/`RP-L` `QS-05` completion |
 | FR-A08 | Running Play has one visible projection and exposes stale dependents as pending | FR3 | Scene/Party/Encounter/Loot fault matrix |
 | FR-A09 | Catalog/editor search, selection, draft, submission, and persisted projection have separate owners | FR4 | crossed reads/writes and draft survival matrix |
 | FR-A10 | Long work has one linear cancel result and cannot publish into a different authored authority | FR5 | early/mid/commit cancel plus switch/restart cases |
