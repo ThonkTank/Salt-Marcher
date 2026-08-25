@@ -23,14 +23,36 @@ export function replaceSemanticIdentities(
 }
 
 export function assertNoRawUuid(value: unknown, label: string): void {
-  const serialized = JSON.stringify(value)
-  const match = serialized.match(
-    /[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i
-  )
+  const match = findRawUuid(value)
   if (match)
     throw new Error(
-      `${label} semantic projection left raw identity ${match[0]}.`
+      `${label} semantic projection left raw identity ${match.identity} at ${match.path}.`
     )
+}
+
+function findRawUuid(
+  value: unknown,
+  path = '$'
+): Readonly<{ identity: string; path: string }> | null {
+  if (Array.isArray(value)) {
+    for (const [index, entry] of value.entries()) {
+      const match = findRawUuid(entry, `${path}[${index}]`)
+      if (match) return match
+    }
+    return null
+  }
+  if (typeof value === 'object' && value !== null) {
+    for (const [key, entry] of Object.entries(value)) {
+      const match = findRawUuid(entry, `${path}.${key}`)
+      if (match) return match
+    }
+    return null
+  }
+  if (typeof value !== 'string') return null
+  const match = value.match(
+    /[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i
+  )
+  return match ? { identity: match[0], path } : null
 }
 
 export function semanticHash(value: unknown): string {

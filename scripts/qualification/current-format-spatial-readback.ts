@@ -71,11 +71,16 @@ export type CurrentFormatSpatialReadback = Readonly<{
   campaigns: readonly CurrentFormatSpatialCampaignReadback[]
 }>
 
+export type CurrentFormatSpatialProjectionExtensions = Readonly<{
+  downstreamLocationChoiceIds?: ReadonlyMap<'A' | 'B', ReadonlySet<string>>
+}>
+
 export function readCurrentFormatSpatialFixture(
   dataRoot: string,
   rootFixture: CurrentFormatRootFixture,
   liveFixture: CurrentFormatLiveFixture,
-  spatialFixture: CurrentFormatSpatialFixture
+  spatialFixture: CurrentFormatSpatialFixture,
+  projectionExtensions: CurrentFormatSpatialProjectionExtensions = {}
 ): CurrentFormatSpatialReadback {
   const root = readCurrentFormatRootFixture(dataRoot, rootFixture)
   const campaigns = new CampaignStore(dataRoot)
@@ -149,7 +154,10 @@ export function readCurrentFormatSpatialFixture(
               travel,
               overlays,
               nextBoundaryDelay
-            }
+            },
+            projectionExtensions.downstreamLocationChoiceIds?.get(
+              configured.role
+            )
           )
           return {
             role: configured.role,
@@ -382,7 +390,8 @@ function semanticSpatialProjection(
     travel: HexTravelSnapshot
     overlays: HexRuntimeOverlayProjection
     nextBoundaryDelay: number | null
-  }>
+  }>,
+  downstreamLocationChoiceIds: ReadonlySet<string> = new Set()
 ): unknown {
   const additions = new Map<string, string>([
     [mapId, configured.materialization.mapSemanticKey],
@@ -406,9 +415,24 @@ function semanticSpatialProjection(
     session,
     additions
   )
+  for (const id of downstreamLocationChoiceIds)
+    assert.equal(
+      session.scene.locationChoices.filter((choice) => choice.id === id).length,
+      1,
+      `Campaign ${configured.role} downstream Location choice ${id} is not singular.`
+    )
+  const upstreamSession: LiveSessionSnapshot = {
+    ...session,
+    scene: {
+      ...session.scene,
+      locationChoices: session.scene.locationChoices.filter(
+        ({ id }) => !downstreamLocationChoiceIds.has(id)
+      )
+    }
+  }
   const projection = replaceSemanticIdentities(
     {
-      liveSession: session,
+      liveSession: upstreamSession,
       hex: spatial
     },
     identities
