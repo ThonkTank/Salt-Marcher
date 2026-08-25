@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "identity": "frontend-robustness-current-format-preparation-v1",
+  "spatialFixtureIdentity": "frontend-robustness-current-format-spatial-v1",
+  "qualificationClaim": "partial-fr2f2c1-preparation-cohort-not-complete-current-format",
+  "coveredCampaignRegistrations": [
+    "campaign-rules",
+    "encounter-plans",
+    "encounter-tables",
+    "session-generation",
+    "session-planner"
+  ],
+  "coveredInstallationAuthorities": [
+    "installation.generator-presets",
+    "installation.encounter-tables"
+  ],
+  "installation": {
+    "sharedEncounterTableCommandId": "01910000-0000-7000-8000-000000000001",
+    "sharedEncounterTableName": "Geteilte Küstenbegegnungen",
+    "sharedEncounterCreatureId": "wolf",
+    "expectedPresetRegistryRevision": 4,
+    "expectedEncounterTableRevision": 1
+  },
+  "campaigns": [
+    {
+      "role": "A",
+      "materialization": {
+        "presetSemanticKey": "generator-preset:harbor",
+        "presetName": "Hafen-Vorbereitung",
+        "referencedLocationExternalKey": "location:salt-harbor",
+        "commandIds": {
+          "createPreset": "01910000-0000-7000-8000-000000000002",
+          "assignPreset": "01910000-0000-7000-8000-000000000003",
+          "updateRules": "01910000-0000-7000-8000-000000000004",
+          "createCampaignEncounterTable": "01910000-0000-7000-8000-000000000005",
+          "preparationOperation": "01910000-0000-7000-8000-000000000006"
+        },
+        "rewardXpBasis": "adjusted",
+        "campaignEncounterTableName": "Hafenwache",
+        "encounterCreatureId": "goblin",
+        "seed": 179974,
+        "adventureDayFraction": "0.6",
+        "encounterCount": 1
+      },
+      "expected": {
+        "rulesRevision": 1,
+        "locationRevision": 3,
+        "campaignEncounterTableRevision": 1,
+        "plannerRevision": 2,
+        "preparationStatus": "succeeded",
+        "generatedRunKind": "session",
+        "encounterPlanCount": 1,
+        "generatedRewardCount": 2,
+        "semanticSha256": "96a5de32ad7588fe8ba43b895cdb0df33b99b5c491349e56b54d1877887ffb5c"
+      }
+    },
+    {
+      "role": "B",
+      "materialization": {
+        "presetSemanticKey": "generator-preset:marsh",
+        "presetName": "Moor-Vorbereitung",
+        "referencedLocationExternalKey": "location:moon-marsh",
+        "commandIds": {
+          "createPreset": "01910000-0000-7000-8000-000000000007",
+          "assignPreset": "01910000-0000-7000-8000-000000000008",
+          "updateRules": "01910000-0000-7000-8000-000000000009",
+          "createCampaignEncounterTable": "01910000-0000-7000-8000-00000000000a",
+          "preparationOperation": "01910000-0000-7000-8000-00000000000b"
+        },
+        "rewardXpBasis": "adjusted",
+        "campaignEncounterTableName": "Moorjäger",
+        "encounterCreatureId": "wolf",
+        "seed": 179975,
+        "adventureDayFraction": "0.5",
+        "encounterCount": 1
+      },
+      "expected": {
+        "rulesRevision": 1,
+        "locationRevision": 2,
+        "campaignEncounterTableRevision": 1,
+        "plannerRevision": 2,
+        "preparationStatus": "succeeded",
+        "generatedRunKind": "session",
+        "encounterPlanCount": 1,
+        "generatedRewardCount": 2,
+        "semanticSha256": "916833f21e8dc77e66983fc218d0ec9118f540717ca589a09ec42599df79f123"
+      }
+    }
+  ]
+}
