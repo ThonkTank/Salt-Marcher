@@ -120,6 +120,9 @@ function settingsApi(
     settings: {
       read,
       update
+    },
+    session: {
+      onChanged: vi.fn(() => () => undefined)
     }
   } as unknown as SaltMarcherApi
 }

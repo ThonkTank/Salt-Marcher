@@ -298,6 +298,7 @@ const referenceChanges = new ReferenceChangeCoordinator(
 )
 const {
   mutateReferences,
+  publishSessionProjectionInvalidation,
   publishSessionChange,
   publishLootChange,
   publishPreparationChange,
@@ -388,6 +389,7 @@ const worldPlannerHandlers = createWorldPlannerHandlers({
   worldNpcs,
   biomes: biomeService,
   mutateReferences,
+  publishSessionProjectionInvalidation,
   publishLocationChange,
   publishLocationMarkerHexChanges,
   publishSymbolChange,

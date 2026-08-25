@@ -4,7 +4,7 @@
 - Delivery baseline: `origin/main@02a0e9c2e25700489157a017806b7cfeaa4c6134`
 - Sprint: `FR2F2B2` from the
   [frontend robustness roadmap](../architecture/frontend-robustness-roadmap.md)
-- Change class: qualification and documentation only
+- Change class: qualification plus app-relevant post-phase robustness follow-up
 - Gate verdict: **FR2 remains open / no-go for FR3**
 
 ## Sources reviewed before implementation
@@ -142,6 +142,34 @@ This slice owns:
     masks only that qualified field for mapped Party members and re-applies the
     complete root oracle. A public Location-notes mutation proves unrelated
     root drift still fails; no later phase is used to hide this omission.
+13. The first exact-SHA Candidate run
+    [32819591384](https://github.com/ThonkTank/Salt-Marcher/actions/runs/32819591384)
+    failed only `Linux Visual · goldens-campaign`; every root job and every
+    other downstream E2E/Visual job passed. Failure artifact readback proved
+    that `Verfallener Turm` had been deleted from the Location table while the
+    Scene still contained its now-dangling Location identity. The rendered
+    Session nevertheless still showed the deleted label. This is a real stale
+    Renderer projection, not failed persistence and not a visual-golden drift.
+14. Root cause is the former route-local ownership boundary: Location deletion
+    commits in Utility, then the Catalog route unmounts and cancels its
+    hook-local latest-only coordinator before its follow-up Session refresh can
+    publish. `CampaignWorkspaceProjection` already outlives both routes, but
+    previously did not consume the existing identity-bound `session.changed`
+    channel. A blind retry was rejected because it would preserve this race.
+15. The follow-up publishes `projection-invalidated` after public Location
+    catalog save/delete commits and makes the provider-lived Campaign workspace
+    owner refresh only the matching active Campaign Session. It neither polls
+    nor remounts the application and ignores inactive-Campaign events. The E2E
+    path also waits for the preceding Scene-location command to become visible
+    before starting deletion, so two independent writes are not accidentally
+    overlapped by the test.
+16. The invalidation intentionally performs one coarse complete active-Session
+    read instead of synthesizing a partial Location patch. It does not yet
+    provide a joint Location/Session command receipt, and asynchronous refresh
+    failure retains the projection owner's existing failure/cached-state
+    behavior rather than adding a new user-facing error surface. Those are
+    bounded later owner/receipt concerns; this follow-up claims only removal of
+    the demonstrated cross-route stale projection.
 
 ## Verification
 
@@ -157,20 +185,35 @@ This slice owns:
   including invalid-B preflight, public Hex, Travel, and Location mutations,
   root preservation, coverage and identity/hash drift, exact receipt identity
   after reopen, complete semantic hashes, and A/B isolation;
+- targeted projection, Utility-event, and architecture verification: 3 files
+  and 21 tests passed, covering matching active-Campaign refresh,
+  inactive-Campaign isolation, disposal/unsubscription, exact event Campaign,
+  Scene, revision, reason, and both Location publisher callsites;
 - after the post-phase follow-up, `pnpm check:frontend-robustness`: 28 files and
-  185 tests passed, including both TypeScript projects;
-- the complete local `pnpm check` passed formatting, every lint partition, both
-  TypeScript projects, and 91/91 architecture tests. Its portable unit phase
-  reproduced only the four unrelated host-sensitive failures already recorded
-  through FR2F2B1: three Encounter Generator settings tests exceeded their
-  unchanged 30-second timeout and the 16-ms Reference Matcher gate measured
-  30.572 ms. The result was 195/197 files and 803/807 tests; no failing test
-  imports the new spatial fixture, protocol, reader, or integration test, and
-  no timeout or threshold was weakened;
-- baseline and candidate app-build input fingerprint are both
-  `00e52f0d9d8d3f826d5aef5e1080d4b08e29af23cacafc8230b25e447da64ea1`;
-  this qualification/documentation-only SHA therefore does not require a local
-  application handoff;
+  186 tests passed, including both TypeScript projects and the provider-lived
+  invalidation plus publisher-wiring architecture coverage;
+- the final complete local `pnpm check` passed formatting, every lint
+  partition, both TypeScript projects, and 91/91 architecture tests. On the
+  same overloaded host that timed out both direct Visual scenarios, its
+  portable unit phase ended at 195/197 files and 802/809 tests: five unchanged
+  30-second timeouts in the previously recorded Encounter Generator settings
+  suite, one follow-on duplicate Escape callback in that same file after the
+  timeouts, and the 16-ms Reference Matcher gate at 66.015 ms. All 30 directly
+  affected provider tests passed together; all 186 focused robustness tests
+  passed. No failing test imports the changed projection/event code or spatial
+  qualification, and no timeout, threshold, worker count, or product behavior
+  was weakened to obtain a local green result;
+- the qualification-only SHA retained baseline app-build input fingerprint
+  `00e52f0d9d8d3f826d5aef5e1080d4b08e29af23cacafc8230b25e447da64ea1`.
+  The robustness follow-up changes production Renderer and Utility inputs and
+  therefore produces fingerprint
+  `f4a545959738c83b8ee3c88ed2b62df55d021ffa992ed46bc8984140917e63c6`;
+  an exact-SHA canonical application handoff is mandatory before promotion;
+- a direct local `goldens-campaign` run was attempted without `xvfb` on the
+  desktop host. It failed first in the unchanged preceding Hex Map scenario
+  through repeated 30-second Renderer and screenshot timeouts. This host-bound
+  run is not used as functional proof; the exact-SHA remote Visual job remains
+  authoritative for the corrected Campaign Combat path;
 - formatting and diff validation passed; remote Candidate result and Main
   attestation are recorded at delivery time rather than predeclared here.
 

@@ -100,7 +100,8 @@ const api = {
   runtime: {
     reportRendererIncident: vi.fn().mockResolvedValue(undefined),
     reloadRenderer: vi.fn().mockResolvedValue(undefined)
-  }
+  },
+  session: { onChanged: vi.fn(() => () => undefined) }
 } as unknown as SaltMarcherApi
 const asyncAssertion = { timeout: 5_000 } as const
 

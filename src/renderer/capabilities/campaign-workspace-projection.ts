@@ -101,6 +101,7 @@ export class CampaignWorkspaceProjection {
   >
   readonly #listeners = new Set<() => void>()
   readonly #unsubscribeCatalog: () => void
+  readonly #unsubscribeSessionChanges: () => void
   #unsubscribeSession: (() => void) | null = null
   #subscribedCampaignId: string | null = null
   #pendingReconciliation: PendingCampaignReconciliation | null = null
@@ -128,6 +129,9 @@ export class CampaignWorkspaceProjection {
     this.#unsubscribeCatalog = this.#catalog.subscribe(
       campaignCatalogAuthority,
       this.#synchronize
+    )
+    this.#unsubscribeSessionChanges = api.session.onChanged(
+      this.#handleSessionChange
     )
   }
 
@@ -411,6 +415,7 @@ export class CampaignWorkspaceProjection {
     if (this.#disposed) return
     this.#disposed = true
     this.#unsubscribeCatalog()
+    this.#unsubscribeSessionChanges()
     this.#unsubscribeSession?.()
     this.#unsubscribeSession = null
     this.#catalog.dispose()
@@ -478,6 +483,17 @@ export class CampaignWorkspaceProjection {
     if (sameSnapshot(this.#snapshot, next)) return
     this.#snapshot = next
     for (const listener of this.#listeners) listener()
+  }
+
+  readonly #handleSessionChange: Parameters<
+    SaltMarcherApi['session']['onChanged']
+  >[0] = (notice) => {
+    if (this.#disposed) return
+    const campaignId = this.#catalog.current(
+      campaignCatalogAuthority
+    )?.activeCampaignId
+    if (!campaignId || notice.campaignId !== campaignId) return
+    void this.#refreshSession(campaignId)
   }
 
   async #settleCampaignWrite<Receipt extends CampaignCommandReceipt>(

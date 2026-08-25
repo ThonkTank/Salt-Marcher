@@ -80,7 +80,8 @@ describe('encounter scenario panel', () => {
 
   beforeEach(() => {
     api = {
-      encounter: { evaluate: vi.fn().mockResolvedValue(null) }
+      encounter: { evaluate: vi.fn().mockResolvedValue(null) },
+      session: { onChanged: vi.fn(() => () => undefined) }
     } as unknown as SaltMarcherApi
   })
 

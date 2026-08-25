@@ -143,7 +143,13 @@ describe('session workspace layout', () => {
 
   it('shows control selectors only while their register row is edited', () => {
     render(
-      <CapabilityProvider api={{} as SaltMarcherApi}>
+      <CapabilityProvider
+        api={
+          {
+            session: { onChanged: vi.fn(() => () => undefined) }
+          } as unknown as SaltMarcherApi
+        }
+      >
         <SessionControlPanel
           model={{
             focusedSceneId: sceneId,
@@ -173,7 +179,8 @@ describe('session workspace layout', () => {
     const value = snapshot()
     const setScenario = vi.fn()
     const api = {
-      encounter: { evaluate: vi.fn().mockResolvedValue(null) }
+      encounter: { evaluate: vi.fn().mockResolvedValue(null) },
+      session: { onChanged: vi.fn(() => () => undefined) }
     } as unknown as SaltMarcherApi
     render(
       <CapabilityProvider api={api}>

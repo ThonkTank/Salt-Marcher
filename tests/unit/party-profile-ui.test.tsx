@@ -67,7 +67,10 @@ describe('structured party profile UI', () => {
         return Promise.resolve(party)
       }
     )
-    const api = { party: { update } } as unknown as SaltMarcherApi
+    const api = {
+      party: { update },
+      session: { onChanged: vi.fn(() => () => undefined) }
+    } as unknown as SaltMarcherApi
     render(
       <CapabilityProvider api={api}>
         <PartyDropdown

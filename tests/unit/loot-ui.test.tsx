@@ -77,7 +77,13 @@ describe('Loot UI', () => {
     }
 
     render(
-      <CapabilityProvider api={{} as SaltMarcherApi}>
+      <CapabilityProvider
+        api={
+          {
+            session: { onChanged: vi.fn(() => () => undefined) }
+          } as unknown as SaltMarcherApi
+        }
+      >
         <GroupsPanelHarness snapshot={snapshot} loot={loot} focused={focused} />
       </CapabilityProvider>
     )
@@ -157,7 +163,10 @@ describe('Loot UI', () => {
     } as unknown as LiveSessionSnapshot
     const api = {
       loot: { distribute },
-      session: { read: vi.fn() }
+      session: {
+        read: vi.fn(),
+        onChanged: vi.fn(() => () => undefined)
+      }
     } as unknown as SaltMarcherApi
 
     const view = render(

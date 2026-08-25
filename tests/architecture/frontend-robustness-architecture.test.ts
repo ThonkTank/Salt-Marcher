@@ -175,6 +175,18 @@ architectureGate(
     expect(projection.stringLiterals).toContain('campaign.live-session')
     expect(projection.stringLiterals).toContain('read-projection')
     expect(projection.stringLiterals).toContain('receipt-reconciliation')
+    expect(projection.propertyAccesses).toContain('api.session.onChanged')
+
+    const worldPlanner = readTypeScriptModule(
+      'src/utility/composition/world-planner.ts'
+    )
+    expect(
+      worldPlanner.calls.filter(
+        (call) => call === 'publishSessionProjectionInvalidation'
+      )
+    ).toHaveLength(2)
+    const domainEvents = readTypeScriptModule('src/utility/domain-events.ts')
+    expect(domainEvents.stringLiterals).toContain('projection-invalidated')
 
     const coordinator = readTypeScriptModule(
       'src/renderer/features/workspace/use-campaign-session-coordinator.ts'

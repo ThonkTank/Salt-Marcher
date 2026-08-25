@@ -451,6 +451,7 @@ export async function runCampaignCombatScenario(): Promise<void> {
   await (await client.$('button[aria-label="Ort Details schließen"]')).click()
   await (await client.$('button[aria-label="Session"]')).click()
   await setSceneLocation(client, 'Verfallener Turm')
+  await waitForSceneLocation(client, 'Verfallener Turm')
   await (await client.$('button[aria-label="Katalog"]')).click()
   await (await client.$('button=Orte')).click()
   await (await client.$('button=Verfallener Turm')).click()

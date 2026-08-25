@@ -139,6 +139,7 @@ function snapshot(revision: number, archived = false): LiveSessionSnapshot {
 
 function sessionApi(sceneOverrides: Record<string, unknown>): SaltMarcherApi {
   return {
+    session: { onChanged: vi.fn(() => () => undefined) },
     loot: {
       scene: vi.fn().mockResolvedValue({
         revision: 0,

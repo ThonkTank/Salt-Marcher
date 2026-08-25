@@ -39,6 +39,7 @@ export function createWorldPlannerHandlers(dependencies: {
     work: () => T,
     changes: (result: T) => readonly ReferenceChangeDescriptor[]
   ) => T
+  publishSessionProjectionInvalidation: () => void
   publishLocationChange: (
     ids: readonly string[],
     reason: 'catalog' | 'presentation' | 'symbol-replacement'
@@ -86,6 +87,7 @@ export function createWorldPlannerHandlers(dependencies: {
     worldNpcs,
     biomes,
     mutateReferences,
+    publishSessionProjectionInvalidation,
     publishLocationChange,
     publishLocationMarkerHexChanges,
     publishSymbolChange,
@@ -109,6 +111,7 @@ export function createWorldPlannerHandlers(dependencies: {
           () => {
             const execution = save.execute(input)
             publishLocationChange([execution.receipt.saved.id], 'catalog')
+            publishSessionProjectionInvalidation()
             if (execution.hexResult) publishHexChange(execution.hexResult)
             return execution.receipt
           },
@@ -143,6 +146,7 @@ export function createWorldPlannerHandlers(dependencies: {
                 [result.notice.changedChunk]
               )
             publishLocationChange([input.id], 'catalog')
+            publishSessionProjectionInvalidation()
             return result.receipt
           },
           () => [{ kind: 'location', id: input.id }]

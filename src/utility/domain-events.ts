@@ -38,6 +38,23 @@ export class CoreEventSink {
   }
 }
 
+export function publishSessionProjectionInvalidation(deps: {
+  sink: CoreEventSink
+  campaigns: Pick<CampaignStore, 'activeCampaignId'>
+  play: Pick<LivePlayService, 'readSession'>
+}): void {
+  const snapshot = deps.play.readSession()
+  deps.sink.post({
+    kind: 'session.changed',
+    notice: {
+      campaignId: deps.campaigns.activeCampaignId(),
+      sceneId: snapshot.scene.focusedSceneId,
+      revision: snapshot.revision,
+      reason: 'projection-invalidated'
+    }
+  })
+}
+
 interface DomainEventDependencies {
   sink: CoreEventSink
   campaigns: CampaignStore
@@ -149,6 +166,8 @@ export function createDomainEventPublishers(deps: DomainEventDependencies) {
       deps.referenceChanges.record(changes(result))
       return result
     },
+    publishSessionProjectionInvalidation: () =>
+      publishSessionProjectionInvalidation(deps),
     publishSessionChange,
     publishLootChange: (
       reason: 'created' | 'updated' | 'moved' | 'accepted' | 'distributed'

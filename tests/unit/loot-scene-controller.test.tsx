@@ -117,6 +117,7 @@ describe('Loot scene controller', () => {
 
 function lootApi(overrides: Partial<SaltMarcherApi['loot']>): SaltMarcherApi {
   return {
+    session: { onChanged: vi.fn(() => () => undefined) },
     loot: {
       scene: vi.fn(({ sceneId }: { sceneId: string }) =>
         Promise.resolve(projection(sceneId, 0))

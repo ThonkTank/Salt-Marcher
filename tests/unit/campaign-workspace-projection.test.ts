@@ -132,6 +132,56 @@ describe('Campaign Workspace projection', () => {
     expect(read).toHaveBeenCalledOnce()
   })
 
+  it('refreshes the active Session from provider-lived invalidation events across consumer routes', async () => {
+    let changed!: Parameters<SaltMarcherApi['session']['onChanged']>[0]
+    const unsubscribe = vi.fn()
+    const onChanged = vi.fn<SaltMarcherApi['session']['onChanged']>(
+      (listener) => {
+        changed = listener
+        return unsubscribe
+      }
+    )
+    const refreshed = session(2)
+    const read = vi.fn<SaltMarcherApi['session']['read']>(() =>
+      Promise.resolve(refreshed)
+    )
+    const projection = new CampaignWorkspaceProjection(
+      apiWithCampaigns({}, { read, onChanged })
+    )
+    projection.publishCampaigns(catalog(campaignA))
+    projection.publishSession(campaignA, session(1))
+
+    changed({
+      campaignId: campaignB,
+      sceneId: campaignB,
+      revision: 2,
+      reason: 'projection-invalidated'
+    })
+    await Promise.resolve()
+    expect(read).not.toHaveBeenCalled()
+
+    changed({
+      campaignId: campaignA,
+      sceneId: campaignA,
+      revision: 2,
+      reason: 'projection-invalidated'
+    })
+    await vi.waitFor(() => expect(read).toHaveBeenCalledOnce())
+    expect(read).toHaveBeenCalledWith({ campaignId: campaignA })
+    expect(projection.snapshot().session).toBe(refreshed)
+
+    projection.dispose()
+    expect(unsubscribe).toHaveBeenCalledOnce()
+    changed({
+      campaignId: campaignA,
+      sceneId: campaignA,
+      revision: 3,
+      reason: 'projection-invalidated'
+    })
+    await Promise.resolve()
+    expect(read).toHaveBeenCalledOnce()
+  })
+
   it('queues same-authority commands and selects the accepted revision at transport time', async () => {
     const created =
       deferred<Awaited<ReturnType<SaltMarcherApi['campaigns']['create']>>>()
@@ -500,7 +550,7 @@ function api(
 ): SaltMarcherApi {
   return {
     campaigns: { list },
-    session: { read }
+    session: { read, onChanged: vi.fn(() => () => undefined) }
   } as unknown as SaltMarcherApi
 }
 
@@ -516,6 +566,7 @@ function apiWithCampaigns(
     },
     session: {
       read: vi.fn(() => Promise.resolve(session(0))),
+      onChanged: vi.fn(() => () => undefined),
       ...sessionCapability
     }
   } as unknown as SaltMarcherApi
