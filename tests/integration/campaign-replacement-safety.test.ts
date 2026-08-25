@@ -40,20 +40,16 @@ afterEach(() => {
 })
 
 describe('campaign replacement safety', () => {
-  it.each(['active', 'inactive'] as const)(
-    'preserves the original for every uncommitted boundary of an %s campaign',
-    (activity) => {
-      for (const failurePhase of rollbackPhases)
-        assertFailureConverges(activity, failurePhase, false)
-    }
+  it.each(boundaryCases(rollbackPhases))(
+    'preserves the original for an %s campaign interrupted at %s',
+    (activity, failurePhase) =>
+      assertFailureConverges(activity, failurePhase, false)
   )
 
-  it.each(['active', 'inactive'] as const)(
-    'preserves the verified replacement after registry commit for an %s campaign',
-    (activity) => {
-      for (const failurePhase of rollForwardPhases)
-        assertFailureConverges(activity, failurePhase, true)
-    }
+  it.each(boundaryCases(rollForwardPhases))(
+    'preserves the verified replacement for an %s campaign interrupted at %s',
+    (activity, failurePhase) =>
+      assertFailureConverges(activity, failurePhase, true)
   )
 
   it.each([
@@ -109,6 +105,14 @@ describe('campaign replacement safety', () => {
     }
   )
 })
+
+function boundaryCases<T extends CampaignLifecycleBoundary>(
+  boundaries: readonly T[]
+): ReadonlyArray<readonly ['active' | 'inactive', T]> {
+  return (['active', 'inactive'] as const).flatMap((activity) =>
+    boundaries.map((boundary) => [activity, boundary] as const)
+  )
+}
 
 function assertFailureConverges(
   activity: 'active' | 'inactive',

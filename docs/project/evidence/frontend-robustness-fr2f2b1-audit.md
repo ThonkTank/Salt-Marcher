@@ -118,6 +118,15 @@ This slice owns:
 9. Hex maps, Party travel position, Scene time progression, active/paused
    journey state, renderer dispatch, warm-switch timing, focused-Scene next
    mutation, SwiftShader, handoff, and owner acceptance remain absent by design.
+10. The first exact-SHA Candidate run exposed a pre-existing Windows-native test
+    granularity defect: each of four Campaign replacement cases executed five or
+    nine complete interruption boundaries under one 30-second Vitest deadline.
+    Two different boundary groups timed out on each of two attempts while the
+    other platform and product jobs passed. The bounded follow-up decomposes the
+    same active/inactive and rollback/roll-forward matrix into one test per
+    boundary. It removes no assertion, changes no product timeout, and does not
+    raise the test timeout; the replacement guarantees and failure injection
+    remain identical while each failure now identifies its exact boundary.
 
 ## Verification
 
@@ -142,6 +151,18 @@ This slice owns:
   test, and no timeout or threshold was weakened;
 - final diff validation, remote Candidate result, and Main attestation are
   recorded at delivery time rather than predeclared here.
+- Candidate run `32810330784` attempts 1 and 2 reproduced only the Windows test
+  granularity issue described above; the decomposed-boundary follow-up requires
+  a new exact SHA and a complete fresh Candidate run rather than blessing the
+  failed run or repeatedly retrying it.
+- after that follow-up, the decomposed Campaign replacement file passed all 35
+  boundary cases, the isolated native-persistence suite passed 5 files and 77
+  tests, and `pnpm check:frontend-robustness` passed 27 files and 179 tests. A
+  fresh serial `pnpm check` again passed formatting, every lint partition, both
+  TypeScript projects, and 91/91 architecture tests, then reproduced only the
+  same unrelated three Encounter Generator timeouts and Reference Matcher
+  16-ms gate (34.17 ms), for 195/197 files and 803/807 tests. No product or test
+  timeout was increased.
 
 ## Gate decision and follow-up
 
