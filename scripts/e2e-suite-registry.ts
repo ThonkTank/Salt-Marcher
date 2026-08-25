@@ -202,6 +202,15 @@ export const e2eSuiteRegistry = [
         measuredSeconds: 82
       }
     }
+  },
+  {
+    name: 'travelSwiftshaderIsolation',
+    spec: './tests/e2e/travel-swiftshader-isolation.e2e.ts',
+    fixture: 'v2/travel-scenario',
+    types: ['functional'],
+    ci: {
+      functional: { shard: 'group-loot-travel', measuredSeconds: 110 }
+    }
   }
 ] as const satisfies readonly E2eSuiteRegistration[]
 
