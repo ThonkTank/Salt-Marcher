@@ -4,12 +4,13 @@ Date: 2026-08-25
 
 Baseline: `7716d9bdaab6d8be58c8a85251327fc555912156`
 
-Verdict: pending clean-host Candidate evidence. The reproducible Current-Format
-5+100 production population and its semantic oracle are implemented without
-weakening the one-second p95 or ten-second per-switch budgets. The deliberately
-overloaded local host did not meet p95 and is recorded as a negative result,
-not as qualification evidence. `FR2G2` owner architecture go/no-go and exact
-cross-platform `RP-R`/`RP-L` `QS-05` remain open.
+Verdict: the Current-Format production timing and semantic oracle are complete.
+A clean Candidate population measured p95 `378.011 ms` and maximum
+`452.992 ms` across 100 coherent switches, then durably preserved the focused-
+Scene next mutation across restart. The deliberately overloaded local host did
+not meet p95 and remains recorded as a negative result, not qualification
+evidence. `FR2G2` owner architecture go/no-go and exact cross-platform `RP-R`/
+`RP-L` `QS-05` remain open.
 
 ## Reviewed current truth and phase split
 
@@ -31,7 +32,7 @@ authorities. The roadmap now separates:
    FR2 evidence.
 
 An automated test cannot manufacture the second decision. This packet closes
-only `FR2G1` if clean-host Candidate evidence meets every unchanged threshold.
+only `FR2G1`; its clean-host Candidate evidence met every unchanged threshold.
 
 ## Implementation packet
 
@@ -83,8 +84,8 @@ emitted only after the mutation and restart oracle pass.
    measured p95 `1483.255 ms`, above the required one second. During the run the
    host load average was approximately 14--18, dominated by unrelated parallel
    Gradle/Robolectric processes. The result is an honest local no-go and must
-   not be relabelled as passing evidence. A clean Candidate runner is required
-   for the phase verdict.
+   not be relabelled as passing evidence. The independent clean Candidate
+   population is the phase timing evidence.
 4. Dialog opening is excluded from the stimulus exactly as in the established
    FR2D protocol. Snapshot equality reads occur after each timed readiness
    interval, so oracle cost cannot improve or contaminate a sample.
@@ -110,7 +111,19 @@ emitted only after the mutation and restart oracle pass.
 - second local Electron attempt: 100 coherent samples, p95 `1483.255 ms`, then
   correctly failed the unchanged one-second threshold under unrelated host
   load; no completion claim;
-- clean-host exact-SHA Candidate result: pending.
+- clean-host Candidate run `32869874511` on
+  `47efaad8bfba45d0e3ce950e254239907ee36d4a`: complete Check and exact-SHA
+  aggregate passed;
+- `currentFormatCampaignQualification`: 1/1 passed in 2 minutes 33 seconds on
+  Linux, Electron `43.2.0` / Chrome `150.0.7871.129`;
+- remote population: 5 warmups, 100/100 exact A/B Session snapshots, p95
+  `378.011 ms`, maximum `452.992 ms`, zero samples at or above one second and
+  zero samples at or above ten seconds;
+- semantic oracle: Scene revision `8 -> 9`, Location
+  `Salt Harbor -> Unterbrochene Küstenwacht`, and complete committed snapshot
+  equality after Electron restart;
+- the complete `hex-npc-restart` shard passed in 9 minutes 48 seconds; its
+  registry estimate is updated to the measured 153 seconds for this suite.
 
 The packet changes one E2E qualification journey, its typed registry, scoped
 Webdriver test configuration, the roadmap split, and this audit only. It changes

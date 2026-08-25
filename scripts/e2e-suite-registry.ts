@@ -106,7 +106,7 @@ export const e2eSuiteRegistry = [
     fixture: 'v5/current-format',
     types: ['functional'],
     ci: {
-      functional: { shard: 'hex-npc-restart', measuredSeconds: 350 }
+      functional: { shard: 'hex-npc-restart', measuredSeconds: 153 }
     }
   },
   {
