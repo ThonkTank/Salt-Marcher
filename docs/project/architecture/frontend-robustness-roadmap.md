@@ -329,7 +329,8 @@ decision.
 | `FR2F2B1` | Extend A/B materialization/readback to Scene and Combat through the public Live Play owner, including inactive Roster, focused Location, and active/archived Group sentinels without direct fixture SQL |
 | `FR2F2B2` | Extend A/B materialization/readback to Hex maps and Travel through their public owners, including sparse map, Location placement, Party position, Scene time, and controlled-clock journey sentinels without direct fixture SQL |
 | `FR2F2C1` | Extend A/B materialization/readback to Campaign preparation owners plus their generator-preset and Encounter-Table installation dependencies; this is partial FR2F2C evidence only |
-| `FR2F2C2` | Extend A/B materialization/readback to economy and remaining installation/reconciliation owners, then fail closed unless every manifest registration and installation dependency has exactly one primary disposition |
+| `FR2F2C2A` | Extend A/B materialization/readback to legacy item definitions, Loot, Character Loot, and the remaining biome/symbol and Session-layout installation dependencies; this remains partial FR2F2C evidence |
+| `FR2F2C2B` | Add the controlled World Location save interruption/reconciliation journey, then fail closed unless every manifest registration and installation dependency has exactly one primary disposition |
 | `FR2F3` | Focused-Scene next-action/restart oracle and isolated Travel/SwiftShader disposition |
 | `FR2G` | Current-format production timing and owner architecture go/no-go; exact `QS-05` remains open for `FR7B` |
 | `FR3A` | Running Play projection owner and selector/action boundary; no behavior migration yet |

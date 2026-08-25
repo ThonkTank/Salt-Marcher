@@ -24,6 +24,7 @@
     "tests/integration/current-format-live-qualification.test.ts",
     "tests/integration/current-format-spatial-qualification.test.ts",
     "tests/integration/current-format-preparation-qualification.test.ts",
+    "tests/integration/current-format-economy-qualification.test.ts",
     "tests/unit/generator-preset-application.test.ts",
     "tests/unit/generator-preset-reconciliation-ui.test.tsx",
     "tests/unit/core-process-supervisor.test.ts",

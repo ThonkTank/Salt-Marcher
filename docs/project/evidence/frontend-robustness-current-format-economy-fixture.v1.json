@@ -1,0 +1,156 @@
+{
+  "version": 1,
+  "identity": "frontend-robustness-current-format-economy-v1",
+  "preparationFixtureIdentity": "frontend-robustness-current-format-preparation-v1",
+  "qualificationClaim": "partial-fr2f2c2a-economy-installation-cohort-not-complete-current-format",
+  "coveredCampaignRegistrations": [
+    "legacy-items",
+    "loot",
+    "character-loot"
+  ],
+  "coveredInstallationAuthorities": [
+    "installation.biomes-and-symbols",
+    "installation.session-layout"
+  ],
+  "extendedCampaignRegistrations": [
+    "world-locations",
+    "party",
+    "session-generation",
+    "session-planner"
+  ],
+  "installation": {
+    "locationSymbolName": "Geteiltes Signalfeuer",
+    "locationSymbolSource": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 16 16\"><path d=\"M 2 14 L 8 2 L 14 14 Z\" fill-rule=\"evenodd\"/></svg>",
+    "expectedLocationSymbolRevision": 1,
+    "sessionLayout": {
+      "schemaVersion": 2,
+      "controlPaneWidth": 344,
+      "scenarioPaneWidth": 312,
+      "centerTab": "map"
+    },
+    "expectedSettingsRevision": 1,
+    "expectedSystemBiomeIds": ["forest", "grassland", "mountain", "swamp"]
+  },
+  "campaigns": [
+    {
+      "role": "A",
+      "materialization": {
+        "targetLocationExternalKey": "location:salt-harbor",
+        "symbolLocationSemanticKey": "location:signal-fire-a",
+        "symbolLocationName": "Signalfeuer der Salzküste",
+        "symbolLocationTags": ["Signal", "Küste"],
+        "legacyDefinition": {
+          "reference": {
+            "kind": "legacy",
+            "definitionId": "legacy:fr2f2c2a:salt-rope"
+          },
+          "name": "Salzseil",
+          "unitValueCp": 125,
+          "unitCapacity": 0.25,
+          "stackable": true,
+          "magic": false,
+          "rarity": null,
+          "curse": null,
+          "components": {
+            "baseItemId": null,
+            "modifierId": null,
+            "componentId": null,
+            "magicItemId": null,
+            "magicVariantId": null,
+            "spellId": null,
+            "enspelledRuleId": null,
+            "curseId": null,
+            "coinProfileId": null,
+            "coinDenominations": []
+          }
+        },
+        "manualTreasureLabel": "Vorräte der Salzwacht",
+        "generatedTreasureLabel": "Fund aus der Hafenvorbereitung",
+        "manualContainerId": "01920000-0000-7000-8000-000000000001",
+        "manualContainerName": "Seemannskiste",
+        "manualContainerCapacity": 4,
+        "manualItemQuantity": 2,
+        "distributionQuantity": 1,
+        "commandIds": {
+          "createManualTreasure": "01920000-0000-7000-8000-000000000002",
+          "acceptGeneratedTreasure": "01920000-0000-7000-8000-000000000003",
+          "distributeManualTreasure": "01920000-0000-7000-8000-000000000004"
+        }
+      },
+      "expected": {
+        "locationRevision": 4,
+        "mapPresentationRevision": 1,
+        "lootProjectionRevision": 3,
+        "manualTreasureRevision": 1,
+        "manualDistributionState": "partial",
+        "ledgerRevision": 1,
+        "ledgerEntryCount": 1,
+        "inboxEntryCount": 1,
+        "sceneLocationTreasureCount": 1,
+        "manualTotalValueCp": 250,
+        "manualAllocatedValueCp": 125,
+        "semanticSha256": "6afb33f3b9c110790aa17b573a114a499e0ca7dc1cbc4c60c63df0e6114d267d"
+      }
+    },
+    {
+      "role": "B",
+      "materialization": {
+        "targetLocationExternalKey": "location:moon-marsh",
+        "symbolLocationSemanticKey": "location:signal-fire-b",
+        "symbolLocationName": "Signalfeuer des Mondmoors",
+        "symbolLocationTags": ["Signal", "Moor"],
+        "legacyDefinition": {
+          "reference": {
+            "kind": "legacy",
+            "definitionId": "legacy:fr2f2c2a:marsh-torch"
+          },
+          "name": "Moorfackel",
+          "unitValueCp": 75,
+          "unitCapacity": 0.2,
+          "stackable": true,
+          "magic": false,
+          "rarity": null,
+          "curse": null,
+          "components": {
+            "baseItemId": null,
+            "modifierId": null,
+            "componentId": null,
+            "magicItemId": null,
+            "magicVariantId": null,
+            "spellId": null,
+            "enspelledRuleId": null,
+            "curseId": null,
+            "coinProfileId": null,
+            "coinDenominations": []
+          }
+        },
+        "manualTreasureLabel": "Vorräte der Moorführer",
+        "generatedTreasureLabel": "Fund aus der Moorvorbereitung",
+        "manualContainerId": "01920000-0000-7000-8000-000000000005",
+        "manualContainerName": "Schilfkorb",
+        "manualContainerCapacity": 4,
+        "manualItemQuantity": 2,
+        "distributionQuantity": 1,
+        "commandIds": {
+          "createManualTreasure": "01920000-0000-7000-8000-000000000006",
+          "acceptGeneratedTreasure": "01920000-0000-7000-8000-000000000007",
+          "distributeManualTreasure": "01920000-0000-7000-8000-000000000008"
+        }
+      },
+      "expected": {
+        "locationRevision": 3,
+        "mapPresentationRevision": 1,
+        "lootProjectionRevision": 3,
+        "manualTreasureRevision": 1,
+        "manualDistributionState": "partial",
+        "ledgerRevision": 1,
+        "ledgerEntryCount": 1,
+        "inboxEntryCount": 1,
+        "sceneLocationTreasureCount": 1,
+        "manualTotalValueCp": 150,
+        "manualAllocatedValueCp": 75,
+        "semanticSha256": "60a0b6834769aa1b3e5854c3d4febe1c0bdb2c09a3f8e0dbbd506059f12dde11"
+      }
+    }
+  ]
+}

@@ -47,6 +47,11 @@ type PreparationReceipt = NonNullable<
 type GeneratedRun = ReturnType<SessionGenerationService['readRun']>
 type PlanSummaries = ReturnType<GeneratedEncounterPlanService['summaries']>
 
+export type CurrentFormatPreparationProjectionExtensions = Readonly<{
+  downstreamLocationChoiceIds?: ReadonlyMap<'A' | 'B', ReadonlySet<string>>
+  downstreamPlacedTreasureIds?: ReadonlyMap<'A' | 'B', ReadonlySet<string>>
+}>
+
 export type CurrentFormatPreparationCampaignReadback = Readonly<{
   role: 'A' | 'B'
   campaignId: string
@@ -83,13 +88,15 @@ export function readCurrentFormatPreparationFixture(
   rootFixture: CurrentFormatRootFixture,
   liveFixture: CurrentFormatLiveFixture,
   spatialFixture: CurrentFormatSpatialFixture,
-  preparationFixture: CurrentFormatPreparationFixture
+  preparationFixture: CurrentFormatPreparationFixture,
+  projectionExtensions: CurrentFormatPreparationProjectionExtensions = {}
 ): CurrentFormatPreparationReadback {
   const spatial = readCurrentFormatSpatialFixture(
     dataRoot,
     rootFixture,
     liveFixture,
-    spatialFixture
+    spatialFixture,
+    projectionExtensions
   )
   const campaigns = new CampaignStore(dataRoot)
   try {
@@ -199,7 +206,13 @@ export function readCurrentFormatPreparationFixture(
               preparation,
               generatedRun,
               encounterPlans
-            }
+            },
+            projectionExtensions.downstreamPlacedTreasureIds?.get(
+              configured.role
+            ),
+            projectionExtensions.downstreamLocationChoiceIds?.get(
+              configured.role
+            )
           )
           return Object.freeze({
             role: configured.role,
@@ -444,7 +457,9 @@ function semanticPreparationProjection(
     preparation: PreparationReceipt
     generatedRun: GeneratedRun
     encounterPlans: PlanSummaries
-  }>
+  }>,
+  downstreamPlacedTreasureIds: ReadonlySet<string> = new Set(),
+  downstreamLocationChoiceIds: ReadonlySet<string> = new Set()
 ): unknown {
   const presetId = preparation.preset.assignment?.effectivePresetId
   if (!presetId)
@@ -491,6 +506,41 @@ function semanticPreparationProjection(
           `generated-treasure:${index + 1}:${rewardIndex + 1}`
         )
   }
+  for (const id of downstreamPlacedTreasureIds)
+    assert.equal(
+      workspace.session.scenes
+        .flatMap(({ generatedRewards }) => generatedRewards)
+        .filter(({ placedTreasure }) => placedTreasure?.id === id).length,
+      1,
+      `Campaign ${configured.role} downstream placed Treasure ${id} is not singular.`
+    )
+  for (const id of downstreamLocationChoiceIds)
+    assert.equal(
+      workspace.availableLocations.filter((location) => location.id === id)
+        .length,
+      1,
+      `Campaign ${configured.role} downstream available Location ${id} is not singular.`
+    )
+  const upstreamWorkspace: Workspace = {
+    ...preparation.workspace,
+    availableLocations: preparation.workspace.availableLocations.filter(
+      ({ id }) => !downstreamLocationChoiceIds.has(id)
+    ),
+    session: {
+      ...preparation.workspace.session,
+      scenes: preparation.workspace.session.scenes.map((scene) => ({
+        ...scene,
+        generatedRewards: scene.generatedRewards.map((reward) => ({
+          ...reward,
+          placedTreasure:
+            reward.placedTreasure &&
+            downstreamPlacedTreasureIds.has(reward.placedTreasure.id)
+              ? null
+              : reward.placedTreasure
+        }))
+      }))
+    }
+  }
   const identities = currentFormatLiveSemanticIdentities(
     liveFixture,
     root,
@@ -518,7 +568,7 @@ function semanticPreparationProjection(
       sharedEncounterTableReceipt: projectTableReceipt(
         preparation.sharedEncounterTableReceipt
       ),
-      workspace: preparation.workspace,
+      workspace: upstreamWorkspace,
       preparation: {
         ...preparation.preparation,
         encounterBatchFingerprint: '<identity-bound-batch-fingerprint>'
