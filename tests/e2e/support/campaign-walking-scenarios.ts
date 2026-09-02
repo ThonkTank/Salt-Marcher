@@ -9,6 +9,7 @@ import {
   setWindowToMinimumResponsiveSize
 } from './e2e-assertions.js'
 import { clickWhenInteractable } from './e2e-interactions.js'
+import { waitForGmRendererReady } from './e2e-ready.js'
 
 export async function runCampaignCreationScenario(): Promise<void> {
   const client = browser as unknown as WdioBrowser
@@ -31,13 +32,18 @@ export async function runCampaignCreationScenario(): Promise<void> {
   await client.execute(() => {
     document.documentElement.dataset['theme'] = 'light'
   })
-  await field.setValue('Campaign A')
+  await field.setValue('test')
   await (await client.$('button=Anlegen')).click()
   await (
-    await client.$('h1=Session · Campaign A')
+    await client.$('h1=Session · test')
   ).waitForExist({
     timeout: 10_000
   })
+  await expect(await client.$('.error-message')).not.toBeExisting()
+  await client.reloadSession()
+  await waitForGmRendererReady(client)
+  await (await client.$('h1=Session · test')).waitForExist({ timeout: 10_000 })
+  await expect(await client.$('.error-message')).not.toBeExisting()
   await expect(
     await client.$('section[aria-label="Session Steuerung"]')
   ).toBeExisting()
@@ -221,9 +227,9 @@ export async function runCampaignCreationScenario(): Promise<void> {
   })
 
   await openCampaignDialog(client)
-  await (await client.$('button[aria-label="Campaign A"]')).click()
+  await (await client.$('button[aria-label="test"]')).click()
   await (
-    await client.$('h1=Session · Campaign A')
+    await client.$('h1=Session · test')
   ).waitForExist({
     timeout: 10_000
   })

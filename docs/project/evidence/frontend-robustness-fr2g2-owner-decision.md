@@ -4,14 +4,17 @@ Date: 2026-08-25
 
 Decision baseline: `origin/main@eeec3abdd2637a6d75f6c42081dd7777a4774560`
 
-Status: **owner decision requested**
+Status: **NO-GO recorded; bounded FR2G2 follow-up implemented; owner
+re-decision pending**
 
-Recommendation: **GO for the Campaign Workspace replacement and the start of
-FR3A**. This recommendation is not the owner decision. It does not accept the
-whole frontend, close the historical M1 rendering gate, complete `QS-05`, or
-approve an installed visible cutover.
+The original recommendation below was superseded by the owner's explicit
+**NO-GO** on 2026-09-02 after a valid empty-profile Campaign creation exposed a
+provider-lifecycle defect. The bounded follow-up is recorded in
+[`frontend-robustness-fr2g2a-provider-lifecycle-followup.md`](frontend-robustness-fr2g2a-provider-lifecycle-followup.md).
+FR3A remains unauthorized until the owner reviews that delivered follow-up and
+records a new explicit GO.
 
-## Decision requested
+## Original decision request
 
 Choose exactly one outcome after reviewing this packet:
 
@@ -23,6 +26,23 @@ Choose exactly one outcome after reviewing this packet:
 Until the owner records one of those outcomes, `FR2G2` and the FR3 entry gate
 remain open. Tests, audits, CI, and this recommendation cannot substitute for
 that explicit decision.
+
+## Owner decision — 2026-09-02
+
+**FR2G2 NO-GO — blocking defect:** under the application's root React
+`StrictMode`, the top-level `CapabilityProvider` constructed its stateful
+projection owners during render and disposed the retained instances during
+StrictMode's probe cleanup. The following setup reused those permanently
+disposed instances. A valid `createCampaign("test")` therefore stopped before
+transport, produced no Campaign registry entry, and surfaced only
+`Unbekannter Fehler`.
+
+The owner explicitly selected formal NO-GO handling for this defect. It is a
+Campaign Workspace ownership failure and must be closed as a bounded FR2G2
+follow-up, not shipped as unrelated polish or used to authorize FR3A. A
+successful follow-up, Candidate check, exact-SHA handoff, Main promotion, and
+installed-runtime proof resolve the named blocker but do not manufacture the
+subsequent owner GO.
 
 ## Sources and live state reviewed
 
@@ -177,7 +197,9 @@ a NO-GO will produce a bounded follow-up packet before any FR3 implementation.
 
 ## Delivery classification
 
-This decision packet changes documentation only. It adds no runtime,
-qualification, dependency, Electron/build, resource, or packaging input. It
-finishes with the documentation/test gate, requires no AppImage handoff, and
-does not itself close `FR2G2` while the owner response remains pending.
+The original decision packet changed documentation only. The owner NO-GO and
+its linked follow-up now accompany an app-relevant Renderer lifecycle change.
+That final Candidate must pass the complete remote check and canonical
+exact-SHA AppImage handoff before unchanged Main promotion. Even after that
+delivery, `FR2G2` remains at **NO-GO resolved; owner re-decision pending** until
+the owner explicitly supplies the next decision.

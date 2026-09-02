@@ -9,6 +9,7 @@
     "tests/unit/async-command-coordinator.test.ts",
     "tests/unit/keyed-read-projection-owner.test.ts",
     "tests/unit/keyed-write-command-owner.test.ts",
+    "tests/unit/capability-provider.test.tsx",
     "tests/unit/installation-settings-projection.test.tsx",
     "tests/unit/campaign-workspace-projection.test.ts",
     "tests/unit/campaign-registry-repository.test.ts",
