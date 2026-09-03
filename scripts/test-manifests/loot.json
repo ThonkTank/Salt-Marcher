@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "name": "loot",
+  "typecheck": true,
+  "tests": [
+    "tests/unit/loot-ui.test.tsx",
+    "tests/unit/loot-catalog-pane.test.tsx",
+    "tests/unit/loot-catalog-service.test.ts",
+    "tests/unit/loot-scene-controller.test.tsx",
+    "tests/unit/group-loot-draft.test.ts",
+    "tests/integration/loot-projection-store.test.ts",
+    "tests/integration/loot-vertical-slice.test.ts"
+  ],
+  "maxWorkers": 2
+}

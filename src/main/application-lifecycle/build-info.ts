@@ -18,8 +18,17 @@ export function loadBuildInfo(): BuildInfo | undefined {
   }
 }
 
-export function windowTitleForBuild(buildInfo: BuildInfo | undefined): string {
-  return buildInfo?.channel === 'local'
-    ? `SaltMarcher Local · ${shortBuildFingerprint(buildInfo)}`
-    : 'SaltMarcher'
+export function windowTitleForBuild(
+  buildInfo: BuildInfo | undefined,
+  iterationIdentity = process.env['SALT_MARCHER_ITERATION_ID']
+): string {
+  if (buildInfo?.channel === 'local')
+    return `SaltMarcher Local · ${shortBuildFingerprint(buildInfo)}`
+  if (
+    buildInfo === undefined &&
+    iterationIdentity !== undefined &&
+    /^[a-z][a-z0-9-]{0,31}@[0-9a-f]{12}(?:\+dirty)?$/.test(iterationIdentity)
+  )
+    return `SaltMarcher Iteration · ${iterationIdentity}`
+  return 'SaltMarcher'
 }
