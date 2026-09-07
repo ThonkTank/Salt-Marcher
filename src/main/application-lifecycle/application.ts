@@ -144,7 +144,8 @@ async function startApplicationWithProfileLock(
       process.arch === 'x64',
     async () => {
       await supervisor.closeGracefully()
-    }
+    },
+    () => supervisor.resumeAfterMaintenance()
   )
   if (verifyRelease) {
     try {

@@ -158,6 +158,16 @@ export class CoreProcessSupervisor {
     this.spawn()
   }
 
+  /** Reopen only after maintenance has restored the original profile. */
+  resumeAfterMaintenance(): void {
+    if (this.#lifecycle.phase !== 'closed') return
+    this.transition({
+      phase: 'unavailable',
+      generation: this.#lifecycle.generation
+    })
+    this.retry()
+  }
+
   /** Process-boundary probe registered only by the E2E runtime. */
   terminateUtilityForE2e(): boolean {
     const state = this.#lifecycle

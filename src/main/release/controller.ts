@@ -43,7 +43,8 @@ export class ReleaseController {
   private readonly root = releaseRoot()
   constructor(
     enabled: boolean,
-    private readonly stopCore: () => Promise<void>
+    private readonly stopCore: () => Promise<void>,
+    private readonly resumeCore: () => void
   ) {
     this.value = {
       enabled,
@@ -303,6 +304,7 @@ export class ReleaseController {
       app.quit()
     } catch (error) {
       await rollbackRelease()
+      this.resumeCore()
       throw error
     }
   }

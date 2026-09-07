@@ -35,7 +35,9 @@ export function ReleaseSettings({
           if (value.enabled && !value.installed) setOpen(true)
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        if (active) onReady(true)
+      })
     const unsubscribe = api.updates.onStatus((value) => {
       if (active) setStatus(value)
     })

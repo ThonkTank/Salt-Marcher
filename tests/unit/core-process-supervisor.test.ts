@@ -141,6 +141,29 @@ describe('CoreProcessSupervisor', () => {
     await supervisor.closeGracefully()
   })
 
+  it('reopens a closed profile after a failed maintenance attempt', async () => {
+    const { supervisor, children } = harness()
+    children[0]!.ready()
+    await supervisor.waitUntilReady()
+    const closing = supervisor.closeGracefully()
+    children[0]!.succeed(undefined)
+    await closing
+    supervisor.resumeAfterMaintenance()
+    expect(children).toHaveLength(2)
+    children[1]!.ready()
+    const request = supervisor.requestOperation('campaign.list', undefined)
+    children[1]!.succeed({
+      revision: 0,
+      activeCampaignId: null,
+      campaigns: [],
+      trashedCampaigns: []
+    })
+    await expect(request).resolves.toMatchObject({ campaigns: [] })
+    const finalClose = supervisor.closeGracefully()
+    children[1]!.succeed(undefined)
+    await finalClose
+  })
+
   it('reports generation-bound internal runtime evidence', async () => {
     const { supervisor, children } = harness()
     children[0]?.ready()
