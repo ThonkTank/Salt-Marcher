@@ -24,13 +24,14 @@ import {
 
 vi.mock('electron', () => ({ app: { getVersion: () => '0.2.0' } }))
 vi.mock('../../src/main/release/maintenance-worker.js', () => ({
-  maintenanceWorker: async (input: {
+  maintenanceWorker: (input: {
     root: string
     version: string
     operation: 'rollback' | 'commit'
   }) => {
     const transaction = new ProfileTransaction(input.root, input.version)
     transaction[input.operation]()
+    return Promise.resolve()
   }
 }))
 let workspace: string
