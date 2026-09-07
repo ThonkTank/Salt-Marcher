@@ -1,16 +1,16 @@
 {
   "recordedAt": "2026-09-07",
-  "reason": "Load release settings as an independent shell module and retain shared draft guards",
+  "reason": "Load release settings separately and gate first-run campaign UI until installation",
   "dependencyRationale": "No new runtime dependencies",
-  "chunkRationale": "Keep the startup shell below 32 KiB by loading the update and recovery panel separately",
+  "chunkRationale": "Keep startup below its existing limit; isolate the update and recovery panel",
   "graphs": {
-    "shell": 420290,
-    "workspace": 513048,
+    "shell": 420323,
+    "workspace": 513081,
     "session": 168956,
     "catalog": 186087,
     "hex": 176916,
     "reference": 39450,
     "pixi": 408635,
-    "reachable": 1534182
+    "reachable": 1534381
   }
 }

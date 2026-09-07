@@ -61,12 +61,13 @@ export async function checkRelease(
   const release = apiReleaseSchema.parse(await response.json())
   if (release.draft || release.prerelease || !release.tag_name.startsWith('v'))
     return null
-  const version = release.tag_name.slice(1)
-  if (!newerRelease(version, current)) return null
   const asset = release.assets.find(
     (entry) => entry.name === 'release-manifest.json'
   )
-  if (!asset) throw new Error('Release-Manifest fehlt.')
+  // Legacy Java releases do not belong to the Electron update feed.
+  if (!asset) return null
+  const version = release.tag_name.slice(1)
+  if (!newerRelease(version, current)) return null
   const metadata = await fetch(
     assetUrl(asset.browser_download_url, version, asset.name),
     { signal: AbortSignal.timeout(20_000) }

@@ -5,6 +5,10 @@
   z-index: 20;
 }
 .release-settings {
+  background: var(--surface-panel);
+  color: var(--text-1);
+  border: 1px solid var(--border-structural);
+  box-shadow: var(--shadow-dialog);
   width: min(42rem, calc(100vw - 2rem));
   max-height: calc(100vh - 3rem);
   overflow: auto;

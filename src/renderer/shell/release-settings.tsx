@@ -4,7 +4,11 @@ import { useCapabilityApi } from '../capabilities/use-capability-api.js'
 import type { ReleaseStatus } from '../../shared/contracts/release.js'
 import { ModalDialog } from './modal-dialog.js'
 import './release-settings.css'
-export function ReleaseSettings() {
+export function ReleaseSettings({
+  onReady
+}: {
+  onReady: (ready: boolean) => void
+}) {
   const api = useCapabilityApi()
   const [status, setStatus] = useState<ReleaseStatus | null>(null)
   const [open, setOpen] = useState(false)
@@ -27,6 +31,7 @@ export function ReleaseSettings() {
       .then((value) => {
         if (active) {
           setStatus(value)
+          onReady(!value.enabled || value.installed)
           if (value.enabled && !value.installed) setOpen(true)
         }
       })
@@ -38,7 +43,7 @@ export function ReleaseSettings() {
       active = false
       unsubscribe()
     }
-  }, [api])
+  }, [api, onReady])
   useEffect(() => {
     if (!open) return
     let active = true

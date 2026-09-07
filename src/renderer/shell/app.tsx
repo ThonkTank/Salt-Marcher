@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useState } from 'react'
 import { useCapabilityApi } from '../capabilities/use-capability-api.js'
 import { ModuleHost } from './module-host.js'
 import { shellMessagesDe } from '../i18n/shell-messages.de.js'
@@ -17,29 +17,32 @@ const loadWorkspace = async () => {
 /** Global renderer boundary; feature state lives below the workspace route. */
 export function App() {
   const api = useCapabilityApi()
+  const [ready, setReady] = useState(false)
   return (
     <>
       <Suspense fallback={null}>
-        <ReleaseSettings />
+        <ReleaseSettings onReady={setReady} />
       </Suspense>
-      <ModuleHost
-        workspace="application"
-        load={loadWorkspace}
-        componentProps={{}}
-        loadingMessage={shellMessagesDe.loading}
-        failureMessage={shellMessagesDe.loadFailed}
-        recoveryMessage={shellMessagesDe.recovery}
-        retryLabel={shellMessagesDe.retry}
-        reloadLabel={shellMessagesDe.reload}
-        recoveryPolicy={{
-          moduleFailure: 'retry-or-reload',
-          renderFailure: 'remount'
-        }}
-        reportIncident={(incident) =>
-          api.runtime.reportRendererIncident(incident)
-        }
-        reloadRenderer={() => api.runtime.reloadRenderer()}
-      />
+      {ready && (
+        <ModuleHost
+          workspace="application"
+          load={loadWorkspace}
+          componentProps={{}}
+          loadingMessage={shellMessagesDe.loading}
+          failureMessage={shellMessagesDe.loadFailed}
+          recoveryMessage={shellMessagesDe.recovery}
+          retryLabel={shellMessagesDe.retry}
+          reloadLabel={shellMessagesDe.reload}
+          recoveryPolicy={{
+            moduleFailure: 'retry-or-reload',
+            renderFailure: 'remount'
+          }}
+          reportIncident={(incident) =>
+            api.runtime.reportRendererIncident(incident)
+          }
+          reloadRenderer={() => api.runtime.reloadRenderer()}
+        />
+      )}
     </>
   )
 }
