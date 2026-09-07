@@ -17,17 +17,15 @@ describe('release transport', () => {
   it('ignores legacy releases without an Electron manifest', async () => {
     vi.stubGlobal(
       'fetch',
-      vi
-        .fn()
-        .mockResolvedValue(
-          Response.json({
-            tag_name: 'v9.0.0',
-            draft: false,
-            prerelease: false,
-            body: 'old Java release',
-            assets: []
-          })
-        )
+      vi.fn().mockResolvedValue(
+        Response.json({
+          tag_name: 'v9.0.0',
+          draft: false,
+          prerelease: false,
+          body: 'old Java release',
+          assets: []
+        })
+      )
     )
     expect(await checkRelease('0.2.0')).toBeNull()
   })
