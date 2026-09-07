@@ -11,7 +11,8 @@ export default defineConfig({
       rollupOptions: {
         input: {
           index: resolve('src/main/index.ts'),
-          utility: resolve('src/utility/index.ts')
+          utility: resolve('src/utility/index.ts'),
+          maintenance: resolve('src/utility/maintenance/worker.ts')
         }
       }
     }

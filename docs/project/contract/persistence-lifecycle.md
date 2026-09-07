@@ -2,11 +2,15 @@
 
 ## Boundary
 
-Until the first real-use format release, SaltMarcher has a disposable
-development-data format. `installation.sqlite` contains installation-wide
-registry and settings truth; each Campaign has the separate
-`campaigns/<id>/campaign.sqlite` store. The utility process is the sole owner
-of SQLite connections, SQL, schema initialization, and recovery work.
+Release 0.2.0 establishes the persistent Electron real-use baseline. Installation
+schema 39 and Campaign schema 34 are versioned independently from the application.
+Every later public release must retain a tested, complete forward migration path
+from every earlier public release. Packaged data is never implicitly reset.
+Development-only reset behavior remains confined to the isolated development-data root.
+
+`installation.sqlite` contains installation-wide registry and settings truth;
+each Campaign has the separate `campaigns/<id>/campaign.sqlite` store. The utility
+process is the sole application owner of SQLite connections and recovery work.
 
 The renderer receives validated, immutable results through the preload bridge;
 it never receives a database path, connection, or SQL capability. Electron
@@ -14,17 +18,9 @@ main owns process lifecycle and permissions, but does not execute domain SQL.
 
 ## Current Development Format
 
-The current development format may be recreated when its greenfield schema
-changes. It has no legacy Java-data reader, generic persistence coordinator,
-feature-store ledger, owner readiness phase, compatibility adapter, or
-conversion promise. SQLite and prepared statements stay with the aggregate
-that owns their truth.
-
-At startup, a whole-database version mismatch causes the application to remove
-only its fixed `development-data` directory and build the current schema from
-scratch. This is the intentionally minimal no-legacy behavior: incompatible
-rows are discarded automatically, while unrelated sibling paths and failures
-other than a version mismatch are left untouched and reported normally.
+Development builds may recreate their fixed development-data directory under the
+explicit reset policy. Local and Release data are preserved. Unsupported schemas,
+missing forward paths, corruption and access errors never trigger a reset.
 
 Campaign creation is an explicit exception to a single-file transaction:
 
@@ -58,9 +54,18 @@ previous schema; the installation and Campaign database formats are unchanged.
 
 ## Release Boundary
 
-The format is frozen only at the first accepted real-use release. Any later
-format migration, backup, recovery, import/export, or compatibility guarantee
-must be specified and qualified in the vertical slice that introduces it.
+The Release profile is isolated at `$XDG_DATA_HOME/salt-marcher/profile/campaign-data`
+(with the standard Linux data-home fallback). All campaign stores, recoverable trash,
+installation settings and user files participate in one maintenance operation.
+
+The utility process snapshots locked sources without changing their bytes, uses
+SQLite Online Backup on that snapshot, migrates a separate working tree, validates
+integrity, foreign keys and campaign/party/scene readback, then promotes the tree.
+The application activation journal binds the old and new executable deployments.
+The data journal records intent before moves and completion only after target startup.
+Before completion recovery restores the prior pair; after completion later user work
+must never be rolled back automatically. Backups are permanent and restoration first
+backs up current data. The renderer receives validated status and backup IDs only.
 
 ## References
 

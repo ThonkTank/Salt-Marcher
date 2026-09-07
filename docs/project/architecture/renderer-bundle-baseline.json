@@ -1,16 +1,16 @@
 {
-  "recordedAt": "2026-08-24",
-  "reason": "Adopt the provider-lived Campaign Workspace read and FIFO command owners with durable installation registry revisions.",
-  "dependencyRationale": "No dependency changes.",
-  "chunkRationale": "Campaign Workspace authority, revision selection, FIFO acceptance, and strict lifecycle command adapters remain in the existing common Workspace and shared capability graphs; no route or dependency crosses a lazy boundary, and every hard graph budget retains substantial reserve.",
+  "recordedAt": "2026-09-07",
+  "reason": "Add release settings and shared draft guards; ratchet smaller feature graphs",
+  "dependencyRationale": "No new runtime dependencies",
+  "chunkRationale": "Shared capability contracts and draft guards move common bytes into the application graph",
   "graphs": {
-    "shell": 416472,
-    "workspace": 508360,
-    "session": 168918,
-    "catalog": 185608,
-    "hex": 176544,
-    "reference": 39450,
+    "shell": 427398,
+    "workspace": 519978,
+    "session": 165056,
+    "catalog": 181641,
+    "hex": 172665,
+    "reference": 39345,
     "pixi": 408635,
-    "reachable": 1522638
+    "reachable": 1529963
   }
 }

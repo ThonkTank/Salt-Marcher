@@ -1,3 +1,4 @@
+import { releaseOperationDefinitions } from './operations/release.js'
 import { z } from 'zod'
 import {
   composeOperationDefinitions,
@@ -67,7 +68,10 @@ export const coreOperationFragments = [
   coreLifecycleOperationDefinitions
 ] as const
 
-export const mainOperationFragments = [runtimeOperationDefinitions] as const
+export const mainOperationFragments = [
+  runtimeOperationDefinitions,
+  releaseOperationDefinitions
+] as const
 
 export const coreOperations = registerOperations(
   composeOperationDefinitions(...coreOperationFragments),

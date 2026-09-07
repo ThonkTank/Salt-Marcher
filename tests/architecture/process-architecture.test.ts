@@ -81,7 +81,14 @@ architectureGate(
     expect(main.stringLiterals).toContain('core.sessionGenerationCatalog')
     expect(main.stringLiterals).not.toContain('sessionPlanner.read')
     for (const kind of Object.keys(capabilityEvents))
-      expect(main.stringLiterals, `${kind} is not routed`).toContain(kind)
+      expect(
+        [
+          ...main.stringLiterals,
+          ...readTypeScriptModule('src/main/release/controller.ts')
+            .stringLiterals
+        ],
+        `${kind} is not routed`
+      ).toContain(kind)
   }
 )
 
@@ -221,9 +228,22 @@ architectureGate(
       channel === null ? [] : [channel]
     )
     expect(new Set(channels).size).toBe(channels.length)
-    expect(operations.every(({ deadlineMs }) => deadlineMs === 10_000)).toBe(
-      true
-    )
+    expect(
+      operations.every(
+        ({ key, deadlineMs }) =>
+          deadlineMs ===
+          ([
+            'updates.newProfile',
+            'updates.download',
+            'updates.install',
+            'updates.setup',
+            'updates.importProfile',
+            'backups.restore'
+          ].includes(key)
+            ? 1_800_000
+            : 10_000)
+      )
+    ).toBe(true)
     const main = readTypeScriptModule(
       'src/main/application-lifecycle/capability-registration.ts'
     )

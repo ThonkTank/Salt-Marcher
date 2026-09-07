@@ -1,3 +1,4 @@
+import type { ReleaseController } from '../release/controller.js'
 import { app, dialog, ipcMain, type IpcMainInvokeEvent } from 'electron'
 import type { CoreProcessSupervisor } from '../core-process/core-process-supervisor.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
@@ -18,12 +19,17 @@ import { roleForEvent } from './window-role.js'
 import { gpuObservation } from './runtime-observation.js'
 import { readLocationSymbolFile } from './location-symbol-file.js'
 
-export function registerCapabilities(core: CoreProcessSupervisor): void {
+export function registerCapabilities(
+  core: CoreProcessSupervisor,
+  releases: ReleaseController
+): void {
   for (const [rawKind, definition] of Object.entries(coreOperations)) {
     if (definition.channel === null) continue
     const kind = rawKind as CoreOperationKind
     ipcMain.handle(definition.channel, (event, raw) =>
       invokeGeneric(() => {
+        if (releases.isMaintaining())
+          throw new CapabilityError('core_unavailable', true)
         if (!roleCanInvoke(roleForEvent(event), kind))
           throw new CapabilityError('read_only', false)
         const input = definition.input.safeParse(raw)
@@ -34,7 +40,7 @@ export function registerCapabilities(core: CoreProcessSupervisor): void {
     )
   }
 
-  const handlers = mainHandlers(core)
+  const handlers = mainHandlers(core, releases)
   for (const [rawKind, definition] of Object.entries(mainOperations)) {
     if (definition.channel === null) continue
     const kind = rawKind as MainOperationKind
@@ -55,11 +61,25 @@ export function registerCapabilities(core: CoreProcessSupervisor): void {
   }
 }
 
-function mainHandlers(core: CoreProcessSupervisor) {
+function mainHandlers(
+  core: CoreProcessSupervisor,
+  releases: ReleaseController
+) {
   return defineContextualOperationHandlers<
     typeof mainOperations,
     IpcMainInvokeEvent
   >('main_handlers', mainOperations, {
+    'updates.profiles': () => releases.profiles(),
+    'updates.newProfile': () => releases.newProfile(),
+    'updates.status': () => releases.status(),
+    'updates.check': () => releases.check(),
+    'updates.download': () => releases.download(),
+    'updates.install': () => releases.install(),
+    'updates.setup': () => releases.setup(),
+    'updates.importProfile': (_event, input) =>
+      releases.importProfile(input.id),
+    'backups.list': () => releases.backups(),
+    'backups.restore': (_event, input) => releases.restore(input.id),
     'runtime.memory': () =>
       app
         .getAppMetrics()
@@ -73,6 +93,8 @@ function mainHandlers(core: CoreProcessSupervisor) {
     },
     'runtime.coreStatus': () => core.status(),
     'runtime.retryCore': () => {
+      if (releases.isMaintaining())
+        throw new CapabilityError('core_unavailable', true)
       core.retry()
       return core.status()
     },

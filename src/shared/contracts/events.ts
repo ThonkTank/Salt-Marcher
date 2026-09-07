@@ -1,3 +1,4 @@
+import { releaseStatusSchema } from './release.js'
 import type { z } from 'zod'
 import { biomeChangeNoticeSchema } from './biome.js'
 import {
@@ -24,6 +25,11 @@ export type EventDefinition<Payload extends z.ZodType = z.ZodType> = Readonly<{
 }>
 
 const definitions = {
+  'updates.onStatus': {
+    channel: 'updates:status-changed',
+    payload: releaseStatusSchema,
+    roles: ['gm']
+  },
   'references.onCampaignIndexChanged': {
     channel: 'references:index-changed',
     payload: referenceIndexChangeNoticeSchema,

@@ -9,7 +9,13 @@ import {
 
 const smokeTest = process.argv.includes('--smoke-test')
 
-void startApplication()
+void (
+  process.argv.includes('--release-maintenance')
+    ? import('./release/maintenance-entry.js').then(({ runMaintenanceEntry }) =>
+        runMaintenanceEntry()
+      )
+    : startApplication()
+)
   .then(() => {
     if (smokeTest)
       void waitForCoreReady()

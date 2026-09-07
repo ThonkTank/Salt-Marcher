@@ -1,3 +1,12 @@
 extends: ./electron-builder.yml
 directories:
   output: release/release
+artifactName: SaltMarcher-${version}-x64.${ext}
+linux:
+  category: Game
+  desktop:
+    entry:
+      StartupWMClass: SaltMarcher
+  target:
+    - target: AppImage
+      arch: [x64]

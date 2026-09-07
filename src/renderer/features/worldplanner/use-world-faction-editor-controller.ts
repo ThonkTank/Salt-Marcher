@@ -1,3 +1,4 @@
+import { useMaintenanceDraftGuard } from '../../shell/maintenance-drafts.js'
 import { useMemo, useReducer, useRef, useState } from 'react'
 import type { EncounterTableSnapshot } from '../../../shared/contracts/encounter-source.js'
 import { presentCapabilityError } from '../../capabilities/capability-errors.js'
@@ -55,6 +56,7 @@ export function useWorldFactionEditorController(
   )
   const facts = useCreatureFacts(selectedCreatureIds, props.creatures)
   const dirty = worldFactionDraftDirty(draft)
+  useMaintenanceDraftGuard(dirty)
 
   const selectPrimaryTable = (
     id: string | null,

@@ -1,3 +1,4 @@
+import { useMaintenanceDraftGuard } from '../../shell/maintenance-drafts.js'
 import { useReducer, useRef, useState } from 'react'
 import type { HexMapSummary } from '../../../shared/contracts/hex.js'
 import { presentCapabilityError } from '../../capabilities/capability-errors.js'
@@ -43,6 +44,7 @@ export function HexMapDialog(props: {
   const submission = useRef(new PersistedSubmissionLifecycle<HexMapSummary>())
   const displayName = draft.displayName
   const dirty = hexMapNameDraftDirty(draft)
+  useMaintenanceDraftGuard(dirty)
   const requestClose = () => {
     if (busy) return
     if (dirty) setDiscardOpen(true)

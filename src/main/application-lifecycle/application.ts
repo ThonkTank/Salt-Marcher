@@ -1,3 +1,17 @@
+import { relaunchRelease } from '../release/relaunch.js'
+import {
+  configureReleaseQualification,
+  qualifyRelease,
+  releaseQualificationEnabled
+} from '../release/qualification.js'
+import { mkdirSync } from 'node:fs'
+import { ReleaseController } from '../release/controller.js'
+import { releaseRoot } from '../release/paths.js'
+import {
+  recoverRelease,
+  completeRelease,
+  rollbackRelease
+} from '../release/recovery.js'
 import { app, BrowserWindow, ipcMain } from 'electron'
 import { dirname, join } from 'node:path'
 import { CoreProcessSupervisor } from '../core-process/core-process-supervisor.js'
@@ -29,15 +43,37 @@ let localProfileLock: ProfileLock | undefined
 export async function startApplication(): Promise<void> {
   await app.whenReady()
   configureSecurity()
+  configureReleaseQualification()
   const buildInfo = loadBuildInfo()
   const windowTitle = windowTitleForBuild(buildInfo)
-  if (buildInfo?.channel === 'local')
+  const release =
+    buildInfo?.channel === 'release' &&
+    process.platform === 'linux' &&
+    process.arch === 'x64'
+  if (release) {
+    mkdirSync(join(releaseRoot(), 'profile'), { recursive: true })
+    app.setPath('userData', join(releaseRoot(), 'profile'))
+  }
+  if (buildInfo?.channel === 'local' || release)
     localProfileLock = acquireProfileLock(
       join(dirname(app.getPath('userData')), 'runtime.lock'),
       'application'
     )
   try {
-    startApplicationWithProfileLock(buildInfo, windowTitle)
+    const recovery = release ? await recoverRelease() : 'normal'
+    if (recovery === 'relaunch') {
+      relaunchRelease(
+        join(releaseRoot(), 'current', 'SaltMarcher.AppImage'),
+        []
+      )
+      app.quit()
+      return
+    }
+    await startApplicationWithProfileLock(
+      buildInfo,
+      windowTitle,
+      recovery === 'verify'
+    )
   } catch (error) {
     localProfileLock?.release()
     localProfileLock = undefined
@@ -45,10 +81,11 @@ export async function startApplication(): Promise<void> {
   }
 }
 
-function startApplicationWithProfileLock(
+async function startApplicationWithProfileLock(
   buildInfo: ReturnType<typeof loadBuildInfo>,
-  windowTitle: string
-): void {
+  windowTitle: string,
+  verifyRelease = false
+): Promise<void> {
   if (buildInfo !== undefined)
     console.info(
       JSON.stringify({
@@ -100,8 +137,48 @@ function startApplicationWithProfileLock(
     // The shell stays visible and exposes explicit recovery through core status.
   })
 
-  registerCapabilities(core)
+  const supervisor = core
+  const releases = new ReleaseController(
+    buildInfo?.channel === 'release' &&
+      process.platform === 'linux' &&
+      process.arch === 'x64',
+    async () => {
+      await supervisor.closeGracefully()
+    }
+  )
+  if (verifyRelease) {
+    try {
+      await supervisor.waitUntilReady()
+      await completeRelease()
+    } catch (error) {
+      await supervisor.closeGracefully()
+      await rollbackRelease()
+      relaunchRelease(
+        join(releaseRoot(), 'current', 'SaltMarcher.AppImage'),
+        []
+      )
+      app.quit()
+      throw error
+    }
+  }
+  registerCapabilities(core, releases)
   createMainWindow(windowTitle)
+  if (releaseQualificationEnabled()) {
+    await supervisor.waitUntilReady()
+    void qualifyRelease(releases, verifyRelease, async () => {
+      await supervisor.requestOperation('campaign.create', {
+        commandId: crypto.randomUUID(),
+        expectedRegistryRevision: 0,
+        name: 'Update-Abnahme'
+      })
+    })
+    return
+  }
+  void releases.automaticCheck()
+  const updateTimer = setInterval(() => {
+    void releases.automaticCheck()
+  }, 86_400_000)
+  updateTimer.unref()
   if (process.argv.includes('--passive-e2e')) createSecondaryWindow()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0)

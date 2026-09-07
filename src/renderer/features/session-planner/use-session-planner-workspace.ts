@@ -1,3 +1,4 @@
+import { useMaintenanceDraftGuard } from '../../shell/maintenance-drafts.js'
 import { useCallback, useEffect, useMemo, useReducer, useState } from 'react'
 import type { SavedEncounterPlanSummary } from '../../../shared/contracts/encounter-plans.js'
 import type {
@@ -31,6 +32,7 @@ export function useSessionPlannerWorkspace(options: {
   )
   const [draft, dispatchDraft] = useReducer(plannerDraftReducer, null)
   const [dirty, setDirty] = useState(false)
+  useMaintenanceDraftGuard(dirty)
   const [intentRevision, setIntentRevision] = useState(0)
   const [loading, setLoading] = useState(true)
   const [participantsOpen, setParticipantsOpen] = useState(false)

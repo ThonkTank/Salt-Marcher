@@ -1,0 +1,356 @@
+import { relaunchRelease } from './relaunch.js'
+import { tmpdir } from 'node:os'
+import { rollbackRelease } from './recovery.js'
+import { capabilityEvents } from '../../shared/contracts/events.js'
+import { app, BrowserWindow, dialog } from 'electron'
+import { randomUUID } from 'node:crypto'
+import { spawn } from 'node:child_process'
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync
+} from 'node:fs'
+import { dirname, join } from 'node:path'
+import {
+  backupSummarySchema,
+  releaseManifestSchema,
+  type ReleaseStatus
+} from '../../shared/contracts/release.js'
+import { durableJson, sha256 } from '../../shared/maintenance/files.js'
+import {
+  checkRelease,
+  downloadRelease,
+  type AvailableRelease
+} from './github-release.js'
+import {
+  beginActivation,
+  installLauncher,
+  stageDeployment,
+  setCurrent
+} from './deployment.js'
+import { maintenanceWorker } from './maintenance-worker.js'
+import { releaseRoot } from './paths.js'
+import { acquireProfileLock } from '../local-profile/local-profile-lock.js'
+
+export class ReleaseController {
+  private value: ReleaseStatus
+  private available: AvailableRelease | null = null
+  private downloaded: string | null = null
+  private busy = false
+  private readonly root = releaseRoot()
+  constructor(
+    enabled: boolean,
+    private readonly stopCore: () => Promise<void>
+  ) {
+    this.value = {
+      enabled,
+      installed: enabled && existsSync(join(this.root, 'current')),
+      currentVersion: app.getVersion(),
+      phase: 'idle',
+      availableVersion: null,
+      notes: '',
+      progress: 0,
+      message: ''
+    }
+  }
+  isMaintaining(): boolean {
+    return this.value.phase === 'maintenance'
+  }
+  status(): ReleaseStatus {
+    return { ...this.value }
+  }
+  private update(changes: Partial<ReleaseStatus>): ReleaseStatus {
+    this.value = { ...this.value, ...changes }
+    for (const window of BrowserWindow.getAllWindows())
+      if (!window.webContents.isDestroyed())
+        window.webContents.send(
+          capabilityEvents['updates.onStatus'].channel,
+          this.status()
+        )
+    return this.status()
+  }
+  async automaticCheck(): Promise<void> {
+    if (!this.value.enabled) return
+    const path = join(this.root, 'last-check.json')
+    try {
+      if (existsSync(path)) {
+        const last = JSON.parse(readFileSync(path, 'utf8')) as { at: number }
+        if (Number.isFinite(last.at) && Date.now() - last.at < 86_400_000)
+          return
+      }
+      durableJson(path, { at: Date.now() })
+      await this.check()
+    } catch {
+      /* Update availability never blocks play. */
+    }
+  }
+  private async operation(action: () => Promise<void>): Promise<ReleaseStatus> {
+    if (!this.value.enabled || this.busy) return this.status()
+    this.busy = true
+    try {
+      await action()
+    } catch (error) {
+      this.update({
+        phase: 'error',
+        message:
+          error instanceof Error
+            ? error.message
+            : 'Vorgang fehlgeschlagen. Bitte erneut versuchen.'
+      })
+    } finally {
+      this.busy = false
+    }
+    return this.status()
+  }
+  check() {
+    return this.operation(async () => {
+      this.update({ phase: 'checking', message: '' })
+      this.available = await checkRelease(app.getVersion())
+      this.downloaded = null
+      this.update({
+        phase: this.available ? 'available' : 'idle',
+        availableVersion: this.available?.manifest.version ?? null,
+        notes: this.available?.notes ?? '',
+        message: this.available
+          ? 'Eine neue Version ist verfügbar.'
+          : 'Du verwendest die aktuelle Version.'
+      })
+    })
+  }
+  download() {
+    return this.operation(async () => {
+      if (!this.available) throw new Error('Bitte zuerst nach Updates suchen.')
+      this.update({ phase: 'downloading', progress: 0, message: '' })
+      this.downloaded = await downloadRelease(
+        this.available,
+        join(this.root, 'cache'),
+        (progress) => this.update({ progress })
+      )
+      this.update({ phase: 'downloaded', progress: 1 })
+    })
+  }
+  async backups() {
+    if (!this.value.enabled) return []
+    return backupSummarySchema.array().parse(
+      await maintenanceWorker({
+        root: this.root,
+        version: app.getVersion(),
+        operation: 'list'
+      })
+    )
+  }
+  install() {
+    return this.operation(async () => {
+      if (!this.available || !this.downloaded)
+        throw new Error('Bitte das Update zuerst herunterladen.')
+      const deployment = stageDeployment(
+        this.root,
+        this.downloaded,
+        this.available.manifest
+      )
+      await this.activate(deployment)
+    })
+  }
+  setup() {
+    return this.operation(async () => {
+      if (this.value.installed) return
+      const source = process.env['APPIMAGE']
+      if (!source)
+        throw new Error('Bitte das heruntergeladene AppImage starten.')
+      const adjacent = join(dirname(source), 'release-manifest.json')
+      let rawManifest: unknown
+      if (existsSync(adjacent))
+        rawManifest = JSON.parse(readFileSync(adjacent, 'utf8'))
+      else {
+        const response = await fetch(
+          `https://github.com/ThonkTank/Salt-Marcher/releases/download/v${app.getVersion()}/release-manifest.json`,
+          { signal: AbortSignal.timeout(20_000) }
+        )
+        if (!response.ok)
+          throw new Error(
+            'Das Release-Manifest fehlt. Bitte zusammen mit dem AppImage herunterladen und im selben Ordner ablegen.'
+          )
+        rawManifest = await response.json()
+      }
+      const manifest = releaseManifestSchema.parse(rawManifest)
+      if (
+        manifest.version !== app.getVersion() ||
+        statSync(source).size !== manifest.artifact.bytes ||
+        sha256(source) !== manifest.artifact.sha256
+      )
+        throw new Error(
+          'Dieses AppImage stimmt nicht mit dem veröffentlichten Release überein.'
+        )
+      const deployment = stageDeployment(this.root, source, manifest)
+      await this.activate(deployment)
+    })
+  }
+  private profileCandidates() {
+    return [
+      {
+        id: 'local' as const,
+        label: 'SaltMarcher Local',
+        path: join(
+          dirname(this.root),
+          'salt-marcher-local',
+          'profile',
+          'campaign-data'
+        )
+      },
+      {
+        id: 'electron' as const,
+        label: 'Bisherige Electron-App',
+        path: join(app.getPath('appData'), 'salt-marcher', 'campaign-data')
+      },
+      {
+        id: 'development' as const,
+        label: 'Electron-Entwicklungsprofil',
+        path: join(app.getPath('appData'), 'salt-marcher', 'development-data')
+      }
+    ].filter((entry) => existsSync(join(entry.path, 'installation.sqlite')))
+  }
+  profiles() {
+    return this.value.enabled
+      ? this.profileCandidates().map(({ id, label }) => ({ id, label }))
+      : []
+  }
+  newProfile() {
+    return this.operation(() =>
+      this.activateCurrent({ source: join(this.root, `empty-${randomUUID()}`) })
+    )
+  }
+  importProfile(id?: 'local' | 'electron' | 'development') {
+    return this.operation(async () => {
+      let source = id
+        ? this.profileCandidates().find((entry) => entry.id === id)?.path
+        : undefined
+      if (id && !source)
+        throw new Error('Das ausgewählte Profil ist nicht mehr vorhanden.')
+      if (!source) {
+        const selection = await dialog.showOpenDialog({
+          title:
+            'Datenordner einer vollständig geschlossenen Electron-App auswählen',
+          properties: ['openDirectory']
+        })
+        if (selection.canceled || !selection.filePaths[0]) return
+        source = selection.filePaths[0]
+      }
+      if (existsSync(join(dirname(source), 'SingletonLock')))
+        throw new Error(
+          'Bitte die Quell-App vor der Übernahme vollständig schließen.'
+        )
+      if (!existsSync(join(source, 'installation.sqlite')))
+        throw new Error(
+          'Bitte den Datenordner mit installation.sqlite auswählen.'
+        )
+      if (source === join(this.root, 'profile', 'campaign-data'))
+        throw new Error('Dieses Profil wird bereits verwendet.')
+      // Both Local and new Release runtimes hold the parent profile lock.
+      const lock = acquireProfileLock(
+        join(dirname(dirname(source)), 'runtime.lock'),
+        'installer'
+      )
+      try {
+        await this.activateCurrent({ source })
+      } finally {
+        lock.release()
+      }
+    })
+  }
+  restore(id: string) {
+    return this.operation(() => this.activateCurrent({ id }))
+  }
+  private async activateCurrent(options: { source?: string; id?: string }) {
+    if (!this.value.installed)
+      throw new Error('Bitte SaltMarcher zuerst installieren.')
+    const manifest = releaseManifestSchema.parse(
+      JSON.parse(
+        readFileSync(join(this.root, 'current', 'manifest.json'), 'utf8')
+      )
+    )
+    const deployment = stageDeployment(
+      this.root,
+      join(this.root, 'current', 'SaltMarcher.AppImage'),
+      manifest
+    )
+    await this.activate(deployment, options)
+  }
+  private async activate(
+    deployment: string,
+    options: { source?: string; id?: string } = {}
+  ) {
+    this.update({
+      phase: 'maintenance',
+      message: 'Sicherung und Datenprüfung laufen. Bitte warten.'
+    })
+    await this.stopCore()
+    const target = join(
+      this.root,
+      'deployments',
+      deployment,
+      'SaltMarcher.AppImage'
+    )
+    try {
+      await this.runTarget(target, options.id ? 'restore' : 'prepare', options)
+      const activation = beginActivation(this.root, deployment)
+      await this.runTarget(target, 'activate')
+      setCurrent(this.root, deployment)
+      installLauncher(this.root)
+      relaunchRelease(target, ['--release-complete', activation.id])
+      app.quit()
+    } catch (error) {
+      await rollbackRelease()
+      throw error
+    }
+  }
+  private runTarget(
+    target: string,
+    operation: 'prepare' | 'activate' | 'restore',
+    options: { source?: string; id?: string } = {}
+  ): Promise<void> {
+    const token = randomUUID()
+    mkdirSync(this.root, { recursive: true })
+    durableJson(join(this.root, 'maintenance-request.json'), {
+      token,
+      parent: process.pid,
+      sourceVersion: app.getVersion(),
+      operation,
+      ...options
+    })
+    return new Promise((resolve, reject) => {
+      const scratch = mkdtempSync(join(tmpdir(), 'salt-release-worker-'))
+      const child = spawn(target, ['--release-maintenance', token], {
+        stdio: 'ignore',
+        env: { ...process.env, APPIMAGE_EXTRACT_AND_RUN: '1', TMPDIR: scratch }
+      })
+      child.once('error', reject)
+      child.once('exit', (code) => {
+        rmSync(scratch, { recursive: true, force: true })
+        const path = join(this.root, `maintenance-result-${token}.json`)
+        try {
+          if (code !== 0 || !existsSync(path))
+            throw new Error(
+              'Die Zielversion konnte die Wartung nicht abschließen.'
+            )
+          const result = JSON.parse(readFileSync(path, 'utf8')) as {
+            ok: boolean
+            message?: string
+          }
+          rmSync(path)
+          if (!result.ok)
+            throw new Error(result.message ?? 'Wartung fehlgeschlagen.')
+          resolve()
+        } catch (error) {
+          reject(
+            error instanceof Error
+              ? error
+              : new Error('Wartung fehlgeschlagen.')
+          )
+        }
+      })
+    })
+  }
+}

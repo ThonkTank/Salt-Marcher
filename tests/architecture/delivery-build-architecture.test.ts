@@ -98,8 +98,12 @@ architectureGate(
     const worker = readTypeScriptModule(
       'scripts/sqlite-online-backup-worker.ts'
     )
-    expect(hasImport(worker, 'better-sqlite3')).toBe(true)
-    expect(hasCall(worker, 'database.backup')).toBe(true)
+    expect(hasCall(worker, 'onlineBackupDatabase')).toBe(true)
+    const sharedSnapshot = readTypeScriptModule(
+      'src/core/maintenance/profile-snapshot.ts'
+    )
+    expect(hasImport(sharedSnapshot, 'better-sqlite3')).toBe(true)
+    expect(hasCall(sharedSnapshot, 'database.backup')).toBe(true)
 
     const inventory = readTypeScriptModule(
       'scripts/local-installation/campaign-file-inventory.ts'

@@ -30,7 +30,11 @@ try {
       timeout: 30_000,
       env:
         process.platform === 'linux'
-          ? { ...process.env, APPIMAGE_EXTRACT_AND_RUN: '1' }
+          ? {
+              ...process.env,
+              APPIMAGE_EXTRACT_AND_RUN: '1',
+              XDG_DATA_HOME: join(userData, 'xdg')
+            }
           : process.env
     }
   )

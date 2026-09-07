@@ -1,3 +1,4 @@
+import { useMaintenanceDraftGuard } from '../../shell/maintenance-drafts.js'
 import type { KeyboardEvent, ReactNode } from 'react'
 import type { SceneGroupDisposition } from '../../../shared/contracts/scene.js'
 import {
@@ -24,6 +25,7 @@ export function GroupManagerView(props: {
   controller: GroupManagerController
 }) {
   const controller = props.controller
+  useMaintenanceDraftGuard(controller.dirty)
   const { state, group, loot } = controller
   const totalInDraft = Object.fromEntries(
     Array.from(

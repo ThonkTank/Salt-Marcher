@@ -321,9 +321,9 @@ editors use one shell-owned fixed-header/scrolling-body/fixed-footer frame.
 
 `installation.sqlite` holds registry, settings, and reusable definitions.
 Each campaign owns `campaigns/<id>/campaign.sqlite`. A utility process alone
-opens these stores. Until the first accepted real-use release, the application
-uses an isolated development data directory and schema changes may recreate
-it under an explicit reset policy. Packaged/local-profile data is always
+opens these stores. Development builds use an isolated development data directory and may recreate
+it under the explicit reset policy. Release 0.2.0 establishes the persistent
+real-use baseline; all subsequent public releases retain forward migration paths. Packaged/local-profile data is always
 preserved unless a registered and tested forward migration is promoted from a
 verified backup.
 
@@ -372,7 +372,7 @@ databases. It runs `quick_check` and reads `user_version` only on the temporary
 snapshot, then removes it. This keeps the source tree byte-for-byte and
 metadata-stable during preflight. Development may reset only its fixed isolated
 root under the explicit reset policy. Packaged data is preserved; supported
-migrations are applied by the offline installer to a staged copy of the
+migrations are applied by the Local offline installer or Release maintenance utility to a staged copy of the
 complete tree in one transaction per database, validated, then promoted by
 directory rename. Missing paths, missing migration chains, corruption, and
 access failures remain distinct terminal outcomes. Installation preferences,

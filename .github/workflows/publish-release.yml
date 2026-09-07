@@ -1,0 +1,52 @@
+name: Publish accepted release
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Draft release version'
+        required: true
+        type: string
+      appimage_sha256:
+        description: 'SHA-256 of the exact AppImage tested live'
+        required: true
+        type: string
+      acceptance:
+        description: 'Live test evidence: update, saved change, continued campaign and backup restore'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: salt-marcher-release
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_VERSION: ${{ inputs.version }}
+      ACCEPTED_SHA256: ${{ inputs.appimage_sha256 }}
+      ACCEPTANCE_TEXT: ${{ inputs.acceptance }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.15.1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22.23.2, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: Download and verify accepted bytes
+        run: |
+          test "$(gh release view "v$RELEASE_VERSION" --json isDraft --jq .isDraft)" = true
+          gh release download "v$RELEASE_VERSION" --dir release/release
+          pnpm exec tsx scripts/verify-release-assets.ts
+          node --input-type=module -e 'import fs from "node:fs"; const q = JSON.parse(fs.readFileSync("release/release/update-qualification.json")); if (q.appimageSha256 !== process.env.ACCEPTED_SHA256 || q.targetVersion !== process.env.RELEASE_VERSION || q.baselineVersion === q.targetVersion) throw new Error("Missing packaged update qualification");' 
+          node --input-type=module -e 'import fs from "node:fs"; const m = JSON.parse(fs.readFileSync("release/release/release-manifest.json")); if (m.artifact.sha256 !== process.env.ACCEPTED_SHA256 || (process.env.ACCEPTANCE_TEXT ?? "").trim().length < 40) throw new Error("Missing exact-artifact live acceptance"); fs.writeFileSync("release-acceptance.json", JSON.stringify({manifest: m, evidence: process.env.ACCEPTANCE_TEXT, reviewer: process.env.GITHUB_ACTOR, run: process.env.GITHUB_RUN_ID}));'
+      - name: Record acceptance and publish without rebuilding
+        run: |
+          gh release upload "v$RELEASE_VERSION" release-acceptance.json
+          gh release edit "v$RELEASE_VERSION" --draft=false --latest

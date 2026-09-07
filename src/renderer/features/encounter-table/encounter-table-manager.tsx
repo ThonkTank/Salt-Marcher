@@ -1,3 +1,4 @@
+import { useMaintenanceDraftGuard } from '../../shell/maintenance-drafts.js'
 import { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import type {
   Creature,
@@ -80,6 +81,7 @@ export function EncounterTableDialog(props: EncounterTableEditorRenderProps) {
   const dirty =
     encounterTableDraftDirty(draft) ||
     (!props.table && creationScope !== 'campaign')
+  useMaintenanceDraftGuard(dirty)
   const creatureIdsKey = [...draft.order].toSorted().join('\u0000')
   const entries = useMemo(
     () =>

@@ -1,3 +1,4 @@
+import { useMaintenanceDraftGuard } from '../../shell/maintenance-drafts.js'
 import {
   lazy,
   Suspense,
@@ -65,6 +66,7 @@ export function EncounterGeneratorSettings(props: {
   const busy = editor.phase === 'saving' || reconciliationPending
   const conflict = editor.phase === 'conflict'
   const dirty = generatorPresetEditorDirty(editor)
+  useMaintenanceDraftGuard(dirty)
   const changeConfig = useCallback(
     (next: GeneratorPresetConfigV3) =>
       dispatch({ type: 'draft-config', config: next }),

@@ -1,3 +1,4 @@
+import { useMaintenanceDraftGuard } from '../../shell/maintenance-drafts.js'
 import { useMemo, useState } from 'react'
 import type { WorldNpcDraft } from '../../../shared/contracts/world-npc.js'
 import { message } from '../../i18n/catalog-runtime.de.js'
@@ -42,6 +43,7 @@ export function NpcCatalogEditor(props: {
   const [busy, setBusy] = useState(false)
   const [discardOpen, setDiscardOpen] = useState(false)
   const dirty = JSON.stringify(draft) !== JSON.stringify(initial)
+  useMaintenanceDraftGuard(dirty)
   const set = <K extends keyof WorldNpcDraft>(
     key: K,
     value: WorldNpcDraft[K]

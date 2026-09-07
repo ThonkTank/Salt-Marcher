@@ -1,0 +1,75 @@
+name: Release
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Stable version, for example 0.2.0; must match main package.json'
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: salt-marcher-release
+  cancel-in-progress: false
+jobs:
+  candidate:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_VERSION: ${{ inputs.version }}
+      RELEASE_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: '${{ github.sha }}', fetch-depth: 0 }
+      - uses: pnpm/action-setup@v4
+        with: { version: 10.15.1 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22.23.2, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: Verify immutable main and version
+        run: |
+          test "$(git rev-parse origin/main)" = "$RELEASE_SHA"
+          test "$(node -p 'require("./package.json").version')" = "$RELEASE_VERSION"
+          pnpm exec tsx scripts/verify-post-promotion.ts
+          if gh release view "v$RELEASE_VERSION"; then
+            echo 'Release already exists; assets must never be overwritten.'
+            exit 1
+          fi
+      - run: pnpm exec vitest run tests/unit/release-contract.test.ts tests/integration/release-maintenance.test.ts --maxWorkers=2
+      - run: pnpm package:release
+      - run: pnpm exec tsx scripts/write-release-manifest.ts
+      - run: pnpm exec tsx scripts/verify-release-assets.ts
+      - run: pnpm exec tsx scripts/package-release-baseline.ts
+      - run: xvfb-run -a pnpm exec tsx scripts/qualify-release-update.ts
+      - run: xvfb-run -a pnpm exec tsx scripts/packaged-smoke.ts --channel release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ github.sha }}
+          path: |
+            release/release/*.AppImage
+            release/release/release-manifest.json
+            release/release/update-qualification.json
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 30
+  draft:
+    needs: candidate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      RELEASE_VERSION: ${{ inputs.version }}
+      RELEASE_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: '${{ github.sha }}' }
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-${{ github.sha }}
+          path: release/release
+      - name: Create immutable draft for live acceptance
+        run: gh release create "v$RELEASE_VERSION" release/release/* --target "$RELEASE_SHA" --title "SaltMarcher $RELEASE_VERSION" --notes-file "docs/releases/$RELEASE_VERSION.md" --draft

@@ -1,19 +1,15 @@
+import { migrateProfile } from '../../src/core/maintenance/profile-snapshot.js'
 import { cpSync, renameSync, rmSync } from 'node:fs'
-import { join, relative } from 'node:path'
-import Database from 'better-sqlite3'
+import { join } from 'node:path'
 import {
   CorruptDataError,
-  configureSqlite,
   IncompatibleDataError
 } from '../../src/core/persistence/sqlite/database.js'
 import {
   preflightPersistence,
   type PersistencePreflight
 } from '../../src/core/persistence/sqlite/persistence-preflight.js'
-import {
-  applySchemaMigrations,
-  type SchemaMigration
-} from '../../src/core/persistence/sqlite/schema-migrations.js'
+import { type SchemaMigration } from '../../src/core/persistence/sqlite/schema-migrations.js'
 import type { LocalInstallJournal } from '../local-install-journal.js'
 import {
   LocalInstallCrashForTest,
@@ -68,17 +64,9 @@ export function migrateCampaignData(
       phase: 'migration-staged',
       migration: { staging, rollback }
     })
-    for (const source of preflight.databases) {
-      if (source.schemaVersion === source.expectedVersion) continue
-      const path = join(staging, relative(paths.campaignData, source.path))
-      const database = new Database(path)
-      try {
-        configureSqlite(database)
-        applySchemaMigrations(database, { path, role: source.role }, migrations)
-      } finally {
-        database.close()
-      }
-    }
+    if (preflight.databases.length === 0)
+      throw new Error('Migration requires a declared database inventory')
+    migrateProfile(staging, migrations)
     if (preflightPersistence(staging, migrations).kind !== 'ready')
       throw new Error('Migrated persistence did not reach the current schema')
     renameSync(paths.campaignData, rollback)

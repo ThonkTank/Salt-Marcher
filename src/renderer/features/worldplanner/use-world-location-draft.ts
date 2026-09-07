@@ -1,3 +1,4 @@
+import { useMaintenanceDraftGuard } from '../../shell/maintenance-drafts.js'
 import { useMemo, useReducer, useState } from 'react'
 import type { WorldLocation } from '../../../shared/contracts/world-location.js'
 import { validateWorldLocationDraft } from './location-draft-validation.js'
@@ -21,6 +22,7 @@ export function useWorldLocationDraft(
       canonicalWorldLocationDraft(baseline) ||
     externalDirty ||
     tagInput.trim().length > 0
+  useMaintenanceDraftGuard(dirty)
 
   const change = <Key extends keyof WorldLocationFormDraft>(
     key: Key,
