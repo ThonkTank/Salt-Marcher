@@ -69,6 +69,14 @@ afterEach(() => {
   rmSync(workspace, { recursive: true, force: true })
 })
 describe('coupled program and data recovery', () => {
+  it('redirects a separately launched newer AppImage before it can open installed data', async () => {
+    transaction.rollback()
+    expect(await recoverRelease()).toBe('relaunch')
+    expect(readlinkSync(join(root, 'current'))).toContain(oldDeployment)
+    expect(readFileSync(join(transaction.data, 'note.txt'), 'utf8')).toBe(
+      'original'
+    )
+  })
   it.each([
     'prepared',
     'activation-recorded',

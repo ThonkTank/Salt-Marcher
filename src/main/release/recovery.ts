@@ -22,6 +22,13 @@ export async function recoverRelease(): Promise<
         version: app.getVersion(),
         operation: 'rollback'
       })
+    const currentManifest = join(root, 'current', 'manifest.json')
+    if (existsSync(currentManifest)) {
+      const current = JSON.parse(readFileSync(currentManifest, 'utf8')) as {
+        version: string
+      }
+      if (current.version !== app.getVersion()) return 'relaunch'
+    }
     return 'normal'
   }
   if (journal?.phase === 'committed') {
