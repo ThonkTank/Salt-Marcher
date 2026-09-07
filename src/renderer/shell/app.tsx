@@ -1,7 +1,13 @@
-import { ReleaseSettings } from './release-settings.js'
+import { lazy, Suspense } from 'react'
 import { useCapabilityApi } from '../capabilities/use-capability-api.js'
 import { ModuleHost } from './module-host.js'
 import { shellMessagesDe } from '../i18n/shell-messages.de.js'
+
+const ReleaseSettings = lazy(() =>
+  import('./release-settings.js').then((module) => ({
+    default: module.ReleaseSettings
+  }))
+)
 
 const loadWorkspace = async () => {
   const module = await import('../features/workspace/workspace.js')
@@ -13,7 +19,9 @@ export function App() {
   const api = useCapabilityApi()
   return (
     <>
-      <ReleaseSettings />
+      <Suspense fallback={null}>
+        <ReleaseSettings />
+      </Suspense>
       <ModuleHost
         workspace="application"
         load={loadWorkspace}

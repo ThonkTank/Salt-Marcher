@@ -1,16 +1,16 @@
 {
   "recordedAt": "2026-09-07",
-  "reason": "Add release settings and shared draft guards; ratchet smaller feature graphs",
+  "reason": "Load release settings as an independent shell module and retain shared draft guards",
   "dependencyRationale": "No new runtime dependencies",
-  "chunkRationale": "Shared capability contracts and draft guards move common bytes into the application graph",
+  "chunkRationale": "Keep the startup shell below 32 KiB by loading the update and recovery panel separately",
   "graphs": {
-    "shell": 427398,
-    "workspace": 519978,
-    "session": 165056,
-    "catalog": 181641,
-    "hex": 172665,
-    "reference": 39345,
+    "shell": 420290,
+    "workspace": 513048,
+    "session": 168956,
+    "catalog": 186087,
+    "hex": 176916,
+    "reference": 39450,
     "pixi": 408635,
-    "reachable": 1529963
+    "reachable": 1534182
   }
 }

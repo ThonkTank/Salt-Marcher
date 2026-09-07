@@ -25,7 +25,10 @@ export function ReleaseSettings() {
     void api.updates
       .status()
       .then((value) => {
-        if (active) setStatus(value)
+        if (active) {
+          setStatus(value)
+          if (value.enabled && !value.installed) setOpen(true)
+        }
       })
       .catch(() => {})
     const unsubscribe = api.updates.onStatus((value) => {
@@ -36,9 +39,6 @@ export function ReleaseSettings() {
       unsubscribe()
     }
   }, [api])
-  useEffect(() => {
-    if (status?.enabled && !status.installed) setOpen(true)
-  }, [status?.enabled, status?.installed])
   useEffect(() => {
     if (!open) return
     let active = true
