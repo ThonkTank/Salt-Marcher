@@ -1,4 +1,5 @@
-import { useMaintenanceDraftGuard } from '../../shell/maintenance-drafts.js'
+import { useMaintenanceDraft } from '../../shell/maintenance-drafts.js'
+import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
 import { useReducer, useRef, useState } from 'react'
 import type { HexMapSummary } from '../../../shared/contracts/hex.js'
 import { presentCapabilityError } from '../../capabilities/capability-errors.js'
@@ -42,11 +43,71 @@ export function HexMapDialog(props: {
   const [error, setError] = useState('')
   const [discardOpen, setDiscardOpen] = useState(false)
   const submission = useRef(new PersistedSubmissionLifecycle<HexMapSummary>())
+  const draftRef = useRef(draft)
+  const settled = useRef(false)
+  const pending = useRef<Promise<boolean> | null>(null)
+  const blocked = useMaintenanceDraft({
+    label: `Hexkarte: ${draft.displayName.trim() || 'Neue Karte'}`,
+    isDirty: () =>
+      !settled.current &&
+      (pending.current !== null || hexMapNameDraftDirty(draftRef.current)),
+    save: saveDraft,
+    discard: discardDraft
+  })
+  function saveDraft(): Promise<boolean> {
+    if (pending.current) return pending.current
+    if (submission.current.phase === 'reconciled') return Promise.resolve(true)
+    const name = hexMapNameDraftValue(draftRef.current)
+    if (!name) return Promise.resolve(false)
+    setBusy(true)
+    setError('')
+    const operation = Promise.resolve()
+      .then(() =>
+        submission.current.persistedValue !== null
+          ? retryPersistedSubmissionReconciliation(
+              submission.current,
+              props.created
+            )
+          : executePersistedSubmission(
+              submission.current,
+              () => props.create(name),
+              props.created
+            )
+      )
+      .then((outcome) => {
+        if (
+          outcome.status === 'reconciled' ||
+          outcome.status === 'reconciliation-failed'
+        )
+          setPersisted(true)
+        setReconciliationFailed(outcome.status === 'reconciliation-failed')
+        if (
+          outcome.status === 'mutation-failed' ||
+          outcome.status === 'reconciliation-failed'
+        )
+          setError(presentCapabilityError(outcome.cause, props.onError))
+        settled.current = outcome.status === 'reconciled'
+        return settled.current
+      })
+      .finally(() => {
+        pending.current = null
+        setBusy(false)
+      })
+    pending.current = operation
+    return operation
+  }
+  async function discardDraft(): Promise<boolean> {
+    if (pending.current) await pending.current.catch(() => false)
+    props.close()
+    settled.current = true
+    return true
+  }
+  const inputBlocked = () =>
+    maintenanceDraftCoordinator.isLocked() || pending.current !== null
   const displayName = draft.displayName
   const dirty = hexMapNameDraftDirty(draft)
-  useMaintenanceDraftGuard(dirty)
   const requestClose = () => {
-    if (busy) return
+    if (inputBlocked()) return
     if (dirty) setDiscardOpen(true)
     else props.close()
   }
@@ -56,7 +117,7 @@ export function HexMapDialog(props: {
       <EditorDialogFrame
         className="hex-map-dialog"
         ariaLabel={message('hex.map.createTitle')}
-        busy={busy}
+        busy={busy || blocked}
         onClose={requestClose}
         breadcrumb={
           props.invocation.kind === 'location-link'
@@ -66,28 +127,7 @@ export function HexMapDialog(props: {
         title={message('hex.map.createTitle')}
         closeLabel={message('ui.dialog.schliessen')}
         onSubmit={() => {
-          const name = hexMapNameDraftValue(draft)
-          if (!name || busy || persisted) return
-          setBusy(true)
-          setError('')
-          void executePersistedSubmission(
-            submission.current,
-            () => props.create(name),
-            props.created
-          ).then((outcome) => {
-            if (
-              outcome.status === 'reconciled' ||
-              outcome.status === 'reconciliation-failed'
-            )
-              setPersisted(true)
-            setReconciliationFailed(outcome.status === 'reconciliation-failed')
-            if (
-              outcome.status === 'mutation-failed' ||
-              outcome.status === 'reconciliation-failed'
-            )
-              setError(presentCapabilityError(outcome.cause, props.onError))
-            setBusy(false)
-          })
+          if (!inputBlocked()) void saveDraft()
         }}
         footer={
           <>
@@ -100,7 +140,7 @@ export function HexMapDialog(props: {
               <ModalCloseButton>{message('action.cancel')}</ModalCloseButton>
               <button
                 className="hex-map-primary"
-                disabled={busy || persisted || !displayName.trim()}
+                disabled={busy || blocked || persisted || !displayName.trim()}
               >
                 {props.invocation.kind === 'location-link'
                   ? message('action.createAndLink')
@@ -110,23 +150,9 @@ export function HexMapDialog(props: {
                 <button
                   type="button"
                   className="hex-map-primary"
-                  disabled={busy}
+                  disabled={busy || blocked}
                   onClick={() => {
-                    setBusy(true)
-                    setError('')
-                    void retryPersistedSubmissionReconciliation(
-                      submission.current,
-                      props.created
-                    ).then((outcome) => {
-                      setReconciliationFailed(
-                        outcome.status === 'reconciliation-failed'
-                      )
-                      if (outcome.status === 'reconciliation-failed')
-                        setError(
-                          presentCapabilityError(outcome.cause, props.onError)
-                        )
-                      setBusy(false)
-                    })
+                    if (!inputBlocked()) void saveDraft()
                   }}
                 >
                   {message('action.retry')}
@@ -144,11 +170,25 @@ export function HexMapDialog(props: {
               required
               maxLength={100}
               aria-label={message('hex.editor.mapName')}
-              disabled={busy}
+              disabled={busy || blocked || persisted}
               value={displayName}
-              onChange={(event) =>
-                dispatch({ kind: 'name', value: event.target.value })
-              }
+              onChange={(event) => {
+                if (
+                  inputBlocked() ||
+                  submission.current.persistedValue !== null
+                )
+                  return
+                const action = {
+                  kind: 'name' as const,
+                  value: event.target.value
+                }
+                draftRef.current = hexMapNameDraftReducer(
+                  draftRef.current,
+                  action
+                )
+                settled.current = false
+                dispatch(action)
+              }}
             />
           </label>
           <p>{message('hex.map.nameEnough')}</p>
@@ -160,8 +200,12 @@ export function HexMapDialog(props: {
           message={message('ui.ungespeicherte.aenderungen.verwerfen')}
           cancelLabel={message('action.cancel')}
           discardLabel={message('ui.aenderungen.verwerfen')}
-          onCancel={() => setDiscardOpen(false)}
-          onDiscard={props.close}
+          onCancel={() => {
+            if (!inputBlocked()) setDiscardOpen(false)
+          }}
+          onDiscard={() => {
+            if (!inputBlocked()) void discardDraft()
+          }}
         />
       )}
     </>

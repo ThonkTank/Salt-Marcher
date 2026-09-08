@@ -27,7 +27,7 @@ export function useNpcCatalogMutations(input: {
 }) {
   const { api, coordinator, dispatch, onError, queries, state } = input
 
-  async function save(draft: WorldNpcDraft): Promise<void> {
+  async function save(draft: WorldNpcDraft): Promise<boolean> {
     const editing = editableNpc(state)
     const commandId = crypto.randomUUID()
     dispatch({ type: 'save-started' })
@@ -58,7 +58,7 @@ export function useNpcCatalogMutations(input: {
         }
       }
     })
-    if (outcome.status === 'stale') return
+    if (outcome.status === 'stale') return false
     if (outcome.status === 'failure') {
       dispatch({
         type: 'save-conflicted',
@@ -69,6 +69,7 @@ export function useNpcCatalogMutations(input: {
     acceptMutation(outcome.value)
     dispatch({ type: 'save-completed' })
     await Promise.all([queries.loadPage(), queries.loadReferences()])
+    return true
   }
 
   function acceptMutation(receipt: {

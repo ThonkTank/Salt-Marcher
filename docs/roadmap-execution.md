@@ -15,7 +15,8 @@ Ergänzende Detailanforderungen: [Zielzustand](project/architecture/release-main
 | 1     | abgeschlossen |
 | 2     | abgeschlossen |
 | 3     | abgeschlossen |
-| 4–7   | offen |
+| 4     | in Arbeit |
+| 5–7   | offen |
 
 ## Phase 1 — Plan, vor Änderungen
 
@@ -1590,3 +1591,175 @@ vollständige Transport-/Fehlermatrix bleiben Phase5; CI-/Releasefreigabe Phase6
 Kopie vorhandener Benutzerdaten und manuelle Veröffentlichung Phase7. Der einzelne
 M11-AppImagefall wird ausdrücklich nicht als Nachweis dieser späteren Phasen
 verwendet. Das übergeordnete Ziel bleibt aktiv.
+
+## Phase 4 — Plan vor Umsetzung, 2026-09-08
+
+Phase3 ist abgeschlossen; vorheriger Zielturn war Fortschritt. Ausgangspunkt:
+maintenance-drafts.ts enthält nur ein Set schmutziger React-IDs. Neun bestehende
+Editorfamilien melden dort Änderungen, ohne Save-/Discard-Vertrag. Teilweise liegt
+die Meldung in einem niedrigen Draft-Hook, während Speichern im übergeordneten
+Controller lebt; die Registrierung muss deshalb zum tatsächlichen Verantwortlichen
+wandern. Es genügt nicht, das vorhandene Set mit einem neuen Dialog zu umgeben.
+
+1. Eine kleine gemeinsame Registrierung mit lesbarem Bereichsnamen, dirty-Abfrage,
+   bestätigtem asynchronem Speichern und Verwerfen einführen. Ein Koordinator hält
+   eine globale Bearbeitungssperre über Klärung/Wartungsbeginn. Teilerfolge bleiben
+   erhalten, fehlgeschlagene Bereiche werden zugeordnet, parallele Klärungen
+   verhindert. Neue Registrierungen sehen sofort die bestehende Sperre.
+2. Jeden vorhandenen Guard mit den echten Owner-Operationen verbinden; zusätzlich
+   nach nicht registrierten Drafts suchen. Mutationseingänge und UI müssen während
+   der Sperre neue Benutzeränderungen verhindern; laufende Speichervorgänge werden
+   berücksichtigt. Kein generischer DOM-Submit als Save-Ersatz.
+3. Updates/Restore/Import/Neustart in ReleaseSettings verwenden dieselbe Klärung
+   mit Speichern und fortfahren, Verwerfen und fortfahren, Abbrechen. Download und
+   Prüfung bleiben getrennte nicht destruktive Aktionen. Fehler nennen Bereich
+   und nächste Aktion; kein Wartungsbeginn bei fehlgeschlagenem Speichern.
+4. Tests für mehrere Editoren, teilweise erfolgreiche Saves, fehlgeschlagene Saves,
+   Verwerfen, Abbrechen und Mutationssperre. Offline-/Download-/Installationsfluss
+   prüfen. Abschließend getrennte Plan-/Roadmapaudits und passende App-Prüfung.
+
+Erster konkreter Teil: testbarer Koordinator, der noch fehlende Save-/Discard-
+Handler ausdrücklich abweist. Die vorhandene Guard-API wird auf dessen Registry
+umgestellt, bleibt bis zur Owner-Anbindung aber weiterhin nur ein Schutz gegen
+Wartung mit offenen Änderungen. Diese Zwischenkompatibilität zählt nicht als
+fertige Phase4-Bedienung.
+
+### Phase 4 — Koordinator: Korrekturrunde vor Owner-Anbindung
+
+12 erste Koordinator-/Recovery-UI-Tests bestanden. Audit findet eine Lücke: Die
+Momentaufnahme der Registry übersieht während eines Save neu registrierte Drafts;
+ein fälschlich bestätigter Save könnte außerdem weiterhin dirty bleiben.
+Korrekturplan: nach der Runde alle aktuell registrierten Dirty-Zustände erneut
+prüfen, verbleibende/neu entstandene Änderungen als Bereichsfehler melden und
+Dirty-Abfragefehler ebenfalls zuordnen. Die Owner-Bestätigung allein ersetzt nicht
+die Klärung ihres Dirty-Zustands. Tests für beide Fälle ergänzen; echte Adapter
+müssen ihren geklärten Zustand vor Abschluss der Operation sichtbar machen.
+
+### Phase 4 — Callback-Bindung
+
+14 Tests und Typecheck bestanden. Lint fordert eine explizite Bindung der optionalen
+Owner-Methoden bei deren Auswahl; .call erst am späteren Aufruf reicht der Regel
+nicht. Save/Discard bei Auswahl mit bind(draft) binden und anschließend normal
+aufrufen. Verhalten bleibt dasselbe; gezieltes Lint und Koordinatortests wiederholen.
+
+### Phase 4 — Koordinator: Teilaudit
+
+14 Koordinator-/Recovery-UI-Tests bestanden; Typecheck bestanden; gezieltes Lint
+nach expliziter Callback-Bindung bestanden. Teilerfolge bleiben bestehen, Fehler
+tragen Bereich/ID, Abbruch führt keine Owner-Operation aus, konkurrierende Klärung
+und Freigabe während eines Save werden abgewiesen. Die Abschlussprüfung erfasst
+weiterhin offene sowie während des Save hinzugekommene Drafts. Der bestehende
+Guard verwendet nun dieselbe Registry; die bisherige Ablehnung unsaved Wartung
+bleibt erhalten.
+
+Planabgleich des ersten Teils: Koordinationsgrundlage implementiert/geprüft.
+Roadmapabgleich: Phase4 bleibt in Arbeit. Reale Owner-Save-/Discard-Adapter,
+Mutationssperren an sämtlichen Eingängen, die drei zentralen UI-Aktionen und der
+vollständige Update-/Fehlerablauf sind noch anzubinden und zu prüfen. Der globale
+Sperrzustand allein beweist noch keine verhinderte Editoränderung. Kein neuer
+App-Handoff oder Phasenabschluss behauptet.
+
+### Phase 4 — Erster Owner: NSC-Editor
+
+Der NSC-Editor besitzt einen überschaubaren eigenständigen Save-Pfad und ist der
+erste konkrete Adapter. Sein bisheriges Promise<void> unterscheidet einen vom
+Async-Koordinator verworfenen Auftrag nicht von erfolgreichem Speichern. Vor
+Anbindung den Owner auf ein ausdrückliches boolean-Ergebnis umstellen: stale=false,
+erfolgreich persistiert/übernommen=true, Fehler weiterhin rejected. Bestehende
+normalen Submit-Aufrufe verwenden denselben Save-Pfad.
+
+Ein stabiler React-Registry-Hook delegiert an aktuelle Owner-Funktionen. Der NSC-
+Adapter hält synchronen Draft-/Pending-Zustand, wartet vorhandenes Speichern ab,
+setzt geklärt erst bei bestätigtem Erfolg und verwirft nur nach expliziter Wahl.
+Alle NSC-Feldmutationen/normalen Submits/Schließen prüfen die globale Sperre direkt;
+die Oberfläche zeigt denselben busy-Zustand. Tests: echter Editor registriert sich,
+Save über Koordinator, fehlgeschlagener/unbestätigter Save, Verwerfen und während
+der Sperre versuchte Eingaben. Weitere Editorfamilien bleiben danach offen.
+
+### Phase 4 — NSC-Owner: Teilaudit
+
+20 Tests in npc-maintenance-draft/npc-catalog/maintenance-draft-coordinator
+bestanden. Vollständiger Typecheck und gezieltes Lint bestanden; git diff --check
+bestand. Der echte NSC-Editor registriert seine eigenen Save-/Discard-Funktionen.
+Save benutzt denselben Mutationspfad wie normales Submit, stale=false zählt nicht
+als Erfolg. Pending-Save wird wiederverwendet, Fehler erhalten Dirty-Zustand.
+Discard setzt den lokalen Draft zurück und schließt nur nach expliziter Auswahl.
+
+Mutationsschutz ist zweifach: disabled fieldset/busy-Dialog und direkte Prüfung
+vor Feldänderung, normalem Submit oder Schließen. Der Test versucht ein Change-
+Ereignis trotz Sperre und bestätigt, dass der unveränderte Draft gespeichert wird.
+Die synchrone Owner-Zustandsführung macht erfolgreiche Klärung sichtbar, ohne auf
+einen zufälligen React-Effect-Zeitpunkt angewiesen zu sein.
+
+Planabgleich dieses Owners: erfüllt. Roadmapabgleich: nur erste Editorfamilie
+angebunden. Die übrigen Guards sind noch Übergangssperren ohne Save-/Discard-
+Adapter; zentrale Dialogintegration, weitere Mutationseingänge und Phase4-
+Gesamtabnahme fehlen. Kein Phasenabschluss und keine App-Übergabe behauptet.
+
+### Phase 4 — Zentrale Dialoganbindung
+
+Vorheriger Zielturn war Fortschritt (NSC-Owner). Nun ersetzt ReleaseSettings den
+pauschalen Dirty-Abbruch durch eine gehaltene Koordinator-Sitzung. Sie beginnt
+beim Öffnen einer Wartungsbestätigung. Bei Dirty-Zustand erscheinen Speichern und
+fortfahren, Verwerfen und fortfahren sowie Abbrechen. Nicht bestätigte oder
+verbleibende Änderungen zeigen Bereichsfehler und verhindern die Main-Aktion.
+Ein nachträglich auftauchender Dirty-Zustand fordert die Auswahl erneut an.
+Prüfen/Download starten keine Klärung. Abbruch/fehlgeschlagene oder abgebrochene
+Wartungsaktion geben die Sperre frei; aktivierte Wartung hält sie bis Neustart.
+Tests verwenden mehrere echte Registry-Teilnehmer neben der realen Dialogkomponente.
+Noch nicht angebundene Owner bleiben ausdrücklich blockierende Übergangseinträge.
+
+### Phase 4 — Dialog: eindeutige Fehlerzeilen
+
+23 Dialog-/Owner-/Koordinatortests bestanden. Teilaudit: mehrere noch unbenannte
+Übergangseditoren können denselben Fehlertext haben; Text als React-Key wäre dann
+nicht eindeutig. Fehlerzeilen behalten deshalb die Registry-ID. Zusätzlich nennt
+die Fehleransicht ausdrücklich Wiederholen oder Abbrechen zum Bearbeiten als
+nächste Aktion. Danach Typen/Lint und Dialogtests prüfen.
+
+### Phase 4 — Dialog: Teilaudit und nächster Owner
+
+Der vorherige Installationsturn verifizierte nur den Skill, ohne Roadmap-Codefortschritt.
+Aktueller Stand geprüft: 23 Dialog-/Owner-/Koordinatortests, Typecheck und gezieltes
+Lint bestanden. Build und Built-Smoke abgeschlossen; dessen Log zeigt bereiten Core
+und bestätigten Prozessabschluss. Planabgleich: zentrale Auswahl und Fehlerzuordnung
+umgesetzt. Roadmapabgleich: weitere Owner und Gesamtbedienungsabnahme bleiben offen.
+
+Nächster Teilplan: HexMapDialog registriert seine tatsächlichen Owner-Operationen.
+Normales Submit und Wartungs-Save teilen ein Pending-Promise; bei schon persistierter
+Karte wird ausschließlich UI-Reconciliation wiederholt. Draft-Status wird synchron
+geführt, Eingaben und normale Aktionen prüfen die globale Sperre direkt. Explizites
+Verwerfen wartet laufendes Speichern ab, entfernt aber keine bereits angelegte Karte.
+Tests prüfen Mutationserfolg, Mutation-/Reconciliationfehler, Wiederholung ohne
+Duplikat, Pending-Save, Verwerfen und gesperrte Eingaben. Verschachtelte Owner bleiben
+als gesonderter Integrationsfall für den späteren Gesamtabschluss offen.
+
+### Phase 4 — Hexkarten-Owner: Teilaudit
+
+20 Hexkarten-/Koordinatortests bestanden; vollständiger Typecheck und gezieltes
+Lint bestanden. Gemeinsame Regression aus Hexkarten, NSC, Wartungsdialog und
+Koordinator: 44 Tests in sieben Dateien bestanden. Build und Built-Smoke bestanden.
+Der Owner blockiert Feldänderungen/normalen Submit/Schließen synchron und sichtbar,
+wartet bestehende Mutation ab und bestätigt erst nach erfolgreicher Reconciliation.
+Der Wiederholungstest belegt genau einen Create-Aufruf bei zweimaliger Reconciliation.
+Verwerfen wartet Pending-Arbeit ab und löscht keine bereits persistierte Karte.
+
+Planabgleich Hexkarten: erfüllt. Roadmapabgleich: Phase4 weiter in Arbeit;
+übrige Owner, verschachtelte Klärung, sämtliche Mutationseingänge und vollständiger
+Offline-/Update-UI-Nachweis fehlen. Dieser lokale technische Build ist kein
+kanonischer Handoff; die abschließenden Candidate-/Main-Gates bleiben erforderlich.
+
+### Phase 4 — Befund zur nächsten Owner-Anbindung
+
+WorldFactionEditor fordert über related-entity-dialog-stack einen eigenständigen
+Begegnungstabellen-Editor an. Dessen Save-Callback verändert danach den Fraktions-
+Draft. WorldLocationDialog kann wiederum Fraktion/Tabelle anlegen; Hexkartenanlage
+ist ebenfalls Teil des Ortsdialogs. Eine reine Registry-Einfügereihenfolge ist
+kein belastbarer Abhängigkeitsvertrag. Vor Abschluss dieser Familien eine explizite
+Kind-vor-Eltern-Klärung im Dialog-/Owner-Vertrag ergänzen; die resultierenden
+Owner-Callbacks müssen während der Sperre erlaubt bleiben, neue Nutzereingaben
+hingegen gesperrt sein. Fehler im Kind verhindern vorzeitiges Speichern des Eltern-
+Drafts. Tests benötigen reale verschachtelte Editoren, fehlgeschlagene Kind-Saves,
+Wiederholung sowie Verwerfen ohne Verlust bereits persistierter Teilergebnisse.
+Die bestehenden Übergangs-Guards bleiben bis dahin blockierend; kein vollständiger
+Wartungsablauf mit allen Editoren wird behauptet.

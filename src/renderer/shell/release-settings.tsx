@@ -1,7 +1,11 @@
+import {
+  maintenanceDraftCoordinator,
+  type MaintenanceDraftResolution
+} from './maintenance-draft-coordinator.js'
 import type { CoreProcessStatus } from '../../shared/contracts/runtime.js'
 import { ProfileRecoveryNotice } from './profile-recovery-notice.js'
 import { hasMaintenanceDrafts } from './maintenance-drafts.js'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useCapabilityApi } from '../capabilities/use-capability-api.js'
 import type { ReleaseStatus } from '../../shared/contracts/release.js'
 import { ModalDialog } from './modal-dialog.js'
@@ -27,6 +31,85 @@ export function ReleaseSettings({
     run: () => Promise<ReleaseStatus>
   } | null>(null)
   const [busy, setBusy] = useState(false)
+  const resolution = useRef<MaintenanceDraftResolution | null>(null)
+  const resolving = useRef(false)
+  const mounted = useRef(true)
+  const [needsDrafts, setNeedsDrafts] = useState(false)
+  const [draftErrors, setDraftErrors] = useState<
+    readonly { id: string; text: string }[]
+  >([])
+  useEffect(() => {
+    mounted.current = true
+    return () => {
+      mounted.current = false
+      if (!resolving.current) {
+        resolution.current?.release()
+        resolution.current = null
+      }
+    }
+  }, [])
+  function requestMaintenance(value: {
+    text: string
+    run: () => Promise<ReleaseStatus>
+  }) {
+    if (resolution.current) return
+    resolution.current = maintenanceDraftCoordinator.begin()
+    setNeedsDrafts(hasMaintenanceDrafts())
+    setDraftErrors([])
+    setConfirmation(value)
+  }
+  function cancelMaintenance() {
+    if (resolving.current) return
+    resolution.current?.release()
+    resolution.current = null
+    setConfirmation(null)
+    setDraftErrors([])
+  }
+  async function confirmMaintenance(choice?: 'save' | 'discard') {
+    if (!confirmation || !resolution.current || resolving.current) return
+    if (hasMaintenanceDrafts() && !choice) {
+      setNeedsDrafts(true)
+      return
+    }
+    resolving.current = true
+    setBusy(true)
+    setDraftErrors([])
+    try {
+      if (choice) {
+        const failures = await resolution.current.resolve(choice)
+        if (failures.length) {
+          setDraftErrors(
+            failures.map((failure) => ({
+              id: failure.id,
+              text: `${failure.label}: ${failure.message}`
+            }))
+          )
+          return
+        }
+      }
+      if (!mounted.current) return
+      const next = await confirmation.run()
+      setStatus(next)
+      setConfirmation(null)
+      if (next.phase !== 'maintenance') {
+        resolution.current.release()
+        resolution.current = null
+      }
+    } catch {
+      setDraftErrors([
+        {
+          id: 'maintenance',
+          text: 'Der Vorgang konnte nicht abgeschlossen werden. Bitte erneut versuchen oder abbrechen.'
+        }
+      ])
+    } finally {
+      resolving.current = false
+      if (!mounted.current) {
+        resolution.current?.release()
+        resolution.current = null
+      } else setBusy(false)
+    }
+  }
   useEffect(() => {
     let active = true
     const accept = (value: CoreProcessStatus) => {
@@ -87,16 +170,9 @@ export function ReleaseSettings({
   }, [api, open])
   if (!status?.enabled) return null
   async function run(action: () => Promise<ReleaseStatus>) {
-    if (confirmation && hasMaintenanceDrafts()) {
-      setError(
-        'Bitte offene Änderungen zuerst im jeweiligen Editor speichern oder verwerfen. Danach kannst du den Neustart bestätigen.'
-      )
-      setConfirmation(null)
-      return
-    }
+    if (resolution.current) return
     setBusy(true)
     setError('')
-    setConfirmation(null)
     try {
       setStatus(await action())
     } catch {
@@ -133,7 +209,7 @@ export function ReleaseSettings({
             <button
               disabled={busy}
               onClick={() =>
-                setConfirmation({
+                requestMaintenance({
                   text: 'SaltMarcher auf diesem Rechner installieren und neu starten?',
                   run: () => api.updates.setup({ confirmed: true })
                 })
@@ -171,7 +247,7 @@ export function ReleaseSettings({
             <button
               disabled={busy}
               onClick={() =>
-                setConfirmation({
+                requestMaintenance({
                   text: 'Speichere offene Änderungen vor dem Neustart. Jetzt sichern, installieren und neu starten?',
                   run: () => api.updates.install({ confirmed: true })
                 })
@@ -185,7 +261,7 @@ export function ReleaseSettings({
           <button
             disabled={busy || maintenance}
             onClick={() =>
-              setConfirmation({
+              requestMaintenance({
                 text: 'Ein vollständiges Profil auswählen? Der aktuelle Stand wird vor der Übernahme gesichert.',
                 run: () =>
                   api.updates.importProfile({
@@ -205,7 +281,7 @@ export function ReleaseSettings({
                 key={`direct-${profile.id}`}
                 disabled={busy || maintenance}
                 onClick={() =>
-                  setConfirmation({
+                  requestMaintenance({
                     text: `Das vollständige Profil von ${profile.label} auswählen? Der aktuelle Stand wird vorher gesichert.`,
                     run: () =>
                       api.updates.importProfile({
@@ -224,7 +300,7 @@ export function ReleaseSettings({
               key={profile.id}
               disabled={busy || maintenance}
               onClick={() =>
-                setConfirmation({
+                requestMaintenance({
                   text: 'Eine geprüfte Sicherung dieses Profils auswählen und übernehmen? Der aktuelle Stand wird vorher gesichert.',
                   run: () =>
                     api.updates.importProfile({
@@ -240,7 +316,7 @@ export function ReleaseSettings({
           <button
             disabled={busy || maintenance}
             onClick={() =>
-              setConfirmation({
+              requestMaintenance({
                 text: 'Mit einem leeren Profil neu anfangen? Das bisherige Profil wird vorher vollständig gesichert.',
                 run: () => api.updates.newProfile({ confirmed: true })
               })
@@ -266,7 +342,7 @@ export function ReleaseSettings({
                 <button
                   disabled={busy || maintenance || !backup.valid}
                   onClick={() =>
-                    setConfirmation({
+                    requestMaintenance({
                       text:
                         backup.scope === 'profile'
                           ? 'Das gesamte Profil auf diese Sicherung zurücksetzen? Aktuelle Daten werden vorher gesichert.'
@@ -284,7 +360,7 @@ export function ReleaseSettings({
           <button
             disabled={busy || maintenance}
             onClick={() =>
-              setConfirmation({
+              requestMaintenance({
                 text: 'Eine geprüfte SaltMarcher-Sicherung übernehmen? Der aktuelle Stand wird vorher gesichert; die Quelle bleibt erhalten.',
                 run: () => api.updates.importProfile({ confirmed: true })
               })
@@ -302,11 +378,44 @@ export function ReleaseSettings({
           className="release-settings"
           ariaLabel="Neustart bestätigen"
           role="alertdialog"
-          onClose={() => setConfirmation(null)}
+          onClose={cancelMaintenance}
+          busy={busy}
         >
           <p>{confirmation.text}</p>
-          <button onClick={() => setConfirmation(null)}>Zurück</button>
-          <button onClick={() => void run(confirmation.run)}>Bestätigen</button>
+          {draftErrors.length > 0 && (
+            <div role="alert">
+              {draftErrors.map((failure) => (
+                <p key={failure.id}>{failure.text}</p>
+              ))}
+              <p>
+                Erneut versuchen oder abbrechen, um die betroffenen Änderungen
+                zu bearbeiten.
+              </p>
+            </div>
+          )}
+          <button disabled={busy} onClick={cancelMaintenance}>
+            Abbrechen
+          </button>
+          {needsDrafts ? (
+            <>
+              <button
+                disabled={busy}
+                onClick={() => void confirmMaintenance('save')}
+              >
+                Speichern und fortfahren
+              </button>
+              <button
+                disabled={busy}
+                onClick={() => void confirmMaintenance('discard')}
+              >
+                Verwerfen und fortfahren
+              </button>
+            </>
+          ) : (
+            <button disabled={busy} onClick={() => void confirmMaintenance()}>
+              Bestätigen
+            </button>
+          )}
         </ModalDialog>
       )}
     </>

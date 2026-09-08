@@ -1,5 +1,6 @@
-import { useMaintenanceDraftGuard } from '../../shell/maintenance-drafts.js'
-import { useMemo, useState } from 'react'
+import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
+import { useMaintenanceDraft } from '../../shell/maintenance-drafts.js'
+import { useMemo, useRef, useState } from 'react'
 import type { WorldNpcDraft } from '../../../shared/contracts/world-npc.js'
 import { message } from '../../i18n/catalog-runtime.de.js'
 import {
@@ -22,7 +23,7 @@ export function NpcCatalogEditor(props: {
   creatureOptions: readonly SearchableSelectOption[]
   searchCreatures: (query: string) => Promise<readonly SearchableSelectOption[]>
   close: () => void
-  save: (draft: WorldNpcDraft) => Promise<void>
+  save: (draft: WorldNpcDraft) => Promise<boolean>
 }) {
   const initial = useMemo<WorldNpcDraft>(
     () => ({
@@ -40,15 +41,59 @@ export function NpcCatalogEditor(props: {
     [props.npc]
   )
   const [draft, setDraft] = useState<WorldNpcDraft>(initial)
-  const [busy, setBusy] = useState(false)
+  const [saving, setBusy] = useState(false)
+  const draftRef = useRef(initial)
+  const settled = useRef(false)
+  const pending = useRef<Promise<boolean> | null>(null)
   const [discardOpen, setDiscardOpen] = useState(false)
   const dirty = JSON.stringify(draft) !== JSON.stringify(initial)
-  useMaintenanceDraftGuard(dirty)
+  const blocked = useMaintenanceDraft({
+    label: `NSC: ${draft.displayName.trim() || 'Neuer NSC'}`,
+    isDirty: () =>
+      !settled.current &&
+      (pending.current !== null ||
+        JSON.stringify(draftRef.current) !== JSON.stringify(initial)),
+    save: saveDraft,
+    discard: discardDraft
+  })
+  const busy = saving || blocked
+  function saveDraft(): Promise<boolean> {
+    if (pending.current) return pending.current
+    const value = draftRef.current
+    if (!value.displayName.trim() || !value.creatureId.trim())
+      return Promise.resolve(false)
+    setBusy(true)
+    pending.current = Promise.resolve()
+      .then(() => props.save(value))
+      .then((saved) => {
+        if (saved) settled.current = true
+        return saved
+      })
+      .finally(() => {
+        pending.current = null
+        setBusy(false)
+      })
+    return pending.current
+  }
+  async function discardDraft(): Promise<boolean> {
+    if (pending.current) await pending.current.catch(() => false)
+    draftRef.current = initial
+    settled.current = true
+    setDraft(initial)
+    props.close()
+    return true
+  }
   const set = <K extends keyof WorldNpcDraft>(
     key: K,
     value: WorldNpcDraft[K]
-  ) => setDraft((current) => ({ ...current, [key]: value }))
+  ) => {
+    if (maintenanceDraftCoordinator.isLocked() || pending.current) return
+    settled.current = false
+    draftRef.current = { ...draftRef.current, [key]: value }
+    setDraft(draftRef.current)
+  }
   const requestClose = () => {
+    if (maintenanceDraftCoordinator.isLocked() || pending.current) return
     if (dirty) setDiscardOpen(true)
     else props.close()
   }
@@ -73,8 +118,9 @@ export function NpcCatalogEditor(props: {
         <ModalForm
           onSubmit={(event) => {
             event.preventDefault()
-            setBusy(true)
-            void props.save(draft).catch(() => setBusy(false))
+            if (maintenanceDraftCoordinator.isLocked() || pending.current)
+              return
+            void saveDraft().catch(() => {})
           }}
         >
           <header>
@@ -88,7 +134,7 @@ export function NpcCatalogEditor(props: {
               {props.conflict}
             </p>
           )}
-          <div className="npc-dialog-grid">
+          <fieldset className="npc-dialog-grid" disabled={busy}>
             <label>
               {message('ui.name')}
               <input
@@ -196,7 +242,7 @@ export function NpcCatalogEditor(props: {
               changed={(value) => set('notes', value)}
               rows={5}
             />
-          </div>
+          </fieldset>
           <footer>
             <ModalCloseButton>{message('action.cancel')}</ModalCloseButton>
             <button
@@ -215,7 +261,10 @@ export function NpcCatalogEditor(props: {
           cancelLabel={message('action.cancel')}
           discardLabel={message('ui.aenderungen.verwerfen')}
           onCancel={() => setDiscardOpen(false)}
-          onDiscard={props.close}
+          onDiscard={() => {
+            if (!maintenanceDraftCoordinator.isLocked() && !pending.current)
+              void discardDraft()
+          }}
         />
       )}
     </>
