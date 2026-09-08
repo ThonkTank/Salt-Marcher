@@ -1,4 +1,11 @@
 export const lootMessagesDe = {
+  'loot.editorCheck': 'Gespeicherten Schatz prüfen',
+  'loot.editorInvalid':
+    'Bitte Bezeichnung, Gegenstände und Behälter prüfen oder den Entwurf verwerfen.',
+  'loot.editorConflict':
+    'Der gespeicherte Schatz hat sich geändert. Bitte den Entwurf verwerfen und den aktuellen Schatz erneut öffnen.',
+  'loot.editorNotSaved':
+    'Der Entwurf wurde nicht gespeichert. Du kannst ihn speichern oder verwerfen.',
   'loot.title': 'Schatz',
   'loot.add': 'Schatz hinzufügen',
   'loot.edit': 'Schatz bearbeiten',

@@ -35,6 +35,9 @@ export function SessionPlannerDialogHost(props: {
   name: string
   deleteConfirm: boolean
   treasureEditor: Treasure | null | false
+  treasureMaintenanceId: string
+  closeTreasureEditor: () => void
+  completeTreasureEditor: () => Promise<void>
   distribution: Treasure | null
   setConfirmation: (value: null) => void
   setNameDialog: (value: 'create' | 'rename' | null) => void
@@ -160,11 +163,9 @@ export function SessionPlannerDialogHost(props: {
             snapshot={props.snapshot}
             initialAnchor={{ kind: 'unplaced' }}
             treasure={props.treasureEditor}
-            close={() => props.setTreasureEditor(false)}
-            saved={() => {
-              props.setTreasureEditor(false)
-              props.refreshWorkspace()
-            }}
+            maintenanceId={props.treasureMaintenanceId}
+            close={props.closeTreasureEditor}
+            saved={props.completeTreasureEditor}
             onError={props.onError}
           />
         )}

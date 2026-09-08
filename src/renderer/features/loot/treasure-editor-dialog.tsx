@@ -1,4 +1,12 @@
-import { useEffect, useReducer, useState, type Dispatch } from 'react'
+import {
+  useEffect,
+  useLayoutEffect,
+  useState,
+  useSyncExternalStore,
+  type Dispatch
+} from 'react'
+import { TreasureEditorController } from './treasure-editor-controller.js'
+import { useMaintenanceDraft } from '../../shell/maintenance-drafts.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type {
   Treasure,
@@ -20,37 +28,68 @@ import {
   type EditableTreasureDraft
 } from './treasure-draft.js'
 import {
-  reduceTreasureDraft,
   type TreasureContainerPatch,
   type TreasureDraftCommand,
   type TreasureItemPatch
 } from './treasure-draft-reducer.js'
 import { treasureDraftEditorMessagesDe } from './treasure-draft-editor-messages.de.js'
 
-export function TreasureEditorDialog(props: {
+type TreasureEditorDialogProps = {
   snapshot: LiveSessionSnapshot
   initialAnchor: TreasureAnchor
   treasure: Treasure | null
   close: () => void
-  saved: () => void
+  saved: () => void | Promise<void>
+  maintenanceId?: string
   onError: (message: string) => void
-}) {
+}
+export function TreasureEditorDialog(props: TreasureEditorDialogProps) {
+  return <TreasureEditorContent key={props.treasure?.id ?? 'new'} {...props} />
+}
+function TreasureEditorContent(props: TreasureEditorDialogProps) {
   const loot = useTreasureEditorPort()
   const focused = props.snapshot.scene.scenes.find(
     (scene) => scene.id === props.snapshot.scene.focusedSceneId
   )!
-  const [anchor, setAnchor] = useState<TreasureAnchor>(
-    props.treasure?.anchor ?? props.initialAnchor
+  const [controller] = useState(
+    () =>
+      new TreasureEditorController(
+        loot,
+        props.treasure,
+        treasureDraftFrom(props.treasure),
+        props.treasure?.anchor ?? props.initialAnchor,
+        {
+          saved: props.saved,
+          close: props.close
+        }
+      )
   )
-  const [draft, dispatchDraft] = useReducer(
-    (
-      current: EditableTreasureDraft,
-      command: TreasureDraftCommand
-    ): EditableTreasureDraft => reduceTreasureDraft(current, command, 'manual'),
-    props.treasure,
-    treasureDraftFrom
+  useLayoutEffect(() => {
+    controller.updateCallbacks({ saved: props.saved, close: props.close })
+  }, [controller, props.saved, props.close])
+  const {
+    draft,
+    anchor,
+    busy: saving,
+    uncertain,
+    error,
+    closed
+  } = useSyncExternalStore(controller.subscribe, controller.snapshot)
+  const blocked = useMaintenanceDraft(
+    {
+      label: `Schatz: ${draft.label || 'Neuer Schatz'}`,
+      isDirty: controller.dirty,
+      save: controller.maintenanceSave,
+      discard: controller.maintenanceDiscard
+    },
+    props.maintenanceId
   )
-  const [saving, setSaving] = useState(false)
+  const editingBlocked = blocked || saving || uncertain || closed
+  const dispatchDraft = controller.dispatch
+  const setAnchor = controller.setAnchor
+  const close = () => {
+    void controller.close()
+  }
   const [catalogQuery, setCatalogQuery] = useState<
     Omit<LootCatalogQuery, 'runId' | 'catalogContentHash'>
   >({
@@ -90,53 +129,12 @@ export function TreasureEditorDialog(props: {
     dispatchDraft({ kind: 'patch-container', id, patch })
   }
 
-  async function save() {
-    if (invalid) return
-    setSaving(true)
-    const items = draft.items.map((item) => ({
-      id: item.persistedId,
-      itemReference: item.itemReference!,
-      quantity: item.quantity,
-      containerId: item.containerId
-    }))
-    const containerDrafts = draft.containers.map((container) => ({
-      id: container.persistedId ?? container.draftId,
-      catalogContainerId: container.catalogContainerId,
-      name: container.name,
-      capacity: container.capacity
-    }))
-    try {
-      if (props.treasure)
-        await loot.update({
-          commandId: crypto.randomUUID(),
-          treasureId: props.treasure.id,
-          expectedRevision: props.treasure.revision,
-          label: draft.label,
-          anchor,
-          containers: containerDrafts,
-          items
-        })
-      else
-        await loot.create({
-          commandId: crypto.randomUUID(),
-          label: draft.label,
-          anchor,
-          containers: containerDrafts,
-          items
-        })
-      props.saved()
-    } catch (cause) {
-      props.onError(capabilityErrorText(cause))
-    } finally {
-      setSaving(false)
-    }
-  }
-
   return (
     <ModalDialog
       className="treasure-editor-dialog"
       labelledBy="treasure-editor-title"
-      onClose={props.close}
+      onClose={close}
+      busy={editingBlocked}
     >
       <header>
         <div>
@@ -149,105 +147,118 @@ export function TreasureEditorDialog(props: {
           type="button"
           className="compact"
           aria-label={message('ui.dialog.schliessen')}
-          onClick={props.close}
+          onClick={close}
+          disabled={editingBlocked}
         >
           ×
         </button>
       </header>
-      <label className="loot-label-field">
-        {message('loot.anchor')}
-        <select
-          value={anchorKey(anchor)}
-          onChange={(event) => {
-            const value = event.target.value
-            if (value === 'unplaced') setAnchor({ kind: 'unplaced' })
-            else if (
-              value === `location:${focused.locationId}` &&
-              focused.locationId
-            )
-              setAnchor({
-                kind: 'location',
-                locationId: focused.locationId,
-                lastKnownLabel: focused.locationName
-              })
-            else if (value.startsWith('group:')) {
-              const group = focused.groups.find(
-                (candidate) => candidate.id === value.slice('group:'.length)
-              )
-              if (group)
-                setAnchor({
-                  kind: 'group',
-                  sceneId: focused.id,
-                  groupId: group.id,
-                  lastKnownLabel: group.name
-                })
-            }
-          }}
+      {error && <p role="alert">{error}</p>}
+      {uncertain && (
+        <button
+          type="button"
+          disabled={blocked || saving}
+          onClick={() => void controller.retry()}
         >
-          <option value="unplaced">{message('loot.unplaced')}</option>
-          {focused.locationId && (
-            <option value={`location:${focused.locationId}`}>
-              {formatMessage('loot.locationNamed', {
-                name: focused.locationName
-              })}
-            </option>
-          )}
-          {focused.groups.map((group) => (
-            <option key={group.id} value={`group:${group.id}`}>
-              {formatMessage('loot.groupNamed', { name: group.name })}
-            </option>
-          ))}
-          {anchor.kind !== 'unplaced' &&
-            !anchorAvailableInScene(anchor, focused) && (
-              <option value={anchorKey(anchor)}>
-                {formatMessage('loot.previousNamed', {
-                  name: anchor.lastKnownLabel
+          {message('loot.editorCheck')}
+        </button>
+      )}
+      <div inert={editingBlocked} style={{ display: 'contents' }}>
+        <label className="loot-label-field">
+          {message('loot.anchor')}
+          <select
+            value={anchorKey(anchor)}
+            onChange={(event) => {
+              const value = event.target.value
+              if (value === 'unplaced') setAnchor({ kind: 'unplaced' })
+              else if (
+                value === `location:${focused.locationId}` &&
+                focused.locationId
+              )
+                setAnchor({
+                  kind: 'location',
+                  locationId: focused.locationId,
+                  lastKnownLabel: focused.locationName
+                })
+              else if (value.startsWith('group:')) {
+                const group = focused.groups.find(
+                  (candidate) => candidate.id === value.slice('group:'.length)
+                )
+                if (group)
+                  setAnchor({
+                    kind: 'group',
+                    sceneId: focused.id,
+                    groupId: group.id,
+                    lastKnownLabel: group.name
+                  })
+              }
+            }}
+          >
+            <option value="unplaced">{message('loot.unplaced')}</option>
+            {focused.locationId && (
+              <option value={`location:${focused.locationId}`}>
+                {formatMessage('loot.locationNamed', {
+                  name: focused.locationName
                 })}
               </option>
             )}
-        </select>
-      </label>
-      <TreasureDraftFields
-        draft={draft}
-        policy="catalog"
-        messages={treasureDraftEditorMessagesDe()}
-        labelChanged={(label) => dispatchDraft({ kind: 'set-label', label })}
-        patchItem={patchItem}
-        removeItem={(id) => dispatchDraft({ kind: 'remove-item', id })}
-        patchContainer={patchContainer}
-        removeContainer={(id) =>
-          dispatchDraft({ kind: 'remove-container', id })
-        }
-        itemDefinitionReadOnly={() => true}
-        addContainer={() =>
-          dispatchDraft({
-            kind: 'add-container',
-            container: emptyEditableTreasureContainer()
-          })
-        }
-      />
-      <LootCatalogPane
-        query={catalogQuery}
-        page={catalogPage}
-        error={catalogError}
-        queryChanged={(patch, preserveOffset = false) =>
-          setCatalogQuery((current) => ({
-            ...current,
-            ...patch,
-            offset: preserveOffset ? (patch.offset ?? current.offset) : 0
-          }))
-        }
-        add={(entry) => addCatalogEntry(entry, draft, dispatchDraft)}
-      />
+            {focused.groups.map((group) => (
+              <option key={group.id} value={`group:${group.id}`}>
+                {formatMessage('loot.groupNamed', { name: group.name })}
+              </option>
+            ))}
+            {anchor.kind !== 'unplaced' &&
+              !anchorAvailableInScene(anchor, focused) && (
+                <option value={anchorKey(anchor)}>
+                  {formatMessage('loot.previousNamed', {
+                    name: anchor.lastKnownLabel
+                  })}
+                </option>
+              )}
+          </select>
+        </label>
+        <TreasureDraftFields
+          draft={draft}
+          policy="catalog"
+          messages={treasureDraftEditorMessagesDe()}
+          labelChanged={(label) => dispatchDraft({ kind: 'set-label', label })}
+          patchItem={patchItem}
+          removeItem={(id) => dispatchDraft({ kind: 'remove-item', id })}
+          patchContainer={patchContainer}
+          removeContainer={(id) =>
+            dispatchDraft({ kind: 'remove-container', id })
+          }
+          itemDefinitionReadOnly={() => true}
+          addContainer={() =>
+            dispatchDraft({
+              kind: 'add-container',
+              container: emptyEditableTreasureContainer()
+            })
+          }
+        />
+        <LootCatalogPane
+          query={catalogQuery}
+          page={catalogPage}
+          error={catalogError}
+          queryChanged={(patch, preserveOffset = false) =>
+            setCatalogQuery((current) => ({
+              ...current,
+              ...patch,
+              offset: preserveOffset ? (patch.offset ?? current.offset) : 0
+            }))
+          }
+          add={(entry) => addCatalogEntry(entry, draft, dispatchDraft)}
+        />
+      </div>
       <footer>
-        <button type="button" onClick={props.close}>
+        <button type="button" onClick={close} disabled={editingBlocked}>
           {message('loot.cancel')}
         </button>
         <button
           type="button"
           className="primary-action"
-          disabled={invalid || saving}
-          onClick={() => void save()}
+          disabled={invalid || editingBlocked}
+          onClick={() => void controller.save()}
         >
           {saving ? message('loot.saving') : message('loot.save')}
         </button>

@@ -3706,3 +3706,67 @@ Save/Discard/Readretry sowie seine abhängige Einbindung im Planner. Dabei getre
 Abschlusscallbacks für Wartung und Benutzeraktionen verwenden. Verteilungsdialog,
 weitere Phase-4-Schreibwege, Update-/Offline-Abnahme und Phasen 5–7 bleiben im
 Umfang. Exact-SHA-CI, Handoff und Main-Abschluss sind dadurch nicht ersetzt.
+
+### Phase 4 — Plan: Schatzeditorzustand und Planner-Abhängigkeit
+
+673bda007 ist sauber. Den protokollierten Editorplan jetzt umsetzen: ein eigener
+Controller hält Draft, Anchor, Ausgangsrevision, Originalport, Pending und
+Originalcommand. Save/Discard warten auf denselben Vorgang. Nach Writefehlern
+wird ausschließlich die Quittung gelesen; bestätigte Writes schließen nach
+erfolgreichem Parent-Refresh, abwesende Quittungen erhalten den Entwurf. Eine
+abweichende aktuelle Revision verhindert erneutes Übertragen alter Entwürfe.
+Unveränderte offene Editoren können während Wartung ohne Write geschlossen
+werden. Der komplette offene Editor bleibt bis zum Abschluss ein Owner.
+
+Der Planner benennt einen stabilen Schatzeditor-Owner als Abhängigkeit und
+hält gesonderte interne Abschlusscallbacks vor. Sein Refresh wird abgewartet,
+bevor der Kinddialog als erfolgreich geschlossen gilt. Ein Refreshfehler darf
+keinen zweiten Write auslösen. Verteilung bleibt als eigener offener Dialog
+weiter blockierend, bis ihr eigener Owner folgt. Gerenderte Tests des Editors
+und Koordinator-/Parenttests prüfen diese Grenzen; anschließend bestehende
+Loot-/Plannerprüfungen und Build/Smoke/Bundle sowie Loot-E2E.
+
+Korrekturrunde nach UI-Prüfung: 156 Tests und Typecheck bestehen. ESLint meldet
+Ref-Zugriff aus dem Controller-Initializer sowie unpräzise Mocktypen und unnötige
+async-Funktionen in den neuen Tests. Die Callbackaktualisierung auf eine explizite
+Controller-Methode im Layout-Effekt umstellen; der Initializer erhält normale
+Props, der Originalport bleibt fest. Mockvergleiche auf unknown typisieren und
+synchrone Testcallbacks mit expliziten Promises versehen. Danach dieselben
+betroffenen Tests sowie Typecheck/Lint erneut prüfen. Kein Architektur-/Guard-
+Bypass und keine Regelunterdrückung.
+
+### Phase 4 — Schatzeditorzustand: Plan-/Roadmapaudit
+
+Planabgleich bestanden: Der gerenderte Schatzeditor ist bis zum Abschluss ein
+zentraler Wartungs-Owner. Synchroner Draft/Anchor, Originalport und Ausgangsrevision
+bleiben erhalten; öffentliche Aktionen sind während Klärung, Pending und Unknown
+gesperrt. Save/Discard warten auf den vollständigen Write einschließlich asynchronem
+Abschlusscallback. Fehler bleiben im Editor sichtbar. Lesender Retry verwendet
+denselben Originalcommand; bestätigte Quittungen führen keinen zweiten Write aus.
+Bei Abwesenheit bleiben Eingaben erhalten, bei neuerer Revision ist erneutes
+Überschreiben ausgeschlossen. Unberührte Editoren schließen während Wartung ohne
+Write. Der Planner benennt den Kind-Owner auch vor dem Lazy-Mount als Abhängigkeit;
+sein interner Abschluss liest frisch und schließt erst danach. Ein fehlgeschlagener
+Refresh hält die Recovery offen, ein schmutziger Parentdraft bleibt erhalten.
+
+Validierung: 178 Tests in 16 Dateien bestanden. Neue gerenderte Fälle prüfen
+Save/Discard, unmittelbare Eingabesperre, Validierungsfehler/Abbrechen, unberührten
+Editor, Pending inklusive Parent-Refresh, verlorene Antwort, mehrfachen Readretry,
+Abwesenheit, Revisionskonflikt und ursprüngliche Kampagne. Koordinator-/Planner-
+Tests prüfen Reihenfolge und einen noch ladenden Kind-Owner. Typecheck und gezieltes
+ESLint sind nach der protokollierten Korrekturrunde grün. Build, Smoke ready/closed
+und Bundle-Gate bestehen (1652738 reachable Bytes; keine Baseline-/Budgetänderung).
+Beide E2E-Suiten auf demselben Build bestanden: loot mit teilweiser Verteilung,
+Neustart und Provenienz; sessionGeneration mit dauerhafter Plannerarbeit über
+Prozessneustarts. Logs: work/roadmap-phase4-treasure-ui-*.log. Keine echte
+Nutzerinstallation oder Nutzerdaten verändert.
+
+Roadmapabgleich: Der Schatzeditor samt Planner-Abhängigkeit ist implementiert und
+gezielt automatisiert geprüft. Der Verteilungsdialog hat noch seinen alten lokalen
+Pending-/Commandzustand ohne zentralen Owner und ohne lesende Recovery; der Planner
+blockiert diesen Dialog weiterhin ausdrücklich. Als nächstes dessen bestehende
+atomare Quittung lesbar und kampagnengebunden machen und anschließend Verteilungs-
+Owner plus abhängigen Parentabschluss integrieren. Weitere Phase-4-Schreibwege und
+Update-/Offline-Abnahme sowie Phasen 5–7 bleiben offen. Lokaler Build und diese
+Prüfungen ersetzen weder vollständige Exact-SHA-CI noch Handoff, Main-Abschluss,
+Livetest oder Veröffentlichung.

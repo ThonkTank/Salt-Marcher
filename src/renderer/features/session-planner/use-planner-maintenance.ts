@@ -27,6 +27,7 @@ export function usePlannerMaintenance(options: {
     isOpen: () => boolean
     settle: (choice: 'save' | 'discard') => Promise<boolean>
   }
+  dependencies?: () => readonly string[]
   readUnresolved: () => string | null
 }) {
   const {
@@ -50,6 +51,9 @@ export function usePlannerMaintenance(options: {
   }
   const maintenanceBlocked = useMaintenanceDraft({
     label: 'Sitzungsplanung',
+    get dependsOn() {
+      return options.dependencies?.() ?? []
+    },
     isDirty: () =>
       read().dirty ||
       runtime.pending() ||

@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useId, useRef, useState } from 'react'
 import { CapabilityError } from '../../../shared/errors/capability-error.js'
 import type {
   AcceptGeneratedTreasureInput,
@@ -42,6 +42,7 @@ export function useSessionRewardMaterialization(options: {
   >(false)
   const [distribution, setDistributionState] = useState<Treasure | null>(null)
 
+  const treasureMaintenanceId = useId()
   const dialogs = useRef({ treasure: false, distribution: false })
   const setTreasureEditor = useCallback((value: Treasure | null | false) => {
     dialogs.current.treasure = value !== false
@@ -131,6 +132,10 @@ export function useSessionRewardMaterialization(options: {
   )
 
   return {
+    treasureMaintenanceId,
+    treasureDependencies: () =>
+      dialogs.current.treasure ? [treasureMaintenanceId] : [],
+    hasDistributionDialog: () => dialogs.current.distribution,
     hasOpenDialog: () =>
       dialogs.current.treasure || dialogs.current.distribution,
     treasureEditor,

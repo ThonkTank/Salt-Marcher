@@ -114,6 +114,9 @@ export function SessionPlannerWorkspace(props: WorkspaceSurfaceProps) {
           name={controller.name}
           deleteConfirm={controller.deleteConfirm}
           treasureEditor={controller.treasureEditor}
+          treasureMaintenanceId={controller.treasureMaintenanceId}
+          closeTreasureEditor={controller.closeTreasureEditor}
+          completeTreasureEditor={controller.completeTreasureEditor}
           distribution={controller.distribution}
           setConfirmation={controller.setConfirmation}
           setNameDialog={controller.setNameDialog}
