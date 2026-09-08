@@ -676,7 +676,10 @@ its exact-SHA checks, app handoff and green main promotion are verified.
 Scene desktop phase 5 was delivered at e6ad4389b with canonical handoff and green main: atomic scene roster replacement/transfers,
 manual XP separated from encounter burden, selected two-click rests. Campaign
 schema 35 preserves legacy counters with separate trust flags; registry 14.
-Phase 6 is in progress: desktop default, legacy Party/column removal, installation
-42 and preference envelope 2 (theme retained), registry 15, scoped presentation
-cleanup and final workflow qualification. Delivery evidence is recorded separately
-in the scene desktop execution log.
+Phase 6 was delivered at `c084ff2f1022bf0d92486e96a9489ec3396bd416`: the desktop
+is the regular scene surface, legacy Party/columns and global reference pins are
+removed, installation 42 uses theme-only preference envelope 2, registry 15, and
+scoped presentation cleanup preserves recoverable campaign layouts. All six scene
+desktop phases are complete, with all required remote checks, exact-SHA canonical
+handoff and green main verified. The final cross-phase audit and immutable delivery
+evidence are recorded in `scene-desktop-execution.md`.
