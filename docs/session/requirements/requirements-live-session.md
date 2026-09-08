@@ -185,3 +185,17 @@ SC combatants are reconciled while the active turn is retained where possible.
   in their own left-column section and unplaced treasures remain recoverable
 - closing a Loot distribution dialog writes nothing; only `Verteilung
   abschließen` atomically creates allocations and character-ledger entries
+
+## Scene desktop preview (phase 1)
+
+The application menu offers an explicitly labeled, default-off scene desktop
+preview. Each scene initially opens one read-only overview with its location,
+time, assigned PCs and active groups. Windows can be moved, resized, snapped,
+minimized, maximized/restored or closed, with keyboard alternatives. The window
+bar reopens minimized views; the overview launcher reopens a closed overview.
+Campaign and scene identity scope persistent presentation state. Scene/catalog
+navigation and app restart preserve geometry and closed state; a smaller
+viewport fits windows without destroying preferred geometry. Failed loads must
+not overwrite stored arrangements. The classic Session workflow remains
+available by disabling the preview. Further feature windows follow the approved
+[desktop roadmap](../../project/architecture/scene-desktop-roadmap.md).

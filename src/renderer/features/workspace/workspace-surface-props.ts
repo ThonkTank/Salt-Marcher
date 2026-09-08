@@ -5,6 +5,7 @@ import type { SessionLayoutPreference } from '../../../shared/contracts/session-
 import type { SessionScenario } from '../session/session-scenario.js'
 
 export type WorkspaceSurfaceProps = Readonly<{
+  desktopPreview?: boolean
   campaignId: string
   snapshot: LiveSessionSnapshot
   setSnapshot: Dispatch<SetStateAction<LiveSessionSnapshot>>

@@ -652,3 +652,14 @@ remain later work. The slice uses only secure typed capabilities
 and utility-process-owned feature stores; it does not introduce copied creature
 truth, a Java compatibility layer, or claim that the open M1 qualification
 gate is complete.
+
+### Scene desktop roadmap — 2026-09-08, in progress
+
+The user-approved [six-phase roadmap](scene-desktop-roadmap.md) moves running
+play to an independently persisted desktop per scene. Execution and correction
+rounds are tracked separately in [the execution log](scene-desktop-execution.md).
+Phase 1 introduces the opt-in window shell and read-only scene overview, an
+installation 40→41 migration and separately revisioned desktop contracts.
+The existing Session remains default; reference, travel/combat and character
+changes belong to subsequent phases. No phase is recorded as delivered until
+its exact-SHA checks, app handoff and green main promotion are verified.

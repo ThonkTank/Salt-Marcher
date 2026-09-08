@@ -36,6 +36,8 @@ export function WorkspaceTopBar(props: {
   onError: (message: string) => void
   theme: 'light' | 'dark'
   toggleTheme: () => void
+  desktopPreview?: boolean
+  setDesktopPreview?: (enabled: boolean) => void
   loadGeneratorPresetApplication: GeneratorPresetApplicationLoader
   campaignRules?: CampaignRewardRulesPort
 }) {
@@ -95,6 +97,10 @@ export function WorkspaceTopBar(props: {
                 .length ?? 0
             }
             onError={props.onError}
+            desktopPreview={props.desktopPreview ?? false}
+            {...(props.setDesktopPreview
+              ? { setDesktopPreview: props.setDesktopPreview }
+              : {})}
           />
         </Suspense>
       )}

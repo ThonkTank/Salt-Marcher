@@ -1,3 +1,4 @@
+import { sceneDesktopOperationDefinitions } from './operations/scene-desktop.js'
 import { releaseOperationDefinitions } from './operations/release.js'
 import { z } from 'zod'
 import {
@@ -44,6 +45,7 @@ export const coreOperationFragments = [
   campaignOperationDefinitions,
   campaignImportOperationDefinitions,
   settingsOperationDefinitions,
+  sceneDesktopOperationDefinitions,
   campaignRulesOperationDefinitions,
   generatorPresetsOperationDefinitions,
   passiveProjectionOperationDefinitions,

@@ -16,6 +16,7 @@ export function useInstallationPreferences(
   const commands = useAsyncCommandCoordinator()
   const { snapshot: projectionSnapshot, projection } =
     useInstallationSettingsProjection(enabled)
+  const [sceneDesktopPreview, setSceneDesktopPreview] = useState(false)
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
   const [sessionLayout, setSessionLayout] = useState<SessionLayoutPreference>(
     defaultSessionLayoutPreferenceValue
@@ -31,6 +32,7 @@ export function useInstallationPreferences(
     savedLayout.current = JSON.stringify(value.preferences.sessionLayout)
     setSessionLayout(value.preferences.sessionLayout)
     setTheme(value.preferences.theme)
+    setSceneDesktopPreview(value.preferences.sceneDesktopPreview ?? false)
   }, [projectionSnapshot.value])
 
   useEffect(() => {
@@ -122,5 +124,19 @@ export function useInstallationPreferences(
     })
   }, [save])
 
-  return { theme, toggleTheme, sessionLayout, setSessionLayout }
+  const changeSceneDesktopPreview = useCallback(
+    (enabled: boolean) => {
+      setSceneDesktopPreview(enabled)
+      save({ sceneDesktopPreview: enabled })
+    },
+    [save]
+  )
+  return {
+    theme,
+    toggleTheme,
+    sessionLayout,
+    setSessionLayout,
+    sceneDesktopPreview,
+    changeSceneDesktopPreview
+  }
 }

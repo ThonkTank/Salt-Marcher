@@ -1,16 +1,16 @@
 {
   "recordedAt": "2026-09-08",
-  "reason": "Remove unused campaign dialog styles after the full-screen transition.",
-  "dependencyRationale": "No dependencies added or changed.",
-  "chunkRationale": "Workspace CSS shrinks; live campaign row and settings styles are preserved.",
+  "reason": "Opt-in per-scene window desktop and strict persistence contracts after campaign style cleanup.",
+  "dependencyRationale": "No dependencies added; uses existing React, Zod, SQLite and native pointer events.",
+  "chunkRationale": "Window shell and CSS load only with preview; preserves upstream removal of unused campaign styles. Shared desktop schemas remain in capability validation.",
   "graphs": {
     "shell": 420394,
-    "workspace": 515415,
-    "session": 168964,
+    "workspace": 517090,
+    "session": 169410,
     "catalog": 185870,
     "hex": 176699,
     "reference": 39491,
     "pixi": 408635,
-    "reachable": 1540258
+    "reachable": 1559470
   }
 }

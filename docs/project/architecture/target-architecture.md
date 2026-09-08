@@ -629,3 +629,20 @@ separate static and Campaign revisioned indexes plus normalized documents
 through three typed read capabilities and one typed invalidation event.
 The renderer compiles matching state locally; hover traversal performs detail
 reads but never receives filesystem, database, or runtime network access.
+
+## Per-scene desktop preview
+
+The opt-in scene desktop is presentation state owned by the installation,
+separately revisioned by explicit Campaign/Scene UUID pair. Its strict v1
+contracts live in `shared/contracts/scene-desktop.ts`; the utility-owned
+`SceneDesktopStore` owns its SQL. Neither the renderer nor the desktop store
+mutates campaign truth while arranging windows. Absent state seeds a single
+read-only overview; a saved empty array remains empty. Preferred geometry is
+preserved when fitting to a smaller viewport and while snapped/maximized.
+
+Renderer projections retain their captured scope across route/scene unmounts.
+They serialize completed gesture writes, reconcile uncertain replies by readback,
+and stop on conflicting persistence instead of overwriting with defaults. An
+explicit reload discards unsaved presentation intent. The default-off preview
+preference is an additive optional installation preference. The classic Session
+surface remains the default until the phased parity audit is complete.

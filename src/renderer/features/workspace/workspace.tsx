@@ -62,8 +62,14 @@ export function WorkspaceApp() {
     campaignError,
     coreStatus === 'ready'
   )
-  const { theme, toggleTheme, sessionLayout, setSessionLayout } =
-    useInstallationPreferences(settingsError, coreStatus === 'ready')
+  const {
+    theme,
+    toggleTheme,
+    sessionLayout,
+    setSessionLayout,
+    sceneDesktopPreview,
+    changeSceneDesktopPreview
+  } = useInstallationPreferences(settingsError, coreStatus === 'ready')
   const [partyOpen, setPartyOpen] = useState(false)
   const [dayOpen, setDayOpen] = useState(false)
   const [scenarios, setScenarios] = useState<Record<string, SessionScenario>>(
@@ -122,6 +128,7 @@ export function WorkspaceApp() {
     coordinator.session && activeCampaignId
       ? {
           campaignId: activeCampaignId,
+          desktopPreview: sceneDesktopPreview,
           snapshot: coordinator.session,
           setSnapshot,
           scenario: coordinator.session.combat
@@ -212,6 +219,8 @@ export function WorkspaceApp() {
           onError={featureError}
           theme={theme}
           toggleTheme={toggleTheme}
+          desktopPreview={sceneDesktopPreview}
+          setDesktopPreview={changeSceneDesktopPreview}
           loadGeneratorPresetApplication={loadGeneratorPresetApplication}
           campaignRules={createCampaignRewardRulesPort(api)}
         />

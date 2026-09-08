@@ -1,6 +1,7 @@
 import { lazy, Suspense, useCallback, useState } from 'react'
 import type { CampaignSnapshot } from '../../../shared/contracts/campaign.js'
 import { formatMessage, message } from '../../i18n/campaign-menu-runtime.de.js'
+import { message as workspaceMessage } from '../../i18n/workspace-runtime.de.js'
 import { AnchoredPopup } from '../../shell/anchored-popup.js'
 import type { GeneratorPresetApplicationLoader } from './generator-preset-application.js'
 import type { CampaignRewardRulesPort } from './campaign-reward-rules-port.js'
@@ -12,6 +13,8 @@ const EncounterGeneratorSettingsRoute = lazy(() =>
 )
 interface CampaignMenuProps {
   snapshot: CampaignSnapshot
+  desktopPreview?: boolean
+  setDesktopPreview?: (enabled: boolean) => void
   open: boolean
   anchor: HTMLElement | null
   showCampaigns: () => void
@@ -73,6 +76,18 @@ function OpenCampaignMenu(props: CampaignMenuProps) {
         <button type="button" onClick={() => setView('settings')}>
           {message('menu.settings')}
         </button>
+        {props.setDesktopPreview && (
+          <label className="desktop-preview-setting">
+            <input
+              type="checkbox"
+              checked={props.desktopPreview ?? false}
+              onChange={(event) =>
+                props.setDesktopPreview?.(event.target.checked)
+              }
+            />
+            {workspaceMessage('desktop.preview')}
+          </label>
+        )}
       </nav>
     </AnchoredPopup>
   )

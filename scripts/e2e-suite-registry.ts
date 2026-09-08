@@ -35,6 +35,13 @@ export type E2eSuiteRegistration = Readonly<{
 
 export const e2eSuiteRegistry = [
   {
+    name: 'sceneDesktop',
+    spec: './tests/e2e/scene-desktop.e2e.ts',
+    fixture: 'v6/scene-desktop',
+    types: ['functional'],
+    ci: { functional: { shard: 'campaign-workspaces', measuredSeconds: 90 } }
+  },
+  {
     name: 'workspaces',
     spec: './tests/e2e/workspace-isolation.e2e.ts',
     fixture: 'v1/empty-installation',

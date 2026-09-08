@@ -1,3 +1,4 @@
+import { initializeSceneDesktopSchema } from '../../scene-desktop/scene-desktop-store.js'
 import type Database from 'better-sqlite3'
 import { migrateSessionLayoutPreference } from '../../../shared/contracts/session-layout.js'
 import {
@@ -346,6 +347,21 @@ export const installationSchemaMigrations: readonly SchemaMigration[] =
             'installation-39-to-40-campaign-last-opened',
             new Date().toISOString()
           )
+      }
+    },
+    {
+      id: 'installation-40-to-41-scene-desktop',
+      role: 'installation',
+      fromVersion: 40,
+      toVersion: 41,
+      migrate(database) {
+        initializeInstallationSchemaMetadata(database)
+        initializeSceneDesktopSchema(database)
+        database
+          .prepare(
+            'INSERT INTO installation_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run('installation-40-to-41-scene-desktop', new Date().toISOString())
       }
     }
   ])

@@ -1,3 +1,5 @@
+import { sceneDesktopOperationDefinitions } from '../../shared/contracts/operations/scene-desktop.js'
+import { SceneDesktopStore } from '../../core/scene-desktop/scene-desktop-store.js'
 import { campaignOperationDefinitions } from '../../shared/contracts/operations/campaign.js'
 import { campaignImportOperationDefinitions } from '../../shared/contracts/operations/campaign-import.js'
 import { campaignRulesOperationDefinitions } from '../../shared/contracts/operations/campaign-rules.js'
@@ -20,6 +22,7 @@ const campaignHandlerOperations = composeOperationDefinitions(
   campaignOperationDefinitions,
   campaignImportOperationDefinitions,
   settingsOperationDefinitions,
+  sceneDesktopOperationDefinitions,
   campaignRulesOperationDefinitions,
   generatorPresetsOperationDefinitions,
   passiveProjectionOperationDefinitions
@@ -44,6 +47,9 @@ export function createCampaignHandlers(dependencies: {
     mutateReferences,
     recoverPendingPreparations
   } = dependencies
+  const sceneDesktops = new SceneDesktopStore(
+    campaigns.installationPersistenceAccess()
+  )
   return defineOperationHandlers(
     'campaign_handlers',
     campaignHandlerOperations,
@@ -82,6 +88,8 @@ export function createCampaignHandlers(dependencies: {
         recoverPendingPreparations()
         return result
       },
+      'sceneDesktop.read': (input) => sceneDesktops.read(input),
+      'sceneDesktop.save': (input) => sceneDesktops.save(input),
       'settings.read': () => campaigns.readSettings(),
       'settings.update': (input) =>
         campaigns.updateSettings(input.patch, input.expectedRevision),

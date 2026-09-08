@@ -11,6 +11,30 @@ import { CapabilityError } from '../../src/shared/errors/capability-error.js'
 import { defaultSessionLayoutPreferenceValue } from '../../src/shared/values/session-layout-values.js'
 
 describe('Installation settings projection', () => {
+  it('defaults desktop preview off and persists the explicitly enabled preference', async () => {
+    const read = vi.fn().mockResolvedValue(settings(1, 'light'))
+    const update = vi.fn().mockResolvedValue({
+      ...settings(2, 'light'),
+      preferences: {
+        ...settings(2, 'light').preferences,
+        sceneDesktopPreview: true
+      }
+    })
+    const hook = renderHook(() => useInstallationPreferences(vi.fn()), {
+      wrapper: provider(settingsApi(read, update))
+    })
+    await waitFor(() => expect(read).toHaveBeenCalledTimes(1))
+    expect(hook.result.current.sceneDesktopPreview).toBe(false)
+    act(() => hook.result.current.changeSceneDesktopPreview(true))
+    await waitFor(() =>
+      expect(update).toHaveBeenCalledWith({
+        patch: { sceneDesktopPreview: true },
+        expectedRevision: 1
+      })
+    )
+    expect(hook.result.current.sceneDesktopPreview).toBe(true)
+  })
+
   it('deduplicates the initial read across two preference consumers', async () => {
     const pending = deferred<InstallationSettings>()
     const read = vi.fn(() => pending.promise)
