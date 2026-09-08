@@ -200,7 +200,7 @@ describe('catalog draft concurrency', () => {
         members: [member, { ...member, id: 'new', name: 'New' }]
       }
       const api = {
-        party: { create: vi.fn(async () => result) },
+        party: { create: vi.fn(() => Promise.resolve(result)) },
         session: { onChanged: () => () => undefined }
       } as unknown as SaltMarcherApi
       const select = vi.fn()

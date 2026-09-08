@@ -1064,3 +1064,13 @@ scene quickinfos, stable language/passive comparisons, XP/next threshold/catalog
 access, unchanged XP/rest rules. Existing desktop state survives catalog returns.
 Phase 5 membership, XP/burden and selected-rest work and phase 6 legacy removal
 remain explicitly pending. The roadmap itself is unchanged.
+
+### Phase 4 — Candidate correction 6
+
+Candidate `af7e92da83cf3ea01002fd0caae18d3d2bd63e6a` (PR 667,
+Check 34249690905) failed portable lint: the final added publication test used an
+async stub without await. Earlier full lint preceded that added test. Replace the
+stub with Promise.resolve, rerun lint on the exact changed test and its seven
+cases, and push a new candidate SHA. The application implementation is unchanged;
+the failed SHA is not eligible for handoff or promotion. The new SHA must still
+pass the complete remote set and canonical handoff.
