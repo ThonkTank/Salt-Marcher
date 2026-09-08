@@ -140,7 +140,7 @@ describe('persistence preflight', () => {
     const planned = preflightPersistence(root)
 
     expect(planned.kind).toBe('migration-required')
-    expect(migrationRegistryVersion).toBe(11)
+    expect(migrationRegistryVersion).toBe(12)
     for (const entry of planned.databases) {
       const database = new Database(entry.path)
       applySchemaMigrations(database, {
@@ -153,7 +153,7 @@ describe('persistence preflight', () => {
     const restarted = preflightPersistence(root)
     expect(restarted.kind).toBe('ready')
     expect(restarted.databases).toMatchObject([
-      { path: campaign, role: 'campaign', schemaVersion: 34 },
+      { path: campaign, role: 'campaign', schemaVersion: 35 },
       { path: installation, role: 'installation', schemaVersion: 39 }
     ])
     const installationDatabase = new Database(installation)

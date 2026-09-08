@@ -1,3 +1,4 @@
+import type { SaveSceneGroupInput } from '../../../shared/contracts/scene.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type { EncounterTuningOverride } from '../../../shared/contracts/encounter-tuning.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
@@ -119,17 +120,45 @@ export function createGroupManagerCommands(
   async function save(): Promise<LiveSessionSnapshot | null> {
     const key = state.activeKey
     if (!key || !validateAvailableMonster()) return null
-    const outcome = await runCommand(key, () =>
-      ports.scene.saveGroup(
-        focused.id,
-        key === newGroupDraftKey ? null : key,
-        group.name.trim(),
-        group.note.trim(),
-        group.disposition,
-        entries,
-        snapshot.scene.revision,
-        selectedPersistedGroup?.revision ?? null
-      )
+    const request: SaveSceneGroupInput = {
+      commandId: crypto.randomUUID(),
+      sceneId: focused.id,
+      groupId: key === newGroupDraftKey ? null : key,
+      name: group.name.trim(),
+      note: group.note.trim(),
+      disposition: group.disposition,
+      entries: [...entries],
+      expectedRevision: snapshot.scene.revision,
+      expectedGroupRevision: selectedPersistedGroup?.revision ?? null
+    }
+    const reconcile = async () => {
+      const receipt = await ports.scene.groupSaveReceipt(request)
+      if (!receipt) return null
+      const fresh = await ports.session.read()
+      acknowledgeGroupSave(input, receipt)
+      dispatch({
+        kind: 'sync-external',
+        groups:
+          fresh.scene.scenes.find((scene) => scene.id === focused.id)?.groups ??
+          []
+      })
+      return fresh
+    }
+    const outcome = await runCommand(
+      key,
+      () =>
+        ports.scene.saveGroup(
+          request.sceneId,
+          request.groupId,
+          request.name,
+          request.note,
+          request.disposition,
+          request.entries,
+          request.expectedRevision,
+          request.expectedGroupRevision,
+          request.commandId
+        ),
+      reconcile
     )
     if (!outcome) return null
     acknowledgeGroupSave(input, outcome)
@@ -170,7 +199,8 @@ export function createGroupManagerCommands(
 
   async function runCommand<Value>(
     key: string,
-    execute: () => Promise<Value>
+    execute: () => Promise<Value>,
+    reconcile?: () => Promise<LiveSessionSnapshot | null>
   ): Promise<Value | null> {
     const outcome = await commands.run({
       scope: 'group-manager.command',
@@ -178,12 +208,16 @@ export function createGroupManagerCommands(
       execute
     })
     if (outcome.status === 'success') return outcome.value
-    if (outcome.status === 'failure') failCommand(key, outcome.cause)
+    if (outcome.status === 'failure') failCommand(key, outcome.cause, reconcile)
     return null
   }
 
-  function failCommand(key: string, cause: unknown): void {
-    input.failed?.(cause)
+  function failCommand(
+    key: string,
+    cause: unknown,
+    reconcile?: () => Promise<LiveSessionSnapshot | null>
+  ): void {
+    input.failed?.(cause, reconcile)
     dispatch({
       kind: 'group-message',
       key,

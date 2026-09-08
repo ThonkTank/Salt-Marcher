@@ -2541,3 +2541,81 @@ Receipt-ID; andere Unknown-Fälle wie Generierung/Archivieren/Combat sind zu pr�
 und bleiben derzeit konservativ gesperrt. Session Planner, übrige Writer-/Karten-
 und Offline-/Updateabnahme sowie Phasen 5–7 bleiben erforderlich. Keine vollständige
 Gruppen- oder Phase-4-Abnahme behauptet.
+
+### Phase 4 — Bestätigbare normale Gruppen-Saves: Umsetzungsplan
+
+Vorheriger Turn Fortschritt (732fd60bd), Worktree sauber. Normale scene.saveGroup-
+Aufträge besitzen bisher keine persistierte Command-ID. Einen gruppeneigenen
+SceneGroupCommandJournal einführen, dessen SQL beim Szenenverantwortlichen liegt.
+Der IPC-Savevertrag erhält eine Command-ID; Save und Quittung werden atomar über
+bestehenden LivePlayService/CampaignUnitOfWork gespeichert. Gleiches ID/Input-Paar
+liefert das gespeicherte Ergebnis, geänderte Daten unter derselben ID einen Konflikt.
+Ein rein lesender groupSaveReceipt-Pfad liefert die passende Quittung/null.
+Interne Save-Aufrufe durch Beute bleiben im vorhandenen äußeren Beutejournal.
+
+Das zusätzliche Journal benötigt eine echte Vorwärtsmigration: Kampagnenschema
+34→35, Installation bleibt 39, Migrationsregistry 11→12. Bootstrap und Migration
+verwenden denselben szeneneigenen Initializer. Bestehende eingefrorene Release-0.2-
+Fixtures mit Schema 34 unverändert lassen; lediglich Tests aktueller Zielidentitäten
+an neue Konstanten anpassen. Migration muss alte Inhalte erhalten und das Journal
+auch nach Neustart lesbar machen. Keine Nutzerprofile migrieren.
+
+Danach Renderer-Adapter mit einmaliger Command-ID und read-only Recovery versorgen,
+analog Beute: verlorene Antwort abgleichen, frischen kampagnengebundenen Snapshot
+lesen, Baseline quittieren und keine zweite Neuanlage. Tests: Neuanlage/Edit,
+identischer Retry, ID-Konflikt, Transaktionsrollback einschließlich fehlgeschlagenem
+Receipt-Write, read-only Quittungsread, Migration 34→35 und unveränderte Inhalte.
+Typecheck, Lint, Migrations-/Wartungsregression, Build/Smoke und getrennte Audits.
+
+Normale Gruppen-Saves — Validierung/Korrekturrunde: 500 Tests in 43 Dateien bestanden;
+sechs Current-format-Suites scheitern bereits beim Laden am ausdrücklich auf Schema
+34 festgelegten aktuellen Fixture-Manifest. Das ist ein aktiver vorläufiger
+Qualifikationsauftrag (kein historischer Abnahmebeleg); auf Schema 35 und den neuen
+Bootstrap-Owner scene-group-receipts erweitern. Diesen Owner als initialize-only
+abgrenzen, da jene bestehenden Materialisierer weiterhin ihre direkten internen
+Saves verwenden; der neue echte Receipt-Roundtrip wird separat geprüft. Eingefrorene
+Release-0.2.0-Dateien und alte Ausführungsbelege bleiben unverändert. Danach die sechs
+Suites erneut ausführen. Typecheck-Korrektur: den optionalen Adapter-Parameter
+commandId ausdrücklich string typisieren, statt den engeren crypto.randomUUID-
+Template-Literaltyp aus seinem Defaultwert abzuleiten.
+
+Korrekturrunde Fixture-Vollständigkeit: 30 Tests bestehen, die Completion-Suite
+weist den neuen Owner noch keinem Cohort zu. Den Root-Cohort um das initial leere
+Scene-Quittungsjournal erweitern und dessen tatsächliche Zeilenzahl im unabhängigen
+Readback vor/nach Kampagnenwechsel prüfen. Die Schema-Oracle auf 35 korrigieren;
+keine historischen Run-Belege oder eingefrorenen Release-Fixtures ändern.
+
+Korrekturrunde Versionsdokument: Der vollständige Typecheck und alle 34 Tests der
+sieben betroffenen Fixture-Dateien bestehen. check:version-truth weist die noch
+alte aktuelle Schema-/Registry-Tabelle zurück. Diese aus den ausführbaren
+Registern neu erzeugen und den unveränderten Versionscheck erneut ausführen.
+
+### Phase 4 — Normale Gruppen-Saves: Plan- und Roadmapabgleich
+
+Planabgleich bestanden: Der Scene-eigene Journalvertrag speichert Save und Quittung
+in derselben CampaignUnitOfWork. Gleiche ID mit gleichem Input liefert das
+persistierte Ergebnis; abweichender Input wird abgewiesen. Receipt-Reads schreiben
+nicht, auch unter query_only. Fehlgeschlagenes Receipt-Insert rollt Gruppe und
+Revision zurück. Renderer hält dieselbe Auftrags-ID für den Abgleich, bestätigt
+erst nach kampagnengebundenem frischem Read und erzeugt keine zweite Gruppe.
+Bootstrap und echte Migration 34→35 verwenden denselben Scene-Initializer.
+
+Validierung: zuvor 500 bestandene Tests in 43 Dateien (Integration, Architektur,
+Wartungsregression); die sechs wegen des aktuellen Fixture-Manifests nicht geladenen
+Suites bestehen nach Korrektur zusammen mit dessen Unit-Test: 34 Tests, 7 Dateien.
+Die neue Root-Oracle liest die tatsächliche leere Receipt-Tabelle in beiden
+Kampagnen. Eingefrorene 0.2.0-Fixtures unverändert; deren Migration erhält sämtliche
+vorhandenen Tabelleninhalte, ergänzt das leere Journal und besteht integrity_check.
+25 gezielte Tests hatten Renderer-Abgleich, Command-Runtime, Journal und Migration
+bereits gemeinsam geprüft. Abschließend vollständiger Typecheck, ESLint aller
+geänderten TypeScript-Dateien, Prettier dieser Dateien/JSON, check:version-truth,
+Build, Built-Smoke (Utility ready/closed) und git diff --check bestanden.
+Logs: work/roadmap-phase4-scene-receipt-*.log. Aktuell Installation 39,
+Kampagne 35, Registry 12. Build/Smoke ist Entwicklungsevidenz, kein Handoff.
+
+Roadmapabgleich: Phase 4 bleibt offen. Normale Gruppen-Saves besitzen jetzt ebenso
+wie Beutecommits einen bestätigbaren unbekannten Ausgang. Die dauerhaft fehlende
+Quittung braucht weiterhin einen verlässlichen, bedienbaren Abschluss; andere
+Unknown-Fälle (Generierung/Archivieren/Combat), Session Planner, übrige Schreib-
+und Kartenwege sowie Offline-/Update-UI bleiben zu bearbeiten. Phasen 5–7,
+kanonischer Handoff, Livetest und Veröffentlichung sind weiterhin erforderlich.

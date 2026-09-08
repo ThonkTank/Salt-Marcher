@@ -1,3 +1,4 @@
+import { initializeSceneGroupCommandJournal } from '../../scene/scene-group-command-journal.js'
 import type Database from 'better-sqlite3'
 import type { SchemaMigration } from './schema-migrations.js'
 import { migratePartySchema28To29 } from '../../party/party-store.js'
@@ -192,6 +193,24 @@ export const campaignSchemaMigrations: readonly SchemaMigration[] =
             'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
           )
           .run('campaign-33-to-34-import-provenance', new Date().toISOString())
+      }
+    },
+    {
+      id: 'campaign-34-to-35-scene-group-receipts',
+      role: 'campaign',
+      fromVersion: 34,
+      toVersion: 35,
+      migrate(database) {
+        initializeCampaignSchemaMetadata(database)
+        initializeSceneGroupCommandJournal(database)
+        database
+          .prepare(
+            'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run(
+            'campaign-34-to-35-scene-group-receipts',
+            new Date().toISOString()
+          )
       }
     }
   ])

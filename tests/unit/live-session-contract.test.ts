@@ -47,6 +47,7 @@ describe('live session capability contracts', () => {
   it('allows empty groups with optional names and rejects invalid quantities', () => {
     expect(
       saveSceneGroupInputSchema.safeParse({
+        commandId: '0184d1f4-bba7-7c9c-9d89-5f1c0f36a099',
         sceneId: '0184d1f4-bba7-7c9c-9d89-5f1c0f36a030',
         groupId: null,
         name: 'Goblins',
@@ -59,6 +60,7 @@ describe('live session capability contracts', () => {
     ).toBe(true)
     expect(
       saveSceneGroupInputSchema.parse({
+        commandId: '0184d1f4-bba7-7c9c-9d89-5f1c0f36a099',
         sceneId: '0184d1f4-bba7-7c9c-9d89-5f1c0f36a030',
         groupId: null,
         name: '   ',
@@ -72,6 +74,7 @@ describe('live session capability contracts', () => {
     expect(sceneGroupSchema.shape.name.safeParse('').success).toBe(false)
     expect(
       saveSceneGroupInputSchema.safeParse({
+        commandId: '0184d1f4-bba7-7c9c-9d89-5f1c0f36a099',
         sceneId: '0184d1f4-bba7-7c9c-9d89-5f1c0f36a030',
         groupId: null,
         name: 'Goblins',

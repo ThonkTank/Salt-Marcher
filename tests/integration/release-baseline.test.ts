@@ -1,3 +1,4 @@
+import Database from 'better-sqlite3'
 import { describe, it, expect } from 'vitest'
 import { gunzipSync } from 'node:zlib'
 import {
@@ -35,7 +36,27 @@ describe('permanent 0.2.0 persistence baseline', () => {
         join(campaign, 'campaign.sqlite'),
         gunzipSync(readFileSync(join(fixture, 'campaign.sqlite.gz')))
       )
+      const path = join(campaign, 'campaign.sqlite')
+      const before = new Database(path, { readonly: true })
+      expect(before.pragma('user_version', { simple: true })).toBe(34)
+      const rows = dataRows(before)
+      before.close()
       migrateProfile(root)
+      const after = new Database(path, { readonly: true })
+      try {
+        expect(after.pragma('user_version', { simple: true })).toBe(35)
+        expect(dataRows(after, Object.keys(rows))).toEqual(rows)
+        expect(
+          after
+            .prepare(
+              'SELECT COUNT(*) AS count FROM scene_group_command_receipt'
+            )
+            .get()
+        ).toEqual({ count: 0 })
+        expect(after.pragma('integrity_check', { simple: true })).toBe('ok')
+      } finally {
+        after.close()
+      }
       readbackProfile(root)
       const store = new CampaignStore(root)
       try {
@@ -50,3 +71,24 @@ describe('permanent 0.2.0 persistence baseline', () => {
     }
   })
 })
+
+function dataRows(
+  database: Database.Database,
+  tables?: readonly string[]
+): Record<string, unknown> {
+  const names =
+    tables ??
+    (
+      database
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name <> 'campaign_schema_migration'"
+        )
+        .all() as { name: string }[]
+    ).map((row) => row.name)
+  return Object.fromEntries(
+    names.map((name) => [
+      name,
+      database.prepare(`SELECT * FROM "${name.replaceAll('"', '""')}"`).all()
+    ])
+  )
+}

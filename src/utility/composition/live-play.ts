@@ -63,17 +63,8 @@ export function createSessionHandlers(
         input.locationId,
         input.expectedRevision
       ),
-    'scene.saveGroup': (input) =>
-      play.saveSceneGroup(
-        input.sceneId,
-        input.groupId,
-        input.name,
-        input.note,
-        input.disposition,
-        input.entries,
-        input.expectedRevision,
-        input.expectedGroupRevision
-      ),
+    'scene.saveGroup': (input) => play.saveSceneGroupCommand(input),
+    'scene.groupSaveReceipt': (input) => play.sceneGroupSaveReceipt(input),
     'scene.deleteGroup': (input) =>
       play.deleteSceneGroup(
         input.sceneId,

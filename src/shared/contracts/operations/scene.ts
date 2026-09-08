@@ -27,6 +27,11 @@ export const sceneOperationDefinitions = utilityOperationFragment({
     setSceneLocationInputSchema,
     liveSessionSnapshotSchema
   ),
+  'scene.groupSaveReceipt': read(
+    'scene:group-save-receipt',
+    saveSceneGroupInputSchema,
+    sceneGroupCommandResultSchema.nullable()
+  ),
   'scene.saveGroup': write(
     'scene:saveGroup',
     saveSceneGroupInputSchema,

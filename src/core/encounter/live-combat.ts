@@ -1,3 +1,8 @@
+import { SceneGroupCommandJournal } from '../scene/scene-group-command-journal.js'
+import {
+  saveSceneGroupInputSchema,
+  type SaveSceneGroupInput
+} from '../../shared/contracts/scene.js'
 import type Database from 'better-sqlite3'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import { HexMapStore } from '../hex/hex-map-store.js'
@@ -167,6 +172,38 @@ export class LivePlayService {
       scene.setLocation(sceneId, locationId, expectedRevision)
       return this.snapshotFrom(db, party, scene, combat)
     })
+  }
+
+  saveSceneGroupCommand(raw: SaveSceneGroupInput): SceneGroupCommandResult {
+    const input = saveSceneGroupInputSchema.parse(raw)
+    return this.campaignDatabase.use((db) =>
+      new CampaignUnitOfWork(db).run(() => {
+        const journal = new SceneGroupCommandJournal(db)
+        const previous = journal.read(input)
+        if (previous) return previous
+        const result = this.saveSceneGroup(
+          input.sceneId,
+          input.groupId,
+          input.name,
+          input.note,
+          input.disposition,
+          input.entries,
+          input.expectedRevision,
+          input.expectedGroupRevision
+        )
+        journal.record(input, result)
+        return result
+      })
+    )
+  }
+
+  sceneGroupSaveReceipt(
+    raw: SaveSceneGroupInput
+  ): SceneGroupCommandResult | null {
+    const input = saveSceneGroupInputSchema.parse(raw)
+    return this.campaignDatabase.use((db) =>
+      new SceneGroupCommandJournal(db).read(input)
+    )
   }
 
   saveSceneGroup(

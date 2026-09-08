@@ -449,6 +449,76 @@ describe('group maintenance owner', () => {
     expect(props.saved).not.toHaveBeenCalled()
   })
 
+  it('recovers a lost new-group response without creating another group', async () => {
+    const initial = snapshot()
+    const runtime = new GroupManagerDraftRuntime(
+      createGroupManagerState({
+        activeKey: 'new',
+        initialGroup: null,
+        prospectiveGroupId: 'prospective',
+        locationId: null
+      }),
+      initial
+    )
+    runtime.dispatch({
+      kind: 'mutate-group',
+      mutation: { kind: 'name', update: 'New group' }
+    })
+    const saveGroup = vi
+      .fn<GroupManagerPorts['scene']['saveGroup']>()
+      .mockRejectedValue(new CapabilityError('outcome_unknown', false))
+    const receipt = await saveResult(
+      'scene',
+      null,
+      'New group',
+      '',
+      'hostile',
+      [],
+      1,
+      null
+    )
+    const groupSaveReceipt = vi
+      .fn<GroupManagerPorts['scene']['groupSaveReceipt']>()
+      .mockResolvedValue(receipt)
+    const fresh = {
+      ...initial,
+      revision: 2,
+      scene: {
+        ...initial.scene,
+        revision: 2,
+        scenes: [
+          {
+            ...initial.scene.scenes[0]!,
+            groups: [
+              ...initial.scene.scenes[0]!.groups,
+              receipt.scenePatch.upsertedGroups[0]!
+            ]
+          }
+        ]
+      }
+    }
+    const base = mockPorts(saveGroup)
+    const ports = {
+      ...base,
+      scene: { ...base.scene, groupSaveReceipt },
+      session: {
+        read: vi
+          .fn<GroupManagerPorts['session']['read']>()
+          .mockResolvedValue(fresh)
+      }
+    }
+    const coordinator = new AsyncCommandCoordinator()
+    await expect(runtime.saveAll(ports, coordinator, vi.fn())).rejects.toThrow()
+    expect(await runtime.saveAll(ports, coordinator, vi.fn())).toBe(true)
+    expect(saveGroup).toHaveBeenCalledOnce()
+    expect(groupSaveReceipt.mock.calls[0]?.[0].commandId).toBe(
+      saveGroup.mock.calls[0]?.[8]
+    )
+    expect(runtime.snapshot().state.sessions['new']).toBeUndefined()
+    expect(runtime.snapshot().state.sessions['created']?.sourceRevision).toBe(1)
+    expect(runtime.snapshot().snapshot).toBe(fresh)
+  })
+
   it('does not replay or discard an unknown write outcome', async () => {
     const runtime = dirtyRuntime()
     const saveGroup = vi
@@ -689,7 +759,7 @@ function mockPorts(
 ): GroupManagerPorts {
   return {
     runtime: { e2e: true },
-    scene: { saveGroup },
+    scene: { saveGroup, groupSaveReceipt: () => Promise.resolve(null) },
     loot: {},
     creatures: {},
     campaignRules: {}

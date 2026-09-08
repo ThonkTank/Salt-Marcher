@@ -92,6 +92,7 @@ const groupEntriesInputSchema = z.array(sceneGroupDraftEntrySchema)
 
 export const saveSceneGroupInputSchema = z
   .object({
+    commandId: z.uuid(),
     sceneId: z.uuid(),
     groupId: z.uuid().nullable(),
     name: z.string().trim().max(100),
@@ -267,4 +268,8 @@ export type SceneGroupDraftEntry = Readonly<
 export type GroupGenerationMode = z.infer<typeof groupGenerationModeSchema>
 export type EncounterSelectionEvaluation = Readonly<
   z.infer<typeof encounterSelectionEvaluationSchema>
+>
+
+export type SaveSceneGroupInput = Readonly<
+  z.infer<typeof saveSceneGroupInputSchema>
 >

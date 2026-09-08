@@ -1,3 +1,4 @@
+import { initializeSceneGroupCommandJournal } from '../../scene/scene-group-command-journal.js'
 import type Database from 'better-sqlite3'
 import { initializeCampaignRulesSchema } from '../../application/campaign-rules-service.js'
 import { initializeCampaignImportSchema } from '../../campaign-import/campaign-import-store.js'
@@ -61,6 +62,9 @@ export function createDefaultCampaignSchemaBootstrapper(): CampaignSchemaBootstr
         ),
       ['party']
     ),
+    registration('scene-group-receipts', initializeSceneGroupCommandJournal, [
+      'scene'
+    ]),
     registration('combat', initializeCombatSchema, ['scene']),
     registration('world-locations', initializeWorldLocationSchema),
     registration('encounter-tables', initializeEncounterTableSchema),

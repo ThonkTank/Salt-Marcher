@@ -1,3 +1,4 @@
+import { databaseSchemaVersions } from '../../src/core/persistence/sqlite/database.js'
 import { randomUUID } from 'node:crypto'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -27,7 +28,7 @@ export function releaseDeployment(root: string, version: string): string {
       commit: 'a'.repeat(40),
       platform: 'linux',
       arch: 'x64',
-      schemaVersions: { installation: 39, campaign: 34 },
+      schemaVersions: databaseSchemaVersions,
       artifact: {
         name: `SaltMarcher-${version}-x64.AppImage`,
         bytes: Buffer.byteLength(version),

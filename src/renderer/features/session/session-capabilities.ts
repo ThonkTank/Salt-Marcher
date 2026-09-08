@@ -4,7 +4,8 @@ import type { EncounterTuningOverride } from '../../../shared/contracts/encounte
 import type {
   GroupGenerationMode,
   SceneGroupDisposition,
-  SceneGroupDraftEntry
+  SceneGroupDraftEntry,
+  SaveSceneGroupInput
 } from '../../../shared/contracts/scene.js'
 
 /** Positional convenience is local to the Session renderer adapter. */
@@ -12,6 +13,8 @@ export function sessionCapabilities(api: SaltMarcherApi) {
   return {
     references: api.references,
     scene: {
+      groupSaveReceipt: (input: SaveSceneGroupInput) =>
+        api.scene.groupSaveReceipt(input),
       focus: (sceneId: string, expectedRevision: number) =>
         api.scene.focus({ sceneId, expectedRevision }),
       setLocation: (
@@ -27,9 +30,11 @@ export function sessionCapabilities(api: SaltMarcherApi) {
         disposition: SceneGroupDisposition,
         entries: readonly SceneGroupDraftEntry[],
         expectedRevision: number,
-        expectedGroupRevision: number | null
+        expectedGroupRevision: number | null,
+        commandId: string = crypto.randomUUID()
       ) =>
         api.scene.saveGroup({
+          commandId,
           sceneId,
           groupId,
           name,
