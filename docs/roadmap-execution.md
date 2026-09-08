@@ -3076,3 +3076,73 @@ Szenendesktop sowie Offline-/Update-UI-Abnahme bleiben offen. Phase 4 bleibt
 in Arbeit, Phasen 5–7 offen. Check 34259911264 für den Vorgänger 97d8377b8
 war zuletzt weiterhin aktiv und ohne fehlgeschlagenen abgeschlossenen Job;
 kein vollständiges CI-Grün oder kanonischer Handoff behauptet.
+
+### Phase 4 — Plan: Szenendesktop-Speicherung vor Wartung klären
+
+DesktopProjection lebt über Ansichtswechsel hinweg und hält 200-ms-Timer sowie
+serialisierte Schreibvorgänge. Ein Hook-Owner nur für die sichtbare Szene würde
+die offenen Änderungen einer verlassenen Szene verlieren. Deshalb registriert
+sich die Projektion bei erster Änderung selbst und gibt die Registrierung erst
+nach bestätigter Speicherung oder bestätigtem Verwerfen frei. Keine statische
+Abhängigkeit des CapabilityProviders vom nachgeladenen Desktop.
+
+Wartungssperre hält Timer und weitere Writes zwischen zwei laufenden Befehlen
+an; Eingaben/Reload dürfen die Klärung nicht umgehen. Save wartet den aktiven
+Write ab und schreibt verbliebenen Intent bewusst. Discard wartet ebenfalls,
+liest den tatsächlich aktuellen Stand und verwirft nur den lokalen Rest.
+Abbruch der Wartung setzt die normale Autospeicherung fort. Fehler erhalten
+Intent/Owner. Verlorene Antwort: zuerst ursprünglichen Scope erneut lesen.
+Identischer gespeicherter Stand bestätigt den Write; unveränderte Revision und
+unveränderter vorheriger Stand erlauben ausdrücklich ausgelösten Retry.
+Anderer/neuerer Stand verhindert Überschreiben und bietet Verwerfen/Reload;
+fehlgeschlagener Read hält die Klärung offen.
+
+Tests mit realem Wartungskoordinator und Projektion: Timer ohne Subscriber,
+Save/Discard, bestehender Write plus nachfolgender Intent, keine Writes während
+Klärung vor Entscheidung, Abbruch, unbekannter Ausgang/Read-Retry, Konflikt,
+mehrere Szenen und Ende der Registrierung nach Erfolg. Regression der bisherigen
+Desktopprojektion sowie Architektur, Typecheck, Lint und Build/Smoke prüfen.
+Dies ersetzt nicht die ausstehende Charakter-/Planner-/Karten-/Updateabnahme.
+
+Korrekturrunde vor Abschluss: Beim Audit des asynchronen Reloads kann ein
+Wartungsabbruch die Autospeicherung wieder anstoßen, während dessen Read noch
+läuft. Persist muss daher auch recoveryRequest als Sperre behandeln. Ein
+gezielter Test hält den Reload-Read offen, beginnt/beendet Wartung und versucht
+neue Eingaben; bis zum bestätigten Read dürfen keine Writes entstehen.
+
+### Phase 4 — Szenendesktop: Plan- und Roadmapabgleich
+
+Planabgleich bestanden: Die langlebige DesktopProjection registriert offene
+Änderungen unabhängig von ihren React-Subscribern. Der Owner bleibt bei Timer,
+Write, fehlgeschlagenem Write und Recovery erhalten und wird nach bestätigtem
+Abschluss entfernt. Die gemeinsame Sperre hält Timer an, verhindert neue
+Eingaben/Reloads und stoppt automatische Folge-Writes zwischen zwei Aufträgen.
+Save wartet laufende Writes ab und sichert den restlichen Intent; Discard
+wartet ebenfalls und liest den aktuellen gespeicherten Stand. Wartungsabbruch
+setzt Autosave fort. Kein vor der Wartung bestätigter Stand wird zurückgesetzt.
+
+Verlorene Antworten werden über Read im ursprünglichen Scope geklärt. Ein
+identischer Stand bestätigt den Write ohne Wiederholung; nur unveränderte
+Revision plus unveränderter vorheriger Stand erlauben einen ausdrücklichen
+Save-Retry. Konflikte bleiben bei Save offen. Discard/Reload übernehmen nach
+erfolgreichem Read den frischen Stand; Readfehler erhalten den lokalen Rest.
+Auch ein laufender Recovery-Read blockiert Autosave nach Wartungsabbruch.
+
+Validierung: 109 Tests in 10 Dateien einschließlich bestehender Desktop-
+Projektion/Lifecycle, Wartungskoordinator und Architektur bestanden. Neue Tests
+prüfen Timer ohne Subscriber, mehrere Szenen, Save/Discard, bestehenden Write
+mit Folge-Intent, unmittelbare Eingabesperre, Abbruch, verlorene bestätigte
+Antwort ohne Replay, expliziten Retry nach unverändertem Stand, Konflikt und
+Readfehler sowie den verzögerten Recovery-Read. Typecheck, gezielter ESLint,
+Prettier, Build/Built-Smoke (ready/closed), Bundle-Gate und diff --check
+bestanden. Logs: work/roadmap-phase4-desktop-maintenance-*.log. Keine Änderung
+an Datenformat, Abhängigkeiten oder Bundlebaseline; kein Nutzerprofil verändert.
+
+Roadmapabgleich: Die verzögerten Desktop-Writes sind an die gemeinsame Wartung
+angebunden. Die vollständige Phase-4-Abnahme bleibt offen: Planner-Unknown-
+Recovery, Beute-Unterdialoge, Charakter-/Kampagneneditoren, weitere Gruppen-/
+Karten-/Writerwege und Offline-/Updateoberfläche. Fachliches Profilreadback
+für die neue Desktop-Tabelle sowie vollständige Artefakt-/Releaseprüfungen
+bleiben ausdrücklich ausstehend. Phasen 5–7 sind offen. Der Vorgänger-Check
+34260605418 lief beim letzten Abruf ohne abgeschlossenen Fehler weiter; dies
+ist kein vollständiges CI-Grün. Kein kanonischer Handoff/Main-Push/Release.
