@@ -14,7 +14,7 @@ Ergänzende Detailanforderungen: [Zielzustand](project/architecture/release-main
 | ----- | --------- |
 | 1     | abgeschlossen |
 | 2     | abgeschlossen |
-| 3     | in Arbeit |
+| 3     | abgeschlossen |
 | 4–7   | offen |
 
 ## Phase 1 — Plan, vor Änderungen
@@ -1471,3 +1471,122 @@ Fehlerpfaden, Parallelstarts und vorhandener Erhaltungsnachweise erforderlich.
 Ein vollständiger echter AppImage-Import/Updateweg bleibt Teil der Artefaktabnahme;
 kein einzelner Test wird als Beleg für diesen kompletten Ablauf ausgegeben.
 Phasen4–7, Canonical-Handoff und Veröffentlichung bleiben offen.
+
+### Phase 3 — Gesamtaudit: verbleibende Nachweisgrenzen
+
+Vorheriger Zielturn war Fortschritt; direkte Übernahme auf c5beb080a gespeichert.
+Abgleich mit dem ursprünglichen Phase3-Plan: kanonische Sperren, vollständiger
+Payload, qualifizierte Quelle, bestätigter Import und vorgeschalteter Restorebackup
+sind implementiert. Fachliche Erhaltung wird semantisch geprüft. Für die neue
+asynchrone Exportlebensdauer fehlt noch ein echter konkurrierender Prozess; der
+ältere Mehrprozesstest prüft nur eine normale gehaltene App-Sperre.
+Korrekturplan: während des offenen Export-Promise echte Development-/Local-/Release-
+Zugriffe und Starter über einen Symlinkalias aus einem zweiten Node-Prozess
+versuchen. Nur ProfileLockedError zählt als erwartete Ablehnung; nach Freigabe
+muss derselbe Zugriff erfolgreich sein. Keine künstliche erfolgreiche Ablehnung
+bei anderem Start-/Importfehler.
+
+Weiter offen im Phasengesamtaudit: echter gestarteter Fehler-/Wiederherstellungsweg
+über die Oberfläche (M11). Bisherige UI-Doubles und der Controller mit echter
+beschädigter SQLite-Datei belegen jeweils ihre Grenze, nicht deren vollständige
+Verkettung. Phase3 bleibt bis zur passenden Abnahme offen. Die spätere
+Schema-/AppImage-Matrix aus Phase5 bleibt ebenfalls unverändert erforderlich.
+
+### Phase 3 — Export-Parallelstart: Auditnachweis
+
+19 Tests in source-profile-access/local-profile-lock bestanden, gezieltes Lint
+und git diff --check bestanden. Tatsächlich gestartete Node-Zweitprozesse rufen
+die reale Profilzugriffsschicht für Development, Local, Release und Starter über
+einen Symlinkalias auf. Während des Export-Promise ist ausschließlich die
+konkrete ProfileLockedError-Ablehnung zulässig; nach Abschluss erwirbt ein neuer
+Release-Zugriff die Sperre erfolgreich. Damit ist diese Lücke aus dem Teilplan
+geprüft. Das ist ein Prozess-/Sperrnachweis, kein vierfacher GUI-AppImage-Livetest.
+
+Abnahmematrix M07–M11 auf den aktuellen Evidenzstand gebracht. Phase3 bleibt wegen
+des realen Oberflächen-Recoverywegs offen; der nächste konkrete Arbeitsschritt
+ist eine isolierte verpackte App mit beschädigter Kampagneninstallation, gültiger
+Vollsicherung und UI-ausgelöstem Restore samt beobachtetem Neustart/Commit. Keine
+Benutzerdaten dafür direkt verwenden und keine Test-Doubles als End-to-End-Beleg.
+
+Remote-Beobachtung: Check34235819998 für e336918546321984a5fd65edc992a2803eceee3a
+ist success. Damit besteht der vollständige ältere Candidate-Check einschließlich
+der korrigierten WebDriver-Pfade. Check34237359906 fürc5beb080a6352dca8209089fba694482185190a1
+ist in_progress; noch kein grüner Nachweis für diesen neueren Stand.
+
+### Phase 3 — M11: verpackte Oberflächen-Recovery
+
+Vorheriger Zielturn war Fortschritt: echte Export-Parallelstarts und Matrixaudit.
+Umsetzung des offenen Nachweises als reproduzierbares Qualifikationsskript:
+ein Release-AppImage wird in einer isolierten XDG-Installation bereitgestellt,
+eine vollständige Sicherung erstellt und anschließend die aktuelle SQLite-
+Installation beschädigt. Über Chromium-Debugging werden ausschließlich sichtbare
+Schaltflächen der wirklichen Oberfläche angeklickt. Nach Bestätigung muss der
+normale Controller eine vorgeschaltete Sicherung und Journalaktivierung ausführen;
+der neu gestartete Prozess muss den Wartungsabschluss bestätigen. Verglichen
+werden wiederhergestellte Inhalte und die erhaltenen beschädigten aktuellen Bytes.
+Kein direkter Capability-Aufruf als Ersatz für den UI-Schritt. Debugging dient nur
+der Teststeuerung; keine Änderung des normalen Produktpfads. Das Skript beendet
+nur Prozesse aus seiner isolierten Installation und behält einen Ergebnisbeleg.
+
+## Phase 3 — Abschlussaudit, 2026-09-08
+
+### Nachweise des abschließenden Stands
+
+- Gemeinsamer Lauf von 13 Phase3-relevanten Testdateien: 192 Tests bestanden,
+  Exit0,101.62s (roadmap-phase3-completion-tests.log). Enthalten sind Local-
+  Installer, Release-Controller, volle Profile, Sperren/echte Zweitprozesse,
+  Quellzulassung, Recovery-UI und bestätigtes Core-Ende.
+- Typecheck und gezieltes Lint des neuen Qualifikationsskripts sowie der
+  Prozessprüfung bestanden. Der vorherige vollständige Lint-/Architekturlauf
+  auf dem Implementierungsstand bestand; seitdem nur Test-/Nachweisänderungen.
+- `pnpm package:release` und anschließend reale Oberflächenqualifikation unter
+  Xvfb mit scripts/qualify-profile-recovery.ts bestanden.
+- Test-AppImage SHA256:
+  87952bee17d0df4087d7ee85dbeae8cf43f2a983e6b600f0bccfc9a5ac0afef1.
+  Codecommit c5beb080a6352dca8209089fba694482185190a1, lokaler dirty Release-Build,
+  App-Fingerprint c87d055e1a74500e776088ae6193600ada89bc570a337f3a04e4c79dbcbac5e9.
+  Kein veröffentlichter oder kanonisch übergebener Build.
+- Reale UI-Steuerung: sichtbare Schaltflächen per CDP-Mausereignissen anklicken;
+  kein direkter Restore-Capabilityaufruf. Initialer Core meldet corrupt-data.
+  Nach Bestätigung entsteht Restore afcc5f10-c32e-48ff-a12e-afbc808be79d;
+  neu gestartete App erreicht committed. Originaldatei wiederhergestellt,
+  späterer Inhalt und beschädigte SQLite-Bytes im vorgeschalteten Backup erhalten,
+  Programmdeployment und AppImagehash unverändert. Alle isolierten Testprozesse
+  beendet. Beleg /tmp/salt-ui-recovery-EtBwN9/result.json und application.log,
+  Runnerlog work/roadmap-phase3-ui-recovery-real.log.
+
+### Audit gegen den gespeicherten Phase3-Plan
+
+1. Gemeinsame kanonische Sperren: alle Linux-Kanäle verwenden dieselbe
+   Zugriffsschicht; Legacy- und Startreservierungen bleiben wirksam. Alias- und
+   echte konkurrierende Prozesszugriffe während asynchronem Export sind geprüft.
+2. Vollständiger Payload: Browserlaufzeit liegt außerhalb. Vollprofilformat2
+   sichert beide bekannten Datenwurzeln, Einstellungen, eigene Dateien und leere
+   Ordner; historische Sicherungen bleiben ausdrücklich als Kampagnenformat lesbar.
+3. Quellzulassung: Vertrag stammt aus hashgeprüftem Programm, Starter und terminales
+   Journal werden geprüft, Sperren umschließen Export und erneute Prüfung. Unklare
+   Altanwendungen erhalten keinen stillen Direktimport-Fallback.
+4. Restore: gemeinsamer Vorwärtsmigrationspfad mit vorgeschaltetem Vollbackup,
+   neuere Formate werden abgewiesen, spätere akzeptierte Arbeit nicht automatisch
+   zurückgesetzt. Echte beschädigte aktuelle Bytes bleiben erhalten.
+5. Recovery/Profilwahl: Core-unabhängiger UI-Zugang und frühe native Journal-
+   Diagnose vorhanden. Reale Release-App mit defekter Installation kann per UI
+   wiederherstellen und neu starten; Renderer bleibt bei IDs/validierten Daten.
+6. Fachliche Erhaltung: konkrete Einstellungen, Party-/Kampfzustände, inaktive und
+   wiederherstellbare Trash-Kampagnen sowie spätere Arbeit semantisch geprüft.
+
+Ergebnis gegen Phase3-Plan: bestanden, keine offene Anforderung dieses Plans.
+
+### Separater Audit gegen die kanonische Roadmap
+
+Die sechs Punkte und das Abschlusskriterium von Phase3 sind durch die oben
+zugeordneten Implementierungen und Prüfungen erfüllt. Phase3 ist abgeschlossen.
+Das bedeutet implementiert und automatisiert geprüft; es bedeutet weder lokale
+kanonische Übergabe noch menschliche Live-Abnahme oder Veröffentlichung.
+
+Die vollständige Speichern-/Verwerfen-/Abbrechen-Koordination gehört weiterhin zu
+Phase4. Echte verschiedene Schema-AppImages, übersprungene Releases und die
+vollständige Transport-/Fehlermatrix bleiben Phase5; CI-/Releasefreigabe Phase6;
+Kopie vorhandener Benutzerdaten und manuelle Veröffentlichung Phase7. Der einzelne
+M11-AppImagefall wird ausdrücklich nicht als Nachweis dieser späteren Phasen
+verwendet. Das übergeordnete Ziel bleibt aktiv.
