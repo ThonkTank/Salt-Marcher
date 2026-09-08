@@ -41,7 +41,36 @@ describe('permanent 0.2.0 persistence baseline', () => {
       expect(before.pragma('user_version', { simple: true })).toBe(34)
       const rows = dataRows(before)
       before.close()
+      const installationPath = join(root, 'installation.sqlite')
+      const oldInstallation = new Database(installationPath, { readonly: true })
+      expect(oldInstallation.pragma('user_version', { simple: true })).toBe(39)
+      const installationRows = dataRows(oldInstallation)
+      oldInstallation.close()
       migrateProfile(root)
+      const installation = new Database(installationPath, { readonly: true })
+      try {
+        expect(installation.pragma('user_version', { simple: true })).toBe(41)
+        const migratedRows = dataRows(
+          installation,
+          Object.keys(installationRows)
+        )
+        const campaigns = migratedRows['campaigns'] as Record<string, unknown>[]
+        for (const campaign of campaigns) {
+          expect(campaign['last_opened_at']).toBeNull()
+          delete campaign['last_opened_at']
+        }
+        expect(migratedRows).toEqual(installationRows)
+        expect(
+          installation
+            .prepare('SELECT COUNT(*) AS count FROM scene_desktop')
+            .get()
+        ).toEqual({ count: 0 })
+        expect(installation.pragma('integrity_check', { simple: true })).toBe(
+          'ok'
+        )
+      } finally {
+        installation.close()
+      }
       const after = new Database(path, { readonly: true })
       try {
         expect(after.pragma('user_version', { simple: true })).toBe(35)
@@ -81,7 +110,7 @@ function dataRows(
     (
       database
         .prepare(
-          "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name <> 'campaign_schema_migration'"
+          "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name NOT IN ('campaign_schema_migration', 'installation_schema_migration')"
         )
         .all() as { name: string }[]
     ).map((row) => row.name)

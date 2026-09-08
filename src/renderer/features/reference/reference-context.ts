@@ -63,6 +63,7 @@ export type ReferenceContextValue = Readonly<{
   navigation: ReferenceNavigation
   moveNavigation(offset: number): void
   closeNavigation(): void
+  desktopRouting?: boolean
   cacheRevision: number
 }>
 

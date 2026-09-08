@@ -83,6 +83,7 @@ describe('capability contract', () => {
           ...snapshot,
           campaigns: [
             {
+              lastOpenedAt: null,
               id: campaignId,
               name: 'Still present',
               createdAt: '2026-08-24T12:00:00.000Z'
@@ -177,6 +178,7 @@ describe('capability contract', () => {
       activeCampaignId: null,
       campaigns: [
         {
+          lastOpenedAt: null,
           id: '0184d1f4-bba7-7c9c-9d89-5f1c0f36a031',
           name: 'Campaign A',
           createdAt: '2026-07-30T10:00:00.000Z'

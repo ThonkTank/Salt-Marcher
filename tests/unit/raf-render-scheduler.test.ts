@@ -53,6 +53,26 @@ describe('RAF render scheduler', () => {
     expect(render).toHaveBeenCalledTimes(2)
   })
 
+  it('cancels hidden frames, accumulates changes and resumes once with current reasons', () => {
+    const { scheduler, request, render, frames, run } = harness()
+    scheduler.invalidate('scene')
+    scheduler.setActive(false)
+    scheduler.invalidate('camera')
+    scheduler.invalidate('overlay')
+    expect(frames.size).toBe(0)
+    expect(request).toHaveBeenCalledTimes(1)
+    expect(render).not.toHaveBeenCalled()
+    scheduler.setActive(true)
+    scheduler.setActive(true)
+    expect(frames.size).toBe(1)
+    run(2)
+    expect(render).toHaveBeenCalledWith(['scene', 'camera', 'overlay'])
+    scheduler.dispose()
+    scheduler.setActive(false)
+    scheduler.setActive(true)
+    expect(frames.size).toBe(0)
+  })
+
   it('cancels pending work and ignores invalidation after disposal', () => {
     const { scheduler, request, cancel, render, frames } = harness()
     scheduler.invalidate('scene')

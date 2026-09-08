@@ -1,9 +1,7 @@
 import { lazy, Suspense, useCallback, useState } from 'react'
-import type {
-  CampaignCommandReceipt,
-  CampaignSnapshot
-} from '../../../shared/contracts/campaign.js'
+import type { CampaignSnapshot } from '../../../shared/contracts/campaign.js'
 import { formatMessage, message } from '../../i18n/campaign-menu-runtime.de.js'
+import { message as workspaceMessage } from '../../i18n/workspace-runtime.de.js'
 import { AnchoredPopup } from '../../shell/anchored-popup.js'
 import type { GeneratorPresetApplicationLoader } from './generator-preset-application.js'
 import type { CampaignRewardRulesPort } from './campaign-reward-rules-port.js'
@@ -13,27 +11,15 @@ const EncounterGeneratorSettingsRoute = lazy(() =>
     default: module.EncounterGeneratorSettingsRoute
   }))
 )
-const CampaignManagementDialog = lazy(() =>
-  import('./campaign-management-dialog.js').then((module) => ({
-    default: module.CampaignManagementDialog
-  }))
-)
-
 interface CampaignMenuProps {
   snapshot: CampaignSnapshot
+  desktopPreview?: boolean
+  setDesktopPreview?: (enabled: boolean) => void
   open: boolean
   anchor: HTMLElement | null
-  forced: boolean
+  showCampaigns: () => void
   partySize: number
   dismiss: () => void
-  create: (name: string) => Promise<boolean>
-  activate: (id: string) => Promise<boolean>
-  rename: (id: string, name: string) => Promise<boolean>
-  trash: (id: string) => Promise<boolean>
-  restore: (id: string) => Promise<boolean>
-  deleteForever: (id: string, confirmationName: string) => Promise<boolean>
-  reconciliationPending: boolean
-  reconcile: () => Promise<CampaignCommandReceipt | null>
   loadGeneratorPresetApplication: GeneratorPresetApplicationLoader
   campaignRules?: CampaignRewardRulesPort
   onError: (message: string) => void
@@ -44,17 +30,14 @@ export function CampaignMenu(props: CampaignMenuProps) {
 }
 
 function OpenCampaignMenu(props: CampaignMenuProps) {
-  const { dismiss, forced, snapshot } = props
-  const [view, setView] = useState<'menu' | 'campaigns' | 'settings'>(
-    forced ? 'campaigns' : 'menu'
-  )
+  const { dismiss, snapshot } = props
+  const [view, setView] = useState<'menu' | 'settings'>('menu')
   const closeMenu = useCallback(() => {
     setView('menu')
     dismiss()
   }, [dismiss])
 
-  const effectiveView = forced ? 'campaigns' : view
-  if (effectiveView === 'settings')
+  if (view === 'settings')
     return (
       <Suspense
         fallback={
@@ -77,25 +60,6 @@ function OpenCampaignMenu(props: CampaignMenuProps) {
         />
       </Suspense>
     )
-  if (effectiveView === 'campaigns')
-    return (
-      <Suspense fallback={null}>
-        <CampaignManagementDialog
-          snapshot={snapshot}
-          forced={forced}
-          dismiss={closeMenu}
-          create={props.create}
-          activate={props.activate}
-          rename={props.rename}
-          trash={props.trash}
-          restore={props.restore}
-          deleteForever={props.deleteForever}
-          reconciliationPending={props.reconciliationPending}
-          reconcile={props.reconcile}
-          completed={() => setView('menu')}
-        />
-      </Suspense>
-    )
   return (
     <AnchoredPopup
       open
@@ -106,12 +70,24 @@ function OpenCampaignMenu(props: CampaignMenuProps) {
       minWidth={176}
     >
       <nav id="campaign-menu" aria-label={message('app.menu')}>
-        <button type="button" onClick={() => setView('campaigns')}>
+        <button type="button" onClick={props.showCampaigns}>
           {message('nav.campaigns')}
         </button>
         <button type="button" onClick={() => setView('settings')}>
           {message('menu.settings')}
         </button>
+        {props.setDesktopPreview && (
+          <label className="desktop-preview-setting">
+            <input
+              type="checkbox"
+              checked={props.desktopPreview ?? false}
+              onChange={(event) =>
+                props.setDesktopPreview?.(event.target.checked)
+              }
+            />
+            {workspaceMessage('desktop.preview')}
+          </label>
+        )}
       </nav>
     </AnchoredPopup>
   )

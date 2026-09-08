@@ -1,0 +1,116 @@
+.campaign-screen {
+  min-height: 0;
+  overflow: auto;
+  background: var(--surface-sheet);
+  padding: clamp(20px, 4vw, 64px);
+}
+.campaign-screen > header {
+  border-bottom: 2px solid var(--accent-rubric-line);
+  margin-bottom: var(--space-10);
+  padding-bottom: var(--space-8);
+}
+.campaign-screen h2,
+.campaign-management-popup h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  color: var(--text-rubric-on-card);
+}
+.campaign-intro,
+.campaign-identity small {
+  color: var(--text-3);
+}
+.campaign-screen-list {
+  padding: 0;
+  margin: var(--space-10) 0 0;
+  list-style: none;
+}
+.campaign-screen-list > li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  padding: var(--space-8) 0;
+  border-top: 1px solid var(--border-hair);
+}
+.campaign-identity {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.campaign-identity strong {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--text-lg);
+}
+.campaign-screen > footer,
+.campaign-management-popup > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-7);
+}
+.campaign-screen > footer {
+  border-top: 1px solid var(--border-hair);
+  padding-top: var(--space-8);
+}
+.campaign-screen > footer button,
+.campaign-edit-trigger,
+.campaign-management-popup > header button {
+  background: transparent;
+  border: 0;
+}
+.campaign-management-popup {
+  width: min(38rem, calc(100vw - 2rem));
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  border: var(--border-width-structural) solid var(--border-structural);
+  background: var(--surface-sheet);
+  box-shadow: var(--shadow-dialog);
+  padding: var(--space-10);
+}
+.campaign-management-popup > header {
+  margin-bottom: var(--space-10);
+}
+.campaign-management-popup form {
+  display: grid;
+  gap: var(--space-7);
+}
+.campaign-management-popup p {
+  overflow-wrap: anywhere;
+}
+.campaign-popup-actions {
+  display: flex;
+  gap: var(--space-6);
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+.campaign-danger-zone {
+  border-top: 1px solid var(--border-hair);
+  margin-top: var(--space-10);
+  padding-top: var(--space-7);
+}
+button.campaign-danger {
+  color: var(--text-danger);
+  border-color: var(--accent-danger);
+  background: transparent;
+}
+.campaign-management-popup .campaign-screen-list > li {
+  flex-wrap: wrap;
+}
+.campaign-management-popup .campaign-row-actions {
+  flex-wrap: wrap;
+}
+.app-shell[data-screen='campaigns'] {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+@media (max-width: 600px) {
+  .campaign-screen-list > li,
+  .campaign-screen > footer {
+    flex-wrap: wrap;
+  }
+  .campaign-management-popup {
+    padding: var(--space-8);
+  }
+}

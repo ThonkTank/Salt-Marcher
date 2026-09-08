@@ -266,8 +266,8 @@ architectureGate(
         'dynamic'
       ],
       [
-        'src/renderer/features/workspace/campaign-menu.tsx',
-        './campaign-management-dialog.js',
+        'src/renderer/features/workspace/workspace.tsx',
+        './campaign-screen.js',
         'dynamic'
       ]
     ]

@@ -1,3 +1,7 @@
+import {
+  openCampaignScreen,
+  resumeCampaignFromScreen
+} from './support/campaign-navigation.js'
 import { browser, expect } from '@wdio/globals'
 import { performance } from 'node:perf_hooks'
 import type { LiveSessionSnapshot } from '../../src/shared/contracts/live-session.js'
@@ -92,6 +96,7 @@ describe('Current-Format Campaign qualification', () => {
 
     progress('restart-after-focused-scene-action')
     await client.reloadSession()
+    await resumeCampaignFromScreen(client)
     await waitForCampaignReady(client, campaigns.A.id)
     await waitForSceneLocation(client, targetLocation)
     const restarted = await readSession(client, campaigns.A.id)
@@ -168,36 +173,23 @@ async function switchCampaign(
   campaignId: string,
   campaignName: string
 ): Promise<number> {
-  await openCampaignDialog(client)
-  const target = await client.$(`button[aria-label="${campaignName}"]`)
+  await openCampaignScreen(client)
+  const target = await client.$(`button[aria-label="${campaignName} öffnen"]`)
   await target.waitForClickable({ timeout: 5_000 })
   const startedAt = performance.now()
   await target.click()
   await waitForCampaignReady(client, campaignId)
-  await waitForCampaignDialogClosed(client)
+  await waitForCampaignScreenClosed(client)
   return performance.now() - startedAt
 }
 
-async function openCampaignDialog(client: WdioBrowser): Promise<void> {
-  const button = await client.$('button[aria-label="Menü"]')
-  if ((await button.getAttribute('aria-expanded')) !== 'true')
-    await button.click()
-  const menu = await client.$('nav#campaign-menu')
-  await menu.waitForDisplayed({ timeout: 5_000 })
-  await (await menu.$('button=Kampagnen')).click()
-  await (await client.$('#campaign-name')).waitForDisplayed({ timeout: 5_000 })
-}
-
-async function waitForCampaignDialogClosed(client: WdioBrowser): Promise<void> {
-  const button = await client.$('button[aria-label="Menü"]')
-  await client.waitUntil(
-    async () => (await button.getAttribute('aria-expanded')) === 'false',
-    {
-      timeout: 5_000,
-      interval: 25,
-      timeoutMsg: 'Campaign dialog did not close after activation.'
-    }
-  )
+async function waitForCampaignScreenClosed(client: WdioBrowser): Promise<void> {
+  await client
+    .$('.campaign-screen')
+    .waitForExist({ reverse: true, timeout: 5_000 })
+  await client
+    .$('button[aria-label="Menü"]')
+    .waitForClickable({ timeout: 5_000 })
 }
 
 async function waitForCampaignReady(

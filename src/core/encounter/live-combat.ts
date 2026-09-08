@@ -3,10 +3,11 @@ import {
   saveSceneGroupInputSchema,
   type SaveSceneGroupInput
 } from '../../shared/contracts/scene.js'
+import { sceneHasActiveCombat } from './combat-repository.js'
 import type Database from 'better-sqlite3'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import { HexMapStore } from '../hex/hex-map-store.js'
-import { HexTravelStore } from '../hex/hex-travel.js'
+import { HexTravelStore, sceneIsTravelling } from '../hex/hex-travel.js'
 import { biomeDefinition as defaultBiomeDefinition } from '../hex/biome-catalog.js'
 import type {
   HexBiomeDefinition,
@@ -110,20 +111,30 @@ export class LivePlayService {
     character: PartyCharacterDraft,
     expectedRevision: number
   ) {
-    return this.withStores(({ party, scene, combat }) => {
-      const snapshot = party.update(id, character, expectedRevision)
-      combat.reconcileParty(scene.assignedParty(snapshot.members))
-      return snapshot
-    })
+    return this.withStores(({ party, scene, combatFor, unitOfWork }) =>
+      unitOfWork.run(() => {
+        const sceneId = scene.sceneForPartyMember(id)
+        const snapshot = party.update(id, character, expectedRevision)
+        if (sceneId)
+          combatFor(sceneId).reconcileParty(
+            scene.assignedParty(snapshot.members, sceneId)
+          )
+        return snapshot
+      })
+    )
   }
 
   deletePartyCharacter(id: string, expectedRevision: number) {
-    return this.withStores(({ party, scene, combat }) => {
-      const snapshot = party.delete(id, expectedRevision)
-      scene.unassignPartyMember(id)
-      combat.reconcileParty(scene.assignedParty(snapshot.members))
-      return snapshot
-    })
+    return this.withStores(({ party, scene, combatFor, unitOfWork }) =>
+      unitOfWork.run(() => {
+        const before = party.read()
+        for (const entry of scene.snapshot(before.members).scenes)
+          combatFor(entry.id).removePartyCharacter(id)
+        const snapshot = party.delete(id, expectedRevision)
+        scene.unassignPartyMember(id)
+        return snapshot
+      })
+    )
   }
 
   adjustPartyXp(id: string, delta: number, expectedRevision: number) {
@@ -417,19 +428,22 @@ export class LivePlayService {
     expectedSceneRevision: number,
     groupIds: readonly string[]
   ): CombatCommandResult {
-    return this.withStores(({ party, scene, combat }) => {
-      if (scene.revision() !== expectedSceneRevision)
-        throw new CapabilityError('stale', true)
-      const partySnapshot = party.read()
-      const focused = scene.focused(partySnapshot.members)
-      if (focused.id !== sceneId) throw new CapabilityError('not_found', false)
-      const assigned = scene.assignedParty(partySnapshot.members, sceneId)
-      const evaluation = evaluateSceneGroups(focused, assigned, groupIds)
-      if (!evaluation.canStart)
-        throw new CapabilityError('validation_failed', false)
-      combat.prepare(assigned, focused.groups, groupIds)
-      return this.combatResult(party, scene, combat, false, false)
-    })
+    return this.withStores(({ party, scene, combat, unitOfWork }) =>
+      unitOfWork.run(() => {
+        if (scene.revision() !== expectedSceneRevision)
+          throw new CapabilityError('stale', true)
+        const partySnapshot = party.read()
+        const focused = scene.focused(partySnapshot.members)
+        if (focused.id !== sceneId)
+          throw new CapabilityError('not_found', false)
+        const assigned = scene.assignedParty(partySnapshot.members, sceneId)
+        const evaluation = evaluateSceneGroups(focused, assigned, groupIds)
+        if (!evaluation.canStart)
+          throw new CapabilityError('validation_failed', false)
+        combat.prepare(assigned, focused.groups, groupIds)
+        return this.combatResult(party, scene, combat, false, false)
+      })
+    )
   }
 
   rollInitiative(expectedRevision: number): CombatCommandResult {
@@ -517,11 +531,15 @@ export class LivePlayService {
     expectedRevision: number,
     target: 'selection' | 'initiative' | 'combat'
   ): CombatCommandResult {
-    return this.withStores(({ party, scene, combat, unitOfWork }) =>
+    return this.withStores(({ db, party, scene, combat, unitOfWork }) =>
       unitOfWork.run(() => {
         combat.assertRevision(expectedRevision)
         if (target === 'selection') combat.clear()
-        else combat.moveToPhase(target)
+        else {
+          if (target === 'combat')
+            assertSceneCanFight(db, scene.focusedSceneId())
+          combat.moveToPhase(target)
+        }
         return this.combatResult(party, scene, combat, false, false)
       })
     )
@@ -572,10 +590,12 @@ export class LivePlayService {
     expectedRevision: number,
     mutation: (combat: CombatService) => void
   ): CombatCommandResult {
-    return this.withStores(({ party, scene, combat, unitOfWork }) => {
+    return this.withStores(({ db, party, scene, combat, unitOfWork }) => {
       return unitOfWork.run(() => {
         combat.assertRevision(expectedRevision)
         mutation(combat)
+        if (sceneHasActiveCombat(db, scene.focusedSceneId()))
+          assertSceneCanFight(db, scene.focusedSceneId())
         return this.combatResult(party, scene, combat, true, false)
       })
     })
@@ -748,4 +768,9 @@ export class LivePlayService {
           revision: 0
         }
   }
+}
+
+function assertSceneCanFight(db: Database.Database, sceneId: string): void {
+  if (sceneIsTravelling(db, sceneId))
+    throw new CapabilityError('scene_activity_conflict', false)
 }

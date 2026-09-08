@@ -2947,3 +2947,68 @@ Sitzungsbefehle und deren Unknown-Recovery, Namens-/Beute-Unterdialoge, vollstä
 Konfliktklärung, andere Gruppenbefehle, übrige Writer-/Kartenwege und Offline-/
 Update-UI-Abnahme. Phasen 5–7 sowie exakter CI-Handoff und Main-Abschluss bleiben
 verpflichtend. Keine vollständige Planner- oder Release-Abnahme behauptet.
+
+### Phase 4 — Korrekturplan: Main-Integration und CI-Freigängigkeit
+
+Aktueller Kandidat d482274bf ist sauber, aber PR 661 ist laut GitHub
+CONFLICTING; es gibt keine Checks für diesen SHA. Main steht nach Fetch auf
+63b427900 und bringt Kampagnenoberfläche, Szenendesktop, Charakterkatalog
+sowie Installationsmigrationen bis 41 mit. Der letzte ältere Check auf
+732fd60bd scheiterte an Prettier (location-maintenance-draft.test.tsx) und
+mehr als 16 KiB Bundlewachstum. Kein grüner aktueller CI-Stand behauptet.
+
+Plan: Main in den Kandidaten integrieren, beide fachlichen Änderungen erhalten.
+Installationsschema 41 und Kampagnenschema 35 gemeinsam führen; Registry-Version
+für die vereinigte Migrationsmenge fortschreiben, erzeugte Versionsdokumentation
+und aktuelle Formatverträge entsprechend prüfen. Historische Fixtures bleiben
+unverändert. Konflikte fachlich auflösen, besonders atomare Gruppenquittungen
+und neue Kampf-/Reiseregeln. Danach Formatierung, Typen, Migrationen und relevante
+Integrationstests prüfen. Aktuellen Bundlegraph messen, Wachstum den tatsächlichen
+Änderungen zuordnen und nur mit dokumentierter Begründung den vorgesehenen
+Baseline-Mechanismus verwenden; keine Budgetgrenzen abschwächen. Neue Writer
+aus Main in die weiterhin offene Phase-4-Abnahme aufnehmen. Erst nach Prüfungen
+committen/pushen und exakte CI-Auslösung kontrollieren. Plan- und Roadmapaudit
+separat dokumentieren; kein Handoff oder Main-Push ohne vollständige Gates.
+
+Korrekturergänzung vor Teständerung: Die gemeinsame Migration 39/34 nach 41/35
+braucht einen expliziten Erhaltungsnachweis für die alten Installationstabellen,
+nicht nur einen Theme-Lesetest. Im eingefrorenen 0.2.0-Profil zusätzlich sämtliche
+bestehenden Installationszeilen vergleichen (neue Metadaten separat), die neue
+nullable last_opened_at-Spalte und die leere scene_desktop-Tabelle prüfen. Keine
+Änderung an den eingefrorenen Daten. Vollständige portable Prüfung zuvor grün.
+
+### Phase 4 — Main-Integration: Plan- und Roadmapabgleich
+
+Planabgleich bestanden für die lokale Integration: Main 63b427900 ist ohne
+Verlust der Roadmap-Änderungen zusammengeführt. Die unabhängigen Datenrollen
+stehen auf Installation 41 / Kampagne 35, Registry 14; Vorwärtsketten und
+Versionsdokumentation stimmen überein. Gruppenquittungen und die neuen
+Kampf-/Reise-Invarianten bleiben im gemeinsamen LivePlayService erhalten.
+Die eingefrorenen 0.2.0-Fixtures sind unverändert. Der erweiterte Migrationstest
+vergleicht alle bisherigen Installationstabellen ohne Migrationsmetadaten und
+alle bisherigen Kampagnentabellen; neue last_opened_at-Werte sind null,
+scene_desktop und Gruppenquittungen sind leer. SQLite-Integrität und fachliches
+Readback bestehen.
+
+Validierung: check:portable:fast vollständig bestanden (91 Architekturtests,
+1127 portable Unit-Tests, 312 Integrationstests sowie Format/Lint/Typecheck und
+Referenz-/Generator-/Versions-/Renderartefakt-Gates). Nach der Ergänzung des
+Erhaltungsnachweises 23 Tests in release-baseline, persistence-preflight und
+scene-desktop-store, gezielter ESLint und vollständiger Typecheck bestanden.
+Build und Built-Smoke melden ready/closed. Bundlegraph gegenüber Main:
+reachable +33295 Bytes, shell +423, workspace +4715, catalog +3763, hex +2791,
+session +164. Keine Abhängigkeits-/Lockfileänderung gegenüber Main. Manifest
+bestätigt dynamische Grenzen für Planner, Gruppen, Updates, Charakterkatalog,
+Szenendesktop und Pixi. Baseline über das vorgesehene Skript mit konkreter
+Begründung aktualisiert; absolute Grenzen und 16-KiB-Wachstumsgate unverändert.
+Bundle-Gate danach bestanden, reachable 1628220 Bytes von 3019898. Logs:
+work/roadmap-phase4-main-*.log. Kein Nutzerprofil oder installierte App verändert.
+
+Roadmapabgleich: Phase 4 bleibt offen. Zusätzlich zu den bisherigen offenen
+Planner-/Gruppen-/Karten-/Updatewegen benötigen CharacterCatalogSection,
+CampaignScreen und die verzögerten DesktopProjection-Schreibvorgänge die
+Wartungsanbindung und Abnahme. Die neue installationseigene scene_desktop-
+Tabelle ist auch in der vollständigen Profil-/Recovery-Qualifikation fachlich
+zu berücksichtigen; ein generischer SQLite-Backup allein beweist diese
+Lesbarkeit nicht. Phasen 5–7 bleiben offen. Lokale Gates ersetzen weder
+exakte Remote-CI noch kanonischen Handoff, Main-Grün oder Release-Abnahme.

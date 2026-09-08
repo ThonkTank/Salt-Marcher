@@ -1,3 +1,4 @@
+import { capabilityErrorCode } from '../../../shared/errors/capability-error.js'
 import { useCallback, useEffect, useRef } from 'react'
 import type { AsyncCommandCoordinator } from '../../async/async-command-coordinator.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
@@ -56,9 +57,33 @@ export function useTravelCommands<P, S, M, E>(options: {
         entityKey: travelEntityKey(scope),
         mode: 'queue',
         execute: async ({ signal }) => {
-          const result = await port.execute(command)
-          signal.throwIfAborted()
-          return result
+          try {
+            const result = await port.execute(command)
+            signal.throwIfAborted()
+            return result
+          } catch (cause) {
+            // A boundary tick may advance the CAS revision while Pause is in flight.
+            // Only a definite non-write can be retried, and Pause never toggles Resume.
+            if (
+              command.kind !== 'pause' ||
+              capabilityErrorCode(cause) !== 'stale'
+            )
+              throw cause
+            signal.throwIfAborted()
+            if (!sameTravelScope(read().scope, scope)) throw cause
+            const current = await port.read({ sceneId: command.sceneId })
+            signal.throwIfAborted()
+            if (!sameTravelScope(read().scope, scope)) throw cause
+            const descriptor = port.describe(current.providerState)
+            if (descriptor.status === 'paused') return current
+            if (descriptor.status !== 'travelling') throw cause
+            const result = await port.execute({
+              ...command,
+              expectedRevision: descriptor.revision
+            })
+            signal.throwIfAborted()
+            return result
+          }
         },
         accept: (result) =>
           acceptCommand({

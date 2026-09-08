@@ -46,6 +46,7 @@
 }
 
 .catalog-section-selector {
+  flex-wrap: wrap;
   border-bottom: 1px solid var(--border-structural);
   padding: var(--space-5) var(--space-7);
   background: var(--surface-pane-sunken);

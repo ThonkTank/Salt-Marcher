@@ -24,6 +24,7 @@ type Automaton = Readonly<{
 
 export type CompiledReferenceIndex = Readonly<{
   revision: string
+  terms: readonly ReferenceTerm[]
   exact: Automaton
   folded: Automaton
 }>
@@ -41,6 +42,7 @@ export function compileReferenceIndex(
 ): CompiledReferenceIndex {
   return {
     revision: index.revision,
+    terms: index.terms,
     exact: buildAutomaton(index.terms, 'exact'),
     folded: buildAutomaton(index.terms, 'folded')
   }
@@ -254,4 +256,24 @@ function candidateOrder(
       referenceTargetKey(right.target)
     )
   )
+}
+
+/** Search the same indexed aliases that drive inline reference links. */
+export function searchReferenceIndices(
+  indices: readonly CompiledReferenceIndex[],
+  query: string
+): readonly ReferenceCandidate[] {
+  const words = query.trim().toLocaleLowerCase().split(/\s+/u).filter(Boolean)
+  if (words.length === 0) return []
+  const found = new Map<string, ReferenceCandidate>()
+  for (const index of indices)
+    for (const term of index.terms)
+      for (const candidate of term.candidates) {
+        const text = `${term.term} ${candidate.title}`.toLocaleLowerCase()
+        if (words.every((word) => text.includes(word)))
+          found.set(referenceTargetKey(candidate.target), candidate)
+      }
+  return [...found.values()]
+    .sort((a, b) => a.title.localeCompare(b.title))
+    .slice(0, 100)
 }

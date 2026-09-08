@@ -445,7 +445,8 @@ describe('CoreProcessSupervisor', () => {
           {
             id: '00000000-0000-4000-8000-000000000004',
             name: 'Committed write',
-            createdAt: '2026-08-24T12:00:00.000Z'
+            createdAt: '2026-08-24T12:00:00.000Z',
+            lastOpenedAt: null
           }
         ],
         trashedCampaigns: []

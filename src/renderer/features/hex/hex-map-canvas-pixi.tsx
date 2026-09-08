@@ -59,7 +59,11 @@ type CanvasState = {
   layers: HexPixiLayers
 }
 
+export type HexCamera = Readonly<{ x: number; y: number; scale: number }>
 export type HexMapCanvasProps = {
+  camera?: HexCamera | undefined
+  onCameraChange?: (mapId: string, camera: HexCamera) => void
+  renderActive?: boolean
   snapshot: HexMapView
   biomes: HexBiomeCatalog
   selected: AxialCoordinate | null
@@ -115,6 +119,11 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
   const syncCamera = useCallback(() => {
     const current = state.current
     if (!current || current.destroyed) return
+    latest.current.onCameraChange?.(current.mapId, {
+      x: current.world.position.x,
+      y: current.world.position.y,
+      scale: current.world.scale.x
+    })
     markerOverlay.current?.setCamera({
       x: current.world.position.x,
       y: current.world.position.y,
@@ -125,6 +134,7 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
   }, [])
 
   const redrawGrid = useCallback(() => {
+    if (latest.current.renderActive === false) return
     const current = state.current
     if (!current || current.destroyed) return
     drawHexGrid(current, current.layers.grid)
@@ -132,6 +142,7 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
   }, [invalidateRender])
 
   const redrawTransientLayers = useCallback(() => {
+    if (latest.current.renderActive === false) return
     const current = state.current
     if (!current || current.destroyed) return
     const currentProps = latest.current
@@ -147,6 +158,7 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
   }, [invalidateRender])
 
   const redraw = useCallback(() => {
+    if (latest.current.renderActive === false) return
     const current = state.current
     if (!current || current.destroyed) return
     const currentProps = latest.current
@@ -286,7 +298,12 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
           current.renderReasonCounts
         )
         state.current = current
-        resetCamera(state.current, { q: 0, r: 0 })
+        scheduler.setActive(latest.current.renderActive !== false)
+        const initialCamera = latest.current.camera
+        if (initialCamera) {
+          world.scale.set(initialCamera.scale)
+          world.position.set(initialCamera.x, initialCamera.y)
+        } else resetCamera(state.current, { q: 0, r: 0 })
         syncCamera()
         redrawSafely()
 
@@ -404,12 +421,25 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
   useEffect(() => {
     const current = state.current
     if (!current) return
+    current.scheduler.setActive(props.renderActive !== false)
+    let active = true
+    queueMicrotask(() => {
+      if (active && latest.current.renderActive !== false) redrawSafely()
+    })
+    return () => {
+      active = false
+    }
+  }, [props.renderActive, redrawSafely])
+
+  useEffect(() => {
+    const current = state.current
+    if (!current) return
     if (current.mapId !== props.snapshot.map.id) {
       rememberCamera(current)
       current.chunks.clear()
       clearHexPixiLayer(current.layers.biome)
       current.mapId = props.snapshot.map.id
-      const remembered = current.cameraByMap.get(current.mapId)
+      const remembered = props.camera ?? current.cameraByMap.get(current.mapId)
       if (remembered) {
         current.world.scale.set(remembered.scale)
         current.world.position.set(remembered.x, remembered.y)
@@ -419,6 +449,7 @@ export function HexMapCanvasPixi(props: HexMapCanvasProps): ReactElement {
     redrawSafely()
   }, [
     props.snapshot,
+    props.camera,
     props.biomes,
     props.token,
     props.route,

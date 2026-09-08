@@ -12,6 +12,8 @@ const LazyDocument = lazy(async () => {
 
 export function LazyReferenceDocument(props: {
   document: ReferenceDocument
+  onReady?: () => void
+  hideTitle?: boolean
   compact?: boolean
   path?: readonly ReferenceTarget[]
 }) {

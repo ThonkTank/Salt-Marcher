@@ -185,3 +185,101 @@ SC combatants are reconciled while the active turn is retained where possible.
   in their own left-column section and unplaced treasures remain recoverable
 - closing a Loot distribution dialog writes nothing; only `Verteilung
   abschließen` atomically creates allocations and character-ledger entries
+
+## Scene desktop preview (phase 1)
+
+The application menu offers an explicitly labeled, default-off scene desktop
+preview. Each scene initially opens one read-only overview with its location,
+time, assigned PCs and active groups. Windows can be moved, resized, snapped,
+minimized, maximized/restored or closed, with keyboard alternatives. The window
+bar reopens minimized views; the overview launcher reopens a closed overview.
+Campaign and scene identity scope persistent presentation state. Scene/catalog
+navigation and app restart preserve geometry and closed state; a smaller
+viewport fits windows without destroying preferred geometry. Failed loads must
+not overwrite stored arrangements. The classic Session workflow remains
+available by disabling the preview. Further feature windows follow the approved
+[desktop roadmap](../../project/architecture/scene-desktop-roadmap.md).
+
+
+## Scene desktop references (phase 2)
+
+The preview offers a compact search window using the shared static and active
+campaign reference indices. Selecting a result opens the shared reader, whose
+back/forward history retains each entry's scroll position. Separate opening
+retains an independent reader; requesting the same separate target raises and
+restores its existing window. Inline links and reference previews use the same
+routing and detail caches. Legacy references retain their existing behavior
+outside the preview desktop.
+
+Window targets, search query, history and scroll are scene-scoped presentation
+state and survive restart. A delayed response cannot replace another selected
+reference. Missing targets expose an inline retry without deleting other
+windows. Desktop document version 2 explicitly upgrades existing version 1
+states while preserving geometry, deliberately closed windows and storage
+revision. Reference targets from another campaign are rejected at the contract
+boundary. Content bodies and source attribution remain complete.
+
+
+## Scene desktop play windows (phase 3)
+
+The preview offers map/travel, combat and loot windows beside references.
+The overview exposes compact scene location/time, present characters, personal
+loot and active/archived group actions. Existing group and loot editors,
+distribution, inbox recovery and the top-bar Party/rest/time actions remain
+reachable. The travel launcher explicitly opens the map with its controls;
+otherwise travel controls expand on demand inside the map window.
+
+Window mounting, focus, minimization and closure never start, pause, abort or
+finish a journey or encounter. Utility retains the travel scheduler; session
+controllers sit outside individual windows. Combat turn changes do not replace
+a reader; inspecting a creature explicitly still opens its reference.
+
+Desktop document version 3 retains selected map/hex and bounded per-map camera
+positions independently of window closure. It upgrades versions 1 and 2 without
+resetting their readers or geometry. Missing selected maps fall back to an
+available map and clear obsolete hex selection. Fully occluded maps suspend
+rendering and redraw current state when visible; partial coverage continues to
+draw. Encounter preparation selection remains per scene after window closure.
+
+Only actual Combat execution excludes travelling in the same scene. Encounter
+selection and Initiative preparation remain possible during travel. Confirming
+Initiative or returning to Combat requires travel to be paused/stopped. Starting
+or resuming travel requires Combat to have ended; Resolution may coexist with
+travel. These guards run transactionally in domain owners, including undo paths
+that could re-enter Combat, and reject without partial changes. Other scenes
+remain independent. Paused journeys retain their last committed position and
+paused status across restart. Transient dialogs are discarded on scene changes.
+
+A legacy campaign that already contains actual Combat plus travelling is paused
+by the Utility travel tick before any further movement. A Pause definitely
+rejected because a travel boundary advanced its revision may refresh and retry
+once within the same current scene; an already paused readback satisfies the
+intent. Completed/aborted journeys, changed scopes and unknown outcomes are never
+replayed by this recovery path.
+
+## Character library and scene quickinfos (phase 4)
+
+Katalog → Charaktere owns campaign-wide profile CRUD, including inactive PCs.
+Search uses character/player name and identity; rows retain authored roster order.
+Rows expose level and assigned scene or inactive status. Namesakes expose a short
+unique ID suffix; the full ID is available in details. Creation is inactive and
+only name is mandatory. Optional profile facts can be cleared. The detail pane
+opens the existing personal loot ledger and requires explicit permanent deletion
+confirmation. Inline validation retains drafts; concurrent profile edits cannot
+silently overwrite one another, and unknown outcomes are never automatically
+replayed.
+
+A scene's Character window lists only its membership, in stable scene order.
+Name/player, level, current XP/next threshold, three aligned passives and written
+languages remain compact. Language/passive comparisons highlight matches without
+filtering or sorting; missing facts remain —. Personal loot and a catalog deep
+link are available beside each PC. Catalog return preserves the scene desktop.
+Desktop document version 4 upgrades v1/v2/v3 with existing geometry, reference
+history and map presentation intact and persists the new comparison controls.
+
+Campaign-wide profile updates reconcile the assigned scene. Permanent deletion
+removes combat references before the Party record in one transaction. Surviving
+initiative and active turn remain intact; affected combat undo history is cleared
+to prevent restoring a deleted Party reference. Historical loot records retain
+their existing behavior. The legacy Party popup, XP, membership, rest and burden
+semantics remain until their subsequent roadmap phases.

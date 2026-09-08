@@ -6,6 +6,7 @@ import { formatMessage, message } from '../../i18n/session-runtime.de.js'
 export function useSessionReferenceFollow(input: {
   snapshot: LiveSessionSnapshot
   reference: ReferenceContextValue
+  follow?: boolean
 }) {
   const followedCombatCard = useRef<string | null>(null)
   const focused = input.snapshot.scene.scenes.find(
@@ -24,7 +25,7 @@ export function useSessionReferenceFollow(input: {
   )
 
   useEffect(() => {
-    if (!activeCombatCard?.creatureId) {
+    if (input.follow === false || !activeCombatCard?.creatureId) {
       followedCombatCard.current = null
       return
     }
@@ -40,6 +41,7 @@ export function useSessionReferenceFollow(input: {
       group?.name ?? message('ui.encounter')
     )
   }, [
+    input.follow,
     activeCombatCard?.creatureId,
     activeCombatCard?.id,
     focused.groups,

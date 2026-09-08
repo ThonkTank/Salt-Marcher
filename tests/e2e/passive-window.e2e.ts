@@ -1,3 +1,5 @@
+import { beginCampaignCreation } from './support/campaign-navigation.js'
+import { waitForGmRendererReady } from './support/e2e-ready.js'
 import { browser, expect } from '@wdio/globals'
 import type { Browser as WdioBrowser } from 'webdriverio'
 import {
@@ -8,6 +10,8 @@ import {
 describe('passive display isolation', () => {
   it('never renders a GM sentinel and exposes only the empty projection', async () => {
     const client = browser as unknown as WdioBrowser
+    await waitForGmRendererReady(client)
+    await beginCampaignCreation(client)
     await client.waitUntil(
       async () => (await client.getWindowHandles()).length === 2
     )
@@ -26,7 +30,7 @@ describe('passive display isolation', () => {
     const input = await client.$('#campaign-name')
     await input.waitForExist()
     await input.setValue('GM-SENTINEL-DO-NOT-LEAK')
-    await (await client.$('button=Anlegen')).click()
+    await (await client.$('button=Erstellen & öffnen')).click()
     await (
       await client.$('h1=Session · GM-SENTINEL-DO-NOT-LEAK')
     ).waitForExist({ timeout: 15_000 })

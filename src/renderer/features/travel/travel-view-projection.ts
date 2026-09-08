@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState
+} from 'react'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import {
   initialTravelControllerState,
@@ -28,11 +34,16 @@ type LocalKind = 'intent' | 'map' | 'route' | 'transient'
 /** Owns the synchronous view state and the authority for publishing remote work. */
 export function useTravelViewProjection<P, S, M, E>(options: {
   snapshot: LiveSessionSnapshot
+  presentation?: { mapId: string | null; selected: P | null }
   setSnapshot: (snapshot: LiveSessionSnapshot) => void
 }) {
   const [state, setState] = useState(() =>
     initialTravelControllerState<P, S, M, E>()
   )
+  const presentation = useRef(options.presentation)
+  useLayoutEffect(() => {
+    presentation.current = options.presentation
+  }, [options.presentation])
   const stateRef = useRef(state)
   const snapshotRef = useRef(options.snapshot)
   const setSnapshotRef = useRef(options.setSnapshot)
@@ -119,7 +130,11 @@ export function useTravelViewProjection<P, S, M, E>(options: {
         revisions.current.map += 1
         revisions.current.route += 1
       }
-      publish({ type: 'activated', scope })
+      publish({
+        type: 'activated',
+        scope,
+        ...(presentation.current ? { presentation: presentation.current } : {})
+      })
     },
     [publish]
   )

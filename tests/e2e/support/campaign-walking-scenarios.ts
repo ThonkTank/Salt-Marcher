@@ -1,3 +1,8 @@
+import {
+  beginCampaignCreation,
+  openCampaignScreen,
+  resumeCampaignFromScreen
+} from './campaign-navigation.js'
 import { browser, expect } from '@wdio/globals'
 import type { Browser as WdioBrowser } from 'webdriverio'
 import {
@@ -13,13 +18,25 @@ import { waitForGmRendererReady } from './e2e-ready.js'
 
 export async function runCampaignCreationScenario(): Promise<void> {
   const client = browser as unknown as WdioBrowser
+  await (
+    await client.$('button=+ Neue Kampagne')
+  ).waitForClickable({ timeout: 30_000 })
+  await expectElementGolden(client, 'campaign-screen-light', '.app-shell')
+  await client.execute(() => {
+    document.documentElement.dataset['theme'] = 'dark'
+  })
+  await expectElementGolden(client, 'campaign-screen-dark', '.app-shell')
+  await client.execute(() => {
+    document.documentElement.dataset['theme'] = 'light'
+  })
+  await beginCampaignCreation(client)
   const field = await client.$('#campaign-name')
   await waitForCampaignInput(client, field)
   await expectAccessibleInBothThemes(client)
   await expectElementGolden(
     client,
     'campaign-dialog-light',
-    'section.campaign-dialog'
+    'section.campaign-management-popup'
   )
   await client.execute(() => {
     document.documentElement.dataset['theme'] = 'dark'
@@ -27,13 +44,13 @@ export async function runCampaignCreationScenario(): Promise<void> {
   await expectElementGolden(
     client,
     'campaign-dialog-dark',
-    'section.campaign-dialog'
+    'section.campaign-management-popup'
   )
   await client.execute(() => {
     document.documentElement.dataset['theme'] = 'light'
   })
   await field.setValue('test')
-  await (await client.$('button=Anlegen')).click()
+  await (await client.$('button=Erstellen & öffnen')).click()
   await (
     await client.$('h1=Session · test')
   ).waitForExist({
@@ -41,6 +58,7 @@ export async function runCampaignCreationScenario(): Promise<void> {
   })
   await expect(await client.$('.error-message')).not.toBeExisting()
   await client.reloadSession()
+  await resumeCampaignFromScreen(client)
   await waitForGmRendererReady(client)
   await (await client.$('h1=Session · test')).waitForExist({ timeout: 10_000 })
   await expect(await client.$('.error-message')).not.toBeExisting()
@@ -216,59 +234,49 @@ export async function runCampaignCreationScenario(): Promise<void> {
   await pressDividerKey(client, 'Breite der Szenariospalte', 'ArrowLeft')
   await expect(rightDivider).toHaveAttribute('aria-valuenow', '274')
 
-  await openCampaignDialog(client)
+  await openCampaignScreen(client)
+  await beginCampaignCreation(client)
   const nextField = await client.$('#campaign-name')
   await nextField.setValue('Campaign B')
-  await (await client.$('button=Anlegen')).click()
+  await (await client.$('button=Erstellen & öffnen')).click()
   await (
     await client.$('h1=Session · Campaign B')
   ).waitForExist({
     timeout: 10_000
   })
 
-  await openCampaignDialog(client)
-  await (await client.$('button[aria-label="test"]')).click()
+  await openCampaignScreen(client)
+  await (await client.$('button[aria-label="test öffnen"]')).click()
   await (
     await client.$('h1=Session · test')
   ).waitForExist({
     timeout: 10_000
   })
 
-  await openCampaignDialog(client)
-  let campaignBRow = await (
-    await client.$('button[aria-label="Campaign B"]')
-  ).$('..')
-  await (await campaignBRow.$('button=Umbenennen')).click()
-  const rename = await campaignBRow.$('input[aria-label="Umbenennen"]')
-  await rename.setValue('Campaign B Archiv')
-  await (await campaignBRow.$('button=Speichern')).click()
-  campaignBRow = await (
-    await client.$('button[aria-label="Campaign B Archiv"]')
-  ).$('..')
-  await (await campaignBRow.$('button=In Papierkorb')).click()
-  await (await client.$('summary=Papierkorb (1)')).click()
-  let trashedRow = await (await client.$('span=Campaign B Archiv')).$('..')
-  await (await trashedRow.$('button=Wiederherstellen')).click()
-  campaignBRow = await (
-    await client.$('button[aria-label="Campaign B Archiv"]')
-  ).$('..')
-  await (await campaignBRow.$('button=In Papierkorb')).click()
-  await (await client.$('summary=Papierkorb (1)')).click()
-  trashedRow = await (await client.$('span=Campaign B Archiv')).$('..')
-  await (await trashedRow.$('button=Endgültig löschen')).click()
-  const deleteConfirmation = await client.$('.campaign-delete-confirm')
+  await openCampaignScreen(client)
+  await (await client.$('button[aria-label="Campaign B bearbeiten"]')).click()
+  await (await client.$('#campaign-name')).setValue('Campaign B Archiv')
+  await (await client.$('button=Speichern')).click()
   await (
-    await deleteConfirmation.$(
-      'input[aria-label="Kampagnenname zur Bestätigung"]'
-    )
-  ).setValue('Campaign B Archiv')
-  await (await deleteConfirmation.$('button=Endgültig löschen')).click()
-  await expect(
-    await client.$('button[aria-label="Campaign B Archiv"]')
-  ).not.toBeExisting()
-  await (
-    await client.$('#campaign-menu button[aria-label="Schließen"]')
+    await client.$('button[aria-label="Campaign B Archiv bearbeiten"]')
   ).click()
+  await (await client.$('button=In den Papierkorb')).click()
+  await (await client.$('button=Papierkorb (1)')).click()
+  await (await client.$('button=Wiederherstellen')).click()
+  await (await client.$('button[aria-label="Schließen"]')).click()
+  await (
+    await client.$('button[aria-label="Campaign B Archiv bearbeiten"]')
+  ).click()
+  await (await client.$('button=In den Papierkorb')).click()
+  await (await client.$('button=Papierkorb (1)')).click()
+  await (await client.$('button=Löschen …')).click()
+  await (await client.$('#campaign-confirm-name')).setValue('Campaign B Archiv')
+  await (await client.$('button=Endgültig löschen')).click()
+  await expect(await client.$('strong=Campaign B Archiv')).not.toBeExisting()
+  await (await client.$('button[aria-label="Schließen"]')).click()
+  await (await client.$('button[aria-label="test öffnen"]')).click()
+  await client.$('[data-screen="workspace"]').waitForExist({ timeout: 15_000 })
+  await runCampaignMinimumSizeScenario(client)
 }
 
 export async function runCampaignHexMapScenario(): Promise<void> {
@@ -629,6 +637,11 @@ export async function runCampaignCombatScenario(): Promise<void> {
   ).toBeElementsArrayOfSize(2)
 
   await (await client.$('button[aria-label="Katalog"]')).click()
+  await (
+    await client.$('.catalog-section-selector')
+  )
+    .$('button=Monster')
+    .click()
   const monsterSearch = await client.$('input[aria-label="Monster suchen"]')
   await monsterSearch.setValue('wolf')
   const wolf = await client.$('button=Wolf')
@@ -913,31 +926,16 @@ async function createFreshCampaign(
   client: WdioBrowser,
   name: string
 ): Promise<void> {
-  let field = await client.$('#campaign-name')
-  try {
-    await field.waitForDisplayed({ timeout: 5_000 })
-  } catch {
-    await openCampaignDialog(client)
-    field = await client.$('#campaign-name')
-  }
+  await beginCampaignCreation(client)
+  const field = await client.$('#campaign-name')
   await waitForCampaignInput(client, field)
   await field.setValue(name)
-  await (await client.$('button=Anlegen')).click()
+  await (await client.$('button=Erstellen & öffnen')).click()
   await (
     await client.$(`h1=Session · ${name}`)
   ).waitForExist({
     timeout: 10_000
   })
-}
-
-async function openCampaignDialog(client: WdioBrowser): Promise<void> {
-  await (await client.$('button[aria-label="Menü"]')).click()
-  const menu = await client.$('nav#campaign-menu')
-  await menu.waitForDisplayed({ timeout: 5_000 })
-  const campaigns = await menu.$('button=Kampagnen')
-  await campaigns.waitForClickable({ timeout: 5_000 })
-  await campaigns.click()
-  await (await client.$('#campaign-name')).waitForDisplayed({ timeout: 5_000 })
 }
 
 async function expectHexEditorLayout(client: WdioBrowser): Promise<void> {
@@ -1214,4 +1212,112 @@ async function waitForGroupManagementReady(client: WdioBrowser): Promise<void> {
         'Group roster, Loot draft, catalog, and workspace layout did not become ready.'
     }
   )
+}
+
+async function runCampaignMinimumSizeScenario(
+  client: WdioBrowser
+): Promise<void> {
+  await openCampaignScreen(client)
+  await setWindowToMinimumResponsiveSize(client)
+  const name =
+    'Die außergewöhnlich lange Kampagne der Salzmark '.repeat(3).slice(0, 99) +
+    '!'
+  const before = await client.execute(() => window.saltMarcher.campaigns.list())
+  for (let i = 0; i < 2; i++) {
+    await beginCampaignCreation(client)
+    await client.$('#campaign-name').setValue(name)
+    await expectCampaignLayout(client)
+    await client.$('button=Erstellen & öffnen').click()
+    await client
+      .$('[data-screen="workspace"]')
+      .waitForExist({ timeout: 15_000 })
+    await openCampaignScreen(client)
+  }
+  const created = await client.execute(() =>
+    window.saltMarcher.campaigns.list()
+  )
+  const duplicates = created.campaigns.filter(
+    (campaign) => campaign.name === name
+  )
+  expect(created.campaigns.length).toBe(before.campaigns.length + 2)
+  expect(duplicates).toHaveLength(2)
+  expect(new Set(duplicates.map((campaign) => campaign.id)).size).toBe(2)
+
+  const originalTheme = await client.execute(
+    () => document.documentElement.dataset['theme']
+  )
+  try {
+    for (const theme of ['light', 'dark']) {
+      await client.execute((theme: string) => {
+        document.documentElement.dataset['theme'] = theme
+      }, theme)
+      await expect(client.$$('strong=' + name)).toBeElementsArrayOfSize(2)
+      await expectCampaignLayout(client)
+      await beginCampaignCreation(client)
+      await client.$('#campaign-name').setValue(name)
+      await expectCampaignLayout(client)
+      await client.$('button[aria-label="Schließen"]').click()
+      await client.$('button[aria-label="' + name + ' bearbeiten"]').click()
+      await expect(client.$('#campaign-name')).toHaveValue(name)
+      await expectCampaignLayout(client)
+      await client.$('button=In den Papierkorb').click()
+      await client.$('button=Papierkorb (1)').click()
+      await expectCampaignLayout(client)
+      await client.$('button=Löschen …').click()
+      await expectCampaignLayout(client)
+      await client.$('#campaign-confirm-name').setValue(name.toLowerCase())
+      await expect(client.$('button=Endgültig löschen')).toBeDisabled()
+      await client.$('#campaign-confirm-name').setValue(name)
+      await expect(client.$('button=Endgültig löschen')).toBeEnabled()
+      await client.$('button=Abbrechen').click()
+      await client.$('button=Wiederherstellen').click()
+      await client.$('p*=Die Kampagne wurde wiederhergestellt').waitForExist()
+      await expectCampaignLayout(client)
+      await client.$('button[aria-label="Schließen"]').click()
+      const restored = await client.execute(() =>
+        window.saltMarcher.campaigns.list()
+      )
+      expect(restored.activeCampaignId).toBeNull()
+      expect(
+        restored.campaigns.filter((campaign) => campaign.name === name)
+      ).toEqual(duplicates)
+    }
+  } finally {
+    await client.execute((theme: string | null) => {
+      if (theme === null) delete document.documentElement.dataset['theme']
+      else document.documentElement.dataset['theme'] = theme
+    }, originalTheme ?? null)
+  }
+}
+
+async function expectCampaignLayout(client: WdioBrowser): Promise<void> {
+  await expectAccessible(client)
+  const layout = await client.execute(() => {
+    const popup = document.querySelector<HTMLElement>(
+      '.campaign-management-popup'
+    )
+    const surface =
+      popup ?? document.querySelector<HTMLElement>('.campaign-screen')
+    if (!surface) throw new Error('Campaign surface is missing')
+    const bounds = surface.getBoundingClientRect()
+    const controls = [...surface.querySelectorAll<HTMLElement>('button,input')]
+    return {
+      pageOverflow: document.documentElement.scrollWidth > innerWidth,
+      surfaceOverflow: surface.scrollWidth > surface.clientWidth + 1,
+      outsideViewport: bounds.left < 0 || bounds.right > innerWidth + 1,
+      popupOutsideViewport:
+        popup !== null && (bounds.top < 0 || bounds.bottom > innerHeight + 1),
+      controlsOutsideSurface: controls.some((control) => {
+        const rect = control.getBoundingClientRect()
+        return rect.left < bounds.left - 1 || rect.right > bounds.right + 1
+      })
+    }
+  })
+  expect(layout).toEqual({
+    pageOverflow: false,
+    surfaceOverflow: false,
+    outsideViewport: false,
+    popupOutsideViewport: false,
+    controlsOutsideSurface: false
+  })
 }

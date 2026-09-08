@@ -1,3 +1,4 @@
+import { initializeSceneDesktopSchema } from '../../scene-desktop/scene-desktop-store.js'
 import { mkdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import Database from 'better-sqlite3'
@@ -111,6 +112,7 @@ export class InstallationDatabaseOwner {
 
   private initializeInstallationSchema(installationExists: boolean): void {
     this.registry.initialize()
+    initializeSceneDesktopSchema(this.database)
     this.database.exec(`
       CREATE TABLE IF NOT EXISTS installation_settings (
         singleton INTEGER PRIMARY KEY NOT NULL CHECK(singleton = 1),

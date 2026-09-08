@@ -1,3 +1,5 @@
+import { resumeCampaignFromScreen } from './support/campaign-navigation.js'
+import { beginCampaignCreation } from './support/campaign-navigation.js'
 import { browser, expect } from '@wdio/globals'
 import type { Browser as WdioBrowser } from 'webdriverio'
 import { expectAccessible } from './support/e2e-assertions.js'
@@ -6,10 +8,11 @@ import { clickWhenInteractable } from './support/e2e-interactions.js'
 describe('generator preset integration', () => {
   it('resumes durable Planner work across active process restarts', async () => {
     const client = browser as unknown as WdioBrowser
+    await beginCampaignCreation(client)
     const campaignName = await client.$('#campaign-name')
     await campaignName.waitForDisplayed({ timeout: 30_000 })
     await campaignName.setValue('Preset E2E')
-    await (await client.$('button=Anlegen')).click()
+    await (await client.$('button=Erstellen & öffnen')).click()
     await (
       await client.$('h1=Session · Preset E2E')
     ).waitForExist({ timeout: 10_000 })
@@ -115,6 +118,7 @@ describe('generator preset integration', () => {
     await (await dialog.$('button[aria-label="Schließen"]')).click()
 
     await client.refresh()
+    await resumeCampaignFromScreen(client)
     await (
       await client.$('h1=Session · Preset E2E')
     ).waitForExist({ timeout: 15_000 })
@@ -227,6 +231,7 @@ describe('generator preset integration', () => {
     expect(beforeRestart.status).toBe('queued')
 
     await client.reloadSession()
+    await resumeCampaignFromScreen(client)
     await (
       await client.$('h1=Session · Preset E2E')
     ).waitForExist({

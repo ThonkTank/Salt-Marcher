@@ -1,16 +1,16 @@
 {
-  "recordedAt": "2026-09-07",
-  "reason": "Load release settings separately and gate first-run campaign UI until installation",
-  "dependencyRationale": "No new runtime dependencies",
-  "chunkRationale": "Keep startup below its existing limit; isolate the update and recovery panel",
+  "recordedAt": "2026-09-08",
+  "reason": "Integrate phase-4 maintenance draft settlement and receipt reconciliation with the current scene desktop and character catalog.",
+  "dependencyRationale": "No dependency or lockfile changes relative to main; growth comes from maintenance owners, pending-command coordination and Planner/group recovery.",
+  "chunkRationale": "Reviewed growth relative to main: reachable +33295 bytes, shell +423, workspace +4715, catalog +3763, hex +2791, session +164. Planner, group manager, release settings, character catalog, desktop and Pixi retain dynamic boundaries. Existing absolute budgets and the 16 KiB growth gate remain unchanged.",
   "graphs": {
-    "shell": 420323,
-    "workspace": 513081,
-    "session": 168956,
-    "catalog": 186087,
-    "hex": 176916,
-    "reference": 39450,
-    "pixi": 408635,
-    "reachable": 1534381
+    "shell": 420843,
+    "workspace": 526399,
+    "session": 171176,
+    "catalog": 190442,
+    "hex": 179490,
+    "reference": 39766,
+    "pixi": 409364,
+    "reachable": 1628220
   }
 }

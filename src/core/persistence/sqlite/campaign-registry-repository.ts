@@ -60,6 +60,7 @@ export class CampaignRegistryRepository {
         id TEXT PRIMARY KEY NOT NULL,
         name TEXT NOT NULL,
         created_at TEXT NOT NULL,
+        last_opened_at TEXT,
         trashed_at TEXT,
         status TEXT NOT NULL DEFAULT 'ready' CHECK(status IN ('creating', 'ready'))
       );
@@ -71,12 +72,12 @@ export class CampaignRegistryRepository {
   snapshot(): CampaignSnapshot {
     const campaigns = this.database
       .prepare(
-        "SELECT id, name, created_at AS createdAt FROM campaigns WHERE status = 'ready' AND trashed_at IS NULL ORDER BY created_at ASC"
+        "SELECT id, name, created_at AS createdAt, last_opened_at AS lastOpenedAt FROM campaigns WHERE status = 'ready' AND trashed_at IS NULL ORDER BY created_at ASC"
       )
       .all() as Campaign[]
     const trashedCampaigns = this.database
       .prepare(
-        "SELECT id, name, created_at AS createdAt, trashed_at AS trashedAt FROM campaigns WHERE status = 'ready' AND trashed_at IS NOT NULL ORDER BY trashed_at DESC"
+        "SELECT id, name, created_at AS createdAt, last_opened_at AS lastOpenedAt, trashed_at AS trashedAt FROM campaigns WHERE status = 'ready' AND trashed_at IS NOT NULL ORDER BY trashed_at DESC"
       )
       .all() as CampaignSnapshot['trashedCampaigns']
     const activeId = this.recordedActiveId()
@@ -136,15 +137,16 @@ export class CampaignRegistryRepository {
   markReadyAndActivate(
     id: string,
     expectedRevision = this.revision(),
-    command?: CampaignCommandIdentity
+    command?: CampaignCommandIdentity,
+    openedAt: string | null = new Date().toISOString()
   ): CampaignCommandReceipt | null {
     return this.database.transaction(() => {
       this.assertRevision(expectedRevision)
       const result = this.database
         .prepare(
-          "UPDATE campaigns SET status = 'ready' WHERE id = ? AND status = 'creating'"
+          "UPDATE campaigns SET status = 'ready', last_opened_at = ? WHERE id = ? AND status = 'creating'"
         )
-        .run(id)
+        .run(openedAt, id)
       if (result.changes !== 1)
         throw new Error('Campaign creation registry target is unavailable')
       this.writeActive(id)
@@ -261,6 +263,9 @@ export class CampaignRegistryRepository {
     return this.database.transaction(() => {
       this.assertRevision(expectedRevision)
       this.writeActive(id)
+      this.database
+        .prepare('UPDATE campaigns SET last_opened_at = ? WHERE id = ?')
+        .run(new Date().toISOString(), id)
       this.advanceRevision()
       return command ? this.completeCommand(command) : null
     })()

@@ -85,6 +85,10 @@ architectureGate(
         /^(party_|player_characters$)/,
         `${normalize(resolve('src/core/party'))}${sep}`
       ],
+      [
+        /^scene_desktop$/,
+        `${normalize(resolve('src/core/scene-desktop'))}${sep}`
+      ],
       [/^scene_/, `${normalize(resolve('src/core/scene'))}${sep}`],
       [/^encounter_/, `${normalize(resolve('src/core/encounter'))}${sep}`],
       [/^worldplanner_/, `${normalize(resolve('src/core/worldplanner'))}${sep}`]

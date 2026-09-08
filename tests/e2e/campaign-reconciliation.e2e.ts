@@ -1,9 +1,14 @@
+import {
+  beginCampaignCreation,
+  resumeCampaignFromScreen
+} from './support/campaign-navigation.js'
 import { browser, expect } from '@wdio/globals'
 import type { Browser as WdioBrowser } from 'webdriverio'
 
 describe('Campaign receipt reconciliation', () => {
   it('keeps the dialog and draft mounted across an interrupted committed create', async () => {
     const client = browser as unknown as WdioBrowser
+    await beginCampaignCreation(client)
     const field = await client.$('#campaign-name')
     await field.waitForDisplayed({ timeout: 30_000 })
     await field.setValue('Receipt E2E')
@@ -15,7 +20,7 @@ describe('Campaign receipt reconciliation', () => {
         __fr2cCampaignDialog?: Element | null
       }
       e2eWindow.__fr2cCampaignDialog = document.querySelector(
-        'section.campaign-dialog'
+        'section.campaign-management-popup'
       )
       return (
         (await e2eWindow.__saltMarcherE2e?.interruptCampaignCreate()) ?? false
@@ -23,7 +28,7 @@ describe('Campaign receipt reconciliation', () => {
     })
     expect(interruptionArmed).toBe(true)
 
-    await (await client.$('button=Anlegen')).click()
+    await (await client.$('button=Erstellen & öffnen')).click()
     await client.waitUntil(async () => (await coreStatus(client)) !== 'ready', {
       timeout: 10_000,
       interval: 100,
@@ -44,7 +49,7 @@ describe('Campaign receipt reconciliation', () => {
         }
         return (
           e2eWindow.__fr2cCampaignDialog ===
-          document.querySelector('section.campaign-dialog')
+          document.querySelector('section.campaign-management-popup')
         )
       })
     ).toBe(true)
@@ -71,18 +76,20 @@ describe('Campaign receipt reconciliation', () => {
     const menu = await client.$('nav#campaign-menu')
     await menu.waitForDisplayed({ timeout: 5_000 })
     await (await menu.$('button=Kampagnen')).click()
-    let row = await (await client.$('button[aria-label="Receipt E2E"]')).$('..')
-    await (await row.$('button=Umbenennen')).click()
     await (
-      await row.$('input[aria-label="Umbenennen"]')
-    ).setValue('Receipt E2E confirmed')
-    row = await (await client.$('input[aria-label="Umbenennen"]')).$('..')
-    await (await row.$('button=Speichern')).click()
+      await client.$('button[aria-label="Receipt E2E bearbeiten"]')
+    ).click()
+    await (await client.$('#campaign-name')).setValue('Receipt E2E confirmed')
+    await (await client.$('button=Speichern')).click()
+    await (
+      await client.$('button[aria-label="Receipt E2E confirmed öffnen"]')
+    ).click()
     await (
       await client.$('h1=Session · Receipt E2E confirmed')
     ).waitForExist({ timeout: 10_000 })
 
     await client.reloadSession()
+    await resumeCampaignFromScreen(client)
     await (
       await client.$('h1=Session · Receipt E2E confirmed')
     ).waitForExist({ timeout: 30_000 })

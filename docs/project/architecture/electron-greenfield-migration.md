@@ -652,3 +652,22 @@ remain later work. The slice uses only secure typed capabilities
 and utility-process-owned feature stores; it does not introduce copied creature
 truth, a Java compatibility layer, or claim that the open M1 qualification
 gate is complete.
+
+### Scene desktop roadmap — 2026-09-08, in progress
+
+The user-approved [six-phase roadmap](scene-desktop-roadmap.md) moves running
+play to an independently persisted desktop per scene. Execution and correction
+rounds are tracked separately in [the execution log](scene-desktop-execution.md).
+Phase 1 introduces the opt-in window shell and read-only scene overview, an
+installation 40→41 migration and separately revisioned desktop contracts.
+Phase 1 was delivered at `e254a04a2bc62b3605b3ca080be772eae72aecd6` with
+canonical handoff and green main. Phase 2 was delivered at
+`8cb1fbe7b12bff005e5e9dc423761c3c853cb2ba` with the same complete delivery gates:
+shared reference indices/cache feed search, history and independent readers.
+Phase 3 was delivered at `a8f679e2e9de7a334d18bb578c2b8adb4c74c0af` with canonical handoff and green main. Map/travel, combat and loot windows reuse domain
+controllers; map presentation is persisted in document version 3, explicitly
+upgrading versions 1 and 2. Installation schema 41 and campaign schema 34 remain
+unchanged. Actual combat execution and travelling exclude one another per scene;
+initiative preparation and inspection remain available. The existing Session
+remains default. Phase 4 is in progress: full campaign Character catalog, nullable profile editing and scene quickinfos with persisted comparisons in desktop document version 4. No phase is recorded as delivered until
+its exact-SHA checks, app handoff and green main promotion are verified.

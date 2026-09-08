@@ -8,8 +8,7 @@ import {
   waitFor
 } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { CampaignManagementDialog } from '../../src/renderer/features/workspace/campaign-management-dialog.js'
-import { CampaignMenu } from '../../src/renderer/features/workspace/campaign-menu.js'
+import { CampaignScreen } from '../../src/renderer/features/workspace/campaign-screen.js'
 import { ModalLayerProvider } from '../../src/renderer/shell/modal-layer.js'
 
 const campaignId = '00000000-0000-4000-8000-000000000010'
@@ -28,7 +27,12 @@ describe('Campaign receipt reconciliation UI', () => {
         campaigns: [],
         trashedCampaigns: []
       },
-      forced: false,
+      status: 'ready' as const,
+      error: '',
+      busy: false,
+      sessionRetry: false,
+      retryCatalog: vi.fn(() => Promise.resolve()),
+      retrySession: vi.fn(() => Promise.resolve(true)),
       dismiss: vi.fn(),
       completed: vi.fn(),
       create,
@@ -41,19 +45,17 @@ describe('Campaign receipt reconciliation UI', () => {
     }
     const rendered = render(
       <ModalLayerProvider>
-        <CampaignManagementDialog
-          {...baseProps}
-          reconciliationPending={false}
-        />
+        <CampaignScreen {...baseProps} reconciliationPending={false} />
       </ModalLayerProvider>
     )
+    fireEvent.click(screen.getByRole('button', { name: '+ Neue Kampagne' }))
     fireEvent.change(screen.getByLabelText('Kampagnenname'), {
       target: { value: 'Bleibt erhalten' }
     })
 
     rendered.rerender(
       <ModalLayerProvider>
-        <CampaignManagementDialog {...baseProps} reconciliationPending />
+        <CampaignScreen {...baseProps} reconciliationPending />
       </ModalLayerProvider>
     )
 
@@ -64,15 +66,20 @@ describe('Campaign receipt reconciliation UI', () => {
     expect(screen.getByRole('button', { name: 'Schließen' })).toBeDisabled()
     fireEvent.keyDown(document, { key: 'Escape' })
     fireEvent.pointerDown(screen.getByRole('presentation'))
-    expect(screen.getByRole('dialog', { name: 'Kampagnen' })).toBeVisible()
+    expect(screen.getByRole('dialog', { name: 'Neue Kampagne' })).toBeVisible()
     fireEvent.click(screen.getByRole('button', { name: 'Ergebnis prüfen' }))
     await waitFor(() => expect(reconcile).toHaveBeenCalledOnce())
     expect(create).not.toHaveBeenCalled()
   })
 
-  it('retains the forced view when recovery publishes the first active Campaign', async () => {
+  it('retains the creation popup when recovery publishes the first active Campaign', async () => {
     const common = {
-      open: true,
+      status: 'ready' as const,
+      error: '',
+      busy: false,
+      sessionRetry: false,
+      retryCatalog: vi.fn(() => Promise.resolve()),
+      retrySession: vi.fn(() => Promise.resolve(true)),
       anchor: null,
       partySize: 0,
       dismiss: vi.fn(),
@@ -90,7 +97,7 @@ describe('Campaign receipt reconciliation UI', () => {
     }
     const rendered = render(
       <ModalLayerProvider>
-        <CampaignMenu
+        <CampaignScreen
           {...common}
           snapshot={{
             revision: 0,
@@ -98,34 +105,38 @@ describe('Campaign receipt reconciliation UI', () => {
             campaigns: [],
             trashedCampaigns: []
           }}
-          forced
           reconciliationPending={false}
         />
       </ModalLayerProvider>
     )
+    fireEvent.click(screen.getByRole('button', { name: '+ Neue Kampagne' }))
     fireEvent.change(await screen.findByLabelText('Kampagnenname'), {
       target: { value: 'Receipt E2E' }
     })
 
     rendered.rerender(
       <ModalLayerProvider>
-        <CampaignMenu
+        <CampaignScreen
           {...common}
           snapshot={{
             revision: 1,
             activeCampaignId: campaignId,
             campaigns: [
-              { id: campaignId, name: 'Receipt E2E', createdAt: now }
+              {
+                id: campaignId,
+                name: 'Receipt E2E',
+                createdAt: now,
+                lastOpenedAt: null
+              }
             ],
             trashedCampaigns: []
           }}
-          forced={false}
           reconciliationPending
         />
       </ModalLayerProvider>
     )
 
-    expect(screen.getByRole('dialog', { name: 'Kampagnen' })).toBeVisible()
+    expect(screen.getByRole('dialog', { name: 'Neue Kampagne' })).toBeVisible()
     expect(screen.getByLabelText('Kampagnenname')).toHaveValue('Receipt E2E')
     expect(
       screen.getByRole('button', { name: 'Ergebnis prüfen' })

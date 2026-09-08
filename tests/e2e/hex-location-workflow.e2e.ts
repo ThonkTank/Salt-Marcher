@@ -1,3 +1,4 @@
+import { beginCampaignCreation } from './support/campaign-navigation.js'
 import { browser, expect } from '@wdio/globals'
 import type { Browser as WdioBrowser } from 'webdriverio'
 import {
@@ -12,10 +13,11 @@ import { clickWhenInteractable } from './support/e2e-interactions.js'
 describe('Hex World Location creation workflow', () => {
   it('creates, selects and safely auto-places complete World Locations', async () => {
     const client = browser as unknown as WdioBrowser
+    await beginCampaignCreation(client)
     const campaignName = await client.$('#campaign-name')
     await campaignName.waitForDisplayed({ timeout: 30_000 })
     await campaignName.setValue('Hex Location Workflow')
-    await (await client.$('button=Anlegen')).click()
+    await (await client.$('button=Erstellen & öffnen')).click()
     await (await client.$('button[aria-label="Hex-Editor"]')).click()
     await (await client.$('button=Neu')).click()
     const createMap = await client.$(

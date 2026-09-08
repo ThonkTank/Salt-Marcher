@@ -24,12 +24,20 @@ import { createCatalogEditorPorts } from './catalog-editor-ports.js'
 import { useNpcCatalogController } from './npc-catalog-controller.js'
 import {
   CatalogSectionSelector,
+  type CatalogNavigation,
   type CatalogSection
 } from './catalog-section-selector.js'
+
+const LazyCharacterCatalogSection = lazy(
+  () => import('../party/character-catalog-section.js')
+)
 
 const LazyNpcCatalogSection = lazy(() => import('./npc-catalog-section.js'))
 
 type CatalogWorkspaceProps = {
+  navigation?: CatalogNavigation | undefined
+  navigate?: ((navigation: CatalogNavigation) => void) | undefined
+  snapshot?: LiveSessionSnapshot
   campaignId: string
   setSnapshot: (snapshot: LiveSessionSnapshot) => void
   onError: (message: string) => void
@@ -68,7 +76,20 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
       catalog.encounterTables.onChanged(listener),
     [catalog]
   )
-  const [section, setSection] = useState<CatalogSection>('monsters')
+  const [localSection, setLocalSection] = useState<CatalogSection>('monsters')
+  const [localCharacter, setLocalCharacter] = useState<string | null>(null)
+  const section = props.navigation?.section ?? localSection
+  const characterId = props.navigation
+    ? props.navigation.characterId
+    : localCharacter
+  const setSection = (section: CatalogSection) => {
+    setLocalSection(section)
+    props.navigate?.({ section, characterId })
+  }
+  const selectCharacter = (characterId: string | null) => {
+    setLocalCharacter(characterId)
+    props.navigate?.({ section: 'characters', characterId })
+  }
   const monsterController = useMonsterCatalogController(
     section === 'monsters',
     props.onError,
@@ -106,7 +127,18 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
         className={`catalog-browser${section !== 'monsters' ? ' locations-catalog-browser' : ''}`}
       >
         <CatalogSectionSelector section={section} select={setSection} />
-        {section === 'monsters' ? (
+        {section === 'characters' && props.snapshot ? (
+          <Suspense fallback={null}>
+            <LazyCharacterCatalogSection
+              key={props.campaignId}
+              campaignId={props.campaignId}
+              snapshot={props.snapshot}
+              selectedId={characterId}
+              select={selectCharacter}
+              onError={props.onError}
+            />
+          </Suspense>
+        ) : section === 'monsters' ? (
           <MonsterCatalogSection controller={monsterController} />
         ) : section === 'locations' ? (
           <LocationCatalogSection

@@ -107,6 +107,7 @@ export class CampaignWorkspaceProjection {
   #pendingReconciliation: PendingCampaignReconciliation | null = null
   #snapshot: CampaignWorkspaceProjectionSnapshot = idleSnapshot
   #disposed = false
+  #sessionEnabled = false
 
   public constructor(api: SaltMarcherApi) {
     this.#api = api
@@ -144,8 +145,9 @@ export class CampaignWorkspaceProjection {
   public readonly snapshot = (): CampaignWorkspaceProjectionSnapshot =>
     this.#snapshot
 
-  public async load(): Promise<CampaignWorkspaceReadOutcome> {
+  public async load(loadSession = true): Promise<CampaignWorkspaceReadOutcome> {
     if (this.#disposed) return Object.freeze({ status: 'stale' })
+    if (loadSession) this.#sessionEnabled = true
     const catalog = await settleRead(
       this.#catalog.invalidate(this.#catalogExecution),
       () => this.#catalog.ensure(this.#catalogExecution)
@@ -154,7 +156,7 @@ export class CampaignWorkspaceProjection {
       return Object.freeze({ status: 'failure', cause: catalog.cause })
     if (catalog.status === 'stale') return Object.freeze({ status: 'stale' })
     const campaignId = catalog.value.activeCampaignId
-    if (campaignId === null)
+    if (campaignId === null || !loadSession)
       return Object.freeze({ status: 'ready', value: this.#snapshot })
     const session = await this.#refreshSession(campaignId)
     if (
@@ -176,6 +178,7 @@ export class CampaignWorkspaceProjection {
 
   public async refreshActiveSession(): Promise<CampaignWorkspaceReadOutcome> {
     if (this.#disposed) return Object.freeze({ status: 'stale' })
+    this.#sessionEnabled = true
     const campaignId = this.#catalog.current(
       campaignCatalogAuthority
     )?.activeCampaignId
@@ -404,6 +407,7 @@ export class CampaignWorkspaceProjection {
       | LiveSessionSnapshot
       | ((current: LiveSessionSnapshot) => LiveSessionSnapshot)
   ): boolean {
+    this.#sessionEnabled = true
     const authority = campaignSessionAuthority(campaignId)
     const current = this.#sessions.current(authority)
     if (typeof update === 'function' && current === null) return false
@@ -488,7 +492,7 @@ export class CampaignWorkspaceProjection {
   readonly #handleSessionChange: Parameters<
     SaltMarcherApi['session']['onChanged']
   >[0] = (notice) => {
-    if (this.#disposed) return
+    if (this.#disposed || !this.#sessionEnabled) return
     const campaignId = this.#catalog.current(
       campaignCatalogAuthority
     )?.activeCampaignId
@@ -506,7 +510,8 @@ export class CampaignWorkspaceProjection {
         return outcome.value
       case 'failure':
         this.#clearPendingReconciliation()
-        if (capabilityErrorCode(outcome.cause) === 'stale') await this.load()
+        if (capabilityErrorCode(outcome.cause) === 'stale')
+          await this.load(this.#sessionEnabled)
         throw outcome.cause
       case 'stale':
         this.#clearPendingReconciliation()

@@ -1,3 +1,4 @@
+import { beginCampaignCreation } from './support/campaign-navigation.js'
 import { browser, expect } from '@wdio/globals'
 import type {
   Browser as WdioBrowser,
@@ -15,11 +16,12 @@ import { clickWhenInteractable } from './support/e2e-interactions.js'
 describe('dialog architecture', () => {
   it('stacks, guards and responsively lays out direct and nested table managers', async () => {
     const client = browser as unknown as WdioBrowser
+    await beginCampaignCreation(client)
     await setElectronWindowSize(client, 1150, 700)
     const campaignName = await client.$('#campaign-name')
     await campaignName.waitForDisplayed({ timeout: 10_000 })
     await campaignName.setValue('Dialog Architecture')
-    await (await client.$('button=Anlegen')).click()
+    await (await client.$('button=Erstellen & öffnen')).click()
 
     await openCatalogSection(client, 'Encounter-Tabellen')
     await clickVisibleCatalogCreate(client)

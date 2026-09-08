@@ -16,6 +16,7 @@ import type {
 } from './session-workspace-model.js'
 
 export function useSessionWorkspaceController(input: {
+  followCombat?: boolean
   snapshot: LiveSessionSnapshot
   setSnapshot: Dispatch<SetStateAction<LiveSessionSnapshot>>
   onError: (message: string) => void
@@ -28,7 +29,8 @@ export function useSessionWorkspaceController(input: {
   const { mutateGroup, mutateSnapshot } = useSessionMutationController(input)
   const { openCreature } = useSessionReferenceFollow({
     snapshot: input.snapshot,
-    reference
+    reference,
+    follow: input.followCombat ?? true
   })
   const focused = input.snapshot.scene.scenes.find(
     (scene) => scene.id === input.snapshot.scene.focusedSceneId
@@ -38,7 +40,7 @@ export function useSessionWorkspaceController(input: {
     locationId: focused.locationId,
     onError: input.onError
   })
-  const dialog = useSessionDialogController()
+  const dialog = useSessionDialogController(focused.id)
   const scene = useSessionSceneController({ api, mutateSnapshot })
   const groups = useSessionGroupController({
     scene: focused,

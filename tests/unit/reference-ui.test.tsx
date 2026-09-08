@@ -88,7 +88,7 @@ const document = (target: ReferenceTarget): ReferenceDocument => {
   }
 }
 
-function setup(text = 'Prone') {
+function setup(text = 'Prone', enabled = true) {
   const activateReference = vi.fn()
   const capability: SaltMarcherApi['references'] = {
     staticIndex: vi.fn(() => Promise.resolve(referenceIndex)),
@@ -104,8 +104,9 @@ function setup(text = 'Prone') {
     ),
     onCampaignIndexChanged: vi.fn(() => () => undefined)
   }
-  render(
+  const content = (active: boolean) => (
     <ReferenceProvider
+      enabled={active}
       capability={capability}
       campaignId="campaign"
       sceneId="scene"
@@ -118,7 +119,12 @@ function setup(text = 'Prone') {
       <NavigationProbe />
     </ReferenceProvider>
   )
-  return { capability, activateReference }
+  const rendered = render(content(enabled))
+  return {
+    capability,
+    activateReference,
+    enable: () => rendered.rerender(content(true))
+  }
 }
 
 function NavigationProbe() {
@@ -132,6 +138,19 @@ afterEach(() => {
 })
 
 describe('reference UI', () => {
+  it('defers reference reads until the workspace is explicitly opened', async () => {
+    const { capability, enable } = setup('Prone', false)
+    expect(capability.staticIndex).not.toHaveBeenCalled()
+    expect(capability.campaignIndex).not.toHaveBeenCalled()
+    expect(capability.onCampaignIndexChanged).not.toHaveBeenCalled()
+    enable()
+    expect(await screen.findByRole('button', { name: 'Prone' })).toBeVisible()
+    expect(capability.staticIndex).toHaveBeenCalledOnce()
+    expect(capability.campaignIndex).toHaveBeenCalledWith({
+      campaignId: 'campaign'
+    })
+  })
+
   it('opens a clicked term in the registered detail navigator', async () => {
     const { activateReference } = setup()
     fireEvent.click(await screen.findByRole('button', { name: 'Prone' }))

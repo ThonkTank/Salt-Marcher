@@ -15,6 +15,7 @@ export function reportCapabilityError(
 const locallyExpectedCodes = new Set([
   'validation_failed',
   'idempotency_conflict',
+  'scene_activity_conflict',
   'stale',
   'not_found',
   'read_only'

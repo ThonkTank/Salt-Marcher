@@ -7,6 +7,7 @@ import {
 export const installationPreferencesSchema = z
   .object({
     theme: z.enum(['light', 'dark']),
+    sceneDesktopPreview: z.boolean().optional(),
     sessionLayout: sessionLayoutPreferenceSchema
   })
   .strict()

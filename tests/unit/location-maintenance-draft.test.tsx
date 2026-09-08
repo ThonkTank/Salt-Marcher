@@ -101,13 +101,11 @@ describe('location maintenance owner', () => {
       .fn()
       .mockResolvedValueOnce({ status: 'failed', message: 'Still unavailable' })
       .mockResolvedValueOnce({ status: 'saved' })
-    const save = vi
-      .fn()
-      .mockResolvedValue({
-        status: 'partially-saved',
-        message: 'Placement failed',
-        retry
-      })
+    const save = vi.fn().mockResolvedValue({
+      status: 'partially-saved',
+      message: 'Placement failed',
+      retry
+    })
     view({ save })
     begin()
     await act(async () => {
@@ -142,13 +140,11 @@ describe('location maintenance owner', () => {
   })
   it('discards without repeating a partially successful save', async () => {
     const retry = vi.fn()
-    const save = vi
-      .fn()
-      .mockResolvedValue({
-        status: 'partially-saved',
-        message: 'Placement failed',
-        retry
-      })
+    const save = vi.fn().mockResolvedValue({
+      status: 'partially-saved',
+      message: 'Placement failed',
+      retry
+    })
     const { close } = view({ save })
     begin()
     await act(async () => {

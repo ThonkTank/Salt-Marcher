@@ -1,14 +1,19 @@
+import type { CatalogNavigation } from '../catalog/catalog-section-selector.js'
 import {
+  lazy,
+  Suspense,
   useCallback,
   useEffect,
   useRef,
   useState,
   type SetStateAction
 } from 'react'
+import type { ReferenceTarget } from '../../../shared/contracts/reference.js'
 import type { Creature } from '../../../shared/contracts/encounter.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type { CoreProcessStatus } from '../../../shared/contracts/runtime.js'
 import { message } from '../../i18n/workspace-runtime.de.js'
+import { message as campaignMessage } from '../../i18n/campaign-menu-runtime.de.js'
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 import { useInstallationPreferences } from '../../shell/use-installation-preferences.js'
 import { CreatureInspector } from '../reference/creature-inspector.js'
@@ -27,6 +32,12 @@ import type {
   GeneratorPresetApplicationOwner
 } from './generator-preset-application.js'
 import { createCampaignRewardRulesPort } from './campaign-reward-rules-port.js'
+
+const CampaignScreen = lazy(() =>
+  import('./campaign-screen.js').then((module) => ({
+    default: module.CampaignScreen
+  }))
+)
 
 export function WorkspaceApp() {
   const api = useCapabilityApi()
@@ -53,8 +64,17 @@ export function WorkspaceApp() {
     campaignError,
     coreStatus === 'ready'
   )
-  const { theme, toggleTheme, sessionLayout, setSessionLayout } =
-    useInstallationPreferences(settingsError, coreStatus === 'ready')
+  const {
+    theme,
+    toggleTheme,
+    sessionLayout,
+    setSessionLayout,
+    sceneDesktopPreview,
+    changeSceneDesktopPreview
+  } = useInstallationPreferences(settingsError, coreStatus === 'ready')
+  const [catalogNavigation, setCatalogNavigation] = useState<
+    Record<string, CatalogNavigation>
+  >({})
   const [partyOpen, setPartyOpen] = useState(false)
   const [dayOpen, setDayOpen] = useState(false)
   const [scenarios, setScenarios] = useState<Record<string, SessionScenario>>(
@@ -99,6 +119,37 @@ export function WorkspaceApp() {
   }, [acceptCoreStatus, api.runtime])
 
   const focusedSceneId = coordinator.session?.scene.focusedSceneId ?? ''
+  const routeDesktopReference = useCallback(
+    (target: ReferenceTarget, title: string | undefined, separate: boolean) => {
+      const campaignId = coordinator.campaigns.activeCampaignId
+      const sceneId = focusedSceneId
+      if (!campaignId || !sceneId) return
+      void import('../scene-desktop/desktop-projection.js')
+        .then(async ({ desktopProjection }) => {
+          const projection = desktopProjection(api.sceneDesktop, {
+            campaignId,
+            sceneId
+          })
+          await projection.load()
+          projection.dispatch({
+            type: 'open-reference',
+            entry: {
+              target,
+              title: title?.slice(0, 300) || message('desktop.reference'),
+              scrollTop: 0
+            },
+            ...(separate ? { separateId: crypto.randomUUID() } : {})
+          })
+        })
+        .catch(() => featureError(message('desktop.referenceOpenFailed')))
+    },
+    [
+      api.sceneDesktop,
+      coordinator.campaigns.activeCampaignId,
+      focusedSceneId,
+      featureError
+    ]
+  )
   const setCoordinatorSession = coordinator.setSession
   const setSnapshot = useCallback(
     (update: SetStateAction<LiveSessionSnapshot>) =>
@@ -113,6 +164,23 @@ export function WorkspaceApp() {
     coordinator.session && activeCampaignId
       ? {
           campaignId: activeCampaignId,
+          catalogNavigation: catalogNavigation[activeCampaignId] ?? {
+            section: 'monsters' as const,
+            characterId: null
+          },
+          navigateCatalog: (navigation: CatalogNavigation) =>
+            setCatalogNavigation((current) => ({
+              ...current,
+              [activeCampaignId]: navigation
+            })),
+          openCharacter: (characterId: string) => {
+            setCatalogNavigation((current) => ({
+              ...current,
+              [activeCampaignId]: { section: 'characters', characterId }
+            }))
+            coordinator.setWorkspace('catalog')
+          },
+          desktopPreview: sceneDesktopPreview,
           snapshot: coordinator.session,
           setSnapshot,
           scenario: coordinator.session.combat
@@ -144,6 +212,10 @@ export function WorkspaceApp() {
 
   return (
     <ReferenceProvider
+      {...(sceneDesktopPreview && coordinator.workspace === 'session'
+        ? { routeReference: routeDesktopReference }
+        : {})}
+      enabled={coordinator.screen === 'workspace'}
       capability={api.references}
       campaignId={coordinator.campaigns.activeCampaignId}
       sceneId={coordinator.session?.scene.focusedSceneId ?? null}
@@ -159,7 +231,12 @@ export function WorkspaceApp() {
         data-active-campaign-id={activeCampaignId ?? ''}
         data-session-campaign-id={coordinator.sessionCampaignId ?? ''}
         data-session-revision={coordinator.session?.revision ?? ''}
-        data-active-workspace={coordinator.workspace}
+        data-active-workspace={
+          coordinator.screen === 'campaigns'
+            ? 'campaigns'
+            : coordinator.workspace
+        }
+        data-screen={coordinator.screen}
         aria-busy={coreStatus !== 'ready' || undefined}
       >
         {coreStatus !== 'ready' && (
@@ -172,16 +249,8 @@ export function WorkspaceApp() {
           campaigns={coordinator.campaigns}
           campaignMenuOpen={coordinator.campaignMenuOpen}
           setCampaignMenuOpen={coordinator.setCampaignMenuOpen}
-          campaignActions={{
-            create: coordinator.createCampaign,
-            activate: coordinator.switchCampaign,
-            rename: coordinator.renameCampaign,
-            trash: coordinator.trashCampaign,
-            restore: coordinator.restoreCampaign,
-            deleteForever: coordinator.deleteCampaignForever,
-            reconciliationPending: coordinator.campaignReconciliationPending,
-            reconcile: coordinator.reconcileCampaign
-          }}
+          screen={coordinator.screen}
+          showCampaigns={coordinator.showCampaigns}
           workspace={coordinator.workspace}
           session={coordinator.session}
           partyOpen={partyOpen}
@@ -196,6 +265,23 @@ export function WorkspaceApp() {
                 .then(coordinator.setSession)
           }}
           startTravel={() => {
+            if (sceneDesktopPreview && activeCampaignId && focusedSceneId) {
+              const scope = {
+                campaignId: activeCampaignId,
+                sceneId: focusedSceneId
+              }
+              void import('../scene-desktop/desktop-projection.js')
+                .then(async ({ desktopProjection }) => {
+                  const projection = desktopProjection(api.sceneDesktop, scope)
+                  await projection.load()
+                  projection.dispatch({ type: 'open-map' })
+                  projection.dispatch({ type: 'map-controls', value: true })
+                })
+                .catch(() =>
+                  featureError(message('desktop.referenceOpenFailed'))
+                )
+              return
+            }
             if (focusedSceneId)
               setScenarios((current) => ({
                 ...current,
@@ -205,26 +291,54 @@ export function WorkspaceApp() {
           onError={featureError}
           theme={theme}
           toggleTheme={toggleTheme}
+          desktopPreview={sceneDesktopPreview}
+          setDesktopPreview={changeSceneDesktopPreview}
           loadGeneratorPresetApplication={loadGeneratorPresetApplication}
           campaignRules={createCampaignRewardRulesPort(api)}
         />
-        <div className="shell-body">
-          <WorkspaceRail
-            active={active}
-            workspace={coordinator.workspace}
-            select={coordinator.setWorkspace}
-          />
-          <div
-            className={`work-area layout-${active ? definition.layout : 'scroll'}`}
+        {coordinator.screen === 'campaigns' ? (
+          <Suspense
+            fallback={
+              <p role="status">{campaignMessage('campaign.loading')}</p>
+            }
           >
-            <WorkspaceRouteHost
+            <CampaignScreen
+              snapshot={coordinator.campaigns}
+              status={coordinator.catalogStatus}
+              error={coordinator.error}
+              busy={coordinator.busy || coreStatus !== 'ready'}
+              sessionRetry={coordinator.sessionRetry}
+              retryCatalog={coordinator.retryCatalog}
+              retrySession={coordinator.retrySession}
+              create={coordinator.createCampaign}
+              activate={coordinator.switchCampaign}
+              rename={coordinator.renameCampaign}
+              trash={coordinator.trashCampaign}
+              restore={coordinator.restoreCampaign}
+              deleteForever={coordinator.deleteCampaignForever}
+              reconciliationPending={coordinator.campaignReconciliationPending}
+              reconcile={coordinator.reconcileCampaign}
+            />
+          </Suspense>
+        ) : (
+          <div className="shell-body">
+            <WorkspaceRail
               active={active}
               workspace={coordinator.workspace}
-              surfaceProps={surfaceProps}
-              runtime={api.runtime}
+              select={coordinator.setWorkspace}
             />
+            <div
+              className={`work-area layout-${active ? definition.layout : 'scroll'}`}
+            >
+              <WorkspaceRouteHost
+                active={active}
+                workspace={coordinator.workspace}
+                surfaceProps={surfaceProps}
+                runtime={api.runtime}
+              />
+            </div>
           </div>
-        </div>
+        )}
         <WorkspaceErrors errors={errors} dismiss={dismiss} />
         {inspected && (
           <CreatureInspector

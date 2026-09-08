@@ -1,3 +1,7 @@
+import { randomUUID } from 'node:crypto'
+import { CombatService } from '../../src/core/encounter/combat-service.js'
+import { partyCharacterDraftSchema } from '../../src/shared/contracts/party.js'
+import { vi } from 'vitest'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -75,6 +79,91 @@ describe('party and catalog parity slice', () => {
       xp: 6500,
       currentLevelFloor: 6500
     })
+    campaigns.close()
+  })
+
+  it('updates and deletes an unfocused scene character atomically without resetting initiative or the active turn', () => {
+    const { campaigns, play } = harness()
+    let party = play.readParty()
+    const member = party.members[0]!
+    party = play.setMembership(member.id, true, party.revision)
+    let session = play.readSession()
+    const originalScene = session.scene.focusedSceneId
+    play.saveSceneGroup(
+      originalScene,
+      null,
+      'Wolves',
+      '',
+      'hostile',
+      [{ creatureId: 'wolf', quantity: 2 }],
+      session.scene.revision,
+      null
+    )
+    session = play.readSession()
+    play.prepareCombat(originalScene, session.scene.revision, [
+      session.scene.scenes[0]!.groups[0]!.id
+    ])
+    session = play.readSession()
+    play.confirmInitiative(
+      session.combat!.revision,
+      session.combat!.initiativeRows.map((row) => ({
+        id: row.id,
+        initiative: row.kind === 'party' ? 27 : 11
+      }))
+    )
+    session = play.readSession()
+    const activeId = session.combat!.cards.find((card) => card.active)!.id
+    const otherScene = randomUUID()
+    activeCampaignDatabase(campaigns)
+      .prepare(
+        "INSERT INTO scene_running_scene (id,title,location_name,position) VALUES (?, 'Other', '', 1)"
+      )
+      .run(otherScene)
+    play.focusScene(otherScene, session.scene.revision)
+    const draft = partyCharacterDraftSchema.parse({
+      name: 'Renamed',
+      playerName: member.playerName,
+      level: member.level,
+      passivePerception: member.passivePerception,
+      armorClass: member.armorClass
+    })
+    party = play.updatePartyCharacter(member.id, draft, party.revision)
+    expect(play.readSession().combat).toBeNull()
+    session = play.focusScene(originalScene, play.readSession().scene.revision)
+    expect(
+      session.combat!.cards.find((card) => card.playerCharacter)
+    ).toMatchObject({ name: 'Renamed', initiative: 27 })
+    expect(session.combat!.cards.find((card) => card.active)!.id).toBe(activeId)
+    play.focusScene(otherScene, session.scene.revision)
+    const before = play.readParty()
+    const reconcile = vi
+      .spyOn(CombatService.prototype, 'removePartyCharacter')
+      .mockImplementationOnce(() => {
+        throw new Error('reconcile failed')
+      })
+    try {
+      expect(() =>
+        play.deletePartyCharacter(member.id, party.revision)
+      ).toThrow('reconcile failed')
+    } finally {
+      reconcile.mockRestore()
+    }
+    expect(play.readParty()).toEqual(before)
+    expect(
+      play
+        .readSession()
+        .scene.scenes.find((scene) => scene.id === originalScene)!
+        .partyMemberIds
+    ).toContain(member.id)
+    play.deletePartyCharacter(member.id, party.revision)
+    session = play.focusScene(originalScene, play.readSession().scene.revision)
+    expect(session.combat!.cards.some((card) => card.playerCharacter)).toBe(
+      false
+    )
+    expect(
+      session.scene.scenes.find((scene) => scene.id === originalScene)!
+        .partyMemberIds
+    ).not.toContain(member.id)
     campaigns.close()
   })
 

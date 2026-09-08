@@ -35,10 +35,16 @@ type ScenarioProps = {
 }
 
 export function SessionEncounterPanel(
-  props: ScenarioProps & { inspect: (creature: Creature) => void }
+  props: ScenarioProps & {
+    inspect: (creature: Creature) => void
+    selection?: readonly string[]
+    selectionChanged?: (ids: readonly string[]) => void
+  }
 ) {
   const api = useCapabilityApi()
-  const [selected, setSelected] = useState<string[]>([])
+  const [localSelection, setLocalSelection] = useState<readonly string[]>([])
+  const selected = props.selection ?? localSelection
+  const setSelected = props.selectionChanged ?? setLocalSelection
   const focused = props.snapshot.scene.scenes.find(
     (scene) => scene.id === props.snapshot.scene.focusedSceneId
   )!
@@ -57,7 +63,7 @@ export function SessionEncounterPanel(
     await scenarioAction(props, () =>
       encounterCapabilities(api).combat.prepare({
         sceneId: focused.id,
-        groupIds: selected,
+        groupIds: [...selected],
         expectedSceneRevision: props.snapshot.scene.revision
       })
     )

@@ -1,3 +1,4 @@
+import { materializeSceneDesktopFixture } from './materialize-scene-desktop-fixture.js'
 import { readFileSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { createRequire } from 'node:module'
@@ -123,7 +124,27 @@ const fixtureSchema = z.discriminatedUnion('version', [
   fixtureV2Schema,
   fixtureV3Schema,
   fixtureV4Schema,
-  fixtureV5Schema
+  fixtureV5Schema,
+  z
+    .object({
+      version: z.literal(8),
+      sceneDesktopFixtureIdentity: z.literal(
+        'scene-desktop-character-library-v1'
+      )
+    })
+    .strict(),
+  z
+    .object({
+      version: z.literal(6),
+      sceneDesktopFixtureIdentity: z.literal('scene-desktop-two-scenes-v1')
+    })
+    .strict(),
+  z
+    .object({
+      version: z.literal(7),
+      sceneDesktopFixtureIdentity: z.literal('scene-desktop-two-scenes-v2')
+    })
+    .strict()
 ])
 
 const userData = requiredArgument('--user-data')
@@ -131,6 +152,13 @@ const fixturePath = resolve(userData, 'fixture.json')
 const fixture = fixtureSchema.parse(
   JSON.parse(readFileSync(fixturePath, 'utf8'))
 )
+if (fixture.version === 6 || fixture.version === 7 || fixture.version === 8) {
+  materializeSceneDesktopFixture(
+    resolve(userData, 'development-data'),
+    fixture.version === 8
+  )
+  process.exit(0)
+}
 if (fixture.version === 5) {
   const materialized = spawnSync(
     process.execPath,

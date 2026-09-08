@@ -541,6 +541,30 @@ export class CombatService {
     this.reduce(this.require(), { kind: 'mark-xp-awarded' })
   }
 
+  removePartyCharacter(id: string): void {
+    const state = this.repository.load()
+    if (!state) return
+    const sources = state.sources.filter(
+      (source) => source.kind !== 'party' || source.partyId !== id
+    )
+    const combatants = state.combatants.filter(
+      (combatant) => !combatant.playerCharacter || combatant.id !== id
+    )
+    if (
+      sources.length === state.sources.length &&
+      combatants.length === state.combatants.length
+    )
+      return
+    const activeCard = state.turnOrder[state.activeIndex]
+    state.sources = sources
+    state.combatants = combatants
+    const surviving = new Set(combatants.map((combatant) => combatant.cardId))
+    state.turnOrder = state.turnOrder.filter((cardId) => surviving.has(cardId))
+    state.activeIndex = Math.max(0, state.turnOrder.indexOf(activeCard ?? ''))
+    this.repository.clearHistory()
+    this.bump(state)
+  }
+
   reconcileParty(members: readonly PartyMember[]): void {
     const state = this.repository.load()
     if (!state || state.phase === 'resolution') return
@@ -555,7 +579,11 @@ export class CombatService {
           rowId: `party:${member.id}`,
           partyId: member.id,
           name: member.name,
-          initiative: 10 + index
+          initiative:
+            state.sources.find(
+              (source) =>
+                source.kind === 'party' && source.partyId === member.id
+            )?.initiative ?? 10 + index
         })),
         ...monsters
       ]
@@ -571,8 +599,13 @@ export class CombatService {
       (combatant) => !combatant.playerCharacter || activeIds.has(combatant.id)
     )
     active.forEach((member, index) => {
-      if (state.combatants.some((combatant) => combatant.id === member.id))
+      const existing = state.combatants.find(
+        (combatant) => combatant.id === member.id
+      )
+      if (existing) {
+        existing.name = member.name
         return
+      }
       state.combatants.push({
         id: member.id,
         cardId: `party-card:${member.id}`,

@@ -246,6 +246,15 @@ export class SceneStore {
     })
   }
 
+  sceneForPartyMember(partyMemberId: string): string | null {
+    const row = this.db
+      .prepare(
+        'SELECT scene_id AS sceneId FROM scene_party_member WHERE party_member_id = ?'
+      )
+      .get(partyMemberId) as { sceneId: string } | undefined
+    return row?.sceneId ?? null
+  }
+
   unassignPartyMember(partyMemberId: string): void {
     const changed = this.db
       .prepare('DELETE FROM scene_party_member WHERE party_member_id = ?')

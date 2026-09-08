@@ -69,6 +69,145 @@ function harness() {
 }
 
 describe('chunked hex editor to session travel vertical slice', () => {
+  it('keeps travel and combat exclusive per scene with atomic rejection and paused coexistence', () => {
+    const h = harness()
+    const map = h.maps.create('Activity map', h.maps.catalog().revision)
+    h.editing.applyBrushStroke({
+      commandId: randomUUID(),
+      mapId: map.id,
+      mode: 'paint',
+      biomeId: 'grassland',
+      path: [
+        { q: 0, r: 0 },
+        { q: 1, r: 0 }
+      ],
+      radius: 0,
+      expectedContentRevision: 0,
+      confirmationToken: null
+    })
+    let session = h.play.readSession()
+    h.play.setMembership(
+      session.party.members[0]!.id,
+      true,
+      session.party.revision
+    )
+    session = h.play.readSession()
+    const sceneId = session.scene.focusedSceneId
+    h.travel.position({
+      sceneId,
+      mapId: map.id,
+      coordinate: { q: 0, r: 0 },
+      expectedSceneRevision: session.scene.revision
+    })
+    session = h.play.readSession()
+    h.play.saveSceneGroup(
+      sceneId,
+      null,
+      'Wölfe',
+      '',
+      'hostile',
+      [{ creatureId: 'wolf', quantity: 2 }],
+      session.scene.revision,
+      null
+    )
+    session = h.play.readSession()
+    const groupIds = session.scene.scenes
+      .find((scene) => scene.id === sceneId)!
+      .groups.map((group) => group.id)
+    const start = () =>
+      h.travel.start({
+        sceneId,
+        mapId: map.id,
+        waypoints: [{ q: 1, r: 0 }],
+        multiplier: 1,
+        expectedRevision: h.travel.read(sceneId).revision
+      })
+    const travelling = start()
+    h.play.prepareCombat(sceneId, h.play.readSession().scene.revision, groupIds)
+    const initiative = h.play.readSession()
+    const confirm = () =>
+      h.play.confirmInitiative(
+        initiative.combat!.revision,
+        initiative.combat!.initiativeRows.map((row) => ({
+          id: row.id,
+          initiative: 10
+        }))
+      )
+    expect(() => confirm()).toThrow(
+      expect.objectContaining({ code: 'scene_activity_conflict' })
+    )
+    expect(h.play.readSession()).toEqual(initiative)
+    expect(h.travel.read(sceneId)).toEqual(travelling)
+    const paused = h.travel.pause({
+      sceneId,
+      expectedRevision: travelling.revision
+    })
+    confirm()
+    const fighting = h.play.readSession()
+    expect(fighting.combat?.phase).toBe('combat')
+    expect(() => start()).toThrow(
+      expect.objectContaining({ code: 'scene_activity_conflict' })
+    )
+    expect(() =>
+      h.travel.resume({ sceneId, expectedRevision: paused.revision })
+    ).toThrow(expect.objectContaining({ code: 'scene_activity_conflict' }))
+    expect(h.travel.read(sceneId)).toEqual(paused)
+    expect(h.play.readSession()).toEqual(fighting)
+    // Simulate a legacy persisted pair, which the new public commands reject.
+    h.database()
+      .prepare(
+        "UPDATE hex_journey SET status = 'travelling', segment_started_at = 0 WHERE scene_id = ?"
+      )
+      .run(sceneId)
+    const recovered = h.travel
+      .tick()
+      .changed.find((trip) => trip.sceneId === sceneId)!
+    expect(recovered.status).toBe('paused')
+    expect(recovered.current).toEqual(paused.current)
+    expect(recovered.gameTimeSeconds).toBe(paused.gameTimeSeconds)
+    // A different scene can execute its own travel while this scene fights.
+    const otherScene = randomUUID()
+    const otherMember = h.play.readParty().members[1]!
+    h.play.setMembership(otherMember.id, true, h.play.readParty().revision)
+    h.database()
+      .prepare(
+        'INSERT INTO scene_running_scene (id, title, location_name, game_time_seconds, position) VALUES (?, ?, ?, 0, 1)'
+      )
+      .run(otherScene, 'Elsewhere', '')
+    h.database()
+      .prepare(
+        'UPDATE scene_party_member SET scene_id = ? WHERE party_member_id = ?'
+      )
+      .run(otherScene, otherMember.id)
+    h.travel.position({
+      sceneId: otherScene,
+      mapId: map.id,
+      coordinate: { q: 0, r: 0 },
+      expectedSceneRevision: h.play.readSession().scene.revision
+    })
+    const otherTrip = h.travel.start({
+      sceneId: otherScene,
+      mapId: map.id,
+      waypoints: [{ q: 1, r: 0 }],
+      multiplier: 1,
+      expectedRevision: h.travel.read(otherScene).revision
+    })
+    expect(otherTrip.status).toBe('travelling')
+    expect(h.play.readSession().combat?.phase).toBe('combat')
+    h.play.endCombat(h.play.readSession().combat!.revision)
+    expect(h.play.readSession().combat?.phase).toBe('resolution')
+    const resumed = h.travel.resume({
+      sceneId,
+      expectedRevision: h.travel.read(sceneId).revision
+    })
+    const resolution = h.play.readSession()
+    expect(() =>
+      h.play.moveCombatToPhase(resolution.combat!.revision, 'combat')
+    ).toThrow(expect.objectContaining({ code: 'scene_activity_conflict' }))
+    expect(h.play.readSession()).toEqual(resolution)
+    expect(h.travel.read(sceneId)).toEqual(resumed)
+  })
+
   it('persists sparse biome and placements with independent revisions', () => {
     const { locations, maps, editing } = harness()
     const world = locations.create(

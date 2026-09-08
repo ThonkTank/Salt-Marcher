@@ -42,13 +42,21 @@ const emptyPins: readonly PinnedReference[] = []
 
 export function ReferenceProvider(props: {
   children: ReactNode
+  enabled?: boolean
   capability: SaltMarcherApi['references']
   campaignId: string | null
   sceneId: string | null
+  routeReference?: (
+    target: ReferenceTarget,
+    title: string | undefined,
+    separate: boolean
+  ) => void
   activateReference: () => void
   onError: (message: string) => void
 }) {
-  const { capability, onError, sceneId, activateReference } = props
+  const { capability, onError, sceneId, activateReference, routeReference } =
+    props
+  const enabled = props.enabled ?? true
   const [staticIndex, setStaticIndex] = useState<ReferenceIndex | null>(null)
   const [campaignIndices, setCampaignIndices] = useState<
     Readonly<Record<string, ReferenceIndex>>
@@ -70,7 +78,7 @@ export function ReferenceProvider(props: {
   const zCounter = useRef(1)
   const navigationRequest = useRef(0)
   const overlayCloseTimer = useRef<number | null>(null)
-  const campaignId = props.campaignId
+  const campaignId = enabled ? props.campaignId : null
   const campaignIndex = campaignId
     ? (campaignIndices[campaignId] ?? null)
     : null
@@ -79,6 +87,7 @@ export function ReferenceProvider(props: {
 
   useEffect(() => {
     const token = ++staticRequest.current
+    if (!enabled) return
     void capability
       .staticIndex()
       .then((next) => {
@@ -88,7 +97,7 @@ export function ReferenceProvider(props: {
         if (staticRequest.current === token)
           onError(message('reference.indexFailed'))
       })
-  }, [capability, onError])
+  }, [capability, enabled, onError])
 
   useEffect(() => {
     const token = ++campaignRequest.current
@@ -199,6 +208,10 @@ export function ReferenceProvider(props: {
 
   const openReference = useCallback(
     (target: ReferenceTarget, breadcrumb: string) => {
+      if (routeReference) {
+        routeReference(target, breadcrumb, false)
+        return
+      }
       if (!navigationKey) return
       const token = ++navigationRequest.current
       activateReference()
@@ -227,7 +240,14 @@ export function ReferenceProvider(props: {
           }
         })
     },
-    [activateReference, loadDetail, navigationKey, onError, storeNavigation]
+    [
+      activateReference,
+      loadDetail,
+      navigationKey,
+      onError,
+      storeNavigation,
+      routeReference
+    ]
   )
 
   const moveNavigation = useCallback(
@@ -367,6 +387,21 @@ export function ReferenceProvider(props: {
       target: ReferenceTarget,
       anchor: Readonly<{ right: number; top: number }> | null
     ) => {
+      if (routeReference) {
+        routeReference(
+          target,
+          compiled
+            ?.flatMap((index) => index.terms)
+            .flatMap((term) => term.candidates)
+            .find(
+              (candidate) =>
+                referenceTargetKey(candidate.target) ===
+                referenceTargetKey(target)
+            )?.title,
+          true
+        )
+        return
+      }
       updateCurrentPins((current) => {
         const existing = current.find(
           (pin) => referenceTargetKey(pin.target) === referenceTargetKey(target)
@@ -388,20 +423,21 @@ export function ReferenceProvider(props: {
         ]
       })
     },
-    [updateCurrentPins]
+    [updateCurrentPins, routeReference, compiled]
   )
 
   useEffect(() => {
-    if (!staticIndex) return
+    if (!enabled || !staticIndex) return
     const idle = window.requestIdleCallback?.(() => void loadReferenceRuntime())
     if (idle !== undefined) return () => window.cancelIdleCallback?.(idle)
     const timer = window.setTimeout(() => void loadReferenceRuntime(), 1_500)
     return () => window.clearTimeout(timer)
-  }, [staticIndex])
+  }, [enabled, staticIndex])
 
-  const pins = campaignId
-    ? (pinsByCampaign[campaignId] ?? emptyPins)
-    : emptyPins
+  const pins =
+    !routeReference && campaignId
+      ? (pinsByCampaign[campaignId] ?? emptyPins)
+      : emptyPins
   const visibleOverlays = useMemo(
     () =>
       overlays.filter((card) => card.scopeKey === (navigationKey ?? 'none')),
@@ -463,6 +499,7 @@ export function ReferenceProvider(props: {
   const value = useMemo(
     () => ({
       compiled,
+      desktopRouting: !!routeReference,
       campaignId,
       loadDetail,
       openReference,
@@ -482,6 +519,7 @@ export function ReferenceProvider(props: {
       cacheRevision
     }),
     [
+      routeReference,
       cacheRevision,
       campaignId,
       cancelOverlayClose,
@@ -506,7 +544,7 @@ export function ReferenceProvider(props: {
   return (
     <ReferenceContext.Provider value={value}>
       {props.children}
-      {(visibleOverlays.length > 0 || pins.length > 0) && (
+      {enabled && (visibleOverlays.length > 0 || pins.length > 0) && (
         <Suspense fallback={null}>
           <LazyReferenceRuntime />
         </Suspense>
