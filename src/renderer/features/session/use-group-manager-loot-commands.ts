@@ -13,7 +13,7 @@ import { applySceneGroupCommandResult } from './session-patches.js'
 import { acknowledgeGroupSave } from './group-manager-save-result.js'
 import type { GroupManagerCommandInput } from './group-manager-command-input.js'
 
-export function useGroupManagerLootCommands(
+export function createGroupManagerLootCommands(
   input: GroupManagerCommandInput,
   commands: AsyncCommandCoordinator
 ): Readonly<{
@@ -84,13 +84,15 @@ export function useGroupManagerLootCommands(
       })
       return true
     }
-    if (outcome.status === 'failure')
+    if (outcome.status === 'failure') {
+      input.failed?.(outcome.cause)
       dispatch({
         kind: 'loot-failed',
         key,
         error: capabilityErrorText(outcome.cause),
         issues: capabilityErrorIssues(outcome.cause)
       })
+    }
     return false
   }
 
@@ -133,13 +135,15 @@ export function useGroupManagerLootCommands(
       saved(applySceneGroupCommandResult(snapshot, outcome.value.groupResult))
       return outcome.value
     }
-    if (outcome.status === 'failure')
+    if (outcome.status === 'failure') {
+      input.failed?.(outcome.cause)
       dispatch({
         kind: 'loot-failed',
         key,
         error: capabilityErrorText(outcome.cause),
         issues: capabilityErrorIssues(outcome.cause)
       })
+    }
     return null
   }
 
@@ -157,4 +161,11 @@ export function useGroupManagerLootCommands(
   }
 
   return { generateLoot, commitLoot }
+}
+
+export function useGroupManagerLootCommands(
+  input: GroupManagerCommandInput,
+  commands: AsyncCommandCoordinator
+) {
+  return createGroupManagerLootCommands(input, commands)
 }

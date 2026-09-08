@@ -20,6 +20,11 @@ architectureGate(
     expect(rendererControllerBoundaryViolations(sources)).toEqual([])
     const mutations = [
       {
+        path: 'src/renderer/features/session/use-group-manager-controller.ts',
+        append: '\ngroupManagerReducer(state, action)\n',
+        code: 'multiple_group_reducer_owners'
+      },
+      {
         path: 'src/renderer/features/session/session-group-card.tsx',
         append: '\nuseCapabilityApi()\n',
         code: 'view_owns_controller_hook'

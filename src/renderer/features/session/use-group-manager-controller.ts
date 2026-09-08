@@ -1,4 +1,4 @@
-import { useEffect, useReducer } from 'react'
+import { useCallback, useEffect } from 'react'
 import type { Creature } from '../../../shared/contracts/encounter.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import { useAsyncCommandCoordinator } from '../../async/use-async-command-coordinator.js'
@@ -10,12 +10,14 @@ import {
 import { createGroupManagerInteractions } from './group-manager-interactions.js'
 import {
   activeGroupSession,
-  createGroupManagerState,
-  groupManagerReducer
+  type GroupManagerAction
 } from './group-manager-state.js'
 import { projectGroupManagerView } from './group-manager-view-projection.js'
 import type { GroupManagerPorts } from './use-group-manager-capability-ports.js'
 import { useGroupManagerCommands } from './use-group-manager-commands.js'
+import { useGroupManagerDraftRuntime } from './use-group-manager-draft-runtime.js'
+import { useMaintenanceDraft } from '../../shell/maintenance-drafts.js'
+import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
 import { useGroupManagerQueries } from './use-group-manager-queries.js'
 
 export function useGroupManagerController(
@@ -33,20 +35,63 @@ export function useGroupManagerController(
   ports: GroupManagerPorts
 ) {
   const coordinator = useAsyncCommandCoordinator()
-  const focused = props.snapshot.scene.scenes.find(
+  const initialFocused = props.snapshot.scene.scenes.find(
     (scene) => scene.id === props.snapshot.scene.focusedSceneId
   )!
-  const activeGroups = focused.groups.filter((group) => !group.archived)
   const initialSelection =
-    props.group?.id ?? (activeGroups.length === 0 ? newGroupDraftKey : null)
-  const [state, dispatch] = useReducer(groupManagerReducer, undefined, () =>
-    createGroupManagerState({
-      activeKey: initialSelection,
-      initialGroup: props.group,
-      prospectiveGroupId: crypto.randomUUID(),
-      locationId: focused.locationId
-    })
+    props.group?.id ??
+    (initialFocused.groups.every((group) => group.archived)
+      ? newGroupDraftKey
+      : null)
+  const { runtime, state, snapshot, pending, uncertain } =
+    useGroupManagerDraftRuntime(
+      {
+        activeKey: initialSelection,
+        initialGroup: props.group,
+        locationId: initialFocused.locationId
+      },
+      props.snapshot
+    )
+  const dispatch = runtime.dispatch
+  const focused = snapshot.scene.scenes.find(
+    (scene) => scene.id === snapshot.scene.focusedSceneId
+  )!
+  const activeGroups = focused.groups.filter((group) => !group.archived)
+  const editingBlocked = () =>
+    maintenanceDraftCoordinator.isLocked() ||
+    runtime.snapshot().pending ||
+    runtime.snapshot().uncertain
+  const userDispatch = useCallback(
+    (action: GroupManagerAction) => {
+      if (
+        !maintenanceDraftCoordinator.isLocked() &&
+        !runtime.snapshot().pending &&
+        !runtime.snapshot().uncertain
+      )
+        runtime.dispatch(action)
+    },
+    [runtime]
   )
+  const publish = (next: LiveSessionSnapshot) => {
+    runtime.acceptSnapshot(next)
+    if (!maintenanceDraftCoordinator.isLocked())
+      props.saved(runtime.snapshot().snapshot)
+  }
+  const maintenanceBlocked = useMaintenanceDraft({
+    label: 'Gruppenverwaltung',
+    isDirty: runtime.isDirty,
+    save: async () => {
+      if (!(await runtime.saveAll(ports, coordinator, props.lootChanged)))
+        return false
+      props.saved(runtime.snapshot().snapshot)
+      return true
+    },
+    discard: async () => {
+      await runtime.discardAll(coordinator)
+      props.saved(runtime.snapshot().snapshot)
+      return true
+    }
+  })
   const session = activeGroupSession(state)
   const group = session?.group ?? groupDraftStateFromGroup(null)
   const entries = groupDraftEntries(group.quantities, group.deadQuantities)
@@ -57,7 +102,7 @@ export function useGroupManagerController(
     state.activeKey && state.activeKey !== newGroupDraftKey
       ? state.activeKey
       : state.prospectiveGroupId
-  const assigned = props.snapshot.party.members.filter((member) =>
+  const assigned = snapshot.party.members.filter((member) =>
     focused.partyMemberIds.includes(member.id)
   )
   const canGenerate =
@@ -69,12 +114,12 @@ export function useGroupManagerController(
 
   useEffect(() => {
     dispatch({ kind: 'sync-external', groups: focused.groups })
-  }, [focused.groups])
+  }, [dispatch, focused.groups])
 
   const queries = useGroupManagerQueries(
     {
       focused,
-      snapshot: props.snapshot,
+      snapshot,
       state,
       session,
       group,
@@ -84,9 +129,9 @@ export function useGroupManagerController(
     },
     coordinator
   )
-  const commands = useGroupManagerCommands(
+  const rawCommands = useGroupManagerCommands(
     {
-      snapshot: props.snapshot,
+      snapshot,
       focused,
       state,
       session,
@@ -97,11 +142,35 @@ export function useGroupManagerController(
       canGenerate,
       ports,
       dispatch,
-      saved: props.saved,
+      saved: publish,
+      failed: runtime.failed,
       lootChanged: props.lootChanged
     },
     coordinator
   )
+  const commands = {
+    ...rawCommands,
+    pending,
+    busy: pending || uncertain || maintenanceBlocked || rawCommands.busy,
+    save: () =>
+      editingBlocked() ? Promise.resolve(null) : runtime.run(rawCommands.save),
+    commitLoot: () =>
+      editingBlocked()
+        ? Promise.resolve(null)
+        : runtime.run(rawCommands.commitLoot),
+    generateRoster: (...args: Parameters<typeof rawCommands.generateRoster>) =>
+      editingBlocked()
+        ? Promise.resolve()
+        : runtime.run(() => rawCommands.generateRoster(...args)),
+    generateLoot: (...args: Parameters<typeof rawCommands.generateLoot>) =>
+      editingBlocked()
+        ? Promise.resolve(false)
+        : runtime.run(() => rawCommands.generateLoot(...args)),
+    archive: () =>
+      editingBlocked() ? Promise.resolve() : runtime.run(rawCommands.archive),
+    joinCombat: () =>
+      editingBlocked() ? Promise.resolve() : runtime.run(rawCommands.joinCombat)
+  }
   const interactions = createGroupManagerInteractions({
     state,
     session,
@@ -109,29 +178,39 @@ export function useGroupManagerController(
     entries,
     commands,
     ports,
-    dispatch,
-    close: props.close,
-    inspect: props.inspect
+    dispatch: userDispatch,
+    close: () => {
+      if (editingBlocked()) return
+      const confirmed = runtime.snapshot().snapshot
+      if (confirmed.revision > props.snapshot.revision) props.saved(confirmed)
+      else props.close()
+    },
+    inspect: (creature) => {
+      if (!editingBlocked()) props.inspect(creature)
+    }
   })
 
-  return projectGroupManagerView({
-    snapshot: props.snapshot,
-    reinforcementMode: props.reinforcementMode,
-    state,
-    dispatch,
-    focused,
-    activeGroups,
-    group,
-    session,
-    entries,
-    assigned,
-    selectedPersistedGroup,
-    rewardGroupId,
-    canGenerate,
-    commands,
-    queries,
-    interactions
-  })
+  return {
+    ...projectGroupManagerView({
+      snapshot,
+      reinforcementMode: props.reinforcementMode,
+      state,
+      dispatch: userDispatch,
+      focused,
+      activeGroups,
+      group,
+      session,
+      entries,
+      assigned,
+      selectedPersistedGroup,
+      rewardGroupId,
+      canGenerate,
+      commands,
+      queries,
+      interactions
+    }),
+    maintenanceBlocked: maintenanceBlocked || uncertain
+  }
 }
 
 export type GroupManagerController = ReturnType<

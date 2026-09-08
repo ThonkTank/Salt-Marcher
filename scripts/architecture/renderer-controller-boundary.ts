@@ -208,15 +208,19 @@ function inspectGroupManager(
       module.path.includes('/features/session/') &&
       /(?:^|\/)(?:group-|use-group-)/.test(module.path)
   )
-  const reducerOwners = groupModules.filter((module) =>
-    hasCall(module, 'useReducer')
+  const reducerOwners = groupModules.filter(
+    (module) =>
+      hasCall(module, 'useReducer') || hasCall(module, 'groupManagerReducer')
   )
   if (
     reducerOwners.length !== 1 ||
-    reducerOwners[0]?.path !== groupController
+    reducerOwners[0]?.path !==
+      'src/renderer/features/session/group-manager-draft-runtime.ts'
   ) {
     const unexpected = reducerOwners.find(
-      (module) => module.path !== groupController
+      (module) =>
+        module.path !==
+        'src/renderer/features/session/group-manager-draft-runtime.ts'
     )
     violations.push({
       path: unexpected?.path ?? groupController,

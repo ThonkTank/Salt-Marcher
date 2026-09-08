@@ -2330,3 +2330,100 @@ allen Sessions erfolgen. Command-Drain inklusive außerhalb accept laufender
 Controllerketten, Reconciliation unbekannter Commit-Ausgänge und vollständige
 Eingabesperren sind weiterhin verpflichtend; keine Teilprüfung als vollständige
 Mehrgruppenabnahme gewertet. Phasen 5–7 sowie Handoff/Release bleiben ausstehend.
+
+### Phase 4 — Gruppen-Wartungsowner: Integrationsplan
+
+Vorheriger Turn Fortschritt (e8bce4a24), aktueller Worktree sauber. Jetzt die bereits
+vorhandenen Quittierungen und tatsächliche Command-Verfolgung zusammenführen:
+ein renderer-lokaler Draft-Runtime hält Reducerstand und bestätigten Snapshot
+synchron und verfolgt vollständige Controller-Promises (inklusive Generierungskette).
+Der Hook verwendet dessen abonnierbaren Stand; SQL/Persistenz verbleiben unverändert.
+
+Save wartet auf alle laufenden Controlleroperationen und speichert anschließend
+jede offene Session über die vorhandenen Command-Fabriken, jeweils mit aktuellem
+Snapshot und aktuellen Revisionen. Bestätigte Teilsaves bleiben sofort in Runtime
+und Reducer erhalten; Publication/Schließung erfolgt unter Wartung erst nach allen
+Sessions. Discard wartet ebenfalls und verwirft nur lokale Entwürfe, publiziert aber
+bereits bestätigte Teilsaves. Direkte User-Einstiegspunkte und die Dialogoberfläche
+werden während Wartung gesperrt. Übergangs-Guard durch echten benannten Owner ersetzen.
+
+Unbekannte Mutationsergebnisse dürfen dabei nicht blind erneut ausgeführt werden.
+Der Runtime merkt sie und verweigert Save/Discard mit konkreter Fehlermeldung; eine
+vollständig bedienbare Receipt-Reconciliation bleibt eine explizite ausstehende
+Korrekturrunde (scene.saveGroup besitzt derzeit keine Command-ID/Receipt-Capability,
+loot.commitGroupReward nur das Utility-Journal). Damit keine unbekannte Neuanlage
+wiederholt wird. Diese Zwischenbegrenzung ist kein Phase-4-Abschluss.
+
+Tests mit echten Commands und Reducer: zwei Gruppen, Teilfehler/Retry ohne zweiten
+Save der ersten Gruppe, aktuelle Revisionsfolge, unveränderte generierte Beute,
+Discard ohne Rücknahme bereits gespeicherter Daten, laufende Generierung/Saves und
+User-Eingabesperre. Typecheck, Lint, relevante Architekturtests sowie Build/Smoke.
+
+Gruppen-Owner — Integrationskorrektur: ModalDialog rendert per Portal und setzt
+untergeordnete Modal-Layer bereits inert. Ein inert-Wrapper außerhalb des Portals
+wirkt nicht auf den Dialog; diesen Ansatz entfernen. Die vorhandene zentrale
+Modal-Layer-Sperre plus direkte Command-/Dispatch-Guards verwenden. Für laufende
+Aufträge außerdem bisher ungesperrte Header-Eingaben deaktivieren. Unbekannte
+Ausgänge benötigen weiterhin die dokumentierte bedienbare Recovery-Korrekturrunde.
+
+Gruppen-Owner — erste Validierung/Korrekturrunde: 43/45 Tests bestanden. Der neue
+Mehrgruppen-Test erwartete den technischen Error-Text, während die bestehende
+Capability-Übersetzung absichtlich „Unbekannter Fehler“ liefert; auf den benannten
+betroffenen Gruppenbereich prüfen und die Fehlermeldung immer um eine nächste
+Aktion ergänzen. Architekturprüfung verlangt noch useReducer direkt im Controller.
+Die Eigentümerschaft ist jetzt ausdrücklich im synchronen GroupManagerDraftRuntime;
+den Wächter auf genau diesen einzigen Reducer-Aufrufer umstellen und mit einem
+zusätzlichen manipulierten zweiten Owner prüfen. Keine bloße Entfernung des Gates.
+
+Gruppen-Owner — Auditkorrektur für Abbrechen nach Teilerfolg: 48 Tests bestehen.
+Nach Abbrechen der Wartung kann der Nutzer den Gruppeneditor regulär schließen und
+verbleibende Entwürfe verwerfen. Auch dann muss der bereits bestätigte Teilsnapshot
+an den übergeordneten Workspace publiziert werden; sonst bleibt dessen Anzeige
+bis zur nächsten Aktualisierung veraltet. Close-Adapter entsprechend ergänzen und
+mit echtem Hook/zentraler Resolution testen. Prospektive ID außerdem nur bei
+Runtime-Erzeugung statt bei jedem Controller-Render erzeugen.
+
+Gruppen-Owner — Lintkorrektur: 49 Tests in vier Dateien bestanden. ESLint beanstandet
+nur eine überflüssige Non-null-Assertion im neuen Testfixture; entfernen und Lint
+sowie die Owner-Tests erneut prüfen. Keine Änderung am Anwendungsverhalten.
+
+Gruppen-Owner — Typecheck-Korrekturrunde: Der vollständige Check meldet zwei reine
+Testtypfehler: Recordzugriff mit Punktnotation und unvollständiger Loot-Port beim
+Überschreiben eines Testadapters. Indexzugriff und typgerechtes Erweitern des
+bestehenden Ports verwenden; danach vollständigen Typecheck erneut ausführen.
+
+### Phase 4 — Gruppen-Wartungsowner: Integrationsaudit
+
+Planabgleich: synchroner Runtime mit genau einem Reducer-Verantwortlichen ist in
+den Controller eingebunden. Der echte benannte Wartungsowner ersetzt den View-
+Übergangs-Guard. Vollständige normale Controlleroperationen werden verfolgt;
+Save/Discard warten vor der Auflösung. Save verwendet die vorhandenen Command-
+Fabriken für sämtliche Dirty-Sessions einschließlich unveränderter generierter
+Beute, fortgeschriebener Snapshot/Revision und sofortiger Gruppenquittierung.
+Teilerfolg bleibt erhalten; Retry speichert nur verbleibende Sessions. Publication
+unter Wartung erfolgt erst nach vollständigem Erfolg. Discard verwirft nur lokale
+Entwürfe und publiziert bestätigte Teilsaves. Nach Wartungsabbruch und regulärem
+Schließen wird ein bestätigter Teilsnapshot ebenfalls publiziert. Direkte Mutatoren
+und Command-Einstiege sind unter Wartung gesperrt; vorhandene Modal-Layer-Sperre
+schützt die Portal-Oberfläche. Header-Felder berücksichtigen busy.
+
+Validierung: neun neue Runtime-/Hooktests mit echtem Reducer und Commands; darunter
+Mehrgruppen-Teilfehler/Retry, aktuelle Revisionsfolge, einmaliger Beutecommit,
+Pending-Save ohne frühe Schließung, Verwerfen nach laufendem Auftrag, Cancel nach
+Teilerfolg, direkte gesperrte Eingaben und unbekannter Ausgang ohne Wiederholung.
+122 Tests in elf Dateien einschließlich vollständiger Architekturtests bestanden.
+Vollständiger Typecheck, korrigiertes gezieltes Lint, Build/Built-Smoke (ready/closed)
+und git diff --check bestanden. Logs work/roadmap-phase4-group-owner-*.
+Die beiden dokumentierten Test-/Gate-Korrekturen sind abgeschlossen. Kein kanonischer
+Handoff, technische Development-Probe.
+
+Roadmapabgleich: Phase 4 bleibt offen. Gruppen-Save/Discard ist jetzt integriert;
+fehlende bedienbare Reconciliation unbekannter Mutationsergebnisse bleibt eine
+konkrete Abweichung. Aktuell verweigert der Owner bei outcome_unknown weitere
+Save-/Discard-Versuche und verhindert damit blinde doppelte Neuanlagen; eine
+read-only Receipt-/Projektionsprüfung mit sinnvoller nächster UI-Aktion muss folgen.
+Weitere Grenzen: ausstehende Archivieren/Combat-Pending-Fälle und vollständige
+Oberflächenabnahme; Session Planner verbleibt beim Übergangs-Guard. Der übergreifende
+Writer-/Karten-/Offline-/Updateaudit sowie Phasen 5–7 und sämtliche kanonischen
+Handoff-/Releasegates bleiben erforderlich. Keine vollständige Gruppen- oder
+Phase-4-Abnahme aus den erfolgreichen Teilfällen abgeleitet.

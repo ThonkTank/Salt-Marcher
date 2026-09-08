@@ -11,7 +11,10 @@ import {
 } from './session-patches.js'
 import type { GroupManagerCommandInput } from './group-manager-command-input.js'
 import { acknowledgeGroupSave } from './group-manager-save-result.js'
-import { useGroupManagerLootCommands } from './use-group-manager-loot-commands.js'
+import {
+  createGroupManagerLootCommands,
+  useGroupManagerLootCommands
+} from './use-group-manager-loot-commands.js'
 
 const tuning: EncounterTuningOverride = {
   difficulty: 'preset',
@@ -20,7 +23,7 @@ const tuning: EncounterTuningOverride = {
   diversity: 'preset'
 }
 
-export function useGroupManagerCommands(
+export function createGroupManagerCommands(
   input: GroupManagerCommandInput,
   commands: AsyncCommandCoordinator
 ): Readonly<{
@@ -49,7 +52,7 @@ export function useGroupManagerCommands(
     snapshot,
     state
   } = input
-  const lootCommands = useGroupManagerLootCommands(input, commands)
+  const lootCommands = createGroupManagerLootCommands(input, commands)
 
   async function generateRoster(mode: 'fill' | 'replace'): Promise<void> {
     const key = state.activeKey
@@ -180,6 +183,7 @@ export function useGroupManagerCommands(
   }
 
   function failCommand(key: string, cause: unknown): void {
+    input.failed?.(cause)
     dispatch({
       kind: 'group-message',
       key,
@@ -226,4 +230,12 @@ function totalQuantity(quantities: Readonly<Record<string, number>>): number {
     (total, quantity) => total + quantity,
     0
   )
+}
+
+/** React-facing adapter; command construction itself owns no hooks. */
+export function useGroupManagerCommands(
+  input: GroupManagerCommandInput,
+  commands: AsyncCommandCoordinator
+) {
+  return createGroupManagerCommands(input, commands)
 }

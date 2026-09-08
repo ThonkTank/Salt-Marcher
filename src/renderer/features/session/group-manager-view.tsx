@@ -1,4 +1,3 @@
-import { useMaintenanceDraftGuard } from '../../shell/maintenance-drafts.js'
 import type { KeyboardEvent, ReactNode } from 'react'
 import type { SceneGroupDisposition } from '../../../shared/contracts/scene.js'
 import {
@@ -25,7 +24,6 @@ export function GroupManagerView(props: {
   controller: GroupManagerController
 }) {
   const controller = props.controller
-  useMaintenanceDraftGuard(controller.anyDirty || controller.pending)
   const { state, group, loot } = controller
   const totalInDraft = Object.fromEntries(
     Array.from(
@@ -226,6 +224,7 @@ function GroupManagerHeader(props: {
       </span>
       <select
         className="group-manager-selection"
+        disabled={controller.busy}
         aria-label={uiMessage('group.select')}
         value={controller.selection ?? ''}
         onChange={(event) => controller.activate(event.target.value || null)}
@@ -245,6 +244,7 @@ function GroupManagerHeader(props: {
       </select>
       <button
         className="group-manager-new"
+        disabled={controller.busy}
         type="button"
         onClick={() => controller.activate(newGroupDraftKey)}
       >
@@ -255,14 +255,14 @@ function GroupManagerHeader(props: {
         aria-label={uiMessage('ui.gruppenname')}
         placeholder={uiMessage('group.name.placeholder')}
         maxLength={100}
-        disabled={!controller.active}
+        disabled={!controller.active || controller.busy}
         value={controller.group.name}
         onChange={(event) => controller.setName(event.target.value)}
       />
       <select
         className="group-manager-disposition"
         aria-label={uiMessage('group.disposition')}
-        disabled={!controller.active}
+        disabled={!controller.active || controller.busy}
         value={controller.group.disposition}
         onChange={(event) =>
           controller.setDisposition(event.target.value as SceneGroupDisposition)
