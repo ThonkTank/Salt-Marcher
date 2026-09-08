@@ -5,6 +5,8 @@ directories:
 files:
   - out/**
 extraResources:
+  - from: resources/maintenance/profile-access.json
+    to: maintenance/profile-access.json
   - from: out/maintenance
     to: maintenance
   - from: resources/reference

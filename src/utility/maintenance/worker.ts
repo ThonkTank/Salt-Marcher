@@ -1,3 +1,4 @@
+import { exportCompleteProfile } from '../../core/maintenance/export-profile.js'
 import { ProfileMaintenance } from '../../core/maintenance/profile-maintenance.js'
 import { maintenanceWorkerRequestSchema } from '../../shared/contracts/maintenance.js'
 process.parentPort?.on('message', (event) => {
@@ -12,6 +13,12 @@ async function handle(raw: unknown): Promise<void> {
       'profile'
     )
     let result: unknown = null
+    if (input.operation === 'export-profile')
+      result = await exportCompleteProfile(
+        input.source,
+        input.destination,
+        input.version
+      )
     if (input.operation === 'list') result = transaction.backups()
     if (input.operation === 'prepare')
       result = await transaction.prepare(input.transactionId, input.source)

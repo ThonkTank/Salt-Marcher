@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   coreStatus: vi.fn(),
   list: vi.fn(),
   restore: vi.fn(),
+  importProfile: vi.fn(),
   status: vi.fn()
 }))
 vi.mock('../../src/renderer/capabilities/use-capability-api.js', () => {
@@ -22,6 +23,7 @@ vi.mock('../../src/renderer/capabilities/use-capability-api.js', () => {
     runtime: { coreStatus: mocks.coreStatus, onCoreStatus: () => () => {} },
     updates: {
       status: mocks.status,
+      importProfile: mocks.importProfile,
       onStatus: () => () => {},
       profiles: () => Promise.resolve([])
     },
@@ -42,6 +44,7 @@ const status: ReleaseStatus = {
 beforeEach(() => {
   vi.clearAllMocks()
   mocks.status.mockResolvedValue(status)
+  mocks.importProfile.mockResolvedValue(status)
   mocks.coreStatus.mockResolvedValue('corrupt-data')
   mocks.list.mockResolvedValue([
     {
@@ -81,6 +84,25 @@ describe('profile recovery without a working campaign database', () => {
       await screen.findByRole('button', { name: 'Wiederherstellen' })
     ).toBeDefined()
     expect(mocks.list).toHaveBeenCalledOnce()
+  })
+  it('requests direct profile selection only after confirmation and exposes no path', async () => {
+    view()
+    fireEvent.click(
+      await screen.findByRole('button', {
+        name: 'Sicherungen und Wiederherstellung öffnen'
+      })
+    )
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Profilordner übernehmen' })
+    )
+    expect(mocks.importProfile).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Bestätigen' }))
+    await waitFor(() =>
+      expect(mocks.importProfile).toHaveBeenCalledWith({
+        confirmed: true,
+        mode: 'profile'
+      })
+    )
   })
   it('restores only after the explicit confirmation', async () => {
     view()

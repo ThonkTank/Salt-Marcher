@@ -1,8 +1,17 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  readFileSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { readAppImageLauncher } from '../../src/shared/maintenance/appimage-launcher.js'
+import {
+  readAppImageLauncher,
+  readAppImageProfileProtocol
+} from '../../src/shared/maintenance/appimage-launcher.js'
 import { sha256 } from '../../src/shared/maintenance/files.js'
 const mocks = vi.hoisted(() => ({ spawnSync: vi.fn() }))
 vi.mock('node:child_process', () => ({ spawnSync: mocks.spawnSync }))
@@ -19,6 +28,38 @@ afterEach(() => rmSync(root, { recursive: true, force: true }))
 const record =
   'SALT_MARCHER_LAUNCHER_V2:' + Buffer.from('helper bytes').toString('base64')
 describe('verified AppImage helper extraction', () => {
+  it('validates the packaged profile protocol, rejecting unsupported versions', () => {
+    const protocol = readFileSync(
+      join(process.cwd(), 'resources/maintenance/profile-access.json'),
+      'utf8'
+    )
+    mocks.spawnSync.mockReturnValue({
+      status: 0,
+      stdout:
+        'SALT_MARCHER_LAUNCHER_V2:' + Buffer.from(protocol).toString('base64'),
+      stderr: ''
+    })
+    expect(
+      readAppImageProfileProtocol(artifact, sha256(artifact))
+    ).toMatchObject({
+      locking: 'canonical-profile-v1',
+      scope: 'complete-profile'
+    })
+    const args = mocks.spawnSync.mock.calls[0]![1] as string[]
+    expect(args[1]).toContain("'profile-access.json'")
+    mocks.spawnSync.mockReturnValue({
+      status: 0,
+      stdout:
+        'SALT_MARCHER_LAUNCHER_V2:' +
+        Buffer.from(
+          protocol.replace('"formatVersion": 1', '"formatVersion": 2')
+        ).toString('base64'),
+      stderr: ''
+    })
+    expect(() =>
+      readAppImageProfileProtocol(artifact, sha256(artifact))
+    ).toThrow()
+  })
   it('does not execute bytes with a different artifact hash', () => {
     expect(() => readAppImageLauncher(artifact, 'f'.repeat(64))).toThrow(
       'verändert'

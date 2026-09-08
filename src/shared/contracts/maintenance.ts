@@ -90,6 +90,15 @@ export const maintenanceWorkerRequestSchema = z.discriminatedUnion(
       .object({
         root: z.string().min(1),
         version: z.string().min(1),
+        operation: z.literal('export-profile'),
+        source: z.string().min(1),
+        destination: z.string().min(1)
+      })
+      .strict(),
+    z
+      .object({
+        root: z.string().min(1),
+        version: z.string().min(1),
         operation: z.literal('list')
       })
       .strict(),

@@ -182,7 +182,43 @@ export function ReleaseSettings({
           )}
           <p role="status">{status.message}</p>
           {error && <p role="alert">{error}</p>}
+          <button
+            disabled={busy || maintenance}
+            onClick={() =>
+              setConfirmation({
+                text: 'Ein vollständiges Profil auswählen? Der aktuelle Stand wird vor der Übernahme gesichert.',
+                run: () =>
+                  api.updates.importProfile({
+                    confirmed: true,
+                    mode: 'profile'
+                  })
+              })
+            }
+          >
+            Profilordner übernehmen
+          </button>
           <h2>Sicherung eines vorhandenen Profils übernehmen</h2>
+          {profiles
+            .filter((profile) => profile.id === 'local')
+            .map((profile) => (
+              <button
+                key={`direct-${profile.id}`}
+                disabled={busy || maintenance}
+                onClick={() =>
+                  setConfirmation({
+                    text: `Das vollständige Profil von ${profile.label} auswählen? Der aktuelle Stand wird vorher gesichert.`,
+                    run: () =>
+                      api.updates.importProfile({
+                        confirmed: true,
+                        id: profile.id,
+                        mode: 'profile'
+                      })
+                  })
+                }
+              >
+                Profil von {profile.label} übernehmen
+              </button>
+            ))}
           {profiles.map((profile) => (
             <button
               key={profile.id}

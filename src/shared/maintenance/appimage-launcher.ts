@@ -1,3 +1,4 @@
+import { profileAccessProtocolSchema } from '../contracts/profile-access.js'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -10,9 +11,29 @@ export function readAppImageLauncher(
   appImage: string,
   expectedHash: string
 ): Buffer {
+  return readAppImageMaintenanceResource(appImage, expectedHash, 'start.cjs')
+}
+
+export function readAppImageProfileProtocol(
+  appImage: string,
+  expectedHash: string
+) {
+  const bytes = readAppImageMaintenanceResource(
+    appImage,
+    expectedHash,
+    'profile-access.json'
+  )
+  return profileAccessProtocolSchema.parse(JSON.parse(bytes.toString('utf8')))
+}
+
+function readAppImageMaintenanceResource(
+  appImage: string,
+  expectedHash: string,
+  resource: 'start.cjs' | 'profile-access.json'
+): Buffer {
   if (sha256(appImage) !== expectedHash)
     throw new Error('Das Ziel-AppImage wurde verändert.')
-  const script = `const fs=require('node:fs');const path=require('node:path');const data=fs.readFileSync(path.join(path.dirname(process.execPath),'resources','maintenance','start.cjs'));process.stdout.write('\\n${marker}'+data.toString('base64')+'\\n')`
+  const script = `const fs=require('node:fs');const path=require('node:path');const data=fs.readFileSync(path.join(path.dirname(process.execPath),'resources','maintenance','${resource}'));process.stdout.write('\\n${marker}'+data.toString('base64')+'\\n')`
   const temporary = mkdtempSync(join(tmpdir(), 'salt-helper-read-'))
   const result = (() => {
     try {

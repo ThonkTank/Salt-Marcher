@@ -1,3 +1,6 @@
+import { z } from 'zod'
+import { canonicalProfilePath } from '../../shared/maintenance/profile-path.js'
+import { withQualifiedSourceProfile } from '../local-profile/source-profile-admission.js'
 import { profileBackupSchema } from '../../shared/contracts/profile-backup.js'
 import { MaintenanceCoordinator } from '../../shared/maintenance/coordinator.js'
 import {
@@ -228,13 +231,20 @@ export class ReleaseController {
       this.activateCurrent({ source: join(this.root, `empty-${randomUUID()}`) })
     )
   }
-  importProfile(id?: 'local' | 'electron' | 'development') {
+  importProfile(
+    id?: 'local' | 'electron' | 'development',
+    mode: 'backup' | 'profile' = 'backup'
+  ) {
     return this.operation(async () => {
       const source = id
         ? this.profileCandidates().find((entry) => entry.id === id)?.path
         : undefined
       if (id && !source)
         throw new Error('Das ausgewählte Profil ist nicht mehr vorhanden.')
+      if (mode === 'profile') {
+        await this.importDirectProfile(source ? dirname(source) : undefined)
+        return
+      }
       const selection = await dialog.showOpenDialog({
         title:
           'Geprüfte SaltMarcher-Sicherung auswählen (Ordner mit manifest.json und data)',
@@ -283,6 +293,67 @@ export class ReleaseController {
       if (confirmation.response !== 1) return
       await this.activateCurrent({ backupDirectory, expectedManifestSha256 })
     })
+  }
+  private async importDirectProfile(defaultPath?: string): Promise<void> {
+    if (!this.value.installed)
+      throw new Error('Bitte SaltMarcher zuerst installieren.')
+    const selection = await dialog.showOpenDialog({
+      title: 'Profilordner einer installierten SaltMarcher-App auswählen',
+      properties: ['openDirectory'],
+      ...(defaultPath ? { defaultPath } : {})
+    })
+    if (selection.canceled || !selection.filePaths[0]) return
+    const profile = canonicalProfilePath(selection.filePaths[0])
+    const sourceRoot = dirname(profile)
+    if (profile !== join(sourceRoot, 'profile'))
+      throw new Error(
+        'Bitte den Profilordner „profile“ einer installierten App auswählen. Für ältere Profile eine geprüfte Sicherung verwenden.'
+      )
+    const confirmation = await dialog.showMessageBox({
+      type: 'warning',
+      title: 'Vollständiges Profil übernehmen',
+      message:
+        'Das gesamte aktuelle Profil durch das ausgewählte Profil ersetzen?',
+      detail:
+        'Einstellungen, Kampagnen und eigene Dateien werden vollständig übernommen. Das aktuelle Profil wird vorher gesichert. Die Quelle bleibt unverändert und muss während der Kopie geschlossen bleiben.',
+      buttons: ['Abbrechen', 'Profil übernehmen'],
+      defaultId: 0,
+      cancelId: 0,
+      noLink: true
+    })
+    if (confirmation.response !== 1) return
+    const cache = join(this.root, 'cache')
+    mkdirSync(cache, { recursive: true })
+    const exported = mkdtempSync(join(cache, 'profile-import-'))
+    try {
+      const expectedManifestSha256 = await withQualifiedSourceProfile(
+        sourceRoot,
+        join(this.root, 'profile'),
+        async (source) => {
+          const state = new MaintenanceCoordinator(sourceRoot).read()!
+          const program =
+            state.phase === 'committed' ? state.next : state.previous!
+          return z
+            .string()
+            .regex(/^[a-f0-9]{64}$/)
+            .parse(
+              await maintenanceWorker({
+                operation: 'export-profile',
+                root: this.root,
+                version: program.version,
+                source,
+                destination: exported
+              })
+            )
+        }
+      )
+      await this.activateCurrent({
+        backupDirectory: exported,
+        expectedManifestSha256
+      })
+    } finally {
+      rmSync(exported, { recursive: true, force: true })
+    }
   }
   restore(id: string) {
     return this.operation(() => this.activateCurrent({ id }))

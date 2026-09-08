@@ -1346,3 +1346,128 @@ historische Schemawechsel mit echten AppImages. Die direkte Übernahme sicher
 kooperierender Quellen bleibt das zentrale offene Phase-3-Arbeitspaket. Vollständige
 CI auf dem neuen Commit, alle GUI-Shards, Hand-off und Phasen4–7 bleiben offen.
 Keine Produktionsdaten verändert; Candidate-Zwischenstand wird gespeichert.
+
+### Phase 3 — Direkte Übernahme: gehaltene Quellsperren
+
+Vorheriger Zielturn war Fortschritt (fachliche Datenprüfung/E2E-Korrektur).
+Bestandsaufnahme: Die vorhandene Startreservierung ist synchron; ein asynchroner
+Export darf sie nicht mit einem Promise verwenden, weil finally sie sofort
+freigäbe. Vor der Quellzulassung einen expliziten erwerbbaren Reservierungsgriff
+bereitstellen und die bestehende synchrone API darauf aufbauen. Die neue
+asynchrone Quellzugriffsschicht hält Startreservierung, kanonische Profilsperre
+und Legacy-Laufzeitsperre bis zum Ende des Exports. Quelle/Ziel werden kanonisch
+aufgelöst; gleiche oder ineinanderliegende Profile werden abgewiesen.
+
+Diese Zugriffsschicht ist keine Zulassung unbekannter Altprofile. Der spätere
+öffentliche Import benötigt zusätzlich eine qualifizierte kooperierende
+Programminstallation; Metadatenmarker allein sind kein solcher Nachweis.
+Abnahme dieses Teils: paralleler Appstart und zweite Startreservierung bleiben
+während eines noch offenen Promise blockiert, Aliase/nested-Ziele werden vor dem
+Export abgewiesen, Fehler geben alle eigenen Sperren wieder frei. Bestehende
+Startreservierungs-Tests bleiben unverändert gültig.
+
+### Phase 3 — Quellsperren: Teilaudit
+
+23 Tests in source-profile-access/local-maintenance-start bestanden. Gezieltes
+Lint und vollständiger Typecheck bestanden; git diff --check bestanden. Der
+asynchrone Export hält kanonische und Legacy-Startreservierungen sowie die
+Quellprofilsperren bis Promise-Abschluss. Erfolgs-/Fehlerpfad, belegte Quelle und
+überlappende/aliasierte Zielprofile sind geprüft. Bestehende synchrone Aufrufer
+verwenden weiterhin denselben Wrapper; keine Timer oder Promise-Sonderbehandlung.
+
+Planabgleich dieses Zugriffsteils: erfüllt. Roadmapabgleich: direkte Übernahme
+noch nicht fertig; die neue Zugriffsfunktion ist bewusst noch nicht öffentlich
+angebunden. Qualifizierte Quellzulassung, Übergabe an Utility und vollständiger
+Importablauf fehlen weiterhin. Dies ist kein Nachweis für beliebige Altanwendungen.
+Phase 3 bleibt offen.
+
+CI-Beobachtung:34235819998 für e336918546321984a5fd65edc992a2803eceee3a ist
+in_progress; Vorgängerlauf34235204923 ist cancelled. Kein grüner Exact-SHA-
+Nachweis behauptet. Lokale Typ-/Lint-/Testprozesse dieses Teils sind beendet.
+
+### Phase 3 — Quellzulassung: Vertrag im geprüften Programm
+
+Die Quellsperrschicht allein erlaubt keine unbekannte Quelle. Konkreter Plan:
+Ein versionierter Profilzugriffsvertrag wird als Ressource im AppImage ausgeliefert
+(kanonische Sperren, vollständiges Profil, Browserdaten außerhalb). Die Zulassung
+liest diesen Vertrag aus genau der per Journalhash geprüften Programmdatei, prüft
+den installierten Starter samt dessen Bytes und akzeptiert nur terminale,
+bestätigte Wartungszustände. Kein neuer Marker im Quellprofil und kein Ausführen
+der normalen Quell-App. Die vorhandene AppImage-Ressourcenlesung im Node-Modus
+wird um genau diese interne Ressource erweitert. Quellen ohne Vertrag oder mit
+unaufgelöster Wartung erhalten den Sicherungs-/Exportweg als nächste Aktion.
+
+Die Zulassungsprüfung muss unter den bereits eingeführten Quellsperren erneut
+stattfinden; vor einer späteren Kopie reicht eine Prüfung vor Sperrerwerb nicht.
+Tests decken fehlenden Vertrag, ausgetauschte Programmbytes und offene Journale
+ab. Verpackter Nachweis bleibt Teil der AppImage-Qualifikation.
+
+### Phase 3 — Quellzulassung: Teilaudit und echter Ressourcennachweis
+
+35 Tests in vier Dateien bestanden; Typecheck und gezieltes Lint bestanden;
+git diff --check bestanden. Der Wrapper hält die Quellsperren während Zulassung,
+Export und erneuter Programmprüfung. Journalzustand, installierte Programmbytes
+und Starterprovenienz werden real geprüft; Integrationstests ersetzen nur die
+AppImage-Protokollextraktion. Fehlender Vertrag, offene Wartung und manipulierte
+Programmbytes verhindern den Exportaufruf.
+
+Zusätzlicher realer Nachweis: `pnpm package:local` Exit0; Ressourcenextraktion mit
+readAppImageProfileProtocol aus release/local/SaltMarcher-Local-0.2.0.AppImage Exit0.
+SHA256 6c765ddab73c4e8d49e2c8d3ada11d848f5913d157dd269ce8eb2fefbfb65676.
+Der validierte Vertrag meldet formatVersion1, canonical-profile-v1,
+complete-profile, outside-profile. Log:roadmap-phase3-source-protocol-real-artifact.log.
+Dies ist ein lokales technisches Testartefakt aus uncommittetem Stand, keine
+kanonische Übergabe und kein freigabefähiger öffentlicher Release.
+
+Planabgleich: Quellzulassung und Vertragsverpackung implementiert/geprüft.
+Roadmapabgleich: direkte Übernahme noch nicht vollständig angebunden; Utility-
+Export, Importaktion und End-to-End-Abnahme bleiben erforderlich. Ein beliebiges
+Altprofil wird durch diesen Vertrag nicht nachträglich qualifiziert. Phase3 bleibt
+offen. Paketbau hat native Abhängigkeiten bearbeitet; vor weiteren Node-SQLite-
+Tests die zur jeweiligen Runtime gehörende native Umgebung prüfen.
+
+### Phase 3 — Direkte Übernahme: Utility-Export und Bedienung
+
+Vorheriger Zielturn war Fortschritt: Quellzulassung einschließlich echter gepackter
+Ressource geprüft. Nun die direkte Übernahme durchgängig verbinden: Main wählt das
+Profil, bestätigt den vollständigen Ersatz und hält qualifizierte Quellsperren.
+Utility exportiert das vollständige Profil in einen frischen Zielcacheordner mit
+SQLite-Onlinebackup und Format2-Manifest; Speicherplatz wird vorher geprüft. Nach
+Export und erneuter Quellprüfung werden deren Sperren freigegeben. Erst dann nutzt
+Main import-backup samt Manifesthash und vorgeschalteter Zielsicherung. Die Quelle
+wird nicht migriert. Fehler/Abbruch vor Export berühren das Zielprofil nicht.
+
+Die bestehende Capability erhält einen optionalen Auswahlmodus; ohne Modus bleibt
+sie Backup-Import-kompatibel. Renderer übergibt nur Modus/ID, keine Pfade. Ein
+separater Profilordner-Button und eine direkte Local-Profilaktion ergänzen den
+bestehenden Sicherungsweg. Der komplette Save/Discard-Dialog bleibt Phase4.
+Abnahme: tatsächlicher Utility-Export mit unveränderter Quelle und vollständigem
+Manifest; Controller benutzt qualifizierten Export und bestehenden Aktivierungspfad;
+Typ-/Capability-Verträge und Ablehnungs-/Abbruchfälle prüfen.
+
+### Phase 3 — Direkte Übernahme: Integrations-Teilaudit
+
+26 Tests in Controller/Quellzulassung/Sperren/Recovery-UI bestanden. Nach Ergänzung
+der neuen UI-Aktion nochmals 7 Recovery-UI-Tests bestanden. Typecheck, vollständiges
+Lint, 91 Architekturtests, Build und tatsächlicher Development-Smoke unter Xvfb
+bestanden. App-Fingerprint c87d055e1a74500e776088ae6193600ada89bc570a337f3a04e4c79dbcbac5e9,
+Schema39/34; kein Handoff-Artefakt.
+
+Planabgleich: direkte Ordnerauswahl und Local-Profilaktion sind über den strikt
+validierten optionalen Modus angebunden; Renderer sieht keine Pfade. Main hält
+Quellzugriff/Zulassung während Utility-Export und prüft die Programmherkunft erneut.
+Export verwendet vollständigen Snapshot, Onlinebackup, Platzprüfung und Format2-
+Manifest. Der bestätigte Exporthash wird im vorhandenen import-backup-Pfad geprüft;
+Zielbackup, Migration und Aktivierung bleiben beim gemeinsamen Wartungsablauf.
+Temporärer Export wird nach Übernahme oder Fehler entfernt. Im Controllertest
+bleiben die Quellbytes unverändert, eigene Datei und Kampagne werden übernommen,
+die vorgeschaltete Sicherung enthält das alte Zielprofil. Dialog, Prozessstart und
+Quellzulassung sind dort Doubles; deren eigenständige Tests und der frühere echte
+AppImage-Ressourcennachweis decken andere Grenzen ab.
+
+Roadmapabgleich: direkte Übernahme ist jetzt implementiert und auf Komponenten- /
+Integrationsebene geprüft. Vor Schließen von Phase3 ist ein Gesamtaudit einschließlich
+Fehlerpfaden, Parallelstarts und vorhandener Erhaltungsnachweise erforderlich.
+Ein vollständiger echter AppImage-Import/Updateweg bleibt Teil der Artefaktabnahme;
+kein einzelner Test wird als Beleg für diesen kompletten Ablauf ausgegeben.
+Phasen4–7, Canonical-Handoff und Veröffentlichung bleiben offen.

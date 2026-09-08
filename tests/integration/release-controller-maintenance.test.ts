@@ -1,3 +1,9 @@
+import { exportCompleteProfile } from '../../src/core/maintenance/export-profile.js'
+import { inventory } from '../../src/shared/maintenance/files.js'
+import {
+  preparedMaintenance,
+  acceptMaintenance
+} from '../support/release-maintenance.js'
 import type { MessageBoxOptions, MessageBoxReturnValue } from 'electron'
 import { EventEmitter } from 'node:events'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -32,6 +38,20 @@ const mocks = vi.hoisted(() => ({
 }))
 vi.mock('../../src/shared/maintenance/appimage-launcher.js', () => ({
   readAppImageLauncher: () => Buffer.from('// synthetic fixture helper')
+}))
+vi.mock('../../src/main/local-profile/source-profile-admission.js', () => ({
+  withQualifiedSourceProfile: (
+    root: string,
+    _target: string,
+    operation: (profile: string) => Promise<string>
+  ) => operation(join(root, 'profile'))
+}))
+vi.mock('../../src/main/release/maintenance-worker.js', () => ({
+  maintenanceWorker: (input: {
+    source: string
+    destination: string
+    version: string
+  }) => exportCompleteProfile(input.source, input.destination, input.version)
 }))
 vi.mock('node:child_process', () => ({ spawn: mocks.spawn }))
 vi.mock('electron', () => ({
@@ -113,6 +133,44 @@ afterEach(() => {
   rmSync(workspace, { recursive: true, force: true })
 })
 describe('release controller uses shared maintenance', () => {
+  it('exports a selected qualified profile unchanged and activates it with a target backup', async () => {
+    const source = join(workspace, 'source-installation')
+    const producer = new ProfileMaintenance(source, '0.3.0', 'profile')
+    const store = new CampaignStore(producer.data)
+    store.create('Imported campaign')
+    store.close()
+    writeFileSync(join(source, 'profile', 'own-map.svg'), 'source map')
+    acceptMaintenance(producer, await preparedMaintenance(producer))
+    const before = inventory(join(source, 'profile'))
+    mocks.chooseBackup.mockResolvedValue({
+      canceled: false,
+      filePaths: [join(source, 'profile')]
+    })
+    const controller = new ReleaseController(true, async () => {}, vi.fn())
+    await controller.importProfile(undefined, 'profile')
+    expect(controller.status().phase).toBe('maintenance')
+    expect(requestOperations).toEqual(['import-backup'])
+    expect(inventory(join(source, 'profile'))).toEqual(before)
+    expect(readFileSync(join(root, 'profile', 'own-map.svg'), 'utf8')).toBe(
+      'source map'
+    )
+    const imported = new CampaignStore(maintenance.data)
+    expect(imported.list().campaigns[0]?.name).toBe('Imported campaign')
+    imported.close()
+    const state = new MaintenanceCoordinator(root).read()!
+    expect(
+      readFileSync(
+        join(
+          maintenance.backupSource(state.backup!),
+          'campaign-data',
+          'notes.txt'
+        ),
+        'utf8'
+      )
+    ).toBe('backup state')
+    expect(readdirSync(join(root, 'cache'))).toEqual([])
+  })
+
   it('restores while the live campaign database is corrupt and preserves its bytes', async () => {
     const id = await maintenance.backup()
     const path = join(maintenance.data, 'installation.sqlite')
