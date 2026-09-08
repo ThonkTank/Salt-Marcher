@@ -1,3 +1,4 @@
+import { useDraftTransition } from '../../shell/use-draft-transition.js'
 import { DesktopRosterActions } from './desktop-roster-actions.js'
 import { DesktopCharacters } from './desktop-characters.js'
 import { useSessionWorkspaceController } from '../session/use-session-workspace-controller.js'
@@ -35,6 +36,10 @@ export function SceneDesktop(
     (scene) => scene.id === props.snapshot.scene.focusedSceneId
   )!
   const { projection, snapshot } = useSceneDesktop(props.campaignId, focused.id)
+  const transition = useDraftTransition(`${props.campaignId}:${focused.id}`, {
+    title: message('desktop.confirmWindowChange'),
+    text: message('desktop.resolveBeforeWindowChange')
+  })
   const stage = useRef<HTMLDivElement>(null)
   const launcher = useRef<HTMLButtonElement>(null)
   const requestedFocus = useRef<{ sceneId: string; windowId: string } | null>(
@@ -174,9 +179,12 @@ export function SceneDesktop(
                 .map((other) => desktopWindowBounds(other, size))}
               preview={(side) => setPreview({ sceneId: focused.id, side })}
               dispatch={(action) => {
-                projection.dispatch(action)
-                if (action.type === 'close' || action.type === 'minimize')
-                  launcher.current?.focus()
+                if (action.type === 'close' || action.type === 'minimize') {
+                  transition.request(() => {
+                    projection.dispatch(action)
+                    launcher.current?.focus()
+                  })
+                } else projection.dispatch(action)
               }}
             >
               {window.kind === 'characters' ? (
@@ -326,6 +334,7 @@ export function SceneDesktop(
           <small>{message('desktop.empty')}</small>
         )}
       </nav>
+      {transition.dialog}
       <SessionDialogHost
         model={model}
         actions={actions}

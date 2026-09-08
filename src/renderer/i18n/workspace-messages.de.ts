@@ -9,6 +9,11 @@ export const workspaceMessagesDe = {
   'rest.unknown': 'Basis ungesichert',
   'rest.shortDue': 'Kurze Rast empfohlen',
   'rest.longDue': 'Lange Rast empfohlen',
+  'xp.chooseAction':
+    'Bitte zuerst +, − oder Überschreiben wählen. Der Betrag wurde noch nicht verbucht.',
+  'desktop.confirmWindowChange': 'Fensteränderung bestätigen',
+  'desktop.resolveBeforeWindowChange':
+    'Es gibt offene Änderungen. Bitte diese vor dem Schließen oder Minimieren speichern oder verwerfen.',
   'xp.action': 'XP',
   'xp.amount': 'Betrag',
   'xp.set': 'Überschreiben',

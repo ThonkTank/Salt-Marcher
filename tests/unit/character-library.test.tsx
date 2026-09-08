@@ -173,6 +173,8 @@ describe('catalog draft concurrency', () => {
     let receipt: PartyCharacterCommandReceipt | null = null
     const execute = vi.fn((input: PartyCharacterCommand) => {
       const command = input.command
+      if (command.kind === 'adjust-xp' || command.kind === 'set-xp')
+        throw new Error('Unexpected XP command in character editor fixture')
       const id = command.kind === 'create' ? 'new' : command.input.id
       const members =
         command.kind === 'delete'

@@ -222,3 +222,95 @@ describe('atomic Party character commands and read-only recovery', () => {
     }
   })
 })
+
+it.each(['add', 'subtract', 'set'] as const)(
+  'journals %s XP atomically and retains the original outcome after later work and restart',
+  (mode) => {
+    const h = fixture()
+    try {
+      h.play.setPartyXp(h.member.id, 1300, h.play.readParty().revision)
+      const before = h.play.readSession()
+      const common = {
+        id: h.member.id,
+        expectedRevision: before.party.revision
+      }
+      const input: PartyCharacterCommand = {
+        commandId: randomUUID(),
+        command:
+          mode === 'set'
+            ? { kind: 'set-xp', input: { ...common, amount: 1125 } }
+            : {
+                kind: 'adjust-xp',
+                input: { ...common, delta: mode === 'add' ? 25 : -25 }
+              }
+      }
+      const handlers = createPartyHandlers(h.play, () =>
+        h.campaigns.activeCampaignId()
+      )
+      const request = { ...input, campaignId: h.campaigns.activeCampaignId() }
+      h.db.pragma('query_only = ON')
+      expect(handlers['party.characterCommandStatus'](request)).toEqual({
+        receipt: null,
+        party: before.party
+      })
+      h.db.pragma('query_only = OFF')
+      h.db.exec(
+        "CREATE TEMP TRIGGER fail_xp_receipt BEFORE INSERT ON party_character_command_receipt BEGIN SELECT RAISE(ABORT, 'XP receipt interrupted'); END"
+      )
+      expect(() => handlers['party.executeCharacterCommand'](request)).toThrow(
+        'XP receipt interrupted'
+      )
+      expect(h.play.readSession()).toEqual(before)
+      expect(h.play.partyCharacterCommandStatus(input).receipt).toBeNull()
+      h.db.exec('DROP TRIGGER fail_xp_receipt')
+      const receipt = partyCharacterCommandReceiptSchema.parse(
+        handlers['party.executeCharacterCommand'](request)
+      )
+      expect(receipt.characterId).toBe(h.member.id)
+      expect(receipt.party.revision).toBe(before.party.revision + 1)
+      expect(
+        receipt.party.members.find((member) => member.id === h.member.id)?.xp
+      ).toBe(mode === 'set' ? 1125 : mode === 'add' ? 1325 : 1275)
+      const committed = h.play.readSession()
+      expect(h.play.executePartyCharacterCommand(input)).toEqual(receipt)
+      expect(h.play.readSession()).toEqual(committed)
+      h.play.setPartyXp(h.member.id, 1777, h.play.readParty().revision)
+      const later = h.play.readSession()
+      const altered = {
+        ...input,
+        command:
+          input.command.kind === 'set-xp'
+            ? {
+                ...input.command,
+                input: { ...input.command.input, amount: 1126 }
+              }
+            : { ...input.command, input: { ...input.command.input, delta: 26 } }
+      } as PartyCharacterCommand
+      h.db.pragma('query_only = ON')
+      expect(h.play.partyCharacterCommandStatus(input)).toEqual({
+        receipt,
+        party: later.party
+      })
+      expect(() => h.play.partyCharacterCommandStatus(altered)).toThrow(
+        'idempotency_conflict'
+      )
+      expect(h.play.readSession()).toEqual(later)
+      h.db.pragma('query_only = OFF')
+      h.campaigns.close()
+      const reopened = new CampaignStore(h.root)
+      try {
+        const play = new LivePlayService(reopened.activeCampaignPersistence())
+        expect(play.executePartyCharacterCommand(input)).toEqual(receipt)
+        expect(play.readSession()).toEqual(later)
+        expect(() => play.executePartyCharacterCommand(altered)).toThrow(
+          'idempotency_conflict'
+        )
+      } finally {
+        reopened.close()
+      }
+    } finally {
+      h.campaigns.close()
+      rmSync(h.root, { recursive: true, force: true })
+    }
+  }
+)

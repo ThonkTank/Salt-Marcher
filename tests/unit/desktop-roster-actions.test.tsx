@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import '@testing-library/jest-dom/vitest'
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -14,7 +15,25 @@ import { DesktopRosterActions } from '../../src/renderer/features/scene-desktop/
 import { CapabilityProvider } from '../../src/renderer/capabilities/capability-provider.js'
 import { CampaignWorkspaceProjection } from '../../src/renderer/capabilities/campaign-workspace-projection.js'
 import { ModalLayerProvider } from '../../src/renderer/shell/modal-layer.js'
+import {
+  maintenanceDraftCoordinator,
+  type MaintenanceDraftResolution
+} from '../../src/renderer/shell/maintenance-draft-coordinator.js'
+import type { CharacterCommandPort } from '../../src/renderer/features/party/use-character-command-port.js'
+import { DesktopXpAction } from '../../src/renderer/features/scene-desktop/desktop-xp-action.js'
+const xpPort = vi.hoisted(() => ({
+  execute: vi.fn<CharacterCommandPort['execute']>(),
+  status: vi.fn<CharacterCommandPort['status']>(),
+  refresh: vi.fn<CharacterCommandPort['refresh']>()
+}))
+vi.mock(
+  '../../src/renderer/features/party/use-character-command-port.js',
+  () => ({ useCharacterCommandPort: () => xpPort })
+)
+let resolution: MaintenanceDraftResolution | undefined
 afterEach(() => {
+  resolution?.release()
+  resolution = undefined
   cleanup()
   vi.restoreAllMocks()
 })
@@ -88,63 +107,111 @@ it('retains row identity, scroll and hidden selections and submits one batch', a
   })
 })
 
-it('writes XP immediately with only amount and three actions', async () => {
-  const { DesktopXpAction } =
-    await import('../../src/renderer/features/scene-desktop/desktop-xp-action.js')
-  const result = { revision: 4, members: [], adventuringDay: {} }
-  const adjustXp = vi.fn().mockResolvedValue(result)
-  const setXp = vi.fn().mockResolvedValue(result)
-  const api = {
-    party: { adjustXp, setXp },
-    session: { onChanged: () => () => undefined }
-  } as unknown as SaltMarcherApi
-  vi.spyOn(
-    CampaignWorkspaceProjection.prototype,
-    'publishSession'
-  ).mockImplementation(() => true)
-  render(
-    <CapabilityProvider api={api}>
-      <ModalLayerProvider>
-        <DesktopXpAction
-          campaignId="campaign"
-          member={{ id: 'character' } as never}
-          revision={3}
-        />
-      </ModalLayerProvider>
-    </CapabilityProvider>
+function xpFixture() {
+  const party = {
+    revision: 4,
+    members: []
+  } as unknown as LiveSessionSnapshot['party']
+  const receipt = { characterId: 'character', party }
+  xpPort.execute.mockReset().mockResolvedValue(receipt)
+  xpPort.status.mockReset().mockResolvedValue({ receipt, party })
+  xpPort.refresh.mockReset().mockResolvedValue({ party } as LiveSessionSnapshot)
+  const view = render(
+    <ModalLayerProvider>
+      <DesktopXpAction
+        campaignId="campaign"
+        member={{ id: 'character', name: 'Edrik' } as never}
+        revision={3}
+      />
+    </ModalLayerProvider>
   )
   fireEvent.click(screen.getByText('XP'))
   fireEvent.change(screen.getByLabelText('Betrag'), { target: { value: '50' } })
+  return { ...view, receipt, party }
+}
+it('writes explicit XP actions with original receipts and keeps the confirmed amount reusable', async () => {
+  xpFixture()
+  for (const [button, command] of [
+    [
+      '+',
+      {
+        kind: 'adjust-xp',
+        input: { id: 'character', delta: 50, expectedRevision: 3 }
+      }
+    ],
+    [
+      '−',
+      {
+        kind: 'adjust-xp',
+        input: { id: 'character', delta: -50, expectedRevision: 3 }
+      }
+    ],
+    [
+      'Überschreiben',
+      {
+        kind: 'set-xp',
+        input: { id: 'character', amount: 50, expectedRevision: 3 }
+      }
+    ]
+  ] as const) {
+    fireEvent.click(screen.getByText(button))
+    await waitFor(() =>
+      expect(xpPort.execute.mock.lastCall?.[0].command).toEqual(command)
+    )
+    expect(xpPort.execute.mock.lastCall?.[0].commandId).toEqual(
+      expect.any(String)
+    )
+    await waitFor(() => expect(screen.getByText(button)).toBeEnabled())
+    expect(screen.getByLabelText('Betrag')).toHaveValue(50)
+    expect(maintenanceDraftCoordinator.hasDirty()).toBe(false)
+  }
+  expect(
+    new Set(xpPort.execute.mock.calls.map(([input]) => input.commandId)).size
+  ).toBe(3)
+})
+it('retains a never submitted XP amount, rejects ambiguous central save and permits discard', async () => {
+  xpFixture()
+  fireEvent.click(screen.getByText('XP'))
+  fireEvent.click(screen.getByText('XP'))
+  expect(screen.getByLabelText('Betrag')).toHaveValue(50)
+  act(() => {
+    resolution = maintenanceDraftCoordinator.begin()
+  })
+  let failures: readonly { label: string; message: string }[] = []
+  await act(async () => {
+    failures = await resolution!.resolve('save')
+  })
+  expect(failures).toEqual([
+    expect.objectContaining({
+      label: 'XP: Edrik'
+    })
+  ])
+  expect(failures[0]?.message).toContain(
+    'Bitte zuerst +, − oder Überschreiben wählen'
+  )
+  expect(xpPort.execute).not.toHaveBeenCalled()
+  expect(screen.getByLabelText('Betrag')).toHaveValue(50)
+  expect(screen.getByLabelText('Betrag')).toBeDisabled()
+  await act(async () => {
+    expect(await resolution!.resolve('discard')).toEqual([])
+  })
+  expect(maintenanceDraftCoordinator.hasDirty()).toBe(false)
+  expect(xpPort.execute).not.toHaveBeenCalled()
+})
+it('holds an unknown XP write and resolves the original command without replay', async () => {
+  xpFixture()
+  xpPort.execute.mockRejectedValueOnce(new Error('lost response'))
   fireEvent.click(screen.getByText('+'))
-  await waitFor(() =>
-    expect(adjustXp).toHaveBeenCalledWith({
-      id: 'character',
-      delta: 50,
-      expectedRevision: 3
-    })
-  )
-  await waitFor(() => expect(screen.getByText('−')).not.toBeDisabled())
+  await screen.findByText('Speicherstatus erneut prüfen')
+  const original = xpPort.execute.mock.calls[0]![0]
+  expect(screen.getByLabelText('Betrag')).toBeDisabled()
   fireEvent.click(screen.getByText('−'))
-  await waitFor(() =>
-    expect(adjustXp).toHaveBeenLastCalledWith({
-      id: 'character',
-      delta: -50,
-      expectedRevision: 3
-    })
-  )
-  await waitFor(() =>
-    expect(screen.getByText('Überschreiben')).not.toBeDisabled()
-  )
-  fireEvent.click(screen.getByText('Überschreiben'))
-  await waitFor(() =>
-    expect(setXp).toHaveBeenCalledWith({
-      id: 'character',
-      amount: 50,
-      expectedRevision: 3
-    })
-  )
-  expect(screen.queryByText('Übernehmen')).toBeNull()
-  expect(screen.queryByRole('dialog')).toBeNull()
+  expect(xpPort.execute).toHaveBeenCalledOnce()
+  fireEvent.click(screen.getByText('Speicherstatus erneut prüfen'))
+  await waitFor(() => expect(screen.getByText('+')).toBeEnabled())
+  expect(xpPort.status).toHaveBeenCalledWith(original)
+  expect(xpPort.execute).toHaveBeenCalledOnce()
+  expect(maintenanceDraftCoordinator.hasDirty()).toBe(false)
 })
 
 it('requires the same rest button twice and invalidates confirmation on selection and revision changes', async () => {

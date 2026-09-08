@@ -551,6 +551,32 @@ describe('per-scene desktop', () => {
     await expect(row()).toHaveText(expect.stringContaining('XP 100 /'))
     expect(await row().$('.desktop-character-burden').getText()).toBe(burden)
     await client.keys('Escape')
+    for (const action of ['Fenster schließen', 'Minimieren']) {
+      await row().$('button=XP').click()
+      await client.$('.desktop-xp-popup input').setValue('250')
+      await info().$(`button[aria-label="${action}"]`).click()
+      const confirmation = () =>
+        client.$(
+          '[role="alertdialog"][aria-label="Fensteränderung bestätigen"]'
+        )
+      await confirmation().waitForDisplayed({ timeout: 10_000 })
+      await confirmation().$('button=Abbrechen').click()
+      await info().waitForDisplayed()
+      await row().$('button=XP').click()
+      await expect(client.$('.desktop-xp-popup input')).toHaveValue('250')
+      await info().$(`button[aria-label="${action}"]`).click()
+      await confirmation().waitForDisplayed({ timeout: 10_000 })
+      await confirmation().$('button=Speichern und fortfahren').click()
+      await expect(confirmation().$('[role="alert"]')).toHaveText(
+        expect.stringContaining('XP:')
+      )
+      await expect(info()).toBeExisting()
+      await confirmation().$('button=Verwerfen und fortfahren').click()
+      await info().waitForExist({ reverse: true })
+      await client.$('.desktop-toolbar').$('button=Charaktere').click()
+      await info().waitForDisplayed()
+      await expect(row()).toHaveText(expect.stringContaining('XP 100 /'))
+    }
     await info().$('button=Rasten').click()
     await popup().$('button=Kurze Rast').click()
     await expect(popup().$('button=Kurze Rast bestätigen')).toBeDisplayed()

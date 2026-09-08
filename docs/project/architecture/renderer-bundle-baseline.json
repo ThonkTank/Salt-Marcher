@@ -1,16 +1,16 @@
 {
-  "recordedAt": "2026-09-09",
-  "reason": "Ratchet smaller graphs after sharing the draft-resolution dialog between release maintenance and workspace transitions.",
-  "dependencyRationale": "No dependency or lockfile changes. Absolute budgets and growth thresholds remain unchanged; existing lower baselines are retained for growing graphs.",
-  "chunkRationale": "Shared shell dialog code reduces Hex by 3584 bytes, Catalog by 3339, Reference by 51 and Shell by 44. Only these reductions are adopted; the reachable graph growth remains measured against its existing baseline.",
+  "recordedAt": "2026-09-08",
+  "reason": "Account for verified workspace draft transitions and durable desktop XP maintenance.",
+  "dependencyRationale": "No new dependency or lockfile change. Reuse the existing character command controller and shared draft dialog; preserve all absolute budgets and the 16 KiB growth threshold.",
+  "chunkRationale": "Reachable renderer is 1630221 bytes, 1620 bytes above the prior qualified route build. The older retained growth baseline also included 15108 bytes of previously qualified campaign and route maintenance. Desktop XP now retains original attempts and window transitions reuse the existing shell resolver.",
   "graphs": {
     "shell": 420905,
-    "workspace": 513613,
-    "session": 1311,
-    "catalog": 186668,
+    "workspace": 524603,
+    "session": 1348,
+    "catalog": 186677,
     "hex": 175900,
     "reference": 37404,
-    "pixi": 409364,
-    "reachable": 1613493
+    "pixi": 409405,
+    "reachable": 1630221
   }
 }

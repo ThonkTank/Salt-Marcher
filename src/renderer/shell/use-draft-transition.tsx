@@ -14,7 +14,10 @@ type Transition = {
 }
 
 /** Keep the originating editors mounted until their own save/discard confirms. */
-export function useDraftTransition(identity: string) {
+export function useDraftTransition(
+  identity: string,
+  description?: { title: string; text: string }
+) {
   const pending = useRef<Transition | null>(null)
   const mounted = useRef(false)
   const [open, setOpen] = useState(false)
@@ -118,8 +121,8 @@ export function useDraftTransition(identity: string) {
     request,
     dialog: open ? (
       <DraftResolutionDialog
-        title={message('draft.transitionTitle')}
-        text={message('draft.transitionText')}
+        title={description?.title ?? message('draft.transitionTitle')}
+        text={description?.text ?? message('draft.transitionText')}
         errors={errors}
         busy={busy}
         needsDrafts

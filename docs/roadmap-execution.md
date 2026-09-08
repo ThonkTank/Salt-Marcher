@@ -4766,3 +4766,119 @@ ist im neuen Routen-Callback behoben und vollständiges Lint besteht. Den geprü
 neuen Stand committen/pushen; nur dessen vollständige Remote-Prüfung kann den
 nächsten kanonischen Handoff freigeben. Keine lokale Installation oder Main-Promotion
 in dieser Runde.
+
+Phase 4 – Desktop-Eingaben, konkretisierter Teilplan:
+Candidate 516a992d6 ist sauber; CI 34289734156 läuft. Prüfung von DesktopWindow,
+DesktopXpAction, DesktopRosterActions und DesktopRestAction zeigt, dass ihre
+Popovereingaben und direkten Writes bislang keine vollständigen Wartungsowner
+besitzen. Eine bloße Schließsperre würde daher diese Änderungen nicht entdecken.
+XP add/subtract/set nutzt direkte Party-Writes ohne originale Befehlsquittung.
+
+Zuerst den XP-Schreibweg absichern: Den vorhandenen PartyCharacterCommand-Vertrag
+um adjust-xp und set-xp erweitern. Beide bleiben einzelne Charakteränderungen mit
+dem vorhandenen Receiptformat {characterId, party}; das vorhandene Journal enthält
+bereits vollständige Fingerprints und benötigt keine neue Tabelle oder Spalte.
+LivePlay führt XP-Änderung und Quittung in derselben UnitOfWork aus; Status bleibt
+rein lesend, Replay liefert die ursprüngliche Quittung. Bestehende Grenzen für
+XP-Werte, Revisionsprüfung und Burden-Berechnung übernehmen. SQL bleibt beim
+Party-Aggregat. Danach DesktopXpAction auf diesen Port und Originalauftrag umstellen,
+mit Wartungsowner und Schutz des noch nicht abgesendeten Betrags. Die drei
+bestehenden Aktionen bleiben ausdrücklich wählbar; zentrales Speichern darf
+bei einem Betrag ohne gewählte Aktion keine Add-/Subtract-/Set-Absicht erfinden.
+
+Abnahme Backend: alle drei XP-Wirkungen, wiederholter Originalauftrag nach späterer
+Änderung und Neustart, abweichender Fingerprint, read-only Status und atomarer
+Rollback bei gescheiterter Quittung. Renderer-Abnahme folgt mit tatsächlichem
+Originalhandle, unklarer Antwort, neuerem Party-Stand, Save/Discard/Cancel und
+Schließen/Minimieren. Erst danach ist dieser Desktop-Teilpfad abgeschlossen;
+Roster und Rest bleiben zusätzliche offene Schreibwege.
+
+XP-Testkorrektur: 104 Fälle bestehen; die drei neuen XP-Orakel missachten die
+bestehende Level-3-Untergrenze von 900 XP. Die Produktberechnung bleibt unverändert.
+Fixture und Erwartungswerte oberhalb dieser Grenze wählen (1300 Ausgangs-XP),
+so dass Plus/Minus/Set eigenständige Wirkungen prüfen; bestehende Burden-Tests
+behalten den Grenzfall. Typecheck findet außerdem im reinen Charaktereditor-Mock
+noch eine implizite create/update/delete-Annahme. Unerwartete XP-Varianten dort
+explizit ablehnen, statt nicht existente character-Felder auszulesen. Keine
+Produktionseinschränkung oder unsichere Typassertion zur Umgehung des Fehlers.
+
+Backend-Zwischenstand: Die korrigierten Receipt-/Burden-/Charaktereditorfälle
+bestehen (31/31). Die vorherigen 104 übrigen Fälle einschließlich Architektur
+bestanden bereits; Produkt-Lint des Backendteils ist grün.
+
+Renderer-Umsetzung konkretisiert: Betrag und gewählte Originalaktion synchron
+halten. Nach erfolgreichem Write darf derselbe Betrag für einen neuen ausdrücklich
+ausgelösten Klick erhalten bleiben; er gilt dann als bestätigt. Noch nicht
+bestätigte oder neu eingegebene Beträge bleiben dirty. Save ohne ausdrücklich
+gewählten Modus meldet eine nächste Aktion; kein stillschweigendes Add/Set.
+Unklare Versuche nur über die originale Quittung klären; Eingaben/weitere Writes
+bis dahin sperren. Dismiss eines Popovers erhält einen offenen Entwurf und eine
+Wiederöffnung setzt ihn nicht zurück. Zusätzlich close/minimize des Desktopfensters
+über den bestehenden DraftTransition-Hook klären, mit passender Fensterbeschreibung.
+Nur nach erfolgreicher Klärung wird die ursprüngliche Desktopaktion ausgeführt.
+
+Prüfung: 140 Fälle in 13 Dateien bestehen, einschließlich nativer XP-Quittungen,
+Controller/Port, Charaktereditor, Desktop-XP und Übergängen. Typecheck besteht.
+Auditkorrektur vor dem Build: Die konkrete Meldung „+ / − / Überschreiben wählen“
+muss im zentralen Fehlerdialog erscheinen, auch wenn das XP-Popover bereits
+verdeckt/geschlossen ist. Deshalb den bekannten Validierungsgrund vom XP-Saveowner
+als Fehler an den Koordinator geben statt lediglich false zurückzuliefern; lokale
+Meldung ebenfalls erhalten. Der Test prüft den konkreten Hinweis im Ownerfehler.
+
+Korrektur vor E2E: Vollständiges Lint findet genau eine unsichere any-Zuweisung
+im Testobjekt `commandId: expect.any(String)`. Den tatsächlichen Aufruf getrennt
+auf Commandinhalt und string-ID prüfen; keine Regel-Ausnahme. Produkt-Lint besteht.
+Build und Built-Smoke bestehen. Der erreichbare Graph beträgt 1630221 Bytes,
+1620 Bytes mehr als beim zuletzt qualifizierten Routenstand. Weil der alte
+Wachstumsvergleich bewusst noch bei 1613493 blieb, überschreiten die aufsummierten
+16728 Bytes jetzt die 16-KiB-Prüfschwelle. Baseline nach dem vorhandenen expliziten
+Verfahren aktualisieren: keine neue Bibliothek, bestehender Charaktercontroller
+für XP wiederverwendet; Fensterübergang nutzt vorhandenen gemeinsamen Dialog.
+Absolute Budgets und 16-KiB-Wachstumsschwelle unverändert lassen. Danach Budget
+und SzeneDesktop-E2E auf denselben Appbytes; E2E wurde bislang nicht gestartet.
+
+Hinweis zur laufenden Prüfung: Die nachgelagerte Lint-/Test-/Formatkette (56445)
+ist bereits beim Lint gestoppt; deren Tests/Format sind noch nicht ausgeführt.
+Fehler genau auswerten und erst nach Ende der laufenden E2E korrigieren; die
+Appbytes der E2E bleiben währenddessen unverändert.
+
+Lint-Korrekturplan konkret: Die zusätzliche Assertion auf den zentralen
+Validierungstext verwendet ebenfalls expect.stringContaining als Objektproperty
+(any). Den Failuretyp im Test um message:string erweitern und die konkrete
+Message getrennt mit toContain prüfen. Bestehende Label-Assertion beibehalten;
+keine Produktänderung. Nach E2E-Ende betroffenen Test/Lint und Format ausführen.
+
+XP-/Fensterabnahme: Gesamthandle 72072 endet mit exit 0. Alle sieben echten
+sceneDesktop-Szenarien bestehen, einschließlich erweitertem XP-Fall für
+Fenster-schließen und Minimieren: ungesendeter Betrag, Cancel erhält 250,
+zentrales Save ohne Modus blockiert, Discard schließt/minimiert, Wiederöffnung
+zeigt die unveränderten zuvor bestätigten 100 XP. Roster, Rest, Reisen,
+Referenzfenster und Neustarts bestehen als bestehende Verhaltensregressionen;
+dies belegt noch nicht deren vollständige Wartungsintegration.
+Summary: .tmp/e2e-runs/functional-1788909976708-547745/summary.json.
+Geprüfter appBuildInputFingerprint:
+62e7218a0d611b25bfd59c404444febaf792b87e5ab221501b3782d88cdfcacb.
+
+Plan-Audit: Desktop-XP verwendet jetzt einen dauerhaft identifizierten Original-
+befehl, atomare Quittung und lesende Recovery. Nicht abgeschickte Beträge bleiben
+in der Ownerregistrierung; Dismiss/Wiederöffnung löscht sie nicht. Ungewählte
+Rechenart ist ein klarer zentraler Validierungsfehler. Confirmed amount bleibt
+für einen weiteren expliziten Klick erhalten. Fenster-close/minimize verwenden
+dieselbe Entwurfsklärung und führen ihre Originalaktion erst danach aus. Die
+native Abnahme zeigt, dass XP und Quittung gemeinsam zurückrollen und ein Replay
+spätere XP-Arbeit selbst nach Neustart nicht überschreibt. Kein Schemawechsel:
+Receipt v1 speichert denselben Resultattyp; bestehende Tabelle/Fingerprints reichen.
+
+Roadmap-Audit: Dieser XP-/Fensterpfad ist implementiert und automatisiert geprüft.
+Weitere Desktop-Roster-/Rest- und Szenenwechsel-Writes bleiben offen. Insbesondere
+die weiterhin vorhandene direkte adjustXp-Adaptermethode in party-capabilities.ts
+ist beim abschließenden Writer-Inventar zu bewerten. Phase 4 bleibt in Arbeit;
+kein Handoff, keine Main-Promotion und keine Veröffentlichung dieser Runde.
+
+Finale lokale Prüfungen dieser Runde: gezieltes korrigiertes Lint, alle fünf
+Desktop-Action-Tests und vollständiges Format bestehen zusammen als Handle 17336,
+exit 0. Im vollständigen früheren Lint bestanden alle anderen Partitionen; seine
+einzige verbleibende Testbeanstandung ist damit behoben. Typecheck bestand als
+16492; 140 qualifizierte Fälle plus konkrete Fehlermeldungsprüfung und echte
+Desktop-E2E bilden die lokale Abnahme. git diff --check besteht. Candidate jetzt
+committen/pushen, vollständige Remote-Prüfung des neuen SHA abwarten.

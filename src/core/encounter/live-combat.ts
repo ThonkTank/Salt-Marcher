@@ -255,22 +255,38 @@ export class LivePlayService {
         if (existing) return existing
         const before = party.read()
         const command = input.command
-        const result =
-          command.kind === 'create'
-            ? this.createPartyCharacter(
+        const result = (() => {
+          switch (command.kind) {
+            case 'create':
+              return this.createPartyCharacter(
                 command.input.character,
                 command.input.expectedRevision
               )
-            : command.kind === 'update'
-              ? this.updatePartyCharacter(
-                  command.input.id,
-                  command.input.character,
-                  command.input.expectedRevision
-                )
-              : this.deletePartyCharacter(
-                  command.input.id,
-                  command.input.expectedRevision
-                )
+            case 'update':
+              return this.updatePartyCharacter(
+                command.input.id,
+                command.input.character,
+                command.input.expectedRevision
+              )
+            case 'delete':
+              return this.deletePartyCharacter(
+                command.input.id,
+                command.input.expectedRevision
+              )
+            case 'adjust-xp':
+              return this.adjustPartyXp(
+                command.input.id,
+                command.input.delta,
+                command.input.expectedRevision
+              )
+            case 'set-xp':
+              return this.setPartyXp(
+                command.input.id,
+                command.input.amount,
+                command.input.expectedRevision
+              )
+          }
+        })()
         const characterId =
           command.kind === 'create'
             ? result.members.find(

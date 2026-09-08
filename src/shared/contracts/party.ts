@@ -197,6 +197,18 @@ export const partyCharacterCommandSchema = z
           kind: z.literal('delete'),
           input: deletePartyCharacterInputSchema
         })
+        .strict(),
+      z
+        .object({
+          kind: z.literal('adjust-xp'),
+          input: adjustPartyXpInputSchema
+        })
+        .strict(),
+      z
+        .object({
+          kind: z.literal('set-xp'),
+          input: setPartyXpInputSchema
+        })
         .strict()
     ])
   })
