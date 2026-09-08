@@ -20,6 +20,8 @@ import {
   sceneLootInputSchema,
   treasureIdInputSchema,
   treasureSchema,
+  treasureEditorCommandSchema,
+  treasureEditorStatusSchema,
   updateTreasureInputSchema
 } from '../loot.js'
 import { read, utilityOperationFragment, write } from './registry.js'
@@ -52,6 +54,23 @@ export const lootOperationDefinitions = utilityOperationFragment({
     lootSceneProjectionSchema
   ),
   'loot.inbox': read('loot:inbox', lootInboxInputSchema, lootInboxPageSchema),
+  'loot.editorStatus': read(
+    'loot:editor-status',
+    z
+      .object({ campaignId: z.uuid(), command: treasureEditorCommandSchema })
+      .strict(),
+    treasureEditorStatusSchema
+  ),
+  'loot.createForCampaign': write(
+    'loot:create-for-campaign',
+    createTreasureInputSchema.extend({ campaignId: z.uuid() }),
+    treasureSchema
+  ),
+  'loot.updateForCampaign': write(
+    'loot:update-for-campaign',
+    updateTreasureInputSchema.extend({ campaignId: z.uuid() }),
+    treasureSchema
+  ),
   'loot.create': write(
     'loot:create',
     createTreasureInputSchema,

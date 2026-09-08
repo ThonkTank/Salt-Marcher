@@ -3650,3 +3650,59 @@ vorsehen: heutige öffentliche setTreasureEditor/setDistribution-Guards sperren
 auch einen während Wartung erfolgreichen Kindabschluss. Dies ist der nächste
 konkrete Schritt. Die übrigen Phase-4-Schreibwege, Update-/Offline-Abnahme,
 Phasen 5–7 sowie Exact-SHA-CI/Handoff/Main-Abschluss bleiben offen.
+
+### Phase 4 — Plan: Schatzeditor zentral klären
+
+Ausgang 62729b31c sauber; vorheriger Zielturn war geprüfter Fortschritt.
+Zuerst bestehende atomare Create-/Update-Quittungen durch einen streng validierten
+Editor-Statusvertrag lesbar machen. Originalinput inklusive Revision/Fingerprint
+bleibt maßgeblich; Ergebnisquittung und aktuell gespeicherter Schatz bleiben
+getrennt. Create/Update und Status über kampagnengebundene Ports anbieten. Keine
+neue Quittungstabelle oder Migration. Native Tests prüfen Status ohne Schreibrecht,
+spätere Änderungen und Fingerprintkonflikt; Ports prüfen Kampagnenwechsel.
+
+Danach erhält der Editor einen eigenen Wartungs-Owner mit synchronem Entwurf,
+Originalport, Pending-/Unknown-Zustand und Save/Discard/Retry. Der Planner benennt
+diesen Kind-Owner als Abhängigkeit, auch während des Lazy-Ladens. Erfolgreiche
+Wartungsabschlüsse benötigen interne Callbackpfade, die trotz allgemeiner
+Bedienungssperre den Kinddialog schließen und den Parent frisch lesen dürfen.
+Lesefehler und Konflikte halten Entwürfe erhalten und verhindern Wartung. Tests
+müssen gerenderten Editor plus zentrale Klärung und Parent-Abschluss abdecken.
+Der erste Backend-/Portnachweis allein schließt diesen Dialog ausdrücklich nicht.
+
+Korrekturrunde Vertrags-Typen: 102 Tests und ESLint bestehen. Die Bridge verwendet
+normalisierte Zod-Ausgaben; der neue Commandtyp war als roher Zod-Input definiert
+und erlaubte deshalb fehlende containers/containerId. Den öffentlichen Commandtyp
+auf die normalisierte Form ausrichten und die neuen Bridge-Testinputs vollständig
+angeben. Owner und Boundary parsen weiterhin strikt mit denselben Defaults;
+Originalfingerprints bleiben dadurch identisch. Tests/Typecheck erneut prüfen.
+
+### Phase 4 — Schatzeditor-Statusvertrag: Plan-/Roadmapaudit
+
+Planabgleich des Backend-/Portschritts bestanden: Strikter Create-/Update-
+Commandvertrag, lesender Ownerstatus und kampagnengebundene Create/Update/Status-
+Capabilities sind implementiert. Status liest die ursprüngliche Quittung mit
+normalisiertem Vollfingerprint und unabhängig davon den aktuellen Schatz.
+Abwesende Create-Quittung liefert ausdrücklich null; ein abwesender Updatebeleg
+liefert weiterhin den bestehenden Schatz. Fehlende Zielobjekte/Readfehler werden
+nicht als erfolgreicher Abschluss ausgegeben. Post-Write-Kampagnenwechsel ist
+outcome_unknown, vor Transport wird abgewiesen. Bestehende Schema-/Journal-
+Implementierung bleibt erhalten; keine Migration und keine Tabellenänderung.
+
+Validierung: 102 Tests in 10 Dateien bestanden, darunter query_only für
+Create-/Update-Abwesenheit und vorhandene Quittungen, spätere Änderung,
+Fingerprintfalschbelegung, kampagnengebundene Handler und Ports vor/während
+Transport. Bestehende Loot-/Ledger-/Planner-Ports und Architekturtests grün.
+Typecheck und gezieltes ESLint bestanden. Build, Smoke ready/closed und
+Bundle-Gate grün (1648629 reachable, keine Baseline-/Budgetänderung). Der echte
+loot-E2E besteht auf demselben Build: teilweise verteilen, Neustart, vollständig
+verteilen und Herkunft erhalten. Logs work/roadmap-phase4-treasure-ports-*.
+Keine echte Nutzerinstallation oder Nutzerdaten verändert.
+
+Roadmapabgleich: Der Vertrags-/Portteil des protokollierten Schatzeditorplans ist
+qualifiziert, die eigentliche Wartungs-UI bleibt offen. Nächster Schritt ist der
+Editorzustand mit synchronem Draft/Anchor, Pending und genau einem Originalcommand,
+Save/Discard/Readretry sowie seine abhängige Einbindung im Planner. Dabei getrennte
+Abschlusscallbacks für Wartung und Benutzeraktionen verwenden. Verteilungsdialog,
+weitere Phase-4-Schreibwege, Update-/Offline-Abnahme und Phasen 5–7 bleiben im
+Umfang. Exact-SHA-CI, Handoff und Main-Abschluss sind dadurch nicht ersetzt.

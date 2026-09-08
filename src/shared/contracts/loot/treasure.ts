@@ -292,3 +292,19 @@ export type MoveTreasureInput = Readonly<
 export type AcceptGeneratedTreasureInput = Readonly<
   z.infer<typeof acceptGeneratedTreasureInputSchema>
 >
+
+export const treasureEditorCommandSchema = z.discriminatedUnion('kind', [
+  z
+    .object({ kind: z.literal('create'), input: createTreasureInputSchema })
+    .strict(),
+  z
+    .object({ kind: z.literal('update'), input: updateTreasureInputSchema })
+    .strict()
+])
+export const treasureEditorStatusSchema = z
+  .object({
+    receipt: treasureSchema.nullable(),
+    treasure: treasureSchema.nullable()
+  })
+  .strict()
+export type TreasureEditorCommand = z.infer<typeof treasureEditorCommandSchema>

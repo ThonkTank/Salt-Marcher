@@ -1,3 +1,4 @@
+import type { TreasureEditorCommand } from '../../../shared/contracts/loot.js'
 import { useContext, useMemo, useSyncExternalStore } from 'react'
 import { CapabilityContext } from '../../capabilities/capability-context.js'
 import { CapabilityError } from '../../../shared/errors/capability-error.js'
@@ -31,7 +32,12 @@ export type CharacterLootPort = Pick<
 export type TreasureEditorPort = Pick<
   SaltMarcherApi['loot'],
   'create' | 'update' | 'catalog'
->
+> &
+  Readonly<{
+    editorStatus(
+      command: TreasureEditorCommand
+    ): ReturnType<SaltMarcherApi['loot']['editorStatus']>
+  }>
 
 export type RewardDistributionPort = Pick<SaltMarcherApi['loot'], 'distribute'>
 
@@ -114,10 +120,57 @@ export function useCharacterLootPort(): CharacterLootPort {
 
 export function useTreasureEditorPort(): TreasureEditorPort {
   const loot = useCapabilityApi().loot
-  return useMemo(
-    () => ({ create: loot.create, update: loot.update, catalog: loot.catalog }),
-    [loot]
-  )
+  const context = useContext(CapabilityContext)
+  if (!context) throw new Error('Capability provider missing')
+  const projection = context.campaignWorkspace
+  const root = useSyncExternalStore(projection.subscribe, projection.snapshot)
+  const campaignId = root.sessionCampaignId
+  return useMemo(() => {
+    const requireCampaign = () => {
+      const current = projection.snapshot()
+      if (
+        !campaignId ||
+        current.sessionCampaignId !== campaignId ||
+        current.campaigns.activeCampaignId !== campaignId
+      )
+        throw new CapabilityError('stale', false)
+      return campaignId
+    }
+    const confirmWriteCampaign = () => {
+      try {
+        requireCampaign()
+      } catch {
+        throw new CapabilityError('outcome_unknown', true)
+      }
+    }
+    return {
+      catalog: loot.catalog,
+      create: async (input) => {
+        const result = await loot.createForCampaign({
+          ...input,
+          campaignId: requireCampaign()
+        })
+        confirmWriteCampaign()
+        return result
+      },
+      update: async (input) => {
+        const result = await loot.updateForCampaign({
+          ...input,
+          campaignId: requireCampaign()
+        })
+        confirmWriteCampaign()
+        return result
+      },
+      editorStatus: async (command) => {
+        const result = await loot.editorStatus({
+          campaignId: requireCampaign(),
+          command
+        })
+        requireCampaign()
+        return result
+      }
+    } satisfies TreasureEditorPort
+  }, [loot, projection, campaignId])
 }
 
 export function useRewardDistributionPort(): RewardDistributionPort {

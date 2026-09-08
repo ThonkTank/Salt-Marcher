@@ -10,6 +10,7 @@ import type {
   LootSceneProjection,
   MoveTreasureInput,
   Treasure,
+  TreasureEditorCommand,
   TreasureAnchor,
   UpdateTreasureInput
 } from '../../shared/contracts/loot.js'
@@ -114,6 +115,10 @@ export class LootService {
 
   inbox(input: unknown): LootInboxPage {
     return this.queries.inbox(input)
+  }
+
+  editorStatus(input: TreasureEditorCommand) {
+    return this.commands.editorStatus(input)
   }
 
   create(input: CreateTreasureInput): Treasure {

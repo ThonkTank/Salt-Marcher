@@ -136,6 +136,29 @@ export function createLootComposition(dependencies: {
             ),
           'loot.scene': (input) => loot.sceneProjection(input.sceneId),
           'loot.inbox': (input) => loot.inbox(input),
+          'loot.editorStatus': ({ campaignId, command }) => {
+            if (campaignId !== dependencies.activeCampaignId())
+              throw new CapabilityError('stale', false)
+            return loot.editorStatus(command)
+          },
+          'loot.createForCampaign': ({ campaignId, ...input }) => {
+            if (campaignId !== dependencies.activeCampaignId())
+              throw new CapabilityError('stale', false)
+            return publish(
+              lootOperationDefinitions['loot.createForCampaign'],
+              'created',
+              () => loot.create(input)
+            )
+          },
+          'loot.updateForCampaign': ({ campaignId, ...input }) => {
+            if (campaignId !== dependencies.activeCampaignId())
+              throw new CapabilityError('stale', false)
+            return publish(
+              lootOperationDefinitions['loot.updateForCampaign'],
+              'updated',
+              () => loot.update(input)
+            )
+          },
           'loot.create': (input) =>
             publish(lootOperationDefinitions['loot.create'], 'created', () =>
               loot.create(input)

@@ -66,6 +66,68 @@ function campaign() {
 }
 
 describe('loot vertical slice', () => {
+  it('reads original create/update receipts and current treasure state without writes', () => {
+    const { campaigns, db } = campaign()
+    const loot = new LootService(campaigns.activeCampaignPersistence())
+    const create = {
+      commandId: randomUUID(),
+      label: 'Original',
+      anchor: { kind: 'unplaced' as const },
+      containers: [],
+      items: []
+    }
+    db.pragma('query_only = ON')
+    expect(loot.editorStatus({ kind: 'create', input: create })).toEqual({
+      receipt: null,
+      treasure: null
+    })
+    db.pragma('query_only = OFF')
+    const original = loot.create(create)
+    const update = {
+      ...create,
+      commandId: randomUUID(),
+      treasureId: original.id,
+      expectedRevision: original.revision,
+      label: 'Updated'
+    }
+    db.pragma('query_only = ON')
+    expect(loot.editorStatus({ kind: 'update', input: update })).toEqual({
+      receipt: null,
+      treasure: original
+    })
+    db.pragma('query_only = OFF')
+    const updated = loot.update(update)
+    const latest = loot.update({
+      ...update,
+      commandId: randomUUID(),
+      expectedRevision: updated.revision,
+      label: 'Later work'
+    })
+    db.pragma('query_only = ON')
+    expect(loot.editorStatus({ kind: 'create', input: create })).toEqual({
+      receipt: original,
+      treasure: latest
+    })
+    expect(loot.editorStatus({ kind: 'update', input: update })).toEqual({
+      receipt: updated,
+      treasure: latest
+    })
+    expectIdempotencyConflict(() =>
+      loot.editorStatus({
+        kind: 'create',
+        input: { ...create, label: 'Changed request' }
+      })
+    )
+    expectIdempotencyConflict(() =>
+      loot.editorStatus({
+        kind: 'update',
+        input: { ...update, expectedRevision: 999 }
+      })
+    )
+    db.pragma('query_only = OFF')
+    expect(loot.read(original.id)).toEqual(latest)
+  })
+
   it('guards all ledger maintenance operations with the original campaign', () => {
     const { campaigns, db, members } = campaign()
     const unused = (): never => {
@@ -80,6 +142,34 @@ describe('loot vertical slice', () => {
       currentCatalogReference: unused,
       groupCommands: { save: unused, result: unused }
     }).createHandlers(unused)
+    const editorInput = {
+      commandId: randomUUID(),
+      label: 'Editor',
+      anchor: { kind: 'unplaced' as const },
+      containers: [],
+      items: []
+    }
+    const wrongCampaign = randomUUID()
+    expect(() =>
+      handlers['loot.createForCampaign']({
+        ...editorInput,
+        campaignId: wrongCampaign
+      })
+    ).toThrow('stale')
+    expect(() =>
+      handlers['loot.updateForCampaign']({
+        ...editorInput,
+        campaignId: wrongCampaign,
+        treasureId: randomUUID(),
+        expectedRevision: 0
+      })
+    ).toThrow('stale')
+    expect(() =>
+      handlers['loot.editorStatus']({
+        campaignId: wrongCampaign,
+        command: { kind: 'create', input: editorInput }
+      })
+    ).toThrow('stale')
     const generatedInput = {
       campaignId: randomUUID(),
       commandId: randomUUID(),
