@@ -4882,3 +4882,70 @@ einzige verbleibende Testbeanstandung ist damit behoben. Typecheck bestand als
 16492; 140 qualifizierte Fälle plus konkrete Fehlermeldungsprüfung und echte
 Desktop-E2E bilden die lokale Abnahme. git diff --check besteht. Candidate jetzt
 committen/pushen, vollständige Remote-Prüfung des neuen SHA abwarten.
+
+Phase 4 – Besetzung und ausgewählte Rasten, Backend-Teilplan:
+Candidate 4c95c1604 ist sauber; CI 34290901390 steht pending. setRoster,
+moveRoster und restSelected sind direkte Writes ohne wiederlesbares Original-
+ergebnis. Vor der UI-Wartungsintegration einen gemeinsamen ScenePartyCommand
+mit Varianten set-roster, move-roster und rest-selected einführen. Ergebnisse
+enthalten den ursprünglichen vollständigen LiveSessionSnapshot, einschließlich
+der bei move neu angelegten Szene. Status liefert Originalreceipt plus heutigen
+Snapshot. Campaign-ID validiert die Utility-Grenze vor Write und Read.
+
+Eigener SQL-Owner ScenePartyCommandJournal im Scene-Aggregat, mit Befehls-ID,
+vollständigem Fingerprint und versioniertem Resultat. XP/Charakterquittungen nicht
+zweckentfremden: Rasten und Verschieben betreffen mehrere Charaktere/Szenen.
+Atomare UnitOfWork umfasst alle vorhandenen Domainwirkungen und die Quittung.
+Kampagnenschema 38→39, Registry 18→19; Installation bleibt 42. Frische Profile
+und Vorwärtsmigration registrieren denselben Owner. Eingefrorenes Release-0.2.0-
+Fixture bleibt unverändert. Aktuelle Qualifikationsinventare und Versionstruth
+auf die neue Migration abstimmen.
+
+Abnahme: set-roster, move in bestehende/neue Szene und short/long rest; ursprüngliche
+Quittung nach späterer Arbeit und Neustart; doppelte Befehle erzeugen keine zweite
+Szene/Rast; falsche Campaign-ID/Fingerprint werden abgewiesen; query_only-Status;
+Quittungsfehler rollt Party/Scene/Combat/Travel gemeinsam zurück. Migration mit
+Abbruch und erneutem Start erhält Inhalte. Danach separate Rendererintegration
+mit ausgewählter Originalabsicht, vorhandener Rastbestätigung und zentraler
+Save/Discard/Cancel-Klärung. Backendprüfung allein schließt diesen Teilpfad nicht.
+
+Qualifikationskorrektur für den Scene-Party-Backendteil: Die nativen
+Befehls-/Migrationstests bestehen (71 Fälle), die aktuelle Root-/Completion-
+Qualifikation bricht bereits beim Manifestladen ab: Schema 38 statt 39.
+Vor der Korrektur festgelegt: ausschließlich das aktuelle Manifest und dessen
+Root-Inventar um den tatsächlich registrierten Scene-Party-Receipt-Owner ergänzen;
+Reihenfolge gegen den Bootstrapper prüfen und den veralteten textlichen
+Schema-Oracle auf 39 berichtigen. Das eingefrorene 0.2.0-Fixture bleibt unverändert.
+Danach die betroffenen Qualifikationen erneut ausführen und deren tatsächliche
+Abdeckung prüfen. Der vorige Installationsturn änderte keinen Implementierungsstand;
+diese Runde setzt am nachgewiesenen Qualifikationsfehler fort.
+
+Scene-Party-Backend: Qualifikationskorrektur abgeschlossen. Root/Completion
+bestehen mit neun Fällen (66694, exit 0); sämtliche Current-Format-Integrationen
+plus Scene-Party-Receipt-Abnahme bestehen mit 39 Fällen in sieben Dateien
+(34611, exit 0). Vollständiges Lint, beide Typechecks und Format bestehen
+(78487, exit 0). Build, Smoke und unveränderte Bundlegrenzen bestehen
+(52813, exit 0). Kein geändertes eingefrorenes Release-0.2.0-Fixture.
+
+Echte App-Abnahme currentFormatCampaignQualification besteht (14890, exit 0):
+100 warme Kampagnenwechsel, p95 168.184 ms, Maximum 172.723 ms, anschließende
+Szenenänderung und Neustart mit dauerhaftem Zustand. Summary:
+.tmp/e2e-runs/functional-1788911124303-553473/summary.json.
+App-Build-Fingerprint b601dff077f0e7ce4a79f1d81cb5dd2ed0bad9f6d0d8fb2c8eb15963ba182722.
+
+Plan-Audit: Neues Schema und frischer Bootstrap verwenden denselben Scene-Owner.
+Die Utility prüft die ursprüngliche Kampagnenidentität vor Lesen und Schreiben.
+Originalquittung und Domainwirkungen werden gemeinsam transaktional gespeichert;
+Status liest Originalergebnis und heutigen Zustand getrennt. Die nativen Tests
+prüfen Wiederholung, Neustart, spätere Arbeit, Fingerprint-Konflikt und Rollback
+samt Reisezustand. Aktuelle Qualifikationsdaten erkennen die neue Tabelle und
+Version ausdrücklich. Backend-Teilplan damit lokal automatisiert geprüft.
+
+Roadmap-Audit: Phase 4 bleibt offen. DesktopRosterActions und DesktopRestAction
+verwenden weiterhin die direkten Legacy-Operationen; sie müssen im nächsten
+Teilplan die neuen Quittungen und die zentrale Entwurfsklärung verwenden. Insbesondere
+bleibt die zweite bewusste Rastbestätigung erhalten. Die oben beschriebene
+Current-Format-App-Abnahme belegt Schema-/Bestandsregression, keine fertige
+Wartungsintegration dieser beiden Oberflächen. Phasen 5–7 bleiben unverändert offen.
+Kein Local-Handoff, keine Main-Promotion, kein öffentlicher Release in dieser Runde.
+Candidate-Remoteprüfung für diesen neuen Stand ist nach Commit/Push noch abzuwarten.

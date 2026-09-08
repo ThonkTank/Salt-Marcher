@@ -1,3 +1,4 @@
+import { initializeScenePartyCommandJournal } from '../../scene/scene-party-command-journal.js'
 import { initializePartyCharacterCommandJournal } from '../../party/party-character-command-journal.js'
 import { initializeSessionPlannerCommandJournal } from '../../session-planner/session-planner-command-journal.js'
 import { initializeSceneGroupCommandJournal } from '../../scene/scene-group-command-journal.js'
@@ -70,6 +71,9 @@ export function createDefaultCampaignSchemaBootstrapper(): CampaignSchemaBootstr
       ['party']
     ),
     registration('scene-group-receipts', initializeSceneGroupCommandJournal, [
+      'scene'
+    ]),
+    registration('scene-party-receipts', initializeScenePartyCommandJournal, [
       'scene'
     ]),
     registration('combat', initializeCombatSchema, ['scene']),

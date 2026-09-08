@@ -1,3 +1,8 @@
+import {
+  scenePartyCommandSchema,
+  type ScenePartyCommand
+} from '../../shared/contracts/scene-party-command.js'
+import { ScenePartyCommandJournal } from '../scene/scene-party-command-journal.js'
 import { PartyCharacterCommandJournal } from '../party/party-character-command-journal.js'
 import {
   partyCharacterCommandSchema,
@@ -244,6 +249,40 @@ export class LivePlayService {
         )
       })
     )
+  }
+
+  executeScenePartyCommand(value: ScenePartyCommand) {
+    const input = scenePartyCommandSchema.parse(value)
+    return this.withStores(({ db, unitOfWork }) =>
+      unitOfWork.run(() => {
+        const journal = new ScenePartyCommandJournal(db)
+        const existing = journal.read(input)
+        if (existing) return existing
+        const command = input.command
+        const snapshot = (() => {
+          switch (command.kind) {
+            case 'set-roster':
+              return this.setSceneRoster(command.input)
+            case 'move-roster':
+              return this.moveSceneRoster(command.input)
+            case 'rest-selected':
+              this.restSceneParty(command.input)
+              return this.readSession()
+          }
+        })()
+        const receipt = { snapshot }
+        journal.record(input, receipt)
+        return receipt
+      })
+    )
+  }
+
+  scenePartyCommandStatus(value: ScenePartyCommand) {
+    const input = scenePartyCommandSchema.parse(value)
+    return this.withStores(({ db }) => ({
+      receipt: new ScenePartyCommandJournal(db).read(input),
+      snapshot: this.readSession()
+    }))
   }
 
   executePartyCharacterCommand(value: PartyCharacterCommand) {

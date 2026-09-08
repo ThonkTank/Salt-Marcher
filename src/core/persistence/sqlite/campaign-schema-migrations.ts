@@ -1,3 +1,4 @@
+import { initializeScenePartyCommandJournal } from '../../scene/scene-party-command-journal.js'
 import { initializePartyCharacterCommandJournal } from '../../party/party-character-command-journal.js'
 import { initializeSessionPlannerCommandJournal } from '../../session-planner/session-planner-command-journal.js'
 import { initializeSceneGroupCommandJournal } from '../../scene/scene-group-command-journal.js'
@@ -268,6 +269,24 @@ export const campaignSchemaMigrations: readonly SchemaMigration[] =
           )
           .run(
             'campaign-37-to-38-party-character-receipts',
+            new Date().toISOString()
+          )
+      }
+    },
+    {
+      id: 'campaign-38-to-39-scene-party-receipts',
+      role: 'campaign',
+      fromVersion: 38,
+      toVersion: 39,
+      migrate(database) {
+        initializeCampaignSchemaMetadata(database)
+        initializeScenePartyCommandJournal(database)
+        database
+          .prepare(
+            'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run(
+            'campaign-38-to-39-scene-party-receipts',
             new Date().toISOString()
           )
       }

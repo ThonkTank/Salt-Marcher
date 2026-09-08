@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "identity": {
     "name": "frontend-robustness-current-format-v1",
-    "campaignDatabaseSchemaVersion": 38,
+    "campaignDatabaseSchemaVersion": 39,
     "qualificationClaim": "preliminary-current-format-reference-not-rp-r-or-rp-l"
   },
   "campaignOwners": [
@@ -175,6 +175,14 @@
       "oraclePlan": "Retain the empty journal across current-format switching; atomic command and receipt recovery is covered separately by scene-group-command-receipts integration tests."
     },
     {
+      "registration": "scene-party-receipts",
+      "authority": "campaign.scene-party-command-receipts",
+      "stateClass": "reconciliation",
+      "disposition": "initialize-only",
+      "fixturePlan": "Initialize the Scene Party command journal through CampaignSchemaBootstrapper; current-format materializers use internal roster and rest operations without IPC receipts.",
+      "oraclePlan": "Require an empty journal across current-format switching; atomic roster, move and rest commands, read-only recovery and durable receipts across restart are covered by scene-party-command-receipts integration tests."
+    },
+    {
       "registration": "schema-metadata",
       "authority": "campaign.schema-metadata",
       "stateClass": "durable-truth",
@@ -188,7 +196,7 @@
       "stateClass": "durable-truth",
       "disposition": "initialize-only",
       "fixturePlan": "Set SQLite user_version only through the schema bootstrap owner.",
-      "oraclePlan": "Reject a fixture whose Campaign database version is not exactly 35."
+      "oraclePlan": "Reject a fixture whose Campaign database version is not exactly 39."
     }
   ],
   "installationDependencies": [

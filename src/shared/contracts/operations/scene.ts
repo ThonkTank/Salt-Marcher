@@ -1,3 +1,8 @@
+import {
+  campaignScenePartyCommandSchema,
+  scenePartyCommandReceiptSchema,
+  scenePartyCommandStatusSchema
+} from '../scene-party-command.js'
 import { z } from 'zod'
 import {
   liveSessionSnapshotSchema,
@@ -20,6 +25,16 @@ import {
 import { read, utilityOperationFragment, write } from './registry.js'
 
 export const sceneOperationDefinitions = utilityOperationFragment({
+  'scene.executePartyCommand': write(
+    'scene:execute-party-command',
+    campaignScenePartyCommandSchema,
+    scenePartyCommandReceiptSchema
+  ),
+  'scene.partyCommandStatus': read(
+    'scene:party-command-status',
+    campaignScenePartyCommandSchema,
+    scenePartyCommandStatusSchema
+  ),
   'scene.setRoster': write(
     'scene:setRoster',
     setSceneRosterInputSchema,

@@ -69,6 +69,16 @@ export function createSessionHandlers(
         throw new CapabilityError('stale', true)
       return play.readSession()
     },
+    'scene.executePartyCommand': ({ campaignId, ...command }) => {
+      if (campaignId !== activeCampaignId())
+        throw new CapabilityError('stale', false)
+      return play.executeScenePartyCommand(command)
+    },
+    'scene.partyCommandStatus': ({ campaignId, ...command }) => {
+      if (campaignId !== activeCampaignId())
+        throw new CapabilityError('stale', false)
+      return play.scenePartyCommandStatus(command)
+    },
     'scene.setRoster': (input) => play.setSceneRoster(input),
     'scene.moveRoster': (input) => play.moveSceneRoster(input),
     'scene.focus': (input) =>
