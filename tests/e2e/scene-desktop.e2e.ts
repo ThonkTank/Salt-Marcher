@@ -148,7 +148,7 @@ describe('per-scene desktop preview', () => {
     await client.$('.desktop-preview-setting input').click()
     await client.keys('Escape')
     await client.$('.scene-desktop').waitForDisplayed()
-    await setElectronWindowSize(client, 1440, 1000)
+    await setElectronWindowSize(client, 1200, 900)
     const original = await client.$('select[aria-label="Szene"]').getValue()
     const sceneIds = await client
       .$$('select[aria-label="Szene"] option')

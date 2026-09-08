@@ -598,3 +598,30 @@ functional discrepancy. Origin/main is still the completed phase 1 SHA.
 Submit this isolated candidate for the complete required remote jobs, canonical
 handoff and same-SHA main promotion. Delivery is not yet complete, and phase 2
 remains in progress until that evidence is verified.
+
+## Phase 2 — Candidate CI failure and correction round 14
+
+Candidate `715ff9613f1ad0241c018b6c327c2ab6d9996042`, PR 665, Check
+[34235903687](https://github.com/ThonkTank/Salt-Marcher/actions/runs/34235903687)
+passed portable/static/unit/integration, all native jobs, packaging, all visual
+shards and the other E2E shards. Campaign-workspaces failed at the new reader
+case's requested 1440px outer width; exact-SHA aggregate consequently failed.
+No handoff or promotion was attempted.
+
+Downloaded failure evidence shows a correctly rendered desktop at 1280×1000:
+the CI Xvfb screen constrains width to 1280. The unchanged geometry helper
+correctly rejects a request for 1440. Change this acceptance viewport to
+1200×900, which fits that screen and exercises a narrower reading workspace.
+Retain all geometry checks, side-by-side, scroll, history, restart and
+window-deduplication assertions. Run the full desktop suite locally, format
+and typecheck, then submit a new candidate commit for the entire required
+remote Check set. App source and app-build fingerprint remain unchanged.
+
+## Phase 2 — CI viewport correction validated
+
+The complete desktop suite passes at 1200×900 without warning regressions:
+`.tmp/e2e-runs/functional-1788877142318-250925/summary.json` (two cases,
+about 91 seconds). Typecheck, full formatting and targeted E2E lint pass.
+Both phase audits pass again for this test-only correction; remote qualification
+and canonical delivery remain outstanding. Submit the corrected candidate SHA
+for the entire required Check workflow, preserving the failed prior evidence.
