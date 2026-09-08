@@ -1932,3 +1932,93 @@ weitere Editorfamilien und Offline-/Update-Gesamtabnahme bleiben offen. Ortsanbi
 muss insbesondere den bisherigen partially-saved-Retry verwenden, statt bereits
 persistierte Ortsdaten erneut anzulegen, und eigene Hexkarten-Dialogabhängigkeiten
 explizit erfassen. Phasen5–7 und abschließende Auslieferungsgates bleiben erforderlich.
+
+### Phase 4 — Orts-Owner: Teilplan
+
+Vorheriger Zielturn: Fortschritt, Tabellen-Owner/echter Fraktionsstapel als ddf7d1e0d
+geprüft und gepusht. Aktueller Worktree sauber, Phase4 weiterhin offen.
+Orts-Owner führt Text-/Referenz-Draft und Tag-Eingabe synchron. Ausstehender Tag wird
+beim ausdrücklichen Save nach bestehenden Trim-/Längen-/Anzahl-/Duplikatregeln
+übernommen; ungültige Eingaben bleiben offen. Formmutation und bestätigte Kind-
+Übernahme erhalten getrennte Zugänge. Save wartet Pending ab, nutzt bei partially-
+saved ausschließlich den vorhandenen Retry und bestätigt erst vollständigen Erfolg.
+Related-Creation-Handles werden vom Ort als Abhängigkeiten gehalten. Kartenplatzierung
+und eigener Hexkarten-Dialog erhalten danach denselben synchronen Zustands-/ID-Vertrag;
+Save muss die tatsächlich aktuelle Platzierungsabsicht lesen. Verwerfen löscht keine
+bereits persistierten Teilergebnisse. Tests prüfen Tags, Mutationenschutz, Child-IDs,
+Pending, Teilfehler/Retry und später die vollständige Orts-/Kartenintegration.
+
+### Phase 4 — Orts-Adapter: erste Korrekturrunde
+
+Typecheck findet zwei alte Test-Dialogbesitzer ohne Wartungshandle. Sie erhalten
+wie der echte Stack pro Öffnungsereignis einen synchronen Offen-Handle. Codeaudit:
+React-Anzeigezustand darf nicht aus synchronen Refs gelesen werden; Dirty-Anzeige
+bleibt aus State abgeleitet, synchrone Getter dienen ausschließlich Ereignissen/
+Wartung. Vollständiger Save bekommt einen separaten React-Abschlusszustand.
+Danach bestehende Ortsdialog-/Draft-Tests und neue Wartungs-Ownerfälle prüfen.
+
+### Phase 4 — Kartenintegration und Testzeitpunkt
+
+Sieben neue Orts-Ownertests bestanden. Bestehender Busy-Test benötigt wie Tabelle
+waitFor auf den nun im Microtask startenden Save; Doppelclick bleibt genau einmal.
+Kartenintegration hält Platzierung synchron und liest die Absicht erst im Save.
+Eigene Kartenanlage erhält eine stabile Dialog-ID als Ortsabhängigkeit. Direkte
+Platzierungsänderungen und neue Kartenanforderungen während der Wartung werden
+abgewiesen; bestätigte Kartenanzeige-Callbacks bleiben erlaubt. Vollständige
+Platzierungs-/Lade- und verschachtelte Ortsabnahme folgt zusätzlich zum Grundadapter.
+
+### Phase 4 — Echter dreistufiger Dialogstapel: Prüfplan
+
+25 Orts-/Kartenregressionstests, vollständiger Typecheck und gezieltes Lint bestanden.
+Zusätzlich jetzt den echten Related-Stack mit WorldLocationDialog als Wurzel und
+Lazy-Integrationen für Fraktion/Tabelle ausführen. Erfolgsfall muss Tabelle, dann
+Fraktion mit Tabellen-ID, dann Ort mit Fraktions-ID persistieren. Fehler auf mittlerer
+Ebene muss den Ort ungespeichert lassen und bei Retry die erfolgreiche Tabelle
+nicht erneut anlegen. Explizites Verwerfen darf keine Ebene persistieren.
+
+### Phase 4 — Ortsabschluss: Korrekturplan
+
+19 neue Owner-/Stacktests bestanden, darunter der komplette dreistufige Dialogstapel.
+Abschlussaudit findet einen bereits bestehenden doppelten Close nach erfolgreichem
+Platzierungs-Retry: Integrationsadapter und Dialog schließen beide. Nur der Dialog
+schließt nach bestätigtem Retry; Adapter liefert ausschließlich Ergebnis. Ein bereits
+vollständig gespeicherter, noch gemounteter Ort soll beim normalen Schließen zudem
+keine ungespeicherten Änderungen mehr behaupten. Danach gezielte Regression und Build.
+
+### Phase 4 — Erfolgreich gespeicherten Ort schließen: Testabgleich
+
+Gemeinsame Regression: 65 Tests bestanden, ein bestehender Test erwartet nach
+bestätigtem vollständigem Save weiterhin einen Unsaved-Dialog. Diese Erwartung
+widerspricht dem eben korrigierten Abschlusszustand. Test wartet den vollständigen
+Busy-Abschluss ab und prüft danach genau einen Close ohne Unsaved-Warnung. Die
+unveränderte Vollständigkeitsassertion des gespeicherten Drafts bleibt erhalten.
+
+### Phase 4 — Orts-Owner und dreistufiger Stapel: Teilaudit
+
+Planabgleich Grundadapter: Orts-Owner registriert Save/Discard und explizite
+Child-Handles. Synchroner Draft schließt pending Tags sowie bestätigte Child-IDs
+ein; Benutzeränderungen bleiben während Wartung/Pending/Teilspeicherung gesperrt.
+Vollständiger Save bestätigt erst saved; partially-saved hält ausschließlich seinen
+Retry bereit, ohne die Ortsanlage zu wiederholen. Verwerfen entfernt keine bereits
+persistierten Teilergebnisse. Die Integration liest die aktuelle Platzierungsabsicht
+im Save und gibt dem eigenen Hexkarten-Dialog eine Wartungs-ID. Ein bestätigter
+Retry schließt nur noch einmal, vollständiger Save erzeugt keine falsche Unsaved-
+Warnung mehr beim anschließenden Schließen.
+
+Sieben Orts-Ownertests prüfen pending/ungültige Tags, direkte gesperrte Eingaben,
+Savefehler, Pending-Normalsave, Teilfehler/Retry, Verwerfen und bestätigte Child-ID.
+Drei weitere Tests verwenden den echten Ort/Fraktion/Tabelle-Dialogstapel: komplette
+Save-Reihenfolge samt IDs, mittlerer Fehler/Retry ohne zweite Tabelle und Discard
+ohne Persistenz. Zusätzliche echte Karteninteraktions-/Lade- und Ortsplatzierungs-
+Wartungstests bleiben offen; vorhandene Kartenregression ist kein vollständiger
+Nachweis hierfür.
+
+Validierung des korrigierten Stands: 66 Tests in neun Dateien bestanden;
+vollständiger Typecheck, gezieltes Lint, Build, Built-Smoke und git diff --check
+bestanden. Smoke belegt Core ready und bestätigt closed. Entwicklungsartefakt,
+kein kanonischer Handoff. Die früher fehlgeschlagenen Testläufe bleiben oben erhalten.
+
+Roadmapabgleich: Phase4 in Arbeit. Weitere Draft-Owner (u.a. Session Planner,
+Gruppenverwaltung, Generator-Einstellungen), vollständige Karteninteraktionssperren,
+Offline-/Update-Gesamtabnahme und anschließende Phasen5–7 bleiben erforderlich.
+Die bereits geprüften Teilbäume ersetzen keine Freigabe der gesamten Phase.

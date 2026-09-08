@@ -26,6 +26,7 @@ export type HexMapEditorInvocation =
   Readonly<{ kind: 'catalog' }> | Readonly<{ kind: 'location-link' }>
 
 export function HexMapDialog(props: {
+  maintenanceId?: string
   close: () => void
   create: (displayName: string) => Promise<HexMapSummary>
   created: (map: HexMapSummary) => void
@@ -46,14 +47,17 @@ export function HexMapDialog(props: {
   const draftRef = useRef(draft)
   const settled = useRef(false)
   const pending = useRef<Promise<boolean> | null>(null)
-  const blocked = useMaintenanceDraft({
-    label: `Hexkarte: ${draft.displayName.trim() || 'Neue Karte'}`,
-    isDirty: () =>
-      !settled.current &&
-      (pending.current !== null || hexMapNameDraftDirty(draftRef.current)),
-    save: saveDraft,
-    discard: discardDraft
-  })
+  const blocked = useMaintenanceDraft(
+    {
+      label: `Hexkarte: ${draft.displayName.trim() || 'Neue Karte'}`,
+      isDirty: () =>
+        !settled.current &&
+        (pending.current !== null || hexMapNameDraftDirty(draftRef.current)),
+      save: saveDraft,
+      discard: discardDraft
+    },
+    props.maintenanceId
+  )
   function saveDraft(): Promise<boolean> {
     if (pending.current) return pending.current
     if (submission.current.phase === 'reconciled') return Promise.resolve(true)

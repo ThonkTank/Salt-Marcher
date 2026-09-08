@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { WorldLocationDialog } from '../../src/renderer/features/worldplanner/world-location-dialog.js'
+import type { WorldLocationDraft } from '../../src/shared/contracts/world-location.js'
 import '@testing-library/jest-dom/vitest'
 import {
   act,
@@ -362,4 +364,118 @@ describe('real faction and table dialog stack', () => {
     expect(save).not.toHaveBeenCalled()
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
+})
+
+describe('real location, faction and table dialog stack', () => {
+  it.each(['save', 'retry', 'discard'] as const)(
+    'settles all three owners on %s',
+    async (mode) => {
+      const calls: string[] = []
+      const createTable = vi.fn(() => {
+        calls.push('table')
+        return Promise.resolve(tableReceipt)
+      })
+      let attempt = 0
+      const createFaction = vi.fn((input: { faction: WorldFactionDraft }) => {
+        calls.push('faction')
+        expect(input.faction.primaryEncounterTableId).toBe(table.id)
+        if (mode === 'retry' && attempt++ === 0)
+          return Promise.reject(new Error('faction write failed'))
+        return Promise.resolve(factionReceipt)
+      })
+      const saveLocation = vi
+        .fn<(draft: WorldLocationDraft) => Promise<{ status: 'saved' }>>()
+        .mockImplementation(() => {
+          calls.push('location')
+          return Promise.resolve({ status: 'saved' })
+        })
+      const port = {
+        creatures: creatures(),
+        biomes: { search: vi.fn() },
+        encounterTables: {
+          read: () => Promise.resolve(emptyEncounterTableSnapshot),
+          create: createTable
+        },
+        factions: {
+          read: () => Promise.resolve({ revision: 0, factions: [] }),
+          create: createFaction
+        }
+      } as unknown as SaltMarcherApi
+      function Harness() {
+        const [open, setOpen] = useState(true)
+        const stack = useRelatedEntityDialogStack({
+          port,
+          onError: vi.fn(),
+          inspect: vi.fn()
+        })
+        return (
+          <ModalLayerProvider>
+            <Suspense fallback={null}>
+              {open && (
+                <WorldLocationDialog
+                  location={null}
+                  references={{
+                    factions: { status: 'ready', value: [] },
+                    tables: { status: 'ready', value: [] }
+                  }}
+                  suggestTags={() => Promise.resolve([])}
+                  close={() => setOpen(false)}
+                  save={saveLocation}
+                  relatedCreation={{
+                    requestFactionCreation: stack.requestFactionCreation,
+                    requestTableCreation: (created) =>
+                      stack.requestTableCreation('location-link', (result) =>
+                        created(result.saved)
+                      )
+                  }}
+                />
+              )}
+              {stack.dialogs}
+            </Suspense>
+          </ModalLayerProvider>
+        )
+      }
+      render(<Harness />)
+      fireEvent.change(screen.getByRole('textbox', { name: 'Ortsname' }), {
+        target: { value: 'Kap' }
+      })
+      fireEvent.change(screen.getByRole('combobox', { name: 'Tags' }), {
+        target: { value: 'Küste' }
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'Neue Fraktion' }))
+      await screen.findByRole('textbox', { name: 'Fraktionsname' })
+      await editNested()
+      begin()
+      if (mode === 'retry') {
+        await act(async () => {
+          expect(await resolution!.resolve('save')).toHaveLength(2)
+        })
+        expect(saveLocation).not.toHaveBeenCalled()
+        expect(createTable).toHaveBeenCalledOnce()
+      }
+      await act(async () => {
+        expect(
+          await resolution!.resolve(mode === 'discard' ? 'discard' : 'save')
+        ).toEqual([])
+      })
+      if (mode === 'discard') {
+        expect(calls).toEqual([])
+        expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+      } else {
+        expect(calls).toEqual(
+          mode === 'retry'
+            ? ['table', 'faction', 'faction', 'location']
+            : ['table', 'faction', 'location']
+        )
+        expect(saveLocation).toHaveBeenCalledExactlyOnceWith(
+          expect.objectContaining({
+            displayName: 'Kap',
+            tags: ['Küste'],
+            factionIds: [factionReceipt.saved.id]
+          })
+        )
+        expect(createTable).toHaveBeenCalledOnce()
+      }
+    }
+  )
 })

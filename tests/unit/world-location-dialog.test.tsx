@@ -150,13 +150,18 @@ describe('WorldLocationDialog', () => {
       })
     )
 
+    await waitFor(() =>
+      expect(
+        screen.getByRole('dialog', { name: 'Ort erstellen' })
+      ).not.toHaveAttribute('aria-busy')
+    )
     fireEvent.click(screen.getByRole('button', { name: 'Dialog schließen' }))
     expect(
-      screen.getByRole('alertdialog', {
+      screen.queryByRole('alertdialog', {
         name: 'Ungespeicherte Änderungen verwerfen?'
       })
-    ).toBeVisible()
-    expect(close).not.toHaveBeenCalled()
+    ).not.toBeInTheDocument()
+    expect(close).toHaveBeenCalledOnce()
   })
 
   it('owns async busy and inline failure state', async () => {
@@ -185,7 +190,7 @@ describe('WorldLocationDialog', () => {
     expect(
       screen.getByRole('dialog', { name: 'Ort erstellen' })
     ).toHaveAttribute('aria-busy', 'true')
-    expect(save).toHaveBeenCalledOnce()
+    await waitFor(() => expect(save).toHaveBeenCalledOnce())
     fireEvent.click(screen.getByRole('button', { name: 'Erstellen' }))
     expect(save).toHaveBeenCalledOnce()
 
@@ -409,15 +414,37 @@ function TestWorldLocationDialog(
   const [tableCreated, setTableCreated] = useState<
     ((value: EncounterTable) => void) | null
   >(null)
-  const closeFaction = () => setFactionCreated(null)
-  const closeTable = () => setTableCreated(null)
+  const [closeFactionHandle, setCloseFactionHandle] = useState(() => () => {})
+  const [closeTableHandle, setCloseTableHandle] = useState(() => () => {})
+  const closeFaction = () => {
+    closeFactionHandle()
+    setFactionCreated(null)
+  }
+  const closeTable = () => {
+    closeTableHandle()
+    setTableCreated(null)
+  }
   return (
     <>
       <WorldLocationDialog
         {...dialogProps}
         relatedCreation={{
-          requestFactionCreation: (created) => setFactionCreated(() => created),
-          requestTableCreation: (created) => setTableCreated(() => created)
+          requestFactionCreation: (created) => {
+            let open = true
+            setCloseFactionHandle(() => () => {
+              open = false
+            })
+            setFactionCreated(() => created)
+            return { id: 'test-faction', isOpen: () => open }
+          },
+          requestTableCreation: (created) => {
+            let open = true
+            setCloseTableHandle(() => () => {
+              open = false
+            })
+            setTableCreated(() => created)
+            return { id: 'test-table', isOpen: () => open }
+          }
         }}
       />
       {factionCreated &&

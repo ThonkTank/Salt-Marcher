@@ -1,4 +1,9 @@
-import { useState, type ReactNode } from 'react'
+import { useRef, useState, type ReactNode } from 'react'
+import { useMaintenanceDraft } from '../../shell/maintenance-drafts.js'
+import {
+  maintenanceDraftCoordinator,
+  type MaintenanceDraftHandle
+} from '../../shell/maintenance-draft-coordinator.js'
 import type {
   WorldLocation,
   WorldLocationDraft
@@ -48,6 +53,8 @@ export type WorldLocationDialogProps = Readonly<{
   save: (draft: WorldLocationDraft) => Promise<WorldLocationDialogSubmitResult>
   aside?: (props: WorldLocationDialogAsideProps) => ReactNode
   externalDirty?: boolean
+  maintenanceDependencies?: () => readonly string[]
+  hasExternalChanges?: () => boolean
   relatedCreation?: WorldLocationRelatedCreation
 }>
 
@@ -61,7 +68,6 @@ export function WorldLocationDialog(props: WorldLocationDialogProps) {
 }
 
 function WorldLocationDialogContent(props: WorldLocationDialogProps) {
-  const form = useWorldLocationDraft(props.location, props.externalDirty)
   const [factionQuery, setFactionQuery] = useState('')
   const [tableQuery, setTableQuery] = useState('')
   const [discardOpen, setDiscardOpen] = useState(false)
@@ -73,10 +79,92 @@ function WorldLocationDialogContent(props: WorldLocationDialogProps) {
   > | null>(null)
   const [createdFactions, setCreatedFactions] = useState<WorldFaction[]>([])
   const [createdTables, setCreatedTables] = useState<EncounterTable[]>([])
+  const pending = useRef<Promise<boolean> | null>(null)
+  const recovery = useRef<typeof partialRecovery>(null)
+  const settled = useRef(false)
+  const [complete, setComplete] = useState(false)
+  const children = useRef<MaintenanceDraftHandle[]>([])
+  const form = useWorldLocationDraft(
+    props.location,
+    props.externalDirty,
+    () =>
+      pending.current !== null || recovery.current !== null || settled.current
+  )
+  const blocked = useMaintenanceDraft({
+    label: `Ort: ${form.draft.displayName.trim() || 'Neuer Ort'}`,
+    get dependsOn() {
+      return [
+        ...children.current
+          .filter((child) => child.isOpen())
+          .map((child) => child.id),
+        ...(props.maintenanceDependencies?.() ?? [])
+      ]
+    },
+    isDirty: () =>
+      !settled.current &&
+      (pending.current !== null ||
+        recovery.current !== null ||
+        form.isDirty() ||
+        (props.hasExternalChanges?.() ?? false)),
+    save: saveDraft,
+    discard: discardDraft
+  })
+  const inputBlocked = () =>
+    maintenanceDraftCoordinator.isLocked() || pending.current !== null
+  const editingBlocked =
+    submitting || blocked || partialRecovery !== null || complete
+  function saveDraft(): Promise<boolean> {
+    if (pending.current) return pending.current
+    if (settled.current) return Promise.resolve(true)
+    const retry = recovery.current
+    const value = retry ? null : form.prepareSave()
+    if (!retry && !value) return Promise.resolve(false)
+    setSubmitting(true)
+    setSubmitError(null)
+    const operation = Promise.resolve()
+      .then(() => (retry ? retry.retry() : props.save(value!)))
+      .then((result) => {
+        if (result.status === 'partially-saved') {
+          recovery.current = result
+          setPartialRecovery(result)
+        }
+        if (result.status === 'saved') {
+          settled.current = true
+          setComplete(true)
+          recovery.current = null
+          setPartialRecovery(null)
+          if (retry) props.close()
+          return true
+        }
+        setSubmitError(result.message)
+        return false
+      })
+      .catch((cause: unknown) => {
+        setSubmitError(
+          cause instanceof Error
+            ? cause.message
+            : 'Speichern fehlgeschlagen. Bitte erneut versuchen.'
+        )
+        return false
+      })
+      .finally(() => {
+        pending.current = null
+        setSubmitting(false)
+      })
+    pending.current = operation
+    return operation
+  }
+  async function discardDraft(): Promise<boolean> {
+    if (pending.current) await pending.current
+    props.close()
+    settled.current = true
+    setComplete(true)
+    return true
+  }
   const { nameMissing, tagsMissing, draft: validDraft } = form.validation
   const requestClose = () => {
-    if (submitting) return
-    if (form.dirty) setDiscardOpen(true)
+    if (inputBlocked()) return
+    if (!settled.current && form.dirty) setDiscardOpen(true)
     else props.close()
   }
   const status = nameMissing
@@ -92,7 +180,7 @@ function WorldLocationDialogContent(props: WorldLocationDialogProps) {
   return (
     <>
       <EditorDialogFrame
-        busy={submitting}
+        busy={submitting || blocked}
         className="location-dialog"
         ariaLabel={
           props.location
@@ -108,19 +196,7 @@ function WorldLocationDialogContent(props: WorldLocationDialogProps) {
         closeLabel={message('ui.dialog.schliessen')}
         onClose={requestClose}
         onSubmit={() => {
-          if (submitting || partialRecovery || !validDraft) return
-          setSubmitting(true)
-          setSubmitError(null)
-          void props
-            .save(validDraft)
-            .then((result) => {
-              if (result.status === 'failed') setSubmitError(result.message)
-              if (result.status === 'partially-saved') {
-                setSubmitError(result.message)
-                setPartialRecovery(result)
-              }
-            })
-            .finally(() => setSubmitting(false))
+          if (!inputBlocked() && !partialRecovery) void saveDraft()
         }}
         footer={
           <>
@@ -132,7 +208,7 @@ function WorldLocationDialogContent(props: WorldLocationDialogProps) {
               <ModalCloseButton>{message('action.cancel')}</ModalCloseButton>
               <button
                 className="location-primary-action"
-                disabled={submitting || partialRecovery !== null || !validDraft}
+                disabled={editingBlocked || !validDraft}
               >
                 {props.location
                   ? message('action.save')
@@ -142,17 +218,9 @@ function WorldLocationDialogContent(props: WorldLocationDialogProps) {
                 <button
                   type="button"
                   className="location-primary-action"
-                  disabled={submitting}
+                  disabled={submitting || blocked}
                   onClick={() => {
-                    setSubmitting(true)
-                    setSubmitError(null)
-                    void partialRecovery
-                      .retry()
-                      .then((result) => {
-                        if (result.status === 'saved') props.close()
-                        else setSubmitError(result.message)
-                      })
-                      .finally(() => setSubmitting(false))
+                    if (!inputBlocked()) void saveDraft()
                   }}
                 >
                   {message('action.retry')}
@@ -176,42 +244,40 @@ function WorldLocationDialogContent(props: WorldLocationDialogProps) {
           createdFactions={createdFactions}
           createdTables={createdTables}
           suggestTags={props.suggestTags}
-          disabled={submitting}
+          disabled={editingBlocked}
           aside={props.aside?.({
             locationId: props.location?.id ?? null,
             locationName: form.draft.displayName.trim() || message('ui.ort'),
-            disabled: submitting
+            disabled: editingBlocked
           })}
           {...(props.relatedCreation
             ? {
-                createFaction: () =>
-                  props.relatedCreation!.requestFactionCreation((faction) => {
-                    setCreatedFactions((current) =>
-                      current.some((entry) => entry.id === faction.id)
-                        ? current
-                        : [...current, faction]
-                    )
-                    form.change(
-                      'factionIds',
-                      form.draft.factionIds.includes(faction.id)
-                        ? form.draft.factionIds
-                        : [...form.draft.factionIds, faction.id]
-                    )
-                  }),
-                createTable: () =>
-                  props.relatedCreation!.requestTableCreation((table) => {
-                    setCreatedTables((current) =>
-                      current.some((entry) => entry.id === table.id)
-                        ? current
-                        : [...current, table]
-                    )
-                    form.change(
-                      'encounterTableIds',
-                      form.draft.encounterTableIds.includes(table.id)
-                        ? form.draft.encounterTableIds
-                        : [...form.draft.encounterTableIds, table.id]
-                    )
-                  })
+                createFaction: () => {
+                  if (inputBlocked() || editingBlocked) return
+                  children.current.push(
+                    props.relatedCreation!.requestFactionCreation((faction) => {
+                      form.acceptRelated('factionIds', faction.id)
+                      setCreatedFactions((current) =>
+                        current.some((entry) => entry.id === faction.id)
+                          ? current
+                          : [...current, faction]
+                      )
+                    })
+                  )
+                },
+                createTable: () => {
+                  if (inputBlocked() || editingBlocked) return
+                  children.current.push(
+                    props.relatedCreation!.requestTableCreation((table) => {
+                      form.acceptRelated('encounterTableIds', table.id)
+                      setCreatedTables((current) =>
+                        current.some((entry) => entry.id === table.id)
+                          ? current
+                          : [...current, table]
+                      )
+                    })
+                  )
+                }
               }
             : {})}
         />
@@ -221,8 +287,12 @@ function WorldLocationDialogContent(props: WorldLocationDialogProps) {
           message={message('ui.ungespeicherte.aenderungen.verwerfen')}
           cancelLabel={message('action.cancel')}
           discardLabel={message('ui.aenderungen.verwerfen')}
-          onCancel={() => setDiscardOpen(false)}
-          onDiscard={props.close}
+          onCancel={() => {
+            if (!inputBlocked()) setDiscardOpen(false)
+          }}
+          onDiscard={() => {
+            if (!inputBlocked()) void discardDraft()
+          }}
         />
       )}
     </>
