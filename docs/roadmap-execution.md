@@ -13,7 +13,7 @@ Ergänzende Detailanforderungen: [Zielzustand](project/architecture/release-main
 | Phase | Status    |
 | ----- | --------- |
 | 1     | abgeschlossen |
-| 2     | in Arbeit |
+| 2     | abgeschlossen |
 | 3–7   | offen |
 
 ## Phase 1 — Plan, vor Änderungen
@@ -520,3 +520,141 @@ neuen gemeinsamen Starter noch nicht installieren. Nächster Schritt ist die
 Extraktion des Helfers aus dem geprüften Ziel-AppImage, dauerhafte Installation
 vor Desktop-Aktivierung und Ablösung des alten Release-Shell-Fallbacks. Danach
 Anbindungstests einschließlich unterbrochener Installation und Abschlussaudit.
+
+### Phase 2 — Installeranbindung des Starthelfers, Plan vor Änderung
+
+Vorheriger Zielturn: Fortschritt (ca90dd7d8, gebündelter und separat geprüfter
+Starthelfer). Aktuelle Arbeitskopie sauber. Jetzt gemeinsame Extraktion aus dem
+hashgeprüften Ziel-AppImage über dessen Node-Modus; keine Workspace-Kopie als
+Produktionsquelle. Ausgabe gerahmt und begrenzt lesen, Programmhash vor und nach
+dem Lesen prüfen. Local-Testartefakte aus Text haben dafür eine ausdrücklich
+benannte Extraktions-Testnaht; echte AppImage-Qualifikation bleibt separat.
+
+Beide Installer installieren denselben Starter mit einem erhaltenen unveränderlichen
+AppImage als Interpreter, bevor normale Desktop-Aktivierung möglich ist. Local-
+Desktop-Eintrag zeigt auf root/start. Release ersetzt seinen bisherigen Shell-
+Fallback durch denselben Starter. Bestehende Journale und die normale Startprüfung
+bleiben beim gemeinsamen Koordinator. Aktivierungs-/Wiederverwendungsprüfung muss
+auch fehlende oder veränderte Starterbelege erkennen. Bei einem Fehler darf der
+bisherige Datenstand nicht ersetzt werden. Nachweise: vollständige Local-Tests,
+Release-Controller-/Launcher-Tests, echte Extraktion aus einem neu gebauten Test-
+AppImage, dann Phase-2-Abschlussaudit.
+
+### Phase 2 — Korrekturrunde: AppImage-Entpackverzeichnisse
+
+Echte Installer-/Desktop-Probe: Zielhelfer bytegleich extrahiert; gemeinsamer
+Rollback erfolgreich, vorherige echte App erreicht Core ready und regulären
+Core-Exit 0. Gesamtstarter liefert dennoch 127 mit „Failed to clean up cache
+directory“. Interpreter und normale App sind dasselbe alte AppImage und verwenden
+beim verschachtelten Extract-and-run denselben temporären Cache.
+Korrekturplan: dem normalen Kindprozess ein eigenes temporäres Verzeichnis geben,
+nach dessen Ende ausschließlich dieses eigene Verzeichnis aufräumen. Danach das
+Artefakt neu bauen und die identische Probe wiederholen; den bisherigen Lauf
+nicht als bestanden zählen. Tests müssen zusätzlich Fehler nach bestätigter
+Nutzung ohne Datenrollback und einen ersten erfolgreichen Start prüfen.
+
+Echte Probe nach Korrektur bestanden: vorheriges Local-AppImage SHA
+8801d0ba2a6847d48745d4af9978adbd29fbec5c7761ab6f1b8f62ffc55c6c57,
+neu gebautes Test-AppImage SHA
+2cbb42f80f37b2eee7fa2c6ee87613ed9a8722d7f5d7b6217e49f664850f7635.
+Helfer bytegleich aus dem Ziel extrahiert. Isolierte Kampagne Starthelfer-Probe:
+beschädigtes unbestätigtes Ziel → Desktop-Rollback → alte App ready; danach intaktes
+Update → installierter Runtime-Verifier bestätigt → normaler Desktopstart; erst
+anschließend beschädigtes Programm lässt bestätigte spätere Notizen unverändert.
+Beide Artefakte tragen noch Paketversion 0.2.0; unterschiedliche Builds und echtes
+Starterverhalten, kein behaupteter veröffentlichter Versions-/Schemawechsel.
+
+Ergänzende Prüfplanung: Extraktionsgrenze direkt gegen falschen Hash, Prozessfehler,
+mehrdeutige Ausgabe und Änderung während Ausführung testen. Starterbeleg-Reparatur
+über den echten Local-Adapter prüfen. Diese neuen Tests verändern keine App-Build-
+Eingaben des bereits geprüften technischen Artefakts.
+
+### Phase 2 — Korrekturrunde: Übergang vom Starter zur alten App
+
+Auditabweichung: Zwischen Freigabe der Profilsperre im Helfer und Erwerb durch die
+normale App kann ein externer Local-Installer beginnen. Ein alter Local-Build
+versteht das gemeinsame Journal noch nicht und darf nach diesem Fenster keinen
+inzwischen aktivierten neuen Datenstand öffnen. Korrektur: eine Startreservierung
+über dieselbe bestehende Sperrimplementierung hält den gesamten Desktop-Kindprozess;
+Local-Installer erwerben sie vor der Profilsperre. Der normale App-Profilbesitz
+bleibt unverändert. Dies verhindert externe Installation schon während der
+Startübergabe. Kanalübergreifende kanonische Pfade bleiben ausdrücklich Phase 3.
+Tests: blockierte Installation bei aktiver Startreservierung und garantierte
+Freigabe nach fehlgeschlagenem Start. Keine neue Recovery-Entscheidungsquelle.
+
+### Phase 2 — Korrekturrunde: Lebensdauer bei Relaunch und Extraktion
+
+Audit: relaunchRelease legt sein Verzeichnis unter dem aktuellen TMPDIR an. Ein
+rekursives Entfernen dieses Elternverzeichnisses durch den neuen Starter könnte
+den bereits neu gestarteten Prozess beschädigen. Nach dem Kindprozess nur ein
+leeres Verzeichnis entfernen; belegte Nachfolgerverzeichnisse erhalten. Außerdem
+braucht readAppImageLauncher eigenes TMPDIR, insbesondere bei Restore aus dem
+noch laufenden AppImage. Dafür einen eigenen, begrenzten Extraktionsprozess ohne
+normale App starten und nur dessen Scratch nach Ende entfernen. Regressionstest
+mit belegtem Relaunch-Verzeichnis und leerem Normalfall ergänzen.
+
+Vollständige technische Probe mit Startreservierung und frischer Installation
+bestanden (Testartefakt 516cf02a0daf27dca029a022f82c653681b0087b4a8339d7b5307de638bd1ede).
+Zusatzprüfung: 24 Start-/Extraktionstests bestanden. TypeScript und 91 Architektur-
+tests bestanden. ESLint beanstandet Throw im Cleanup-finally: eine nichtkritische
+Temp-Bereinigung darf das Ergebnis der App nicht überschreiben. Unerwartete
+Cleanupfehler nur protokollieren, erhaltene Verzeichnisse nicht rekursiv löschen;
+Lint und Zielartefaktprobe nach dieser Korrektur erneut prüfen.
+
+### Phase 2 — Abschlussaudit-Korrektur: mehrdeutiger Release-v1-Rollback
+
+Historischer Producer 4bd7892/core/maintenance/profile-transaction.ts geprüft:
+Nach Rückkehr alter Daten ist entweder die unaktivierte Arbeitskopie staged-ID
+oder der erhaltene fehlgeschlagene Stand failed-ID vorhanden. Der aktuelle
+v1-Adapter prüft bei rolling-back ohne previous-ID nur, ob Live-Daten existieren;
+das reicht bei verlorenem vorherigem Stand nicht als Recovery-Nachweis.
+Korrektur: bei hadData zusätzlich staged-ID oder failed-ID verlangen, sonst
+Journal und Daten unverändert lassen und Prüfung verlangen. Den gültigen bisherigen
+Test mit failed-ID beibehalten; mehrdeutigen Fall ohne beide Marker ergänzen.
+Dies betrifft ausschließlich Legacy-Release-Aufnahme, nicht den in der technischen
+AppImage-Probe ausgeführten Local-Startpfad.
+
+
+## Phase 2 — Abschlussaudit, 2026-09-08
+
+Gemeinsamer Abschlusslauf: 159 Tests in acht Koordinator-/Local-/Release-Dateien,
+alle bestanden. TypeScript und ESLint bestanden. 91 Architekturtests bestanden.
+Zuvor und nach Korrekturen: eigenständiger Helper-Build, vollständiger Local-Build
+und AppImage-Paketierung erfolgreich. Abschließende technische Artefaktprobe mit
+Zielhash 0995d1b717e29a8674c393febad4fa0c0236134d30f95dbd37980be5dfc03670
+und vorherigem Hash 8801d0ba2a6847d48745d4af9978adbd29fbec5c7761ab6f1b8f62ffc55c6c57
+bestanden, einschließlich leerer Erstinstallation und installierter Runtimeprüfung.
+Der spätere Release-v1-Guard ist durch Release- und Abschlusstests belegt; diese
+Release-only-Korrektur wird nicht dem vorherigen Local-Testartefakt zugeschrieben.
+
+Audit gegen Phase-2-Plan:
+1. Striktes gemeinsames Journal, dauerhafte Übergänge und Abschluss vor Freigabe:
+   implementiert; gemeinsame Fehler-/Commit-/Rücksetzungstests bestanden.
+2. Backup, Migration und fachlicher Readback bleiben gemeinsame Datenmodule;
+   Aktivierung ist daraus entfernt, SQL verbleibt bei Datenbankverantwortlichen.
+3. Beide Adapter und deren Startbarrieren benutzen den Koordinator. Wiederherstellung
+   verwendet das vorhandene Release-Deployment; Test prüft Identität und Anzahl.
+4. Local-Handoff-Belege behalten Provenienzfunktion, entscheiden nicht über Recovery;
+   Belegwiederverwendung prüft gemeinsames Journal und Starteridentität.
+5. Alte Producer entfernt. Local-/Release-Altjournale werden vor neuer Wartung
+   aufgenommen, mehrdeutige alte Zustände ohne Live-Änderung abgewiesen.
+6. Gemeinsame Unterbrechungstabelle und konkrete Adaptertests bestanden. Echter
+   Starter mit zwei AppImages zusätzlich geprüft; keine Datenrollback-Automatik
+   nach bestätigter Nutzung.
+
+Separates Audit gegen kanonische Phase 2: bestanden im geforderten gemeinsamen
+Wartungs-/Recovery-Umfang. Phasenstatus auf abgeschlossen gesetzt. Vollständige
+historische Schema-Artefakte und alle physisch/packaged injizierten Fehlerfälle
+bleiben ausdrücklich Phase 5, kanalübergreifende Profile/Pfad-Aliase Phase 3.
+Die Abnahmematrix ist auf die jetzigen Besitzer und Belege aktualisiert.
+
+Fortschrittsstatus: implementiert und gezielt automatisiert geprüft; nicht als
+neuer kanonischer Local-Handoff, Main-Promotion, echter Nutzerdaten-Livetest oder
+öffentliche Veröffentlichung ausgegeben. Diese Gesamtgates bleiben offen.
+GitHub Check 34221766403 für den vorherigen ca90dd7d8-Zwischenstand ist erfolgreich;
+auch das ist kein Remote-Nachweis für die jetzt folgenden Änderungen.
+
+Nächste Phase: Phase 3 nach erneuter Bestandsaufnahme planen. Gemeinsame kanonische
+Profilsperren einschließlich Startreservierung und dauerhaft angelegter Profil-
+verzeichnisse, vollständige sichere Quelle/Übernahme, Restore sowie Recovery ohne
+startfähige Kampagnendatenbank. Die ursprüngliche Roadmap bleibt unverändert.

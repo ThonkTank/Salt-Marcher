@@ -10,15 +10,15 @@ Status below is evidence classification, not a declaration of passing execution.
 | M01 | Preserve baseline 39/34                       | release-baseline.test.ts; fixture already at current schema                                              | 1/5: run baseline, extend exact settings/content assertions                                         |
 | M02 | Real forward migration and skipped version    | loot-schema-31-migration.test.ts covers a domain transition; synthetic AppImages share schemas           | 5: immutable historical schema artifacts A→B→C and A→C; compare semantic state                      |
 | M03 | No downgrade/missing path/reset               | persistence-preflight.ts rejects incompatible inputs                                                     | 2/5: source byte comparison for missing edge/newer schema/corruption                                |
-| M04 | One Local/Release transaction                 | profile-transaction.ts, release/deployment.ts and local-installation/recovery.ts have separate authority | 2: both adapters run identical fault table and use one authoritative journal                        |
-| M05 | Durable intent and recovery at every boundary | release-recovery.test.ts covers some activation failures                                                 | 2/5: kill before/after intent, moves, startup/commit and recovery itself; restart repeatedly        |
-| M06 | Never rollback accepted later work            | release-maintenance.test.ts and release-recovery.test.ts                                                 | 2/5: commit, edit, crash, restart; exact later-state comparison                                     |
+| M04 | One Local/Release transaction                 | Shared coordinator owns both adapters; Phase-2 completion suite passed | 2: both adapters run identical fault table and use one authoritative journal                        |
+| M05 | Durable intent and recovery at every boundary | Shared forward/recovery boundary tests passed; real Local starter fault probe passed                                                 | 2/5: kill before/after intent, moves, startup/commit and recovery itself; restart repeatedly        |
+| M06 | Never rollback accepted later work            | Commit/write/crash tests and damaged-accepted-AppImage probe preserve later work                                                 | 2/5: commit, edit, crash, restart; exact later-state comparison                                     |
 | M07 | Safe source import across channels/aliases    | import test uses quiet source; SingletonLock check insufficient                                          | 3: parallel Development/Local/Release processes; canonical aliases; source hashes unchanged         |
 | M08 | Full profile preservation                     | snapshot inventory and domain readback exist                                                             | 3/5: exact preferences, inactive/trash campaigns, user files, own content and resumable live state  |
 | M09 | Consistent legacy export only                 | diagnostic JSON is explicitly unsupported                                                                | 3: qualify producer+format or reject; no unsupported direct-folder fallback                         |
 | M10 | Restore plus prior backup                     | release-maintenance.test.ts includes corrupt-current preservation                                        | 3/5: compare both retained current state and migrated restored state; reject newer backup           |
 | M11 | Recovery without campaign DB                  | lifecycle recovery and error UI exist                                                                    | 3/4: launch with damaged profile, enumerate backups, restore through UI                             |
-| M12 | Reuse installed executable for restore        | controller currently stages deployment                                                                   | 2: unchanged executable deployment count and identity after restore                                 |
+| M12 | Reuse installed executable for restore        | Controller restore reuses the same deployment; identity/count assertions passed                                                                   | 2: unchanged executable deployment count and identity after restore                                 |
 | M13 | Resolve all drafts                            | dirty-ID guard currently blocks only                                                                     | 4: multi-editor save/discard/cancel, partial save failure, edit barrier                             |
 | M14 | Explicit download/install; offline usable     | transport/controller tests exist                                                                         | 4/5: UI and feed demonstrate no automatic download/install or shutdown install                      |
 | M15 | Verify origin/manifest/arch/size/hash         | release-contract.test.ts, release-transport.test.ts                                                      | 5: damaged/truncated/wrong-origin payload never executed; progress/errors actionable                |
@@ -47,7 +47,7 @@ schema/migration semantics. No invented production migration merely to pass a te
 Choose three actual schema stands for skipped-release qualification. Exact artifact
 commits are an open Phase 5 deliverable, not existing evidence.
 
-## Current owner to target owner
+## Original owner to target owner (Phase-1 inventory)
 
 | Existing implementation                                          | Target responsibility                                                                 |
 | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
@@ -67,3 +67,30 @@ Selected historical sources (Phase 1 audit): A=52a0cc28cdb332406a4d03e0a14cc005e
 (37/34), B=6e84a12c1c83cd6437680ae70529cdc9723c353b (38/34),
 C=c583e05506e10d8446a4e210fa0603e3be53d63a (39/34). Their schema metadata and
 production migration edges were inspected; packaged execution remains unqualified.
+
+
+## Phase 2 evidence update
+
+Local and Release now use `shared/maintenance/coordinator.ts`; the obsolete Local
+activation/recovery producer is removed. Legacy adapters preserve source evidence
+and admit only identifiable recovery states. The shared standalone starter uses a
+verified retained AppImage's Node mode, before any normal application data access.
+Local startup reservations cover the handover to legacy executables. Cross-channel
+canonical path/lock admission remains Phase 3.
+
+Completion run: 159 tests in eight maintenance/adapter files passed; 91 architecture
+tests and static checks passed. Real isolated Local test used the previous AppImage
+`8801d0ba2a6847d48745d4af9978adbd29fbec5c7761ab6f1b8f62ffc55c6c57`
+and target `0995d1b717e29a8674c393febad4fa0c0236134d30f95dbd37980be5dfc03670`.
+It covered helper extraction from target bytes, a damaged unconfirmed target,
+rollback and previous-runtime startup, acceptance of an intact update, normal
+desktop startup, preservation of later work after accepted-program damage, and
+fresh installation/startup. These are two real builds with the same package/schema
+versions and a synthetic campaign. They do not establish Phase-5 historical schema
+qualification or Phase-7 acceptance with the user's real campaign.
+
+The later Release-v1 ambiguity guard was verified separately and in the 159-test
+completion run. The exact Local artifact probe did not exercise that Release-only
+branch. Canonical CI artifact handoff, main promotion, live acceptance and publication
+remain separate, outstanding gates. See `../../roadmap-execution.md` for corrective
+rounds and scope of each result.

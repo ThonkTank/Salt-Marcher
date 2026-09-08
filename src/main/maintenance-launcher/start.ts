@@ -1,5 +1,13 @@
+import { withLaunchReservation } from '../local-profile/launch-reservation.js'
 import { spawnSync } from 'node:child_process'
-import { existsSync, lstatSync, readlinkSync } from 'node:fs'
+import {
+  existsSync,
+  lstatSync,
+  mkdtempSync,
+  readlinkSync,
+  rmdirSync
+} from 'node:fs'
+import { tmpdir } from 'node:os'
 import { basename, join, resolve } from 'node:path'
 import { sha256 } from '../../shared/maintenance/files.js'
 import { MaintenanceCoordinator } from '../../shared/maintenance/coordinator.js'
@@ -51,23 +59,49 @@ export function launchDesktop(
   root: string,
   arguments_: readonly string[]
 ): number {
+  return withLaunchReservation(root, () =>
+    launchReservedDesktop(root, arguments_)
+  )
+}
+
+function launchReservedDesktop(
+  root: string,
+  arguments_: readonly string[]
+): number {
   const executable = admitDesktopStart(root)
   const environment = { ...process.env }
   for (const key of ['ELECTRON_RUN_AS_NODE', 'APPIMAGE', 'APPDIR', 'OWD'])
     delete environment[key]
-  const result = spawnSync(
-    executable,
-    [`--user-data-dir=${join(root, 'profile')}`, ...arguments_],
-    {
-      stdio: 'inherit',
-      env: environment
-    }
-  )
-  if (result.error)
-    throw new Error(
-      'Das installierte Programm konnte nicht gestartet werden.',
-      { cause: result.error }
+  // AppImage runtimes may share a content-addressed extraction cache. A child
+  // running the same image must not remove its interpreter's active cache.
+  const temporary = mkdtempSync(join(tmpdir(), 'salt-desktop-'))
+  environment['TMPDIR'] = temporary
+  try {
+    const result = spawnSync(
+      executable,
+      [`--user-data-dir=${join(root, 'profile')}`, ...arguments_],
+      {
+        stdio: 'inherit',
+        env: environment
+      }
     )
-  // Never interpret a later runtime failure as permission to roll back user work.
-  return result.status ?? 1
+    if (result.error)
+      throw new Error(
+        'Das installierte Programm konnte nicht gestartet werden.',
+        { cause: result.error }
+      )
+    // Never interpret a later runtime failure as permission to roll back user work.
+    return result.status ?? 1
+  } finally {
+    try {
+      rmdirSync(temporary)
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code
+      if (code !== 'ENOTEMPTY' && code !== 'ENOENT')
+        console.warn(
+          'Das temporäre Laufzeitverzeichnis konnte nicht entfernt werden.',
+          error
+        )
+    }
+  }
 }

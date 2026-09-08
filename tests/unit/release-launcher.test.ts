@@ -1,3 +1,4 @@
+import { readAppImageLauncher } from '../../src/shared/maintenance/appimage-launcher.js'
 import { installMaintenanceLauncher } from '../../src/shared/maintenance/launcher.js'
 import { releaseManifestSchema } from '../../src/shared/contracts/release.js'
 import { execFileSync, spawnSync } from 'node:child_process'
@@ -14,7 +15,7 @@ import {
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { randomUUID } from 'node:crypto'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { releaseDeployment } from '../support/release-maintenance.js'
 import {
   currentProgram,
@@ -24,13 +25,18 @@ import {
 } from '../../src/main/release/deployment.js'
 import { MaintenanceCoordinator } from '../../src/shared/maintenance/coordinator.js'
 import { durableJson, sha256 } from '../../src/shared/maintenance/files.js'
+vi.mock('../../src/shared/maintenance/appimage-launcher.js', () => ({
+  readAppImageLauncher: vi.fn(() =>
+    Buffer.from('process.stdout.write("shared-helper")')
+  )
+}))
 const roots: string[] = []
 afterEach(() => {
   for (const root of roots.splice(0))
     rmSync(root, { recursive: true, force: true })
 })
 describe('stable release launcher', () => {
-  it('uses the authoritative journal fallback only until the transaction is committed', () => {
+  it('installs the target helper using the retained runtime', () => {
     const workspace = mkdtempSync(join(tmpdir(), "salt launcher '"))
     roots.push(workspace)
     const root = join(workspace, 'salt-marcher')
@@ -48,7 +54,10 @@ describe('stable release launcher', () => {
       durableJson(manifestPath, manifest)
       return id
     }
-    const previous = executable('0.1.99', '#!/bin/sh\nprintf "%s" "$*"\n')
+    const previous = executable(
+      '0.1.99',
+      `#!/bin/sh\nexec '${process.execPath}' "$@"\n`
+    )
     const next = executable('0.2.0', '#!/bin/sh\nexit 47\n')
     setCurrent(root, previous)
     const id = randomUUID()
@@ -61,15 +70,18 @@ describe('stable release launcher', () => {
       previous: currentProgram(root),
       next: deploymentProgram(root, next)
     })
-    installLauncher(root)
+    installLauncher(root, deploymentProgram(root, next))
     coordinator.activate()
     expect(execFileSync(join(root, 'start'), { encoding: 'utf8' })).toBe(
+      'shared-helper'
+    )
+    expect(readAppImageLauncher).toHaveBeenCalledWith(
+      join(root, 'deployments', next, 'SaltMarcher.AppImage'),
+      deploymentProgram(root, next).sha256
+    )
+    expect(readFileSync(join(root, 'start'), 'utf8')).not.toContain(
       '--release-recover'
     )
-    coordinator.commit(id)
-    const result = spawnSync(join(root, 'start'), { encoding: 'utf8' })
-    expect(result.status).toBe(47)
-    expect(result.stdout).toBe('')
   })
 })
 

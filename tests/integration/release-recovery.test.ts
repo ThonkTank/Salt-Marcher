@@ -164,6 +164,33 @@ describe('pre-baseline journal adoption', () => {
       expect(existsSync(join(root, 'activation.json'))).toBe(false)
     }
   )
+  it('preserves an ambiguous legacy rollback without declaring a previous data pair', () => {
+    rmSync(join(root, `staged-${prepared.id}`), { recursive: true })
+    setCurrent(root, nextDeployment)
+    const old = {
+      formatVersion: 1,
+      id: prepared.id,
+      phase: 'rolling-back',
+      hadData: true
+    }
+    durableJson(join(root, 'maintenance-journal.json'), old)
+    durableJson(join(root, 'activation.json'), {
+      formatVersion: 1,
+      id: randomUUID(),
+      previous: oldDeployment,
+      next: nextDeployment,
+      phase: 'pending'
+    })
+    expect(() => recoverRelease()).toThrow('nicht eindeutig')
+    expect(
+      JSON.parse(readFileSync(join(root, 'maintenance-journal.json'), 'utf8'))
+    ).toEqual(old)
+    expect(readFileSync(join(maintenance.data, 'note.txt'), 'utf8')).toBe(
+      'original'
+    )
+    expect(readlinkSync(join(root, 'current'))).toContain(nextDeployment)
+    expect(existsSync(join(root, 'activation.json'))).toBe(true)
+  })
   it('resumes legacy rollback after the old data already moved back', () => {
     renameSync(
       join(root, `staged-${prepared.id}`),

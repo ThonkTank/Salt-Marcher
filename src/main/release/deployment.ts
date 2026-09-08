@@ -1,3 +1,5 @@
+import { readAppImageLauncher } from '../../shared/maintenance/appimage-launcher.js'
+import { installMaintenanceLauncher } from '../../shared/maintenance/launcher.js'
 import {
   chmodSync,
   copyFileSync,
@@ -91,34 +93,32 @@ export function stageDeployment(
   syncPath(dirname(directory))
   return id
 }
-export function installLauncher(root: string): void {
-  const quote = (text: string) => `'${text.replaceAll("'", "'\\''")}'`
+export function installLauncher(
+  root: string,
+  target: MaintenanceProgram
+): void {
+  const executable = join(
+    root,
+    'deployments',
+    target.deployment,
+    'SaltMarcher.AppImage'
+  )
+  const bundle = readAppImageLauncher(executable, target.sha256)
+  const runtime = currentProgram(root) ?? target
+  installMaintenanceLauncher(
+    root,
+    {
+      path: join(
+        root,
+        'deployments',
+        runtime.deployment,
+        'SaltMarcher.AppImage'
+      ),
+      sha256: runtime.sha256
+    },
+    bundle
+  )
   const launcher = join(root, 'start')
-  const script = `#!/bin/sh
-${quote(join(root, 'current', 'SaltMarcher.AppImage'))} "$@"
-salt_status=$?
-if [ "$salt_status" -ne 0 ]; then
-  salt_journal=$(cat ${quote(join(root, 'maintenance-journal.json'))} 2>/dev/null)
-  case "$salt_journal" in
-    *'"formatVersion":2'*)
-      case "$salt_journal" in
-        *'"phase":"committed"'*|*'"phase":"rolled-back"'*) ;;
-        *)
-          salt_previous=$(printf '%s' "$salt_journal" | sed -n 's/.*"previous":{"deployment":"\\([^" ]*\\)".*/\\1/p')
-          case "$salt_previous" in
-            ''|*[!a-zA-Z0-9._-]*|.*) ;;
-            *) exec ${quote(join(root, 'deployments'))}/"$salt_previous"/SaltMarcher.AppImage --release-recover ;;
-          esac ;;
-      esac ;;
-  esac
-fi
-exit "$salt_status"
-`
-  const temporary = `${launcher}.${randomUUID()}.tmp`
-  writeFileSync(temporary, script, { mode: 0o700, flag: 'wx' })
-  syncPath(temporary)
-  renameSync(temporary, launcher)
-  syncPath(root)
   const applications = join(dirname(root), 'applications')
   mkdirSync(applications, { recursive: true })
   const desktopPath = join(applications, 'org.saltmarcher.app.desktop')

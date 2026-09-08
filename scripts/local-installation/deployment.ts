@@ -1,3 +1,4 @@
+import { validateMaintenanceLauncher } from '../../src/shared/maintenance/launcher.js'
 import { randomUUID } from 'node:crypto'
 import {
   chmodSync,
@@ -112,6 +113,7 @@ export function validateCompletedInstallation(
     manifest.receipt.build.workspaceFingerprint
   )
   validateDeployment(deployment, manifest, iconSourcePath)
+  validateMaintenanceLauncher(paths.root)
   if (!currentSelectsDeployment(paths.current, deployment))
     throw new Error(
       'Current installation does not select the staged deployment'
@@ -186,7 +188,7 @@ function renderDesktopEntry(
     'Type=Application',
     `Name=SaltMarcher Local (${fingerprint})`,
     `Comment=Lokaler SaltMarcher-Testbuild ${fingerprint}`,
-    `Exec=${desktopQuote(paths.appImage)} --user-data-dir=${desktopQuote(paths.profile)}`,
+    `Exec=${desktopQuote(join(paths.root, 'start'))} --user-data-dir=${desktopQuote(paths.profile)}`,
     `Icon=${paths.icon}`,
     'Terminal=false',
     'Categories=Game;Utility;',

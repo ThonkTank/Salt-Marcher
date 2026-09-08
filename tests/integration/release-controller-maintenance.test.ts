@@ -26,6 +26,9 @@ const mocks = vi.hoisted(() => ({
   relaunch: vi.fn(),
   quit: vi.fn()
 }))
+vi.mock('../../src/shared/maintenance/appimage-launcher.js', () => ({
+  readAppImageLauncher: () => Buffer.from('// synthetic fixture helper')
+}))
 vi.mock('node:child_process', () => ({ spawn: mocks.spawn }))
 vi.mock('electron', () => ({
   app: { getVersion: () => '0.2.0', quit: mocks.quit, isPackaged: false },

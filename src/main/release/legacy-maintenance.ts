@@ -100,8 +100,15 @@ export function adoptLegacyReleaseMaintenance(root: string): void {
     !existsSync(join(root, `previous-${old.id}`))
   ) {
     const dataExists = existsSync(join(root, 'profile', 'campaign-data'))
-    if (old.hadData && !dataExists)
-      throw new Error('Der vorherige Datenstand fehlt; Prüfung erforderlich.')
+    if (
+      old.hadData &&
+      (!dataExists ||
+        (!existsSync(join(root, `staged-${old.id}`)) &&
+          !existsSync(join(root, `failed-${old.id}`))))
+    )
+      throw new Error(
+        'Der vorherige Datenstand ist nicht eindeutig; Prüfung erforderlich.'
+      )
     phase =
       !old.hadData && dataExists ? 'rollback-preserving' : 'rollback-program'
   }

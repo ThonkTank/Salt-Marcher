@@ -1,3 +1,5 @@
+import { readAppImageLauncher } from '../src/shared/maintenance/appimage-launcher.js'
+import { installMaintenanceLauncher } from '../src/shared/maintenance/launcher.js'
 import { cpSync, existsSync, mkdirSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import { basename, join } from 'node:path'
@@ -278,11 +280,30 @@ function advanceLocalAppInstallationLocked(
       )
     }
     const previousProgram = currentLocalProgram(paths.root)
+    const nextProgram = localProgram(paths.root, basename(deployment))
+    const targetAppImage = join(deployment, 'SaltMarcher.AppImage')
+    const launcher = (options.readLauncherForTest ?? readAppImageLauncher)(
+      targetAppImage,
+      nextProgram.sha256
+    )
+    const interpreter = previousProgram ?? nextProgram
+    installMaintenanceLauncher(
+      paths.root,
+      {
+        path: join(
+          paths.deployments,
+          interpreter.deployment,
+          'SaltMarcher.AppImage'
+        ),
+        sha256: interpreter.sha256
+      },
+      launcher
+    )
     coordinator.begin({
       id,
       operation: previousProgram ? 'update' : 'install',
       previous: previousProgram,
-      next: localProgram(paths.root, basename(deployment)),
+      next: nextProgram,
       backup: activeJournal.backupPath
         ? basename(activeJournal.backupPath)
         : null,

@@ -307,7 +307,7 @@ export class ReleaseController {
               ? 'update'
               : 'install'
       })
-      installLauncher(this.root)
+      installLauncher(this.root, activation.next)
       coordinator.activate()
       relaunchRelease(target, ['--release-complete', activation.id])
       app.quit()

@@ -7,7 +7,8 @@ import {
   writeFileSync
 } from 'node:fs'
 import { join } from 'node:path'
-import { sha256, syncPath } from './files.js'
+import { z } from 'zod'
+import { durableJson, sha256, syncPath } from './files.js'
 
 /** Immutable helper bytes, executed by a retained AppImage's built-in Node mode. */
 export function installMaintenanceLauncher(
@@ -51,4 +52,35 @@ exec env ELECTRON_RUN_AS_NODE=1 APPIMAGE_EXTRACT_AND_RUN=1 ${quote(runtime.path)
   syncPath(temporary)
   renameSync(temporary, target)
   syncPath(root)
+  durableJson(join(root, 'launcher-manifest.json'), {
+    formatVersion: 1,
+    runtime,
+    helperSha256: hash,
+    launcherSha256: sha256(target)
+  })
+}
+
+/** Provenance evidence only; the maintenance journal alone owns recovery. */
+export function validateMaintenanceLauncher(root: string): void {
+  const hash = z.string().regex(/^[a-f0-9]{64}$/)
+  const manifest = z
+    .object({
+      formatVersion: z.literal(1),
+      runtime: z.object({ path: z.string().min(1), sha256: hash }).strict(),
+      helperSha256: hash,
+      launcherSha256: hash
+    })
+    .strict()
+    .parse(
+      JSON.parse(readFileSync(join(root, 'launcher-manifest.json'), 'utf8'))
+    )
+  if (
+    sha256(join(root, 'start')) !== manifest.launcherSha256 ||
+    sha256(join(root, 'launchers', `${manifest.helperSha256}.cjs`)) !==
+      manifest.helperSha256 ||
+    sha256(manifest.runtime.path) !== manifest.runtime.sha256
+  )
+    throw new Error(
+      'Der installierte Starthelfer stimmt nicht mit seinem Nachweis überein.'
+    )
 }

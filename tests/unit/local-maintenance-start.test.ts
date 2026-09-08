@@ -1,9 +1,15 @@
-import { admitDesktopStart } from '../../src/main/maintenance-launcher/start.js'
+import { withLaunchReservation } from '../../src/main/local-profile/launch-reservation.js'
+import {
+  admitDesktopStart,
+  launchDesktop
+} from '../../src/main/maintenance-launcher/start.js'
 import { verifyLocalRuntimeStartup } from '../../scripts/local-installation/runtime-start.js'
 import { acquireProfileLock } from '../../src/main/local-profile/local-profile-lock.js'
 import { randomUUID } from 'node:crypto'
 import {
   mkdirSync,
+  chmodSync,
+  existsSync,
   mkdtempSync,
   readFileSync,
   readlinkSync,
@@ -200,6 +206,50 @@ describe('Local external startup verification', () => {
 })
 
 describe('stable desktop admission', () => {
+  it.each([false, true])(
+    'cleans only empty runtime directories (relaunch=%s)',
+    (relaunch) => {
+      const executable = join(
+        root,
+        'deployments',
+        'b'.repeat(64),
+        'SaltMarcher.AppImage'
+      )
+      const report = join(root, 'runtime-directory')
+      vi.stubEnv('SALT_TEST_RUNTIME_DIRECTORY', report)
+      writeFileSync(
+        executable,
+        '#!/bin/sh\nprintf "%s" "$TMPDIR" > "$SALT_TEST_RUNTIME_DIRECTORY"\n' +
+          (relaunch
+            ? 'mkdir "$TMPDIR/relaunch"\nprintf "alive" > "$TMPDIR/relaunch/state"\n'
+            : '') +
+          'exit 0\n'
+      )
+      chmodSync(executable, 0o700)
+      const state = coordinator.read()!
+      durableJson(coordinator.journalPath, {
+        ...state,
+        next: { ...state.next, sha256: sha256(executable) }
+      })
+      coordinator.commit(id)
+      expect(launchDesktop(root, [])).toBe(0)
+      const directory = readFileSync(report, 'utf8')
+      try {
+        expect(existsSync(directory)).toBe(relaunch)
+        if (relaunch)
+          expect(
+            readFileSync(join(directory, 'relaunch', 'state'), 'utf8')
+          ).toBe('alive')
+      } finally {
+        rmSync(directory, { recursive: true, force: true })
+      }
+    }
+  )
+  it('releases the startup reservation after a failed launch', () => {
+    rmSync(coordinator.journalPath)
+    expect(() => launchDesktop(root, [])).toThrow('Wartungsbeleg fehlt')
+    expect(withLaunchReservation(root, () => 'available')).toBe('available')
+  })
   it('restores the previous pair before executing a broken target', () => {
     writeFileSync(
       join(root, 'deployments', 'b'.repeat(64), 'SaltMarcher.AppImage'),

@@ -1,3 +1,4 @@
+import { withLaunchReservation } from '../../src/main/local-profile/launch-reservation.js'
 import { randomUUID } from 'node:crypto'
 import { adoptLegacyLocalMaintenance } from '../../scripts/local-installation/legacy-maintenance.js'
 import {
@@ -89,6 +90,34 @@ describe('local AppImage installation', () => {
       })
     )
     expect(inspectLocalAppInstallation(fixture.options, 'activated')).toBeNull()
+  })
+
+  it('repairs a missing stable launcher instead of reusing a stale activation receipt', () => {
+    const fixture = createFixture(build('a'))
+    const first = installAndAccept(fixture.options)
+    rmSync(join(first.paths.root, 'start'))
+    expect(inspectLocalAppInstallation(fixture.options, 'activated')).toBeNull()
+    installAndAccept(fixture.options)
+    expect(
+      inspectLocalAppInstallation(fixture.options, 'activated')
+    ).not.toBeNull()
+    expect(readFileSync(first.paths.desktopEntry, 'utf8')).toContain(
+      join(first.paths.root, 'start')
+    )
+  })
+
+  it('rejects installation during the handover from the desktop launcher to the app', () => {
+    const fixture = createFixture(build('a'))
+    const paths = localInstallationPaths(fixture.xdg)
+    mkdirSync(paths.root, { recursive: true })
+    withLaunchReservation(paths.root, () => {
+      expectFailure(
+        () => installAndAccept(fixture.options),
+        'installation-locked'
+      )
+      expect(existsSync(paths.current)).toBe(false)
+    })
+    expect(installAndAccept(fixture.options).installedSha256).toBeDefined()
   })
 
   it('stores canonical profile data separately from the Local handoff proof', () => {
@@ -959,6 +988,7 @@ function createFixture(initialBuild: BuildInfo): {
     iconSourcePath,
     readWorkspaceIdentity: () => identity(currentBuild),
     isAppRunning: () => false,
+    readLauncherForTest: () => Buffer.from('// synthetic fixture helper'),
     now: () => new Date('2026-08-15T12:00:00.000Z')
   }
   fixture.useBuild(initialBuild)
