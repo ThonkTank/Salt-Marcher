@@ -24,7 +24,8 @@ import { releaseDeployment } from '../support/release-maintenance.js'
 const mocks = vi.hoisted(() => ({
   spawn: vi.fn(),
   relaunch: vi.fn(),
-  quit: vi.fn()
+  quit: vi.fn(),
+  chooseBackup: vi.fn()
 }))
 vi.mock('../../src/shared/maintenance/appimage-launcher.js', () => ({
   readAppImageLauncher: () => Buffer.from('// synthetic fixture helper')
@@ -33,7 +34,7 @@ vi.mock('node:child_process', () => ({ spawn: mocks.spawn }))
 vi.mock('electron', () => ({
   app: { getVersion: () => '0.2.0', quit: mocks.quit, isPackaged: false },
   BrowserWindow: { getAllWindows: () => [] },
-  dialog: {}
+  dialog: { showOpenDialog: mocks.chooseBackup }
 }))
 vi.mock('../../src/main/release/relaunch.js', () => ({
   relaunchRelease: mocks.relaunch
@@ -67,6 +68,7 @@ beforeEach(() => {
           id?: string
           transactionId: string
           source?: string
+          backupDirectory?: string
         }
         requestOperations.push(request.operation)
         try {
@@ -74,10 +76,13 @@ beforeEach(() => {
             request.operation === 'restore'
               ? maintenance.backupSource(request.id!)
               : request.source
-          const result = await maintenance.prepare(
-            request.transactionId,
-            source
-          )
+          const result =
+            request.operation === 'import-backup'
+              ? await maintenance.importBackup(
+                  request.transactionId,
+                  request.backupDirectory!
+                )
+              : await maintenance.prepare(request.transactionId, source)
           durableJson(join(root, `maintenance-result-${request.token}.json`), {
             ok: true,
             result
@@ -99,6 +104,26 @@ afterEach(() => {
   rmSync(workspace, { recursive: true, force: true })
 })
 describe('release controller uses shared maintenance', () => {
+  it('routes the selected backup through target-version validation and shared activation', async () => {
+    const id = await maintenance.backup()
+    mocks.chooseBackup.mockResolvedValue({
+      canceled: false,
+      filePaths: [join(root, 'backups', id!)]
+    })
+    writeFileSync(join(maintenance.data, 'notes.txt'), 'later work')
+    const controller = new ReleaseController(true, async () => {}, vi.fn())
+    await controller.importProfile()
+    expect(requestOperations).toEqual(['import-backup'])
+    expect(new MaintenanceCoordinator(root).read()).toMatchObject({
+      operation: 'import',
+      phase: 'awaiting-start'
+    })
+    expect(readFileSync(join(maintenance.data, 'notes.txt'), 'utf8')).toBe(
+      'backup state'
+    )
+    expect(maintenance.backups()).toHaveLength(2)
+  })
+
   it('restores using the installed deployment, preserves current work and awaits startup acceptance', async () => {
     const id = await maintenance.backup()
     writeFileSync(join(maintenance.data, 'notes.txt'), 'later valuable work')

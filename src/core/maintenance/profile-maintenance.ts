@@ -1,3 +1,5 @@
+import { profileBackupSchema as backupSchema } from '../../shared/contracts/profile-backup.js'
+import { readVerifiedBackup } from './verified-backup.js'
 import { readbackProfile } from '../persistence/sqlite/profile-readback.js'
 import { randomUUID } from 'node:crypto'
 import {
@@ -25,24 +27,6 @@ import {
   validateProfile
 } from './profile-snapshot.js'
 
-const backupSchema = z
-  .object({
-    formatVersion: z.literal(1),
-    id: z.uuid(),
-    createdAt: z.iso.datetime(),
-    version: z.string().min(1),
-    restorable: z.boolean().default(true),
-    files: z.array(
-      z
-        .object({
-          path: z.string(),
-          bytes: z.number().nonnegative(),
-          sha256: z.string()
-        })
-        .strict()
-    )
-  })
-  .strict()
 export class ProfileMaintenance {
   readonly data: string
   constructor(
@@ -136,6 +120,19 @@ export class ProfileMaintenance {
     if (!this.backups().some((backup) => backup.id === id && backup.valid))
       throw new Error('Sicherung fehlt oder wurde verändert.')
     return join(this.root, 'backups', id, 'data')
+  }
+  async importBackup(
+    id: string,
+    directory: string
+  ): Promise<{ id: string; backup: string | null }> {
+    const source = readVerifiedBackup(directory)
+    const prepared = await this.prepare(id, source.data)
+    if (
+      JSON.stringify(readVerifiedBackup(directory).manifest) !==
+      JSON.stringify(source.manifest)
+    )
+      throw new Error('Die Sicherung wurde während der Übernahme verändert.')
+    return prepared
   }
   /** Produces a validated working copy; never activates or rolls back live data. */
   async prepare(

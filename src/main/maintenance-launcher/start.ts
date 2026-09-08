@@ -11,11 +11,13 @@ import { tmpdir } from 'node:os'
 import { basename, join, resolve } from 'node:path'
 import { sha256 } from '../../shared/maintenance/files.js'
 import { MaintenanceCoordinator } from '../../shared/maintenance/coordinator.js'
-import { acquireProfileLock } from '../local-profile/local-profile-lock.js'
+import { acquireProfileAccess } from '../local-profile/profile-access.js'
+import { canonicalProfilePath } from '../../shared/maintenance/profile-path.js'
 
 /** No SQLite or normal app bootstrap may run before this admission gate. */
 export function admitDesktopStart(root: string): string {
-  const lock = acquireProfileLock(join(root, 'runtime.lock'), 'installer')
+  root = canonicalProfilePath(root)
+  const lock = acquireProfileAccess(join(root, 'profile'), 'installer', root)
   try {
     const coordinator = new MaintenanceCoordinator(root)
     coordinator.rollback()
@@ -59,6 +61,7 @@ export function launchDesktop(
   root: string,
   arguments_: readonly string[]
 ): number {
+  root = canonicalProfilePath(root)
   return withLaunchReservation(root, () =>
     launchReservedDesktop(root, arguments_)
   )

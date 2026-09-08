@@ -160,14 +160,14 @@ export function ReleaseSettings({
           )}
           <p role="status">{status.message}</p>
           {error && <p role="alert">{error}</p>}
-          <h2>Vorhandene Profile</h2>
+          <h2>Sicherung eines vorhandenen Profils übernehmen</h2>
           {profiles.map((profile) => (
             <button
               key={profile.id}
               disabled={busy || maintenance}
               onClick={() =>
                 setConfirmation({
-                  text: 'Bitte die Quell-App vollständig schließen. Dieses Profil übernehmen? Der aktuelle Stand wird vorher gesichert.',
+                  text: 'Eine geprüfte Sicherung dieses Profils auswählen und übernehmen? Der aktuelle Stand wird vorher gesichert.',
                   run: () =>
                     api.updates.importProfile({
                       confirmed: true,
@@ -176,7 +176,7 @@ export function ReleaseSettings({
                 })
               }
             >
-              {profile.label} übernehmen
+              Sicherung von {profile.label} auswählen
             </button>
           ))}
           <button
@@ -221,12 +221,12 @@ export function ReleaseSettings({
             disabled={busy || maintenance}
             onClick={() =>
               setConfirmation({
-                text: 'Ein vorhandenes Electron-Profil übernehmen? Das aktuelle Profil wird vorher gesichert; die Quelle bleibt erhalten.',
+                text: 'Eine geprüfte SaltMarcher-Sicherung übernehmen? Der aktuelle Stand wird vorher gesichert; die Quelle bleibt erhalten.',
                 run: () => api.updates.importProfile({ confirmed: true })
               })
             }
           >
-            Vorhandenes Profil übernehmen
+            Sicherungsordner auswählen
           </button>
           <button disabled={busy || maintenance} onClick={() => setOpen(false)}>
             Schließen

@@ -14,7 +14,8 @@ Ergänzende Detailanforderungen: [Zielzustand](project/architecture/release-main
 | ----- | --------- |
 | 1     | abgeschlossen |
 | 2     | abgeschlossen |
-| 3–7   | offen |
+| 3     | in Arbeit |
+| 4–7   | offen |
 
 ## Phase 1 — Plan, vor Änderungen
 
@@ -658,3 +659,190 @@ Nächste Phase: Phase 3 nach erneuter Bestandsaufnahme planen. Gemeinsame kanoni
 Profilsperren einschließlich Startreservierung und dauerhaft angelegter Profil-
 verzeichnisse, vollständige sichere Quelle/Übernahme, Restore sowie Recovery ohne
 startfähige Kampagnendatenbank. Die ursprüngliche Roadmap bleibt unverändert.
+
+## Phase 3 — Plan vor Umsetzung, 2026-09-08
+
+Vorheriger Zielturn: Fortschritt; Phase 2 abgeschlossen auf a5daf8ea6. Aktuelle
+Arbeitskopie sauber. Bestandsaufnahme: Main sperrt nur Local/Release, Development
+nutzt noch automatischen Reset bei Inkompatibilität. Import prüft SingletonLock
+und einen aus dem ungeprüften Pfad abgeleiteten Elternlock. ProfileMaintenance
+sichert derzeit campaign-data; die Vollständigkeit des gesamten persistenten
+Profils und Recovery ohne gestarteten Core sind deshalb eigenständige offene
+Arbeitspakete, keine bereits erfüllten Garantien.
+
+Ziel: M07–M11 sowie die Profilseite von M03 erfüllen. Reihenfolge:
+1. Kanonische Profilpfade und dauerhafte Verzeichniserstellung; gemeinsame
+   Profilzugriffsschicht für Linux Development, Local, Release, Installer,
+   Starthelfer und Utility-Auftrag. Sperren liegen außerhalb austauschbarer
+   Profile und sind pro kanonischem Profil getrennt. Bestehende Local-/Release-
+   runtime.lock bleibt als Kompatibilitätssperre bestehen. Startreservierung
+   ebenfalls kanonisch binden. Kein automatischer Reset bestehender Profile.
+2. Persistente Profileigentümer/Dateien inventarisieren. Vollständigen Payload
+   (Einstellungen, Kampagnen inkl. inaktiv/Trash, eigene Dateien, Spielzustand)
+   von ausschließlich flüchtigen Laufzeitdateien unterscheiden; bestehende
+   Backupformate lesbar halten. Aktivierungs-/Sperrgrenzen beim Profiltausch
+   und späte Electron-Schreibvorgänge ausdrücklich prüfen.
+3. Unterstützte Quelltypen anhand eines belegten Produzenten/Protokolls prüfen.
+   Nicht kooperierende Altanwendungen nur über konsistente, validierte Sicherungen/
+   Exporte zulassen. Kein stiller Direktordner-Fallback. Alias/Selbstimport,
+   gleichzeitigen Start und Veränderung der Quelle abweisen bzw. verhindern.
+4. Vollständige Wiederherstellung mit vorgeschalteter erhaltener Sicherung,
+   Vorwärtsmigration und Ablehnung neuerer Datenstände durchführen.
+5. Recovery-/Profilwahl auch bei fehlgeschlagenem Core-Start zugänglich machen;
+   Renderer erhält nur validierte IDs und Statusdaten.
+6. Repräsentative Inhalte vor/nach Import und Restore vergleichen, Prozesse über
+   Profilaliase gegeneinander starten; relevante Checks und getrennte Audits
+   gegen diesen Plan und die kanonische Phase 3. Erst danach Phase 3 schließen.
+
+Erster Umsetzungsschritt: kanonische externe Profil-Lockpfade plus kompatible
+Elternlocks. Keine Source-Marker als alleinigen Beweis sicherer Legacy-Übernahme
+verwenden. Die Quellzulassung wird erst nach ihrer eigenen Prüfung erweitert.
+
+### Phase 3 — Zwischenstand: gemeinsamer Profilzugriff
+
+Kanonische Pfadauflösung umfasst bestehende Elternverzeichnisse, bevor ein neues
+Profil angelegt wird. Neue Verzeichniseinträge werden unter Linux synchronisiert.
+Die profilbezogene Sperre liegt außerhalb des austauschbaren Profilbaums;
+Local-/Release-Elternlocks bleiben zusätzlich erhalten. Main erwirbt unter Linux
+auch im Development-Kanal die gemeinsame Sperre vor app.whenReady; bestehende
+Profile werden bei Inkompatibilität nicht mehr automatisch zurückgesetzt.
+Local-Installer, Runtime-Verifier und Desktopstarter verwenden dieselbe
+Zugriffsschicht. Die Startreservierung besitzt zusätzlich eine kanonische Identität.
+
+Gezielte Prüfung: 72 Tests aus local-profile-lock, local-maintenance-start und
+local-app-installation bestanden. Nach letzten Ergänzungen 24 Sperr-/Starttests
+bestanden, darunter ein echter zweiter Node-Prozess über einen Symlink-Alias,
+unabhängige Geschwisterprofile, Sperrerhalt beim Profiltausch und kompatibler
+Altprozess mit Freigabe eines gescheiterten zusammengesetzten Sperrerwerbs.
+TypeScript und scoped ESLint liefen zunächst erfolgreich; abschließender
+TypeScript-/Architekturlauf wird separat festgehalten.
+
+Zwischenaudit gegen Plan und Roadmap: dieser Schritt trägt zur gemeinsamen
+Profilsperre bei, erfüllt Phase 3 aber noch nicht. Import-Quellzulassung und
+Utility-Auftragsprüfung verwenden noch ihre bisherigen Elternlock-Prüfungen.
+Vollständiger Profilpayload, Electron-Schreibgrenzen beim Austausch und Recovery-
+Bedienung bleiben offen. Insbesondere ist ein bestandener Profiltausch-Sperrtest
+kein Nachweis für einen vollständigen sicheren Electron-Profiltausch.
+Kein Handoff und keine Veröffentlichung dieses Zwischenstands.
+
+Abschließender TypeScript-/Architekturlauf erfolgreich beendet (Logs
+roadmap-phase3-profile-access-typecheck.log und
+roadmap-phase3-profile-access-architecture.log im Arbeitsverzeichnis).
+Nächster Schritt: primäre kanonische Sperridentität im Utility-Auftrag prüfen,
+Importquellen nach belegtem Kooperationsprotokoll zulassen und vollständige
+persistente Profileigentümer inventarisieren. Phase 3 bleibt in Arbeit.
+
+### Phase 3 — Utility-Auftragsprüfung, Plan vor Umsetzung
+
+Vorheriger Zielturn war Fortschritt: kanonischer Zugriff implementiert und geprüft.
+Der Wartungseinstieg vertraut noch einer unvalidierten PID im alten runtime.lock.
+Jetzt dieselbe strikte Lockstruktur und Linux-Prozessidentität wie beim Sperrerwerb
+verwenden. Zielwartung muss sowohl kanonische Profilsperre als auch kompatiblen
+Elternlock dem lebenden auftraggebenden Anwendungsprozess zuordnen, bevor der
+Utility-Auftrag startet. Fehlende, manipulierte, fremde und veraltete Sperren
+werden nur gelesen und abgewiesen. Tests prüfen insbesondere eine noch existierende
+PID mit abweichender Startidentität, damit PID-Wiederverwendung nicht genügt.
+
+### Phase 3 — Quellunverändertheit, Plan vor Umsetzung
+
+snapshotProfile liest die Quelle unter der vorausgesetzten exklusiven Sperre,
+prüft bisher aber nicht nochmals deren vollständiges Dateiinventar. Vor Freigabe
+der Arbeitskopie ein zweites Inventar mit dem ursprünglichen vergleichen; eine
+Veränderung bricht die Vorbereitung ab. Ein Integrationstest verändert eine eigene
+Datei während des asynchronen SQLite-Backups und verlangt Ablehnung. Ein normaler
+Snapshot muss die Quelle bytegleich lassen und eigene Dateien erhalten. Dies
+ersetzt ausdrücklich keine Quellzulassung und beweist bei unkooperierenden
+Schreibern keine konsistente Quelle; deren sichere Backupwege bleiben offen.
+
+### Phase 3 — Prüfergebnisse und Zwischenaudit
+
+Utility-Zulassung: 11 Tests in local-profile-lock und
+release-controller-maintenance bestanden. Nach ergänzendem Test für beide
+Elternleases 10 direkte Lock-/Zulassungstests bestanden. Der Entrypoint benutzt
+nun assertProfileAccessOwner vor maintenanceWorker; dieser prüft striktes Schema,
+PID, Anwendungseigentümer und Boot-/Start-/Executable-Identität für beide Locks.
+Fehlende und veränderte Lockdateien werden dabei nicht repariert oder überschrieben.
+
+Quellinventar: 12 Release-Maintenance-Integrationstests bestanden. Neuer Test
+ändert während des echten asynchronen SQLite-Backups eine eigene Datei; Snapshot
+wird abgewiesen, aktuelle Quelldatei bleibt erhalten. Separater Erfolgstest prüft
+unveränderte Quellbytes und eigene Datei im Ziel. Die Prüfung erfolgt vor Rückkehr
+an den Vorbereitungsablauf; keine Aktivierung einer so abgewiesenen Arbeitskopie.
+
+Audit gegen die beiden vorangestellten Teilpläne: erfüllt. Audit gegen die gesamte
+kanonische Phase 3: weiterhin offen, insbesondere sichere Legacy-Quellzulassung,
+vollständiger Profilpayload und bedienbare Recovery. Inventarvergleich ist nur
+zusätzlicher Fehlernachweis unter der Sperrannahme, keine Zusage für unkooperierende
+laufende Quellen. Keine Änderung der ursprünglichen Roadmap und kein Handoff.
+
+TypeScript und scoped ESLint für diesen Stand ebenfalls bestanden
+(roadmap-phase3-owner-typecheck.log, roadmap-phase3-owner-lint.log).
+Vorheriger Zielturn und dieser Zielturn sind Fortschritt, kein wiederholter Blocker.
+Nächster Arbeitsschritt bleibt Quellzulassung samt vollständigem Profilpayload;
+der bisherige direkte Importordnerpfad ist noch kein qualifizierter Altprofilweg.
+
+### Phase 3 — Sicherungsimport, Plan vor Umsetzung
+
+Istbefund: importProfile akzeptiert beliebige installation.sqlite-Ordner und
+vermutet Kooperation anhand eines abgeleiteten Elternlocks. Dieser Fallback erfüllt
+keine sichere Altquellzulassung. Implementierung: bestehendes Sicherungsformat 1 als
+gemeinsamen strikten Vertrag auslagern; externer Import akzeptiert nur manifestierte,
+restorable Sicherungen mit vollständiger passender Datei-/Hashliste. Utility prüft
+vor und nach Vorbereitung denselben Sicherungsstand. Zieldaten werden zuvor wie
+bei Restore gesichert; Migration bleibt in der Zielversion. Main bietet die Wahl
+eines Sicherungsordners an und reicht ihn als expliziten import-backup-Auftrag
+weiter. Bekanntes Profil darf den Dialog zu dessen Sicherungen führen, aber keine
+ungeprüfte Rohdatenübernahme auslösen. Defekte Manifeste, Hashabweichung, Rohordner,
+neuere Datenformate und Quellenänderung bleiben ohne Zielaktivierung.
+
+Dieser Schritt qualifiziert vorhandenes campaign-data-Sicherungsformat 1, nicht
+bereits den späteren vollständigen Electron-Profilumfang. Direkte Übernahme
+kooperierender Profile und vollständiger Payload bleiben bis zu eigenem Nachweis
+offen. Prüfungen: echte fremde Sicherung importieren, aktuelle Zielarbeit sichern,
+Quelle bytegleich, Rohordner/Manipulation ablehnen, Controller reicht explizite
+Operation weiter. Originalroadmap unverändert.
+
+### Phase 3 — Sicherungsimport: Korrekturrunde vor Abschlussprüfung
+
+17 erste Integrationstests bestanden; erweiterter Lauf mit neuerem Datenformat,
+Metadatenänderung und Architektur: 92 Tests bestanden. TypeScript bestanden.
+ESLint findet in zwei neuen Testfällen untypisierte JSON-Manifeste. Korrekturplan:
+auch in diesen mutierenden Fixtures den gemeinsamen profileBackupSchema-Vertrag
+parsen, anschließend die betroffenen Tests und Lint erneut prüfen. Keine Änderung
+der Produktionssemantik erforderlich.
+
+### Phase 3 — Auditkorrektur: zulässige Linux-Dateinamen
+
+Der neue Manifestvertrag darf bestehende Sicherungen eigener Dateien nicht enger
+als das Linux-Dateisystem auslegen. Backslash ist unter Linux ein gültiges Zeichen
+im Dateinamen, kein Pfadtrenner. Korrektur vor Commit: dieses Verbot entfernen;
+relative Slash-Segmente, Ganzzahlgröße und SHA-256-Struktur bleiben validiert.
+Die Hashliste wird gegen tatsächliches Inventar verglichen und nicht als beliebiger
+Schreibpfad verwendet. Bestehende Integrationstests erneut ausführen.
+
+### Phase 3 — Sicherungsimport: Audit und Candidate-Zwischenstand
+
+Umsetzung gegen Teilplan geprüft: gemeinsam validierter Format-1-Sicherungsvertrag,
+expliziter import-backup-Auftrag an die Zielversion, Manifest-/Inventarprüfung vor
+und nach Vorbereitung, vorherige Sicherung der aktuellen Zieldaten und Aktivierung
+nur über den bestehenden Koordinator. Die Oberfläche fordert jetzt ausdrücklich
+einen Sicherungsordner an. Der unqualifizierte Rohdatenordner-Fallback ist entfernt.
+Die Auswahl bekannter Profile führt lediglich zum Sicherungsdialog, nicht zu einer
+impliziten Zusage direkter Profilübernahme.
+
+Prüfungen: 92 Tests im kombinierten Import-/Controller-/Architekturlauf bestanden;
+94 Tests im separaten Lock-/Local-Installer-/Start-/Release-Recovery-Lauf bestanden.
+TypeScript bestanden. Scoped ESLint nach Korrektur der beiden Test-Manifeste
+bestanden; betroffene 16 Integrationstests erneut bestanden. Der Backslash-Guard
+wurde als unbegründete Linux-Dateinamenbeschränkung entfernt und separat nachgeprüft.
+Dokumentation der Persistenzgrenzen auf die implementierte Phase-2-Zuständigkeit
+und Phase-3-Teilschritte aktualisiert.
+
+Separates Audit gegen gesamte Roadmap: Phase 3 bleibt offen. Format 1 enthält
+campaign-data, nicht beliebige Dateien außerhalb davon. Vollständiger persistenter
+Profilumfang, direkte Übernahme kooperierender Quellen, Erhalt leerer Ordner und
+bedienbare Recovery ohne Core sind weiter erforderlich. Dieser Candidate ist kein
+Alltagsrelease, kein abgeschlossener Phase-3-Nachweis und kein kanonischer Handoff.
+Nächster Schritt: persistente Profildateien von Electron-Laufzeitdateien trennen,
+vollständigen Backup-/Aktivierungspayload versionieren und Altformat 1 bewusst
+weiter lesbar halten. Keine stillschweigende Verengung des finalen Profilumfangs.

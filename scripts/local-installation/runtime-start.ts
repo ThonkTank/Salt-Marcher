@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import { acquireProfileLock } from '../../src/main/local-profile/local-profile-lock.js'
+import { acquireProfileAccess } from '../../src/main/local-profile/profile-access.js'
 import { MaintenanceCoordinator } from '../../src/shared/maintenance/coordinator.js'
 
 /** The child acquires its own lock; the parent never holds it across launch. */
@@ -10,7 +10,7 @@ export function verifyLocalRuntimeStartup<T>(
 ): T {
   const coordinator = new MaintenanceCoordinator(root)
   const locked = <R>(operation: () => R): R => {
-    const lock = acquireProfileLock(join(root, 'runtime.lock'), 'installer')
+    const lock = acquireProfileAccess(join(root, 'profile'), 'installer', root)
     try {
       return operation()
     } finally {

@@ -107,6 +107,15 @@ export const maintenanceWorkerRequestSchema = z.discriminatedUnion(
       .object({
         root: z.string().min(1),
         version: z.string().min(1),
+        operation: z.literal('import-backup'),
+        transactionId: z.uuid(),
+        backupDirectory: z.string().min(1)
+      })
+      .strict(),
+    z
+      .object({
+        root: z.string().min(1),
+        version: z.string().min(1),
         operation: z.literal('restore'),
         transactionId: z.uuid(),
         id: z.uuid()

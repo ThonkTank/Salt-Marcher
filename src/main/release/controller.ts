@@ -35,7 +35,6 @@ import {
 } from './deployment.js'
 import { maintenanceWorker } from './maintenance-worker.js'
 import { releaseRoot } from './paths.js'
-import { acquireProfileLock } from '../local-profile/local-profile-lock.js'
 
 export class ReleaseController {
   private value: ReleaseStatus
@@ -227,46 +226,31 @@ export class ReleaseController {
   }
   importProfile(id?: 'local' | 'electron' | 'development') {
     return this.operation(async () => {
-      let source = id
+      const source = id
         ? this.profileCandidates().find((entry) => entry.id === id)?.path
         : undefined
       if (id && !source)
         throw new Error('Das ausgewählte Profil ist nicht mehr vorhanden.')
-      if (!source) {
-        const selection = await dialog.showOpenDialog({
-          title:
-            'Datenordner einer vollständig geschlossenen Electron-App auswählen',
-          properties: ['openDirectory']
-        })
-        if (selection.canceled || !selection.filePaths[0]) return
-        source = selection.filePaths[0]
-      }
-      if (existsSync(join(dirname(source), 'SingletonLock')))
-        throw new Error(
-          'Bitte die Quell-App vor der Übernahme vollständig schließen.'
-        )
-      if (!existsSync(join(source, 'installation.sqlite')))
-        throw new Error(
-          'Bitte den Datenordner mit installation.sqlite auswählen.'
-        )
-      if (source === join(this.root, 'profile', 'campaign-data'))
-        throw new Error('Dieses Profil wird bereits verwendet.')
-      // Both Local and new Release runtimes hold the parent profile lock.
-      const lock = acquireProfileLock(
-        join(dirname(dirname(source)), 'runtime.lock'),
-        'installer'
-      )
-      try {
-        await this.activateCurrent({ source })
-      } finally {
-        lock.release()
-      }
+      const selection = await dialog.showOpenDialog({
+        title:
+          'Geprüfte SaltMarcher-Sicherung auswählen (Ordner mit manifest.json und data)',
+        properties: ['openDirectory'],
+        ...(source
+          ? { defaultPath: join(dirname(dirname(source)), 'backups') }
+          : {})
+      })
+      if (selection.canceled || !selection.filePaths[0]) return
+      await this.activateCurrent({ backupDirectory: selection.filePaths[0] })
     })
   }
   restore(id: string) {
     return this.operation(() => this.activateCurrent({ id }))
   }
-  private async activateCurrent(options: { source?: string; id?: string }) {
+  private async activateCurrent(options: {
+    source?: string
+    id?: string
+    backupDirectory?: string
+  }) {
     if (!this.value.installed)
       throw new Error('Bitte SaltMarcher zuerst installieren.')
     const installed = currentProgram(this.root)
@@ -276,7 +260,7 @@ export class ReleaseController {
   }
   private async activate(
     deployment: string,
-    options: { source?: string; id?: string } = {}
+    options: { source?: string; id?: string; backupDirectory?: string } = {}
   ) {
     this.update({
       phase: 'maintenance',
@@ -301,7 +285,7 @@ export class ReleaseController {
         next: deploymentProgram(this.root, deployment),
         operation: options.id
           ? 'restore'
-          : options.source
+          : options.source || options.backupDirectory
             ? 'import'
             : previous
               ? 'update'
@@ -320,7 +304,7 @@ export class ReleaseController {
   private runTarget(
     target: string,
     transactionId: string,
-    options: { source?: string; id?: string } = {}
+    options: { source?: string; id?: string; backupDirectory?: string } = {}
   ): Promise<{ id: string; backup: string | null }> {
     const token = randomUUID()
     mkdirSync(this.root, { recursive: true })
@@ -328,7 +312,11 @@ export class ReleaseController {
       token,
       parent: process.pid,
       sourceVersion: app.getVersion(),
-      operation: options.id ? 'restore' : 'prepare',
+      operation: options.id
+        ? 'restore'
+        : options.backupDirectory
+          ? 'import-backup'
+          : 'prepare',
       transactionId,
       ...options
     })

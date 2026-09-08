@@ -9,7 +9,7 @@ import {
   qualifyRelease,
   releaseQualificationEnabled
 } from '../release/qualification.js'
-import { existsSync, mkdirSync } from 'node:fs'
+import { existsSync } from 'node:fs'
 import { ReleaseController } from '../release/controller.js'
 import { releaseRoot } from '../release/paths.js'
 import {
@@ -37,34 +37,36 @@ import { capabilityEvents } from '../../shared/contracts/events.js'
 import { isE2eRuntime } from './e2e-runtime.js'
 import { loadBuildInfo, windowTitleForBuild } from './build-info.js'
 import { runtimeEvidenceSchema } from '../../shared/contracts/runtime-evidence.js'
-import {
-  acquireProfileLock,
-  type ProfileLock
-} from '../local-profile/local-profile-lock.js'
+import { type ProfileLock } from '../local-profile/local-profile-lock.js'
+
+import { acquireProfileAccess } from '../local-profile/profile-access.js'
+import { prepareProfileDirectory } from '../../shared/maintenance/profile-path.js'
 
 let core: CoreProcessSupervisor | undefined
 let localProfileLock: ProfileLock | undefined
 
 export async function startApplication(): Promise<void> {
-  await app.whenReady()
-  configureSecurity()
-  configureReleaseQualification()
   const buildInfo = loadBuildInfo()
   const windowTitle = windowTitleForBuild(buildInfo)
   const release =
     buildInfo?.channel === 'release' &&
     process.platform === 'linux' &&
     process.arch === 'x64'
-  if (release) {
-    mkdirSync(join(releaseRoot(), 'profile'), { recursive: true })
-    app.setPath('userData', join(releaseRoot(), 'profile'))
-  }
-  if (buildInfo?.channel === 'local' || release)
-    localProfileLock = acquireProfileLock(
-      join(dirname(app.getPath('userData')), 'runtime.lock'),
-      'application'
+  if (process.platform === 'linux') {
+    const profile = prepareProfileDirectory(
+      release ? join(releaseRoot(), 'profile') : app.getPath('userData')
     )
+    app.setPath('userData', profile)
+    localProfileLock = acquireProfileAccess(
+      profile,
+      'application',
+      buildInfo?.channel === 'local' || release ? dirname(profile) : undefined
+    )
+  }
   try {
+    await app.whenReady()
+    configureSecurity()
+    configureReleaseQualification()
     const installationRoot = dirname(app.getPath('userData'))
     const local = buildInfo?.channel === 'local'
     const recovery = release
@@ -114,7 +116,7 @@ async function startApplicationWithProfileLock(
       ),
       referenceDatabasePath: resourcePath('reference', 'srd-5.1.sqlite'),
       sessionGenerationCatalogRoot: resourcePath('sessiongeneration'),
-      incompatibleDataPolicy: packaged ? 'preserve' : 'reset'
+      incompatibleDataPolicy: 'preserve'
     },
     outputPath('main', 'utility.js')
   )

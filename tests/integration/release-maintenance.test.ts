@@ -1,3 +1,7 @@
+import { profileBackupSchema } from '../../src/shared/contracts/profile-backup.js'
+import Database from 'better-sqlite3'
+import { randomUUID } from 'node:crypto'
+import { snapshotProfile } from '../../src/core/maintenance/profile-snapshot.js'
 import { MaintenanceCoordinator } from '../../src/shared/maintenance/coordinator.js'
 import {
   preparedMaintenance,
@@ -33,6 +37,125 @@ afterEach(() => {
     rmSync(root, { recursive: true, force: true })
 })
 describe('release maintenance', () => {
+  it('imports a verified foreign backup and preserves the replaced campaign first', async () => {
+    const origin = fixture()
+    const destination = fixture()
+    const producer = new ProfileMaintenance(origin.root, '0.2.0')
+    const backupId = await producer.backup()
+    const backupDirectory = join(origin.root, 'backups', backupId!)
+    const sourceBefore = inventory(backupDirectory)
+    writeFileSync(
+      join(destination.data, 'notes.txt'),
+      'current destination work'
+    )
+    const consumer = new ProfileMaintenance(destination.root, '0.3.0')
+    const prepared = await consumer.importBackup(randomUUID(), backupDirectory)
+    expect(
+      readFileSync(
+        join(destination.root, `staged-${prepared.id}`, 'notes.txt'),
+        'utf8'
+      )
+    ).toBe('wertvolle Notizen')
+    expect(
+      readFileSync(
+        join(consumer.backupSource(prepared.backup!), 'notes.txt'),
+        'utf8'
+      )
+    ).toBe('current destination work')
+    expect(readFileSync(join(destination.data, 'notes.txt'), 'utf8')).toBe(
+      'current destination work'
+    )
+    expect(inventory(backupDirectory)).toEqual(sourceBefore)
+  })
+
+  it('rejects a raw source directory and a modified external backup before preparing data', async () => {
+    const source = fixture()
+    const destination = fixture()
+    const producer = new ProfileMaintenance(source.root, '0.2.0')
+    const consumer = new ProfileMaintenance(destination.root, '0.3.0')
+    const before = inventory(destination.data)
+    await expect(
+      consumer.importBackup(randomUUID(), source.data)
+    ).rejects.toThrow()
+    const id = await producer.backup()
+    const directory = join(source.root, 'backups', id!)
+    writeFileSync(join(directory, 'data', 'notes.txt'), 'changed after backup')
+    await expect(
+      consumer.importBackup(randomUUID(), directory)
+    ).rejects.toThrow('Sicherung ist beschädigt')
+    expect(inventory(destination.data)).toEqual(before)
+    expect(consumer.backups()).toEqual([])
+  })
+
+  it('rejects an intact backup containing a newer database format', async () => {
+    const source = fixture()
+    const destination = fixture()
+    const producer = new ProfileMaintenance(source.root, '0.2.0')
+    const id = await producer.backup()
+    const directory = join(source.root, 'backups', id!)
+    const database = new Database(
+      join(directory, 'data', 'installation.sqlite')
+    )
+    database.pragma('user_version = 9999')
+    database.close()
+    const manifestPath = join(directory, 'manifest.json')
+    const manifest = profileBackupSchema.parse(
+      JSON.parse(readFileSync(manifestPath, 'utf8'))
+    )
+    manifest.files = inventory(join(directory, 'data'))
+    writeFileSync(manifestPath, JSON.stringify(manifest))
+    const consumer = new ProfileMaintenance(destination.root, '0.3.0')
+    const before = inventory(destination.data)
+    await expect(
+      consumer.importBackup(randomUUID(), directory)
+    ).rejects.toThrow()
+    expect(inventory(destination.data)).toEqual(before)
+  })
+
+  it('rejects changed backup metadata after preparing a working copy', async () => {
+    const source = fixture()
+    const destination = fixture()
+    const producer = new ProfileMaintenance(source.root, '0.2.0')
+    const id = await producer.backup()
+    const directory = join(source.root, 'backups', id!)
+    const consumer = new ProfileMaintenance(destination.root, '0.3.0')
+    const before = inventory(destination.data)
+    const pending = consumer.importBackup(randomUUID(), directory)
+    const manifestPath = join(directory, 'manifest.json')
+    const manifest = profileBackupSchema.parse(
+      JSON.parse(readFileSync(manifestPath, 'utf8'))
+    )
+    manifest.version = '0.2.1'
+    writeFileSync(manifestPath, JSON.stringify(manifest))
+    await expect(pending).rejects.toThrow(
+      'Sicherung wurde während der Übernahme verändert'
+    )
+    expect(inventory(destination.data)).toEqual(before)
+  })
+
+  it('preserves source bytes and custom files during a database snapshot', async () => {
+    const { root, data } = fixture()
+    const before = inventory(data)
+    const target = join(root, 'source-copy')
+    await snapshotProfile(data, target)
+    expect(inventory(data)).toEqual(before)
+    expect(readFileSync(join(target, 'notes.txt'), 'utf8')).toBe(
+      'wertvolle Notizen'
+    )
+  })
+
+  it('rejects source changes while the online backup is pending', async () => {
+    const { root, data } = fixture()
+    const pending = snapshotProfile(data, join(root, 'source-copy'))
+    writeFileSync(join(data, 'notes.txt'), 'concurrent source edit')
+    await expect(pending).rejects.toThrow(
+      'Quellprofil wurde während der Sicherung verändert'
+    )
+    expect(readFileSync(join(data, 'notes.txt'), 'utf8')).toBe(
+      'concurrent source edit'
+    )
+  })
+
   it('backs up a real campaign, activates it and preserves later edits after commit', async () => {
     const { root, data } = fixture()
     const transaction = new ProfileMaintenance(root, '0.2.0')

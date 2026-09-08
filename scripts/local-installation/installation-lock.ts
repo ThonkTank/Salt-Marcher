@@ -1,10 +1,8 @@
+import { acquireProfileAccess } from '../../src/main/local-profile/profile-access.js'
 import { withLaunchReservation } from '../../src/main/local-profile/launch-reservation.js'
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
-import {
-  acquireProfileLock,
-  ProfileLockedError
-} from '../../src/main/local-profile/local-profile-lock.js'
+import { ProfileLockedError } from '../../src/main/local-profile/local-profile-lock.js'
 import {
   LocalInstallationError,
   type LocalInstallationPaths
@@ -34,7 +32,7 @@ function withProfileLock<T>(
 ): T {
   let lock
   try {
-    lock = acquireProfileLock(paths.lock, 'installer')
+    lock = acquireProfileAccess(paths.profile, 'installer', paths.root)
   } catch (error) {
     if (!(error instanceof ProfileLockedError)) throw error
     throw new LocalInstallationError(

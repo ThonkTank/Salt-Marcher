@@ -1,6 +1,7 @@
+import { assertProfileAccessOwner } from '../local-profile/profile-access.js'
 import { app } from 'electron'
 import { maintenanceWorkerRequestSchema } from '../../shared/contracts/maintenance.js'
-import { existsSync, readFileSync, rmSync } from 'node:fs'
+import { readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { z } from 'zod'
 import { maintenanceWorker } from './maintenance-worker.js'
@@ -11,9 +12,10 @@ export const maintenanceRequestSchema = z
     token: z.uuid(),
     parent: z.number().int().positive(),
     sourceVersion: z.string(),
-    operation: z.enum(['prepare', 'restore']),
+    operation: z.enum(['prepare', 'restore', 'import-backup']),
     transactionId: z.uuid(),
     source: z.string().optional(),
+    backupDirectory: z.string().optional(),
     id: z.string().optional()
   })
   .strict()
@@ -24,13 +26,9 @@ export async function runMaintenanceEntry(): Promise<void> {
     JSON.parse(readFileSync(join(root, 'maintenance-request.json'), 'utf8'))
   )
   const token = process.argv.at(-1)
-  if (token !== request.token || !existsSync(`/proc/${request.parent}`))
+  if (token !== request.token)
     throw new Error('Wartungsauftrag ist nicht mehr gültig.')
-  const lock = JSON.parse(readFileSync(join(root, 'runtime.lock'), 'utf8')) as {
-    pid?: number
-  }
-  if (lock.pid !== request.parent)
-    throw new Error('Die Profilsperre gehört nicht zur Wartung.')
+  assertProfileAccessOwner(join(root, 'profile'), request.parent, root)
   try {
     const result = await maintenanceWorker(
       maintenanceWorkerRequestSchema.parse({
@@ -38,6 +36,9 @@ export async function runMaintenanceEntry(): Promise<void> {
         version: request.sourceVersion,
         operation: request.operation,
         transactionId: request.transactionId,
+        ...(request.backupDirectory
+          ? { backupDirectory: request.backupDirectory }
+          : {}),
         ...(request.source ? { source: request.source } : {}),
         ...(request.id ? { id: request.id } : {})
       })

@@ -76,6 +76,10 @@ export async function snapshotProfile(
         force: true
       })
   syncTree(target)
+  if (JSON.stringify(inventory(source)) !== JSON.stringify(files))
+    throw new Error(
+      'Das Quellprofil wurde während der Sicherung verändert. Bitte die Quell-App schließen und erneut versuchen.'
+    )
 }
 export function migrateProfile(
   root: string,
