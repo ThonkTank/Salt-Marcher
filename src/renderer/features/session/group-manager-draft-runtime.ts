@@ -21,6 +21,7 @@ export class GroupManagerDraftRuntime {
     pending: boolean
     uncertain: boolean
   }>
+  #reconcile: (() => Promise<LiveSessionSnapshot | null>) | undefined
   readonly #listeners = new Set<() => void>()
   readonly #operations = new Set<Promise<unknown>>()
 
@@ -45,10 +46,27 @@ export class GroupManagerDraftRuntime {
     this.#current = { ...this.#current, snapshot }
     this.#publish()
   }
-  readonly failed = (cause: unknown): void => {
+  readonly failed = (
+    cause: unknown,
+    reconcile?: () => Promise<LiveSessionSnapshot | null>
+  ): void => {
     if (capabilityErrorCode(cause) !== 'outcome_unknown') return
+    this.#reconcile = reconcile
     this.#current = { ...this.#current, uncertain: true }
     this.#publish()
+  }
+  readonly canReconcile = (): boolean => Boolean(this.#reconcile)
+
+  async reconcileUnknown(): Promise<boolean> {
+    if (!this.#current.uncertain) return true
+    if (!this.#reconcile) return false
+    const snapshot = await this.#reconcile()
+    if (!snapshot) return false
+    this.acceptSnapshot(snapshot)
+    this.#reconcile = undefined
+    this.#current = { ...this.#current, uncertain: false }
+    this.#publish()
+    return true
   }
   readonly isDirty = (): boolean =>
     this.#current.pending ||
@@ -71,7 +89,7 @@ export class GroupManagerDraftRuntime {
     while (this.#operations.size)
       await Promise.allSettled([...this.#operations])
     await coordinator.whenIdle(['group-manager.command', 'group-manager.loot'])
-    if (this.#current.uncertain)
+    if (this.#current.uncertain && !(await this.reconcileUnknown()))
       throw new Error(
         'Der Ausgang eines Gruppen-Speicherauftrags ist unbekannt. Wartung bleibt gesperrt; den gespeicherten Kampagnenstand zuerst prüfen.'
       )

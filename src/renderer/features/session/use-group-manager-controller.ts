@@ -1,4 +1,5 @@
 import { useCallback, useEffect } from 'react'
+import { message } from '../../i18n/session-runtime.de.js'
 import type { Creature } from '../../../shared/contracts/encounter.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import { useAsyncCommandCoordinator } from '../../async/use-async-command-coordinator.js'
@@ -209,7 +210,19 @@ export function useGroupManagerController(
       queries,
       interactions
     }),
-    maintenanceBlocked: maintenanceBlocked || uncertain
+    maintenanceBlocked: maintenanceBlocked || uncertain,
+    uncertain,
+    canReconcile: runtime.canReconcile(),
+    retryUnknown: async () => {
+      if (runtime.snapshot().pending || maintenanceDraftCoordinator.isLocked())
+        return
+      try {
+        if (!(await runtime.run(() => runtime.reconcileUnknown())))
+          props.onError(message('group.receiptAbsent'))
+      } catch {
+        props.onError(message('group.receiptReadFailed'))
+      }
+    }
   }
 }
 

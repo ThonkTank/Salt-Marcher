@@ -1,5 +1,13 @@
 // @vitest-environment jsdom
-import { act, cleanup, renderHook } from '@testing-library/react'
+import type { ReactNode } from 'react'
+import {
+  act,
+  cleanup,
+  renderHook,
+  render,
+  screen,
+  fireEvent
+} from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type {
   LiveSessionSnapshot,
@@ -12,6 +20,7 @@ import { AsyncCommandCoordinator } from '../../src/renderer/async/async-command-
 import { GroupManagerDraftRuntime } from '../../src/renderer/features/session/group-manager-draft-runtime.js'
 import { createGroupManagerState } from '../../src/renderer/features/session/group-manager-state.js'
 import { groupDraftStateFromGroup } from '../../src/renderer/features/session/group-draft.js'
+import { GroupManagerView } from '../../src/renderer/features/session/group-manager-view.js'
 import { useGroupManagerController } from '../../src/renderer/features/session/use-group-manager-controller.js'
 import type { GroupManagerPorts } from '../../src/renderer/features/session/use-group-manager-capability-ports.js'
 import {
@@ -25,6 +34,17 @@ vi.mock(
     useGroupManagerQueries: () => ({ searchBiomeOptions: vi.fn() })
   })
 )
+vi.mock(
+  '../../src/renderer/features/creature-collection/creature-collection.js',
+  () => ({
+    CreatureCollectionManagerDialog: (props: { tools: ReactNode }) =>
+      props.tools
+  })
+)
+vi.mock('../../src/renderer/features/session/group-manager-catalog.js', () => ({
+  GroupManagerCatalogTools: () => null,
+  GroupManagerCatalogPane: () => null
+}))
 let resolution: MaintenanceDraftResolution | undefined
 afterEach(() => {
   resolution?.release()
@@ -170,6 +190,263 @@ describe('group maintenance owner', () => {
     await discard
     expect(runtime.snapshot().snapshot.revision).toBe(7)
     expect(runtime.isDirty()).toBe(false)
+  })
+
+  it('retries only receipt reads and refreshes later work before releasing an unknown loot commit', async () => {
+    const runtime = runtimeFor(snapshot())
+    runtime.dispatch({
+      kind: 'loot-generated',
+      key: 'a',
+      run: { id: 'run', treasures: [] } as unknown as GroupRewardGeneratedRun,
+      draft: { label: 'No loot', items: [], containers: [] },
+      seed: 1
+    })
+    const commitGroupReward = vi
+      .fn<GroupManagerPorts['loot']['commitGroupReward']>()
+      .mockRejectedValue(new CapabilityError('outcome_unknown', false))
+    const receipt = {
+      treasure: null,
+      groupResult: await saveResult('scene', 'a', 'A', '', 'hostile', [], 1, 1)
+    }
+    const groupRewardReceipt = vi
+      .fn<GroupManagerPorts['loot']['groupRewardReceipt']>()
+      .mockResolvedValueOnce(null)
+      .mockRejectedValueOnce(new Error('read failed'))
+      .mockResolvedValue(receipt)
+    const fresh = snapshot()
+    const current = {
+      ...fresh,
+      revision: 7,
+      scene: {
+        ...fresh.scene,
+        revision: 7,
+        scenes: [
+          {
+            ...fresh.scene.scenes[0]!,
+            groups: [group('a', 'Later persisted work', 3), group('b', 'B')]
+          }
+        ]
+      }
+    }
+    const read = vi
+      .fn<GroupManagerPorts['session']['read']>()
+      .mockRejectedValueOnce(new Error('snapshot unavailable'))
+      .mockResolvedValue(current)
+    const ports = {
+      ...mockPorts(vi.fn()),
+      loot: {
+        ...mockPorts(vi.fn()).loot,
+        commitGroupReward,
+        groupRewardReceipt
+      },
+      session: { read }
+    } satisfies GroupManagerPorts
+    const coordinator = new AsyncCommandCoordinator()
+    await expect(runtime.saveAll(ports, coordinator, vi.fn())).rejects.toThrow()
+    expect(runtime.canReconcile()).toBe(true)
+    expect(await runtime.reconcileUnknown()).toBe(false)
+    await expect(runtime.reconcileUnknown()).rejects.toThrow('read failed')
+    await expect(runtime.reconcileUnknown()).rejects.toThrow(
+      'snapshot unavailable'
+    )
+    expect(runtime.snapshot().state.sessions['a']?.sourceRevision).toBe(1)
+    expect(runtime.snapshot().uncertain).toBe(true)
+    expect(await runtime.saveAll(ports, coordinator, vi.fn())).toBe(true)
+    expect(runtime.snapshot().snapshot).toBe(current)
+    expect(runtime.snapshot().state.sessions['a']?.group.name).toBe(
+      'Later persisted work'
+    )
+    expect(runtime.snapshot().uncertain).toBe(false)
+    expect(commitGroupReward).toHaveBeenCalledOnce()
+    expect(groupRewardReceipt).toHaveBeenCalledTimes(4)
+    for (const [request] of groupRewardReceipt.mock.calls)
+      expect(request).toBe(commitGroupReward.mock.calls[0]?.[0])
+  })
+
+  it('exposes an explicit read retry after canceled maintenance without closing the editor', async () => {
+    const initial = snapshot()
+    const props = {
+      snapshot: initial,
+      group: initial.scene.scenes[0]!.groups[0]!,
+      close: vi.fn(),
+      saved: vi.fn(),
+      lootChanged: vi.fn(),
+      inspect: vi.fn(),
+      onError: vi.fn(),
+      reinforcementMode: false
+    }
+    const commitGroupReward = vi
+      .fn<GroupManagerPorts['loot']['commitGroupReward']>()
+      .mockRejectedValue(new CapabilityError('outcome_unknown', false))
+    const result = await saveResult('scene', 'a', 'A', '', 'hostile', [], 1, 1)
+    const receipt = { treasure: null, groupResult: result }
+    const groupRewardReceipt = vi
+      .fn<GroupManagerPorts['loot']['groupRewardReceipt']>()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValue(receipt)
+    const fresh = {
+      ...initial,
+      revision: 2,
+      scene: {
+        ...initial.scene,
+        revision: 2,
+        scenes: [
+          {
+            ...initial.scene.scenes[0]!,
+            groups: [group('a', 'A', 2), group('b', 'B')]
+          }
+        ]
+      }
+    }
+    const read = vi
+      .fn<GroupManagerPorts['session']['read']>()
+      .mockResolvedValue(fresh)
+    const ports = {
+      ...mockPorts(vi.fn()),
+      loot: {
+        ...mockPorts(vi.fn()).loot,
+        commitGroupReward,
+        groupRewardReceipt
+      },
+      session: { read }
+    } satisfies GroupManagerPorts
+    const hook = renderHook(() => useGroupManagerController(props, ports))
+    act(() =>
+      hook.result.current.dispatch({
+        kind: 'loot-generated',
+        key: 'a',
+        run: { id: 'run', treasures: [] } as unknown as GroupRewardGeneratedRun,
+        draft: { label: 'No loot', items: [], containers: [] },
+        seed: 1
+      })
+    )
+    act(() => {
+      resolution = maintenanceDraftCoordinator.begin()
+    })
+    await act(async () => {
+      expect(await resolution!.resolve('save')).toHaveLength(1)
+    })
+    act(() => {
+      resolution!.release()
+      resolution = undefined
+    })
+    expect(hook.result.current.canReconcile).toBe(true)
+    await act(async () => {
+      await hook.result.current.retryUnknown()
+    })
+    expect(props.onError).toHaveBeenCalledOnce()
+    act(() => hook.result.current.setName('Blocked edit'))
+    expect(hook.result.current.group.name).toBe('A')
+    await act(async () => {
+      await hook.result.current.retryUnknown()
+    })
+    expect(hook.result.current.uncertain).toBe(false)
+    expect(props.saved).not.toHaveBeenCalled()
+    expect(props.close).not.toHaveBeenCalled()
+    expect(commitGroupReward).toHaveBeenCalledOnce()
+    act(() => hook.result.current.setName('Allowed edit'))
+    expect(hook.result.current.group.name).toBe('Allowed edit')
+  })
+
+  it('lets the user click the rendered retry button and disables it while reading', async () => {
+    const initial = snapshot()
+    const props = {
+      snapshot: initial,
+      group: initial.scene.scenes[0]!.groups[0]!,
+      close: vi.fn(),
+      saved: vi.fn(),
+      lootChanged: vi.fn(),
+      inspect: vi.fn(),
+      onError: vi.fn(),
+      reinforcementMode: false
+    }
+    const commitGroupReward = vi
+      .fn<GroupManagerPorts['loot']['commitGroupReward']>()
+      .mockRejectedValue(new CapabilityError('outcome_unknown', false))
+    const receipt = {
+      treasure: null,
+      groupResult: await saveResult('scene', 'a', 'A', '', 'hostile', [], 1, 1)
+    }
+    const groupRewardReceipt = vi
+      .fn<GroupManagerPorts['loot']['groupRewardReceipt']>()
+      .mockResolvedValue(receipt)
+    const gate = deferred<LiveSessionSnapshot>()
+    const read = vi
+      .fn<GroupManagerPorts['session']['read']>()
+      .mockReturnValue(gate.promise)
+    const ports = {
+      ...mockPorts(vi.fn()),
+      loot: {
+        ...mockPorts(vi.fn()).loot,
+        commitGroupReward,
+        groupRewardReceipt
+      },
+      session: { read }
+    } satisfies GroupManagerPorts
+    function Harness() {
+      const controller = useGroupManagerController(props, ports)
+      return (
+        <>
+          <button
+            onClick={() =>
+              controller.dispatch({
+                kind: 'loot-generated',
+                key: 'a',
+                run: {
+                  id: 'run',
+                  treasures: []
+                } as unknown as GroupRewardGeneratedRun,
+                draft: { label: 'No loot', items: [], containers: [] },
+                seed: 1
+              })
+            }
+          >
+            Prepare reward
+          </button>
+          <GroupManagerView controller={controller} />
+        </>
+      )
+    }
+    render(<Harness />)
+    fireEvent.click(screen.getByText('Prepare reward'))
+    act(() => {
+      resolution = maintenanceDraftCoordinator.begin()
+    })
+    await act(async () => {
+      expect(await resolution!.resolve('save')).toHaveLength(1)
+    })
+    act(() => {
+      resolution!.release()
+      resolution = undefined
+    })
+    const button = screen.getByRole('button', {
+      name: 'Speicherstand erneut prüfen'
+    })
+    fireEvent.click(button)
+    expect(button).toHaveProperty('disabled', true)
+    await act(async () => {
+      gate.resolve({
+        ...initial,
+        revision: 2,
+        scene: {
+          ...initial.scene,
+          revision: 2,
+          scenes: [
+            {
+              ...initial.scene.scenes[0]!,
+              groups: [group('a', 'A', 2), group('b', 'B')]
+            }
+          ]
+        }
+      })
+      await gate.promise
+    })
+    expect(
+      screen.queryByRole('button', { name: 'Speicherstand erneut prüfen' })
+    ).toBeNull()
+    expect(commitGroupReward).toHaveBeenCalledOnce()
+    expect(groupRewardReceipt).toHaveBeenCalledOnce()
+    expect(props.saved).not.toHaveBeenCalled()
   })
 
   it('does not replay or discard an unknown write outcome', async () => {

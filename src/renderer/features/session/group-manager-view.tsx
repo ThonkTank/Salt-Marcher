@@ -100,19 +100,35 @@ export function GroupManagerView(props: {
           />
         }
         tools={
-          <GroupManagerCatalogTools
-            mode={controller.effectiveCatalogMode}
-            lootAvailable={Boolean(loot.run)}
-            query={state.creatureCatalog.query}
-            options={state.creatureCatalog.options}
-            searchBiomeOptions={controller.searchBiomeOptions}
-            queryChanged={controller.setCreatureQuery}
-            modeChanged={controller.setCatalogMode}
-            filterSummary={filterSummary}
-            busy={controller.busy}
-            canGenerate={controller.canGenerate}
-            generate={controller.generateRoster}
-          />
+          <>
+            {controller.uncertain && (
+              <div role="status">
+                {uiMessage('group.saveUnconfirmed')}
+                {controller.canReconcile && (
+                  <button
+                    type="button"
+                    disabled={controller.pending}
+                    onClick={() => void controller.retryUnknown()}
+                  >
+                    {uiMessage('group.checkSavedState')}
+                  </button>
+                )}
+              </div>
+            )}
+            <GroupManagerCatalogTools
+              mode={controller.effectiveCatalogMode}
+              lootAvailable={Boolean(loot.run)}
+              query={state.creatureCatalog.query}
+              options={state.creatureCatalog.options}
+              searchBiomeOptions={controller.searchBiomeOptions}
+              queryChanged={controller.setCreatureQuery}
+              modeChanged={controller.setCatalogMode}
+              filterSummary={filterSummary}
+              busy={controller.busy}
+              canGenerate={controller.canGenerate}
+              generate={controller.generateRoster}
+            />
+          </>
         }
         catalog={
           <GroupManagerCatalogPane

@@ -2467,3 +2467,77 @@ bzw. monoton berücksichtigen. Scene.saveGroup benötigt noch einen entsprechend
 verlässlichen Abgleich für Neuanlagen. Unbekannte Ausgänge bleiben bis zur folgenden
 Integration gesperrt. Weitere Gruppen-Pending-Fälle, Session Planner, Gesamtaudit
 sowie Phasen 5–7 und Handoff/Release sind weiterhin ausstehend.
+
+### Phase 4 — Gruppenbeute-Abgleich in der Oberfläche: Umsetzungsplan
+
+Vorheriger Turn Fortschritt (738db4459); Worktree sauber. Der Beutecommand hält den
+ursprünglichen Commit-Auftrag mit einmal erzeugter Command-ID in seinem Closure.
+Bei outcome_unknown hinterlegt er einen ausschließlich lesenden Recovery-Callback
+beim bestehenden Draft-Runtime. Der Callback liest die passende Quittung und danach
+den frischen Session-Snapshot, bevor lokale Baselines quittiert werden. Fehlende
+Quittung oder fehlgeschlagene Reads lassen die Unknown-Sperre bestehen. Es wird kein
+zweiter Commit ausgelöst. Frische externe Gruppenstände werden nach Quittierung
+mit dem bestehenden Reducer synchronisiert; spätere Daten nicht durch das Receipt
+ersetzt.
+
+Runtime bietet diesen Abgleich explizit an; die Gruppenoberfläche zeigt Status und
+„Speicherstand erneut prüfen“. Speichern/Verwerfen im Wartungsdialog können denselben
+Abgleich vor ihrer Fortsetzung ausführen. Normale User-Mutationen bleiben während
+Unknown/Pending gesperrt. Kein automatisches Schließen allein durch einen Read.
+Scene.saveGroup ohne Receipt bleibt zunächst gesperrt und ist weiterhin offene
+Abweichung. Tests für verlorene Antwort, wiederholte fehlende/fehlerhafte Reads,
+frischeren Snapshot, erfolgreiche Freigabe und genau einen Commit; danach
+Typecheck/Lint/Architektur und Build/Smoke.
+
+Gruppenbeute-Abgleich — zusätzlicher Bediennachweis: 105 Tests einschließlich aller
+Architekturgates sowie gezieltes Lint bestanden. Den tatsächlichen Retry-Button des
+GroupManagerView zusätzlich mit realem Controller/Runtime rendern und klicken.
+Katalog und Dialograhmen dürfen im Test reduziert werden; unbekannter Commit,
+Quittungsread, Pending-Zustand und Freigabe bleiben echte Produktionspfade. Dies
+prüft den neuen UI-Anschluss über einen bloßen Controlleraufruf hinaus.
+
+Gruppenbeute-Abgleich — Typecheck-Korrekturrunde: Der frische Session-Read verlangt
+explizit eine campaignId; ein parameterloser Aufruf der allgemeinen API ist falsch.
+Im Capability-Port eine lokale parameterlose Convenience-Funktion bereitstellen,
+die die bei der Port-Erzeugung geladene Kampagne bindet. Vor Read prüfen, dass die
+Workspace-Projektion noch dieselbe aktive/session-Kampagne hält; Utility validiert
+die explizite ID zusätzlich. Kein automatisches Ausweichen auf eine inzwischen
+andere Kampagne und keine Aufweichung des API-Vertrags. Der gerenderte Retry-Button
+hat bereits seinen UI-Test bestanden (12 Owner-Tests).
+
+Gruppenbeute-Abgleich — abschließende Test-Lintkorrektur: Der neue Button-Test nutzt
+einen async-act-Callback ohne await. Nach Auflösen des Testgates dessen Promise
+explizit abwarten; danach den betroffenen Test und ESLint erneut ausführen.
+Anwendungscode/Build unverändert.
+
+### Phase 4 — Gruppenbeute-Abgleich: Teilaudit
+
+Planabgleich bestanden: Ein Beutecommit erzeugt genau einen gehaltenen Auftrag;
+outcome_unknown registriert dessen read-only Recovery-Callback. Dieser liest die
+passende Quittung und danach den kampagnengebundenen frischen Sessionstand, bevor
+lokale Bestätigungen angewendet werden. Fehler/fehlende Quittung erhalten die Sperre.
+Save/Discard können denselben Abgleich fortsetzen; der explizite Button ist nach
+Wartungsabbruch verfügbar, während Reads deaktiviert und schließt den Editor nicht.
+User-Änderungen bleiben bis zur Quittierung gesperrt. Später persistierte Änderungen
+werden aus dem frischen Snapshot übernommen, nicht durch den alten Receipt-Patch
+ersetzt. Aktive und geladene Kampagnen-ID werden vor dem Session-Read geprüft.
+
+Validierung: 105 Regressionstests einschließlich aller Architekturtests bestanden;
+nach Kampagnenbindung 33 gezielte Tests einschließlich Renderer-Architektur erneut
+bestanden. Abschließend 14 Owner-/Porttests nach der Test-Lintkorrektur bestanden,
+einschließlich tatsächlichem Klick auf den GroupManagerView-Button mit realem
+Controller/Runtime (Katalog und Dialograhmen im UI-Test reduziert). Read-Fehler,
+fehlende Quittung, gescheiterter frischer Read, späterer Datenstand und beide
+Kampagnenwechselvarianten geprüft. Genau ein Commit trotz mehrerer Abgleichsversuche.
+Abschließender vollständiger Typecheck, gezieltes ESLint, Build/Built-Smoke
+(ready/closed) und git diff --check bestanden. Logs unter
+work/roadmap-phase4-group-reconciliation-*.log. Kein kanonischer Handoff.
+
+Roadmapabgleich: Phase 4 bleibt offen. Der bestätigbare unbekannte Beutecommit ist
+jetzt bedienbar abgleichbar. Dauerhaft fehlende Quittungen brauchen noch eine
+verlässliche Abgrenzung zwischen nicht ausgeführtem und noch unklarem Auftrag.
+Scene.saveGroup (insbesondere Neuanlage) besitzt weiterhin keine entsprechende
+Receipt-ID; andere Unknown-Fälle wie Generierung/Archivieren/Combat sind zu prüfen
+und bleiben derzeit konservativ gesperrt. Session Planner, übrige Writer-/Karten-
+und Offline-/Updateabnahme sowie Phasen 5–7 bleiben erforderlich. Keine vollständige
+Gruppen- oder Phase-4-Abnahme behauptet.

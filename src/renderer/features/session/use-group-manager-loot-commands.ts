@@ -1,4 +1,7 @@
-import type { CommitGroupRewardResult } from '../../../shared/contracts/loot.js'
+import type {
+  CommitGroupRewardInput,
+  CommitGroupRewardResult
+} from '../../../shared/contracts/loot.js'
 import { capabilityErrorIssues } from '../../../shared/errors/capability-error.js'
 import type { AsyncCommandCoordinator } from '../../async/async-command-coordinator.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
@@ -103,40 +106,56 @@ export function createGroupManagerLootCommands(
     const history = session?.loot.history
     if (!key || !run || !history || !availableMonster()) return null
     dispatch({ kind: 'loot-request-began', key, phase: 'committing' })
-    const outcome = await commands.run({
-      scope: 'group-manager.loot',
-      entityKey: key,
-      mode: 'latest-only',
-      execute: () =>
-        ports.loot.commitGroupReward({
-          commandId: crypto.randomUUID(),
-          runId: run.id,
-          generatedTreasureId: treasure?.id ?? null,
-          treasureDraft: treasure ? groupLootCommitDraft(history.draft) : null,
-          sceneId: focused.id,
-          groupId: rewardGroupId,
-          expectedSceneRevision: snapshot.scene.revision,
-          expectedGroupRevision: selectedPersistedGroup?.revision ?? null,
-          name: group.name.trim(),
-          note: group.note.trim(),
-          disposition: group.disposition,
-          entries: [...entries]
-        })
-    })
-    if (outcome.status === 'success') {
-      const savedKey = acknowledgeGroupSave(input, outcome.value.groupResult)
+    const request: CommitGroupRewardInput = {
+      commandId: crypto.randomUUID(),
+      runId: run.id,
+      generatedTreasureId: treasure?.id ?? null,
+      treasureDraft: treasure ? groupLootCommitDraft(history.draft) : null,
+      sceneId: focused.id,
+      groupId: rewardGroupId,
+      expectedSceneRevision: snapshot.scene.revision,
+      expectedGroupRevision: selectedPersistedGroup?.revision ?? null,
+      name: group.name.trim(),
+      note: group.note.trim(),
+      disposition: group.disposition,
+      entries: [...entries]
+    }
+    const acknowledge = (result: CommitGroupRewardResult) => {
+      const savedKey = acknowledgeGroupSave(input, result.groupResult)
       dispatch({
         kind: 'loot-committed',
         key: savedKey,
         runId: run.id,
         signature: groupLootDraftSignature(history.draft)
       })
-      if (outcome.value.treasure) lootChanged()
+      if (result.treasure) lootChanged()
+    }
+    const reconcile = async () => {
+      const receipt = await ports.loot.groupRewardReceipt(request)
+      if (!receipt) return null
+      const fresh = await ports.session.read()
+      acknowledge(receipt)
+      dispatch({
+        kind: 'sync-external',
+        groups:
+          fresh.scene.scenes.find((scene) => scene.id === focused.id)?.groups ??
+          []
+      })
+      return fresh
+    }
+    const outcome = await commands.run({
+      scope: 'group-manager.loot',
+      entityKey: key,
+      mode: 'latest-only',
+      execute: () => ports.loot.commitGroupReward(request)
+    })
+    if (outcome.status === 'success') {
+      acknowledge(outcome.value)
       saved(applySceneGroupCommandResult(snapshot, outcome.value.groupResult))
       return outcome.value
     }
     if (outcome.status === 'failure') {
-      input.failed?.(outcome.cause)
+      input.failed?.(outcome.cause, reconcile)
       dispatch({
         kind: 'loot-failed',
         key,
