@@ -55,6 +55,12 @@ export async function startApplication(): Promise<void> {
   let profile = release
     ? join(releaseRoot(), 'profile')
     : app.getPath('userData')
+  if (isE2eRuntime()) {
+    const selected = process.argv.find((argument) =>
+      argument.startsWith('--salt-marcher-profile=')
+    )
+    if (selected) profile = selected.slice('--salt-marcher-profile='.length)
+  }
   if (process.platform === 'linux') {
     const access = openApplicationProfile(
       profile,

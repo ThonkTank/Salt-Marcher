@@ -1287,3 +1287,62 @@ Fehler im stabilen Startpunkt steht aus. Die direkte Übernahme kooperierender
 Profile und die breite fachliche Erhaltungsabnahme bleiben offen; Phase 3 wird
 nicht geschlossen. Zusammenhängende Änderungen seit 912dcaea1 werden als
 Candidate-Zwischenstand gespeichert, ohne Main-Promotion oder App-Handoff.
+
+### Phase 3 — Fachliche Erhaltung: vollständiger Kampagnenfall
+
+Vorheriger Zielturn war Fortschritt; Candidate 5b2e5e661 ist gespeichert. Die
+bisherigen Vollprofiltests verwenden überwiegend eine einfache Kampagne und
+Dateiinventare. Ergänzung: reale Domain-APIs erzeugen aktive, inaktive und
+wiederherstellbar gelöschte Kampagnen mit Party-Daten, Einstellungen und einen
+laufenden Kampf mit verändertem HP-/Zustandswert. Gemeinsame Vorbereitung,
+Aktivierung und Commit müssen diese Inhalte exakt erhalten. Anschließend wird
+der Kampf weitergeführt und eine Einstellung geändert; Restore stellt den alten
+Stand wieder her, während die vorgeschaltete Sicherung die spätere Arbeit enthält.
+Backups werden für fachliche Inspektion kopiert, niemals direkt schreibend geöffnet.
+
+Abnahme: semantische Snapshots vor/nach Update und Restore vergleichen; aktiven
+Kampf nach Wartung tatsächlich weiterführen; inaktive Kampagne öffnen und gelöschte
+Kampagne ausdrücklich wiederherstellen. Eigene Dateien bleiben Bestandteil des
+bestehenden Vollprofilfixtures. Dieser Domain-Test ersetzt keine echten
+AppImage-/Schemawechselprüfungen aus Phase 5.
+
+### Phase 3 — Fachlicher Nachweis und E2E-Startkorrektur
+
+25 Vollprofiltests einschließlich neuem Domain-Fall bestanden; gezieltes Lint und
+Typecheck bestanden. Semantisch erhalten: Registry, Einstellungen, Party-Daten,
+laufender Kampf; echtes advanceTurn nach Update; zurückgeholte Trash-Kampagne;
+spätere Settings/Kampfrunde in kopierter vorgeschalteter Sicherung nachgewiesen.
+
+CI 34231804547 (912dcaea1) scheiterte in sämtlichen betrachteten GUI-Shards bereits
+beim WebDriver-Sessionaufbau (DevToolsActivePort fehlt). Aktueller Lauf34235204923
+für5b2e5e661 war bei Abfrage in_progress. Wahrscheinliche Regression der gemeinsamen
+Profiltrennung: ChromeDriver erwartet DevToolsActivePort im CLI-user-data-dir,
+während Main userData auf den Browserlaufzeitordner umstellt. Korrekturplan:
+Browserpfadberechnung wiederverwenden; E2E startet Chromium direkt mit diesem Pfad
+und reicht das logische Profil getrennt über einen ausschließlich im bestehenden
+E2E-Modus beachteten Parameter. Normale Installation behält ihren Startvertrag.
+Ein realer WebDriver-Lauf muss den Sessionaufbau und eine Campaign-Suite bestehen;
+ein Unit- oder normaler Smoke-Test reicht dafür nicht.
+
+### Phase 3 — Fachliche Erhaltung und WebDriver: Teilaudit
+
+Fachlicher Plan: erfüllt auf Integrationsebene. 25 Vollprofiltests bestanden,
+inklusive Einstellungen, aktive/inaktive/gelöschte Kampagnen, Party-Inhalte,
+konkrete Kampfzustände und fortsetzbarer Runde. Vorgeschaltete Sicherung erhält
+die spätere Runde und Einstellung; Inspektion erfolgte auf einer Kopie.
+Typecheck und gezieltes Lint bestanden.
+
+E2E-Korrekturplan: gemeinsame Browserpfadberechnung in App und WDIO; logischer
+Testprofilpfad wird getrennt und nur im bestehenden E2E-Modus übernommen. Build,
+Typecheck und Lint bestanden. Realer Xvfb-WebDriver-Lauf
+`pnpm test:e2e:built -- --suite campaignCreate`: Exit 0, eine Suite/ein Test
+bestanden (1m21.2s). ChromeDriver fand DevToolsActivePort im vorgesehenen
+Browserverzeichnis; Kampagne anlegen und wechseln bestand vollständig.
+Nachweis: roadmap-phase3-webdriver-profile-e2e.log und
+.tmp/e2e-runs/functional-1788876073294-242942/summary.json.
+
+Roadmapaudit: stärkerer fachlicher Erhaltungsnachweis, aber kein Ersatz für
+historische Schemawechsel mit echten AppImages. Die direkte Übernahme sicher
+kooperierender Quellen bleibt das zentrale offene Phase-3-Arbeitspaket. Vollständige
+CI auf dem neuen Commit, alle GUI-Shards, Hand-off und Phasen4–7 bleiben offen.
+Keine Produktionsdaten verändert; Candidate-Zwischenstand wird gespeichert.

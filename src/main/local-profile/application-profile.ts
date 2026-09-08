@@ -10,6 +10,12 @@ interface BrowserProfileHost {
   setPath(name: 'userData' | 'sessionData', path: string): void
 }
 
+export function browserRuntimePath(requestedProfile: string): string {
+  const profile = canonicalProfilePath(requestedProfile)
+  const identity = createHash('sha256').update(profile).digest('hex')
+  return join(dirname(profile), '.salt-marcher-runtime', identity)
+}
+
 /** The logical profile is exclusively owned; Chromium writes to a sibling tree. */
 export function openApplicationProfile(
   requestedProfile: string,
@@ -19,10 +25,7 @@ export function openApplicationProfile(
   const profile = canonicalProfilePath(requestedProfile)
   const access = acquireProfileAccess(profile, 'application', legacyRoot)
   try {
-    const identity = createHash('sha256').update(profile).digest('hex')
-    const runtime = prepareProfileDirectory(
-      join(dirname(profile), '.salt-marcher-runtime', identity)
-    )
+    const runtime = prepareProfileDirectory(browserRuntimePath(profile))
     host.setPath('userData', runtime)
     host.setPath('sessionData', runtime)
     return access

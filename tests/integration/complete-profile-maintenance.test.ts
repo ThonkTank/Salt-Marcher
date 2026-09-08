@@ -1,7 +1,11 @@
+import { LivePlayService } from '../../src/core/encounter/live-combat.js'
+import { seedExampleParty } from '../../src/core/party/party-example-seed.js'
+import { activeCampaignDatabase } from '../support/campaign-store-test-access.js'
 import { openApplicationProfile } from '../../src/main/local-profile/application-profile.js'
 import { maintenanceJournalSchema as legacyJournalSchema } from '../fixtures/maintenance-journal-v2.js'
 import { randomUUID } from 'node:crypto'
 import {
+  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -42,6 +46,125 @@ afterEach(() => {
 })
 
 describe('complete profile maintenance', () => {
+  it('preserves settings, inactive and trashed campaigns, and a continuable combat through update and restore', async () => {
+    const { root, profile, maintenance } = fixture()
+    const store = new CampaignStore(maintenance.data)
+    const inactive = store.create('Inaktive Insel').activeCampaignId!
+    seedExampleParty(activeCampaignDatabase(store))
+    const inactiveParty = new LivePlayService(
+      store.activeCampaignPersistence()
+    ).readParty()
+    const trashed = store.create('Gelöschter Hafen').activeCampaignId!
+    seedExampleParty(activeCampaignDatabase(store))
+    const trashedParty = new LivePlayService(
+      store.activeCampaignPersistence()
+    ).readParty()
+    store.trash(trashed)
+    const active = store.create('Laufende Küstenrunde').activeCampaignId!
+    seedExampleParty(activeCampaignDatabase(store))
+    const settings = store.readSettings()
+    const expectedSettings = store.updateSettings(
+      { ...settings.preferences, theme: 'dark' },
+      settings.revision
+    )
+    const play = new LivePlayService(store.activeCampaignPersistence())
+    const party = play.readParty()
+    play.setMembership(party.members[0]!.id, true, party.revision)
+    let session = play.readSession()
+    play.saveSceneGroup(
+      session.scene.focusedSceneId,
+      null,
+      'Küstenwölfe',
+      '',
+      'hostile',
+      [{ creatureId: 'wolf', quantity: 2 }],
+      session.scene.revision,
+      null
+    )
+    session = play.readSession()
+    play.prepareCombat(session.scene.focusedSceneId, session.scene.revision, [
+      session.scene.scenes[0]!.groups[0]!.id
+    ])
+    session = play.readSession()
+    play.confirmInitiative(
+      session.combat!.revision,
+      session.combat!.initiativeRows.map((row) => ({
+        id: row.id,
+        initiative: row.initiative
+      }))
+    )
+    session = play.readSession()
+    const monster = session.combat!.cards.find((card) => !card.playerCharacter)!
+    play.changeHp(session.combat!.revision, monster.id, 3, false)
+    session = play.readSession()
+    play.toggleCombatCondition(
+      session.combat!.revision,
+      monster.id,
+      'prone',
+      true
+    )
+    const expectedSession = play.readSession()
+    const expectedRegistry = store.list()
+    store.close()
+
+    const update = await preparedMaintenance(maintenance)
+    acceptMaintenance(maintenance, update)
+    const originalBackup = update.read()!.backup!
+    const updated = new CampaignStore(maintenance.data)
+    expect(updated.list()).toEqual(expectedRegistry)
+    expect(updated.readSettings()).toEqual(expectedSettings)
+    const continued = new LivePlayService(updated.activeCampaignPersistence())
+    expect(continued.readSession()).toEqual(expectedSession)
+    continued.advanceTurn(expectedSession.combat!.revision)
+    const laterSession = continued.readSession()
+    expect(laterSession.combat!.revision).toBeGreaterThan(
+      expectedSession.combat!.revision
+    )
+    const laterSettings = updated.updateSettings(
+      { ...expectedSettings.preferences, theme: 'light' },
+      expectedSettings.revision
+    )
+    updated.close()
+
+    const restore = await preparedMaintenance(
+      maintenance,
+      maintenance.backupSource(originalBackup)
+    )
+    acceptMaintenance(maintenance, restore)
+    const restored = new CampaignStore(maintenance.data)
+    expect(restored.list()).toEqual(expectedRegistry)
+    expect(restored.readSettings()).toEqual(expectedSettings)
+    expect(
+      new LivePlayService(restored.activeCampaignPersistence()).readSession()
+    ).toEqual(expectedSession)
+    restored.activate(inactive)
+    expect(
+      new LivePlayService(restored.activeCampaignPersistence()).readParty()
+    ).toEqual(inactiveParty)
+    restored.restore(trashed)
+    restored.activate(trashed)
+    expect(
+      new LivePlayService(restored.activeCampaignPersistence()).readParty()
+    ).toEqual(trashedParty)
+    restored.close()
+    expect(readFileSync(join(profile, 'own-assets', 'map.svg'), 'utf8')).toBe(
+      'old map'
+    )
+
+    const saved = maintenance.backupSource(restore.read()!.backup!)
+    const before = inventory(saved)
+    const inspection = join(root, 'inspection')
+    cpSync(saved, inspection, { recursive: true })
+    const later = new CampaignStore(join(inspection, 'campaign-data'))
+    expect(later.list().activeCampaignId).toBe(active)
+    expect(later.readSettings()).toEqual(laterSettings)
+    expect(
+      new LivePlayService(later.activeCampaignPersistence()).readSession()
+    ).toEqual(laterSession)
+    later.close()
+    expect(inventory(saved)).toEqual(before)
+  })
+
   it('lists backups during interrupted activation without recreating the absent live profile', async () => {
     const { root, profile, maintenance } = fixture()
     const before = inventory(profile)
