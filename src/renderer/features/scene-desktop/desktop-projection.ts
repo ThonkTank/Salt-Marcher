@@ -15,6 +15,7 @@ export type DesktopProjectionSnapshot = Readonly<{
   loading: boolean
   saving: boolean
   error: unknown
+  focusWindowId: string | null
 }>
 
 /** Lifetime is the capability host, not the mounted Scene or route. */
@@ -23,7 +24,8 @@ export class DesktopProjection {
     state: null,
     loading: true,
     saving: false,
-    error: null
+    error: null,
+    focusWindowId: null
   }
   private readonly listeners = new Set<() => void>()
   private authoritative: SceneDesktopSnapshot | null = null
@@ -43,6 +45,15 @@ export class DesktopProjection {
     return () => {
       this.listeners.delete(listener)
     }
+  }
+
+  requestFocus(windowId: string): void {
+    this.publish({ focusWindowId: windowId })
+  }
+
+  acknowledgeFocus(windowId: string): void {
+    if (this.snapshotValue.focusWindowId === windowId)
+      this.publish({ focusWindowId: null })
   }
 
   private publish(patch: Partial<DesktopProjectionSnapshot>): void {

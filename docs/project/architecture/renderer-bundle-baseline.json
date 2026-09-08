@@ -5,7 +5,7 @@
   "chunkRationale": "Session entry loads the productive desktop lazily. Removed legacy UI reduces both Workspace and total reachable renderer; personal loot, references and Pixi remain lazy. Only downward ratchets are applied. Retired reference navigation and global pin windows remove a further 5719 reachable bytes.",
   "graphs": {
     "shell": 420420,
-    "workspace": 508081,
+    "workspace": 507912,
     "session": 1311,
     "catalog": 186259,
     "hex": 176693,

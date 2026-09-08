@@ -165,13 +165,7 @@ export function WorkspaceApp() {
         projection.dispatch({ type })
         if (type === 'open-map')
           projection.dispatch({ type: 'map-controls', value: true })
-        requestAnimationFrame(() => {
-          document
-            .querySelector<HTMLElement>(
-              `.app-shell[data-active-campaign-id="${scope.campaignId}"] .scene-desktop[data-scene-id="${scope.sceneId}"] [data-window-id="${type === 'open-map' ? 'map' : 'characters'}"]`
-            )
-            ?.focus()
-        })
+        projection.requestFocus(type === 'open-map' ? 'map' : 'characters')
       })
       .catch(() => featureError(message('desktop.referenceOpenFailed')))
   }

@@ -1846,3 +1846,60 @@ width; its explicit update and isolated comparison are underway. Combat, travel
 and all other visual assertions pass without tolerance changes. The seven intended
 PNG changes are the three combat stages, three travel states/themes and the single
 200%-zoom Hex state; no blanket golden refresh is used.
+
+
+### Phase 6 — Cross-platform titlebar correction 18
+
+Candidate 96a0992e reaches remote qualification. Linux/macOS/Windows builds,
+portable checks, packaging and two visual shards pass. The campaign visual shard
+finds initiative differing by 5.22%. Downloaded CI actual/diff inspection shows
+identical content translated by one pixel: the window titlebar uses normal line
+height and a native details marker, whose font/marker metrics differ across the
+local and Ubuntu hosts. This is not a data or interaction failure.
+
+Give the titlebar an explicit 2rem height/flex basis, set its direct icon controls
+to a fixed 1.5rem box with unit line height, and suppress the redundant native
+summary marker. Keep the existing accessible arrangement menu and window controls.
+Regenerate only the six desktop-containing combat/travel goldens, recheck desktop
+keyboard/resource behavior and visuals, then qualify a new immutable candidate
+SHA. Do not increase pixel tolerance or add platform-specific whole-window copies.
+
+
+### Phase 6 — SwiftShader entry correction 19
+
+The remote group/loot/travel shard passes its domain workflows but the isolated
+SwiftShader test still clicks the retired “Karte öffnen” control after already
+opening the combined map/travel window. Use the shared desktop map-window opener
+(maximized) at that point. Retain empty-campaign timing, real WebGL2/SwiftShader
+observation, keyboard route interaction and evaluated travel duration assertions.
+Run this formerly missed suite locally before the revised candidate is pushed.
+
+
+### Phase 6 — Deferred keyboard focus correction 20
+
+The repeated desktop suite passes six cases but intermittently misses Alt+P focus
+after lazy catalog→session mounting. The root currently focuses through one
+requestAnimationFrame; a not-yet-mounted frame silently drops the request. Replace
+that timing assumption with a transient request on the explicitly scoped desktop
+projection. The mounted SceneDesktop consumes it in a layout effect only when the
+requested frame exists. Keep focus outside persisted desktop documents and IPC;
+add coverage for requests surviving subscriber gaps, remaining scope-isolated,
+and not writing presentation storage. Repeat desktop and SwiftShader E2E afterward.
+
+
+### Phase 6 — Corrections 18–20 verification
+
+The rebuilt desktop passes all seven E2E cases (126.4s), including delayed Alt+P
+focus, two-theme accessibility, 720px bounds and eight map open/close cycles.
+The corrected SwiftShader interaction reaches WebGL2 and evaluates the next route;
+its empty route becomes ready in 288.573ms (10s bound), with no timing-oracle waiver.
+Focused projection/layout tests (9), typecheck and all lint partitions pass.
+Titlebar combat/travel updates pass and the inspected titlebar has consistent
+bounded controls without the redundant native marker.
+
+The first candidate's remaining functional campaign and restart shards also pass;
+only the two identified visual/obsolete-entry failures prevent its qualification.
+It is not promoted. The next candidate includes the verified corrections.
+Bundle measurement is 1,565,449 reachable bytes, 421 above its downward baseline
+within unchanged allowances; the workspace shrinks 169 bytes to 507,912, which is
+ratcheted down under the existing policy. No upward baseline or budget change.

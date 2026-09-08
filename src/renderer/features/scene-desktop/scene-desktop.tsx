@@ -48,6 +48,17 @@ export function SceneDesktop(
         ?.querySelector<HTMLElement>(`[data-window-id="${request.windowId}"]`)
         ?.focus()
   }, [snapshot.state, focused.id])
+  useLayoutEffect(() => {
+    const windowId = snapshot.focusWindowId
+    if (!windowId) return
+    const frame = stage.current?.querySelector<HTMLElement>(
+      `[data-window-id="${windowId}"]`
+    )
+    if (frame) {
+      frame.focus()
+      projection.acknowledgeFocus(windowId)
+    }
+  }, [projection, snapshot.focusWindowId, snapshot.state])
   const [size, setSize] = useState<DesktopSize>({ width: 800, height: 600 })
   const [preview, setPreview] = useState<{
     sceneId: string

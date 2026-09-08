@@ -1,3 +1,4 @@
+import { openSceneWindow } from './support/scene-desktop-navigation.js'
 import {
   openCampaignScreen,
   beginCampaignCreation
@@ -34,7 +35,7 @@ describe('Travel SwiftShader isolation', () => {
     expect(await mappedSelect.$('option:checked').getText()).toBe('Reiseküste')
 
     progress('open-pixi-map')
-    await (await mappedConsole.$('button=Karte öffnen')).click()
+    await openSceneWindow(client, 'map', true)
     const map = await client.$(
       '[role="region"][aria-label="Hex-Karte Reiseküste"]'
     )
