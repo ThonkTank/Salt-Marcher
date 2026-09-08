@@ -2767,3 +2767,104 @@ UI-Target getrennte Aufträge benötigen eigene Receipt-Klärung. Unknown-Recove
 Planner-Befehle ist noch nicht bedienbar und darf nicht als abgeschlossen gelten.
 Weitere Gruppenbefehle (Generierung/Archivieren/Combat), übrige Writer-/Kartenwege,
 Offline-/Update-UI, Phasen 5–7 und exakter CI-Handoff/Main-Abschluss bleiben offen.
+
+### Phase 4 — Hintergrundvorbereitung in Wartung abschließen: Umsetzungsplan
+
+Vorheriger Turn Fortschritt (3f756795b), Worktree sauber. Persistierte Vorbereitung
+hat bereits idempotenten Abbruch: vor saving sofort canceled, in saving lediglich
+cancel_requested bis zur abschließenden Quittung. Die neue Wartungsauflösung darf
+daher eine Cancel-Antwort nicht pauschal als Abschluss behandeln.
+
+Eine kampagnengebundene Statusoperation in der Utility liefert bekannte Quittungen,
+alle weiteren recoverable Operationen und den gleichzeitig gelesenen Planner-
+Workspace. Sie verwendet SessionPreparationStore.recoverable/read; kein neues SQL
+außerhalb des bestehenden Owners. Ein ebenso kampagnengebundener Cancel-Adapter
+nutzt die bestehende Abbruchimplementierung. Renderer bindet beide Fähigkeiten an
+die beim Öffnen geladene Kampagne und lehnt Projektionswechsel vor dem Transport ab.
+
+Wartungs-Save wartet auf terminale Quittungen; Discard fordert für nichtterminale
+Aufträge Abbruch an und wartet auch bei saving weiter. Begrenzte Polls verhindern
+ein Hängen bei nicht fortschreitenden Aufträgen. Read-/Cancel-Fehler halten Wartung
+an; ein neuer Versuch liest wieder den tatsächlichen Zustand. Bekannte und vom
+UI-Target getrennte Aufträge sowie weitere aktive Sitzungen werden erfasst.
+Offene Ersetzungsbestätigung wird bei Discard nur geschlossen, bei Save weiterhin
+zur ausdrücklichen Entscheidung zurückgewiesen.
+
+Nach Abschluss gilt der frische Workspace: saubere Entwürfe dürfen aktualisiert,
+Discard darf lokale Änderungen verwerfen. Bei Save und zwischenzeitlich geänderter
+Sitzungsrevision bleibt ein lokaler Entwurf unverändert und meldet Konflikt statt
+generierte oder spätere Inhalte zu überschreiben. Unbekannte andere Planner-
+Befehle und offene Namens-/Beutedialoge bleiben Folgearbeit in Phase 4.
+
+Prüfen: mehrere/detachierte Aufträge, bereits terminale/fehlende Quittungen, Save
+wartet ohne Cancel, Discard wartet durch saving, Timeout/Readfehler, Camp-Bindung,
+frischer Stand und Draft-Konflikt. Native Status/Cancel mit realem Journal und
+kontrolliertem Worker; bestehende Planner-/Wartungs-/Architekturregression,
+Typecheck, Lint, Build/Smoke und getrennte Audits.
+
+Implementierungspräzisierung: Der zentrale Owner wird nur für offene Arbeit
+aufgelöst. Deshalb genügt die Statusabfrage innerhalb von settle nicht, wenn nur
+in einer anderen Sitzung ein Hintergrundauftrag läuft. Beim Öffnen des Planners
+eine koordinierte kampagnengebundene Bestandsabfrage ergänzen; bis zu erfolgreicher
+Abfrage bleibt der Status ungeklärt. Alle Vorbereitungsnotices erfassen Operation-
+IDs, auch ohne aktiven UI-Target; ausschließlich Statusquittungen schließen sie ab.
+
+Korrekturrunde Typecheck: Der Terminal-Observer muss receipt ausdrücklich auf
+Nicht-null prüfen. Zwei optionale Session-IDs könnten beide undefined sein; ein
+bloßer Gleichheitsvergleich beweist keine vorhandene Quittung. Guard korrigieren,
+bevor Status/Fehltext der Quittung gelesen werden.
+
+Korrekturrunde Testverträge: 119 Tests bestehen. Typecheck/Lint beanstanden die
+unvalidierten unknown-Rückgaben des nativen Composition-Tests. Diese wie im echten
+Dispatcher durch die jeweiligen Output-Schemas prüfen, bevor Eigenschaften gelesen
+werden. Der optionale Settlement-Callback im Owner-Test darf bei exactOptional-
+PropertyTypes nur dann im Optionsobjekt stehen, wenn er vorhanden ist. Produktcode
+besteht diese Prüfungen bereits; Testadapter entsprechend korrigieren.
+
+Korrekturrunde Transport-/Mengengrenze: Die Kampagnenbindung auch nach Rückkehr der
+Transportantwort prüfen; ein Wechsel während des Reads darf keinen alten Workspace
+publizieren. Den neu eingeführten Maximalwert 1000 für bekannte Operation-IDs
+entfernen: der Status liefert alle recoverable Aufträge, deren Folgeabfrage sonst
+bei größeren Beständen scheitern könnte. Die bestehende Profilzusage erhält keine
+solche zusätzliche Mengenbegrenzung.
+
+### Phase 4 — Vorbereitungsabschluss: Plan- und Roadmapabgleich
+
+Planabgleich bestanden: Eine kampagnengebundene Utility-Statusoperation liest
+bekannte Operation-IDs, weitere recoverable Aufträge aller Sitzungen und denselben
+aktuellen Workspace. Bestehende Journalmethoden bleiben SQL-Verantwortliche.
+Die zweite kampagnengebundene Fähigkeit nutzt den bestehenden idempotenten Abbruch.
+Vor und nach den Renderer-Transporten wird die ursprüngliche Kampagne geprüft;
+die Utility weist abweichende aktive Kampagnen vor Domain-Zugriff zurück.
+
+Der Planner entdeckt offene Aufträge beim Öffnen und erfasst Notices auch ohne
+aktiven UI-Target. Fehlgeschlagene Discovery bleibt ungeklärt. Save wartet auf
+terminale Quittungen, Discard fordert Abbruch an und wartet bei saving weiter.
+Ein späterer Versuch liest nach Fehler/Timeout erneut den tatsächlichen Stand.
+Fehlende bekannte IDs müssen ausdrücklich receipt:null liefern; eine unvollständige
+Antwort kann keine Auflösung behaupten. Ersetzungsbestätigung wird bei Save nicht
+implizit erteilt; Discard schließt sie ohne Cancel eines nicht existenten Auftrags.
+
+Der frische Stand bleibt bei sauberem Entwurf/Discard maßgeblich. Bei lokalem
+Entwurf und geänderter gespeicherter Sitzungsrevision verhindert Save die
+Überschreibung und behält den Entwurf. Native Prüfung mit zwei Sitzungen bestätigt
+Discovery beider queued-Aufträge unter query_only, Camp-Ablehnung, idempotenten
+Abbruch, unveränderte erste Sitzung und Erhalt des fertig vorbereiteten Ergebnisses
+bei erneutem Cancel. Keine zusätzlichen Schema- oder Datenmigrationen nötig.
+
+Validierung: 119 Tests in 12 Dateien einschließlich Architektur bestanden; nach
+Validierung der Composition-Testoutputs 26 native/Owner-Tests erneut bestanden.
+Nach Nachprüfung der Kampagnenbindung 18 Port-/Settlement-/Preparation-Tests
+bestanden, einschließlich Wechsel während der Antwort. Abschließend vollständiger
+Typecheck, ESLint aller geänderten/neuen TypeScript-Dateien, Prettier, Build,
+Built-Smoke (ready/closed) und git diff --check bestanden. Logs unter
+work/roadmap-phase4-planner-settle-*.log. Kein Nutzerprofil/keine Installation
+verändert; kein kanonischer Handoff.
+
+Roadmapabgleich: Der normale Vorbereitungsabschluss ist jetzt Teil der zentralen
+Wartung. Phase 4 bleibt offen: Unknown-Ausgänge normaler Planner-Aufträge
+(einschließlich außerhalb der Wartung unterbrochener Start-/Cancel-Aufträge),
+Namens-/Beute-Unterdialoge und die vollständige bedienbare Konfliktklärung sind
+noch zu bearbeiten. Weitere Gruppenbefehle, übrige Writer-/Kartenwege, Offline- und
+Update-UI-Abnahme sowie Phasen 5–7 und exakter CI-Handoff/Main-Abschluss bleiben
+verpflichtend. Keine vollständige Planner- oder Phase-4-Abnahme behauptet.

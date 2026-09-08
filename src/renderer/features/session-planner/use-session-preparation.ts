@@ -1,3 +1,5 @@
+import type { PlannerPreparationMaintenanceStatus } from '../../../shared/contracts/session-planner.js'
+import { settlePlannerPreparations } from './settle-planner-preparations.js'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type {
   SessionPreparationReceipt,
@@ -44,14 +46,26 @@ export function useSessionPreparation(options: {
   const [seed, setSeed] = useState(179_974)
   const [stage, setStage] = useState<PreparationStage>('idle')
   const [stageMessage, setStageMessage] = useState('')
-  const [confirmation, setConfirmation] = useState<{
+  const [confirmation, setConfirmationState] = useState<{
     operationId: string
     target: SessionPlannerWorkspace
   } | null>(null)
+  const confirmationOpen = useRef(false)
+  const setConfirmation = useCallback(
+    (
+      value: { operationId: string; target: SessionPlannerWorkspace } | null
+    ) => {
+      confirmationOpen.current = value !== null
+      setConfirmationState(value)
+    },
+    []
+  )
   const activeTarget = useRef<PreparationTarget | null>(null)
   const activeAbort = useRef<AbortController | null>(null)
   const observedReceipt = useRef<string | null>(null)
   const unsettled = useRef(new Set<string>())
+  const settled = useRef(new Set<string>())
+  const maintenanceDiscovered = useRef(false)
 
   useEffect(
     () => () => activeAbort.current?.abort('preparation-controller-unmounted'),
@@ -176,7 +190,15 @@ export function useSessionPreparation(options: {
         onError(capabilityErrorText(outcome.cause))
       }
     },
-    [coordinator, failed, onError, planner, publishReceipt, read]
+    [
+      coordinator,
+      failed,
+      onError,
+      planner,
+      publishReceipt,
+      read,
+      setConfirmation
+    ]
   )
 
   const generate = useCallback(async (): Promise<void> => {
@@ -216,7 +238,15 @@ export function useSessionPreparation(options: {
       onError(capabilityErrorText(outcome.cause))
     }
     setConfirmation(null)
-  }, [confirmation, coordinator, failed, onError, planner, publishReceipt])
+  }, [
+    confirmation,
+    coordinator,
+    failed,
+    onError,
+    planner,
+    publishReceipt,
+    setConfirmation
+  ])
 
   const authority = read()
   const sessionId = authority.workspace?.session.id ?? null
@@ -232,7 +262,7 @@ export function useSessionPreparation(options: {
       setStage('stale')
       setStageMessage(message('planner.statusStale'))
     }
-  }, [intentRevision, read, sessionId, sessionRevision])
+  }, [intentRevision, read, sessionId, sessionRevision, setConfirmation])
 
   const preparation = authority.workspace?.preparation ?? null
   useEffect(() => {
@@ -257,11 +287,81 @@ export function useSessionPreparation(options: {
   useEffect(
     () =>
       planner.onPreparationChanged((notice) => {
+        unsettled.current.add(notice.operationId)
         const target = activeTarget.current
         if (target?.operationId === notice.operationId) void reconcile(target)
       }),
     [planner, reconcile]
   )
+
+  const observeMaintenance = useCallback(
+    (operations: PlannerPreparationMaintenanceStatus['operations']) => {
+      maintenanceDiscovered.current = true
+
+      for (const { operationId, receipt } of operations) {
+        if (receipt && !isPreparationTerminal(receipt.status)) {
+          unsettled.current.add(operationId)
+          continue
+        }
+        unsettled.current.delete(operationId)
+        settled.current.add(operationId)
+        if (activeTarget.current?.operationId === operationId) {
+          activeAbort.current?.abort('preparation-settled-for-maintenance')
+          activeAbort.current = null
+          activeTarget.current = null
+        }
+        if (receipt && receipt.sessionId === read().workspace?.session.id) {
+          setStage(preparationStageForStatus(receipt.status))
+          setStageMessage(preparationStatusMessage(receipt))
+        }
+      }
+    },
+    [read]
+  )
+
+  useEffect(() => {
+    maintenanceDiscovered.current = false
+    const abort = new AbortController()
+    void coordinator
+      .run({
+        scope: 'planner.preparation-maintenance-discovery',
+        mode: 'latest-only',
+        signal: abort.signal,
+        execute: () => planner.preparationMaintenanceStatus([]),
+        accept: (status) => observeMaintenance(status.operations)
+      })
+      .then((outcome) => {
+        if (outcome.status === 'failure')
+          onError(capabilityErrorText(outcome.cause))
+      })
+    return () => abort.abort('planner-maintenance-discovery-ended')
+  }, [coordinator, observeMaintenance, onError, planner])
+
+  const settleForMaintenance = async (choice: 'save' | 'discard') => {
+    const known = new Set(unsettled.current)
+    const active = activeTarget.current
+    if (active) known.add(active.operationId)
+    const preparation = read().workspace?.preparation
+    if (preparation) known.add(preparation.operationId)
+    if (confirmationOpen.current) {
+      if (choice === 'save')
+        throw new Error(
+          'Bitte die Ersetzung der Sitzung zuerst im Vorbereitungsdialog bestätigen oder abbrechen.'
+        )
+      activeAbort.current?.abort(
+        'maintenance-discards-preparation-confirmation'
+      )
+      activeTarget.current = null
+      activeAbort.current = null
+      setConfirmation(null)
+    }
+    return settlePlannerPreparations({
+      planner,
+      choice,
+      operationIds: [...known],
+      observed: observeMaintenance
+    })
+  }
 
   return {
     hasActiveOperation: () => {
@@ -269,14 +369,17 @@ export function useSessionPreparation(options: {
       const unobserved =
         receipt &&
         !isPreparationTerminal(receipt.status) &&
+        !settled.current.has(receipt.operationId) &&
         observedReceipt.current !==
           `${receipt.operationId}:${receipt.updatedAt}`
       return (
+        !maintenanceDiscovered.current ||
         activeTarget.current !== null ||
         unsettled.current.size > 0 ||
         Boolean(unobserved)
       )
     },
+    settleForMaintenance,
     seed,
     stage,
     stageMessage,

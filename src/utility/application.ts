@@ -406,6 +406,7 @@ const sessionHandlers = createSessionHandlers(play, () =>
   campaigns.activeCampaignId()
 )
 const sessionPlannerHandlers = createSessionPlannerHandlers({
+  activeCampaignId: () => campaigns.activeCampaignId(),
   encounterPlans,
   sessionPlanner
 })

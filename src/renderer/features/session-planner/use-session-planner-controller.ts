@@ -67,6 +67,7 @@ export function useSessionPlannerController(
     read: workspace.read,
     applyWorkspace: workspace.applyWorkspace,
     saveDraft: sessions.saveDraft,
+    settlePreparations: preparation.settleForMaintenance,
     readUnresolved: () => {
       if (preparation.hasActiveOperation())
         return 'Die Sitzungsvorbereitung ist noch offen. Bitte Wartung abbrechen und die Vorbereitung abschließen oder abbrechen.'

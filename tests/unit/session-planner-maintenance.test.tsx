@@ -57,7 +57,10 @@ function setup(
         scenes: []
       }
     })
-  )
+  ),
+  settlePreparations?: (
+    choice: 'save' | 'discard'
+  ) => Promise<SessionPlannerWorkspace>
 ) {
   const coordinator = new AsyncCommandCoordinator()
   const planner = {
@@ -88,6 +91,7 @@ function setup(
       read: workspace.read,
       applyWorkspace: workspace.applyWorkspace,
       saveDraft: sessions.saveDraft,
+      ...(settlePreparations ? { settlePreparations } : {}),
       readUnresolved: () => (sessions.hasOpenDialog() ? 'Dialog offen' : null)
     })
     return {
@@ -120,6 +124,40 @@ async function resolve(choice: 'save' | 'discard') {
 }
 
 describe('Session Planner maintenance owner', () => {
+  it.each(['save', 'discard'] as const)(
+    'preserves the fresh persisted preparation while resolving %s',
+    async (choice) => {
+      const fresh = {
+        ...initial,
+        session: { ...initial.session, revision: 2, encounterCount: 7 }
+      }
+      const settle = vi.fn().mockResolvedValue(fresh)
+      const hook = setup(undefined, settle)
+      await load()
+      act(() =>
+        hook.result.current.mutate((draft) => ({ ...draft, encounterCount: 3 }))
+      )
+      begin()
+      const failures = await resolve(choice)
+      expect(settle).toHaveBeenCalledWith(choice)
+      expect(hook.save).not.toHaveBeenCalled()
+      if (choice === 'save') {
+        expect(failures).toHaveLength(1)
+        expect(failures[0]?.message).toContain('Entwurf bleibt erhalten')
+        expect(hook.result.current.workspace.read().draft?.encounterCount).toBe(
+          3
+        )
+        expect(hook.result.current.workspace.read().dirty).toBe(true)
+      } else {
+        expect(failures).toEqual([])
+        expect(hook.result.current.workspace.read().draft?.encounterCount).toBe(
+          7
+        )
+        expect(hook.result.current.workspace.read().workspace).toBe(fresh)
+      }
+    }
+  )
+
   it('saves the real planner draft through the normal session command and blocks new input immediately', async () => {
     const hook = setup()
     await load()

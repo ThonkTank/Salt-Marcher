@@ -1,3 +1,4 @@
+import type { PlannerPreparationMaintenanceStatus } from '../../shared/contracts/session-planner.js'
 import type Database from 'better-sqlite3'
 import type { SqliteDatabaseAccess } from '../../core/persistence/sqlite/database-access.js'
 import { GeneratedEncounterPlanService } from '../../core/encounter/generated-plan-service.js'
@@ -219,6 +220,23 @@ export class SessionPlannerService {
         )
       )
     })
+  }
+
+  preparationMaintenanceStatus(
+    operationIds: readonly string[]
+  ): PlannerPreparationMaintenanceStatus {
+    const journal = new SessionPreparationStore(this.activeDatabase())
+    const ids = new Set([
+      ...operationIds,
+      ...journal.recoverable().map(({ id }) => id)
+    ])
+    return {
+      operations: [...ids].map((operationId) => ({
+        operationId,
+        receipt: nullableReceipt(journal.read(operationId))
+      })),
+      workspace: this.read()
+    }
   }
 
   cancelPreparation(input: unknown): { receipt: SessionPreparationReceipt } {

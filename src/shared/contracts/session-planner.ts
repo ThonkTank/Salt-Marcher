@@ -434,3 +434,26 @@ function validateSession(
       })
   })
 }
+
+export const plannerPreparationMaintenanceInputSchema = z
+  .object({
+    campaignId: z.uuid(),
+    operationIds: z.array(z.uuid())
+  })
+  .strict()
+export const plannerPreparationMaintenanceStatusSchema = z
+  .object({
+    operations: z.array(
+      z
+        .object({
+          operationId: z.uuid(),
+          receipt: sessionPreparationReceiptSchema.nullable()
+        })
+        .strict()
+    ),
+    workspace: sessionPlannerWorkspaceSchema
+  })
+  .strict()
+export type PlannerPreparationMaintenanceStatus = Readonly<
+  z.infer<typeof plannerPreparationMaintenanceStatusSchema>
+>

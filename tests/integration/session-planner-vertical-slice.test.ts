@@ -1,3 +1,8 @@
+import {
+  plannerPreparationMaintenanceStatusSchema,
+  cancelSessionPreparationResultSchema
+} from '../../src/shared/contracts/session-planner.js'
+import { createSessionPlannerHandlers } from '../../src/utility/composition/session-planner.js'
 import { randomUUID } from 'node:crypto'
 import type Database from 'better-sqlite3'
 import { mkdtempSync, rmSync } from 'node:fs'
@@ -29,6 +34,89 @@ afterEach(() => {
 })
 
 describe('Session Planner vertical slice', () => {
+  it('settles preparations across sessions using campaign-bound reads and idempotent cancellation', () => {
+    const harness = createHarness()
+    const first = saveGenerationInput(harness)
+    const a = randomUUID()
+    harness.planner.startPreparation({
+      operationId: a,
+      sessionId: first.session.id,
+      expectedRevision: first.session.revision,
+      seed: 179_974,
+      confirmedReplacement: false
+    })
+    harness.planner.create({ name: 'Other session' })
+    const second = saveGenerationInput(harness)
+    const b = randomUUID()
+    harness.planner.startPreparation({
+      operationId: b,
+      sessionId: second.session.id,
+      expectedRevision: second.session.revision,
+      seed: 179_974,
+      confirmedReplacement: false
+    })
+    const handlers = createSessionPlannerHandlers({
+      encounterPlans: harness.encounterPlans,
+      sessionPlanner: harness.planner,
+      activeCampaignId: () => harness.campaigns.activeCampaignId()
+    })
+    const campaignId = harness.campaigns.activeCampaignId()
+    const readStatus = (operationIds: string[]) =>
+      plannerPreparationMaintenanceStatusSchema.parse(
+        handlers['sessionPlanner.preparationMaintenanceStatus']({
+          campaignId,
+          operationIds
+        })
+      )
+    const cancel = (operationId: string) =>
+      cancelSessionPreparationResultSchema.parse(
+        handlers['sessionPlanner.cancelPreparationForMaintenance']({
+          campaignId,
+          operationId
+        })
+      )
+
+    expect(() =>
+      handlers['sessionPlanner.preparationMaintenanceStatus']({
+        campaignId: randomUUID(),
+        operationIds: []
+      })
+    ).toThrow('stale')
+    expect(() =>
+      handlers['sessionPlanner.cancelPreparationForMaintenance']({
+        campaignId: randomUUID(),
+        operationId: a
+      })
+    ).toThrow('stale')
+    const db = activeCampaignDatabase(harness.campaigns)
+    db.pragma('query_only = ON')
+    try {
+      const status = readStatus([])
+      expect(
+        status.operations.map(({ operationId }) => operationId).sort()
+      ).toEqual([a, b].sort())
+      expect(
+        status.operations.every(({ receipt }) => receipt?.status === 'queued')
+      ).toBe(true)
+      expect(status.workspace.session.id).toBe(second.session.id)
+    } finally {
+      db.pragma('query_only = OFF')
+    }
+    expect(cancel(a).receipt.status).toBe('canceled')
+    harness.planner.runPreparationWorker(a)
+    harness.planner.runPreparationWorker(b)
+    const final = readStatus([a, b])
+    expect(final.operations.map(({ receipt }) => receipt?.status)).toEqual([
+      'canceled',
+      'succeeded'
+    ])
+    expect(cancel(b).receipt.status).toBe('succeeded')
+    expect(harness.planner.read()).toEqual(final.workspace)
+    expect(
+      harness.planner.open({ sessionId: first.session.id }).session
+    ).toEqual(first.session)
+  })
+
   it('keeps the durable preparation journal schema frozen and relational', () => {
     const harness = createHarness()
     const db = activeCampaignDatabase(harness.campaigns)

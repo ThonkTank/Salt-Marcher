@@ -18,6 +18,9 @@ export function usePlannerMaintenance(options: {
   read: () => SessionPlannerAuthority
   applyWorkspace: (workspace: SessionPlannerWorkspace) => void
   saveDraft: () => Promise<SessionPlannerWorkspace | null>
+  settlePreparations?: (
+    choice: 'save' | 'discard'
+  ) => Promise<SessionPlannerWorkspace>
   readUnresolved: () => string | null
 }) {
   const {
@@ -26,14 +29,17 @@ export function usePlannerMaintenance(options: {
     read,
     applyWorkspace,
     saveDraft,
+    settlePreparations,
     readUnresolved
   } = options
-  const settle = async () => {
+  const settle = async (choice: 'save' | 'discard') => {
     await runtime.drain()
     await coordinator.whenIdle()
     if (runtime.uncertain()) await runtime.drain()
+    const fresh = await settlePreparations?.(choice)
     const unresolved = readUnresolved()
     if (unresolved) throw new Error(unresolved)
+    return fresh
   }
   const maintenanceBlocked = useMaintenanceDraft({
     label: 'Sitzungsplanung',
@@ -44,13 +50,25 @@ export function usePlannerMaintenance(options: {
       coordinator.hasPending() ||
       Boolean(readUnresolved()),
     save: async () => {
-      await settle()
-      if (!read().dirty) return true
+      const fresh = await settle('save')
+      const current = read()
+      if (!current.dirty) {
+        if (fresh) applyWorkspace(fresh)
+        return true
+      }
+      if (
+        fresh &&
+        (fresh.session.id !== current.workspace?.session.id ||
+          fresh.session.revision !== current.workspace.session.revision)
+      )
+        throw new Error(
+          'Die gespeicherte Sitzung hat sich während der Vorbereitung geändert. Dein Entwurf bleibt erhalten. Bitte Wartung abbrechen und die Änderungen prüfen.'
+        )
       return Boolean(await saveDraft()) && !read().dirty && !runtime.uncertain()
     },
     discard: async () => {
-      await settle()
-      const workspace = read().workspace
+      const fresh = await settle('discard')
+      const workspace = fresh ?? read().workspace
       if (workspace) applyWorkspace(workspace)
       return !read().dirty
     }

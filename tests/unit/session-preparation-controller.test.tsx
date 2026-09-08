@@ -2,6 +2,7 @@
 import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 import type {
+  PlannerPreparationMaintenanceStatus,
   SessionPreparationReceipt,
   SessionPlannerWorkspace
 } from '../../src/shared/contracts/session-planner.js'
@@ -13,6 +14,101 @@ const sessionId = '01900000-0000-7000-8000-000000000001'
 const operationId = '01900000-0000-7000-8000-000000000002'
 
 describe('Session preparation controller', () => {
+  it('discovers detached work on mount and settles it without an active UI target', async () => {
+    const status = vi
+      .fn<
+        (ids: readonly string[]) => Promise<PlannerPreparationMaintenanceStatus>
+      >()
+      .mockResolvedValueOnce({
+        operations: [
+          { operationId, receipt: { ...receipt('queued'), sessionId: 'other' } }
+        ],
+        workspace: plannerWorkspace()
+      })
+      .mockResolvedValue({
+        operations: [
+          {
+            operationId,
+            receipt: { ...receipt('succeeded'), sessionId: 'other' }
+          }
+        ],
+        workspace: plannerWorkspace()
+      })
+    const fixture = renderPreparation({
+      startPreparation: vi.fn(),
+      preparationMaintenanceStatus: status
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(fixture.result.current.hasActiveOperation()).toBe(true)
+    await act(async () => {
+      await fixture.result.current.settleForMaintenance('save')
+    })
+    expect(status.mock.calls).toEqual([[[]], [[operationId]]])
+    expect(fixture.result.current.hasActiveOperation()).toBe(false)
+    expect(fixture.planner.cancelPreparation).not.toHaveBeenCalled()
+  })
+
+  it('keeps failed discovery unresolved until a successful maintenance status read', async () => {
+    const status = vi
+      .fn<
+        (ids: readonly string[]) => Promise<PlannerPreparationMaintenanceStatus>
+      >()
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValue({ operations: [], workspace: plannerWorkspace() })
+    const fixture = renderPreparation({
+      startPreparation: vi.fn(),
+      preparationMaintenanceStatus: status
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+    expect(fixture.result.current.hasActiveOperation()).toBe(true)
+    expect(fixture.onError).toHaveBeenCalledOnce()
+    await act(async () => {
+      await fixture.result.current.settleForMaintenance('save')
+    })
+    expect(fixture.result.current.hasActiveOperation()).toBe(false)
+  })
+
+  it('requires explicit replacement approval on save and only dismisses it on discard', async () => {
+    const status = vi
+      .fn<
+        (ids: readonly string[]) => Promise<PlannerPreparationMaintenanceStatus>
+      >()
+      .mockResolvedValueOnce({ operations: [], workspace: plannerWorkspace() })
+      .mockResolvedValue({
+        operations: [{ operationId, receipt: null }],
+        workspace: plannerWorkspace()
+      })
+    const fixture = renderPreparation({
+      startPreparation: () =>
+        Promise.resolve({
+          status: 'confirmation_required',
+          parameters: { sceneCount: 2 }
+        }),
+      preparationMaintenanceStatus: status
+    })
+    await act(async () =>
+      fixture.result.current.requestPreparation(
+        fixture.workspace,
+        operationId,
+        false,
+        17
+      )
+    )
+    await expect(
+      fixture.result.current.settleForMaintenance('save')
+    ).rejects.toThrow('bestätigen oder abbrechen')
+    await act(async () => {
+      await fixture.result.current.settleForMaintenance('discard')
+    })
+    expect(fixture.result.current.confirmation).toBeNull()
+    expect(fixture.result.current.hasActiveOperation()).toBe(false)
+    expect(fixture.planner.cancelPreparation).not.toHaveBeenCalled()
+  })
+
   it('does not publish a start result after authored intent changed', async () => {
     const started = deferred<{
       status: 'accepted'
@@ -158,6 +254,9 @@ describe('Session preparation controller', () => {
 
 function renderPreparation(overrides: {
   startPreparation: () => Promise<unknown>
+  preparationMaintenanceStatus?: (
+    ids: readonly string[]
+  ) => Promise<PlannerPreparationMaintenanceStatus>
   preparationReceipt?: () => Promise<unknown>
   cancelPreparation?: () => Promise<unknown>
   read?: () => Promise<SessionPlannerWorkspace>
@@ -174,6 +273,9 @@ function renderPreparation(overrides: {
     authoredRevision: intentRevision - 1
   })
   const planner = {
+    preparationMaintenanceStatus:
+      overrides.preparationMaintenanceStatus ??
+      (() => Promise.resolve({ operations: [], workspace })),
     startPreparation: overrides.startPreparation,
     preparationReceipt:
       overrides.preparationReceipt ??

@@ -1,5 +1,8 @@
+import { z } from 'zod'
 import {
   cancelSessionPreparationResultSchema,
+  plannerPreparationMaintenanceInputSchema,
+  plannerPreparationMaintenanceStatusSchema,
   createSessionPlanInputSchema,
   deleteSessionPlanInputSchema,
   openSessionPlanInputSchema,
@@ -15,6 +18,16 @@ import {
 import { none, read, utilityOperationFragment, write } from './registry.js'
 
 export const sessionPlannerOperationDefinitions = utilityOperationFragment({
+  'sessionPlanner.preparationMaintenanceStatus': read(
+    'session-planner:preparation-maintenance-status',
+    plannerPreparationMaintenanceInputSchema,
+    plannerPreparationMaintenanceStatusSchema
+  ),
+  'sessionPlanner.cancelPreparationForMaintenance': write(
+    'session-planner:cancel-preparation-for-maintenance',
+    sessionPreparationReceiptInputSchema.extend({ campaignId: z.uuid() }),
+    cancelSessionPreparationResultSchema
+  ),
   'sessionPlanner.read': read(
     'session-planner:read',
     none,

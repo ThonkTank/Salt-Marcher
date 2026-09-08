@@ -1,4 +1,6 @@
-import { useMemo } from 'react'
+import { useContext, useMemo, useSyncExternalStore } from 'react'
+import { CapabilityContext } from '../../capabilities/capability-context.js'
+import { CapabilityError } from '../../../shared/errors/capability-error.js'
 import type { SaltMarcherApi } from '../../../shared/contracts/capability-api.js'
 import type { SaveSessionPlanInput } from '../../../shared/contracts/session-planner.js'
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
@@ -6,9 +8,21 @@ import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
 type RawPlanner = SaltMarcherApi['sessionPlanner']
 export type SessionPlannerPort = Omit<
   RawPlanner,
-  'create' | 'open' | 'switch' | 'rename' | 'delete'
+  | 'create'
+  | 'open'
+  | 'switch'
+  | 'rename'
+  | 'delete'
+  | 'preparationMaintenanceStatus'
+  | 'cancelPreparationForMaintenance'
 > &
   Readonly<{
+    preparationMaintenanceStatus(
+      operationIds: readonly string[]
+    ): ReturnType<RawPlanner['preparationMaintenanceStatus']>
+    cancelPreparationForMaintenance(
+      operationId: string
+    ): ReturnType<RawPlanner['cancelPreparationForMaintenance']>
     create(name: string): ReturnType<RawPlanner['create']>
     open(sessionId: string): ReturnType<RawPlanner['open']>
     switch(
@@ -39,10 +53,44 @@ export function useSessionPlannerPorts(): Readonly<{
   loot: PlannerLootPort
 }> {
   const api = useCapabilityApi()
-  return useMemo(
-    () => ({
+  const context = useContext(CapabilityContext)
+  if (!context) throw new Error('Capability provider missing')
+  const projection = context.campaignWorkspace
+  const root = useSyncExternalStore(projection.subscribe, projection.snapshot)
+  const campaignId = root.sessionCampaignId
+  return useMemo(() => {
+    const requireCampaign = () => {
+      const current = projection.snapshot()
+      if (
+        !campaignId ||
+        current.sessionCampaignId !== campaignId ||
+        current.campaigns.activeCampaignId !== campaignId
+      )
+        throw new CapabilityError('stale', false)
+      return campaignId
+    }
+    return {
       planner: {
         ...api.sessionPlanner,
+        preparationMaintenanceStatus: async (
+          operationIds: readonly string[]
+        ) => {
+          const status = await api.sessionPlanner.preparationMaintenanceStatus({
+            campaignId: requireCampaign(),
+            operationIds: [...operationIds]
+          })
+          requireCampaign()
+          return status
+        },
+        cancelPreparationForMaintenance: async (operationId: string) => {
+          const result =
+            await api.sessionPlanner.cancelPreparationForMaintenance({
+              campaignId: requireCampaign(),
+              operationId
+            })
+          requireCampaign()
+          return result
+        },
         create: (name) => api.sessionPlanner.create({ name }),
         open: (sessionId) => api.sessionPlanner.open({ sessionId }),
         switch: (targetSessionId, source) =>
@@ -58,7 +106,6 @@ export function useSessionPlannerPorts(): Readonly<{
           api.encounterPlans.summaries({ planIds: [...planIds] })
       },
       loot: { acceptGenerated: api.loot.acceptGenerated }
-    }),
-    [api.encounterPlans, api.loot, api.sessionPlanner]
-  )
+    }
+  }, [api.encounterPlans, api.loot, api.sessionPlanner, campaignId, projection])
 }
