@@ -1,5 +1,7 @@
 import { z } from 'zod'
 import {
+  campaignSessionPlannerCommandSchema,
+  sessionPlannerCommandStatusSchema,
   cancelSessionPreparationResultSchema,
   plannerPreparationMaintenanceInputSchema,
   plannerPreparationMaintenanceStatusSchema,
@@ -18,6 +20,16 @@ import {
 import { none, read, utilityOperationFragment, write } from './registry.js'
 
 export const sessionPlannerOperationDefinitions = utilityOperationFragment({
+  'sessionPlanner.executeCommand': write(
+    'session-planner:execute-command',
+    campaignSessionPlannerCommandSchema,
+    sessionPlannerWorkspaceSchema
+  ),
+  'sessionPlanner.commandStatus': read(
+    'session-planner:command-status',
+    campaignSessionPlannerCommandSchema,
+    sessionPlannerCommandStatusSchema
+  ),
   'sessionPlanner.preparationMaintenanceStatus': read(
     'session-planner:preparation-maintenance-status',
     plannerPreparationMaintenanceInputSchema,

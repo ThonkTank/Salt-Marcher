@@ -715,6 +715,21 @@ export async function runCampaignCombatScenario(): Promise<void> {
   })
   await undoGenerated.click()
   const dialogSearch = await groupDialog.$('input[aria-label="Monster suchen"]')
+  const discardGeneratedLoot = await client.$('section[role="alertdialog"]')
+  await discardGeneratedLoot.waitForDisplayed({ timeout: 5_000 })
+  expect(
+    await client.execute(() =>
+      Boolean(
+        document
+          .querySelector(
+            'section[aria-labelledby="group-builder-title"] input[aria-label="Monster suchen"]'
+          )
+          ?.closest('[inert]')
+      )
+    )
+  ).toBe(true)
+  await (await discardGeneratedLoot.$('button=Änderungen verwerfen')).click()
+  await discardGeneratedLoot.waitForExist({ reverse: true, timeout: 5_000 })
   await dialogSearch.setValue('wolf')
   const addWolf = await client.$('button[aria-label="Wolf hinzufügen"]')
   await client.waitUntil(() => addWolf.isExisting(), {

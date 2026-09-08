@@ -1,3 +1,4 @@
+import { initializeSessionPlannerCommandJournal } from '../../session-planner/session-planner-command-journal.js'
 import { initializeSceneGroupCommandJournal } from '../../scene/scene-group-command-journal.js'
 import type Database from 'better-sqlite3'
 import { initializeCampaignRulesSchema } from '../../application/campaign-rules-service.js'
@@ -83,6 +84,11 @@ export function createDefaultCampaignSchemaBootstrapper(): CampaignSchemaBootstr
     registration('session-generation', initializeSessionGenerationSchema),
     registration('encounter-plans', initializeEncounterPlanSchema),
     registration('session-planner', initializeSessionPlannerSchema),
+    registration(
+      'session-planner-receipts',
+      initializeSessionPlannerCommandJournal,
+      ['session-planner']
+    ),
     registration('legacy-items', initializeLegacyItemDefinitionSchema),
     registration('loot', initializeLootSchema, ['legacy-items']),
     registration('character-loot', initializeCharacterLootSchema, ['loot']),

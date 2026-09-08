@@ -1,3 +1,4 @@
+import { initializeSessionPlannerCommandJournal } from '../../session-planner/session-planner-command-journal.js'
 import { initializeSceneGroupCommandJournal } from '../../scene/scene-group-command-journal.js'
 import type Database from 'better-sqlite3'
 import type { SchemaMigration } from './schema-migrations.js'
@@ -230,6 +231,24 @@ export const campaignSchemaMigrations: readonly SchemaMigration[] =
           )
           .run(
             'campaign-35-to-36-unified-burden-and-group-receipts',
+            new Date().toISOString()
+          )
+      }
+    },
+    {
+      id: 'campaign-36-to-37-planner-command-receipts',
+      role: 'campaign',
+      fromVersion: 36,
+      toVersion: 37,
+      migrate(database) {
+        initializeCampaignSchemaMetadata(database)
+        initializeSessionPlannerCommandJournal(database)
+        database
+          .prepare(
+            'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run(
+            'campaign-36-to-37-planner-command-receipts',
             new Date().toISOString()
           )
       }

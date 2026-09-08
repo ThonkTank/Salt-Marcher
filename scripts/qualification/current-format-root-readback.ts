@@ -38,6 +38,7 @@ const creatureResolver = {
 
 type StructuralReadback = Readonly<{
   campaignRuntimeRows: number
+  plannerCommandReceiptRows: number
   sceneGroupReceiptRows: number
   migrationMetadataRows: number
   userVersion: number
@@ -187,6 +188,7 @@ function assertCampaignReadback(
   )
   assert.deepStrictEqual(actual.structure, {
     campaignRuntimeRows: 0,
+    plannerCommandReceiptRows: 0,
     sceneGroupReceiptRows: 0,
     migrationMetadataRows: 0,
     userVersion: databaseSchemaVersions.campaign
@@ -361,6 +363,13 @@ function structuralReadback(database: Database.Database): StructuralReadback {
         .get() as {
         value: number
       }
+    ).value,
+    plannerCommandReceiptRows: (
+      database
+        .prepare(
+          'SELECT COUNT(*) AS value FROM session_planner_command_receipt'
+        )
+        .get() as { value: number }
     ).value,
     sceneGroupReceiptRows: (
       database

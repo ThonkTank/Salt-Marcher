@@ -3393,3 +3393,119 @@ Update-/Offline-Abnahme bleiben offen. Phasen 5–7 benötigen weiterhin echte
 unterschiedliche AppImages, vollständige Artefaktqualifikation, Releasefreigabe
 und Livetest. Lokale Prüfungen ersetzen weder exact-SHA Remote-Check noch
 kanonischen Handoff und grünen Main-Abschluss.
+
+### Phase 4 — Plan: quittierbare allgemeine Plannerbefehle
+
+Der vorherige Zielturn hat mit 51f1bf61c geprüften Fortschritt geliefert.
+Der Planner hat für create/open/switch/rename/save/delete bisher weder stabile
+Befehls-IDs noch Quittungen. Eine reine Zustandsähnlichkeit wäre bei späteren
+Änderungen oder gelöschten Sitzungen kein Beleg. Zuerst einen gemeinsamen,
+streng validierten Befehlsumschlag und eine kampagnengebundene Execute-/Status-
+Capability ergänzen. Der Planner-Owner speichert vollständigen Fingerprint und
+versionierte Ergebnisquittung atomar mit der Änderung; Status liest Quittung
+plus aktuellen Workspace, auch wenn die ursprüngliche Sitzung gelöscht wurde.
+Keine Quittungseviction, kein Write beim Statuslesen. Die vorhandenen internen
+Serviceoperationen bleiben wiederverwendbar. Eine neue Vorwärtsmigration 36→37
+und Bootstrap-Registrierung ergänzen ausschließlich die Quittungstabelle.
+
+Native Tests prüfen alle sechs Operationen, idempotenten Wiederholungsaufruf,
+Fingerprintfalschbelegung, Rollback beim Quittungsinsert, query_only-Status,
+spätere Änderungen und Kampagnenabweichung. Versionswahrheit und eingefrorene
+Fixtures bleiben konsistent. Danach folgt die Rendereranbindung mit originalem
+Befehlsumschlag/Port, lesender Unknown-Recovery und zentraler Wartungsklärung;
+ein Backendnachweis allein schließt diesen Schreibweg ausdrücklich noch nicht.
+
+Korrekturrunde Planner-Testaufbau: Alle sechs neuen Befehlsfälle bestehen ihre
+Atomizitäts-/Read-only-Prüfung, scheitern anschließend beim Neustartnachweis am
+falschen Helpernamen createServices statt services. Typecheck bestätigt genau
+diesen Fehler. Helper korrigieren und Current-format-Manifest auf Schema 37
+nachführen; native Suite und Typecheck danach erneut prüfen.
+
+Korrekturrunde Manifest: 119 Prüfungen bestanden; der Current-format-Vertrag
+meldet den noch fehlenden session-planner-receipts-Owner. Ihn nach party in
+der tatsächlichen Bootstrap-Reihenfolge ergänzen. Die bestehende Fixture nutzt
+interne Serviceoperationen ohne Quittung; diese Einschränkung explizit als
+initialize-only benennen. Die neuen nativen Befehls-/Neustarttests belegen die
+gefüllte Quittung separat. Typecheck und ESLint sind bestanden.
+
+Korrekturrunde Versionsoracle: Vollständige Format-/Lint-/Typprüfung und 91
+Architekturtests bestanden. Unter 1175 Unit-Tests erwartet allein das explizite
+version-truth-Oracle noch Kampagne 36. Es auf die ausführbare Kette bis 37
+nachführen, dieses Oracle erneut prüfen und die noch nicht ausgeführten
+Integrationstests sowie Artefakt-/Versionsgates abschließen.
+
+Remote-Befund 51f1bf61c: Check 34265480950 ist abgeschlossen und nicht grün.
+Beide roten UI-Jobs scheitern in campaignCombat. Das heruntergeladene echte
+Fehlerbild zeigt die Loot-Verwerfen-Bestätigung über dem Gruppendialog,
+während der Test bereits Monster suchen bearbeiten will. Diesen konkreten
+Ablauf nach dem Planner-Backendnachweis untersuchen; kein Handoff und keine
+Main-Promotion auf Basis der übrigen grünen Jobs.
+
+Korrekturrunde Current-format-Abdeckung: 324 Integrationstests bestanden;
+der übergreifende Abschlussvertrag fordert zusätzlich die eindeutige Zuordnung
+des neuen Owners zu einer Fixturekohorte. Dem strukturellen Root-Readback
+session-planner-receipts hinzufügen und dort die tatsächlich leere Tabelle
+prüfen. Die gefüllten Quittungen bleiben durch die sechs nativen Plannerfälle
+belegt. Root-/Completion-Qualifikation anschließend gezielt erneut ausführen.
+
+Korrekturrunde Root-Reihenfolge: Der Root-Untervertrag verlangt ebenfalls die
+Bootstrap-Reihenfolge; die neue Registrierung muss direkt nach party stehen,
+nicht bei der älteren Gruppenquittung. Beide Listen entsprechend ordnen.
+
+Korrekturrunde Kampagnenkampf-E2E: Die vorhandene Reducerprüfung bestätigt,
+dass unmodifizierte generierte Beute bewusst als ungespeichert geschützt wird.
+Das CI-Fehlerbild zeigt genau die notwendige Bestätigung nach Undo. Der Test
+soll zuerst deren Sichtbarkeit und gesperrte Suche prüfen, Verwerfen ausdrücklich
+wählen und erst nach Schließen der Bestätigung weiterschreiben. Schutzdialog
+und Produktlogik bleiben erhalten. Danach den vollständigen campaignCombat-
+Ablauf im gebauten Produkt einschließlich visueller Prüfung ausführen.
+
+E2E-Assertionsabgleich vor Ausführung: inert liegt laut ModalDialog am Backdrop,
+nicht am Dialog selbst. Die Sperrprüfung muss deshalb den tatsächlichen
+inert-Vorfahren des Suchfelds verlangen; ein bloß definiertes Attribut wäre
+kein belastbarer Nachweis.
+
+### Phase 4 — Plannerquittungen und Kampagnenkampf: Plan-/Roadmapaudit
+
+Planabgleich Backend bestanden: Execute und Status verwenden denselben strikten
+Befehlsumschlag für create/open/switch/rename/save/delete. Beide Capabilities
+prüfen die ursprüngliche Kampagne vor Zugriff. Der Planner-Owner persistiert
+vollständigen Fingerprint und versionierte Ergebnisquittung innerhalb derselben
+Transaktion wie die Änderung. Wiederholungen liefern das ursprüngliche Ergebnis,
+ohne aktuelle Daten zu verändern. Status liest separat den aktuellen Workspace;
+die Quittung bleibt nach späterer Sitzungsänderung und -löschung erhalten.
+Kein automatisches Wiederholen oder Löschen von Quittungen. Kampagne 36→37
+führt nur die neue Quittungstabelle ein; Installation 41 / Registry 16.
+Bootstrap, Versionswahrheit und Current-format-Root-Abdeckung sind nachgeführt;
+die eingefrorenen 0.2.0-Quelldaten bleiben unverändert.
+
+Validierung: Alle sechs Befehle bestehen Fehler beim Quittungsinsert mit
+vollständigem Rollback, bewusste Wiederholung, falsche Kampagne, Fingerprint-
+Konflikt, query_only-Status, spätere Löschung und echten Profilneustart. Der
+Migrationsabbruch setzt Tabelle und user_version zurück und erhält Plannerdaten;
+der erneute Übergang gelingt. Vollständige Format-/Lint-/Typprüfung und 91
+Architekturtests bestanden. 1174 Unit-Tests plus korrigierter Versionsoracle-
+Retest (2 Tests) bestanden. 324 Integrationstests bestanden; der zunächst
+fehlgeschlagene Root-/Completion-Abdeckungsabgleich wurde korrigiert und besteht
+mit 11 gezielten Root-/Completion-/Manifesttests. Referenz-, Generator-, Versions-
+und Renderartefakt-Gates bestanden. Nach den letzten Änderungen Typecheck und
+gezieltes ESLint erneut grün. Build, Smoke ready/closed und Bundle-Gate bestanden;
+Renderergröße unverändert zur letzten Baseline, keine Budgetänderung.
+Logs work/roadmap-phase4-planner-receipts-*.log.
+
+E2E-Korrekturabgleich bestanden: Die im echten CI-Fehlerbild sichtbare notwendige
+Verwerfen-Entscheidung wird im Kampagnenkampf-Test ausdrücklich geprüft und
+gewählt. Eine echte inert-Vorfahrenprüfung bestätigt die Eingabesperre bis zur
+Entscheidung. Der vollständige campaignCombat-Ablauf besteht auf demselben Build
+funktional und mit allen bestehenden visuellen Goldens, ohne Bildaktualisierung.
+Logs work/roadmap-phase4-combat-recovery-{e2e,visual}.log. Der frühere rote
+Remote-Lauf bleibt rot; diese lokalen Nachweise ersetzen keine neue Exact-SHA-CI.
+
+Roadmapabgleich: Backend und Migration sind qualifiziert. Die Rendererbefehle
+verwenden noch den bisherigen Vertrag; der sichtbare Planner-Recoveryweg ist
+somit ausdrücklich noch nicht abgeschlossen. Nächster Schritt: Originalinput
+und Port im Planner halten, bestätigte Quittung plus frischen Zustand abgleichen,
+abwesende Quittung ohne Replay freigeben und Save/Discard sowie Namensdialoge
+korrekt abschließen. Die übrigen Phase-4-Schreibwege, Update-/Offline-Abnahme,
+Phasen 5–7 und kanonischer Handoff/Main-Abschluss bleiben verpflichtend.
+Keine echte Nutzerinstallation, Nutzerdaten oder öffentlichen Releases geändert.

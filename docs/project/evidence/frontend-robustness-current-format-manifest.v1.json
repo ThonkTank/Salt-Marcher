@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "identity": {
     "name": "frontend-robustness-current-format-v1",
-    "campaignDatabaseSchemaVersion": 36,
+    "campaignDatabaseSchemaVersion": 37,
     "qualificationClaim": "preliminary-current-format-reference-not-rp-r-or-rp-l"
   },
   "campaignOwners": [
@@ -101,6 +101,14 @@
       "disposition": "switch-oracle",
       "fixturePlan": "Persist active and inactive Roster characters with distinct assignments and travel state.",
       "oraclePlan": "Compare the complete PartySnapshot and Scene Party membership."
+    },
+    {
+      "registration": "session-planner-receipts",
+      "authority": "campaign.session-planner-command-receipts",
+      "stateClass": "reconciliation",
+      "disposition": "initialize-only",
+      "fixturePlan": "Initialize the planner command journal through CampaignSchemaBootstrapper; current-format materializers use internal planner operations without IPC receipts.",
+      "oraclePlan": "Keep the journal empty during current-format materialization; atomic commands, query-only recovery and durable receipts after restart are covered by session-planner-vertical-slice integration tests."
     },
     {
       "registration": "world-location-save-journal",

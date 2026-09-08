@@ -1,3 +1,8 @@
+import { applySchemaMigrations } from '../../src/core/persistence/sqlite/schema-migrations.js'
+import {
+  sessionPlannerCommandStatusSchema,
+  type SessionPlannerCommand
+} from '../../src/shared/contracts/session-planner.js'
 import {
   plannerPreparationMaintenanceStatusSchema,
   cancelSessionPreparationResultSchema
@@ -34,6 +39,135 @@ afterEach(() => {
 })
 
 describe('Session Planner vertical slice', () => {
+  it.each(['create', 'open', 'switch', 'rename', 'save', 'delete'] as const)(
+    'commits %s with a durable receipt and reconciles without replaying later state',
+    (kind) => {
+      const h = createHarness()
+      const first = h.planner.read()
+      const second = h.planner.create({ name: 'Second' })
+      const commands: Record<typeof kind, SessionPlannerCommand['command']> = {
+        create: { kind: 'create', input: { name: 'Created once' } },
+        open: { kind: 'open', input: { sessionId: first.session.id } },
+        switch: {
+          kind: 'switch',
+          input: {
+            targetSessionId: first.session.id,
+            source: { ...draft(second), adventureDayFraction: '0.5' }
+          }
+        },
+        rename: {
+          kind: 'rename',
+          input: {
+            sessionId: second.session.id,
+            expectedRevision: second.session.revision,
+            name: 'Renamed'
+          }
+        },
+        save: {
+          kind: 'save',
+          input: { ...draft(second), adventureDayFraction: '0.5' }
+        },
+        delete: {
+          kind: 'delete',
+          input: {
+            sessionId: second.session.id,
+            expectedRevision: second.session.revision
+          }
+        }
+      }
+      const input = { commandId: randomUUID(), command: commands[kind] }
+      const db = activeCampaignDatabase(h.campaigns)
+      const campaignId = h.campaigns.activeCampaignId()
+      const handlers = createSessionPlannerHandlers({
+        activeCampaignId: () => campaignId,
+        encounterPlans: h.encounterPlans,
+        sessionPlanner: h.planner
+      })
+      expect(() =>
+        handlers['sessionPlanner.executeCommand']({
+          ...input,
+          campaignId: randomUUID()
+        })
+      ).toThrow('stale')
+      expect(() =>
+        handlers['sessionPlanner.commandStatus']({
+          ...input,
+          campaignId: randomUUID()
+        })
+      ).toThrow('stale')
+      db.pragma('query_only = ON')
+      expect(h.planner.commandStatus(input)).toEqual({
+        receipt: null,
+        workspace: second
+      })
+      db.pragma('query_only = OFF')
+      db.exec(
+        "CREATE TEMP TRIGGER fail_receipt BEFORE INSERT ON session_planner_command_receipt BEGIN SELECT RAISE(ABORT, 'receipt interrupted'); END"
+      )
+      expect(() => h.planner.executeCommand(input)).toThrow(
+        'receipt interrupted'
+      )
+      expect(h.planner.read()).toEqual(second)
+      expect(h.planner.commandStatus(input).receipt).toBeNull()
+      db.exec('DROP TRIGGER fail_receipt')
+      const result = h.planner.executeCommand(input)
+      // Deleting the result session later must not erase or invalidate its receipt.
+      h.planner.delete({
+        sessionId: result.session.id,
+        expectedRevision: result.session.revision
+      })
+      const later = h.planner.create({ name: 'Later work' })
+      expect(h.planner.executeCommand(input)).toEqual(result)
+      expect(h.planner.read()).toEqual(later)
+      db.pragma('query_only = ON')
+      const status = sessionPlannerCommandStatusSchema.parse(
+        handlers['sessionPlanner.commandStatus']({ ...input, campaignId })
+      )
+      expect(status).toEqual({ receipt: result, workspace: later })
+      expect(() =>
+        h.planner.commandStatus({
+          ...input,
+          command: { kind: 'create', input: { name: 'Different request' } }
+        })
+      ).toThrow('idempotency_conflict')
+      db.pragma('query_only = OFF')
+      expect(tableCount(db, 'session_planner_command_receipt')).toBe(1)
+      h.campaigns.close()
+      const reopened = new CampaignStore(h.root)
+      stores.push(reopened)
+      const recovered = services(reopened)
+      expect(recovered.planner.commandStatus(input)).toEqual(status)
+    }
+  )
+
+  it('migrates schema 36 without modifying planner data and rolls back an interrupted migration', () => {
+    const h = createHarness()
+    const before = h.planner.create({ name: 'Preserved plan' })
+    const db = activeCampaignDatabase(h.campaigns)
+    db.exec('DROP TABLE session_planner_command_receipt')
+    db.pragma('user_version = 36')
+    db.exec(
+      "CREATE TEMP TRIGGER fail_migration BEFORE INSERT ON campaign_schema_migration WHEN NEW.migration_id = 'campaign-36-to-37-planner-command-receipts' BEGIN SELECT RAISE(ABORT, 'migration interrupted'); END"
+    )
+    expect(() =>
+      applySchemaMigrations(db, { path: h.root, role: 'campaign' })
+    ).toThrow('migration interrupted')
+    expect(db.pragma('user_version', { simple: true })).toBe(36)
+    expect(
+      db
+        .prepare(
+          "SELECT name FROM sqlite_master WHERE name = 'session_planner_command_receipt'"
+        )
+        .get()
+    ).toBeUndefined()
+    expect(h.planner.read()).toEqual(before)
+    db.exec('DROP TRIGGER fail_migration')
+    applySchemaMigrations(db, { path: h.root, role: 'campaign' })
+    expect(db.pragma('user_version', { simple: true })).toBe(37)
+    expect(tableCount(db, 'session_planner_command_receipt')).toBe(0)
+    expect(h.planner.read()).toEqual(before)
+  })
+
   it('settles preparations across sessions using campaign-bound reads and idempotent cancellation', () => {
     const harness = createHarness()
     const first = saveGenerationInput(harness)

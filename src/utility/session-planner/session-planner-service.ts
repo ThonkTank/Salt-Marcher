@@ -1,3 +1,8 @@
+import { SessionPlannerCommandJournal } from '../../core/session-planner/session-planner-command-journal.js'
+import {
+  sessionPlannerCommandSchema,
+  sessionPlannerCommandStatusSchema
+} from '../../shared/contracts/session-planner.js'
 import type { PlannerPreparationMaintenanceStatus } from '../../shared/contracts/session-planner.js'
 import type Database from 'better-sqlite3'
 import type { SqliteDatabaseAccess } from '../../core/persistence/sqlite/database-access.js'
@@ -86,6 +91,31 @@ export class SessionPlannerService {
   read(): SessionPlannerWorkspace {
     const store = new SessionPlannerStore(this.activeDatabase())
     return this.workspace(store.currentId())
+  }
+
+  executeCommand(input: unknown): SessionPlannerWorkspace {
+    const parsed = sessionPlannerCommandSchema.parse(input)
+    const db = this.activeDatabase()
+    const journal = new SessionPlannerCommandJournal(db)
+    return db
+      .transaction(() => {
+        const receipt = journal.read(parsed)
+        if (receipt) return receipt
+        const { command } = parsed
+        const result = this[command.kind](command.input)
+        journal.record(parsed, result)
+        return result
+      })
+      .immediate()
+  }
+
+  commandStatus(input: unknown) {
+    const parsed = sessionPlannerCommandSchema.parse(input)
+    const journal = new SessionPlannerCommandJournal(this.activeDatabase())
+    return sessionPlannerCommandStatusSchema.parse({
+      receipt: journal.read(parsed),
+      workspace: this.read()
+    })
   }
 
   create(input: unknown): SessionPlannerWorkspace {

@@ -12,6 +12,7 @@ export const currentFormatRootRegistrations = Object.freeze([
   'world-factions',
   'world-locations',
   'party',
+  'session-planner-receipts',
   'world-npcs',
   'campaign-import',
   'scene-group-receipts',
