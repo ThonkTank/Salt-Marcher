@@ -463,3 +463,60 @@ Phase-2-Abschlussaudit einschließlich der Release-Legacy-Aufnahme an.
 Remote Check 34219709769 für vorherigen Commit 9a9e90710 zum Auditzeitpunkt noch
 in_progress: alle abgeschlossenen Prüfjobs erfolgreich; campaign-workspaces und
 hex-npc-restart laufen. Dies ist keine Remote-Abnahme der uncommitteten Legacy-Runde.
+
+### Phase 2 — Stabiler Starthelfer, Plan vor Änderung
+
+Vorheriger Zielturn: Fortschritt (8838ed8ee, Legacy-Aufnahme und Belegprüfung).
+Aktuelle Arbeitskopie sauber. Tatsächliches vorhandenes Local-AppImage mit
+ELECTRON_RUN_AS_NODE=1 und APPIMAGE_EXTRACT_AND_RUN=1 read-only geprüft: Node
+24.18.0 / Electron 43.2.0, Exit 0, keine normale App gestartet.
+
+Der stabile Startpunkt soll einen separat gebündelten CJS-Starthelfer über den
+mitgelieferten Node-Modus eines erhaltenen, geprüften AppImages ausführen. Dieser
+Helfer benutzt denselben Koordinator und dieselbe Profilsperre vor jeder normalen
+Appöffnung. Die alte App muss das neue Journal nicht selbst verstehen. Normale
+Desktopstarts bestätigen keine Wartung: unbestätigte Vorgänge werden zuerst
+zurückgesetzt; bestätigte spätere Arbeit bleibt erhalten. Fehlende Erstinstallation
+oder blockierte Sperre führen zu einer verständlichen Abweisung.
+
+Reihenfolge: eigenständigen Starthelfer und Bundle in den Build aufnehmen, mit
+echtem vorhandenen AppImage-Interpreter auf isolierten Daten prüfen; anschließend
+Local-/Release-Installer auf denselben Starter umstellen und den extrahierten
+Helfer an geprüfte AppImage-Bytes binden. Der Helfer führt keinerlei SQL aus.
+Sperre wird vor normalem Appstart freigegeben, ELECTRON_RUN_AS_NODE und die
+Interpreter-AppImage-Umgebung werden nicht in die normale App vererbt.
+Tests: nicht ausführbares Ziel, unterbrochene Zeiger-/Datenpromotion, Erstinstallation,
+Parallelstart und Crash nach bestätigter Nutzung. Phase 2 schließt erst nach
+Anbindung und deren eigenem Abschlussaudit.
+
+### Phase 2 — Starthelfer, Zwischenaudit
+
+Implementiert: eigener CJS-Starthelfer aus demselben Koordinator und Lockmodul;
+Build- und Qualification-Build bündeln ihn ohne externe Pakete, AppImage-Packaging
+nimmt ihn als Resource auf. Gemeinsamer Shell-Starter bindet Interpreter und
+unveränderlichen Helfer an SHA-256 und prüft beide vor Ausführung. Der Helfer
+setzt unbestätigte Vorgänge unter Sperre zurück, prüft den Programmzeiger samt
+Hash und gibt die Sperre vor normalem Appstart frei. Spätere Programmfehler
+verursachen keine weitere Rücksetzung.
+
+Validierung: 17 Unit-Tests bestanden (14 Local-Startfälle, drei Launcherfälle),
+91 Architekturtests bestanden; TypeScript, ESLint und vollständiger Development-
+Build bestanden. Manuelle technische Probe mit echtem vorhandenem AppImage als
+Node-Interpreter und synthetischem Programm-/Datenpaar: gemeinsamer Shell-Starter,
+gebündelte Recovery, Rückkehr zum vorherigen Paar und bereinigte Kindprozess-
+Umgebung erfolgreich. Keine echte Kampagne und keine zwei echten Zielprogramme
+in dieser Probe; sie ersetzt nicht Phase 5 oder Live-Abnahme.
+
+Die vorhandene Local-current-Verknüpfung zeigte zwischen den Proben auf ein anderes
+Deployment. Daher die technische Probe auf den unveränderlichen alten Deployment-
+Pfad bfad4ba546969a84bd2d1d0dd4433fa2179d90478feba87227bfa58781913a09 fixiert
+und erneut erfolgreich geprüft. Interpreterhash:
+8801d0ba2a6847d48745d4af9978adbd29fbec5c7761ab6f1b8f62ffc55c6c57.
+Die vorhandene Installation wurde durch diese Proben nicht verändert.
+
+Audit gegen Plan: Starthelfer und eigenständiger Laufzeitnachweis bestanden.
+Audit gegen gesamte Phase 2: weiterhin offen, da Local-/Release-Installer den
+neuen gemeinsamen Starter noch nicht installieren. Nächster Schritt ist die
+Extraktion des Helfers aus dem geprüften Ziel-AppImage, dauerhafte Installation
+vor Desktop-Aktivierung und Ablösung des alten Release-Shell-Fallbacks. Danach
+Anbindungstests einschließlich unterbrochener Installation und Abschlussaudit.

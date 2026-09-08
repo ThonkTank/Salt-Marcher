@@ -5,6 +5,8 @@ directories:
 files:
   - out/**
 extraResources:
+  - from: out/maintenance
+    to: maintenance
   - from: resources/reference
     to: reference
   - from: resources/sessiongeneration

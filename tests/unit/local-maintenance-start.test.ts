@@ -1,3 +1,4 @@
+import { admitDesktopStart } from '../../src/main/maintenance-launcher/start.js'
 import { verifyLocalRuntimeStartup } from '../../scripts/local-installation/runtime-start.js'
 import { acquireProfileLock } from '../../src/main/local-profile/local-profile-lock.js'
 import { randomUUID } from 'node:crypto'
@@ -191,6 +192,60 @@ describe('Local external startup verification', () => {
         'locked'
       )
       expect(launch).not.toHaveBeenCalled()
+      expect(coordinator.read()?.phase).toBe('awaiting-start')
+    } finally {
+      lock.release()
+    }
+  })
+})
+
+describe('stable desktop admission', () => {
+  it('restores the previous pair before executing a broken target', () => {
+    writeFileSync(
+      join(root, 'deployments', 'b'.repeat(64), 'SaltMarcher.AppImage'),
+      'broken executable'
+    )
+    expect(admitDesktopStart(root)).toBe(
+      join(root, 'deployments', 'a'.repeat(64), 'SaltMarcher.AppImage')
+    )
+    expect(
+      readFileSync(join(root, 'profile', 'campaign-data', 'state'), 'utf8')
+    ).toBe('old')
+    expect(coordinator.read()?.phase).toBe('rolled-back')
+  })
+  it('preserves accepted work and selects the accepted executable', () => {
+    coordinator.commit(id)
+    writeFileSync(join(root, 'profile', 'campaign-data', 'state'), 'later work')
+    expect(admitDesktopStart(root)).toBe(
+      join(root, 'deployments', 'b'.repeat(64), 'SaltMarcher.AppImage')
+    )
+    expect(
+      readFileSync(join(root, 'profile', 'campaign-data', 'state'), 'utf8')
+    ).toBe('later work')
+  })
+  it('fails closed on a missing journal', () => {
+    rmSync(coordinator.journalPath)
+    expect(() => admitDesktopStart(root)).toThrow('Wartungsbeleg fehlt')
+    expect(
+      readFileSync(join(root, 'profile', 'campaign-data', 'state'), 'utf8')
+    ).toBe('new')
+  })
+  it('does not undo a committed transaction when its executable is damaged', () => {
+    coordinator.commit(id)
+    writeFileSync(
+      join(root, 'deployments', 'b'.repeat(64), 'SaltMarcher.AppImage'),
+      'damaged after acceptance'
+    )
+    expect(() => admitDesktopStart(root)).toThrow('Programmversion')
+    expect(coordinator.read()?.phase).toBe('committed')
+    expect(
+      readFileSync(join(root, 'profile', 'campaign-data', 'state'), 'utf8')
+    ).toBe('new')
+  })
+  it('refuses a parallel start while the app owns the profile', () => {
+    const lock = acquireProfileLock(join(root, 'runtime.lock'), 'application')
+    try {
+      expect(() => admitDesktopStart(root)).toThrow('locked')
       expect(coordinator.read()?.phase).toBe('awaiting-start')
     } finally {
       lock.release()

@@ -1,3 +1,4 @@
+import { installMaintenanceLauncher } from '../../src/shared/maintenance/launcher.js'
 import { releaseManifestSchema } from '../../src/shared/contracts/release.js'
 import { execFileSync, spawnSync } from 'node:child_process'
 import {
@@ -5,6 +6,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
   statSync,
   writeFileSync
@@ -68,5 +70,57 @@ describe('stable release launcher', () => {
     const result = spawnSync(join(root, 'start'), { encoding: 'utf8' })
     expect(result.status).toBe(47)
     expect(result.stdout).toBe('')
+  })
+})
+
+describe('shared maintenance launcher publication', () => {
+  it('quotes installation paths and refuses changed helper bytes', () => {
+    const root = mkdtempSync(join(tmpdir(), "salt shared launcher '"))
+    roots.push(root)
+    const runtime = join(root, 'interpreter')
+    const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`
+    // Test interpreter only. Real AppImage Node-mode execution is qualified separately.
+    writeFileSync(
+      runtime,
+      `#!/bin/sh\nexec ${quote(process.execPath)} "$@"\n`,
+      { mode: 0o700 }
+    )
+    const bundle = Buffer.from(
+      'process.stdout.write(JSON.stringify(process.argv.slice(2)))'
+    )
+    installMaintenanceLauncher(
+      root,
+      { path: runtime, sha256: sha256(runtime) },
+      bundle
+    )
+    const result = spawnSync(join(root, 'start'), ['argument with spaces'], {
+      encoding: 'utf8'
+    })
+    expect(result.status).toBe(0)
+    expect(JSON.parse(result.stdout)).toEqual([root, 'argument with spaces'])
+    const helper = join(
+      root,
+      'launchers',
+      readdirSync(join(root, 'launchers'))[0]!
+    )
+    writeFileSync(helper, 'throw new Error("should never execute")')
+    const failed = spawnSync(join(root, 'start'), { encoding: 'utf8' })
+    expect(failed.status).toBe(1)
+    expect(failed.stderr).toContain('Starthelfer wurde verändert')
+  })
+  it('refuses changed interpreter bytes without replacing the existing launcher', () => {
+    const root = mkdtempSync(join(tmpdir(), 'salt launcher identity-'))
+    roots.push(root)
+    const runtime = join(root, 'interpreter')
+    writeFileSync(runtime, '#!/bin/sh\nexit 0\n', { mode: 0o700 })
+    const identity = { path: runtime, sha256: sha256(runtime) }
+    installMaintenanceLauncher(root, identity, Buffer.from('first helper'))
+    const before = readFileSync(join(root, 'start'))
+    writeFileSync(runtime, '#!/bin/sh\nexit 33\n')
+    expect(() =>
+      installMaintenanceLauncher(root, identity, Buffer.from('second helper'))
+    ).toThrow('Laufzeit wurde verändert')
+    expect(readFileSync(join(root, 'start'))).toEqual(before)
+    expect(spawnSync(join(root, 'start')).status).toBe(1)
   })
 })
