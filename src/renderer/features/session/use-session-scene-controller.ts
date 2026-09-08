@@ -24,15 +24,6 @@ export function useSessionSceneController(input: {
           locationId,
           current.scene.revision
         )
-      ),
-    assignPartyMember: (memberId: string, assigned: boolean) =>
-      void input.mutateSnapshot((current) =>
-        capabilities.assignPartyMember(
-          current.scene.focusedSceneId,
-          memberId,
-          assigned,
-          current.scene.revision
-        )
       )
   } as const
 }

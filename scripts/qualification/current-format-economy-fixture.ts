@@ -1,7 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { z } from 'zod'
 import { itemDefinitionSchema } from '../../src/shared/contracts/loot.js'
-import { sessionLayoutPreferenceSchema } from '../../src/shared/contracts/session-layout.js'
 import type { CurrentFormatCampaignManifest } from './current-format-campaign-manifest.js'
 import type { CurrentFormatPreparationFixture } from './current-format-preparation-fixture.js'
 import type { CurrentFormatSpatialFixture } from './current-format-spatial-fixture.js'
@@ -14,7 +13,7 @@ export const currentFormatEconomyRegistrations = Object.freeze([
 
 export const currentFormatEconomyInstallationAuthorities = Object.freeze([
   'installation.biomes-and-symbols',
-  'installation.session-layout'
+  'installation.preferences'
 ] as const)
 
 export const currentFormatEconomyExtendedRegistrations = Object.freeze([
@@ -95,7 +94,7 @@ export const currentFormatEconomyFixtureSchema = z
         locationSymbolName: z.string().trim().min(1).max(100),
         locationSymbolSource: z.string().min(1),
         expectedLocationSymbolRevision: z.literal(1),
-        sessionLayout: sessionLayoutPreferenceSchema,
+        theme: z.enum(['light', 'dark']),
         expectedSettingsRevision: z.literal(1),
         expectedSystemBiomeIds: z.array(z.string().min(1)).min(1)
       })

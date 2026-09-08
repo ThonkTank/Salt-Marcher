@@ -10,15 +10,11 @@ describe('isolated workspace routes', () => {
     await campaignName.waitForDisplayed({ timeout: 30_000 })
     await campaignName.setValue('Workspace Isolation')
     await (await client.$('button=Erstellen & öffnen')).click()
-    await (
-      await client.$('section[aria-label="Session Steuerung"]')
-    ).waitForExist({ timeout: 10_000 })
+    await (await client.$('.scene-desktop')).waitForExist({ timeout: 10_000 })
 
     const menu = await client.$('button[aria-label="Menü"]')
     await expect(menu).toBeExisting()
-    await expect(
-      await client.$('section[aria-label="Session Steuerung"]')
-    ).toBeExisting()
+    await expect(await client.$('.scene-desktop')).toBeExisting()
 
     await (await client.$('button[aria-label="Katalog"]')).click()
     await expect(await client.$('.catalog-workspace')).toBeExisting()
@@ -29,9 +25,7 @@ describe('isolated workspace routes', () => {
     await expect(menu).toBeExisting()
 
     await (await client.$('button[aria-label="Session"]')).click()
-    await expect(
-      await client.$('section[aria-label="Session Steuerung"]')
-    ).toBeExisting()
+    await expect(await client.$('.scene-desktop')).toBeExisting()
     await expect(menu).toBeExisting()
   })
 
@@ -39,7 +33,7 @@ describe('isolated workspace routes', () => {
     const client = browser as unknown as WdioBrowser
     const geometry = await client.execute(async () => {
       const shell = document.querySelector<HTMLElement>('.app-shell')
-      const workspace = document.querySelector<HTMLElement>('.session-mockup')
+      const workspace = document.querySelector<HTMLElement>('.scene-desktop')
       if (!shell || !workspace) return null
       const snapshot = () => {
         const bounds = workspace.getBoundingClientRect()

@@ -185,7 +185,7 @@ async function waitForCampaignReady(
       `[data-active-campaign-id="${campaignId}"]` +
       `[data-session-campaign-id="${campaignId}"]` +
       '[data-session-revision]:not([data-session-revision=""])' +
-      '[data-active-workspace="session"] .session-mockup'
+      '[data-active-workspace="session"] .scene-desktop'
   )
   await session.waitForExist({
     timeout: switchTimeoutMs,

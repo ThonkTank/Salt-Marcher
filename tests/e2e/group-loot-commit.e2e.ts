@@ -25,7 +25,10 @@ describe('Group Loot atomic commit', () => {
     ).waitForExist({ timeout: 15_000 })
     await clickWhenInteractable(
       client,
-      async () => await client.$('button=Gruppen managen')
+      async () =>
+        await client.$(
+          '[data-window-id="overview"] button[aria-label="Gruppen bearbeiten"]'
+        )
     )
     const dialogSelector = 'section[aria-labelledby="group-builder-title"]'
     let dialog = await client.$(dialogSelector)

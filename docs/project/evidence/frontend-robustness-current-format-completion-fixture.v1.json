@@ -18,7 +18,7 @@
       "expected": {
         "locationRevision": 5,
         "mapContentRevision": 4,
-        "semanticSha256": "862037f4b248feb7fd0455baad01658ffb7e56846458e22682198248d15ff596"
+        "semanticSha256": "28de4d03dbb9371067b7529058f96372743334a01db4fc3bb5401bc7473a06cf"
       }
     },
     {
@@ -34,7 +34,7 @@
       "expected": {
         "locationRevision": 4,
         "mapContentRevision": 4,
-        "semanticSha256": "516a909a2b25549561f66148a77c0ae30d23de195e1d04a461733bdcea610ebf"
+        "semanticSha256": "1d417bdd1396aee89416e600bf7ad1daa409511f96080fe4024c9077bc3ec0ea"
       }
     }
   ]

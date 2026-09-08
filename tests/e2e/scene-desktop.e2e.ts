@@ -7,16 +7,12 @@ import {
   setWindowToMinimumResponsiveSize
 } from './support/e2e-assertions.js'
 
-describe('per-scene desktop preview', () => {
+describe('per-scene desktop', () => {
   it('preserves separate arrangements and intentional closure through navigation and process restart', async () => {
     const client = browser as unknown as WdioBrowser
     await resumeCampaignFromScreen(client)
-    await client.$('.session-mockup').waitForDisplayed({ timeout: 30_000 })
-    await client.$('button[aria-label="Menü"]').click()
-    const toggle = client.$('.desktop-preview-setting input')
-    await expect(toggle).not.toBeSelected()
-    await toggle.click()
-    await client.keys('Escape')
+    await client.$('.scene-desktop').waitForDisplayed({ timeout: 30_000 })
+    await expect(client.$('.desktop-preview-setting')).not.toBeExisting()
     await client.$('.desktop-window').waitForDisplayed({ timeout: 10_000 })
     const spansWorkspace = await client.execute(() => {
       const desktop = document
@@ -83,9 +79,7 @@ describe('per-scene desktop preview', () => {
     await client.reloadSession()
     await resumeCampaignFromScreen(client)
     await client.$('.desktop-window').waitForDisplayed({ timeout: 30_000 })
-    await client.$('button[aria-label="Menü"]').click()
-    await expect(client.$('.desktop-preview-setting input')).toBeSelected()
-    await client.keys('Escape')
+    await expect(client.$('.desktop-preview-setting')).not.toBeExisting()
     expect(await geometry(client)).toEqual(preferred)
     await client
       .$('select[aria-label="Szene"]')
@@ -123,6 +117,7 @@ describe('per-scene desktop preview', () => {
             .querySelector('.desktop-stage')!
             .getBoundingClientRect()
           return (
+            area.right <= window.innerWidth &&
             frame.left >= area.left &&
             frame.right <= area.right &&
             frame.top >= area.top &&
@@ -134,19 +129,13 @@ describe('per-scene desktop preview', () => {
         timeoutMsg: 'Desktop window did not fit the smaller viewport'
       }
     )
-    await client.$('button[aria-label="Menü"]').click()
-    await client.$('.desktop-preview-setting input').click()
-    await client.keys('Escape')
-    await client.$('.session-mockup').waitForDisplayed({ timeout: 10_000 })
+    await client.$('.scene-desktop').waitForDisplayed({ timeout: 10_000 })
     await expect(client.$('.desktop-error')).not.toBeExisting()
   })
   it('reads independent item and location documents with history and restored scroll', async () => {
     const client = browser as unknown as WdioBrowser
     await client.reloadSession()
     await resumeCampaignFromScreen(client)
-    await client.$('button[aria-label="Menü"]').click()
-    await client.$('.desktop-preview-setting input').click()
-    await client.keys('Escape')
     await client.$('.scene-desktop').waitForDisplayed()
     await setElectronWindowSize(client, 1200, 900)
     const original = await client.$('select[aria-label="Szene"]').getValue()
@@ -599,6 +588,53 @@ describe('per-scene desktop preview', () => {
     await resumeCampaignFromScreen(client)
     await info().waitForDisplayed({ timeout: 30_000 })
     await expect(info()).toHaveText(expect.stringContaining('XP 100 /'))
+  })
+  it('opens quickinfos with Alt+P from the catalog and releases repeated map windows', async () => {
+    const client = browser as unknown as WdioBrowser
+    await client.$('button[aria-label="Katalog"]').click()
+    await client.$('.catalog-workspace').waitForDisplayed()
+    await client.keys(['Alt', 'p'])
+    await client.$('[data-window-id="characters"]').waitForDisplayed()
+    await client.waitUntil(() =>
+      client.execute(
+        () =>
+          document.activeElement?.getAttribute('data-window-id') ===
+          'characters'
+      )
+    )
+    await expect(client.$('.party-panel:not(.day-panel)')).not.toBeExisting()
+    const map = () => client.$('[data-window-id="map"]')
+    if (await map().isExisting())
+      await map().$('button[aria-label="Fenster schließen"]').click()
+    const evidence = () =>
+      client.execute(async () => {
+        const bridge = (
+          window as typeof window & {
+            __saltMarcherE2e: {
+              runtimeEvidence: () => Promise<
+                import('../../src/shared/contracts/runtime-evidence.js').RuntimeEvidence
+              >
+            }
+          }
+        ).__saltMarcherE2e
+        return bridge.runtimeEvidence()
+      })
+    const before = await evidence()
+    for (let iteration = 0; iteration < 8; iteration++) {
+      await client.$('.desktop-toolbar').$('button=Karte & Reise').click()
+      await map().waitForDisplayed()
+      expect(await client.$$('[data-window-id="map"]').length).toBe(1)
+      await map().$('button[aria-label="Fenster schließen"]').click()
+      await map().waitForExist({ reverse: true })
+      expect(await client.$$('.desktop-stage canvas').length).toBe(0)
+    }
+    const after = await evidence()
+    expect(after.supervisor.generation).toBe(before.supervisor.generation)
+    expect(after.supervisor.utility.activeDomainTimers).toBe(
+      before.supervisor.utility.activeDomainTimers
+    )
+    await waitSaved(client)
+    await expectAccessibleInBothThemes(client)
   })
 })
 

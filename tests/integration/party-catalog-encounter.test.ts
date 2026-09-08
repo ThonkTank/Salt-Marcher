@@ -39,6 +39,45 @@ function sessionAfter(play: LivePlayService, command: () => unknown) {
 }
 
 describe('party and catalog parity slice', () => {
+  it('recovers an active legacy character without a scene through batch assignment', () => {
+    const { campaigns, play } = harness()
+    try {
+      let state = play.readSession()
+      const member = state.party.members[0]!
+      play.setMembership(member.id, true, state.party.revision)
+      state = play.readSession()
+      const sceneId = state.scene.focusedSceneId
+      play.assignScenePartyMember(
+        sceneId,
+        member.id,
+        false,
+        state.scene.revision
+      )
+      state = play.readSession()
+      expect(state.scene.unassignedPartyMemberIds).toContain(member.id)
+      const before = state.party.members.find(
+        (candidate) => candidate.id === member.id
+      )!
+      state = play.setSceneRoster({
+        sceneId,
+        memberIds: [
+          ...state.scene.scenes.find((scene) => scene.id === sceneId)!
+            .partyMemberIds,
+          member.id
+        ],
+        expectedRevision: state.scene.revision,
+        expectedPartyRevision: state.party.revision
+      })
+      expect(
+        state.scene.scenes.find((scene) => scene.id === sceneId)!.partyMemberIds
+      ).toContain(member.id)
+      expect(
+        state.party.members.find((candidate) => candidate.id === member.id)
+      ).toEqual(before)
+    } finally {
+      campaigns.close()
+    }
+  })
   it('atomically replaces, splits and merges scene rosters without activating unrelated characters', () => {
     const { campaigns, play } = harness()
     try {

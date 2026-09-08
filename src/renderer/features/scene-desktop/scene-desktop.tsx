@@ -275,7 +275,13 @@ export function SceneDesktop(
               ) : window.kind === 'loot' ? (
                 <SessionLootPanel model={model.groups} actions={actions} />
               ) : (
-                <DesktopOverview model={model} actions={actions} />
+                <DesktopOverview
+                  model={model}
+                  actions={actions}
+                  openCharacters={() =>
+                    projection.dispatch({ type: 'open-characters' })
+                  }
+                />
               )}
             </DesktopWindow>
           ))}

@@ -87,7 +87,7 @@ export function materializeCurrentFormatEconomyFixture(
       economyFixture.installation.expectedLocationSymbolRevision
     )
     const settings = campaigns.updateSettings(
-      { sessionLayout: economyFixture.installation.sessionLayout },
+      { theme: economyFixture.installation.theme },
       campaigns.readSettings().revision
     )
     assert.equal(

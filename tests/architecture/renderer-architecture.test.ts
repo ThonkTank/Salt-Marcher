@@ -422,7 +422,7 @@ architectureGate(
       'src/renderer/features/session-planner/session-planner-dialog-host.tsx',
       'src/renderer/features/session/group-manager-catalog.tsx',
       'src/renderer/features/session/group-manager-draft-pane.tsx',
-      'src/renderer/features/party/party-controls.tsx'
+      'src/renderer/features/party/character-catalog-section.tsx'
     ])
       expect(
         readTypeScriptModule(path).imports.some(

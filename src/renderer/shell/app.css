@@ -70,6 +70,7 @@ input {
 
 .app-shell {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: var(--topbar-h) minmax(0, 1fr);
   min-height: 100vh;
 }
@@ -144,6 +145,7 @@ input {
 
 .workspace-heading {
   display: flex;
+  min-width: 0;
   flex-direction: column;
   justify-content: center;
   padding-left: var(--space-9);
@@ -158,6 +160,9 @@ input {
 }
 
 .workspace-heading h1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-family: var(--font-display);
   font-size: var(--text-xl);
   font-weight: var(--weight-display);

@@ -184,11 +184,6 @@ try {
   if (fixture.campaign === null) process.exitCode = 0
   else {
     campaigns.create(fixture.campaign)
-    if (fixture.sessionLayout)
-      campaigns.updateSettings(
-        { sessionLayout: fixture.sessionLayout },
-        campaigns.readSettings().revision
-      )
     const locations = new WorldLocationService(
       campaigns.activeCampaignPersistence()
     )

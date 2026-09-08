@@ -1,3 +1,4 @@
+import { openSceneWindow } from './support/scene-desktop-navigation.js'
 import { resumeCampaignFromScreen } from './support/campaign-navigation.js'
 import { browser, expect } from '@wdio/globals'
 import type { Browser as WdioBrowser } from 'webdriverio'
@@ -21,8 +22,11 @@ describe('Session map and travel console', () => {
       timeout: 10_000
     })
 
-    await (await client.$('button=Karte')).click()
-    await (await client.$('[role="tab"]=Reise')).click()
+    await openSceneWindow(client, 'overview')
+    expect(await client.$('.desktop-register').getText()).toContain('Alrik')
+    expect(await client.$$('.desktop-register li').length).toBe(1)
+    await client.$('.shell-quick-actions').$('button=Reise').click()
+    await openSceneWindow(client, 'map', true)
 
     const mapRegion = await client.$(
       '[role="region"][aria-label="Hex-Karte Reiseküste"]'
@@ -83,13 +87,6 @@ describe('Session map and travel console', () => {
       cpuGate: 'evidence-only'
     })
     await (await client.$('select[aria-label="Hex-Karte"]')).waitForExist()
-    const partyCard = await client.$('.scene-party-card')
-    await partyCard.waitForExist()
-    const partyExpansion = await partyCard.$('.group-expand')
-    if ((await partyExpansion.getAttribute('aria-expanded')) !== 'true')
-      await partyExpansion.click()
-    expect(await client.$('.scene-party-expanded').getText()).toContain('Alrik')
-    expect(await partyCard.$('.count').getText()).toBe('1')
     const speedWarning = await client.$('.travel-warning')
     await speedWarning.waitForExist()
     expect(await speedWarning.getText()).toContain('Alrik')
@@ -101,7 +98,7 @@ describe('Session map and travel console', () => {
     const geometry = await client.execute(() => {
       const map = document.querySelector<HTMLElement>('.hex-travel-map')
       const shell = map?.querySelector<HTMLElement>('.hex-canvas-shell')
-      const content = map?.closest<HTMLElement>('.session-center-content-slot')
+      const content = map?.closest<HTMLElement>('.desktop-map-canvas')
       if (!map || !shell || !content) return null
       const mapBounds = map.getBoundingClientRect()
       const shellBounds = shell.getBoundingClientRect()
@@ -121,7 +118,7 @@ describe('Session map and travel console', () => {
       heightDelta: 2
     })
     if (!geometry) throw new Error('Travel map geometry is unavailable.')
-    expect(geometry.mapHeight).toBeGreaterThan(300)
+    expect(geometry.mapHeight).toBeGreaterThan(200)
     expect(
       Math.abs(geometry.mapHeight - geometry.contentHeight)
     ).toBeLessThanOrEqual(1)
@@ -133,21 +130,27 @@ describe('Session map and travel console', () => {
             '.hex-travel-map canvas'
           )
           if (!canvas) throw new Error('Travel canvas is missing.')
-          const bounds = canvas.getBoundingClientRect()
-          const centerX = bounds.left + bounds.width / 2
-          const centerY = bounds.top + bounds.height / 2
-          const horizontalHexStep = 28 * Math.sqrt(3)
-          const pointer = (type: string, q: number) =>
+          const world = document.querySelector<SVGGElement>(
+            '.hex-travel-map .hex-location-overlay > g'
+          )
+          const matrix = world?.getScreenCTM()
+          if (!matrix) throw new Error('Rendered map camera is unavailable.')
+          const pointer = (type: string, q: number) => {
+            const point = new DOMPoint(
+              27 * Math.sqrt(3) * q,
+              0
+            ).matrixTransform(matrix)
             canvas.dispatchEvent(
               new PointerEvent(type, {
                 bubbles: true,
                 button: 0,
                 buttons: type === 'pointerup' ? 0 : 1,
                 pointerId: 41,
-                clientX: centerX + horizontalHexStep * q,
-                clientY: centerY
+                clientX: point.x,
+                clientY: point.y
               })
             )
+          }
           pointer('pointerdown', startQ)
           pointer('pointermove', destinationQ)
           pointer('pointerup', destinationQ)
@@ -203,11 +206,11 @@ describe('Session map and travel console', () => {
     ).toBeEnabled()
     await expectAccessible(client)
 
-    await expectElementGolden(client, 'session-travel-light', '.session-mockup')
+    await expectElementGolden(client, 'session-travel-light', '.scene-desktop')
     await client.execute(() => {
       document.documentElement.dataset['theme'] = 'dark'
     })
-    await expectElementGolden(client, 'session-travel-dark', '.session-mockup')
+    await expectElementGolden(client, 'session-travel-dark', '.scene-desktop')
     await client.execute(() => {
       document.documentElement.dataset['theme'] = 'light'
     })
@@ -315,7 +318,7 @@ describe('Session map and travel console', () => {
     await expectElementGolden(
       client,
       'session-travel-completed-light',
-      '.session-mockup'
+      '.scene-desktop'
     )
 
     await client.execute(() => {

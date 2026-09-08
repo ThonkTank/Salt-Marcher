@@ -1,3 +1,4 @@
+import { partyCharacterMatchesSearch } from './party-search.js'
 import { CapabilityContext } from '../../capabilities/capability-context.js'
 import { message, formatMessage } from '../../i18n/session-runtime.de.js'
 import { lazy, Suspense, useMemo, useState, useContext } from 'react'
@@ -48,14 +49,15 @@ export default function CharacterCatalogSection(props: {
   const selected =
     members.find((member) => member.id === props.selectedId) ?? null
   const visible = members.filter((member) =>
-    `${member.name} ${member.playerName ?? ''} ${member.id}`
-      .toLocaleLowerCase('de-DE')
-      .includes(query.trim().toLocaleLowerCase('de-DE'))
+    partyCharacterMatchesSearch(member, query.trim())
   )
   const status = (member: PartyCharacter) =>
     props.snapshot.scene.scenes.find((scene) =>
       scene.partyMemberIds.includes(member.id)
-    )?.title ?? message('character.inactive')
+    )?.title ??
+    (member.active
+      ? message('character.unassigned')
+      : message('character.inactive'))
   function select(id: string | null) {
     if (busy) return
     setEditing(null)

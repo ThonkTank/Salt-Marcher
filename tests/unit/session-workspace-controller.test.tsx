@@ -20,8 +20,8 @@ describe('session workspace controller', () => {
     const updated = snapshot(5)
     const setSnapshot = vi.fn()
     const onError = vi.fn()
-    const assignPartyMember = vi.fn().mockResolvedValue(updated)
-    const api = sessionApi({ assignPartyMember })
+    const setLocation = vi.fn().mockResolvedValue(updated)
+    const api = sessionApi({ setLocation })
     const wrapper = controllerWrapper(api)
     const view = renderHook(
       ({ value }: { value: LiveSessionSnapshot }) =>
@@ -35,15 +35,13 @@ describe('session workspace controller', () => {
     await waitFor(() => expect(api.loot.scene).toHaveBeenCalled())
     expect(
       view.result.current.model.groups.activeRows.map((row) => row.kind)
-    ).toEqual(['party', 'active-group'])
-    expect(view.result.current.model.groups.activeRows[1]).toMatchObject({
+    ).toEqual(['active-group'])
+    expect(view.result.current.model.groups.activeRows[0]).toMatchObject({
       kind: 'active-group',
       sceneId,
       expanded: true
     })
 
-    act(() => view.result.current.actions.editParty())
-    expect(view.result.current.model.dialog).toEqual({ kind: 'party-editor' })
     act(() => view.result.current.actions.manageGroups())
     expect(view.result.current.model.dialog).toEqual({
       kind: 'group-editor',
@@ -53,19 +51,18 @@ describe('session workspace controller', () => {
     act(() => view.result.current.actions.closeDialog())
     expect(view.result.current.model.dialog).toEqual({ kind: 'none' })
 
-    act(() => view.result.current.actions.toggleRow({ kind: 'party' }))
+    act(() => view.result.current.actions.toggleRow({ kind: 'group', groupId }))
     expect(view.result.current.model.groups.activeRows[0]).toMatchObject({
-      kind: 'party',
-      expanded: true
+      kind: 'active-group',
+      expanded: false
     })
 
     view.rerender({ value: updated })
-    act(() => view.result.current.actions.assignPartyMember(memberId, false))
+    act(() => view.result.current.actions.setSceneLocation(null))
     await waitFor(() =>
-      expect(assignPartyMember).toHaveBeenCalledWith({
+      expect(setLocation).toHaveBeenCalledWith({
         sceneId,
-        partyMemberId: memberId,
-        assigned: false,
+        locationId: null,
         expectedRevision: updated.scene.revision
       })
     )

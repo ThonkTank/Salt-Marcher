@@ -1,3 +1,4 @@
+import { openSceneWindow } from './support/scene-desktop-navigation.js'
 import { resumeCampaignFromScreen } from './support/campaign-navigation.js'
 import { browser, expect } from '@wdio/globals'
 import type { Browser as WdioBrowser } from 'webdriverio'
@@ -61,6 +62,7 @@ describe('Loot distribution and ledger', () => {
       }
     })
 
+    await openSceneWindow(client, 'loot', true)
     await (await client.$('button=Nicht zugeordnete Beute öffnen')).click()
     const openTreasure = await client.$('.unplaced-loot-section')
     await openTreasure.waitForDisplayed({ timeout: 10_000 })
@@ -137,16 +139,15 @@ describe('Loot distribution and ledger', () => {
       )
     ).toBe(true)
 
-    const partyCard = await client.$('.scene-party-card')
-    await partyCard.waitForExist({ timeout: 10_000 })
-    const partyExpansion = await partyCard.$('.group-expand')
-    if ((await partyExpansion.getAttribute('aria-expanded')) !== 'true')
-      await partyExpansion.click()
-    await (
-      await client.$(
-        `button.scene-party-member[aria-label="Beute: ${prepared.characterName}"]`
-      )
-    ).click()
+    await client
+      .$('[data-window-id="loot"] button[aria-label="Fenster schließen"]')
+      .click()
+    await openSceneWindow(client, 'overview')
+    const character = await client
+      .$('.desktop-register')
+      .$(`li*=${prepared.characterName}`)
+    await character.waitForExist({ timeout: 10000 })
+    await character.$('button=Beute').click()
     const ledgerDialog = await client.$('.character-loot-dialog')
     await ledgerDialog.waitForDisplayed({ timeout: 10_000 })
     await client.waitUntil(

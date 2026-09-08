@@ -2,10 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react'
 import type { CampaignSnapshot } from '../../../shared/contracts/campaign.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import { message } from '../../i18n/workspace-runtime.de.js'
-import {
-  AdventuringDayDropdown,
-  PartyDropdown
-} from '../party/party-controls.js'
+import { AdventuringDayDropdown } from '../party/party-controls.js'
 import {
   workspaceDefinition,
   type WorkspaceId
@@ -27,17 +24,13 @@ export function WorkspaceTopBar(props: {
   showCampaigns: () => void
   workspace: WorkspaceId
   session: LiveSessionSnapshot | null
-  partyOpen: boolean
-  setPartyOpen: (open: boolean | ((current: boolean) => boolean)) => void
+  openCharacters: () => void
   dayOpen: boolean
   setDayOpen: (open: boolean) => void
-  setSession: (snapshot: LiveSessionSnapshot) => void
   startTravel: () => void
   onError: (message: string) => void
   theme: 'light' | 'dark'
   toggleTheme: () => void
-  desktopPreview?: boolean
-  setDesktopPreview?: (enabled: boolean) => void
   loadGeneratorPresetApplication: GeneratorPresetApplicationLoader
   campaignRules?: CampaignRewardRulesPort
 }) {
@@ -50,19 +43,19 @@ export function WorkspaceTopBar(props: {
     (scene) => scene.id === props.session?.scene.focusedSceneId
   )
   const definition = workspaceDefinition(props.workspace)
-  const setPartyOpen = props.setPartyOpen
+  const openCharacters = props.openCharacters
   const [menuAnchor, setMenuAnchor] = useState<HTMLButtonElement | null>(null)
 
   useEffect(() => {
     const keydown = (event: KeyboardEvent) => {
       if (event.altKey && event.key.toLowerCase() === 'p' && active) {
         event.preventDefault()
-        setPartyOpen((current) => !current)
+        openCharacters()
       }
     }
     window.addEventListener('keydown', keydown)
     return () => window.removeEventListener('keydown', keydown)
-  }, [active, setPartyOpen])
+  }, [active, openCharacters])
 
   return (
     <header
@@ -97,10 +90,6 @@ export function WorkspaceTopBar(props: {
                 .length ?? 0
             }
             onError={props.onError}
-            desktopPreview={props.desktopPreview ?? false}
-            {...(props.setDesktopPreview
-              ? { setDesktopPreview: props.setDesktopPreview }
-              : {})}
           />
         </Suspense>
       )}
@@ -114,17 +103,15 @@ export function WorkspaceTopBar(props: {
             party={props.session.party}
             open={props.dayOpen}
             setOpen={props.setDayOpen}
-            triggerLabel={message('quick.rest')}
+            triggerLabel={message('quick.dayBudget')}
           />
           <button onClick={props.startTravel}>{message('ui.reise')}</button>
-          <PartyDropdown
-            party={props.session.party}
-            open={props.partyOpen}
-            setOpen={props.setPartyOpen}
-            changed={(party) => props.setSession({ ...props.session!, party })}
-            onError={props.onError}
-            triggerLabel={message('ui.party')}
-          />
+          <button
+            onClick={props.openCharacters}
+            title={message('desktop.charactersShortcut')}
+          >
+            {message('character.characters')}
+          </button>
         </nav>
       )}
       <div className="workspace-heading">
@@ -139,10 +126,7 @@ export function WorkspaceTopBar(props: {
       </div>
       <p className="top-bar-status">
         {active && props.workspace === 'session' && focusedScene
-          ? formatSessionStatus(
-              focusedScene.gameTimeSeconds,
-              props.session?.party.adventuringDay
-            )
+          ? formatSessionStatus(focusedScene.gameTimeSeconds)
           : active
             ? message('campaign.statusActive')
             : message('campaign.choose')}
@@ -170,10 +154,7 @@ export function WorkspaceTopBar(props: {
   )
 }
 
-function formatSessionStatus(
-  gameTimeSeconds: number,
-  dayBudget: LiveSessionSnapshot['party']['adventuringDay'] | undefined
-) {
+function formatSessionStatus(gameTimeSeconds: number) {
   const day = Math.floor(gameTimeSeconds / 86_400) + 1
   const secondsInDay = gameTimeSeconds % 86_400
   const hour = Math.floor(secondsInDay / 3_600)
@@ -185,12 +166,5 @@ function formatSessionStatus(
         : hour < 18
           ? 'Nachmittag'
           : 'Abend'
-  const progress =
-    dayBudget?.available && dayBudget.dailyBudget > 0
-      ? Math.min(
-          100,
-          Math.round((dayBudget.longRestXp / dayBudget.dailyBudget) * 100)
-        )
-      : null
-  return `Tag ${day} · ${period}${progress === null ? '' : ` · ${progress} % Tagesbudget`}`
+  return `Tag ${day} · ${period}`
 }

@@ -1,16 +1,16 @@
 {
   "recordedAt": "2026-09-08",
-  "reason": "Phase 4 adds campaign character CRUD and compact scene quickinfos after phase 3 play windows.",
-  "dependencyRationale": "No dependency changes; authoritative schemas remain outside renderer imports.",
-  "chunkRationale": "Character catalog and profile form are a dynamic leaf. Desktop, personal loot, reference readers and Pixi retain lazy boundaries. Reviewed cumulative growth since phase 2: 25,344 bytes reachable, with shell growth 26 bytes.",
+  "reason": "Phase 6 retires legacy Party and Session columns; desktop becomes the regular scene surface.",
+  "dependencyRationale": "No dependency changes. All hard ceilings and growth thresholds remain unchanged.",
+  "chunkRationale": "Session entry loads the productive desktop lazily. Removed legacy UI reduces both Workspace and total reachable renderer; personal loot, references and Pixi remain lazy. Only downward ratchets are applied. Retired reference navigation and global pin windows remove a further 5719 reachable bytes.",
   "graphs": {
     "shell": 420420,
-    "workspace": 521684,
-    "session": 171012,
-    "catalog": 186679,
-    "hex": 176699,
-    "reference": 39766,
+    "workspace": 508081,
+    "session": 1311,
+    "catalog": 186259,
+    "hex": 176693,
+    "reference": 37455,
     "pixi": 409364,
-    "reachable": 1594925
+    "reachable": 1565028
   }
 }

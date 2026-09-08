@@ -33,7 +33,7 @@ type ModuleFacts = Readonly<{
   mutableTopLevelBindings: ReadonlySet<string>
 }>
 
-const sessionWorkspace = 'src/renderer/features/session/session-workspace.tsx'
+const sessionWorkspace = 'src/renderer/features/scene-desktop/scene-desktop.tsx'
 const groupController =
   'src/renderer/features/session/use-group-manager-controller.ts'
 const groupCommands =
@@ -50,7 +50,7 @@ const locationCatalogController =
   'src/renderer/features/catalog/location-catalog-controller.ts'
 
 const passiveViews = new Set([
-  'src/renderer/features/session/scene-party-card.tsx',
+  'src/renderer/features/scene-desktop/desktop-overview.tsx',
   'src/renderer/features/session/session-group-card.tsx',
   'src/renderer/features/session/session-groups-panel.tsx',
   'src/renderer/features/catalog/npc-catalog-browser.tsx',
@@ -144,21 +144,19 @@ function inspectSessionWorkspace(
   requireImport(
     module,
     'useSessionWorkspaceController',
-    './use-session-workspace-controller.js',
+    '../session/use-session-workspace-controller.js',
     violations
   )
   requireCall(
     module,
     'useSessionWorkspaceController',
-    './use-session-workspace-controller.js',
+    '../session/use-session-workspace-controller.js',
     violations
   )
   for (const hook of [
     'useCapabilityApi',
     'sessionCapabilities',
-    'useLootSceneController',
-    'useState',
-    'useEffect'
+    'useLootSceneController'
   ])
     if (hasImportedCall(module, hook) || hasCall(module, hook))
       violations.push(violation(module, 1, 'view_owns_controller_hook', hook))

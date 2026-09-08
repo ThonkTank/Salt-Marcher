@@ -357,8 +357,8 @@ export function assertCurrentFormatEconomyReadback(
   assert.equal(readback.fixtureIdentity, economyFixture.identity)
   assert.equal(readback.qualificationClaim, economyFixture.qualificationClaim)
   assert.deepStrictEqual(
-    readback.installation.settings.preferences.sessionLayout,
-    economyFixture.installation.sessionLayout
+    readback.installation.settings.preferences.theme,
+    economyFixture.installation.theme
   )
   assert.equal(
     readback.installation.settings.revision,

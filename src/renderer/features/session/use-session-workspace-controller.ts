@@ -44,7 +44,6 @@ export function useSessionWorkspaceController(input: {
   const scene = useSessionSceneController({ api, mutateSnapshot })
   const groups = useSessionGroupController({
     scene: focused,
-    partyMembers: input.snapshot.party.members,
     groupTreasures: loot.scene.groupTreasures,
     onDelete: (group) =>
       void mutateGroup(
@@ -62,7 +61,6 @@ export function useSessionWorkspaceController(input: {
     toggleRow: groups.toggleRow,
     focusScene: scene.focus,
     setSceneLocation: scene.setLocation,
-    editParty: dialog.editParty,
     openLedger: dialog.openLedger,
     inspectCreature: openCreature,
     editGroup: dialog.editGroup,
@@ -93,8 +91,7 @@ export function useSessionWorkspaceController(input: {
       void loot.refresh()
       dialog.close()
     },
-    lootChanged: () => void loot.refresh(),
-    assignPartyMember: scene.assignPartyMember
+    lootChanged: () => void loot.refresh()
   }
   const model: SessionWorkspaceViewModel = {
     snapshot: input.snapshot,

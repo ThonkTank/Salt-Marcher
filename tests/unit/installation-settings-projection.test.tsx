@@ -8,31 +8,23 @@ import { useInstallationPreferences } from '../../src/renderer/shell/use-install
 import type { SaltMarcherApi } from '../../src/shared/contracts/capability-api.js'
 import type { InstallationSettings } from '../../src/shared/contracts/settings.js'
 import { CapabilityError } from '../../src/shared/errors/capability-error.js'
-import { defaultSessionLayoutPreferenceValue } from '../../src/shared/values/session-layout-values.js'
 
 describe('Installation settings projection', () => {
-  it('defaults desktop preview off and persists the explicitly enabled preference', async () => {
+  it('persists theme changes after the desktop becomes the regular surface', async () => {
     const read = vi.fn().mockResolvedValue(settings(1, 'light'))
-    const update = vi.fn().mockResolvedValue({
-      ...settings(2, 'light'),
-      preferences: {
-        ...settings(2, 'light').preferences,
-        sceneDesktopPreview: true
-      }
-    })
+    const update = vi.fn().mockResolvedValue(settings(2, 'dark'))
     const hook = renderHook(() => useInstallationPreferences(vi.fn()), {
       wrapper: provider(settingsApi(read, update))
     })
     await waitFor(() => expect(read).toHaveBeenCalledTimes(1))
-    expect(hook.result.current.sceneDesktopPreview).toBe(false)
-    act(() => hook.result.current.changeSceneDesktopPreview(true))
+    act(() => hook.result.current.toggleTheme())
     await waitFor(() =>
       expect(update).toHaveBeenCalledWith({
-        patch: { sceneDesktopPreview: true },
+        patch: { theme: 'dark' },
         expectedRevision: 1
       })
     )
-    expect(hook.result.current.sceneDesktopPreview).toBe(true)
+    expect(hook.result.current.theme).toBe('dark')
   })
 
   it('deduplicates the initial read across two preference consumers', async () => {
@@ -158,8 +150,7 @@ function settings(
   return Object.freeze({
     revision,
     preferences: Object.freeze({
-      theme,
-      sessionLayout: defaultSessionLayoutPreferenceValue
+      theme
     })
   })
 }

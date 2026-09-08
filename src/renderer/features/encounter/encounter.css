@@ -1,4 +1,4 @@
-@scope (.session-mockup) {
+@scope (.scene-desktop) {
   .encounter {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -776,9 +776,8 @@
   }
 
   .combat-round-bar .step-back {
-    width: 24px;
-    padding-inline: 0;
-    overflow: hidden;
+    width: auto;
+    white-space: nowrap;
   }
 
   .scenario-panel .combat-card .body {
@@ -937,7 +936,7 @@
   }
 
   .resolution-controls input {
-    width: 56px;
+    width: 5.5rem;
     margin-left: auto;
     text-align: right;
   }
@@ -985,4 +984,11 @@
     color: var(--text-3);
     text-overflow: ellipsis;
   }
+}
+
+.tuning-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
 }

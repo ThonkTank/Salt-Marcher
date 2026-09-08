@@ -19,9 +19,7 @@ describe('NPC catalog journey', () => {
     await campaignName.waitForDisplayed({ timeout: 30_000 })
     await campaignName.setValue('NPC Journey')
     await (await client.$('button=Erstellen & öffnen')).click()
-    await (
-      await client.$('section[aria-label="Session Steuerung"]')
-    ).waitForExist({ timeout: 10_000 })
+    await (await client.$('.scene-desktop')).waitForExist({ timeout: 10_000 })
 
     await (await client.$('button[aria-label="Katalog"]')).click()
     await createFaction(client, 'Rosenhof E2E')

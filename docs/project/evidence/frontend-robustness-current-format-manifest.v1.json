@@ -193,9 +193,9 @@
       "oraclePlan": "Resolve shared definitions unchanged across switching and restart."
     },
     {
-      "authority": "installation.session-layout",
+      "authority": "installation.preferences",
       "disposition": "shared-view-state",
-      "fixturePlan": "Persist one schema-v2 app-wide Session layout preference.",
+      "fixturePlan": "Persist a non-default installation theme in the strict version-2 preferences envelope.",
       "oraclePlan": "Prove the preference remains installation-wide and unchanged rather than becoming per-Campaign truth."
     }
   ],

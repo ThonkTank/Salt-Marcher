@@ -40,7 +40,9 @@ export function DesktopRosterActions(props: {
   const available = props.snapshot.party.members.filter(
     (member) =>
       source.partyMemberIds.includes(member.id) ||
-      (draft?.kind === 'roster' && !member.active)
+      (draft?.kind === 'roster' &&
+        (!member.active ||
+          props.snapshot.scene.unassignedPartyMemberIds.includes(member.id)))
   )
   const visible = available.filter((member) =>
     `${member.name} ${member.playerName ?? ''} ${member.id}`

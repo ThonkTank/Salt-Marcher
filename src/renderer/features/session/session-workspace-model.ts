@@ -11,20 +11,12 @@ import type {
 } from '../../../shared/contracts/loot.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 
-export type SessionExpansionTarget =
-  | Readonly<{ kind: 'party' }>
-  | Readonly<{ kind: 'group'; groupId: string }>
-  | null
+export type SessionExpansionTarget = Readonly<{
+  kind: 'group'
+  groupId: string
+}> | null
 
 export type SessionRegisterRow =
-  | Readonly<{
-      kind: 'party'
-      key: 'party'
-      name: string
-      count: number
-      expanded: boolean
-      members: readonly PartyCharacter[]
-    }>
   | Readonly<{
       kind: 'active-group'
       key: string
@@ -59,7 +51,6 @@ export type SessionDialogState =
       group: SceneGroup | null
       reinforcement: boolean
     }>
-  | Readonly<{ kind: 'party-editor' }>
   | Readonly<{ kind: 'character-ledger'; character: PartyCharacter }>
   | Readonly<{ kind: 'reward-distribution'; treasure: Treasure }>
   | Readonly<{
@@ -101,7 +92,6 @@ export type SessionWorkspaceActions = Readonly<{
   toggleRow: (target: Exclude<SessionExpansionTarget, null>) => void
   focusScene: (sceneId: string) => void
   setSceneLocation: (locationId: string | null) => void
-  editParty: () => void
   openLedger: (character: PartyCharacter) => void
   inspectCreature: (creatureId: string, context: string) => void
   editGroup: (group: SceneGroup) => void
@@ -119,18 +109,11 @@ export type SessionWorkspaceActions = Readonly<{
   closeDialog: () => void
   groupSaved: (snapshot: LiveSessionSnapshot) => void
   lootChanged: () => void
-  assignPartyMember: (memberId: string, assigned: boolean) => void
 }>
 
 export function sameExpansionTarget(
   left: SessionExpansionTarget,
   right: Exclude<SessionExpansionTarget, null>
 ): boolean {
-  return (
-    left?.kind === right.kind &&
-    (left.kind === 'party' ||
-      (left.kind === 'group' &&
-        right.kind === 'group' &&
-        left.groupId === right.groupId))
-  )
+  return left?.kind === right.kind && left.groupId === right.groupId
 }

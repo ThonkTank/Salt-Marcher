@@ -47,7 +47,7 @@ architectureGate(
       'src/core/persistence/sqlite/installation-schema-migrations.ts'
     )
     const wrapper = scope(migrations, 'wrapStoredInstallationPreferences')
-    expect(wrapper?.calls).toContain('persistedInstallationPreferences')
+    expect(migrations.calls).toContain('persistedInstallationPreferences')
     expect(wrapper?.calls).toContain('installationPreferencesSchema.parse')
     expect(migrations.stringLiterals).toContain(
       'installation-36-to-37-preferences-envelope-v1'

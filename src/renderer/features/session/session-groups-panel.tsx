@@ -1,69 +1,11 @@
 import { message } from '../../i18n/session-runtime.de.js'
 import { LootTreasureCard } from '../loot/loot-treasure-card.js'
-import { CompactRegister } from '../shared/compact-register.js'
-import { ScenePartyCard } from './scene-party-card.js'
-import { SessionGroupCard } from './session-group-card.js'
 import type {
   SessionGroupsViewModel,
   SessionLootRow,
   SessionWorkspaceActions
 } from './session-workspace-model.js'
 import './session-groups-panel.css'
-
-const registerColumns = [
-  'ui.status',
-  'ui.gruppe',
-  'ui.zahl',
-  'ui.xp.2',
-  'ui.aktionen'
-] as const
-
-export function SessionGroupsPanel(props: {
-  model: SessionGroupsViewModel
-  actions: SessionWorkspaceActions
-}) {
-  return (
-    <section className="session-groups" aria-label={message('ui.gruppen')}>
-      <div className="groups-heading">
-        <h2>{message('ui.gruppen')}</h2>
-      </div>
-      <CompactRegister
-        className="group-register"
-        label={message('ui.gruppen')}
-        columns={registerColumns.map((key) => message(key))}
-      >
-        {props.model.activeRows.map((row) =>
-          row.kind === 'party' ? (
-            <ScenePartyCard key={row.key} row={row} actions={props.actions} />
-          ) : row.kind === 'active-group' ? (
-            <SessionGroupCard key={row.key} row={row} actions={props.actions} />
-          ) : null
-        )}
-      </CompactRegister>
-      <SessionLootPanel {...props} />
-      {props.model.archivedRows.length > 0 && (
-        <section className="inactive-groups">
-          <h3>{message('group.inactive')}</h3>
-          <CompactRegister
-            className="group-register archived-group-register"
-            label={message('group.inactive')}
-            columns={registerColumns.map((key) => message(key))}
-          >
-            {props.model.archivedRows.map((row) =>
-              row.kind === 'archived-group' ? (
-                <SessionGroupCard
-                  key={row.key}
-                  row={row}
-                  actions={props.actions}
-                />
-              ) : null
-            )}
-          </CompactRegister>
-        </section>
-      )}
-    </section>
-  )
-}
 
 function LootSection(props: {
   kicker: string

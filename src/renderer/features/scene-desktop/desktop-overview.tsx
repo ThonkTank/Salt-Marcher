@@ -10,10 +10,12 @@ import '../session/session-groups-panel.css'
 
 export function DesktopOverview({
   model,
-  actions
+  actions,
+  openCharacters
 }: {
   model: SessionWorkspaceViewModel
   actions: SessionWorkspaceActions
+  openCharacters: () => void
 }) {
   const [editingLocation, setEditingLocation] = useState(false)
   const focused = model.focused
@@ -69,7 +71,12 @@ export function DesktopOverview({
       </div>
       <div className="desktop-section-heading">
         <h3>{message('desktop.characters')}</h3>
-        <button onClick={actions.editParty}>{message('ui.bearbeiten')}</button>
+        <button
+          aria-label={message('desktop.openCharacters')}
+          onClick={openCharacters}
+        >
+          {message('ui.bearbeiten')}
+        </button>
       </div>
       <ul className="desktop-register">
         {members.map((member) => (
@@ -93,7 +100,10 @@ export function DesktopOverview({
       )}
       <div className="desktop-section-heading">
         <h3>{message('desktop.groups')}</h3>
-        <button onClick={actions.manageGroups}>
+        <button
+          aria-label={message('desktop.editGroups')}
+          onClick={actions.manageGroups}
+        >
           {message('ui.bearbeiten')}
         </button>
       </div>

@@ -56,18 +56,6 @@ export function sessionCapabilities(api: SaltMarcherApi) {
           archived,
           expectedGroupRevision
         }),
-      assignPartyMember: (
-        sceneId: string,
-        partyMemberId: string,
-        assigned: boolean,
-        expectedRevision: number
-      ) =>
-        api.scene.assignPartyMember({
-          sceneId,
-          partyMemberId,
-          assigned,
-          expectedRevision
-        }),
       evaluateGroupDraft: (
         sceneId: string,
         entries: readonly SceneGroupDraftEntry[],

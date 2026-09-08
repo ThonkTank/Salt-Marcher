@@ -124,3 +124,12 @@ productive daily level budget; short-rest orientation uses one third of that
 budget. Missing levels and untrusted baselines do not produce exact forecasts.
 The legacy popup is retained until phase 6; its manual XP follows the corrected
 semantics and actual rests also establish trusted baselines.
+
+
+## Phase 6 replacement
+
+The historical global Party dropdown is retired. Its CRUD belongs to the character
+catalog; roster, XP and selected two-click rests belong to scene quickinfos.
+Alt+P opens those quickinfos. The independent Adventuring-Day calculator is retained.
+Legacy active characters without scene membership remain discoverable as “Ohne
+Szene” and can be assigned through the scene roster selector.
