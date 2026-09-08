@@ -42,6 +42,7 @@ const emptyPins: readonly PinnedReference[] = []
 
 export function ReferenceProvider(props: {
   children: ReactNode
+  enabled?: boolean
   capability: SaltMarcherApi['references']
   campaignId: string | null
   sceneId: string | null
@@ -49,6 +50,7 @@ export function ReferenceProvider(props: {
   onError: (message: string) => void
 }) {
   const { capability, onError, sceneId, activateReference } = props
+  const enabled = props.enabled ?? true
   const [staticIndex, setStaticIndex] = useState<ReferenceIndex | null>(null)
   const [campaignIndices, setCampaignIndices] = useState<
     Readonly<Record<string, ReferenceIndex>>
@@ -70,7 +72,7 @@ export function ReferenceProvider(props: {
   const zCounter = useRef(1)
   const navigationRequest = useRef(0)
   const overlayCloseTimer = useRef<number | null>(null)
-  const campaignId = props.campaignId
+  const campaignId = enabled ? props.campaignId : null
   const campaignIndex = campaignId
     ? (campaignIndices[campaignId] ?? null)
     : null
@@ -79,6 +81,7 @@ export function ReferenceProvider(props: {
 
   useEffect(() => {
     const token = ++staticRequest.current
+    if (!enabled) return
     void capability
       .staticIndex()
       .then((next) => {
@@ -88,7 +91,7 @@ export function ReferenceProvider(props: {
         if (staticRequest.current === token)
           onError(message('reference.indexFailed'))
       })
-  }, [capability, onError])
+  }, [capability, enabled, onError])
 
   useEffect(() => {
     const token = ++campaignRequest.current
@@ -392,12 +395,12 @@ export function ReferenceProvider(props: {
   )
 
   useEffect(() => {
-    if (!staticIndex) return
+    if (!enabled || !staticIndex) return
     const idle = window.requestIdleCallback?.(() => void loadReferenceRuntime())
     if (idle !== undefined) return () => window.cancelIdleCallback?.(idle)
     const timer = window.setTimeout(() => void loadReferenceRuntime(), 1_500)
     return () => window.clearTimeout(timer)
-  }, [staticIndex])
+  }, [enabled, staticIndex])
 
   const pins = campaignId
     ? (pinsByCampaign[campaignId] ?? emptyPins)
@@ -506,7 +509,7 @@ export function ReferenceProvider(props: {
   return (
     <ReferenceContext.Provider value={value}>
       {props.children}
-      {(visibleOverlays.length > 0 || pins.length > 0) && (
+      {enabled && (visibleOverlays.length > 0 || pins.length > 0) && (
         <Suspense fallback={null}>
           <LazyReferenceRuntime />
         </Suspense>

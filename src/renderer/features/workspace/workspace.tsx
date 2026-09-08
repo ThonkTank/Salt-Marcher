@@ -153,6 +153,7 @@ export function WorkspaceApp() {
 
   return (
     <ReferenceProvider
+      enabled={coordinator.screen === 'workspace'}
       capability={api.references}
       campaignId={coordinator.campaigns.activeCampaignId}
       sceneId={coordinator.session?.scene.focusedSceneId ?? null}
