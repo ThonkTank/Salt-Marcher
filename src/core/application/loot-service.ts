@@ -140,6 +140,10 @@ export class LootService {
     return this.characters.read(characterId)
   }
 
+  ledgerCorrectionStatus(input: CorrectCharacterLootInput) {
+    return this.characters.correctionStatus(input)
+  }
+
   correctLedger(input: CorrectCharacterLootInput): CharacterLootLedger {
     return this.characters.correct(input)
   }

@@ -161,6 +161,21 @@ export function createLootComposition(dependencies: {
               () => loot.distribute(input)
             ),
           'loot.ledger': (input) => loot.ledger(input.characterId),
+          'loot.ledgerForCampaign': ({ campaignId, characterId }) => {
+            if (campaignId !== dependencies.activeCampaignId())
+              throw new CapabilityError('stale', false)
+            return loot.ledger(characterId)
+          },
+          'loot.ledgerCorrectionStatus': ({ campaignId, ...command }) => {
+            if (campaignId !== dependencies.activeCampaignId())
+              throw new CapabilityError('stale', false)
+            return loot.ledgerCorrectionStatus(command)
+          },
+          'loot.correctLedgerForCampaign': ({ campaignId, ...command }) => {
+            if (campaignId !== dependencies.activeCampaignId())
+              throw new CapabilityError('stale', false)
+            return loot.correctLedger(command)
+          },
           'loot.correctLedger': (input) => loot.correctLedger(input)
         }
       )

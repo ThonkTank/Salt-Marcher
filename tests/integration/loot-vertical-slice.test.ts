@@ -66,6 +66,62 @@ function campaign() {
 }
 
 describe('loot vertical slice', () => {
+  it('guards all ledger maintenance operations with the original campaign', () => {
+    const { campaigns, db, members } = campaign()
+    const unused = (): never => {
+      throw new Error('unexpected domain work')
+    }
+    const handlers = createLootComposition({
+      activeCampaignId: () => campaigns.activeCampaignId(),
+      activeDatabase: fixedSqliteDatabaseAccess(db),
+      rules: { read: unused },
+      generation: { generateGroupReward: unused },
+      loadCatalog: unused,
+      currentCatalogReference: unused,
+      groupCommands: { save: unused, result: unused }
+    }).createHandlers(unused)
+    const input = {
+      campaignId: randomUUID(),
+      characterId: members[0]!.id,
+      commandId: randomUUID(),
+      entryId: randomUUID(),
+      expectedRevision: 0,
+      quantity: 1,
+      status: 'sold' as const,
+      reason: 'Test'
+    }
+    expectCapabilityCode(
+      () =>
+        handlers['loot.ledgerForCampaign']({
+          campaignId: input.campaignId,
+          characterId: input.characterId
+        }),
+      'stale'
+    )
+    expectCapabilityCode(
+      () => handlers['loot.ledgerCorrectionStatus'](input),
+      'stale'
+    )
+    expectCapabilityCode(
+      () => handlers['loot.correctLedgerForCampaign'](input),
+      'stale'
+    )
+    db.pragma('query_only = ON')
+    try {
+      expect(
+        handlers['loot.ledgerCorrectionStatus']({
+          ...input,
+          campaignId: campaigns.activeCampaignId()
+        })
+      ).toMatchObject({
+        receipt: null,
+        ledger: { characterId: input.characterId, entries: [] }
+      })
+    } finally {
+      db.pragma('query_only = OFF')
+    }
+  })
+
   it('requires the original campaign for an authoritative absent reward receipt', () => {
     const { campaigns, db } = campaign()
     const unused = (): never => {
@@ -1364,6 +1420,15 @@ describe('loot vertical slice', () => {
       status: 'sold',
       reason: 'Identifikation beim Händler'
     } as const
+    db.pragma('query_only = ON')
+    try {
+      expect(loot.ledgerCorrectionStatus(correctionInput)).toEqual({
+        receipt: null,
+        ledger: before
+      })
+    } finally {
+      db.pragma('query_only = OFF')
+    }
     const corrected = loot.correctLedger(correctionInput)
     expect(corrected.revision).toBe(before.revision + 1)
     expect(corrected.entries).toHaveLength(2)
@@ -1387,6 +1452,34 @@ describe('loot vertical slice', () => {
       )
     ).toEqual(corrected)
     expect(loot.correctLedger(correctionInput)).toEqual(corrected)
+    const later = loot.correctLedger({
+      ...correctionInput,
+      commandId: randomUUID(),
+      entryId: correction.id,
+      expectedRevision: corrected.revision,
+      status: 'given_away',
+      reason: 'Spätere Änderung'
+    })
+    const changes = db.prepare('SELECT total_changes() AS count').get()
+    db.pragma('query_only = ON')
+    try {
+      const status = new LootService(
+        campaigns.activeCampaignPersistence()
+      ).ledgerCorrectionStatus(correctionInput)
+      expect(status).toEqual({ receipt: corrected, ledger: later })
+      expectIdempotencyConflict(() =>
+        loot.ledgerCorrectionStatus({
+          ...correctionInput,
+          reason: 'Anderer Request'
+        })
+      )
+      expect(db.prepare('SELECT total_changes() AS count').get()).toEqual(
+        changes
+      )
+    } finally {
+      db.pragma('query_only = OFF')
+    }
+
     expectIdempotencyConflict(() =>
       loot.correctLedger({
         ...correctionInput,

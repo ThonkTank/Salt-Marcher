@@ -3210,3 +3210,58 @@ Recovery, Beute-Unterdialoge, Kampagnenoberfläche, übrige Gruppen-/Karten-/Wri
 wege und Offline-/Updateabnahme sind weiterhin erforderlich. Phasen 5–7 bleiben
 offen. Vorgänger-Check 34261446658 war zuletzt aktiv ohne abgeschlossenen
 Fehler; kein vollständiges CI-Grün, kanonischer Handoff, Main-Push oder Release.
+
+### Phase 4 — Plan: Ledger-Korrekturquittung und kampagnengebundene Ports
+
+Der bestehende Charakter-Ledger korrigiert append-only und speichert bereits
+atomare LootOperationJournal-Quittungen. Der Renderer kann diese bislang nur
+durch erneutes Senden des Write-Befehls erreichen. Für bedienbare Unknown-
+Recovery zunächst eine reine Status-Leseoperation ergänzen: vollständiger
+Originalbefehl plus Kampagnen-ID, geprüfte Quittung oder explizites null und
+frischer Ledger. Der Read schreibt weder Journal noch Ledger und spielt
+keine alte Quittung über inzwischen eingegangene Änderungen.
+
+Utility prüft die aktive Kampagne vor Zugriff. Zusätzlich kampagnengebundene
+Ledger-Read-/Correct-Operationen für den Renderer, der die ursprüngliche
+Kampagne vor und nach IPC prüft. Alte interne API-Aufrufer bleiben kompatibel;
+keine neue Tabelle/Migration. SQL bleibt beim vorhandenen Journal-Owner.
+Native Prüfung: abwesender/gespeicherter Befehl, unveränderte Zeilen und
+Revisionen unter query_only, spätere Korrektur bleibt im frischen Ledger,
+Fingerprintkonflikt und falsche Kampagne. Porttests prüfen Wechsel vor und
+während Read/Write. Die darauf aufbauende Dialog-Wartungsklärung mit sichtbarem
+Read-Retry bleibt ein eigener notwendiger nächster Umsetzungsschritt.
+
+### Phase 4 — Ledger-Status: Plan- und Roadmapabgleich
+
+Planabgleich bestanden für die Quittungs-/Portgrundlage: CharacterLootService
+liest den bestehenden correct_ledger-Journaleintrag mit Original-Fingerprint,
+Operationstyp und Charakter-ID und liefert Quittung/null plus aktuellen Ledger.
+Es wird kein Write erneut gesendet und keine alte Quittung als aktueller Stand
+ausgegeben. LootService exponiert diesen fachlichen Read. Drei GM-only-
+Operationen sichern Status, Ledger-Read und Korrektur durch explizite Kampagnen-ID
+ab; Utility vergleicht sie vor Zugriff mit der aktiven Kampagne. Der Renderer-
+Port prüft geladene/aktive Kampagne vor und nach IPC. Vorhandene interne
+Operationen bleiben kompatibel. Keine neue Tabelle oder Migration.
+
+Validierung: 106 Tests in 10 Dateien einschließlich nativer Loot-Integration,
+neuer Porttests, Capability-Verträge/-Provider und Architektur bestanden.
+Nach Präzisierung der falschen Kampagne auf den Fehlercode stale bestehen
+19 native/Port-Tests erneut. Status mit fehlender und vorhandener Quittung
+funktioniert unter query_only; total_changes bleibt unverändert. Nach einer
+späteren Korrektur liefert der Read die ursprüngliche Quittung und den neueren
+Ledger, Fingerprintabweichung schlägt fehl. Alle drei qualifizierten Utility-
+Operationen verweigern die falsche Kampagne. Porttests prüfen korrekte
+Übermittlung, Wechsel geladener/aktiver Kampagne und verspätete Antworten.
+Typecheck, gezielter ESLint/Prettier, Build/Built-Smoke (ready/closed), Bundle-
+Gate und diff --check bestanden. Logs: work/roadmap-phase4-ledger-status-*.log.
+Schema 41/35 und Registry 14 unverändert; kein Nutzerprofil verändert.
+
+Roadmapabgleich: Dies ist die geprüfte Grundlage für sichere Ledger-Recovery,
+noch keine abgeschlossene Ledger-Wartungsoberfläche. Nächster notwendiger
+Schritt: Originalinput und ursprünglichen Port beim Beginn einer Korrektur
+festhalten, vollständigen Write abwarten, zentral Save/Discard registrieren
+und Unknown über den neuen Read abgleichen. Sichtbarer Retry, keine zweite
+Buchung nach bestätigtem Ausgang und Erhalt späterer Einträge müssen im
+gerenderten Dialog geprüft werden. Phase 4 mit ihren übrigen offenen Writer-/
+Planner-/Charakter-/Karten-/Updatewegen sowie Phasen 5–7 bleibt offen.
+Kein vollständiges Remote-CI-Grün, kanonischer Handoff, Main-Push oder Release.

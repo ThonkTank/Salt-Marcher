@@ -78,6 +78,26 @@ export const lootOperationDefinitions = utilityOperationFragment({
     characterLootInputSchema,
     characterLootLedgerSchema
   ),
+  'loot.ledgerForCampaign': read(
+    'loot:ledger-for-campaign',
+    characterLootInputSchema.extend({ campaignId: z.uuid() }),
+    characterLootLedgerSchema
+  ),
+  'loot.ledgerCorrectionStatus': read(
+    'loot:ledger-correction-status',
+    correctCharacterLootInputSchema.extend({ campaignId: z.uuid() }),
+    z
+      .object({
+        receipt: characterLootLedgerSchema.nullable(),
+        ledger: characterLootLedgerSchema
+      })
+      .strict()
+  ),
+  'loot.correctLedgerForCampaign': write(
+    'loot:correct-ledger-for-campaign',
+    correctCharacterLootInputSchema.extend({ campaignId: z.uuid() }),
+    characterLootLedgerSchema
+  ),
   'loot.correctLedger': write(
     'loot:correct-ledger',
     correctCharacterLootInputSchema,
