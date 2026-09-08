@@ -3324,3 +3324,72 @@ DesktopRestAction und persönliche XP-Eingaben benötigen ebenfalls die
 Phase-4-Wartungsanbindung. Alle bisher offenen Planner-/Charakter-/Beute-/
 Karten-/Updatewege bleiben in der Abnahme. Phasen 5–7, exakte Remote-CI,
 kanonischer Handoff und Main-Abschluss bleiben verpflichtend.
+
+### Phase 4 — Plan: bedienbare Ledger-Korrektur und Recovery
+
+Kandidat 37cb5631b ist sauber, Check 34264129314 läuft. Die neue Statusoperation
+steht bereit. Ein Dialogmodell hält Ledger, Korrekturentwurf, Originalrevision,
+Originalport und den vollständigen aktiven Vorgang. Ein einzelner Wartungs-Owner
+wartet laufende Reads/Writes ab, speichert gültige Korrekturen oder verwirft
+nur den lokalen Rest. Eingaben/Schließen werden während Wartung, Pending und
+ungelöstem Befehlsausgang gesperrt.
+
+Nach jeder fehlgeschlagenen Write-Antwort bleibt der genaue Originalinput
+festgehalten. Read-Retry fragt die Quittung ab: vorhanden → frischen Ledger
+übernehmen und Entwurf bestätigen; abwesend → frischen Ledger übernehmen,
+Entwurf behalten und bewussten Save/Discard wieder zulassen. Unterschiedliche
+Revisionen verhindern automatisches Übertragen auf späteren Ledgerstand.
+Readfehler behalten Unknown; Retry selbst schreibt nie. Wartung verwendet
+denselben Abgleich. Dialogport bleibt an die ursprüngliche Kampagne gebunden.
+
+Gerenderte Tests prüfen Save/Discard/Abbruch/Validierung, Pending plus fehlende
+Antwort, Readfehler/Retry, vorhandene/abwesende Quittung, spätere Ledgeränderung,
+keine zweite Buchung, sofortige Sperre und Originalinput. Bestehende Loot-/
+Port-/Architekturtests und Typecheck/Lint/Build/Smoke. Plan-/Roadmapaudit danach;
+übrige Phase-4-Schreibwege und Phasen 5–7 bleiben im Gesamtumfang.
+
+Korrekturrunde Testaufbau: Der neue gerenderte Test hat eine fehlende schließende
+Klammer in fixture(). Syntax korrigieren, anschließend die vollständige
+geplante Dialog-/Port-/Loot-/Architekturprüfung erneut ausführen.
+
+Korrekturrunde Bundle-Nachweis: Build und Smoke ready/closed bestanden,
+Typecheck und gezieltes ESLint ebenfalls. Das Bundle-Gate meldet kumulativ
+reachable +18638 Bytes gegenüber der letzten Baseline; gegenüber dem zuletzt
+geprüften 37cb-Build sind es +3987 Bytes. Messung: 1646858 reachable,
+527693 workspace, 171783 session, 190479 catalog; shell/hex/reference/pixi
+unverändert zur Baseline. Manifest bestätigt den dynamischen Ledger-Dialog.
+Keine neuen Dependencies oder Lockfileänderungen. Die vorgesehen begründete
+Baseline-Aktualisierung übernimmt diese gemessenen Werte, ohne absolute
+Budgets oder 16-KiB-Wachstumsgrenze zu ändern. Anschließend Gate erneut prüfen.
+
+### Phase 4 — Ledger-Dialog: Plan- und Roadmapabgleich
+
+Planabgleich bestanden: Ein kampagnengebundener Dialogcontroller hält den
+Originalinput einschließlich Befehls-ID und Ausgangsrevision fest, wartet
+laufende Vorgänge ab und übernimmt zentrale Save-/Discard-Entscheidungen.
+Ungültige Eingaben verhindern Wartung mit benanntem Owner. Nach fehlender
+Schreibantwort verhindert der Zustand weitere Bearbeitung und Schließen;
+der sichtbare Leseabgleich schreibt nicht. Vorhandene Quittungen bestätigen
+die ursprüngliche Korrektur, übernehmen aber den frischen Ledger einschließlich
+späterer Buchungen. Explizite Abwesenheit erhält den Entwurf; eine abweichende
+Ledgerrevision verhindert dessen Übertragung. Lesefehler lassen Recovery offen.
+Der bei Dialogbeginn erfasste Port bleibt an die ursprüngliche Kampagne gebunden.
+
+Validierung: 107 Tests in 10 Dateien (gerenderter Ledger-Dialog, gebundene
+Loot-Ports, vorhandene Loot-UI, Wartungskoordinator und Architektur) bestanden.
+Geprüft sind Save/Discard, ungültiges Speichern mit anschließendem Abbruch,
+laufender Write plus Discard, fehlende Antwort, erneuter fehlgeschlagener Read,
+vorhandene/abwesende Quittung, spätere Buchung, bewusster erneuter Save und
+Kampagnenwechsel ohne fehlgeleiteten Read. Typecheck und gezieltes ESLint
+bestanden. Build und Built-Smoke ready/closed bestanden. Bundle-Gate besteht
+nach dokumentierter Messung/Baseline-Aktualisierung. Logs unter
+work/roadmap-phase4-ledger-dialog-*.log. Keine echte Nutzerinstallation oder
+Nutzerdaten verändert.
+
+Roadmapabgleich: Dieser Nachweis schließt den persönlichen Ledger-Korrekturweg,
+nicht Phase 4 insgesamt. Allgemeine Planner-/Charakterbefehle mit unklarem
+Ausgang, weitere Beute-/Karten-/Desktop-/Kampagneneditoren und die vollständige
+Update-/Offline-Abnahme bleiben offen. Phasen 5–7 benötigen weiterhin echte
+unterschiedliche AppImages, vollständige Artefaktqualifikation, Releasefreigabe
+und Livetest. Lokale Prüfungen ersetzen weder exact-SHA Remote-Check noch
+kanonischen Handoff und grünen Main-Abschluss.

@@ -1,16 +1,16 @@
 {
   "recordedAt": "2026-09-08",
-  "reason": "Integrate phase-4 maintenance draft settlement and receipt reconciliation with the current scene desktop and character catalog.",
-  "dependencyRationale": "No dependency or lockfile changes relative to main; growth comes from maintenance owners, pending-command coordination and Planner/group recovery.",
-  "chunkRationale": "Reviewed growth relative to main: reachable +33295 bytes, shell +423, workspace +4715, catalog +3763, hex +2791, session +164. Planner, group manager, release settings, character catalog, desktop and Pixi retain dynamic boundaries. Existing absolute budgets and the 16 KiB growth gate remain unchanged.",
+  "reason": "Qualify phase-4 ledger maintenance and accumulated planner, character and desktop recovery changes.",
+  "dependencyRationale": "No dependencies or lockfile changes; the ledger controller and rendered recovery add 3987 reachable bytes over the previous verified build.",
+  "chunkRationale": "Reviewed cumulative reachable growth +18638, workspace +1294, session +607, catalog +37; shell, hex, reference and Pixi unchanged. Ledger remains dynamically imported. Absolute budgets and the 16 KiB growth gate remain unchanged.",
   "graphs": {
     "shell": 420843,
-    "workspace": 526399,
-    "session": 171176,
-    "catalog": 190442,
+    "workspace": 527693,
+    "session": 171783,
+    "catalog": 190479,
     "hex": 179490,
     "reference": 39766,
     "pixi": 409364,
-    "reachable": 1628220
+    "reachable": 1646858
   }
 }

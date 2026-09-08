@@ -142,6 +142,16 @@ export const lootMessagesDe = {
   'loot.correctTitle': 'Eintrag korrigieren',
   'loot.status': 'Status',
   'loot.reason': 'Grund',
+  'loot.correctionCheck': 'Gespeicherten Stand prüfen',
+  'loot.ledgerReload': 'Beute erneut laden',
+  'loot.correctionInvalid':
+    'Bitte eine ganze positive Menge und einen Grund mit höchstens 500 Zeichen eingeben.',
+  'loot.correctionConflict':
+    'Die Beuteliste hat sich geändert. Bitte die Korrektur verwerfen und den aktuellen Eintrag erneut bearbeiten.',
+  'loot.correctionReadMismatch':
+    'Der gespeicherte Beutestand passt nicht zum ursprünglichen Auftrag. Bitte erneut prüfen.',
+  'loot.correctionNotSaved':
+    'Die Korrektur wurde nicht gespeichert. Du kannst sie erneut speichern oder verwerfen.',
   'loot.correctSave': 'Korrektur speichern',
   'loot.unresolvedKicker': 'Zuordnung fehlt',
   'loot.unresolvedTitle': 'Frühere Beute',
