@@ -15,6 +15,7 @@ import {
   localInstallationPaths
 } from './local-app-installation.js'
 import { atomicWrite } from './safe-file-write.js'
+import { installedProfileReadbacks } from './installed-profile-readbacks.js'
 
 const paths = localInstallationPaths(
   process.env['XDG_DATA_HOME'] ?? join(homedir(), '.local', 'share')
@@ -139,18 +140,11 @@ try {
   database.close()
 }
 const domainReadbacks = [
-  {
-    name: 'installation.readyCampaignCount',
-    expected: 'at least 1',
-    actual: readyCampaignCount,
-    passed: readyCampaignCount >= 1
-  },
-  {
-    name: 'installation.activeCampaign',
-    expected: 'existing ready campaign',
-    actual: activeCampaignId,
-    passed: activeCampaignExists
-  },
+  ...installedProfileReadbacks(
+    readyCampaignCount,
+    activeCampaignId,
+    activeCampaignExists
+  ),
   ...preflight.databases.map((entry) => ({
     name: `schema.${entry.role}.${relative(paths.campaignData, entry.path)}`,
     expected: entry.expectedVersion,
