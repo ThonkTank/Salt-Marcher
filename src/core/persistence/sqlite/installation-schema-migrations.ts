@@ -11,6 +11,7 @@ import {
   initializeCampaignImportSagaSchema
 } from '../../campaign-import/campaign-import-store.js'
 import {
+  CampaignRegistryRepository,
   initializeCampaignCommandReceiptSchema,
   initializeCampaignRegistryRevision
 } from './campaign-registry-repository.js'
@@ -320,6 +321,29 @@ export const installationSchemaMigrations: readonly SchemaMigration[] =
           )
           .run(
             'installation-38-to-39-campaign-command-receipts',
+            new Date().toISOString()
+          )
+      }
+    },
+    {
+      id: 'installation-39-to-40-campaign-last-opened',
+      role: 'installation',
+      fromVersion: 39,
+      toVersion: 40,
+      migrate(database) {
+        initializeInstallationSchemaMetadata(database)
+        new CampaignRegistryRepository(database).initialize()
+        const columns = database.pragma('table_info(campaigns)') as {
+          name: string
+        }[]
+        if (!columns.some((column) => column.name === 'last_opened_at'))
+          database.exec('ALTER TABLE campaigns ADD COLUMN last_opened_at TEXT')
+        database
+          .prepare(
+            'INSERT INTO installation_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run(
+            'installation-39-to-40-campaign-last-opened',
             new Date().toISOString()
           )
       }

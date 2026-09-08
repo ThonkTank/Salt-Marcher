@@ -584,7 +584,8 @@ export class CampaignStore {
   private finalizeCampaignCreation(
     id: string,
     expectedRevision = this.list().revision,
-    command?: CampaignCommandIdentity
+    command?: CampaignCommandIdentity,
+    recovery = false
   ): CampaignCommandReceipt | null {
     this.filesystem.promoteStagedCreation(id)
     this.onCreatePhase?.('before-ready')
@@ -594,7 +595,8 @@ export class CampaignStore {
       return this.installationOwner.registry.markReadyAndActivate(
         id,
         expectedRevision,
-        command
+        command,
+        recovery ? null : new Date().toISOString()
       )
     } catch (cause) {
       this.restoreActiveConnectionAfterFailedSwitch(previousActiveId, id)
@@ -613,7 +615,8 @@ export class CampaignStore {
           id,
           this.list().revision,
           this.installationOwner.registry.pendingCreationCommand(id) ??
-            undefined
+            undefined,
+          true
         )
       } catch {
         this.removeIncompleteCreation(id)

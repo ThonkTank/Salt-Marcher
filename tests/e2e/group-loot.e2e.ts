@@ -1,3 +1,4 @@
+import { resumeCampaignFromScreen } from './support/campaign-navigation.js'
 import { browser, expect } from '@wdio/globals'
 import type {
   Browser as WdioBrowser,
@@ -14,6 +15,7 @@ import {
 describe('Group Loot editor', () => {
   it('edits only quantities and packing while keeping generated facts fixed', async () => {
     const client = browser as unknown as WdioBrowser
+    await resumeCampaignFromScreen(client)
     await setElectronWindowSize(client, 1280, 800)
     await (
       await client.$('h1=Session · Gruppenloot-Abnahme')

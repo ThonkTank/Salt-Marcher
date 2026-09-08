@@ -162,7 +162,9 @@ function campaignSnapshot(activeCampaignId: string | null, revision: number) {
     campaigns:
       activeCampaignId === null
         ? []
-        : [{ id: campaignId, name: 'test', createdAt: now }],
+        : [
+            { lastOpenedAt: null, id: campaignId, name: 'test', createdAt: now }
+          ],
     trashedCampaigns: []
   }
 }

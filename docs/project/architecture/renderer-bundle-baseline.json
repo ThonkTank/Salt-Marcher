@@ -1,16 +1,16 @@
 {
-  "recordedAt": "2026-09-07",
-  "reason": "Load release settings separately and gate first-run campaign UI until installation",
-  "dependencyRationale": "No new runtime dependencies",
-  "chunkRationale": "Keep startup below its existing limit; isolate the update and recovery panel",
+  "recordedAt": "2026-09-08",
+  "reason": "Campaign start screen and management popups with persistent last opening timestamps.",
+  "dependencyRationale": "No dependencies added; existing React modal and campaign capabilities are reused.",
+  "chunkRationale": "Replace lazy campaign management dialog with lazy campaign screen; ratchet smaller catalog and hex graphs.",
   "graphs": {
-    "shell": 420323,
-    "workspace": 513081,
-    "session": 168956,
-    "catalog": 186087,
-    "hex": 176916,
-    "reference": 39450,
+    "shell": 420394,
+    "workspace": 517175,
+    "session": 168964,
+    "catalog": 185870,
+    "hex": 176699,
+    "reference": 39491,
     "pixi": 408635,
-    "reachable": 1534381
+    "reachable": 1542018
   }
 }

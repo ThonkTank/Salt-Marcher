@@ -1,8 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react'
-import type {
-  CampaignCommandReceipt,
-  CampaignSnapshot
-} from '../../../shared/contracts/campaign.js'
+import type { CampaignSnapshot } from '../../../shared/contracts/campaign.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import { message } from '../../i18n/workspace-runtime.de.js'
 import {
@@ -22,22 +19,12 @@ const CampaignMenu = lazy(() =>
   }))
 )
 
-type CampaignActions = Readonly<{
-  create: (name: string) => Promise<boolean>
-  activate: (id: string) => Promise<boolean>
-  rename: (id: string, name: string) => Promise<boolean>
-  trash: (id: string) => Promise<boolean>
-  restore: (id: string) => Promise<boolean>
-  deleteForever: (id: string, confirmationName: string) => Promise<boolean>
-  reconciliationPending: boolean
-  reconcile: () => Promise<CampaignCommandReceipt | null>
-}>
-
 export function WorkspaceTopBar(props: {
   campaigns: CampaignSnapshot
   campaignMenuOpen: boolean
   setCampaignMenuOpen: (open: boolean | ((current: boolean) => boolean)) => void
-  campaignActions: CampaignActions
+  screen: 'campaigns' | 'workspace'
+  showCampaigns: () => void
   workspace: WorkspaceId
   session: LiveSessionSnapshot | null
   partyOpen: boolean
@@ -52,7 +39,8 @@ export function WorkspaceTopBar(props: {
   loadGeneratorPresetApplication: GeneratorPresetApplicationLoader
   campaignRules?: CampaignRewardRulesPort
 }) {
-  const active = props.campaigns.activeCampaignId !== null
+  const active =
+    props.screen === 'workspace' && props.campaigns.activeCampaignId !== null
   const activeCampaign = props.campaigns.campaigns.find(
     (campaign) => campaign.id === props.campaigns.activeCampaignId
   )
@@ -84,9 +72,7 @@ export function WorkspaceTopBar(props: {
         aria-label={message('app.menu')}
         aria-expanded={props.campaignMenuOpen}
         aria-controls="campaign-menu"
-        onClick={() =>
-          props.setCampaignMenuOpen((current) => (active ? !current : true))
-        }
+        onClick={() => props.setCampaignMenuOpen((current) => !current)}
       >
         <span aria-hidden="true">☰</span>
       </button>
@@ -96,9 +82,8 @@ export function WorkspaceTopBar(props: {
             anchor={menuAnchor}
             snapshot={props.campaigns}
             open
-            forced={!active}
+            showCampaigns={props.showCampaigns}
             dismiss={() => props.setCampaignMenuOpen(false)}
-            {...props.campaignActions}
             loadGeneratorPresetApplication={
               props.loadGeneratorPresetApplication
             }
@@ -139,7 +124,7 @@ export function WorkspaceTopBar(props: {
       <div className="workspace-heading">
         <p className="eyebrow">{message('ui.saltmarcher')}</p>
         <h1>
-          {props.workspace === 'session' && activeCampaign
+          {active && props.workspace === 'session' && activeCampaign
             ? `${message('nav.session')} · ${activeCampaign.name}`
             : active
               ? message(definition.label)
@@ -147,7 +132,7 @@ export function WorkspaceTopBar(props: {
         </h1>
       </div>
       <p className="top-bar-status">
-        {props.workspace === 'session' && focusedScene
+        {active && props.workspace === 'session' && focusedScene
           ? formatSessionStatus(
               focusedScene.gameTimeSeconds,
               props.session?.party.adventuringDay

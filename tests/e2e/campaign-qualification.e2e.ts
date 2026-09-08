@@ -1,3 +1,8 @@
+import {
+  openCampaignScreen,
+  beginCampaignCreation,
+  resumeCampaignFromScreen
+} from './support/campaign-navigation.js'
 import { browser, expect } from '@wdio/globals'
 import { performance } from 'node:perf_hooks'
 import type { LiveSessionSnapshot } from '../../src/shared/contracts/live-session.js'
@@ -56,6 +61,7 @@ describe('Campaign production-route qualification', () => {
 
     progress('restart-after-mutation')
     await client.reloadSession()
+    await resumeCampaignFromScreen(client)
     await waitForCampaignReady(client, campaignA.id)
     progress('restart-after-mutation-ready')
     await (
@@ -91,16 +97,11 @@ async function createCampaign(
   client: WdioBrowser,
   name: string
 ): Promise<void> {
-  let field = await client.$('#campaign-name')
-  try {
-    await field.waitForDisplayed({ timeout: 5_000 })
-  } catch {
-    await openCampaignDialog(client)
-    field = await client.$('#campaign-name')
-  }
+  await beginCampaignCreation(client)
+  const field = await client.$('#campaign-name')
   await field.waitForDisplayed({ timeout: 5_000 })
   await field.setValue(name)
-  await (await client.$('button=Anlegen')).click()
+  await (await client.$('button=Erstellen & öffnen')).click()
   await (
     await client.$(`h1=Session · ${name}`)
   ).waitForExist({
@@ -156,7 +157,7 @@ async function switchCampaign(
   campaignName: string
 ): Promise<number> {
   await openCampaignDialog(client)
-  const target = await client.$(`button[aria-label="${campaignName}"]`)
+  const target = await client.$(`button[aria-label="${campaignName} öffnen"]`)
   await target.waitForClickable({ timeout: 5_000 })
   const startedAt = performance.now()
   await target.click()
@@ -167,24 +168,7 @@ async function switchCampaign(
 }
 
 async function openCampaignDialog(client: WdioBrowser): Promise<void> {
-  const button = await client.$('button[aria-label="Menü"]')
-  if ((await button.getAttribute('aria-expanded')) === 'true') {
-    const field = await client.$('#campaign-name')
-    if (await field.isDisplayed()) return
-    const openMenu = await client.$('nav#campaign-menu')
-    if (await openMenu.isDisplayed()) {
-      await (await openMenu.$('button=Kampagnen')).click()
-      await field.waitForDisplayed({ timeout: 5_000 })
-      return
-    }
-    await field.waitForDisplayed({ timeout: 5_000 })
-    return
-  }
-  await button.click()
-  const menu = await client.$('nav#campaign-menu')
-  await menu.waitForDisplayed({ timeout: 5_000 })
-  await (await menu.$('button=Kampagnen')).click()
-  await (await client.$('#campaign-name')).waitForDisplayed({ timeout: 5_000 })
+  await openCampaignScreen(client)
 }
 
 async function waitForCampaignDialogClosed(client: WdioBrowser): Promise<void> {
@@ -224,21 +208,13 @@ async function renameActiveCampaign(
   nextName: string
 ): Promise<void> {
   await openCampaignDialog(client)
-  let row = await (
-    await client.$(`button[aria-label="${currentName}"]`)
-  ).$('..')
-  await (await row.$('button=Umbenennen')).click()
-  const field = await row.$('input[aria-label="Umbenennen"]')
-  await field.setValue(nextName)
-  row = await field.$('..')
-  await (await row.$('button=Speichern')).click()
+  await (
+    await client.$(`button[aria-label="${currentName} bearbeiten"]`)
+  ).click()
+  await (await client.$('#campaign-name')).setValue(nextName)
+  await (await client.$('button=Speichern')).click()
+  await (await client.$(`button[aria-label="${nextName} öffnen"]`)).click()
   await (
     await client.$(`h1=Session · ${nextName}`)
-  ).waitForExist({
-    timeout: switchTimeoutMs
-  })
-  await (
-    await client.$('#campaign-menu button[aria-label="Schließen"]')
-  ).click()
-  await waitForCampaignDialogClosed(client)
+  ).waitForExist({ timeout: switchTimeoutMs })
 }

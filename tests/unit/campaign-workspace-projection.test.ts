@@ -581,6 +581,7 @@ function catalog(
     revision,
     activeCampaignId,
     campaigns: [campaignA, campaignB].map((id) => ({
+      lastOpenedAt: null,
       id,
       name: names[id] ?? `Campaign ${id.at(-1)}`,
       createdAt: now

@@ -54,57 +54,6 @@ function capability(): GeneratorPresetCapability {
 }
 
 describe('campaign burger menu redesign', () => {
-  it('keeps the forced campaign dialog open through its create interaction', async () => {
-    const create = vi.fn(() => Promise.resolve(true))
-    const dismiss = vi.fn()
-    render(
-      <ModalLayerProvider>
-        <CampaignMenu
-          snapshot={{
-            revision: 0,
-            activeCampaignId: null,
-            campaigns: [],
-            trashedCampaigns: []
-          }}
-          open
-          anchor={null}
-          forced
-          partySize={0}
-          dismiss={dismiss}
-          create={create}
-          activate={vi.fn()}
-          rename={vi.fn()}
-          trash={vi.fn()}
-          restore={vi.fn()}
-          deleteForever={vi.fn()}
-          reconciliationPending={false}
-          reconcile={vi.fn(() => Promise.resolve(null))}
-          loadGeneratorPresetApplication={() =>
-            Promise.resolve(
-              createGeneratorPresetApplicationOwner(capability()).port(null)
-            )
-          }
-          onError={vi.fn()}
-        />
-      </ModalLayerProvider>
-    )
-
-    fireEvent.change(await screen.findByLabelText('Kampagnenname'), {
-      target: { value: 'Campaign A' }
-    })
-    expect(screen.getByPlaceholderText('Name')).toBeInTheDocument()
-    fireEvent.keyDown(document, { key: 'Escape' })
-    fireEvent.pointerDown(screen.getByRole('presentation'))
-    expect(dismiss).not.toHaveBeenCalled()
-    const submit = screen.getByRole('button', {
-      name: 'Anlegen'
-    })
-    fireEvent.pointerDown(submit)
-    expect(dismiss).not.toHaveBeenCalled()
-    fireEvent.click(submit)
-    await waitFor(() => expect(create).toHaveBeenCalledWith('Campaign A'))
-  })
-
   it('keeps the dropdown minimal and opens the dedicated settings dialog', async () => {
     render(
       <ModalLayerProvider>
@@ -112,22 +61,21 @@ describe('campaign burger menu redesign', () => {
           snapshot={{
             revision: 1,
             activeCampaignId: campaignId,
-            campaigns: [{ id: campaignId, name: 'Salzmarsch', createdAt: now }],
+            campaigns: [
+              {
+                lastOpenedAt: null,
+                id: campaignId,
+                name: 'Salzmarsch',
+                createdAt: now
+              }
+            ],
             trashedCampaigns: []
           }}
           open
           anchor={document.body}
-          forced={false}
+          showCampaigns={vi.fn()}
           partySize={5}
           dismiss={vi.fn()}
-          create={vi.fn()}
-          activate={vi.fn()}
-          rename={vi.fn()}
-          trash={vi.fn()}
-          restore={vi.fn()}
-          deleteForever={vi.fn()}
-          reconciliationPending={false}
-          reconcile={vi.fn(() => Promise.resolve(null))}
           loadGeneratorPresetApplication={() =>
             Promise.resolve(
               createGeneratorPresetApplicationOwner(capability()).port(

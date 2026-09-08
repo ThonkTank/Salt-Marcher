@@ -1,3 +1,7 @@
+import {
+  openCampaignScreen,
+  beginCampaignCreation
+} from './support/campaign-navigation.js'
 import { browser, expect } from '@wdio/globals'
 import { performance } from 'node:perf_hooks'
 import type { Browser as WdioBrowser } from 'webdriverio'
@@ -95,9 +99,10 @@ async function createCampaign(
   name: string
 ): Promise<void> {
   await openCampaignDialog(client)
+  await beginCampaignCreation(client)
   const field = await client.$('#campaign-name')
   await field.setValue(name)
-  await (await client.$('button=Anlegen')).click()
+  await (await client.$('button=Erstellen & öffnen')).click()
   await (
     await client.$(`h1=Session · ${name}`)
   ).waitForExist({
@@ -111,7 +116,7 @@ async function switchCampaign(
   name: string
 ): Promise<void> {
   await openCampaignDialog(client)
-  const target = await client.$(`button[aria-label="${name}"]`)
+  const target = await client.$(`button[aria-label="${name} öffnen"]`)
   await target.waitForClickable({ timeout: 5_000 })
   await target.click()
   await (
@@ -125,11 +130,7 @@ async function switchCampaign(
 async function openCampaignDialog(client: WdioBrowser): Promise<void> {
   const menuButton = await client.$('button[aria-label="Menü"]')
   if ((await menuButton.getAttribute('aria-expanded')) !== 'true')
-    await menuButton.click()
-  const menu = await client.$('nav#campaign-menu')
-  await menu.waitForDisplayed({ timeout: 5_000 })
-  await (await menu.$('button=Kampagnen')).click()
-  await (await client.$('#campaign-name')).waitForDisplayed({ timeout: 5_000 })
+    await openCampaignScreen(client)
 }
 
 async function waitForCampaignDialogClosed(client: WdioBrowser): Promise<void> {

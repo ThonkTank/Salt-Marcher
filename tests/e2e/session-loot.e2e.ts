@@ -1,3 +1,4 @@
+import { resumeCampaignFromScreen } from './support/campaign-navigation.js'
 import { browser, expect } from '@wdio/globals'
 import type { Browser as WdioBrowser } from 'webdriverio'
 import {
@@ -9,6 +10,7 @@ import { waitForGmRendererReady } from './support/e2e-ready.js'
 describe('Loot distribution and ledger', () => {
   it('partially distributes, restarts, completes, and preserves provenance', async () => {
     const client = browser as unknown as WdioBrowser
+    await resumeCampaignFromScreen(client)
     await setElectronWindowSize(client, 1280, 800)
     await (
       await client.$('h1=Session · Loot-Verteilung-Abnahme')
@@ -80,6 +82,7 @@ describe('Loot distribution and ledger', () => {
     await distributionDialog.waitForExist({ reverse: true, timeout: 5_000 })
 
     await client.reloadSession()
+    await resumeCampaignFromScreen(client)
     await waitForGmRendererReady(client)
     await (
       await client.$('h1=Session · Loot-Verteilung-Abnahme')

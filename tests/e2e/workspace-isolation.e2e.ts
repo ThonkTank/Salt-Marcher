@@ -1,13 +1,15 @@
+import { beginCampaignCreation } from './support/campaign-navigation.js'
 import { browser, expect } from '@wdio/globals'
 import type { Browser as WdioBrowser } from 'webdriverio'
 
 describe('isolated workspace routes', () => {
   it('loads Session, Catalog and Hex through the persistent shell', async () => {
     const client = browser as unknown as WdioBrowser
+    await beginCampaignCreation(client)
     const campaignName = await client.$('#campaign-name')
     await campaignName.waitForDisplayed({ timeout: 30_000 })
     await campaignName.setValue('Workspace Isolation')
-    await (await client.$('button=Anlegen')).click()
+    await (await client.$('button=Erstellen & öffnen')).click()
     await (
       await client.$('section[aria-label="Session Steuerung"]')
     ).waitForExist({ timeout: 10_000 })

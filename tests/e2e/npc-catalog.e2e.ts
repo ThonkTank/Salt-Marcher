@@ -1,3 +1,5 @@
+import { resumeCampaignFromScreen } from './support/campaign-navigation.js'
+import { beginCampaignCreation } from './support/campaign-navigation.js'
 import { browser, expect } from '@wdio/globals'
 import type {
   Browser as WdioBrowser,
@@ -12,10 +14,11 @@ import {
 describe('NPC catalog journey', () => {
   it('creates, links, edits, restarts, inspects and deletes an NPC accessibly', async () => {
     const client = browser as unknown as WdioBrowser
+    await beginCampaignCreation(client)
     const campaignName = await client.$('#campaign-name')
     await campaignName.waitForDisplayed({ timeout: 30_000 })
     await campaignName.setValue('NPC Journey')
-    await (await client.$('button=Anlegen')).click()
+    await (await client.$('button=Erstellen & öffnen')).click()
     await (
       await client.$('section[aria-label="Session Steuerung"]')
     ).waitForExist({ timeout: 10_000 })
@@ -89,6 +92,7 @@ describe('NPC catalog journey', () => {
     await setElectronWindowSize(client, 1280, 800)
 
     await client.reloadSession()
+    await resumeCampaignFromScreen(client)
     await (
       await client.$('h1=Session · NPC Journey')
     ).waitForExist({ timeout: 20_000 })

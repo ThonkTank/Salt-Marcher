@@ -8,7 +8,8 @@ export const campaignSchema = z
   .object({
     id: z.uuid(),
     name: z.string().min(1).max(100),
-    createdAt: z.iso.datetime()
+    createdAt: z.iso.datetime(),
+    lastOpenedAt: z.iso.datetime().nullable().default(null)
   })
   .strict()
 
