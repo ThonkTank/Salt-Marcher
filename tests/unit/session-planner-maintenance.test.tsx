@@ -60,12 +60,14 @@ function setup(
   ),
   settlePreparations?: (
     choice: 'save' | 'discard'
-  ) => Promise<SessionPlannerWorkspace>
+  ) => Promise<SessionPlannerWorkspace>,
+  overrides: Partial<SessionPlannerPort> = {}
 ) {
   const coordinator = new AsyncCommandCoordinator()
   const planner = {
     read: () => Promise.resolve(initial),
-    save
+    save,
+    ...overrides
   } as unknown as SessionPlannerPort
   const onError = vi.fn()
   const hook = renderHook(() => {
@@ -93,7 +95,11 @@ function setup(
       applyWorkspace: workspace.applyWorkspace,
       saveDraft: sessions.saveDraft,
       ...(settlePreparations ? { settlePreparations } : {}),
-      readUnresolved: () => (sessions.hasOpenDialog() ? 'Dialog offen' : null)
+      dialogs: {
+        isOpen: sessions.hasOpenDialog,
+        settle: sessions.settleDialogs
+      },
+      readUnresolved: () => null
     })
     return {
       runtime,
@@ -125,6 +131,175 @@ async function resolve(choice: 'save' | 'discard') {
 }
 
 describe('Session Planner maintenance owner', () => {
+  it.each(['create', 'rename'] as const)(
+    'saves the draft before %s and retains the final workspace',
+    async (operation) => {
+      const final = {
+        ...initial,
+        session: {
+          ...initial.session,
+          id: operation === 'create' ? 'new-session' : 'session',
+          name: 'Neue Küste',
+          revision: 3
+        }
+      }
+      const command = vi.fn().mockResolvedValue(final)
+      const hook = setup(undefined, () => Promise.resolve(initial), {
+        [operation]: command
+      })
+      await load()
+      act(() => {
+        hook.result.current.mutate((draft) => ({ ...draft, encounterCount: 3 }))
+        hook.result.current.sessions.setNameDialog(operation)
+        hook.result.current.sessions.setName('Neue Küste')
+        resolution = maintenanceDraftCoordinator.begin()
+      })
+      expect(await resolve('save')).toEqual([])
+      expect(hook.save).toHaveBeenCalledOnce()
+      expect(command).toHaveBeenCalledOnce()
+      expect(hook.save.mock.invocationCallOrder[0]).toBeLessThan(
+        command.mock.invocationCallOrder[0]!
+      )
+      if (operation === 'rename')
+        expect(command).toHaveBeenCalledWith('session', 2, 'Neue Küste')
+      else expect(command).toHaveBeenCalledWith('Neue Küste')
+      expect(hook.result.current.workspace.read().workspace).toBe(final)
+      expect(hook.result.current.sessions.hasOpenDialog()).toBe(false)
+    }
+  )
+
+  it('retains a confirmed draft save when rename fails and retries only the rename', async () => {
+    const renamed = {
+      ...initial,
+      session: {
+        ...initial.session,
+        revision: 3,
+        name: 'Küste',
+        encounterCount: 3
+      }
+    }
+    const rename = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('rename failed'))
+      .mockResolvedValue(renamed)
+    const hook = setup(undefined, undefined, { rename })
+    await load()
+    act(() => {
+      hook.result.current.mutate((draft) => ({ ...draft, encounterCount: 3 }))
+      hook.result.current.sessions.setNameDialog('rename')
+      hook.result.current.sessions.setName('Küste')
+    })
+    begin()
+    expect(await resolve('save')).toMatchObject([{ label: 'Sitzungsplanung' }])
+    expect(hook.result.current.workspace.read().dirty).toBe(false)
+    expect(
+      hook.result.current.workspace.read().workspace?.session.encounterCount
+    ).toBe(3)
+    expect(hook.result.current.sessions.nameDialog).toBe('rename')
+    expect(await resolve('save')).toEqual([])
+    expect(hook.save).toHaveBeenCalledOnce()
+    expect(rename).toHaveBeenCalledTimes(2)
+    expect(rename).toHaveBeenNthCalledWith(2, 'session', 2, 'Küste')
+    expect(hook.result.current.workspace.read().workspace).toBe(renamed)
+  })
+
+  it.each(['create', 'rename'] as const)(
+    'discards %s and the draft without issuing a command',
+    async (operation) => {
+      const command = vi.fn()
+      const hook = setup(undefined, undefined, { [operation]: command })
+      await load()
+      act(() => {
+        hook.result.current.mutate((draft) => ({ ...draft, encounterCount: 3 }))
+        hook.result.current.sessions.setNameDialog(operation)
+        hook.result.current.sessions.setName('Ungespeichert')
+      })
+      begin()
+      expect(await resolve('discard')).toEqual([])
+      expect(hook.save).not.toHaveBeenCalled()
+      expect(command).not.toHaveBeenCalled()
+      expect(hook.result.current.sessions.hasOpenDialog()).toBe(false)
+      expect(hook.result.current.workspace.read().draft?.encounterCount).toBe(1)
+    }
+  )
+
+  it.each(['save', 'discard'] as const)(
+    'closes an unconfirmed deletion during %s without deleting the session',
+    async (choice) => {
+      const remove = vi.fn()
+      const hook = setup(undefined, undefined, { delete: remove })
+      await load()
+      act(() => hook.result.current.sessions.setDeleteConfirm(true))
+      begin()
+      expect(await resolve(choice)).toEqual([])
+      expect(remove).not.toHaveBeenCalled()
+      expect(hook.result.current.sessions.deleteConfirm).toBe(false)
+    }
+  )
+
+  it('keeps an empty name for correction and permits explicit discard', async () => {
+    const create = vi.fn()
+    const hook = setup(undefined, undefined, { create })
+    await load()
+    act(() => hook.result.current.sessions.setNameDialog('create'))
+    begin()
+    const failures = await resolve('save')
+    expect(failures[0]?.message).toContain('Sitzungsnamen')
+    expect(hook.result.current.sessions.nameDialog).toBe('create')
+    expect(create).not.toHaveBeenCalled()
+    expect(await resolve('discard')).toEqual([])
+  })
+
+  it('keeps dialog input when maintenance is canceled', async () => {
+    const hook = setup()
+    await load()
+    act(() => {
+      hook.result.current.sessions.setNameDialog('rename')
+      hook.result.current.sessions.setName('Noch offen')
+    })
+    begin()
+    act(() => {
+      resolution!.release()
+      resolution = undefined
+    })
+    expect(hook.result.current.sessions.nameDialog).toBe('rename')
+    expect(hook.result.current.sessions.name).toBe('Noch offen')
+  })
+
+  it('does not redirect an open rename to a different session returned by preparation settlement', async () => {
+    const other = { ...initial, session: { ...initial.session, id: 'other' } }
+    const rename = vi.fn()
+    const hook = setup(undefined, () => Promise.resolve(other), { rename })
+    await load()
+    act(() => {
+      hook.result.current.sessions.setNameDialog('rename')
+      hook.result.current.sessions.setName('Falsches Ziel')
+    })
+    begin()
+    expect(await resolve('save')).toHaveLength(1)
+    expect(rename).not.toHaveBeenCalled()
+    expect(hook.result.current.sessions.hasOpenDialog()).toBe(true)
+    expect(await resolve('discard')).toEqual([])
+  })
+
+  it('does not retry or discard a rename with an unknown outcome', async () => {
+    const rename = vi
+      .fn()
+      .mockRejectedValue(new CapabilityError('outcome_unknown', false))
+    const hook = setup(undefined, undefined, { rename })
+    await load()
+    act(() => {
+      hook.result.current.sessions.setNameDialog('rename')
+      hook.result.current.sessions.setName('Unklar')
+    })
+    begin()
+    expect(await resolve('save')).toHaveLength(1)
+    expect(await resolve('save')).toHaveLength(1)
+    expect(await resolve('discard')).toHaveLength(1)
+    expect(rename).toHaveBeenCalledOnce()
+    expect(hook.result.current.sessions.hasOpenDialog()).toBe(true)
+  })
+
   it.each(['save', 'discard'] as const)(
     'preserves the fresh persisted preparation while resolving %s',
     async (choice) => {
@@ -227,7 +402,7 @@ describe('Session Planner maintenance owner', () => {
     expect(save).toHaveBeenCalledOnce()
     expect(hook.result.current.workspace.read().dirty).toBe(true)
   })
-  it('waits for the whole action and detects a dialog opened by its final continuation', async () => {
+  it('waits for the whole action and discards a dialog opened by its final continuation', async () => {
     const hook = setup()
     await load()
     let finish!: () => void
@@ -257,9 +432,8 @@ describe('Session Planner maintenance owner', () => {
       await operation
       await result
     })
-    expect(await result).toMatchObject([
-      { label: 'Sitzungsplanung', message: 'Dialog offen' }
-    ])
+    expect(await result).toEqual([])
+    expect(hook.result.current.sessions.hasOpenDialog()).toBe(false)
     expect(hook.save).not.toHaveBeenCalled()
   })
   it('waits for an existing save and preserves its confirmed state when discarding', async () => {

@@ -69,10 +69,11 @@ export function useSessionPlannerController(
     applyWorkspace: workspace.applyWorkspace,
     saveDraft: sessions.saveDraft,
     settlePreparations: preparation.settleForMaintenance,
+    dialogs: { isOpen: sessions.hasOpenDialog, settle: sessions.settleDialogs },
     readUnresolved: () => {
       if (preparation.hasActiveOperation())
         return 'Die Sitzungsvorbereitung ist noch offen. Bitte Wartung abbrechen und die Vorbereitung abschließen oder abbrechen.'
-      if (sessions.hasOpenDialog() || rewards.hasOpenDialog())
+      if (rewards.hasOpenDialog())
         return 'In der Sitzungsplanung ist noch ein Dialog offen. Bitte Wartung abbrechen und den Dialog zuerst abschließen oder schließen.'
       return null
     }

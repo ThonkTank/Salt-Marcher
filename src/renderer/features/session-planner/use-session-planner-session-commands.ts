@@ -34,14 +34,27 @@ export function useSessionPlannerSessionCommands(dependencies: Dependencies) {
   const [nameDialog, setNameDialogState] = useState<'create' | 'rename' | null>(
     null
   )
-  const [name, setName] = useState('')
+  const [name, setNameState] = useState('')
+  const nameValue = useRef('')
+  const setName = useCallback((value: string) => {
+    nameValue.current = value
+    setNameState(value)
+  }, [])
   const [deleteConfirm, setDeleteConfirmState] = useState(false)
 
-  const dialogs = useRef({ name: false, delete: false })
-  const setNameDialog = useCallback((value: 'create' | 'rename' | null) => {
-    dialogs.current.name = value !== null
-    setNameDialogState(value)
-  }, [])
+  const dialogs = useRef<{
+    name: { kind: 'create' | 'rename'; sessionId: string | null } | null
+    delete: boolean
+  }>({ name: null, delete: false })
+  const setNameDialog = useCallback(
+    (value: 'create' | 'rename' | null) => {
+      dialogs.current.name = value
+        ? { kind: value, sessionId: read().workspace?.session.id ?? null }
+        : null
+      setNameDialogState(value)
+    },
+    [read]
+  )
   const setDeleteConfirm = useCallback((value: boolean) => {
     dialogs.current.delete = value
     setDeleteConfirmState(value)
@@ -104,11 +117,17 @@ export function useSessionPlannerSessionCommands(dependencies: Dependencies) {
   )
 
   const submitName = useCallback(async (): Promise<void> => {
-    const operation = nameDialog
-    const requestedName = name
+    const operation = dialogs.current.name
+    const requestedName = nameValue.current
     if (!operation || !requestedName.trim()) return
     let target = read()
     if (!target.workspace) return
+    if (target.workspace.session.id !== operation.sessionId) {
+      onError(
+        'Die Sitzung des Namensdialogs hat sich geändert. Bitte den Dialog schließen und erneut öffnen.'
+      )
+      return
+    }
     if (target.dirty) {
       const saved = await saveDraft()
       if (!saved) return
@@ -119,16 +138,18 @@ export function useSessionPlannerSessionCommands(dependencies: Dependencies) {
     await execute(
       target,
       () =>
-        operation === 'create'
+        operation.kind === 'create'
           ? planner.create(requestedName)
           : planner.rename(
               current.session.id,
               current.session.revision,
               requestedName
             ),
-      () => setNameDialog(null)
+      () => {
+        if (dialogs.current.name === operation) setNameDialog(null)
+      }
     )
-  }, [execute, name, nameDialog, planner, read, saveDraft, setNameDialog])
+  }, [execute, onError, planner, read, saveDraft, setNameDialog])
 
   const deleteSession = useCallback(async (): Promise<void> => {
     const target = read()
@@ -141,8 +162,27 @@ export function useSessionPlannerSessionCommands(dependencies: Dependencies) {
     )
   }, [execute, planner, read, setDeleteConfirm])
 
+  const settleDialogs = async (
+    choice: 'save' | 'discard'
+  ): Promise<boolean> => {
+    if (choice === 'discard') setNameDialog(null)
+    else if (dialogs.current.name) {
+      if (!nameValue.current.trim())
+        throw new Error(
+          'Bitte einen Sitzungsnamen eingeben oder die offenen Änderungen verwerfen.'
+        )
+      await submitName()
+      if (dialogs.current.name) return false
+    }
+    // A general maintenance decision never confirms a pending destructive action.
+    setDeleteConfirm(false)
+    return true
+  }
+
   return {
-    hasOpenDialog: () => dialogs.current.name || dialogs.current.delete,
+    hasOpenDialog: () =>
+      Boolean(dialogs.current.name) || dialogs.current.delete,
+    settleDialogs,
     nameDialog,
     name,
     deleteConfirm,
@@ -162,6 +202,7 @@ function sameAuthority(
 ): boolean {
   return (
     current.authoredRevision === target.authoredRevision &&
+    current.workspace?.session.id === target.workspace?.session.id &&
     Boolean(current.workspace) === Boolean(target.workspace)
   )
 }

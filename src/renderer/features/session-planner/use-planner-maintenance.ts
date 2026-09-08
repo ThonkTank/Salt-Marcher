@@ -23,6 +23,10 @@ export function usePlannerMaintenance(options: {
   settlePreparations?: (
     choice: 'save' | 'discard'
   ) => Promise<SessionPlannerWorkspace>
+  dialogs?: {
+    isOpen: () => boolean
+    settle: (choice: 'save' | 'discard') => Promise<boolean>
+  }
   readUnresolved: () => string | null
 }) {
   const {
@@ -32,6 +36,7 @@ export function usePlannerMaintenance(options: {
     applyWorkspace,
     saveDraft,
     settlePreparations,
+    dialogs,
     readUnresolved
   } = options
   const settle = async (choice: 'save' | 'discard') => {
@@ -50,15 +55,14 @@ export function usePlannerMaintenance(options: {
       runtime.pending() ||
       runtime.uncertain() ||
       coordinator.hasPending() ||
-      Boolean(readUnresolved()),
+      Boolean(readUnresolved()) ||
+      Boolean(dialogs?.isOpen()),
     save: async () => {
       const fresh = await settle('save')
       const current = read()
       if (!current.dirty) {
         if (fresh) applyWorkspace(fresh)
-        return true
-      }
-      if (
+      } else if (
         fresh &&
         (fresh.session.id !== current.workspace?.session.id ||
           fresh.session.revision !== current.workspace.session.revision)
@@ -66,13 +70,15 @@ export function usePlannerMaintenance(options: {
         throw new Error(
           'Die gespeicherte Sitzung hat sich während der Vorbereitung geändert. Dein Entwurf bleibt erhalten. Bitte Wartung abbrechen und die Änderungen prüfen.'
         )
-      return Boolean(await saveDraft()) && !read().dirty && !runtime.uncertain()
+      if (read().dirty && !(await saveDraft())) return false
+      if (read().dirty || runtime.uncertain()) return false
+      return (await dialogs?.settle('save')) ?? true
     },
     discard: async () => {
       const fresh = await settle('discard')
       const workspace = fresh ?? read().workspace
       if (workspace) applyWorkspace(workspace)
-      return !read().dirty
+      return ((await dialogs?.settle('discard')) ?? true) && !read().dirty
     }
   })
   const blocked = () =>

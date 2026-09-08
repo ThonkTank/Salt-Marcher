@@ -3012,3 +3012,67 @@ Tabelle ist auch in der vollständigen Profil-/Recovery-Qualifikation fachlich
 zu berücksichtigen; ein generischer SQLite-Backup allein beweist diese
 Lesbarkeit nicht. Phasen 5–7 bleiben offen. Lokale Gates ersetzen weder
 exakte Remote-CI noch kanonischen Handoff, Main-Grün oder Release-Abnahme.
+
+### Phase 4 — Plan: Planner-Namensdialoge zentral klären
+
+Ausgangslage: Kandidat 97d8377b8 ist sauber, exakter Check 34259911264 läuft.
+Planner-Namens- und Löschbestätigungsdialoge werden bisher nur als pauschaler
+Blocker behandelt. Umsetzung im bestehenden Sitzungs-Owner: Dialogzustand und
+Namenseingabe synchron lesen, ursprüngliche Sitzung beim Öffnen binden.
+Nach Drain und Vorbereitung zunächst den aktuellen Sitzungsentwurf klären, dann
+bei Speichern einen offenen Create-/Rename-Dialog über den bestehenden Befehl
+abschließen. Kein Zurückspielen des vor diesem Befehl gelesenen Workspace.
+Fehlender Name oder Speicherfehler erhalten Dialog und Wartungssperre.
+Bestätigte erste Speicherung bleibt bei fehlgeschlagenem zweiten Befehl erhalten;
+Retry darf diese erste Speicherung nicht wiederholen. Ein zwischenzeitlicher
+Sitzungswechsel darf keinen Namensbefehl auf das falsche Ziel umleiten.
+Verwerfen schließt lokale Dialoge ohne Create/Rename/Delete. Unbestätigte
+Löschanfragen werden bei beiden Wartungsentscheidungen geschlossen; generisches
+Speichern bestätigt keine Löschung. Abbrechen der Wartung lässt Dialoge erhalten.
+
+Prüfen mit realen Workspace-/Sitzungs-/Wartungshooks: Create und Rename,
+leerer Name, teilweiser Erfolg/Retry, Verwerfen, Löschbestätigung ohne Delete,
+sofortige Ref-Sichtbarkeit, verspätet geöffneter Dialog nach laufendem Befehl,
+Zielwechsel und Erhalt des neuen Workspace. Unknown-Befehle bleiben bis zum
+separaten Quittungsabgleich blockiert; keine Write-Wiederholung bei Unknown.
+Relevante Planner-/Wartungs-/Architekturtests, Typecheck, Lint, Build/Smoke.
+Danach separater Plan-/Roadmapabgleich. Beute-Unterdialoge bleiben eigenes
+Arbeitspaket; vollständige Phase-4-Abnahme weiterhin erforderlich.
+
+### Phase 4 — Planner-Namensdialoge: Plan- und Roadmapabgleich
+
+Planabgleich bestanden: Namensinhalt und Dialogidentität sind synchron lesbar.
+Der Dialog bindet die beim Öffnen ausgewählte Sitzung; Session-Antworten prüfen
+zusätzlich die aktuelle Sitzungsidentität vor Veröffentlichung. Die Wartung
+wartet bestehende Aktionen/Vorbereitungen ab, klärt den Sitzungsentwurf und
+führt anschließend Create/Rename über den normalen Sitzungsbefehl aus.
+Ein alter Vorbereitungs-Workspace wird danach nicht erneut angewandt.
+Speicherfehler oder leerer Name erhalten den Dialog. Bestätigte Draft-Speicherung
+bleibt bei fehlgeschlagenem Rename erhalten; Retry führt nur Rename erneut aus.
+
+Verwerfen schließt die lokalen Namens- und Löschbestätigungsdialoge ohne
+Create/Rename/Delete. Speichern bestätigt ebenfalls keine Löschung. Abbruch
+der Wartung bewahrt Dialog und Eingabe. Nach einem verlorenen Rename-Ausgang
+verhindert die bestehende Unknown-Sperre sowohl Retry als auch Verwerfen.
+Verspätet von einer laufenden Aktion geöffnete Dialoge werden nach Drain
+gesehen und können verworfen werden.
+
+Validierung: 128 Tests in 10 Dateien einschließlich Architektur, Planner-
+Sitzungsbefehlen, Vorbereitung und zentraler Wartung bestanden. Der reale
+Workspace-/Sitzungs-/Wartungshook-Verbund prüft Create/Rename nach Draft-Save,
+Teilerfolg/Retry, leeren Namen, Verwerfen, unbestätigte Löschung, Abbruch,
+sofortigen Dialogzustand, Sitzungswechsel und Unknown ohne zweiten Write.
+Nach expliziter Einbeziehung eines frischen Vorbereitungs-Workspace in den
+Create-/Rename-Test bestehen die 19 Owner-Tests erneut. Typecheck, gezielter
+ESLint, Prettier, Build/Built-Smoke (ready/closed), Bundle-Gate und diff --check
+bestanden. Logs: work/roadmap-phase4-planner-dialog-*.log. Keine neue
+Schema-/Abhängigkeits-/Baselineänderung, kein Nutzerprofil verändert.
+
+Roadmapabgleich: Der zentrale Owner kann die Planner-Namensdialoge nun
+auflösen. Dies ist keine vollständige Planner-/UI-/Release-Abnahme: allgemeine
+Session-Unknown-Recovery, Beute-Unterdialoge, Konfliktklärung, übrige
+Gruppen-/Karten-/Writerwege einschließlich neuem Charakterkatalog und
+Szenendesktop sowie Offline-/Update-UI-Abnahme bleiben offen. Phase 4 bleibt
+in Arbeit, Phasen 5–7 offen. Check 34259911264 für den Vorgänger 97d8377b8
+war zuletzt weiterhin aktiv und ohne fehlgeschlagenen abgeschlossenen Job;
+kein vollständiges CI-Grün oder kanonischer Handoff behauptet.
