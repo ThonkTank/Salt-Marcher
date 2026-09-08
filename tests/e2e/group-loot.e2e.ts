@@ -20,7 +20,11 @@ describe('Group Loot editor', () => {
     await (
       await client.$('h1=Session · Gruppenloot-Abnahme')
     ).waitForExist({ timeout: 15_000 })
-    await (await client.$('button=Gruppen managen')).click()
+    await (
+      await client.$(
+        '[data-window-id="overview"] button[aria-label="Gruppen bearbeiten"]'
+      )
+    ).click()
     const dialog = await client.$(
       'section[aria-labelledby="group-builder-title"]'
     )

@@ -1,3 +1,4 @@
+import { openSceneWindow } from './scene-desktop-navigation.js'
 import {
   beginCampaignCreation,
   openCampaignScreen,
@@ -62,16 +63,16 @@ export async function runCampaignCreationScenario(): Promise<void> {
   await waitForGmRendererReady(client)
   await (await client.$('h1=Session · test')).waitForExist({ timeout: 10_000 })
   await expect(await client.$('.error-message')).not.toBeExisting()
+  await expect(await client.$('.scene-desktop')).toBeExisting()
+  await expect(client.$('[data-window-id="overview"]')).toBeExisting()
   await expect(
-    await client.$('section[aria-label="Session Steuerung"]')
+    client.$('[data-window-id="overview"] [aria-label="Gruppen"]')
   ).toBeExisting()
-  await expect(
-    await client.$('section[aria-label="Detailansicht"]')
-  ).toBeExisting()
-  await expect(await client.$('section[aria-label="Gruppen"]')).toBeExisting()
-  await expect(
-    await client.$('aside[aria-label="Szenario Panel"]')
-  ).toBeExisting()
+  await openSceneWindow(client, 'combat')
+  await expect(client.$('[data-window-id="combat"]')).toBeExisting()
+  await client
+    .$('[data-window-id="combat"] button[aria-label="Fenster schließen"]')
+    .click()
   await (await client.$('button[aria-label="Menü"]')).click()
   await (
     await (await client.$('#campaign-menu')).$('button=Einstellungen')
@@ -193,46 +194,29 @@ export async function runCampaignCreationScenario(): Promise<void> {
   await client.keys('Escape')
   await settingsDialog.waitForExist({ reverse: true, timeout: 5_000 })
   const geometry = await client.execute(() => {
-    const height = (selector: string) =>
-      Math.round(
-        document.querySelector(selector)!.getBoundingClientRect().height
-      )
-    const width = (selector: string) =>
-      Math.round(
-        document.querySelector(selector)!.getBoundingClientRect().width
-      )
+    const desktop = document
+      .querySelector('.scene-desktop')!
+      .getBoundingClientRect()
+    const work = document.querySelector('.work-area')!.getBoundingClientRect()
     return {
-      topBar: height('.top-bar'),
-      rail: width('.icon-bar'),
-      control: width('.session-control-column'),
-      scenario: width('.session-scenario-column'),
-      dividers: [...document.querySelectorAll('.session-divider')].map(
-        (element) => Math.round(element.getBoundingClientRect().width)
-      )
+      topBar: document.querySelector('.top-bar')!.getBoundingClientRect()
+        .height,
+      rail: document.querySelector('.icon-bar')!.getBoundingClientRect().width,
+      widthDelta: Math.abs(desktop.width - work.width)
     }
   })
-  expect(geometry).toEqual({
-    topBar: 66,
-    rail: 66,
-    control: 300,
-    scenario: 264,
-    dividers: [9, 9]
-  })
+  expect(geometry.topBar).toBe(66)
+  expect(geometry.rail).toBe(66)
+  expect(geometry.widthDelta).toBeLessThan(2)
   await expectAccessibleInBothThemes(client)
-  await (await client.$('button=Karte')).click()
+  await openSceneWindow(client, 'map')
   await expect(await client.$('strong=Keine Hex-Karte')).toBeExisting()
-  await (await client.$('button=Detail')).click()
-  await expect(await client.$$('[role="separator"]')).toBeElementsArrayOfSize(2)
-  const columnDivider = await client.$(
-    '[aria-label="Breite der Steuerungsspalte"]'
-  )
-  await pressDividerKey(client, 'Breite der Steuerungsspalte', 'ArrowLeft')
-  await expect(columnDivider).toHaveAttribute('aria-valuenow', '290')
-  const rightDivider = await client.$(
-    '[aria-label="Breite der Szenariospalte"]'
-  )
-  await pressDividerKey(client, 'Breite der Szenariospalte', 'ArrowLeft')
-  await expect(rightDivider).toHaveAttribute('aria-valuenow', '274')
+  const overview = await openSceneWindow(client, 'overview')
+  await overview
+    .$('button[aria-label="Fenster mit Pfeiltasten verschieben"]')
+    .click()
+  await client.keys('ArrowRight')
+  await expect(overview).toBeDisplayed()
 
   await openCampaignScreen(client)
   await beginCampaignCreation(client)
@@ -491,6 +475,9 @@ export async function runCampaignCombatScenario(): Promise<void> {
     async () => await client.$('button=Neue Encounter-Tabelle')
   )
   const tableDialog = await client.$('section.encounter-table-manager')
+  await tableDialog
+    .$('.creature-collection-layout')
+    .waitForDisplayed({ timeout: 10000 })
   const tableGeometry = await client.execute(() => {
     const layout = document.querySelector('.creature-collection-layout')!
     const catalog = layout
@@ -590,51 +577,28 @@ export async function runCampaignCombatScenario(): Promise<void> {
   await (await client.$('button[aria-label="Ort Details schließen"]')).click()
   await (await client.$('button[aria-label="Session"]')).click()
 
-  await (await client.$('button=Party')).click()
+  await client.$('button[aria-label="Katalog"]').click()
+  await client.$('.catalog-section-selector').$('button=Charaktere').click()
   for (const name of ['Alrik', 'Brynn']) {
-    await (await client.$('button=Neuer Roster-Charakter')).click()
-    const editor = await client.$('form.party-editor')
-    await (await editor.$('input[placeholder="Charaktername"]')).setValue(name)
-    await (await editor.$('input[aria-label="Level"]')).setValue('3')
-    await (await editor.$('button=Erstellen')).click()
-    await editor.waitForExist({ reverse: true, timeout: 5_000 })
+    await client.$('.character-catalog-tools').$('button=Neu').click()
+    const editor = client.$('form.character-profile-form')
+    await editor.$('input[name="name"]').setValue(name)
+    await editor.$('input[name="level"]').setValue('3')
+    await editor.$('button=Speichern').click()
+    await editor.waitForExist({ reverse: true, timeout: 5000 })
   }
-  for (let active = 1; active <= 2; active += 1) {
-    const addButtons = await client.$$('button=Zur Party')
-    await addButtons[0]?.click()
-    await client.waitUntil(
-      async () => (await client.$$('button=Aus Party').length) === active,
-      {
-        timeout: 5_000,
-        timeoutMsg: `Party membership ${active} was not published.`
-      }
-    )
-  }
-  await (await client.$('button[aria-label="Party-Panel schließen"]')).click()
-
-  await (await client.$('.scene-party-card')).waitForExist()
-  const expandedParty = await client.$('.scene-party-expanded')
-  await client.waitUntil(
-    async () => (await expandedParty.$$('.scene-party-member').length) === 2,
-    {
-      timeout: 5_000,
-      timeoutMsg: 'New party members were not assigned to the focused scene.'
-    }
-  )
-  await (await expandedParty.$('button=Bearbeiten')).click()
-  const scenePartyDialog = await client.$(
-    'section[aria-labelledby="scene-party-dialog-title"]'
-  )
-  await expect(
-    await scenePartyDialog.$$('button=Entfernen')
-  ).toBeElementsArrayOfSize(2)
-  await expect(
-    await scenePartyDialog.$$('button=Zur Scene')
-  ).toBeElementsArrayOfSize(0)
-  await (await scenePartyDialog.$('button=Schließen')).click()
-  await expect(
-    await expandedParty.$$('.scene-party-member')
-  ).toBeElementsArrayOfSize(2)
+  await client.$('button[aria-label="Session"]').click()
+  const characters = await openSceneWindow(client, 'characters', true)
+  await characters.$('button=Besetzung').click()
+  const roster = client.$('.desktop-roster-popup')
+  await roster.waitForDisplayed()
+  for (const name of ['Alrik', 'Brynn'])
+    await roster.$(`label*=${name}`).$('input').click()
+  await roster.$('button=Übernehmen').click()
+  await roster.waitForExist({ reverse: true, timeout: 5000 })
+  expect(await characters.getText()).toContain('Alrik')
+  expect(await characters.getText()).toContain('Brynn')
+  await characters.$('button[aria-label="Fenster schließen"]').click()
 
   await (await client.$('button[aria-label="Katalog"]')).click()
   await (
@@ -667,9 +631,13 @@ export async function runCampaignCombatScenario(): Promise<void> {
   await expectAccessibleInBothThemes(client)
 
   await (await client.$('button[aria-label="Session"]')).click()
-  const groupsHeading = await client.$('.groups-heading')
+  const groupsHeading = await client.$('[data-window-id="overview"]')
   await expect(await groupsHeading.$('button=Neue Gruppe')).not.toBeExisting()
-  await (await client.$('button=Gruppen managen')).click()
+  await (
+    await openSceneWindow(client, 'overview')
+  )
+    .$('button[aria-label="Gruppen bearbeiten"]')
+    .click()
   const groupDialog = await client.$(
     'section[aria-labelledby="group-builder-title"]'
   )
@@ -748,7 +716,9 @@ export async function runCampaignCombatScenario(): Promise<void> {
   const confirmSave = await client.$('section[role="alertdialog"]')
   await confirmSave.waitForDisplayed({ timeout: 5_000 })
   await (await confirmSave.$('button=Änderungen verwerfen')).click()
-  await expect(await client.$('strong=Wolf Pack')).toBeExisting()
+  await expect(await client.$('.group-name=Wolf Pack')).toBeExisting()
+  const expandWolf = await client.$('button[aria-label="Wolf Pack aufklappen"]')
+  if (await expandWolf.isExisting()) await expandWolf.click()
   await expect(await client.$('.group-note')).toHaveText(
     'Lauert Prone in den Dünen; Stunned bei Alarm.'
   )
@@ -795,31 +765,40 @@ export async function runCampaignCombatScenario(): Promise<void> {
   )
   await reopenedPronePreview.waitForExist({ timeout: 5_000 })
   await (
-    await reopenedPronePreview.$('button[aria-label="Prone anheften"]')
+    await reopenedPronePreview.$('button[aria-label="Prone separat öffnen"]')
   ).click()
-  const pinnedProne = await client.$(
-    'section[aria-label="Angeheftete Referenz: Prone"]'
-  )
+  const pinnedProne = await client.$('.desktop-window[aria-label="Prone"]')
   await pinnedProne.waitForExist({ timeout: 5_000 })
   const movePinned = await pinnedProne.$(
-    'button[aria-label="Prone verschieben"]'
+    'button[aria-label="Fenster mit Pfeiltasten verschieben"]'
   )
   await movePinned.click()
   await client.keys(['SHIFT', 'ARROWRIGHT'])
-  await (await pinnedProne.$('button[aria-label="Prone schließen"]')).click()
+  await (await pinnedProne.$('button[aria-label="Fenster schließen"]')).click()
 
   await proneReference.click()
-  let referenceDocument = await client.$('.reference-document')
-  await expect(await referenceDocument.$('h2=Prone')).toBeExisting()
+  const reader = await client.$('.desktop-window[data-window-id="reader"]')
+  await expect(reader).toHaveAttribute(
+    'aria-label',
+    expect.stringContaining('Prone')
+  )
+  await (await reader.$('.reference-document')).waitForDisplayed()
+  await openSceneWindow(client, 'overview')
   await (await groupNote.$('button=Stunned')).click()
-  referenceDocument = await client.$('.reference-document')
-  await expect(await referenceDocument.$('h2=Stunned')).toBeExisting()
-  await (await client.$('button[aria-label="Zurück"]')).click()
-  referenceDocument = await client.$('.reference-document')
-  await expect(await referenceDocument.$('h2=Prone')).toBeExisting()
-  await (await client.$('button[aria-label="Vor"]')).click()
-  referenceDocument = await client.$('.reference-document')
-  await expect(await referenceDocument.$('h2=Stunned')).toBeExisting()
+  await expect(reader).toHaveAttribute(
+    'aria-label',
+    expect.stringContaining('Stunned')
+  )
+  await (await reader.$('button[aria-label="Zurück"]')).click()
+  await expect(reader).toHaveAttribute(
+    'aria-label',
+    expect.stringContaining('Prone')
+  )
+  await (await reader.$('button[aria-label="Vorwärts"]')).click()
+  await expect(reader).toHaveAttribute(
+    'aria-label',
+    expect.stringContaining('Stunned')
+  )
 
   await client.execute(() => {
     document.documentElement.style.zoom = '200%'
@@ -837,20 +816,14 @@ export async function runCampaignCombatScenario(): Promise<void> {
     reverse: true,
     timeout: 5_000
   })
-  await client.execute(() => {
-    for (const close of document.querySelectorAll<HTMLButtonElement>(
-      '.reference-pinned-window button[aria-label$=" schließen"]'
-    ))
-      close.click()
-  })
-  await (
-    await client.$('.reference-pinned-window')
-  ).waitForExist({
-    reverse: true,
-    timeout: 5_000
-  })
+  await (await reader.$('button[aria-label="Fenster schließen"]')).click()
+  await reader.waitForExist({ reverse: true, timeout: 5_000 })
 
-  await (await client.$('button=Gruppen managen')).click()
+  await (
+    await openSceneWindow(client, 'overview')
+  )
+    .$('button[aria-label="Gruppen bearbeiten"]')
+    .click()
   const reopenedGroupDialog = await client.$(
     'section[aria-labelledby="group-builder-title"]'
   )
@@ -878,7 +851,7 @@ export async function runCampaignCombatScenario(): Promise<void> {
   await (await confirmNewGroupSave.$('button=Änderungen verwerfen')).click()
   await expect(await client.$('.group-name=Gruppe 1')).toBeExisting()
 
-  await (await client.$('[role="tab"]=Encounter')).click()
+  await openSceneWindow(client, 'combat', true)
   const groupChoice = await client.$('label*=Wolf Pack')
   await (await groupChoice.$('input')).click()
   const prepare = await client.$('button=Initiative vorbereiten')
@@ -1094,9 +1067,8 @@ async function waitForSceneLocation(
 ): Promise<void> {
   await client.waitUntil(
     async () =>
-      (await (
-        await client.$('[data-register-field="location"] .register-value')
-      ).getText()) === expected,
+      (await (await client.$('.desktop-scene-facts > button')).getText()) ===
+      expected,
     {
       timeout: 5_000,
       timeoutMsg: `Scene location did not become ${expected}.`
@@ -1108,8 +1080,8 @@ async function setSceneLocation(
   client: WdioBrowser,
   location: string
 ): Promise<void> {
-  const row = await client.$('[data-register-field="location"]')
-  await (await row.$('button=Setzen')).click()
+  const row = await client.$('.desktop-scene-facts')
+  await (await row.$('button')).click()
   await (
     await row.$('select[aria-label="Scene-Ort"]')
   ).selectByVisibleText(location)
@@ -1142,9 +1114,10 @@ async function expectScenarioGolden(
   for (const width of [1024, 1280, 1600]) {
     await setElectronWindowSize(client, width, 800)
     const overflow = await client.execute(() => {
-      const panel = document.querySelector<HTMLElement>('.scenario-panel')
-      const workspace =
-        document.querySelector<HTMLElement>('.session-workspace')
+      const panel = document.querySelector<HTMLElement>(
+        '.desktop-window[data-window-id="combat"]'
+      )
+      const workspace = document.querySelector<HTMLElement>('.scene-desktop')
       if (!panel || !workspace) return null
       const panelBounds = panel.getBoundingClientRect()
       const workspaceBounds = workspace.getBoundingClientRect()
@@ -1162,7 +1135,7 @@ async function expectScenarioGolden(
     if (document.activeElement instanceof HTMLElement)
       document.activeElement.blur()
     const panel = document.querySelector<HTMLElement>(
-      'aside[aria-label="Szenario Panel"]'
+      '.desktop-window[data-window-id="combat"]'
     )
     const resetScroll = () => {
       if (panel) {
@@ -1188,7 +1161,7 @@ async function expectScenarioGolden(
   await expectElementGolden(
     client,
     name,
-    'aside[aria-label="Szenario Panel"]',
+    '.desktop-window[data-window-id="combat"]',
     false
   )
 }

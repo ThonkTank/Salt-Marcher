@@ -95,7 +95,7 @@
       "name": "initiative",
       "suite": "campaignCombat",
       "testPattern": "builds a scene party, browses monsters and starts a scene group combat",
-      "selector": "aside[aria-label=\"Szenario Panel\"]",
+      "selector": ".desktop-window[data-window-id=\"combat\"]",
       "viewport": {
         "width": 1280,
         "height": 800
@@ -105,7 +105,7 @@
       "name": "combat",
       "suite": "campaignCombat",
       "testPattern": "builds a scene party, browses monsters and starts a scene group combat",
-      "selector": "aside[aria-label=\"Szenario Panel\"]",
+      "selector": ".desktop-window[data-window-id=\"combat\"]",
       "viewport": {
         "width": 1280,
         "height": 800
@@ -115,7 +115,7 @@
       "name": "resolution",
       "suite": "campaignCombat",
       "testPattern": "builds a scene party, browses monsters and starts a scene group combat",
-      "selector": "aside[aria-label=\"Szenario Panel\"]",
+      "selector": ".desktop-window[data-window-id=\"combat\"]",
       "viewport": {
         "width": 1280,
         "height": 800
@@ -125,7 +125,7 @@
       "name": "session-travel-light",
       "suite": "travel",
       "testPattern": "plans and controls one journey from the shared borderless map state",
-      "selector": ".session-mockup",
+      "selector": ".scene-desktop",
       "viewport": {
         "width": 1280,
         "height": 800
@@ -135,7 +135,7 @@
       "name": "session-travel-dark",
       "suite": "travel",
       "testPattern": "plans and controls one journey from the shared borderless map state",
-      "selector": ".session-mockup",
+      "selector": ".scene-desktop",
       "viewport": {
         "width": 1280,
         "height": 800
@@ -145,7 +145,7 @@
       "name": "session-travel-completed-light",
       "suite": "travel",
       "testPattern": "plans and controls one journey from the shared borderless map state",
-      "selector": ".session-mockup",
+      "selector": ".scene-desktop",
       "viewport": {
         "width": 1280,
         "height": 800

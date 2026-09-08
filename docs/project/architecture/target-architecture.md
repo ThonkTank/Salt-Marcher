@@ -630,19 +630,27 @@ through three typed read capabilities and one typed invalidation event.
 The renderer compiles matching state locally; hover traversal performs detail
 reads but never receives filesystem, database, or runtime network access.
 
-## Per-scene desktop preview
+## Per-scene desktop
 
-The opt-in scene desktop is presentation state owned by the installation,
-separately revisioned by explicit Campaign/Scene UUID pair. Its strict v1
-contracts live in `shared/contracts/scene-desktop.ts`; the utility-owned
-`SceneDesktopStore` owns its SQL. Neither the renderer nor the desktop store
-mutates campaign truth while arranging windows. Absent state seeds a single
-read-only overview; a saved empty array remains empty. Preferred geometry is
-preserved when fitting to a smaller viewport and while snapped/maximized.
+The scene desktop is the regular session surface. Presentation state belongs to
+the installation, separately revisioned by explicit Campaign/Scene UUID pair.
+Strict desktop document version 4 reads older versions 1–3 through explicit
+upcasts. The utility-owned `SceneDesktopStore` owns its SQL; `SceneDesktopService`
+validates scope through Campaign and Scene owners and removes obsolete presentation
+records. Trashed campaign layouts remain recoverable; permanently deleted scopes
+cannot be recreated by delayed renderer writes. Missing references remain visible
+as retryable unavailable readers.
 
-Renderer projections retain their captured scope across route/scene unmounts.
-They serialize completed gesture writes, reconcile uncertain replies by readback,
-and stop on conflicting persistence instead of overwriting with defaults. An
-explicit reload discards unsaved presentation intent. The default-off preview
-preference is an additive optional installation preference. The classic Session
-surface remains the default until the phased parity audit is complete.
+Absent state seeds one compact overview; a saved empty array remains empty.
+Preferred geometry survives smaller viewports, snapping and maximizing. Map/travel,
+combat, references, loot and character quickinfos reuse their domain owners;
+window visibility never owns gameplay execution. Hidden map drawing pauses.
+Character CRUD lives in the campaign catalog, with scene roster, XP and selective
+rests in quickinfos. Alt+P opens quickinfos; the independent day-budget calculator
+remains available.
+
+Renderer projections retain captured scope across route/scene unmounts, serialize
+presentation writes, reconcile uncertain replies by readback and stop on conflicts.
+An explicit reload discards unsaved presentation intent. Installation migration
+41→42 removes preview and column preferences, preserving theme in strict envelope
+version 2. Historical settings codecs exist only for validated migration.

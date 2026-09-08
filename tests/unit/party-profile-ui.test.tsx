@@ -3,15 +3,9 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { CapabilityProvider } from '../../src/renderer/capabilities/capability-provider.js'
-import { PartyDropdown } from '../../src/renderer/features/party/party-controls.js'
+import { CharacterProfileForm } from '../../src/renderer/features/party/character-profile-form.js'
 import { partyCharacterMatchesSearch } from '../../src/renderer/features/party/party-search.js'
-import type { SaltMarcherApi } from '../../src/shared/contracts/capability-api.js'
-import type {
-  PartyCharacter,
-  PartyCharacterDraft,
-  PartySnapshot
-} from '../../src/shared/contracts/party.js'
+import type { PartyCharacter } from '../../src/shared/contracts/party.js'
 
 const character: PartyCharacter = {
   id: '01900000-0000-7000-8000-000000000201',
@@ -35,18 +29,6 @@ const character: PartyCharacter = {
   xpSinceShortRest: 0,
   xpSinceLongRest: 0
 }
-const party: PartySnapshot = {
-  revision: 4,
-  members: [character],
-  adventuringDay: {
-    available: true,
-    partySize: 1,
-    dailyBudget: 600,
-    shortRestXp: 0,
-    longRestXp: 0
-  }
-}
-
 afterEach(cleanup)
 
 describe('structured party profile UI', () => {
@@ -57,46 +39,32 @@ describe('structured party profile UI', () => {
   })
 
   it('renders and submits all added editor fields', () => {
-    const update = vi.fn(
-      (input: {
-        id: string
-        expectedRevision: number
-        character: PartyCharacterDraft
-      }) => {
-        void input
-        return Promise.resolve(party)
-      }
-    )
-    const api = {
-      party: { update },
-      session: { onChanged: vi.fn(() => () => undefined) }
-    } as unknown as SaltMarcherApi
+    const save = vi.fn()
     render(
-      <CapabilityProvider api={api}>
-        <PartyDropdown
-          party={party}
-          open
-          setOpen={vi.fn()}
-          changed={vi.fn()}
-          onError={vi.fn()}
-        />
-      </CapabilityProvider>
+      <CharacterProfileForm
+        member={character}
+        busy={false}
+        error={null}
+        save={save}
+        close={vi.fn()}
+      />
     )
-    fireEvent.click(screen.getAllByRole('button', { name: 'Bearbeiten' })[0]!)
     expect(screen.getByLabelText('Spezies')).toHaveValue('Githjanki')
     expect(screen.getByLabelText('Klasse')).toHaveValue('Rogue')
-    expect(screen.getByLabelText('Sprachen')).toHaveValue('Common, Gith')
-    expect(screen.getByLabelText('Passive Investigation')).toHaveValue(16)
-    expect(screen.getByLabelText('Passive Insight')).toHaveValue(12)
+    expect(screen.getByRole('textbox', { name: /Sprachen/ })).toHaveValue(
+      'Common, Gith'
+    )
+    expect(
+      screen.getByRole('spinbutton', { name: /Nachforschung/ })
+    ).toHaveValue(16)
+    expect(screen.getByRole('spinbutton', { name: /Einsicht/ })).toHaveValue(12)
 
-    fireEvent.change(screen.getByLabelText('Sprachen'), {
+    fireEvent.change(screen.getByRole('textbox', { name: /Sprachen/ }), {
       target: { value: 'Common, common, Sylvan' }
     })
     fireEvent.click(screen.getByRole('button', { name: 'Speichern' }))
-    expect(update.mock.calls[0]![0]).toMatchObject({
-      id: character.id,
-      expectedRevision: party.revision,
-      character: { languages: ['Common', 'Sylvan'] }
-    })
+    expect(save).toHaveBeenCalledWith(
+      expect.objectContaining({ languages: ['Common', 'Sylvan'] })
+    )
   })
 })

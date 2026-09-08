@@ -3793,3 +3793,65 @@ prüfen, dann Build/Smoke/Bundle und Desktop-/Loot-/Planner-/Kampagnen-E2E passe
 zum kombinierten Stand. Abweichungen vor Fixes gesondert protokollieren. Erst ein
 sauberer neuer Mergecommit wird gepusht und für genau dessen SHA CI überprüft.
 Die vorherigen 178 Tests und zwei E2Es belegen allein den Vor-Merge-Stand.
+
+Korrekturrunde Main-Fixture: Vollständiges Format/Lint/Typecheck und 87 Architektur-
+prüfungen bestehen; Unitlauf 1260 bestanden, drei Recoveryfälle fehlgeschlagen.
+Der Fehler ist vor der simulierten Crashgrenze: Die Fault-Fixture setzt eine neu
+gebootstrappte Installation auf current-1, behält aber den neuen Settings-Envelope
+2. Migration 41→42 erwartet korrekt den historischen Envelope 1 mit Sessionlayout.
+Die drei Fälle explizit auf Installation 41 samt gültigem Legacy-Envelope und
+abweichendem Theme vorbereiten. Anschließend Theme und Sentinel nach Recovery
+prüfen. Produktionsmigration bleibt strikt; die Fixture behauptet weiterhin keine
+vollständige historische Kompatibilitätsqualifikation. Betroffene 51 Installer-
+Tests erneut, danach bisher noch nicht erreichte Integrations-/Artefaktchecks.
+
+Korrekturrunde Baseline-Orakel: Alle 51 Installerprüfungen bestehen nun. Der
+Integrationslauf besteht mit 330 Fällen; einzig die eingefrorene 0.2.0-Baseline
+vergleicht den migrierten installation_settings-Datensatz noch bytegleich mit
+Envelope 1. Das Orakel muss den beabsichtigten Übergang explizit prüfen: gleicher
+Theme-Wert, Envelope 2 und genau ein Revisionsschritt; alle übrigen Zeilen bleiben
+weiterhin im vollständigen Vergleich. Kein pauschales Auslassen von Einstellungen,
+keine Änderung der eingefrorenen Quelldateien. Den Baselinefall und die übrigen
+Migrations-/Current-format-Integrationsfälle erneut prüfen.
+
+Bundle-Konvergenz: Build und Smoke bestehen. Das Bundle-Gate verlangt die
+Absenkung der historischen Candidate-Baseline: reachable −33365, Session −170472,
+Workspace −14080, Reference −2311, Catalog −472, Hex −6 Bytes. Shell +106 Bytes
+bleibt innerhalb unveränderter Wachstumsschwelle. Die Entfernung der alten
+Session-/Referenzoberflächen aus Main erklärt die kleineren Graphen; Candidate-
+Wartungscontroller bleiben enthalten. Gemäß Mergeplan jetzt die gemessene
+kombinierte Baseline mit dem vorgesehenen Tool erfassen, ohne Grenzwerte zu ändern,
+und das Gate auf denselben Buildbytes wiederholen.
+
+### Phase 4 — Main-Konvergenz: Plan-/Roadmapaudit
+
+Planabgleich bestanden: c084ff2f1 ist mit dem Schatzeditorstand zusammengeführt.
+Installation 42 und Main-Migration 41→42 bleiben erhalten, Kampagne 37 behält
+beide Candidate-Quittungsowner, Registry 17 und Versionsvertrag stimmen überein.
+Charakterkatalog kombiniert Main-Suche/Status mit bisherigen Wartungsguards.
+Desktop-Fokusänderungen lassen Pending-/Discard-/Recovery-Verfolgung bestehen;
+der zusammengeführte Kampftest fordert weiterhin ausdrücklich Verwerfen an.
+Die eingefrorenen 0.2.0-Dateien wurden nicht verändert. Testanpassungen für
+Settings-Envelope 1→2 sind oben mit Ursache und explizitem Orakel dokumentiert.
+
+Validierung: Vollständiges Format, Lint, Typecheck und 87 Architekturprüfungen
+bestanden. Unitlauf 1260 bestanden / drei ungültige Fault-Fixtures; nach Korrektur
+alle 51 Installerfälle bestanden. Integrationslauf 330 bestanden / ein veraltetes
+Baseline-Orakel; nach Korrektur alle 50 Fälle in acht betroffenen Baseline-,
+Current-format- und Preflightdateien bestanden. Letzte Teständerungen bestehen
+ESLint und Typecheck. Referenz-/Generatorartefakte, Version-Truth und Render-
+Qualifikationsartefakte sind grün. Build und Smoke ready/closed bestehen.
+Bundle-Gate besteht nach vorgeschriebener Absenkung auf 1613493 reachable Bytes,
+ohne Änderung der Grenzwerte. Fünf echte E2E-Suiten auf denselben Buildbytes
+bestanden: sceneDesktop (sieben Fälle), campaignCreate, campaignCombat, loot und
+sessionGeneration (zusammen elf Fälle). Logs work/roadmap-phase4-treasure-main-*.
+Keine echte Nutzerinstallation oder Nutzerdaten wurden verändert.
+
+Roadmapabgleich: Die Main-Konvergenz ist lokal geprüft und beseitigt den
+festgestellten Mergekonflikt. Sie ersetzt keine vollständige Exact-SHA-CI oder
+kanonische Übergabe. Phase 4 bleibt in Arbeit: Verteilungsdialog, weitere
+Schreibwege einschließlich Desktop-Aktionen, Update-/Offline-Abnahme. Main hat
+die Desktop-Scope-Prüfung um Aufräumarbeiten erweitert; bei der ausstehenden
+Qualifikation der Desktop-Schreibwege auch die Trennung dieser Pflege vom
+lesenden Wartungsabgleich erneut prüfen. Phasen 5–7, Handoff/Main-Abschluss,
+Livetest und Veröffentlichung bleiben offen.

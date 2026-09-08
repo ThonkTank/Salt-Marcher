@@ -2,7 +2,8 @@ import { initializeSceneDesktopSchema } from '../../scene-desktop/scene-desktop-
 import type Database from 'better-sqlite3'
 import { migrateSessionLayoutPreference } from '../../../shared/contracts/session-layout.js'
 import {
-  installationPreferencesSchema,
+  legacyInstallationPreferencesSchema as installationPreferencesSchema,
+  legacyPersistedInstallationPreferencesSchema,
   persistedInstallationPreferences
 } from '../../../shared/contracts/settings.js'
 import { defaultGeneratorLootRules } from '../../../shared/generator/default-loot-rules.js'
@@ -363,6 +364,51 @@ export const installationSchemaMigrations: readonly SchemaMigration[] =
           )
           .run('installation-40-to-41-scene-desktop', new Date().toISOString())
       }
+    },
+    {
+      id: 'installation-41-to-42-desktop-default-settings',
+      role: 'installation',
+      fromVersion: 41,
+      toVersion: 42,
+      migrate(database) {
+        initializeInstallationSchemaMetadata(database)
+        const exists = database
+          .prepare(
+            "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'installation_settings'"
+          )
+          .get()
+        if (exists) {
+          const row = database
+            .prepare(
+              'SELECT preferences_json AS json FROM installation_settings WHERE singleton = 1'
+            )
+            .get() as { json: string } | undefined
+          if (row) {
+            const legacy = legacyPersistedInstallationPreferencesSchema.parse(
+              JSON.parse(row.json) as unknown
+            )
+            database
+              .prepare(
+                'UPDATE installation_settings SET revision = revision + 1, preferences_json = ? WHERE singleton = 1'
+              )
+              .run(
+                JSON.stringify(
+                  persistedInstallationPreferences({
+                    theme: legacy.preferences.theme
+                  })
+                )
+              )
+          }
+        }
+        database
+          .prepare(
+            'INSERT INTO installation_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run(
+            'installation-41-to-42-desktop-default-settings',
+            new Date().toISOString()
+          )
+      }
     }
   ])
 
@@ -389,7 +435,7 @@ function wrapStoredInstallationPreferences(database: Database.Database): void {
     .prepare(
       'UPDATE installation_settings SET preferences_json = ? WHERE singleton = 1'
     )
-    .run(JSON.stringify(persistedInstallationPreferences(preferences)))
+    .run(JSON.stringify({ schemaVersion: 1, preferences }))
 }
 
 function migrateStoredSessionLayout(database: Database.Database): void {

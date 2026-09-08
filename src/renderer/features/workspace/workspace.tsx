@@ -23,7 +23,6 @@ import { useWorkspaceErrors } from './use-workspace-errors.js'
 import { WorkspaceErrors } from './workspace-errors.js'
 import { WorkspaceRail } from './workspace-rail.js'
 import { WorkspaceRouteHost } from './workspace-route-host.js'
-import type { SessionScenario } from '../session/session-scenario.js'
 import { WorkspaceTopBar } from './workspace-top-bar.js'
 import { workspaceDefinition } from './workspace-definition.js'
 import './workspace.css'
@@ -64,22 +63,14 @@ export function WorkspaceApp() {
     campaignError,
     coreStatus === 'ready'
   )
-  const {
-    theme,
-    toggleTheme,
-    sessionLayout,
-    setSessionLayout,
-    sceneDesktopPreview,
-    changeSceneDesktopPreview
-  } = useInstallationPreferences(settingsError, coreStatus === 'ready')
+  const { theme, toggleTheme } = useInstallationPreferences(
+    settingsError,
+    coreStatus === 'ready'
+  )
   const [catalogNavigation, setCatalogNavigation] = useState<
     Record<string, CatalogNavigation>
   >({})
-  const [partyOpen, setPartyOpen] = useState(false)
   const [dayOpen, setDayOpen] = useState(false)
-  const [scenarios, setScenarios] = useState<Record<string, SessionScenario>>(
-    {}
-  )
   const [inspected, setInspected] = useState<Creature | null>(null)
   const active = coordinator.campaigns.activeCampaignId !== null
   const generatorPresetOwner =
@@ -119,11 +110,13 @@ export function WorkspaceApp() {
   }, [acceptCoreStatus, api.runtime])
 
   const focusedSceneId = coordinator.session?.scene.focusedSceneId ?? ''
+  const setWorkspace = coordinator.setWorkspace
   const routeDesktopReference = useCallback(
     (target: ReferenceTarget, title: string | undefined, separate: boolean) => {
       const campaignId = coordinator.campaigns.activeCampaignId
       const sceneId = focusedSceneId
       if (!campaignId || !sceneId) return
+      setWorkspace('session')
       void import('../scene-desktop/desktop-projection.js')
         .then(async ({ desktopProjection }) => {
           const projection = desktopProjection(api.sceneDesktop, {
@@ -146,6 +139,7 @@ export function WorkspaceApp() {
     [
       api.sceneDesktop,
       coordinator.campaigns.activeCampaignId,
+      setWorkspace,
       focusedSceneId,
       featureError
     ]
@@ -160,6 +154,21 @@ export function WorkspaceApp() {
     [setCoordinatorSession]
   )
   const activeCampaignId = coordinator.campaigns.activeCampaignId
+  const openSceneWindow = (type: 'open-map' | 'open-characters') => {
+    if (!activeCampaignId || !focusedSceneId) return
+    coordinator.setWorkspace('session')
+    const scope = { campaignId: activeCampaignId, sceneId: focusedSceneId }
+    void import('../scene-desktop/desktop-projection.js')
+      .then(async ({ desktopProjection }) => {
+        const projection = desktopProjection(api.sceneDesktop, scope)
+        await projection.load()
+        projection.dispatch({ type })
+        if (type === 'open-map')
+          projection.dispatch({ type: 'map-controls', value: true })
+        projection.requestFocus(type === 'open-map' ? 'map' : 'characters')
+      })
+      .catch(() => featureError(message('desktop.referenceOpenFailed')))
+  }
   const surfaceProps =
     coordinator.session && activeCampaignId
       ? {
@@ -180,19 +189,8 @@ export function WorkspaceApp() {
             }))
             coordinator.setWorkspace('catalog')
           },
-          desktopPreview: sceneDesktopPreview,
           snapshot: coordinator.session,
           setSnapshot,
-          scenario: coordinator.session.combat
-            ? ('encounter' as const)
-            : (scenarios[focusedSceneId] ?? 'encounter'),
-          setScenario: (scenario: SessionScenario) =>
-            setScenarios((current) => ({
-              ...current,
-              [focusedSceneId]: scenario
-            })),
-          layout: sessionLayout,
-          setLayout: setSessionLayout,
           inspect: setInspected,
           onError: featureError,
           returnToSession: () => coordinator.setWorkspace('session')
@@ -212,17 +210,11 @@ export function WorkspaceApp() {
 
   return (
     <ReferenceProvider
-      {...(sceneDesktopPreview && coordinator.workspace === 'session'
-        ? { routeReference: routeDesktopReference }
-        : {})}
+      routeReference={routeDesktopReference}
       enabled={coordinator.screen === 'workspace'}
       capability={api.references}
       campaignId={coordinator.campaigns.activeCampaignId}
       sceneId={coordinator.session?.scene.focusedSceneId ?? null}
-      activateReference={() => {
-        coordinator.setWorkspace('session')
-        setSessionLayout({ ...sessionLayout, centerTab: 'details' })
-      }}
       onError={featureError}
     >
       <main
@@ -253,46 +245,13 @@ export function WorkspaceApp() {
           showCampaigns={coordinator.showCampaigns}
           workspace={coordinator.workspace}
           session={coordinator.session}
-          partyOpen={partyOpen}
-          setPartyOpen={setPartyOpen}
           dayOpen={dayOpen}
           setDayOpen={setDayOpen}
-          setSession={(snapshot) => {
-            coordinator.setSession(snapshot)
-            if (activeCampaignId)
-              void api.session
-                .read({ campaignId: activeCampaignId })
-                .then(coordinator.setSession)
-          }}
-          startTravel={() => {
-            if (sceneDesktopPreview && activeCampaignId && focusedSceneId) {
-              const scope = {
-                campaignId: activeCampaignId,
-                sceneId: focusedSceneId
-              }
-              void import('../scene-desktop/desktop-projection.js')
-                .then(async ({ desktopProjection }) => {
-                  const projection = desktopProjection(api.sceneDesktop, scope)
-                  await projection.load()
-                  projection.dispatch({ type: 'open-map' })
-                  projection.dispatch({ type: 'map-controls', value: true })
-                })
-                .catch(() =>
-                  featureError(message('desktop.referenceOpenFailed'))
-                )
-              return
-            }
-            if (focusedSceneId)
-              setScenarios((current) => ({
-                ...current,
-                [focusedSceneId]: 'travel'
-              }))
-          }}
+          openCharacters={() => openSceneWindow('open-characters')}
+          startTravel={() => openSceneWindow('open-map')}
           onError={featureError}
           theme={theme}
           toggleTheme={toggleTheme}
-          desktopPreview={sceneDesktopPreview}
-          setDesktopPreview={changeSceneDesktopPreview}
           loadGeneratorPresetApplication={loadGeneratorPresetApplication}
           campaignRules={createCampaignRewardRulesPort(api)}
         />

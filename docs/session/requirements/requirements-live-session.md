@@ -293,3 +293,20 @@ moving preserves active participation. Current ordering remains stable. A new
 scene inherits source time/location; existing targets and empty sources remain.
 Affected combat rosters reconcile in their own scene, and affected ongoing
 journeys pause with a party-change hint. No command retries an unknown outcome.
+
+
+## Scene desktop final transition (phase 6)
+
+The per-scene desktop supersedes the historical column layout and preview switch.
+Scene overview, character quickinfos, map/travel, combat, loot and lookup remain
+independent windows; opening from global navigation returns to the focused scene.
+Alt+P opens its character quickinfos, including from the catalog. Full character
+CRUD belongs to Catalog → Characters. The separate Adventuring-Day calculator
+remains available. No global Party popup or column-layout preference survives.
+Installation migration 41→42 preserves theme, removes preview/column preferences
+and increments the settings revision exactly once. Historical invalid preferences
+still fail migration rather than silently resetting. Desktop scope reads/writes
+reject unavailable campaigns/scenes; cleanup preserves trashed campaigns until
+permanent deletion. Missing reference targets remain explicit, retryable and
+closable. Legacy active characters without a scene are labeled and can be assigned
+through the same batch roster selector; other scenes' active members require Move.

@@ -673,8 +673,10 @@ remains default. Phase 4 was delivered at 63b427900 with canonical handoff and g
 its exact-SHA checks, app handoff and green main promotion are verified.
 
 
-Scene desktop phase 5 is in progress: atomic scene roster replacement/transfers,
+Scene desktop phase 5 was delivered at e6ad4389b with canonical handoff and green main: atomic scene roster replacement/transfers,
 manual XP separated from encounter burden, selected two-click rests. Campaign
 schema 35 preserves legacy counters with separate trust flags; registry 14.
-Phase closure still requires the candidate, handoff and main evidence in the
-scene desktop execution log.
+Phase 6 is in progress: desktop default, legacy Party/column removal, installation
+42 and preference envelope 2 (theme retained), registry 15, scoped presentation
+cleanup and final workflow qualification. Delivery evidence is recorded separately
+in the scene desktop execution log.

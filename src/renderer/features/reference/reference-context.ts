@@ -8,26 +8,6 @@ import type {
   ReferenceMatch
 } from './reference-matcher.js'
 
-export type PinnedReference = Readonly<{
-  id: string
-  target: ReferenceTarget
-  x: number
-  y: number
-  z: number
-}>
-
-export type ReferenceNavigationEntry = Readonly<{
-  target: ReferenceTarget
-  breadcrumb: string
-}>
-
-export type ReferenceNavigation = Readonly<{
-  entries: readonly ReferenceNavigationEntry[]
-  index: number
-  document: ReferenceDocument | null
-  loading: boolean
-}>
-
 export type ReferenceOverlayCard = Readonly<{
   id: string
   parentId: string | null
@@ -52,18 +32,7 @@ export type ReferenceContextValue = Readonly<{
   scheduleOverlayClose(parentId?: string): void
   cancelOverlayClose(): void
   overlays: readonly ReferenceOverlayCard[]
-  pinReference(
-    target: ReferenceTarget,
-    anchor: Readonly<{ right: number; top: number }> | null
-  ): void
-  closePin(id: string): void
-  movePin(id: string, x: number, y: number): void
-  raisePin(id: string): void
-  pins: readonly PinnedReference[]
-  navigation: ReferenceNavigation
-  moveNavigation(offset: number): void
-  closeNavigation(): void
-  desktopRouting?: boolean
+  openSeparateReference(target: ReferenceTarget): void
   cacheRevision: number
 }>
 

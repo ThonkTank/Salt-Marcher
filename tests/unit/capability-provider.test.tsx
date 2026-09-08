@@ -175,13 +175,7 @@ function settings(
   return Object.freeze({
     revision: 0,
     preferences: Object.freeze({
-      theme,
-      sessionLayout: Object.freeze({
-        schemaVersion: 2,
-        controlPaneWidth: 300,
-        scenarioPaneWidth: 264,
-        centerTab: 'details'
-      })
+      theme
     })
   }) satisfies InstallationSettings
 }

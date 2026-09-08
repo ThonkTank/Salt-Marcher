@@ -7,6 +7,7 @@
   min-height: 0;
 }
 .scene-desktop {
+  min-width: 0;
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -63,6 +64,8 @@
 }
 .desktop-window-title {
   display: flex;
+  flex: 0 0 2rem;
+  height: 2rem;
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
@@ -91,6 +94,19 @@
   background: transparent;
   text-align: center;
   cursor: pointer;
+}
+.desktop-window-title > button,
+.desktop-arrange > summary {
+  height: 1.5rem;
+  line-height: 1;
+}
+.desktop-arrange > summary {
+  display: grid;
+  place-items: center;
+  list-style: none;
+}
+.desktop-arrange > summary::-webkit-details-marker {
+  display: none;
 }
 .desktop-window-title button:hover {
   border-color: var(--border-structural);

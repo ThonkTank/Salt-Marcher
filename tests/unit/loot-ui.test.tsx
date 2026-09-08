@@ -1,3 +1,4 @@
+import { DesktopOverview } from '../../src/renderer/features/scene-desktop/desktop-overview.js'
 // @vitest-environment jsdom
 
 import {
@@ -11,7 +12,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useState } from 'react'
 import { CapabilityProvider } from '../../src/renderer/capabilities/capability-provider.js'
 import { RewardDistributionDialog } from '../../src/renderer/features/loot/reward-distribution-dialog.js'
-import { SessionGroupsPanel } from '../../src/renderer/features/session/session-groups-panel.js'
+import { SessionLootPanel } from '../../src/renderer/features/session/session-groups-panel.js'
 import type {
   SessionExpansionTarget,
   SessionGroupsViewModel,
@@ -94,8 +95,10 @@ describe('Loot UI', () => {
     expect(screen.queryByText('Gruppenfund')).toBeNull()
     expect(document.querySelectorAll('.group-expanded')).toHaveLength(1)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Party aufklappen' }))
-    expect(document.querySelectorAll('.group-expanded')).toHaveLength(1)
+    fireEvent.click(
+      screen.getByRole('button', { name: 'Schmuggler zuklappen' })
+    )
+    expect(document.querySelectorAll('.group-expanded')).toHaveLength(0)
     expect(screen.queryByRole('button', { name: 'Beute (1)' })).toBeNull()
     fireEvent.click(
       screen.getByRole('button', { name: 'Schmuggler aufklappen' })
@@ -138,12 +141,11 @@ describe('Loot UI', () => {
           groupTreasures: []
         }}
         focused={focused}
-        initialExpansion={{ kind: 'party' }}
         openLedger={openLedger}
       />
     )
 
-    fireEvent.click(screen.getByRole('button', { name: 'Beute: Alrik' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Beute' }))
     expect(openLedger).toHaveBeenCalledWith(snapshot.party.members[0])
   })
 
@@ -226,14 +228,13 @@ function GroupsPanelHarness(props: {
     props.initialExpansion ??
       (props.focused.groups[0]
         ? { kind: 'group', groupId: props.focused.groups[0].id }
-        : { kind: 'party' })
+        : null)
   )
   const actions = {
     toggleRow: (target) =>
       setExpansion((current) => (sameTarget(current, target) ? null : target)),
     focusScene: vi.fn(),
     setSceneLocation: vi.fn(),
-    editParty: vi.fn(),
     openLedger: props.openLedger ?? vi.fn(),
     inspectCreature: vi.fn(),
     editGroup: vi.fn(),
@@ -250,27 +251,14 @@ function GroupsPanelHarness(props: {
     distribute: vi.fn(),
     closeDialog: vi.fn(),
     groupSaved: vi.fn(),
-    lootChanged: vi.fn(),
-    assignPartyMember: vi.fn()
+    lootChanged: vi.fn()
   } satisfies SessionWorkspaceActions
   const groupLoot = new Map(
     props.loot.groupTreasures.map((entry) => [entry.groupId, entry.treasures])
   )
-  const members = props.snapshot.party.members.filter(
-    (member) =>
-      member.active && props.focused.partyMemberIds.includes(member.id)
-  )
   const model = {
     scene: props.focused,
     activeRows: [
-      {
-        kind: 'party',
-        key: 'party',
-        name: 'Party',
-        count: members.length,
-        expanded: expansion?.kind === 'party',
-        members
-      },
       ...props.focused.groups
         .filter((group) => !group.archived)
         .map((group) => ({
@@ -294,20 +282,38 @@ function GroupsPanelHarness(props: {
     inbox: { revision: props.loot.revision, entries: [], nextCursor: null },
     inboxOpen: false
   } satisfies SessionGroupsViewModel
-  return <SessionGroupsPanel model={model} actions={actions} />
+  return (
+    <>
+      <DesktopOverview
+        model={{
+          snapshot: props.snapshot,
+          focused: props.focused,
+          loot: props.loot,
+          groups: model,
+          control: {
+            focusedSceneId: props.focused.id,
+            focusedSceneTitle: props.focused.title,
+            focusedLocationId: props.focused.locationId,
+            focusedLocationLabel: props.focused.locationName,
+            scenes: [],
+            locationChoices: [],
+            locationUnavailable: false
+          },
+          dialog: { kind: 'none' }
+        }}
+        actions={actions}
+        openCharacters={vi.fn()}
+      />
+      <SessionLootPanel model={model} actions={actions} />
+    </>
+  )
 }
 
 function sameTarget(
   left: SessionExpansionTarget,
   right: Exclude<SessionExpansionTarget, null>
 ) {
-  return (
-    left?.kind === right.kind &&
-    (left.kind === 'party' ||
-      (left.kind === 'group' &&
-        right.kind === 'group' &&
-        left.groupId === right.groupId))
-  )
+  return left?.kind === right.kind && left.groupId === right.groupId
 }
 
 function treasure(id: string, label: string, itemName: string): Treasure {

@@ -506,10 +506,23 @@ export class CampaignStore {
     campaignId: string,
     visitor: (database: Database.Database) => T
   ): T | null {
-    const result = this.visitCampaignDatabases(({ id, database }) =>
-      id === campaignId ? visitor(database) : null
-    ).find((value): value is T => value !== null)
-    return result ?? null
+    const row = this.installationOwner.registry
+      .readyRows()
+      .find((candidate) => candidate.id === campaignId)
+    if (!row) return null
+    if (this.connections.activeId() === row.id)
+      return this.connections.visit(visitor)
+    const path = row.trashedAt
+      ? `${this.filesystem.trashDirectory(row.id)}/campaign.sqlite`
+      : this.filesystem.campaignPath(row.id)
+    const database = new Database(path)
+    try {
+      configureSqlite(database)
+      assertSchemaVersion(database, undefined, 'campaign')
+      return visitor(database)
+    } finally {
+      database.close()
+    }
   }
 
   visitCampaignDatabases<T>(

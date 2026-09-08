@@ -10,7 +10,7 @@ describe('persisted installation preferences envelope', () => {
     expect(
       persistedInstallationPreferences(defaultInstallationPreferences)
     ).toEqual({
-      schemaVersion: 1,
+      schemaVersion: 2,
       preferences: defaultInstallationPreferences
     })
     expect(() =>
@@ -20,7 +20,7 @@ describe('persisted installation preferences envelope', () => {
     ).toThrow()
     expect(() =>
       persistedInstallationPreferencesSchema.parse({
-        schemaVersion: 2,
+        schemaVersion: 1,
         preferences: defaultInstallationPreferences
       })
     ).toThrow()

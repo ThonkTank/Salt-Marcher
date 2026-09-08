@@ -24,15 +24,10 @@ describe('campaign restart', () => {
         `Persisted active campaign did not resume after restart. Renderer: ${await (await client.$('body')).getText()}`
       )
     }
-    await expect(
-      await client.$('[aria-label="Breite der Steuerungsspalte"]')
-    ).toHaveAttribute('aria-valuenow', '290')
-    await expect(
-      await client.$('[aria-label="Breite der Szenariospalte"]')
-    ).toHaveAttribute('aria-valuenow', '274')
-    await expect(
-      await client.$('[data-register-field="location"] .register-value')
-    ).toHaveText('Salzmarschhafen')
+    await expect(client.$('.desktop-window')).toBeExisting()
+    await expect(await client.$('.desktop-scene-facts > button')).toHaveText(
+      'Salzmarschhafen'
+    )
     await (await client.$('button[aria-label="Katalog"]')).click()
     await (await client.$('button=Orte')).click()
     await expect(await client.$('button=Salzmarschhafen')).toBeExisting()

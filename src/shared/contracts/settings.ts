@@ -1,20 +1,30 @@
 import { z } from 'zod'
-import {
-  defaultSessionLayoutPreference,
-  sessionLayoutPreferenceSchema
-} from './session-layout.js'
+import { sessionLayoutPreferenceSchema } from './session-layout.js'
 
-export const installationPreferencesSchema = z
+/** Historical envelope codec, used only when migrating pre-desktop settings. */
+export const legacyInstallationPreferencesSchema = z
   .object({
     theme: z.enum(['light', 'dark']),
     sceneDesktopPreview: z.boolean().optional(),
     sessionLayout: sessionLayoutPreferenceSchema
   })
   .strict()
+export const legacyPersistedInstallationPreferencesSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    preferences: legacyInstallationPreferencesSchema
+  })
+  .strict()
+
+export const installationPreferencesSchema = z
+  .object({
+    theme: z.enum(['light', 'dark'])
+  })
+  .strict()
 
 export const persistedInstallationPreferencesSchema = z
   .object({
-    schemaVersion: z.literal(1),
+    schemaVersion: z.literal(2),
     preferences: installationPreferencesSchema
   })
   .strict()
@@ -40,15 +50,14 @@ export const updateInstallationSettingsInputSchema = z
 
 export const defaultInstallationPreferences: InstallationPreferences =
   installationPreferencesSchema.parse({
-    theme: 'light',
-    sessionLayout: defaultSessionLayoutPreference
+    theme: 'light'
   })
 
 export function persistedInstallationPreferences(
   preferences: InstallationPreferences
 ): PersistedInstallationPreferences {
   return persistedInstallationPreferencesSchema.parse({
-    schemaVersion: 1,
+    schemaVersion: 2,
     preferences
   })
 }

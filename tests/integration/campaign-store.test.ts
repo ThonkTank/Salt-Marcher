@@ -352,11 +352,7 @@ describe('CampaignStore', () => {
     const updated = store.updateSettings(
       {
         ...initial.preferences,
-        theme: 'dark',
-        sessionLayout: {
-          ...initial.preferences.sessionLayout,
-          controlPaneWidth: 340
-        }
+        theme: 'dark'
       },
       initial.revision
     )
@@ -364,8 +360,7 @@ describe('CampaignStore', () => {
     expect(updated).toMatchObject({
       revision: initial.revision + 1,
       preferences: {
-        theme: 'dark',
-        sessionLayout: { controlPaneWidth: 340 }
+        theme: 'dark'
       }
     })
     expect(() =>
@@ -389,7 +384,7 @@ describe('CampaignStore', () => {
     )
     database.close()
     expect(persisted).toEqual({
-      schemaVersion: 1,
+      schemaVersion: 2,
       preferences: updated.preferences
     })
   })

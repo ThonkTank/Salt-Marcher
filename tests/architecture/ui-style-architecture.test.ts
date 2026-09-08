@@ -11,11 +11,7 @@ import {
 } from './support/typescript-module.js'
 
 for (const path of [
-  'src/renderer/features/session/session-workspace.css',
-  'src/renderer/features/session/session-control-panel.css',
-  'src/renderer/features/session/session-center-panel.css',
   'src/renderer/features/session/session-groups-panel.css',
-  'src/renderer/features/session/session-scenario-panel.css',
   'src/renderer/features/encounter/encounter.css'
 ])
   legitimateLiteralGate({
@@ -25,7 +21,7 @@ for (const path of [
     rationale:
       'CSS scope syntax is a stylesheet literal contract and is not represented in the TypeScript AST.',
     inspect: (content) => {
-      expect(content.trimStart().startsWith('@scope (.session-mockup)')).toBe(
+      expect(content.trimStart().startsWith('@scope (.scene-desktop)')).toBe(
         true
       )
     }
@@ -91,7 +87,7 @@ legitimateLiteralGate({
 
 legitimateLiteralGate({
   name: 'keeps Session and Hex selectors within their owning feature',
-  path: 'src/renderer/features/session/session-workspace.css',
+  path: 'src/renderer/features/session/session-groups-panel.css',
   owner: 'session-and-hex-ui',
   rationale:
     'Cross-feature CSS selector ownership cannot be expressed by the TypeScript import graph.',
@@ -154,7 +150,7 @@ architectureGate(
   'gives every renderer feature a screen, hook, adapter and owned CSS',
   () => {
     const screens = {
-      session: 'session-workspace.tsx',
+      session: 'session-dialog-host.tsx',
       catalog: 'catalog-workspace.tsx',
       hex: 'hex-editor.tsx',
       party: 'party-controls.tsx',
@@ -247,8 +243,7 @@ architectureGate(
     for (const path of [
       'src/renderer/features/reference/creature-inspector.tsx',
       'src/renderer/features/encounter/combat-card.tsx',
-      'src/renderer/features/session/session-group-card.tsx',
-      'src/renderer/features/session/session-center-panel.tsx'
+      'src/renderer/features/session/session-group-card.tsx'
     ])
       expect(readTypeScriptModule(path).jsxTags, path).toContain(
         'ReadOnlyProse'

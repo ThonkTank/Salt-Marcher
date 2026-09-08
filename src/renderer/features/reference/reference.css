@@ -49,7 +49,6 @@
 }
 
 .reference-card-header,
-.reference-pinned-window > header,
 .reference-choices header {
   display: flex;
   align-items: flex-start;
@@ -169,67 +168,6 @@
 .reference-status {
   color: var(--text-3);
   font-style: italic;
-}
-
-.reference-pin-layer {
-  position: fixed;
-  z-index: 55;
-  inset: 0;
-  pointer-events: none;
-}
-
-.reference-pinned-window {
-  position: fixed;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  width: min(22rem, calc(100vw - 1.5rem));
-  height: min(24rem, 70vh);
-  overflow: hidden;
-  border: 1px solid var(--border-structural);
-  background: var(--surface-panel);
-  box-shadow: var(--shadow-dialog);
-  color: var(--text-1);
-  pointer-events: auto;
-}
-
-.reference-pinned-window > header {
-  align-items: stretch;
-  border-bottom: 1px solid var(--border-1);
-  background: var(--surface-chrome);
-}
-
-.reference-pinned-window > header > button:last-child {
-  width: 2rem;
-  border: 0;
-  border-left: 1px solid var(--border-1);
-  border-radius: 0;
-}
-
-.reference-drag-handle {
-  display: flex;
-  min-width: 0;
-  flex: 1;
-  align-items: center;
-  gap: var(--space-3);
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  cursor: move;
-  padding: var(--space-3) var(--space-5);
-  text-align: left;
-  touch-action: none;
-}
-
-.reference-drag-handle strong {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.reference-pinned-scroll {
-  min-height: 0;
-  overflow: auto;
-  padding: var(--space-6);
 }
 
 @media (prefers-reduced-motion: reduce) {

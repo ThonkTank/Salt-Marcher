@@ -1,5 +1,5 @@
 import { sceneDesktopOperationDefinitions } from '../../shared/contracts/operations/scene-desktop.js'
-import { SceneDesktopStore } from '../../core/scene-desktop/scene-desktop-store.js'
+import { SceneDesktopService } from '../../core/scene-desktop/scene-desktop-service.js'
 import { campaignOperationDefinitions } from '../../shared/contracts/operations/campaign.js'
 import { campaignImportOperationDefinitions } from '../../shared/contracts/operations/campaign-import.js'
 import { campaignRulesOperationDefinitions } from '../../shared/contracts/operations/campaign-rules.js'
@@ -47,9 +47,7 @@ export function createCampaignHandlers(dependencies: {
     mutateReferences,
     recoverPendingPreparations
   } = dependencies
-  const sceneDesktops = new SceneDesktopStore(
-    campaigns.installationPersistenceAccess()
-  )
+  const sceneDesktops = new SceneDesktopService(campaigns)
   return defineOperationHandlers(
     'campaign_handlers',
     campaignHandlerOperations,
@@ -74,7 +72,11 @@ export function createCampaignHandlers(dependencies: {
       'campaign.rename': (input) => campaigns.rename(input),
       'campaign.trash': (input) => campaigns.trash(input),
       'campaign.restore': (input) => campaigns.restore(input),
-      'campaign.deleteForever': (input) => campaigns.deleteForever(input),
+      'campaign.deleteForever': (input) => {
+        const result = campaigns.deleteForever(input)
+        sceneDesktops.cleanupCampaigns()
+        return result
+      },
       'campaign.commandReceipt': (input) =>
         campaigns.commandReceipt(input.commandId),
       'campaignImport.validate': (input) =>

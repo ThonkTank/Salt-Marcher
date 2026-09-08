@@ -215,17 +215,14 @@ describe('FR2F2C2A current-format economy qualification protocol', () => {
     expect(() => assertReadback(read())).toThrow()
   })
 
-  it('detects a public installation Session layout mutation', () => {
+  it('detects a public installation theme mutation', () => {
     materialize()
     const campaigns = new CampaignStore(root)
     try {
       const settings = campaigns.readSettings()
       campaigns.updateSettings(
         {
-          sessionLayout: {
-            ...settings.preferences.sessionLayout,
-            centerTab: 'details'
-          }
+          theme: settings.preferences.theme === 'dark' ? 'light' : 'dark'
         },
         settings.revision
       )

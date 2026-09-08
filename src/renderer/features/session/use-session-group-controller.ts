@@ -1,11 +1,9 @@
 import { useState } from 'react'
-import type { PartyCharacter } from '../../../shared/contracts/party.js'
 import type {
   SceneGroup,
   SceneSnapshot
 } from '../../../shared/contracts/scene.js'
 import type { Treasure } from '../../../shared/contracts/loot.js'
-import { message } from '../../i18n/session-runtime.de.js'
 import {
   sameExpansionTarget,
   type SessionExpansionTarget,
@@ -14,7 +12,6 @@ import {
 
 export function useSessionGroupController(input: {
   scene: SceneSnapshot['scenes'][number]
-  partyMembers: readonly PartyCharacter[]
   groupTreasures: readonly Readonly<{
     groupId: string
     treasures: readonly Treasure[]
@@ -34,23 +31,11 @@ export function useSessionGroupController(input: {
     ? storedExpansion
     : activeGroups[0]
       ? { kind: 'group', groupId: activeGroups[0].id }
-      : { kind: 'party' }
+      : null
   const groupLoot = new Map(
     input.groupTreasures.map((entry) => [entry.groupId, entry.treasures])
   )
-  const assignedMembers = input.partyMembers.filter(
-    (member) => member.active && input.scene.partyMemberIds.includes(member.id)
-  )
-  const partyRow: SessionRegisterRow = {
-    kind: 'party',
-    key: 'party',
-    name: message('ui.party'),
-    count: assignedMembers.length,
-    expanded: sameExpansionTarget(expansion, { kind: 'party' }),
-    members: assignedMembers
-  }
   const activeRows: SessionRegisterRow[] = [
-    partyRow,
     ...activeGroups.map((group) => ({
       kind: 'active-group' as const,
       key: group.id,
@@ -103,7 +88,6 @@ function validExpansion(
 ): value is SessionExpansionTarget {
   return (
     value === null ||
-    value?.kind === 'party' ||
     (value?.kind === 'group' &&
       groups.some((group) => group.id === value.groupId))
   )

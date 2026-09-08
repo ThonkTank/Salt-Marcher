@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import type { SessionLayoutPreference } from '../../shared/contracts/session-layout.js'
 import type { InstallationPreferences } from '../../shared/contracts/settings.js'
-import { defaultSessionLayoutPreferenceValue } from '../../shared/values/session-layout-values.js'
 import { capabilityErrorCode } from '../../shared/errors/capability-error.js'
 import { capabilityErrorMessage, message } from '../i18n/messages.de.js'
 import { useCapabilityApi } from '../capabilities/use-capability-api.js'
@@ -16,23 +14,15 @@ export function useInstallationPreferences(
   const commands = useAsyncCommandCoordinator()
   const { snapshot: projectionSnapshot, projection } =
     useInstallationSettingsProjection(enabled)
-  const [sceneDesktopPreview, setSceneDesktopPreview] = useState(false)
   const [theme, setTheme] = useState<'light' | 'dark'>('light')
-  const [sessionLayout, setSessionLayout] = useState<SessionLayoutPreference>(
-    defaultSessionLayoutPreferenceValue
-  )
   const loaded = useRef(false)
-  const savedLayout = useRef('')
   const reportedFailure = useRef<unknown>(null)
 
   useEffect(() => {
     const value = projectionSnapshot.value
     if (loaded.current || value === null) return
     loaded.current = true
-    savedLayout.current = JSON.stringify(value.preferences.sessionLayout)
-    setSessionLayout(value.preferences.sessionLayout)
     setTheme(value.preferences.theme)
-    setSceneDesktopPreview(value.preferences.sceneDesktopPreview ?? false)
   }, [projectionSnapshot.value])
 
   useEffect(() => {
@@ -105,17 +95,6 @@ export function useInstallationPreferences(
     [capabilityApi, commands, onError, projection]
   )
 
-  useEffect(() => {
-    if (!loaded.current) return
-    const serialized = JSON.stringify(sessionLayout)
-    if (serialized === savedLayout.current) return
-    const timer = window.setTimeout(() => {
-      savedLayout.current = serialized
-      save({ sessionLayout })
-    }, 250)
-    return () => window.clearTimeout(timer)
-  }, [save, sessionLayout])
-
   const toggleTheme = useCallback(() => {
     setTheme((current) => {
       const next = current === 'dark' ? 'light' : 'dark'
@@ -124,19 +103,5 @@ export function useInstallationPreferences(
     })
   }, [save])
 
-  const changeSceneDesktopPreview = useCallback(
-    (enabled: boolean) => {
-      setSceneDesktopPreview(enabled)
-      save({ sceneDesktopPreview: enabled })
-    },
-    [save]
-  )
-  return {
-    theme,
-    toggleTheme,
-    sessionLayout,
-    setSessionLayout,
-    sceneDesktopPreview,
-    changeSceneDesktopPreview
-  }
+  return { theme, toggleTheme }
 }

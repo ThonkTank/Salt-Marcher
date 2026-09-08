@@ -18,7 +18,6 @@ import type {
 } from '../../src/shared/contracts/reference.js'
 import { ReferenceProvider } from '../../src/renderer/features/reference/reference-provider.js'
 import { ReferenceText } from '../../src/renderer/features/reference/reference-text.js'
-import { useReferenceContext } from '../../src/renderer/features/reference/reference-context.js'
 
 vi.stubGlobal(
   'ResizeObserver',
@@ -89,7 +88,7 @@ const document = (target: ReferenceTarget): ReferenceDocument => {
 }
 
 function setup(text = 'Prone', enabled = true) {
-  const activateReference = vi.fn()
+  const routeReference = vi.fn()
   const capability: SaltMarcherApi['references'] = {
     staticIndex: vi.fn(() => Promise.resolve(referenceIndex)),
     campaignIndex: vi.fn(() =>
@@ -110,26 +109,20 @@ function setup(text = 'Prone', enabled = true) {
       capability={capability}
       campaignId="campaign"
       sceneId="scene"
-      activateReference={activateReference}
+      routeReference={routeReference}
       onError={vi.fn()}
     >
       <p>
         <ReferenceText>{text}</ReferenceText>
       </p>
-      <NavigationProbe />
     </ReferenceProvider>
   )
   const rendered = render(content(enabled))
   return {
     capability,
-    activateReference,
+    routeReference,
     enable: () => rendered.rerender(content(true))
   }
-}
-
-function NavigationProbe() {
-  const reference = useReferenceContext()
-  return <output>{reference.navigation.document?.title ?? ''}</output>
 }
 
 afterEach(() => {
@@ -152,12 +145,13 @@ describe('reference UI', () => {
   })
 
   it('opens a clicked term in the registered detail navigator', async () => {
-    const { activateReference } = setup()
+    const { routeReference } = setup()
     fireEvent.click(await screen.findByRole('button', { name: 'Prone' }))
-    expect(activateReference).toHaveBeenCalledOnce()
-    expect(
-      await screen.findByText('Prone', { selector: 'output' })
-    ).toBeInTheDocument()
+    expect(routeReference).toHaveBeenCalledWith(
+      prone,
+      expect.stringContaining('Prone'),
+      false
+    )
   })
 
   it('renders compiler-linked concepts inside a focused preview', async () => {
@@ -171,7 +165,7 @@ describe('reference UI', () => {
 
   it('automatically pins after five seconds of direct dwell', async () => {
     vi.useFakeTimers()
-    setup()
+    const { routeReference } = setup()
     await act(async () => Promise.resolve())
     const term = screen.getByRole('button', { name: 'Prone' })
     fireEvent.pointerEnter(term)
@@ -185,9 +179,7 @@ describe('reference UI', () => {
       vi.advanceTimersByTime(5_000)
       return Promise.resolve()
     })
-    expect(
-      screen.getByLabelText('Angeheftete Referenz: Prone')
-    ).toBeInTheDocument()
+    expect(routeReference).toHaveBeenCalledWith(prone, 'Prone', true)
   })
 
   it('keeps the card open across the 150ms corridor and closes on Escape', async () => {
@@ -220,19 +212,14 @@ describe('reference UI', () => {
   })
 
   it('pins only the explicit selection from an ambiguous term', async () => {
-    setup('Slow')
+    const { routeReference } = setup('Slow')
     const term = await screen.findByRole('button', { name: 'Slow' })
     fireEvent.click(term)
     const card = await screen.findByRole('region', { name: 'Referenz: Slow' })
     fireEvent.click(within(card).getByRole('button', { name: /Prone/ }))
     fireEvent.click(
-      await within(card).findByRole('button', { name: 'Prone anheften' })
+      await within(card).findByRole('button', { name: 'Prone separat öffnen' })
     )
-    expect(
-      await screen.findByLabelText('Angeheftete Referenz: Prone')
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByLabelText('Angeheftete Referenz: Stunned')
-    ).not.toBeInTheDocument()
+    expect(routeReference).toHaveBeenCalledExactlyOnceWith(prone, 'Prone', true)
   })
 })

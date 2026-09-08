@@ -8,36 +8,23 @@ describe('session style ownership', () => {
     'src/renderer/shell/tokens.css',
     () => {
       const tokens = file('src/renderer/shell/tokens.css')
-      const scenario = file(
-        'src/renderer/features/session/session-scenario-panel.css'
-      )
+      const scenario = file('src/renderer/features/hex/hex-travel.css')
       const travel = file('src/renderer/features/hex/hex-travel.css')
       expect(tokens.match(/--text-on-accent-line:/g)).toHaveLength(2)
       expect(scenario).toContain('color: var(--text-on-accent-line)')
       expect(travel).toContain('color: var(--text-on-accent-line)')
     }
   )
-  styleGate(
-    'keeps workspace CSS limited to layout composition',
-    'src/renderer/features/session/session-workspace.css',
-    () => {
-      const workspace = css('session-workspace.css')
-      expect(workspace).toContain('@scope (.session-mockup)')
-      expect(workspace).not.toMatch(/\.group-dialog|\.monster-picker/)
-      expect(workspace).not.toMatch(/^\s*(?:select|progress|\.muted)\s*\{/m)
-    }
-  )
 
   styleGate(
-    'keeps control, group, dialog, and encounter rules with their owners',
-    'src/renderer/features/session/session-control-panel.css',
+    'keeps group, dialog, and encounter rules with their owners',
+    'src/renderer/features/session/session-groups-panel.css',
     () => {
-      expect(css('session-control-panel.css')).not.toContain('.session-groups')
       expect(css('session-groups-panel.css')).toContain('.groups-heading')
       expect(css('session-dialogs.css')).toContain('.monster-picker')
       expect(
         readFileSync('src/renderer/features/encounter/encounter.css', 'utf8')
-      ).toContain('@scope (.session-mockup)')
+      ).toContain('@scope (.scene-desktop)')
       expect(
         readFileSync('src/renderer/features/loot/loot-dialogs.css', 'utf8')
       ).not.toContain('.session-group-manager')

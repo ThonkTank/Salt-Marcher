@@ -202,7 +202,7 @@ async function waitForCampaignReady(
         `[data-active-campaign-id="${campaignId}"]` +
         `[data-session-campaign-id="${campaignId}"]` +
         '[data-session-revision]:not([data-session-revision=""])' +
-        '[data-active-workspace="session"] .session-mockup'
+        '[data-active-workspace="session"] .scene-desktop'
     )
   ).waitForExist({
     timeout: readinessTimeoutMs,
@@ -236,8 +236,8 @@ async function setSceneLocation(
   client: WdioBrowser,
   location: string
 ): Promise<void> {
-  const row = await client.$('[data-register-field="location"]')
-  await (await row.$('button=Setzen')).click()
+  const row = await client.$('.desktop-scene-facts')
+  await (await row.$('button')).click()
   await (
     await row.$('select[aria-label="Scene-Ort"]')
   ).selectByVisibleText(location)
@@ -249,9 +249,8 @@ async function waitForSceneLocation(
 ): Promise<void> {
   await client.waitUntil(
     async () =>
-      (await (
-        await client.$('[data-register-field="location"] .register-value')
-      ).getText()) === expected,
+      (await (await client.$('.desktop-scene-facts > button')).getText()) ===
+      expected,
     {
       timeout: 5_000,
       interval: 25,

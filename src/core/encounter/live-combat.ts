@@ -123,9 +123,8 @@ export class LivePlayService {
           scene.revision() !== input.expectedRevision
         )
           throw new CapabilityError('stale', true)
-        const source = scene
-          .snapshot(before.members)
-          .scenes.find((s) => s.id === input.sceneId)
+        const sceneState = scene.snapshot(before.members)
+        const source = sceneState.scenes.find((s) => s.id === input.sceneId)
         if (!source) throw new CapabilityError('not_found', false)
         const desired = new Set(input.memberIds)
         if (
@@ -135,7 +134,9 @@ export class LivePlayService {
               !before.members.some(
                 (m) =>
                   m.id === id &&
-                  (!m.active || source.partyMemberIds.includes(id))
+                  (!m.active ||
+                    source.partyMemberIds.includes(id) ||
+                    sceneState.unassignedPartyMemberIds.includes(id))
               )
           )
         )

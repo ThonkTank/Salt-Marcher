@@ -1,3 +1,4 @@
+import { defaultSessionLayoutPreference } from '../../src/shared/contracts/session-layout.js'
 import { ProfileMaintenance } from '../../src/core/maintenance/profile-maintenance.js'
 import { withLaunchReservation } from '../../src/main/local-profile/launch-reservation.js'
 import { randomUUID } from 'node:crypto'
@@ -818,7 +819,23 @@ describe('local AppImage installation', () => {
     (phase) => {
       const fixture = createFixture(build('a'))
       const paths = localInstallationPaths(fixture.xdg)
-      const databasePath = createDatabase(paths.campaignData, schemaVersion - 1)
+      // Explicit pre-desktop-settings fault fixture, not current schema relabeled.
+      const databasePath = createDatabase(paths.campaignData, 41)
+      const legacy = new Database(databasePath)
+      legacy
+        .prepare(
+          'UPDATE installation_settings SET preferences_json = ? WHERE singleton = 1'
+        )
+        .run(
+          JSON.stringify({
+            schemaVersion: 1,
+            preferences: {
+              theme: 'dark',
+              sessionLayout: defaultSessionLayoutPreference
+            }
+          })
+        )
+      legacy.close()
       fixture.options = {
         ...fixture.options,
         afterMaintenanceBoundaryForTest: (boundary) => {
@@ -847,6 +864,16 @@ describe('local AppImage installation', () => {
         database.prepare('SELECT content FROM valuable').pluck().get()
       ).toBe('preserve me')
       database.close()
+      const settings = new Database(databasePath, { readonly: true })
+      expect(
+        settings
+          .prepare(
+            "SELECT json_extract(preferences_json, '$.preferences.theme') FROM installation_settings"
+          )
+          .pluck()
+          .get()
+      ).toBe('dark')
+      settings.close()
       expect(readFileSync(recovered.paths.appImage, 'utf8')).toBe('artifact-a')
       expect(findTransactionDebris(fixture.xdg)).toEqual([])
     }

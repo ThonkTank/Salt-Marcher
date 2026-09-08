@@ -37,6 +37,23 @@ function mockApi() {
 }
 
 describe('scene desktop projection', () => {
+  it('retains a transient scoped focus request until the mounted frame consumes it', async () => {
+    const api = mockApi()
+    const source = desktopProjection(api, scope)
+    const target = desktopProjection(api, { ...scope, sceneId: 'other' })
+    const unsubscribe = source.subscribe(() => {})
+    unsubscribe()
+    source.requestFocus('characters')
+    await source.load()
+    expect(source.snapshot().focusWindowId).toBe('characters')
+    expect(target.snapshot().focusWindowId).toBeNull()
+    source.acknowledgeFocus('map')
+    expect(source.snapshot().focusWindowId).toBe('characters')
+    source.acknowledgeFocus('characters')
+    expect(source.snapshot().focusWindowId).toBeNull()
+    expect(api.save).not.toHaveBeenCalled()
+  })
+
   it('does not resume a delayed write after an earlier save reports a conflict', async () => {
     vi.useFakeTimers()
     try {

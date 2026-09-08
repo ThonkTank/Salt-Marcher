@@ -20,7 +20,6 @@ export function useSessionDialogController(scope = '') {
   return {
     dialog,
     close: () => setDialog({ kind: 'none' }),
-    editParty: () => setDialog({ kind: 'party-editor' }),
     openLedger: (character: PartyCharacter) =>
       setDialog({ kind: 'character-ledger', character }),
     editGroup: (group: SceneGroup) =>

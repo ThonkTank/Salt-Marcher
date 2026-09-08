@@ -50,6 +50,39 @@ export class SceneDesktopStore {
     )
   }
 
+  retainCampaigns(ids: readonly string[]): void {
+    const keep = new Set(ids)
+    this.persistence.use((db) =>
+      db.transaction(() => {
+        const rows = db
+          .prepare('SELECT DISTINCT campaign_id AS id FROM scene_desktop')
+          .all() as { id: string }[]
+        const remove = db.prepare(
+          'DELETE FROM scene_desktop WHERE campaign_id = ?'
+        )
+        for (const row of rows) if (!keep.has(row.id)) remove.run(row.id)
+      })()
+    )
+  }
+
+  retainScenes(campaignId: string, ids: readonly string[]): void {
+    const keep = new Set(ids)
+    this.persistence.use((db) =>
+      db.transaction(() => {
+        const rows = db
+          .prepare(
+            'SELECT scene_id AS id FROM scene_desktop WHERE campaign_id = ?'
+          )
+          .all(campaignId) as { id: string }[]
+        const remove = db.prepare(
+          'DELETE FROM scene_desktop WHERE campaign_id = ? AND scene_id = ?'
+        )
+        for (const row of rows)
+          if (!keep.has(row.id)) remove.run(campaignId, row.id)
+      })()
+    )
+  }
+
   private readFrom(
     db: Database.Database,
     scope: SceneDesktopScope

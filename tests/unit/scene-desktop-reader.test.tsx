@@ -78,7 +78,7 @@ describe('desktop reader rendering', () => {
         capability={capability}
         campaignId="campaign"
         sceneId="scene"
-        activateReference={vi.fn()}
+        routeReference={vi.fn()}
         onError={vi.fn()}
       >
         <DesktopReader window={reader(index)} dispatch={dispatch} />
@@ -101,9 +101,37 @@ describe('desktop reader rendering', () => {
     ).toBe(215)
     expect(screen.queryByText('Second body')).not.toBeInTheDocument()
   })
+  it('keeps a missing saved reference explicit and retries without discarding history', async () => {
+    const detail = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('not found'))
+      .mockResolvedValueOnce(doc(first, 'Recovered body'))
+    const dispatch = vi.fn()
+    render(
+      <ReferenceProvider
+        capability={api(detail)}
+        campaignId="campaign"
+        sceneId="scene"
+        routeReference={vi.fn()}
+        onError={vi.fn()}
+      >
+        <DesktopReader window={reader(0)} dispatch={dispatch} />
+      </ReferenceProvider>
+    )
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Referenz nicht verfügbar.'
+    )
+    expect(dispatch).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Erneut laden' }))
+    expect(await screen.findByText('Recovered body')).toBeVisible()
+    expect(detail).toHaveBeenCalledTimes(2)
+    expect(dispatch).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'close' })
+    )
+    expect(screen.getByRole('button', { name: 'Vorwärts' })).toBeEnabled()
+  })
   it('routes ordinary links and pin actions to desktop windows without activating legacy navigation', async () => {
     const route = vi.fn()
-    const activate = vi.fn()
     function Probe() {
       const context = useReferenceContext()
       return (
@@ -113,11 +141,10 @@ describe('desktop reader rendering', () => {
           </button>
           <button
             disabled={!context.compiled}
-            onClick={() => context.pinReference(first, null)}
+            onClick={() => context.openSeparateReference(first)}
           >
             Separate
           </button>
-          <span>{context.navigation.entries.length}</span>
         </>
       )
     }
@@ -126,7 +153,6 @@ describe('desktop reader rendering', () => {
         capability={api(vi.fn().mockResolvedValue(doc(first, 'body')))}
         campaignId="campaign"
         sceneId="scene"
-        activateReference={activate}
         onError={vi.fn()}
         routeReference={route}
       >
@@ -140,7 +166,5 @@ describe('desktop reader rendering', () => {
       [first, 'One', false],
       [first, 'One', true]
     ])
-    expect(activate).not.toHaveBeenCalled()
-    expect(screen.getByText('0')).toBeInTheDocument()
   })
 })

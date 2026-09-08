@@ -13,8 +13,8 @@ includes remote checks, exact-SHA app handoff and green promotion to main.
 | 2 — Reference windows | Complete | 8cb1fbe7b; candidate, canonical handoff and main evidence below |
 | 3 — Travel and combat | Complete | a8f679e2e; candidate, canonical handoff and main evidence below |
 | 4 — Character catalog | Complete | 63b427900; candidate, canonical handoff and main evidence below |
-| 5 — Membership, XP, rest | In progress | Plan below; 5A precedes 5B and 5C |
-| 6 — Default and cleanup | Not started | Depends on all previous phases |
+| 5 — Membership, XP, rest | Complete | e6ad4389b; candidate, canonical handoff and main evidence below |
+| 6 — Default and cleanup | In progress | Plan below; all preceding phases delivered |
 
 ## 2026-09-08 — Initial state verification
 
@@ -1474,3 +1474,432 @@ remain unchanged and all downstream protocols pass. Formatting and changed-file
 lint pass. Plan and original-roadmap re-audits confirm no unrelated fixture drift
 or relaxed oracle. This correction changes qualification documentation and its
 explicit version test only; application inputs remain those of 32db71075.
+
+
+## Phase 5 — Delivery closure
+
+PR 668 delivered exact SHA e6ad4389bc0e575fb6faf3dbbd0be37428e7b07d.
+Candidate Check 34260893667 passed all 15 required jobs. Canonical handoff
+cd06d71d-b0bc-4438-afd0-0faf0c1a1098, originating attempt
+e76dc012-c308-4ef7-b1f3-4cb36bb5c0d7, verified artifact and installed SHA256
+16f00d4ea70b10fa8732e5d00acd7084924a7d1b61030bcd8a15c86d70b9d704.
+Backup 2026-09-08T18-21-48-417Z-33632ddfb343-9b8590f1 precedes installation.
+Installed runtime passed two quick checks and four domain readbacks. Same-SHA
+promotion completed and main Check 34262653944 passed; manifest-v4 successful
+post-promotion evidence was read back. Six-case desktop E2E passed with zero
+warnings; additional current-format next-action E2E passed, including 100 warm
+switches (p95 225.456 ms), mutation and restart. Phase 5 is complete.
+
+## Phase 6 — Plan before implementation
+
+Base: clean codex/scene-desktop-phase-6 at delivered e6ad4389b. Outcome: the
+scene desktop is the only regular session surface, with complete workflow parity.
+
+1. Replace root preview routing with the desktop, remove the preview menu and
+   old scenario/layout renderer states. Route reference activation, travel and
+   Alt+P into the current scene's saved windows, including from the catalog.
+2. Remove the global Party popup and obsolete scene membership dialog. Retain
+   the independent Adventuring-Day calculator, group management, scene time and
+   location, treasure/rewards and personal loot through their productive owners.
+   Overview membership entry opens quickinfos and its stable batch actions.
+3. Remove old column components and exclusively owned styles/controllers; adapt
+   their meaningful tests to desktop equivalents. Migrate obsolete installation
+   preferences through a versioned codec/migration while preserving theme and
+   historical data validation. Do not retain a hidden legacy testing surface.
+4. Validate desktop scope and handle orphaned saved layouts at aggregate-owned
+   lifecycle boundaries. Preserve recoverable trashed campaigns; permanently
+   removed scopes must not remain usable. Missing reference targets show an
+   explicit recoverable unavailable state. Legacy active characters without a
+   scene remain explicitly discoverable and assignable after popup removal.
+5. Port existing E2E workflows to window navigation without weakening domain,
+   accessibility, warning, performance or semantic-data oracles. Verify a full
+   session, both themes, small workspaces, keyboard access, restart, and repeated
+   open/close resource behavior. Review intentional visual-reference changes.
+6. Update requirements, migration/version truth and architecture progress.
+   Run plan and original-roadmap audits separately; record correction plans
+   before fixes. Qualify a clean candidate, exact-SHA handoff and green main.
+   Finish with a cross-phase audit and persisted delivery closure.
+
+Acceptance: all phase-6 roadmap cases pass; no legacy Party or column route or
+preview switch remains; existing domain commands retain their validated behavior;
+no information becomes unreachable when a window is closed. Desktop and reference
+presentation cannot resurrect deleted domain scopes. All required remote jobs,
+installed artifact checks and post-promotion evidence must succeed before closure.
+
+
+### Phase 6 — Focused validation correction 1
+
+First focused run: 29/33 pass. Four failures are transition-test assumptions:
+preflight still expects installation 41 in two places; the historical schema-40
+fixture incorrectly serializes today's new envelope; the ported profile test
+uses old popup labels. Correct these to real historical envelope-v1 data and
+current form labels, asserting theme preservation, one revision increment and
+obsolete-key removal. Retain historical invalid-data rollback assertions.
+Continue migrating E2E preview toggles to direct default-desktop assertions.
+
+
+### Phase 6 — Architecture and qualification correction 2
+
+Broad regression execution identifies architecture inventories pointing at removed
+column/Party owners, a current-envelope test still expecting v1, and two intentional
+installation-fixture differences in economy/completion protocols. Update ownership
+gates to the actual desktop/controller and character-catalog lazy loot boundary;
+retain restrictions on domain hooks and direct capability access. Desktop window
+presentation hooks are legitimate view-owned state. Move added visible copy behind
+typed message keys and remove obsolete preview/Party-only CSS. Audit economy and
+completion readbacks field by field before changing any semantic oracle; preserve
+campaign hashes unless a proven intended fact changes. The economy fixture now
+exercises persistent theme rather than retired column preferences.
+
+
+### Phase 6 — Surface ownership correction 3
+
+The built E2E reaches the default desktop but its first wait still targets the
+removed `.session-mockup`. Source audit also finds that the retained group and
+encounter CSS scopes still target that obsolete class, so productive desktop
+content misses those rules. Move those scopes and their ownership assertions to
+`.scene-desktop`; migrate remaining E2E surface/location selectors. Review the
+resulting productive rendering in both themes. Do not restore an invisible legacy
+wrapper solely to satisfy tests.
+
+The economy semantic audit saved complete A/B projections. Replacing only their
+installation preferences with the previous light-theme/column-layout fixture
+reproduces both previous checked-in hashes exactly. Update these two hashes after
+recording the proof; audit completion's explicit upstream economy digest similarly.
+
+
+### Phase 6 — Semantic audit evidence
+
+Economy A/B old hashes are reproduced exactly by restoring only the retired
+installation preference fixture. Completion A/B old hashes are reproduced exactly
+by restoring only the explicit upstream economy digest. Raw projections and proof
+are in `.tmp/phase6-{economy,completion}-oracle-projections.json` and
+`/tmp/desktop-phase6-{oracle-audit,completion-oracle}.log`. The four current hashes
+are updated to reflect that intended settings transition; no campaign facts changed.
+The current installation authority inventory now names `installation.preferences`.
+Historical audit documents remain unchanged. First built desktop E2E passed five
+of six cases; its sole failure is the obsolete initial surface selector.
+
+
+### Phase 6 — Final access correction 4
+
+Second complete regression run: 1,253/1,254 pass across 258 files. The only failure
+is the newly added orphan-character test: the seed intentionally creates inactive
+characters, while the test assumed an active one. Explicitly activate one through
+the public command before unassigning and recovering it; retain the exact member
+and scene assertions. Access review also finds the calculator trigger still says
+“Rast” despite being separate from executable rests. Label it “Tagesbudget” so the
+retained calculator and scene rest action are unambiguous. Remove the obsolete
+renderer membership adapter entry, retaining validated domain/IPC compatibility.
+
+
+### Phase 6 — Keyboard/resource acceptance correction 5
+
+Desktop rerun passes the six established scenarios; the seventh new lifecycle
+case opens quickinfos via Alt+P successfully, then asks for an obsolete “Karte”
+label instead of “Karte & Reise”. Correct the shared navigation helper and test.
+Make the global quick action explicitly focus its opened window after React has
+mounted it, scoped to the captured scene and without affecting later scene/window
+changes. Assert that focus in the keyboard case. Focused correction-4 verification
+passes all 42 cases, including orphan recovery, migration and semantic fixtures.
+
+
+### Phase 6 — Bundle baseline correction 6
+
+The built bundle passes hard ceilings but correctly requests downward ratchets:
+removal of the legacy static Session graph and Party UI reduces Session by
+169,701 bytes, reachable renderer by 24,166, Workspace by 10,302, Catalog by 420
+and Hex by 6 against the checked baseline. Ratchet only these measurements down;
+retain all hard and growth limits and unchanged graph baselines. No dependencies
+were added. The small Session entry now loads the productive desktop lazily;
+total reachable-renderer coverage still includes those dynamic leaves.
+
+
+### Phase 6 — Small viewport correction 7
+
+All seven desktop E2E cases pass, including Alt+P focus and eight map open/close
+cycles with no surviving canvases or extra utility timers. Inspecting the captured
+minimum-size geometry nevertheless exposes a shell regression: at 720 px viewport,
+the longer calculator label expands the grid to 759 px. Constrain the shell's
+single grid column, allow the workspace title to shrink/ellipsis, and keep desktop
+min-width zero. Add an explicit viewport-width assertion, beyond the existing
+frame-within-stage check. Verify the built result and both themes; do not hide
+quick actions or reduce their accessible target sizes.
+
+### Phase 6 — Function parity inventory
+
+| Retired entry | Productive entry | Qualification |
+| --- | --- | --- |
+| Party roster create/edit/delete | Catalog → Characters | Desktop E2E library case; profile/catalog unit and domain tests |
+| Party XP adjustment | Scene quickinfos anchored XP controls | Desktop E2E roster/XP/rest case; burden integration |
+| Global rest action | Selected scene rest action, two clicks | Desktop E2E and explicit recipient/trust tests |
+| Scene Party assignment dialog | Stable roster batch / Move | Desktop E2E plus transactional roster integration |
+| Active member without scene | Catalog “Ohne Szene”, roster selector | New public-command recovery integration |
+| Scene selector/location register | Desktop toolbar / overview location | Workspace/current-format/session workflow E2E |
+| Scene group register and manager | Overview group register / edit | Group loot and full combat workflows |
+| Scene treasure/inbox/distribution | Loot window | Loot E2E and domain transactions |
+| Personal loot chip / Party loot | Overview, quickinfos and catalog | Desktop catalog E2E and loot E2E |
+| Center map + travel scenario tab | One map/travel window | Travel E2E; map-close/runtime desktop case |
+| Encounter scenario tab | Combat window | Full initiative/combat/resolution workflow |
+| Center reference history and pins | Shared/independent desktop readers | Reader history/restart and stale-response tests |
+| Center monster filters | Full Catalog monster filters; desktop lookup | Full combat catalog workflow and reference search cases |
+| Installation column settings | Saved scene geometry, strict theme settings | Migration, desktop persistence and minimum-size cases |
+| Top-bar Party shortcut Alt+P | Focused scene quickinfos | New keyboard E2E case |
+| Separate AD calculation | Top-bar Tagesbudget | Existing calculation owner and preserved controls |
+
+No manual clock editor existed in the retired control panel. Existing travel and
+combat clock ownership remains unchanged; overview displays scene time and new
+split scenes inherit it. Removing the old header's global burden percentage avoids
+presenting untrusted aggregate counters as exact current-scene guidance.
+
+
+### Phase 6 — Full combat workflow correction 8
+
+Session desktop, workspace isolation and campaign creation workflows pass. The
+ported full combat setup reaches the character catalog but uses “Neuer Charakter”
+where the existing compact action is “Neu”. Correct that scoped selector. Two
+warnings originate from measuring the lazily loaded creature-collection layout
+before it exists; wait for its visible owner before geometry measurement. Preserve
+the geometry assertions and zero-warning gate. Continue the rest of the session
+batch to identify independent travel/loot discrepancies before rerunning.
+
+
+### Phase 6 — Combined travel window qualification correction 9
+
+Travel E2E reaches the live map and passes idle render/timer evidence and border
+geometry, then fails the old >300 px map-height assertion (actual 245 px). That
+assertion described the retired full-height center column; the accepted combined
+map/travel window shares its vertical space with controls. Require a usable >200 px
+map at this fixed 1280×800 test viewport, and retain exact map-to-available-canvas
+height, border geometry, token drag, route execution, idle rendering and runtime
+assertions. Review the updated travel golden at this composition rather than
+restoring a permanent separate column or dropping the interaction checks.
+
+
+### Phase 6 — Loot/group navigation correction 10
+
+Loot distribution, restart, completion and provenance assertions pass; the final
+ledger click fails because the ported selector mixes CSS ancestry and WebDriver
+text syntax. Query the register first and then its text-matched list item. Give
+the overview's two “Bearbeiten” buttons explicit accessible names (“Charaktere
+öffnen”, “Gruppen bearbeiten”) and use those for group workflow navigation,
+preventing similarly ambiguous/invalid selectors without adding visible copy.
+Keep the group's single edit action and ledger assertions intact.
+
+
+### Phase 6 — Remaining current-action labels correction 11
+
+The full combat setup now reaches the profile form; its one shared submit action
+is “Speichern” for both create and update, unlike the retired popup's “Erstellen”.
+Use the existing current form label. The added missing-reference retry test also
+uses “Erneut versuchen” while the implemented reader says “Erneut laden”; correct
+that test label and retain failed-target/history/cache retry assertions. No
+application behavior changes are needed for either discrepancy.
+
+
+### Phase 6 — Travel pointer coordinate correction 12
+
+The combined travel window passes its revised geometry but token dragging fails.
+Inspection shows the saved camera retains its pixel origin when the window is
+maximized, as required by map presentation persistence. The old test assumes q=0
+is always the canvas midpoint and uses an obsolete radius 28 (current radius 27).
+Transform the intended axial positions through the rendered SVG world camera's
+screen matrix. Keep real pointer down/move/up events and persisted outbound/return
+position assertions; do not bypass travel commands or reset the user's camera.
+
+
+### Phase 6 — Cross-campaign persistence correction 13
+
+Cross-phase audit finds an actual interaction between phase-1 deferred writes and
+phase-6 scope validation: rejecting every non-active campaign would reject a valid
+captured desktop write just after a campaign switch. Validate availability and
+scene ownership in the explicitly addressed campaign instead. Use the Campaign
+owner's visitor without changing the active campaign; narrow its single-campaign
+visitor to open only the requested database (the old implementation visits all
+campaigns). Keep trashed/deleted scope rejection and cleanup. Add integration
+coverage for saving A's captured state while B remains active, then reopening A.
+This preserves explicit-scope durability rather than weakening orphan checks.
+
+### Phase 6 — Retired reference presentation correction 14
+
+Final source inventory finds one remaining old-column owner: ReferenceProvider
+still carries the old center-navigation history and global pin coordinates/window
+renderer, although every productive route now delegates to scene desktop readers.
+Remove those obsolete states and UI leaves; retain the shared index, detail cache,
+hover corridors, stale-response guards and explicit/separate opening callbacks.
+Make desktop routing required. Port the reference unit interactions to assert
+routing (including dwell and ambiguous selection), retain reader history/retry
+coverage, and migrate the full combat workflow's old pin/history selectors to
+independent/shared desktop readers. No second reference history or window manager
+should survive the final transition.
+
+
+### Phase 6 — Correction 14 verification and bundle ratchet
+
+Reference routing/hover/dwell/ambiguity and reader history/missing-target retry:
+9 tests pass. No legacy navigation or global pin renderer remains in production.
+The replacement build succeeds; reachable renderer shrinks another 5,719 bytes
+(to 1,565,040), workspace to 508,081, reference leaf to 37,455. Apply the existing
+correction-6 downward-only ratchet policy. Shell graph grows 106 bytes within its
+unchanged allowance; no budget or upward baseline adjustment is made.
+
+The second functional batch passes sceneDesktop (7), loot, groupLoot,
+groupLootCommit, currentFormatCampaignQualification and npcCatalog. Its remaining
+combat and travel failures are the already recorded corrections 11/12; repeat
+both against the rebuilt reference/scope changes.
+
+
+### Phase 6 — Compact group register correction 15
+
+Full combat now reaches saved group creation. Its old assertion expects a strong
+heading and always-visible note; the current compact register uses .group-name
+and explicitly expandable details. Assert the saved row, expand it if collapsed,
+and retain the exact note and nested-reference interaction checks. This ports the
+entry point without changing compact group presentation or generated group data.
+
+
+### Phase 6 — Local structural and domain verification
+
+Final typecheck and all four lint partitions pass; Prettier and diff whitespace
+checks pass. Full test command passes 87 architecture, 912 unit and 256 integration
+cases (1,255 total, 258 files). Static references, session-generation artifacts,
+version truth and render-qualification artifacts validate. Bundle budget passes
+with unchanged limits. Travel E2E passes its complete real-pointer, planning,
+execution and arrival workflow (77.4s). The compact group-register correction is
+being verified in the full combat journey before updating its visual references.
+
+
+### Phase 6 — Visual acceptance correction 16
+
+Functional combat passes (89.5s), including independent/shared readers and keyboard
+window movement. Inspection of the deliberately updated combat golden reveals a
+legacy 24px width clipping the visible “Zug zurück” label. The resolution percentage
+field also lacks room for its three-digit value and native number control. Remove
+the fixed back-button width in favor of content sizing/no wrapping and give the
+percentage field 5.5rem. Preserve labels and behavior. Rebuild, repeat the affected
+visual workflow and inspect the regenerated images before accepting them.
+
+Correction 16 further removes 12 reachable CSS bytes; the same downward-only
+baseline policy records 1,565,028 bytes. No other graph or threshold changes.
+
+
+### Phase 6 — Plan audit before candidate qualification
+
+1. Default routing and shortcuts: pass. Session has one desktop surface; Alt+P
+   opens/focuses scene quickinfos from the catalog. No preview toggle or old
+   scenario/layout owner remains.
+2. Access parity: pass against the inventory above. Character CRUD, personal
+   loot, selected rests/XP/roster, group management, scene location/time, travel,
+   combat and independent Adventuring-Day calculation all have productive entries.
+3. Removal/migration: pass. Legacy columns, Party popup and global reference pins
+   are deleted. Historical strict settings codecs remain migration-only, theme is
+   preserved, current envelope is v2 at installation 42.
+4. Lifecycle: pass. Missing scenes and permanently deleted campaigns reject saved
+   presentation; trash/restore preserves layouts. Explicit inactive-campaign
+   writes preserve the captured scope. Missing references show retryable failure
+   without losing history. Active unassigned characters are recoverable.
+5. Qualification: functional, migration, accessibility, resource-cycle and local
+   build checks pass. Combat visual correction 16 rerun passes (89.0s), and its
+   inspected buttons/percentage are legible. Travel update passes (77.1s); light
+   and dark images show the combined map/travel surface and accessible controls.
+   Full visual regression comparison is running; its success and exact-SHA
+   remote delivery remain required before marking the phase complete.
+6. Documentation: canonical roadmap unchanged; requirements, current architecture,
+   schema truth and this append-only execution record agree with the final shape.
+
+### Phase 6 — Original-roadmap and cross-phase audit before delivery
+
+The six-phase sequence is preserved: delivered per-scene window persistence;
+independent/shared readers with history; productive map/travel/combat; character
+catalog/quickinfos; transactional roster/move, XP and selective rests; final
+removal of duplicate UI. Earlier delivered acceptance evidence remains above.
+Phase-6 desktop E2E additionally rechecks all-window closure, scene isolation,
+restart, character/inactive edits, null values, stable selections, manual XP vs
+burden, selected two-click rests, keyboard focus and repeated resource release.
+The current-format campaign-switch qualification passes; complete travel/combat,
+loot/group-loot and NPC journeys pass through the final routes.
+
+No missing product requirement remains identified after corrections 1–16. This
+is a source/behavior audit, not a premature delivery claim: full visual comparison,
+required remote checks, canonical installed artifact handoff and green-main
+promotion remain open. Final immutable delivery evidence and completed status will
+be recorded after those gates succeed.
+
+
+### Phase 6 — Zoomed shared-shell visual correction 17
+
+Full visual comparison passes campaign creation and its unchanged settings/dialog
+images. At 200% zoom the Hex editor's selected-state golden is now 567x118 instead
+of 605x118. Side-by-side inspection shows identical content and height; the shared
+shell minmax(0,1fr) correction 7 now prevents the previous horizontal overflow in
+this route too. Retain the narrower, viewport-contained behavior and update only
+hex-editor-selection-light-200 through the explicit golden command. Its existing
+stacked-layout geometry and accessibility checks already pass. No application
+change is needed; other Hex editor goldens remain unchanged.
+
+
+### Phase 6 — Full visual sweep evidence
+
+Full visual comparison passes campaignCreate, campaignCombat, hexLocation, dialogs,
+groupLoot and travel. The sole discrepancy is correction 17's reviewed Hex zoom
+width; its explicit update and isolated comparison are underway. Combat, travel
+and all other visual assertions pass without tolerance changes. The seven intended
+PNG changes are the three combat stages, three travel states/themes and the single
+200%-zoom Hex state; no blanket golden refresh is used.
+
+
+### Phase 6 — Cross-platform titlebar correction 18
+
+Candidate 96a0992e reaches remote qualification. Linux/macOS/Windows builds,
+portable checks, packaging and two visual shards pass. The campaign visual shard
+finds initiative differing by 5.22%. Downloaded CI actual/diff inspection shows
+identical content translated by one pixel: the window titlebar uses normal line
+height and a native details marker, whose font/marker metrics differ across the
+local and Ubuntu hosts. This is not a data or interaction failure.
+
+Give the titlebar an explicit 2rem height/flex basis, set its direct icon controls
+to a fixed 1.5rem box with unit line height, and suppress the redundant native
+summary marker. Keep the existing accessible arrangement menu and window controls.
+Regenerate only the six desktop-containing combat/travel goldens, recheck desktop
+keyboard/resource behavior and visuals, then qualify a new immutable candidate
+SHA. Do not increase pixel tolerance or add platform-specific whole-window copies.
+
+
+### Phase 6 — SwiftShader entry correction 19
+
+The remote group/loot/travel shard passes its domain workflows but the isolated
+SwiftShader test still clicks the retired “Karte öffnen” control after already
+opening the combined map/travel window. Use the shared desktop map-window opener
+(maximized) at that point. Retain empty-campaign timing, real WebGL2/SwiftShader
+observation, keyboard route interaction and evaluated travel duration assertions.
+Run this formerly missed suite locally before the revised candidate is pushed.
+
+
+### Phase 6 — Deferred keyboard focus correction 20
+
+The repeated desktop suite passes six cases but intermittently misses Alt+P focus
+after lazy catalog→session mounting. The root currently focuses through one
+requestAnimationFrame; a not-yet-mounted frame silently drops the request. Replace
+that timing assumption with a transient request on the explicitly scoped desktop
+projection. The mounted SceneDesktop consumes it in a layout effect only when the
+requested frame exists. Keep focus outside persisted desktop documents and IPC;
+add coverage for requests surviving subscriber gaps, remaining scope-isolated,
+and not writing presentation storage. Repeat desktop and SwiftShader E2E afterward.
+
+
+### Phase 6 — Corrections 18–20 verification
+
+The rebuilt desktop passes all seven E2E cases (126.4s), including delayed Alt+P
+focus, two-theme accessibility, 720px bounds and eight map open/close cycles.
+The corrected SwiftShader interaction reaches WebGL2 and evaluates the next route;
+its empty route becomes ready in 288.573ms (10s bound), with no timing-oracle waiver.
+Focused projection/layout tests (9), typecheck and all lint partitions pass.
+Titlebar combat/travel updates pass and the inspected titlebar has consistent
+bounded controls without the redundant native marker.
+
+The first candidate's remaining functional campaign and restart shards also pass;
+only the two identified visual/obsolete-entry failures prevent its qualification.
+It is not promoted. The next candidate includes the verified corrections.
+Bundle measurement is 1,565,449 reachable bytes, 421 above its downward baseline
+within unchanged allowances; the workspace shrinks 169 bytes to 507,912, which is
+ratcheted down under the existing policy. No upward baseline or budget change.

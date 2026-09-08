@@ -8,14 +8,7 @@ import {
   shift,
   useFloating
 } from '@floating-ui/react'
-import {
-  Fragment,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type PointerEvent as ReactPointerEvent
-} from 'react'
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type {
   ReferenceBlock,
   ReferenceCandidate,
@@ -28,8 +21,7 @@ import { formatMessage, message } from '../../i18n/reference-runtime.de.js'
 import { NonModalSurface } from '../../shell/nonmodal-surface.js'
 import {
   useReferenceContext,
-  ReferenceOverlayParentContext,
-  type PinnedReference
+  ReferenceOverlayParentContext
 } from './reference-context.js'
 import { referenceTargetKey } from './reference-matcher.js'
 import {
@@ -82,10 +74,7 @@ function ReferenceOverlayCard(props: {
     pinTimer.current = window.setTimeout(() => {
       pinTimer.current = null
       setPinning(false)
-      reference.pinReference(
-        candidate.target,
-        props.card.anchor.getBoundingClientRect()
-      )
+      reference.openSeparateReference(candidate.target)
       reference.closeOverlayBranch()
     }, 5_000)
   }
@@ -124,10 +113,7 @@ function ReferenceOverlayCard(props: {
             path={props.card.path}
             {...(selected ? { back: () => setSelected(null) } : {})}
             pin={(next) => {
-              reference.pinReference(
-                next.target,
-                props.card.anchor.getBoundingClientRect()
-              )
+              reference.openSeparateReference(next.target)
               reference.closeOverlayBranch()
             }}
           />
@@ -196,17 +182,10 @@ function ReferencePreview(props: {
           <button
             type="button"
             onClick={() => props.pin(props.candidate)}
-            aria-label={formatMessage(
-              reference.desktopRouting ? 'reference.separate' : 'reference.pin',
-              {
-                name: props.candidate.title
-              }
-            )}
-            title={message(
-              reference.desktopRouting
-                ? 'reference.separateTitle'
-                : 'reference.pinTitle'
-            )}
+            aria-label={formatMessage('reference.separate', {
+              name: props.candidate.title
+            })}
+            title={message('reference.separateTitle')}
           >
             ◈
           </button>
@@ -401,152 +380,6 @@ function ReferenceBlockView(props: {
         ))}
       </tbody>
     </table>
-  )
-}
-
-export function ReferencePinnedWindow(props: { pin: PinnedReference }) {
-  const reference = useReferenceContext()
-  const movePin = reference.movePin
-  const state = useReferenceDocument(props.pin.target)
-  const windowRef = useRef<HTMLElement>(null)
-  const title =
-    state.status === 'ready'
-      ? state.document.title
-      : targetLabel(props.pin.target)
-  const drag = useRef<{
-    pointerId: number
-    originX: number
-    originY: number
-    startX: number
-    startY: number
-  } | null>(null)
-
-  useEffect(() => {
-    const element = windowRef.current
-    if (!element) return
-    const contain = () => {
-      const bounds = element.getBoundingClientRect()
-      movePin(
-        props.pin.id,
-        Math.min(
-          props.pin.x,
-          Math.max(12, window.innerWidth - bounds.width - 12)
-        ),
-        Math.min(
-          props.pin.y,
-          Math.max(12, window.innerHeight - bounds.height - 12)
-        )
-      )
-    }
-    const observer = new ResizeObserver(contain)
-    observer.observe(element)
-    window.addEventListener('resize', contain)
-    contain()
-    return () => {
-      observer.disconnect()
-      window.removeEventListener('resize', contain)
-    }
-  }, [movePin, props.pin.id, props.pin.x, props.pin.y])
-
-  const pointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    drag.current = {
-      pointerId: event.pointerId,
-      originX: props.pin.x,
-      originY: props.pin.y,
-      startX: event.clientX,
-      startY: event.clientY
-    }
-    event.currentTarget.setPointerCapture(event.pointerId)
-    reference.raisePin(props.pin.id)
-  }
-  const pointerMove = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    const current = drag.current
-    if (!current || current.pointerId !== event.pointerId) return
-    reference.movePin(
-      props.pin.id,
-      current.originX + event.clientX - current.startX,
-      current.originY + event.clientY - current.startY
-    )
-  }
-  const pointerUp = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    if (drag.current?.pointerId === event.pointerId) drag.current = null
-  }
-
-  return (
-    <NonModalSurface
-      ref={windowRef}
-      className="reference-pinned-window"
-      aria-label={formatMessage('reference.pinnedLabel', {
-        name: title
-      })}
-      style={{
-        left: props.pin.x,
-        top: props.pin.y,
-        zIndex: props.pin.z
-      }}
-      onPointerDown={() => reference.raisePin(props.pin.id)}
-      onFocusCapture={() => reference.raisePin(props.pin.id)}
-    >
-      <header>
-        <button
-          type="button"
-          className="reference-drag-handle"
-          aria-label={formatMessage('reference.move', {
-            name: title
-          })}
-          title={message('reference.moveTitle')}
-          onPointerDown={pointerDown}
-          onPointerMove={pointerMove}
-          onPointerUp={pointerUp}
-          onPointerCancel={pointerUp}
-          onKeyDown={(event) => {
-            if (!event.key.startsWith('Arrow')) return
-            event.preventDefault()
-            const step = event.shiftKey ? 24 : 8
-            reference.movePin(
-              props.pin.id,
-              props.pin.x +
-                (event.key === 'ArrowLeft'
-                  ? -step
-                  : event.key === 'ArrowRight'
-                    ? step
-                    : 0),
-              props.pin.y +
-                (event.key === 'ArrowUp'
-                  ? -step
-                  : event.key === 'ArrowDown'
-                    ? step
-                    : 0)
-            )
-          }}
-        >
-          <span aria-hidden="true">⠿</span>
-          <strong>{title}</strong>
-        </button>
-        <button
-          type="button"
-          aria-label={formatMessage('reference.close', {
-            name: title
-          })}
-          onClick={() => reference.closePin(props.pin.id)}
-        >
-          ×
-        </button>
-      </header>
-      <div className="reference-pinned-scroll">
-        {state.status === 'loading' ? (
-          <p className="reference-status" role="status">
-            {message('reference.loading')}
-          </p>
-        ) : state.status === 'failed' ? (
-          <p className="reference-status" role="alert">
-            {message('reference.deleted')}
-          </p>
-        ) : (
-          <ReferenceDocumentView document={state.document} />
-        )}
-      </div>
-    </NonModalSurface>
   )
 }
 

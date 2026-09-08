@@ -14,10 +14,7 @@ import { fixedSqliteDatabaseAccess } from '../../src/core/persistence/sqlite/dat
 import { initialDesktopState } from '../../src/renderer/features/scene-desktop/desktop-state.js'
 
 import { applySchemaMigrations } from '../../src/core/persistence/sqlite/schema-migrations.js'
-import {
-  defaultInstallationPreferences,
-  persistedInstallationPreferences
-} from '../../src/shared/contracts/settings.js'
+import { persistedInstallationPreferences } from '../../src/shared/contracts/settings.js'
 
 const scope = {
   campaignId: '00000000-0000-4000-8000-000000000001',
@@ -83,27 +80,42 @@ describe('installation-owned scene desktops', () => {
     }
   })
 
-  it('upgrades schema 40 without modifying existing preference bytes or revision', () => {
+  it('upgrades schema 40 preserving theme and removing obsolete preferences once', () => {
     const db = new Database(':memory:')
     try {
       db.exec(
         'PRAGMA user_version = 40; CREATE TABLE installation_schema_migration (migration_id TEXT PRIMARY KEY, applied_at TEXT NOT NULL); CREATE TABLE installation_settings (singleton INTEGER PRIMARY KEY, revision INTEGER, preferences_json TEXT)'
       )
-      const preferences = JSON.stringify(
-        persistedInstallationPreferences(defaultInstallationPreferences)
-      )
+      const preferences = JSON.stringify({
+        schemaVersion: 1,
+        preferences: {
+          theme: 'dark',
+          sceneDesktopPreview: false,
+          sessionLayout: {
+            schemaVersion: 2,
+            controlPaneWidth: 300,
+            scenarioPaneWidth: 264,
+            centerTab: 'details'
+          }
+        }
+      })
       db.prepare('INSERT INTO installation_settings VALUES (1, 7, ?)').run(
         preferences
       )
       applySchemaMigrations(db, { path: ':memory:', role: 'installation' })
-      expect(db.pragma('user_version', { simple: true })).toBe(41)
+      expect(db.pragma('user_version', { simple: true })).toBe(42)
       expect(
         db
           .prepare(
             'SELECT revision, preferences_json FROM installation_settings'
           )
           .get()
-      ).toEqual({ revision: 7, preferences_json: preferences })
+      ).toEqual({
+        revision: 8,
+        preferences_json: JSON.stringify(
+          persistedInstallationPreferences({ theme: 'dark' })
+        )
+      })
       expect(
         new SceneDesktopStore(fixedSqliteDatabaseAccess(db)).read(scope).state
       ).toBeNull()

@@ -1,16 +1,16 @@
 {
   "recordedAt": "2026-09-08",
-  "reason": "Qualify phase-4 ledger maintenance and accumulated planner, character and desktop recovery changes.",
-  "dependencyRationale": "No dependencies or lockfile changes; the ledger controller and rendered recovery add 3987 reachable bytes over the previous verified build.",
-  "chunkRationale": "Reviewed cumulative reachable growth +18638, workspace +1294, session +607, catalog +37; shell, hex, reference and Pixi unchanged. Ledger remains dynamically imported. Absolute budgets and the 16 KiB growth gate remain unchanged.",
+  "reason": "Converge the regular scene desktop from main with phase-4 maintenance owners and treasure editor recovery.",
+  "dependencyRationale": "No dependency or lockfile changes. Absolute budgets and growth thresholds are unchanged.",
+  "chunkRationale": "Main retires legacy Session and reference surfaces; combined reachable shrinks 33365 bytes, Session 170472, Workspace 14080, Reference 2311, Catalog 472 and Hex 6 versus the Candidate baseline. Shell grows 106 bytes. Existing maintenance controllers remain included.",
   "graphs": {
-    "shell": 420843,
-    "workspace": 527693,
-    "session": 171783,
-    "catalog": 190479,
-    "hex": 179490,
-    "reference": 39766,
+    "shell": 420949,
+    "workspace": 513613,
+    "session": 1311,
+    "catalog": 190007,
+    "hex": 179484,
+    "reference": 37455,
     "pixi": 409364,
-    "reachable": 1646858
+    "reachable": 1613493
   }
 }

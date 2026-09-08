@@ -1,6 +1,5 @@
 import { lazy, Suspense } from 'react'
 import { formatMessage } from '../../i18n/session-runtime.de.js'
-import { SessionPartyDialog } from './session-party-dialog.js'
 import type {
   SessionWorkspaceActions,
   SessionWorkspaceViewModel
@@ -30,15 +29,6 @@ export function SessionDialogHost(props: {
 }) {
   const dialog = props.model.dialog
   if (dialog.kind === 'none') return null
-  if (dialog.kind === 'party-editor')
-    return (
-      <SessionPartyDialog
-        snapshot={props.model.snapshot}
-        sceneId={props.model.focused.id}
-        assign={props.actions.assignPartyMember}
-        close={props.actions.closeDialog}
-      />
-    )
   return (
     <Suspense fallback={null}>
       {dialog.kind === 'group-editor' && (
