@@ -1,3 +1,4 @@
+import { DraftResolutionDialog } from './draft-resolution-dialog.js'
 import {
   maintenanceDraftCoordinator,
   type MaintenanceDraftResolution
@@ -373,49 +374,15 @@ export function ReleaseSettings({
         </ModalDialog>
       )}
       {confirmation && (
-        <ModalDialog
-          className="release-settings"
-          ariaLabel="Neustart bestätigen"
-          role="alertdialog"
-          onClose={cancelMaintenance}
+        <DraftResolutionDialog
+          title="Neustart bestätigen"
+          text={confirmation.text}
+          errors={draftErrors}
+          needsDrafts={needsDrafts}
           busy={busy}
-        >
-          <p>{confirmation.text}</p>
-          {draftErrors.length > 0 && (
-            <div role="alert">
-              {draftErrors.map((failure) => (
-                <p key={failure.id}>{failure.text}</p>
-              ))}
-              <p>
-                Erneut versuchen oder abbrechen, um die betroffenen Änderungen
-                zu bearbeiten.
-              </p>
-            </div>
-          )}
-          <button disabled={busy} onClick={cancelMaintenance}>
-            Abbrechen
-          </button>
-          {needsDrafts ? (
-            <>
-              <button
-                disabled={busy}
-                onClick={() => void confirmMaintenance('save')}
-              >
-                Speichern und fortfahren
-              </button>
-              <button
-                disabled={busy}
-                onClick={() => void confirmMaintenance('discard')}
-              >
-                Verwerfen und fortfahren
-              </button>
-            </>
-          ) : (
-            <button disabled={busy} onClick={() => void confirmMaintenance()}>
-              Bestätigen
-            </button>
-          )}
-        </ModalDialog>
+          cancel={cancelMaintenance}
+          confirm={(choice) => void confirmMaintenance(choice)}
+        />
       )}
     </>
   )

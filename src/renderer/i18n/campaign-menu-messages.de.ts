@@ -1,4 +1,14 @@
 export const campaignMenuMessagesDe = {
+  'draft.retry':
+    'Erneut versuchen oder abbrechen, um die betroffenen Änderungen zu bearbeiten.',
+  'draft.save': 'Speichern und fortfahren',
+  'draft.discard': 'Verwerfen und fortfahren',
+  'draft.confirm': 'Bestätigen',
+  'draft.failed':
+    'Der Vorgang konnte nicht abgeschlossen werden. Bitte erneut versuchen oder abbrechen.',
+  'draft.transitionTitle': 'Arbeitsbereich wechseln',
+  'draft.transitionText':
+    'Es gibt offene Änderungen. Bitte vor dem Wechsel speichern oder verwerfen.',
   'workspace.loading': '{name} wird geladen …',
   'action.close': 'Schließen',
   'action.cancel': 'Abbrechen',

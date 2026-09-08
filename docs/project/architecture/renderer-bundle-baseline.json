@@ -1,15 +1,15 @@
 {
-  "recordedAt": "2026-09-08",
-  "reason": "Converge the regular scene desktop from main with phase-4 maintenance owners and treasure editor recovery.",
-  "dependencyRationale": "No dependency or lockfile changes. Absolute budgets and growth thresholds are unchanged.",
-  "chunkRationale": "Main retires legacy Session and reference surfaces; combined reachable shrinks 33365 bytes, Session 170472, Workspace 14080, Reference 2311, Catalog 472 and Hex 6 versus the Candidate baseline. Shell grows 106 bytes. Existing maintenance controllers remain included.",
+  "recordedAt": "2026-09-09",
+  "reason": "Ratchet smaller graphs after sharing the draft-resolution dialog between release maintenance and workspace transitions.",
+  "dependencyRationale": "No dependency or lockfile changes. Absolute budgets and growth thresholds remain unchanged; existing lower baselines are retained for growing graphs.",
+  "chunkRationale": "Shared shell dialog code reduces Hex by 3584 bytes, Catalog by 3339, Reference by 51 and Shell by 44. Only these reductions are adopted; the reachable graph growth remains measured against its existing baseline.",
   "graphs": {
-    "shell": 420949,
+    "shell": 420905,
     "workspace": 513613,
     "session": 1311,
-    "catalog": 190007,
-    "hex": 179484,
-    "reference": 37455,
+    "catalog": 186668,
+    "hex": 175900,
+    "reference": 37404,
     "pixi": 409364,
     "reachable": 1613493
   }

@@ -4652,3 +4652,117 @@ Formatprüfung der zehn betroffenen Quell-/Testdateien sowie git diff --check
 bestehen. Den zusammengehörigen Dialog-/Navigationsstand jetzt als Candidate
 committen und pushen; vollständige Remote-Prüfung dieses neuen SHA bleibt Pflicht.
 Phase 4 bleibt in Arbeit, Handoff/Main/Liveabnahme/Veröffentlichung unbestätigt.
+
+Phase 4, nächster Teilplan – Entwürfe vor Arbeitsbereichswechsel erhalten:
+Candidate 28a6364d2 ist sauber; Remote-Run 34288396494 läuft. Read-only-Prüfung
+zeigt neben Desktop-close/minimize einen unmittelbaren Verlustpfad: WorkspaceRail
+ruft den rohen setWorkspace auf, ModuleHost ersetzt den bisherigen Bereich.
+CharacterCatalogSection hält noch nicht abgeschickte Formdaten nur im gemounteten
+Editor. Dessen Registrierung verschwindet beim Wechsel; der bestehende detached
+Commandcontroller kann nur bereits abgeschickte Versuche halten.
+
+Zuerst diesen übergreifenden Routenpfad schließen: Einen Shell-Hook für bestätigte
+UI-Übergänge erstellen, der die vorhandene Wartungsregistrierung und globale Sperre
+verwendet. Bereits beauftragte Hintergrundwrites vorab abwarten; bei offenen
+Entwürfen den ursprünglichen Bereich erhalten und Save/Discard/Cancel zeigen.
+Gemeinsame Dialogdarstellung mit der bestehenden Releasebestätigung verwenden.
+Savefehler bleiben bereichsbezogen; Teil-Saves bleiben erhalten; Cancel schreibt
+nichts. Bei Unmount oder geänderter Kampagnenidentität keine verspätete Navigation.
+WorkspaceRail, Rückkehr zur Sitzung, Charakter-/Referenznavigation und obere
+Desktop-Öffnungen müssen den gesamten jeweiligen Übergang kapseln, damit keine
+Nebenwirkung vor dem bestätigten Wechsel erfolgt. Wechsel innerhalb desselben
+Arbeitsbereichs bleibt bei dessen bestehenden Editorregeln.
+
+Prüfung: Hook/UI mit nie abgeschicktem Entwurf, mehreren Ownern, Teilerfolg,
+Verwerfen, Abbrechen, laufendem Save, neuem Dirty-Zustand während Autosave-Wartezeit,
+Unmount und Identitätswechsel. Bestehende Release-UI-Tests sichern die extrahierte
+Darstellung. Anschließend Typecheck/Lint/Architektur, Build und relevante echte
+Navigationstests. Desktop-close/minimize und weitere Writer bleiben eigenständig
+in Phase 4 offen; dieser Teilplan erklärt sie nicht für erledigt.
+
+Korrekturrunde Testaufbau: Der neue Hooktest hat die in der App vorhandene
+ModalLayerProvider-Umgebung noch nicht eingebunden; deshalb schlagen seine sieben
+Fälle vor der Verhaltensprüfung fehl. Provider ergänzen. Für den synchronen
+Testentwurf eine echte useRef statt mutiertem useState-Objekt verwenden und
+Promise-returnende Testcallbacks ohne unnötiges async deklarieren. Der angenommene
+Dateiname release-settings.test.tsx existiert nicht; die tatsächlichen
+ReleaseSettings-Prüfungen ermitteln, bevor deren Ausführung behauptet wird.
+
+Zusätzlich Produkt-Lint: Den UI-Zustand bei geänderter Übergangsidentität bedingt
+im Render zurücksetzen, statt setState im Layout-Effekt aufzurufen. Der Effekt
+behält ausschließlich Lebensdauer/Abbruch der laufenden Aufträge. Keine Lockerung
+der React-Regel. Tatsächlicher Release-UI-Test: profile-recovery-ui.test.tsx.
+
+Zwischenprüfung: 132 Tests (11 Dateien), Typecheck und Produkt-Lint bestehen.
+Build und Built-Smoke bestehen. Bundlecheck stoppt vor E2E mit Pflicht-Ratchet:
+Hex -3584, Katalog -3339, Referenz -51 und Shell -44 Bytes. Die gemeinsame
+Dialogdarstellung verschiebt diese Abhängigkeiten; der gesamte erreichbare Graph
+liegt +15108 Bytes über alter Baseline, innerhalb des bestehenden 16-KiB-Limits.
+Nur gesunkene Teilbudgets nachziehen; keine Grenzerhöhung zum Bestehen des Checks.
+Danach Budgetcheck und die noch nicht gestarteten E2E auf vorhandenen Bytes ausführen.
+
+CI-Befund des vorherigen 28a6364d2: Portable-Lint beanstandet den seit dem letzten
+Autosavefix Promise-returnenden showCampaigns-Prop in workspace.tsx. Die neue
+vollständig gekapselte Navigation verwendet dort bereits einen void-Callback und
+besteht gezieltes Produkt-Lint. Vor erneutem Push bleibt vollständiges Renderer-
+Lint erforderlich; der frühere Candidate ist damit weiterhin nicht handofffähig.
+
+E2E-Korrekturplan: Der neue workspace-isolation-Fall scheitert am Testselektor
+`.catalog-section-selector button=Charaktere`: WebDriver akzeptiert die Kombination
+von CSS-Vorfahren und Textstrategie nicht als einen Selektor. Elterncontainer
+zuerst mit CSS auswählen, dessen button=Charaktere bzw. button=Neu separat suchen.
+Die Produktbytes unverändert lassen. Laufenden Gesamthandle 53502 zunächst
+abschließen, da Current-Format noch auf denselben Bytes folgt. Danach nur den
+betroffenen Workspace-E2E erneut ausführen, keine Zeitgrenzen lockern.
+
+Teilprüfung vor Candidateabschluss: 132 Architektur-/Featurefälle bestehen;
+Typecheck (8230) und vollständiges partitioniertes Lint (63584) jeweils exit 0.
+Die ReleaseSettings-Extraktion ist durch 12 vorhandene profile-recovery-ui-Fälle
+und sieben neue Übergangsfälle abgedeckt. Build/Built-Smoke bestehen, ebenso der
+Budgetcheck nach ausschließlich nach unten korrigierter Baseline. Geprüfter
+appBuildInputFingerprint: 1c11b3230857224567439a4cbe37b1ae28c4e49148aaf49a3c2463849595261b.
+
+Current-Format besteht vollständig (Gesamthandle 53502 endet wegen des separaten
+Workspace-Testselektors mit exit 1): 100 Wechsel, p95 150.961 ms, Maximum 160.878 ms,
+Szenenänderung und anschließender Neustart bestätigt. Zusammenfassung
+.tmp/e2e-runs/functional-1788908766491-542036/summary.json. Korrigierter Workspace-
+Test läuft separat als Handle 20958; Produktbytes unverändert.
+
+Plan-Audit: Vor Routenwechseln bleiben die realen Editorinstanzen gemountet.
+Die gemeinsame Dialogdarstellung bietet Save/Discard/Cancel, die vorhandenen
+Owner verantworten Speicherung und Fehler. Hintergrundwrites werden zuerst beendet;
+neue Entwürfe während dieses Wartens werden danach entdeckt. Auftragsidentität,
+Unmount und globale Sperre verhindern verspätete Übergänge. Charakter- und
+Referenznavigation kapseln ihre Auswahl-/Öffnungsnebenwirkung bis zur Freigabe.
+Roadmap-Audit: Der Routenverlustpfad für nie abgeschickte Entwürfe ist implementiert;
+seine echte Charakter-E2E-Abnahme steht noch aus. Desktop-close/minimize,
+Szenenwechsel und weitere direkte Writer bleiben zu prüfen. Phase 4 bleibt offen.
+
+E2E-Korrekturrunde Elementlebensdauer: Handle 20958 endet mit exit 1, obwohl alle
+drei Workspace-Verhaltensfälle bestehen. Die verpflichtende Warnungsprüfung zählt
+sechs staleElement-Warnungen. Der neue Test hält Input und Dialog über deren
+bewusstes Entfernen/erneutes Öffnen hinweg fest. Diese Elemente vor jeder Aktion
+über ihre stabilen Selektoren neu beziehen. Warnungsgrenze und Produkt unverändert;
+Workspace-Suite erneut auf identischen Appbytes prüfen. Vollständiges Format
+(7790) ist bereits exit 0. E2E-Abnahme noch nicht als vollständig bestanden werten.
+
+Abschluss Routen-Korrekturrunde: Handle 90322 endet mit exit 0. Alle drei echten
+Workspace-Fälle bestehen einschließlich neuem Charakterentwurf, Abbrechen,
+zentralem Save, Rückkehr mit gespeichertem Charakter und anschließendem Discard
+eines anderen Entwurfs. Keine staleElement-Warnungsregression mehr. Summary:
+.tmp/e2e-runs/functional-1788909159467-544032/summary.json. Produktbytes sind dieselben
+wie bei Built-Smoke/Budget und bestandenem Current-Format-Test.
+
+Abschließender Plan-Audit: Die reale Editor-E2E ergänzt die Hook-/Ownerprüfungen;
+Routenschutz ist damit implementiert und automatisiert geprüft. Gemeinsame
+Release-Dialogdarstellung bleibt durch die vorhandenen UI-Fälle abgedeckt.
+Roadmap-Audit unverändert: Phase 4 ist nicht geschlossen. Desktopfenster-Schließen,
+Minimieren, Szenenwechsel und weitere Writer sind nächste Prüffelder; vollständige
+Updatebedienung und Phasen 5–7 bleiben verpflichtend. Keine neue Datenformatversion.
+
+Run 34288396494 des vorherigen Candidate ist inzwischen failure; ausschließlich
+Portable-Lint und dessen Aggregate sind fehlgeschlagen. Der konkrete Promise-Prop
+ist im neuen Routen-Callback behoben und vollständiges Lint besteht. Den geprüften
+neuen Stand committen/pushen; nur dessen vollständige Remote-Prüfung kann den
+nächsten kanonischen Handoff freigeben. Keine lokale Installation oder Main-Promotion
+in dieser Runde.
