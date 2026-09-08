@@ -45,6 +45,7 @@ type CreatureCollectionCatalogProps = Readonly<{
 type CreatureBuilderCatalogProps = CreatureCollectionCatalogProps &
   Readonly<{
     add: (creature: Creature) => void
+    disabled?: boolean
     quantities: Readonly<Record<string, number>>
   }>
 
@@ -93,7 +94,11 @@ export function CreatureBuilderCatalogTable(
                         {formatMessage('catalog.inGroup', { quantity })}
                       </span>
                     ) : (
-                      <AddCreatureButton creature={creature} add={props.add} />
+                      <AddCreatureButton
+                        creature={creature}
+                        add={props.add}
+                        disabled={props.disabled ?? false}
+                      />
                     )}
                   </td>
                 </tr>
@@ -167,6 +172,7 @@ export function EncounterTableCreatureCatalogTable(
                   <AddCreatureButton
                     creature={creature}
                     add={props.add}
+                    disabled={props.disabled ?? false}
                     selected={selected}
                   />
                 </td>
@@ -283,11 +289,12 @@ function AddCreatureButton(props: {
   creature: Creature
   add: (creature: Creature) => void
   selected?: boolean
+  disabled?: boolean
 }) {
   return (
     <button
       type="button"
-      disabled={props.selected}
+      disabled={props.selected || props.disabled}
       aria-label={formatMessage('catalog.addCreature', {
         name: props.creature.name
       })}

@@ -1867,3 +1867,68 @@ Reconciliation-Semantik, gefolgt vom realen verschachtelten UI-Test und Orts-Own
 Weitere Editorfamilien, vollständige Eingabesperre sowie Offline-/Update-Gesamtabnahme
 bleiben offen. Phasen5–7 und abschließende Candidate-/Handoff-/Main-/Release-Gates
 bleiben vollständig erforderlich.
+
+### Phase 4 — Begegnungstabellen-Owner: Teilplan
+
+Vorheriger Zielturn: Fortschritt, e09551b29 mit Abhängigkeiten/Fraktions-Owner
+committed/gepusht. Worktree nun sauber; kanonische Phase4 weiterhin offen.
+Begegnungstabelle ersetzt ihren Übergangs-Guard durch vollständige Save-/Discard-
+Operationen. Draft und Anlage-Scope werden synchron geführt. Pending-Normalsave wird
+abgewartet; Reconciliation-Retry verwendet die persistierte Receipt. Validierung
+bleibt beim bestehenden Parser. Name, Beschreibung, Scope, Hinzufügen/Entfernen
+und Gewichte prüfen die globale Sperre direkt und zeigen deaktivierte Bedienelemente.
+Normales Schließen/Submit/Retry und lokaler Verwerfen-Dialog erhalten dieselben Guards.
+Tests: vollständiger Draft samt Scope/Gewichten, fehlende Pflichtdaten, Savefehler,
+Pending, Discard, Retry ohne Duplikat; anschließend reale Tabellen-/Fraktionsdialoge
+über den vorhandenen Related-Dialog-Stack gemeinsam klären und Datenreihenfolge prüfen.
+
+### Phase 4 — Tabellen-Testkorrekturen
+
+Erste Prüfung: acht der neun neuen Owner-/Stack-Tests bestanden, darunter alle vier
+realen verschachtelten Dialogfälle. Ein neuer Test verwendet geratenen statt realen
+UI-Namen; auf die vorhandenen deutschen Labels umstellen. Bestehender Doppelclick-
+Test erwartet den Save synchron im Click-Stack; der gemeinsame Pending-Pfad beginnt
+nun im Microtask. Weiterhin zwei Klicks auslösen und genau einen Save prüfen, dessen
+Start aber mit waitFor abwarten. Das Sicherheitskriterium bleibt unverändert.
+Der neue disabled-Parameter des gemeinsamen Katalogtyps wird auch an dessen zweite
+Add-Button-Variante durchgereicht, damit der gemeinsame Vertrag vollständig bleibt.
+
+### Phase 4 — Tabellen-Mutationsschutz: Nachprüfung
+
+25 Tests und vollständiger Typecheck bestanden. Lint findet einen unbenutzten
+Testcallback-Parameter; entfernen. Der Audit erweitert den bisherigen direkten
+Sperrtest für Name/Scope um Beschreibung, Gewichte, Entfernen und das Hinzufügen
+einer noch nicht gewählten Kreatur. Jede dieser Bedienelemente muss deaktiviert
+sein; ausgelöste Testereignisse dürfen den tatsächlich gespeicherten Draft nicht
+verändern. Danach gemeinsame Owner-/Dialogregression, Lint und gebauter Startpfad.
+
+### Phase 4 — Tabellen-Owner und echter Dialogstapel: Teilaudit
+
+Planabgleich: Tabellen-Guard durch tatsächliche Owner-Operationen ersetzt. Parser,
+Scope und gewichtete Einträge bleiben beim Tabellen-Owner; synchroner Draft-/Scope-
+Zustand verhindert spätere Feldmutationen. Normaler Save und Wartungs-Save verwenden
+dasselbe Pending-Promise. Erfolgreiche Persistenz mit fehlgeschlagener Reconciliation
+wird ohne zweite Tabellenanlage wiederholt. Alle schreibenden Bedienelemente prüfen
+die Sperre und sind sichtbar deaktiviert; direkte Testereignisse verändern die
+an Save übergebenen Felder/Gewichte/Scope nicht.
+
+Neun neue Tests enthalten vier Fälle mit echten WorldFactionDialog-,
+RelatedEntityDialogStack-, IntegratedEncounterTableCreation- und EncounterTableDialog-
+Komponenten. Sie belegen Kind-vor-Eltern-Save samt referenzierter Tabellen-ID,
+Kindfehler ohne Eltern-Save, Elternfehler mit geschlossenem Kind und Retry ohne
+zweite Kindanlage sowie explizites Verwerfen beider Dialoge ohne Persistenz.
+Capability-Persistenz ist im UI-Test kontrolliert; dies ist kein AppImage-Update-
+oder Datenmigrationstest und ersetzt die Artefaktqualifikation nicht.
+
+Validierung: 25 Tabellen-/Parser-/Draft-Tests bestanden. Gemeinsame Regression mit
+Koordinator, Fraktion, Wartungsdialog, NSC und Hexkarte: 67 Tests in sieben Dateien
+bestanden. Vollständiger Typecheck, gezieltes Lint, Build, Built-Smoke und
+git diff --check bestanden. Smoke belegt Core ready/closed. Kein kanonischer
+Handoff und keine Veröffentlichung behauptet.
+
+Roadmapabgleich: Phase4 weiter in Arbeit. Tabellen-/Fraktions-Unterbaum ist nun
+real geprüft; Orts-Owner und seine Kartenplatzierung/Tags/Teilspeicherzustände sowie
+weitere Editorfamilien und Offline-/Update-Gesamtabnahme bleiben offen. Ortsanbindung
+muss insbesondere den bisherigen partially-saved-Retry verwenden, statt bereits
+persistierte Ortsdaten erneut anzulegen, und eigene Hexkarten-Dialogabhängigkeiten
+explizit erfassen. Phasen5–7 und abschließende Auslieferungsgates bleiben erforderlich.
