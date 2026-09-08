@@ -138,3 +138,244 @@ describe('maintenance draft coordination', () => {
     expect(changed).toHaveBeenCalledTimes(2)
   })
 })
+
+describe('explicit editor dependencies', () => {
+  it.each(['save', 'discard'] as const)(
+    'settles children before parents on %s, including initially clean parents',
+    async (choice) => {
+      const coordinator = new MaintenanceDraftCoordinator()
+      const calls: string[] = []
+      let parentDirty = false
+      let childDirty = true
+      const parent = () => {
+        calls.push('parent')
+        parentDirty = false
+        return Promise.resolve(true)
+      }
+      const child = () => {
+        calls.push('child')
+        childDirty = false
+        parentDirty = true
+        return Promise.resolve(true)
+      }
+      coordinator.register('parent', {
+        label: 'Ort',
+        dependsOn: ['child'],
+        isDirty: () => parentDirty,
+        save: parent,
+        discard: parent
+      })
+      coordinator.register('child', {
+        label: 'Fraktion',
+        isDirty: () => childDirty,
+        save: child,
+        discard: child
+      })
+      const resolution = coordinator.begin()
+      expect(await resolution.resolve(choice)).toEqual([])
+      expect(calls).toEqual(['child', 'parent'])
+      resolution.release()
+    }
+  )
+  it('blocks ancestors of a failing child while preserving independent successes', async () => {
+    const coordinator = new MaintenanceDraftCoordinator()
+    let childDirty = true
+    let parentDirty = true
+    let independentDirty = true
+    const child = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('child failed'))
+      .mockImplementationOnce(() => {
+        childDirty = false
+        return true
+      })
+    const parent = vi.fn(() => {
+      parentDirty = false
+      return Promise.resolve(true)
+    })
+    const independent = vi.fn(() => {
+      independentDirty = false
+      return Promise.resolve(true)
+    })
+    coordinator.register('parent', {
+      label: 'Ort',
+      dependsOn: ['child'],
+      isDirty: () => parentDirty,
+      save: parent
+    })
+    coordinator.register('child', {
+      label: 'Fraktion',
+      isDirty: () => childDirty,
+      save: child
+    })
+    coordinator.register('independent', {
+      label: 'NSC',
+      isDirty: () => independentDirty,
+      save: independent
+    })
+    const resolution = coordinator.begin()
+    expect(
+      (await resolution.resolve('save')).map((failure) => failure.id)
+    ).toEqual(['child', 'parent'])
+    expect(parent).not.toHaveBeenCalled()
+    expect(independent).toHaveBeenCalledOnce()
+    expect(await resolution.resolve('save')).toEqual([])
+    expect(parent).toHaveBeenCalledOnce()
+    expect(independent).toHaveBeenCalledOnce()
+    resolution.release()
+  })
+  it('does not persist parents when children acknowledge save but remain dirty', async () => {
+    const coordinator = new MaintenanceDraftCoordinator()
+    const parent = vi.fn()
+    coordinator.register('parent', {
+      label: 'Ort',
+      dependsOn: ['child'],
+      isDirty: () => true,
+      save: parent
+    })
+    coordinator.register('child', {
+      label: 'Fraktion',
+      isDirty: () => true,
+      save: () => Promise.resolve(true)
+    })
+    const resolution = coordinator.begin()
+    expect(
+      (await resolution.resolve('save')).map((failure) => failure.id)
+    ).toEqual(['child', 'parent'])
+    expect(parent).not.toHaveBeenCalled()
+    resolution.release()
+  })
+  it('does not repeat a successful child after its parent failed', async () => {
+    const coordinator = new MaintenanceDraftCoordinator()
+    let childDirty = true
+    let parentDirty = true
+    const child = vi.fn(() => {
+      childDirty = false
+      return Promise.resolve(true)
+    })
+    const parent = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('parent failed'))
+      .mockImplementationOnce(() => {
+        parentDirty = false
+        return true
+      })
+    coordinator.register('parent', {
+      label: 'Ort',
+      dependsOn: ['child'],
+      isDirty: () => parentDirty,
+      save: parent
+    })
+    coordinator.register('child', {
+      label: 'Fraktion',
+      isDirty: () => childDirty,
+      save: child
+    })
+    const resolution = coordinator.begin()
+    expect(await resolution.resolve('save')).toHaveLength(1)
+    expect(await resolution.resolve('save')).toEqual([])
+    expect(child).toHaveBeenCalledOnce()
+    resolution.release()
+  })
+  it('rejects cycles without calling their mutations', async () => {
+    const coordinator = new MaintenanceDraftCoordinator()
+    const save = vi.fn()
+    coordinator.register('a', {
+      label: 'A',
+      dependsOn: ['b'],
+      isDirty: () => true,
+      save
+    })
+    coordinator.register('b', {
+      label: 'B',
+      dependsOn: ['a'],
+      isDirty: () => true,
+      save
+    })
+    const resolution = coordinator.begin()
+    const failures = await resolution.resolve('save')
+    expect(failures).toHaveLength(2)
+    expect(failures.some((failure) => failure.message.includes('Kreis'))).toBe(
+      true
+    )
+    expect(save).not.toHaveBeenCalled()
+    resolution.release()
+  })
+  it('rejects unavailable children before calling their parent', async () => {
+    const coordinator = new MaintenanceDraftCoordinator()
+    const save = vi.fn()
+    coordinator.register('parent', {
+      label: 'Ort',
+      dependsOn: ['missing'],
+      isDirty: () => true,
+      save
+    })
+    const resolution = coordinator.begin()
+    const failures = await resolution.resolve('save')
+    expect(failures).toHaveLength(1)
+    expect(failures[0]?.id).toBe('parent')
+    expect(failures[0]?.message).toContain('nicht verfügbar')
+    expect(save).not.toHaveBeenCalled()
+    resolution.release()
+  })
+  it('rejects dependencies added by child completion until a fresh attempt', async () => {
+    const coordinator = new MaintenanceDraftCoordinator()
+    const dependencies = ['child']
+    let dirty = true
+    const save = vi.fn()
+    coordinator.register('parent', {
+      label: 'Ort',
+      dependsOn: dependencies,
+      isDirty: () => true,
+      save
+    })
+    coordinator.register('child', {
+      label: 'Fraktion',
+      isDirty: () => dirty,
+      save: () => {
+        dirty = false
+        dependencies.push('new')
+        coordinator.register('new', { label: 'Neu', isDirty: () => true })
+        return Promise.resolve(true)
+      }
+    })
+    const resolution = coordinator.begin()
+    expect(
+      (await resolution.resolve('save')).map((failure) => failure.id)
+    ).toEqual(['parent', 'new'])
+    expect(save).not.toHaveBeenCalled()
+    resolution.release()
+  })
+})
+
+describe('read-only maintenance confirmation', () => {
+  it('never saves or discards an unexpectedly dirty owner', async () => {
+    const coordinator = new MaintenanceDraftCoordinator()
+    const save = vi.fn()
+    const discard = vi.fn()
+    coordinator.register('draft', {
+      label: 'Ort',
+      isDirty: () => true,
+      save,
+      discard
+    })
+    const resolution = coordinator.begin()
+    expect(await resolution.resolve('check')).toHaveLength(1)
+    expect(save).not.toHaveBeenCalled()
+    expect(discard).not.toHaveBeenCalled()
+    resolution.release()
+  })
+  it('checks missing dependencies even when the parent is clean', async () => {
+    const coordinator = new MaintenanceDraftCoordinator()
+    coordinator.register('parent', {
+      label: 'Ort',
+      dependsOn: ['loading'],
+      isDirty: () => false
+    })
+    const resolution = coordinator.begin()
+    expect(await resolution.resolve('check')).toEqual([
+      expect.objectContaining({ id: 'parent' })
+    ])
+    resolution.release()
+  })
+})

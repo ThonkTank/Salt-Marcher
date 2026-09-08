@@ -345,7 +345,10 @@ describe('WorldLocationDialog', () => {
                 .fn()
                 .mockRejectedValue(new Error('nested mutation failed'))}
               saved={(result) => child.created(result.saved)}
-              requestTableCreation={() => undefined}
+              requestTableCreation={() => ({
+                id: 'unused-table',
+                isOpen: () => false
+              })}
               onError={vi.fn()}
               inspect={vi.fn()}
               creatures={

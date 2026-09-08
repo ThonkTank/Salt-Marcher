@@ -1763,3 +1763,107 @@ Drafts. Tests benötigen reale verschachtelte Editoren, fehlgeschlagene Kind-Sav
 Wiederholung sowie Verwerfen ohne Verlust bereits persistierter Teilergebnisse.
 Die bestehenden Übergangs-Guards bleiben bis dahin blockierend; kein vollständiger
 Wartungsablauf mit allen Editoren wird behauptet.
+
+### Phase 4 — Explizite Klärungsabhängigkeiten: Teilplan
+
+Vorheriger Zielturn: Fortschritt, geprüfter Owner-/Dialogstand als 1e0400af5
+committed/gepusht. Aktueller Worktree sauber; Check 34241844508 läuft für diesen SHA.
+Die kanonische Phase4 bleibt unverändert in Arbeit.
+
+Zuerst die kleine Registry-Schnittstelle um ausdrücklich benannte abhängige
+Editor-IDs erweitern. Der Koordinator klärt sie vor ihrem Eltern-Owner, unabhängig
+von Mount-/Registrierungsreihenfolge. Ein fehlerhaftes oder weiterhin schmutziges
+Kind sperrt seine Eltern; unabhängige Editoren dürfen weiterhin erfolgreich sein.
+Fehlende IDs, Zyklen und nachträglich hinzugekommene Abhängigkeiten brechen betroffene
+Owner vor ihrem Save ab. Bestätigte Kind-Ergebnisse werden bei Wiederholung nicht
+nochmals gespeichert. Save und Discard verwenden dieselbe Abhängigkeitsordnung.
+Der React-Hook erhält optional eine vom Dialogbesitzer vorab bestimmte stabile ID.
+Validierung: Reihenfolge, sauberer Eltern-Draft mit Dirty-Kind, Fehler/Retry,
+weiterhin Dirty trotz Bestätigung, Zyklen, fehlende ID, spätere Abhängigkeit,
+Discard-Reihenfolge und bestehende Dialog-/Ownerregression.
+Danach die echten Dialogbesitzer mit diesen IDs verbinden; der Vertrag allein ist
+noch kein Nachweis für funktionsfähige verschachtelte Produktdialoge.
+
+### Phase 4 — Fraktion und reale Dialog-IDs: Umsetzungsplan
+
+37 Koordinator-/Dialog-/Ownerregressionstests bestanden. Jetzt liefert der bestehende
+Related-Dialog-Stack für jeden geöffneten Dialog einen stabilen Wartungshandle
+(ID und synchroner Offen-Status), auch solange der Lazy-Editor noch lädt. Die ID
+wird durch die Integrationskomponenten bis zur Registry weitergereicht. Fraktions-
+Owner behalten den Tabellenhandle als Abhängigkeit, übernehmen bestätigte Tabellen-
+Callbacks synchron in ihren Draft und sperren davon getrennt neue Benutzereingaben.
+Save/Reconciliation/Pending-Semantik entspricht dem geprüften Hexkarten-Owner.
+Der Tabelleneditor erhält zunächst seine explizite ID am Übergangs-Guard; solange
+seine eigene Save-Anbindung fehlt, verhindert er ausdrücklich den Eltern-Save.
+
+### Phase 4 — ID-Vertrag: Korrekturrunde
+
+Erster Typecheck findet einen optionalen Getter mit explizitem undefined sowie
+zwei ältere Test-Dialogbesitzer ohne Rückgabehandle. Getter liefert eine leere
+Abhängigkeitsliste; Testbesitzer erhalten echte synchrone Offen-Handles entsprechend
+dem neuen Vertrag. Optionale Wartungs-IDs werden nur bei Vorhandensein weitergereicht.
+Zusätzlich normale Tabellenauswahl nach Persistenz direkt sperren, damit UI-Retry
+keine nachträglichen Entwurfsänderungen zulässt. Danach Typen und bestehende
+Fraktions-/Ortsdialogtests erneut prüfen.
+
+### Phase 4 — Bestätigung ohne Dirty-Drafts: Korrekturplan
+
+33 bestehende Fraktions-/Orts-/Koordinatortests sowie 21 Owner-/Koordinatortests
+bestanden. Teilaudit findet: Die zentrale Bestätigung überspringt den Koordinator,
+wenn beim Öffnen keine Änderungen erkannt wurden. Damit könnten noch ladende
+Abhängigkeiten ungeprüft bleiben. Eine reine check-Klärung führt keine Owner-
+Mutation aus, prüft aber den vollständigen Abhängigkeitsgraphen und spätere Dirty-
+Zustände. Jede zentrale Bestätigung verwendet entweder die ausdrücklich gewählte
+Save-/Discard-Operation oder check. Fehler verhindern Main und fordern bei Dirty-
+Zustand erneut die ausdrückliche Auswahl. Tests belegen keine impliziten Saves und
+Blockierung fehlender Abhängigkeiten auch bei sauberem Eltern-Draft.
+
+### Phase 4 — Testadapter-Lint: Korrekturrunde
+
+64 Tests bestanden, vollständiger Typecheck bestanden. Lint beanstandet zwei
+Teststellen: einen unsicher typisierten Matcher als Objektwert und einen
+Render-Factory-Callback, dessen Testhandle ein React-Ref erfasst. Matcher in direkte
+Assertion zerlegen; stabilen Testhandle-Zustand als eigenes Objekt initialisieren,
+das ausschließlich Ereignisse ändern. Produktcode benötigt dafür keine Ausnahme.
+Danach Lint, betroffene Tests und den gebauten Startpfad prüfen.
+
+### Phase 4 — Testhandle: zweite Korrekturrunde
+
+Lint lehnt auch direkte Mutation des durch useState gehaltenen Testobjekts ab.
+Stattdessen erzeugt der Test-Dialogbesitzer pro Öffnungsereignis einen Handle mit
+gekapseltem Offen-Zustand und Close-/isOpen-Funktionen; React hält nur diesen
+unveränderlichen Handle. Keine Lint-Ausnahme. Der Build-/Smoke-Lauf der vorherigen
+Runde war erfolgreich, die wegen Lint nicht gestartete Testwiederholung wird jetzt
+nachgeholt.
+
+### Phase 4 — Abhängigkeiten und Fraktions-Owner: Teilaudit
+
+Implementierungsplanabgleich: explizite dependsOn-IDs werden vor dem Eltern-Owner
+geklärt. Fehlerhafte/weiterhin Dirty-Kinder verhindern dessen Mutation; unabhängige
+Teilerfolge bleiben erhalten. Tests belegen Reihenfolge für Save/Discard, Retry ohne
+erneuten erfolgreichen Kind-Save, Zyklen/fehlende IDs und später hinzugekommene
+Abhängigkeiten. Die reine check-Klärung schreibt nichts; die reale Wartungsbestätigung
+weist damit fehlende Kind-Editoren auch ohne Dirty-Felder vor Main ab.
+
+Related-Dialog-Stack liefert stabile IDs und synchronen Offen-Status bis zu den
+realen Integrations-/Editor-Komponenten. Fraktions-Owner verwendet diese Abhängigkeit,
+führt erfolgreiche Kind-Callbacks synchron in seinen Draft ein und trennt das von
+gesperrten Benutzermutationen. Normaler Save, Wartungs-Save und vorhandenes Pending
+teilen einen Pfad; Reconciliation-Retry legt keine zweite Fraktion an. Sechs neue
+Owner-Tests prüfen diese Fälle einschließlich noch ladendem Kind. Der Child-Registry-
+Teil im Owner-Test ist kontrolliert; dies ersetzt ausdrücklich keinen Test des
+vollständigen realen Tabellen-/Fraktions-/Ortsdialogstapels.
+
+Validierung: 64 Tests in acht Dateien bestanden. Nach Testadapter-Korrekturen die
+betroffenen 28 Tests erneut bestanden; gezieltes Lint nun ohne Fehler. Vollständiger
+Typecheck des abschließenden Stands bestanden. 91 Architekturprüfungen bestanden.
+Build/Built-Smoke bestanden (Core ready und bestätigt closed); git diff --check
+bestand. Technischer Development-Build, kein kanonischer App-Handoff.
+
+Roadmapabgleich: Phase4 bleibt in Arbeit. Begegnungstabelle trägt bereits ihre
+explizite ID, verwendet aber noch den blockierenden Guard. Nächster Schritt ist
+ihr vollständiger Owner-Adapter einschließlich Scope, Gewichte und vorhandener
+Reconciliation-Semantik, gefolgt vom realen verschachtelten UI-Test und Orts-Owner.
+Weitere Editorfamilien, vollständige Eingabesperre sowie Offline-/Update-Gesamtabnahme
+bleiben offen. Phasen5–7 und abschließende Candidate-/Handoff-/Main-/Release-Gates
+bleiben vollständig erforderlich.

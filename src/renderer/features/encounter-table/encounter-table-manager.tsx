@@ -81,7 +81,7 @@ export function EncounterTableDialog(props: EncounterTableEditorRenderProps) {
   const dirty =
     encounterTableDraftDirty(draft) ||
     (!props.table && creationScope !== 'campaign')
-  useMaintenanceDraftGuard(dirty)
+  useMaintenanceDraftGuard(dirty, props.maintenanceId)
   const creatureIdsKey = [...draft.order].toSorted().join('\u0000')
   const entries = useMemo(
     () =>

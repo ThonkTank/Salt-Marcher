@@ -11,8 +11,12 @@ import {
 } from './maintenance-draft-coordinator.js'
 
 /** Transitional guard; owner save/discard registration is required for resolution. */
-export function useMaintenanceDraftGuard(dirty: boolean): void {
-  const id = useId()
+export function useMaintenanceDraftGuard(
+  dirty: boolean,
+  ownerId?: string
+): void {
+  const generatedId = useId()
+  const id = ownerId ?? generatedId
   useEffect(
     () =>
       maintenanceDraftCoordinator.register(id, {
@@ -33,8 +37,12 @@ export function useMaintenanceEditingBlocked(): boolean {
 }
 
 /** Stable registration; save/discard stay with the committed editor instance. */
-export function useMaintenanceDraft(owner: MaintenanceDraft): boolean {
-  const id = useId()
+export function useMaintenanceDraft(
+  owner: MaintenanceDraft,
+  ownerId?: string
+): boolean {
+  const generatedId = useId()
+  const id = ownerId ?? generatedId
   const current = useRef(owner)
   useLayoutEffect(() => {
     current.current = owner
@@ -44,6 +52,9 @@ export function useMaintenanceDraft(owner: MaintenanceDraft): boolean {
       maintenanceDraftCoordinator.register(id, {
         get label() {
           return current.current.label
+        },
+        get dependsOn() {
+          return current.current.dependsOn ?? []
         },
         isDirty: () => current.current.isDirty(),
         save: () => current.current.save?.() ?? Promise.resolve(false),

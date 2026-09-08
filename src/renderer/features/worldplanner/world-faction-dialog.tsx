@@ -277,7 +277,7 @@ export function WorldFactionDialog(props: WorldFactionEditorRenderProps) {
           cancelLabel={message('action.cancel')}
           discardLabel={message('ui.aenderungen.verwerfen')}
           onCancel={() => controller.setDiscardOpen(false)}
-          onDiscard={props.close}
+          onDiscard={() => void controller.discard()}
         />
       )}
     </>

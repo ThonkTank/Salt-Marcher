@@ -1,5 +1,13 @@
+/** Returned by dialog owners, including while the lazy editor is loading. */
+export interface MaintenanceDraftHandle {
+  readonly id: string
+  isOpen(): boolean
+}
+
 export interface MaintenanceDraft {
   readonly label: string
+  /** Child editors whose results must be settled before this owner. */
+  readonly dependsOn?: readonly string[]
   isDirty(): boolean
   /** Resolve true only when the owning editor confirmed successful persistence. */
   save?(): Promise<boolean>
@@ -12,7 +20,7 @@ export interface DraftResolutionFailure {
 }
 export interface MaintenanceDraftResolution {
   resolve(
-    choice: 'save' | 'discard'
+    choice: 'save' | 'discard' | 'check'
   ): Promise<readonly DraftResolutionFailure[]>
   release(): void
 }
@@ -55,38 +63,84 @@ export class MaintenanceDraftCoordinator {
         resolving = true
         const failures: DraftResolutionFailure[] = []
         try {
-          for (const [id, draft] of [...this.drafts]) {
+          const snapshot = new Map(this.drafts)
+          const states = new Map<string, 'visiting' | 'succeeded' | 'failed'>()
+          const resolveDraft = async (id: string): Promise<boolean> => {
+            if (states.get(id) === 'succeeded') return true
+            if (states.get(id) === 'failed') return false
+            const draft = snapshot.get(id)!
             try {
-              if (!draft.isDirty()) continue
+              if (states.get(id) === 'visiting')
+                throw new Error(
+                  'Die Editor-Abhängigkeiten enthalten einen Kreis. Bitte Wartung abbrechen und die Bereiche prüfen.'
+                )
+              states.set(id, 'visiting')
+              const dependencies = [...(draft.dependsOn ?? [])]
+              let childrenResolved = true
+              for (const child of dependencies) {
+                if (!snapshot.has(child))
+                  throw new Error(
+                    'Ein abhängiger Editor ist nicht verfügbar. Bitte Wartung abbrechen und den Bereich erneut öffnen.'
+                  )
+                if (!(await resolveDraft(child))) childrenResolved = false
+              }
+              if (!childrenResolved)
+                throw new Error(
+                  'Ein abhängiger Editor konnte nicht geklärt werden. Bitte dessen Fehler zuerst beheben.'
+                )
+              if (
+                (draft.dependsOn ?? []).some(
+                  (child) => !dependencies.includes(child)
+                )
+              )
+                throw new Error(
+                  'Ein neuer abhängiger Editor ist hinzugekommen. Bitte erneut prüfen.'
+                )
               if (this.drafts.get(id) !== draft)
                 throw new Error(
                   'Der Editor wurde während der Klärung geschlossen. Bitte den Bereich prüfen.'
                 )
-              const operation =
-                choice === 'save'
-                  ? draft.save?.bind(draft)
-                  : draft.discard?.bind(draft)
-              if (!operation)
-                throw new Error(
-                  'Bitte Änderungen in diesem Bereich zuerst speichern oder verwerfen.'
-                )
-              if (!(await operation()))
-                throw new Error(
+              if (draft.isDirty()) {
+                if (choice === 'check')
+                  throw new Error(
+                    'Dieser Bereich enthält offene Änderungen. Bitte Speichern oder Verwerfen wählen.'
+                  )
+                const operation =
                   choice === 'save'
-                    ? 'Speichern wurde nicht bestätigt. Bitte Eingaben oder Verbindung prüfen.'
-                    : 'Verwerfen wurde nicht bestätigt. Bitte den Bereich prüfen.'
-                )
+                    ? draft.save?.bind(draft)
+                    : draft.discard?.bind(draft)
+                if (!operation)
+                  throw new Error(
+                    'Bitte Änderungen in diesem Bereich zuerst speichern oder verwerfen.'
+                  )
+                if (!(await operation()))
+                  throw new Error(
+                    choice === 'save'
+                      ? 'Speichern wurde nicht bestätigt. Bitte Eingaben oder Verbindung prüfen.'
+                      : 'Verwerfen wurde nicht bestätigt. Bitte den Bereich prüfen.'
+                  )
+                if (this.drafts.get(id) === draft && draft.isDirty())
+                  throw new Error(
+                    'Dieser Bereich enthält weiterhin offene Änderungen. Bitte erneut prüfen.'
+                  )
+              }
+              states.set(id, 'succeeded')
+              return true
             } catch (error) {
-              failures.push({
-                id,
-                label: draft.label,
-                message:
-                  error instanceof Error
-                    ? error.message
-                    : 'Der Vorgang ist fehlgeschlagen. Bitte erneut versuchen.'
-              })
+              states.set(id, 'failed')
+              if (!failures.some((failure) => failure.id === id))
+                failures.push({
+                  id,
+                  label: draft.label,
+                  message:
+                    error instanceof Error
+                      ? error.message
+                      : 'Der Vorgang ist fehlgeschlagen. Bitte erneut versuchen.'
+                })
+              return false
             }
           }
+          for (const id of snapshot.keys()) await resolveDraft(id)
           for (const [id, draft] of this.drafts) {
             if (failures.some((failure) => failure.id === id)) continue
             try {

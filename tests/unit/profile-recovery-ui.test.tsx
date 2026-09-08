@@ -106,6 +106,24 @@ function view() {
   )
 }
 describe('profile recovery without a working campaign database', () => {
+  it('checks missing child editors even without dirty fields before restore', async () => {
+    unregister.push(
+      maintenanceDraftCoordinator.register('clean-parent', {
+        label: 'Fraktion',
+        dependsOn: ['loading-table'],
+        isDirty: () => false
+      })
+    )
+    await openRestore()
+    fireEvent.click(screen.getByRole('button', { name: 'Bestätigen' }))
+    await screen.findByText(
+      /Fraktion: Ein abhängiger Editor ist nicht verfügbar/
+    )
+    expect(mocks.restore).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Abbrechen' }))
+    expect(maintenanceDraftCoordinator.isLocked()).toBe(false)
+  })
+
   it('saves every dirty owner before calling restore and retains the barrier during maintenance', async () => {
     const world = vi.fn(() => Promise.resolve(true))
     const npc = vi.fn(() => Promise.resolve(true))

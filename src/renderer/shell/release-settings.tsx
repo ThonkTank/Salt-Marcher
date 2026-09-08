@@ -75,17 +75,16 @@ export function ReleaseSettings({
     setBusy(true)
     setDraftErrors([])
     try {
-      if (choice) {
-        const failures = await resolution.current.resolve(choice)
-        if (failures.length) {
-          setDraftErrors(
-            failures.map((failure) => ({
-              id: failure.id,
-              text: `${failure.label}: ${failure.message}`
-            }))
-          )
-          return
-        }
+      const failures = await resolution.current.resolve(choice ?? 'check')
+      if (failures.length) {
+        setNeedsDrafts(hasMaintenanceDrafts())
+        setDraftErrors(
+          failures.map((failure) => ({
+            id: failure.id,
+            text: `${failure.label}: ${failure.message}`
+          }))
+        )
+        return
       }
       if (!mounted.current) return
       const next = await confirmation.run()
