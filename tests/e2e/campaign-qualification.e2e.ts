@@ -107,7 +107,7 @@ async function createCampaign(
   ).waitForExist({
     timeout: switchTimeoutMs
   })
-  await waitForCampaignDialogClosed(client)
+  await waitForCampaignScreenClosed(client)
 }
 
 async function activeCampaign(
@@ -156,32 +156,24 @@ async function switchCampaign(
   campaignId: string,
   campaignName: string
 ): Promise<number> {
-  await openCampaignDialog(client)
+  await openCampaignScreen(client)
   const target = await client.$(`button[aria-label="${campaignName} öffnen"]`)
   await target.waitForClickable({ timeout: 5_000 })
   const startedAt = performance.now()
   await target.click()
   await waitForCampaignReady(client, campaignId)
-  await waitForCampaignDialogClosed(client)
+  await waitForCampaignScreenClosed(client)
   const finishedAt = performance.now()
   return finishedAt - startedAt
 }
 
-async function openCampaignDialog(client: WdioBrowser): Promise<void> {
-  await openCampaignScreen(client)
-}
-
-async function waitForCampaignDialogClosed(client: WdioBrowser): Promise<void> {
-  const button = await client.$('button[aria-label="Menü"]')
-  await client.waitUntil(
-    async () => (await button.getAttribute('aria-expanded')) === 'false',
-    {
-      timeout: 5_000,
-      interval: 25,
-      timeoutMsg: 'Campaign dialog did not close after activation.'
-    }
-  )
-  await button.waitForClickable({ timeout: 5_000 })
+async function waitForCampaignScreenClosed(client: WdioBrowser): Promise<void> {
+  await client
+    .$('.campaign-screen')
+    .waitForExist({ reverse: true, timeout: 5_000 })
+  await client
+    .$('button[aria-label="Menü"]')
+    .waitForClickable({ timeout: 5_000 })
 }
 
 async function waitForCampaignReady(
@@ -207,7 +199,7 @@ async function renameActiveCampaign(
   currentName: string,
   nextName: string
 ): Promise<void> {
-  await openCampaignDialog(client)
+  await openCampaignScreen(client)
   await (
     await client.$(`button[aria-label="${currentName} bearbeiten"]`)
   ).click()

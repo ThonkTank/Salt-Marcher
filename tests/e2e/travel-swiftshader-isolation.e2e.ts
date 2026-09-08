@@ -98,7 +98,7 @@ async function createCampaign(
   client: WdioBrowser,
   name: string
 ): Promise<void> {
-  await openCampaignDialog(client)
+  await openCampaignScreen(client)
   await beginCampaignCreation(client)
   const field = await client.$('#campaign-name')
   await field.setValue(name)
@@ -108,14 +108,14 @@ async function createCampaign(
   ).waitForExist({
     timeout: travelTimeoutMs
   })
-  await waitForCampaignDialogClosed(client)
+  await waitForCampaignScreenClosed(client)
 }
 
 async function switchCampaign(
   client: WdioBrowser,
   name: string
 ): Promise<void> {
-  await openCampaignDialog(client)
+  await openCampaignScreen(client)
   const target = await client.$(`button[aria-label="${name} öffnen"]`)
   await target.waitForClickable({ timeout: 5_000 })
   await target.click()
@@ -124,25 +124,16 @@ async function switchCampaign(
   ).waitForExist({
     timeout: travelTimeoutMs
   })
-  await waitForCampaignDialogClosed(client)
+  await waitForCampaignScreenClosed(client)
 }
 
-async function openCampaignDialog(client: WdioBrowser): Promise<void> {
-  const menuButton = await client.$('button[aria-label="Menü"]')
-  if ((await menuButton.getAttribute('aria-expanded')) !== 'true')
-    await openCampaignScreen(client)
-}
-
-async function waitForCampaignDialogClosed(client: WdioBrowser): Promise<void> {
-  const menuButton = await client.$('button[aria-label="Menü"]')
-  await client.waitUntil(
-    async () => (await menuButton.getAttribute('aria-expanded')) === 'false',
-    {
-      timeout: 5_000,
-      interval: 25,
-      timeoutMsg: 'Campaign dialog did not close.'
-    }
-  )
+async function waitForCampaignScreenClosed(client: WdioBrowser): Promise<void> {
+  await client
+    .$('.campaign-screen')
+    .waitForExist({ reverse: true, timeout: 5_000 })
+  await client
+    .$('button[aria-label="Menü"]')
+    .waitForClickable({ timeout: 5_000 })
 }
 
 async function openTravel(client: WdioBrowser): Promise<void> {

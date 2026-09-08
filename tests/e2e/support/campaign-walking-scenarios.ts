@@ -234,7 +234,7 @@ export async function runCampaignCreationScenario(): Promise<void> {
   await pressDividerKey(client, 'Breite der Szenariospalte', 'ArrowLeft')
   await expect(rightDivider).toHaveAttribute('aria-valuenow', '274')
 
-  await openCampaignDialog(client)
+  await openCampaignScreen(client)
   await beginCampaignCreation(client)
   const nextField = await client.$('#campaign-name')
   await nextField.setValue('Campaign B')
@@ -245,7 +245,7 @@ export async function runCampaignCreationScenario(): Promise<void> {
     timeout: 10_000
   })
 
-  await openCampaignDialog(client)
+  await openCampaignScreen(client)
   await (await client.$('button[aria-label="test öffnen"]')).click()
   await (
     await client.$('h1=Session · test')
@@ -253,7 +253,7 @@ export async function runCampaignCreationScenario(): Promise<void> {
     timeout: 10_000
   })
 
-  await openCampaignDialog(client)
+  await openCampaignScreen(client)
   await (await client.$('button[aria-label="Campaign B bearbeiten"]')).click()
   await (await client.$('#campaign-name')).setValue('Campaign B Archiv')
   await (await client.$('button=Speichern')).click()
@@ -275,6 +275,7 @@ export async function runCampaignCreationScenario(): Promise<void> {
   await expect(await client.$('strong=Campaign B Archiv')).not.toBeExisting()
   await (await client.$('button[aria-label="Schließen"]')).click()
   await (await client.$('button[aria-label="test öffnen"]')).click()
+  await runCampaignMinimumSizeScenario(client)
 }
 
 export async function runCampaignHexMapScenario(): Promise<void> {
@@ -931,10 +932,6 @@ async function createFreshCampaign(
   })
 }
 
-async function openCampaignDialog(client: WdioBrowser): Promise<void> {
-  await openCampaignScreen(client)
-}
-
 async function expectHexEditorLayout(client: WdioBrowser): Promise<void> {
   const layout = await client.execute(() => {
     const workspace = document.querySelector('.hex-editor-workspace')
@@ -1209,4 +1206,112 @@ async function waitForGroupManagementReady(client: WdioBrowser): Promise<void> {
         'Group roster, Loot draft, catalog, and workspace layout did not become ready.'
     }
   )
+}
+
+async function runCampaignMinimumSizeScenario(
+  client: WdioBrowser
+): Promise<void> {
+  await openCampaignScreen(client)
+  await setWindowToMinimumResponsiveSize(client)
+  const name =
+    'Die außergewöhnlich lange Kampagne der Salzmark '.repeat(3).slice(0, 99) +
+    '!'
+  const before = await client.execute(() => window.saltMarcher.campaigns.list())
+  for (let i = 0; i < 2; i++) {
+    await beginCampaignCreation(client)
+    await client.$('#campaign-name').setValue(name)
+    await expectCampaignLayout(client)
+    await client.$('button=Erstellen & öffnen').click()
+    await client
+      .$('[data-screen="workspace"]')
+      .waitForExist({ timeout: 15_000 })
+    await openCampaignScreen(client)
+  }
+  const created = await client.execute(() =>
+    window.saltMarcher.campaigns.list()
+  )
+  const duplicates = created.campaigns.filter(
+    (campaign) => campaign.name === name
+  )
+  expect(created.campaigns.length).toBe(before.campaigns.length + 2)
+  expect(duplicates).toHaveLength(2)
+  expect(new Set(duplicates.map((campaign) => campaign.id)).size).toBe(2)
+
+  const originalTheme = await client.execute(
+    () => document.documentElement.dataset['theme']
+  )
+  try {
+    for (const theme of ['light', 'dark']) {
+      await client.execute((theme: string) => {
+        document.documentElement.dataset['theme'] = theme
+      }, theme)
+      await expect(client.$$('strong=' + name)).toBeElementsArrayOfSize(2)
+      await expectCampaignLayout(client)
+      await beginCampaignCreation(client)
+      await client.$('#campaign-name').setValue(name)
+      await expectCampaignLayout(client)
+      await client.$('button[aria-label="Schließen"]').click()
+      await client.$('button[aria-label="' + name + ' bearbeiten"]').click()
+      await expect(client.$('#campaign-name')).toHaveValue(name)
+      await expectCampaignLayout(client)
+      await client.$('button=In den Papierkorb').click()
+      await client.$('button=Papierkorb (1)').click()
+      await expectCampaignLayout(client)
+      await client.$('button=Löschen …').click()
+      await expectCampaignLayout(client)
+      await client.$('#campaign-confirm-name').setValue(name.toLowerCase())
+      await expect(client.$('button=Endgültig löschen')).toBeDisabled()
+      await client.$('#campaign-confirm-name').setValue(name)
+      await expect(client.$('button=Endgültig löschen')).toBeEnabled()
+      await client.$('button=Abbrechen').click()
+      await client.$('button=Wiederherstellen').click()
+      await client.$('p*=Die Kampagne wurde wiederhergestellt').waitForExist()
+      await expectCampaignLayout(client)
+      await client.$('button[aria-label="Schließen"]').click()
+      const restored = await client.execute(() =>
+        window.saltMarcher.campaigns.list()
+      )
+      expect(restored.activeCampaignId).toBeNull()
+      expect(
+        restored.campaigns.filter((campaign) => campaign.name === name)
+      ).toEqual(duplicates)
+    }
+  } finally {
+    await client.execute((theme: string | null) => {
+      if (theme === null) delete document.documentElement.dataset['theme']
+      else document.documentElement.dataset['theme'] = theme
+    }, originalTheme ?? null)
+  }
+}
+
+async function expectCampaignLayout(client: WdioBrowser): Promise<void> {
+  await expectAccessible(client)
+  const layout = await client.execute(() => {
+    const popup = document.querySelector<HTMLElement>(
+      '.campaign-management-popup'
+    )
+    const surface =
+      popup ?? document.querySelector<HTMLElement>('.campaign-screen')
+    if (!surface) throw new Error('Campaign surface is missing')
+    const bounds = surface.getBoundingClientRect()
+    const controls = [...surface.querySelectorAll<HTMLElement>('button,input')]
+    return {
+      pageOverflow: document.documentElement.scrollWidth > innerWidth,
+      surfaceOverflow: surface.scrollWidth > surface.clientWidth + 1,
+      outsideViewport: bounds.left < 0 || bounds.right > innerWidth + 1,
+      popupOutsideViewport:
+        popup !== null && (bounds.top < 0 || bounds.bottom > innerHeight + 1),
+      controlsOutsideSurface: controls.some((control) => {
+        const rect = control.getBoundingClientRect()
+        return rect.left < bounds.left - 1 || rect.right > bounds.right + 1
+      })
+    }
+  })
+  expect(layout).toEqual({
+    pageOverflow: false,
+    surfaceOverflow: false,
+    outsideViewport: false,
+    popupOutsideViewport: false,
+    controlsOutsideSurface: false
+  })
 }
