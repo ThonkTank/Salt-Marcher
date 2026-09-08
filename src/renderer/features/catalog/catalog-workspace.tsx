@@ -1,3 +1,5 @@
+import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
+import { useMaintenanceEditingBlocked } from '../../shell/maintenance-drafts.js'
 import { lazy, Suspense, useMemo, useState } from 'react'
 import type { Creature } from '../../../shared/contracts/encounter.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
@@ -46,6 +48,7 @@ type CatalogWorkspaceProps = {
 }
 
 export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
+  const maintenanceBlocked = useMaintenanceEditingBlocked()
   const api = useCapabilityApi()
   const catalog = useMemo(() => catalogCapabilities(api), [api])
   const editorPorts = useMemo(() => createCatalogEditorPorts(api), [api])
@@ -79,16 +82,21 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
   const [localSection, setLocalSection] = useState<CatalogSection>('monsters')
   const [localCharacter, setLocalCharacter] = useState<string | null>(null)
   const section = props.navigation?.section ?? localSection
+  const [charactersVisited, setCharactersVisited] = useState(
+    section === 'characters'
+  )
+  if (section === 'characters' && !charactersVisited) setCharactersVisited(true)
   const characterId = props.navigation
     ? props.navigation.characterId
     : localCharacter
   const setSection = (section: CatalogSection) => {
+    if (maintenanceDraftCoordinator.isLocked()) return
     setLocalSection(section)
     props.navigate?.({ section, characterId })
   }
   const selectCharacter = (characterId: string | null) => {
     setLocalCharacter(characterId)
-    props.navigate?.({ section: 'characters', characterId })
+    props.navigate?.({ section, characterId })
   }
   const monsterController = useMonsterCatalogController(
     section === 'monsters',
@@ -126,19 +134,29 @@ export default function CatalogWorkspace(props: CatalogWorkspaceProps) {
       <div
         className={`catalog-browser${section !== 'monsters' ? ' locations-catalog-browser' : ''}`}
       >
-        <CatalogSectionSelector section={section} select={setSection} />
-        {section === 'characters' && props.snapshot ? (
-          <Suspense fallback={null}>
-            <LazyCharacterCatalogSection
-              key={props.campaignId}
-              campaignId={props.campaignId}
-              snapshot={props.snapshot}
-              selectedId={characterId}
-              select={selectCharacter}
-              onError={props.onError}
-            />
-          </Suspense>
-        ) : section === 'monsters' ? (
+        <CatalogSectionSelector
+          section={section}
+          select={setSection}
+          blocked={maintenanceBlocked}
+        />
+        {charactersVisited && props.snapshot && (
+          <div
+            className="character-catalog-host"
+            hidden={section !== 'characters'}
+          >
+            <Suspense fallback={null}>
+              <LazyCharacterCatalogSection
+                key={props.campaignId}
+                campaignId={props.campaignId}
+                snapshot={props.snapshot}
+                selectedId={characterId}
+                select={selectCharacter}
+                onError={props.onError}
+              />
+            </Suspense>
+          </div>
+        )}
+        {section === 'characters' ? null : section === 'monsters' ? (
           <MonsterCatalogSection controller={monsterController} />
         ) : section === 'locations' ? (
           <LocationCatalogSection

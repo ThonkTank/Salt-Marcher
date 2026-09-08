@@ -4027,3 +4027,231 @@ Rendereranschluss mit ursprünglicher Kampagne, gehaltenem Write/Refresh und
 Save-/Discard-Recovery bleibt der nächste geplante Schritt. Phase 4 bleibt offen;
 Phasen 5–7 sowie Exact-SHA-CI, kanonischer Handoff und Main-Abschluss bleiben
 unverändert erforderlich. Lokale Buildprüfungen ersetzen keinen Handoff.
+
+### Phase 4 — Konkretisierung des Charakterkatalog-Anschlusses: Originalport
+
+Backend-Commit 508101c9e ist gepusht; dessen Check 34281011400 wurde gestartet.
+Der Renderer erhält zunächst einen getesteten Port mit expliziter Kampagnen-ID
+vom Katalog. Execute und Status prüfen aktive und geladene Kampagne vor und nach
+Transport; ein Wechsel nach Write meldet Unknown. Refresh verwendet die bestehende
+Workspace-Projektion und akzeptiert nur ready mit vorhandenem Sessionstand der
+ursprünglichen Kampagne. Stale, Fehler und leere Session bleiben Fehler. Tests
+prüfen beide Identitäten vor/während aller drei Operationen und Refresh-Ergebnisse.
+Danach folgt der bereits geplante Controller-/UI-Anschluss; ein isolierter Port
+schließt die Bedienlücke ausdrücklich noch nicht. Beim Anschluss außerdem die
+Mount-/Close-Lebensdauer des Katalogs prüfen, damit ausstehende Schreibversuche
+beim Schließen nicht aus der zentralen Wartung verschwinden.
+
+Originalport-Nachweis: Zehn Hooktests bestehen; sie prüfen aktive und geladene
+Kampagne jeweils vor/während Write, Status und vollständigem Refresh. Ungültige
+Refresh-Ergebnisse und Transportfehler werden abgewiesen, ohne Write-Replay.
+Vollständiger Typecheck, gezieltes ESLint, Format der neuen Dateien und
+ git diff --check bestehen. Logs work/roadmap-phase4-character-port-{tests,types,lint}.log.
+Der Port ist noch nicht in den Katalog eingebunden; dieser Zwischenstand ist
+lokal und ersetzt keine UI- oder Handoff-Abnahme. Check 34281011400 ist für den
+Backend-Commit weiterhin in_progress; PR 661 nennt exakt 508101c9e und MERGEABLE.
+
+Plan-/Roadmapabgleich des Ports: ursprüngliche Kampagnenbindung und bestätigter
+vollständiger Refresh sind implementiert und gezielt geprüft. Die geplante
+Controller-/UI-Arbeit bleibt offen. Zusätzlicher bestätigter Befund:
+CatalogWorkspace rendert CharacterCatalogSection nur für section=characters
+und mit campaignId als Key. Der Bereichswechsel in setSection hat keinen
+Pending-Guard; useMaintenanceDraft meldet den Owner beim Unmount ab. Deshalb muss
+der Charakter-Controller seinen ausstehenden Versuch einschließlich Originalport
+unabhängig vom Mount halten, bis lesende Klärung abgeschlossen ist. Vor dem
+UI-Anschluss eine solche begrenzte Registrierung für Pending/Unknown umsetzen
+und Unmount plus zentrale Save-/Discard-Klärung testen. Allgemeine Hook-Cleanup-
+Semantik nicht pauschal verändern. Unbestätigte Entwürfe und Navigation außerdem
+im Katalog ausdrücklich behandeln, statt sie beim Bereichswechsel zu verlieren.
+Phase 4 bleibt offen; die kanonische Roadmap bleibt unverändert.
+
+### Phase 4 — Plan: Lebensdauer und Recovery eines Charakterbefehls
+
+Vorheriger Zielturn war Fortschritt: Backend gepusht, Originalport implementiert
+und geprüft. Check 34281011400 läuft weiterhin. Als nächster konkreter Teil des
+UI-Anschlusses einen Charakterbefehls-Controller einführen: ein Versuch hält
+Originalinput und Port, wartet Write plus vollständigen Refresh ab und klärt
+jeden nicht bestätigten Ausgang ausschließlich über Status plus aktuellen Read.
+Eine abwesende Quittung erhält den Entwurf; eine geänderte Partyrevision sperrt
+blinde Wiederholung bis zum ausdrücklich verworfenen/neuen Entwurf. Erfolgreiche
+Quittungen liefern nur Identität, nie den alten Partystand als aktuelle Anzeige.
+
+Der Controller besitzt attach/detach für UI-Callbacks. Wird er mit Pending oder
+Unknown ausgehängt, registriert er selbst einen begrenzten Wartungsowner, dessen
+Save und Discard ausschließlich den Originalversuch lesend klären. Nach Abschluss
+wird dieser Owner entfernt. Ohne ungelösten Versuch entsteht keine Registrierung.
+Bei Rückkehr darf derselbe Controller wieder angebunden werden; keine späten
+Navigationscallbacks an bereits geschlossene Oberflächen. Native Befehle bleiben
+unverändert. Controller-Tests prüfen alle CRUD-Arten, Vollrefresh, verlorene
+Antworten, Abwesenheit/Revisionskonflikt, mehrfachen Readfehler, spätere Löschung,
+Unmount während Write/Unknown und anschließende zentrale Klärung ohne Replay.
+Die Form-/Navigationsintegration samt Entwurfserhalt bleibt Bestandteil des
+anschließenden UI-Schritts und ist nicht durch Controllertests allein abgenommen.
+
+Korrekturrunde Controller-Testumgebung: Fehlerfälle erreichen die vorhandene
+Renderer-Fehlerübersetzung, die window.location für die Pseudolokalisierung liest.
+Der neue Controllertest lief bisher in Node und scheitert dort vor seinen
+Recovery-Assertions. Wie die übrigen Renderer-Controllertests jsdom deklarieren;
+Produktverhalten unverändert lassen und sämtliche neuen Fälle erneut prüfen.
+
+Controller-Zwischennachweis: 22 Controller-/Porttests bestehen nach Korrektur der
+Testumgebung. Jetzt den Charakterkatalog an diesen Controller anschließen:
+Formsave normalisiert das Draftschema und verwendet eine neue Command-ID;
+Delete bleibt am ausdrücklichen Bestätigungsklick. UI-Callbacks erhalten Quittung
+plus aktuelle Session und wählen nur noch existierende IDs. Save/Discard warten
+settle; Readretry ist gesondert sichtbar. Controller attach/detach erfolgt in der
+Layout-Lebensdauer. Bestehende Tests mit alten CRUD-Mocks müssen auf die neuen
+Capabilities und echte Workspace-Identität umgestellt werden; alte Erwartungen,
+die Stale/Refreshfehler als Erfolg behandeln, gelten nicht mehr als Abnahme.
+
+Navigationsanschluss: Der Charakterbereich bleibt nach seinem ersten Öffnen im
+Katalog gemountet und wird beim Bereichswechsel verborgen. Dadurch bleiben Form,
+Save-Callback und Wartungsowner erhalten, ohne den Charakterchunk vor der ersten
+Nutzung zu laden. Die Auswahl nach einem verspäteten Save respektiert den aktuell
+sichtbaren Katalogbereich. Bereichswechsel während Wartung werden abgewehrt;
+Charakterauswahl/Neu ersetzen keinen noch offenen Form-/Löschentwurf. Schließen des
+gesamten Katalogs nutzt für Pending/Unknown den geprüften Detached-Owner. Die
+übergreifende Behandlung ungeklärter, noch nicht gesendeter Entwürfe beim Schließen
+ganzer Workspacefenster muss in der verbleibenden Desktop-Abnahme geprüft werden.
+
+Korrekturrunde UI-Testlint: Alle 41 ausgeführten Fälle und der Typecheck bestehen.
+Zwei Testcallbacks sind unnötig async (Mock liefert synchron berechneten Wert;
+act-Callback löst nur Deferred auf). Explizites Promise.resolve im API-Mock und
+synchrones act verwenden, anschließend UI-/Controller-/Porttests und Lint erneut.
+
+Korrekturrunde Retention-Testowner: Bereichswechsel und Entwurfserhalt bestehen,
+aber der künstliche Testowner meldet Dirty über veralteten React-State, während
+Discard synchron zurückkehrt. Wie der echte Charakterowner einen synchronen
+Ref für Dirty/Discard verwenden. Dies korrigiert ausschließlich den Testdouble;
+der echte Owner verwendet bereits editingRef/confirmRef. Retentiontest erneut.
+
+UI-Audit vor Build: 44 gezielte Tests bestehen. Zwei kleine Vertragsdetails vor
+Artefaktprüfung absichern: Fehler auch ohne noch ausgewählten Charakter anzeigen;
+den endgültigen Delete-Handler zusätzlich synchron gegen Wartung sperren. Der
+Controller übernimmt eine Kopie des Originalcommands, damit spätere Änderungen
+an einem aufrufereigenen Objekt nicht den Recovery-Fingerprint verändern können.
+Dazu einen Mutationsschutztest ergänzen; danach keine weiteren Sourceänderungen
+während Build/Smoke/E2E.
+
+Korrekturrunde Architektur-/Typprüfung: 112 Fälle bestehen; zwei Architekturtests
+finden einen Runtime-Schemaimport im Renderer und unlokalisierten Buttontext.
+Der Renderer normalisiert die sechs optionalen Profilfelder wie der vorhandene
+Partyadapter; Zod-Validierung bleibt an der Capability-Grenze. Button und neue
+Controllerhinweise in den typisierten Workspace-Nachrichtenkatalog übernehmen.
+Der Retentiontest verwendet außerdem eine nicht unterstützte getByRole-Option
+exact; exaktes name-Matching genügt. Keine Regeln/Budgets abschwächen. Danach
+Architektur-/UI-Tests, Typen und Lint erneut prüfen.
+
+### Phase 4 — Zwischenprüfung des Charakterkatalog-Anschlusses
+
+Implementiert: Originalkampagnenport, kopierter Commandinput, Controller mit
+vollständigem Write-/Refresh-Lebenszyklus, lesender Statusabgleich, Revisions-
+konfliktsperre, expliziter Readretry und zentrale Save-/Discard-Anbindung. Nach
+Quittungsabgleich wird nur eine im aktuellen Sessionstand vorhandene Charakter-ID
+ausgewählt; alter Quittungs-Partystand wird nicht publiziert. Unbestätigtes Delete
+wird durch zentralen Save nicht ausgeführt. Neue Charakterauswahl ersetzt keinen
+offenen Entwurf. Nach dem ersten Öffnen bleibt der Charakterbereich bei anderem
+Katalogbereich verborgen gemountet; sein Entwurf und Wartungsowner bleiben erhalten.
+Pending/Unknown nach Unmount behalten einen eigenen Wartungsowner und lösen keine
+späte Navigation aus. Der sichtbare Host nutzt display:contents, um die vorhandene
+Gridanordnung zu erhalten; versteckte Hosts bleiben ausgeblendet.
+
+Nachweise: 114 Tests in elf Dateien grün (Architektur plus Charakterform, Katalog,
+Port, Controller und Bereichs-Retention); vollständiger Typecheck, gezieltes Lint,
+Format und git diff --check bestehen. Build/Smoke ready/closed und Bundle-Gate grün,
+1621273 reachable Bytes ohne Baseline-/Budgetänderung. Buildidentität: dirty auf
+508101c9e, appBuildInputFingerprint
+1614e3c4918289137d38563f71d3eff1420a79b4778e49bd560b977ecff38ab5,
+BuiltAt 2026-09-08T21:45:25.609Z. Alle sieben sceneDesktop-E2E bestehen. Auf denselben
+Bytes läuft campaignCombat noch in Handle 42016. Logs work/roadmap-phase4-character-ui-*.log;
+Controller-/Portlogs wie zuvor. Backend-Check 34281011400 ist vollständig SUCCESS.
+
+Separater Roadmapabgleich: Die montierte Charakter-Recovery ist implementiert
+und gezielt geprüft. Ein zusätzlicher Lebensdauerfall bleibt offen und verbietet
+noch den Abschluss dieser Lücke: Nach Unmount und Status=abwesend wird der
+Originalversuch bislang freigegeben, obwohl der geschlossene Editor seinen
+ungespeicherten Entwurf nicht mehr anzeigen kann. Zentrale Save darf diesen
+Zustand nicht als erfolgreich gespeicherten Entwurf behandeln. Noch nicht
+abgesendete Entwürfe beim Schließen des ganzen Workspacefensters gehören ebenfalls
+zur verbleibenden Desktop-Klärung. Phasen 4–7 und kanonischer Handoff/Main-Abschluss
+bleiben offen. Der aktuelle UI-Stand ist noch nicht committed/gepusht.
+
+### Phase 4 — Nächste Korrekturrunde: abwesender Versuch nach Unmount
+
+Nach Ende des laufenden E2E zunächst dessen Handle/Log auswerten, nicht neu starten.
+Dann den Originalentwurf bei bestätigter Abwesenheit nach Unmount weiter halten.
+Readretry bleibt rein lesend. Eine ausdrücklich gewählte zentrale Discard-Aktion
+darf den nachweislich nicht gespeicherten Entwurf entfernen. Zentrale Save muss
+den Entwurf tatsächlich speichern oder einen konkreten Fehler zurückgeben; sie
+darf keine leere Erfolgsmeldung erzeugen. Nur nach lesend bestätigter Abwesenheit
+und unveränderter Revision darf eine explizite Save-Aktion einen neuen Command
+mit neuer ID verwenden. Bei Konflikt bleibt der Entwurf erhalten und Wartung
+blockiert, bis ausdrücklich verworfen oder im wieder geöffneten Editor geklärt.
+Detached-Owner erst freigeben, wenn weder Versuch noch solcher Entwurf vorhanden.
+Tests für Save/Discard, Konflikt, wiederholte Readfehler und neues vs. ursprüngliches
+Command-ID-Verhalten ergänzen. Danach passende statische Tests und neu gebaute
+Artefaktprüfungen; die bestehenden Buildnachweise gelten nur für den obigen Stand.
+
+Fortsetzung der Korrekturrunde: Vorheriger Zielturn war Fortschritt. E2E-Handle
+42016 ist exit 0; alle acht Fälle bestehen, Summary
+.tmp/e2e-runs/functional-1788903954257-514679/summary.json. Der Controller wird nun
+zwischen ungelöstem Versuch und bestätigt ungespeichertem Entwurf unterscheiden.
+Auch nach montierter Abwesenheitsklärung bleibt die Originaleingabe bis zum
+expliziten Reset/Save intern verfügbar, falls die Ansicht anschließend schließt.
+Nur Detached-Save darf nach erfolgreicher lesender Klärung den gehaltenen Entwurf
+mit neuer Command-ID senden; Detached-Discard entfernt ihn ohne Write. Konflikte
+bleiben konkret gemeldet und blockieren Save. Bestehende Quittungs-Recovery bleibt
+rein lesend und wird nicht wiederholt geschrieben.
+
+Korrekturrunde Testassertion: 121 Tests, vollständiger Typecheck, Build/Smoke/Bundle
+bestehen. ESLint findet ausschließlich any im verschachtelten asymmetrischen
+Matcher der neuen Konfliktassertion. Ergebnis lokal halten, Länge und konkrete
+message mit toContain prüfen; Produktdateien und gebaute Appbytes unverändert.
+Danach betroffenen Test/Lint erneut und sceneDesktop auf dem bestehenden Build
+prüfen. Dieser E2E enthält echtes Charakter-Create/Update/Delete (Zeilen 464–504).
+
+### Phase 4 — Abschlussprüfung des Charakterbefehls-Anschlusses
+
+Planabgleich: Der Charakterkatalog verwendet Originalkampagnenports und kopierte
+Originalinputs für Create/Update/Delete. Pending umfasst Write und vollständigen
+Workspace-Refresh. Fehler halten den Versuch; Readretry und Quittungsklärung sind
+rein lesend. Spätere Änderungen/Löschungen werden aus dem aktuellen Sessionstand
+angezeigt, alte Quittungsdaten nicht darüber publiziert. Konflikte nach
+Abwesenheitsbestätigung sperren blinde Wiederholung. Unbestätigtes Delete wird
+beim zentralen Save geschlossen, nicht ausgeführt. Eingaben sind während der
+Klärung gesperrt, Validierungsfehler erhalten die Form.
+
+Die zusätzliche Unmount-Korrekturrunde ist implementiert und geprüft: Der
+Controller hält sowohl ungelöste Versuche als auch bestätigt ungespeicherte
+Originalentwürfe. Nach Unmount bleiben beide wartungsrelevant. Save nach
+bestätigter Abwesenheit und konfliktfreier Revision sendet ausschließlich auf
+explizite zentrale Save-Aktion einen neuen Command mit neuer ID. Discard löscht
+den bestätigten Entwurf ohne Write. Readfehler/Revisionkonflikte halten ihn fest;
+eine verlorene Antwort des neuen Commands wird mit dessen eigener ID geklärt.
+Späte Navigation an die geschlossene Ansicht unterbleibt. Auch ein erst nach
+montierter Abwesenheitsklärung geschlossenes Formular behält seinen Original-
+entwurf. Keine offene Abweichung innerhalb dieses Befehls-/Recovery-Teilplans.
+
+Validierung: 121 Tests in elf Dateien bestanden (Architektur und gezielte
+Charakter-/Katalog-/Port-/Controllerfälle), einschließlich gerendertem Unmount
+mit zentralem Save/Discard. Vollständiger Typecheck besteht. Gezielt geänderte
+Produkt-/Testdateien sind lintgrün nach der reinen Matcher-Korrektur; alle 18
+Controllerfälle danach erneut grün. Vollständiges pnpm format und git diff --check
+bestehen. Build, Smoke ready/closed und Bundle-Gate grün, reachable 1621722 Bytes,
+keine Baseline-/Budgetänderung. Finaler Build auf dirty 508101c9e:
+appBuildInputFingerprint c64e2b3e10bba566c4b7ff5853aa3508580ec283f4436e093d297e5197394854,
+BuiltAt 2026-09-08T21:52:46.947Z. Auf diesen unveränderten Appbytes bestehen alle
+sieben sceneDesktop-E2E einschließlich echtem Profil-Create/Update/Delete und
+Neustart. Summary .tmp/e2e-runs/functional-1788904439533-518181/summary.json;
+Logs work/roadmap-phase4-character-detached-*.log. Die anschließende Änderung war
+nur eine Unittest-Assertion. Der Kampf-E2E bestand auf dem unmittelbar vorherigen
+Build; die letzte Korrektur verändert ausschließlich den Detached-Controller.
+
+Separater Roadmapabgleich: Charakterbefehls-Recovery und Katalogbereichswechsel
+sind implementiert und lokal geprüft. Das ist kein Abschluss von Phase 4. Offen
+bleiben insbesondere noch nie abgesendete Editorentwürfe beim Schließen ganzer
+Workspacefenster, CampaignScreen, weitere Gruppen-/Kampf-/Karten-/Preset-/Desktop-
+Schreibwege und die vollständige Update-/Offline-Abnahme. Die bekannte schreibende
+Desktop-Scope-Pflege in Readpfaden bleibt zu qualifizieren. Phasen 5–7 sowie
+Exact-SHA-CI, kanonischer Handoff und Main-Abschluss bleiben erforderlich. Keine
+Nutzerinstallation oder echten Kampagnendaten verändert.

@@ -61,6 +61,11 @@ export const workspaceMessagesDe = {
   'character.languagesTitle': 'Sprachen',
   'character.nameError': 'Name erforderlich (max. 100 Zeichen).',
   'character.valueError': 'Bitte einen gültigen Wert eingeben.',
+  'character.checkSavedState': 'Speicherstatus erneut prüfen',
+  'character.commandConflict':
+    'Der Charakterstand wurde inzwischen geändert. Bitte den Entwurf verwerfen und neu öffnen.',
+  'character.commandAbsent':
+    'Die Änderung wurde nicht gespeichert. Der Entwurf kann erneut gespeichert oder verworfen werden.',
   'character.conflict':
     'Dieser Charakter wurde inzwischen geändert. Bitte erneut öffnen; deine Eingaben bleiben bis dahin erhalten.',
   'character.identifier': 'Kennung: {id}',
