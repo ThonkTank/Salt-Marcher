@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { canonicalProfilePath } from '../../shared/maintenance/profile-path.js'
 import { readFileSync, lstatSync } from 'node:fs'
 import { join } from 'node:path'
@@ -27,9 +28,9 @@ function readBackup(directory: string) {
     throw new Error(
       'Bitte einen unveränderten SaltMarcher-Sicherungsordner auswählen.'
     )
-  const manifest = profileBackupSchema.parse(
-    JSON.parse(readFileSync(join(directory, 'manifest.json'), 'utf8'))
-  )
+  const bytes = readFileSync(join(directory, 'manifest.json'))
+  const manifest = profileBackupSchema.parse(JSON.parse(bytes.toString('utf8')))
+  const manifestSha256 = createHash('sha256').update(bytes).digest('hex')
   const data = join(directory, 'data')
   if (
     !manifest.restorable ||
@@ -41,5 +42,5 @@ function readBackup(directory: string) {
     throw new Error(
       'Die Sicherung ist beschädigt, unvollständig oder wurde verändert.'
     )
-  return { manifest, data }
+  return { manifest, data, manifestSha256 }
 }

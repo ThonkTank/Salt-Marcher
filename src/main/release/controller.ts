@@ -1,3 +1,4 @@
+import { profileBackupSchema } from '../../shared/contracts/profile-backup.js'
 import { MaintenanceCoordinator } from '../../shared/maintenance/coordinator.js'
 import {
   profilePreparationSchema,
@@ -8,7 +9,7 @@ import { tmpdir } from 'node:os'
 import { rollbackRelease } from './recovery.js'
 import { capabilityEvents } from '../../shared/contracts/events.js'
 import { app, BrowserWindow, dialog } from 'electron'
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { spawn } from 'node:child_process'
 import {
   existsSync,
@@ -243,7 +244,44 @@ export class ReleaseController {
           : {})
       })
       if (selection.canceled || !selection.filePaths[0]) return
-      await this.activateCurrent({ backupDirectory: selection.filePaths[0] })
+      const backupDirectory = selection.filePaths[0]
+      let bytes: Buffer
+      let manifest: ReturnType<typeof profileBackupSchema.parse>
+      try {
+        bytes = readFileSync(join(backupDirectory, 'manifest.json'))
+        manifest = profileBackupSchema.parse(JSON.parse(bytes.toString('utf8')))
+      } catch (cause) {
+        throw new Error(
+          'Dieser Ordner enthält kein lesbares SaltMarcher-Sicherungsmanifest. Bitte einen Sicherungsordner mit manifest.json und data auswählen.',
+          { cause }
+        )
+      }
+      if (!manifest.restorable)
+        throw new Error(
+          'Diese Sicherung ist nicht wiederherstellbar. Bitte eine andere Sicherung auswählen.'
+        )
+      const expectedManifestSha256 = createHash('sha256')
+        .update(bytes)
+        .digest('hex')
+      const confirmation = await dialog.showMessageBox({
+        type: 'warning',
+        title: 'Ausgewählte Sicherung übernehmen',
+        message:
+          manifest.formatVersion === 2
+            ? 'Das gesamte Profil durch diese Sicherung ersetzen?'
+            : 'Diese ältere Sicherung enthält nur Kampagnendaten. Das gesamte Profil ersetzen?',
+        detail: `Version ${manifest.version} · ${new Date(manifest.createdAt).toLocaleString('de-DE')}\n${
+          manifest.formatVersion === 2
+            ? 'Die Sicherung umfasst das vollständige Profil einschließlich eigener Dateien.'
+            : 'Zusätzliche Dateien des aktuellen Profils sind darin nicht enthalten; sie bleiben in der vorher erstellten Sicherung erhalten.'
+        }\nDer aktuelle Stand wird zuerst gesichert. Die Quelle bleibt erhalten. Vor der Übernahme werden Inhalt und Kompatibilität geprüft.`,
+        buttons: ['Abbrechen', 'Sicherung übernehmen'],
+        defaultId: 0,
+        cancelId: 0,
+        noLink: true
+      })
+      if (confirmation.response !== 1) return
+      await this.activateCurrent({ backupDirectory, expectedManifestSha256 })
     })
   }
   restore(id: string) {
@@ -253,6 +291,7 @@ export class ReleaseController {
     source?: string
     id?: string
     backupDirectory?: string
+    expectedManifestSha256?: string
   }) {
     if (!this.value.installed)
       throw new Error('Bitte SaltMarcher zuerst installieren.')
@@ -263,7 +302,12 @@ export class ReleaseController {
   }
   private async activate(
     deployment: string,
-    options: { source?: string; id?: string; backupDirectory?: string } = {}
+    options: {
+      source?: string
+      id?: string
+      backupDirectory?: string
+      expectedManifestSha256?: string
+    } = {}
   ) {
     this.update({
       phase: 'maintenance',
@@ -308,7 +352,12 @@ export class ReleaseController {
   private runTarget(
     target: string,
     transactionId: string,
-    options: { source?: string; id?: string; backupDirectory?: string } = {}
+    options: {
+      source?: string
+      id?: string
+      backupDirectory?: string
+      expectedManifestSha256?: string
+    } = {}
   ): Promise<ProfilePreparation> {
     const token = randomUUID()
     mkdirSync(this.root, { recursive: true })

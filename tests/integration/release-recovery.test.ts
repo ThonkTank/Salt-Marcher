@@ -46,7 +46,7 @@ beforeEach(async () => {
   nextDeployment = releaseDeployment(root, '0.2.0')
   setCurrent(root, oldDeployment)
   maintenance = new ProfileMaintenance(root, '0.1.99')
-  mkdirSync(maintenance.data)
+  mkdirSync(maintenance.data, { recursive: true })
   const store = new CampaignStore(maintenance.data)
   store.create('Recovery campaign')
   store.close()

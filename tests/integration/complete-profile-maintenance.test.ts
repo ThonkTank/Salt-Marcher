@@ -1,3 +1,4 @@
+import { openApplicationProfile } from '../../src/main/local-profile/application-profile.js'
 import { maintenanceJournalSchema as legacyJournalSchema } from '../fixtures/maintenance-journal-v2.js'
 import { randomUUID } from 'node:crypto'
 import {
@@ -41,6 +42,56 @@ afterEach(() => {
 })
 
 describe('complete profile maintenance', () => {
+  it('lists backups during interrupted activation without recreating the absent live profile', async () => {
+    const { root, profile, maintenance } = fixture()
+    const before = inventory(profile)
+    const coordinator = await preparedMaintenance(maintenance)
+    expect(() =>
+      new MaintenanceCoordinator(root, (at) => {
+        if (at === 'old-data-moved') throw new Error('power loss')
+      }).activate()
+    ).toThrow('power loss')
+    expect(existsSync(profile)).toBe(false)
+    expect(
+      new ProfileMaintenance(root, '0.3.0', 'profile').backups()
+    ).toHaveLength(1)
+    expect(existsSync(profile)).toBe(false)
+    coordinator.rollback()
+    expect(inventory(profile)).toEqual(before)
+  })
+
+  it('starts with a missing live profile during interrupted rollback without obstructing recovery', async () => {
+    const { root, profile, maintenance } = fixture()
+    const before = inventory(profile)
+    const coordinator = await preparedMaintenance(maintenance)
+    coordinator.activate()
+    expect(() =>
+      new MaintenanceCoordinator(root, (at) => {
+        if (at === 'rollback-restoring') throw new Error('power loss')
+      }).rollback()
+    ).toThrow('power loss')
+    expect(existsSync(profile)).toBe(false)
+    const access = openApplicationProfile(profile, { setPath: () => {} }, root)
+    try {
+      expect(existsSync(profile)).toBe(false)
+      new ProfileMaintenance(root, '0.3.0', 'profile').backups()
+      new MaintenanceCoordinator(root).rollback()
+      expect(inventory(profile)).toEqual(before)
+    } finally {
+      access.release()
+    }
+  })
+
+  it('does not create directories for an empty backup overview', () => {
+    const root = mkdtempSync(join(tmpdir(), 'salt-empty-overview-'))
+    roots.push(root)
+    const missing = join(root, 'missing-installation')
+    expect(
+      new ProfileMaintenance(missing, '0.3.0', 'profile').backups()
+    ).toEqual([])
+    expect(existsSync(missing)).toBe(false)
+  })
+
   it('updates the whole tree, restores all files and preserves later work after commit', async () => {
     const { root, profile, maintenance } = fixture()
     const coordinator = await preparedMaintenance(maintenance)

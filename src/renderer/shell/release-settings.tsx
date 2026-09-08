@@ -1,3 +1,5 @@
+import type { CoreProcessStatus } from '../../shared/contracts/runtime.js'
+import { ProfileRecoveryNotice } from './profile-recovery-notice.js'
 import { hasMaintenanceDrafts } from './maintenance-drafts.js'
 import { useEffect, useState } from 'react'
 import { useCapabilityApi } from '../capabilities/use-capability-api.js'
@@ -12,6 +14,7 @@ export function ReleaseSettings({
   const api = useCapabilityApi()
   const [status, setStatus] = useState<ReleaseStatus | null>(null)
   const [open, setOpen] = useState(false)
+  const [coreStatus, setCoreStatus] = useState<CoreProcessStatus>('starting')
   const [backups, setBackups] = useState<
     Awaited<ReturnType<typeof api.backups.list>>
   >([])
@@ -24,6 +27,21 @@ export function ReleaseSettings({
     run: () => Promise<ReleaseStatus>
   } | null>(null)
   const [busy, setBusy] = useState(false)
+  useEffect(() => {
+    let active = true
+    const accept = (value: CoreProcessStatus) => {
+      if (active) setCoreStatus(value)
+    }
+    void api.runtime
+      .coreStatus()
+      .then(accept)
+      .catch(() => accept('unavailable'))
+    const unsubscribe = api.runtime.onCoreStatus(accept)
+    return () => {
+      active = false
+      unsubscribe()
+    }
+  }, [api])
   useEffect(() => {
     let active = true
     void api.updates
@@ -92,6 +110,10 @@ export function ReleaseSettings({
   const maintenance = status.phase === 'maintenance'
   return (
     <>
+      <ProfileRecoveryNotice
+        status={coreStatus}
+        openRecovery={() => setOpen(true)}
+      />
       <button
         className="release-settings-trigger"
         onClick={() => setOpen(true)}

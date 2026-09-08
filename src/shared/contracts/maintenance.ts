@@ -115,7 +115,11 @@ export const maintenanceWorkerRequestSchema = z.discriminatedUnion(
         version: z.string().min(1),
         operation: z.literal('import-backup'),
         transactionId: z.uuid(),
-        backupDirectory: z.string().min(1)
+        backupDirectory: z.string().min(1),
+        expectedManifestSha256: z
+          .string()
+          .regex(/^[a-f0-9]{64}$/)
+          .optional()
       })
       .strict(),
     z

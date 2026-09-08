@@ -37,8 +37,6 @@ export class ProfileMaintenance {
     readonly payload: 'campaign-data' | 'profile' = 'campaign-data'
   ) {
     this.data = join(root, 'profile', 'campaign-data')
-    mkdirSync(join(root, 'profile'), { recursive: true })
-    mkdirSync(join(root, 'backups'), { recursive: true })
   }
   get payloadRoot(): string {
     return this.payload === 'profile' ? join(this.root, 'profile') : this.data
@@ -60,6 +58,7 @@ export class ProfileMaintenance {
         'Nicht genug freier Speicherplatz für eine vollständige Sicherung.'
       )
     const id = randomUUID()
+    mkdirSync(join(this.root, 'backups'), { recursive: true })
     const staged = join(this.root, 'backups', `.pending-${id}`)
     mkdirSync(staged)
     let restorable = true
@@ -94,6 +93,7 @@ export class ProfileMaintenance {
     return id
   }
   backups() {
+    if (!existsSync(join(this.root, 'backups'))) return []
     return readdirSync(join(this.root, 'backups'))
       .filter((id) => z.uuid().safeParse(id).success)
       .map((id) => {
@@ -146,9 +146,17 @@ export class ProfileMaintenance {
   }
   async importBackup(
     id: string,
-    directory: string
+    directory: string,
+    expectedManifestSha256?: string
   ): Promise<{ id: string; backup: string | null; journalVersion?: 3 }> {
     const source = readVerifiedBackup(directory)
+    if (
+      expectedManifestSha256 &&
+      source.manifestSha256 !== expectedManifestSha256
+    )
+      throw new Error(
+        'Die ausgewählte Sicherung wurde seit der Bestätigung verändert. Bitte erneut auswählen und prüfen.'
+      )
     const prepared = await this.prepare(id, source.data)
     if (
       JSON.stringify(readVerifiedBackup(directory).manifest) !==
@@ -170,6 +178,7 @@ export class ProfileMaintenance {
       existsSync(path)
         ? inventory(path).reduce((sum, file) => sum + file.bytes, 0)
         : 0
+    mkdirSync(this.root, { recursive: true })
     const fs = statfsSync(this.root)
     if (
       fs.bavail * fs.bsize <

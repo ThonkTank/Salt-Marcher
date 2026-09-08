@@ -112,6 +112,38 @@ describe('CoreProcessSupervisor', () => {
     vi.useRealTimers()
   })
 
+  it('waits for an actual exit before resolving concurrent shutdown requests', async () => {
+    const { supervisor, children } = harness()
+    void supervisor.waitUntilReady().catch(() => undefined)
+    vi.spyOn(children[0]!, 'kill').mockReturnValue(true)
+    const completed = vi.fn()
+    const closing = supervisor.closeGracefully()
+    expect(supervisor.closeGracefully()).toBe(closing)
+    void closing.then(completed)
+    await vi.advanceTimersByTimeAsync(100)
+    expect(completed).not.toHaveBeenCalled()
+    expect(supervisor.status()).not.toBe('closed')
+    children[0]!.emit('exit', 0)
+    await closing
+    expect(completed).toHaveBeenCalledOnce()
+    expect(supervisor.status()).toBe('closed')
+  })
+
+  it('rejects maintenance admission when the killed process has not exited', async () => {
+    const { supervisor, children } = harness()
+    void supervisor.waitUntilReady().catch(() => undefined)
+    vi.spyOn(children[0]!, 'kill').mockReturnValue(true)
+    const closing = supervisor.closeGracefully()
+    const rejected = expect(closing).rejects.toThrow(
+      'Datenprozess ist noch nicht beendet'
+    )
+    await vi.advanceTimersByTimeAsync(2_000)
+    await rejected
+    expect(supervisor.status()).not.toBe('closed')
+    children[0]!.emit('exit', 0)
+    await expect(supervisor.closeGracefully()).resolves.toBeUndefined()
+  })
+
   it('starts every generation with one validated configuration envelope', async () => {
     const { supervisor, spawnArguments } = harness()
     void supervisor.waitUntilReady().catch(() => undefined)

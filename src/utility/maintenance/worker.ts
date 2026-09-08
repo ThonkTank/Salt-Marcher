@@ -18,7 +18,8 @@ async function handle(raw: unknown): Promise<void> {
     if (input.operation === 'import-backup')
       result = await transaction.importBackup(
         input.transactionId,
-        input.backupDirectory
+        input.backupDirectory,
+        input.expectedManifestSha256
       )
     if (input.operation === 'restore')
       result = await transaction.prepare(

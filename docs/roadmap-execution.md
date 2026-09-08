@@ -1064,3 +1064,226 @@ ProfileMaintenance erstellt ihn noch, was bei einem offenen Profil-Rollback stö
 könnte. Dies ist vor der Recovery-Oberfläche zu korrigieren und zu testen. Beim
 externen Import bleibt die Bestätigung des erkannten Sicherungsumfangs nach Auswahl
 notwendig. Phase 3 wird daher nicht geschlossen.
+
+### Phase 3 — Recovery vorbereiten, Plan vor Umsetzung
+
+Vorheriger Zielturn war Fortschritt, 912dcaea1 sauber auf Candidate. Jetzt zuerst
+lesende Sicherungsübersicht ohne Live-Dateisystemänderung: ProfileMaintenance-
+Konstruktor erzeugt keine Verzeichnisse; backups() liefert für fehlendes Backup-
+Verzeichnis leer. Schreibende Vorbereitung/Backup legen nur ihre benötigten Ordner
+an. Test: zwischen Wegbewegen des alten Profils und Aktivierung darf das Auflisten
+keinen leeren Live-Ordner erzeugen und damit Recovery blockieren.
+
+Bestandsaufnahme zeigt außerdem: closeGracefully löst nach kill() auf, bevor das
+Exit-Ereignis bestätigt ist. Besonders beim fehlgeschlagenen/startenden Core kann
+Wartung dadurch vor Prozessende beginnen. Vor Recovery-Aktionen eine explizite
+bestätigte Shutdown-Barriere ergänzen und verzögerten Exit testen; bloße kill()-
+Anforderung gilt nicht als geschlossene Datenverbindung. Kein Wartungsbeginn nach
+Zeitüberschreitung dieser Barriere. Die Oberflächenanbindung folgt auf diese beiden
+abgesicherten Voraussetzungen.
+
+### Phase 3 — Shutdown: Korrektur der Statuswahrheit
+
+44 Tests der lesenden Sicherungs-/Recoveryänderung bestanden. Die neue Shutdown-
+Barriere hält bereits bis Exit, aber zwei neue Tests zeigen: publicCoreStatus meldet
+terminating/closed schon als closed. Korrekturplan: nur interner Zustand closed
+wird öffentlich closed; closing/terminating bleiben recovering. Der Wartende prüft
+zusätzlich den internen Zustand, sodass die Prozessbarriere nicht allein von der
+Anzeigeprojektion abhängt. Danach Shutdown- und Architekturtests erneut prüfen.
+
+### Phase 3 — Recovery-Zugang bei Core-Fehler, UI-Teilplan
+
+Die globale ReleaseSettings-Komponente liegt bereits außerhalb der datenabhängigen
+Workspace-Route. Dort den validierten Core-Status abonnieren und bei inkompatiblen,
+beschädigten oder nicht zugänglichen Daten einen sichtbaren Recovery-Zugang mit
+Ursache und nächster Aktion anbieten. Sicherungsübersicht/Restore bleiben Main-
+Capabilities und benötigen keine erfolgreiche Campaign-Verbindung. Tests rendern
+nur diese Oberfläche mit fehlgeschlagenem Core und prüfen Öffnen der Sicherungen
+sowie bewusst bestätigte Wiederherstellung; keine Domain-API wird bereitgestellt.
+Ein Controllertest ersetzt zusätzlich eine tatsächlich beschädigte Live-SQLite-Datei
+über die vorhandene Sicherung und erhält die beschädigten aktuellen Bytes davor.
+Fehler beim Journal vor dem Core-Start sind ein weiterer noch offener Startpfad.
+
+### Phase 3 — Recovery: Korrektur des frühen normalen Profilstarts
+
+UI-/Controllerlauf mit beschädigter Datenbank: 11 Tests bestanden; Shutdownlauf nach
+Statuskorrektur 28 Tests bestanden. Weiteres Startpfadaudit: openApplicationProfile
+legt den logischen Profilordner ebenfalls vor Journal-Recovery an. Bei unterbrochenem
+rollback-restoring kann das den Wiederherstellungsordner belegen. Korrekturplan:
+logischen Pfad nur kanonisch bestimmen und extern sperren; ausschließlich den
+separaten Browser-Laufzeitordner anlegen. Erst Recovery beziehungsweise normaler
+Core-Bootstrap dürfen das logische Profil erzeugen. Den unterbrochenen Restore mit
+dieser tatsächlichen Startzugriffsschicht testen, nicht nur direkt am Koordinator.
+
+### Phase 3 — Recovery: kleine Testkorrektur vor Abschlussprüfung
+
+TypeScript bestanden. ESLint findet zwei Test-Doubles mit async ohne await.
+Korrekturplan: explizite Promise.resolve/Promise.reject-Rückgaben verwenden;
+Produktionscode bleibt dabei unverändert. Nach dem Startpfadfix erneut gezielte
+Tests, Typen/Lint und realen gebauten App-Smoke ausführen.
+
+### Phase 3 — Shutdown: abschließende Exit-Guard-Korrektur
+
+66 Start-/Recovery-/UI-/Supervisor-Tests bestanden, Build erfolgreich. Audit des
+App-Exit-Handlers: ein zweites quit während des ersten Shutdowns darf die Barriere
+nicht umgehen. Den Guard in eine kleine getestete Lebenszyklusfunktion ziehen:
+jede noch unbestätigte Quit-Anfrage verhindern, höchstens einen Stop auslösen und
+erst nach dessen Erfolg Quit erlauben. Nach Fehlstart und Shutdown-Timeout bis zum
+tatsächlichen Core-Ende beobachten, danach sauber freigeben und beenden; keine
+verwaiste Main-Instanz nach späterem Exit und kein früheres Freigeben der Sperre.
+
+### Phase 3 — Exit-Guard: Build-Korrektur
+
+32 gezielte Tests bestanden. Der anschließende vollständige Build und Typecheck
+finden eine fehlende Funktionsklammer in waitForCoreTermination; der isolierte
+Quit-Guard-Test importiert diese Electron-Anbindung nicht. Korrekturplan: Funktion
+syntaktisch schließen, betroffene Datei formatieren und danach Typecheck, Lint,
+Build sowie Smoke des neu gebauten Programms prüfen. Phase 3 bleibt offen.
+
+### Phase 3 — Recovery/Exit: Validierung und getrenntes Teilaudit
+
+Aktueller Arbeitsstand auf 912dcaea1 mit uncommitteten Phase-3-Änderungen:
+
+- `vitest run tests/unit/quit-barrier.test.ts tests/unit/core-process-supervisor.test.ts tests/unit/profile-recovery-ui.test.tsx --maxWorkers=2`: 32 Tests bestanden (exit-guard-tests.log).
+- `pnpm typecheck`, `pnpm lint`, `pnpm build`: nach Klammerkorrektur jeweils Exit 0 (roadmap-phase3-exit-fixed-*.log unter work).
+- `pnpm test:smoke:built` unter Xvfb/X11: Exit 0; tatsächlicher Utility-Lauf starting → ready → exited → closed. Development-Build, App-Fingerprint fb9844ad3cc69f96de5992a63e87ce78b13eb885db843e7e1266b9b1815c6de0, Schema 39/34. Kein AppImage-Handoff-Nachweis.
+- `pnpm test:architecture`: 91 Tests in 9 Dateien bestanden.
+- `git diff --check`: bestanden.
+
+Audit gegen die aktuellen Recovery-/Shutdown-Teilpläne: lesende Übersicht erzeugt
+kein Ersatzprofil, normaler Profilstart verhindert den fehlenden-Profil-Recoveryfall
+nicht mehr, Core-Fehler haben einen datenunabhängigen Zugang zur Wiederherstellung,
+und Quit sowie Wartung warten auf das bestätigte Utility-Ende. Die Syntaxkorrektur
+ist durch vollständigen Build und Typprüfung bestätigt. Die kontrollierten
+Shutdown-/UI-Tests und der reale normale Appstart decken unterschiedliche Grenzen
+ab; daraus folgt kein Nachweis sämtlicher verpackter Fehlerpfade.
+
+Audit gegen die kanonische Roadmap: Phase 3 weiterhin unvollständig. Offen sind
+insbesondere die sichere direkte Übernahme nachweislich kooperierender Profile,
+die Bestätigung des tatsächlich ausgewählten externen Sicherungsumfangs, der
+Recovery-Zugang bei Fehlern vor Core-/Fensterstart und die vollständige fachliche
+Erhaltungsabnahme für aktive/inaktive/gelöschte Kampagnen und fortsetzbares Spiel.
+Phasen 4–7 bleiben offen. Keine Übergabe, Main-Promotion, Live-Abnahme oder
+Veröffentlichung mit diesen lokalen Prüfergebnissen behauptet.
+
+### Phase 3 — Externe Sicherung: konkreter Bestätigungsplan
+
+Vorheriger Zielturn: Fortschritt mit Build-/Shutdown-Korrektur und Nachweisen.
+Der Import bestätigt bislang vor der Ordnerauswahl einen unbekannten Umfang.
+Nach Auswahl liest Main nur den strikt validierten Manifestvertrag und zeigt einen
+nativen Bestätigungsdialog mit Version, Datum und vollständigem beziehungsweise
+historischem Kampagnenumfang. Abbrechen darf Core, Backup und Aktivierung nicht
+berühren. Datenprüfung/SQL bleiben im Utility-Prozess. Der bestätigte Manifesthash
+wird durch den Wartungsauftrag bis importBackup getragen und vor Vorbereitung mit
+dem tatsächlich geprüften Manifest verglichen. So kann ein Austausch nach dem
+Dialog keinen anderen Sicherungsumfang aktivieren. Bestehende interne Aufrufer
+bleiben ohne optionalen Bestätigungshash kompatibel.
+
+Abnahme: vollständige und historische Sicherung erzeugen die passende Erklärung;
+Abbrechen startet keine Wartung; Manifestwechsel nach Bestätigung wird verworfen;
+regulär bestätigter Import bleibt auf dem gemeinsamen Wartungspfad. Danach Typen,
+gezielte Tests und Audit gegen Plan sowie Phase 3.
+
+### Phase 3 — Externe Sicherung: Fehlertext-Korrektur
+
+50 gezielte Tests bestanden. Teilaudit findet eine Bedienlücke: fehlende oder
+ungültige externe Manifeste würden rohe Dateisystem-/Zod-Fehler anzeigen. Vor der
+Abnahme diesen Lese-/Vertragsfehler mit einer konkreten Aufforderung zum Auswählen
+eines SaltMarcher-Sicherungsordners versehen. Test: beliebiger Profilordner wird
+vor Dialogbestätigung und Core-Stopp verständlich abgewiesen.
+
+### Phase 3 — Externe Sicherung: typisierte Testassertionen
+
+51 Tests bestanden, Typecheck vor der Fehlertextkorrektur bestanden. ESLint meldet
+unsichere any-Zuweisungen durch asymmetrische expect.stringContaining-Matcher in
+Objektliteralen. Korrekturplan: Text separat mit toContain prüfen und den nativen
+Dialogaufruf über einen typisierten Parameter erfassen. Anschließend gezieltes
+Lint, Typprüfung und dieselben relevanten Importtests abschließen.
+
+### Phase 3 — Externe Sicherung: Teilaudit
+
+Planabgleich: Main zeigt nach Auswahl einen abbrechbaren nativen Dialog mit
+Manifestdatum, Version und Formatumfang; historische Kampagnensicherungen erklären
+den Ersatz des gesamten Profils und den Erhalt zusätzlicher aktueller Dateien in
+der vorgeschalteten Sicherung. Main liest ausschließlich Metadaten. Der bestätigte
+Hash wird im Zielprozessvertrag und Utility-Vertrag validiert und vor prepare mit
+dem Hash der geprüften Manifestbytes verglichen. Vollständige Daten-/Hashprüfung
+und Migration verbleiben in Utility. Abbruch und ungültiger Ordner berühren Core
+und Daten nicht. Der Controller-Test führt die reale ProfileMaintenance aus,
+ersetzt jedoch den Prozessstart und den nativen Dialog durch kontrollierte Doubles.
+
+Nachweise: 51 Tests der drei betroffenen Integrationsdateien bestanden; nach der
+reinen Assertionkorrektur erneut alle 9 Controllerfälle bestanden. Vollständiger
+Lintlauf hatte ausschließlich drei unsichere Testmatcher gemeldet; gezieltes Lint
+für Controller und korrigierte Tests besteht. `git diff --check` besteht.
+
+Roadmapabgleich: Die Lücke der Bestätigung nach externer Sicherungsauswahl ist auf
+Code-/Integrationsebene geschlossen. Dies ersetzt weder die noch ausstehende
+verpackte UI-Abnahme noch die direkte Übernahme kooperierender Profile. Phase 3
+bleibt offen; vor-Core-Recovery und umfassende fachliche Erhaltungsabnahme sind
+weiter erforderlich. Der vorherige Development-Smoke stammt vor diesen Änderungen
+und wird ausdrücklich nicht als Nachweis dieses neuen Dialogs verwendet.
+
+Abschließender `pnpm typecheck` nach Fehlertext- und Assertionkorrektur: Exit 0
+(roadmap-phase3-confirmation-final-types.log). Keine laufenden Prüfprozesse aus
+diesem Teilschritt verbleiben.
+
+### Phase 3 — Frühe Journalfehler: Recovery-Ansicht vor Core-Start
+
+Vorheriger Zielturn war Fortschritt: Umfangsbestätigung und gebundener Import.
+Bestandsaufnahme: recoverRelease/recoverLocalMaintenance laufen vor Core und
+Fenster; ein Fehler führt bisher unmittelbar zum Prozessende. Ein nativer
+Recovery-Dialog soll Ursache, erneuten Recovery-Versuch, explizites Öffnen des
+Sicherungsverzeichnisses und Beenden anbieten. Dabei bleibt die erworbene
+Profilsperre bestehen. Ein unaufgelöstes Journal darf durch diesen Pfad weder
+überschrieben noch durch einen neuen Restore-Auftrag verdrängt werden. Nach
+erfolgreichem Retry geht ausschließlich das reguläre Recovery-Ergebnis weiter.
+
+Umsetzung: kleine testbare Dialogsteuerung ohne Core-/SQL-Abhängigkeit; Anbindung
+um die bestehende frühe Recovery-Auswahl für Local und Release; bei Beenden den
+vorhandenen bestätigten Quit-Ablauf verwenden. Tests prüfen Retry, Abbruch,
+Sicherungsordner und dessen Zugriffsfehler. Das ist die frühe Diagnose-/Retryansicht;
+Startpunktfehler vor Ausführung von Electron bleiben separat zu qualifizieren.
+
+### Phase 3 — Frühe Recovery: unbeaufsichtigte Prüfläufe
+
+Dialog-/Quit-Tests bestanden. Integrationsaudit: --smoke-test darf bei Journalfehler
+nicht auf Benutzereingabe warten. Ergänzung vor Buildprüfung: explizite interaktive
+Option an der Dialogsteuerung; Smoke-Aufruf reicht false durch, der Originalfehler
+geht unverändert an den vorhandenen fehlgeschlagenen Start/Shutdown. Test deckt
+unbeaufsichtigtes Fehlschlagen ohne Dialog ab.
+
+### Phase 3 — Frühe Recovery: Fehlerbehandlung vereinfachen
+
+8 Tests, Typecheck und Build bestanden. Lint beanstandet die innerhalb eines
+Catch-Kontexts erzeugte Ausnahme für einen openPath-Fehlertext. Korrekturplan:
+Rückgabefehler direkt als fehlgeschlagenes Öffnen behandeln, echte Promise-Fehler
+ebenfalls in diesen Anzeigezustand überführen; keine künstliche Ausnahme werfen.
+
+Lint-Nachkorrektur: Der neue Fehlerindikator wird in beiden try/catch-Zweigen
+zugewiesen; seine Initialisierung ist überflüssig. Nur die Initialisierung entfernen
+und gezieltes Lint erneut ausführen. Der Verhaltenslauf mit 8 Tests besteht weiter.
+
+### Phase 3 — Frühe Recovery: Teilaudit und Candidate-Zwischenstand
+
+Planabgleich: Der frühe Local-/Release-Recovery-Aufruf läuft jetzt durch einen
+nativen Dialog, bevor Core und Hauptfenster erzeugt werden. Retry ruft denselben
+Recovery-Pfad erneut auf; Beenden nutzt den bestehenden Quit-Guard; Sicherungen
+öffnen geschieht nur nach Klick. Die Funktion gibt keine Profilsperre frei und
+startet keine neue Wartung. Smoke-Modus leitet den Originalfehler ohne Dialog an
+den vorhandenen fehlgeschlagenen Start weiter.
+
+Nachweise: 8 Dialog-/Quit-Tests bestanden; Typecheck und Build bestanden; nach
+Lintkorrekturen gezieltes Lint bestanden. Erneuter aktueller Build plus
+`pnpm test:smoke:built` unter Xvfb bestanden (Exit 0). Development-App-Fingerprint
+c81977fb9768648294d003cb69149439614e351c6f44f37b0a958c53b1529cfb,
+Schema 39/34. Der normale reale Start prüft die Integration; Fehlerdialoge sind
+bislang über kontrollierte Electron-Doubles geprüft. `git diff --check` bestanden.
+
+Roadmapabgleich: Der bisherige unmittelbare Abbruch bei frühem Journalfehler hat
+jetzt eine Diagnose-/Retryansicht. Unaufgelöste Journale werden nicht für einen
+Restore überschrieben. Eine vollständige verpackte Recovery-Abnahme einschließlich
+Fehler im stabilen Startpunkt steht aus. Die direkte Übernahme kooperierender
+Profile und die breite fachliche Erhaltungsabnahme bleiben offen; Phase 3 wird
+nicht geschlossen. Zusammenhängende Änderungen seit 912dcaea1 werden als
+Candidate-Zwischenstand gespeichert, ohne Main-Promotion oder App-Handoff.

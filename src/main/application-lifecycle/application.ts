@@ -1,3 +1,4 @@
+import { recoverWithDialog } from './startup-recovery.js'
 import {
   recoverLocalMaintenance,
   completeLocalMaintenance,
@@ -69,11 +70,20 @@ export async function startApplication(): Promise<void> {
     configureReleaseQualification()
     const installationRoot = dirname(profile)
     const local = buildInfo?.channel === 'local'
-    const recovery = release
-      ? recoverRelease()
-      : local
-        ? recoverLocalMaintenance(installationRoot, buildInfo.commit)
-        : 'normal'
+    const recovery = await recoverWithDialog(
+      () =>
+        release
+          ? recoverRelease()
+          : local
+            ? recoverLocalMaintenance(installationRoot, buildInfo.commit)
+            : 'normal',
+      installationRoot,
+      !process.argv.includes('--smoke-test')
+    )
+    if (recovery === null) {
+      app.quit()
+      return
+    }
     if (recovery === 'relaunch') {
       relaunchRelease(
         join(installationRoot, 'current', 'SaltMarcher.AppImage'),
@@ -89,8 +99,10 @@ export async function startApplication(): Promise<void> {
       recovery === 'verify'
     )
   } catch (error) {
-    localProfileLock?.release()
-    localProfileLock = undefined
+    if (core === undefined || core.status() === 'closed') {
+      localProfileLock?.release()
+      localProfileLock = undefined
+    }
     throw error
   }
 }
@@ -312,21 +324,30 @@ function connectCoreNotifications(supervisor: CoreProcessSupervisor): void {
 }
 
 export async function stopApplication(): Promise<void> {
-  try {
-    await core?.closeGracefully()
-  } finally {
-    core = undefined
-    localProfileLock?.release()
-    localProfileLock = undefined
-    if (isE2eRuntime())
-      ipcMain.removeHandler('salt-marcher-e2e:terminate-utility')
-    if (isE2eRuntime())
-      ipcMain.removeHandler(
-        'salt-marcher-e2e:interrupt-generator-preset-create'
-      )
-    if (isE2eRuntime())
-      ipcMain.removeHandler('salt-marcher-e2e:runtime-evidence')
-  }
+  await core?.closeGracefully()
+  core = undefined
+  localProfileLock?.release()
+  localProfileLock = undefined
+  if (isE2eRuntime())
+    ipcMain.removeHandler('salt-marcher-e2e:terminate-utility')
+  if (isE2eRuntime())
+    ipcMain.removeHandler('salt-marcher-e2e:interrupt-generator-preset-create')
+  if (isE2eRuntime()) ipcMain.removeHandler('salt-marcher-e2e:runtime-evidence')
+}
+
+/** Observe an already requested shutdown without releasing the live profile lease. */
+export function waitForCoreTermination(): Promise<void> {
+  const supervisor = core
+  if (supervisor === undefined || supervisor.status() === 'closed')
+    return Promise.resolve()
+  return new Promise((resolve) => {
+    let unsubscribe = () => {}
+    unsubscribe = supervisor.onStatus((status) => {
+      if (status !== 'closed') return
+      unsubscribe()
+      resolve()
+    })
+  })
 }
 
 export function waitForCoreReady(): Promise<void> {

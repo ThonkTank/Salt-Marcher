@@ -1,3 +1,4 @@
+import type { MessageBoxOptions, MessageBoxReturnValue } from 'electron'
 import { EventEmitter } from 'node:events'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
@@ -25,7 +26,9 @@ const mocks = vi.hoisted(() => ({
   spawn: vi.fn(),
   relaunch: vi.fn(),
   quit: vi.fn(),
-  chooseBackup: vi.fn()
+  chooseBackup: vi.fn(),
+  confirmBackup:
+    vi.fn<(options: MessageBoxOptions) => Promise<MessageBoxReturnValue>>()
 }))
 vi.mock('../../src/shared/maintenance/appimage-launcher.js', () => ({
   readAppImageLauncher: () => Buffer.from('// synthetic fixture helper')
@@ -34,7 +37,10 @@ vi.mock('node:child_process', () => ({ spawn: mocks.spawn }))
 vi.mock('electron', () => ({
   app: { getVersion: () => '0.2.0', quit: mocks.quit, isPackaged: false },
   BrowserWindow: { getAllWindows: () => [] },
-  dialog: { showOpenDialog: mocks.chooseBackup }
+  dialog: {
+    showOpenDialog: mocks.chooseBackup,
+    showMessageBox: mocks.confirmBackup
+  }
 }))
 vi.mock('../../src/main/release/relaunch.js', () => ({
   relaunchRelease: mocks.relaunch
@@ -45,12 +51,13 @@ let maintenance: ProfileMaintenance
 let requestOperations: string[]
 beforeEach(() => {
   vi.clearAllMocks()
+  mocks.confirmBackup.mockResolvedValue({ response: 1, checkboxChecked: false })
   workspace = mkdtempSync(join(tmpdir(), 'salt-controller-'))
   vi.stubEnv('XDG_DATA_HOME', workspace)
   root = join(workspace, 'salt-marcher')
   setCurrent(root, releaseDeployment(root, '0.2.0'))
   maintenance = new ProfileMaintenance(root, '0.2.0', 'profile')
-  mkdirSync(maintenance.data)
+  mkdirSync(maintenance.data, { recursive: true })
   const store = new CampaignStore(maintenance.data)
   store.create('Alltagskampagne')
   store.close()
@@ -69,6 +76,7 @@ beforeEach(() => {
           transactionId: string
           source?: string
           backupDirectory?: string
+          expectedManifestSha256?: string
         }
         requestOperations.push(request.operation)
         try {
@@ -80,7 +88,8 @@ beforeEach(() => {
             request.operation === 'import-backup'
               ? await maintenance.importBackup(
                   request.transactionId,
-                  request.backupDirectory!
+                  request.backupDirectory!,
+                  request.expectedManifestSha256
                 )
               : await maintenance.prepare(request.transactionId, source)
           durableJson(join(root, `maintenance-result-${request.token}.json`), {
@@ -104,6 +113,50 @@ afterEach(() => {
   rmSync(workspace, { recursive: true, force: true })
 })
 describe('release controller uses shared maintenance', () => {
+  it('restores while the live campaign database is corrupt and preserves its bytes', async () => {
+    const id = await maintenance.backup()
+    const path = join(maintenance.data, 'installation.sqlite')
+    writeFileSync(path, 'damaged current database')
+    const controller = new ReleaseController(true, async () => {}, vi.fn())
+    await controller.restore(id!)
+    expect(controller.status().phase).toBe('maintenance')
+    const transaction = new MaintenanceCoordinator(root).read()!
+    expect(
+      readFileSync(
+        join(
+          root,
+          'backups',
+          transaction.backup!,
+          'data',
+          'campaign-data',
+          'installation.sqlite'
+        ),
+        'utf8'
+      )
+    ).toBe('damaged current database')
+    const restored = new CampaignStore(maintenance.data)
+    expect(restored.list().campaigns[0]?.name).toBe('Alltagskampagne')
+    restored.close()
+  })
+
+  it('does not start target maintenance when the old data process cannot be stopped', async () => {
+    const id = await maintenance.backup()
+    const before = readFileSync(join(maintenance.data, 'notes.txt'))
+    const controller = new ReleaseController(
+      true,
+      () => Promise.reject(new Error('Datenprozess ist noch nicht beendet')),
+      vi.fn()
+    )
+    await controller.restore(id!)
+    expect(controller.status()).toMatchObject({
+      phase: 'error',
+      message: 'Datenprozess ist noch nicht beendet'
+    })
+    expect(mocks.spawn).not.toHaveBeenCalled()
+    expect(readFileSync(join(maintenance.data, 'notes.txt'))).toEqual(before)
+    expect(maintenance.backups()).toHaveLength(1)
+  })
+
   it('routes the selected backup through target-version validation and shared activation', async () => {
     const id = await maintenance.backup()
     mocks.chooseBackup.mockResolvedValue({
@@ -122,6 +175,86 @@ describe('release controller uses shared maintenance', () => {
       'backup state'
     )
     expect(maintenance.backups()).toHaveLength(2)
+  })
+
+  it('rejects an ordinary profile folder before confirmation or stopping Core', async () => {
+    mocks.chooseBackup.mockResolvedValue({
+      canceled: false,
+      filePaths: [maintenance.data]
+    })
+    const stop = vi.fn(async () => {})
+    const controller = new ReleaseController(true, stop, vi.fn())
+    await controller.importProfile()
+    expect(controller.status().phase).toBe('error')
+    expect(controller.status().message).toContain(
+      'Bitte einen Sicherungsordner mit manifest.json und data auswählen'
+    )
+    expect(mocks.confirmBackup).not.toHaveBeenCalled()
+    expect(stop).not.toHaveBeenCalled()
+    expect(mocks.spawn).not.toHaveBeenCalled()
+  })
+
+  it.each(['profile', 'campaign-data'] as const)(
+    'explains %s scope after selection and cancels without stopping Core',
+    async (scope) => {
+      const producer = new ProfileMaintenance(root, '0.2.0', scope)
+      const id = await producer.backup()
+      mocks.chooseBackup.mockResolvedValue({
+        canceled: false,
+        filePaths: [join(root, 'backups', id!)]
+      })
+      mocks.confirmBackup.mockResolvedValue({
+        response: 0,
+        checkboxChecked: false
+      })
+      const stop = vi.fn(async () => {})
+      const controller = new ReleaseController(true, stop, vi.fn())
+      await controller.importProfile()
+      expect(mocks.confirmBackup).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message:
+            scope === 'profile'
+              ? 'Das gesamte Profil durch diese Sicherung ersetzen?'
+              : 'Diese ältere Sicherung enthält nur Kampagnendaten. Das gesamte Profil ersetzen?',
+          defaultId: 0,
+          cancelId: 0
+        })
+      )
+      expect(mocks.confirmBackup.mock.calls[0]?.[0].detail).toContain(
+        'Version 0.2.0'
+      )
+      expect(stop).not.toHaveBeenCalled()
+      expect(mocks.spawn).not.toHaveBeenCalled()
+      expect(maintenance.backups()).toHaveLength(1)
+      expect(new MaintenanceCoordinator(root).read()).toBeNull()
+    }
+  )
+
+  it('rejects replacement of the confirmed manifest before any preparation', async () => {
+    const id = await maintenance.backup()
+    const directory = join(root, 'backups', id!)
+    mocks.chooseBackup.mockResolvedValue({
+      canceled: false,
+      filePaths: [directory]
+    })
+    mocks.confirmBackup.mockImplementation(() => {
+      const path = join(directory, 'manifest.json')
+      const manifest = JSON.parse(readFileSync(path, 'utf8')) as {
+        version: string
+      }
+      manifest.version = 'another backup'
+      durableJson(path, manifest)
+      return Promise.resolve({ response: 1, checkboxChecked: false })
+    })
+    const controller = new ReleaseController(true, async () => {}, vi.fn())
+    await controller.importProfile()
+    expect(controller.status().phase).toBe('error')
+    expect(controller.status().message).toContain(
+      'seit der Bestätigung verändert'
+    )
+    expect(maintenance.backups()).toHaveLength(1)
+    expect(new MaintenanceCoordinator(root).read()).toBeNull()
+    expect(mocks.relaunch).not.toHaveBeenCalled()
   })
 
   it('restores using the installed deployment, preserves current work and awaits startup acceptance', async () => {

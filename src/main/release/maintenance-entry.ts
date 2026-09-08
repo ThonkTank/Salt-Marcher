@@ -17,6 +17,10 @@ export const maintenanceRequestSchema = z
     transactionId: z.uuid(),
     source: z.string().optional(),
     backupDirectory: z.string().optional(),
+    expectedManifestSha256: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .optional(),
     id: z.string().optional()
   })
   .strict()
@@ -42,6 +46,9 @@ export async function runMaintenanceEntry(): Promise<void> {
         transactionId: request.transactionId,
         ...(request.backupDirectory
           ? { backupDirectory: request.backupDirectory }
+          : {}),
+        ...(request.expectedManifestSha256
+          ? { expectedManifestSha256: request.expectedManifestSha256 }
           : {}),
         ...(request.source ? { source: request.source } : {}),
         ...(request.id ? { id: request.id } : {})

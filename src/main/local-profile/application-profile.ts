@@ -1,6 +1,9 @@
 import { createHash } from 'node:crypto'
 import { dirname, join } from 'node:path'
-import { prepareProfileDirectory } from '../../shared/maintenance/profile-path.js'
+import {
+  canonicalProfilePath,
+  prepareProfileDirectory
+} from '../../shared/maintenance/profile-path.js'
 import { acquireProfileAccess, type ProfileAccess } from './profile-access.js'
 
 interface BrowserProfileHost {
@@ -13,7 +16,7 @@ export function openApplicationProfile(
   host: BrowserProfileHost,
   legacyRoot?: string
 ): ProfileAccess {
-  const profile = prepareProfileDirectory(requestedProfile)
+  const profile = canonicalProfilePath(requestedProfile)
   const access = acquireProfileAccess(profile, 'application', legacyRoot)
   try {
     const identity = createHash('sha256').update(profile).digest('hex')
