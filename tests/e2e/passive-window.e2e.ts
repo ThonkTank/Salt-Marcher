@@ -1,4 +1,5 @@
 import { beginCampaignCreation } from './support/campaign-navigation.js'
+import { waitForGmRendererReady } from './support/e2e-ready.js'
 import { browser, expect } from '@wdio/globals'
 import type { Browser as WdioBrowser } from 'webdriverio'
 import {
@@ -9,6 +10,7 @@ import {
 describe('passive display isolation', () => {
   it('never renders a GM sentinel and exposes only the empty projection', async () => {
     const client = browser as unknown as WdioBrowser
+    await waitForGmRendererReady(client)
     await beginCampaignCreation(client)
     await client.waitUntil(
       async () => (await client.getWindowHandles()).length === 2

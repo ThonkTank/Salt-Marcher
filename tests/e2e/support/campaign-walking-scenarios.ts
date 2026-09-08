@@ -275,6 +275,7 @@ export async function runCampaignCreationScenario(): Promise<void> {
   await expect(await client.$('strong=Campaign B Archiv')).not.toBeExisting()
   await (await client.$('button[aria-label="Schließen"]')).click()
   await (await client.$('button[aria-label="test öffnen"]')).click()
+  await client.$('[data-screen="workspace"]').waitForExist({ timeout: 15_000 })
   await runCampaignMinimumSizeScenario(client)
 }
 
