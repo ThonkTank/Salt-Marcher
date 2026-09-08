@@ -1,3 +1,7 @@
+import type {
+  CampaignActionAttempt,
+  CampaignManagementCommand
+} from './campaign-action-attempt.js'
 import {
   useCallback,
   useContext,
@@ -42,6 +46,13 @@ export function useCampaignSessionCoordinator(
   const [busy, setBusy] = useState(false)
   const running = useRef<Promise<boolean> | null>(null)
   const pendingEntry = useRef<string | null>(null)
+  const activeAttempt = useRef<{
+    started: boolean
+    confirmed: boolean
+    commandId: string | null
+    entryPending: boolean
+    campaignId: string | null
+  } | null>(null)
   const [sessionRetry, setSessionRetry] = useState(false)
 
   const load = useCallback(async () => {
@@ -61,14 +72,15 @@ export function useCampaignSessionCoordinator(
 
   function run(
     operation: () => Promise<void>,
-    recovery = false
+    recovery = false,
+    maintenance = false
   ): Promise<boolean> {
     if (
       running.current ||
       (!recovery &&
         (pendingEntry.current ||
           projection.snapshot().reconciliationCommandId ||
-          maintenanceDraftCoordinator.isLocked()))
+          (!maintenance && maintenanceDraftCoordinator.isLocked())))
     )
       return Promise.resolve(false)
     setBusy(true)
@@ -108,6 +120,8 @@ export function useCampaignSessionCoordinator(
     )
       throw new CapabilityError('stale', false)
     pendingEntry.current = null
+    if (activeAttempt.current?.campaignId === campaignId)
+      activeAttempt.current.entryPending = false
     setSessionRetry(false)
     if (!maintenanceDraftCoordinator.isLocked()) {
       setWorkspace('session')
@@ -120,11 +134,20 @@ export function useCampaignSessionCoordinator(
     let accepted: CampaignCommandReceipt | null = null
     const complete = await run(async () => {
       accepted = await projection.reconcilePendingCommand()
+      if (activeAttempt.current?.commandId === accepted.commandId) {
+        activeAttempt.current.confirmed = true
+        activeAttempt.current.commandId = null
+        activeAttempt.current.campaignId = accepted.campaignId
+        activeAttempt.current.entryPending =
+          accepted.kind === 'created' || accepted.kind === 'activated'
+      }
       if (accepted.kind === 'created' || accepted.kind === 'activated') {
         pendingEntry.current = accepted.campaignId
         await enterSession()
       }
     }, true)
+    if (!projection.snapshot().reconciliationCommandId && activeAttempt.current)
+      activeAttempt.current.commandId = null
     return complete ? accepted : null
   }
 
@@ -150,6 +173,93 @@ export function useCampaignSessionCoordinator(
     save: settle,
     discard: settle
   })
+
+  function beginCampaignAction(
+    value: CampaignManagementCommand,
+    maintenance = false
+  ): CampaignActionAttempt {
+    const input = structuredClone(value)
+    const attempt = {
+      started: false,
+      confirmed: false,
+      commandId: null as string | null,
+      entryPending: false,
+      campaignId: null as string | null
+    }
+    const permitted =
+      !maintenance || input.kind === 'create' || input.kind === 'rename'
+    const completion = permitted
+      ? run(
+          async () => {
+            attempt.started = true
+            activeAttempt.current = attempt
+            try {
+              switch (input.kind) {
+                case 'create': {
+                  const created = await projection.createCampaign(
+                    input.name.trim()
+                  )
+                  attempt.confirmed = true
+                  attempt.campaignId = created.activeCampaignId
+                  attempt.entryPending = true
+                  pendingEntry.current = created.activeCampaignId
+                  await enterSession()
+                  break
+                }
+                case 'activate':
+                  await projection.activateCampaign(input.id)
+                  attempt.confirmed = true
+                  attempt.campaignId = input.id
+                  attempt.entryPending = true
+                  pendingEntry.current = input.id
+                  await enterSession()
+                  break
+                case 'rename':
+                  await projection.renameCampaign(input.id, input.name.trim())
+                  attempt.confirmed = true
+                  break
+                case 'trash': {
+                  const next = await projection.trashCampaign(input.id)
+                  attempt.confirmed = true
+                  if (next.activeCampaignId === null) {
+                    setScreen('campaigns')
+                    setSessionRetry(false)
+                  }
+                  break
+                }
+                case 'restore':
+                  await projection.restoreCampaign(input.id)
+                  attempt.confirmed = true
+                  break
+                case 'delete':
+                  await projection.deleteCampaignForever(
+                    input.id,
+                    input.confirmationName
+                  )
+                  attempt.confirmed = true
+                  break
+              }
+            } catch (cause) {
+              if (cause instanceof CampaignReconciliationPendingError)
+                attempt.commandId = cause.commandId
+              throw cause
+            }
+          },
+          false,
+          maintenance
+        )
+      : Promise.resolve(false)
+    return {
+      completion,
+      settle: async () => {
+        await completion
+        if (!attempt.started) return 'absent'
+        if (attempt.commandId || attempt.entryPending) await settle()
+        if (attempt.commandId || attempt.entryPending) return 'pending'
+        return attempt.confirmed ? 'confirmed' : 'absent'
+      }
+    }
+  }
 
   const activeCampaignId = root.campaigns.activeCampaignId
   return {
@@ -192,37 +302,18 @@ export function useCampaignSessionCoordinator(
     setWorkspace,
     campaignReconciliationPending: root.reconciliationCommandId !== null,
     reconcileCampaign: reconcile,
+    beginCampaignAction,
     createCampaign: (name: string) =>
-      run(async () => {
-        const created = await projection.createCampaign(name.trim())
-        pendingEntry.current = created.activeCampaignId
-        await enterSession()
-      }),
+      beginCampaignAction({ kind: 'create', name }).completion,
     switchCampaign: (id: string) =>
-      run(async () => {
-        await projection.activateCampaign(id)
-        pendingEntry.current = id
-        await enterSession()
-      }),
+      beginCampaignAction({ kind: 'activate', id }).completion,
     renameCampaign: (id: string, name: string) =>
-      run(async () => {
-        await projection.renameCampaign(id, name.trim())
-      }),
+      beginCampaignAction({ kind: 'rename', id, name }).completion,
     trashCampaign: (id: string) =>
-      run(async () => {
-        const next = await projection.trashCampaign(id)
-        if (next.activeCampaignId === null) {
-          setScreen('campaigns')
-          setSessionRetry(false)
-        }
-      }),
+      beginCampaignAction({ kind: 'trash', id }).completion,
     restoreCampaign: (id: string) =>
-      run(async () => {
-        await projection.restoreCampaign(id)
-      }),
+      beginCampaignAction({ kind: 'restore', id }).completion,
     deleteCampaignForever: (id: string, confirmationName: string) =>
-      run(async () => {
-        await projection.deleteCampaignForever(id, confirmationName)
-      })
+      beginCampaignAction({ kind: 'delete', id, confirmationName }).completion
   }
 }

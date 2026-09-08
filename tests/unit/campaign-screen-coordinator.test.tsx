@@ -10,6 +10,8 @@ import {
 } from '../../src/renderer/shell/maintenance-draft-coordinator.js'
 import type { LiveSessionSnapshot } from '../../src/shared/contracts/live-session.js'
 import { CapabilityContext } from '../../src/renderer/capabilities/capability-context.js'
+import { CampaignReconciliationPendingError } from '../../src/renderer/capabilities/campaign-workspace-projection.js'
+import type { CampaignActionAttempt } from '../../src/renderer/features/workspace/campaign-action-attempt.js'
 import { useCampaignSessionCoordinator } from '../../src/renderer/features/workspace/use-campaign-session-coordinator.js'
 const guards = vi.hoisted(() => ({ dirty: false }))
 vi.mock(
@@ -53,6 +55,10 @@ function fixture() {
         value: snapshot
       })
     ),
+    renameCampaign: vi.fn(() => Promise.resolve(snapshot.campaigns)),
+    trashCampaign: vi.fn(() => Promise.resolve(snapshot.campaigns)),
+    restoreCampaign: vi.fn(() => Promise.resolve(snapshot.campaigns)),
+    deleteCampaignForever: vi.fn(() => Promise.resolve(snapshot.campaigns)),
     createCampaign: vi.fn(() => Promise.resolve(snapshot.campaigns)),
     reconcilePendingCommand: vi.fn<() => Promise<CampaignCommandReceipt>>(),
     activateCampaign: vi.fn<(id: string) => Promise<void>>(() =>
@@ -327,4 +333,148 @@ it('does not create a second campaign after a confirmed create whose session rea
   })
   expect(f.projection.createCampaign).toHaveBeenCalledOnce()
   expect(maintenanceDraftCoordinator.hasDirty()).toBe(false)
+})
+it('keeps the original confirmed handle after later independent commands', async () => {
+  const f = fixture()
+  await waitFor(() => expect(f.result.current.catalogStatus).toBe('ready'))
+  let original!: CampaignActionAttempt
+  const input = { kind: 'rename' as const, id: 'a', name: 'Original' }
+  await act(async () => {
+    original = f.result.current.beginCampaignAction(input)
+    input.name = 'Changed caller object'
+    expect(await original.completion).toBe(true)
+  })
+  expect(f.projection.renameCampaign).toHaveBeenCalledWith('a', 'Original')
+  f.projection.renameCampaign.mockRejectedValueOnce(new Error('failed'))
+  await act(async () => {
+    expect(await f.result.current.renameCampaign('a', 'Later')).toBe(false)
+  })
+  expect(await original.settle()).toBe('confirmed')
+  expect(f.projection.renameCampaign).toHaveBeenCalledTimes(2)
+})
+it('observes central receipt recovery through the original handle without replay', async () => {
+  const f = fixture()
+  await waitFor(() => expect(f.result.current.catalogStatus).toBe('ready'))
+  const root = f.projection.snapshot()
+  f.projection.renameCampaign.mockImplementationOnce(() => {
+    root.reconciliationCommandId = 'original'
+    return Promise.reject(new CampaignReconciliationPendingError('original'))
+  })
+  let original!: CampaignActionAttempt
+  await act(async () => {
+    original = f.result.current.beginCampaignAction({
+      kind: 'rename',
+      id: 'a',
+      name: 'Saved'
+    })
+    expect(await original.completion).toBe(false)
+  })
+  f.projection.reconcilePendingCommand.mockRejectedValueOnce(
+    new Error('offline')
+  )
+  await act(async () => {
+    expect(await original.settle()).toBe('pending')
+  })
+  f.projection.reconcilePendingCommand.mockImplementationOnce(() => {
+    root.reconciliationCommandId = null
+    return Promise.resolve({
+      kind: 'renamed',
+      commandId: 'original',
+      campaignId: 'a',
+      snapshot: root.campaigns
+    })
+  })
+  act(() => {
+    resolution = maintenanceDraftCoordinator.begin()
+  })
+  await act(async () => {
+    expect(await resolution!.resolve('save')).toEqual([])
+  })
+  expect(await original.settle()).toBe('confirmed')
+  expect(f.projection.renameCampaign).toHaveBeenCalledOnce()
+})
+it('keeps confirmed absence distinct from a later successful command', async () => {
+  const f = fixture()
+  await waitFor(() => expect(f.result.current.catalogStatus).toBe('ready'))
+  const root = f.projection.snapshot()
+  f.projection.renameCampaign.mockImplementationOnce(() => {
+    root.reconciliationCommandId = 'absent'
+    return Promise.reject(new CampaignReconciliationPendingError('absent'))
+  })
+  let original!: CampaignActionAttempt
+  await act(async () => {
+    original = f.result.current.beginCampaignAction({
+      kind: 'rename',
+      id: 'a',
+      name: 'Absent'
+    })
+    await original.completion
+  })
+  f.projection.reconcilePendingCommand.mockImplementationOnce(() => {
+    root.reconciliationCommandId = null
+    return Promise.reject(new Error('command not applied'))
+  })
+  await act(async () => {
+    expect(await original.settle()).toBe('absent')
+  })
+  await act(async () => {
+    expect(await f.result.current.renameCampaign('a', 'Later')).toBe(true)
+  })
+  expect(await original.settle()).toBe('absent')
+  expect(f.projection.renameCampaign).toHaveBeenCalledTimes(2)
+})
+it('holds a confirmed create handle through read failure and central recovery', async () => {
+  const f = fixture()
+  await waitFor(() => expect(f.result.current.catalogStatus).toBe('ready'))
+  f.projection.refreshActiveSession.mockRejectedValueOnce(new Error('offline'))
+  let original!: CampaignActionAttempt
+  await act(async () => {
+    original = f.result.current.beginCampaignAction({
+      kind: 'create',
+      name: 'New'
+    })
+    expect(await original.completion).toBe(false)
+  })
+  act(() => {
+    resolution = maintenanceDraftCoordinator.begin()
+  })
+  await act(async () => {
+    expect(await resolution!.resolve('discard')).toEqual([])
+  })
+  expect(await original.settle()).toBe('confirmed')
+  expect(f.projection.createCampaign).toHaveBeenCalledOnce()
+})
+it('allows only explicit create and rename maintenance actions through the UI lock', async () => {
+  const f = fixture()
+  await waitFor(() => expect(f.result.current.catalogStatus).toBe('ready'))
+  act(() => {
+    resolution = maintenanceDraftCoordinator.begin()
+  })
+  for (const kind of ['activate', 'trash', 'restore', 'delete'] as const) {
+    const attempt = f.result.current.beginCampaignAction(
+      { kind, id: 'a', confirmationName: 'Name' },
+      true
+    )
+    expect(await attempt.completion).toBe(false)
+    expect(await attempt.settle()).toBe('absent')
+  }
+  await act(async () => {
+    const rename = f.result.current.beginCampaignAction(
+      { kind: 'rename', id: 'a', name: 'Renamed' },
+      true
+    )
+    expect(await rename.completion).toBe(true)
+    const create = f.result.current.beginCampaignAction(
+      { kind: 'create', name: 'New' },
+      true
+    )
+    expect(await create.completion).toBe(true)
+  })
+  expect(f.result.current.screen).toBe('campaigns')
+  expect(f.projection.renameCampaign).toHaveBeenCalledOnce()
+  expect(f.projection.createCampaign).toHaveBeenCalledOnce()
+  expect(f.projection.activateCampaign).not.toHaveBeenCalled()
+  expect(f.projection.trashCampaign).not.toHaveBeenCalled()
+  expect(f.projection.restoreCampaign).not.toHaveBeenCalled()
+  expect(f.projection.deleteCampaignForever).not.toHaveBeenCalled()
 })

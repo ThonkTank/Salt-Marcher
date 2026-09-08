@@ -4414,3 +4414,86 @@ schließen, Eingaben sperren und Save/Discard/Cancel/Unknown/Readfehler gerender
 prüfen. Vor Sourceänderungen den konkreten Schnittstellenplan protokollieren.
 Phase 4, Phasen 5–7, Exact-SHA-CI, Handoff/Main und öffentliche Abnahme bleiben offen.
 Keine Nutzerinstallation oder echten Kampagnendaten verändert.
+
+### Phase 4 — Plan: ursprünglicher Abschlussstatus für Kampagnendialoge
+
+Vorheriger Zielturn war Fortschritt; 05c83d699 ist sauber, Check 34284992539 wartet.
+Die Screen-Anbindung benötigt zuerst ein Ergebnis je ursprünglichem Versuch.
+Frontend-Vertrag CampaignActionAttempt enthält completion (bisheriges Boolean für
+bestehende Aufrufer) und settle mit confirmed/absent/pending. Begin erhält einen
+unveränderlich kopierten Create/Activate/Rename/Trash/Restore/Delete-Auftrag.
+Bestehende öffentliche Aktionen delegieren dorthin; keine zweite Backend- oder
+Reconciliation-Implementierung einführen.
+
+Je Versuch Start, bestätigten Write, ursprüngliche Reconciliation-Command-ID und
+noch offenen Sessionread halten. Die vorhandene Reconciliation aktualisiert nur
+den dazugehörigen Versuch. Alte Handles dürfen nicht das Ergebnis späterer
+Befehle übernehmen. settle liest/klärt ausschließlich und bleibt nach bestätigter
+Nichtausführung absent; ein neuer Save muss einen neuen Versuch beginnen. Ein
+interner maintenance-Aufruf darf die globale UI-Sperre nur für Create/Rename
+umgehen, niemals für Activate/Trash/Restore/Delete. Pending/Reconciliation-
+Sperren gelten weiterhin. Tests decken direkte Bestätigung, Abweisung, Unknown,
+Abwesenheit, bestätigten Write plus Readfehler, zentrale Klärung vor Handle-Abfrage,
+unveränderten Originalinput und spätere unabhängige Befehle ab. Danach Screen
+schrittweise mit diesen Handles verbinden; dessen Lücke bleibt bis dahin offen.
+
+### Phase 4 — Audit des ursprünglichen Kampagnen-Abschlussstatus
+
+Planabgleich: CampaignActionAttempt hält completion und den lesend klärbaren
+Status confirmed/absent/pending je ursprünglichem Versuch. beginCampaignAction
+kopiert den Auftrag; die bestehenden sechs öffentlichen Methoden delegieren
+auf denselben Ablauf. Der Koordinator hält Start, Writebestätigung, ursprüngliche
+Quittungs-ID und ausstehenden Sessionread pro Versuch. Bestehende Reconciliation
+aktualisiert den passenden Versuch; auch eine schon zentral erledigte Klärung
+bleibt danach am ursprünglichen Handle erkennbar. Spätere Befehle ändern dieses
+Ergebnis nicht. Nicht gestartete/abgewiesene und bestätigt nicht ausgeführte
+Versuche sind absent, verlorene Antworten bleiben pending bis zur bestehenden
+lesenden Recovery. settle sendet keinen Ersatzbefehl. Interner Maintenance-Start
+umgeht die globale UI-Sperre ausschließlich für Create/Rename; ausstehende
+Befehle/Reconciliation bleiben gesperrt. Keine zusätzliche Backend-Quittungskette.
+
+Validierung: 42 Koordinator-/Projektions-/bestehende Dialogtests und 69 Architektur-
+tests bestanden. Neue Nachweise prüfen unveränderten Originalinput, unabhängige
+spätere Befehle, Unknown mit wiederholtem Readfehler, zentrale Klärung vor
+Handle-Abfrage, bestätigte Abwesenheit und bestätigtes Create plus Readfehler.
+Wartungsweg erlaubt ausschließlich Create/Rename; Activate/Trash/Restore/Delete
+bleiben nachweislich ohne Aufruf. Vollständiger Typecheck, gezieltes ESLint,
+Format und git diff --check bestehen. Build, Smoke ready/closed und Bundle-Gate
+grün; 1623965 reachable Bytes ohne Baseline-/Budgetänderung. Kampagnen-E2E mit
+echtem Create und Wechsel besteht auf denselben Appbytes. Summary
+.tmp/e2e-runs/functional-1788906092971-527475/summary.json. Build auf dirty
+05c83d699, appBuildInputFingerprint
+3525d6dcd5a297a4fcceff3373b7de86aabb0a1cb35ee7794e0ffda997a232bf,
+BuiltAt 2026-09-08T22:21:25.152Z. Logs work/roadmap-phase4-campaign-attempt-*.log.
+Keine offene Abweichung im Abschlussstatus-Teilplan.
+
+Separater Roadmapabgleich: Der neue Vertrag ist im Koordinator aktiv, aber
+CampaignScreen verwendet weiterhin die bisherigen Boolean-Aktionen. Sein
+Maintenance-Owner und die Dialogeingaben sind noch anzubinden; diese Lücke und
+Phase 4 bleiben offen. Alle weiteren Roadmapphasen und Exact-SHA-CI/Handoff/Main
+bleiben unverändert erforderlich. Keine echten Nutzerdaten verändert.
+
+### Phase 4 — Konkreter nächster Schritt: CampaignScreen-Dialogowner
+
+CampaignScreen über einen begin-Prop an beginCampaignAction anschließen und je
+laufendem Auftrag Handle plus ursprünglichen Abschlusscallback halten. Pending
+muss awaitbar sein. Ein gemeinsamer drain wartet den Versuch und liest dessen
+Status: confirmed führt genau den ursprünglichen Abschluss aus, absent erhält
+den Entwurf, pending verhindert Wartung. Dadurch kann der Koordinator zuerst
+zentral klären, ohne dass Screen-Save danach ein bestätigtes Create wiederholt.
+Kein Rückschluss allein aus aktuellen Boolean-Props.
+
+Popup-, Name- und Bestätigungseingaben synchron in Refs halten. Originale Popup-Art
+und bei Rename ursprüngliche ID/Name behalten; fehlende oder inzwischen umbenannte
+Kampagne erklärt einen Konflikt und erhält die Form. Ein Editdialog rendert auch
+bei verschwundener Kampagne weiter und kann nie zu Create umfallen. Zentrales
+Save klärt zuerst drain, startet danach nur Create/Rename über den internen
+Wartungsweg oder schließt einen unbestätigten Delete-/Trashdialog ohne Write.
+Discard wartet drain und verwirft anschließend ausdrücklich die Eingaben.
+Public-Handler, Close und Eingaben bei globaler Klärung synchron sperren; Cancel
+behält den Entwurf. Readretry verwendet zuerst das Originalhandle. Bestehende
+Aufruf-/Testfixtures auf den neuen begin-Vertrag umstellen, statt einen zweiten
+Boolean-Fallback einzubauen. Gerenderte Fälle für alle Save/Discard/Cancel-
+Ausgänge, Pending, zentrale Vorab-Recovery, Abwesenheit, unveränderte Original-ID,
+fehlgeschlagenen Read und veraltetes Rename ergänzen. Danach passenden Build/E2E
+qualifizieren und beide Teile zusammen auditieren.
