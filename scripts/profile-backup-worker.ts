@@ -3,5 +3,5 @@ import { ProfileMaintenance } from '../src/core/maintenance/profile-maintenance.
 const [root, version] = z
   .tuple([z.string().min(1), z.string().min(1)])
   .parse(process.argv.slice(2))
-const id = await new ProfileMaintenance(root, version).backup()
+const id = await new ProfileMaintenance(root, version, 'profile').backup()
 process.stdout.write(JSON.stringify({ id }))

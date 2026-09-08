@@ -38,7 +38,8 @@ export const backupSummarySchema = z
     createdAt: z.iso.datetime(),
     version: z.string().min(1),
     bytes: z.number().nonnegative(),
-    valid: z.boolean()
+    valid: z.boolean(),
+    scope: z.enum(['campaign-data', 'profile']).optional()
   })
   .strict()
 export const releaseStatusSchema = z

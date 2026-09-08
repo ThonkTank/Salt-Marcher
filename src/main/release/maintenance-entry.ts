@@ -1,7 +1,8 @@
 import { assertProfileAccessOwner } from '../local-profile/profile-access.js'
 import { app } from 'electron'
 import { maintenanceWorkerRequestSchema } from '../../shared/contracts/maintenance.js'
-import { readFileSync, rmSync } from 'node:fs'
+import { readFileSync, rmSync, mkdtempSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { z } from 'zod'
 import { maintenanceWorker } from './maintenance-worker.js'
@@ -20,6 +21,9 @@ export const maintenanceRequestSchema = z
   })
   .strict()
 export async function runMaintenanceEntry(): Promise<void> {
+  const runtime = mkdtempSync(join(tmpdir(), 'salt-maintenance-browser-'))
+  app.setPath('userData', runtime)
+  app.setPath('sessionData', runtime)
   await app.whenReady()
   const root = releaseRoot()
   const request = maintenanceRequestSchema.parse(

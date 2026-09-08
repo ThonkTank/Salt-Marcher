@@ -1,5 +1,8 @@
 import { MaintenanceCoordinator } from '../../shared/maintenance/coordinator.js'
-import { profilePreparationSchema } from '../../shared/contracts/maintenance.js'
+import {
+  profilePreparationSchema,
+  type ProfilePreparation
+} from '../../shared/contracts/maintenance.js'
 import { relaunchRelease } from './relaunch.js'
 import { tmpdir } from 'node:os'
 import { rollbackRelease } from './recovery.js'
@@ -280,6 +283,7 @@ export class ReleaseController {
       const previous = currentProgram(this.root)
       const activation = coordinator.begin({
         id: prepared.id,
+        formatVersion: prepared.journalVersion ?? 2,
         backup: prepared.backup,
         previous,
         next: deploymentProgram(this.root, deployment),
@@ -305,7 +309,7 @@ export class ReleaseController {
     target: string,
     transactionId: string,
     options: { source?: string; id?: string; backupDirectory?: string } = {}
-  ): Promise<{ id: string; backup: string | null }> {
+  ): Promise<ProfilePreparation> {
     const token = randomUUID()
     mkdirSync(this.root, { recursive: true })
     durableJson(join(this.root, 'maintenance-request.json'), {

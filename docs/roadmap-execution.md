@@ -846,3 +846,221 @@ Alltagsrelease, kein abgeschlossener Phase-3-Nachweis und kein kanonischer Hando
 Nächster Schritt: persistente Profildateien von Electron-Laufzeitdateien trennen,
 vollständigen Backup-/Aktivierungspayload versionieren und Altformat 1 bewusst
 weiter lesbar halten. Keine stillschweigende Verengung des finalen Profilumfangs.
+
+### Phase 3 — Vollständiges Profil: Schreibgrenzen vor Payloadwechsel
+
+Vorheriger Zielturn war Fortschritt; d6cb89a0c ist sauber auf dem Candidate gepusht.
+Bestandsaufnahme: sämtliche App-Einstellungen und Domänendaten liegen unter dem
+Core-Datenroot; Renderer verwendet kein localStorage/indexedDB zur Persistenz.
+Electron verwendet userData/sessionData jedoch derzeit ebenfalls im Profilbaum.
+Damit kann Main nach dem Schließen von SQLite weiter Chromium-Dateien schreiben.
+Electron app-Dokumentation (https://www.electronjs.org/docs/latest/api/app#getpathname)
+beschreibt sessionData als Cookies/Cache/Local Storage/Netzwerkzustand; Pfadwechsel
+muss vor ready erfolgen. Nur sessionData auszulagern genügt nicht als Garantie für
+sämtliche Electron-Dateien: auch userData wird vom logischen Profil getrennt.
+
+Plan vor Umsetzung: logischen Profilpfad beim Start erfassen und kanonisch sperren.
+Electron userData und sessionData in ein eindeutig profilbezogenes Geschwister-
+Laufzeitverzeichnis außerhalb des tauschbaren Profilbaums setzen. Core, Recovery,
+Runtime-Abnahme und Relaunch verwenden ausdrücklich den logischen Profilpfad;
+keine spätere Ableitung aus Electron userData. Bestehende Profildateien bleiben
+unverändert an Ort und Stelle. Wartungsmodus erhält einen eigenen temporären
+Electron-Laufzeitordner vor ready. Danach den vollständigen Payload versionieren;
+noch keine vorhandenen Nutzerdaten verschieben oder als entbehrlich löschen.
+
+Prüfung dieses Schritts: Aliasidentität, vorhandene eigene Dateien unverändert,
+Electron-Schreibpfade außerhalb des Profils, fehlgeschlagene Konfiguration gibt
+Sperren frei, reale Electron-Probe mit Browser-Schreibvorgängen und Vergleich der
+logischen Profildateien. Anschließend Typen/Lint/Architektur sowie passende Starts.
+
+### Phase 3 — Vollständiger Snapshot, Plan vor Umsetzung
+
+Die Laufzeittrennung ist durch echte Electron-Schreibvorgänge und normalen gebauten
+App-Smoke belegt. Nächster Teil: ein vollständiger Profil-Snapshot als Utility-
+Baustein, der den bestehenden SQLite-Online-Snapshot für campaign-data nutzt und
+alle übrigen regulären Dateien sowie leere Verzeichnisse erhält. Gesamtes Quell-
+Inventar einschließlich Verzeichnissen vor/nach Kopie vergleichen; Symlinks und
+Spezialdateien bleiben ohne sichere Quellzulassung abgewiesen. Kein Ausschließen
+unbekannter Dateien anhand vermuteter Cache-Namen. Bestehende Preferences und
+eigene Dateien außerhalb campaign-data müssen im Test bytegleich erhalten bleiben.
+
+Dieser Baustein wird im folgenden versionierten Backup-/Aktivierungsschritt
+angebunden. Er allein ändert noch keine produktive Payloadgrenze. Die vorhandenen
+Format-1-Sicherungen und Format-2-Journale müssen weiterhin lesbar bleiben; ältere
+Programme dürfen bei Rückkehr nach einem fehlgeschlagenen neuen Update nicht an
+unbekannten Journalfeldern scheitern. Dafür ist vor Anbindung ein expliziter
+Kompatibilitätsübergang erforderlich, keine globale Umdeutung alter stage-Ordner.
+
+### Phase 3 — Laufzeittrennung: Nachweise und Teilplanaudit
+
+29 Sperr-/Starttests, TypeScript, scoped ESLint und 73 Architekturtests bestanden.
+Eigenständige reale Electron-43.2-Probe mit dem aktuellen gebündelten Profilmodul:
+Local Storage und Cookies geschrieben, Browserfenster geschlossen und Prozess
+beendet. Dateimenge und Inhalte von own-file.txt und vorhandener Preferences im
+logischen Profil nach Prozessende unverändert; Browserdateien ausschließlich im
+separaten Laufzeitverzeichnis. Probe: roadmap-phase3-real-browser-boundary.log.
+Zusätzlich vollständiger Development-Build und test:smoke:built erfolgreich;
+Core erreicht ready und beendet sich geordnet. Buildfingerspur
+f09668d577ae613c657571fc2149586ba3b54b0af347ec155f09824f09453257.
+Das ist lokale technische Prüfung, kein CI-Artefakt-Handoff oder Release.
+
+Audit gegen Schreibgrenzen-Teilplan: erfüllt im jetzigen Startpfad. Core und
+Local-Recovery/Abnahme/Relaunch nutzen den erfassten logischen Pfad, nicht das neue
+Electron-userData. Der Headless-Wartungsmodus konfiguriert eigenen temporären
+Browserpfad. Keine bestehenden Dateien wurden zur Einführung verschoben/gelöscht.
+
+Der nachfolgende vollständige Snapshot enthält beide bekannten Datenwurzeln
+campaign-data und development-data separat und verwendet für beide den vorhandenen
+SQLite-Online-Snapshot. Sie werden nicht zusammengeführt. Eigene Dateien daneben,
+vorhandene Preferences und leere Verzeichnisse bleiben erhalten. Unterhalb der
+Quelle liegende Ziele werden vor jedem Schreibzugriff abgewiesen. Anbindung an
+Backupformat und Aktivierung bleibt offen; die zuvor genannte Buildfingerspur
+wird diesem erst danach ergänzten Snapshotbaustein nicht zugeschrieben.
+
+Vollständiger Snapshot: 18 Integrationstests bestanden, einschließlich beider
+getrennt fortlesbarer Kampagnenwurzeln; TypeScript bestanden. Scoped ESLint für den
+Snapshotbaustein und seine Testdatei zuvor bestanden. Phase 3 bleibt in Arbeit.
+Nächster verbindlicher Schritt: Format-2-Backup mit vollständigem Profilpayload und
+passender Koordinator-Journalversion integrieren. Alte Format-1-Backups müssen
+bewusst auf den Zielumfang abgebildet werden; ältere Programme müssen nach
+Rollback weiterhin ihren alten Profilstand starten können. Dieser Übergang muss
+vor der produktiven Nutzung des vollständigen Snapshots getestet sein.
+
+### Phase 3 — Vollständiger Payload: Integrationsplan vor Umsetzung
+
+Vorheriger Zielturn war Fortschritt. Jetzt Backupformat 2 mit vollständigem Profil,
+Datei- und Verzeichnisinventar ergänzen; Format 1 bleibt als campaign-data-Sicherung
+lesbar. Eine gemeinsame ProfileMaintenance-Implementierung unterstützt während des
+Adapterübergangs beide Layouts. Release-Utility verwendet das volle Layout;
+Local-Adapter wird anschließend ebenfalls umgestellt, bevor Phase 3 schließen darf.
+Keine Zusammenführung von Quellen: eine alte Format-1-Sicherung wird als Profil
+mit campaign-data abgebildet. Der aktuelle vollständige Stand wird vorher gesichert;
+die Oberfläche muss den begrenzten Umfang alter Sicherungen kenntlich machen.
+
+Arbeitskopie und vorheriger Stand enthalten bei Journalformat 3 den Profilbaum;
+Format 2 behält exakt die alte Bedeutung campaign-data. Koordinator muss beides
+anhand der Journalversion unterscheiden. Vorbereitung meldet die zugehörige
+Journalversion, Main darf sie nicht erraten. Bei vollständigem Rollback zuerst einen
+dauerhaften Format-3-Abschlussbeleg als Historie ablegen, dann ausschließlich den
+terminalen Zustand in ein altes Format-2-kompatibles Startjournal überführen.
+Dieses enthält keine offene Datenaktion und erlaubt älteren Programmen den Start;
+vor diesem terminalen Übergang bleibt ausschließlich das Format-3-Journal maßgebend.
+Die Historie entscheidet niemals über Recovery. Keine Umdeutung offener alter Journale.
+
+Prüfungen: volle Dateien/Leerordner durch Update, Restore und Rollback; alle
+Unterbrechungsgrenzen des gemeinsamen Koordinators mit vollem Payload; altes
+Journal/alte Sicherung weiterhin lesbar; kein Rollback späterer Arbeit. Release-
+Controllertest muss genau den neuen Ziel-Utility-Payload und dessen Journalversion
+verwenden. Typen/Lint/Architektur und bestehende Legacyprüfungen absichern.
+
+### Phase 3 — Vollständiger Payload: erste Validierung und Korrekturplan
+
+86 Tests aus voller Profilwartung, bisheriger Release-Wartung, Release-Controller
+und gemeinsamem Koordinator bestanden. TypeScript findet eine exactOptionalPropertyTypes-
+Abweichung zwischen Zod-Ergebnis und handgeschriebenem Promise-Rückgabetyp für
+journalVersion. Korrektur: den gemeinsamen aus Zod abgeleiteten Preparation-Typ
+exportieren und am Controller verwenden. Keine alternative Laufzeitsemantik oder
+Aufweichung des Journalvertrags.
+
+### Phase 3 — Vollständiger Release-Payload: Teilplanaudit
+
+86 kombinierte Tests bestanden; anschließend 21 vollständige Profil-/Rollbacktests
+mit sämtlichen Vorwärts- und Rücksetzungsgrenzen bestanden. 108 Architektur-,
+Legacy-Release- und Local-Starttests bestanden. TypeScript nach Korrektur bestanden,
+scoped ESLint bestanden. Eingefrorener Format-2-Reader aus d6cb89a0c prüft ausdrücklich,
+dass offene Format-3-Journale abgewiesen und terminale Rückwege gelesen werden.
+Dies ist Vertrags-/Prozesslogiknachweis; die erneute Prüfung mit echten alten und
+neuen AppImages bleibt Pflicht der Artefaktqualifikation.
+
+Audit gegen Integrations-Teilplan: Release-Utility verwendet volle Profile. Format-2-
+Backups enthalten Dateien und leere Verzeichnisse; Format-3-Koordinator tauscht das
+Profil als Einheit. Restore sichert vorher alle aktuellen Daten und führt Quellen
+nicht zusammen. Alte Sicherungen bleiben lesbar und werden als Kampagnendatenumfang
+gekennzeichnet. Nach bestätigter Nutzung verbleibt das Format-3-Journal committed;
+es findet kein späterer automatischer Rollback statt. Offene Format-2-Journale
+behalten ihre bisherige Bedeutung. Historienbelege sind kein Recovery-Eingang.
+
+Separates Audit gegen gesamte Phase 3: weiterhin offen. Local-Installer verwendet
+noch den alten Payload. Seine Handoff-Hashes müssen ihre bisherige Kampagnendaten-
+Bedeutung behalten, während zusätzliche vollständige Sicherungsbelege alle Dateien
+absichern. Bei Wiederaufnahme alter Backup-Checkpoints darf kein eigener Profilinhalt
+verloren gehen; erforderlichenfalls neue vollständige Sicherung erzeugen und alte
+behalten. Außerdem bleiben direkte kooperierende Quellen und Recovery-Oberfläche
+offen. Beim externen Import muss nach der Ordnerauswahl der erkannte Sicherungsumfang
+verständlich bestätigt werden; die bisherige generische Vorabfrage reicht für alte
+Kampagnendatensicherungen noch nicht als fertiger UX-Nachweis.
+
+Remote-Beleg gelesen: Check 34228010436 für d6cb89a0c erfolgreich; a5daf8ea6 ebenfalls
+erfolgreich. Diese Ergebnisse werden den jetzigen uncommitteten Änderungen nicht
+zugeschrieben. Noch kein neuer kanonischer Handoff, Main-Promotion oder Release.
+
+### Phase 3 — Local vollständiger Payload, Plan vor Umsetzung
+
+Local-Backupworker auf denselben vollständigen ProfileMaintenance-Modus umstellen.
+Handoff sourceDataHash/campaignDataHash behalten Kampagnendatenbedeutung; ihr
+backupPayload-Leser liefert bei Format 2 deshalb data/campaign-data. Ein separater
+vollständiger Payload-Leser dient der Aktivierung. Der Handoff-Backupbeleg bindet
+zusätzlich das vollständige Quellinventar; Wiederaufnahme prüft dessen Unverändertheit.
+Alte gültige Backup-Checkpoints werden vor Aktivierung durch eine neue vollständige
+Sicherung ergänzt; der alte Backupordner bleibt erhalten. Neue Aktivierungen nutzen
+Journalformat 3, migrieren beide vorhandenen Datenwurzeln und erhalten eigene Dateien.
+Prüfen: normale 49 Local-Installertests, eigene Dateien außerhalb campaign-data,
+Unterbrechung/Rollback und Wiederaufnahme eines alten Backup-Checkpoints. Keine
+Umdeutung bestehender Handoff-Hashes und keine Entfernung alter Sicherungen.
+
+### Phase 3 — Local: Korrekturrunde für aktivierte Checkpoints
+
+Erster Lauf: 46/49 Local-Tests bestanden. Drei Abweichungen: Reparatur erzeugt neue
+Sicherung, Wiederholung nach Migration erzeugt neue Sicherung, Wiederaufnahme bei
+awaiting-start beginnt irrtümlich neue Wartung. Ursache: voller Rohinventarvergleich
+verwendet nach Aktivierung noch die unveränderte Vor-Migrations-Sicherung.
+
+Korrekturplan: eigenständiger aktivierter Profil-Checkpoint als Handoff-Provenienz,
+gebunden an lokale Transaktionskennung, Artefakt und Backupbeleg. Er enthält einen
+Profilhash aus bestehenden SQLite-Snapshot-Hashes beider Datenwurzeln, sonstigen
+Dateien und Verzeichnissen. Vor Aktivierung bleibt der vollständige Quellvergleich
+maßgeblich; nach Aktivierung der passende Zielcheckpoint. Bei awaiting-start darf
+dieser unter Sperre rekonstruiert werden, bevor normale Nutzung freigegeben ist.
+Fehlender Beleg nach committed erlaubt keine solche Rekonstruktion. Die Datei
+entscheidet nie über Rollback; allein das gemeinsame Wartungsjournal tut dies.
+Damit bleiben bestehende Hashfelder und alte Handoff-Journalformate unverändert.
+
+### Phase 3 — Local: Auditkorrektur vollständige Dauerhaftigkeit
+
+Typen, Lint und 97 Architektur-/Release-Tests bestanden. Codeaudit findet eine
+Lücke im neuen Local-Stage: die beiden Datenwurzeln werden synchronisiert, eigene
+Dateien daneben nach cpSync noch nicht. Korrekturplan: gemeinsame Funktion
+migratePreparedCompleteProfile für beide Adapter. Sie migriert/prüft vorhandene
+Datenwurzeln und synchronisiert danach den gesamten Profilbaum einschließlich
+zusätzlicher Dateien und Verzeichnisse. Local und Release rufen exakt diese
+Funktion auf. Vor Journalbeginn muss dieser Schritt erfolgreich zurückkehren.
+
+### Phase 3 — Local vollständiger Payload: Teilplanaudit
+
+51 Local-Installertests bestanden. Darunter vollständige Sicherung eigener Dateien,
+getrennte Development-Daten, Erhalt späterer Änderungen, Wiederaufnahme eines alten
+Kampagnendaten-Checkpoints mit zusätzlicher vollständiger Sicherung und Dateierhalt
+über alle bisherigen Installationsunterbrechungen. Die ursprünglichen drei Fehler
+sind behoben; idempotente Wiederholung und Metadatenreparatur behalten ihre Sicherung.
+
+Die anschließend erkannte fsync-Lücke ist durch den gemeinsamen vollständigen
+Vorbereitungsschritt geschlossen. Danach 24 Release-/Profiltests und fünf gezielte
+Local-Regressionsfälle erneut bestanden. TypeScript und scoped ESLint bestanden.
+Zuvor 97 kombinierte Architektur-/Release-Tests bestanden. Die Aktivierungslogik
+bleibt ausschließlich beim gemeinsamen Koordinator, auch für Local nun Format 3.
+Der zusätzliche aktivierte Checkpoint ist Handoff-Provenienz und wird niemals als
+Anweisung zur Recovery oder zum Zurücksetzen von Benutzerdaten ausgewertet.
+
+Audit gegen Local-Teilplan: erfüllt im implementierten und gezielt geprüften Umfang.
+Beide Adapter verwenden vollständigen Backup-/Profilpayload und dieselbe dauerhafte
+Migration/Prüfung. Historische Sicherungen bleiben erhalten; Hashfelder und alte
+Handoff-Journalbedeutung bleiben unverändert. Echte Artefaktprobe des neuen gesamten
+Standes und endgültiger kanonischer Handoff bleiben offen.
+
+Separates Audit gegen Phase 3: sichere direkte Profilzulassung und Recovery-
+Oberfläche fehlen weiterhin. Für Recovery muss außerdem die Wartungsübersicht ohne
+Anlegen eines fehlenden Live-Profilordners auskommen; der bisherige Konstruktor von
+ProfileMaintenance erstellt ihn noch, was bei einem offenen Profil-Rollback stören
+könnte. Dies ist vor der Recovery-Oberfläche zu korrigieren und zu testen. Beim
+externen Import bleibt die Bestätigung des erkannten Sicherungsumfangs nach Auswahl
+notwendig. Phase 3 wird daher nicht geschlossen.

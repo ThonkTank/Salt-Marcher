@@ -8,7 +8,7 @@ import {
   currentLocalProgram,
   localProgram
 } from '../src/shared/maintenance/local-program.js'
-import { migratePreparedProfile } from '../src/core/maintenance/profile-maintenance.js'
+import { migratePreparedCompleteProfile } from '../src/core/maintenance/profile-maintenance.js'
 import type { LocalArtifactManifest } from '../src/shared/contracts/build-info.js'
 import {
   createInstallJournal,
@@ -33,9 +33,10 @@ import {
 } from './local-installation/contract.js'
 import {
   backupCampaignData,
-  backupPayload,
+  completeBackupPayload,
   campaignDataHash,
-  validateBackupCheckpoint
+  validateBackupCheckpoint,
+  writeActivatedProfileCheckpoint
 } from './local-installation/campaign-backup.js'
 import { readPersistencePreflight } from './local-installation/campaign-migration.js'
 import {
@@ -121,6 +122,7 @@ function advanceLocalAppInstallationLocked(
       pending.next.sha256 === manifest.artifactSha256 &&
       pending.next.deployment === manifest.receipt.build.workspaceFingerprint
     ) {
+      writeActivatedProfileCheckpoint(paths, journal)
       journal = writeInstallJournal(
         paths.journal,
         {
@@ -253,15 +255,42 @@ function advanceLocalAppInstallationLocked(
       return installationResult(paths, manifest, activeJournal)
 
     validateBackupCheckpoint(paths, activeJournal)
+    if (
+      activeJournal.backupPath &&
+      !completeBackupPayload(activeJournal.backupPath)
+    ) {
+      const preflight = readPersistencePreflight(
+        paths,
+        options.schemaMigrations
+      )
+      const complete = backupCampaignData(
+        paths,
+        manifest.receipt.build,
+        readPreviousInstalledBuild(paths.installedManifest),
+        preflight.databases,
+        now
+      )
+      if (!complete)
+        throw new Error(
+          'Existing profile requires a complete backup before activation'
+        )
+      updateJournal({
+        backupPath: complete.path,
+        backupManifestSha256: complete.manifestSha256,
+        sourceDataHash: complete.sourceDataHash,
+        campaignDataHash: complete.sourceDataHash
+      })
+      validateBackupCheckpoint(paths, activeJournal)
+    }
     const deployment = activeJournal.deploymentPath
     if (deployment === null)
       throw new Error('Installation journal has no staged deployment')
     const id = randomUUID()
     const staging = join(paths.root, `staged-${id}`)
     const source = activeJournal.backupPath
-      ? backupPayload(activeJournal.backupPath)
-      : paths.campaignData
-    if (existsSync(source))
+      ? completeBackupPayload(activeJournal.backupPath)
+      : paths.profile
+    if (source && existsSync(source))
       cpSync(source, staging, {
         recursive: true,
         errorOnExist: true,
@@ -271,7 +300,7 @@ function advanceLocalAppInstallationLocked(
       })
     else mkdirSync(staging)
     try {
-      migratePreparedProfile(staging, options.schemaMigrations)
+      migratePreparedCompleteProfile(staging, options.schemaMigrations)
     } catch (cause) {
       throw new LocalInstallationError(
         'migration-failed',
@@ -301,6 +330,7 @@ function advanceLocalAppInstallationLocked(
     )
     coordinator.begin({
       id,
+      formatVersion: 3,
       operation: previousProgram ? 'update' : 'install',
       previous: previousProgram,
       next: nextProgram,
@@ -314,6 +344,7 @@ function advanceLocalAppInstallationLocked(
       )
     })
     coordinator.activate()
+    writeActivatedProfileCheckpoint(paths, activeJournal)
     updateJournal({
       phase: 'completed',
       campaignDataHash: campaignDataHash(paths)

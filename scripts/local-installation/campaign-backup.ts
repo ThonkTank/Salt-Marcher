@@ -1,5 +1,10 @@
+import { profileBackupSchema } from '../../src/shared/contracts/profile-backup.js'
 import { ProfileMaintenance } from '../../src/core/maintenance/profile-maintenance.js'
-import { durableJson } from '../../src/shared/maintenance/files.js'
+import {
+  durableJson,
+  inventory,
+  directoryInventory
+} from '../../src/shared/maintenance/files.js'
 import {
   existsSync,
   mkdirSync,
@@ -11,7 +16,7 @@ import { spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import { basename, dirname, join, relative, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { z } from 'zod'
 import {
   buildInfoSchema,
@@ -33,6 +38,7 @@ import {
   directoryHasEntries,
   hashFileInventory,
   hashTree,
+  hashTreeOrEmpty,
   sqliteOwnedBackupInventory
 } from './campaign-file-inventory.js'
 
@@ -68,6 +74,99 @@ export function validateBackupCheckpoint(
       'Campaign data changed after the verified backup checkpoint'
     )
   validateBackupContents(paths, journal)
+  const activated = readActivatedCheckpoint(paths, journal)
+  if (activated) {
+    if (activated.profileHash !== fullProfileHash(paths))
+      throw new LocalInstallationError(
+        'data-corrupt',
+        'Activated profile changed after the verified checkpoint'
+      )
+    return
+  }
+  if (journal.backupPath) {
+    const proof = z
+      .object({ sourceProfile: z.unknown().optional() })
+      .passthrough()
+      .parse(
+        JSON.parse(
+          readFileSync(join(journal.backupPath, 'backup-manifest.json'), 'utf8')
+        )
+      )
+    if (
+      proof.sourceProfile !== undefined &&
+      JSON.stringify(proof.sourceProfile) !==
+        JSON.stringify(profileCheckpoint(paths.profile))
+    )
+      throw new LocalInstallationError(
+        'data-corrupt',
+        'Profile files changed after the verified backup checkpoint'
+      )
+  }
+}
+
+const activatedProfileCheckpointSchema = z
+  .object({
+    formatVersion: z.literal(1),
+    transactionId: z.uuid(),
+    artifactSha256: z.string().nullable(),
+    backupManifestSha256: z.string().nullable(),
+    profileHash: z.string().regex(/^[a-f0-9]{64}$/)
+  })
+  .strict()
+
+function readActivatedCheckpoint(
+  paths: LocalInstallationPaths,
+  journal: LocalInstallJournal
+) {
+  const path = join(paths.root, 'activated-profile-checkpoint.json')
+  if (!existsSync(path)) return null
+  const parsed = activatedProfileCheckpointSchema.safeParse(
+    JSON.parse(readFileSync(path, 'utf8'))
+  )
+  if (
+    !parsed.success ||
+    parsed.data.transactionId !== journal.transactionId ||
+    parsed.data.artifactSha256 !== journal.artifactSha256 ||
+    parsed.data.backupManifestSha256 !== journal.backupManifestSha256
+  )
+    return null
+  return parsed.data
+}
+
+export function writeActivatedProfileCheckpoint(
+  paths: LocalInstallationPaths,
+  journal: LocalInstallJournal
+): void {
+  durableJson(
+    join(paths.root, 'activated-profile-checkpoint.json'),
+    activatedProfileCheckpointSchema.parse({
+      formatVersion: 1,
+      transactionId: journal.transactionId,
+      artifactSha256: journal.artifactSha256,
+      backupManifestSha256: journal.backupManifestSha256,
+      profileHash: fullProfileHash(paths)
+    })
+  )
+}
+
+function fullProfileHash(paths: LocalInstallationPaths): string {
+  const content = profileCheckpoint(paths.profile)
+  const files = content.files.filter(
+    (file) =>
+      !['campaign-data/', 'development-data/'].some((prefix) =>
+        file.path.startsWith(prefix)
+      )
+  )
+  const value = {
+    files,
+    directories: content.directories,
+    campaign: campaignDataHash(paths),
+    development: campaignDataHash({
+      ...paths,
+      campaignData: join(paths.profile, 'development-data')
+    })
+  }
+  return createHash('sha256').update(JSON.stringify(value)).digest('hex')
 }
 
 /** Validates retained evidence independently from the now-promoted live profile. */
@@ -114,7 +213,7 @@ export function validateBackupContents(
       basename(journal.backupPath)
     )
   const actualFiles = sqliteOwnedBackupInventory(
-    hashTree(payload).filter(
+    hashTreeOrEmpty(payload).filter(
       ({ path }) =>
         payload !== journal.backupPath || path !== 'backup-manifest.json'
     ),
@@ -144,7 +243,8 @@ export function backupCampaignData(
       readonly sourceDataHash: string
     }
   | undefined {
-  if (!directoryHasEntries(paths.campaignData)) return undefined
+  if (!directoryHasEntries(paths.profile)) return undefined
+  const sourceProfile = profileCheckpoint(paths.profile)
   const worker = fileURLToPath(
     new URL('../profile-backup-worker.ts', import.meta.url)
   )
@@ -172,12 +272,18 @@ export function backupCampaignData(
     .parse(JSON.parse(result.stdout))
   const target = join(paths.backups, id)
   try {
-    const sourceHashes = hashTree(backupPayload(target))
+    if (
+      JSON.stringify(sourceProfile) !==
+      JSON.stringify(profileCheckpoint(paths.profile))
+    )
+      throw new Error('Profile changed during backup')
+    const sourceHashes = hashTreeOrEmpty(backupPayload(target))
     const sourceDataHash = hashFileInventory(sourceHashes)
     const backupManifestPath = join(target, 'backup-manifest.json')
     durableJson(backupManifestPath, {
       formatVersion: localPersistenceFormatVersions.campaignBackupManifest,
       snapshotMethod: 'sqlite-online-backup',
+      sourceProfile,
       createdAt: now().toISOString(),
       previousBuild,
       nextBuild,
@@ -208,10 +314,24 @@ export function backupCampaignData(
 
 /** Legacy checkpoints stored data alongside their proof; new backups isolate it. */
 export function backupPayload(backup: string): string {
+  const complete = completeBackupPayload(backup)
+  if (complete) return join(complete, 'campaign-data')
   return z.uuid().safeParse(basename(backup)).success &&
     existsSync(join(backup, 'manifest.json'))
     ? join(backup, 'data')
     : backup
+}
+
+export function completeBackupPayload(backup: string): string | undefined {
+  if (!existsSync(join(backup, 'manifest.json'))) return undefined
+  const manifest = profileBackupSchema.parse(
+    JSON.parse(readFileSync(join(backup, 'manifest.json'), 'utf8'))
+  )
+  return manifest.formatVersion === 2 ? join(backup, 'data') : undefined
+}
+
+function profileCheckpoint(profile: string) {
+  return { files: inventory(profile), directories: directoryInventory(profile) }
 }
 
 export function snapshotCampaignData(

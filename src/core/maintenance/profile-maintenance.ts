@@ -1,3 +1,4 @@
+import { snapshotCompleteProfile } from './complete-profile-snapshot.js'
 import { profileBackupSchema as backupSchema } from '../../shared/contracts/profile-backup.js'
 import { readVerifiedBackup } from './verified-backup.js'
 import { readbackProfile } from '../persistence/sqlite/profile-readback.js'
@@ -12,11 +13,12 @@ import {
   rmSync,
   statfsSync
 } from 'node:fs'
-import { join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 import { z } from 'zod'
 import {
   durableJson,
   inventory,
+  directoryInventory,
   syncPath,
   syncTree
 } from '../../shared/maintenance/files.js'
@@ -31,16 +33,26 @@ export class ProfileMaintenance {
   readonly data: string
   constructor(
     readonly root: string,
-    readonly version: string
+    readonly version: string,
+    readonly payload: 'campaign-data' | 'profile' = 'campaign-data'
   ) {
     this.data = join(root, 'profile', 'campaign-data')
     mkdirSync(join(root, 'profile'), { recursive: true })
     mkdirSync(join(root, 'backups'), { recursive: true })
   }
+  get payloadRoot(): string {
+    return this.payload === 'profile' ? join(this.root, 'profile') : this.data
+  }
+  private snapshot(source: string, target: string): Promise<void> {
+    return this.payload === 'profile'
+      ? snapshotCompleteProfile(source, target)
+      : snapshotProfile(source, target)
+  }
   async backup(preserveInvalid = false): Promise<string | null> {
-    if (!existsSync(this.data)) return null
+    if (!existsSync(this.payloadRoot)) return null
     const required =
-      inventory(this.data).reduce((sum, file) => sum + file.bytes, 0) * 2 +
+      inventory(this.payloadRoot).reduce((sum, file) => sum + file.bytes, 0) *
+        2 +
       64 * 1024 * 1024
     const available = statfsSync(this.root)
     if (available.bavail * available.bsize < required)
@@ -52,12 +64,12 @@ export class ProfileMaintenance {
     mkdirSync(staged)
     let restorable = true
     try {
-      await snapshotProfile(this.data, join(staged, 'data'))
+      await this.snapshot(this.payloadRoot, join(staged, 'data'))
     } catch (error) {
       if (!preserveInvalid) throw error
-      inventory(this.data)
+      inventory(this.payloadRoot)
       rmSync(join(staged, 'data'), { recursive: true, force: true })
-      cpSync(this.data, join(staged, 'data'), {
+      cpSync(this.payloadRoot, join(staged, 'data'), {
         recursive: true,
         errorOnExist: true,
         force: false
@@ -66,7 +78,10 @@ export class ProfileMaintenance {
       restorable = false
     }
     const manifest = backupSchema.parse({
-      formatVersion: 1,
+      formatVersion: this.payload === 'profile' ? 2 : 1,
+      ...(this.payload === 'profile'
+        ? { directories: directoryInventory(join(staged, 'data')) }
+        : {}),
       id,
       createdAt: new Date().toISOString(),
       version: this.version,
@@ -95,13 +110,21 @@ export class ProfileMaintenance {
             manifest.restorable &&
             manifest.id === id &&
             JSON.stringify(manifest.files) ===
-              JSON.stringify(inventory(join(this.root, 'backups', id, 'data')))
+              JSON.stringify(
+                inventory(join(this.root, 'backups', id, 'data'))
+              ) &&
+            (manifest.formatVersion === 1 ||
+              JSON.stringify(manifest.directories) ===
+                JSON.stringify(
+                  directoryInventory(join(this.root, 'backups', id, 'data'))
+                ))
           return backupSummarySchema.parse({
             id,
             createdAt: manifest.createdAt,
             version: manifest.version,
             bytes: manifest.files.reduce((sum, file) => sum + file.bytes, 0),
-            valid
+            valid,
+            scope: manifest.formatVersion === 2 ? 'profile' : 'campaign-data'
           })
         } catch {
           return {
@@ -124,7 +147,7 @@ export class ProfileMaintenance {
   async importBackup(
     id: string,
     directory: string
-  ): Promise<{ id: string; backup: string | null }> {
+  ): Promise<{ id: string; backup: string | null; journalVersion?: 3 }> {
     const source = readVerifiedBackup(directory)
     const prepared = await this.prepare(id, source.data)
     if (
@@ -137,8 +160,8 @@ export class ProfileMaintenance {
   /** Produces a validated working copy; never activates or rolls back live data. */
   async prepare(
     id: string,
-    source = this.data
-  ): Promise<{ id: string; backup: string | null }> {
+    source = this.payloadRoot
+  ): Promise<{ id: string; backup: string | null; journalVersion?: 3 }> {
     z.uuid().parse(id)
     const staged = join(this.root, `staged-${id}`)
     if (existsSync(staged))
@@ -150,27 +173,59 @@ export class ProfileMaintenance {
     const fs = statfsSync(this.root)
     if (
       fs.bavail * fs.bsize <
-      2 * bytes(this.data) + 2 * bytes(source) + 64 * 1024 * 1024
+      2 * bytes(this.payloadRoot) + 2 * bytes(source) + 64 * 1024 * 1024
     )
       throw new Error(
         'Nicht genug freier Speicherplatz für Sicherung und Migration.'
       )
-    const backup = await this.backup(source !== this.data)
+    const backup = await this.backup(source !== this.payloadRoot)
     if (existsSync(source)) {
-      if (source === this.data && backup)
+      if (source === this.payloadRoot && backup)
         cpSync(this.backupSource(backup), staged, {
           recursive: true,
           errorOnExist: true,
           force: false
         })
-      else await snapshotProfile(source, staged)
+      else if (this.payload === 'profile') {
+        const descriptor =
+          basename(source) === 'data' &&
+          existsSync(join(dirname(source), 'manifest.json'))
+            ? readVerifiedBackup(dirname(source))
+            : undefined
+        if (descriptor?.manifest.formatVersion === 2)
+          await snapshotCompleteProfile(source, staged)
+        else {
+          mkdirSync(staged)
+          await snapshotProfile(source, join(staged, 'campaign-data'))
+        }
+      } else {
+        const descriptor =
+          basename(source) === 'data' &&
+          existsSync(join(dirname(source), 'manifest.json'))
+            ? readVerifiedBackup(dirname(source))
+            : undefined
+        if (descriptor?.manifest.formatVersion === 2)
+          throw new Error(
+            'Diese Sicherung benötigt eine Version mit vollständiger Profilwiederherstellung.'
+          )
+        await snapshotProfile(source, staged)
+      }
     } else mkdirSync(staged)
+    if (this.payload === 'profile') {
+      migratePreparedCompleteProfile(staged)
+      return { id, backup, journalVersion: 3 }
+    }
     migratePreparedProfile(staged)
     return { id, backup }
   }
   validate(): void {
     validateProfile(this.data, true)
     readbackProfile(this.data)
+    const development = join(this.root, 'profile', 'development-data')
+    if (this.payload === 'profile' && existsSync(development)) {
+      validateProfile(development, true)
+      readbackProfile(development)
+    }
   }
 }
 
@@ -181,5 +236,17 @@ export function migratePreparedProfile(
 ): void {
   migrateProfile(staged, migrations)
   readbackProfile(staged)
+  syncTree(staged)
+}
+
+/** One durable full-profile preparation gate shared by both installation adapters. */
+export function migratePreparedCompleteProfile(
+  staged: string,
+  migrations?: readonly import('../persistence/sqlite/schema-migrations.js').SchemaMigration[]
+): void {
+  mkdirSync(join(staged, 'campaign-data'), { recursive: true })
+  for (const name of ['campaign-data', 'development-data'])
+    if (existsSync(join(staged, name)))
+      migratePreparedProfile(join(staged, name), migrations)
   syncTree(staged)
 }

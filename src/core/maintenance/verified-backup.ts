@@ -2,7 +2,10 @@ import { canonicalProfilePath } from '../../shared/maintenance/profile-path.js'
 import { readFileSync, lstatSync } from 'node:fs'
 import { join } from 'node:path'
 import { profileBackupSchema } from '../../shared/contracts/profile-backup.js'
-import { inventory } from '../../shared/maintenance/files.js'
+import {
+  inventory,
+  directoryInventory
+} from '../../shared/maintenance/files.js'
 
 /** Hash validation precedes database access; callers recheck after preparation. */
 export function readVerifiedBackup(directory: string) {
@@ -30,7 +33,10 @@ function readBackup(directory: string) {
   const data = join(directory, 'data')
   if (
     !manifest.restorable ||
-    JSON.stringify(manifest.files) !== JSON.stringify(inventory(data))
+    JSON.stringify(manifest.files) !== JSON.stringify(inventory(data)) ||
+    (manifest.formatVersion === 2 &&
+      JSON.stringify(manifest.directories) !==
+        JSON.stringify(directoryInventory(data)))
   )
     throw new Error(
       'Die Sicherung ist beschädigt, unvollständig oder wurde verändert.'

@@ -25,7 +25,6 @@ import { durableJson, sha256, syncPath } from './files.js'
  * Data preparation/readback belongs to Utility; this owns publication only.
  */
 export class MaintenanceCoordinator {
-  readonly data: string
   readonly journalPath: string
   constructor(
     readonly root: string,
@@ -35,8 +34,16 @@ export class MaintenanceCoordinator {
       target: string
     ) => void = renameSync
   ) {
-    this.data = join(root, 'profile', 'campaign-data')
     this.journalPath = join(root, 'maintenance-journal.json')
+  }
+
+  get data(): string {
+    return this.payloadPath(this.read()?.formatVersion ?? 2)
+  }
+  private payloadPath(version: 2 | 3): string {
+    return version === 3
+      ? join(this.root, 'profile')
+      : join(this.root, 'profile', 'campaign-data')
   }
 
   read(): MaintenanceJournal | null {
@@ -55,6 +62,8 @@ export class MaintenanceCoordinator {
       MaintenanceJournal,
       'id' | 'operation' | 'backup' | 'previous' | 'next'
     > & {
+      formatVersion?: 2 | 3
+      journalVersion?: 3
       integration?: readonly {
         target: string
         source?: string
@@ -67,11 +76,17 @@ export class MaintenanceCoordinator {
     if (previous && !['committed', 'rolled-back'].includes(previous.phase))
       throw new Error('Eine Wartung muss zuerst wiederhergestellt werden.')
     const state = maintenanceJournalSchema.parse({
-      ...input,
-      formatVersion: 2,
+      id: input.id,
+      operation: input.operation,
+      backup: input.backup,
+      previous: input.previous,
+      next: input.next,
+      formatVersion: input.formatVersion ?? input.journalVersion ?? 2,
       phase: 'prepared',
       rollbackFrom: null,
-      hadData: existsSync(this.data),
+      hadData: existsSync(
+        this.payloadPath(input.formatVersion ?? input.journalVersion ?? 2)
+      ),
       integration: []
     })
     if (!existsSync(this.staged(state)))
@@ -81,7 +96,9 @@ export class MaintenanceCoordinator {
     this.verifyProgram(state.next)
     if (state.previous) this.verifyProgram(state.previous)
     this.assertCurrent(state.previous)
-    mkdirSync(dirname(this.data), { recursive: true })
+    mkdirSync(dirname(this.payloadPath(state.formatVersion)), {
+      recursive: true
+    })
     const integration = (input.integration ?? []).map((file, index) => {
       this.integrationTarget(file.target)
       const directory = join(this.root, `integration-${state.id}`)
@@ -274,6 +291,19 @@ export class MaintenanceCoordinator {
           syncPath(this.root)
           this.boundary('program-unlinked')
         }
+      }
+      if (state.formatVersion === 3) {
+        const history = join(this.root, 'maintenance-history')
+        mkdirSync(history, { recursive: true })
+        syncPath(this.root)
+        durableJson(join(history, `${state.id}-rolled-back.json`), {
+          ...state,
+          phase: 'rolled-back'
+        })
+        syncPath(history)
+        this.boundary('rollback-history-written')
+        // Older runtimes can read this terminal state; there are no pending moves.
+        state = { ...state, formatVersion: 2 }
       }
       this.write(state, 'rolled-back')
     }

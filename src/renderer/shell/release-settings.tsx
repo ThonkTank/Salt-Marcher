@@ -201,12 +201,18 @@ export function ReleaseSettings({
               <li key={backup.id}>
                 {new Date(backup.createdAt).toLocaleString('de-DE')} · Version{' '}
                 {backup.version} · {(backup.bytes / 1024 / 1024).toFixed(1)} MB
-                · {backup.valid ? 'Geprüft' : 'Beschädigt'}{' '}
+                · {backup.valid ? 'Geprüft' : 'Beschädigt'} ·{' '}
+                {backup.scope === 'profile'
+                  ? 'Vollständiges Profil'
+                  : 'Ältere Kampagnendatensicherung'}{' '}
                 <button
                   disabled={busy || maintenance || !backup.valid}
                   onClick={() =>
                     setConfirmation({
-                      text: 'Das gesamte Profil auf diese Sicherung zurücksetzen? Aktuelle Daten werden vorher gesichert.',
+                      text:
+                        backup.scope === 'profile'
+                          ? 'Das gesamte Profil auf diese Sicherung zurücksetzen? Aktuelle Daten werden vorher gesichert.'
+                          : 'Diese ältere Sicherung enthält nur Kampagnendaten. Sie ersetzt das Profil; zusätzliche Dateien des aktuellen Profils bleiben in der vorher erstellten Sicherung erhalten. Fortfahren?',
                       run: () =>
                         api.backups.restore({ id: backup.id, confirmed: true })
                     })

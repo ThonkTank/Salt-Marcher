@@ -1,3 +1,4 @@
+import { snapshotCompleteProfile } from '../../src/core/maintenance/complete-profile-snapshot.js'
 import { profileBackupSchema } from '../../src/shared/contracts/profile-backup.js'
 import Database from 'better-sqlite3'
 import { randomUUID } from 'node:crypto'
@@ -10,6 +11,7 @@ import {
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   mkdtempSync,
+  existsSync,
   mkdirSync,
   readFileSync,
   rmSync,
@@ -37,6 +39,59 @@ afterEach(() => {
     rmSync(root, { recursive: true, force: true })
 })
 describe('release maintenance', () => {
+  it('snapshots the complete profile including external files and empty directories', async () => {
+    const { root, data } = fixture()
+    const profile = join(root, 'profile')
+    writeFileSync(
+      join(profile, 'Preferences'),
+      'retained historical preferences'
+    )
+    mkdirSync(join(profile, 'own-assets', 'empty'), { recursive: true })
+    writeFileSync(
+      join(profile, 'own-assets', 'map.svg'),
+      '<svg>custom map</svg>'
+    )
+    mkdirSync(join(data, 'own-empty-directory'))
+    const development = new CampaignStore(join(profile, 'development-data'))
+    development.create('Entwicklung separat')
+    development.close()
+    const before = inventory(profile)
+    const target = join(root, 'complete-copy')
+    await snapshotCompleteProfile(profile, target)
+    expect(inventory(profile)).toEqual(before)
+    expect(readFileSync(join(target, 'Preferences'), 'utf8')).toBe(
+      'retained historical preferences'
+    )
+    expect(readFileSync(join(target, 'own-assets', 'map.svg'), 'utf8')).toBe(
+      '<svg>custom map</svg>'
+    )
+    expect(existsSync(join(target, 'own-assets', 'empty'))).toBe(true)
+    expect(
+      existsSync(join(target, 'campaign-data', 'own-empty-directory'))
+    ).toBe(true)
+    const copied = new CampaignStore(join(target, 'campaign-data'))
+    expect(copied.list().campaigns[0]?.name).toBe('Meine Kampagne')
+    copied.close()
+    const copiedDevelopment = new CampaignStore(
+      join(target, 'development-data')
+    )
+    expect(copiedDevelopment.list().campaigns[0]?.name).toBe(
+      'Entwicklung separat'
+    )
+    copiedDevelopment.close()
+  })
+
+  it('rejects a complete snapshot destination inside its source without changing it', async () => {
+    const { root } = fixture()
+    const profile = join(root, 'profile')
+    const before = inventory(profile)
+    await expect(
+      snapshotCompleteProfile(profile, join(profile, 'copy'))
+    ).rejects.toThrow('außerhalb des Quellprofils')
+    expect(inventory(profile)).toEqual(before)
+    expect(existsSync(join(profile, 'copy'))).toBe(false)
+  })
+
   it('imports a verified foreign backup and preserves the replaced campaign first', async () => {
     const origin = fixture()
     const destination = fixture()

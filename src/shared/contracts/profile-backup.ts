@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 /** Historical campaign-data backup envelope; never a raw-profile marker. */
-export const profileBackupSchema = z
+const legacyProfileBackupSchema = z
   .object({
     formatVersion: z.literal(1),
     id: z.uuid(),
@@ -28,3 +28,13 @@ export const profileBackupSchema = z
     )
   })
   .strict()
+
+export const profileBackupSchema = z.discriminatedUnion('formatVersion', [
+  legacyProfileBackupSchema,
+  legacyProfileBackupSchema
+    .extend({
+      formatVersion: z.literal(2),
+      directories: z.array(z.string().min(1))
+    })
+    .strict()
+])

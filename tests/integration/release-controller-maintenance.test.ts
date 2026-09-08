@@ -49,7 +49,7 @@ beforeEach(() => {
   vi.stubEnv('XDG_DATA_HOME', workspace)
   root = join(workspace, 'salt-marcher')
   setCurrent(root, releaseDeployment(root, '0.2.0'))
-  maintenance = new ProfileMaintenance(root, '0.2.0')
+  maintenance = new ProfileMaintenance(root, '0.2.0', 'profile')
   mkdirSync(maintenance.data)
   const store = new CampaignStore(maintenance.data)
   store.create('Alltagskampagne')
@@ -147,7 +147,10 @@ describe('release controller uses shared maintenance', () => {
     expect(state.phase).toBe('awaiting-start')
     expect(state.previous).toEqual(state.next)
     expect(
-      readFileSync(join(root, `previous-${state.id}`, 'notes.txt'), 'utf8')
+      readFileSync(
+        join(root, `previous-${state.id}`, 'campaign-data', 'notes.txt'),
+        'utf8'
+      )
     ).toBe('later valuable work')
     expect(mocks.relaunch).toHaveBeenCalledWith(
       join(root, 'deployments', deployment.deployment, 'SaltMarcher.AppImage'),

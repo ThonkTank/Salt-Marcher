@@ -1,3 +1,4 @@
+import { ProfileMaintenance } from '../../src/core/maintenance/profile-maintenance.js'
 import { withLaunchReservation } from '../../src/main/local-profile/launch-reservation.js'
 import { randomUUID } from 'node:crypto'
 import { adoptLegacyLocalMaintenance } from '../../scripts/local-installation/legacy-maintenance.js'
@@ -38,7 +39,8 @@ import {
 import type { BuildInfo } from '../../src/shared/contracts/build-info.js'
 import {
   campaignDataHash,
-  backupPayload
+  backupPayload,
+  completeBackupPayload
 } from '../../scripts/local-installation/campaign-backup.js'
 import {
   schemaMigrations,
@@ -120,6 +122,112 @@ describe('local AppImage installation', () => {
     expect(installAndAccept(fixture.options).installedSha256).toBeDefined()
   })
 
+  it('preserves external files and records later profile work in a new complete backup', () => {
+    const fixture = createFixture(build('a'))
+    const paths = localInstallationPaths(fixture.xdg)
+    createDatabase(paths.campaignData, schemaVersion)
+    const developmentPath = createDatabase(
+      join(paths.profile, 'development-data'),
+      schemaVersion
+    )
+    mkdirSync(join(paths.profile, 'own-assets', 'empty'), { recursive: true })
+    writeFileSync(join(paths.profile, 'own-assets', 'map.svg'), 'first map')
+    const first = installAndAccept(fixture.options)
+    expect(new MaintenanceCoordinator(paths.root).read()?.formatVersion).toBe(3)
+    expect(
+      readFileSync(
+        join(
+          completeBackupPayload(first.backupPath!)!,
+          'own-assets',
+          'map.svg'
+        ),
+        'utf8'
+      )
+    ).toBe('first map')
+    expect(existsSync(join(paths.profile, 'own-assets', 'empty'))).toBe(true)
+    writeFileSync(join(paths.profile, 'own-assets', 'map.svg'), 'later map')
+    const development = new Database(developmentPath)
+    development
+      .prepare('INSERT INTO valuable VALUES (?)')
+      .run('later development work')
+    development.close()
+    const second = installAndAccept(fixture.options)
+    expect(second.backupPath).not.toBe(first.backupPath)
+    expect(
+      readFileSync(
+        join(
+          completeBackupPayload(second.backupPath!)!,
+          'own-assets',
+          'map.svg'
+        ),
+        'utf8'
+      )
+    ).toBe('later map')
+    const copied = new Database(
+      join(
+        completeBackupPayload(second.backupPath!)!,
+        'development-data',
+        'installation.sqlite'
+      ),
+      { readonly: true }
+    )
+    expect(
+      copied.prepare('SELECT content FROM valuable').pluck().all()
+    ).toContain('later development work')
+    copied.close()
+    expect(
+      readFileSync(join(paths.profile, 'own-assets', 'map.svg'), 'utf8')
+    ).toBe('later map')
+  })
+
+  it('upgrades a resumed campaign-only backup checkpoint without deleting its evidence', async () => {
+    const fixture = createFixture(build('a'))
+    const paths = localInstallationPaths(fixture.xdg)
+    createDatabase(paths.campaignData, schemaVersion)
+    writeFileSync(join(paths.profile, 'custom.txt'), 'outside campaign data')
+    const initial = advanceLocalAppInstallation(
+      fixture.options,
+      'backup-created'
+    )
+    const legacyId = await new ProfileMaintenance(paths.root, 'legacy').backup()
+    const legacyPath = join(paths.backups, legacyId!)
+    const legacyProof = JSON.parse(
+      readFileSync(join(initial.backupPath!, 'backup-manifest.json'), 'utf8')
+    ) as Record<string, unknown>
+    delete legacyProof['sourceProfile']
+    writeFileSync(
+      join(legacyPath, 'backup-manifest.json'),
+      JSON.stringify(legacyProof)
+    )
+    const manifestBefore = readFileSync(join(legacyPath, 'manifest.json'))
+    writeInstallJournal(
+      paths.journal,
+      {
+        ...readInstallJournal(paths.journal)!,
+        backupPath: legacyPath,
+        backupManifestSha256: hash(
+          readFileSync(join(legacyPath, 'backup-manifest.json'))
+        )
+      },
+      () => new Date()
+    )
+    const installed = installAndAccept(fixture.options)
+    expect(installed.backupPath).not.toBe(legacyPath)
+    expect(completeBackupPayload(installed.backupPath!)).toBeDefined()
+    expect(readFileSync(join(legacyPath, 'manifest.json'))).toEqual(
+      manifestBefore
+    )
+    expect(readFileSync(join(paths.profile, 'custom.txt'), 'utf8')).toBe(
+      'outside campaign data'
+    )
+    expect(
+      readFileSync(
+        join(completeBackupPayload(installed.backupPath!)!, 'custom.txt'),
+        'utf8'
+      )
+    ).toBe('outside campaign data')
+  })
+
   it('stores canonical profile data separately from the Local handoff proof', () => {
     const fixture = createFixture(build('a'))
     const paths = localInstallationPaths(fixture.xdg)
@@ -129,14 +237,16 @@ describe('local AppImage installation', () => {
       'backup-created'
     )
     expect(backupPayload(backup.backupPath!)).toBe(
-      join(backup.backupPath!, 'data')
+      join(backup.backupPath!, 'data', 'campaign-data')
     )
     const manifest = JSON.parse(
       readFileSync(join(backup.backupPath!, 'manifest.json'), 'utf8')
     ) as { version: string; files: Array<{ path: string }> }
     expect(manifest.version).toBe('Local unknown')
     expect(
-      manifest.files.some((file) => file.path === 'installation.sqlite')
+      manifest.files.some(
+        (file) => file.path === 'campaign-data/installation.sqlite'
+      )
     ).toBe(true)
     expect(
       manifest.files.some((file) => file.path === 'backup-manifest.json')
@@ -654,6 +764,10 @@ describe('local AppImage installation', () => {
         first.paths.campaignData,
         schemaVersion
       )
+      writeFileSync(
+        join(first.paths.profile, 'own-profile-file.txt'),
+        'retain across interruption'
+      )
       fixture.useBuild(build('b'))
       let seen = 0
       const interrupt = (boundary: string) => {
@@ -679,6 +793,12 @@ describe('local AppImage installation', () => {
       void _maintenanceHook
       fixture.options = withoutCrashHook
       const recovered = installAndAccept(fixture.options)
+      expect(
+        readFileSync(
+          join(recovered.paths.profile, 'own-profile-file.txt'),
+          'utf8'
+        )
+      ).toBe('retain across interruption')
 
       expect(readFileSync(recovered.paths.appImage, 'utf8')).toBe('artifact-b')
       const database = new Database(databasePath, { readonly: true })

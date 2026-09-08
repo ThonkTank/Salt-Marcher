@@ -6,7 +6,11 @@ process.parentPort?.on('message', (event) => {
 async function handle(raw: unknown): Promise<void> {
   try {
     const input = maintenanceWorkerRequestSchema.parse(raw)
-    const transaction = new ProfileMaintenance(input.root, input.version)
+    const transaction = new ProfileMaintenance(
+      input.root,
+      input.version,
+      'profile'
+    )
     let result: unknown = null
     if (input.operation === 'list') result = transaction.backups()
     if (input.operation === 'prepare')

@@ -1,3 +1,4 @@
+import { openApplicationProfile } from '../../src/main/local-profile/application-profile.js'
 import { spawnSync } from 'node:child_process'
 import {
   acquireProfileAccess,
@@ -124,6 +125,53 @@ describe.skipIf(process.platform !== 'linux')(
       symlinkSync(real, alias)
       return { root, real, alias }
     }
+
+    it('keeps browser writes outside the logical profile and uses the same runtime for aliases', () => {
+      const { real, alias } = fixture()
+      const profile = prepareProfileDirectory(join(real, 'profile'))
+      writeFileSync(join(profile, 'own-file.txt'), 'keep this')
+      const browserPaths: string[] = []
+      const host = {
+        setPath: (_name: 'userData' | 'sessionData', path: string) => {
+          browserPaths.push(path)
+        }
+      }
+      const access = openApplicationProfile(join(alias, 'profile'), host, alias)
+      try {
+        expect(access.profile).toBe(profile)
+        expect(browserPaths).toHaveLength(2)
+        expect(browserPaths[0]).toBe(browserPaths[1])
+        expect(browserPaths[0]!.startsWith(profile + '/')).toBe(false)
+        writeFileSync(join(browserPaths[0]!, 'Preferences'), 'browser output')
+        expect(readFileSync(join(profile, 'own-file.txt'), 'utf8')).toBe(
+          'keep this'
+        )
+        expect(existsSync(join(profile, 'Preferences'))).toBe(false)
+      } finally {
+        access.release()
+      }
+      const again = openApplicationProfile(profile, host, real)
+      again.release()
+      expect(browserPaths[2]).toBe(browserPaths[0])
+    })
+
+    it('releases profile ownership when configuring browser storage fails', () => {
+      const { real } = fixture()
+      const profile = join(real, 'profile')
+      expect(() =>
+        openApplicationProfile(
+          profile,
+          {
+            setPath: () => {
+              throw new Error('browser path failed')
+            }
+          },
+          real
+        )
+      ).toThrow('browser path failed')
+      const next = acquireProfileAccess(profile, 'application', real)
+      next.release()
+    })
 
     it('requires both parent leases before delegating maintenance', () => {
       const { real, alias } = fixture()

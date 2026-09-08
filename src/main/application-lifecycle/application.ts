@@ -39,8 +39,7 @@ import { loadBuildInfo, windowTitleForBuild } from './build-info.js'
 import { runtimeEvidenceSchema } from '../../shared/contracts/runtime-evidence.js'
 import { type ProfileLock } from '../local-profile/local-profile-lock.js'
 
-import { acquireProfileAccess } from '../local-profile/profile-access.js'
-import { prepareProfileDirectory } from '../../shared/maintenance/profile-path.js'
+import { openApplicationProfile } from '../local-profile/application-profile.js'
 
 let core: CoreProcessSupervisor | undefined
 let localProfileLock: ProfileLock | undefined
@@ -52,22 +51,23 @@ export async function startApplication(): Promise<void> {
     buildInfo?.channel === 'release' &&
     process.platform === 'linux' &&
     process.arch === 'x64'
+  let profile = release
+    ? join(releaseRoot(), 'profile')
+    : app.getPath('userData')
   if (process.platform === 'linux') {
-    const profile = prepareProfileDirectory(
-      release ? join(releaseRoot(), 'profile') : app.getPath('userData')
-    )
-    app.setPath('userData', profile)
-    localProfileLock = acquireProfileAccess(
+    const access = openApplicationProfile(
       profile,
-      'application',
+      app,
       buildInfo?.channel === 'local' || release ? dirname(profile) : undefined
     )
+    localProfileLock = access
+    profile = access.profile
   }
   try {
     await app.whenReady()
     configureSecurity()
     configureReleaseQualification()
-    const installationRoot = dirname(app.getPath('userData'))
+    const installationRoot = dirname(profile)
     const local = buildInfo?.channel === 'local'
     const recovery = release
       ? recoverRelease()
@@ -77,7 +77,7 @@ export async function startApplication(): Promise<void> {
     if (recovery === 'relaunch') {
       relaunchRelease(
         join(installationRoot, 'current', 'SaltMarcher.AppImage'),
-        local ? [`--user-data-dir=${app.getPath('userData')}`] : []
+        local ? [`--user-data-dir=${profile}`] : []
       )
       app.quit()
       return
@@ -85,6 +85,7 @@ export async function startApplication(): Promise<void> {
     await startApplicationWithProfileLock(
       buildInfo,
       windowTitle,
+      profile,
       recovery === 'verify'
     )
   } catch (error) {
@@ -97,6 +98,7 @@ export async function startApplication(): Promise<void> {
 async function startApplicationWithProfileLock(
   buildInfo: ReturnType<typeof loadBuildInfo>,
   windowTitle: string,
+  profile: string,
   verifyMaintenance = false
 ): Promise<void> {
   if (buildInfo !== undefined)
@@ -110,10 +112,7 @@ async function startApplicationWithProfileLock(
   const packaged = app.isPackaged
   core = new CoreProcessSupervisor(
     {
-      dataRoot: join(
-        app.getPath('userData'),
-        packaged ? 'campaign-data' : 'development-data'
-      ),
+      dataRoot: join(profile, packaged ? 'campaign-data' : 'development-data'),
       referenceDatabasePath: resourcePath('reference', 'srd-5.1.sqlite'),
       sessionGenerationCatalogRoot: resourcePath('sessiongeneration'),
       incompatibleDataPolicy: 'preserve'
@@ -164,23 +163,18 @@ async function startApplicationWithProfileLock(
     try {
       await supervisor.waitUntilReady()
       if (buildInfo?.channel === 'local')
-        completeLocalMaintenance(
-          dirname(app.getPath('userData')),
-          buildInfo.commit
-        )
+        completeLocalMaintenance(dirname(profile), buildInfo.commit)
       else completeRelease()
     } catch (error) {
       await supervisor.closeGracefully()
-      const installationRoot = dirname(app.getPath('userData'))
+      const installationRoot = dirname(profile)
       if (buildInfo?.channel === 'local')
         rollbackLocalMaintenance(installationRoot)
       else rollbackRelease()
       if (existsSync(join(installationRoot, 'current')))
         relaunchRelease(
           join(installationRoot, 'current', 'SaltMarcher.AppImage'),
-          buildInfo?.channel === 'local'
-            ? [`--user-data-dir=${app.getPath('userData')}`]
-            : []
+          buildInfo?.channel === 'local' ? [`--user-data-dir=${profile}`] : []
         )
       app.quit()
       throw error

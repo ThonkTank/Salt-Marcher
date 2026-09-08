@@ -75,3 +75,20 @@ export function syncTree(root: string): void {
   }
   syncPath(root)
 }
+
+/** Directory inventory preserves empty folders in complete profile backups. */
+export function directoryInventory(root: string): string[] {
+  const result: string[] = []
+  function visit(path: string) {
+    for (const entry of readdirSync(path, { withFileTypes: true }).sort(
+      (a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0)
+    )) {
+      if (!entry.isDirectory()) continue
+      const directory = join(path, entry.name)
+      result.push(relative(root, directory))
+      visit(directory)
+    }
+  }
+  visit(root)
+  return result
+}
