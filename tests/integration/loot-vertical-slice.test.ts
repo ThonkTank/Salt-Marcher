@@ -80,6 +80,20 @@ describe('loot vertical slice', () => {
       currentCatalogReference: unused,
       groupCommands: { save: unused, result: unused }
     }).createHandlers(unused)
+    const generatedInput = {
+      campaignId: randomUUID(),
+      commandId: randomUUID(),
+      runId: randomUUID(),
+      generatedTreasureId: 'generated',
+      label: 'Reward',
+      anchor: { kind: 'unplaced' as const }
+    }
+    expect(() =>
+      handlers['loot.generatedAcceptanceStatus'](generatedInput)
+    ).toThrow('stale')
+    expect(() =>
+      handlers['loot.acceptGeneratedForCampaign'](generatedInput)
+    ).toThrow('stale')
     const input = {
       campaignId: randomUUID(),
       characterId: members[0]!.id,
@@ -1313,6 +1327,12 @@ describe('loot vertical slice', () => {
       label: 'Generated reward',
       anchor: { kind: 'unplaced' }
     } as const
+    db.pragma('query_only = ON')
+    expect(loot.generatedAcceptanceStatus(acceptInput)).toEqual({
+      receipt: null,
+      treasure: null
+    })
+    db.pragma('query_only = OFF')
     const accepted = loot.acceptGenerated(acceptInput)
     const repeated = loot.acceptGenerated({
       commandId: randomUUID(),
@@ -1360,6 +1380,15 @@ describe('loot vertical slice', () => {
         acceptInput
       )
     ).toEqual(accepted)
+    db.pragma('query_only = ON')
+    expect(loot.generatedAcceptanceStatus(acceptInput)).toEqual({
+      receipt: accepted,
+      treasure: edited
+    })
+    expectIdempotencyConflict(() =>
+      loot.generatedAcceptanceStatus({ ...acceptInput, label: 'Other input' })
+    )
+    db.pragma('query_only = OFF')
     expect(loot.acceptGenerated(acceptInput)).toEqual(accepted)
     expectIdempotencyConflict(() =>
       loot.acceptGenerated({ ...acceptInput, label: 'Konflikt' })
@@ -1382,6 +1411,14 @@ describe('loot vertical slice', () => {
         }
       ]
     }).createdEntries[0]!
+    db.pragma('query_only = ON')
+    const afterDistribution = loot.generatedAcceptanceStatus(acceptInput)
+    expect(afterDistribution.receipt).toEqual(accepted)
+    expect(afterDistribution.treasure).toEqual(loot.read(accepted.id))
+    expect(afterDistribution.treasure?.revision).toBeGreaterThan(
+      edited.revision
+    )
+    db.pragma('query_only = OFF')
     expect(awarded.rewardProvenance).toEqual({
       runId: generated.run.id,
       generatedTreasureId: source.id,

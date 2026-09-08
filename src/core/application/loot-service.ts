@@ -128,6 +128,10 @@ export class LootService {
     return this.commands.move(input)
   }
 
+  generatedAcceptanceStatus(input: AcceptGeneratedTreasureInput) {
+    return this.commands.generatedAcceptanceStatus(input)
+  }
+
   acceptGenerated(input: AcceptGeneratedTreasureInput): Treasure {
     return this.commands.acceptGenerated(input)
   }

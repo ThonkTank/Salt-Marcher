@@ -40,6 +40,11 @@ export const sessionPlannerOperationDefinitions = utilityOperationFragment({
     sessionPreparationReceiptInputSchema.extend({ campaignId: z.uuid() }),
     cancelSessionPreparationResultSchema
   ),
+  'sessionPlanner.readForCampaign': read(
+    'session-planner:read-for-campaign',
+    z.object({ campaignId: z.uuid() }).strict(),
+    sessionPlannerWorkspaceSchema
+  ),
   'sessionPlanner.read': read(
     'session-planner:read',
     none,

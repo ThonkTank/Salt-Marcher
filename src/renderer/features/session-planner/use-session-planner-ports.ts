@@ -1,3 +1,4 @@
+import type { AcceptGeneratedTreasureInput } from '../../../shared/contracts/loot.js'
 import { useContext, useMemo, useSyncExternalStore } from 'react'
 import { CapabilityContext } from '../../capabilities/capability-context.js'
 import { CapabilityError } from '../../../shared/errors/capability-error.js'
@@ -56,7 +57,14 @@ export type EncounterSearchPort = Readonly<{
     planIds: readonly string[]
   ): ReturnType<SaltMarcherApi['encounterPlans']['summaries']>
 }>
-export type PlannerLootPort = Pick<SaltMarcherApi['loot'], 'acceptGenerated'>
+export type PlannerLootPort = Readonly<{
+  acceptGenerated(
+    input: AcceptGeneratedTreasureInput
+  ): ReturnType<SaltMarcherApi['loot']['acceptGeneratedForCampaign']>
+  generatedAcceptanceStatus(
+    input: AcceptGeneratedTreasureInput
+  ): ReturnType<SaltMarcherApi['loot']['generatedAcceptanceStatus']>
+}>
 
 export function useSessionPlannerPorts(): Readonly<{
   planner: SessionPlannerPort
@@ -83,6 +91,13 @@ export function useSessionPlannerPorts(): Readonly<{
     return {
       planner: {
         ...api.sessionPlanner,
+        read: async () => {
+          const result = await api.sessionPlanner.readForCampaign({
+            campaignId: requireCampaign()
+          })
+          requireCampaign()
+          return result
+        },
         executeCommand: async (input: SessionPlannerCommand) => {
           const result = await api.sessionPlanner.executeCommand({
             ...input,
@@ -136,7 +151,30 @@ export function useSessionPlannerPorts(): Readonly<{
         summaries: (planIds) =>
           api.encounterPlans.summaries({ planIds: [...planIds] })
       },
-      loot: { acceptGenerated: api.loot.acceptGenerated }
+      loot: {
+        acceptGenerated: async (input: AcceptGeneratedTreasureInput) => {
+          const result = await api.loot.acceptGeneratedForCampaign({
+            ...input,
+            campaignId: requireCampaign()
+          })
+          try {
+            requireCampaign()
+          } catch {
+            throw new CapabilityError('outcome_unknown', true)
+          }
+          return result
+        },
+        generatedAcceptanceStatus: async (
+          input: AcceptGeneratedTreasureInput
+        ) => {
+          const result = await api.loot.generatedAcceptanceStatus({
+            ...input,
+            campaignId: requireCampaign()
+          })
+          requireCampaign()
+          return result
+        }
+      }
     }
   }, [api.encounterPlans, api.loot, api.sessionPlanner, campaignId, projection])
 }

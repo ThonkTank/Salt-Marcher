@@ -1,5 +1,9 @@
 import { useCallback, useRef, useState } from 'react'
-import type { Treasure } from '../../../shared/contracts/loot.js'
+import { CapabilityError } from '../../../shared/errors/capability-error.js'
+import type {
+  AcceptGeneratedTreasureInput,
+  Treasure
+} from '../../../shared/contracts/loot.js'
 import type { AsyncCommandCoordinator } from '../../async/async-command-coordinator.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import type {
@@ -20,7 +24,7 @@ export function useSessionRewardMaterialization(options: {
   saveDraft: () => Promise<NonNullable<
     SessionPlannerAuthority['workspace']
   > | null>
-  failed?: (cause: unknown) => void
+  failed?: (cause: unknown, reconcile?: () => Promise<boolean>) => void
   onError: (message: string) => void
 }) {
   const {
@@ -33,7 +37,6 @@ export function useSessionRewardMaterialization(options: {
     read,
     saveDraft
   } = options
-  const commandIds = useRef(new Map<string, string>())
   const [treasureEditor, setTreasureEditorState] = useState<
     Treasure | null | false
   >(false)
@@ -62,40 +65,55 @@ export function useSessionRewardMaterialization(options: {
       const sessionId = target.workspace?.session.id
       if (!sessionId) return
       const key = `${runId}:${generatedTreasureId}`
-      let commandId = commandIds.current.get(key)
-      if (!commandId) {
-        commandId = crypto.randomUUID()
-        commandIds.current.set(key, commandId)
+      const input: AcceptGeneratedTreasureInput = {
+        commandId: crypto.randomUUID(),
+        runId,
+        generatedTreasureId,
+        label,
+        anchor: { kind: 'unplaced' }
+      }
+      let writeConfirmed = false
+      const acceptCurrent = (
+        treasure: Treasure | null,
+        workspace: NonNullable<SessionPlannerAuthority['workspace']>
+      ) => {
+        const current = read()
+        if (
+          current.intentRevision !== target.intentRevision ||
+          current.workspace?.session.id !== sessionId
+        )
+          return
+        applyWorkspace(workspace)
+        if (edit && treasure) setTreasureEditor(treasure)
       }
       const outcome = await coordinator.run({
         scope: 'planner.reward-materialization',
         entityKey: `reward:${key}`,
         mode: 'queue',
         execute: async () => {
-          const treasure =
-            placed ??
-            (await loot.acceptGenerated({
-              commandId,
-              runId,
-              generatedTreasureId,
-              label,
-              anchor: { kind: 'unplaced' }
-            }))
+          const treasure = placed
+            ? (await loot.generatedAcceptanceStatus(input)).treasure
+            : await loot.acceptGenerated(input)
+          writeConfirmed = !placed
           return Object.freeze({ treasure, workspace: await planner.read() })
         },
-        accept: (result) => {
-          const current = read()
-          if (
-            current.intentRevision !== target.intentRevision ||
-            current.workspace?.session.id !== sessionId
-          )
-            return
-          applyWorkspace(result.workspace)
-          if (edit) setTreasureEditor(result.treasure)
-        }
+        accept: (result) => acceptCurrent(result.treasure, result.workspace)
       })
       if (outcome.status === 'failure') {
-        failed?.(outcome.cause)
+        failed?.(
+          writeConfirmed || placed
+            ? new CapabilityError('outcome_unknown', true)
+            : outcome.cause,
+          async () => {
+            const status = await loot.generatedAcceptanceStatus(input)
+            const workspace = await planner.read()
+            acceptCurrent(
+              status.receipt || placed ? status.treasure : null,
+              workspace
+            )
+            return true
+          }
+        )
         onError(capabilityErrorText(outcome.cause))
       }
     },

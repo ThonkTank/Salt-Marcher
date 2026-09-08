@@ -166,6 +166,23 @@ export class LootCommandHandler {
     })
   }
 
+  generatedAcceptanceStatus(input: AcceptGeneratedTreasureInput) {
+    const parsed = acceptGeneratedTreasureInputSchema.parse(input)
+    const context = this.context()
+    return {
+      receipt: readReceipt(
+        context,
+        parsed.commandId,
+        'accept_generated',
+        commandFingerprint(parsed)
+      ),
+      treasure: context.treasures.findByGenerated(
+        parsed.runId,
+        parsed.generatedTreasureId
+      )
+    }
+  }
+
   acceptGenerated(input: AcceptGeneratedTreasureInput): Treasure {
     const parsed = acceptGeneratedTreasureInputSchema.parse(input)
     return this.transact(() => {

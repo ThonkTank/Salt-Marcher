@@ -52,6 +52,11 @@ export function createSessionPlannerHandlers(dependencies: {
           throw new CapabilityError('stale', false)
         return sessionPlanner.commandStatus(input)
       },
+      'sessionPlanner.readForCampaign': ({ campaignId }) => {
+        if (campaignId !== dependencies.activeCampaignId())
+          throw new CapabilityError('stale', false)
+        return sessionPlanner.read()
+      },
       'sessionPlanner.read': () => sessionPlanner.read(),
       'sessionPlanner.create': (input) => sessionPlanner.create(input),
       'sessionPlanner.open': (input) => sessionPlanner.open(input),

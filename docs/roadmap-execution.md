@@ -3574,3 +3574,79 @@ weitere Gruppen-/Kampagnen-/Karten-/Desktop-Schreibwege, vollständige Update- u
 Offline-Abnahme sowie Phasen 5–7 bleiben offen. Remote-Check des neuen SHA,
 kanonischer Handoff und grüner Main-Abschluss bleiben notwendig. Keine echte
 Nutzerinstallation, Nutzerdaten oder öffentlichen Releases verändert.
+
+### Phase 4 — Plan: generierte Planner-Beute lesend abgleichen
+
+Ausgang 86b174b58 sauber. Der vorherige Zielturn hat geprüften Fortschritt
+gepusht. acceptGenerated besitzt bereits eine atomare Lootquittung. Ergänzen:
+Owner-Statusread mit vollem Originalfingerprint, Quittung und aktuell vorhandenem
+Schatz für dasselbe Generierungsobjekt; kampagnengebundener Write-/Statusvertrag.
+Keine neue Tabelle oder Schemaänderung. Der Planner erhält einen gebundenen
+Workspace-Read, damit Folge-/Recoveryreads nicht in andere Kampagnen geraten.
+
+Der Renderer hält den vollständigen Originalinput pro Versuch. Nach Unknown
+oder fehlgeschlagenem Refresh nach bestätigtem Write bleibt ein lesender Callback
+für Status plus aktuellen Workspace verfügbar. Bestätigung führt nie zu erneutem
+Write; abwesende Quittung beendet Unknown erst nach erfolgreichem Read. Nur bei
+unveränderter lokaler Autorität frischen Workspace und gegebenenfalls den aktuellen
+Schatzeditor öffnen. Spätere Schatzänderungen/Verteilung nicht mit einer alten
+Quittung überschreiben. Kein bloßes Wiederverwenden einer ID mit geändertem Label.
+Ein neuer bewusster Versuch darf eine neue ID erhalten; die Domain gewährleistet
+weiterhin Eindeutigkeit je generiertem Schatz.
+
+Native Tests: query_only, Vollfingerprintkonflikt, aktueller Schatz nach späterer
+Änderung, falsche Kampagne, keine Doppelanlage. Renderer: Unknown, fehlgeschlagener
+Refresh nach Write, Readretry, Originalinput, Abwesenheit und geänderte lokale
+Autorität. Bestehende Loot-/Plannerprüfungen, Typ/Lint/Build/Smoke/Bundle. Offene
+Schatz-/Verteilungsunterdialoge danach separat zentral anbinden; dieser Schritt
+allein schließt weder diese Dialoge noch Phase 4.
+
+Zwischenabgleich: Die erste gezielte Suite besteht mit 130 Tests. Vor Abschluss
+noch die konkret neuen Loot-/Workspace-Ports bei Kampagnenwechsel und den
+Statusread nach späterer Verteilung ergänzen; so bleiben Herkunft und aktuelle
+Bestände auch über die zusätzliche Read-Verbindung ausdrücklich belegt.
+
+Korrekturrunde Typdisziplin im Test: Die 132 Tests und Typecheck bestehen.
+ESLint meldet eine untypisierte Mock-Rückgabe beim Vergleich des Originalinputs.
+Diesen reinen Vergleichswert ausdrücklich als unknown führen; keine Änderung
+am Produkt oder am bereits fertig gebauten App-Artefakt. Lint erneut prüfen.
+
+### Phase 4 — Generierte Planner-Beute: Plan-/Roadmapaudit
+
+Planabgleich bestanden: Der vorhandene Loot-Owner liest die Quittung anhand des
+kompletten Originalfingerprints und separat den aktuellen Schatz desselben
+Generierungsobjekts. Status und Write sind kampagnengebunden; Planner-Reads
+verwenden jetzt ebenfalls eine gebundene Capability. SQL und existierende
+Quittungstabelle bleiben beim Loot-Owner; keine Schemaänderung.
+
+Der Renderer hält den Originalinput im lesenden Callback. Verlorene Antworten
+und fehlgeschlagener Refresh nach bestätigtem Write bleiben klärbar. Auch ein
+bereits platzierter Schatz wird vor Editoröffnung frisch gelesen. Recovery
+öffnet nur den aktuellen Schatz, nie die historische Quittungskopie, und nur
+bei unverändertem lokalen Kontext. Abwesenheit und später entfernte Objekte
+führen zu keiner erneuten Anlage. Die bisherige reine ID-Wiederverwendung wurde
+ersetzt; neue bewusste Versuche haben neue IDs, während die vorhandene Domain-
+Eindeutigkeit Doppelanlagen verhindert.
+
+Validierung: 132 Tests in 11 Dateien bestanden. Native query_only-Prüfungen
+belegen Abwesenheit, Fingerprintkonflikt sowie aktuellen Schatz nach Bearbeitung
+und nach Verteilung, bei unveränderter Originalquittung. Falsche Kampagne wird
+vor Domainarbeit abgewiesen. Rendererprüfungen belegen verlorenen Write,
+Refreshfehler nach bestätigtem Write, fehlgeschlagenen Read und erneuten Retry,
+Originalinput, Abwesenheit, bereits platzierten Schatz und neuere lokale Eingaben.
+Neue Ports sind bei Kampagnenwechsel vor und während Transport geprüft.
+Typecheck und gezieltes ESLint bestanden; die reine unknown-Typannotation im
+Test ändert keine Runtime. Build, Smoke ready/closed und Bundle-Gate bestanden
+(reachable 1648030 Bytes, keine Baseline-/Budgetänderung). Der sessionGeneration-
+E2E mit Electron-Neustart besteht auf demselben Build. Logs:
+work/roadmap-phase4-reward-recovery-*.log. Keine echte Nutzerinstallation oder
+Nutzerdaten verändert.
+
+Roadmapabgleich: Der Recoveryteil der Belohnungsübernahme ist angeschlossen.
+Schatzeditor und Verteilungsdialog haben weiterhin keine vollständigen eigenen
+Wartungs-Owner. Der Planner blockiert bei offenen Beutedialogen noch zentral.
+Deren Integration muss abhängige Owner und wartungsinterne Abschlusscallbacks
+vorsehen: heutige öffentliche setTreasureEditor/setDistribution-Guards sperren
+auch einen während Wartung erfolgreichen Kindabschluss. Dies ist der nächste
+konkrete Schritt. Die übrigen Phase-4-Schreibwege, Update-/Offline-Abnahme,
+Phasen 5–7 sowie Exact-SHA-CI/Handoff/Main-Abschluss bleiben offen.

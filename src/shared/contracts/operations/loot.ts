@@ -63,6 +63,21 @@ export const lootOperationDefinitions = utilityOperationFragment({
     treasureSchema
   ),
   'loot.move': write('loot:move', moveTreasureInputSchema, treasureSchema),
+  'loot.acceptGeneratedForCampaign': write(
+    'loot:accept-generated-for-campaign',
+    acceptGeneratedTreasureInputSchema.extend({ campaignId: z.uuid() }),
+    treasureSchema
+  ),
+  'loot.generatedAcceptanceStatus': read(
+    'loot:generated-acceptance-status',
+    acceptGeneratedTreasureInputSchema.extend({ campaignId: z.uuid() }),
+    z
+      .object({
+        receipt: treasureSchema.nullable(),
+        treasure: treasureSchema.nullable()
+      })
+      .strict()
+  ),
   'loot.acceptGenerated': write(
     'loot:accept-generated',
     acceptGeneratedTreasureInputSchema,
