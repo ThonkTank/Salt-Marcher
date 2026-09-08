@@ -1437,3 +1437,40 @@ unchanged from the zero-warning six-case E2E acceptance. Plan re-audit and origi
 phase-5 re-audit pass; no Golden-Master bytes, budgets or acceptance assertions were
 relaxed. Replace the unqualified initial candidate with this corrective SHA and
 repeat the complete required remote job set before handoff.
+
+### Phase 5 — Current-format qualification correction 12
+
+Check 34259712605 reports three portable-test failures: the current-format
+qualification manifest still declares campaign schema 34, and version-truth's
+explicit expected path also stops at 34. Windows/macOS, package and initial visual
+jobs are already green. Update the current-format manifest's version and matching
+oracle prose to 35, and the version-truth test's current path to include 35.
+Keep fixture identities, stored semantic hashes, preliminary qualification claim,
+owner inventory and historical release fixtures unchanged. Run all current-format
+unit and integration cases plus version truth before a new candidate. Let remaining
+jobs finish to inspect any independent regression before replacing this SHA.
+
+### Phase 5 — Semantic fixture audit correction 13
+
+Once the current-format manifest accepts schema 35, five integration protocols
+reach their complete-snapshot hash checks. A separate readback audit materialized
+A/B Live and Spatial fixtures, saved full semantic projections, and recomputed
+hashes after removing only the newly specified `burden` fact. All four stripped
+hashes exactly match their prior checked-in hashes. Thus the difference is solely
+the intentional trust/budget addition, not unrelated state drift. Update these
+four current-format expected hashes to cover the new fact, preserve every other
+oracle and rerun all eight current-format/version suites. Any downstream mismatch
+must receive the same field-level audit before changing its expected hash.
+The failed hex/NPC CI shard is also confirmed to fail at the stale manifest gate,
+not an unrelated UI regression.
+
+### Phase 5 — Current-format correction validation and re-audit
+
+All 36 cases across eight current-format/version-truth suites now pass. The four
+Live/Spatial A/B expected hashes include the new burden facts; removing only that
+fact reproduces each original hash exactly (audit log
+`/tmp/desktop-phase5-oracle-audit.log`). Preparation, economy and completion hashes
+remain unchanged and all downstream protocols pass. Formatting and changed-file
+lint pass. Plan and original-roadmap re-audits confirm no unrelated fixture drift
+or relaxed oracle. This correction changes qualification documentation and its
+explicit version test only; application inputs remain those of 32db71075.

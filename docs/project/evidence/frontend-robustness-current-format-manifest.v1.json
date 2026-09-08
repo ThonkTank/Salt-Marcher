@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "identity": {
     "name": "frontend-robustness-current-format-v1",
-    "campaignDatabaseSchemaVersion": 34,
+    "campaignDatabaseSchemaVersion": 35,
     "qualificationClaim": "preliminary-current-format-reference-not-rp-r-or-rp-l"
   },
   "campaignOwners": [
@@ -164,7 +164,7 @@
       "stateClass": "durable-truth",
       "disposition": "initialize-only",
       "fixturePlan": "Set SQLite user_version only through the schema bootstrap owner.",
-      "oraclePlan": "Reject a fixture whose Campaign database version is not exactly 34."
+      "oraclePlan": "Reject a fixture whose Campaign database version is not exactly 35."
     }
   ],
   "installationDependencies": [
