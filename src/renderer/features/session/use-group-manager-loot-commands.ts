@@ -5,6 +5,7 @@ import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import { message } from '../../i18n/session-runtime.de.js'
 import {
   groupLootCommitDraft,
+  groupLootDraftSignature,
   groupLootDraftFromRun
 } from '../loot/group-loot-draft.js'
 import { generationSeed } from './generation-seed.js'
@@ -120,7 +121,12 @@ export function useGroupManagerLootCommands(
         })
     })
     if (outcome.status === 'success') {
-      dispatch({ kind: 'loot-committed', key })
+      dispatch({
+        kind: 'loot-committed',
+        key,
+        runId: run.id,
+        signature: groupLootDraftSignature(history.draft)
+      })
       if (outcome.value.treasure) lootChanged()
       saved(applySceneGroupCommandResult(snapshot, outcome.value.groupResult))
       return outcome.value

@@ -5,7 +5,6 @@ import type {
   SceneGroup,
   SceneGroupDisposition
 } from '../../../shared/contracts/scene.js'
-import { groupLootDraftDirty } from '../loot/group-loot-draft.js'
 import type {
   TreasureContainerPatch,
   TreasureItemPatch
@@ -20,6 +19,7 @@ import {
   groupDraftSessionDirty,
   groupManagerAnyDirty,
   groupManagerAnyLootDirty,
+  groupManagerCurrentLootDirty,
   type GroupCatalogMode,
   type GroupDraftSession,
   type GroupManagerAction,
@@ -65,9 +65,7 @@ export function projectGroupManagerView(input: {
   } = input
   const loot = session?.loot ?? null
   const lootHistory = loot?.history ?? null
-  const currentLootDirty = Boolean(
-    lootHistory && groupLootDraftDirty(lootHistory)
-  )
+  const currentLootDirty = groupManagerCurrentLootDirty(state)
 
   return {
     state,

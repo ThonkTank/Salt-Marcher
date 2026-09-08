@@ -14,7 +14,7 @@ import {
   beginGroupLootDraftTransaction,
   createGroupLootDraftHistory,
   endGroupLootDraftTransaction,
-  groupLootDraftDirty,
+  groupLootDraftSignature,
   mutateGroupLootDraft,
   redoGroupLootDraft,
   undoGroupLootDraft,
@@ -44,6 +44,7 @@ export type GroupDraftLootPhase =
 export type GroupManagerLootState = Readonly<{
   run: GroupRewardGeneratedRun | null
   history: GroupLootDraftHistory | null
+  committedSignature: string | null
   seed: number | null
   phase: GroupDraftLootPhase
   error: string
@@ -128,7 +129,7 @@ export type GroupManagerAction =
       draft: GroupLootDraft
       seed: number
     }
-  | { kind: 'loot-committed'; key: string }
+  | { kind: 'loot-committed'; key: string; runId: string; signature: string }
   | {
       kind: 'loot-failed'
       key: string
@@ -331,6 +332,7 @@ export function groupManagerReducer(
         loot: {
           run: action.run,
           history: createGroupLootDraftHistory(action.draft),
+          committedSignature: null,
           phase: 'ready',
           error: '',
           issues: [],
@@ -340,15 +342,20 @@ export function groupManagerReducer(
     )
   }
   if (action.kind === 'loot-committed')
-    return updateSession(state, action.key, (session) => ({
-      ...session,
-      loot: {
-        ...session.loot,
-        phase: 'ready',
-        error: '',
-        issues: []
-      }
-    }))
+    return updateSession(state, action.key, (session) =>
+      session.loot.run?.id === action.runId
+        ? {
+            ...session,
+            loot: {
+              ...session.loot,
+              committedSignature: action.signature,
+              phase: 'ready',
+              error: '',
+              issues: []
+            }
+          }
+        : session
+    )
   if (action.kind === 'loot-failed')
     return updateSession(state, action.key, (session) => ({
       ...session,
@@ -473,14 +480,13 @@ export function groupManagerAnyDirty(state: GroupManagerState): boolean {
 
 export function groupDraftSessionDirty(session: GroupDraftSession): boolean {
   return (
-    groupDraftStateDirty(session.group) ||
-    Boolean(session.loot.history && groupLootDraftDirty(session.loot.history))
+    groupDraftStateDirty(session.group) || groupManagerLootDirty(session.loot)
   )
 }
 
 export function groupManagerAnyLootDirty(state: GroupManagerState): boolean {
   return Object.values(state.sessions).some((session) =>
-    Boolean(session.loot.history && groupLootDraftDirty(session.loot.history))
+    groupManagerLootDirty(session.loot)
   )
 }
 
@@ -488,8 +494,13 @@ export function groupManagerCurrentLootDirty(
   state: GroupManagerState
 ): boolean {
   const session = activeGroupSession(state)
+  return session ? groupManagerLootDirty(session.loot) : false
+}
+
+export function groupManagerLootDirty(loot: GroupManagerLootState): boolean {
   return Boolean(
-    session?.loot.history && groupLootDraftDirty(session.loot.history)
+    loot.history &&
+    groupLootDraftSignature(loot.history.draft) !== loot.committedSignature
   )
 }
 
@@ -509,6 +520,7 @@ function emptyLoot(): GroupManagerLootState {
   return {
     run: null,
     history: null,
+    committedSignature: null,
     seed: null,
     phase: 'idle',
     error: '',

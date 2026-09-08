@@ -6,8 +6,11 @@ import { groupDraftStateFromGroup } from '../../src/renderer/features/session/gr
 import {
   activeGroupSession,
   createGroupManagerState,
+  groupManagerReducer,
   type GroupManagerAction
 } from '../../src/renderer/features/session/group-manager-state.js'
+import type { GroupRewardGeneratedRun } from '../../src/shared/contracts/session-generation.js'
+import { groupLootDraftSignature } from '../../src/renderer/features/loot/group-loot-draft.js'
 import { useGroupManagerCommands } from '../../src/renderer/features/session/use-group-manager-commands.js'
 import { AsyncCommandCoordinator } from '../../src/renderer/async/async-command-coordinator.js'
 import type { GroupManagerPorts } from '../../src/renderer/features/session/use-group-manager-capability-ports.js'
@@ -17,6 +20,57 @@ import type {
 } from '../../src/shared/contracts/live-session.js'
 
 describe('group manager commands', () => {
+  it('acknowledges the run and exact treasure draft submitted for commit', async () => {
+    const input = commandInput(vi.fn(), vi.fn(), vi.fn())
+    const draft = { label: 'Beute', items: [], containers: [] }
+    const state = groupManagerReducer(input.state, {
+      kind: 'loot-generated',
+      key: 'group-a',
+      run: {
+        id: 'run-a',
+        treasures: [{ id: 'treasure-a' }]
+      } as GroupRewardGeneratedRun,
+      draft,
+      seed: 1
+    })
+    const commitGroupReward = vi.fn().mockResolvedValue({
+      treasure: null,
+      groupResult: groupResult(2)
+    })
+    const controller = renderHook(() =>
+      useGroupManagerCommands(
+        {
+          ...input,
+          state,
+          session: activeGroupSession(state),
+          ports: {
+            ...input.ports,
+            loot: { commitGroupReward }
+          } as unknown as GroupManagerPorts
+        },
+        new AsyncCommandCoordinator()
+      )
+    )
+    await act(async () => {
+      await controller.result.current.commitLoot()
+    })
+    expect(commitGroupReward).toHaveBeenCalledWith(
+      expect.objectContaining({
+        runId: 'run-a',
+        treasureDraft: { label: 'Beute', items: [], containers: [] }
+      })
+    )
+    expect(input.dispatch).toHaveBeenCalledWith({
+      kind: 'loot-committed',
+      key: 'group-a',
+      runId: 'run-a',
+      signature: groupLootDraftSignature(draft)
+    })
+    expect(input.saved).toHaveBeenCalledWith(
+      expect.objectContaining({ revision: 2 })
+    )
+  })
+
   it('does not acknowledge a currently failed save', async () => {
     const saveGroup = vi.fn().mockRejectedValue(new Error('write failed'))
     const saved = vi.fn()

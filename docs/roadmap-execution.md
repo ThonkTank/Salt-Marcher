@@ -2164,3 +2164,57 @@ Zustand. Vor Wartungsabschluss prüfen, wie auch unveränderte generierte Vorsch
 und erfolgreich übernommene Beute unterschieden werden, damit weder offene Ergebnisse
 verschwinden noch bestätigte Commits wiederholt werden. Der geplante Mehrfachsave
 muss diese Semantik ausdrücklich testen. Phase4 und die folgenden Phasen bleiben offen.
+
+### Phase 4 — Beuteübernahmestand: Umsetzungsplan
+
+Der vorherige Turn prüfte lediglich den bereits installierten Skill; für das
+Roadmapziel kein Implementierungsfortschritt. Aktueller Worktree sauber. Der
+Gruppen-Mehrfachsave bleibt der nächste Integrationsschritt. Zuerst die dafür
+notwendige Übernahmequittierung korrigieren: Die History-Baseline bezeichnet die
+Generierung, nicht eine bestätigte persistierte Übernahme. Ein eigener nullable
+committedSignature-Wert unterscheidet diese Zustände, ohne Undo-History umzudeuten.
+Alle Gruppen-Dirty-Prüfungen verwenden den Vergleich zum bestätigten Stand.
+
+Der bestehende Beutecommand quittiert Run-ID und Signatur des tatsächlich gesendeten
+Entwurfs. Ein verzögertes Ergebnis darf weder einen neu generierten Run noch später
+bearbeitete Felder als gespeichert markieren. Keine neue Persistenzimplementierung.
+Tests: unveränderte generierte Beute, inaktive Session, externe Aktualisierung,
+fehlgeschlagene Übernahme, bestätigte Übernahme, spätere Bearbeitung/Undo sowie
+Quittierung eines ersetzten Runs. Anschließend Typecheck, gezieltes Lint und
+Build/Smoke. Dies schließt Phase 4 nicht ab; Mehrfachsave, Command-Drain und
+Reconciliation unbekannter Commit-Ausgänge bleiben Teil des Owner-Auftrags.
+
+Beuteübernahmestand — erste Validierung: 17/18 Tests bestanden. Der neue
+Replacement-Run-Test änderte nur die Run-ID, ließ aber Itemreferenzen am alten Run;
+der vorhandene Presenter weist dieses ungültige Fixture korrekt ab. Korrekturrunde:
+Fixture mit durchgängig parametrisierter Run-ID erzeugen; Szenario und Assertions
+bleiben unverändert. Zusätzlich Command-Test für die tatsächlich ausgegebene
+Run-/Entwurfsquittierung ergänzen, damit der Reducer-Nachweis nicht allein steht.
+
+### Phase 4 — Beuteübernahmestand: Teilaudit
+
+Planabgleich bestanden: Generierungsbaseline und persistierter Übernahmestand sind
+getrennt. Alle Gruppen-Dirty-Prüfungen einschließlich View-Projektion erkennen auch
+unveränderte generierte Ergebnisse. Bestätigungen enthalten Run-ID und die Signatur
+des tatsächlich übergebenen Entwurfs. Ein anderer Run wird nicht quittiert; spätere
+Bearbeitung bleibt dirty, Undo zurück zum quittierten Stand wird clean. Externe
+Gruppenaktualisierung ersetzt offene Beute nicht still. 19 Tests in drei Dateien
+bestanden, einschließlich des tatsächlichen Commands. Vollständiger Typecheck,
+gezieltes ESLint, Build/Built-Smoke (ready/closed) und git diff --check bestanden.
+Logs: work/roadmap-phase4-group-loot-state-{tests,types,lint,build,smoke}.log im
+übergeordneten Arbeitsverzeichnis. Build war eine technische Development-Probe,
+kein kanonischer Handoff.
+
+Roadmapabgleich: Phase 4 bleibt offen. Dieser Stand macht offene Beute erkennbar,
+implementiert jedoch noch keinen vollständigen Gruppen-Wartungsowner. Bestätigte
+Teilsaves müssen dort die Gruppenbaselines und den Snapshot synchron fortschreiben,
+bevor weitere Sessions gespeichert werden. Read-only-Inventar bestätigt zusätzlich:
+GroupRewardCommitHandler besitzt ein persistiertes Command-Journal mit Fingerprint;
+der Renderer erzeugt dagegen für jeden Aufruf eine neue Command-ID. Unbekannte
+Ausgänge müssen vor Wiederholung über denselben Auftrag abgeglichen werden. Ein
+neuer Commit mit neuer ID ist kein zulässiger Reconciliation-Ersatz. Der aktuelle
+AsyncCommandCoordinator quittiert verdrängte Ergebnisse als stale, obwohl ein nicht
+abbrechbarer IPC-Auftrag weiterlaufen kann; Owner-Drain darf deshalb nicht allein
+auf aktuelle busy-/pending-Anzeigen vertrauen. Diese verbleibenden Anforderungen
+werden im folgenden Gruppen-Owner-Schritt umgesetzt und geprüft. Kein Abschluss
+von Phase 4, Handoff, Main-Promotion oder Release behauptet.
