@@ -101,7 +101,9 @@ it('always starts in campaigns and loads only the catalog', async () => {
     await f.result.current.switchCampaign('a')
   })
   expect(f.result.current.screen).toBe('workspace')
-  act(() => f.result.current.showCampaigns())
+  await act(async () => {
+    await f.result.current.showCampaigns()
+  })
   expect(f.result.current.screen).toBe('campaigns')
 })
 it('keeps the campaign screen on session failure and retries the read without activating again', async () => {
@@ -130,9 +132,21 @@ it('protects workspace drafts when returning to the campaign screen', async () =
     await f.result.current.switchCampaign('a')
   })
   guards.dirty = true
-  act(() => f.result.current.showCampaigns())
-  expect(f.result.current.screen).toBe('workspace')
-  expect(f.report).toHaveBeenCalledOnce()
+  const unregister = maintenanceDraftCoordinator.register('test-name-draft', {
+    label: 'Kampagnenname',
+    isDirty: () => true
+  })
+  try {
+    await act(async () => {
+      await f.result.current.showCampaigns()
+    })
+    expect(f.result.current.screen).toBe('workspace')
+    expect(f.report).toHaveBeenCalledWith(
+      expect.stringContaining('Kampagnenname')
+    )
+  } finally {
+    unregister()
+  }
 })
 it.each(['save', 'discard'] as const)(
   'holds confirmed activation until central %s can finish the session read',
@@ -478,3 +492,72 @@ it('allows only explicit create and rename maintenance actions through the UI lo
   expect(f.projection.restoreCampaign).not.toHaveBeenCalled()
   expect(f.projection.deleteCampaignForever).not.toHaveBeenCalled()
 })
+it('can recover an older activation without navigating away from an independent campaign dialog', async () => {
+  const f = fixture()
+  await waitFor(() => expect(f.result.current.catalogStatus).toBe('ready'))
+  const root = f.projection.snapshot()
+  root.reconciliationCommandId = 'older-command'
+  f.projection.reconcilePendingCommand.mockImplementationOnce(() => {
+    root.reconciliationCommandId = null
+    return Promise.resolve({
+      kind: 'activated',
+      commandId: 'older-command',
+      campaignId: 'a',
+      snapshot: root.campaigns
+    })
+  })
+  await act(async () => {
+    expect(await f.result.current.reconcileCampaign(true)).toMatchObject({
+      kind: 'activated'
+    })
+  })
+  expect(f.result.current.screen).toBe('campaigns')
+  expect(f.result.current.sessionRetry).toBe(false)
+  expect(f.projection.activateCampaign).not.toHaveBeenCalled()
+  expect(f.projection.refreshActiveSession).toHaveBeenCalledOnce()
+})
+
+it.each([false, true])(
+  'waits for autosave and rechecks newer drafts (%s)',
+  async (newDraft) => {
+    const f = fixture()
+    await waitFor(() => expect(f.result.current.catalogStatus).toBe('ready'))
+    await act(async () => {
+      await f.result.current.switchCampaign('a')
+    })
+    let complete!: () => void
+    const autosave = new Promise<void>((resolve) => {
+      complete = resolve
+    })
+    guards.dirty = true
+    const save = vi.fn()
+    const unregister = maintenanceDraftCoordinator.register(
+      'background-navigation-test',
+      {
+        label: 'Szenendesktop',
+        isDirty: () => guards.dirty,
+        save,
+        settleBackgroundWrites: async () => {
+          await autosave
+          guards.dirty = newDraft
+        }
+      }
+    )
+    try {
+      let navigation!: Promise<void>
+      act(() => {
+        navigation = f.result.current.showCampaigns()
+      })
+      expect(f.result.current.screen).toBe('workspace')
+      await act(async () => {
+        complete()
+        await navigation
+      })
+      expect(f.result.current.screen).toBe(newDraft ? 'workspace' : 'campaigns')
+      expect(save).not.toHaveBeenCalled()
+      expect(f.report).toHaveBeenCalledTimes(newDraft ? 1 : 0)
+    } finally {
+      unregister()
+    }
+  }
+)

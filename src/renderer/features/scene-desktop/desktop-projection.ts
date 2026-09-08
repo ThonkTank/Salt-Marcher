@@ -157,6 +157,12 @@ export class DesktopProjection {
     this.unregister = this.maintenance.register(this.maintenanceId, {
       label: 'Szenendesktop',
       isDirty: this.dirty,
+      settleBackgroundWrites: async () => {
+        if (this.maintenance.isLocked()) return
+        this.clearTimer()
+        await this.writeRequest
+        if (this.desired) await this.persist()
+      },
       save: async () => {
         this.clearTimer()
         await this.recoveryRequest

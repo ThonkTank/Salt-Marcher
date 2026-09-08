@@ -9,6 +9,8 @@ export interface MaintenanceDraft {
   /** Child editors whose results must be settled before this owner. */
   readonly dependsOn?: readonly string[]
   isDirty(): boolean
+  /** Finish only writes already requested by automatic persistence. */
+  settleBackgroundWrites?(): Promise<void>
   /** Resolve true only when the owning editor confirmed successful persistence. */
   save?(): Promise<boolean>
   discard?(): Promise<boolean>
@@ -40,6 +42,19 @@ export class MaintenanceDraftCoordinator {
   }
   hasDirty(): boolean {
     return [...this.drafts.values()].some((draft) => draft.isDirty())
+  }
+  async settleBackgroundWrites(): Promise<void> {
+    if (this.locked) return
+    await Promise.allSettled(
+      [...this.drafts.values()].map((draft) =>
+        Promise.resolve().then(() => draft.settleBackgroundWrites?.())
+      )
+    )
+  }
+  dirtyLabels(): readonly string[] {
+    return [...this.drafts.values()]
+      .filter((draft) => draft.isDirty())
+      .map((draft) => draft.label)
   }
   isLocked = (): boolean => this.locked
   subscribe = (listener: () => void): (() => void) => {

@@ -4497,3 +4497,158 @@ Boolean-Fallback einzubauen. Gerenderte Fälle für alle Save/Discard/Cancel-
 Ausgänge, Pending, zentrale Vorab-Recovery, Abwesenheit, unveränderte Original-ID,
 fehlgeschlagenen Read und veraltetes Rename ergänzen. Danach passenden Build/E2E
 qualifizieren und beide Teile zusammen auditieren.
+
+Fortsetzung CampaignScreen-Dialogowner: Vorheriger Turn war Fortschritt; 3e18fad45
+ist sauber und sein Check 34285789972 wartet. Jetzt den dokumentierten Screenplan
+umsetzen. Die sechs Boolean-Actionprops durch den begin-Vertrag ersetzen; bestehende
+Testaktionen erhalten ausschließlich im Fixture einen passenden Attempt-Adapter.
+Production erhält keinen Boolean-Fallback. Pending- und Eingaberefs sind synchron;
+der ursprüngliche Abschlusscallback wird erst bei confirmed ausgeführt. Ein
+absenter Versuch entfernt nur den Versuch, nicht den Namensentwurf. Lokale Fehler
+werden im Dialog angezeigt. Der Workspace-Koordinator bleibt Owner globaler
+Befehls-/Session-Recovery, CampaignScreen wird Owner seiner Eingaben und des
+ursprünglichen UI-Abschlusses. Zentrale Discard führt keine Write-Aktion aus.
+
+Korrekturrunde Dialog-Orakel: 39 Fälle bestehen. Drei neue Selektoren verwenden
+abweichende Texte statt der bestehenden Labels „Löschen …“ und „Erstellen & öffnen“;
+diese korrigieren. Der bisherige Pending-Test erwartete nach false sofort wieder
+Save. Nach dem neuen Vertrag muss zuerst das Originalhandle lesend absent melden;
+den Test um den ausdrücklichen „Ergebnis prüfen“-Schritt ergänzen und danach
+Editierbarkeit prüfen. Keine Produktionssperre zugunsten des alten Orakels lockern.
+
+Dialog-Zwischenprüfung: 43 Fälle bestehen. Vor der integrierten Prüfung auch einen
+geworfenen Handle-Read-/Completionfehler als unklaren Versuch sichtbar halten;
+sonst könnte die nächste lesende Aktion trotz erhaltenem Attempt fehlen. Bei
+unverändertem Rename-Namen nach gültigem Konfliktcheck den Dialog ohne unnötigen
+Write schließen. Danach einen realen CampaignWorkspaceProjection-/Koordinator-
+und Screen-Test ergänzen: bestätigtes Create, fehlgeschlagener Sessionread,
+zentraler Save klärt zuerst den Koordinator und schließt danach den Originaldialog,
+bei genau einem Create-Transport. Dies ergänzt die bisherigen getrennten Tests.
+
+Abgleich nach 129 bestandenen Tests: Koordinator und Dialog müssen ihre vorhandene
+Owner-Abhängigkeit ausdrücklich deklarieren. Sonst könnte nach einem fehlgeschlagenen
+Koordinatorread der Screen im selben globalen Durchlauf sofort einen zweiten Read
+starten. Stabile ID im Koordinator mit useId erzeugen, an dessen Registrierung und
+CampaignScreen weiterreichen; Screen dependsOn verwenden. Standalone-Screentests
+benötigen keinen künstlichen Parent, daher optionaler Dependency-Prop. Gemeinsamen
+Test verschärfen: erster zentraler Read scheitert, Dialog bleibt unverändert und
+startet keinen zweiten Read; erst die nächste zentrale Aktion klärt beide Owner.
+
+Korrekturrunde Test-Lint: Produkt-Lint und Typecheck bestehen. Die neue lokale
+TestActions-Typdeklaration verwendet Methodensignaturen; ihre Mock-Assertions
+lösen dadurch unbound-method aus. Wie zuvor Funktionsproperties deklarieren,
+ohne this-Kontext und ohne Regel-Ausnahmen. Danach die betroffenen Checks erneut.
+
+Zusätzlicher Auditbefund während des laufenden E2E (Handle 6047): Der neue
+Originalhandle-Zweig ist geprüft. Der verbleibende allgemeine reconcile-Zweig
+ohne lokalen Versuch übernimmt jedoch noch den alten removedFocus-Abschluss.
+Wird eine andere/ältere Recovery bei einem neu geöffneten Namenspopup geklärt,
+könnte sie dessen unabhängigen Entwurf schließen; außerdem könnte der Koordinator
+nach Create/Activate automatisch navigieren. Die vorhandenen Reconciliation-UI-
+Tests stellen einen solchen unabhängigen offenen Entwurf bereits dar, bislang
+aber nur mit null als Ergebnis.
+
+Korrektur nach Ende des laufenden E2E: Allgemeinen Screen-Recovery-Aufruf mit
+explizitem stayOnCampaigns an den Koordinator geben. Nur dieser Readabschluss
+unterdrückt zusätzliche Navigation; normale Originalhandle-Recovery behält ihr
+bisheriges Verhalten. Im allgemeinen Screen-Zweig lediglich Status melden,
+keinen fremden Popup-/Name-/Bestätigungszustand schließen. Test mit bestätigter
+älterer Create-Quittung und unverändertem neuerem Namensentwurf ergänzen sowie
+Koordinatortest zur unterdrückten Navigation. Keine Sourceänderung während der
+laufenden Artefaktprüfung; deren Handle zuerst abschließen/auswerten.
+
+Artefaktzwischenstand: Handle 6047 ist exit 0; campaignCreate und alle sieben
+sceneDesktop-Fälle bestehen. Summary
+.tmp/e2e-runs/functional-1788906924471-530627/summary.json. Jetzt die bereits
+geplante unabhängige Dialog-Recovery korrigieren; danach neue Appbytes bauen und
+die geänderte Navigation mit Koordinatortest und campaignCreate erneut prüfen.
+
+Korrekturrunde letzter UI-Selektor: 130 Fälle bestehen. Im neuen Recoverytest
+existieren bewusst sowohl die allgemeine Recoveryanzeige als auch der neue
+Statushinweis; getByRole('status') ist deshalb mehrdeutig. Den konkreten
+Bestätigungstext abfragen und anschließend unveränderte Eingabe/Dialog prüfen.
+Produktverhalten unverändert; betroffenen Test und statische Prüfung abschließen.
+
+Fortsetzungsprüfung 2026-09-09: Die letzte Selektorkorrektur besteht mit 26/26
+CampaignScreen-Tests. Die zuvor gestarteten Typecheck- und Lint-Handles 48373 und
+77194 enden beide mit exit 0. Neuer Build, Built-Smoke, Bundlebudget und
+campaignCreate bestehen zusammen (Handle 25897, exit 0). Geprüfter
+appBuildInputFingerprint: 475371c460a29ea1593a290dc54e7f1a4cc274f290c981486f885bbb95ca276b.
+E2E-Summary: .tmp/e2e-runs/functional-1788907475723-533947/summary.json.
+
+Planabgleich Dialogintegration: Originalversuche werden ohne Write-Wiederholung
+geklärt, zentrale Create-/Rename-Saves sind explizit begrenzt, Delete bleibt
+bestätigungspflichtig, fremde Recovery erhält unabhängige Entwürfe und Navigation.
+Der integrierte Parent-/Child-Test verhindert einen zweiten Recoveryread im selben
+fehlgeschlagenen Wartungsdurchlauf. Die lokale Dialogintegration erfüllt damit den
+aufgezeichneten Teilplan. Roadmap-Abgleich: Phase 4 bleibt offen; insbesondere
+Fensterschluss, übrige Writer und vollständige Updatebedienung sind nicht durch
+CampaignScreen-Tests abgenommen.
+
+Neuer CI-Befund: Run 34285789972 für 3e18fad ist abgeschlossen mit failure.
+Linux E2E hex-npc-restart scheitert im currentFormatCampaignQualification-Test
+beim Wechsel von Current Format A nach B: Kampagnenübersicht erscheint nicht.
+Heruntergeladener CI-Screenshot zeigt ausdrücklich die Meldung über offene
+Editoränderungen, obwohl nur die Szenenübersicht sichtbar ist. Dies ist kein
+Beleg für einen Infrastrukturfehler. Aggregate scheitert folgerichtig ebenfalls.
+
+Korrekturplan: Zunächst denselben Current-Format-Test mit den eben geprüften Bytes
+lokal ausführen (Handle 79341); keine Sourceänderung währenddessen. Den konkreten
+noch schmutzigen Owner und seine Lebensdauer ermitteln, bevor die Navigationssperre
+verändert wird. Reale Entwürfe müssen erhalten bleiben; ein Test-Timeout oder das
+pauschale Entfernen der Sperre wäre keine Lösung. Nach belegter Ursache fokussierte
+Regression ergänzen und danach den echten Wechseltest erneut qualifizieren.
+Kein Handoff und keine Main-Promotion auf Grundlage des fehlgeschlagenen CI-Laufs.
+
+Lokale Reproduktion endet ebenfalls mit Produktfehler (Handle 79341, exit 1),
+Summary .tmp/e2e-runs/functional-1788907593877-534921/summary.json. Fokussierter
+nächster Schritt: Die bisher pauschale Meldung beim blockierten Kampagnenwechsel
+um die vorhandenen Owner-Bezeichnungen ergänzen. Der Koordinator liefert dazu
+nur lesend die Namen schmutziger Bereiche; keine Auflösung oder Writes. Damit
+wird die nächste Aktion auch für Nutzer zuordenbar und der reproduzierte Befund
+konkret diagnostizierbar. Bestehende Navigationssperre unverändert erhalten;
+Unit-Test prüft benannten Bereich und weiterhin blockierte Navigation.
+
+Diagnose bestätigt: Screenshot der zweiten lokalen Reproduktion benennt
+Szenendesktop als einzigen offenen Bereich; Handle 55527 endet mit exit 1.
+37 Unit-Tests sowie Typecheck/Lint der Bereichsanzeige bestehen. Der Desktop
+führt bereits ausgelöste automatische Layoutwrites; die Navigation prüft deren
+kurzzeitig schmutzigen Zustand synchron und bleibt danach ohne erneuten Klick stehen.
+
+Korrekturplan: Optionales Owner-Protokoll zum Abschluss bereits beauftragter
+Hintergrundwrites ergänzen. Nur Desktop implementiert es: geplanten Autosave
+abschließen, laufenden Write abwarten, Fehler/unklares Ergebnis behalten. Dies
+ruft weder generische Editor-Saves noch Discard oder Recovery-Replay auf. Beim
+Kampagnenwechsel zunächst diese Writes abwarten, anschließend globale Sperre,
+Originalkampagne und weiterhin offene Entwürfe erneut prüfen. Neue Entwürfe während
+des Wartens müssen die Navigation ebenfalls verhindern. Tests für laufenden und
+geplanten Desktopwrite, Fehler und einen währenddessen geöffneten Entwurf ergänzen.
+Danach echte Current-Format-Qualifikation erneut ausführen; deren Grenzwerte bleiben.
+
+Korrekturprüfung Autosave: 76 Tests in vier Dateien bestehen, einschließlich
+laufendem/geplantem/fehlgeschlagenem Desktopwrite und erneutem Dirty-Check nach
+Wartezeit. Typecheck und ESLint bestehen (42713/80450, beide exit 0), ebenso 69
+Architekturtests (54323, exit 0). Build, Built-Smoke und Bundlebudget bestehen.
+Die zuvor zweimal reproduzierbar fehlgeschlagene Current-Format-Qualifikation
+besteht jetzt vollständig einschließlich Neustart und persistierter nächster
+Szenenänderung: 100 Messungen, p95 155.304 ms, Maximum 171.421 ms. Die unveränderten
+Grenzen bleiben 1.000 ms p95 / 10.000 ms Maximum. campaignCreate läuft anschließend
+mit denselben Bytes; dessen Ergebnis steht noch aus (Gesamthandle 22774).
+
+Plan-Audit Autosave: Nur der Desktop bietet settleBackgroundWrites an; sein
+bestehender Speicherauftrag wird abgearbeitet. Generische save/discard-Callbacks
+bleiben unaufgerufen. Unklare Writes bleiben dirty, die Navigation prüft danach
+Sperre, ursprüngliche Kampagne und neue Entwürfe. Die Bereichsnamen sind aus dem
+vorhandenen Ownerregister abgeleitet. Keine SQL-, Profil- oder Schemaänderung.
+Roadmap-Audit: Diese Korrektur schließt die aufgedeckte Navigationsregression und
+verbessert die zuordenbare Fehleranzeige in Phase 4. Sie ersetzt weder die noch
+ausstehende Fensterentwurfsbehandlung noch die Artefakt-/Releasephasen 5 bis 7.
+
+Abschluss dieser Korrekturrunde: Handle 22774 endet mit exit 0. Beide echten
+E2E-Suiten currentFormatCampaignQualification und campaignCreate bestehen mit
+appBuildInputFingerprint 011277ba89d5a1d0aaebb4193a8a5566c27f329a4b73f6915bbeac41109f6c7f.
+Summary: .tmp/e2e-runs/functional-1788907966361-537722/summary.json.
+Formatprüfung der zehn betroffenen Quell-/Testdateien sowie git diff --check
+bestehen. Den zusammengehörigen Dialog-/Navigationsstand jetzt als Candidate
+committen und pushen; vollständige Remote-Prüfung dieses neuen SHA bleibt Pflicht.
+Phase 4 bleibt in Arbeit, Handoff/Main/Liveabnahme/Veröffentlichung unbestätigt.

@@ -4,6 +4,7 @@ import type {
 } from './campaign-action-attempt.js'
 import {
   useCallback,
+  useId,
   useContext,
   useEffect,
   useRef,
@@ -21,7 +22,7 @@ import {
 } from '../../shell/maintenance-drafts.js'
 import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
 import { CapabilityError } from '../../../shared/errors/capability-error.js'
-import { message } from '../../i18n/campaign-menu-runtime.de.js'
+import { formatMessage } from '../../i18n/campaign-menu-runtime.de.js'
 import type { WorkspaceId } from './workspace-definition.js'
 
 export function useCampaignSessionCoordinator(
@@ -101,7 +102,7 @@ export function useCampaignSessionCoordinator(
     return request
   }
 
-  async function enterSession(): Promise<void> {
+  async function enterSession(navigate = true): Promise<void> {
     const campaignId =
       pendingEntry.current ?? projection.snapshot().campaigns.activeCampaignId
     if (!campaignId) throw new CapabilityError('stale', false)
@@ -123,14 +124,16 @@ export function useCampaignSessionCoordinator(
     if (activeAttempt.current?.campaignId === campaignId)
       activeAttempt.current.entryPending = false
     setSessionRetry(false)
-    if (!maintenanceDraftCoordinator.isLocked()) {
+    if (navigate && !maintenanceDraftCoordinator.isLocked()) {
       setWorkspace('session')
       setScreen('workspace')
       setCampaignMenuOpen(false)
     }
   }
 
-  async function reconcile(): Promise<CampaignCommandReceipt | null> {
+  async function reconcile(
+    stayOnCampaigns = false
+  ): Promise<CampaignCommandReceipt | null> {
     let accepted: CampaignCommandReceipt | null = null
     const complete = await run(async () => {
       accepted = await projection.reconcilePendingCommand()
@@ -143,7 +146,7 @@ export function useCampaignSessionCoordinator(
       }
       if (accepted.kind === 'created' || accepted.kind === 'activated') {
         pendingEntry.current = accepted.campaignId
-        await enterSession()
+        await enterSession(!stayOnCampaigns)
       }
     }, true)
     if (!projection.snapshot().reconciliationCommandId && activeAttempt.current)
@@ -162,17 +165,21 @@ export function useCampaignSessionCoordinator(
     if (pendingEntry.current) return run(enterSession, true)
     return true
   }
-  const maintenanceBlocked = useMaintenanceDraft({
-    label: 'Kampagnenwechsel',
-    isDirty: () =>
-      Boolean(
-        running.current ||
-        pendingEntry.current ||
-        projection.snapshot().reconciliationCommandId
-      ),
-    save: settle,
-    discard: settle
-  })
+  const campaignMaintenanceId = useId()
+  const maintenanceBlocked = useMaintenanceDraft(
+    {
+      label: 'Kampagnenwechsel',
+      isDirty: () =>
+        Boolean(
+          running.current ||
+          pendingEntry.current ||
+          projection.snapshot().reconciliationCommandId
+        ),
+      save: settle,
+      discard: settle
+    },
+    campaignMaintenanceId
+  )
 
   function beginCampaignAction(
     value: CampaignManagementCommand,
@@ -273,10 +280,26 @@ export function useCampaignSessionCoordinator(
     sessionRetry,
     retryCatalog: load,
     retrySession: () => run(enterSession, true),
-    showCampaigns: () => {
+    showCampaigns: async () => {
+      if (maintenanceDraftCoordinator.isLocked()) return
+      const originalCampaignId =
+        projection.snapshot().campaigns.activeCampaignId
       if (screen === 'workspace' && hasMaintenanceDrafts()) {
-        reportError(message('campaign.unsavedWorkspace'))
-        return
+        await maintenanceDraftCoordinator.settleBackgroundWrites()
+        if (
+          maintenanceDraftCoordinator.isLocked() ||
+          projection.snapshot().campaigns.activeCampaignId !==
+            originalCampaignId
+        )
+          return
+        if (hasMaintenanceDrafts()) {
+          reportError(
+            formatMessage('campaign.unsavedWorkspace', {
+              areas: maintenanceDraftCoordinator.dirtyLabels().join(', ')
+            })
+          )
+          return
+        }
       }
       setScreen('campaigns')
       setCampaignMenuOpen(false)
@@ -302,6 +325,7 @@ export function useCampaignSessionCoordinator(
     setWorkspace,
     campaignReconciliationPending: root.reconciliationCommandId !== null,
     reconcileCampaign: reconcile,
+    campaignMaintenanceId,
     beginCampaignAction,
     createCampaign: (name: string) =>
       beginCampaignAction({ kind: 'create', name }).completion,

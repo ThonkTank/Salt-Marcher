@@ -8,10 +8,17 @@ export const campaignMenuMessagesDe = {
   'menu.settings': 'Einstellungen',
   'nav.campaigns': 'Kampagnen',
   'campaign.loading': 'Kampagnen werden geladen …',
+  'campaign.nameInvalid':
+    'Bitte einen Kampagnennamen mit 1 bis 100 Zeichen eingeben.',
+  'campaign.nameConflict':
+    'Diese Kampagne wurde inzwischen geändert oder entfernt. Bitte den Entwurf verwerfen und erneut öffnen.',
+  'campaign.reconciled': 'Der Kampagnenbefehl wurde geklärt.',
+  'campaign.commandAbsent':
+    'Die Änderung wurde nicht ausgeführt. Dein Entwurf bleibt erhalten und kann erneut gespeichert oder verworfen werden.',
   'campaign.retry': 'Erneut laden',
   'campaign.sessionRetry': 'Session erneut laden',
   'campaign.unsavedWorkspace':
-    'Bitte offene Änderungen zuerst im jeweiligen Editor speichern oder verwerfen. Danach kannst du die Kampagnenübersicht öffnen.',
+    'Offene Änderungen in: {areas}. Bitte diese zuerst im jeweiligen Editor speichern oder verwerfen. Danach kannst du die Kampagnenübersicht öffnen.',
   'campaign.new': 'Neue Kampagne',
   'campaign.newButton': '+ Neue Kampagne',
   'campaign.createOpen': 'Erstellen & öffnen',

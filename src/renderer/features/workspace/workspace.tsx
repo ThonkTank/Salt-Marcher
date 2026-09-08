@@ -269,12 +269,8 @@ export function WorkspaceApp() {
               sessionRetry={coordinator.sessionRetry}
               retryCatalog={coordinator.retryCatalog}
               retrySession={coordinator.retrySession}
-              create={coordinator.createCampaign}
-              activate={coordinator.switchCampaign}
-              rename={coordinator.renameCampaign}
-              trash={coordinator.trashCampaign}
-              restore={coordinator.restoreCampaign}
-              deleteForever={coordinator.deleteCampaignForever}
+              begin={coordinator.beginCampaignAction}
+              maintenanceDependencyId={coordinator.campaignMaintenanceId}
               reconciliationPending={coordinator.campaignReconciliationPending}
               reconcile={coordinator.reconcileCampaign}
             />
