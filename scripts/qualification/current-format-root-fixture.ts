@@ -15,6 +15,7 @@ export const currentFormatRootRegistrations = Object.freeze([
   'session-planner-receipts',
   'world-npcs',
   'campaign-import',
+  'party-character-receipts',
   'scene-group-receipts',
   'schema-metadata',
   'schema-version'

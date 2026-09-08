@@ -371,7 +371,9 @@ const campaignHandlers = createCampaignHandlers({
   mutateReferences,
   recoverPendingPreparations: () => sessionPlanner.recoverPendingPreparations()
 })
-const partyHandlers = createPartyHandlers(play)
+const partyHandlers = createPartyHandlers(play, () =>
+  campaigns.activeCampaignId()
+)
 const creatureHandlers = createReferenceHandlers({ creatures, references })
 
 const biomeHandlers = createBiomeHandlers({

@@ -175,3 +175,47 @@ export const restScenePartyInputSchema = partyMutationBaseSchema
   })
   .strict()
 export type RestScenePartyInput = z.infer<typeof restScenePartyInputSchema>
+
+export const partyCharacterCommandSchema = z
+  .object({
+    commandId: z.uuid(),
+    command: z.discriminatedUnion('kind', [
+      z
+        .object({
+          kind: z.literal('create'),
+          input: createPartyCharacterInputSchema
+        })
+        .strict(),
+      z
+        .object({
+          kind: z.literal('update'),
+          input: updatePartyCharacterInputSchema
+        })
+        .strict(),
+      z
+        .object({
+          kind: z.literal('delete'),
+          input: deletePartyCharacterInputSchema
+        })
+        .strict()
+    ])
+  })
+  .strict()
+export const partyCharacterCommandReceiptSchema = z
+  .object({
+    characterId: z.uuid(),
+    party: partySnapshotSchema
+  })
+  .strict()
+export const partyCharacterCommandStatusSchema = z
+  .object({
+    receipt: partyCharacterCommandReceiptSchema.nullable(),
+    party: partySnapshotSchema
+  })
+  .strict()
+export const campaignPartyCharacterCommandSchema =
+  partyCharacterCommandSchema.extend({ campaignId: z.uuid() })
+export type PartyCharacterCommand = z.infer<typeof partyCharacterCommandSchema>
+export type PartyCharacterCommandReceipt = z.infer<
+  typeof partyCharacterCommandReceiptSchema
+>

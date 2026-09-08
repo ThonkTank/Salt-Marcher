@@ -1,3 +1,8 @@
+import { PartyCharacterCommandJournal } from '../party/party-character-command-journal.js'
+import {
+  partyCharacterCommandSchema,
+  type PartyCharacterCommand
+} from '../../shared/contracts/party.js'
 import { SceneGroupCommandJournal } from '../scene/scene-group-command-journal.js'
 import {
   saveSceneGroupInputSchema,
@@ -239,6 +244,54 @@ export class LivePlayService {
         )
       })
     )
+  }
+
+  executePartyCharacterCommand(value: PartyCharacterCommand) {
+    const input = partyCharacterCommandSchema.parse(value)
+    return this.withStores(({ db, party, unitOfWork }) =>
+      unitOfWork.run(() => {
+        const journal = new PartyCharacterCommandJournal(db)
+        const existing = journal.read(input)
+        if (existing) return existing
+        const before = party.read()
+        const command = input.command
+        const result =
+          command.kind === 'create'
+            ? this.createPartyCharacter(
+                command.input.character,
+                command.input.expectedRevision
+              )
+            : command.kind === 'update'
+              ? this.updatePartyCharacter(
+                  command.input.id,
+                  command.input.character,
+                  command.input.expectedRevision
+                )
+              : this.deletePartyCharacter(
+                  command.input.id,
+                  command.input.expectedRevision
+                )
+        const characterId =
+          command.kind === 'create'
+            ? result.members.find(
+                (member) =>
+                  !before.members.some((previous) => previous.id === member.id)
+              )?.id
+            : command.input.id
+        if (!characterId) throw new CapabilityError('validation_failed', false)
+        const receipt = { characterId, party: result }
+        journal.record(input, receipt)
+        return receipt
+      })
+    )
+  }
+
+  partyCharacterCommandStatus(value: PartyCharacterCommand) {
+    const input = partyCharacterCommandSchema.parse(value)
+    return this.withStores(({ db, party }) => ({
+      receipt: new PartyCharacterCommandJournal(db).read(input),
+      party: party.read()
+    }))
   }
 
   createPartyCharacter(

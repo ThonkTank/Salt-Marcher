@@ -1,3 +1,4 @@
+import { initializePartyCharacterCommandJournal } from '../../party/party-character-command-journal.js'
 import { initializeSessionPlannerCommandJournal } from '../../session-planner/session-planner-command-journal.js'
 import { initializeSceneGroupCommandJournal } from '../../scene/scene-group-command-journal.js'
 import type Database from 'better-sqlite3'
@@ -51,6 +52,11 @@ export function createDefaultCampaignSchemaBootstrapper(): CampaignSchemaBootstr
       )
     ),
     registration('party', initializePartySchema, ['campaign-runtime']),
+    registration(
+      'party-character-receipts',
+      initializePartyCharacterCommandJournal,
+      ['party']
+    ),
     registration(
       'scene',
       (database) =>

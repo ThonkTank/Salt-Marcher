@@ -1,3 +1,4 @@
+import { initializePartyCharacterCommandJournal } from '../../party/party-character-command-journal.js'
 import { initializeSessionPlannerCommandJournal } from '../../session-planner/session-planner-command-journal.js'
 import { initializeSceneGroupCommandJournal } from '../../scene/scene-group-command-journal.js'
 import type Database from 'better-sqlite3'
@@ -249,6 +250,24 @@ export const campaignSchemaMigrations: readonly SchemaMigration[] =
           )
           .run(
             'campaign-36-to-37-planner-command-receipts',
+            new Date().toISOString()
+          )
+      }
+    },
+    {
+      id: 'campaign-37-to-38-party-character-receipts',
+      role: 'campaign',
+      fromVersion: 37,
+      toVersion: 38,
+      migrate(database) {
+        initializeCampaignSchemaMetadata(database)
+        initializePartyCharacterCommandJournal(database)
+        database
+          .prepare(
+            'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run(
+            'campaign-37-to-38-party-character-receipts',
             new Date().toISOString()
           )
       }

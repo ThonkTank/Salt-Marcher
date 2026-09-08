@@ -21,9 +21,20 @@ const encounterHandlerOperations = composeOperationDefinitions(
 )
 
 export function createPartyHandlers(
-  play: LivePlayService
+  play: LivePlayService,
+  activeCampaignId: () => string
 ): OperationHandlers<typeof partyOperationDefinitions> {
   return defineOperationHandlers('party_handlers', partyOperationDefinitions, {
+    'party.executeCharacterCommand': ({ campaignId, ...command }) => {
+      if (campaignId !== activeCampaignId())
+        throw new CapabilityError('stale', false)
+      return play.executePartyCharacterCommand(command)
+    },
+    'party.characterCommandStatus': ({ campaignId, ...command }) => {
+      if (campaignId !== activeCampaignId())
+        throw new CapabilityError('stale', false)
+      return play.partyCharacterCommandStatus(command)
+    },
     'party.restSelected': (input) => play.restSceneParty(input),
     'party.setXp': (input) =>
       play.setPartyXp(input.id, input.amount, input.expectedRevision),

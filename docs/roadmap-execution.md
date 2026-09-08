@@ -3934,3 +3934,96 @@ CampaignScreen, weitere Gruppen-/Kampf-/Karten-/Preset-/Desktop-Schreibwege und
 Update-/Offline-Abnahme. Die erwähnte Desktop-Scope-Pflege beim Read bleibt bei
 deren Qualifikation zu prüfen. Phasen 5–7, vollständige Exact-SHA-CI, kanonischer
 Handoff/Main-Abschluss und öffentliche Abnahme bleiben erforderlich.
+
+### Phase 4 — Plan: Charakterprofil-Befehle wiederherstellbar machen
+
+Vorheriger Zielturn war Fortschritt; e21d3e078 ist sauber, Check 34278244449 läuft.
+Die Charakter-CRUD-Operationen besitzen noch keine Quittungen. Profile liegen in
+PartyStore der Kampagne; LivePlayService koordiniert bei Update/Delete zusätzlich
+Szene/Kampf. Im Charakterkatalog blockiert Unknown derzeit dauerhaft; ein
+fehlgeschlagener Refresh nach bestätigtem Write wird bisher nur gemeldet.
+
+Zunächst einen strikt validierten Commandvertrag für Create/Update/Delete mit
+Originalcommand-ID einführen. Party-eigenes Journal enthält Vollfingerprint und
+versionierte Ergebnisquittung (betroffene Charakter-ID plus damaliger Partystand),
+ohne löschende Fremdschlüssel und ohne automatische Eviction. LivePlayService
+schließt bestehende CRUD-Transaktionen und Quittung in eine gemeinsame Transaktion
+ein. Status liest ursprüngliche Quittung und aktuellen Partystand getrennt und
+schreibfrei. Beide Capabilities prüfen die ursprüngliche Kampagne vor Domainarbeit.
+
+Neue Kampagnenmigration 37→38 initialisiert ausschließlich diesen Owner; Registry
+18, Installation weiter 42. Bootstrap, Versionsvertrag und aktuelle Qualification-
+Owner/Readbacks ergänzen. Eingefrorene 0.2.0-Fixtures bleiben unverändert. Native
+Tests prüfen alle drei Commands: Rollback bei Quittungsfehler inklusive Szene/
+Kampf, Replay, Fingerprintkonflikt, query_only vor/nach Command und nach späterer
+Änderung/Löschung, Wiederöffnen sowie unterbrochene Migration mit Datenvergleich.
+
+Danach Charakterkatalog an Originalkampagnenports anbinden. Originalinput und
+Originalabschluss bleiben während Write und vollständigem Refresh erhalten.
+Unknown-Recovery liest ausschließlich; aktuelle Daten werden frisch übernommen,
+nie die alte Ergebnisquittung über neuere Arbeit gelegt. Save/Discard warten auf
+Abgleich; abwesende Commands erhalten Entwürfe, geänderte Revisionen verhindern
+blinde Wiederholung. Delete wird ausschließlich nach ausdrücklicher Bestätigung
+ausgeführt, nie durch zentralen Save eines offenen Bestätigungsdialogs. Gerenderte
+Tests decken alle drei CRUD-Wege, verlorene Antwort, fehlgeschlagenen Refresh/Read,
+spätere Änderungen, ursprüngliche Kampagne und zentrale Klärung ab.
+
+Vertrags-/Migrationsschritt und anschließender Rendereranschluss erhalten jeweils
+gezielte Nachweise; erst zusammen gilt diese Phase-4-Lücke als geschlossen.
+Wegen Schemaänderung sind vollständige statische/Unit-/Integrationsprüfungen,
+Versions-/Artefaktchecks sowie Build/Smoke/Bundle und passende echte Charakter-/
+Kampagnen-E2E erforderlich. Vollständige Exact-SHA-CI/Handoff bleiben maßgeblich.
+
+Korrekturrunde erster Vertragsnachweis: Zwei Testfehler betreffen neue Orakel.
+Das Qualification-Manifest muss die topologische Bootstrap-Reihenfolge verwenden;
+Party-Quittungen sind erst nach Party bereit und stehen nach character-loot vor
+scene. Der Kampftest muss den tatsächlichen Initiativevertrag (label) statt eines
+nicht vorhandenen name-Felds vergleichen. Manifestposition und Assertion
+korrigieren; die Produktionsbefehle/Transaktionen bleiben unverändert. Die bisher
+bestandenen Create-/Delete-/Migrationsfälle und alle geänderten Fälle erneut prüfen.
+
+Fortsetzung derselben Korrekturrunde: Alle 35 ausgeführten Fälle bestehen, darunter
+nun Update samt Initiativeabgleich. Der Root-Fixture-Loader verlangt außerdem die
+neu erklärte elfte Registrierung in der aktuellen Fixture-Datei. Diese Coverage-
+Liste um den bereits implementierten Party-Quittungsowner ergänzen; importierte
+Kampagneninhalte und historische Release-Fixtures bleiben unverändert.
+
+Korrekturrunde Handler-Orakel: Format und Produkt-Lint bestehen. Der vollständige
+Test-Linter/Typecheck meldet ausschließlich unaufgelösten Handleroutput im neuen
+Integrationstest. OperationHandlers liefert absichtlich unknown; das Orakel muss
+wie die echte Boundary mit partyCharacterCommandReceiptSchema parsen, bevor es
+Felder verwendet. Explizite Outputvalidierung statt Typcast ergänzen und die
+vollständige Kette erneut starten. Produktionsvertrag/SQL bleiben unverändert.
+
+### Phase 4 — Audit des Charakterprofil-Vertrags und der Migration
+
+Fortsetzung: Der vorherige Installations-Prüfturn brachte keinen Fortschritt an
+ der Roadmap. Arbeitsbaum und laufender E2E-Handle wurden erneut geprüft; Handle
+44494 ist erfolgreich beendet. Check 34278244449 für e21d3e078 ist ebenfalls
+abgeschlossen und erfolgreich.
+
+Planabgleich des Backend-Teils: Create/Update/Delete und ihre versionierte
+Quittung liegen in derselben Kampagnentransaktion, einschließlich Szene/Kampf.
+Status prüft den vollständigen Originalfingerprint und liefert ursprüngliche
+Quittung und aktuellen Partystand getrennt. Beide neuen Handler prüfen die
+Kampagne vor Domainarbeit. Quittungen überleben Löschung und Wiederöffnung.
+Migration 37→38 initialisiert ausschließlich den neuen Owner; Installation 42,
+Registry 18 und aktuelle Qualification-Verträge sind konsistent. Historische
+Release-Fixtures wurden nicht geändert. Keine offene Abweichung im Backend-Teil.
+
+Validierung: vollständiges check:fast erfolgreich (87 Architekturtests,
+1281 Unittests, 335 Integrationstests; Format, Lint, Typen und Artefakt-/Versions-
+prüfungen). Native Fälle belegen Rollback einschließlich Szene/Kampf bei
+Quittungsfehler, Replay, Fingerprintkonflikte, query_only vor und nach späteren
+Änderungen, Wiederöffnung und unterbrochene Migration. Build, Smoke und Bundle
+bestehen; reachable 1617724 Bytes ohne Budgetänderung. Auf denselben Buildbytes
+bestehen sieben sceneDesktop-Fälle und campaignCombat. Logs liegen unter
+work/roadmap-phase4-character-receipts-*.log; E2E-Zusammenfassung unter
+.tmp/e2e-runs/functional-1788902438927-507715/summary.json. git diff --check besteht.
+
+Separater Roadmapabgleich: Der Backend-Teil erfüllt die Voraussetzung für
+lesende Charakter-Recovery, aber noch nicht die bedienbare Fehlerklärung.
+Rendereranschluss mit ursprünglicher Kampagne, gehaltenem Write/Refresh und
+Save-/Discard-Recovery bleibt der nächste geplante Schritt. Phase 4 bleibt offen;
+Phasen 5–7 sowie Exact-SHA-CI, kanonischer Handoff und Main-Abschluss bleiben
+unverändert erforderlich. Lokale Buildprüfungen ersetzen keinen Handoff.

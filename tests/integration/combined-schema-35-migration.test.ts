@@ -71,7 +71,7 @@ describe('converging schema 35 variants', () => {
         ).toEqual(rows)
         db.exec('DROP TRIGGER fail_transition')
         applySchemaMigrations(db, { path: root, role: 'campaign' })
-        expect(db.pragma('user_version', { simple: true })).toBe(37)
+        expect(db.pragma('user_version', { simple: true })).toBe(38)
         expect(
           db.prepare('SELECT * FROM player_characters ORDER BY id').all()
         ).toEqual(
