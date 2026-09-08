@@ -73,6 +73,19 @@ export function migratePartySchema28To29(db: Database.Database): void {
   `)
 }
 
+export function migratePartyBurden34To35(db: Database.Database): void {
+  const columns = new Set(
+    (db.pragma('table_info(player_characters)') as Array<{ name: string }>).map(
+      (column) => column.name
+    )
+  )
+  for (const name of ['short_rest_trusted', 'long_rest_trusted'])
+    if (!columns.has(name))
+      db.exec(
+        `ALTER TABLE player_characters ADD COLUMN ${name} INTEGER NOT NULL DEFAULT 0 CHECK(${name} IN (0, 1))`
+      )
+}
+
 function createPartyTables(db: Database.Database): void {
   db.exec(`
     CREATE TABLE IF NOT EXISTS party_roster_metadata (
@@ -94,6 +107,8 @@ function createPartyTables(db: Database.Database): void {
       xp INTEGER NOT NULL CHECK(xp >= 0),
       xp_since_short_rest INTEGER NOT NULL CHECK(xp_since_short_rest >= 0),
       xp_since_long_rest INTEGER NOT NULL CHECK(xp_since_long_rest >= 0),
+      short_rest_trusted INTEGER NOT NULL DEFAULT 0 CHECK(short_rest_trusted IN (0, 1)),
+      long_rest_trusted INTEGER NOT NULL DEFAULT 0 CHECK(long_rest_trusted IN (0, 1)),
       movement_speed_feet INTEGER CHECK(movement_speed_feet BETWEEN 0 AND 999),
       travel_map_id TEXT,
       travel_q INTEGER,
@@ -133,7 +148,7 @@ export class PartyStore {
         `
         SELECT id, name, player_name, species, character_class, level,
                passive_perception, passive_investigation, passive_insight, armor_class,
-               active, xp, xp_since_short_rest, xp_since_long_rest,
+               active, xp, xp_since_short_rest, xp_since_long_rest, short_rest_trusted, long_rest_trusted,
                movement_speed_feet, travel_map_id, travel_q, travel_r,
                travel_state
         FROM player_characters ORDER BY position, id
@@ -189,6 +204,11 @@ export class PartyStore {
           parsed.movementSpeedFeet,
           position
         )
+      this.db
+        .prepare(
+          'UPDATE player_characters SET short_rest_trusted = 1, long_rest_trusted = 1 WHERE id = ?'
+        )
+        .run(id)
       this.replaceLanguages(id, parsed.languages)
     })
     return this.read()
@@ -342,7 +362,25 @@ export class PartyStore {
     return this.read()
   }
 
-  adjustXp(id: string, delta: number, expectedRevision: number): PartySnapshot {
+  setXp(id: string, amount: number, expectedRevision: number): PartySnapshot {
+    if (!Number.isSafeInteger(amount) || amount < 0 || amount > 1_000_000)
+      throw new CapabilityError('validation_failed', false)
+    const member = this.read().members.find((member) => member.id === id)
+    if (!member) throw new CapabilityError('not_found', false)
+    return this.adjustXp(id, amount - member.xp, expectedRevision, true)
+  }
+
+  adjustXp(
+    id: string,
+    delta: number,
+    expectedRevision: number,
+    absolute = false
+  ): PartySnapshot {
+    if (
+      !Number.isSafeInteger(delta) ||
+      (!absolute && Math.abs(delta) > 1_000_000)
+    )
+      throw new CapabilityError('validation_failed', false)
     this.mutate(expectedRevision, () => {
       const member = this.db
         .prepare(
@@ -357,6 +395,8 @@ export class PartyStore {
         | undefined
       if (!member) throw new CapabilityError('not_found', false)
       const next = applyXpAdjustment(member, delta)
+      if (!Number.isSafeInteger(next.xp))
+        throw new CapabilityError('validation_failed', false)
       this.db
         .prepare(
           `
@@ -372,7 +412,11 @@ export class PartyStore {
     return this.read()
   }
 
-  rest(type: 'short' | 'long', expectedRevision: number): PartySnapshot {
+  rest(
+    type: 'short' | 'long',
+    expectedRevision: number,
+    memberIds?: readonly string[]
+  ): PartySnapshot {
     this.mutate(expectedRevision, () => {
       const members = this.db
         .prepare(
@@ -381,14 +425,25 @@ export class PartyStore {
            FROM player_characters WHERE active = 1`
         )
         .all() as Array<{ id: string; shortXp: number; longXp: number }>
+      const selected = memberIds
+        ? members.filter((member) => memberIds.includes(member.id))
+        : members
+      if (
+        memberIds &&
+        (!memberIds.length ||
+          new Set(memberIds).size !== memberIds.length ||
+          selected.length !== memberIds.length)
+      )
+        throw new CapabilityError('validation_failed', false)
       const update = this.db.prepare(
         `UPDATE player_characters
-         SET xp_since_short_rest = ?, xp_since_long_rest = ?
+         SET xp_since_short_rest = ?, xp_since_long_rest = ?, short_rest_trusted = 1,
+             long_rest_trusted = CASE WHEN ? = 'long' THEN 1 ELSE long_rest_trusted END
          WHERE id = ?`
       )
-      for (const member of members) {
+      for (const member of selected) {
         const next = applyRest(member, type)
-        update.run(next.shortXp, next.longXp, member.id)
+        update.run(next.shortXp, next.longXp, type, member.id)
       }
     })
     return this.read()
@@ -408,6 +463,21 @@ export class PartyStore {
       if (inserted === 0) return
       const selected = memberIds ? Array.from(new Set(memberIds)) : null
       if (selected && selected.length === 0)
+        throw new CapabilityError('validation_failed', false)
+      const recipients = this.read().members.filter(
+        (member) => member.active && (!selected || selected.includes(member.id))
+      )
+      if (
+        (selected && recipients.length !== selected.length) ||
+        !Number.isSafeInteger(xpEach) ||
+        xpEach < 0 ||
+        recipients.some(
+          (member) =>
+            ![member.xp, member.xpSinceShortRest, member.xpSinceLongRest].every(
+              (value) => Number.isSafeInteger(value + xpEach)
+            )
+        )
+      )
         throw new CapabilityError('validation_failed', false)
       const selection = selected
         ? ` AND id IN (${selected.map(() => '?').join(', ')})`

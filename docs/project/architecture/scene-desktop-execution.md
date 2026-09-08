@@ -12,8 +12,8 @@ includes remote checks, exact-SHA app handoff and green promotion to main.
 | 1 — Window desktop and persistence | Complete | e254a04a2; candidate, exact-SHA handoff and main evidence below |
 | 2 — Reference windows | Complete | 8cb1fbe7b; candidate, canonical handoff and main evidence below |
 | 3 — Travel and combat | Complete | a8f679e2e; candidate, canonical handoff and main evidence below |
-| 4 — Character catalog | In progress | Context refresh below |
-| 5 — Membership, XP, rest | Not started | Depends on completed phase 4 |
+| 4 — Character catalog | Complete | 63b427900; candidate, canonical handoff and main evidence below |
+| 5 — Membership, XP, rest | In progress | Plan below; 5A precedes 5B and 5C |
 | 6 — Default and cleanup | Not started | Depends on all previous phases |
 
 ## 2026-09-08 — Initial state verification
@@ -1220,3 +1220,197 @@ nullable CRUD, loot, scene-only comparisons and retained navigation meet the pla
 Original-roadmap re-audit: phase 4 is implemented without XP/rest semantics changes
 or premature legacy removal. All discovered discrepancies are resolved; exact
 candidate checks, canonical handoff and green-main promotion remain outstanding.
+
+
+## Phase 4 — Delivery closure
+
+Candidate `63b4279001365b891d097eede49bfe0a0f1d3988` passed all 15 required
+jobs in Check 34254846635. Canonical handoff completed with state
+`fc4535c3-aced-439c-b485-41048eb3b0ac`, origin/active attempt
+`4cc205fe-708f-43cb-8241-4fb022da9d9c`. CI artifact and installed bytes match
+`581433d55b1bdf33c69b9cfc3fc544dcfb84eaf03eeac7132791bb5719465941`.
+Backup `2026-09-08T17-18-24-319Z-3946f8d998f2-5ee09ae8` was verified;
+installed runtime passed two quick checks and four domain readbacks.
+Promotion fast-forwarded the same SHA from a8f679e2e. Main Check 34256714284
+passed; readSuccessfulPostPromotionEvidence verified manifest version 4.
+Phase 4 is complete with no unresolved audit discrepancy.
+
+## Phase 5 — Context refresh and plan before implementation
+
+Base is the delivered phase-4 SHA above; implementation continues in the isolated
+worktree on `codex/scene-desktop-phase-5`. Original checkout remains untouched.
+The canonical roadmap and contributor boundaries were re-read. Current PartyStore
+mixes manual XP with rest counters; encounter awards already have a combat-ID
+uniqueness guard. Current rests target all active characters. SceneStore owns
+assignments but has no production scene creation command. Travel detects changed
+membership before advancing; combat reconciliation must target each affected
+scene, never merely the focused one. Party commands require explicit shared
+projection publication after confirmed persistence, including after view closure.
+
+Implementation sequence and acceptance:
+
+1. **5A:** Add strict scene-scoped batch membership and move contracts with Party
+   and Scene expected revisions. Validate all IDs, eligibility and target before
+   writing within CampaignUnitOfWork. Preserve surviving assignment order; append
+   newly assigned members in roster order. Removed members become inactive;
+   moved members stay active. Add aggregate-owned new-scene creation inheriting
+   source time/location. Retain empty sources and existing target metadata.
+   Reconcile affected combat and pause changed journeys without advancing them.
+   Build compact anchored selection popovers with stable search/list/scroll,
+   clear/select-all and one bottom-right Apply. Test rollback, stale revisions,
+   invalid/duplicate IDs, source/target isolation and full replacement.
+2. **5B:** Separate manual delta/absolute XP from encounter burden while retaining
+   level-floor validation. Add persisted trust flags through campaign migration;
+   preserve old counters as untrusted. Keep confirmed encounter awards atomic and
+   once-only for explicit actual recipients. Provide only amount/plus/minus/set
+   controls, immediate publication and local errors; no optimistic command replay.
+   Test migration, floor/bounds, repeat awards and unchanged manual burden.
+3. **5C:** Add explicit-ID, revision-checked scene rest commands. Short rest resets
+   only short burden/trust; long resets both. Default UI selection to all present;
+   require the same button twice, invalidate on selection/type/scope/revision or
+   dismissal. Compute compact burden/orientation from productive rule tables;
+   missing levels and untrusted baselines cannot yield precise forecasts.
+   Test selected-only effects, confirmation invalidation, rule values and errors.
+4. Validate each package before proceeding to the next. Extend real desktop E2E
+   with the 18-character fixture for replace/split/merge, XP and selected rests;
+   use isolated DISPLAY=:1 sequentially. Run lint/typecheck, focused unit and
+   SQLite integration, build and affected E2E/bundle checks. Update requirements
+   and migration progress. Audit separately against this plan and original
+   phase 5; record corrective plans before fixes. Deliver only after exact-SHA
+   remote checks, canonical handoff and green main. Legacy removal is phase 6.
+
+### Phase 5A — Compilation correction 1
+
+Initial typecheck found an overbroad import edit also adding schemas to the old
+assignment operation arguments, a missing HexMapStore location owner and union
+narrowing across a callback. Remove the stray arguments, supply the existing
+WorldLocationStore and capture the narrowed target ID before callback validation.
+Rerun typecheck before UI integration.
+
+### Phase 5A — UI correction 2
+
+Typecheck caught passing an ID instead of a character to the existing suffix
+formatter. UI inspection also found nonexistent palette tokens and an older
+request could dismiss a newly opened draft. Use the established sheet/border
+tokens, pass the member and guard completion by draft identity; keep confirmed
+shared publication independent. Validate these fixes with the batch integration
+cases and UI tests before 5B.
+
+### Phase 5A — Acceptance correction 3
+
+The new integration case used a nonexistent composite location field. Compare
+actual locationId/locationName and time instead; retain the inherited-location
+requirement. Add a component case proving checkbox node identity, scroll and
+selection retention during search, and one batched submission.
+
+### Phase 5A — Test harness correction 4
+
+All seven SQLite cases pass, including transactional rollback and inheritance.
+The component harness omitted the required session notice subscription; add the
+existing no-op subscription mock and rerun without changing production behavior.
+
+### Phase 5A — Test typing correction 5
+
+All eight focused cases pass. Typecheck requires publishSession's boolean return
+in the mock; return true instead of undefined, then repeat typecheck.
+
+### Phase 5A — Package validation and audits
+
+Eight focused component/SQLite cases pass; both typecheck projects pass. The
+plan audit verifies stable authored ordering, one atomic batch, inactive removal,
+active transfer, inherited source metadata, existing-target preservation, retained
+empty sources and dependent rollback. Original 5A audit passes these requirements;
+full real-app acceptance remains part of phase-5 delivery. Proceed to 5B.
+
+5B implementation detail: campaign schema 35 adds aggregate-owned short/long
+trust flags, defaulting legacy rows to false without altering counters. New CRUD
+characters start at trusted zero. Expose burden as an optional structured fact on
+the character contract so old test/import consumers can represent unavailable
+provenance; production PartyStore always supplies it. Daily budget is resolved
+in the domain from the existing productive level table, never duplicated in UI.
+
+### Phase 5B — Package validation and audits
+
+Twelve existing/focused cases pass; eight migration/domain/release-baseline cases
+pass, including preserved unknown counters, manual delta/absolute/floor behavior,
+invalid recipient rollback and duplicate award suppression. Both typecheck
+projects pass. The XP component is exercised independently for all three immediate
+actions. Phase-plan and original 5B audit: no manual burden mutation, no fabricated
+legacy baseline and no duplicate confirmed encounter effect. Proceed to 5C; full
+app checks and phase-wide audit still required before delivery.
+
+### Phase 5 — Corrective audit round 6
+
+Twenty focused cases and 114 architecture/regression cases pass; build and bundle
+budgets pass without raising baselines. Lint rejects render-time ref reads in XP
+and rest anchors: capture the clicked element in state instead, as roster already
+does. A publication audit finds full roster results could replace newer Party or
+combat facts when only the scene revision was compared. Publish the confirmed
+Party slice with its own revision guard and refresh the authoritative complete
+session before dismissing; never replace a whole session using one aggregate's
+revision. Keep publication independent of view lifetime. Finally, show suffixes
+only for otherwise identical name/player rows. Implement after the current built
+E2E run, then repeat relevant tests, lint and final built acceptance.
+
+### Phase 5 — Corrective audit round 7
+
+The first real-app run passes all five previous desktop cases and completes the
+new roster/XP/rest/move interactions. Its final accessibility scan finds an
+unfocusable scrollable travel body when the changed party pauses the journey.
+Make the existing travel body keyboard-focusable; retain the unchanged axe rules.
+Repeat all six desktop cases after corrections 6 and 7.
+
+### Phase 5 — Transitional command audit correction 8
+
+The new batch commands reconcile the correct scenes, but the retained legacy
+single-member routes still reconcile only the focused combat. Because both UIs
+remain available until phase 6, fix those routes in this phase too: resolve source
+and target assignments, remove departed combat references, reconcile both affected
+scenes in one UnitOfWork and pause only genuinely changed journeys. Keep legacy
+single unassignment's active-but-unassigned meaning until its UI is removed.
+Add an unfocused-scene regression case and rerun targeted domain and final app
+acceptance before delivery; this is required parity, not a new feature.
+
+### Phase 5 — E2E synchronization correction 9
+
+All six cases pass in 1m56.3s, including accessibility, but the qualification
+wrapper rejects two stale-element warnings. The new move case queries its window
+immediately after changing scenes, before the keyed window replacement settles.
+Wait for the scene container's actual target identity after each selection before
+querying the new window. Preserve the zero-warning gate; do not increase warning
+budgets. Legacy command correction passes 32 domain cases. Rebuild final code and
+repeat the complete six-case suite with the synchronization fix.
+
+### Phase 5 — Test helper typing correction 10
+
+The new scene-selection helper must account for WebDriver's nullable attribute
+return. Coalesce an absent value to the existing empty sentinel so the explicit
+missing-scene error remains authoritative. Repeat typecheck; no app change.
+
+### Phase 5 — Final local validation and separate audits
+
+The final built desktop suite passes all six cases in 2m1.9s with no warning-gate
+failure: `.tmp/e2e-runs/functional-1788889601195-363731/summary.json`.
+This covers replacement, scene creation/merge, XP add/subtract/set, selected rest
+confirmation, both themes, independent windows and restart. No golden changed.
+Full lint passed; subsequent changed-file lint and final typecheck pass. The
+format check passes. Architecture/regression coverage passed 114 cases; focused
+burden/UI coverage passed 20, corrective coverage 16, legacy commands 32, and final
+source/target/travel coverage 19 cases. Build and built smoke pass. Renderer
+reachable size is 1,604,714 bytes, within unchanged hard and growth budgets.
+Version truth confirms campaign schema 35 and migration registry 14.
+
+Phase-plan audit: each package was implemented and validated in 5A -> 5B -> 5C
+order. Commands validate full selections, use aggregate-owned SQL within one
+UnitOfWork, preserve ordering/metadata and reconcile affected scenes. Publication
+cannot roll back newer Party facts; confirmed writes survive view closure. Legacy
+routes were corrected while they remain available. Unknown counters remain
+stored and visibly untrusted; productive budget data drives orientation.
+
+Original-roadmap audit: all 5A, 5B and 5C bullets and acceptance cases are covered.
+Rest confirmation resets with selection/type/revision/scope/dismissal. Manual XP
+never increases burden; encounter awards remain once-only. Empty sources survive,
+inactive members remain searchable, moves affect only selected members. No player
+resources, legacy removal or phase-6 default switch was introduced. All identified
+discrepancies are resolved. Phase 5 remains in progress pending exact-SHA remote
+qualification, canonical installation handoff and successful main attestation.

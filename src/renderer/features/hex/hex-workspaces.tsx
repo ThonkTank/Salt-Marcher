@@ -185,7 +185,7 @@ export function TravelScenario(props: {
         </div>
       </div>
 
-      <div className="travel-console-body">
+      <div className="travel-console-body" tabIndex={0}>
         {state.travel && (
           <p className="travel-route-message" role="status">
             {travelHint(state.travel.hintCode)}

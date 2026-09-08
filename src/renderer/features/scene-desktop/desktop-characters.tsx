@@ -1,3 +1,5 @@
+import { DesktopXpAction } from './desktop-xp-action.js'
+import type { ReactNode } from 'react'
 import { message, formatMessage } from '../../i18n/session-runtime.de.js'
 import { lazy, Suspense, useState } from 'react'
 import type { PartyCharacter } from '../../../shared/contracts/party.js'
@@ -31,6 +33,9 @@ function characterMatchesComparison(
 }
 
 export function DesktopCharacters(props: {
+  campaignId?: string
+  partyRevision?: number
+  actions?: ReactNode
   members: readonly PartyCharacter[]
   comparison: CharacterComparison
   change: (comparison: CharacterComparison) => void
@@ -48,6 +53,7 @@ export function DesktopCharacters(props: {
   const comparing = !!comparison.language || comparison.minimum !== null
   return (
     <div className="desktop-characters">
+      {props.actions}
       <div className="desktop-character-comparison">
         <select
           aria-label={message('character.compareLanguage')}
@@ -126,6 +132,7 @@ export function DesktopCharacters(props: {
                 <small>
                   XP {member.xp} / {member.nextLevelXp ?? '—'}
                 </small>
+                <CharacterBurden member={member} />
               </th>
               {passives.map(([key]) => (
                 <td key={key}>{member[key] ?? '—'}</td>
@@ -135,6 +142,13 @@ export function DesktopCharacters(props: {
               <td colSpan={4}>
                 <div className="desktop-character-footer">
                   <span>{member.languages.join(', ') || '—'}</span>
+                  {props.campaignId && props.partyRevision !== undefined && (
+                    <DesktopXpAction
+                      campaignId={props.campaignId}
+                      member={member}
+                      revision={props.partyRevision}
+                    />
+                  )}
                   <button onClick={() => setLedger(member)}>
                     {message('character.loot')}
                   </button>
@@ -160,5 +174,50 @@ export function DesktopCharacters(props: {
         )}
       </Suspense>
     </div>
+  )
+}
+
+function CharacterBurden({ member }: { member: PartyCharacter }) {
+  const budget = member.burden?.dailyBudget
+  return (
+    <small className="desktop-character-burden">
+      {(['short', 'long'] as const).map((kind, index) => {
+        const trusted =
+          kind === 'short'
+            ? member.burden?.shortTrusted
+            : member.burden?.longTrusted
+        const used =
+          kind === 'short' ? member.xpSinceShortRest : member.xpSinceLongRest
+        const threshold = budget
+          ? kind === 'short'
+            ? Math.ceil(budget / 3)
+            : budget
+          : null
+        const due = trusted && threshold !== null && used >= threshold
+        return (
+          <span
+            key={kind}
+            title={
+              !trusted
+                ? message('rest.unknown')
+                : due
+                  ? message(kind === 'short' ? 'rest.shortDue' : 'rest.longDue')
+                  : undefined
+            }
+            data-due={due}
+          >
+            {index > 0 ? ' · ' : ''}
+            {message(
+              kind === 'short' ? 'rest.shortLoad' : 'rest.longLoad'
+            )}{' '}
+            {used}
+            {trusted
+              ? ` / ${threshold ?? '—'}`
+              : ` (${message('rest.unknown')})`}
+            {due ? ' !' : ''}
+          </span>
+        )
+      })}
+    </small>
   )
 }

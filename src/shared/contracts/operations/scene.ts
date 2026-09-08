@@ -4,6 +4,8 @@ import {
 } from '../live-session.js'
 import {
   assignScenePartyInputSchema,
+  setSceneRosterInputSchema,
+  moveSceneRosterInputSchema,
   deleteSceneGroupInputSchema,
   evaluateSceneGroupDraftInputSchema,
   focusSceneInputSchema,
@@ -17,6 +19,16 @@ import {
 import { read, utilityOperationFragment, write } from './registry.js'
 
 export const sceneOperationDefinitions = utilityOperationFragment({
+  'scene.setRoster': write(
+    'scene:setRoster',
+    setSceneRosterInputSchema,
+    liveSessionSnapshotSchema
+  ),
+  'scene.moveRoster': write(
+    'scene:moveRoster',
+    moveSceneRosterInputSchema,
+    liveSessionSnapshotSchema
+  ),
   'scene.focus': write(
     'scene:focus',
     focusSceneInputSchema,

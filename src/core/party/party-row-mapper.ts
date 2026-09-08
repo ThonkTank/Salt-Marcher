@@ -1,5 +1,5 @@
 import type { PartyCharacter } from '../../shared/contracts/party.js'
-import { levelFloor, levelXp } from './party-roster-domain.js'
+import { levelFloor, levelXp, dailyXp } from './party-roster-domain.js'
 
 export function mapPartyCharacterRow(
   row: unknown,
@@ -55,6 +55,11 @@ export function mapPartyCharacterRow(
     currentLevelFloor: levelFloor(level),
     nextLevelXp: level === null || level === 20 ? null : levelXp[level]!,
     xpSinceShortRest: Number(value['xp_since_short_rest']),
-    xpSinceLongRest: Number(value['xp_since_long_rest'])
+    xpSinceLongRest: Number(value['xp_since_long_rest']),
+    burden: {
+      shortTrusted: Number(value['short_rest_trusted']) === 1,
+      longTrusted: Number(value['long_rest_trusted']) === 1,
+      dailyBudget: level === null ? null : dailyXp[level - 1]!
+    }
   }
 }

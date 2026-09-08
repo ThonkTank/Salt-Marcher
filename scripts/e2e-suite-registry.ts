@@ -39,7 +39,7 @@ export const e2eSuiteRegistry = [
     spec: './tests/e2e/scene-desktop.e2e.ts',
     fixture: 'v8/scene-desktop',
     types: ['functional'],
-    ci: { functional: { shard: 'campaign-workspaces', measuredSeconds: 115 } }
+    ci: { functional: { shard: 'campaign-workspaces', measuredSeconds: 125 } }
   },
   {
     name: 'workspaces',

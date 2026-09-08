@@ -58,11 +58,10 @@ export function applyXpAdjustment(
   delta: number
 ): Readonly<{ xp: number; shortXp: number; longXp: number }> {
   const xp = Math.max(levelFloor(member.level), member.xp + delta)
-  const applied = xp - member.xp
   return {
     xp,
-    shortXp: Math.max(0, member.shortXp + applied),
-    longXp: Math.max(0, member.longXp + applied)
+    shortXp: member.shortXp,
+    longXp: member.longXp
   }
 }
 

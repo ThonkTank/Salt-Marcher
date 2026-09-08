@@ -110,3 +110,17 @@ scene-specific quickinfos. The dropdown remains available during migration and i
 removed only in phase 6. Nullable profile fields, inactive creation, explicit
 permanent deletion and personal loot are shared requirements of both entrypoints.
 XP/rest and membership redesign belong to phase 5, not this transition.
+
+
+## Scene desktop phase 5
+
+The preview offers anchored batch roster replacement (current scene + inactive
+characters), moves to existing/new scenes, immediate amount/+/-/overwrite XP,
+and explicit selected-character rests. Rests require two clicks on the same type;
+selection, revision, scene or dismissal invalidates confirmation. Manual XP never
+changes encounter burden. Legacy counters remain stored but untrusted until the
+corresponding rest; new characters begin at trusted zero. The domain supplies the
+productive daily level budget; short-rest orientation uses one third of that
+budget. Missing levels and untrusted baselines do not produce exact forecasts.
+The legacy popup is retained until phase 6; its manual XP follows the corrected
+semantics and actual rests also establish trusted baselines.

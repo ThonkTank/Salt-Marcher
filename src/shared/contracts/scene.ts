@@ -268,3 +268,34 @@ export type GroupGenerationMode = z.infer<typeof groupGenerationModeSchema>
 export type EncounterSelectionEvaluation = Readonly<
   z.infer<typeof encounterSelectionEvaluationSchema>
 >
+
+const scenePartySelectionSchema = z
+  .array(z.uuid())
+  .max(1000)
+  .refine((ids) => new Set(ids).size === ids.length, {
+    message: 'Character IDs must be unique'
+  })
+export const setSceneRosterInputSchema = z
+  .object({
+    sceneId: z.uuid(),
+    memberIds: scenePartySelectionSchema,
+    expectedRevision: z.number().int().nonnegative(),
+    expectedPartyRevision: z.number().int().nonnegative()
+  })
+  .strict()
+export const moveSceneRosterInputSchema = setSceneRosterInputSchema
+  .extend({
+    memberIds: scenePartySelectionSchema.refine((ids) => ids.length > 0),
+    target: z.discriminatedUnion('kind', [
+      z.object({ kind: z.literal('existing'), sceneId: z.uuid() }).strict(),
+      z
+        .object({
+          kind: z.literal('new'),
+          title: z.string().trim().min(1).max(100)
+        })
+        .strict()
+    ])
+  })
+  .strict()
+export type SetSceneRosterInput = z.infer<typeof setSceneRosterInputSchema>
+export type MoveSceneRosterInput = z.infer<typeof moveSceneRosterInputSchema>

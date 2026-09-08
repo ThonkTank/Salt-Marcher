@@ -1,6 +1,9 @@
 import type Database from 'better-sqlite3'
 import type { SchemaMigration } from './schema-migrations.js'
-import { migratePartySchema28To29 } from '../../party/party-store.js'
+import {
+  migratePartySchema28To29,
+  migratePartyBurden34To35
+} from '../../party/party-store.js'
 import {
   initializeWorldNpcSchema,
   migrateWorldNpcSchema32To33
@@ -192,6 +195,21 @@ export const campaignSchemaMigrations: readonly SchemaMigration[] =
             'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
           )
           .run('campaign-33-to-34-import-provenance', new Date().toISOString())
+      }
+    },
+    {
+      id: 'campaign-34-to-35-party-burden',
+      role: 'campaign',
+      fromVersion: 34,
+      toVersion: 35,
+      migrate(database) {
+        initializeCampaignSchemaMetadata(database)
+        migratePartyBurden34To35(database)
+        database
+          .prepare(
+            'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run('campaign-34-to-35-party-burden', new Date().toISOString())
       }
     }
   ])
