@@ -1,3 +1,8 @@
+import { MaintenanceCoordinator } from '../../src/shared/maintenance/coordinator.js'
+import {
+  preparedMaintenance,
+  acceptMaintenance
+} from '../support/release-maintenance.js'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   mkdtempSync,
@@ -9,7 +14,7 @@ import {
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { CampaignStore } from '../../src/core/persistence/sqlite/campaign-store.js'
-import { ProfileTransaction } from '../../src/core/maintenance/profile-transaction.js'
+import { ProfileMaintenance } from '../../src/core/maintenance/profile-maintenance.js'
 import { inventory } from '../../src/shared/maintenance/files.js'
 const roots: string[] = []
 function fixture() {
@@ -30,15 +35,14 @@ afterEach(() => {
 describe('release maintenance', () => {
   it('backs up a real campaign, activates it and preserves later edits after commit', async () => {
     const { root, data } = fixture()
-    const transaction = new ProfileTransaction(root, '0.2.0')
-    await transaction.prepare()
+    const transaction = new ProfileMaintenance(root, '0.2.0')
+    const coordinator = await preparedMaintenance(transaction)
     expect(transaction.backups()).toMatchObject([
       { valid: true, version: '0.2.0' }
     ])
-    transaction.activate()
-    transaction.commit()
+    acceptMaintenance(transaction, coordinator)
     writeFileSync(join(data, 'notes.txt'), 'nach dem Update')
-    new ProfileTransaction(root, '0.2.0').rollback()
+    new MaintenanceCoordinator(root).rollback()
     expect(readFileSync(join(data, 'notes.txt'), 'utf8')).toBe(
       'nach dem Update'
     )
@@ -55,28 +59,35 @@ describe('release maintenance', () => {
   ])('recovers a crash at %s idempotently', async (phase) => {
     const { root, data } = fixture()
     const before = inventory(data)
-    const transaction = new ProfileTransaction(root, '0.2.0', (at) => {
+    const transaction = new ProfileMaintenance(root, '0.2.0')
+    const boundary = (at: string) => {
       if (at === phase) throw new Error('simulated crash')
-    })
+    }
     await expect(
       (async () => {
-        await transaction.prepare()
-        transaction.activate()
+        const coordinator = await preparedMaintenance(
+          transaction,
+          undefined,
+          boundary
+        )
+        coordinator.activate()
       })()
     ).rejects.toThrow('simulated crash')
-    const recovery = new ProfileTransaction(root, '0.2.0')
+    const recovery = new MaintenanceCoordinator(root)
     recovery.rollback()
     recovery.rollback()
     expect(inventory(data)).toEqual(before)
   })
   it('restores a backup and backs up the replaced state first', async () => {
     const { root, data } = fixture()
-    const transaction = new ProfileTransaction(root, '0.2.0')
+    const transaction = new ProfileMaintenance(root, '0.2.0')
     const id = await transaction.backup()
     writeFileSync(join(data, 'notes.txt'), 'neuere Notizen')
-    await transaction.prepare(transaction.backupSource(id!))
-    transaction.activate()
-    transaction.commit()
+    const coordinator = await preparedMaintenance(
+      transaction,
+      transaction.backupSource(id!)
+    )
+    acceptMaintenance(transaction, coordinator)
     expect(readFileSync(join(data, 'notes.txt'), 'utf8')).toBe(
       'wertvolle Notizen'
     )
@@ -95,7 +106,7 @@ describe('release maintenance', () => {
   })
   it('refuses a modified backup without replacing the current profile', async () => {
     const { root, data } = fixture()
-    const transaction = new ProfileTransaction(root, '0.2.0')
+    const transaction = new ProfileMaintenance(root, '0.2.0')
     const id = await transaction.backup()
     writeFileSync(join(root, 'backups', id!, 'data', 'notes.txt'), 'beschädigt')
     expect(() => transaction.backupSource(id!)).toThrow()
@@ -105,12 +116,14 @@ describe('release maintenance', () => {
   })
   it('can restore a good backup while preserving a corrupt current profile for recovery', async () => {
     const { root, data } = fixture()
-    const transaction = new ProfileTransaction(root, '0.2.0')
+    const transaction = new ProfileMaintenance(root, '0.2.0')
     const id = await transaction.backup()
     writeFileSync(join(data, 'installation.sqlite'), 'damaged database bytes')
-    await transaction.prepare(transaction.backupSource(id!))
-    transaction.activate()
-    transaction.commit()
+    const coordinator = await preparedMaintenance(
+      transaction,
+      transaction.backupSource(id!)
+    )
+    acceptMaintenance(transaction, coordinator)
     const raw = transaction.backups().find((backup) => !backup.valid)!
     expect(raw).toBeDefined()
     expect(
@@ -127,10 +140,9 @@ describe('release maintenance', () => {
     const source = fixture()
     const target = fixture()
     const before = inventory(source.data)
-    const transaction = new ProfileTransaction(target.root, '0.2.0')
-    await transaction.prepare(source.data)
-    transaction.activate()
-    transaction.commit()
+    const transaction = new ProfileMaintenance(target.root, '0.2.0')
+    const coordinator = await preparedMaintenance(transaction, source.data)
+    acceptMaintenance(transaction, coordinator)
     expect(inventory(source.data)).toEqual(before)
   })
 })

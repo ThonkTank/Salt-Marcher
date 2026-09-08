@@ -62,3 +62,8 @@ commits are an open Phase 5 deliverable, not existing evidence.
 Implementation, automated verification, Local handoff, live acceptance and publication
 are separate statuses. A test filename is a coverage lead until its execution and
 assertions have been audited for the associated requirement.
+
+Selected historical sources (Phase 1 audit): A=52a0cc28cdb332406a4d03e0a14cc005eb7a0ff0
+(37/34), B=6e84a12c1c83cd6437680ae70529cdc9723c353b (38/34),
+C=c583e05506e10d8446a4e210fa0603e3be53d63a (39/34). Their schema metadata and
+production migration edges were inspected; packaged execution remains unqualified.

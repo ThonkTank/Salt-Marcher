@@ -60,7 +60,7 @@ export async function startApplication(): Promise<void> {
       'application'
     )
   try {
-    const recovery = release ? await recoverRelease() : 'normal'
+    const recovery = release ? recoverRelease() : 'normal'
     if (recovery === 'relaunch') {
       relaunchRelease(
         join(releaseRoot(), 'current', 'SaltMarcher.AppImage'),
@@ -150,10 +150,10 @@ async function startApplicationWithProfileLock(
   if (verifyRelease) {
     try {
       await supervisor.waitUntilReady()
-      await completeRelease()
+      completeRelease()
     } catch (error) {
       await supervisor.closeGracefully()
-      await rollbackRelease()
+      rollbackRelease()
       relaunchRelease(
         join(releaseRoot(), 'current', 'SaltMarcher.AppImage'),
         []

@@ -1,4 +1,5 @@
 import { app } from 'electron'
+import { maintenanceWorkerRequestSchema } from '../../shared/contracts/maintenance.js'
 import { existsSync, readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 import { z } from 'zod'
@@ -10,7 +11,8 @@ export const maintenanceRequestSchema = z
     token: z.uuid(),
     parent: z.number().int().positive(),
     sourceVersion: z.string(),
-    operation: z.enum(['prepare', 'activate', 'commit', 'rollback', 'restore']),
+    operation: z.enum(['prepare', 'restore']),
+    transactionId: z.uuid(),
     source: z.string().optional(),
     id: z.string().optional()
   })
@@ -30,15 +32,19 @@ export async function runMaintenanceEntry(): Promise<void> {
   if (lock.pid !== request.parent)
     throw new Error('Die Profilsperre gehört nicht zur Wartung.')
   try {
-    await maintenanceWorker({
-      root,
-      version: request.sourceVersion,
-      operation: request.operation,
-      ...(request.source ? { source: request.source } : {}),
-      ...(request.id ? { id: request.id } : {})
-    })
+    const result = await maintenanceWorker(
+      maintenanceWorkerRequestSchema.parse({
+        root,
+        version: request.sourceVersion,
+        operation: request.operation,
+        transactionId: request.transactionId,
+        ...(request.source ? { source: request.source } : {}),
+        ...(request.id ? { id: request.id } : {})
+      })
+    )
     durableJson(join(root, `maintenance-result-${request.token}.json`), {
-      ok: true
+      ok: true,
+      result
     })
   } catch (error) {
     durableJson(join(root, `maintenance-result-${request.token}.json`), {

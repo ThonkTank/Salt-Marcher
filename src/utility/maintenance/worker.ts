@@ -1,38 +1,22 @@
-import { z } from 'zod'
-import { ProfileTransaction } from '../../core/maintenance/profile-transaction.js'
-const requestSchema = z
-  .object({
-    root: z.string(),
-    version: z.string(),
-    operation: z.enum([
-      'list',
-      'prepare',
-      'activate',
-      'commit',
-      'rollback',
-      'restore'
-    ]),
-    source: z.string().optional(),
-    id: z.string().optional()
-  })
-  .strict()
+import { ProfileMaintenance } from '../../core/maintenance/profile-maintenance.js'
+import { maintenanceWorkerRequestSchema } from '../../shared/contracts/maintenance.js'
 process.parentPort?.on('message', (event) => {
   void handle(event.data)
 })
 async function handle(raw: unknown): Promise<void> {
   try {
-    const input = requestSchema.parse(raw)
-    const transaction = new ProfileTransaction(input.root, input.version)
+    const input = maintenanceWorkerRequestSchema.parse(raw)
+    const transaction = new ProfileMaintenance(input.root, input.version)
     let result: unknown = null
     if (input.operation === 'list') result = transaction.backups()
-    if (input.operation === 'prepare') await transaction.prepare(input.source)
+    if (input.operation === 'prepare')
+      result = await transaction.prepare(input.transactionId, input.source)
     if (input.operation === 'restore')
-      await transaction.prepare(
-        transaction.backupSource(z.uuid().parse(input.id))
+      result = await transaction.prepare(
+        input.transactionId,
+        transaction.backupSource(input.id)
       )
-    if (input.operation === 'activate') transaction.activate()
-    if (input.operation === 'commit') transaction.commit()
-    if (input.operation === 'rollback') transaction.rollback()
+    if (input.operation === 'validate') transaction.validate()
     process.parentPort?.postMessage({ ok: true, result })
   } catch (error) {
     process.parentPort?.postMessage({

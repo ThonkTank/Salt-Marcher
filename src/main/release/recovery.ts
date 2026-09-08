@@ -1,72 +1,56 @@
 import { app } from 'electron'
-import { existsSync, readFileSync } from 'node:fs'
-import { join } from 'node:path'
-import { durableJson } from '../../shared/maintenance/files.js'
-import { readActivation, setCurrent } from './deployment.js'
-import { maintenanceWorker } from './maintenance-worker.js'
+import { currentProgram } from './deployment.js'
 import { releaseRoot } from './paths.js'
-export async function recoverRelease(): Promise<
-  'normal' | 'verify' | 'relaunch'
-> {
+import { adoptLegacyReleaseMaintenance } from './legacy-maintenance.js'
+import { MaintenanceCoordinator } from '../../shared/maintenance/coordinator.js'
+import { sha256 } from '../../shared/maintenance/files.js'
+import type { MaintenanceProgram } from '../../shared/contracts/maintenance.js'
+
+function matchesRuntime(program: MaintenanceProgram): boolean {
+  if (program.version !== app.getVersion()) return false
+  if (!app.isPackaged) return true
+  const executable = process.env['APPIMAGE']
+  return Boolean(executable && sha256(executable) === program.sha256)
+}
+
+export function recoverRelease(): 'normal' | 'verify' | 'relaunch' {
   const root = releaseRoot()
-  const state = readActivation(root)
-  const journal = existsSync(join(root, 'maintenance-journal.json'))
-    ? (JSON.parse(
-        readFileSync(join(root, 'maintenance-journal.json'), 'utf8')
-      ) as { phase?: string })
-    : null
-  if (!state || state.phase !== 'pending') {
-    if (journal && !['committed', 'rolled-back'].includes(journal.phase ?? ''))
-      await maintenanceWorker({
-        root,
-        version: app.getVersion(),
-        operation: 'rollback'
-      })
-    const currentManifest = join(root, 'current', 'manifest.json')
-    if (existsSync(currentManifest)) {
-      const current = JSON.parse(readFileSync(currentManifest, 'utf8')) as {
-        version: string
-      }
-      if (current.version !== app.getVersion()) return 'relaunch'
-    }
-    return 'normal'
+  adoptLegacyReleaseMaintenance(root)
+  const coordinator = new MaintenanceCoordinator(root)
+  const state = coordinator.read()
+  if (state && !['committed', 'rolled-back'].includes(state.phase)) {
+    if (
+      state.phase === 'awaiting-start' &&
+      process.argv.includes('--release-complete') &&
+      process.argv.at(-1) === state.id &&
+      matchesRuntime(state.next)
+    )
+      return 'verify'
+    coordinator.rollback()
+    if (state.previous) return 'relaunch'
   }
-  if (journal?.phase === 'committed') {
-    setCurrent(root, state.next)
-    durableJson(join(root, 'activation.json'), { ...state, phase: 'committed' })
-    const manifest = JSON.parse(
-      readFileSync(join(root, 'current', 'manifest.json'), 'utf8')
-    ) as { version: string }
-    return manifest.version === app.getVersion() ? 'normal' : 'relaunch'
-  }
+  const current = currentProgram(root)
+  return current && !matchesRuntime(current) ? 'relaunch' : 'normal'
+}
+
+/** Caller awaited target core readiness and has not exposed user actions. */
+export function completeRelease(): void {
+  const coordinator = new MaintenanceCoordinator(releaseRoot())
+  const state = coordinator.read()
+  if (!state || state.phase === 'committed') return
   if (
-    process.argv.includes('--release-complete') &&
-    process.argv.at(-1) === state.id
+    !process.argv.includes('--release-complete') ||
+    process.argv.at(-1) !== state.id ||
+    !matchesRuntime(state.next)
   )
-    return 'verify'
-  await rollbackRelease()
-  return state.previous ? 'relaunch' : 'normal'
+    throw new Error(
+      'Die Startprüfung gehört nicht zur vorgesehenen Programmversion.'
+    )
+  coordinator.commit(state.id)
 }
-export async function completeRelease(): Promise<void> {
+
+export function rollbackRelease(): void {
   const root = releaseRoot()
-  const state = readActivation(root)
-  if (!state || state.phase !== 'pending') return
-  await maintenanceWorker({
-    root,
-    version: app.getVersion(),
-    operation: 'commit'
-  })
-  durableJson(join(root, 'activation.json'), { ...state, phase: 'committed' })
-}
-export async function rollbackRelease(): Promise<void> {
-  const root = releaseRoot()
-  const state = readActivation(root)
-  await maintenanceWorker({
-    root,
-    version: app.getVersion(),
-    operation: 'rollback'
-  })
-  if (!state || state.phase !== 'pending') return
-  if (state.previous) setCurrent(root, state.previous)
-  durableJson(join(root, 'activation.json'), { ...state, phase: 'rolled-back' })
+  adoptLegacyReleaseMaintenance(root)
+  new MaintenanceCoordinator(root).rollback()
 }

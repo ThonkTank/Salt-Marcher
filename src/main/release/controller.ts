@@ -1,3 +1,5 @@
+import { MaintenanceCoordinator } from '../../shared/maintenance/coordinator.js'
+import { profilePreparationSchema } from '../../shared/contracts/maintenance.js'
 import { relaunchRelease } from './relaunch.js'
 import { tmpdir } from 'node:os'
 import { rollbackRelease } from './recovery.js'
@@ -26,10 +28,10 @@ import {
   type AvailableRelease
 } from './github-release.js'
 import {
-  beginActivation,
   installLauncher,
   stageDeployment,
-  setCurrent
+  currentProgram,
+  deploymentProgram
 } from './deployment.js'
 import { maintenanceWorker } from './maintenance-worker.js'
 import { releaseRoot } from './paths.js'
@@ -267,16 +269,9 @@ export class ReleaseController {
   private async activateCurrent(options: { source?: string; id?: string }) {
     if (!this.value.installed)
       throw new Error('Bitte SaltMarcher zuerst installieren.')
-    const manifest = releaseManifestSchema.parse(
-      JSON.parse(
-        readFileSync(join(this.root, 'current', 'manifest.json'), 'utf8')
-      )
-    )
-    const deployment = stageDeployment(
-      this.root,
-      join(this.root, 'current', 'SaltMarcher.AppImage'),
-      manifest
-    )
+    const installed = currentProgram(this.root)
+    if (!installed) throw new Error('Die installierte Programmversion fehlt.')
+    const deployment = installed.deployment
     await this.activate(deployment, options)
   }
   private async activate(
@@ -295,31 +290,46 @@ export class ReleaseController {
       'SaltMarcher.AppImage'
     )
     try {
-      await this.runTarget(target, options.id ? 'restore' : 'prepare', options)
-      const activation = beginActivation(this.root, deployment)
-      await this.runTarget(target, 'activate')
-      setCurrent(this.root, deployment)
+      const transactionId = randomUUID()
+      const prepared = await this.runTarget(target, transactionId, options)
+      const coordinator = new MaintenanceCoordinator(this.root)
+      const previous = currentProgram(this.root)
+      const activation = coordinator.begin({
+        id: prepared.id,
+        backup: prepared.backup,
+        previous,
+        next: deploymentProgram(this.root, deployment),
+        operation: options.id
+          ? 'restore'
+          : options.source
+            ? 'import'
+            : previous
+              ? 'update'
+              : 'install'
+      })
       installLauncher(this.root)
+      coordinator.activate()
       relaunchRelease(target, ['--release-complete', activation.id])
       app.quit()
     } catch (error) {
-      await rollbackRelease()
+      rollbackRelease()
       this.resumeCore()
       throw error
     }
   }
   private runTarget(
     target: string,
-    operation: 'prepare' | 'activate' | 'restore',
+    transactionId: string,
     options: { source?: string; id?: string } = {}
-  ): Promise<void> {
+  ): Promise<{ id: string; backup: string | null }> {
     const token = randomUUID()
     mkdirSync(this.root, { recursive: true })
     durableJson(join(this.root, 'maintenance-request.json'), {
       token,
       parent: process.pid,
       sourceVersion: app.getVersion(),
-      operation,
+      operation: options.id ? 'restore' : 'prepare',
+      transactionId,
       ...options
     })
     return new Promise((resolve, reject) => {
@@ -340,11 +350,17 @@ export class ReleaseController {
           const result = JSON.parse(readFileSync(path, 'utf8')) as {
             ok: boolean
             message?: string
+            result?: unknown
           }
           rmSync(path)
           if (!result.ok)
             throw new Error(result.message ?? 'Wartung fehlgeschlagen.')
-          resolve()
+          const prepared = profilePreparationSchema.parse(result.result)
+          if (prepared.id !== transactionId)
+            throw new Error(
+              'Die Arbeitskopie gehört zu einem anderen Wartungsauftrag.'
+            )
+          resolve(prepared)
         } catch (error) {
           reject(
             error instanceof Error

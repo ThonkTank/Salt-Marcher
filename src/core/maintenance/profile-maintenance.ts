@@ -46,46 +46,15 @@ const backupSchema = z
     )
   })
   .strict()
-const journalSchema = z
-  .object({
-    formatVersion: z.literal(1),
-    id: z.uuid(),
-    phase: z.enum([
-      'prepared',
-      'data-moving',
-      'data-ready',
-      'committed',
-      'rolling-back',
-      'rolled-back'
-    ]),
-    hadData: z.boolean()
-  })
-  .strict()
-export type MaintenanceJournal = z.infer<typeof journalSchema>
-export class ProfileTransaction {
+export class ProfileMaintenance {
   readonly data: string
-  readonly journalPath: string
   constructor(
     readonly root: string,
-    readonly version: string,
-    private readonly boundary: (phase: string) => void = () => {}
+    readonly version: string
   ) {
     this.data = join(root, 'profile', 'campaign-data')
-    this.journalPath = join(root, 'maintenance-journal.json')
     mkdirSync(join(root, 'profile'), { recursive: true })
     mkdirSync(join(root, 'backups'), { recursive: true })
-  }
-  private journal(): MaintenanceJournal | null {
-    return existsSync(this.journalPath)
-      ? journalSchema.parse(JSON.parse(readFileSync(this.journalPath, 'utf8')))
-      : null
-  }
-  private write(
-    journal: MaintenanceJournal,
-    phase: MaintenanceJournal['phase']
-  ) {
-    durableJson(this.journalPath, { ...journal, phase })
-    this.boundary(phase)
   }
   async backup(preserveInvalid = false): Promise<string | null> {
     if (!existsSync(this.data)) return null
@@ -163,24 +132,31 @@ export class ProfileTransaction {
       throw new Error('Sicherung fehlt oder wurde verändert.')
     return join(this.root, 'backups', id, 'data')
   }
-  async prepare(source = this.data): Promise<void> {
-    const previous = this.journal()
-    if (previous && !['committed', 'rolled-back'].includes(previous.phase))
-      throw new Error('Eine Wartung muss zuerst wiederhergestellt werden.')
-    const id = randomUUID()
+  /** Produces a validated working copy; never activates or rolls back live data. */
+  async prepare(
+    id: string,
+    source = this.data
+  ): Promise<{ id: string; backup: string | null }> {
+    z.uuid().parse(id)
     const staged = join(this.root, `staged-${id}`)
-    const bytes = existsSync(source)
-      ? inventory(source).reduce((sum, file) => sum + file.bytes, 0)
-      : 0
+    if (existsSync(staged))
+      throw new Error('Die Arbeitskopie existiert bereits.')
+    const bytes = (path: string) =>
+      existsSync(path)
+        ? inventory(path).reduce((sum, file) => sum + file.bytes, 0)
+        : 0
     const fs = statfsSync(this.root)
-    if (fs.bavail * fs.bsize < bytes * 4 + 64 * 1024 * 1024)
+    if (
+      fs.bavail * fs.bsize <
+      2 * bytes(this.data) + 2 * bytes(source) + 64 * 1024 * 1024
+    )
       throw new Error(
         'Nicht genug freier Speicherplatz für Sicherung und Migration.'
       )
-    const ownBackup = await this.backup(source !== this.data)
+    const backup = await this.backup(source !== this.data)
     if (existsSync(source)) {
-      if (source === this.data && ownBackup)
-        cpSync(this.backupSource(ownBackup), staged, {
+      if (source === this.data && backup)
+        cpSync(this.backupSource(backup), staged, {
           recursive: true,
           errorOnExist: true,
           force: false
@@ -190,67 +166,10 @@ export class ProfileTransaction {
     migrateProfile(staged)
     readbackProfile(staged)
     syncTree(staged)
-    this.write(
-      {
-        formatVersion: 1,
-        id,
-        phase: 'prepared',
-        hadData: existsSync(this.data)
-      },
-      'prepared'
-    )
+    return { id, backup }
   }
-  activate(): void {
-    const journal = this.journal()
-    if (!journal || journal.phase !== 'prepared')
-      throw new Error('Keine geprüfte Migration vorhanden.')
-    this.write(journal, 'data-moving')
-    if (journal.hadData)
-      renameSync(this.data, join(this.root, `previous-${journal.id}`))
-    syncPath(join(this.root, 'profile'))
-    syncPath(this.root)
-    this.boundary('old-data-moved')
-    renameSync(join(this.root, `staged-${journal.id}`), this.data)
-    syncPath(join(this.root, 'profile'))
-    syncPath(this.root)
-    this.boundary('new-data-moved')
-    this.write(journal, 'data-ready')
-  }
-  commit(): void {
-    const journal = this.journal()
-    if (!journal || journal.phase !== 'data-ready')
-      throw new Error('Kein aktivierter Datenstand vorhanden.')
+  validate(): void {
     validateProfile(this.data, true)
-    this.write(journal, 'committed')
-  }
-  rollback(): void {
-    const journal = this.journal()
-    if (!journal || ['committed', 'rolled-back'].includes(journal.phase)) return
-    const previous = join(this.root, `previous-${journal.id}`)
-    this.write(journal, 'rolling-back')
-    if (existsSync(previous)) {
-      if (existsSync(this.data)) {
-        const failed = join(this.root, `failed-${journal.id}`)
-        if (!existsSync(failed)) renameSync(this.data, failed)
-        else
-          throw new Error(
-            'Wiederherstellung benötigt eine Prüfung der erhaltenen Datenstände.'
-          )
-      }
-      renameSync(previous, this.data)
-    } else if (!journal.hadData && existsSync(this.data)) {
-      renameSync(this.data, join(this.root, `failed-${journal.id}`))
-    }
-    syncPath(join(this.root, 'profile'))
-    syncPath(this.root)
-    this.write(journal, 'rolled-back')
-  }
-  discardStaging(): void {
-    const journal = this.journal()
-    if (journal?.phase === 'rolled-back')
-      rmSync(join(this.root, `staged-${journal.id}`), {
-        recursive: true,
-        force: true
-      })
+    readbackProfile(this.data)
   }
 }
