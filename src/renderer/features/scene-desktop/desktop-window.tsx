@@ -23,6 +23,8 @@ export function DesktopWindow(props: {
   window: SceneDesktopWindow
   size: DesktopSize
   others: readonly DesktopBounds[]
+  title?: string
+  zIndex?: number
   raised: boolean
   disabled: boolean
   dispatch: (action: DesktopAction) => void
@@ -142,10 +144,12 @@ export function DesktopWindow(props: {
     <section
       ref={element}
       className={`desktop-window${props.raised ? ' raised' : ''}`}
-      aria-label={message('desktop.overview')}
+      data-window-id={props.window.id}
+      aria-label={props.title ?? message('desktop.overview')}
       tabIndex={-1}
-      style={
-        gestureBounds
+      style={{
+        zIndex: props.zIndex,
+        ...(gestureBounds
           ? {
               left: gestureBounds.x,
               top: gestureBounds.y,
@@ -175,8 +179,8 @@ export function DesktopWindow(props: {
                   height: props.window.bounds.height,
                   maxWidth: '100%',
                   maxHeight: '100%'
-                }
-      }
+                })
+      }}
       onFocus={() => {
         if (!props.raised)
           props.dispatch({ type: 'raise', id: props.window.id })
@@ -221,8 +225,26 @@ export function DesktopWindow(props: {
         >
           ↔
         </button>
-        <h2>{message('desktop.overview')}</h2>
-        <details className="desktop-arrange">
+        <h2>{props.title ?? message('desktop.overview')}</h2>
+        <details
+          className="desktop-arrange"
+          onClick={(event) => {
+            if ((event.target as HTMLElement).closest('button'))
+              event.currentTarget.open = false
+          }}
+          onBlur={(event) => {
+            if (
+              !event.currentTarget.contains(event.relatedTarget as Node | null)
+            )
+              event.currentTarget.open = false
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') {
+              event.currentTarget.open = false
+              event.currentTarget.querySelector('summary')?.focus()
+            }
+          }}
+        >
           <summary aria-label={message('desktop.arrange')}>⋮</summary>
           <div>
             <button

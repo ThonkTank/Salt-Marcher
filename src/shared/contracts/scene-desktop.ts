@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { referenceTargetSchema } from './reference.js'
 
 export const desktopBoundsSchema = z
   .object({
@@ -10,30 +11,129 @@ export const desktopBoundsSchema = z
   .strict()
   .readonly()
 
-export const sceneDesktopWindowSchema = z
+const windowShape = {
+  bounds: desktopBoundsSchema,
+  minimized: z.boolean(),
+  maximized: z.boolean(),
+  snap: z.enum(['left', 'right']).nullable()
+}
+const scrollSchema = z.number().int().min(0).max(10_000_000)
+export const desktopReferenceEntrySchema = z
   .object({
-    id: z.literal('overview'),
-    kind: z.literal('overview'),
-    bounds: desktopBoundsSchema,
-    minimized: z.boolean(),
-    maximized: z.boolean(),
-    snap: z.enum(['left', 'right']).nullable()
+    target: referenceTargetSchema,
+    title: z.string().min(1).max(300),
+    scrollTop: scrollSchema
   })
   .strict()
+  .readonly()
+
+const overviewSchema = z
+  .object({
+    ...windowShape,
+    id: z.literal('overview'),
+    kind: z.literal('overview')
+  })
+  .strict()
+
+export const sceneDesktopWindowSchema = z
+  .discriminatedUnion('kind', [
+    overviewSchema,
+    z
+      .object({
+        ...windowShape,
+        id: z.literal('search'),
+        kind: z.literal('search'),
+        query: z.string().max(300),
+        scrollTop: scrollSchema
+      })
+      .strict(),
+    z
+      .object({
+        ...windowShape,
+        id: z.literal('reader'),
+        kind: z.literal('reader'),
+        entries: z
+          .array(desktopReferenceEntrySchema)
+          .min(1)
+          .max(100)
+          .readonly(),
+        index: z.number().int().min(0).max(99)
+      })
+      .strict(),
+    z
+      .object({
+        ...windowShape,
+        id: z.uuid(),
+        kind: z.literal('reference'),
+        entry: desktopReferenceEntrySchema
+      })
+      .strict()
+  ])
+  .superRefine((window, context) => {
+    if (window.kind === 'reader' && window.index >= window.entries.length)
+      context.addIssue({ code: 'custom', message: 'Invalid history position' })
+  })
   .readonly()
 
 // Array order is the back-to-front order. Empty is a deliberately closed desktop.
 export const sceneDesktopStateSchema = z
   .object({
-    schemaVersion: z.literal(1),
-    windows: z.array(sceneDesktopWindowSchema).max(1).readonly()
+    schemaVersion: z.literal(2),
+    windows: z.array(sceneDesktopWindowSchema).max(32).readonly()
   })
   .strict()
+  .superRefine((state, context) => {
+    if (
+      new Set(state.windows.map((window) => window.id)).size !==
+      state.windows.length
+    )
+      context.addIssue({ code: 'custom', message: 'Duplicate window IDs' })
+  })
   .readonly()
+
+const legacyDesktopStateSchema = z
+  .object({
+    schemaVersion: z.literal(1),
+    windows: z.array(overviewSchema).max(1)
+  })
+  .strict()
+
+/** Explicit document upgrade; storage revision and preferred geometry are retained. */
+export function readStoredDesktopState(value: unknown): SceneDesktopState {
+  const legacy = legacyDesktopStateSchema.safeParse(value)
+  return sceneDesktopStateSchema.parse(
+    legacy.success ? { ...legacy.data, schemaVersion: 2 } : value
+  )
+}
 
 const scopeShape = { campaignId: z.uuid(), sceneId: z.uuid() }
 
 export const sceneDesktopScopeSchema = z.object(scopeShape).strict().readonly()
+
+function validateReferenceScope(
+  value: { campaignId: string; state: SceneDesktopState | null },
+  context: z.RefinementCtx
+): void {
+  for (const window of value.state?.windows ?? []) {
+    const entries =
+      window.kind === 'reader'
+        ? window.entries
+        : window.kind === 'reference'
+          ? [window.entry]
+          : []
+    if (
+      entries.some(
+        (entry) =>
+          entry.target.scope === 'campaign' &&
+          entry.target.campaignId !== value.campaignId
+      )
+    )
+      context.addIssue({
+        code: 'custom',
+        message: 'Reference belongs to another campaign'
+      })
+  }
+}
 
 export const sceneDesktopSnapshotSchema = z
   .object({
@@ -42,6 +142,7 @@ export const sceneDesktopSnapshotSchema = z
     state: sceneDesktopStateSchema.nullable()
   })
   .strict()
+  .superRefine(validateReferenceScope)
   .readonly()
 
 export const saveSceneDesktopInputSchema = z
@@ -51,8 +152,10 @@ export const saveSceneDesktopInputSchema = z
     state: sceneDesktopStateSchema
   })
   .strict()
+  .superRefine(validateReferenceScope)
   .readonly()
 
+export type DesktopReferenceEntry = z.infer<typeof desktopReferenceEntrySchema>
 export type DesktopBounds = z.infer<typeof desktopBoundsSchema>
 export type SceneDesktopWindow = z.infer<typeof sceneDesktopWindowSchema>
 export type SceneDesktopState = z.infer<typeof sceneDesktopStateSchema>

@@ -46,10 +46,16 @@ export function ReferenceProvider(props: {
   capability: SaltMarcherApi['references']
   campaignId: string | null
   sceneId: string | null
+  routeReference?: (
+    target: ReferenceTarget,
+    title: string | undefined,
+    separate: boolean
+  ) => void
   activateReference: () => void
   onError: (message: string) => void
 }) {
-  const { capability, onError, sceneId, activateReference } = props
+  const { capability, onError, sceneId, activateReference, routeReference } =
+    props
   const enabled = props.enabled ?? true
   const [staticIndex, setStaticIndex] = useState<ReferenceIndex | null>(null)
   const [campaignIndices, setCampaignIndices] = useState<
@@ -202,6 +208,10 @@ export function ReferenceProvider(props: {
 
   const openReference = useCallback(
     (target: ReferenceTarget, breadcrumb: string) => {
+      if (routeReference) {
+        routeReference(target, breadcrumb, false)
+        return
+      }
       if (!navigationKey) return
       const token = ++navigationRequest.current
       activateReference()
@@ -230,7 +240,14 @@ export function ReferenceProvider(props: {
           }
         })
     },
-    [activateReference, loadDetail, navigationKey, onError, storeNavigation]
+    [
+      activateReference,
+      loadDetail,
+      navigationKey,
+      onError,
+      storeNavigation,
+      routeReference
+    ]
   )
 
   const moveNavigation = useCallback(
@@ -370,6 +387,21 @@ export function ReferenceProvider(props: {
       target: ReferenceTarget,
       anchor: Readonly<{ right: number; top: number }> | null
     ) => {
+      if (routeReference) {
+        routeReference(
+          target,
+          compiled
+            ?.flatMap((index) => index.terms)
+            .flatMap((term) => term.candidates)
+            .find(
+              (candidate) =>
+                referenceTargetKey(candidate.target) ===
+                referenceTargetKey(target)
+            )?.title,
+          true
+        )
+        return
+      }
       updateCurrentPins((current) => {
         const existing = current.find(
           (pin) => referenceTargetKey(pin.target) === referenceTargetKey(target)
@@ -391,7 +423,7 @@ export function ReferenceProvider(props: {
         ]
       })
     },
-    [updateCurrentPins]
+    [updateCurrentPins, routeReference, compiled]
   )
 
   useEffect(() => {
@@ -402,9 +434,10 @@ export function ReferenceProvider(props: {
     return () => window.clearTimeout(timer)
   }, [enabled, staticIndex])
 
-  const pins = campaignId
-    ? (pinsByCampaign[campaignId] ?? emptyPins)
-    : emptyPins
+  const pins =
+    !routeReference && campaignId
+      ? (pinsByCampaign[campaignId] ?? emptyPins)
+      : emptyPins
   const visibleOverlays = useMemo(
     () =>
       overlays.filter((card) => card.scopeKey === (navigationKey ?? 'none')),
@@ -466,6 +499,7 @@ export function ReferenceProvider(props: {
   const value = useMemo(
     () => ({
       compiled,
+      desktopRouting: !!routeReference,
       campaignId,
       loadDetail,
       openReference,
@@ -485,6 +519,7 @@ export function ReferenceProvider(props: {
       cacheRevision
     }),
     [
+      routeReference,
       cacheRevision,
       campaignId,
       cancelOverlayClose,

@@ -25,6 +25,38 @@ const scope = {
 }
 
 describe('installation-owned scene desktops', () => {
+  it('reads and upgrades persisted version 1 geometry without writing or changing its revision', () => {
+    const db = new Database(':memory:')
+    try {
+      initializeSceneDesktopSchema(db)
+      const old = { ...initialDesktopState(), schemaVersion: 1 }
+      db.prepare('INSERT INTO scene_desktop VALUES (?, ?, ?, ?)').run(
+        scope.campaignId,
+        scope.sceneId,
+        7,
+        JSON.stringify(old)
+      )
+      const store = new SceneDesktopStore(fixedSqliteDatabaseAccess(db))
+      expect(store.read(scope)).toEqual({
+        ...scope,
+        revision: 7,
+        state: initialDesktopState()
+      })
+      expect(db.prepare('SELECT state_json FROM scene_desktop').get()).toEqual({
+        state_json: JSON.stringify(old)
+      })
+      expect(
+        store.save({
+          ...scope,
+          expectedRevision: 7,
+          state: initialDesktopState()
+        }).revision
+      ).toBe(8)
+    } finally {
+      db.close()
+    }
+  })
+
   it('materializes the acceptance fixture with independent populated scenes', () => {
     const root = mkdtempSync(join(tmpdir(), 'desktop-fixture-'))
     try {
@@ -104,14 +136,14 @@ describe('installation-owned scene desktops', () => {
       store.save({
         ...otherScene,
         expectedRevision: 0,
-        state: { schemaVersion: 1, windows: [] }
+        state: { schemaVersion: 2, windows: [] }
       })
       expect(store.read(otherCampaign).state).toBeNull()
       expect(() =>
         store.save({
           ...scope,
           expectedRevision: 0,
-          state: { schemaVersion: 1, windows: [] }
+          state: { schemaVersion: 2, windows: [] }
         })
       ).toThrow()
       expect(store.read(scope)).toEqual(first)
@@ -122,13 +154,13 @@ describe('installation-owned scene desktops', () => {
       expect(reopened.read(otherScene)).toEqual({
         ...otherScene,
         revision: 1,
-        state: { schemaVersion: 1, windows: [] }
+        state: { schemaVersion: 2, windows: [] }
       })
       expect(
         reopened.save({
           ...scope,
           expectedRevision: 1,
-          state: { schemaVersion: 1, windows: [] }
+          state: { schemaVersion: 2, windows: [] }
         }).revision
       ).toBe(2)
     } finally {

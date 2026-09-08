@@ -30,6 +30,7 @@ export class DesktopProjection {
   private desired: SceneDesktopState | null = null
   private loadRequest: Promise<void> | null = null
   private saving = false
+  private writeTimer: ReturnType<typeof setTimeout> | null = null
 
   constructor(
     private readonly api: SaltMarcherApi['sceneDesktop'],
@@ -80,19 +81,29 @@ export class DesktopProjection {
       return
     this.desired = reduceDesktop(this.snapshotValue.state, action)
     this.publish({ state: this.desired })
-    void this.persist()
+    if (this.writeTimer) clearTimeout(this.writeTimer)
+    this.writeTimer = null
+    if (action.type === 'query' || action.type === 'scroll') {
+      this.publish({ saving: true })
+      this.writeTimer = setTimeout(() => {
+        this.writeTimer = null
+        void this.persist()
+      }, 200)
+    } else void this.persist()
   }
 
   // Explicit recovery discards only unsaved presentation intent, never domain state.
   reload = (): void => {
     if (this.saving) return
+    if (this.writeTimer) clearTimeout(this.writeTimer)
+    this.writeTimer = null
     this.desired = null
     this.authoritative = null
     void this.load()
   }
 
   private async persist(): Promise<void> {
-    if (this.saving) return
+    if (this.saving || this.snapshotValue.error) return
     this.saving = true
     this.publish({ saving: true })
     try {
@@ -114,6 +125,8 @@ export class DesktopProjection {
         }
       }
     } catch (error) {
+      if (this.writeTimer) clearTimeout(this.writeTimer)
+      this.writeTimer = null
       this.publish({ error })
     } finally {
       this.saving = false

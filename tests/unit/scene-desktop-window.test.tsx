@@ -42,6 +42,18 @@ function pointer(target: Element, type: string, x: number, y: number) {
 }
 
 describe('desktop window interaction', () => {
+  it('closes arrangement choices after a selection or Escape', () => {
+    const view = fixture()
+    const menu = view.container.querySelector('details')!
+    menu.open = true
+    fireEvent.click(view.getByText('Linke Hälfte'))
+    expect(menu.open).toBe(false)
+    menu.open = true
+    fireEvent.keyDown(menu, { key: 'Escape' })
+    expect(menu.open).toBe(false)
+    expect(document.activeElement).toBe(menu.querySelector('summary'))
+  })
+
   it('offers keyboard movement, resizing and arrangement alongside window controls', () => {
     const view = fixture()
     fireEvent.keyDown(

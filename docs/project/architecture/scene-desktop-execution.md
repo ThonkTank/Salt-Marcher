@@ -9,8 +9,8 @@ includes remote checks, exact-SHA app handoff and green promotion to main.
 
 | Phase | Status | Evidence |
 | --- | --- | --- |
-| 1 — Window desktop and persistence | In progress | Plan below; implementation and verification outstanding |
-| 2 — Reference windows | Not started | Depends on completed phase 1 |
+| 1 — Window desktop and persistence | Complete | e254a04a2; candidate, exact-SHA handoff and main evidence below |
+| 2 — Reference windows | In progress | Context refresh and concrete plan below |
 | 3 — Travel and combat | Not started | Depends on completed phases 1–2 |
 | 4 — Character catalog | Not started | Depends on completed phases 1–3 |
 | 5 — Membership, XP, rest | Not started | Depends on completed phase 4 |
@@ -311,3 +311,290 @@ this final candidate. The unrelated original checkout remains untouched.
 - Candidate submission starts the mandatory remote checks. Pending validation
   evidence remains in local test artifacts until candidate delivery completes;
   no phase or handoff is declared complete at submission.
+
+## Phase 1 — Completed delivery and closing audit
+
+- Delivered SHA: `e254a04a2bc62b3605b3ca080be772eae72aecd6`.
+- [PR 664](https://github.com/ThonkTank/Salt-Marcher/pull/664).
+- [Complete candidate Check, attempt 1](https://github.com/ThonkTank/Salt-Marcher/actions/runs/34229830009): all 15 required jobs including exact-SHA aggregate passed. This includes both native platforms, full unit/integration suites, all functional E2E and all visual shards.
+- Refreshed-base desktop acceptance passed again locally. An additional legacy
+  geometry test timed out waiting for rAF on the occluded local display; that
+  unchanged test passed in the exact-SHA CI campaign-workspaces shard. The local
+  combined run is preserved as failed, not relabeled green.
+- Canonical `pnpm handoff:app` completed successfully without resume/bypass.
+  State ID `d11231f7-9777-4142-92a2-c645b3f7be3c`; original attempt
+  `4624f7eb-73b2-480a-ad24-7d97a2707dc0`.
+- Downloaded and installed artifact SHA-256:
+  `bb151a48fe1673f7440360fb4d63e47f85aca17283ccf3d2e545138f146d02d1`.
+  Installed runtime verification passed with two quick checks and four domain
+  readbacks. A SQLite-consistent campaign backup was created before activation:
+  `2026-09-08T13-19-32-601Z-7cb0e0499ea0-9ede40ed`.
+- `pnpm delivery:promote` fast-forwarded the same SHA to main.
+- [Green main attestation](https://github.com/ThonkTank/Salt-Marcher/actions/runs/34231353324)
+  verified with `readSuccessfulPostPromotionEvidence`; origin/main matches the
+  delivered SHA. Phase 1 plan and canonical roadmap audits now pass including
+  delivery. No outstanding phase 1 product correction remains.
+
+## Phase 2 — Context refresh
+
+Started from the completed phase 1 main SHA on
+`codex/scene-desktop-phase-2`. Re-read the original phase 2 roadmap and inspect
+existing reference target contracts, index/detail caches, navigation, link and
+hover rendering, and tests before recording the implementation plan. No phase 2
+implementation edits precede that plan.
+
+## Phase 2 — Concrete implementation plan
+
+Outcome: a compact search window, a shared reader with back/forward history,
+and independently retained reference windows within each scene desktop.
+
+1. Extend the strict desktop contract to document version 2: overview, search,
+   shared reader and separate reference windows, unique IDs, bounded history
+   and scroll positions. Explicitly upcast stored version 1 documents on read;
+   the SQLite table shape and revision ownership remain unchanged. Validate
+   campaign reference scope. Existing geometry and deliberately empty desktops
+   survive. Test old documents, invalid documents and revision conflicts.
+2. Extend the pure desktop reducer for search, shared navigation, deduplicated
+   separate references and per-entry scroll. Reuse the existing projection's
+   serialized writes; debounce text/scroll writes in its scope-owned lifetime.
+3. Expose searchable candidate aliases from already compiled reference indices.
+   Reuse ReferenceProvider detail caches and invalidation. Add optional desktop
+   routing for reference opening and pins, preserving legacy routing otherwise.
+   Capture the originating scene for asynchronous routing. Desktop pins become
+   separate readers, including actions from existing hover previews.
+4. Generalize window titles and stacking. Keep DOM window order stable while
+   changing z-order, so raising does not disturb pointer capture or inputs.
+   Search stays compact; shared reader offers back/forward and separate opening.
+   Existing full reference rendering, attribution and links remain intact.
+   Guard delayed detail responses and restore scroll only after content loads.
+5. Verify reducers, projection writes, document upgrade, reference routing and
+   stale-load behavior. Extend desktop E2E with item/location readers, separate
+   opening/deduplication, history, scene switches and restart. Check both themes,
+   narrow viewport and existing reference workflows. Update requirements and
+   measured bundle baseline where needed; do not change unrelated domain logic.
+6. Audit against this plan and original phase 2, record corrective rounds before
+   fixes, then deliver a clean candidate through complete remote Check,
+   canonical exact-SHA handoff, same-SHA promotion and green main.
+
+Acceptance: item and location descriptions remain independently readable next
+ to one another; maximize/restore works; history, targets and scroll survive
+scene switch/restart; delayed loads cannot replace a newer selection. No new
+reference backend, map/combat work or character workflows enter this phase.
+
+## Phase 2 — Validation round 1 and correction plan
+
+Initial renderer typecheck found incomplete union narrowing for the two window
+launcher actions and an explicitly undefined optional routing prop. Split the
+launcher variants and omit the prop when routing is inactive. Update current
+version test inputs to document version 2 while retaining explicit version 1
+upgrade coverage. Before acceptance, verify scope rejection and scroll restoration
+including history revisits and deferred rendering; these remain unverified.
+
+## Phase 2 — Focused checks and correction plan 2
+
+All 28 tests in six focused suites passed; full typecheck passed. ESLint found
+five hook/export warnings. The reader review also found that revisiting the
+same target at another history index needs an independent scroll restoration
+identity. Extract keyed reader content, use stable loader dependencies, and
+move the shared title formatter out of the component module. Verify this with
+DOM-level delayed-load and history-scroll tests. Search scroll follows persisted
+query resets. Resolve pin titles from the existing index and present desktop
+pin actions as separate opening. No change to legacy pin behavior.
+
+## Phase 2 — Checkpoint before app acceptance
+
+Build, full typecheck and 96 focused/architecture tests passed. Additional
+projection debounce coverage passed (6 projection tests). A test-only ESLint
+error flags nested asymmetric matchers as unsafe any; replace that assertion
+with direct typed scope and search-window checks. App E2E remains in progress.
+The fixture now contains actual WorldLocation records and a long description
+so reference restoration is tested against productive reference resolution.
+
+## Phase 2 — App acceptance correction round 3
+
+The existing complete desktop E2E passed. New reader E2E failed at initial
+window resizing: WebDriver Browser.getWindowForTarget is unavailable for the
+Electron target. Use the repository's setElectronWindowSize helper, which
+verifies both main-process and renderer geometry, then rerun reader acceptance.
+No reader acceptance is claimed from this failed run. Artifact run:
+`.tmp/e2e-runs/functional-1788874927203-222968/summary.json`.
+
+## Phase 2 — Formatting correction
+
+The repository-wide format check found one new DOM test not yet formatted.
+Apply the repository formatter to that file and repeat the format gate. Full
+lint and typecheck are running separately; no product adjustment is involved.
+
+## Phase 2 — Projection conflict audit and correction round 4
+
+Code audit found that a delayed text/scroll timer could start persistence again
+after an earlier in-flight save reported a conflicting remote state. Guard
+persist against an existing projection error and cancel pending timers on
+failure. Keep explicit reload as the only recovery. Add a delayed conflict test
+proving that pending edits cannot overwrite the newly observed remote revision.
+
+## Phase 2 — Reader acceptance harness correction round 5
+
+The legacy desktop flow passed again. Reader setup then hit an invalid mixed
+CSS/text WebDriver selector. Replace all mixed selectors with scoped element
+lookups, and make reader acceptance independently runnable by reopening the
+application before its setup. Run that focused case first, then the complete
+suite after it passes. Preserve failed run evidence; no assertions are removed.
+
+## Phase 2 — Search result audit and correction round 6
+
+Full unit suite passed (211 files, 896 tests), integrations passed (32 files,
+246 tests), and the added delayed-conflict test passed. Bundle measurement
+keeps all budgets with 1,567,898 reachable renderer bytes and no dependencies.
+Search review found that identically named item/action/NPC results need their
+existing reference-kind label to remain distinguishable. Extract and reuse the
+current label formatter, show one compact kind label per result, and give the
+acceptance test an explicit item result selector. Preserve the full shared
+index and existing reference labels rather than creating a second taxonomy.
+
+## Phase 2 — Resize acceptance correction round 7
+
+Focused reader setup resized the native window to 1440×1000 (failure screenshot
+confirms those dimensions), but the helper timed out waiting for the legacy
+layout to acknowledge geometry. This is the previously documented occluded
+legacy layout behavior. Enable the desktop before resizing, so the unchanged
+geometry helper checks the surface under acceptance. Keep the requested size
+and geometry verification; do not weaken or relabel the failed run.
+
+## Phase 2 — Visual acceptance correction round 8
+
+Reader E2E now opens the item and location, snaps them side by side, and
+navigates history. Scroll assertion failed because the 30-entry fixture fits
+inside the 1000px window (screenshot confirms no scroll range). Expand the
+fixture to 100 entries and assert that scrollable range exists before scrolling.
+
+Screenshot review also found arrangement menus staying open after selection
+and a previously requested taskbar focus arriving late via requestAnimationFrame,
+raising search after opening the reader. Close arrangement menus on selection,
+blur and Escape. Replace deferred taskbar/launcher focus with a commit-time
+layout effect scoped to the scene, so a delayed frame cannot steal later focus.
+Minimize search before checking the side-by-side reading arrangement. Preserve
+all content/history/scroll assertions and rerun focused then full acceptance.
+
+## Phase 2 — Reference invalidation audit and correction round 9
+
+A loaded campaign document can be renamed through the existing catalog while
+its reader remains saved. The reader currently reuses refreshed content but
+keeps its old window title. Update only the matching active reference entry's
+title from the loaded document, with target/index guards like scroll updates.
+This also replaces generic pin fallback titles once resolution succeeds.
+Verify late responses still cannot rename another selection and rerun reader
+unit coverage. Geometry and reading position must remain untouched.
+
+## Phase 2 — Title reducer correction
+
+Typecheck caught the title update branch nested inside the query/scroll branch,
+where its discriminant is impossible. Move that branch to reducer top level
+before query/history/scroll handling. Add title-update assertions for matching
+and stale targets, then repeat types and reference/window unit coverage.
+
+## Phase 2 — Reader acceptance final selector correction round 10
+
+The focused app run passed side-by-side documents, history scroll restoration,
+both-theme accessibility, scene switching and actual restart restoration. Its
+last deduplication action could not locate exact taskbar text "Nachschlagen"
+because minimized buttons intentionally prefix the title. Match the title
+within that button text and reacquire the search element after process restart.
+Rerun the complete suite with the final title/focus code; this run remains failed
+until the final deduplication assertion is also green.
+
+## Phase 2 — Bundle boundary correction round 11
+
+The final bundle gate found the reference-ui source entry had become an
+anonymous shared chunk after the desktop imported it synchronously. Preserve
+the existing lazy reference rendering boundary rather than relaxing the gate.
+Use LazyReferenceDocument again and add an explicit content-ready callback so
+scroll restoration occurs after the lazy body commits, never on its loading
+placeholder. Repeat delayed-load/scroll tests, build, measured budget and app
+acceptance. The failed measurement did not overwrite the recorded baseline.
+
+## Phase 2 — Full acceptance warning correction round 12
+
+Both complete app cases passed, including final separate-reader deduplication.
+The canonical wrapper still rejects the run for two stale-element warnings.
+A reader handle retained across scene unmount/remount is used in the return
+assertion. Reacquire the reader's document from the current DOM instead of that
+old parent handle. Keep warning enforcement unchanged and rerun the entire
+suite with the restored lazy boundary. Lazy document/legacy reference tests
+passed (8 tests). Previous app run is not recorded as green because its wrapper
+failed: `.tmp/e2e-runs/functional-1788875719222-236995/summary.json`.
+
+## Phase 2 — Lazy boundary validation
+
+The restored source entry passes measured bundle gates: reachable renderer
+1,569,535 bytes, shell 420,394, common workspace 518,918 and reference graph
+39,763. Full typecheck passes. ESLint requests destructuring the content-ready
+callback before the hook; apply that dependency-only cleanup and rerun lint.
+No callback timing or content behavior changes in this cleanup.
+
+## Phase 2 — Window bar stability audit and correction round 13
+
+The window bodies keep stable DOM order, but the window bar still maps the
+back-to-front array directly, causing buttons to move whenever a window is
+raised. Render taskbar entries in stable identity order as well. Add acceptance
+coverage comparing bar order before and after raising an existing separate
+reader. This preserves geometry and saved stacking while preventing another
+orientation shift during ordinary window switching.
+
+## Phase 2 — Separate implementation-plan audit
+
+- Version 2 documents include search, shared history, fixed separate targets
+  and guarded per-entry scroll. Version 1 upgrade retains revision and geometry;
+  strict scope validation rejects foreign campaign targets.
+- Shared compiled aliases and ReferenceProvider caches resolve search results,
+  full documents, inline links and hover previews. Desktop routing captures
+  the originating scene before asynchronous projection loading; legacy routing
+  remains available outside the preview.
+- Separate targets deduplicate and restore their saved window; shared reader
+  back/forward preserves per-entry scroll and trims abandoned forward history.
+  Late loads and stale title/scroll events cannot replace another selection.
+- Window bodies and bar retain stable identity order; stored array controls
+  stacking only. Focus commits with the requested scene, and arrangement menus
+  close after use. Saved scroll applies only after lazy content commits.
+- Serialized writes coalesce frequent edits in the scope-owned projection and
+  stop after conflicts. Closing a view cannot cancel its pending scoped write.
+- Tests cover upgrade/revision ownership, conflict recovery, delayed rendering,
+  navigation, target deduplication, title changes and existing reference routes.
+  Source attribution and full document bodies remain available.
+
+No unresolved implementation-plan discrepancy remains. Final taskbar-order
+app assertion and delivery evidence are still pending; phase status stays open.
+
+## Phase 2 — Separate canonical-roadmap audit
+
+Phase 2's item/location side-by-side workflow, maximize/restore, independent
+scene state, restart, history and scroll were exercised in the green full app
+run `.tmp/e2e-runs/functional-1788875901838-240356/summary.json`. Both themes and
+small desktop geometry pass. A final run includes stable taskbar order added
+by the closing audit. Search and document windows use existing domain truth;
+no map, combat, character or XP/rest phase has been pulled forward. Preview is
+still opt-in and the original roadmap remains unchanged.
+
+Validation to date: full unit suite 896 passed; full integration suite 246
+passed; final affected suites 30 passed (plus 8 lazy-render/reference tests);
+architecture required set 91 passed; full typecheck and lint passed before the
+final dependency-only hook cleanup, whose targeted lint also passes. Reference,
+version truth and generated artifacts pass. Final measured reachable renderer
+is 1,569,581 bytes (shell unchanged at 420,394), with all budgets passing.
+Canonical candidate checks, exact-SHA handoff and green main are required before
+this phase can close.
+
+## Phase 2 — Final local acceptance and candidate submission
+
+The final complete sceneDesktop suite passes without warning regressions:
+`.tmp/e2e-runs/functional-1788876070885-242855/summary.json` (two cases,
+about 92 seconds including runner). This includes stable taskbar order while
+raising a deduplicated reader, all restart/history/scroll assertions, both
+ themes and minimum geometry. Built application smoke test exits 0. Full format,
+typecheck, measured bundle gate and the final affected lint checks pass.
+Implementation-plan and canonical phase 2 product audits pass with no remaining
+functional discrepancy. Origin/main is still the completed phase 1 SHA.
+
+Submit this isolated candidate for the complete required remote jobs, canonical
+handoff and same-SHA main promotion. Delivery is not yet complete, and phase 2
+remains in progress until that evidence is verified.

@@ -1,3 +1,4 @@
+import { referenceTargetLabel as targetLabel } from './reference-target-label.js'
 /* eslint-disable react-hooks/refs -- Floating UI exposes callback refs and prop getters that are intentionally used during render. */
 import {
   FloatingPortal,
@@ -10,6 +11,7 @@ import {
 import {
   Fragment,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent
@@ -194,10 +196,17 @@ function ReferencePreview(props: {
           <button
             type="button"
             onClick={() => props.pin(props.candidate)}
-            aria-label={formatMessage('reference.pin', {
-              name: props.candidate.title
-            })}
-            title={message('reference.pinTitle')}
+            aria-label={formatMessage(
+              reference.desktopRouting ? 'reference.separate' : 'reference.pin',
+              {
+                name: props.candidate.title
+              }
+            )}
+            title={message(
+              reference.desktopRouting
+                ? 'reference.separateTitle'
+                : 'reference.pinTitle'
+            )}
           >
             ◈
           </button>
@@ -235,9 +244,13 @@ function ReferencePreview(props: {
 
 export function ReferenceDocumentView(props: {
   document: ReferenceDocument
+  onReady?: () => void
+  hideTitle?: boolean
   compact?: boolean
   path?: readonly ReferenceTarget[]
 }) {
+  const { onReady } = props
+  useLayoutEffect(() => onReady?.(), [onReady, props.document])
   const path = [...(props.path ?? []), props.document.target]
   if (props.document.documentKind === 'creature')
     return (
@@ -250,7 +263,7 @@ export function ReferenceDocumentView(props: {
     )
   return (
     <article className={`reference-document${props.compact ? ' compact' : ''}`}>
-      {!props.compact && (
+      {!props.compact && !props.hideTitle && (
         <header>
           <p>{targetLabel(props.document.target)}</p>
           <h2>{props.document.title}</h2>
@@ -570,24 +583,4 @@ function useReferenceDocument(
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, reference.loadDetail, reference.cacheRevision])
   return state
-}
-
-function targetLabel(target: ReferenceTarget): string {
-  const labels = {
-    rule: message('reference.kind.rule'),
-    condition: message('reference.kind.condition'),
-    spell: message('reference.kind.spell'),
-    item: message('reference.kind.item'),
-    ability: message('reference.kind.ability'),
-    action: message('reference.kind.action'),
-    creature: message('reference.kind.creature'),
-    location: message('reference.kind.location'),
-    faction: message('reference.kind.faction'),
-    npc: message('reference.kind.npc')
-  }
-  if (target.scope === 'srd') return labels[target.definitionKind]
-  if (target.scope === 'creature') return labels.creature
-  if (target.scope === 'creature-part')
-    return target.partKind === 'trait' ? labels.ability : labels.action
-  return labels[target.entityKind]
 }

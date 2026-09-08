@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { WorkspaceSurfaceProps } from '../workspace/workspace-surface-props.js'
 import { formatMessage, message } from '../../i18n/session-runtime.de.js'
 import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
@@ -11,6 +11,8 @@ import {
   type DesktopSize,
   type SnapSide
 } from './desktop-geometry.js'
+import { DesktopReader, DesktopSearch } from './desktop-references.js'
+import { desktopWindowTitle } from './desktop-window-title.js'
 import './scene-desktop.css'
 
 export function SceneDesktop(props: WorkspaceSurfaceProps) {
@@ -23,6 +25,17 @@ export function SceneDesktop(props: WorkspaceSurfaceProps) {
   const { projection, snapshot } = useSceneDesktop(props.campaignId, focused.id)
   const stage = useRef<HTMLDivElement>(null)
   const launcher = useRef<HTMLButtonElement>(null)
+  const requestedFocus = useRef<{ sceneId: string; windowId: string } | null>(
+    null
+  )
+  useLayoutEffect(() => {
+    const request = requestedFocus.current
+    requestedFocus.current = null
+    if (request?.sceneId === focused.id)
+      stage.current
+        ?.querySelector<HTMLElement>(`[data-window-id="${request.windowId}"]`)
+        ?.focus()
+  }, [snapshot.state, focused.id])
   const [size, setSize] = useState<DesktopSize>({ width: 800, height: 600 })
   const [preview, setPreview] = useState<{
     sceneId: string
@@ -76,15 +89,23 @@ export function SceneDesktop(props: WorkspaceSurfaceProps) {
           ref={launcher}
           disabled={!snapshot.state || !!snapshot.error}
           onClick={() => {
+            requestedFocus.current = {
+              sceneId: focused.id,
+              windowId: 'overview'
+            }
             projection.dispatch({ type: 'open-overview' })
-            requestAnimationFrame(() =>
-              stage.current
-                ?.querySelector<HTMLElement>('.desktop-window')
-                ?.focus()
-            )
           }}
         >
           {message('desktop.overview')}
+        </button>
+        <button
+          disabled={!snapshot.state || !!snapshot.error}
+          onClick={() => {
+            requestedFocus.current = { sceneId: focused.id, windowId: 'search' }
+            projection.dispatch({ type: 'open-search' })
+          }}
+        >
+          {message('desktop.search')}
         </button>
         <small role="status">
           {snapshot.loading
@@ -103,70 +124,90 @@ export function SceneDesktop(props: WorkspaceSurfaceProps) {
         </div>
       )}
       <div ref={stage} className="desktop-stage">
-        {visible.map((window) => (
-          <DesktopWindow
-            key={`${focused.id}:${window.id}`}
-            window={window}
-            size={size}
-            raised={window.id === raised}
-            disabled={!!snapshot.error}
-            others={visible
-              .filter((other) => other.id !== window.id)
-              .map((other) => desktopWindowBounds(other, size))}
-            preview={(side) => setPreview({ sceneId: focused.id, side })}
-            dispatch={(action) => {
-              projection.dispatch(action)
-              if (action.type === 'close' || action.type === 'minimize')
-                launcher.current?.focus()
-            }}
-          >
-            <div className="desktop-scene-facts">
-              <span>{focused.locationName || '—'}</span>
-              <span>
-                {formatMessage('desktop.time', {
-                  day: Math.floor(focused.gameTimeSeconds / 86400) + 1,
-                  hours: String(
-                    Math.floor(focused.gameTimeSeconds / 3600) % 24
-                  ).padStart(2, '0'),
-                  minutes: String(
-                    Math.floor(focused.gameTimeSeconds / 60) % 60
-                  ).padStart(2, '0')
-                })}
-              </span>
-            </div>
-            <h3>{message('desktop.characters')}</h3>
-            <ul className="desktop-register">
-              {members.map((member) => (
-                <li key={member.id}>
-                  <span>{member.name}</span>
-                  <small>
-                    {member.playerName ?? '—'} · {message('ui.lv')}{' '}
-                    {member.level ?? '—'}
-                  </small>
-                </li>
-              ))}
-            </ul>
-            {members.length === 0 && (
-              <p className="desktop-empty">{message('desktop.noCharacters')}</p>
-            )}
-            <h3>{message('desktop.groups')}</h3>
-            <ul className="desktop-register">
-              {focused.groups
-                .filter((group) => !group.archived)
-                .map((group) => (
-                  <li key={group.id}>
-                    <span>{group.name}</span>
-                    <small>
-                      {group.entries.reduce(
-                        (count, entry) => count + entry.aliveQuantity,
-                        0
-                      )}
-                    </small>
-                  </li>
-                ))}
-            </ul>
-          </DesktopWindow>
-        ))}
+        {[...visible]
+          .sort((a, b) => a.id.localeCompare(b.id))
+          .map((window) => (
+            <DesktopWindow
+              key={`${focused.id}:${window.id}`}
+              window={window}
+              title={desktopWindowTitle(window)}
+              zIndex={windows.indexOf(window) + 1}
+              size={size}
+              raised={window.id === raised}
+              disabled={!!snapshot.error}
+              others={visible
+                .filter((other) => other.id !== window.id)
+                .map((other) => desktopWindowBounds(other, size))}
+              preview={(side) => setPreview({ sceneId: focused.id, side })}
+              dispatch={(action) => {
+                projection.dispatch(action)
+                if (action.type === 'close' || action.type === 'minimize')
+                  launcher.current?.focus()
+              }}
+            >
+              {window.kind === 'search' ? (
+                <DesktopSearch
+                  window={window}
+                  dispatch={projection.dispatch.bind(projection)}
+                />
+              ) : window.kind !== 'overview' ? (
+                <DesktopReader
+                  window={window}
+                  dispatch={projection.dispatch.bind(projection)}
+                />
+              ) : (
+                <>
+                  <div className="desktop-scene-facts">
+                    <span>{focused.locationName || '—'}</span>
+                    <span>
+                      {formatMessage('desktop.time', {
+                        day: Math.floor(focused.gameTimeSeconds / 86400) + 1,
+                        hours: String(
+                          Math.floor(focused.gameTimeSeconds / 3600) % 24
+                        ).padStart(2, '0'),
+                        minutes: String(
+                          Math.floor(focused.gameTimeSeconds / 60) % 60
+                        ).padStart(2, '0')
+                      })}
+                    </span>
+                  </div>
+                  <h3>{message('desktop.characters')}</h3>
+                  <ul className="desktop-register">
+                    {members.map((member) => (
+                      <li key={member.id}>
+                        <span>{member.name}</span>
+                        <small>
+                          {member.playerName ?? '—'} · {message('ui.lv')}{' '}
+                          {member.level ?? '—'}
+                        </small>
+                      </li>
+                    ))}
+                  </ul>
+                  {members.length === 0 && (
+                    <p className="desktop-empty">
+                      {message('desktop.noCharacters')}
+                    </p>
+                  )}
+                  <h3>{message('desktop.groups')}</h3>
+                  <ul className="desktop-register">
+                    {focused.groups
+                      .filter((group) => !group.archived)
+                      .map((group) => (
+                        <li key={group.id}>
+                          <span>{group.name}</span>
+                          <small>
+                            {group.entries.reduce(
+                              (count, entry) => count + entry.aliveQuantity,
+                              0
+                            )}
+                          </small>
+                        </li>
+                      ))}
+                  </ul>
+                </>
+              )}
+            </DesktopWindow>
+          ))}
         {preview?.sceneId === focused.id && preview.side && (
           <div
             className={`desktop-snap-preview ${preview.side}`}
@@ -175,23 +216,24 @@ export function SceneDesktop(props: WorkspaceSurfaceProps) {
         )}
       </div>
       <nav className="desktop-taskbar" aria-label={message('desktop.windows')}>
-        {windows.map((window) => (
-          <button
-            key={window.id}
-            aria-pressed={!window.minimized && window.id === raised}
-            onClick={() => {
-              projection.dispatch({ type: 'raise', id: window.id })
-              requestAnimationFrame(() =>
-                stage.current
-                  ?.querySelector<HTMLElement>('.desktop-window')
-                  ?.focus()
-              )
-            }}
-          >
-            {window.minimized ? '▁ ' : ''}
-            {message('desktop.overview')}
-          </button>
-        ))}
+        {[...windows]
+          .sort((a, b) => a.id.localeCompare(b.id))
+          .map((window) => (
+            <button
+              key={window.id}
+              aria-pressed={!window.minimized && window.id === raised}
+              onClick={() => {
+                requestedFocus.current = {
+                  sceneId: focused.id,
+                  windowId: window.id
+                }
+                projection.dispatch({ type: 'raise', id: window.id })
+              }}
+            >
+              {window.minimized ? '▁ ' : ''}
+              {desktopWindowTitle(window)}
+            </button>
+          ))}
         {windows.length === 0 && !snapshot.loading && (
           <small>{message('desktop.empty')}</small>
         )}

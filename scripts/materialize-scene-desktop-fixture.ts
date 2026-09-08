@@ -1,3 +1,4 @@
+import { WorldLocationService } from '../src/core/worldplanner/location-store.js'
 import { SceneStore } from '../src/core/scene/scene-store.js'
 import { randomUUID } from 'node:crypto'
 import { CampaignStore } from '../src/core/persistence/sqlite/campaign-store.js'
@@ -9,6 +10,37 @@ export function materializeSceneDesktopFixture(dataRoot: string): void {
   try {
     campaigns.create('Desktop Acceptance')
     const persistence = campaigns.activeCampaignPersistence()
+    const locations = new WorldLocationService(persistence)
+    const harbor = locations
+      .create(
+        {
+          displayName: 'Salzmarschhafen',
+          tags: ['Ort'],
+          notes:
+            'Am Hafen werden Longsword und andere Waren gehandelt.\n\n' +
+            Array.from(
+              { length: 100 },
+              (_, index) =>
+                `Kai ${index + 1}: Speicher, Anlegestellen und schmale Gassen liegen zwischen den Lagerhäusern.`
+            ).join('\n\n')
+        },
+        locations.read().revision
+      )
+      .snapshot.locations.find(
+        (location) => location.displayName === 'Salzmarschhafen'
+      )!
+    const forest = locations
+      .create(
+        {
+          displayName: 'Düsterwald',
+          tags: ['Ort'],
+          notes: 'Ein alter Pfad führt durch den Wald.'
+        },
+        locations.read().revision
+      )
+      .snapshot.locations.find(
+        (location) => location.displayName === 'Düsterwald'
+      )!
     const play = new LivePlayService(persistence)
     const firstId = play.readSession().scene.focusedSceneId
     const secondId = randomUUID()
@@ -19,6 +51,14 @@ export function materializeSceneDesktopFixture(dataRoot: string): void {
       db.prepare(
         'INSERT INTO scene_running_scene (id, title, location_name, game_time_seconds, position) VALUES (?, ?, ?, ?, 1)'
       ).run(secondId, 'Wald', 'Düsterwald', 90000)
+    })
+    persistence.use((db) => {
+      db.prepare(
+        'UPDATE scene_running_scene SET location_id = ? WHERE id = ?'
+      ).run(harbor.id, firstId)
+      db.prepare(
+        'UPDATE scene_running_scene SET location_id = ? WHERE id = ?'
+      ).run(forest.id, secondId)
     })
     for (const [index, sceneId] of [firstId, secondId].entries()) {
       let party = play.readParty()

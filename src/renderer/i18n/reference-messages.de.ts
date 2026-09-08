@@ -4,6 +4,8 @@ export const referenceMessagesDe = {
   'reference.possibleCount': '{count} mögliche Referenzen',
   'reference.back': 'Zur Auswahl',
   'reference.pin': '{name} anheften',
+  'reference.separate': '{name} separat öffnen',
+  'reference.separateTitle': 'Separat öffnen',
   'reference.pinTitle': 'Anheften',
   'reference.detail': 'Detail',
   'reference.loading': 'Referenz wird geladen …',

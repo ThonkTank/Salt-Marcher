@@ -1,16 +1,16 @@
 {
   "recordedAt": "2026-09-08",
-  "reason": "Opt-in per-scene window desktop and strict persistence contracts after campaign style cleanup.",
-  "dependencyRationale": "No dependencies added; uses existing React, Zod, SQLite and native pointer events.",
-  "chunkRationale": "Window shell and CSS load only with preview; preserves upstream removal of unused campaign styles. Shared desktop schemas remain in capability validation.",
+  "reason": "Phase 2 adds scene-scoped reference search and independent persisted readers with stable window switching and guarded presentation writes.",
+  "dependencyRationale": "No dependency changes.",
+  "chunkRationale": "Desktop and reference bodies retain lazy boundaries; final measured graph after title, focus, scroll and taskbar corrections.",
   "graphs": {
     "shell": 420394,
-    "workspace": 517090,
-    "session": 169410,
+    "workspace": 518918,
+    "session": 169505,
     "catalog": 185870,
     "hex": 176699,
-    "reference": 39491,
+    "reference": 39766,
     "pixi": 408635,
-    "reachable": 1559470
+    "reachable": 1569581
   }
 }

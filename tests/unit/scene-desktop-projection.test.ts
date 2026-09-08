@@ -14,7 +14,7 @@ const scope = {
   campaignId: '00000000-0000-4000-8000-000000000001',
   sceneId: '00000000-0000-4000-8000-000000000002'
 }
-const empty = { schemaVersion: 1 as const, windows: [] }
+const empty = { schemaVersion: 2 as const, windows: [] }
 const stored = (
   revision = 0,
   state: SceneDesktopSnapshot['state'] = null,
@@ -37,6 +37,65 @@ function mockApi() {
 }
 
 describe('scene desktop projection', () => {
+  it('does not resume a delayed write after an earlier save reports a conflict', async () => {
+    vi.useFakeTimers()
+    try {
+      const api = mockApi()
+      let rejectSave!: (error: Error) => void
+      api.save.mockReturnValue(
+        new Promise((_, reject) => {
+          rejectSave = reject
+        })
+      )
+      const model = new DesktopProjection(api, scope)
+      await model.load()
+      model.dispatch({ type: 'open-search' })
+      model.dispatch({ type: 'query', value: 'unsaved' })
+      api.read.mockResolvedValue(stored(5, empty))
+      rejectSave(new Error('conflict'))
+      await vi.advanceTimersByTimeAsync(500)
+      expect(model.snapshot().error).toBeInstanceOf(Error)
+      expect(api.save).toHaveBeenCalledTimes(1)
+      model.reload()
+      await vi.runAllTimersAsync()
+      expect(model.snapshot().state).toEqual(empty)
+      expect(api.save).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('debounces search edits in the original scope after its last subscriber leaves', async () => {
+    vi.useFakeTimers()
+    try {
+      const api = mockApi()
+      api.save.mockImplementation((input) =>
+        Promise.resolve(stored(input.expectedRevision + 1, input.state, input))
+      )
+      const model = new DesktopProjection(api, scope)
+      await model.load()
+      model.dispatch({ type: 'open-search' })
+      await vi.runAllTimersAsync()
+      api.save.mockClear()
+      const unsubscribe = model.subscribe(() => {})
+      model.dispatch({ type: 'query', value: 'Long' })
+      model.dispatch({ type: 'query', value: 'Longsword' })
+      unsubscribe()
+      expect(api.save).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(200)
+      expect(api.save).toHaveBeenCalledTimes(1)
+      const saved = api.save.mock.calls[0]![0]
+      expect(saved.campaignId).toBe(scope.campaignId)
+      expect(saved.sceneId).toBe(scope.sceneId)
+      expect(
+        saved.state.windows.find((window) => window.kind === 'search')?.query
+      ).toBe('Longsword')
+      expect(model.snapshot().saving).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('deduplicates loading, distinguishes missing from closed, and never writes defaults', async () => {
     const api = mockApi()
     const request = deferred<SceneDesktopSnapshot>()

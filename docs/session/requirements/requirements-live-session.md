@@ -199,3 +199,22 @@ viewport fits windows without destroying preferred geometry. Failed loads must
 not overwrite stored arrangements. The classic Session workflow remains
 available by disabling the preview. Further feature windows follow the approved
 [desktop roadmap](../../project/architecture/scene-desktop-roadmap.md).
+
+
+## Scene desktop references (phase 2)
+
+The preview offers a compact search window using the shared static and active
+campaign reference indices. Selecting a result opens the shared reader, whose
+back/forward history retains each entry's scroll position. Separate opening
+retains an independent reader; requesting the same separate target raises and
+restores its existing window. Inline links and reference previews use the same
+routing and detail caches. Legacy references retain their existing behavior
+outside the preview desktop.
+
+Window targets, search query, history and scroll are scene-scoped presentation
+state and survive restart. A delayed response cannot replace another selected
+reference. Missing targets expose an inline retry without deleting other
+windows. Desktop document version 2 explicitly upgrades existing version 1
+states while preserving geometry, deliberately closed windows and storage
+revision. Reference targets from another campaign are rejected at the contract
+boundary. Content bodies and source attribution remain complete.

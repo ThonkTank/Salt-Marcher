@@ -7,6 +7,7 @@ import {
   useState,
   type SetStateAction
 } from 'react'
+import type { ReferenceTarget } from '../../../shared/contracts/reference.js'
 import type { Creature } from '../../../shared/contracts/encounter.js'
 import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type { CoreProcessStatus } from '../../../shared/contracts/runtime.js'
@@ -114,6 +115,37 @@ export function WorkspaceApp() {
   }, [acceptCoreStatus, api.runtime])
 
   const focusedSceneId = coordinator.session?.scene.focusedSceneId ?? ''
+  const routeDesktopReference = useCallback(
+    (target: ReferenceTarget, title: string | undefined, separate: boolean) => {
+      const campaignId = coordinator.campaigns.activeCampaignId
+      const sceneId = focusedSceneId
+      if (!campaignId || !sceneId) return
+      void import('../scene-desktop/desktop-projection.js')
+        .then(async ({ desktopProjection }) => {
+          const projection = desktopProjection(api.sceneDesktop, {
+            campaignId,
+            sceneId
+          })
+          await projection.load()
+          projection.dispatch({
+            type: 'open-reference',
+            entry: {
+              target,
+              title: title?.slice(0, 300) || message('desktop.reference'),
+              scrollTop: 0
+            },
+            ...(separate ? { separateId: crypto.randomUUID() } : {})
+          })
+        })
+        .catch(() => featureError(message('desktop.referenceOpenFailed')))
+    },
+    [
+      api.sceneDesktop,
+      coordinator.campaigns.activeCampaignId,
+      focusedSceneId,
+      featureError
+    ]
+  )
   const setCoordinatorSession = coordinator.setSession
   const setSnapshot = useCallback(
     (update: SetStateAction<LiveSessionSnapshot>) =>
@@ -160,6 +192,9 @@ export function WorkspaceApp() {
 
   return (
     <ReferenceProvider
+      {...(sceneDesktopPreview && coordinator.workspace === 'session'
+        ? { routeReference: routeDesktopReference }
+        : {})}
       enabled={coordinator.screen === 'workspace'}
       capability={api.references}
       campaignId={coordinator.campaigns.activeCampaignId}

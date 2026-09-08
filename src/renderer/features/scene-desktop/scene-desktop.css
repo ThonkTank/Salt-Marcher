@@ -245,3 +245,48 @@
   background: var(--surface-error);
   color: var(--text-error);
 }
+
+.desktop-window-content:has(> .desktop-reference-pane) {
+  overflow: hidden;
+}
+.desktop-reference-pane {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: var(--space-4);
+}
+.desktop-reference-pane > input {
+  width: 100%;
+  min-width: 0;
+}
+.desktop-reference-scroll {
+  overflow: auto;
+  flex: 1;
+  min-height: 0;
+}
+.desktop-search-result,
+.desktop-reader-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+.desktop-search-result > button:first-child {
+  flex: 1;
+  text-align: left;
+}
+.desktop-reader-actions > button:last-child {
+  margin-left: auto;
+}
+.desktop-snap-preview {
+  z-index: 40;
+}
+
+.desktop-search-result > button:first-child {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.desktop-search-result small {
+  color: var(--text-muted);
+}

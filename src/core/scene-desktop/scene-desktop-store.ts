@@ -3,6 +3,7 @@ import type { SqliteDatabaseAccess } from '../persistence/sqlite/database-access
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import {
   saveSceneDesktopInputSchema,
+  readStoredDesktopState,
   sceneDesktopScopeSchema,
   sceneDesktopSnapshotSchema,
   type SaveSceneDesktopInput,
@@ -64,7 +65,9 @@ export class SceneDesktopStore {
       campaignId: scope.campaignId,
       sceneId: scope.sceneId,
       revision: row?.revision ?? 0,
-      state: row ? (JSON.parse(row.stateJson) as unknown) : null
+      state: row
+        ? readStoredDesktopState(JSON.parse(row.stateJson) as unknown)
+        : null
     })
   }
 }
