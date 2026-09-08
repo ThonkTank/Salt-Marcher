@@ -17,6 +17,55 @@ import type {
 } from '../../src/shared/contracts/live-session.js'
 
 describe('group manager commands', () => {
+  it('does not acknowledge a currently failed save', async () => {
+    const saveGroup = vi.fn().mockRejectedValue(new Error('write failed'))
+    const saved = vi.fn()
+    const dispatch = vi.fn<(action: GroupManagerAction) => void>()
+    const input = commandInput(saveGroup, saved, dispatch)
+    const controller = renderHook(() =>
+      useGroupManagerCommands(input, new AsyncCommandCoordinator())
+    )
+    await act(async () => {
+      expect(await controller.result.current.save()).toBeNull()
+    })
+    expect(saved).not.toHaveBeenCalled()
+    expect(dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ kind: 'group-message', key: 'group-a' })
+    )
+  })
+  it('does not acknowledge a draft whose creatures are unavailable', async () => {
+    const saveGroup = vi.fn()
+    const saved = vi.fn()
+    const dispatch = vi.fn<(action: GroupManagerAction) => void>()
+    const input = commandInput(saveGroup, saved, dispatch)
+    const controller = renderHook(() =>
+      useGroupManagerCommands(
+        {
+          ...input,
+          entries: [{ creatureId: 'missing', quantity: 1, deadQuantity: 0 }]
+        },
+        new AsyncCommandCoordinator()
+      )
+    )
+    await act(async () => {
+      expect(await controller.result.current.save()).toBeNull()
+    })
+    expect(saveGroup).not.toHaveBeenCalled()
+    expect(saved).not.toHaveBeenCalled()
+  })
+  it('does not acknowledge saving without an active group', async () => {
+    const saveGroup = vi.fn()
+    const input = commandInput(saveGroup, vi.fn(), vi.fn())
+    const controller = renderHook(() =>
+      useGroupManagerCommands(
+        { ...input, state: { ...input.state, activeKey: null } },
+        new AsyncCommandCoordinator()
+      )
+    )
+    expect(await controller.result.current.save()).toBeNull()
+    expect(saveGroup).not.toHaveBeenCalled()
+  })
+
   it('publishes only the latest save and suppresses an obsolete failure', async () => {
     const older = deferred<SceneGroupCommandResult>()
     const newer = deferred<SceneGroupCommandResult>()
@@ -36,10 +85,10 @@ describe('group manager commands', () => {
     const second = controller.result.current.save()
     await act(async () => {
       newer.resolve(groupResult(3))
-      await second
+      expect(await second).toMatchObject({ revision: 3 })
     })
     older.reject(new Error('obsolete failure'))
-    await first
+    expect(await first).toBeNull()
 
     expect(saved).toHaveBeenCalledOnce()
     expect(saved.mock.calls[0]?.[0]).toMatchObject({ revision: 3 })

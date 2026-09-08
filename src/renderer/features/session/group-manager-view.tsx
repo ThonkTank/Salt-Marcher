@@ -25,7 +25,7 @@ export function GroupManagerView(props: {
   controller: GroupManagerController
 }) {
   const controller = props.controller
-  useMaintenanceDraftGuard(controller.dirty)
+  useMaintenanceDraftGuard(controller.anyDirty)
   const { state, group, loot } = controller
   const totalInDraft = Object.fromEntries(
     Array.from(

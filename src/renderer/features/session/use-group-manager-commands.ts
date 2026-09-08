@@ -1,3 +1,4 @@
+import type { LiveSessionSnapshot } from '../../../shared/contracts/live-session.js'
 import type { EncounterTuningOverride } from '../../../shared/contracts/encounter-tuning.js'
 import { capabilityErrorText } from '../../capabilities/capability-errors.js'
 import { formatMessage, message } from '../../i18n/session-runtime.de.js'
@@ -29,7 +30,7 @@ export function useGroupManagerCommands(
     key?: string | null
   ) => Promise<boolean>
   commitLoot: ReturnType<typeof useGroupManagerLootCommands>['commitLoot']
-  save: () => Promise<void>
+  save: () => Promise<LiveSessionSnapshot | null>
   archive: () => Promise<void>
   joinCombat: () => Promise<void>
   busy: boolean
@@ -110,9 +111,9 @@ export function useGroupManagerCommands(
     } else if (outcome.status === 'failure') failCommand(key, outcome.cause)
   }
 
-  async function save(): Promise<void> {
+  async function save(): Promise<LiveSessionSnapshot | null> {
     const key = state.activeKey
-    if (!key || !validateAvailableMonster()) return
+    if (!key || !validateAvailableMonster()) return null
     const outcome = await runCommand(key, () =>
       ports.scene.saveGroup(
         focused.id,
@@ -125,7 +126,10 @@ export function useGroupManagerCommands(
         selectedPersistedGroup?.revision ?? null
       )
     )
-    if (outcome) saved(applySceneGroupCommandResult(snapshot, outcome))
+    if (!outcome) return null
+    const next = applySceneGroupCommandResult(snapshot, outcome)
+    saved(next)
+    return next
   }
 
   async function archive(): Promise<void> {

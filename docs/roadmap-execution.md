@@ -2115,3 +2115,52 @@ und Session Planner. Zusätzlicher Gesamtaudit muss schreibende Wege ohne bisher
 Guard sowie Karteninteraktionen erfassen und das Warten bei weiteren Preset-Befehlen
 wie Zuweisen/Löschen prüfen. Offline-/Update-Gesamtabnahme und Phasen5–7 einschließlich
 aller Handoff-/Veröffentlichungsgates bleiben erforderlich.
+
+### Phase 4 — Gruppenverwaltung: Inventar und erste Vertragskorrektur
+
+Vorheriger Zielturn: Fortschritt, Generator-Preset/Belohnungsregel als 21713b47a
+committed/gepusht. Worktree sauber. GroupManagerState hält mehrere persistierende
+Draft-Sessions, einschließlich Beuteentwürfen. Der View-Guard verwendet bisher nur
+controller.dirty (aktive Session), obwohl controller.anyDirty bereits existiert.
+Sofort auf alle Sessions umstellen, damit abgewählte Entwürfe Wartung weiterhin
+verhindern. Dies ist weiterhin ein Übergangs-Guard, kein vollständiger Save-Owner.
+
+Save liefert bisher Promise<void> sowohl bei fehlender Auswahl/Validierungsfehler
+als auch bei erfolgreicher Mutation oder veraltetem Ergebnis. Rückgabe auf den
+bestätigten LiveSessionSnapshot oder null umstellen; bestehende normale Publication
+bleibt erhalten. Tests müssen bestätigten Snapshot, verdrängten Save, aktuellen
+Fehler und abgewiesene Validierung unterscheiden. Das ist Voraussetzung für den
+anschließenden Owner, der sämtliche Dirty-Sessions in Reihenfolge mit aktualisierten
+Revisionsständen speichern und Beute über ihren tatsächlichen Commit-Pfad erhalten
+muss. Ein Save nur der aktiven Gruppe erfüllt die Roadmap ausdrücklich nicht.
+
+### Phase 4 — Gruppen-Mehrfachsave: konkretisierter nächster Schritt
+
+11 Gruppen-Command-/State-Tests, vollständiger Typecheck und gezieltes Lint bestanden.
+Read-only-Nachverfolgung bestätigt: use-session-workspace-controller.groupSaved
+publiziert den Snapshot und schließt sofort den gesamten Dialog. Der Wartungs-Owner
+muss deshalb die bestehenden Gruppen-/Beute-Commands mit zurückgestellter Publication
+verwenden, alle Dirty-Sessions bearbeiten und den jeweils bestätigten Snapshot samt
+Revisionsständen synchron fortschreiben. Erst danach darf die normale Publication/
+Schließung erfolgen. Teilerfolge brauchen sofort aktualisierte lokale Baselines,
+damit Retry nicht bereits gespeicherte Gruppen/Beute erneut schreibt. Generierung,
+Beute-Commit und sämtliche laufenden Befehle müssen vorher vollständig auslaufen;
+reines Prüfen von busy einer aktiven Session ist kein Nachweis dafür.
+
+### Phase 4 — Gruppen-Vertragskorrektur: Teilaudit
+
+Planabgleich dieses Schritts: Übergangs-Guard erfasst jetzt alle Draft-Sessions.
+Save bestätigt nur einen tatsächlich veröffentlichten Snapshot; fehlende Auswahl,
+Validierungsfehler, aktueller Fehler und verdrängtes Ergebnis liefern null.
+Vier Command-Tests plus sieben State-Tests bestanden. Vollständiger Typecheck,
+gezieltes Lint, Build/Built-Smoke und git diff --check bestanden. Smoke zeigt
+ready/closed. Kein kanonischer Handoff.
+
+Roadmapabgleich: Dies sind Grundlagen für den Gruppen-Owner; vollständiges Speichern/
+Verwerfen sämtlicher Gruppen und Beute sowie deren Eingabesperren fehlen weiterhin.
+Weitere Inventarstelle: createGroupLootDraftHistory setzt die frisch generierte Beute
+sofort als baseline, loot-committed markiert bislang keinen separaten übernommenen
+Zustand. Vor Wartungsabschluss prüfen, wie auch unveränderte generierte Vorschauen
+und erfolgreich übernommene Beute unterschieden werden, damit weder offene Ergebnisse
+verschwinden noch bestätigte Commits wiederholt werden. Der geplante Mehrfachsave
+muss diese Semantik ausdrücklich testen. Phase4 und die folgenden Phasen bleiben offen.
