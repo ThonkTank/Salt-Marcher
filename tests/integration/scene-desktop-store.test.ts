@@ -29,7 +29,7 @@ describe('installation-owned scene desktops', () => {
     const db = new Database(':memory:')
     try {
       initializeSceneDesktopSchema(db)
-      const old = { ...initialDesktopState(), schemaVersion: 1 }
+      const old = { windows: initialDesktopState().windows, schemaVersion: 1 }
       db.prepare('INSERT INTO scene_desktop VALUES (?, ?, ?, ?)').run(
         scope.campaignId,
         scope.sceneId,
@@ -136,14 +136,14 @@ describe('installation-owned scene desktops', () => {
       store.save({
         ...otherScene,
         expectedRevision: 0,
-        state: { schemaVersion: 2, windows: [] }
+        state: { ...initialDesktopState(), windows: [] }
       })
       expect(store.read(otherCampaign).state).toBeNull()
       expect(() =>
         store.save({
           ...scope,
           expectedRevision: 0,
-          state: { schemaVersion: 2, windows: [] }
+          state: { ...initialDesktopState(), windows: [] }
         })
       ).toThrow()
       expect(store.read(scope)).toEqual(first)
@@ -154,13 +154,13 @@ describe('installation-owned scene desktops', () => {
       expect(reopened.read(otherScene)).toEqual({
         ...otherScene,
         revision: 1,
-        state: { schemaVersion: 2, windows: [] }
+        state: { ...initialDesktopState(), windows: [] }
       })
       expect(
         reopened.save({
           ...scope,
           expectedRevision: 1,
-          state: { schemaVersion: 2, windows: [] }
+          state: { ...initialDesktopState(), windows: [] }
         }).revision
       ).toBe(2)
     } finally {

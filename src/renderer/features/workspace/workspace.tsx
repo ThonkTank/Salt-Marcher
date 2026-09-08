@@ -245,6 +245,23 @@ export function WorkspaceApp() {
                 .then(coordinator.setSession)
           }}
           startTravel={() => {
+            if (sceneDesktopPreview && activeCampaignId && focusedSceneId) {
+              const scope = {
+                campaignId: activeCampaignId,
+                sceneId: focusedSceneId
+              }
+              void import('../scene-desktop/desktop-projection.js')
+                .then(async ({ desktopProjection }) => {
+                  const projection = desktopProjection(api.sceneDesktop, scope)
+                  await projection.load()
+                  projection.dispatch({ type: 'open-map' })
+                  projection.dispatch({ type: 'map-controls', value: true })
+                })
+                .catch(() =>
+                  featureError(message('desktop.referenceOpenFailed'))
+                )
+              return
+            }
             if (focusedSceneId)
               setScenarios((current) => ({
                 ...current,

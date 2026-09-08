@@ -1,3 +1,6 @@
+import { HexMapStore } from '../src/core/hex/hex-map-store.js'
+import { HexTravelService } from '../src/core/hex/hex-travel.js'
+import { WorldLocationStore } from '../src/core/worldplanner/location-store.js'
 import { WorldLocationService } from '../src/core/worldplanner/location-store.js'
 import { SceneStore } from '../src/core/scene/scene-store.js'
 import { randomUUID } from 'node:crypto'
@@ -75,7 +78,7 @@ export function materializeSceneDesktopFixture(dataRoot: string): void {
           passiveInsight: null,
           passiveInvestigation: null,
           armorClass: null,
-          movementSpeedFeet: null
+          movementSpeedFeet: 30
         },
         party.revision
       )
@@ -91,13 +94,46 @@ export function materializeSceneDesktopFixture(dataRoot: string): void {
           null,
           index === 0 ? 'Hafenwache' : 'Wanderer',
           '',
-          'neutral',
-          [],
+          'hostile',
+          [{ creatureId: 'wolf', quantity: 2 }],
           scenes.revision(),
           null
         )
       })
     }
+    const mapId = persistence.use((db) => {
+      const maps = new HexMapStore(db, new WorldLocationStore(db))
+      const map = maps.create({
+        displayName: 'Küstenweg',
+        expectedCatalogRevision: maps.catalog().revision
+      })
+      maps.applyBrushTargets({
+        mapId: map.id,
+        mode: 'paint',
+        biomeId: 'grassland',
+        coordinates: Array.from({ length: 12 }, (_, q) => ({ q, r: 0 })),
+        expectedContentRevision: map.contentRevision
+      })
+      return map.id
+    })
+    const travel = new HexTravelService(persistence)
+    for (const [index, sceneId] of [firstId, secondId].entries()) {
+      travel.position({
+        sceneId,
+        mapId,
+        coordinate: { q: index * 2, r: 0 },
+        expectedSceneRevision: play.readSession().scene.revision
+      })
+    }
+    // Keep the named locations used by reference and overview acceptance cases.
+    persistence.use((db) => {
+      db.prepare(
+        'UPDATE scene_running_scene SET location_id = ?, location_name = ? WHERE id = ?'
+      ).run(harbor.id, harbor.displayName, firstId)
+      db.prepare(
+        'UPDATE scene_running_scene SET location_id = ?, location_name = ? WHERE id = ?'
+      ).run(forest.id, forest.displayName, secondId)
+    })
   } finally {
     campaigns.close()
   }

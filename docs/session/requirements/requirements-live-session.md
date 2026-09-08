@@ -218,3 +218,41 @@ windows. Desktop document version 2 explicitly upgrades existing version 1
 states while preserving geometry, deliberately closed windows and storage
 revision. Reference targets from another campaign are rejected at the contract
 boundary. Content bodies and source attribution remain complete.
+
+
+## Scene desktop play windows (phase 3)
+
+The preview offers map/travel, combat and loot windows beside references.
+The overview exposes compact scene location/time, present characters, personal
+loot and active/archived group actions. Existing group and loot editors,
+distribution, inbox recovery and the top-bar Party/rest/time actions remain
+reachable. The travel launcher explicitly opens the map with its controls;
+otherwise travel controls expand on demand inside the map window.
+
+Window mounting, focus, minimization and closure never start, pause, abort or
+finish a journey or encounter. Utility retains the travel scheduler; session
+controllers sit outside individual windows. Combat turn changes do not replace
+a reader; inspecting a creature explicitly still opens its reference.
+
+Desktop document version 3 retains selected map/hex and bounded per-map camera
+positions independently of window closure. It upgrades versions 1 and 2 without
+resetting their readers or geometry. Missing selected maps fall back to an
+available map and clear obsolete hex selection. Fully occluded maps suspend
+rendering and redraw current state when visible; partial coverage continues to
+draw. Encounter preparation selection remains per scene after window closure.
+
+Only actual Combat execution excludes travelling in the same scene. Encounter
+selection and Initiative preparation remain possible during travel. Confirming
+Initiative or returning to Combat requires travel to be paused/stopped. Starting
+or resuming travel requires Combat to have ended; Resolution may coexist with
+travel. These guards run transactionally in domain owners, including undo paths
+that could re-enter Combat, and reject without partial changes. Other scenes
+remain independent. Paused journeys retain their last committed position and
+paused status across restart. Transient dialogs are discarded on scene changes.
+
+A legacy campaign that already contains actual Combat plus travelling is paused
+by the Utility travel tick before any further movement. A Pause definitely
+rejected because a travel boundary advanced its revision may refresh and retry
+once within the same current scene; an already paused readback satisfies the
+intent. Completed/aborted journeys, changed scopes and unknown outcomes are never
+replayed by this recovery path.

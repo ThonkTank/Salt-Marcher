@@ -7,8 +7,15 @@ import type {
 } from '../../../shared/contracts/loot.js'
 import type { SessionDialogState } from './session-workspace-model.js'
 
-export function useSessionDialogController() {
-  const [dialog, setDialog] = useState<SessionDialogState>({ kind: 'none' })
+export function useSessionDialogController(scope = '') {
+  const [stored, setStored] = useState<{
+    scope: string
+    dialog: SessionDialogState
+  }>({ scope, dialog: { kind: 'none' } })
+  if (stored.scope !== scope) setStored({ scope, dialog: { kind: 'none' } })
+  const dialog: SessionDialogState =
+    stored.scope === scope ? stored.dialog : { kind: 'none' }
+  const setDialog = (dialog: SessionDialogState) => setStored({ scope, dialog })
 
   return {
     dialog,

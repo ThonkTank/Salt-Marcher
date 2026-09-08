@@ -13,6 +13,7 @@ const browserAnimationFrames: AnimationFramePort = {
 export class RafRenderScheduler {
   #frame: number | null = null
   #disposed = false
+  #active = true
   readonly #reasons = new Set<RenderInvalidationReason>()
 
   constructor(
@@ -25,7 +26,7 @@ export class RafRenderScheduler {
   invalidate(reason: RenderInvalidationReason): void {
     if (this.#disposed) return
     this.#reasons.add(reason)
-    if (this.#frame !== null) return
+    if (!this.#active || this.#frame !== null) return
     this.#frame = this.frames.request(() => {
       this.#frame = null
       if (this.#disposed) return
@@ -33,6 +34,15 @@ export class RafRenderScheduler {
       this.#reasons.clear()
       this.render(reasons)
     })
+  }
+
+  setActive(active: boolean): void {
+    if (this.#disposed || active === this.#active) return
+    this.#active = active
+    if (!active) {
+      if (this.#frame !== null) this.frames.cancel(this.#frame)
+      this.#frame = null
+    } else if (this.#reasons.size) this.invalidate([...this.#reasons][0]!)
   }
 
   dispose(): void {

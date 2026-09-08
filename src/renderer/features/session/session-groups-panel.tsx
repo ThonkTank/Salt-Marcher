@@ -22,12 +22,6 @@ export function SessionGroupsPanel(props: {
   model: SessionGroupsViewModel
   actions: SessionWorkspaceActions
 }) {
-  const unplaced = props.model.inboxLoot.filter(
-    (row) => row.placement === 'unplaced'
-  )
-  const unresolved = props.model.inboxLoot.filter(
-    (row) => row.placement === 'unresolved'
-  )
   return (
     <section className="session-groups" aria-label={message('ui.gruppen')}>
       <div className="groups-heading">
@@ -46,50 +40,7 @@ export function SessionGroupsPanel(props: {
           ) : null
         )}
       </CompactRegister>
-      {props.model.scene.locationId && (
-        <LootSection
-          kicker={message('loot.locationKicker')}
-          title={props.model.scene.locationName}
-          rows={props.model.locationLoot}
-          empty={message('loot.locationEmpty')}
-          add={() =>
-            props.actions.createLoot({
-              kind: 'location',
-              locationId: props.model.scene.locationId!,
-              lastKnownLabel: props.model.scene.locationName
-            })
-          }
-          actions={props.actions}
-        />
-      )}
-      {!props.model.inboxOpen && (
-        <button type="button" onClick={props.actions.openLootInbox}>
-          {message('loot.inboxOpen')}
-        </button>
-      )}
-      {unplaced.length > 0 && (
-        <LootSection
-          className="unplaced-loot-section"
-          kicker={message('loot.unplaced')}
-          title={message('loot.unplacedTitle')}
-          rows={unplaced}
-          actions={props.actions}
-        />
-      )}
-      {unresolved.length > 0 && (
-        <LootSection
-          className="unresolved-loot-section"
-          kicker={message('loot.unresolvedKicker')}
-          title={message('loot.unresolvedTitle')}
-          rows={unresolved}
-          actions={props.actions}
-        />
-      )}
-      {props.model.inbox.nextCursor && (
-        <button type="button" onClick={props.actions.loadMoreLoot}>
-          {message('loot.inboxMore')}
-        </button>
-      )}
+      <SessionLootPanel {...props} />
       {props.model.archivedRows.length > 0 && (
         <section className="inactive-groups">
           <h3>{message('group.inactive')}</h3>
@@ -150,5 +101,65 @@ function LootSection(props: {
         ))
       )}
     </section>
+  )
+}
+
+export function SessionLootPanel(props: {
+  model: SessionGroupsViewModel
+  actions: SessionWorkspaceActions
+}) {
+  const unplaced = props.model.inboxLoot.filter(
+    (row) => row.placement === 'unplaced'
+  )
+  const unresolved = props.model.inboxLoot.filter(
+    (row) => row.placement === 'unresolved'
+  )
+  return (
+    <>
+      {props.model.scene.locationId && (
+        <LootSection
+          kicker={message('loot.locationKicker')}
+          title={props.model.scene.locationName}
+          rows={props.model.locationLoot}
+          empty={message('loot.locationEmpty')}
+          add={() =>
+            props.actions.createLoot({
+              kind: 'location',
+              locationId: props.model.scene.locationId!,
+              lastKnownLabel: props.model.scene.locationName
+            })
+          }
+          actions={props.actions}
+        />
+      )}
+      {!props.model.inboxOpen && (
+        <button type="button" onClick={props.actions.openLootInbox}>
+          {message('loot.inboxOpen')}
+        </button>
+      )}
+      {unplaced.length > 0 && (
+        <LootSection
+          className="unplaced-loot-section"
+          kicker={message('loot.unplaced')}
+          title={message('loot.unplacedTitle')}
+          rows={unplaced}
+          actions={props.actions}
+        />
+      )}
+      {unresolved.length > 0 && (
+        <LootSection
+          className="unresolved-loot-section"
+          kicker={message('loot.unresolvedKicker')}
+          title={message('loot.unresolvedTitle')}
+          rows={unresolved}
+          actions={props.actions}
+        />
+      )}
+      {props.model.inbox.nextCursor && (
+        <button type="button" onClick={props.actions.loadMoreLoot}>
+          {message('loot.inboxMore')}
+        </button>
+      )}
+    </>
   )
 }

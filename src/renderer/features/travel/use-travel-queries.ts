@@ -11,6 +11,7 @@ export function useTravelQueries<P, S, M, E>(options: {
   port: TravelProviderPort<P, S, M, E> | null
   scope: TravelScope | null
   projection: TravelViewProjection<P, S, M, E>
+  preferSelectedMap?: boolean
   onError: (message: string) => void
 }) {
   const { coordinator, onError, port, projection, scope } = options
@@ -58,9 +59,10 @@ export function useTravelQueries<P, S, M, E>(options: {
           signal.throwIfAborted()
           const descriptor = port.describe(result.providerState)
           const mapId =
-            descriptor.currentMapId ??
+            (options.preferSelectedMap ? null : descriptor.currentMapId) ??
             descriptor.mapOptions.find((entry) => entry.id === target.mapId)
               ?.id ??
+            descriptor.currentMapId ??
             descriptor.mapOptions[0]?.id ??
             null
           const map = mapId
@@ -88,7 +90,16 @@ export function useTravelQueries<P, S, M, E>(options: {
       if (outcome.status === 'failure')
         reportFailure(target, 'intent', 'context', outcome.cause)
     },
-    [acceptContext, capture, coordinator, port, reportFailure, scope, started]
+    [
+      acceptContext,
+      capture,
+      coordinator,
+      port,
+      reportFailure,
+      scope,
+      started,
+      options.preferSelectedMap
+    ]
   )
 
   const runMapRead = useCallback(

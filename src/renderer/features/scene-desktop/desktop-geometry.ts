@@ -67,3 +67,42 @@ export function alignDesktopBounds(
   }
   return fitDesktopBounds(next, size)
 }
+
+/** Union coverage, not just one covering window; partial visibility still draws. */
+export function desktopWindowIsVisible(
+  window: SceneDesktopWindow,
+  windows: readonly SceneDesktopWindow[],
+  size: DesktopSize
+): boolean {
+  if (window.minimized) return false
+  let remaining = [desktopWindowBounds(window, size)]
+  for (const above of windows.slice(windows.indexOf(window) + 1)) {
+    if (above.minimized) continue
+    const cover = desktopWindowBounds(above, size)
+    remaining = remaining.flatMap((rect) => {
+      const left = Math.max(rect.x, cover.x),
+        top = Math.max(rect.y, cover.y)
+      const right = Math.min(rect.x + rect.width, cover.x + cover.width)
+      const bottom = Math.min(rect.y + rect.height, cover.y + cover.height)
+      if (left >= right || top >= bottom) return [rect]
+      return [
+        { x: rect.x, y: rect.y, width: rect.width, height: top - rect.y },
+        {
+          x: rect.x,
+          y: bottom,
+          width: rect.width,
+          height: rect.y + rect.height - bottom
+        },
+        { x: rect.x, y: top, width: left - rect.x, height: bottom - top },
+        {
+          x: right,
+          y: top,
+          width: rect.x + rect.width - right,
+          height: bottom - top
+        }
+      ].filter((part) => part.width > 0 && part.height > 0)
+    })
+    if (!remaining.length) return false
+  }
+  return true
+}

@@ -259,6 +259,197 @@ describe('per-scene desktop preview', () => {
         .map((button) => button.getText())
     ).toEqual(barOrder)
   })
+  it('keeps map presentation and combat alive independently of their windows', async () => {
+    const client = browser as unknown as WdioBrowser
+    await client.reloadSession()
+    await resumeCampaignFromScreen(client)
+    await client.$('.scene-desktop').waitForDisplayed({ timeout: 30_000 })
+    await setElectronWindowSize(client, 1200, 900)
+    await client.$('.desktop-toolbar').$('button=Karte & Reise').click()
+    await client
+      .$('[data-window-id="map"] canvas')
+      .waitForDisplayed({ timeout: 30_000 })
+    await client
+      .$('[data-window-id="map"]')
+      .$('button[aria-label="Maximieren"]')
+      .click()
+    const cameraSelector = '[data-window-id="map"] .hex-location-overlay > g'
+    const initial = await client.$(cameraSelector).getAttribute('transform')
+    await client.execute(() => {
+      const canvas = document.querySelector<HTMLCanvasElement>(
+        '[data-window-id="map"] canvas'
+      )!
+      const bounds = canvas.getBoundingClientRect()
+      canvas.dispatchEvent(
+        new WheelEvent('wheel', {
+          bubbles: true,
+          cancelable: true,
+          deltaY: -100,
+          clientX: bounds.left + bounds.width / 2,
+          clientY: bounds.top + bounds.height / 2
+        })
+      )
+    })
+    await client.waitUntil(
+      async () =>
+        (await client.$(cameraSelector).getAttribute('transform')) !== initial
+    )
+    await waitSaved(client)
+    const camera = await client.$(cameraSelector).getAttribute('transform')
+    await client
+      .$('[data-window-id="map"]')
+      .$('button[aria-label="Fenster schließen"]')
+      .click()
+    await client.$('.desktop-toolbar').$('button=Karte & Reise').click()
+    await client.$('[data-window-id="map"] canvas').waitForDisplayed()
+    await expect(client.$(cameraSelector)).toHaveAttribute('transform', camera)
+    await client.$('.desktop-toolbar').$('button=Kampf').click()
+    await client
+      .$('[data-window-id="combat"] .encounter-group-choice input')
+      .click()
+    await client
+      .$('[data-window-id="combat"]')
+      .$('button=Initiative vorbereiten')
+      .waitForEnabled()
+    await client
+      .$('[data-window-id="combat"]')
+      .$('button=Initiative vorbereiten')
+      .click()
+    await client
+      .$('[data-window-id="combat"]')
+      .$('button=Kampf starten')
+      .click()
+    await expect(
+      client.$('[data-window-id="combat"] .combat-panel')
+    ).toBeExisting()
+    const readerTitle = await client.$('[data-window-id="reader"] h2').getText()
+    await client
+      .$('[data-window-id="combat"]')
+      .$('button[aria-label="Maximieren"]')
+      .click()
+    const countSelector = '[data-window-id="map"] [data-render-count]'
+    await client.pause(200)
+    const count = await client
+      .$(countSelector)
+      .getAttribute('data-render-count')
+    await client.pause(300)
+    await expect(client.$(countSelector)).toHaveAttribute(
+      'data-render-count',
+      count
+    )
+    await client
+      .$('[data-window-id="combat"]')
+      .$('button[aria-label="Minimieren"]')
+      .click()
+    await client.$('.desktop-toolbar').$('button=Karte & Reise').click()
+    await expect(client.$(cameraSelector)).toHaveAttribute('transform', camera)
+    await client.$('.desktop-toolbar').$('button=Kampf').click()
+    await expect(
+      client.$('[data-window-id="combat"] .combat-panel')
+    ).toBeExisting()
+    await client
+      .$('[data-window-id="combat"]')
+      .$('button[aria-label="Fenster schließen"]')
+      .click()
+    await client.$('.desktop-toolbar').$('button=Kampf').click()
+    await expect(
+      client.$('[data-window-id="combat"] .combat-panel')
+    ).toBeExisting()
+    await expect(client.$('[data-window-id="reader"] h2')).toHaveText(
+      readerTitle
+    )
+    await waitSaved(client)
+    await client.reloadSession()
+    await resumeCampaignFromScreen(client)
+    await client
+      .$('[data-window-id="combat"] .combat-panel')
+      .waitForExist({ timeout: 30_000 })
+    await client.$('.desktop-toolbar').$('button=Karte & Reise').click()
+    await client.$('[data-window-id="map"] canvas').waitForDisplayed()
+    await expect(client.$(cameraSelector)).toHaveAttribute('transform', camera)
+    const source = await client.$('select[aria-label="Szene"]').getValue()
+    const other = (
+      await client
+        .$$('select[aria-label="Szene"] option')
+        .map((option) => option.getAttribute('value'))
+    ).find((id) => id !== source)!
+    await client
+      .$('select[aria-label="Szene"]')
+      .selectByAttribute('value', other)
+    await expect(client.$('[data-window-id="combat"]')).not.toBeExisting()
+    await client
+      .$('select[aria-label="Szene"]')
+      .selectByAttribute('value', source)
+    await expect(
+      client.$('[data-window-id="combat"] .combat-panel')
+    ).toBeExisting()
+  })
+  it('continues travel with its window closed and restores an explicitly paused journey after restart', async () => {
+    const client = browser as unknown as WdioBrowser
+    await client.$('.desktop-toolbar').$('button=Kampf').click()
+    await client
+      .$('[data-window-id="combat"] .combat-panel footer')
+      .$('button*=Auflösung')
+      .click()
+    await client.$('.desktop-toolbar').$('button=Karte & Reise').click()
+    await client.$('[data-window-id="map"] canvas').waitForDisplayed()
+    await client.$('[data-window-id="map"]').$('button=Reiseplanung').click()
+    await client.$('[data-window-id="map"]').$('button=Route planen').click()
+    await client.execute(() =>
+      document
+        .querySelector<HTMLElement>('[data-window-id="map"] .hex-canvas')!
+        .focus()
+    )
+    for (let index = 0; index < 8; index++) await client.keys('ArrowRight')
+    await client.keys('Enter')
+    await client
+      .$('[data-window-id="map"] button[aria-label="Reise starten"]')
+      .waitForEnabled()
+    await client
+      .$('[data-window-id="map"] button[aria-label="Reise starten"]')
+      .click()
+    await expect(client.$('[data-window-id="map"] .travel-console')).toHaveText(
+      expect.stringContaining('Reise läuft.')
+    )
+    const startLocation = await client
+      .$('[data-window-id="map"] .travel-current-location')
+      .getText()
+    const selectedHex = await client
+      .$('[data-window-id="map"] .hex-canvas-shell .sr-only')
+      .getText()
+    await client
+      .$('[data-window-id="map"]')
+      .$('button[aria-label="Fenster schließen"]')
+      .click()
+    await client.pause(1200)
+    await client.$('.desktop-toolbar').$('button=Karte & Reise').click()
+    await client.$('[data-window-id="map"]').$('button=Reiseplanung').click()
+    await expect(client.$('[data-window-id="map"] .travel-console')).toHaveText(
+      expect.stringContaining('Reise läuft.')
+    )
+    expect(
+      await client
+        .$('[data-window-id="map"] .travel-current-location')
+        .getText()
+    ).not.toBe(startLocation)
+    await client.$('[data-window-id="map"] button[aria-label="Pause"]').click()
+    await expect(client.$('[data-window-id="map"] .travel-console')).toHaveText(
+      expect.stringContaining('Reise pausiert.')
+    )
+    await waitSaved(client)
+    await client.reloadSession()
+    await resumeCampaignFromScreen(client)
+    await client
+      .$('[data-window-id="map"] .travel-console')
+      .waitForExist({ timeout: 30_000 })
+    await expect(client.$('[data-window-id="map"] .travel-console')).toHaveText(
+      expect.stringContaining('Reise pausiert.')
+    )
+    await expect(
+      client.$('[data-window-id="map"] .hex-canvas-shell .sr-only')
+    ).toHaveText(selectedHex)
+    await client.$('[data-window-id="map"] button[aria-label="Stopp"]').click()
+  })
 })
 
 async function waitSaved(client: WdioBrowser) {

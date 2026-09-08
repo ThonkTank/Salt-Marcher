@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { axialCoordinateSchema } from './hex.js'
 import { referenceTargetSchema } from './reference.js'
 
 export const desktopBoundsSchema = z
@@ -35,7 +36,7 @@ const overviewSchema = z
   })
   .strict()
 
-export const sceneDesktopWindowSchema = z
+const previousWindowSchema = z
   .discriminatedUnion('kind', [
     overviewSchema,
     z
@@ -75,10 +76,59 @@ export const sceneDesktopWindowSchema = z
   })
   .readonly()
 
+export const desktopMapViewSchema = z
+  .object({
+    mapId: z.uuid().nullable(),
+    selected: axialCoordinateSchema.nullable(),
+    cameras: z
+      .array(
+        z
+          .object({
+            mapId: z.uuid(),
+            x: z.number().finite().min(-100_000_000).max(100_000_000),
+            y: z.number().finite().min(-100_000_000).max(100_000_000),
+            scale: z.number().positive().max(100)
+          })
+          .strict()
+          .readonly()
+      )
+      .max(100)
+      .readonly()
+  })
+  .strict()
+  .readonly()
+
+export const sceneDesktopWindowSchema = z.union([
+  previousWindowSchema,
+  z
+    .object({
+      ...windowShape,
+      id: z.literal('map'),
+      kind: z.literal('map'),
+      controlsOpen: z.boolean()
+    })
+    .strict()
+    .readonly(),
+  z
+    .object({
+      ...windowShape,
+      id: z.literal('combat'),
+      kind: z.literal('combat')
+    })
+    .strict()
+    .readonly(),
+  z
+    .object({ ...windowShape, id: z.literal('loot'), kind: z.literal('loot') })
+    .strict()
+    .readonly()
+])
+
 // Array order is the back-to-front order. Empty is a deliberately closed desktop.
 export const sceneDesktopStateSchema = z
   .object({
-    schemaVersion: z.literal(2),
+    schemaVersion: z.literal(3),
+    mapView: desktopMapViewSchema,
+    combatSelection: z.array(z.uuid()).max(1000).readonly(),
     windows: z.array(sceneDesktopWindowSchema).max(32).readonly()
   })
   .strict()
@@ -100,9 +150,26 @@ const legacyDesktopStateSchema = z
 
 /** Explicit document upgrade; storage revision and preferred geometry are retained. */
 export function readStoredDesktopState(value: unknown): SceneDesktopState {
-  const legacy = legacyDesktopStateSchema.safeParse(value)
+  const old = z
+    .union([
+      legacyDesktopStateSchema,
+      z
+        .object({
+          schemaVersion: z.literal(2),
+          windows: z.array(previousWindowSchema).max(32)
+        })
+        .strict()
+    ])
+    .safeParse(value)
   return sceneDesktopStateSchema.parse(
-    legacy.success ? { ...legacy.data, schemaVersion: 2 } : value
+    old.success
+      ? {
+          ...old.data,
+          schemaVersion: 3,
+          mapView: { mapId: null, selected: null, cameras: [] },
+          combatSelection: []
+        }
+      : value
   )
 }
 
@@ -162,3 +229,5 @@ export type SceneDesktopState = z.infer<typeof sceneDesktopStateSchema>
 export type SceneDesktopScope = z.infer<typeof sceneDesktopScopeSchema>
 export type SceneDesktopSnapshot = z.infer<typeof sceneDesktopSnapshotSchema>
 export type SaveSceneDesktopInput = z.infer<typeof saveSceneDesktopInputSchema>
+
+export type DesktopMapView = z.infer<typeof desktopMapViewSchema>

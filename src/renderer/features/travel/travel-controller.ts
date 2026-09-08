@@ -28,7 +28,11 @@ export type TravelControllerState<P, S, M, E> = Readonly<{
 }>
 
 export type TravelControllerEvent<P, S, M, E> =
-  | Readonly<{ type: 'activated'; scope: TravelScope }>
+  | Readonly<{
+      type: 'activated'
+      scope: TravelScope
+      presentation?: { mapId: string | null; selected: P | null }
+    }>
   | Readonly<{ type: 'deactivated' }>
   | Readonly<{ type: 'request-started'; channel: TravelRequestChannel }>
   | Readonly<{
@@ -103,6 +107,7 @@ export function travelControllerReducer<P, S, M, E>(
           }
         : {
             ...initialTravelControllerState<P, S, M, E>(),
+            ...event.presentation,
             scope: event.scope,
             lifecycle: 'loading'
           }

@@ -661,10 +661,13 @@ rounds are tracked separately in [the execution log](scene-desktop-execution.md)
 Phase 1 introduces the opt-in window shell and read-only scene overview, an
 installation 40→41 migration and separately revisioned desktop contracts.
 Phase 1 was delivered at `e254a04a2bc62b3605b3ca080be772eae72aecd6` with
-canonical handoff and green main. Phase 2 is in progress: shared reference
-indices/cache feed desktop search, navigation history and independent readers.
-Desktop document version 2 explicitly upgrades version 1 geometry on read;
-installation schema 41 and campaign schema 34 remain unchanged.
-The existing Session remains default; travel/combat and character changes
-belong to subsequent phases. No phase is recorded as delivered until
+canonical handoff and green main. Phase 2 was delivered at
+`8cb1fbe7b12bff005e5e9dc423761c3c853cb2ba` with the same complete delivery gates:
+shared reference indices/cache feed search, history and independent readers.
+Phase 3 is in progress: map/travel, combat and loot windows reuse domain
+controllers; map presentation is persisted in document version 3, explicitly
+upgrading versions 1 and 2. Installation schema 41 and campaign schema 34 remain
+unchanged. Actual combat execution and travelling exclude one another per scene;
+initiative preparation and inspection remain available. The existing Session
+remains default; character changes belong to subsequent phases. No phase is recorded as delivered until
 its exact-SHA checks, app handoff and green main promotion are verified.

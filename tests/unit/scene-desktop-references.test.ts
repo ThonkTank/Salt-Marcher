@@ -121,11 +121,14 @@ describe('desktop reference state', () => {
   })
   it('upgrades old presentation documents without resurrecting closed windows or accepting malformed history', () => {
     expect(readStoredDesktopState({ schemaVersion: 1, windows: [] })).toEqual({
-      schemaVersion: 2,
+      ...initialDesktopState(),
       windows: []
     })
     expect(
-      readStoredDesktopState({ ...initialDesktopState(), schemaVersion: 1 })
+      readStoredDesktopState({
+        windows: initialDesktopState().windows,
+        schemaVersion: 1
+      })
     ).toEqual(initialDesktopState())
     const state = reduceDesktop(initialDesktopState(), {
       type: 'open-reference',

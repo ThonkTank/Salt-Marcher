@@ -1,3 +1,4 @@
+import type { DesktopMapView } from '../../../../shared/contracts/scene-desktop.js'
 import { useEffect, useMemo, useState, type ComponentType } from 'react'
 import type { LiveSessionSnapshot } from '../../../../shared/contracts/live-session.js'
 import type {
@@ -11,7 +12,10 @@ import { capabilityErrorText } from '../../../capabilities/capability-errors.js'
 import { message } from '../../../i18n/session-runtime.de.js'
 import { ModuleHost } from '../../../shell/module-host.js'
 
-type MapProps = Readonly<{ controller: HexTravelController }>
+type MapProps = Readonly<{
+  controller: HexTravelController
+  presentation?: Parameters<SessionTravelSlots['renderMap']>[0]
+}>
 type ScenarioProps = Readonly<{
   controller: HexTravelController
   openMap: () => void
@@ -32,8 +36,19 @@ export function useSessionTravelIntegration(options: {
   setSnapshot: (snapshot: LiveSessionSnapshot) => void
   onError: (message: string) => void
   active: boolean
+  presentation?: DesktopMapView
+  presentationChanged?: (
+    view: Pick<DesktopMapView, 'mapId' | 'selected'>
+  ) => void
 }): SessionTravelSlots {
-  const { active, onError, setSnapshot, snapshot } = options
+  const {
+    active,
+    onError,
+    setSnapshot,
+    snapshot,
+    presentation,
+    presentationChanged
+  } = options
   const api = useCapabilityApi()
   const [port, setPort] = useState<HexTravelProviderPort | null>(null)
 
@@ -58,8 +73,31 @@ export function useSessionTravelIntegration(options: {
     snapshot,
     setSnapshot,
     onError,
-    active
+    active,
+    ...(presentation ? { presentation: presentation } : {})
   })
+  useEffect(() => {
+    const state = controller.state
+    if (
+      state.scope?.sceneId !== snapshot.scene.focusedSceneId ||
+      (state.lifecycle !== 'ready' && state.lifecycle !== 'unavailable')
+    )
+      return
+    if (
+      state.mapId === presentation?.mapId &&
+      JSON.stringify(state.selected) === JSON.stringify(presentation?.selected)
+    )
+      return
+    presentationChanged?.({
+      mapId: state.mapId,
+      selected: state.selected
+    })
+  }, [
+    controller.state,
+    presentation,
+    presentationChanged,
+    snapshot.scene.focusedSceneId
+  ])
   const common = useMemo(
     () => ({
       workspace: 'session' as const,
@@ -84,11 +122,16 @@ export function useSessionTravelIntegration(options: {
 
   return useMemo(
     () => ({
-      renderMap: () => (
+      renderMap: (
+        presentation?: Parameters<SessionTravelSlots['renderMap']>[0]
+      ) => (
         <ModuleHost
           {...common}
           load={loadMap}
-          componentProps={{ controller }}
+          componentProps={{
+            controller,
+            ...(presentation ? { presentation } : {})
+          }}
         />
       ),
       renderScenario: (props: { openMap: () => void; mapActive: boolean }) => (

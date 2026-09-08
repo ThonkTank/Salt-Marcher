@@ -15,6 +15,10 @@ export const workspaceMessagesDe = {
   'desktop.preview': 'Szenenarbeitsfläche (Vorschau)',
   'desktop.time': 'Tag {day}, {hours}:{minutes}',
   'desktop.scene': 'Szene',
+  'desktop.map': 'Karte & Reise',
+  'desktop.combat': 'Kampf',
+  'desktop.loot': 'Beute',
+  'desktop.travelControls': 'Reiseplanung',
   'desktop.overview': 'Szenenübersicht',
   'desktop.characters': 'Charaktere',
   'desktop.groups': 'Gruppen',
@@ -90,6 +94,8 @@ export const workspaceMessagesDe = {
   'passive.shared': 'Freigegebene Projektion',
   'error.unknown': 'Unbekannter Fehler',
   'passive.empty': 'Keine Datenfreigabe aktiv',
+  'error.scene_activity_conflict':
+    'Reise pausieren oder Kampf beenden, bevor die andere Aktion in dieser Szene beginnt.',
   'error.validation_failed': 'Die Eingabe ist ungültig.',
   'error.idempotency_conflict':
     'Diese Befehls-ID wurde bereits für eine andere Änderung verwendet.',

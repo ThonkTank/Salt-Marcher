@@ -1,6 +1,7 @@
 export const capabilityErrorCodes = [
   'validation_failed',
   'idempotency_conflict',
+  'scene_activity_conflict',
   'unsupported_svg',
   'svg_too_large',
   'file_read_failed',

@@ -14,7 +14,7 @@ const scope = {
   campaignId: '00000000-0000-4000-8000-000000000001',
   sceneId: '00000000-0000-4000-8000-000000000002'
 }
-const empty = { schemaVersion: 2 as const, windows: [] }
+const empty = { ...initialDesktopState(), windows: [] }
 const stored = (
   revision = 0,
   state: SceneDesktopSnapshot['state'] = null,

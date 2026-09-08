@@ -47,6 +47,37 @@ function readyState(): State {
 }
 
 describe('travel controller view state', () => {
+  it('restores saved selection on initial load and clears it when its map no longer exists', () => {
+    const initial = initialTravelControllerState<
+      Position,
+      ProviderState,
+      MapProjection,
+      Evaluation
+    >()
+    const restored = travelControllerReducer(initial, {
+      type: 'activated',
+      scope,
+      presentation: { mapId: 'coast', selected: { q: 4, r: -3 } }
+    })
+    const loaded = travelControllerReducer(restored, {
+      type: 'projection-loaded',
+      providerState: { revision: 1, status: 'ready' },
+      mapId: 'coast',
+      map: { id: 'coast' },
+      multiplier: 1
+    })
+    expect(loaded.selected).toEqual({ q: 4, r: -3 })
+    expect(
+      travelControllerReducer(restored, {
+        type: 'projection-loaded',
+        providerState: { revision: 1, status: 'ready' },
+        mapId: 'replacement',
+        map: { id: 'replacement' },
+        multiplier: 1
+      }).selected
+    ).toBeNull()
+  })
+
   it('keeps provider truth separate from transient route and token state', () => {
     let state = readyState()
     state = travelControllerReducer(state, { type: 'mode', mode: 'plan' })

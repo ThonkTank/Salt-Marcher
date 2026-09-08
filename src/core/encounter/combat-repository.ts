@@ -590,3 +590,17 @@ function persistCombat(
   if (db.inTransaction) persist()
   else db.transaction(persist)()
 }
+
+/** Aggregate-owned read used by scene activity guards inside the caller's transaction. */
+export function sceneHasActiveCombat(
+  db: Database.Database,
+  sceneId: string
+): boolean {
+  return (
+    db
+      .prepare(
+        "SELECT 1 FROM encounter_combat_runtime WHERE scene_id = ? AND phase = 'combat'"
+      )
+      .get(sceneId) !== undefined
+  )
+}

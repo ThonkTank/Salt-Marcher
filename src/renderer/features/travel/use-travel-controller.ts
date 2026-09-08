@@ -32,11 +32,13 @@ export function useTravelController<P, S, M, E>(options: {
   setSnapshot: (snapshot: LiveSessionSnapshot) => void
   onError: (message: string) => void
   active: boolean
+  presentation?: { mapId: string | null; selected: P | null }
 }): TravelController<P, S, M, E> {
   const coordinator = useAsyncCommandCoordinator()
   const projection = useTravelViewProjection<P, S, M, E>({
     snapshot: options.snapshot,
-    setSnapshot: options.setSnapshot
+    setSnapshot: options.setSnapshot,
+    ...(options.presentation ? { presentation: options.presentation } : {})
   })
   const sceneId = options.snapshot.scene.focusedSceneId
   const scope = useMemo<TravelScope | null>(
@@ -51,6 +53,7 @@ export function useTravelController<P, S, M, E>(options: {
     [options.port, sceneId]
   )
   const queries = useTravelQueries({
+    preferSelectedMap: !!options.presentation,
     coordinator,
     port: options.port,
     scope,

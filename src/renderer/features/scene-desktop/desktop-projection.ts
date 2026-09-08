@@ -83,7 +83,11 @@ export class DesktopProjection {
     this.publish({ state: this.desired })
     if (this.writeTimer) clearTimeout(this.writeTimer)
     this.writeTimer = null
-    if (action.type === 'query' || action.type === 'scroll') {
+    if (
+      action.type === 'query' ||
+      action.type === 'scroll' ||
+      action.type === 'map-view'
+    ) {
       this.publish({ saving: true })
       this.writeTimer = setTimeout(() => {
         this.writeTimer = null

@@ -10,8 +10,8 @@ includes remote checks, exact-SHA app handoff and green promotion to main.
 | Phase | Status | Evidence |
 | --- | --- | --- |
 | 1 — Window desktop and persistence | Complete | e254a04a2; candidate, exact-SHA handoff and main evidence below |
-| 2 — Reference windows | In progress | Context refresh and concrete plan below |
-| 3 — Travel and combat | Not started | Depends on completed phases 1–2 |
+| 2 — Reference windows | Complete | 8cb1fbe7b; candidate, canonical handoff and main evidence below |
+| 3 — Travel and combat | In progress | Context refresh below |
 | 4 — Character catalog | Not started | Depends on completed phases 1–3 |
 | 5 — Membership, XP, rest | Not started | Depends on completed phase 4 |
 | 6 — Default and cleanup | Not started | Depends on all previous phases |
@@ -625,3 +625,248 @@ about 91 seconds). Typecheck, full formatting and targeted E2E lint pass.
 Both phase audits pass again for this test-only correction; remote qualification
 and canonical delivery remain outstanding. Submit the corrected candidate SHA
 for the entire required Check workflow, preserving the failed prior evidence.
+
+
+## Phase 2 — Completed delivery and closing audit
+
+- Delivered SHA: `8cb1fbe7b12bff005e5e9dc423761c3c853cb2ba`,
+  [PR 665](https://github.com/ThonkTank/Salt-Marcher/pull/665).
+- [Complete candidate Check](https://github.com/ThonkTank/Salt-Marcher/actions/runs/34237684246),
+  attempt 1: all 15 required jobs including exact-SHA aggregate passed. The
+  corrected desktop suite passed on the CI display; previous failed candidate
+  evidence remains recorded above.
+- `pnpm handoff:app` completed without resume/bypass. State ID
+  `06626fc6-3246-40b6-b22e-0b9cac92c5d0`; original/active attempt
+  `ae4c9ae5-a841-483f-add9-2408b35abc02`.
+- Downloaded and installed artifact SHA-256:
+  `ecd2955ef8c24cae39c1502f8e995443c408b80b751cac365676971882a91bad`.
+  Installed runtime passed two quick checks and four domain readbacks.
+- SQLite-consistent backup:
+  `2026-09-08T14-34-44-535Z-468573e429a1-a8186cf7`, manifest SHA-256
+  `ed4f6af527a242688a0e7d1df1371d029ad42d281cc74ccf5958eb2b2e0b2196`.
+- `pnpm delivery:promote` fast-forwarded the same SHA to main.
+  [Main attestation](https://github.com/ThonkTank/Salt-Marcher/actions/runs/34239238120)
+  is green and verified with `readSuccessfulPostPromotionEvidence`, manifest
+  version 4. Origin/main matches the delivered SHA.
+- Phase 2 implementation-plan and canonical-roadmap audits pass including
+  delivery. No outstanding phase 2 discrepancy remains.
+
+## Phase 3 — Context refresh
+
+Started from completed phase 2 main on `codex/scene-desktop-phase-3`.
+Inspect the existing map/travel and combat surfaces, session runtime ownership,
+scene/group/time/location/loot actions and their requirements before recording
+ the concrete implementation plan. No phase 3 implementation edits precede it.
+
+
+## Phase 3 — Concrete implementation plan
+
+Outcome: productive map/travel and encounter windows in the opt-in desktop,
+using existing domain services and controls. No character/XP/rest redesign yet.
+
+Repository findings: Utility TravelBoundaryScheduler already owns travel time;
+canvas mounting does not own the scheduler. Travel view/controller currently
+lives in SessionSurface, resets presentation on scope changes and holds camera
+memory only inside Pixi. Combat auto-follow currently replaces the reference
+reader on turn changes and must be disabled for desktop only. Scene/group/loot
+commands and dialogs already exist; no separate manual clock-edit command exists.
+Time remains accessible through the existing travel and rest controls.
+
+Implementation sequence:
+
+1. Extend strict desktop documents to version 3 with map, combat and loot
+   singleton windows and independent per-scene map presentation (selected map,
+   hex and bounded per-map camera memory). Upgrade versions 1 and 2 explicitly,
+   preserving every existing document and preferred geometry. Retain presentation
+   after window close; never persist domain snapshots in desktop storage.
+2. Compose desktop session controllers above individual windows. Reuse existing
+   encounter, travel and loot components, with compact overview/group actions and
+   explicit location editing. Keep the Party popup available. Disable automatic
+   monster reference following in desktop; explicit inspection still opens the
+   shared reader. Route the top-bar travel action to the desktop map explicitly.
+3. Restore map camera and selection across close, scene switch and restart.
+   Pause rendering when fully occluded or hidden, resume with current data and
+   no camera reset. Window lifecycle must neither abort nor start domain commands.
+   Keep per-scene encounter preparation selection while switching windows.
+4. Add aggregate-owned, transactional domain guards: travelling blocks entry
+   into initiative/combat; initiative/combat block travel start/resume in that
+   scene. Paused travel and resolution may coexist; inspection/planning remain
+   possible. Reject conflicts with a typed capability error and useful localized
+   feedback. Other scenes remain independent. Verify restart handling against
+   existing requirements; do not introduce a second scheduler or lifecycle.
+5. Extend meaningful fixtures and acceptance tests; update requirements,
+   migration progress and measured bundle budgets where necessary.
+
+Validation: contract/reducer upgrade and scope tests; map presentation and
+render scheduling tests; integration tests for both activity-conflict directions,
+no partial writes and scene independence; targeted desktop E2E for map, reference
+and combat coexistence, close/minimize/reopen, scene changes and camera retention.
+Run required local checks, then audit implementation against this plan and
+separately against original phase 3. Record corrective plans before corrections.
+Finally clean candidate commit/push, full exact-SHA remote Check, canonical
+handoff, same-SHA promotion and green-main attestation.
+
+Acceptance: map inspection during combat does not dismiss descriptions; closing
+or minimizing map/combat changes no domain runtime; reopening restores current
+runtime and presentation. Existing scene/location/group/loot/time actions remain
+reachable. No automatic document replacement on turn change, no offscreen drawing,
+no cross-scene state leakage, no simultaneous travel execution and combat in one
+scene. Legacy layout and Party access remain functional.
+
+### Phase 3 — Compile correction round 1
+
+Initial typecheck identifies readonly encounter selection crossing a mutable DTO,
+optional camera passed explicitly undefined, an insufficiently discriminated
+launcher action union, and fixtures still supplying version 2 as current writes.
+Correct those boundaries, keep legacy versions only in upgrade fixtures, and rerun
+typecheck. Preserve map-choice priority for legacy integration while allowing the
+desktop's saved selection to take precedence. These are implementation corrections;
+phase audit and behavioral validation remain outstanding.
+
+### Phase 3 — Validation correction round 2
+
+Targeted checks: 51 passed, one legacy-upgrade fixture failed because spreading
+current initial state accidentally inserted version-3 fields into a purported
+version-1 document. Keep that fixture historically accurate (windows only) and
+repeat it. The strict reader correctly rejected the malformed old document.
+Typecheck now passes. Add direct tests for presentation retention, union occlusion,
+paused render scheduling and transactional activity conflicts before the phase audit.
+
+### Phase 3 — Validation correction round 3
+
+The E2E runner could not start because the new fixture directory was not yet
+materialized in source. Add its versioned descriptor and matching parser branch,
+retaining the prior descriptor. Lint also rejects a render-time ref update and
+synchronous canvas error-state propagation in the visibility effect. Move the
+presentation ref update into layout synchronization and use the canvas's existing
+guarded microtask pattern for redraw; explicitly declare camera/effect dependencies.
+Rerun lint/typecheck, rebuild, and repeat the complete desktop suite.
+
+### Phase 3 — Validation correction round 4
+
+The initial UI run exposed insufficient contrast on the overview's new location
+button (4.4:1). It also emitted stale-element warnings after overview remounting.
+Stop that obsolete-build run; synchronize rebuild completion before repeating it.
+Use the primary text token on the location control and inspect scene/mount identity
+for the warning source. Full regression tests are still running and will be audited
+before additional fixes. No failed/obsolete UI run counts as acceptance evidence.
+
+### Phase 3 — Product-truth audit and corrective plan 5
+
+Full regression: 1,149 passed; 18 failures share one cause. Existing qualified
+current-format fixtures intentionally combine initiative preparation with travel.
+The original roadmap prohibits simultaneous *execution* of travel and combat; it
+does not prohibit preparing an encounter. The phase plan's additional initiative
+restriction was therefore too broad relative to product truth. Correct the plan:
+allow encounter selection/initiative preparation during travel, just as route
+planning remains available during combat. Only entering the actual combat phase
+requires paused/stopped travel; only the actual combat phase blocks start/resume.
+Keep all existing Golden-Master fixtures and semantic hashes unchanged. Adapt the
+new tests to prove rejected initiative confirmation and unchanged runtime, then
+rerun the 18 qualification failures and domain tests. No additional product scope.
+
+Also keep the desktop's scene selector mounted across scene changes. Scope dialog
+state within its controller instead of keying/remounting the entire desktop;
+window contents retain their existing scene-specific keys. This prevents stale
+selector handles and still closes obsolete transient dialogs safely.
+
+### Phase 3 — Pre-delivery audit correction round 6
+
+Inspection found that persisted encounter selection can retain an ID after its
+scene group is archived/deleted. Filter the selection supplied to evaluation and
+commands by current active groups, preserving stored presentation until phase 6's
+orphan cleanup. Otherwise a hidden obsolete checkbox could prevent preparation.
+Keep current groups selectable and do not silently modify any domain data.
+
+Evidence so far: corrected qualification/domain tests 33/33; lifecycle tests 18/18;
+architecture plus desktop/travel targeted tests 95/95. The full desktop suite
+passed all three initial cases with zero stale-element warnings, including both
+themes and restart. Additional closed-window travel acceptance is running.
+
+### Phase 3 — Travel acceptance correction round 7
+
+Three desktop cases pass again. The added travel case selected 11 hexes east of
+its current position, incorrectly assuming the source was Hafen at q=0. The
+retained scene is Wald at q=2, so q=13 is correctly unauthored and start remains
+disabled (failure screenshot confirms the map's empty-hex selection). Select eight
+steps, valid from either populated fixture scene. Strengthen the case to compare
+committed location before/after the closed-window interval and restore the exact
+selected-hex announcement after restart. No production route behavior changes.
+
+### Phase 3 — Legacy runtime audit correction round 8
+
+New-command guards alone leave an already persisted legacy combination of actual
+Combat plus travelling able to advance on a scheduler tick. Add an aggregate-owned
+check before any travel advancement: pause that conflicting journey without moving
+its last committed hex or changing scene time. Do not pause Initiative preparation
+(the existing qualification fixture) or any other scene. Add an integration case
+that seeds only this legacy impossible-under-new-commands combination and proves
+the first tick reconciles it without movement. Keep scheduler ownership unchanged.
+
+### Phase 3 — Transport concurrency correction round 9
+
+The travel test now proves movement while the window is closed, but Pause raced a
+Utility boundary tick and returned a legitimate stale-revision rejection. The
+screenshot shows the stale message and continued movement. Improve this existing
+transport race within the reused controller: only a definitely rejected `pause`
+may refresh current provider state and retry once against the latest travelling
+revision, in the same still-current scene scope. If already paused, accept that
+readback; if completed/aborted/changed scope, do not issue another write. Never
+retry start/resume or any outcome_unknown/transport failure. Keep domain CAS guards
+intact. Add async tests for tick-stale recovery, unknown-outcome non-replay and
+scope cancellation; repeat the closed-window travel acceptance.
+
+## Phase 3 — Implementation-plan audit
+
+- Version-3 strict desktop documents, explicit v1/v2 upgrades and independently
+  retained map camera/hex plus encounter selection are implemented. Storage remains
+  installation-owned and CAS-revisioned; no domain snapshot is duplicated.
+- Existing map/travel, encounter, group, loot and personal-ledger controls are
+  integrated. Overview remains compact, travel controls expand on demand, the
+  toolbar travel action explicitly opens them, and Party/rest remain available.
+- Controllers outlive windows, the Utility scheduler remains sole clock owner,
+  full union occlusion pauses map drawing, and reopening restores presentation.
+  Scope-bound dialogs close on scene change; scene selector stays mounted.
+- Desktop combat auto-follow is disabled; explicit inspection still routes to
+  the shared reference reader. Invalid archived/deleted group selections cannot
+  block current preparation.
+- Actual Combat versus travelling guards are atomic and scene-local. The plan's
+  overbroad Initiative restriction was corrected against product truth in round 5.
+  Legacy conflicting execution is paused before movement. Definite stale Pause
+  recovery is bounded to one current-scope retry and excludes unknown outcomes.
+- Requirements and migration progress are updated. No SQL schema change or bundle
+  budget increase is needed. Character, XP and rest semantics remain for phases 4–5.
+
+Local evidence: full unit/integration run initially 1,149 passed and 18 failures
+from the overbroad Initiative restriction; all those failures passed unchanged
+qualification oracles after correction (33/33 focused qualification/domain cases).
+Latest runtime/domain/architecture checks pass 113/113, including stale Pause,
+unknown-outcome non-replay, scope cancellation, legacy reconciliation and combat
+regressions. Earlier desktop/projection/lifecycle checks also passed. Lint,
+typecheck, formatting, version truth, build, smoke and bundle checks pass on their
+recorded runs. Final four-case desktop E2E and remote delivery remain outstanding;
+this phase is not closed.
+
+## Phase 3 — Original-roadmap audit
+
+Every phase-3 implementation bullet has a corresponding production path and
+focused tests: shared map/reise window; encounter window; independent runtime;
+preserved map/zoom/selection and suspended hidden drawing; per-scene execution
+exclusion; accessible existing scene/time/location/group/loot actions. Phases 1–2
+remain covered by the desktop suite. The preview remains opt-in and the old Party
+entry point remains available, as required by this milestone. No phase 4–6 work
+has been substituted for phase 3. Final combined UI acceptance and the canonical
+exact-SHA delivery gates are still required before the closing audit can pass.
+
+### Phase 3 — Final local acceptance
+
+The complete four-case desktop suite passes, 1m40.7s, with zero warning regressions:
+`.tmp/e2e-runs/functional-1788880821514-285660/summary.json`. It covers phase 1/2
+behavior, both themes, independent reader/combat/map windows, camera retention,
+scene isolation, actual movement with the map closed, explicit Pause and paused
+restart with the selected hex restored. Calibrate its CI estimate to 105 seconds.
+Final runtime checks are 113/113; build/smoke/bundle checks pass. Reachable renderer
+is 1,577,721 bytes against 3,019,898; existing limits remain unchanged. Both the
+implementation-plan and original-roadmap local audits pass with no remaining
+local discrepancy. Exact-SHA candidate checks, handoff and green-main promotion
+are the remaining phase-3 gates.

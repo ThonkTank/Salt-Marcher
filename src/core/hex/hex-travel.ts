@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3'
+import { sceneHasActiveCombat } from '../encounter/combat-repository.js'
 import { CapabilityError } from '../../shared/errors/capability-error.js'
 import { z } from 'zod'
 import {
@@ -400,6 +401,8 @@ export class HexTravelStore {
     const status: JourneyStatus =
       evaluation.path.length <= 1 ? 'completed' : 'travelling'
     this.db.transaction(() => {
+      if (sceneHasActiveCombat(this.db, input.sceneId))
+        throw new CapabilityError('scene_activity_conflict', false)
       this.party.setTravelPosition(
         partyMemberIds,
         input.mapId,
@@ -442,20 +445,24 @@ export class HexTravelStore {
   }
 
   resume(input: z.infer<typeof mutateHexTravelInputSchema>) {
-    const journey = this.requireJourney(input.sceneId, input.expectedRevision)
-    const path = this.path(journey)
-    if (journey.currentIndex >= path.length - 1)
-      throw new CapabilityError('validation_failed', false)
-    const currentMembers = this.scenes.partyMemberIds(input.sceneId)
-    this.db
-      .prepare(
-        `UPDATE hex_journey SET status = 'travelling', revision = revision + 1,
+    return this.db.transaction(() => {
+      if (sceneHasActiveCombat(this.db, input.sceneId))
+        throw new CapabilityError('scene_activity_conflict', false)
+      const journey = this.requireJourney(input.sceneId, input.expectedRevision)
+      const path = this.path(journey)
+      if (journey.currentIndex >= path.length - 1)
+        throw new CapabilityError('validation_failed', false)
+      const currentMembers = this.scenes.partyMemberIds(input.sceneId)
+      this.db
+        .prepare(
+          `UPDATE hex_journey SET status = 'travelling', revision = revision + 1,
          party_member_ids_json = ?, segment_started_at = ?,
          abort_reason = NULL, hint_code = 'travelling'
          WHERE scene_id = ?`
-      )
-      .run(JSON.stringify(currentMembers), this.now(), input.sceneId)
-    return this.snapshot(input.sceneId, this.journey(input.sceneId))
+        )
+        .run(JSON.stringify(currentMembers), this.now(), input.sceneId)
+      return this.snapshot(input.sceneId, this.journey(input.sceneId))
+    })()
   }
 
   abort(input: z.infer<typeof mutateHexTravelInputSchema>) {
@@ -583,6 +590,15 @@ export class HexTravelStore {
   }
 
   private advance(journey: JourneyRow): void {
+    // Older campaigns could persist both activities; reconcile before moving a hex.
+    if (sceneHasActiveCombat(this.db, journey.sceneId)) {
+      this.db
+        .prepare(
+          "UPDATE hex_journey SET status = 'paused', revision = revision + 1, segment_started_at = NULL, hint_code = 'paused' WHERE scene_id = ?"
+        )
+        .run(journey.sceneId)
+      return
+    }
     const storedMembers = this.memberIds(journey)
     const currentMembers = this.scenes.partyMemberIds(journey.sceneId)
     if (JSON.stringify(storedMembers) !== JSON.stringify(currentMembers)) {
@@ -870,4 +886,18 @@ export class HexTravelStore {
   private memberIds(journey: JourneyRow): readonly string[] {
     return z.array(z.uuid()).parse(JSON.parse(journey.partyMemberIdsJson))
   }
+}
+
+/** Aggregate-owned read; paused journeys do not execute and may coexist with combat. */
+export function sceneIsTravelling(
+  db: Database.Database,
+  sceneId: string
+): boolean {
+  return (
+    db
+      .prepare(
+        "SELECT 1 FROM hex_journey WHERE scene_id = ? AND status = 'travelling'"
+      )
+      .get(sceneId) !== undefined
+  )
 }

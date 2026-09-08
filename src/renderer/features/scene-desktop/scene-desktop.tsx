@@ -1,13 +1,20 @@
+import { useSessionWorkspaceController } from '../session/use-session-workspace-controller.js'
+import { SessionDialogHost } from '../session/session-dialog-host.js'
+import { SessionLootPanel } from '../session/session-groups-panel.js'
+import {
+  EncounterCrumbs,
+  SessionEncounterPanel
+} from '../encounter/encounter-panels.js'
+import type { SessionTravelSlots } from '../session/session-travel-slots.js'
+import { DesktopOverview } from './desktop-overview.js'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { WorkspaceSurfaceProps } from '../workspace/workspace-surface-props.js'
-import { formatMessage, message } from '../../i18n/session-runtime.de.js'
-import { useCapabilityApi } from '../../capabilities/use-capability-api.js'
-import { useSessionMutationController } from '../session/use-session-mutation-controller.js'
-import { useSessionSceneController } from '../session/use-session-scene-controller.js'
+import { message } from '../../i18n/session-runtime.de.js'
 import { useSceneDesktop } from './use-scene-desktop.js'
 import { DesktopWindow } from './desktop-window.js'
 import {
   desktopWindowBounds,
+  desktopWindowIsVisible,
   type DesktopSize,
   type SnapSide
 } from './desktop-geometry.js'
@@ -15,10 +22,13 @@ import { DesktopReader, DesktopSearch } from './desktop-references.js'
 import { desktopWindowTitle } from './desktop-window-title.js'
 import './scene-desktop.css'
 
-export function SceneDesktop(props: WorkspaceSurfaceProps) {
-  const api = useCapabilityApi()
-  const { mutateSnapshot } = useSessionMutationController(props)
-  const actions = useSessionSceneController({ api, mutateSnapshot })
+export function SceneDesktop(
+  props: WorkspaceSurfaceProps & { travel: SessionTravelSlots }
+) {
+  const { model, actions } = useSessionWorkspaceController({
+    ...props,
+    followCombat: false
+  })
   const focused = props.snapshot.scene.scenes.find(
     (scene) => scene.id === props.snapshot.scene.focusedSceneId
   )!
@@ -61,9 +71,6 @@ export function SceneDesktop(props: WorkspaceSurfaceProps) {
   const windows = snapshot.state?.windows ?? []
   const visible = windows.filter((window) => !window.minimized)
   const raised = visible.at(-1)?.id
-  const members = props.snapshot.party.members.filter((member) =>
-    focused.partyMemberIds.includes(member.id)
-  )
   return (
     <section
       className="scene-desktop"
@@ -76,7 +83,7 @@ export function SceneDesktop(props: WorkspaceSurfaceProps) {
           <select
             aria-label={message('desktop.scene')}
             value={focused.id}
-            onChange={(event) => actions.focus(event.target.value)}
+            onChange={(event) => actions.focusScene(event.target.value)}
           >
             {props.snapshot.scene.scenes.map((scene) => (
               <option key={scene.id} value={scene.id}>
@@ -107,6 +114,18 @@ export function SceneDesktop(props: WorkspaceSurfaceProps) {
         >
           {message('desktop.search')}
         </button>
+        {(['map', 'combat', 'loot'] as const).map((kind) => (
+          <button
+            key={kind}
+            disabled={!snapshot.state || !!snapshot.error}
+            onClick={() => {
+              requestedFocus.current = { sceneId: focused.id, windowId: kind }
+              projection.dispatch({ type: `open-${kind}` })
+            }}
+          >
+            {message(`desktop.${kind}`)}
+          </button>
+        ))}
         <small role="status">
           {snapshot.loading
             ? message('desktop.loading')
@@ -150,61 +169,85 @@ export function SceneDesktop(props: WorkspaceSurfaceProps) {
                   window={window}
                   dispatch={projection.dispatch.bind(projection)}
                 />
-              ) : window.kind !== 'overview' ? (
+              ) : window.kind === 'reader' || window.kind === 'reference' ? (
                 <DesktopReader
                   window={window}
                   dispatch={projection.dispatch.bind(projection)}
                 />
-              ) : (
-                <>
-                  <div className="desktop-scene-facts">
-                    <span>{focused.locationName || '—'}</span>
-                    <span>
-                      {formatMessage('desktop.time', {
-                        day: Math.floor(focused.gameTimeSeconds / 86400) + 1,
-                        hours: String(
-                          Math.floor(focused.gameTimeSeconds / 3600) % 24
-                        ).padStart(2, '0'),
-                        minutes: String(
-                          Math.floor(focused.gameTimeSeconds / 60) % 60
-                        ).padStart(2, '0')
+              ) : window.kind === 'map' ? (
+                <div className="desktop-map">
+                  <button
+                    className="desktop-map-controls-toggle"
+                    aria-expanded={window.controlsOpen}
+                    onClick={() =>
+                      projection.dispatch({
+                        type: 'map-controls',
+                        value: !window.controlsOpen
+                      })
+                    }
+                  >
+                    {message('desktop.travelControls')}
+                  </button>
+                  {window.controlsOpen && (
+                    <div className="desktop-travel-controls">
+                      {props.travel.renderScenario({
+                        openMap: () => {},
+                        mapActive: true
                       })}
-                    </span>
-                  </div>
-                  <h3>{message('desktop.characters')}</h3>
-                  <ul className="desktop-register">
-                    {members.map((member) => (
-                      <li key={member.id}>
-                        <span>{member.name}</span>
-                        <small>
-                          {member.playerName ?? '—'} · {message('ui.lv')}{' '}
-                          {member.level ?? '—'}
-                        </small>
-                      </li>
-                    ))}
-                  </ul>
-                  {members.length === 0 && (
-                    <p className="desktop-empty">
-                      {message('desktop.noCharacters')}
-                    </p>
+                    </div>
                   )}
-                  <h3>{message('desktop.groups')}</h3>
-                  <ul className="desktop-register">
-                    {focused.groups
-                      .filter((group) => !group.archived)
-                      .map((group) => (
-                        <li key={group.id}>
-                          <span>{group.name}</span>
-                          <small>
-                            {group.entries.reduce(
-                              (count, entry) => count + entry.aliveQuantity,
-                              0
-                            )}
-                          </small>
-                        </li>
-                      ))}
-                  </ul>
-                </>
+                  <div className="desktop-map-canvas">
+                    {props.travel.renderMap({
+                      view: snapshot.state!.mapView,
+                      renderActive: desktopWindowIsVisible(
+                        window,
+                        windows,
+                        size
+                      ),
+                      changed: (value) => {
+                        const state = projection.snapshot().state
+                        if (state)
+                          projection.dispatch({
+                            type: 'map-view',
+                            value: { ...state.mapView, cameras: value.cameras }
+                          })
+                      }
+                    })}
+                  </div>
+                </div>
+              ) : window.kind === 'combat' ? (
+                <div className="desktop-combat">
+                  <EncounterCrumbs
+                    snapshot={props.snapshot}
+                    loot={model.loot}
+                    setSnapshot={props.setSnapshot}
+                    onError={props.onError}
+                  />
+                  <SessionEncounterPanel
+                    snapshot={props.snapshot}
+                    loot={model.loot}
+                    setSnapshot={props.setSnapshot}
+                    onError={props.onError}
+                    selection={snapshot.state!.combatSelection.filter((id) =>
+                      focused.groups.some(
+                        (group) => group.id === id && !group.archived
+                      )
+                    )}
+                    selectionChanged={(value) =>
+                      projection.dispatch({ type: 'combat-selection', value })
+                    }
+                    manageGroups={actions.manageGroups}
+                    reinforce={actions.reinforce}
+                    distribute={actions.distribute}
+                    inspect={(creature) =>
+                      actions.inspectCreature(creature.id, creature.name)
+                    }
+                  />
+                </div>
+              ) : window.kind === 'loot' ? (
+                <SessionLootPanel model={model.groups} actions={actions} />
+              ) : (
+                <DesktopOverview model={model} actions={actions} />
               )}
             </DesktopWindow>
           ))}
@@ -238,6 +281,11 @@ export function SceneDesktop(props: WorkspaceSurfaceProps) {
           <small>{message('desktop.empty')}</small>
         )}
       </nav>
+      <SessionDialogHost
+        model={model}
+        actions={actions}
+        onError={props.onError}
+      />
     </section>
   )
 }

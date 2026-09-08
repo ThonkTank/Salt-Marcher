@@ -1,3 +1,4 @@
+import type { SessionTravelSlots } from '../session/session-travel-slots.js'
 import { formatMessage, message } from '../../i18n/hex-runtime.de.js'
 import { useCallback, useMemo } from 'react'
 import { HexMapCanvas } from './hex-map-canvas.js'
@@ -221,7 +222,10 @@ export function TravelScenario(props: {
   )
 }
 
-export function SessionHexMap(props: { controller: HexTravelController }) {
+export function SessionHexMap(props: {
+  controller: HexTravelController
+  presentation?: Parameters<SessionTravelSlots['renderMap']>[0]
+}) {
   const state = useHexTravelViewModel(props.controller)
   const travel = state.travel
   const mapId = state.map?.map.id
@@ -274,6 +278,38 @@ export function SessionHexMap(props: { controller: HexTravelController }) {
   return (
     <div className="hex-travel-map">
       <HexMapCanvas
+        {...(props.presentation
+          ? {
+              camera: props.presentation.view.cameras.find(
+                (camera) => camera.mapId === mapId
+              ),
+              renderActive: props.presentation.renderActive,
+              onCameraChange: (
+                id: string,
+                camera: { x: number; y: number; scale: number }
+              ) => {
+                const presentation = props.presentation!
+                const previous = presentation.view.cameras.find(
+                  (entry) => entry.mapId === id
+                )
+                if (
+                  previous?.x === camera.x &&
+                  previous.y === camera.y &&
+                  previous.scale === camera.scale
+                )
+                  return
+                presentation.changed({
+                  ...presentation.view,
+                  cameras: [
+                    ...presentation.view.cameras.filter(
+                      (entry) => entry.mapId !== id
+                    ),
+                    { mapId: id, ...camera }
+                  ].slice(-100)
+                })
+              }
+            }
+          : {})}
         snapshot={state.map}
         biomes={state.biomes}
         selected={state.selected}

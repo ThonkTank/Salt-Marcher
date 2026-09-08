@@ -1,5 +1,6 @@
 import type {
   DesktopBounds,
+  DesktopMapView,
   DesktopReferenceEntry,
   SceneDesktopState,
   SceneDesktopWindow
@@ -16,11 +17,22 @@ export const initialOverviewWindow: SceneDesktopWindow = {
   snap: null
 }
 export function initialDesktopState(): SceneDesktopState {
-  return { schemaVersion: 2, windows: [initialOverviewWindow] }
+  return {
+    schemaVersion: 3,
+    windows: [initialOverviewWindow],
+    mapView: { mapId: null, selected: null, cameras: [] },
+    combatSelection: []
+  }
 }
 export type DesktopAction =
   | Readonly<{ type: 'open-overview' }>
   | Readonly<{ type: 'open-search' }>
+  | Readonly<{ type: 'open-map' }>
+  | Readonly<{ type: 'open-combat' }>
+  | Readonly<{ type: 'open-loot' }>
+  | Readonly<{ type: 'map-view'; value: DesktopMapView }>
+  | Readonly<{ type: 'map-controls'; value: boolean }>
+  | Readonly<{ type: 'combat-selection'; value: readonly string[] }>
   | Readonly<{
       type: 'open-reference'
       entry: DesktopReferenceEntry
@@ -50,6 +62,39 @@ export function reduceDesktop(
   state: SceneDesktopState,
   action: DesktopAction
 ): SceneDesktopState {
+  if (action.type === 'map-view') return { ...state, mapView: action.value }
+  if (action.type === 'combat-selection')
+    return { ...state, combatSelection: action.value }
+  if (action.type === 'map-controls')
+    return {
+      ...state,
+      windows: state.windows.map((window) =>
+        window.kind === 'map'
+          ? { ...window, controlsOpen: action.value }
+          : window
+      )
+    }
+  if (
+    action.type === 'open-map' ||
+    action.type === 'open-combat' ||
+    action.type === 'open-loot'
+  ) {
+    const kind =
+      action.type === 'open-map'
+        ? 'map'
+        : action.type === 'open-combat'
+          ? 'combat'
+          : 'loot'
+    if (state.windows.some((window) => window.id === kind))
+      return reduceDesktop(state, { type: 'raise', id: kind })
+    return appendWindow(state, {
+      ...initialOverviewWindow,
+      id: kind,
+      kind,
+      ...(kind === 'map' ? { controlsOpen: false } : {}),
+      bounds: { x: 80, y: 40, width: kind === 'map' ? 720 : 600, height: 560 }
+    } as SceneDesktopWindow)
+  }
   if (action.type === 'open-overview' || action.type === 'open-search') {
     const id = action.type === 'open-overview' ? 'overview' : 'search'
     if (state.windows.some((window) => window.id === id))

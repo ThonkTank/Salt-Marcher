@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { CapabilityError } from '../../src/shared/errors/capability-error.js'
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { LiveSessionSnapshot } from '../../src/shared/contracts/live-session.js'
@@ -38,6 +39,79 @@ type ReadResult = TravelProviderReadResult<ProviderState>
 afterEach(cleanup)
 
 describe('Travel async controller boundaries', () => {
+  it('retries only a definitely stale Pause once against a fresh travelling revision', async () => {
+    const fixture = createFixture()
+    fixture.read.mockResolvedValueOnce(travelResult('scene-a', 1, 'travelling'))
+    fixture.read.mockResolvedValueOnce(travelResult('scene-a', 2, 'travelling'))
+    fixture.execute.mockRejectedValueOnce(new CapabilityError('stale', true))
+    fixture.execute.mockResolvedValueOnce(travelResult('scene-a', 3, 'paused'))
+    render(fixture.harness())
+    await expectState('provider:1')
+    await act(async () => fixture.controller().pauseOrResume())
+    expect(fixture.execute.mock.calls.map(([command]) => command)).toEqual([
+      { kind: 'pause', sceneId: 'scene-a', expectedRevision: 1 },
+      { kind: 'pause', sceneId: 'scene-a', expectedRevision: 2 }
+    ])
+    await expectState('provider:3')
+    expect(fixture.onError).not.toHaveBeenCalled()
+  })
+
+  it.each(['paused', 'completed'])(
+    'does not replay a stale Pause when readback is already %s',
+    async (status) => {
+      const fixture = createFixture()
+      fixture.read.mockResolvedValueOnce(
+        travelResult('scene-a', 1, 'travelling')
+      )
+      fixture.read.mockResolvedValueOnce(travelResult('scene-a', 2, status))
+      fixture.execute.mockRejectedValueOnce(new CapabilityError('stale', true))
+      render(fixture.harness())
+      await expectState('provider:1')
+      await act(async () => fixture.controller().pauseOrResume())
+      expect(fixture.execute).toHaveBeenCalledTimes(1)
+      if (status === 'paused') {
+        await expectState('provider:2')
+        expect(fixture.onError).not.toHaveBeenCalled()
+      } else expect(fixture.onError).toHaveBeenCalledTimes(1)
+    }
+  )
+
+  it('never replays Pause after an unknown outcome', async () => {
+    const fixture = createFixture()
+    fixture.read.mockResolvedValueOnce(travelResult('scene-a', 1, 'travelling'))
+    fixture.execute.mockRejectedValueOnce(
+      new CapabilityError('outcome_unknown', true)
+    )
+    render(fixture.harness())
+    await expectState('provider:1')
+    await act(async () => fixture.controller().pauseOrResume())
+    expect(fixture.execute).toHaveBeenCalledTimes(1)
+    expect(fixture.read).toHaveBeenCalledTimes(1)
+    expect(fixture.onError).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not retry a stale Pause after leaving its scene during fresh readback', async () => {
+    const pending = deferred<ReadResult>()
+    const fixture = createFixture()
+    fixture.read.mockResolvedValueOnce(travelResult('scene-a', 1, 'travelling'))
+    fixture.read.mockImplementationOnce(() => pending.promise)
+    fixture.read.mockResolvedValueOnce(result('scene-b', 4, 'map-b'))
+    fixture.execute.mockRejectedValueOnce(new CapabilityError('stale', true))
+    const view = render(fixture.harness())
+    await expectState('provider:1')
+    act(() => {
+      void fixture.controller().pauseOrResume()
+    })
+    await waitFor(() => expect(fixture.read).toHaveBeenCalledTimes(2))
+    view.rerender(fixture.harness(snapshot('scene-b', 4)))
+    await expectState('provider:4')
+    pending.resolve(travelResult('scene-a', 2, 'travelling'))
+    await act(async () => pending.promise)
+    expect(fixture.execute).toHaveBeenCalledTimes(1)
+    expect(fixture.onError).not.toHaveBeenCalled()
+    await expectState('provider:4')
+  })
+
   it('accepts only the newest out-of-order Context response', async () => {
     const first = deferred<ReadResult>()
     const second = deferred<ReadResult>()
@@ -296,4 +370,13 @@ async function expectState(text: string): Promise<void> {
   await waitFor(() =>
     expect(screen.getByTestId('travel-state')).toHaveTextContent(text)
   )
+}
+
+function travelResult(
+  sceneId: string,
+  revision: number,
+  status: string
+): ReadResult {
+  const value = result(sceneId, revision, 'map-a')
+  return { ...value, providerState: { ...value.providerState, status } }
 }

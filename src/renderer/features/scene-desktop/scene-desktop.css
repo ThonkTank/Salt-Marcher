@@ -290,3 +290,55 @@
 .desktop-search-result small {
   color: var(--text-muted);
 }
+
+.desktop-section-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+.desktop-section-heading h3 {
+  flex: 1;
+}
+.desktop-section-heading button,
+.desktop-register button {
+  padding: 0 var(--space-3);
+}
+.desktop-map {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.desktop-map-controls-toggle {
+  align-self: flex-start;
+  margin-bottom: var(--space-3);
+}
+.desktop-travel-controls {
+  overflow: auto;
+  max-height: 50%;
+  flex-shrink: 0;
+}
+.desktop-map-canvas {
+  flex: 1;
+  min-height: 100px;
+  display: flex;
+}
+.desktop-map-canvas > * {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+.desktop-combat {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+.desktop-combat .scenario-scroll {
+  overflow: visible;
+}
+.scene-desktop .group-register {
+  min-width: 0;
+}
+.desktop-scene-facts button {
+  color: var(--text-1);
+}

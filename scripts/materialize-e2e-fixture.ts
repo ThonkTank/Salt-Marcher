@@ -130,6 +130,12 @@ const fixtureSchema = z.discriminatedUnion('version', [
       version: z.literal(6),
       sceneDesktopFixtureIdentity: z.literal('scene-desktop-two-scenes-v1')
     })
+    .strict(),
+  z
+    .object({
+      version: z.literal(7),
+      sceneDesktopFixtureIdentity: z.literal('scene-desktop-two-scenes-v2')
+    })
     .strict()
 ])
 
@@ -138,7 +144,7 @@ const fixturePath = resolve(userData, 'fixture.json')
 const fixture = fixtureSchema.parse(
   JSON.parse(readFileSync(fixturePath, 'utf8'))
 )
-if (fixture.version === 6) {
+if (fixture.version === 6 || fixture.version === 7) {
   materializeSceneDesktopFixture(resolve(userData, 'development-data'))
   process.exit(0)
 }
