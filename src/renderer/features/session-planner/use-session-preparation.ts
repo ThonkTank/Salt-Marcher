@@ -29,10 +29,18 @@ export function useSessionPreparation(options: {
   read: () => SessionPlannerAuthority
   applyWorkspace: (workspace: SessionPlannerWorkspace) => void
   saveDraft: () => Promise<SessionPlannerWorkspace | null>
+  failed?: (cause: unknown) => void
   onError: (message: string) => void
 }) {
-  const { applyWorkspace, coordinator, onError, planner, read, saveDraft } =
-    options
+  const {
+    applyWorkspace,
+    coordinator,
+    failed,
+    onError,
+    planner,
+    read,
+    saveDraft
+  } = options
   const [seed, setSeed] = useState(179_974)
   const [stage, setStage] = useState<PreparationStage>('idle')
   const [stageMessage, setStageMessage] = useState('')
@@ -43,6 +51,7 @@ export function useSessionPreparation(options: {
   const activeTarget = useRef<PreparationTarget | null>(null)
   const activeAbort = useRef<AbortController | null>(null)
   const observedReceipt = useRef<string | null>(null)
+  const unsettled = useRef(new Set<string>())
 
   useEffect(
     () => () => activeAbort.current?.abort('preparation-controller-unmounted'),
@@ -55,6 +64,9 @@ export function useSessionPreparation(options: {
       target: PreparationTarget,
       refreshSucceeded = true
     ): Promise<void> => {
+      if (isPreparationTerminal(receipt.status))
+        unsettled.current.delete(receipt.operationId)
+      else unsettled.current.add(receipt.operationId)
       if (!preparationTargetIsCurrent(activeTarget.current, target, read()))
         return
       setSeed(receipt.seed)
@@ -85,13 +97,14 @@ export function useSessionPreparation(options: {
         signal,
         acceptReceipt: (receipt) => publishReceipt(receipt, target)
       })
+      if (outcome.status === 'failure') failed?.(outcome.cause)
       if (
         outcome.status === 'failure' &&
         preparationTargetIsCurrent(activeTarget.current, target, read())
       )
         onError(capabilityErrorText(outcome.cause))
     },
-    [coordinator, onError, planner, publishReceipt, read]
+    [coordinator, failed, onError, planner, publishReceipt, read]
   )
 
   const requestPreparation = useCallback(
@@ -150,6 +163,7 @@ export function useSessionPreparation(options: {
           await publishReceipt(started.receipt, target)
         }
       })
+      if (outcome.status === 'failure') failed?.(outcome.cause)
       if (
         outcome.status === 'failure' &&
         preparationTargetIsCurrent(activeTarget.current, target, read())
@@ -162,7 +176,7 @@ export function useSessionPreparation(options: {
         onError(capabilityErrorText(outcome.cause))
       }
     },
-    [coordinator, onError, planner, publishReceipt, read]
+    [coordinator, failed, onError, planner, publishReceipt, read]
   )
 
   const generate = useCallback(async (): Promise<void> => {
@@ -197,10 +211,12 @@ export function useSessionPreparation(options: {
         planner.cancelPreparation({ operationId: target.operationId }),
       accept: ({ receipt }) => publishReceipt(receipt, target)
     })
-    if (outcome.status === 'failure')
+    if (outcome.status === 'failure') {
+      failed?.(outcome.cause)
       onError(capabilityErrorText(outcome.cause))
+    }
     setConfirmation(null)
-  }, [confirmation, coordinator, onError, planner, publishReceipt])
+  }, [confirmation, coordinator, failed, onError, planner, publishReceipt])
 
   const authority = read()
   const sessionId = authority.workspace?.session.id ?? null
@@ -248,6 +264,19 @@ export function useSessionPreparation(options: {
   )
 
   return {
+    hasActiveOperation: () => {
+      const receipt = read().workspace?.preparation
+      const unobserved =
+        receipt &&
+        !isPreparationTerminal(receipt.status) &&
+        observedReceipt.current !==
+          `${receipt.operationId}:${receipt.updatedAt}`
+      return (
+        activeTarget.current !== null ||
+        unsettled.current.size > 0 ||
+        Boolean(unobserved)
+      )
+    },
     seed,
     stage,
     stageMessage,

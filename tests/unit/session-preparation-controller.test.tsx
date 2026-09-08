@@ -41,6 +41,45 @@ describe('Session preparation controller', () => {
     expect(fixture.onError).not.toHaveBeenCalled()
   })
 
+  it('retains an accepted background preparation after the UI target becomes stale', async () => {
+    const fixture = renderPreparation({
+      startPreparation: () =>
+        Promise.resolve({ status: 'accepted', receipt: receipt('queued') })
+    })
+    await act(async () =>
+      fixture.result.current.requestPreparation(
+        fixture.workspace,
+        operationId,
+        false,
+        17
+      )
+    )
+    expect(fixture.result.current.hasActiveOperation()).toBe(true)
+    fixture.setIntentRevision(2)
+    fixture.rerender({ revision: 2 })
+    expect(fixture.result.current.stage).toBe('stale')
+    expect(fixture.result.current.hasActiveOperation()).toBe(true)
+  })
+
+  it('releases a preparation only after its terminal cancellation receipt', async () => {
+    const fixture = renderPreparation({
+      startPreparation: () =>
+        Promise.resolve({ status: 'accepted', receipt: receipt('queued') }),
+      cancelPreparation: () => Promise.resolve({ receipt: receipt('canceled') })
+    })
+    await act(async () =>
+      fixture.result.current.requestPreparation(
+        fixture.workspace,
+        operationId,
+        false,
+        17
+      )
+    )
+    expect(fixture.result.current.hasActiveOperation()).toBe(true)
+    await act(async () => fixture.result.current.cancelPreparation())
+    expect(fixture.result.current.hasActiveOperation()).toBe(false)
+  })
+
   it('drops a succeeded receipt when intent changes during refresh', async () => {
     const refreshed = deferred<SessionPlannerWorkspace>()
     const fixture = renderPreparation({
@@ -120,6 +159,7 @@ describe('Session preparation controller', () => {
 function renderPreparation(overrides: {
   startPreparation: () => Promise<unknown>
   preparationReceipt?: () => Promise<unknown>
+  cancelPreparation?: () => Promise<unknown>
   read?: () => Promise<SessionPlannerWorkspace>
 }) {
   const workspace = plannerWorkspace()
@@ -139,7 +179,7 @@ function renderPreparation(overrides: {
       overrides.preparationReceipt ??
       (() => Promise.resolve({ receipt: null })),
     read: overrides.read ?? (() => Promise.resolve(workspace)),
-    cancelPreparation: vi.fn(),
+    cancelPreparation: overrides.cancelPreparation ?? vi.fn(),
     onPreparationChanged: (
       listener: (value: { operationId: string; status: string }) => void
     ) => {

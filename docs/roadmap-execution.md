@@ -2693,3 +2693,77 @@ normale Gruppen-Saves und Reward-Commits bedienbar aufgelöst. Phase 4 bleibt of
 Generierung, Archivieren/Combat, Session Planner, übrige Writer-/Kartenwege und
 Offline-/Update-UI müssen noch vollständig qualifiziert werden. Phasen 5–7 und
 exakter CI-Handoff/Main-Abschluss bleiben erforderlich.
+
+### Phase 4 — Session-Planner-Wartungsowner: erster Umsetzungsabschnitt
+
+Vorheriger Turn Fortschritt (43438551c), aktueller Worktree sauber. Der Planner
+hat getrennte Owner für Entwurf, Sitzungsbefehle, Vorbereitung und Beute. Ein bloßes
+whenIdle auf Einzeltransporten deckt mehrstufiges Save→Create/Prepare/Materialize
+nicht ab. Einen lokalen Lebenszyklus für ganze Controller-Aktionen ergänzen und
+alle schreibenden Benutzereinstiege darüber führen. Neue Eingaben werden während
+Wartung sowie laufender Controller-Aufträge synchron blockiert. Unterhalb der
+Hooks gestartete Receipt-/Load-Arbeit zusätzlich über den Coordinator drainen.
+
+Den transitional Draft-Guard durch einen benannten Owner ersetzen: normale
+Planentwürfe speichern über denselben saveDraft-Pfad wie die normale Oberfläche;
+Verwerfen stellt den letzten bestätigten Workspace wieder her. Fehler behalten den
+Entwurf und verhindern Wartung. Unknown-Fehler aus den beteiligten Command-Hooks
+explizit an den Lebenszyklus melden, sodass kein blindes Verwerfen oder Speichern
+folgt. Laufende Hintergrundvorbereitung/offene Unterdialoge zunächst ausdrücklich
+als noch ungeklärte Zustände erkennen; diese dürfen die Wartung nicht passieren.
+Deren vollständige Save-/Discard-Auflösung und Unknown-Recovery sind nachfolgende
+Teile desselben Phase-4-Owners, keine abgeschlossene Planner-Abnahme.
+
+Prüfen: realer Workspace-/Session-Command-Hook mit zentralem Owner, Speichern,
+Verwerfen, Speicherfehler, Abbrechen/Entsperren, sofortige Eingabesperre, laufender
+mehrstufiger Auftrag, unbekannter Ausgang und offene Unterdialoge. Bestehende
+Planner-Command-/Preparation- und Architekturtests, Typecheck/Lint, Build/Smoke.
+
+Planner-Teilaudit/Korrektur vor Abschluss: 86 Tests und Typecheck bestehen. Die
+Vorbereitung kann nach einer lokalen Intent-Änderung ihren aktiven UI-Target
+verlieren, obwohl der persistierte Auftrag weiterläuft. Umgekehrt kann ein alter
+Workspace noch queued zeigen, nachdem die Cancel-Quittung terminal war. Für die
+Wartungsprüfung deshalb die beobachteten nichtterminalen Operation-IDs getrennt
+vom UI-Target halten und nur mit terminaler Quittung entfernen. Initiale noch nicht
+übernommene Workspace-Quittungen ebenfalls erkennen. Diese Fälle im vorhandenen
+Vorbereitungs-Hook testen; vollständige automatische Klärung bleibt Folgearbeit.
+
+Planner-Validierung/Korrektur: 87 Tests bestehen. Der neue Cancel-Test konnte seine
+Antwort nicht injizieren, weil der bestehende Testhelfer diesen Override noch
+nicht unterstützt; dessen Signatur/Implementierung ergänzen. Typecheck beanstandet
+zusätzlich einen absichtlich reduzierten Test-Port, dessen Cast ausdrücklich über
+unknown erfolgen muss. Lint-Korrekturen: Callback-Optionen als Funktionswerte statt
+ungebundene Methoden deklarieren, die neue stabile Dialog-Setter-Abhängigkeit
+aufnehmen und den Fehlertext ohne unsichere verschachtelte Matcher-Zuweisung prüfen.
+
+### Phase 4 — Session Planner: erster Owner-Abschnitt, getrennte Audits
+
+Planabgleich dieses Abschnitts bestanden: Der normale Sitzungsplan verwendet den
+vorhandenen Session-Command-Save auch in der zentralen Wartung. Verwerfen ersetzt
+nur den lokalen Entwurf durch den bestätigten Workspace. Der Lebenszyklus hält
+ganze Benutzeraktionen einschließlich ihrer Fortsetzungen; währenddessen sowie
+bei Wartung sind die öffentlichen Eingabe-/Command-Einstiege synchron blockiert.
+Die Workspace-Oberfläche ist zusätzlich inert. Ungebremste interne Fortsetzungen
+können einen zuvor begonnenen Auftrag abschließen, bevor der Owner weiterarbeitet.
+Dialog-Getter erfassen neu geöffnete Dialoge synchron vor einem React-Commit.
+Unknown-Fehler aus Session-/Preparation-/Reward-Hooks verhindern erneute Writes
+und Verwerfen. Beobachtete nichtterminale Vorbereitungen bleiben unabhängig vom
+aktiven UI-Target als offen erfasst; eine terminale Quittung entfernt sie.
+
+Validierung: 88 Tests in 9 Dateien bestanden, einschließlich aller Architekturtests,
+realer Workspace-/Session-Command-Hooks mit Wartungsowner, Save, Discard, Fehler,
+Abbrechen/Entsperren, unbekanntem Ausgang, sofortiger Eingabesperre, bereits laufendem
+Save und Dialogöffnung am Ende einer mehrstufigen Aktion. Preparation-Hook deckt
+stale UI-Target und bestätigten Cancel ab. Vollständiger Typecheck, gezieltes ESLint
+aller geänderten/neuen TypeScript-Dateien, Prettier, Build, Built-Smoke (Utility
+ready/closed) und git diff --check bestanden. Logs: work/roadmap-phase4-planner-*.log.
+Keine Nutzerinstallation verändert; kein kanonischer Handoff.
+
+Roadmapabgleich: Phase 4 und der vollständige Planner-Owner bleiben offen. Normale
+Planentwürfe sind jetzt auflösbar. Namens-/Bestätigungs-/Beute-Unterdialoge werden
+bis zu ihrer eigenen Auflösung ausdrücklich zurückgewiesen. Hintergrundvorbereitung
+muss noch im zentralen Ablauf abgeschlossen/abgebrochen werden; insbesondere vom
+UI-Target getrennte Aufträge benötigen eigene Receipt-Klärung. Unknown-Recovery für
+Planner-Befehle ist noch nicht bedienbar und darf nicht als abgeschlossen gelten.
+Weitere Gruppenbefehle (Generierung/Archivieren/Combat), übrige Writer-/Kartenwege,
+Offline-/Update-UI, Phasen 5–7 und exakter CI-Handoff/Main-Abschluss bleiben offen.

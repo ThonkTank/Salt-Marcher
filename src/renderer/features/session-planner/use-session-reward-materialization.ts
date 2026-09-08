@@ -20,11 +20,13 @@ export function useSessionRewardMaterialization(options: {
   saveDraft: () => Promise<NonNullable<
     SessionPlannerAuthority['workspace']
   > | null>
+  failed?: (cause: unknown) => void
   onError: (message: string) => void
 }) {
   const {
     applyWorkspace,
     coordinator,
+    failed,
     loot,
     onError,
     planner,
@@ -32,10 +34,20 @@ export function useSessionRewardMaterialization(options: {
     saveDraft
   } = options
   const commandIds = useRef(new Map<string, string>())
-  const [treasureEditor, setTreasureEditor] = useState<Treasure | null | false>(
-    false
-  )
-  const [distribution, setDistribution] = useState<Treasure | null>(null)
+  const [treasureEditor, setTreasureEditorState] = useState<
+    Treasure | null | false
+  >(false)
+  const [distribution, setDistributionState] = useState<Treasure | null>(null)
+
+  const dialogs = useRef({ treasure: false, distribution: false })
+  const setTreasureEditor = useCallback((value: Treasure | null | false) => {
+    dialogs.current.treasure = value !== false
+    setTreasureEditorState(value)
+  }, [])
+  const setDistribution = useCallback((value: Treasure | null) => {
+    dialogs.current.distribution = value !== null
+    setDistributionState(value)
+  }, [])
 
   const materializeReward = useCallback(
     async (
@@ -82,13 +94,27 @@ export function useSessionRewardMaterialization(options: {
           if (edit) setTreasureEditor(result.treasure)
         }
       })
-      if (outcome.status === 'failure')
+      if (outcome.status === 'failure') {
+        failed?.(outcome.cause)
         onError(capabilityErrorText(outcome.cause))
+      }
     },
-    [applyWorkspace, coordinator, loot, onError, planner, read, saveDraft]
+    [
+      applyWorkspace,
+      coordinator,
+      failed,
+      loot,
+      onError,
+      planner,
+      read,
+      saveDraft,
+      setTreasureEditor
+    ]
   )
 
   return {
+    hasOpenDialog: () =>
+      dialogs.current.treasure || dialogs.current.distribution,
     treasureEditor,
     distribution,
     setTreasureEditor,

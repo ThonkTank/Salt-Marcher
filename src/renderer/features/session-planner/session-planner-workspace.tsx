@@ -21,7 +21,11 @@ export function SessionPlannerWorkspace(props: WorkspaceSurfaceProps) {
     )
 
   return (
-    <section className="session-planner" aria-label={message('planner.title')}>
+    <section
+      className="session-planner"
+      aria-label={message('planner.title')}
+      inert={controller.maintenanceBlocked}
+    >
       <SessionCatalog
         workspace={workspace}
         draft={draft}

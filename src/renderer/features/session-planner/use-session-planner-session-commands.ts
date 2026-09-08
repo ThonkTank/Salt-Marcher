@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import type { SessionPlannerWorkspace } from '../../../shared/contracts/session-planner.js'
 import type {
   AsyncCommandCoordinator,
@@ -15,6 +15,7 @@ type Dependencies = Readonly<{
   applyWorkspace: (workspace: SessionPlannerWorkspace) => void
   mergeCatalog: (sessions: SessionPlannerWorkspace['sessions']) => void
   resetEncounterQuery: () => void
+  failed?: (cause: unknown) => void
   onError: (message: string) => void
 }>
 
@@ -22,6 +23,7 @@ type Dependencies = Readonly<{
 export function useSessionPlannerSessionCommands(dependencies: Dependencies) {
   const {
     applyWorkspace,
+    failed,
     coordinator,
     mergeCatalog,
     onError,
@@ -29,9 +31,21 @@ export function useSessionPlannerSessionCommands(dependencies: Dependencies) {
     read,
     resetEncounterQuery
   } = dependencies
-  const [nameDialog, setNameDialog] = useState<'create' | 'rename' | null>(null)
+  const [nameDialog, setNameDialogState] = useState<'create' | 'rename' | null>(
+    null
+  )
   const [name, setName] = useState('')
-  const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [deleteConfirm, setDeleteConfirmState] = useState(false)
+
+  const dialogs = useRef({ name: false, delete: false })
+  const setNameDialog = useCallback((value: 'create' | 'rename' | null) => {
+    dialogs.current.name = value !== null
+    setNameDialogState(value)
+  }, [])
+  const setDeleteConfirm = useCallback((value: boolean) => {
+    dialogs.current.delete = value
+    setDeleteConfirmState(value)
+  }, [])
 
   const execute = useCallback(
     async (
@@ -58,10 +72,11 @@ export function useSessionPlannerSessionCommands(dependencies: Dependencies) {
           }
         }
       })
+      if (outcome.status === 'failure') failed?.(outcome.cause)
       reportCommandFailure(outcome, onError)
       return outcome.status === 'success' && published ? outcome.value : null
     },
-    [applyWorkspace, coordinator, mergeCatalog, onError, read]
+    [applyWorkspace, coordinator, failed, mergeCatalog, onError, read]
   )
 
   const saveDraft =
@@ -113,7 +128,7 @@ export function useSessionPlannerSessionCommands(dependencies: Dependencies) {
             ),
       () => setNameDialog(null)
     )
-  }, [execute, name, nameDialog, planner, read, saveDraft])
+  }, [execute, name, nameDialog, planner, read, saveDraft, setNameDialog])
 
   const deleteSession = useCallback(async (): Promise<void> => {
     const target = read()
@@ -124,9 +139,10 @@ export function useSessionPlannerSessionCommands(dependencies: Dependencies) {
       () => planner.delete(current.session.id, current.session.revision),
       () => setDeleteConfirm(false)
     )
-  }, [execute, planner, read])
+  }, [execute, planner, read, setDeleteConfirm])
 
   return {
+    hasOpenDialog: () => dialogs.current.name || dialogs.current.delete,
     nameDialog,
     name,
     deleteConfirm,
