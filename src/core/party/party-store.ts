@@ -74,6 +74,14 @@ export function migratePartySchema28To29(db: Database.Database): void {
 }
 
 export function migratePartyBurden34To35(db: Database.Database): void {
+  if (
+    !db
+      .prepare(
+        "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'player_characters'"
+      )
+      .get()
+  )
+    return
   const columns = new Set(
     (db.pragma('table_info(player_characters)') as Array<{ name: string }>).map(
       (column) => column.name

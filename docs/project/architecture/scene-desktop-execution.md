@@ -1414,3 +1414,26 @@ inactive members remain searchable, moves affect only selected members. No playe
 resources, legacy removal or phase-6 default switch was introduced. All identified
 discrepancies are resolved. Phase 5 remains in progress pending exact-SHA remote
 qualification, canonical installation handoff and successful main attestation.
+
+### Phase 5 — Legacy persistence correction 11
+
+Candidate 7a0f873cc was pushed as PR 668; Check 34259428154 started. Additional
+preflight review found stale explicit registry/schema expectations in the schema-27
+Golden-Master case (confirmed failure: expected registry 13, actual 14). That
+minimal historical fixture also has no Party aggregate. Guard the burden migration
+when the character table is absent, matching the existing Party 28->29 migration;
+normal aggregate initialization creates current tables later. Update only current
+version assertions to registry 14/campaign 35, preserve Golden-Master bytes and
+valuable-data checks. Rerun all preflight and burden/release migration cases, build,
+smoke and focused acceptance before pushing the corrected candidate.
+
+### Phase 5 — Migration correction validation and re-audit
+
+All 21 preflight/burden/release-baseline cases pass, including schema-27 databases
+without a Party table and schema-34 counters with unknown provenance. Corrected
+build and built smoke pass; changed-file lint passes. Twenty-two targeted
+roster/travel/UI cases pass. The UI and normal populated-Party migration path are
+unchanged from the zero-warning six-case E2E acceptance. Plan re-audit and original
+phase-5 re-audit pass; no Golden-Master bytes, budgets or acceptance assertions were
+relaxed. Replace the unqualified initial candidate with this corrective SHA and
+repeat the complete required remote job set before handoff.
