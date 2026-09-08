@@ -1,3 +1,30 @@
+.planner-workspace {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.planner-workspace > .session-planner {
+  flex: 1;
+}
+
+.planner-recovery-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  border-bottom: var(--border-width-structural) solid var(--border-structural);
+  background: var(--surface-panel);
+  padding: var(--space-4) var(--space-6);
+}
+
+.planner-recovery-notice p {
+  margin: 0;
+}
+
 .session-planner {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);

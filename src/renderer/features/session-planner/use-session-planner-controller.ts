@@ -63,6 +63,7 @@ export function useSessionPlannerController(
 
   const maintenance = usePlannerMaintenance({
     runtime,
+    onError,
     coordinator,
     read: workspace.read,
     applyWorkspace: workspace.applyWorkspace,
@@ -78,6 +79,10 @@ export function useSessionPlannerController(
   })
   return {
     maintenanceBlocked: maintenance.blocked,
+    uncertain: maintenance.uncertain,
+    canReconcile: maintenance.canReconcile,
+    reconciliationBlocked: maintenance.reconciliationBlocked,
+    retryUnknown: maintenance.retryUnknown,
     workspace: workspace.workspace,
     draft: workspace.draft,
     draftProjection: workspace.draftProjection,

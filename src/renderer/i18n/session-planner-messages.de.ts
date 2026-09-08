@@ -1,5 +1,16 @@
 export const sessionPlannerMessagesDe = {
   'planner.title': 'Session-Planer',
+  'planner.saveUnconfirmed':
+    'Der Ausgang eines Planungsauftrags ist noch unklar. Bitte den gespeicherten Stand prüfen.',
+  'planner.checkSavedState': 'Speicherstand erneut prüfen',
+  'planner.reconciliationUnavailable':
+    'Für diesen Auftrag ist noch keine Speicherbestätigung verfügbar.',
+  'planner.reconciliationFailed':
+    'Der Speicherstand konnte nicht geprüft werden. Bitte erneut versuchen.',
+  'planner.preparationNotStarted':
+    'Die Vorbereitung wurde nicht gestartet. Du kannst sie erneut anfordern.',
+  'planner.cancelNotApplied':
+    'Der Abbruch wurde nicht ausgeführt. Du kannst die laufende Vorbereitung erneut abbrechen.',
   'planner.loading': 'Session-Planer wird geladen …',
   'planner.session': 'Sitzung',
   'planner.sessionCreate': 'Sitzung anlegen',

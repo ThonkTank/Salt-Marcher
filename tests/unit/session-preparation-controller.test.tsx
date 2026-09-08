@@ -1,3 +1,5 @@
+import { PlannerMaintenanceRuntime } from '../../src/renderer/features/session-planner/planner-maintenance-runtime.js'
+import { CapabilityError } from '../../src/shared/errors/capability-error.js'
 // @vitest-environment jsdom
 import { act, renderHook } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
@@ -14,6 +16,180 @@ const sessionId = '01900000-0000-7000-8000-000000000001'
 const operationId = '01900000-0000-7000-8000-000000000002'
 
 describe('Session preparation controller', () => {
+  it.each(['queued', 'succeeded', null] as const)(
+    'reconciles an interrupted start as %s without repeating it',
+    async (state) => {
+      const runtime = new PlannerMaintenanceRuntime()
+      const startPreparation = vi
+        .fn()
+        .mockRejectedValue(new CapabilityError('outcome_unknown', false))
+      const fresh = {
+        ...plannerWorkspace(),
+        session: {
+          ...plannerWorkspace().session,
+          revision: state === 'succeeded' ? 2 : 1
+        }
+      }
+      const status = vi
+        .fn<
+          (
+            ids: readonly string[]
+          ) => Promise<PlannerPreparationMaintenanceStatus>
+        >()
+        .mockResolvedValueOnce({
+          operations: [],
+          workspace: plannerWorkspace()
+        })
+        .mockRejectedValueOnce(new Error('read failed'))
+        .mockResolvedValue({
+          operations: [{ operationId, receipt: state ? receipt(state) : null }],
+          workspace: fresh
+        })
+      const fixture = renderPreparation({
+        startPreparation,
+        preparationMaintenanceStatus: status,
+        failed: runtime.failed
+      })
+      await act(async () =>
+        fixture.result.current.requestPreparation(
+          fixture.workspace,
+          operationId,
+          false,
+          17
+        )
+      )
+      expect(runtime.uncertain()).toBe(true)
+      expect(runtime.canReconcile()).toBe(true)
+      await expect(runtime.reconcileUnknown()).rejects.toThrow('read failed')
+      expect(runtime.uncertain()).toBe(true)
+      expect(fixture.applyWorkspace).not.toHaveBeenCalled()
+      await act(async () =>
+        expect(runtime.reconcileUnknown()).resolves.toBe(true)
+      )
+      expect(runtime.uncertain()).toBe(false)
+      expect(startPreparation).toHaveBeenCalledOnce()
+      expect(status.mock.calls.slice(1)).toEqual([
+        [[operationId]],
+        [[operationId]]
+      ])
+      expect(fixture.applyWorkspace).toHaveBeenCalledWith(fresh)
+      expect(fixture.result.current.hasActiveOperation()).toBe(
+        state === 'queued'
+      )
+      if (!state)
+        expect(fixture.result.current.stageMessage).toContain('nicht gestartet')
+    }
+  )
+
+  it('preserves a local draft and rejects mismatched or omitted receipt rows', async () => {
+    const runtime = new PlannerMaintenanceRuntime()
+    const status = vi
+      .fn<
+        (ids: readonly string[]) => Promise<PlannerPreparationMaintenanceStatus>
+      >()
+      .mockResolvedValueOnce({ operations: [], workspace: plannerWorkspace() })
+      .mockResolvedValueOnce({ operations: [], workspace: plannerWorkspace() })
+      .mockResolvedValueOnce({
+        operations: [
+          {
+            operationId,
+            receipt: { ...receipt('succeeded'), sessionId: 'another' }
+          }
+        ],
+        workspace: plannerWorkspace()
+      })
+      .mockResolvedValue({
+        operations: [{ operationId, receipt: receipt('succeeded') }],
+        workspace: plannerWorkspace()
+      })
+    const fixture = renderPreparation({
+      startPreparation: vi
+        .fn()
+        .mockRejectedValue(new CapabilityError('outcome_unknown', false)),
+      preparationMaintenanceStatus: status,
+      failed: runtime.failed
+    })
+    fixture.setDirty()
+    await act(async () =>
+      fixture.result.current.requestPreparation(
+        fixture.workspace,
+        operationId,
+        false,
+        17
+      )
+    )
+    await expect(runtime.reconcileUnknown()).rejects.toThrow(
+      'Vorbereitungsquittung fehlt'
+    )
+    await expect(runtime.reconcileUnknown()).rejects.toThrow('anderen Sitzung')
+    expect(runtime.uncertain()).toBe(true)
+    await act(async () => {
+      await runtime.drain()
+    })
+    expect(runtime.uncertain()).toBe(false)
+    expect(fixture.applyWorkspace).not.toHaveBeenCalled()
+  })
+
+  it.each(['queued', 'canceled', null] as const)(
+    'reads an interrupted cancellation as %s without reissuing it',
+    async (state) => {
+      const runtime = new PlannerMaintenanceRuntime()
+      const cancelPreparation = vi
+        .fn()
+        .mockRejectedValue(new CapabilityError('outcome_unknown', false))
+      const status = vi
+        .fn<
+          (
+            ids: readonly string[]
+          ) => Promise<PlannerPreparationMaintenanceStatus>
+        >()
+        .mockResolvedValueOnce({
+          operations: [],
+          workspace: plannerWorkspace()
+        })
+        .mockResolvedValue({
+          operations: [{ operationId, receipt: state ? receipt(state) : null }],
+          workspace: plannerWorkspace()
+        })
+      const fixture = renderPreparation({
+        startPreparation: () =>
+          Promise.resolve({ status: 'accepted', receipt: receipt('queued') }),
+        cancelPreparation,
+        preparationMaintenanceStatus: status,
+        failed: runtime.failed
+      })
+      await act(async () =>
+        fixture.result.current.requestPreparation(
+          fixture.workspace,
+          operationId,
+          false,
+          17
+        )
+      )
+      await act(async () => fixture.result.current.cancelPreparation())
+      expect(runtime.uncertain()).toBe(true)
+      if (state) {
+        await act(async () =>
+          expect(runtime.reconcileUnknown()).resolves.toBe(true)
+        )
+        expect(runtime.uncertain()).toBe(false)
+        expect(fixture.result.current.hasActiveOperation()).toBe(
+          state === 'queued'
+        )
+        if (state === 'queued')
+          expect(fixture.result.current.stageMessage).toContain(
+            'Abbruch wurde nicht ausgeführt'
+          )
+      } else {
+        await expect(runtime.reconcileUnknown()).rejects.toThrow(
+          'Vorbereitungsquittung fehlt'
+        )
+        expect(runtime.uncertain()).toBe(true)
+      }
+      expect(cancelPreparation).toHaveBeenCalledOnce()
+    }
+  )
+
   it('discovers detached work on mount and settles it without an active UI target', async () => {
     const status = vi
       .fn<
@@ -254,6 +430,7 @@ describe('Session preparation controller', () => {
 
 function renderPreparation(overrides: {
   startPreparation: () => Promise<unknown>
+  failed?: PlannerMaintenanceRuntime['failed']
   preparationMaintenanceStatus?: (
     ids: readonly string[]
   ) => Promise<PlannerPreparationMaintenanceStatus>
@@ -263,12 +440,23 @@ function renderPreparation(overrides: {
 }) {
   const workspace = plannerWorkspace()
   let intentRevision = 1
+  let dirty = false
   let notice:
     ((notice: { operationId: string; status: string }) => void) | undefined
   const authority = (): SessionPlannerAuthority => ({
     workspace,
-    draft: null,
-    dirty: false,
+    draft: dirty
+      ? {
+          sessionId,
+          expectedRevision: workspace.session.revision,
+          participantIds: [],
+          adventureDayFraction: '0.5',
+          encounterCount: 5,
+          selectedSceneId: null,
+          scenes: []
+        }
+      : null,
+    dirty,
     intentRevision,
     authoredRevision: intentRevision - 1
   })
@@ -303,6 +491,7 @@ function renderPreparation(overrides: {
         read: authority,
         applyWorkspace,
         saveDraft: () => Promise.resolve(workspace),
+        ...(overrides.failed ? { failed: overrides.failed } : {}),
         onError
       })
     },
@@ -319,6 +508,9 @@ function renderPreparation(overrides: {
     },
     setIntentRevision(value: number) {
       intentRevision = value
+    },
+    setDirty() {
+      dirty = true
     }
   }
 }

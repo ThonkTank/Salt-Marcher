@@ -1,3 +1,4 @@
+import { capabilityErrorCode } from '../../../shared/errors/capability-error.js'
 import type { PlannerPreparationMaintenanceStatus } from '../../../shared/contracts/session-planner.js'
 import { settlePlannerPreparations } from './settle-planner-preparations.js'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -31,7 +32,7 @@ export function useSessionPreparation(options: {
   read: () => SessionPlannerAuthority
   applyWorkspace: (workspace: SessionPlannerWorkspace) => void
   saveDraft: () => Promise<SessionPlannerWorkspace | null>
-  failed?: (cause: unknown) => void
+  failed?: (cause: unknown, reconcile?: () => Promise<boolean>) => void
   onError: (message: string) => void
 }) {
   const {
@@ -70,6 +71,82 @@ export function useSessionPreparation(options: {
   useEffect(
     () => () => activeAbort.current?.abort('preparation-controller-unmounted'),
     []
+  )
+
+  const observeMaintenance = useCallback(
+    (operations: PlannerPreparationMaintenanceStatus['operations']) => {
+      maintenanceDiscovered.current = true
+
+      for (const { operationId, receipt } of operations) {
+        if (receipt && !isPreparationTerminal(receipt.status)) {
+          unsettled.current.add(operationId)
+          continue
+        }
+        unsettled.current.delete(operationId)
+        settled.current.add(operationId)
+        if (activeTarget.current?.operationId === operationId) {
+          activeAbort.current?.abort('preparation-settled-for-maintenance')
+          activeAbort.current = null
+          activeTarget.current = null
+        }
+        if (receipt && receipt.sessionId === read().workspace?.session.id) {
+          setStage(preparationStageForStatus(receipt.status))
+          setStageMessage(preparationStatusMessage(receipt))
+        }
+      }
+    },
+    [read]
+  )
+
+  const reconcileUnknownPreparation = useCallback(
+    async (
+      target: PreparationTarget,
+      kind: 'start' | 'cancel'
+    ): Promise<boolean> => {
+      const status = await planner.preparationMaintenanceStatus([
+        target.operationId
+      ])
+      const operation = status.operations.find(
+        ({ operationId }) => operationId === target.operationId
+      )
+      if (!operation || (!operation.receipt && kind === 'cancel'))
+        throw new Error(
+          'Die erwartete Vorbereitungsquittung fehlt. Bitte den Speicherstand erneut prüfen.'
+        )
+      const receipt = operation.receipt
+      if (receipt && receipt.sessionId !== target.sessionId)
+        throw new Error(
+          'Die Vorbereitungsquittung gehört zu einer anderen Sitzung.'
+        )
+      if (!read().dirty) applyWorkspace(status.workspace)
+      observeMaintenance(status.operations)
+      setConfirmation(null)
+      const current = read()
+      if (
+        receipt &&
+        !isPreparationTerminal(receipt.status) &&
+        current.workspace?.session.id === target.sessionId
+      ) {
+        activeAbort.current?.abort('preparation-reconciled')
+        activeAbort.current = new AbortController()
+        activeTarget.current = preparationTarget(
+          target.operationId,
+          current.workspace,
+          current.intentRevision
+        )
+        setStage(preparationStageForStatus(receipt.status))
+        setStageMessage(
+          kind === 'cancel' && !receipt.cancelRequested
+            ? message('planner.cancelNotApplied')
+            : preparationStatusMessage(receipt)
+        )
+      } else if (!receipt) {
+        setStage('ready')
+        setStageMessage(message('planner.preparationNotStarted'))
+      }
+      return true
+    },
+    [applyWorkspace, observeMaintenance, planner, read, setConfirmation]
   )
 
   const publishReceipt = useCallback(
@@ -177,7 +254,13 @@ export function useSessionPreparation(options: {
           await publishReceipt(started.receipt, target)
         }
       })
-      if (outcome.status === 'failure') failed?.(outcome.cause)
+      if (outcome.status === 'failure') {
+        if (capabilityErrorCode(outcome.cause) === 'outcome_unknown')
+          unsettled.current.add(operationId)
+        failed?.(outcome.cause, () =>
+          reconcileUnknownPreparation(target, 'start')
+        )
+      }
       if (
         outcome.status === 'failure' &&
         preparationTargetIsCurrent(activeTarget.current, target, read())
@@ -197,6 +280,7 @@ export function useSessionPreparation(options: {
       planner,
       publishReceipt,
       read,
+      reconcileUnknownPreparation,
       setConfirmation
     ]
   )
@@ -234,7 +318,9 @@ export function useSessionPreparation(options: {
       accept: ({ receipt }) => publishReceipt(receipt, target)
     })
     if (outcome.status === 'failure') {
-      failed?.(outcome.cause)
+      failed?.(outcome.cause, () =>
+        reconcileUnknownPreparation(target, 'cancel')
+      )
       onError(capabilityErrorText(outcome.cause))
     }
     setConfirmation(null)
@@ -245,6 +331,7 @@ export function useSessionPreparation(options: {
     onError,
     planner,
     publishReceipt,
+    reconcileUnknownPreparation,
     setConfirmation
   ])
 
@@ -292,31 +379,6 @@ export function useSessionPreparation(options: {
         if (target?.operationId === notice.operationId) void reconcile(target)
       }),
     [planner, reconcile]
-  )
-
-  const observeMaintenance = useCallback(
-    (operations: PlannerPreparationMaintenanceStatus['operations']) => {
-      maintenanceDiscovered.current = true
-
-      for (const { operationId, receipt } of operations) {
-        if (receipt && !isPreparationTerminal(receipt.status)) {
-          unsettled.current.add(operationId)
-          continue
-        }
-        unsettled.current.delete(operationId)
-        settled.current.add(operationId)
-        if (activeTarget.current?.operationId === operationId) {
-          activeAbort.current?.abort('preparation-settled-for-maintenance')
-          activeAbort.current = null
-          activeTarget.current = null
-        }
-        if (receipt && receipt.sessionId === read().workspace?.session.id) {
-          setStage(preparationStageForStatus(receipt.status))
-          setStageMessage(preparationStatusMessage(receipt))
-        }
-      }
-    },
-    [read]
   )
 
   useEffect(() => {

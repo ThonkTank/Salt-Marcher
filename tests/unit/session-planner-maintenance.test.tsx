@@ -87,6 +87,7 @@ function setup(
     })
     const maintenance = usePlannerMaintenance({
       runtime,
+      onError,
       coordinator,
       read: workspace.read,
       applyWorkspace: workspace.applyWorkspace,

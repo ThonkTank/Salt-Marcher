@@ -1,3 +1,4 @@
+import { message } from '../../i18n/session-runtime.de.js'
 import { useState, useSyncExternalStore } from 'react'
 import type { AsyncCommandCoordinator } from '../../async/async-command-coordinator.js'
 import { maintenanceDraftCoordinator } from '../../shell/maintenance-draft-coordinator.js'
@@ -15,6 +16,7 @@ export function usePlannerMaintenanceRuntime() {
 export function usePlannerMaintenance(options: {
   runtime: PlannerMaintenanceRuntime
   coordinator: AsyncCommandCoordinator
+  onError: (message: string) => void
   read: () => SessionPlannerAuthority
   applyWorkspace: (workspace: SessionPlannerWorkspace) => void
   saveDraft: () => Promise<SessionPlannerWorkspace | null>
@@ -78,6 +80,18 @@ export function usePlannerMaintenance(options: {
     runtime.pending() ||
     runtime.uncertain()
   return {
+    uncertain: runtime.uncertain(),
+    canReconcile: runtime.canReconcile(),
+    reconciliationBlocked: maintenanceBlocked || runtime.pending(),
+    retryUnknown: async () => {
+      if (maintenanceDraftCoordinator.isLocked() || runtime.pending()) return
+      try {
+        if (!(await runtime.run(() => runtime.reconcileUnknown())))
+          options.onError(message('planner.reconciliationUnavailable'))
+      } catch {
+        options.onError(message('planner.reconciliationFailed'))
+      }
+    },
     blocked: maintenanceBlocked || runtime.pending() || runtime.uncertain(),
     edit:
       <Args extends unknown[]>(operation: (...args: Args) => void) =>

@@ -2868,3 +2868,82 @@ Namens-/Beute-Unterdialoge und die vollständige bedienbare Konfliktklärung sin
 noch zu bearbeiten. Weitere Gruppenbefehle, übrige Writer-/Kartenwege, Offline- und
 Update-UI-Abnahme sowie Phasen 5–7 und exakter CI-Handoff/Main-Abschluss bleiben
 verpflichtend. Keine vollständige Planner- oder Phase-4-Abnahme behauptet.
+
+### Phase 4 — Unbekannte Vorbereitungsantworten abgleichen: Umsetzungsplan
+
+Vorheriger Turn Fortschritt (b5147f9e1), Worktree sauber. Start besitzt bereits eine
+stabile operationId; Cancel wirkt idempotent auf deren persistierte Quittung. Die
+Runtime hält für outcome_unknown zusätzlich einen konkreten read-only Abgleich.
+Vorbereitung übergibt den Abgleich mit ursprünglicher ID und Sitzungszuordnung,
+auch wenn der UI-Target nach dem Fehler gelöscht wird. Normale Planner-Befehle ohne
+solchen Nachweis bleiben unverändert ungeklärt.
+
+Der Abgleich nutzt ausschließlich die kampagnengebundene Statusoperation und deren
+frischen Workspace. Fehlende angeforderte Antwortzeile oder unpassende Sitzung ist
+ein Fehler. Explizit null bei einem unbekannten Start bestätigt Nichtausführung;
+bei Cancel fehlt dann dagegen die vorausgesetzte Quittung und die Sperre bleibt.
+Ein vorhandener nichtterminaler Auftrag wird wieder als aktiver Target beobachtet,
+terminaler Status wird übernommen. Keine Wiederholung von Start/Cancel im Abgleich.
+Saubere Entwürfe dürfen den frischen Workspace übernehmen, lokale Änderungen bleiben
+bei der bestehenden Konfliktregel erhalten. Readfehler halten den Abgleich bereit.
+
+Automatische Wartungsklärung versucht denselben Read vor der eigentlichen
+Vorbereitungsauflösung. Nach Wartungsabbruch erhält der Planner einen sichtbaren
+Read-Retry außerhalb der gesperrten Editorfläche; keine normalen Aktionen während
+Unknown oder Read. Bekannte nicht ausgeführte Starts können danach bewusst neu
+angefordert werden. Nicht ausgeführter Abbruch wird verständlich angezeigt.
+
+Prüfen: verlorene Start-/Cancel-Antwort, read failure/retry, laufender/terminaler
+Auftrag, explizite Abwesenheit, fehlende Zeile, abweichende Sitzung, kein zweiter
+Write, frischer gespeicherter Stand, Draft-Erhalt und realer Retry-Button. Bestehende
+Planner-/Wartungs-/Architekturregression, Typecheck, Lint, Build/Smoke und Audits.
+
+Korrekturrunde Sprachvertrag: Typecheck weist die neuen Planner-Texte zurück, weil
+sie in der allgemeinen Session-Datei gesucht wurden. Die Planner-Schlüssel liegen
+in session-planner-messages.de.ts. Neue Meldungen dort am tatsächlichen Owner
+ergänzen; keine Ausweitung des Message-Typs und keine hart codierten UI-Ersatztexte.
+
+Korrekturrunde Tests/Layout: 99 Tests bestehen. Zwei Fehlermatcher müssen die
+zusammengeschriebene deutsche Meldung „Vorbereitungsquittung fehlt“ korrekt prüfen.
+Die sichtbare Recovery-Notiz benötigt zudem einen gemeinsamen vertikalen Wrapper
+mit dem gesperrten Planner: Der übergeordnete Cockpit-Bereich ist eine horizontale
+Flexfläche und würde beide bisherigen Fragment-Kinder nebeneinander anordnen.
+Wrapper/Notiz mit bestehenden Layout-Tokens gestalten; Editor bleibt separat inert.
+
+### Phase 4 — Vorbereitungs-Recovery: Plan- und Roadmapabgleich
+
+Planabgleich bestanden: Die Planner-Runtime hält bei unbekanntem Ausgang den
+konkreten Read-Callback. Sie führt ihn bei Wartungs-Drain oder über den sichtbaren
+Retry aus und löscht ihn erst nach erfolgreicher Klärung. Ein neuerer Callback
+kann nicht durch eine ältere Abgleichsantwort entfernt werden. Start/Cancel
+übergeben ursprüngliche Operation-ID und Sitzung; kein zweiter Schreibauftrag
+wird durch den Abgleich ausgelöst.
+
+Die bestehende kampagnengebundene Statusabfrage liefert Quittung und frischen
+Workspace. Fehlende Antwortzeile, unpassende Sitzung und fehlende Cancel-Quittung
+bleiben Fehler. Explizit fehlender Start wird als nicht ausgeführt erklärt;
+vorhandener laufender Auftrag wird wieder beobachtet. Nicht ausgeführter Cancel
+wird als solcher angezeigt. Saubere Entwürfe übernehmen den frischen Stand;
+lokale Änderungen bleiben erhalten. Readfehler erhalten Unknown und Retry.
+
+Die Recovery-Notiz steht in einer vertikalen Planner-Hülle außerhalb des inert
+Editors. Der Button ist während Read oder Wartung deaktiviert. Die bestehende
+Wartungsklärung kann denselben Read automatisch vor dem Vorbereitungsabschluss
+verwenden. Namens-/Sitzungs-/Beute-Befehle ohne Quittungsabgleich bleiben gesperrt.
+
+Validierung: 101 Tests in 10 Dateien einschließlich Architektur, realem Preparation-
+Hook mit Runtime, unbekanntem Start (queued/succeeded/absent), unbekanntem Cancel
+(queued/canceled/missing), Readfehler/Retry, fremder/fehlender Quittung, Draft-Erhalt
+und tatsächlichem Klick auf den Recovery-Button bestanden. Der UI-Test prüft den
+Button mit realer Runtime-Subscription einschließlich Sperre gegen Doppelklick;
+kein vollständiger gerenderter Planner-Livetest behauptet. Vollständiger Typecheck,
+ESLint aller geänderten/neuen TypeScript-Dateien, Prettier, Build/Built-Smoke
+(ready/closed) und git diff --check bestanden. Logs: work/roadmap-phase4-planner-
+reconcile-*.log. Kein Nutzerprofil verändert; kein kanonischer Handoff.
+
+Roadmapabgleich: Vorbereitung besitzt nun auch nach verlorenen Start-/Cancel-
+Antworten einen bedienbaren Abgleich. Phase 4 bleibt offen: normale Planner-
+Sitzungsbefehle und deren Unknown-Recovery, Namens-/Beute-Unterdialoge, vollständige
+Konfliktklärung, andere Gruppenbefehle, übrige Writer-/Kartenwege und Offline-/
+Update-UI-Abnahme. Phasen 5–7 sowie exakter CI-Handoff und Main-Abschluss bleiben
+verpflichtend. Keine vollständige Planner- oder Release-Abnahme behauptet.
