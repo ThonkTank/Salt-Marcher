@@ -1,4 +1,5 @@
 import type {
+  CharacterComparison,
   DesktopBounds,
   DesktopMapView,
   DesktopReferenceEntry,
@@ -18,13 +19,15 @@ export const initialOverviewWindow: SceneDesktopWindow = {
 }
 export function initialDesktopState(): SceneDesktopState {
   return {
-    schemaVersion: 3,
+    schemaVersion: 4,
     windows: [initialOverviewWindow],
     mapView: { mapId: null, selected: null, cameras: [] },
     combatSelection: []
   }
 }
 export type DesktopAction =
+  | Readonly<{ type: 'open-characters' }>
+  | Readonly<{ type: 'character-comparison'; value: CharacterComparison }>
   | Readonly<{ type: 'open-overview' }>
   | Readonly<{ type: 'open-search' }>
   | Readonly<{ type: 'open-map' }>
@@ -62,6 +65,26 @@ export function reduceDesktop(
   state: SceneDesktopState,
   action: DesktopAction
 ): SceneDesktopState {
+  if (action.type === 'character-comparison')
+    return {
+      ...state,
+      windows: state.windows.map((window) =>
+        window.kind === 'characters'
+          ? { ...window, comparison: action.value }
+          : window
+      )
+    }
+  if (action.type === 'open-characters') {
+    if (state.windows.some((window) => window.id === 'characters'))
+      return reduceDesktop(state, { type: 'raise', id: 'characters' })
+    return appendWindow(state, {
+      ...initialOverviewWindow,
+      id: 'characters',
+      kind: 'characters',
+      comparison: { language: '', passive: 'passivePerception', minimum: null },
+      bounds: { x: 60, y: 40, width: 600, height: 480 }
+    })
+  }
   if (action.type === 'map-view') return { ...state, mapView: action.value }
   if (action.type === 'combat-selection')
     return { ...state, combatSelection: action.value }

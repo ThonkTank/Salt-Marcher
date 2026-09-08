@@ -98,7 +98,7 @@ export const desktopMapViewSchema = z
   .strict()
   .readonly()
 
-export const sceneDesktopWindowSchema = z.union([
+const version3WindowSchema = z.union([
   previousWindowSchema,
   z
     .object({
@@ -123,10 +123,36 @@ export const sceneDesktopWindowSchema = z.union([
     .readonly()
 ])
 
+export const characterComparisonSchema = z
+  .object({
+    language: z.string().max(100),
+    passive: z.enum([
+      'passivePerception',
+      'passiveInsight',
+      'passiveInvestigation'
+    ]),
+    minimum: z.number().int().min(0).max(99).nullable()
+  })
+  .strict()
+  .readonly()
+
+export const sceneDesktopWindowSchema = z.union([
+  version3WindowSchema,
+  z
+    .object({
+      ...windowShape,
+      id: z.literal('characters'),
+      kind: z.literal('characters'),
+      comparison: characterComparisonSchema
+    })
+    .strict()
+    .readonly()
+])
+
 // Array order is the back-to-front order. Empty is a deliberately closed desktop.
 export const sceneDesktopStateSchema = z
   .object({
-    schemaVersion: z.literal(3),
+    schemaVersion: z.literal(4),
     mapView: desktopMapViewSchema,
     combatSelection: z.array(z.uuid()).max(1000).readonly(),
     windows: z.array(sceneDesktopWindowSchema).max(32).readonly()
@@ -155,6 +181,14 @@ export function readStoredDesktopState(value: unknown): SceneDesktopState {
       legacyDesktopStateSchema,
       z
         .object({
+          schemaVersion: z.literal(3),
+          windows: z.array(version3WindowSchema).max(32),
+          mapView: desktopMapViewSchema,
+          combatSelection: z.array(z.uuid()).max(1000)
+        })
+        .strict(),
+      z
+        .object({
           schemaVersion: z.literal(2),
           windows: z.array(previousWindowSchema).max(32)
         })
@@ -165,9 +199,13 @@ export function readStoredDesktopState(value: unknown): SceneDesktopState {
     old.success
       ? {
           ...old.data,
-          schemaVersion: 3,
-          mapView: { mapId: null, selected: null, cameras: [] },
-          combatSelection: []
+          schemaVersion: 4,
+          mapView:
+            'mapView' in old.data
+              ? old.data.mapView
+              : { mapId: null, selected: null, cameras: [] },
+          combatSelection:
+            'combatSelection' in old.data ? old.data.combatSelection : []
         }
       : value
   )
@@ -231,3 +269,5 @@ export type SceneDesktopSnapshot = z.infer<typeof sceneDesktopSnapshotSchema>
 export type SaveSceneDesktopInput = z.infer<typeof saveSceneDesktopInputSchema>
 
 export type DesktopMapView = z.infer<typeof desktopMapViewSchema>
+
+export type CharacterComparison = z.infer<typeof characterComparisonSchema>

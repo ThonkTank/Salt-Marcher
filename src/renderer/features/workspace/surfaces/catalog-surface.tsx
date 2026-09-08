@@ -10,6 +10,9 @@ export default function CatalogSurface(props: WorkspaceSurfaceProps) {
   return (
     <CatalogWorkspace
       campaignId={props.campaignId}
+      snapshot={props.snapshot}
+      navigation={props.catalogNavigation}
+      navigate={props.navigateCatalog}
       setSnapshot={props.setSnapshot}
       inspect={props.inspect}
       onError={props.onError}

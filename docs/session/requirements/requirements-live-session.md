@@ -256,3 +256,30 @@ rejected because a travel boundary advanced its revision may refresh and retry
 once within the same current scene; an already paused readback satisfies the
 intent. Completed/aborted journeys, changed scopes and unknown outcomes are never
 replayed by this recovery path.
+
+## Character library and scene quickinfos (phase 4)
+
+Katalog → Charaktere owns campaign-wide profile CRUD, including inactive PCs.
+Search uses character/player name and identity; rows retain authored roster order.
+Rows expose level and assigned scene or inactive status. Namesakes expose a short
+unique ID suffix; the full ID is available in details. Creation is inactive and
+only name is mandatory. Optional profile facts can be cleared. The detail pane
+opens the existing personal loot ledger and requires explicit permanent deletion
+confirmation. Inline validation retains drafts; concurrent profile edits cannot
+silently overwrite one another, and unknown outcomes are never automatically
+replayed.
+
+A scene's Character window lists only its membership, in stable scene order.
+Name/player, level, current XP/next threshold, three aligned passives and written
+languages remain compact. Language/passive comparisons highlight matches without
+filtering or sorting; missing facts remain —. Personal loot and a catalog deep
+link are available beside each PC. Catalog return preserves the scene desktop.
+Desktop document version 4 upgrades v1/v2/v3 with existing geometry, reference
+history and map presentation intact and persists the new comparison controls.
+
+Campaign-wide profile updates reconcile the assigned scene. Permanent deletion
+removes combat references before the Party record in one transaction. Surviving
+initiative and active turn remain intact; affected combat undo history is cleared
+to prevent restoring a deleted Party reference. Historical loot records retain
+their existing behavior. The legacy Party popup, XP, membership, rest and burden
+semantics remain until their subsequent roadmap phases.

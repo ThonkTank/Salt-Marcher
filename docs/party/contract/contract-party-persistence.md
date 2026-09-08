@@ -97,3 +97,12 @@ older or newer formats remain rejected by the shared persistence lifecycle.
 
 - [Party Domain Model](../domain/domain-party.md) (line 1)
 - [Party Dropdown UI](../requirements/requirements-party-dropdown.md) (line 1)
+
+## Campaign-wide character editing
+
+Profile updates and permanent deletion are atomic with affected combat/scene
+reconciliation. Updating an assigned PC refreshes its own scene rather than the
+focused scene. Deletion removes surviving combat references before deleting the
+Party record, including nonfocused scenes; affected undo history cannot restore
+that deleted reference. No additional Party fields or schema migration are needed
+for the catalog/quickinfo entrypoints introduced by scene-desktop phase 4.

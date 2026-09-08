@@ -127,6 +127,14 @@ const fixtureSchema = z.discriminatedUnion('version', [
   fixtureV5Schema,
   z
     .object({
+      version: z.literal(8),
+      sceneDesktopFixtureIdentity: z.literal(
+        'scene-desktop-character-library-v1'
+      )
+    })
+    .strict(),
+  z
+    .object({
       version: z.literal(6),
       sceneDesktopFixtureIdentity: z.literal('scene-desktop-two-scenes-v1')
     })
@@ -144,8 +152,11 @@ const fixturePath = resolve(userData, 'fixture.json')
 const fixture = fixtureSchema.parse(
   JSON.parse(readFileSync(fixturePath, 'utf8'))
 )
-if (fixture.version === 6 || fixture.version === 7) {
-  materializeSceneDesktopFixture(resolve(userData, 'development-data'))
+if (fixture.version === 6 || fixture.version === 7 || fixture.version === 8) {
+  materializeSceneDesktopFixture(
+    resolve(userData, 'development-data'),
+    fixture.version === 8
+  )
   process.exit(0)
 }
 if (fixture.version === 5) {

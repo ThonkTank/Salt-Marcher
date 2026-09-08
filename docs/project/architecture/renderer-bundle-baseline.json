@@ -1,16 +1,16 @@
 {
   "recordedAt": "2026-09-08",
-  "reason": "Phase 2 adds scene-scoped reference search and independent persisted readers with stable window switching and guarded presentation writes.",
-  "dependencyRationale": "No dependency changes.",
-  "chunkRationale": "Desktop and reference bodies retain lazy boundaries; final measured graph after title, focus, scroll and taskbar corrections.",
+  "reason": "Phase 4 adds campaign character CRUD and compact scene quickinfos after phase 3 play windows.",
+  "dependencyRationale": "No dependency changes; authoritative schemas remain outside renderer imports.",
+  "chunkRationale": "Character catalog and profile form are a dynamic leaf. Desktop, personal loot, reference readers and Pixi retain lazy boundaries. Reviewed cumulative growth since phase 2: 25,344 bytes reachable, with shell growth 26 bytes.",
   "graphs": {
-    "shell": 420394,
-    "workspace": 518918,
-    "session": 169505,
-    "catalog": 185870,
+    "shell": 420420,
+    "workspace": 521684,
+    "session": 171012,
+    "catalog": 186679,
     "hex": 176699,
     "reference": 39766,
-    "pixi": 408635,
-    "reachable": 1569581
+    "pixi": 409364,
+    "reachable": 1594925
   }
 }

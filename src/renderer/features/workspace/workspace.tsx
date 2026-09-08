@@ -1,3 +1,4 @@
+import type { CatalogNavigation } from '../catalog/catalog-section-selector.js'
 import {
   lazy,
   Suspense,
@@ -71,6 +72,9 @@ export function WorkspaceApp() {
     sceneDesktopPreview,
     changeSceneDesktopPreview
   } = useInstallationPreferences(settingsError, coreStatus === 'ready')
+  const [catalogNavigation, setCatalogNavigation] = useState<
+    Record<string, CatalogNavigation>
+  >({})
   const [partyOpen, setPartyOpen] = useState(false)
   const [dayOpen, setDayOpen] = useState(false)
   const [scenarios, setScenarios] = useState<Record<string, SessionScenario>>(
@@ -160,6 +164,22 @@ export function WorkspaceApp() {
     coordinator.session && activeCampaignId
       ? {
           campaignId: activeCampaignId,
+          catalogNavigation: catalogNavigation[activeCampaignId] ?? {
+            section: 'monsters' as const,
+            characterId: null
+          },
+          navigateCatalog: (navigation: CatalogNavigation) =>
+            setCatalogNavigation((current) => ({
+              ...current,
+              [activeCampaignId]: navigation
+            })),
+          openCharacter: (characterId: string) => {
+            setCatalogNavigation((current) => ({
+              ...current,
+              [activeCampaignId]: { section: 'characters', characterId }
+            }))
+            coordinator.setWorkspace('catalog')
+          },
           desktopPreview: sceneDesktopPreview,
           snapshot: coordinator.session,
           setSnapshot,

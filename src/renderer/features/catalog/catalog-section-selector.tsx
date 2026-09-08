@@ -1,7 +1,12 @@
 import { message } from '../../i18n/catalog-runtime.de.js'
 
 export type CatalogSection =
-  'monsters' | 'locations' | 'factions' | 'npcs' | 'encounterTables'
+  | 'monsters'
+  | 'locations'
+  | 'factions'
+  | 'npcs'
+  | 'encounterTables'
+  | 'characters'
 
 const sections: readonly {
   id: CatalogSection
@@ -20,6 +25,12 @@ export function CatalogSectionSelector(props: {
 }) {
   return (
     <header className="catalog-section-selector">
+      <button
+        aria-pressed={props.section === 'characters'}
+        onClick={() => props.select('characters')}
+      >
+        {message('character.characters')}
+      </button>
       {sections.map((section) => (
         <button
           key={section.id}
@@ -32,3 +43,8 @@ export function CatalogSectionSelector(props: {
     </header>
   )
 }
+
+export type CatalogNavigation = Readonly<{
+  section: CatalogSection
+  characterId: string | null
+}>

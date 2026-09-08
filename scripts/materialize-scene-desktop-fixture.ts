@@ -8,7 +8,10 @@ import { CampaignStore } from '../src/core/persistence/sqlite/campaign-store.js'
 import { LivePlayService } from '../src/core/encounter/live-combat.js'
 
 /** Isolated pre-launch fixture preparation; never touches the installed profile. */
-export function materializeSceneDesktopFixture(dataRoot: string): void {
+export function materializeSceneDesktopFixture(
+  dataRoot: string,
+  extendedRoster = false
+): void {
   const campaigns = new CampaignStore(dataRoot)
   try {
     campaigns.create('Desktop Acceptance')
@@ -73,8 +76,10 @@ export function materializeSceneDesktopFixture(dataRoot: string): void {
           level: 3,
           species: null,
           characterClass: null,
-          languages: [],
-          passivePerception: null,
+          languages: extendedRoster
+            ? ['Common', index === 0 ? 'Abyssal' : 'Elvish']
+            : [],
+          passivePerception: extendedRoster ? 14 : null,
           passiveInsight: null,
           passiveInvestigation: null,
           armorClass: null,
@@ -100,6 +105,30 @@ export function materializeSceneDesktopFixture(dataRoot: string): void {
           null
         )
       })
+    }
+    if (extendedRoster) {
+      for (let index = 0; index < 16; index++) {
+        let party = play.readParty()
+        party = play.createPartyCharacter(
+          {
+            name:
+              index < 2
+                ? 'Edrik'
+                : index === 2
+                  ? 'Zuga'
+                  : `Reserve ${index + 1}`,
+            playerName: index === 0 ? 'Alex' : index === 1 ? 'Mara' : null,
+            level: index === 2 ? 3 : null,
+            passivePerception: null,
+            passiveInsight: index === 2 ? 16 : null,
+            armorClass: null,
+            languages: index === 2 ? ['Common', 'Abyssal'] : []
+          },
+          party.revision
+        )
+        if (index === 2)
+          play.setMembership(party.members.at(-1)!.id, true, party.revision)
+      }
     }
     const mapId = persistence.use((db) => {
       const maps = new HexMapStore(db, new WorldLocationStore(db))

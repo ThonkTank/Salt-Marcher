@@ -1,3 +1,4 @@
+import { DesktopCharacters } from './desktop-characters.js'
 import { useSessionWorkspaceController } from '../session/use-session-workspace-controller.js'
 import { SessionDialogHost } from '../session/session-dialog-host.js'
 import { SessionLootPanel } from '../session/session-groups-panel.js'
@@ -114,7 +115,7 @@ export function SceneDesktop(
         >
           {message('desktop.search')}
         </button>
-        {(['map', 'combat', 'loot'] as const).map((kind) => (
+        {(['characters', 'map', 'combat', 'loot'] as const).map((kind) => (
           <button
             key={kind}
             disabled={!snapshot.state || !!snapshot.error}
@@ -123,7 +124,9 @@ export function SceneDesktop(
               projection.dispatch({ type: `open-${kind}` })
             }}
           >
-            {message(`desktop.${kind}`)}
+            {kind === 'characters'
+              ? message('character.characters')
+              : message(`desktop.${kind}`)}
           </button>
         ))}
         <small role="status">
@@ -164,7 +167,21 @@ export function SceneDesktop(
                   launcher.current?.focus()
               }}
             >
-              {window.kind === 'search' ? (
+              {window.kind === 'characters' ? (
+                <DesktopCharacters
+                  members={focused.partyMemberIds.flatMap((id) =>
+                    props.snapshot.party.members.filter(
+                      (member) => member.id === id
+                    )
+                  )}
+                  comparison={window.comparison}
+                  change={(value) =>
+                    projection.dispatch({ type: 'character-comparison', value })
+                  }
+                  openCharacter={props.openCharacter}
+                  onError={props.onError}
+                />
+              ) : window.kind === 'search' ? (
                 <DesktopSearch
                   window={window}
                   dispatch={projection.dispatch.bind(projection)}

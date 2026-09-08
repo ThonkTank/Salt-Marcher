@@ -342,3 +342,61 @@
 .desktop-scene-facts button {
   color: var(--text-1);
 }
+
+.desktop-characters {
+  padding: 0.5rem;
+  overflow: auto;
+  min-height: 0;
+}
+.desktop-character-comparison {
+  display: flex;
+  gap: 0.3rem;
+  margin-bottom: 0.5rem;
+}
+.desktop-character-comparison select {
+  min-width: 0;
+  flex: 1;
+}
+.desktop-character-comparison input {
+  width: 3.5rem;
+}
+.desktop-character-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+.desktop-character-table th:first-child {
+  width: 40%;
+  text-align: left;
+}
+.desktop-character-table thead {
+  font-size: 0.75rem;
+}
+.desktop-character-table th,
+.desktop-character-table td {
+  padding: 0.3rem;
+  overflow-wrap: anywhere;
+}
+.desktop-character-table td:not([colspan]) {
+  text-align: center;
+}
+.desktop-character-table small {
+  display: block;
+  font-weight: normal;
+}
+.desktop-character-table tbody {
+  border-bottom: 1px solid var(--border-structural);
+}
+.desktop-character-table tbody[data-match='true'] {
+  background: var(--surface-tab-active);
+  outline: 1px solid var(--accent-gold);
+  outline-offset: -1px;
+}
+.desktop-character-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.desktop-character-footer span {
+  flex: 1;
+}

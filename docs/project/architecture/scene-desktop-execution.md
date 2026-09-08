@@ -11,8 +11,8 @@ includes remote checks, exact-SHA app handoff and green promotion to main.
 | --- | --- | --- |
 | 1 — Window desktop and persistence | Complete | e254a04a2; candidate, exact-SHA handoff and main evidence below |
 | 2 — Reference windows | Complete | 8cb1fbe7b; candidate, canonical handoff and main evidence below |
-| 3 — Travel and combat | In progress | Context refresh below |
-| 4 — Character catalog | Not started | Depends on completed phases 1–3 |
+| 3 — Travel and combat | Complete | a8f679e2e; candidate, canonical handoff and main evidence below |
+| 4 — Character catalog | In progress | Context refresh below |
 | 5 — Membership, XP, rest | Not started | Depends on completed phase 4 |
 | 6 — Default and cleanup | Not started | Depends on all previous phases |
 
@@ -870,3 +870,197 @@ is 1,577,721 bytes against 3,019,898; existing limits remain unchanged. Both the
 implementation-plan and original-roadmap local audits pass with no remaining
 local discrepancy. Exact-SHA candidate checks, handoff and green-main promotion
 are the remaining phase-3 gates.
+
+
+## Phase 3 — Completed delivery and closing audits
+
+- Delivered SHA: `a8f679e2e9de7a334d18bb578c2b8adb4c74c0af`,
+  [PR 666](https://github.com/ThonkTank/Salt-Marcher/pull/666).
+- [Candidate Check](https://github.com/ThonkTank/Salt-Marcher/actions/runs/34244432318),
+  attempt 1: all 15 required jobs including exact-SHA aggregate passed.
+- `pnpm handoff:app` completed without resume or bypass. State ID
+  `aa81627e-6cc6-4488-b943-53d83d009413`; original/active attempt
+  `a31da4fd-f8d7-4ca4-ac3f-a091e7a6bfd4`.
+- Downloaded and installed AppImage SHA-256:
+  `069503f8bb739bf35f3555a23ee8237a644aad03f0bd5a20a27f8aa60566fe3c`.
+  Installed runtime passed two quick checks and four domain readbacks.
+- SQLite-consistent backup:
+  `2026-09-08T15-38-12-991Z-bd8f9415e76a-834af1ae`, manifest SHA-256
+  `09a286e5d456df906eee83cbf4b1410015f1e8702aef4522271f2c854899a502`.
+- Deployment fingerprint:
+  `caac77c829cd68fde2a2c6a06cd4108412059480e7189b8319a7e2906afee361`.
+- `pnpm delivery:promote` fast-forwarded the same SHA to main.
+  [Main Check](https://github.com/ThonkTank/Salt-Marcher/actions/runs/34246102450)
+  passed and `readSuccessfulPostPromotionEvidence` verified its manifest-version-4
+  attestation for the delivered SHA.
+- Implementation-plan and original-roadmap closing audits both pass. No phase 3
+  requirement or delivery gate remains outstanding.
+
+## Phase 4 — Context refresh
+
+Started on `codex/scene-desktop-phase-4` from the completed phase 3 SHA. Inspect
+character contracts, existing complete Party CRUD/loot controls, catalog tab
+composition and scene quick-info requirements before recording the concrete plan.
+No phase 4 implementation edit precedes its plan.
+
+## Phase 4 — Concrete implementation plan
+
+Outcome: a full campaign Character catalog and an independent compact scene
+quick-info window, using existing Party/loot capabilities and authored nullable
+facts. No membership/XP/rest redesign or legacy-popup removal in this phase.
+
+Repository findings: Party contracts and persistence already support all required
+fields, name-only UI drafts, stable roster IDs, inactive creation and personal loot.
+The root CampaignWorkspaceProjection already refreshes session data on domain
+notices across all workspaces. Catalog currently has local section selection and
+no character deep link. Desktop version 3 has no character window. Party update
+and delete currently reconcile only the focused combat and are not atomic across
+the affected scene; this must be corrected for campaign-wide CRUD.
+
+Implementation sequence:
+
+1. Add renderer-only per-campaign catalog navigation (section and selected PC)
+   in the workspace owner. Add `Katalog → Charaktere` with searchable stable roster
+   rows (name/player primary, ID disambiguation, level and inactive/scene status),
+   a selected detail pane, create/edit and explicit delete confirmation in that
+   pane, plus existing personal-ledger access. A scene quick-info link selects the
+   correct catalog character; returning to Session preserves the desktop.
+2. Implement a compact, labeled character form using the existing strict draft
+   schema and public Party adapter. Only name is required; empty optional inputs
+   become null, languages retain authored order and case-insensitive uniqueness.
+   Report field/mutation failures inline, keep drafts on failure, prevent duplicate
+   submissions, and do not replay unknown outcomes. Use current snapshots and
+   guard draft base profiles against conflicting edits; runtime-only revisions
+   must not silently overwrite another character profile.
+3. Make Party update/delete transactional and reconcile the actually assigned
+   scene's combat through aggregate APIs. Preserve existing initiative values,
+   active turn and player runtime while refreshing names/removing deleted PCs.
+   Inactive edits never activate or assign characters. Historical loot ownership
+   remains under the existing loot persistence behavior; no resource tracking.
+4. Add a `characters` desktop singleton with persisted language/passive-comparison
+   controls. Document version 4 explicitly upgrades v1/v2/v3 while retaining all
+   prior windows and map presentation. Show only current scene PCs in stable
+   scene-membership order: name/player/level, current and next-threshold XP,
+   three fixed passive columns, written languages, personal loot and catalog link.
+   Highlight matches without filtering or reordering rows; missing facts show —.
+5. Add a versioned 18-character fixture with two scenes, inactive/incomplete PCs
+   and namesakes. Verify CRUD, null clearing, invalid saves, explicit deletion,
+   personal loot, scene isolation, comparison order and catalog return/restart.
+   Update requirements and migration progress without rewriting the roadmap.
+
+Validation: draft/projection/highlighting and version-upgrade unit tests; mutation
+concurrency/scope tests; integration tests for inactive CRUD and nonfocused-scene
+combat reconciliation with preserved initiative/turn; targeted E2E for library and
+quickinfos, both themes and a small workspace. Run applicable existing Party,
+Catalog, desktop, architecture, type/lint/format/build/smoke/bundle checks. Audit
+separately against this plan and original phase 4, recording fixes before edits.
+Complete clean candidate push, all exact-SHA remote checks, canonical app handoff,
+same-SHA main promotion and green-main evidence before phase 5.
+
+Acceptance: inactive name-only creation and complete nullable profile editing work
+without participation changes. Namesakes remain distinguishable and independently
+editable. Only present PCs appear in quickinfos; comparisons preserve row order.
+XP/next threshold are visible without changing existing XP/rest rules. Catalog
+navigation returns to the same scene workspace and open reference documents.
+No unrelated catalog or legacy Party workflow regresses.
+
+### Phase 4 — Validation correction 1
+
+The first focused run passed 22 cases and failed the new invalid-form case:
+inline error text nested inside a label changed the input's accessible name.
+Keep labels stable with an explicit accessible name; retain the error description
+association. Re-run the form cases and continue the planned integration/fixture
+coverage. This corrects actual orientation/accessibility, not the test oracle.
+
+### Phase 4 — Validation correction 2
+
+The new nonfocused-scene integration case exposed an existing deletion failure:
+combat persistence resolves Party foreign references while loading, so deleting a
+PC before reconciling makes the combat unreadable. Combat sources also retain PCs
+after initiative and during resolution. Correct deletion by asking every scene's
+combat aggregate to remove the character before deleting its Party record, within
+the same transaction. Preserve surviving cards/turn; clear undo history only in
+affected combats so undo cannot resurrect a deleted character reference. Cover
+rollback, successful deletion and nonfocused combat reads. No historical loot rows
+are changed. Type validation also requires explicit optional navigation undefined
+handling at the existing optional surface seam.
+
+### Phase 4 — Validation correction 3
+
+Architecture regression checks passed 101 cases and found two boundary violations:
+a runtime schema import in the renderer and static UI copy outside typed messages.
+Keep authoritative strict Zod validation at IPC, use lightweight form validation
+for immediate field feedback, and move all new copy into the existing workspace
+message catalog. Preserve test assertions and bundle boundaries. Remove the unused
+comparison export and correct the E2E accessibility helper call signature before
+running the built acceptance suite.
+
+### Phase 4 — Validation correction 4
+
+The copy and renderer boundaries now pass. Two new concurrency tests failed before
+rendering because their capability fixture omitted the existing global session
+subscription. Supply that fixture dependency and rerun; production behavior and
+assertions stay unchanged. The built desktop acceptance run is now in progress.
+
+### Phase 4 — Bundle review and adjustment plan
+
+The measured reachable renderer is 1,594,925 bytes, 25,344 above the phase-2
+baseline and below the unchanged 3,019,898-byte hard limit. This crosses the
+16-KiB review threshold after phase-3 play windows plus the new lazy character
+catalog, profile form and quickinfo UI. No dependency was added. Shell increased
+26 bytes, common workspace 2,766, catalog 809 and session 1,507 against that
+baseline; the catalog/form remains a dynamic leaf and the existing reference and
+Pixi boundaries remain intact. Record these reviewed measurements as the next
+baseline, without increasing any hard budget or growth allowance, then recheck.
+
+### Phase 4 — Built acceptance correction 5
+
+The four previous desktop E2E cases still pass. The new case reaches name-only
+creation but the new detail does not appear: Party commands return a Party
+snapshot without emitting the runtime session notice assumed by the initial
+plan. Publish the successful returned aggregate into the campaign-scoped workspace
+projection, then refresh the full session for scene/combat reconciliation; never
+replay the mutation. Also constrain the character catalog to the actual work-area
+height so its roster scrolls internally rather than extending the entire page.
+Re-run built acceptance and add mutation-publication coverage.
+
+### Phase 4 — Phase-plan audit
+
+The catalog implements stable campaign rows, primary identity search, namesake
+suffixes, full nullable profile CRUD and explicit permanent deletion. Personal
+loot reuses its existing ledger. Root per-campaign navigation carries deep links
+and retains selection when returning from Session. Lightweight field feedback
+plus authoritative IPC validation replace the initial direct-schema rendering
+plan as documented in correction 3. Concurrency cases prove profile conflict
+protection, duplicate-save prevention, publication of confirmed results and late
+completion suppression after unmount.
+
+The independent Character window uses current scene membership order, all three
+fixed passives, written languages, XP/next threshold, and comparison highlighting
+without sorting. Version 4 explicitly retains v1/v2/v3 presentation state. Domain
+CRUD targets assigned/nonfocused combats transactionally; tests cover rename,
+initiative/active-turn preservation, failed deletion rollback and successful
+reference removal. No XP/rest/membership semantics were changed.
+
+The 18-PC v8 fixture contains two scenes, inactive/incomplete characters and three
+namesakes. The full five-case built E2E run passed, including existing desktop,
+reference, map/combat/travel lifecycle, new CRUD/loot/scene isolation, comparisons,
+null clearing, invalid creation, delete confirmation, empty search, both themes
+and restart. Summary:
+`.tmp/e2e-runs/functional-1788883735998-311714/summary.json`, 5 passing in 1m49.4s.
+Focused library concurrency/form/presentation tests pass 7/7; focused combined
+architecture/domain cases passed 31/31 before the additional publication case.
+Existing domain/desktop regression cases passed; the two initial architecture
+failures were corrected and separately revalidated. Full lint, typecheck,
+formatting, version truth, built smoke and reviewed bundle budgets pass on their
+recorded inputs. No phase-plan discrepancy remains; final checks and delivery
+still required before closing the phase.
+
+### Phase 4 — Original roadmap audit
+
+All six phase-4 implementation bullets and its acceptance paragraph are met:
+full Character catalog, nullable/inactive records and personal loot, independent
+scene quickinfos, stable language/passive comparisons, XP/next threshold/catalog
+access, unchanged XP/rest rules. Existing desktop state survives catalog returns.
+Phase 5 membership, XP/burden and selected-rest work and phase 6 legacy removal
+remain explicitly pending. The roadmap itself is unchanged.

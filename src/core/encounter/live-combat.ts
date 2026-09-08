@@ -106,20 +106,30 @@ export class LivePlayService {
     character: PartyCharacterDraft,
     expectedRevision: number
   ) {
-    return this.withStores(({ party, scene, combat }) => {
-      const snapshot = party.update(id, character, expectedRevision)
-      combat.reconcileParty(scene.assignedParty(snapshot.members))
-      return snapshot
-    })
+    return this.withStores(({ party, scene, combatFor, unitOfWork }) =>
+      unitOfWork.run(() => {
+        const sceneId = scene.sceneForPartyMember(id)
+        const snapshot = party.update(id, character, expectedRevision)
+        if (sceneId)
+          combatFor(sceneId).reconcileParty(
+            scene.assignedParty(snapshot.members, sceneId)
+          )
+        return snapshot
+      })
+    )
   }
 
   deletePartyCharacter(id: string, expectedRevision: number) {
-    return this.withStores(({ party, scene, combat }) => {
-      const snapshot = party.delete(id, expectedRevision)
-      scene.unassignPartyMember(id)
-      combat.reconcileParty(scene.assignedParty(snapshot.members))
-      return snapshot
-    })
+    return this.withStores(({ party, scene, combatFor, unitOfWork }) =>
+      unitOfWork.run(() => {
+        const before = party.read()
+        for (const entry of scene.snapshot(before.members).scenes)
+          combatFor(entry.id).removePartyCharacter(id)
+        const snapshot = party.delete(id, expectedRevision)
+        scene.unassignPartyMember(id)
+        return snapshot
+      })
+    )
   }
 
   adjustPartyXp(id: string, delta: number, expectedRevision: number) {

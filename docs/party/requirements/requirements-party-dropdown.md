@@ -101,3 +101,12 @@ summary, and mutation controls use the Party feature's public mutation API.
 - [Adventuring Day Top-Bar UI](requirements-adventuring-day-dropdown.md)
 - [Party Domain Model](../domain/domain-party.md)
 - [Party Persistence](../contract/contract-party-persistence.md)
+
+## Scene desktop roadmap transition
+
+The approved scene-desktop roadmap supersedes the earlier no-catalog constraint:
+phase 4 adds full campaign-wide character CRUD under Katalog → Charaktere and
+scene-specific quickinfos. The dropdown remains available during migration and is
+removed only in phase 6. Nullable profile fields, inactive creation, explicit
+permanent deletion and personal loot are shared requirements of both entrypoints.
+XP/rest and membership redesign belong to phase 5, not this transition.
