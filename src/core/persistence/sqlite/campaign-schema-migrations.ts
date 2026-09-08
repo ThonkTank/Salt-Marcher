@@ -1,7 +1,10 @@
 import { initializeSceneGroupCommandJournal } from '../../scene/scene-group-command-journal.js'
 import type Database from 'better-sqlite3'
 import type { SchemaMigration } from './schema-migrations.js'
-import { migratePartySchema28To29 } from '../../party/party-store.js'
+import {
+  migratePartySchema28To29,
+  migratePartyBurden34To35
+} from '../../party/party-store.js'
 import {
   initializeWorldNpcSchema,
   migrateWorldNpcSchema32To33
@@ -196,19 +199,37 @@ export const campaignSchemaMigrations: readonly SchemaMigration[] =
       }
     },
     {
-      id: 'campaign-34-to-35-scene-group-receipts',
+      id: 'campaign-34-to-35-party-burden',
       role: 'campaign',
       fromVersion: 34,
       toVersion: 35,
       migrate(database) {
         initializeCampaignSchemaMetadata(database)
+        migratePartyBurden34To35(database)
+        database
+          .prepare(
+            'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
+          )
+          .run('campaign-34-to-35-party-burden', new Date().toISOString())
+      }
+    },
+    {
+      id: 'campaign-35-to-36-unified-burden-and-group-receipts',
+      role: 'campaign',
+      fromVersion: 35,
+      toVersion: 36,
+      migrate(database) {
+        initializeCampaignSchemaMetadata(database)
+        // Main-35 has burden facts; the earlier maintenance candidate-35 has receipts.
+        // Both owners preserve existing data and only add the missing schema.
+        migratePartyBurden34To35(database)
         initializeSceneGroupCommandJournal(database)
         database
           .prepare(
             'INSERT INTO campaign_schema_migration (migration_id, applied_at) VALUES (?, ?)'
           )
           .run(
-            'campaign-34-to-35-scene-group-receipts',
+            'campaign-35-to-36-unified-burden-and-group-receipts',
             new Date().toISOString()
           )
       }

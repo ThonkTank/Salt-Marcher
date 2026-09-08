@@ -24,6 +24,9 @@ export function createPartyHandlers(
   play: LivePlayService
 ): OperationHandlers<typeof partyOperationDefinitions> {
   return defineOperationHandlers('party_handlers', partyOperationDefinitions, {
+    'party.restSelected': (input) => play.restSceneParty(input),
+    'party.setXp': (input) =>
+      play.setPartyXp(input.id, input.amount, input.expectedRevision),
     'party.read': () => play.readParty(),
     'party.setMembership': (input) =>
       play.setMembership(input.id, input.active, input.expectedRevision),
@@ -55,6 +58,8 @@ export function createSessionHandlers(
         throw new CapabilityError('stale', true)
       return play.readSession()
     },
+    'scene.setRoster': (input) => play.setSceneRoster(input),
+    'scene.moveRoster': (input) => play.moveSceneRoster(input),
     'scene.focus': (input) =>
       play.focusScene(input.sceneId, input.expectedRevision),
     'scene.setLocation': (input) =>

@@ -22,10 +22,15 @@ import {
   type LiveSessionSnapshot,
   type SceneGroupCommandResult
 } from '../../shared/contracts/live-session.js'
-import type { PartyCharacterDraft } from '../../shared/contracts/party.js'
+import type {
+  PartyCharacterDraft,
+  RestScenePartyInput
+} from '../../shared/contracts/party.js'
 import type { CreatureCatalogQuery } from '../../shared/contracts/encounter.js'
 import type { EncounterTuningOverride } from '../../shared/contracts/encounter-tuning.js'
 import type {
+  SetSceneRosterInput,
+  MoveSceneRosterInput,
   EncounterSelectionEvaluation,
   GroupGenerationMode,
   SceneGroupDraftEntry,
@@ -78,23 +83,161 @@ export class LivePlayService {
   }
 
   setMembership(id: string, active: boolean, expectedRevision: number) {
-    return this.withStores(({ party, scene, combat, unitOfWork }) => {
-      return unitOfWork.run(() => {
+    return this.withStores(({ db, party, scene, combatFor, unitOfWork }) =>
+      unitOfWork.run(() => {
         const existing = party.read().members.find((member) => member.id === id)
         if (!existing) throw new CapabilityError('not_found', false)
+        const sourceId = scene.sceneForPartyMember(id)
+        if (!active && sourceId) combatFor(sourceId).removePartyCharacter(id)
         const snapshot = party.setMembership(id, active, expectedRevision)
-        if (!active) scene.unassignPartyMember(id)
-        else if (!existing.active)
+        let changedScene: string | null = null
+        if (!active && sourceId) {
+          scene.unassignPartyMember(id)
+          changedScene = sourceId
+        } else if (active && !existing.active) {
+          changedScene = scene.focusedSceneId()
+          scene.assignPartyMember(changedScene, id, true, scene.revision())
+        }
+        if (changedScene) {
+          combatFor(changedScene).reconcileParty(
+            scene.assignedParty(snapshot.members, changedScene)
+          )
+          new HexTravelStore(
+            db,
+            new HexMapStore(db, new WorldLocationStore(db)),
+            party,
+            scene
+          ).pauseForMembershipChange(changedScene)
+        }
+        return snapshot
+      })
+    )
+  }
+
+  setSceneRoster(input: SetSceneRosterInput): LiveSessionSnapshot {
+    return this.withStores(({ db, party, scene, combatFor, unitOfWork }) =>
+      unitOfWork.run(() => {
+        const before = party.read()
+        if (
+          before.revision !== input.expectedPartyRevision ||
+          scene.revision() !== input.expectedRevision
+        )
+          throw new CapabilityError('stale', true)
+        const source = scene
+          .snapshot(before.members)
+          .scenes.find((s) => s.id === input.sceneId)
+        if (!source) throw new CapabilityError('not_found', false)
+        const desired = new Set(input.memberIds)
+        if (
+          desired.size !== input.memberIds.length ||
+          input.memberIds.some(
+            (id) =>
+              !before.members.some(
+                (m) =>
+                  m.id === id &&
+                  (!m.active || source.partyMemberIds.includes(id))
+              )
+          )
+        )
+          throw new CapabilityError('validation_failed', false)
+        const removed = source.partyMemberIds.filter((id) => !desired.has(id))
+        const added = before.members.filter(
+          (m) => desired.has(m.id) && !source.partyMemberIds.includes(m.id)
+        )
+        for (const id of removed) {
+          combatFor(input.sceneId).removePartyCharacter(id)
+          scene.unassignPartyMember(id)
+          party.setMembership(id, false, party.read().revision)
+        }
+        for (const member of added) {
+          party.setMembership(member.id, true, party.read().revision)
           scene.assignPartyMember(
-            scene.focusedSceneId(),
-            id,
+            input.sceneId,
+            member.id,
             true,
             scene.revision()
           )
-        combat.reconcileParty(scene.assignedParty(snapshot.members))
-        return snapshot
+        }
+        if (removed.length || added.length) {
+          combatFor(input.sceneId).reconcileParty(
+            scene.assignedParty(party.read().members, input.sceneId)
+          )
+          new HexTravelStore(
+            db,
+            new HexMapStore(db, new WorldLocationStore(db)),
+            party,
+            scene
+          ).pauseForMembershipChange(input.sceneId)
+        }
+        return this.snapshotFrom(
+          db,
+          party,
+          scene,
+          combatFor(scene.focusedSceneId())
+        )
       })
-    })
+    )
+  }
+
+  moveSceneRoster(input: MoveSceneRosterInput): LiveSessionSnapshot {
+    return this.withStores(({ db, party, scene, combatFor, unitOfWork }) =>
+      unitOfWork.run(() => {
+        const before = party.read()
+        const scenes = scene.snapshot(before.members)
+        if (
+          before.revision !== input.expectedPartyRevision ||
+          scenes.revision !== input.expectedRevision
+        )
+          throw new CapabilityError('stale', true)
+        const source = scenes.scenes.find((s) => s.id === input.sceneId)
+        const selected = new Set(input.memberIds)
+        if (
+          !source ||
+          !selected.size ||
+          selected.size !== input.memberIds.length ||
+          input.memberIds.some(
+            (id) =>
+              !source.partyMemberIds.includes(id) ||
+              !before.members.some((m) => m.id === id && m.active)
+          )
+        )
+          throw new CapabilityError('validation_failed', false)
+        const requestedTarget =
+          input.target.kind === 'existing' ? input.target.sceneId : null
+        if (
+          input.target.kind === 'existing' &&
+          (input.target.sceneId === source.id ||
+            !scenes.scenes.some((s) => s.id === requestedTarget))
+        )
+          throw new CapabilityError('validation_failed', false)
+        const targetId =
+          input.target.kind === 'new'
+            ? scene.createFromScene(source.id, input.target.title)
+            : input.target.sceneId
+        for (const id of source.partyMemberIds.filter((id) =>
+          selected.has(id)
+        )) {
+          combatFor(source.id).removePartyCharacter(id)
+          scene.assignPartyMember(targetId, id, true, scene.revision())
+        }
+        const travel = new HexTravelStore(
+          db,
+          new HexMapStore(db, new WorldLocationStore(db)),
+          party,
+          scene
+        )
+        for (const id of [source.id, targetId]) {
+          combatFor(id).reconcileParty(scene.assignedParty(before.members, id))
+          travel.pauseForMembershipChange(id)
+        }
+        return this.snapshotFrom(
+          db,
+          party,
+          scene,
+          combatFor(scene.focusedSceneId())
+        )
+      })
+    )
   }
 
   createPartyCharacter(
@@ -137,9 +280,32 @@ export class LivePlayService {
     )
   }
 
+  setPartyXp(id: string, amount: number, expectedRevision: number) {
+    return this.withStores(({ party }) =>
+      party.setXp(id, amount, expectedRevision)
+    )
+  }
+
   adjustPartyXp(id: string, delta: number, expectedRevision: number) {
     return this.withStores(({ party }) =>
       party.adjustXp(id, delta, expectedRevision)
+    )
+  }
+
+  restSceneParty(input: RestScenePartyInput) {
+    return this.withStores(({ party, scene, unitOfWork }) =>
+      unitOfWork.run(() => {
+        if (scene.revision() !== input.expectedSceneRevision)
+          throw new CapabilityError('stale', true)
+        const ids = scene.partyMemberIds(input.sceneId)
+        if (
+          !input.memberIds.length ||
+          new Set(input.memberIds).size !== input.memberIds.length ||
+          input.memberIds.some((id) => !ids.includes(id))
+        )
+          throw new CapabilityError('validation_failed', false)
+        return party.rest(input.type, input.expectedRevision, input.memberIds)
+      })
     )
   }
 
@@ -335,16 +501,46 @@ export class LivePlayService {
     assigned: boolean,
     expectedRevision: number
   ): LiveSessionSnapshot {
-    return this.withStores(({ db, party, scene, combat }) => {
-      scene.assignPartyMember(
-        sceneId,
-        partyMemberId,
-        assigned,
-        expectedRevision
-      )
-      combat.reconcileParty(scene.assignedParty(party.read().members, sceneId))
-      return this.snapshotFrom(db, party, scene, combat)
-    })
+    return this.withStores(({ db, party, scene, combatFor, unitOfWork }) =>
+      unitOfWork.run(() => {
+        const sourceId = scene.sceneForPartyMember(partyMemberId)
+        const departed =
+          sourceId &&
+          ((assigned && sourceId !== sceneId) ||
+            (!assigned && sourceId === sceneId))
+            ? sourceId
+            : null
+        if (departed) combatFor(departed).removePartyCharacter(partyMemberId)
+        scene.assignPartyMember(
+          sceneId,
+          partyMemberId,
+          assigned,
+          expectedRevision
+        )
+        const affected = new Set([
+          ...(departed ? [departed] : []),
+          ...(assigned && sourceId !== sceneId ? [sceneId] : [])
+        ])
+        const travel = new HexTravelStore(
+          db,
+          new HexMapStore(db, new WorldLocationStore(db)),
+          party,
+          scene
+        )
+        for (const id of affected) {
+          combatFor(id).reconcileParty(
+            scene.assignedParty(party.read().members, id)
+          )
+          travel.pauseForMembershipChange(id)
+        }
+        return this.snapshotFrom(
+          db,
+          party,
+          scene,
+          combatFor(scene.focusedSceneId())
+        )
+      })
+    )
   }
 
   generateGroupDraft(

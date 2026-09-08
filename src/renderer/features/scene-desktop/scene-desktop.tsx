@@ -1,3 +1,4 @@
+import { DesktopRosterActions } from './desktop-roster-actions.js'
 import { DesktopCharacters } from './desktop-characters.js'
 import { useSessionWorkspaceController } from '../session/use-session-workspace-controller.js'
 import { SessionDialogHost } from '../session/session-dialog-host.js'
@@ -169,6 +170,16 @@ export function SceneDesktop(
             >
               {window.kind === 'characters' ? (
                 <DesktopCharacters
+                  campaignId={props.campaignId}
+                  partyRevision={props.snapshot.party.revision}
+                  actions={
+                    <DesktopRosterActions
+                      key={focused.id}
+                      campaignId={props.campaignId}
+                      sceneId={focused.id}
+                      snapshot={props.snapshot}
+                    />
+                  }
                   members={focused.partyMemberIds.flatMap((id) =>
                     props.snapshot.party.members.filter(
                       (member) => member.id === id

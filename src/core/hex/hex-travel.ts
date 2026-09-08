@@ -202,6 +202,16 @@ export class HexTravelStore {
     ) => HexBiomeDefinition = defaultBiomeDefinition
   ) {}
 
+  pauseForMembershipChange(sceneId: string): void {
+    this.db
+      .prepare(
+        `UPDATE hex_journey SET status = 'paused',
+      revision = revision + 1, segment_started_at = NULL, hint_code = 'party-changed'
+      WHERE scene_id = ? AND status = 'travelling'`
+      )
+      .run(sceneId)
+  }
+
   read(requestedSceneId?: string): HexTravelSnapshot {
     const sceneId = requestedSceneId ?? this.scenes.focusedSceneId()
     return this.snapshot(sceneId, this.journey(sceneId))

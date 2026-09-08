@@ -3265,3 +3265,62 @@ Buchung nach bestätigtem Ausgang und Erhalt späterer Einträge müssen im
 gerenderten Dialog geprüft werden. Phase 4 mit ihren übrigen offenen Writer-/
 Planner-/Charakter-/Karten-/Updatewegen sowie Phasen 5–7 bleibt offen.
 Kein vollständiges Remote-CI-Grün, kanonischer Handoff, Main-Push oder Release.
+
+### Phase 4 — Vorrangiger Integrationsplan: kollidierendes Kampagnenschema 35
+
+Vor Dialogänderungen ist der Kandidat sauber, PR 661 aber CONFLICTING.
+Main e6ad4389b bringt Szenenbesetzung, selektive XP/Rast und die bereits
+übergebene Migration 34→35 für explizite Belastungsherkunft. Der Kandidat
+verwendete 35 für Gruppenquittungen. Kein aktueller CI-Lauf auf 925ef2334.
+
+Main integrieren und seine veröffentlichte Migrationsidentität erhalten.
+Gemeinsamer Nachfolger: Kampagne 36, Installation 41, Registry 15. Migration
+35→36 initialisiert Gruppenquittungen und ergänzt fehlende Belastungsfelder
+über den idempotenten Party-Owner. So werden sowohl Main-35-Profile als auch
+bisherige Kandidaten-35-Profile erhalten. Keine Ableitung vertrauter XP-Herkunft
+aus unbekannten Altzählern; vorhandene Vertrauensflags bleiben unverändert.
+Konflikte in Scene-Verträgen vereinigen. Aktuelle Versions-/Fixture-Verträge
+nachziehen, eingefrorene Release-Daten unverändert lassen.
+
+Prüfen: beide Schema-35-Varianten und 34 über den gesamten Pfad; vorhandene
+Quittungen, Partywerte und Flags bleiben erhalten. 0.2.0-Zeilenvergleich muss
+nur die neu hinzugefügten, separat geprüften Spalten ausnehmen. Vollständige
+portable Prüfung und Build/Smoke/Bundlegate. Neue Main-Writer bleiben im
+Phase-4-Audit sichtbar. Ledger-Dialog-Recovery danach fortsetzen.
+
+### Phase 4 — Schema-35-Kollision: Plan- und Roadmapabgleich
+
+Planabgleich bestanden: Main e6ad4389b ist integriert. Seine komplette
+Migrationskette einschließlich campaign-34-to-35-party-burden bleibt unverändert;
+der neue Schritt 35→36 ergänzt über die jeweiligen Owner beide fehlenden
+Strukturen. Installation bleibt 41, Kampagne wird 36, Registry 15. Bestehende
+Gruppenquittungen sowie belastbare/unsichere Partyherkunft werden erhalten.
+Vorhandene Metadateneinträge behalten ID und Zeitstempel. Scene-Verträge und
+Handler enthalten sowohl Gruppenquittungen als auch neue Roster-Kommandos.
+Aktuelle Versionsdokumentation und Qualifikationsmanifest stimmen mit den
+ausführbaren Registern überein; eingefrorene Release-Fixtures sind unverändert.
+
+Validierung: Native Tests rekonstruieren beide Schema-35-Varianten mit
+realen Party-/Gruppendaten und echter Gruppenquittung. Ein injizierter Fehler
+beim abschließenden Migrationseintrag setzt DDL, Zeilen und user_version
+vollständig zurück. Anschließende Migration und Profilneustart erhalten
+Gruppenstand, gegebenenfalls Quittung und Partywerte; vorhandene Flags bleiben
+erhalten, fehlende Flags werden explizit unbekannt (0). Der 0.2.0-
+Zeilenvergleich prüft zusätzlich beide neuen Partyspalten und vergleicht alle
+alten Spalten weiter exakt. 54 gezielte Migrations-/Versions-/Current-format-
+Tests sowie vollständiges check:portable:fast bestanden: 91 Architekturtests,
+1165 Unit-Tests, 321 Integrationstests, Format/Lint/Typecheck und Referenz-/
+Generator-/Versions-/Renderartefakt-Gates. Build/Built-Smoke ready/closed,
+Bundle-Gate und diff --check bestanden. Keine Baseline-/Budgetlockerung;
+reachable Renderer 1642871 Bytes. Logs: work/roadmap-phase4-main36-*.log.
+Keine echte Nutzerinstallation oder Nutzerdaten verändert.
+
+Roadmapabgleich: Diese notwendige Zusammenführung stellt den qualifizierten
+Migrationspfad und die CI-Freigängigkeit wieder her, ersetzt aber keine
+Abnahme mit echten alten AppImages. Der Ledger-Dialog wurde in diesem Schritt
+noch nicht geändert; seine zentrale Klärung und sichtbare Recovery sind als
+Nächstes umzusetzen. Neu aus Main hinzugekommene DesktopRosterActions,
+DesktopRestAction und persönliche XP-Eingaben benötigen ebenfalls die
+Phase-4-Wartungsanbindung. Alle bisher offenen Planner-/Charakter-/Beute-/
+Karten-/Updatewege bleiben in der Abnahme. Phasen 5–7, exakte Remote-CI,
+kanonischer Handoff und Main-Abschluss bleiben verpflichtend.

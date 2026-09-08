@@ -73,8 +73,18 @@ describe('permanent 0.2.0 persistence baseline', () => {
       }
       const after = new Database(path, { readonly: true })
       try {
-        expect(after.pragma('user_version', { simple: true })).toBe(35)
-        expect(dataRows(after, Object.keys(rows))).toEqual(rows)
+        expect(after.pragma('user_version', { simple: true })).toBe(36)
+        const migrated = dataRows(after, Object.keys(rows))
+        for (const character of migrated['player_characters'] as Record<
+          string,
+          unknown
+        >[]) {
+          expect(character['short_rest_trusted']).toBe(0)
+          expect(character['long_rest_trusted']).toBe(0)
+          delete character['short_rest_trusted']
+          delete character['long_rest_trusted']
+        }
+        expect(migrated).toEqual(rows)
         expect(
           after
             .prepare(

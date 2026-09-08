@@ -29,7 +29,15 @@ export const partyCharacterSchema = z
     currentLevelFloor: z.number().int().nonnegative(),
     nextLevelXp: z.number().int().nonnegative().nullable(),
     xpSinceShortRest: z.number().int().nonnegative(),
-    xpSinceLongRest: z.number().int().nonnegative()
+    xpSinceLongRest: z.number().int().nonnegative(),
+    burden: z
+      .object({
+        shortTrusted: z.boolean(),
+        longTrusted: z.boolean(),
+        dailyBudget: z.number().int().positive().nullable()
+      })
+      .strict()
+      .optional()
   })
   .strict()
 
@@ -149,3 +157,21 @@ export type AdventuringDaySummary = Readonly<
 export type AdventuringDayCalculation = Readonly<
   z.infer<typeof adventuringDayCalculationSchema>
 >
+
+export const setPartyXpInputSchema = deletePartyCharacterInputSchema
+  .extend({ amount: z.number().int().min(0).max(1_000_000) })
+  .strict()
+
+export const restScenePartyInputSchema = partyMutationBaseSchema
+  .extend({
+    sceneId: z.uuid(),
+    expectedSceneRevision: z.number().int().nonnegative(),
+    memberIds: z
+      .array(z.uuid())
+      .min(1)
+      .max(1000)
+      .refine((ids) => new Set(ids).size === ids.length),
+    type: z.enum(['short', 'long'])
+  })
+  .strict()
+export type RestScenePartyInput = z.infer<typeof restScenePartyInputSchema>

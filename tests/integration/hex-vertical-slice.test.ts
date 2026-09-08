@@ -69,6 +69,68 @@ function harness() {
 }
 
 describe('chunked hex editor to session travel vertical slice', () => {
+  it('pauses a journey before changing its roster and does not move its former members', () => {
+    const h = harness()
+    const map = h.maps.create('Roster route', h.maps.catalog().revision)
+    h.editing.applyBrushStroke({
+      commandId: randomUUID(),
+      mapId: map.id,
+      mode: 'paint',
+      biomeId: 'grassland',
+      path: [
+        { q: 0, r: 0 },
+        { q: 1, r: 0 }
+      ],
+      radius: 0,
+      expectedContentRevision: 0,
+      confirmationToken: null
+    })
+    let session = h.play.readSession()
+    const sceneId = session.scene.focusedSceneId
+    const memberId = session.party.members[0]!.id
+    session = h.play.setSceneRoster({
+      sceneId,
+      memberIds: [memberId],
+      expectedRevision: session.scene.revision,
+      expectedPartyRevision: session.party.revision
+    })
+    h.travel.position({
+      sceneId,
+      mapId: map.id,
+      coordinate: { q: 0, r: 0 },
+      expectedSceneRevision: session.scene.revision
+    })
+    h.travel.start({
+      sceneId,
+      mapId: map.id,
+      waypoints: [{ q: 1, r: 0 }],
+      multiplier: 1,
+      expectedRevision: h.travel.read(sceneId).revision
+    })
+    session = h.play.readSession()
+    const before = session.scene.scenes.find(
+      (scene) => scene.id === sceneId
+    )!.gameTimeSeconds
+    session = h.play.setSceneRoster({
+      sceneId,
+      memberIds: [],
+      expectedRevision: session.scene.revision,
+      expectedPartyRevision: session.party.revision
+    })
+    expect(h.travel.read(sceneId)).toMatchObject({
+      status: 'paused',
+      hintCode: 'party-changed'
+    })
+    expect(
+      session.scene.scenes.find((scene) => scene.id === sceneId)!
+        .gameTimeSeconds
+    ).toBe(before)
+    expect(
+      session.party.members.find((member) => member.id === memberId)
+        ?.travelPosition
+    ).toMatchObject({ q: 0, r: 0 })
+  })
+
   it('keeps travel and combat exclusive per scene with atomic rejection and paused coexistence', () => {
     const h = harness()
     const map = h.maps.create('Activity map', h.maps.catalog().revision)

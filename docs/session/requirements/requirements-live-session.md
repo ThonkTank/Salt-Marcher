@@ -283,3 +283,13 @@ initiative and active turn remain intact; affected combat undo history is cleare
 to prevent restoring a deleted Party reference. Historical loot records retain
 their existing behavior. The legacy Party popup, XP, membership, rest and burden
 semantics remain until their subsequent roadmap phases.
+
+
+## Scene desktop phase 5: roster transactions
+
+Roster replacement and move commands carry both Scene and Party revisions and
+validate the whole selection before an atomic write. Deselecting deactivates;
+moving preserves active participation. Current ordering remains stable. A new
+scene inherits source time/location; existing targets and empty sources remain.
+Affected combat rosters reconcile in their own scene, and affected ongoing
+journeys pause with a party-change hint. No command retries an unknown outcome.

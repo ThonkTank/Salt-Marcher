@@ -1,5 +1,7 @@
 import { partySnapshotSchema } from '../live-session.js'
 import {
+  restScenePartyInputSchema,
+  setPartyXpInputSchema,
   adjustPartyXpInputSchema,
   adventuringDayCalculationSchema,
   adventuringDayInputSchema,
@@ -12,6 +14,16 @@ import {
 import { none, read, utilityOperationFragment, write } from './registry.js'
 
 export const partyOperationDefinitions = utilityOperationFragment({
+  'party.restSelected': write(
+    'party:restSelected',
+    restScenePartyInputSchema,
+    partySnapshotSchema
+  ),
+  'party.setXp': write(
+    'party:setXp',
+    setPartyXpInputSchema,
+    partySnapshotSchema
+  ),
   'party.read': read('party:read', none, partySnapshotSchema),
   'party.setMembership': write(
     'party:setMembership',

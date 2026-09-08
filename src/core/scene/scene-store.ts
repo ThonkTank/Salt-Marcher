@@ -228,6 +228,7 @@ export class SceneStore {
       if (assigned) {
         if (!this.activePartyMember(partyMemberId))
           throw new CapabilityError('not_found', false)
+        if (this.sceneForPartyMember(partyMemberId) === sceneId) return
         this.db
           .prepare('DELETE FROM scene_party_member WHERE party_member_id = ?')
           .run(partyMemberId)
@@ -244,6 +245,24 @@ export class SceneStore {
           .run(sceneId, partyMemberId)
       }
     })
+  }
+
+  createFromScene(sourceId: string, title: string): string {
+    this.requireScene(sourceId)
+    if (!title.trim() || title.trim().length > 100)
+      throw new CapabilityError('validation_failed', false)
+    const id = uuidv7()
+    this.db
+      .prepare(
+        `INSERT INTO scene_running_scene
+      (id, title, location_id, location_name, game_time_seconds, position)
+      SELECT ?, ?, location_id, location_name, game_time_seconds,
+        (SELECT COALESCE(MAX(position) + 1, 0) FROM scene_running_scene)
+      FROM scene_running_scene WHERE id = ?`
+      )
+      .run(id, title.trim(), sourceId)
+    this.bump()
+    return id
   }
 
   sceneForPartyMember(partyMemberId: string): string | null {

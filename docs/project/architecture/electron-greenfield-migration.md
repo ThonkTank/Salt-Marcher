@@ -669,5 +669,12 @@ controllers; map presentation is persisted in document version 3, explicitly
 upgrading versions 1 and 2. Installation schema 41 and campaign schema 34 remain
 unchanged. Actual combat execution and travelling exclude one another per scene;
 initiative preparation and inspection remain available. The existing Session
-remains default. Phase 4 is in progress: full campaign Character catalog, nullable profile editing and scene quickinfos with persisted comparisons in desktop document version 4. No phase is recorded as delivered until
+remains default. Phase 4 was delivered at 63b427900 with canonical handoff and green main: full campaign Character catalog, nullable profile editing and scene quickinfos with persisted comparisons in desktop document version 4. No phase is recorded as delivered until
 its exact-SHA checks, app handoff and green main promotion are verified.
+
+
+Scene desktop phase 5 is in progress: atomic scene roster replacement/transfers,
+manual XP separated from encounter burden, selected two-click rests. Campaign
+schema 35 preserves legacy counters with separate trust flags; registry 14.
+Phase closure still requires the candidate, handoff and main evidence in the
+scene desktop execution log.

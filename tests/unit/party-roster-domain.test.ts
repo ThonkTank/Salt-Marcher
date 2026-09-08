@@ -18,7 +18,7 @@ describe('Party roster domain', () => {
         { level: 5, xp: 7_000, shortXp: 700, longXp: 1_200 },
         -2_000
       )
-    ).toEqual({ xp: 6_500, shortXp: 200, longXp: 700 })
+    ).toEqual({ xp: 6_500, shortXp: 700, longXp: 1_200 })
     expect(levelFloor(null)).toBe(0)
     expect(initialXpForLevel(5)).toBe(6_500)
     expect(xpAfterLevelSelection(7_000, 4)).toBe(7_000)
